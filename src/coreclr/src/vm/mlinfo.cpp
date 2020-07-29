@@ -1929,7 +1929,7 @@ MarshalInfo::MarshalInfo(Module* pModule,
                     }
                 }
 #endif // FEATURE_COMINTEROP
-                else if (sigTH.CanCastTo(TypeHandle(MscorlibBinder::GetClass(CLASS__SAFE_HANDLE))))
+                else if (sigTH.CanCastTo(TypeHandle(CoreLibBinder::GetClass(CLASS__SAFE_HANDLE))))
                 {
                     if (nativeType != NATIVE_TYPE_DEFAULT)
                     {
@@ -1939,7 +1939,7 @@ MarshalInfo::MarshalInfo(Module* pModule,
                     m_args.m_pMT = m_pMT;
                     m_type = MARSHAL_TYPE_SAFEHANDLE;
                 }
-                else if (sigTH.CanCastTo(TypeHandle(MscorlibBinder::GetClass(CLASS__CRITICAL_HANDLE))))
+                else if (sigTH.CanCastTo(TypeHandle(CoreLibBinder::GetClass(CLASS__CRITICAL_HANDLE))))
                 {
                     if (nativeType != NATIVE_TYPE_DEFAULT)
                     {
@@ -2304,14 +2304,14 @@ MarshalInfo::MarshalInfo(Module* pModule,
                     && (!m_pMT->IsBlittable()
                         || (m_pMT->HasSameTypeDefAs(g_pNullableClass)
                         || m_pMT->HasSameTypeDefAs(g_pByReferenceClass)
-                        || m_pMT->HasSameTypeDefAs(MscorlibBinder::GetClass(CLASS__SPAN))
-                        || m_pMT->HasSameTypeDefAs(MscorlibBinder::GetClass(CLASS__READONLY_SPAN))
-                        || m_pMT->HasSameTypeDefAs(MscorlibBinder::GetClass(CLASS__VECTOR64T))
-                        || m_pMT->HasSameTypeDefAs(MscorlibBinder::GetClass(CLASS__VECTOR128T))
-                        || m_pMT->HasSameTypeDefAs(MscorlibBinder::GetClass(CLASS__VECTOR256T))
+                        || m_pMT->HasSameTypeDefAs(CoreLibBinder::GetClass(CLASS__SPAN))
+                        || m_pMT->HasSameTypeDefAs(CoreLibBinder::GetClass(CLASS__READONLY_SPAN))
+                        || m_pMT->HasSameTypeDefAs(CoreLibBinder::GetClass(CLASS__VECTOR64T))
+                        || m_pMT->HasSameTypeDefAs(CoreLibBinder::GetClass(CLASS__VECTOR128T))
+                        || m_pMT->HasSameTypeDefAs(CoreLibBinder::GetClass(CLASS__VECTOR256T))
 #ifndef CROSSGEN_COMPILE
                             // Crossgen scenarios block Vector<T> from even being loaded
-                            || m_pMT->HasSameTypeDefAs(MscorlibBinder::GetClass(CLASS__VECTORT))
+                            || m_pMT->HasSameTypeDefAs(CoreLibBinder::GetClass(CLASS__VECTORT))
 #endif // !CROSSGEN_COMPILE
                     )))
                 {
@@ -4359,26 +4359,26 @@ void ArrayMarshalInfo::InitElementInfo(CorNativeType arrayNativeType, MarshalInf
             }
 #endif // FEATURE_COMINTEROP
         }
-        else if (m_thElement.CanCastTo(TypeHandle(MscorlibBinder::GetClass(CLASS__SAFE_HANDLE))))
+        else if (m_thElement.CanCastTo(TypeHandle(CoreLibBinder::GetClass(CLASS__SAFE_HANDLE))))
         {
             // Array's of SAFEHANDLEs are not supported.
             ReportInvalidArrayMarshalInfo(IDS_EE_BADMARSHAL_SAFEHANDLEARRAY);
         }
-        else if (m_thElement.CanCastTo(TypeHandle(MscorlibBinder::GetClass(CLASS__CRITICAL_HANDLE))))
+        else if (m_thElement.CanCastTo(TypeHandle(CoreLibBinder::GetClass(CLASS__CRITICAL_HANDLE))))
         {
             // Array's of CRITICALHANDLEs are not supported.
             ReportInvalidArrayMarshalInfo(IDS_EE_BADMARSHAL_CRITICALHANDLEARRAY);
         }
         else if (etElement == ELEMENT_TYPE_VALUETYPE)
         {
-            if (m_thElement == TypeHandle(MscorlibBinder::GetClass(CLASS__DATE_TIME)))
+            if (m_thElement == TypeHandle(CoreLibBinder::GetClass(CLASS__DATE_TIME)))
             {
                 if (ntElement == NATIVE_TYPE_STRUCT || ntElement == NATIVE_TYPE_DEFAULT)
                     m_vtElement = VT_DATE;
                 else
                     ReportInvalidArrayMarshalInfo(IDS_EE_BADMARSHAL_DATETIMEARRAY);
             }
-            else if (m_thElement == TypeHandle(MscorlibBinder::GetClass(CLASS__DECIMAL)))
+            else if (m_thElement == TypeHandle(CoreLibBinder::GetClass(CLASS__DECIMAL)))
             {
                 if (ntElement == NATIVE_TYPE_STRUCT || ntElement == NATIVE_TYPE_DEFAULT)
                     m_vtElement = VT_DECIMAL;
@@ -4395,7 +4395,7 @@ void ArrayMarshalInfo::InitElementInfo(CorNativeType arrayNativeType, MarshalInf
             }
         }
 #ifdef FEATURE_COMINTEROP
-        else if (m_thElement == TypeHandle(MscorlibBinder::GetClass(CLASS__ERROR_WRAPPER)))
+        else if (m_thElement == TypeHandle(CoreLibBinder::GetClass(CLASS__ERROR_WRAPPER)))
         {
             m_vtElement = VT_ERROR;
         }

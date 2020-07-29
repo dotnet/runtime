@@ -485,6 +485,7 @@ namespace System.ComponentModel.Tests
         [InlineData(typeof(CultureInfo), typeof(CultureInfoConverter))]
         [InlineData(typeof(Version), typeof(VersionConverter))]
         [InlineData(typeof(IComponent), typeof(ComponentConverter))]
+        [InlineData(typeof(IFooComponent), typeof(ReferenceConverter))]
         public static void GetConverter(Type targetType, Type resultConverterType)
         {
             TypeConverter converter = TypeDescriptor.GetConverter(targetType);
@@ -1150,6 +1151,11 @@ namespace System.ComponentModel.Tests
         {
             [Description("Derived")]
             public override int Value { get; set; }
+        }
+
+        interface IFooComponent
+        {
+            bool Flag { get; set; }
         }
     }
 }

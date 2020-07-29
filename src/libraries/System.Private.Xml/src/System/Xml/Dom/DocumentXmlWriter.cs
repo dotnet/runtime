@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#nullable enable
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -57,13 +58,13 @@ namespace System.Xml
         private readonly DocumentXmlWriterType _type; // writer type
         private readonly XmlNode _start; // context node
         private readonly XmlDocument _document; // context document
-        private XmlNamespaceManager _namespaceManager; // context namespace manager
+        private XmlNamespaceManager? _namespaceManager; // context namespace manager
         private State _state; // current state
-        private XmlNode _write; // current node
+        private XmlNode? _write; // current node
         private readonly List<XmlNode> _fragment; // top level node cache
         private readonly XmlWriterSettings _settings; // wrapping writer settings
-        private DocumentXPathNavigator _navigator; // context for replace
-        private XmlNode _end; // context for replace
+        private DocumentXPathNavigator? _navigator; // context for replace
+        private XmlNode? _end; // context for replace
 
         public DocumentXmlWriter(DocumentXmlWriterType type, XmlNode start, XmlDocument document)
         {
@@ -81,7 +82,7 @@ namespace System.Xml
             _settings.ReadOnly = true;
         }
 
-        public XmlNamespaceManager NamespaceManager
+        public XmlNamespaceManager? NamespaceManager
         {
             set
             {
@@ -97,7 +98,7 @@ namespace System.Xml
             }
         }
 
-        public DocumentXPathNavigator Navigator
+        public DocumentXPathNavigator? Navigator
         {
             set
             {
@@ -126,9 +127,9 @@ namespace System.Xml
         internal override void WriteXmlDeclaration(string xmldecl)
         {
             VerifyState(Method.WriteXmlDeclaration);
-            string version, encoding, standalone;
+            string? version, encoding, standalone;
             XmlLoader.ParseXmlDeclarationValue(xmldecl, out version, out encoding, out standalone);
-            XmlNode node = _document.CreateXmlDeclaration(version, encoding, standalone);
+            XmlNode node = _document.CreateXmlDeclaration(version!, encoding, standalone);
             AddChild(node, _write);
         }
 
@@ -147,14 +148,14 @@ namespace System.Xml
             VerifyState(Method.WriteEndDocument);
         }
 
-        public override void WriteDocType(string name, string pubid, string sysid, string subset)
+        public override void WriteDocType(string name, string? pubid, string? sysid, string? subset)
         {
             VerifyState(Method.WriteDocType);
             XmlNode node = _document.CreateDocumentType(name, pubid, sysid, subset);
             AddChild(node, _write);
         }
 
-        public override void WriteStartElement(string prefix, string localName, string ns)
+        public override void WriteStartElement(string? prefix, string localName, string? ns)
         {
             VerifyState(Method.WriteStartElement);
             XmlNode node = _document.CreateElement(prefix, localName, ns);
@@ -169,6 +170,7 @@ namespace System.Xml
             {
                 throw new InvalidOperationException();
             }
+
             _write = _write.ParentNode;
         }
 
@@ -180,11 +182,12 @@ namespace System.Xml
         public override void WriteFullEndElement()
         {
             VerifyState(Method.WriteFullEndElement);
-            XmlElement elem = _write as XmlElement;
+            XmlElement? elem = _write as XmlElement;
             if (elem == null)
             {
                 throw new InvalidOperationException();
             }
+
             elem.IsEmpty = false;
             _write = elem.ParentNode;
         }
@@ -199,7 +202,7 @@ namespace System.Xml
             // nop
         }
 
-        public override void WriteStartAttribute(string prefix, string localName, string ns)
+        public override void WriteStartAttribute(string? prefix, string localName, string? ns)
         {
             VerifyState(Method.WriteStartAttribute);
             XmlAttribute attr = _document.CreateAttribute(prefix, localName, ns);
@@ -210,16 +213,18 @@ namespace System.Xml
         public override void WriteEndAttribute()
         {
             VerifyState(Method.WriteEndAttribute);
-            XmlAttribute attr = _write as XmlAttribute;
+            XmlAttribute? attr = _write as XmlAttribute;
             if (attr == null)
             {
                 throw new InvalidOperationException();
             }
+
             if (!attr.HasChildNodes)
             {
                 XmlNode node = _document.CreateTextNode(string.Empty);
                 AddChild(node, attr);
             }
+
             _write = attr.OwnerElement;
         }
 
@@ -250,6 +255,7 @@ namespace System.Xml
             {
                 attr = _document.CreateAttribute(_document.strXmlns, prefix, _document.strReservedXmlns);
             }
+
             AddAttribute(attr, _write);
             _write = attr;
         }
@@ -257,20 +263,22 @@ namespace System.Xml
         internal override void WriteEndNamespaceDeclaration()
         {
             VerifyState(Method.WriteEndNamespaceDeclaration);
-            XmlAttribute attr = _write as XmlAttribute;
+            XmlAttribute? attr = _write as XmlAttribute;
             if (attr == null)
             {
                 throw new InvalidOperationException();
             }
+
             if (!attr.HasChildNodes)
             {
                 XmlNode node = _document.CreateTextNode(string.Empty);
                 AddChild(node, attr);
             }
+
             _write = attr.OwnerElement;
         }
 
-        public override void WriteCData(string text)
+        public override void WriteCData(string? text)
         {
             VerifyState(Method.WriteCData);
             XmlConvert.VerifyCharData(text, ExceptionType.ArgumentException);
@@ -278,7 +286,7 @@ namespace System.Xml
             AddChild(node, _write);
         }
 
-        public override void WriteComment(string text)
+        public override void WriteComment(string? text)
         {
             VerifyState(Method.WriteComment);
             XmlConvert.VerifyCharData(text, ExceptionType.ArgumentException);
@@ -286,11 +294,11 @@ namespace System.Xml
             AddChild(node, _write);
         }
 
-        public override void WriteProcessingInstruction(string name, string text)
+        public override void WriteProcessingInstruction(string name, string? text)
         {
             VerifyState(Method.WriteProcessingInstruction);
             XmlConvert.VerifyCharData(text, ExceptionType.ArgumentException);
-            XmlNode node = _document.CreateProcessingInstruction(name, text);
+            XmlNode node = _document.CreateProcessingInstruction(name, text!);
             AddChild(node, _write);
         }
 
@@ -307,7 +315,7 @@ namespace System.Xml
             WriteString(char.ToString(ch));
         }
 
-        public override void WriteWhitespace(string text)
+        public override void WriteWhitespace(string? text)
         {
             VerifyState(Method.WriteWhitespace);
             XmlConvert.VerifyCharData(text, ExceptionType.ArgumentException);
@@ -318,7 +326,7 @@ namespace System.Xml
             }
         }
 
-        public override void WriteString(string text)
+        public override void WriteString(string? text)
         {
             VerifyState(Method.WriteString);
             XmlConvert.VerifyCharData(text, ExceptionType.ArgumentException);
@@ -363,15 +371,17 @@ namespace System.Xml
                 switch (_type)
                 {
                     case DocumentXmlWriterType.InsertSiblingAfter:
-                        XmlNode parent = _start.ParentNode;
+                        XmlNode? parent = _start.ParentNode;
                         if (parent == null)
                         {
                             throw new InvalidOperationException(SR.Xpn_MissingParent);
                         }
+
                         for (int i = _fragment.Count - 1; i >= 0; i--)
                         {
                             parent.InsertAfter(_fragment[i], _start);
                         }
+
                         break;
                     case DocumentXmlWriterType.InsertSiblingBefore:
                         parent = _start.ParentNode;
@@ -379,22 +389,26 @@ namespace System.Xml
                         {
                             throw new InvalidOperationException(SR.Xpn_MissingParent);
                         }
+
                         for (int i = 0; i < _fragment.Count; i++)
                         {
                             parent.InsertBefore(_fragment[i], _start);
                         }
+
                         break;
                     case DocumentXmlWriterType.PrependChild:
                         for (int i = _fragment.Count - 1; i >= 0; i--)
                         {
                             _start.PrependChild(_fragment[i]);
                         }
+
                         break;
                     case DocumentXmlWriterType.AppendChild:
                         for (int i = 0; i < _fragment.Count; i++)
                         {
                             _start.AppendChild(_fragment[i]);
                         }
+
                         break;
                     case DocumentXmlWriterType.AppendAttribute:
                         CloseWithAppendAttribute();
@@ -404,6 +418,7 @@ namespace System.Xml
                         {
                             throw new InvalidOperationException(SR.Xpn_NoContent);
                         }
+
                         CloseWithReplaceToFollowingSibling();
                         break;
                 }
@@ -416,12 +431,12 @@ namespace System.Xml
 
         private void CloseWithAppendAttribute()
         {
-            XmlElement elem = _start as XmlElement;
+            XmlElement? elem = _start as XmlElement;
             Debug.Assert(elem != null);
             XmlAttributeCollection attrs = elem.Attributes;
             for (int i = 0; i < _fragment.Count; i++)
             {
-                XmlAttribute attr = _fragment[i] as XmlAttribute;
+                XmlAttribute? attr = _fragment[i] as XmlAttribute;
                 Debug.Assert(attr != null);
                 int offset = attrs.FindNodeOffsetNS(attr);
                 if (offset != -1
@@ -432,7 +447,7 @@ namespace System.Xml
             }
             for (int i = 0; i < _fragment.Count; i++)
             {
-                XmlAttribute attr = _fragment[i] as XmlAttribute;
+                XmlAttribute? attr = _fragment[i] as XmlAttribute;
                 Debug.Assert(attr != null);
                 attrs.Append(attr);
             }
@@ -440,11 +455,12 @@ namespace System.Xml
 
         private void CloseWithReplaceToFollowingSibling()
         {
-            XmlNode parent = _start.ParentNode;
+            XmlNode? parent = _start.ParentNode;
             if (parent == null)
             {
                 throw new InvalidOperationException(SR.Xpn_MissingParent);
             }
+
             if (_start != _end)
             {
                 if (!DocumentXPathNavigator.IsFollowingSibling(_start, _end))
@@ -455,15 +471,18 @@ namespace System.Xml
                 {
                     throw new InvalidOperationException(SR.Xdom_Node_Modify_ReadOnly);
                 }
+
                 DocumentXPathNavigator.DeleteToFollowingSibling(_start.NextSibling, _end);
             }
+
             XmlNode fragment0 = _fragment[0];
             parent.ReplaceChild(fragment0, _start);
             for (int i = _fragment.Count - 1; i >= 1; i--)
             {
                 parent.InsertAfter(_fragment[i], fragment0);
             }
-            _navigator.ResetPosition(fragment0);
+
+            _navigator!.ResetPosition(fragment0);
         }
 
         public override void Flush()
@@ -473,20 +492,20 @@ namespace System.Xml
 
         IDictionary<string, string> IXmlNamespaceResolver.GetNamespacesInScope(XmlNamespaceScope scope)
         {
-            return _namespaceManager.GetNamespacesInScope(scope);
+            return _namespaceManager!.GetNamespacesInScope(scope);
         }
 
-        string IXmlNamespaceResolver.LookupNamespace(string prefix)
+        string? IXmlNamespaceResolver.LookupNamespace(string prefix)
         {
-            return _namespaceManager.LookupNamespace(prefix);
+            return _namespaceManager!.LookupNamespace(prefix);
         }
 
-        string IXmlNamespaceResolver.LookupPrefix(string namespaceName)
+        string? IXmlNamespaceResolver.LookupPrefix(string namespaceName)
         {
-            return _namespaceManager.LookupPrefix(namespaceName);
+            return _namespaceManager!.LookupPrefix(namespaceName);
         }
 
-        private void AddAttribute(XmlAttribute attr, XmlNode parent)
+        private void AddAttribute(XmlAttribute attr, XmlNode? parent)
         {
             if (parent == null)
             {
@@ -494,16 +513,17 @@ namespace System.Xml
             }
             else
             {
-                XmlElement elem = parent as XmlElement;
+                XmlElement? elem = parent as XmlElement;
                 if (elem == null)
                 {
                     throw new InvalidOperationException();
                 }
+
                 elem.Attributes.Append(attr);
             }
         }
 
-        private void AddChild(XmlNode node, XmlNode parent)
+        private void AddChild(XmlNode node, XmlNode? parent)
         {
             if (parent == null)
             {
@@ -523,11 +543,12 @@ namespace System.Xml
             {
                 case DocumentXmlWriterType.InsertSiblingAfter:
                 case DocumentXmlWriterType.InsertSiblingBefore:
-                    XmlNode parent = _start.ParentNode;
+                    XmlNode? parent = _start.ParentNode;
                     if (parent != null)
                     {
                         nodeType = parent.NodeType;
                     }
+
                     if (nodeType == XmlNodeType.Document)
                     {
                         return State.Prolog;
@@ -536,6 +557,7 @@ namespace System.Xml
                     {
                         return State.Fragment;
                     }
+
                     break;
                 case DocumentXmlWriterType.PrependChild:
                 case DocumentXmlWriterType.AppendChild:
@@ -548,6 +570,7 @@ namespace System.Xml
                     {
                         return State.Fragment;
                     }
+
                     break;
                 case DocumentXmlWriterType.AppendAttribute:
                     return State.Attribute;

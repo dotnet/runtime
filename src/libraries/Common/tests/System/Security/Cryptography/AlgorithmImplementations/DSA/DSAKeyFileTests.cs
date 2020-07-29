@@ -562,6 +562,47 @@ vAB5Wz646GeWztKawSR/9xIqHq8IECV1FXI=",
             }
         }
 
+        [Fact]
+        public static void DecryptPkcs12PbeTooManyIterations()
+        {
+            // pbeWithSHAAnd3-KeyTripleDES-CBC with 600,001 iterations
+            byte[] high3DesIterationKey = Convert.FromBase64String(@"
+MIIBezAlBgoqhkiG9w0BDAEDMBcEEDH/8QAPoG1utiuJkzA4u4kCAwknwQSCAVD9BOoJTlihH9zP
+0AmAXtBa7fjJGnq4tZBJSYmJbNxszTSvM3tEkzyiqFWd6Ptm9bf0cOybad2LXIWnrtlIclGD0ibH
+earAf1YvAIBFlbDXfVF8v5//XL2R1d8kcp4fqTVKdRunTSvPS0rIFP5Mrfj89WacHO3HQOB6UMMT
+ZYSdI3qZj+6Rlo0a7/MEO23Y0zR9XLdUhyra+UixzVi05VslPoWn1dsFksbklwtV+IRJ9biMjCta
+8fr3uqHmtb57121dA3p4A2dya8bgcHOJlMPsYxJ012GV4twULSyaZz6hXOzVh3AL5uLlrzSkV7ZQ
+dkOGlpaaJkhGKtkfxRe82w3ZXhuLsVt3vPciDbbF5hIDf8JX7X1aANq5Ka9Tcs3Lyd/FVdkceqn7
+KaC843/LqYiSNoD7rBPpSpkyLtldwhqc7o2Wz7tyb1Oj8WF47AJD5OI=");
+
+            using (DSA key = DSAFactory.Create())
+            {
+                Assert.ThrowsAny<CryptographicException>(
+                    () => key.ImportEncryptedPkcs8PrivateKey("test", high3DesIterationKey, out _));
+            }
+        }
+
+        [Fact]
+        public static void ReadWriteDsa1024EncryptedPkcs8_Pbes2HighIterations()
+        {
+            // pkcs5PBES2 hmacWithSHA256 aes128-CBC with 600,001 iterations
+            ReadBase64EncryptedPkcs8(@"
+MIIBtjBgBgkqhkiG9w0BBQ0wUzAyBgkqhkiG9w0BBQwwJQQQ+ZTlQ9PG0lKomeY4b7lpZgIDCSfB
+MAwGCCqGSIb3DQIJBQAwHQYJYIZIAWUDBAECBBDoHELpGkGH/pPcq1/id3l4BIIBUHF74QMFkUdy
+XZiUndRy+u2d5KNct89WYj8b3Fb7/VTZQwWRfoIZbC2Of769SMvd2R1ViWNG/ZPX7gxZ2keHFiNL
+v/Dj6sNdfFGDF8RyPGOzFQSYu/PYteCHMCh4cYtLQqaGARbKQ1R46dfSyBgQ8IFh9Mnz7T57wSSt
+Af3nJkTjfvS28hjtErrufv0XrLCy95+K/fX80GicWuAsC/sLDbbMiiKWzOlLhug4uX5/gSRM3Oqy
+LGssZuyeza1fTIgU8NjijYQ/kJJUwEWjjn1PA7BWtDWYaqG5wLyz6z50S6pbpLRelvxV5s9dX1Yq
+aylTdOmNGHG+7yEVFQ+sgvJJVIG9mz+YP9tBbzm65UvbzPrXSvNldgm2XUF0Z8LZMRqrurKLYjLE
++TA4wBPaTRUeF0/9Sgk7MXcKHEjhG+OlTP9MExv6Wq3mIREamzu+EtVcPg==",
+                "test",
+                new PbeParameters(
+                    PbeEncryptionAlgorithm.Aes128Cbc,
+                    HashAlgorithmName.SHA256,
+                    600_001),
+                DSATestData.GetDSA1024Params());
+        }
+
         private static void ReadBase64EncryptedPkcs8(
             string base64EncPkcs8,
             string password,

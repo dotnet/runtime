@@ -616,31 +616,31 @@ void CodeGen::genIntrinsic(GenTree* treeNode)
 
     // Right now only Abs/Ceiling/Floor/Round/Sqrt are treated as math intrinsics.
     //
-    switch (treeNode->AsIntrinsic()->gtIntrinsicId)
+    switch (treeNode->AsIntrinsic()->gtIntrinsicName)
     {
-        case CORINFO_INTRINSIC_Abs:
+        case NI_System_Math_Abs:
             genConsumeOperands(treeNode->AsOp());
             GetEmitter()->emitInsBinary(INS_ABS, emitActualTypeSize(treeNode), treeNode, srcNode);
             break;
 
 #ifdef TARGET_ARM64
-        case CORINFO_INTRINSIC_Ceiling:
+        case NI_System_Math_Ceiling:
             genConsumeOperands(treeNode->AsOp());
             GetEmitter()->emitInsBinary(INS_frintp, emitActualTypeSize(treeNode), treeNode, srcNode);
             break;
 
-        case CORINFO_INTRINSIC_Floor:
+        case NI_System_Math_Floor:
             genConsumeOperands(treeNode->AsOp());
             GetEmitter()->emitInsBinary(INS_frintm, emitActualTypeSize(treeNode), treeNode, srcNode);
             break;
 
-        case CORINFO_INTRINSIC_Round:
+        case NI_System_Math_Round:
             genConsumeOperands(treeNode->AsOp());
             GetEmitter()->emitInsBinary(INS_frintn, emitActualTypeSize(treeNode), treeNode, srcNode);
             break;
 #endif // TARGET_ARM64
 
-        case CORINFO_INTRINSIC_Sqrt:
+        case NI_System_Math_Sqrt:
             genConsumeOperands(treeNode->AsOp());
             GetEmitter()->emitInsBinary(INS_SQRT, emitActualTypeSize(treeNode), treeNode, srcNode);
             break;
@@ -815,11 +815,15 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
                     // so update 'source' to point this GT_LCL_VAR_ADDR node
                     // and continue to the codegen for the LCL_VAR node below
                     //
+                    assert(addrNode->isContained());
                     varNode  = addrNode->AsLclVarCommon();
                     addrNode = nullptr;
                 }
                 else // addrNode is used
                 {
+                    // TODO-Cleanup: `Lowering::NewPutArg` marks only `LCL_VAR_ADDR` as contained nowadays,
+                    // but we use `genConsumeAddress` as a precaution, use `genConsumeReg()` instead.
+                    assert(!addrNode->isContained());
                     // Generate code to load the address that we need into a register
                     genConsumeAddress(addrNode);
                     addrReg = addrNode->GetRegNum();
@@ -1253,6 +1257,7 @@ void CodeGen::genPutArgSplit(GenTreePutArgSplit* treeNode)
 
         if (varNode != nullptr)
         {
+            assert(varNode->isContained());
             srcVarNum = varNode->GetLclNum();
             assert(srcVarNum < compiler->lvaCount);
 
@@ -1270,6 +1275,9 @@ void CodeGen::genPutArgSplit(GenTreePutArgSplit* treeNode)
         else // addrNode is used
         {
             assert(addrNode != nullptr);
+            // TODO-Cleanup: `Lowering::NewPutArg` marks only `LCL_VAR_ADDR` as contained nowadays,
+            // but we use `genConsumeAddress` as a precaution, use `genConsumeReg()` instead.
+            assert(!addrNode->isContained());
 
             // Generate code to load the address that we need into a register
             genConsumeAddress(addrNode);
@@ -1959,11 +1967,7 @@ void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* node)
     {
         assert(dstAddr->OperIsLocalAddr());
         dstLclNum = dstAddr->AsLclVarCommon()->GetLclNum();
-
-        if (dstAddr->OperIs(GT_LCL_FLD_ADDR))
-        {
-            dstOffset = dstAddr->AsLclFld()->GetLclOffs();
-        }
+        dstOffset = dstAddr->AsLclVarCommon()->GetLclOffs();
     }
 
     regNumber srcReg;
@@ -2095,11 +2099,7 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* node)
 
         assert(dstAddr->OperIsLocalAddr());
         dstLclNum = dstAddr->AsLclVarCommon()->GetLclNum();
-
-        if (dstAddr->OperIs(GT_LCL_FLD_ADDR))
-        {
-            dstOffset = dstAddr->AsLclFld()->GetLclOffs();
-        }
+        dstOffset = dstAddr->AsLclVarCommon()->GetLclOffs();
     }
 
     unsigned  srcLclNum      = BAD_VAR_NUM;
@@ -2112,11 +2112,7 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* node)
     if (src->OperIs(GT_LCL_VAR, GT_LCL_FLD))
     {
         srcLclNum = src->AsLclVarCommon()->GetLclNum();
-
-        if (src->OperIs(GT_LCL_FLD))
-        {
-            srcOffset = src->AsLclFld()->GetLclOffs();
-        }
+        srcOffset = src->AsLclVarCommon()->GetLclOffs();
     }
     else
     {
@@ -2136,11 +2132,7 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* node)
         {
             assert(srcAddr->OperIsLocalAddr());
             srcLclNum = srcAddr->AsLclVarCommon()->GetLclNum();
-
-            if (srcAddr->OperIs(GT_LCL_FLD_ADDR))
-            {
-                srcOffset = srcAddr->AsLclFld()->GetLclOffs();
-            }
+            srcOffset = srcAddr->AsLclVarCommon()->GetLclOffs();
         }
     }
 

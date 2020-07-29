@@ -447,25 +447,25 @@ namespace BINDER_SPACE
         // Satellite assembly's path:
         //   * Absolute path when looking for a file on disk
         //   * Bundle-relative path when looking within the single-file bundle.
-        StackSString sMscorlibSatellite;
+        StackSString sCoreLibSatellite;
 
         BinderTracing::PathSource pathSource = BinderTracing::PathSource::Bundle;
         BundleFileLocation bundleFileLocation = Bundle::ProbeAppBundle(relativePath, /*pathIsBundleRelative */ true);
         if (!bundleFileLocation.IsValid())
         {
-            sMscorlibSatellite.Set(systemDirectory);
+            sCoreLibSatellite.Set(systemDirectory);
             pathSource = BinderTracing::PathSource::ApplicationAssemblies;
         }
-        CombinePath(sMscorlibSatellite, relativePath, sMscorlibSatellite);
+        CombinePath(sCoreLibSatellite, relativePath, sCoreLibSatellite);
 
         ReleaseHolder<Assembly> pSystemAssembly;
-        IF_FAIL_GO(AssemblyBinder::GetAssembly(sMscorlibSatellite,
+        IF_FAIL_GO(AssemblyBinder::GetAssembly(sCoreLibSatellite,
                                                TRUE /* fIsInGAC */,
                                                FALSE /* fExplicitBindToNativeImage */,
                                                &pSystemAssembly,
                                                NULL /* szMDAssemblyPath */,
                                                bundleFileLocation));
-        BinderTracing::PathProbed(sMscorlibSatellite, pathSource, hr);
+        BinderTracing::PathProbed(sCoreLibSatellite, pathSource, hr);
 
         *ppSystemAssembly = pSystemAssembly.Extract();
 
