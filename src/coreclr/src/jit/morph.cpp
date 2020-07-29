@@ -13656,7 +13656,10 @@ DONE_MORPHING_CHILDREN:
             }
 
             bool foldAndReturnTemp;
+            bool isLoad;
+
             foldAndReturnTemp = false;
+            isLoad            = (tree->gtFlags & GTF_IND_ASG_LHS) == 0;
             temp              = nullptr;
             ival1             = 0;
 
@@ -13713,40 +13716,45 @@ DONE_MORPHING_CHILDREN:
                                 }
                             }
                         }
-                        // For loads we can read and normalize using a small type
-                        else if (!varTypeIsStruct(typ) && (lclType == typ) &&
-                            ((tree->gtFlags & GTF_IND_ASG_LHS) == 0) &&
-                            !lvaTable[lclNum].lvNormalizeOnLoad())
+                        bool matchingTypes = (lclType == typ);
+
+                        // TYP_BOOL and TYP_UBYTE are also matching types
+                        if (!matchingTypes)
                         {
-                            tree->gtType = typ = temp->TypeGet();
-                            foldAndReturnTemp = true;
-                        }
-                        // If the type of the IND (typ) is a "small int", and the type of the local has the
-                        // same width, then we can reduce to just the local variable -- it will be
-                        // correctly normalized.
-                        //
-                        // The below transformation cannot be applied if the local var needs to be normalized on load.
-                        else if (varTypeIsSmall(typ) && (genTypeSize(lclType) == genTypeSize(typ)) &&
-                                 !lvaTable[lclNum].lvNormalizeOnLoad())
-                        {
-#if 0
-                            // For stores we can assign using a small type
-                            if ((tree->gtFlags & GTF_IND_ASG_LHS) != 0)
+                            if ((lclType == TYP_BOOL) && (typ == TYP_UBYTE))
                             {
-                                tree->gtType = typ = temp->TypeGet();
-                                foldAndReturnTemp = true;
+                                matchingTypes = true;
                             }
-                            else
-#endif
-                            // for loads signed/unsigned differences do matter.
-                            if (varTypeIsUnsigned(lclType) == varTypeIsUnsigned(typ) &&
-                                ((tree->gtFlags & GTF_IND_ASG_LHS) == 0))
+                            else if ((lclType == TYP_UBYTE) && (typ == TYP_BOOL))
+                            {
+                                matchingTypes = true;
+                            }
+                        }
+
+                        // If the type of the Local Var matches the indirection type and we dont have a TYP_STRUCT,
+                        // then often we can fold the IND/ADDR and use the LCL_VAR directly
+                        if (matchingTypes && (typ != TYP_STRUCT))
+                        {
+                            // For Loads or Stores of non small types (types that don't need sign or zero extends)
+                            // we can fold the IND/ADDR and reduce to just the local variable
+                            if (!varTypeIsSmall(typ))
                             {
                                 tree->gtType = typ = temp->TypeGet();
                                 foldAndReturnTemp  = true;
                             }
+                            else // varTypeIsSmall(typ) is true
+                            {
+                                // For Loads of small types than are not NormalizeOnLoad()
+                                // we can fold the IND/ADDR and reduce to just the local variable
+                                if (isLoad && !lvaTable[lclNum].lvNormalizeOnLoad())
+                                {
+                                    tree->gtType = typ = temp->TypeGet();
+                                    foldAndReturnTemp  = true;
+                                }
+                            }
                         }
-                        else
+
+                        if (!foldAndReturnTemp)
                         {
                             // Assumes that when Lookup returns "false" it will leave "fieldSeq" unmodified (i.e.
                             // nullptr)
