@@ -233,6 +233,18 @@
             or the objects being referenced must both be pinned; or both references must represent unmanaged pointers; otherwise the result is undefined.
             </remarks>
         </member>
+        <member name="M:System.Runtime.CompilerServices.Unsafe.IsNullRef``1(``0@)">
+          <summary>
+            Returns if a given reference to a value of type <typeparamref name="T"/> is a null reference.
+          </summary>
+          <param name="source">The reference to check.</param>
+          <remarks>This check is conceptually similar to "(void*)(&amp;source) == nullptr".</remarks>
+        </member>
+        <member name="M:System.Runtime.CompilerServices.Unsafe.NullRef``1">
+          <summary>
+            Returns a reference to a value of type <typeparamref name="T"/> that is a null reference.
+          </summary>
+        </member>
         <member name="M:System.Runtime.CompilerServices.Unsafe.CopyBlock(System.Void*,System.Void*,System.UInt32)">
             <summary>
             Copies bytes from the source address to the destination address.
