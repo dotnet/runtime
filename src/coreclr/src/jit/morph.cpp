@@ -7915,20 +7915,24 @@ GenTree* Compiler::fgCreateCallDispatcherAndGetResult(GenTreeCall*          orig
         else
         {
             // Caller return buffer argument retBufArg can point to GC heap while the dispatcher expects
-            // the return value argument retValArg to point on the stack.
+            // the return value argument retValArg to point to the stack.
             // We use a temporary stack allocated return buffer to hold the value during the dispatcher call
             // and copy the value back to the caller return buffer after that.
-            unsigned int tmpRetBuf = lvaGrabTemp(true DEBUGARG("substitute local for return buffer"));
+            unsigned int tmpRetBufNum = lvaGrabTemp(true DEBUGARG("substitute local for return buffer"));
 
             constexpr bool unsafeValueClsCheck = false;
-            lvaSetStruct(tmpRetBuf, origCall->gtRetClsHnd, unsafeValueClsCheck);
+            lvaSetStruct(tmpRetBufNum, origCall->gtRetClsHnd, unsafeValueClsCheck);
+            lvaSetVarAddrExposed(tmpRetBufNum);
 
-            lvaSetVarAddrExposed(tmpRetBuf);
-            retValArg = gtNewOperNode(GT_ADDR, TYP_I_IMPL, gtNewLclvNode(tmpRetBuf, lvaGetDesc(tmpRetBuf)->TypeGet()));
+            var_types tmpRetBufType = lvaGetDesc(tmpRetBufNum)->TypeGet();
 
-            GenTree* dstAddr = gtNewLclvNode(info.compRetBuffArg, lvaGetDesc(info.compRetBuffArg)->TypeGet());
+            retValArg = gtNewOperNode(GT_ADDR, TYP_I_IMPL, gtNewLclvNode(tmpRetBufNum, tmpRetBufType));
+
+            var_types callerRetBufType = lvaGetDesc(info.compRetBuffArg)->TypeGet();
+
+            GenTree* dstAddr = gtNewLclvNode(info.compRetBuffArg, callerRetBufType);
             GenTree* dst     = gtNewObjNode(info.compMethodInfo->args.retTypeClass, dstAddr);
-            GenTree* src     = gtNewLclvNode(tmpRetBuf, lvaGetDesc(tmpRetBuf)->TypeGet());
+            GenTree* src     = gtNewLclvNode(tmpRetBufNum, tmpRetBufType);
 
             constexpr bool isVolatile  = false;
             constexpr bool isCopyBlock = true;
