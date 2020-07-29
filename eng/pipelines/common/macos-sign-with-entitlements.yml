@@ -1,0 +1,52 @@
+parameters:
+  fileToSign : ''
+  fileToSignFolder: ''
+  entitlementsFile : ''
+
+steps:
+  - script: codesign -s - -f --entitlements ${{ parameters.entitlementsFile }} ${{ parameters.fileToSignFolder }}/${{ parameters.fileToSign }}
+    displayName: 'Add entitlements to ${{ parameters.fileToSign }}'
+
+  - task: ArchiveFiles@2
+    displayName: 'Zip ${{ parameters.fileToSign }} for signing'
+    inputs:
+      rootFolderOrFile:  '${{ parameters.fileToSignFolder }}/${{ parameters.fileToSign }}'
+      archiveFile:       '$(Build.ArtifactStagingDirectory)/${{ parameters.fileToSign }}_to_sign.zip'
+      archiveType:       zip
+      includeRootFolder: true
+      replaceExistingArchive: true
+
+  - task: SFP.build-tasks.custom-build-task-1.EsrpCodeSigning@1
+    displayName: 'ESRP CodeSigning'
+    inputs:
+      ConnectedServiceName: 'ESRP CodeSigning'
+      FolderPath: '$(Build.ArtifactStagingDirectory)/'
+      Pattern: '${{ parameters.fileToSign }}_to_sign.zip'
+      UseMinimatch: true
+      signConfigType: inlineSignParams
+      inlineOperation: |
+        [
+          {
+            "keyCode": "CP-401337-Apple",
+            "operationCode": "MacAppDeveloperSign",
+            "parameters" : {
+              "hardening": "Enable"
+            },
+            "toolName": "sign",
+            "toolVersion": "1.0"
+          }
+        ]  
+
+  - task: ExtractFiles@1
+    displayName: 'Extract ${{ parameters.fileToSign }} after signing'
+    inputs:
+      archiveFilePatterns: '$(Build.ArtifactStagingDirectory)/${{ parameters.fileToSign }}_to_sign.zip'
+      destinationFolder: '$(Build.ArtifactStagingDirectory)/${{ parameters.fileToSign }}_destination'
+
+  - task: CopyFiles@2
+    displayName: 'Copy ${{ parameters.fileToSign }} to destination ${{ parameters.fileToSignFolder }}'
+    inputs:
+      contents: '${{ parameters.fileToSign }}'
+      sourceFolder: '$(Build.ArtifactStagingDirectory)/${{ parameters.fileToSign }}_destination'
+      targetFolder: '${{ parameters.fileToSignFolder }}'
+      overWrite: true
