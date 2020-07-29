@@ -18,7 +18,7 @@ namespace System.Reflection.Tests
 
             Assembly assembly = type.Assembly;
             string location = assembly.Location;
-            if (location == null || location == string.Empty)
+            if (PlatformDetection.IsNotBrowser && (location == null || location == string.Empty))
             {
                 throw new Exception("Could not find the IL for assembly " + type.Assembly + " on disk. The most likely cause " +
                     "is that you built the tests for a Jitted runtime but are running them on an AoT runtime.");
@@ -29,10 +29,19 @@ namespace System.Reflection.Tests
                 {
                     // The core assembly we're using might not be the one powering the runtime. Make sure we project to the core assembly the MetataLoadContext
                     // is using.
+                    //
+                    // Note, in Browser, assemblies are loaded from memory.  Therefore, the location will be an empty string and we'll 
+                    // need to load them by name.
                     if (a == typeof(object).Assembly)
-                        return TestMetadataLoadContext.LoadFromStream(CreateStreamForCoreAssembly());
+                    {
+                        return (PlatformDetection.IsNotBrowser) ?
+                            TestMetadataLoadContext.LoadFromStream(CreateStreamForCoreAssembly())
+                            : TestMetadataLoadContext.LoadFromAssemblyName(typeof(object).Assembly.GetName().FullName);
+                    }
 
-                    return TestMetadataLoadContext.LoadFromAssemblyPath(a.Location);
+                    return (PlatformDetection.IsNotBrowser) ? 
+                        TestMetadataLoadContext.LoadFromAssemblyPath(a.Location)
+                        : TestMetadataLoadContext.LoadFromAssemblyName(a.GetName().FullName);
                 });
 
             Type projectedType = s_typeDict.GetOrAdd(type, (t) => projectedAssembly.GetType(t.FullName, throwOnError: true, ignoreCase: false));
@@ -69,6 +78,11 @@ namespace System.Reflection.Tests
         public static string GetNameOfCoreAssembly()
         {
             return typeof(object).Assembly.GetName().Name;
+        }
+
+        public static string GetFullNameOfCoreAssembly()
+        {
+            return typeof(object).Assembly.GetName().FullName;
         }
     }
 }
