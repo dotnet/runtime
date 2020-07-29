@@ -7,7 +7,6 @@ using Xunit;
 
 namespace System.IO.Tests
 {
-    [PlatformSpecific(~TestPlatforms.Browser)]
     public partial class FileStream_Flush : FileSystemTest
     {
         [Theory]
