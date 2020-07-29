@@ -1522,8 +1522,11 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 #if !defined(_MSC_VER)
 	else if (in_corlib && !strcmp (klass_name_space, "System.Numerics") && !strcmp (klass_name, "BitOperations")) {
 		if (!strcmp (tm, "Log2")) {
-			gboolean is_long = csignature->params [0]->type == MONO_TYPE_U8;
+			gboolean is_long = csignature->params [0]->type == MONO_TYPE_U8 || csignature->params [0]->type == MONO_TYPE_I8;
 			*op = is_long ? MINT_INTRINS_BITOPS_LOG2_64 : MINT_INTRINS_BITOPS_LOG2_32;
+		} else if (!strcmp (tm, "TrailingZeroCount")) {
+			gboolean is_long = csignature->params [0]->type == MONO_TYPE_U8 || csignature->params [0]->type == MONO_TYPE_I8;
+			*op = is_long ? MINT_INTRINS_BITOPS_TZC_64 : MINT_INTRINS_BITOPS_TZC_32;
 		}
 	} 
 #endif

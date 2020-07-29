@@ -5359,6 +5359,17 @@ call_newobj:
 			MINT_IN_BREAK;
 		}
 #if !defined(_MSC_VER)
+		MINT_IN_CASE(MINT_INTRINS_BITOPS_TZC_32) {
+			sp [-1].data.i = (gint32)__builtin_ctz ((guint32)sp [-1].data.i);
+			++ip;
+			MINT_IN_BREAK;
+		}
+		MINT_IN_CASE(MINT_INTRINS_BITOPS_TZC_64) {
+			guint64 value = (guint64)sp [-1].data.l;
+			sp [-1].data.i = value == 0 ? 64 : (gint32)__builtin_ctz (value);
+			++ip;
+			MINT_IN_BREAK;
+		}
 		MINT_IN_CASE(MINT_INTRINS_BITOPS_LOG2_32) {
 			sp [-1].data.i = 31 ^ (gint32)__builtin_clz ((guint32)sp [-1].data.i | 1);
 			++ip;
