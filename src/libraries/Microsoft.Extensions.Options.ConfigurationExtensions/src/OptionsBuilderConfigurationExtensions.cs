@@ -41,7 +41,6 @@ namespace Microsoft.Extensions.DependencyInjection
             return optionsBuilder;
         }
 
-        #nullable enable
         /// <summary>
         /// Registers the dependency injection container to bind <typeparamref name="TOptions"/> against
         /// the <see cref="IConfiguration"/> obtained from the DI service provider.
@@ -58,7 +57,7 @@ namespace Microsoft.Extensions.DependencyInjection
         public static OptionsBuilder<TOptions> BindConfiguration<TOptions>(
             this OptionsBuilder<TOptions> optionsBuilder,
             string configSectionPath,
-            Action<BinderOptions>? configureBinder = null)
+            Action<BinderOptions> configureBinder = null)
             where TOptions : class
         {
             _ = optionsBuilder ?? throw new ArgumentNullException(nameof(optionsBuilder));
@@ -73,6 +72,5 @@ namespace Microsoft.Extensions.DependencyInjection
             });
             return optionsBuilder;
         }
-        #nullable restore
     }
 }
