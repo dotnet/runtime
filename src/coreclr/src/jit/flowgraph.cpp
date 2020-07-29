@@ -175,6 +175,8 @@ void Compiler::fgInit()
 #ifdef FEATURE_SIMD
     fgPreviousCandidateSIMDFieldAsgStmt = nullptr;
 #endif
+
+    fgHasSwitch = false;
 }
 
 bool Compiler::fgHaveProfileData()
@@ -476,7 +478,8 @@ void Compiler::fgEnsureFirstBBisScratch()
 
     noway_assert(fgLastBB != nullptr);
 
-    block->bbFlags |= (BBF_INTERNAL | BBF_IMPORTED);
+    // Set the expected flags
+    block->bbFlags |= (BBF_INTERNAL | BBF_IMPORTED | BBF_JMP_TARGET | BBF_HAS_LABEL);
 
     // This new first BB has an implicit ref, and no others.
     block->bbRefs = 1;
@@ -7250,7 +7253,7 @@ bool Compiler::fgIsThrow(GenTree* tree)
         return true;
     }
 
-    // TODO-CQ: there are a bunch of managed methods in [mscorlib]System.ThrowHelper
+    // TODO-CQ: there are a bunch of managed methods in System.ThrowHelper
     // that would be nice to recognize.
 
     return false;

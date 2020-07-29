@@ -3458,14 +3458,14 @@ void Debugger::getBoundaries(MethodDesc * md,
 
     if (pModule == SystemDomain::SystemModule())
     {
-        // We don't look up PDBs for mscorlib.  This is not quite right, but avoids
+        // We don't look up PDBs for CoreLib.  This is not quite right, but avoids
         // a bootstrapping problem.  When an EXE loads, it has the option of setting
         // the COM apartment model to STA if we need to.  It is important that no
         // other Coinitialize happens before this.  Since loading the PDB reader uses
         // com we can not come first.  However managed code IS run before the COM
         // apartment model is set, and thus we have a problem since this code is
         // called for when JITTing managed code.    We avoid the problem by just
-        // bailing for mscorlib.
+        // bailing for CoreLib.
         return;
     }
 

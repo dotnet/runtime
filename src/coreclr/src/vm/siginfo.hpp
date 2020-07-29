@@ -566,7 +566,7 @@ class MetaSig
 
         MetaSig(FieldDesc *pFD, TypeHandle declaringType = TypeHandle());
 
-        // Used to avoid touching metadata for mscorlib methods.  Nb. only use for non-generic methods.
+        // Used to avoid touching metadata for CoreLib methods.  Nb. only use for non-generic methods.
         MetaSig(BinderMethodID id);
 
         MetaSig(LPHARDCODEDMETASIG pwzMetaSig);

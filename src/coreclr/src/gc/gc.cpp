@@ -18090,12 +18090,12 @@ uint8_t* gc_heap::find_object (uint8_t* interior)
     {
         // this is a pointer to a UOH object
         heap_segment* seg = find_segment (interior, FALSE);
-        if (seg
-#ifdef FEATURE_CONSERVATIVE_GC
-            && (GCConfig::GetConservativeGC() || interior <= heap_segment_allocated(seg))
-#endif
-            )
+        if (seg)
         {
+#ifdef FEATURE_CONSERVATIVE_GC
+            if (interior >= heap_segment_allocated(seg))
+                return 0;
+#endif
             // If interior falls within the first free object at the beginning of a generation,
             // we don't have brick entry for it, and we may incorrectly treat it as on large object heap.
             int align_const = get_alignment_constant (heap_segment_read_only_p (seg)

@@ -61,7 +61,7 @@ namespace System.Net.Connections
     public abstract partial class ConnectionListenerFactory : System.IAsyncDisposable, System.IDisposable
     {
         protected ConnectionListenerFactory() { }
-        public abstract System.Threading.Tasks.ValueTask<System.Net.Connections.ConnectionListener> BindAsync(System.Net.EndPoint? endPoint, System.Net.Connections.IConnectionProperties? options = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
+        public abstract System.Threading.Tasks.ValueTask<System.Net.Connections.ConnectionListener> ListenAsync(System.Net.EndPoint? endPoint, System.Net.Connections.IConnectionProperties? options = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
         public void Dispose() { }
         protected virtual void Dispose(bool disposing) { }
         public System.Threading.Tasks.ValueTask DisposeAsync() { throw null; }

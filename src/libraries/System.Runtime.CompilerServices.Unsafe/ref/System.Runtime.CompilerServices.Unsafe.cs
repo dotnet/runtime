@@ -35,6 +35,8 @@ namespace System.Runtime.CompilerServices
         public static unsafe void InitBlockUnaligned(void* startAddress, byte value, uint byteCount) { }
         public static bool IsAddressGreaterThan<T>(ref T left, ref T right) { throw null; }
         public static bool IsAddressLessThan<T>(ref T left, ref T right) { throw null; }
+        public static bool IsNullRef<T>(ref T source) { throw null; }
+        public static ref T NullRef<T>() { throw null; }
         public static T ReadUnaligned<T>(ref byte source) { throw null; }
         public static unsafe T ReadUnaligned<T>(void* source) { throw null; }
         public static unsafe T Read<T>(void* source) { throw null; }
