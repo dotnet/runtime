@@ -6,8 +6,10 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 
@@ -83,7 +85,7 @@ namespace Microsoft.Extensions.Logging.Console
                         {
                             foreach (KeyValuePair<string, object> item in stateProperties)
                             {
-                                writer.WriteString(item.Key, ToInvariantString(item.Value));
+                                WriteItem(writer, item);
                             }
                         }
                         writer.WriteEndObject();
@@ -128,7 +130,7 @@ namespace Microsoft.Extensions.Logging.Console
                         state.WriteString("Message", scope.ToString());
                         foreach (KeyValuePair<string, object> item in scopes)
                         {
-                            state.WriteString(item.Key, ToInvariantString(item.Value));
+                            WriteItem(state, item);
                         }
                         state.WriteEndObject();
                     }
@@ -138,6 +140,32 @@ namespace Microsoft.Extensions.Logging.Console
                     }
                 }, writer);
                 writer.WriteEndArray();
+            }
+        }
+
+        private static void WriteItem(Utf8JsonWriter writer, KeyValuePair<string, object> item)
+        {
+            writer.WritePropertyName(item.Key);
+            switch (item.Value)
+            {
+                case bool _:
+                case byte _:
+                case sbyte _:
+                case char _:
+                case decimal _:
+                case double _:
+                case float _:
+                case int _:
+                case uint _:
+                case long _:
+                case ulong _:
+                case short _:
+                case ushort _:
+                    JsonSerializer.Serialize(writer, item.Value);
+                    break;
+                default:
+                    writer.WriteStringValue(ToInvariantString(item.Value));
+                    break;
             }
         }
 
