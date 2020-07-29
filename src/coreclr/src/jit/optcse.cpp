@@ -20,7 +20,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 /*****************************************************************************/
 
 /* static */
-const size_t Compiler::s_optCSEhashSize         = EXPSET_SZ * 2;
+const size_t Compiler::s_optCSEhashSizeInitial  = EXPSET_SZ * 2;
 const size_t Compiler::s_optCSEhashGrowthFactor = 2;
 const size_t Compiler::s_optCSEhashBucketSize   = 4;
 
@@ -375,9 +375,9 @@ void Compiler::optValnumCSE_Init()
     cseMaskTraits = nullptr;
 
     // Allocate and clear the hash bucket table
-    optCSEhash = new (this, CMK_CSE) CSEdsc*[s_optCSEhashSize]();
+    optCSEhash = new (this, CMK_CSE) CSEdsc*[s_optCSEhashSizeInitial]();
 
-    optCSEhashSize                 = s_optCSEhashSize;
+    optCSEhashSize                 = s_optCSEhashSizeInitial;
     optCSEhashMaxCountBeforeResize = optCSEhashSize * s_optCSEhashBucketSize;
     optCSEhashCount                = 0;
 
@@ -641,8 +641,8 @@ unsigned Compiler::optValnumCSE_Index(GenTree* tree, Statement* stmt)
         {
             if (optCSEhashCount == optCSEhashMaxCountBeforeResize)
             {
-                size_t newOptCSEhashSize = optCSEhashSize * s_optCSEhashGrowthFactor;
-                CSEdsc** newOptCSEhash   = new (this, CMK_CSE) CSEdsc*[newOptCSEhashSize]();
+                size_t   newOptCSEhashSize = optCSEhashSize * s_optCSEhashGrowthFactor;
+                CSEdsc** newOptCSEhash     = new (this, CMK_CSE) CSEdsc*[newOptCSEhashSize]();
 
                 // Iterate through each existing entry, moving to the new table
                 CSEdsc** ptr;
