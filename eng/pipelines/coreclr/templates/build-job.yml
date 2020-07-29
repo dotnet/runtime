@@ -153,7 +153,24 @@ jobs:
           df -h
         displayName: Disk Usage after Build
 
-      # Sign and add entitlements to these MacOS binaries
+    # Sign and add entitlements to these MacOS binaries
+    - ${{ if eq(parameters.osGroup, 'OSX') }}:
+      - task: NuGetAuthenticate@0
+
+      # NuGet's http cache lasts 30 minutes. If we're on a static machine, this may interfere with
+      # auto-update PRs by preventing the CI build from fetching the new version. Delete the cache.
+      - powershell: Remove-Item -Recurse -ErrorAction Ignore "$env:LocalAppData\NuGet\v3-cache"
+        displayName: Clear NuGet http cache (if exists)
+
+      - task: MicroBuildSigningPlugin@2
+        displayName: Install MicroBuild plugin for Signing
+        inputs:
+          signType: $(_SignType)
+          zipSources: false
+          feedSource: https://dnceng.pkgs.visualstudio.com/_packaging/MicroBuildToolset/nuget/v3/index.json
+        continueOnError: false
+        condition: and(succeeded(), in(variables['_SignType'], 'real', 'test'))
+
       - template: /eng/pipelines/common/macos-sign-with-entitlements.yml
         parameters:
           fileToSign: createdump

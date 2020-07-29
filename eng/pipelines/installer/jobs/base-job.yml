@@ -370,23 +370,22 @@ jobs:
         mkdir "$(Agent.BuildDirectory)/s"
       displayName: Clean up old artifacts owned by root
 
-  - ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest')) }}:
+  - ${{ if in(parameters.osGroup, 'Windows_NT', 'OSX') }}:
     - task: NuGetAuthenticate@0
 
-    - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
-      # NuGet's http cache lasts 30 minutes. If we're on a static machine, this may interfere with
-      # auto-update PRs by preventing the CI build from fetching the new version. Delete the cache.
-      - powershell: Remove-Item -Recurse -ErrorAction Ignore "$env:LocalAppData\NuGet\v3-cache"
-        displayName: Clear NuGet http cache (if exists)
+    # NuGet's http cache lasts 30 minutes. If we're on a static machine, this may interfere with
+    # auto-update PRs by preventing the CI build from fetching the new version. Delete the cache.
+    - powershell: Remove-Item -Recurse -ErrorAction Ignore "$env:LocalAppData\NuGet\v3-cache"
+      displayName: Clear NuGet http cache (if exists)
 
-      - task: MicroBuildSigningPlugin@2
-        displayName: Install MicroBuild plugin for Signing
-        inputs:
-          signType: $(SignType)
-          zipSources: false
-          feedSource: https://dnceng.pkgs.visualstudio.com/_packaging/MicroBuildToolset/nuget/v3/index.json
-        continueOnError: false
-        condition: and(succeeded(), in(variables['SignType'], 'real', 'test'))
+    - task: MicroBuildSigningPlugin@2
+      displayName: Install MicroBuild plugin for Signing
+      inputs:
+        signType: $(SignType)
+        zipSources: false
+        feedSource: https://dnceng.pkgs.visualstudio.com/_packaging/MicroBuildToolset/nuget/v3/index.json
+      continueOnError: false
+      condition: and(succeeded(), in(variables['SignType'], 'real', 'test'))
 
   - template: /eng/pipelines/common/clone-checkout-bundle-step.yml
 
@@ -465,7 +464,8 @@ jobs:
         df -h
       displayName: Disk Usage after Build
 
-    # Sign and add entitlements to these MacOS binaries
+  # Sign and add entitlements to these MacOS binaries
+  - ${{ if eq(parameters.osGroup, 'OSX') }}:
     - template: /eng/pipelines/common/macos-sign-with-entitlements.yml
       parameters:
         fileToSign: dotnet
