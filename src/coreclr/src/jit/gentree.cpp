@@ -13782,16 +13782,13 @@ GenTree* Compiler::gtTryRemoveBoxUpstreamEffects(GenTree* op, BoxRemovalOptions 
         // For struct types read the first byte of the
         // source struct; there's no need to read the
         // entire thing, and no place to put it.
-        assert(copySrc->gtOper == GT_OBJ || copySrc->gtOper == GT_IND || copySrc->gtOper == GT_FIELD);
+        assert(copySrc->OperIs(GT_OBJ, GT_IND, GT_FIELD));
         copyStmt->SetRootNode(copySrc);
 
         if (options == BR_REMOVE_AND_NARROW || options == BR_REMOVE_AND_NARROW_WANT_TYPE_HANDLE)
         {
             JITDUMP(" to read first byte of struct via modified [%06u]\n", dspTreeID(copySrc));
-            copySrc->ChangeOper(GT_NULLCHECK);
-            copySrc->gtType = TYP_BYTE;
-            compCurBB->bbFlags |= BBF_HAS_NULLCHECK;
-            optMethodFlags |= OMF_HAS_NULLCHECK;
+            gtChangeOperToNullCheck(copySrc, compCurBB);
         }
         else
         {
@@ -15972,13 +15969,8 @@ void Compiler::gtExtractSideEffList(GenTree*  expr,
                     m_sideEffects.Push(node);
                     if (node->OperIsBlk() && !node->OperIsStoreBlk())
                     {
-                        // IR doesn't expect dummy uses of `GT_OBJ/BLK/DYN_BLK`.
-                        node->ChangeType(TYP_BYTE);
-                        node->ChangeOper(GT_NULLCHECK);
-
-                        m_compiler->compCurBB->bbFlags |= BBF_HAS_NULLCHECK;
-                        m_compiler->optMethodFlags |= OMF_HAS_NULLCHECK;
                         JITDUMP("Replace an unused OBJ/BLK node [%06d] with a NULLCHECK\n", dspTreeID(node));
+                        m_compiler->gtChangeOperToNullCheck(node, m_compiler->compCurBB);
                     }
                     return Compiler::WALK_SKIP_SUBTREES;
                 }

@@ -2128,11 +2128,8 @@ void Compiler::fgComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VARSET_VALAR
                 if (!removed && node->IsUnusedValue())
                 {
                     // IR doesn't expect dummy uses of `GT_OBJ/BLK/DYN_BLK`.
-                    node->ChangeType(TYP_BYTE);
-                    node->ChangeOper(GT_NULLCHECK);
-                    block->bbFlags |= BBF_HAS_NULLCHECK;
-                    optMethodFlags |= OMF_HAS_NULLCHECK;
                     JITDUMP("Replace an unused OBJ/BLK node [%06d] with a NULLCHECK\n", dspTreeID(node));
+                    gtChangeOperToNullCheck(node, block);
                 }
             }
             break;
