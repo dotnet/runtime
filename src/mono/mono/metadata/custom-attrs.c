@@ -1203,7 +1203,7 @@ fail:
 /*
  * mono_reflection_create_custom_attr_data_args_noalloc:
  *
- * Same as mono_reflection_create_custom_attr_data_args_noalloc but allocate no managed objects, return values
+ * Same as mono_reflection_create_custom_attr_data_args but allocate no managed objects, return values
  * using C arrays. Only usable for cattrs with primitive/type arguments.
  * TYPED_ARGS, NAMED_ARGS, and NAMED_ARG_INFO should be freed using g_free ().
  */

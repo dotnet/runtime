@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
+using System.Net.Connections;
 using System.Net.Http.Headers;
 using System.Net.Http.HPack;
 using System.Net.Security;
@@ -21,6 +22,7 @@ namespace System.Net.Http
     {
         private readonly HttpConnectionPool _pool;
         private readonly Stream _stream;
+        private readonly Connection _connection;
 
         // NOTE: These are mutable structs; do not make these readonly.
         private ArrayBuffer _incomingBuffer;
@@ -94,10 +96,11 @@ namespace System.Net.Http
         // Channel options for creating _writeChannel
         private static readonly UnboundedChannelOptions s_channelOptions = new UnboundedChannelOptions() { SingleReader = true };
 
-        public Http2Connection(HttpConnectionPool pool, Stream stream)
+        public Http2Connection(HttpConnectionPool pool, Connection connection)
         {
             _pool = pool;
-            _stream = stream;
+            _stream = connection.Stream;
+            _connection = connection;
             _incomingBuffer = new ArrayBuffer(InitialConnectionBufferSize);
             _outgoingBuffer = new ArrayBuffer(InitialConnectionBufferSize);
 
@@ -114,11 +117,14 @@ namespace System.Net.Http
             _initialWindowSize = DefaultInitialWindowSize;
             _maxConcurrentStreams = int.MaxValue;
             _pendingWindowUpdate = 0;
+            _idleSinceTickCount = Environment.TickCount64;
 
-            if (NetEventSource.Log.IsEnabled()) TraceConnection(stream);
+            if (NetEventSource.Log.IsEnabled()) TraceConnection(_stream);
         }
 
         private object SyncObject => _httpStreams;
+
+        public bool CanAddNewStream => _concurrentStreams.IsCreditAvailable;
 
         public async ValueTask SetupAsync()
         {
@@ -1203,7 +1209,17 @@ namespace System.Net.Http
             // in order to avoid consuming resources in potentially many requests waiting for access.
             try
             {
-                await _concurrentStreams.RequestCreditAsync(1, cancellationToken).ConfigureAwait(false);
+                if (_pool.EnableMultipleHttp2Connections)
+                {
+                    if (!_concurrentStreams.TryRequestCreditNoWait(1))
+                    {
+                        throw new HttpRequestException(null, null, RequestRetryType.RetryOnNextConnection);
+                    }
+                }
+                else
+                {
+                    await _concurrentStreams.RequestCreditAsync(1, cancellationToken).ConfigureAwait(false);
+                }
             }
             catch (ObjectDisposedException)
             {
@@ -1572,7 +1588,7 @@ namespace System.Net.Http
             }
 
             // Do shutdown.
-            _stream.Close();
+            _connection.Dispose();
 
             _connectionWindow.Dispose();
             _concurrentStreams.Dispose();
@@ -1734,7 +1750,8 @@ namespace System.Net.Http
                 if (requestBodyTask.IsCompleted ||
                     duplex == false ||
                     await Task.WhenAny(requestBodyTask, responseHeadersTask).ConfigureAwait(false) == requestBodyTask ||
-                    requestBodyTask.IsCompleted)
+                    requestBodyTask.IsCompleted ||
+                    http2Stream.SendRequestFinished)
                 {
                     // The sending of the request body completed before receiving all of the request headers (or we're
                     // ok waiting for the request body even if it hasn't completed, e.g. because we're not doing duplex).

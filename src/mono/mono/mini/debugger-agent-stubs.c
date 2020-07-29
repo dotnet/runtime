@@ -74,6 +74,12 @@ stub_debugger_agent_debug_log_is_enabled (void)
 }
 
 static void
+stub_debugger_agent_unhandled_exception (MonoException *exc)
+{
+	g_assert_not_reached ();
+}
+
+static void
 stub_debugger_agent_single_step_from_context (MonoContext *ctx)
 {
 	g_assert_not_reached ();
@@ -104,6 +110,7 @@ mono_debugger_agent_stub_init (void)
 	cbs.single_step_from_context = stub_debugger_agent_single_step_from_context;
 	cbs.breakpoint_from_context = stub_debugger_agent_breakpoint_from_context;
 	cbs.free_domain_info = stub_debugger_agent_free_domain_info;
+	cbs.unhandled_exception = stub_debugger_agent_unhandled_exception;
 	cbs.handle_exception = stub_debugger_agent_handle_exception;
 	cbs.begin_exception_filter = stub_debugger_agent_begin_exception_filter;
 	cbs.end_exception_filter = stub_debugger_agent_end_exception_filter;

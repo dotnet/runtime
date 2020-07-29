@@ -145,6 +145,8 @@ namespace System.Net.Http
 
             public int StreamId { get; private set; }
 
+            public bool SendRequestFinished => _requestCompletionState != StreamCompletionState.InProgress;
+
             public HttpResponseMessage GetAndClearResponse()
             {
                 // Once SendAsync completes, the Http2Stream should no longer hold onto the response message.

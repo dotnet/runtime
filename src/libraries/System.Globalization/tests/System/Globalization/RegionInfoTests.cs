@@ -79,6 +79,24 @@ namespace System.Globalization.Tests
             }).Dispose();
         }
 
+
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        // We are testing with "no" as it match a neutral culture name. We want ensure this not conflict with region name.
+        [InlineData("no")]
+        [InlineData("No")]
+        [InlineData("NO")]
+        public void ValidateUsingCasedRegionName(string regionName)
+        {
+            RemoteExecutor.Invoke(name =>
+            {
+                // It is important to do this test in the following order because we have internal cache for regions.
+                // creating the region with the original input name should be the first to do to ensure not cached before.
+                string resultedName = new RegionInfo(name).Name;
+                string expectedName = new RegionInfo(name.ToUpperInvariant()).Name;
+                Assert.Equal(expectedName, resultedName);
+            }, regionName).Dispose();
+        }
+
         [Theory]
         [InlineData("en-US", "United States")]
         [OuterLoop("May fail on machines with multiple language packs installed")] // see https://github.com/dotnet/runtime/issues/30132

@@ -7250,7 +7250,7 @@ bool Compiler::fgIsThrow(GenTree* tree)
         return true;
     }
 
-    // TODO-CQ: there are a bunch of managed methods in [mscorlib]System.ThrowHelper
+    // TODO-CQ: there are a bunch of managed methods in System.ThrowHelper
     // that would be nice to recognize.
 
     return false;

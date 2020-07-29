@@ -2117,6 +2117,45 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
+        public async Task SendAsync_Expect100Continue_RequestBodyFails_ThrowsContentException()
+        {
+            if (IsWinHttpHandler && UseVersion >= HttpVersion20.Value)
+            {
+                return;
+            }
+            if (!TestAsync && UseVersion >= HttpVersion20.Value)
+            {
+                return;
+            }
+
+            var clientFinished = new TaskCompletionSource<bool>();
+
+            await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
+            {
+                using (HttpClient client = CreateHttpClient())
+                {
+                    HttpRequestMessage initialMessage = new HttpRequestMessage(HttpMethod.Post, uri) { Version = UseVersion };
+                    initialMessage.Content = new ThrowingContent(() => new ThrowingContentException());
+                    initialMessage.Headers.ExpectContinue = true;
+                    Exception exception = await Assert.ThrowsAsync<ThrowingContentException>(() => client.SendAsync(TestAsync, initialMessage));
+
+                    clientFinished.SetResult(true);
+                }
+            }, async server =>
+            {
+                await server.AcceptConnectionAsync(async connection =>
+                {
+                    try
+                    {
+                        await connection.ReadRequestDataAsync(readBody: true);
+                    }
+                    catch { } // Eat errors from client disconnect.
+                    await clientFinished.Task.TimeoutAfter(TimeSpan.FromMinutes(2));
+                });
+            });
+        }
+
+        [Fact]
         public async Task SendAsync_No100ContinueReceived_RequestBodySentEventually()
         {
             if (IsWinHttpHandler && UseVersion >= HttpVersion20.Value)
