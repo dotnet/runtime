@@ -1640,6 +1640,12 @@
         <ExcludeList Include="$(XunitTestBinBase)/profiler/gc/gc/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/profiler/elt/slowpatheltenter/*">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/profiler/elt/slowpatheltleave/*">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/profiler/unittest/metadatagetdispenser/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
