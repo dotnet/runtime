@@ -12,9 +12,13 @@
 
   <Target Name="Build" DependsOnTargets="$(TraversalBuildDependsOn)" />
 
+  <PropertyGroup>
+    <ProjectAssetsFile>$(RepoRoot)src\coreclr\tests\src\Common\test_dependencies_fs\obj\project.assets.json</ProjectAssetsFile>
+  </PropertyGroup>
+
   <Import Project="$(RepositoryEngineeringDir)liveBuilds.targets" />
 
-  <Target Name="AddLibrariesToCoreRoot" BeforeTargets="CopyDependencyToCoreRoot" DependsOnTargets="ResolveLibrariesFromLocalBuild">
+  <Target Name="AddLibrariesToCoreRootFS" BeforeTargets="AddLibrariesToCoreRoot" DependsOnTargets="ResolveLibrariesFromLocalBuild">
     <ItemGroup>
       <RuntimeCopyLocalItems Include="@(LibrariesRuntimeFiles)" />
     </ItemGroup>
