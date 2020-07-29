@@ -188,8 +188,22 @@ $@"{ currentIndent}}}
         private static bool IsGeneratedDllImportAttribute(AttributeSyntax attrSyntaxMaybe)
         {
             var attrName = attrSyntaxMaybe.Name.ToString();
-            return attrName.EndsWith(GeneratedDllImport)
-                || attrName.EndsWith(GeneratedDllImportAttribute);
+
+            if (attrName.Length == GeneratedDllImport.Length)
+            {
+                return attrName.Equals(GeneratedDllImport);
+            }
+            else if (attrName.Length == GeneratedDllImportAttribute.Length)
+            {
+                return attrName.Equals(GeneratedDllImportAttribute);
+            }
+
+            // Handle the case where the user defines an attribute with
+            // the same name but adds a prefix.
+            const string PrefixedGeneratedDllImport = "." + GeneratedDllImport;
+            const string PrefixedGeneratedDllImportAttribute = "." + GeneratedDllImportAttribute;
+            return attrName.EndsWith(PrefixedGeneratedDllImport)
+                || attrName.EndsWith(PrefixedGeneratedDllImportAttribute);
         }
 
         private IEnumerable<string> ProcessAttributes(
