@@ -465,6 +465,19 @@ jobs:
         df -h
       displayName: Disk Usage after Build
 
+    # Sign and add entitlements to these MacOS binaries
+    - template: /eng/pipelines/common/macos-sign-with-entitlements.yml
+      parameters:
+        fileToSign: dotnet
+        fileToSignFolder: $(Build.SourcesDirectory)/artifacts/bin/installer/OSX.${{ parameters.archType }}.$(_BuildConfig)
+        entitlementsFile: $(Build.SourcesDirectory)/eng/pipelines/common/entitlements.plist
+
+    - template: /eng/pipelines/common/macos-sign-with-entitlements.yml
+      parameters:
+        fileToSign: apphost
+        fileToSignFolder: $(Build.SourcesDirectory)/artifacts/bin/installer/OSX.${{ parameters.archType }}.$(_BuildConfig)
+        entitlementsFile: $(Build.SourcesDirectory)/eng/pipelines/common/entitlements.plist
+
   # Only in glibc leg, we produce RPMs and Debs
   - ${{ if and(eq(parameters.runtimeFlavor, 'coreclr'), eq(parameters.platform, 'Linux_x64'), eq(parameters.osSubgroup, ''))}}:
     - task: CopyFiles@2

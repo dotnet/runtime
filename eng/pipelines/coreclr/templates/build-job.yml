@@ -153,6 +153,19 @@ jobs:
           df -h
         displayName: Disk Usage after Build
 
+      # Sign and add entitlements to these MacOS binaries
+      - template: /eng/pipelines/common/macos-sign-with-entitlements.yml
+        parameters:
+          fileToSign: createdump
+          fileToSignFolder: $(Build.SourcesDirectory)/artifacts/bin/coreclr/OSX.$(archType).$(buildConfig)/sharedFramework
+          entitlementsFile: $(Build.SourcesDirectory)/eng/pipelines/coreclr/createdump-entitlements.plist
+
+      - template: /eng/pipelines/common/macos-sign-with-entitlements.yml
+        parameters:
+          fileToSign: corerun
+          fileToSignFolder: $(Build.SourcesDirectory)/artifacts/bin/coreclr/OSX.$(archType).$(buildConfig)
+          entitlementsFile: $(Build.SourcesDirectory)/eng/pipelines/common/entitlements.plist
+
     # Build CoreCLR Managed Components
     - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -subset clr.corelib+clr.nativecorelib+clr.tools+clr.packages $(crossArg) -arch $(archType) $(osArg) -c $(buildConfig) $(officialBuildIdArg) -ci
       displayName: Build managed product components and packages
