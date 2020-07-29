@@ -15,7 +15,7 @@ namespace System.Net.Security.Tests
 {
     using Configuration = System.Net.Test.Common.Configuration;
 
-    public class SslStreamNetworkStreamTest
+    public class SslStreamNetworkStreamTest : IDisposable
     {
         private readonly X509Certificate2 _serverCert;
         private readonly X509Certificate2Collection _serverChain;
@@ -25,9 +25,9 @@ namespace System.Net.Security.Tests
             (_serverCert, _serverChain) = TestHelper.GenerateCertificates("localhost", this.GetType().Name);
         }
 
-        ~SslStreamNetworkStreamTest()
+        public void Dispose()
         {
-            TestHelper.ClenupCertificates(this.GetType().Name);
+            TestHelper.CleanupCertificates(this.GetType().Name);
         }
 
         [Fact]

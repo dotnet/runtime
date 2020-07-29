@@ -72,9 +72,9 @@ namespace System.Net.Security.Tests
             return (new VirtualNetworkStream(vn, isServer: false), new VirtualNetworkStream(vn, isServer: true));
         }
 
-        internal static void ClenupCertificates(string testName)
+        internal static void CleanupCertificates(string testName)
         {
-            string caName = $"o={testName}";
+            string caName = $"O={testName}";
             try
             {
                 using (X509Store store = new X509Store(StoreName.CertificateAuthority, StoreLocation.LocalMachine))
@@ -111,7 +111,7 @@ namespace System.Net.Security.Tests
         {
             if (PlatformDetection.IsWindows && testName != null)
             {
-                ClenupCertificates(testName);
+                CleanupCertificates(testName);
             }
 
             X509Certificate2Collection chain = new X509Certificate2Collection();

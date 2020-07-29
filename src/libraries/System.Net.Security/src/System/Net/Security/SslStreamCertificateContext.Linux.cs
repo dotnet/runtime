@@ -7,8 +7,7 @@ namespace System.Net.Security
 {
     public partial class SslStreamCertificateContext
     {
-        // No leaf, no root.
-        private const int _trimChain = 2;
+        private const bool TrimRootCertificate = true;
 
         private SslStreamCertificateContext(X509Certificate2 target, X509Certificate2[] intermediates)
         {

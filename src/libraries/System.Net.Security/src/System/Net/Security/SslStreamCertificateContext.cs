@@ -38,7 +38,7 @@ namespace System.Net.Security
                     NetEventSource.Error(null, $"Failed to build chain for {target.Subject}");
                 }
 
-                int count = chain.ChainElements.Count - _trimChain;
+                int count = chain.ChainElements.Count - (TrimRootCertificate ? 1 : 2);
                 foreach (X509ChainStatus status in chain.ChainStatus)
                 {
                     if (status.Status.HasFlag(X509ChainStatusFlags.PartialChain))
@@ -50,7 +50,7 @@ namespace System.Net.Security
                 }
 
                 // Count can be zero for a self-signed certificate, or a cert issued directly from a root.
-                if (count > 0 & chain.ChainElements.Count > 1)
+                if (count > 0 && chain.ChainElements.Count > 1)
                 {
                     intermediates = new X509Certificate2[count];
                     for (int i = 0; i < count; i++)
