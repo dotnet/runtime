@@ -145,8 +145,12 @@ namespace System.IO.Tests
             Assert.True(File.Exists(testFile));
         }
 
+        #endregion
+
+        #region PlatformSpecific
+
         [Fact]
-        [PlatformSpecific(~TestPlatforms.Browser)]
+        [PlatformSpecific(~TestPlatforms.Browser)] // Browser platform volume does not limit segments
         public void LongPathSegment()
         {
             DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
@@ -154,10 +158,6 @@ namespace System.IO.Tests
             AssertExtensions.ThrowsAny<IOException, DirectoryNotFoundException, PathTooLongException>(() =>
               Create(Path.Combine(testDir.FullName, new string('a', 300))));
         }
-
-        #endregion
-
-        #region PlatformSpecific
 
         [Fact]
         [PlatformSpecific(TestPlatforms.AnyUnix)]
