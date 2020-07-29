@@ -5358,6 +5358,16 @@ call_newobj:
 			ip++;
 			MINT_IN_BREAK;
 		}
+		MINT_IN_CASE(MINT_INTRINS_BITOPS_LOG2_32) {
+			sp [-1].data.i = 31 ^ (gint32)__builtin_clz ((guint32)sp [-1].data.i | 1);
+			++ip;
+			MINT_IN_BREAK;
+		}
+		MINT_IN_CASE(MINT_INTRINS_BITOPS_LOG2_64) {
+			sp [-1].data.i = 63 ^ (gint32)__builtin_clz ((guint64)sp [-1].data.l | 1);
+			++ip;
+			MINT_IN_BREAK;
+		}
 		MINT_IN_CASE(MINT_INTRINS_UNSAFE_BYTE_OFFSET) {
 			sp -= 2;
 			sp [0].data.nati = (guint8*)sp [1].data.p - (guint8*)sp [0].data.p;
