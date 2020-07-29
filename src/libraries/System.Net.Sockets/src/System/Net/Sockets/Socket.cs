@@ -2815,7 +2815,6 @@ namespace System.Net.Sockets
 
             // Throw an appropriate SocketException if the native call failed asynchronously.
             SocketError errorCode = (SocketError)castedAsyncResult.ErrorCode;
-
             if (errorCode != SocketError.Success)
             {
                 UpdateSendSocketErrorForDisposed(ref errorCode);
@@ -3230,7 +3229,6 @@ namespace System.Net.Sockets
 
             SocketError errorCode = (SocketError)castedAsyncResult.ErrorCode;
             UpdateReceiveSocketErrorForDisposed(ref errorCode, bytesTransferred);
-
             // Throw an appropriate SocketException if the native call failed asynchronously.
             if (errorCode != SocketError.Success && errorCode != SocketError.MessageSize)
             {
