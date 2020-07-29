@@ -30,4 +30,7 @@
     <ProjectReference Include="ReferencedClassLib\ReferencedClassLib.csproj" />
     <ProjectReference Include="ReferencedClassLibNeutralIsSatellite\ReferencedClassLibNeutralIsSatellite.csproj" />
   </ItemGroup>
+  <ItemGroup Condition="'$(TargetOS)' == 'Browser'">
+    <WasmFilesToIncludeFromPublishDir Include="$(AssemblyName).dll" />
+  </ItemGroup>
 </Project>
