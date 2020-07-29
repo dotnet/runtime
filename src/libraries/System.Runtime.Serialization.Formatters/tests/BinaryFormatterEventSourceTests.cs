@@ -27,10 +27,10 @@ namespace System.Runtime.Serialization.Formatters.Tests
 
             string[] expected = new string[]
             {
-                "SerializationStarted [Start, 00000001]: <no payload>",
+                "SerializationStart [Start, 00000001]: <no payload>",
                 "SerializingObject [Info, 00000001]: " + typeof(Person).AssemblyQualifiedName,
                 "SerializingObject [Info, 00000001]: " + typeof(Address).AssemblyQualifiedName,
-                "SerializationEnded [Stop, 00000001]: <no payload>",
+                "SerializationStop [Stop, 00000001]: <no payload>",
             };
 
             Assert.Equal(expected, listener.Log);
@@ -50,10 +50,10 @@ namespace System.Runtime.Serialization.Formatters.Tests
 
             string[] expected = new string[]
             {
-                "DeserializationStarted [Start, 00000002]: <no payload>",
+                "DeserializationStart [Start, 00000002]: <no payload>",
                 "DeserializingObject [Info, 00000002]: " + typeof(Person).AssemblyQualifiedName,
                 "DeserializingObject [Info, 00000002]: " + typeof(Address).AssemblyQualifiedName,
-                "DeserializationEnded [Stop, 00000002]: <no payload>",
+                "DeserializationStop [Stop, 00000002]: <no payload>",
             };
 
             Assert.Equal(expected, listener.Log);
@@ -73,12 +73,12 @@ namespace System.Runtime.Serialization.Formatters.Tests
 
             string[] expected = new string[]
             {
-                "SerializationStarted [Start, 00000001]: <no payload>",
+                "SerializationStart [Start, 00000001]: <no payload>",
                 "SerializingObject [Info, 00000001]: " + typeof(ClassWithNestedDeserialization).AssemblyQualifiedName,
-                "SerializationStarted [Start, 00000001]: <no payload>",
+                "SerializationStart [Start, 00000001]: <no payload>",
                 "SerializingObject [Info, 00000001]: " + typeof(Address).AssemblyQualifiedName,
-                "SerializationEnded [Stop, 00000001]: <no payload>",
-                "SerializationEnded [Stop, 00000001]: <no payload>",
+                "SerializationStop [Stop, 00000001]: <no payload>",
+                "SerializationStop [Stop, 00000001]: <no payload>",
             };
 
             Assert.Equal(expected, listener.Log);
@@ -92,12 +92,12 @@ namespace System.Runtime.Serialization.Formatters.Tests
 
             expected = new string[]
             {
-                "DeserializationStarted [Start, 00000002]: <no payload>",
+                "DeserializationStart [Start, 00000002]: <no payload>",
                 "DeserializingObject [Info, 00000002]: " + typeof(ClassWithNestedDeserialization).AssemblyQualifiedName,
-                "DeserializationStarted [Start, 00000002]: <no payload>",
+                "DeserializationStart [Start, 00000002]: <no payload>",
                 "DeserializingObject [Info, 00000002]: " + typeof(Address).AssemblyQualifiedName,
-                "DeserializationEnded [Stop, 00000002]: <no payload>",
-                "DeserializationEnded [Stop, 00000002]: <no payload>",
+                "DeserializationStop [Stop, 00000002]: <no payload>",
+                "DeserializationStop [Stop, 00000002]: <no payload>",
             };
 
             Assert.Equal(expected, listener.Log);
@@ -119,13 +119,13 @@ namespace System.Runtime.Serialization.Formatters.Tests
 
             string[] expected = new string[]
             {
-                "SerializationStarted [Start, 00000001]: <no payload>",
+                "SerializationStart [Start, 00000001]: <no payload>",
                 "Callback fired.",
                 "SerializingObject [Info, 00000001]: " + typeof(Person).AssemblyQualifiedName,
                 "Callback fired.",
                 "SerializingObject [Info, 00000001]: " + typeof(Address).AssemblyQualifiedName,
                 "Callback fired.",
-                "SerializationEnded [Stop, 00000001]: <no payload>",
+                "SerializationStop [Stop, 00000001]: <no payload>",
                 "Callback fired.",
             };
 
@@ -140,13 +140,13 @@ namespace System.Runtime.Serialization.Formatters.Tests
 
             expected = new string[]
             {
-                "DeserializationStarted [Start, 00000002]: <no payload>",
+                "DeserializationStart [Start, 00000002]: <no payload>",
                 "Callback fired.",
                 "DeserializingObject [Info, 00000002]: " + typeof(Person).AssemblyQualifiedName,
                 "Callback fired.",
                 "DeserializingObject [Info, 00000002]: " + typeof(Address).AssemblyQualifiedName,
                 "Callback fired.",
-                "DeserializationEnded [Stop, 00000002]: <no payload>",
+                "DeserializationStop [Stop, 00000002]: <no payload>",
                 "Callback fired.",
             };
 

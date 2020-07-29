@@ -39,7 +39,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
             };
             try
             {
-                BinaryFormatterEventSource.Log.DeserializationStarted();
+                BinaryFormatterEventSource.Log.DeserializationStart();
                 var parser = new BinaryParser(serializationStream, reader);
                 return reader.Deserialize(parser);
             }
@@ -53,7 +53,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
             }
             finally
             {
-                BinaryFormatterEventSource.Log.DeserializationEnded();
+                BinaryFormatterEventSource.Log.DeserializationStop();
             }
         }
 
@@ -80,7 +80,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
 
             try
             {
-                BinaryFormatterEventSource.Log.SerializationStarted();
+                BinaryFormatterEventSource.Log.SerializationStart();
                 var sow = new ObjectWriter(_surrogates, _context, formatterEnums, _binder);
                 BinaryFormatterWriter binaryWriter = new BinaryFormatterWriter(serializationStream, sow, _typeFormat);
                 sow.Serialize(graph, binaryWriter);
@@ -88,7 +88,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
             }
             finally
             {
-                BinaryFormatterEventSource.Log.SerializationEnded();
+                BinaryFormatterEventSource.Log.SerializationStop();
             }
         }
     }
