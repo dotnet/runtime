@@ -20,7 +20,7 @@ namespace System.Net.Test.Common
             return factory;
         }
 
-        public override ValueTask<ConnectionListener> BindAsync(EndPoint endPoint, IConnectionProperties options = null, CancellationToken cancellationToken = default)
+        public override ValueTask<ConnectionListener> ListenAsync(EndPoint endPoint, IConnectionProperties options = null, CancellationToken cancellationToken = default)
         {
             if (cancellationToken.IsCancellationRequested) return ValueTask.FromCanceled<ConnectionListener>(cancellationToken);
             return new ValueTask<ConnectionListener>(new VirtualConnectionListener(endPoint));

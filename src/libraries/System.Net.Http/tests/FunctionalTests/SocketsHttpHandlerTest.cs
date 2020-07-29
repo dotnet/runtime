@@ -114,7 +114,7 @@ namespace System.Net.Http.Functional.Tests
         public async Task CustomConnectionFactory_AsyncRequest_Success()
         {
             await using ConnectionListenerFactory listenerFactory = new VirtualNetworkConnectionListenerFactory();
-            await using ConnectionListener listener = await listenerFactory.BindAsync(endPoint: null);
+            await using ConnectionListener listener = await listenerFactory.ListenAsync(endPoint: null);
             await using ConnectionFactory connectionFactory = VirtualNetworkConnectionListenerFactory.GetConnectionFactory(listener);
 
             // TODO: if GenericLoopbackOptions actually worked for HTTP/1 LoopbackServer we could just use that and pass in to CreateConnectionAsync.
