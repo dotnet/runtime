@@ -103,56 +103,6 @@ namespace System.Runtime.Serialization.Formatters.Tests
             Assert.Equal(expected, listener.Log);
         }
 
-        [Fact]
-        public static void DoesNotRecordRecursiveSerializationPerformedByEventListener()
-        {
-            // First, serialization
-
-            LoggingEventListener listener = new LoggingEventListener();
-            listener.EventWritten += (source, args) => listener.Log.Add("Callback fired.");
-            listener.EventWritten += (source, args) => new BinaryFormatter().Serialize(Stream.Null, CreatePerson());
-
-            MemoryStream ms = new MemoryStream();
-            BinaryFormatter formatter = new BinaryFormatter();
-            formatter.Serialize(ms, CreatePerson());
-            ms.Position = 0;
-
-            string[] expected = new string[]
-            {
-                "SerializationStart [Start, 00000001]: <no payload>",
-                "Callback fired.",
-                "SerializingObject [Info, 00000001]: " + typeof(Person).AssemblyQualifiedName,
-                "Callback fired.",
-                "SerializingObject [Info, 00000001]: " + typeof(Address).AssemblyQualifiedName,
-                "Callback fired.",
-                "SerializationStop [Stop, 00000001]: <no payload>",
-                "Callback fired.",
-            };
-
-            Assert.Equal(expected, listener.Log);
-            listener.Log.Clear();
-
-            // Then, deserialization
-
-            ms.Position = 0;
-            formatter.Deserialize(ms);
-            listener.Dispose();
-
-            expected = new string[]
-            {
-                "DeserializationStart [Start, 00000002]: <no payload>",
-                "Callback fired.",
-                "DeserializingObject [Info, 00000002]: " + typeof(Person).AssemblyQualifiedName,
-                "Callback fired.",
-                "DeserializingObject [Info, 00000002]: " + typeof(Address).AssemblyQualifiedName,
-                "Callback fired.",
-                "DeserializationStop [Stop, 00000002]: <no payload>",
-                "Callback fired.",
-            };
-
-            Assert.Equal(expected, listener.Log);
-        }
-
         private static Person CreatePerson()
         {
             return new Person()
