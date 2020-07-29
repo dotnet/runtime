@@ -40,7 +40,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [PlatformSpecific(~TestPlatforms.Browser)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/40065", TestPlatforms.Browser)]
         public void FileShareWithoutWriteThrows()
         {
             string fileName = GetTestFilePath();
