@@ -23,7 +23,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
         {
         }
 
-        [Event(EventId_SerializationStart, Opcode = EventOpcode.Start, Keywords = Keywords.Serialization, Level = EventLevel.Informational)]
+        [Event(EventId_SerializationStart, Opcode = EventOpcode.Start, Keywords = Keywords.Serialization, Level = EventLevel.Informational, ActivityOptions = EventActivityOptions.Recursive)]
         public void SerializationStart()
         {
             if (IsEnabled(EventLevel.Informational, Keywords.Serialization))
@@ -58,7 +58,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
             WriteEvent(EventId_SerializingObject, typeName);
         }
 
-        [Event(EventId_DeserializationStart, Opcode = EventOpcode.Start, Keywords = Keywords.Deserialization, Level = EventLevel.Informational)]
+        [Event(EventId_DeserializationStart, Opcode = EventOpcode.Start, Keywords = Keywords.Deserialization, Level = EventLevel.Informational, ActivityOptions = EventActivityOptions.Recursive)]
         public void DeserializationStart()
         {
             if (IsEnabled(EventLevel.Informational, Keywords.Deserialization))
