@@ -19,11 +19,11 @@ namespace System.Runtime.Serialization.Formatters.Tests
         [Fact]
         public static void RecordsSerialization()
         {
-            LoggingEventListener listener = new LoggingEventListener();
+            using LoggingEventListener listener = new LoggingEventListener();
 
             BinaryFormatter formatter = new BinaryFormatter();
             formatter.Serialize(Stream.Null, CreatePerson());
-            listener.Dispose();
+            string[] capturedLog = listener.CaptureLog();
 
             string[] expected = new string[]
             {
@@ -33,7 +33,7 @@ namespace System.Runtime.Serialization.Formatters.Tests
                 "SerializationStop [Stop, 00000001]: <no payload>",
             };
 
-            Assert.Equal(expected, listener.Log);
+            Assert.Equal(expected, capturedLog);
         }
 
         [Fact]
@@ -44,9 +44,9 @@ namespace System.Runtime.Serialization.Formatters.Tests
             formatter.Serialize(ms, CreatePerson());
             ms.Position = 0;
 
-            LoggingEventListener listener = new LoggingEventListener();
+            using LoggingEventListener listener = new LoggingEventListener();
             formatter.Deserialize(ms);
-            listener.Dispose();
+            string[] capturedLog = listener.CaptureLog();
 
             string[] expected = new string[]
             {
@@ -56,7 +56,7 @@ namespace System.Runtime.Serialization.Formatters.Tests
                 "DeserializationStop [Stop, 00000002]: <no payload>",
             };
 
-            Assert.Equal(expected, listener.Log);
+            Assert.Equal(expected, capturedLog);
         }
 
         [Fact]
@@ -64,11 +64,12 @@ namespace System.Runtime.Serialization.Formatters.Tests
         {
             // First, serialization
 
-            LoggingEventListener listener = new LoggingEventListener();
+            using LoggingEventListener listener = new LoggingEventListener();
 
             MemoryStream ms = new MemoryStream();
             BinaryFormatter formatter = new BinaryFormatter();
             formatter.Serialize(ms, new ClassWithNestedDeserialization());
+            string[] capturedLog = listener.CaptureLog();
             ms.Position = 0;
 
             string[] expected = new string[]
@@ -81,14 +82,14 @@ namespace System.Runtime.Serialization.Formatters.Tests
                 "SerializationStop [Stop, 00000001]: <no payload>",
             };
 
-            Assert.Equal(expected, listener.Log);
-            listener.Log.Clear();
+            Assert.Equal(expected, capturedLog);
+            listener.ClearLog();
 
             // Then, deserialization
 
             ms.Position = 0;
             formatter.Deserialize(ms);
-            listener.Dispose();
+            capturedLog = listener.CaptureLog();
 
             expected = new string[]
             {
@@ -100,7 +101,7 @@ namespace System.Runtime.Serialization.Formatters.Tests
                 "DeserializationStop [Stop, 00000002]: <no payload>",
             };
 
-            Assert.Equal(expected, listener.Log);
+            Assert.Equal(expected, capturedLog);
         }
 
         private static Person CreatePerson()
@@ -119,11 +120,22 @@ namespace System.Runtime.Serialization.Formatters.Tests
         private sealed class LoggingEventListener : EventListener
         {
             private readonly Thread _activeThread = Thread.CurrentThread;
-            internal readonly List<string> Log = new List<string>();
+            private readonly List<string> _log = new List<string>();
 
             private void AddToLog(FormattableString message)
             {
-                Log.Add(FormattableString.Invariant(message));
+                _log.Add(FormattableString.Invariant(message));
+            }
+
+            // Captures the current log
+            public string[] CaptureLog()
+            {
+                return _log.ToArray();
+            }
+
+            public void ClearLog()
+            {
+                _log.Clear();
             }
 
             protected override void OnEventSourceCreated(EventSource eventSource)
