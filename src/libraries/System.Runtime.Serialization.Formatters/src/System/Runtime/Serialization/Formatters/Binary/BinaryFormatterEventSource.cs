@@ -8,8 +8,7 @@ using System.Threading;
 namespace System.Runtime.Serialization.Formatters.Binary
 {
     [EventSource(
-        Name = "System.Runtime.Serialization.Formatters.Binary.BinaryFormatterEventSource",
-        LocalizationResources = "FxResources.System.Runtime.Serialization.Formatters.SR")]
+        Name = "System.Runtime.Serialization.Formatters.Binary.BinaryFormatterEventSource")]
     internal sealed class BinaryFormatterEventSource : EventSource
     {
         private const int EventId_SerializationStart = 10;
