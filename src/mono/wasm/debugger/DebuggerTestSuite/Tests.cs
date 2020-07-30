@@ -23,7 +23,7 @@ namespace DebuggerTests
 			await insp.Ready ();
 			Assert.Contains ("dotnet://debugger-test.dll/debugger-test.cs", scripts.Values);
 			Assert.Contains ("dotnet://debugger-test.dll/debugger-test2.cs", scripts.Values);
-			Assert.Contains ("dotnet://Simple.Dependency.dll/dependency.cs", scripts.Values);
+			Assert.Contains ("dotnet://debugger-test.dll/dependency.cs", scripts.Values);
 		}
 
 		[Fact]
@@ -494,7 +494,7 @@ namespace DebuggerTests
 				ctx = new DebugTestContext (cli, insp, token, scripts);
 				ctx.UseCallFunctionOnBeforeGetProperties = use_cfo;
 
-				var dep_cs_loc = "dotnet://Simple.Dependency.dll/dependency.cs";
+				var dep_cs_loc = "dotnet://debugger-test.dll/dependency.cs";
 				await SetBreakpoint (dep_cs_loc, 24, 2);
 
 				var debugger_test_loc = "dotnet://debugger-test.dll/debugger-test.cs";
