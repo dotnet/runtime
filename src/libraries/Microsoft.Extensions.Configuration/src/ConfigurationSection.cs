@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Microsoft.Extensions.Primitives;
 
 namespace Microsoft.Extensions.Configuration
@@ -102,6 +103,25 @@ namespace Microsoft.Extensions.Configuration
         ///     an empty <see cref="IConfigurationSection"/> will be returned.
         /// </remarks>
         public IConfigurationSection GetSection(string key) => _root.GetSection(ConfigurationPath.Combine(Path, key));
+
+        /// <summary>
+        /// Gets a configuration sub-section with the specified key.
+        /// </summary>
+        /// <param name="key">The key of the configuration section.</param>
+        /// <returns>The <see cref="IConfigurationSection"/>.</returns>
+        /// <remarks>
+        ///     If no matching sub-section is found with the specified key, an exception raised
+        /// </remarks>
+        /// <exception cref="System.InvalidOperationException">There is no section with key <paramref name="key"/>.</exception>
+        public IConfigurationSection GetRequiredSection(string key)
+        {
+            IConfigurationSection section = GetSection(key);
+            if (section.Value != null || section.GetChildren().Any())
+            {
+                return section;
+            }
+            throw new InvalidOperationException(SR.Format(SR.InvalidSectionName, key));
+        }
 
         /// <summary>
         /// Gets the immediate descendant configuration sub-sections.

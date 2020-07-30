@@ -33,6 +33,7 @@ namespace Microsoft.Extensions.Configuration
         System.Collections.Generic.IEnumerable<Microsoft.Extensions.Configuration.IConfigurationSection> GetChildren();
         Microsoft.Extensions.Primitives.IChangeToken GetReloadToken();
         Microsoft.Extensions.Configuration.IConfigurationSection GetSection(string key);
+        Microsoft.Extensions.Configuration.IConfigurationSection GetRequiredSection(string key);
     }
     public partial interface IConfigurationBuilder
     {

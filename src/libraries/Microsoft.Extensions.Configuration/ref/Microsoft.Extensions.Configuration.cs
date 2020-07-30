@@ -72,6 +72,7 @@ namespace Microsoft.Extensions.Configuration
         public System.Collections.Generic.IEnumerable<Microsoft.Extensions.Configuration.IConfigurationSection> GetChildren() { throw null; }
         public Microsoft.Extensions.Primitives.IChangeToken GetReloadToken() { throw null; }
         public Microsoft.Extensions.Configuration.IConfigurationSection GetSection(string key) { throw null; }
+        public Microsoft.Extensions.Configuration.IConfigurationSection GetRequiredSection(string key) { throw null; }
         public void Reload() { }
     }
     public partial class ConfigurationSection : Microsoft.Extensions.Configuration.IConfiguration, Microsoft.Extensions.Configuration.IConfigurationSection
@@ -84,6 +85,7 @@ namespace Microsoft.Extensions.Configuration
         public System.Collections.Generic.IEnumerable<Microsoft.Extensions.Configuration.IConfigurationSection> GetChildren() { throw null; }
         public Microsoft.Extensions.Primitives.IChangeToken GetReloadToken() { throw null; }
         public Microsoft.Extensions.Configuration.IConfigurationSection GetSection(string key) { throw null; }
+        public Microsoft.Extensions.Configuration.IConfigurationSection GetRequiredSection(string key) { throw null; }
     }
     public static partial class MemoryConfigurationBuilderExtensions
     {

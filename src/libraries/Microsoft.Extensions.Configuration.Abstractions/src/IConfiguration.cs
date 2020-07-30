@@ -31,6 +31,17 @@ namespace Microsoft.Extensions.Configuration
         IConfigurationSection GetSection(string key);
 
         /// <summary>
+        /// Gets a configuration sub-section with the specified key.
+        /// </summary>
+        /// <param name="key">The key of the configuration section.</param>
+        /// <returns>The <see cref="IConfigurationSection"/>.</returns>
+        /// <remarks>
+        ///     If no matching sub-section is found with the specified key, an exception raised
+        /// </remarks>
+        /// <exception cref="System.InvalidOperationException">There is no section with key <paramref name="key"/>.</exception>
+        IConfigurationSection GetRequiredSection(string key);
+
+        /// <summary>
         /// Gets the immediate descendant configuration sub-sections.
         /// </summary>
         /// <returns>The configuration sub-sections.</returns>

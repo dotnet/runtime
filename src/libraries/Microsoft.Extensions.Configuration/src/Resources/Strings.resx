@@ -123,4 +123,7 @@
   <data name="InvalidNullArgument" xml:space="preserve">
     <value>Null is not a valid value for '{0}'.</value>
   </data>
+  <data name="InvalidSectionName" xml:space="preserve">
+    <value>Section '{0}' not found in configuration.</value>
+  </data>
 </root>

@@ -104,6 +104,25 @@ namespace Microsoft.Extensions.Configuration
             => new ConfigurationSection(this, key);
 
         /// <summary>
+        /// Gets a configuration sub-section with the specified key.
+        /// </summary>
+        /// <param name="key">The key of the configuration section.</param>
+        /// <returns>The <see cref="IConfigurationSection"/>.</returns>
+        /// <remarks>
+        ///     If no matching sub-section is found with the specified key, an exception raised
+        /// </remarks>
+        /// <exception cref="System.InvalidOperationException">There is no section with key <paramref name="key"/>.</exception>
+        public IConfigurationSection GetRequiredSection(string key)
+        {
+            IConfigurationSection section = GetSection(key);
+            if (section.Value != null || section.GetChildren().Any())
+            {
+                return section;
+            }
+            throw new InvalidOperationException(SR.Format(SR.InvalidSectionName, key));
+        }
+
+        /// <summary>
         /// Force the configuration values to be reloaded from the underlying sources.
         /// </summary>
         public void Reload()
