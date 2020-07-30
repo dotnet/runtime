@@ -23,7 +23,7 @@ namespace System.Net.Sockets.Tests
 
             for (int i = 0; i < 10000; i++) // run multiple times to attempt to force various interleavings
             {
-                (Socket client, Socket server) = CreateConnectedSocketPair();
+                (Socket client, Socket server) = SocketTestExtensions.CreateConnectedSocketPair();
                 using (var b = new Barrier(2))
                 {
                     Task dispose = Task.Factory.StartNew(() =>
