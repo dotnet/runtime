@@ -60,7 +60,7 @@ namespace System.Reflection.Tests
             string coreAssemblyPath = TestUtils.GetPathToCoreAssembly();
 
             // Obtain this test class
-            string thisAssemblyPath = typeof(MetadataLoadContextTests).Assembly.Location;
+            string thisAssemblyPath = TestUtils.GetAssemblyLocation(typeof(MetadataLoadContextTests).Assembly);
 
             if (PlatformDetection.IsBrowser)
             {

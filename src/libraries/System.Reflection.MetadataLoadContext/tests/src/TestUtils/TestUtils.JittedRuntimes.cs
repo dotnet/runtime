@@ -29,19 +29,12 @@ namespace System.Reflection.Tests
                 {
                     // The core assembly we're using might not be the one powering the runtime. Make sure we project to the core assembly the MetataLoadContext
                     // is using.
-                    //
-                    // Note, in Browser, assemblies are loaded from memory.  Therefore, the location will be an empty string and we'll 
-                    // need to load them by name.
                     if (a == typeof(object).Assembly)
                     {
-                        return (PlatformDetection.IsNotBrowser) ?
-                            TestMetadataLoadContext.LoadFromStream(CreateStreamForCoreAssembly())
-                            : TestMetadataLoadContext.LoadFromAssemblyName(typeof(object).Assembly.GetName().Name);
+                        TestMetadataLoadContext.LoadFromStream(CreateStreamForCoreAssembly());
                     }
 
-                    return (PlatformDetection.IsNotBrowser) ? 
-                        TestMetadataLoadContext.LoadFromAssemblyPath(a.Location)
-                        : TestMetadataLoadContext.LoadFromAssemblyName(a.GetName().Name);
+                    return TestMetadataLoadContext.LoadFromAssemblyPath(TestUtils.GetAssemblyLocation(a));
                 });
 
             Type projectedType = s_typeDict.GetOrAdd(type, (t) => projectedAssembly.GetType(t.FullName, throwOnError: true, ignoreCase: false));
@@ -75,25 +68,12 @@ namespace System.Reflection.Tests
 
         public static string GetPathToCoreAssembly()
         {
-            var files = Directory.GetFiles("/");
-
-            foreach (var file in files) {
-                Console.WriteLine("File: " + file);
-            }
-
-            return (PlatformDetection.IsNotBrowser) ? 
-                typeof(object).Assembly.Location
-                : GetNameOfCoreAssembly() + ".dll";
+            return TestUtils.GetAssemblyLocation(typeof(object).Assembly);
         }
 
         public static string GetNameOfCoreAssembly()
         {
             return typeof(object).Assembly.GetName().Name;
-        }
-
-        public static string GetFullNameOfCoreAssembly()
-        {
-            return typeof(object).Assembly.GetName().FullName;
         }
     }
 }
