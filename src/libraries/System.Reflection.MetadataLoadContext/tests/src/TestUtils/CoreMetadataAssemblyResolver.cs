@@ -24,14 +24,15 @@ namespace System.Reflection.Tests
             {
                 if (_coreAssembly == null)
                 {
-                    if (PlatformDetection.IsNotBrowser)
-                    {
-                        _coreAssembly = context.LoadFromStream(TestUtils.CreateStreamForCoreAssembly());
-                    }
-                    else
-                    {
-                        _coreAssembly = context.LoadFromAssemblyName(assemblyName);
-                    }
+                    _coreAssembly = context.LoadFromStream(TestUtils.CreateStreamForCoreAssembly());
+                    //if (PlatformDetection.IsNotBrowser)
+                    //{
+                    //    _coreAssembly = context.LoadFromStream(TestUtils.CreateStreamForCoreAssembly());
+                    //}
+                    //else
+                    //{
+                    //    _coreAssembly = context.LoadFromAssemblyName(assemblyName);
+                    //}
                 }
 
                 return _coreAssembly;
