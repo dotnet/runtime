@@ -109,7 +109,7 @@ set(CORECLR_LIBRARIES
     ildbsymlib
     utilcode
     v3binder
-    System.Globalization.Native-Static
+    System.Globalization.Native-static
     interop
 )
 
