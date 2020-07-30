@@ -486,7 +486,7 @@ namespace System.Text.Unicode
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static uint GetNonAsciiBytes(Vector128<byte> value, Vector128<byte> bitMask128)
+        internal static uint GetNonAsciiBytes(Vector128<byte> value, Vector128<byte> bitMask128)
         {
             Debug.Assert(AdvSimd.Arm64.IsSupported);
 
