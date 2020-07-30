@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -18,10 +19,10 @@ namespace System.Net.Http
 
         private const string CrLf = "\r\n";
 
-        private static readonly int s_crlfLength = GetEncodedLength(CrLf);
-        private static readonly int s_dashDashLength = GetEncodedLength("--");
-        private static readonly int s_colonSpaceLength = GetEncodedLength(": ");
-        private static readonly int s_commaSpaceLength = GetEncodedLength(", ");
+        private const int CrlfLength = 2;
+        private const int DashDashLength = 2;
+        private const int ColonSpaceLength = 2;
+        private const int CommaSpaceLength = 2;
 
         private readonly List<HttpContent> _nestedContent;
         private readonly string _boundary;
@@ -157,7 +158,11 @@ namespace System.Net.Http
 
         #region Serialization
 
-        public Func<string, HttpContent, Encoding?>? HeaderEncodingSelector { get; set; }
+        /// <summary>
+        /// Gets or sets a callback that returns the <see cref="Encoding"/> to decode the value for the specified response header name,
+        /// or <see langword="null"/> to use the default behavior.
+        /// </summary>
+        public HeaderEncodingSelector<HttpContent>? HeaderEncodingSelector { get; set; }
 
         // for-each content
         //   write "--" + boundary
@@ -173,7 +178,7 @@ namespace System.Net.Http
             try
             {
                 // Write start boundary.
-                WriteLatin1ToStream(stream, "--" + _boundary + CrLf);
+                WriteToStream(stream, "--" + _boundary + CrLf);
 
                 // Write each nested content.
                 for (int contentIndex = 0; contentIndex < _nestedContent.Count; contentIndex++)
@@ -185,7 +190,7 @@ namespace System.Net.Http
                 }
 
                 // Write footer boundary.
-                WriteLatin1ToStream(stream, CrLf + "--" + _boundary + "--" + CrLf);
+                WriteToStream(stream, CrLf + "--" + _boundary + "--" + CrLf);
             }
             catch (Exception ex)
             {
@@ -322,37 +327,30 @@ namespace System.Net.Http
             // Add divider.
             if (writeDivider) // Write divider for all but the first content.
             {
-                WriteLatin1ToStream(stream, CrLf + "--"); // const strings
-                WriteLatin1ToStream(stream, _boundary);
-                WriteLatin1ToStream(stream, CrLf);
+                WriteToStream(stream, CrLf + "--"); // const strings
+                WriteToStream(stream, _boundary);
+                WriteToStream(stream, CrLf);
             }
 
             // Add headers.
             foreach (KeyValuePair<string, IEnumerable<string>> headerPair in content.Headers)
             {
-                Encoding? headerValueEncoding = HeaderEncodingSelector?.Invoke(headerPair.Key, content);
+                Encoding headerValueEncoding = HeaderEncodingSelector?.Invoke(headerPair.Key, content) ?? HttpRuleParser.DefaultHttpEncoding;
 
-                WriteLatin1ToStream(stream, headerPair.Key);
-                WriteLatin1ToStream(stream, ": ");
+                WriteToStream(stream, headerPair.Key);
+                WriteToStream(stream, ": ");
                 string delim = string.Empty;
                 foreach (string value in headerPair.Value)
                 {
-                    WriteLatin1ToStream(stream, delim);
-                    if (headerValueEncoding is null)
-                    {
-                        WriteLatin1ToStream(stream, value);
-                    }
-                    else
-                    {
-                        WriteToStream(stream, value, headerValueEncoding);
-                    }
+                    WriteToStream(stream, delim);
+                    WriteToStream(stream, value, headerValueEncoding);
                     delim = ", ";
                 }
-                WriteLatin1ToStream(stream, CrLf);
+                WriteToStream(stream, CrLf);
             }
 
             // Extra CRLF to end headers (even if there are no headers).
-            WriteLatin1ToStream(stream, CrLf);
+            WriteToStream(stream, CrLf);
         }
 
         private static ValueTask EncodeStringToStreamAsync(Stream stream, string input, CancellationToken cancellationToken)
@@ -378,51 +376,43 @@ namespace System.Net.Http
 
         protected internal override bool TryComputeLength(out long length)
         {
-            int boundaryLength = GetEncodedLength(_boundary);
-
-            long currentLength = 0;
-            long internalBoundaryLength = s_crlfLength + s_dashDashLength + boundaryLength + s_crlfLength;
-
             // Start Boundary.
-            currentLength += s_dashDashLength + boundaryLength + s_crlfLength;
+            long currentLength = DashDashLength + _boundary.Length + CrlfLength;
 
-            bool first = true;
+            if (_nestedContent.Count > 1)
+            {
+                // Internal boundaries
+                currentLength += (_nestedContent.Count - 1) * (CrlfLength + DashDashLength + _boundary.Length + CrlfLength);
+            }
+
             foreach (HttpContent content in _nestedContent)
             {
-                if (first)
-                {
-                    first = false; // First boundary already written.
-                }
-                else
-                {
-                    // Internal Boundary.
-                    currentLength += internalBoundaryLength;
-                }
-
                 // Headers.
                 foreach (KeyValuePair<string, IEnumerable<string>> headerPair in content.Headers)
                 {
-                    currentLength += GetEncodedLength(headerPair.Key) + s_colonSpaceLength;
+                    currentLength += headerPair.Key.Length + ColonSpaceLength;
+
+                    Encoding headerValueEncoding = HeaderEncodingSelector?.Invoke(headerPair.Key, content) ?? HttpRuleParser.DefaultHttpEncoding;
 
                     int valueCount = 0;
                     foreach (string value in headerPair.Value)
                     {
-                        currentLength += GetEncodedLength(value);
+                        currentLength += headerValueEncoding.GetByteCount(value);
                         valueCount++;
                     }
+
                     if (valueCount > 1)
                     {
-                        currentLength += (valueCount - 1) * s_commaSpaceLength;
+                        currentLength += (valueCount - 1) * CommaSpaceLength;
                     }
 
-                    currentLength += s_crlfLength;
+                    currentLength += CrlfLength;
                 }
 
-                currentLength += s_crlfLength;
+                currentLength += CrlfLength;
 
                 // Content.
-                long tempContentLength = 0;
-                if (!content.TryComputeLength(out tempContentLength))
+                if (!content.TryComputeLength(out long tempContentLength))
                 {
                     length = 0;
                     return false;
@@ -431,15 +421,10 @@ namespace System.Net.Http
             }
 
             // Terminating boundary.
-            currentLength += s_crlfLength + s_dashDashLength + boundaryLength + s_dashDashLength + s_crlfLength;
+            currentLength += CrlfLength + DashDashLength + _boundary.Length + DashDashLength + CrlfLength;
 
             length = currentLength;
             return true;
-        }
-
-        private static int GetEncodedLength(string input)
-        {
-            return HttpRuleParser.DefaultHttpEncoding.GetByteCount(input);
         }
 
         private sealed class ContentReadStream : Stream
@@ -685,27 +670,32 @@ namespace System.Net.Http
         }
 
 
+        private static void WriteToStream(Stream stream, string content) =>
+            WriteToStream(stream, content, HttpRuleParser.DefaultHttpEncoding);
+
         private static void WriteToStream(Stream stream, string content, Encoding encoding)
         {
-            if (ReferenceEquals(encoding, Encoding.Latin1) ? content.Length <= 512
-                : (ReferenceEquals(encoding, Encoding.UTF8) && content.Length <= 128))
+            const int StackallocThreshold = 1024;
+
+            int maxLength = encoding.GetMaxByteCount(content.Length);
+
+            byte[]? rentedBuffer = null;
+            Span<byte> buffer = maxLength <= StackallocThreshold
+                ? stackalloc byte[StackallocThreshold]
+                : (rentedBuffer = ArrayPool<byte>.Shared.Rent(maxLength));
+
+            try
             {
-                // Fast-path for the expected common cases
-                Span<byte> buffer = stackalloc byte[512];
                 int written = encoding.GetBytes(content, buffer);
                 stream.Write(buffer.Slice(0, written));
             }
-            else
+            finally
             {
-                stream.Write(encoding.GetBytes(content));
+                if (rentedBuffer != null)
+                {
+                    ArrayPool<byte>.Shared.Return(rentedBuffer);
+                }
             }
-        }
-
-        private static void WriteLatin1ToStream(Stream stream, string content)
-        {
-            Debug.Assert(ReferenceEquals(Encoding.Latin1, HttpRuleParser.DefaultHttpEncoding));
-
-            WriteToStream(stream, content, HttpRuleParser.DefaultHttpEncoding);
         }
 
         #endregion Serialization
