@@ -31,7 +31,9 @@ namespace Microsoft.Extensions.Logging.EventSource
     ///
     /// SPEC =                          // empty spec, same as *
     ///      | NAME                     // Just a name the level is the default level
-    ///      | NAME : LEVEL            // specifies level for a particular logger (can have a * suffix).
+    ///      | NAME : LEVEL             // specifies level for a particular logger (can have a * suffix).
+    ///
+    /// When UseAppConfig is specified in the FilterSpecs, it avoids disabling all categories which happens by default otherwise.
     ///
     /// Where Name is the name of a ILoggger (case matters), Name can have a * which acts as a wildcard
     /// AS A SUFFIX.   Thus Net* will match any loggers that start with the 'Net'.
@@ -111,6 +113,7 @@ namespace Microsoft.Extensions.Logging.EventSource
         // having assignment in ctor would overwrite the value
         private LoggerFilterRule[] _filterSpec = Array.Empty<LoggerFilterRule>();
         private CancellationTokenSource _cancellationTokenSource;
+        private const string UseAppFilters = "UseAppFilters";
 
         private LoggingEventSource() : base(EventSourceSettings.EtwSelfDescribingEventFormat)
         {
@@ -338,14 +341,21 @@ namespace Microsoft.Extensions.Logging.EventSource
 
             var rules = new List<LoggerFilterRule>();
 
-            // All event source loggers are disabled by default
-            rules.Add(new LoggerFilterRule(typeof(EventSourceLoggerProvider).FullName, null, LogLevel.None, null));
+            if (filterSpec == null || !filterSpec.StartsWith(UseAppFilters, StringComparison.OrdinalIgnoreCase))
+            {
+                // All event source loggers are disabled by default
+                rules.Add(new LoggerFilterRule(typeof(EventSourceLoggerProvider).FullName, null, LogLevel.None, null));
+            }
 
             if (filterSpec != null)
             {
                 string[] ruleStrings = filterSpec.Split(new[] { ';' }, StringSplitOptions.RemoveEmptyEntries);
                 foreach (string rule in ruleStrings)
                 {
+                    if (rule.Equals(UseAppFilters, StringComparison.OrdinalIgnoreCase))
+                    {
+                        continue;
+                    }
                     LogLevel level = defaultLevel;
                     string[] parts = rule.Split(new[] { ':' }, 2);
                     string loggerName = parts[0];
