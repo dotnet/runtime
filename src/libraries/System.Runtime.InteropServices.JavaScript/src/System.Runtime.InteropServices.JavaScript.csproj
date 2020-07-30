@@ -8,6 +8,11 @@
   <PropertyGroup>
     <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetsAnyOS)' == 'true'">SR.SystemRuntimeInteropServicesJavaScript_PlatformNotSupported</GeneratePlatformNotSupportedAssemblyMessage>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(TargetsBrowser)' == 'true'">
+    <!-- The Browser build currently doesn't use any strings from SR, so don't include it until it does. -->
+    <OmitResources>true</OmitResources>
+    <GenerateResourcesSubstitutions>false</GenerateResourcesSubstitutions>
+  </PropertyGroup>
   <ItemGroup Condition="'$(TargetsBrowser)' == 'true'">
     <Compile Include="$(CommonPath)Interop\Browser\Interop.Runtime.cs" Link="Common\Interop\Browser\Interop.Runtime.cs" />
     <Compile Include="System\Runtime\InteropServices\JavaScript\Runtime.cs" />
