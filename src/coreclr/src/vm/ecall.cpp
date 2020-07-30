@@ -16,12 +16,12 @@
 #ifndef DACCESS_COMPILE
 
 #ifdef CROSSGEN_COMPILE
-namespace CrossGenMscorlib
+namespace CrossGenCoreLib
 {
     extern const ECClass c_rgECClasses[];
     extern const int c_nECClasses;
 };
-using namespace CrossGenMscorlib;
+using namespace CrossGenCoreLib;
 #else // CROSSGEN_COMPILE
 extern const ECClass c_rgECClasses[];
 extern const int c_nECClasses;
@@ -53,7 +53,7 @@ Utf8String, but String is similar.)
   add any void-returning metasig declarations if they haven't already been defined elsewhere.
   search "String_RetUtf8Str" for an example of how to do this.
 
-- src/vm/mscorlib.h, search "DEFINE_CLASS(UTF8_STRING" and add the new DEFINE_METHOD
+- src/vm/corelib.h, search "DEFINE_CLASS(UTF8_STRING" and add the new DEFINE_METHOD
   declarations for the Utf8String-returning Ctor methods, referencing the new metasig declarations.
 
 **********/
@@ -118,7 +118,7 @@ void ECall::PopulateManagedStringConstructors()
     _ASSERTE(g_pStringClass != NULL);
     for (int i = 0; i < NumberOfStringConstructors; i++)
     {
-        MethodDesc* pMD = MscorlibBinder::GetMethod((BinderMethodID)(METHOD__STRING__CTORF_FIRST + i));
+        MethodDesc* pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__STRING__CTORF_FIRST + i));
         _ASSERTE(pMD != NULL);
 
         PCODE pDest = pMD->GetMultiCallableAddrOfCode();
@@ -130,7 +130,7 @@ void ECall::PopulateManagedStringConstructors()
     _ASSERTE(g_pUtf8StringClass != NULL);
     for (int i = 0; i < NumberOfUtf8StringConstructors; i++)
     {
-        MethodDesc* pMD = MscorlibBinder::GetMethod((BinderMethodID)(METHOD__UTF8STRING__CTORF_FIRST + i));
+        MethodDesc* pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__UTF8STRING__CTORF_FIRST + i));
         _ASSERTE(pMD != NULL);
 
         PCODE pDest = pMD->GetMultiCallableAddrOfCode();
@@ -148,7 +148,7 @@ void ECall::PopulateManagedCastHelpers()
 
     STANDARD_VM_CONTRACT;
 
-    MethodDesc* pMD = MscorlibBinder::GetMethod((BinderMethodID)(METHOD__CASTHELPERS__ISINSTANCEOFANY));
+    MethodDesc* pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__CASTHELPERS__ISINSTANCEOFANY));
     PCODE pDest = pMD->GetMultiCallableAddrOfCode();
     SetJitHelperFunction(CORINFO_HELP_ISINSTANCEOFANY, pDest);
     // array cast uses the "ANY" helper
@@ -158,16 +158,16 @@ void ECall::PopulateManagedCastHelpers()
     // When interface table uses indirect references, just set interface casts to "ANY" helper
     SetJitHelperFunction(CORINFO_HELP_ISINSTANCEOFINTERFACE, pDest);
 #else
-    pMD = MscorlibBinder::GetMethod((BinderMethodID)(METHOD__CASTHELPERS__ISINSTANCEOFINTERFACE));
+    pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__CASTHELPERS__ISINSTANCEOFINTERFACE));
     pDest = pMD->GetMultiCallableAddrOfCode();
     SetJitHelperFunction(CORINFO_HELP_ISINSTANCEOFINTERFACE, pDest);
 #endif
 
-    pMD = MscorlibBinder::GetMethod((BinderMethodID)(METHOD__CASTHELPERS__ISINSTANCEOFCLASS));
+    pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__CASTHELPERS__ISINSTANCEOFCLASS));
     pDest = pMD->GetMultiCallableAddrOfCode();
     SetJitHelperFunction(CORINFO_HELP_ISINSTANCEOFCLASS, pDest);
 
-    pMD = MscorlibBinder::GetMethod((BinderMethodID)(METHOD__CASTHELPERS__CHKCASTANY));
+    pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__CASTHELPERS__CHKCASTANY));
     pDest = pMD->GetMultiCallableAddrOfCode();
     SetJitHelperFunction(CORINFO_HELP_CHKCASTANY, pDest);
     // array cast uses the "ANY" helper
@@ -177,20 +177,20 @@ void ECall::PopulateManagedCastHelpers()
     // When interface table uses indirect references, just set interface casts to "ANY" handler
     SetJitHelperFunction(CORINFO_HELP_CHKCASTINTERFACE, pDest);
 #else
-    pMD = MscorlibBinder::GetMethod((BinderMethodID)(METHOD__CASTHELPERS__CHKCASTINTERFACE));
+    pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__CASTHELPERS__CHKCASTINTERFACE));
     pDest = pMD->GetMultiCallableAddrOfCode();
     SetJitHelperFunction(CORINFO_HELP_CHKCASTINTERFACE, pDest);
 #endif
 
-    pMD = MscorlibBinder::GetMethod((BinderMethodID)(METHOD__CASTHELPERS__CHKCASTCLASS));
+    pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__CASTHELPERS__CHKCASTCLASS));
     pDest = pMD->GetMultiCallableAddrOfCode();
     SetJitHelperFunction(CORINFO_HELP_CHKCASTCLASS, pDest);
 
-    pMD = MscorlibBinder::GetMethod((BinderMethodID)(METHOD__CASTHELPERS__CHKCASTCLASSSPECIAL));
+    pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__CASTHELPERS__CHKCASTCLASSSPECIAL));
     pDest = pMD->GetMultiCallableAddrOfCode();
     SetJitHelperFunction(CORINFO_HELP_CHKCASTCLASS_SPECIAL, pDest);
 
-    pMD = MscorlibBinder::GetMethod((BinderMethodID)(METHOD__CASTHELPERS__UNBOX));
+    pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__CASTHELPERS__UNBOX));
     pDest = pMD->GetMultiCallableAddrOfCode();
     SetJitHelperFunction(CORINFO_HELP_UNBOX, pDest);
 
@@ -203,14 +203,14 @@ void ECall::PopulateManagedCastHelpers()
     //TODO: revise if this specialcasing is still needed when crossgen supports tailcall optimizations
     //      see: https://github.com/dotnet/runtime/issues/5857
 
-    pMD = MscorlibBinder::GetMethod((BinderMethodID)(METHOD__CASTHELPERS__STELEMREF));
+    pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__CASTHELPERS__STELEMREF));
     pMD->DoPrestub(NULL);
     // This helper is marked AggressiveOptimization and its native code is in its final form.
     // Get the code directly to avoid PreStub indirection.
     pDest = pMD->GetNativeCode();
     SetJitHelperFunction(CORINFO_HELP_ARRADDR_ST, pDest);
 
-    pMD = MscorlibBinder::GetMethod((BinderMethodID)(METHOD__CASTHELPERS__LDELEMAREF));
+    pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__CASTHELPERS__LDELEMAREF));
     pMD->DoPrestub(NULL);
     // This helper is marked AggressiveOptimization and its native code is in its final form.
     // Get the code directly to avoid PreStub indirection.
@@ -344,11 +344,11 @@ static INT FindECIndexForMethod(MethodDesc *pMD, const LPVOID* impls)
 
         if (cur->HasSignature())
         {
-            Signature sig = MscorlibBinder::GetTargetSignature(cur->m_pMethodSig);
+            Signature sig = CoreLibBinder::GetTargetSignature(cur->m_pMethodSig);
 
             //@GENERICS: none of these methods belong to generic classes so there is no instantiation info to pass in
             if (!MetaSig::CompareMethodSigs(pMethodSig, cbMethodSigLen, pModule, NULL,
-                                            sig.GetRawSig(), sig.GetRawSigLen(), MscorlibBinder::GetModule(), NULL, FALSE))
+                                            sig.GetRawSig(), sig.GetRawSigLen(), CoreLibBinder::GetModule(), NULL, FALSE))
             {
                 continue;
             }
@@ -461,7 +461,7 @@ PCODE ECall::GetFCallImpl(MethodDesc * pMD, BOOL * pfSharedOrDynamicFCallImpl /*
         // We need to set up the ECFunc properly.  We don't want to use the pMD passed in,
         // since it may disappear.  Instead, use the stable one on Delegate.  Remember
         // that this is 1:M between the FCall and the pMDs.
-        return GetFCallImpl(MscorlibBinder::GetMethod(METHOD__DELEGATE__CONSTRUCT_DELEGATE));
+        return GetFCallImpl(CoreLibBinder::GetMethod(METHOD__DELEGATE__CONSTRUCT_DELEGATE));
     }
 
     // COM imported classes have special constructors
@@ -498,16 +498,16 @@ PCODE ECall::GetFCallImpl(MethodDesc * pMD, BOOL * pfSharedOrDynamicFCallImpl /*
     //
     // You'll see this assert in several situations, almost all being the fault of whomever
     // last touched a particular ecall or fcall method, either here or in the classlibs.
-    // However, you must also ensure you don't have stray copies of mscorlib.dll on your machine.
+    // However, you must also ensure you don't have stray copies of System.Private.CoreLib.dll on your machine.
     // 1) You forgot to add your class to c_rgECClasses, the list of classes w/ ecall & fcall methods.
     // 2) You forgot to add your particular method to the ECFunc array for your class.
     // 3) You misspelled the name of your function and/or classname.
     // 4) The signature of the managed function doesn't match the hardcoded metadata signature
     //    listed in your ECFunc array.  The hardcoded metadata sig is only necessary to disambiguate
     //    overloaded ecall functions - usually you can leave it set to NULL.
-    // 5) Your copy of mscorlib.dll & mscoree.dll are out of sync - rebuild both.
-    // 6) You've loaded the wrong copy of mscorlib.dll.  In msdev's debug menu,
-    //    select the "Modules..." dialog.  Verify the path for mscorlib is right.
+    // 5) Your copy of System.Private.CoreLib.dll & coreclr.dll are out of sync - rebuild both.
+    // 6) You've loaded the wrong copy of System.Private.CoreLib.dll.  In Visual Studio's debug menu,
+    //    select the "Modules..." dialog.  Verify the path for System.Private.CoreLib is right.
     // 7) Someone mucked around with how the signatures in metasig.h are parsed, changing the
     //    interpretation of a part of the signature (this is very rare & extremely unlikely,
     //    but has happened at least once).
@@ -631,7 +631,7 @@ BOOL ECall::CheckUnusedECalls(SetSHash<DWORD>& usedIDs)
 
                 if (!usedIDs.Contains(id))
                 {
-                    printf("CheckMscorlibExtended: Unused ecall found: %s.%s::%s\n", pECClass->m_szNameSpace, c_rgECClasses[ImplsIndex].m_szClassName, ptr->m_szMethodName);
+                    printf("CheckCoreLibExtended: Unused ecall found: %s.%s::%s\n", pECClass->m_szNameSpace, c_rgECClasses[ImplsIndex].m_szClassName, ptr->m_szMethodName);
                     fUnusedFCallsFound = TRUE;
                     continue;
                 }
@@ -641,7 +641,7 @@ BOOL ECall::CheckUnusedECalls(SetSHash<DWORD>& usedIDs)
 
         if (fUnreferencedType)
         {
-            printf("CheckMscorlibExtended: Unused type found: %s.%s\n", c_rgECClasses[ImplsIndex].m_szNameSpace, c_rgECClasses[ImplsIndex].m_szClassName);
+            printf("CheckCoreLibExtended: Unused type found: %s.%s\n", c_rgECClasses[ImplsIndex].m_szNameSpace, c_rgECClasses[ImplsIndex].m_szClassName);
             fUnusedFCallsFound = TRUE;
             continue;
         }
@@ -803,7 +803,7 @@ CorInfoIntrinsics ECall::GetIntrinsicID(MethodDesc* pMD)
         return(CORINFO_INTRINSIC_Illegal);
     }
 
-    // All intrinsic live in mscorlib.dll (FindECFuncForMethod does not work for non-mscorlib intrinsics)
+    // All intrinsic live in CoreLib (FindECFuncForMethod does not work for non-CoreLib intrinsics)
     if (!pMD->GetModule()->IsSystem())
     {
         return(CORINFO_INTRINSIC_Illegal);

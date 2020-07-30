@@ -61,6 +61,7 @@
     <Compile Include="System\Runtime\Serialization\Formatters\Binary\BinaryFormatter.cs" />
     <Compile Include="System\Runtime\Serialization\Formatters\Binary\BinaryFormatter.Core.cs" Condition="'$(TargetsBrowser)' != 'true'" />
     <Compile Include="System\Runtime\Serialization\Formatters\Binary\BinaryFormatter.PlatformNotSupported.cs" Condition="'$(TargetsBrowser)' == 'true'" />
+    <Compile Include="System\Runtime\Serialization\Formatters\Binary\BinaryFormatterEventSource.cs" />
     <Compile Include="System\Runtime\Serialization\Formatters\Binary\BinaryFormatterWriter.cs" />
     <Compile Include="System\Runtime\Serialization\Formatters\Binary\BinaryObjectInfo.cs" />
     <Compile Include="System\Runtime\Serialization\Formatters\Binary\BinaryObjectReader.cs" />

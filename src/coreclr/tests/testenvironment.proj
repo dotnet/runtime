@@ -15,6 +15,7 @@
     <COMPlusVariables>
       COMPlus_TieredCompilation;
       COMPlus_DbgEnableMiniDump;
+      COMPlus_DbgEnableElfDumpOnMacOS;
       COMPlus_DbgMiniDumpName;
       COMPlus_EnableAES;
       COMPlus_EnableAVX;
@@ -65,6 +66,7 @@
     <TestEnvironment>
       <TieredCompilation>0</TieredCompilation>
       <DbgEnableMiniDump Condition="'$(TargetsWindows)' != 'true'">1</DbgEnableMiniDump> <!-- Enable minidumps for all scenarios -->
+      <DbgEnableElfDumpOnMacOS Condition="'$(TargetsOSX)' == 'true'">1</DbgEnableElfDumpOnMacOS> <!-- Enable minidumps for OSX -->
       <DbgMiniDumpName Condition="'$(TargetsWindows)' != 'true'">$HELIX_DUMP_FOLDER/coredump.%d.dmp</DbgMiniDumpName>
     </TestEnvironment>
   </ItemDefinitionGroup>

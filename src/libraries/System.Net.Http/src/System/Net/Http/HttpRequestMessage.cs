@@ -25,7 +25,7 @@ namespace System.Net.Http
         private HttpVersionPolicy _versionPolicy;
         private HttpContent? _content;
         private bool _disposed;
-        private IDictionary<string, object?>? _properties;
+        private HttpRequestOptions? _options;
 
         public Version Version
         {
@@ -123,17 +123,10 @@ namespace System.Net.Http
 
         internal bool HasHeaders => _headers != null;
 
-        public IDictionary<string, object?> Properties
-        {
-            get
-            {
-                if (_properties == null)
-                {
-                    _properties = new Dictionary<string, object?>();
-                }
-                return _properties;
-            }
-        }
+        [Obsolete("Use Options instead.")]
+        public IDictionary<string, object?> Properties => Options;
+
+        public HttpRequestOptions Options => _options ??= new HttpRequestOptions();
 
         public HttpRequestMessage()
             : this(HttpMethod.Get, (Uri?)null)

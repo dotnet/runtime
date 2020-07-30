@@ -52,17 +52,12 @@
 # we can align to 16 and be guaranteed to not exceed the frame size
 .equ STACK_FUDGE_FACTOR, 0x8
 
-# Space to keep xmm0 and xmm1
-.equ SIZEOF_FP_ARG_SPILL, 0x10*2
-
-.equ OFFSETOF_FP_ARG_SPILL, SIZEOF_PROFILE_PLATFORM_SPECIFIC_DATA + STACK_FUDGE_FACTOR
-
 # SIZEOF_STACK_FRAME is how many bytes we reserve in our ELT helpers below
 # There are three components, the first is space for profiler platform specific
 # data struct that we spill the general purpose registers to, then space to
 # spill xmm0 and xmm1, then finally 8 bytes of padding to ensure that the xmm
 # register reads/writes are aligned on 16 bytes.
-.equ SIZEOF_STACK_FRAME, SIZEOF_PROFILE_PLATFORM_SPECIFIC_DATA + SIZEOF_FP_ARG_SPILL + STACK_FUDGE_FACTOR
+.equ SIZEOF_STACK_FRAME, SIZEOF_PROFILE_PLATFORM_SPECIFIC_DATA + STACK_FUDGE_FACTOR
 
 .equ PROFILE_ENTER, 0x1
 .equ PROFILE_LEAVE, 0x2
@@ -131,15 +126,6 @@ NESTED_ENTRY ProfileEnterNaked, _TEXT, NoHandler
   mov                     r10, 0x1 # PROFILE_ENTER
   mov                     [rsp + 0xa8], r10d              #      -- struct flags field
 
-  # get aligned stack ptr (rsp + OFFSETOF_FP_ARG_SPILL) & (-16)
-  lea                     rax, [rsp + OFFSETOF_FP_ARG_SPILL]
-  and                     rax, -16
-
-  # we need to be able to restore the fp return register
-  # save fp return registers
-  movdqa                  [rax + 0x00], xmm0
-  movdqa                  [rax + 0x10], xmm1
-
   END_PROLOGUE
 
   # rdi already contains the clientInfo
@@ -148,10 +134,14 @@ NESTED_ENTRY ProfileEnterNaked, _TEXT, NoHandler
   call                    C_FUNC(ProfileEnter)
 
   # restore fp return registers
-  lea                     rax, [rsp + OFFSETOF_FP_ARG_SPILL]
-  and                     rax, -16
-  movdqa                  xmm0, [rax + 0x00]
-  movdqa                  xmm1, [rax + 0x10]
+  movsd                   xmm0, real8 ptr [rsp + 0x38]    #      -- struct flt0 field
+  movsd                   xmm1, real8 ptr [rsp + 0x40]    #      -- struct flt1 field
+  movsd                   xmm2, real8 ptr [rsp + 0x48]    #      -- struct flt2 field
+  movsd                   xmm3, real8 ptr [rsp + 0x50]    #      -- struct flt3 field
+  movsd                   xmm4, real8 ptr [rsp + 0x58]    #      -- struct flt4 field
+  movsd                   xmm5, real8 ptr [rsp + 0x60]    #      -- struct flt5 field
+  movsd                   xmm6, real8 ptr [rsp + 0x68]    #      -- struct flt6 field
+  movsd                   xmm7, real8 ptr [rsp + 0x70]    #      -- struct flt7 field
 
   # restore arg registers
   mov                     rdi, [rsp + 0x78]
@@ -216,15 +206,6 @@ NESTED_ENTRY ProfileLeaveNaked, _TEXT, NoHandler
   mov                     r10, 0x2  # PROFILE_LEAVE
   mov                     [rsp + 0xa8], r10d   # flags           -- struct flags field
 
-  # get aligned stack ptr (rsp + OFFSETOF_FP_ARG_SPILL) & (-16)
-  lea                     rax, [rsp + OFFSETOF_FP_ARG_SPILL]
-  and                     rax, -16
-
-  # we need to be able to restore the fp return register
-  # save fp return registers
-  movdqa                  [rax + 0x00], xmm0
-  movdqa                  [rax + 0x10], xmm1
-
   END_PROLOGUE
 
   # rdi already contains the clientInfo
@@ -232,10 +213,14 @@ NESTED_ENTRY ProfileLeaveNaked, _TEXT, NoHandler
   call                    C_FUNC(ProfileLeave)
 
   # restore fp return registers
-  lea                     rax, [rsp + OFFSETOF_FP_ARG_SPILL]
-  and                     rax, -16
-  movdqa                  xmm0, [rax + 0x00]
-  movdqa                  xmm1, [rax + 0x10]
+  movsd                   xmm0, real8 ptr [rsp + 0x38]    #      -- struct flt0 field
+  movsd                   xmm1, real8 ptr [rsp + 0x40]    #      -- struct flt1 field
+  movsd                   xmm2, real8 ptr [rsp + 0x48]    #      -- struct flt2 field
+  movsd                   xmm3, real8 ptr [rsp + 0x50]    #      -- struct flt3 field
+  movsd                   xmm4, real8 ptr [rsp + 0x58]    #      -- struct flt4 field
+  movsd                   xmm5, real8 ptr [rsp + 0x60]    #      -- struct flt5 field
+  movsd                   xmm6, real8 ptr [rsp + 0x68]    #      -- struct flt6 field
+  movsd                   xmm7, real8 ptr [rsp + 0x70]    #      -- struct flt7 field
 
   # restore int return register
   mov                     rax, [rsp + 0x28]
@@ -295,15 +280,6 @@ NESTED_ENTRY ProfileTailcallNaked, _TEXT, NoHandler
   mov                     r10, 0x2  # PROFILE_LEAVE
   mov                     [rsp + 0xa8], r10d   # flags           -- struct flags field
 
-  # get aligned stack ptr (rsp + OFFSETOF_FP_ARG_SPILL) & (-16)
-  lea                     rax, [rsp + OFFSETOF_FP_ARG_SPILL]
-  and                     rax, -16
-
-  # we need to be able to restore the fp return register
-  # save fp return registers
-  movdqa                  [rax + 0x00], xmm0
-  movdqa                  [rax + 0x10], xmm1
-
   END_PROLOGUE
 
   # rdi already contains the clientInfo
@@ -311,10 +287,14 @@ NESTED_ENTRY ProfileTailcallNaked, _TEXT, NoHandler
   call                    C_FUNC(ProfileTailcall)
 
   # restore fp return registers
-  lea                     rax, [rsp + OFFSETOF_FP_ARG_SPILL]
-  and                     rax, -16
-  movdqa                  xmm0, [rax + 0x00]
-  movdqa                  xmm1, [rax + 0x10]
+  movsd                   xmm0, real8 ptr [rsp + 0x38]    #      -- struct flt0 field
+  movsd                   xmm1, real8 ptr [rsp + 0x40]    #      -- struct flt1 field
+  movsd                   xmm2, real8 ptr [rsp + 0x48]    #      -- struct flt2 field
+  movsd                   xmm3, real8 ptr [rsp + 0x50]    #      -- struct flt3 field
+  movsd                   xmm4, real8 ptr [rsp + 0x58]    #      -- struct flt4 field
+  movsd                   xmm5, real8 ptr [rsp + 0x60]    #      -- struct flt5 field
+  movsd                   xmm6, real8 ptr [rsp + 0x68]    #      -- struct flt6 field
+  movsd                   xmm7, real8 ptr [rsp + 0x70]    #      -- struct flt7 field
 
   # restore int return register
   mov                     rax, [rsp + 0x28]

@@ -316,6 +316,7 @@ set(VM_SOURCES_WKS
     comthreadpool.cpp
     comutilnative.cpp
     comwaithandle.cpp
+    corelib.cpp # <DisablePrecompiledHeaders>true</DisablePrecompiledHeaders>
     customattribute.cpp
     custommarshalerinfo.cpp
     autotrace.cpp
@@ -370,7 +371,6 @@ set(VM_SOURCES_WKS
     marshalnative.cpp
     methodtablebuilder.cpp
     mlinfo.cpp
-    mscorlib.cpp # <DisablePrecompiledHeaders>true</DisablePrecompiledHeaders>
     multicorejit.cpp # Condition="'$(FeatureMulticoreJIT)' == 'true'
     multicorejitplayer.cpp # Condition="'$(FeatureMulticoreJIT)' == 'true'
     nativeeventsource.cpp
@@ -491,7 +491,7 @@ set(VM_HEADERS_WKS
     marshalnative.h
     methodtablebuilder.h
     mlinfo.h
-    mscorlib.h
+    corelib.h
     multicorejit.h
     multicorejitimpl.h
     nativeeventsource.h

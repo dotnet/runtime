@@ -2119,7 +2119,7 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         public async Task SendAsync_Expect100Continue_RequestBodyFails_ThrowsContentException()
         {
-            if (IsWinHttpHandler && UseVersion >= HttpVersion20.Value)
+            if (IsWinHttpHandler)
             {
                 return;
             }
@@ -2137,7 +2137,7 @@ namespace System.Net.Http.Functional.Tests
                     HttpRequestMessage initialMessage = new HttpRequestMessage(HttpMethod.Post, uri) { Version = UseVersion };
                     initialMessage.Content = new ThrowingContent(() => new ThrowingContentException());
                     initialMessage.Headers.ExpectContinue = true;
-                    Exception exception = await Assert.ThrowsAsync<ThrowingContentException>(() => client.SendAsync(TestAsync, initialMessage));
+                    await Assert.ThrowsAsync<ThrowingContentException>(() => client.SendAsync(TestAsync, initialMessage));
 
                     clientFinished.SetResult(true);
                 }

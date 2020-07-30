@@ -44,6 +44,9 @@ namespace System.Net.Http
         internal TimeSpan _expect100ContinueTimeout = HttpHandlerDefaults.DefaultExpect100ContinueTimeout;
         internal TimeSpan _connectTimeout = HttpHandlerDefaults.DefaultConnectTimeout;
 
+        internal HeaderEncodingSelector<HttpRequestMessage>? _requestHeaderEncodingSelector;
+        internal HeaderEncodingSelector<HttpRequestMessage>? _responseHeaderEncodingSelector;
+
         internal Version _maxHttpVersion;
 
         internal SslClientAuthenticationOptions? _sslOptions;
@@ -100,6 +103,8 @@ namespace System.Net.Http
                 _sslOptions = _sslOptions?.ShallowClone(), // shallow clone the options for basic prevention of mutation issues while processing
                 _useCookies = _useCookies,
                 _useProxy = _useProxy,
+                _requestHeaderEncodingSelector = _requestHeaderEncodingSelector,
+                _responseHeaderEncodingSelector = _responseHeaderEncodingSelector,
                 _enableMultipleHttp2Connections = _enableMultipleHttp2Connections,
                 _connectionFactory = _connectionFactory,
                 _plaintextFilter = _plaintextFilter

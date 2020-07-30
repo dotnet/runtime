@@ -246,7 +246,7 @@ namespace BinderTracing
 
         // ActivityTracker or EventSource may have triggered the system satellite load.
         // Don't track system satellite binding to avoid potential infinite recursion.
-        m_ignoreBind = m_bindRequest.AssemblySpec->IsMscorlibSatellite();
+        m_ignoreBind = m_bindRequest.AssemblySpec->IsCoreLibSatellite();
         m_checkedIgnoreBind = true;
         return m_ignoreBind;
     }
