@@ -142,6 +142,18 @@ namespace System.Net.Http
 
         public IDictionary<string, object?> Properties => throw new PlatformNotSupportedException();
 
+        public HeaderEncodingSelector<HttpRequestMessage>? RequestHeaderEncodingSelector
+        {
+            get => throw new PlatformNotSupportedException();
+            set => throw new PlatformNotSupportedException();
+        }
+
+        public HeaderEncodingSelector<HttpRequestMessage>? ResponseHeaderEncodingSelector
+        {
+            get => throw new PlatformNotSupportedException();
+            set => throw new PlatformNotSupportedException();
+        }
+
         protected internal override Task<HttpResponseMessage> SendAsync(
             HttpRequestMessage request, CancellationToken cancellationToken) => throw new PlatformNotSupportedException();
 

@@ -273,6 +273,7 @@
     <Compile Include="Headers\GenericHeaderParserTest\TokenListParserTest.cs" />
     <Compile Include="Headers\GenericHeaderParserTest\ViaParserTest.cs" />
     <Compile Include="Headers\GenericHeaderParserTest\WarningParserTest.cs" />
+    <Compile Include="Headers\HeaderEncodingTest.cs" />
     <Compile Include="Headers\HeaderUtilitiesTest.cs" />
     <Compile Include="Headers\HttpContentHeadersTest.cs" />
     <Compile Include="Headers\HttpHeadersTest.cs" />

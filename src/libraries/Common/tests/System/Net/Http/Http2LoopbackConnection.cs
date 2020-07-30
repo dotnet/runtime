@@ -662,7 +662,7 @@ namespace System.Net.Test.Common
             {
                 foreach (HttpHeaderData headerData in headers)
                 {
-                    bytesGenerated += HPackEncoder.EncodeHeader(headerData.Name, headerData.Value, headerData.HuffmanEncoded ? HPackFlags.HuffmanEncode : HPackFlags.None, headerBlock.AsSpan(bytesGenerated));
+                    bytesGenerated += HPackEncoder.EncodeHeader(headerData.Name, headerData.Value, headerData.ValueEncoding, headerData.HuffmanEncoded ? HPackFlags.HuffmanEncode : HPackFlags.None, headerBlock.AsSpan(bytesGenerated));
                 }
             }
 

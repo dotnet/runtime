@@ -542,24 +542,26 @@ namespace System.Net.Http
                             throw new HttpRequestException(SR.Format(SR.net_http_invalid_response_header_name, Encoding.ASCII.GetString(name)));
                         }
 
+                        Encoding? valueEncoding = _connection._pool.Settings._responseHeaderEncodingSelector?.Invoke(descriptor.Name, _request);
+
                         // Note we ignore the return value from TryAddWithoutValidation;
                         // if the header can't be added, we silently drop it.
                         if (_responseProtocolState == ResponseProtocolState.ExpectingTrailingHeaders)
                         {
                             Debug.Assert(_trailers != null);
-                            string headerValue = descriptor.GetHeaderValue(value);
+                            string headerValue = descriptor.GetHeaderValue(value, valueEncoding);
                             _trailers.TryAddWithoutValidation((descriptor.HeaderType & HttpHeaderType.Request) == HttpHeaderType.Request ? descriptor.AsCustomHeader() : descriptor, headerValue);
                         }
                         else if ((descriptor.HeaderType & HttpHeaderType.Content) == HttpHeaderType.Content)
                         {
                             Debug.Assert(_response != null && _response.Content != null);
-                            string headerValue = descriptor.GetHeaderValue(value);
+                            string headerValue = descriptor.GetHeaderValue(value, valueEncoding);
                             _response.Content.Headers.TryAddWithoutValidation(descriptor, headerValue);
                         }
                         else
                         {
                             Debug.Assert(_response != null);
-                            string headerValue = _connection.GetResponseHeaderValueWithCaching(descriptor, value);
+                            string headerValue = _connection.GetResponseHeaderValueWithCaching(descriptor, value, valueEncoding);
                             _response.Headers.TryAddWithoutValidation((descriptor.HeaderType & HttpHeaderType.Request) == HttpHeaderType.Request ? descriptor.AsCustomHeader() : descriptor, headerValue);
                         }
                     }
