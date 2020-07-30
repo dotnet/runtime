@@ -58,8 +58,8 @@ add_library_clr(cee_wks_obj OBJECT ${VM_SOURCES_WKS_SPECIAL})
 add_library_clr(cee_wks_mergeable_obj OBJECT ${VM_SOURCES_WKS_SPECIAL})
 
 add_custom_target(preprocessd_asm DEPENDS ${VM_WKS_ARCH_ASM_OBJECTS})
-add_dependencies(cee_wks_obj preprocessd_asm)
-add_dependencies(cee_wks_mergeable_obj preprocessd_asm)
+add_dependencies(cee_wks_obj preprocessd_asm eventing_headers)
+add_dependencies(cee_wks_mergeable_obj preprocessd_asm eventing_headers)
 
 target_precompile_header(TARGET cee_wks_obj HEADER common.h)
 target_precompile_header(TARGET cee_wks_mergeable_obj HEADER common.h)

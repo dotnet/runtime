@@ -14,6 +14,7 @@ set (EventingHeaders
   ${GENERATED_INCLUDE_DIR}/etmdummy.h
   ${GENERATED_INCLUDE_DIR}/clretwallmain.h
   ${GENERATED_INCLUDE_DIR}/clreventpipewriteevents.h
+  ${GENERATED_INCLUDE_DIR}/clrproviders.h
 )
 
 if (NEED_XPLAT_HEADER)
