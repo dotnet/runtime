@@ -29,6 +29,7 @@ public class WasmAppBuilder : Task
     public string? MainJS { get; set; }
     [Required]
     public ITaskItem[]? AssemblySearchPaths { get; set; }
+    public int EnableDebugging { get; set; }
     public ITaskItem[]? ExtraAssemblies { get; set; }
     public ITaskItem[]? FilesToIncludeInFileSystem { get; set; }
     public ITaskItem[]? RemoteSources { get; set; }
@@ -116,8 +117,14 @@ public class WasmAppBuilder : Task
         // Create app
         Directory.CreateDirectory(AppDir!);
         Directory.CreateDirectory(Path.Join(AppDir, config.AssemblyRoot));
-        foreach (var assembly in _assemblies!.Values)
+        foreach (var assembly in _assemblies!.Values) {
             File.Copy(assembly.Location, Path.Join(AppDir, config.AssemblyRoot, Path.GetFileName(assembly.Location)), true);
+            if (EnableDebugging == 1) {
+                var pdb = assembly.Location;
+                pdb = pdb.Replace(".dll", ".pdb");
+                File.Copy(assembly.Location, Path.Join(AppDir, config.AssemblyRoot, Path.GetFileName(pdb)), true);
+            }
+        }
 
         List<string> nativeAssets = new List<string>() { "dotnet.wasm", "dotnet.js", "dotnet.timezones.blat" };
 
@@ -130,8 +137,16 @@ public class WasmAppBuilder : Task
             File.Copy(Path.Join (MicrosoftNetCoreAppRuntimePackDir, "native", f), Path.Join(AppDir, f), true);
         File.Copy(MainJS!, Path.Join(AppDir, "runtime.js"),  true);
 
-        foreach (var assembly in _assemblies.Values)
+        foreach (var assembly in _assemblies.Values) {
             config.Assets.Add(new AssemblyEntry (Path.GetFileName(assembly.Location)));
+            if (EnableDebugging == 1) {
+                var pdb = assembly.Location;
+                pdb = pdb.Replace(".dll", ".pdb");
+                config.Assets.Add(new AssemblyEntry (Path.GetFileName(pdb)));
+            }
+        }
+
+        config.EnableDebugging = EnableDebugging;
 
         if (FilesToIncludeInFileSystem != null)
         {
