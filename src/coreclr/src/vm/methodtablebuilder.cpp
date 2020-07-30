@@ -8763,7 +8763,7 @@ MethodTableBuilder::HandleGCForExplicitLayout()
         if (bmtParent->NumParentPointerSeries != 0)
         {
             size_t ParentGCSize = CGCDesc::ComputeSize(bmtParent->NumParentPointerSeries);
-            memcpy( (PVOID) (((BYTE*) pMT) - ParentGCSize),  (PVOID) (((BYTE*) GetParentMethodTable()) - ParentGCSize), ParentGCSize - sizeof(UINT) );
+            memcpy( (PVOID) (((BYTE*) pMT) - ParentGCSize),  (PVOID) (((BYTE*) GetParentMethodTable()) - ParentGCSize), ParentGCSize - sizeof(size_t) );
 
         }
 
