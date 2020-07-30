@@ -1180,8 +1180,7 @@ namespace System.Net.Sockets
                 // Don't log transfered byte count in case of a failure.
                 return 0;
             }
-
-            if (SocketsTelemetry.Log.IsEnabled())
+            else if (SocketsTelemetry.Log.IsEnabled())
             {
                 SocketsTelemetry.Log.BytesSent(bytesTransferred);
                 if (SocketType == SocketType.Dgram) SocketsTelemetry.Log.DatagramSent();
@@ -1237,8 +1236,7 @@ namespace System.Net.Sockets
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, new SocketException((int)errorCode));
                 return 0;
             }
-
-            if (SocketsTelemetry.Log.IsEnabled())
+            else if (SocketsTelemetry.Log.IsEnabled())
             {
                 SocketsTelemetry.Log.BytesSent(bytesTransferred);
                 if (SocketType == SocketType.Dgram) SocketsTelemetry.Log.DatagramSent();
@@ -1279,13 +1277,10 @@ namespace System.Net.Sockets
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, new SocketException((int)errorCode));
                 bytesTransferred = 0;
             }
-            else
+            else if (SocketsTelemetry.Log.IsEnabled())
             {
-                if (SocketsTelemetry.Log.IsEnabled())
-                {
-                    SocketsTelemetry.Log.BytesSent(bytesTransferred);
-                    if (SocketType == SocketType.Dgram) SocketsTelemetry.Log.DatagramSent();
-                }
+                SocketsTelemetry.Log.BytesSent(bytesTransferred);
+                if (SocketType == SocketType.Dgram) SocketsTelemetry.Log.DatagramSent();
             }
 
             return bytesTransferred;
@@ -1351,13 +1346,10 @@ namespace System.Net.Sockets
 
                 UpdateStatusAfterSocketErrorAndThrowException(errorCode);
             }
-            else
+            else if (SocketsTelemetry.Log.IsEnabled())
             {
-                if (SocketsTelemetry.Log.IsEnabled())
-                {
-                    SocketsTelemetry.Log.BytesSent(bytesTransferred);
-                    if (SocketType == SocketType.Dgram) SocketsTelemetry.Log.DatagramSent();
-                }
+                SocketsTelemetry.Log.BytesSent(bytesTransferred);
+                if (SocketType == SocketType.Dgram) SocketsTelemetry.Log.DatagramSent();
             }
 
             if (_rightEndPoint == null)
@@ -1437,11 +1429,6 @@ namespace System.Net.Sockets
 
             int bytesTransferred;
             errorCode = SocketPal.Receive(_handle, buffer, offset, size, socketFlags, out bytesTransferred);
-            if (SocketsTelemetry.Log.IsEnabled())
-            {
-                SocketsTelemetry.Log.BytesReceived(bytesTransferred);
-                if (SocketType == SocketType.Dgram) SocketsTelemetry.Log.DatagramReceived();
-            }
 
             UpdateReceiveSocketErrorForDisposed(ref errorCode, bytesTransferred);
 
@@ -1451,6 +1438,11 @@ namespace System.Net.Sockets
                 UpdateStatusAfterSocketError(errorCode);
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, new SocketException((int)errorCode));
                 return 0;
+            }
+            else if (SocketsTelemetry.Log.IsEnabled())
+            {
+                SocketsTelemetry.Log.BytesReceived(bytesTransferred);
+                if (SocketType == SocketType.Dgram) SocketsTelemetry.Log.DatagramReceived();
             }
 
             if (NetEventSource.Log.IsEnabled()) NetEventSource.DumpBuffer(this, buffer, offset, bytesTransferred);
@@ -1475,11 +1467,6 @@ namespace System.Net.Sockets
 
             int bytesTransferred;
             errorCode = SocketPal.Receive(_handle, buffer, socketFlags, out bytesTransferred);
-            if (SocketsTelemetry.Log.IsEnabled())
-            {
-                SocketsTelemetry.Log.BytesReceived(bytesTransferred);
-                if (SocketType == SocketType.Dgram) SocketsTelemetry.Log.DatagramReceived();
-            }
 
             UpdateReceiveSocketErrorForDisposed(ref errorCode, bytesTransferred);
 
@@ -1488,6 +1475,11 @@ namespace System.Net.Sockets
                 UpdateStatusAfterSocketError(errorCode);
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, new SocketException((int)errorCode));
                 bytesTransferred = 0;
+            }
+            else if (SocketsTelemetry.Log.IsEnabled())
+            {
+                SocketsTelemetry.Log.BytesReceived(bytesTransferred);
+                if (SocketType == SocketType.Dgram) SocketsTelemetry.Log.DatagramReceived();
             }
 
             return bytesTransferred;
@@ -1529,11 +1521,6 @@ namespace System.Net.Sockets
 
             int bytesTransferred;
             errorCode = SocketPal.Receive(_handle, buffers, socketFlags, out bytesTransferred);
-            if (SocketsTelemetry.Log.IsEnabled())
-            {
-                SocketsTelemetry.Log.BytesReceived(bytesTransferred);
-                if (SocketType == SocketType.Dgram) SocketsTelemetry.Log.DatagramReceived();
-            }
 
             UpdateReceiveSocketErrorForDisposed(ref errorCode, bytesTransferred);
 
@@ -1543,6 +1530,11 @@ namespace System.Net.Sockets
                 UpdateStatusAfterSocketError(errorCode);
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, new SocketException((int)errorCode));
                 return 0;
+            }
+            else if (SocketsTelemetry.Log.IsEnabled())
+            {
+                SocketsTelemetry.Log.BytesReceived(bytesTransferred);
+                if (SocketType == SocketType.Dgram) SocketsTelemetry.Log.DatagramReceived();
             }
 
             return bytesTransferred;
@@ -1595,18 +1587,17 @@ namespace System.Net.Sockets
             Internals.SocketAddress receiveAddress;
             int bytesTransferred;
             SocketError errorCode = SocketPal.ReceiveMessageFrom(this, _handle, buffer, offset, size, ref socketFlags, socketAddress, out receiveAddress, out ipPacketInformation, out bytesTransferred);
-            if (SocketsTelemetry.Log.IsEnabled())
-            {
-                SocketsTelemetry.Log.BytesReceived(bytesTransferred);
-                if (SocketType == SocketType.Dgram) SocketsTelemetry.Log.DatagramReceived();
-            }
 
             UpdateReceiveSocketErrorForDisposed(ref errorCode, bytesTransferred);
-
             // Throw an appropriate SocketException if the native call fails.
             if (errorCode != SocketError.Success && errorCode != SocketError.MessageSize)
             {
                 UpdateStatusAfterSocketErrorAndThrowException(errorCode);
+            }
+            else if (SocketsTelemetry.Log.IsEnabled())
+            {
+                SocketsTelemetry.Log.BytesReceived(bytesTransferred);
+                if (errorCode == SocketError.Success && SocketType == SocketType.Dgram) SocketsTelemetry.Log.DatagramReceived();
             }
 
             if (!socketAddressOriginal.Equals(receiveAddress))
@@ -1676,14 +1667,8 @@ namespace System.Net.Sockets
 
             int bytesTransferred;
             SocketError errorCode = SocketPal.ReceiveFrom(_handle, buffer, offset, size, socketFlags, socketAddress.Buffer, ref socketAddress.InternalSize, out bytesTransferred);
-            if (SocketsTelemetry.Log.IsEnabled())
-            {
-                SocketsTelemetry.Log.BytesReceived(bytesTransferred);
-                if (SocketType == SocketType.Dgram) SocketsTelemetry.Log.DatagramReceived();
-            }
 
             UpdateReceiveSocketErrorForDisposed(ref errorCode, bytesTransferred);
-
             // If the native call fails we'll throw a SocketException.
             SocketException? socketException = null;
             if (errorCode != SocketError.Success)
@@ -1696,6 +1681,11 @@ namespace System.Net.Sockets
                 {
                     throw socketException;
                 }
+            }
+            else if (SocketsTelemetry.Log.IsEnabled())
+            {
+                SocketsTelemetry.Log.BytesReceived(bytesTransferred);
+                if (SocketType == SocketType.Dgram) SocketsTelemetry.Log.DatagramReceived();
             }
 
             if (!socketAddressOriginal.Equals(socketAddress))
@@ -2641,6 +2631,7 @@ namespace System.Net.Sockets
 
             // Throw an appropriate SocketException if the native call failed asynchronously.
             errorCode = (SocketError)castedAsyncResult.ErrorCode;
+
             if (errorCode != SocketError.Success)
             {
                 UpdateSendSocketErrorForDisposed(ref errorCode);
@@ -2649,8 +2640,7 @@ namespace System.Net.Sockets
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, new SocketException((int)errorCode));
                 return 0;
             }
-
-            if (SocketsTelemetry.Log.IsEnabled())
+            else if (SocketsTelemetry.Log.IsEnabled())
             {
                 SocketsTelemetry.Log.BytesSent(bytesTransferred);
                 if (SocketType == SocketType.Dgram) SocketsTelemetry.Log.DatagramSent();
@@ -2830,13 +2820,10 @@ namespace System.Net.Sockets
                 UpdateSendSocketErrorForDisposed(ref errorCode);
                 UpdateStatusAfterSocketErrorAndThrowException(errorCode);
             }
-            else
+            else if (SocketsTelemetry.Log.IsEnabled())
             {
-                if (SocketsTelemetry.Log.IsEnabled())
-                {
-                    SocketsTelemetry.Log.BytesSent(bytesTransferred);
-                    if (SocketType == SocketType.Dgram) SocketsTelemetry.Log.DatagramSent();
-                }
+                SocketsTelemetry.Log.BytesSent(bytesTransferred);
+                if (SocketType == SocketType.Dgram) SocketsTelemetry.Log.DatagramSent();
             }
 
             return bytesTransferred;
@@ -3062,11 +3049,6 @@ namespace System.Net.Sockets
 
             int bytesTransferred = castedAsyncResult.InternalWaitForCompletionInt32Result();
             castedAsyncResult.EndCalled = true;
-            if (SocketsTelemetry.Log.IsEnabled())
-            {
-                SocketsTelemetry.Log.BytesReceived(bytesTransferred);
-                if (SocketType == SocketType.Dgram) SocketsTelemetry.Log.DatagramReceived();
-            }
 
             // Throw an appropriate SocketException if the native call failed asynchronously.
             errorCode = (SocketError)castedAsyncResult.ErrorCode;
@@ -3078,6 +3060,11 @@ namespace System.Net.Sockets
                 UpdateStatusAfterSocketError(errorCode);
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, new SocketException((int)errorCode));
                 return 0;
+            }
+            else if (SocketsTelemetry.Log.IsEnabled())
+            {
+                SocketsTelemetry.Log.BytesReceived(bytesTransferred);
+                if (SocketType == SocketType.Dgram) SocketsTelemetry.Log.DatagramReceived();
             }
             return bytesTransferred;
         }
@@ -3223,11 +3210,6 @@ namespace System.Net.Sockets
 
             int bytesTransferred = castedAsyncResult.InternalWaitForCompletionInt32Result();
             castedAsyncResult.EndCalled = true;
-            if (SocketsTelemetry.Log.IsEnabled())
-            {
-                SocketsTelemetry.Log.BytesReceived(bytesTransferred);
-                if (SocketType == SocketType.Dgram) SocketsTelemetry.Log.DatagramReceived();
-            }
 
             // Update socket address size.
             castedAsyncResult.SocketAddress!.InternalSize = castedAsyncResult.GetSocketAddressSize();
@@ -3251,6 +3233,11 @@ namespace System.Net.Sockets
             if (errorCode != SocketError.Success && errorCode != SocketError.MessageSize)
             {
                 UpdateStatusAfterSocketErrorAndThrowException(errorCode);
+            }
+            else if (SocketsTelemetry.Log.IsEnabled())
+            {
+                SocketsTelemetry.Log.BytesReceived(bytesTransferred);
+                if (errorCode == SocketError.Success && SocketType == SocketType.Dgram) SocketsTelemetry.Log.DatagramReceived();
             }
 
             socketFlags = castedAsyncResult.SocketFlags;
@@ -3431,11 +3418,6 @@ namespace System.Net.Sockets
 
             int bytesTransferred = castedAsyncResult.InternalWaitForCompletionInt32Result();
             castedAsyncResult.EndCalled = true;
-            if (SocketsTelemetry.Log.IsEnabled())
-            {
-                SocketsTelemetry.Log.BytesReceived(bytesTransferred);
-                if (SocketType == SocketType.Dgram) SocketsTelemetry.Log.DatagramReceived();
-            }
 
             // Update socket address size.
             castedAsyncResult.SocketAddress!.InternalSize = castedAsyncResult.GetSocketAddressSize();
@@ -3459,6 +3441,11 @@ namespace System.Net.Sockets
             if (errorCode != SocketError.Success)
             {
                 UpdateStatusAfterSocketErrorAndThrowException(errorCode);
+            }
+            else if (SocketsTelemetry.Log.IsEnabled())
+            {
+                SocketsTelemetry.Log.BytesReceived(bytesTransferred);
+                if (SocketType == SocketType.Dgram) SocketsTelemetry.Log.DatagramReceived();
             }
             return bytesTransferred;
         }
