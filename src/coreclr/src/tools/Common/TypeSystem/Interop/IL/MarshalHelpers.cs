@@ -196,14 +196,14 @@ namespace Internal.TypeSystem.Interop
         }
 
         internal static MarshallerKind GetMarshallerKind(
-             TypeDesc type,
+            TypeDesc type,
             int? parameterIndex,
             EmbeddedSignatureData[] customModifierData,
             MarshalAsDescriptor marshalAs,
-             bool isReturn,
-             bool isAnsi,
-             MarshallerType marshallerType,
-             out MarshallerKind elementMarshallerKind)
+            bool isReturn,
+            bool isAnsi,
+            MarshallerType marshallerType,
+            out MarshallerKind elementMarshallerKind)
         {
             elementMarshallerKind = MarshallerKind.Invalid;
 
@@ -214,7 +214,7 @@ namespace Internal.TypeSystem.Interop
 
                 type = type.GetParameterType();
 
-                if (!type.IsPrimitive && type.IsValueType && !(marshallerType == MarshallerType.Field)
+                if (!type.IsPrimitive && type.IsValueType && marshallerType != MarshallerType.Field
                     && HasCopyConstructorCustomModifier(parameterIndex, customModifierData))
                 {
                     return MarshallerKind.BlittableValueClassWithCopyCtor;
@@ -483,7 +483,7 @@ namespace Internal.TypeSystem.Interop
                 if (nativeType == NativeTypeKind.Default)
                 {
                     var pointedAtType = type.GetParameterType();
-                    if (!pointedAtType.IsPrimitive && !type.IsEnum && !(marshallerType == MarshallerType.Field)
+                    if (!pointedAtType.IsPrimitive && !type.IsEnum && marshallerType != MarshallerType.Field
                         && HasCopyConstructorCustomModifier(parameterIndex, customModifierData))
                     {
                         return MarshallerKind.BlittableValueClassWithCopyCtor;
