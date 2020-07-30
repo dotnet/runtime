@@ -133,7 +133,7 @@
     <RefOnlyNugetProjectModelVersion>4.9.4</RefOnlyNugetProjectModelVersion>
     <RefOnlyNugetPackagingVersion>4.9.4</RefOnlyNugetPackagingVersion>
     <!-- Testing -->
-    <MicrosoftNETTestSdkVersion>16.8.0-preview-20200720-01</MicrosoftNETTestSdkVersion>
+    <MicrosoftNETTestSdkVersion>16.8.0-preview-20200730-02</MicrosoftNETTestSdkVersion>
     <MicrosoftDotNetXHarnessTestRunnersXunitVersion>1.0.0-prerelease.20352.3</MicrosoftDotNetXHarnessTestRunnersXunitVersion>
     <MicrosoftDotNetXHarnessCLIVersion>1.0.0-prerelease.20352.3</MicrosoftDotNetXHarnessCLIVersion>
     <XUnitVersion>2.4.1</XUnitVersion>
