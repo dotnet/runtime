@@ -456,7 +456,7 @@ namespace System.Text.Json
             if (length > 7)
             {
                 key = Unsafe.ReadUnaligned<ulong>(ref reference) & 0x00ffffffffffffffL;
-                length = Math.Min(length, 0xff);
+                key |= (ulong)Math.Min(length, 0xff) << 56;
             }
             else
             {
@@ -464,15 +464,14 @@ namespace System.Text.Json
                     length > 5 ? Unsafe.ReadUnaligned<uint>(ref reference) | (ulong)Unsafe.ReadUnaligned<ushort>(ref Unsafe.Add(ref reference, 4)) << 32 :
                     length > 3 ? Unsafe.ReadUnaligned<uint>(ref reference) :
                     length > 1 ? Unsafe.ReadUnaligned<ushort>(ref reference) : 0UL;
+                key |= (ulong)length << 56;
 
-                if ((length & 1) == 1)
+                if ((length & 1) != 0)
                 {
-                    int offset = length - 1;
+                    var offset = length - 1;
                     key |= (ulong)Unsafe.Add(ref reference, offset) << (offset * 8);
                 }
             }
-
-            key |= (ulong)length << 56;
 
             // Verify key contains the embedded bytes as expected.
             const int BitsInByte = 8;
