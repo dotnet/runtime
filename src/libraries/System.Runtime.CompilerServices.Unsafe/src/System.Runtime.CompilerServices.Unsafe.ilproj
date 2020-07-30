@@ -5,22 +5,18 @@
     <DebugOptimization Condition="'$(Configuration)' == 'Release'">OPT</DebugOptimization>
   </PropertyGroup>
   <PropertyGroup>
-    <PrepareForBuildDependsOn>$(PrepareForBuildDependsOn);GenerateVersionFile</PrepareForBuildDependsOn>
+    <CoreCompileDependsOn>$(CoreCompileDependsOn);GenerateVersionFile</CoreCompileDependsOn>
     <DocumentationFile>$(MSBuildThisFileDirectory)System.Runtime.CompilerServices.Unsafe.xml</DocumentationFile>
     <ProjectGuid>{04BA3E3C-6979-4792-B19E-C797AD607F42}</ProjectGuid>
-    <IncludePath>$([MSBuild]::NormalizeDirectory('$(IntermediateOutputPath)', 'version'))</IncludePath>
-    <AssemblyPublicKeyToken>B0 3F 5F 7F 11 D5 0A 3A</AssemblyPublicKeyToken>
+    <IncludePath>$([MSBuild]::NormalizeDirectory('$(BaseIntermediateOutputPath)', '$(TargetFramework)-$(TargetFrameworkSuffix)-$(Configuration)', 'version'))</IncludePath>
+    <IncludePath Condition="'$(TargetFrameworkSuffix)' == ''">$([MSBuild]::NormalizeDirectory('$(BaseIntermediateOutputPath)', '$(TargetFramework)-$(Configuration)', 'version'))</IncludePath>
     <CoreAssembly>System.Runtime</CoreAssembly>
     <ExtraMacros Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)' or '$(TargetFramework)' == 'netcoreapp2.0'">#define netcoreapp</ExtraMacros>
-    <VersionFilePath Condition="'$(VersionFilePath)' == ''">$(IncludePath)version.h</VersionFilePath>
-    <CoreAssemblyVersion>5.0.0.0</CoreAssemblyVersion>
-    <CoreAssemblyVersion Condition="'$(TargetFramework)' != $(NetCoreAppCurrent)">4.0.0.0</CoreAssemblyVersion>  
     <IlasmFlags>$(IlasmFlags) -INCLUDE=$(IncludePath) -DEBUG=$(DebugOptimization)</IlasmFlags>
     <TargetFrameworks>$(NetCoreAppCurrent);netstandard2.0;netcoreapp2.0;netstandard1.0;net45</TargetFrameworks>
     <ExcludeCurrentNetCoreAppFromPackage>true</ExcludeCurrentNetCoreAppFromPackage>
   </PropertyGroup>
   <PropertyGroup Condition="$(TargetFramework.StartsWith('net4'))">
-    <AssemblyPublicKeyToken Condition="$(TargetFramework.StartsWith('net4'))">B7 7A 5C 56 19 34 E0 89</AssemblyPublicKeyToken>
     <CoreAssembly>mscorlib</CoreAssembly>
     <ExtraMacros>#define net45</ExtraMacros>
   </PropertyGroup>
@@ -31,11 +27,24 @@
                         '$(TargetFramework)' == 'netcoreapp2.0'">
     <Reference Include="System.Runtime" />
   </ItemGroup>
-  <Target Name="GenerateVersionFile">
+
+  <Target Name="GenerateVersionFile"
+          DependsOnTargets="ResolveReferences"
+          Inputs="$(MSBuildAllProjects)"
+          Outputs="'$(VersionFilePath)">
    <PropertyGroup>
       <VersionFilePath Condition="'$(VersionFilePath)' == ''">$([MSBuild]::NormalizePath('$(IntermediateOutputPath)', 'version', 'version.h'))</VersionFilePath>
       <_AssemblyVersion>$(AssemblyVersion.Replace('.', ':'))</_AssemblyVersion>
-      <_CoreAssemblyVersion>$(CoreAssemblyVersion.Replace('.', ':'))</_CoreAssemblyVersion>
+      <_coreAssemblyName Condition="'%(ReferencePath.FileName)' == '$(CoreAssembly)'">%(ReferencePath.FusionName)</_coreAssemblyName>
+      <_assemblyNamePattern><![CDATA[[^,]+, Version=(?<v1>[0-9]+)\.(?<v2>[0-9]+)\.(?<v3>[0-9]+)\.(?<v4>[0-9]+), .*PublicKeyToken=(?<p1>[0-9a-f]{2})(?<p2>[0-9a-f]{2})(?<p3>[0-9a-f]{2})(?<p4>[0-9a-f]{2})(?<p5>[0-9a-f]{2})(?<p6>[0-9a-f]{2})(?<p7>[0-9a-f]{2})(?<p8>[0-9a-f]{2})]]></_assemblyNamePattern>
+      <_coreAssemblyVersion>$([System.Text.RegularExpressions.Regex]::Replace(
+        $(_coreAssemblyName),
+        $(_assemblyNamePattern),
+        '${v1}:${v2}:${v3}:${v4}'))</_coreAssemblyVersion>
+      <_coreAssemblyPublicKeyToken>$([System.Text.RegularExpressions.Regex]::Replace(
+        $(_coreAssemblyName),
+        $(_assemblyNamePattern),
+        '${p1} ${p2} ${p3} ${p4} ${p5} ${p6} ${p7} ${p8}').ToUpperInvariant())</_coreAssemblyPublicKeyToken>
       <_VersionFileContents>
 <![CDATA[
 #define CORE_ASSEMBLY "$(CoreAssembly)"
@@ -45,7 +54,7 @@ $(ExtraMacros)
 // Metadata version: v4.0.30319
 .assembly extern CORE_ASSEMBLY
 {
-  .publickeytoken = ($(AssemblyPublicKeyToken) )
+  .publickeytoken = ($(_coreAssemblyPublicKeyToken) )
   .ver CORE_ASSEMBLY_VERSION
 }
  ]]>      
