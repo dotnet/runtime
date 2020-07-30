@@ -6122,10 +6122,8 @@ regNumber CodeGen::genGetZeroReg(regNumber initReg, bool* pInitRegZeroed)
 //    untrLclLo      - (Untracked locals Low-Offset)   The lower bound at which the zero init code will
 //                                                     start zero initializing memory.
 //    initReg        - A scratch register (that gets set to zero on some platforms).
-//    pInitRegZeroed - Sets a flag that tells the callee whether or not the initReg register got zeroed.
-//                     'true' if this method sets initReg to zero value. 'false' it is was set to non-zero value.
-//                     Unchanged if initReg was not touched during this call.
-//
+//    pInitRegZeroed - OUT parameter. *pInitRegZeroed is set to 'true' if this method sets initReg register to zero,
+//                     'false' if initReg was set to a non-zero value, and left unchanged if initReg was not touched.
 void CodeGen::genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, bool* pInitRegZeroed)
 {
     assert(compiler->compGeneratingProlog);
@@ -7673,10 +7671,12 @@ void CodeGen::genFnProlog()
 
     /* Choose the register to use for zero initialization */
 
-    regNumber initReg       = REG_SCRATCH; // Unless we find a better register below
-    bool      initRegZeroed = false; // Track if initReg holds non-zero value. Start conservative and assume it has non-zero value.
-                                     // If initReg is ever set to zero, this variable is set to true and zero initializing initReg
-                                     // will be skipped.
+    regNumber initReg = REG_SCRATCH; // Unless we find a better register below
+
+    // Track if initReg holds non-zero value. Start conservative and assume it has non-zero value.
+    // If initReg is ever set to zero, this variable is set to true and zero initializing initReg
+    // will be skipped.
+    bool      initRegZeroed = false;
     regMaskTP excludeMask   = intRegState.rsCalleeRegArgMaskLiveIn;
     regMaskTP tempMask;
 
