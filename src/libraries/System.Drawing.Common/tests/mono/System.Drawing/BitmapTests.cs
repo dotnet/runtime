@@ -46,7 +46,6 @@ using Xunit;
 namespace MonoTests.System.Drawing
 {
 
-    [SkipOnCoreClr("https://github.com/dotnet/runtime/issues/37082", TestPlatforms.AnyUnix, RuntimeConfiguration.Checked)]
     public class TestBitmap
     {
 
