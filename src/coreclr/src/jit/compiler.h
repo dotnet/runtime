@@ -2701,6 +2701,8 @@ public:
 
     GenTree* gtNewNullCheck(GenTree* addr, BasicBlock* basicBlock);
 
+    void gtChangeOperToNullCheck(GenTree* tree, BasicBlock* block);
+
     GenTreeArgList* gtNewArgList(GenTree* op);
     GenTreeArgList* gtNewArgList(GenTree* op1, GenTree* op2);
     GenTreeArgList* gtNewArgList(GenTree* op1, GenTree* op2, GenTree* op3);
@@ -4632,6 +4634,8 @@ public:
                        bool* pStmtInfoDirty DEBUGARG(bool* treeModf));
 
     void fgComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VARSET_VALARG_TP volatileVars);
+
+    bool fgTryRemoveNonLocal(GenTree* node, LIR::Range* blockRange);
 
     bool fgRemoveDeadStore(GenTree**        pTree,
                            LclVarDsc*       varDsc,
