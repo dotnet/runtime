@@ -143,27 +143,10 @@ namespace System.Net.Test.Common
 
         public override async Task<HttpRequestData> HandleRequestAsync(HttpStatusCode statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null, string content = "")
         {
-            Http2LoopbackConnection connection = await EstablishConnectionAsync().ConfigureAwait(false);
-
-            (int streamId, HttpRequestData requestData) = await connection.ReadAndParseRequestHeaderAsync().ConfigureAwait(false);
-
-            // We are about to close the connection, after we send the response.
-            // So, send a GOAWAY frame now so the client won't inadvertantly try to reuse the connection.
-            await connection.SendGoAway(streamId).ConfigureAwait(false);
-
-            if (string.IsNullOrEmpty(content))
+            using (Http2LoopbackConnection connection = await EstablishConnectionAsync().ConfigureAwait(false))
             {
-                await connection.SendResponseHeadersAsync(streamId, endStream: true, statusCode, isTrailingHeader: false, headers : headers).ConfigureAwait(false);
-            }
-            else
-            {
-                await connection.SendResponseHeadersAsync(streamId, endStream: false, statusCode, isTrailingHeader: false, headers : headers).ConfigureAwait(false);
-                await connection.SendResponseBodyAsync(streamId, Encoding.ASCII.GetBytes(content)).ConfigureAwait(false);
-            }
-
-            await connection.WaitForConnectionShutdownAsync().ConfigureAwait(false);
-
-            return requestData;
+                return await connection.HandleRequestAsync(statusCode, headers, content).ConfigureAwait(false);
+			}
         }
 
         public override async Task AcceptConnectionAsync(Func<GenericLoopbackConnection, Task> funcAsync)
@@ -193,8 +176,6 @@ namespace System.Net.Test.Common
 
     public class Http2Options : GenericLoopbackOptions
     {
-        public int ListenBacklog { get; set; } = 1;
-
         public bool ClientCertificateRequired { get; set; }
 
         public Http2Options()
@@ -233,6 +214,7 @@ namespace System.Net.Test.Common
                 http2Options.Address = options.Address;
                 http2Options.UseSsl = options.UseSsl;
                 http2Options.SslProtocols = options.SslProtocols;
+                http2Options.ListenBacklog = options.ListenBacklog;
             }
             return http2Options;
         }
@@ -245,7 +227,7 @@ namespace System.Net.Test.Common
             }
         }
 
-    public override Version Version => HttpVersion20.Value;
+        public override Version Version => HttpVersion20.Value;
     }
 
     public enum ProtocolErrors
