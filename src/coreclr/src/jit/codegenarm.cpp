@@ -1650,14 +1650,14 @@ void CodeGen::genCodeForMulLong(GenTreeMultiRegOp* node)
 // genProfilingEnterCallback: Generate the profiling function enter callback.
 //
 // Arguments:
-//     initReg          - register to use as scratch register
-//     pInitRegModified - OUT parameter. *pInitRegModified set to 'true' if and only if
-//                        this call sets 'initReg' to a non-zero value.
+//     initReg        - register to use as scratch register
+//     pInitRegZeroed - OUT parameter. *pInitRegZeroed set to 'false' if 'initReg' is
+//                      not zero after this call.
 //
 // Return Value:
 //     None
 //
-void CodeGen::genProfilingEnterCallback(regNumber initReg, bool* pInitRegModified)
+void CodeGen::genProfilingEnterCallback(regNumber initReg, bool* pInitRegZeroed)
 {
     assert(compiler->compGeneratingProlog);
 
@@ -1690,7 +1690,7 @@ void CodeGen::genProfilingEnterCallback(regNumber initReg, bool* pInitRegModifie
 
     if (initReg == argReg)
     {
-        *pInitRegModified = true;
+        *pInitRegZeroed = false;
     }
 }
 
@@ -1820,17 +1820,14 @@ void CodeGen::genProfilingLeaveCallback(unsigned helper)
 // Arguments:
 //      frameSize         - the size of the stack frame being allocated.
 //      initReg           - register to use as a scratch register.
-//      pInitRegModified  - OUT parameter. *pInitRegModified is set to 'true' if and only if
+//      pInitRegZeroed    - OUT parameter. *pInitRegZeroed is set to 'false' if and only if
 //                          this call sets 'initReg' to a non-zero value.
 //      maskArgRegsLiveIn - incoming argument registers that are currently live.
 //
 // Return value:
 //      None
 //
-void CodeGen::genAllocLclFrame(unsigned  frameSize,
-                               regNumber initReg,
-                               bool*     pInitRegModified,
-                               regMaskTP maskArgRegsLiveIn)
+void CodeGen::genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pInitRegZeroed, regMaskTP maskArgRegsLiveIn)
 {
     assert(compiler->compGeneratingProlog);
 
@@ -1860,7 +1857,7 @@ void CodeGen::genAllocLclFrame(unsigned  frameSize,
         }
 
         regSet.verifyRegUsed(initReg);
-        *pInitRegModified = true;
+        *pInitRegZeroed = false; // The initReg does not contain zero
 
         instGen_Set_Reg_To_Imm(EA_PTRSIZE, initReg, frameSize);
         compiler->unwindPadding();
@@ -1880,7 +1877,7 @@ void CodeGen::genAllocLclFrame(unsigned  frameSize,
         if ((genRegMask(initReg) & (RBM_STACK_PROBE_HELPER_ARG | RBM_STACK_PROBE_HELPER_CALL_TARGET |
                                     RBM_STACK_PROBE_HELPER_TRASH)) != RBM_NONE)
         {
-            *pInitRegModified = true;
+            *pInitRegZeroed = false;
         }
     }
 
