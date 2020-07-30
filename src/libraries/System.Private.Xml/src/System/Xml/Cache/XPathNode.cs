@@ -125,11 +125,7 @@ namespace MS.Internal.Xml.Cache
         /// </summary>
         public string BaseUri
         {
-            get
-            {
-                Debug.Assert(_info.BaseUri != null);
-                return _info.BaseUri;
-            }
+            get { return _info.BaseUri ?? string.Empty; }
         }
 
         /// <summary>

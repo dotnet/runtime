@@ -904,9 +904,8 @@ namespace MS.Internal.Xml.Cache
             {
                 Debug.Assert((int)XPathNodeType.Text < (int)XPathNodeType.SignificantWhitespace);
                 Debug.Assert((int)XPathNodeType.SignificantWhitespace < (int)XPathNodeType.Whitespace);
-                Debug.Assert(text != null);
 
-                if (text.Length != 0)
+                if (!string.IsNullOrEmpty(text))
                 {
                     if (_textType == TextBlockType.None)
                     {
