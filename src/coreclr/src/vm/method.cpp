@@ -83,7 +83,7 @@ static_assert_no_msg((sizeof(DynamicMethodDesc)     & MethodDesc::ALIGNMENT_MASK
     adjustment + sizeof(ComPlusCallMethodDesc),      /* mcComInterOp    */  \
     adjustment + sizeof(DynamicMethodDesc)           /* mcDynamic       */
 
-const SIZE_T MethodDesc::s_ClassificationSizeTable[] = {
+const BYTE MethodDesc::s_ClassificationSizeTable[] = {
     // This is the raw
     METHOD_DESC_SIZES(0),
 
@@ -91,7 +91,24 @@ const SIZE_T MethodDesc::s_ClassificationSizeTable[] = {
     // We index using optional slot flags into it
     METHOD_DESC_SIZES(sizeof(NonVtableSlot)),
     METHOD_DESC_SIZES(sizeof(MethodImpl)),
-    METHOD_DESC_SIZES(sizeof(NonVtableSlot) + sizeof(MethodImpl))
+    METHOD_DESC_SIZES(sizeof(NonVtableSlot) + sizeof(MethodImpl)),
+
+    METHOD_DESC_SIZES(sizeof(NativeCodeSlot)),
+    METHOD_DESC_SIZES(sizeof(NonVtableSlot) + sizeof(NativeCodeSlot)),
+    METHOD_DESC_SIZES(sizeof(MethodImpl) + sizeof(NativeCodeSlot)),
+    METHOD_DESC_SIZES(sizeof(NonVtableSlot) + sizeof(MethodImpl) + sizeof(NativeCodeSlot)),
+
+#ifdef FEATURE_COMINTEROP
+    METHOD_DESC_SIZES(sizeof(ComPlusCallInfo)),
+    METHOD_DESC_SIZES(sizeof(NonVtableSlot) + sizeof(ComPlusCallInfo)),
+    METHOD_DESC_SIZES(sizeof(MethodImpl) + sizeof(ComPlusCallInfo)),
+    METHOD_DESC_SIZES(sizeof(NonVtableSlot) + sizeof(MethodImpl) + sizeof(ComPlusCallInfo)),
+
+    METHOD_DESC_SIZES(sizeof(NativeCodeSlot) + sizeof(ComPlusCallInfo)),
+    METHOD_DESC_SIZES(sizeof(NonVtableSlot) + sizeof(NativeCodeSlot) + sizeof(ComPlusCallInfo)),
+    METHOD_DESC_SIZES(sizeof(MethodImpl) + sizeof(NativeCodeSlot) + sizeof(ComPlusCallInfo)),
+    METHOD_DESC_SIZES(sizeof(NonVtableSlot) + sizeof(MethodImpl) + sizeof(NativeCodeSlot) + sizeof(ComPlusCallInfo))
+#endif
 };
 
 #ifndef FEATURE_COMINTEROP
@@ -122,18 +139,22 @@ SIZE_T MethodDesc::SizeOf()
 {
     LIMITED_METHOD_DAC_CONTRACT;
 
-    SIZE_T size = s_ClassificationSizeTable[m_wFlags & (mdcClassification | mdcHasNonVtableSlot | mdcMethodImpl)];
+    SIZE_T size = s_ClassificationSizeTable[m_wFlags & 
+        (mdcClassification 
+        | mdcHasNonVtableSlot 
+        | mdcMethodImpl 
+#ifdef FEATURE_COMINTEROP
+        | mdcHasComPlusCallInfo
+#endif
+        | mdcHasNativeCodeSlot)];
 
+#ifdef FEATURE_PREJIT
     if (HasNativeCodeSlot())
     {
-        size += (*dac_cast<PTR_TADDR>(dac_cast<TADDR>(this) + size) & FIXUP_LIST_MASK) ?
-            (sizeof(NativeCodeSlot) + sizeof(FixupListSlot)) : sizeof(NativeCodeSlot);
+        size += (*dac_cast<PTR_TADDR>(GetAddrOfNativeCodeSlot()) & FIXUP_LIST_MASK) ? 
+            sizeof(FixupListSlot) : 0;
     }
-
-#ifdef FEATURE_COMINTEROP
-    if (IsGenericComPlusCall())
-        size += sizeof(ComPlusCallInfo);
-#endif // FEATURE_COMINTEROP
+#endif
 
     return size;
 }
@@ -3696,11 +3717,11 @@ void MethodDesc::SaveChunk::SaveOneChunk(COUNT_T start, COUNT_T count, ULONG siz
 
         if (pMethodInfo->m_fHasNativeCodeSlot)
         {
-            pNewMD->m_bFlags2 |= enum_flag2_HasNativeCodeSlot;
+            pNewMD->m_wFlags |= mdcHasNativeCodeSlot;
         }
         else
         {
-            pNewMD->m_bFlags2 &= ~enum_flag2_HasNativeCodeSlot;
+            pNewMD->m_wFlags &= ~mdcHasNativeCodeSlot;
         }
 
 #ifdef FEATURE_COMINTEROP
@@ -5594,7 +5615,15 @@ MethodDesc::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
 
 #ifdef FEATURE_CODE_VERSIONING
     // Make sure the active IL and native code version are in triage dumps.
-    GetCodeVersionManager()->GetActiveILCodeVersion(dac_cast<PTR_MethodDesc>(this)).GetActiveNativeCodeVersion(dac_cast<PTR_MethodDesc>(this));
+    CodeVersionManager* pCodeVersionManager = GetCodeVersionManager();
+    ILCodeVersion ilVersion = pCodeVersionManager->GetActiveILCodeVersion(dac_cast<PTR_MethodDesc>(this));
+    if (!ilVersion.IsNull())
+    {
+        ilVersion.GetActiveNativeCodeVersion(dac_cast<PTR_MethodDesc>(this));
+        ilVersion.GetVersionId();
+        ilVersion.GetRejitState();
+        ilVersion.GetIL();
+    }
 #endif
 
     // Also, call DacValidateMD to dump the memory it needs. !clrstack calls
@@ -5721,7 +5750,7 @@ REFLECTMETHODREF MethodDesc::GetStubMethodInfo()
     CONTRACTL_END;
 
     REFLECTMETHODREF retVal;
-    REFLECTMETHODREF methodRef = (REFLECTMETHODREF)AllocateObject(MscorlibBinder::GetClass(CLASS__STUBMETHODINFO));
+    REFLECTMETHODREF methodRef = (REFLECTMETHODREF)AllocateObject(CoreLibBinder::GetClass(CLASS__STUBMETHODINFO));
     GCPROTECT_BEGIN(methodRef);
 
     methodRef->SetMethod(this);

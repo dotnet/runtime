@@ -79,7 +79,7 @@ public:
         return m_pBindingContext;
     }
 
-    BOOL IsAssemblySpecForMscorlib();
+    BOOL IsAssemblySpecForCoreLib();
 
     HRESULT ParseName();
     DWORD Hash();
@@ -106,8 +106,8 @@ public:
     BOOL IsStrongNamed() const;
     BOOL HasPublicKey() const;
     BOOL HasPublicKeyToken() const;
-    BOOL IsMscorlibSatellite() const;
-    BOOL IsMscorlib();
+    BOOL IsCoreLibSatellite() const;
+    BOOL IsCoreLib();
 
     // Returns true
     inline BOOL HasUniqueIdentity() const

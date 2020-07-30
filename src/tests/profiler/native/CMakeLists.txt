@@ -10,8 +10,16 @@ set(EVENTPIPE_SOURCES
     eventpipeprofiler/eventpipemetadatareader.cpp)
 set(METADATAGETDISPENSER_SOURCES metadatagetdispenser/metadatagetdispenser.cpp)
 set(GETAPPDOMAINSTATICADDRESS_SOURCES getappdomainstaticaddress/getappdomainstaticaddress.cpp)
+set(ELT_SOURCES eltprofiler/slowpatheltprofiler.cpp)
 
-set(SOURCES ${GCBASIC_SOURCES} ${REJIT_SOURCES} ${EVENTPIPE_SOURCES} ${METADATAGETDISPENSER_SOURCES} ${GETAPPDOMAINSTATICADDRESS_SOURCES} profiler.def profiler.cpp classfactory.cpp dllmain.cpp guids.cpp)
+set(SOURCES
+    ${GCBASIC_SOURCES}
+    ${REJIT_SOURCES}
+    ${EVENTPIPE_SOURCES}
+    ${METADATAGETDISPENSER_SOURCES}
+    ${GETAPPDOMAINSTATICADDRESS_SOURCES}
+    ${ELT_SOURCES}
+    profiler.def profiler.cpp classfactory.cpp dllmain.cpp guids.cpp)
 
 include_directories(../../../coreclr/src/pal/prebuilt/inc)
 

@@ -942,14 +942,26 @@ namespace System.Tests
         {
             for (int i = 0; i < categories.Length; i++)
             {
-                char[] latinSet = s_latinTestSet[(int)categories[i]];
+                UnicodeCategory category = categories[i];
+                char[] latinSet = s_latinTestSet[(int)category];
                 for (int j = 0; j < latinSet.Length; j++)
-                    yield return latinSet[j];
+                    if (ShouldTestCasingForChar(latinSet[j], category))
+                        yield return latinSet[j];
 
-                char[] unicodeSet = s_unicodeTestSet[(int)categories[i]];
+                char[] unicodeSet = s_unicodeTestSet[(int)category];
                 for (int k = 0; k < unicodeSet.Length; k++)
-                    yield return unicodeSet[k];
+                    if (ShouldTestCasingForChar(unicodeSet[k], category))
+                        yield return unicodeSet[k];
             }
+        }
+
+        private static bool ShouldTestCasingForChar(char ch, UnicodeCategory category)
+        {
+            return PlatformDetection.IsNotInvariantGlobalization ||
+                    (category != UnicodeCategory.UppercaseLetter &&
+                    category != UnicodeCategory.LowercaseLetter) ||
+                    ch >= 'a' && ch <= 'z' ||
+                    ch >= 'A' && ch <= 'Z';
         }
 
         private static char[][] s_latinTestSet = new char[][]
@@ -1063,11 +1075,15 @@ namespace System.Tests
         public static IEnumerable<object[]> UpperLowerCasing_TestData()
         {
             //                          lower          upper    Culture
-            yield return new object[] { 'a',          'A',      "en-US" };
-            yield return new object[] { 'i',          'I',      "en-US" };
-            yield return new object[] { '\u0131',     'I',      "tr-TR" };
-            yield return new object[] { 'i',          '\u0130', "tr-TR" };
-            yield return new object[] { '\u0660',     '\u0660', "en-US" };
+            yield return new object[] { 'a', 'A', "en-US" };
+            yield return new object[] { 'i', 'I', "en-US" };
+            
+            if (PlatformDetection.IsNotInvariantGlobalization)
+            {
+                yield return new object[] { '\u0131', 'I', "tr-TR" };
+                yield return new object[] { 'i', '\u0130', "tr-TR" };
+                yield return new object[] { '\u0660', '\u0660', "en-US" };
+            }
         }
 
         [Fact]
@@ -1076,7 +1092,7 @@ namespace System.Tests
             StringBuilder sb = new StringBuilder(256);
             string latineString = sb.ToString();
 
-            for (int i=0; i < latineString.Length; i++)
+            for (int i = 0; i < latineString.Length; i++)
             {
                 Assert.Equal(s_categoryForLatin1[i], char.GetUnicodeCategory(latineString[i]));
                 Assert.Equal(s_categoryForLatin1[i], char.GetUnicodeCategory(latineString, i));
@@ -1086,14 +1102,14 @@ namespace System.Tests
         [Fact]
         public static void NonLatinRangeTest()
         {
-            for (int i=256; i <= 0xFFFF; i++)
+            for (int i = 256; i <= 0xFFFF; i++)
             {
                 Assert.Equal(CharUnicodeInfo.GetUnicodeCategory((char)i), char.GetUnicodeCategory((char)i));
             }
 
             string nonLatinString = "\u0100\u0200\u0300\u0400\u0500\u0600\u0700\u0800\u0900\u0A00\u0B00\u0C00\u0D00\u0E00\u0F00" +
                                     "\u1000\u2000\u3000\u4000\u5000\u6000\u7000\u8000\u9000\uA000\uB000\uC000\uD000\uE000\uF000";
-            for (int i=0; i < nonLatinString.Length; i++)
+            for (int i = 0; i < nonLatinString.Length; i++)
             {
                 Assert.Equal(CharUnicodeInfo.GetUnicodeCategory(nonLatinString[i]), char.GetUnicodeCategory(nonLatinString, i));
             }

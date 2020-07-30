@@ -87,6 +87,8 @@ namespace System.Text.Json
             // The initial JsonPropertyInfo will be used to obtain the converter.
             Current.JsonPropertyInfo = jsonClassInfo.PropertyInfoForClassInfo;
 
+            Current.NumberHandling = Current.JsonPropertyInfo.NumberHandling;
+
             bool preserveReferences = options.ReferenceHandler != null;
             if (preserveReferences)
             {
@@ -109,6 +111,8 @@ namespace System.Text.Json
                 else
                 {
                     JsonClassInfo jsonClassInfo;
+                    JsonNumberHandling? numberHandling = Current.NumberHandling;
+
                     if (Current.JsonClassInfo.ClassType == ClassType.Object)
                     {
                         if (Current.JsonPropertyInfo != null)
@@ -120,13 +124,14 @@ namespace System.Text.Json
                             jsonClassInfo = Current.CtorArgumentState!.JsonParameterInfo!.RuntimeClassInfo;
                         }
                     }
-                    else if ((Current.JsonClassInfo.ClassType & (ClassType.Value | ClassType.NewValue)) != 0)
+                    else if (((ClassType.Value | ClassType.NewValue) & Current.JsonClassInfo.ClassType) != 0)
                     {
                         // Although ClassType.Value doesn't push, a custom custom converter may re-enter serialization.
                         jsonClassInfo = Current.JsonPropertyInfo!.RuntimeClassInfo;
                     }
                     else
                     {
+                        Debug.Assert(((ClassType.Enumerable | ClassType.Dictionary) & Current.JsonClassInfo.ClassType) != 0);
                         jsonClassInfo = Current.JsonClassInfo.ElementClassInfo!;
                     }
 
@@ -135,6 +140,8 @@ namespace System.Text.Json
 
                     Current.JsonClassInfo = jsonClassInfo;
                     Current.JsonPropertyInfo = jsonClassInfo.PropertyInfoForClassInfo;
+                    // Allow number handling on property to win over handling on type.
+                    Current.NumberHandling = numberHandling ?? Current.JsonPropertyInfo.NumberHandling;
                 }
             }
             else if (_continuationCount == 1)
@@ -159,7 +166,7 @@ namespace System.Text.Json
                 }
             }
 
-            SetConstrutorArgumentState();
+            SetConstructorArgumentState();
         }
 
         public void Pop(bool success)
@@ -210,7 +217,7 @@ namespace System.Text.Json
                 Current = _previous[--_count -1];
             }
 
-            SetConstrutorArgumentState();
+            SetConstructorArgumentState();
         }
 
         // Return a JSONPath using simple dot-notation when possible. When special characters are present, bracket-notation is used:
@@ -328,7 +335,7 @@ namespace System.Text.Json
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private void SetConstrutorArgumentState()
+        private void SetConstructorArgumentState()
         {
             if (Current.JsonClassInfo.ParameterCount > 0)
             {

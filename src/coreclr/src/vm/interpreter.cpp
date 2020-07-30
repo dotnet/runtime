@@ -9077,7 +9077,7 @@ void Interpreter::DoCallWork(bool virtualCall, void* thisArg, CORINFO_RESOLVED_T
         }
 
         // Plus some other calls that we're going to treat "like" intrinsics...
-        if (methToCall == MscorlibBinder::GetMethod(METHOD__STUBHELPERS__SET_LAST_ERROR))
+        if (methToCall == CoreLibBinder::GetMethod(METHOD__STUBHELPERS__SET_LAST_ERROR))
         {
             // If we're interpreting a method that calls "SetLastError", it's very likely that the call(i) whose
             // error we're trying to capture was performed with MethodDescCallSite machinery that itself trashes
@@ -10281,7 +10281,7 @@ void Interpreter::CallI()
             }
             else
             {
-                pMD = MscorlibBinder::GetMethod(METHOD__INTERLOCKED__COMPARE_EXCHANGE_OBJECT);  // A random static method.
+                pMD = CoreLibBinder::GetMethod(METHOD__INTERLOCKED__COMPARE_EXCHANGE_OBJECT);  // A random static method.
             }
             MethodDescCallSite mdcs(pMD, &mSig, ftnPtr);
 #if 0

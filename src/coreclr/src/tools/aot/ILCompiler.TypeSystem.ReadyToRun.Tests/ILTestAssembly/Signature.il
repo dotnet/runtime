@@ -1,6 +1,31 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+.class public auto ansi beforefieldinit ModOptTester
+       extends [CoreTestAssembly]System.Object
+{
+  .method public hidebysig specialname rtspecialname 
+          instance void  .ctor() cil managed
+  {
+    // Code size       8 (0x8)
+    .maxstack  8
+    IL_0000:  ldarg.0
+    IL_0001:  call       instance void [CoreTestAssembly]System.Object::.ctor()
+    IL_0006:  nop
+    IL_0007:  ret
+  } // end of method I::.ctor
+
+  .method public hidebysig instance int32 modopt([CoreTestAssembly]System.Void) modopt([CoreTestAssembly]System.Char) Method(int32 modopt(FooModifier)) cil managed
+  {
+     ret
+  }
+
+  .method public hidebysig instance int32 modopt([CoreTestAssembly]System.Void) & modopt([CoreTestAssembly]System.Char) Method2(int32 modopt(FooModifier)) cil managed
+  {
+     ret
+  }
+}
+
 .class private auto ansi beforefieldinit Atom
        extends [CoreTestAssembly]System.Object
 {

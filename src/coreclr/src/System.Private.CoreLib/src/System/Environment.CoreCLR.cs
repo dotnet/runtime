@@ -83,9 +83,7 @@ namespace System
         [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
         private static extern int GetProcessorCount();
 
-        // If you change this method's signature then you must change the code that calls it
-        // in excep.cpp and probably you will have to visit mscorlib.h to add the new signature
-        // as well as metasig.h to create the new signature type
+        // Used by VM
         internal static string? GetResourceStringLocal(string key) => SR.GetResourceString(key);
 
         public static string StackTrace

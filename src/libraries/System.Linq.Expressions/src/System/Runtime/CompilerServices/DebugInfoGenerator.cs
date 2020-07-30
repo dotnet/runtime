@@ -17,6 +17,7 @@ namespace System.Runtime.CompilerServices
         /// Creates PDB symbol generator.
         /// </summary>
         /// <returns>PDB symbol generator.</returns>
+        [Obsolete(Obsoletions.CreatePdbGeneratorMessage, DiagnosticId = Obsoletions.CreatePdbGeneratorDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public static DebugInfoGenerator CreatePdbGenerator()
         {
             // Creating PDBs is not supported in .NET Core

@@ -143,6 +143,7 @@ namespace System.Data
 
         private void UpdateColumnType(Type type, StorageType typeCode)
         {
+            TypeLimiter.EnsureTypeIsAllowed(type);
             _dataType = type;
             _storageType = typeCode;
             if (StorageType.DateTime != typeCode)

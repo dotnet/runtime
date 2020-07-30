@@ -14,25 +14,35 @@ namespace System.Net.Http.Unit.Tests.HPack
 {
     public class HPackRoundtripTests
     {
-
         public static IEnumerable<object[]> TestHeaders()
         {
-            yield return new object[] { new HttpRequestHeaders() { { "header", "value" } } };
-            yield return new object[] { new HttpRequestHeaders() { { "header", new[] { "value1", "value2" } } } };
+            yield return new object[] { new HttpRequestHeaders() { { "header", "value" } }, null };
+            yield return new object[] { new HttpRequestHeaders() { { "header", "value" } }, Encoding.ASCII };
+            yield return new object[] { new HttpRequestHeaders() { { "header", new[] { "value1", "value2" } } }, null };
+            yield return new object[] { new HttpRequestHeaders() { { "header", new[] { "value1", "value2" } } }, Encoding.ASCII };
             yield return new object[] { new HttpRequestHeaders()
             {
                 { "header-0", new[] { "value1", "value2" } },
                 { "header-0", "value3" },
                 { "header-1", "value1" },
                 { "header-2", new[] { "value1", "value2" } },
-            } };
+            }, null };
+            yield return new object[] { new HttpRequestHeaders() { { "header", "foo" } }, Encoding.UTF8 };
+            yield return new object[] { new HttpRequestHeaders() { { "header", "\uD83D\uDE03" } }, Encoding.UTF8 };
+            yield return new object[] { new HttpRequestHeaders()
+            {
+                { "header-0", new[] { "\uD83D\uDE03", "\uD83D\uDE48\uD83D\uDE49\uD83D\uDE4A" } },
+                { "header-1", "\uD83D\uDE03" },
+                { "header-2", "\uD83D\uDE48\uD83D\uDE49\uD83D\uDE4A" },
+                { "header-3", new[] { "\uD83D\uDE03", "\uD83D\uDE48\uD83D\uDE49\uD83D\uDE4A" } }
+            }, Encoding.UTF8 };
         }
 
         [Theory, MemberData(nameof(TestHeaders))]
-        public void HPack_HeaderEncodeDecodeRoundtrip_ShouldMatchOriginalInput(HttpHeaders headers)
+        public void HPack_HeaderEncodeDecodeRoundtrip_ShouldMatchOriginalInput(HttpHeaders headers, Encoding? valueEncoding)
         {
-            Memory<byte> encoding = HPackEncode(headers);
-            HttpHeaders decodedHeaders = HPackDecode(encoding);
+            Memory<byte> encoding = HPackEncode(headers, valueEncoding);
+            HttpHeaders decodedHeaders = HPackDecode(encoding, valueEncoding);
 
             // Assert: decoded headers are structurally equal to original headers
             Assert.Equal(headers.Count(), decodedHeaders.Count());
@@ -44,7 +54,7 @@ namespace System.Net.Http.Unit.Tests.HPack
         }
 
         // adapted from Header serialization code in Http2Connection.cs
-        private static Memory<byte> HPackEncode(HttpHeaders headers)
+        private static Memory<byte> HPackEncode(HttpHeaders headers, Encoding? valueEncoding)
         {
             var buffer = new ArrayBuffer(4);
             FillAvailableSpaceWithOnes(buffer);
@@ -101,7 +111,7 @@ namespace System.Net.Http.Unit.Tests.HPack
             void WriteLiteralHeaderValues(ReadOnlySpan<string> values, string separator)
             {
                 int bytesWritten;
-                while (!HPackEncoder.EncodeStringLiterals(values, separator, buffer.AvailableSpan, out bytesWritten))
+                while (!HPackEncoder.EncodeStringLiterals(values, separator, valueEncoding, buffer.AvailableSpan, out bytesWritten))
                 {
                     buffer.EnsureAvailableSpace(buffer.AvailableLength + 1);
                     FillAvailableSpaceWithOnes(buffer);
@@ -113,7 +123,7 @@ namespace System.Net.Http.Unit.Tests.HPack
             void WriteLiteralHeader(string name, ReadOnlySpan<string> values)
             {
                 int bytesWritten;
-                while (!HPackEncoder.EncodeLiteralHeaderFieldWithoutIndexingNewName(name, values, HttpHeaderParser.DefaultSeparator, buffer.AvailableSpan, out bytesWritten))
+                while (!HPackEncoder.EncodeLiteralHeaderFieldWithoutIndexingNewName(name, values, HttpHeaderParser.DefaultSeparator, valueEncoding, buffer.AvailableSpan, out bytesWritten))
                 {
                     buffer.EnsureAvailableSpace(buffer.AvailableLength + 1);
                     FillAvailableSpaceWithOnes(buffer);
@@ -127,12 +137,12 @@ namespace System.Net.Http.Unit.Tests.HPack
         }
 
         // adapted from header deserialization code in Http2Connection.cs
-        private static HttpHeaders HPackDecode(Memory<byte> memory)
+        private static HttpHeaders HPackDecode(Memory<byte> memory, Encoding? valueEncoding)
         {
             var header = new HttpRequestHeaders();
             var hpackDecoder = new HPackDecoder(maxDynamicTableSize: 0, maxHeadersLength: HttpHandlerDefaults.DefaultMaxResponseHeadersLength * 1024);
 
-            hpackDecoder.Decode(memory.Span, true, new HeaderHandler(header));
+            hpackDecoder.Decode(memory.Span, true, new HeaderHandler(header, valueEncoding));
 
             return header;
         }
@@ -140,9 +150,12 @@ namespace System.Net.Http.Unit.Tests.HPack
         private class HeaderHandler : IHttpHeadersHandler
         {
             HttpRequestHeaders _headers;
-            public HeaderHandler(HttpRequestHeaders headers)
+            Encoding? _valueEncoding;
+
+            public HeaderHandler(HttpRequestHeaders headers, Encoding? valueEncoding)
             {
                 _headers = headers;
+                _valueEncoding = valueEncoding;
             }
 
             public void OnHeader(ReadOnlySpan<byte> name, ReadOnlySpan<byte> value)
@@ -152,7 +165,7 @@ namespace System.Net.Http.Unit.Tests.HPack
                     throw new HttpRequestException(SR.Format(SR.net_http_invalid_response_header_name, Encoding.ASCII.GetString(name)));
                 }
 
-                string headerValue = descriptor.GetHeaderValue(value);
+                string headerValue = descriptor.GetHeaderValue(value, _valueEncoding);
 
                 _headers.TryAddWithoutValidation(descriptor, headerValue.Split(',').Select(x => x.Trim()));
             }

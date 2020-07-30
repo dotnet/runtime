@@ -16,6 +16,13 @@
     <GenerateDependencyFile>false</GenerateDependencyFile>
     <Configurations>Debug;Release;Checked</Configurations>
   </PropertyGroup>
+
+  <ItemGroup Label="Embedded Resources">
+    <EmbeddedResource Include="..\..\Common\TypeSystem\Common\Properties\Resources.resx">
+      <LogicalName>Internal.TypeSystem.Strings.resources</LogicalName>
+    </EmbeddedResource>
+  </ItemGroup>
+
   <ItemGroup>
     <PackageReference Include="System.IO.MemoryMappedFiles">
       <Version>4.3.0</Version>
@@ -144,6 +151,9 @@
     </Compile>
     <Compile Include="..\..\Common\TypeSystem\Common\TypeSystemException.cs">
       <Link>TypeSystem\Common\TypeSystemException.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\TypeSystem\Common\TypeSystemException.Resources.cs">
+      <Link>TypeSystem\Common\TypeSystemException.Resources.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\TypeSystem\Common\ThrowHelper.cs">
       <Link>TypeSystem\Common\ThrowHelper.cs</Link>

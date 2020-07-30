@@ -840,7 +840,8 @@ class ClrDataAccess
       public ISOSDacInterface5,
       public ISOSDacInterface6,
       public ISOSDacInterface7,
-      public ISOSDacInterface8
+      public ISOSDacInterface8,
+      public ISOSDacInterface9
 {
 public:
     ClrDataAccess(ICorDebugDataTarget * pTarget, ICLRDataTarget * pLegacyTarget=0);
@@ -1205,6 +1206,9 @@ public:
 
     virtual HRESULT STDMETHODCALLTYPE GetAssemblyLoadContext(CLRDATA_ADDRESS methodTable, CLRDATA_ADDRESS* assemblyLoadContext);
 
+    // ISOSDacInterface9
+    virtual HRESULT STDMETHODCALLTYPE GetBreakingChangeVersion(int* pVersion);
+
     //
     // ClrDataAccess.
     //
@@ -1455,8 +1459,12 @@ protected:
 private:
 #endif
 
-#ifdef FEATURE_COMINTEROP
 protected:
+    // Populates a DacpJitCodeHeapInfo with proper information about the
+    // code heap type and the information needed to locate it.
+    DacpJitCodeHeapInfo DACGetHeapInfoForCodeHeap(CodeHeap *heapAddr);
+
+#ifdef FEATURE_COMINTEROP
     // Returns CCW pointer based on a target address.
     PTR_ComCallWrapper DACGetCCWFromAddress(CLRDATA_ADDRESS addr);
 

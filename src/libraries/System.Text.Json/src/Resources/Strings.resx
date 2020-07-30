@@ -486,7 +486,7 @@
     <value>Members '{0}' and '{1}' on type '{2}' cannot both bind with parameter '{3}' in constructor '{4}' on deserialization.</value>
   </data>
   <data name="ConstructorParamIncompleteBinding" xml:space="preserve">
-    <value>Each parameter in constructor '{0}' on type '{1}' must bind to an object member on deserialization. Each parameter name must be the camel case equivalent of an object member named with the pascal case naming convention.</value>
+    <value>Each parameter in constructor '{0}' on type '{1}' must bind to an object property or field on deserialization. Each parameter name must match with a property or field on the object. The match can be case-insensitive.</value>
   </data>
   <data name="ConstructorMaxOf64Parameters" xml:space="preserve">
     <value>The constructor '{0}' on type '{1}' may not have more than 64 parameters for deserialization.</value>
@@ -532,5 +532,14 @@
   </data>
   <data name="DictionaryKeyTypeNotSupported" xml:space="preserve">
     <value>The type '{0}' is not a supported Dictionary key type.</value>
+  </data>
+  <data name="IgnoreConditionOnValueTypeInvalid" xml:space="preserve">
+    <value>The ignore condition 'JsonIgnoreCondition.WhenWritingNull' is not valid on value-type member '{0}' on type '{1}'. Consider using 'JsonIgnoreCondition.WhenWritingDefault'.</value>
+  </data>
+  <data name="NumberHandlingConverterMustBeBuiltIn" xml:space="preserve">
+    <value>'JsonNumberHandlingAttribute' cannot be placed on a property, field, or type that is handled by a custom converter. See usage(s) of converter '{0}' on type '{1}'.</value>
+  </data>
+  <data name="NumberHandlingOnPropertyTypeMustBeNumberOrCollection" xml:space="preserve">
+    <value>When 'JsonNumberHandlingAttribute' is placed on a property or field, the property or field must be a number or a collection. See member '{0}' on type '{1}'.</value>
   </data>
 </root>

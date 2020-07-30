@@ -8,7 +8,7 @@
     <Nullable>annotations</Nullable>
   </PropertyGroup>
   <ItemGroup>
-    <DefaultReferenceExclusions Include="System.Net.Http.WinHttpHandler" />
+    <DefaultReferenceExclusion Include="System.Net.Http.WinHttpHandler" />
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsWindows)' == 'true' ">
     <Compile Include="$(CommonTestPath)System\Net\SslProtocolSupport.cs"

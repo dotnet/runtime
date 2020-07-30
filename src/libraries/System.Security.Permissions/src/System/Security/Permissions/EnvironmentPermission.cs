@@ -3,6 +3,9 @@
 
 namespace System.Security.Permissions
 {
+#if NET50_OBSOLETIONS
+    [Obsolete(Obsoletions.CodeAccessSecurityMessage, DiagnosticId = Obsoletions.CodeAccessSecurityDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+#endif
     public sealed partial class EnvironmentPermission : CodeAccessPermission, IUnrestrictedPermission
     {
         public EnvironmentPermission(EnvironmentPermissionAccess flag, string pathList) { }

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using Internal.NativeCrypto;
+using System.Runtime.Versioning;
 
 #pragma warning disable CA5373 // Call to obsolete key derivation function PasswordDeriveBytes.*
 
@@ -11,6 +12,7 @@ namespace System.Security.Cryptography
     {
         private SafeProvHandle? _safeProvHandle;
 
+        [MinimumOSPlatform("windows7.0")]
         public byte[] CryptDeriveKey(string? algname, string? alghashname, int keySize, byte[] rgbIV)
         {
             if (keySize < 0)

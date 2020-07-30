@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <CLRTestKind>BuildOnly</CLRTestKind>
+    <IsTestProject>false</IsTestProject>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <DisableRarCache>true</DisableRarCache>
+    <DisablePackageAssetsCache>true</DisablePackageAssetsCache>
+    <RuntimeIdentifiers>win-arm;win-arm64;win-x64;win-x86;$(TargetRid)</RuntimeIdentifiers>
+    <IncludeOOBLibraries>true</IncludeOOBLibraries>
+    <LibrariesConfiguration>Release</LibrariesConfiguration>
+  </PropertyGroup>
+
+  <Target Name="Build" DependsOnTargets="$(TraversalBuildDependsOn)" />
+
+  <PropertyGroup>
+    <ProjectAssetsFile>$(RepoRoot)src\coreclr\tests\src\Common\test_dependencies_fs\obj\project.assets.json</ProjectAssetsFile>
+  </PropertyGroup>
+
+  <Import Project="$(RepositoryEngineeringDir)liveBuilds.targets" />
+
+  <Target Name="AddLibrariesToCoreRootFS" BeforeTargets="AddLibrariesToCoreRoot" DependsOnTargets="ResolveLibrariesFromLocalBuild">
+    <ItemGroup>
+      <RuntimeCopyLocalItems Include="@(LibrariesRuntimeFiles)" />
+    </ItemGroup>
+  </Target>
+</Project>
