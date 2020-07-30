@@ -9597,7 +9597,7 @@ void CodeGen::genArm64EmitterUnitTests()
 //      frameSize         - the size of the stack frame being allocated.
 //      initReg           - register to use as a scratch register.
 //      pInitRegZeroed    - OUT parameter. *pInitRegZeroed is set to 'false' if and only if
-//                          this call sets 'initReg' to a non-zero value.
+//                          this call sets 'initReg' to a non-zero value. Otherwise, it is unchanged.
 //      maskArgRegsLiveIn - incoming argument registers that are currently live.
 //
 // Return value:

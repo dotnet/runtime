@@ -6123,6 +6123,8 @@ regNumber CodeGen::genGetZeroReg(regNumber initReg, bool* pInitRegZeroed)
 //                                                     start zero initializing memory.
 //    initReg        - A scratch register (that gets set to zero on some platforms).
 //    pInitRegZeroed - Sets a flag that tells the callee whether or not the initReg register got zeroed.
+//                     'true' if this method sets initReg to zero value. 'false' it is was set to non-zero value.
+//                     Unchanged if initReg was not touched during this call.
 //
 void CodeGen::genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, bool* pInitRegZeroed)
 {
