@@ -13247,10 +13247,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                             // via an underlying address, just null check the address.
                             if (op1->OperIs(GT_FIELD, GT_IND, GT_OBJ))
                             {
-                                op1->ChangeOper(GT_NULLCHECK);
-                                block->bbFlags |= BBF_HAS_NULLCHECK;
-                                optMethodFlags |= OMF_HAS_NULLCHECK;
-                                op1->gtType = TYP_BYTE;
+                                gtChangeOperToNullCheck(op1, block);
                             }
                             else
                             {
