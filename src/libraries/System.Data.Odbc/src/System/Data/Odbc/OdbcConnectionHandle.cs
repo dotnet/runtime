@@ -57,9 +57,7 @@ namespace System.Data.Odbc
 
             Debug.Assert(HandleState.Connected <= _handleState, "AutoCommitOff while in wrong state?");
 
-            // Avoid runtime injected errors in the following block.
             // must call SQLSetConnectAttrW and set _handleState
-            RuntimeHelpers.PrepareConstrainedRegions();
             try { }
             finally
             {
@@ -141,7 +139,7 @@ namespace System.Data.Odbc
         internal ODBC32.RetCode CompleteTransaction(short transactionOperation)
         {
             bool mustRelease = false;
-            RuntimeHelpers.PrepareConstrainedRegions();
+
             try
             {
                 DangerousAddRef(ref mustRelease);
@@ -157,15 +155,12 @@ namespace System.Data.Odbc
             }
         }
 
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
         private ODBC32.RetCode CompleteTransaction(short transactionOperation, IntPtr handle)
         {
             // must only call this code from ReleaseHandle or DangerousAddRef region
 
             ODBC32.RetCode retcode = ODBC32.RetCode.SUCCESS;
 
-            // using ConstrainedRegions to make the native ODBC call and change the _handleState
-            RuntimeHelpers.PrepareConstrainedRegions();
             try { }
             finally
             {
@@ -195,8 +190,6 @@ namespace System.Data.Odbc
 
             ODBC32.RetCode retcode;
 
-            // Avoid runtime injected errors in the following block.
-            RuntimeHelpers.PrepareConstrainedRegions();
             try { }
             finally
             {

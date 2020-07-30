@@ -198,8 +198,9 @@ namespace System.ComponentModel
     {
         public static readonly System.ComponentModel.TypeConverterAttribute Default;
         public TypeConverterAttribute() { }
-        public TypeConverterAttribute(string typeName) { }
-        public TypeConverterAttribute(System.Type type) { }
+        public TypeConverterAttribute([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)] string typeName) { }
+        public TypeConverterAttribute([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)] System.Type type) { }
+        [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)]
         public string ConverterTypeName { get { throw null; } }
         public override bool Equals(object? obj) { throw null; }
         public override int GetHashCode() { throw null; }

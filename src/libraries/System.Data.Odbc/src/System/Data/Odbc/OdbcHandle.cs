@@ -12,17 +12,15 @@ namespace System.Data.Odbc
     internal abstract class OdbcHandle : SafeHandle
     {
         private readonly ODBC32.SQL_HANDLE _handleType;
-        private OdbcHandle _parentHandle;
+        private OdbcHandle? _parentHandle;
 
-        protected OdbcHandle(ODBC32.SQL_HANDLE handleType, OdbcHandle parentHandle) : base(IntPtr.Zero, true)
+        protected OdbcHandle(ODBC32.SQL_HANDLE handleType, OdbcHandle? parentHandle) : base(IntPtr.Zero, true)
         {
             _handleType = handleType;
 
             bool mustRelease = false;
             ODBC32.RetCode retcode = ODBC32.RetCode.SUCCESS;
 
-            // using ConstrainedRegions to make the native ODBC call and AddRef the parent
-            RuntimeHelpers.PrepareConstrainedRegions();
             try
             {
                 // validate handleType
@@ -63,7 +61,7 @@ namespace System.Data.Odbc
                             else
                             {
                                 // without a handle, ReleaseHandle may not be called
-                                parentHandle.DangerousRelease();
+                                parentHandle!.DangerousRelease();
                             }
                             break;
                     }
@@ -85,7 +83,7 @@ namespace System.Data.Odbc
             int cbActual;
             ODBC32.RetCode retcode;
             bool mustRelease = false;
-            RuntimeHelpers.PrepareConstrainedRegions();
+
             try
             {
                 // must addref before calling native so it won't be released just after
@@ -166,7 +164,7 @@ namespace System.Data.Odbc
 
             // If we ended up getting released, then we have to release
             // our reference on our parent.
-            OdbcHandle parentHandle = _parentHandle;
+            OdbcHandle? parentHandle = _parentHandle;
             _parentHandle = null;
             if (null != parentHandle)
             {

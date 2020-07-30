@@ -458,6 +458,26 @@
         ret
   } // end of method Unsafe::IsAddressLessThan
 
+  .method public hidebysig static bool IsNullRef<T>(!!T& source) cil managed aggressiveinlining
+  {
+        .custom instance void System.Runtime.Versioning.NonVersionableAttribute::.ctor() = ( 01 00 00 00 )
+        .maxstack 2
+        ldarg.0
+        ldc.i4.0
+        conv.u
+        ceq
+        ret
+  } // end of method Unsafe::IsNullRef
+
+  .method public hidebysig static !!T& NullRef<T>() cil managed aggressiveinlining
+  {
+        .custom instance void System.Runtime.Versioning.NonVersionableAttribute::.ctor() = ( 01 00 00 00 )
+        .maxstack 1
+        ldc.i4.0
+        conv.u
+        ret
+  } // end of method Unsafe::NullRef
+
 } // end of class System.Runtime.CompilerServices.Unsafe
 
 .class private auto ansi sealed beforefieldinit System.Runtime.Versioning.NonVersionableAttribute

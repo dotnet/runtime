@@ -17,6 +17,7 @@ namespace System.Security.Cryptography
 
         protected HashAlgorithm() { }
 
+        [Obsolete(Obsoletions.DefaultCryptoAlgorithmsMessage, DiagnosticId = Obsoletions.DefaultCryptoAlgorithmsDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public static HashAlgorithm Create() =>
             CryptoConfigForwarder.CreateDefaultHashAlgorithm();
 

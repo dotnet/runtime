@@ -171,7 +171,7 @@ namespace System.Globalization.Tests
             }
         }
 
-        private static readonly string [] s_cultureNames = new string[] { "", "en-US", "fr", "fr-FR" };
+        private static readonly string [] s_cultureNames = new string[] { "en-US", "fr", "fr-FR" };
 
         // ToLower_TestData_netcore has the data which is specific to netcore framework
         public static IEnumerable<object[]> ToLower_TestData_netcore()
@@ -180,6 +180,24 @@ namespace System.Globalization.Tests
             {
                 // DESERT CAPITAL LETTER LONG I has a lower case variant (but not on Windows 7).
                 yield return new object[] { cultureName, "\U00010400", PlatformDetection.IsWindows7 ? "\U00010400" : "\U00010428" };
+            }
+
+            if (!PlatformDetection.IsNlsGlobalization)
+            {
+                yield return new object[] { "", "\U00010400", PlatformDetection.IsWindows7 ? "\U00010400" : "\U00010428" };
+            }
+        }
+
+        public static IEnumerable<string> GetTestLocales()
+        {
+            yield return "tr";
+            yield return "tr-TR";
+
+            if (PlatformDetection.IsNotBrowser)
+            {
+                // Browser's ICU doesn't contain these locales
+                yield return "az";
+                yield return "az-Latn-AZ";
             }
         }
 
@@ -226,7 +244,7 @@ namespace System.Globalization.Tests
                 yield return new object[] { cultureName, "\u03A3", "\u03C3" };
             }
 
-            foreach (string cultureName in new string[] { "tr", "tr-TR", "az", "az-Latn-AZ" })
+            foreach (string cultureName in GetTestLocales())
             {
                 yield return new object[] { cultureName, "\u0130", "i" };
                 yield return new object[] { cultureName, "i", "i" };
@@ -349,7 +367,7 @@ namespace System.Globalization.Tests
             }
 
             // Turkish i
-            foreach (string cultureName in new string[] { "tr", "tr-TR", "az", "az-Latn-AZ" })
+            foreach (string cultureName in GetTestLocales())
             {
                 yield return new object[] { cultureName, "i", "\u0130" };
                 yield return new object[] { cultureName, "\u0130", "\u0130" };

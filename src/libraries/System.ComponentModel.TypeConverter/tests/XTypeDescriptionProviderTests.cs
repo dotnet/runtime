@@ -10,6 +10,7 @@ using Xunit;
 
 namespace System.Xml.Linq.Tests
 {
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/39709", TestPlatforms.Browser)]
     public class XTypeDescriptionProviderTests
     {
         [Fact]

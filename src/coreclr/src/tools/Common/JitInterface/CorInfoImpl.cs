@@ -135,20 +135,16 @@ namespace Internal.JitInterface
 
         private CORINFO_MODULE_STRUCT_* _methodScope; // Needed to resolve CORINFO_EH_CLAUSE tokens
 
-        private bool _isFallbackBodyCompilation; // True if we're compiling a fallback method body after compiling the real body failed
-
-        private void CompileMethodInternal(IMethodNode methodCodeNodeNeedingCode, MethodIL methodIL = null)
+        private void CompileMethodInternal(IMethodNode methodCodeNodeNeedingCode, MethodIL methodIL)
         {
-            _isFallbackBodyCompilation = methodIL != null;
-
-            CORINFO_METHOD_INFO methodInfo;
-            methodIL = Get_CORINFO_METHOD_INFO(MethodBeingCompiled, methodIL, &methodInfo);
-
-            // This is e.g. an "extern" method in C# without a DllImport or InternalCall.
+            // methodIL must not be null
             if (methodIL == null)
             {
                 ThrowHelper.ThrowInvalidProgramException(ExceptionStringID.InvalidProgramSpecific, MethodBeingCompiled);
             }
+
+            CORINFO_METHOD_INFO methodInfo;
+            Get_CORINFO_METHOD_INFO(MethodBeingCompiled, methodIL, &methodInfo);
 
             _methodScope = methodInfo.scope;
 
@@ -428,16 +424,12 @@ namespace Internal.JitInterface
         private FieldDesc HandleToObject(CORINFO_FIELD_STRUCT_* field) { return (FieldDesc)HandleToObject((IntPtr)field); }
         private CORINFO_FIELD_STRUCT_* ObjectToHandle(FieldDesc field) { return (CORINFO_FIELD_STRUCT_*)ObjectToHandle((Object)field); }
 
-        private MethodIL Get_CORINFO_METHOD_INFO(MethodDesc method, MethodIL methodIL, CORINFO_METHOD_INFO* methodInfo)
+        private bool Get_CORINFO_METHOD_INFO(MethodDesc method, MethodIL methodIL, CORINFO_METHOD_INFO* methodInfo)
         {
-            // MethodIL can be provided externally for the case of a method whose IL was replaced because we couldn't compile it.
-            if (methodIL == null)
-                methodIL = _compilation.GetMethodIL(method);
-
             if (methodIL == null)
             {
                 *methodInfo = default(CORINFO_METHOD_INFO);
-                return null;
+                return false;
             }
 
             methodInfo->ftn = ObjectToHandle(method);
@@ -465,7 +457,7 @@ namespace Internal.JitInterface
             Get_CORINFO_SIG_INFO(method, &methodInfo->args);
             Get_CORINFO_SIG_INFO(methodIL.GetLocals(), &methodInfo->locals);
 
-            return methodIL;
+            return true;
         }
 
         private void Get_CORINFO_SIG_INFO(MethodDesc method, CORINFO_SIG_INFO* sig, bool suppressHiddenArgument = false)
@@ -510,6 +502,53 @@ namespace Internal.JitInterface
             }
         }
 
+        private bool TryGetUnmanagedCallingConventionFromModOpt(MethodSignature signature, out CorInfoCallConv callConv)
+        {
+            callConv = CorInfoCallConv.CORINFO_CALLCONV_UNMANAGED;
+            if (!signature.HasEmbeddedSignatureData || signature.GetEmbeddedSignatureData() == null)
+                return false;
+
+            bool found = false;
+            foreach (EmbeddedSignatureData data in signature.GetEmbeddedSignatureData())
+            {
+                if (data.kind != EmbeddedSignatureDataKind.OptionalCustomModifier)
+                    continue;
+
+                // We only care about the modifiers for the return type. These will be at the start of
+                // the signature, so will be first in the array of embedded signature data.
+                if (data.index != MethodSignature.IndexOfCustomModifiersOnReturnType)
+                    break;
+
+                if (!(data.type is DefType defType))
+                    continue;
+
+                if (defType.Namespace != "System.Runtime.CompilerServices")
+                    continue;
+
+                // Look for a recognized calling convention in metadata.
+                CorInfoCallConv? callConvLocal = defType.Name switch
+                {
+                    "CallConvCdecl"     => CorInfoCallConv.CORINFO_CALLCONV_C,
+                    "CallConvStdcall"   => CorInfoCallConv.CORINFO_CALLCONV_STDCALL,
+                    "CallConvFastcall"  => CorInfoCallConv.CORINFO_CALLCONV_FASTCALL,
+                    "CallConvThiscall"  => CorInfoCallConv.CORINFO_CALLCONV_THISCALL,
+                    _ => null
+                };
+
+                if (callConvLocal.HasValue)
+                {
+                    // Error if there are multiple recognized calling conventions
+                    if (found)
+                        ThrowHelper.ThrowInvalidProgramException(ExceptionStringID.InvalidProgramMultipleCallConv, MethodBeingCompiled);
+ 
+                    callConv = callConvLocal.Value;
+                    found = true;
+                }
+            }
+
+            return found;
+        }
+
         private void Get_CORINFO_SIG_INFO(MethodSignature signature, CORINFO_SIG_INFO* sig)
         {
             sig->callConv = (CorInfoCallConv)(signature.Flags & MethodSignatureFlags.UnmanagedCallingConventionMask);
@@ -519,6 +558,22 @@ namespace Internal.JitInterface
                 ThrowHelper.ThrowBadImageFormatException();
 
             if (!signature.IsStatic) sig->callConv |= CorInfoCallConv.CORINFO_CALLCONV_HASTHIS;
+
+            // Unmanaged calling convention indicates modopt should be read
+            if (sig->callConv == CorInfoCallConv.CORINFO_CALLCONV_UNMANAGED)
+            {
+                if (TryGetUnmanagedCallingConventionFromModOpt(signature, out CorInfoCallConv callConvMaybe))
+                {
+                    sig->callConv = callConvMaybe;
+                }
+                else
+                {
+                    // Use platform default
+                    sig->callConv = _compilation.TypeSystemContext.Target.IsWindows
+                        ? CorInfoCallConv.CORINFO_CALLCONV_STDCALL
+                        : CorInfoCallConv.CORINFO_CALLCONV_C;
+                }
+            }
 
             TypeDesc returnType = signature.ReturnType;
 
@@ -760,7 +815,7 @@ namespace Internal.JitInterface
                 // do a dynamic check instead.
                 if (
                     !HardwareIntrinsicHelpers.IsIsSupportedMethod(method)
-                    || !_compilation.IsHardwareInstrinsicWithRuntimeDeterminedSupport(method))
+                    || !_compilation.IsHardwareIntrinsicWithRuntimeDeterminedSupport(method))
 #endif
                 {
                     result |= CorInfoFlag.CORINFO_FLG_JIT_INTRINSIC;
@@ -803,8 +858,9 @@ namespace Internal.JitInterface
 
         private bool getMethodInfo(CORINFO_METHOD_STRUCT_* ftn, CORINFO_METHOD_INFO* info)
         {
-            MethodIL methodIL = Get_CORINFO_METHOD_INFO(HandleToObject(ftn), null, info);
-            return methodIL != null;
+            MethodDesc method = HandleToObject(ftn);
+            MethodIL methodIL = _compilation.GetMethodIL(method);
+            return Get_CORINFO_METHOD_INFO(method, methodIL, info);
         }
 
         private CorInfoInline canInline(CORINFO_METHOD_STRUCT_* callerHnd, CORINFO_METHOD_STRUCT_* calleeHnd, ref uint pRestrictions)
@@ -1663,10 +1719,11 @@ namespace Internal.JitInterface
             MethodDesc md = method == null ? MethodBeingCompiled : HandleToObject(method);
             TypeDesc type = fd != null ? fd.OwningType : typeFromContext(context);
 
-            if (_isFallbackBodyCompilation ||
+            if (
 #if READYTORUN
                 IsClassPreInited(type)
 #else
+                _isFallbackBodyCompilation ||
                 !_compilation.HasLazyStaticConstructor(type)
 #endif
                 )
@@ -2442,12 +2499,6 @@ namespace Internal.JitInterface
         { throw new NotImplementedException("getThreadTLSIndex"); }
         private void* getInlinedCallFrameVptr(ref void* ppIndirection)
         { throw new NotImplementedException("getInlinedCallFrameVptr"); }
-
-        private int* getAddrOfCaptureThreadGlobal(ref void* ppIndirection)
-        {
-            ppIndirection = null;
-            return null;
-        }
 
         private Dictionary<CorInfoHelpFunc, ISymbolNode> _helperCache = new Dictionary<CorInfoHelpFunc, ISymbolNode>();
         private void* getHelperFtn(CorInfoHelpFunc ftnNum, ref void* ppIndirection)

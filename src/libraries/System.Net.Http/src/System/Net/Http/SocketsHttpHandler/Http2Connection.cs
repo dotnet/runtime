@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
+using System.Net.Connections;
 using System.Net.Http.Headers;
 using System.Net.Http.HPack;
 using System.Net.Security;
@@ -21,6 +22,7 @@ namespace System.Net.Http
     {
         private readonly HttpConnectionPool _pool;
         private readonly Stream _stream;
+        private readonly Connection _connection;
 
         // NOTE: These are mutable structs; do not make these readonly.
         private ArrayBuffer _incomingBuffer;
@@ -94,10 +96,11 @@ namespace System.Net.Http
         // Channel options for creating _writeChannel
         private static readonly UnboundedChannelOptions s_channelOptions = new UnboundedChannelOptions() { SingleReader = true };
 
-        public Http2Connection(HttpConnectionPool pool, Stream stream)
+        public Http2Connection(HttpConnectionPool pool, Connection connection)
         {
             _pool = pool;
-            _stream = stream;
+            _stream = connection.Stream;
+            _connection = connection;
             _incomingBuffer = new ArrayBuffer(InitialConnectionBufferSize);
             _outgoingBuffer = new ArrayBuffer(InitialConnectionBufferSize);
 
@@ -114,11 +117,14 @@ namespace System.Net.Http
             _initialWindowSize = DefaultInitialWindowSize;
             _maxConcurrentStreams = int.MaxValue;
             _pendingWindowUpdate = 0;
+            _idleSinceTickCount = Environment.TickCount64;
 
-            if (NetEventSource.Log.IsEnabled()) TraceConnection(stream);
+            if (NetEventSource.Log.IsEnabled()) TraceConnection(_stream);
         }
 
         private object SyncObject => _httpStreams;
+
+        public bool CanAddNewStream => _concurrentStreams.IsCreditAvailable;
 
         public async ValueTask SetupAsync()
         {
@@ -765,7 +771,7 @@ namespace System.Net.Http
         }
 
         internal Task FlushAsync(CancellationToken cancellationToken) =>
-            PerformWriteAsync(0, 0, (_, __) => true, cancellationToken);
+            PerformWriteAsync(0, 0, static (_, __) => true, cancellationToken);
 
         private abstract class WriteQueueEntry : TaskCompletionSource
         {
@@ -778,7 +784,7 @@ namespace System.Net.Http
                 WriteBytes = writeBytes;
 
                 _cancellationToken = cancellationToken;
-                _cancellationRegistration = cancellationToken.UnsafeRegister(s => ((WriteQueueEntry)s!).OnCancellation(), this);
+                _cancellationRegistration = cancellationToken.UnsafeRegister(static s => ((WriteQueueEntry)s!).OnCancellation(), this);
             }
 
             public int WriteBytes { get; }
@@ -822,7 +828,7 @@ namespace System.Net.Http
             if (!_writeChannel.Writer.TryWrite(writeEntry))
             {
                 Debug.Assert(_abortException is not null);
-                ThrowRequestAborted(_abortException);
+                return Task.FromException(GetRequestAbortedException(_abortException));
             }
 
             return writeEntry.Task;
@@ -901,7 +907,7 @@ namespace System.Net.Http
         }
 
         private Task SendSettingsAckAsync() =>
-            PerformWriteAsync(FrameHeader.Size, this, (thisRef, writeBuffer) =>
+            PerformWriteAsync(FrameHeader.Size, this, static (thisRef, writeBuffer) =>
             {
                 if (NetEventSource.Log.IsEnabled()) thisRef.Trace("Started writing.");
 
@@ -912,7 +918,7 @@ namespace System.Net.Http
 
         /// <param name="pingContent">The 8-byte ping content to send, read as a big-endian integer.</param>
         private Task SendPingAckAsync(long pingContent) =>
-            PerformWriteAsync(FrameHeader.Size + FrameHeader.PingLength, (thisRef: this, pingContent), (state, writeBuffer) =>
+            PerformWriteAsync(FrameHeader.Size + FrameHeader.PingLength, (thisRef: this, pingContent), static (state, writeBuffer) =>
             {
                 if (NetEventSource.Log.IsEnabled()) state.thisRef.Trace("Started writing.");
 
@@ -926,7 +932,7 @@ namespace System.Net.Http
             });
 
         private Task SendRstStreamAsync(int streamId, Http2ProtocolErrorCode errorCode) =>
-            PerformWriteAsync(FrameHeader.Size + FrameHeader.RstStreamLength, (thisRef: this, streamId, errorCode), (s, writeBuffer) =>
+            PerformWriteAsync(FrameHeader.Size + FrameHeader.RstStreamLength, (thisRef: this, streamId, errorCode), static (s, writeBuffer) =>
             {
                 if (NetEventSource.Log.IsEnabled()) s.thisRef.Trace(s.streamId, $"Started writing. {nameof(s.errorCode)}={s.errorCode}");
 
@@ -1203,7 +1209,17 @@ namespace System.Net.Http
             // in order to avoid consuming resources in potentially many requests waiting for access.
             try
             {
-                await _concurrentStreams.RequestCreditAsync(1, cancellationToken).ConfigureAwait(false);
+                if (_pool.EnableMultipleHttp2Connections)
+                {
+                    if (!_concurrentStreams.TryRequestCreditNoWait(1))
+                    {
+                        throw new HttpRequestException(null, null, RequestRetryType.RetryOnNextConnection);
+                    }
+                }
+                else
+                {
+                    await _concurrentStreams.RequestCreditAsync(1, cancellationToken).ConfigureAwait(false);
+                }
             }
             catch (ObjectDisposedException)
             {
@@ -1249,7 +1265,7 @@ namespace System.Net.Http
                 // Start the write.  This serializes access to write to the connection, and ensures that HEADERS
                 // and CONTINUATION frames stay together, as they must do. We use the lock as well to ensure new
                 // streams are created and started in order.
-                await PerformWriteAsync(totalSize, (thisRef: this, http2Stream, headerBytes, endStream: (request.Content == null), mustFlush), (s, writeBuffer) =>
+                await PerformWriteAsync(totalSize, (thisRef: this, http2Stream, headerBytes, endStream: (request.Content == null), mustFlush), static (s, writeBuffer) =>
                 {
                     if (NetEventSource.Log.IsEnabled()) s.thisRef.Trace(s.http2Stream.StreamId, $"Started writing. Total header bytes={s.headerBytes.Length}");
 
@@ -1269,7 +1285,7 @@ namespace System.Net.Http
                         // assigning the stream ID to ensure only one stream gets an ID, and it must be held
                         // across setting the initial window size (available credit) and storing the stream into
                         // collection such that window size updates are able to atomically affect all known streams.
-                        s.http2Stream.Initialize(s.thisRef._nextStream, _initialWindowSize);
+                        s.http2Stream.Initialize(s.thisRef._nextStream, s.thisRef._initialWindowSize);
 
                         // Client-initiated streams are always odd-numbered, so increase by 2.
                         s.thisRef._nextStream += 2;
@@ -1337,7 +1353,7 @@ namespace System.Net.Http
                 (current, remaining) = SplitBuffer(remaining, frameSize);
                 try
                 {
-                    await PerformWriteAsync(FrameHeader.Size + current.Length, (thisRef: this, streamId, current), (s, writeBuffer) =>
+                    await PerformWriteAsync(FrameHeader.Size + current.Length, (thisRef: this, streamId, current), static (s, writeBuffer) =>
                     {
                         // Invoked while holding the lock:
                         if (NetEventSource.Log.IsEnabled()) s.thisRef.Trace(s.streamId, $"Started writing. {nameof(writeBuffer.Length)}={writeBuffer.Length}");
@@ -1358,7 +1374,7 @@ namespace System.Net.Http
         }
 
         private Task SendEndStreamAsync(int streamId) =>
-            PerformWriteAsync(FrameHeader.Size, (thisRef: this, streamId), (s, writeBuffer) =>
+            PerformWriteAsync(FrameHeader.Size, (thisRef: this, streamId), static (s, writeBuffer) =>
             {
                 if (NetEventSource.Log.IsEnabled()) s.thisRef.Trace(s.streamId, "Started writing.");
 
@@ -1371,7 +1387,7 @@ namespace System.Net.Http
         {
             // We update both the connection-level and stream-level windows at the same time
             Debug.Assert(amount > 0);
-            return PerformWriteAsync(FrameHeader.Size + FrameHeader.WindowUpdateLength, (thisRef: this, streamId, amount), (s, writeBuffer) =>
+            return PerformWriteAsync(FrameHeader.Size + FrameHeader.WindowUpdateLength, (thisRef: this, streamId, amount), static (s, writeBuffer) =>
             {
                 if (NetEventSource.Log.IsEnabled()) s.thisRef.Trace(s.streamId, $"Started writing. {nameof(s.amount)}={s.amount}");
 
@@ -1572,7 +1588,7 @@ namespace System.Net.Http
             }
 
             // Do shutdown.
-            _stream.Close();
+            _connection.Dispose();
 
             _connectionWindow.Dispose();
             _concurrentStreams.Dispose();
@@ -1734,7 +1750,8 @@ namespace System.Net.Http
                 if (requestBodyTask.IsCompleted ||
                     duplex == false ||
                     await Task.WhenAny(requestBodyTask, responseHeadersTask).ConfigureAwait(false) == requestBodyTask ||
-                    requestBodyTask.IsCompleted)
+                    requestBodyTask.IsCompleted ||
+                    http2Stream.SendRequestFinished)
                 {
                     // The sending of the request body completed before receiving all of the request headers (or we're
                     // ok waiting for the request body even if it hasn't completed, e.g. because we're not doing duplex).
@@ -1824,9 +1841,12 @@ namespace System.Net.Http
         private static void ThrowRetry(string message, Exception innerException) =>
             throw new HttpRequestException(message, innerException, allowRetry: RequestRetryType.RetryOnSameOrNextProxy);
 
+        private static Exception GetRequestAbortedException(Exception? innerException = null) =>
+            new IOException(SR.net_http_request_aborted, innerException);
+
         [DoesNotReturn]
         private static void ThrowRequestAborted(Exception? innerException = null) =>
-            throw new IOException(SR.net_http_request_aborted, innerException);
+            throw GetRequestAbortedException(innerException);
 
         [DoesNotReturn]
         private static void ThrowProtocolError() =>

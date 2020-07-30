@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using CultureInfo = System.Globalization.CultureInfo;
 using System.IO;
 using System.Configuration.Assemblies;
@@ -158,6 +159,7 @@ namespace System.Reflection
                                             ObjectHandleOnStack keepAlive,
                                             ObjectHandleOnStack assemblyLoadContext);
 
+        [RequiresUnreferencedCode("Types might be removed")]
         public override Type? GetType(string name, bool throwOnError, bool ignoreCase)
         {
             // throw on null strings regardless of the value of "throwOnError"
@@ -184,6 +186,7 @@ namespace System.Reflection
         [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
         private static extern void GetExportedTypes(QCallAssembly assembly, ObjectHandleOnStack retTypes);
 
+        [RequiresUnreferencedCode("Types might be removed")]
         public override Type[] GetExportedTypes()
         {
             Type[]? types = null;
@@ -194,6 +197,7 @@ namespace System.Reflection
 
         public override IEnumerable<TypeInfo> DefinedTypes
         {
+            [RequiresUnreferencedCode("Types might be removed")]
             get
             {
                 RuntimeModule[] modules = GetModulesInternal(true, false);
@@ -394,6 +398,7 @@ namespace System.Reflection
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern AssemblyName[] GetReferencedAssemblies(RuntimeAssembly assembly);
 
+        [RequiresUnreferencedCode("Assembly references might be removed")]
         public override AssemblyName[] GetReferencedAssemblies()
         {
             return GetReferencedAssemblies(GetNativeHandle());
@@ -451,6 +456,7 @@ namespace System.Reflection
             }
         }
 
+        [Obsolete(Obsoletions.GlobalAssemblyCacheMessage, DiagnosticId = Obsoletions.GlobalAssemblyCacheDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public override bool GlobalAssemblyCache => false;
 
         public override long HostContext => 0;
@@ -606,6 +612,7 @@ namespace System.Reflection
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern int GetToken(RuntimeAssembly assembly);
 
+        [RequiresUnreferencedCode("Types might be removed")]
         public sealed override Type[] GetForwardedTypes()
         {
             List<Type> types = new List<Type>();

@@ -3,6 +3,7 @@
 
 namespace System.Runtime.ConstrainedExecution
 {
+    [Obsolete(Obsoletions.ConstrainedExecutionRegionMessage, DiagnosticId = Obsoletions.ConstrainedExecutionRegionDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
     public enum Cer : int
     {
         None = 0,

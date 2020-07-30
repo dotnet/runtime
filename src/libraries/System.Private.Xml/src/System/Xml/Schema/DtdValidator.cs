@@ -566,7 +566,7 @@ namespace System.Xml.Schema
             SchemaAttDef attdef,
             SchemaInfo sinfo,
             IValidationEventHandling eventHandling,
-            string baseUriStr
+            string? baseUriStr
         )
         {
             try

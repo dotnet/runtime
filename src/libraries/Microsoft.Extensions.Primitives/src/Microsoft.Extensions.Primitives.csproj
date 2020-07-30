@@ -1,10 +1,12 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent);netcoreapp3.0;netstandard2.0;net461;$(NetFrameworkCurrent)</TargetFrameworks>
-    <ExcludeCurrentFullFrameworkFromPackage>true</ExcludeCurrentFullFrameworkFromPackage>
+    <TargetFrameworks>$(NetCoreAppCurrent);netcoreapp3.0;netstandard2.0;net461</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <ExcludeCurrentNetCoreAppFromPackage>true</ExcludeCurrentNetCoreAppFromPackage>
+    <!-- Use targeting pack references instead of granular ones in the project file. -->
+    <DisableImplicitAssemblyReferences>false</DisableImplicitAssemblyReferences>
   </PropertyGroup>
+
   <ItemGroup>
     <Compile Include="$(CommonPath)Extensions\HashCodeCombiner\HashCodeCombiner.cs"
              Link="Common\src\Extensions\HashCodeCombiner\HashCodeCombiner.cs" />
@@ -20,23 +22,11 @@
     <Compile Include="StringValues.cs" />
     <Compile Include="ThrowHelper.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetFramework)' != 'netstandard2.0' AND !$(TargetFramework.StartsWith('net4'))">
-    <Reference Include="System.Resources.ResourceManager" />
-    <Reference Include="System.Runtime" />
-    <Reference Include="System.Runtime.CompilerServices.Unsafe" />
-    <Reference Include="System.Runtime.Extensions" />
-    <Reference Include="System.Collections" />
-    <Reference Include="System.Diagnostics.Debug" />
-    <Reference Include="System.Memory" />
-    <Reference Include="System.Threading" />
-    <Reference Include="System.Threading.Tasks" />
+
+  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0' or
+                        $(TargetFramework.StartsWith('net4'))">
+    <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.CompilerServices.Unsafe\src\System.Runtime.CompilerServices.Unsafe.ilproj" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0' OR $(TargetFramework.StartsWith('net4'))">
-    <Reference Include="System.Memory" />
-    <Reference Include="System.Runtime.CompilerServices.Unsafe" />
-  </ItemGroup>
-  <ItemGroup Condition="$(TargetFramework.StartsWith('net4'))">
-    <Reference Include="mscorlib" />
-    <Reference Include="System" />
-  </ItemGroup>
+
 </Project>

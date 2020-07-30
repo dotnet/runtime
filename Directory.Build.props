@@ -40,7 +40,7 @@
     <!-- Installer specific, required during restore. -->
     <InstallerTasksOutputPath>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'installer.tasks'))</InstallerTasksOutputPath>
     <InstallerTasksAssemblyPath Condition="'$(MSBuildRuntimeType)' == 'Core'">$([MSBuild]::NormalizePath('$(InstallerTasksOutputPath)', 'Debug', 'netstandard2.0', 'installer.tasks.dll'))</InstallerTasksAssemblyPath>
-    <InstallerTasksAssemblyPath Condition="'$(MSBuildRuntimeType)' != 'Core'">$([MSBuild]::NormalizePath('$(InstallerTasksOutputPath)', 'Debug', 'net46', 'installer.tasks.dll'))</InstallerTasksAssemblyPath>
+    <InstallerTasksAssemblyPath Condition="'$(MSBuildRuntimeType)' != 'Core'">$([MSBuild]::NormalizePath('$(InstallerTasksOutputPath)', 'Debug', 'net461', 'installer.tasks.dll'))</InstallerTasksAssemblyPath>
 
     <DocsDir>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'docs'))</DocsDir>
     <ManPagesDir>$([MSBuild]::NormalizeDirectory('$(DocsDir)', 'manpages'))</ManPagesDir>

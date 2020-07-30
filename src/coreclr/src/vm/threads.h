@@ -977,7 +977,7 @@ struct PortableTailCallFrame
 
 class TailCallTls
 {
-    friend class MscorlibBinder;
+    friend class CoreLibBinder;
 
     PortableTailCallFrame* m_frame;
     char* m_argBuffer;

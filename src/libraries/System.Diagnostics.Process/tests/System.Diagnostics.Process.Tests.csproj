@@ -18,7 +18,6 @@
     <Compile Include="DelegateSynchronizeInvoke.cs" />
     <Compile Include="Helpers.cs" />
     <Compile Include="Interop.cs" />
-    <Compile Include="Interop.Unix.cs" Condition="'$(TargetsWindows)' != 'true'" />
     <Compile Include="ProcessCollectionTests.cs" />
     <Compile Include="ProcessModuleTests.cs" />
     <Compile Include="ProcessStandardConsoleTests.cs" />
@@ -39,9 +38,14 @@
              Link="System\PasteArguments.Windows.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)' == 'true' or '$(TargetsBrowser)' == 'true'">
+    <Compile Include="Interop.Unix.cs" />
     <Compile Include="ProcessTests.Unix.cs" />
     <Compile Include="ProcessThreadTests.Unix.cs" />
     <Compile Include="$(CoreLibSharedDir)System\PasteArguments.Unix.cs"
              Link="System\PasteArguments.Unix.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Win32.Registry\src\Microsoft.Win32.Registry.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.DirectoryServices\src\System.DirectoryServices.csproj" />
   </ItemGroup>
 </Project>

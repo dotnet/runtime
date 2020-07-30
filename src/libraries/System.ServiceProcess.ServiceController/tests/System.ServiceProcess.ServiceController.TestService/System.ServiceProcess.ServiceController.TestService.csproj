@@ -2,7 +2,7 @@
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <OutputType>Exe</OutputType>
-    <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkCurrent)</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent);net461</TargetFrameworks>
     <Nullable>annotations</Nullable>
   </PropertyGroup>
   <ItemGroup>
@@ -36,5 +36,8 @@
              Link="Common\Interop\Windows\Interop.DeleteService.cs" />
     <Compile Include="$(CommonTestPath)System\Threading\Tasks\TaskTimeoutExtensions.cs"
              Link="Common\System\Threading\Tasks\TaskTimeoutExtensions.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\System.ServiceProcess.ServiceController.csproj" />
   </ItemGroup>
 </Project>

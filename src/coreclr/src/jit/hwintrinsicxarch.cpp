@@ -405,11 +405,12 @@ bool HWIntrinsicInfo::isScalarIsa(CORINFO_InstructionSet isa)
         case InstructionSet_BMI2_X64:
         case InstructionSet_LZCNT:
         case InstructionSet_LZCNT_X64:
-        case InstructionSet_POPCNT:
-        case InstructionSet_POPCNT_X64:
         case InstructionSet_X86Base:
         case InstructionSet_X86Base_X64:
         {
+            // InstructionSet_POPCNT and InstructionSet_POPCNT_X64 are excluded
+            // even though they are "scalar" ISA because they depend on SSE4.2
+            // and Popcnt.IsSupported implies Sse42.IsSupported
             return true;
         }
 

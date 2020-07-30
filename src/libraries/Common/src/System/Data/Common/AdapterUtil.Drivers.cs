@@ -8,7 +8,7 @@ namespace System.Data.Common
     internal static partial class ADP
     {
 
-        internal static Timer UnsafeCreateTimer(TimerCallback callback, object state, int dueTime, int period)
+        internal static Timer UnsafeCreateTimer(TimerCallback callback, object? state, int dueTime, int period)
         {
             // Don't capture the current ExecutionContext and its AsyncLocals onto
             // a global timer causing them to live forever

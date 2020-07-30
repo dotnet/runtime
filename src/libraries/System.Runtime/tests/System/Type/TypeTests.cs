@@ -174,23 +174,6 @@ namespace System.Tests
             Assert.Null(Type.GetTypeFromHandle(default(RuntimeTypeHandle)));
         }
 
-        [Theory]
-        [InlineData(typeof(int[]), 1)]
-        [InlineData(typeof(int[,,]), 3)]
-        public void GetArrayRank_Get_ReturnsExpected(Type t, int expected)
-        {
-            Assert.Equal(expected, t.GetArrayRank());
-        }
-
-        [Theory]
-        [InlineData(typeof(int))]
-        [InlineData(typeof(IList<int>))]
-        [InlineData(typeof(IList<>))]
-        public void GetArrayRank_NonArrayType_ThrowsArgumentException(Type t)
-        {
-            AssertExtensions.Throws<ArgumentException>(null, () => t.GetArrayRank());
-        }
-
         public static IEnumerable<object[]> MakeArrayType_TestData()
         {
             return new object[][]
@@ -346,23 +329,170 @@ namespace System.Tests
             Assert.Throws<TypeLoadException>(() => t.MakeArrayType(rank));
         }
 
+        public static IEnumerable<object[]> MakeByRefType_TestData()
+        {
+            return new object[][]
+            {
+                // Primitives
+                new object[] { typeof(string) },
+                new object[] { typeof(sbyte) },
+                new object[] { typeof(byte) },
+                new object[] { typeof(short) },
+                new object[] { typeof(ushort) },
+                new object[] { typeof(int) },
+                new object[] { typeof(uint) },
+                new object[] { typeof(long) },
+                new object[] { typeof(ulong) },
+                new object[] { typeof(char) },
+                new object[] { typeof(bool) },
+                new object[] { typeof(float) },
+                new object[] { typeof(double) },
+                new object[] { typeof(IntPtr) },
+                new object[] { typeof(UIntPtr) },
+                new object[] { typeof(void) },
+
+                // Primitives enums
+                new object[] { typeof(SByteEnum) },
+                new object[] { typeof(ByteEnum) },
+                new object[] { typeof(Int16Enum) },
+                new object[] { typeof(UInt16Enum) },
+                new object[] { typeof(Int32Enum) },
+                new object[] { typeof(UInt32Enum) },
+                new object[] { typeof(Int64Enum) },
+                new object[] { typeof(UInt64Enum) },
+
+                // Array, pointers
+                new object[] { typeof(string[]) },
+                new object[] { typeof(int[]) },
+                new object[] { typeof(int*) },
+
+                // Classes, structs, interfaces, enums
+                new object[] { typeof(NonGenericClass) },
+                new object[] { typeof(GenericClass<int>) },
+                new object[] { typeof(NonGenericStruct) },
+                new object[] { typeof(GenericStruct<int>) },
+                new object[] { typeof(NonGenericInterface) },
+                new object[] { typeof(GenericInterface<int>) },
+                new object[] { typeof(AbstractClass) },
+                new object[] { typeof(StaticClass) },
+
+                // Generic types.
+                new object[] { typeof(GenericClass<>) },
+                new object[] { typeof(GenericClass<>).MakeGenericType(typeof(GenericClass<>)) },
+                new object[] { typeof(GenericClass<>).GetTypeInfo().GetGenericArguments()[0] },
+
+                // By-Ref Like.
+                new object[] { typeof(TypedReference) },
+                new object[] { typeof(ArgIterator) },
+                new object[] { typeof(RuntimeArgumentHandle) },
+                new object[] { typeof(Span<int>) },
+            };
+        }
+
         [Theory]
-        [InlineData(typeof(int))]
+        [MemberData(nameof(MakeByRefType_TestData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/37489", TestRuntimes.Mono)]
         public void MakeByRefType_Invoke_ReturnsExpected(Type t)
         {
-            Type tRef1 = t.MakeByRefType();
-            Type tRef2 = t.MakeByRefType();
+            Type tPointer = t.MakeByRefType();
+            Assert.Equal(tPointer, t.MakeByRefType());
 
-            Assert.Equal(tRef1, tRef2);
+            Assert.True(tPointer.IsByRef);
+            Assert.False(tPointer.IsPointer);
+            Assert.True(tPointer.HasElementType);
+            Assert.Equal(t, tPointer.GetElementType());
 
-            Assert.True(tRef1.IsByRef);
-            Assert.True(tRef1.HasElementType);
+            Assert.Equal(t.ToString() + "&", tPointer.ToString());
+        }
 
-            Assert.Equal(t, tRef1.GetElementType());
+        [Fact]
+        public void MakeByRefType_ByRef_ThrowsTypeLoadException()
+        {
+            Type t = typeof(int).MakeByRefType();
+            Assert.Throws<TypeLoadException>(() => t.MakeByRefType());
+        }
 
-            string s1 = t.ToString();
-            string s2 = tRef1.ToString();
-            Assert.Equal(s2, s1 + "&");
+        public static IEnumerable<object[]> MakePointerType_TestData()
+        {
+            return new object[][]
+            {
+                // Primitives
+                new object[] { typeof(string) },
+                new object[] { typeof(sbyte) },
+                new object[] { typeof(byte) },
+                new object[] { typeof(short) },
+                new object[] { typeof(ushort) },
+                new object[] { typeof(int) },
+                new object[] { typeof(uint) },
+                new object[] { typeof(long) },
+                new object[] { typeof(ulong) },
+                new object[] { typeof(char) },
+                new object[] { typeof(bool) },
+                new object[] { typeof(float) },
+                new object[] { typeof(double) },
+                new object[] { typeof(IntPtr) },
+                new object[] { typeof(UIntPtr) },
+                new object[] { typeof(void) },
+
+                // Primitives enums
+                new object[] { typeof(SByteEnum) },
+                new object[] { typeof(ByteEnum) },
+                new object[] { typeof(Int16Enum) },
+                new object[] { typeof(UInt16Enum) },
+                new object[] { typeof(Int32Enum) },
+                new object[] { typeof(UInt32Enum) },
+                new object[] { typeof(Int64Enum) },
+                new object[] { typeof(UInt64Enum) },
+
+                // Array, pointers
+                new object[] { typeof(string[]) },
+                new object[] { typeof(int[]) },
+                new object[] { typeof(int*) },
+
+                // Classes, structs, interfaces, enums
+                new object[] { typeof(NonGenericClass) },
+                new object[] { typeof(GenericClass<int>) },
+                new object[] { typeof(NonGenericStruct) },
+                new object[] { typeof(GenericStruct<int>) },
+                new object[] { typeof(NonGenericInterface) },
+                new object[] { typeof(GenericInterface<int>) },
+                new object[] { typeof(AbstractClass) },
+                new object[] { typeof(StaticClass) },
+
+                // Generic types.
+                new object[] { typeof(GenericClass<>) },
+                new object[] { typeof(GenericClass<>).MakeGenericType(typeof(GenericClass<>)) },
+                new object[] { typeof(GenericClass<>).GetTypeInfo().GetGenericArguments()[0] },
+
+                // ByRef Like.
+                new object[] { typeof(TypedReference) },
+                new object[] { typeof(ArgIterator) },
+                new object[] { typeof(RuntimeArgumentHandle) },
+                new object[] { typeof(Span<int>) },
+            };
+        }
+
+        [Theory]
+        [MemberData(nameof(MakePointerType_TestData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/37489", TestRuntimes.Mono)]
+        public void MakePointerType_Invoke_ReturnsExpected(Type t)
+        {
+            Type tPointer = t.MakePointerType();
+            Assert.Equal(tPointer, t.MakePointerType());
+
+            Assert.False(tPointer.IsByRef);
+            Assert.True(tPointer.IsPointer);
+            Assert.True(tPointer.HasElementType);
+            Assert.Equal(t, tPointer.GetElementType());
+
+            Assert.Equal(t.ToString() + "*", tPointer.ToString());
+        }
+
+        [Fact]
+        public void MakePointerType_ByRef_ThrowsTypeLoadException()
+        {
+            Type t = typeof(int).MakeByRefType();
+            Assert.Throws<TypeLoadException>(() => t.MakePointerType());
         }
 
         [Theory]
