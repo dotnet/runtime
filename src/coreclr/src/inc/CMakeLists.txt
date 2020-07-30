@@ -77,4 +77,3 @@ _install (FILES cfi.h
                gcinfoencoder.h
                gcinfotypes.h
                DESTINATION inc)
-_install (FILES $<TARGET_OBJECTS:corguids_obj> DESTINATION lib)

@@ -33,7 +33,3 @@ set_target_properties(eventpipe_obj PROPERTIES LINKER_LANGUAGE CXX)
 add_dependencies(eventpipe_obj eventing_headers)
 add_library(eventpipe INTERFACE)
 target_sources(eventpipe INTERFACE $<TARGET_OBJECTS:eventpipe_obj>)
-
-if (NOT CLR_CMAKE_TARGET_WIN32)
-  _install(FILES $<TARGET_OBJECTS:eventpipe_obj> DESTINATION lib)
-endif()

@@ -87,8 +87,6 @@ add_library(System.Globalization.Native-obj
 
 set_target_properties(System.Globalization.Native-obj PROPERTIES OUTPUT_NAME System.Globalization.Native  CLEAN_DIRECT_OUTPUT 1)
 
-install (FILES $<TARGET_OBJECTS:System.Globalization.Native-obj> DESTINATION .)
-
 add_library(System.Globalization.Native-static INTERFACE)
 target_sources(System.Globalization.Native-static INTERFACE $<TARGET_OBJECTS:System.Globalization.Native-obj>)
 
