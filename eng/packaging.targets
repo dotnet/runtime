@@ -29,7 +29,7 @@
 
   <PropertyGroup>
     <PkgProjPath>$(MSBuildProjectDirectory)\..\pkg\$(MSBuildProjectName).pkgproj</PkgProjPath>
-    <!-- Point to our cusotm pack target which builds the pkgproj instead. -->
+    <!-- Point to our custom pack target which builds the pkgproj instead. -->
     <PackDependsOn Condition="'$(IsSourceProject)' == 'true' and
                               Exists('$(PkgProjPath)')">_BuildPkgProj</PackDependsOn>
   </PropertyGroup>
