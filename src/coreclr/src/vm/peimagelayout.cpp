@@ -402,18 +402,29 @@ ConvertedImageLayout::ConvertedImageLayout(PEImageLayout* source)
         EEFileLoadException::Throw(GetPath(), COR_E_BADIMAGEFORMAT);
     LOG((LF_LOADER, LL_INFO100, "PEImage: Opening manually mapped stream\n"));
 
-
+#if !defined(CROSSGEN_COMPILE) && !defined(TARGET_UNIX)
+    // on Windows we may want to enable execution if the image contains R2R sections
+    // so must ensure the mapping is compatible with that
     m_FileMap.Assign(WszCreateFileMapping(INVALID_HANDLE_VALUE, NULL,
-                                          PAGE_READWRITE, 0,
-                                          source->GetVirtualSize(), NULL));
+        PAGE_EXECUTE_READWRITE, 0,
+        source->GetVirtualSize(), NULL));
+
+    DWORD allAccess = FILE_MAP_EXECUTE | FILE_MAP_WRITE;
+#else
+    m_FileMap.Assign(WszCreateFileMapping(INVALID_HANDLE_VALUE, NULL,
+        PAGE_READWRITE, 0,
+        source->GetVirtualSize(), NULL));
+
+    DWORD allAccess = FILE_MAP_ALL_ACCESS;
+#endif
+
     if (m_FileMap == NULL)
         ThrowLastError();
 
-
-    m_FileView.Assign(CLRMapViewOfFile(m_FileMap, FILE_MAP_ALL_ACCESS, 0, 0, 0,
+    m_FileView.Assign(CLRMapViewOfFile(m_FileMap, allAccess, 0, 0, 0,
                                 (void *) source->GetPreferredBase()));
     if (m_FileView == NULL)
-        m_FileView.Assign(CLRMapViewOfFile(m_FileMap, FILE_MAP_ALL_ACCESS, 0, 0, 0));
+        m_FileView.Assign(CLRMapViewOfFile(m_FileMap, allAccess, 0, 0, 0));
 
     if (m_FileView == NULL)
         ThrowLastError();
@@ -421,9 +432,20 @@ ConvertedImageLayout::ConvertedImageLayout(PEImageLayout* source)
     source->LayoutILOnly(m_FileView, TRUE); //@TODO should be false for streams
     IfFailThrow(Init(m_FileView));
 
-#ifdef CROSSGEN_COMPILE
+#if defined(CROSSGEN_COMPILE)
     if (HasNativeHeader())
+    {
         ApplyBaseRelocations();
+    }
+#elif !defined(TARGET_UNIX)
+    if ((HasNativeHeader() || HasReadyToRunHeader()) && g_fAllowNativeImages)
+    {
+        //Do base relocation for PE, if necessary.
+        if (!IsNativeMachineFormat())
+            ThrowHR(COR_E_BADIMAGEFORMAT);
+
+        ApplyBaseRelocations();
+    }
 #endif
 }
 
