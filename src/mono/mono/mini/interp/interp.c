@@ -1913,12 +1913,10 @@ interp_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObject 
 	context->stack_pointer = (guchar*)sp;
 
 	if (context->has_resume_state) {
-		// This can happen on wasm !?
-		MonoException *thrown_exc = (MonoException*) mono_gchandle_get_target_internal (context->exc_gchandle);
-		if (exc)
-			*exc = (MonoObject*)thrown_exc;
-		else
-			mono_error_set_exception_instance (error, thrown_exc);
+		/*
+		 * This can happen on wasm where native frames cannot be skipped during EH.
+		 * EH processing will continue when control returns to the interpreter.
+		 */
 		return NULL;
 	}
 	return (MonoObject*)result.data.p;
@@ -2977,6 +2975,7 @@ interp_create_method_pointer (MonoMethod *method, gboolean compile, MonoError *e
 			return addr;
 		}
 
+#ifdef ENABLE_NETCORE
 		/*
 		 * The runtime expects a function pointer unique to method and
 		 * the native caller expects a function pointer with the
@@ -2984,6 +2983,7 @@ interp_create_method_pointer (MonoMethod *method, gboolean compile, MonoError *e
 		 */
 		mono_error_set_platform_not_supported (error, "No native to managed transitions on this platform.");
 		return NULL;
+#endif
 	}
 #endif
 	return (gpointer)interp_no_native_to_managed;
@@ -4592,31 +4592,37 @@ call:
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_STIND_REF) 
+			NULL_CHECK (sp [-2].data.p);
 			++ip;
 			sp -= 2;
 			mono_gc_wbarrier_generic_store_internal (sp->data.p, sp [1].data.o);
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_STIND_I1)
+			NULL_CHECK (sp [-2].data.p);
 			++ip;
 			sp -= 2;
 			* (gint8 *) sp->data.p = (gint8)sp[1].data.i;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_STIND_I2)
+			NULL_CHECK (sp [-2].data.p);
 			++ip;
 			sp -= 2;
 			* (gint16 *) sp->data.p = (gint16)sp[1].data.i;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_STIND_I4)
+			NULL_CHECK (sp [-2].data.p);
 			++ip;
 			sp -= 2;
 			* (gint32 *) sp->data.p = sp[1].data.i;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_STIND_I)
+			NULL_CHECK (sp [-2].data.p);
 			++ip;
 			sp -= 2;
 			* (mono_i *) sp->data.p = (mono_i)sp[1].data.p;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_STIND_I8)
+			NULL_CHECK (sp [-2].data.p);
 			++ip;
 			sp -= 2;
 #ifdef NO_UNALIGNED_ACCESS
@@ -4627,11 +4633,13 @@ call:
 			* (gint64 *) sp->data.p = sp[1].data.l;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_STIND_R4)
+			NULL_CHECK (sp [-2].data.p);
 			++ip;
 			sp -= 2;
 			* (float *) sp->data.p = sp[1].data.f_r4;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_STIND_R8)
+			NULL_CHECK (sp [-2].data.p);
 			++ip;
 			sp -= 2;
 #ifdef NO_UNALIGNED_ACCESS
@@ -5269,6 +5277,23 @@ call_newobj:
 			ip++;
 			MINT_IN_BREAK;
 		}
+		MINT_IN_CASE(MINT_INTRINS_SPAN_CTOR) {
+			gpointer ptr = sp [-2].data.p;
+			int len = sp [-1].data.i;
+			if (len < 0)
+				THROW_EX (mono_get_exception_argument_out_of_range ("length"), ip);
+			*(gpointer*)vt_sp = ptr;
+			*(gint32*)((gpointer*)vt_sp + 1) = len;
+			sp [-2].data.p = vt_sp;
+#if SIZEOF_VOID_P == 8
+			vt_sp += ALIGN_TO (12, MINT_VT_ALIGNMENT);
+#else
+			vt_sp += ALIGN_TO (8, MINT_VT_ALIGNMENT);
+#endif
+			sp--;
+			ip++;
+			MINT_IN_BREAK;
+		}
 		MINT_IN_CASE(MINT_INTRINS_BYREFERENCE_GET_VALUE) {
 			gpointer *byreference_this = (gpointer*)sp [-1].data.p;
 			sp [-1].data.p = *byreference_this;
@@ -5298,6 +5323,13 @@ call_newobj:
 		}
 		MINT_IN_CASE(MINT_INTRINS_ASCII_CHARS_TO_UPPERCASE) {
 			sp [-1].data.i = interp_intrins_ascii_chars_to_uppercase ((guint32)sp [-1].data.i);
+			++ip;
+			MINT_IN_BREAK;
+		}
+		MINT_IN_CASE(MINT_INTRINS_MEMORYMARSHAL_GETARRAYDATAREF) {
+			MonoObject* const o = sp [-1].data.o;
+			NULL_CHECK (o);
+			sp[-1].data.p = (guint8*)o + MONO_STRUCT_OFFSET (MonoArray, vector);
 			++ip;
 			MINT_IN_BREAK;
 		}

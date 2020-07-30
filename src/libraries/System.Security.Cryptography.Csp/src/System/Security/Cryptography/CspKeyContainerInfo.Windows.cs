@@ -3,9 +3,11 @@
 
 using Internal.NativeCrypto;
 using Microsoft.Win32.SafeHandles;
+using System.Runtime.Versioning;
 
 namespace System.Security.Cryptography
 {
+    [MinimumOSPlatform("windows7.0")]
     public sealed class CspKeyContainerInfo
     {
         private readonly CspParameters _parameters;

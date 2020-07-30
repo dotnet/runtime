@@ -489,6 +489,7 @@ MONO_RESTORE_WARNING
 	case MONO_TYPE_SZARRAY: {
 		MonoArray *arr;
 		guint32 i, alen, basetype;
+
 		if (!bcheck_blob (p, 3, boundp, error))
 			return NULL;
 		alen = read32 (p);
@@ -497,8 +498,10 @@ MONO_RESTORE_WARNING
 			*end = p;
 			return NULL;
 		}
+
 		arr = mono_array_new_checked (mono_domain_get(), tklass, alen, error);
 		return_val_if_nok (error, NULL);
+
 		basetype = m_class_get_byval_arg (tklass)->type;
 		if (basetype == MONO_TYPE_VALUETYPE && m_class_is_enumtype (tklass))
 			basetype = mono_class_enum_basetype_internal (tklass)->type;
@@ -569,7 +572,10 @@ MONO_RESTORE_WARNING
 		case MONO_TYPE_CLASS:
 		case MONO_TYPE_OBJECT:
 		case MONO_TYPE_STRING:
-		case MONO_TYPE_SZARRAY:
+		case MONO_TYPE_SZARRAY: {
+			HANDLE_FUNCTION_ENTER ();
+			MONO_HANDLE_NEW (MonoArray, arr);
+
 			for (i = 0; i < alen; i++) {
 				MonoObject *item = NULL;
 				load_cattr_value (image, m_class_get_byval_arg (tklass), &item, p, boundp, &p, error);
@@ -577,13 +583,16 @@ MONO_RESTORE_WARNING
 					return NULL;
 				mono_array_setref_internal (arr, i, item);
 			}
+			HANDLE_FUNCTION_RETURN ();
 			break;
+		}
 		default:
 			g_error ("Type 0x%02x not handled in custom attr array decoding", basetype);
 		}
 		*end = p;
 		g_assert (out_obj);
 		*out_obj = (MonoObject*)arr;
+
 		return NULL;
 	}
 	default:
@@ -625,6 +634,8 @@ create_cattr_typed_arg (MonoType *t, MonoObject *val, MonoError *error)
 
 	error_init (error);
 
+	HANDLE_FUNCTION_ENTER ();
+
 	MONO_STATIC_POINTER_INIT (MonoMethod, ctor)
 
 		ctor = mono_class_get_method_from_name_checked (mono_class_get_custom_attribute_typed_argument_class (), ".ctor", 2, 0, error);
@@ -634,14 +645,19 @@ create_cattr_typed_arg (MonoType *t, MonoObject *val, MonoError *error)
 
 	params [0] = mono_type_get_object_checked (mono_domain_get (), t, error);
 	return_val_if_nok (error, NULL);
+	MONO_HANDLE_PIN ((MonoObject*)params [0]);
 
 	params [1] = val;
 	retval = mono_object_new_checked (mono_domain_get (), mono_class_get_custom_attribute_typed_argument_class (), error);
 	return_val_if_nok (error, NULL);
+	MONO_HANDLE_PIN (retval);
+
 	unboxed = mono_object_unbox_internal (retval);
 
 	mono_runtime_invoke_checked (ctor, unboxed, params, error);
 	return_val_if_nok (error, NULL);
+
+	HANDLE_FUNCTION_RETURN ();
 
 	return retval;
 }
@@ -654,6 +670,8 @@ create_cattr_named_arg (void *minfo, MonoObject *typedarg, MonoError *error)
 
 	error_init (error);
 
+	HANDLE_FUNCTION_ENTER ();
+
 	MONO_STATIC_POINTER_INIT (MonoMethod, ctor)
 
 		ctor = mono_class_get_method_from_name_checked (mono_class_get_custom_attribute_named_argument_class (), ".ctor", 2, 0, error);
@@ -665,11 +683,14 @@ create_cattr_named_arg (void *minfo, MonoObject *typedarg, MonoError *error)
 	params [1] = typedarg;
 	retval = mono_object_new_checked (mono_domain_get (), mono_class_get_custom_attribute_named_argument_class (), error);
 	return_val_if_nok (error, NULL);
+	MONO_HANDLE_PIN (retval);
 
 	unboxed = mono_object_unbox_internal (retval);
 
 	mono_runtime_invoke_checked (ctor, unboxed, params, error);
 	return_val_if_nok (error, NULL);
+
+	HANDLE_FUNCTION_RETURN ();
 
 	return retval;
 }
@@ -1182,7 +1203,7 @@ fail:
 /*
  * mono_reflection_create_custom_attr_data_args_noalloc:
  *
- * Same as mono_reflection_create_custom_attr_data_args_noalloc but allocate no managed objects, return values
+ * Same as mono_reflection_create_custom_attr_data_args but allocate no managed objects, return values
  * using C arrays. Only usable for cattrs with primitive/type arguments.
  * TYPED_ARGS, NAMED_ARGS, and NAMED_ARG_INFO should be freed using g_free ().
  */
@@ -1385,7 +1406,7 @@ ves_icall_System_Reflection_CustomAttributeData_ResolveArgumentsInternal (MonoRe
 		obj = mono_array_get_internal (typed_args, MonoObject*, i);
 		MONO_HANDLE_ASSIGN_RAW (obj_h, obj);
 
-		t = mono_method_signature_internal (method)->params [i];
+		t = sig->params [i];
 		if (t->type == MONO_TYPE_OBJECT && obj)
 			t = m_class_get_byval_arg (obj->vtable->klass);
 		typedarg = create_cattr_typed_arg (t, obj, error);

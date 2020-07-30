@@ -169,15 +169,15 @@ namespace System.Data.Common
             {
                 for (int i = 0; i < _baseParameterNames.Length; i++)
                 {
-                    if (_baseParameterNames[i] is { } baseParameterName)
+                    if (_baseParameterNames[i] is string baseParameterName)
                     {
                         _baseParameterNames[i] = _dbCommandBuilder.GetParameterName(baseParameterName);
                     }
-                    if (_originalParameterNames[i] is { } originalParameterName)
+                    if (_originalParameterNames[i] is string originalParameterName)
                     {
                         _originalParameterNames[i] = _dbCommandBuilder.GetParameterName(originalParameterName);
                     }
-                    if (_nullParameterNames[i] is { } nullParameterName)
+                    if (_nullParameterNames[i] is string nullParameterName)
                     {
                         _nullParameterNames[i] = _dbCommandBuilder.GetParameterName(nullParameterName);
                     }
@@ -228,7 +228,7 @@ namespace System.Data.Common
                         _baseParameterNames[i] = GetNextGenericParameterName();
                         _originalParameterNames[i] = GetNextGenericParameterName();
                         // don't bother generating an 'IsNull' name if it's not used
-                        if (schemaRows[i] is { } schemaRow && schemaRow.AllowDBNull)
+                        if (schemaRows[i] is DbSchemaRow schemaRow && schemaRow.AllowDBNull)
                         {
                             _nullParameterNames[i] = GetNextGenericParameterName();
                         }
@@ -633,7 +633,7 @@ namespace System.Data.Common
             string[] srcColumnNames = new string[schemaRows.Length];
             for (int i = 0; i < schemaRows.Length; ++i)
             {
-                if (schemaRows[i] is { } schemaRow)
+                if (schemaRows[i] is DbSchemaRow schemaRow)
                 {
                     srcColumnNames[i] = schemaRow.ColumnName;
                 }

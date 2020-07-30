@@ -3,24 +3,25 @@
 
 using System.ComponentModel;
 using System.Data.Common;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Data.OleDb
 {
     public sealed partial class OleDbParameter : DbParameter
     { // V1.2.3300
-        private object _value;
+        private object? _value;
 
-        private object _parent;
+        private object? _parent;
 
         private ParameterDirection _direction;
         private int _size;
-        private string _sourceColumn;
+        private string? _sourceColumn;
         private DataRowVersion _sourceVersion;
         private bool _sourceColumnNullMapping;
 
         private bool _isNullable;
 
-        private object _coercedValue;
+        private object? _coercedValue;
 
         private OleDbParameter(OleDbParameter source) : this()
         { // V1.2.3300, Clone
@@ -28,14 +29,14 @@ namespace System.Data.OleDb
 
             source.CloneHelper(this);
 
-            ICloneable cloneable = (_value as ICloneable);
+            ICloneable? cloneable = (_value as ICloneable);
             if (null != cloneable)
             {
                 _value = cloneable.Clone();
             }
         }
 
-        private object CoercedValue
+        private object? CoercedValue
         { // V1.2.3300
             get
             {
@@ -134,11 +135,12 @@ namespace System.Data.OleDb
             return (0 != _size);
         }
 
+        [AllowNull]
         public override string SourceColumn
         { // V1.2.3300, XXXParameter V1.0.3300
             get
             {
-                string sourceColumn = _sourceColumn;
+                string? sourceColumn = _sourceColumn;
                 return ((null != sourceColumn) ? sourceColumn : string.Empty);
             }
             set
@@ -200,13 +202,13 @@ namespace System.Data.OleDb
             CloneHelper((OleDbParameter)destination);
         }
 
-        internal object CompareExchangeParent(object value, object comparand)
+        internal object? CompareExchangeParent(object? value, object? comparand)
         {
             // the interlock guarantees same parameter won't belong to multiple collections
             // at the same time, but to actually occur the user must really try
             // since we never declared thread safety, we don't care at this time
             //return System.Threading.Interlocked.CompareExchange(ref _parent, value, comparand);
-            object parent = _parent;
+            object? parent = _parent;
             if (comparand == parent)
             {
                 _parent = value;
@@ -224,7 +226,7 @@ namespace System.Data.OleDb
             return ParameterName;
         }
 
-        private byte ValuePrecisionCore(object value)
+        private byte ValuePrecisionCore(object? value)
         { // V1.2.3300
             if (value is decimal)
             {
@@ -233,7 +235,7 @@ namespace System.Data.OleDb
             return 0;
         }
 
-        private byte ValueScaleCore(object value)
+        private byte ValueScaleCore(object? value)
         { // V1.2.3300
             if (value is decimal)
             {
@@ -242,21 +244,21 @@ namespace System.Data.OleDb
             return 0;
         }
 
-        private int ValueSizeCore(object value)
+        private int ValueSizeCore(object? value)
         { // V1.2.3300
             if (!ADP.IsNull(value))
             {
-                string svalue = (value as string);
+                string? svalue = (value as string);
                 if (null != svalue)
                 {
                     return svalue.Length;
                 }
-                byte[] bvalue = (value as byte[]);
+                byte[]? bvalue = (value as byte[]);
                 if (null != bvalue)
                 {
                     return bvalue.Length;
                 }
-                char[] cvalue = (value as char[]);
+                char[]? cvalue = (value as char[]);
                 if (null != cvalue)
                 {
                     return cvalue.Length;

@@ -23,9 +23,9 @@ namespace System.Diagnostics
             // the hashing manually.
             int hash = 5381;
             hash = ((hash << 5) + hash) + this.Context.GetHashCode();
-            if (Attributes != null)
+            if (Tags != null)
             {
-                foreach (KeyValuePair<string, object> kvp in Attributes)
+                foreach (KeyValuePair<string, object> kvp in Tags)
                 {
                     hash = ((hash << 5) + hash) + kvp.Key.GetHashCode();
                     if (kvp.Value != null)

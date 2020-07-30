@@ -1,20 +1,21 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#nullable enable
 namespace System.Xml
 {
     // Represents a parsed or unparsed entity in the XML document.
     public class XmlEntity : XmlNode
     {
-        private readonly string _publicId;
-        private readonly string _systemId;
-        private readonly string _notationName;
+        private readonly string? _publicId;
+        private readonly string? _systemId;
+        private readonly string? _notationName;
         private readonly string _name;
-        private string _baseURI;
-        private XmlLinkedNode _lastChild;
+        private string _baseURI = string.Empty;
+        private XmlLinkedNode? _lastChild;
         private bool _childrenFoliating;
 
-        internal XmlEntity(string name, string strdata, string publicId, string systemId, string notationName, XmlDocument doc) : base(doc)
+        internal XmlEntity(string name, string? strdata, string? publicId, string? systemId, string? notationName, XmlDocument doc) : base(doc)
         {
             _name = doc.NameTable.Add(name);
             _publicId = publicId;
@@ -71,7 +72,7 @@ namespace System.Xml
             get { return true; }
         }
 
-        internal override XmlLinkedNode LastNode
+        internal override XmlLinkedNode? LastNode
         {
             get
             {
@@ -106,20 +107,20 @@ namespace System.Xml
         }
 
         // Gets the value of the public identifier on the entity declaration.
-        public string PublicId
+        public string? PublicId
         {
             get { return _publicId; }
         }
 
         // Gets the value of the system identifier on the entity declaration.
-        public string SystemId
+        public string? SystemId
         {
             get { return _systemId; }
         }
 
         // Gets the name of the optional NDATA attribute on the
         // entity declaration.
-        public string NotationName
+        public string? NotationName
         {
             get { return _notationName; }
         }

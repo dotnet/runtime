@@ -43,7 +43,8 @@ popd
 :DoGen
 set __ExtraCmakeParams=%__ExtraCmakeParams% "-DCMAKE_SYSTEM_VERSION=10.0" "-DCLI_CMAKE_HOST_VER=%__HostVersion%" "-DCLI_CMAKE_COMMON_HOST_VER=%__AppHostVersion%" "-DCLI_CMAKE_HOST_FXR_VER=%__HostFxrVersion%"
 set __ExtraCmakeParams=%__ExtraCmakeParams% "-DCLI_CMAKE_HOST_POLICY_VER=%__HostPolicyVersion%" "-DCLI_CMAKE_PKG_RID=%cm_BaseRid%" "-DCLI_CMAKE_COMMIT_HASH=%__LatestCommit%" "-DCLR_CMAKE_HOST_ARCH=%__Arch%"
-set __ExtraCmakeParams=%__ExtraCmakeParams% "-DCMAKE_INSTALL_PREFIX=%__CMakeBinDir%" "-DCLI_CMAKE_RESOURCE_DIR=%__ResourcesDir%" "-DCLR_ENG_NATIVE_DIR="%__sourceDir%\..\..\..\eng\native"
+set __ExtraCmakeParams=%__ExtraCmakeParams% "-DCORECLR_ARTIFACTS=%__CoreClrArtifacts% " "-DNATIVE_LIBS_ARTIFACTS=%__NativeLibsArtifacts%" 
+set __ExtraCmakeParams=%__ExtraCmakeParams% "-DCMAKE_INSTALL_PREFIX=%__CMakeBinDir%" "-DCLI_CMAKE_RESOURCE_DIR=%__ResourcesDir%" "-DCLR_ENG_NATIVE_DIR=%__sourceDir%\..\..\..\eng\native"
 
 echo "%CMakePath%" %__sourceDir% -G "Visual Studio %__VSString%" %__ExtraCmakeParams%
 "%CMakePath%" %__sourceDir% -G "Visual Studio %__VSString%" %__ExtraCmakeParams%

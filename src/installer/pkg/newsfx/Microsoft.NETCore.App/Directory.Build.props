@@ -208,6 +208,7 @@
     <PlatformManifestFileEntry Include="System.IO.FileSystem.Watcher.dll" />
     <PlatformManifestFileEntry Include="System.IO.IsolatedStorage.dll" />
     <PlatformManifestFileEntry Include="System.IO.MemoryMappedFiles.dll" />
+    <PlatformManifestFileEntry Include="System.IO.Pipelines.dll" />
     <PlatformManifestFileEntry Include="System.IO.Pipes.AccessControl.dll" />
     <PlatformManifestFileEntry Include="System.IO.Pipes.dll" />
     <PlatformManifestFileEntry Include="System.IO.UnmanagedMemoryStream.dll" />
@@ -217,6 +218,7 @@
     <PlatformManifestFileEntry Include="System.Linq.Queryable.dll" />
     <PlatformManifestFileEntry Include="System.Memory.dll" />
     <PlatformManifestFileEntry Include="System.Net.dll" />
+    <PlatformManifestFileEntry Include="System.Net.Connections.dll" />
     <PlatformManifestFileEntry Include="System.Net.Http.dll" />
     <PlatformManifestFileEntry Include="System.Net.Http.Json.dll" />
     <PlatformManifestFileEntry Include="System.Net.HttpListener.dll" />
@@ -345,6 +347,7 @@
     <PlatformManifestFileEntry Include="dotnet.js" IsNative="true" />
     <PlatformManifestFileEntry Include="dotnet.wasm" IsNative="true" />
     <PlatformManifestFileEntry Include="dotnet.timezones.blat" IsNative="true" />
+    <PlatformManifestFileEntry Include="icudt.dat" IsNative="true" />
   </ItemGroup>
 
   <ItemGroup>

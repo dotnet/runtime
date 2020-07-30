@@ -28,7 +28,16 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Contains("'X'", exStr);
             Assert.Contains("'x'", exStr);
             Assert.Contains("(Int32)", exStr);
-            Assert.Contains("System.Text.Json.Serialization.Tests.Point_MultipleMembers_BindTo_OneConstructorParameter_Variant", exStr);
+            Assert.Contains("Point_MultipleMembers_BindTo_OneConstructorParameter_Variant", exStr);
+
+            ex = await Assert.ThrowsAsync<InvalidOperationException>(
+                () => Serializer.DeserializeWrapper<Url_BindTo_OneConstructorParameter>("{}"));
+
+            exStr = ex.ToString();
+            Assert.Contains("'URL'", exStr);
+            Assert.Contains("'Url'", exStr);
+            Assert.Contains("(Int32)", exStr);
+            Assert.Contains("Url_BindTo_OneConstructorParameter", exStr);
         }
 
         [Fact]
@@ -126,20 +135,6 @@ namespace System.Text.Json.Serialization.Tests
             public Dictionary<string, JsonElement> ExtensionData { get; set; }
 
             public Class_ExtData_CtorParam(Dictionary<string, JsonElement> extensionData) { }
-        }
-
-        [Fact]
-        public void AnonymousObject_InvalidOperationException()
-        {
-            var obj = new { Prop = 5 };
-
-            InvalidOperationException ex = Assert.Throws<InvalidOperationException>(() => JsonSerializer.Deserialize("{}", obj.GetType()));
-
-            // We expect property 'Prop' to bind with a ctor arg called 'prop', but the ctor arg is called 'Prop'.
-            string exStr = ex.ToString();
-            Assert.Contains("AnonymousType", exStr);
-            Assert.Contains("(Int32)", exStr);
-            Assert.Contains("[System.Int32]", exStr);
         }
 
         [Fact]
@@ -251,10 +246,11 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        [ActiveIssue("JsonElement needs to support Path")]
         public async Task ExtensionPropertyRoundTripFails()
         {
-            JsonException e = await Assert.ThrowsAsync<JsonException>(() => Serializer.DeserializeWrapper<Parameterized_ClassWithExtensionProperty>(@"{""MyNestedClass"":{""UnknownProperty"":bad}}"));
+            JsonException e = await Assert.ThrowsAsync<JsonException>(() =>
+                Serializer.DeserializeWrapper<Parameterized_ClassWithExtensionProperty>(@"{""MyNestedClass"":{""UnknownProperty"":bad}}"));
+
             Assert.Equal("$.MyNestedClass.UnknownProperty", e.Path);
         }
 

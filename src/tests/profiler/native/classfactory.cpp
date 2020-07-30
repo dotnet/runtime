@@ -8,6 +8,7 @@
 #include "eventpipeprofiler/eventpipewritingprofiler.h"
 #include "metadatagetdispenser/metadatagetdispenser.h"
 #include "getappdomainstaticaddress/getappdomainstaticaddress.h"
+#include "eltprofiler/slowpatheltprofiler.h"
 
 ClassFactory::ClassFactory(REFCLSID clsid) : refCount(0), clsid(clsid)
 {
@@ -61,7 +62,8 @@ HRESULT STDMETHODCALLTYPE ClassFactory::CreateInstance(IUnknown *pUnkOuter, REFI
         new EventPipeReadingProfiler(),
         new EventPipeWritingProfiler(),
         new MetaDataGetDispenser(),
-        new GetAppDomainStaticAddress()
+        new GetAppDomainStaticAddress(),
+        new SlowPathELTProfiler()
 		// add new profilers here
 	};
 

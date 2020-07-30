@@ -60,7 +60,7 @@ FCIMPL0(Object*, AppDomainNative::GetLoadedAssemblies)
 
     HELPER_METHOD_FRAME_BEGIN_RET_PROTECT(gc);
 
-    MethodTable * pAssemblyClass = MscorlibBinder::GetClass(CLASS__ASSEMBLY);
+    MethodTable * pAssemblyClass = CoreLibBinder::GetClass(CLASS__ASSEMBLY);
 
     AppDomain * pApp = GetAppDomain();
 

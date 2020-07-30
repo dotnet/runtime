@@ -40,7 +40,7 @@ public:
 
     BOOL Found();
     PEImage* GetPEImage();
-    BOOL IsMscorlib();
+    BOOL IsCoreLib();
     void GetBindAssembly(ICLRPrivAssembly** ppAssembly);
 #ifdef FEATURE_PREJIT
     BOOL HasNativeImage();

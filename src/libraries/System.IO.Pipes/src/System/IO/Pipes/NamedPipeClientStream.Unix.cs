@@ -8,6 +8,7 @@ using System.Runtime.InteropServices;
 using System.Net.Sockets;
 using System.Security;
 using System.Threading;
+using System.Runtime.Versioning;
 
 namespace System.IO.Pipes
 {
@@ -66,6 +67,7 @@ namespace System.IO.Pipes
             return true;
         }
 
+        [MinimumOSPlatform("windows7.0")]
         public int NumberOfServerInstances
         {
             get

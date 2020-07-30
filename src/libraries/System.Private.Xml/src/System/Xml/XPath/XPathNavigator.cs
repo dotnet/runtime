@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#nullable enable
 using System.ComponentModel;
 using System.IO;
 using System.Collections;
@@ -13,6 +14,7 @@ using System.Text;
 using System.Xml;
 using MS.Internal.Xml.Cache;
 using MS.Internal.Xml.XPath;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Xml.XPath
 {
@@ -40,16 +42,16 @@ namespace System.Xml.XPath
             get { return true; }
         }
 
-        public override XmlSchemaType XmlType
+        public override XmlSchemaType? XmlType
         {
             get
             {
-                IXmlSchemaInfo schemaInfo = SchemaInfo;
+                IXmlSchemaInfo? schemaInfo = SchemaInfo;
                 if (schemaInfo != null)
                 {
                     if (schemaInfo.Validity == XmlSchemaValidity.Valid)
                     {
-                        XmlSchemaType memberType = schemaInfo.MemberType;
+                        XmlSchemaType? memberType = schemaInfo.MemberType;
                         if (memberType != null)
                         {
                             return memberType;
@@ -70,9 +72,9 @@ namespace System.Xml.XPath
         {
             get
             {
-                IXmlSchemaInfo schemaInfo = SchemaInfo;
-                XmlSchemaType schemaType;
-                XmlSchemaDatatype datatype;
+                IXmlSchemaInfo? schemaInfo = SchemaInfo;
+                XmlSchemaType? schemaType;
+                XmlSchemaDatatype? datatype;
                 if (schemaInfo != null)
                 {
                     if (schemaInfo.Validity == XmlSchemaValidity.Valid)
@@ -122,15 +124,15 @@ namespace System.Xml.XPath
                 default:
                     throw new InvalidOperationException(SR.Xpn_BadPosition);
             }
-            string value = null;
-            IXmlSchemaInfo schemaInfo = SchemaInfo;
+            string? value = null;
+            IXmlSchemaInfo? schemaInfo = SchemaInfo;
             if (schemaInfo != null)
             {
-                XmlSchemaType schemaType = schemaInfo.SchemaType;
+                XmlSchemaType? schemaType = schemaInfo.SchemaType;
                 if (schemaType != null)
                 {
                     value = schemaType.ValueConverter.ToString(typedValue, this);
-                    XmlSchemaDatatype datatype = schemaType.Datatype;
+                    XmlSchemaDatatype? datatype = schemaType.Datatype;
                     if (datatype != null)
                     {
                         datatype.ParseValue(value, NameTable, this);
@@ -148,9 +150,9 @@ namespace System.Xml.XPath
         {
             get
             {
-                IXmlSchemaInfo schemaInfo = SchemaInfo;
-                XmlSchemaType schemaType;
-                XmlSchemaDatatype datatype;
+                IXmlSchemaInfo? schemaInfo = SchemaInfo;
+                XmlSchemaType? schemaType;
+                XmlSchemaDatatype? datatype;
                 if (schemaInfo != null)
                 {
                     if (schemaInfo.Validity == XmlSchemaValidity.Valid)
@@ -190,9 +192,9 @@ namespace System.Xml.XPath
         {
             get
             {
-                IXmlSchemaInfo schemaInfo = SchemaInfo;
-                XmlSchemaType schemaType;
-                XmlSchemaDatatype datatype;
+                IXmlSchemaInfo? schemaInfo = SchemaInfo;
+                XmlSchemaType? schemaType;
+                XmlSchemaDatatype? datatype;
                 if (schemaInfo != null)
                 {
                     if (schemaInfo.Validity == XmlSchemaValidity.Valid)
@@ -228,9 +230,9 @@ namespace System.Xml.XPath
         {
             get
             {
-                IXmlSchemaInfo schemaInfo = SchemaInfo;
-                XmlSchemaType schemaType;
-                XmlSchemaDatatype datatype;
+                IXmlSchemaInfo? schemaInfo = SchemaInfo;
+                XmlSchemaType? schemaType;
+                XmlSchemaDatatype? datatype;
                 if (schemaInfo != null)
                 {
                     if (schemaInfo.Validity == XmlSchemaValidity.Valid)
@@ -266,9 +268,9 @@ namespace System.Xml.XPath
         {
             get
             {
-                IXmlSchemaInfo schemaInfo = SchemaInfo;
-                XmlSchemaType schemaType;
-                XmlSchemaDatatype datatype;
+                IXmlSchemaInfo? schemaInfo = SchemaInfo;
+                XmlSchemaType? schemaType;
+                XmlSchemaDatatype? datatype;
                 if (schemaInfo != null)
                 {
                     if (schemaInfo.Validity == XmlSchemaValidity.Valid)
@@ -304,9 +306,9 @@ namespace System.Xml.XPath
         {
             get
             {
-                IXmlSchemaInfo schemaInfo = SchemaInfo;
-                XmlSchemaType schemaType;
-                XmlSchemaDatatype datatype;
+                IXmlSchemaInfo? schemaInfo = SchemaInfo;
+                XmlSchemaType? schemaType;
+                XmlSchemaDatatype? datatype;
                 if (schemaInfo != null)
                 {
                     if (schemaInfo.Validity == XmlSchemaValidity.Valid)
@@ -342,9 +344,9 @@ namespace System.Xml.XPath
         {
             get
             {
-                IXmlSchemaInfo schemaInfo = SchemaInfo;
-                XmlSchemaType schemaType;
-                XmlSchemaDatatype datatype;
+                IXmlSchemaInfo? schemaInfo = SchemaInfo;
+                XmlSchemaType? schemaType;
+                XmlSchemaDatatype? datatype;
                 if (schemaInfo != null)
                 {
                     if (schemaInfo.Validity == XmlSchemaValidity.Valid)
@@ -376,15 +378,15 @@ namespace System.Xml.XPath
             }
         }
 
-        public override object ValueAs(Type returnType, IXmlNamespaceResolver nsResolver)
+        public override object ValueAs(Type returnType, IXmlNamespaceResolver? nsResolver)
         {
             if (nsResolver == null)
             {
                 nsResolver = this;
             }
-            IXmlSchemaInfo schemaInfo = SchemaInfo;
-            XmlSchemaType schemaType;
-            XmlSchemaDatatype datatype;
+            IXmlSchemaInfo? schemaInfo = SchemaInfo;
+            XmlSchemaType? schemaType;
+            XmlSchemaDatatype? datatype;
             if (schemaInfo != null)
             {
                 if (schemaInfo.Validity == XmlSchemaValidity.Valid)
@@ -439,7 +441,7 @@ namespace System.Xml.XPath
 
         public abstract XmlNameTable NameTable { get; }
 
-        public virtual string LookupNamespace(string prefix)
+        public virtual string? LookupNamespace(string prefix)
         {
             if (prefix == null)
                 return null;
@@ -470,7 +472,7 @@ namespace System.Xml.XPath
             return null;
         }
 
-        public virtual string LookupPrefix(string namespaceURI)
+        public virtual string? LookupPrefix(string namespaceURI)
         {
             if (namespaceURI == null)
                 return null;
@@ -610,7 +612,7 @@ namespace System.Xml.XPath
             writer.WriteNode(this, true);
         }
 
-        public virtual object UnderlyingObject
+        public virtual object? UnderlyingObject
         {
             get { return null; }
         }
@@ -778,7 +780,7 @@ namespace System.Xml.XPath
             return MoveToFollowing(localName, namespaceURI, null);
         }
 
-        public virtual bool MoveToFollowing(string localName, string namespaceURI, XPathNavigator end)
+        public virtual bool MoveToFollowing(string localName, string namespaceURI, XPathNavigator? end)
         {
             XPathNavigator navSave = Clone();
 
@@ -844,7 +846,7 @@ namespace System.Xml.XPath
             return MoveToFollowing(type, null);
         }
 
-        public virtual bool MoveToFollowing(XPathNodeType type, XPathNavigator end)
+        public virtual bool MoveToFollowing(XPathNodeType type, XPathNavigator? end)
         {
             XPathNavigator navSave = Clone();
             int mask = GetContentKindMask(type);
@@ -947,7 +949,7 @@ namespace System.Xml.XPath
 
         public abstract bool IsSamePosition(XPathNavigator other);
 
-        public virtual bool IsDescendant(XPathNavigator nav)
+        public virtual bool IsDescendant([NotNullWhen(true)] XPathNavigator? nav)
         {
             if (nav != null)
             {
@@ -959,7 +961,7 @@ namespace System.Xml.XPath
             return false;
         }
 
-        public virtual XmlNodeOrder ComparePosition(XPathNavigator nav)
+        public virtual XmlNodeOrder ComparePosition(XPathNavigator? nav)
         {
             if (nav == null)
             {
@@ -1019,17 +1021,17 @@ namespace System.Xml.XPath
             }
         }
 
-        public virtual IXmlSchemaInfo SchemaInfo
+        public virtual IXmlSchemaInfo? SchemaInfo
         {
             get { return this as IXmlSchemaInfo; }
         }
 
         public virtual bool CheckValidity(XmlSchemaSet schemas, ValidationEventHandler validationEventHandler)
         {
-            IXmlSchemaInfo schemaInfo;
-            XmlSchemaType schemaType = null;
-            XmlSchemaElement schemaElement = null;
-            XmlSchemaAttribute schemaAttribute = null;
+            IXmlSchemaInfo? schemaInfo;
+            XmlSchemaType? schemaType = null;
+            XmlSchemaElement? schemaElement = null;
+            XmlSchemaAttribute? schemaAttribute = null;
 
             switch (NodeType)
             {
@@ -1080,9 +1082,9 @@ namespace System.Xml.XPath
 
             Debug.Assert(schemaType != null || this.NodeType == XPathNodeType.Root, "schemaType != null  || this.NodeType == XPathNodeType.Root");
 
-            XmlReader reader = CreateReader();
+            XPathNavigatorReader reader = (XPathNavigatorReader)CreateReader();
 
-            CheckValidityHelper validityTracker = new CheckValidityHelper(validationEventHandler, reader as XPathNavigatorReader);
+            CheckValidityHelper validityTracker = new CheckValidityHelper(validationEventHandler, reader);
             validationEventHandler = new ValidationEventHandler(validityTracker.ValidationCallback);
             XmlReader validatingReader = GetValidatingReader(reader, schemas, validationEventHandler, schemaType, schemaElement, schemaAttribute);
 
@@ -1092,7 +1094,7 @@ namespace System.Xml.XPath
             return validityTracker.IsValid;
         }
 
-        private XmlReader GetValidatingReader(XmlReader reader, XmlSchemaSet schemas, ValidationEventHandler validationEvent, XmlSchemaType schemaType, XmlSchemaElement schemaElement, XmlSchemaAttribute schemaAttribute)
+        private XmlReader GetValidatingReader(XmlReader reader, XmlSchemaSet schemas, ValidationEventHandler validationEvent, XmlSchemaType? schemaType, XmlSchemaElement? schemaElement, XmlSchemaAttribute? schemaAttribute)
         {
             if (schemaAttribute != null)
             {
@@ -1128,12 +1130,12 @@ namespace System.Xml.XPath
                 _reader = reader;
             }
 
-            internal void ValidationCallback(object sender, ValidationEventArgs args)
+            internal void ValidationCallback(object? sender, ValidationEventArgs args)
             {
                 Debug.Assert(args != null);
                 if (args.Severity == XmlSeverityType.Error)
                     _isValid = false;
-                XmlSchemaValidationException exception = args.Exception as XmlSchemaValidationException;
+                XmlSchemaValidationException? exception = args.Exception as XmlSchemaValidationException;
                 if (exception != null && _reader != null)
                     exception.SetSourceObject(_reader.UnderlyingObject);
 
@@ -1158,17 +1160,17 @@ namespace System.Xml.XPath
             return XPathExpression.Compile(xpath);
         }
 
-        public virtual XPathNavigator SelectSingleNode(string xpath)
+        public virtual XPathNavigator? SelectSingleNode(string xpath)
         {
             return SelectSingleNode(XPathExpression.Compile(xpath));
         }
 
-        public virtual XPathNavigator SelectSingleNode(string xpath, IXmlNamespaceResolver resolver)
+        public virtual XPathNavigator? SelectSingleNode(string xpath, IXmlNamespaceResolver? resolver)
         {
             return SelectSingleNode(XPathExpression.Compile(xpath, resolver));
         }
 
-        public virtual XPathNavigator SelectSingleNode(XPathExpression expression)
+        public virtual XPathNavigator? SelectSingleNode(XPathExpression expression)
         {
             // PERF BUG: this actually caches _all_ matching nodes...
             XPathNodeIterator iter = this.Select(expression);
@@ -1191,7 +1193,7 @@ namespace System.Xml.XPath
 
         public virtual XPathNodeIterator Select(XPathExpression expr)
         {
-            XPathNodeIterator result = Evaluate(expr) as XPathNodeIterator;
+            XPathNodeIterator? result = Evaluate(expr) as XPathNodeIterator;
             if (result == null)
             {
                 throw XPathException.Create(SR.Xp_NodeSetExpected);
@@ -1214,9 +1216,9 @@ namespace System.Xml.XPath
             return Evaluate(expr, null);
         }
 
-        public virtual object Evaluate(XPathExpression expr, XPathNodeIterator context)
+        public virtual object Evaluate(XPathExpression expr, XPathNodeIterator? context)
         {
-            CompiledXpathExpr cexpr = expr as CompiledXpathExpr;
+            CompiledXpathExpr? cexpr = expr as CompiledXpathExpr;
             if (cexpr == null)
             {
                 throw XPathException.Create(SR.Xp_BadQueryObject);
@@ -1233,6 +1235,7 @@ namespace System.Xml.XPath
 
             if (result is XPathNodeIterator)
             {
+                Debug.Assert(context.Current != null);
                 return new XPathSelectionIterator(context.Current, query);
             }
 
@@ -1241,7 +1244,7 @@ namespace System.Xml.XPath
 
         public virtual bool Matches(XPathExpression expr)
         {
-            CompiledXpathExpr cexpr = expr as CompiledXpathExpr;
+            CompiledXpathExpr? cexpr = expr as CompiledXpathExpr;
             if (cexpr == null)
                 throw XPathException.Create(SR.Xp_BadQueryObject);
 
@@ -1695,10 +1698,10 @@ namespace System.Xml.XPath
         {
             XPathNavigator navClone = Clone();
 
-            localName = (localName != null) ? NameTable.Get(localName) : null;
+            string? atomizedLocalName = (localName != null) ? NameTable.Get(localName) : null;
             while (MoveToPrevious())
             {
-                if (NodeType == XPathNodeType.Element && (object)localName == (object)LocalName && namespaceURI == NamespaceURI)
+                if (NodeType == XPathNodeType.Element && atomizedLocalName == LocalName && namespaceURI == NamespaceURI)
                     return true;
             }
 

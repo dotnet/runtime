@@ -10,6 +10,8 @@ namespace System.Tests.Types
     {
         public abstract Type CreateType();
 
+        public virtual int? ArrayRank => null;
+
         public abstract TypeAttributes Attributes { get; }
 
         public virtual Type BaseType => typeof(object);
@@ -27,6 +29,8 @@ namespace System.Tests.Types
         public virtual int? GenericParameterPosition => null;
 
         public virtual Type[] GenericTypeArguments => new Type[0];
+
+        public virtual Type GenericTypeDefinition => null;
 
         public virtual bool HasElementType => false;
 
@@ -90,7 +94,7 @@ namespace System.Tests.Types
             Assert.Equal((Attributes & TypeAttributes.Import) != 0, t.IsImport);
             Assert.Equal((Attributes & TypeAttributes.Sealed) != 0, t.IsSealed);
             Assert.Equal((Attributes & TypeAttributes.SpecialName) != 0, t.IsSpecialName);
-            Assert.Equal((Attributes & TypeAttributes.Serializable) != 0 || t.IsEnum, t.IsSerializable);
+            Assert.Equal((Attributes & TypeAttributes.Serializable) != 0 || t.IsEnum || t == typeof(Delegate), t.IsSerializable);
 
             Assert.Equal((Attributes & TypeAttributes.ClassSemanticsMask) == TypeAttributes.Class && !t.IsValueType, t.IsClass);
             Assert.Equal((Attributes & TypeAttributes.ClassSemanticsMask) == TypeAttributes.Interface, t.IsInterface);
@@ -150,6 +154,19 @@ namespace System.Tests.Types
         }
 
         [Fact]
+        public void GetGenericTypeDefinition_Invoke_ReturnsExpected()
+        {
+            if (GenericTypeDefinition != null)
+            {
+                Assert.Equal(GenericTypeDefinition, CreateType().GetGenericTypeDefinition());
+            }
+            else
+            {
+                Assert.Throws<InvalidOperationException>(() => CreateType().GetGenericTypeDefinition());
+            }
+        }
+
+        [Fact]
         public void GenericParameterAttributes_Get_ReturnsExpected()
         {
             if (GenericParameterPosition != null)
@@ -172,6 +189,19 @@ namespace System.Tests.Types
             else
             {
                 Assert.Throws<InvalidOperationException>(() => CreateType().GenericParameterPosition);
+            }
+        }
+
+        [Fact]
+        public void GetArrayRank_Invoke_ReturnsExpected()
+        {
+            if (ArrayRank != null)
+            {
+                Assert.Equal(ArrayRank, CreateType().GetArrayRank());
+            }
+            else
+            {
+                AssertExtensions.Throws<ArgumentException>(null, () => CreateType().GetArrayRank());
             }
         }
 
@@ -393,17 +423,14 @@ namespace System.Tests.Types
         public override TypeAttributes Attributes => TypeAttributes.AutoLayout | TypeAttributes.AnsiClass | TypeAttributes.Class | TypeAttributes.Public | TypeAttributes.Sealed;
 
         public override Type BaseType => typeof(Enum);
-
     }
 
-    public class ByteTests : PrimitiveTypeTestBase
+    // Primitives
+    public class StringTypeTests : ClassTypeTestBase
     {
-        public override Type CreateType() => typeof(byte);
-    }
+        public override Type CreateType() => typeof(string);
 
-    public class ByteEnumTests : EnumTypeTestBase
-    {
-        public override Type CreateType() => typeof(ByteEnum);
+        public override TypeAttributes Attributes => TypeAttributes.AutoLayout | TypeAttributes.AnsiClass | TypeAttributes.Class | TypeAttributes.Public | TypeAttributes.Sealed | TypeAttributes.Serializable | TypeAttributes.BeforeFieldInit;
     }
 
     public class SByteTests : PrimitiveTypeTestBase
@@ -411,19 +438,9 @@ namespace System.Tests.Types
         public override Type CreateType() => typeof(sbyte);
     }
 
-    public class SByteEnumTests : EnumTypeTestBase
+    public class ByteTests : PrimitiveTypeTestBase
     {
-        public override Type CreateType() => typeof(SByteEnum);
-    }
-
-    public class UShortTests : PrimitiveTypeTestBase
-    {
-        public override Type CreateType() => typeof(ushort);
-    }
-
-    public class UShortEnumTests : EnumTypeTestBase
-    {
-        public override Type CreateType() => typeof(UShortEnum);
+        public override Type CreateType() => typeof(byte);
     }
 
     public class ShortTests : PrimitiveTypeTestBase
@@ -431,19 +448,9 @@ namespace System.Tests.Types
         public override Type CreateType() => typeof(short);
     }
 
-    public class ShortEnumTests : EnumTypeTestBase
+    public class UShortTests : PrimitiveTypeTestBase
     {
-        public override Type CreateType() => typeof(ShortEnum);
-    }
-
-    public class UIntTests : PrimitiveTypeTestBase
-    {
-        public override Type CreateType() => typeof(uint);
-    }
-
-    public class UIntEnumTests : EnumTypeTestBase
-    {
-        public override Type CreateType() => typeof(UIntEnum);
+        public override Type CreateType() => typeof(ushort);
     }
 
     public class IntTests : PrimitiveTypeTestBase
@@ -451,19 +458,9 @@ namespace System.Tests.Types
         public override Type CreateType() => typeof(int);
     }
 
-    public class IntEnumTests : EnumTypeTestBase
+    public class UIntTests : PrimitiveTypeTestBase
     {
-        public override Type CreateType() => typeof(IntEnum);
-    }
-
-    public class ULongTests : PrimitiveTypeTestBase
-    {
-        public override Type CreateType() => typeof(ulong);
-    }
-
-    public class ULongEnumTests : EnumTypeTestBase
-    {
-        public override Type CreateType() => typeof(ULongEnum);
+        public override Type CreateType() => typeof(uint);
     }
 
     public class LongTests : PrimitiveTypeTestBase
@@ -471,19 +468,14 @@ namespace System.Tests.Types
         public override Type CreateType() => typeof(long);
     }
 
-    public class LongEnumTests : EnumTypeTestBase
+    public class ULongTests : PrimitiveTypeTestBase
     {
-        public override Type CreateType() => typeof(LongEnum);
+        public override Type CreateType() => typeof(ulong);
     }
 
-    public class DoubleTests : PrimitiveTypeTestBase
+    public class CharTests : PrimitiveTypeTestBase
     {
-        public override Type CreateType() => typeof(double);
-    }
-
-    public class FloatTests : PrimitiveTypeTestBase
-    {
-        public override Type CreateType() => typeof(float);
+        public override Type CreateType() => typeof(char);
     }
 
     public class BoolTests : PrimitiveTypeTestBase
@@ -491,9 +483,14 @@ namespace System.Tests.Types
         public override Type CreateType() => typeof(bool);
     }
 
-    public class CharTests : PrimitiveTypeTestBase
+    public class FloatTests : PrimitiveTypeTestBase
     {
-        public override Type CreateType() => typeof(char);
+        public override Type CreateType() => typeof(float);
+    }
+
+    public class DoubleTests : PrimitiveTypeTestBase
+    {
+        public override Type CreateType() => typeof(double);
     }
 
     public class IntPtrTests : PrimitiveTypeTestBase
@@ -506,7 +503,12 @@ namespace System.Tests.Types
         public override Type CreateType() => typeof(UIntPtr);
     }
 
-    public class ObjectTests : ClassTypeTestBase
+    public class VoidTests : StructTypeTestBase
+    {
+        public override Type CreateType() => typeof(void);
+    }
+
+    public class ObjectTypeTests : ClassTypeTestBase
     {
         public override Type CreateType() => typeof(object);
 
@@ -515,11 +517,27 @@ namespace System.Tests.Types
         public override Type BaseType => null;
     }
 
-    public class ValueTypeTests : ClassTypeTestBase
+    public class ArrayTypeTests : ClassTypeTestBase
+    {
+        public override Type CreateType() => typeof(Array);
+
+        public override TypeAttributes Attributes => TypeAttributes.AutoLayout | TypeAttributes.AnsiClass | TypeAttributes.Class | TypeAttributes.Public | TypeAttributes.Abstract | TypeAttributes.Serializable | TypeAttributes.BeforeFieldInit;
+    }
+
+    public class ValueTypeTypeTests : ClassTypeTestBase
     {
         public override Type CreateType() => typeof(ValueType);
 
         public override TypeAttributes Attributes => TypeAttributes.AutoLayout | TypeAttributes.AnsiClass | TypeAttributes.Class | TypeAttributes.Public | TypeAttributes.Public | TypeAttributes.Abstract | TypeAttributes.Serializable | TypeAttributes.BeforeFieldInit;
+    }
+
+    public class DelegateTypeTests : ClassTypeTestBase
+    {
+        public override Type CreateType() => typeof(Delegate);
+
+        public override TypeAttributes Attributes => PlatformDetection.IsMonoRuntime
+            ? TypeAttributes.AutoLayout | TypeAttributes.AnsiClass | TypeAttributes.Class | TypeAttributes.Public | TypeAttributes.SequentialLayout | TypeAttributes.Abstract | TypeAttributes.BeforeFieldInit
+            : TypeAttributes.AutoLayout | TypeAttributes.AnsiClass | TypeAttributes.Class | TypeAttributes.Public | TypeAttributes.Abstract | TypeAttributes.BeforeFieldInit;
     }
 
     public class EnumTypeTests : ClassTypeTestBase
@@ -531,26 +549,123 @@ namespace System.Tests.Types
         public override Type BaseType => typeof(ValueType);
     }
 
-    public class VoidTests : StructTypeTestBase
+    // Primitives enums
+    public class SByteEnumTests : EnumTypeTestBase
     {
-        public override Type CreateType() => typeof(void);
+        public override Type CreateType() => typeof(SByteEnum);
     }
 
-    public class IntRefTests : TypePropertyTestBase
+    public class ByteEnumTests : EnumTypeTestBase
     {
-        public override Type CreateType() => typeof(int).MakeByRefType();
+        public override Type CreateType() => typeof(ByteEnum);
+    }
 
-        public override TypeAttributes Attributes => TypeAttributes.Class;
+    public class Int16EnumTests : EnumTypeTestBase
+    {
+        public override Type CreateType() => typeof(Int16Enum);
+    }
 
-        public override Type BaseType => null;
+    public class UInt16EnumTests : EnumTypeTestBase
+    {
+        public override Type CreateType() => typeof(UInt16Enum);
+    }
 
-        public override bool IsByRef => true;
+    public class Int32EnumTests : EnumTypeTestBase
+    {
+        public override Type CreateType() => typeof(Int32Enum);
+    }
 
-        public override bool IsTypeDefinition => false;
+    public class UInt32EnumTests : EnumTypeTestBase
+    {
+        public override Type CreateType() => typeof(UInt32Enum);
+    }
 
-        public override bool HasElementType => true;
+    public class Int64EnumTests : EnumTypeTestBase
+    {
+        public override Type CreateType() => typeof(Int64Enum);
+    }
+
+    public class UInt64EnumTests : EnumTypeTestBase
+    {
+        public override Type CreateType() => typeof(UInt64Enum);
+    }
+
+    // Arrays, pointers.
+    public class StringArrayTests : ArrayTypeTestBase
+    {
+        public override Type CreateType() => typeof(string[]);
+
+        public override int? ArrayRank => 1;
+
+        public override Type ElementType => typeof(string);
+
+        public override bool IsSZArray => true;
+    }
+
+    public class IntArrayTests : ArrayTypeTestBase
+    {
+        public override Type CreateType() => typeof(int[]);
+
+        public override int? ArrayRank => 1;
 
         public override Type ElementType => typeof(int);
+
+        public override bool IsSZArray => true;
+    }
+
+    public class ArrayOfArrayTests : ArrayTypeTestBase
+    {
+        public override Type CreateType() => typeof(int[][]);
+
+        public override int? ArrayRank => 1;
+
+        public override Type ElementType => typeof(int[]);
+
+        public override bool IsSZArray => true;
+    }
+
+    public class NestedArrayTests : ArrayTypeTestBase
+    {
+        public override Type CreateType() => typeof(Outside.Inside[]);
+
+        public override int? ArrayRank => 1;
+
+        public override Type ElementType => typeof(Outside.Inside);
+
+        public override bool IsSZArray => true;
+    }
+
+    public class GenericNestedArrayTests : ArrayTypeTestBase
+    {
+        public override Type CreateType() => typeof(Outside<int>.Inside<double>[]);
+
+        public override int? ArrayRank => 1;
+
+        public override Type ElementType => typeof(Outside<int>.Inside<double>);
+
+        public override bool IsSZArray => true;
+    }
+
+    public class NonSzIntArrayTests : ArrayTypeTestBase
+    {
+        public override Type CreateType() => typeof(int).MakeArrayType(1);
+
+        public override int? ArrayRank => 1;
+
+        public override Type ElementType => typeof(int);
+
+        public override bool IsVariableBoundArray => true;
+    }
+
+    public class MultidimensionalIntArrayTests : ArrayTypeTestBase
+    {
+        public override Type CreateType() => typeof(int[,]);
+
+        public override int? ArrayRank => 2;
+
+        public override Type ElementType => typeof(int);
+
+        public override bool IsVariableBoundArray => true;
     }
 
     public class IntPointerTests : TypePropertyTestBase
@@ -570,76 +685,37 @@ namespace System.Tests.Types
         public override Type ElementType => typeof(int);
     }
 
-    public class IntArrayTests : ArrayTypeTestBase
+    public class IntRefTests : TypePropertyTestBase
     {
-        public override Type CreateType() => typeof(int[]);
+        public override Type CreateType() => typeof(int).MakeByRefType();
+
+        public override TypeAttributes Attributes => TypeAttributes.Class;
+
+        public override Type BaseType => null;
+
+        public override bool IsByRef => true;
+
+        public override bool IsTypeDefinition => false;
+
+        public override bool HasElementType => true;
 
         public override Type ElementType => typeof(int);
-
-        public override bool IsSZArray => true;
     }
 
-    public class MultidimensionalIntArrayTests : ArrayTypeTestBase
-    {
-        public override Type CreateType() => typeof(int[,]);
-
-        public override Type ElementType => typeof(int);
-
-        public override bool IsVariableBoundArray => true;
-    }
-
-    public class ArrayOfArrayTests : ArrayTypeTestBase
-    {
-        public override Type CreateType() => typeof(int[][]);
-
-        public override Type ElementType => typeof(int[]);
-
-        public override bool IsSZArray => true;
-    }
-
-    public class NestedArrayTests : ArrayTypeTestBase
-    {
-        public override Type CreateType() => typeof(Outside.Inside[]);
-
-        public override Type ElementType => typeof(Outside.Inside);
-
-        public override bool IsSZArray => true;
-    }
-
-    public class GenericNestedArrayTests : ArrayTypeTestBase
-    {
-        public override Type CreateType() => typeof(Outside<int>.Inside<double>[]);
-
-        public override Type ElementType => typeof(Outside<int>.Inside<double>);
-
-        public override bool IsSZArray => true;
-    }
-
-    public class ArrayTypeTests : ClassTypeTestBase
-    {
-        public override Type CreateType() => typeof(Array);
-
-        public override TypeAttributes Attributes => TypeAttributes.AutoLayout | TypeAttributes.AnsiClass | TypeAttributes.Class | TypeAttributes.Public | TypeAttributes.Abstract | TypeAttributes.Serializable | TypeAttributes.BeforeFieldInit;
-    }
-
-    public class NonGenericClassTests : ClassTypeTestBase
+    // Classes, structs, interfaces, enums
+    public class NonGenericClassTypeTests : ClassTypeTestBase
     {
         public override Type CreateType() => typeof(NonGenericClass);
     }
 
-    public class NonGenericSubClassOfNonGenericTests : ClassTypeTestBase
+    public class NonGenericSubClassOfNonGenericTypeTests : ClassTypeTestBase
     {
         public override Type CreateType() => typeof(NonGenericSubClassOfNonGeneric);
 
         public override Type BaseType => typeof(NonGenericClass);
     }
 
-    public class TypedReferenceTypeTests : StructTypeTestBase
-    {
-        public override Type CreateType() => typeof(TypedReference);
-    }
-
-    public class GenericClass1Tests : ClassTypeTestBase
+    public class GenericClass1TypeTests : ClassTypeTestBase
     {
         public override Type CreateType() => typeof(GenericClass<string>);
 
@@ -650,9 +726,11 @@ namespace System.Tests.Types
         public override bool IsTypeDefinition => false;
 
         public override Type[] GenericTypeArguments => new Type[] { typeof(string) };
+
+        public override Type GenericTypeDefinition => typeof(GenericClass<>);
     }
 
-    public class GenericClass2Tests : ClassTypeTestBase
+    public class GenericClass2TypeTests : ClassTypeTestBase
     {
         public override Type CreateType() => typeof(GenericClass<int, string>);
 
@@ -663,9 +741,11 @@ namespace System.Tests.Types
         public override bool IsTypeDefinition => false;
 
         public override Type[] GenericTypeArguments => new Type[] { typeof(int), typeof(string) };
+
+        public override Type GenericTypeDefinition => typeof(GenericClass<,>);
     }
 
-    public class OpenGenericClassTests : ClassTypeTestBase
+    public class OpenGenericClassTypeTests : ClassTypeTestBase
     {
         public override Type CreateType() => typeof(GenericClass<>);
 
@@ -674,9 +754,28 @@ namespace System.Tests.Types
         public override bool IsGenericType => true;
 
         public override bool IsGenericTypeDefinition => true;
+
+        public override Type GenericTypeDefinition => typeof(GenericClass<>);
     }
 
-    public class NonGenericSubClassOfGenericTests : ClassTypeTestBase
+    public class OpenGenericNestedClassTypeTests : ClassTypeTestBase
+    {
+        public override Type CreateType() => typeof(GenericClass<>).MakeGenericType(typeof(GenericClass<>));
+
+        public override bool ContainsGenericParameters => true;
+
+        public override bool IsConstructedGenericType => true;
+
+        public override bool IsGenericType => true;
+
+        public override bool IsTypeDefinition => false;
+
+        public override Type[] GenericTypeArguments => new Type[] { typeof(GenericClass<>) };
+
+        public override Type GenericTypeDefinition => typeof(GenericClass<>);
+    }
+
+    public class NonGenericSubClassOfGenericTypeTests : ClassTypeTestBase
     {
         public override Type CreateType() => typeof(NonGenericSubClassOfGeneric);
 
@@ -704,6 +803,8 @@ namespace System.Tests.Types
         public override bool IsTypeDefinition => false;
 
         public override Type[] GenericTypeArguments => new Type[] { typeof(string) };
+
+        public override Type GenericTypeDefinition => typeof(GenericStruct<>);
     }
 
     public class GenericStruct2Tests : StructTypeTestBase
@@ -717,6 +818,8 @@ namespace System.Tests.Types
         public override bool IsTypeDefinition => false;
 
         public override Type[] GenericTypeArguments => new Type[] { typeof(int), typeof(string) };
+
+        public override Type GenericTypeDefinition => typeof(GenericStruct<,>);
     }
 
     public class NonGenericInterfaceTests : InterfaceTypeTestBase
@@ -735,6 +838,8 @@ namespace System.Tests.Types
         public override bool IsTypeDefinition => false;
 
         public override Type[] GenericTypeArguments => new Type[] { typeof(string) };
+
+        public override Type GenericTypeDefinition => typeof(GenericInterface<>);
     }
 
     public class GenericInterface2Tests : InterfaceTypeTestBase
@@ -748,6 +853,15 @@ namespace System.Tests.Types
         public override bool IsTypeDefinition => false;
 
         public override Type[] GenericTypeArguments => new Type[] { typeof(int), typeof(string) };
+
+        public override Type GenericTypeDefinition => typeof(GenericInterface<,>);
+    }
+
+    public class AbstractClassTypeTests : ClassTypeTestBase
+    {
+        public override Type CreateType() => typeof(AbstractClass);
+
+        public override TypeAttributes Attributes => TypeAttributes.AutoLayout | TypeAttributes.AnsiClass | TypeAttributes.Class | TypeAttributes.Public | TypeAttributes.Abstract | TypeAttributes.BeforeFieldInit;
     }
 
     public class OpenGenericInterfaceTests : InterfaceTypeTestBase
@@ -759,6 +873,8 @@ namespace System.Tests.Types
         public override bool IsGenericType => true;
 
         public override bool IsGenericTypeDefinition => true;
+
+        public override Type GenericTypeDefinition => typeof(GenericInterface<>);
     }
 
     public class NonGenericNestedTests : TypePropertyTestBase
@@ -785,6 +901,8 @@ namespace System.Tests.Types
         public override bool IsTypeDefinition => false;
 
         public override Type[] GenericTypeArguments => new Type[] { typeof(int), typeof(double) };
+
+        public override Type GenericTypeDefinition => typeof(Outside<>.Inside<>);
     }
 
     public class OpenGenericNestedTests : TypePropertyTestBase
@@ -800,6 +918,8 @@ namespace System.Tests.Types
         public override bool IsGenericType => true;
 
         public override bool IsGenericTypeDefinition => true;
+
+        public override Type GenericTypeDefinition => typeof(Outside<>.Inside<>);
     }
 
     public class GenericTypeParameter1Of1Tests : TypePropertyTestBase
@@ -939,7 +1059,7 @@ namespace System.Tests.Types
         public override int? GenericParameterPosition => 1;
     }
 
-    public class MarshalByRefObjectTests : ClassTypeTestBase
+    public class MarshalByRefObjectTypeTests : ClassTypeTestBase
     {
         public override Type CreateType() => typeof(MarshalByRefObject);
 
@@ -949,7 +1069,7 @@ namespace System.Tests.Types
         public override bool IsMarshalByRef => false;
     }
 
-    public class ContextBoundObjectTests : ClassTypeTestBase
+    public class ContextBoundObjectTypeTests : ClassTypeTestBase
     {
         public override Type CreateType() => typeof(ContextBoundObject);
 
@@ -962,19 +1082,38 @@ namespace System.Tests.Types
         public override bool IsContextful => false;
     }
 
-    public enum ByteEnum : byte { }
+    // By-Ref types.
+    public class TypedReferenceTypeTests : StructTypeTestBase
+    {
+        public override Type CreateType() => typeof(TypedReference);
+    }
 
-    public enum SByteEnum : sbyte { }
+    public class ArgIteratorTypeTests : StructTypeTestBase
+    {
+        public override Type CreateType() => typeof(ArgIterator);
 
-    public enum UShortEnum : ushort { }
+        public override TypeAttributes Attributes => PlatformDetection.IsMonoRuntime
+            ? TypeAttributes.AutoLayout | TypeAttributes.AnsiClass | TypeAttributes.Class | TypeAttributes.Public | TypeAttributes.Sealed | TypeAttributes.BeforeFieldInit
+            : TypeAttributes.AutoLayout | TypeAttributes.AnsiClass | TypeAttributes.Class | TypeAttributes.Public | TypeAttributes.SequentialLayout | TypeAttributes.Sealed | TypeAttributes.BeforeFieldInit;
+    }
 
-    public enum ShortEnum : short { }
+    public class RuntimeArgumentHandleTypeTests : StructTypeTestBase
+    {
+        public override Type CreateType() => typeof(RuntimeArgumentHandle);
+    }
 
-    public enum UIntEnum : uint { }
+    public class SpanIntTypeTests : StructTypeTestBase
+    {
+        public override Type CreateType() => typeof(Span<int>);
 
-    public enum IntEnum : int { }
+        public override Type[] GenericTypeArguments => new Type[] { typeof(int) };
 
-    public enum ULongEnum : ulong { }
+        public override bool IsConstructedGenericType => true;
 
-    public enum LongEnum : long { }
+        public override bool IsGenericType => true;
+
+        public override bool IsTypeDefinition => false;
+
+        public override Type GenericTypeDefinition => typeof(Span<>);
+    }
 }
