@@ -14,23 +14,23 @@
     <RunArguments>$(TargetPath) --settings:$(OutDir).runsettings</RunArguments>
   </PropertyGroup>
 
-  <PropertyGroup>
-    <ArchiveTestsAfterTargets>PrepareForRun</ArchiveTestsAfterTargets>
-
-    <!-- For browser we need to hook up the target with DependsOnTargets in PublishTestAsSelfContained
-    because we do a Publish which runs after Build, if we run after PrepareForRun we would generated
-    an empty zip because we haven't published the selfcontained app.  -->
-    <ArchiveTestsAfterTargets Condition="'$(TargetOS)' == 'Browser'" />
-  </PropertyGroup>
+  <Target Name="PublishAfterBuild"
+          DependsOnTargets="Publish"
+          AfterTargets="Build"
+          Condition="'$(IsCrossTargetingBuild)' != 'true' and
+                     '$(ArchiveTests)' == 'true'" />
 
   <!-- Archive test binaries. -->
   <Target Name="ArchiveTests"
-          Condition="'$(ArchiveTests)' == 'true' and '$(IgnoreForCI)' != 'true' and ('$(TargetsMobile)' != 'true' or '$(TargetOS)' == 'Browser')"
-          AfterTargets="$(ArchiveTestsAfterTargets)">
+          Condition="'$(IsCrossTargetingBuild)' != 'true' and
+                     '$(IgnoreForCI)' != 'true' and
+                     ('$(TargetsMobile)' != 'true' or
+                      '$(TargetOS)' == 'Browser')"
+          AfterTargets="Publish">
     <Error Condition="'$(TestArchiveTestsDir)' == ''" Text="TestArchiveTestsDir property to archive the test folder must be set." />
 
     <PropertyGroup>
-      <_ZipSourceDirectory>$(OutDir)</_ZipSourceDirectory>
+      <_ZipSourceDirectory>$(PublishDir)</_ZipSourceDirectory>
       <_ZipSourceDirectory Condition="'$(TargetOS)' == 'Browser'">$(BundleDir)</_ZipSourceDirectory>
     </PropertyGroup>
 
