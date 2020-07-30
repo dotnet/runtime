@@ -3638,10 +3638,10 @@ namespace System
     }
     public static partial class StringNormalizationExtensions
     {
-        public static bool IsNormalized(this string value) { throw null; }
-        public static bool IsNormalized(this string value, System.Text.NormalizationForm normalizationForm) { throw null; }
-        public static string Normalize(this string value) { throw null; }
-        public static string Normalize(this string value, System.Text.NormalizationForm normalizationForm) { throw null; }
+        public static bool IsNormalized(this string strInput) { throw null; }
+        public static bool IsNormalized(this string strInput, System.Text.NormalizationForm normalizationForm) { throw null; }
+        public static string Normalize(this string strInput) { throw null; }
+        public static string Normalize(this string strInput, System.Text.NormalizationForm normalizationForm) { throw null; }
     }
     [System.FlagsAttribute]
     public enum StringSplitOptions
