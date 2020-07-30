@@ -16,6 +16,44 @@ namespace System.Net.Sockets.Tests
     {
         public SendReceive(ITestOutputHelper output) : base(output) {}
 
+        [Fact]
+        public async Task ReceiveAsync_ConcurrentShutdownWithTimeoutAndClose_SucceedsOrThrowsAppropriateException()
+        {
+            if (UsesSync) return;
+
+            for (int i = 0; i < 10000; i++) // run multiple times to attempt to force various interleavings
+            {
+                (Socket client, Socket server) = CreateConnectedSocketPair();
+                using (var b = new Barrier(2))
+                {
+                    Task dispose = Task.Factory.StartNew(() =>
+                    {
+                        b.SignalAndWait();
+                        client.Shutdown(SocketShutdown.Both);
+                        client.Close(15);
+                    }, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default);
+
+                    Task send = Task.Factory.StartNew(() =>
+                    {
+                        SendAsync(server, new ArraySegment<byte>(new byte[1])).GetAwaiter().GetResult();
+                        b.SignalAndWait();
+                        ReceiveAsync(client, new ArraySegment<byte>(new byte[1])).GetAwaiter().GetResult();
+                    }, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default);
+
+                    await dispose;
+                    Exception error = await Record.ExceptionAsync(() => send);
+                    if (error != null)
+                    {
+                        Assert.True(
+                            error is ObjectDisposedException ||
+                            error is SocketException ||
+                            (error is SEHException && PlatformDetection.IsInAppContainer),
+                            error.ToString());
+                    }
+                }
+            }
+        }
+
         [Theory]
         [InlineData(null, 0, 0)] // null array
         [InlineData(1, -1, 0)] // offset low
