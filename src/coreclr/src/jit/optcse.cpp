@@ -2526,8 +2526,9 @@ public:
 #ifdef DEBUG
                     if (m_pCompiler->verbose)
                     {
-                        printf("Moderate CSE Promotion (CSE is live across a call) (%u >= %u)\n", cseRefCnt,
-                               moderateRefCnt);
+                        printf("Moderate CSE Promotion (%s) (%u >= %u)\n",
+                               candidate->LiveAcrossCall() ? "CSE is live across a call" : "not enregisterable",
+                               cseRefCnt, moderateRefCnt);
                     }
 #endif
                     cse_def_cost = 2;
@@ -2558,8 +2559,9 @@ public:
 #ifdef DEBUG
                     if (m_pCompiler->verbose)
                     {
-                        printf("Conservative CSE Promotion (CSE never live at call) (%u < %u)\n", cseRefCnt,
-                               moderateRefCnt);
+                        printf("Conservative CSE Promotion (%s) (%u < %u)\n",
+                               candidate->LiveAcrossCall() ? "CSE is live across a call" : "not enregisterable",
+                               cseRefCnt, moderateRefCnt);
                     }
 #endif
                     cse_def_cost = 2;
