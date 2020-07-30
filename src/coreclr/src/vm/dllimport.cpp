@@ -54,6 +54,9 @@ using namespace clr::fs;
 // Specifies whether coreclr is embedded or standalone
 extern bool g_coreclr_embedded;
 
+// Specifies whether hostpolicy is embedded in executable or standalone
+extern bool g_hostpolicy_embedded;
+
 // remove when we get an updated SDK
 #define LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR 0x00000100
 #define LOAD_LIBRARY_SEARCH_DEFAULT_DIRS 0x00001000
@@ -6330,6 +6333,21 @@ namespace
             }
         }
 #endif
+
+        if (g_hostpolicy_embedded)
+        {
+#ifdef TARGET_WINDOWS
+            if (wcscmp(wszLibName, W("hostpolicy.dll")) == 0)
+            {
+                return WszGetModuleHandle(NULL);
+            }
+#else
+            if (wcscmp(wszLibName, W("libhostpolicy")) == 0)
+            {
+                return PAL_LoadLibraryDirect(NULL);
+            }
+#endif
+        }
 
         AppDomain* pDomain = GetAppDomain();
         DWORD loadWithAlteredPathFlags = GetLoadWithAlteredSearchPathFlag();

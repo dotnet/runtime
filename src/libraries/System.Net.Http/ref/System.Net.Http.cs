@@ -4,6 +4,8 @@
 // Changes to this file must follow the https://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
 
+using System.Diagnostics.CodeAnalysis;
+
 namespace System.Net.Http
 {
     public partial class ByteArrayContent : System.Net.Http.HttpContent
@@ -212,13 +214,44 @@ namespace System.Net.Http
         public System.Net.Http.HttpContent? Content { get { throw null; } set { } }
         public System.Net.Http.Headers.HttpRequestHeaders Headers { get { throw null; } }
         public System.Net.Http.HttpMethod Method { get { throw null; } set { } }
+        [Obsolete("Use Options instead.")]
         public System.Collections.Generic.IDictionary<string, object?> Properties { get { throw null; } }
+        public HttpRequestOptions Options { get { throw null; } }
         public System.Uri? RequestUri { get { throw null; } set { } }
         public System.Version Version { get { throw null; } set { } }
         public void Dispose() { }
         protected virtual void Dispose(bool disposing) { }
         public override string ToString() { throw null; }
     }
+
+    public readonly struct HttpRequestOptionsKey<TValue>
+    {
+        public HttpRequestOptionsKey(string key) {}
+        public string Key { get { throw null; } }
+    }
+
+    public sealed class HttpRequestOptions : System.Collections.Generic.IDictionary<string, object?>
+    {
+        void System.Collections.Generic.IDictionary<string, object?>.Add(string key, object? value) { throw null; }
+        System.Collections.Generic.ICollection<string> System.Collections.Generic.IDictionary<string, object?>.Keys { get { throw null; } }
+        System.Collections.Generic.ICollection<object?> System.Collections.Generic.IDictionary<string, object?>.Values { get { throw null; } }
+        bool System.Collections.Generic.IDictionary<string, object?>.Remove(string key) { throw null; }
+        bool System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<string, object?>>.Remove(System.Collections.Generic.KeyValuePair<string, object?> item) { throw null; }
+        bool System.Collections.Generic.IDictionary<string, object?>.TryGetValue(string key, out object? value) { throw null; }
+        object? System.Collections.Generic.IDictionary<string, object?>.this[string key] { get { throw null; } set { } }
+        void System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<string, object?>>.Add(System.Collections.Generic.KeyValuePair<string, object?> item) { throw null; }
+        void System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<string, object?>>.Clear() { throw null; }
+        bool System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<string, object?>>.Contains(System.Collections.Generic.KeyValuePair<string, object?> item) { throw null; }
+        bool System.Collections.Generic.IDictionary<string, object?>.ContainsKey(string key) { throw null; }
+        void System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<string, object?>>.CopyTo(System.Collections.Generic.KeyValuePair<string, object?>[] array, int arrayIndex) { throw null; }
+        int System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<string, object?>>.Count { get { throw null; } }
+        bool System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<string, object?>>.IsReadOnly { get { throw null; } }
+        System.Collections.Generic.IEnumerator<System.Collections.Generic.KeyValuePair<string, object?>> System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, object?>>.GetEnumerator() { throw null; }
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { throw null; }
+        public bool TryGetValue<TValue>(HttpRequestOptionsKey<TValue> key, [MaybeNullWhen(false)] out TValue value) { throw null; }
+        public void Set<TValue>(HttpRequestOptionsKey<TValue> key, TValue value) { throw null; }
+    }
+
     public partial class HttpResponseMessage : System.IDisposable
     {
         public HttpResponseMessage() { }

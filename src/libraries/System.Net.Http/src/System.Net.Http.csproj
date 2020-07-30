@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <WindowsRID>win</WindowsRID>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -45,6 +45,8 @@
     <Compile Include="System\Net\Http\HttpParseResult.cs" />
     <Compile Include="System\Net\Http\HttpRequestException.cs" />
     <Compile Include="System\Net\Http\HttpRequestMessage.cs" />
+    <Compile Include="System\Net\Http\HttpRequestOptions.cs" />
+    <Compile Include="System\Net\Http\HttpRequestOptionsKey.cs" />
     <Compile Include="System\Net\Http\HttpResponseMessage.cs" />
     <Compile Include="System\Net\Http\HttpRuleParser.cs" />
     <Compile Include="System\Net\Http\HttpTelemetry.cs" />

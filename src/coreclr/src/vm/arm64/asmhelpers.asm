@@ -1427,7 +1427,7 @@ CallHelper2
  #define PROFILE_ENTER    1
  #define PROFILE_LEAVE    2
  #define PROFILE_TAILCALL 4
- #define SIZEOF__PROFILE_PLATFORM_SPECIFIC_DATA 256
+ #define SIZEOF__PROFILE_PLATFORM_SPECIFIC_DATA 272
 
 ; ------------------------------------------------------------------
     MACRO
