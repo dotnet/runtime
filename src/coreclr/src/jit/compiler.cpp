@@ -9287,11 +9287,11 @@ bool Compiler::lvaIsOSRLocal(unsigned varNum)
 }
 
 //------------------------------------------------------------------------------
-// gtChangeOperToNullCheck: helper to change tree oper with a NULLCHECK.
+// gtChangeOperToNullCheck: helper to change tree oper to a NULLCHECK.
 //
 // Arguments:
 //    tree       - the node to change;
-//    basicBlock - Basic block of the node.
+//    basicBlock - basic block of the node.
 //
 void Compiler::gtChangeOperToNullCheck(GenTree* tree, BasicBlock* block)
 {
