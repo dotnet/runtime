@@ -38,6 +38,15 @@ MONO_VERSION_MAJOR=`echo $VERSION | cut -d . -f 1`
 MONO_VERSION_MINOR=`echo $VERSION | cut -d . -f 2`
 MONO_VERSION_BUILD=`echo $VERSION | cut -d . -f 3`
 
+# Temporary workaround for Apple Silicon
+if uname -a | grep -q 'Darwin.*arm64'; then 
+    if test $ac_cv_host = arm-apple-darwin20.0.0 -o $ac_cv_target = arm-apple-darwin20.0.0; then 
+       echo "You are running on Apple Silicon, but using an old config.guess, invoke configure like this:"
+       echo "Run configure using ./configure --host=aarch64-apple-darwin20.0.0 --target=aarch64-apple-darwin20.0.0"
+       exit 1
+    fi
+fi
+
 #
 # This is the version of the corlib-runtime interface. When
 # making changes to this interface (by changing the layout
