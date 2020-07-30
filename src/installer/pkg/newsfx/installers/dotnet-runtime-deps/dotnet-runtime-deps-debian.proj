@@ -19,7 +19,7 @@
     <KnownLibIcuVersion Include="66;65;63;60;57;55;52" />
     <LibIcuPackageDependency Include="libicu" Dependencies="libicu | @(KnownLibIcuVersion -> 'libicu%(Identity)', ' | ')" />
     <LinuxPackageDependency
-      Include="%(LibIcuPackageDependency.Dependencies)" />
-    <DebJsonProperty Include="debian_ignored_dependencies" Value="$(DebianIgnoredDependencies)" />
+      Include="@(LibIcuPackageDependency->Metadata('Dependencies'))" />
+    <DebJsonProperty Include="debian_ignored_dependencies" Object="$(DebianIgnoredDependencies)" />
  </ItemGroup>
 </Project>
