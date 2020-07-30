@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <Sdk Name="Microsoft.DotNet.SharedFramework.Sdk" />
   <PropertyGroup>
-    <GenerateInstallers Condition="'$(BuildRpmPackage)' == 'true'">true</GenerateInstallers>
+    <GenerateInstallers Condition="'$(BuildRpmPackage)' != 'true'">false</GenerateInstallers>
     <PackageTargetOS>sles.12</PackageTargetOS>
   </PropertyGroup>
 

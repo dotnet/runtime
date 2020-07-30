@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <Sdk Name="Microsoft.DotNet.SharedFramework.Sdk" />
   <PropertyGroup>
-    <GenerateInstallers Condition="'$(BuildDebPackage)' == 'true'">true</GenerateInstallers>
+    <GenerateInstallers Condition="'$(BuildDebPackage)' != 'true'">false</GenerateInstallers>
   </PropertyGroup>
 
   <PropertyGroup>
