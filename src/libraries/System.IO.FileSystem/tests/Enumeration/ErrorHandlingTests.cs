@@ -68,7 +68,6 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/39955", TestPlatforms.Browser)]
         public void NotFoundErrorIsExpected()
         {
             // Make sure we're returning the native error as expected (and not the PAL error on Unix)
