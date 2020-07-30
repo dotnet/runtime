@@ -772,9 +772,8 @@ namespace MS.Internal.Xml.Cache
         {
             TextBlockType textType;
             string text;
-            Debug.Assert(_pageSibling != null);
             Debug.Assert(_textBldr.HasText || (_idxSibling == 0 && _idxParent == 0), "Cannot create empty text node unless it's a top-level text node.");
-            Debug.Assert(_idxSibling == 0 || !_pageSibling[_idxSibling].IsText, "Cannot create adjacent text nodes.");
+            Debug.Assert(_idxSibling == 0 || (_pageSibling != null && !_pageSibling[_idxSibling].IsText), "Cannot create adjacent text nodes.");
 
             // Create a text node
             textType = _textBldr.TextType;
