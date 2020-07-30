@@ -7672,7 +7672,9 @@ void CodeGen::genFnProlog()
     /* Choose the register to use for zero initialization */
 
     regNumber initReg       = REG_SCRATCH; // Unless we find a better register below
-    bool      initRegZeroed = false;
+    bool      initRegZeroed = false; // Track if initReg holds non-zero value. Start conservative and assume it has non-zero value.
+                                     // If initReg is ever set to zero, this variable is set to true and zero initializing initReg
+                                     // will be skipped.
     regMaskTP excludeMask   = intRegState.rsCalleeRegArgMaskLiveIn;
     regMaskTP tempMask;
 

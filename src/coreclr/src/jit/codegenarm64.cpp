@@ -156,7 +156,9 @@ void CodeGen::genStackPointerAdjustment(ssize_t spDelta, regNumber tmpReg, bool*
     // Even though INS_add is specified here, the encoder will choose either
     // an INS_add or an INS_sub and encode the immediate as a positive value
     //
-    if (genInstrWithConstant(INS_add, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, spDelta, tmpReg, true))
+    bool wasTempRegisterUsedForImm =
+        !genInstrWithConstant(INS_add, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, spDelta, tmpReg, true);
+    if (wasTempRegisterUsedForImm)
     {
         if (pTmpRegIsZero != nullptr)
         {
@@ -4812,7 +4814,7 @@ void CodeGen::genStoreLclTypeSIMD12(GenTree* treeNode)
 // Arguments:
 //     initReg        - register to use as scratch register
 //     pInitRegZeroed - OUT parameter. *pInitRegZeroed set to 'false' if 'initReg' is
-//                      not zero after this call.
+//                      set to non-zero value after this call.
 //
 // Return Value:
 //     None
