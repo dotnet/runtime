@@ -7692,7 +7692,12 @@ regMaskTP emitter::emitGetGCRegsKilledByNoGCCall(CorInfoHelpFunc helper)
             break;
 
         case CORINFO_HELP_PROF_FCN_LEAVE:
+#if defined(TARGET_ARM)
+            // profiler scratch remains gc live
+            result = RBM_PROFILER_LEAVE_TRASH & ~RBM_PROFILER_RET_SCRATCH;
+#else
             result = RBM_PROFILER_LEAVE_TRASH;
+#endif
             break;
 
         case CORINFO_HELP_PROF_FCN_TAILCALL:
