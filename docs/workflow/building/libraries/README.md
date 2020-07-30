@@ -23,7 +23,7 @@ cd tests
 
 :: Then inner loop build / test
 :: (If using Visual Studio, you might run tests inside it instead)
-pushd ..\src & dotnet build & popd & dotnet test /t:test
+pushd ..\src & dotnet build & popd & dotnet build /t:test
 ```
 
 The instructions for Linux and macOS are essentially the same:
@@ -187,7 +187,7 @@ build.cmd clr.corelib+clr.nativecorelib+libs.pretest -rc Release
 
 When this `System.Private.CoreLib` will be built in Release mode, then it will be crossgen'd and we will update the testhost to the latest version of corelib. 
 
-You can use the same workflow for mono runtime by using `mono.corelib+libs.pretest` subsets and specifying `/p:RuntimeFlavor=Mono`.
+You can use the same workflow for mono runtime by using `mono.corelib+libs.pretest` subsets.
 
 ### Building for Mono
 By default the libraries will attempt to build using the CoreCLR version of `System.Private.CoreLib.dll`. In order to build against the Mono version you need to use the `/p:RuntimeFlavor=Mono` argument.
