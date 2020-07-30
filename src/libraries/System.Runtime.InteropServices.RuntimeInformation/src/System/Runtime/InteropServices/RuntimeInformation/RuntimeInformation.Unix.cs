@@ -34,6 +34,8 @@ namespace System.Runtime.InteropServices
                     return Architecture.X64;
                 case Interop.Sys.ProcessorArchitecture.ARM64:
                     return Architecture.Arm64;
+                case Interop.Sys.ProcessorArchitecture.WASM:
+                    return Architecture.Wasm;
                 case Interop.Sys.ProcessorArchitecture.x86:
                 default:
                     Debug.Assert(arch == Interop.Sys.ProcessorArchitecture.x86, "Unidentified Architecture");
