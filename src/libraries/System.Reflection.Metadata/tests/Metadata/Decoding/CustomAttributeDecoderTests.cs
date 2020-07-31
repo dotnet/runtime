@@ -15,7 +15,7 @@ namespace System.Reflection.Metadata.Decoding.Tests
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Type assembly name is different on .NET Framework.")]
         public void TestCustomAttributeDecoder()
         {
-            using (FileStream stream = File.OpenRead(PathHelper.GetAssemblyLocation(typeof(HasAttributes).GetTypeInfo().Assembly)))
+            using (FileStream stream = File.OpenRead(AssemblyPathHelper.GetAssemblyLocation(typeof(HasAttributes).GetTypeInfo().Assembly)))
             using (var peReader = new PEReader(stream))
             {
                 MetadataReader reader = peReader.GetMetadataReader();

@@ -81,7 +81,7 @@ namespace System.Reflection.Tests
         [Fact]
         public void FullyQualifiedName()
         {
-            Assert.Equal(PathHelper.GetAssemblyLocation(Assembly.GetExecutingAssembly()), Module.FullyQualifiedName);
+            Assert.Equal(AssemblyPathHelper.GetAssemblyLocation(Assembly.GetExecutingAssembly()), Module.FullyQualifiedName);
         }
 
         [Fact]

@@ -253,7 +253,7 @@ namespace System.Reflection.Tests
 
         private static readonly Lazy<bool> s_useRuntimeTypesForTests = new Lazy<bool>(() =>
         {
-            var loc = PathHelper.GetAssemblyLocation(typeof(TestUtils).Assembly);
+            var loc = AssemblyPathHelper.GetAssemblyLocation(typeof(TestUtils).Assembly);
 
             if (File.Exists(Path.Combine(loc, "UseRuntimeTypes.txt")))
             {

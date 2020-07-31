@@ -6,7 +6,7 @@ using System.Reflection;
 
 namespace System
 {
-    public static class PathHelper
+    public static class AssemblyPathHelper
     {
         public static string GetAssemblyLocation(Assembly a)
         {

@@ -240,7 +240,7 @@ namespace System.Reflection.Tests
             }
 
             Assembly a = typeof(AssemblyNameTests).Assembly;
-            Assert.Equal(new AssemblyName(a.FullName).ToString(), AssemblyName.GetAssemblyName(PathHelper.GetAssemblyLocation(a)).ToString());
+            Assert.Equal(new AssemblyName(a.FullName).ToString(), AssemblyName.GetAssemblyName(AssemblyPathHelper.GetAssemblyLocation(a)).ToString());
         }
 
         [Fact]
