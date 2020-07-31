@@ -357,11 +357,11 @@ void SetExceptionAVParameters(              // No return.
     GCPROTECT_BEGIN(throwable)
     {
         // This should only be called for AccessViolationException
-        _ASSERTE(MscorlibBinder::GetException(kAccessViolationException) == throwable->GetMethodTable());
+        _ASSERTE(CoreLibBinder::GetException(kAccessViolationException) == throwable->GetMethodTable());
 
-        FieldDesc *pFD_ip = MscorlibBinder::GetField(FIELD__ACCESS_VIOLATION_EXCEPTION__IP);
-        FieldDesc *pFD_target = MscorlibBinder::GetField(FIELD__ACCESS_VIOLATION_EXCEPTION__TARGET);
-        FieldDesc *pFD_access = MscorlibBinder::GetField(FIELD__ACCESS_VIOLATION_EXCEPTION__ACCESSTYPE);
+        FieldDesc *pFD_ip = CoreLibBinder::GetField(FIELD__ACCESS_VIOLATION_EXCEPTION__IP);
+        FieldDesc *pFD_target = CoreLibBinder::GetField(FIELD__ACCESS_VIOLATION_EXCEPTION__TARGET);
+        FieldDesc *pFD_access = CoreLibBinder::GetField(FIELD__ACCESS_VIOLATION_EXCEPTION__ACCESSTYPE);
 
         _ASSERTE(pFD_ip->GetFieldType() == ELEMENT_TYPE_I);
         _ASSERTE(pFD_target->GetFieldType() == ELEMENT_TYPE_I);
@@ -456,12 +456,12 @@ void WrapNonCompliantException(OBJECTREF *ppThrowable)
     {
         // idempotent operations, so the race condition is okay.
         if (pMT_RuntimeWrappedException == NULL)
-            pMT_RuntimeWrappedException = MscorlibBinder::GetException(kRuntimeWrappedException);
+            pMT_RuntimeWrappedException = CoreLibBinder::GetException(kRuntimeWrappedException);
 
         if (pFD_WrappedException == NULL)
-            pFD_WrappedException = MscorlibBinder::GetField(FIELD__RUNTIME_WRAPPED_EXCEPTION__WRAPPED_EXCEPTION);
+            pFD_WrappedException = CoreLibBinder::GetField(FIELD__RUNTIME_WRAPPED_EXCEPTION__WRAPPED_EXCEPTION);
 
-        OBJECTREF orWrapper = AllocateObject(MscorlibBinder::GetException(kRuntimeWrappedException));
+        OBJECTREF orWrapper = AllocateObject(CoreLibBinder::GetException(kRuntimeWrappedException));
 
         GCPROTECT_BEGIN(orWrapper);
 
@@ -577,7 +577,7 @@ void CreateTypeInitializationExceptionObject(LPCWSTR pTypeThatFailed,
         // in the code that follows.
         if (!isAlreadyCreating.GetValue()) {
             pThread->SetIsCreatingTypeInitException();
-            pMT = MscorlibBinder::GetException(kTypeInitializationException);
+            pMT = CoreLibBinder::GetException(kTypeInitializationException);
             methodID = METHOD__TYPE_INIT_EXCEPTION__STR_EX_CTOR;
         }
         else {
@@ -3490,9 +3490,7 @@ BOOL IsExceptionOfType(RuntimeExceptionKind reKind, OBJECTREF *pThrowable)
 
     MethodTable *pThrowableMT = (*pThrowable)->GetMethodTable();
 
-    // IsExceptionOfType is supported for mscorlib exception types only
-    _ASSERTE(reKind <= kLastExceptionInMscorlib);
-    return MscorlibBinder::IsException(pThrowableMT, reKind);
+    return CoreLibBinder::IsException(pThrowableMT, reKind);
 }
 
 BOOL IsAsyncThreadException(OBJECTREF *pThrowable) {
@@ -10895,7 +10893,7 @@ BOOL IsProcessCorruptedStateException(DWORD dwExceptionCode, OBJECTREF throwable
     switch (dwExceptionCode)
     {
     case STATUS_ACCESS_VIOLATION:
-        if (throwable != NULL && MscorlibBinder::IsException(throwable->GetMethodTable(), kNullReferenceException))
+        if (throwable != NULL && CoreLibBinder::IsException(throwable->GetMethodTable(), kNullReferenceException))
             return FALSE;
         break;
     case STATUS_STACK_OVERFLOW:
@@ -10972,7 +10970,7 @@ void ExceptionNotifications::GetEventArgsForNotification(ExceptionNotificationHa
         switch(notificationType)
         {
             case FirstChanceExceptionHandler:
-                pMTEventArgs = MscorlibBinder::GetClass(CLASS__FIRSTCHANCE_EVENTARGS);
+                pMTEventArgs = CoreLibBinder::GetClass(CLASS__FIRSTCHANCE_EVENTARGS);
                 idEventArgsCtor = METHOD__FIRSTCHANCE_EVENTARGS__CTOR;
                 break;
             default:
@@ -11037,7 +11035,7 @@ BOOL ExceptionNotifications::CanDeliverNotificationToCurrentAppDomain(ExceptionN
     // Do we have handler(s) of the specific type wired up?
     if (notificationType == FirstChanceExceptionHandler)
     {
-        return MscorlibBinder::GetField(FIELD__APPCONTEXT__FIRST_CHANCE_EXCEPTION)->GetStaticOBJECTREF() != NULL;
+        return CoreLibBinder::GetField(FIELD__APPCONTEXT__FIRST_CHANCE_EXCEPTION)->GetStaticOBJECTREF() != NULL;
     }
     else
     {
@@ -11135,7 +11133,7 @@ void ExceptionNotifications::DeliverNotificationInternal(ExceptionNotificationHa
     // Get the reference to the delegate based upon the type of notification
     if (notificationType == FirstChanceExceptionHandler)
     {
-        gc.oNotificationDelegate = MscorlibBinder::GetField(FIELD__APPCONTEXT__FIRST_CHANCE_EXCEPTION)->GetStaticOBJECTREF();
+        gc.oNotificationDelegate = CoreLibBinder::GetField(FIELD__APPCONTEXT__FIRST_CHANCE_EXCEPTION)->GetStaticOBJECTREF();
     }
     else
     {

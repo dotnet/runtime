@@ -430,12 +430,12 @@ namespace System.Net
                     {
                         if (s[pos + 1] == 'u' && pos < count - 5)
                         {
-                            int h1 = HexToInt(s[pos + 2]);
-                            int h2 = HexToInt(s[pos + 3]);
-                            int h3 = HexToInt(s[pos + 4]);
-                            int h4 = HexToInt(s[pos + 5]);
+                            int h1 = HexConverter.FromChar(s[pos + 2]);
+                            int h2 = HexConverter.FromChar(s[pos + 3]);
+                            int h3 = HexConverter.FromChar(s[pos + 4]);
+                            int h4 = HexConverter.FromChar(s[pos + 5]);
 
-                            if (h1 >= 0 && h2 >= 0 && h3 >= 0 && h4 >= 0)
+                            if ((h1 | h2 | h3 | h4) != 0xFF)
                             {   // valid 4 hex chars
                                 ch = (char)((h1 << 12) | (h2 << 8) | (h3 << 4) | h4);
                                 pos += 5;
@@ -447,10 +447,10 @@ namespace System.Net
                         }
                         else
                         {
-                            int h1 = HexToInt(s[pos + 1]);
-                            int h2 = HexToInt(s[pos + 2]);
+                            int h1 = HexConverter.FromChar(s[pos + 1]);
+                            int h2 = HexConverter.FromChar(s[pos + 2]);
 
-                            if (h1 >= 0 && h2 >= 0)
+                            if ((h1 | h2) != 0xFF)
                             {     // valid 2 hex chars
                                 byte b = (byte)((h1 << 4) | h2);
                                 pos += 2;
@@ -469,14 +469,6 @@ namespace System.Net
                 }
 
                 return helper.GetString();
-            }
-
-            private static int HexToInt(char h)
-            {
-                return (h >= '0' && h <= '9') ? h - '0' :
-                (h >= 'a' && h <= 'f') ? h - 'a' + 10 :
-                (h >= 'A' && h <= 'F') ? h - 'A' + 10 :
-                -1;
             }
 
             private class UrlDecoder

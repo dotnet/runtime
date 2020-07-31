@@ -31,12 +31,15 @@
 // with static const members of Target
 #if defined(TARGET_XARCH)
 #define REGMASK_BITS 32
+#define CSE_CONST_SHARED_LOW_BITS 16
 
 #elif defined(TARGET_ARM)
 #define REGMASK_BITS 64
+#define CSE_CONST_SHARED_LOW_BITS 12
 
 #elif defined(TARGET_ARM64)
 #define REGMASK_BITS 64
+#define CSE_CONST_SHARED_LOW_BITS 12
 
 #else
 #error Unsupported or unset target architecture
@@ -441,10 +444,10 @@ typedef unsigned char   regNumberSmall;
   #define REG_ARG_0                REG_ECX
   #define REG_ARG_1                REG_EDX
 
-  SELECTANY const regNumber intArgRegs [] = {REG_ECX, REG_EDX};
-  SELECTANY const regMaskTP intArgMasks[] = {RBM_ECX, RBM_EDX};
-  SELECTANY const regNumber fltArgRegs [] = {REG_XMM0, REG_XMM1, REG_XMM2, REG_XMM3};
-  SELECTANY const regMaskTP fltArgMasks[] = {RBM_XMM0, RBM_XMM1, RBM_XMM2, RBM_XMM3};
+  constexpr regNumber intArgRegs [] = {REG_ECX, REG_EDX};
+  constexpr regMaskTP intArgMasks[] = {RBM_ECX, RBM_EDX};
+  constexpr regNumber fltArgRegs [] = {REG_XMM0, REG_XMM1, REG_XMM2, REG_XMM3};
+  constexpr regMaskTP fltArgMasks[] = {RBM_XMM0, RBM_XMM1, RBM_XMM2, RBM_XMM3};
 
   #define RBM_ARG_0                RBM_ECX
   #define RBM_ARG_1                RBM_EDX
@@ -779,10 +782,10 @@ typedef unsigned char   regNumberSmall;
   #define REG_ARG_4                REG_R8
   #define REG_ARG_5                REG_R9
 
-  SELECTANY const regNumber intArgRegs [] = { REG_EDI, REG_ESI, REG_EDX, REG_ECX, REG_R8, REG_R9 };
-  SELECTANY const regMaskTP intArgMasks[] = { RBM_EDI, RBM_ESI, RBM_EDX, RBM_ECX, RBM_R8, RBM_R9 };
-  SELECTANY const regNumber fltArgRegs [] = { REG_XMM0, REG_XMM1, REG_XMM2, REG_XMM3, REG_XMM4, REG_XMM5, REG_XMM6, REG_XMM7 };
-  SELECTANY const regMaskTP fltArgMasks[] = { RBM_XMM0, RBM_XMM1, RBM_XMM2, RBM_XMM3, RBM_XMM4, RBM_XMM5, RBM_XMM6, RBM_XMM7 };
+  constexpr regNumber intArgRegs [] = { REG_EDI, REG_ESI, REG_EDX, REG_ECX, REG_R8, REG_R9 };
+  constexpr regMaskTP intArgMasks[] = { RBM_EDI, RBM_ESI, RBM_EDX, RBM_ECX, RBM_R8, RBM_R9 };
+  constexpr regNumber fltArgRegs [] = { REG_XMM0, REG_XMM1, REG_XMM2, REG_XMM3, REG_XMM4, REG_XMM5, REG_XMM6, REG_XMM7 };
+  constexpr regMaskTP fltArgMasks[] = { RBM_XMM0, RBM_XMM1, RBM_XMM2, RBM_XMM3, RBM_XMM4, RBM_XMM5, RBM_XMM6, RBM_XMM7 };
 
   #define RBM_ARG_0                RBM_RDI
   #define RBM_ARG_1                RBM_RSI
@@ -802,10 +805,10 @@ typedef unsigned char   regNumberSmall;
   #define REG_ARG_2                REG_R8
   #define REG_ARG_3                REG_R9
 
-  SELECTANY const regNumber intArgRegs [] = { REG_ECX, REG_EDX, REG_R8, REG_R9 };
-  SELECTANY const regMaskTP intArgMasks[] = { RBM_ECX, RBM_EDX, RBM_R8, RBM_R9 };
-  SELECTANY const regNumber fltArgRegs [] = { REG_XMM0, REG_XMM1, REG_XMM2, REG_XMM3 };
-  SELECTANY const regMaskTP fltArgMasks[] = { RBM_XMM0, RBM_XMM1, RBM_XMM2, RBM_XMM3 };
+  constexpr regNumber intArgRegs [] = { REG_ECX, REG_EDX, REG_R8, REG_R9 };
+  constexpr regMaskTP intArgMasks[] = { RBM_ECX, RBM_EDX, RBM_R8, RBM_R9 };
+  constexpr regNumber fltArgRegs [] = { REG_XMM0, REG_XMM1, REG_XMM2, REG_XMM3 };
+  constexpr regMaskTP fltArgMasks[] = { RBM_XMM0, RBM_XMM1, RBM_XMM2, RBM_XMM3 };
 
   #define RBM_ARG_0                RBM_ECX
   #define RBM_ARG_1                RBM_EDX
@@ -1152,8 +1155,8 @@ typedef unsigned char   regNumberSmall;
   #define REG_ARG_2                REG_R2
   #define REG_ARG_3                REG_R3
 
-  SELECTANY const regNumber intArgRegs [] = {REG_R0, REG_R1, REG_R2, REG_R3};
-  SELECTANY const regMaskTP intArgMasks[] = {RBM_R0, RBM_R1, RBM_R2, RBM_R3};
+  constexpr regNumber intArgRegs [] = {REG_R0, REG_R1, REG_R2, REG_R3};
+  constexpr regMaskTP intArgMasks[] = {RBM_R0, RBM_R1, RBM_R2, RBM_R3};
 
   #define RBM_ARG_0                RBM_R0
   #define RBM_ARG_1                RBM_R1
@@ -1164,8 +1167,8 @@ typedef unsigned char   regNumberSmall;
   #define RBM_FLTARG_REGS         (RBM_F0|RBM_F1|RBM_F2|RBM_F3|RBM_F4|RBM_F5|RBM_F6|RBM_F7|RBM_F8|RBM_F9|RBM_F10|RBM_F11|RBM_F12|RBM_F13|RBM_F14|RBM_F15)
   #define RBM_DBL_REGS            RBM_ALLDOUBLE
 
-  SELECTANY const regNumber fltArgRegs [] = {REG_F0, REG_F1, REG_F2, REG_F3, REG_F4, REG_F5, REG_F6, REG_F7, REG_F8, REG_F9, REG_F10, REG_F11, REG_F12, REG_F13, REG_F14, REG_F15 };
-  SELECTANY const regMaskTP fltArgMasks[] = {RBM_F0, RBM_F1, RBM_F2, RBM_F3, RBM_F4, RBM_F5, RBM_F6, RBM_F7, RBM_F8, RBM_F9, RBM_F10, RBM_F11, RBM_F12, RBM_F13, RBM_F14, RBM_F15 };
+  constexpr regNumber fltArgRegs [] = {REG_F0, REG_F1, REG_F2, REG_F3, REG_F4, REG_F5, REG_F6, REG_F7, REG_F8, REG_F9, REG_F10, REG_F11, REG_F12, REG_F13, REG_F14, REG_F15 };
+  constexpr regMaskTP fltArgMasks[] = {RBM_F0, RBM_F1, RBM_F2, RBM_F3, RBM_F4, RBM_F5, RBM_F6, RBM_F7, RBM_F8, RBM_F9, RBM_F10, RBM_F11, RBM_F12, RBM_F13, RBM_F14, RBM_F15 };
 
   #define LBL_DIST_SMALL_MAX_NEG  (0)
   #define LBL_DIST_SMALL_MAX_POS  (+1020)
@@ -1486,8 +1489,8 @@ typedef unsigned char   regNumberSmall;
   #define REG_ARG_6                REG_R6
   #define REG_ARG_7                REG_R7
 
-  SELECTANY const regNumber intArgRegs [] = {REG_R0, REG_R1, REG_R2, REG_R3, REG_R4, REG_R5, REG_R6, REG_R7};
-  SELECTANY const regMaskTP intArgMasks[] = {RBM_R0, RBM_R1, RBM_R2, RBM_R3, RBM_R4, RBM_R5, RBM_R6, RBM_R7};
+  constexpr regNumber intArgRegs [] = {REG_R0, REG_R1, REG_R2, REG_R3, REG_R4, REG_R5, REG_R6, REG_R7};
+  constexpr regMaskTP intArgMasks[] = {RBM_R0, RBM_R1, RBM_R2, RBM_R3, RBM_R4, RBM_R5, RBM_R6, RBM_R7};
 
   #define RBM_ARG_0                RBM_R0
   #define RBM_ARG_1                RBM_R1
@@ -1519,8 +1522,8 @@ typedef unsigned char   regNumberSmall;
   #define RBM_ARG_REGS            (RBM_ARG_0|RBM_ARG_1|RBM_ARG_2|RBM_ARG_3|RBM_ARG_4|RBM_ARG_5|RBM_ARG_6|RBM_ARG_7)
   #define RBM_FLTARG_REGS         (RBM_FLTARG_0|RBM_FLTARG_1|RBM_FLTARG_2|RBM_FLTARG_3|RBM_FLTARG_4|RBM_FLTARG_5|RBM_FLTARG_6|RBM_FLTARG_7)
 
-  SELECTANY const regNumber fltArgRegs [] = {REG_V0, REG_V1, REG_V2, REG_V3, REG_V4, REG_V5, REG_V6, REG_V7 };
-  SELECTANY const regMaskTP fltArgMasks[] = {RBM_V0, RBM_V1, RBM_V2, RBM_V3, RBM_V4, RBM_V5, RBM_V6, RBM_V7 };
+  constexpr regNumber fltArgRegs [] = {REG_V0, REG_V1, REG_V2, REG_V3, REG_V4, REG_V5, REG_V6, REG_V7 };
+  constexpr regMaskTP fltArgMasks[] = {RBM_V0, RBM_V1, RBM_V2, RBM_V3, RBM_V4, RBM_V5, RBM_V6, RBM_V7 };
 
   #define LBL_DIST_SMALL_MAX_NEG  (-1048576)
   #define LBL_DIST_SMALL_MAX_POS  (+1048575)
@@ -1618,11 +1621,11 @@ public:
     static const enum ArgOrder g_tgtArgOrder;
 };
 
-#if defined(DEBUG) || defined(LATE_DISASM)
+#if defined(DEBUG) || defined(LATE_DISASM) || DUMP_GC_TABLES
 const char* getRegName(unsigned reg, bool isFloat = false); // this is for gcencode.cpp and disasm.cpp that don't use
                                                             // the regNumber type
 const char* getRegName(regNumber reg, bool isFloat = false);
-#endif // defined(DEBUG) || defined(LATE_DISASM)
+#endif // defined(DEBUG) || defined(LATE_DISASM) || DUMP_GC_TABLES
 
 #ifdef DEBUG
 const char* getRegNameFloat(regNumber reg, var_types type);
@@ -1999,9 +2002,13 @@ C_ASSERT((RBM_INT_CALLEE_SAVED & RBM_FPBASE) == RBM_NONE);
 #ifdef TARGET_64BIT
 typedef unsigned __int64 target_size_t;
 typedef __int64          target_ssize_t;
-#else  // !TARGET_64BIT
+#define TARGET_SIGN_BIT (1ULL << 63)
+
+#else // !TARGET_64BIT
 typedef unsigned int target_size_t;
 typedef int          target_ssize_t;
+#define TARGET_SIGN_BIT (1ULL << 31)
+
 #endif // !TARGET_64BIT
 
 C_ASSERT(sizeof(target_size_t) == TARGET_POINTER_SIZE);

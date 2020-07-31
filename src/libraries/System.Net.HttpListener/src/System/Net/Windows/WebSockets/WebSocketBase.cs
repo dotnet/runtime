@@ -1591,7 +1591,7 @@ namespace System.Net.WebSockets
                                     WebSocketProtocolComponent.WebSocketCompleteAction(_webSocket, actionContext, 0);
                                     AsyncOperationCompleted = true;
                                     ReleaseLock(_webSocket.SessionHandle, ref sessionHandleLockTaken);
-                                    await _webSocket._innerStream.FlushAsync().SuppressContextFlow();
+                                    await _webSocket._innerStream.FlushAsync(cancellationToken).SuppressContextFlow();
                                     Monitor.Enter(_webSocket.SessionHandle, ref sessionHandleLockTaken);
                                     break;
                                 case WebSocketProtocolComponent.Action.SendToNetwork:

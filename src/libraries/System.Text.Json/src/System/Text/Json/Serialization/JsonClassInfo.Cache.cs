@@ -35,14 +35,14 @@ namespace System.Text.Json
 
         // All of the serializable parameters on a POCO constructor keyed on parameter name.
         // Only paramaters which bind to properties are cached.
-        public volatile Dictionary<string, JsonParameterInfo>? ParameterCache;
+        public Dictionary<string, JsonParameterInfo>? ParameterCache;
 
         // All of the serializable properties on a POCO (except the optional extension property) keyed on property name.
-        public volatile Dictionary<string, JsonPropertyInfo>? PropertyCache;
+        public Dictionary<string, JsonPropertyInfo>? PropertyCache;
 
         // All of the serializable properties on a POCO including the optional extension property.
         // Used for performance during serialization instead of 'PropertyCache' above.
-        public volatile JsonPropertyInfo[]? PropertyCacheArray;
+        public JsonPropertyInfo[]? PropertyCacheArray;
 
         // Fast cache of constructor parameters by first JSON ordering; may not contain all parameters. Accessed before ParameterCache.
         // Use an array (instead of List<T>) for highest performance.
@@ -52,10 +52,14 @@ namespace System.Text.Json
         // Use an array (instead of List<T>) for highest performance.
         private volatile PropertyRef[]? _propertyRefsSorted;
 
-        public static JsonPropertyInfo AddProperty(MemberInfo memberInfo, Type memberType, Type parentClassType, JsonSerializerOptions options)
+        public static JsonPropertyInfo AddProperty(
+            MemberInfo memberInfo,
+            Type memberType,
+            Type parentClassType,
+            JsonNumberHandling? parentTypeNumberHandling,
+            JsonSerializerOptions options)
         {
             JsonIgnoreCondition? ignoreCondition = JsonPropertyInfo.GetAttribute<JsonIgnoreAttribute>(memberInfo)?.Condition;
-
             if (ignoreCondition == JsonIgnoreCondition.Always)
             {
                 return JsonPropertyInfo.CreateIgnoredPropertyPlaceholder(memberInfo, options);
@@ -75,6 +79,7 @@ namespace System.Text.Json
                 parentClassType,
                 converter,
                 options,
+                parentTypeNumberHandling,
                 ignoreCondition);
         }
 
@@ -85,6 +90,7 @@ namespace System.Text.Json
             Type parentClassType,
             JsonConverter converter,
             JsonSerializerOptions options,
+            JsonNumberHandling? parentTypeNumberHandling = null,
             JsonIgnoreCondition? ignoreCondition = null)
         {
             // Create the JsonPropertyInfo instance.
@@ -98,6 +104,7 @@ namespace System.Text.Json
                 memberInfo,
                 converter,
                 ignoreCondition,
+                parentTypeNumberHandling,
                 options);
 
             return jsonPropertyInfo;
@@ -113,13 +120,16 @@ namespace System.Text.Json
             JsonConverter converter,
             JsonSerializerOptions options)
         {
+            JsonNumberHandling? numberHandling = GetNumberHandlingForType(declaredPropertyType);
+
             JsonPropertyInfo jsonPropertyInfo = CreateProperty(
                 declaredPropertyType: declaredPropertyType,
                 runtimePropertyType: runtimePropertyType,
                 memberInfo: null, // Not a real property so this is null.
                 parentClassType: JsonClassInfo.ObjectType, // a dummy value (not used)
                 converter: converter,
-                options);
+                options,
+                parentTypeNumberHandling: numberHandling);
 
             Debug.Assert(jsonPropertyInfo.IsForClassInfo);
 

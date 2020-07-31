@@ -848,7 +848,7 @@ typedef VMPTR_Base<DT_CONTEXT, void > VMPTR_CONTEXT;
 #endif
 
 // DomainFile is a base-class for a CLR module, with app-domain affinity.
-// For domain-neutral modules (like mscorlib), there is a DomainFile instance
+// For domain-neutral modules (like CoreLib), there is a DomainFile instance
 // for each appdomain the module lives in.
 // This is the canonical handle ICorDebug uses to a CLR module.
 DEFINE_VMPTR(class DomainFile,      PTR_DomainFile,     VMPTR_DomainFile);
@@ -984,7 +984,7 @@ struct MSLAYOUT IPCEventTypeNameMapping
             const char *            eventName;
 };
 
-extern const IPCEventTypeNameMapping DECLSPEC_SELECTANY DbgIPCEventTypeNames[] =
+constexpr IPCEventTypeNameMapping DbgIPCEventTypeNames[] =
 {
     #define IPC_EVENT_TYPE0(type, val)  { type, #type },
     #define IPC_EVENT_TYPE1(type, val)  { type, #type },

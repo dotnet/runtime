@@ -5,7 +5,7 @@
 #ifdef ENABLE_NETCORE
 #include <mono/metadata/icall-decl.h>
 
-#ifdef ENABLE_PERFTRACING
+#if defined(ENABLE_PERFTRACING) && !defined(DISABLE_EVENTPIPE)
 #include <mono/eventpipe/ep-rt-config.h>
 #include <mono/eventpipe/ep.h>
 #include <mono/eventpipe/ep-event.h>

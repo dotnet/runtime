@@ -101,7 +101,7 @@
 #include <stddef.h> // offsetof
 #include "static_assert.h"
 #include "metamodel.h"
-#include "MDInternalRW.h"
+#include "mdinternalrw.h"
 
 // other types provide friend access to this type so that the
 // offsetof macro can access their private fields
@@ -110,70 +110,69 @@ class VerifyLayoutsMD
     // we have a bunch of arrays with this fixed size, make sure it doesn't change
     static_assert_no_msg(TBL_COUNT == 45);
 
+#define USING_ALIAS(typeName, ...)  using typeName = __VA_ARGS__;
 
+#define FIELD(typeName, fieldName, fieldSize) ALIGN_FIELD(typeName, fieldName, fieldSize, fieldSize)
 
-#define IGNORE_COMMAS(...) __VA_ARGS__ // use this to surround templated types with commas in the name
+#define BEGIN_TYPE(typeName, initialFieldOffset) \
+    static const int expected_offset_of_first_field_in_##typeName = initialFieldOffset; \
+    static const int actual_offset_of_first_field_in_##typeName =
 
-#define BEGIN_TYPE(typeName, initialFieldOffset) BEGIN_TYPE_ESCAPED(typeName, typeName, initialFieldOffset)
-#define FIELD(typeName, fieldName, fieldSize) ALIGN_FIELD_ESCAPED(typeName, typeName, fieldName, fieldSize, fieldSize)
-#define ALIGN_FIELD(typeName, fieldName, fieldSize, fieldAlign) ALIGN_FIELD_ESCAPED(typeName, typeName, fieldName, fieldSize, fieldAlign)
-#define FIELD_ESCAPED(typeName, escapedTypeName, fieldName, fieldSize) ALIGN_FIELD_ESCAPED(typeName, escapedTypeName, fieldName, fieldSize, fieldSize)
-#define END_TYPE(typeName, typeAlign) END_TYPE_ESCAPED(typeName, typeName, typeAlign)
-
-#define BEGIN_TYPE_ESCAPED(typeName, typeNameEscaped, initialFieldOffset) \
-    static const int expected_offset_of_first_field_in_##typeNameEscaped## = initialFieldOffset; \
-    static const int actual_offset_of_first_field_in_##typeNameEscaped## =
-
-#define ALIGN_FIELD_ESCAPED(typeName, typeNameEscaped, fieldName, fieldSize, fieldAlign) \
-    offsetof(IGNORE_COMMAS(typeName), fieldName); \
-    static const int offset_of_field_after_##typeNameEscaped##_##fieldName =
+#define ALIGN_FIELD(typeName, fieldName, fieldSize, fieldAlign) \
+    offsetof(typeName, fieldName); \
+    static const int offset_of_field_after_##typeName##_##fieldName =
 
 #define BITFIELD(typeName, fieldName, fieldOffset, fieldSize) \
     fieldOffset; \
     static const int offset_of_field_after_##typeName##_##fieldName =
 
-#define END_TYPE_ESCAPED(typeName, typeNameEscaped, typeAlignentSize) \
+#define END_TYPE(typeName, typeAlignentSize) \
     sizeof(typeName);
 
 #include "VerifyLayouts.inc"
 
-#undef BEGIN_TYPE_ESCAPED
-#undef ALIGN_FIELD_ESCAPED
-#undef END_TYPE_ESCAPED
+// Only declare using once
+#undef USING_ALIAS
+#define USING_ALIAS(a, ...)
+
+#undef BEGIN_TYPE
+#undef ALIGN_FIELD
+#undef END_TYPE
 #undef BITFIELD
 
-#define BEGIN_TYPE_ESCAPED(typeName, escapedTypeName, initialFieldOffset) \
-    static const int alignment_of_first_field_in_##escapedTypeName =
-#define ALIGN_FIELD_ESCAPED(typeName, escapedTypeName, fieldName, fieldSize, fieldAlign) \
+
+#define BEGIN_TYPE(typeName, initialFieldOffset) \
+    static const int alignment_of_first_field_in_##typeName =
+#define ALIGN_FIELD(typeName, fieldName, fieldSize, fieldAlign) \
     fieldAlign; \
-    static const int alignment_of_field_after_##escapedTypeName##_##fieldName =
+    static const int alignment_of_field_after_##typeName##_##fieldName =
 #define BITFIELD(typeName, fieldName, fieldOffset, fieldSize) \
     fieldSize; \
     static const int alignment_of_field_after_##typeName##_##fieldName =
-#define END_TYPE_ESCAPED(typeName, escapedTypeName, typeAlignmentSize) \
+#define END_TYPE(typeName, typeAlignmentSize) \
     typeAlignmentSize;
 
 #include "VerifyLayouts.inc"
 
-#undef BEGIN_TYPE_ESCAPED
-#undef ALIGN_FIELD_ESCAPED
-#undef END_TYPE_ESCAPED
+#undef BEGIN_TYPE
+#undef ALIGN_FIELD
+#undef END_TYPE
 #undef BITFIELD
 
 
-#define BEGIN_TYPE_ESCAPED(typeName, escapedTypeName, initialFieldOffset) \
-    static_assert_no_msg(expected_offset_of_first_field_in_##escapedTypeName == actual_offset_of_first_field_in_##escapedTypeName);
+#define BEGIN_TYPE(typeName, initialFieldOffset) \
+    static_assert_no_msg(expected_offset_of_first_field_in_##typeName == actual_offset_of_first_field_in_##typeName);
 
 
 #define ALIGN_UP(value, alignment) (((value) + (alignment) - 1)&~((alignment) - 1))
-#define ALIGN_FIELD_ESCAPED(typeName, escapedTypeName, fieldName, fieldSize, fieldAlign) \
-    static_assert_no_msg(offset_of_field_after_##escapedTypeName##_##fieldName == \
-    ALIGN_UP(offsetof(IGNORE_COMMAS(typeName), fieldName) + fieldSize, alignment_of_field_after_##escapedTypeName##_##fieldName));
+#define ALIGN_FIELD(typeName, fieldName, fieldSize, fieldAlign) \
+    static_assert_no_msg(offset_of_field_after_##typeName##_##fieldName == \
+    ALIGN_UP(offsetof(typeName, fieldName) + fieldSize, alignment_of_field_after_##typeName##_##fieldName));
 #define BITFIELD(typeName, fieldName, fieldOffset, fieldSize) \
     static_assert_no_msg(offset_of_field_after_##typeName##_##fieldName == \
     ALIGN_UP(fieldOffset + fieldSize, alignment_of_field_after_##typeName##_##fieldName));
 
-#define END_TYPE_ESCAPED(typeName, escapedTypeName, typeAlignmentSize)
+#define END_TYPE(typeName, typeAlignmentSize)
 #include "VerifyLayouts.inc"
 
 };

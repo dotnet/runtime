@@ -41,7 +41,13 @@ namespace System.Reflection.TypeLoading
 
         // Location and codebase
         public abstract override string Location { get; }
+#if NET50_OBSOLETIONS
+        [Obsolete(Obsoletions.CodeBaseMessage, DiagnosticId = Obsoletions.CodeBaseDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+#endif
         public sealed override string CodeBase => throw new NotSupportedException(SR.NotSupported_AssemblyCodeBase);
+#if NET50_OBSOLETIONS
+        [Obsolete(Obsoletions.CodeBaseMessage, DiagnosticId = Obsoletions.CodeBaseDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+#endif
         public sealed override string EscapedCodeBase => throw new NotSupportedException(SR.NotSupported_AssemblyCodeBase);
 
         // Custom Attributes
@@ -145,6 +151,9 @@ namespace System.Reflection.TypeLoading
 
         // Miscellaneous properties
         public sealed override bool ReflectionOnly => true;
+#if NET50_OBSOLETIONS
+        [Obsolete("The Global Assembly Cache is not supported.", DiagnosticId = "SYSLIB0005", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+#endif
         public sealed override bool GlobalAssemblyCache => false;
         public sealed override long HostContext => 0;
         public abstract override string ImageRuntimeVersion { get; }

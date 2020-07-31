@@ -11,13 +11,25 @@
 #include "mono/utils/mono-logger-internals.h"
 #include "mono/utils/mono-path.h"
 #include "mono/metadata/native-library.h"
+#include "mono/metadata/custom-attrs-internals.h"
 
 #ifdef ENABLE_NETCORE
 static int pinvoke_search_directories_count;
 static char **pinvoke_search_directories;
 
-// In DllImportSearchPath enum, bit 0x2 represents AssemblyDirectory. It is not passed on and is instead handled by the runtime.
-#define DLLIMPORTSEARCHPATH_ASSEMBLYDIRECTORY 0x2
+// sync with src/libraries/System.Private.CoreLib/src/System/Runtime/InteropServices/DllImportSearchPath.cs
+typedef enum
+{
+	DLLIMPORTSEARCHPATH_LEGACY_BEHAVIOR = 0x0, // when no other flags are present, search the application directory and then call LoadLibraryEx with LOAD_WITH_ALTERED_SEARCH_PATH
+	DLLIMPORTSEARCHPATH_USE_DLL_DIRECTORY_FOR_DEPENDENCIES = 0x100,
+	DLLIMPORTSEARCHPATH_APPLICATION_DIRECTORY = 0x200,
+	DLLIMPORTSEARCHPATH_USER_DIRECTORIES = 0x400,
+	DLLIMPORTSEARCHPATH_SYSTEM32 = 0x800,
+	DLLIMPORTSEARCHPATH_SAFE_DIRECTORIES = 0x1000,
+	DLLIMPORTSEARCHPATH_ASSEMBLY_DIRECTORY = 0x2, // search the assembly directory first regardless of platform, not passed on to LoadLibraryEx
+} DllImportSearchPath;
+//static const int DLLIMPORTSEARCHPATH_LOADLIBRARY_FLAG_MASK = DLLIMPORTSEARCHPATH_USE_DLL_DIRECTORY_FOR_DEPENDENCIES | DLLIMPORTSEARCHPATH_APPLICATION_DIRECTORY |
+//                                                             DLLIMPORTSEARCHPATH_USER_DIRECTORIES | DLLIMPORTSEARCHPATH_SYSTEM32 | DLLIMPORTSEARCHPATH_SAFE_DIRECTORIES;
 
 // This lock may be taken within an ALC lock, and should never be the other way around.
 static MonoCoopMutex native_library_module_lock;
@@ -58,6 +70,7 @@ GENERATE_GET_CLASS_WITH_CACHE (appdomain_unloaded_exception, "System", "AppDomai
 GENERATE_TRY_GET_CLASS_WITH_CACHE (appdomain_unloaded_exception, "System", "AppDomainUnloadedException")
 #ifdef ENABLE_NETCORE
 GENERATE_GET_CLASS_WITH_CACHE (native_library, "System.Runtime.InteropServices", "NativeLibrary");
+static GENERATE_TRY_GET_CLASS_WITH_CACHE (dllimportsearchpath_attribute, "System.Runtime.InteropServices", "DefaultDllImportSearchPathsAttribute");
 #endif
 
 #ifndef DISABLE_DLLMAP
@@ -504,7 +517,6 @@ static MonoDl *
 netcore_probe_for_module (MonoImage *image, const char *file_name, int flags)
 {
 	MonoDl *module = NULL;
-	gboolean search_assembly_dir = flags & DLLIMPORTSEARCHPATH_ASSEMBLYDIRECTORY;
 
 	// Try without any path additions
 	module = netcore_probe_for_module_variations (NULL, file_name);
@@ -514,12 +526,14 @@ netcore_probe_for_module (MonoImage *image, const char *file_name, int flags)
 		module = netcore_probe_for_module_variations (pinvoke_search_directories[i], file_name);
 
 	// Check the assembly directory if the search flag is set and the image exists
-	if (search_assembly_dir && image != NULL && module == NULL) {
+	if (flags & DLLIMPORTSEARCHPATH_ASSEMBLY_DIRECTORY && image != NULL && module == NULL) {
 		char *mdirname = g_path_get_dirname (image->filename);
 		if (mdirname)
 			module = netcore_probe_for_module_variations (mdirname, file_name);
 		g_free (mdirname);
 	}
+
+	// TODO: Pass remaining flags on to LoadLibraryEx on Windows where appropriate, see https://docs.microsoft.com/en-us/dotnet/api/system.runtime.interopservices.dllimportsearchpath?view=netcore-3.1
 
 	return module;
 }
@@ -833,6 +847,50 @@ add_to_alc_cache:
 
 leave:
 	return module;
+}
+
+static int
+get_dllimportsearchpath_flags (MonoCustomAttrInfo *cinfo)
+{
+	ERROR_DECL (error);
+	MonoCustomAttrEntry *attr = NULL;
+	MonoClass *dllimportsearchpath = mono_class_try_get_dllimportsearchpath_attribute_class ();
+	int idx;
+	int flags;
+
+	if (!dllimportsearchpath)
+		return -1;
+	if (!cinfo)
+		return -2;
+
+	for (idx = 0; idx < cinfo->num_attrs; ++idx) {
+		MonoClass *ctor_class = cinfo->attrs [idx].ctor->klass;
+		if (ctor_class == dllimportsearchpath) {
+			attr = &cinfo->attrs [idx];
+			break;
+		}
+	}
+	if (!attr)
+		return -3;
+
+	gpointer *typed_args, *named_args;
+	CattrNamedArg *arginfo;
+	int num_named_args;
+
+	mono_reflection_create_custom_attr_data_args_noalloc (m_class_get_image (attr->ctor->klass), attr->ctor, attr->data, attr->data_size,
+															&typed_args, &named_args, &num_named_args, &arginfo, error);
+	if (!is_ok (error)) {
+		mono_error_cleanup (error);
+		return -4;
+	}
+
+	flags = *(gint32*)typed_args [0];
+	g_free (typed_args [0]);
+	g_free (typed_args);
+	g_free (named_args);
+	g_free (arginfo);
+
+	return flags;
 }
 
 #else // ENABLE_NETCORE
@@ -1174,6 +1232,8 @@ lookup_pinvoke_call_impl (MonoMethod *method, MonoLookupPInvokeStatus *status_ou
 	MonoImage *image = m_class_get_image (method->klass);
 #ifdef ENABLE_NETCORE
 	MonoAssemblyLoadContext *alc = mono_image_get_alc (image);
+	MonoCustomAttrInfo *cinfo;
+	int flags;
 #endif
 	MonoMethodPInvoke *piinfo = (MonoMethodPInvoke *)method;
 	MonoTableInfo *tables = image->tables;
@@ -1240,8 +1300,26 @@ lookup_pinvoke_call_impl (MonoMethod *method, MonoLookupPInvokeStatus *status_ou
 #ifndef HOST_WIN32
 retry_with_libcoreclr:
 #endif
-	// FIXME: these flags are not getting passed correctly
-	module = netcore_lookup_native_library (alc, image, new_scope, 0);
+	{
+		ERROR_DECL (local_error);
+		cinfo = mono_custom_attrs_from_method_checked (method, local_error);
+		mono_error_cleanup (local_error);
+	}
+	flags = get_dllimportsearchpath_flags (cinfo);
+	if (cinfo && !cinfo->cached)
+		mono_custom_attrs_free (cinfo);
+
+	if (flags < 0) {
+		ERROR_DECL (local_error);
+		cinfo = mono_custom_attrs_from_assembly_checked (m_class_get_image (method->klass)->assembly, TRUE, local_error);
+		mono_error_cleanup (local_error);
+		flags = get_dllimportsearchpath_flags (cinfo);
+		if (cinfo && !cinfo->cached)
+			mono_custom_attrs_free (cinfo);
+	}
+	if (flags < 0)
+		flags = 0;
+	module = netcore_lookup_native_library (alc, image, new_scope, flags);
 #else
 	module = legacy_lookup_native_library (image, new_scope);
 #endif
@@ -1496,7 +1574,7 @@ ves_icall_System_Runtime_InteropServices_NativeLibrary_LoadByName (MonoStringHan
 	goto_if_nok (error, leave);
 
 	// FIXME: implement search flag defaults properly
-	module = netcore_probe_for_module (image, lib_name, has_search_flag ? search_flag : 0x2);
+	module = netcore_probe_for_module (image, lib_name, has_search_flag ? search_flag : DLLIMPORTSEARCHPATH_ASSEMBLY_DIRECTORY);
 	if (!module)
 		mono_error_set_generic_error (error, "System", "DllNotFoundException", "%s", lib_name);
 	goto_if_nok (error, leave);
@@ -1601,4 +1679,3 @@ mono_loader_save_bundled_library (int fd, uint64_t offset, uint64_t size, const 
 	
 	g_free (buffer);
 }
-

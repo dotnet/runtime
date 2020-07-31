@@ -796,7 +796,7 @@ namespace System
                     }
 
                     // sort and copy the TimeZoneInfo's into a ReadOnlyCollection for the user
-                    list.Sort((x, y) =>
+                    list.Sort(static (x, y) =>
                     {
                         // sort by BaseUtcOffset first and by DisplayName second - this is similar to the Windows Date/Time control panel
                         int comparison = x.BaseUtcOffset.CompareTo(y.BaseUtcOffset);

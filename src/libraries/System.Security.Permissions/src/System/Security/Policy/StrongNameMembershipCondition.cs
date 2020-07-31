@@ -5,6 +5,9 @@ using System.Security.Permissions;
 
 namespace System.Security.Policy
 {
+#if NET50_OBSOLETIONS
+    [Obsolete(Obsoletions.CodeAccessSecurityMessage, DiagnosticId = Obsoletions.CodeAccessSecurityDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+#endif
     public sealed partial class StrongNameMembershipCondition : ISecurityEncodable, ISecurityPolicyEncodable, IMembershipCondition
     {
         public StrongNameMembershipCondition(StrongNamePublicKeyBlob blob, string name, Version version) { }

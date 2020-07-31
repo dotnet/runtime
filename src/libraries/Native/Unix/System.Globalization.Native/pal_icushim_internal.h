@@ -19,11 +19,13 @@
 
 // All ICU headers need to be included here so that all function prototypes are
 // available before the function pointers are declared below.
+#include <unicode/uclean.h>
 #include <unicode/ucurr.h>
 #include <unicode/ucal.h>
 #include <unicode/uchar.h>
 #include <unicode/ucol.h>
 #include <unicode/udat.h>
+#include <unicode/udata.h>
 #include <unicode/udatpg.h>
 #include <unicode/uenum.h>
 #include <unicode/uidna.h>
@@ -55,6 +57,7 @@
 
 #include "pal_compiler.h"
 
+#if !defined(STATIC_ICU)
 // List of all functions from the ICU libraries that are used in the System.Globalization.Native.so
 #define FOR_ALL_UNCONDITIONAL_ICU_FUNCTIONS \
     PER_FUNCTION_BLOCK(u_charsToUChars, libicuuc) \
@@ -279,3 +282,5 @@ FOR_ALL_ICU_FUNCTIONS
 #define usearch_getMatchedLength(...) usearch_getMatchedLength_ptr(__VA_ARGS__)
 #define usearch_last(...) usearch_last_ptr(__VA_ARGS__)
 #define usearch_openFromCollator(...) usearch_openFromCollator_ptr(__VA_ARGS__)
+
+#endif // !defined(STATIC_ICU)

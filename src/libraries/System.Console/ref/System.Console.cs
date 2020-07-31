@@ -9,16 +9,16 @@ namespace System
     public static partial class Console
     {
         public static System.ConsoleColor BackgroundColor { get { throw null; } set { } }
-        public static int BufferHeight { get { throw null; } set { } }
-        public static int BufferWidth { get { throw null; } set { } }
+        public static int BufferHeight { get { throw null; } [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")] set { } }
+        public static int BufferWidth { get { throw null; } [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")] set { } }
+        [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")]
         public static bool CapsLock { get { throw null; } }
         public static int CursorLeft { get { throw null; } set { } }
-        public static int CursorSize { get { throw null; } set { } }
+        public static int CursorSize { get { throw null; } [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")] set { } }
         public static int CursorTop { get { throw null; } set { } }
-        public static bool CursorVisible { get { throw null; } set { } }
+        public static bool CursorVisible { [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")] get { throw null; } set { } }
         public static System.IO.TextWriter Error { get { throw null; } }
         public static System.ConsoleColor ForegroundColor { get { throw null; } set { } }
-        public static (int Left, int Top) GetCursorPosition() { throw null; }
         public static System.IO.TextReader In { get { throw null; } }
         public static System.Text.Encoding InputEncoding { get { throw null; } set { } }
         public static bool IsErrorRedirected { get { throw null; } }
@@ -27,20 +27,25 @@ namespace System
         public static bool KeyAvailable { get { throw null; } }
         public static int LargestWindowHeight { get { throw null; } }
         public static int LargestWindowWidth { get { throw null; } }
+        [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")]
         public static bool NumberLock { get { throw null; } }
         public static System.IO.TextWriter Out { get { throw null; } }
         public static System.Text.Encoding OutputEncoding { get { throw null; } set { } }
-        public static string Title { get { throw null; } set { } }
+        public static string Title { [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")] get { throw null; } set { } }
         public static bool TreatControlCAsInput { get { throw null; } set { } }
-        public static int WindowHeight { get { throw null; } set { } }
-        public static int WindowLeft { get { throw null; } set { } }
-        public static int WindowTop { get { throw null; } set { } }
-        public static int WindowWidth { get { throw null; } set { } }
+        public static int WindowHeight { get { throw null; } [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")] set { } }
+        public static int WindowLeft { get { throw null; } [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")] set { } }
+        public static int WindowTop { get { throw null; } [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")] set { } }
+        public static int WindowWidth { get { throw null; } [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")] set { } }
         public static event System.ConsoleCancelEventHandler? CancelKeyPress { add { } remove { } }
         public static void Beep() { }
+        [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")]
         public static void Beep(int frequency, int duration) { }
         public static void Clear() { }
+        public static (int Left, int Top) GetCursorPosition() { throw null; }
+        [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")]
         public static void MoveBufferArea(int sourceLeft, int sourceTop, int sourceWidth, int sourceHeight, int targetLeft, int targetTop) { }
+        [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")]
         public static void MoveBufferArea(int sourceLeft, int sourceTop, int sourceWidth, int sourceHeight, int targetLeft, int targetTop, char sourceChar, System.ConsoleColor sourceForeColor, System.ConsoleColor sourceBackColor) { }
         public static System.IO.Stream OpenStandardError() { throw null; }
         public static System.IO.Stream OpenStandardError(int bufferSize) { throw null; }
@@ -53,12 +58,15 @@ namespace System
         public static System.ConsoleKeyInfo ReadKey(bool intercept) { throw null; }
         public static string? ReadLine() { throw null; }
         public static void ResetColor() { }
+        [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")]
         public static void SetBufferSize(int width, int height) { }
         public static void SetCursorPosition(int left, int top) { }
         public static void SetError(System.IO.TextWriter newError) { }
         public static void SetIn(System.IO.TextReader newIn) { }
         public static void SetOut(System.IO.TextWriter newOut) { }
+        [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")]
         public static void SetWindowPosition(int left, int top) { }
+        [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")]
         public static void SetWindowSize(int width, int height) { }
         public static void Write(bool value) { }
         public static void Write(char value) { }

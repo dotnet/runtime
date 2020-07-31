@@ -143,7 +143,7 @@ BOOL GetAnyThunkTarget (T_CONTEXT *pctx, TADDR *pTarget, TADDR *pTargetMethodDes
 
 //
 // ResetProcessorStateHolder saves/restores processor state around calls to
-// mscorlib during exception handling.
+// CoreLib during exception handling.
 //
 class ResetProcessorStateHolder
 {

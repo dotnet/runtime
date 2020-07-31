@@ -363,11 +363,7 @@ namespace Internal.Cryptography.Pal
             get
             {
                 EnsureCertData();
-
-                using (SHA1 hash = SHA1.Create())
-                {
-                    return hash.ComputeHash(_certData.RawData);
-                }
+                return SHA1.HashData(_certData.RawData);
             }
         }
 

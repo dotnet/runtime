@@ -405,6 +405,9 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
     <MSBuild Projects="$(MSBuildThisFileDirectory)Common\test_dependencies\test_dependencies.csproj"
              Condition=" '$(BuildWrappers)'=='true' " />
 
+    <MSBuild Projects="$(MSBuildThisFileDirectory)Common\test_dependencies_fs\test_dependencies.fsproj"
+             Condition=" '$(BuildWrappers)'=='true' " />
+
     <MSBuild Projects="$(MSBuildProjectFile)"
              Targets="MonoAotCompileTests"
              Properties=""

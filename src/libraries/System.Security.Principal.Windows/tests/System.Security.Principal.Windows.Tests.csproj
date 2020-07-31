@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
-    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetFrameworkCurrent)-Windows_NT</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;net461-Windows_NT</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="NTAccount.cs" />
@@ -14,5 +14,8 @@
   <ItemGroup>
     <Compile Include="$(CommonTestPath)System\Threading\ThreadTestHelpers.cs"
              Link="Common\System\Threading\ThreadTestHelpers.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\src\System.Security.Principal.Windows.csproj" />
   </ItemGroup>
 </Project>
