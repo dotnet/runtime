@@ -40,13 +40,6 @@ namespace System.Diagnostics.Tracing
         private PollingCounter? _assemblyCounter;
         private PollingCounter? _ilBytesJittedCounter;
         private PollingCounter? _methodsJittedCounter;
-        private PollingCounter? _lastGen0GCTimeCounter;
-        private PollingCounter? _lastGen1GCTimeCounter;
-        private PollingCounter? _lastGen2GCTimeCounter;
-        private PollingCounter? _timeBetweenGCCounter;
-        private PollingCounter? _gen0TimeBetweenGCCounter;
-        private PollingCounter? _gen1TimeBetweenGCCounter;
-        private PollingCounter? _gen2TimeBetweenGCCounter;
 #endif
 
         public static void Initialize()
@@ -94,13 +87,6 @@ namespace System.Diagnostics.Tracing
                 _assemblyCounter ??= new PollingCounter("assembly-count", this, () => System.Reflection.Assembly.GetAssemblyCount()) { DisplayName = "Number of Assemblies Loaded" };
                 _ilBytesJittedCounter ??= new PollingCounter("il-bytes-jitted", this, () => System.Runtime.CompilerServices.RuntimeHelpers.GetILBytesJitted()) { DisplayName = "IL Bytes Jitted", DisplayUnits = "B" };
                 _methodsJittedCounter ??= new PollingCounter("methods-jitted-count", this, () => System.Runtime.CompilerServices.RuntimeHelpers.GetMethodsJittedCount()) { DisplayName = "Number of Methods Jitted" };
-                _lastGen0GCTimeCounter ??= new PollingCounter("last-gen-0-duration", this, () => GC.GetGenerationLastGCDuration(0)) { DisplayName = "Last Gen 0 GC Pause Duration", DisplayUnits = "ms" };
-                _lastGen1GCTimeCounter ??= new PollingCounter("last-gen-1-duration", this, () => GC.GetGenerationLastGCDuration(1)) { DisplayName = "Last Gen 1 GC Pause Duration", DisplayUnits = "ms" };
-                _lastGen2GCTimeCounter ??= new PollingCounter("last-gen-2-duration", this, () => GC.GetGenerationLastGCDuration(2)) { DisplayName = "Last Gen 2 GC Pause Duration", DisplayUnits = "ms" };
-                _timeBetweenGCCounter ??= new PollingCounter("time-between-gc", this, () => GC.GetGenerationTimeBetweenGC(-1)) { DisplayName = "Time Between Last Two GCs", DisplayUnits = "ms" };
-                _gen0TimeBetweenGCCounter ??= new PollingCounter("time-between-gen-0-gc", this, () => GC.GetGenerationTimeBetweenGC(0)) { DisplayName = "Time Between Last Two Gen 0 GCs", DisplayUnits = "ms" };
-                _gen1TimeBetweenGCCounter ??= new PollingCounter("time-between-gen-1-gc", this, () => GC.GetGenerationTimeBetweenGC(1)) { DisplayName = "Time Between Last Two Gen 1 GCs", DisplayUnits = "ms" };
-                _gen2TimeBetweenGCCounter ??= new PollingCounter("time-between-gen-2-gc", this, () => GC.GetGenerationTimeBetweenGC(2)) { DisplayName = "Time Between Last Two Gen 2 GCs", DisplayUnits = "ms" };
 #endif
             }
 
