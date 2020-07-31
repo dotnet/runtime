@@ -94,34 +94,71 @@ var BindingSupportLib = {
 					throw "Can't find method " + namespace + "." + classname + ":" + method_name;
 				return res;
 			}
-			this.bind_js_obj = get_method ("BindJSObject");
-			this.bind_core_clr_obj = get_method ("BindCoreCLRObject");
-			this.bind_existing_obj = get_method ("BindExistingObject");
-			this.unbind_raw_obj_and_free = get_method ("UnBindRawJSObjectAndFree");			
-			this.get_js_id = get_method ("GetJSObjectId");
-			this.get_raw_mono_obj = get_method ("GetDotNetObject");
 
-			this.box_js_int = get_method ("BoxInt");
-			this.box_js_double = get_method ("BoxDouble");
-			this.box_js_bool = get_method ("BoxBool");
-			this.is_simple_array = get_method ("IsSimpleArray");
-			this.setup_js_cont = get_method ("SetupJSContinuation");
+			this.Runtime = {};
+			var bind_method = function(method_name, signature, container = BINDING.Runtime) {
+				var method = BINDING.find_method (wasm_runtime_class, method_name, -1);
+				container[method_name] = function (arg) {
+					try {
+						return BINDING.call_method (method, null, signature, arg);
+					} catch (ex) {
+						console.error (`unable to call method: ${method_name} args: ${arguments.toString()}`, ex.stack);
+					}
+				}
+				return container[method_name];
+			}
+			//this.bind_js_obj = get_method ("BindJSObject");
+			bind_method ("BindJSObject", "iii");
+			//this.bind_core_clr_obj = get_method ("BindCoreCLRObject");
+			bind_method ("BindCoreCLRObject", "ii")
+			//this.bind_existing_obj = get_method ("BindExistingObject");
+			bind_method ("BindExistingObject", "mi");
+			//this.unbind_raw_obj_and_free = get_method ("UnBindRawJSObjectAndFree");
+			bind_method ("UnBindRawJSObjectAndFree", "ii");
+			//this.get_js_id = get_method ("GetJSObjectId");
+			bind_method ("GetJSObjectId", "m");
+			//this.get_raw_mono_obj = get_method ("GetDotNetObject", "im");
+			bind_method ("GetDotNetObject", "im");
 
-			this.create_tcs = get_method ("CreateTaskSource");
-			this.set_tcs_result = get_method ("SetTaskSourceResult");
-			this.set_tcs_failure = get_method ("SetTaskSourceFailure");
-			this.tcs_get_task_and_bind = get_method ("GetTaskAndBind");
-			this.get_call_sig = get_method ("GetCallSignature");
+			//this.box_js_int = get_method ("BoxInt");
+			bind_method ("BoxInt", "im");
+			//this.box_js_double = get_method ("BoxDouble");
+			bind_method ("BoxDouble", "dm");
+			//this.box_js_bool = get_method ("BoxBool");
+			bind_method ("BoxBool", "im");
+			//this.is_simple_array = get_method ("IsSimpleArray");
+			bind_method ("IsSimpleArray", "mi");
+			//this.setup_js_cont = get_method ("SetupJSContinuation");
+			bind_method ("SetupJSContinuation", "mo")
 
-			this.object_to_string = get_method ("ObjectToString");
-			this.get_date_value = get_method ("GetDateValue");
-			this.create_date_time = get_method ("CreateDateTime");
-			this.create_uri = get_method ("CreateUri");
+			//this.create_tcs = get_method ("CreateTaskSource");
+			bind_method ("CreateTaskSource", "i");
+			//this.set_tcs_result = get_method ("SetTaskSourceResult");
+			bind_method ("SetTaskSourceFailure", "oo");
+			//this.set_tcs_failure = get_method ("SetTaskSourceFailure");
+			bind_method ("SetTaskSourceFailure", "os");
+			//this.tcs_get_task_and_bind = get_method ("GetTaskAndBind");
+			bind_method ("GetTaskAndBind", "oi");
+			//this.get_call_sig = get_method ("GetCallSignature");
+			bind_method ("GetCallSignature", "i");
+
+			//this.object_to_string = get_method ("ObjectToString");
+			bind_method ("ObjectToString", "m");
+			//this.get_date_value = get_method ("GetDateValue");
+			bind_method ("GetDateValue", "md");
+			//this.create_date_time = get_method ("CreateDateTime");
+			bind_method ("CreateDateTime", "dm");
+			//this.create_uri = get_method ("CreateUri");
+			bind_method ("CreateUri", "sm");
 
 			this.safehandle_addref = get_method ("SafeHandleAddRef");
+			//bind_method ("SafeHandleAddRef");
 			this.safehandle_release = get_method ("SafeHandleRelease");
-			this.safehandle_get_handle = get_method ("SafeHandleGetHandle");
-			this.safehandle_release_by_handle = get_method ("SafeHandleReleaseByHandle");
+			//bind_method ("SafeHandleRelease");
+			//this.safehandle_get_handle = get_method ("SafeHandleGetHandle");
+			bind_method ("SafeHandleGetHandle", "mii")
+			///this.safehandle_release_by_handle = get_method ("SafeHandleReleaseByHandle");
+			bind_method ("SafeHandleReleaseByHandle", "i");
 
 			this.init = true;
 		},
@@ -137,7 +174,7 @@ var BindingSupportLib = {
 		},
 
 		is_nested_array: function (ele) {
-			return this.call_method (this.is_simple_array, null, "mi", [ ele ]);
+			return BINDING.Runtime.IsSimpleArray ([ele]);
 		},
 
 		mono_array_to_js_array: function (mono_array) {
@@ -201,7 +238,8 @@ var BindingSupportLib = {
 					};
 				});
 
-				this.call_method (this.setup_js_cont, null, "mo", [ mono_obj, cont_obj ]);
+				//this.call_method (this.setup_js_cont, null, "mo", [ mono_obj, cont_obj ]);
+				BINDING.Runtime.SetupJsContinuation ([ mono_obj, cont_obj ]);
 				obj.__mono_js_cont__ = cont_obj.__mono_gchandle__;
 				cont_obj.__mono_js_task__ = obj.__mono_gchandle__;
 				return promise;
@@ -221,7 +259,8 @@ var BindingSupportLib = {
 				}
 				else
 				{
-					enumValue = this.call_method(this.object_to_string, null, "m", [ mono_obj ]);
+					//enumValue = this.call_method(this.object_to_string, null, "m", [ mono_obj ]);
+					enumValue = BINDING.Runtime.ObjectToString ([mono_obj]);
 				}
 
 				return enumValue;
@@ -239,17 +278,21 @@ var BindingSupportLib = {
 				throw new Error ("Marshalling of primitive arrays are not supported.  Use the corresponding TypedArray instead.");
 			}
 			case 20: // clr .NET DateTime
-				var dateValue = this.call_method(this.get_date_value, null, "md", [ mono_obj ]);
+				//var dateValue = this.call_method(this.get_date_value, null, "md", [ mono_obj ]);
+				var dateValue = BINDING.Runtime.GetDateValue ([mono_obj]);
 				return new Date(dateValue);
 			case 21: // clr .NET DateTimeOffset
-				var dateoffsetValue = this.call_method(this.object_to_string, null, "m", [ mono_obj ]);
+				//var dateoffsetValue = this.call_method(this.object_to_string, null, "m", [ mono_obj ]);
+				var dateoffsetValue = BINDING.Runtime.ObjectToString ([mono_obj]);
 				return dateoffsetValue;
 			case 22: // clr .NET Uri
-				var uriValue = this.call_method(this.object_to_string, null, "m", [ mono_obj ]);
+				//var uriValue = this.call_method(this.object_to_string, null, "m", [ mono_obj ]);
+				var uriValue = BINDING.Runtime.ObjectToString ([mono_obj]);
 				return uriValue;
 			case 23: // clr .NET SafeHandle
 				var addRef = true;
-				var js_handle = this.call_method(this.safehandle_get_handle, null, "mii", [ mono_obj, addRef ]);
+				//var js_handle = this.call_method(this.safehandle_get_handle, null, "mii", [ mono_obj, addRef ]);
+				var js_handle = BINDING.Runtime.SafeHandleGetHandle ([mono_obj, addRef]);
 				var requiredObject = BINDING.mono_wasm_require_handle (js_handle);
 				if (addRef)
 				{
@@ -265,19 +308,22 @@ var BindingSupportLib = {
 		},
 
 		create_task_completion_source: function () {
-			return this.call_method (this.create_tcs, null, "i", [ -1 ]);
+			//return this.call_method (this.create_tcs, null, "i", [ -1 ]);
+			return BINDING.Runtime.CreateTaskSource ([-1]);
 		},
 
 		set_task_result: function (tcs, result) {
 			tcs.is_mono_tcs_result_set = true;
-			this.call_method (this.set_tcs_result, null, "oo", [ tcs, result ]);
+			//this.call_method (this.set_tcs_result, null, "oo", [ tcs, result ]);
+			BINDING.Runtime.SetTaskSourceResult ([tcs, result]);
 			if (tcs.is_mono_tcs_task_bound)
 				this.free_task_completion_source(tcs);
 		},
 
 		set_task_failure: function (tcs, reason) {
 			tcs.is_mono_tcs_result_set = true;
-			this.call_method (this.set_tcs_failure, null, "os", [ tcs, reason.toString () ]);
+			//this.call_method (this.set_tcs_failure, null, "os", [ tcs, reason.toString () ]);
+			BINDING.Runtime.SetTaskSourceFailure ([tcs, reason.toString ()]);
 			if (tcs.is_mono_tcs_task_bound)
 				this.free_task_completion_source(tcs);
 		},
@@ -310,14 +356,19 @@ var BindingSupportLib = {
 				case js_obj === null:
 				case typeof js_obj === "undefined":
 					return 0;
-				case typeof js_obj === "number":
+				case typeof js_obj === "number":/*
 					if (parseInt(js_obj) == js_obj)
 						return this.call_method (this.box_js_int, null, "im", [ js_obj ]);
 					return this.call_method (this.box_js_double, null, "dm", [ js_obj ]);
+					*/
+					if (parseInt(js_obj) == js_obj)
+						return BINDING.Runtime.BoxInt ([js_obj]);
+					return BINDING.Runtime.BoxDouble ([js_obj]);
 				case typeof js_obj === "string":
 					return this.js_string_to_mono_string (js_obj);
 				case typeof js_obj === "boolean":
-					return this.call_method (this.box_js_bool, null, "im", [ js_obj ]);
+					//return this.call_method (this.box_js_bool, null, "im", [ js_obj ]);
+					return BINDING.Runtime.BoxBool ([js_obj]);
 				case isThenable() === true:
 					var the_task = this.try_extract_mono_obj (js_obj);
 					if (the_task)
@@ -331,7 +382,8 @@ var BindingSupportLib = {
 					return this.get_task_and_bind (tcs, js_obj);
 				case js_obj.constructor.name === "Date":
 					// We may need to take into account the TimeZone Offset
-					return this.call_method(this.create_date_time, null, "dm", [ js_obj.getTime() ]);
+					//return this.call_method(this.create_date_time, null, "dm", [ js_obj.getTime() ]);
+					return BINDING.Runtime.CreateDateTime ([js_obj.getTime()]);
 				default:
 					return this.extract_mono_obj (js_obj);
 			}
@@ -344,7 +396,8 @@ var BindingSupportLib = {
 				case typeof js_obj === "undefined":
 					return 0;
 				case typeof js_obj === "string":
-					return this.call_method(this.create_uri, null, "sm", [ js_obj ])
+					//return this.call_method(this.create_uri, null, "sm", [ js_obj ])
+					return BINDING.Runtime.CreateUri ([js_obj]);
 				default:
 					return this.extract_mono_obj (js_obj);
 			}
@@ -531,26 +584,31 @@ var BindingSupportLib = {
 		},
 		wasm_binding_obj_new: function (js_obj_id, ownsHandle, type)
 		{
-			return this.call_method (this.bind_js_obj, null, "iii", [js_obj_id, ownsHandle, type]);
+			//return this.call_method (this.bind_js_obj, null, "iii", [js_obj_id, ownsHandle, type]);
+			return BINDING.Runtime.BindJSObject ([js_obj_id, ownsHandle, type]);	
 		},
 		wasm_bind_existing: function (mono_obj, js_id)
 		{
-			return this.call_method (this.bind_existing_obj, null, "mi", [mono_obj, js_id]);
+			//return this.call_method (this.bind_existing_obj, null, "mi", [mono_obj, js_id]);
+			return BINDING.Runtime.BindExistingObject ([mono_obj, js_id]);
 		},
 
 		wasm_bind_core_clr_obj: function (js_id, gc_handle)
 		{
-			return this.call_method (this.bind_core_clr_obj, null, "ii", [js_id, gc_handle]);
+			//return this.call_method (this.bind_core_clr_obj, null, "ii", [js_id, gc_handle]);
+			return BINDING.Runtime.BindCoreCLRObject ([js_id, gc_handle]);
 		},
 
 		wasm_get_js_id: function (mono_obj)
 		{
-			return this.call_method (this.get_js_id, null, "m", [mono_obj]);
+			//return this.call_method (this.get_js_id, null, "m", [mono_obj]);
+			return BINDING.Runtime.GetJSObjectId ([mono_obj]);
 		},
 
 		wasm_get_raw_obj: function (gchandle)
 		{
-			return this.call_method (this.get_raw_mono_obj, null, "im", [gchandle]);
+			//return this.call_method (this.get_raw_mono_obj, null, "im", [gchandle]);
+			return BINDING.Runtime.GetDotNetObject ([gchandle])
 		},
 
 		try_extract_mono_obj:function (js_obj) {
@@ -562,12 +620,14 @@ var BindingSupportLib = {
 		mono_method_get_call_signature: function(method) {
 			this.bindings_lazy_init ();
 
-			return this.call_method (this.get_call_sig, null, "i", [ method ]);
+			//return this.call_method (this.get_call_sig, null, "i", [ method ]);
+			return BINDING.Runtime.GetCallSignature ([method]);
 		},
 
 		get_task_and_bind: function (tcs, js_obj) {
 			var gc_handle = this.mono_wasm_free_list.length ? this.mono_wasm_free_list.pop() : this.mono_wasm_ref_counter++;
-			var task_gchandle = this.call_method (this.tcs_get_task_and_bind, null, "oi", [ tcs, gc_handle + 1 ]);
+			//var task_gchandle = this.call_method (this.tcs_get_task_and_bind, null, "oi", [ tcs, gc_handle + 1 ]);
+			var task_gchandle = BINDING.Runtime.GetTaskAndBind ([tcs, gc_handle + 1]);
 			js_obj.__mono_gchandle__ = task_gchandle;
 			this.mono_wasm_object_registry[gc_handle] = js_obj;
 			this.free_task_completion_source(tcs);
@@ -580,11 +640,13 @@ var BindingSupportLib = {
 		free_task_completion_source: function (tcs) {
 			if (tcs.is_mono_tcs_result_set)
 			{
-				this.call_method (this.unbind_raw_obj_and_free, null, "ii", [ tcs.__mono_gchandle__ ]);
+				//this.call_method (this.unbind_raw_obj_and_free, null, "ii", [ tcs.__mono_gchandle__ ]);
+				BINDING.Runtime.UnBindRawJSObjectAndFree ([tcs.__mono_gchandle__]);
 			}
 			if (tcs.__mono_bound_task__)
 			{
-				this.call_method (this.unbind_raw_obj_and_free, null, "ii", [ tcs.__mono_bound_task__ ]);
+				//this.call_method (this.unbind_raw_obj_and_free, null, "ii", [ tcs.__mono_bound_task__ ]);
+				BINDING.Runtime.UnBindRawJSObjectAndFree ([tcs.__mono_bound_task__]);
 			}
 		},
 
@@ -971,7 +1033,8 @@ var BindingSupportLib = {
 				for (refidx = 0; refidx < __owned_objects__.length; refidx++)
 				{
 					var ownerRelease = __owned_objects__[refidx];
-					this.call_method(this.safehandle_release_by_handle, null, "i", [ ownerRelease ]);
+					//this.call_method(this.safehandle_release_by_handle, null, "i", [ ownerRelease ]);
+					BINDING.Runtime.SafeHandleReleaseByHandle ([ownerRelease]);
 				}
 			}
 			//console.log("restore LMF: " + BINDING.mono_wasm_owned_objects_frames.length)
@@ -1092,7 +1155,8 @@ var BindingSupportLib = {
         
 		}
 		BINDING.mono_wasm_unwind_LMF();
-        return BINDING.call_method (BINDING.box_js_bool, null, "im", [ result ]);
+		//return BINDING.call_method (BINDING.box_js_bool, null, "im", [ result ]);
+		BINDING.Runtime.BoxBool ([result]);
 	},
 	mono_wasm_get_by_index: function(js_handle, property_index, is_exception) {
 		BINDING.bindings_lazy_init ();
