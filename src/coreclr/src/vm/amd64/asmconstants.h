@@ -486,7 +486,7 @@ ASMCONSTANTS_C_ASSERT(OFFSET__TEB__ThreadLocalStoragePointer == offsetof(TEB, Th
 
 #define                     DELEGATE_FIELD_OFFSET__METHOD_AUX           0x20
 ASMCONSTANTS_RUNTIME_ASSERT(DELEGATE_FIELD_OFFSET__METHOD_AUX == Object::GetOffsetOfFirstField() +
-        MscorlibBinder::GetFieldOffset(FIELD__DELEGATE__METHOD_PTR_AUX));
+        CoreLibBinder::GetFieldOffset(FIELD__DELEGATE__METHOD_PTR_AUX));
 
 
 #define ASM_LARGE_OBJECT_SIZE 85000

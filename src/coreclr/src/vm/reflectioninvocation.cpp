@@ -200,7 +200,7 @@ FCIMPL2(FC_BOOL_RET, ReflectionInvocation::CanValueSpecialCast, ReflectClassBase
     // the field type is a pointer
     if (targetCorElement == ELEMENT_TYPE_PTR || targetCorElement == ELEMENT_TYPE_FNPTR) {
         // the object must be an IntPtr or a System.Reflection.Pointer
-        if (valueType == TypeHandle(MscorlibBinder::GetClass(CLASS__INTPTR))) {
+        if (valueType == TypeHandle(CoreLibBinder::GetClass(CLASS__INTPTR))) {
             //
             // it's an IntPtr, it's good.
         }
@@ -1679,7 +1679,7 @@ FCIMPL5(void, RuntimeFieldHandle::SetValueDirect, ReflectFieldObject *pFieldUNSA
     case ELEMENT_TYPE_PTR:      // pointers
         if (gc.oValue != 0) {
             value = 0;
-            if (MscorlibBinder::IsClass(gc.oValue->GetMethodTable(), CLASS__POINTER)) {
+            if (CoreLibBinder::IsClass(gc.oValue->GetMethodTable(), CLASS__POINTER)) {
                 value = (size_t) InvokeUtil::GetPointerValue(gc.oValue);
 #ifdef _MSC_VER
 #pragma warning(disable: 4267) //work-around for compiler
@@ -2368,7 +2368,7 @@ FCIMPL1(Object *, ReflectionEnum::InternalGetEnumUnderlyingType, ReflectClassBas
     OBJECTREF result = NULL;
 
     HELPER_METHOD_FRAME_BEGIN_RET_0();
-    MethodTable *pMT = MscorlibBinder::GetElementType(th.AsMethodTable()->GetInternalCorElementType());
+    MethodTable *pMT = CoreLibBinder::GetElementType(th.AsMethodTable()->GetInternalCorElementType());
     result = pMT->GetManagedClassObject();
     HELPER_METHOD_FRAME_END();
 
@@ -2646,7 +2646,7 @@ FCIMPL2(FC_BOOL_RET, ReflectionEnum::InternalEquals, Object *pRefThis, Object* p
 }
 FCIMPLEND
 
-// preform (this & flags) != flags
+// perform (this & flags) == flags
 FCIMPL2(FC_BOOL_RET, ReflectionEnum::InternalHasFlag, Object *pRefThis, Object* pRefFlags)
 {
     FCALL_CONTRACT;

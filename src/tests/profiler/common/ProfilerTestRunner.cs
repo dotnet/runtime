@@ -33,10 +33,11 @@ namespace Profiler.Tests
 
             arguments = profileePath + " RunTest " + profileeArguments;
             program = GetCorerunPath();
+            string profilerPath = GetProfilerPath();
             if (!profileeOptions.HasFlag(ProfileeOptions.NoStartupAttach))
             {
                 envVars.Add("CORECLR_ENABLE_PROFILING", "1");
-                envVars.Add("CORECLR_PROFILER_PATH", GetProfilerPath());
+                envVars.Add("CORECLR_PROFILER_PATH", profilerPath);
                 envVars.Add("CORECLR_PROFILER", "{" + profilerClsid + "}");
             }
 
@@ -48,7 +49,8 @@ namespace Profiler.Tests
                 envVars.Add("COMPlus_JITMinOpts", "0");
             }
 
-            string profilerPath = GetProfilerPath();
+            envVars.Add("Profiler_Test_Name", testName);
+
             if(!File.Exists(profilerPath))
             {
                 LogTestFailure("Profiler library not found at expected path: " + profilerPath);

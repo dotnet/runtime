@@ -207,7 +207,6 @@ namespace System.Drawing
         internal BufferedGraphics() { }
         public System.Drawing.Graphics Graphics { get { throw null; } }
         public void Dispose() { }
-        ~BufferedGraphics() { }
         public void Render() { }
         public void Render(System.Drawing.Graphics? target) { }
         public void Render(System.IntPtr targetDC) { }
@@ -657,7 +656,7 @@ namespace System.Drawing
         ~Icon() { }
         public static System.Drawing.Icon FromHandle(System.IntPtr handle) { throw null; }
         public void Save(System.IO.Stream outputStream) { }
-        void System.Runtime.Serialization.ISerializable.GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
+        void System.Runtime.Serialization.ISerializable.GetObjectData(System.Runtime.Serialization.SerializationInfo si, System.Runtime.Serialization.StreamingContext context) { }
         public System.Drawing.Bitmap ToBitmap() { throw null; }
         public override string ToString() { throw null; }
     }
@@ -731,7 +730,7 @@ namespace System.Drawing
         public void SaveAdd(System.Drawing.Imaging.EncoderParameters? encoderParams) { }
         public int SelectActiveFrame(System.Drawing.Imaging.FrameDimension dimension, int frameIndex) { throw null; }
         public void SetPropertyItem(System.Drawing.Imaging.PropertyItem propitem) { }
-        void System.Runtime.Serialization.ISerializable.GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
+        void System.Runtime.Serialization.ISerializable.GetObjectData(System.Runtime.Serialization.SerializationInfo si, System.Runtime.Serialization.StreamingContext context) { }
         public delegate bool GetThumbnailImageAbort();
     }
     public sealed partial class ImageAnimator
@@ -2096,17 +2095,17 @@ namespace System.Drawing.Imaging
     {
         public static readonly System.Drawing.Imaging.Encoder ChrominanceTable;
         public static readonly System.Drawing.Imaging.Encoder ColorDepth;
+        public static readonly System.Drawing.Imaging.Encoder ColorSpace;
         public static readonly System.Drawing.Imaging.Encoder Compression;
+        public static readonly System.Drawing.Imaging.Encoder ImageItems;
         public static readonly System.Drawing.Imaging.Encoder LuminanceTable;
         public static readonly System.Drawing.Imaging.Encoder Quality;
         public static readonly System.Drawing.Imaging.Encoder RenderMethod;
+        public static readonly System.Drawing.Imaging.Encoder SaveAsCmyk;
         public static readonly System.Drawing.Imaging.Encoder SaveFlag;
         public static readonly System.Drawing.Imaging.Encoder ScanMethod;
         public static readonly System.Drawing.Imaging.Encoder Transformation;
         public static readonly System.Drawing.Imaging.Encoder Version;
-        public static readonly System.Drawing.Imaging.Encoder ColorSpace;
-        public static readonly System.Drawing.Imaging.Encoder ImageItems;
-        public static readonly System.Drawing.Imaging.Encoder SaveAsCmyk;
         public Encoder(System.Guid guid) { }
         public System.Guid Guid { get { throw null; } }
     }
@@ -2718,8 +2717,8 @@ namespace System.Drawing.Printing
         public virtual System.Drawing.Graphics? OnStartPage(System.Drawing.Printing.PrintDocument document, System.Drawing.Printing.PrintPageEventArgs e) { throw null; }
         public virtual void OnStartPrint(System.Drawing.Printing.PrintDocument document, System.Drawing.Printing.PrintEventArgs e) { }
     }
-    [System.ComponentModel.DefaultPropertyAttribute("DocumentName")]
     [System.ComponentModel.DefaultEventAttribute("PrintPage")]
+    [System.ComponentModel.DefaultPropertyAttribute("DocumentName")]
     public partial class PrintDocument : System.ComponentModel.Component
     {
         public PrintDocument() { }

@@ -1,7 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent);netstandard1.3;netstandard2.0;netstandard2.1;netcoreapp3.0;net461;$(NetFrameworkCurrent)</TargetFrameworks>
-    <ExcludeCurrentFullFrameworkFromPackage>true</ExcludeCurrentFullFrameworkFromPackage>
+    <TargetFrameworks>$(NetCoreAppCurrent);netstandard1.3;netstandard2.0;netstandard2.1;netcoreapp3.0;net461</TargetFrameworks>
     <ExcludeCurrentNetCoreAppFromPackage>true</ExcludeCurrentNetCoreAppFromPackage>
     <Nullable>enable</Nullable>
   </PropertyGroup>
@@ -31,8 +30,8 @@
     <Compile Include="$(CommonPath)System\Collections\Concurrent\SingleProducerConsumerQueue.cs"
              Link="Common\System\Collections\Concurrent\SingleProducerConsumerQueue.cs" />
   </ItemGroup>
-  <ItemGroup>
-    <Reference Include="System.AppContext" Condition="'$(TargetFramework)' == 'netstandard1.3'" />
+  <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)' or
+                        '$(TargetFramework)' == 'netcoreapp3.0'">
     <Reference Include="System.Collections" />
     <Reference Include="System.Collections.Concurrent" />
     <Reference Include="System.Diagnostics.Debug" />
@@ -40,12 +39,12 @@
     <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.Extensions" />
     <Reference Include="System.Threading" />
-    <Reference Include="System.Threading.ThreadPool" Condition="!$(TargetFramework.StartsWith('netstandard')) AND !$(TargetFramework.StartsWith('net4'))" />
+    <Reference Include="System.Threading.ThreadPool" />
     <Reference Include="System.Threading.Tasks" />
     <Reference Include="System.Threading.Tasks.Extensions" />
   </ItemGroup>
-  <ItemGroup Condition="$(TargetFramework.StartsWith('net4'))">
-    <Reference Include="mscorlib" />
-    <Reference Include="System" />
+  <ItemGroup Condition="$(TargetFramework.StartsWith('netstandard')) or
+                        $(TargetFramework.StartsWith('net4'))">
+    <PackageReference Include="System.Threading.Tasks.Extensions" Version="$(SystemThreadingTasksExtensionsVersion)" />
   </ItemGroup>
 </Project>

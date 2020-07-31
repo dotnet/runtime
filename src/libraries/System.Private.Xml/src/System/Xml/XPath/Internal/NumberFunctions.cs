@@ -1,7 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#nullable enable
 using System;
+using System.Diagnostics;
 using System.Xml;
 using System.Xml.XPath;
 using System.Xml.Xsl;
@@ -11,10 +13,10 @@ namespace MS.Internal.Xml.XPath
 {
     internal sealed class NumberFunctions : ValueQuery
     {
-        private readonly Query _arg;
+        private readonly Query? _arg;
         private readonly FT _ftype;
 
-        public NumberFunctions(FT ftype, Query arg)
+        public NumberFunctions(FT ftype, Query? arg)
         {
             _arg = arg;
             _ftype = ftype;
@@ -50,20 +52,21 @@ namespace MS.Internal.Xml.XPath
                 FT.FuncFloor => Floor(nodeIterator),
                 FT.FuncCeiling => Ceiling(nodeIterator),
                 FT.FuncRound => Round(nodeIterator),
-                _ => null,
+                _ => throw new InvalidOperationException(),
             };
 
         private double Number(XPathNodeIterator nodeIterator)
         {
             if (_arg == null)
             {
+                Debug.Assert(nodeIterator.Current != null);
                 return XmlConvert.ToXPathDouble(nodeIterator.Current.Value);
             }
             object argVal = _arg.Evaluate(nodeIterator);
             switch (GetXPathType(argVal))
             {
                 case XPathResultType.NodeSet:
-                    XPathNavigator value = _arg.Advance();
+                    XPathNavigator? value = _arg.Advance();
                     if (value != null)
                     {
                         return Number(value.Value);
@@ -84,8 +87,9 @@ namespace MS.Internal.Xml.XPath
         private double Sum(XPathNodeIterator nodeIterator)
         {
             double sum = 0;
+            Debug.Assert(_arg != null);
             _arg.Evaluate(nodeIterator);
-            XPathNavigator nav;
+            XPathNavigator? nav;
             while ((nav = _arg.Advance()) != null)
             {
                 sum += Number(nav.Value);
@@ -95,16 +99,19 @@ namespace MS.Internal.Xml.XPath
 
         private double Floor(XPathNodeIterator nodeIterator)
         {
+            Debug.Assert(_arg != null);
             return Math.Floor((double)_arg.Evaluate(nodeIterator));
         }
 
         private double Ceiling(XPathNodeIterator nodeIterator)
         {
+            Debug.Assert(_arg != null);
             return Math.Ceiling((double)_arg.Evaluate(nodeIterator));
         }
 
         private double Round(XPathNodeIterator nodeIterator)
         {
+            Debug.Assert(_arg != null);
             double n = XmlConvert.ToXPathDouble(_arg.Evaluate(nodeIterator));
             return XmlConvert.XPathRound(n);
         }

@@ -21,8 +21,8 @@ namespace System.Data.ProviderBase
 
         private readonly WeakReference _owningObject = new WeakReference(null, false);  // [usage must be thread safe] the owning object, when not in the pool. (both Pooled and Non-Pooled connections)
 
-        private DbConnectionPool _connectionPool;           // the pooler that the connection came from (Pooled connections only)
-        private DbReferenceCollection _referenceCollection;      // collection of objects that we need to notify in some way when we're being deactivated
+        private DbConnectionPool? _connectionPool;           // the pooler that the connection came from (Pooled connections only)
+        private DbReferenceCollection? _referenceCollection;      // collection of objects that we need to notify in some way when we're being deactivated
         private int _pooledCount;              // [usage must be thread safe] the number of times this object has been pushed into the pool less the number of times it's been popped (0 != inPool)
 
         private bool _connectionIsDoomed;       // true when the connection should no longer be used.
@@ -113,17 +113,17 @@ namespace System.Data.ProviderBase
         }
 
 
-        protected internal object Owner
+        protected internal object? Owner
         {
             // We use a weak reference to the owning object so we can identify when
-            // it has been garbage collected without thowing exceptions.
+            // it has been garbage collected without throwing exceptions.
             get
             {
                 return _owningObject.Target;
             }
         }
 
-        internal DbConnectionPool Pool
+        internal DbConnectionPool? Pool
         {
             get
             {
@@ -131,7 +131,7 @@ namespace System.Data.ProviderBase
             }
         }
 
-        protected internal DbReferenceCollection ReferenceCollection
+        protected internal DbReferenceCollection? ReferenceCollection
         {
             get
             {
@@ -199,12 +199,12 @@ namespace System.Data.ProviderBase
             // By default, there is no preparation required
         }
 
-        protected virtual object ObtainAdditionalLocksForClose()
+        protected virtual object? ObtainAdditionalLocksForClose()
         {
             return null; // no additional locks in default implementation
         }
 
-        protected virtual void ReleaseAdditionalLocksForClose(object lockToken)
+        protected virtual void ReleaseAdditionalLocksForClose(object? lockToken)
         {
             // no additional locks in default implementation
         }
@@ -218,6 +218,8 @@ namespace System.Data.ProviderBase
 
         internal void DeactivateConnection()
         {
+            Debug.Assert(Pool != null);
+
             // Internal method called from the connection pooler so we don't expose
             // the Deactivate method publicly.
 
@@ -251,7 +253,7 @@ namespace System.Data.ProviderBase
             _connectionIsDoomed = true;
         }
 
-        protected internal virtual DataTable GetSchema(DbConnectionFactory factory, DbConnectionPoolGroup poolGroup, DbConnection outerConnection, string collectionName, string[] restrictions)
+        protected internal virtual DataTable GetSchema(DbConnectionFactory factory, DbConnectionPoolGroup poolGroup, DbConnection outerConnection, string collectionName, string?[]? restrictions)
         {
             Debug.Assert(outerConnection != null, "outerConnection may not be null.");
 
@@ -282,7 +284,7 @@ namespace System.Data.ProviderBase
 
         internal void NotifyWeakReference(int message)
         {
-            DbReferenceCollection referenceCollection = ReferenceCollection;
+            DbReferenceCollection? referenceCollection = ReferenceCollection;
             if (null != referenceCollection)
             {
                 referenceCollection.Notify(message);
@@ -302,22 +304,22 @@ namespace System.Data.ProviderBase
         /// override this and do the correct thing.</devdoc>
         // User code should either override DbConnectionInternal.Activate when it comes out of the pool
         // or override DbConnectionFactory.CreateConnection when the connection is created for non-pooled connections
-        internal virtual bool TryOpenConnection(DbConnection outerConnection, DbConnectionFactory connectionFactory, TaskCompletionSource<DbConnectionInternal> retry, DbConnectionOptions userOptions)
+        internal virtual bool TryOpenConnection(DbConnection outerConnection, DbConnectionFactory connectionFactory, TaskCompletionSource<DbConnectionInternal>? retry, DbConnectionOptions? userOptions)
         {
             throw ADP.ConnectionAlreadyOpen(State);
         }
 
-        internal virtual bool TryReplaceConnection(DbConnection outerConnection, DbConnectionFactory connectionFactory, TaskCompletionSource<DbConnectionInternal> retry, DbConnectionOptions userOptions)
+        internal virtual bool TryReplaceConnection(DbConnection outerConnection, DbConnectionFactory connectionFactory, TaskCompletionSource<DbConnectionInternal>? retry, DbConnectionOptions? userOptions)
         {
             throw ADP.MethodNotImplemented();
         }
 
-        protected bool TryOpenConnectionInternal(DbConnection outerConnection, DbConnectionFactory connectionFactory, TaskCompletionSource<DbConnectionInternal> retry, DbConnectionOptions userOptions)
+        protected bool TryOpenConnectionInternal(DbConnection outerConnection, DbConnectionFactory connectionFactory, TaskCompletionSource<DbConnectionInternal>? retry, DbConnectionOptions? userOptions)
         {
             // ?->Connecting: prevent set_ConnectionString during Open
             if (connectionFactory.SetInnerConnectionFrom(outerConnection, DbConnectionClosedConnecting.SingletonInstance, this))
             {
-                DbConnectionInternal openConnection = null;
+                DbConnectionInternal? openConnection = null;
                 try
                 {
                     connectionFactory.PermissionDemand(outerConnection);
@@ -343,7 +345,7 @@ namespace System.Data.ProviderBase
             return true;
         }
 
-        internal void PrePush(object expectedOwner)
+        internal void PrePush(object? expectedOwner)
         {
             // Called by DbConnectionPool when we're about to be put into it's pool, we
             // take this opportunity to ensure ownership and pool counts are legit.
@@ -412,7 +414,7 @@ namespace System.Data.ProviderBase
 
         internal void RemoveWeakReference(object value)
         {
-            DbReferenceCollection referenceCollection = ReferenceCollection;
+            DbReferenceCollection? referenceCollection = ReferenceCollection;
             if (null != referenceCollection)
             {
                 referenceCollection.Remove(value);

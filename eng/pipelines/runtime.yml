@@ -226,7 +226,8 @@ jobs:
     jobTemplate: /eng/pipelines/coreclr/templates/format-job.yml
     platforms:
     - Linux_x64
-    - Windows_NT_x64
+    # Isssue: https://github.com/dotnet/runtime/issues/40034
+    #- Windows_NT_x64
     jobParameters:
       condition: >-
         and(
@@ -576,7 +577,7 @@ jobs:
     helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
     jobParameters:
       isFullMatrix: ${{ variables.isFullMatrix }}
-      framework: net472
+      framework: net48
       runTests: true
       testScope: innerloop
       condition: >-

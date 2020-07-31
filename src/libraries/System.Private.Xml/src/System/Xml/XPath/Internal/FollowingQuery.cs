@@ -1,14 +1,16 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#nullable enable
+using System.Diagnostics;
 using System.Xml.XPath;
 
 namespace MS.Internal.Xml.XPath
 {
     internal sealed class FollowingQuery : BaseAxisQuery
     {
-        private XPathNavigator _input;
-        private XPathNodeIterator _iterator;
+        private XPathNavigator? _input;
+        private XPathNodeIterator? _iterator;
 
         public FollowingQuery(Query qyInput, string name, string prefix, XPathNodeType typeTest) : base(qyInput, name, prefix, typeTest) { }
         private FollowingQuery(FollowingQuery other) : base(other)
@@ -23,7 +25,7 @@ namespace MS.Internal.Xml.XPath
             base.Reset();
         }
 
-        public override XPathNavigator Advance()
+        public override XPathNavigator? Advance()
         {
             if (_iterator == null)
             {
@@ -47,7 +49,7 @@ namespace MS.Internal.Xml.XPath
             while (!_iterator.MoveNext())
             {
                 bool matchSelf;
-                if (_input.NodeType == XPathNodeType.Attribute || _input.NodeType == XPathNodeType.Namespace)
+                if (_input!.NodeType == XPathNodeType.Attribute || _input.NodeType == XPathNodeType.Namespace)
                 {
                     _input.MoveToParent();
                     matchSelf = false;
@@ -65,7 +67,7 @@ namespace MS.Internal.Xml.XPath
                 }
                 if (NameTest)
                 {
-                    _iterator = _input.SelectDescendants(Name, Namespace, matchSelf);
+                    _iterator = _input.SelectDescendants(Name, Namespace!, matchSelf);
                 }
                 else
                 {

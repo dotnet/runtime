@@ -1200,7 +1200,7 @@ LEAF_END JIT_ProfilerEnterLeaveTailcallStub, _TEXT
 #define PROFILE_ENTER    1
 #define PROFILE_LEAVE    2
 #define PROFILE_TAILCALL 4
-#define SIZEOF__PROFILE_PLATFORM_SPECIFIC_DATA 256
+#define SIZEOF__PROFILE_PLATFORM_SPECIFIC_DATA 272
 
 // ------------------------------------------------------------------
 .macro GenerateProfileHelper helper, flags
