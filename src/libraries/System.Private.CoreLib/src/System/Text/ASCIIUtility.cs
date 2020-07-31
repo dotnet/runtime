@@ -355,7 +355,7 @@ namespace System.Text
                         throw new PlatformNotSupportedException();
                     }
 
-                    if (ContainsNonAsciiByte(currentMask | secondMask))
+                    if (ContainsNonAsciiByte(currentMask) || ContainsNonAsciiByte(secondMask))
                     {
                         goto FoundNonAsciiDataInInnerLoop;
                     }
