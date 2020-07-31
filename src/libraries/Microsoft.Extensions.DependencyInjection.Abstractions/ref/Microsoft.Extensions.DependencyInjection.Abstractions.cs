@@ -14,6 +14,7 @@ namespace Microsoft.Extensions.DependencyInjection
         public static object GetServiceOrCreateInstance(System.IServiceProvider provider, System.Type type) { throw null; }
         public static T GetServiceOrCreateInstance<T>(System.IServiceProvider provider) { throw null; }
     }
+    [System.AttributeUsageAttribute(System.AttributeTargets.All)]
     public partial class ActivatorUtilitiesConstructorAttribute : System.Attribute
     {
         public ActivatorUtilitiesConstructorAttribute() { }

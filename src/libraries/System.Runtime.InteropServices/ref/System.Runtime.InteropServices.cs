@@ -493,6 +493,7 @@ namespace System.Runtime.InteropServices
         [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")]
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public static System.IntPtr CreateAggregatedObject(System.IntPtr pOuter, object o) { throw null; }
+        [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")]
         public static System.IntPtr CreateAggregatedObject<T>(System.IntPtr pOuter, T o) where T : notnull { throw null; }
         [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")]
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
