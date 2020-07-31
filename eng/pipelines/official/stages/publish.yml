@@ -27,8 +27,7 @@ stages:
     - PrepareForPublish
     # The following checks are run after the build in the validation and release pipelines
     # And thus are not enabled here. They can be enabled for dev builds for spot testing if desired
-    enableSymbolValidation: false
-    enableSigningValidation: false
+    enableSymbolValidation: false    
     enableNugetValidation: false
     enableSourceLinkValidation: false
     SDLValidationParameters:
