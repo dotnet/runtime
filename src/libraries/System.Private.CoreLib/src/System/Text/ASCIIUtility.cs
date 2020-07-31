@@ -450,7 +450,7 @@ namespace System.Text
             // Tzcnt is the correct operation to count the number of zero bits quickly. If this instruction isn't
             // available, we'll fall back to a normal loop.
 
-            Debug.Assert(currentMask != 0, "Shouldn't be here unless we see non-ASCII data.");
+            Debug.Assert(ContainsNonAsciiByte(currentMask), "Shouldn't be here unless we see non-ASCII data.");
             if (Sse2.IsSupported)
             {
                 pBuffer += (uint)BitOperations.TrailingZeroCount(currentMask);
