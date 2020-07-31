@@ -26,12 +26,9 @@ static unsafe class CopyCtor
         return 100;
     }
 
-    [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
-    public delegate int TestDelegate(StructWithCtor* ptrStruct, ref StructWithCtor refStruct);
-
     public static unsafe int Main()
     {
-        TestDelegate del = (TestDelegate)StructWithCtorTest;
+        TestDelegate del = (TestDelegate)Delegate.CreateDelegate(typeof(TestDelegate), typeof(CopyCtor).GetMethod("StructWithCtorTest"));
         StructWithCtor s1 = new StructWithCtor();
         StructWithCtor s2 = new StructWithCtor();
         s1._instanceField = 1;
