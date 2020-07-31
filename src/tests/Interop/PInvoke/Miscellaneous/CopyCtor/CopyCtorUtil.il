@@ -52,14 +52,6 @@
         ldarg.1
         ldfld int32 StructWithCtor::_instanceField
         stfld int32 StructWithCtor::_instanceField
-        ldarg.0
-        ldarg.1
-        ldfld int32 StructWithCtor::_instanceField2
-        stfld int32 StructWithCtor::_instanceField2
-        ldarg.0
-        ldarg.1
-        ldfld int32 StructWithCtor::_instanceField3
-        stfld int32 StructWithCtor::_instanceField3
 
         ldsfld int32 StructWithCtor::CopyCtorCallCount
         ldc.i4.1
