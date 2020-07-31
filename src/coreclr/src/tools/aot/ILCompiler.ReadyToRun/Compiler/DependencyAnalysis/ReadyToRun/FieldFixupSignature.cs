@@ -14,6 +14,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
     public class FieldFixupSignature : Signature
     {
+        public const int MaxCheckableOffset = 0x1FFFFFFF;
         private readonly ReadyToRunFixupKind _fixupKind;
 
         private readonly FieldDesc _fieldDesc;
