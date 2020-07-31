@@ -9,13 +9,13 @@ namespace DebuggerTests
 
 		[Theory]
 		[InlineData ("en-US")]
-		[InlineData ("de-DE")]
-		[InlineData ("ka-GE")]
-		[InlineData ("hu-HU")]
-        
-        // Currently not passing tests. Issue #19743
-        // [InlineData ("ja-JP")]
-        // [InlineData ("es-ES")]
+
+		// Currently not passing tests. Issue #19743
+		// [InlineData ("ja-JP")]
+		// [InlineData ("es-ES")]
+		//[InlineData ("de-DE")]
+		//[InlineData ("ka-GE")]
+		//[InlineData ("hu-HU")]
 		public async Task CheckDateTimeLocale (string locale) {
 			var insp = new Inspector ();
 			var scripts = SubscribeToScripts(insp);

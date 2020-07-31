@@ -107,7 +107,7 @@ namespace WebAssembly.Net.Debugging {
 				Console.WriteLine ($"launching proxy for {con_str}");
 
 				using var loggerFactory = LoggerFactory.Create(
-					builder => builder.AddConsole().AddFilter(null, LogLevel.Trace));
+					builder => builder.AddConsole().AddFilter(null, LogLevel.Information));
 				var proxy = new DebuggerProxy (loggerFactory);
 				var browserUri = new Uri (con_str);
 				var ideSocket = await context.WebSockets.AcceptWebSocketAsync ();
