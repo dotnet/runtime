@@ -43,7 +43,7 @@ namespace System.Text
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int GetIndexOfFirstNonAsciiByteInLane(Vector128<byte> value, Vector128<byte> bitmask)
+        private static int GetIndexOfFirstNonAsciiByteInLane(Vector128<byte> value, Vector128<byte> bitmask)
         {
             if (!AdvSimd.Arm64.IsSupported || !BitConverter.IsLittleEndian)
             {
