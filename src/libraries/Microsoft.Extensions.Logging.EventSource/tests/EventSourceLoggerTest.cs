@@ -54,6 +54,98 @@ namespace Microsoft.Extensions.Logging.Test
         }
 
         [Fact]
+        public void FilterSpecs_UseAppFilters_IncreaseLoggingLevelForOneCategory_KeepsExistingEventSourceLoggingRules()
+        {
+            using (var testListener = new TestEventListener())
+            {
+                var loggerFactory = LoggerFactory.Create(builder =>
+                    builder
+                        .AddEventSourceLogger()
+                        .AddFilter("Logger1*", LogLevel.Warning)
+                        .AddFilter("Logger2*", LogLevel.Error)
+                );
+
+                var listenerSettings = new TestEventListener.ListenerSettings();
+                listenerSettings.FilterSpec = "UseAppFilters;Logger3:1";
+                testListener.EnableEvents(listenerSettings);
+
+                var logger = loggerFactory.CreateLogger("Logger1");
+                var logger2 = loggerFactory.CreateLogger("Logger2");
+                var logger3 = loggerFactory.CreateLogger("Logger3");
+
+                Assert.False(logger.IsEnabled(LogLevel.None));
+                Assert.True(logger.IsEnabled(LogLevel.Critical));
+                Assert.True(logger.IsEnabled(LogLevel.Error));
+                Assert.True(logger.IsEnabled(LogLevel.Warning));
+                Assert.False(logger.IsEnabled(LogLevel.Information));
+                Assert.False(logger.IsEnabled(LogLevel.Debug));
+                Assert.False(logger.IsEnabled(LogLevel.Trace));
+
+                Assert.False(logger2.IsEnabled(LogLevel.None));
+                Assert.True(logger2.IsEnabled(LogLevel.Critical));
+                Assert.True(logger2.IsEnabled(LogLevel.Error));
+                Assert.False(logger2.IsEnabled(LogLevel.Warning));
+                Assert.False(logger2.IsEnabled(LogLevel.Information));
+                Assert.False(logger2.IsEnabled(LogLevel.Debug));
+                Assert.False(logger2.IsEnabled(LogLevel.Trace));
+
+                Assert.False(logger3.IsEnabled(LogLevel.None));
+                Assert.True(logger3.IsEnabled(LogLevel.Critical));
+                Assert.True(logger3.IsEnabled(LogLevel.Error));
+                Assert.True(logger3.IsEnabled(LogLevel.Warning));
+                Assert.True(logger3.IsEnabled(LogLevel.Information));
+                Assert.True(logger3.IsEnabled(LogLevel.Debug));
+                Assert.False(logger3.IsEnabled(LogLevel.Trace));
+            }
+        }
+
+        [Fact]
+        public void FilterSpecs_IncreaseLoggingLevelForOneCategory_DisablesExistingEventSourceLoggingRules()
+        {
+            using (var testListener = new TestEventListener())
+            {
+                var loggerFactory = LoggerFactory.Create(builder =>
+                    builder
+                        .AddEventSourceLogger()
+                        .AddFilter("Logger1*", LogLevel.Warning)
+                        .AddFilter("Logger2*", LogLevel.Error)
+                );
+
+                var listenerSettings = new TestEventListener.ListenerSettings();
+                listenerSettings.FilterSpec = "Logger3:1";
+                testListener.EnableEvents(listenerSettings);
+
+                var logger = loggerFactory.CreateLogger("Logger1");
+                var logger2 = loggerFactory.CreateLogger("Logger2");
+                var logger3 = loggerFactory.CreateLogger("Logger3");
+
+                Assert.False(logger.IsEnabled(LogLevel.None));
+                Assert.False(logger.IsEnabled(LogLevel.Critical));
+                Assert.False(logger.IsEnabled(LogLevel.Error));
+                Assert.False(logger.IsEnabled(LogLevel.Warning));
+                Assert.False(logger.IsEnabled(LogLevel.Information));
+                Assert.False(logger.IsEnabled(LogLevel.Debug));
+                Assert.False(logger.IsEnabled(LogLevel.Trace));
+
+                Assert.False(logger2.IsEnabled(LogLevel.None));
+                Assert.False(logger2.IsEnabled(LogLevel.Critical));
+                Assert.False(logger2.IsEnabled(LogLevel.Error));
+                Assert.False(logger2.IsEnabled(LogLevel.Warning));
+                Assert.False(logger2.IsEnabled(LogLevel.Information));
+                Assert.False(logger2.IsEnabled(LogLevel.Debug));
+                Assert.False(logger2.IsEnabled(LogLevel.Trace));
+
+                Assert.False(logger3.IsEnabled(LogLevel.None));
+                Assert.True(logger3.IsEnabled(LogLevel.Critical));
+                Assert.True(logger3.IsEnabled(LogLevel.Error));
+                Assert.True(logger3.IsEnabled(LogLevel.Warning));
+                Assert.True(logger3.IsEnabled(LogLevel.Information));
+                Assert.True(logger3.IsEnabled(LogLevel.Debug));
+                Assert.False(logger3.IsEnabled(LogLevel.Trace));
+            }
+        }
+
+        [Fact]
         public void Logs_AsExpected_WithDefaults()
         {
             using (var testListener = new TestEventListener())
