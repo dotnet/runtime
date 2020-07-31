@@ -2463,15 +2463,6 @@ private static void ProcessInputs((string templateFileName, Dictionary<string, s
         Directory.CreateDirectory(directoryName);
 
         string[] testNamesPerIsa = testGroup.Select(i => i.templateData["TestName"]).ToArray();
-        string testListFileName = $"Program.{isa}.cs";
-
-        CreateTestListFile(testNamesPerIsa, Path.Combine(directoryName, testListFileName));
-
-        string dbgTestProjectFileName = $"{isa}_r.csproj";
-        string relTestProjectFileName = $"{isa}_ro.csproj";
-
-        CreateTestProject(testNamesPerIsa, optimize: false, Path.Combine(directoryName, dbgTestProjectFileName));
-        CreateTestProject(testNamesPerIsa, optimize: true,  Path.Combine(directoryName, relTestProjectFileName));
 
         foreach ((string templateFileName, Dictionary<string, string> templateData) in testGroup)
         {
@@ -2487,43 +2478,54 @@ private static void ProcessInputs((string templateFileName, Dictionary<string, s
                 string method = testSubGroup.Key;
                 string[] testNamesPerIsaAndMethod = testSubGroup.Select(t => t.templateData["TestName"]).ToArray();
 
-                CreateRunOnlyTestProject(testNamesPerIsaAndMethod, testProjectToRun: dbgTestProjectFileName, Path.Combine(directoryName, $"{method}_r.csproj"));
-                CreateRunOnlyTestProject(testNamesPerIsaAndMethod, testProjectToRun: relTestProjectFileName, Path.Combine(directoryName, $"{method}_ro.csproj"));
+                string testListFileName = $"Program.{isa}.{method}.cs";
+                string dbgTestProjectFileName = $"{method}_r.csproj";
+                string relTestProjectFileName = $"{method}_ro.csproj";
+
+                CreateTestListFile(testNamesPerIsaAndMethod, Path.Combine(directoryName, testListFileName));
+                CreateTestProject(testNamesPerIsaAndMethod, optimize: false, testListFileName, Path.Combine(directoryName, dbgTestProjectFileName));
+                CreateTestProject(testNamesPerIsaAndMethod, optimize: true,  testListFileName, Path.Combine(directoryName, relTestProjectFileName));
             }
+        }
+        else
+        {
+            string testListFileName = $"Program.{isa}.cs";
+            string dbgTestProjectFileName = $"{isa}_r.csproj";
+            string relTestProjectFileName = $"{isa}_ro.csproj";
+
+            CreateTestListFile(testNamesPerIsa, Path.Combine(directoryName, testListFileName));
+            CreateTestProject(testNamesPerIsa, optimize: false, testListFileName, Path.Combine(directoryName, dbgTestProjectFileName));
+            CreateTestProject(testNamesPerIsa, optimize: true,  testListFileName, Path.Combine(directoryName, relTestProjectFileName));
         }
     }
 }
 
-private static void CreateTestProject(string[] testNames, bool optimize, string outputFileName)
+private static void CreateTestProject(string[] testNames, bool optimize, string testListFileName, string outputFileName)
 {
-    string content = $@"<Project Sdk=""Microsoft.NET.Sdk"">
+    var sb = new StringBuilder();
+
+    sb.AppendFormat(@"<Project Sdk=""Microsoft.NET.Sdk"">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DebugType>Embedded</DebugType>
-    <Optimize>{optimize}</Optimize>
+    <Optimize>{0}</Optimize>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include=""*.cs""/>
     <Compile Include=""..\Shared\Helpers.cs"" />
     <Compile Include=""..\Shared\Program.cs"" />
-  </ItemGroup>
-</Project>";
+    <Compile Include=""{1}"" />
+", optimize, testListFileName);
 
-    File.WriteAllText(outputFileName, content);
-}
+    foreach (string testName in testNames)
+    {
+        sb.AppendFormat("    <Compile Include=\"{0}.cs\" />\n", testName.Replace('_', '.'));
+    }
 
-private static void CreateRunOnlyTestProject(string[] testNames, string testProjectToRun, string outputFileName)
-{
-    string executionArgs = string.Join(" ", testNames.Select(name => name.Replace('_', '.')));
-    string content = $@"<Project Sdk=""Microsoft.NET.Sdk"">
-  <PropertyGroup>
-    <CLRTestKind>RunOnly</CLRTestKind>
-    <CLRTestProjectToRun>{testProjectToRun}</CLRTestProjectToRun>
-    <CLRTestExecutionArguments>{executionArgs}</CLRTestExecutionArguments>
-  </PropertyGroup>
-</Project>";
+    sb.AppendLine(@"  </ItemGroup>
+</Project>");
 
+    string content = sb.ToString();
     File.WriteAllText(outputFileName, content);
 }
 
