@@ -4678,7 +4678,7 @@ case "$host" in
 		ACCESS_UNALIGNED="yes"
 		BTLS_SUPPORTED=yes
 		BTLS_PLATFORM=s390x
-		CFLAGS="$CFLAGS -mbackchain -D__USE_STRING_INLINES"
+		CFLAGS="$CFLAGS -mbackchain"
 		;;
 	riscv32-*)
 		TARGET=RISCV32
