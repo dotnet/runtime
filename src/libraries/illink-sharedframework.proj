@@ -42,7 +42,8 @@
     <ItemGroup>
       <!-- add two directories to load references: the libraries directory and CoreLib's directory -->
       <_DependencyDirectories Include="$(LibrariesPretrimmedArtifactsPath.TrimEnd('\'))" />
-      <_DependencyDirectories Include="$(CoreCLRArtifactsPath)IL" />
+      <_DependencyDirectories Condition="'$(RuntimeFlavor)' == 'CoreCLR'" Include="$([MSBuild]::NormalizePath('$(CoreCLRArtifactsPath)', 'IL'))" />
+      <_DependencyDirectories Condition="'$(RuntimeFlavor)' == 'Mono'" Include="$([MSBuild]::NormalizePath('$(MonoArtifactsPath)', 'IL'))" />
     </ItemGroup>
 
     <PropertyGroup>
@@ -79,5 +80,5 @@
         ToolPath="$(_DotNetHostDirectory)" />
   </Target>
 
-  <Import Project="$(RepositoryEngineeringDir)illink.targets" />
+  <Import Project="$([MSBuild]::NormalizePath('$(RepositoryEngineeringDir)', 'illink.targets'))" />
 </Project>
