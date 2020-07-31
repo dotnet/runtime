@@ -290,7 +290,6 @@ namespace System.Linq.Expressions.Tests
 
         [Theory]
         [PerCompilationType(nameof(Call_NoParameters_TestData))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/39771", TestPlatforms.Browser)]
         public static void Call_NoParameters(Expression instance, MethodInfo method, object expected, bool useInterpreter)
         {
             Expression call = Expression.Call(instance, method);
