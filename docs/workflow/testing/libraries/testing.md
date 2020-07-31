@@ -46,7 +46,7 @@ There may be multiple projects in some directories so you may need to specify th
 
 #### Running a single test on the command line
 
-To quickly run or debug a single test from the command line, supply a filter argument value. property, e.g.:
+To quickly run or debug a single test from the command line, supply a filter argument value, e.g.:
 ```cmd
 dotnet test --filter {FullyQualifiedNamespace}.{ClassName}.{MethodName}
 ```
