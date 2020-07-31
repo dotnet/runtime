@@ -108,20 +108,30 @@ mono_wasm_invoke_js (MonoString *str, int *is_exception)
 static void
 wasm_logger (const char *log_domain, const char *log_level, const char *message, mono_bool fatal, void *user_data)
 {
-	if (fatal) {
-		EM_ASM(
-			   var err = new Error();
-			   console.log ("Stacktrace: \n");
-			   console.log (err.stack);
-			   );
+	EM_ASM({
+		var message = $1;
+		if ($2)
+			console.trace (message);
 
-		fprintf (stderr, "%s\n", message);
-		fflush (stderr);
-
-		abort ();
-	} else {
-		fprintf (stdout, "L: %s\n", message);
-	}
+		switch ($0) {
+			case "critical":
+			case "error":
+				console.error (message);
+				break;
+			case "warning":
+				console.warn (message);
+				break;
+			case "message":
+				console.log (message);
+				break;
+			case "info":
+				console.info (message);
+				break;
+			case "debug":
+				console.debug (message);
+				break;
+		}
+	},log_level, message, fatal);
 }
 
 #ifdef DRIVER_GEN
