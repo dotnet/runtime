@@ -243,9 +243,13 @@ namespace System.Text
             {
                 return currentMask != 0;
             }
-            else
+            else if (AdvSimd.IsSupported)
             {
                 return currentMask < 16;
+            }
+            else
+            {
+                throw new PlatformNotSupportedException();
             }
         }
 
