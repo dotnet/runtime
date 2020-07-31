@@ -1,7 +1,8 @@
 <Project Sdk="Microsoft.Build.Traversal">
 
   <Target Name="ILLinkTrimSharedFramework"
-          AfterTargets="Build">
+          AfterTargets="Build"
+          Condition="'$(BuildTargetFramework)' == '$(NetCoreAppCurrent)'">
 
     <PropertyGroup>
       <!-- default action for core assemblies -->
