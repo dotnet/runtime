@@ -13,14 +13,10 @@
 // #define FEATURE_ADVANCED_MANAGED_ETW_CHANNELS
 #endif
 
-#if ES_BUILD_STANDALONE
 using System;
-using System.Diagnostics;
-using Environment = Microsoft.Diagnostics.Tracing.Internal.Environment;
-using EventDescriptor = Microsoft.Diagnostics.Tracing.EventDescriptor;
-#endif
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Text;
 

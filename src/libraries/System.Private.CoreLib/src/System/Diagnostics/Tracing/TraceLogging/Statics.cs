@@ -1,15 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#if ES_BUILD_STANDALONE
 using System;
-using Environment = Microsoft.Diagnostics.Tracing.Internal.Environment;
-#endif
 using System.Collections.Generic;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text;
-using Microsoft.Reflection;
 
 #if ES_BUILD_STANDALONE
 namespace Microsoft.Diagnostics.Tracing
@@ -321,53 +317,11 @@ namespace System.Diagnostics.Tracing
 
         #region Reflection helpers
 
-        /*
-        All TraceLogging use of reflection APIs should go through wrappers here.
-        This helps with portability, and it also makes it easier to audit what
-        kinds of reflection operations are being done.
-        */
-
-        public static object? CreateInstance(Type type, params object?[]? parameters)
-        {
-            return Activator.CreateInstance(type, parameters);
-        }
-
-        public static bool IsValueType(Type type)
-        {
-            bool result = type.IsValueType();
-            return result;
-        }
-
-        public static bool IsEnum(Type type)
-        {
-            bool result = type.IsEnum();
-            return result;
-        }
-
-        public static IEnumerable<PropertyInfo> GetProperties(Type type)
-        {
-            IEnumerable<PropertyInfo> result = type.GetProperties();
-            return result;
-        }
-
-        public static MethodInfo? GetGetMethod(PropertyInfo propInfo)
-        {
-            MethodInfo? result = propInfo.GetGetMethod();
-            return result;
-        }
-
-        public static MethodInfo? GetDeclaredStaticMethod(Type declaringType, string name)
-        {
-            return declaringType.GetMethod(
-                name,
-                BindingFlags.DeclaredOnly | BindingFlags.Static | BindingFlags.NonPublic);
-        }
-
         public static bool HasCustomAttribute(
             PropertyInfo propInfo,
             Type attributeType)
         {
-            return propInfo.IsDefined(attributeType);
+            return propInfo.IsDefined(attributeType, false);
         }
 
         public static AttributeType? GetCustomAttribute<AttributeType>(PropertyInfo propInfo)
@@ -394,18 +348,13 @@ namespace System.Diagnostics.Tracing
             return result;
         }
 
-        public static Type[] GetGenericArguments(Type type)
-        {
-            return type.GetGenericArguments();
-        }
-
         public static Type? FindEnumerableElementType(Type type)
         {
             Type? elementType = null;
 
             if (IsGenericMatch(type, typeof(IEnumerable<>)))
             {
-                elementType = GetGenericArguments(type)[0];
+                elementType = type.GetGenericArguments()[0];
             }
             else
             {
@@ -420,7 +369,7 @@ namespace System.Diagnostics.Tracing
                         break;
                     }
 
-                    elementType = GetGenericArguments(ifaceType)[0];
+                    elementType = ifaceType.GetGenericArguments()[0];
                 }
             }
 
@@ -429,14 +378,7 @@ namespace System.Diagnostics.Tracing
 
         public static bool IsGenericMatch(Type type, object? openType)
         {
-            return type.IsGenericType() && type.GetGenericTypeDefinition() == (Type?)openType;
-        }
-
-        public static Delegate CreateDelegate(Type delegateType, MethodInfo methodInfo)
-        {
-            return Delegate.CreateDelegate(
-                delegateType,
-                methodInfo);
+            return type.IsGenericType && type.GetGenericTypeDefinition() == (Type?)openType;
         }
 
         public static TraceLoggingTypeInfo CreateDefaultTypeInfo(
@@ -530,7 +472,7 @@ namespace System.Diagnostics.Tracing
             }
             else
             {
-                if (Statics.IsEnum(dataType))
+                if (dataType.IsEnum)
                     dataType = Enum.GetUnderlyingType(dataType);
 
                 if (dataType == typeof(string))

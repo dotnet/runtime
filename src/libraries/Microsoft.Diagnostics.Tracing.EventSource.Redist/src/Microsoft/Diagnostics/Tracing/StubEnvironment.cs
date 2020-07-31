@@ -3,24 +3,16 @@
 
 using System;
 using System.Reflection;
-#if ES_BUILD_STANDALONE
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Security;
 using System.Security.Permissions;
-#endif
-using Microsoft.Reflection;
 
-#if ES_BUILD_STANDALONE
-namespace Microsoft.Diagnostics.Tracing.Internal
-#else
-namespace System.Diagnostics.Tracing.Internal
-#endif
+namespace Microsoft.Diagnostics.Tracing
 {
-#if ES_BUILD_STANDALONE
     internal static class Environment
     {
-        public static int ProcessId = GetCurrentProcessId();
+        public static readonly int ProcessId = GetCurrentProcessId();
 
         private static int GetCurrentProcessId()
         {
@@ -63,30 +55,8 @@ namespace System.Diagnostics.Tracing.Internal
             return count;
         }
     }
-#endif
 }
 
-namespace Microsoft.Reflection
-{
-    internal static class ReflectionExtensions
-    {
-        //
-        // Type extension methods
-        //
-        public static bool IsEnum(this Type type) { return type.IsEnum; }
-        public static bool IsAbstract(this Type type) { return type.IsAbstract; }
-        public static bool IsSealed(this Type type) { return type.IsSealed; }
-        public static bool IsValueType(this Type type) { return type.IsValueType; }
-        public static bool IsGenericType(this Type type) { return type.IsGenericType; }
-        public static Type? BaseType(this Type type) { return type.BaseType; }
-        public static Assembly Assembly(this Type type) { return type.Assembly; }
-        public static TypeCode GetTypeCode(this Type type) { return Type.GetTypeCode(type); }
-
-        public static bool ReflectionOnly(this Assembly assm) { return assm.ReflectionOnly; }
-    }
-}
-
-#if ES_BUILD_STANDALONE
 internal static partial class Interop
 {
     [SuppressUnmanagedCodeSecurityAttribute]
@@ -99,4 +69,3 @@ internal static partial class Interop
         internal static extern uint GetCurrentProcessId();
     }
 }
-#endif

@@ -1,18 +1,19 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#if ES_BUILD_STANDALONE
-using Microsoft.Win32;
 using System;
 using System.Diagnostics;
-using System.Security.Permissions;
-using BitOperations = Microsoft.Diagnostics.Tracing.Internal.BitOperations;
-#endif
 using System.Collections.Generic;
 using System.Globalization;
 using System.Numerics;
 using System.Runtime.InteropServices;
-#if (CORECLR || MONO) && TARGET_WINDOWS
+
+#if ES_BUILD_STANDALONE
+using Microsoft.Win32;
+using System.Security.Permissions;
+#endif
+
+#if !ES_BUILD_STANDALONE && TARGET_WINDOWS
 using Internal.Win32;
 #endif
 

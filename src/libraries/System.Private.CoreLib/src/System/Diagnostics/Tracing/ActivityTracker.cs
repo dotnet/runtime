@@ -4,7 +4,6 @@
 #if ES_BUILD_STANDALONE
 using System;
 using System.Diagnostics;
-using Environment = Microsoft.Diagnostics.Tracing.Internal.Environment;
 #else
 using System.Threading.Tasks;
 #endif
