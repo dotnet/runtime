@@ -36,6 +36,8 @@ if (typeof console !== "undefined") {
 		console.trace = console.log;
 	if (!console.warn)
 		console.warn = console.log;
+	if (!console.error)
+		console.error = console.log;
 }
 
 if (typeof crypto == 'undefined') {
