@@ -358,50 +358,27 @@ namespace System.Diagnostics.Tracing
 
         public static MethodInfo? GetDeclaredStaticMethod(Type declaringType, string name)
         {
-            MethodInfo? result;
-#if (ES_BUILD_PCL)
-            result = declaringType.GetTypeInfo().GetDeclaredMethod(name);
-#else
-            result = declaringType.GetMethod(
+            return declaringType.GetMethod(
                 name,
                 BindingFlags.DeclaredOnly | BindingFlags.Static | BindingFlags.NonPublic);
-#endif
-            return result;
         }
 
         public static bool HasCustomAttribute(
             PropertyInfo propInfo,
             Type attributeType)
         {
-            bool result;
-#if (ES_BUILD_PCL)
-            result = propInfo.IsDefined(attributeType);
-#else
-            object[] attributes = propInfo.GetCustomAttributes(
-                attributeType,
-                false);
-            result = attributes.Length != 0;
-#endif
-            return result;
+            return propInfo.IsDefined(attributeType);
         }
 
         public static AttributeType? GetCustomAttribute<AttributeType>(PropertyInfo propInfo)
             where AttributeType : Attribute
         {
             AttributeType? result = null;
-#if (ES_BUILD_PCL)
-            foreach (var attrib in propInfo.GetCustomAttributes<AttributeType>(false))
-            {
-                result = attrib;
-                break;
-            }
-#else
             object[] attributes = propInfo.GetCustomAttributes(typeof(AttributeType), false);
             if (attributes.Length != 0)
             {
                 result = (AttributeType)attributes[0];
             }
-#endif
             return result;
         }
 
@@ -409,19 +386,11 @@ namespace System.Diagnostics.Tracing
             where AttributeType : Attribute
         {
             AttributeType? result = null;
-#if (ES_BUILD_PCL)
-            foreach (var attrib in type.GetTypeInfo().GetCustomAttributes<AttributeType>(false))
-            {
-                result = attrib;
-                break;
-            }
-#else
             object[] attributes = type.GetCustomAttributes(typeof(AttributeType), false);
             if (attributes.Length != 0)
             {
                 result = (AttributeType)attributes[0];
             }
-#endif
             return result;
         }
 
@@ -440,21 +409,10 @@ namespace System.Diagnostics.Tracing
             }
             else
             {
-#if (ES_BUILD_PCL)
-                IEnumerable<Type> ifaceTypes = type.GetTypeInfo().ImplementedInterfaces;
-#else
                 Type[] ifaceTypes = type.FindInterfaces(IsGenericMatch, typeof(IEnumerable<>));
-#endif
 
                 foreach (Type ifaceType in ifaceTypes)
                 {
-#if (ES_BUILD_PCL)
-                    if (!IsGenericMatch(ifaceType, typeof(IEnumerable<>)))
-                    {
-                        continue;
-                    }
-#endif
-
                     if (elementType != null)
                     {
                         // ambiguous match. report no match at all.
@@ -476,16 +434,9 @@ namespace System.Diagnostics.Tracing
 
         public static Delegate CreateDelegate(Type delegateType, MethodInfo methodInfo)
         {
-            Delegate result;
-#if (ES_BUILD_PCL)
-            result = methodInfo.CreateDelegate(
-                delegateType);
-#else
-            result = Delegate.CreateDelegate(
+            return Delegate.CreateDelegate(
                 delegateType,
                 methodInfo);
-#endif
-            return result;
         }
 
         public static TraceLoggingTypeInfo CreateDefaultTypeInfo(

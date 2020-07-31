@@ -312,13 +312,8 @@ namespace System.Diagnostics.Tracing
             {
                 if (attrib.Guid != null)
                 {
-#if !ES_BUILD_AGAINST_DOTNET_V35
                     if (Guid.TryParse(attrib.Guid, out Guid g))
                         return g;
-#else
-                    try { return new Guid(attrib.Guid); }
-                    catch (Exception) { }
-#endif
                 }
 
                 if (attrib.Name != null)
@@ -2920,13 +2915,6 @@ namespace System.Diagnostics.Tracing
 #endif // FEATURE_MANAGED_ETW
         }
 
-#if (ES_BUILD_PCL)
-        internal static Attribute GetCustomAttributeHelper(Type type, Type attributeType, EventManifestOptions flags = EventManifestOptions.None)
-        {
-            return GetCustomAttributeHelper(type.GetTypeInfo(), attributeType, flags);
-        }
-#endif
-
         // Helper to deal with the fact that the type we are reflecting over might be loaded in the ReflectionOnly context.
         // When that is the case, we have the build the custom assemblies on a member by hand.
         internal static Attribute? GetCustomAttributeHelper(
@@ -2951,7 +2939,6 @@ namespace System.Diagnostics.Tracing
                 return firstAttribute;
             }
 
-#if (!ES_BUILD_PCL)
             foreach (CustomAttributeData data in CustomAttributeData.GetCustomAttributes(member))
             {
                 if (AttributeTypeNamesMatch(attributeType, data.Constructor.ReflectedType!))
@@ -2991,10 +2978,6 @@ namespace System.Diagnostics.Tracing
             }
 
             return null;
-#else // ES_BUILD_PCL
-            // Don't use nameof here because the resource doesn't exist on some platforms, which results in a compilation error.
-            throw new ArgumentException("EventSource_PCLPlatformNotSupportedReflection", "EventSource");
-#endif
         }
 
         /// <summary>
@@ -3586,7 +3569,6 @@ namespace System.Diagnostics.Tracing
         /// <returns>The literal value or -1 if the value could not be determined. </returns>
         private static int GetHelperCallFirstArg(MethodInfo method)
         {
-#if (!ES_BUILD_PCL)
             // Currently searches for the following pattern
             //
             // ...     // CAN ONLY BE THE INSTRUCTIONS BELOW
@@ -3703,7 +3685,6 @@ namespace System.Diagnostics.Tracing
                 }
                 idx++;
             }
-#endif
             return -1;
         }
 
@@ -3715,10 +3696,8 @@ namespace System.Diagnostics.Tracing
         {
             try
             {
-#if (!ES_BUILD_PCL)
                 // send message to debugger without delay
                 System.Diagnostics.Debugger.Log(0, null, string.Format("EventSource Error: {0}{1}", msg, Environment.NewLine));
-#endif
 
                 // Send it to all listeners.
                 if (m_outOfBandMessageCount < 16 - 1)     // Note this is only if size byte
