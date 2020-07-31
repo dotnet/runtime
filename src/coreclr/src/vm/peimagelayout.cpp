@@ -445,6 +445,19 @@ ConvertedImageLayout::ConvertedImageLayout(PEImageLayout* source)
             ThrowHR(COR_E_BADIMAGEFORMAT);
 
         ApplyBaseRelocations();
+
+        // Check if there is a static function table.
+        COUNT_T cbSize = 0;
+        PT_RUNTIME_FUNCTION   pExceptionDir = (PT_RUNTIME_FUNCTION)GetDirectoryEntryData(IMAGE_DIRECTORY_ENTRY_EXCEPTION, &cbSize);
+        DWORD tableSize = cbSize / sizeof(T_RUNTIME_FUNCTION);
+
+        if (pExceptionDir != NULL)
+        {
+            if (!RtlAddFunctionTable(pExceptionDir, tableSize, (DWORD64)this->GetBase()))
+                ThrowLastError();
+
+                //TODO: WIP remember tbl to undo the above when releasing img
+        }
     }
 #endif
 }
