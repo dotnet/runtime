@@ -6,7 +6,6 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <CLRTestPriority>0</CLRTestPriority>
     <Optimize>true</Optimize>
-    <!-- Disable for GCStress due to test failure: https://github.com/dotnet/runtime/issues/39932 -->
     <GCStressIncompatible>true</GCStressIncompatible>
   </PropertyGroup>
   <ItemGroup>
