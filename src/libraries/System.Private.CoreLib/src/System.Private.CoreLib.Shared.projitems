@@ -1825,6 +1825,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Environment.OSVersion.Unix.cs" Condition="'$(IsOSXLike)' != 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\TimeZoneInfo.GetDisplayName.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\DriveInfoInternal.Unix.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\IO\PersistedFiles.Unix.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsBrowser)' == 'true'">
     <Compile Include="$(MSBuildThisFileDirectory)System\AppContext.Browser.cs" />
