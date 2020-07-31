@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.6.3)
+cmake_minimum_required(VERSION 3.6.2)
 if(CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS) 
      # CMake 3.14.5 contains bug fixes for iOS 
      cmake_minimum_required(VERSION 3.14.5) 
