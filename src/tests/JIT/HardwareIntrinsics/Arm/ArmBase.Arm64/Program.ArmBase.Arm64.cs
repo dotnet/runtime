@@ -10,7 +10,8 @@ namespace JIT.HardwareIntrinsics.Arm
     {
         static Program()
         {
-            TestList = new Dictionary<string, Action>() {
+            TestList = new Dictionary<string, Action>()
+            {
                 ["LeadingSignCount.Int32"] = LeadingSignCount_Int32,
                 ["LeadingSignCount.Int64"] = LeadingSignCount_Int64,
                 ["LeadingZeroCount.Int64"] = LeadingZeroCount_Int64,

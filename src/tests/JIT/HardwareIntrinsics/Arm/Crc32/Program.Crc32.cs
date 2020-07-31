@@ -10,7 +10,8 @@ namespace JIT.HardwareIntrinsics.Arm
     {
         static Program()
         {
-            TestList = new Dictionary<string, Action>() {
+            TestList = new Dictionary<string, Action>()
+            {
                 ["ComputeCrc32.Byte"] = ComputeCrc32_Byte,
                 ["ComputeCrc32.UInt16"] = ComputeCrc32_UInt16,
                 ["ComputeCrc32.UInt32"] = ComputeCrc32_UInt32,

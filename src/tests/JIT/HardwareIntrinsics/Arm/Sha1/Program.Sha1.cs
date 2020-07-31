@@ -10,7 +10,8 @@ namespace JIT.HardwareIntrinsics.Arm
     {
         static Program()
         {
-            TestList = new Dictionary<string, Action>() {
+            TestList = new Dictionary<string, Action>()
+            {
                 ["FixedRotate.Vector64.UInt32"] = FixedRotate_Vector64_UInt32,
                 ["HashUpdateChoose.Vector128.UInt32"] = HashUpdateChoose_Vector128_UInt32,
                 ["HashUpdateMajority.Vector128.UInt32"] = HashUpdateMajority_Vector128_UInt32,

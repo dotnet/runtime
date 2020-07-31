@@ -10,7 +10,8 @@ namespace JIT.HardwareIntrinsics.Arm
     {
         static Program()
         {
-            TestList = new Dictionary<string, Action>() {
+            TestList = new Dictionary<string, Action>()
+            {
                 ["MultiplyRoundedDoublingAndAddSaturateHighScalar.Vector64.Int16"] = MultiplyRoundedDoublingAndAddSaturateHighScalar_Vector64_Int16,
                 ["MultiplyRoundedDoublingAndAddSaturateHighScalar.Vector64.Int32"] = MultiplyRoundedDoublingAndAddSaturateHighScalar_Vector64_Int32,
                 ["MultiplyRoundedDoublingAndSubtractSaturateHighScalar.Vector64.Int16"] = MultiplyRoundedDoublingAndSubtractSaturateHighScalar_Vector64_Int16,

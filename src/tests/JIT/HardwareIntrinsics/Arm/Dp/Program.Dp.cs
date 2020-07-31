@@ -10,7 +10,8 @@ namespace JIT.HardwareIntrinsics.Arm
     {
         static Program()
         {
-            TestList = new Dictionary<string, Action>() {
+            TestList = new Dictionary<string, Action>()
+            {
                 ["DotProduct.Vector64.Int32"] = DotProduct_Vector64_Int32,
                 ["DotProduct.Vector64.UInt32"] = DotProduct_Vector64_UInt32,
                 ["DotProduct.Vector128.Int32"] = DotProduct_Vector128_Int32,
