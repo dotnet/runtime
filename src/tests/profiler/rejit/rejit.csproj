@@ -7,6 +7,7 @@
     <CLRTestPriority>0</CLRTestPriority>
     <Optimize>true</Optimize>
     <JitOptimizationSensitive>True</JitOptimizationSensitive>
+    <!-- This test provides no interesting scenarios for GCStress -->
     <GCStressIncompatible>true</GCStressIncompatible>
   </PropertyGroup>
   <ItemGroup>
