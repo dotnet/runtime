@@ -1,0 +1,7 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <CLRTestKind>RunOnly</CLRTestKind>
+    <CLRTestProjectToRun>AdvSimd_ro.csproj</CLRTestProjectToRun>
+    <CLRTestExecutionArguments>NegateSaturate.Vector64.Int16 NegateSaturate.Vector64.Int32 NegateSaturate.Vector64.SByte NegateSaturate.Vector128.Int16 NegateSaturate.Vector128.Int32 NegateSaturate.Vector128.SByte</CLRTestExecutionArguments>
+  </PropertyGroup>
+</Project>

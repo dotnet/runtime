@@ -1,0 +1,7 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <CLRTestKind>RunOnly</CLRTestKind>
+    <CLRTestProjectToRun>AdvSimd_ro.csproj</CLRTestProjectToRun>
+    <CLRTestExecutionArguments>ConvertToUInt32RoundAwayFromZeroScalar.Vector64.Single</CLRTestExecutionArguments>
+  </PropertyGroup>
+</Project>

@@ -1,0 +1,7 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <CLRTestKind>RunOnly</CLRTestKind>
+    <CLRTestProjectToRun>AdvSimd_r.csproj</CLRTestProjectToRun>
+    <CLRTestExecutionArguments>LoadAndInsertScalar.Vector64.Byte.7 LoadAndInsertScalar.Vector64.Int16.3 LoadAndInsertScalar.Vector64.Int32.1 LoadAndInsertScalar.Vector64.SByte.7 LoadAndInsertScalar.Vector64.Single.1 LoadAndInsertScalar.Vector64.UInt16.3 LoadAndInsertScalar.Vector64.UInt32.1 LoadAndInsertScalar.Vector128.Byte.15 LoadAndInsertScalar.Vector128.Double.1 LoadAndInsertScalar.Vector128.Int16.7 LoadAndInsertScalar.Vector128.Int32.3 LoadAndInsertScalar.Vector128.Int64.1 LoadAndInsertScalar.Vector128.SByte.15 LoadAndInsertScalar.Vector128.Single.3 LoadAndInsertScalar.Vector128.UInt16.7 LoadAndInsertScalar.Vector128.UInt32.3 LoadAndInsertScalar.Vector128.UInt64.1</CLRTestExecutionArguments>
+  </PropertyGroup>
+</Project>

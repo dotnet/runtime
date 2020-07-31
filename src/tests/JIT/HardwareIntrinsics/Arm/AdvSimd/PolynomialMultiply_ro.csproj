@@ -1,0 +1,7 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <CLRTestKind>RunOnly</CLRTestKind>
+    <CLRTestProjectToRun>AdvSimd_ro.csproj</CLRTestProjectToRun>
+    <CLRTestExecutionArguments>PolynomialMultiply.Vector64.Byte PolynomialMultiply.Vector64.SByte PolynomialMultiply.Vector128.Byte PolynomialMultiply.Vector128.SByte</CLRTestExecutionArguments>
+  </PropertyGroup>
+</Project>

@@ -1,0 +1,7 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <CLRTestKind>RunOnly</CLRTestKind>
+    <CLRTestProjectToRun>AdvSimd_ro.csproj</CLRTestProjectToRun>
+    <CLRTestExecutionArguments>FusedAddRoundedHalving.Vector64.Byte FusedAddRoundedHalving.Vector64.Int16 FusedAddRoundedHalving.Vector64.Int32 FusedAddRoundedHalving.Vector64.SByte FusedAddRoundedHalving.Vector64.UInt16 FusedAddRoundedHalving.Vector64.UInt32 FusedAddRoundedHalving.Vector128.Byte FusedAddRoundedHalving.Vector128.Int16 FusedAddRoundedHalving.Vector128.Int32 FusedAddRoundedHalving.Vector128.SByte FusedAddRoundedHalving.Vector128.UInt16 FusedAddRoundedHalving.Vector128.UInt32</CLRTestExecutionArguments>
+  </PropertyGroup>
+</Project>
