@@ -1922,7 +1922,7 @@ namespace Internal.JitInterface
             if (!type.IsValueType)
                 return false;
 
-            return !_compilation.IsLayoutFixedInCurrentVersionBubble(type) || _compilation.SymbolNodeFactory.VerifyTypeAndFieldLayout;
+            return !_compilation.IsLayoutFixedInCurrentVersionBubble(type) || (_compilation.SymbolNodeFactory.VerifyTypeAndFieldLayout && !((MetadataType)type).IsNonVersionable());
         }
 
         private bool HasLayoutMetadata(TypeDesc type)
@@ -1978,7 +1978,7 @@ namespace Internal.JitInterface
             }
             else if (pMT.IsValueType)
             {
-                if (_compilation.SymbolNodeFactory.VerifyTypeAndFieldLayout)
+                if (_compilation.SymbolNodeFactory.VerifyTypeAndFieldLayout && !callerMethod.IsNonVersionable())
                 {
                     // ENCODE_CHECK_FIELD_OFFSET
                     _methodCodeNode.Fixups.Add(_compilation.SymbolNodeFactory.CheckFieldOffset(field));
@@ -1987,7 +1987,7 @@ namespace Internal.JitInterface
             }
             else if (_compilation.IsInheritanceChainLayoutFixedInCurrentVersionBubble(pMT.BaseType))
             {
-                if (_compilation.SymbolNodeFactory.VerifyTypeAndFieldLayout)
+                if (_compilation.SymbolNodeFactory.VerifyTypeAndFieldLayout && !callerMethod.IsNonVersionable())
                 {
                     // ENCODE_CHECK_FIELD_OFFSET
                     _methodCodeNode.Fixups.Add(_compilation.SymbolNodeFactory.CheckFieldOffset(field));
@@ -2009,7 +2009,7 @@ namespace Internal.JitInterface
             {
                 PreventRecursiveFieldInlinesOutsideVersionBubble(field, callerMethod);
 
-                if (_compilation.SymbolNodeFactory.VerifyTypeAndFieldLayout)
+                if (_compilation.SymbolNodeFactory.VerifyTypeAndFieldLayout && !callerMethod.IsNonVersionable())
                 {
                     // ENCODE_CHECK_FIELD_OFFSET
                     _methodCodeNode.Fixups.Add(_compilation.SymbolNodeFactory.CheckFieldOffset(field));
