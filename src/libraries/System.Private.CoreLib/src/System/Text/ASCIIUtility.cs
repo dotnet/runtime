@@ -264,8 +264,8 @@ namespace System.Text
             Debug.Assert(BitConverter.IsLittleEndian, "This SSE2/Arm64 implementation assumes little-endian.");
 
             Vector128<byte> bitmask = BitConverter.IsLittleEndian ?
-            Vector128.Create((ushort)0x1001).AsByte() :
-            Vector128.Create((ushort)0x0110).AsByte();
+                Vector128.Create((ushort)0x1001).AsByte() :
+                Vector128.Create((ushort)0x0110).AsByte();
 
             uint currentMask, secondMask;
             byte* pOriginalBuffer = pBuffer;
