@@ -1824,9 +1824,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Environment.Unix.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsBrowser)' == 'true'">
-    <Compile Include="$(CommonPath)\Interop\Browser\Interop.GetCurrentProcessId.cs">
-      <Link>Common\Interop\Browser\Interop.GetCurrentProcessId.cs</Link>
-    </Compile>
     <Compile Include="$(MSBuildThisFileDirectory)System\Environment.Browser.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(IsOSXLike)' == 'true'">
