@@ -27,19 +27,6 @@
              Properties="$(TraversalGlobalProperties)" />
   </Target>
 
-  <Target Name="CopyILTrimmedSharedFrameworkLibraries"
-          Condition="'$(BinplaceTestSharedFramework)' == 'true' and '$(BuildTargetFramework)' == '$(NetCoreAppCurrent)'"
-          AfterTargets="RestoreTestHost">
-
-    <ItemGroup>
-      <LibrariesSharedFrameworkFiles Include="$(LibrariesSharedFrameworkBinArtifactsPath)*.*" />
-    </ItemGroup>
-
-    <Copy SourceFiles="@(LibrariesSharedFrameworkFiles)PostRuntimePackTrim\"
-          DestinationFolder="$(TestHostRuntimePath)PostRuntimePackTrim\" />
-
-  </Target>
-
   <Target Name="CreateIntermediateRunSettingsFile"
           DependsOnTargets="GenerateRunSettingsFile"
           BeforeTargets="Build"

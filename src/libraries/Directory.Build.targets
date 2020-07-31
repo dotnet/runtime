@@ -64,9 +64,6 @@
     <BinPlaceRef Condition="'$(BinPlaceRef)' == '' and ('$(IsReferenceAssembly)' == 'true' or '$(IsRuntimeAndReferenceAssembly)' == 'true')">true</BinPlaceRef>
     <BinPlaceRuntime Condition="'$(BinPlaceRuntime)' == '' and ('$(IsRuntimeAssembly)' == 'true' or '$(IsRuntimeAndReferenceAssembly)' == 'true')">true</BinPlaceRuntime>
     <BinPlaceForTargetVertical Condition="'$(BinPlaceForTargetVertical)' == ''">true</BinPlaceForTargetVertical>
-
-    <!-- All IsNETCoreApp assemblies will get binplaced to the test sharedframework after the ILLink step. -->
-    <BinPlaceTestSharedFramework Condition="'$(IsNETCoreApp)' == 'true' and '$(BuildAllProjects)' == 'true'">false</BinPlaceTestSharedFramework>
   </PropertyGroup>
 
   <ItemGroup Condition="$(MSBuildProjectName.StartsWith('Microsoft.Extensions.'))">

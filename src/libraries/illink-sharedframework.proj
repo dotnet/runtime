@@ -76,9 +76,6 @@
         ExtraArgs="$(ILLinkArgs)"
         ToolExe="$(_DotNetHostFileName)"
         ToolPath="$(_DotNetHostDirectory)" />
-
-    <!-- Remove the copied CoreLib since it is not used. -->
-    <Delete Files="$(LibrariesTrimmedArtifactsPath)System.Private.CoreLib.dll" />
   </Target>
 
   <Import Project="$(RepositoryEngineeringDir)illink.targets" />

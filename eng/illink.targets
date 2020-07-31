@@ -52,18 +52,24 @@
     <None Include="@(ILLinkSubstitutionsXmls)" />
   </ItemGroup>
 
-  <!-- Custom binplacing for pre/post-trimming and reports that is useful for analysis
+  <!-- Custom binplacing for post-trimming and reports that is useful for analysis
        Must be enabled by setting BinPlaceILLinkTrimAssembly=true
   -->
   <ItemGroup Condition="'$(BinPlaceILLinkTrimAssembly)' == 'true'">
     <BinPlaceTargetFrameworks Include="$(BuildSettings)">
-      <RuntimePath>$(ArtifactsBinDir)ILLinkTrimAssembly/$(BuildSettings)/trimmed</RuntimePath>
+      <RuntimePath>$([MSBuild]::NormalizePath('$(LibrariesTrimmingArtifactsRoot)', 'trimmed'))</RuntimePath>
       <ItemName>TrimmedItem</ItemName>
     </BinPlaceTargetFrameworks>
     <BinPlaceTargetFrameworks Include="$(BuildSettings)">
-      <RuntimePath>$(ArtifactsBinDir)ILLinkTrimAssembly/$(BuildSettings)/reports</RuntimePath>
+      <RuntimePath>$([MSBuild]::NormalizePath('$(LibrariesTrimmingArtifactsRoot)', 'reports'))</RuntimePath>
       <ItemName>TrimmingReport</ItemName>
     </BinPlaceTargetFrameworks>
+  </ItemGroup>
+
+  <!-- Binplacing for pre-trimming that is used when running the linker
+       on the entire runtime pack to observe warnings from verbose output
+  -->
+  <ItemGroup>
     <BinPlaceTargetFrameworks Include="$(NetCoreAppCurrent)">
       <RuntimePath>$(LibrariesPretrimmedArtifactsPath)</RuntimePath>
       <ItemName>PreTrimmedItem</ItemName>
@@ -183,16 +189,6 @@
       <ILLinkTrimAssembly Condition="'%(ReferencePath.FileName)%(ReferencePath.Extension)' == 'Windows.winmd'">false</ILLinkTrimAssembly>
     </PropertyGroup>
   </Target>
-
-  <!-- Binplacing for pre-trimming that is used when running the linker
-       on the entire runtime pack to observe warnings from verbose output.
-  -->
-  <ItemGroup>
-    <BinPlaceTargetFrameworks Include="$(NetCoreAppCurrent)">
-      <RuntimePath>$(LibrariesPretrimmedArtifactsPath)</RuntimePath>
-      <ItemName>PreTrimmedItem</ItemName>
-    </BinPlaceTargetFrameworks>
-  </ItemGroup>
 
   <!-- ILLinkTrimAssembly
        Examines the "input assembly" for IL that is unreachable from public API and trims that,
