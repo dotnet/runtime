@@ -5,6 +5,16 @@
       <XUnitWrapperDll>$(BinDir)baseservices\threading\baseservices.threading.XUnitWrapper.dll</XUnitWrapperDll>
     </TestGrouping>
 
+    <TestGrouping Include="$(BinDir)JIT\HardwareIntrinsics\Arm\**">
+      <TestGroup>JIT.HardwareIntrinsics.Arm</TestGroup>
+      <XUnitWrapperDll>$(BinDir)JIT\HardwareIntrinsics\JIT.HardwareIntrinsics.XUnitWrapper.dll</XUnitWrapperDll>
+    </TestGrouping>
+
+    <TestGrouping Include="$(BinDir)JIT\HardwareIntrinsics\X86\**">
+      <TestGroup>JIT.HardwareIntrinsics.X86</TestGroup>
+      <XUnitWrapperDll>$(BinDir)JIT\HardwareIntrinsics\JIT.HardwareIntrinsics.XUnitWrapper.dll</XUnitWrapperDll>
+    </TestGrouping>
+
     <TestGrouping Include="$(BinDir)JIT\jit64\hfa\**">
       <TestGroup>JIT.jit64.hfa</TestGroup>
       <XUnitWrapperDll>$(BinDir)JIT\jit64\JIT.jit64.XUnitWrapper.dll</XUnitWrapperDll>
