@@ -108,7 +108,7 @@ jobs:
 
     - name: BaseJobBuildCommand
       value: >-
-        build.cmd -subset corehost+newsfx+installer.pkgprojs -ci
+        build.cmd -subset corehost+sfx+installer.pkgprojs -ci
         $(BuildAction)
         -configuration $(_BuildConfig)
         $(LiveOverridePathArgs)
@@ -229,7 +229,7 @@ jobs:
         $(PreserveNuGetAuthDockerArgs)
 
     - name: installersSubsetArg
-      value: --subset newsfx
+      value: --subset installers
 
     - name: BaseJobBuildCommand
       value: |

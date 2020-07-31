@@ -17,7 +17,7 @@
       <SharedFrameworkPublishFiles Include="$(SharedFrameworkPublishDir)**" />
     </ItemGroup>
 
-    <MSBuild Projects="$(InstallerProjectRoot)pkg\newsfx\bundle\Microsoft.NETCore.App.Bundle.bundleproj"
+    <MSBuild Projects="$(InstallerProjectRoot)pkg\sfx\bundle\Microsoft.NETCore.App.Bundle.bundleproj"
              Targets="PublishSharedFrameworkToDisk"
              Properties="SharedFrameworkOutputPath=$(TestsOutputDir)sharedFrameworkPublish/" />
 
@@ -63,7 +63,7 @@
       the same as the package's version. Fetch this directly from the project to avoid guesswork.
     -->
     <MSBuild
-      Projects="$(InstallerProjectRoot)pkg\newsfx\Microsoft.NETCore.App\Microsoft.NETCore.App.Ref.sfxproj"
+      Projects="$(InstallerProjectRoot)pkg\sfx\Microsoft.NETCore.App\Microsoft.NETCore.App.Ref.sfxproj"
       Targets="ReturnProductVersion">
       <Output TaskParameter="TargetOutputs" PropertyName="NETCoreAppRuntimePackageVersion" />
     </MSBuild>
@@ -102,7 +102,7 @@
   -->
   <Target Name="GetNETCoreAppRuntimePackVersion">
     <MSBuild
-      Projects="$(InstallerProjectRoot)pkg\newsfx\Microsoft.NETCore.App\Microsoft.NETCore.App.Runtime.sfxproj"
+      Projects="$(InstallerProjectRoot)pkg\sfx\Microsoft.NETCore.App\Microsoft.NETCore.App.Runtime.sfxproj"
       Targets="ReturnProductVersion">
       <Output TaskParameter="TargetOutputs" PropertyName="NETCoreAppRuntimePackVersion" />
     </MSBuild>

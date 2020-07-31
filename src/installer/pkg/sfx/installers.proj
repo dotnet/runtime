@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.Build.NoTargets">
+  <ItemGroup>
+    <InstallerProjectReference Include="Microsoft.NETCore.App/*.sfxproj" />
+    <InstallerProjectReference Include="installers/*.proj" />
+    <InstallerProjectReference Include="bundle/*.bundleproj" />
+     
+  </ItemGroup>
+  <Target Name="BuildInstallerProjects" BeforeTargets="Build">
+    <MSBuild Projects="@(InstallerProjectReference)"
+             Targets="GenerateInstallers"
+             SkipNonexistentTargets="true" />
+  </Target>
+</Project>
