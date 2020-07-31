@@ -36,7 +36,4 @@
   <ItemGroup Condition="'$(TargetGroup)' != 'netstandard2.1'">
     <PackageReference Include="System.Threading.Tasks.Extensions" Version="$(SystemThreadingTasksExtensionsVersion)" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetFramework)' == 'net461'">
-    <Reference Include="mscorlib" />
-  </ItemGroup>
 </Project>
