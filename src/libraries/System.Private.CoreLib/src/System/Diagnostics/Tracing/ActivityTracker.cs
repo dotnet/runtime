@@ -4,6 +4,7 @@
 #if ES_BUILD_STANDALONE
 using System;
 using System.Diagnostics;
+using Environment = Microsoft.Diagnostics.Tracing.Internal.Environment;
 #else
 using System.Threading.Tasks;
 #endif
@@ -511,7 +512,7 @@ namespace System.Diagnostics.Tracing
                 uint* sumPtr = (uint*)outPtr;
                 // We set the last DWORD the sum of the first 3 DWORDS in the GUID.   This
                 // This last number is a random number (it identifies us as us)  the process ID to make it unique per process.
-                sumPtr[3] = (sumPtr[0] + sumPtr[1] + sumPtr[2] + 0x599D99AD) ^ EventSource.s_currentPid;
+                sumPtr[3] = (sumPtr[0] + sumPtr[1] + sumPtr[2] + 0x599D99AD) ^ (uint)Environment.ProcessId;
 
                 return (int)(ptr - ((byte*)outPtr));
             }

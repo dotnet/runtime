@@ -9,6 +9,7 @@
 #include "metadatagetdispenser/metadatagetdispenser.h"
 #include "getappdomainstaticaddress/getappdomainstaticaddress.h"
 #include "eltprofiler/slowpatheltprofiler.h"
+#include "gcprofiler/gcprofiler.h"
 
 ClassFactory::ClassFactory(REFCLSID clsid) : refCount(0), clsid(clsid)
 {
@@ -63,7 +64,8 @@ HRESULT STDMETHODCALLTYPE ClassFactory::CreateInstance(IUnknown *pUnkOuter, REFI
         new EventPipeWritingProfiler(),
         new MetaDataGetDispenser(),
         new GetAppDomainStaticAddress(),
-        new SlowPathELTProfiler()
+        new SlowPathELTProfiler(),
+        new GCProfiler()
 		// add new profilers here
 	};
 

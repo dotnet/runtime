@@ -1868,7 +1868,7 @@ bool Compiler::fgReachable(BasicBlock* b1, BasicBlock* b2)
  *  it again.
  */
 
-void Compiler::fgUpdateChangedFlowGraph()
+void Compiler::fgUpdateChangedFlowGraph(bool computeDoms)
 {
     // We need to clear this so we don't hit an assert calling fgRenumberBlocks().
     fgDomsComputed = false;
@@ -1878,7 +1878,11 @@ void Compiler::fgUpdateChangedFlowGraph()
 
     fgComputePreds();
     fgComputeEnterBlocksSet();
-    fgComputeReachability();
+    fgComputeReachabilitySets();
+    if (computeDoms)
+    {
+        fgComputeDoms();
+    }
 }
 
 /*****************************************************************************
@@ -3725,7 +3729,8 @@ PhaseStatus Compiler::fgInsertGCPolls()
     {
         noway_assert(opts.OptimizationEnabled());
         fgReorderBlocks();
-        fgUpdateChangedFlowGraph();
+        constexpr bool computeDoms = false;
+        fgUpdateChangedFlowGraph(computeDoms);
     }
 #ifdef DEBUG
     if (verbose)
