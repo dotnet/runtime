@@ -48,8 +48,6 @@ namespace System
 
         private static bool Is64BitOperatingSystemWhen32BitProcess => false;
 
-        private static int GetCurrentProcessId() => Interop.Sys.GetPid();
-
         internal const string NewLineConst = "\n";
 
         public static string SystemDirectory => GetFolderPathCore(SpecialFolder.System, SpecialFolderOption.None);
