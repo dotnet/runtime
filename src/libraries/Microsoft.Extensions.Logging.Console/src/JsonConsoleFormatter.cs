@@ -147,62 +147,52 @@ namespace Microsoft.Extensions.Logging.Console
 
         private void WriteItem(Utf8JsonWriter writer, KeyValuePair<string, object> item)
         {
-            if (item.Value is bool boolValue)
+            var key = item.Key;
+            switch (item.Value)
             {
-                writer.WriteBoolean(item.Key, boolValue);
-            }
-            else if (item.Value is byte byteValue)
-            {
-                writer.WriteNumber(item.Key, byteValue);
-            }
-            else if (item.Value is sbyte sbyteValue)
-            {
-                writer.WriteNumber(item.Key, sbyteValue);
-            }
-            else if (item.Value is char charValue)
-            {
-                _singleCharArray[0] = charValue;
-                writer.WriteString(item.Key, _singleCharArray.AsSpan());
-            }
-            else if (item.Value is decimal decimalValue)
-            {
-                writer.WriteNumber(item.Key, decimalValue);
-            }
-            else if (item.Value is double doubleValue)
-            {
-                writer.WriteNumber(item.Key, doubleValue);
-            }
-            else if (item.Value is float floatValue)
-            {
-                writer.WriteNumber(item.Key, floatValue);
-            }
-            else if (item.Value is int intValue)
-            {
-                writer.WriteNumber(item.Key, intValue);
-            }
-            else if (item.Value is uint uintValue)
-            {
-                writer.WriteNumber(item.Key, uintValue);
-            }
-            else if (item.Value is long longValue)
-            {
-                writer.WriteNumber(item.Key, longValue);
-            }
-            else if (item.Value is ulong ulongValue)
-            {
-                writer.WriteNumber(item.Key, ulongValue);
-            }
-            else if (item.Value is short shortValue)
-            {
-                writer.WriteNumber(item.Key, shortValue);
-            }
-            else if (item.Value is ushort ushortValue)
-            {
-                writer.WriteNumber(item.Key, ushortValue);
-            }
-            else
-            {
-                writer.WriteString(item.Key, ToInvariantString(item.Value));
+                case bool boolValue:
+                    writer.WriteBoolean(key, boolValue);
+                    break;
+                case byte byteValue:
+                    writer.WriteNumber(key, byteValue);
+                    break;
+                case sbyte sbyteValue:
+                    writer.WriteNumber(key, sbyteValue);
+                    break;
+                case char charValue:
+                    _singleCharArray[0] = charValue;
+                    writer.WriteString(key, _singleCharArray.AsSpan());
+                    break;
+                case decimal decimalValue:
+                    writer.WriteNumber(key, decimalValue);
+                    break;
+                case double doubleValue:
+                    writer.WriteNumber(key, doubleValue);
+                    break;
+                case float floatValue:
+                    writer.WriteNumber(key, floatValue);
+                    break;
+                case int intValue:
+                    writer.WriteNumber(key, intValue);
+                    break;
+                case uint uintValue:
+                    writer.WriteNumber(key, uintValue);
+                    break;
+                case long longValue:
+                    writer.WriteNumber(key, longValue);
+                    break;
+                case ulong ulongValue:
+                    writer.WriteNumber(key, ulongValue);
+                    break;
+                case short shortValue:
+                    writer.WriteNumber(key, shortValue);
+                    break;
+                case ushort ushortValue:
+                    writer.WriteNumber(key, ushortValue);
+                    break;
+                default:
+                    writer.WriteString(key, ToInvariantString(item.Value));
+                    break;
             }
         }
 

@@ -239,17 +239,8 @@ namespace Microsoft.Extensions.Logging.Console.Test
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        [InlineData(true, "true")]
-        [InlineData((byte)1, "1")]
-        [InlineData((sbyte)1, "1")]
-        [InlineData('a', "\"a\"")]
-        [InlineData(1, "1")]
-        [InlineData((uint)1, "1")]
-        [InlineData((long)1, "1")]
-        [InlineData((ulong)1, "1")]
-        [InlineData((short)1, "1")]
-        [InlineData((ushort)1, "1")]
-        public void Log_StateAndScopeContainsBuiltInValueType_SerializesValue(object value, string expectedJsonValue)
+        [MemberData(nameof(SpecialCaseValues))]
+        public void Log_StateAndScopeContainsSpecialCaseValue_SerializesValueAsExpected(object value, string expectedJsonValue)
         {
             // Arrange
             var t = SetUp(
@@ -278,8 +269,7 @@ namespace Microsoft.Extensions.Logging.Console.Test
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        [InlineData(1.2d)]
-        [InlineData(1.2f)]
+        [MemberData(nameof(FloatingPointValues))]
         public void Log_StateAndScopeContainsFloatingPointType_SerializesValue(object value)
         {
             // Arrange
@@ -317,91 +307,63 @@ namespace Microsoft.Extensions.Logging.Console.Test
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        public void Log_StateAndScopeContainsDecimal_SerializesValue()
+        public static TheoryData<object, string> SpecialCaseValues
         {
-            // Arrange
-            var t = SetUp(
-                new ConsoleLoggerOptions { FormatterName = ConsoleFormatterNames.Json },
-                simpleOptions: null,
-                systemdOptions: null,
-                jsonOptions: new JsonConsoleFormatterOptions
-                {
-                    JsonWriterOptions = new JsonWriterOptions() { Indented = false },
-                    IncludeScopes = true
-                }
-            );
-            var logger = (ILogger)t.Logger;
-            var sink = t.Sink;
-
-            // Act
-            using (logger.BeginScope("{Value}", 1.2m))
+            get
             {
-                logger.LogInformation("{LogEntryValue}", 1.2m);
-            }
+                var data = new TheoryData<object, string>
+                {
+                    // primitives, excluding floating point
+                    { true, "true" },
+                    { (byte)1, "1" },
+                    { (sbyte)1, "1" },
+                    { 'a', "\"a\"" },
+                    { 1, "1" },
+                    { (uint)1, "1" },
+                    { (long)1, "1" },
+                    { (ulong)1, "1" },
+                    { (short)1, "1" },
+                    { (ushort)1, "1" },
+                    { 1.2m, "1.2" },
 
-            // Assert
-            string message = sink.Writes[0].Message;
-            Assert.Contains("\"Value\":1.2,", message);
-            Assert.Contains("\"LogEntryValue\":1.2,", message);
+                    // nullables primitives, excluding floating point
+                    { (bool?)true, "true" },
+                    { (byte?)1, "1" },
+                    { (sbyte?)1, "1" },
+                    { (char?)'a', "\"a\"" },
+                    { (int?)1, "1" },
+                    { (uint?)1, "1" },
+                    { (long?)1, "1" },
+                    { (ulong?)1, "1" },
+                    { (short?)1, "1" },
+                    { (ushort?)1, "1" },
+                    { (decimal?)1.2m, "1.2" },
+
+                    // Dynamic object serialized as string
+                    { new { a = 1, b = 2 }, "\"{ a = 1, b = 2 }\"" },
+
+                    // null serialized as special string
+                    { null, "\"(null)\"" }
+                };
+                return data;
+            }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        public void Log_StateAndScopeContainsDynamicObject_SerializesAsString()
+        public static TheoryData<object> FloatingPointValues
         {
-            // Arrange
-            var t = SetUp(
-                new ConsoleLoggerOptions { FormatterName = ConsoleFormatterNames.Json },
-                simpleOptions: null,
-                systemdOptions: null,
-                jsonOptions: new JsonConsoleFormatterOptions
-                {
-                    JsonWriterOptions = new JsonWriterOptions() { Indented = false },
-                    IncludeScopes = true
-                }
-            );
-            var logger = (ILogger)t.Logger;
-            var sink = t.Sink;
-
-            // Act
-            using (logger.BeginScope("{Object}", new { a = 1, b = 2 }))
+            get
             {
-                logger.LogInformation("{LogEntryObject}", new { c = 1, d = 2 });
-            }
-
-            // Assert
-            string message = sink.Writes[0].Message;
-            Assert.Contains("\"Object\":\"{ a = 1, b = 2 }\"", message);
-            Assert.Contains("\"LogEntryObject\":\"{ c = 1, d = 2 }\"", message);
-        }
-
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        public void Log_StateAndScopeContainsNull_SerializesAsNullString()
-        {
-            // Arrange
-            var t = SetUp(
-                new ConsoleLoggerOptions { FormatterName = ConsoleFormatterNames.Json },
-                simpleOptions: null,
-                systemdOptions: null,
-                jsonOptions: new JsonConsoleFormatterOptions
+                var data = new TheoryData<object>
                 {
-                    JsonWriterOptions = new JsonWriterOptions() { Indented = false },
-                    IncludeScopes = true
-                }
-            );
-            var logger = (ILogger)t.Logger;
-            var sink = t.Sink;
+                    { 1.2 },
+                    { 1.2f },
 
-            // Act
-            using (logger.BeginScope("{Null}", (object)null))
-            {
-                logger.LogInformation("{LogEntryNull}", (object)null);
+                    // nullables
+                    { (double?)1.2 },
+                    { (float?)1.2f }
+                };
+                return data;
             }
-
-            // Assert
-            string message = sink.Writes[0].Message;
-            Assert.Contains("\"Null\":\"(null)\"", message);
-            Assert.Contains("\"LogEntryNull\":\"(null)\"", message);
         }
     }
 }
