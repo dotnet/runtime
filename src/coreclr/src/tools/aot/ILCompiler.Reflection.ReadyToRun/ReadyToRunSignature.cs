@@ -1254,6 +1254,7 @@ namespace ILCompiler.Reflection.ReadyToRun
 
 
                 case ReadyToRunFixupKind.Check_TypeLayout:
+				case ReadyToRunFixupKind.Verify_TypeLayout:
                     ParseType(builder);
                     ReadyToRunTypeLayoutFlags layoutFlags = (ReadyToRunTypeLayoutFlags)ReadUInt();
                     builder.Append($" Flags {layoutFlags}");
