@@ -18,9 +18,7 @@ namespace System
         // on wasm.
         public static long WorkingSet => 0;
 
-        public static string UserName => UserNameValue;
-
-        internal const string UserNameValue = "Browser";
+        public static string UserName => "Browser";
 
         private static OperatingSystem GetOSVersion()
         {
