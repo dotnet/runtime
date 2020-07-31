@@ -13,10 +13,6 @@
       Set up the shared framework copy this set of tests should use. There's no known reason to have
       one per test project, but RepoDirectoriesProvider may need some tweaking to share.
     -->
-    <ItemGroup>
-      <SharedFrameworkPublishFiles Include="$(SharedFrameworkPublishDir)**" />
-    </ItemGroup>
-
     <MSBuild Projects="$(InstallerProjectRoot)pkg\sfx\bundle\Microsoft.NETCore.App.Bundle.bundleproj"
              Targets="PublishSharedFrameworkToDisk"
              Properties="SharedFrameworkOutputPath=$(TestsOutputDir)sharedFrameworkPublish/" />
