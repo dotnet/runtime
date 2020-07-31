@@ -2658,70 +2658,7 @@
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/IL_Conformance/Old/Conformance_Base/div_r8/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/HardwareIntrinsics/Arm/Sha256/Sha256_ro/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/HardwareIntrinsics/Arm/Sha256/Sha256_r/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/HardwareIntrinsics/Arm/ArmBase/ArmBase_ro/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/HardwareIntrinsics/Arm/Sha1/Sha1_ro/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/HardwareIntrinsics/Arm/AdvSimd.Arm64/AdvSimd.Arm64_Part*_ro/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/HardwareIntrinsics/Arm/Sha1/Sha1_r/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/HardwareIntrinsics/Arm/Crc32.Arm64/Crc32.Arm64_ro/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/HardwareIntrinsics/Arm/Crc32.Arm64/Crc32.Arm64_r/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/HardwareIntrinsics/Arm/AdvSimd.Arm64/AdvSimd.Arm64_Part*_r/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/HardwareIntrinsics/Arm/AdvSimd/AdvSimd_Part*_r/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/HardwareIntrinsics/Arm/Crc32/Crc32_r/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/HardwareIntrinsics/Arm/Aes/Aes_ro/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/HardwareIntrinsics/Arm/AdvSimd/AdvSimd_Part*_ro/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/HardwareIntrinsics/Arm/ArmBase.Arm64/ArmBase.Arm64_ro/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/HardwareIntrinsics/Arm/ArmBase.Arm64/ArmBase.Arm64_r/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/HardwareIntrinsics/Arm/Crc32/Crc32_ro/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/HardwareIntrinsics/Arm/Dp/Dp_r/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/HardwareIntrinsics/Arm/Dp/Dp_ro/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/HardwareIntrinsics/Arm/Rdm/Rdm_r/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/HardwareIntrinsics/Arm/Rdm/Rdm_ro/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/HardwareIntrinsics/Arm/Rdm.Arm64/Rdm.Arm64_r/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/HardwareIntrinsics/Arm/Rdm.Arm64/Rdm.Arm64_ro/**">
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/HardwareIntrinsics/Arm/**/*">
             <Issue>needs triage</Issue>
         </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/jit64/rtchecks/overflow/overflow02_div/**">
