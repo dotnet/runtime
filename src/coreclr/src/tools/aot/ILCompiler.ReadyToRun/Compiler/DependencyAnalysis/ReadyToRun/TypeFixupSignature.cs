@@ -81,14 +81,14 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             if (defType.IsHomogeneousAggregate)
             {
-                CorElementType elementType = (defType.ValueTypeShapeCharacteristics & ValueTypeShapeCharacteristics.AggregateMask) switch
+                CorInfoHFAElemType hfaElementType = (defType.ValueTypeShapeCharacteristics & ValueTypeShapeCharacteristics.AggregateMask) switch
                 {
-                    ValueTypeShapeCharacteristics.Float32Aggregate => CorElementType.ELEMENT_TYPE_R4,
-                    ValueTypeShapeCharacteristics.Float64Aggregate => CorElementType.ELEMENT_TYPE_R8,
-                    ValueTypeShapeCharacteristics.Vector64Aggregate => CorElementType.ELEMENT_TYPE_R8,
+                    ValueTypeShapeCharacteristics.Float32Aggregate => CorInfoHFAElemType.CORINFO_HFA_ELEM_FLOAT,
+                    ValueTypeShapeCharacteristics.Float64Aggregate => CorInfoHFAElemType.CORINFO_HFA_ELEM_DOUBLE,
+                    ValueTypeShapeCharacteristics.Vector64Aggregate => CorInfoHFAElemType.CORINFO_HFA_ELEM_VECTOR64,
                     // See MethodTable::GetHFAType
-                    ValueTypeShapeCharacteristics.Vector128Aggregate => CorElementType.ELEMENT_TYPE_VALUETYPE,
-                    _ => CorElementType.Invalid
+                    ValueTypeShapeCharacteristics.Vector128Aggregate => CorInfoHFAElemType.CORINFO_HFA_ELEM_VECTOR128,
+                    _ => throw new NotSupportedException()
                 };
                 dataBuilder.EmitUInt((uint)elementType);
             }
