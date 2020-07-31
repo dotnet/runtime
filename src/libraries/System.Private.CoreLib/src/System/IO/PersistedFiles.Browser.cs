@@ -8,7 +8,7 @@ namespace System.IO
         internal static string GetHomeDirectory()
         {
             string? home = Environment.GetEnvironmentVariable("HOME");
-            return string.IsNullOrEmpty(userHomeDirectory) ? "/" : home;
+            return string.IsNullOrEmpty(home) ? "/" : home;
         }
     }
 }
