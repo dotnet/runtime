@@ -6760,7 +6760,6 @@ mono_marshal_lookup_pinvoke (MonoMethod *method)
 
 	g_assert (method);
 	addr = mono_lookup_pinvoke_call_internal (method, error);
-	printf ("%p\n", addr);
 	if (!addr)
 		g_assert (!is_ok (error));
 	mono_error_set_pending_exception (error);
