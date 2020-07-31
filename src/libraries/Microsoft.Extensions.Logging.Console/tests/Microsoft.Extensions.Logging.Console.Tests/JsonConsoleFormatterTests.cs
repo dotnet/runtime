@@ -347,7 +347,7 @@ namespace Microsoft.Extensions.Logging.Console.Test
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        public void Log_StateAndScopeContainsDyanmicObject_SerializesAsString()
+        public void Log_StateAndScopeContainsDynamicObject_SerializesAsString()
         {
             // Arrange
             var t = SetUp(
@@ -373,6 +373,35 @@ namespace Microsoft.Extensions.Logging.Console.Test
             string message = sink.Writes[0].Message;
             Assert.Contains("\"Object\":\"{ a = 1, b = 2 }\"", message);
             Assert.Contains("\"LogEntryObject\":\"{ c = 1, d = 2 }\"", message);
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        public void Log_StateAndScopeContainsNull_SerializesAsNullString()
+        {
+            // Arrange
+            var t = SetUp(
+                new ConsoleLoggerOptions { FormatterName = ConsoleFormatterNames.Json },
+                simpleOptions: null,
+                systemdOptions: null,
+                jsonOptions: new JsonConsoleFormatterOptions
+                {
+                    JsonWriterOptions = new JsonWriterOptions() { Indented = false },
+                    IncludeScopes = true
+                }
+            );
+            var logger = (ILogger)t.Logger;
+            var sink = t.Sink;
+
+            // Act
+            using (logger.BeginScope("{Null}", (object)null))
+            {
+                logger.LogInformation("{LogEntryNull}", (object)null);
+            }
+
+            // Assert
+            string message = sink.Writes[0].Message;
+            Assert.Contains("\"Null\":\"(null)\"", message);
+            Assert.Contains("\"LogEntryNull\":\"(null)\"", message);
         }
     }
 }

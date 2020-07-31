@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
@@ -18,6 +19,7 @@ namespace Microsoft.Extensions.Logging.Console
     internal class JsonConsoleFormatter : ConsoleFormatter, IDisposable
     {
         private IDisposable _optionsReloadToken;
+        private char[] _singleCharArray = new char[1];
 
         public JsonConsoleFormatter(IOptionsMonitor<JsonConsoleFormatterOptions> options)
             : base (ConsoleFormatterNames.Json)
@@ -143,29 +145,64 @@ namespace Microsoft.Extensions.Logging.Console
             }
         }
 
-        private static void WriteItem(Utf8JsonWriter writer, KeyValuePair<string, object> item)
+        private void WriteItem(Utf8JsonWriter writer, KeyValuePair<string, object> item)
         {
-            writer.WritePropertyName(item.Key);
-            switch (item.Value)
+            if (item.Value is bool boolValue)
             {
-                case bool _:
-                case byte _:
-                case sbyte _:
-                case char _:
-                case decimal _:
-                case double _:
-                case float _:
-                case int _:
-                case uint _:
-                case long _:
-                case ulong _:
-                case short _:
-                case ushort _:
-                    JsonSerializer.Serialize(writer, item.Value);
-                    break;
-                default:
-                    writer.WriteStringValue(ToInvariantString(item.Value));
-                    break;
+                writer.WriteBoolean(item.Key, boolValue);
+            }
+            else if (item.Value is byte byteValue)
+            {
+                writer.WriteNumber(item.Key, byteValue);
+            }
+            else if (item.Value is sbyte sbyteValue)
+            {
+                writer.WriteNumber(item.Key, sbyteValue);
+            }
+            else if (item.Value is char charValue)
+            {
+                _singleCharArray[0] = charValue;
+                writer.WriteString(item.Key, _singleCharArray.AsSpan());
+            }
+            else if (item.Value is decimal decimalValue)
+            {
+                writer.WriteNumber(item.Key, decimalValue);
+            }
+            else if (item.Value is double doubleValue)
+            {
+                writer.WriteNumber(item.Key, doubleValue);
+            }
+            else if (item.Value is float floatValue)
+            {
+                writer.WriteNumber(item.Key, floatValue);
+            }
+            else if (item.Value is int intValue)
+            {
+                writer.WriteNumber(item.Key, intValue);
+            }
+            else if (item.Value is uint uintValue)
+            {
+                writer.WriteNumber(item.Key, uintValue);
+            }
+            else if (item.Value is long longValue)
+            {
+                writer.WriteNumber(item.Key, longValue);
+            }
+            else if (item.Value is ulong ulongValue)
+            {
+                writer.WriteNumber(item.Key, ulongValue);
+            }
+            else if (item.Value is short shortValue)
+            {
+                writer.WriteNumber(item.Key, shortValue);
+            }
+            else if (item.Value is ushort ushortValue)
+            {
+                writer.WriteNumber(item.Key, ushortValue);
+            }
+            else
+            {
+                writer.WriteString(item.Key, ToInvariantString(item.Value));
             }
         }
 
