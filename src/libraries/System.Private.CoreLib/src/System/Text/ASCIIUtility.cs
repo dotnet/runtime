@@ -90,7 +90,7 @@ namespace System.Text
             // this method is running.
 
             return (Sse2.IsSupported || AdvSimd.Arm64.IsSupported && BitConverter.IsLittleEndian)
-                ? GetIndexOfFirstNonAsciiByte_Sse2OrArm64(pBuffer, bufferLength)
+                ? GetIndexOfFirstNonAsciiByte_Intrinsified(pBuffer, bufferLength)
                 : GetIndexOfFirstNonAsciiByte_Default(pBuffer, bufferLength);
         }
 
@@ -249,7 +249,7 @@ namespace System.Text
             }
         }
 
-        private static unsafe nuint GetIndexOfFirstNonAsciiByte_Sse2OrArm64(byte* pBuffer, nuint bufferLength)
+        private static unsafe nuint GetIndexOfFirstNonAsciiByte_Intrinsified(byte* pBuffer, nuint bufferLength)
         {
             // JIT turns the below into constants
 
@@ -259,7 +259,9 @@ namespace System.Text
             Debug.Assert(Sse2.IsSupported || AdvSimd.Arm64.IsSupported, "Sse2 or AdvSimd64 required.");
             Debug.Assert(BitConverter.IsLittleEndian, "This SSE2/Arm64 implementation assumes little-endian.");
 
-            Vector128<byte> bitmask = Vector128.Create((ushort)0x1001).AsByte();
+            Vector128<byte> bitmask = BitConverter.IsLittleEndian ?
+            Vector128.Create((ushort)0x1001).AsByte() :
+            Vector128.Create((ushort)0x0110).AsByte();
 
             uint currentMask, secondMask;
             byte* pOriginalBuffer = pBuffer;
