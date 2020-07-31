@@ -81,16 +81,16 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             if (defType.IsHomogeneousAggregate)
             {
-                CorInfoHFAElemType hfaElementType = (defType.ValueTypeShapeCharacteristics & ValueTypeShapeCharacteristics.AggregateMask) switch
+                ReadyToRunHFAElemType hfaElementType = (defType.ValueTypeShapeCharacteristics & ValueTypeShapeCharacteristics.AggregateMask) switch
                 {
-                    ValueTypeShapeCharacteristics.Float32Aggregate => CorInfoHFAElemType.CORINFO_HFA_ELEM_FLOAT,
-                    ValueTypeShapeCharacteristics.Float64Aggregate => CorInfoHFAElemType.CORINFO_HFA_ELEM_DOUBLE,
-                    ValueTypeShapeCharacteristics.Vector64Aggregate => CorInfoHFAElemType.CORINFO_HFA_ELEM_VECTOR64,
+                    ValueTypeShapeCharacteristics.Float32Aggregate => ReadyToRunHFAElemType.Float,
+                    ValueTypeShapeCharacteristics.Float64Aggregate => ReadyToRunHFAElemType.Double,
+                    ValueTypeShapeCharacteristics.Vector64Aggregate => ReadyToRunHFAElemType.Vector64,
                     // See MethodTable::GetHFAType
-                    ValueTypeShapeCharacteristics.Vector128Aggregate => CorInfoHFAElemType.CORINFO_HFA_ELEM_VECTOR128,
+                    ValueTypeShapeCharacteristics.Vector128Aggregate => ReadyToRunHFAElemType.Vector128,
                     _ => throw new NotSupportedException()
                 };
-                dataBuilder.EmitUInt((uint)elementType);
+                dataBuilder.EmitUInt((uint)hfaElementType);
             }
             
             if (alignment != pointerSize)
