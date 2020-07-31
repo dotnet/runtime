@@ -5,6 +5,39 @@
 .assembly extern System.Runtime.CompilerServices.VisualC { }
 .assembly CopyCtorUtil { }
 
+.class auto ansi sealed public TestDelegate
+       extends [mscorlib]System.MulticastDelegate
+{
+  .custom instance void [mscorlib]System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute::.ctor(valuetype [mscorlib]System.Runtime.InteropServices.CallingConvention) = ( 01 00 03 00 00 00 00 00 ) 
+  .method public hidebysig specialname rtspecialname 
+          instance void  .ctor(object 'object',
+                               native int 'method') runtime managed
+  {
+  } // end of method TestDelegate::.ctor
+
+  .method public hidebysig newslot virtual 
+          instance int32  Invoke(valuetype [CopyCtorUtil]StructWithCtor modreq([mscorlib]System.Runtime.CompilerServices.IsCopyConstructed)* ptrStruct,
+                                 valuetype [CopyCtorUtil]StructWithCtor modreq([mscorlib]System.Runtime.CompilerServices.IsCopyConstructed)& refStruct) runtime managed
+  {
+  } // end of method TestDelegate::Invoke
+
+  .method public hidebysig newslot virtual 
+          instance class [mscorlib]System.IAsyncResult 
+          BeginInvoke(valuetype [CopyCtorUtil]StructWithCtor modreq([mscorlib]System.Runtime.CompilerServices.IsCopyConstructed)* ptrStruct,
+                      valuetype [CopyCtorUtil]StructWithCtor modreq([mscorlib]System.Runtime.CompilerServices.IsCopyConstructed)& refStruct,
+                      class [mscorlib]System.AsyncCallback callback,
+                      object 'object') runtime managed
+  {
+  } // end of method TestDelegate::BeginInvoke
+
+  .method public hidebysig newslot virtual 
+          instance int32  EndInvoke(valuetype [CopyCtorUtil]StructWithCtor modreq([mscorlib]System.Runtime.CompilerServices.IsCopyConstructed)& refStruct,
+                                    class [mscorlib]System.IAsyncResult result) runtime managed
+  {
+  } // end of method TestDelegate::EndInvoke
+
+} // end of class TestDelegate
+
 .class public sealed sequential ansi beforefieldinit StructWithCtor
        extends [mscorlib]System.ValueType
 {
@@ -19,6 +52,14 @@
         ldarg.1
         ldfld int32 StructWithCtor::_instanceField
         stfld int32 StructWithCtor::_instanceField
+        ldarg.0
+        ldarg.1
+        ldfld int32 StructWithCtor::_instanceField2
+        stfld int32 StructWithCtor::_instanceField2
+        ldarg.0
+        ldarg.1
+        ldfld int32 StructWithCtor::_instanceField3
+        stfld int32 StructWithCtor::_instanceField3
 
         ldsfld int32 StructWithCtor::CopyCtorCallCount
         ldc.i4.1
