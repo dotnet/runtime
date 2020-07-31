@@ -138,7 +138,7 @@
       <PreCommands Condition="'$(Compare)' == 'true'">$(WorkItemCommand) --bdn-artifacts $(BaselineArtifactsDirectory) --bdn-arguments="--anyCategories $(BDNCategories) $(ExtraBenchmarkDotNetArguments) $(BaselineCoreRunArgument)"</PreCommands>
       <Command>$(WorkItemCommand) --bdn-artifacts $(ArtifactsDirectory) --bdn-arguments="--anyCategories $(BDNCategories) $(ExtraBenchmarkDotNetArguments) $(CoreRunArgument)"</Command>
       <PostCommands Condition="'$(Compare)' == 'true'">$(DotnetExe) run -f $(_Framework) -p $(ResultsComparer) --base $(BaselineArtifactsDirectory) --diff $(ArtifactsDirectory) --threshold 2$(Percent) --xml $(XMLResults)</PostCommands>
-      <Timeout>4:00</Timeout>
+      <Timeout>12:00</Timeout>
     </HelixWorkItem>
   </ItemGroup>
 </Project>
