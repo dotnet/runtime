@@ -143,8 +143,18 @@ function writeContentToFile(content, path)
 	FS.close(stream);
 }
 
-if (typeof window == "undefined")
-  load ("mono-config.js");
+function loadScript (url)
+{
+	if (is_browser) {
+		var script = document.createElement ("script");
+		script.src = url;
+		document.head.appendChild (script);
+	} else {
+		load (url);
+	}
+}
+
+loadScript ("mono-config.js");
 
 var Module = {
 	mainScriptUrlOrBlob: "dotnet.js",
@@ -218,8 +228,7 @@ var Module = {
 	},
 };
 
-if (typeof window == "undefined")
-  load ("dotnet.js");
+loadScript ("dotnet.js");
 
 const IGNORE_PARAM_COUNT = -1;
 
