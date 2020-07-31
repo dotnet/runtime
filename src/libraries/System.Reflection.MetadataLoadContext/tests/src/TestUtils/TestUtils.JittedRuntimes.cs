@@ -34,7 +34,7 @@ namespace System.Reflection.Tests
                         TestMetadataLoadContext.LoadFromStream(CreateStreamForCoreAssembly());
                     }
 
-                    return TestMetadataLoadContext.LoadFromAssemblyPath(TestUtils.GetAssemblyLocation(a));
+                    return TestMetadataLoadContext.LoadFromAssemblyPath(PathHelper.GetAssemblyLocation(a));
                 });
 
             Type projectedType = s_typeDict.GetOrAdd(type, (t) => projectedAssembly.GetType(t.FullName, throwOnError: true, ignoreCase: false));
@@ -68,7 +68,7 @@ namespace System.Reflection.Tests
 
         public static string GetPathToCoreAssembly()
         {
-            return TestUtils.GetAssemblyLocation(typeof(object).Assembly);
+            return PathHelper.GetAssemblyLocation(typeof(object).Assembly);
         }
 
         public static string GetNameOfCoreAssembly()

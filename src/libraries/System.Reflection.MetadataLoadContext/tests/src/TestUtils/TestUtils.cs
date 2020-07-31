@@ -238,16 +238,6 @@ namespace System.Reflection.Tests
             }
         }
 
-        public static string GetAssemblyLocation(Assembly a)
-        {
-            // Note, in Browser, assemblies are loaded from memory and in that case, Assembly.Location will return an empty
-            // string.  For these tests, the assemblies will also be available in the VFS, so just specify the assembly name
-            // plus extension.
-            return (PlatformDetection.IsNotBrowser) ?
-                a.Location
-                : a.GetName().Name + ".dll";
-        }
-
         // For the tests that exercise Type objects and friends, we'll use a single MetadataLoadContext to keep the test methods from being
         // bound too tightly to the fact that the Types are coming from a MetadataLoadContext.
         //
@@ -263,7 +253,7 @@ namespace System.Reflection.Tests
 
         private static readonly Lazy<bool> s_useRuntimeTypesForTests = new Lazy<bool>(() =>
         {
-            var loc = TestUtils.GetAssemblyLocation(typeof(TestUtils).Assembly);
+            var loc = PathHelper.GetAssemblyLocation(typeof(TestUtils).Assembly);
 
             if (File.Exists(Path.Combine(loc, "UseRuntimeTypes.txt")))
             {

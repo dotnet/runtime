@@ -387,7 +387,7 @@ namespace System.Reflection.Tests
         [Fact]
         public void LoadFrom_SameIdentityAsAssemblyWithDifferentPath_ReturnsEqualAssemblies()
         {
-            Assembly assembly1 = Assembly.LoadFrom(typeof(AssemblyTests).Assembly.Location);
+            Assembly assembly1 = Assembly.LoadFrom(PathHelper.GetAssemblyLocation(typeof(AssemblyTests).Assembly));
             Assert.Equal(assembly1, typeof(AssemblyTests).Assembly);
 
             Assembly assembly2 = Assembly.LoadFrom(LoadFromTestPath);
@@ -659,7 +659,7 @@ namespace System.Reflection.Tests
         public void AssemblyLoadFromBytes()
         {
             Assembly assembly = typeof(AssemblyTests).Assembly;
-            byte[] aBytes = System.IO.File.ReadAllBytes(assembly.Location);
+            byte[] aBytes = System.IO.File.ReadAllBytes(PathHelper.GetAssemblyLocation(assembly));
 
             Assembly loadedAssembly = Assembly.Load(aBytes);
             Assert.NotNull(loadedAssembly);
@@ -677,8 +677,8 @@ namespace System.Reflection.Tests
         public void AssemblyLoadFromBytesWithSymbols()
         {
             Assembly assembly = typeof(AssemblyTests).Assembly;
-            byte[] aBytes = System.IO.File.ReadAllBytes(assembly.Location);
-            byte[] symbols = System.IO.File.ReadAllBytes((System.IO.Path.ChangeExtension(assembly.Location, ".pdb")));
+            byte[] aBytes = System.IO.File.ReadAllBytes(PathHelper.GetAssemblyLocation(assembly));
+            byte[] symbols = System.IO.File.ReadAllBytes((System.IO.Path.ChangeExtension(PathHelper.GetAssemblyLocation(assembly), ".pdb")));
 
             Assembly loadedAssembly = Assembly.Load(aBytes, symbols);
             Assert.NotNull(loadedAssembly);
@@ -696,7 +696,7 @@ namespace System.Reflection.Tests
         public void AssemblyReflectionOnlyLoadFromBytes()
         {
             Assembly assembly = typeof(AssemblyTests).Assembly;
-            byte[] aBytes = System.IO.File.ReadAllBytes(assembly.Location);
+            byte[] aBytes = System.IO.File.ReadAllBytes(PathHelper.GetAssemblyLocation(assembly));
             Assert.Throws<PlatformNotSupportedException>(() => Assembly.ReflectionOnlyLoad(aBytes));
         }
 

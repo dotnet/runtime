@@ -358,13 +358,15 @@ mono_wasm_load_runtime (const char *unused, int enable_debugging)
 	monoeg_g_setenv ("COMPlus_DebugWriteToStdErr", "1", 0);
 #endif
 
-	const char *appctx_keys[1];
+	const char *appctx_keys[2];
 	appctx_keys [0] = "APP_CONTEXT_BASE_DIRECTORY";
+	appctx_keys [1] = "RUNTIME_IDENTIFIER";
 
-	const char *appctx_values[1];
+	const char *appctx_values[2];
 	appctx_values [0] = "/";
+	appctx_values [1] = "browser-wasm";
 
-	monovm_initialize (1, appctx_keys, appctx_values);
+	monovm_initialize (2, appctx_keys, appctx_values);
 
 	mini_parse_debug_option ("top-runtime-invoke-unhandled");
 
