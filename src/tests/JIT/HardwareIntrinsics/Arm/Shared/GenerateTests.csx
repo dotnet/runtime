@@ -2453,69 +2453,83 @@ private static readonly (string templateFileName, Dictionary<string, string> tem
     ("SecureHashTernOpTest.template",     new Dictionary<string, string> { ["TestName"] = "ScheduleUpdate1_Vector128_UInt32",                                                                      ["Isa"] = "Sha256",        ["LoadIsa"] = "AdvSimd", ["Method"] = "ScheduleUpdate1",                                                      ["RetVectorType"] = "Vector128", ["RetBaseType"] = "UInt32",  ["Op1VectorType"] = "Vector128", ["Op1BaseType"] = "UInt32", ["Op2VectorType"] = "Vector128", ["Op2BaseType"] = "UInt32", ["Op3VectorType"] = "Vector128", ["Op3BaseType"] = "UInt32", ["LargestVectorSize"] = "16", ["NextValueOp1"] = "0x00112233",                               ["NextValueOp2"] = "0x44556677",                               ["NextValueOp3"] = "0x8899AABB",                               ["ExpectedResult"] = "{0x248F1BDF, 0x248F1BDF, 0xB303DDBA, 0xF74821FE}"}),
 };
 
-private static void ProcessInputs(string groupName, (string templateFileName, Dictionary<string, string> templateData)[] inputs)
+private static void ProcessInputs((string templateFileName, Dictionary<string, string> templateData)[] inputs, bool splitAndGroupTestsByMethodName = false)
 {
-    // Too many tests may time out in CI or various stress modes
-    const int MaxGroupSize = 256;
-
-    var numGroups = (inputs.Length + (MaxGroupSize - 1)) / MaxGroupSize;
-
-    if (numGroups == 1)
+    foreach (var testGroup in inputs.GroupBy(i => i.templateData["Isa"]))
     {
-        ProcessInputGroup(groupName, -1, inputs);
-    }
-    else
-    {
-        for (var i = 0; i < numGroups; i++)
+        string isa = testGroup.Key;
+
+        string directoryName = Path.Combine("..", isa);
+        Directory.CreateDirectory(directoryName);
+
+        string[] testNamesPerIsa = testGroup.Select(i => i.templateData["TestName"]).ToArray();
+        string testListFileName = $"Program.{isa}.cs";
+
+        CreateTestListFile(testNamesPerIsa, Path.Combine(directoryName, testListFileName));
+
+        string dbgTestProjectFileName = $"{isa}_r.csproj";
+        string relTestProjectFileName = $"{isa}_ro.csproj";
+
+        CreateTestProject(testNamesPerIsa, optimize: false, Path.Combine(directoryName, dbgTestProjectFileName));
+        CreateTestProject(testNamesPerIsa, optimize: true,  Path.Combine(directoryName, relTestProjectFileName));
+
+        foreach ((string templateFileName, Dictionary<string, string> templateData) in testGroup)
         {
-            var groupStart = i * MaxGroupSize;
-            var groupSize = Math.Min(MaxGroupSize, inputs.Length - groupStart);
+            string testName = templateData["TestName"];
+            string testFileName = Path.Combine("..", isa, testName.Replace('_', '.') + ".cs");
+            ProcessTemplateFile(templateFileName, templateData, testFileName);
+        }
 
-            var inputGroup = inputs.Skip(groupStart).Take(groupSize).ToArray();
-            ProcessInputGroup(groupName, i, inputGroup);
+        if (splitAndGroupTestsByMethodName)
+        {
+            foreach (var testSubGroup in testGroup.GroupBy(i => i.templateData["Method"]))
+            {
+                string method = testSubGroup.Key;
+                string[] testNamesPerIsaAndMethod = testSubGroup.Select(t => t.templateData["TestName"]).ToArray();
+
+                CreateRunOnlyTestProject(testNamesPerIsaAndMethod, testProjectToRun: dbgTestProjectFileName, Path.Combine(directoryName, $"{method}_r.csproj"));
+                CreateRunOnlyTestProject(testNamesPerIsaAndMethod, testProjectToRun: relTestProjectFileName, Path.Combine(directoryName, $"{method}_ro.csproj"));
+            }
         }
     }
 }
 
-private static void ProcessInputGroup(string groupName, int index, (string templateFileName, Dictionary<string, string> templateData)[] inputs)
+private static void CreateTestProject(string[] testNames, bool optimize, string outputFileName)
 {
-    var directoryName = Path.Combine("..", groupName);
-    Directory.CreateDirectory(directoryName);
-
-    var fileGroupName = (index >= 0) ? $"{groupName}_Part{index}" : groupName;
-
-    var debugProjectFileName = Path.Combine(directoryName, $"{fileGroupName}_r.csproj");
-    var releaseProjectFileName = Path.Combine(directoryName, $"{fileGroupName}_ro.csproj");
-
-    var testListFileName = Path.Combine(directoryName, $"Program.{fileGroupName}.cs");
-
-    using (var debugProjectFile = new StreamWriter(debugProjectFileName, append: false))
-    using (var releaseProjectFile = new StreamWriter(releaseProjectFileName, append: false))
-    using (var testListFile = new StreamWriter(testListFileName, append: false))
-    {
-        debugProjectFile.WriteLine(@"<Project Sdk=""Microsoft.NET.Sdk"">
+    string content = $@"<Project Sdk=""Microsoft.NET.Sdk"">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-  </PropertyGroup>
-  <PropertyGroup>
     <DebugType>Embedded</DebugType>
-    <Optimize />
+    <Optimize>{optimize}</Optimize>
   </PropertyGroup>
-  <ItemGroup>");
+  <ItemGroup>
+    <Compile Include=""*.cs""/>
+    <Compile Include=""..\Shared\Helpers.cs"" />
+    <Compile Include=""..\Shared\Program.cs"" />
+  </ItemGroup>
+</Project>";
 
-        releaseProjectFile.WriteLine(@"<Project Sdk=""Microsoft.NET.Sdk"">
-  <PropertyGroup>
-    <OutputType>Exe</OutputType>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-  </PropertyGroup>
-  <PropertyGroup>
-    <DebugType>Embedded</DebugType>
-    <Optimize>True</Optimize>
-  </PropertyGroup>
-  <ItemGroup>");
+    File.WriteAllText(outputFileName, content);
+}
 
-        testListFile.WriteLine(@"// Licensed to the .NET Foundation under one or more agreements.
+private static void CreateRunOnlyTestProject(string[] testNames, string testProjectToRun, string outputFileName)
+{
+    string executionArgs = string.Join(" ", testNames.Select(name => name.Replace('_', '.')));
+    string content = $@"<Project Sdk=""Microsoft.NET.Sdk"">
+  <PropertyGroup>
+    <CLRTestKind>RunOnly</CLRTestKind>
+    <CLRTestProjectToRun>{testProjectToRun}</CLRTestProjectToRun>
+    <CLRTestExecutionArguments>{executionArgs}</CLRTestExecutionArguments>
+  </PropertyGroup>
+</Project>";
+
+    File.WriteAllText(outputFileName, content);
+}
+
+private static void CreateTestListFile(string[] testNames, string outputFileName)
+{
+     var sb = new StringBuilder(@"// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
@@ -2527,79 +2541,62 @@ namespace JIT.HardwareIntrinsics.Arm
     {
         static Program()
         {
-            TestList = new Dictionary<string, Action>() {");
+            TestList = new Dictionary<string, Action>()
+            {
+");
 
-        foreach (var input in inputs)
-        {
-            ProcessInput(debugProjectFile, releaseProjectFile, testListFile, groupName, input);
-        }
+    foreach (string testName in testNames)
+    {
+        sb.AppendFormat("                [\"{0}\"] = {1},\n", testName.Replace('_', '.'), testName);
+    }
 
-        debugProjectFile.WriteLine($@"    <Compile Include=""Program.{fileGroupName}.cs"" />
-    <Compile Include=""..\Shared\Helpers.cs"" />
-    <Compile Include=""..\Shared\Program.cs"" />
-  </ItemGroup>
-</Project>");
-
-        releaseProjectFile.WriteLine($@"    <Compile Include=""Program.{fileGroupName}.cs"" />
-    <Compile Include=""..\Shared\Helpers.cs"" />
-    <Compile Include=""..\Shared\Program.cs"" />
-  </ItemGroup>
-</Project>");
-
-        testListFile.WriteLine(@"            };
+    sb.AppendLine(@"            };
         }
     }
 }");
-    }
+
+    string content = sb.ToString();
+    File.WriteAllText(outputFileName, content);
 }
 
-private static void ProcessInput(StreamWriter debugProjectFile, StreamWriter releaseProjectFile, StreamWriter testListFile, string groupName, (string templateFileName, Dictionary<string, string> templateData) input)
+private static void ProcessTemplateFile(string templateFileName, Dictionary<string, string> templateData, string outputFileName)
 {
-    var testName = input.templateData["TestName"];
-    var fileName = testName.Replace('_', '.');
+    string testName = templateData["TestName"];
+    var matchingTemplate = Templates.Where((t) => t.outputTemplateName.Equals(templateFileName)).SingleOrDefault();
 
-    // Ex: <Compile Include="Add.Vector128.Single" />
-    debugProjectFile.WriteLine($@"    <Compile Include=""{fileName}.cs"" />");
-    releaseProjectFile.WriteLine($@"    <Compile Include=""{fileName}.cs"" />");
-
-    // Ex: ["Add.Vector128.Single"] = Add_Vector128_Single
-    testListFile.WriteLine($@"                [""{fileName}""] = {testName},");
-
-    var testFileName = Path.Combine("..", groupName, $"{fileName}.cs");
-    var matchingTemplate = Templates.Where((t) => t.outputTemplateName.Equals(input.templateFileName)).SingleOrDefault();
-    var template = string.Empty;
+    string content = string.Empty;
 
     if (matchingTemplate.templateFileName is null)
     {
-        template = File.ReadAllText(input.templateFileName);
+        content = File.ReadAllText(templateFileName);
     }
     else
     {
-        template = File.ReadAllText(matchingTemplate.templateFileName);
+        content = File.ReadAllText(matchingTemplate.templateFileName);
 
         foreach (var kvp in matchingTemplate.templateData)
         {
-            template = template.Replace($"{{{kvp.Key}}}", kvp.Value);
+            content = content.Replace($"{{{kvp.Key}}}", kvp.Value);
         }
     }
 
-    foreach (var kvp in input.templateData)
+    foreach (var kvp in templateData)
     {
-        template = template.Replace($"{{{kvp.Key}}}", kvp.Value);
+        content = content.Replace($"{{{kvp.Key}}}", kvp.Value);
     }
 
-    File.WriteAllText(testFileName, template);
+    File.WriteAllText(outputFileName, content);
 }
 
-ProcessInputs("AdvSimd", AdvSimdInputs);
-ProcessInputs("AdvSimd.Arm64", AdvSimd_Arm64Inputs);
-ProcessInputs("Aes", AesInputs);
-ProcessInputs("ArmBase", ArmBaseInputs);
-ProcessInputs("ArmBase.Arm64", ArmBase_Arm64Inputs);
-ProcessInputs("Crc32", Crc32Inputs);
-ProcessInputs("Crc32.Arm64", Crc32_Arm64Inputs);
-ProcessInputs("Dp", DpInputs);
-ProcessInputs("Rdm", RdmInputs);
-ProcessInputs("Rdm.Arm64", Rdm_Arm64Inputs);
-ProcessInputs("Sha1", Sha1Inputs);
-ProcessInputs("Sha256", Sha256Inputs);
+ProcessInputs(AdvSimdInputs, splitAndGroupTestsByMethodName: true);
+ProcessInputs(AdvSimd_Arm64Inputs, splitAndGroupTestsByMethodName: true);
+ProcessInputs(AesInputs);
+ProcessInputs(ArmBaseInputs);
+ProcessInputs(ArmBase_Arm64Inputs);
+ProcessInputs(Crc32Inputs);
+ProcessInputs(Crc32_Arm64Inputs);
+ProcessInputs(DpInputs);
+ProcessInputs(RdmInputs);
+ProcessInputs(Rdm_Arm64Inputs);
+ProcessInputs(Sha1Inputs);
+ProcessInputs(Sha256Inputs);
