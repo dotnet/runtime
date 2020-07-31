@@ -10759,11 +10759,14 @@ mono_ldptr:
 			break;
 		case MONO_CEE_MONO_PINVOKE_ADDR_CACHE: {
 			g_assert (method->wrapper_type != MONO_WRAPPER_NONE);
-			// FIXME: AOT
-			g_assert (!cfg->compile_aot);
+			MonoMethod *pinvoke_method = mono_method_get_wrapper_data (method, token);
 			/* This is a memory slot used by the wrapper */
-			gpointer addr = mono_domain_alloc0 (cfg->domain, sizeof (gpointer));
-			EMIT_NEW_PCONST (cfg, ins, addr);
+			if (cfg->compile_aot) {
+				EMIT_NEW_AOTCONST (cfg, ins, MONO_PATCH_INFO_METHOD_PINVOKE_ADDR_CACHE, pinvoke_method);
+			} else {
+				gpointer addr = mono_domain_alloc0 (cfg->domain, sizeof (gpointer));
+				EMIT_NEW_PCONST (cfg, ins, addr);
+			}
 			*sp++ = ins;
 			break;
 		}
