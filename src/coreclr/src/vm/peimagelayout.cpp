@@ -446,7 +446,8 @@ ConvertedImageLayout::ConvertedImageLayout(PEImageLayout* source)
 
         ApplyBaseRelocations();
 
-        // Check if there is a static function table.
+        // Check if there is a static function table and install it. (except x86)
+#if !defined(TARGET_X86)
         COUNT_T cbSize = 0;
         PT_RUNTIME_FUNCTION   pExceptionDir = (PT_RUNTIME_FUNCTION)GetDirectoryEntryData(IMAGE_DIRECTORY_ENTRY_EXCEPTION, &cbSize);
         DWORD tableSize = cbSize / sizeof(T_RUNTIME_FUNCTION);
@@ -458,6 +459,7 @@ ConvertedImageLayout::ConvertedImageLayout(PEImageLayout* source)
 
                 //TODO: WIP remember tbl to undo the above when releasing img
         }
+#endif //TARGET_X86
     }
 #endif
 }
