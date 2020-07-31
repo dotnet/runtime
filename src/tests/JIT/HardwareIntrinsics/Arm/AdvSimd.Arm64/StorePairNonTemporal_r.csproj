@@ -1,0 +1,7 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <CLRTestKind>RunOnly</CLRTestKind>
+    <CLRTestProjectToRun>AdvSimd.Arm64_r.csproj</CLRTestProjectToRun>
+    <CLRTestExecutionArguments>StorePairNonTemporal.Vector64.Byte StorePairNonTemporal.Vector64.Double StorePairNonTemporal.Vector64.Int16 StorePairNonTemporal.Vector64.Int32 StorePairNonTemporal.Vector64.Int64 StorePairNonTemporal.Vector64.SByte StorePairNonTemporal.Vector64.Single StorePairNonTemporal.Vector64.UInt16 StorePairNonTemporal.Vector64.UInt32 StorePairNonTemporal.Vector64.UInt64 StorePairNonTemporal.Vector128.Byte StorePairNonTemporal.Vector128.Double StorePairNonTemporal.Vector128.Int16 StorePairNonTemporal.Vector128.Int32 StorePairNonTemporal.Vector128.Int64 StorePairNonTemporal.Vector128.SByte StorePairNonTemporal.Vector128.Single StorePairNonTemporal.Vector128.UInt16 StorePairNonTemporal.Vector128.UInt32 StorePairNonTemporal.Vector128.UInt64</CLRTestExecutionArguments>
+  </PropertyGroup>
+</Project>

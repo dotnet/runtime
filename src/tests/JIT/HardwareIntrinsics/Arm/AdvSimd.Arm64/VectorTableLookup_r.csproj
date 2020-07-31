@@ -1,0 +1,7 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <CLRTestKind>RunOnly</CLRTestKind>
+    <CLRTestProjectToRun>AdvSimd.Arm64_r.csproj</CLRTestProjectToRun>
+    <CLRTestExecutionArguments>VectorTableLookup.Vector128.Byte VectorTableLookup.Vector128.SByte</CLRTestExecutionArguments>
+  </PropertyGroup>
+</Project>

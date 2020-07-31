@@ -1,0 +1,7 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <CLRTestKind>RunOnly</CLRTestKind>
+    <CLRTestProjectToRun>AdvSimd.Arm64_ro.csproj</CLRTestProjectToRun>
+    <CLRTestExecutionArguments>MultiplyDoublingWideningScalarBySelectedScalarAndSubtractSaturate.Vector64.Int16.Vector64.Int16.3 MultiplyDoublingWideningScalarBySelectedScalarAndSubtractSaturate.Vector64.Int16.Vector128.Int16.7 MultiplyDoublingWideningScalarBySelectedScalarAndSubtractSaturate.Vector64.Int32.Vector64.Int32.1 MultiplyDoublingWideningScalarBySelectedScalarAndSubtractSaturate.Vector64.Int32.Vector128.Int32.3</CLRTestExecutionArguments>
+  </PropertyGroup>
+</Project>

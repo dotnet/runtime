@@ -1,0 +1,7 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <CLRTestKind>RunOnly</CLRTestKind>
+    <CLRTestProjectToRun>AdvSimd.Arm64_ro.csproj</CLRTestProjectToRun>
+    <CLRTestExecutionArguments>UnzipOdd.Vector64.Byte UnzipOdd.Vector64.Int16 UnzipOdd.Vector64.Int32 UnzipOdd.Vector64.SByte UnzipOdd.Vector64.Single UnzipOdd.Vector64.UInt16 UnzipOdd.Vector64.UInt32 UnzipOdd.Vector128.Byte UnzipOdd.Vector128.Double UnzipOdd.Vector128.Int16 UnzipOdd.Vector128.Int32 UnzipOdd.Vector128.Int64 UnzipOdd.Vector128.SByte UnzipOdd.Vector128.Single UnzipOdd.Vector128.UInt16 UnzipOdd.Vector128.UInt32 UnzipOdd.Vector128.UInt64</CLRTestExecutionArguments>
+  </PropertyGroup>
+</Project>

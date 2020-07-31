@@ -1,0 +1,7 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <CLRTestKind>RunOnly</CLRTestKind>
+    <CLRTestProjectToRun>AdvSimd.Arm64_r.csproj</CLRTestProjectToRun>
+    <CLRTestExecutionArguments>MaxPairwise.Vector128.Byte MaxPairwise.Vector128.Double MaxPairwise.Vector128.Int16 MaxPairwise.Vector128.Int32 MaxPairwise.Vector128.SByte MaxPairwise.Vector128.Single MaxPairwise.Vector128.UInt16 MaxPairwise.Vector128.UInt32</CLRTestExecutionArguments>
+  </PropertyGroup>
+</Project>
