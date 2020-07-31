@@ -1,7 +1,27 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <CLRTestKind>RunOnly</CLRTestKind>
-    <CLRTestProjectToRun>AdvSimd_r.csproj</CLRTestProjectToRun>
-    <CLRTestExecutionArguments>CompareLessThanOrEqual.Vector64.Byte CompareLessThanOrEqual.Vector64.Int16 CompareLessThanOrEqual.Vector64.Int32 CompareLessThanOrEqual.Vector64.SByte CompareLessThanOrEqual.Vector64.Single CompareLessThanOrEqual.Vector64.UInt16 CompareLessThanOrEqual.Vector64.UInt32 CompareLessThanOrEqual.Vector128.Byte CompareLessThanOrEqual.Vector128.Int16 CompareLessThanOrEqual.Vector128.Int32 CompareLessThanOrEqual.Vector128.SByte CompareLessThanOrEqual.Vector128.Single CompareLessThanOrEqual.Vector128.UInt16 CompareLessThanOrEqual.Vector128.UInt32</CLRTestExecutionArguments>
+    <OutputType>Exe</OutputType>
+    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+    <DebugType>Embedded</DebugType>
+    <Optimize>False</Optimize>
   </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="..\Shared\Helpers.cs" />
+    <Compile Include="..\Shared\Program.cs" />
+    <Compile Include="Program.AdvSimd.CompareLessThanOrEqual.cs" />
+    <Compile Include="CompareLessThanOrEqual.Vector64.Byte.cs" />
+    <Compile Include="CompareLessThanOrEqual.Vector64.Int16.cs" />
+    <Compile Include="CompareLessThanOrEqual.Vector64.Int32.cs" />
+    <Compile Include="CompareLessThanOrEqual.Vector64.SByte.cs" />
+    <Compile Include="CompareLessThanOrEqual.Vector64.Single.cs" />
+    <Compile Include="CompareLessThanOrEqual.Vector64.UInt16.cs" />
+    <Compile Include="CompareLessThanOrEqual.Vector64.UInt32.cs" />
+    <Compile Include="CompareLessThanOrEqual.Vector128.Byte.cs" />
+    <Compile Include="CompareLessThanOrEqual.Vector128.Int16.cs" />
+    <Compile Include="CompareLessThanOrEqual.Vector128.Int32.cs" />
+    <Compile Include="CompareLessThanOrEqual.Vector128.SByte.cs" />
+    <Compile Include="CompareLessThanOrEqual.Vector128.Single.cs" />
+    <Compile Include="CompareLessThanOrEqual.Vector128.UInt16.cs" />
+    <Compile Include="CompareLessThanOrEqual.Vector128.UInt32.cs" />
+  </ItemGroup>
 </Project>

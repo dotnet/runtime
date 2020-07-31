@@ -1,7 +1,23 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <CLRTestKind>RunOnly</CLRTestKind>
-    <CLRTestProjectToRun>AdvSimd_ro.csproj</CLRTestProjectToRun>
-    <CLRTestExecutionArguments>MultiplyByScalar.Vector64.Int16 MultiplyByScalar.Vector64.Int32 MultiplyByScalar.Vector64.Single MultiplyByScalar.Vector64.UInt16 MultiplyByScalar.Vector64.UInt32 MultiplyByScalar.Vector128.Int16 MultiplyByScalar.Vector128.Int32 MultiplyByScalar.Vector128.Single MultiplyByScalar.Vector128.UInt16 MultiplyByScalar.Vector128.UInt32</CLRTestExecutionArguments>
+    <OutputType>Exe</OutputType>
+    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+    <DebugType>Embedded</DebugType>
+    <Optimize>True</Optimize>
   </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="..\Shared\Helpers.cs" />
+    <Compile Include="..\Shared\Program.cs" />
+    <Compile Include="Program.AdvSimd.MultiplyByScalar.cs" />
+    <Compile Include="MultiplyByScalar.Vector64.Int16.cs" />
+    <Compile Include="MultiplyByScalar.Vector64.Int32.cs" />
+    <Compile Include="MultiplyByScalar.Vector64.Single.cs" />
+    <Compile Include="MultiplyByScalar.Vector64.UInt16.cs" />
+    <Compile Include="MultiplyByScalar.Vector64.UInt32.cs" />
+    <Compile Include="MultiplyByScalar.Vector128.Int16.cs" />
+    <Compile Include="MultiplyByScalar.Vector128.Int32.cs" />
+    <Compile Include="MultiplyByScalar.Vector128.Single.cs" />
+    <Compile Include="MultiplyByScalar.Vector128.UInt16.cs" />
+    <Compile Include="MultiplyByScalar.Vector128.UInt32.cs" />
+  </ItemGroup>
 </Project>

@@ -1,7 +1,16 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <CLRTestKind>RunOnly</CLRTestKind>
-    <CLRTestProjectToRun>AdvSimd.Arm64_r.csproj</CLRTestProjectToRun>
-    <CLRTestExecutionArguments>MaxNumberPairwise.Vector64.Single MaxNumberPairwise.Vector128.Double MaxNumberPairwise.Vector128.Single</CLRTestExecutionArguments>
+    <OutputType>Exe</OutputType>
+    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+    <DebugType>Embedded</DebugType>
+    <Optimize>False</Optimize>
   </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="..\Shared\Helpers.cs" />
+    <Compile Include="..\Shared\Program.cs" />
+    <Compile Include="Program.AdvSimd.Arm64.MaxNumberPairwise.cs" />
+    <Compile Include="MaxNumberPairwise.Vector64.Single.cs" />
+    <Compile Include="MaxNumberPairwise.Vector128.Double.cs" />
+    <Compile Include="MaxNumberPairwise.Vector128.Single.cs" />
+  </ItemGroup>
 </Project>

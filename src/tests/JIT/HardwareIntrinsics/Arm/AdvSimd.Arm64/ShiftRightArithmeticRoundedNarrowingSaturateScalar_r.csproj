@@ -1,7 +1,16 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <CLRTestKind>RunOnly</CLRTestKind>
-    <CLRTestProjectToRun>AdvSimd.Arm64_r.csproj</CLRTestProjectToRun>
-    <CLRTestExecutionArguments>ShiftRightArithmeticRoundedNarrowingSaturateScalar.Vector64.Int16.32 ShiftRightArithmeticRoundedNarrowingSaturateScalar.Vector64.Int32.64 ShiftRightArithmeticRoundedNarrowingSaturateScalar.Vector64.SByte.16</CLRTestExecutionArguments>
+    <OutputType>Exe</OutputType>
+    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+    <DebugType>Embedded</DebugType>
+    <Optimize>False</Optimize>
   </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="..\Shared\Helpers.cs" />
+    <Compile Include="..\Shared\Program.cs" />
+    <Compile Include="Program.AdvSimd.Arm64.ShiftRightArithmeticRoundedNarrowingSaturateScalar.cs" />
+    <Compile Include="ShiftRightArithmeticRoundedNarrowingSaturateScalar.Vector64.Int16.32.cs" />
+    <Compile Include="ShiftRightArithmeticRoundedNarrowingSaturateScalar.Vector64.Int32.64.cs" />
+    <Compile Include="ShiftRightArithmeticRoundedNarrowingSaturateScalar.Vector64.SByte.16.cs" />
+  </ItemGroup>
 </Project>

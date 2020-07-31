@@ -1,7 +1,15 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <CLRTestKind>RunOnly</CLRTestKind>
-    <CLRTestProjectToRun>AdvSimd_r.csproj</CLRTestProjectToRun>
-    <CLRTestExecutionArguments>ReciprocalStep.Vector64.Single ReciprocalStep.Vector128.Single</CLRTestExecutionArguments>
+    <OutputType>Exe</OutputType>
+    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+    <DebugType>Embedded</DebugType>
+    <Optimize>False</Optimize>
   </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="..\Shared\Helpers.cs" />
+    <Compile Include="..\Shared\Program.cs" />
+    <Compile Include="Program.AdvSimd.ReciprocalStep.cs" />
+    <Compile Include="ReciprocalStep.Vector64.Single.cs" />
+    <Compile Include="ReciprocalStep.Vector128.Single.cs" />
+  </ItemGroup>
 </Project>

@@ -1,7 +1,19 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <CLRTestKind>RunOnly</CLRTestKind>
-    <CLRTestProjectToRun>AdvSimd_r.csproj</CLRTestProjectToRun>
-    <CLRTestExecutionArguments>AddHighNarrowingLower.Vector64.Byte AddHighNarrowingLower.Vector64.Int16 AddHighNarrowingLower.Vector64.Int32 AddHighNarrowingLower.Vector64.SByte AddHighNarrowingLower.Vector64.UInt16 AddHighNarrowingLower.Vector64.UInt32</CLRTestExecutionArguments>
+    <OutputType>Exe</OutputType>
+    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+    <DebugType>Embedded</DebugType>
+    <Optimize>False</Optimize>
   </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="..\Shared\Helpers.cs" />
+    <Compile Include="..\Shared\Program.cs" />
+    <Compile Include="Program.AdvSimd.AddHighNarrowingLower.cs" />
+    <Compile Include="AddHighNarrowingLower.Vector64.Byte.cs" />
+    <Compile Include="AddHighNarrowingLower.Vector64.Int16.cs" />
+    <Compile Include="AddHighNarrowingLower.Vector64.Int32.cs" />
+    <Compile Include="AddHighNarrowingLower.Vector64.SByte.cs" />
+    <Compile Include="AddHighNarrowingLower.Vector64.UInt16.cs" />
+    <Compile Include="AddHighNarrowingLower.Vector64.UInt32.cs" />
+  </ItemGroup>
 </Project>

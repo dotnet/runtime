@@ -1,7 +1,15 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <CLRTestKind>RunOnly</CLRTestKind>
-    <CLRTestProjectToRun>AdvSimd_r.csproj</CLRTestProjectToRun>
-    <CLRTestExecutionArguments>FusedMultiplyAdd.Vector64.Single FusedMultiplyAdd.Vector128.Single</CLRTestExecutionArguments>
+    <OutputType>Exe</OutputType>
+    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+    <DebugType>Embedded</DebugType>
+    <Optimize>False</Optimize>
   </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="..\Shared\Helpers.cs" />
+    <Compile Include="..\Shared\Program.cs" />
+    <Compile Include="Program.AdvSimd.FusedMultiplyAdd.cs" />
+    <Compile Include="FusedMultiplyAdd.Vector64.Single.cs" />
+    <Compile Include="FusedMultiplyAdd.Vector128.Single.cs" />
+  </ItemGroup>
 </Project>

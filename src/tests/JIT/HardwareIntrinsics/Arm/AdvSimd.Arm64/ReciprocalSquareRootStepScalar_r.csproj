@@ -1,7 +1,15 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <CLRTestKind>RunOnly</CLRTestKind>
-    <CLRTestProjectToRun>AdvSimd.Arm64_r.csproj</CLRTestProjectToRun>
-    <CLRTestExecutionArguments>ReciprocalSquareRootStepScalar.Vector64.Double ReciprocalSquareRootStepScalar.Vector64.Single</CLRTestExecutionArguments>
+    <OutputType>Exe</OutputType>
+    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+    <DebugType>Embedded</DebugType>
+    <Optimize>False</Optimize>
   </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="..\Shared\Helpers.cs" />
+    <Compile Include="..\Shared\Program.cs" />
+    <Compile Include="Program.AdvSimd.Arm64.ReciprocalSquareRootStepScalar.cs" />
+    <Compile Include="ReciprocalSquareRootStepScalar.Vector64.Double.cs" />
+    <Compile Include="ReciprocalSquareRootStepScalar.Vector64.Single.cs" />
+  </ItemGroup>
 </Project>

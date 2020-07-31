@@ -1,7 +1,33 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <CLRTestKind>RunOnly</CLRTestKind>
-    <CLRTestProjectToRun>AdvSimd.Arm64_ro.csproj</CLRTestProjectToRun>
-    <CLRTestExecutionArguments>StorePair.Vector64.Byte StorePair.Vector64.Double StorePair.Vector64.Int16 StorePair.Vector64.Int32 StorePair.Vector64.Int64 StorePair.Vector64.SByte StorePair.Vector64.Single StorePair.Vector64.UInt16 StorePair.Vector64.UInt32 StorePair.Vector64.UInt64 StorePair.Vector128.Byte StorePair.Vector128.Double StorePair.Vector128.Int16 StorePair.Vector128.Int32 StorePair.Vector128.Int64 StorePair.Vector128.SByte StorePair.Vector128.Single StorePair.Vector128.UInt16 StorePair.Vector128.UInt32 StorePair.Vector128.UInt64</CLRTestExecutionArguments>
+    <OutputType>Exe</OutputType>
+    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+    <DebugType>Embedded</DebugType>
+    <Optimize>True</Optimize>
   </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="..\Shared\Helpers.cs" />
+    <Compile Include="..\Shared\Program.cs" />
+    <Compile Include="Program.AdvSimd.Arm64.StorePair.cs" />
+    <Compile Include="StorePair.Vector64.Byte.cs" />
+    <Compile Include="StorePair.Vector64.Double.cs" />
+    <Compile Include="StorePair.Vector64.Int16.cs" />
+    <Compile Include="StorePair.Vector64.Int32.cs" />
+    <Compile Include="StorePair.Vector64.Int64.cs" />
+    <Compile Include="StorePair.Vector64.SByte.cs" />
+    <Compile Include="StorePair.Vector64.Single.cs" />
+    <Compile Include="StorePair.Vector64.UInt16.cs" />
+    <Compile Include="StorePair.Vector64.UInt32.cs" />
+    <Compile Include="StorePair.Vector64.UInt64.cs" />
+    <Compile Include="StorePair.Vector128.Byte.cs" />
+    <Compile Include="StorePair.Vector128.Double.cs" />
+    <Compile Include="StorePair.Vector128.Int16.cs" />
+    <Compile Include="StorePair.Vector128.Int32.cs" />
+    <Compile Include="StorePair.Vector128.Int64.cs" />
+    <Compile Include="StorePair.Vector128.SByte.cs" />
+    <Compile Include="StorePair.Vector128.Single.cs" />
+    <Compile Include="StorePair.Vector128.UInt16.cs" />
+    <Compile Include="StorePair.Vector128.UInt32.cs" />
+    <Compile Include="StorePair.Vector128.UInt64.cs" />
+  </ItemGroup>
 </Project>

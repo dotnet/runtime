@@ -1,7 +1,19 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <CLRTestKind>RunOnly</CLRTestKind>
-    <CLRTestProjectToRun>AdvSimd.Arm64_ro.csproj</CLRTestProjectToRun>
-    <CLRTestExecutionArguments>ShiftRightLogicalRoundedNarrowingSaturateScalar.Vector64.Byte.1 ShiftRightLogicalRoundedNarrowingSaturateScalar.Vector64.Int16.1 ShiftRightLogicalRoundedNarrowingSaturateScalar.Vector64.Int32.1 ShiftRightLogicalRoundedNarrowingSaturateScalar.Vector64.SByte.1 ShiftRightLogicalRoundedNarrowingSaturateScalar.Vector64.UInt16.1 ShiftRightLogicalRoundedNarrowingSaturateScalar.Vector64.UInt32.1</CLRTestExecutionArguments>
+    <OutputType>Exe</OutputType>
+    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+    <DebugType>Embedded</DebugType>
+    <Optimize>True</Optimize>
   </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="..\Shared\Helpers.cs" />
+    <Compile Include="..\Shared\Program.cs" />
+    <Compile Include="Program.AdvSimd.Arm64.ShiftRightLogicalRoundedNarrowingSaturateScalar.cs" />
+    <Compile Include="ShiftRightLogicalRoundedNarrowingSaturateScalar.Vector64.Byte.1.cs" />
+    <Compile Include="ShiftRightLogicalRoundedNarrowingSaturateScalar.Vector64.Int16.1.cs" />
+    <Compile Include="ShiftRightLogicalRoundedNarrowingSaturateScalar.Vector64.Int32.1.cs" />
+    <Compile Include="ShiftRightLogicalRoundedNarrowingSaturateScalar.Vector64.SByte.1.cs" />
+    <Compile Include="ShiftRightLogicalRoundedNarrowingSaturateScalar.Vector64.UInt16.1.cs" />
+    <Compile Include="ShiftRightLogicalRoundedNarrowingSaturateScalar.Vector64.UInt32.1.cs" />
+  </ItemGroup>
 </Project>

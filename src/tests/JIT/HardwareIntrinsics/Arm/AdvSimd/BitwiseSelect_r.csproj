@@ -1,7 +1,33 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <CLRTestKind>RunOnly</CLRTestKind>
-    <CLRTestProjectToRun>AdvSimd_r.csproj</CLRTestProjectToRun>
-    <CLRTestExecutionArguments>BitwiseSelect.Vector64.Byte BitwiseSelect.Vector64.Double BitwiseSelect.Vector64.Int16 BitwiseSelect.Vector64.Int32 BitwiseSelect.Vector64.Int64 BitwiseSelect.Vector64.SByte BitwiseSelect.Vector64.Single BitwiseSelect.Vector64.UInt16 BitwiseSelect.Vector64.UInt32 BitwiseSelect.Vector64.UInt64 BitwiseSelect.Vector128.Byte BitwiseSelect.Vector128.Double BitwiseSelect.Vector128.Int16 BitwiseSelect.Vector128.Int32 BitwiseSelect.Vector128.Int64 BitwiseSelect.Vector128.SByte BitwiseSelect.Vector128.Single BitwiseSelect.Vector128.UInt16 BitwiseSelect.Vector128.UInt32 BitwiseSelect.Vector128.UInt64</CLRTestExecutionArguments>
+    <OutputType>Exe</OutputType>
+    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+    <DebugType>Embedded</DebugType>
+    <Optimize>False</Optimize>
   </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="..\Shared\Helpers.cs" />
+    <Compile Include="..\Shared\Program.cs" />
+    <Compile Include="Program.AdvSimd.BitwiseSelect.cs" />
+    <Compile Include="BitwiseSelect.Vector64.Byte.cs" />
+    <Compile Include="BitwiseSelect.Vector64.Double.cs" />
+    <Compile Include="BitwiseSelect.Vector64.Int16.cs" />
+    <Compile Include="BitwiseSelect.Vector64.Int32.cs" />
+    <Compile Include="BitwiseSelect.Vector64.Int64.cs" />
+    <Compile Include="BitwiseSelect.Vector64.SByte.cs" />
+    <Compile Include="BitwiseSelect.Vector64.Single.cs" />
+    <Compile Include="BitwiseSelect.Vector64.UInt16.cs" />
+    <Compile Include="BitwiseSelect.Vector64.UInt32.cs" />
+    <Compile Include="BitwiseSelect.Vector64.UInt64.cs" />
+    <Compile Include="BitwiseSelect.Vector128.Byte.cs" />
+    <Compile Include="BitwiseSelect.Vector128.Double.cs" />
+    <Compile Include="BitwiseSelect.Vector128.Int16.cs" />
+    <Compile Include="BitwiseSelect.Vector128.Int32.cs" />
+    <Compile Include="BitwiseSelect.Vector128.Int64.cs" />
+    <Compile Include="BitwiseSelect.Vector128.SByte.cs" />
+    <Compile Include="BitwiseSelect.Vector128.Single.cs" />
+    <Compile Include="BitwiseSelect.Vector128.UInt16.cs" />
+    <Compile Include="BitwiseSelect.Vector128.UInt32.cs" />
+    <Compile Include="BitwiseSelect.Vector128.UInt64.cs" />
+  </ItemGroup>
 </Project>

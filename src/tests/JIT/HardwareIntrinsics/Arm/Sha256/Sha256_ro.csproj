@@ -1,13 +1,17 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
     <DebugType>Embedded</DebugType>
     <Optimize>True</Optimize>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="*.cs"/>
     <Compile Include="..\Shared\Helpers.cs" />
     <Compile Include="..\Shared\Program.cs" />
+    <Compile Include="Program.Sha256.cs" />
+    <Compile Include="HashUpdate1.Vector128.UInt32.cs" />
+    <Compile Include="HashUpdate2.Vector128.UInt32.cs" />
+    <Compile Include="ScheduleUpdate0.Vector128.UInt32.cs" />
+    <Compile Include="ScheduleUpdate1.Vector128.UInt32.cs" />
   </ItemGroup>
 </Project>

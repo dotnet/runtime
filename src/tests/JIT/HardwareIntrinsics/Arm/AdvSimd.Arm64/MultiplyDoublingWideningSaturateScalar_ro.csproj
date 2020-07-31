@@ -1,7 +1,15 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <CLRTestKind>RunOnly</CLRTestKind>
-    <CLRTestProjectToRun>AdvSimd.Arm64_ro.csproj</CLRTestProjectToRun>
-    <CLRTestExecutionArguments>MultiplyDoublingWideningSaturateScalar.Vector64.Int16 MultiplyDoublingWideningSaturateScalar.Vector64.Int32</CLRTestExecutionArguments>
+    <OutputType>Exe</OutputType>
+    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+    <DebugType>Embedded</DebugType>
+    <Optimize>True</Optimize>
   </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="..\Shared\Helpers.cs" />
+    <Compile Include="..\Shared\Program.cs" />
+    <Compile Include="Program.AdvSimd.Arm64.MultiplyDoublingWideningSaturateScalar.cs" />
+    <Compile Include="MultiplyDoublingWideningSaturateScalar.Vector64.Int16.cs" />
+    <Compile Include="MultiplyDoublingWideningSaturateScalar.Vector64.Int32.cs" />
+  </ItemGroup>
 </Project>

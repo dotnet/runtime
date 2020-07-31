@@ -1,7 +1,17 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <CLRTestKind>RunOnly</CLRTestKind>
-    <CLRTestProjectToRun>AdvSimd.Arm64_ro.csproj</CLRTestProjectToRun>
-    <CLRTestExecutionArguments>AbsSaturateScalar.Vector64.Int16 AbsSaturateScalar.Vector64.Int32 AbsSaturateScalar.Vector64.Int64 AbsSaturateScalar.Vector64.SByte</CLRTestExecutionArguments>
+    <OutputType>Exe</OutputType>
+    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+    <DebugType>Embedded</DebugType>
+    <Optimize>True</Optimize>
   </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="..\Shared\Helpers.cs" />
+    <Compile Include="..\Shared\Program.cs" />
+    <Compile Include="Program.AdvSimd.Arm64.AbsSaturateScalar.cs" />
+    <Compile Include="AbsSaturateScalar.Vector64.Int16.cs" />
+    <Compile Include="AbsSaturateScalar.Vector64.Int32.cs" />
+    <Compile Include="AbsSaturateScalar.Vector64.Int64.cs" />
+    <Compile Include="AbsSaturateScalar.Vector64.SByte.cs" />
+  </ItemGroup>
 </Project>

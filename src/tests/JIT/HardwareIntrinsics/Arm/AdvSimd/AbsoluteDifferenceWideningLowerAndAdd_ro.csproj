@@ -1,7 +1,19 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <CLRTestKind>RunOnly</CLRTestKind>
-    <CLRTestProjectToRun>AdvSimd_ro.csproj</CLRTestProjectToRun>
-    <CLRTestExecutionArguments>AbsoluteDifferenceWideningLowerAndAdd.Vector64.Byte AbsoluteDifferenceWideningLowerAndAdd.Vector64.Int16 AbsoluteDifferenceWideningLowerAndAdd.Vector64.Int32 AbsoluteDifferenceWideningLowerAndAdd.Vector64.SByte AbsoluteDifferenceWideningLowerAndAdd.Vector64.UInt16 AbsoluteDifferenceWideningLowerAndAdd.Vector64.UInt32</CLRTestExecutionArguments>
+    <OutputType>Exe</OutputType>
+    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+    <DebugType>Embedded</DebugType>
+    <Optimize>True</Optimize>
   </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="..\Shared\Helpers.cs" />
+    <Compile Include="..\Shared\Program.cs" />
+    <Compile Include="Program.AdvSimd.AbsoluteDifferenceWideningLowerAndAdd.cs" />
+    <Compile Include="AbsoluteDifferenceWideningLowerAndAdd.Vector64.Byte.cs" />
+    <Compile Include="AbsoluteDifferenceWideningLowerAndAdd.Vector64.Int16.cs" />
+    <Compile Include="AbsoluteDifferenceWideningLowerAndAdd.Vector64.Int32.cs" />
+    <Compile Include="AbsoluteDifferenceWideningLowerAndAdd.Vector64.SByte.cs" />
+    <Compile Include="AbsoluteDifferenceWideningLowerAndAdd.Vector64.UInt16.cs" />
+    <Compile Include="AbsoluteDifferenceWideningLowerAndAdd.Vector64.UInt32.cs" />
+  </ItemGroup>
 </Project>

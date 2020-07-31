@@ -1,7 +1,15 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <CLRTestKind>RunOnly</CLRTestKind>
-    <CLRTestProjectToRun>AdvSimd_ro.csproj</CLRTestProjectToRun>
-    <CLRTestExecutionArguments>MinNumber.Vector64.Single MinNumber.Vector128.Single</CLRTestExecutionArguments>
+    <OutputType>Exe</OutputType>
+    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+    <DebugType>Embedded</DebugType>
+    <Optimize>True</Optimize>
   </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="..\Shared\Helpers.cs" />
+    <Compile Include="..\Shared\Program.cs" />
+    <Compile Include="Program.AdvSimd.MinNumber.cs" />
+    <Compile Include="MinNumber.Vector64.Single.cs" />
+    <Compile Include="MinNumber.Vector128.Single.cs" />
+  </ItemGroup>
 </Project>

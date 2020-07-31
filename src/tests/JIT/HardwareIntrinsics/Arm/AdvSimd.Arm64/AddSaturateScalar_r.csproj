@@ -1,7 +1,27 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <CLRTestKind>RunOnly</CLRTestKind>
-    <CLRTestProjectToRun>AdvSimd.Arm64_r.csproj</CLRTestProjectToRun>
-    <CLRTestExecutionArguments>AddSaturateScalar.Vector64.Byte.Vector64.Byte AddSaturateScalar.Vector64.Byte.Vector64.SByte AddSaturateScalar.Vector64.Int16.Vector64.Int16 AddSaturateScalar.Vector64.Int16.Vector64.UInt16 AddSaturateScalar.Vector64.Int32.Vector64.Int32 AddSaturateScalar.Vector64.Int32.Vector64.UInt32 AddSaturateScalar.Vector64.Int64.Vector64.UInt64 AddSaturateScalar.Vector64.SByte.Vector64.Byte AddSaturateScalar.Vector64.SByte.Vector64.SByte AddSaturateScalar.Vector64.UInt16.Vector64.Int16 AddSaturateScalar.Vector64.UInt16.Vector64.UInt16 AddSaturateScalar.Vector64.UInt32.Vector64.Int32 AddSaturateScalar.Vector64.UInt32.Vector64.UInt32 AddSaturateScalar.Vector64.UInt64.Vector64.Int64</CLRTestExecutionArguments>
+    <OutputType>Exe</OutputType>
+    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+    <DebugType>Embedded</DebugType>
+    <Optimize>False</Optimize>
   </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="..\Shared\Helpers.cs" />
+    <Compile Include="..\Shared\Program.cs" />
+    <Compile Include="Program.AdvSimd.Arm64.AddSaturateScalar.cs" />
+    <Compile Include="AddSaturateScalar.Vector64.Byte.Vector64.Byte.cs" />
+    <Compile Include="AddSaturateScalar.Vector64.Byte.Vector64.SByte.cs" />
+    <Compile Include="AddSaturateScalar.Vector64.Int16.Vector64.Int16.cs" />
+    <Compile Include="AddSaturateScalar.Vector64.Int16.Vector64.UInt16.cs" />
+    <Compile Include="AddSaturateScalar.Vector64.Int32.Vector64.Int32.cs" />
+    <Compile Include="AddSaturateScalar.Vector64.Int32.Vector64.UInt32.cs" />
+    <Compile Include="AddSaturateScalar.Vector64.Int64.Vector64.UInt64.cs" />
+    <Compile Include="AddSaturateScalar.Vector64.SByte.Vector64.Byte.cs" />
+    <Compile Include="AddSaturateScalar.Vector64.SByte.Vector64.SByte.cs" />
+    <Compile Include="AddSaturateScalar.Vector64.UInt16.Vector64.Int16.cs" />
+    <Compile Include="AddSaturateScalar.Vector64.UInt16.Vector64.UInt16.cs" />
+    <Compile Include="AddSaturateScalar.Vector64.UInt32.Vector64.Int32.cs" />
+    <Compile Include="AddSaturateScalar.Vector64.UInt32.Vector64.UInt32.cs" />
+    <Compile Include="AddSaturateScalar.Vector64.UInt64.Vector64.Int64.cs" />
+  </ItemGroup>
 </Project>

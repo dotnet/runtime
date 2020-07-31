@@ -1,7 +1,33 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <CLRTestKind>RunOnly</CLRTestKind>
-    <CLRTestProjectToRun>AdvSimd_ro.csproj</CLRTestProjectToRun>
-    <CLRTestExecutionArguments>And.Vector64.Byte And.Vector64.Double And.Vector64.Int16 And.Vector64.Int32 And.Vector64.Int64 And.Vector64.SByte And.Vector64.Single And.Vector64.UInt16 And.Vector64.UInt32 And.Vector64.UInt64 And.Vector128.Byte And.Vector128.Double And.Vector128.Int16 And.Vector128.Int32 And.Vector128.Int64 And.Vector128.SByte And.Vector128.Single And.Vector128.UInt16 And.Vector128.UInt32 And.Vector128.UInt64</CLRTestExecutionArguments>
+    <OutputType>Exe</OutputType>
+    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+    <DebugType>Embedded</DebugType>
+    <Optimize>True</Optimize>
   </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="..\Shared\Helpers.cs" />
+    <Compile Include="..\Shared\Program.cs" />
+    <Compile Include="Program.AdvSimd.And.cs" />
+    <Compile Include="And.Vector64.Byte.cs" />
+    <Compile Include="And.Vector64.Double.cs" />
+    <Compile Include="And.Vector64.Int16.cs" />
+    <Compile Include="And.Vector64.Int32.cs" />
+    <Compile Include="And.Vector64.Int64.cs" />
+    <Compile Include="And.Vector64.SByte.cs" />
+    <Compile Include="And.Vector64.Single.cs" />
+    <Compile Include="And.Vector64.UInt16.cs" />
+    <Compile Include="And.Vector64.UInt32.cs" />
+    <Compile Include="And.Vector64.UInt64.cs" />
+    <Compile Include="And.Vector128.Byte.cs" />
+    <Compile Include="And.Vector128.Double.cs" />
+    <Compile Include="And.Vector128.Int16.cs" />
+    <Compile Include="And.Vector128.Int32.cs" />
+    <Compile Include="And.Vector128.Int64.cs" />
+    <Compile Include="And.Vector128.SByte.cs" />
+    <Compile Include="And.Vector128.Single.cs" />
+    <Compile Include="And.Vector128.UInt16.cs" />
+    <Compile Include="And.Vector128.UInt32.cs" />
+    <Compile Include="And.Vector128.UInt64.cs" />
+  </ItemGroup>
 </Project>

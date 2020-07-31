@@ -1,7 +1,15 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <CLRTestKind>RunOnly</CLRTestKind>
-    <CLRTestProjectToRun>AdvSimd_ro.csproj</CLRTestProjectToRun>
-    <CLRTestExecutionArguments>MultiplyScalarBySelectedScalar.Vector64.Single.Vector64.Single.1 MultiplyScalarBySelectedScalar.Vector64.Single.Vector128.Single.3</CLRTestExecutionArguments>
+    <OutputType>Exe</OutputType>
+    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+    <DebugType>Embedded</DebugType>
+    <Optimize>True</Optimize>
   </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="..\Shared\Helpers.cs" />
+    <Compile Include="..\Shared\Program.cs" />
+    <Compile Include="Program.AdvSimd.MultiplyScalarBySelectedScalar.cs" />
+    <Compile Include="MultiplyScalarBySelectedScalar.Vector64.Single.Vector64.Single.1.cs" />
+    <Compile Include="MultiplyScalarBySelectedScalar.Vector64.Single.Vector128.Single.3.cs" />
+  </ItemGroup>
 </Project>

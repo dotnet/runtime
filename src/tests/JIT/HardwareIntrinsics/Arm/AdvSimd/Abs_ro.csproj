@@ -1,7 +1,21 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <CLRTestKind>RunOnly</CLRTestKind>
-    <CLRTestProjectToRun>AdvSimd_ro.csproj</CLRTestProjectToRun>
-    <CLRTestExecutionArguments>Abs.Vector64.Int16 Abs.Vector64.Int32 Abs.Vector64.SByte Abs.Vector64.Single Abs.Vector128.Int16 Abs.Vector128.Int32 Abs.Vector128.SByte Abs.Vector128.Single</CLRTestExecutionArguments>
+    <OutputType>Exe</OutputType>
+    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+    <DebugType>Embedded</DebugType>
+    <Optimize>True</Optimize>
   </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="..\Shared\Helpers.cs" />
+    <Compile Include="..\Shared\Program.cs" />
+    <Compile Include="Program.AdvSimd.Abs.cs" />
+    <Compile Include="Abs.Vector64.Int16.cs" />
+    <Compile Include="Abs.Vector64.Int32.cs" />
+    <Compile Include="Abs.Vector64.SByte.cs" />
+    <Compile Include="Abs.Vector64.Single.cs" />
+    <Compile Include="Abs.Vector128.Int16.cs" />
+    <Compile Include="Abs.Vector128.Int32.cs" />
+    <Compile Include="Abs.Vector128.SByte.cs" />
+    <Compile Include="Abs.Vector128.Single.cs" />
+  </ItemGroup>
 </Project>

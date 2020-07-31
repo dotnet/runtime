@@ -1,7 +1,15 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <CLRTestKind>RunOnly</CLRTestKind>
-    <CLRTestProjectToRun>AdvSimd_ro.csproj</CLRTestProjectToRun>
-    <CLRTestExecutionArguments>ShiftLogicalRoundedSaturateScalar.Vector64.Int64 ShiftLogicalRoundedSaturateScalar.Vector64.UInt64</CLRTestExecutionArguments>
+    <OutputType>Exe</OutputType>
+    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+    <DebugType>Embedded</DebugType>
+    <Optimize>True</Optimize>
   </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="..\Shared\Helpers.cs" />
+    <Compile Include="..\Shared\Program.cs" />
+    <Compile Include="Program.AdvSimd.ShiftLogicalRoundedSaturateScalar.cs" />
+    <Compile Include="ShiftLogicalRoundedSaturateScalar.Vector64.Int64.cs" />
+    <Compile Include="ShiftLogicalRoundedSaturateScalar.Vector64.UInt64.cs" />
+  </ItemGroup>
 </Project>

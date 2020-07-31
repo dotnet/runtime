@@ -1,7 +1,30 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <CLRTestKind>RunOnly</CLRTestKind>
-    <CLRTestProjectToRun>AdvSimd.Arm64_ro.csproj</CLRTestProjectToRun>
-    <CLRTestExecutionArguments>ZipLow.Vector64.Byte ZipLow.Vector64.Int16 ZipLow.Vector64.Int32 ZipLow.Vector64.SByte ZipLow.Vector64.Single ZipLow.Vector64.UInt16 ZipLow.Vector64.UInt32 ZipLow.Vector128.Byte ZipLow.Vector128.Double ZipLow.Vector128.Int16 ZipLow.Vector128.Int32 ZipLow.Vector128.Int64 ZipLow.Vector128.SByte ZipLow.Vector128.Single ZipLow.Vector128.UInt16 ZipLow.Vector128.UInt32 ZipLow.Vector128.UInt64</CLRTestExecutionArguments>
+    <OutputType>Exe</OutputType>
+    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+    <DebugType>Embedded</DebugType>
+    <Optimize>True</Optimize>
   </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="..\Shared\Helpers.cs" />
+    <Compile Include="..\Shared\Program.cs" />
+    <Compile Include="Program.AdvSimd.Arm64.ZipLow.cs" />
+    <Compile Include="ZipLow.Vector64.Byte.cs" />
+    <Compile Include="ZipLow.Vector64.Int16.cs" />
+    <Compile Include="ZipLow.Vector64.Int32.cs" />
+    <Compile Include="ZipLow.Vector64.SByte.cs" />
+    <Compile Include="ZipLow.Vector64.Single.cs" />
+    <Compile Include="ZipLow.Vector64.UInt16.cs" />
+    <Compile Include="ZipLow.Vector64.UInt32.cs" />
+    <Compile Include="ZipLow.Vector128.Byte.cs" />
+    <Compile Include="ZipLow.Vector128.Double.cs" />
+    <Compile Include="ZipLow.Vector128.Int16.cs" />
+    <Compile Include="ZipLow.Vector128.Int32.cs" />
+    <Compile Include="ZipLow.Vector128.Int64.cs" />
+    <Compile Include="ZipLow.Vector128.SByte.cs" />
+    <Compile Include="ZipLow.Vector128.Single.cs" />
+    <Compile Include="ZipLow.Vector128.UInt16.cs" />
+    <Compile Include="ZipLow.Vector128.UInt32.cs" />
+    <Compile Include="ZipLow.Vector128.UInt64.cs" />
+  </ItemGroup>
 </Project>

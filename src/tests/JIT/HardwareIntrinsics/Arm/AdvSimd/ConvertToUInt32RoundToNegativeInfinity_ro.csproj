@@ -1,7 +1,15 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <CLRTestKind>RunOnly</CLRTestKind>
-    <CLRTestProjectToRun>AdvSimd_ro.csproj</CLRTestProjectToRun>
-    <CLRTestExecutionArguments>ConvertToUInt32RoundToNegativeInfinity.Vector64.Single ConvertToUInt32RoundToNegativeInfinity.Vector128.Single</CLRTestExecutionArguments>
+    <OutputType>Exe</OutputType>
+    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+    <DebugType>Embedded</DebugType>
+    <Optimize>True</Optimize>
   </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="..\Shared\Helpers.cs" />
+    <Compile Include="..\Shared\Program.cs" />
+    <Compile Include="Program.AdvSimd.ConvertToUInt32RoundToNegativeInfinity.cs" />
+    <Compile Include="ConvertToUInt32RoundToNegativeInfinity.Vector64.Single.cs" />
+    <Compile Include="ConvertToUInt32RoundToNegativeInfinity.Vector128.Single.cs" />
+  </ItemGroup>
 </Project>

@@ -1,7 +1,17 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <CLRTestKind>RunOnly</CLRTestKind>
-    <CLRTestProjectToRun>AdvSimd_r.csproj</CLRTestProjectToRun>
-    <CLRTestExecutionArguments>ConvertToSingle.Vector64.Int32 ConvertToSingle.Vector64.UInt32 ConvertToSingle.Vector128.Int32 ConvertToSingle.Vector128.UInt32</CLRTestExecutionArguments>
+    <OutputType>Exe</OutputType>
+    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+    <DebugType>Embedded</DebugType>
+    <Optimize>False</Optimize>
   </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="..\Shared\Helpers.cs" />
+    <Compile Include="..\Shared\Program.cs" />
+    <Compile Include="Program.AdvSimd.ConvertToSingle.cs" />
+    <Compile Include="ConvertToSingle.Vector64.Int32.cs" />
+    <Compile Include="ConvertToSingle.Vector64.UInt32.cs" />
+    <Compile Include="ConvertToSingle.Vector128.Int32.cs" />
+    <Compile Include="ConvertToSingle.Vector128.UInt32.cs" />
+  </ItemGroup>
 </Project>

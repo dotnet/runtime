@@ -1,7 +1,17 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <CLRTestKind>RunOnly</CLRTestKind>
-    <CLRTestProjectToRun>AdvSimd.Arm64_r.csproj</CLRTestProjectToRun>
-    <CLRTestExecutionArguments>AddPairwiseScalar.Vector64.Single AddPairwiseScalar.Vector128.Double AddPairwiseScalar.Vector128.Int64 AddPairwiseScalar.Vector128.UInt64</CLRTestExecutionArguments>
+    <OutputType>Exe</OutputType>
+    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+    <DebugType>Embedded</DebugType>
+    <Optimize>False</Optimize>
   </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="..\Shared\Helpers.cs" />
+    <Compile Include="..\Shared\Program.cs" />
+    <Compile Include="Program.AdvSimd.Arm64.AddPairwiseScalar.cs" />
+    <Compile Include="AddPairwiseScalar.Vector64.Single.cs" />
+    <Compile Include="AddPairwiseScalar.Vector128.Double.cs" />
+    <Compile Include="AddPairwiseScalar.Vector128.Int64.cs" />
+    <Compile Include="AddPairwiseScalar.Vector128.UInt64.cs" />
+  </ItemGroup>
 </Project>

@@ -1,7 +1,23 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <CLRTestKind>RunOnly</CLRTestKind>
-    <CLRTestProjectToRun>AdvSimd.Arm64_r.csproj</CLRTestProjectToRun>
-    <CLRTestExecutionArguments>AddAcrossWidening.Vector64.Byte AddAcrossWidening.Vector64.Int16 AddAcrossWidening.Vector64.SByte AddAcrossWidening.Vector64.UInt16 AddAcrossWidening.Vector128.Byte AddAcrossWidening.Vector128.Int16 AddAcrossWidening.Vector128.Int32 AddAcrossWidening.Vector128.SByte AddAcrossWidening.Vector128.UInt16 AddAcrossWidening.Vector128.UInt32</CLRTestExecutionArguments>
+    <OutputType>Exe</OutputType>
+    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+    <DebugType>Embedded</DebugType>
+    <Optimize>False</Optimize>
   </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="..\Shared\Helpers.cs" />
+    <Compile Include="..\Shared\Program.cs" />
+    <Compile Include="Program.AdvSimd.Arm64.AddAcrossWidening.cs" />
+    <Compile Include="AddAcrossWidening.Vector64.Byte.cs" />
+    <Compile Include="AddAcrossWidening.Vector64.Int16.cs" />
+    <Compile Include="AddAcrossWidening.Vector64.SByte.cs" />
+    <Compile Include="AddAcrossWidening.Vector64.UInt16.cs" />
+    <Compile Include="AddAcrossWidening.Vector128.Byte.cs" />
+    <Compile Include="AddAcrossWidening.Vector128.Int16.cs" />
+    <Compile Include="AddAcrossWidening.Vector128.Int32.cs" />
+    <Compile Include="AddAcrossWidening.Vector128.SByte.cs" />
+    <Compile Include="AddAcrossWidening.Vector128.UInt16.cs" />
+    <Compile Include="AddAcrossWidening.Vector128.UInt32.cs" />
+  </ItemGroup>
 </Project>

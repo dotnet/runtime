@@ -1,7 +1,19 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <CLRTestKind>RunOnly</CLRTestKind>
-    <CLRTestProjectToRun>AdvSimd_ro.csproj</CLRTestProjectToRun>
-    <CLRTestExecutionArguments>MultiplyWideningLowerAndSubtract.Vector64.Byte MultiplyWideningLowerAndSubtract.Vector64.Int16 MultiplyWideningLowerAndSubtract.Vector64.Int32 MultiplyWideningLowerAndSubtract.Vector64.SByte MultiplyWideningLowerAndSubtract.Vector64.UInt16 MultiplyWideningLowerAndSubtract.Vector64.UInt32</CLRTestExecutionArguments>
+    <OutputType>Exe</OutputType>
+    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+    <DebugType>Embedded</DebugType>
+    <Optimize>True</Optimize>
   </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="..\Shared\Helpers.cs" />
+    <Compile Include="..\Shared\Program.cs" />
+    <Compile Include="Program.AdvSimd.MultiplyWideningLowerAndSubtract.cs" />
+    <Compile Include="MultiplyWideningLowerAndSubtract.Vector64.Byte.cs" />
+    <Compile Include="MultiplyWideningLowerAndSubtract.Vector64.Int16.cs" />
+    <Compile Include="MultiplyWideningLowerAndSubtract.Vector64.Int32.cs" />
+    <Compile Include="MultiplyWideningLowerAndSubtract.Vector64.SByte.cs" />
+    <Compile Include="MultiplyWideningLowerAndSubtract.Vector64.UInt16.cs" />
+    <Compile Include="MultiplyWideningLowerAndSubtract.Vector64.UInt32.cs" />
+  </ItemGroup>
 </Project>

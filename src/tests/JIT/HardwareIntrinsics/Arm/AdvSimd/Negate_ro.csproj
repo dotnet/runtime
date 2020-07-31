@@ -1,7 +1,21 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <CLRTestKind>RunOnly</CLRTestKind>
-    <CLRTestProjectToRun>AdvSimd_ro.csproj</CLRTestProjectToRun>
-    <CLRTestExecutionArguments>Negate.Vector64.Int16 Negate.Vector64.Int32 Negate.Vector64.SByte Negate.Vector64.Single Negate.Vector128.Int16 Negate.Vector128.Int32 Negate.Vector128.SByte Negate.Vector128.Single</CLRTestExecutionArguments>
+    <OutputType>Exe</OutputType>
+    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+    <DebugType>Embedded</DebugType>
+    <Optimize>True</Optimize>
   </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="..\Shared\Helpers.cs" />
+    <Compile Include="..\Shared\Program.cs" />
+    <Compile Include="Program.AdvSimd.Negate.cs" />
+    <Compile Include="Negate.Vector64.Int16.cs" />
+    <Compile Include="Negate.Vector64.Int32.cs" />
+    <Compile Include="Negate.Vector64.SByte.cs" />
+    <Compile Include="Negate.Vector64.Single.cs" />
+    <Compile Include="Negate.Vector128.Int16.cs" />
+    <Compile Include="Negate.Vector128.Int32.cs" />
+    <Compile Include="Negate.Vector128.SByte.cs" />
+    <Compile Include="Negate.Vector128.Single.cs" />
+  </ItemGroup>
 </Project>

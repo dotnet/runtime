@@ -1,7 +1,15 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <CLRTestKind>RunOnly</CLRTestKind>
-    <CLRTestProjectToRun>AdvSimd.Arm64_ro.csproj</CLRTestProjectToRun>
-    <CLRTestExecutionArguments>AbsoluteCompareLessThanScalar.Vector64.Double AbsoluteCompareLessThanScalar.Vector64.Single</CLRTestExecutionArguments>
+    <OutputType>Exe</OutputType>
+    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+    <DebugType>Embedded</DebugType>
+    <Optimize>True</Optimize>
   </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="..\Shared\Helpers.cs" />
+    <Compile Include="..\Shared\Program.cs" />
+    <Compile Include="Program.AdvSimd.Arm64.AbsoluteCompareLessThanScalar.cs" />
+    <Compile Include="AbsoluteCompareLessThanScalar.Vector64.Double.cs" />
+    <Compile Include="AbsoluteCompareLessThanScalar.Vector64.Single.cs" />
+  </ItemGroup>
 </Project>

@@ -1,13 +1,19 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
     <DebugType>Embedded</DebugType>
     <Optimize>True</Optimize>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="*.cs"/>
     <Compile Include="..\Shared\Helpers.cs" />
     <Compile Include="..\Shared\Program.cs" />
+    <Compile Include="Program.Crc32.cs" />
+    <Compile Include="ComputeCrc32.Byte.cs" />
+    <Compile Include="ComputeCrc32.UInt16.cs" />
+    <Compile Include="ComputeCrc32.UInt32.cs" />
+    <Compile Include="ComputeCrc32C.Byte.cs" />
+    <Compile Include="ComputeCrc32C.UInt16.cs" />
+    <Compile Include="ComputeCrc32C.UInt32.cs" />
   </ItemGroup>
 </Project>

@@ -1,7 +1,16 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <CLRTestKind>RunOnly</CLRTestKind>
-    <CLRTestProjectToRun>AdvSimd_ro.csproj</CLRTestProjectToRun>
-    <CLRTestExecutionArguments>SignExtendWideningLower.Vector64.Int16 SignExtendWideningLower.Vector64.Int32 SignExtendWideningLower.Vector64.SByte</CLRTestExecutionArguments>
+    <OutputType>Exe</OutputType>
+    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+    <DebugType>Embedded</DebugType>
+    <Optimize>True</Optimize>
   </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="..\Shared\Helpers.cs" />
+    <Compile Include="..\Shared\Program.cs" />
+    <Compile Include="Program.AdvSimd.SignExtendWideningLower.cs" />
+    <Compile Include="SignExtendWideningLower.Vector64.Int16.cs" />
+    <Compile Include="SignExtendWideningLower.Vector64.Int32.cs" />
+    <Compile Include="SignExtendWideningLower.Vector64.SByte.cs" />
+  </ItemGroup>
 </Project>

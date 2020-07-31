@@ -1,7 +1,25 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <CLRTestKind>RunOnly</CLRTestKind>
-    <CLRTestProjectToRun>AdvSimd_r.csproj</CLRTestProjectToRun>
-    <CLRTestExecutionArguments>SubtractWideningLower.Vector64.Byte SubtractWideningLower.Vector64.Int16 SubtractWideningLower.Vector64.Int32 SubtractWideningLower.Vector64.SByte SubtractWideningLower.Vector64.UInt16 SubtractWideningLower.Vector64.UInt32 SubtractWideningLower.Vector128.Int16 SubtractWideningLower.Vector128.Int32 SubtractWideningLower.Vector128.Int64 SubtractWideningLower.Vector128.UInt16 SubtractWideningLower.Vector128.UInt32 SubtractWideningLower.Vector128.UInt64</CLRTestExecutionArguments>
+    <OutputType>Exe</OutputType>
+    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+    <DebugType>Embedded</DebugType>
+    <Optimize>False</Optimize>
   </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="..\Shared\Helpers.cs" />
+    <Compile Include="..\Shared\Program.cs" />
+    <Compile Include="Program.AdvSimd.SubtractWideningLower.cs" />
+    <Compile Include="SubtractWideningLower.Vector64.Byte.cs" />
+    <Compile Include="SubtractWideningLower.Vector64.Int16.cs" />
+    <Compile Include="SubtractWideningLower.Vector64.Int32.cs" />
+    <Compile Include="SubtractWideningLower.Vector64.SByte.cs" />
+    <Compile Include="SubtractWideningLower.Vector64.UInt16.cs" />
+    <Compile Include="SubtractWideningLower.Vector64.UInt32.cs" />
+    <Compile Include="SubtractWideningLower.Vector128.Int16.cs" />
+    <Compile Include="SubtractWideningLower.Vector128.Int32.cs" />
+    <Compile Include="SubtractWideningLower.Vector128.Int64.cs" />
+    <Compile Include="SubtractWideningLower.Vector128.UInt16.cs" />
+    <Compile Include="SubtractWideningLower.Vector128.UInt32.cs" />
+    <Compile Include="SubtractWideningLower.Vector128.UInt64.cs" />
+  </ItemGroup>
 </Project>

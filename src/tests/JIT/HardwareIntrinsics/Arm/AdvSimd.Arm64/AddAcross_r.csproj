@@ -1,7 +1,23 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <CLRTestKind>RunOnly</CLRTestKind>
-    <CLRTestProjectToRun>AdvSimd.Arm64_r.csproj</CLRTestProjectToRun>
-    <CLRTestExecutionArguments>AddAcross.Vector64.Byte AddAcross.Vector64.Int16 AddAcross.Vector64.SByte AddAcross.Vector64.UInt16 AddAcross.Vector128.Byte AddAcross.Vector128.Int16 AddAcross.Vector128.Int32 AddAcross.Vector128.SByte AddAcross.Vector128.UInt16 AddAcross.Vector128.UInt32</CLRTestExecutionArguments>
+    <OutputType>Exe</OutputType>
+    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+    <DebugType>Embedded</DebugType>
+    <Optimize>False</Optimize>
   </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="..\Shared\Helpers.cs" />
+    <Compile Include="..\Shared\Program.cs" />
+    <Compile Include="Program.AdvSimd.Arm64.AddAcross.cs" />
+    <Compile Include="AddAcross.Vector64.Byte.cs" />
+    <Compile Include="AddAcross.Vector64.Int16.cs" />
+    <Compile Include="AddAcross.Vector64.SByte.cs" />
+    <Compile Include="AddAcross.Vector64.UInt16.cs" />
+    <Compile Include="AddAcross.Vector128.Byte.cs" />
+    <Compile Include="AddAcross.Vector128.Int16.cs" />
+    <Compile Include="AddAcross.Vector128.Int32.cs" />
+    <Compile Include="AddAcross.Vector128.SByte.cs" />
+    <Compile Include="AddAcross.Vector128.UInt16.cs" />
+    <Compile Include="AddAcross.Vector128.UInt32.cs" />
+  </ItemGroup>
 </Project>

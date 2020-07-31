@@ -1,7 +1,19 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <CLRTestKind>RunOnly</CLRTestKind>
-    <CLRTestProjectToRun>AdvSimd_ro.csproj</CLRTestProjectToRun>
-    <CLRTestExecutionArguments>SubtractHighNarrowingUpper.Vector128.Byte SubtractHighNarrowingUpper.Vector128.Int16 SubtractHighNarrowingUpper.Vector128.Int32 SubtractHighNarrowingUpper.Vector128.SByte SubtractHighNarrowingUpper.Vector128.UInt16 SubtractHighNarrowingUpper.Vector128.UInt32</CLRTestExecutionArguments>
+    <OutputType>Exe</OutputType>
+    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+    <DebugType>Embedded</DebugType>
+    <Optimize>True</Optimize>
   </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="..\Shared\Helpers.cs" />
+    <Compile Include="..\Shared\Program.cs" />
+    <Compile Include="Program.AdvSimd.SubtractHighNarrowingUpper.cs" />
+    <Compile Include="SubtractHighNarrowingUpper.Vector128.Byte.cs" />
+    <Compile Include="SubtractHighNarrowingUpper.Vector128.Int16.cs" />
+    <Compile Include="SubtractHighNarrowingUpper.Vector128.Int32.cs" />
+    <Compile Include="SubtractHighNarrowingUpper.Vector128.SByte.cs" />
+    <Compile Include="SubtractHighNarrowingUpper.Vector128.UInt16.cs" />
+    <Compile Include="SubtractHighNarrowingUpper.Vector128.UInt32.cs" />
+  </ItemGroup>
 </Project>

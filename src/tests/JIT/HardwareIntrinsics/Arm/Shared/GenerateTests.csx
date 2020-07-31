@@ -2507,7 +2507,7 @@ private static void CreateTestProject(string[] testNames, bool optimize, string 
     sb.AppendFormat(@"<Project Sdk=""Microsoft.NET.Sdk"">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
     <DebugType>Embedded</DebugType>
     <Optimize>{0}</Optimize>
   </PropertyGroup>

@@ -1,7 +1,27 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <CLRTestKind>RunOnly</CLRTestKind>
-    <CLRTestProjectToRun>AdvSimd.Arm64_r.csproj</CLRTestProjectToRun>
-    <CLRTestExecutionArguments>AddSaturate.Vector64.Byte.Vector64.SByte AddSaturate.Vector64.Int16.Vector64.UInt16 AddSaturate.Vector64.Int32.Vector64.UInt32 AddSaturate.Vector64.SByte.Vector64.Byte AddSaturate.Vector64.UInt16.Vector64.Int16 AddSaturate.Vector64.UInt32.Vector64.Int32 AddSaturate.Vector128.Byte.Vector128.SByte AddSaturate.Vector128.Int16.Vector128.UInt16 AddSaturate.Vector128.Int32.Vector128.UInt32 AddSaturate.Vector128.Int64.Vector128.UInt64 AddSaturate.Vector128.SByte.Vector128.Byte AddSaturate.Vector128.UInt16.Vector128.Int16 AddSaturate.Vector128.UInt32.Vector128.Int32 AddSaturate.Vector128.UInt64.Vector128.Int64</CLRTestExecutionArguments>
+    <OutputType>Exe</OutputType>
+    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+    <DebugType>Embedded</DebugType>
+    <Optimize>False</Optimize>
   </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="..\Shared\Helpers.cs" />
+    <Compile Include="..\Shared\Program.cs" />
+    <Compile Include="Program.AdvSimd.Arm64.AddSaturate.cs" />
+    <Compile Include="AddSaturate.Vector64.Byte.Vector64.SByte.cs" />
+    <Compile Include="AddSaturate.Vector64.Int16.Vector64.UInt16.cs" />
+    <Compile Include="AddSaturate.Vector64.Int32.Vector64.UInt32.cs" />
+    <Compile Include="AddSaturate.Vector64.SByte.Vector64.Byte.cs" />
+    <Compile Include="AddSaturate.Vector64.UInt16.Vector64.Int16.cs" />
+    <Compile Include="AddSaturate.Vector64.UInt32.Vector64.Int32.cs" />
+    <Compile Include="AddSaturate.Vector128.Byte.Vector128.SByte.cs" />
+    <Compile Include="AddSaturate.Vector128.Int16.Vector128.UInt16.cs" />
+    <Compile Include="AddSaturate.Vector128.Int32.Vector128.UInt32.cs" />
+    <Compile Include="AddSaturate.Vector128.Int64.Vector128.UInt64.cs" />
+    <Compile Include="AddSaturate.Vector128.SByte.Vector128.Byte.cs" />
+    <Compile Include="AddSaturate.Vector128.UInt16.Vector128.Int16.cs" />
+    <Compile Include="AddSaturate.Vector128.UInt32.Vector128.Int32.cs" />
+    <Compile Include="AddSaturate.Vector128.UInt64.Vector128.Int64.cs" />
+  </ItemGroup>
 </Project>

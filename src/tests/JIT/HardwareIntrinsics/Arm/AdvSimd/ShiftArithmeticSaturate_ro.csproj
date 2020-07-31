@@ -1,7 +1,20 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <CLRTestKind>RunOnly</CLRTestKind>
-    <CLRTestProjectToRun>AdvSimd_ro.csproj</CLRTestProjectToRun>
-    <CLRTestExecutionArguments>ShiftArithmeticSaturate.Vector64.Int16 ShiftArithmeticSaturate.Vector64.Int32 ShiftArithmeticSaturate.Vector64.SByte ShiftArithmeticSaturate.Vector128.Int16 ShiftArithmeticSaturate.Vector128.Int32 ShiftArithmeticSaturate.Vector128.Int64 ShiftArithmeticSaturate.Vector128.SByte</CLRTestExecutionArguments>
+    <OutputType>Exe</OutputType>
+    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+    <DebugType>Embedded</DebugType>
+    <Optimize>True</Optimize>
   </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="..\Shared\Helpers.cs" />
+    <Compile Include="..\Shared\Program.cs" />
+    <Compile Include="Program.AdvSimd.ShiftArithmeticSaturate.cs" />
+    <Compile Include="ShiftArithmeticSaturate.Vector64.Int16.cs" />
+    <Compile Include="ShiftArithmeticSaturate.Vector64.Int32.cs" />
+    <Compile Include="ShiftArithmeticSaturate.Vector64.SByte.cs" />
+    <Compile Include="ShiftArithmeticSaturate.Vector128.Int16.cs" />
+    <Compile Include="ShiftArithmeticSaturate.Vector128.Int32.cs" />
+    <Compile Include="ShiftArithmeticSaturate.Vector128.Int64.cs" />
+    <Compile Include="ShiftArithmeticSaturate.Vector128.SByte.cs" />
+  </ItemGroup>
 </Project>

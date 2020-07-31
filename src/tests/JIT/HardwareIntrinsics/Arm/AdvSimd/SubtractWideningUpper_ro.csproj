@@ -1,7 +1,25 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <CLRTestKind>RunOnly</CLRTestKind>
-    <CLRTestProjectToRun>AdvSimd_ro.csproj</CLRTestProjectToRun>
-    <CLRTestExecutionArguments>SubtractWideningUpper.Vector128.Byte.Vector128.Byte SubtractWideningUpper.Vector128.Int16.Vector128.Int16 SubtractWideningUpper.Vector128.Int16.Vector128.SByte SubtractWideningUpper.Vector128.Int32.Vector128.Int16 SubtractWideningUpper.Vector128.Int32.Vector128.Int32 SubtractWideningUpper.Vector128.Int64.Vector128.Int32 SubtractWideningUpper.Vector128.SByte.Vector128.SByte SubtractWideningUpper.Vector128.UInt16.Vector128.Byte SubtractWideningUpper.Vector128.UInt16.Vector128.UInt16 SubtractWideningUpper.Vector128.UInt32.Vector128.UInt16 SubtractWideningUpper.Vector128.UInt32.Vector128.UInt32 SubtractWideningUpper.Vector128.UInt64.Vector128.UInt32</CLRTestExecutionArguments>
+    <OutputType>Exe</OutputType>
+    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+    <DebugType>Embedded</DebugType>
+    <Optimize>True</Optimize>
   </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="..\Shared\Helpers.cs" />
+    <Compile Include="..\Shared\Program.cs" />
+    <Compile Include="Program.AdvSimd.SubtractWideningUpper.cs" />
+    <Compile Include="SubtractWideningUpper.Vector128.Byte.Vector128.Byte.cs" />
+    <Compile Include="SubtractWideningUpper.Vector128.Int16.Vector128.Int16.cs" />
+    <Compile Include="SubtractWideningUpper.Vector128.Int16.Vector128.SByte.cs" />
+    <Compile Include="SubtractWideningUpper.Vector128.Int32.Vector128.Int16.cs" />
+    <Compile Include="SubtractWideningUpper.Vector128.Int32.Vector128.Int32.cs" />
+    <Compile Include="SubtractWideningUpper.Vector128.Int64.Vector128.Int32.cs" />
+    <Compile Include="SubtractWideningUpper.Vector128.SByte.Vector128.SByte.cs" />
+    <Compile Include="SubtractWideningUpper.Vector128.UInt16.Vector128.Byte.cs" />
+    <Compile Include="SubtractWideningUpper.Vector128.UInt16.Vector128.UInt16.cs" />
+    <Compile Include="SubtractWideningUpper.Vector128.UInt32.Vector128.UInt16.cs" />
+    <Compile Include="SubtractWideningUpper.Vector128.UInt32.Vector128.UInt32.cs" />
+    <Compile Include="SubtractWideningUpper.Vector128.UInt64.Vector128.UInt32.cs" />
+  </ItemGroup>
 </Project>

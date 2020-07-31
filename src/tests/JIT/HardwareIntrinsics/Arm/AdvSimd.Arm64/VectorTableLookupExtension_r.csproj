@@ -1,7 +1,15 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <CLRTestKind>RunOnly</CLRTestKind>
-    <CLRTestProjectToRun>AdvSimd.Arm64_r.csproj</CLRTestProjectToRun>
-    <CLRTestExecutionArguments>VectorTableLookupExtension.Vector128.Byte VectorTableLookupExtension.Vector128.SByte</CLRTestExecutionArguments>
+    <OutputType>Exe</OutputType>
+    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+    <DebugType>Embedded</DebugType>
+    <Optimize>False</Optimize>
   </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="..\Shared\Helpers.cs" />
+    <Compile Include="..\Shared\Program.cs" />
+    <Compile Include="Program.AdvSimd.Arm64.VectorTableLookupExtension.cs" />
+    <Compile Include="VectorTableLookupExtension.Vector128.Byte.cs" />
+    <Compile Include="VectorTableLookupExtension.Vector128.SByte.cs" />
+  </ItemGroup>
 </Project>

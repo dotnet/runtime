@@ -1,13 +1,17 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
     <DebugType>Embedded</DebugType>
     <Optimize>False</Optimize>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="*.cs"/>
     <Compile Include="..\Shared\Helpers.cs" />
     <Compile Include="..\Shared\Program.cs" />
+    <Compile Include="Program.ArmBase.cs" />
+    <Compile Include="LeadingZeroCount.Int32.cs" />
+    <Compile Include="LeadingZeroCount.UInt32.cs" />
+    <Compile Include="ReverseElementBits.Int32.cs" />
+    <Compile Include="ReverseElementBits.UInt32.cs" />
   </ItemGroup>
 </Project>

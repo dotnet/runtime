@@ -1,7 +1,27 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <CLRTestKind>RunOnly</CLRTestKind>
-    <CLRTestProjectToRun>AdvSimd_r.csproj</CLRTestProjectToRun>
-    <CLRTestExecutionArguments>ShiftRightAndInsert.Vector64.Byte ShiftRightAndInsert.Vector64.Int16 ShiftRightAndInsert.Vector64.Int32 ShiftRightAndInsert.Vector64.SByte ShiftRightAndInsert.Vector64.UInt16 ShiftRightAndInsert.Vector64.UInt32 ShiftRightAndInsert.Vector128.Byte ShiftRightAndInsert.Vector128.Int16 ShiftRightAndInsert.Vector128.Int32 ShiftRightAndInsert.Vector128.Int64 ShiftRightAndInsert.Vector128.SByte ShiftRightAndInsert.Vector128.UInt16 ShiftRightAndInsert.Vector128.UInt32 ShiftRightAndInsert.Vector128.UInt64</CLRTestExecutionArguments>
+    <OutputType>Exe</OutputType>
+    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+    <DebugType>Embedded</DebugType>
+    <Optimize>False</Optimize>
   </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="..\Shared\Helpers.cs" />
+    <Compile Include="..\Shared\Program.cs" />
+    <Compile Include="Program.AdvSimd.ShiftRightAndInsert.cs" />
+    <Compile Include="ShiftRightAndInsert.Vector64.Byte.cs" />
+    <Compile Include="ShiftRightAndInsert.Vector64.Int16.cs" />
+    <Compile Include="ShiftRightAndInsert.Vector64.Int32.cs" />
+    <Compile Include="ShiftRightAndInsert.Vector64.SByte.cs" />
+    <Compile Include="ShiftRightAndInsert.Vector64.UInt16.cs" />
+    <Compile Include="ShiftRightAndInsert.Vector64.UInt32.cs" />
+    <Compile Include="ShiftRightAndInsert.Vector128.Byte.cs" />
+    <Compile Include="ShiftRightAndInsert.Vector128.Int16.cs" />
+    <Compile Include="ShiftRightAndInsert.Vector128.Int32.cs" />
+    <Compile Include="ShiftRightAndInsert.Vector128.Int64.cs" />
+    <Compile Include="ShiftRightAndInsert.Vector128.SByte.cs" />
+    <Compile Include="ShiftRightAndInsert.Vector128.UInt16.cs" />
+    <Compile Include="ShiftRightAndInsert.Vector128.UInt32.cs" />
+    <Compile Include="ShiftRightAndInsert.Vector128.UInt64.cs" />
+  </ItemGroup>
 </Project>

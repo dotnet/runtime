@@ -1,7 +1,19 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <CLRTestKind>RunOnly</CLRTestKind>
-    <CLRTestProjectToRun>AdvSimd.Arm64_ro.csproj</CLRTestProjectToRun>
-    <CLRTestExecutionArguments>DuplicateToVector128.Double DuplicateToVector128.Double.31 DuplicateToVector128.Int64 DuplicateToVector128.Int64.31 DuplicateToVector128.UInt64 DuplicateToVector128.UInt64.31</CLRTestExecutionArguments>
+    <OutputType>Exe</OutputType>
+    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+    <DebugType>Embedded</DebugType>
+    <Optimize>True</Optimize>
   </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="..\Shared\Helpers.cs" />
+    <Compile Include="..\Shared\Program.cs" />
+    <Compile Include="Program.AdvSimd.Arm64.DuplicateToVector128.cs" />
+    <Compile Include="DuplicateToVector128.Double.cs" />
+    <Compile Include="DuplicateToVector128.Double.31.cs" />
+    <Compile Include="DuplicateToVector128.Int64.cs" />
+    <Compile Include="DuplicateToVector128.Int64.31.cs" />
+    <Compile Include="DuplicateToVector128.UInt64.cs" />
+    <Compile Include="DuplicateToVector128.UInt64.31.cs" />
+  </ItemGroup>
 </Project>

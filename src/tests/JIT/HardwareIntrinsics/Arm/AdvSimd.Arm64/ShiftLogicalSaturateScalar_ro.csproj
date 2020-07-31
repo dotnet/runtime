@@ -1,7 +1,19 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <CLRTestKind>RunOnly</CLRTestKind>
-    <CLRTestProjectToRun>AdvSimd.Arm64_ro.csproj</CLRTestProjectToRun>
-    <CLRTestExecutionArguments>ShiftLogicalSaturateScalar.Vector64.Byte ShiftLogicalSaturateScalar.Vector64.Int16 ShiftLogicalSaturateScalar.Vector64.Int32 ShiftLogicalSaturateScalar.Vector64.SByte ShiftLogicalSaturateScalar.Vector64.UInt16 ShiftLogicalSaturateScalar.Vector64.UInt32</CLRTestExecutionArguments>
+    <OutputType>Exe</OutputType>
+    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+    <DebugType>Embedded</DebugType>
+    <Optimize>True</Optimize>
   </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="..\Shared\Helpers.cs" />
+    <Compile Include="..\Shared\Program.cs" />
+    <Compile Include="Program.AdvSimd.Arm64.ShiftLogicalSaturateScalar.cs" />
+    <Compile Include="ShiftLogicalSaturateScalar.Vector64.Byte.cs" />
+    <Compile Include="ShiftLogicalSaturateScalar.Vector64.Int16.cs" />
+    <Compile Include="ShiftLogicalSaturateScalar.Vector64.Int32.cs" />
+    <Compile Include="ShiftLogicalSaturateScalar.Vector64.SByte.cs" />
+    <Compile Include="ShiftLogicalSaturateScalar.Vector64.UInt16.cs" />
+    <Compile Include="ShiftLogicalSaturateScalar.Vector64.UInt32.cs" />
+  </ItemGroup>
 </Project>

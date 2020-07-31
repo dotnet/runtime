@@ -1,7 +1,15 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <CLRTestKind>RunOnly</CLRTestKind>
-    <CLRTestProjectToRun>AdvSimd_ro.csproj</CLRTestProjectToRun>
-    <CLRTestExecutionArguments>PolynomialMultiplyWideningUpper.Vector128.Byte PolynomialMultiplyWideningUpper.Vector128.SByte</CLRTestExecutionArguments>
+    <OutputType>Exe</OutputType>
+    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+    <DebugType>Embedded</DebugType>
+    <Optimize>True</Optimize>
   </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="..\Shared\Helpers.cs" />
+    <Compile Include="..\Shared\Program.cs" />
+    <Compile Include="Program.AdvSimd.PolynomialMultiplyWideningUpper.cs" />
+    <Compile Include="PolynomialMultiplyWideningUpper.Vector128.Byte.cs" />
+    <Compile Include="PolynomialMultiplyWideningUpper.Vector128.SByte.cs" />
+  </ItemGroup>
 </Project>

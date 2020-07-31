@@ -1,7 +1,27 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <CLRTestKind>RunOnly</CLRTestKind>
-    <CLRTestProjectToRun>AdvSimd_ro.csproj</CLRTestProjectToRun>
-    <CLRTestExecutionArguments>CompareGreaterThan.Vector64.Byte CompareGreaterThan.Vector64.Int16 CompareGreaterThan.Vector64.Int32 CompareGreaterThan.Vector64.SByte CompareGreaterThan.Vector64.Single CompareGreaterThan.Vector64.UInt16 CompareGreaterThan.Vector64.UInt32 CompareGreaterThan.Vector128.Byte CompareGreaterThan.Vector128.Int16 CompareGreaterThan.Vector128.Int32 CompareGreaterThan.Vector128.SByte CompareGreaterThan.Vector128.Single CompareGreaterThan.Vector128.UInt16 CompareGreaterThan.Vector128.UInt32</CLRTestExecutionArguments>
+    <OutputType>Exe</OutputType>
+    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+    <DebugType>Embedded</DebugType>
+    <Optimize>True</Optimize>
   </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="..\Shared\Helpers.cs" />
+    <Compile Include="..\Shared\Program.cs" />
+    <Compile Include="Program.AdvSimd.CompareGreaterThan.cs" />
+    <Compile Include="CompareGreaterThan.Vector64.Byte.cs" />
+    <Compile Include="CompareGreaterThan.Vector64.Int16.cs" />
+    <Compile Include="CompareGreaterThan.Vector64.Int32.cs" />
+    <Compile Include="CompareGreaterThan.Vector64.SByte.cs" />
+    <Compile Include="CompareGreaterThan.Vector64.Single.cs" />
+    <Compile Include="CompareGreaterThan.Vector64.UInt16.cs" />
+    <Compile Include="CompareGreaterThan.Vector64.UInt32.cs" />
+    <Compile Include="CompareGreaterThan.Vector128.Byte.cs" />
+    <Compile Include="CompareGreaterThan.Vector128.Int16.cs" />
+    <Compile Include="CompareGreaterThan.Vector128.Int32.cs" />
+    <Compile Include="CompareGreaterThan.Vector128.SByte.cs" />
+    <Compile Include="CompareGreaterThan.Vector128.Single.cs" />
+    <Compile Include="CompareGreaterThan.Vector128.UInt16.cs" />
+    <Compile Include="CompareGreaterThan.Vector128.UInt32.cs" />
+  </ItemGroup>
 </Project>

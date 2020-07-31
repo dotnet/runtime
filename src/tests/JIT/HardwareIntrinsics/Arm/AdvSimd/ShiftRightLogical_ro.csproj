@@ -1,7 +1,27 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <CLRTestKind>RunOnly</CLRTestKind>
-    <CLRTestProjectToRun>AdvSimd_ro.csproj</CLRTestProjectToRun>
-    <CLRTestExecutionArguments>ShiftRightLogical.Vector64.Byte.1 ShiftRightLogical.Vector64.Int16.1 ShiftRightLogical.Vector64.Int32.1 ShiftRightLogical.Vector64.SByte.1 ShiftRightLogical.Vector64.UInt16.1 ShiftRightLogical.Vector64.UInt32.1 ShiftRightLogical.Vector128.Byte.1 ShiftRightLogical.Vector128.Int16.1 ShiftRightLogical.Vector128.Int32.1 ShiftRightLogical.Vector128.Int64.1 ShiftRightLogical.Vector128.SByte.1 ShiftRightLogical.Vector128.UInt16.1 ShiftRightLogical.Vector128.UInt32.1 ShiftRightLogical.Vector128.UInt64.1</CLRTestExecutionArguments>
+    <OutputType>Exe</OutputType>
+    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+    <DebugType>Embedded</DebugType>
+    <Optimize>True</Optimize>
   </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="..\Shared\Helpers.cs" />
+    <Compile Include="..\Shared\Program.cs" />
+    <Compile Include="Program.AdvSimd.ShiftRightLogical.cs" />
+    <Compile Include="ShiftRightLogical.Vector64.Byte.1.cs" />
+    <Compile Include="ShiftRightLogical.Vector64.Int16.1.cs" />
+    <Compile Include="ShiftRightLogical.Vector64.Int32.1.cs" />
+    <Compile Include="ShiftRightLogical.Vector64.SByte.1.cs" />
+    <Compile Include="ShiftRightLogical.Vector64.UInt16.1.cs" />
+    <Compile Include="ShiftRightLogical.Vector64.UInt32.1.cs" />
+    <Compile Include="ShiftRightLogical.Vector128.Byte.1.cs" />
+    <Compile Include="ShiftRightLogical.Vector128.Int16.1.cs" />
+    <Compile Include="ShiftRightLogical.Vector128.Int32.1.cs" />
+    <Compile Include="ShiftRightLogical.Vector128.Int64.1.cs" />
+    <Compile Include="ShiftRightLogical.Vector128.SByte.1.cs" />
+    <Compile Include="ShiftRightLogical.Vector128.UInt16.1.cs" />
+    <Compile Include="ShiftRightLogical.Vector128.UInt32.1.cs" />
+    <Compile Include="ShiftRightLogical.Vector128.UInt64.1.cs" />
+  </ItemGroup>
 </Project>

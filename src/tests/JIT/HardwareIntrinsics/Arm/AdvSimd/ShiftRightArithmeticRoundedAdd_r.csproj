@@ -1,7 +1,20 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <CLRTestKind>RunOnly</CLRTestKind>
-    <CLRTestProjectToRun>AdvSimd_r.csproj</CLRTestProjectToRun>
-    <CLRTestExecutionArguments>ShiftRightArithmeticRoundedAdd.Vector64.Int16.1 ShiftRightArithmeticRoundedAdd.Vector64.Int32.1 ShiftRightArithmeticRoundedAdd.Vector64.SByte.1 ShiftRightArithmeticRoundedAdd.Vector128.Int16.1 ShiftRightArithmeticRoundedAdd.Vector128.Int32.1 ShiftRightArithmeticRoundedAdd.Vector128.Int64.1 ShiftRightArithmeticRoundedAdd.Vector128.SByte.1</CLRTestExecutionArguments>
+    <OutputType>Exe</OutputType>
+    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+    <DebugType>Embedded</DebugType>
+    <Optimize>False</Optimize>
   </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="..\Shared\Helpers.cs" />
+    <Compile Include="..\Shared\Program.cs" />
+    <Compile Include="Program.AdvSimd.ShiftRightArithmeticRoundedAdd.cs" />
+    <Compile Include="ShiftRightArithmeticRoundedAdd.Vector64.Int16.1.cs" />
+    <Compile Include="ShiftRightArithmeticRoundedAdd.Vector64.Int32.1.cs" />
+    <Compile Include="ShiftRightArithmeticRoundedAdd.Vector64.SByte.1.cs" />
+    <Compile Include="ShiftRightArithmeticRoundedAdd.Vector128.Int16.1.cs" />
+    <Compile Include="ShiftRightArithmeticRoundedAdd.Vector128.Int32.1.cs" />
+    <Compile Include="ShiftRightArithmeticRoundedAdd.Vector128.Int64.1.cs" />
+    <Compile Include="ShiftRightArithmeticRoundedAdd.Vector128.SByte.1.cs" />
+  </ItemGroup>
 </Project>

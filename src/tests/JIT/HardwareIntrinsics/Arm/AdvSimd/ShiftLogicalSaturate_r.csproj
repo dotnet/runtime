@@ -1,7 +1,27 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <CLRTestKind>RunOnly</CLRTestKind>
-    <CLRTestProjectToRun>AdvSimd_r.csproj</CLRTestProjectToRun>
-    <CLRTestExecutionArguments>ShiftLogicalSaturate.Vector64.Byte ShiftLogicalSaturate.Vector64.Int16 ShiftLogicalSaturate.Vector64.Int32 ShiftLogicalSaturate.Vector64.SByte ShiftLogicalSaturate.Vector64.UInt16 ShiftLogicalSaturate.Vector64.UInt32 ShiftLogicalSaturate.Vector128.Byte ShiftLogicalSaturate.Vector128.Int16 ShiftLogicalSaturate.Vector128.Int32 ShiftLogicalSaturate.Vector128.Int64 ShiftLogicalSaturate.Vector128.SByte ShiftLogicalSaturate.Vector128.UInt16 ShiftLogicalSaturate.Vector128.UInt32 ShiftLogicalSaturate.Vector128.UInt64</CLRTestExecutionArguments>
+    <OutputType>Exe</OutputType>
+    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+    <DebugType>Embedded</DebugType>
+    <Optimize>False</Optimize>
   </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="..\Shared\Helpers.cs" />
+    <Compile Include="..\Shared\Program.cs" />
+    <Compile Include="Program.AdvSimd.ShiftLogicalSaturate.cs" />
+    <Compile Include="ShiftLogicalSaturate.Vector64.Byte.cs" />
+    <Compile Include="ShiftLogicalSaturate.Vector64.Int16.cs" />
+    <Compile Include="ShiftLogicalSaturate.Vector64.Int32.cs" />
+    <Compile Include="ShiftLogicalSaturate.Vector64.SByte.cs" />
+    <Compile Include="ShiftLogicalSaturate.Vector64.UInt16.cs" />
+    <Compile Include="ShiftLogicalSaturate.Vector64.UInt32.cs" />
+    <Compile Include="ShiftLogicalSaturate.Vector128.Byte.cs" />
+    <Compile Include="ShiftLogicalSaturate.Vector128.Int16.cs" />
+    <Compile Include="ShiftLogicalSaturate.Vector128.Int32.cs" />
+    <Compile Include="ShiftLogicalSaturate.Vector128.Int64.cs" />
+    <Compile Include="ShiftLogicalSaturate.Vector128.SByte.cs" />
+    <Compile Include="ShiftLogicalSaturate.Vector128.UInt16.cs" />
+    <Compile Include="ShiftLogicalSaturate.Vector128.UInt32.cs" />
+    <Compile Include="ShiftLogicalSaturate.Vector128.UInt64.cs" />
+  </ItemGroup>
 </Project>

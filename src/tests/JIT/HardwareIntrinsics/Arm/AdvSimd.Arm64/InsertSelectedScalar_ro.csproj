@@ -1,7 +1,44 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <CLRTestKind>RunOnly</CLRTestKind>
-    <CLRTestProjectToRun>AdvSimd.Arm64_ro.csproj</CLRTestProjectToRun>
-    <CLRTestExecutionArguments>InsertSelectedScalar.Vector64.Byte.7.Vector64.Byte.7 InsertSelectedScalar.Vector64.Byte.7.Vector128.Byte.15 InsertSelectedScalar.Vector64.Int16.3.Vector64.Int16.3 InsertSelectedScalar.Vector64.Int16.3.Vector128.Int16.7 InsertSelectedScalar.Vector64.Int32.1.Vector64.Int32.1 InsertSelectedScalar.Vector64.Int32.1.Vector128.Int32.3 InsertSelectedScalar.Vector64.SByte.7.Vector64.SByte.7 InsertSelectedScalar.Vector64.SByte.7.Vector128.SByte.15 InsertSelectedScalar.Vector64.Single.1.Vector64.Single.1 InsertSelectedScalar.Vector64.Single.1.Vector128.Single.3 InsertSelectedScalar.Vector64.UInt16.3.Vector64.UInt16.3 InsertSelectedScalar.Vector64.UInt16.3.Vector128.UInt16.7 InsertSelectedScalar.Vector64.UInt32.1.Vector64.UInt32.1 InsertSelectedScalar.Vector64.UInt32.1.Vector128.UInt32.3 InsertSelectedScalar.Vector128.Byte.15.Vector64.Byte.7 InsertSelectedScalar.Vector128.Byte.15.Vector128.Byte.15 InsertSelectedScalar.Vector128.Double.1.Vector128.Double.1 InsertSelectedScalar.Vector128.Int16.7.Vector64.Int16.3 InsertSelectedScalar.Vector128.Int16.7.Vector128.Int16.7 InsertSelectedScalar.Vector128.Int32.3.Vector64.Int32.1 InsertSelectedScalar.Vector128.Int32.3.Vector128.Int32.3 InsertSelectedScalar.Vector128.Int64.1.Vector128.Int64.1 InsertSelectedScalar.Vector128.SByte.15.Vector64.SByte.7 InsertSelectedScalar.Vector128.SByte.15.Vector128.SByte.15 InsertSelectedScalar.Vector128.Single.3.Vector64.Single.1 InsertSelectedScalar.Vector128.Single.3.Vector128.Single.3 InsertSelectedScalar.Vector128.UInt16.7.Vector64.UInt16.3 InsertSelectedScalar.Vector128.UInt16.7.Vector128.UInt16.7 InsertSelectedScalar.Vector128.UInt32.3.Vector64.UInt32.1 InsertSelectedScalar.Vector128.UInt32.3.Vector128.UInt32.3 InsertSelectedScalar.Vector128.UInt64.1.Vector128.UInt64.1</CLRTestExecutionArguments>
+    <OutputType>Exe</OutputType>
+    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+    <DebugType>Embedded</DebugType>
+    <Optimize>True</Optimize>
   </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="..\Shared\Helpers.cs" />
+    <Compile Include="..\Shared\Program.cs" />
+    <Compile Include="Program.AdvSimd.Arm64.InsertSelectedScalar.cs" />
+    <Compile Include="InsertSelectedScalar.Vector64.Byte.7.Vector64.Byte.7.cs" />
+    <Compile Include="InsertSelectedScalar.Vector64.Byte.7.Vector128.Byte.15.cs" />
+    <Compile Include="InsertSelectedScalar.Vector64.Int16.3.Vector64.Int16.3.cs" />
+    <Compile Include="InsertSelectedScalar.Vector64.Int16.3.Vector128.Int16.7.cs" />
+    <Compile Include="InsertSelectedScalar.Vector64.Int32.1.Vector64.Int32.1.cs" />
+    <Compile Include="InsertSelectedScalar.Vector64.Int32.1.Vector128.Int32.3.cs" />
+    <Compile Include="InsertSelectedScalar.Vector64.SByte.7.Vector64.SByte.7.cs" />
+    <Compile Include="InsertSelectedScalar.Vector64.SByte.7.Vector128.SByte.15.cs" />
+    <Compile Include="InsertSelectedScalar.Vector64.Single.1.Vector64.Single.1.cs" />
+    <Compile Include="InsertSelectedScalar.Vector64.Single.1.Vector128.Single.3.cs" />
+    <Compile Include="InsertSelectedScalar.Vector64.UInt16.3.Vector64.UInt16.3.cs" />
+    <Compile Include="InsertSelectedScalar.Vector64.UInt16.3.Vector128.UInt16.7.cs" />
+    <Compile Include="InsertSelectedScalar.Vector64.UInt32.1.Vector64.UInt32.1.cs" />
+    <Compile Include="InsertSelectedScalar.Vector64.UInt32.1.Vector128.UInt32.3.cs" />
+    <Compile Include="InsertSelectedScalar.Vector128.Byte.15.Vector64.Byte.7.cs" />
+    <Compile Include="InsertSelectedScalar.Vector128.Byte.15.Vector128.Byte.15.cs" />
+    <Compile Include="InsertSelectedScalar.Vector128.Double.1.Vector128.Double.1.cs" />
+    <Compile Include="InsertSelectedScalar.Vector128.Int16.7.Vector64.Int16.3.cs" />
+    <Compile Include="InsertSelectedScalar.Vector128.Int16.7.Vector128.Int16.7.cs" />
+    <Compile Include="InsertSelectedScalar.Vector128.Int32.3.Vector64.Int32.1.cs" />
+    <Compile Include="InsertSelectedScalar.Vector128.Int32.3.Vector128.Int32.3.cs" />
+    <Compile Include="InsertSelectedScalar.Vector128.Int64.1.Vector128.Int64.1.cs" />
+    <Compile Include="InsertSelectedScalar.Vector128.SByte.15.Vector64.SByte.7.cs" />
+    <Compile Include="InsertSelectedScalar.Vector128.SByte.15.Vector128.SByte.15.cs" />
+    <Compile Include="InsertSelectedScalar.Vector128.Single.3.Vector64.Single.1.cs" />
+    <Compile Include="InsertSelectedScalar.Vector128.Single.3.Vector128.Single.3.cs" />
+    <Compile Include="InsertSelectedScalar.Vector128.UInt16.7.Vector64.UInt16.3.cs" />
+    <Compile Include="InsertSelectedScalar.Vector128.UInt16.7.Vector128.UInt16.7.cs" />
+    <Compile Include="InsertSelectedScalar.Vector128.UInt32.3.Vector64.UInt32.1.cs" />
+    <Compile Include="InsertSelectedScalar.Vector128.UInt32.3.Vector128.UInt32.3.cs" />
+    <Compile Include="InsertSelectedScalar.Vector128.UInt64.1.Vector128.UInt64.1.cs" />
+  </ItemGroup>
 </Project>

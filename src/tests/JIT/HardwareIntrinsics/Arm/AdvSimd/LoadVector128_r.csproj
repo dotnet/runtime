@@ -1,7 +1,23 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <CLRTestKind>RunOnly</CLRTestKind>
-    <CLRTestProjectToRun>AdvSimd_r.csproj</CLRTestProjectToRun>
-    <CLRTestExecutionArguments>LoadVector128.Byte LoadVector128.Double LoadVector128.Int16 LoadVector128.Int32 LoadVector128.Int64 LoadVector128.SByte LoadVector128.Single LoadVector128.UInt16 LoadVector128.UInt32 LoadVector128.UInt64</CLRTestExecutionArguments>
+    <OutputType>Exe</OutputType>
+    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+    <DebugType>Embedded</DebugType>
+    <Optimize>False</Optimize>
   </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="..\Shared\Helpers.cs" />
+    <Compile Include="..\Shared\Program.cs" />
+    <Compile Include="Program.AdvSimd.LoadVector128.cs" />
+    <Compile Include="LoadVector128.Byte.cs" />
+    <Compile Include="LoadVector128.Double.cs" />
+    <Compile Include="LoadVector128.Int16.cs" />
+    <Compile Include="LoadVector128.Int32.cs" />
+    <Compile Include="LoadVector128.Int64.cs" />
+    <Compile Include="LoadVector128.SByte.cs" />
+    <Compile Include="LoadVector128.Single.cs" />
+    <Compile Include="LoadVector128.UInt16.cs" />
+    <Compile Include="LoadVector128.UInt32.cs" />
+    <Compile Include="LoadVector128.UInt64.cs" />
+  </ItemGroup>
 </Project>

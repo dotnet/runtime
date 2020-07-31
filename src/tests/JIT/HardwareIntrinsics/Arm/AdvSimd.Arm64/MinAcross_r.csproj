@@ -1,7 +1,24 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <CLRTestKind>RunOnly</CLRTestKind>
-    <CLRTestProjectToRun>AdvSimd.Arm64_r.csproj</CLRTestProjectToRun>
-    <CLRTestExecutionArguments>MinAcross.Vector64.Byte MinAcross.Vector64.Int16 MinAcross.Vector64.SByte MinAcross.Vector64.UInt16 MinAcross.Vector128.Byte MinAcross.Vector128.Int16 MinAcross.Vector128.Int32 MinAcross.Vector128.SByte MinAcross.Vector128.Single MinAcross.Vector128.UInt16 MinAcross.Vector128.UInt32</CLRTestExecutionArguments>
+    <OutputType>Exe</OutputType>
+    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+    <DebugType>Embedded</DebugType>
+    <Optimize>False</Optimize>
   </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="..\Shared\Helpers.cs" />
+    <Compile Include="..\Shared\Program.cs" />
+    <Compile Include="Program.AdvSimd.Arm64.MinAcross.cs" />
+    <Compile Include="MinAcross.Vector64.Byte.cs" />
+    <Compile Include="MinAcross.Vector64.Int16.cs" />
+    <Compile Include="MinAcross.Vector64.SByte.cs" />
+    <Compile Include="MinAcross.Vector64.UInt16.cs" />
+    <Compile Include="MinAcross.Vector128.Byte.cs" />
+    <Compile Include="MinAcross.Vector128.Int16.cs" />
+    <Compile Include="MinAcross.Vector128.Int32.cs" />
+    <Compile Include="MinAcross.Vector128.SByte.cs" />
+    <Compile Include="MinAcross.Vector128.Single.cs" />
+    <Compile Include="MinAcross.Vector128.UInt16.cs" />
+    <Compile Include="MinAcross.Vector128.UInt32.cs" />
+  </ItemGroup>
 </Project>

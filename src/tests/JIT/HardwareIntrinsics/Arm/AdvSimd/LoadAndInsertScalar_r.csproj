@@ -1,7 +1,30 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <CLRTestKind>RunOnly</CLRTestKind>
-    <CLRTestProjectToRun>AdvSimd_r.csproj</CLRTestProjectToRun>
-    <CLRTestExecutionArguments>LoadAndInsertScalar.Vector64.Byte.7 LoadAndInsertScalar.Vector64.Int16.3 LoadAndInsertScalar.Vector64.Int32.1 LoadAndInsertScalar.Vector64.SByte.7 LoadAndInsertScalar.Vector64.Single.1 LoadAndInsertScalar.Vector64.UInt16.3 LoadAndInsertScalar.Vector64.UInt32.1 LoadAndInsertScalar.Vector128.Byte.15 LoadAndInsertScalar.Vector128.Double.1 LoadAndInsertScalar.Vector128.Int16.7 LoadAndInsertScalar.Vector128.Int32.3 LoadAndInsertScalar.Vector128.Int64.1 LoadAndInsertScalar.Vector128.SByte.15 LoadAndInsertScalar.Vector128.Single.3 LoadAndInsertScalar.Vector128.UInt16.7 LoadAndInsertScalar.Vector128.UInt32.3 LoadAndInsertScalar.Vector128.UInt64.1</CLRTestExecutionArguments>
+    <OutputType>Exe</OutputType>
+    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+    <DebugType>Embedded</DebugType>
+    <Optimize>False</Optimize>
   </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="..\Shared\Helpers.cs" />
+    <Compile Include="..\Shared\Program.cs" />
+    <Compile Include="Program.AdvSimd.LoadAndInsertScalar.cs" />
+    <Compile Include="LoadAndInsertScalar.Vector64.Byte.7.cs" />
+    <Compile Include="LoadAndInsertScalar.Vector64.Int16.3.cs" />
+    <Compile Include="LoadAndInsertScalar.Vector64.Int32.1.cs" />
+    <Compile Include="LoadAndInsertScalar.Vector64.SByte.7.cs" />
+    <Compile Include="LoadAndInsertScalar.Vector64.Single.1.cs" />
+    <Compile Include="LoadAndInsertScalar.Vector64.UInt16.3.cs" />
+    <Compile Include="LoadAndInsertScalar.Vector64.UInt32.1.cs" />
+    <Compile Include="LoadAndInsertScalar.Vector128.Byte.15.cs" />
+    <Compile Include="LoadAndInsertScalar.Vector128.Double.1.cs" />
+    <Compile Include="LoadAndInsertScalar.Vector128.Int16.7.cs" />
+    <Compile Include="LoadAndInsertScalar.Vector128.Int32.3.cs" />
+    <Compile Include="LoadAndInsertScalar.Vector128.Int64.1.cs" />
+    <Compile Include="LoadAndInsertScalar.Vector128.SByte.15.cs" />
+    <Compile Include="LoadAndInsertScalar.Vector128.Single.3.cs" />
+    <Compile Include="LoadAndInsertScalar.Vector128.UInt16.7.cs" />
+    <Compile Include="LoadAndInsertScalar.Vector128.UInt32.3.cs" />
+    <Compile Include="LoadAndInsertScalar.Vector128.UInt64.1.cs" />
+  </ItemGroup>
 </Project>

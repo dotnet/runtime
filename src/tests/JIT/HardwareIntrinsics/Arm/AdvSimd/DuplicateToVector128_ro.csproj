@@ -1,7 +1,27 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <CLRTestKind>RunOnly</CLRTestKind>
-    <CLRTestProjectToRun>AdvSimd_ro.csproj</CLRTestProjectToRun>
-    <CLRTestExecutionArguments>DuplicateToVector128.Byte DuplicateToVector128.Byte.31 DuplicateToVector128.Int16 DuplicateToVector128.Int16.31 DuplicateToVector128.Int32 DuplicateToVector128.Int32.31 DuplicateToVector128.SByte DuplicateToVector128.SByte.31 DuplicateToVector128.Single DuplicateToVector128.Single.31 DuplicateToVector128.UInt16 DuplicateToVector128.UInt16.31 DuplicateToVector128.UInt32 DuplicateToVector128.UInt32.31</CLRTestExecutionArguments>
+    <OutputType>Exe</OutputType>
+    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+    <DebugType>Embedded</DebugType>
+    <Optimize>True</Optimize>
   </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="..\Shared\Helpers.cs" />
+    <Compile Include="..\Shared\Program.cs" />
+    <Compile Include="Program.AdvSimd.DuplicateToVector128.cs" />
+    <Compile Include="DuplicateToVector128.Byte.cs" />
+    <Compile Include="DuplicateToVector128.Byte.31.cs" />
+    <Compile Include="DuplicateToVector128.Int16.cs" />
+    <Compile Include="DuplicateToVector128.Int16.31.cs" />
+    <Compile Include="DuplicateToVector128.Int32.cs" />
+    <Compile Include="DuplicateToVector128.Int32.31.cs" />
+    <Compile Include="DuplicateToVector128.SByte.cs" />
+    <Compile Include="DuplicateToVector128.SByte.31.cs" />
+    <Compile Include="DuplicateToVector128.Single.cs" />
+    <Compile Include="DuplicateToVector128.Single.31.cs" />
+    <Compile Include="DuplicateToVector128.UInt16.cs" />
+    <Compile Include="DuplicateToVector128.UInt16.31.cs" />
+    <Compile Include="DuplicateToVector128.UInt32.cs" />
+    <Compile Include="DuplicateToVector128.UInt32.31.cs" />
+  </ItemGroup>
 </Project>

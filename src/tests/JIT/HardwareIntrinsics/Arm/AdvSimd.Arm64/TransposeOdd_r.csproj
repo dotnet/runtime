@@ -1,7 +1,30 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <CLRTestKind>RunOnly</CLRTestKind>
-    <CLRTestProjectToRun>AdvSimd.Arm64_r.csproj</CLRTestProjectToRun>
-    <CLRTestExecutionArguments>TransposeOdd.Vector64.Byte TransposeOdd.Vector64.Int16 TransposeOdd.Vector64.Int32 TransposeOdd.Vector64.SByte TransposeOdd.Vector64.Single TransposeOdd.Vector64.UInt16 TransposeOdd.Vector64.UInt32 TransposeOdd.Vector128.Byte TransposeOdd.Vector128.Double TransposeOdd.Vector128.Int16 TransposeOdd.Vector128.Int32 TransposeOdd.Vector128.Int64 TransposeOdd.Vector128.SByte TransposeOdd.Vector128.Single TransposeOdd.Vector128.UInt16 TransposeOdd.Vector128.UInt32 TransposeOdd.Vector128.UInt64</CLRTestExecutionArguments>
+    <OutputType>Exe</OutputType>
+    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+    <DebugType>Embedded</DebugType>
+    <Optimize>False</Optimize>
   </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="..\Shared\Helpers.cs" />
+    <Compile Include="..\Shared\Program.cs" />
+    <Compile Include="Program.AdvSimd.Arm64.TransposeOdd.cs" />
+    <Compile Include="TransposeOdd.Vector64.Byte.cs" />
+    <Compile Include="TransposeOdd.Vector64.Int16.cs" />
+    <Compile Include="TransposeOdd.Vector64.Int32.cs" />
+    <Compile Include="TransposeOdd.Vector64.SByte.cs" />
+    <Compile Include="TransposeOdd.Vector64.Single.cs" />
+    <Compile Include="TransposeOdd.Vector64.UInt16.cs" />
+    <Compile Include="TransposeOdd.Vector64.UInt32.cs" />
+    <Compile Include="TransposeOdd.Vector128.Byte.cs" />
+    <Compile Include="TransposeOdd.Vector128.Double.cs" />
+    <Compile Include="TransposeOdd.Vector128.Int16.cs" />
+    <Compile Include="TransposeOdd.Vector128.Int32.cs" />
+    <Compile Include="TransposeOdd.Vector128.Int64.cs" />
+    <Compile Include="TransposeOdd.Vector128.SByte.cs" />
+    <Compile Include="TransposeOdd.Vector128.Single.cs" />
+    <Compile Include="TransposeOdd.Vector128.UInt16.cs" />
+    <Compile Include="TransposeOdd.Vector128.UInt32.cs" />
+    <Compile Include="TransposeOdd.Vector128.UInt64.cs" />
+  </ItemGroup>
 </Project>
