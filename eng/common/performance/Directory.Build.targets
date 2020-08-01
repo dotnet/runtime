@@ -1,0 +1,21 @@
+<Project>
+ <Target Name="UpdateTargetingAndRuntimePack"
+         AfterTargets="ResolveFrameworkReferences">
+    <PropertyGroup>
+        <ArtifactsBinDir>$(Build.SourcesDirectory)/artifacts/bin/</ArtifactsBinDir>
+        <MicrosoftNetCoreAppRefPackDir>$(ArtifactsBinDir)microsoft.netcore.app.ref</MicrosoftNetCoreAppRefPackDir>
+        <MicrosoftNetCoreAppRuntimePackDir>$(ArtifactsBinDir)microsoft.netcore.app.runtime.browser-wasm/$(Configuration)/runtimes/browser-wasm</MicrosoftNetCoreAppRuntimePackDir>
+    </PropertyGroup>
+    <ItemGroup>
+      <ResolvedTargetingPack Path="$(MicrosoftNetCoreAppRefPackDir.TrimEnd('/\'))"
+                             NuGetPackageVersion="$(ProductVersion)"
+                             PackageDirectory="$(MicrosoftNetCoreAppRefPackDir.TrimEnd('/\'))"
+                            />
+      <ResolvedRuntimePack PackageDirectory="$(MicrosoftNetCoreAppRuntimePackDir)"
+                            />
+      <ResolvedFrameworkReference TargetingPackPath="$(MicrosoftNetCoreAppRefPackDir.TrimEnd('/\'))"
+                                  TargetingPackVersion="$(ProductVersion)"
+                                   />
+    </ItemGroup>
+  </Target>
+</Project>

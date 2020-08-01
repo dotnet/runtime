@@ -1,5 +1,11 @@
 steps:
   - script: dotnet --info
     displayName: display dotnet info
-  - script: ls -R $(Build.SourcesDirectory)/artifacts
-    displayName: print build artifacts
+  - script: mkdir $(Build.SourcesDirectory)/eng/common/performance/blazor_project
+    diplayName: make blazor project directory
+  - script: dotnet new blazorwasm
+    displayName: new blazorwasm
+    workingDirectory: $(Build.SourcesDirectory)/eng/common/performance/blazor_project
+  - script: dotnet publish -c Release -o pub /bl:$(Build.SourcesDirectory)/artifacts/log/test-blazor-project.binlog
+    displayName: publish blazorwasm project
+    workingDirectory: $(Build.SourcesDirectory)/eng/common/performance/blazor_project
