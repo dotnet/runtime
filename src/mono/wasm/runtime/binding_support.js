@@ -94,15 +94,11 @@ var BindingSupportLib = {
 
 			var bind_method = function(method_name, signature, namespace = BINDING.runtime) {
 				var method = BINDING.find_method (namespace.class, method_name, -1);
-				namespace[method_name ] = function () {
+				namespace[method_name] = function () {
 					try {
-						args = [];
-						Array.prototype.forEach.call(arguments, function (el) {
-							args.push (el);
-						});
-						return BINDING.call_method (method, null, signature, args);
+						return BINDING.call_method (method, null, signature, [...arguments]);
 					} catch (ex) {
-						console.error (`unable to call method: ${method_name} args: ${args.toString()}`, ex.stack);
+						console.error (`unable to call method: ${method_name} args: ${JSON.stringify(arguments)}`, ex.stack);
 					}
 				}
 				return namespace[method_name];
