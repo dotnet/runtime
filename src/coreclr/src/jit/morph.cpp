@@ -13656,10 +13656,10 @@ DONE_MORPHING_CHILDREN:
             }
 
             bool foldAndReturnTemp;
-            bool isLoad;
+            bool isStore;
 
             foldAndReturnTemp = false;
-            isLoad            = (tree->gtFlags & GTF_IND_ASG_LHS) == 0;
+            isStore           = (tree->gtFlags & GTF_IND_ASG_LHS) == GTF_IND_ASG_LHS;
             temp              = nullptr;
             ival1             = 0;
 
@@ -13746,11 +13746,16 @@ DONE_MORPHING_CHILDREN:
                             {
                                 // For Loads of small types than are not NormalizeOnLoad()
                                 // we can fold the IND/ADDR and reduce to just the local variable
-                                if (isLoad && !lvaTable[lclNum].lvNormalizeOnLoad())
+                                //
+                                // Stores of small types or when we don't normalize on load
+                                // then we need to insert a cast
+                                //
+                                if (isStore || !varDsc->lvNormalizeOnLoad())
                                 {
-                                    tree->gtType = typ = temp->TypeGet();
-                                    foldAndReturnTemp  = true;
+                                    varDsc->lvForceLoadNormalize = true;
                                 }
+                                tree->gtType = typ = temp->TypeGet();
+                                foldAndReturnTemp  = true;
                             }
                         }
 
