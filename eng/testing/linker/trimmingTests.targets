@@ -57,7 +57,7 @@
       <_projectSourceFile>%(TestConsoleApps.ProjectCompileItems)</_projectSourceFile>
     </PropertyGroup>
 
-    <ItemGroup>
+    <ItemGroup Condition="'$(AdditionalProjectReferences)' != ''">
       <_additionalProjectReferenceTemp Include="$(AdditionalProjectReferences)" />
       <_additionalProjectReference Include="&lt;ProjectReference Include=&quot;$(LibrariesProjectRoot)%(_additionalProjectReferenceTemp.Identity)\src\%(_additionalProjectReferenceTemp.Identity).csproj&quot; SkipUseReferenceAssembly=&quot;true&quot; /&gt;" />
     </ItemGroup>
