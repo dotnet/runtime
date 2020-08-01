@@ -49,7 +49,7 @@ namespace System.Net.Test.Common
             return EncodeInteger(buffer, nameValueIdx, prefix, prefixMask);
         }
 
-        public static int EncodeHeader(Span<byte> buffer, int nameIdx, string value, QPackFlags flags = QPackFlags.StaticIndex)
+        public static int EncodeHeader(Span<byte> buffer, int nameIdx, string value, Encoding valueEncoding, QPackFlags flags = QPackFlags.StaticIndex)
         {
             byte prefix, prefixMask;
 
@@ -76,12 +76,12 @@ namespace System.Net.Test.Common
             }
 
             int nameLen = EncodeInteger(buffer, nameIdx, prefix, prefixMask);
-            int valueLen = EncodeString(buffer.Slice(nameLen), value, flags.HasFlag(QPackFlags.HuffmanEncodeValue));
+            int valueLen = EncodeString(buffer.Slice(nameLen), value, valueEncoding, flags.HasFlag(QPackFlags.HuffmanEncodeValue));
 
             return nameLen + valueLen;
         }
 
-        public static int EncodeHeader(Span<byte> buffer, string name, string value, QPackFlags flags = QPackFlags.None)
+        public static int EncodeHeader(Span<byte> buffer, string name, string value, Encoding valueEncoding, QPackFlags flags = QPackFlags.None)
         {
             byte[] data = Encoding.ASCII.GetBytes(name);
             byte prefix;
@@ -116,14 +116,14 @@ namespace System.Net.Test.Common
             bytesGenerated += data.Length;
 
             // write value string.
-            bytesGenerated += EncodeString(buffer.Slice(bytesGenerated), value, flags.HasFlag(QPackFlags.HuffmanEncodeValue));
+            bytesGenerated += EncodeString(buffer.Slice(bytesGenerated), value, valueEncoding, flags.HasFlag(QPackFlags.HuffmanEncodeValue));
 
             return bytesGenerated;
         }
 
-        public static int EncodeString(Span<byte> buffer, string value, bool huffmanCoded = false)
+        public static int EncodeString(Span<byte> buffer, string value, Encoding valueEncoding, bool huffmanCoded = false)
         {
-            return HPackEncoder.EncodeString(value, buffer, huffmanCoded);
+            return HPackEncoder.EncodeString(value, valueEncoding, buffer, huffmanCoded);
         }
 
         public static int EncodeInteger(Span<byte> buffer, int value, byte prefix, byte prefixMask)

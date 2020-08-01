@@ -4729,7 +4729,7 @@ VOID ETW::ExceptionLog::ExceptionThrown(CrawlFrame  *pCf, BOOL bIsReThrownExcept
         _ASSERTE(pExInfo != NULL);
         bIsNestedException = (pExInfo->GetPreviousExceptionTracker() != NULL);
         bIsCLSCompliant = IsException((gc.exceptionObj)->GetMethodTable()) &&
-                          ((gc.exceptionObj)->GetMethodTable() != MscorlibBinder::GetException(kRuntimeWrappedException));
+                          ((gc.exceptionObj)->GetMethodTable() != CoreLibBinder::GetException(kRuntimeWrappedException));
 
         // A rethrown exception is also a nested exception
         // but since we have a separate flag for it, lets unset the nested flag

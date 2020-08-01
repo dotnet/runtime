@@ -77,7 +77,7 @@ jobs:
       liveLibrariesBuildConfig: Release
       runtimeType: mono
       projectFile: microbenchmarks.proj
-      runKind: micro
+      runKind: micro_mono
 
 # run mono interpreter job (private CI only)
 - ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest')) }}:
@@ -94,7 +94,7 @@ jobs:
         runtimeType: mono
         codeGenType: 'Interpreter'
         projectFile: microbenchmarks.proj
-        runKind: micro
+        runKind: micro_mono
 
 # run coreclr microbenchmarks perf job
 - template: /eng/pipelines/common/platform-matrix.yml

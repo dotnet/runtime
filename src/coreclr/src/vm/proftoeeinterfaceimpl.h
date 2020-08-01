@@ -56,9 +56,9 @@ class ProfileArgIterator
 private:
     void        *m_handle;
     ArgIterator  m_argIterator;
-#ifdef UNIX_AMD64_ABI
+#if defined(UNIX_AMD64_ABI) || defined(TARGET_ARM64)
     UINT64       m_bufferPos;
-#endif // UNIX_AMD64_ABI
+#endif // defined(UNIX_AMD64_ABI) || defined(TARGET_ARM64)
 
 public:
     ProfileArgIterator(MetaSig * pMetaSig, void* platformSpecificHandle);
@@ -74,9 +74,12 @@ public:
         return m_argIterator.NumFixedArgs();
     }
 
-#ifdef UNIX_AMD64_ABI
+#if defined(UNIX_AMD64_ABI)
+    // On certain architectures we can pass args in non-sequential registers,
+    // this function will copy the struct so it is laid out as it would be in memory
+    // so it can be passed to the profiler
     LPVOID CopyStructFromRegisters();
-#endif // UNIX_AMD64_ABI
+#endif // defined(UNIX_AMD64_ABI)
 
     //
     // After initialization, this method is called repeatedly until it

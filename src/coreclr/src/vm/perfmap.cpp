@@ -401,7 +401,7 @@ NativeImagePerfMap::NativeImagePerfMap(Assembly * pAssembly, BSTR pDestPath)
     GetNativeImageSignature(pAssembly->GetManifestFile(), wszSignature, lengthof(wszSignature));
 
     // Build the path to the perfmap file, which consists of <inputpath><imagesimplename>.ni.<signature>.map.
-    // Example: /tmp/mscorlib.ni.{GUID}.map
+    // Example: /tmp/System.Private.CoreLib.ni.{GUID}.map
     SString sDestPerfMapPath;
     sDestPerfMapPath.Printf("%S%s.ni.%S.map", pDestPath, lpcSimpleName, wszSignature);
 

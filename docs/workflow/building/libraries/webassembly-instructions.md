@@ -34,12 +34,12 @@ The libraries build contains some native code. This includes shims over libc, op
 
 - Building in debug mode for platform wasm and Browser operating system
 ```bash
-./build.sh --arch wasm --os Browser --subset Libs.Native --configuration Debug
+./build.sh libs.native --arch wasm --os Browser
 ```
 
 - Building in release mode for platform wasm and Browser operating system
 ```bash
-./build.sh --arch wasm --os Browser --subset Libs.Native --configuration Release
+./build.sh libs.native --arch wasm --os Browser -c Release
 ```
 
 ## How to build mono System.Private.CoreLib
@@ -48,20 +48,19 @@ If you are working on core parts of mono libraries you will probably need to bui
 
 
 ```bash
-./build.sh --arch wasm --os Browser --configuration release --subset Mono
+./build.sh mono --arch wasm --os Browser -c Release
 ```
 
 To build just SPC without mono you can use the Mono.CoreLib subset.
 
 ```bash
-./build.sh --arch wasm --os Browser --configuration release --subset Mono.CoreLib
+./build.sh mono.corelib --arch wasm --os Browser -c Release
 ```
-
 
 Building the managed libraries as well:
 
 ```bash
-./build.sh --arch wasm --os Browser --configuration release --subset Mono+Libs
+./build.sh mono+libs --arch wasm --os Browser -c Release
 ```
 
 ## Building individual libraries
@@ -71,16 +70,16 @@ Individual projects and libraries can be build by specifying the build configura
 Building individual libraries
 **Examples**
 
-- Build all projects for a given library (e.g.: System.Net.Http) including running the tests
+- Build all projects for a given library (e.g.: System.Net.Http) including the tests
 
 ```bash
- ./build.sh --arch wasm --os Browser --configuration release --projects src/libraries/System.Net.Http/System.Net.Http.sln
+ ./build.sh --arch wasm --os Browser -c Release --projects src/libraries/System.Net.Http/System.Net.Http.sln
 ```
 
 - Build only the source project of a given library (e.g.: System.Net.Http)
 
 ```bash
- ./build.sh --arch wasm --os Browser --configuration release --projects src/libraries/System.Net.Http/src/System.Net.Http.csproj
+ ./build.sh --arch wasm --os Browser -c Release --projects src/libraries/System.Net.Http/src/System.Net.Http.csproj
 ```
 
 More information and examples can be found in the [libraries](./README.md#building-individual-libraries) document.

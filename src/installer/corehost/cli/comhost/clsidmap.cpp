@@ -43,16 +43,8 @@ namespace
         return S_OK;
     }
 
-    clsid_map parse_stream(_Inout_ pal::istream_t &json_map_raw)
+    clsid_map get_map_from_json(_In_ const json_parser_t &json)
     {
-        json_parser_t json;
-
-        if (!json.parse_stream(json_map_raw, _X("<embedded .clsidmap>")))
-        {
-            trace::error(_X("Embedded .clsidmap format is invalid"));
-            throw HResultException{ StatusCode::InvalidConfigFile };
-        }
-
         // Process JSON and construct a map
         HRESULT hr;
         clsid_map mapping;
@@ -86,16 +78,6 @@ namespace
         return mapping;
     }
 
-    class memory_buffer : public std::basic_streambuf<pal::istream_t::char_type>
-    {
-    public:
-        memory_buffer(_In_ DWORD dataInBytes, _In_reads_bytes_(dataInBytes) void *data)
-        {
-            auto raw_begin = reinterpret_cast<pal::istream_t::char_type*>(data);
-            setg(raw_begin, raw_begin, raw_begin + (dataInBytes / sizeof(pal::istream_t::char_type)));
-        }
-    };
-
     clsid_map get_json_map_from_resource(bool &found_resource)
     {
         found_resource = false;
@@ -117,9 +99,14 @@ namespace
         if (data == nullptr)
             throw HResultException{ E_UNEXPECTED }; // This should never happen in Windows 7+
 
-        memory_buffer resourceBuffer{ size, data };
-        pal::istream_t stream{ &resourceBuffer };
-        return parse_stream(stream);
+        json_parser_t json;
+        if (!json.parse_raw_data(reinterpret_cast<char*>(data), size, _X("<embedded .clsidmap>")))
+        {
+            trace::error(_X("Embedded .clsidmap format is invalid"));
+            throw HResultException{ StatusCode::InvalidConfigFile };
+        }
+
+        return get_map_from_json(json);
     }
 
     bool is_binary_unsigned(const pal::string_t &path)
@@ -190,8 +177,14 @@ namespace
         if (!pal::file_exists(map_file_name))
             return {};
 
-        pal::ifstream_t file{ map_file_name };
-        return parse_stream(file);
+        json_parser_t json;
+        if (!json.parse_file(map_file_name))
+        {
+            trace::error(_X("File .clsidmap format is invalid"));
+            throw HResultException{ StatusCode::InvalidConfigFile };
+        }
+
+        return get_map_from_json(json);
     }
 }
 

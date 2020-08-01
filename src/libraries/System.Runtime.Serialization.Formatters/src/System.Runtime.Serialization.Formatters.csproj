@@ -9,8 +9,8 @@
   <PropertyGroup>
     <ILLinkDirectory>$(MSBuildThisFileDirectory)ILLink\</ILLinkDirectory>
   </PropertyGroup>
-  <ItemGroup>
-    <ILLinkSubstitutionsXmls Include="$(ILLinkDirectory)ILLink.Substitutions.xml" />
+  <ItemGroup Condition="'$(TargetsBrowser)' != 'true'">
+    <ILLinkSubstitutionsXmls Include="$(ILLinkDirectory)ILLink.Substitutions.NonBrowser.xml" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="System.Runtime.Serialization.Formatters.TypeForwards.cs" />
@@ -21,10 +21,6 @@
     <Compile Include="System\Runtime\Serialization\IFormatter.cs" />
     <Compile Include="System\Runtime\Serialization\ISerializationSurrogate.cs" />
     <Compile Include="System\Runtime\Serialization\ISurrogateSelector.cs" />
-    <Compile Include="System\Runtime\Serialization\LocalAppContextSwitches.cs" />
-    <Compile Include="$(CommonPath)System\LocalAppContextSwitches.Common.cs">
-      <Link>Common\System\LocalAppContextSwitches.Common.cs</Link>
-    </Compile>
     <Compile Include="System\Runtime\Serialization\MemberHolder.cs" />
     <Compile Include="System\Runtime\Serialization\ObjectIDGenerator.cs" />
     <Compile Include="System\Runtime\Serialization\ObjectManager.cs" />
@@ -59,8 +55,7 @@
     <Compile Include="System\Runtime\Serialization\Formatters\Binary\Converter.cs" />
     <Compile Include="System\Runtime\Serialization\Formatters\Binary\BinaryEnums.cs" />
     <Compile Include="System\Runtime\Serialization\Formatters\Binary\BinaryFormatter.cs" />
-    <Compile Include="System\Runtime\Serialization\Formatters\Binary\BinaryFormatter.Core.cs" Condition="'$(TargetsBrowser)' != 'true'" />
-    <Compile Include="System\Runtime\Serialization\Formatters\Binary\BinaryFormatter.PlatformNotSupported.cs" Condition="'$(TargetsBrowser)' == 'true'" />
+    <Compile Include="System\Runtime\Serialization\Formatters\Binary\BinaryFormatterEventSource.cs" />
     <Compile Include="System\Runtime\Serialization\Formatters\Binary\BinaryFormatterWriter.cs" />
     <Compile Include="System\Runtime\Serialization\Formatters\Binary\BinaryObjectInfo.cs" />
     <Compile Include="System\Runtime\Serialization\Formatters\Binary\BinaryObjectReader.cs" />
@@ -71,6 +66,16 @@
              Link="Common\System\Obsoletions.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Collections\HashHelpers.cs"
              Link="Common\System\Collections\HashHelpers.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsBrowser)' != 'true'">
+    <Compile Include="System\Runtime\Serialization\Formatters\Binary\BinaryFormatter.Core.cs" />
+    <Compile Include="System\Runtime\Serialization\LocalAppContextSwitches.cs" />
+    <Compile Include="$(CommonPath)System\LocalAppContextSwitches.Common.cs">
+      <Link>Common\System\LocalAppContextSwitches.Common.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsBrowser)' == 'true'">
+    <Compile Include="System\Runtime\Serialization\Formatters\Binary\BinaryFormatter.PlatformNotSupported.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="$(CoreLibProject)" />

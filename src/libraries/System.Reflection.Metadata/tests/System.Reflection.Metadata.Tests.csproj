@@ -139,4 +139,7 @@
     <PackageReference Include="System.Security.Cryptography.Algorithms" Version="$(SystemSecurityCryptographyAlgorithmsVersion)" />
     <PackageReference Include="System.ValueTuple" Version="$(SystemValueTupleVersion)" />
   </ItemGroup>
+  <ItemGroup Condition="'$(TargetOS)' == 'Browser'">
+    <WasmFilesToIncludeFromPublishDir Include="$(AssemblyName).dll" />
+  </ItemGroup>
 </Project>

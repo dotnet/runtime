@@ -94,11 +94,8 @@ HANDLES(ENV_2, "GetCommandLineArgs", ves_icall_System_Environment_GetCommandLine
 HANDLES(ENV_3, "GetEnvironmentVariableNames", ves_icall_System_Environment_GetEnvironmentVariableNames, MonoArray, 0, ())
 NOHANDLES(ICALL(ENV_4, "GetProcessorCount", ves_icall_System_Environment_get_ProcessorCount))
 NOHANDLES(ICALL(ENV_9, "get_ExitCode", mono_environment_exitcode_get))
-HANDLES(ENV_11, "get_MachineName", ves_icall_System_Environment_get_MachineName, MonoString, 0, ())
-NOHANDLES(ICALL(ENV_13, "get_Platform", ves_icall_System_Environment_get_Platform))
 NOHANDLES(ICALL(ENV_15, "get_TickCount", ves_icall_System_Environment_get_TickCount))
 NOHANDLES(ICALL(ENV_15a, "get_TickCount64", ves_icall_System_Environment_get_TickCount64))
-HANDLES(ENV_16, "get_UserName", ves_icall_System_Environment_get_UserName, MonoString, 0, ())
 HANDLES(ENV_17, "internalGetEnvironmentVariable_native", ves_icall_System_Environment_GetEnvironmentVariable_native, MonoString, 1, (const_char_ptr))
 NOHANDLES(ICALL(ENV_20, "set_ExitCode", mono_environment_exitcode_set))
 

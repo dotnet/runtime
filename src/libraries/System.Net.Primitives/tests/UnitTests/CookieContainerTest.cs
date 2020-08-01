@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
 
@@ -36,6 +37,18 @@ namespace System.Net.Primitives.Unit.Tests
         private const string CookieValue1 = "CookieValue1";
         private const string CookieValue2 = "CookieValue2";
 
+        // Creates cookies as following:
+        // c1  | .url1.com     | name1=value
+        // c2  | .url1.com     | name2=value; Secure=True
+        // c3  | .url1.com     | name3=value; $Version=1;  $Domain=.url1.com; $Port="80, 90, 100, 443"
+        // c4  | 127.0.0.1     | name4=value
+        // c5  | 127.0.0.1     | name4=value; Path=/path
+        // c6  | .url3.com     | name6=value
+        // c7  | .url3.com     | name7=value
+        // c8  | url4.com      | name8=value
+        // c9  | url4.com      | name9=value
+        // c10 | url5.com/path | name10=value
+        // c11 | url5.com/path | name11=value; $Version=1;  $Port="80, 90, 100"
         private CookieContainer CreateCount11Container()
         {
             CookieContainer cc1 = new CookieContainer();
@@ -100,9 +113,9 @@ namespace System.Net.Primitives.Unit.Tests
                 new Cookie[]
                 {
                     c10,
+                    c11,
                     new Cookie("name98", "value98"),
                     new Cookie("name99", "value99"),
-                    c11
                 }
             }; // Simple
 
@@ -637,7 +650,7 @@ namespace System.Net.Primitives.Unit.Tests
         {
             // Internally, paths are stored alphabetically sorted - so expect a cookie collection sorted by the path of each cookie
             // This test ensures that all cookies with paths (that the path specified by the uri starts with) are returned
-            Cookie c1 = new Cookie("name1", "value", "/aa", ".url.com");
+            Cookie c1 = new Cookie("name1", "value", "/a/a", ".url.com");
             Cookie c2 = new Cookie("name2", "value", "/a", ".url.com");
             Cookie c3 = new Cookie("name3", "value", "/b", ".url.com"); // Should be ignored - no match with the URL's path
             Cookie c4 = new Cookie("name4", "value", "/", ".url.com"); // Should NOT be ignored (has no path specified)
@@ -648,7 +661,7 @@ namespace System.Net.Primitives.Unit.Tests
             cc1.Add(c3);
             cc1.Add(c4);
 
-            CookieCollection cc2 = cc1.GetCookies(new Uri("http://url.com/aaa"));
+            CookieCollection cc2 = cc1.GetCookies(new Uri("http://url.com/a/a/a"));
             Assert.Equal(3, cc2.Count);
             Assert.Equal(c1, cc2[0]);
             Assert.Equal(c2, cc2[1]);
@@ -837,6 +850,82 @@ namespace System.Net.Primitives.Unit.Tests
             CookieContainer container = new CookieContainer();
 
             Assert.Throws<CookieException>(() => container.SetCookies(uri, cookie));
+        }
+
+        // Test default-path calculation as defined in
+        // https://tools.ietf.org/html/rfc6265#section-5.1.4
+        public static readonly TheoryData<string, string> DefaultPathData = new TheoryData<string, string>()
+        {
+            {"http://url1.com", "/"},
+            {"http://url1.com/abc", "/"},
+            {"http://url1.com/abc/xy", "/abc"},
+            {"http://url1.com/abc/xy/foo", "/abc/xy"},
+            {"http://127.0.0.1", "/"},
+            {"http://127.0.0.1/a/s/d/f", "/a/s/d"},
+        };
+
+        [Theory]
+        [MemberData(nameof(DefaultPathData))]
+        public void GetCookies_DefaultPathCalculationFollowsRfc6265(string uriString, string expectedPath)
+        {
+            Cookie cookie = new Cookie("n", "v");
+            Uri uri = new Uri(uriString);
+
+            CookieContainer container = new CookieContainer();
+            container.Add(uri, cookie);
+
+            Cookie actualCookie = container.GetCookies(uri).Single();
+            Assert.Equal(expectedPath, actualCookie.Path);
+        }
+
+        // Test path-match as defined in
+        // https://tools.ietf.org/html/rfc6265#section-5.1.4
+        public static readonly TheoryData<bool, string[], string, int> PathMatchData = new TheoryData<bool, string[], string, int>
+        {
+            {false, new [] {"/"}, "/", 1},
+            {false, new [] {"/asd/fg/hjk/l", "/x"}, "/asd/fg/hjk/l", 1},
+            {false, new [] {"/a", "/x"}, "/a/hello", 1},
+            {false, new [] {"/a/foo", "/a/lol"}, "/a/foo/1/2/3", 1},
+            {false, new [] {"/a/", "/x"}, "/a/hello", 1},
+            {false, new [] {"", "/x"}, "/y", 1},
+            {false, new [] {"//"}, "/", 0},
+            {false, new [] {"//"}, "//", 1},
+            {false, new [] {"", "/", "//", "///"}, "///", 4},
+
+            // Should not match the second half of the criteria:
+            // "The cookie-path is a prefix of the request-path, and the first
+            // character of the request-path that is not included in the cookie-
+            // path is a %x2F ("/") character."
+            {false, new [] {"/a/foo", "/x"}, "/a/foo123", 0},
+
+            {true, new [] {"/"}, "/", 1},
+            {true, new [] {"/a/b", "/a/c", "/x/y"}, "/a/hello", 2},
+            {true, new [] {"/a/foo/b", "/a/foo/c", "/a/foo/42", "/a/lol/42"}, "/a/foo/hello", 3},
+        };
+
+        [Theory]
+        [MemberData(nameof(PathMatchData))]
+        public void GetCookies_PathMatchingFollowsRfc6265(bool useDefaultPath, string[] cookiePaths, string requestPath, int expectedMatches)
+        {
+            CookieContainer container = new CookieContainer();
+
+            int i = 0;
+            foreach (string cookiePath in cookiePaths)
+            {
+                if (useDefaultPath)
+                {
+                    container.Add(new Uri("http://test.com" + cookiePath), new Cookie($"c{i}", "value"));
+                }
+                else
+                {
+                    container.Add(new Uri("http://test.com"), new Cookie($"c{i}", "value", cookiePath));
+                }
+                i++;
+            }
+
+            Uri requestUri = new Uri("http://test.com" + requestPath);
+            CookieCollection collection = container.GetCookies(requestUri);
+            Assert.Equal(expectedMatches, collection.Count);
         }
     }
 }
