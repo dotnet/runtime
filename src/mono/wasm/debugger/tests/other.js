@@ -1,3 +1,6 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
 function big_array_js_test (len) {
 	var big = new Array(len);
 	for (let i=0; i < len; i ++) {

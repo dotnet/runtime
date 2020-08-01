@@ -39,7 +39,7 @@
       MicrosoftNetCoreAppRuntimePackDir="$(MicrosoftNetCoreAppRuntimePackDir)"
       MainAssembly="$(ArtifactsBinDir)debugger-test/wasm/Debug/debugger-test.dll"
       MainJS="$(MonoProjectRoot)wasm\runtime-test.js"
-      EnableDebugging="1"
+      EnableDebugging="true"
       AssemblySearchPaths="@(AssemblySearchPaths)"
       ExtraAssemblies="$(ArtifactsBinDir)\System.Runtime.InteropServices.JavaScript\$(NetCoreAppCurrent)-Browser-$(Configuration)\System.Runtime.InteropServices.JavaScript.dll"/>
     <Exec Command="chmod a+x $(AppDir)/run-v8.sh" />

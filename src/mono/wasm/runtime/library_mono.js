@@ -153,22 +153,20 @@ var MonoSupportLib = {
 			return final_var_list;
 		},
 
-				// code from https://stackoverflow.com/a/5582308
-		//
 		// Given `dotnet:object:foo:bar`,
 		// returns [ 'dotnet', 'object', 'foo:bar']
-		_split_object_id: function (id, delim = ':', count = 3) {
+		_split_object_id: function (id, delimiter = ':', count = 3) {
 			if (id === undefined || id == "")
 				return [];
 
-			if (delim === undefined) delim = ':';
+			if (delimiter === undefined) delimiter = ':';
 			if (count === undefined) count = 3;
 
-			var arr = id.split (delim);
-			var result = arr.splice (0, count - 1);
+			var var_arr = id.split (delimiter);
+			var result = var_arr.splice (0, count - 1);
 
-			if (arr.length > 0)
-				result.push (arr.join (delim));
+			if (var_arr.length > 0)
+				result.push (var_arr.join (delimiter));
 			return result;
 		},
 
