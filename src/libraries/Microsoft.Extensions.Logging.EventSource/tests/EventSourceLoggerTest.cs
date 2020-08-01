@@ -54,7 +54,7 @@ namespace Microsoft.Extensions.Logging.Test
         }
 
         [Fact]
-        public void FilterSpecs_UseAppFilters_IncreaseLoggingLevelForOneCategory_KeepsExistingEventSourceLoggingRules()
+        public void FilterSpecs_UseAppFilters_IncreaseLoggingLevelForOneCategory_GuaranteesAllRulesRemainAvailable()
         {
             using (var testListener = new TestEventListener())
             {
@@ -63,6 +63,8 @@ namespace Microsoft.Extensions.Logging.Test
                         .AddEventSourceLogger()
                         .AddFilter("Logger1*", LogLevel.Warning)
                         .AddFilter("Logger2*", LogLevel.Error)
+                        .AddFilter("Logger3*", LogLevel.Critical)
+                        .AddFilter<EventSourceLoggerProvider>("Logger4*", LogLevel.Error)
                 );
 
                 var listenerSettings = new TestEventListener.ListenerSettings();
@@ -72,6 +74,7 @@ namespace Microsoft.Extensions.Logging.Test
                 var logger = loggerFactory.CreateLogger("Logger1");
                 var logger2 = loggerFactory.CreateLogger("Logger2");
                 var logger3 = loggerFactory.CreateLogger("Logger3");
+                var logger4 = loggerFactory.CreateLogger("Logger4");
 
                 Assert.False(logger.IsEnabled(LogLevel.None));
                 Assert.True(logger.IsEnabled(LogLevel.Critical));
@@ -96,11 +99,21 @@ namespace Microsoft.Extensions.Logging.Test
                 Assert.True(logger3.IsEnabled(LogLevel.Information));
                 Assert.True(logger3.IsEnabled(LogLevel.Debug));
                 Assert.False(logger3.IsEnabled(LogLevel.Trace));
+
+                Assert.False(logger4.IsEnabled(LogLevel.None));
+                Assert.True(logger4.IsEnabled(LogLevel.Critical));
+                Assert.True(logger4.IsEnabled(LogLevel.Error));
+                Assert.False(logger4.IsEnabled(LogLevel.Warning));
+                Assert.False(logger4.IsEnabled(LogLevel.Information));
+                Assert.False(logger4.IsEnabled(LogLevel.Debug));
+                Assert.False(logger4.IsEnabled(LogLevel.Trace));
             }
         }
 
-        [Fact]
-        public void FilterSpecs_IncreaseLoggingLevelForOneCategory_DisablesExistingEventSourceLoggingRules()
+        [Theory]
+        [InlineData("")]
+        [InlineData("UseAppFilters_StartsThisWay:Debug;")]
+        public void FilterSpecs_IncreaseLoggingLevelForOneCategory_DisablesExistingRulesByDefault(string prefix)
         {
             using (var testListener = new TestEventListener())
             {
@@ -109,31 +122,24 @@ namespace Microsoft.Extensions.Logging.Test
                         .AddEventSourceLogger()
                         .AddFilter("Logger1*", LogLevel.Warning)
                         .AddFilter("Logger2*", LogLevel.Error)
+                        .AddFilter("Logger3*", LogLevel.Critical)
+                        .AddFilter<EventSourceLoggerProvider>("Logger4*", LogLevel.Error)
                 );
 
                 var listenerSettings = new TestEventListener.ListenerSettings();
-                listenerSettings.FilterSpec = "Logger3:1";
+                listenerSettings.FilterSpec = prefix + "Logger3:1";
                 testListener.EnableEvents(listenerSettings);
 
                 var logger = loggerFactory.CreateLogger("Logger1");
                 var logger2 = loggerFactory.CreateLogger("Logger2");
                 var logger3 = loggerFactory.CreateLogger("Logger3");
-
-                Assert.False(logger.IsEnabled(LogLevel.None));
-                Assert.False(logger.IsEnabled(LogLevel.Critical));
-                Assert.False(logger.IsEnabled(LogLevel.Error));
-                Assert.False(logger.IsEnabled(LogLevel.Warning));
-                Assert.False(logger.IsEnabled(LogLevel.Information));
-                Assert.False(logger.IsEnabled(LogLevel.Debug));
-                Assert.False(logger.IsEnabled(LogLevel.Trace));
-
-                Assert.False(logger2.IsEnabled(LogLevel.None));
-                Assert.False(logger2.IsEnabled(LogLevel.Critical));
-                Assert.False(logger2.IsEnabled(LogLevel.Error));
-                Assert.False(logger2.IsEnabled(LogLevel.Warning));
-                Assert.False(logger2.IsEnabled(LogLevel.Information));
-                Assert.False(logger2.IsEnabled(LogLevel.Debug));
-                Assert.False(logger2.IsEnabled(LogLevel.Trace));
+                var logger4 = loggerFactory.CreateLogger("Logger4");
+                
+                foreach (LogLevel level in Enum.GetValues(typeof(LogLevel)))
+                {
+                    Assert.False(logger.IsEnabled(LogLevel.None));
+                    Assert.False(logger2.IsEnabled(LogLevel.None));
+                }
 
                 Assert.False(logger3.IsEnabled(LogLevel.None));
                 Assert.True(logger3.IsEnabled(LogLevel.Critical));
@@ -142,6 +148,15 @@ namespace Microsoft.Extensions.Logging.Test
                 Assert.True(logger3.IsEnabled(LogLevel.Information));
                 Assert.True(logger3.IsEnabled(LogLevel.Debug));
                 Assert.False(logger3.IsEnabled(LogLevel.Trace));
+
+                // Note: default disabling rule does not take precedence on filter rules that specify both a provider and a category
+                Assert.False(logger4.IsEnabled(LogLevel.None));
+                Assert.True(logger4.IsEnabled(LogLevel.Critical));
+                Assert.True(logger4.IsEnabled(LogLevel.Error));
+                Assert.False(logger4.IsEnabled(LogLevel.Warning));
+                Assert.False(logger4.IsEnabled(LogLevel.Information));
+                Assert.False(logger4.IsEnabled(LogLevel.Debug));
+                Assert.False(logger4.IsEnabled(LogLevel.Trace));
             }
         }
 
