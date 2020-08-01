@@ -845,12 +845,12 @@ var MonoSupportLib = {
 
 		// deprecated
 		mono_load_runtime_and_bcl: function (
-			unused_vfs_prefix, deploy_prefix, enable_debugging, file_list, loaded_cb, fetch_file_cb
+			unused_vfs_prefix, deploy_prefix, debug_level, file_list, loaded_cb, fetch_file_cb
 		) {
 			var args = {
 				fetch_file_cb: fetch_file_cb,
 				loaded_cb: loaded_cb,
-				enable_debugging: enable_debugging,
+				debug_level: debug_level,
 				assembly_root: deploy_prefix,
 				assets: []
 			};
@@ -875,7 +875,7 @@ var MonoSupportLib = {
 		// Initializes the runtime and loads assemblies, debug information, and other files.
 		// @args is a dictionary-style Object with the following properties:
 		//    assembly_root: (required) the subfolder containing managed assemblies and pdbs
-		//    enable_debugging: (required)
+		//    debug_level: (required)
 		//    assets: (required) a list of assets to load along with the runtime. each asset
 		//     is a dictionary-style Object with the following properties:
 		//        name: (required) the name of the asset, including extension.
@@ -959,7 +959,7 @@ var MonoSupportLib = {
 
 			if (ENVIRONMENT_IS_SHELL || ENVIRONMENT_IS_NODE) {
 				try {
-					load_runtime ("unused", args.enable_debugging);
+					load_runtime ("unused", args.debug_level);
 				} catch (ex) {
 					print ("MONO_WASM: load_runtime () failed: " + ex);
 					var err = new Error();
@@ -970,7 +970,7 @@ var MonoSupportLib = {
 					wasm_exit (1);
 				}
 			} else {
-				load_runtime ("unused", args.enable_debugging);
+				load_runtime ("unused", args.debug_level);
 			}
 
 			MONO.mono_wasm_runtime_ready ();

@@ -29,7 +29,7 @@ public class WasmAppBuilder : Task
     public string? MainJS { get; set; }
     [Required]
     public ITaskItem[]? AssemblySearchPaths { get; set; }
-    public bool EnableDebugging { get; set; }
+    public int DebugLevel { get; set; }
     public ITaskItem[]? ExtraAssemblies { get; set; }
     public ITaskItem[]? FilesToIncludeInFileSystem { get; set; }
     public ITaskItem[]? RemoteSources { get; set; }
@@ -42,8 +42,8 @@ public class WasmAppBuilder : Task
     {
         [JsonPropertyName("assembly_root")]
         public string AssemblyRoot { get; set; } = "managed";
-        [JsonPropertyName("enable_debugging")]
-        public bool EnableDebugging { get; set; } = false;
+        [JsonPropertyName("debug_level")]
+        public int DebugLevel { get; set; } = 0;
         [JsonPropertyName("assets")]
         public List<object> Assets { get; } = new List<object>();
         [JsonPropertyName("remote_sources")]
@@ -119,7 +119,7 @@ public class WasmAppBuilder : Task
         Directory.CreateDirectory(Path.Join(AppDir, config.AssemblyRoot));
         foreach (var assembly in _assemblies!.Values) {
             File.Copy(assembly.Location, Path.Join(AppDir, config.AssemblyRoot, Path.GetFileName(assembly.Location)), true);
-            if (EnableDebugging) {
+            if (DebugLevel > 0) {
                 var pdb = assembly.Location;
                 pdb = pdb.Replace(".dll", ".pdb");
                 if (File.Exists(pdb))
@@ -140,7 +140,7 @@ public class WasmAppBuilder : Task
 
         foreach (var assembly in _assemblies.Values) {
             config.Assets.Add(new AssemblyEntry (Path.GetFileName(assembly.Location)));
-            if (EnableDebugging) {
+            if (DebugLevel > 0) {
                 var pdb = assembly.Location;
                 pdb = pdb.Replace(".dll", ".pdb");
                 if (File.Exists(pdb))
@@ -148,7 +148,7 @@ public class WasmAppBuilder : Task
             }
         }
 
-        config.EnableDebugging = EnableDebugging;
+        config.DebugLevel = DebugLevel;
 
         if (FilesToIncludeInFileSystem != null)
         {
