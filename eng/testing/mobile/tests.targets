@@ -1,37 +1,37 @@
 <Project>
-  <Import Project="$(MSBuildThisFileDirectory)runscript.targets" />
-  <Import Project="$(MSBuildThisFileDirectory)outerBuild.targets" Condition="'$(IsCrossTargetingBuild)' == 'true'" />
-
   <PropertyGroup>
+    <!-- Implicit test build support when invoking the Test target on the project directly. -->
+    <TestDependsOn Condition="'$(TestNoBuild)' != 'true' and
+                              '$(VSTestNoBuild)' != 'true' and
+                              '$(BuildAllProjects)' != 'true'">Build</TestDependsOn>
+    <TestDependsOn>$(TestDependsOn);RunTests</TestDependsOn>
+
     <!-- Test runners are built as part of libs.pretest so we need to use libraries configuration -->
     <MobileRunnersDirSuffix>$(NetCoreAppCurrent)-$(Configuration)</MobileRunnersDirSuffix>
     <AppleTestRunnerDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'AppleTestRunner', '$(MobileRunnersDirSuffix)'))</AppleTestRunnerDir>
     <AndroidTestRunnerDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'AndroidTestRunner', '$(MobileRunnersDirSuffix)'))</AndroidTestRunnerDir>
     <WasmTestRunnerDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'WasmTestRunner', '$(MobileRunnersDirSuffix)'))</WasmTestRunnerDir>
-
-    <!-- OutDir is not set early enough to set this property in .props file. -->
     <BundleDir>$([MSBuild]::NormalizeDirectory('$(OutDir)', 'AppBundle'))</BundleDir>
-    <RunScriptOutputPath>$([MSBuild]::NormalizePath('$(BundleDir)', '$(RunScriptOutputName)'))</RunScriptOutputPath>
-    <RunAOTCompilation Condition="'$(TargetOS)' == 'iOS' and $(TargetArchitecture.StartsWith('arm'))">true</RunAOTCompilation>
-    <JSEngine Condition="'$(TargetOS)' == 'Browser' and '$(JSEngine)' == ''">V8</JSEngine>
-    <JSEngineArgs Condition="'$(JSEngine)' == 'V8'">$(JSEngineArgs) --engine-arg=--stack-trace-limit=1000</JSEngineArgs>
 
+    <RunScriptInputName Condition="'$(TargetOS)' == 'iOS'">AppleRunnerTemplate.sh</RunScriptInputName>
+    <RunScriptInputName Condition="'$(TargetOS)' == 'Android'">AndroidRunnerTemplate.sh</RunScriptInputName>
+    <RunScriptInputName Condition="'$(TargetOS)' == 'Browser'">WasmRunnerTemplate.sh</RunScriptInputName>
+    <RunScriptInputPath>$(MSBuildThisFileDirectory)$(RunScriptInputName)</RunScriptInputPath>
+
+    <RunScriptOutputName Condition="'$(TargetOS)' == 'Windows_NT'">RunTests.cmd</RunScriptOutputName>
+    <RunScriptOutputName Condition="'$(TargetOS)' != 'Windows_NT'">RunTests.sh</RunScriptOutputName>
+    <RunScriptOutputPath>$([MSBuild]::NormalizePath('$(BundleDir)', '$(RunScriptOutputName)'))</RunScriptOutputPath>
+
+    <RunAOTCompilation Condition="'$(TargetOS)' == 'iOS' and $(TargetArchitecture.StartsWith('arm'))">true</RunAOTCompilation>
     <RuntimeIdentifier>$(PackageRID)</RuntimeIdentifier>
     <SelfContained>true</SelfContained>
   </PropertyGroup>
 
   <ItemGroup>
-    <RunScriptCommands Include="TARGET_ARCH=$(TargetArchitecture)" />
-  </ItemGroup>
-
-  <PropertyGroup Condition="'$(TargetOS)' == 'Browser'">
-    <!-- We need to set this in order to get extensibility on xunit category traits and other arguments we pass down to xunit via MSBuild properties -->
-    <RunScriptCommand>$HARNESS_RUNNER wasm test --engine=$(JSEngine) $(JSEngineArgs) --js-file=runtime.js -v --output-directory=$XHARNESS_OUT -- --run WasmTestRunner.dll $(AssemblyName).dll</RunScriptCommand>
-  </PropertyGroup>
-
-  <ItemGroup>
-    <RunScriptCommands Include="TEST_NAME=$(TestProjectName)" />
-    <RunScriptCommands Include="TARGET_ARCH=$(TargetArchitecture)" />
+    <None Include="$(RunScriptInputPath)"
+          CopyToOutputDirectory="PreserveNewest"
+          Link="AppBundle\$(RunScriptOutputName)"
+          Visible="false" />
   </ItemGroup>
 
   <!-- Generate a self-contained app bundle for Android with tests. -->
@@ -201,4 +201,39 @@
           BeforeTargets="ArchiveTests"
           AfterTargets="Publish"
           Condition="'$(IsCrossTargetingBuild)' != 'true'" />
+
+  <Target Name="RunTests"
+          DependsOnTargets="CopyRunScript">
+    <PropertyGroup>
+      <RunTestsCommand>"$(RunScriptOutputPath)"</RunTestsCommand>
+      <RunTestsCommand Condition="'$(TargetOS)' != 'Browser'">$(RunTestsCommand) $(AssemblyName) $(TargetArchitecture)</RunTestsCommand>
+      <RunTestsCommand Condition="'$(TargetOS)' == 'Browser'">$(RunTestsCommand) $(AssemblyName) "$(JSEngine)" "$(JSEngineArgs)"</RunTestsCommand>
+
+      <RunTestsEnvironmentVariables>TARGET_ARCH=$(TargetArchitecture)</RunTestsEnvironmentVariables>
+      <RunTestsEnvironmentVariables Condition="'$(MonoEnvOptions)' != ''">$(RunTestsEnvironmentVariables);MONO_ENV_OPTIONS=$(MonoEnvOptions)</RunTestsEnvironmentVariables>
+    </PropertyGroup>
+
+    <!-- Invoke the run script with the test host as the runtime path. -->
+    <Exec Command="$(RunTestsCommand)"
+          ContinueOnError="true"
+          IgnoreExitCode="true"
+          IgnoreStandardErrorWarningFormat="true"
+          EnvironmentVariables="$(RunTestsEnvironmentVariables)">
+      <Output PropertyName="TestRunExitCode" TaskParameter="ExitCode" />
+    </Exec>
+
+    <PropertyGroup Condition="'$(TestRunExitCode)' != '0'">
+      <TestResultsPath>$(OutputPath)$(TestResultsName)</TestResultsPath>
+      <TestRunErrorMessage>One or more tests failed while running tests from '$(TestProjectName)'.</TestRunErrorMessage>
+      <TestRunErrorMessage Condition="Exists('$(TestResultsPath)')">$(TestRunErrorMessage) Please check $(TestResultsPath) for details!</TestRunErrorMessage>
+    </PropertyGroup>
+
+    <Error Condition="'$(TestRunExitCode)' != '0'" Text="$(TestRunErrorMessage)" />
+  </Target>
+
+  <Target Name="Test" DependsOnTargets="$(TestDependsOn)" />
+  <!-- Overwrite the VSTest target to enable "dotnet test". -->
+  <Target Name="VSTest" DependsOnTargets="Test" />
+
+  <Import Project="$(MSBuildThisFileDirectory)outerBuild.targets" Condition="'$(IsCrossTargetingBuild)' == 'true'" />
 </Project>

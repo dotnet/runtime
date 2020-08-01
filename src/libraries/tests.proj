@@ -1,17 +1,20 @@
 <Project Sdk="Microsoft.Build.Traversal">
-
   <PropertyGroup>
-    <TestInParallel Condition="'$(Coverage)' == 'true'">false</TestInParallel>
     <!-- For tests we want to continue running if a test run failed. -->
     <TestContinueOnError>ErrorAndContinue</TestContinueOnError>
     <TraversalGlobalProperties>BuildAllProjects=true</TraversalGlobalProperties>
-    <CoverageReportInputPath>$(ArtifactsBinDir)\*.Tests\**\coverage.opencover.xml</CoverageReportInputPath>
-    <CoverageReportDir>$(ArtifactsDir)coverage</CoverageReportDir>
-    <EnableCoverageSupport>true</EnableCoverageSupport>
+
     <TestAssemblies Condition="'$(TestAssemblies)' == ''">true</TestAssemblies>
     <TestPackages Condition="'$(TestPackages)' == ''">false</TestPackages>
     <TestTrimming Condition="'$(TestTrimming)' == ''">false</TestTrimming>
     <ContinueOnError Condition="'$(TestTrimming)' == 'true'">true</ContinueOnError>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Coverage)' == 'true'">
+    <TestInParallel>false</TestInParallel>
+    <CoverageReportInputPath>$(ArtifactsBinDir)\*.Tests\**\coverage.opencover.xml</CoverageReportInputPath>
+    <CoverageReportDir>$(ArtifactsDir)coverage</CoverageReportDir>
+    <EnableCoverageSupport>true</EnableCoverageSupport>
   </PropertyGroup>
   
   <!-- Projects that don't support code coverage measurement. -->
@@ -132,5 +135,4 @@
           DependsOnTargets="GenerateCoverageReport"
           Condition="'$(TestAssemblies)' == 'true' and
                      '$(Coverage)' == 'true'" />
-
 </Project>

@@ -17,14 +17,12 @@
       around a dupliate type between System.Runtime.Serialization.Formatters and Newtonsoft.Json.
     -->
     <PackageReference Include="Newtonsoft.Json" Version="$(NewtonsoftJsonVersion)" />
-    <PackageReference Include="coverlet.collector" Version="$(CoverletCollectorVersion)" />
   </ItemGroup>
 
   <PropertyGroup>
     <!-- Default and user defined categories -->
     <_withCategories Condition="'$(WithCategories)' != ''">;$(WithCategories.Trim(';'))</_withCategories>
     <_withoutCategories Condition="'$(WithoutCategories)' != ''">;$(WithoutCategories.Trim(';'))</_withoutCategories>
-
     <TestScope Condition="'$(TestScope)' == '' and '$(Outerloop)' == 'true'">all</TestScope>
     <_withCategories Condition="'$(TestScope)' == 'outerloop'">$(_withCategories);OuterLoop</_withCategories>
     <_withoutCategories Condition="'$(ArchiveTests)' == 'true'">$(_withoutCategories);IgnoreForCI</_withoutCategories>
@@ -32,9 +30,5 @@
     <_withoutCategories Condition="!$(_withCategories.Contains('failing'))">$(_withoutCategories);failing</_withoutCategories>
   </PropertyGroup>
 
-  <!--
-    Unit/Functional/Integration test support.
-    Supported runners: xunit.
-  -->
   <Import Project="$(MSBuildThisFileDirectory)xunit\xunit.props" Condition="'$(TestFramework)' == 'xunit'" />
 </Project>

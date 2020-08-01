@@ -1,4 +1,8 @@
 <Project>
+  <PropertyGroup>
+    <PackageReference Include="coverlet.collector" Version="$(CoverletCollectorVersion)" />
+  </PropertyGroup>
+
   <Target Name="SetupCoverageFilter">
     <!--
       We need to filter the data to only the assembly being tested. Otherwise we will gather tons of data about other assemblies.
@@ -52,7 +56,6 @@
     <Exec Command="$(CoverageReportCommand)" />
   </Target>
 
-  
   <!--
     Clean the test results directory to guarantee that a report is generated from the
     newest coverage results file.
