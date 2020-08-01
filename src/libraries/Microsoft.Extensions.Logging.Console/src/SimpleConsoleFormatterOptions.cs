@@ -11,7 +11,7 @@ namespace Microsoft.Extensions.Logging.Console
         public SimpleConsoleFormatterOptions() { }
 
         /// <summary>
-        /// Determines when color can be enabled log messages.
+        /// Determines when to use color when logging messages.
         /// </summary>
         public LoggerColorBehavior ColorBehavior { get; set; }
 

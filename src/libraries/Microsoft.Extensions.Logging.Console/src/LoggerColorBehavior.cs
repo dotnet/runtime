@@ -4,13 +4,16 @@
 namespace Microsoft.Extensions.Logging.Console
 {
     /// <summary>
-    /// Determines when color can be enabled log messages
+    /// Determines when to use color when logging messages.
     /// </summary>
     public enum LoggerColorBehavior
     {
         /// <summary>
-        /// Disabled when output is redirected
-        /// </summary>
+        /// Use the default color behavior
+        /// </summary>        
+        /// <remarks>
+        /// Enables color except when the console output is redirected.
+        /// </remarks>
         Default,
         /// <summary>
         /// Enable color for logging
