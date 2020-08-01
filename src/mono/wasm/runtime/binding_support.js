@@ -88,25 +88,26 @@ var BindingSupportLib = {
 			if (!wasm_runtime_class)
 				throw "Can't find " + binding_fqn_class + " class";
 
-			var get_method = function(method_name) {
-				var res = BINDING.find_method (wasm_runtime_class, method_name, -1)
-				if (!res)
-					throw "Can't find method " + namespace + "." + classname + ":" + method_name;
-				return res;
-			}
+			this.runtime = {
+				class: wasm_runtime_class
+			};
 
-			this.Runtime = {};
-			var bind_method = function(method_name, signature, container = BINDING.Runtime) {
-				var method = BINDING.find_method (wasm_runtime_class, method_name, -1);
-				container[method_name] = function (arg) {
+			var bind_method = function(method_name, signature, namespace = BINDING.runtime) {
+				var method = BINDING.find_method (namespace.class, method_name, -1);
+				namespace[method_name ] = function () {
 					try {
-						return BINDING.call_method (method, null, signature, arg);
+						args = [];
+						Array.prototype.forEach.call(arguments, function (el) {
+							args.push (el);
+						});
+						return BINDING.call_method (method, null, signature, args);
 					} catch (ex) {
-						console.error (`unable to call method: ${method_name} args: ${arguments.toString()}`, ex.stack);
+						console.error (`unable to call method: ${method_name} args: ${args.toString()}`, ex.stack);
 					}
 				}
-				return container[method_name];
+				return namespace[method_name];
 			}
+
 			bind_method ("BindJSObject", "iii");
 			bind_method ("BindCoreCLRObject", "ii")
 			bind_method ("BindExistingObject", "mi");
@@ -150,7 +151,7 @@ var BindingSupportLib = {
 		},
 
 		is_nested_array: function (ele) {
-			return BINDING.Runtime.IsSimpleArray ([ele]);
+			return BINDING.runtime.IsSimpleArray (ele);
 		},
 
 		mono_array_to_js_array: function (mono_array) {
@@ -214,7 +215,7 @@ var BindingSupportLib = {
 					};
 				});
 
-				BINDING.Runtime.SetupJsContinuation ([mono_obj, cont_obj]);
+				BINDING.Runtime.SetupJsContinuation (mono_obj, cont_obj);
 				obj.__mono_js_cont__ = cont_obj.__mono_gchandle__;
 				cont_obj.__mono_js_task__ = obj.__mono_gchandle__;
 				return promise;
@@ -234,7 +235,7 @@ var BindingSupportLib = {
 				}
 				else
 				{
-					enumValue = BINDING.Runtime.ObjectToString ([mono_obj]);
+					enumValue = BINDING.runtime.ObjectToString (mono_obj);
 				}
 
 				return enumValue;
@@ -252,14 +253,14 @@ var BindingSupportLib = {
 				throw new Error ("Marshalling of primitive arrays are not supported.  Use the corresponding TypedArray instead.");
 			}
 			case 20: // clr .NET DateTime
-				var dateValue = BINDING.Runtime.GetDateValue ([mono_obj]);
+				var dateValue = BINDING.runtime.GetDateValue (mono_obj);
 				return new Date(dateValue);
 			case 21: // clr .NET DateTimeOffset
 			case 22: // clr .NET Uri
-				return BINDING.Runtime.ObjectToString ([mono_obj]);
+				return BINDING.runtime.ObjectToString (mono_obj);
 			case 23: // clr .NET SafeHandle
 				var addRef = true;
-				var js_handle = BINDING.Runtime.SafeHandleGetHandle ([mono_obj, addRef]);
+				var js_handle = BINDING.runtime.SafeHandleGetHandle (mono_obj, addRef);
 				var requiredObject = BINDING.mono_wasm_require_handle (js_handle);
 				if (addRef)
 				{
@@ -275,19 +276,19 @@ var BindingSupportLib = {
 		},
 
 		create_task_completion_source: function () {
-			return BINDING.Runtime.CreateTaskSource ([-1]);
+			return BINDING.runtime.CreateTaskSource (-1);
 		},
 
 		set_task_result: function (tcs, result) {
 			tcs.is_mono_tcs_result_set = true;
-			BINDING.Runtime.SetTaskSourceResult ([tcs, result]);
+			BINDING.runtime.SetTaskSourceResult (tcs, result);
 			if (tcs.is_mono_tcs_task_bound)
 				this.free_task_completion_source(tcs);
 		},
 
 		set_task_failure: function (tcs, reason) {
 			tcs.is_mono_tcs_result_set = true;
-			BINDING.Runtime.SetTaskSourceFailure ([tcs, reason.toString ()]);
+			BINDING.runtime.SetTaskSourceFailure (tcs, reason.toString ());
 			if (tcs.is_mono_tcs_task_bound)
 				this.free_task_completion_source(tcs);
 		},
@@ -322,12 +323,12 @@ var BindingSupportLib = {
 					return 0;
 				case typeof js_obj === "number":
 					if (parseInt(js_obj) == js_obj)
-						return BINDING.Runtime.BoxInt ([js_obj]);
-					return BINDING.Runtime.BoxDouble ([js_obj]);
+						return BINDING.runtime.BoxInt (js_obj);
+					return BINDING.runtime.BoxDouble (js_obj);
 				case typeof js_obj === "string":
 					return this.js_string_to_mono_string (js_obj);
 				case typeof js_obj === "boolean":
-					return BINDING.Runtime.BoxBool ([js_obj]);
+					return BINDING.runtime.BoxBool (js_obj);
 				case isThenable() === true:
 					var the_task = this.try_extract_mono_obj (js_obj);
 					if (the_task)
@@ -341,7 +342,7 @@ var BindingSupportLib = {
 					return this.get_task_and_bind (tcs, js_obj);
 				case js_obj.constructor.name === "Date":
 					// We may need to take into account the TimeZone Offset
-					return BINDING.Runtime.CreateDateTime ([js_obj.getTime()]);
+					return BINDING.runtime.CreateDateTime (js_obj.getTime());
 				default:
 					return this.extract_mono_obj (js_obj);
 			}
@@ -354,7 +355,7 @@ var BindingSupportLib = {
 				case typeof js_obj === "undefined":
 					return 0;
 				case typeof js_obj === "string":
-					return BINDING.Runtime.CreateUri ([js_obj]);
+					return BINDING.runtime.CreateUri (js_obj);
 				default:
 					return this.extract_mono_obj (js_obj);
 			}
@@ -541,26 +542,26 @@ var BindingSupportLib = {
 		},
 		wasm_binding_obj_new: function (js_obj_id, ownsHandle, type)
 		{
-			return BINDING.Runtime.BindJSObject ([js_obj_id, ownsHandle, type]);	
+			return BINDING.runtime.BindJSObject (js_obj_id, ownsHandle, type);
 		},
 		wasm_bind_existing: function (mono_obj, js_id)
 		{
-			return BINDING.Runtime.BindExistingObject ([mono_obj, js_id]);
+			return BINDING.runtime.BindExistingObject (mono_obj, js_id);
 		},
 
 		wasm_bind_core_clr_obj: function (js_id, gc_handle)
 		{
-			return BINDING.Runtime.BindCoreCLRObject ([js_id, gc_handle]);
+			return BINDING.runtime.BindCoreCLRObject (js_id, gc_handle);
 		},
 
 		wasm_get_js_id: function (mono_obj)
 		{
-			return BINDING.Runtime.GetJSObjectId ([mono_obj]);
+			return BINDING.runtime.GetJSObjectId (mono_obj);
 		},
 
 		wasm_get_raw_obj: function (gchandle)
 		{
-			return BINDING.Runtime.GetDotNetObject ([gchandle])
+			return BINDING.runtime.GetDotNetObject (gchandle)
 		},
 
 		try_extract_mono_obj:function (js_obj) {
@@ -572,12 +573,12 @@ var BindingSupportLib = {
 		mono_method_get_call_signature: function(method) {
 			this.bindings_lazy_init ();
 
-			return BINDING.Runtime.GetCallSignature ([method]);
+			return BINDING.runtime.GetCallSignature (method);
 		},
 
 		get_task_and_bind: function (tcs, js_obj) {
 			var gc_handle = this.mono_wasm_free_list.length ? this.mono_wasm_free_list.pop() : this.mono_wasm_ref_counter++;
-			var task_gchandle = BINDING.Runtime.GetTaskAndBind ([tcs, gc_handle + 1]);
+			var task_gchandle = BINDING.runtime.GetTaskAndBind (tcs, gc_handle + 1);
 			js_obj.__mono_gchandle__ = task_gchandle;
 			this.mono_wasm_object_registry[gc_handle] = js_obj;
 			this.free_task_completion_source(tcs);
@@ -590,11 +591,11 @@ var BindingSupportLib = {
 		free_task_completion_source: function (tcs) {
 			if (tcs.is_mono_tcs_result_set)
 			{
-				BINDING.Runtime.UnBindRawJSObjectAndFree ([tcs.__mono_gchandle__]);
+				BINDING.runtime.UnBindRawJSObjectAndFree (tcs.__mono_gchandle__);
 			}
 			if (tcs.__mono_bound_task__)
 			{
-				BINDING.Runtime.UnBindRawJSObjectAndFree ([tcs.__mono_bound_task__]);
+				BINDING.runtime.UnBindRawJSObjectAndFree (tcs.__mono_bound_task__);
 			}
 		},
 
@@ -981,7 +982,7 @@ var BindingSupportLib = {
 				for (refidx = 0; refidx < __owned_objects__.length; refidx++)
 				{
 					var ownerRelease = __owned_objects__[refidx];
-					BINDING.Runtime.SafeHandleReleaseByHandle ([ownerRelease]);
+					BINDING.runtime.SafeHandleReleaseByHandle (ownerRelease);
 				}
 			}
 			//console.log("restore LMF: " + BINDING.mono_wasm_owned_objects_frames.length)
@@ -1102,7 +1103,7 @@ var BindingSupportLib = {
         
 		}
 		BINDING.mono_wasm_unwind_LMF();
-		BINDING.Runtime.BoxBool ([result]);
+		BINDING.runtime.BoxBool (result);
 	},
 	mono_wasm_get_by_index: function(js_handle, property_index, is_exception) {
 		BINDING.bindings_lazy_init ();
