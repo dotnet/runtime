@@ -16,6 +16,7 @@ typedef void (*ErrorCallback)(const char *szMessage, uint32_t code);
 
 class IpcStream final
 {
+    friend class IpcStreamFactory;
 public:
     static constexpr int32_t InfiniteTimeout = -1;
     ~IpcStream();
@@ -26,6 +27,7 @@ public:
 
     class DiagnosticsIpc final
     {
+        friend class IpcStreamFactory;
     public:
         enum ConnectionMode
         {
@@ -38,7 +40,8 @@ public:
             NONE     = 0x00, // no events
             SIGNALED = 0x01, // ready for use
             HANGUP   = 0x02, // connection remotely closed
-            ERR      = 0x04  // other error
+            ERR      = 0x04, // error
+            UNKOWN   = 0xFF  // unknown state
         };
 
         // The bookeeping struct used for polling on server and client structs
