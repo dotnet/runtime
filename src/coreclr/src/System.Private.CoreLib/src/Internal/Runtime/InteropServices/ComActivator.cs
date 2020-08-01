@@ -497,32 +497,28 @@ $@"{nameof(UnregisterClassForTypeInternal)} arguments:
             {
 #if FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
                 // If the requested "interface type" is type object then return as IUnknown
-                IntPtr interfacePtr = Marshal.GetIUnknownForObject(obj);
-                if (interfaceType != typeof(object))
+                if (interfaceType == typeof(object))
                 {
-                    Debug.Assert(interfaceType.IsInterface);
-
-                    // The intent of this call is to get AND validate the interface can be
-                    // marshalled to native code. An exception will be thrown if the
-                    // type is unable to be marshalled to native code.
-                    // Scenarios where this is relevant:
-                    //  - Interfaces that use Generics
-                    //  - Interfaces that define implementation
-                    IntPtr interfaceMaybe = Marshal.GetComInterfaceForObject(obj, interfaceType, CustomQueryInterfaceMode.Ignore);
-
-                    // Decrement the above 'Marshal.GetIUnknownForObject()'
-                    Marshal.Release(interfacePtr);
-
-                    if (interfaceMaybe == IntPtr.Zero)
-                    {
-                        // E_NOINTERFACE
-                        throw new InvalidCastException();
-                    }
-
-                    interfacePtr = interfaceMaybe;
+                    return Marshal.GetIUnknownForObject(obj);
                 }
 
-                return interfacePtr;
+                Debug.Assert(interfaceType.IsInterface);
+
+                // The intent of this call is to get AND validate the interface can be
+                // marshalled to native code. An exception will be thrown if the
+                // type is unable to be marshalled to native code.
+                // Scenarios where this is relevant:
+                //  - Interfaces that use Generics
+                //  - Interfaces that define implementation
+                IntPtr interfaceMaybe = Marshal.GetComInterfaceForObject(obj, interfaceType, CustomQueryInterfaceMode.Ignore);
+
+                if (interfaceMaybe == IntPtr.Zero)
+                {
+                    // E_NOINTERFACE
+                    throw new InvalidCastException();
+                }
+
+                return interfaceMaybe;
 #else
                 throw new PlatformNotSupportedException();
 #endif
