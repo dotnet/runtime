@@ -118,7 +118,7 @@ var BindingSupportLib = {
 			bind_method ("SetupJSContinuation", "mo")
 
 			bind_method ("CreateTaskSource", "i");
-			bind_method ("SetTaskSourceFailure", "oo");
+			bind_method ("SetTaskSourceResult", "oo");
 			bind_method ("SetTaskSourceFailure", "os");
 			bind_method ("GetTaskAndBind", "oi");
 			bind_method ("GetCallSignature", "i");
