@@ -7,11 +7,9 @@ T:System.ComponentModel.EditorAttribute
 T:System.ComponentModel.ToolboxItemAttribute
 T:System.ComponentModel.TypeDescriptionProviderAttribute
 T:System.Configuration.ConfigurationPropertyAttribute
-T:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute
 T:System.Diagnostics.CodeAnalysis.DynamicDependencyAttribute
 T:System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverageAttribute
 T:System.Diagnostics.CodeAnalysis.MemberNotNullAttribute
-T:System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute
 T:System.Diagnostics.CodeAnalysis.SuppressMessageAttribute
 T:System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute
 T:System.Diagnostics.DebuggerBrowsableAttribute
