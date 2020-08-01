@@ -2,7 +2,7 @@ steps:
   - script: dotnet --info
     displayName: display dotnet info
   - script: mkdir $(Build.SourcesDirectory)/eng/common/performance/blazor_project
-    diplayName: make blazor project directory
+    displayName: make blazor project directory
   - script: dotnet new blazorwasm
     displayName: new blazorwasm
     workingDirectory: $(Build.SourcesDirectory)/eng/common/performance/blazor_project
