@@ -14,10 +14,10 @@ namespace DebuggerTests
 	public class DelegateTests : DebuggerTestBase {
 
 		[Theory]
-		[InlineData (0, 45, 2, "DelegatesTest", false)]
-		[InlineData (0, 45, 2, "DelegatesTest", true)]
-		[InlineData (2, 90, 2, "InnerMethod2", false)]
-		[InlineData (2, 90, 2, "InnerMethod2", true)]
+		[InlineData (0, 48, 2, "DelegatesTest", false)]
+		[InlineData (0, 48, 2, "DelegatesTest", true)]
+		[InlineData (2, 93, 2, "InnerMethod2", false)]
+		[InlineData (2, 93, 2, "InnerMethod2", true)]
 		public async Task InspectLocalsWithDelegatesAtBreakpointSite (int frame, int line, int col, string method_name, bool use_cfo) =>
 			await CheckInspectLocalsAtBreakpointSite (
 				"dotnet://debugger-test.dll/debugger-test.cs", line, col, method_name,
@@ -74,10 +74,10 @@ namespace DebuggerTests
 			);
 
 		[Theory]
-		[InlineData (0, 190, 2, "DelegatesSignatureTest", false)]
-		[InlineData (0, 190, 2, "DelegatesSignatureTest", true)]
-		[InlineData (2, 90, 2, "InnerMethod2", false)]
-		[InlineData (2, 90, 2, "InnerMethod2", true)]
+		[InlineData (0, 193, 2, "DelegatesSignatureTest", false)]
+		[InlineData (0, 193, 2, "DelegatesSignatureTest", true)]
+		[InlineData (2, 93, 2, "InnerMethod2", false)]
+		[InlineData (2, 93, 2, "InnerMethod2", true)]
 		public async Task InspectDelegateSignaturesWithFunc (int frame, int line, int col, string bp_method, bool use_cfo)
 			=> await CheckInspectLocalsAtBreakpointSite (
 				"dotnet://debugger-test.dll/debugger-test.cs",
@@ -141,10 +141,10 @@ namespace DebuggerTests
 				});
 
 		[Theory]
-		[InlineData (0, 211, 2, "ActionTSignatureTest", false)]
-		[InlineData (0, 211, 2, "ActionTSignatureTest", true)]
-		[InlineData (2, 90, 2, "InnerMethod2", false)]
-		[InlineData (2, 90, 2, "InnerMethod2", true)]
+		[InlineData (0, 214, 2, "ActionTSignatureTest", false)]
+		[InlineData (0, 214, 2, "ActionTSignatureTest", true)]
+		[InlineData (2, 93, 2, "InnerMethod2", false)]
+		[InlineData (2, 93, 2, "InnerMethod2", true)]
 		public async Task ActionTSignatureTest (int frame, int line, int col, string bp_method, bool use_cfo)
 			=> await CheckInspectLocalsAtBreakpointSite (
 				"dotnet://debugger-test.dll/debugger-test.cs", line, col,
@@ -182,10 +182,10 @@ namespace DebuggerTests
 				});
 
 		[Theory]
-		[InlineData (0, 228, 2, "NestedDelegatesTest", false)]
-		[InlineData (0, 228, 2, "NestedDelegatesTest", true)]
-		[InlineData (2, 90, 2, "InnerMethod2", false)]
-		[InlineData (2, 90, 2, "InnerMethod2", true)]
+		[InlineData (0, 231, 2, "NestedDelegatesTest", false)]
+		[InlineData (0, 231, 2, "NestedDelegatesTest", true)]
+		[InlineData (2, 93, 2, "InnerMethod2", false)]
+		[InlineData (2, 93, 2, "InnerMethod2", true)]
 		public async Task NestedDelegatesTest (int frame, int line, int col, string bp_method, bool use_cfo)
 			=> await CheckInspectLocalsAtBreakpointSite (
 				"dotnet://debugger-test.dll/debugger-test.cs", line, col,
@@ -222,10 +222,10 @@ namespace DebuggerTests
 				});
 
 		[Theory]
-		[InlineData (0, 247, 2, "MethodWithDelegateArgs", false)]
-		[InlineData (0, 247, 2, "MethodWithDelegateArgs", true)]
-		[InlineData (2, 90, 2, "InnerMethod2", false)]
-		[InlineData (2, 90, 2, "InnerMethod2", true)]
+		[InlineData (0, 250, 2, "MethodWithDelegateArgs", false)]
+		[InlineData (0, 250, 2, "MethodWithDelegateArgs", true)]
+		[InlineData (2, 93, 2, "InnerMethod2", false)]
+		[InlineData (2, 93, 2, "InnerMethod2", true)]
 		public async Task DelegatesAsMethodArgsTest (int frame, int line, int col, string bp_method, bool use_cfo)
 			=> await CheckInspectLocalsAtBreakpointSite (
 				"dotnet://debugger-test.dll/debugger-test.cs", line, col,
@@ -257,7 +257,7 @@ namespace DebuggerTests
 		[InlineData (true)]
 		public async Task MethodWithDelegatesAsyncTest (bool use_cfo)
 			=> await CheckInspectLocalsAtBreakpointSite (
-				"dotnet://debugger-test.dll/debugger-test.cs", 265, 2,
+				"dotnet://debugger-test.dll/debugger-test.cs", 268, 2,
 				"MoveNext", //"DelegatesAsMethodArgsTestAsync"
 				"window.setTimeout (function () { invoke_static_method_async ('[debugger-test] Math:MethodWithDelegatesAsyncTest'); }, 1)",
 				use_cfo: use_cfo,

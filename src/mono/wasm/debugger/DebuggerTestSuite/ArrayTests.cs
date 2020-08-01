@@ -14,10 +14,10 @@ namespace DebuggerTests
 	public class ArrayTests : DebuggerTestBase {
 
 		[Theory]
-		[InlineData (16, 2, "PrimitiveTypeLocals", false, 0, false)]
-		[InlineData (16, 2, "PrimitiveTypeLocals", false, 0, true)]
-		[InlineData (93, 2, "YetAnotherMethod", true, 2, false)]
-		[InlineData (93, 2, "YetAnotherMethod", true, 2, true)]
+		[InlineData (19, 2, "PrimitiveTypeLocals", false, 0, false)]
+		[InlineData (19, 2, "PrimitiveTypeLocals", false, 0, true)]
+		[InlineData (96, 2, "YetAnotherMethod", true, 2, false)]
+		[InlineData (96, 2, "YetAnotherMethod", true, 2, true)]
 		public async Task InspectPrimitiveTypeArrayLocals (int line, int col, string method_name, bool test_prev_frame, int frame_idx, bool use_cfo)
 			=> await TestSimpleArrayLocals (
 				line, col,
@@ -32,10 +32,10 @@ namespace DebuggerTests
 				use_cfo: use_cfo);
 
 		[Theory]
-		[InlineData (32, 2, "ValueTypeLocals", false, 0, false)]
-		[InlineData (32, 2, "ValueTypeLocals", false, 0, true)]
-		[InlineData (93, 2, "YetAnotherMethod", true, 2, false)]
-		[InlineData (93, 2, "YetAnotherMethod", true, 2, true)]
+		[InlineData (35, 2, "ValueTypeLocals", false, 0, false)]
+		[InlineData (35, 2, "ValueTypeLocals", false, 0, true)]
+		[InlineData (96, 2, "YetAnotherMethod", true, 2, false)]
+		[InlineData (96, 2, "YetAnotherMethod", true, 2, true)]
 		public async Task InspectValueTypeArrayLocals (int line, int col, string method_name, bool test_prev_frame, int frame_idx, bool use_cfo)
 			=> await TestSimpleArrayLocals (
 				line, col,
@@ -56,10 +56,10 @@ namespace DebuggerTests
 				use_cfo: use_cfo);
 
 		[Theory]
-		[InlineData (49, 2, "ObjectTypeLocals", false, 0, false)]
-		[InlineData (49, 2, "ObjectTypeLocals", false, 0, true)]
-		[InlineData (93, 2, "YetAnotherMethod", true, 2, false)]
-		[InlineData (93, 2, "YetAnotherMethod", true, 2, true)]
+		[InlineData (52, 2, "ObjectTypeLocals", false, 0, false)]
+		[InlineData (52, 2, "ObjectTypeLocals", false, 0, true)]
+		[InlineData (96, 2, "YetAnotherMethod", true, 2, false)]
+		[InlineData (96, 2, "YetAnotherMethod", true, 2, true)]
 		public async Task InspectObjectArrayLocals (int line, int col, string method_name, bool test_prev_frame, int frame_idx, bool use_cfo)
 			=> await TestSimpleArrayLocals (
 				line, col,
@@ -81,10 +81,10 @@ namespace DebuggerTests
 				use_cfo: use_cfo);
 
 		[Theory]
-		[InlineData (66, 2, "GenericTypeLocals", false, 0, false)]
-		[InlineData (66, 2, "GenericTypeLocals", false, 0, true)]
-		[InlineData (93, 2, "YetAnotherMethod", true, 2, false)]
-		[InlineData (93, 2, "YetAnotherMethod", true, 2, true)]
+		[InlineData (69, 2, "GenericTypeLocals", false, 0, false)]
+		[InlineData (69, 2, "GenericTypeLocals", false, 0, true)]
+		[InlineData (96, 2, "YetAnotherMethod", true, 2, false)]
+		[InlineData (96, 2, "YetAnotherMethod", true, 2, true)]
 		public async Task InspectGenericTypeArrayLocals (int line, int col, string method_name, bool test_prev_frame, int frame_idx, bool use_cfo)
 			=> await TestSimpleArrayLocals (
 				line, col,
@@ -115,10 +115,10 @@ namespace DebuggerTests
 				use_cfo: use_cfo);
 
 		[Theory]
-		[InlineData (82, 2, "GenericValueTypeLocals", false, 0, false)]
-		[InlineData (82, 2, "GenericValueTypeLocals", false, 0, true)]
-		[InlineData (93, 2, "YetAnotherMethod", true, 2, false)]
-		[InlineData (93, 2, "YetAnotherMethod", true, 2, true)]
+		[InlineData (85, 2, "GenericValueTypeLocals", false, 0, false)]
+		[InlineData (85, 2, "GenericValueTypeLocals", false, 0, true)]
+		[InlineData (96, 2, "YetAnotherMethod", true, 2, false)]
+		[InlineData (96, 2, "YetAnotherMethod", true, 2, true)]
 		public async Task InspectGenericValueTypeArrayLocals (int line, int col, string method_name, bool test_prev_frame, int frame_idx, bool use_cfo)
 			=> await TestSimpleArrayLocals (
 				line, col,
@@ -147,10 +147,10 @@ namespace DebuggerTests
 				use_cfo: use_cfo);
 
 		[Theory]
-		[InlineData (191, 2, "GenericValueTypeLocals2", false, 0, false)]
-		[InlineData (191, 2, "GenericValueTypeLocals2", false, 0, true)]
-		[InlineData (93, 2, "YetAnotherMethod", true, 2, false)]
-		[InlineData (93, 2, "YetAnotherMethod", true, 2, true)]
+		[InlineData (194, 2, "GenericValueTypeLocals2", false, 0, false)]
+		[InlineData (194, 2, "GenericValueTypeLocals2", false, 0, true)]
+		[InlineData (96, 2, "YetAnotherMethod", true, 2, false)]
+		[InlineData (96, 2, "YetAnotherMethod", true, 2, true)]
 		public async Task InspectGenericValueTypeArrayLocals2 (int line, int col, string method_name, bool test_prev_frame, int frame_idx, bool use_cfo)
 			=> await TestSimpleArrayLocals (
 				line, col,
@@ -277,7 +277,7 @@ namespace DebuggerTests
 			var insp = new Inspector ();
 			//Collect events
 			var scripts = SubscribeToScripts(insp);
-			int line = 205;
+			int line = 208;
 			int col = 3;
 			string entry_method_name = "[debugger-test] DebuggerTests.ArrayTestsClass:ObjectArrayMembers";
 			string method_name = "PlaceholderMethod";
@@ -351,7 +351,7 @@ namespace DebuggerTests
 			var insp = new Inspector ();
 			//Collect events
 			var scripts = SubscribeToScripts(insp);
-			int line = 143;
+			int line = 146;
 			int col = 3;
 			string entry_method_name = "[debugger-test] DebuggerTests.ArrayTestsClass:ValueTypeLocalsAsync";
 			string method_name = "MoveNext"; // BUG: this should be ValueTypeLocalsAsync
@@ -416,7 +416,7 @@ namespace DebuggerTests
 			var insp = new Inspector ();
 			//Collect events
 			var scripts = SubscribeToScripts(insp);
-			int line = 155;
+			int line = 158;
 			int col = 3;
 			string entry_method_name = "[debugger-test] DebuggerTests.ArrayTestsClass:ValueTypeLocalsAsync";
 			int frame_idx = 0;
@@ -471,7 +471,7 @@ namespace DebuggerTests
 			var insp = new Inspector ();
 			//Collect events
 			var scripts = SubscribeToScripts(insp);
-			int line = 222;
+			int line = 225;
 			int col = 3;
 			string entry_method_name = "[debugger-test] DebuggerTests.ArrayTestsClass:EntryPointForStructMethod";
 			int frame_idx = 0;
@@ -509,7 +509,7 @@ namespace DebuggerTests
 			var insp = new Inspector ();
 			//Collect events
 			var scripts = SubscribeToScripts(insp);
-			int line = 229;
+			int line = 232;
 			int col = 3;
 			string entry_method_name = "[debugger-test] DebuggerTests.ArrayTestsClass:EntryPointForStructMethod";
 			int frame_idx = 0;
