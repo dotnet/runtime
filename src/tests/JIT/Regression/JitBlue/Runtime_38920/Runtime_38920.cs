@@ -53,8 +53,8 @@ class TestStructs
         CastToStruct8  to8  = new CastToStruct8();
         CastToStruct12 to12 = new CastToStruct12();
 
-	// possible incorrect CSE def of impByRefStruct20.structField
-	//
+        // possible incorrect CSE def of impByRefStruct20.structField
+        //
         to8 = Unsafe.As<StructA, CastToStruct8>(ref impByRefStruct20.structField);
 
         for (int i =0; i<10; i++)
@@ -107,7 +107,7 @@ class TestStructs
         s.c = c;    // 9
         UnsafeCastFromAPrimitiveStructFieldToStruct(s, b, c);
 
-	if (exitStatus == 100)
+        if (exitStatus == 100)
         {
             Console.WriteLine("Test Passed");
         }
