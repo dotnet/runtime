@@ -10,6 +10,7 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Security;
+using System.Security.Permissions;
 #endif
 #if ES_BUILD_AGAINST_DOTNET_V35
 using Microsoft.Internal;
@@ -22,32 +23,18 @@ namespace Microsoft.Diagnostics.Tracing.Internal
 namespace System.Diagnostics.Tracing.Internal
 #endif
 {
+#if ES_BUILD_STANDALONE
     internal static class Environment
     {
-        public static readonly string NewLine = System.Environment.NewLine;
+        public static int ProcessId = GetCurrentProcessId();
 
-        public static int TickCount => System.Environment.TickCount;
-
-        public static string GetResourceString(string key, params object?[] args)
+        private static int GetCurrentProcessId()
         {
-            string? fmt = rm.GetString(key);
-            if (fmt != null)
-                return string.Format(fmt, args);
-
-            string sargs = string.Join(", ", args);
-
-            return key + " (" + sargs + ")";
+            new SecurityPermission(PermissionState.Unrestricted).Assert();
+            return (int)Interop.Kernel32.GetCurrentProcessId();
         }
-
-        public static string GetRuntimeResourceString(string key, params object?[] args)
-        {
-            return GetResourceString(key, args);
-        }
-
-        private static readonly System.Resources.ResourceManager rm = new System.Resources.ResourceManager("Microsoft.Diagnostics.Tracing.Messages", typeof(Environment).Assembly());
     }
 
-#if ES_BUILD_STANDALONE
     internal static class BitOperations
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -365,7 +352,5 @@ internal static partial class Interop
         [DllImport("kernel32.dll", CharSet = CharSet.Auto)]
         internal static extern uint GetCurrentProcessId();
     }
-
-    internal static uint GetCurrentProcessId() => Kernel32.GetCurrentProcessId();
 }
 #endif

@@ -12,8 +12,8 @@ add_library_clr(cee_wks_core OBJECT ${VM_SOURCES_WKS} ${VM_SOURCES_WKS_ARCH_ASM}
 target_precompile_header(TARGET cee_wks_core HEADER common.h)
 
 if (MSVC)
-    # mscorlib.cpp does not compile with precompiled header file
-    set_source_files_properties(../mscorlib.cpp PROPERTIES COMPILE_FLAGS "/Y-")
+    # corelib.cpp does not compile with precompiled header file
+    set_source_files_properties(../corelib.cpp PROPERTIES COMPILE_FLAGS "/Y-")
 endif()
 
 add_dependencies(cee_wks_core eventing_headers)

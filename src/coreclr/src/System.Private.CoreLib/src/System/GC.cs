@@ -294,7 +294,7 @@ namespace System
 
         public static void WaitForPendingFinalizers()
         {
-            // QCalls can not be exposed from mscorlib directly, need to wrap it.
+            // QCalls can not be exposed directly, need to wrap it.
             _WaitForPendingFinalizers();
         }
 

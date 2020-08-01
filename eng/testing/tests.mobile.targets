@@ -132,23 +132,12 @@
       <WasmFilesToIncludeInFileSystem Include="@(ContentWithTargetPath)" />
       <WasmFilesToIncludeInFileSystem Include="@(ReferenceCopyLocalPaths)" Condition="'%(ReferenceCopyLocalPaths.BuildReference)' == 'true' and !$([System.String]::new('%(ReferenceCopyLocalPaths.Identity)').EndsWith('.resources.dll'))" />
       <WasmFilesToIncludeInFileSystem Include="@(WasmSatelliteAssemblies)" TargetPath="%(WasmSatelliteAssemblies.CultureName)\%(WasmSatelliteAssemblies.Filename)%(WasmSatelliteAssemblies.Extension)" />
+      <!-- Include files specified by test projects from publish dir -->
+      <WasmFilesToIncludeInFileSystem Include="@(WasmFilesToIncludeFromPublishDir -> '$(PublishDir)%(Identity)')" />
       <ExtraAssemblies Include="$(PublishDir)$(AssemblyName).dll" />
       <!-- We need these facades for some tests. -->
       <ExtraAssemblies Include="$(PublishDir)mscorlib.dll" />
       <ExtraAssemblies Include="$(PublishDir)System.Drawing.dll" />
-    </ItemGroup>
-    <!-- these tests load assemblies from the file system -->
-    <ItemGroup Condition="'$(AssemblyName)' == 'System.Reflection.MetadataLoadContext.Tests'">
-      <WasmFilesToIncludeInFileSystem Include="$(PublishDir)System.Private.CoreLib.dll" />
-      <WasmFilesToIncludeInFileSystem Include="$(PublishDir)System.Reflection.MetadataLoadContext.Tests.dll" />
-      <WasmFilesToIncludeInFileSystem Include="$(PublishDir)mscorlib.dll" />
-    </ItemGroup>
-    <ItemGroup Condition="'$(AssemblyName)' == 'System.Reflection.Metadata.Tests'">
-      <WasmFilesToIncludeInFileSystem Include="$(PublishDir)System.Reflection.Metadata.Tests.dll" />
-    </ItemGroup>
-    <ItemGroup Condition="'$(AssemblyName)' == 'System.Reflection.Tests'">
-      <WasmFilesToIncludeInFileSystem Include="$(PublishDir)System.Reflection.Tests.dll" />
-      <WasmFilesToIncludeInFileSystem Include="$(PublishDir)System.Reflection.Tests.pdb" />
     </ItemGroup>
     <Error Condition="!Exists('$(MicrosoftNetCoreAppRuntimePackRidDir)')" Text="MicrosoftNetCoreAppRuntimePackRidDir=$(MicrosoftNetCoreAppRuntimePackRidDir) doesn't exist" />
     <WasmAppBuilder

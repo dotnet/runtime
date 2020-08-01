@@ -7768,7 +7768,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
         // If this is a call to JitTestLabel.Mark, do "early inlining", and record the test attribute.
 
         // This recognition should really be done by knowing the methHnd of the relevant Mark method(s).
-        // These should be in mscorlib.h, and available through a JIT/EE interface call.
+        // These should be in corelib.h, and available through a JIT/EE interface call.
         const char* modName;
         const char* className;
         const char* methodName;
@@ -13247,10 +13247,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                             // via an underlying address, just null check the address.
                             if (op1->OperIs(GT_FIELD, GT_IND, GT_OBJ))
                             {
-                                op1->ChangeOper(GT_NULLCHECK);
-                                block->bbFlags |= BBF_HAS_NULLCHECK;
-                                optMethodFlags |= OMF_HAS_NULLCHECK;
-                                op1->gtType = TYP_BYTE;
+                                gtChangeOperToNullCheck(op1, block);
                             }
                             else
                             {

@@ -313,7 +313,6 @@ namespace System.Diagnostics.TraceSourceTests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/39223", TestPlatforms.Browser)]
         [MethodImpl(MethodImplOptions.NoInlining)]
         public void WriteFooterTest_Callstack()
         {

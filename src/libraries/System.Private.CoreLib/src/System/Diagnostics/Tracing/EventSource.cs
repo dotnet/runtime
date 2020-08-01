@@ -2843,14 +2843,6 @@ namespace System.Diagnostics.Tracing
                 DefineEventPipeEvents();
 #endif
             }
-            if (s_currentPid == 0)
-            {
-#if ES_BUILD_STANDALONE
-                // for non-BCL EventSource we must assert SecurityPermission
-                new SecurityPermission(PermissionState.Unrestricted).Assert();
-#endif
-                s_currentPid = Interop.GetCurrentProcessId();
-            }
         }
 
         // Send out the ETW manifest XML out to ETW
@@ -3807,7 +3799,6 @@ namespace System.Diagnostics.Tracing
 
         private string[]? m_traits;                      // Used to implement GetTraits
 
-        internal static uint s_currentPid;              // current process id, used in synthesizing quasi-GUIDs
         [ThreadStatic]
         private static byte m_EventSourceExceptionRecurenceCount; // current recursion count inside ThrowEventSourceException
 

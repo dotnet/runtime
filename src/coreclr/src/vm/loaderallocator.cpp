@@ -1008,7 +1008,7 @@ void LoaderAllocator::SetupManagedTracking(LOADERALLOCATORREF * pKeepLoaderAlloc
     // Initialize managed loader allocator reference holder
     //
 
-    MethodTable *pMT = MscorlibBinder::GetClass(CLASS__LOADERALLOCATOR);
+    MethodTable *pMT = CoreLibBinder::GetClass(CLASS__LOADERALLOCATOR);
 
     *pKeepLoaderAllocatorAlive = (LOADERALLOCATORREF)AllocateObject(pMT);
 
