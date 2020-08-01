@@ -215,7 +215,7 @@ var BindingSupportLib = {
 					};
 				});
 
-				BINDING.Runtime.SetupJsContinuation (mono_obj, cont_obj);
+				BINDING.runtime.SetupJsContinuation (mono_obj, cont_obj);
 				obj.__mono_js_cont__ = cont_obj.__mono_gchandle__;
 				cont_obj.__mono_js_task__ = obj.__mono_gchandle__;
 				return promise;
@@ -1103,7 +1103,7 @@ var BindingSupportLib = {
         
 		}
 		BINDING.mono_wasm_unwind_LMF();
-		BINDING.runtime.BoxBool (result);
+		return BINDING.runtime.BoxBool (result);
 	},
 	mono_wasm_get_by_index: function(js_handle, property_index, is_exception) {
 		BINDING.bindings_lazy_init ();
