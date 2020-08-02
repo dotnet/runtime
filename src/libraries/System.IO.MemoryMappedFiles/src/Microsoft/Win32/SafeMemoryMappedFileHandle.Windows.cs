@@ -14,5 +14,7 @@ namespace Microsoft.Win32.SafeHandles
         {
             return Interop.Kernel32.CloseHandle(handle);
         }
+
+        public override bool IsInvalid => base.IsInvalid;
     }
 }

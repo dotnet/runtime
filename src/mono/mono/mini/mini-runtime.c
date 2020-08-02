@@ -1963,6 +1963,8 @@ enum {
 	ELF_MACHINE = EM_PPC64,
 #elif HOST_S390X
 	ELF_MACHINE = EM_S390,
+#elif HOST_RISCV
+	ELF_MACHINE = EM_RISCV,
 #endif
 	JIT_CODE_LOAD = 0
 };
@@ -4645,6 +4647,11 @@ register_icalls (void)
 				mono_runtime_install_handlers);
 	mono_add_internal_call_internal ("Mono.Runtime::mono_runtime_cleanup_handlers",
 				mono_runtime_cleanup_handlers);
+
+#if defined(HOST_ANDROID) || defined(TARGET_ANDROID)
+	mono_add_internal_call_internal ("System.Diagnostics.Debugger::Mono_UnhandledException_internal",
+							mini_get_dbg_callbacks ()->unhandled_exception);
+#endif
 
 	/*
 	 * It's important that we pass `TRUE` as the last argument here, as
