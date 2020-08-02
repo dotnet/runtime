@@ -438,7 +438,7 @@ ConvertedImageLayout::ConvertedImageLayout(PEImageLayout* source)
         ApplyBaseRelocations();
     }
 #elif !defined(TARGET_UNIX)
-    if ((HasNativeHeader() || HasReadyToRunHeader()) && g_fAllowNativeImages)
+    if (HasCorHeader() && (HasNativeHeader() || HasReadyToRunHeader()) && g_fAllowNativeImages)
     {
         //Do base relocation for PE, if necessary.
         if (!IsNativeMachineFormat())
