@@ -398,6 +398,8 @@ ConvertedImageLayout::ConvertedImageLayout(PEImageLayout* source)
     m_pOwner=source->m_pOwner;
     _ASSERTE(!source->IsMapped());
 
+    m_pExceptionDir = NULL;
+
     if (!source->HasNTHeaders())
         EEFileLoadException::Throw(GetPath(), COR_E_BADIMAGEFORMAT);
     LOG((LF_LOADER, LL_INFO100, "PEImage: Opening manually mapped stream\n"));
@@ -457,9 +459,27 @@ ConvertedImageLayout::ConvertedImageLayout(PEImageLayout* source)
             if (!RtlAddFunctionTable(pExceptionDir, tableSize, (DWORD64)this->GetBase()))
                 ThrowLastError();
 
-                //TODO: WIP remember tbl to undo the above when releasing img
+            m_pExceptionDir = pExceptionDir;
         }
 #endif //TARGET_X86
+    }
+#endif
+}
+
+ConvertedImageLayout::~ConvertedImageLayout()
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_TRIGGERS;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
+#if !defined(CROSSGEN_COMPILE) && !defined(TARGET_UNIX) && !defined(TARGET_X86)
+    if (m_pExceptionDir)
+    {
+        RtlDeleteFunctionTable(m_pExceptionDir);
     }
 #endif
 }

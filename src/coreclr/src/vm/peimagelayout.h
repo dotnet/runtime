@@ -110,7 +110,10 @@ protected:
 public:
 #ifndef DACCESS_COMPILE
     ConvertedImageLayout(PEImageLayout* source);
+    virtual ~ConvertedImageLayout();
 #endif
+private:
+    PT_RUNTIME_FUNCTION m_pExceptionDir;
 };
 
 class MappedImageLayout: public PEImageLayout
