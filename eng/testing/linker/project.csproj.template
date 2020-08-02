@@ -9,6 +9,10 @@
     <_ExtraTrimmerArgs>{ExtraTrimmerArgs} $(_ExtraTrimmerArgs)</_ExtraTrimmerArgs>
   </PropertyGroup>
 
+  <ItemGroup>
+    {AdditionalProjectReferences}
+  </ItemGroup>
+
   <!-- Logic to override the default IlLink tasks that come from the SDK and use the one
   we use in dotnet/runtime repo -->
 
