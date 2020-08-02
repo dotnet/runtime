@@ -10,13 +10,22 @@ using System.Threading.Tasks.Sources;
 namespace System.Net.Http
 {
     /// <summary>Represents a waiter for credit.</summary>
-    internal class CreditWaiter : IValueTaskSource<int>
+    internal sealed class CreditWaiter : IValueTaskSource<int>
     {
+        private readonly object _syncObj;
+
+        private CancellationTokenRegistration _registration;
+        private ManualResetValueTaskSourceCore<int> _source;
+
         public int Amount;
         public CreditWaiter? Next;
-        protected ManualResetValueTaskSourceCore<int> _source;
 
-        public CreditWaiter() => _source.RunContinuationsAsynchronously = true;
+        public CreditWaiter(object syncObj, CancellationToken cancellationToken)
+        {
+            _source.RunContinuationsAsynchronously = true;
+            _syncObj = syncObj;
+            RegisterCancellation(cancellationToken);
+        }
 
         public ValueTask<int> AsValueTask() => new ValueTask<int>(this, _source.Version);
 
@@ -33,35 +42,20 @@ namespace System.Net.Http
             return false;
         }
 
-        public virtual void CleanUp() { }
+        public void UnregisterCancellation()
+        {
+            Monitor.IsEntered(_syncObj);
+            _registration.Dispose();
+            _registration = default;
+        }
 
         public void Dispose()
         {
-            CleanUp();
+            UnregisterCancellation();
             if (IsPending)
             {
                 _source.SetException(ExceptionDispatchInfo.SetCurrentStackTrace(new ObjectDisposedException(nameof(CreditManager), SR.net_http_disposed_while_in_use)));
             }
-        }
-
-        int IValueTaskSource<int>.GetResult(short token) =>
-            _source.GetResult(token);
-        ValueTaskSourceStatus IValueTaskSource<int>.GetStatus(short token) =>
-            _source.GetStatus(token);
-        void IValueTaskSource<int>.OnCompleted(Action<object?> continuation, object? state, short token, ValueTaskSourceOnCompletedFlags flags) =>
-            _source.OnCompleted(continuation, state, token, flags);
-    }
-
-    /// <summary>Represents a cancelable waiter for credit.</summary>
-    internal sealed class CancelableCreditWaiter : CreditWaiter
-    {
-        private readonly object _syncObj;
-        private CancellationTokenRegistration _registration;
-
-        public CancelableCreditWaiter(object syncObj, CancellationToken cancellationToken)
-        {
-            _syncObj = syncObj;
-            RegisterCancellation(cancellationToken);
         }
 
         public void ResetForAwait(CancellationToken cancellationToken)
@@ -75,18 +69,11 @@ namespace System.Net.Http
             RegisterCancellation(cancellationToken);
         }
 
-        public override void CleanUp()
-        {
-            Monitor.IsEntered(_syncObj);
-            _registration.Dispose();
-            _registration = default;
-        }
-
         private void RegisterCancellation(CancellationToken cancellationToken)
         {
             _registration = cancellationToken.UnsafeRegister(static s =>
             {
-                CancelableCreditWaiter thisRef = (CancelableCreditWaiter)s!;
+                var thisRef = (CreditWaiter)s!;
                 lock (thisRef._syncObj)
                 {
                     if (thisRef.IsPending)
@@ -102,5 +89,12 @@ namespace System.Net.Http
                 }
             }, this);
         }
+
+        int IValueTaskSource<int>.GetResult(short token) =>
+            _source.GetResult(token);
+        ValueTaskSourceStatus IValueTaskSource<int>.GetStatus(short token) =>
+            _source.GetStatus(token);
+        void IValueTaskSource<int>.OnCompleted(Action<object?> continuation, object? state, short token, ValueTaskSourceOnCompletedFlags flags) =>
+            _source.OnCompleted(continuation, state, token, flags);
     }
 }

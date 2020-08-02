@@ -36,7 +36,7 @@ namespace System.Net.Http
 
             private ArrayBuffer _responseBuffer; // mutable struct, do not make this readonly
             private int _pendingWindowUpdate;
-            private CancelableCreditWaiter? _creditWaiter;
+            private CreditWaiter? _creditWaiter;
             private int _availableCredit;
 
             private StreamCompletionState _requestCompletionState;
@@ -1100,7 +1100,7 @@ namespace System.Net.Http
                             {
                                 if (_creditWaiter is null)
                                 {
-                                    _creditWaiter = new CancelableCreditWaiter(SyncObject, _requestBodyCancellationSource.Token);
+                                    _creditWaiter = new CreditWaiter(SyncObject, _requestBodyCancellationSource.Token);
                                 }
                                 else
                                 {
@@ -1115,7 +1115,7 @@ namespace System.Net.Http
                         {
                             Debug.Assert(_creditWaiter != null);
                             sendSize = await _creditWaiter.AsValueTask().ConfigureAwait(false);
-                            _creditWaiter.CleanUp();
+                            _creditWaiter.UnregisterCancellation();
                         }
 
                         ReadOnlyMemory<byte> current;
