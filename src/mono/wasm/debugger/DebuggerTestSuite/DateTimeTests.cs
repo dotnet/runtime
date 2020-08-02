@@ -33,7 +33,7 @@ namespace DebuggerTests
 				var pause_location = await EvaluateAndCheck (
 					"window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.DateTimeTest:LocaleTest'," 
 					+ $"'{locale}'); }}, 1);",
-					debugger_test_loc, 20, 3, "LocaleTest",
+					debugger_test_loc, 23, 3, "LocaleTest",
 					locals_fn: async (locals) => {
 						DateTimeFormatInfo dtfi = CultureInfo.GetCultureInfo(locale).DateTimeFormat;
 						CultureInfo.CurrentCulture = new CultureInfo (locale, false);
