@@ -12,28 +12,26 @@ namespace System.Net.Http
     /// <summary>Represents a waiter for credit.</summary>
     internal sealed class CreditWaiter : IValueTaskSource<int>
     {
-        private readonly object _syncObj;
-
         private CancellationTokenRegistration _registration;
         private ManualResetValueTaskSourceCore<int> _source;
+        private int _completionReserved;
 
         public int Amount;
         public CreditWaiter? Next;
 
-        public CreditWaiter(object syncObj, CancellationToken cancellationToken)
+        public CreditWaiter(CancellationToken cancellationToken)
         {
             _source.RunContinuationsAsynchronously = true;
-            _syncObj = syncObj;
             RegisterCancellation(cancellationToken);
         }
 
         public ValueTask<int> AsValueTask() => new ValueTask<int>(this, _source.Version);
 
-        public bool IsPending => _source.GetStatus(_source.Version) == ValueTaskSourceStatus.Pending;
+        private bool ReserveCompletion() => Interlocked.CompareExchange(ref _completionReserved, 1, 0) == 0;
 
         public bool TrySetResult(int result)
         {
-            if (IsPending)
+            if (ReserveCompletion())
             {
                 _source.SetResult(result);
                 return true;
@@ -44,7 +42,6 @@ namespace System.Net.Http
 
         public void UnregisterCancellation()
         {
-            Monitor.IsEntered(_syncObj);
             _registration.Dispose();
             _registration = default;
         }
@@ -52,7 +49,7 @@ namespace System.Net.Http
         public void Dispose()
         {
             UnregisterCancellation();
-            if (IsPending)
+            if (ReserveCompletion())
             {
                 _source.SetException(ExceptionDispatchInfo.SetCurrentStackTrace(new ObjectDisposedException(nameof(CreditManager), SR.net_http_disposed_while_in_use)));
             }
@@ -60,32 +57,39 @@ namespace System.Net.Http
 
         public void ResetForAwait(CancellationToken cancellationToken)
         {
-            Debug.Assert(Monitor.IsEntered(_syncObj));
-            Debug.Assert(!IsPending);
+            Debug.Assert(_completionReserved != 0);
             Debug.Assert(Next is null);
             Debug.Assert(_registration == default);
 
+            _completionReserved = 0;
             _source.Reset();
             RegisterCancellation(cancellationToken);
         }
 
         private void RegisterCancellation(CancellationToken cancellationToken)
         {
+            Debug.Assert(_completionReserved == 0);
+            Debug.Assert(Next is null);
+            Debug.Assert(_registration == default);
+
             _registration = cancellationToken.UnsafeRegister(static s =>
             {
                 var thisRef = (CreditWaiter)s!;
-                lock (thisRef._syncObj)
+                if (thisRef.ReserveCompletion())
                 {
-                    if (thisRef.IsPending)
-                    {
-                        thisRef._registration = default; // benign race with setting in the ctor
-                        thisRef._source.SetException(ExceptionDispatchInfo.SetCurrentStackTrace(new OperationCanceledException(thisRef._registration.Token)));
+                    // Complete the source with a cancellation exception.  We try to use the token associated with the registration,
+                    // but there's a race condition here where if cancellation is requested before the _registration field is assigned
+                    // above, we could be here with a default registration, in which case we just won't have the token in the exception.
+                    // Similarly, there's a benign race condition with the assigning of _registration; worst case is the instance
+                    // temporarily ends up holding on to a disposed registration.
+                    CancellationToken token = thisRef._registration.Token;
+                    thisRef._registration = default;
+                    thisRef._source.SetException(ExceptionDispatchInfo.SetCurrentStackTrace(new OperationCanceledException(token)));
 
-                        // We don't remove it from the list as we lack a prev pointer that would enable us to do so correctly,
-                        // and it's not worth adding a prev pointer for the rare case of cancellation.  We instead just
-                        // check when completing a waiter whether it's already been canceled.  As such, we also do not
-                        // dispose it here.
-                    }
+                    // We don't remove it from the list as we lack a prev pointer that would enable us to do so correctly,
+                    // and it's not worth adding a prev pointer for the rare case of cancellation.  We instead just
+                    // check when completing a waiter whether it's already been canceled.  As such, we also do not
+                    // dispose it here.
                 }
             }, this);
         }
