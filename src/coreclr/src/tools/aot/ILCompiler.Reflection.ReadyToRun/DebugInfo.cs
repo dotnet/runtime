@@ -68,7 +68,7 @@ namespace ILCompiler.Reflection.ReadyToRun
                 case Machine.Amd64:
                     return ((Amd64.Registers)regnum).ToString();
                 case Machine.Arm:
-				case Machine.ArmThumb2:
+                case Machine.ArmThumb2:
                     return ((Arm.Registers)regnum).ToString();
                 case Machine.Arm64:
                     return ((Arm64.Registers)regnum).ToString();
@@ -158,6 +158,8 @@ namespace ILCompiler.Reflection.ReadyToRun
                 entry.EndOffset = entry.StartOffset + reader.ReadUInt();
                 entry.VariableNumber = (uint)(reader.ReadUInt() + (int)ImplicitILArguments.Max);
                 entry.Variable = new Variable();
+                // TODO: This is probably incomplete
+                // This does not handle any implicit arguments or var args
                 if (entry.VariableNumber < this._runtimeFunction.Method.Signature.ParameterTypes.Length)
                 {
                     entry.Variable.Type = VariableType.Parameter;

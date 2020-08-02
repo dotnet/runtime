@@ -26,7 +26,8 @@ namespace ILCompiler.Reflection.ReadyToRun
     public enum VariableType
     {
         Parameter,
-        Local
+        Local,
+        // TODO: Special
     }
 
     public class Variable
