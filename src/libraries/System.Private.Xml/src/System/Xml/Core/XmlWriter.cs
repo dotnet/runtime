@@ -490,7 +490,7 @@ namespace System.Xml
                         {
                             do
                             {
-                                IXmlSchemaInfo schemaInfo = navigator.SchemaInfo;
+                                IXmlSchemaInfo? schemaInfo = navigator.SchemaInfo;
                                 if (defattr || (schemaInfo == null || !schemaInfo.IsDefault))
                                 {
                                     WriteStartAttribute(navigator.Prefix, navigator.LocalName, navigator.NamespaceURI);

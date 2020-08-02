@@ -69,7 +69,7 @@ namespace System.Xml.Schema
             get { return _sourceNodeObject; }
         }
 
-        protected internal void SetSourceObject(object sourceObject)
+        protected internal void SetSourceObject(object? sourceObject)
         {
             _sourceNodeObject = sourceObject;
         }

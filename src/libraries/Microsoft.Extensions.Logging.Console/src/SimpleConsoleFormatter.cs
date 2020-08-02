@@ -53,8 +53,8 @@ namespace Microsoft.Extensions.Logging.Console
             string timestampFormat = FormatterOptions.TimestampFormat;
             if (timestampFormat != null)
             {
-                DateTime dateTime = GetCurrentDateTime();
-                timestamp = dateTime.ToString(timestampFormat);
+                DateTimeOffset dateTimeOffset = GetCurrentDateTime();
+                timestamp = dateTimeOffset.ToString(timestampFormat);
             }
             if (timestamp != null)
             {
@@ -126,9 +126,9 @@ namespace Microsoft.Extensions.Logging.Console
             }
         }
 
-        private DateTime GetCurrentDateTime()
+        private DateTimeOffset GetCurrentDateTime()
         {
-            return FormatterOptions.UseUtcTimestamp ? DateTime.UtcNow : DateTime.Now;
+            return FormatterOptions.UseUtcTimestamp ? DateTimeOffset.UtcNow : DateTimeOffset.Now;
         }
 
         private static string GetLogLevelString(LogLevel logLevel)

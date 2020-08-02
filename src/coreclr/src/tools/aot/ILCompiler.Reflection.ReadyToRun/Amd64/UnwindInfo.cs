@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Text;
 
 namespace ILCompiler.Reflection.ReadyToRun.Amd64
@@ -76,6 +77,19 @@ namespace ILCompiler.Reflection.ReadyToRun.Amd64
             FrameOffset = NativeReader.ReadUInt16(image, ref offset);
             NextFrameOffset = -1;
 
+            if (UnwindOp == UnwindOpCodes.UWOP_ALLOC_LARGE)
+            {
+                uint codedSize;
+                if (OpInfo == 0)
+                {
+                    codedSize = NativeReader.ReadUInt16(image, ref offset);
+                }
+                else if (OpInfo == 1)
+                {
+                    codedSize = NativeReader.ReadUInt32(image, ref offset);
+                }
+            }
+
             IsOpInfo = false;
         }
     }
@@ -95,7 +109,7 @@ namespace ILCompiler.Reflection.ReadyToRun.Amd64
         public Registers FrameRegister { get; set; } //4 bits
         public byte FrameOffset { get; set; } //4 bits
         public UnwindCode[] UnwindCodeArray { get; set; }
-        public Dictionary<int, List<UnwindCode>> UnwindCodes { get; set; }
+        public Dictionary<int, UnwindCode> UnwindCodes { get; set; }
         public uint PersonalityRoutineRVA { get; set; }
 
         public UnwindInfo() { }
@@ -115,7 +129,7 @@ namespace ILCompiler.Reflection.ReadyToRun.Amd64
             FrameOffset = (byte)(frameRegisterAndOffset >> 4);
 
             UnwindCodeArray = new UnwindCode[CountOfUnwindCodes];
-            UnwindCodes = new Dictionary<int, List<UnwindCode>>();
+            UnwindCodes = new Dictionary<int, UnwindCode>();
             for (int i = 0; i < CountOfUnwindCodes; i++)
             {
                 UnwindCodeArray[i] = new UnwindCode(image, i, ref offset);
@@ -123,11 +137,8 @@ namespace ILCompiler.Reflection.ReadyToRun.Amd64
             for (int i = 0; i < CountOfUnwindCodes; i++)
             {
                 ParseUnwindCode(ref i);
-                if (!UnwindCodes.ContainsKey(UnwindCodeArray[i].CodeOffset))
-                {
-                    UnwindCodes[UnwindCodeArray[i].CodeOffset] = new List<UnwindCode>();
-                }
-                UnwindCodes[UnwindCodeArray[i].CodeOffset].Add(UnwindCodeArray[i]);
+                Debug.Assert(!UnwindCodes.ContainsKey(UnwindCodeArray[i].CodeOffset));
+                UnwindCodes.Add(UnwindCodeArray[i].CodeOffset, UnwindCodeArray[i]);
             }
 
             Size = _offsetofUnwindCode + CountOfUnwindCodes * _sizeofUnwindCode;

@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 
 namespace System.ComponentModel.DataAnnotations.Schema
@@ -11,7 +12,7 @@ namespace System.ComponentModel.DataAnnotations.Schema
     [AttributeUsage(AttributeTargets.Class, AllowMultiple = false)]
     public class TableAttribute : Attribute
     {
-        private string _schema;
+        private string? _schema;
 
         /// <summary>
         ///     Initializes a new instance of the <see cref="TableAttribute" /> class.
@@ -35,7 +36,8 @@ namespace System.ComponentModel.DataAnnotations.Schema
         /// <summary>
         ///     The schema of the table the class is mapped to.
         /// </summary>
-        public string Schema
+        [DisallowNull]
+        public string? Schema
         {
             get => _schema;
             set

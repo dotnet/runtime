@@ -37,7 +37,7 @@ enum {
     FCFuncFlag_EndOfArray   = 0x01,
     FCFuncFlag_HasSignature = 0x02,
     FCFuncFlag_Unreferenced = 0x04, // Suppress unused fcall check
-    FCFuncFlag_QCall        = 0x08, // QCall - mscorlib.dll to mscorwks.dll transition implemented as PInvoke
+    FCFuncFlag_QCall        = 0x08, // QCall - CoreLib to VM transition implemented as PInvoke
 };
 
 struct ECFunc {

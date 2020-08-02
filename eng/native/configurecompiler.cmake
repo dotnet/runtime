@@ -19,9 +19,7 @@ include(${CMAKE_CURRENT_LIST_DIR}/configureoptimization.cmake)
 # Initialize Cmake compiler flags and other variables
 #-----------------------------------------------------
 
-if(MSVC)
-    add_compile_options(/Zi /FC /Zc:strictStrings)
-elseif (CLR_CMAKE_HOST_UNIX)
+if (CLR_CMAKE_HOST_UNIX)
     add_compile_options(-g)
     add_compile_options(-Wall)
     if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
@@ -417,25 +415,20 @@ endif(CLR_CMAKE_HOST_UNIX)
 if (MSVC)
   # Compile options for targeting windows
 
-  # The following options are set by the razzle build
   add_compile_options(/TP) # compile all files as C++
   add_compile_options(/nologo) # Suppress Startup Banner
   add_compile_options(/W3) # set warning level to 3
   add_compile_options(/WX) # treat warnings as errors
   add_compile_options(/Oi) # enable intrinsics
   add_compile_options(/Oy-) # disable suppressing of the creation of frame pointers on the call stack for quicker function calls
-  add_compile_options(/U_MT) # undefine the predefined _MT macro
-  add_compile_options(/GF) # enable read-only string pooling
   add_compile_options(/Gm-) # disable minimal rebuild
   add_compile_options(/Zp8) # pack structs on 8-byte boundary
   add_compile_options(/Gy) # separate functions for linker
-  add_compile_options(/Zc:wchar_t-) # C++ language conformance: wchar_t is NOT the native type, but a typedef
-  add_compile_options(/Zc:forScope) # C++ language conformance: enforce Standard C++ for scoping rules
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /GR-") # disable C++ RTTI
   add_compile_options(/FC) # use full pathnames in diagnostics
   add_compile_options(/MP) # Build with Multiple Processes (number of processes equal to the number of processors)
-  add_compile_options(/GS) # Buffer Security Check
   add_compile_options(/Zm200) # Specify Precompiled Header Memory Allocation Limit of 150MB
+  add_compile_options(/Zc:strictStrings) # Disable string-literal to char* or wchar_t* conversion
 
   add_compile_options(/wd4960 /wd4961 /wd4603 /wd4627 /wd4838 /wd4456 /wd4457 /wd4458 /wd4459 /wd4091 /we4640)
 

@@ -31,12 +31,15 @@
 // with static const members of Target
 #if defined(TARGET_XARCH)
 #define REGMASK_BITS 32
+#define CSE_CONST_SHARED_LOW_BITS 16
 
 #elif defined(TARGET_ARM)
 #define REGMASK_BITS 64
+#define CSE_CONST_SHARED_LOW_BITS 12
 
 #elif defined(TARGET_ARM64)
 #define REGMASK_BITS 64
+#define CSE_CONST_SHARED_LOW_BITS 12
 
 #else
 #error Unsupported or unset target architecture
@@ -1103,7 +1106,9 @@ typedef unsigned char   regNumberSmall;
   // The registers trashed by profiler enter/leave/tailcall hook
   // See vm\arm\asmhelpers.asm for more details.
   #define RBM_PROFILER_ENTER_TRASH     RBM_NONE
-  #define RBM_PROFILER_LEAVE_TRASH     RBM_NONE
+  // While REG_PROFILER_RET_SCRATCH is not trashed by the method, the register allocator must
+  // consider it killed by the return.
+  #define RBM_PROFILER_LEAVE_TRASH     RBM_PROFILER_RET_SCRATCH
   #define RBM_PROFILER_TAILCALL_TRASH  RBM_NONE
 
   // Which register are int and long values returned in ?
@@ -1616,11 +1621,11 @@ public:
     static const enum ArgOrder g_tgtArgOrder;
 };
 
-#if defined(DEBUG) || defined(LATE_DISASM)
+#if defined(DEBUG) || defined(LATE_DISASM) || DUMP_GC_TABLES
 const char* getRegName(unsigned reg, bool isFloat = false); // this is for gcencode.cpp and disasm.cpp that don't use
                                                             // the regNumber type
 const char* getRegName(regNumber reg, bool isFloat = false);
-#endif // defined(DEBUG) || defined(LATE_DISASM)
+#endif // defined(DEBUG) || defined(LATE_DISASM) || DUMP_GC_TABLES
 
 #ifdef DEBUG
 const char* getRegNameFloat(regNumber reg, var_types type);
@@ -1997,9 +2002,13 @@ C_ASSERT((RBM_INT_CALLEE_SAVED & RBM_FPBASE) == RBM_NONE);
 #ifdef TARGET_64BIT
 typedef unsigned __int64 target_size_t;
 typedef __int64          target_ssize_t;
-#else  // !TARGET_64BIT
+#define TARGET_SIGN_BIT (1ULL << 63)
+
+#else // !TARGET_64BIT
 typedef unsigned int target_size_t;
 typedef int          target_ssize_t;
+#define TARGET_SIGN_BIT (1ULL << 31)
+
 #endif // !TARGET_64BIT
 
 C_ASSERT(sizeof(target_size_t) == TARGET_POINTER_SIZE);
