@@ -16,6 +16,9 @@
              Link="Common\src\Extensions\ActivatorUtilities\ActivatorUtilitiesConstructorAttribute.cs" />
     <Compile Include="$(CommonPath)Extensions\ActivatorUtilities\ObjectFactory.cs"
              Link="Common\src\Extensions\ActivatorUtilities\ObjectFactory.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\DynamicallyAccessedMembersAttribute.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\DynamicallyAccessedMemberTypes.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\UnconditionalSuppressMessageAttribute.cs" />
   </ItemGroup>
 
 </Project>
