@@ -60,10 +60,10 @@ namespace System.Diagnostics
         public bool IsRemote { get; }
 
         /// <summary>
-        /// Parse W3C trace parent and state headers to ActivityContext object.
+        /// Parse W3C trace context headers to ActivityContext object.
         /// </summary>
         /// <param name="traceParent">W3C trace parent header.</param>
-        /// <param name="traceState">Trace state.</param>
+        /// <param name="traceState">W3C trace state.</param>
         /// <param name="context">The ActivityContext object created from the parsing operation.</param>
         public static bool TryParse(string traceParent, string? traceState, out ActivityContext context)
         {
@@ -76,7 +76,7 @@ namespace System.Diagnostics
         }
 
         /// <summary>
-        /// Parse W3C trace parent and state headers to ActivityContext object.
+        /// Parse W3C trace context headers to ActivityContext object.
         /// </summary>
         /// <param name="traceParent">W3C trace parent header.</param>
         /// <param name="traceState">Trace state.</param>

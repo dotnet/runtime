@@ -404,6 +404,9 @@ namespace System.Diagnostics.Tests
             Assert.Throws<ArgumentNullException>(() => ActivityContext.TryParse(null, "k=v", out context));
             Assert.Throws<ArgumentNullException>(() => ActivityContext.Parse(null, null));
             Assert.Throws<ArgumentException>(() => ActivityContext.Parse("BadW3C", null));
+
+            const string invalidW3CContext = "00-Z9d43cb30a4cdb4fbeee3a19c29201b0-e82825765f051b47-01";
+            Assert.False(ActivityContext.TryParse(invalidW3CContext, null, out context));
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
