@@ -27,7 +27,12 @@ namespace System.Net.Http
         {
             // check if there is a parent Activity (and propagation is not suppressed)
             // or if someone listens to HttpHandlerDiagnosticListener
-            return Settings.s_activityPropagationEnabled && (Activity.Current != null || Settings.s_diagnosticListener.IsEnabled());
+            return IsGloballyEnabled() && (Activity.Current != null || Settings.s_diagnosticListener.IsEnabled());
+        }
+
+        internal static bool IsGloballyEnabled()
+        {
+            return Settings.s_activityPropagationEnabled;
         }
 
         // SendAsyncCore returns already completed ValueTask for when async: false is passed.

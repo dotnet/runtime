@@ -39,5 +39,8 @@ namespace System
 
         internal const string BinaryFormatterMessage = "BinaryFormatter serialization is obsolete and should not be used. See https://aka.ms/binaryformatter for more information.";
         internal const string BinaryFormatterDiagId = "SYSLIB0011";
+
+        internal const string CodeBaseMessage = "Use Location instead.";
+        internal const string CodeBaseDiagId = "SYSLIB0012";
     }
 }

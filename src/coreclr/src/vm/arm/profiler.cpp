@@ -144,7 +144,7 @@ Stack for the above call will look as follows (stack growing downwards):
         Thread::VirtualUnwindCallFrame(&ctx);
 
         // add the prespill register(r0-r3) size to get the stack pointer of previous function
-        _ASSERTE(pData->profiledSp == (void*)(ctx.Sp - 4*4));
+        _ASSERTE(pData->profiledSp == (void*)(ctx.Sp - 4*4) || pData->profiledSp == (void*)(ctx.Sp - 6*4));
     }
 #endif // _DEBUG
 

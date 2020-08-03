@@ -174,6 +174,9 @@
   <data name="InvalidProgramNonBlittableTypes" xml:space="preserve">
     <value>UnmanagedCallersOnly attribute specified on method with non-blittable parameters '{0}'</value>
   </data>
+  <data name="InvalidProgramMultipleCallConv" xml:space="preserve">
+    <value>Multiple unmanaged calling conventions are specified. Only a single calling convention is supported.</value>
+  </data>
   <data name="BadImageFormatGeneric" xml:space="preserve">
     <value>The format of a DLL or executable being loaded is invalid</value>
   </data>

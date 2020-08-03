@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="$(CommonPath)System\Threading\Tasks\TaskToApm.cs" Link="Common\System\Threading\Tasks\TaskToApm.cs" />
+    <Compile Include="ConnectionBaseTest.cs" />
+    <Compile Include="ConnectionTest.cs" />
+    <Compile Include="ConnectionWithoutStreamOrPipe.cs" />
+    <Compile Include="MockConnection.cs" />
+    <Compile Include="MockPipe.cs" />
+    <Compile Include="MockPipeReader.cs" />
+    <Compile Include="MockPipeWriter.cs" />
+    <Compile Include="MockStream.cs" />
+  </ItemGroup>
+
+</Project>

@@ -344,7 +344,6 @@ void CodeGen::genCodeForBBlist()
             needLabel = true;
         }
 
-#if defined(DEBUG) || defined(LATE_DISASM)
         // We also want to start a new Instruction group by calling emitAddLabel below,
         // when we need accurate bbWeights for this block in the emitter.  We force this
         // whenever our previous block was a BBJ_COND and it has a different weight than us.
@@ -356,7 +355,6 @@ void CodeGen::genCodeForBBlist()
         {
             needLabel = true;
         }
-#endif // DEBUG || LATE_DISASM
 
         if (needLabel)
         {
@@ -1741,15 +1739,11 @@ void CodeGen::genConsumePutStructArgStk(GenTreePutArgStk* putArgNode,
         {
             // The OperLocalAddr is always contained.
             assert(srcAddr->isContained());
-            GenTreeLclVarCommon* lclNode = srcAddr->AsLclVarCommon();
+            const GenTreeLclVarCommon* lclNode = srcAddr->AsLclVarCommon();
 
             // Generate LEA instruction to load the LclVar address in RSI.
             // Source is known to be on the stack. Use EA_PTRSIZE.
-            unsigned int offset = 0;
-            if (srcAddr->OperGet() == GT_LCL_FLD_ADDR)
-            {
-                offset = srcAddr->AsLclFld()->GetLclOffs();
-            }
+            unsigned int offset = lclNode->GetLclOffs();
             GetEmitter()->emitIns_R_S(INS_lea, EA_PTRSIZE, srcReg, lclNode->GetLclNum(), offset);
         }
         else

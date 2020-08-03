@@ -43,6 +43,7 @@ jobs:
 #
 - template: /eng/pipelines/common/checkout-job.yml
 
+# build coreclr and libraries
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
     jobTemplate: /eng/pipelines/common/build-coreclr-and-libraries-job.yml
@@ -54,6 +55,7 @@ jobs:
     jobParameters:
       testGroup: perf
 
+# build mono
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
     jobTemplate: /eng/pipelines/mono/templates/build-job.yml
@@ -62,6 +64,7 @@ jobs:
     platforms:
     - Linux_x64
 
+# run mono perf job
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
     jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
@@ -73,7 +76,10 @@ jobs:
       testGroup: perf
       liveLibrariesBuildConfig: Release
       runtimeType: mono
+      projectFile: microbenchmarks.proj
+      runKind: micro_mono
 
+# run mono interpreter job (private CI only)
 - ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest')) }}:
   - template: /eng/pipelines/common/platform-matrix.yml
     parameters:
@@ -87,7 +93,10 @@ jobs:
         liveLibrariesBuildConfig: Release
         runtimeType: mono
         codeGenType: 'Interpreter'
+        projectFile: microbenchmarks.proj
+        runKind: micro_mono
 
+# run coreclr microbenchmarks perf job
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
     jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
@@ -100,3 +109,22 @@ jobs:
     jobParameters:
       testGroup: perf
       liveLibrariesBuildConfig: Release
+      projectFile: microbenchmarks.proj
+      runKind: micro
+
+# run coreclr crossgen perf job
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
+    buildConfig: release
+    runtimeFlavor: coreclr
+    platforms:
+    #- Linux_x64
+    - Windows_NT_x64
+    - Windows_NT_x86
+    jobParameters:
+      testGroup: perf
+      liveLibrariesBuildConfig: Release
+      projectFile: crossgen_perf.proj
+      runKind: crossgen_scenarios
+

@@ -14,6 +14,60 @@ class Runtime_34587
 {
     public static int Main()
     {
+        TestLibrary.TestFramework.LogInformation("Supported x86 ISAs:");
+        TestLibrary.TestFramework.LogInformation($"  AES:           {X86Aes.IsSupported}");
+        TestLibrary.TestFramework.LogInformation($"  AVX:           {Avx.IsSupported}");
+        TestLibrary.TestFramework.LogInformation($"  AVX2:          {Avx2.IsSupported}");
+        TestLibrary.TestFramework.LogInformation($"  BMI1:          {Bmi1.IsSupported}");
+        TestLibrary.TestFramework.LogInformation($"  BMI2:          {Bmi2.IsSupported}");
+        TestLibrary.TestFramework.LogInformation($"  FMA:           {Fma.IsSupported}");
+        TestLibrary.TestFramework.LogInformation($"  LZCNT:         {Lzcnt.IsSupported}");
+        TestLibrary.TestFramework.LogInformation($"  PCLMULQDQ:     {Pclmulqdq.IsSupported}");
+        TestLibrary.TestFramework.LogInformation($"  POPCNT:        {Popcnt.IsSupported}");
+        TestLibrary.TestFramework.LogInformation($"  SSE:           {Sse.IsSupported}");
+        TestLibrary.TestFramework.LogInformation($"  SSE2:          {Sse2.IsSupported}");
+        TestLibrary.TestFramework.LogInformation($"  SSE3:          {Sse3.IsSupported}");
+        TestLibrary.TestFramework.LogInformation($"  SSE4.1:        {Sse41.IsSupported}");
+        TestLibrary.TestFramework.LogInformation($"  SSE4.2:        {Sse42.IsSupported}");
+        TestLibrary.TestFramework.LogInformation($"  SSSE3:         {Ssse3.IsSupported}");
+
+        TestLibrary.TestFramework.LogInformation("Supported x64 ISAs:");
+        TestLibrary.TestFramework.LogInformation($"  AES.X64:       {X86Aes.X64.IsSupported}");
+        TestLibrary.TestFramework.LogInformation($"  AVX.X64:       {Avx.X64.IsSupported}");
+        TestLibrary.TestFramework.LogInformation($"  AVX2.X64:      {Avx2.X64.IsSupported}");
+        TestLibrary.TestFramework.LogInformation($"  BMI1.X64:      {Bmi1.X64.IsSupported}");
+        TestLibrary.TestFramework.LogInformation($"  BMI2.X64:      {Bmi2.X64.IsSupported}");
+        TestLibrary.TestFramework.LogInformation($"  FMA.X64:       {Fma.X64.IsSupported}");
+        TestLibrary.TestFramework.LogInformation($"  LZCNT.X64:     {Lzcnt.X64.IsSupported}");
+        TestLibrary.TestFramework.LogInformation($"  PCLMULQDQ.X64: {Pclmulqdq.X64.IsSupported}");
+        TestLibrary.TestFramework.LogInformation($"  POPCNT.X64:    {Popcnt.X64.IsSupported}");
+        TestLibrary.TestFramework.LogInformation($"  SSE.X64:       {Sse.X64.IsSupported}");
+        TestLibrary.TestFramework.LogInformation($"  SSE2.X64:      {Sse2.X64.IsSupported}");
+        TestLibrary.TestFramework.LogInformation($"  SSE3.X64:      {Sse3.X64.IsSupported}");
+        TestLibrary.TestFramework.LogInformation($"  SSE4.1.X64:    {Sse41.X64.IsSupported}");
+        TestLibrary.TestFramework.LogInformation($"  SSE4.2.X64:    {Sse42.X64.IsSupported}");
+        TestLibrary.TestFramework.LogInformation($"  SSSE3.X64:     {Ssse3.X64.IsSupported}");
+
+        TestLibrary.TestFramework.LogInformation("Supported Arm ISAs:");
+        TestLibrary.TestFramework.LogInformation($"  AdvSimd:       {AdvSimd.IsSupported}");
+        TestLibrary.TestFramework.LogInformation($"  Aes:           {ArmAes.IsSupported}");
+        TestLibrary.TestFramework.LogInformation($"  ArmBase:       {ArmBase.IsSupported}");
+        TestLibrary.TestFramework.LogInformation($"  Crc32:         {Crc32.IsSupported}");
+        TestLibrary.TestFramework.LogInformation($"  Dp:            {Dp.IsSupported}");
+        TestLibrary.TestFramework.LogInformation($"  Rdm:           {Rdm.IsSupported}");
+        TestLibrary.TestFramework.LogInformation($"  Sha1:          {Sha1.IsSupported}");
+        TestLibrary.TestFramework.LogInformation($"  Sha256:        {Sha256.IsSupported}");
+
+        TestLibrary.TestFramework.LogInformation("Supported Arm64 ISAs:");
+        TestLibrary.TestFramework.LogInformation($"  AdvSimd.Arm64: {AdvSimd.Arm64.IsSupported}");
+        TestLibrary.TestFramework.LogInformation($"  Aes.Arm64:     {ArmAes.Arm64.IsSupported}");
+        TestLibrary.TestFramework.LogInformation($"  ArmBase.Arm64: {ArmBase.Arm64.IsSupported}");
+        TestLibrary.TestFramework.LogInformation($"  Crc32.Arm64:   {Crc32.Arm64.IsSupported}");
+        TestLibrary.TestFramework.LogInformation($"  Dp.Arm64:      {Dp.Arm64.IsSupported}");
+        TestLibrary.TestFramework.LogInformation($"  Rdm.Arm64:     {Rdm.Arm64.IsSupported}");
+        TestLibrary.TestFramework.LogInformation($"  Sha1.Arm64:    {Sha1.Arm64.IsSupported}");
+        TestLibrary.TestFramework.LogInformation($"  Sha256.Arm64:  {Sha256.Arm64.IsSupported}");
+
         bool succeeded = true;
 
         succeeded &= ValidateArm();

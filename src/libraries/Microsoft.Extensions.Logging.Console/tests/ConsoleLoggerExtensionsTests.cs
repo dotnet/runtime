@@ -170,7 +170,7 @@ namespace Microsoft.Extensions.Logging.Test
             var loggerProvider = new ServiceCollection()
                 .AddLogging(builder => builder
                     .AddConfiguration(configuration)
-                    .AddSimpleConsole(o => {})
+                    .AddSimpleConsole()
                 )
                 .BuildServiceProvider()
                 .GetRequiredService<ILoggerProvider>();
@@ -188,6 +188,37 @@ namespace Microsoft.Extensions.Logging.Test
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/38337", TestPlatforms.Browser)]
+        public void AddSimpleConsole_OutsideConfig_TakesProperty()
+        {
+            var configuration = new ConfigurationBuilder().AddInMemoryCollection(new[] {
+                new KeyValuePair<string, string>("Console:FormatterOptions:TimestampFormat", "HH:mm "),
+                new KeyValuePair<string, string>("Console:FormatterOptions:UseUtcTimestamp", "true"),
+                new KeyValuePair<string, string>("Console:FormatterOptions:IncludeScopes", "false"),
+            }).Build();
+
+            var loggerProvider = new ServiceCollection()
+                .AddLogging(builder => builder
+                    .AddConfiguration(configuration)
+                    .AddSimpleConsole(o => {
+                        o.TimestampFormat = "HH:mm:ss ";
+                        o.IncludeScopes = false;
+                        o.UseUtcTimestamp = true;
+                    })
+                )
+                .BuildServiceProvider()
+                .GetRequiredService<ILoggerProvider>();
+
+            var consoleLoggerProvider = Assert.IsType<ConsoleLoggerProvider>(loggerProvider);
+            var logger = (ConsoleLogger)consoleLoggerProvider.CreateLogger("Category");
+            Assert.Equal(ConsoleFormatterNames.Simple, logger.Options.FormatterName);
+            var formatter = Assert.IsType<SimpleConsoleFormatter>(logger.Formatter);
+            Assert.Equal("HH:mm:ss ", formatter.FormatterOptions.TimestampFormat);
+            Assert.False(formatter.FormatterOptions.IncludeScopes);
+            Assert.True(formatter.FormatterOptions.UseUtcTimestamp);
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/38337", TestPlatforms.Browser)]
         public void AddSystemdConsole_ChangeProperties_IsReadFromLoggingConfiguration()
         {
             var configuration = new ConfigurationBuilder().AddInMemoryCollection(new[] {
@@ -199,7 +230,7 @@ namespace Microsoft.Extensions.Logging.Test
             var loggerProvider = new ServiceCollection()
                 .AddLogging(builder => builder
                     .AddConfiguration(configuration)
-                    .AddSystemdConsole(o => {})
+                    .AddSystemdConsole()
                 )
                 .BuildServiceProvider()
                 .GetRequiredService<ILoggerProvider>();
@@ -211,6 +242,37 @@ namespace Microsoft.Extensions.Logging.Test
             Assert.Equal("HH:mm ", formatter.FormatterOptions.TimestampFormat);
             Assert.True(formatter.FormatterOptions.UseUtcTimestamp);
             Assert.True(formatter.FormatterOptions.IncludeScopes);
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/38337", TestPlatforms.Browser)]
+        public void AddSystemdConsole_OutsideConfig_TakesProperty()
+        {
+            var configuration = new ConfigurationBuilder().AddInMemoryCollection(new[] {
+                new KeyValuePair<string, string>("Console:FormatterOptions:TimestampFormat", "HH:mm "),
+                new KeyValuePair<string, string>("Console:FormatterOptions:UseUtcTimestamp", "true"),
+                new KeyValuePair<string, string>("Console:FormatterOptions:IncludeScopes", "true"),
+            }).Build();
+
+            var loggerProvider = new ServiceCollection()
+                .AddLogging(builder => builder
+                    .AddConfiguration(configuration)
+                    .AddSystemdConsole(o => {
+                        o.TimestampFormat = "HH:mm:ss ";
+                        o.IncludeScopes = false;
+                        o.UseUtcTimestamp = false;
+                    })
+                )
+                .BuildServiceProvider()
+                .GetRequiredService<ILoggerProvider>();
+
+            var consoleLoggerProvider = Assert.IsType<ConsoleLoggerProvider>(loggerProvider);
+            var logger = (ConsoleLogger)consoleLoggerProvider.CreateLogger("Category");
+            Assert.Equal(ConsoleFormatterNames.Systemd, logger.Options.FormatterName);
+            var formatter = Assert.IsType<SystemdConsoleFormatter>(logger.Formatter);
+            Assert.Equal("HH:mm:ss ", formatter.FormatterOptions.TimestampFormat);
+            Assert.False(formatter.FormatterOptions.UseUtcTimestamp);
+            Assert.False(formatter.FormatterOptions.IncludeScopes);
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
@@ -227,7 +289,7 @@ namespace Microsoft.Extensions.Logging.Test
             var loggerProvider = new ServiceCollection()
                 .AddLogging(builder => builder
                     .AddConfiguration(configuration)
-                    .AddJsonConsole(o => {})
+                    .AddJsonConsole()
                 )
                 .BuildServiceProvider()
                 .GetRequiredService<ILoggerProvider>();

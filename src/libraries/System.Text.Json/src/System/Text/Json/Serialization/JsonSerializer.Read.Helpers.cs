@@ -3,7 +3,6 @@
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Runtime.CompilerServices;
 using System.Text.Json.Serialization;
 
 namespace System.Text.Json
@@ -35,12 +34,6 @@ namespace System.Text.Json
             object? value = jsonConverter.ReadCoreAsObject(ref reader, options, ref state);
             Debug.Assert(value == null || value is TValue);
             return (TValue)value!;
-        }
-
-        internal static bool IsValidNumberHandlingValue(JsonNumberHandling handling)
-        {
-            int handlingValue = (int)handling;
-            return handlingValue >= 0 && handlingValue <= 7;
         }
     }
 }

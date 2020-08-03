@@ -2,7 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Net.Connections;
 using System.Net.Security;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace System.Net.Http
 {
@@ -46,6 +49,9 @@ namespace System.Net.Http
         internal HttpKeepAlivePingPolicy _keepAlivePingPolicy = HttpHandlerDefaults.DefaultKeepAlivePingPolicy;
         internal TimeSpan _connectTimeout = HttpHandlerDefaults.DefaultConnectTimeout;
 
+        internal HeaderEncodingSelector<HttpRequestMessage>? _requestHeaderEncodingSelector;
+        internal HeaderEncodingSelector<HttpRequestMessage>? _responseHeaderEncodingSelector;
+
         internal Version _maxHttpVersion;
 
         internal bool _allowUnencryptedHttp2;
@@ -54,6 +60,11 @@ namespace System.Net.Http
         internal bool _assumePrenegotiatedHttp3ForTesting;
 
         internal SslClientAuthenticationOptions? _sslOptions;
+
+        internal bool _enableMultipleHttp2Connections;
+
+        internal ConnectionFactory? _connectionFactory;
+        internal Func<HttpRequestMessage, Connection, CancellationToken, ValueTask<Connection>>? _plaintextFilter;
 
         internal IDictionary<string, object?>? _properties;
 
@@ -107,7 +118,12 @@ namespace System.Net.Http
                 _assumePrenegotiatedHttp3ForTesting = _assumePrenegotiatedHttp3ForTesting,
                 _keepAlivePingTimeout = _keepAlivePingTimeout,
                 _keepAlivePingDelay = _keepAlivePingDelay,
-                _keepAlivePingPolicy = _keepAlivePingPolicy
+                _keepAlivePingPolicy = _keepAlivePingPolicy,
+                _requestHeaderEncodingSelector = _requestHeaderEncodingSelector,
+                _responseHeaderEncodingSelector = _responseHeaderEncodingSelector,
+                _enableMultipleHttp2Connections = _enableMultipleHttp2Connections,
+                _connectionFactory = _connectionFactory,
+                _plaintextFilter = _plaintextFilter
             };
         }
 
@@ -188,6 +204,8 @@ namespace System.Net.Http
                 return false;
             }
         }
+
+        public bool EnableMultipleHttp2Connections => _enableMultipleHttp2Connections;
 
         private byte[]? _http3SettingsFrame;
         internal byte[] Http3SettingsFrame => _http3SettingsFrame ??= Http3Connection.BuildSettingsFrame(this);

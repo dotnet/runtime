@@ -292,6 +292,7 @@ namespace System.Formats.Cbor
             _keysRequireSorting = false;
             _keyEncodingRanges = null;
             _keyValuePairEncodingRanges = null;
+            _isTagContext = false;
         }
 
         private void PopDataItem(CborMajorType typeToPop)
@@ -313,7 +314,7 @@ namespace System.Formats.Cbor
 
             if (_isTagContext)
             {
-                // writer expecting value after a tag data item , cannot pop the current context
+                // writer expecting value after a tag data item, cannot pop the current context
                 throw new InvalidOperationException(SR.Format(SR.Cbor_PopMajorTypeMismatch, (int)CborMajorType.Tag));
             }
 

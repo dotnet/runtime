@@ -171,7 +171,7 @@ namespace System.Globalization.Tests
             }
         }
 
-        private static readonly string [] s_cultureNames = new string[] { "", "en-US", "fr", "fr-FR" };
+        private static readonly string [] s_cultureNames = new string[] { "en-US", "fr", "fr-FR" };
 
         // ToLower_TestData_netcore has the data which is specific to netcore framework
         public static IEnumerable<object[]> ToLower_TestData_netcore()
@@ -180,6 +180,11 @@ namespace System.Globalization.Tests
             {
                 // DESERT CAPITAL LETTER LONG I has a lower case variant (but not on Windows 7).
                 yield return new object[] { cultureName, "\U00010400", PlatformDetection.IsWindows7 ? "\U00010400" : "\U00010428" };
+            }
+
+            if (!PlatformDetection.IsNlsGlobalization)
+            {
+                yield return new object[] { "", "\U00010400", PlatformDetection.IsWindows7 ? "\U00010400" : "\U00010428" };
             }
         }
 
