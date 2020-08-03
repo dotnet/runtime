@@ -12,6 +12,8 @@ namespace System.Net.Http
 {
     public sealed class SocketsHttpHandler : HttpMessageHandler
     {
+        public static bool IsSupported => false;
+
         public bool UseCookies
         {
             get => throw new PlatformNotSupportedException();
