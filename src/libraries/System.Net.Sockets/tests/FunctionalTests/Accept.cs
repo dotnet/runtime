@@ -386,7 +386,7 @@ namespace System.Net.Sockets.Tests
             IPEndPoint listenerEndpoint = new IPEndPoint(IPAddress.Loopback, port);
             listener.Listen(100);
 
-            Assert.Throws<PlatformNotSupportedException>(() => { _ = AcceptAsync(listener, 1); });
+            Assert.ThrowsAsync<PlatformNotSupportedException>(() => AcceptAsync(listener, 1) );
         }
     }
 
@@ -406,7 +406,7 @@ namespace System.Net.Sockets.Tests
 
         [Fact]
         [PlatformSpecific(TestPlatforms.AnyUnix)]
-        public void EndAccept_Unix_ThrowsPlatformNotSupportedException()
+        public void EndAccept_AcceptReceiveUnix_ThrowsPlatformNotSupportedException()
         {
             using Socket listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
 
