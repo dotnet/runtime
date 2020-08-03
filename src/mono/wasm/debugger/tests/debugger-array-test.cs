@@ -7,19 +7,19 @@ namespace DebuggerTests
 {
     public class ArrayTestsClass
     {
-        public static void PrimitiveTypeLocals (bool call_other = false)
+        public static void PrimitiveTypeLocals(bool call_other = false)
         {
             var int_arr = new int[] { 4, 70, 1 };
             var int_arr_empty = new int[0];
             int[] int_arr_null = null;
 
             if (call_other)
-                OtherMethod ();
+                OtherMethod();
 
-            Console.WriteLine ($"int_arr: {int_arr.Length}, {int_arr_empty.Length}, {int_arr_null?.Length}");
+            Console.WriteLine($"int_arr: {int_arr.Length}, {int_arr_empty.Length}, {int_arr_null?.Length}");
         }
 
-        public static void ValueTypeLocals (bool call_other = false)
+        public static void ValueTypeLocals(bool call_other = false)
         {
             var point_arr = new Point[]
             {
@@ -31,12 +31,12 @@ namespace DebuggerTests
             Point[] point_arr_null = null;
 
             if (call_other)
-                OtherMethod ();
+                OtherMethod();
 
-            Console.WriteLine ($"point_arr: {point_arr.Length}, {point_arr_empty.Length}, {point_arr_null?.Length}");
+            Console.WriteLine($"point_arr: {point_arr.Length}, {point_arr_empty.Length}, {point_arr_null?.Length}");
         }
 
-        public static void ObjectTypeLocals (bool call_other = false)
+        public static void ObjectTypeLocals(bool call_other = false)
         {
             var class_arr = new SimpleClass[]
             {
@@ -49,12 +49,12 @@ namespace DebuggerTests
             SimpleClass[] class_arr_null = null;
 
             if (call_other)
-                OtherMethod ();
+                OtherMethod();
 
-            Console.WriteLine ($"class_arr: {class_arr.Length}, {class_arr_empty.Length}, {class_arr_null?.Length}");
+            Console.WriteLine($"class_arr: {class_arr.Length}, {class_arr_empty.Length}, {class_arr_null?.Length}");
         }
 
-        public static void GenericTypeLocals (bool call_other = false)
+        public static void GenericTypeLocals(bool call_other = false)
         {
             var gclass_arr = new GenericClass<int>[]
             {
@@ -67,12 +67,12 @@ namespace DebuggerTests
             GenericClass<int>[] gclass_arr_null = null;
 
             if (call_other)
-                OtherMethod ();
+                OtherMethod();
 
-            Console.WriteLine ($"gclass_arr: {gclass_arr.Length}, {gclass_arr_empty.Length}, {gclass_arr_null?.Length}");
+            Console.WriteLine($"gclass_arr: {gclass_arr.Length}, {gclass_arr_empty.Length}, {gclass_arr_null?.Length}");
         }
 
-        public static void GenericValueTypeLocals (bool call_other = false)
+        public static void GenericValueTypeLocals(bool call_other = false)
         {
             var gvclass_arr = new SimpleGenericStruct<Point>[]
             {
@@ -84,23 +84,23 @@ namespace DebuggerTests
             SimpleGenericStruct<Point>[] gvclass_arr_null = null;
 
             if (call_other)
-                OtherMethod ();
+                OtherMethod();
 
-            Console.WriteLine ($"gvclass_arr: {gvclass_arr.Length}, {gvclass_arr_empty.Length}, {gvclass_arr_null?.Length}");
+            Console.WriteLine($"gvclass_arr: {gvclass_arr.Length}, {gvclass_arr_empty.Length}, {gvclass_arr_null?.Length}");
         }
 
-        static void OtherMethod ()
+        static void OtherMethod()
         {
-            YetAnotherMethod ();
-            Console.WriteLine ($"Just a placeholder for breakpoints");
+            YetAnotherMethod();
+            Console.WriteLine($"Just a placeholder for breakpoints");
         }
 
-        static void YetAnotherMethod ()
+        static void YetAnotherMethod()
         {
-            Console.WriteLine ($"Just a placeholder for breakpoints");
+            Console.WriteLine($"Just a placeholder for breakpoints");
         }
 
-        public static void ObjectArrayMembers ()
+        public static void ObjectArrayMembers()
         {
             var c = new Container
             {
@@ -129,12 +129,12 @@ namespace DebuggerTests
                 }
             };
 
-            Console.WriteLine ($"Back from PlaceholderMethod, {c.ClassArrayProperty?.Length}");
-            c.PlaceholderMethod ();
-            Console.WriteLine ($"Back from PlaceholderMethod, {c.id}");
+            Console.WriteLine($"Back from PlaceholderMethod, {c.ClassArrayProperty?.Length}");
+            c.PlaceholderMethod();
+            Console.WriteLine($"Back from PlaceholderMethod, {c.id}");
         }
 
-        public static async Task<bool> ValueTypeLocalsAsync (bool call_other = false)
+        public static async Task<bool> ValueTypeLocalsAsync(bool call_other = false)
         {
             var gvclass_arr = new SimpleGenericStruct<Point>[]
             {
@@ -144,21 +144,21 @@ namespace DebuggerTests
 
             var gvclass_arr_empty = new SimpleGenericStruct<Point>[0];
             SimpleGenericStruct<Point>[] gvclass_arr_null = null;
-            Console.WriteLine ($"ValueTypeLocalsAsync: call_other: {call_other}");
+            Console.WriteLine($"ValueTypeLocalsAsync: call_other: {call_other}");
             SimpleGenericStruct<Point> gvclass;
             Point[] points = null;
 
             if (call_other)
             {
-                (gvclass, points) = await new ArrayTestsClass ().InstanceMethodValueTypeLocalsAsync<SimpleGenericStruct<Point>> (gvclass_arr[0]);
-                Console.WriteLine ($"* gvclass: {gvclass}, points: {points.Length}");
+                (gvclass, points) = await new ArrayTestsClass().InstanceMethodValueTypeLocalsAsync<SimpleGenericStruct<Point>>(gvclass_arr[0]);
+                Console.WriteLine($"* gvclass: {gvclass}, points: {points.Length}");
             }
 
-            Console.WriteLine ($"gvclass_arr: {gvclass_arr.Length}, {gvclass_arr_empty.Length}, {gvclass_arr_null?.Length}");
+            Console.WriteLine($"gvclass_arr: {gvclass_arr.Length}, {gvclass_arr_empty.Length}, {gvclass_arr_null?.Length}");
             return true;
         }
 
-        public async Task < (T, Point[]) > InstanceMethodValueTypeLocalsAsync<T> (T t1)
+        public async Task < (T, Point[]) > InstanceMethodValueTypeLocalsAsync<T>(T t1)
         {
             var point_arr = new Point[]
             {
@@ -167,17 +167,17 @@ namespace DebuggerTests
             };
             var point = new Point { X = 45, Y = 51, Id = "point#Id", Color = RGB.Green };
 
-            Console.WriteLine ($"point_arr: {point_arr.Length}, T: {t1}, point: {point}");
+            Console.WriteLine($"point_arr: {point_arr.Length}, T: {t1}, point: {point}");
             return (t1, new Point[] { point_arr[0], point_arr[1], point });
         }
 
         // A workaround for method invocations on structs not working right now
-        public static async Task EntryPointForStructMethod (bool call_other = false)
+        public static async Task EntryPointForStructMethod(bool call_other = false)
         {
-            await Point.AsyncMethod (call_other);
+            await Point.AsyncMethod(call_other);
         }
 
-        public static void GenericValueTypeLocals2 (bool call_other = false)
+        public static void GenericValueTypeLocals2(bool call_other = false)
         {
             var gvclass_arr = new SimpleGenericStruct<Point[]>[]
             {
@@ -208,9 +208,9 @@ namespace DebuggerTests
             SimpleGenericStruct<Point[]>[] gvclass_arr_null = null;
 
             if (call_other)
-                OtherMethod ();
+                OtherMethod();
 
-            Console.WriteLine ($"gvclass_arr: {gvclass_arr.Length}, {gvclass_arr_empty.Length}, {gvclass_arr_null?.Length}");
+            Console.WriteLine($"gvclass_arr: {gvclass_arr.Length}, {gvclass_arr_empty.Length}, {gvclass_arr_null?.Length}");
         }
     }
 
@@ -223,9 +223,9 @@ namespace DebuggerTests
         public Point[] PointsProperty { get; set; }
         public Point[] PointsField;
 
-        public void PlaceholderMethod ()
+        public void PlaceholderMethod()
         {
-            Console.WriteLine ($"Container.PlaceholderMethod");
+            Console.WriteLine($"Container.PlaceholderMethod");
         }
     }
 
@@ -236,27 +236,27 @@ namespace DebuggerTests
         public RGB Color { get; set; }
 
         /* instance too */
-        public static async Task AsyncMethod (bool call_other)
+        public static async Task AsyncMethod(bool call_other)
         {
             int local_i = 5;
             var sc = new SimpleClass { X = 10, Y = 45, Id = "sc#Id", Color = RGB.Blue };
             if (call_other)
-                await new Point { X = 90, Y = -4, Id = "point#Id", Color = RGB.Green }.AsyncInstanceMethod (sc);
-            Console.WriteLine ($"AsyncMethod local_i: {local_i}, sc: {sc.Id}");
+                await new Point { X = 90, Y = -4, Id = "point#Id", Color = RGB.Green }.AsyncInstanceMethod(sc);
+            Console.WriteLine($"AsyncMethod local_i: {local_i}, sc: {sc.Id}");
         }
 
-        public async Task AsyncInstanceMethod (SimpleClass sc_arg)
+        public async Task AsyncInstanceMethod(SimpleClass sc_arg)
         {
             var local_gs = new SimpleGenericStruct<int> { Id = "local_gs#Id", Color = RGB.Green, Value = 4 };
             sc_arg.Id = "sc_arg#Id";
-            Console.WriteLine ($"AsyncInstanceMethod sc_arg: {sc_arg.Id}, local_gs: {local_gs.Id}");
+            Console.WriteLine($"AsyncInstanceMethod sc_arg: {sc_arg.Id}, local_gs: {local_gs.Id}");
         }
 
-        public void GenericInstanceMethod<T> (T sc_arg) where T : SimpleClass
+        public void GenericInstanceMethod<T>(T sc_arg) where T : SimpleClass
         {
             var local_gs = new SimpleGenericStruct<int> { Id = "local_gs#Id", Color = RGB.Green, Value = 4 };
             sc_arg.Id = "sc_arg#Id";
-            Console.WriteLine ($"AsyncInstanceMethod sc_arg: {sc_arg.Id}, local_gs: {local_gs.Id}");
+            Console.WriteLine($"AsyncInstanceMethod sc_arg: {sc_arg.Id}, local_gs: {local_gs.Id}");
         }
     }
 
@@ -285,24 +285,24 @@ namespace DebuggerTests
 
     public class EntryClass
     {
-        public static void run ()
+        public static void run()
         {
-            ArrayTestsClass.PrimitiveTypeLocals (true);
-            ArrayTestsClass.ValueTypeLocals (true);
-            ArrayTestsClass.ObjectTypeLocals (true);
+            ArrayTestsClass.PrimitiveTypeLocals(true);
+            ArrayTestsClass.ValueTypeLocals(true);
+            ArrayTestsClass.ObjectTypeLocals(true);
 
-            ArrayTestsClass.GenericTypeLocals (true);
-            ArrayTestsClass.GenericValueTypeLocals (true);
-            ArrayTestsClass.GenericValueTypeLocals2 (true);
+            ArrayTestsClass.GenericTypeLocals(true);
+            ArrayTestsClass.GenericValueTypeLocals(true);
+            ArrayTestsClass.GenericValueTypeLocals2(true);
 
-            ArrayTestsClass.ObjectArrayMembers ();
+            ArrayTestsClass.ObjectArrayMembers();
 
-            ArrayTestsClass.ValueTypeLocalsAsync (true).Wait ();
+            ArrayTestsClass.ValueTypeLocalsAsync(true).Wait();
 
-            ArrayTestsClass.EntryPointForStructMethod (true).Wait ();
+            ArrayTestsClass.EntryPointForStructMethod(true).Wait();
 
             var sc = new SimpleClass { X = 10, Y = 45, Id = "sc#Id", Color = RGB.Blue };
-            new Point { X = 90, Y = -4, Id = "point#Id", Color = RGB.Green }.GenericInstanceMethod (sc);
+            new Point { X = 90, Y = -4, Id = "point#Id", Color = RGB.Green }.GenericInstanceMethod(sc);
         }
     }
 }

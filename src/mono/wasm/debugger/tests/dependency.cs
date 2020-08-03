@@ -11,29 +11,29 @@ namespace Simple
         public string B { get; set; }
         object c;
 
-        public Complex (int a, string b)
+        public Complex(int a, string b)
         {
             A = a;
             B = b;
             this.c = this;
         }
 
-        public int DoStuff ()
+        public int DoStuff()
         {
-            return DoOtherStuff ();
+            return DoOtherStuff();
         }
 
-        public int DoOtherStuff ()
+        public int DoOtherStuff()
         {
-            return DoEvenMoreStuff () - 1;
+            return DoEvenMoreStuff() - 1;
         }
 
-        public int DoEvenMoreStuff ()
+        public int DoEvenMoreStuff()
         {
-            return 1 + BreakOnThisMethod ();
+            return 1 + BreakOnThisMethod();
         }
 
-        public int BreakOnThisMethod ()
+        public int BreakOnThisMethod()
         {
             var x = A + 10;
             c = $"{x}_{B}";
