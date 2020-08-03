@@ -4570,7 +4570,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
             Throw GetNoValidOperatorException(UserDefinedOperator.Modulus, Left, Right)
         End Function
 
-        <MethodImpl(MethodImplOptions.NoInlining)> ' To work around https://github.com/dotnet/coreclr/issues/8648
+        <MethodImpl(MethodImplOptions.NoInlining)> ' To work around https://github.com/dotnet/runtime/issues/7141
         Private Shared Function ModSByte(ByVal left As SByte, ByVal right As SByte) As Object
             Return left Mod right
         End Function

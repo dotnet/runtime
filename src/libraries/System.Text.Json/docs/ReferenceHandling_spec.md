@@ -359,7 +359,7 @@ Now, to read back those references, you have to use `MetadataPropertyHandling.De
   * This could break existing converters. For example, an array converter may expect the first token to be "[" but a preserved array starts with "{".
     * perhaps converters are more feasible with the JSON path implementation.
   * We will now accept that an array comes in valid format when starts with a curly brace "{"; below issue is related to guard against NRE when this happens:
-    * https://github.com/dotnet/corefx/issues/41839
+    * https://github.com/dotnet/runtime/issues/31192
 
 ## dojo toolkit (JavaScript framework)
 https://dojotoolkit.org/reference-guide/1.10/dojox/json/ref.html

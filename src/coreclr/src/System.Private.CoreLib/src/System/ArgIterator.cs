@@ -134,50 +134,50 @@ namespace System
 #else
         public ArgIterator(RuntimeArgumentHandle arglist)
         {
-            throw new PlatformNotSupportedException(SR.PlatformNotSupported_ArgIterator); // https://github.com/dotnet/coreclr/issues/9204
+            throw new PlatformNotSupportedException(SR.PlatformNotSupported_ArgIterator); // https://github.com/dotnet/runtime/issues/7317
         }
 
         [CLSCompliant(false)]
         public unsafe ArgIterator(RuntimeArgumentHandle arglist, void* ptr)
         {
-            throw new PlatformNotSupportedException(SR.PlatformNotSupported_ArgIterator); // https://github.com/dotnet/coreclr/issues/9204
+            throw new PlatformNotSupportedException(SR.PlatformNotSupported_ArgIterator); // https://github.com/dotnet/runtime/issues/7317
         }
 
         public void End()
         {
-            throw new PlatformNotSupportedException(SR.PlatformNotSupported_ArgIterator); // https://github.com/dotnet/coreclr/issues/9204
+            throw new PlatformNotSupportedException(SR.PlatformNotSupported_ArgIterator); // https://github.com/dotnet/runtime/issues/7317
         }
 
         public override bool Equals(object? o)
         {
-            throw new PlatformNotSupportedException(SR.PlatformNotSupported_ArgIterator); // https://github.com/dotnet/coreclr/issues/9204
+            throw new PlatformNotSupportedException(SR.PlatformNotSupported_ArgIterator); // https://github.com/dotnet/runtime/issues/7317
         }
 
         public override int GetHashCode()
         {
-            throw new PlatformNotSupportedException(SR.PlatformNotSupported_ArgIterator); // https://github.com/dotnet/coreclr/issues/9204
+            throw new PlatformNotSupportedException(SR.PlatformNotSupported_ArgIterator); // https://github.com/dotnet/runtime/issues/7317
         }
 
         [CLSCompliant(false)]
         public System.TypedReference GetNextArg()
         {
-            throw new PlatformNotSupportedException(SR.PlatformNotSupported_ArgIterator); // https://github.com/dotnet/coreclr/issues/9204
+            throw new PlatformNotSupportedException(SR.PlatformNotSupported_ArgIterator); // https://github.com/dotnet/runtime/issues/7317
         }
 
         [CLSCompliant(false)]
         public System.TypedReference GetNextArg(System.RuntimeTypeHandle rth)
         {
-            throw new PlatformNotSupportedException(SR.PlatformNotSupported_ArgIterator); // https://github.com/dotnet/coreclr/issues/9204
+            throw new PlatformNotSupportedException(SR.PlatformNotSupported_ArgIterator); // https://github.com/dotnet/runtime/issues/7317
         }
 
         public unsafe System.RuntimeTypeHandle GetNextArgType()
         {
-            throw new PlatformNotSupportedException(SR.PlatformNotSupported_ArgIterator); // https://github.com/dotnet/coreclr/issues/9204
+            throw new PlatformNotSupportedException(SR.PlatformNotSupported_ArgIterator); // https://github.com/dotnet/runtime/issues/7317
         }
 
         public int GetRemainingCount()
         {
-            throw new PlatformNotSupportedException(SR.PlatformNotSupported_ArgIterator); // https://github.com/dotnet/coreclr/issues/9204
+            throw new PlatformNotSupportedException(SR.PlatformNotSupported_ArgIterator); // https://github.com/dotnet/runtime/issues/7317
         }
 #endif // TARGET_WINDOWS
     }

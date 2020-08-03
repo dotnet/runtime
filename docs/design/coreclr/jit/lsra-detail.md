@@ -464,10 +464,10 @@ During this phase, preferences are set:
 
         This area has room for improvement:
 
-        -   A specific case that could be improved is [Issue #25312](https://github.com/dotnet/coreclr/issues/25312)
+        -   A specific case that could be improved is [Issue #12945](https://github.com/dotnet/runtime/issues/12945)
             which involves preferencing for HW intrinsics.
 
-        -   Issue [#22374](https://github.com/dotnet/coreclr/issues/22374) also has a pointer
+        -   Issue [#11959](https://github.com/dotnet/runtime/issues/11959) also has a pointer
             to some methods that could benefit from improved preferencing.
 
     - Register preferences are set:
@@ -528,7 +528,7 @@ LinearScanAllocation(List<RefPosition> refPositions)
     -   Currently, parameters may not be allocated a register if their
         weighted reference count is less than `BB_UNITY_WEIGHT`, however
         plenty of room remains for improving the allocation of
-        parameters [Issue \#11356](https://github.com/dotnet/coreclr/issues/11356)
+        parameters [Issue \#7999](https://github.com/dotnet/runtime/issues/7999)
 
 -   `TryAllocateFreeReg()` iterates over the registers, attempting to find
     the best free register (if any) to allocate:
@@ -550,7 +550,7 @@ LinearScanAllocation(List<RefPosition> refPositions)
     -   It always uses the same order for iterating over the registers.
         The jit32 register allocator used a different ordering for tree
         temps than for lclVars. It's unclear if this matters for LSRA,
-        but [Issue \#11357](https://github.com/dotnet/coreclr/issues/11357)
+        but [Issue \#8000](https://github.com/dotnet/runtime/issues/8000)
         tracks this question.
 
 -   `AllocateBusyReg()` iterates over all the registers trying to find the
@@ -570,8 +570,8 @@ LinearScanAllocation(List<RefPosition> refPositions)
     -   It will always spill an `Interval` either at its most recent
         use, or at the entry to the current block.
 
-        -   Issues [\#7609](https://github.com/dotnet/coreclr/issues/7609) and
-            [\#7665](https://github.com/dotnet/coreclr/issues/7665) track improvement of spill
+        -   Issues [\#6806](https://github.com/dotnet/runtime/issues/6806) and
+            [\#6825](https://github.com/dotnet/runtime/issues/6825) track improvement of spill
             placement.
 
     -   It is quite possible that combining `TryAllocateFreeReg()` and
@@ -896,7 +896,7 @@ exclusive:
 -   Never allocate a register for a `RefPosition` marked `regOptional` (0x1000).
 
 It may be useful to also have a stress mode that deliberately trashes registers that
-are not currently occupied (e.g. at block boundaries). Issue [#18944](https://github.com/dotnet/coreclr/issues/18944).
+are not currently occupied (e.g. at block boundaries). Issue [#10691](https://github.com/dotnet/runtime/issues/10691).
 
 Assertions & Validation
 -----------------------
@@ -924,13 +924,13 @@ At the end of write-back (`resolveRegisters()`), `verifyFinalAllocation()` runs.
 Future Extensions and Enhancements
 ----------------------------------
 
-The potential enhancements to the JIT, some of which are referenced in this document, can generally be found by [searching for LSRA in open issues](https://github.com/dotnet/coreclr/issues?utf8=%E2%9C%93&q=is%3Aissue+is%3Aopen+LSRA+in%3Atitle). The ones that are focused on JIT throughput are labeled `JITThroughput`.
+The potential enhancements to the JIT, some of which are referenced in this document, can generally be found by [searching for LSRA in open issues](https://github.com/dotnet/runtime/issues?q=is%3Aissue+is%3Aopen+LSRA+in%3Atitle). The ones that are focused on JIT throughput are labeled `JITThroughput`.
 
 ## Code Quality Enhancements
 
 ### <a name="combine"></a>Merge Allocation of Free and Busy Registers
 
-This is captured as [\#15408](https://github.com/dotnet/coreclr/issues/15408)
+This is captured as [\#9399](https://github.com/dotnet/runtime/issues/9399)
 Consider merging allocating free & busy regs.
 
 Currently the register allocator will always allocate an available register, even if it only meets
@@ -948,19 +948,19 @@ further work to eliminate diffs and improve throughput.
 
 This would make it possible to spill a register for a higher weight `lclVar` rather than "settling"
 for a register that's a poor fit for its requirements. This is probably the best approach to
-address Issues [\#7664](https://github.com/dotnet/coreclr/issues/7664)
+address Issues [\#6824](https://github.com/dotnet/runtime/issues/6824)
 Heuristics for callee saved reg allocation and
-[\#13735](https://github.com/dotnet/coreclr/issues/13735)
+[\#8846](https://github.com/dotnet/runtime/issues/8846)
 Let variables within a loop use register first.
 
 The following issues are related:
 
 * Both `tryAllocateFreeReg()` and `allocateBusyReg()` currently fully evaluate the "goodness" of each register.
-  Issue [\#7301](https://github.com/dotnet/coreclr/issues/7301) tracks the possibility of short-circuiting
+  Issue [\#6705](https://github.com/dotnet/runtime/issues/6705) tracks the possibility of short-circuiting
   this evaluation.
   Making such an improvement should probably be done in conjunction with this work.
 
-* Issue [\#26847](https://github.com/dotnet/coreclr/issues/26847)
+* Issue [\#13466](https://github.com/dotnet/runtime/issues/13466)
   Heuristics for callee saved reg allocation.
 
 ### Auto-tuning of register selection
@@ -980,7 +980,7 @@ would be added as an alternate path in the register allocator, leaving the defau
 
 ### Pre-allocating high frequency lclVars
 
-This is captured as Issue [\#11424](https://github.com/dotnet/coreclr/issues/11424)
+This is captured as Issue [\#8019](https://github.com/dotnet/runtime/issues/8019)
 Consider pre-allocating high-frequency lclVars.
 
 The idea here is to ensure that high frequency lclVars aren't forced to use less-than-optimal
@@ -1015,7 +1015,7 @@ One strategy would be to do something along the lines of (appropriate hand-wavin
 
 ### <a name="avoid-split"></a>Avoid Splitting Loop Backedges
 
-This is captured as Issue [\#16857](https://github.com/dotnet/coreclr/issues/16857).
+This is captured as Issue [\#9909](https://github.com/dotnet/runtime/issues/9909).
 
 When the register allocator performs resolution across block boundaries, it may split critical
 edges (edges from a block with multiple successors to a block with multiple predecessors).
@@ -1049,8 +1049,8 @@ investigating whether it would be worthwhile and cheaper to simply track this in
 
 ### Support Reg-Optional Defs
 
-Issues [\#7752](https://github.com/dotnet/coreclr/issues/7752) and
-[\#7753](https://github.com/dotnet/coreclr/issues/7753) track the
+Issues [\#6862](https://github.com/dotnet/runtime/issues/6862) and
+[\#6863](https://github.com/dotnet/runtime/issues/6863) track the
  proposal to support "folding" of operations using a tree temp when
 the defining operation supports read-modify-write (RMW) to memory.
 This involves supporting the possibility
@@ -1059,7 +1059,7 @@ never occupy a register.
 
 ### Don't Pre-determine Reg-Optional Operand
 
-Issue [\#6361](https://github.com/dotnet/coreclr/issues/6361)
+Issue [\#6358](https://github.com/dotnet/runtime/issues/6358)
 tracks the problem that `Lowering` currently has
 to select a single operand to be reg-optional, even if either
 operand could be. This requires some additional state because
@@ -1116,7 +1116,7 @@ start over.
 It is unclear whether it would be beneficial, but if we could keep track of the variables that are
 only used within a block (presumably true of many introduced temps), we may find that we could
 continue to limit the number of variables whose liveness is tracked across blocks, keeping an expanded
-set only for transient liveness. Issue [\#11339](https://github.com/dotnet/coreclr/issues/11339).
+set only for transient liveness. Issue [\#7992](https://github.com/dotnet/runtime/issues/7992).
 
 Note that this would only improve JIT throughput for optimized code.
 

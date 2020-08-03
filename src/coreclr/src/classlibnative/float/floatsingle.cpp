@@ -123,7 +123,7 @@ FCIMPLEND
 
 #if defined(_MSC_VER) && defined(TARGET_AMD64)
 // The /fp:fast form of `ceilf` for AMD64 does not correctly handle: `-1.0 < value <= -0.0`
-// https://github.com/dotnet/coreclr/issues/19739
+// https://github.com/dotnet/runtime/issues/11003
 #pragma float_control(push)
 #pragma float_control(precise, on)
 #endif

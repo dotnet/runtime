@@ -67,7 +67,7 @@ DWORD SPINLOCKTryAcquire (LONG * lock);
 // Named mutex
 
 // Temporarily disabling usage of pthread process-shared mutexes on ARM/ARM64 due to functional issues that cannot easily be
-// detected with code due to hangs. See https://github.com/dotnet/coreclr/issues/5456.
+// detected with code due to hangs. See https://github.com/dotnet/runtime/issues/6014.
 #if HAVE_FULLY_FEATURED_PTHREAD_MUTEXES && HAVE_FUNCTIONAL_PTHREAD_ROBUST_MUTEXES && !(defined(HOST_ARM) || defined(HOST_ARM64) || defined(__FreeBSD__))
     #define NAMED_MUTEX_USE_PTHREAD_MUTEX 1
 #else

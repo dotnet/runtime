@@ -365,7 +365,7 @@ int ExecuteManagedAssembly(
     // libunwind library is used to unwind stack frame, but libunwind for ARM
     // does not support ARM vfpv3/NEON registers in DWARF format correctly.
     // Therefore let's disable stack unwinding using DWARF information
-    // See https://github.com/dotnet/coreclr/issues/6698
+    // See https://github.com/dotnet/runtime/issues/6479
     //
     // libunwind use following methods to unwind stack frame.
     // UNW_ARM_METHOD_ALL          0xFF

@@ -217,7 +217,7 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
 
-        // SPAN-TODO: GC reporting - https://github.com/dotnet/coreclr/issues/8517
+        // SPAN-TODO: GC reporting - https://github.com/dotnet/runtime/issues/7103
 
        _ASSERTE(IsStructPassedInRegs());
 

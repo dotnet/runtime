@@ -474,7 +474,7 @@ namespace Span
         }
         #endregion
 
-#if false // netcoreapp specific API https://github.com/dotnet/coreclr/issues/16126
+#if false // netcoreapp specific API https://github.com/dotnet/runtime/issues/9635
         #region TestSpanCreate<T>
         [Benchmark(InnerIterationCount = BaseIterations)]
         [InlineData(100)]

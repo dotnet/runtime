@@ -147,7 +147,7 @@ error with a suitable message rather than a stack overflow.
 Related issues:
 
 * https://github.com/dotnet/roslyn/issues/7971
-* https://github.com/dotnet/coreclr/issues/2674
+* https://github.com/dotnet/runtime/issues/4945
 
 #### Proposed specification change
 

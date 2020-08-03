@@ -273,7 +273,7 @@
   {
         .custom instance void System.Runtime.Versioning.NonVersionableAttribute::.ctor() = ( 01 00 00 00 )
 // For .NET Core the roundtrip via a local is no longer needed see:
-// https://github.com/dotnet/coreclr/issues/13341
+// https://github.com/dotnet/runtime/issues/8730
 // and
 // https://github.com/dotnet/coreclr/pull/11218
 #ifdef netcoreapp

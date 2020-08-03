@@ -308,7 +308,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         //  fieldBytes - size of the structure
         internal void ReportPointersFromStructInRegisters(TypeDesc type, int delta, CORCOMPILE_GCREFMAP_TOKENS[] frame)
         {
-            // SPAN-TODO: GC reporting - https://github.com/dotnet/coreclr/issues/8517
+            // SPAN-TODO: GC reporting - https://github.com/dotnet/runtime/issues/7103
 
             Debug.Assert(IsStructPassedInRegs());
 

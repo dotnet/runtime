@@ -25,7 +25,7 @@ namespace Microsoft.Extensions.Internal
             }
             catch (FormatException) when (parameter.ParameterType == typeof(DateTime))
             {
-                // Workaround for https://github.com/dotnet/corefx/issues/12338
+                // Workaround for https://github.com/dotnet/runtime/issues/18844
                 // If HasDefaultValue throws FormatException for DateTime
                 // we expect it to have default value
                 hasDefaultValue = true;
@@ -39,7 +39,7 @@ namespace Microsoft.Extensions.Internal
                     defaultValue = parameter.DefaultValue;
                 }
 
-                // Workaround for https://github.com/dotnet/corefx/issues/11797
+                // Workaround for https://github.com/dotnet/runtime/issues/18599
                 if (defaultValue == null && parameter.ParameterType.IsValueType)
                 {
                     defaultValue = CreateValueType(parameter.ParameterType);

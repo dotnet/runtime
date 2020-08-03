@@ -685,7 +685,7 @@ namespace System
             // kept outside of the small arrays hot path to have inlining without big size growth
             return AllocateNewUninitializedArray(length, pinned);
 
-            // remove the local function when https://github.com/dotnet/coreclr/issues/5329 is implemented
+            // remove the local function when https://github.com/dotnet/runtime/issues/5973 is implemented
             static T[] AllocateNewUninitializedArray(int length, bool pinned)
             {
                 GC_ALLOC_FLAGS flags = GC_ALLOC_FLAGS.GC_ALLOC_ZEROING_OPTIONAL;
