@@ -1,0 +1,3 @@
+# Debian (buster)   # Stable
+deb http://ftp.debian.org/debian/ buster main contrib non-free
+deb-src http://ftp.debian.org/debian/ buster main contrib non-free

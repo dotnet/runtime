@@ -211,7 +211,7 @@ while :; do
     shift
 done
 
-if [ "$__BuildArch" == "armel" ]; then
+if [ "$__BuildArch" == "armel" ] && [ "$__CodeName" == "jessie" ]; then
     __LLDB_Package="lldb-3.5-dev"
 fi
 __UbuntuPackages+=" ${__LLDB_Package:-}"
