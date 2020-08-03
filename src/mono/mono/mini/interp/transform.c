@@ -4945,7 +4945,8 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 			// box T + unbox.any T -> nop
 			if (td->last_ins->opcode == MINT_BOX && (td->sp - 1)->klass == klass) {
 				interp_clear_ins (td, td->last_ins);
-				td->ip += 2;
+				SET_TYPE (td->sp - 1, stack_type [mt], klass);
+				td->ip += 5;
 				break;
 			}
 
