@@ -2555,7 +2555,7 @@ namespace System.ComponentModel
             }
             else
             {
-                return !attribute.Equals(memberAttribute);
+                return !attribute.Match(memberAttribute);
             }
         }
 

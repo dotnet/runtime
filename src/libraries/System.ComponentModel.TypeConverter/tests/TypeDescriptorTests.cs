@@ -1141,6 +1141,30 @@ namespace System.ComponentModel.Tests
             Assert.Equal("Derived", descriptionAttribute.Description);
         }
 
+        [Fact]
+        public void PropertyFilterAttributeMatch()
+        {
+            Assert.Equal(3, TypeDescriptor.GetProperties(typeof(POCO), new[] { new PropertyFilterAttribute() }).Count);
+        }
+
+        public sealed class PropertyFilterAttribute : Attribute
+        {
+            public override bool Equals(object value) => ReferenceEquals(this, value);
+
+            public override int GetHashCode() => throw new NotImplementedException();
+
+            public override bool Match(object value) => true;
+
+            public static readonly PropertyFilterAttribute Default = new PropertyFilterAttribute();
+        }
+
+        public class POCO
+        {
+            public string StringPrpp { get; set; }
+            public int IntProp { get; set; }
+            public double DoubleProp { get; set; }
+        }
+
         class FooBarBase
         {
             [Description("Base")]
