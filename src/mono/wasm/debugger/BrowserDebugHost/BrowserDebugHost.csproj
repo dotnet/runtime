@@ -9,7 +9,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Mono.WebAssembly.DebuggerProxy\Mono.WebAssembly.DebuggerProxy.csproj" />
+    <ProjectReference Include="..\BrowserDebugProxy\BrowserDebugProxy.csproj" />
   </ItemGroup>
 
 </Project>

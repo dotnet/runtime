@@ -13,8 +13,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\ProxyDriver\ProxyDriver.csproj" />
-    <ProjectReference Include="..\Mono.WebAssembly.DebuggerProxy\Mono.WebAssembly.DebuggerProxy.csproj" />
+    <ProjectReference Include="..\BrowserDebugHost\BrowserDebugHost.csproj" />
+    <ProjectReference Include="..\BrowserDebugProxy\BrowserDebugProxy.csproj" />
   </ItemGroup>
 
 </Project>

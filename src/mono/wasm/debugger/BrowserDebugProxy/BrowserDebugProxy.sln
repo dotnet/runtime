@@ -3,9 +3,9 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.28407.52
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ProxyDriver", "..\ProxyDriver\ProxyDriver.csproj", "{954F768A-23E6-4B14-90E0-27EA6B41FBCC}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BrowserDebugHost", "..\BrowserDebugHost\BrowserDebugHost.csproj", "{954F768A-23E6-4B14-90E0-27EA6B41FBCC}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Mono.WebAssembly.DebuggerProxy", "Mono.WebAssembly.DebuggerProxy.csproj", "{490128B6-9F21-46CA-878A-F22BCF51EF3C}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BrowserDebugProxy", "BrowserDebugProxy.csproj", "{490128B6-9F21-46CA-878A-F22BCF51EF3C}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

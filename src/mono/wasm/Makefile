@@ -154,6 +154,6 @@ run-debugger-tests: build-debugger-test-app build-dbg-testsuite
 	fi
 
 build-dbg-proxy:
-	$(DOTNET) build $(TOP)/src/mono/wasm/debugger/ProxyDriver
+	$(DOTNET) build $(TOP)/src/mono/wasm/debugger/BrowserDebugHost
 build-dbg-testsuite:
 	$(DOTNET) build $(TOP)/src/mono/wasm/debugger/DebuggerTestSuite
