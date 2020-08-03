@@ -306,7 +306,15 @@ namespace System.Net.Http
         }
 
 
-        public bool KeepAlivePingWithoutRequests => _settings._keepAlivePingWithoutRequests;
+        public HttpKeepAlivePingPolicy KeepAlivePingPolicy
+        {
+            get => _settings._keepAlivePingPolicy;
+            set
+            {
+                CheckDisposedOrStarted();
+                _settings._keepAlivePingPolicy = value;
+            }
+        }
 
         public IDictionary<string, object?> Properties =>
             _settings._properties ?? (_settings._properties = new Dictionary<string, object?>());

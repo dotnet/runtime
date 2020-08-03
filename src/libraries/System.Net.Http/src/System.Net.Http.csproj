@@ -143,6 +143,7 @@
     <Compile Include="System\Net\Http\SocketsHttpHandler\FailedProxyCache.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\Http2Connection.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\Http2ConnectionException.cs" />
+    <Compile Include="System\Net\Http\SocketsHttpHandler\Http2KeepAlive.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\Http2ProtocolErrorCode.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\Http2ProtocolException.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\Http2Stream.cs" />
@@ -164,6 +165,7 @@
     <Compile Include="System\Net\Http\SocketsHttpHandler\HttpContentReadStream.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\HttpContentStream.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\HttpContentWriteStream.cs" />
+    <Compile Include="System\Net\Http\SocketsHttpHandler\HttpKeepAlivePingPolicy.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\IHttpTrace.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\IMultiWebProxy.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\MultiProxy.cs" />

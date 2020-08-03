@@ -576,6 +576,25 @@ namespace System.Net.Test.Common
             Assert.Equal(pingData, pingAck.Data);
         }
 
+        public async Task<PingFrame> ReadPingAsync(TimeSpan timeout)
+        {
+            Frame frame = await ReadFrameAsync(timeout).ConfigureAwait(false);
+            Assert.NotNull(frame);
+            Assert.Equal(FrameType.Ping, frame.Type);
+            Assert.Equal(0, frame.StreamId);
+            Assert.False(frame.AckFlag);
+
+            PingFrame ping = frame as PingFrame;
+            Assert.NotNull(ping);
+            return ping;
+        }
+
+        public async Task SendPingAckAsync(byte[] payload)
+        {
+            PingFrame pingAck = new PingFrame(payload, FrameFlags.Ack, 0);
+            await WriteFrameAsync(pingAck).ConfigureAwait(false);
+        }
+
         public async Task SendDefaultResponseHeadersAsync(int streamId)
         {
             byte[] headers = new byte[] { 0x88 };   // Encoding for ":status: 200"

@@ -295,7 +295,7 @@ namespace System.Net.Http
         public System.TimeSpan Expect100ContinueTimeout { get { throw null; } set { } }
         public System.TimeSpan KeepAlivePingDelay { get { throw null; } set { } }
         public System.TimeSpan KeepAlivePingTimeout { get { throw null; } set { } }
-        public bool KeepAlivePingWithoutRequests { get { throw null; } set { } }
+        public HttpKeepAlivePingPolicy KeepAlivePingPolicy { get { throw null; } set { } }
         public int MaxAutomaticRedirections { get { throw null; } set { } }
         public int MaxConnectionsPerServer { get { throw null; } set { } }
         public int MaxResponseDrainSize { get { throw null; } set { } }
@@ -313,6 +313,11 @@ namespace System.Net.Http
         protected override void Dispose(bool disposing) { }
         protected internal override System.Net.Http.HttpResponseMessage Send(System.Net.Http.HttpRequestMessage request, System.Threading.CancellationToken cancellationToken) { throw null; }
         protected internal override System.Threading.Tasks.Task<System.Net.Http.HttpResponseMessage> SendAsync(System.Net.Http.HttpRequestMessage request, System.Threading.CancellationToken cancellationToken) { throw null; }
+    }
+    public enum HttpKeepAlivePingPolicy
+    {
+        WithActiveRequests,
+        Always
     }
     public partial class StreamContent : System.Net.Http.HttpContent
     {

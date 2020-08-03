@@ -214,6 +214,123 @@ namespace System.Net.Http.Functional.Tests
         public SocketsHttpHandler_HttpClientHandler_ServerCertificates_Test(ITestOutputHelper output) : base(output) { }
     }
 
+    public sealed class SocketsHttpHandler_KeepAlivePing : HttpClientHandlerTestBase
+    {
+        public SocketsHttpHandler_KeepAlivePing(ITestOutputHelper output) : base(output) { }
+
+        protected override Version UseVersion => HttpVersion.Version20;
+
+        [Fact]
+        public void DefaultValues()
+        {
+            using (var handler = new SocketsHttpHandler())
+            {
+                Assert.Equal(TimeSpan.FromSeconds(20), handler.KeepAlivePingTimeout);
+                Assert.Equal(TimeSpan.FromSeconds(0), handler.KeepAlivePingDelay);
+                Assert.Equal(HttpKeepAlivePingPolicy.Always, handler.KeepAlivePingPolicy);
+            }
+        }
+
+        public static IEnumerable<object[]> KeepAliveTestDataSource()
+        {
+            // yield return new object[] { TimeSpan.FromSeconds(0), TimeSpan.FromSeconds(0), HttpKeepAlivePingPolicy.Always, false, false, false };
+            yield return new object[] { TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(0), HttpKeepAlivePingPolicy.WithActiveRequests, true, false, false };
+            // yield return new object[] { TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(0), HttpKeepAlivePingPolicy.Always, true, true, false };
+            // yield return new object[] { TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(5), HttpKeepAlivePingPolicy.WithActiveRequests, true, true, true };
+        }
+
+        [OuterLoop("Significant delay.")]
+        [Theory]
+        [MemberData(nameof(KeepAliveTestDataSource))]
+        public async Task KeepAlive(TimeSpan keepAlivePingDelay, TimeSpan pongDelay, HttpKeepAlivePingPolicy keepAlivePingPolicy, bool expectStreamPing,
+            bool expectPingWithoutStream, bool expectRequestFail)
+        {
+            var pingTimeout = keepAlivePingDelay.Add(TimeSpan.FromSeconds(4));
+
+            await Http2LoopbackServer.CreateClientAndServerAsync(
+                async uri =>
+                {
+                    SocketsHttpHandler handler = new SocketsHttpHandler()
+                    {
+                        KeepAlivePingTimeout = TimeSpan.FromSeconds(1),
+                        KeepAlivePingPolicy = keepAlivePingPolicy,
+                        KeepAlivePingDelay = keepAlivePingDelay
+                    };
+                    handler.SslOptions.RemoteCertificateValidationCallback = (_, __, ___, ____) => true;
+
+                    using (HttpClient client = new HttpClient(handler))
+                    {
+                        client.DefaultRequestVersion = HttpVersion.Version20;
+                        // Warmup request to create connection.
+                        await client.GetStringAsync(uri);
+                        //_output.WriteLine("* start req");
+                        // Request under the test scope.
+                        if (expectRequestFail)
+                            await Assert.ThrowsAsync<HttpRequestException>(() => client.GetStringAsync(uri));
+                        else
+                            await client.GetStringAsync(uri);
+
+                        //_output.WriteLine("* done");
+                        // Let connection live for a while.
+                        await Task.Delay(pingTimeout);
+                        //_output.WriteLine("* definitely done");
+                    }
+                },
+                async server =>
+                {
+                    Http2LoopbackConnection connection = await server.EstablishConnectionAsync();
+                    //_output.WriteLine("Connection established");
+                    // Warmup the connection.
+                    int streamId1 = await connection.ReadRequestHeaderAsync();
+                    await connection.SendDefaultResponseAsync(streamId1);
+
+                    //_output.WriteLine("Warm up done");
+                    // Request under the test scope.
+                    int streamId2 = await connection.ReadRequestHeaderAsync();
+
+                    // Test ping with active stream.
+                    if (!expectStreamPing)
+                    {
+                        await Assert.ThrowsAsync<OperationCanceledException>(() => connection.ReadPingAsync(pingTimeout));
+                    }
+                    else
+                    {
+                        //_output.WriteLine("Waiting on ping");
+                        PingFrame ping = await connection.ReadPingAsync(pingTimeout);
+                        //_output.WriteLine("Ping received");
+                        await Task.Delay(pongDelay);
+
+                        await connection.SendPingAckAsync(ping.Data);
+                        //_output.WriteLine("Pong sent");
+                    }
+
+                    // Send response and close the stream.
+                    if (expectRequestFail)
+                    {
+                        await Assert.ThrowsAsync<IOException>(() => connection.SendDefaultResponseAsync(streamId2));
+                        // As stream is closed we don't want to continue with sending data.
+                        return;
+                    }
+                    await connection.SendDefaultResponseAsync(streamId2);
+                    //_output.WriteLine("Sent default response");
+                    // Test ping with no active stream.
+                    if (expectPingWithoutStream)
+                    {
+                        //_output.WriteLine("Expecting last ping");
+                        PingFrame ping = await connection.ReadPingAsync(pingTimeout);
+                        //_output.WriteLine("receivedping");
+                        await connection.SendPingAckAsync(ping.Data);
+                        //_output.WriteLine("ack sent");
+                    }
+                    else
+                        await Assert.ThrowsAsync<OperationCanceledException>(() => connection.ReadPingAsync(pingTimeout));
+                    await connection.WaitForClientDisconnectAsync();
+                });
+
+
+        }
+    }
+
     public sealed class SocketsHttpHandler_HttpClientHandler_ResponseDrain_Test : HttpClientHandler_ResponseDrain_Test
     {
         protected override void SetResponseDrainTimeout(HttpClientHandler handler, TimeSpan time)
@@ -805,7 +922,7 @@ namespace System.Net.Http.Functional.Tests
                 await connection.WriteFrameAsync(MakeDataFrame(streamId, DataBytes));
 
                 // Additional trailing header frame.
-                await connection.SendResponseHeadersAsync(streamId, isTrailingHeader:true, headers: TrailingHeaders, endStream : true);
+                await connection.SendResponseHeadersAsync(streamId, isTrailingHeader: true, headers: TrailingHeaders, endStream: true);
 
                 HttpResponseMessage response = await sendTask;
                 Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -831,7 +948,7 @@ namespace System.Net.Http.Functional.Tests
                 await connection.SendDefaultResponseHeadersAsync(streamId);
                 await connection.WriteFrameAsync(MakeDataFrame(streamId, DataBytes));
                 // Additional trailing header frame with pseudo-headers again..
-                await connection.SendResponseHeadersAsync(streamId, isTrailingHeader:false, headers: TrailingHeaders, endStream : true);
+                await connection.SendResponseHeadersAsync(streamId, isTrailingHeader: false, headers: TrailingHeaders, endStream: true);
 
                 await Assert.ThrowsAsync<HttpRequestException>(() => sendTask);
             }
@@ -870,10 +987,10 @@ namespace System.Net.Http.Functional.Tests
 
                 // Finish data stream and write out trailing headers.
                 await connection.WriteFrameAsync(MakeDataFrame(streamId, DataBytes));
-                await connection.SendResponseHeadersAsync(streamId, endStream : true, isTrailingHeader:true, headers: TrailingHeaders);
+                await connection.SendResponseHeadersAsync(streamId, endStream: true, isTrailingHeader: true, headers: TrailingHeaders);
 
                 // Read data until EOF is reached
-                while (stream.Read(data, 0, data.Length) != 0);
+                while (stream.Read(data, 0, data.Length) != 0) ;
 
                 Assert.Equal(TrailingHeaders.Count, response.TrailingHeaders.Count());
                 Assert.Contains("amazingtrailer", response.TrailingHeaders.GetValues("MyCoolTrailerHeader"));
@@ -895,7 +1012,7 @@ namespace System.Net.Http.Functional.Tests
 
                 // Response header.
                 await connection.SendDefaultResponseHeadersAsync(streamId);
-                await connection.SendResponseHeadersAsync(streamId, endStream : true, isTrailingHeader:true, headers: TrailingHeaders);
+                await connection.SendResponseHeadersAsync(streamId, endStream: true, isTrailingHeader: true, headers: TrailingHeaders);
 
                 HttpResponseMessage response = await sendTask;
                 Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -1235,14 +1352,14 @@ namespace System.Net.Http.Functional.Tests
                 using (var serverStream = new NetworkStream(server, ownsSocket: false))
                 using (var serverReader = new StreamReader(serverStream))
                 {
-                    while (!string.IsNullOrWhiteSpace(await serverReader.ReadLineAsync()));
+                    while (!string.IsNullOrWhiteSpace(await serverReader.ReadLineAsync())) ;
                     await server.SendAsync(new ArraySegment<byte>(Encoding.ASCII.GetBytes(responseBody)), SocketFlags.None);
                     await firstRequest;
 
                     Task<Socket> secondAccept = listener.AcceptAsync(); // shouldn't complete
 
                     Task<string> additionalRequest = client.GetStringAsync(uri);
-                    while (!string.IsNullOrWhiteSpace(await serverReader.ReadLineAsync()));
+                    while (!string.IsNullOrWhiteSpace(await serverReader.ReadLineAsync())) ;
                     await server.SendAsync(new ArraySegment<byte>(Encoding.ASCII.GetBytes(responseBody)), SocketFlags.None);
                     await additionalRequest;
 
@@ -1517,7 +1634,7 @@ namespace System.Net.Http.Functional.Tests
                         "Content-Length: 0\r\n" +
                         "\r\n";
 
-                using  (var handler = new HttpClientHandler())
+                using (var handler = new HttpClientHandler())
                 {
                     handler.Proxy = new UseSpecifiedUriWebProxy(proxyUrl, new NetworkCredential("abc", "def"));
 
@@ -1530,7 +1647,7 @@ namespace System.Net.Http.Functional.Tests
                             // Get first request, no body for GET.
                             await connection.ReadRequestHeaderAndSendCustomResponseAsync(responseBody).ConfigureAwait(false);
                             // Client should send another request after being rejected with 407.
-                            await connection.ReadRequestHeaderAndSendResponseAsync(content:"OK").ConfigureAwait(false);
+                            await connection.ReadRequestHeaderAndSendResponseAsync(content: "OK").ConfigureAwait(false);
                         });
 
                         string response = await request;

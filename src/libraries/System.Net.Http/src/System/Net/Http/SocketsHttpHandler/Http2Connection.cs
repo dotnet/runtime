@@ -95,90 +95,7 @@ namespace System.Net.Http
         // Channel options for creating _writeChannel
         private static readonly UnboundedChannelOptions s_channelOptions = new UnboundedChannelOptions() { SingleReader = true };
 
-
-        private readonly Http2KeepAlive _keepAlive;
-
-        internal enum KeepAliveState
-        {
-            None,
-            PingSent
-        }
-
-        internal enum KeepAliveVerifyAction
-        {
-            None,
-            SendPing,
-            Throw
-        }
-
-        internal class Http2KeepAlive
-        {
-
-            private long _pingPayload;
-
-            private readonly TimeSpan _keepAliveInterval;
-            private readonly TimeSpan _keepAliveTimeout;
-            private DateTimeOffset _nextPingRequestTimestamp;
-            private DateTimeOffset _pingTimeoutTimestamp;
-
-            private KeepAliveState _state;
-
-            public Http2KeepAlive(TimeSpan keepAliveInterval, TimeSpan keepAliveTimeout)
-            {
-                _keepAliveInterval = keepAliveInterval;
-                _keepAliveTimeout = keepAliveTimeout;
-                _nextPingRequestTimestamp = DateTimeOffset.Now.Add(keepAliveInterval);
-            }
-
-            public long PingPayload => _pingPayload;
-
-            public void ProcessFrame()
-            {
-                _nextPingRequestTimestamp = DateTimeOffset.Now.Add(_keepAliveInterval);
-            }
-
-            public bool ProcessPingAck(long payload)
-            {
-                if (_state != KeepAliveState.PingSent)
-                    return false;
-                if (Interlocked.Read(ref _pingPayload) != payload)
-                    return false;
-                _state = KeepAliveState.None;
-                return true;
-            }
-
-            public KeepAliveVerifyAction VerifyKeepAlive()
-            {
-                var now = DateTimeOffset.Now;
-                switch (_state)
-                {
-                    case KeepAliveState.None:
-                        // Check whether keep alive interval has passed since last frame received
-                        if (_keepAliveInterval > TimeSpan.Zero && now > _nextPingRequestTimestamp)
-                        {
-                            // Ping will be sent immeditely after this method finishes.
-                            // Set the status directly to ping sent and set the timestamp
-                            _state = KeepAliveState.PingSent;
-                            // System clock only has 1 second of precision, so the clock could be up to 1 second in the past.
-                            // To err on the side of caution, add a second to the clock when calculating the ping sent time.
-                            _pingTimeoutTimestamp = now.Add(_keepAliveTimeout);
-                            Interlocked.Increment(ref _pingPayload);
-                            return KeepAliveVerifyAction.SendPing;
-                        }
-                        break;
-                    case KeepAliveState.PingSent:
-                        if (_keepAliveTimeout != TimeSpan.MaxValue)
-                        {
-                            if (now > _pingTimeoutTimestamp)
-                                return KeepAliveVerifyAction.Throw;
-                        }
-
-                        break;
-                }
-
-                return KeepAliveVerifyAction.None;
-            }
-        }
+        private Http2KeepAlive _keepAlive;
 
         public Http2Connection(HttpConnectionPool pool, Stream stream)
         {
@@ -201,7 +118,7 @@ namespace System.Net.Http
             _maxConcurrentStreams = int.MaxValue;
             _pendingWindowUpdate = 0;
 
-            _keepAlive = new Http2KeepAlive(_pool.Settings._keepAlivePingDelay, _pool.Settings._keepAlivePingTimeout);
+            _keepAlive = new Http2KeepAlive(this, _pool.Settings);
 
             if (NetEventSource.Log.IsEnabled()) TraceConnection(stream);
         }
@@ -1048,15 +965,7 @@ namespace System.Net.Http
         {
             try
             {
-                switch (_keepAlive.VerifyKeepAlive())
-                {
-                    case KeepAliveVerifyAction.SendPing:
-                        SendPingAsync(_keepAlive.PingPayload);
-                        break;
-                    case KeepAliveVerifyAction.Throw:
-                        ThrowProtocolError();
-                        break;
-                }
+                _keepAlive.VerifyKeepAlive();
             }
             catch (Exception e)
             {

@@ -326,6 +326,8 @@
              Link="ProductionCode\System\Net\Http\MultiProxy.cs" />
     <Compile Include="..\..\src\System\Net\Http\SocketsHttpHandler\FailedProxyCache.cs"
              Link="ProductionCode\System\Net\Http\FailedProxyCache.cs" />
+    <Compile Include="..\..\src\System\Net\Http\SocketsHttpHandler\HttpKeepAlivePingPolicy.cs"
+             Link="ProductionCode\System\Net\Http\HttpKeepAlivePingPolicy.cs" />
     <Compile Include="..\..\..\System.Net.Http.WinHttpHandler\src\System\Net\Http\WinHttpException.cs"
              Link="ProductionCode\System\Net\Http\WinHttpException.cs" />
     <Compile Include="..\..\..\System.Net.Http.WinHttpHandler\src\System\Net\Http\WinHttpTraceHelper.cs"
