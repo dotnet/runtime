@@ -742,13 +742,13 @@ namespace System.Reflection.Emit
             return InternalModule.GetField(name, bindingAttr);
         }
 
-        [RequiresUnreferencedCode("Fields might be removed")]
+        [RequiresUnreferencedCode("Methods might be removed")]
         public override MethodInfo[] GetMethods(BindingFlags bindingFlags)
         {
             return InternalModule.GetMethods(bindingFlags);
         }
 
-        [RequiresUnreferencedCode("Fields might be removed")]
+        [RequiresUnreferencedCode("Methods might be removed")]
         protected override MethodInfo? GetMethodImpl(string name, BindingFlags bindingAttr, Binder? binder,
             CallingConventions callConvention, Type[]? types, ParameterModifier[]? modifiers)
         {
