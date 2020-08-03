@@ -558,6 +558,9 @@ namespace Mono.Linker.Steps
 						continue;
 					}
 
+					if (UnconditionalSuppressMessageAttributeState.TypeRefHasUnconditionalSuppressions (ca.Constructor.DeclaringType))
+						_context.Suppressions.AddSuppression (ca, provider);
+
 					if (_context.Annotations.HasLinkerAttribute<RemoveAttributeInstancesAttribute> (ca.AttributeType.Resolve ()) && providerInLinkedAssembly)
 						continue;
 
@@ -1590,8 +1593,6 @@ namespace Mono.Linker.Steps
 					provider,
 					sourceLocationMember);
 				return true;
-			} else if (UnconditionalSuppressMessageAttributeState.TypeRefHasUnconditionalSuppressions (dt)) {
-				_context.Suppressions.AddSuppression (ca, provider);
 			}
 
 			return false;

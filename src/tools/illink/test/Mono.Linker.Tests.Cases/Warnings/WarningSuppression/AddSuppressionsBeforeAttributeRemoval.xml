@@ -1,0 +1,8 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<linker>
+	<assembly fullname="test, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null">
+		<type fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+			<attribute internal="RemoveAttributeInstances" />
+		</type>
+	</assembly>
+</linker>
