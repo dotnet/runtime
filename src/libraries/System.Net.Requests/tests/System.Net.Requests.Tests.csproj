@@ -4,9 +4,12 @@
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
     <DefineConstants>$(DefineConstants);NETSTANDARD</DefineConstants>
+    <IgnoreForCI Condition="'$(TargetOS)' == 'Browser'">true</IgnoreForCI>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="AssemblyInfo.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsBrowser)' != 'true'">
     <Compile Include="HttpWebRequestTest.cs" />
     <Compile Include="HttpWebResponseTest.cs" />
     <Compile Include="RequestStreamTest.cs" />
@@ -30,7 +33,7 @@
     <Compile Include="$(CommonTestPath)System\Threading\Tasks\TaskTimeoutExtensions.cs"
              Link="Common\System\Threading\Tasks\TaskTimeoutExtensions.cs" />
   </ItemGroup>
-  <ItemGroup>
+  <ItemGroup Condition="'$(TargetsBrowser)' != 'true'">
     <Compile Include="AuthorizationTest.cs" />
     <Compile Include="AuthenticationManagerTest.cs" />
     <Compile Include="GlobalProxySelectionTest.cs" />
@@ -40,7 +43,7 @@
     <Compile Include="HttpRequestCachePolicyTest.cs" />
     <Compile Include="HttpWebResponseHeaderTest.cs" />
   </ItemGroup>
-  <ItemGroup>
+  <ItemGroup Condition="'$(TargetsBrowser)' != 'true'">
     <PackageReference Include="System.Net.TestData" Version="$(SystemNetTestDataVersion)" />
   </ItemGroup>
 </Project>
