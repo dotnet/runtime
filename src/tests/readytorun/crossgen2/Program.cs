@@ -1765,6 +1765,61 @@ internal class Program
         return true;
     }
 
+    [StructLayout(LayoutKind.Explicit)]
+    struct ExplicitLayoutStruct16
+    {
+        [FieldOffset(0)]
+        public int x;
+        [FieldOffset(4)]
+        public int y;
+        [FieldOffset(8)]
+        public int z;
+        [FieldOffset(12)]
+        public int w;
+        public override string ToString() { return $"{x}{y}{z}{w}"; }
+    }
+    struct BlittableStruct<T>
+    {
+	public ExplicitLayoutStruct16 _explict;
+        public override string ToString() { return $"{_explict}"; }
+    }
+
+    struct StructWithGenericBlittableStruct
+    {
+        public BlittableStruct<short> _blittableGeneric;
+        public int _int;
+        public override string ToString() { return $"{_blittableGeneric}{_int}"; }
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveOptimization)]    
+    private static bool TestWithStructureNonBlittableFieldDueToGenerics_StringCompare(ref StructWithGenericBlittableStruct input)
+    {
+        StructWithGenericBlittableStruct s = new StructWithGenericBlittableStruct();
+        s._blittableGeneric._explict.x = 1;
+        s._blittableGeneric._explict.y = 2;
+        s._blittableGeneric._explict.z = 3;
+        s._blittableGeneric._explict.w = 4;
+        s._int = 5;
+
+        Console.WriteLine(input);
+        Console.WriteLine(s);
+
+        return s.Equals(input) && input.ToString() == "12345";
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static bool TestWithStructureNonBlittableFieldDueToGenerics()
+    {
+        StructWithGenericBlittableStruct s = new StructWithGenericBlittableStruct();
+        s._blittableGeneric._explict.x = 1;
+        s._blittableGeneric._explict.y = 2;
+        s._blittableGeneric._explict.z = 3;
+        s._blittableGeneric._explict.w = 4;
+        s._int = 5;
+
+        return TestWithStructureNonBlittableFieldDueToGenerics_StringCompare(ref s);
+    }
+
     public static int Main(string[] args)
     {
         _passedTests = new List<string>();
@@ -1832,6 +1887,7 @@ internal class Program
         RunTest("GenericLdtokenTest", GenericLdtokenTest());
         RunTest("ArrayLdtokenTests", ArrayLdtokenTests());
         RunTest("TestGenericMDArrayBehavior", TestGenericMDArrayBehavior());
+        RunTest("TestWithStructureNonBlittableFieldDueToGenerics", TestWithStructureNonBlittableFieldDueToGenerics());
 
         File.Delete(TextFileName);
 
