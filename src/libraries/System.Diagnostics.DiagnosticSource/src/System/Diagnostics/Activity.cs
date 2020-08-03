@@ -839,24 +839,29 @@ namespace System.Diagnostics
 #if ALLOW_PARTIALLY_TRUSTED_CALLERS
         [System.Security.SecuritySafeCriticalAttribute]
 #endif
-        internal static bool TryConvertIdToContext(string id, out ActivityContext context)
+        internal static bool TryConvertIdToContext(string traceParent, string? traceState, out ActivityContext context)
         {
             context = default;
-            if (!IsW3CId(id))
+            if (!IsW3CId(traceParent))
             {
                 return false;
             }
 
-            ReadOnlySpan<char> traceIdSpan = id.AsSpan(3,  32);
-            ReadOnlySpan<char> spanIdSpan  = id.AsSpan(36, 16);
+            ReadOnlySpan<char> traceIdSpan = traceParent.AsSpan(3,  32);
+            ReadOnlySpan<char> spanIdSpan  = traceParent.AsSpan(36, 16);
 
             if (!ActivityTraceId.IsLowerCaseHexAndNotAllZeros(traceIdSpan) || !ActivityTraceId.IsLowerCaseHexAndNotAllZeros(spanIdSpan) ||
-                !HexConverter.IsHexLowerChar(id[53]) || !HexConverter.IsHexLowerChar(id[54]))
+                !HexConverter.IsHexLowerChar(traceParent[53]) || !HexConverter.IsHexLowerChar(traceParent[54]))
             {
                 return false;
             }
 
-            context = new ActivityContext(new ActivityTraceId(traceIdSpan.ToString()), new ActivitySpanId(spanIdSpan.ToString()), (ActivityTraceFlags) ActivityTraceId.HexByteFromChars(id[53], id[54]));
+            context = new ActivityContext(
+                            new ActivityTraceId(traceIdSpan.ToString()),
+                            new ActivitySpanId(spanIdSpan.ToString()),
+                            (ActivityTraceFlags) ActivityTraceId.HexByteFromChars(traceParent[53], traceParent[54]),
+                            traceState);
+
             return true;
         }
 
