@@ -42,6 +42,12 @@ namespace Internal.TypeSystem.Interop
                     continue;
                 }
 
+/*                // No field which is itself generic is blittable
+                if (field.FieldType.HasInstantiation)
+                {
+                    return false;
+                }
+*/
                 MarshallerKind marshallerKind = MarshalHelpers.GetMarshallerKind(
                     field.FieldType,
                     parameterIndex : null,

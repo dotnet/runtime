@@ -31,8 +31,8 @@
     <CLRTestBatchPreCommands><![CDATA[
 $(CLRTestBatchPreCommands)
 copy helperildll.dll helperildll.ildll
-%Core_Root%\CoreRun.exe %Core_Root%\crossgen2\crossgen2.dll --verify-type-and-field-layout -r:%Core_Root%\*.dll -r:helperdll.dll -o:helperildll.dll helperildll.ildll
-%Core_Root%\CoreRun.exe %Core_Root%\crossgen2\crossgen2.dll --verify-type-and-field-layout -r:%Core_Root%\*.dll -r:helperdll.dll -r:helperildll.dll -o:crossgen2smoke.dll crossgen2smoke.ildll
+dotnet %Core_Root%\crossgen2\crossgen2.dll --verify-type-and-field-layout -r:%Core_Root%\*.dll -r:helperdll.dll -o:helperildll.dll helperildll.ildll
+dotnet %Core_Root%\crossgen2\crossgen2.dll --verify-type-and-field-layout -r:%Core_Root%\*.dll -r:helperdll.dll -r:helperildll.dll -o:crossgen2smoke.dll crossgen2smoke.ildll
 ]]></CLRTestBatchPreCommands>
     <BashCLRTestPreCommands><![CDATA[
 $(BashCLRTestPreCommands)
