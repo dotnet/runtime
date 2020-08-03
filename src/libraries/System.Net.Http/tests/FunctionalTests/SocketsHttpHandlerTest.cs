@@ -117,14 +117,12 @@ namespace System.Net.Http.Functional.Tests
             await using ConnectionListener listener = await listenerFactory.ListenAsync(endPoint: null);
             await using ConnectionFactory connectionFactory = VirtualNetworkConnectionListenerFactory.GetConnectionFactory(listener);
 
-            // TODO: if GenericLoopbackOptions actually worked for HTTP/1 LoopbackServer we could just use that and pass in to CreateConnectionAsync.
-            // Making that work causes other tests to fail, so for now...
-            bool useHttps = UseVersion.Major >= 2 && new GenericLoopbackOptions().UseSsl;
+            var options = new GenericLoopbackOptions();
 
             Task serverTask = Task.Run(async () =>
             {
                 await using Connection serverConnection = await listener.AcceptAsync();
-                using GenericLoopbackConnection loopbackConnection = await LoopbackServerFactory.CreateConnectionAsync(socket: null, serverConnection.Stream);
+                using GenericLoopbackConnection loopbackConnection = await LoopbackServerFactory.CreateConnectionAsync(socket: null, serverConnection.Stream, options);
 
                 await loopbackConnection.InitializeConnectionAsync();
 
@@ -137,13 +135,14 @@ namespace System.Net.Http.Functional.Tests
             Task clientTask = Task.Run(async () =>
             {
                 using HttpClientHandler handler = CreateHttpClientHandler();
-
+                handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
+                
                 var socketsHandler = (SocketsHttpHandler)GetUnderlyingSocketsHttpHandler(handler);
                 socketsHandler.ConnectionFactory = connectionFactory;
 
                 using HttpClient client = CreateHttpClient(handler);
 
-                string response = await client.GetStringAsync($"{(useHttps ? "https" : "http")}://{Guid.NewGuid():N}.com/foo");
+                string response = await client.GetStringAsync($"{(options.UseSsl ? "https" : "http")}://{Guid.NewGuid():N}.com/foo");
                 Assert.Equal("foo", response);
             });
 
