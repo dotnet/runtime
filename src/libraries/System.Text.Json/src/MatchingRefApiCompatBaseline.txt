@@ -1,3 +1,0 @@
-Compat issues with assembly System.Text.Json:
-CannotRemoveAttribute : Attribute 'System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute' exists on 'System.Text.Json.Serialization.JsonConverterAttribute.ConverterType' in the implementation but not the reference.
-Total Issues: 1
