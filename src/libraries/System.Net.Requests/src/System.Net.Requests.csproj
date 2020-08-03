@@ -3,10 +3,10 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Browser</TargetFrameworks>
     <Nullable>enable</Nullable>
-    <NoWarn Condition="'$(TargetOS)' == 'Browser'">$(NoWarn);CS0809</NoWarn>
   </PropertyGroup>
   <PropertyGroup>
     <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetsBrowser)' == 'true'">SR.SystemNetRequests_PlatformNotSupported</GeneratePlatformNotSupportedAssemblyMessage>
+    <NoWarn Condition="'$(GeneratePlatformNotSupportedAssemblyMessage )' != ''">$(NoWarn);CS0809</NoWarn>
   </PropertyGroup>
   <ItemGroup Condition="'$(TargetsBrowser)' != 'true'">
     <Compile Include="System\Net\AuthenticationManager.cs" />
