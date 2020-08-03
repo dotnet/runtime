@@ -91,7 +91,10 @@ c_static_assert(PAL_S_IFSOCK == S_IFSOCK);
 // Validate that our enum for inode types is the same as what is
 // declared by the dirent.h header on the local system.
 // (AIX doesn't have dirent d_type, so none of this there)
-#if defined(DT_UNKNOWN)
+// WebAssembly (BROWSER) has dirent d_type but is not correct
+// by returning UNKNOWN the managed code properly stats the file
+// to detect if entry is directory or not.
+#if defined(DT_UNKNOWN) | TARGET_WASM
 c_static_assert((int)PAL_DT_UNKNOWN == (int)DT_UNKNOWN);
 c_static_assert((int)PAL_DT_FIFO == (int)DT_FIFO);
 c_static_assert((int)PAL_DT_CHR == (int)DT_CHR);
@@ -259,6 +262,7 @@ static int32_t ConvertOpenFlags(int32_t flags)
 
 intptr_t SystemNative_Open(const char* path, int32_t flags, int32_t mode)
 {
+    //fprintf(stderr, "SystemNative_Open %s flags: %i  mode: %i\n ", path, flags, mode);
 // these two ifdefs are for platforms where we dont have the open version of CLOEXEC and thus
 // must simulate it by doing a fcntl with the SETFFD version after the open instead
 #if !HAVE_O_CLOEXEC
@@ -345,10 +349,13 @@ static void ConvertDirent(const struct dirent* entry, DirectoryEntry* outputEntr
     // the start of the unmanaged string. Give the caller back a pointer to the
     // location of the start of the string that exists in their own byte buffer.
     outputEntry->Name = entry->d_name;
-#if !defined(DT_UNKNOWN)
+#if !defined(DT_UNKNOWN) | TARGET_WASM
     // AIX has no d_type, and since we can't get the directory that goes with
     // the filename from ReadDir, we can't stat the file. Return unknown and
     // hope that managed code can properly stat the file.
+    // WebAssembly (BROWSER) has dirent d_type but is not correct
+    // by returning UNKNOWN the managed code properly stats the file
+    // to detect if entry is directory or not.
     outputEntry->InodeType = PAL_DT_UNKNOWN;
 #else
     outputEntry->InodeType = (int32_t)entry->d_type;
