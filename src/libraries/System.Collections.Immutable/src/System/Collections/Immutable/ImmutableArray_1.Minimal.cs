@@ -366,7 +366,7 @@ namespace System.Collections.Immutable
         /// </remarks>
         public ImmutableArray<TOther> As<TOther>() where TOther : class?
         {
-            return new ImmutableArray<TOther>((this.array as TOther[])!);
+            return new ImmutableArray<TOther>((this.array as TOther[]));
         }
 
         /// <summary>
