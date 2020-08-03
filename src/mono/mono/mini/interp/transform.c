@@ -4943,15 +4943,12 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 
 			// Common in generic code:
 			// box T + unbox.any T -> nop
-			if (td->last_ins->opcode == MINT_BOX && (td->sp - 1)->klass == klass) {
+			if ((td->last_ins->opcode == MINT_BOX || td->last_ins->opcode == MINT_BOX_VT) && (td->sp - 1)->klass == klass) {
+				gboolean is_vt = td->last_ins->opcode == MINT_BOX_VT;
 				interp_clear_ins (td, td->last_ins);
+				if (is_vt)
+					PUSH_VT (td, mono_class_value_size (klass, NULL));
 				SET_TYPE (td->sp - 1, stack_type [mt], klass);
-				td->ip += 5;
-				break;
-			} else if (td->last_ins->opcode == MINT_BOX_VT && (td->sp - 1)->klass == klass) {
-				interp_clear_ins (td, td->last_ins);
-				SET_TYPE (td->sp - 1, stack_type [mt], klass);
-				PUSH_VT (td, mono_class_value_size (klass, NULL));
 				td->ip += 5;
 				break;
 			}
