@@ -6,6 +6,10 @@ steps:
   - script: dotnet new blazorwasm
     displayName: new blazorwasm
     workingDirectory: $(Build.SourcesDirectory)/eng/common/performance/blazor_project
+    env:
+      BuildSourcesDirectory: $(Build.SourcesDirectory)
   - script: dotnet publish -c Release -o pub /bl:$(Build.SourcesDirectory)/artifacts/log/test-blazor-project.binlog
     displayName: publish blazorwasm project
     workingDirectory: $(Build.SourcesDirectory)/eng/common/performance/blazor_project
+    env:
+      BuildSourcesDirectory: $(Build.SourcesDirectory)
