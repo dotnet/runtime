@@ -10,7 +10,7 @@ namespace Microsoft.Extensions.Logging.Console
     {
         /// <summary>
         /// Use the default color behavior
-        /// </summary>        
+        /// </summary>
         /// <remarks>
         /// Enables color except when the console output is redirected.
         /// </remarks>
