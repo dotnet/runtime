@@ -390,7 +390,7 @@ namespace System.Net.Http.Functional.Tests
                     }
                     else
                         await Assert.ThrowsAsync<OperationCanceledException>(() => connection.ReadPingAsync(pingTimeout));
-                    await connection.WaitForClientDisconnectAsync();
+                    await connection.WaitForClientDisconnectAsync(true);
                 });
 
 
