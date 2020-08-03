@@ -734,8 +734,8 @@ namespace System.Net.Security
                         }
                         else
                         {
-                            inUnmanagedBuffer[1].cbBuffer = inSecBuffers._item0.Token.Length;
-                            inUnmanagedBuffer[1].pvBuffer = (IntPtr)pinnedToken0;
+                            inUnmanagedBuffer[1].cbBuffer = inSecBuffers._item1.Token.Length;
+                            inUnmanagedBuffer[1].pvBuffer = (IntPtr)pinnedToken1;
                         }
                     }
 
