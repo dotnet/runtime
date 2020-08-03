@@ -40,7 +40,7 @@ namespace System.Data.Tests
     {
         private string _eventStatus = string.Empty;
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
+        [ConditionalFact(typeof(SuitePlatformDetection), nameof(SuitePlatformDetection.IsBinaryFormatterSupportedAndNotInvariantGlobalization))]
         public void TypedDataSet()
         {
             int i = 0;

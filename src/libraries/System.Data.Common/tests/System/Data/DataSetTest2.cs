@@ -3515,7 +3515,7 @@ namespace System.Data.Tests
             Assert.Equal("data8", dt.Rows[0]["&ID"]);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
+        [ConditionalFact(typeof(SuitePlatformDetection), nameof(SuitePlatformDetection.IsBinaryFormatterSupportedAndNotInvariantGlobalization))]
         public void Bug537229_BinFormatSerializer_Test()
         {
             DataSet ds = new DataSet();

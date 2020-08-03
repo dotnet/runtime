@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppCurrent)-Browser</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
@@ -77,8 +77,6 @@
       <SubType>Component</SubType>
     </Compile>
     <Compile Include="System\Data\DataTableExtensions.cs" />
-    <Compile Include="System\Data\DataTableExtensions.Any.cs" Condition="'$(TargetsBrowser)' != 'true'" />
-    <Compile Include="System\Data\DataTableExtensions.Browser.cs" Condition="'$(TargetsBrowser)' == 'true'" />
     <Compile Include="System\Data\DataTableClearEvent.cs" />
     <Compile Include="System\Data\DataTableClearEventHandler.cs" />
     <Compile Include="System\Data\DataTableCollection.cs" />
@@ -218,8 +216,6 @@
     <Compile Include="System\Data\Common\DbParameterCollection.cs" />
     <Compile Include="System\Data\Common\DbProviderFactory.cs" />
     <Compile Include="System\Data\Common\DbProviderFactories.cs" />
-    <Compile Include="System\Data\Common\DbProviderFactories.Any.cs" Condition="'$(TargetsBrowser)' != 'true'" />
-    <Compile Include="System\Data\Common\DbProviderFactories.Browser.cs" Condition="'$(TargetsBrowser)' == 'true'" />
     <Compile Include="System\Data\Common\DbProviderSpecificTypePropertyAttribute.cs" />
     <Compile Include="System\Data\Common\DBSchemaRow.cs" />
     <Compile Include="System\Data\Common\DBSchemaTable.cs" />

@@ -375,7 +375,7 @@ namespace System.Data.Tests
 
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
+        [ConditionalFact(typeof(SuitePlatformDetection), nameof(SuitePlatformDetection.IsBinaryFormatterSupportedAndNotInvariantGlobalization))]
         public void DataColumnTypeSerialization()
         {
             DataTable dt = new DataTable("MyTable");
@@ -1767,7 +1767,7 @@ Assert.False(true);
             Assert.Equal("</xs:schema>", textString);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
+        [ConditionalFact(typeof(SuitePlatformDetection), nameof(SuitePlatformDetection.IsBinaryFormatterSupportedAndNotInvariantGlobalization))]
         public void Serialize()
         {
             // Create an array with multiple elements refering to

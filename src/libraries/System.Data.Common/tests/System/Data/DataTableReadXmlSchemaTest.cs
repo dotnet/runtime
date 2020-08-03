@@ -428,7 +428,7 @@ namespace System.Data.Tests
             Assert.Equal("Constraint1", ds.Tables[0].Constraints[0].ConstraintName);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
+        [ConditionalFact(typeof(SuitePlatformDetection), nameof(SuitePlatformDetection.IsBinaryFormatterSupportedAndNotInvariantGlobalization))]
         public void XsdSchemaSerializationIgnoresLocale()
         {
             var serializer = new BinaryFormatter();
@@ -475,7 +475,7 @@ namespace System.Data.Tests
             Assert.DoesNotContain("()2", rawSchemaXML);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
+        [ConditionalFact(typeof(SuitePlatformDetection), nameof(SuitePlatformDetection.IsBinaryFormatterSupportedAndNotInvariantGlobalization))]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET Framework does not have the fix for this bug")]
         public void XsdSchemaDeserializationIgnoresLocale()
         {
