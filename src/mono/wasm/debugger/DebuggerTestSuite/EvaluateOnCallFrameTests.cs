@@ -16,7 +16,7 @@ namespace DebuggerTests
 		[Fact]
 		public async Task EvaluateThisProperties ()
 			=> await CheckInspectLocalsAtBreakpointSite (
-				"dotnet://debugger-test.dll/debugger-evaluate-test.cs", 23, 16,
+				"dotnet://debugger-test.dll/debugger-evaluate-test.cs", 25, 16,
 				"run",
 				"window.setTimeout(function() { invoke_static_method_async ('[debugger-test] DebuggerTests.EvaluateTestsClass:EvaluateLocals'); })",
 				wait_for_event_fn: async (pause_location) => {
@@ -33,9 +33,9 @@ namespace DebuggerTests
 				});
 
 		[Theory]
-		[InlineData (61, 3, "EvaluateTestsStructInstanceMethod")]
-		[InlineData (77, 3, "GenericInstanceMethodOnStruct<int>")]
-		[InlineData (100, 3, "EvaluateTestsGenericStructInstanceMethod")]
+		[InlineData (63, 12, "EvaluateTestsStructInstanceMethod")]
+		[InlineData (79, 12, "GenericInstanceMethodOnStruct<int>")]
+		[InlineData (102, 12, "EvaluateTestsGenericStructInstanceMethod")]
 		public async Task EvaluateThisPropertiesOnStruct (int line, int col, string method_name)
 			=> await CheckInspectLocalsAtBreakpointSite (
 				"dotnet://debugger-test.dll/debugger-evaluate-test.cs", line, col,
@@ -56,7 +56,7 @@ namespace DebuggerTests
 		[Fact]
 		public async Task EvaluateParameters ()
 			=> await CheckInspectLocalsAtBreakpointSite (
-				"dotnet://debugger-test.dll/debugger-evaluate-test.cs", 23, 16,
+				"dotnet://debugger-test.dll/debugger-evaluate-test.cs", 25, 16,
 				"run",
 				"window.setTimeout(function() { invoke_static_method_async ('[debugger-test] DebuggerTests.EvaluateTestsClass:EvaluateLocals'); })",
 				wait_for_event_fn: async (pause_location) => {
@@ -72,7 +72,7 @@ namespace DebuggerTests
 		[Fact]
 		public async Task EvaluateLocals ()
 			=> await CheckInspectLocalsAtBreakpointSite (
-				"dotnet://debugger-test.dll/debugger-evaluate-test.cs", 23, 16,
+				"dotnet://debugger-test.dll/debugger-evaluate-test.cs", 25, 16,
 				"run",
 				"window.setTimeout(function() { invoke_static_method_async ('[debugger-test] DebuggerTests.EvaluateTestsClass:EvaluateLocals'); })",
 				wait_for_event_fn: async (pause_location) => {
@@ -92,7 +92,7 @@ namespace DebuggerTests
 		public async Task EvaluateLocalsAsync ()
 		{
 			var bp_loc = "dotnet://debugger-test.dll/debugger-array-test.cs";
-			int line = 230; int col = 3;
+			int line = 249; int col = 12;
 			var function_name = "MoveNext";
 			await CheckInspectLocalsAtBreakpointSite (
 				bp_loc, line, col,
@@ -164,7 +164,7 @@ namespace DebuggerTests
 		[Fact]
 		public async Task EvaluateExpressions ()
 			=> await CheckInspectLocalsAtBreakpointSite (
-				"dotnet://debugger-test.dll/debugger-evaluate-test.cs", 23, 16,
+				"dotnet://debugger-test.dll/debugger-evaluate-test.cs", 25, 16,
 				"run",
 				"window.setTimeout(function() { invoke_static_method_async ('[debugger-test] DebuggerTests.EvaluateTestsClass:EvaluateLocals'); })",
 				wait_for_event_fn: async (pause_location) => {
@@ -186,7 +186,7 @@ namespace DebuggerTests
 		[Fact]
 		public async Task EvaluateThisExpressions ()
 			=> await CheckInspectLocalsAtBreakpointSite (
-				"dotnet://debugger-test.dll/debugger-evaluate-test.cs", 23, 16,
+				"dotnet://debugger-test.dll/debugger-evaluate-test.cs", 25, 16,
 				"run",
 				"window.setTimeout(function() { invoke_static_method_async ('[debugger-test] DebuggerTests.EvaluateTestsClass:EvaluateLocals'); })",
 				wait_for_event_fn: async (pause_location) => {

@@ -40,7 +40,7 @@ namespace DebuggerTests
 			await insp.Ready (async (cli, token) => {
 				ctx = new DebugTestContext (cli, insp, token, scripts);
 
-				var bp1_res = await SetBreakpoint ("dotnet://debugger-test.dll/debugger-test.cs", 8, 2);
+				var bp1_res = await SetBreakpoint ("dotnet://debugger-test.dll/debugger-test.cs", 10, 8);
 
 				Assert.EndsWith ("debugger-test.cs", bp1_res.Value ["breakpointId"].ToString());
 				Assert.Equal (1, bp1_res.Value ["locations"]?.Value<JArray> ()?.Count);
@@ -49,8 +49,8 @@ namespace DebuggerTests
 
 				Assert.NotNull (loc ["scriptId"]);
 				Assert.Equal("dotnet://debugger-test.dll/debugger-test.cs", scripts [loc["scriptId"]?.Value<string> ()]);
-				Assert.Equal (8, loc ["lineNumber"]);
-				Assert.Equal (2, loc ["columnNumber"]);
+				Assert.Equal (10, loc ["lineNumber"]);
+				Assert.Equal (8, loc ["columnNumber"]);
 			});
 		}
 
@@ -130,7 +130,7 @@ namespace DebuggerTests
 
 		[Theory]
 		[InlineData (0)]
-		[InlineData (44)]
+		[InlineData (50)]
 		public async Task CheckMultipleBreakpointsOnSameLine (int col) {
 			var insp = new Inspector ();
 
@@ -140,21 +140,21 @@ namespace DebuggerTests
 			await insp.Ready (async (cli, token) => {
 				ctx = new DebugTestContext (cli, insp, token, scripts);
 
-				var bp1_res = await SetBreakpoint ("dotnet://debugger-test.dll/debugger-array-test.cs", 200, col);
+				var bp1_res = await SetBreakpoint ("dotnet://debugger-test.dll/debugger-array-test.cs", 219, col);
 				Assert.EndsWith ("debugger-array-test.cs", bp1_res.Value["breakpointId"].ToString());
 				Assert.Equal (1, bp1_res.Value ["locations"]?.Value<JArray> ()?.Count);
 
 				var loc = bp1_res.Value ["locations"]?.Value<JArray> ()[0];
 
-				CheckLocation ("dotnet://debugger-test.dll/debugger-array-test.cs", 200, 44, scripts, loc);
+				CheckLocation ("dotnet://debugger-test.dll/debugger-array-test.cs", 219, 50, scripts, loc);
 
-				var bp2_res = await SetBreakpoint ("dotnet://debugger-test.dll/debugger-array-test.cs", 200, 49);
+				var bp2_res = await SetBreakpoint ("dotnet://debugger-test.dll/debugger-array-test.cs", 219, 55);
 				Assert.EndsWith ("debugger-array-test.cs", bp2_res.Value["breakpointId"].ToString());
 				Assert.Equal (1, bp2_res.Value ["locations"]?.Value<JArray> ()?.Count);
 
 				var loc2 = bp2_res.Value ["locations"]?.Value<JArray> ()[0];
 
-				CheckLocation ("dotnet://debugger-test.dll/debugger-array-test.cs", 200, 49, scripts, loc2);
+				CheckLocation ("dotnet://debugger-test.dll/debugger-array-test.cs", 219, 55, scripts, loc2);
 			});
 		}
 
@@ -192,7 +192,7 @@ namespace DebuggerTests
 			await insp.Ready (async (cli, token) => {
 				ctx = new DebugTestContext (cli, insp, token, scripts);
 
-				var bp = await SetBreakpoint ("dotnet://debugger-test.dll/debugger-test.cs", 8, 2);
+				var bp = await SetBreakpoint ("dotnet://debugger-test.dll/debugger-test.cs", 10, 8);
 
 				var eval_req = JObject.FromObject(new {
 					expression = "window.setTimeout(function() { invoke_add(); }, 1);",
@@ -200,7 +200,7 @@ namespace DebuggerTests
 
 				await EvaluateAndCheck (
 					"window.setTimeout(function() { invoke_add(); }, 1);",
-					"dotnet://debugger-test.dll/debugger-test.cs", 8, 2,
+					"dotnet://debugger-test.dll/debugger-test.cs", 10, 8,
 					"IntAdd",
 					wait_for_event_fn: (pause_location) => {
 						Assert.Equal ("other", pause_location ["reason"]?.Value<string> ());
@@ -210,7 +210,7 @@ namespace DebuggerTests
 						Assert.Equal ("IntAdd", top_frame ["functionName"].Value<string>());
 						Assert.Contains ("debugger-test.cs", top_frame ["url"].Value<string> ());
 
-						CheckLocation ("dotnet://debugger-test.dll/debugger-test.cs", 6, 41, scripts, top_frame["functionLocation"]);
+						CheckLocation ("dotnet://debugger-test.dll/debugger-test.cs", 8, 4, scripts, top_frame["functionLocation"]);
 
 						//now check the scope
 						var scope = top_frame ["scopeChain"][0];
@@ -219,8 +219,8 @@ namespace DebuggerTests
 
 						Assert.Equal ("object", scope ["object"]["type"]);
 						Assert.Equal ("dotnet:scope:0", scope ["object"]["objectId"]);
-						CheckLocation ("dotnet://debugger-test.dll/debugger-test.cs", 6, 41, scripts, scope["startLocation"]);
-						CheckLocation ("dotnet://debugger-test.dll/debugger-test.cs", 12, 1, scripts, scope["endLocation"]);
+						CheckLocation ("dotnet://debugger-test.dll/debugger-test.cs", 8, 4, scripts, scope["startLocation"]);
+						CheckLocation ("dotnet://debugger-test.dll/debugger-test.cs", 14, 4, scripts, scope["endLocation"]);
 						return Task.CompletedTask;
 					}
 				);
@@ -280,7 +280,7 @@ namespace DebuggerTests
 		[InlineData (true)]
 		public async Task InspectLocalsAtBreakpointSite (bool use_cfo) =>
 			await CheckInspectLocalsAtBreakpointSite (
-				"dotnet://debugger-test.dll/debugger-test.cs", 8, 2, "IntAdd",
+				"dotnet://debugger-test.dll/debugger-test.cs",10, 8, "IntAdd",
 				"window.setTimeout(function() { invoke_add(); }, 1);",
 				use_cfo: use_cfo,
 				test_fn: (locals) => {
@@ -295,7 +295,7 @@ namespace DebuggerTests
 		[Fact]
 		public async Task InspectPrimitiveTypeLocalsAtBreakpointSite () =>
 			await CheckInspectLocalsAtBreakpointSite (
-				"dotnet://debugger-test.dll/debugger-test.cs", 148, 2, "PrimitiveTypesTest",
+				"dotnet://debugger-test.dll/debugger-test.cs", 154, 8, "PrimitiveTypesTest",
 				"window.setTimeout(function() { invoke_static_method ('[debugger-test] Math:PrimitiveTypesTest'); }, 1);",
 				test_fn: (locals) => {
 					CheckSymbol (locals, "c0", "8364 '€'");
@@ -306,7 +306,7 @@ namespace DebuggerTests
 		[Fact]
 		public async Task InspectLocalsTypesAtBreakpointSite () =>
 			await CheckInspectLocalsAtBreakpointSite (
-				"dotnet://debugger-test.dll/debugger-test2.cs", 43, 2, "Types",
+				"dotnet://debugger-test.dll/debugger-test2.cs", 48, 8, "Types",
 				"window.setTimeout(function() { invoke_static_method (\"[debugger-test] Fancy:Types\")(); }, 1);",
 				use_cfo: false,
 				test_fn: (locals) => {
@@ -338,7 +338,7 @@ namespace DebuggerTests
 		[InlineData (true)]
 		public async Task InspectLocalsWithGenericTypesAtBreakpointSite (bool use_cfo) =>
 			await CheckInspectLocalsAtBreakpointSite (
-				"dotnet://debugger-test.dll/debugger-test.cs", 68, 2, "GenericTypesTest",
+				"dotnet://debugger-test.dll/debugger-test.cs", 74, 8, "GenericTypesTest",
 				"window.setTimeout(function() { invoke_generic_types_test (); }, 1);",
 				use_cfo: use_cfo,
 				test_fn: (locals) => {
@@ -373,11 +373,11 @@ namespace DebuggerTests
 			await insp.Ready (async (cli, token) => {
 				ctx = new DebugTestContext (cli, insp, token, scripts);
 
-				var bp = await SetBreakpoint ("dotnet://debugger-test.dll/debugger-test.cs", 44, 2);
+				var bp = await SetBreakpoint ("dotnet://debugger-test.dll/debugger-test.cs", 49, 8);
 
 				await EvaluateAndCheck (
 					"window.setTimeout(function() { invoke_delegates_test (); }, 1);",
-					"dotnet://debugger-test.dll/debugger-test.cs", 44, 2,
+					"dotnet://debugger-test.dll/debugger-test.cs", 49, 8,
 					"DelegatesTest",
 					wait_for_event_fn: async (pause_location) => {
 						//make sure we're on the right bp
@@ -410,26 +410,26 @@ namespace DebuggerTests
 			await insp.Ready (async (cli, token) => {
 				ctx = new DebugTestContext (cli, insp, token, scripts);
 
-				var bp = await SetBreakpoint ("dotnet://debugger-test.dll/debugger-test.cs", 8, 2);
+				var bp = await SetBreakpoint ("dotnet://debugger-test.dll/debugger-test.cs", 10, 8);
 
 				await EvaluateAndCheck (
 					"window.setTimeout(function() { invoke_add(); }, 1);",
-					"dotnet://debugger-test.dll/debugger-test.cs", 8, 2,
+					"dotnet://debugger-test.dll/debugger-test.cs", 10, 8,
 					"IntAdd",
 					wait_for_event_fn: (pause_location) => {
 						//make sure we're on the right bp
 						Assert.Equal (bp.Value ["breakpointId"]?.ToString (), pause_location ["hitBreakpoints"]?[0]?.Value<string> ());
 
 						var top_frame = pause_location ["callFrames"][0];
-						CheckLocation ("dotnet://debugger-test.dll/debugger-test.cs", 6, 41, scripts, top_frame["functionLocation"]);
+						CheckLocation ("dotnet://debugger-test.dll/debugger-test.cs", 8, 4, scripts, top_frame["functionLocation"]);
 						return Task.CompletedTask;
 					}
 				);
 
-				await StepAndCheck (StepKind.Over, "dotnet://debugger-test.dll/debugger-test.cs", 9, 2, "IntAdd",
+				await StepAndCheck (StepKind.Over, "dotnet://debugger-test.dll/debugger-test.cs", 11, 8, "IntAdd",
 						wait_for_event_fn: (pause_location) => {
 							var top_frame = pause_location ["callFrames"][0];
-							CheckLocation ("dotnet://debugger-test.dll/debugger-test.cs", 6, 41, scripts, top_frame["functionLocation"]);
+							CheckLocation ("dotnet://debugger-test.dll/debugger-test.cs", 8, 4, scripts, top_frame["functionLocation"]);
 							return Task.CompletedTask;
 						}
 				);
@@ -447,21 +447,11 @@ namespace DebuggerTests
 				ctx = new DebugTestContext (cli, insp, token, scripts);
 
 				var debugger_test_loc = "dotnet://debugger-test.dll/debugger-test.cs";
-				await SetBreakpoint (debugger_test_loc, 7, 2);
+				await SetBreakpoint (debugger_test_loc, 10, 8);
 
 				await EvaluateAndCheck (
 					"window.setTimeout(function() { invoke_add(); }, 1);",
-					debugger_test_loc, 7, 2, "IntAdd",
-					locals_fn: (locals) => {
-						CheckNumber (locals, "a", 10);
-						CheckNumber (locals, "b", 20);
-						CheckNumber (locals, "c", 0);
-						CheckNumber (locals, "d", 0);
-						CheckNumber (locals, "e", 0);
-					}
-				);
-
-				await StepAndCheck (StepKind.Over, debugger_test_loc, 8, 2, "IntAdd",
+					debugger_test_loc, 10, 8, "IntAdd",
 					locals_fn: (locals) => {
 						CheckNumber (locals, "a", 10);
 						CheckNumber (locals, "b", 20);
@@ -471,14 +461,24 @@ namespace DebuggerTests
 					}
 				);
 
-				//step and get locals
-				await StepAndCheck (StepKind.Over, debugger_test_loc, 9, 2, "IntAdd",
+				await StepAndCheck (StepKind.Over, debugger_test_loc, 11, 8, "IntAdd",
 					locals_fn: (locals) => {
 						CheckNumber (locals, "a", 10);
 						CheckNumber (locals, "b", 20);
 						CheckNumber (locals, "c", 30);
 						CheckNumber (locals, "d", 50);
 						CheckNumber (locals, "e", 0);
+					}
+				);
+
+				//step and get locals
+				await StepAndCheck (StepKind.Over, debugger_test_loc, 12, 8, "IntAdd",
+					locals_fn: (locals) => {
+						CheckNumber (locals, "a", 10);
+						CheckNumber (locals, "b", 20);
+						CheckNumber (locals, "c", 30);
+						CheckNumber (locals, "d", 50);
+						CheckNumber (locals, "e", 60);
 					}
 				);
 			});
@@ -498,14 +498,14 @@ namespace DebuggerTests
 				ctx.UseCallFunctionOnBeforeGetProperties = use_cfo;
 
 				var dep_cs_loc = "dotnet://debugger-test.dll/dependency.cs";
-				await SetBreakpoint (dep_cs_loc, 27, 2);
+				await SetBreakpoint (dep_cs_loc, 33, 8);
 
 				var debugger_test_loc = "dotnet://debugger-test.dll/debugger-test.cs";
 
 				// Will stop in Complex.DoEvenMoreStuff
 				var pause_location = await EvaluateAndCheck (
 					"window.setTimeout(function() { invoke_use_complex (); }, 1);",
-					dep_cs_loc, 27, 2, "DoEvenMoreStuff",
+					dep_cs_loc, 33, 8, "DoEvenMoreStuff",
 					locals_fn: (locals) => {
 						Assert.Single (locals);
 						CheckObject (locals, "this", "Simple.Complex");
@@ -519,7 +519,7 @@ namespace DebuggerTests
 				CheckObject (props, "c", "object");
 
 				// Check UseComplex frame
-				var locals_m1 = await GetLocalsForFrame (pause_location ["callFrames"][3], debugger_test_loc, 20, 2, "UseComplex");
+				var locals_m1 = await GetLocalsForFrame (pause_location ["callFrames"][3], debugger_test_loc, 23, 8, "UseComplex");
 				Assert.Equal (7, locals_m1.Count());
 
 				CheckNumber (locals_m1, "a", 10);
@@ -536,9 +536,9 @@ namespace DebuggerTests
 				CheckString (props, "B", "xx");
 				CheckObject (props, "c", "object");
 
-				pause_location = await StepAndCheck (StepKind.Over, dep_cs_loc, 19, 2, "DoStuff", times: 2);
+				pause_location = await StepAndCheck (StepKind.Over, dep_cs_loc, 23, 8, "DoStuff", times: 2);
 				// Check UseComplex frame again
-				locals_m1 = await GetLocalsForFrame (pause_location ["callFrames"][1], debugger_test_loc, 20, 2, "UseComplex");
+				locals_m1 = await GetLocalsForFrame (pause_location ["callFrames"][1], debugger_test_loc, 23, 8, "UseComplex");
 				Assert.Equal (7, locals_m1.Count());
 
 				CheckNumber (locals_m1, "a", 10);
@@ -571,12 +571,12 @@ namespace DebuggerTests
 				ctx.UseCallFunctionOnBeforeGetProperties = use_cfo;
 
 				var debugger_test_loc = "dotnet://debugger-test.dll/debugger-test.cs";
-				await SetBreakpoint (debugger_test_loc, 105, 3);
+				await SetBreakpoint (debugger_test_loc, 111, 12);
 
 				// Will stop in InnerMethod
 				var wait_res = await EvaluateAndCheck (
 					"window.setTimeout(function() { invoke_outer_method(); }, 1);",
-					debugger_test_loc, 105, 3, "InnerMethod",
+					debugger_test_loc, 111, 12, "InnerMethod",
 					locals_fn: (locals) => {
 						Assert.Equal (4, locals.Count());
 						CheckNumber (locals, "i", 5);
@@ -599,7 +599,7 @@ namespace DebuggerTests
 				await CheckDateTime (ss_props, "dt", new DateTime (2020, 1, 2, 3, 4, 5));
 
 				// Check OuterMethod frame
-				var locals_m1 = await GetLocalsForFrame (wait_res ["callFrames"][1], debugger_test_loc, 81, 2, "OuterMethod");
+				var locals_m1 = await GetLocalsForFrame (wait_res ["callFrames"][1], debugger_test_loc, 87, 8, "OuterMethod");
 				Assert.Equal (5, locals_m1.Count());
 				// FIXME: Failing test CheckNumber (locals_m1, "i", 5);
 				// FIXME: Failing test CheckString (locals_m1, "text", "Hello");
@@ -608,7 +608,7 @@ namespace DebuggerTests
 				CheckObject (locals_m1, "nim", "Math.NestedInMath");
 
 				// step back into OuterMethod
-				await StepAndCheck (StepKind.Over, debugger_test_loc, 85, 2, "OuterMethod", times: 9,
+				await StepAndCheck (StepKind.Over, debugger_test_loc, 91, 8, "OuterMethod", times: 9,
 					locals_fn: (locals) => {
 						Assert.Equal (5, locals.Count());
 
@@ -623,7 +623,7 @@ namespace DebuggerTests
 				//await StepAndCheck (StepKind.Over, "dotnet://debugger-test.dll/debugger-test.cs", 81, 2, "OuterMethod", times: 2);
 
 				// step into InnerMethod2
-				await StepAndCheck (StepKind.Into, "dotnet://debugger-test.dll/debugger-test.cs", 90, 1, "InnerMethod2",
+				await StepAndCheck (StepKind.Into, "dotnet://debugger-test.dll/debugger-test.cs", 96, 4, "InnerMethod2",
 					locals_fn: (locals) => {
 						Assert.Equal (3, locals.Count());
 
@@ -633,7 +633,7 @@ namespace DebuggerTests
 					}
 				);
 
-				await StepAndCheck (StepKind.Over, "dotnet://debugger-test.dll/debugger-test.cs", 94, 1, "InnerMethod2", times: 4,
+				await StepAndCheck (StepKind.Over, "dotnet://debugger-test.dll/debugger-test.cs", 100, 4, "InnerMethod2", times: 4,
 					locals_fn: (locals) => {
 						Assert.Equal (3, locals.Count());
 
@@ -643,7 +643,7 @@ namespace DebuggerTests
 					}
 				);
 
-				await StepAndCheck (StepKind.Over, "dotnet://debugger-test.dll/debugger-test.cs", 86, 2, "OuterMethod", times: 2,
+				await StepAndCheck (StepKind.Over, "dotnet://debugger-test.dll/debugger-test.cs", 92, 8, "OuterMethod", times: 2,
 					locals_fn: (locals) => {
 						Assert.Equal (5, locals.Count());
 
@@ -667,10 +667,10 @@ namespace DebuggerTests
 			await insp.Ready (async (cli, token) => {
 				ctx = new DebugTestContext (cli, insp, token, scripts);
 
-				await SetBreakpoint ("dotnet://debugger-test.dll/debugger-test.cs", 80, 2);
+				await SetBreakpoint ("dotnet://debugger-test.dll/debugger-test.cs", 86, 8);
 
 				await EvaluateAndCheck ("window.setTimeout(function() { invoke_outer_method(); }, 1);",
-					"dotnet://debugger-test.dll/debugger-test.cs", 80, 2, "OuterMethod",
+					"dotnet://debugger-test.dll/debugger-test.cs", 86, 8, "OuterMethod",
 					locals_fn: (locals) => {
 						Assert.Equal (5, locals.Count());
 
@@ -682,7 +682,7 @@ namespace DebuggerTests
 					}
 				);
 
-				await StepAndCheck (StepKind.Over, "dotnet://debugger-test.dll/debugger-test.cs", 81, 2, "OuterMethod",
+				await StepAndCheck (StepKind.Over, "dotnet://debugger-test.dll/debugger-test.cs", 87, 8, "OuterMethod",
 					locals_fn: (locals) => {
 						Assert.Equal (5, locals.Count());
 
@@ -695,8 +695,8 @@ namespace DebuggerTests
 				);
 
 				// Step into InnerMethod
-				await StepAndCheck (StepKind.Into, "dotnet://debugger-test.dll/debugger-test.cs", 99, 2, "InnerMethod");
-				await StepAndCheck (StepKind.Over, "dotnet://debugger-test.dll/debugger-test.cs", 103, 3, "InnerMethod", times: 5,
+				await StepAndCheck (StepKind.Into, "dotnet://debugger-test.dll/debugger-test.cs", 105, 8, "InnerMethod");
+				await StepAndCheck (StepKind.Over, "dotnet://debugger-test.dll/debugger-test.cs", 109, 12, "InnerMethod", times: 5,
 					locals_fn: (locals) => {
 						Assert.Equal (4, locals.Count());
 
@@ -708,7 +708,7 @@ namespace DebuggerTests
 				);
 
 				// Step back to OuterMethod
-				await StepAndCheck (StepKind.Over, "dotnet://debugger-test.dll/debugger-test.cs", 82, 2, "OuterMethod", times: 6,
+				await StepAndCheck (StepKind.Over, "dotnet://debugger-test.dll/debugger-test.cs", 88, 8, "OuterMethod", times: 6,
 					locals_fn: (locals) => {
 						Assert.Equal (5, locals.Count());
 
@@ -736,13 +736,13 @@ namespace DebuggerTests
 				ctx.UseCallFunctionOnBeforeGetProperties = use_cfo;
 				var debugger_test_loc = "dotnet://debugger-test.dll/debugger-test.cs";
 
-				await SetBreakpoint (debugger_test_loc, 114, 3);
-				await SetBreakpoint (debugger_test_loc, 129, 3);
+				await SetBreakpoint (debugger_test_loc, 120, 12);
+				await SetBreakpoint (debugger_test_loc, 135, 12);
 
 				// Will stop in Asyncmethod0
 				var wait_res = await EvaluateAndCheck (
 					"window.setTimeout(function() { invoke_async_method_with_await(); }, 1);",
-					debugger_test_loc, 114, 3, "MoveNext", //FIXME:
+					debugger_test_loc, 120, 12, "MoveNext", //FIXME:
 					locals_fn: (locals) => {
 						Assert.Equal (4, locals.Count());
 						CheckString (locals, "s", "string from js");
@@ -762,7 +762,7 @@ namespace DebuggerTests
 
 				// TODO: previous frames have async machinery details, so no point checking that right now
 
-				var pause_loc = await SendCommandAndCheck (null, "Debugger.resume", debugger_test_loc, 129, 3, /*FIXME: "AsyncMethodNoReturn"*/ "MoveNext",
+				var pause_loc = await SendCommandAndCheck (null, "Debugger.resume", debugger_test_loc, 135, 12, /*FIXME: "AsyncMethodNoReturn"*/ "MoveNext",
 					locals_fn: (locals) => {
 						Assert.Equal (4, locals.Count());
 						CheckString (locals, "str", "AsyncMethodNoReturn's local");
@@ -797,11 +797,11 @@ namespace DebuggerTests
 				ctx.UseCallFunctionOnBeforeGetProperties = use_cfo;
 				var debugger_test_loc = "dotnet://debugger-test.dll/debugger-valuetypes-test.cs";
 
-				await SetBreakpoint (debugger_test_loc, 19, 2);
+				await SetBreakpoint (debugger_test_loc, 22, 8);
 
 				var pause_location = await EvaluateAndCheck (
 					"window.setTimeout(function() { invoke_method_with_structs(); }, 1);",
-					debugger_test_loc, 19, 2, "MethodWithLocalStructs",
+					debugger_test_loc, 22, 8, "MethodWithLocalStructs",
 					locals_fn: (locals) => {
 						Assert.Equal (3, locals.Count ());
 
@@ -895,12 +895,12 @@ namespace DebuggerTests
 				ctx.UseCallFunctionOnBeforeGetProperties = use_cfo;
 				var debugger_test_loc = "dotnet://debugger-test.dll/debugger-valuetypes-test.cs";
 
-				await SetBreakpoint (debugger_test_loc, 30, 3);
+				await SetBreakpoint (debugger_test_loc, 34, 12);
 
 
 				var pause_location = await EvaluateAndCheck (
 					"window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.ValueTypesTest:TestStructsAsMethodArgs'); }, 1);",
-					debugger_test_loc, 30, 3, "MethodWithStructArgs",
+					debugger_test_loc, 34, 12, "MethodWithStructArgs",
 					locals_fn: (locals) => {
 						Assert.Equal (3, locals.Count ());
 
@@ -935,7 +935,7 @@ namespace DebuggerTests
 					await CompareObjectPropertiesFor (ss_arg_props, "gs", ss_local_gs);
 				}
 
-				pause_location = await StepAndCheck (StepKind.Over, debugger_test_loc, 34, 3, "MethodWithStructArgs", times: 4,
+				pause_location = await StepAndCheck (StepKind.Over, debugger_test_loc, 38, 8, "MethodWithStructArgs", times: 4,
 					locals_fn: (locals) => {
 						Assert.Equal (3, locals.Count());
 
@@ -983,7 +983,7 @@ namespace DebuggerTests
 
 				// ----------- Step back to the caller ---------
 
-				pause_location = await StepAndCheck (StepKind.Over, debugger_test_loc, 25, 3, "TestStructsAsMethodArgs",
+				pause_location = await StepAndCheck (StepKind.Over, debugger_test_loc, 28, 12, "TestStructsAsMethodArgs",
 							times: 2, locals_fn: (l) => { /* non-null to make sure that locals get fetched */} );
 				var locals = await GetProperties (pause_location ["callFrames"][0]["callFrameId"].Value<string> ());
 				await CheckProps (locals, new {
@@ -1016,20 +1016,20 @@ namespace DebuggerTests
 				ctx = new DebugTestContext (cli, insp, token, scripts);
 				var debugger_test_loc = "dotnet://debugger-test.dll/debugger-valuetypes-test.cs";
 
-				var lines = new [] {189, 192};
-				await SetBreakpoint (debugger_test_loc, lines [0], 3);
-				await SetBreakpoint (debugger_test_loc, lines [1], 3);
+				var lines = new [] {202, 205};
+				await SetBreakpoint (debugger_test_loc, lines [0], 12);
+				await SetBreakpoint (debugger_test_loc, lines [1], 12);
 
 				var pause_location = await EvaluateAndCheck (
 					"window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.ValueTypesTest:MethodUpdatingValueTypeMembers'); }, 1);",
-					debugger_test_loc, lines [0], 3, "MethodUpdatingValueTypeMembers");
+					debugger_test_loc, lines [0], 12, "MethodUpdatingValueTypeMembers");
 
 				var dt = new DateTime (1, 2, 3, 4, 5, 6);
 				await CheckLocals (pause_location, dt);
 
 				// Resume
 				dt = new DateTime (9, 8, 7, 6, 5, 4);
-				pause_location = await SendCommandAndCheck (JObject.FromObject (new{}), "Debugger.resume", debugger_test_loc, lines[1], 3, "MethodUpdatingValueTypeMembers");
+				pause_location = await SendCommandAndCheck (JObject.FromObject (new{}), "Debugger.resume", debugger_test_loc, lines[1], 12, "MethodUpdatingValueTypeMembers");
 				await CheckLocals (pause_location, dt);
 			});
 
@@ -1073,13 +1073,13 @@ namespace DebuggerTests
 				ctx = new DebugTestContext (cli, insp, token, scripts);
 				var debugger_test_loc = "dotnet://debugger-test.dll/debugger-valuetypes-test.cs";
 
-				var lines = new [] { 198, 200 };
-				await SetBreakpoint (debugger_test_loc, lines [0], 3);
-				await SetBreakpoint (debugger_test_loc, lines [1], 3);
+				var lines = new [] { 211, 213 };
+				await SetBreakpoint (debugger_test_loc, lines [0], 12);
+				await SetBreakpoint (debugger_test_loc, lines [1], 12);
 
 				var pause_location = await EvaluateAndCheck (
 					"window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.ValueTypesTest:MethodUpdatingValueTypeLocalsAsync'); }, 1);",
-					debugger_test_loc, lines [0], 3, "MoveNext");
+					debugger_test_loc, lines [0], 12, "MoveNext");
 
 				var dt = new DateTime (1, 2, 3, 4, 5, 6);
 				var locals = await GetProperties (pause_location ["callFrames"][0]["callFrameId"].Value<string> ());
@@ -1087,7 +1087,7 @@ namespace DebuggerTests
 
 				// Resume
 				dt = new DateTime (9, 8, 7, 6, 5, 4);
-				pause_location = await SendCommandAndCheck (JObject.FromObject (new{}), "Debugger.resume", debugger_test_loc, lines[1], 3, "MoveNext");
+				pause_location = await SendCommandAndCheck (JObject.FromObject (new{}), "Debugger.resume", debugger_test_loc, lines[1], 12, "MoveNext");
 				locals = await GetProperties (pause_location ["callFrames"][0]["callFrameId"].Value<string> ());
 				await CheckDateTime (locals, "dt", dt);
 			});
@@ -1105,19 +1105,19 @@ namespace DebuggerTests
 				ctx = new DebugTestContext (cli, insp, token, scripts);
 				var debugger_test_loc = "dotnet://debugger-test.dll/debugger-valuetypes-test.cs";
 
-				var lines = new [] { 208, 210 };
-				await SetBreakpoint (debugger_test_loc, lines [0], 3);
-				await SetBreakpoint (debugger_test_loc, lines [1], 3);
+				var lines = new [] { 222, 224 };
+				await SetBreakpoint (debugger_test_loc, lines [0], 12);
+				await SetBreakpoint (debugger_test_loc, lines [1], 12);
 
 				var dt = new DateTime (1, 2, 3, 4, 5, 6);
 				var pause_location = await EvaluateAndCheck (
 					"window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.ValueTypesTest:MethodUpdatingVTArrayMembers'); }, 1);",
-					debugger_test_loc, lines [0], 3, "MethodUpdatingVTArrayMembers");
+					debugger_test_loc, lines [0], 12, "MethodUpdatingVTArrayMembers");
 				await CheckArrayElements (pause_location, dt);
 
 				// Resume
 				dt = new DateTime (9, 8, 7, 6, 5, 4);
-				pause_location = await SendCommandAndCheck (JObject.FromObject (new{}), "Debugger.resume", debugger_test_loc, lines[1], 3, "MethodUpdatingVTArrayMembers");
+				pause_location = await SendCommandAndCheck (JObject.FromObject (new{}), "Debugger.resume", debugger_test_loc, lines[1], 12, "MethodUpdatingVTArrayMembers");
 				await CheckArrayElements (pause_location, dt);
 			});
 
@@ -1151,13 +1151,13 @@ namespace DebuggerTests
 				ctx.UseCallFunctionOnBeforeGetProperties = use_cfo;
 				var debugger_test_loc = "dotnet://debugger-test.dll/debugger-valuetypes-test.cs";
 
-				await SetBreakpoint (debugger_test_loc, 50, 3);
+				await SetBreakpoint (debugger_test_loc, 54, 12);
 
 				var pause_location = await EvaluateAndCheck (
 					"window.setTimeout(function() { invoke_static_method_async ("
 						+ "'[debugger-test] DebuggerTests.ValueTypesTest:MethodWithLocalStructsStaticAsync'"
 					+ "); }, 1);",
-					debugger_test_loc, 50, 3, "MoveNext"); //BUG: method name
+					debugger_test_loc, 54, 12, "MoveNext"); //BUG: method name
 
 				var locals = await GetProperties (pause_location ["callFrames"][0]["callFrameId"].Value<string> ());
 				await CheckProps (locals, new {
@@ -1204,10 +1204,10 @@ namespace DebuggerTests
 		}
 
 		[Theory]
-		[InlineData (126, 3, "MethodWithLocalsForToStringTest", false, false)]
-		[InlineData (136, 3, "MethodWithArgumentsForToStringTest", true, false)]
-		[InlineData (178, 3, "MethodWithArgumentsForToStringTestAsync", true, true)]
-		[InlineData (168, 3, "MethodWithArgumentsForToStringTestAsync", false, true)]
+		[InlineData (134, 12, "MethodWithLocalsForToStringTest", false, false)]
+		[InlineData (144, 12, "MethodWithArgumentsForToStringTest", true, false)]
+		[InlineData (189, 12, "MethodWithArgumentsForToStringTestAsync", true, true)]
+		[InlineData (179, 12, "MethodWithArgumentsForToStringTestAsync", false, true)]
 		public async Task InspectLocalsForToStringDescriptions (int line, int col, string method_name, bool call_other, bool invoke_async)
 		{
 			var insp = new Inspector ();
@@ -1316,7 +1316,7 @@ namespace DebuggerTests
 		[InlineData (true)]
 		public async Task InspectLocalsForStructInstanceMethod (bool use_cfo)
 			=> await CheckInspectLocalsAtBreakpointSite (
-				"dotnet://debugger-test.dll/debugger-array-test.cs", 239, 3,
+				"dotnet://debugger-test.dll/debugger-array-test.cs", 258, 12,
 				"GenericInstanceMethod<DebuggerTests.SimpleClass>",
 				"window.setTimeout(function() { invoke_static_method_async ('[debugger-test] DebuggerTests.EntryClass:run'); })",
 				use_cfo: use_cfo,
@@ -1358,10 +1358,10 @@ namespace DebuggerTests
 			await insp.Ready (async (cli, token) => {
 				ctx = new DebugTestContext (cli, insp, token, scripts);
 
-				var bp = await SetBreakpoint ("dotnet://debugger-test.dll/debugger-test.cs", 77, 2);
+				var bp = await SetBreakpoint ("dotnet://debugger-test.dll/debugger-test.cs", 83, 8);
 				var pause_location = await EvaluateAndCheck (
 					"window.setTimeout(function() { invoke_static_method ('[debugger-test] Math:OuterMethod'); }, 1);",
-					"dotnet://debugger-test.dll/debugger-test.cs", 77, 2,
+					"dotnet://debugger-test.dll/debugger-test.cs", 83, 8,
 					"OuterMethod");
 
 				//make sure we're on the right bp
