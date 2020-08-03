@@ -210,9 +210,10 @@ namespace System.Diagnostics.Tracing
                     elapsed = now - _timeStampSinceCollectionStarted;
                 }
 
-                // MUST keep out of the scope of s_counterGroupLock because this will cause WritePayload callback can be re-entrant
-                // i.e. it's possible it calls back into EnableTimer() above, since WritePayload callback
-                // can contain user code with EventSource constructor.
+                // MUST keep out of the scope of s_counterGroupLock because this will cause WritePayload
+                // callback can be re-entrant to CounterGroup (i.e. it's possible it calls back into EnableTimer()
+                // above, since WritePayload callback can contain user code that can invoke EventSource constructor
+                // and lead to a deadlock. (See https://github.com/dotnet/runtime/issues/40190 for details)
                 foreach (DiagnosticCounter counter in _counters)
                 {
                     counter.WritePayload((float)elapsed.TotalSeconds, _pollingIntervalInMilliseconds);
