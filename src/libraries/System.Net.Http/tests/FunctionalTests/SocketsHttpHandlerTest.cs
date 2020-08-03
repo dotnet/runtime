@@ -299,10 +299,10 @@ namespace System.Net.Http.Functional.Tests
 
         public static IEnumerable<object[]> KeepAliveTestDataSource()
         {
-            // yield return new object[] { TimeSpan.FromSeconds(0), TimeSpan.FromSeconds(0), HttpKeepAlivePingPolicy.Always, false, false, false };
+            yield return new object[] { TimeSpan.FromSeconds(0), TimeSpan.FromSeconds(0), HttpKeepAlivePingPolicy.Always, false, false, false };
             yield return new object[] { TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(0), HttpKeepAlivePingPolicy.WithActiveRequests, true, false, false };
-            // yield return new object[] { TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(0), HttpKeepAlivePingPolicy.Always, true, true, false };
-            // yield return new object[] { TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(5), HttpKeepAlivePingPolicy.WithActiveRequests, true, true, true };
+            yield return new object[] { TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(0), HttpKeepAlivePingPolicy.Always, true, true, false };
+            yield return new object[] { TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(5), HttpKeepAlivePingPolicy.WithActiveRequests, true, true, true };
         }
 
         [OuterLoop("Significant delay.")]

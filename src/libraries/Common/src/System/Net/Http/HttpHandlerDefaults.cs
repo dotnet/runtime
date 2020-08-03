@@ -31,6 +31,5 @@ namespace System.Net.Http
         public static readonly TimeSpan DefaultKeepAlivePingDelay = TimeSpan.FromSeconds(0);
         public const HttpKeepAlivePingPolicy DefaultKeepAlivePingPolicy = HttpKeepAlivePingPolicy.Always;
         public static readonly TimeSpan DefaultConnectTimeout = Timeout.InfiniteTimeSpan;
-
     }
 }
