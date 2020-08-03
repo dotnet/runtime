@@ -94,7 +94,7 @@ c_static_assert(PAL_S_IFSOCK == S_IFSOCK);
 // WebAssembly (BROWSER) has dirent d_type but is not correct
 // by returning UNKNOWN the managed code properly stats the file
 // to detect if entry is directory or not.
-#if defined(DT_UNKNOWN) | TARGET_WASM
+#if defined(DT_UNKNOWN) || defined(TARGET_WASM)
 c_static_assert((int)PAL_DT_UNKNOWN == (int)DT_UNKNOWN);
 c_static_assert((int)PAL_DT_FIFO == (int)DT_FIFO);
 c_static_assert((int)PAL_DT_CHR == (int)DT_CHR);
@@ -349,7 +349,7 @@ static void ConvertDirent(const struct dirent* entry, DirectoryEntry* outputEntr
     // the start of the unmanaged string. Give the caller back a pointer to the
     // location of the start of the string that exists in their own byte buffer.
     outputEntry->Name = entry->d_name;
-#if !defined(DT_UNKNOWN) | TARGET_WASM
+#if !defined(DT_UNKNOWN) || defined(TARGET_WASM)
     // AIX has no d_type, and since we can't get the directory that goes with
     // the filename from ReadDir, we can't stat the file. Return unknown and
     // hope that managed code can properly stat the file.
