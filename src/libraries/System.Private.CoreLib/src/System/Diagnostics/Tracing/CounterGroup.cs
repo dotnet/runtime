@@ -200,22 +200,32 @@ namespace System.Diagnostics.Tracing
 
         private void OnTimer()
         {
-            Debug.Assert(Monitor.IsEntered(s_counterGroupLock));
             if (_eventSource.IsEnabled())
             {
-                DateTime now = DateTime.UtcNow;
-                TimeSpan elapsed = now - _timeStampSinceCollectionStarted;
+                DateTime now;
+                TimeSpan elapsed;
+                lock (s_counterGroupLock)
+                {
+                    now = DateTime.UtcNow;
+                    elapsed = now - _timeStampSinceCollectionStarted;
+                }
 
+                // MUST keep out of the scope of s_counterGroupLock because this will cause WritePayload callback can be re-entrant
+                // i.e. it's possible it calls back into EnableTimer() above, since WritePayload callback
+                // can contain user code with EventSource constructor.
                 foreach (DiagnosticCounter counter in _counters)
                 {
                     counter.WritePayload((float)elapsed.TotalSeconds, _pollingIntervalInMilliseconds);
                 }
-                _timeStampSinceCollectionStarted = now;
 
-                do
+                lock (s_counterGroupLock)
                 {
-                    _nextPollingTimeStamp += new TimeSpan(0, 0, 0, 0, _pollingIntervalInMilliseconds);
-                } while (_nextPollingTimeStamp <= now);
+                    _timeStampSinceCollectionStarted = now;
+                    do
+                    {
+                        _nextPollingTimeStamp += new TimeSpan(0, 0, 0, 0, _pollingIntervalInMilliseconds);
+                    } while (_nextPollingTimeStamp <= now);
+                }
             }
         }
 
@@ -231,6 +241,7 @@ namespace System.Diagnostics.Tracing
             while (true)
             {
                 int sleepDurationInMilliseconds = int.MaxValue;
+                List<Action> onTimers = new List<Action>();
                 lock (s_counterGroupLock)
                 {
                     sleepEvent = s_pollingThreadSleepEvent;
@@ -239,13 +250,17 @@ namespace System.Diagnostics.Tracing
                         DateTime now = DateTime.UtcNow;
                         if (counterGroup._nextPollingTimeStamp < now + new TimeSpan(0, 0, 0, 0, 1))
                         {
-                            counterGroup.OnTimer();
+                            onTimers.Add(() => counterGroup.OnTimer());
                         }
 
                         int millisecondsTillNextPoll = (int)((counterGroup._nextPollingTimeStamp - now).TotalMilliseconds);
                         millisecondsTillNextPoll = Math.Max(1, millisecondsTillNextPoll);
                         sleepDurationInMilliseconds = Math.Min(sleepDurationInMilliseconds, millisecondsTillNextPoll);
                     }
+                }
+                foreach (Action onTimer in onTimers)
+                {
+                    onTimer.Invoke();
                 }
                 if (sleepDurationInMilliseconds == int.MaxValue)
                 {
