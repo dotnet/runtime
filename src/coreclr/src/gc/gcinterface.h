@@ -1004,4 +1004,3 @@ typedef HRESULT (*GC_InitializeFunction)(
 );
 
 #endif // _GC_INTERFACE_H_
-

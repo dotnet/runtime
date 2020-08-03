@@ -248,4 +248,3 @@ public:
 };
 
 #endif // _COMUTILNATIVE_H_
-

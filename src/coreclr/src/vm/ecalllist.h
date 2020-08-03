@@ -1250,4 +1250,3 @@ FCClassElement("XplatEventLogger", "System.Diagnostics.Tracing", gEventLogger)
 #undef FCFuncStart
 #undef FCFuncEnd
 #undef FCClassElement
-

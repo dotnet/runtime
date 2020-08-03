@@ -538,4 +538,3 @@ void GCHeap::ControlPrivateEvents(GCEventKeyword keyword, GCEventLevel level)
 #endif // !DACCESS_COMPILE
 
 
-

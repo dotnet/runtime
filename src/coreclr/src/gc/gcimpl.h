@@ -318,4 +318,3 @@ public:
 };
 
 #endif  // GCIMPL_H_
-
