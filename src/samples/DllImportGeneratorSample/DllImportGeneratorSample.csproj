@@ -8,6 +8,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\Ancillary.Interop\Ancillary.Interop.csproj" />
     <ProjectReference Include="..\DllImportGenerator\DllImportGenerator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
   </ItemGroup>
 

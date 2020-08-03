@@ -1,8 +1,10 @@
 ﻿using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
+using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using Xunit;
 
 namespace DllImportGenerator.Test
@@ -34,10 +36,26 @@ namespace DllImportGenerator.Test
         /// <param name="outputKind">Output type</param>
         /// <returns>The resulting compilation</returns>
         public static Compilation CreateCompilation(string source, OutputKind outputKind = OutputKind.DynamicallyLinkedLibrary)
-            => CSharpCompilation.Create("compilation",
+        {
+            var mdRefs = new List<MetadataReference>();
+
+            // Include the assembly containing the new attribute and all of its references.
+            // [TODO] Remove once the attribute has been added to the BCL
+            var attrAssem = typeof(GeneratedDllImportAttribute).GetTypeInfo().Assembly;
+            mdRefs.Add(MetadataReference.CreateFromFile(attrAssem.Location));
+            foreach (var assemName in attrAssem.GetReferencedAssemblies())
+            {
+                var assemRef = Assembly.Load(assemName);
+                mdRefs.Add(MetadataReference.CreateFromFile(assemRef.Location));
+            }
+
+            // Add a CoreLib reference
+            mdRefs.Add(MetadataReference.CreateFromFile(typeof(Binder).GetTypeInfo().Assembly.Location));
+            return CSharpCompilation.Create("compilation",
                 new[] { CSharpSyntaxTree.ParseText(source, new CSharpParseOptions(LanguageVersion.Preview)) },
-                new[] { MetadataReference.CreateFromFile(typeof(Binder).GetTypeInfo().Assembly.Location) },
+                mdRefs,
                 new CSharpCompilationOptions(outputKind));
+        }
 
         /// <summary>
         /// Run the supplied generators on the compilation.

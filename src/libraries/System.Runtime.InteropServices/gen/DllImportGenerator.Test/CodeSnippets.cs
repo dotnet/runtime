@@ -156,6 +156,50 @@ partial class Test
 ";
 
         /// <summary>
+        /// Declaration with all DllImport named arguments.
+        /// </summary>
+        public static readonly string AllDllImportNamedArguments = @"
+using System.Runtime.InteropServices;
+partial class Test
+{
+    [GeneratedDllImport(""DoesNotExist"",
+        BestFitMapping = false,
+        CallingConvention = CallingConvention.Cdecl,
+        CharSet = CharSet.Unicode,
+        EntryPoint = ""UserDefinedEntryPoint"",
+        ExactSpelling = true,
+        PreserveSig = false,
+        SetLastError = true,
+        ThrowOnUnmappableChar = true)]
+    public static partial void Method();
+}
+";
+
+        /// <summary>
+        /// Declaration using various methods to compute constants in C#.
+        /// </summary>
+        public static readonly string UseCSharpFeaturesForConstants = @"
+using System.Runtime.InteropServices;
+partial class Test
+{
+    private const bool IsTrue = true;
+    private const bool IsFalse = false;
+    private const string EntryPointName = nameof(Test) + nameof(IsFalse);
+
+    [GeneratedDllImport(nameof(Test),
+        BestFitMapping = 0 != 1,
+        CallingConvention = (CallingConvention)1,
+        CharSet = (CharSet)2,
+        EntryPoint = EntryPointName,
+        ExactSpelling = IsTrue,
+        PreserveSig = IsFalse,
+        SetLastError = !IsFalse,
+        ThrowOnUnmappableChar = !IsTrue)]
+    public static partial void Method();
+}
+";
+
+        /// <summary>
         /// Declaration with basic parameters.
         /// </summary>
         public static readonly string BasicParametersAndModifiers = @"
@@ -180,6 +224,52 @@ partial class Test
 {
     [GeneratedDllImport(""DoesNotExist"")]
     public static partial void Method(int t = 0);
+}
+";
+
+        /// <summary>
+        /// Apply MarshalAsAttribute to parameters and return types.
+        /// </summary>
+        public static readonly string MarshalAsAttributeOnTypes = @"
+using System;
+using System.Runtime.InteropServices;
+namespace NS
+{
+    class MyCustomMarshaler : ICustomMarshaler
+    {
+        static ICustomMarshaler GetInstance(string pstrCookie)
+            => new MyCustomMarshaler();
+
+        public void CleanUpManagedData(object ManagedObj)
+            => throw new NotImplementedException();
+
+        public void CleanUpNativeData(IntPtr pNativeData)
+            => throw new NotImplementedException();
+
+        public int GetNativeDataSize()
+            => throw new NotImplementedException();
+
+        public IntPtr MarshalManagedToNative(object ManagedObj)
+            => throw new NotImplementedException();
+
+        public object MarshalNativeToManaged(IntPtr pNativeData)
+            => throw new NotImplementedException();
+    }
+}
+
+partial class Test
+{
+    [GeneratedDllImport(""DoesNotExist"")]
+    [return: MarshalAs(UnmanagedType.LPWStr)]
+    public static partial string Method1([MarshalAs(UnmanagedType.LPStr)]string t);
+
+    [GeneratedDllImport(""DoesNotExist"")]
+    [return: MarshalAs(UnmanagedType.LPWStr)]
+    public static partial string Method2([MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(NS.MyCustomMarshaler), MarshalCookie=""COOKIE1"")]string t);
+
+    [GeneratedDllImport(""DoesNotExist"")]
+    [return: MarshalAs(UnmanagedType.LPWStr)]
+    public static partial string Method3([MarshalAs(UnmanagedType.CustomMarshaler, MarshalType = ""NS.MyCustomMarshaler"", MarshalCookie=""COOKIE2"")]string t);
 }
 ";
 
