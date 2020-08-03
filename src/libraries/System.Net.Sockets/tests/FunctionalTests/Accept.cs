@@ -347,7 +347,8 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        public async Task AcceptReceive_Success()
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public async Task AcceptReceive_Windows_Success()
         {
             if (!SupportsAcceptReceive)
             {
@@ -368,7 +369,25 @@ namespace System.Net.Sockets.Tests
 
             (_, byte[] recvBuffer) = await acceptTask;
             Assert.Equal(new byte[] { 42 }, recvBuffer);
-        } 
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        public void AcceptReceive_Unix_ThrowsPlatformNotSupportedException()
+        {
+            if (!SupportsAcceptReceive)
+            {
+                // Currently only supported by APM and EAP
+                return;
+            }
+
+            using Socket listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+            int port = listener.BindToAnonymousPort(IPAddress.Loopback);
+            IPEndPoint listenerEndpoint = new IPEndPoint(IPAddress.Loopback, port);
+            listener.Listen(100);
+
+            Assert.Throws<PlatformNotSupportedException>(() => { _ = AcceptAsync(listener, 1); });
+        }
     }
 
     public sealed class AcceptSync : Accept<SocketHelperArraySync>
@@ -384,6 +403,22 @@ namespace System.Net.Sockets.Tests
     public sealed class AcceptApm : Accept<SocketHelperApm>
     {
         public AcceptApm(ITestOutputHelper output) : base(output) {}
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        public void EndAccept_Unix_ThrowsPlatformNotSupportedException()
+        {
+            using Socket listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+
+            // Creating a fake IAsyncResult:
+            int port = listener.BindToAnonymousPort(IPAddress.Loopback);
+            IPEndPoint listenerEndpoint = new IPEndPoint(IPAddress.Loopback, port);
+            listener.Listen(100);
+            IAsyncResult iar = listener.BeginAccept(null, null);
+
+            Assert.Throws<PlatformNotSupportedException>(() => listener.EndAccept(out _, iar));
+            Assert.Throws<PlatformNotSupportedException>(() => listener.EndAccept(out _, out _, iar));
+        }
     }
 
     public sealed class AcceptTask : Accept<SocketHelperTask>
