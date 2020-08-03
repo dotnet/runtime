@@ -303,7 +303,7 @@ void SimplerHashTable<Key,KeyFuncs,Value,Behavior>::Reallocate(unsigned newTable
 // 32-bit magic numbers, (because the algorithm for using 33-bit magic numbers is slightly slower).
 //
 
-extern PrimeInfo primeInfo[27];
+extern const PrimeInfo primeInfo[27];
 
 template <typename Key, typename KeyFuncs, typename Value, typename Behavior>
 PrimeInfo SimplerHashTable<Key,KeyFuncs,Value,Behavior>::NextPrime(unsigned number)

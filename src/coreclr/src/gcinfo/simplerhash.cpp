@@ -9,7 +9,7 @@
 // 32-bit magic numbers, (because the algorithm for using 33-bit magic numbers is slightly slower).
 //
 
-PrimeInfo primeInfo[] =
+const PrimeInfo primeInfo[] =
 {
     PrimeInfo(9,         0x38e38e39, 1),
     PrimeInfo(23,        0xb21642c9, 4),

@@ -984,7 +984,7 @@ struct MSLAYOUT IPCEventTypeNameMapping
             const char *            eventName;
 };
 
-#ifdef TARGET_WINDOWS
+#ifdef _MSC_VER
 extern const __declspec(selectany)
 #else
 constexpr
