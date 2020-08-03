@@ -873,6 +873,7 @@ namespace System.Net.Http.Functional.Tests
 
         [Fact]
         [OuterLoop]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/39056")]
         public async Task Send_TimeoutRequestContent_Throws()
         {
             await LoopbackServer.CreateClientAndServerAsync(

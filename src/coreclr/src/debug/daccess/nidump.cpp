@@ -477,7 +477,7 @@ NativeImageDumper::NativeImageDumper(PTR_VOID loadedBase,
     m_dis(dis),
     m_MetadataSize(0),
     m_ILHostCopy(NULL),
-    m_isMscorlibHardBound(false),
+    m_isCoreLibHardBound(false),
     m_sectionAlignment(0)
 {
     IfFailThrow(m_display->GetDumpOptions(&m_dumpOptions));
@@ -1132,54 +1132,54 @@ NativeImageDumper::DumpNativeImage()
 
         /* XXX Wed 12/14/2005
          * Now for the real insanity.  I need to initialize static classes in
-         * the DAC.  First I need to find mscorlib's dependency entry.  Search
+         * the DAC.  First I need to find CoreLib's dependency entry.  Search
          * through all of the dependencies to find the one marked as
-         * fIsMscorlib.  If I don't find anything marked that way, then "self"
-         * is mscorlib.
+         * fIsCoreLib.  If I don't find anything marked that way, then "self"
+         * is CoreLib.
          */
-        Dependency * mscorlib = NULL;
+        Dependency * corelib = NULL;
         for( COUNT_T i = 0; i < m_numDependencies; ++i )
         {
-            if( m_dependencies[i].fIsMscorlib )
+            if( m_dependencies[i].fIsCoreLib )
             {
-                mscorlib = &m_dependencies[i];
+                corelib = &m_dependencies[i];
                 break;
             }
         }
 
-        //If we're actually dumping mscorlib, remap the mscorlib dependency to our own native image.
-        if( (mscorlib == NULL) || !wcscmp(m_name, CoreLibName_W))
+        //If we're actually dumping CoreLib, remap the CoreLib dependency to our own native image.
+        if( (corelib == NULL) || !wcscmp(m_name, CoreLibName_W))
         {
-            mscorlib = GetDependency(0);
-            mscorlib->fIsMscorlib = TRUE;
-            _ASSERTE(mscorlib->fIsHardbound);
+            corelib = GetDependency(0);
+            corelib->fIsCoreLib = TRUE;
+            _ASSERTE(corelib->fIsHardbound);
         }
 
-        _ASSERTE(mscorlib != NULL);
-        if( mscorlib->fIsHardbound )
+        _ASSERTE(corelib != NULL);
+        if( corelib->fIsHardbound )
         {
-            m_isMscorlibHardBound = true;
+            m_isCoreLibHardBound = true;
         }
-        if( m_isMscorlibHardBound )
+        if( m_isCoreLibHardBound )
         {
             //go through the module to the binder.
-            PTR_Module mscorlibModule = mscorlib->pModule;
+            PTR_Module corelibModule = corelib->pModule;
 
-            PTR_MscorlibBinder binder = mscorlibModule->m_pBinder;
-            g_Mscorlib = *binder;
+            PTR_CoreLibBinder binder = corelibModule->m_pBinder;
+            g_CoreLib = *binder;
 
-            PTR_MethodTable mt = MscorlibBinder::GetExistingClass(CLASS__OBJECT);
+            PTR_MethodTable mt = CoreLibBinder::GetExistingClass(CLASS__OBJECT);
             g_pObjectClass = mt;
         }
 
 
         if (g_pObjectClass == NULL)
         {
-            //if mscorlib is not hard bound, then warn the user (many features of nidump are shut off)
-            m_display->ErrorPrintF( "Assembly %S is soft bound to mscorlib.  nidump cannot dump MethodTables completely.\n", m_name );
+            //if CoreLib is not hard bound, then warn the user (many features of nidump are shut off)
+            m_display->ErrorPrintF( "Assembly %S is soft bound to CoreLib.  nidump cannot dump MethodTables completely.\n", m_name );
             // TritonTODO: reason?
             // reset "hard bound state"
-            m_isMscorlibHardBound = false;
+            m_isCoreLibHardBound = false;
 
         }
     }
@@ -1267,8 +1267,8 @@ void NativeImageDumper::TraceDumpDependency(int idx, NativeImageDumper::Dependen
         m_display->ErrorPrintF("\tSize: %x (%d)\n", dependency->size, dependency->size);
         m_display->ErrorPrintF("\tModule: P=%p, L=%p\n", DataPtrToDisplay(dac_cast<TADDR>(dependency->pModule)),
                                PTR_TO_TADDR(dependency->pModule));
-        m_display->ErrorPrintF("Mscorlib=%s, Hardbound=%s\n",
-                               (dependency->fIsMscorlib ? "true" : "false"),
+        m_display->ErrorPrintF("CoreLib=%s, Hardbound=%s\n",
+                               (dependency->fIsCoreLib ? "true" : "false"),
                                (dependency->fIsHardbound ? "true" : "false"));
         m_display->ErrorPrintF("Name: %S\n", dependency->name);
     }
@@ -2391,7 +2391,7 @@ mdAssemblyRef NativeImageDumper::MapAssemblyRefToManifest(mdAssemblyRef token, I
             }
             else if (wcscmp(szAssemblyName, CoreLibName_W) == 0)
             {
-                // Mscorlib is special - version number and public key token are ignored.
+                // CoreLib is special - version number and public key token are ignored.
                 ret = currentRef;
                 break;
             }
@@ -2400,7 +2400,7 @@ mdAssemblyRef NativeImageDumper::MapAssemblyRefToManifest(mdAssemblyRef token, I
                      metadata.usBuildNumber == 255 &&
                      metadata.usRevisionNumber == 255)
             {
-                // WinMDs encode all assemblyrefs with version 255.255.255.255 including CLR assembly dependencies (mscorlib, System).
+                // WinMDs encode all assemblyrefs with version 255.255.255.255 including CLR assembly dependencies (corelib, System).
                 ret = currentRef;
             }
             else
@@ -2602,8 +2602,8 @@ NativeImageDumper::Dependency *NativeImageDumper::OpenDependency(int index)
             Dependency& dependency = m_dependencies[index];
             AppendTokenName(entry->dwAssemblyRef, buf, m_manifestImport, true);
             bool isHardBound = !!(entry->signNativeImage != INVALID_NGEN_SIGNATURE);
-            SString mscorlibStr(SString::Literal, CoreLibName_W);
-            bool isMscorlib = (0 == buf.Compare( mscorlibStr ));
+            SString corelibStr(SString::Literal, CoreLibName_W);
+            bool isCoreLib = (0 == buf.Compare( corelibStr ));
             dependency.fIsHardbound = isHardBound;
             wcscpy_s(dependency.name, _countof(dependency.name),
                      (const WCHAR*)buf);
@@ -2703,7 +2703,7 @@ NativeImageDumper::Dependency *NativeImageDumper::OpenDependency(int index)
                                                       ofRead,
                                                       IID_IMetaDataImport2,
                                                       (IUnknown **) &dependency.pImport));
-            dependency.fIsMscorlib = isMscorlib;
+            dependency.fIsCoreLib = isCoreLib;
         }
 
         m_dependencies[index].entry = entry;
@@ -3716,7 +3716,7 @@ void NativeImageDumper::DumpModule( PTR_Module module )
     /* REVISIT_TODO Fri 10/14/2005
      * Dump the binder
      */
-    PTR_MscorlibBinder binder = module->m_pBinder;
+    PTR_CoreLibBinder binder = module->m_pBinder;
     if( NULL != binder )
     {
         DisplayStartStructureWithOffset( m_pBinder, DPtrToPreferredAddr(binder),
@@ -3726,38 +3726,38 @@ void NativeImageDumper::DumpModule( PTR_Module module )
         //these four fields don't have anything useful in ngen images.
         DisplayWriteFieldPointer( m_classDescriptions,
                                   DPtrToPreferredAddr(binder->m_classDescriptions),
-                                  MscorlibBinder, MODULE );
+                                  CoreLibBinder, MODULE );
         DisplayWriteFieldPointer( m_methodDescriptions,
                                   DPtrToPreferredAddr(binder->m_methodDescriptions),
-                                  MscorlibBinder, MODULE );
+                                  CoreLibBinder, MODULE );
         DisplayWriteFieldPointer( m_fieldDescriptions,
                                   DPtrToPreferredAddr(binder->m_fieldDescriptions),
-                                  MscorlibBinder, MODULE );
+                                  CoreLibBinder, MODULE );
         DisplayWriteFieldPointer( m_pModule,
                                   DPtrToPreferredAddr(binder->m_pModule),
-                                  MscorlibBinder, MODULE );
+                                  CoreLibBinder, MODULE );
 
-        DisplayWriteFieldInt( m_cClasses, binder->m_cClasses, MscorlibBinder,
+        DisplayWriteFieldInt( m_cClasses, binder->m_cClasses, CoreLibBinder,
                               MODULE );
         DisplayWriteFieldAddress( m_pClasses,
                                   DPtrToPreferredAddr(binder->m_pClasses),
                                   sizeof(*binder->m_pClasses)
                                   * binder->m_cClasses,
-                                  MscorlibBinder, MODULE );
-        DisplayWriteFieldInt( m_cFields, binder->m_cFields, MscorlibBinder,
+                                  CoreLibBinder, MODULE );
+        DisplayWriteFieldInt( m_cFields, binder->m_cFields, CoreLibBinder,
                               MODULE );
         DisplayWriteFieldAddress( m_pFields,
                                   DPtrToPreferredAddr(binder->m_pFields),
                                   sizeof(*binder->m_pFields)
                                   * binder->m_cFields,
-                                  MscorlibBinder, MODULE );
-        DisplayWriteFieldInt( m_cMethods, binder->m_cMethods, MscorlibBinder,
+                                  CoreLibBinder, MODULE );
+        DisplayWriteFieldInt( m_cMethods, binder->m_cMethods, CoreLibBinder,
                               MODULE );
         DisplayWriteFieldAddress( m_pMethods,
                                   DPtrToPreferredAddr(binder->m_pMethods),
                                   sizeof(*binder->m_pMethods)
                                   * binder->m_cMethods,
-                                  MscorlibBinder, MODULE );
+                                  CoreLibBinder, MODULE );
 
         DisplayEndStructure( MODULE ); //m_pBinder
     }
@@ -6766,11 +6766,11 @@ NativeImageDumper::DumpMethodTable( PTR_MethodTable mt, const char * name,
         MethodTableToString( mt, buf );
         m_display->ErrorPrintF( "WARNING! MethodTable %S is generic but is not hard bound to its EEClass.  Cannot compute generic dictionary sizes.\n", (const WCHAR *)buf );
     }
-    else if( !m_isMscorlibHardBound )
+    else if( !m_isCoreLibHardBound )
     {
         /* REVISIT_TODO Mon 8/20/2007
-         * If we're not hard bound to mscorlib, most things don't work.  They depend on knowing what
-         * g_pObjectClass is.  Without the hard binding to mscorlib, I can't figure that out.
+         * If we're not hard bound to CoreLib, most things don't work.  They depend on knowing what
+         * g_pObjectClass is.  Without the hard binding to CoreLib, I can't figure that out.
          */
         haveCompleteExtents = false;
     }

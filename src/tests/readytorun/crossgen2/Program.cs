@@ -1626,6 +1626,145 @@ internal class Program
         return true;
     }
 
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static bool CheckArrayVal<T>(ref T refVal, T testValue) where T:IEquatable<T>
+    {
+        return refVal.Equals(testValue);
+    }
+
+    struct SomeLargeStruct : IEquatable<SomeLargeStruct>
+    {
+        public SomeLargeStruct(int _xVal)
+        {
+            x = _xVal;
+            y = 0;
+            z = 0;
+            w = 0;
+        }
+        public int x;
+        public int y;
+        public int z;
+        public int w;
+
+        public bool Equals(SomeLargeStruct other)
+        {
+            return (x == other.x) && (y == other.y) && (z == other.z) && (w == other.w);
+        }
+        public override bool Equals(object other)
+        {
+            return Equals((SomeLargeStruct)other);
+        }
+
+        public override int GetHashCode() { return x; }
+    }
+
+    class SomeClass : IEquatable<SomeClass>
+    {
+        public SomeClass(int _xVal)
+        {
+            x = _xVal;
+            y = 0;
+            z = 0;
+            w = 0;
+        }
+        public int x;
+        public int y;
+        public int z;
+        public int w;
+
+        public bool Equals(SomeClass other)
+        {
+            return (x == other.x) && (y == other.y) && (z == other.z) && (w == other.w);
+        }
+        public override bool Equals(object other)
+        {
+            return Equals((SomeClass)other);
+        }
+
+        public override int GetHashCode() { return x; }
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static bool DoLargeStructMDArrayTest(SomeLargeStruct testValue)
+    {
+        SomeLargeStruct[,] array = new SomeLargeStruct[2,2];
+        array[0,0] = testValue;
+        if (!CheckArrayVal(ref array[0,0], testValue))
+        {
+            return false;
+        }
+        if (!testValue.Equals(array[0,0]))
+        {
+            return false;
+        }
+
+        return true;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static bool DoGenericArrayTest<T> (T testValue) where T:IEquatable<T>
+    {
+        T[,] array = new T[2,2];
+        array[0,0] = testValue;
+        if (!CheckArrayVal(ref array[0,0], testValue))
+        {
+            return false;
+        }
+        if (!testValue.Equals(array[0,0]))
+        {
+            return false;
+        }
+
+        return true;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static bool TestGenericMDArrayBehavior()
+    {
+        if (!DoGenericArrayTest<int>(42))
+        {
+            return false;
+        }
+
+        if (!DoGenericArrayTest<SomeClass>(new SomeClass(42)))
+        {
+            return false;
+        }
+
+        SomeLargeStruct testStruct = new SomeLargeStruct(42);
+        if (!DoGenericArrayTest<SomeLargeStruct>(testStruct))
+        {
+            return false;
+        }
+
+        if (!DoLargeStructMDArrayTest(testStruct))
+        {
+            return false;
+        }
+
+        return true;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static bool ArrayLdtokenTests()
+    {
+        // We're testing that mapping from ldtoken to RuntimeMethodHandle works for various ways that 
+        // ldtokens can be referenced (either via a generic token, or not.
+        // (there are slightly different codepaths in crossgen for this)
+        // Incorrect encoding will trigger a BadImageFormatException
+        RuntimeMethodHandle rmhCtor1 = default(RuntimeMethodHandle);
+        RuntimeMethodHandle rmhCtor2 = default(RuntimeMethodHandle);
+        RuntimeMethodHandle rmhSet = default(RuntimeMethodHandle);
+        RuntimeMethodHandle rmhGet = default(RuntimeMethodHandle);
+        RuntimeMethodHandle rmhAddress = default(RuntimeMethodHandle);
+        HelperGenericILCode<string>.LdTokenArrayMethods(ref rmhCtor1, ref rmhCtor2, ref rmhSet, ref rmhGet, ref rmhAddress);
+        HelperGenericILCode<object>.LdTokenArrayMethods(ref rmhCtor1, ref rmhCtor2, ref rmhSet, ref rmhGet, ref rmhAddress);
+        HelperILCode.LdTokenArrayMethodsInt(ref rmhCtor1, ref rmhCtor2, ref rmhSet, ref rmhGet, ref rmhAddress);
+        HelperILCode.LdTokenArrayMethodsString(ref rmhCtor1, ref rmhCtor2, ref rmhSet, ref rmhGet, ref rmhAddress);
+
+        return true;
+    }
+
     public static int Main(string[] args)
     {
         _passedTests = new List<string>();
@@ -1691,6 +1830,8 @@ internal class Program
         RunTest("ExplicitlySizedStructTest", ExplicitlySizedStructTest());
         RunTest("ExplicitlySizedClassTest", ExplicitlySizedClassTest());
         RunTest("GenericLdtokenTest", GenericLdtokenTest());
+        RunTest("ArrayLdtokenTests", ArrayLdtokenTests());
+        RunTest("TestGenericMDArrayBehavior", TestGenericMDArrayBehavior());
 
         File.Delete(TextFileName);
 

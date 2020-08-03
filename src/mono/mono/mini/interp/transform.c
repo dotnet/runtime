@@ -1505,6 +1505,9 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 	} else if (in_corlib && !strcmp (klass_name_space, "System") && !strcmp (klass_name, "Marvin")) {
 		if (!strcmp (tm, "Block"))
 			*op = MINT_INTRINS_MARVIN_BLOCK;
+	} else if (in_corlib && !strcmp (klass_name_space, "System.Runtime.InteropServices") && !strcmp (klass_name, "MemoryMarshal")) {
+		if (!strcmp (tm, "GetArrayDataReference"))
+			*op = MINT_INTRINS_MEMORYMARSHAL_GETARRAYDATAREF;
 	} else if (in_corlib && !strcmp (klass_name_space, "System.Text.Unicode") && !strcmp (klass_name, "Utf16Utility")) {
 		if (!strcmp (tm, "ConvertAllAsciiCharsInUInt32ToUppercase"))
 			*op = MINT_INTRINS_ASCII_CHARS_TO_UPPERCASE;

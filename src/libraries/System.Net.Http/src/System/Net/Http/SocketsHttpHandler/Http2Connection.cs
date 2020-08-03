@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
+using System.Net.Connections;
 using System.Net.Http.Headers;
 using System.Net.Http.HPack;
 using System.Net.Security;
@@ -21,6 +22,7 @@ namespace System.Net.Http
     {
         private readonly HttpConnectionPool _pool;
         private readonly Stream _stream;
+        private readonly Connection _connection;
 
         // NOTE: These are mutable structs; do not make these readonly.
         private ArrayBuffer _incomingBuffer;
@@ -94,10 +96,11 @@ namespace System.Net.Http
         // Channel options for creating _writeChannel
         private static readonly UnboundedChannelOptions s_channelOptions = new UnboundedChannelOptions() { SingleReader = true };
 
-        public Http2Connection(HttpConnectionPool pool, Stream stream)
+        public Http2Connection(HttpConnectionPool pool, Connection connection)
         {
             _pool = pool;
-            _stream = stream;
+            _stream = connection.Stream;
+            _connection = connection;
             _incomingBuffer = new ArrayBuffer(InitialConnectionBufferSize);
             _outgoingBuffer = new ArrayBuffer(InitialConnectionBufferSize);
 
@@ -116,7 +119,7 @@ namespace System.Net.Http
             _pendingWindowUpdate = 0;
             _idleSinceTickCount = Environment.TickCount64;
 
-            if (NetEventSource.Log.IsEnabled()) TraceConnection(stream);
+            if (NetEventSource.Log.IsEnabled()) TraceConnection(_stream);
         }
 
         private object SyncObject => _httpStreams;
@@ -971,12 +974,12 @@ namespace System.Net.Http
             headerBuffer.Commit(bytesWritten);
         }
 
-        private void WriteLiteralHeader(string name, ReadOnlySpan<string> values, ref ArrayBuffer headerBuffer)
+        private void WriteLiteralHeader(string name, ReadOnlySpan<string> values, Encoding? valueEncoding, ref ArrayBuffer headerBuffer)
         {
             if (NetEventSource.Log.IsEnabled()) Trace($"{nameof(name)}={name}, {nameof(values)}={string.Join(", ", values.ToArray())}");
 
             int bytesWritten;
-            while (!HPackEncoder.EncodeLiteralHeaderFieldWithoutIndexingNewName(name, values, HttpHeaderParser.DefaultSeparator, headerBuffer.AvailableSpan, out bytesWritten))
+            while (!HPackEncoder.EncodeLiteralHeaderFieldWithoutIndexingNewName(name, values, HttpHeaderParser.DefaultSeparator, valueEncoding, headerBuffer.AvailableSpan, out bytesWritten))
             {
                 headerBuffer.EnsureAvailableSpace(headerBuffer.AvailableLength + 1);
             }
@@ -984,12 +987,12 @@ namespace System.Net.Http
             headerBuffer.Commit(bytesWritten);
         }
 
-        private void WriteLiteralHeaderValues(ReadOnlySpan<string> values, string? separator, ref ArrayBuffer headerBuffer)
+        private void WriteLiteralHeaderValues(ReadOnlySpan<string> values, string? separator, Encoding? valueEncoding, ref ArrayBuffer headerBuffer)
         {
             if (NetEventSource.Log.IsEnabled()) Trace($"{nameof(values)}={string.Join(separator, values.ToArray())}");
 
             int bytesWritten;
-            while (!HPackEncoder.EncodeStringLiterals(values, separator, headerBuffer.AvailableSpan, out bytesWritten))
+            while (!HPackEncoder.EncodeStringLiterals(values, separator, valueEncoding, headerBuffer.AvailableSpan, out bytesWritten))
             {
                 headerBuffer.EnsureAvailableSpace(headerBuffer.AvailableLength + 1);
             }
@@ -997,12 +1000,12 @@ namespace System.Net.Http
             headerBuffer.Commit(bytesWritten);
         }
 
-        private void WriteLiteralHeaderValue(string value, ref ArrayBuffer headerBuffer)
+        private void WriteLiteralHeaderValue(string value, Encoding? valueEncoding, ref ArrayBuffer headerBuffer)
         {
             if (NetEventSource.Log.IsEnabled()) Trace($"{nameof(value)}={value}");
 
             int bytesWritten;
-            while (!HPackEncoder.EncodeStringLiteral(value, headerBuffer.AvailableSpan, out bytesWritten))
+            while (!HPackEncoder.EncodeStringLiteral(value, valueEncoding, headerBuffer.AvailableSpan, out bytesWritten))
             {
                 headerBuffer.EnsureAvailableSpace(headerBuffer.AvailableLength + 1);
             }
@@ -1023,7 +1026,7 @@ namespace System.Net.Http
             headerBuffer.Commit(bytes.Length);
         }
 
-        private void WriteHeaderCollection(HttpHeaders headers, ref ArrayBuffer headerBuffer)
+        private void WriteHeaderCollection(HttpRequestMessage request, HttpHeaders headers, ref ArrayBuffer headerBuffer)
         {
             if (NetEventSource.Log.IsEnabled()) Trace("");
 
@@ -1032,12 +1035,16 @@ namespace System.Net.Http
                 return;
             }
 
+            HeaderEncodingSelector<HttpRequestMessage>? encodingSelector = _pool.Settings._requestHeaderEncodingSelector;
+
             ref string[]? tmpHeaderValuesArray = ref t_headerValues;
             foreach (KeyValuePair<HeaderDescriptor, object> header in headers.HeaderStore)
             {
                 int headerValuesCount = HttpHeaders.GetValuesAsStrings(header.Key, header.Value, ref tmpHeaderValuesArray);
                 Debug.Assert(headerValuesCount > 0, "No values for header??");
                 ReadOnlySpan<string> headerValues = tmpHeaderValuesArray.AsSpan(0, headerValuesCount);
+
+                Encoding? valueEncoding = encodingSelector?.Invoke(header.Key.Name, request);
 
                 KnownHeader? knownHeader = header.Key.KnownHeader;
                 if (knownHeader != null)
@@ -1055,7 +1062,7 @@ namespace System.Net.Http
                                 if (string.Equals(value, "trailers", StringComparison.OrdinalIgnoreCase))
                                 {
                                     WriteBytes(knownHeader.Http2EncodedName, ref headerBuffer);
-                                    WriteLiteralHeaderValue(value, ref headerBuffer);
+                                    WriteLiteralHeaderValue(value, valueEncoding, ref headerBuffer);
                                     break;
                                 }
                             }
@@ -1078,13 +1085,13 @@ namespace System.Net.Http
                             }
                         }
 
-                        WriteLiteralHeaderValues(headerValues, separator, ref headerBuffer);
+                        WriteLiteralHeaderValues(headerValues, separator, valueEncoding, ref headerBuffer);
                     }
                 }
                 else
                 {
                     // The header is not known: fall back to just encoding the header name and value(s).
-                    WriteLiteralHeader(header.Key.Name, headerValues, ref headerBuffer);
+                    WriteLiteralHeader(header.Key.Name, headerValues, valueEncoding, ref headerBuffer);
                 }
             }
         }
@@ -1139,7 +1146,7 @@ namespace System.Net.Http
 
             if (request.HasHeaders)
             {
-                WriteHeaderCollection(request.Headers, ref headerBuffer);
+                WriteHeaderCollection(request, request.Headers, ref headerBuffer);
             }
 
             // Determine cookies to send.
@@ -1149,7 +1156,9 @@ namespace System.Net.Http
                 if (cookiesFromContainer != string.Empty)
                 {
                     WriteBytes(KnownHeaders.Cookie.Http2EncodedName, ref headerBuffer);
-                    WriteLiteralHeaderValue(cookiesFromContainer, ref headerBuffer);
+
+                    Encoding? cookieEncoding = _pool.Settings._requestHeaderEncodingSelector?.Invoke(KnownHeaders.Cookie.Name, request);
+                    WriteLiteralHeaderValue(cookiesFromContainer, cookieEncoding, ref headerBuffer);
                 }
             }
 
@@ -1160,12 +1169,12 @@ namespace System.Net.Http
                 if (normalizedMethod.MustHaveRequestBody)
                 {
                     WriteBytes(KnownHeaders.ContentLength.Http2EncodedName, ref headerBuffer);
-                    WriteLiteralHeaderValue("0", ref headerBuffer);
+                    WriteLiteralHeaderValue("0", valueEncoding: null, ref headerBuffer);
                 }
             }
             else
             {
-                WriteHeaderCollection(request.Content.Headers, ref headerBuffer);
+                WriteHeaderCollection(request, request.Content.Headers, ref headerBuffer);
             }
         }
 
@@ -1585,7 +1594,7 @@ namespace System.Net.Http
             }
 
             // Do shutdown.
-            _stream.Close();
+            _connection.Dispose();
 
             _connectionWindow.Dispose();
             _concurrentStreams.Dispose();
@@ -1747,7 +1756,8 @@ namespace System.Net.Http
                 if (requestBodyTask.IsCompleted ||
                     duplex == false ||
                     await Task.WhenAny(requestBodyTask, responseHeadersTask).ConfigureAwait(false) == requestBodyTask ||
-                    requestBodyTask.IsCompleted)
+                    requestBodyTask.IsCompleted ||
+                    http2Stream.SendRequestFinished)
                 {
                     // The sending of the request body completed before receiving all of the request headers (or we're
                     // ok waiting for the request body even if it hasn't completed, e.g. because we're not doing duplex).

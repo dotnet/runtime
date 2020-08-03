@@ -11,6 +11,8 @@ parameters:
   runtimeType: 'coreclr'
   pool: ''
   codeGenType: 'JIT'
+  projetFile: ''
+  runKind: ''
 
 ### Perf job
 
@@ -21,8 +23,8 @@ jobs:
 - template: run-performance-job.yml
   parameters:
     # Compute job name from template parameters
-    jobName: ${{ format('perfbuild_{0}{1}_{2}_{3}_{4}_{5}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig, parameters.runtimeType, parameters.codeGenType) }}
-    displayName: ${{ format('Performance {0}{1} {2} {3} {4} {5}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig, parameters.runtimeType, parameters.codeGenType) }}
+    jobName: ${{ format('perfbuild_{0}{1}_{2}_{3}_{4}_{5}_{6}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig, parameters.runtimeType, parameters.codeGenType, parameters.runKind) }}
+    displayName: ${{ format('Performance {0}{1} {2} {3} {4} {5} {6}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig, parameters.runtimeType, parameters.codeGenType, parameters.runKind) }}
     pool: ${{ parameters.pool }}
     buildConfig: ${{ parameters.buildConfig }}
     archType: ${{ parameters.archType }}
@@ -32,6 +34,8 @@ jobs:
     liveLibrariesBuildConfig: ${{ parameters.liveLibrariesBuildConfig }}
     runtimeType: ${{ parameters.runtimeType }}
     codeGenType: ${{ parameters.codeGenType }}
+    projectFile: ${{ parameters.projectFile }}
+    runKind: ${{ parameters.runKind }}
     # Test job depends on the corresponding build job
     dependsOn:
     - ${{ format('coreclr_{0}_product_build_{1}{2}_{3}_{4}', parameters.runtimeVariant, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}

@@ -154,7 +154,7 @@ namespace System.Net.Http.Functional.Tests
             Assert.Equal(version, rm.Version);
 
             Assert.NotNull(rm.Headers);
-            Assert.NotNull(rm.Properties);
+            Assert.NotNull(rm.Options);
         }
 
         [Fact]

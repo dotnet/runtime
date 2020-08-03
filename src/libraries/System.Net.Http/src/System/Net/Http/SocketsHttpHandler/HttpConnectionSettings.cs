@@ -2,7 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Net.Connections;
 using System.Net.Security;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace System.Net.Http
 {
@@ -43,6 +46,9 @@ namespace System.Net.Http
         internal TimeSpan _expect100ContinueTimeout = HttpHandlerDefaults.DefaultExpect100ContinueTimeout;
         internal TimeSpan _connectTimeout = HttpHandlerDefaults.DefaultConnectTimeout;
 
+        internal HeaderEncodingSelector<HttpRequestMessage>? _requestHeaderEncodingSelector;
+        internal HeaderEncodingSelector<HttpRequestMessage>? _responseHeaderEncodingSelector;
+
         internal Version _maxHttpVersion;
 
         internal bool _allowUnencryptedHttp2;
@@ -53,6 +59,9 @@ namespace System.Net.Http
         internal SslClientAuthenticationOptions? _sslOptions;
 
         internal bool _enableMultipleHttp2Connections;
+
+        internal ConnectionFactory? _connectionFactory;
+        internal Func<HttpRequestMessage, Connection, CancellationToken, ValueTask<Connection>>? _plaintextFilter;
 
         internal IDictionary<string, object?>? _properties;
 
@@ -104,7 +113,11 @@ namespace System.Net.Http
                 _useProxy = _useProxy,
                 _allowUnencryptedHttp2 = _allowUnencryptedHttp2,
                 _assumePrenegotiatedHttp3ForTesting = _assumePrenegotiatedHttp3ForTesting,
-                _enableMultipleHttp2Connections = _enableMultipleHttp2Connections
+                _requestHeaderEncodingSelector = _requestHeaderEncodingSelector,
+                _responseHeaderEncodingSelector = _responseHeaderEncodingSelector,
+                _enableMultipleHttp2Connections = _enableMultipleHttp2Connections,
+                _connectionFactory = _connectionFactory,
+                _plaintextFilter = _plaintextFilter
             };
         }
 
