@@ -229,6 +229,20 @@ __BuildOS=$os
 
 __msbuildonunsupportedplatform=0
 
+# Get the number of processors available to the scheduler
+# Other techniques such as `nproc` only get the number of
+# processors available to a single process.
+platform="$(uname)"
+if [[ "$platform" == "FreeBSD" ]]; then
+  __NumProc=$(sysctl hw.ncpu | awk '{ print $2+1 }')
+elif [[ "$platform" == "NetBSD" || "$platform" == "SunOS" ]]; then
+  __NumProc=$(($(getconf NPROCESSORS_ONLN)+1))
+elif [[ "$platform" == "Darwin" ]]; then
+  __NumProc=$(($(getconf _NPROCESSORS_ONLN)+1))
+else
+  __NumProc=$(nproc --all)
+fi
+
 while :; do
     if [[ "$#" -le 0 ]]; then
         break
@@ -394,20 +408,6 @@ while :; do
 
     shift
 done
-
-# Get the number of processors available to the scheduler
-# Other techniques such as `nproc` only get the number of
-# processors available to a single process.
-platform="$(uname)"
-if [[ "$platform" == "FreeBSD" ]]; then
-  __NumProc=$(sysctl hw.ncpu | awk '{ print $2+1 }')
-elif [[ "$platform" == "NetBSD" || "$platform" == "SunOS" ]]; then
-  __NumProc=$(($(getconf NPROCESSORS_ONLN)+1))
-elif [[ "$platform" == "Darwin" ]]; then
-  __NumProc=$(($(getconf _NPROCESSORS_ONLN)+1))
-else
-  __NumProc=$(nproc --all)
-fi
 
 __CommonMSBuildArgs="/p:TargetArchitecture=$__BuildArch /p:Configuration=$__BuildType /p:TargetOS=$__TargetOS /nodeReuse:false $__OfficialBuildIdArg $__SignTypeArg $__SkipRestoreArg"
 
