@@ -856,8 +856,8 @@ static_assert_no_msg(sizeof(READYTORUN_EXCEPTION_CLAUSE) == sizeof(CORCOMPILE_EX
 // ReadyToRunHFAElemType
 //
 static_assert_no_msg((int)READYTORUN_HFA_ELEMTYPE_None      == (int)CORINFO_HFA_ELEM_NONE);
-static_assert_no_msg((int)READYTORUN_HFA_ELEMTYPE_Float     == (int)CORINFO_HFA_ELEM_FLOAT);
-static_assert_no_msg((int)READYTORUN_HFA_ELEMTYPE_Double    == (int)CORINFO_HFA_ELEM_DOUBLE);
+static_assert_no_msg((int)READYTORUN_HFA_ELEMTYPE_Float32   == (int)CORINFO_HFA_ELEM_FLOAT);
+static_assert_no_msg((int)READYTORUN_HFA_ELEMTYPE_Float64   == (int)CORINFO_HFA_ELEM_DOUBLE);
 static_assert_no_msg((int)READYTORUN_HFA_ELEMTYPE_Vector64  == (int)CORINFO_HFA_ELEM_VECTOR64);
 static_assert_no_msg((int)READYTORUN_HFA_ELEMTYPE_Vector128 == (int)CORINFO_HFA_ELEM_VECTOR128);
 

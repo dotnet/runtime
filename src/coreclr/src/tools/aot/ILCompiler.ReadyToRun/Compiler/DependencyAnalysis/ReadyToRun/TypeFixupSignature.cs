@@ -83,8 +83,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             {
                 ReadyToRunHFAElemType hfaElementType = (defType.ValueTypeShapeCharacteristics & ValueTypeShapeCharacteristics.AggregateMask) switch
                 {
-                    ValueTypeShapeCharacteristics.Float32Aggregate => ReadyToRunHFAElemType.Float,
-                    ValueTypeShapeCharacteristics.Float64Aggregate => ReadyToRunHFAElemType.Double,
+                    ValueTypeShapeCharacteristics.Float32Aggregate => ReadyToRunHFAElemType.Float32,
+                    ValueTypeShapeCharacteristics.Float64Aggregate => ReadyToRunHFAElemType.Float64,
                     ValueTypeShapeCharacteristics.Vector64Aggregate => ReadyToRunHFAElemType.Vector64,
                     // See MethodTable::GetHFAType
                     ValueTypeShapeCharacteristics.Vector128Aggregate => ReadyToRunHFAElemType.Vector128,
