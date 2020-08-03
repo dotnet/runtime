@@ -41,10 +41,7 @@ namespace Microsoft.NET.HostModel.Bundle
             writer.Write(RelativePath);
         }
 
-        public override string ToString()
-        {
-            return string.Format($"{RelativePath} [{Type}] @{Offset} Sz={Size}");
-        }
+        public override string ToString() => $"{RelativePath} [{Type}] @{Offset} Sz={Size}";
     }
 }
 
