@@ -436,7 +436,6 @@ typedef unsigned char   regNumberSmall;
   #define FIRST_ARG_STACK_OFFS    (2*REGSIZE_BYTES)   // Caller's saved EBP and return address
 
   #define MAX_REG_ARG              2
-  #define MAX_FLOAT_REG_ARG        4
   
   #define MAX_FLOAT_REG_ARG        0
   #define REG_ARG_FIRST            REG_ECX
@@ -448,8 +447,6 @@ typedef unsigned char   regNumberSmall;
 
   extern const regNumber intArgRegs [MAX_REG_ARG];
   extern const regMaskTP intArgMasks[MAX_REG_ARG];
-  extern const regNumber fltArgRegs [MAX_FLOAT_REG_ARG];
-  extern const regMaskTP fltArgMasks[MAX_FLOAT_REG_ARG];
 
   #define RBM_ARG_0                RBM_ECX
   #define RBM_ARG_1                RBM_EDX

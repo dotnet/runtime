@@ -17,7 +17,5 @@ const Target::ArgOrder Target::g_tgtArgOrder = ARG_ORDER_L2R;
 
 const regNumber intArgRegs [] = {REG_ECX, REG_EDX};
 const regMaskTP intArgMasks[] = {RBM_ECX, RBM_EDX};
-const regNumber fltArgRegs [] = {REG_XMM0, REG_XMM1, REG_XMM2, REG_XMM3};
-const regMaskTP fltArgMasks[] = {RBM_XMM0, RBM_XMM1, RBM_XMM2, RBM_XMM3};
 
 #endif // TARGET_X86
