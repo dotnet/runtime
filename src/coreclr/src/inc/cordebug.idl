@@ -2361,7 +2361,7 @@ interface ICorDebugAppDomain4 : IUnknown
  * Assembly interface
  * An ICorDebugAssembly instance corresponds to a a managed assembly loaded
  * into a specific AppDomain in the CLR.  For assemblies shared between multiple
- * AppDomains (eg. mscorlib), there will be a separate ICorDebugAssembly instance
+ * AppDomains (eg. CoreLib), there will be a separate ICorDebugAssembly instance
  * per AppDomain in which it is used.
  * ------------------------------------------------------------------------- */
 [
@@ -5174,6 +5174,30 @@ interface ICorDebugModule3 : IUnknown
 }
 
 /*
+ * ICorDebugModule4 is a logical extension to ICorDebugModule.
+ */
+[
+    object,
+    local,
+    uuid(FF8B8EAF-25CD-4316-8859-84416DE4402E),
+    pointer_default(unique)
+]
+interface ICorDebugModule4 : IUnknown
+{
+    /*
+     * Query to see if the module is loaded into memory in mapped/hydrated format
+     *
+     * Arguments:
+     *     pIsMapped - BOOL to store mapping information. TRUE will represent mapped
+                      format while FALSE represents flat format.
+     * Return Value:
+     *     S_OK in successful case.
+     * Notes:
+     */
+    HRESULT IsMappedLayout([out] BOOL *pIsMapped);
+}
+
+/*
  * ICorDebugRuntimeUnwindableFrame is a specialized interface of ICorDebugFrame for unmanaged methods
  * which requires special knowledge to unwind.  They are not jitted code.  When the debugger sees this type
  * of frames, it should use ICorDebugStackWalk::Next() to unwind, but it should do inspection itself.
@@ -5196,7 +5220,7 @@ interface ICorDebugRuntimeUnwindableFrame : ICorDebugFrame
  * specific AppDomain.  Normally this is an executable or a DLL, but it may also be
  * some other file of a multi-module assembly.  There is an ICorDebugModule instance
  * for each AppDomain a module is loaded into, even in the case of shared modules like
- * mscorlib.
+ * CoreLib.
  */
 
 [

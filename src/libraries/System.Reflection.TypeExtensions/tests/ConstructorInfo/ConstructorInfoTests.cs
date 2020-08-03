@@ -42,7 +42,7 @@ namespace System.Reflection.Tests
         [MemberData(nameof(Invoke_TestData))]
         public void Invoke(Type[] constructorTypeParameters, object[] parameters)
         {
-            ConstructorInfo constructor = typeof(ConstructorInfoInvoke).GetConstructor(constructorTypeParameters);
+            ConstructorInfo constructor = TypeExtensions.GetConstructor(typeof(ConstructorInfoInvoke), constructorTypeParameters);
             object constructedObject = constructor.Invoke(parameters);
             Assert.NotNull(constructedObject);
         }
@@ -67,7 +67,7 @@ namespace System.Reflection.Tests
         [MemberData(nameof(Invoke_Invalid_TestData))]
         public void Invoke_Invalid(Type constructorParent, Type[] constructorTypeParameters, object[] parameters, Type exceptionType)
         {
-            ConstructorInfo constructor = constructorParent.GetConstructor(constructorTypeParameters);
+            ConstructorInfo constructor = TypeExtensions.GetConstructor(constructorParent, constructorTypeParameters);
             Assert.Throws(exceptionType, () => constructor.Invoke(parameters));
         }
 
@@ -82,7 +82,7 @@ namespace System.Reflection.Tests
         [InlineData(typeof(string), new Type[] { typeof(char), typeof(int) })]
         public void Properties(Type type, Type[] typeParameters)
         {
-            ConstructorInfo constructor = type.GetConstructor(typeParameters);
+            ConstructorInfo constructor = TypeExtensions.GetConstructor(type, typeParameters);
 
             Assert.Equal(type, constructor.DeclaringType);
             Assert.Equal(type.GetTypeInfo().Module, constructor.Module);

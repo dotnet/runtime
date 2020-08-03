@@ -11,6 +11,7 @@
 #include <mono/metadata/assembly.h>
 #include <mono/metadata/tokentype.h>
 #include <mono/metadata/threads.h>
+#include <mono/metadata/image.h>
 #include <mono/utils/mono-logger.h>
 #include <mono/utils/mono-dl-fallback.h>
 #include <mono/jit/jit.h>
@@ -107,20 +108,30 @@ mono_wasm_invoke_js (MonoString *str, int *is_exception)
 static void
 wasm_logger (const char *log_domain, const char *log_level, const char *message, mono_bool fatal, void *user_data)
 {
-	if (fatal) {
-		EM_ASM(
-			   var err = new Error();
-			   console.log ("Stacktrace: \n");
-			   console.log (err.stack);
-			   );
+	EM_ASM({
+		var message = $1;
+		if ($2)
+			console.trace (message);
 
-		fprintf (stderr, "%s\n", message);
-		fflush (stderr);
-
-		abort ();
-	} else {
-		fprintf (stdout, "L: %s\n", message);
-	}
+		switch ($0) {
+			case "critical":
+			case "error":
+				console.error (message);
+				break;
+			case "warning":
+				console.warn (message);
+				break;
+			case "message":
+				console.log (message);
+				break;
+			case "info":
+				console.info (message);
+				break;
+			case "debug":
+				console.debug (message);
+				break;
+		}
+	},log_level, message, fatal);
 }
 
 #ifdef DRIVER_GEN
@@ -137,7 +148,7 @@ struct WasmAssembly_ {
 static WasmAssembly *assemblies;
 static int assembly_count;
 
-EMSCRIPTEN_KEEPALIVE void
+EMSCRIPTEN_KEEPALIVE int
 mono_wasm_add_assembly (const char *name, const unsigned char *data, unsigned int size)
 {
 	int len = strlen (name);
@@ -146,7 +157,7 @@ mono_wasm_add_assembly (const char *name, const unsigned char *data, unsigned in
 		//FIXME handle debugging assemblies with .exe extension
 		strcpy (&new_name [len - 3], "dll");
 		mono_register_symfile_for_assembly (new_name, data, size);
-		return;
+		return 1;
 	}
 	WasmAssembly *entry = g_new0 (WasmAssembly, 1);
 	entry->assembly.name = strdup (name);
@@ -155,6 +166,7 @@ mono_wasm_add_assembly (const char *name, const unsigned char *data, unsigned in
 	entry->next = assemblies;
 	assemblies = entry;
 	++assembly_count;
+	return mono_has_pdb_checksum (data, size);
 }
 
 EMSCRIPTEN_KEEPALIVE void
@@ -370,7 +382,7 @@ mono_wasm_load_runtime (const char *unused, int enable_debugging)
 	mono_jit_set_aot_mode (MONO_AOT_MODE_LLVMONLY);
 #endif
 #else
-	mono_jit_set_aot_mode (MONO_AOT_MODE_INTERP_LLVMONLY);
+	mono_jit_set_aot_mode (MONO_AOT_MODE_INTERP_ONLY);
 	if (enable_debugging) {
 		// Disable optimizations which interfere with debugging
 		interp_opts = "-all";

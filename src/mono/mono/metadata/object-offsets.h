@@ -249,6 +249,9 @@ DECL_OFFSET(MonoLMF, ebp)
 DECL_OFFSET(MonoLMF, eip)
 DECL_OFFSET(MonoLMF, gregs)
 DECL_OFFSET(MonoLMF, fregs)
+#elif defined(TARGET_RISCV)
+DECL_OFFSET(MonoContext, gregs)
+DECL_OFFSET(MonoContext, fregs)
 #endif
 
 // Shared architecture offfsets

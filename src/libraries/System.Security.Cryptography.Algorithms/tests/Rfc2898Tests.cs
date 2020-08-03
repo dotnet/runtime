@@ -518,6 +518,7 @@ namespace System.Security.Cryptography.DeriveBytesTests
             {
                 CaseName = "SHA256 alternate",
                 HashAlgorithmName = "SHA256",
+                // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Unit test dummy credentials.")]
                 Password = "abcdefghij",
                 Salt = ascii.GetBytes("abcdefghij"),
                 IterationCount = 1,
@@ -532,6 +533,7 @@ namespace System.Security.Cryptography.DeriveBytesTests
             {
                 CaseName = "SHA384 alternate",
                 HashAlgorithmName = "SHA384",
+                // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Unit test dummy credentials.")]
                 Password = "abcdefghij",
                 Salt = ascii.GetBytes("abcdefghij"),
                 IterationCount = 1,
@@ -546,6 +548,7 @@ namespace System.Security.Cryptography.DeriveBytesTests
             {
                 CaseName = "SHA512 alternate",
                 HashAlgorithmName = "SHA512",
+                // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Unit test dummy credentials.")]
                 Password = "abcdefghij",
                 Salt = ascii.GetBytes("abcdefghij"),
                 IterationCount = 1,

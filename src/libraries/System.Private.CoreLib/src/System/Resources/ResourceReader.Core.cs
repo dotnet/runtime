@@ -78,11 +78,11 @@ namespace System.Resources
             // If BinaryFormatter support is disabled for the app, the linker will replace this entire
             // method body with "return false;", skipping all reflection code below.
 
-            LazyInitializer.EnsureInitialized(ref s_binaryFormatterType, () =>
+            LazyInitializer.EnsureInitialized(ref s_binaryFormatterType, static () =>
                 Type.GetType("System.Runtime.Serialization.Formatters.Binary.BinaryFormatter, System.Runtime.Serialization.Formatters, Version=0.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a",
                 throwOnError: true)!);
 
-            LazyInitializer.EnsureInitialized(ref s_deserializeMethod, () =>
+            LazyInitializer.EnsureInitialized(ref s_deserializeMethod, static () =>
             {
                 MethodInfo binaryFormatterDeserialize = s_binaryFormatterType!.GetMethod("Deserialize", new Type[] { typeof(Stream) })!;
 

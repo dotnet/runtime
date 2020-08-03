@@ -1,8 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#nullable enable
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Xml;
 using System.Xml.XPath;
 using System.Xml.Xsl;
@@ -12,7 +14,7 @@ namespace MS.Internal.Xml.XPath
     internal sealed class FunctionQuery : ExtensionQuery
     {
         private readonly IList<Query> _args;
-        private IXsltContextFunction _function;
+        private IXsltContextFunction? _function;
 
         public FunctionQuery(string prefix, string name, List<Query> args) : base(prefix, name)
         {
@@ -73,12 +75,18 @@ namespace MS.Internal.Xml.XPath
                 argVals[i] = _args[i].Evaluate(nodeIterator);
                 if (argVals[i] is XPathNodeIterator)
                 {// ForBack Compat. To protect our queries from users.
+                    Debug.Assert(nodeIterator.Current != null);
                     argVals[i] = new XPathSelectionIterator(nodeIterator.Current, _args[i]);
                 }
             }
             try
             {
-                return ProcessResult(_function.Invoke(xsltContext, argVals, nodeIterator.Current));
+                Debug.Assert(_function != null);
+                object? retVal = ProcessResult(_function.Invoke(xsltContext, argVals, nodeIterator.Current));
+
+                // ProcessResult may return null when the input value is XmlNode and here doesn't seem to be the case.
+                Debug.Assert(retVal != null);
+                return retVal;
             }
             catch (Exception ex)
             {
@@ -86,17 +94,17 @@ namespace MS.Internal.Xml.XPath
             }
         }
 
-        public override XPathNavigator MatchNode(XPathNavigator navigator)
+        public override XPathNavigator? MatchNode(XPathNavigator? navigator)
         {
             if (name != "key" && prefix.Length != 0)
             {
                 throw XPathException.Create(SR.Xp_InvalidPattern);
             }
-            this.Evaluate(new XPathSingletonIterator(navigator, /*moved:*/true));
-            XPathNavigator nav = null;
+            this.Evaluate(new XPathSingletonIterator(navigator!, /*moved:*/true));
+            XPathNavigator? nav = null;
             while ((nav = this.Advance()) != null)
             {
-                if (nav.IsSamePosition(navigator))
+                if (nav.IsSamePosition(navigator!))
                 {
                     return nav;
                 }

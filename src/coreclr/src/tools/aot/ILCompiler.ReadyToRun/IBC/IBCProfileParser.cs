@@ -113,7 +113,8 @@ namespace ILCompiler.IBC
                             }
                             else
                             {
-                                _logger.Writer.WriteLine($"Token {0:x} does not refer to a method");
+                                if (_logger.IsVerbose)
+                                    _logger.Writer.WriteLine($"Token {(int)entry.Token:x} does not refer to a method");
                             }
                             break;
 

@@ -23,10 +23,6 @@
     <Compile Include="SmtpDateTimeTest.cs" />
     <Compile Include="WriteStateInfoTest.cs" />
   </ItemGroup>
-  <!-- Do not reference these assemblies from the TargetingPack since we are building part of the source code for tests. -->
-  <ItemGroup>
-    <DefaultReferenceExclusions Include="System.Net.Mail" />
-  </ItemGroup>
   <ItemGroup>
     <Compile Include="..\..\src\System\Net\Base64Stream.cs"
              Link="ProductionCode\Base64Stream.cs" />
@@ -263,5 +259,10 @@
              Link="Common\Interop\Windows\SspiCli\SSPIWrapper.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Interop.UNICODE_STRING.cs"
              Link="Common\Interop\Windows\Interop.UNICODE_STRING.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- Do not reference these assemblies from the TargetingPack since we are building part of the source code for tests. -->
+    <DefaultReferenceExclusion Include="System.Net.Mail" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Principal.Windows\src\System.Security.Principal.Windows.csproj" />
   </ItemGroup>
 </Project>

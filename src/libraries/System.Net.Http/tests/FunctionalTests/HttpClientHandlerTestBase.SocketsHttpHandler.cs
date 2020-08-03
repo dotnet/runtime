@@ -45,5 +45,11 @@ namespace System.Net.Http.Functional.Tests
             FieldInfo field = typeof(HttpClientHandler).GetField("_underlyingHandler", BindingFlags.Instance | BindingFlags.NonPublic);
             return field?.GetValue(handler);
         }
+
+        protected static HttpRequestMessage CreateRequest(HttpMethod method, Uri uri, Version version, bool exactVersion = false) =>
+            new HttpRequestMessage(method, uri)
+            {
+                Version = version,
+            };
     }
 }

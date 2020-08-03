@@ -15,7 +15,7 @@ namespace System.Reflection.Tests
         [InlineData(typeof(StringImpersonator), nameof(StringImpersonator.IsNullOrEmpty))]
         public void Properties(Type type, string name)
         {
-            MethodInfo method = Helpers.GetMethod(type, name);
+            MethodInfo method = TypeExtensions.GetMethod(type, name, Helpers.AllFlags);
             Assert.Equal(type, method.DeclaringType);
             Assert.Equal(type.GetTypeInfo().Module, method.Module);
 
@@ -44,7 +44,7 @@ namespace System.Reflection.Tests
         [InlineData(typeof(MI_ClassWithInterface), nameof(MI_ClassWithInterface.MethodA), new Type[0], typeof(MI_ClassWithInterface))]
         public void GetBaseDefinition(Type type, string name, Type[] typeArguments, Type declaringType)
         {
-            MethodInfo method = type.GetMethod(name, typeArguments);
+            MethodInfo method = TypeExtensions.GetMethod(type, name, typeArguments);
             MethodInfo baseDefinition = method.GetBaseDefinition();
 
             Assert.Equal(name, baseDefinition.Name);
@@ -69,7 +69,7 @@ namespace System.Reflection.Tests
         [MemberData(nameof(GetGenericArguments_TestData))]
         public void GetGenericArguments(Type type, string name, string[] argumentNames)
         {
-            MethodInfo method = Helpers.GetMethod(type, name);
+            MethodInfo method = TypeExtensions.GetMethod(type, name, Helpers.AllFlags);
             Type[] arguments = method.GetGenericArguments();
             Assert.Equal(argumentNames.Length, arguments.Length);
             Assert.Equal(argumentNames, arguments.Select(argumentType => argumentType.Name));
@@ -78,7 +78,7 @@ namespace System.Reflection.Tests
         [Fact]
         public void Invoke_StringArgument_ReturnsString()
         {
-            MethodInfo method = typeof(MI_NonGenericClass).GetMethod(nameof(MI_NonGenericClass.MethodA), new Type[] { typeof(string) });
+            MethodInfo method = TypeExtensions.GetMethod(typeof(MI_NonGenericClass), nameof(MI_NonGenericClass.MethodA), new Type[] { typeof(string) });
             Assert.Equal("test string", method.Invoke(new MI_NonGenericClass(), new object[] { "test string" }));
         }
     }

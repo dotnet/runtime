@@ -6,7 +6,7 @@
   </PropertyGroup>
   <!-- Do not reference these assemblies from the TargetingPack since we are building part of the source code for tests. -->
   <ItemGroup>
-    <DefaultReferenceExclusions Include="System.Configuration" />
+    <DefaultReferenceExclusion Include="System.Configuration" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="$(CommonTestPath)System\Net\Capability.Security.cs"

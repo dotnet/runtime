@@ -3,8 +3,10 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Net.Quic;
 using System.Net.Security;
+using System.Net.Sockets;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
 
@@ -56,11 +58,7 @@ namespace System.Net.Test.Common
         public override async Task<HttpRequestData> HandleRequestAsync(HttpStatusCode statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null, string content = "")
         {
             using var con = (Http3LoopbackConnection)await EstablishGenericConnectionAsync().ConfigureAwait(false);
-
-            HttpRequestData request = await con.ReadRequestDataAsync().ConfigureAwait(false);
-            await con.SendResponseAsync(statusCode, headers, content).ConfigureAwait(false);
-            await con.CloseAsync(Http3LoopbackConnection.H3_NO_ERROR);
-            return request;
+            return await con.HandleRequestAsync(statusCode, headers, content).ConfigureAwait(false);
         }
     }
 
@@ -79,6 +77,13 @@ namespace System.Net.Test.Common
         {
             using GenericLoopbackServer server = CreateServer(options);
             await funcAsync(server, server.Address).TimeoutAfter(millisecondsTimeout).ConfigureAwait(false);
+        }
+
+        public override Task<GenericLoopbackConnection> CreateConnectionAsync(Socket socket, Stream stream, GenericLoopbackOptions options = null)
+        {
+            // TODO: make a new overload that takes a MultiplexedConnection.
+            // This method is always unacceptable to call for HTTP/3.
+            throw new NotImplementedException("HTTP/3 does not operate over a Socket.");
         }
     }
 }

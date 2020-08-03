@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 using System.Text;
 using Internal.Runtime.CompilerServices;
 
@@ -121,7 +122,7 @@ namespace System.Globalization
             Debug.Assert(!GlobalizationMode.Invariant);
 
             return Interop.CallStringMethod(
-                (buffer, locale, id, type) =>
+                static (buffer, locale, id, type) =>
                 {
                     fixed (char* bufferPtr = buffer)
                     {
@@ -422,24 +423,12 @@ namespace System.Globalization
             return result;
         }
 
-#if !TARGET_BROWSER
         private static unsafe bool EnumCalendarInfo(string localeName, CalendarId calendarId, CalendarDataType dataType, ref IcuEnumCalendarsData callbackContext)
         {
-            return Interop.Globalization.EnumCalendarInfo(EnumCalendarInfoCallback, localeName, calendarId, dataType, (IntPtr)Unsafe.AsPointer(ref callbackContext));
-        }
-#else
-        private static unsafe bool EnumCalendarInfo(string localeName, CalendarId calendarId, CalendarDataType dataType, ref IcuEnumCalendarsData callbackContext)
-        {
-            // Temp workaround for pinvoke callbacks for Mono-Wasm-Interpreter
-            // https://github.com/dotnet/runtime/issues/39100
-            var calendarInfoCallback = new Interop.Globalization.EnumCalendarInfoCallback(EnumCalendarInfoCallback);
-            return Interop.Globalization.EnumCalendarInfo(
-                System.Runtime.InteropServices.Marshal.GetFunctionPointerForDelegate(calendarInfoCallback),
-                localeName, calendarId, dataType, (IntPtr)Unsafe.AsPointer(ref callbackContext));
+            return Interop.Globalization.EnumCalendarInfo(&EnumCalendarInfoCallback, localeName, calendarId, dataType, (IntPtr)Unsafe.AsPointer(ref callbackContext));
         }
 
-        [Mono.MonoPInvokeCallback(typeof(Interop.Globalization.EnumCalendarInfoCallback))]
-#endif
+        [UnmanagedCallersOnly]
         private static unsafe void EnumCalendarInfoCallback(char* calendarStringPtr, IntPtr context)
         {
             try

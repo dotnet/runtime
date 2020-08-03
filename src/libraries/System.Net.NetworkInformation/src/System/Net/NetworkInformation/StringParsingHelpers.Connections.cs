@@ -325,22 +325,13 @@ namespace System.Net.NetworkInformation
 
         private static byte HexToByte(char val)
         {
-            if (val <= '9' && val >= '0')
-            {
-                return (byte)(val - '0');
-            }
-            else if (val >= 'a' && val <= 'f')
-            {
-                return (byte)((val - 'a') + 10);
-            }
-            else if (val >= 'A' && val <= 'F')
-            {
-                return (byte)((val - 'A') + 10);
-            }
-            else
+            int result = HexConverter.FromChar(val);
+            if (result == 0xFF)
             {
                 throw ExceptionHelper.CreateForParseFailure();
             }
+
+            return (byte)result;
         }
     }
 }

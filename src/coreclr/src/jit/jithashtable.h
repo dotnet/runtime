@@ -57,10 +57,10 @@ public:
 class JitPrimeInfo
 {
 public:
-    JitPrimeInfo() : prime(0), magic(0), shift(0)
+    constexpr JitPrimeInfo() : prime(0), magic(0), shift(0)
     {
     }
-    JitPrimeInfo(unsigned p, unsigned m, unsigned s) : prime(p), magic(m), shift(s)
+    constexpr JitPrimeInfo(unsigned p, unsigned m, unsigned s) : prime(p), magic(m), shift(s)
     {
     }
     unsigned prime;
@@ -92,7 +92,7 @@ public:
 // 32-bit magic numbers, (because the algorithm for using 33-bit magic numbers is slightly slower).
 
 // clang-format off
-SELECTANY const JitPrimeInfo jitPrimeInfo[]
+constexpr JitPrimeInfo jitPrimeInfo[]
 {
     JitPrimeInfo(9,         0x38e38e39, 1),
     JitPrimeInfo(23,        0xb21642c9, 4),

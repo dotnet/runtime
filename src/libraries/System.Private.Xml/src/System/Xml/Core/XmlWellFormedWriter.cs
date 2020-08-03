@@ -1343,7 +1343,7 @@ namespace System.Xml
             }
         }
 
-        public override string XmlLang
+        public override string? XmlLang
         {
             get
             {
