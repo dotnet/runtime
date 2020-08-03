@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //
 // ZapReadyToRun.cpp
 //
@@ -742,7 +741,7 @@ void ZapImage::OutputAttributePresenceFilter(IMDInternalImport * pMDImport)
     // present. Other assemblies *MAY* benefit from this feature, but it doesn't show
     // as useful at this time.
 
-    if (m_hModule != m_zapper->m_pEECompileInfo->GetLoaderModuleForMscorlib())
+    if (m_hModule != m_zapper->m_pEECompileInfo->GetLoaderModuleForCoreLib())
         return;
 
     SArray<UINT16> table;

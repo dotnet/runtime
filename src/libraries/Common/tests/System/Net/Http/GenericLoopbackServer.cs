@@ -1,12 +1,13 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Security.Authentication;
+using System.IO;
+using System.Net.Sockets;
 
 namespace System.Net.Test.Common
 {
@@ -17,6 +18,8 @@ namespace System.Net.Test.Common
     {
         public abstract GenericLoopbackServer CreateServer(GenericLoopbackOptions options = null);
         public abstract Task CreateServerAsync(Func<GenericLoopbackServer, Uri, Task> funcAsync, int millisecondsTimeout = 60_000, GenericLoopbackOptions options = null);
+
+        public abstract Task<GenericLoopbackConnection> CreateConnectionAsync(Socket socket, Stream stream, GenericLoopbackOptions options = null);
 
         public abstract Version Version { get; }
 
@@ -58,6 +61,8 @@ namespace System.Net.Test.Common
     public abstract class GenericLoopbackConnection : IDisposable
     {
         public abstract void Dispose();
+
+        public abstract Task InitializeConnectionAsync();
 
         /// <summary>Read request Headers and optionally request body as well.</summary>
         public abstract Task<HttpRequestData> ReadRequestDataAsync(bool readBody = true);
@@ -101,13 +106,15 @@ namespace System.Net.Test.Common
         public string Value { get; }
         public bool HuffmanEncoded { get; }
         public byte[] Raw { get; }
+        public Encoding ValueEncoding { get; }
 
-        public HttpHeaderData(string name, string value, bool huffmanEncoded = false, byte[] raw = null)
+        public HttpHeaderData(string name, string value, bool huffmanEncoded = false, byte[] raw = null, Encoding valueEncoding = null)
         {
             Name = name;
             Value = value;
             HuffmanEncoded = huffmanEncoded;
             Raw = raw;
+            ValueEncoding = valueEncoding;
         }
 
         public override string ToString() => Name == null ? "<empty>" : (Name + ": " + (Value ?? string.Empty));
@@ -124,6 +131,36 @@ namespace System.Net.Test.Common
         public HttpRequestData()
         {
             Headers = new List<HttpHeaderData>();
+        }
+
+        public static async Task<HttpRequestData> FromHttpRequestMessageAsync(System.Net.Http.HttpRequestMessage request)
+        {
+            var result = new HttpRequestData();
+            result.Method = request.Method.ToString();
+            result.Path = request.RequestUri?.AbsolutePath;
+
+            foreach (var header in request.Headers)
+            {
+                foreach (var value in header.Value)
+                {
+                    result.Headers.Add(new HttpHeaderData(header.Key, value));
+                }
+            }
+
+            if (request.Content != null)
+            {
+                result.Body = await request.Content.ReadAsByteArrayAsync().ConfigureAwait(false);
+
+                foreach (var header in request.Content.Headers)
+                {
+                    foreach (var value in header.Value)
+                    {
+                        result.Headers.Add(new HttpHeaderData(header.Key, value));
+                    }
+                }
+            }
+
+            return result;
         }
 
         public string[] GetHeaderValues(string headerName)

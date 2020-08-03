@@ -1,11 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
+using System.Runtime.Intrinsics.Arm;
 using System.Runtime.Intrinsics.X86;
 
 #if SYSTEM_PRIVATE_CORELIB
@@ -1003,6 +1003,16 @@ namespace System.Text
                 Vector128<uint> vecNarrow = Sse2.PackUnsignedSaturate(vecWide, vecWide).AsUInt32();
                 Unsafe.WriteUnaligned<uint>(ref outputBuffer, Sse2.ConvertToUInt32(vecNarrow));
             }
+            else if (AdvSimd.IsSupported)
+            {
+                // Narrows a vector of words [ w0 w1 w2 w3 ] to a vector of bytes
+                // [ b0 b1 b2 b3 * * * * ], then writes 4 bytes (32 bits) to the destination.
+
+                Vector128<short> vecWide = Vector128.CreateScalarUnsafe(value).AsInt16();
+                Vector64<byte> lower = AdvSimd.ExtractNarrowingSaturateUnsignedLower(vecWide);
+                Unsafe.WriteUnaligned<uint>(ref outputBuffer, lower.AsUInt32().ToScalar());
+            }
+
             else
             {
                 if (BitConverter.IsLittleEndian)
@@ -1460,6 +1470,7 @@ namespace System.Text
         /// </summary>
         public static unsafe nuint WidenAsciiToUtf16(byte* pAsciiBuffer, char* pUtf16Buffer, nuint elementCount)
         {
+            // Intrinsified in mono interpreter
             nuint currentOffset = 0;
 
             // If SSE2 is supported, use those specific intrinsics instead of the generic vectorized
@@ -1700,6 +1711,12 @@ namespace System.Text
                 Vector128<byte> vecNarrow = Sse2.ConvertScalarToVector128UInt32(value).AsByte();
                 Vector128<ulong> vecWide = Sse2.UnpackLow(vecNarrow, Vector128<byte>.Zero).AsUInt64();
                 Unsafe.WriteUnaligned<ulong>(ref Unsafe.As<char, byte>(ref outputBuffer), Sse2.X64.ConvertToUInt64(vecWide));
+            }
+            else if (AdvSimd.Arm64.IsSupported)
+            {
+                Vector128<byte> vecNarrow = AdvSimd.DuplicateToVector128(value).AsByte();
+                Vector128<ulong> vecWide = AdvSimd.Arm64.ZipLow(vecNarrow, Vector128<byte>.Zero).AsUInt64();
+                Unsafe.WriteUnaligned<ulong>(ref Unsafe.As<char, byte>(ref outputBuffer), vecWide.ToScalar());
             }
             else
             {

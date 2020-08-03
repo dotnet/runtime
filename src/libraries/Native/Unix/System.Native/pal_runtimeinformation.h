@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #pragma once
 
@@ -22,5 +21,6 @@ enum
     ARCH_X86,
     ARCH_X64,
     ARCH_ARM,
-    ARCH_ARM64
+    ARCH_ARM64,
+    ARCH_WASM
 };

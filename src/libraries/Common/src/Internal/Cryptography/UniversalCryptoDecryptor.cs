@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #nullable enable
 using System;
@@ -24,7 +23,7 @@ namespace Internal.Cryptography
         {
         }
 
-        protected sealed override int UncheckedTransformBlock(byte[] inputBuffer, int inputOffset, int inputCount, byte[] outputBuffer, int outputOffset)
+        protected override int UncheckedTransformBlock(ReadOnlySpan<byte> inputBuffer, Span<byte> outputBuffer)
         {
             //
             // If we're decrypting, it's possible to be called with the last blocks of the data, and then
@@ -42,8 +41,8 @@ namespace Internal.Cryptography
                 // If we have data saved from a previous call, decrypt that into the output first
                 if (_heldoverCipher != null)
                 {
-                    int depadDecryptLength = BasicSymmetricCipher.Transform(_heldoverCipher, 0, _heldoverCipher.Length, outputBuffer, outputOffset);
-                    outputOffset += depadDecryptLength;
+                    int depadDecryptLength = BasicSymmetricCipher.Transform(_heldoverCipher, outputBuffer);
+                    outputBuffer = outputBuffer.Slice(depadDecryptLength);
                     decryptedBytes += depadDecryptLength;
                 }
                 else
@@ -52,25 +51,24 @@ namespace Internal.Cryptography
                 }
 
                 // Postpone the last block to the next round.
-                Debug.Assert(inputCount >= _heldoverCipher.Length, "inputCount >= _heldoverCipher.Length");
-                int startOfLastBlock = inputOffset + inputCount - _heldoverCipher.Length;
-                Buffer.BlockCopy(inputBuffer, startOfLastBlock, _heldoverCipher, 0, _heldoverCipher.Length);
-                inputCount -= _heldoverCipher.Length;
-                Debug.Assert(inputCount % InputBlockSize == 0, "Did not remove whole blocks for depadding");
+                Debug.Assert(inputBuffer.Length >= _heldoverCipher.Length, "inputBuffer.Length >= _heldoverCipher.Length");
+                inputBuffer.Slice(inputBuffer.Length - _heldoverCipher.Length).CopyTo(_heldoverCipher);
+                inputBuffer = inputBuffer.Slice(0, inputBuffer.Length - _heldoverCipher.Length);
+                Debug.Assert(inputBuffer.Length % InputBlockSize == 0, "Did not remove whole blocks for depadding");
             }
 
-            if (inputCount > 0)
+            if (inputBuffer.Length > 0)
             {
-                decryptedBytes += BasicSymmetricCipher.Transform(inputBuffer, inputOffset, inputCount, outputBuffer, outputOffset);
+                decryptedBytes += BasicSymmetricCipher.Transform(inputBuffer, outputBuffer);
             }
 
             return decryptedBytes;
         }
 
-        protected sealed override byte[] UncheckedTransformFinalBlock(byte[] inputBuffer, int inputOffset, int inputCount)
+        protected override unsafe int UncheckedTransformFinalBlock(ReadOnlySpan<byte> inputBuffer, Span<byte> outputBuffer)
         {
             // We can't complete decryption on a partial block
-            if (inputCount % InputBlockSize != 0)
+            if (inputBuffer.Length % InputBlockSize != 0)
                 throw new CryptographicException(SR.Cryptography_PartialBlock);
 
             //
@@ -78,46 +76,91 @@ namespace Internal.Cryptography
             // Otherwise the decryption buffer is just the input data.
             //
 
-            byte[]? ciphertext = null;
+            ReadOnlySpan<byte> inputCiphertext;
+            Span<byte> ciphertext;
+            byte[]? rentedCiphertext = null;
+            int rentedCiphertextSize = 0;
 
-            if (_heldoverCipher == null)
+            try
             {
-                ciphertext = new byte[inputCount];
-                Buffer.BlockCopy(inputBuffer, inputOffset, ciphertext, 0, inputCount);
-            }
-            else
-            {
-                ciphertext = new byte[_heldoverCipher.Length + inputCount];
-                Buffer.BlockCopy(_heldoverCipher, 0, ciphertext, 0, _heldoverCipher.Length);
-                Buffer.BlockCopy(inputBuffer, inputOffset, ciphertext, _heldoverCipher.Length, inputCount);
-            }
-
-            // Decrypt the data, then strip the padding to get the final decrypted data. Note that even if the cipherText length is 0, we must
-            // invoke TransformFinal() so that the cipher object knows to reset for the next cipher operation.
-            byte[] decryptedBytes = BasicSymmetricCipher.TransformFinal(ciphertext, 0, ciphertext.Length);
-            byte[] outputData;
-            if (ciphertext.Length > 0)
-            {
-                unsafe
+                if (_heldoverCipher == null)
                 {
-                    fixed (byte* decryptedBytesPtr = decryptedBytes)
-                    {
-                        outputData = DepadBlock(decryptedBytes, 0, decryptedBytes.Length);
+                    rentedCiphertextSize = inputBuffer.Length;
+                    rentedCiphertext = CryptoPool.Rent(inputBuffer.Length);
+                    ciphertext = rentedCiphertext.AsSpan(0, inputBuffer.Length);
+                    inputCiphertext = inputBuffer;
+                }
+                else
+                {
+                    rentedCiphertextSize = _heldoverCipher.Length + inputBuffer.Length;
+                    rentedCiphertext = CryptoPool.Rent(rentedCiphertextSize);
+                    ciphertext = rentedCiphertext.AsSpan(0, rentedCiphertextSize);
+                    _heldoverCipher.AsSpan().CopyTo(ciphertext);
+                    inputBuffer.CopyTo(ciphertext.Slice(_heldoverCipher.Length));
 
-                        if (outputData != decryptedBytes)
-                        {
-                            CryptographicOperations.ZeroMemory(decryptedBytes);
-                        }
+                    // Decrypt in-place
+                    inputCiphertext = ciphertext;
+                }
+
+                int unpaddedLength = 0;
+
+                fixed (byte* pCiphertext = ciphertext)
+                {
+                    // Decrypt the data, then strip the padding to get the final decrypted data. Note that even if the cipherText length is 0, we must
+                    // invoke TransformFinal() so that the cipher object knows to reset for the next cipher operation.
+                    int decryptWritten = BasicSymmetricCipher.TransformFinal(inputCiphertext, ciphertext);
+                    Span<byte> decryptedBytes = ciphertext.Slice(0, decryptWritten);
+
+                    if (decryptedBytes.Length > 0)
+                    {
+                        unpaddedLength = GetPaddingLength(decryptedBytes);
+                        decryptedBytes.Slice(0, unpaddedLength).CopyTo(outputBuffer);
+                    }
+                }
+
+                Reset();
+                return unpaddedLength;
+            }
+            finally
+            {
+                if (rentedCiphertext != null)
+                {
+                    CryptoPool.Return(rentedCiphertext, clearSize: rentedCiphertextSize);
+                }
+            }
+        }
+
+        protected override unsafe byte[] UncheckedTransformFinalBlock(byte[] inputBuffer, int inputOffset, int inputCount)
+        {
+            if (DepaddingRequired)
+            {
+                byte[] rented = CryptoPool.Rent(inputCount + InputBlockSize);
+                int written = 0;
+
+                fixed (byte* pRented = rented)
+                {
+                    try
+                    {
+                        written = UncheckedTransformFinalBlock(inputBuffer.AsSpan(inputOffset, inputCount), rented);
+                        return rented.AsSpan(0, written).ToArray();
+                    }
+                    finally
+                    {
+                        CryptoPool.Return(rented, clearSize: written);
                     }
                 }
             }
             else
             {
-                outputData = Array.Empty<byte>();
+#if NETSTANDARD || NETFRAMEWORK || NETCOREAPP3_0
+                byte[] buffer = new byte[inputCount];
+#else
+                byte[] buffer = GC.AllocateUninitializedArray<byte>(inputCount);
+#endif
+                int written = UncheckedTransformFinalBlock(inputBuffer.AsSpan(inputOffset, inputCount), buffer);
+                Debug.Assert(written == buffer.Length);
+                return buffer;
             }
-
-            Reset();
-            return outputData;
         }
 
         protected sealed override void Dispose(bool disposing)
@@ -166,21 +209,18 @@ namespace Internal.Cryptography
         }
 
         /// <summary>
-        ///     Remove the padding from the last blocks being decrypted
+        ///     Gets the length of the padding applied to the block, and validates
+        ///     the padding, if possible.
         /// </summary>
-        private byte[] DepadBlock(byte[] block, int offset, int count)
+        private int GetPaddingLength(ReadOnlySpan<byte> block)
         {
-            Debug.Assert(block != null && count >= block.Length - offset);
-            Debug.Assert(0 <= offset);
-            Debug.Assert(0 <= count);
-
             int padBytes = 0;
 
             // See PadBlock for a description of the padding modes.
             switch (PaddingMode)
             {
                 case PaddingMode.ANSIX923:
-                    padBytes = block[offset + count - 1];
+                    padBytes = block[^1];
 
                     // Verify the amount of padding is reasonable
                     if (padBytes <= 0 || padBytes > InputBlockSize)
@@ -189,7 +229,7 @@ namespace Internal.Cryptography
                     }
 
                     // Verify that all the padding bytes are 0s
-                    for (int i = offset + count - padBytes; i < offset + count - 1; i++)
+                    for (int i = block.Length - padBytes; i < block.Length - 1; i++)
                     {
                         if (block[i] != 0)
                         {
@@ -200,7 +240,7 @@ namespace Internal.Cryptography
                     break;
 
                 case PaddingMode.ISO10126:
-                    padBytes = block[offset + count - 1];
+                    padBytes = block[^1];
 
                     // Verify the amount of padding is reasonable
                     if (padBytes <= 0 || padBytes > InputBlockSize)
@@ -212,14 +252,14 @@ namespace Internal.Cryptography
                     break;
 
                 case PaddingMode.PKCS7:
-                    padBytes = block[offset + count - 1];
+                    padBytes = block[^1];
 
                     // Verify the amount of padding is reasonable
                     if (padBytes <= 0 || padBytes > InputBlockSize)
                         throw new CryptographicException(SR.Cryptography_InvalidPadding);
 
                     // Verify all the padding bytes match the amount of padding
-                    for (int i = offset + count - padBytes; i < offset + count; i++)
+                    for (int i = block.Length - padBytes; i < block.Length - 1; i++)
                     {
                         if (block[i] != padBytes)
                             throw new CryptographicException(SR.Cryptography_InvalidPadding);
@@ -238,10 +278,7 @@ namespace Internal.Cryptography
                     throw new CryptographicException(SR.Cryptography_UnknownPaddingMode);
             }
 
-            // Copy everything but the padding to the output
-            byte[] depadded = new byte[count - padBytes];
-            Buffer.BlockCopy(block, offset, depadded, 0, depadded.Length);
-            return depadded;
+            return block.Length - padBytes;
         }
 
         //

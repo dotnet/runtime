@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -320,11 +319,11 @@ int LinearScan::BuildNode(GenTree* tree)
 
         case GT_INTRINSIC:
         {
-            noway_assert((tree->AsIntrinsic()->gtIntrinsicId == CORINFO_INTRINSIC_Abs) ||
-                         (tree->AsIntrinsic()->gtIntrinsicId == CORINFO_INTRINSIC_Ceiling) ||
-                         (tree->AsIntrinsic()->gtIntrinsicId == CORINFO_INTRINSIC_Floor) ||
-                         (tree->AsIntrinsic()->gtIntrinsicId == CORINFO_INTRINSIC_Round) ||
-                         (tree->AsIntrinsic()->gtIntrinsicId == CORINFO_INTRINSIC_Sqrt));
+            noway_assert((tree->AsIntrinsic()->gtIntrinsicName == NI_System_Math_Abs) ||
+                         (tree->AsIntrinsic()->gtIntrinsicName == NI_System_Math_Ceiling) ||
+                         (tree->AsIntrinsic()->gtIntrinsicName == NI_System_Math_Floor) ||
+                         (tree->AsIntrinsic()->gtIntrinsicName == NI_System_Math_Round) ||
+                         (tree->AsIntrinsic()->gtIntrinsicName == NI_System_Math_Sqrt));
 
             // Both operand and its result must be of the same floating point type.
             GenTree* op1 = tree->gtGetOp1();
@@ -841,10 +840,7 @@ int LinearScan::BuildSIMD(GenTreeSIMD* simdTree)
         }
         break;
 
-        case SIMDIntrinsicAdd:
         case SIMDIntrinsicSub:
-        case SIMDIntrinsicMul:
-        case SIMDIntrinsicDiv:
         case SIMDIntrinsicBitwiseAnd:
         case SIMDIntrinsicBitwiseOr:
         case SIMDIntrinsicEqual:
@@ -896,19 +892,11 @@ int LinearScan::BuildSIMD(GenTreeSIMD* simdTree)
             // We have an array and an index, which may be contained.
             break;
 
-        case SIMDIntrinsicDotProduct:
-            buildInternalFloatRegisterDefForNode(simdTree);
-            break;
-
         case SIMDIntrinsicInitArrayX:
         case SIMDIntrinsicInitFixed:
         case SIMDIntrinsicCopyToArray:
         case SIMDIntrinsicCopyToArrayX:
         case SIMDIntrinsicNone:
-        case SIMDIntrinsicGetCount:
-        case SIMDIntrinsicGetOne:
-        case SIMDIntrinsicGetZero:
-        case SIMDIntrinsicGetAllOnes:
         case SIMDIntrinsicGetX:
         case SIMDIntrinsicGetY:
         case SIMDIntrinsicGetZ:
@@ -1025,6 +1013,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree)
                     case NI_AdvSimd_DuplicateSelectedScalarToVector128:
                     case NI_AdvSimd_Extract:
                     case NI_AdvSimd_Insert:
+                    case NI_AdvSimd_InsertScalar:
                     case NI_AdvSimd_LoadAndInsertScalar:
                     case NI_AdvSimd_Arm64_DuplicateSelectedScalarToVector128:
                         needBranchTargetReg = !intrin.op2->isContainedIntOrIImmed();

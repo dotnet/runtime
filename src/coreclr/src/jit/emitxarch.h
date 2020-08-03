@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #if defined(TARGET_XARCH)
 
@@ -96,6 +95,8 @@ bool EncodedBySSE38orSSE3A(instruction ins);
 bool Is4ByteSSEInstruction(instruction ins);
 
 bool AreUpper32BitsZero(regNumber reg);
+
+bool AreFlagsSetToZeroCmp(regNumber reg, emitAttr opSize, bool needsOCFlags);
 
 bool hasRexPrefix(code_t code)
 {

@@ -1,14 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  <!-- TODO: Add net472 configuration after OOB package bug is fixed: https://github.com/dotnet/runtime/issues/23497 -->
   <PropertyGroup>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
   </PropertyGroup>
-  <ItemGroup>
-    <!-- Some internal types are needed, so we reference the implementation assembly, rather than the reference assembly. -->
-    <DefaultReferenceExclusions Include="System.ComponentModel.Composition" />
-    <ReferenceFromRuntime Include="System.ComponentModel.Composition" />
-  </ItemGroup>
   <ItemGroup>
     <Compile Include="$(CommonTestPath)System\IO\TempDirectory.cs"
              Link="Common\System\IO\TempDirectory.cs" />
@@ -171,10 +165,11 @@
     <Compile Include="System\UnitTesting\TestServices.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="System.ComponentModel.Composition.Noop.Assembly/System.ComponentModel.Composition.Noop.Assembly.csproj">
-      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
-      <OutputItemType>content</OutputItemType>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </ProjectReference>
+    <ProjectReference Include="System.ComponentModel.Composition.Noop.Assembly/System.ComponentModel.Composition.Noop.Assembly.csproj"
+                      ReferenceOutputAssembly="false"
+                      OutputItemType="content"
+                      CopyToOutputDirectory="PreserveNewest" />
+    <!-- Some internal types are needed, so we reference the implementation assembly, rather than the reference assembly. -->
+    <ProjectReference Include="..\src\System.ComponentModel.Composition.csproj" SkipUseReferenceAssembly="true" />
   </ItemGroup>
 </Project>

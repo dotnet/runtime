@@ -2,10 +2,11 @@
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <ForceManagedImplementation>false</ForceManagedImplementation>
-    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Browser</TargetFrameworks>
     <Nullable>annotations</Nullable>
   </PropertyGroup>
   <ItemGroup>
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Principal.Windows\src\System.Security.Principal.Windows.csproj" />
     <Reference Include="Microsoft.Win32.Primitives" />
     <Reference Include="System.Collections" />
     <Reference Include="System.Collections.NonGeneric" />
@@ -28,13 +29,9 @@
     <Reference Include="System.Security.Cryptography.Primitives" />
     <Reference Include="System.Security.Cryptography.X509Certificates" />
     <Reference Include="System.Security.Principal" />
-    <Reference Include="System.Security.Principal.Windows" />
     <Reference Include="System.Text.Encoding.Extensions" />
     <Reference Include="System.Threading" />
     <Reference Include="System.Threading.Overlapped" />
-  </ItemGroup>
-  <ItemGroup Condition=" '$(TargetsWindows)' == 'true'">
-    <Reference Include="System.Memory" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="System\Net\BoundaryType.cs" />
@@ -83,6 +80,8 @@
     <Compile Include="$(CommonPath)System\Net\WebSockets\WebSocketValidate.cs"
              Link="Common\System\Net\WebSockets\WebSocketValidate.cs" />
     <Compile Include="System\Net\Windows\CookieExtensions.cs" />
+    <Compile Include="$(CommonPath)System\HexConverter.cs"
+             Link="Common\System\HexConverter.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)' == 'true' and '$(ForceManagedImplementation)' != 'true'">
     <Compile Include="System\Net\Windows\HttpListener.Windows.cs" />
@@ -115,6 +114,8 @@
     <Compile Include="System\Net\Windows\WebSockets\WebSocketProtocolComponent.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs"
              Link="Common\Interop\Windows\Interop.Libraries.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Interop.UNICODE_STRING.cs"
+             Link="Common\Interop\Windows\Interop.UNICODE_STRING.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\SChannel\Interop.SecPkgContext_ApplicationProtocol.cs"
              Link="Common\Interop\Windows\SChannel\Interop.SecPkgContext_ApplicationProtocol.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Interop.BOOL.cs"
@@ -236,7 +237,7 @@
     <Compile Include="$(CommonPath)Interop\Windows\SspiCli\SSPIWrapper.cs"
              Link="Common\Interop\Windows\SspiCli\SSPIWrapper.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsUnix)' == 'true' or '$(ForceManagedImplementation)' == 'true'">
+  <ItemGroup Condition="'$(TargetsUnix)' == 'true' or '$(TargetsBrowser)' == 'true' or '$(ForceManagedImplementation)' == 'true'">
     <Compile Include="System\Net\Managed\HttpEndPointListener.cs" />
     <Compile Include="System\Net\Managed\HttpEndPointManager.cs" />
     <Compile Include="System\Net\Managed\HttpConnection.cs" />

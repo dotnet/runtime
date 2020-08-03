@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Runtime.InteropServices;
@@ -51,6 +50,7 @@ namespace Internal.TypeSystem.Interop
         AsAnyA,
         AsAnyW,
         ComInterface,
+        BlittableValueClassWithCopyCtor,
         Invalid
     }
     public enum MarshalDirection
@@ -272,6 +272,8 @@ namespace Internal.TypeSystem.Interop
         /// <param name="parameterType">type of the parameter to marshal</param>
         /// <returns>The created Marshaller</returns>
         public static Marshaller CreateMarshaller(TypeDesc parameterType,
+            int? parameterIndex,
+            EmbeddedSignatureData[] customModifierData,
             MarshallerType marshallerType,
             MarshalAsDescriptor marshalAs,
             MarshalDirection direction,
@@ -287,6 +289,8 @@ namespace Internal.TypeSystem.Interop
         {
             MarshallerKind elementMarshallerKind;
             MarshallerKind marshallerKind = MarshalHelpers.GetMarshallerKind(parameterType,
+                                                parameterIndex,
+                                                customModifierData,
                                                 marshalAs,
                                                 isReturn,
                                                 flags.CharSet == CharSet.Ansi,

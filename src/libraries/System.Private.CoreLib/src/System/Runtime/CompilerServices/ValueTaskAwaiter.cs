@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Threading;
@@ -15,7 +14,7 @@ namespace System.Runtime.CompilerServices
     public readonly struct ValueTaskAwaiter : ICriticalNotifyCompletion, IStateMachineBoxAwareAwaiter
     {
         /// <summary>Shim used to invoke an <see cref="Action"/> passed as the state argument to a <see cref="Action{Object}"/>.</summary>
-        internal static readonly Action<object?> s_invokeActionDelegate = state =>
+        internal static readonly Action<object?> s_invokeActionDelegate = static state =>
         {
             if (!(state is Action action))
             {

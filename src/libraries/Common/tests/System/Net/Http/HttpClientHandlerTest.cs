@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -1005,6 +1004,7 @@ namespace System.Net.Http.Functional.Tests
                 $"Accept-Patch:{fold} text/example;charset=utf-8{newline}" +
                 $"Accept-Ranges:{fold} bytes{newline}" +
                 $"Age: {fold}12{newline}" +
+                // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Unit test dummy authorization.")]
                 $"Authorization: Bearer 63123a47139a49829bcd8d03005ca9d7{newline}" +
                 $"Allow: {fold}GET, HEAD{newline}" +
                 $"Alt-Svc:{fold} http/1.1=\"http2.example.com:8001\"; ma=7200{newline}" +
@@ -2112,6 +2112,45 @@ namespace System.Net.Http.Functional.Tests
                     // Send final status code.
                     await connection.SendResponseAsync(HttpStatusCode.OK);
                     await clientFinished.Task;
+                });
+            });
+        }
+
+        [Fact]
+        public async Task SendAsync_Expect100Continue_RequestBodyFails_ThrowsContentException()
+        {
+            if (IsWinHttpHandler)
+            {
+                return;
+            }
+            if (!TestAsync && UseVersion >= HttpVersion20.Value)
+            {
+                return;
+            }
+
+            var clientFinished = new TaskCompletionSource<bool>();
+
+            await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
+            {
+                using (HttpClient client = CreateHttpClient())
+                {
+                    HttpRequestMessage initialMessage = new HttpRequestMessage(HttpMethod.Post, uri) { Version = UseVersion };
+                    initialMessage.Content = new ThrowingContent(() => new ThrowingContentException());
+                    initialMessage.Headers.ExpectContinue = true;
+                    await Assert.ThrowsAsync<ThrowingContentException>(() => client.SendAsync(TestAsync, initialMessage));
+
+                    clientFinished.SetResult(true);
+                }
+            }, async server =>
+            {
+                await server.AcceptConnectionAsync(async connection =>
+                {
+                    try
+                    {
+                        await connection.ReadRequestDataAsync(readBody: true);
+                    }
+                    catch { } // Eat errors from client disconnect.
+                    await clientFinished.Task.TimeoutAfter(TimeSpan.FromMinutes(2));
                 });
             });
         }

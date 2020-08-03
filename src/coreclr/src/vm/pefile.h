@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 // --------------------------------------------------------------------------------
 // PEFile.h
 //
@@ -627,7 +626,7 @@ class PEAssembly : public PEFile
         PEImage *          pPEImageNI,
         ICLRPrivAssembly * pHostAssembly);
 
-    // This opens the canonical mscorlib.dll
+    // This opens the canonical System.Private.CoreLib.dll
     static PEAssembly *OpenSystem(IUnknown *pAppCtx);
 #ifdef DACCESS_COMPILE
     virtual void EnumMemoryRegions(CLRDataEnumMemoryFlags flags);

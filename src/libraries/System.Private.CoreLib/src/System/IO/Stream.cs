@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*============================================================
 **
@@ -236,7 +235,7 @@ namespace System.IO
 
         public virtual Task FlushAsync(CancellationToken cancellationToken)
         {
-            return Task.Factory.StartNew(state => ((Stream)state!).Flush(), this,
+            return Task.Factory.StartNew(static state => ((Stream)state!).Flush(), this,
                 cancellationToken, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
         }
 
@@ -489,7 +488,7 @@ namespace System.IO
             }
             else  // Otherwise, wait for our turn, and then run the task.
             {
-                asyncWaiter.ContinueWith((t, state) =>
+                asyncWaiter.ContinueWith(static (t, state) =>
                 {
                     Debug.Assert(t.IsCompletedSuccessfully, "The semaphore wait should always complete successfully.");
                     var rwt = (ReadWriteTask)state!;

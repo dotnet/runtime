@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*=============================================================================
 **
@@ -939,7 +938,7 @@ namespace System.Threading
         internal static readonly ThreadPoolWorkQueue s_workQueue = new ThreadPoolWorkQueue();
 
         /// <summary>Shim used to invoke <see cref="IAsyncStateMachineBox.MoveNext"/> of the supplied <see cref="IAsyncStateMachineBox"/>.</summary>
-        internal static readonly Action<object?> s_invokeAsyncStateMachineBox = state =>
+        internal static readonly Action<object?> s_invokeAsyncStateMachineBox = static state =>
         {
             if (!(state is IAsyncStateMachineBox box))
             {

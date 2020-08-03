@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Data.Common;
 using System.Diagnostics;
@@ -3256,13 +3255,13 @@ namespace System.Data.SqlTypes
         // or a value greater than zero if this > object.
         // null is considered to be less than any instance.
         // If object is not of same type, this method throws an ArgumentException.
-        public int CompareTo(object value)
+        public int CompareTo(object? value)
         {
             if (value is SqlDecimal i)
             {
                 return CompareTo(i);
             }
-            throw ADP.WrongType(value.GetType(), typeof(SqlDecimal));
+            throw ADP.WrongType(value!.GetType(), typeof(SqlDecimal));
         }
 
         public int CompareTo(SqlDecimal value)
@@ -3280,7 +3279,7 @@ namespace System.Data.SqlTypes
         }
 
         // Compares this instance with a specified object
-        public override bool Equals(object value)
+        public override bool Equals(object? value)
         {
             if (!(value is SqlDecimal))
             {
@@ -3331,7 +3330,7 @@ namespace System.Data.SqlTypes
             return ulValue;
         }
 
-        XmlSchema IXmlSerializable.GetSchema() { return null; }
+        XmlSchema? IXmlSerializable.GetSchema() { return null; }
 
         void IXmlSerializable.ReadXml(XmlReader reader)
         {

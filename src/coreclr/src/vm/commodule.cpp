@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 
 #include "common.h"
@@ -959,7 +958,7 @@ Object* GetTypesInner(Module* pModule)
 
     if (pModule->IsResource())
     {
-        refArrClasses = (PTRARRAYREF) AllocateObjectArray(0, MscorlibBinder::GetClass(CLASS__CLASS));
+        refArrClasses = (PTRARRAYREF) AllocateObjectArray(0, CoreLibBinder::GetClass(CLASS__CLASS));
         RETURN(OBJECTREFToObject(refArrClasses));
     }
 
@@ -977,7 +976,7 @@ Object* GetTypesInner(Module* pModule)
     // Allocate the COM+ array
     bSystemAssembly = (pModule->GetAssembly() == SystemDomain::SystemAssembly());
     AllocSize = dwNumTypeDefs;
-    refArrClasses = (PTRARRAYREF) AllocateObjectArray(AllocSize, MscorlibBinder::GetClass(CLASS__CLASS));
+    refArrClasses = (PTRARRAYREF) AllocateObjectArray(AllocSize, CoreLibBinder::GetClass(CLASS__CLASS));
 
     int curPos = 0;
     OBJECTREF throwable = 0;

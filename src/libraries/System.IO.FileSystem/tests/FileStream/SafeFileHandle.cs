@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Microsoft.Win32.SafeHandles;
 using System;
@@ -53,7 +52,7 @@ namespace System.IO.Tests
                 // other handle doesn't yet see the change
                 Assert.Equal(0, fsr.Length);
 
-                SafeFileHandle handle = fs.SafeFileHandle;
+                _ = fs.SafeFileHandle;
 
                 // expect the handle to be flushed
                 Assert.Equal(TestBuffer.Length, fsr.Length);

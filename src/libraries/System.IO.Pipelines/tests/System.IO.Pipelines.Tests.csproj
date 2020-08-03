@@ -1,13 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkCurrent)</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent);net461</TargetFrameworks>
   </PropertyGroup>
-  <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
-    <!-- Some internal types are needed, so we reference the implementation assembly, rather than the reference assembly. -->
-    <DefaultReferenceExclusions Include="System.IO.Pipelines" />
-    <ReferenceFromRuntime Include="System.IO.Pipelines" />
-  </ItemGroup>
   <ItemGroup>
     <Compile Include="Infrastructure\HeapBufferPool.cs" />
     <Compile Include="Infrastructure\DisposeTrackingBufferPool.cs" />
@@ -48,5 +43,12 @@
     <Compile Include="PipePoolTests.nonnetstandard.cs" />
     <Compile Include="PipeWriterStreamTests.nonnetstandard.cs" />
     <Compile Include="PipeReaderStreamTests.nonnetstandard.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
+    <!-- Some internal types are needed, so we reference the implementation assembly, rather than the reference assembly. -->
+    <ProjectReference Include="..\src\System.IO.Pipelines.csproj" SkipUseReferenceAssembly="true" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == 'net461'">
+    <ProjectReference Include="..\src\System.IO.Pipelines.csproj" />
   </ItemGroup>
 </Project>

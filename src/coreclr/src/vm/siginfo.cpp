@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //
 // siginfo.cpp
 //
@@ -729,12 +728,12 @@ MetaSig::MetaSig(BinderMethodID id)
     }
     CONTRACTL_END
 
-    Signature sig = MscorlibBinder::GetMethodSignature(id);
+    Signature sig = CoreLibBinder::GetMethodSignature(id);
 
-    _ASSERTE(MethodDescMatchesSig(MscorlibBinder::GetMethod(id),
-        sig.GetRawSig(), sig.GetRawSigLen(), MscorlibBinder::GetModule()));
+    _ASSERTE(MethodDescMatchesSig(CoreLibBinder::GetMethod(id),
+        sig.GetRawSig(), sig.GetRawSigLen(), CoreLibBinder::GetModule()));
 
-    Init(sig.GetRawSig(), sig.GetRawSigLen(), MscorlibBinder::GetModule(), NULL);
+    Init(sig.GetRawSig(), sig.GetRawSigLen(), CoreLibBinder::GetModule(), NULL);
 }
 
 MetaSig::MetaSig(LPHARDCODEDMETASIG pwzMetaSig)
@@ -749,9 +748,9 @@ MetaSig::MetaSig(LPHARDCODEDMETASIG pwzMetaSig)
     }
     CONTRACTL_END
 
-    Signature sig = MscorlibBinder::GetSignature(pwzMetaSig);
+    Signature sig = CoreLibBinder::GetSignature(pwzMetaSig);
 
-    Init(sig.GetRawSig(), sig.GetRawSigLen(), MscorlibBinder::GetModule(), NULL);
+    Init(sig.GetRawSig(), sig.GetRawSigLen(), CoreLibBinder::GetModule(), NULL);
 }
 
 // Helper constructor that constructs a field signature MetaSig from a FieldDesc
@@ -1087,7 +1086,7 @@ TypeHandle SigPointer::GetTypeHandleThrowing(
         // case ELEMENT_TYPE_STRING   = 0x0e,
         // case ELEMENT_TYPE_OBJECT   = 0x1c,
         //
-        thRet = TypeHandle(MscorlibBinder::GetElementType(typ));
+        thRet = TypeHandle(CoreLibBinder::GetElementType(typ));
     }
     else
     {
@@ -1289,7 +1288,7 @@ TypeHandle SigPointer::GetTypeHandleThrowing(
                 pGenericTypeModule = pModule;
             }
 
-            TypeHandle genericType = psig.GetGenericInstType(pModule, fLoadTypes, level, pZapSigContext);
+            TypeHandle genericType = psig.GetGenericInstType(pModule, fLoadTypes, level < CLASS_LOAD_APPROXPARENTS ? level : CLASS_LOAD_APPROXPARENTS, pZapSigContext);
 
             if (genericType.IsNull())
             {
@@ -1480,7 +1479,7 @@ TypeHandle SigPointer::GetTypeHandleThrowing(
             {
                 if (TypeFromToken(typeToken) == mdtTypeRef)
                 {
-                        loadedType = TypeHandle(MscorlibBinder::GetElementType(ELEMENT_TYPE_VOID));
+                        loadedType = TypeHandle(CoreLibBinder::GetElementType(ELEMENT_TYPE_VOID));
                         thRet = loadedType;
                         break;
                 }
@@ -2373,7 +2372,7 @@ CorElementType SigPointer::PeekElemTypeNormalized(Module* pModule, const SigType
             TypeHandle th = GetTypeHandleThrowing(pModule, pTypeContext, ClassLoader::LoadTypes, CLASS_LOAD_APPROXPARENTS, TRUE);
             if(th.IsNull())
             {
-                th = TypeHandle(MscorlibBinder::GetElementType(ELEMENT_TYPE_VOID));
+                th = TypeHandle(CoreLibBinder::GetElementType(ELEMENT_TYPE_VOID));
             }
 
             type = th.GetInternalCorElementType();
@@ -4614,9 +4613,9 @@ MetaSig::CompareElementTypeToToken(
     }
 
     return CompareTypeTokens(
-        MscorlibBinder::GetElementType(Type1)->GetCl(),
+        CoreLibBinder::GetElementType(Type1)->GetCl(),
         tk2,
-        MscorlibBinder::GetModule(),
+        CoreLibBinder::GetModule(),
         pModule2,
         pVisited);
 } // MetaSig::CompareElementTypeToToken
@@ -4766,10 +4765,10 @@ BOOL MetaSig::CompareVariableConstraints(const Substitution *pSubst1,
         // a) are vacuous, and
         // b) may be implicit (ie. absent) in the overriden variable's declaration
         if (!(CompareTypeDefOrRefOrSpec(pModule1, tkConstraintType1, NULL,
-                                       MscorlibBinder::GetModule(), g_pObjectClass->GetCl(), NULL, NULL) ||
+                                       CoreLibBinder::GetModule(), g_pObjectClass->GetCl(), NULL, NULL) ||
           (((specialConstraints1 & gpNotNullableValueTypeConstraint) != 0) &&
            (CompareTypeDefOrRefOrSpec(pModule1, tkConstraintType1, NULL,
-                      MscorlibBinder::GetModule(), g_pValueTypeClass->GetCl(), NULL, NULL)))))
+                      CoreLibBinder::GetModule(), g_pValueTypeClass->GetCl(), NULL, NULL)))))
         {
             HENUMInternalHolder hEnum2(pInternalImport2);
             mdGenericParamConstraint tkConstraint2;
@@ -5220,16 +5219,56 @@ BOOL MetaSig::IsReturnTypeVoid() const
 
 #ifndef DACCESS_COMPILE
 
+namespace
+{
+    HRESULT GetNameOfTypeRefOrDef(
+        _In_ const Module *pModule,
+        _In_ mdToken token,
+        _Out_ LPCSTR *namespaceOut,
+        _Out_ LPCSTR *nameOut)
+    {
+        CONTRACTL
+        {
+            NOTHROW;
+            GC_NOTRIGGER;
+            FORBID_FAULT;
+            MODE_ANY;
+        }
+        CONTRACTL_END
+
+        IMDInternalImport *pInternalImport = pModule->GetMDImport();
+        if (TypeFromToken(token) == mdtTypeDef)
+        {
+            HRESULT hr = pInternalImport->GetNameOfTypeDef(token, nameOut, namespaceOut);
+            if (FAILED(hr))
+                return hr;
+        }
+        else if (TypeFromToken(token) == mdtTypeRef)
+        {
+            HRESULT hr = pInternalImport->GetNameOfTypeRef(token, namespaceOut, nameOut);
+            if (FAILED(hr))
+                return hr;
+        }
+        else
+        {
+            return E_INVALIDARG;
+        }
+
+        return S_OK;
+    }
+}
+
 //----------------------------------------------------------
 // Returns the unmanaged calling convention.
 //----------------------------------------------------------
 /*static*/
-BOOL
-MetaSig::GetUnmanagedCallingConvention(
-    Module *        pModule,
-    PCCOR_SIGNATURE pSig,
-    ULONG           cSig,
-    CorPinvokeMap * pPinvokeMapOut)
+HRESULT
+MetaSig::TryGetUnmanagedCallingConventionFromModOpt(
+    _In_ Module *pModule,
+    _In_ PCCOR_SIGNATURE pSig,
+    _In_ ULONG cSig,
+    _Out_ CorUnmanagedCallingConvention *callConvOut,
+    _Out_ UINT *errorResID)
 {
     CONTRACTL
     {
@@ -5237,14 +5276,18 @@ MetaSig::GetUnmanagedCallingConvention(
         GC_NOTRIGGER;
         FORBID_FAULT;
         MODE_ANY;
+        PRECONDITION(callConvOut != NULL);
+        PRECONDITION(errorResID != NULL);
     }
     CONTRACTL_END
-
 
     // Instantiations aren't relevant here
     MetaSig msig(pSig, cSig, pModule, NULL);
     PCCOR_SIGNATURE pWalk = msig.m_pRetType.GetPtr();
     _ASSERTE(pWalk <= pSig + cSig);
+
+    *callConvOut = (CorUnmanagedCallingConvention)0;
+    bool found = false;
     while ((pWalk < (pSig + cSig)) && ((*pWalk == ELEMENT_TYPE_CMOD_OPT) || (*pWalk == ELEMENT_TYPE_CMOD_REQD)))
     {
         BOOL fIsOptional = (*pWalk == ELEMENT_TYPE_CMOD_OPT);
@@ -5252,38 +5295,54 @@ MetaSig::GetUnmanagedCallingConvention(
         pWalk++;
         if (pWalk + CorSigUncompressedDataSize(pWalk) > pSig + cSig)
         {
-            return FALSE; // Bad formatting
+            *errorResID = BFA_BAD_SIGNATURE;
+            return COR_E_BADIMAGEFORMAT; // Bad formatting
         }
+
         mdToken tk;
         pWalk += CorSigUncompressToken(pWalk, &tk);
 
-        if (fIsOptional)
+        if (!fIsOptional)
+            continue;
+
+        LPCSTR typeNamespace;
+        LPCSTR typeName;
+
+        // Check for CallConv types specified in modopt
+        if (FAILED(GetNameOfTypeRefOrDef(pModule, tk, &typeNamespace, &typeName)))
+            continue;
+
+        if (::strcmp(typeNamespace, CMOD_CALLCONV_NAMESPACE) != 0)
+            continue;
+
+        const struct {
+            LPCSTR name;
+            CorUnmanagedCallingConvention value;
+        } knownCallConvs[] = {
+            { CMOD_CALLCONV_NAME_CDECL,     IMAGE_CEE_UNMANAGED_CALLCONV_C },
+            { CMOD_CALLCONV_NAME_STDCALL,   IMAGE_CEE_UNMANAGED_CALLCONV_STDCALL },
+            { CMOD_CALLCONV_NAME_THISCALL,  IMAGE_CEE_UNMANAGED_CALLCONV_THISCALL },
+            { CMOD_CALLCONV_NAME_FASTCALL,  IMAGE_CEE_UNMANAGED_CALLCONV_FASTCALL } };
+
+        for (const auto &callConv : knownCallConvs)
         {
-            if (IsTypeRefOrDef("System.Runtime.CompilerServices.CallConvCdecl", pModule, tk))
+            // Look for a recognized calling convention in metadata.
+            if (::strcmp(typeName, callConv.name) == 0)
             {
-                *pPinvokeMapOut = pmCallConvCdecl;
-                return TRUE;
-            }
-            else if (IsTypeRefOrDef("System.Runtime.CompilerServices.CallConvStdcall", pModule, tk))
-            {
-                *pPinvokeMapOut = pmCallConvStdcall;
-                return TRUE;
-            }
-            else if (IsTypeRefOrDef("System.Runtime.CompilerServices.CallConvThiscall", pModule, tk))
-            {
-                *pPinvokeMapOut = pmCallConvThiscall;
-                return TRUE;
-            }
-            else if (IsTypeRefOrDef("System.Runtime.CompilerServices.CallConvFastcall", pModule, tk))
-            {
-                *pPinvokeMapOut = pmCallConvFastcall;
-                return TRUE;
+                // Error if there are multiple recognized calling conventions
+                if (found)
+                {
+                    *errorResID = IDS_EE_MULTIPLE_CALLCONV_UNSUPPORTED;
+                    return COR_E_INVALIDPROGRAM;
+                }
+
+                *callConvOut = callConv.value;
+                found = true;
             }
         }
     }
 
-    *pPinvokeMapOut = (CorPinvokeMap)0;
-    return TRUE;
+    return found ? S_OK : S_FALSE;
 }
 
 //---------------------------------------------------------------------------------------

@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -146,7 +145,7 @@ namespace System.Net.Http
                     {
                         // Flush to ensure we get a response.
                         // TODO: MsQuic may not need any flushing.
-                        await _stream.FlushAsync().ConfigureAwait(false);
+                        await _stream.FlushAsync(cancellationToken).ConfigureAwait(false);
                     }
                     else
                     {
@@ -306,7 +305,7 @@ namespace System.Net.Http
 
                 if (frameType != Http3FrameType.Headers)
                 {
-                    if (NetEventSource.IsEnabled)
+                    if (NetEventSource.Log.IsEnabled())
                     {
                         Trace($"Expected HEADERS as first response frame; recieved {frameType}.");
                     }
@@ -332,10 +331,8 @@ namespace System.Net.Http
                 {
                     if (_connection.Pool.Settings._expect100ContinueTimeout != Timeout.InfiniteTimeSpan)
                     {
-                        timer = new Timer(o =>
-                        {
-                            ((Http3RequestStream)o!)._expect100ContinueCompletionSource!.TrySetResult(true);
-                        }, this, _connection.Pool.Settings._expect100ContinueTimeout, Timeout.InfiniteTimeSpan);
+                        timer = new Timer(static o => ((Http3RequestStream)o!)._expect100ContinueCompletionSource!.TrySetResult(true),
+                            this, _connection.Pool.Settings._expect100ContinueTimeout, Timeout.InfiniteTimeSpan);
                     }
 
                     if (!await _expect100ContinueCompletionSource.Task.ConfigureAwait(false))
@@ -455,7 +452,7 @@ namespace System.Net.Http
                         // Per spec, 0-length payload is allowed.
                         if (payloadLength != 0)
                         {
-                            if (NetEventSource.IsEnabled)
+                            if (NetEventSource.Log.IsEnabled())
                             {
                                 Trace("Response content exceeded Content-Length.");
                             }
@@ -551,7 +548,8 @@ namespace System.Net.Http
                 string cookiesFromContainer = _connection.Pool.Settings._cookieContainer!.GetCookieHeader(request.RequestUri);
                 if (cookiesFromContainer != string.Empty)
                 {
-                    BufferLiteralHeaderWithStaticNameReference(H3StaticTable.Cookie, cookiesFromContainer);
+                    Encoding? valueEncoding = _connection.Pool.Settings._requestHeaderEncodingSelector?.Invoke(HttpKnownHeaderNames.Cookie, request);
+                    BufferLiteralHeaderWithStaticNameReference(H3StaticTable.Cookie, cookiesFromContainer, valueEncoding);
                 }
             }
 
@@ -593,11 +591,15 @@ namespace System.Net.Http
                 return;
             }
 
+            HeaderEncodingSelector<HttpRequestMessage>? encodingSelector = _connection.Pool.Settings._requestHeaderEncodingSelector;
+
             foreach (KeyValuePair<HeaderDescriptor, object> header in headers.HeaderStore)
             {
                 int headerValuesCount = HttpHeaders.GetValuesAsStrings(header.Key, header.Value, ref _headerValues);
                 Debug.Assert(headerValuesCount > 0, "No values for header??");
                 ReadOnlySpan<string> headerValues = _headerValues.AsSpan(0, headerValuesCount);
+
+                Encoding? valueEncoding = encodingSelector?.Invoke(header.Key.Name, _request);
 
                 KnownHeader? knownHeader = header.Key.KnownHeader;
                 if (knownHeader != null)
@@ -615,7 +617,7 @@ namespace System.Net.Http
                             {
                                 if (string.Equals(value, "trailers", StringComparison.OrdinalIgnoreCase))
                                 {
-                                    BufferLiteralHeaderWithoutNameReference("TE", value);
+                                    BufferLiteralHeaderWithoutNameReference("TE", value, valueEncoding);
                                     break;
                                 }
                             }
@@ -638,13 +640,13 @@ namespace System.Net.Http
                             }
                         }
 
-                        BufferLiteralHeaderValues(headerValues, separator);
+                        BufferLiteralHeaderValues(headerValues, separator, valueEncoding);
                     }
                 }
                 else
                 {
                     // The header is not known: fall back to just encoding the header name and value(s).
-                    BufferLiteralHeaderWithoutNameReference(header.Key.Name, headerValues, ", ");
+                    BufferLiteralHeaderWithoutNameReference(header.Key.Name, headerValues, HttpHeaderParser.DefaultSeparator, valueEncoding);
                 }
             }
         }
@@ -659,40 +661,40 @@ namespace System.Net.Http
             _sendBuffer.Commit(bytesWritten);
         }
 
-        private void BufferLiteralHeaderWithStaticNameReference(int nameIndex, string value)
+        private void BufferLiteralHeaderWithStaticNameReference(int nameIndex, string value, Encoding? valueEncoding = null)
         {
             int bytesWritten;
-            while (!QPackEncoder.EncodeLiteralHeaderFieldWithStaticNameReference(nameIndex, value, _sendBuffer.AvailableSpan, out bytesWritten))
+            while (!QPackEncoder.EncodeLiteralHeaderFieldWithStaticNameReference(nameIndex, value, valueEncoding, _sendBuffer.AvailableSpan, out bytesWritten))
             {
                 _sendBuffer.Grow();
             }
             _sendBuffer.Commit(bytesWritten);
         }
 
-        private void BufferLiteralHeaderWithoutNameReference(string name, ReadOnlySpan<string> values, string separator)
+        private void BufferLiteralHeaderWithoutNameReference(string name, ReadOnlySpan<string> values, string separator, Encoding? valueEncoding)
         {
             int bytesWritten;
-            while (!QPackEncoder.EncodeLiteralHeaderFieldWithoutNameReference(name, values, separator, _sendBuffer.AvailableSpan, out bytesWritten))
+            while (!QPackEncoder.EncodeLiteralHeaderFieldWithoutNameReference(name, values, separator, valueEncoding, _sendBuffer.AvailableSpan, out bytesWritten))
             {
                 _sendBuffer.Grow();
             }
             _sendBuffer.Commit(bytesWritten);
         }
 
-        private void BufferLiteralHeaderWithoutNameReference(string name, string value)
+        private void BufferLiteralHeaderWithoutNameReference(string name, string value, Encoding? valueEncoding)
         {
             int bytesWritten;
-            while (!QPackEncoder.EncodeLiteralHeaderFieldWithoutNameReference(name, value, _sendBuffer.AvailableSpan, out bytesWritten))
+            while (!QPackEncoder.EncodeLiteralHeaderFieldWithoutNameReference(name, value, valueEncoding, _sendBuffer.AvailableSpan, out bytesWritten))
             {
                 _sendBuffer.Grow();
             }
             _sendBuffer.Commit(bytesWritten);
         }
 
-        private void BufferLiteralHeaderValues(ReadOnlySpan<string> values, string? separator)
+        private void BufferLiteralHeaderValues(ReadOnlySpan<string> values, string? separator, Encoding? valueEncoding)
         {
             int bytesWritten;
-            while (!QPackEncoder.EncodeValueString(values, separator, _sendBuffer.AvailableSpan, out bytesWritten))
+            while (!QPackEncoder.EncodeValueString(values, separator, valueEncoding, _sendBuffer.AvailableSpan, out bytesWritten))
             {
                 _sendBuffer.Grow();
             }
@@ -795,7 +797,7 @@ namespace System.Net.Http
                     }
                     else
                     {
-                        if (NetEventSource.IsEnabled) Trace($"Server closed response stream before entire header payload could be read. {headersLength:N0} bytes remaining.");
+                        if (NetEventSource.Log.IsEnabled()) Trace($"Server closed response stream before entire header payload could be read. {headersLength:N0} bytes remaining.");
                         throw new HttpRequestException(SR.net_http_invalid_response_premature_eof);
                     }
                 }
@@ -837,7 +839,7 @@ namespace System.Net.Http
         {
             if (!HeaderDescriptor.TryGetStaticQPackHeader(index, out descriptor, out knownValue))
             {
-                if (NetEventSource.IsEnabled) Trace($"Response contains invalid static header index '{index}'.");
+                if (NetEventSource.Log.IsEnabled()) Trace($"Response contains invalid static header index '{index}'.");
                 throw new Http3ConnectionException(Http3ErrorCode.ProtocolError);
             }
         }
@@ -853,13 +855,13 @@ namespace System.Net.Http
             {
                 if (descriptor.KnownHeader != KnownHeaders.PseudoStatus)
                 {
-                    if (NetEventSource.IsEnabled) Trace($"Received unknown pseudo-header '{descriptor.Name}'.");
+                    if (NetEventSource.Log.IsEnabled()) Trace($"Received unknown pseudo-header '{descriptor.Name}'.");
                     throw new Http3ConnectionException(Http3ErrorCode.ProtocolError);
                 }
 
                 if (_headerState != HeaderState.StatusHeader)
                 {
-                    if (NetEventSource.IsEnabled) Trace("Received extra status header.");
+                    if (NetEventSource.Log.IsEnabled()) Trace("Received extra status header.");
                     throw new Http3ConnectionException(Http3ErrorCode.ProtocolError);
                 }
 
@@ -908,7 +910,7 @@ namespace System.Net.Http
                         // If the final status code is >= 300, skip sending the body.
                         bool shouldSendBody = (statusCode < 300);
 
-                        if (NetEventSource.IsEnabled) Trace($"Expecting 100 Continue but received final status {statusCode}.");
+                        if (NetEventSource.Log.IsEnabled()) Trace($"Expecting 100 Continue but received final status {statusCode}.");
                         _expect100ContinueCompletionSource.TrySetResult(shouldSendBody);
                     }
                 }
@@ -920,12 +922,18 @@ namespace System.Net.Http
             }
             else
             {
-                string headerValue = staticValue ?? _connection.GetResponseHeaderValueWithCaching(descriptor, literalValue);
+                string? headerValue = staticValue;
+
+                if (headerValue is null)
+                {
+                    Encoding? encoding = _connection.Pool.Settings._responseHeaderEncodingSelector?.Invoke(descriptor.Name, _request);
+                    headerValue = _connection.GetResponseHeaderValueWithCaching(descriptor, literalValue, encoding);
+                }
 
                 switch (_headerState)
                 {
                     case HeaderState.StatusHeader:
-                        if (NetEventSource.IsEnabled) Trace($"Received headers without :status.");
+                        if (NetEventSource.Log.IsEnabled()) Trace($"Received headers without :status.");
                         throw new Http3ConnectionException(Http3ErrorCode.ProtocolError);
                     case HeaderState.ResponseHeaders when descriptor.HeaderType.HasFlag(HttpHeaderType.Content):
                         _response!.Content!.Headers.TryAddWithoutValidation(descriptor, headerValue);

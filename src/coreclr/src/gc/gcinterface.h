@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #ifndef _GC_INTERFACE_H_
 #define _GC_INTERFACE_H_
@@ -397,7 +396,7 @@ typedef enum
      * They are currently used for EnC for adding new field members to existing instantiations under EnC modes where
      * the primary object is the original instantiation and the secondary represents the added field.
      *
-     * They are also used to implement the ConditionalWeakTable class in mscorlib.dll. If you want to use
+     * They are also used to implement the managed ConditionalWeakTable class. If you want to use
      * these from managed code, they are exposed to BCL through the managed DependentHandle class.
      *
      *
@@ -580,26 +579,15 @@ public:
     ===========================================================================
     */
 
-    // Finalizes all registered objects for shutdown, even if they are still reachable.
-    virtual void SetFinalizeQueueForShutdown(bool fHasLock) = 0;
-
     // Gets the number of finalizable objects.
     virtual size_t GetNumberOfFinalizable() = 0;
-
-    // Traditionally used by the finalizer thread on shutdown to determine
-    // whether or not to time out. Returns true if the GC lock has not been taken.
-    virtual bool ShouldRestartFinalizerWatchDog() = 0;
 
     // Gets the next finalizable object.
     virtual Object* GetNextFinalizable() = 0;
 
-    // Sets whether or not the GC should report all finalizable objects as
-    // ready to be finalized, instead of only collectable objects.
-    virtual void SetFinalizeRunOnShutdown(bool value) = 0;
-
     /*
     ===========================================================================
-    BCL routines. These are routines that are directly exposed by mscorlib
+    BCL routines. These are routines that are directly exposed by CoreLib
     as a part of the `System.GC` class. These routines behave in the same
     manner as the functions on `System.GC`.
     ===========================================================================
@@ -652,14 +640,14 @@ public:
     virtual int GetGcLatencyMode() = 0;
 
     // Sets the current GC latency mode. newLatencyMode has already been
-    // verified by mscorlib to be valid.
+    // verified by CoreLib to be valid.
     virtual int SetGcLatencyMode(int newLatencyMode) = 0;
 
     // Gets the current LOH compaction mode.
     virtual int GetLOHCompactionMode() = 0;
 
     // Sets the current LOH compaction mode. newLOHCompactionMode has
-    // already been verified by mscorlib to be valid.
+    // already been verified by CoreLib to be valid.
     virtual void SetLOHCompactionMode(int newLOHCompactionMode) = 0;
 
     // Registers for a full GC notification, raising a notification if the gen 2 or

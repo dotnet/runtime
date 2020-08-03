@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //
 // ZapImage.cpp
 //
@@ -2211,10 +2210,7 @@ ZapImage::CompileStatus ZapImage::TryCompileMethodWorker(CORINFO_METHOD_HANDLE h
 BOOL ZapImage::ShouldCompileMethodDef(mdMethodDef md)
 {
     DWORD partialNGenStressVal = PartialNGenStressPercentage();
-    if (partialNGenStressVal &&
-        // Module::AddCerListToRootTable has problems if mscorlib.dll is
-        // a partial ngen image
-        m_hModule != m_zapper->m_pEECompileInfo->GetLoaderModuleForMscorlib())
+    if (partialNGenStressVal)
     {
         _ASSERTE(partialNGenStressVal <= 100);
         DWORD methodPercentageVal = (md % 100) + 1;
@@ -2316,10 +2312,7 @@ BOOL ZapImage::ShouldCompileMethodDef(mdMethodDef md)
 BOOL ZapImage::ShouldCompileInstantiatedMethod(CORINFO_METHOD_HANDLE handle)
 {
     DWORD partialNGenStressVal = PartialNGenStressPercentage();
-    if (partialNGenStressVal &&
-        // Module::AddCerListToRootTable has problems if mscorlib.dll is
-        // a partial ngen image
-        m_hModule != m_zapper->m_pEECompileInfo->GetLoaderModuleForMscorlib())
+    if (partialNGenStressVal)
     {
         _ASSERTE(partialNGenStressVal <= 100);
         DWORD methodPercentageVal = (m_zapper->m_pEEJitInfo->getMethodHash(handle) % 100) + 1;

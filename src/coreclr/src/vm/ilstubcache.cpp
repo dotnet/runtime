@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //
 // File: ILStubCache.cpp
 //
@@ -257,11 +256,6 @@ MethodDesc* ILStubCache::CreateNewMethodDesc(LoaderHeap* pCreationHeap, MethodTa
         pMD->GetILStubResolver()->SetStubType(ILStubResolver::TailCallCallTargetStub);
     }
     else
-    if (SF_IsTailCallDispatcherStub(dwStubFlags))
-    {
-        pMD->GetILStubResolver()->SetStubType(ILStubResolver::TailCallDispatcherStub);
-    }
-    else
 #ifdef FEATURE_COMINTEROP
     if (SF_IsCOMStub(dwStubFlags))
     {
@@ -427,7 +421,7 @@ MethodTable* ILStubCache::GetOrCreateStubMethodTable(Module* pModule)
 //
 // We're relying on the fact that a VASigCookie may only mention types within the
 // corresponding module used to qualify the signature and the fact that interop
-// stubs may only reference mscorlib code or code related to a type mentioned in
+// stubs may only reference CoreLib code or code related to a type mentioned in
 // the signature.  Both of these are true unless the sig is allowed to contain
 // ELEMENT_TYPE_INTERNAL, which may refer to any type.
 //

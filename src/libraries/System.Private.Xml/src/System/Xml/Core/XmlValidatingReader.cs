@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System;
 using System.IO;
 using System.Text;
@@ -18,6 +18,7 @@ namespace System.Xml
         // Member fields
         //
         private readonly XmlValidatingReaderImpl _impl;
+
         //
         // Constructors
         //
@@ -33,6 +34,7 @@ namespace System.Xml
             {
                 throw new ArgumentNullException(nameof(xmlFragment));
             }
+
             _impl = new XmlValidatingReaderImpl(xmlFragment, fragType, context);
             _impl.OuterReader = this;
         }
@@ -90,7 +92,7 @@ namespace System.Xml
             get { return _impl.Depth; }
         }
 
-        public override string BaseURI
+        public override string? BaseURI
         {
             get { return _impl.BaseURI; }
         }
@@ -124,12 +126,12 @@ namespace System.Xml
 
         public override int AttributeCount { get { return _impl.AttributeCount; } }
 
-        public override string GetAttribute(string name)
+        public override string? GetAttribute(string name)
         {
             return _impl.GetAttribute(name);
         }
 
-        public override string GetAttribute(string localName, string namespaceURI)
+        public override string? GetAttribute(string localName, string? namespaceURI)
         {
             return _impl.GetAttribute(localName, namespaceURI);
         }
@@ -144,7 +146,7 @@ namespace System.Xml
             return _impl.MoveToAttribute(name);
         }
 
-        public override bool MoveToAttribute(string localName, string namespaceURI)
+        public override bool MoveToAttribute(string localName, string? namespaceURI)
         {
             return _impl.MoveToAttribute(localName, namespaceURI);
         }
@@ -199,13 +201,14 @@ namespace System.Xml
             get { return _impl.NameTable; }
         }
 
-        public override string LookupNamespace(string prefix)
+        public override string? LookupNamespace(string prefix)
         {
-            string ns = _impl.LookupNamespace(prefix);
+            string? ns = _impl.LookupNamespace(prefix);
             if (ns != null && ns.Length == 0)
             {
                 ns = null;
             }
+
             return ns;
         }
 
@@ -270,12 +273,12 @@ namespace System.Xml
             return _impl.GetNamespacesInScope(scope);
         }
 
-        string IXmlNamespaceResolver.LookupNamespace(string prefix)
+        string? IXmlNamespaceResolver.LookupNamespace(string prefix)
         {
             return _impl.LookupNamespace(prefix);
         }
 
-        string IXmlNamespaceResolver.LookupPrefix(string namespaceName)
+        string? IXmlNamespaceResolver.LookupPrefix(string namespaceName)
         {
             return _impl.LookupPrefix(namespaceName);
         }
@@ -289,7 +292,7 @@ namespace System.Xml
             remove { _impl.ValidationEventHandler -= value; }
         }
 
-        public object SchemaType
+        public object? SchemaType
         {
             get { return _impl.SchemaType; }
         }
@@ -327,12 +330,12 @@ namespace System.Xml
             set { _impl.Namespaces = value; }
         }
 
-        public object ReadTypedValue()
+        public object? ReadTypedValue()
         {
             return _impl.ReadTypedValue();
         }
 
-        public Encoding Encoding
+        public Encoding? Encoding
         {
             get { return _impl.Encoding; }
         }
@@ -344,7 +347,7 @@ namespace System.Xml
             get { return _impl; }
         }
 
-        internal override IDtdInfo DtdInfo
+        internal override IDtdInfo? DtdInfo
         {
             get { return _impl.DtdInfo; }
         }

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 
 #include "common.h"
@@ -1009,7 +1008,7 @@ void LoaderAllocator::SetupManagedTracking(LOADERALLOCATORREF * pKeepLoaderAlloc
     // Initialize managed loader allocator reference holder
     //
 
-    MethodTable *pMT = MscorlibBinder::GetClass(CLASS__LOADERALLOCATOR);
+    MethodTable *pMT = CoreLibBinder::GetClass(CLASS__LOADERALLOCATOR);
 
     *pKeepLoaderAllocatorAlive = (LOADERALLOCATORREF)AllocateObject(pMT);
 

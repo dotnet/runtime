@@ -1,6 +1,6 @@
 # Introduction #
 
-Core dump generation on Linux and other non-Windows platforms has several challenges. Dumps can be very large and the default name/location of a dump is not consistent across all our supported platforms.  The size of a full core dumps can be controlled somewhat with the "coredump_filter" file/flags but even with the smallest settings may be still too large and may not contain all the managed state needed for debugging. By default, some platforms use _core_ as the name and place the core dump in the current directory from where the program is launched; others add the _pid_ to the name. Configuring the core name and location requires superuser permission. Requiring superuser to make this consistent is not a satisfactory option.
+Dump generation on Windows, Linux and other non-Windows platforms has several challenges. Dumps can be very large and the default name/location of a dump is not consistent across all our supported platforms.  The size of a full core dumps can be controlled somewhat with the "coredump_filter" file/flags but even with the smallest settings may be still too large and may not contain all the managed state needed for debugging. By default, some platforms use _core_ as the name and place the core dump in the current directory from where the program is launched; others add the _pid_ to the name. Configuring the core name and location requires superuser permission. Requiring superuser to make this consistent is not a satisfactory option.
 
 Our goal is to generate core dumps that are on par with WER (Windows Error Reporting) crash dumps on any supported Linux platform. To the very least we want to enable the following:
 - automatic generation of minimal size minidumps. The quality and quantity of the information contained in the dump should be on par with the information contained in a traditional Windows mini-dump.
@@ -42,7 +42,11 @@ There will be some differences gathering the crash information but these platfor
 
 ### OS X ###
 
-Gathering the crash information on OS X will be quite a bit different than Linux and the core dump will be written in the Mach-O format instead of ELF. The OS X support currently has not been implemented.
+As of .NET Core 5.0, createdump is supported on MacOS but instead of the MachO dump format, it generates the ELF coredumps. This is because of time constraints developing a MachO dump writer on the generation side and a MachO reader for the diagnostics tooling side (dotnet-dump and CLRMD). This means the native debuggers like gdb and lldb will not work with these dumps but the dotnet-dump tool will allow the managed state to be analyzed. Because of this behavior an additional environment variable will need to be set (COMPlus_DbgEnableElfDumpOnMacOS=1) along with the ones below in the Configuration/Policy section.
+
+### Windows ###
+
+As of .NET Core 5.0, createdump and the below configuration environment variables are supported on Windows. It is implemented using the Windows MiniDumpWriteDump API. This allows consistent crash/unhandled exception dumps across all of our platforms. 
 
 # Configuration/Policy #
 

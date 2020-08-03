@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Microsoft.Win32.SafeHandles;
 using System.Collections;
@@ -23,10 +22,8 @@ namespace System.Net.Sockets
         // that get stackalloced in the Linux kernel.
         private const int IovStackThreshold = 8;
 
-        private static bool GetPlatformSupportsDualModeIPv4PacketInfo()
-        {
-            return Interop.Sys.PlatformSupportsDualModeIPv4PacketInfo();
-        }
+        private static bool GetPlatformSupportsDualModeIPv4PacketInfo() =>
+            Interop.Sys.PlatformSupportsDualModeIPv4PacketInfo() != 0;
 
         public static void Initialize()
         {
@@ -95,7 +92,7 @@ namespace System.Net.Sockets
             }
 
             socket = new SafeSocketHandle(fd, ownsHandle: true);
-            if (NetEventSource.IsEnabled) NetEventSource.Info(null, socket);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, socket);
 
             return errorCode;
         }
@@ -423,8 +420,8 @@ namespace System.Net.Sockets
         {
             Debug.Assert(socketAddress != null, "Expected non-null socketAddress");
 
-            int cmsgBufferLen = Interop.Sys.GetControlMessageBufferSize(isIPv4, isIPv6);
-            var cmsgBuffer = stackalloc byte[cmsgBufferLen];
+            int cmsgBufferLen = Interop.Sys.GetControlMessageBufferSize(Convert.ToInt32(isIPv4), Convert.ToInt32(isIPv6));
+            byte* cmsgBuffer = stackalloc byte[cmsgBufferLen];
 
             int sockAddrLen = socketAddressLen;
 
@@ -499,8 +496,8 @@ namespace System.Net.Sockets
                 fixed (byte* sockAddr = socketAddress)
                 fixed (Interop.Sys.IOVector* iov = iovecs)
                 {
-                    int cmsgBufferLen = Interop.Sys.GetControlMessageBufferSize(isIPv4, isIPv6);
-                    var cmsgBuffer = stackalloc byte[cmsgBufferLen];
+                    int cmsgBufferLen = Interop.Sys.GetControlMessageBufferSize(Convert.ToInt32(isIPv4), Convert.ToInt32(isIPv6));
+                    byte* cmsgBuffer = stackalloc byte[cmsgBufferLen];
 
                     var messageHeader = new Interop.Sys.MessageHeader
                     {
@@ -1028,7 +1025,7 @@ namespace System.Net.Sockets
             }
 
             socket = new SafeSocketHandle(acceptedFd, ownsHandle: true);
-            if (NetEventSource.IsEnabled) NetEventSource.Info(null, socket);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, socket);
 
             return errorCode;
         }
@@ -2008,7 +2005,7 @@ namespace System.Net.Sockets
         {
             var res = new SafeSocketHandle(fileDescriptor, ownsHandle: true);
 
-            if (NetEventSource.IsEnabled) NetEventSource.Info(null, res);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, res);
             return res;
         }
     }

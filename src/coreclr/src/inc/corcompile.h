@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*****************************************************************************\
 *                                                                             *
@@ -1413,7 +1412,7 @@ class ICorCompileInfo
     // So, the host must call StartupAsCompilationProcess before compiling
     // any code, and Shutdown after finishing.
     //
-    // The arguments control which native image of mscorlib to use.
+    // The arguments control which native image of CoreLib to use.
     // This matters for hardbinding.
     //
 
@@ -1549,8 +1548,8 @@ class ICorCompileInfo
             mdFieldDef             *token
             ) = 0;
 
-    // Get the loader module for mscorlib
-    virtual CORINFO_MODULE_HANDLE GetLoaderModuleForMscorlib() = 0;
+    // Get the loader module for CoreLib
+    virtual CORINFO_MODULE_HANDLE GetLoaderModuleForCoreLib() = 0;
 
     // Get the loader module for a type (where the type is regarded as
     // living for the purposes of loading, unloading, and ngen).

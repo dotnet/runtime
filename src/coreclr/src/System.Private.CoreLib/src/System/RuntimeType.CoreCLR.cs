@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections;
 using System.Collections.Generic;
@@ -235,6 +234,48 @@ namespace System
 
                 internal MethodBase AddMethod(RuntimeType declaringType, RuntimeMethodHandleInternal method, CacheType cacheType)
                 {
+                    // First, see if we've already cached an RuntimeMethodInfo or
+                    // RuntimeConstructorInfo that corresponds to this member. Since another
+                    // thread could be updating the backing store at the same time it's
+                    // possible that the check below will result in a false negative. That's
+                    // ok; we'll handle any concurrency issues in the later call to Insert.
+
+                    T?[]? allMembersLocal = m_allMembers;
+                    if (allMembersLocal != null)
+                    {
+                        // if not a Method or a Constructor, fall through
+                        if (cacheType == CacheType.Method)
+                        {
+                            foreach (T? candidate in allMembersLocal)
+                            {
+                                if (candidate is null)
+                                {
+                                    break; // end of list; stop iteration and fall through to slower path
+                                }
+
+                                if (candidate is RuntimeMethodInfo candidateRMI && candidateRMI.MethodHandle.Value == method.Value)
+                                {
+                                    return candidateRMI; // match!
+                                }
+                            }
+                        }
+                        else if (cacheType == CacheType.Constructor)
+                        {
+                            foreach (T? candidate in allMembersLocal)
+                            {
+                                if (candidate is null)
+                                {
+                                    break; // end of list; stop iteration and fall through to slower path
+                                }
+
+                                if (candidate is RuntimeConstructorInfo candidateRCI && candidateRCI.MethodHandle.Value == method.Value)
+                                {
+                                    return candidateRCI; // match!
+                                }
+                            }
+                        }
+                    }
+
                     T[] list = null!;
                     MethodAttributes methodAttributes = RuntimeMethodHandle.GetAttributes(method);
                     bool isPublic = (methodAttributes & MethodAttributes.MemberAccessMask) == MethodAttributes.Public;
@@ -265,6 +306,29 @@ namespace System
 
                 internal FieldInfo AddField(RuntimeFieldHandleInternal field)
                 {
+                    // First, see if we've already cached an RtFieldInfo that corresponds
+                    // to this field. Since another thread could be updating the backing
+                    // store at the same time it's possible that the check below will
+                    // result in a false negative. That's ok; we'll handle any concurrency
+                    // issues in the later call to Insert.
+
+                    T?[]? allMembersLocal = m_allMembers;
+                    if (allMembersLocal != null)
+                    {
+                        foreach (T? candidate in allMembersLocal)
+                        {
+                            if (candidate is null)
+                            {
+                                break; // end of list; stop iteration and fall through to slower path
+                            }
+
+                            if (candidate is RtFieldInfo candidateRtFI && candidateRtFI.GetFieldHandle() == field.Value)
+                            {
+                                return candidateRtFI; // match!
+                            }
+                        }
+                    }
+
                     // create the runtime field info
                     FieldAttributes fieldAttributes = RuntimeFieldHandle.GetAttributes(field);
                     bool isPublic = (fieldAttributes & FieldAttributes.FieldAccessMask) == FieldAttributes.Public;
@@ -508,7 +572,7 @@ namespace System
                             }
 
                             Debug.Assert(cachedMembers![freeSlotIndex] == null);
-                            cachedMembers[freeSlotIndex] = newMemberInfo;
+                            Volatile.Write(ref cachedMembers[freeSlotIndex], newMemberInfo); // value may be read outside of lock
                             freeSlotIndex++;
                         }
                     }
@@ -2533,26 +2597,31 @@ namespace System
         #endregion
 
         #region Get All XXXInfos
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)]
         public override MethodInfo[] GetMethods(BindingFlags bindingAttr)
         {
             return GetMethodCandidates(null, GenericParameterCountAny, bindingAttr, CallingConventions.Any, null, false).ToArray();
         }
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)]
         public override ConstructorInfo[] GetConstructors(BindingFlags bindingAttr)
         {
             return GetConstructorCandidates(null, bindingAttr, CallingConventions.Any, null, false).ToArray();
         }
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties)]
         public override PropertyInfo[] GetProperties(BindingFlags bindingAttr)
         {
             return GetPropertyCandidates(null, bindingAttr, null, false).ToArray();
         }
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicEvents | DynamicallyAccessedMemberTypes.NonPublicEvents)]
         public override EventInfo[] GetEvents(BindingFlags bindingAttr)
         {
             return GetEventCandidates(null, bindingAttr, false).ToArray();
         }
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields | DynamicallyAccessedMemberTypes.NonPublicFields)]
         public override FieldInfo[] GetFields(BindingFlags bindingAttr)
         {
             return GetFieldCandidates(null, bindingAttr, false).ToArray();
@@ -2564,11 +2633,13 @@ namespace System
             return new ReadOnlySpan<Type>(candidates).ToArray();
         }
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicNestedTypes | DynamicallyAccessedMemberTypes.NonPublicNestedTypes)]
         public override Type[] GetNestedTypes(BindingFlags bindingAttr)
         {
             return GetNestedTypeCandidates(null, bindingAttr, false).ToArray();
         }
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
         public override MemberInfo[] GetMembers(BindingFlags bindingAttr)
         {
             ListBuilder<MethodInfo> methods = GetMethodCandidates(null, GenericParameterCountAny, bindingAttr, CallingConventions.Any, null, false);
@@ -2664,6 +2735,7 @@ namespace System
 
         #region Find XXXInfo
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)]
         protected override MethodInfo? GetMethodImpl(
             string name, BindingFlags bindingAttr, Binder? binder, CallingConventions callConv,
             Type[]? types, ParameterModifier[]? modifiers)
@@ -2671,6 +2743,7 @@ namespace System
             return GetMethodImplCommon(name, GenericParameterCountAny, bindingAttr, binder, callConv, types, modifiers);
         }
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)]
         protected override MethodInfo? GetMethodImpl(
             string name, int genericParameterCount, BindingFlags bindingAttr, Binder? binder, CallingConventions callConv,
             Type[]? types, ParameterModifier[]? modifiers)
@@ -2715,6 +2788,7 @@ namespace System
             return binder.SelectMethod(bindingAttr, candidates.ToArray(), types, modifiers) as MethodInfo;
         }
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)]
         protected override ConstructorInfo? GetConstructorImpl(
             BindingFlags bindingAttr, Binder? binder, CallingConventions callConvention,
             Type[] types, ParameterModifier[]? modifiers)
@@ -2742,6 +2816,7 @@ namespace System
             return binder.SelectMethod(bindingAttr, candidates.ToArray(), types, modifiers) as ConstructorInfo;
         }
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties)]
         protected override PropertyInfo? GetPropertyImpl(
             string name, BindingFlags bindingAttr, Binder? binder, Type? returnType, Type[]? types, ParameterModifier[]? modifiers)
         {
@@ -2779,6 +2854,7 @@ namespace System
             return binder.SelectProperty(bindingAttr, candidates.ToArray(), returnType, types, modifiers);
         }
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicEvents | DynamicallyAccessedMemberTypes.NonPublicEvents)]
         public override EventInfo? GetEvent(string name, BindingFlags bindingAttr)
         {
             if (name is null) throw new ArgumentNullException(nameof(name));
@@ -2805,6 +2881,7 @@ namespace System
             return match;
         }
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields | DynamicallyAccessedMemberTypes.NonPublicFields)]
         public override FieldInfo? GetField(string name, BindingFlags bindingAttr)
         {
             if (name is null) throw new ArgumentNullException();
@@ -2876,6 +2953,7 @@ namespace System
             return match;
         }
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicNestedTypes | DynamicallyAccessedMemberTypes.NonPublicNestedTypes)]
         public override Type? GetNestedType(string fullname, BindingFlags bindingAttr)
         {
             if (fullname is null) throw new ArgumentNullException(nameof(fullname));
@@ -2904,6 +2982,7 @@ namespace System
             return match;
         }
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
         public override MemberInfo[] GetMember(string name, MemberTypes type, BindingFlags bindingAttr)
         {
             if (name is null) throw new ArgumentNullException(nameof(name));

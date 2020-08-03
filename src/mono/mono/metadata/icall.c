@@ -7523,6 +7523,7 @@ ves_icall_Remoting_RealProxy_InternalGetProxyType (MonoTransparentProxyHandle tp
 
 /* System.Environment */
 
+#ifndef ENABLE_NETCORE
 MonoStringHandle
 ves_icall_System_Environment_get_UserName (MonoError *error)
 {
@@ -7606,6 +7607,7 @@ ves_icall_System_Environment_get_Platform (void)
 {
 	return mono_icall_get_platform ();
 }
+#endif /* !ENABLE_NETCORE */
 
 #ifndef HOST_WIN32
 static MonoStringHandle

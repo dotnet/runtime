@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -80,6 +79,24 @@ namespace System.Globalization.Tests
             }).Dispose();
         }
 
+
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        // We are testing with "no" as it match a neutral culture name. We want ensure this not conflict with region name.
+        [InlineData("no")]
+        [InlineData("No")]
+        [InlineData("NO")]
+        public void ValidateUsingCasedRegionName(string regionName)
+        {
+            RemoteExecutor.Invoke(name =>
+            {
+                // It is important to do this test in the following order because we have internal cache for regions.
+                // creating the region with the original input name should be the first to do to ensure not cached before.
+                string resultedName = new RegionInfo(name).Name;
+                string expectedName = new RegionInfo(name.ToUpperInvariant()).Name;
+                Assert.Equal(expectedName, resultedName);
+            }, regionName).Dispose();
+        }
+
         [Theory]
         [InlineData("en-US", "United States")]
         [OuterLoop("May fail on machines with multiple language packs installed")] // see https://github.com/dotnet/runtime/issues/30132
@@ -91,20 +108,51 @@ namespace System.Globalization.Tests
             }
         }
 
+        public static IEnumerable<object[]> NativeName_TestData()
+        {
+            if (PlatformDetection.IsNotBrowser)
+            {
+                yield return new object[] { "GB", "United Kingdom" };
+                yield return new object[] { "SE", "Sverige" };
+                yield return new object[] { "FR", "France" };
+            }
+            else
+            {
+                // Browser's ICU doesn't contain RegionInfo.NativeName
+                yield return new object[] { "GB", "GB" };
+                yield return new object[] { "SE", "SE" };
+                yield return new object[] { "FR", "FR" };
+            }
+        }
+
         [Theory]
-        [InlineData("GB", "United Kingdom")]
-        [InlineData("SE", "Sverige")]
-        [InlineData("FR", "France")]
+        [MemberData(nameof(NativeName_TestData))]
         public void NativeName(string name, string expected)
         {
             Assert.Equal(expected, new RegionInfo(name).NativeName);
         }
 
+        public static IEnumerable<object[]> EnglishName_TestData()
+        {
+            if (PlatformDetection.IsNotBrowser)
+            {
+                yield return new object[] { "en-US", new string[] { "United States" } };
+                yield return new object[] { "US", new string[] { "United States" } };
+                yield return new object[] { "zh-CN", new string[] { "China", "People's Republic of China", "China mainland" }};
+                yield return new object[] { "CN", new string[] { "China", "People's Republic of China", "China mainland" } };
+            }
+            else
+            {
+                // Browser's ICU doesn't contain RegionInfo.EnglishName
+                yield return new object[] { "en-US", new string[] { "US" } };
+                yield return new object[] { "US", new string[] { "US" } };
+                yield return new object[] { "zh-CN", new string[] { "CN" }};
+                yield return new object[] { "CN", new string[] { "CN" } };
+            }
+        }
+
         [Theory]
-        [InlineData("en-US", new string[] { "United States" })]
-        [InlineData("US", new string[] { "United States" })]
-        [InlineData("zh-CN", new string[] { "China", "People's Republic of China", "China mainland" })]
-        [InlineData("CN", new string[] { "China", "People's Republic of China", "China mainland" })]
+        [MemberData(nameof(EnglishName_TestData))]
         public void EnglishName(string name, string[] expected)
         {
             string result = new RegionInfo(name).EnglishName;

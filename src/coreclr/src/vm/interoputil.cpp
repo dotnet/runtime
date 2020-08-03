@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 
 #include "common.h"
@@ -318,7 +317,7 @@ void GetCultureInfoForLCID(LCID lcid, OBJECTREF *pCultureObj)
     GCPROTECT_BEGIN(CultureObj)
     {
         // Allocate a CultureInfo with the specified LCID.
-        CultureObj = AllocateObject(MscorlibBinder::GetClass(CLASS__CULTURE_INFO));
+        CultureObj = AllocateObject(CoreLibBinder::GetClass(CLASS__CULTURE_INFO));
 
         MethodDescCallSite cultureInfoCtor(METHOD__CULTURE_INFO__INT_CTOR, &CultureObj);
 
@@ -1486,7 +1485,7 @@ VOID EnsureComStarted(BOOL fCoInitCurrentThread)
         // COM+ objects are now apartment agile), we only care that a CoInitializeEx
         // has been performed on this thread by us.
         if (fCoInitCurrentThread)
-            GetThread()->SetApartment(Thread::AS_InMTA, FALSE);
+            GetThread()->SetApartment(Thread::AS_InMTA);
 
         // set the finalizer event
         FinalizerThread::EnableFinalization();
@@ -3146,7 +3145,7 @@ void DispInvokeConvertObjectToVariant(OBJECTREF *pSrcObj, VARIANT *pDestVar, Byr
             V_VT(pDestVar) = VT_VARIANT | VT_BYREF;
             pDestVar->pvarVal = &pByrefArgInfo->m_Val;
         }
-        else if (MscorlibBinder::IsClass((*pSrcObj)->GetMethodTable(), CLASS__VARIANT_WRAPPER))
+        else if (CoreLibBinder::IsClass((*pSrcObj)->GetMethodTable(), CLASS__VARIANT_WRAPPER))
         {
             OBJECTREF WrappedObj = (*((VARIANTWRAPPEROBJECTREF*)pSrcObj))->GetWrappedObject();
             GCPROTECT_BEGIN(WrappedObj)

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -145,9 +144,21 @@ namespace ILCompiler.Reflection.ReadyToRun
             {
                 if (_debugInfo == null)
                 {
-                    _readyToRunReader.RuntimeFunctionToDebugInfo.TryGetValue(Id, out _debugInfo);
+                    int offset;
+                    if (_readyToRunReader.RuntimeFunctionToDebugInfo.TryGetValue(Id, out offset))
+                    {
+                        this._debugInfo = new DebugInfo(this, offset);
+                    }
                 }
                 return _debugInfo;
+            }
+        }
+
+        internal ReadyToRunReader ReadyToRunReader
+        {
+            get
+            {
+                return _readyToRunReader;
             }
         }
 
@@ -219,6 +230,8 @@ namespace ILCompiler.Reflection.ReadyToRun
 
         public MethodSignature<string> Signature { get; }
 
+        public ImmutableArray<string> LocalSignature { get; }
+
         /// <summary>
         /// The type that the method belongs to
         /// </summary>
@@ -283,6 +296,7 @@ namespace ILCompiler.Reflection.ReadyToRun
         /// </summary>
         public ReadyToRunMethod(
             ReadyToRunReader readyToRunReader,
+            PEReader peReader,
             MetadataReader metadataReader,
             EntityHandle methodHandle,
             int entryPointId,
@@ -310,6 +324,15 @@ namespace ILCompiler.Reflection.ReadyToRun
                 case HandleKind.MethodDefinition:
                     {
                         MethodDefinition methodDef = MetadataReader.GetMethodDefinition((MethodDefinitionHandle)MethodHandle);
+                        if (methodDef.RelativeVirtualAddress != 0)
+                        {
+                            MethodBodyBlock mbb = peReader.GetMethodBody(methodDef.RelativeVirtualAddress);
+                            if (!mbb.LocalSignature.IsNil)
+                            {
+                                StandaloneSignature ss = MetadataReader.GetStandaloneSignature(mbb.LocalSignature);
+                                LocalSignature = ss.DecodeLocalSignature(typeProvider, genericContext);
+                            }
+                        }
                         Name = MetadataReader.GetString(methodDef.Name);
                         Signature = methodDef.DecodeSignature<string, DisassemblingGenericContext>(typeProvider, genericContext);
                         owningTypeHandle = methodDef.GetDeclaringType();

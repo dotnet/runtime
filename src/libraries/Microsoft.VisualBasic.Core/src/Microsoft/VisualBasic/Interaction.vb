@@ -1,6 +1,5 @@
 ' Licensed to the .NET Foundation under one or more agreements.
 ' The .NET Foundation licenses this file to you under the MIT license.
-' See the LICENSE file in the project root for more information.
 
 Imports System
 Imports System.Reflection
@@ -396,8 +395,6 @@ Namespace Microsoft.VisualBasic
                 Throw ex
             Catch ex As OutOfMemoryException
                 Throw ex
-            Catch ex As System.Threading.ThreadAbortException
-                Throw ex
 
             Catch ex As Exception
                 'Consume the exception
@@ -532,8 +529,6 @@ Namespace Microsoft.VisualBasic
                 Throw ex
             Catch ex As OutOfMemoryException
                 Throw ex
-            Catch ex As System.Threading.ThreadAbortException
-                Throw ex
             Catch e As Exception
                 Throw VbMakeException(vbErrors.CantCreateObject)
             End Try
@@ -549,8 +544,6 @@ Namespace Microsoft.VisualBasic
                     Throw ex
                 Catch ex As OutOfMemoryException
                     Throw ex
-                Catch ex As System.Threading.ThreadAbortException
-                    Throw ex
                 Catch
                     Throw VbMakeException(vbErrors.CantCreateObject)
                 End Try
@@ -564,8 +557,6 @@ Namespace Microsoft.VisualBasic
                     Catch ex As StackOverflowException
                         Throw ex
                     Catch ex As OutOfMemoryException
-                        Throw ex
-                    Catch ex As System.Threading.ThreadAbortException
                         Throw ex
                     Catch
                         Throw VbMakeException(vbErrors.CantCreateObject)

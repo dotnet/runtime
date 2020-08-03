@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*****************************************************************************
  **                                                                         **
@@ -2094,15 +2093,7 @@ inline ULONG CorSigUncompressData(      // return number of bytes of that compre
 }
 
 
-#if !defined(SELECTANY)
-#if defined(__GNUC__)
-    #define SELECTANY extern __attribute__((weak))
-#else
-    #define SELECTANY extern __declspec(selectany)
-#endif
-#endif
-
-SELECTANY const mdToken g_tkCorEncodeToken[4] ={mdtTypeDef, mdtTypeRef, mdtTypeSpec, mdtBaseType};
+constexpr mdToken g_tkCorEncodeToken[4] ={mdtTypeDef, mdtTypeRef, mdtTypeSpec, mdtBaseType};
 
 // uncompress a token
 inline mdToken CorSigUncompressToken(   // return the token.

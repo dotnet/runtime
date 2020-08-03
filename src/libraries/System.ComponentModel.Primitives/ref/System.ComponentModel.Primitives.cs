@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 // ------------------------------------------------------------------------------
 // Changes to this file must follow the https://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
@@ -262,7 +261,7 @@ namespace System.ComponentModel
         public ParenthesizePropertyNameAttribute() { }
         public ParenthesizePropertyNameAttribute(bool needParenthesis) { }
         public bool NeedParenthesis { get { throw null; } }
-        public override bool Equals(object? o) { throw null; }
+        public override bool Equals(object? obj) { throw null; }
         public override int GetHashCode() { throw null; }
         public override bool IsDefaultAttribute() { throw null; }
     }
@@ -292,7 +291,7 @@ namespace System.ComponentModel
         public static readonly System.ComponentModel.RefreshPropertiesAttribute Repaint;
         public RefreshPropertiesAttribute(System.ComponentModel.RefreshProperties refresh) { }
         public System.ComponentModel.RefreshProperties RefreshProperties { get { throw null; } }
-        public override bool Equals(object? value) { throw null; }
+        public override bool Equals(object? obj) { throw null; }
         public override int GetHashCode() { throw null; }
         public override bool IsDefaultAttribute() { throw null; }
     }

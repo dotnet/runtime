@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Runtime.CompilerServices;
@@ -248,7 +247,7 @@ namespace Microsoft.Extensions.Primitives
         {
 #if NETCOREAPP || NETSTANDARD2_1
             return string.GetHashCode(AsSpan());
-#elif NETSTANDARD2_0
+#elif (NETSTANDARD2_0 || NETFRAMEWORK)
             // This GetHashCode is expensive since it allocates on every call.
             // However this is required to ensure we retain any behavior (such as hash code randomization) that
             // string.GetHashCode has.

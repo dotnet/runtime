@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -311,9 +310,9 @@ namespace ILCompiler
                     foreach (string inputFile in _inputFiles)
                     {
                         string relativeMsilPath = Path.GetRelativePath(_compositeRootPath, inputFile);
-                        if (relativeMsilPath.StartsWith(s_folderUpPrefix))
+                        if (relativeMsilPath == inputFile || relativeMsilPath.StartsWith(s_folderUpPrefix, StringComparison.Ordinal))
                         {
-                            // Input file not in the composite root, emit to root output folder
+                            // Input file not under the composite root, emit to root output folder
                             relativeMsilPath = Path.GetFileName(inputFile);
                         }
                         string standaloneMsilOutputFile = Path.Combine(outputDirectory, relativeMsilPath);
@@ -485,15 +484,18 @@ namespace ILCompiler
                     catch (TypeSystemException ex)
                     {
                         // If compilation fails, don't emit code for this method. It will be Jitted at runtime
-                        Logger.Writer.WriteLine($"Warning: Method `{method}` was not compiled because: {ex.Message}");
+                        if (Logger.IsVerbose)
+                            Logger.Writer.WriteLine($"Warning: Method `{method}` was not compiled because: {ex.Message}");
                     }
                     catch (RequiresRuntimeJitException ex)
                     {
-                        Logger.Writer.WriteLine($"Info: Method `{method}` was not compiled because `{ex.Message}` requires runtime JIT");
+                        if (Logger.IsVerbose)
+                            Logger.Writer.WriteLine($"Info: Method `{method}` was not compiled because `{ex.Message}` requires runtime JIT");
                     }
                     catch (CodeGenerationFailedException ex) when (_resilient)
                     {
-                        Logger.Writer.WriteLine($"Warning: Method `{method}` was not compiled because `{ex.Message}` requires runtime JIT");
+                        if (Logger.IsVerbose)
+                            Logger.Writer.WriteLine($"Warning: Method `{method}` was not compiled because `{ex.Message}` requires runtime JIT");
                     }
                 });
             }

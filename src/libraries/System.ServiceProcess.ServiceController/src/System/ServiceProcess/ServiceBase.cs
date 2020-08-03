@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.ComponentModel;
@@ -306,6 +305,8 @@ namespace System.ServiceProcess
         /// <devdoc>
         ///    <para>Disposes of the resources (other than memory ) used by
         ///       the <see cref='System.ServiceProcess.ServiceBase'/>.</para>
+        ///    This is called from <see cref="Run(ServiceBase[])"/> when all
+        ///    services in the process have entered the SERVICE_STOPPED state.
         /// </devdoc>
         protected override void Dispose(bool disposing)
         {
@@ -411,7 +412,7 @@ namespace System.ServiceProcess
                 catch (Exception e)
                 {
                     _status.currentState = ServiceControlStatus.STATE_PAUSED;
-                    WriteLogEntry(SR.Format(SR.ContinueFailed, e), true);
+                    WriteLogEntry(SR.Format(SR.ContinueFailed, e), EventLogEntryType.Error);
 
                     // We re-throw the exception so that the advapi32 code can report
                     // ERROR_EXCEPTION_IN_SERVICE as it would for native services.
@@ -433,7 +434,7 @@ namespace System.ServiceProcess
             }
             catch (Exception e)
             {
-                WriteLogEntry(SR.Format(SR.CommandFailed, e), true);
+                WriteLogEntry(SR.Format(SR.CommandFailed, e), EventLogEntryType.Error);
 
                 // We should re-throw the exception so that the advapi32 code can report
                 // ERROR_EXCEPTION_IN_SERVICE as it would for native services.
@@ -454,7 +455,7 @@ namespace System.ServiceProcess
                 catch (Exception e)
                 {
                     _status.currentState = ServiceControlStatus.STATE_RUNNING;
-                    WriteLogEntry(SR.Format(SR.PauseFailed, e), true);
+                    WriteLogEntry(SR.Format(SR.PauseFailed, e), EventLogEntryType.Error);
 
                     // We re-throw the exception so that the advapi32 code can report
                     // ERROR_EXCEPTION_IN_SERVICE as it would for native services.
@@ -481,7 +482,7 @@ namespace System.ServiceProcess
             }
             catch (Exception e)
             {
-                WriteLogEntry(SR.Format(SR.PowerEventFailed, e), true);
+                WriteLogEntry(SR.Format(SR.PowerEventFailed, e), EventLogEntryType.Error);
 
                 // We rethrow the exception so that advapi32 code can report
                 // ERROR_EXCEPTION_IN_SERVICE as it would for native services.
@@ -497,7 +498,7 @@ namespace System.ServiceProcess
             }
             catch (Exception e)
             {
-                WriteLogEntry(SR.Format(SR.SessionChangeFailed, e), true);
+                WriteLogEntry(SR.Format(SR.SessionChangeFailed, e), EventLogEntryType.Error);
 
                 // We rethrow the exception so that advapi32 code can report
                 // ERROR_EXCEPTION_IN_SERVICE as it would for native services.
@@ -529,7 +530,7 @@ namespace System.ServiceProcess
                 {
                     _status.currentState = previousState;
                     SetServiceStatus(_statusHandle, pStatus);
-                    WriteLogEntry(SR.Format(SR.StopFailed, e), true);
+                    WriteLogEntry(SR.Format(SR.StopFailed, e), EventLogEntryType.Error);
                     throw;
                 }
             }
@@ -555,7 +556,7 @@ namespace System.ServiceProcess
             }
             catch (Exception e)
             {
-                WriteLogEntry(SR.Format(SR.ShutdownFailed, e), true);
+                WriteLogEntry(SR.Format(SR.ShutdownFailed, e), EventLogEntryType.Error);
                 throw;
             }
         }
@@ -640,7 +641,7 @@ namespace System.ServiceProcess
                     service.Dispose();
                     if (!res)
                     {
-                        service.WriteLogEntry(SR.Format(SR.StartFailed, errorMessage), true);
+                        service.WriteLogEntry(SR.Format(SR.StartFailed, errorMessage), EventLogEntryType.Error);
                     }
                 }
             }
@@ -846,7 +847,7 @@ namespace System.ServiceProcess
             }
             catch (Exception e)
             {
-                WriteLogEntry(SR.Format(SR.StartFailed, e), true);
+                WriteLogEntry(SR.Format(SR.StartFailed, e), EventLogEntryType.Error);
                 _status.currentState = ServiceControlStatus.STATE_STOPPED;
 
                 // We capture the exception so that it can be propagated
@@ -899,7 +900,7 @@ namespace System.ServiceProcess
                 if (_statusHandle == (IntPtr)0)
                 {
                     string errorMessage = new Win32Exception().Message;
-                    WriteLogEntry(SR.Format(SR.StartFailed, errorMessage), true);
+                    WriteLogEntry(SR.Format(SR.StartFailed, errorMessage), EventLogEntryType.Error);
                 }
 
                 _status.controlsAccepted = _acceptedCommands;
@@ -942,21 +943,21 @@ namespace System.ServiceProcess
                 statusOK = SetServiceStatus(_statusHandle, pStatus);
                 if (!statusOK)
                 {
-                    WriteLogEntry(SR.Format(SR.StartFailed, new Win32Exception().Message), true);
+                    WriteLogEntry(SR.Format(SR.StartFailed, new Win32Exception().Message), EventLogEntryType.Error);
                     _status.currentState = ServiceControlStatus.STATE_STOPPED;
                     SetServiceStatus(_statusHandle, pStatus);
                 }
             }
         }
 
-        private void WriteLogEntry(string message, bool error = false)
+        private void WriteLogEntry(string message, EventLogEntryType type = EventLogEntryType.Information)
         {
             // EventLog failures shouldn't affect the service operation
             try
             {
                 if (AutoLog)
                 {
-                    EventLog.WriteEntry(message);
+                    EventLog.WriteEntry(message, type);
                 }
             }
             catch

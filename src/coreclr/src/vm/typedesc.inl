@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //
 // File: typedesc.inl
 //
@@ -23,7 +22,7 @@ inline PTR_MethodTable  TypeDesc::GetMethodTable() {
         return NULL;
 
     if (GetInternalCorElementType() == ELEMENT_TYPE_FNPTR)
-        return MscorlibBinder::GetElementType(ELEMENT_TYPE_U);
+        return CoreLibBinder::GetElementType(ELEMENT_TYPE_U);
 
     _ASSERTE(HasTypeParam());
     ParamTypeDesc* asParam = dac_cast<PTR_ParamTypeDesc>(this);

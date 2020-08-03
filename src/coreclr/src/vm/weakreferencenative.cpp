@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*============================================================
 **
@@ -440,7 +439,7 @@ FCIMPL3(void, WeakReferenceNative::Create, WeakReferenceObject * pThisUNSAFE, Ob
         COMPlusThrow(kNullReferenceException);
 
     if (pWeakReferenceMT == NULL)
-        pWeakReferenceMT = MscorlibBinder::GetClass(CLASS__WEAKREFERENCE);
+        pWeakReferenceMT = CoreLibBinder::GetClass(CLASS__WEAKREFERENCE);
 
     _ASSERTE(gc.pThis->GetMethodTable()->CanCastToClass(pWeakReferenceMT));
 

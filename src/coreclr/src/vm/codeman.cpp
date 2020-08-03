@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 // codeman.cpp - a managment class for handling multiple code managers
 //
 
@@ -6611,14 +6610,15 @@ StubCodeBlockKind ReadyToRunJitManager::GetStubCodeBlockKind(RangeSection * pRan
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
+        SUPPORTS_DAC;
     }
     CONTRACTL_END;
 
     DWORD rva = (DWORD)(currentPC - pRangeSection->LowAddress);
 
-    ReadyToRunInfo * pReadyToRunInfo = dac_cast<PTR_Module>(pRangeSection->pHeapListOrZapModule)->GetReadyToRunInfo();
+    PTR_ReadyToRunInfo pReadyToRunInfo = dac_cast<PTR_Module>(pRangeSection->pHeapListOrZapModule)->GetReadyToRunInfo();
 
-    IMAGE_DATA_DIRECTORY * pDelayLoadMethodCallThunksDir = pReadyToRunInfo->FindSection(ReadyToRunSectionType::DelayLoadMethodCallThunks);
+    PTR_IMAGE_DATA_DIRECTORY pDelayLoadMethodCallThunksDir = pReadyToRunInfo->GetDelayMethodCallThunksSection();
     if (pDelayLoadMethodCallThunksDir != NULL)
     {
         if (pDelayLoadMethodCallThunksDir->VirtualAddress <= rva
@@ -6778,6 +6778,12 @@ BOOL ReadyToRunJitManager::JitCodeToMethodInfo(RangeSection * pRangeSection,
     } CONTRACTL_END;
 
     // READYTORUN: FUTURE: Hot-cold spliting
+
+    // If the address is in a thunk, return NULL.
+    if (GetStubCodeBlockKind(pRangeSection, currentPC) != STUB_CODE_BLOCK_UNKNOWN)
+    {
+        return FALSE;
+    }
 
     TADDR currentInstr = PCODEToPINSTR(currentPC);
 

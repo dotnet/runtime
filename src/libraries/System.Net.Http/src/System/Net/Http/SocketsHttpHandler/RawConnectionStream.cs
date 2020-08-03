@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.IO;
 using System.Runtime.ExceptionServices;
@@ -15,7 +14,7 @@ namespace System.Net.Http
         {
             public RawConnectionStream(HttpConnection connection) : base(connection)
             {
-                if (NetEventSource.IsEnabled) NetEventSource.Info(this);
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this);
             }
 
             public sealed override bool CanRead => true;
@@ -34,7 +33,7 @@ namespace System.Net.Http
                 if (bytesRead == 0)
                 {
                     // We cannot reuse this connection, so close it.
-                    if (HttpTelemetry.IsEnabled) LogRequestStop();
+                    if (HttpTelemetry.Log.IsEnabled()) LogRequestStop();
                     _connection = null;
                     connection.Dispose();
                 }
@@ -82,7 +81,7 @@ namespace System.Net.Http
                     CancellationHelper.ThrowIfCancellationRequested(cancellationToken);
 
                     // We cannot reuse this connection, so close it.
-                    if (HttpTelemetry.IsEnabled) LogRequestStop();
+                    if (HttpTelemetry.Log.IsEnabled()) LogRequestStop();
                     _connection = null;
                     connection.Dispose();
                 }
@@ -144,7 +143,7 @@ namespace System.Net.Http
             private void Finish(HttpConnection connection)
             {
                 // We cannot reuse this connection, so close it.
-                if (HttpTelemetry.IsEnabled) LogRequestStop();
+                if (HttpTelemetry.Log.IsEnabled()) LogRequestStop();
                 connection.Dispose();
                 _connection = null;
             }

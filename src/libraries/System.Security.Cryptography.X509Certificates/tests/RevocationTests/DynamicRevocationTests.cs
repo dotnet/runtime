@@ -1,17 +1,16 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Security.Cryptography.X509Certificates.Tests.Common;
 using Xunit;
 
 namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
 {
     [OuterLoop("These tests run serially at about 1 second each, and the code shouldn't change that often.")]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/31249", TestPlatforms.OSX)]
     public static class DynamicRevocationTests
     {
         // The CI machines are doing an awful lot of things at once, be generous with the timeout;
@@ -20,29 +19,10 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
         private static readonly Oid s_tlsServerOid = new Oid("1.3.6.1.5.5.7.3.1", null);
 
         private static readonly X509ChainStatusFlags ThisOsRevocationStatusUnknown =
+                PlatformDetection.IsOSX ?
+                X509ChainStatusFlags.RevocationStatusUnknown :
                 X509ChainStatusFlags.RevocationStatusUnknown | X509ChainStatusFlags.OfflineRevocation;
 
-        [Flags]
-        public enum PkiOptions
-        {
-            None = 0,
-
-            IssuerRevocationViaCrl = 1 << 0,
-            IssuerRevocationViaOcsp = 1 << 1,
-            EndEntityRevocationViaCrl = 1 << 2,
-            EndEntityRevocationViaOcsp = 1 << 3,
-
-            CrlEverywhere = IssuerRevocationViaCrl | EndEntityRevocationViaCrl,
-            OcspEverywhere = IssuerRevocationViaOcsp | EndEntityRevocationViaOcsp,
-            AllIssuerRevocation = IssuerRevocationViaCrl | IssuerRevocationViaOcsp,
-            AllEndEntityRevocation = EndEntityRevocationViaCrl | EndEntityRevocationViaOcsp,
-            AllRevocation = CrlEverywhere | OcspEverywhere,
-
-            IssuerAuthorityHasDesignatedOcspResponder = 1 << 16,
-            RootAuthorityHasDesignatedOcspResponder = 1 << 17,
-            NoIssuerCertDistributionUri = 1 << 18,
-            NoRootCertDistributionUri = 1 << 18,
-        }
 
         private delegate void RunSimpleTest(
             CertificateAuthority root,
@@ -78,6 +58,16 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
                                 continue;
                             }
 
+                            // https://github.com/dotnet/runtime/issues/31249
+                            // not all scenarios are working on macOS.
+                            if (PlatformDetection.IsOSX)
+                            {
+                                if (!endEntityRevocation.HasFlag(PkiOptions.EndEntityRevocationViaOcsp))
+                                {
+                                    continue;
+                                }
+                            }
+
                             yield return new object[] { designationOptions | issuerRevocation | endEntityRevocation };
                         }
                     }
@@ -104,6 +94,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
 
         [Theory]
         [MemberData(nameof(AllViableRevocation))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/31249", TestPlatforms.OSX)]
         public static void RevokeIntermediate(PkiOptions pkiOptions)
         {
             SimpleTest(
@@ -150,6 +141,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
 
         [Theory]
         [MemberData(nameof(AllViableRevocation))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/31249", TestPlatforms.OSX)]
         public static void RevokeIntermediateAndEndEntity(PkiOptions pkiOptions)
         {
             SimpleTest(
@@ -178,6 +170,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
 
         [Theory]
         [MemberData(nameof(AllViableRevocation))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/31249", TestPlatforms.OSX)]
         public static void RevokeRoot(PkiOptions pkiOptions)
         {
             SimpleTest(
@@ -214,6 +207,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
 
         [Theory]
         [MemberData(nameof(AllViableRevocation))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/31249", TestPlatforms.OSX)]
         public static void RevokeRootAndEndEntity(PkiOptions pkiOptions)
         {
             SimpleTest(
@@ -248,6 +242,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
 
         [Theory]
         [MemberData(nameof(AllViableRevocation))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/31249", TestPlatforms.OSX)]
         public static void RevokeRootAndIntermediate(PkiOptions pkiOptions)
         {
             SimpleTest(
@@ -283,6 +278,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
 
         [Theory]
         [MemberData(nameof(AllViableRevocation))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/31249", TestPlatforms.OSX)]
         public static void RevokeEverything(PkiOptions pkiOptions)
         {
             SimpleTest(
@@ -405,6 +401,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
         [Theory]
         [InlineData(PkiOptions.OcspEverywhere)]
         [InlineData(PkiOptions.IssuerRevocationViaOcsp | PkiOptions.AllEndEntityRevocation)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/31249", TestPlatforms.OSX)]
         public static void RevokeEndEntity_RootUnrelatedOcsp(PkiOptions pkiOptions)
         {
             SimpleTest(
@@ -493,6 +490,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
         [InlineData(false, true)]
         [InlineData(true, false)]
         [InlineData(true, true)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/31249", TestPlatforms.OSX)]
         public static void RevokeIntermediate_PolicyErrors_NotTimeValid(bool policyErrors, bool notTimeValid)
         {
             SimpleTest(
@@ -579,6 +577,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
         [InlineData(false, true)]
         [InlineData(true, false)]
         [InlineData(true, true)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/31249", TestPlatforms.OSX)]
         public static void RevokeEndEntity_PolicyErrors_NotTimeValid(bool policyErrors, bool notTimeValid)
         {
             SimpleTest(
@@ -660,6 +659,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
 
         [Theory]
         [MemberData(nameof(AllViableRevocation))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/31249", TestPlatforms.OSX)]
         public static void RevokeEndEntity_RootRevocationOffline(PkiOptions pkiOptions)
         {
             BuildPrivatePki(
@@ -733,6 +733,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
 
         [Theory]
         [MemberData(nameof(AllViableRevocation))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/31249", TestPlatforms.OSX)]
         public static void NothingRevoked_RootRevocationOffline(PkiOptions pkiOptions)
         {
             BuildPrivatePki(
@@ -819,6 +820,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
 
         [Theory]
         [MemberData(nameof(AllViableRevocation))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/31249", TestPlatforms.OSX)]
         public static void RevokeIntermediateWithInvalidRevocationSignature(PkiOptions pkiOptions)
         {
             SimpleTest(
@@ -847,6 +849,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
 
         [Theory]
         [MemberData(nameof(AllViableRevocation))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/31249", TestPlatforms.OSX)]
         public static void RevokeIntermediateWithInvalidRevocationName(PkiOptions pkiOptions)
         {
             SimpleTest(
@@ -884,6 +887,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
 
         [Theory]
         [MemberData(nameof(AllViableRevocation))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/31249", TestPlatforms.OSX)]
         public static void RevokeIntermediateWithExpiredRevocation(PkiOptions pkiOptions)
         {
             SimpleTest(
@@ -924,6 +928,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
 
         [Theory]
         [MemberData(nameof(AllViableRevocation))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/31249", TestPlatforms.OSX)]
         public static void CheckIntermediateWithExpiredRevocation(PkiOptions pkiOptions)
         {
             SimpleTest(
@@ -1276,10 +1281,8 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
             bool registerAuthorities = true,
             bool pkiOptionsInSubject = false)
         {
-            bool rootDistributionViaHttp = !pkiOptions.HasFlag(PkiOptions.NoRootCertDistributionUri);
             bool issuerRevocationViaCrl = pkiOptions.HasFlag(PkiOptions.IssuerRevocationViaCrl);
             bool issuerRevocationViaOcsp = pkiOptions.HasFlag(PkiOptions.IssuerRevocationViaOcsp);
-            bool issuerDistributionViaHttp = !pkiOptions.HasFlag(PkiOptions.NoIssuerCertDistributionUri);
             bool endEntityRevocationViaCrl = pkiOptions.HasFlag(PkiOptions.EndEntityRevocationViaCrl);
             bool endEntityRevocationViaOcsp = pkiOptions.HasFlag(PkiOptions.EndEntityRevocationViaOcsp);
 
@@ -1288,81 +1291,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
                     endEntityRevocationViaCrl || endEntityRevocationViaOcsp,
                 "At least one revocation mode is enabled");
 
-            // All keys created in this method are smaller than recommended,
-            // but they only live for a few seconds (at most),
-            // and never communicate out of process.
-            const int KeySize = 1024;
-
-            using (RSA rootKey = RSA.Create(KeySize))
-            using (RSA intermedKey = RSA.Create(KeySize))
-            using (RSA eeKey = RSA.Create(KeySize))
-            {
-                var rootReq = new CertificateRequest(
-                    BuildSubject("A Revocation Test Root", testName, pkiOptions, pkiOptionsInSubject),
-                    rootKey,
-                    HashAlgorithmName.SHA256,
-                    RSASignaturePadding.Pkcs1);
-
-                X509BasicConstraintsExtension caConstraints =
-                    new X509BasicConstraintsExtension(true, false, 0, true);
-
-                rootReq.CertificateExtensions.Add(caConstraints);
-                var rootSkid = new X509SubjectKeyIdentifierExtension(rootReq.PublicKey, false);
-                rootReq.CertificateExtensions.Add(
-                    rootSkid);
-
-                DateTimeOffset start = DateTimeOffset.UtcNow;
-                DateTimeOffset end = start.AddMonths(3);
-
-                // Don't dispose this, it's being transferred to the CertificateAuthority
-                X509Certificate2 rootCert = rootReq.CreateSelfSigned(start.AddDays(-2), end.AddDays(2));
-                responder = RevocationResponder.CreateAndListen();
-
-                string certUrl = $"{responder.UriPrefix}cert/{rootSkid.SubjectKeyIdentifier}.cer";
-                string cdpUrl = $"{responder.UriPrefix}crl/{rootSkid.SubjectKeyIdentifier}.crl";
-                string ocspUrl = $"{responder.UriPrefix}ocsp/{rootSkid.SubjectKeyIdentifier}";
-
-                rootAuthority = new CertificateAuthority(
-                    rootCert,
-                    rootDistributionViaHttp ? certUrl : null,
-                    issuerRevocationViaCrl ? cdpUrl : null,
-                    issuerRevocationViaOcsp ? ocspUrl : null);
-
-                // Don't dispose this, it's being transferred to the CertificateAuthority
-                X509Certificate2 intermedCert;
-
-                {
-                    X509Certificate2 intermedPub = rootAuthority.CreateSubordinateCA(
-                        BuildSubject("A Revocation Test CA", testName, pkiOptions, pkiOptionsInSubject),
-                        intermedKey);
-
-                    intermedCert = intermedPub.CopyWithPrivateKey(intermedKey);
-                    intermedPub.Dispose();
-                }
-
-                X509SubjectKeyIdentifierExtension intermedSkid =
-                    intermedCert.Extensions.OfType<X509SubjectKeyIdentifierExtension>().Single();
-
-                certUrl = $"{responder.UriPrefix}cert/{intermedSkid.SubjectKeyIdentifier}.cer";
-                cdpUrl = $"{responder.UriPrefix}crl/{intermedSkid.SubjectKeyIdentifier}.crl";
-                ocspUrl = $"{responder.UriPrefix}ocsp/{intermedSkid.SubjectKeyIdentifier}";
-
-                intermediateAuthority = new CertificateAuthority(
-                    intermedCert,
-                    issuerDistributionViaHttp ? certUrl : null,
-                    endEntityRevocationViaCrl ? cdpUrl : null,
-                    endEntityRevocationViaOcsp ? ocspUrl : null);
-
-                endEntityCert = intermediateAuthority.CreateEndEntity(
-                    BuildSubject("A Revocation Test Cert", testName, pkiOptions, pkiOptionsInSubject),
-                    eeKey);
-            }
-
-            if (registerAuthorities)
-            {
-                responder.AddCertificateAuthority(rootAuthority);
-                responder.AddCertificateAuthority(intermediateAuthority);
-            }
+            CertificateAuthority.BuildPrivatePki(pkiOptions, out responder, out rootAuthority, out intermediateAuthority, out endEntityCert, testName, registerAuthorities, pkiOptionsInSubject);
         }
 
         private static string BuildSubject(

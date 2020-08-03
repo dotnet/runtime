@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Linq;
@@ -74,8 +73,11 @@ namespace System.IO.Tests
             // Make sure we're returning the native error as expected (and not the PAL error on Unix)
             using (LastError le = new LastError(Path.GetRandomFileName()))
             {
-                // Conveniently ERROR_FILE_NOT_FOUND and ENOENT are both 0x2
-                Assert.Equal(2, le.Error);
+                // while ERROR_FILE_NOT_FOUND/ENOENT have predictable values on Windows, Linux and Mac,
+                //  we can't rely on ENOENT having the same value on other platforms. Instead, assert
+                //  that we didn't get the PAL error because we know its value.
+                const int PAL_Error_ENOENT = 0x1002D;
+                Assert.NotEqual(PAL_Error_ENOENT, le.Error);
             }
         }
 

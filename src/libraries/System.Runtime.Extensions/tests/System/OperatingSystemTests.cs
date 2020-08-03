@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Xunit;
 
@@ -9,6 +8,7 @@ namespace System.Tests
     public static class OperatingSystemTests
     {
         [Theory]
+        [InlineData(PlatformID.Other, "1.0.0.0")]
         [InlineData(PlatformID.MacOSX, "1.2")]
         [InlineData(PlatformID.Unix, "1.2.3")]
         [InlineData(PlatformID.Win32NT, "1.2.3.4")]

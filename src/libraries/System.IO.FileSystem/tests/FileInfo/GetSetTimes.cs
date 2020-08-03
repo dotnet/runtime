@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Linq;
@@ -187,12 +186,9 @@ namespace System.IO.Tests
         public void DeleteAfterEnumerate_TimesStillSet()
         {
             // When enumerating we populate the state as we already have it.
-            DateTime beforeTime = DateTime.UtcNow.AddSeconds(-1);
             string filePath = GetTestFilePath();
             File.Create(filePath).Dispose();
             FileInfo info = new DirectoryInfo(TestDirectory).EnumerateFiles().First();
-
-            DateTime afterTime = DateTime.UtcNow.AddSeconds(1);
 
             info.Delete();
             Assert.Equal(DateTime.FromFileTimeUtc(0), info.LastAccessTimeUtc);

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Microsoft.Win32.SafeHandles;
 using System.Collections.Generic;
@@ -10,6 +9,7 @@ using System.Net.Sockets;
 using System.Security;
 using System.Text;
 using System.Threading;
+using System.Runtime.Versioning;
 
 namespace System.Diagnostics
 {
@@ -42,12 +42,14 @@ namespace System.Diagnostics
         }
 
         [CLSCompliant(false)]
+        [MinimumOSPlatform("windows7.0")]
         public static Process Start(string fileName, string userName, SecureString password, string domain)
         {
             throw new PlatformNotSupportedException(SR.ProcessStartWithPasswordAndDomainNotSupported);
         }
 
         [CLSCompliant(false)]
+        [MinimumOSPlatform("windows7.0")]
         public static Process Start(string fileName, string arguments, string userName, SecureString password, string domain)
         {
             throw new PlatformNotSupportedException(SR.ProcessStartWithPasswordAndDomainNotSupported);
@@ -304,12 +306,6 @@ namespace System.Diagnostics
                     throw new Win32Exception(); // match Windows exception
                 }
             }
-        }
-
-        /// <summary>Gets the ID of the current process.</summary>
-        private static int GetCurrentProcessId()
-        {
-            return Interop.Sys.GetPid();
         }
 
         /// <summary>Checks whether the argument is a direct child of this process.</summary>

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 // ===========================================================================
 // File: Prestub.cpp
 //
@@ -1064,11 +1063,21 @@ PCODE MethodDesc::JitCompileCodeLocked(PrepareCodeConfig* pConfig, JitListLockEn
     bool shouldCountCalls = false;
     if (pFlags->IsSet(CORJIT_FLAGS::CORJIT_FLAG_TIER0))
     {
-        _ASSERTE(pConfig->GetCodeVersion().GetOptimizationTier() == NativeCodeVersion::OptimizationTier0);
         _ASSERTE(pConfig->GetMethodDesc()->IsEligibleForTieredCompilation());
 
         if (pConfig->JitSwitchedToOptimized())
         {
+#ifdef _DEBUG
+            // Call counting may already have been disabled due to the possibility of concurrent or reentering JIT of the same
+            // native code version of a method. The current optimization tier should be consistent with the change being made
+            // (Tier 0 to Optimized), such that the tier is not changed in an unexpected way or at an unexpected time. Since
+            // changes to the optimization tier are unlocked, this assertion is just a speculative check on possible values.
+            NativeCodeVersion::OptimizationTier previousOptimizationTier = pConfig->GetCodeVersion().GetOptimizationTier();
+            _ASSERTE(
+                previousOptimizationTier == NativeCodeVersion::OptimizationTier0 ||
+                previousOptimizationTier == NativeCodeVersion::OptimizationTierOptimized);
+#endif // _DEBUG
+
             // Update the tier in the code version. The JIT may have decided to switch from tier 0 to optimized, in which case
             // call counting would have to be disabled for the method.
             NativeCodeVersion codeVersion = pConfig->GetCodeVersion();
@@ -1083,7 +1092,7 @@ PCODE MethodDesc::JitCompileCodeLocked(PrepareCodeConfig* pConfig, JitListLockEn
             shouldCountCalls = true;
         }
     }
-#endif
+#endif // FEATURE_TIERED_COMPILATION
 
     // Aside from rejit, performing a SetNativeCodeInterlocked at this point
     // generally ensures that there is only one winning version of the native
@@ -1476,7 +1485,7 @@ Stub * CreateUnboxingILStubForSharedGenericValueTypeMethods(MethodDesc* pTargetM
     CreateInstantiatingILStubTargetSig(pTargetMD, typeContext, &stubSigBuilder);
 
     // 2. Emit the method body
-    mdToken tokRawData = pCode->GetToken(MscorlibBinder::GetField(FIELD__RAW_DATA__DATA));
+    mdToken tokRawData = pCode->GetToken(CoreLibBinder::GetField(FIELD__RAW_DATA__DATA));
 
     // 2.1 Push the thisptr
     // We need to skip over the MethodTable*
@@ -2403,7 +2412,7 @@ EXTERN_C PCODE STDCALL ExternalMethodFixupWorker(TransitionBlock * pTransitionBl
     //
     // In this IL stub implementation we call the native method kernel32!GetFileAttributes,
     // and then we immediately try to save the Last Error code by calling the
-    // mscorlib method System.StubHelpers.StubHelpers.SetLastError().
+    // CoreLib method System.StubHelpers.StubHelpers.SetLastError().
     //
     // However when we are coming from a precompiled IL Stub in an ngen image
     // we must use an ExternalMethodFixup to find the target address of
@@ -3375,7 +3384,7 @@ PCODE DynamicHelperFixup(TransitionBlock * pTransitionBlock, TADDR * pCell, DWOR
                 }
                 else
                 {
-                    target = ECall::GetFCallImpl(MscorlibBinder::GetMethod(METHOD__DELEGATE__CONSTRUCT_DELEGATE));
+                    target = ECall::GetFCallImpl(CoreLibBinder::GetMethod(METHOD__DELEGATE__CONSTRUCT_DELEGATE));
                     ctorData.pArg3 = NULL;
                 }
 

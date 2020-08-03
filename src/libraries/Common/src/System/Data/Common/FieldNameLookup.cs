@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 
 
@@ -34,7 +33,7 @@ namespace System.Data.ProviderBase
         //The compare info is specified by the server by specifying the default LocaleId.
         protected override CompareInfo GetCompareInfo()
         {
-            CompareInfo compareInfo = null;
+            CompareInfo? compareInfo = null;
             if (-1 != _defaultLocaleID)
             {
                 compareInfo = CompareInfo.GetCompareInfo(_defaultLocaleID);

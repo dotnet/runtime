@@ -1,5 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
-// See the LICENSE file in the project root for more information.
+// The .NET Foundation licenses this file to you under the MIT license.
 //
 // SmtpClientTest.cs - Unit Test Cases for System.Net.Mail.SmtpClient
 //
@@ -293,7 +293,7 @@ namespace System.Net.Mail.Tests
         {
             using var server = new LoopbackSmtpServer();
             using SmtpClient client = server.CreateClient();
-            client.Credentials = new NetworkCredential("Foo", "Bar");
+            client.Credentials = new NetworkCredential("foo", "bar");
             MailMessage msg = new MailMessage("foo@example.com", "bar@example.com", "hello", "howdydoo");
 
             client.Send(msg);
@@ -303,8 +303,8 @@ namespace System.Net.Mail.Tests
             Assert.Equal("hello", server.Message.Subject);
             Assert.Equal("howdydoo", server.Message.Body);
             Assert.Equal(GetClientDomain(), server.ClientDomain);
-            Assert.Equal("Foo", server.Username);
-            Assert.Equal("Bar", server.Password);
+            Assert.Equal("foo", server.Username);
+            Assert.Equal("bar", server.Password);
             Assert.Equal("LOGIN", server.AuthMethodUsed, StringComparer.OrdinalIgnoreCase);
         }
 

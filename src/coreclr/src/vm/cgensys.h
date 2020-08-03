@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 // CGENSYS.H -
 //
 // Generic header for choosing system-dependent helpers
@@ -144,7 +143,7 @@ BOOL GetAnyThunkTarget (T_CONTEXT *pctx, TADDR *pTarget, TADDR *pTargetMethodDes
 
 //
 // ResetProcessorStateHolder saves/restores processor state around calls to
-// mscorlib during exception handling.
+// CoreLib during exception handling.
 //
 class ResetProcessorStateHolder
 {

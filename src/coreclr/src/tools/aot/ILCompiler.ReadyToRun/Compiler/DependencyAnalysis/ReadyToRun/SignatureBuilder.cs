@@ -1,9 +1,10 @@
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
 using System.Reflection.Metadata;
+using System.Reflection.Metadata.Ecma335;
 
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
@@ -396,11 +397,10 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             bool enforceDefEncoding,
             bool enforceOwningType,
             SignatureContext context,
-            bool isUnboxingStub,
             bool isInstantiatingStub)
         {
             uint flags = 0;
-            if (isUnboxingStub)
+            if (method.Unboxing)
             {
                 flags |= (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_UnboxingStub;
             }
@@ -442,10 +442,17 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
                             // Owner type is needed for type specs to instantiating stubs or generics with signature variables still present
                             if (!method.Method.OwningType.IsDefType &&
-                                ((flags & (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_InstantiatingStub) != 0 || method.Method.OwningType.ContainsSignatureVariables())
-                                || method.Method.IsArrayAddressMethod())
+                                ((flags & (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_InstantiatingStub) != 0 || method.Method.OwningType.ContainsSignatureVariables()))
                             {
                                 flags |= (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_OwnerType;
+                            }
+                            else if (method.Method.IsArrayMethod())
+                            {
+                                var memberRefMethod = method.Token.Module.GetMethod(MetadataTokens.EntityHandle((int)method.Token.Token));
+                                if (memberRefMethod.OwningType != method.Method.OwningType)
+                                {
+                                    flags |= (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_OwnerType;
+                                }
                             }
 
                             EmitUInt(flags);

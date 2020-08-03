@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -55,7 +54,7 @@ namespace System.Net.Http
                     !algorithm.Equals(Sha256Sess, StringComparison.OrdinalIgnoreCase) &&
                     !algorithm.Equals(MD5Sess, StringComparison.OrdinalIgnoreCase))
                 {
-                    if (NetEventSource.IsEnabled) NetEventSource.Error(digestResponse, $"Algorithm not supported: {algorithm}");
+                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(digestResponse, $"Algorithm not supported: {algorithm}");
                     return null;
                 }
             }
@@ -68,7 +67,7 @@ namespace System.Net.Http
             string? nonce;
             if (!digestResponse.Parameters.TryGetValue(Nonce, out nonce))
             {
-                if (NetEventSource.IsEnabled) NetEventSource.Error(digestResponse, "Nonce missing");
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(digestResponse, "Nonce missing");
                 return null;
             }
 
@@ -79,7 +78,7 @@ namespace System.Net.Http
             string? realm;
             if (!digestResponse.Parameters.TryGetValue(Realm, out realm))
             {
-                if (NetEventSource.IsEnabled) NetEventSource.Error(digestResponse, "Realm missing");
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(digestResponse, "Realm missing");
                 return null;
             }
 
@@ -237,17 +236,7 @@ namespace System.Net.Http
                 bool hashComputed = hash.TryComputeHash(Encoding.UTF8.GetBytes(data), result, out int bytesWritten);
                 Debug.Assert(hashComputed && bytesWritten == result.Length);
 
-                StringBuilder sb = StringBuilderCache.Acquire(result.Length * 2);
-
-                Span<char> byteX2 = stackalloc char[2];
-                for (int i = 0; i < result.Length; i++)
-                {
-                    bool formatted = result[i].TryFormat(byteX2, out int charsWritten, "x2");
-                    Debug.Assert(formatted && charsWritten == 2);
-                    sb.Append(byteX2);
-                }
-
-                return StringBuilderCache.GetStringAndRelease(sb);
+                return HexConverter.ToString(result, HexConverter.Casing.Lower);
             }
         }
 

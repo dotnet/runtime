@@ -2147,7 +2147,7 @@ mono_is_shadow_copy_enabled (MonoDomain *domain, const gchar *dir_name)
 	if (!is_ok (error))
 		goto exit;
 
-	found = !!strstr (dir_name, base_dir);
+	found = strstr (dir_name, base_dir) != 0;
 	if (found)
 		goto exit;
 

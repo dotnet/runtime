@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Microsoft.Win32.SafeHandles;
 using System;
@@ -194,7 +193,7 @@ namespace System.IO.Tests
 
             Action act = () => // separate method to avoid JIT lifetime-extension issues
             {
-                var fs2 = new MyFileStream(GetTestFilePath(), FileMode.Create)
+                new MyFileStream(GetTestFilePath(), FileMode.Create)
                 {
                     DisposeMethod = (disposing) =>
                     {

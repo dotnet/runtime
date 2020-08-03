@@ -1,10 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
-    <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkCurrent)</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent);net461</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="AssemblyInfo.cs" />
     <Compile Include="Dataflow\ActionBlockTests.cs" />
     <Compile Include="Dataflow\BatchBlockTests.cs" />
     <Compile Include="Dataflow\BatchedJoinBlockTests.cs" />
@@ -26,5 +25,8 @@
              Link="Common\System\Diagnostics\Tracing\TestEventListener.cs" />
     <Compile Include="$(CommonTestPath)System\Diagnostics\DebuggerAttributes.cs"
              Link="Common\System\Diagnostics\DebuggerAttributes.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == 'net461'">
+    <ProjectReference Include="..\src\System.Threading.Tasks.Dataflow.csproj" />
   </ItemGroup>
 </Project>

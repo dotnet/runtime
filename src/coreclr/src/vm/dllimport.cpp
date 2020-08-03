@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //
 // File: DllImport.cpp
 //
@@ -51,6 +50,12 @@
 #include "eventtrace.h"
 #include "clr/fs/path.h"
 using namespace clr::fs;
+
+// Specifies whether coreclr is embedded or standalone
+extern bool g_coreclr_embedded;
+
+// Specifies whether hostpolicy is embedded in executable or standalone
+extern bool g_hostpolicy_embedded;
 
 // remove when we get an updated SDK
 #define LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR 0x00000100
@@ -363,7 +368,7 @@ public:
             pcs->EmitCALL(METHOD__CULTURE_INFO__GET_CURRENT_CULTURE, 0, 1);
 
             // save the current culture
-            LocalDesc locDescCulture(MscorlibBinder::GetClass(CLASS__CULTURE_INFO));
+            LocalDesc locDescCulture(CoreLibBinder::GetClass(CLASS__CULTURE_INFO));
             DWORD dwCultureLocalNum = pcs->NewLocal(locDescCulture);
 
             pcs->EmitSTLOC(dwCultureLocalNum);
@@ -651,7 +656,7 @@ public:
             MetaSig nsig(
                 GetStubTargetMethodSig(),
                 GetStubTargetMethodSigLength(),
-                MscorlibBinder::GetModule(),
+                CoreLibBinder::GetModule(),
                 &typeContext);
 
             CorElementType type;
@@ -879,7 +884,7 @@ public:
             PCCOR_SIGNATURE pManagedSig;
             ULONG           cManagedSig;
 
-            IMDInternalImport* pIMDI = MscorlibBinder::GetModule()->GetMDImport();
+            IMDInternalImport* pIMDI = CoreLibBinder::GetModule()->GetMDImport();
 
             pStubMD->GetSig(&pManagedSig, &cManagedSig);
 
@@ -1244,7 +1249,7 @@ public:
         pCleanupStartLabel = pcsSetup->NewCodeLabel();
         pReturnLabel = pcsSetup->NewCodeLabel();
 
-        dwExceptionDispatchInfoLocal = pcsSetup->NewLocal(MscorlibBinder::GetClass(CLASS__EXCEPTION_DISPATCH_INFO));
+        dwExceptionDispatchInfoLocal = pcsSetup->NewLocal(CoreLibBinder::GetClass(CLASS__EXCEPTION_DISPATCH_INFO));
         pcsSetup->EmitLDNULL();
         pcsSetup->EmitSTLOC(dwExceptionDispatchInfoLocal);
 
@@ -1878,7 +1883,7 @@ void NDirectStubLinker::NeedsCleanupList()
         SetCleanupNeeded();
 
         // we setup a new local that will hold the cleanup work list
-        LocalDesc desc(MscorlibBinder::GetClass(CLASS__CLEANUP_WORK_LIST_ELEMENT));
+        LocalDesc desc(CoreLibBinder::GetClass(CLASS__CLEANUP_WORK_LIST_ELEMENT));
         m_dwCleanupWorkListLocalNum = NewLocal(desc);
     }
 }
@@ -1934,7 +1939,7 @@ void NDirectStubLinker::Begin(DWORD dwStubFlags)
             m_pcsDispatch->EmitADD();
             m_pcsDispatch->EmitLDIND_I();      // get OBJECTHANDLE
             m_pcsDispatch->EmitLDIND_REF();    // get Delegate object
-            m_pcsDispatch->EmitLDFLD(GetToken(MscorlibBinder::GetField(FIELD__DELEGATE__TARGET)));
+            m_pcsDispatch->EmitLDFLD(GetToken(CoreLibBinder::GetField(FIELD__DELEGATE__TARGET)));
         }
     }
 
@@ -2131,7 +2136,7 @@ void NDirectStubLinker::DoNDirect(ILCodeStream *pcsEmit, DWORD dwStubFlags, Meth
     {
         if (SF_IsDelegateStub(dwStubFlags)) // reverse P/Invoke via delegate
         {
-            int tokDelegate_methodPtr = pcsEmit->GetToken(MscorlibBinder::GetField(FIELD__DELEGATE__METHOD_PTR));
+            int tokDelegate_methodPtr = pcsEmit->GetToken(CoreLibBinder::GetField(FIELD__DELEGATE__METHOD_PTR));
 
             EmitLoadStubContext(pcsEmit, dwStubFlags);
             pcsEmit->EmitLDC(offsetof(UMEntryThunk, m_pObjectHandle));
@@ -2924,6 +2929,58 @@ inline CorPinvokeMap GetDefaultCallConv(BOOL bIsVarArg)
 #endif // !TARGET_UNIX
 }
 
+namespace
+{
+    bool TryConvertCallConvValueToPInvokeCallConv(_In_ BYTE callConv, _Out_ CorPinvokeMap *pPinvokeMapOut)
+    {
+        LIMITED_METHOD_CONTRACT;
+
+        switch (callConv)
+        {
+        case IMAGE_CEE_CS_CALLCONV_C:
+            *pPinvokeMapOut = pmCallConvCdecl;
+            return true;
+        case IMAGE_CEE_CS_CALLCONV_STDCALL:
+            *pPinvokeMapOut = pmCallConvStdcall;
+            return true;
+        case IMAGE_CEE_CS_CALLCONV_THISCALL:
+            *pPinvokeMapOut = pmCallConvThiscall;
+            return true;
+        case IMAGE_CEE_CS_CALLCONV_FASTCALL:
+            *pPinvokeMapOut = pmCallConvFastcall;
+            return true;
+        }
+
+        return false;
+    }
+
+    HRESULT GetUnmanagedPInvokeCallingConvention(
+        _In_ Module *pModule,
+        _In_ PCCOR_SIGNATURE pSig,
+        _In_ ULONG cSig,
+        _Out_ CorPinvokeMap *pPinvokeMapOut,
+        _Out_ UINT *errorResID)
+    {
+        CONTRACTL
+        {
+            NOTHROW;
+            GC_NOTRIGGER;
+            MODE_ANY;
+        }
+        CONTRACTL_END
+
+        CorUnmanagedCallingConvention callConvMaybe;
+        HRESULT hr = MetaSig::TryGetUnmanagedCallingConventionFromModOpt(pModule, pSig, cSig, &callConvMaybe, errorResID);
+        if (hr != S_OK)
+            return hr;
+        
+        if (!TryConvertCallConvValueToPInvokeCallConv(callConvMaybe, pPinvokeMapOut))
+            return S_FALSE;
+
+        return hr;
+    }
+}
+
 void PInvokeStaticSigInfo::InitCallConv(CorPinvokeMap callConv, BOOL bIsVarArg)
 {
     CONTRACTL
@@ -2939,11 +2996,12 @@ void PInvokeStaticSigInfo::InitCallConv(CorPinvokeMap callConv, BOOL bIsVarArg)
         callConv = GetDefaultCallConv(bIsVarArg);
 
     CorPinvokeMap sigCallConv = (CorPinvokeMap)0;
-    BOOL fSuccess = MetaSig::GetUnmanagedCallingConvention(m_pModule, m_sig.GetRawSig(), m_sig.GetRawSigLen(), &sigCallConv);
-
-    if (!fSuccess)
+    UINT errorResID;
+    HRESULT hr = GetUnmanagedPInvokeCallingConvention(m_pModule, m_sig.GetRawSig(), m_sig.GetRawSigLen(), &sigCallConv, &errorResID);
+    if (FAILED(hr))
     {
-        SetError(IDS_EE_NDIRECT_BADNATL); //Bad metadata format
+        // Set an error message specific to P/Invokes or UnmanagedFunction for bad format.
+        SetError(hr == COR_E_BADIMAGEFORMAT ? IDS_EE_NDIRECT_BADNATL : errorResID);
     }
 
     // Do the same WinAPI to StdCall or CDecl for the signature calling convention as well. We need
@@ -3019,7 +3077,11 @@ HRESULT NDirect::HasNAT_LAttribute(IMDInternalImport *pInternalImport, mdToken t
 
 // Either MD or signature & module must be given.
 /*static*/
-BOOL NDirect::MarshalingRequired(MethodDesc *pMD, PCCOR_SIGNATURE pSig /*= NULL*/, Module *pModule /*= NULL*/)
+BOOL NDirect::MarshalingRequired(
+    _In_opt_ MethodDesc* pMD,
+    _In_opt_ PCCOR_SIGNATURE pSig,
+    _In_opt_ Module* pModule,
+    _In_ bool unmanagedCallersOnlyRequiresMarshalling)
 {
     CONTRACTL
     {
@@ -3060,7 +3122,9 @@ BOOL NDirect::MarshalingRequired(MethodDesc *pMD, PCCOR_SIGNATURE pSig /*= NULL*
             // don't support a DllImport with this attribute and we
             // error out during IL Stub generation so we indicate that
             // when checking if an IL Stub is needed.
-            if (pMD->HasUnmanagedCallersOnlyAttribute())
+            //
+            // Callers can indicate the check doesn't need to be performed.
+            if (unmanagedCallersOnlyRequiresMarshalling && pMD->HasUnmanagedCallersOnlyAttribute())
                 return TRUE;
 
             NDirectMethodDesc* pNMD = (NDirectMethodDesc*)pMD;
@@ -3614,7 +3678,7 @@ static void CreateNDirectStubWorker(StubState*         pss,
                                            pParamTokenArray,
                                            nlType,
                                            nlFlags,
-                                           0,
+                                           1, // Indicating as the first argument
                                            pss,
                                            isInstanceMethod,
                                            argOffset,
@@ -4280,7 +4344,7 @@ void NDirect::PopulateNDirectMethodDesc(NDirectMethodDesc* pNMD, PInvokeStaticSi
             // so we have to special-case it here.
             // If a type doesn't have a native representation, we won't set this flag.
             // We'll throw an exception later when setting up the marshalling.
-            if (pRetMT != MscorlibBinder::GetClass(CLASS__DATE_TIME) && pRetMT->HasLayout() && IsUnmanagedValueTypeReturnedByRef(pRetMT->GetNativeSize()))
+            if (pRetMT != CoreLibBinder::GetClass(CLASS__DATE_TIME) && pRetMT->HasLayout() && IsUnmanagedValueTypeReturnedByRef(pRetMT->GetNativeSize()))
             {
                 ndirectflags |= NDirectMethodDesc::kStdCallWithRetBuf;
             }
@@ -5109,7 +5173,7 @@ MethodDesc* NDirect::CreateStructMarshalILStub(MethodTable* pMT)
     LocalDesc i4(ELEMENT_TYPE_I4);
     sigBuilder.NewArg(&i4);
 
-    LocalDesc cleanupWorkList(MscorlibBinder::GetClass(CLASS__CLEANUP_WORK_LIST_ELEMENT));
+    LocalDesc cleanupWorkList(CoreLibBinder::GetClass(CLASS__CLEANUP_WORK_LIST_ELEMENT));
     cleanupWorkList.MakeByRef();
     sigBuilder.NewArg(&cleanupWorkList);
 
@@ -5205,14 +5269,10 @@ MethodDesc* GetStubMethodDescFromInteropMethodDesc(MethodDesc* pMD, DWORD dwStub
 {
     STANDARD_VM_CONTRACT;
 
-    BOOL fGcMdaEnabled = FALSE;
 #ifdef FEATURE_COMINTEROP
     if (SF_IsReverseCOMStub(dwStubFlags))
     {
 #ifdef FEATURE_PREJIT
-        if (fGcMdaEnabled)
-            return NULL;
-
         // reverse COM stubs live in a hash table
         StubMethodHashTable *pHash = pMD->GetLoaderModule()->GetStubMethodHashTable();
         return (pHash == NULL ? NULL : pHash->FindMethodDesc(pMD));
@@ -5225,23 +5285,17 @@ MethodDesc* GetStubMethodDescFromInteropMethodDesc(MethodDesc* pMD, DWORD dwStub
     if (pMD->IsNDirect())
     {
         NDirectMethodDesc* pNMD = (NDirectMethodDesc*)pMD;
-        return ((fGcMdaEnabled && !pNMD->IsQCall()) ? NULL : pNMD->ndirect.m_pStubMD.GetValueMaybeNull());
+        return pNMD->ndirect.m_pStubMD.GetValueMaybeNull();
     }
 #ifdef FEATURE_COMINTEROP
     else if (pMD->IsComPlusCall() || pMD->IsGenericComPlusCall())
     {
-        if (fGcMdaEnabled)
-            return NULL;
-
         ComPlusCallInfo *pComInfo = ComPlusCallInfo::FromMethodDesc(pMD);
         return (pComInfo == NULL ? NULL : pComInfo->m_pStubMD.GetValueMaybeNull());
     }
 #endif // FEATURE_COMINTEROP
     else if (pMD->IsEEImpl())
     {
-        if (fGcMdaEnabled)
-            return NULL;
-
         DelegateEEClass *pClass = (DelegateEEClass *)pMD->GetClass();
         if (SF_IsReverseStub(dwStubFlags))
         {
@@ -6258,6 +6312,43 @@ namespace
         }
 #endif // FEATURE_CORESYSTEM && !TARGET_UNIX
 
+#if defined(TARGET_LINUX)
+        if (g_coreclr_embedded)
+        {
+            // this matches exactly the names in  Interop.Libraries.cs 
+            static const LPCWSTR toRedirect[] = {
+                W("libSystem.Native"),
+                W("libSystem.IO.Compression.Native"),
+                W("libSystem.Net.Security.Native"),
+                W("libSystem.Security.Cryptography.Native.OpenSsl")
+            };
+
+            int count = lengthof(toRedirect);
+            for (int i = 0; i < count; ++i)
+            {
+                if (wcscmp(wszLibName, toRedirect[i]) == 0)
+                {
+                    return PAL_LoadLibraryDirect(NULL);
+                }
+            }
+        }
+#endif
+
+        if (g_hostpolicy_embedded)
+        {
+#ifdef TARGET_WINDOWS
+            if (wcscmp(wszLibName, W("hostpolicy.dll")) == 0)
+            {
+                return WszGetModuleHandle(NULL);
+            }
+#else
+            if (wcscmp(wszLibName, W("libhostpolicy")) == 0)
+            {
+                return PAL_LoadLibraryDirect(NULL);
+            }
+#endif
+        }
+
         AppDomain* pDomain = GetAppDomain();
         DWORD loadWithAlteredPathFlags = GetLoadWithAlteredSearchPathFlag();
         bool libNameIsRelativePath = Path::IsRelative(wszLibName);
@@ -6783,23 +6874,29 @@ PCODE GetILStubForCalli(VASigCookie *pVASigCookie, MethodDesc *pMD)
         dwStubFlags |= NDIRECTSTUB_FL_UNMANAGED_CALLI;
 
         // need to convert the CALLI signature to stub signature with managed calling convention
-        switch (MetaSig::GetCallingConvention(pVASigCookie->pModule, pVASigCookie->signature))
+        BYTE callConv = MetaSig::GetCallingConvention(pVASigCookie->pModule, signature);
+
+        // Unmanaged calling convention indicates modopt should be read
+        if (callConv == IMAGE_CEE_CS_CALLCONV_UNMANAGED)
         {
-            case IMAGE_CEE_CS_CALLCONV_C:
-                    unmgdCallConv = pmCallConvCdecl;
-                    break;
-            case IMAGE_CEE_CS_CALLCONV_STDCALL:
-                    unmgdCallConv = pmCallConvStdcall;
-                    break;
-            case IMAGE_CEE_CS_CALLCONV_THISCALL:
-                    unmgdCallConv = pmCallConvThiscall;
-                    break;
-            case IMAGE_CEE_CS_CALLCONV_FASTCALL:
-                    unmgdCallConv = pmCallConvFastcall;
-                    break;
-            default:
-                    COMPlusThrow(kTypeLoadException, IDS_INVALID_PINVOKE_CALLCONV);
+            CorUnmanagedCallingConvention callConvMaybe;
+            UINT errorResID;
+            HRESULT hr = MetaSig::TryGetUnmanagedCallingConventionFromModOpt(pVASigCookie->pModule, signature.GetRawSig(), signature.GetRawSigLen(), &callConvMaybe, &errorResID);
+            if (FAILED(hr))
+                COMPlusThrowHR(hr, errorResID);
+
+            if (hr == S_OK)
+            {
+                callConv = callConvMaybe;
+            }
+            else
+            {
+                callConv = MetaSig::GetDefaultUnmanagedCallingConvention();
+            }
         }
+
+        if (!TryConvertCallConvValueToPInvokeCallConv(callConv, &unmgdCallConv))
+            COMPlusThrow(kTypeLoadException, IDS_INVALID_PINVOKE_CALLCONV);
 
         LoaderHeap *pHeap = pVASigCookie->pModule->GetLoaderAllocator()->GetHighFrequencyHeap();
         PCOR_SIGNATURE new_sig = (PCOR_SIGNATURE)(void *)pHeap->AllocMem(S_SIZE_T(signature.GetRawSigLen()));

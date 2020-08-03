@@ -1,8 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections;
+using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.IO;
 using System.Threading.Tasks;
@@ -73,20 +73,86 @@ namespace System.Data.Common
 
         public abstract int GetOrdinal(string name);
 
+        /// <summary>
+        /// Returns a <see cref="DataTable" /> that describes the column metadata of the ><see cref="DbDataReader" />.
+        /// </summary>
+        /// <returns>A <see cref="DataTable" /> that describes the column metadata.</returns>
+        /// <exception cref="InvalidOperationException">The <see cref="DbDataReader" /> is closed.</exception>
+        /// <exception cref="IndexOutOfRangeException">The column index is out of range.</exception>
+        /// <exception cref="NotSupportedException">.NET Core only: This member is not supported.</exception>
         public virtual DataTable GetSchemaTable()
         {
             throw new NotSupportedException();
+        }
+
+        /// <summary>
+        /// This is the asynchronous version of <see cref="GetSchemaTable()" />.
+        /// Providers should override with an appropriate implementation.
+        /// The cancellation token can optionally be honored.
+        /// The default implementation invokes the synchronous <see cref="GetSchemaTable()" /> call and
+        /// returns a completed task.
+        /// The default implementation will return a cancelled task if passed an already cancelled cancellationToken.
+        /// Exceptions thrown by <see cref="GetSchemaTable()" /> will be communicated via the returned Task
+        /// Exception property.
+        /// </summary>
+        /// <param name="cancellationToken">The cancellation instruction.</param>
+        /// <returns>A task representing the asynchronous operation.</returns>
+        public virtual Task<DataTable> GetSchemaTableAsync(CancellationToken cancellationToken = default)
+        {
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return Task.FromCanceled<DataTable>(cancellationToken);
+            }
+
+            try
+            {
+                return Task.FromResult(GetSchemaTable());
+            }
+            catch (Exception e)
+            {
+                return Task.FromException<DataTable>(e);
+            }
+        }
+
+        /// <summary>
+        /// This is the asynchronous version of <see cref="DbDataReaderExtensions.GetColumnSchema(DbDataReader)" />.
+        /// Providers should override with an appropriate implementation.
+        /// The cancellation token can optionally be honored.
+        /// The default implementation invokes the synchronous
+        /// <see cref="DbDataReaderExtensions.GetColumnSchema(DbDataReader)" /> call and returns a completed task.
+        /// The default implementation will return a cancelled task if passed an already cancelled cancellationToken.
+        /// Exceptions thrown by <see cref="DbDataReaderExtensions.GetColumnSchema(DbDataReader)" /> will be
+        /// communicated via the returned Task Exception property.
+        /// </summary>
+        /// <param name="cancellationToken">The cancellation instruction.</param>
+        /// <returns>A task representing the asynchronous operation.</returns>
+        public virtual Task<ReadOnlyCollection<DbColumn>> GetColumnSchemaAsync(
+            CancellationToken cancellationToken = default)
+        {
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return Task.FromCanceled<ReadOnlyCollection<DbColumn>>(cancellationToken);
+            }
+
+            try
+            {
+                return Task.FromResult(this.GetColumnSchema());
+            }
+            catch (Exception e)
+            {
+                return Task.FromException<ReadOnlyCollection<DbColumn>>(e);
+            }
         }
 
         public abstract bool GetBoolean(int ordinal);
 
         public abstract byte GetByte(int ordinal);
 
-        public abstract long GetBytes(int ordinal, long dataOffset, byte[] buffer, int bufferOffset, int length);
+        public abstract long GetBytes(int ordinal, long dataOffset, byte[]? buffer, int bufferOffset, int length);
 
         public abstract char GetChar(int ordinal);
 
-        public abstract long GetChars(int ordinal, long dataOffset, char[] buffer, int bufferOffset, int length);
+        public abstract long GetChars(int ordinal, long dataOffset, char[]? buffer, int bufferOffset, int length);
 
         [EditorBrowsable(EditorBrowsableState.Never)]
         public DbDataReader GetData(int ordinal) => GetDbDataReader(ordinal);

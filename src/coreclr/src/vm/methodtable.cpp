@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //
 // File: methodtable.cpp
 //
@@ -1375,6 +1374,14 @@ BOOL MethodTable::IsEquivalentTo_Worker(MethodTable *pOtherMT COMMA_INDEBUG(Type
     {
         if (!pOtherMT->IsArray() || GetRank() != pOtherMT->GetRank())
             return FALSE;
+
+        if (IsMultiDimArray() != pOtherMT->IsMultiDimArray())
+        {
+            // A non-multidimensional array is not equivalent to an SzArray.
+            // This case is handling the case of a Rank 1 multidimensional array
+            // when compared to a normal array.
+            return FALSE;
+        }
 
         // arrays of structures have their own unshared MTs and will take this path
         return (GetArrayElementTypeHandle().IsEquivalentTo(pOtherMT->GetArrayElementTypeHandle() COMMA_INDEBUG(&newVisited)));
@@ -3239,7 +3246,7 @@ void MethodTable::DoRunClassInitThrowing()
         // managed code to re-enter into this codepath, causing a locking order violation.
         pInitLock.Release();
 
-        if (MscorlibBinder::GetException(kTypeInitializationException) != gc.pInitException->GetMethodTable())
+        if (CoreLibBinder::GetException(kTypeInitializationException) != gc.pInitException->GetMethodTable())
         {
             DefineFullyQualifiedNameForClassWOnStack();
             LPCWSTR wszName = GetFullyQualifiedNameForClassW(this);
@@ -3343,7 +3350,7 @@ void MethodTable::DoRunClassInitThrowing()
                                 GetLoaderAllocator()->RegisterFailedTypeInitForCleanup(pEntry);
                             }
 
-                            _ASSERTE(g_pThreadAbortExceptionClass == MscorlibBinder::GetException(kThreadAbortException));
+                            _ASSERTE(g_pThreadAbortExceptionClass == CoreLibBinder::GetException(kThreadAbortException));
 
                             if(gc.pInnerException->GetMethodTable() == g_pThreadAbortExceptionClass)
                             {
@@ -5957,7 +5964,7 @@ CorElementType MethodTable::GetInternalCorElementType()
         break;
 
     case enum_flag_Category_PrimitiveValueType:
-        // This path should only be taken for the builtin mscorlib types
+        // This path should only be taken for the builtin CoreLib types
         // and primitive valuetypes
         ret = GetClass()->GetInternalCorElementType();
         _ASSERTE((ret != ELEMENT_TYPE_CLASS) &&

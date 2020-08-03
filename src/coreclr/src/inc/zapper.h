@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #ifndef ZAPPER_H_
 #define ZAPPER_H_
@@ -286,7 +285,7 @@ class Zapper
 
     ~Zapper();
 
-    // The arguments control which native image of mscorlib to use.
+    // The arguments control which native image of CoreLib to use.
     // This matters for hardbinding.
     void InitEE(BOOL fForceDebug, BOOL fForceProfile, BOOL fForceInstrument);
     void LoadAndInitializeJITForNgen(LPCWSTR pwzJitName, OUT HINSTANCE* phJit, OUT ICorJitCompiler** ppICorJitCompiler);

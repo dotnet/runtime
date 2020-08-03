@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections;
 using System.Collections.Generic;
@@ -34,7 +33,7 @@ namespace System.Diagnostics.Tests
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public void MainWindowHandle_GetUnix_ThrowsPlatformNotSupportedException()
+        public void MainWindowHandle_GetUnix_ReturnsDefaultValue()
         {
             CreateDefaultProcess();
 

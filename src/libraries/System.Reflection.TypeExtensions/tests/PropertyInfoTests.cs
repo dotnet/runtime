@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Linq;
@@ -16,7 +15,7 @@ namespace System.Reflection.Tests
         [InlineData(typeof(string), nameof(string.Length))]
         public void Properties(Type type, string name)
         {
-            PropertyInfo property = Helpers.GetProperty(type, name);
+            PropertyInfo property = TypeExtensions.GetProperty(type, name, Helpers.AllFlags);
             Assert.Equal(type, property.DeclaringType);
             Assert.Equal(type.GetTypeInfo().Module, property.Module);
             Assert.Equal(name, property.Name);
@@ -27,7 +26,7 @@ namespace System.Reflection.Tests
         [Fact]
         public void SetValue_CantWrite_ThrowsArgumentException()
         {
-            PropertyInfo property = Helpers.GetProperty(typeof(PI_SubClass), nameof(PI_BaseClass.PublicGetPrivateSetProperty));
+            PropertyInfo property = TypeExtensions.GetProperty(typeof(PI_SubClass), nameof(PI_BaseClass.PublicGetPrivateSetProperty), Helpers.AllFlags);
             Assert.False(property.CanWrite);
             AssertExtensions.Throws<ArgumentException>(null, () => property.SetValue(new PI_SubClass(), 5));
         }
@@ -48,7 +47,7 @@ namespace System.Reflection.Tests
         [InlineData(typeof(PI_SubClass), nameof(PI_BaseClass.PublicGetPrivateSetProperty), true, false, false, false)]
         public void GetGetMethod_GetSetMethod(Type type, string name, bool hasGetter, bool nonPublicGetter, bool hasSetter, bool nonPublicSetter)
         {
-            PropertyInfo property = Helpers.GetProperty(type, name);
+            PropertyInfo property = TypeExtensions.GetProperty(type, name, Helpers.AllFlags);
 
             VerifyGetMethod(property, property.GetGetMethod(), hasGetter && !nonPublicGetter, nonPublicGetter);
             Assert.Equal(property.GetGetMethod(), property.GetGetMethod(false));

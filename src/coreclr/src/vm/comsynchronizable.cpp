@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 
 /*============================================================
@@ -228,7 +227,7 @@ void ThreadNative::KickOffThread_Worker(LPVOID ptr)
     _ASSERTE(pMeth);
     MethodDescCallSite invokeMethod(pMeth, &gc.orDelegate);
 
-    if (MscorlibBinder::IsClass(gc.orDelegate->GetMethodTable(), CLASS__PARAMETERIZEDTHREADSTART))
+    if (CoreLibBinder::IsClass(gc.orDelegate->GetMethodTable(), CLASS__PARAMETERIZEDTHREADSTART))
     {
         //Parameterized ThreadStart
         ARG_SLOT arg[2];
@@ -853,7 +852,7 @@ FCIMPLEND
 // Indicate whether the thread will host an STA (this may fail if the thread has
 // already been made part of the MTA, use GetApartmentState or the return state
 // from this routine to check for this).
-FCIMPL3(INT32, ThreadNative::SetApartmentState, ThreadBaseObject* pThisUNSAFE, INT32 iState, CLR_BOOL fireMDAOnMismatch)
+FCIMPL2(INT32, ThreadNative::SetApartmentState, ThreadBaseObject* pThisUNSAFE, INT32 iState)
 {
     FCALL_CONTRACT;
 
@@ -896,7 +895,7 @@ FCIMPL3(INT32, ThreadNative::SetApartmentState, ThreadBaseObject* pThisUNSAFE, I
         {
             EX_TRY
             {
-                state = thread->SetApartment(state, fireMDAOnMismatch == TRUE);
+                state = thread->SetApartment(state);
             }
             EX_CATCH
             {
@@ -1021,7 +1020,7 @@ FCIMPL1(void, ThreadNative::StartupSetApartmentState, ThreadBaseObject* pThisUNS
     Thread::ApartmentState as = thread->GetExplicitApartment();
     if (as == Thread::AS_Unknown)
     {
-        thread->SetApartment(Thread::AS_InMTA, TRUE);
+        thread->SetApartment(Thread::AS_InMTA);
     }
 
     HELPER_METHOD_FRAME_END();
@@ -1393,7 +1392,7 @@ FCIMPL1(Object*, ThreadNative::GetThreadDeserializationTracker, StackCrawlMark* 
     // To avoid reflection trying to bypass deserialization tracking, check the caller
     // and only allow SerializationInfo to call into this method.
     MethodTable* pCallerMT = SystemDomain::GetCallersType(stackMark);
-    if (pCallerMT != MscorlibBinder::GetClass(CLASS__SERIALIZATION_INFO))
+    if (pCallerMT != CoreLibBinder::GetClass(CLASS__SERIALIZATION_INFO))
     {
         COMPlusThrowArgumentException(W("stackMark"), NULL);
     }

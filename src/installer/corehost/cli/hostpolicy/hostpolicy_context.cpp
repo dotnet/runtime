@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #include "hostpolicy_context.h"
 
@@ -232,8 +231,20 @@ int hostpolicy_context_t::initialize(hostpolicy_init_t &hostpolicy_init, const a
         pal::stringstream_t ptr_stream;
         ptr_stream << "0x" << std::hex << (size_t)(&bundle_probe);
 
-        coreclr_properties.add(common_property::BundleProbe, ptr_stream.str().c_str());
+        if (!coreclr_properties.add(common_property::BundleProbe, ptr_stream.str().c_str()))
+        {
+            log_duplicate_property_error(coreclr_property_bag_t::common_property_to_string(common_property::StartUpHooks));
+            return StatusCode::LibHostDuplicateProperty;
+        }
     }
+
+#if defined(HOSTPOLICY_EMBEDDED)
+    if (!coreclr_properties.add(common_property::HostPolicyEmbedded, _X("true")))
+    {
+        log_duplicate_property_error(coreclr_property_bag_t::common_property_to_string(common_property::StartUpHooks));
+        return StatusCode::LibHostDuplicateProperty;
+    }
+#endif
 
     return StatusCode::Success;
 }
