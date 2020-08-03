@@ -109,11 +109,11 @@ static void
 wasm_logger (const char *log_domain, const char *log_level, const char *message, mono_bool fatal, void *user_data)
 {
 	EM_ASM({
-		var message = $1;
+		var message = Module.UTF8ToString ($3) + ": " + Module.UTF8ToString ($1);
 		if ($2)
 			console.trace (message);
 
-		switch ($0) {
+		switch (Module.UTF8ToString ($0)) {
 			case "critical":
 			case "error":
 				console.error (message);
@@ -130,8 +130,11 @@ wasm_logger (const char *log_domain, const char *log_level, const char *message,
 			case "debug":
 				console.debug (message);
 				break;
+			default:
+				console.log (message);
+				break;
 		}
-	},log_level, message, fatal);
+	}, log_level, message, fatal, log_domain);
 }
 
 #ifdef DRIVER_GEN
