@@ -107,7 +107,7 @@ namespace System.IO.Tests
             try
             {
                 // Operation succeeds when being run by the Unix superuser
-                if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && PlatformDetection.IsSuperUser)
+                if (PlatformDetection.IsSuperUser)
                 {
                     File.WriteAllBytes(path, Encoding.UTF8.GetBytes("text"));
                     Assert.Equal(Encoding.UTF8.GetBytes("text"), File.ReadAllBytes(path));

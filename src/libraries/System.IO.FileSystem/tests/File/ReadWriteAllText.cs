@@ -120,7 +120,7 @@ namespace System.IO.Tests
             try
             {
                 // Operation succeeds when being run by the Unix superuser
-                if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && PlatformDetection.IsSuperUser)
+                if (PlatformDetection.IsSuperUser)
                 {
                     Write(path, "text");
                     Assert.Equal("text", Read(path));
