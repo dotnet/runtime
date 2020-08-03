@@ -69,6 +69,25 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
+        public void Invoke_StaticConstructorMultipleTimes()
+        {
+            ConstructorInfo[] constructors = GetConstructors(typeof(ClassWithStaticConstructorThatIsCalledMultipleTimesViaReflection));
+            Assert.Equal(1, constructors.Length);
+            // The first time the static cctor is called, it should run the cctor twice
+            // Once to initialize run the cctor as a cctor
+            // The second to run it as a method which is invoked.
+            Assert.Equal(0, ClassWithStaticConstructorThatIsCalledMultipleTimesViaReflection.VisibleStatics.s_cctorCallCount);
+            object obj = constructors[0].Invoke(null, new object[] { });
+            Assert.Null(obj);
+            Assert.Equal(2, ClassWithStaticConstructorThatIsCalledMultipleTimesViaReflection.VisibleStatics.s_cctorCallCount);
+
+            // Subsequent invocations of the static cctor should run the cctor only once
+            obj = constructors[0].Invoke(null, new object[] { });
+            Assert.Null(obj);
+            Assert.Equal(3, ClassWithStaticConstructorThatIsCalledMultipleTimesViaReflection.VisibleStatics.s_cctorCallCount);
+        }
+
+        [Fact]
         [ActiveIssue("https://github.com/mono/mono/issues/15024", TestRuntimes.Mono)]
         public void Invoke_StaticConstructor_ThrowsMemberAccessException()
         {
@@ -234,6 +253,20 @@ namespace System.Reflection.Tests
     public static class ClassWithStaticConstructor
     {
         static ClassWithStaticConstructor() { }
+    }
+
+    // Use this class only from the Invoke_StaticConstructorMultipleTimes method
+    public static class ClassWithStaticConstructorThatIsCalledMultipleTimesViaReflection
+    {
+        public static class VisibleStatics
+        {
+            public static int s_cctorCallCount;
+        }
+
+        static ClassWithStaticConstructorThatIsCalledMultipleTimesViaReflection()
+        {
+            VisibleStatics.s_cctorCallCount++;
+        }
     }
 
     public struct StructWith1Constructor
