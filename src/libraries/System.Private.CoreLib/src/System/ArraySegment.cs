@@ -140,7 +140,7 @@ namespace System
         {
             ThrowInvalidOperationIfDefault();
 
-            if ((uint)index > (uint)_count || (uint)count > (uint)(_count - index))
+            if ((uint)index >= (uint)_count | (uint)count > (uint)(_count - index))
             {
                 ThrowHelper.ThrowArgumentOutOfRange_IndexException();
             }
