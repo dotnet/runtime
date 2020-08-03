@@ -105,7 +105,6 @@
     <Compile Include="System\Data\SqlTypes\SqlStringTest.cs" />
     <Compile Include="System\Data\SqlTypes\SqlStringSortingTest.cs" />
     <Compile Include="System\Data\SqlTypes\SqlXmlTest.cs" />
-    <Compile Include="SuitePlatformDetection.cs" />
     <Compile Include="System\Data\SyntaxErrorExceptionTest.cs" />
     <Compile Include="System\Data\TrailingSpaceTest.cs" />
     <Compile Include="System\Data\UniqueConstraintTest.cs" />
