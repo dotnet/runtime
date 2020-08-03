@@ -35,6 +35,8 @@ namespace System.Net.Http
             }
         }
 
+        public static bool IsSupported => true;
+
         public bool UseCookies
         {
             get => _settings._useCookies;
