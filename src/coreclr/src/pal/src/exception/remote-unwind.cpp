@@ -1296,6 +1296,7 @@ GetProcInfo(unw_word_t ip, unw_proc_info_t *pip, const libunwindInfo* info, bool
     return false;
 }
 
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
 static bool
 StepWithCompactEncodingRBPFrame(const libunwindInfo* info, compact_unwind_encoding_t compactEncoding)
 {
@@ -1364,10 +1365,101 @@ StepWithCompactEncodingRBPFrame(const libunwindInfo* info, compact_unwind_encodi
         compactEncoding, (void*)context->Rip, (void*)context->Rsp, (void*)context->Rbp);
     return true;
 }
+#endif
+
+#if defined(TARGET_ARM64)
+static bool
+StepWithCompactEncodingArm64Frame(const libunwindInfo* info, compact_unwind_encoding_t compactEncoding)
+{
+    CONTEXT* context = info->Context;
+
+    unw_word_t fp = context->Fp;
+    unw_word_t sp = context->Sp;
+
+    // caller Sp is callee Fp less saved FP and LR
+    context->Sp = fp + (sizeof(uint64_t) * 2);
+
+    context->Pc = context->Lr;
+
+    unw_word_t addr = fp;
+
+    if (!ReadValue64(info, &addr, (uint64_t*)&context->Fp)) {
+        return false;
+    }
+    addr += sizeof(uint64_t);
+
+
+    if (!ReadValue64(info, &addr, (uint64_t*)&context->Lr)) {
+        return false;
+    }
+    addr += sizeof(uint64_t);
+
+    if (compactEncoding & UNWIND_ARM64_FRAME_X19_X20_PAIR)
+    {
+        if (!ReadValue64(info, &addr, (uint64_t*)&context->X[19])) {
+            return false;
+        }
+        addr += sizeof(uint64_t);
+        if (!ReadValue64(info, &addr, (uint64_t*)&context->X[20])) {
+            return false;
+        }
+        addr += sizeof(uint64_t);
+    }
+    if (compactEncoding & UNWIND_ARM64_FRAME_X21_X22_PAIR)
+    {
+        if (!ReadValue64(info, &addr, (uint64_t*)&context->X[21])) {
+            return false;
+        }
+        addr += sizeof(uint64_t);
+        if (!ReadValue64(info, &addr, (uint64_t*)&context->X[22])) {
+            return false;
+        }
+        addr += sizeof(uint64_t);
+    }
+    if (compactEncoding & UNWIND_ARM64_FRAME_X23_X24_PAIR)
+    {
+        if (!ReadValue64(info, &addr, (uint64_t*)&context->X[23])) {
+            return false;
+        }
+        addr += sizeof(uint64_t);
+        if (!ReadValue64(info, &addr, (uint64_t*)&context->X[24])) {
+            return false;
+        }
+        addr += sizeof(uint64_t);
+    }
+    if (compactEncoding & UNWIND_ARM64_FRAME_X25_X26_PAIR)
+    {
+        if (!ReadValue64(info, &addr, (uint64_t*)&context->X[25])) {
+            return false;
+        }
+        addr += sizeof(uint64_t);
+        if (!ReadValue64(info, &addr, (uint64_t*)&context->X[26])) {
+            return false;
+        }
+        addr += sizeof(uint64_t);
+    }
+    if (compactEncoding & UNWIND_ARM64_FRAME_X27_X28_PAIR)
+    {
+        if (!ReadValue64(info, &addr, (uint64_t*)&context->X[27])) {
+            return false;
+        }
+        addr += sizeof(uint64_t);
+        if (!ReadValue64(info, &addr, (uint64_t*)&context->X[28])) {
+            return false;
+        }
+        addr += sizeof(uint64_t);
+    }
+
+    TRACE("SUCCESS: compact step encoding %08x pc %p sp %p fp %p lr %p\n",
+        compactEncoding, (void*)context->Pc, (void*)context->Sp, (void*)context->Fp, (void*)context->Lr);
+    return true;
+}
+#endif
 
 static bool
 StepWithCompactEncoding(const libunwindInfo* info, compact_unwind_encoding_t compactEncoding, unw_word_t functionStart)
 {
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
     if (compactEncoding == 0)
     {
         TRACE("Compact unwind missing for %p\n", (void*)info->Context->Rip);
@@ -1384,6 +1476,24 @@ StepWithCompactEncoding(const libunwindInfo* info, compact_unwind_encoding_t com
             
     }
     ERROR("Invalid encoding %08x\n", compactEncoding);
+#elif defined(TARGET_ARM64)
+    if (compactEncoding == 0)
+    {
+        TRACE("Compact unwind missing for %p\n", (void*)info->Context->Pc);
+        return false;
+    }
+    switch (compactEncoding & UNWIND_ARM64_MODE_MASK)
+    {
+        case UNWIND_ARM64_MODE_FRAME:
+            return StepWithCompactEncodingArm64Frame(info, compactEncoding);
+
+        case UNWIND_ARM64_MODE_FRAMELESS:
+            break;
+    }
+    ERROR("Invalid encoding %08x\n", compactEncoding);
+#else
+    ERROR("Unsupported architecture. encoding %08x\n", compactEncoding);
+#endif
     return false;
 }
 
@@ -1853,10 +1963,17 @@ PAL_VirtualUnwindOutOfProc(CONTEXT *context, KNONVOLATILE_CONTEXT_POINTERS *cont
     info.ReadMemory = readMemoryCallback;
 
 #ifdef __APPLE__
-    TRACE("Unwind: rip %p rsp %p rbp %p\n", (void*)context->Rip, (void*)context->Rsp, (void*)context->Rbp);
     unw_proc_info_t procInfo;
     bool step;
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
+    TRACE("Unwind: rip %p rsp %p rbp %p\n", (void*)context->Rip, (void*)context->Rsp, (void*)context->Rbp);
     result = GetProcInfo(context->Rip, &procInfo, &info, &step, false);
+#elif defined(TARGET_ARM64)
+    TRACE("Unwind: pc %p sp %p fp %p\n", (void*)context->Pc, (void*)context->Sp, (void*)context->Fp);
+    result = GetProcInfo(context->Pc, &procInfo, &info, &step, false);
+#else
+#error Unexpected architecture
+#endif
     if (!result)
     {
         goto exit;

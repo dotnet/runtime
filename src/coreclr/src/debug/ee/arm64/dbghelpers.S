@@ -22,7 +22,7 @@ NESTED_ENTRY FuncEvalHijack, _TEXT, UnhandledExceptionHandlerUnix
     PROLOG_SAVE_REG_PAIR_INDEXED   fp, lr, -32
     str x0, [sp, #16]
     // FuncEvalHijackWorker returns the address we should jump to.
-    bl FuncEvalHijackWorker
+    bl C_FUNC(FuncEvalHijackWorker)
 
     EPILOG_STACK_FREE 32
     EPILOG_BRANCH_REG x0
@@ -33,7 +33,7 @@ NESTED_END FuncEvalHijack
 NESTED_ENTRY ExceptionHijack, _TEXT, UnhandledExceptionHandlerUnix
 
     // make the call
-    bl ExceptionHijackWorker
+    bl C_FUNC(ExceptionHijackWorker)
 
     // effective NOP to terminate unwind
     mov x3, x3

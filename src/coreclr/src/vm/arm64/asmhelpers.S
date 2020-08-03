@@ -125,7 +125,7 @@ NESTED_ENTRY NDirectImportThunk, _TEXT, NoHandler
     SAVE_FLOAT_ARGUMENT_REGISTERS sp, 96
 
     mov x0, x12
-    bl NDirectImportWorker
+    bl C_FUNC(NDirectImportWorker)
     mov x12, x0
 
     // pop the stack and restore original register state
@@ -156,7 +156,7 @@ NESTED_ENTRY PrecodeFixupThunk, _TEXT, NoHandler
     ldr     x13, [x13, #SIZEOF__FixupPrecode]
     add     x12, x13, w14, uxtw #MethodDesc_ALIGNMENT_SHIFT
 
-    b ThePreStub
+    b       C_FUNC(ThePreStub)
 NESTED_END PrecodeFixupThunk, _TEXT
 // ------------------------------------------------------------------
 
@@ -167,7 +167,7 @@ NESTED_ENTRY ThePreStub, _TEXT, NoHandler
     add x0, sp, #__PWTB_TransitionBlock // pTransitionBlock
     mov x1, METHODDESC_REGISTER // pMethodDesc
 
-    bl  PreStubWorker
+    bl  C_FUNC(PreStubWorker)
 
     mov x9, x0
 
@@ -610,9 +610,9 @@ NESTED_ENTRY ComCallPreStub, _TEXT, NoHandler
     str x12, [sp, #(ComCallPreStub_FrameOffset + UnmanagedToManagedFrame__m_pvDatum)]
     add x0, sp, #(ComCallPreStub_FrameOffset)
     add x1, sp, #(ComCallPreStub_ErrorReturnOffset)
-    bl ComPreStubWorker
+    bl C_FUNC(ComPreStubWorker)
 
-    cbz x0, ComCallPreStub_ErrorExit
+    cbz x0, LOCAL_LABEL(ComCallPreStub_ErrorExit)
 
     mov x12, x0
 
@@ -658,7 +658,7 @@ NESTED_END ComCallPreStub, _TEXT
 
     str x12, [sp, #(GenericComCallStub_FrameOffset + UnmanagedToManagedFrame__m_pvDatum)]
     add x1, sp, #GenericComCallStub_FrameOffset
-    bl COMToCLRWorker
+    bl C_FUNC(COMToCLRWorker)
 
     // pop the stack
     EPILOG_STACK_FREE GenericComCallStub_StackAlloc
@@ -685,7 +685,7 @@ NESTED_END ComCallPreStub, _TEXT
 
     PROLOG_SAVE_REG_PAIR           fp, lr, -16!
 
-    cbz x0, COMToCLRDispatchHelper_RegSetup
+    cbz x0, LOCAL_LABEL(COMToCLRDispatchHelper_RegSetup)
 
     add x9, x1, #SIZEOF__ComMethodFrame
     add x9, x9, x0, LSL #3
@@ -693,7 +693,7 @@ COMToCLRDispatchHelper_StackLoop
     ldr x8, [x9, #-8]!
     str x8, [sp, #-8]!
     sub x0, x0, #1
-    cbnz x0, COMToCLRDispatchHelper_StackLoop
+    cbnz x0, LOCAL_LABEL(COMToCLRDispatchHelper_StackLoop)
 
 COMToCLRDispatchHelper_RegSetup
 
@@ -766,7 +766,7 @@ NESTED_ENTRY OnHijackTripThread, _TEXT, NoHandler
     stp q2, q3, [sp, #144]
 
     mov x0, sp
-    bl OnHijackWorker
+    bl C_FUNC(OnHijackWorker)
 
     // restore any integral return value(s)
     ldp x0, x1, [sp, #96]
@@ -987,7 +987,7 @@ LOCAL_LABEL(Promote):
     mov     x12, x9           // We pass the ResolveCacheElem to ResolveWorkerAsmStub instead of the DispatchToken
 
 LOCAL_LABEL(Fail):
-    b       ResolveWorkerAsmStub // call the ResolveWorkerAsmStub method to transition into the VM
+    b       C_FUNC(ResolveWorkerAsmStub) // call the ResolveWorkerAsmStub method to transition into the VM
 
 NESTED_END ResolveWorkerChainLookupAsmStub, _TEXT
 
@@ -1003,7 +1003,7 @@ NESTED_ENTRY ResolveWorkerAsmStub, _TEXT, NoHandler
     and x1, x11, #-4 // Indirection cell
     mov x2, x12 // DispatchToken
     and x3, x11, #3 // flag
-    bl VSD_ResolveWorker
+    bl C_FUNC(VSD_ResolveWorker)
     mov x9, x0
 
     EPILOG_WITH_TRANSITION_BLOCK_TAILCALL
@@ -1015,28 +1015,28 @@ NESTED_END ResolveWorkerAsmStub, _TEXT
 #ifdef FEATURE_READYTORUN
 
 NESTED_ENTRY DelayLoad_MethodCall_FakeProlog, _TEXT, NoHandler
-DelayLoad_MethodCall:
-    .global DelayLoad_MethodCall
+C_FUNC(DelayLoad_MethodCall):
+    .global C_FUNC(DelayLoad_MethodCall)
     PROLOG_WITH_TRANSITION_BLOCK
 
     add x0, sp, #__PWTB_TransitionBlock // pTransitionBlock
     mov x1, x11 // Indirection cell
     mov x2, x9 // sectionIndex
     mov x3, x10 // Module*
-    bl ExternalMethodFixupWorker
+    bl C_FUNC(ExternalMethodFixupWorker)
     mov x12, x0
 
     EPILOG_WITH_TRANSITION_BLOCK_TAILCALL
     // Share patch label
-    b ExternalMethodFixupPatchLabel
+    b C_FUNC(ExternalMethodFixupPatchLabel)
 
 NESTED_END DelayLoad_MethodCall_FakeProlog, _TEXT
 
 
 .macro DynamicHelper frameFlags, suffix
 NESTED_ENTRY DelayLoad_Helper\suffix\()_FakeProlog, _TEXT, NoHandler
-DelayLoad_Helper\suffix:
-    .global DelayLoad_Helper\suffix
+C_FUNC(DelayLoad_Helper\suffix):
+    .global C_FUNC(DelayLoad_Helper\suffix)
 
     PROLOG_WITH_TRANSITION_BLOCK
 
@@ -1045,7 +1045,7 @@ DelayLoad_Helper\suffix:
     mov x2, x9 // sectionIndex
     mov x3, x10 // Module*
     mov x4, \frameFlags
-    bl DynamicHelperWorker
+    bl C_FUNC(DynamicHelperWorker)
     cbnz x0, LOCAL_LABEL(FakeProlog\suffix\()_0)
     ldr x0, [sp, #__PWTB_ArgumentRegister_FirstArg]
     EPILOG_WITH_TRANSITION_BLOCK_RETURN
@@ -1226,7 +1226,7 @@ NESTED_ENTRY \helper\()Naked, _TEXT, NoHandler
 
     mov     x0, x10
     mov     x1, sp
-    bl      \helper
+    bl      C_FUNC(\helper)
 
     RESTORE_ARGUMENT_REGISTERS sp, 16       // Restore x8 and argument registers.
     RESTORE_FLOAT_ARGUMENT_REGISTERS sp, 96 // Restore floating-point/SIMD registers.

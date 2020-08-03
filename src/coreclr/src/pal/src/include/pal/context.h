@@ -305,6 +305,7 @@ inline void *FPREG_Xstate_Ymmh(const ucontext_t *uc)
 #define MCREG_Cpsr(mc)    ((mc).pstate)
 
 
+#ifndef TARGET_OSX
 inline
 fpsimd_context* GetNativeSigSimdContext(native_context_t *mc)
 {
@@ -341,7 +342,9 @@ const fpsimd_context* GetConstNativeSigSimdContext(const native_context_t *mc)
     return GetNativeSigSimdContext(const_cast<native_context_t*>(mc));
 }
 
-#else
+#endif // TARGET_OSX
+
+#else // HOST_ARM64
     // For FreeBSD, as found in x86/ucontext.h
 #define MCREG_Rbp(mc)	    ((mc).mc_rbp)
 #define MCREG_Rip(mc)	    ((mc).mc_rip)

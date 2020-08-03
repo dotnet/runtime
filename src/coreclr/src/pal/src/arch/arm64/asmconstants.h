@@ -90,5 +90,6 @@
 #define CONTEXT_FLOAT_CONTROL_OFFSET  CONTEXT_V31+16
 #define CONTEXT_Fpcr         0
 #define CONTEXT_Fpsr         CONTEXT_Fpcr+8
+#define CONTEXT_Size         ((CONTEXT_NEON_OFFSET + CONTEXT_Fpsr + 8 + 0xf) & ~0xf)
 
 #endif

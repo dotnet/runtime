@@ -41,17 +41,29 @@ include_directories(include)
 
 # Compile options
 
+if(CLR_CMAKE_HOST_ARCH_AMD64)
+  set(PAL_ARCH_SOURCES_DIR amd64)
+elseif(CLR_CMAKE_HOST_ARCH_ARM)
+  set(PAL_ARCH_SOURCES_DIR arm)
+elseif(CLR_CMAKE_HOST_ARCH_ARM64)
+  set(PAL_ARCH_SOURCES_DIR arm64)
+elseif(CLR_CMAKE_HOST_ARCH_I386)
+  set(PAL_ARCH_SOURCES_DIR i386)
+endif()
+
 if(CLR_CMAKE_USE_SYSTEM_LIBUNWIND)
   add_definitions(-DFEATURE_USE_SYSTEM_LIBUNWIND)
 endif(CLR_CMAKE_USE_SYSTEM_LIBUNWIND)
 
 if(CLR_CMAKE_TARGET_OSX)
   add_definitions(-DTARGET_OSX)
-  add_definitions(-DXSTATE_SUPPORTED)
+  if(CLR_CMAKE_TARGET_ARCH_AMD64)
+    add_definitions(-DXSTATE_SUPPORTED)
+  endif()
   set(PLATFORM_SOURCES
-    arch/amd64/activationhandlerwrapper.S
-    arch/amd64/context.S
-    arch/amd64/dispatchexceptionwrapper.S
+    arch/${PAL_ARCH_SOURCES_DIR}/activationhandlerwrapper.S
+    arch/${PAL_ARCH_SOURCES_DIR}/context.S
+    arch/${PAL_ARCH_SOURCES_DIR}/dispatchexceptionwrapper.S
     exception/machexception.cpp
     exception/machmessage.cpp
   )
@@ -64,15 +76,6 @@ add_definitions(-DLP64COMPATIBLE)
 add_definitions(-DCORECLR)
 add_definitions(-DPIC)
 add_definitions(-D_FILE_OFFSET_BITS=64)
-if(CLR_CMAKE_HOST_ARCH_AMD64)
-  set(PAL_ARCH_SOURCES_DIR amd64)
-elseif(CLR_CMAKE_HOST_ARCH_ARM)
-  set(PAL_ARCH_SOURCES_DIR arm)
-elseif(CLR_CMAKE_HOST_ARCH_ARM64)
-  set(PAL_ARCH_SOURCES_DIR arm64)
-elseif(CLR_CMAKE_HOST_ARCH_I386)
-  set(PAL_ARCH_SOURCES_DIR i386)
-endif()
 
 if(CLR_CMAKE_HOST_ARCH_AMD64 AND CLR_CMAKE_TARGET_LINUX AND NOT CLR_CMAKE_HOST_ALPINE_LINUX)
   # Currently the _xstate is not available on Alpine Linux

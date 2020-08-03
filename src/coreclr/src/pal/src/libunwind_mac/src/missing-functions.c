@@ -51,7 +51,13 @@ int
 unw_is_signal_frame (unw_cursor_t *cursor)
 {
   struct cursor *c = (struct cursor *) cursor;
+#ifdef TARGET_AMD64
   return c->sigcontext_format != X86_64_SCF_NONE;
+#elif defined(TARGET_ARM64)
+  return c->sigcontext_format != AARCH64_SCF_NONE;
+#else
+  #error Unexpected target
+#endif
 }
 
 int
