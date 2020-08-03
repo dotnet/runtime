@@ -49,7 +49,7 @@
   </ItemGroup>
   <PropertyGroup>
     <!-- Arcade dependencies -->
-    <MicrosoftDotNetApiCompatVersion>5.0.0-beta.20374.1</MicrosoftDotNetApiCompatVersion>
+    <MicrosoftDotNetApiCompatVersion>5.0.0-beta.20381.6</MicrosoftDotNetApiCompatVersion>
     <MicrosoftDotNetBuildTasksFeedVersion>5.0.0-beta.20374.1</MicrosoftDotNetBuildTasksFeedVersion>
     <MicrosoftDotNetCodeAnalysisVersion>5.0.0-beta.20374.1</MicrosoftDotNetCodeAnalysisVersion>
     <MicrosoftDotNetGenAPIVersion>5.0.0-beta.20374.1</MicrosoftDotNetGenAPIVersion>
