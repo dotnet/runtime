@@ -8,13 +8,12 @@
     <CoreCompileDependsOn>$(CoreCompileDependsOn);GenerateVersionFile</CoreCompileDependsOn>
     <DocumentationFile>$(MSBuildThisFileDirectory)System.Runtime.CompilerServices.Unsafe.xml</DocumentationFile>
     <ProjectGuid>{04BA3E3C-6979-4792-B19E-C797AD607F42}</ProjectGuid>
-    <IncludePath>$([MSBuild]::NormalizeDirectory('$(BaseIntermediateOutputPath)', '$(TargetFramework)-$(TargetFrameworkSuffix)-$(Configuration)', 'version'))</IncludePath>
-    <IncludePath Condition="'$(TargetFrameworkSuffix)' == ''">$([MSBuild]::NormalizeDirectory('$(BaseIntermediateOutputPath)', '$(TargetFramework)-$(Configuration)', 'version'))</IncludePath>
-    <CoreAssembly>System.Runtime</CoreAssembly>
     <ExtraMacros Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)' or '$(TargetFramework)' == 'netcoreapp2.0'">#define netcoreapp</ExtraMacros>
-    <IlasmFlags>$(IlasmFlags) -INCLUDE=$(IncludePath) -DEBUG=$(DebugOptimization)</IlasmFlags>
+    <IlasmFlags>$(IlasmFlags) -DEBUG=$(DebugOptimization)</IlasmFlags>
     <TargetFrameworks>$(NetCoreAppCurrent);netstandard2.0;netcoreapp2.0;netstandard1.0;net45</TargetFrameworks>
     <ExcludeCurrentNetCoreAppFromPackage>true</ExcludeCurrentNetCoreAppFromPackage>
+    <CoreAssembly>System.Runtime</CoreAssembly>
+    <CoreAssembly Condition="'$(TargetFramework)' == 'netstandard2.0'">netstandard</CoreAssembly>
   </PropertyGroup>
   <PropertyGroup Condition="$(TargetFramework.StartsWith('net4'))">
     <CoreAssembly>mscorlib</CoreAssembly>
@@ -33,7 +32,9 @@
           Inputs="$(MSBuildAllProjects)"
           Outputs="'$(VersionFilePath)">
    <PropertyGroup>
-      <VersionFilePath Condition="'$(VersionFilePath)' == ''">$([MSBuild]::NormalizePath('$(IntermediateOutputPath)', 'version', 'version.h'))</VersionFilePath>
+      <IncludePath>$([MSBuild]::NormalizeDirectory('$(IntermediateOutputPath)', 'version'))</IncludePath>
+      <IlasmFlags>$(IlasmFlags) -INCLUDE=$(IncludePath)</IlasmFlags>
+      <VersionFilePath Condition="'$(VersionFilePath)' == ''">$([MSBuild]::NormalizePath('$(IncludePath)', 'version.h'))</VersionFilePath>
       <_AssemblyVersion>$(AssemblyVersion.Replace('.', ':'))</_AssemblyVersion>
       <_coreAssemblyName Condition="'%(ReferencePath.FileName)' == '$(CoreAssembly)'">%(ReferencePath.FusionName)</_coreAssemblyName>
       <_assemblyNamePattern><![CDATA[[^,]+, Version=(?<v1>[0-9]+)\.(?<v2>[0-9]+)\.(?<v3>[0-9]+)\.(?<v4>[0-9]+), .*PublicKeyToken=(?<p1>[0-9a-f]{2})(?<p2>[0-9a-f]{2})(?<p3>[0-9a-f]{2})(?<p4>[0-9a-f]{2})(?<p5>[0-9a-f]{2})(?<p6>[0-9a-f]{2})(?<p7>[0-9a-f]{2})(?<p8>[0-9a-f]{2})]]></_assemblyNamePattern>
