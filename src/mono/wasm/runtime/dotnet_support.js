@@ -86,8 +86,6 @@ var DotNetSupportLib = {
 			return 0;
 		}
 	}
-	
-
 };
 
 autoAddDeps(DotNetSupportLib, '$DOTNET')

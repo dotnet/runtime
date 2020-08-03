@@ -664,8 +664,8 @@ mono_wasm_get_obj_type (MonoObject *obj)
 	}
 }
 
-EMSCRIPTEN_KEEPALIVE int
-mono_unbox_int (MonoObject *obj)
+EMSCRIPTEN_KEEPALIVE double
+mono_unbox_primitive (MonoObject *obj)
 {
 	if (!obj)
 		return 0;
@@ -687,30 +687,15 @@ mono_unbox_int (MonoObject *obj)
 		return *(int*)ptr;
 	case MONO_TYPE_U4:
 		return *(unsigned int*)ptr;
-	// WASM doesn't support returning longs to JS
-	// case MONO_TYPE_I8:
-	// case MONO_TYPE_U8:
-	default:
-		printf ("Invalid type %d to mono_unbox_int\n", mono_type_get_type (type));
-		return 0;
-	}
-}
-
-EMSCRIPTEN_KEEPALIVE double
-mono_wasm_unbox_float (MonoObject *obj)
-{
-	if (!obj)
-		return 0;
-	MonoType *type = mono_class_get_type (mono_object_get_class(obj));
-
-	void *ptr = mono_object_unbox (obj);
-	switch (mono_type_get_type (type)) {
 	case MONO_TYPE_R4:
 		return *(float*)ptr;
 	case MONO_TYPE_R8:
 		return *(double*)ptr;
+	// WASM doesn't support returning longs to JS
+	// case MONO_TYPE_I8:
+	// case MONO_TYPE_U8:
 	default:
-		printf ("Invalid type %d to mono_wasm_unbox_float\n", mono_type_get_type (type));
+		printf ("Invalid type %d to mono_unbox_primitive\n", mono_type_get_type (type));
 		return 0;
 	}
 }

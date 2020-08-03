@@ -54,8 +54,7 @@ var BindingSupportLib = {
 			this.mono_string_get_utf8 = Module.cwrap ('mono_wasm_string_get_utf8', 'number', ['number']);
 			this.js_string_to_mono_string = Module.cwrap ('mono_wasm_string_from_js', 'number', ['string']);
 			this.mono_get_obj_type = Module.cwrap ('mono_wasm_get_obj_type', 'number', ['number']);
-			this.mono_unbox_int = Module.cwrap ('mono_unbox_int', 'number', ['number']);
-			this.mono_unbox_float = Module.cwrap ('mono_wasm_unbox_float', 'number', ['number']);
+			this.mono_unbox_primitive = Module.cwrap ('mono_unbox_primitive', 'number', ['number']);
 			this.mono_array_length = Module.cwrap ('mono_wasm_array_length', 'number', ['number']);
 			this.mono_array_get = Module.cwrap ('mono_wasm_array_get', 'number', ['number', 'number']);
 			this.mono_obj_array_new = Module.cwrap ('mono_wasm_obj_array_new', 'number', ['number']);
@@ -66,30 +65,18 @@ var BindingSupportLib = {
 			// receives a byteoffset into allocated Heap with a size.
 			this.mono_typed_array_new = Module.cwrap ('mono_wasm_typed_array_new', 'number', ['number','number','number','number']);
 
-			var binding_fqn_asm = this.BINDING_ASM.substring(this.BINDING_ASM.indexOf ("[") + 1, this.BINDING_ASM.indexOf ("]")).trim();
-			var binding_fqn_class = this.BINDING_ASM.substring (this.BINDING_ASM.indexOf ("]") + 1).trim();
-			
-			this.binding_module = this.assembly_load (binding_fqn_asm);
+			var binding_info = this.parse_fqn (this.BINDING_ASM);
+
+			this.binding_module = this.assembly_load (binding_info.assembly);
 			if (!this.binding_module)
-				throw "Can't find bindings module assembly: " + binding_fqn_asm;
+				throw `Can't find bindings module assembly:  ${binding_info.assembly}`;
 
-			if (binding_fqn_class !== null && typeof binding_fqn_class !== "undefined")
-			{
-				var namespace = "System.Runtime.InteropServices.JavaScript";
-				var classname = binding_fqn_class.length > 0 ? binding_fqn_class : "Runtime";
-				if (binding_fqn_class.indexOf(".") != -1) {
-					var idx = binding_fqn_class.lastIndexOf(".");
-					namespace = binding_fqn_class.substring (0, idx);
-					classname = binding_fqn_class.substring (idx + 1);
-				}
-			}
-
-			var wasm_runtime_class = this.find_class (this.binding_module, namespace, classname)
-			if (!wasm_runtime_class)
-				throw "Can't find " + binding_fqn_class + " class";
+			var runtime_class = this.find_class (this.binding_module, binding_info.namespace, binding_info.class)
+			if (!runtime_class)
+				throw `Can't find class ${binding_info.class}`;
 
 			this.runtime = {
-				class: wasm_runtime_class
+				class: runtime_class
 			};
 
 			var bind_method = function(method_name, signature, namespace = BINDING.runtime) {
@@ -146,10 +133,6 @@ var BindingSupportLib = {
 			return MONO.string_decoder.copy (mono_obj);
 		},
 
-		is_nested_array: function (ele) {
-			return BINDING.runtime.IsSimpleArray (ele);
-		},
-
 		mono_array_to_js_array: function (mono_array) {
 			if (mono_array == 0)
 				return null;
@@ -159,7 +142,7 @@ var BindingSupportLib = {
 			for (var i = 0; i < len; ++i)
 			{
 				var ele = this.mono_array_get (mono_array, i);
-				if (this.is_nested_array(ele))
+				if (BINDING.runtime.IsSimpleArray (ele))
 					res.push(this.mono_array_to_js_array(ele));
 				else
 					res.push (this.unbox_mono_obj (ele));
@@ -183,9 +166,8 @@ var BindingSupportLib = {
 			//See MARSHAL_TYPE_ defines in driver.c
 			switch (type) {
 			case 1: // int
-				return this.mono_unbox_int (mono_obj);
-			case 2: // float
-				return this.mono_unbox_float (mono_obj);
+			case 2: // double
+				return this.mono_unbox_primitive (mono_obj);
 			case 3: //string
 				return this.conv_string (mono_obj);
 			case 4: //vts
@@ -221,7 +203,7 @@ var BindingSupportLib = {
 				return this.extract_js_obj (mono_obj);
 
 			case 8: // bool
-				return this.mono_unbox_int (mono_obj) != 0;
+				return this.mono_unbox_primitive (mono_obj) != 0;
 
 			case 9: // enum
 
@@ -235,8 +217,6 @@ var BindingSupportLib = {
 				}
 
 				return enumValue;
-
-
 			case 11: 
 			case 12: 
 			case 13: 
@@ -271,10 +251,6 @@ var BindingSupportLib = {
 			}
 		},
 
-		create_task_completion_source: function () {
-			return BINDING.runtime.CreateTaskSource (-1);
-		},
-
 		set_task_result: function (tcs, result) {
 			tcs.is_mono_tcs_result_set = true;
 			BINDING.runtime.SetTaskSourceResult (tcs, result);
@@ -297,6 +273,7 @@ var BindingSupportLib = {
 			heapBytes.set(new Uint8Array(typedArray.buffer, typedArray.byteOffset, numBytes));
 			return heapBytes;
 		},
+
 		js_to_mono_obj: function (js_obj) {
 			this.bindings_lazy_init ();
 
@@ -329,7 +306,7 @@ var BindingSupportLib = {
 					var the_task = this.try_extract_mono_obj (js_obj);
 					if (the_task)
 						return the_task;
-					var tcs = this.create_task_completion_source ();
+					var tcs = BINDING.runtime.CreateTaskSource (-1);
 					js_obj.then (function (result) {
 						BINDING.set_task_result (tcs, result);
 					}, function (reason) {
@@ -343,6 +320,7 @@ var BindingSupportLib = {
 					return this.extract_mono_obj (js_obj);
 			}
 		},
+
 		js_to_mono_uri: function (js_obj) {
 			this.bindings_lazy_init ();
 
@@ -536,34 +514,11 @@ var BindingSupportLib = {
 			// return the unboxed enum value.
 			return this.mono_unbox_enum(monoEnum);
 		},
-		wasm_binding_obj_new: function (js_obj_id, ownsHandle, type)
-		{
-			return BINDING.runtime.BindJSObject (js_obj_id, ownsHandle, type);
-		},
-		wasm_bind_existing: function (mono_obj, js_id)
-		{
-			return BINDING.runtime.BindExistingObject (mono_obj, js_id);
-		},
-
-		wasm_bind_core_clr_obj: function (js_id, gc_handle)
-		{
-			return BINDING.runtime.BindCoreCLRObject (js_id, gc_handle);
-		},
-
-		wasm_get_js_id: function (mono_obj)
-		{
-			return BINDING.runtime.GetJSObjectId (mono_obj);
-		},
-
-		wasm_get_raw_obj: function (gchandle)
-		{
-			return BINDING.runtime.GetDotNetObject (gchandle)
-		},
 
 		try_extract_mono_obj:function (js_obj) {
 			if (js_obj === null || typeof js_obj === "undefined" || typeof js_obj.__mono_gchandle__ === "undefined")
 				return 0;
-			return this.wasm_get_raw_obj (js_obj.__mono_gchandle__);
+			return BINDING.runtime.GetDotNetObject (js_obj.__mono_gchandle__);
 		},
 
 		mono_method_get_call_signature: function(method) {
@@ -581,7 +536,7 @@ var BindingSupportLib = {
 			tcs.is_mono_tcs_task_bound = true;
 			js_obj.__mono_bound_tcs__ = tcs.__mono_gchandle__;
 			tcs.__mono_bound_task__ = js_obj.__mono_gchandle__;
-			return this.wasm_get_raw_obj (js_obj.__mono_gchandle__);
+			return BINDING.runtime.GetDotNetObject (js_obj.__mono_gchandle__);
 		},
 
 		free_task_completion_source: function (tcs) {
@@ -602,24 +557,23 @@ var BindingSupportLib = {
 
 			if (!js_obj.is_mono_bridged_obj) {
 				var gc_handle = this.mono_wasm_register_obj(js_obj);
-				return this.wasm_get_raw_obj (gc_handle);
+				return BINDING.runtime.GetDotNetObject (gc_handle);
 			}
 
-
-			return this.wasm_get_raw_obj (js_obj.__mono_gchandle__);
+			return BINDING.runtime.GetDotNetObject (js_obj.__mono_gchandle__);
 		},
 
 		extract_js_obj: function (mono_obj) {
 			if (mono_obj == 0)
 				return null;
 
-			var js_id = this.wasm_get_js_id (mono_obj);
+			var js_id = BINDING.runtime.GetJSObjectId (mono_obj);
 			if (js_id > 0)
 				return this.mono_wasm_require_handle(js_id);
 
 			var gcHandle = this.mono_wasm_free_list.length ? this.mono_wasm_free_list.pop() : this.mono_wasm_ref_counter++;
 			var js_obj = {
-				__mono_gchandle__: this.wasm_bind_existing(mono_obj, gcHandle + 1),
+				__mono_gchandle__: BINDING.runtime.BindExistingObject(mono_obj, gcHandle + 1),
 				is_mono_bridged_obj: true
 			};
 
@@ -766,15 +720,17 @@ var BindingSupportLib = {
 			// This may need more analysis if causes problems again.
 			return this.call_method (this.delegate_dynamic_invoke, this.extract_mono_obj (delegate_obj), "mo", [ mono_args ]);
 		},
-		
-		resolve_method_fqn: function (fqn) {
-			this.bindings_lazy_init ();
-			
+
+		parse_fqn: function (fqn) {
 			var assembly = fqn.substring(fqn.indexOf ("[") + 1, fqn.indexOf ("]")).trim();
 			fqn = fqn.substring (fqn.indexOf ("]") + 1).trim();
 
-			var methodname = fqn.substring(fqn.indexOf (":") + 1);
-			fqn = fqn.substring (0, fqn.indexOf (":")).trim ();
+			var methodstart = fqn.indexOf (":");
+			var methodname = "";
+			if (methodstart != -1) {
+				methodname = fqn.substring(fqn.indexOf (":") + 1);
+				fqn = fqn.substring (0, fqn.indexOf (":")).trim ();
+			}
 
 			var namespace = "";
 			var classname = fqn;
@@ -784,17 +740,30 @@ var BindingSupportLib = {
 				classname = fqn.substring (idx + 1);
 			}
 
-			var asm = this.assembly_load (assembly);
+			return {
+				assembly: assembly,
+				namespace: namespace,
+				class: classname,
+				method: methodname
+			};
+		},
+
+		resolve_method_fqn: function (fqn) {
+			this.bindings_lazy_init ();
+
+			var info = this.parse_fqn (fqn);
+			var asm = this.assembly_load (info.assembly);
 			if (!asm)
-				throw new Error ("Could not find assembly: " + assembly);
+				throw new Error (`Could not find assembly: ${info.assembly}`);
 
-			var klass = this.find_class(asm, namespace, classname);
+			var klass = this.find_class(asm, info.namespace, info.class);
 			if (!klass)
-				throw new Error ("Could not find class: " + namespace + ":" +classname);
+				throw new Error (`Could not find class: ${info.namespace}:${info.class}`);
 
-			var method = this.find_method (klass, methodname, -1);
+			var method = this.find_method (klass, info.method, -1);
 			if (!method)
-				throw new Error ("Could not find method: " + methodname);
+				throw new Error (`Could not find method: ${info.method}`);
+
 			return method;
 		},
 
@@ -871,7 +840,7 @@ var BindingSupportLib = {
 					// Obtain the JS -> C# type mapping.
 					var wasm_type = obj[Symbol.for("wasm type")];
 					obj.__owns_handle__ = true;
-					gc_handle = obj.__mono_gchandle__ = this.wasm_binding_obj_new(handle + 1, obj.__owns_handle__, typeof wasm_type === "undefined" ? -1 : wasm_type);
+					gc_handle = obj.__mono_gchandle__ = BINDING.runtime.BindJSObject(handle + 1, obj.__owns_handle__, typeof wasm_type === "undefined" ? -1 : wasm_type);
 					this.mono_wasm_object_registry[handle] = obj;
 						
 				}
@@ -1185,7 +1154,7 @@ var BindingSupportLib = {
 			return BINDING.js_string_to_mono_string ("Invalid JS object handle '" + js_handle + "'");
 		}
 
-		BINDING.wasm_bind_core_clr_obj(js_handle, gc_handle );
+		BINDING.runtime.BindCoreCLRObject(js_handle, gc_handle);
 		requireObject.__mono_gchandle__ = gc_handle;
 		requireObject.__js_handle__ = js_handle;
 		return gc_handle;
@@ -1199,7 +1168,7 @@ var BindingSupportLib = {
 			return BINDING.js_string_to_mono_string ("Invalid JS object handle '" + js_handle + "'");
 		}
 
-		BINDING.wasm_bind_core_clr_obj(js_handle, gc_handle );
+		BINDING.runtime.BindCoreCLRObject(js_handle, gc_handle);
 		requireObject.__mono_gchandle__ = gc_handle;
 		return gc_handle;
 	},
