@@ -720,8 +720,6 @@ FCFuncStart(gGCInterfaceFuncs)
     FCFuncElement("GetSegmentSize", GCInterface::GetSegmentSize)
     FCFuncElement("GetLastGCPercentTimeInGC", GCInterface::GetLastGCPercentTimeInGC)
     FCFuncElement("GetGenerationSize", GCInterface::GetGenerationSize)
-    FCFuncElement("GetGenerationTimeBetweenGC", GCInterface::GetGenerationTimeBetweenGC)
-    FCFuncElement("GetGenerationLastGCDuration", GCInterface::GetGenerationLastGCDuration)
     QCFuncElement("_AddMemoryPressure", GCInterface::_AddMemoryPressure)
     QCFuncElement("_RemoveMemoryPressure", GCInterface::_RemoveMemoryPressure)
     FCFuncElement("GetGeneration", GCInterface::GetGeneration)
@@ -1252,3 +1250,4 @@ FCClassElement("XplatEventLogger", "System.Diagnostics.Tracing", gEventLogger)
 #undef FCFuncStart
 #undef FCFuncEnd
 #undef FCClassElement
+

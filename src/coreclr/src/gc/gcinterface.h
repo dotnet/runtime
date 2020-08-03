@@ -703,10 +703,6 @@ public:
 
     virtual size_t GetLastGCGenerationSize(int gen) = 0;
 
-    virtual uint64_t GetLastGCTimeBetweenGC(int gen) = 0;
-
-    virtual int GetGenerationLastGCDuration(int gen) = 0;
-
     /*
     ===========================================================================
     Miscellaneous routines used by the VM.
@@ -1008,3 +1004,4 @@ typedef HRESULT (*GC_InitializeFunction)(
 );
 
 #endif // _GC_INTERFACE_H_
+

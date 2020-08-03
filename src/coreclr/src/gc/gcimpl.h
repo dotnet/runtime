@@ -314,11 +314,8 @@ public:
 
     size_t GetLastGCGenerationSize(int gen);
 
-    uint64_t GetLastGCTimeBetweenGC(int gen);
-
-    int GetGenerationLastGCDuration(int gen);
-
     virtual void Shutdown();
 };
 
 #endif  // GCIMPL_H_
+

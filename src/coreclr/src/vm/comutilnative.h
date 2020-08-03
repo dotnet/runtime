@@ -158,8 +158,6 @@ public:
     static FCDECL0(UINT64,  GetSegmentSize);
     static FCDECL0(int,     GetLastGCPercentTimeInGC);
     static FCDECL1(UINT64,  GetGenerationSize, int gen);
-    static FCDECL1(UINT64,  GetGenerationTimeBetweenGC, int gen);
-    static FCDECL1(int,     GetGenerationLastGCDuration, int gen);
     static
     INT64 QCALLTYPE GetTotalMemory();
 
@@ -250,3 +248,4 @@ public:
 };
 
 #endif // _COMUTILNATIVE_H_
+
