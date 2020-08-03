@@ -43,8 +43,8 @@
         specific path separators or the string compoarison will fail.
       -->
       <DirectorySeparatorChar>$([System.IO.Path]::DirectorySeparatorChar)</DirectorySeparatorChar>
-      <SystemPathTestsOutputDir>$([System.String]::Copy('$(TestsOutputDir)').Replace('/', '$(DirectorySeparatorChar)'))</SystemPathTestsOutputDir>
-      <SystemPathTestsOutputDir>$([System.String]::Copy('$(SystemPathTestsOutputDir)').Replace('\', '$(DirectorySeparatorChar)'))</SystemPathTestsOutputDir>
+      <SystemPathTestsOutputDir>$([System.String]::new('$(TestsOutputDir)').Replace('/', '$(DirectorySeparatorChar)'))</SystemPathTestsOutputDir>
+      <SystemPathTestsOutputDir>$([System.String]::new('$(SystemPathTestsOutputDir)').Replace('\', '$(DirectorySeparatorChar)'))</SystemPathTestsOutputDir>
 
       <!-- This is defined when building in Visual Studio, not DotNetRoot. -->
       <DotNetRoot Condition="'$(DotNetRoot)' == ''">$(NetCoreRoot)</DotNetRoot>
