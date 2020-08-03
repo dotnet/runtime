@@ -6,7 +6,7 @@
   </PropertyGroup>
   <PropertyGroup>
     <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetsBrowser)' == 'true'">SR.SystemNetRequests_PlatformNotSupported</GeneratePlatformNotSupportedAssemblyMessage>
-    <NoWarn Condition="'$(GeneratePlatformNotSupportedAssemblyMessage )' != ''">$(NoWarn);CS0809</NoWarn>
+    <NoWarn Condition="'$(GeneratePlatformNotSupportedAssemblyMessage)' != ''">$(NoWarn);CS0809</NoWarn>
   </PropertyGroup>
   <ItemGroup Condition="'$(TargetsBrowser)' != 'true'">
     <Compile Include="System\Net\AuthenticationManager.cs" />
