@@ -1,8 +1,6 @@
-<Project Sdk="Microsoft.Build.Traversal">
+<Project>
 
-  <Target Name="ILLinkTrimSharedFramework"
-          AfterTargets="Build"
-          Condition="'$(BuildTargetFramework)' == '$(NetCoreAppCurrent)'">
+  <Target Name="ILLinkTrimSharedFramework" AfterTargets="Build">
 
     <PropertyGroup>
       <!-- default action for core assemblies -->
@@ -39,11 +37,19 @@
       <ILLinkArgs>$(ILLinkArgs) --nowarn IL2006;IL2009;IL2025;IL2026;IL2035;IL2050</ILLinkArgs>
     </PropertyGroup>
 
+     <!-- Retrieve CoreLib's targetpath via GetTargetPath as it isn't binplaced yet. -->
+    <MSBuild Projects="$(CoreLibProject)"
+             Targets="GetTargetPath">
+      <Output TaskParameter="TargetOutputs" PropertyName="SystemPrivateCoreLibPath" />
+    </MSBuild>
+
+    <PropertyGroup>
+      <_AssemblyPaths>$(MicrosoftNetCoreAppRuntimePackRidLibTfmDir);$(SystemPrivateCoreLibPath)</_AssemblyPaths>
+    </PropertyGroup>
+
     <ItemGroup>
-      <!-- add two directories to load references: the libraries directory and CoreLib's directory -->
-      <_DependencyDirectories Include="$(LibrariesPretrimmedArtifactsPath.TrimEnd('\'))" />
-      <_DependencyDirectories Condition="'$(RuntimeFlavor)' == 'CoreCLR'" Include="$([MSBuild]::NormalizePath('$(CoreCLRArtifactsPath)', 'IL'))" />
-      <_DependencyDirectories Condition="'$(RuntimeFlavor)' == 'Mono'" Include="$([MSBuild]::NormalizePath('$(MonoArtifactsPath)', 'IL'))" />
+      <!-- add references from the libraries directory -->
+      <_DependencyDirectories Include="$(MicrosoftNetCoreAppRuntimePackRidLibTfmDir.TrimEnd('\'))" />
     </ItemGroup>
 
     <PropertyGroup>
@@ -53,15 +59,12 @@
     <ItemGroup>
       <_AssembliesToLink Include="System.Private.CoreLib" />
 
-      <_LibrariesToLink Include="$(LibrariesPretrimmedArtifactsPath)*.dll" />
+      <_LibrariesToLink Include="$(MicrosoftNetCoreAppRuntimePackRidLibTfmDir)*.dll" />
       <_AssembliesToLink Include="@(_LibrariesToLink->'%(FileName)')" />
     </ItemGroup>
 
     <PropertyGroup>
-      <ILLinkArgs>$(ILLinkArgs) -a @(_AssembliesToLink->'%(Identity)', ' -a ')</ILLinkArgs>
-
-      <!-- Not currently using the trimmed CoreLib because it has already been trimmed and crossgen'd. -->
-      <ILLinkArgs>$(ILLinkArgs) -p copy System.Private.CoreLib</ILLinkArgs>
+      <ILLinkArgs>$(ILLinkArgs) -r @(_AssembliesToLink->'%(Identity)', ' -r ')</ILLinkArgs>
     </PropertyGroup>
 
     <!-- When running from Desktop MSBuild, DOTNET_HOST_PATH is not set.
@@ -72,7 +75,7 @@
       <_DotNetHostFileName Condition=" '$(OS)' == 'Windows_NT' ">dotnet.exe</_DotNetHostFileName>
     </PropertyGroup>
 
-    <ILLink AssemblyPaths="$(LibrariesPretrimmedArtifactsPath)"
+    <ILLink AssemblyPaths="$(_AssemblyPaths)"
         RootAssemblyNames=""
         OutputDirectory="$(LibrariesTrimmedArtifactsPath)"
         ExtraArgs="$(ILLinkArgs)"

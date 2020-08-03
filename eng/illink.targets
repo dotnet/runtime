@@ -64,14 +64,8 @@
       <RuntimePath>$([MSBuild]::NormalizePath('$(LibrariesTrimmingArtifactsRoot)', 'reports'))</RuntimePath>
       <ItemName>TrimmingReport</ItemName>
     </BinPlaceTargetFrameworks>
-  </ItemGroup>
-
-  <!-- Binplacing for pre-trimming that is used when running the linker
-       on the entire runtime pack to observe warnings from verbose output
-  -->
-  <ItemGroup>
     <BinPlaceTargetFrameworks Include="$(NetCoreAppCurrent)">
-      <RuntimePath>$(LibrariesPretrimmedArtifactsPath)</RuntimePath>
+      <RuntimePath>$([MSBuild]::NormalizePath('$(LibrariesTrimmingArtifactsRoot)', 'pretrimmed'))</RuntimePath>
       <ItemName>PreTrimmedItem</ItemName>
     </BinPlaceTargetFrameworks>
   </ItemGroup>
