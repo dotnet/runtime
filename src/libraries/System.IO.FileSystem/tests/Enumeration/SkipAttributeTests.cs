@@ -21,7 +21,6 @@ namespace System.IO.Tests.Enumeration
         }
 
         [Fact]
-        [PlatformSpecific(~TestPlatforms.Browser)]
         public void SkippingHiddenFiles()
         {
             DirectoryInfo testDirectory = Directory.CreateDirectory(GetTestFilePath());
