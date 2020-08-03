@@ -12,7 +12,7 @@ using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
-namespace WebAssembly.Net.Debugging
+namespace WebAssembly.Net.BrowserDebug
 {
 
     public struct SessionId

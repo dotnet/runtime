@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Linq;
 
-namespace WebAssembly.Net.Debugging
+namespace WebAssembly.Net.BrowserDebug
 {
     internal class InspectorClient : DevToolsClient
     {

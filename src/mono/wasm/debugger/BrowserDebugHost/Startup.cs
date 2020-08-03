@@ -16,7 +16,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
-namespace WebAssembly.Net.Debugging
+namespace WebAssembly.Net.BrowserDebug
 {
     internal class Startup
     {

@@ -11,7 +11,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace WebAssembly.Net.Debugging
+namespace WebAssembly.Net.BrowserDebug
 {
     public class ProxyOptions
     {

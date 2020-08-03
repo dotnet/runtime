@@ -5,7 +5,7 @@ using System;
 using System.Linq;
 using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
-using WebAssembly.Net.Debugging;
+using WebAssembly.Net.BrowserDebug;
 using Xunit;
 
 [assembly : CollectionBehavior(CollectionBehavior.CollectionPerAssembly)]
