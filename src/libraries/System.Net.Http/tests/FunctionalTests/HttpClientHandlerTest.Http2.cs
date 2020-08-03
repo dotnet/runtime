@@ -78,7 +78,7 @@ namespace System.Net.Http.Functional.Tests
 
                 string connectionPreface = (await server.AcceptConnectionAsync()).PrefixString;
 
-                Assert.Equal("PRI * HTTP/2.0\r\n\r\nSM\r\n\r\n", connectionPreface);
+                Assert.Equal(Http2LoopbackConnection.Http2Prefix, connectionPreface);
             }
         }
 

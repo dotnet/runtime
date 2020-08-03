@@ -230,22 +230,24 @@ namespace System.Net.Http.Functional.Tests
                 return;
             }
 
-            using (HttpClient client = CreateHttpClient())
-            {
-                var options = new GenericLoopbackOptions { Address = TestHelper.GetIPv6LinkLocalAddress(), UseSsl = false };
-                if (options.Address == null)
-                {
-                    throw new SkipTestException("Unable to find valid IPv6 LL address.");
-                }
 
-                await LoopbackServerFactory.CreateServerAsync(async (server, url) =>
-                {
-                    _output.WriteLine(url.ToString());
-                    await TestHelper.WhenAllCompletedOrAnyFailed(
-                        server.AcceptConnectionSendResponseAndCloseAsync(),
-                        client.SendAsync(CreateRequest(HttpMethod.Get, url, UseVersion, true)));
-                }, options: options);
+            using HttpClientHandler handler = CreateHttpClientHandler();
+            handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
+
+            using HttpClient client = CreateHttpClient(handler);
+
+            if (options.Address == null)
+            {
+                throw new SkipTestException("Unable to find valid IPv6 LL address.");
             }
+
+            await LoopbackServerFactory.CreateServerAsync(async (server, url) =>
+            {
+                _output.WriteLine(url.ToString());
+                await TestHelper.WhenAllCompletedOrAnyFailed(
+                    server.AcceptConnectionSendResponseAndCloseAsync(),
+                    client.SendAsync(CreateRequest(HttpMethod.Get, url, UseVersion, true)));
+            }, options: options);
         }
 
         [Theory]
@@ -257,17 +259,18 @@ namespace System.Net.Http.Functional.Tests
                 return;
             }
 
-            using (HttpClient client = CreateHttpClient())
+            using HttpClientHandler handler = CreateHttpClientHandler();
+            handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
+
+            using HttpClient client = CreateHttpClient(handler);
+
+            await LoopbackServerFactory.CreateServerAsync(async (server, url) =>
             {
-                var options = new GenericLoopbackOptions { Address = address, UseSsl = false };
-                await LoopbackServerFactory.CreateServerAsync(async (server, url) =>
-                {
-                    _output.WriteLine(url.ToString());
-                    await TestHelper.WhenAllCompletedOrAnyFailed(
-                        server.AcceptConnectionSendResponseAndCloseAsync(),
-                        client.SendAsync(CreateRequest(HttpMethod.Get, url, UseVersion, true)));
-                }, options: options);
-            }
+                _output.WriteLine(url.ToString());
+                await TestHelper.WhenAllCompletedOrAnyFailed(
+                    server.AcceptConnectionSendResponseAndCloseAsync(),
+                    client.SendAsync(CreateRequest(HttpMethod.Get, url, UseVersion, true)));
+            }, options: options);
         }
 
         public static IEnumerable<object[]> GetAsync_IPBasedUri_Success_MemberData()

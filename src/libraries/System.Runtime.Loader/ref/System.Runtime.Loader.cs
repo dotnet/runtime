@@ -9,7 +9,7 @@ namespace System.Reflection.Metadata
     public static partial class AssemblyExtensions
     {
         [System.CLSCompliantAttribute(false)]
-        public static unsafe bool TryGetRawMetadata(this System.Reflection.Assembly assembly, out byte* blob, out int length) { throw null; }
+        public unsafe static bool TryGetRawMetadata(this System.Reflection.Assembly assembly, out byte* blob, out int length) { throw null; }
     }
 }
 namespace System.Runtime.Loader

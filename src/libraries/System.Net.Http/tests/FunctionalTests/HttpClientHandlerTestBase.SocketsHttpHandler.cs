@@ -68,5 +68,11 @@ namespace System.Net.Http.Functional.Tests
             
             return base.SendAsync(request, cancellationToken);
         }
+
+        protected static HttpRequestMessage CreateRequest(HttpMethod method, Uri uri, Version version, bool exactVersion = false) =>
+            new HttpRequestMessage(method, uri)
+            {
+                Version = version,
+            };
     }
 }

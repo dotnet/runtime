@@ -24,10 +24,11 @@
       "StableVersions": [
         "1.0.0"
       ],
-      "BaselineVersion": "1.0.0",
+      "BaselineVersion": "5.0.0",
       "InboxOn": {},
       "AssemblyVersionInPackageVersion": {
-        "1.0.0.0": "1.0.0"
+        "1.0.0.0": "1.0.0",
+        "5.0.0.0": "5.0.0"
       }
     },
     "Microsoft.Bcl.HashCode": {
