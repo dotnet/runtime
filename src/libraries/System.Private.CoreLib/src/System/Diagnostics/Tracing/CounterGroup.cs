@@ -238,10 +238,17 @@ namespace System.Diagnostics.Tracing
         private static void PollForValues()
         {
             AutoResetEvent? sleepEvent = null;
+            int maxOnTimersCnt = 64; // initialize the maximum size of CounterGroups' callbacks cache to be 64.
+
+            // Cache of onTimer callbacks for each CounterGroup.
+            // We cache these outside of the scope of s_counterGroupLock because
+            // calling into the callbacks can cause a re-entrancy into CounterGroup.Enable()
+            // and result in a deadlock. (See https://github.com/dotnet/runtime/issues/40190 for details)
+            Action[] onTimers = new Action[maxOnTimersCnt];
             while (true)
             {
+                int numCounterGroups = 0;
                 int sleepDurationInMilliseconds = int.MaxValue;
-                List<Action> onTimers = new List<Action>();
                 lock (s_counterGroupLock)
                 {
                     sleepEvent = s_pollingThreadSleepEvent;
@@ -250,7 +257,14 @@ namespace System.Diagnostics.Tracing
                         DateTime now = DateTime.UtcNow;
                         if (counterGroup._nextPollingTimeStamp < now + new TimeSpan(0, 0, 0, 0, 1))
                         {
-                            onTimers.Add(() => counterGroup.OnTimer());
+                            if (numCounterGroups == maxOnTimersCnt)
+                            {
+                                maxOnTimersCnt *= 2;
+                                Action[] newOnTimers = new Action[maxOnTimersCnt];
+                                onTimers.CopyTo(newOnTimers, 0);
+                                onTimers = newOnTimers;
+                            }
+                            onTimers[numCounterGroups++] = () => counterGroup.OnTimer();
                         }
 
                         int millisecondsTillNextPoll = (int)((counterGroup._nextPollingTimeStamp - now).TotalMilliseconds);
@@ -258,9 +272,9 @@ namespace System.Diagnostics.Tracing
                         sleepDurationInMilliseconds = Math.Min(sleepDurationInMilliseconds, millisecondsTillNextPoll);
                     }
                 }
-                foreach (Action onTimer in onTimers)
+                for (int i = 0; i < numCounterGroups; i++)
                 {
-                    onTimer.Invoke();
+                    onTimers[i].Invoke();
                 }
                 if (sleepDurationInMilliseconds == int.MaxValue)
                 {
