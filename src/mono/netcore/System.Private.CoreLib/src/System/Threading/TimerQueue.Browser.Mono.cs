@@ -60,6 +60,11 @@ namespace System.Threading
 
         private static int PumpTimerQueue() // NOTE: this method is called via reflection by test code
         {
+            if (s_scheduledTimersToFire == null)
+            {
+                return int.MaxValue;
+            }
+
             List<TimerQueue> timersToFire = s_scheduledTimersToFire!;
             List<TimerQueue> timers;
             timers = s_scheduledTimers!;
