@@ -116,7 +116,7 @@ namespace System
                 // says they should be equal, even if the signs differ.
                 return leftIsNegative && !AreZero(left, right);
             }
-            return (short)(left._value) < (short)(right._value);
+            return (left._value < right._value) ^ leftIsNegative;
         }
 
         public static bool operator >(Half left, Half right)
@@ -141,7 +141,7 @@ namespace System
                 // says they should be equal, even if the signs differ.
                 return leftIsNegative || AreZero(left, right);
             }
-            return (short)(left._value) <= (short)(right._value);
+            return (left._value <= right._value) ^ leftIsNegative;
         }
 
         public static bool operator >=(Half left, Half right)

@@ -7,6 +7,7 @@ using Xunit;
 
 namespace System.Runtime.InteropServices.JavaScript.Tests
 {
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/40112")]
     public static class MarshalTests
     {
         [Fact]

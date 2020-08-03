@@ -15,9 +15,9 @@ namespace System.ComponentModel.DataAnnotations
         #region Member fields
 
         private readonly string _propertyName;
-        private Func<string> _cachedResult;
-        private string _propertyValue;
-        private Type _resourceType;
+        private Func<string?>? _cachedResult;
+        private string? _propertyValue;
+        private Type? _resourceType;
 
         #endregion
 
@@ -46,7 +46,7 @@ namespace System.ComponentModel.DataAnnotations
         ///     either the literal, non-localized value, or it can be a resource name
         ///     found on the resource type supplied to <see cref="GetLocalizableValue" />.
         /// </summary>
-        public string Value
+        public string? Value
         {
             get => _propertyValue;
             set
@@ -62,7 +62,7 @@ namespace System.ComponentModel.DataAnnotations
         /// <summary>
         ///     Gets or sets the resource type to be used for localization.
         /// </summary>
-        public Type ResourceType
+        public Type? ResourceType
         {
             get => _resourceType;
             set
@@ -108,7 +108,7 @@ namespace System.ComponentModel.DataAnnotations
         /// <returns>
         ///     Returns the potentially localized value.
         /// </returns>
-        public string GetLocalizableValue()
+        public string? GetLocalizableValue()
         {
             if (_cachedResult == null)
             {
@@ -153,7 +153,7 @@ namespace System.ComponentModel.DataAnnotations
                     else
                     {
                         // We have a valid property, so cache the resource
-                        _cachedResult = () => (string)property.GetValue(null, null);
+                        _cachedResult = () => (string?)property!.GetValue(null, null);
                     }
                 }
             }

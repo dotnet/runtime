@@ -1891,14 +1891,14 @@ public:
         STANDARD_VM_CONTRACT;
 
         EmitLoadNativeHomeAddr(pslILEmit);
-        pslILEmit->EmitINITOBJ(pslILEmit->GetToken(MscorlibBinder::GetClass(CLASS__ID)));
+        pslILEmit->EmitINITOBJ(pslILEmit->GetToken(CoreLibBinder::GetClass(CLASS__ID)));
     }
 
     virtual LocalDesc GetNativeType()
     {
         STANDARD_VM_CONTRACT;
 
-        return LocalDesc(MscorlibBinder::GetClass(CLASS__ID));
+        return LocalDesc(CoreLibBinder::GetClass(CLASS__ID));
     }
 };
 
@@ -1972,7 +1972,7 @@ protected:
         // marshaling a struct referring to an object containing a handle.
         if (structField != 0)
         {
-            int tokStruct__m_object = pslILEmit->GetToken(MscorlibBinder::GetField(structField));
+            int tokStruct__m_object = pslILEmit->GetToken(CoreLibBinder::GetField(structField));
             EmitLoadManagedHomeAddr(pslILEmit);
             pslILEmit->EmitLDFLD(tokStruct__m_object);
         }
@@ -2280,7 +2280,7 @@ public:
     LocalDesc GetManagedType() override
     {
         LIMITED_METHOD_CONTRACT;
-        return LocalDesc(MscorlibBinder::GetClass(CLASS__SAFE_HANDLE));
+        return LocalDesc(CoreLibBinder::GetClass(CLASS__SAFE_HANDLE));
     }
 
     LocalDesc GetNativeType() override
@@ -2324,7 +2324,7 @@ public:
     LocalDesc GetManagedType() override
     {
         LIMITED_METHOD_CONTRACT;
-        return LocalDesc(MscorlibBinder::GetClass(CLASS__CRITICAL_HANDLE));
+        return LocalDesc(CoreLibBinder::GetClass(CLASS__CRITICAL_HANDLE));
     }
 
     LocalDesc GetNativeType() override
@@ -2501,7 +2501,7 @@ protected:
         //
         // value class
         //
-        return LocalDesc(MscorlibBinder::GetClass(CLASS__ID));
+        return LocalDesc(CoreLibBinder::GetClass(CLASS__ID));
     }
 
     bool NeedsClearNative() override
@@ -2541,7 +2541,7 @@ protected:
         {
             EmitLoadNativeValue(pslILEmit);     // dest
             EmitLoadManagedHomeAddr(pslILEmit); // src
-            pslILEmit->EmitCPOBJ(pslILEmit->GetToken(MscorlibBinder::GetClass(CLASS__ID)));
+            pslILEmit->EmitCPOBJ(pslILEmit->GetToken(CoreLibBinder::GetClass(CLASS__ID)));
         }
         else
         {
@@ -2554,7 +2554,7 @@ protected:
     {
         STANDARD_VM_CONTRACT;
 
-        int tokType = pslILEmit->GetToken(MscorlibBinder::GetClass(CLASS__ID));
+        int tokType = pslILEmit->GetToken(CoreLibBinder::GetClass(CLASS__ID));
         ILCodeLabel *pNullLabel = pslILEmit->NewCodeLabel();
         ILCodeLabel *pJoinLabel = pslILEmit->NewCodeLabel();
 
@@ -3302,13 +3302,13 @@ protected:
         EmitCallMngdMarshalerMethod(pslILEmit, GetClearManagedMethod());
     }
 
-    virtual MethodDesc *GetConvertSpaceToManagedMethod()    { WRAPPER_NO_CONTRACT; return (m_idConvertSpaceToManaged    == METHOD__NIL ? NULL : MscorlibBinder::GetMethod(m_idConvertSpaceToManaged));    }
-    virtual MethodDesc *GetConvertContentsToManagedMethod() { WRAPPER_NO_CONTRACT; return (m_idConvertContentsToManaged == METHOD__NIL ? NULL : MscorlibBinder::GetMethod(m_idConvertContentsToManaged)); }
-    virtual MethodDesc *GetConvertSpaceToNativeMethod()     { WRAPPER_NO_CONTRACT; return (m_idConvertSpaceToNative     == METHOD__NIL ? NULL : MscorlibBinder::GetMethod(m_idConvertSpaceToNative));     }
-    virtual MethodDesc *GetConvertContentsToNativeMethod()  { WRAPPER_NO_CONTRACT; return (m_idConvertContentsToNative  == METHOD__NIL ? NULL : MscorlibBinder::GetMethod(m_idConvertContentsToNative));  }
-    virtual MethodDesc *GetClearNativeMethod()              { WRAPPER_NO_CONTRACT; return (m_idClearNative              == METHOD__NIL ? NULL : MscorlibBinder::GetMethod(m_idClearNative));              }
-    virtual MethodDesc *GetClearNativeContentsMethod()      { WRAPPER_NO_CONTRACT; return (m_idClearNativeContents      == METHOD__NIL ? NULL : MscorlibBinder::GetMethod(m_idClearNativeContents));      }
-    virtual MethodDesc *GetClearManagedMethod()             { WRAPPER_NO_CONTRACT; return (m_idClearManaged             == METHOD__NIL ? NULL : MscorlibBinder::GetMethod(m_idClearManaged));             }
+    virtual MethodDesc *GetConvertSpaceToManagedMethod()    { WRAPPER_NO_CONTRACT; return (m_idConvertSpaceToManaged    == METHOD__NIL ? NULL : CoreLibBinder::GetMethod(m_idConvertSpaceToManaged));    }
+    virtual MethodDesc *GetConvertContentsToManagedMethod() { WRAPPER_NO_CONTRACT; return (m_idConvertContentsToManaged == METHOD__NIL ? NULL : CoreLibBinder::GetMethod(m_idConvertContentsToManaged)); }
+    virtual MethodDesc *GetConvertSpaceToNativeMethod()     { WRAPPER_NO_CONTRACT; return (m_idConvertSpaceToNative     == METHOD__NIL ? NULL : CoreLibBinder::GetMethod(m_idConvertSpaceToNative));     }
+    virtual MethodDesc *GetConvertContentsToNativeMethod()  { WRAPPER_NO_CONTRACT; return (m_idConvertContentsToNative  == METHOD__NIL ? NULL : CoreLibBinder::GetMethod(m_idConvertContentsToNative));  }
+    virtual MethodDesc *GetClearNativeMethod()              { WRAPPER_NO_CONTRACT; return (m_idClearNative              == METHOD__NIL ? NULL : CoreLibBinder::GetMethod(m_idClearNative));              }
+    virtual MethodDesc *GetClearNativeContentsMethod()      { WRAPPER_NO_CONTRACT; return (m_idClearNativeContents      == METHOD__NIL ? NULL : CoreLibBinder::GetMethod(m_idClearNativeContents));      }
+    virtual MethodDesc *GetClearManagedMethod()             { WRAPPER_NO_CONTRACT; return (m_idClearManaged             == METHOD__NIL ? NULL : CoreLibBinder::GetMethod(m_idClearManaged));             }
 
     const BinderMethodID m_idConvertSpaceToManaged;
     const BinderMethodID m_idConvertContentsToManaged;

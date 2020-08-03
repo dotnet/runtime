@@ -1106,7 +1106,9 @@ typedef unsigned char   regNumberSmall;
   // The registers trashed by profiler enter/leave/tailcall hook
   // See vm\arm\asmhelpers.asm for more details.
   #define RBM_PROFILER_ENTER_TRASH     RBM_NONE
-  #define RBM_PROFILER_LEAVE_TRASH     RBM_NONE
+  // While REG_PROFILER_RET_SCRATCH is not trashed by the method, the register allocator must
+  // consider it killed by the return.
+  #define RBM_PROFILER_LEAVE_TRASH     RBM_PROFILER_RET_SCRATCH
   #define RBM_PROFILER_TAILCALL_TRASH  RBM_NONE
 
   // Which register are int and long values returned in ?
@@ -1619,11 +1621,11 @@ public:
     static const enum ArgOrder g_tgtArgOrder;
 };
 
-#if defined(DEBUG) || defined(LATE_DISASM)
+#if defined(DEBUG) || defined(LATE_DISASM) || DUMP_GC_TABLES
 const char* getRegName(unsigned reg, bool isFloat = false); // this is for gcencode.cpp and disasm.cpp that don't use
                                                             // the regNumber type
 const char* getRegName(regNumber reg, bool isFloat = false);
-#endif // defined(DEBUG) || defined(LATE_DISASM)
+#endif // defined(DEBUG) || defined(LATE_DISASM) || DUMP_GC_TABLES
 
 #ifdef DEBUG
 const char* getRegNameFloat(regNumber reg, var_types type);

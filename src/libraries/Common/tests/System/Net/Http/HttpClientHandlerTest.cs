@@ -230,22 +230,25 @@ namespace System.Net.Http.Functional.Tests
                 return;
             }
 
-            using (HttpClient client = CreateHttpClient())
-            {
-                var options = new GenericLoopbackOptions { Address = TestHelper.GetIPv6LinkLocalAddress() };
-                if (options.Address == null)
-                {
-                    throw new SkipTestException("Unable to find valid IPv6 LL address.");
-                }
 
-                await LoopbackServerFactory.CreateServerAsync(async (server, url) =>
-                {
-                    _output.WriteLine(url.ToString());
-                    await TestHelper.WhenAllCompletedOrAnyFailed(
-                        server.AcceptConnectionSendResponseAndCloseAsync(),
-                        client.GetAsync(url));
-                }, options: options);
+            using HttpClientHandler handler = CreateHttpClientHandler();
+            handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
+
+            using HttpClient client = CreateHttpClient(handler);
+
+            var options = new GenericLoopbackOptions { Address = TestHelper.GetIPv6LinkLocalAddress() };
+            if (options.Address == null)
+            {
+                throw new SkipTestException("Unable to find valid IPv6 LL address.");
             }
+
+            await LoopbackServerFactory.CreateServerAsync(async (server, url) =>
+            {
+                _output.WriteLine(url.ToString());
+                await TestHelper.WhenAllCompletedOrAnyFailed(
+                    server.AcceptConnectionSendResponseAndCloseAsync(),
+                    client.SendAsync(CreateRequest(HttpMethod.Get, url, UseVersion, true)));
+            }, options: options);
         }
 
         [Theory]
@@ -257,17 +260,19 @@ namespace System.Net.Http.Functional.Tests
                 return;
             }
 
-            using (HttpClient client = CreateHttpClient())
+            using HttpClientHandler handler = CreateHttpClientHandler();
+            handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
+
+            using HttpClient client = CreateHttpClient(handler);
+
+            var options = new GenericLoopbackOptions { Address = address };
+            await LoopbackServerFactory.CreateServerAsync(async (server, url) =>
             {
-                var options = new GenericLoopbackOptions { Address = address };
-                await LoopbackServerFactory.CreateServerAsync(async (server, url) =>
-                {
-                    _output.WriteLine(url.ToString());
-                    await TestHelper.WhenAllCompletedOrAnyFailed(
-                        server.AcceptConnectionSendResponseAndCloseAsync(),
-                        client.GetAsync(url));
-                }, options: options);
-            }
+                _output.WriteLine(url.ToString());
+                await TestHelper.WhenAllCompletedOrAnyFailed(
+                    server.AcceptConnectionSendResponseAndCloseAsync(),
+                    client.SendAsync(CreateRequest(HttpMethod.Get, url, UseVersion, true)));
+            }, options: options);
         }
 
         public static IEnumerable<object[]> GetAsync_IPBasedUri_Success_MemberData()
@@ -2112,6 +2117,45 @@ namespace System.Net.Http.Functional.Tests
                     // Send final status code.
                     await connection.SendResponseAsync(HttpStatusCode.OK);
                     await clientFinished.Task;
+                });
+            });
+        }
+
+        [Fact]
+        public async Task SendAsync_Expect100Continue_RequestBodyFails_ThrowsContentException()
+        {
+            if (IsWinHttpHandler)
+            {
+                return;
+            }
+            if (!TestAsync && UseVersion >= HttpVersion20.Value)
+            {
+                return;
+            }
+
+            var clientFinished = new TaskCompletionSource<bool>();
+
+            await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
+            {
+                using (HttpClient client = CreateHttpClient())
+                {
+                    HttpRequestMessage initialMessage = new HttpRequestMessage(HttpMethod.Post, uri) { Version = UseVersion };
+                    initialMessage.Content = new ThrowingContent(() => new ThrowingContentException());
+                    initialMessage.Headers.ExpectContinue = true;
+                    await Assert.ThrowsAsync<ThrowingContentException>(() => client.SendAsync(TestAsync, initialMessage));
+
+                    clientFinished.SetResult(true);
+                }
+            }, async server =>
+            {
+                await server.AcceptConnectionAsync(async connection =>
+                {
+                    try
+                    {
+                        await connection.ReadRequestDataAsync(readBody: true);
+                    }
+                    catch { } // Eat errors from client disconnect.
+                    await clientFinished.Task.TimeoutAfter(TimeSpan.FromMinutes(2));
                 });
             });
         }

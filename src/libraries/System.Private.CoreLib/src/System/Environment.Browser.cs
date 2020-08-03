@@ -24,5 +24,7 @@ namespace System
         {
             return new OperatingSystem(PlatformID.Other, new Version(1, 0, 0, 0));
         }
+
+        private static int GetCurrentProcessId() => 42;
     }
 }

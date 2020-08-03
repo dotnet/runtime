@@ -5750,7 +5750,7 @@ REFLECTMETHODREF MethodDesc::GetStubMethodInfo()
     CONTRACTL_END;
 
     REFLECTMETHODREF retVal;
-    REFLECTMETHODREF methodRef = (REFLECTMETHODREF)AllocateObject(MscorlibBinder::GetClass(CLASS__STUBMETHODINFO));
+    REFLECTMETHODREF methodRef = (REFLECTMETHODREF)AllocateObject(CoreLibBinder::GetClass(CLASS__STUBMETHODINFO));
     GCPROTECT_BEGIN(methodRef);
 
     methodRef->SetMethod(this);
