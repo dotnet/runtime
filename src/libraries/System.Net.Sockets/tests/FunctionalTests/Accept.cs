@@ -345,6 +345,30 @@ namespace System.Net.Sockets.Tests
                 }
             }, maxAttempts: 10);
         }
+
+        [Fact]
+        public async Task AcceptReceive_Success()
+        {
+            if (!SupportsAcceptReceive)
+            {
+                // Currently only supported by APM and EAP
+                return;
+            }
+
+            using Socket listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+            int port = listener.BindToAnonymousPort(IPAddress.Loopback);
+            IPEndPoint listenerEndpoint = new IPEndPoint(IPAddress.Loopback, port);
+            listener.Listen(100);
+
+            var acceptTask = AcceptAsync(listener, 1);
+
+            using Socket sender = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+            sender.Connect(listenerEndpoint);
+            sender.Send(new byte[] { 42 });
+
+            (_, byte[] recvBuffer) = await acceptTask;
+            Assert.Equal(new byte[] { 42 }, recvBuffer);
+        } 
     }
 
     public sealed class AcceptSync : Accept<SocketHelperArraySync>

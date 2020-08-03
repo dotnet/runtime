@@ -145,16 +145,13 @@ namespace System.Net.Sockets
 
             Socket socket = EndAccept(out innerBuffer, out bytesTransferred, asyncResult);
             buffer = new byte[bytesTransferred];
-            // https://github.com/dotnet/runtime/issues/32633 - this throws on Unix
             Buffer.BlockCopy(innerBuffer, 0, buffer, 0, bytesTransferred);
             return socket;
         }
 
         public Socket EndAccept(out byte[] buffer, out int bytesTransferred, IAsyncResult asyncResult)
         {
-            byte[]? temp;
-            Socket result = CommonEndAccept(out temp, out bytesTransferred, asyncResult);
-            buffer = temp!;
+            Socket result = CommonEndAccept(out buffer!, out bytesTransferred, asyncResult);
             return result;
         }
 
