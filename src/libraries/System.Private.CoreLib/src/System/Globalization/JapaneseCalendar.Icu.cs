@@ -24,7 +24,7 @@ namespace System.Globalization
             }
 
             string[]? abbrevEnglishEraNames;
-            if (!CalendarData.EnumCalendarInfo("en", CalendarId.JAPAN, CalendarDataType.AbbrevEraNames, out abbrevEnglishEraNames))
+            if (!CalendarData.EnumCalendarInfo("ja", CalendarId.JAPAN, CalendarDataType.AbbrevEraNames, out abbrevEnglishEraNames))
             {
                 return null;
             }
@@ -33,6 +33,8 @@ namespace System.Globalization
             int lastMaxYear = GregorianCalendar.MaxYear;
 
             int latestEra = Interop.Globalization.GetLatestJapaneseEra();
+            int eraIndex = abbrevEnglishEraNames!.Length - 1;
+
             for (int i = latestEra; i >= 0; i--)
             {
                 DateTime dt;
@@ -48,7 +50,7 @@ namespace System.Globalization
                 }
 
                 eras.Add(new EraInfo(i, dt.Year, dt.Month, dt.Day, dt.Year - 1, 1, lastMaxYear - dt.Year + 1,
-                    eraNames![i], GetAbbreviatedEraName(eraNames, i), abbrevEnglishEraNames![i]));
+                    eraNames![i], GetAbbreviatedEraName(eraNames, i), eraIndex >= 0 ? abbrevEnglishEraNames![eraIndex--] : ""));
 
                 lastMaxYear = dt.Year;
             }

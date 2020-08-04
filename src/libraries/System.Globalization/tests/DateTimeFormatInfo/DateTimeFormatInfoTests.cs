@@ -187,5 +187,18 @@ namespace System.Globalization.Tests
                         $"Parsing '{formattedDateWithGannen}' result should match if '{formattedDate}' has Gan-nen symbol"
             );
         }
+
+        [Fact]
+        public void JapaneseAbbreviatedEnglishEraNamesTest()
+        {
+            string [] eraNames = { "M", "T", "S", "H", "R" };
+            var ci = new CultureInfo("ja-JP") { DateTimeFormat = { Calendar = new JapaneseCalendar() }};
+
+            int numberOfErasToTest = Math.Min(eraNames.Length, ci.DateTimeFormat.Calendar.Eras.Length);
+            for (int i = 0; i < numberOfErasToTest; i++)
+            {
+                Assert.Equal(i + 1, ci.DateTimeFormat.GetEra(eraNames[i]));
+            }
+        }
     }
 }
