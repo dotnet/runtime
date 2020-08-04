@@ -147,12 +147,8 @@ namespace Microsoft.Extensions.Logging.Console
 
         private ConsoleColors GetLogLevelConsoleColors(LogLevel logLevel)
         {
-            bool disableColors = FormatterOptions.ColorBehavior switch
-            {
-                LoggerColorBehavior.Default => System.Console.IsOutputRedirected,
-                LoggerColorBehavior.Enabled => false,
-                _ => true,
-            };
+            disableColors = (FormatterOptions.ColorBehavior == LoggerColorBehavior.Disabled) ||
+                (FormatterOptions.ColorBehavior == LoggerColorBehavior.Default && System.Console.IsOutputRedirected);
             if (disableColors)
             {
                 return new ConsoleColors(null, null);
