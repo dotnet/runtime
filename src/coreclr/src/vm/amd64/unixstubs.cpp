@@ -16,7 +16,7 @@ extern "C"
         // https://github.com/llvm/llvm-project/blob/master/clang/lib/Headers/cpuid.h
 
         __asm("  cpuid\n" \
-            : "=a"(cpuInfo[0]), "=r"(cpuInfo[1]), "=c"(cpuInfo[2]), "=d"(cpuInfo[3]) \
+            : "=a"(cpuInfo[0]), "=b"(cpuInfo[1]), "=c"(cpuInfo[2]), "=d"(cpuInfo[3]) \
             : "0"(function_id)
         );
     }
@@ -27,7 +27,7 @@ extern "C"
         // https://github.com/llvm/llvm-project/blob/master/clang/lib/Headers/cpuid.h
 
         __asm("  cpuid\n" \
-            : "=a"(cpuInfo[0]), "=r"(cpuInfo[1]), "=c"(cpuInfo[2]), "=d"(cpuInfo[3]) \
+            : "=a"(cpuInfo[0]), "=b"(cpuInfo[1]), "=c"(cpuInfo[2]), "=d"(cpuInfo[3]) \
             : "0"(function_id), "2"(subFunction_id)
         );
     }
