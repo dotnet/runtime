@@ -414,7 +414,7 @@ namespace System.Net.Sockets.Tests
             int port = listener.BindToAnonymousPort(IPAddress.Loopback);
             IPEndPoint listenerEndpoint = new IPEndPoint(IPAddress.Loopback, port);
             listener.Listen(100);
-            IAsyncResult iar = listener.BeginAccept(null, null);
+            IAsyncResult iar = listener.BeginAccept(callback: null, state: null);
 
             Assert.Throws<PlatformNotSupportedException>(() => listener.EndAccept(out _, iar));
             Assert.Throws<PlatformNotSupportedException>(() => listener.EndAccept(out _, out _, iar));

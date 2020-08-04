@@ -129,21 +129,18 @@ namespace System.Net.Sockets
 
         public IAsyncResult BeginAccept(int receiveSize, AsyncCallback? callback, object? state)
         {
-            return BeginAccept(null, receiveSize, callback, state);
+            return BeginAccept(acceptSocket: null, receiveSize, callback, state);
         }
 
         // This is the truly async version that uses AcceptEx.
         public IAsyncResult BeginAccept(Socket? acceptSocket, int receiveSize, AsyncCallback? callback, object? state)
         {
-            return CommonBeginAccept(acceptSocket, receiveSize, callback, state);
+            return BeginAcceptCommon(acceptSocket, receiveSize, callback, state);
         }
 
         public Socket EndAccept(out byte[] buffer, IAsyncResult asyncResult)
         {
-            int bytesTransferred;
-            byte[] innerBuffer;
-
-            Socket socket = EndAccept(out innerBuffer, out bytesTransferred, asyncResult);
+            Socket socket = EndAccept(out byte[] innerBuffer, out int bytesTransferred, asyncResult);
             buffer = new byte[bytesTransferred];
             Buffer.BlockCopy(innerBuffer, 0, buffer, 0, bytesTransferred);
             return socket;
@@ -151,8 +148,7 @@ namespace System.Net.Sockets
 
         public Socket EndAccept(out byte[] buffer, out int bytesTransferred, IAsyncResult asyncResult)
         {
-            Socket result = CommonEndAccept(out buffer!, out bytesTransferred, asyncResult);
-            return result;
+            return EndAcceptCommon(out buffer!, out bytesTransferred, asyncResult);
         }
 
         private void EnsureDynamicWinsockMethods()

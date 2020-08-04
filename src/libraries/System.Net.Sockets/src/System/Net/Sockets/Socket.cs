@@ -3472,7 +3472,7 @@ namespace System.Net.Sockets
         {
             if (!_isDisconnected)
             {
-                return CommonBeginAccept(null, 0, callback, state);
+                return BeginAcceptCommon(acceptSocket: null, receiveSize: 0, callback, state);
             }
 
             Debug.Assert(Disposed);
@@ -3480,7 +3480,7 @@ namespace System.Net.Sockets
             return null; // unreachable
         }
 
-        private IAsyncResult CommonBeginAccept(Socket? acceptSocket, int receiveSize, AsyncCallback? callback, object? state)
+        private IAsyncResult BeginAcceptCommon(Socket? acceptSocket, int receiveSize, AsyncCallback? callback, object? state)
         {
             ThrowIfDisposed();
 
@@ -3548,9 +3548,9 @@ namespace System.Net.Sockets
         //    Socket - a valid socket if successful
         public Socket EndAccept(IAsyncResult asyncResult)
         {
-            return CommonEndAccept(out _, out _, asyncResult);
+            return EndAcceptCommon(out _, out _, asyncResult);
         }
-        private Socket CommonEndAccept(out byte[]? buffer, out int bytesTransferred, IAsyncResult asyncResult)
+        private Socket EndAcceptCommon(out byte[]? buffer, out int bytesTransferred, IAsyncResult asyncResult)
         {
             ThrowIfDisposed();
 
