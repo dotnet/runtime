@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.Linq;
 using System.Text.Json.Serialization;
 using Xunit;
 
@@ -67,11 +68,11 @@ namespace System.Text.Json.SourceGeneration.Tests
             Assert.Equal(expectedCtorParamsExternal, externalTypeTest.CtorParams);
 
             // Public and private methods are visible.
-            List<string> expectedMethodsInternal = new List<string> { "get_PublicIntPropertyPublic", "set_PublicIntPropertyPublic", "get_PublicIntPropertyPrivateSet", "set_PublicIntPropertyPrivateSet", "get_PublicIntPropertyPrivateGet", "set_PublicIntPropertyPrivateGet", "UseFields" };
-            Assert.Equal(expectedMethodsInternal, internalTypeTest.Methods);
+            List<string> expectedMethodsInternal = new List<string> { "get_PublicIntPropertyPrivateGet", "get_PublicIntPropertyPrivateSet", "get_PublicIntPropertyPublic", "set_PublicIntPropertyPrivateGet", "set_PublicIntPropertyPrivateSet", "set_PublicIntPropertyPublic", "UseFields" };
+            Assert.Equal(expectedMethodsInternal, internalTypeTest.Methods.OrderBy(s => s).ToList());
 
-            List<string> expectedMethodsExternal = new List<string> { "get_ConverterType", "CreateConverter" };
-            Assert.Equal(expectedMethodsExternal, externalTypeTest.Methods);
+            List<string> expectedMethodsExternal = new List<string> { "CreateConverter", "get_ConverterType" };
+            Assert.Equal(expectedMethodsExternal, externalTypeTest.Methods.OrderBy(s => s).ToList());
 
             // Public and private fields are visible.
             Dictionary<string, string> expectedFieldsInternal = new Dictionary<string, string> { { "PublicCharField", "Char" }, { "PrivateStringField", "String" } };
