@@ -490,7 +490,7 @@ namespace System.Text
             // this method is running.
 
             return (BitConverter.IsLittleEndian && (Sse2.IsSupported || AdvSimd.Arm64.IsSupported))
-                ? GetIndexOfFirstNonAsciiChar_Sse2OrArm64(pBuffer, bufferLength)
+                ? GetIndexOfFirstNonAsciiChar_Intrinsified(pBuffer, bufferLength)
                 : GetIndexOfFirstNonAsciiChar_Default(pBuffer, bufferLength);
         }
 
@@ -630,7 +630,7 @@ namespace System.Text
             goto Finish;
         }
 
-        private static unsafe nuint GetIndexOfFirstNonAsciiChar_Sse2OrArm64(char* pBuffer, nuint bufferLength /* in chars */)
+        private static unsafe nuint GetIndexOfFirstNonAsciiChar_Intrinsified(char* pBuffer, nuint bufferLength /* in chars */)
         {
             // This method contains logic optimized for SSE2, SSE41 and ARM64. Much of the logic in this method
             // will be elided by JIT once we determine which specific ISAs we support.
