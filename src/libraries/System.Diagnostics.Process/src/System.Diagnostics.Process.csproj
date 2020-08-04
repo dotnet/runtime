@@ -10,6 +10,9 @@
   <PropertyGroup>
     <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetsAnyOS)' == 'true'">SR.Process_PlatformNotSupported</GeneratePlatformNotSupportedAssemblyMessage>
   </PropertyGroup>
+   <PropertyGroup Condition="'$(Platform)' == 'mips64'">
+     <DefineConstants>TARGET_MIPS64;$(DefineConstants)</DefineConstants>
+ </PropertyGroup>
   <ItemGroup Condition="'$(TargetsAnyOS)' != 'true'">
     <Compile Include="Microsoft\Win32\SafeHandles\SafeProcessHandle.cs" />
     <Compile Include="System\Collections\Specialized\DictionaryWrapper.cs" />

@@ -12,7 +12,12 @@ internal static partial class Interop
         {
             None = 0,
             SIGKILL = 9,
+#if TARGET_MIPS64
+            //see kernel source code arch/mips/include/uapi/asm/signal.h
+            SIGSTOP = 23
+#else
             SIGSTOP = 19
+#endif
         }
 
         [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_Kill", SetLastError = true)]
