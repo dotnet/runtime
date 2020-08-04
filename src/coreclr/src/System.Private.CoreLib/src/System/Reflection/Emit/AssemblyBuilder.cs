@@ -497,7 +497,7 @@ namespace System.Reflection.Emit
 
         public override Module? GetModule(string name) => InternalAssembly.GetModule(name);
 
-        [RequiresUnreferencedCode("Types might be removed")]
+        [RequiresUnreferencedCode("Assembly references might be removed")]
         public override AssemblyName[] GetReferencedAssemblies()
         {
             return InternalAssembly.GetReferencedAssemblies();

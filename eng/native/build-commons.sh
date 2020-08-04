@@ -48,11 +48,6 @@ check_prereqs()
 {
     echo "Checking prerequisites..."
 
-    if ! cmake --help 2>&1 | grep -q \\-B; then
-        echo "Please install cmake v3.14.5 or newer from https://www.cmake.org/download/."
-        exit 1
-    fi
-
     if [[ "$__HostOS" == "OSX" ]]; then
         # Check presence of pkg-config on the path
         command -v pkg-config 2>/dev/null || { echo >&2 "Please install pkg-config before running this script, see https://github.com/dotnet/runtime/blob/master/docs/workflow/requirements/macos-requirements.md"; exit 1; }
@@ -177,8 +172,8 @@ EOF
             cmake_command="emcmake $cmake_command"
         fi
 
-        echo "Executing $cmake_command --build \"$intermediatesDir\" --target install -j $__NumProc"
-        $cmake_command --build "$intermediatesDir" --target install -j "$__NumProc"
+        echo "Executing $cmake_command --build \"$intermediatesDir\" --target install -- -j $__NumProc"
+        $cmake_command --build "$intermediatesDir" --target install -- -j "$__NumProc"
     fi
 
     local exit_code="$?"
