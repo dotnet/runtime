@@ -587,6 +587,11 @@ mono_wasm_get_obj_type (MonoObject *obj)
 	if (!obj)
 		return 0;
 
+	/* Process obj before calling into the runtime, class_from_name () can invoke managed code */
+	MonoClass *klass = mono_object_get_class (obj);
+	MonoType *type = mono_class_get_type (klass);
+	obj = NULL;
+
 	if (!datetime_class)
 		datetime_class = mono_class_from_name (mono_get_corlib(), "System", "DateTime");
 	if (!datetimeoffset_class)
@@ -597,9 +602,6 @@ mono_wasm_get_obj_type (MonoObject *obj)
 	}
 	if (!safehandle_class)
 		safehandle_class = mono_class_from_name (mono_get_corlib(), "System.Runtime.InteropServices", "SafeHandle");
-
-	MonoClass *klass = mono_object_get_class (obj);
-	MonoType *type = mono_class_get_type (klass);
 
 	switch (mono_type_get_type (type)) {
 	// case MONO_TYPE_CHAR: prob should be done not as a number?
