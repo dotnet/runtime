@@ -711,8 +711,8 @@ var BindingSupportLib = {
 			var methodstart = fqn.indexOf (":");
 			var methodname = "";
 			if (methodstart != -1) {
-				methodname = fqn.substring(fqn.indexOf (":") + 1);
-				fqn = fqn.substring (0, fqn.indexOf (":")).trim ();
+				methodname = fqn.substring(methodstart + 1);
+				fqn = fqn.substring (0, methodstart).trim ();
 			}
 
 			var namespace = "";
