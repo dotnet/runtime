@@ -6488,7 +6488,7 @@ void Lowering::TransformUnusedIndirection(GenTreeIndir* ind, Compiler* comp, Bas
     // - On XARCH, use GT_IND if we have a contained address, and GT_NULLCHECK otherwise.
     // In all cases, change the type to TYP_INT.
     //
-    assert(ind->OperIs(GT_NULLCHECK, GT_IND));
+    assert(ind->OperIs(GT_NULLCHECK, GT_IND, GT_BLK, GT_OBJ));
 
     ind->gtType = TYP_INT;
 #ifdef TARGET_ARM64
@@ -6499,12 +6499,12 @@ void Lowering::TransformUnusedIndirection(GenTreeIndir* ind, Compiler* comp, Bas
     bool useNullCheck = !ind->Addr()->isContained();
 #endif // !TARGET_XARCH
 
-    if (useNullCheck && ind->OperIs(GT_IND))
+    if (useNullCheck && !ind->OperIs(GT_NULLCHECK))
     {
         comp->gtChangeOperToNullCheck(ind, block);
         ind->ClearUnusedValue();
     }
-    else if (!useNullCheck && ind->OperIs(GT_NULLCHECK))
+    else if (!useNullCheck && !ind->OperIs(GT_IND))
     {
         ind->ChangeOper(GT_IND);
         ind->SetUnusedValue();
