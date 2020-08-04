@@ -41,7 +41,7 @@ public:
             SIGNALED = 0x01, // ready for use
             HANGUP   = 0x02, // connection remotely closed
             ERR      = 0x04, // error
-            UNKOWN   = 0xFF  // unknown state
+            UNKNOWN   = 0x80  // unknown state
         };
 
         // The bookeeping struct used for polling on server and client structs
