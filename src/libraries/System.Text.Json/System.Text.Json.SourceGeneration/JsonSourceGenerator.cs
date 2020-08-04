@@ -30,6 +30,11 @@ namespace System.Text.Json.SourceGeneration
             // Filter classes and structs with JsonSerializable attribute semantically.
             INamedTypeSymbol jsonSerializableAttributeSymbol = context.Compilation.GetTypeByMetadataName("System.Text.Json.Serialization.JsonSerializableAttribute");
 
+            if (jsonSerializableAttributeSymbol == null)
+            {
+                return;
+            }
+
             // Find classes with JsonSerializable Attributes.
             foreach (TypeDeclarationSyntax typeDeclarationNode in receiver.TypesWithAttributes)
             {
@@ -110,7 +115,6 @@ namespace System.Text.Json.SourceGeneration
                 member.Clear();
 
                 context.AddSource($"{entry.Key}ClassInfo", SourceText.From($@"
-using System;
 using System.Collections.Generic;
 
 namespace HelloWorldGenerated
