@@ -9302,7 +9302,7 @@ void Compiler::gtChangeOperToNullCheck(GenTree* tree, BasicBlock* block)
 {
     assert(tree->OperIs(GT_FIELD, GT_IND, GT_OBJ, GT_BLK, GT_DYN_BLK));
     tree->ChangeOper(GT_NULLCHECK);
-    tree->ChangeType(TYP_BYTE);
+    tree->ChangeType(TYP_INT);
     block->bbFlags |= BBF_HAS_NULLCHECK;
     optMethodFlags |= OMF_HAS_NULLCHECK;
 }
