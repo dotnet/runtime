@@ -2506,6 +2506,9 @@ mono_assembly_open_from_bundle (MonoAssemblyLoadContext *alc, const char *filena
 			 * Since bundled images do not exist on disk, don't give them a legit file name.
 			 * This is the expected behavior for single file exe's. 
 			 */
+			if (image->filename)
+				g_free (image->filename);
+
 			image->filename = NULL;
 #endif
 			break;

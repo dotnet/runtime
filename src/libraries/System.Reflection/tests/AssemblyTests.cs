@@ -158,8 +158,13 @@ namespace System.Reflection.Tests
             AssertExtensions.Throws<ArgumentException>(null, () => typeof(AssemblyTests).Assembly.GetFile(""));
             Assert.Null(typeof(AssemblyTests).Assembly.GetFile("NonExistentfile.dll"));
             Assert.NotNull(typeof(AssemblyTests).Assembly.GetFile("System.Reflection.Tests.dll"));
-            if (PlatformDetection.IsNotBrowser) // see https://github.com/dotnet/runtime/issues/39650
-                Assert.Equal(typeof(AssemblyTests).Assembly.GetFile("System.Reflection.Tests.dll").Name, typeof(AssemblyTests).Assembly.Location);
+
+            // For browser, Location is null.
+            string name = (PlatformDetection.IsNotBrowser) ?
+                typeof(AssemblyTests).Assembly.Location
+                : "/System.Reflection.Tests.dll";
+
+            Assert.Equal(typeof(AssemblyTests).Assembly.GetFile("System.Reflection.Tests.dll").Name, name);
         }
 
         [Fact]
@@ -167,8 +172,13 @@ namespace System.Reflection.Tests
         {
             Assert.NotNull(typeof(AssemblyTests).Assembly.GetFiles());
             Assert.Equal(1, typeof(AssemblyTests).Assembly.GetFiles().Length);
-            if (PlatformDetection.IsNotBrowser) // see https://github.com/dotnet/runtime/issues/39650
-                Assert.Equal(typeof(AssemblyTests).Assembly.GetFiles()[0].Name, typeof(AssemblyTests).Assembly.Location);
+
+            // For browser, Location is null.
+            string name = (PlatformDetection.IsNotBrowser) ?
+                typeof(AssemblyTests).Assembly.Location
+                : "/System.Reflection.Tests.dll";
+
+            Assert.Equal(typeof(AssemblyTests).Assembly.GetFiles()[0].Name, name);
         }
 
         public static IEnumerable<object[]> GetHashCode_TestData()
