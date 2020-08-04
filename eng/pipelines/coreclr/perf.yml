@@ -124,6 +124,7 @@ jobs:
       liveLibrariesBuildConfig: Release
       runtimeType: wasm
       codeGenType: 'wasm'
+      projectFile: microbenchmarks.proj
       runKind: micro
 
 - template: /eng/pipelines/common/platform-matrix.yml
