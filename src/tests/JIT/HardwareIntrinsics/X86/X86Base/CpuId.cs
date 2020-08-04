@@ -31,7 +31,17 @@ namespace IntelHardwareIntrinsicTest
 
             if (!isAuthenticAmd && !isGenuineIntel)
             {
-                Console.WriteLine("Unrecognized CPU vendor");
+                // CPUID checks are vendor specific and aren't guaranteed to match up, even across Intel/AMD
+                // as such, we limit ourselves to just AuthenticAMD and GenuineIntel right now. Any other
+                // vendors would need to be validated against the checks below and added to the list as necessary.
+
+                // An example of a difference is Intel/AMD for LZCNT. While the same underlying bit is used to
+                // represent presence of the LZCNT instruction, AMD began using this bit around 2007 for its
+                // ABM instruction set, which indicates LZCNT and POPCNT. Intel introduced a separate bit for
+                // POPCNT and didn't actually implement LZCNT and begin using the LZCNT bit until 2013. So
+                // while everything happens to line up today, it doesn't always and may not always do so.
+
+                Console.WriteLine($"Unrecognized CPU vendor: EBX: {ebx:X8}, ECX: {ecx:X8}, EDX: {edx:X8}";
                 testResult = Fail;
             }
 
