@@ -17,8 +17,4 @@
     <Compile Include="System\Runtime\InteropServices\JavaScript\HelperMarshal.cs" />
     <Compile Include="System\Runtime\InteropServices\JavaScript\Http\HttpRequestMessageTest.cs" />    
   </ItemGroup>
-  <ItemGroup>
-    <!-- Part of the shared framework but not exposed. -->
-    <ProjectReference Include="..\src\System.Runtime.InteropServices.JavaScript.csproj" />
-  </ItemGroup>
 </Project>
