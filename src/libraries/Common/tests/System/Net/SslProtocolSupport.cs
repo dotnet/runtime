@@ -65,7 +65,7 @@ namespace System.Net.Test.Common
             {
                 foreach (SslProtocols protocol in Enum.GetValues(typeof(SslProtocols)))
                 {
-                    if (protocol != 0 && (protocol & SupportedSslProtocols) == protocol)
+                    if (protocol != SslProtocols.None && (protocol & SupportedSslProtocols) == protocol)
                     {
                         yield return new object[] { protocol };
                     }

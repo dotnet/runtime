@@ -91,13 +91,16 @@ namespace System.Net.Security.Tests
             SslProtocols clientProtocol;
             SslProtocols serverProtocol;
 
+            // Try to find protocol mismatch.
             if (PlatformDetection.SupportsTls12 && (PlatformDetection.SupportsTls10 || PlatformDetection.SupportsTls11))
             {
+                // OpenSSL 1.0 where new is Tls12
                 clientProtocol = SslProtocols.Tls | SslProtocols.Tls11;
                 serverProtocol = SslProtocols.Tls12;
             }
             else if (PlatformDetection.SupportsTls12 && PlatformDetection.SupportsTls13)
             {
+                // OpenSSl 1.1 where new is 1.3 and legacy is 1.2
                 clientProtocol = SslProtocols.Tls13;
                 serverProtocol = SslProtocols.Tls12;
             }

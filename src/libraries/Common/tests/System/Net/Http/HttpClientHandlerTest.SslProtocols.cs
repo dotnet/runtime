@@ -82,7 +82,7 @@ namespace System.Net.Http.Functional.Tests
             // explicitly specifying it in the client and when not.
             foreach  (SslProtocols protocol in Enum.GetValues(typeof(SslProtocols)))
             {
-                if (protocol != 0 && (protocol & SslProtocolSupport.SupportedSslProtocols) == protocol)
+                if (protocol != SslProtocolSupport.None && (protocol & SslProtocolSupport.SupportedSslProtocols) == protocol)
                 {
                     yield return new object[] { protocol, false };
                     yield return new object[] { protocol, true };
@@ -98,13 +98,13 @@ namespace System.Net.Http.Functional.Tests
                 yield return new object[] { SslProtocols.Ssl3, true };
 #endif
             }
-            if (PlatformDetection.IsWindows && !PlatformDetection.IsWindows10Version1607OrGreater)
+            if (PlatformDetection.SupportsSsl3)
             {
                 yield return new object[] { SslProtocols.Ssl2, true };
             }
 #pragma warning restore 0618
             // These protocols are new, and might not be enabled everywhere yet
-            if (PlatformDetection.IsUbuntu1810OrHigher)
+            if (PlatformDetection.PlatformDetection.SupportsTls13)
             {
 #if !NETFRAMEWORK
                 yield return new object[] { SslProtocols.Tls13, false };
