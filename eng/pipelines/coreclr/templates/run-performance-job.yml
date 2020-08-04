@@ -73,7 +73,7 @@ jobs:
       - ${{ if eq( parameters.osGroup, 'Windows_NT') }}:
         - HelixPreCommand: $(ExtraMSBuildLogsWindows)
       - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
-          - HelixPreCommand: $(ExtraMSBuildLogsLinux)
+          - HelixPreCommand: $(ExtraMSBuildLogsLinux);npm install --prefix $HELIX_WORKITEM_PAYLOAD jsvu -g;$HELIX_WORKITEM_PAYLOAD/bin/jsvu --os=linux64 --engines=v8
     
 
     - ${{ if and(eq(parameters.codeGenType, 'Interpreter'), eq(parameters.runtimeType, 'mono')) }}:
