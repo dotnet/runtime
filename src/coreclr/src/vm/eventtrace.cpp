@@ -1463,7 +1463,12 @@ void BulkStaticsLogger::WriteEntry(AppDomain *domain, Object **address, Object *
         m_domain = domain;
     }
 
-    ULONGLONG th = (ULONGLONG)obj->GetTypeHandle().AsTAddr();
+    TypeHandle typeHandle = obj->GetGCSafeTypeHandleIfPossible();
+    if (typeHandle == NULL)
+    {
+        return;
+    }
+    ULONGLONG th = (ULONGLONG)typeHandle.AsTAddr();
     ETW::TypeSystemLog::LogTypeAndParametersIfNecessary(m_typeLogger, th, ETW::TypeSystemLog::kTypeLogBehaviorTakeLockAndLogIfFirstTime);
 
     // We should have at least 512 characters remaining in the buffer here.

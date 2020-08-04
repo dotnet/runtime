@@ -15,6 +15,9 @@
 
 #include "gctoclreventsink.h"
 #include "configuration.h"
+#include "eventpipe.h"
+#include "eventpipesession.h"
+extern bool s_forcedGCInProgress;
 
 // the method table for the WeakReference class
 extern MethodTable* pWeakReferenceMT;
