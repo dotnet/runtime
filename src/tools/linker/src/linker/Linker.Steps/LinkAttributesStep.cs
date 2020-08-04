@@ -32,103 +32,143 @@ namespace Mono.Linker.Steps
 				if (!ShouldProcessElement (iterator.Current))
 					continue;
 
-				AssemblyDefinition assembly;
-				TypeDefinition attributeType;
-
 				string internalAttribute = GetAttribute (iterator.Current, "internal");
-				if (internalAttribute != String.Empty) {
-					if (internalAttribute == "RemoveAttributeInstances") {
-						if (provider.MetadataToken.TokenType == TokenType.TypeDef) {
-							if (!Annotations.IsMarked (provider)) {
-								IEnumerable<Attribute> removeAttributeInstance = new List<Attribute> { new RemoveAttributeInstancesAttribute () };
-								Context.CustomAttributes.AddInternalAttributes (provider, removeAttributeInstance);
-							}
-							continue;
-						} else {
-							Context.LogWarning ($"Internal attribute 'RemoveAttributeInstances' can only be used on a type, but is being used on '{nav.Name}' '{provider}'", 2048, _xmlDocumentLocation);
-							continue;
-						}
-					} else {
-						Context.LogWarning ($"Unrecognized internal attribute '{internalAttribute}'", 2049, _xmlDocumentLocation);
-						continue;
-					}
+				if (!string.IsNullOrEmpty (internalAttribute)) {
+					ProcessInternalAttribute (provider, internalAttribute);
+					continue;
 				}
 
 				string attributeFullName = GetFullName (iterator.Current);
-				if (attributeFullName == String.Empty) {
+				if (attributeFullName == string.Empty) {
 					Context.LogWarning ($"Attribute element does not contain attribute 'fullname'", 2029, _xmlDocumentLocation);
 					continue;
 				}
-				string assemblyName = GetAttribute (iterator.Current, "assembly");
-				if (assemblyName == String.Empty)
-					attributeType = Context.GetType (attributeFullName);
-				else {
-					try {
-						assembly = GetAssembly (Context, AssemblyNameReference.Parse (assemblyName));
-					} catch (Exception) {
-						Context.LogWarning ($"Could not resolve assembly '{assemblyName}' in attribute '{attributeFullName}' specified in the '{_xmlDocumentLocation}'", 2030, _xmlDocumentLocation);
-						continue;
-					}
-					attributeType = assembly.FindType (attributeFullName);
-				}
-				if (attributeType == null) {
-					Context.LogWarning ($"Attribute type '{attributeFullName}' could not be found", 2031, _xmlDocumentLocation);
-					continue;
-				}
 
-				ArrayBuilder<string> arguments = GetAttributeChildren (iterator.Current.SelectChildren ("argument", string.Empty));
-				MethodDefinition constructor = attributeType.Methods.Where (method => method.IsInstanceConstructor ()).FirstOrDefault (c => c.Parameters.Count == arguments.Count);
-				if (constructor == null) {
-					Context.LogWarning ($"Could not find a constructor for type '{attributeType}' that receives '{arguments.Count}' arguments as parameter", 2022, _xmlDocumentLocation);
+				if (!GetAttributeType (iterator, attributeFullName, out TypeDefinition attributeType))
 					continue;
-				}
-				string[] xmlArguments = arguments.ToArray ();
-				bool recognizedArgument = true;
 
-				CustomAttribute attribute = new CustomAttribute (constructor);
-				if (xmlArguments == null) {
-					attributes.Add (attribute);
-					continue;
-				}
-				for (int i = 0; i < xmlArguments.Length; i++) {
-					object argumentValue = null;
-
-					if (constructor.Parameters[i].ParameterType.Resolve ().IsEnum) {
-						foreach (var field in constructor.Parameters[i].ParameterType.Resolve ().Fields) {
-							if (field.IsStatic && field.Name == xmlArguments[i]) {
-								argumentValue = Convert.ToInt32 (field.Constant);
-								break;
-							}
-						}
-						if (argumentValue == null) {
-							Context.LogWarning ($"Could not parse argument '{xmlArguments[i]}' specified in '{_xmlDocumentLocation}' as a {constructor.Parameters[i].ParameterType.FullName}", 2021, _xmlDocumentLocation);
-							recognizedArgument = false;
-						}
-					} else {
-						switch (constructor.Parameters[i].ParameterType.MetadataType) {
-						case MetadataType.String:
-							argumentValue = xmlArguments[i];
-							break;
-						case MetadataType.Int32:
-							int result;
-							if (int.TryParse (xmlArguments[i], out result))
-								argumentValue = result;
-							else {
-								Context.LogWarning ($"Argument '{xmlArguments[i]}' specified in '{_xmlDocumentLocation}' could not be transformed to the constructor parameter type", 2032, _xmlDocumentLocation);
-							}
-							break;
-						default:
-							Context.LogWarning ($"Argument '{xmlArguments[i]}' specified in '{_xmlDocumentLocation}' is of unsupported type '{constructor.Parameters[i].ParameterType}'", 2020, _xmlDocumentLocation);
-							recognizedArgument = false;
-							break;
-						}
-					}
-					attribute.ConstructorArguments.Add (new CustomAttributeArgument (constructor.Parameters[i].ParameterType, argumentValue));
-				}
-				if (recognizedArgument)
-					attributes.Add (attribute);
+				CustomAttribute customAttribute = CreateCustomAttribute (iterator, attributeType);
+				if (customAttribute != null)
+					attributes.Add (customAttribute);
 			}
+
 			return attributes;
+		}
+
+		CustomAttribute CreateCustomAttribute (XPathNodeIterator iterator, TypeDefinition attributeType)
+		{
+			string[] attributeArguments = (GetAttributeChildren (iterator.Current.SelectChildren ("argument", string.Empty))).ToArray ();
+			MethodDefinition constructor = attributeType.Methods.Where (method => method.IsInstanceConstructor ()).FirstOrDefault (c => c.Parameters.Count == attributeArguments.Length);
+			if (constructor == null) {
+				Context.LogWarning ($"Could not find a constructor for type '{attributeType}' that receives '{attributeArguments.Length}' arguments as parameter", 2022, _xmlDocumentLocation);
+				return null;
+			}
+
+			CustomAttribute customAttribute = new CustomAttribute (constructor);
+			var arguments = ProcessAttributeArguments (constructor, attributeArguments);
+			if (arguments != null)
+				foreach (var argument in arguments)
+					customAttribute.ConstructorArguments.Add (argument);
+
+			var properties = ProcessAttributeProperties (iterator.Current.SelectChildren ("property", string.Empty), attributeType);
+			if (properties != null)
+				foreach (var property in properties)
+					customAttribute.Properties.Add (property);
+
+			return customAttribute;
+		}
+
+		List<CustomAttributeNamedArgument> ProcessAttributeProperties (XPathNodeIterator iterator, TypeDefinition attributeType)
+		{
+			List<CustomAttributeNamedArgument> attributeProperties = new List<CustomAttributeNamedArgument> ();
+			while (iterator.MoveNext ()) {
+				string propertyName = GetName (iterator.Current);
+				if (propertyName == string.Empty) {
+					Context.LogWarning ($"Property element does not contain attribute 'name'", 2051, _xmlDocumentLocation);
+					continue;
+				}
+
+				PropertyDefinition property = attributeType.Properties.Where (prop => prop.Name == propertyName).FirstOrDefault ();
+				if (property == null) {
+					Context.LogWarning ($"Property '{propertyName}' could not be found", 2052, _xmlDocumentLocation);
+					continue;
+				}
+
+				var propertyValue = iterator.Current.Value;
+				if (!TryConvertValue (propertyValue, property.PropertyType, out object value)) {
+					Context.LogWarning ($"Invalid value '{propertyValue}' for property '{propertyName}'", 2053, _xmlDocumentLocation);
+					continue;
+				}
+
+				attributeProperties.Add (new CustomAttributeNamedArgument (property.Name,
+					new CustomAttributeArgument (property.PropertyType, value)));
+			}
+
+			return attributeProperties;
+		}
+
+		List<CustomAttributeArgument> ProcessAttributeArguments (MethodDefinition attributeConstructor, string[] arguments)
+		{
+			if (arguments == null)
+				return null;
+
+			List<CustomAttributeArgument> attributeArguments = new List<CustomAttributeArgument> ();
+			for (int i = 0; i < arguments.Length; i++) {
+				object argValue;
+				TypeDefinition parameterType = attributeConstructor.Parameters[i].ParameterType.Resolve ();
+				if (!TryConvertValue (arguments[i], parameterType, out argValue)) {
+					Context.LogWarning ($"Invalid argument value '{arguments[i]}' for attribute '{attributeConstructor.DeclaringType.GetDisplayName ()}'", 2054, _xmlDocumentLocation);
+					return null;
+				}
+
+				attributeArguments.Add (new CustomAttributeArgument (parameterType, argValue));
+			}
+
+			return attributeArguments;
+		}
+
+		void ProcessInternalAttribute (ICustomAttributeProvider provider, string internalAttribute)
+		{
+			if (internalAttribute != "RemoveAttributeInstances") {
+				Context.LogWarning ($"Unrecognized internal attribute '{internalAttribute}'", 2049, _xmlDocumentLocation);
+				return;
+			}
+
+			if (provider.MetadataToken.TokenType != TokenType.TypeDef) {
+				Context.LogWarning ($"Internal attribute 'RemoveAttributeInstances' can only be used on a type, but is being used on '{provider}'", 2048, _xmlDocumentLocation);
+				return;
+			}
+
+			if (!Annotations.IsMarked (provider)) {
+				IEnumerable<Attribute> removeAttributeInstance = new List<Attribute> { new RemoveAttributeInstancesAttribute () };
+				Context.CustomAttributes.AddInternalAttributes (provider, removeAttributeInstance);
+			}
+		}
+
+		bool GetAttributeType (XPathNodeIterator iterator, string attributeFullName, out TypeDefinition attributeType)
+		{
+			string assemblyName = GetAttribute (iterator.Current, "assembly");
+			if (string.IsNullOrEmpty (assemblyName)) {
+				attributeType = Context.GetType (attributeFullName);
+			} else {
+				AssemblyDefinition assembly;
+				try {
+					assembly = GetAssembly (Context, AssemblyNameReference.Parse (assemblyName));
+				} catch (Exception) {
+					Context.LogWarning ($"Could not resolve assembly '{assemblyName}' in attribute '{attributeFullName}' specified in '{_xmlDocumentLocation}'", 2030, _xmlDocumentLocation);
+					attributeType = default;
+					return false;
+				}
+
+				attributeType = assembly.FindType (attributeFullName);
+			}
+
+			if (attributeType == null) {
+				Context.LogWarning ($"Attribute type '{attributeFullName}' could not be found", 2031, _xmlDocumentLocation);
+				return false;
+			}
+
+			return true;
 		}
 
 		ArrayBuilder<string> GetAttributeChildren (XPathNodeIterator iterator)

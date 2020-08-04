@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Globalization;
+using System.Linq;
 using System.Text.RegularExpressions;
 using System.Xml.XPath;
 using Mono.Cecil;
@@ -424,6 +426,11 @@ namespace Mono.Linker.Steps
 			return GetAttribute (nav, FullNameAttributeName);
 		}
 
+		protected static string GetName (XPathNavigator nav)
+		{
+			return GetAttribute (nav, NameAttributeName);
+		}
+
 		protected static string GetSignature (XPathNavigator nav)
 		{
 			return GetAttribute (nav, SignatureAttributeName);
@@ -435,5 +442,119 @@ namespace Mono.Linker.Steps
 		}
 
 		public override string ToString () => GetType ().Name + ": " + _xmlDocumentLocation;
+
+		public static bool TryConvertValue (string value, TypeReference target, out object result)
+		{
+			switch (target.MetadataType) {
+			case MetadataType.Boolean:
+				if (bool.TryParse (value, out bool bvalue)) {
+					result = bvalue ? 1 : 0;
+					return true;
+				}
+
+				goto case MetadataType.Int32;
+
+			case MetadataType.Byte:
+				if (!byte.TryParse (value, NumberStyles.Integer, CultureInfo.InvariantCulture, out byte byteresult))
+					break;
+
+				result = (int) byteresult;
+				return true;
+
+			case MetadataType.SByte:
+				if (!sbyte.TryParse (value, NumberStyles.Integer, CultureInfo.InvariantCulture, out sbyte sbyteresult))
+					break;
+
+				result = (int) sbyteresult;
+				return true;
+
+			case MetadataType.Int16:
+				if (!short.TryParse (value, NumberStyles.Integer, CultureInfo.InvariantCulture, out short shortresult))
+					break;
+
+				result = (int) shortresult;
+				return true;
+
+			case MetadataType.UInt16:
+				if (!ushort.TryParse (value, NumberStyles.Integer, CultureInfo.InvariantCulture, out ushort ushortresult))
+					break;
+
+				result = (int) ushortresult;
+				return true;
+
+			case MetadataType.Int32:
+				if (!int.TryParse (value, NumberStyles.Integer, CultureInfo.InvariantCulture, out int iresult))
+					break;
+
+				result = iresult;
+				return true;
+
+			case MetadataType.UInt32:
+				if (!uint.TryParse (value, NumberStyles.Integer, CultureInfo.InvariantCulture, out uint uresult))
+					break;
+
+				result = (int) uresult;
+				return true;
+
+			case MetadataType.Double:
+				if (!double.TryParse (value, NumberStyles.Float, CultureInfo.InvariantCulture, out double dresult))
+					break;
+
+				result = dresult;
+				return true;
+
+			case MetadataType.Single:
+				if (!float.TryParse (value, NumberStyles.Float, CultureInfo.InvariantCulture, out float fresult))
+					break;
+
+				result = fresult;
+				return true;
+
+			case MetadataType.Int64:
+				if (!long.TryParse (value, NumberStyles.Integer, CultureInfo.InvariantCulture, out long lresult))
+					break;
+
+				result = lresult;
+				return true;
+
+			case MetadataType.UInt64:
+				if (!ulong.TryParse (value, NumberStyles.Integer, CultureInfo.InvariantCulture, out ulong ulresult))
+					break;
+
+				result = (long) ulresult;
+				return true;
+
+			case MetadataType.Char:
+				if (!char.TryParse (value, out char chresult))
+					break;
+
+				result = (int) chresult;
+				return true;
+
+			case MetadataType.String:
+				if (value is string || value == null) {
+					result = value;
+					return true;
+				}
+
+				break;
+
+			case MetadataType.ValueType:
+				if (value is string &&
+					target.Resolve () is var typeDefinition &&
+					typeDefinition.IsEnum) {
+					var enumField = typeDefinition.Fields.Where (f => f.IsStatic && f.Name == value).FirstOrDefault ();
+					if (enumField != null) {
+						result = Convert.ToInt32 (enumField.Constant);
+						return true;
+					}
+				}
+
+				break;
+			}
+
+			result = null;
+			return false;
+		}
 	}
 }
