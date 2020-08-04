@@ -120,6 +120,8 @@
              Link="Common\System\Net\TestWebProxies.cs" />
     <Compile Include="$(CommonTestPath)System\Net\VerboseTestLogging.cs"
              Link="Common\System\Net\VerboseTestLogging.cs" />
+    <Compile Include="$(CommonTestPath)System\Net\Http\HttpAgnosticLoopbackServer.cs"
+             Link="Common\System\Net\Http\HttpAgnosticLoopbackServer.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Http\LoopbackProxyServer.cs"
              Link="Common\System\Net\Http\LoopbackProxyServer.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Http\LoopbackServer.cs"

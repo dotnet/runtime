@@ -168,6 +168,14 @@ namespace System.Net.Test.Common
             await GetOpenRequest(requestId).SendHeadersFrameAsync(headers).ConfigureAwait(false);
         }
 
+        public override async Task<HttpRequestData> HandleRequestAsync(HttpStatusCode statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null, string content = "")
+        {
+            HttpRequestData request = await ReadRequestDataAsync().ConfigureAwait(false);
+            await SendResponseAsync(statusCode, headers, content).ConfigureAwait(false);
+            await CloseAsync(Http3LoopbackConnection.H3_NO_ERROR);
+            return request;
+        }
+
         public override async Task WaitForCancellationAsync(bool ignoreIncomingData = true, int requestId = 0)
         {
             await GetOpenRequest(requestId).WaitForCancellationAsync(ignoreIncomingData).ConfigureAwait(false);

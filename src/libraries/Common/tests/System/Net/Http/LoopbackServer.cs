@@ -7,7 +7,9 @@ using System.Linq;
 using System.Net.Security;
 using System.Net.Sockets;
 using System.Security.Authentication;
+using System.Security.Cryptography.X509Certificates;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -104,26 +106,8 @@ namespace System.Net.Test.Common
                 catch (SocketException ex) when (ex.SocketErrorCode == SocketError.InvalidArgument && PlatformDetection.IsOSXLike) { }
 
                 Stream stream = new NetworkStream(s, ownsSocket: false);
-                if (_options.UseSsl)
-                {
-                    var sslStream = new SslStream(stream, false, delegate { return true; });
-                    using (var cert = Configuration.Certificates.GetServerCertificate())
-                    {
-                        await sslStream.AuthenticateAsServerAsync(
-                            cert,
-                            clientCertificateRequired: true, // allowed but not required
-                            enabledSslProtocols: _options.SslProtocols,
-                            checkCertificateRevocation: false).ConfigureAwait(false);
-                    }
-                    stream = sslStream;
-                }
 
-                if (_options.StreamWrapper != null)
-                {
-                    stream = _options.StreamWrapper(stream);
-                }
-
-                return new Connection(s, stream);
+                return await Connection.CreateAsync(s, stream, _options);
             }
             catch (Exception)
             {
@@ -389,7 +373,6 @@ namespace System.Net.Test.Common
 
         public class Options : GenericLoopbackOptions
         {
-            public int ListenBacklog { get; set; } = 1;
             public bool WebSocketEndpoint { get; set; } = false;
             public Func<Stream, Stream> StreamWrapper { get; set; }
             public string Username { get; set; }
@@ -435,6 +418,30 @@ namespace System.Net.Test.Common
             public Socket Socket => _socket;
             public Stream Stream => _stream;
             public StreamWriter Writer => _writer;
+
+            public static async Task<Connection> CreateAsync(Socket socket, Stream stream, Options httpOptions)
+            {
+                if (httpOptions.UseSsl)
+                {
+                    var sslStream = new SslStream(stream, false, delegate { return true; });
+                    using (X509Certificate2 cert = Configuration.Certificates.GetServerCertificate())
+                    {
+                        await sslStream.AuthenticateAsServerAsync(
+                            cert,
+                            clientCertificateRequired: true, // allowed but not required
+                            enabledSslProtocols: httpOptions.SslProtocols,
+                            checkCertificateRevocation: false).ConfigureAwait(false);
+                    }
+                    stream = sslStream;
+                }
+
+                if (httpOptions.StreamWrapper != null)
+                {
+                    stream = httpOptions.StreamWrapper(stream);
+                }
+
+                return new Connection(socket, stream);
+            }
 
             public async Task<int> ReadAsync(Memory<byte> buffer, int offset, int size)
             {
@@ -885,6 +892,35 @@ namespace System.Net.Test.Common
                 await SendResponseAsync(Encoding.UTF8.GetString(body)).ConfigureAwait(false);
             }
 
+            public override async Task<HttpRequestData> HandleRequestAsync(HttpStatusCode statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null, string content = "")
+            {
+                HttpRequestData requestData = await ReadRequestDataAsync().ConfigureAwait(false);
+
+                // For historical reasons, we added Date and "Connection: close" (to improve test reliability)
+                bool hasDate = false;
+                List<HttpHeaderData> newHeaders = new List<HttpHeaderData>();
+                if (headers != null)
+                {
+                    foreach (var header in headers)
+                    {
+                        newHeaders.Add(header);
+                        if (header.Name.Equals("Date", StringComparison.OrdinalIgnoreCase))
+                        {
+                            hasDate = true;
+                        }
+                    }
+                }
+
+                newHeaders.Add(new HttpHeaderData("Connection", "Close"));
+                if (!hasDate)
+                {
+                    newHeaders.Add(new HttpHeaderData("Date", "{DateTimeOffset.UtcNow:R}"));
+                }
+
+                await SendResponseAsync(statusCode, newHeaders, content: content).ConfigureAwait(false);
+                return requestData;
+            }
+
             public override async Task WaitForCancellationAsync(bool ignoreIncomingData = true, int requestId = 0)
             {
                 var buffer = new byte[1024];
@@ -909,31 +945,7 @@ namespace System.Net.Test.Common
         {
             using (Connection connection = await EstablishConnectionAsync().ConfigureAwait(false))
             {
-                HttpRequestData requestData = await connection.ReadRequestDataAsync().ConfigureAwait(false);
-
-                // For historical reasons, we added Date and "Connection: close" (to improve test reliability)
-                bool hasDate = false;
-                List<HttpHeaderData> newHeaders = new List<HttpHeaderData>();
-                if (headers != null)
-                {
-                    foreach (var header in headers)
-                    {
-                        newHeaders.Add(header);
-                        if (header.Name.Equals("Date", StringComparison.OrdinalIgnoreCase))
-                        {
-                            hasDate = true;
-                        }
-                    }
-                }
-
-                newHeaders.Add(new HttpHeaderData("Connection", "Close"));
-                if (!hasDate)
-                {
-                    newHeaders.Add(new HttpHeaderData("Date", "{DateTimeOffset.UtcNow:R}"));
-                }
-
-                await connection.SendResponseAsync(statusCode, newHeaders, content: content).ConfigureAwait(false);
-                return requestData;
+                return await connection.HandleRequestAsync(statusCode, headers, content).ConfigureAwait(false);
             }
         }
 
@@ -957,9 +969,9 @@ namespace System.Net.Test.Common
             return LoopbackServer.CreateServerAsync((server, uri) => funcAsync(server, uri), options: CreateOptions(options));
         }
 
-        public override Task<GenericLoopbackConnection> CreateConnectionAsync(Socket socket, Stream stream, GenericLoopbackOptions options = null)
+        public override async Task<GenericLoopbackConnection> CreateConnectionAsync(Socket socket, Stream stream, GenericLoopbackOptions options = null)
         {
-            return Task.FromResult<GenericLoopbackConnection>(new LoopbackServer.Connection(socket, stream));
+            return await LoopbackServer.Connection.CreateAsync(socket, stream, CreateOptions(options));
         }
 
         private static LoopbackServer.Options CreateOptions(GenericLoopbackOptions options)
@@ -968,6 +980,9 @@ namespace System.Net.Test.Common
             if (options != null)
             {
                 newOptions.Address = options.Address;
+                newOptions.UseSsl = options.UseSsl;
+                newOptions.SslProtocols = options.SslProtocols;
+                newOptions.ListenBacklog = options.ListenBacklog;
             }
             return newOptions;
         }

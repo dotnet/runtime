@@ -164,7 +164,6 @@ var Module = {
 
 	onRuntimeInitialized: function () {
 		// Have to set env vars here to enable setting MONO_LOG_LEVEL etc.
-		var wasm_setenv = Module.cwrap ('mono_wasm_setenv', 'void', ['string', 'string']);
 		for (var variable in setenv) {
 			MONO.mono_wasm_setenv (variable, setenv [variable]);
 		}

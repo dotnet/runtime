@@ -5737,8 +5737,13 @@ mono_runtime_try_invoke_array (MonoMethod *method, void *obj, MonoArray *params,
 				mono_error_assert_ok (error);
 			MONO_STATIC_POINTER_INIT_END (MonoMethod, box_method)
 
-			g_assert (res->vtable->klass == mono_defaults.int_class);
-			box_args [0] = ((MonoIntPtr*)res)->m_value;
+			if (res) {
+				g_assert (res->vtable->klass == mono_defaults.int_class);
+				box_args [0] = ((MonoIntPtr*)res)->m_value;
+			} else {
+				g_assert (sig->ret->byref);
+				box_args [0] = NULL;
+			}
 			if (sig->ret->byref) {
 				// byref is already unboxed by the invoke code
 				MonoType *tmpret = mono_metadata_type_dup (NULL, sig->ret);

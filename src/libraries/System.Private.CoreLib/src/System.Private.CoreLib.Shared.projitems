@@ -1170,7 +1170,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\Tracing\NativeRuntimeEventSource.cs" Condition="'$(FeaturePerfTracing)' == 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\Tracing\PollingCounter.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\Tracing\RuntimeEventSource.cs" Condition="'$(FeaturePerfTracing)' == 'true'" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\Tracing\StubEnvironment.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\Tracing\Winmeta.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\Tracing\TraceLogging\ArrayTypeInfo.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\Tracing\TraceLogging\ConcurrentSet.cs" />

@@ -1228,10 +1228,12 @@ void ClassLoader::ValidateMethodsWithCovariantReturnTypes(MethodTable* pMT)
                 TypeString::AppendType(strInvalidTypeName, TypeHandle(pMD->GetMethodTable()));
 
                 SString strInvalidMethodName;
-                TypeString::AppendMethod(strInvalidMethodName, pMD, pMD->GetMethodInstantiation());
-
                 SString strParentMethodName;
-                TypeString::AppendMethod(strParentMethodName, pParentMD, pParentMD->GetMethodInstantiation());
+                {
+                    CONTRACT_VIOLATION(LoadsTypeViolation);
+                    TypeString::AppendMethod(strInvalidMethodName, pMD, pMD->GetMethodInstantiation());
+                    TypeString::AppendMethod(strParentMethodName, pParentMD, pParentMD->GetMethodInstantiation());
+                }
 
                 COMPlusThrow(
                     kTypeLoadException,

@@ -191,7 +191,17 @@ namespace System.Net.Http
                 {
                     int bytesRead = await _stream.ReadAsync(_incomingBuffer.AvailableMemory).ConfigureAwait(false);
                     _incomingBuffer.Commit(bytesRead);
-                    if (bytesRead == 0) ThrowPrematureEOF(FrameHeader.Size);
+                    if (bytesRead == 0)
+                    {
+                        if (_incomingBuffer.ActiveLength == 0)
+                        {
+                            ThrowMissingFrame();
+                        }
+                        else
+                        {
+                            ThrowPrematureEOF(FrameHeader.Size);
+                        }
+                    }
                 }
                 while (_incomingBuffer.ActiveLength < FrameHeader.Size);
             }
@@ -229,33 +239,44 @@ namespace System.Net.Http
 
             void ThrowPrematureEOF(int requiredBytes) =>
                 throw new IOException(SR.Format(SR.net_http_invalid_response_premature_eof_bytecount, requiredBytes - _incomingBuffer.ActiveLength));
+
+            void ThrowMissingFrame() =>
+                throw new IOException(SR.net_http_invalid_response_missing_frame);
+
         }
 
         private async Task ProcessIncomingFramesAsync()
         {
             try
             {
-                // Read the initial settings frame.
-                FrameHeader frameHeader = await ReadFrameAsync(initialFrame: true).ConfigureAwait(false);
-                if (frameHeader.Type != FrameType.Settings || frameHeader.AckFlag)
+                FrameHeader frameHeader;
+                try
                 {
-                    ThrowProtocolError();
-                }
-                if (NetEventSource.Log.IsEnabled()) Trace($"Frame 0: {frameHeader}.");
+                    // Read the initial settings frame.
+                    frameHeader = await ReadFrameAsync(initialFrame: true).ConfigureAwait(false);
+                    if (frameHeader.Type != FrameType.Settings || frameHeader.AckFlag)
+                    {
+                        ThrowProtocolError();
+                    }
 
-                // Process the initial SETTINGS frame. This will send an ACK.
-                ProcessSettingsFrame(frameHeader);
+                    if (NetEventSource.Log.IsEnabled()) Trace($"Frame 0: {frameHeader}.");
+
+                    // Process the initial SETTINGS frame. This will send an ACK.
+                    ProcessSettingsFrame(frameHeader);
+                }
+                catch (IOException e)
+                {
+                    throw new IOException(SR.net_http_http2_connection_not_established, e);
+                }
 
                 // Keep processing frames as they arrive.
                 for (long frameNum = 1; ; frameNum++)
                 {
-                    // We could just call ReadFrameAsync here, but we add this code before it for two reasons:
-                    // 1. To provide a better error message when we're unable to read another frame.  We otherwise
-                    //    generally output an error message that's relatively obscure.
-                    // 2. To avoid another state machine allocation in the relatively common case where we
-                    //    currently don't have enough data buffered and issuing a read for the frame header
-                    //    completes asynchronously, but that read ends up also reading enough data to fulfill
-                    //    the entire frame's needs (not just the header).
+                    // We could just call ReadFrameAsync here, but we add this code
+                    // to avoid another state machine allocation in the relatively common case where we
+                    // currently don't have enough data buffered and issuing a read for the frame header
+                    // completes asynchronously, but that read ends up also reading enough data to fulfill
+                    // the entire frame's needs (not just the header).
                     if (_incomingBuffer.ActiveLength < FrameHeader.Size)
                     {
                         _incomingBuffer.EnsureAvailableSpace(FrameHeader.Size - _incomingBuffer.ActiveLength);
@@ -266,10 +287,8 @@ namespace System.Net.Http
                             _incomingBuffer.Commit(bytesRead);
                             if (bytesRead == 0)
                             {
-                                string message = _incomingBuffer.ActiveLength == 0 ?
-                                    SR.net_http_invalid_response_missing_frame :
-                                    SR.Format(SR.net_http_invalid_response_premature_eof_bytecount, FrameHeader.Size - _incomingBuffer.ActiveLength);
-                                throw new IOException(message);
+                                // ReadFrameAsync below will detect that the frame is incomplete and throw the appropriate error.
+                                break;
                             }
                         }
                         while (_incomingBuffer.ActiveLength < FrameHeader.Size);
