@@ -1,29 +1,14 @@
 <Project>
 
-  <Target Name="ILLinkTrimSharedFramework" AfterTargets="Build">
+  <Target Name="ILLinkTrimSharedFramework"
+          AfterTargets="Build"
+          DependsOnTargets="SetCommonILLinkArgs">
 
     <PropertyGroup>
       <!-- default action for core assemblies -->
       <ILLinkArgs>$(ILLinkArgs) -c link</ILLinkArgs>
-      <!-- keep type-forward assemblies (facades) -->
-      <ILLinkArgs>$(ILLinkArgs) -t</ILLinkArgs>
       <!-- update debug symbols -->
       <ILLinkArgs>$(ILLinkArgs) -b true</ILLinkArgs>
-      <!-- don't remove the embedded root xml resource since ILLink may run again on the assembly -->
-      <ILLinkArgs Condition="'$(ILLinkTrimXml)' != ''">$(ILLinkArgs) --strip-descriptors false</ILLinkArgs>
-      <!-- pass the non-embedded root xml file on the command line -->
-      <ILLinkArgs Condition="'$(ILLinkTrimXmlLibraryBuild)' != ''">$(ILLinkArgs) -x "$(ILLinkTrimXmlLibraryBuild)"</ILLinkArgs>
-      <!-- don't remove the embedded substitutions xml resource since ILLink may run again on the assembly -->
-      <ILLinkArgs Condition="'$(ILLinkSubstitutionsXml)' != ''">$(ILLinkArgs) --strip-substitutions false</ILLinkArgs>
-      <!-- don't remove the embedded link attributes xml resource since ILLink may run again on the assembly -->
-      <!-- and ignore the link attributes xml file during the library build, since we need the attributes preserved until the final app is linked -->
-      <ILLinkArgs>$(ILLinkArgs) --strip-link-attributes false --ignore-link-attributes true</ILLinkArgs>
-      <!-- ignore unresolved references -->
-      <ILLinkArgs>$(ILLinkArgs) --skip-unresolved true</ILLinkArgs>
-      <!-- keep interface implementations -->
-      <ILLinkArgs>$(ILLinkArgs) --disable-opt unusedinterfaces</ILLinkArgs>
-      <!-- keep DynamicDependencyAttribute -->
-      <ILLinkArgs>$(ILLinkArgs) --keep-dep-attributes true</ILLinkArgs>
       <!-- suppress warnings with the following codes:
            IL2006: The generic parameter 'T' from A with dynamically accessed member kinds B is passed into the generic parameter
                    'T' from 'System.Lazy<T>' which requires dynamically accessed member kinds 'PublicParameterlessConstructor'

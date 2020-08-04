@@ -52,22 +52,22 @@
     <None Include="@(ILLinkSubstitutionsXmls)" />
   </ItemGroup>
 
-  <!-- Custom binplacing for post-trimming and reports that is useful for analysis
+  <!-- Custom binplacing for pre/post-trimming and reports that is useful for analysis
        Must be enabled by setting BinPlaceILLinkTrimAssembly=true
   -->
   <ItemGroup Condition="'$(BinPlaceILLinkTrimAssembly)' == 'true'">
-    <BinPlaceTargetFrameworks Include="$(BuildSettings)">
-      <RuntimePath>$([MSBuild]::NormalizePath('$(LibrariesTrimmingArtifactsRoot)', 'trimmed'))</RuntimePath>
+    <BinPlaceTargetFramework Include="$(BuildSettings)">
+      <RuntimePath>$(ArtifactsBinDir)ILLinkTrimAssembly/$(BuildSettings)/trimmed</RuntimePath>
       <ItemName>TrimmedItem</ItemName>
-    </BinPlaceTargetFrameworks>
-    <BinPlaceTargetFrameworks Include="$(BuildSettings)">
-      <RuntimePath>$([MSBuild]::NormalizePath('$(LibrariesTrimmingArtifactsRoot)', 'reports'))</RuntimePath>
+    </BinPlaceTargetFramework>
+    <BinPlaceTargetFramework Include="$(BuildSettings)">
+      <RuntimePath>$(ArtifactsBinDir)ILLinkTrimAssembly/$(BuildSettings)/reports</RuntimePath>
       <ItemName>TrimmingReport</ItemName>
-    </BinPlaceTargetFrameworks>
-    <BinPlaceTargetFrameworks Include="$(NetCoreAppCurrent)">
-      <RuntimePath>$([MSBuild]::NormalizePath('$(LibrariesTrimmingArtifactsRoot)', 'pretrimmed'))</RuntimePath>
+    </BinPlaceTargetFramework>
+    <BinPlaceTargetFramework Include="$(BuildSettings)">
+      <RuntimePath>$(ArtifactsBinDir)ILLinkTrimAssembly/$(BuildSettings)/pretrimmed</RuntimePath>
       <ItemName>PreTrimmedItem</ItemName>
-    </BinPlaceTargetFrameworks>
+    </BinPlaceTargetFramework>
   </ItemGroup>
 
   <Target Name="_EmbedILLinkXmls"
@@ -184,23 +184,11 @@
     </PropertyGroup>
   </Target>
 
-  <!-- ILLinkTrimAssembly
-       Examines the "input assembly" for IL that is unreachable from public API and trims that,
-       rewriting the assembly to an "output assembly"
-  -->
-  <UsingTask TaskName="ILLink" AssemblyFile="$(ILLinkTasksPath)" />
-  <Target Name="ILLinkTrimAssembly" Condition="'$(ILLinkTrimAssembly)' == 'true'">
+  <!-- ILLink.Tasks arguments common to runs for both individual libraries' and for the entire runtime pack -->
+  <Target Name="SetCommonILLinkArgs">
     <PropertyGroup>
-      <ILLinkArgs>$(ILLinkArgs)-r $(TargetName)</ILLinkArgs>
-      <!-- default action for core assemblies -->
-      <ILLinkArgs>$(ILLinkArgs) -c skip</ILLinkArgs>
-      <!-- default action for non-core assemblies -->
-      <ILLinkArgs>$(ILLinkArgs) -u skip</ILLinkArgs>
-      <!-- trim the target assembly -->
-      <ILLinkArgs>$(ILLinkArgs) -p link $(TargetName)</ILLinkArgs>
       <!-- keep type-forward assemblies (facades) -->
       <ILLinkArgs>$(ILLinkArgs) -t</ILLinkArgs>
-      <ILLinkArgs Condition="'$(ILLinkRewritePDBs)' == 'true' and Exists('$(ILLinkTrimAssemblySymbols)')">$(ILLinkArgs) -b true</ILLinkArgs>
       <!-- don't remove the embedded root xml resource since ILLink may run again on the assembly -->
       <ILLinkArgs Condition="'$(ILLinkTrimXml)' != ''">$(ILLinkArgs) --strip-descriptors false</ILLinkArgs>
       <!-- pass the non-embedded root xml file on the command line -->
@@ -214,6 +202,26 @@
       <ILLinkArgs>$(ILLinkArgs) --skip-unresolved true</ILLinkArgs>
       <!-- keep interface implementations -->
       <ILLinkArgs>$(ILLinkArgs) --disable-opt unusedinterfaces</ILLinkArgs>
+    </PropertyGroup>
+  </Target>
+
+  <!-- ILLinkTrimAssembly
+       Examines the "input assembly" for IL that is unreachable from public API and trims that,
+       rewriting the assembly to an "output assembly"
+  -->
+  <UsingTask TaskName="ILLink" AssemblyFile="$(ILLinkTasksPath)" />
+  <Target Name="ILLinkTrimAssembly"
+          Condition="'$(ILLinkTrimAssembly)' == 'true'"
+          DependsOnTargets="SetCommonILLinkArgs">
+    <PropertyGroup>
+      <ILLinkArgs>$(ILLinkArgs) -r $(TargetName)</ILLinkArgs>
+      <!-- default action for core assemblies -->
+      <ILLinkArgs>$(ILLinkArgs) -c skip</ILLinkArgs>
+      <!-- default action for non-core assemblies -->
+      <ILLinkArgs>$(ILLinkArgs) -u skip</ILLinkArgs>
+      <!-- trim the target assembly -->
+      <ILLinkArgs>$(ILLinkArgs) -p link $(TargetName)</ILLinkArgs>
+      <ILLinkArgs Condition="'$(ILLinkRewritePDBs)' == 'true' and Exists('$(ILLinkTrimAssemblySymbols)')">$(ILLinkArgs) -b true</ILLinkArgs>
       <!-- keep DynamicDependencyAttribute unless a project explicitly disables it -->
       <ILLinkArgs Condition="'$(ILLinkKeepDepAttributes)' != 'false'">$(ILLinkArgs) --keep-dep-attributes true</ILLinkArgs>
       <!-- suppress warnings with the following codes:
@@ -313,7 +321,7 @@
   <!-- Similar to _CheckForCompileOutputs and runs in the same places,
        always set these even if compile didn't run. -->
   <Target Name="_CheckForILLinkTrimAssemblyOutputs"
-          BeforeTargets="BinPlace;CopyFilesToOutputDirectory;_CleanGetCurrentAndPriorFileWrites"
+          BeforeTargets="CopyFilesToOutputDirectory;_CleanGetCurrentAndPriorFileWrites"
           Condition="'$(ILLinkTrimAssembly)' == 'true'">
     <ItemGroup>
       <PreTrimmedItem Condition="Exists('$(ILLinkTrimInputAssembly)')" Include="$(ILLinkTrimInputAssembly)" />

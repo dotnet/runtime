@@ -330,8 +330,7 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <LibrariesTrimmingArtifactsRoot>$([MSBuild]::NormalizePath('$(ArtifactsBinDir)', 'ILLinkTrimAssembly', '$(BuildSettings)'))</LibrariesTrimmingArtifactsRoot>
-    <LibrariesTrimmedArtifactsPath>$([MSBuild]::NormalizePath('$(LibrariesTrimmingArtifactsRoot)', 'trimmed-runtimepack'))</LibrariesTrimmedArtifactsPath>
+    <LibrariesTrimmedArtifactsPath>$([MSBuild]::NormalizePath('$(ArtifactsBinDir)', 'ILLinkTrimAssembly', '$(BuildSettings)', 'trimmed-runtimepack'))</LibrariesTrimmedArtifactsPath>
   </PropertyGroup>
 
 </Project>
