@@ -1891,6 +1891,9 @@ void CodeGen::genCodeForStoreLclFld(GenTreeLclFld* tree)
     assert(varNum < compiler->lvaCount);
     LclVarDsc* varDsc = &(compiler->lvaTable[varNum]);
 
+    // Ensure that lclVar nodes are typed correctly.
+    assert(!varDsc->lvNormalizeOnStore() || targetType == genActualType(varDsc->TypeGet()));
+
     GenTree* data = tree->gtOp1;
     genConsumeRegs(data);
 

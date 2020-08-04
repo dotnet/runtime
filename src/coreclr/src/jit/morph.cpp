@@ -11642,14 +11642,10 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
             // TODO-1stClassStructs: improve this.
             if (op1->IsLocal() || (op1->TypeGet() != TYP_STRUCT))
             {
+                // Consider using GTF_IND_ASG_LHS here, as GTF_DONT_CSE here is used to indicate
+                // that this GT_IND is the LHS of an assignment
+                //
                 op1->gtFlags |= GTF_DONT_CSE;
-
-                // If the left side of the assignment is a GT_IND we mark with GTF_IND_ASG_LHS
-                if (op1->OperIs(GT_IND))
-                {
-                    // Mark this GT_IND as a LHS, so that we know this is a store
-                    op1->gtFlags |= GTF_IND_ASG_LHS;
-                }
             }
             break;
 
@@ -13655,13 +13651,16 @@ DONE_MORPHING_CHILDREN:
                 break;
             }
 
-            bool foldAndReturnTemp;
-            bool isStore;
+            bool      foldAndReturnTemp;
+            bool      isStore;
+            var_types addCastToType;
 
             foldAndReturnTemp = false;
-            isStore           = (tree->gtFlags & GTF_IND_ASG_LHS) == GTF_IND_ASG_LHS;
-            temp              = nullptr;
-            ival1             = 0;
+            isStore           = (tree->gtFlags & GTF_DONT_CSE) == GTF_DONT_CSE;
+            addCastToType     = TYP_VOID; // TYP_VOID means we don't need to insert a cast
+
+            temp  = nullptr;
+            ival1 = 0;
 
             // Don't remove a volatile GT_IND, even if the address points to a local variable.
             if ((tree->gtFlags & GTF_IND_VOLATILE) == 0)
@@ -13669,7 +13668,7 @@ DONE_MORPHING_CHILDREN:
                 /* Try to Fold *(&X) into X */
                 if (op1->gtOper == GT_ADDR)
                 {
-                    // Can not remove a GT_ADDR if it is currently a CSE candidate.
+                    // Cannot remove a GT_ADDR if it is currently a CSE candidate.
                     if (gtIsActiveCSE_Candidate(op1))
                     {
                         break;
@@ -13716,7 +13715,9 @@ DONE_MORPHING_CHILDREN:
                                 }
                             }
                         }
-                        bool matchingTypes = (lclType == typ);
+                        bool matchingTypes  = (lclType == typ);
+                        bool matchingWidths = (genTypeSize(lclType) == genTypeSize(typ));
+                        bool matchingFloat  = (varTypeIsFloating(lclType) == varTypeIsFloating(typ));
 
                         // TYP_BOOL and TYP_UBYTE are also matching types
                         if (!matchingTypes)
@@ -13731,34 +13732,43 @@ DONE_MORPHING_CHILDREN:
                             }
                         }
 
-                        // If the type of the Local Var matches the indirection type and we dont have a TYP_STRUCT,
-                        // then often we can fold the IND/ADDR and use the LCL_VAR directly
-                        if (matchingTypes && (typ != TYP_STRUCT))
+                        // If the sizes match and we dont have a float or TYP_STRUCT,
+                        // then we will fold the IND/ADDR and use the LCL_VAR directly
+                        //
+                        if (matchingWidths && matchingFloat && (typ != TYP_STRUCT))
                         {
-                            // For Loads or Stores of non small types (types that don't need sign or zero extends)
-                            // we can fold the IND/ADDR and reduce to just the local variable
-                            if (!varTypeIsSmall(typ))
+                            // For some small types we might need to change to normalize loads or insert a cast here
+                            //
+                            if (varTypeIsSmall(typ))
                             {
-                                tree->gtType = typ = temp->TypeGet();
-                                foldAndReturnTemp  = true;
-                            }
-                            else // varTypeIsSmall(typ) is true
-                            {
-                                // For Loads of small types than are not NormalizeOnLoad()
-                                // we can fold the IND/ADDR and reduce to just the local variable
+                                // For any stores of small types, we will force loads to be normalized
+                                // this is necessary as we need to zero/sign extend any load
+                                // after this kind of store.
                                 //
-                                // Stores of small types or when we don't normalize on load
-                                // then we need to insert a cast
-                                //
-                                if (isStore || !varDsc->lvNormalizeOnLoad())
+                                if (isStore)
                                 {
                                     varDsc->lvForceLoadNormalize = true;
                                 }
-                                tree->gtType = typ = temp->TypeGet();
-                                foldAndReturnTemp  = true;
+                                // otherwise we have a load operation
+                                //
+                                // Do we have a non matching small type load?
+                                // we may need to insert a cast operation
+                                else if (!matchingTypes)
+                                {
+                                    if (!varDsc->lvNormalizeOnLoad())
+                                    {
+                                        // Since we aren't normalizing on a loads
+                                        // we need to insert a cast here.
+                                        //
+                                        addCastToType = typ;
+                                    }
+                                }
                             }
+                            // we will fold the IND/ADDR and reduce to just the local variable
+                            //
+                            tree->gtType = typ = temp->TypeGet();
+                            foldAndReturnTemp  = true;
                         }
-
                         if (!foldAndReturnTemp)
                         {
                             // Assumes that when Lookup returns "false" it will leave "fieldSeq" unmodified (i.e.
@@ -13949,19 +13959,38 @@ DONE_MORPHING_CHILDREN:
                 // normalization.
                 if (temp->OperIs(GT_LCL_VAR))
                 {
-#ifdef DEBUG
-                    // We clear this flag on `temp` because `fgMorphLocalVar` may assert that this bit is clear
-                    // and the node in question must have this bit set (as it has already been morphed).
-                    temp->gtDebugFlags &= ~GTF_DEBUG_NODE_MORPHED;
-#endif // DEBUG
-                    const bool forceRemorph = true;
-                    temp                    = fgMorphLocalVar(temp, forceRemorph);
-#ifdef DEBUG
-                    // We then set this flag on `temp` because `fgMorhpLocalVar` may not set it itself, and the
-                    // caller of `fgMorphSmpOp` may assert that this flag is set on `temp` once this function
-                    // returns.
-                    temp->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED;
-#endif // DEBUG
+                    unsigned  lclNum  = temp->AsLclVarCommon()->GetLclNum();
+                    var_types lclType = lvaTable[lclNum].lvType;
+
+                    // We build a new 'result' tree to return, as we want to call fgMorphTree on it
+                    //
+                    GenTree* result = gtNewLclvNode(lclNum, lclType);
+                    assert(result->OperGet() == GT_LCL_VAR);
+
+                    // Copy the GTF_DONT_CSE flag from the original tree to `result`
+                    // because fgMorphLocalVar uses this flag to determine if we are loading or storing
+                    // and will insert a cast when we are loading from a lvNormalizeOnLoad() local
+                    //
+                    result->gtFlags |= (tree->gtFlags & GTF_DONT_CSE);
+
+                    // If the indirection node was a different small type than our local variable
+                    // we insert a cast to that type.
+                    //
+                    if (addCastToType != TYP_VOID)
+                    {
+                        assert(varTypeIsSmall(addCastToType));
+
+                        // Insert a narrowing cast to the old indirection type
+                        //
+                        result = gtNewCastNode(TYP_INT, result, false, addCastToType);
+                    }
+
+                    // On this path we return 'result' after calling fgMorphTree on it.
+                    // so now we can destroy the unused'temp' node.
+                    //
+                    DEBUG_DESTROY_NODE(temp);
+
+                    temp = fgMorphTree(result);
                 }
 
                 return temp;
