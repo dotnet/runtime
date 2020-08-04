@@ -9,7 +9,7 @@ namespace Microsoft.Extensions.Logging.Console
     public enum LoggerColorBehavior
     {
         /// <summary>
-        /// Use the default color behavior
+        /// Use the default color behavior, enabling color except when the console output is redirected.
         /// </summary>
         /// <remarks>
         /// Enables color except when the console output is redirected.
