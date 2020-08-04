@@ -82,6 +82,10 @@ function test_exit (exit_code) {
 		// Notify the puppeteer script
 		Module.exit_code = exit_code;
 		print ("WASM EXIT " + exit_code);
+		var tests_done_elem = document.createElement ("label");
+		tests_done_elem.id = "tests_done";
+		tests_done_elem.innerHTML = exit_code.toString ();
+		document.body.appendChild (tests_done_elem);
 	} else {
 		Module.wasm_exit (exit_code);
 	}
