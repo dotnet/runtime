@@ -252,7 +252,7 @@ the error code. For example:
 
 - CustomAttribute 'type' is being referenced in the code but the 'type' has been removed using the "remove" attribute tag on a type inside the LinkAttributes xml
 
-#### `IL2046`: Presence of RequiresUnreferencedCodeAttribute on method '<method>' doesn't match overridden method 'base method'. All overridden methods must have RequiresUnreferencedCodeAttribute.
+#### `IL2046`: Presence of RequiresUnreferencedCodeAttribute on method 'method' doesn't match overridden method 'base method'. All overridden methods must have RequiresUnreferencedCodeAttribute.
 
 - All overrides of a virtual method including the base method must either have or not have the RequiresUnreferencedCodeAttribute.
 
@@ -260,9 +260,9 @@ the error code. For example:
 
 - All overrides of a virtual method including the base method must have the same DynamicallyAccessedMemberAttribute usage on all it's components (return value, parameters and generic parameters).
 
-#### `IL2048`: Internal attribute 'RemoveAttributeInstances' can only be used on a type, but is being used on 'member type' 'member'
+#### `IL2048`: Internal attribute 'RemoveAttributeInstances' can only be used on a type, but is being used on 'member'
 
-- Internal attribute 'RemoveAttributeInstances' is a special attribute that should only be used on custom attribute types and is being used on'member type' 'member'.
+- Internal attribute 'RemoveAttributeInstances' is a special attribute that should only be used on custom attribute types and is being used on 'member'.
 
 #### `IL2049`: Unrecognized internal attribute 'attribute'
 
@@ -271,3 +271,19 @@ the error code. For example:
 #### `IL2050`: Correctness of COM interop cannot be guaranteed
 
 - P/invoke method 'method' declares a parameter with COM marshalling. Correctness of COM interop cannot be guaranteed after trimming. Interfaces and interface members might be removed.
+
+#### `IL2051`: Property element does not contain attribute 'name'
+
+- An attribute element declares a property but this does not specify its name or is empty.
+
+#### `IL2052`: Property 'propertyName' could not be found
+
+- An attribute element has property 'propertyName' but this could not be found.
+
+#### `IL2053`: Invalid value 'propertyValue' for property 'propertyName'
+
+- The value 'propertyValue' used in a custom attribute annotation does not match the type of the attribute's property 'propertyName'.
+
+#### `IL2054`: Invalid argument value 'argumentValue' for attribute 'attribute'
+
+- The value 'argumentValue' used in a custom attribute annotation does not match the type of one of the attribute's constructor arguments. The arguments used for a custom attribute annotation should be declared in the same order the constructor uses.

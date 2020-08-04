@@ -1,9 +1,15 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
 <linker>
   <assembly fullname="Test">
-    <type fullname="Mono.Linker.Tests.Cases.DataFlow.XmlAnnotations">
+      <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute" assembly="Mono.Linker.Tests.Cases.Expectations">
+        <argument>ILLink</argument>
+        <argument>IL2006</argument>
+        <property name="Scope">member</property>
+        <property name="Target">M:Mono.Linker.Tests.Cases.DataFlow.XmlAnnotations.ReadFromInstanceField</property>
+      </attribute>
+      <type fullname="Mono.Linker.Tests.Cases.DataFlow.XmlAnnotations">
       <field name="_typeWithPublicParameterlessConstructor">
-        <attribute fullname="System.DoesNotExistattribute" assembly="Mono.Linker.Tests.Cases.Expectations">
+        <attribute fullname="System.DoesNotExistAttribute" assembly="Mono.Linker.Tests.Cases.Expectations">
           <argument>0</argument>
         </attribute>
         <attribute fullname="System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute">
