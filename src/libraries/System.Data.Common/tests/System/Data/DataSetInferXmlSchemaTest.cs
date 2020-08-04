@@ -246,7 +246,7 @@ namespace System.Data.Tests
             DataSetAssertion.AssertDataColumn("col3", dt.Columns[2], "col3", true, false, 0, 1, "col3", MappingType.Element, typeof(string), DBNull.Value, string.Empty, -1, string.Empty, 2, string.Empty, false, false);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
         public void SimpleDataSet()
         {
             DataSet ds = GetDataSet(_xml8, null);
@@ -337,7 +337,7 @@ namespace System.Data.Tests
             DataSetAssertion.AssertDataSet("pure_whitespace", ds, "root", 0, 0);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
         public void TwoElementTable()
         {
             // FIXME: Also test ReadXml (, XmlReadMode.InferSchema) and
@@ -356,7 +356,7 @@ namespace System.Data.Tests
             DataSetAssertion.AssertDataColumn("col2_2", dt.Columns[1], "col2_2", true, false, 0, 1, "col2_2", MappingType.Element, typeof(string), DBNull.Value, string.Empty, -1, string.Empty, 1, string.Empty, false, false);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
         public void ConflictSimpleComplexColumns()
         {
             DataSet ds = GetDataSet(_xml18, null);
@@ -377,7 +377,7 @@ namespace System.Data.Tests
             DataSetAssertion.AssertForeignKeyConstraint("fkey", dr.ChildKeyConstraint, "table_col", AcceptRejectRule.None, Rule.Cascade, Rule.Cascade, new string[] { "table_Id" }, new string[] { "table_Id" });
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
         public void ConflictColumnTable()
         {
             DataSet ds = GetDataSet(_xml19, null);
@@ -398,7 +398,7 @@ namespace System.Data.Tests
             DataSetAssertion.AssertForeignKeyConstraint("fkey", dr.ChildKeyConstraint, "table_col", AcceptRejectRule.None, Rule.Cascade, Rule.Cascade, new string[] { "table_Id" }, new string[] { "table_Id" });
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
         public void ConflictColumnTableAttribute()
         {
             // Conflicts between a column and a table, additionally an attribute.
@@ -421,7 +421,7 @@ namespace System.Data.Tests
             DataSetAssertion.AssertForeignKeyConstraint("fkey", dr.ChildKeyConstraint, "table_col", AcceptRejectRule.None, Rule.Cascade, Rule.Cascade, new string[] { "table_Id" }, new string[] { "table_Id" });
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
         public void ConflictAttributeDataTable()
         {
             Assert.Throws<DataException>(() =>
@@ -433,7 +433,7 @@ namespace System.Data.Tests
            });
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
         public void ConflictExistingPrimaryKey()
         {
             Assert.Throws<ConstraintException>(() =>

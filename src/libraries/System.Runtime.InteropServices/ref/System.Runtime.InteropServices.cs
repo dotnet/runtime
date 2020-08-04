@@ -493,6 +493,7 @@ namespace System.Runtime.InteropServices
         [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")]
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public static System.IntPtr CreateAggregatedObject(System.IntPtr pOuter, object o) { throw null; }
+        [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")]
         public static System.IntPtr CreateAggregatedObject<T>(System.IntPtr pOuter, T o) where T : notnull { throw null; }
         [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")]
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
@@ -1031,7 +1032,7 @@ namespace System.Runtime.InteropServices
         public struct ComInterfaceDispatch
         {
             public System.IntPtr Vtable;
-            public static unsafe T GetInstance<T>(ComInterfaceDispatch* dispatchPtr) where T : class { throw null; }
+            public unsafe static T GetInstance<T>(ComInterfaceDispatch* dispatchPtr) where T : class { throw null; }
         }
         public System.IntPtr GetOrCreateComInterfaceForObject(object instance, CreateComInterfaceFlags flags) { throw null; }
         protected unsafe abstract ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count);

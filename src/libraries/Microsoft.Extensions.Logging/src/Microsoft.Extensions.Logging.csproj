@@ -26,7 +26,7 @@
 
   <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0' or
                         $(TargetFramework.StartsWith('net4'))">
-    <PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Version="$(MicrosoftBclAsyncInterfacesVersion)" />
+    <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Bcl.AsyncInterfaces\src\Microsoft.Bcl.AsyncInterfaces.csproj" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFramework)' == 'net461'">

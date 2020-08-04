@@ -76,7 +76,6 @@ namespace Microsoft.Extensions.Logging.Test
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [MemberData(nameof(FormatterNames))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/38337", TestPlatforms.Browser)]
         public void AddConsole_ConsoleLoggerOptionsFromConfigFile_IsReadFromLoggingConfiguration(string formatterName)
         {
             var configuration = new ConfigurationBuilder().AddInMemoryCollection(new[] {
@@ -96,7 +95,6 @@ namespace Microsoft.Extensions.Logging.Test
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/38337", TestPlatforms.Browser)]
         public void AddConsoleFormatter_CustomFormatter_IsReadFromLoggingConfiguration()
         {
             var configuration = new ConfigurationBuilder().AddInMemoryCollection(new[] {
@@ -156,7 +154,6 @@ namespace Microsoft.Extensions.Logging.Test
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/38337", TestPlatforms.Browser)]
         public void AddSimpleConsole_ChangeProperties_IsReadFromLoggingConfiguration()
         {
             var configuration = new ConfigurationBuilder().AddInMemoryCollection(new[] {
@@ -187,7 +184,6 @@ namespace Microsoft.Extensions.Logging.Test
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/38337", TestPlatforms.Browser)]
         public void AddSimpleConsole_OutsideConfig_TakesProperty()
         {
             var configuration = new ConfigurationBuilder().AddInMemoryCollection(new[] {
@@ -218,7 +214,6 @@ namespace Microsoft.Extensions.Logging.Test
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/38337", TestPlatforms.Browser)]
         public void AddSystemdConsole_ChangeProperties_IsReadFromLoggingConfiguration()
         {
             var configuration = new ConfigurationBuilder().AddInMemoryCollection(new[] {
@@ -245,7 +240,6 @@ namespace Microsoft.Extensions.Logging.Test
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/38337", TestPlatforms.Browser)]
         public void AddSystemdConsole_OutsideConfig_TakesProperty()
         {
             var configuration = new ConfigurationBuilder().AddInMemoryCollection(new[] {
@@ -276,7 +270,6 @@ namespace Microsoft.Extensions.Logging.Test
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/38337", TestPlatforms.Browser)]
         public void AddJsonConsole_ChangeProperties_IsReadFromLoggingConfiguration()
         {
             var configuration = new ConfigurationBuilder().AddInMemoryCollection(new[] {
@@ -305,7 +298,6 @@ namespace Microsoft.Extensions.Logging.Test
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/38337", TestPlatforms.Browser)]
         public void AddJsonConsole_OutsideConfig_TakesProperty()
         {
             var configuration = new ConfigurationBuilder().AddInMemoryCollection(new[] {
@@ -340,7 +332,6 @@ namespace Microsoft.Extensions.Logging.Test
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/38337", TestPlatforms.Browser)]
         public void AddConsole_NullFormatterNameUsingSystemdFormat_AnyDeprecatedPropertiesOverwriteFormatterOptions()
         {
             var configs = new[] {
@@ -366,7 +357,6 @@ namespace Microsoft.Extensions.Logging.Test
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/38337", TestPlatforms.Browser)]
         public void AddConsole_NullFormatterName_UsingSystemdFormat_IgnoreFormatterOptionsAndUseDeprecatedInstead()
         {
             var configuration = new ConfigurationBuilder().AddInMemoryCollection(new[] {
@@ -399,7 +389,6 @@ namespace Microsoft.Extensions.Logging.Test
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/38337", TestPlatforms.Browser)]
         public void AddConsole_NullFormatterName_UsingDefaultFormat_IgnoreFormatterOptionsAndUseDeprecatedInstead()
         {
             var configuration = new ConfigurationBuilder().AddInMemoryCollection(new[] {
@@ -442,7 +431,6 @@ namespace Microsoft.Extensions.Logging.Test
         [InlineData("missingFormatter")]
         [InlineData("simple")]
         [InlineData("Simple")]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/38337", TestPlatforms.Browser)]
         public void AddConsole_FormatterNameIsSet_UsingDefaultFormat_IgnoreDeprecatedAndUseFormatterOptionsInstead(string formatterName)
         {
             var configuration = new ConfigurationBuilder().AddInMemoryCollection(new[] {
@@ -486,7 +474,6 @@ namespace Microsoft.Extensions.Logging.Test
         [InlineData("missingFormatter")]
         [InlineData("systemd")]
         [InlineData("Systemd")]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/38337", TestPlatforms.Browser)]
         public void AddConsole_FormatterNameIsSet_UsingSystemdFormat_IgnoreDeprecatedAndUseFormatterOptionsInstead(string formatterName)
         {
             var configuration = new ConfigurationBuilder().AddInMemoryCollection(new[] {

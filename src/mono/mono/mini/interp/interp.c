@@ -2385,7 +2385,6 @@ init_jit_call_info (InterpMethod *rmethod, MonoError *error)
 static MONO_NEVER_INLINE void
 do_jit_call (stackval *sp, unsigned char *vt_sp, InterpFrame *frame, InterpMethod *rmethod, MonoError *error)
 {
-	MonoMethodSignature *sig;
 	guint8 res_buf [256];
 	MonoLMFExt ext;
 	JitCallInfo *cinfo;
@@ -2401,8 +2400,6 @@ do_jit_call (stackval *sp, unsigned char *vt_sp, InterpFrame *frame, InterpMetho
 		mono_error_assert_ok (error);
 	}
 	cinfo = (JitCallInfo*)rmethod->jit_call_info;
-
-	sig = cinfo->sig;
 
 	/*
 	 * Convert the arguments on the interpeter stack to the format expected by the gsharedvt_out wrapper.

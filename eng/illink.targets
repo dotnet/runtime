@@ -216,6 +216,18 @@
       <ILLinkArgs>$(ILLinkArgs) --disable-opt unusedinterfaces</ILLinkArgs>
       <!-- keep DynamicDependencyAttribute unless a project explicitly disables it -->
       <ILLinkArgs Condition="'$(ILLinkKeepDepAttributes)' != 'false'">$(ILLinkArgs) --keep-dep-attributes true</ILLinkArgs>
+      <!-- suppress warnings with the following codes:
+           IL2006:  The generic parameter 'T' from A with dynamically accessed member kinds B is passed into the generic parameter
+                    'T' from 'System.Lazy<T>' which requires dynamically accessed member kinds 'PublicParameterlessConstructor'
+           IL2008:  Could not find type A specified in resource B
+           IL2009:  Could not find method A in type B specified in resource C
+           IL2012:  Could not find field A in type B specified in resource C
+           IL2025:  Duplicate preserve of A in B
+           IL2026:  Calling A which has B can break functionality when trimming application code. The target method might be removed.
+           IL2035:  Unresolved assembly A in DynamicDependencyAttribute on B
+           IL2041:  The DynamicallyAccessedMembersAttribute is only allowed on method parameters, return value or generic parameters.
+      -->
+      <ILLinkArgs>$(ILLinkArgs) --nowarn IL2006;IL2008;IL2009;IL2012;IL2025;IL2026;IL2035;IL2041</ILLinkArgs>
     </PropertyGroup>
 
     <MakeDir Directories="$(ILLinkTrimInputPath)" />

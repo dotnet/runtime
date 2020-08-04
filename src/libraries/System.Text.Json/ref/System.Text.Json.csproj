@@ -6,6 +6,10 @@
   <ItemGroup>
     <Compile Include="System.Text.Json.cs" />
   </ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' != '$(NetCoreAppCurrent)'">
+    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\DynamicallyAccessedMembersAttribute.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\DynamicallyAccessedMemberTypes.cs" />
+  </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
     <ProjectReference Include="$(LibrariesProjectRoot)System.Memory\ref\System.Memory.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime\ref\System.Runtime.csproj" />
@@ -19,7 +23,7 @@
                         '$(TargetFramework)' == 'net461'">
     <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />
     <PackageReference Include="System.Threading.Tasks.Extensions" Version="$(SystemThreadingTasksExtensionsVersion)" />
-    <PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Version="$(MicrosoftBclAsyncInterfacesVersion)" />
+    <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Bcl.AsyncInterfaces\ref\Microsoft.Bcl.AsyncInterfaces.csproj" />
   </ItemGroup>
   <!-- Since S.T.E.W continues to be built live within this repo (as both an in-box library and a standalone netstandard2.0 assembly),
     we should use ProjectReference instead of Reference to make sure that its ref assembly gets built first before S.T.Json, regardless of the TFM. -->
