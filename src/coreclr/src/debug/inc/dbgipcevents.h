@@ -984,7 +984,12 @@ struct MSLAYOUT IPCEventTypeNameMapping
             const char *            eventName;
 };
 
-constexpr IPCEventTypeNameMapping DbgIPCEventTypeNames[] =
+#ifdef _MSC_VER
+extern const __declspec(selectany)
+#else
+constexpr
+#endif
+IPCEventTypeNameMapping DbgIPCEventTypeNames[] =
 {
     #define IPC_EVENT_TYPE0(type, val)  { type, #type },
     #define IPC_EVENT_TYPE1(type, val)  { type, #type },
