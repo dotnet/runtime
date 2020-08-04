@@ -351,7 +351,7 @@ namespace System.Net.Http
                     _creditWaiter = null;
                 }
 
-                if (HttpTelemetry.Log.IsEnabled()) HttpTelemetry.Log.RequestStop();
+                if (HttpTelemetry.Log.IsEnabled()) _request.OnStopped();
             }
 
             private void Cancel()
@@ -387,7 +387,7 @@ namespace System.Net.Http
                     _waitSource.SetResult(true);
                 }
 
-                if (HttpTelemetry.Log.IsEnabled()) HttpTelemetry.Log.RequestAborted();
+                if (HttpTelemetry.Log.IsEnabled()) _request.OnAborted();
             }
 
             // Returns whether the waiter should be signalled or not.
@@ -1148,6 +1148,10 @@ namespace System.Net.Http
                 {
                     Cancel();
                 }
+                else
+                {
+                    _request.OnStopped();
+                }
 
                 _responseBuffer.Dispose();
             }
@@ -1280,6 +1284,8 @@ namespace System.Net.Http
                     {
                         return;
                     }
+
+                    GC.SuppressFinalize(this);
 
                     // Technically we shouldn't be doing the following work when disposing == false,
                     // as the following work relies on other finalizable objects.  But given the HTTP/2
