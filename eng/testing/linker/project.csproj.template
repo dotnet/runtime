@@ -6,7 +6,7 @@
     <RuntimeIdentifier>{RuntimeIdentifier}</RuntimeIdentifier>
     <RuntimePackDir>{RuntimePackDir}</RuntimePackDir>
     <TargetingPackDir>{TargetingPackDir}</TargetingPackDir>
-    <_ExtraTrimmerArgs>{ExtraTrimmerArgs} $(_ExtraTrimmerArgs)</_ExtraTrimmerArgs>
+    <_ExtraTrimmerArgs>{ExtraTrimmerArgs} $(_ExtraTrimmerArgs) --nowarn IL2006;IL2026</_ExtraTrimmerArgs>
   </PropertyGroup>
 
   <ItemGroup>
