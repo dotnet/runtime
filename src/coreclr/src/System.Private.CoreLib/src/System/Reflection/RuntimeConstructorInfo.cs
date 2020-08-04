@@ -293,9 +293,10 @@ namespace System.Reflection
 
                 var declaringType = DeclaringType;
 
-                // Handle module ctors, by not running them. They are always executed automatically
                 if (declaringType != null)
                     RuntimeHelpers.RunClassConstructor(declaringType.TypeHandle);
+                else
+                    RuntimeHelpers.RunModuleConstructor(Module.ModuleHandle);
 
                 return null;
             }
