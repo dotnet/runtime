@@ -337,7 +337,7 @@ if defined __SkipManaged goto SkipManagedBuild
 echo %__MsgPrefix%Starting the Managed Tests Build
 
 if not defined VSINSTALLDIR (
-    echo %__ErrMsgPrefix%%__MsgPrefix%Error: build-test.cmd should be run from a Visual Studio Command Prompt.  Please see https://github.com/dotnet/runtime/tree/master/docs/workflow for build instructions.
+    echo %__ErrMsgPrefix%%__MsgPrefix%Error: build.cmd should be run from a Visual Studio Command Prompt.  Please see https://github.com/dotnet/runtime/tree/master/docs/workflow for build instructions.
     exit /b 1
 )
 set __AppendToLog=false
@@ -388,7 +388,7 @@ for /l %%G in (1, 1, %__NumberOfTestGroups%) do (
             echo     %__BuildWrn%
             echo     %__BuildErr%
             REM This is necessary because of a(n apparent) bug in the FOR /L command.  Under certain circumstances,
-            REM such as when this script is invoke with CMD /C "build-test.cmd", a non-zero exit directly from
+            REM such as when this script is invoke with CMD /C "build.cmd", a non-zero exit directly from
             REM within the loop body will not propagate to the caller.  For some reason, goto works around it.
             goto     :Exit_Failure
         )
@@ -403,7 +403,7 @@ for /l %%G in (1, 1, %__NumberOfTestGroups%) do (
             echo     %__BuildWrn%
             echo     %__BuildErr%
             REM This is necessary because of a(n apparent) bug in the FOR /L command.  Under certain circumstances,
-            REM such as when this script is invoke with CMD /C "build-test.cmd", a non-zero exit directly from
+            REM such as when this script is invoke with CMD /C "build.cmd", a non-zero exit directly from
             REM within the loop body will not propagate to the caller.  For some reason, goto works around it.
             goto     :Exit_Failure
         )
