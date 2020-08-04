@@ -5,6 +5,10 @@
           DependsOnTargets="SetCommonILLinkArgs">
 
     <PropertyGroup>
+      <LibrariesTrimmedArtifactsPath>$([MSBuild]::NormalizePath('$(ArtifactsBinDir)', 'ILLinkTrimAssembly', '$(BuildSettings)', 'trimmed-runtimepack'))</LibrariesTrimmedArtifactsPath>
+    </PropertyGroup>
+
+    <PropertyGroup>
       <!-- default action for core assemblies -->
       <ILLinkArgs>$(ILLinkArgs) -c link</ILLinkArgs>
       <!-- update debug symbols -->
