@@ -144,7 +144,7 @@ $(_XunitEpilog)
     <MSBuild Projects="$(XunitWrapperSrcDir)\$(XunitWrapper).csproj" Targets="Restore;Build" />
   </Target>
 
-  <Import Project="../coreclr/tests/testgrouping.proj" />
+  <Import Project="$(RepoRoot)/src/coreclr/tests/testgrouping.proj" />
 
   <Target Name="CreateXunitFacts">
     <!-- NOTE! semicolons must be escaped with %3B boooo -->
