@@ -4,7 +4,7 @@
     <PropertyGroup>
         <ArtifactsBinDir>$(BuildSourcesDirectory)/artifacts/bin/</ArtifactsBinDir>
         <MicrosoftNetCoreAppRefPackDir>$(ArtifactsBinDir)microsoft.netcore.app.ref</MicrosoftNetCoreAppRefPackDir>
-        <MicrosoftNetCoreAppRuntimePackDir>$(ArtifactsBinDir)microsoft.netcore.app.runtime.browser-wasm/$(Configuration)/runtimes/browser-wasm</MicrosoftNetCoreAppRuntimePackDir>
+        <MicrosoftNetCoreAppRuntimePackDir>$(ArtifactsBinDir)microsoft.netcore.app.runtime.browser-wasm/$(Configuration)</MicrosoftNetCoreAppRuntimePackDir>
     </PropertyGroup>
     <ItemGroup>
       <ResolvedTargetingPack Path="$(MicrosoftNetCoreAppRefPackDir.TrimEnd('/\'))"
