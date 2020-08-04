@@ -381,6 +381,17 @@ namespace System.IO
                 throw new IOException(SR.Format(SR.IO_AlreadyExists_Name, destFullPath));
             }
 
+#if TARGET_BROWSER
+            if (!Directory.Exists(Path.GetDirectoryName(sourceFullPath)))
+            {
+                throw new DirectoryNotFoundException(SR.Format(SR.IO_PathNotFound_Path, sourceFullPath));
+            }
+            if (!Directory.Exists(Path.GetDirectoryName(destFullPath)))
+            {
+                throw new DirectoryNotFoundException(SR.Format(SR.IO_PathNotFound_Path, destFullPath));
+            }
+#endif
+
             if (Interop.Sys.Rename(sourceFullPath, destFullPath) < 0)
             {
                 Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
