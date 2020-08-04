@@ -283,11 +283,16 @@ namespace System.Reflection
             if ((invocationFlags & INVOCATION_FLAGS.INVOCATION_FLAGS_NO_INVOKE) != 0)
                 ThrowNoInvokeException();
 
-            if ((invocationFlags & INVOCATION_FLAGS.INVOCATION_FLAGS_RUN_CLASS_CONSTRUCTOR) != 0)
-                RuntimeHelpers.RunClassConstructor(DeclaringType!.TypeHandle);
-
             // check basic method consistency. This call will throw if there are problems in the target/method relationship
             CheckConsistency(obj);
+
+            if ((invocationFlags & INVOCATION_FLAGS.INVOCATION_FLAGS_RUN_CLASS_CONSTRUCTOR) != 0)
+            {
+                // Run the class constructor through the class constructor mechanism instead of the Invoke path.
+                // This avoids allowing mutation of readonly static fields, and initializes the type correctly.
+                RuntimeHelpers.RunClassConstructor(DeclaringType!.TypeHandle);
+                return;
+            }
 
             Signature sig = Signature;
 

@@ -79,12 +79,13 @@ namespace System.Reflection.Tests
             Assert.Equal(0, ClassWithStaticConstructorThatIsCalledMultipleTimesViaReflection.VisibleStatics.s_cctorCallCount);
             object obj = constructors[0].Invoke(null, new object[] { });
             Assert.Null(obj);
-            Assert.Equal(2, ClassWithStaticConstructorThatIsCalledMultipleTimesViaReflection.VisibleStatics.s_cctorCallCount);
+            Assert.Equal(1, ClassWithStaticConstructorThatIsCalledMultipleTimesViaReflection.VisibleStatics.s_cctorCallCount);
 
-            // Subsequent invocations of the static cctor should run the cctor only once
+            // Subsequent invocations of the static cctor should not run the cctor at all, as it has already executed
+            // and running multiple times opens up the possibility of modifying read only static data
             obj = constructors[0].Invoke(null, new object[] { });
             Assert.Null(obj);
-            Assert.Equal(3, ClassWithStaticConstructorThatIsCalledMultipleTimesViaReflection.VisibleStatics.s_cctorCallCount);
+            Assert.Equal(1, ClassWithStaticConstructorThatIsCalledMultipleTimesViaReflection.VisibleStatics.s_cctorCallCount);
         }
 
         [Fact]
