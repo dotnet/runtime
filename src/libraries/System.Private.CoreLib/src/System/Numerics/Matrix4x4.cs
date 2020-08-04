@@ -1778,7 +1778,7 @@ namespace System.Numerics
 
                 AdvSimd.Store(&matrix.M11, AdvSimd.Arm64.ZipLow(P00, P10));
                 AdvSimd.Store(&matrix.M21, AdvSimd.Arm64.ZipHigh(P00, P10));
-                AdvSimd.Store(&matrix.M31, AdvSimd.Arm64.ZipLow(P00, P10));
+                AdvSimd.Store(&matrix.M31, AdvSimd.Arm64.ZipLow(P01, P11));
                 AdvSimd.Store(&matrix.M41, AdvSimd.Arm64.ZipHigh(P01, P11));
 
                 return matrix;
@@ -2155,10 +2155,10 @@ namespace System.Numerics
             Matrix4x4 m;
 
             // First row
-            m.M11 = (value1.M11 * value2.M11) + (value1.M12 * value2.M21) + value1.M13 * value2.M31 + value1.M14 * value2.M41;
-            m.M12 = (value1.M11 * value2.M12) + (value1.M12 * value2.M22) + value1.M13 * value2.M32 + value1.M14 * value2.M42;
-            m.M13 = (value1.M11 * value2.M13) + (value1.M12 * value2.M23) + value1.M13 * value2.M33 + value1.M14 * value2.M43;
-            m.M14 = (value1.M11 * value2.M14) + (value1.M12 * value2.M24) + value1.M13 * value2.M34 + value1.M14 * value2.M44;
+            m.M11 = value1.M11 * value2.M11 + value1.M12 * value2.M21 + value1.M13 * value2.M31 + value1.M14 * value2.M41;
+            m.M12 = value1.M11 * value2.M12 + value1.M12 * value2.M22 + value1.M13 * value2.M32 + value1.M14 * value2.M42;
+            m.M13 = value1.M11 * value2.M13 + value1.M12 * value2.M23 + value1.M13 * value2.M33 + value1.M14 * value2.M43;
+            m.M14 = value1.M11 * value2.M14 + value1.M12 * value2.M24 + value1.M13 * value2.M34 + value1.M14 * value2.M44;
 
             // Second row
             m.M21 = value1.M21 * value2.M11 + value1.M22 * value2.M21 + value1.M23 * value2.M31 + value1.M24 * value2.M41;
