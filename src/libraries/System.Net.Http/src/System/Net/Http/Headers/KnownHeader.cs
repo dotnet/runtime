@@ -9,6 +9,11 @@ namespace System.Net.Http.Headers
 {
     internal sealed class KnownHeader
     {
+        private readonly int? http2Index;
+        private byte[]? http2Name;
+        private readonly int? http3Index;
+        private byte[]? http3Name;
+
         public KnownHeader(string name, int? http2StaticTableIndex = null, int? http3StaticTableIndex = null) :
             this(name, HttpHeaderType.Custom, parser: null, knownValues: null, http2StaticTableIndex, http3StaticTableIndex)
         {
@@ -25,14 +30,8 @@ namespace System.Net.Http.Headers
             HeaderType = headerType;
             Parser = parser;
             KnownValues = knownValues;
-
-            Http2EncodedName = http2StaticTableIndex.HasValue ?
-                HPackEncoder.EncodeLiteralHeaderFieldWithoutIndexingToAllocatedArray(http2StaticTableIndex.GetValueOrDefault()) :
-                HPackEncoder.EncodeLiteralHeaderFieldWithoutIndexingNewNameToAllocatedArray(name);
-
-            Http3EncodedName = http3StaticTableIndex.HasValue ?
-                QPack.QPackEncoder.EncodeLiteralHeaderFieldWithStaticNameReferenceToArray(http3StaticTableIndex.GetValueOrDefault()) :
-                QPack.QPackEncoder.EncodeLiteralHeaderFieldWithoutNameReferenceToArray(name);
+            http2Index = http2StaticTableIndex;
+            http3Index = http3StaticTableIndex;
 
             var asciiBytesWithColonSpace = new byte[name.Length + 2]; // + 2 for ':' and ' '
             int asciiBytes = Encoding.ASCII.GetBytes(name, asciiBytesWithColonSpace);
@@ -52,7 +51,30 @@ namespace System.Net.Http.Headers
         public string[]? KnownValues { get; }
         public byte[] AsciiBytesWithColonSpace { get; }
         public HeaderDescriptor Descriptor => new HeaderDescriptor(this);
-        public byte[] Http2EncodedName { get; }
-        public byte[] Http3EncodedName { get; }
+        public byte[] Http2EncodedName
+        {
+            get
+            {
+                if (http2Name != null)
+                    return http2Name;
+
+                return http2Name = http2Index is int index ?
+                    HPackEncoder.EncodeLiteralHeaderFieldWithoutIndexingToAllocatedArray(index) :
+                    HPackEncoder.EncodeLiteralHeaderFieldWithoutIndexingNewNameToAllocatedArray(Name);
+            }
+        }
+
+        public byte[] Http3EncodedName
+        {
+            get
+            {
+                if (http3Name != null)
+                    return http3Name;
+
+                return http3Name = http3Index is int index ?
+                    QPack.QPackEncoder.EncodeLiteralHeaderFieldWithStaticNameReferenceToArray(index) :
+                    QPack.QPackEncoder.EncodeLiteralHeaderFieldWithoutNameReferenceToArray(Name);
+            }
+        }
     }
 }
