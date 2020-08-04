@@ -32,7 +32,7 @@ build_test_wrappers()
         __MsbuildErr="/fileloggerparameters2:\"ErrorsOnly;LogFile=${__BuildErr}\""
         __Logging="$__MsbuildLog $__MsbuildWrn $__MsbuildErr /consoleloggerparameters:$buildVerbosity"
 
-        nextCommand="\"${__DotNetCli}\" msbuild \"${__ProjectDir}/tests/src/runtest.proj\" /nodereuse:false /p:BuildWrappers=true /p:TestBuildMode=$__TestBuildMode /p:TargetsWindows=false $__Logging /p:TargetOS=$__TargetOS /p:Configuration=$__BuildType /p:TargetArchitecture=$__BuildArch /p:RuntimeFlavor=$__RuntimeFlavor \"/bl:${__RepoRootDir}/artifacts/log/${__BuildType}/build_test_wrappers_${__RuntimeFlavor}.binlog\" ${__UnprocessedBuildArgs[@]}"
+        nextCommand="\"${__DotNetCli}\" msbuild \"$__RepoRootDir/src/tests/run.proj\" /nodereuse:false /p:BuildWrappers=true /p:TestBuildMode=$__TestBuildMode /p:TargetsWindows=false $__Logging /p:TargetOS=$__TargetOS /p:Configuration=$__BuildType /p:TargetArchitecture=$__BuildArch /p:RuntimeFlavor=$__RuntimeFlavor \"/bl:${__RepoRootDir}/artifacts/log/${__BuildType}/build_test_wrappers_${__RuntimeFlavor}.binlog\" ${__UnprocessedBuildArgs[@]}"
         eval $nextCommand
         local exitCode="$?"
         if [[ "$exitCode" -ne 0 ]]; then
@@ -55,7 +55,7 @@ build_mono_aot()
     CORE_ROOT="$__TestBinDir"/Tests/Core_Root
     export __Exclude
     export CORE_ROOT
-    build_MSBuild_projects "Tests_MonoAot" "$__ProjectDir/tests/src/runtest.proj" "Mono AOT compile tests" "/t:MonoAotCompileTests" "/p:RuntimeFlavor=$__RuntimeFlavor" "/p:MonoLlvmPath=$__MonoBinDir"
+    build_MSBuild_projects "Tests_MonoAot" "$__RepoRootDir/src/tests/run.proj" "Mono AOT compile tests" "/t:MonoAotCompileTests" "/p:RuntimeFlavor=$__RuntimeFlavor" "/p:MonoLlvmPath=$__MonoBinDir"
 }
 
 generate_layout()
@@ -108,7 +108,7 @@ generate_layout()
     # ===
     # =========================================================================================
 
-    build_MSBuild_projects "Restore_Packages" "${__ProjectDir}/tests/build.proj" "Restore product binaries (build tests)" "/t:BatchRestorePackages"
+    build_MSBuild_projects "Restore_Packages" "$__RepoRootDir/src/tests/build.proj" "Restore product binaries (build tests)" "/t:BatchRestorePackages"
 
     if [[ -n "$__UpdateInvalidPackagesArg" ]]; then
         __up="/t:UpdateInvalidPackageVersions"
@@ -131,7 +131,7 @@ generate_layout()
 
     chmod +x "$__BinDir"/corerun
 
-    build_MSBuild_projects "Tests_Overlay_Managed" "${__ProjectDir}/tests/src/runtest.proj" "Creating test overlay" "/t:CreateTestOverlay"
+    build_MSBuild_projects "Tests_Overlay_Managed" "$__RepoRootDir/src/tests/run.proj" "Creating test overlay" "/t:CreateTestOverlay"
 
     if [[ "$__TargetOS" != "OSX" && "$__SkipStressDependencies" == 0 ]]; then
         nextCommand="\"${__RepoRootDir}/src/coreclr/tests/setup-stress-dependencies.sh\" --arch=$__BuildArch --outputDir=$CORE_ROOT"
@@ -359,7 +359,7 @@ build_Tests()
     # =========================================================================================
 
     if [[ "${__SkipRestorePackages}" != 1 ]]; then
-        build_MSBuild_projects "Restore_Product" "${__ProjectDir}/tests/build.proj" "Restore product binaries (build tests)" "/t:BatchRestorePackages"
+        build_MSBuild_projects "Restore_Product" "$__RepoRootDir/src/tests/build.proj" "Restore product binaries (build tests)" "/t:BatchRestorePackages"
 
         if [[ "$?" -ne 0 ]]; then
             echo "${__ErrMsgPrefix}${__MsgPrefix}Error: package restoration failed. Refer to the build log files for details (above)"
@@ -379,7 +379,7 @@ build_Tests()
     if [[ "$__SkipManaged" != 1 ]]; then
         echo "Starting the Managed Tests Build..."
 
-        build_MSBuild_projects "Tests_Managed" "$__ProjectDir/tests/build.proj" "Managed tests build (build tests)" "$__up"
+        build_MSBuild_projects "Tests_Managed" "$__RepoRootDir/src/tests/build.proj" "Managed tests build (build tests)" "$__up"
 
         if [[ "$?" -ne 0 ]]; then
             echo "${__ErrMsgPrefix}${__MsgPrefix}Error: managed test build failed. Refer to the build log files for details (above)"
@@ -387,7 +387,7 @@ build_Tests()
         else
             echo "Checking the Managed Tests Build..."
 
-            build_MSBuild_projects "Check_Test_Build" "${__ProjectDir}/tests/src/runtest.proj" "Check Test Build" "/t:CheckTestBuild"
+            build_MSBuild_projects "Check_Test_Build" "$__RepoRootDir/src/tests/run.proj" "Check Test Build" "/t:CheckTestBuild"
 
             if [[ "$?" -ne 0 ]]; then
                 echo "${__ErrMsgPrefix}${__MsgPrefix}Error: Check Test Build failed."
@@ -403,7 +403,7 @@ build_Tests()
     if [[ "$__CopyNativeTestBinaries" == 1 ]]; then
         echo "Copying native test binaries to output..."
 
-        build_MSBuild_projects "Tests_Managed" "$__ProjectDir/tests/build.proj" "Managed tests build (build tests)" "/t:CopyAllNativeProjectReferenceBinaries" "/bl:${__RepoRootDir}/artifacts/log/${__BuildType}/copy_native_test_binaries${__RuntimeFlavor}.binlog"
+        build_MSBuild_projects "Tests_Managed" "$__RepoRootDir/src/tests/build.proj" "Managed tests build (build tests)" "/t:CopyAllNativeProjectReferenceBinaries" "/bl:${__RepoRootDir}/artifacts/log/${__BuildType}/copy_native_test_binaries${__RuntimeFlavor}.binlog"
 
         if [[ "$?" -ne 0 ]]; then
             echo "${__ErrMsgPrefix}${__MsgPrefix}Error: copying native test binaries failed. Refer to the build log files for details (above)"
