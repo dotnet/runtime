@@ -6,7 +6,6 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Reflection;
 using System.Text.Json.Serialization;
-
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 
@@ -31,9 +30,9 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             };
 
             // Add additional references as needed.
-            if(additionalReferences != null)
+            if (additionalReferences != null)
             {
-                foreach(MetadataReference reference in additionalReferences)
+                foreach (MetadataReference reference in additionalReferences)
                 {
                     references.Add(reference);
                 }

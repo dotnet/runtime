@@ -4,7 +4,6 @@
 
 using System.Collections.Generic;
 using System.Reflection;
-
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Text;
@@ -18,7 +17,7 @@ namespace System.Text.Json.SourceGeneration
     [Generator]
     public class JsonSerializerSourceGenerator : ISourceGenerator
     {
-        public Dictionary<string, Type> foundTypes = new Dictionary<string, Type>();
+        public Dictionary<string, Type> FoundTypes = new Dictionary<string, Type>();
 
         public void Execute(SourceGeneratorContext context)
         {
@@ -40,7 +39,7 @@ namespace System.Text.Json.SourceGeneration
                 semanticModel = context.Compilation.GetSemanticModel(typeDeclarationNode.SyntaxTree);
                 namedTypeSymbol = (INamedTypeSymbol)semanticModel.GetDeclaredSymbol(typeDeclarationNode);
                 convertedType = new TypeWrapper(namedTypeSymbol, metadataLoadContext);
-                foundTypes[entry.Key] = convertedType;
+                FoundTypes[entry.Key] = convertedType;
             }
 
             foreach (KeyValuePair<string, IdentifierNameSyntax> entry in receiver.ExternalClassTypes)
@@ -49,39 +48,39 @@ namespace System.Text.Json.SourceGeneration
                 semanticModel = context.Compilation.GetSemanticModel(identifierNameNode.SyntaxTree);
                 typeSymbol = context.Compilation.GetSemanticModel(identifierNameNode.SyntaxTree).GetTypeInfo(identifierNameNode).ConvertedType;
                 convertedType = new TypeWrapper(typeSymbol, metadataLoadContext);
-                foundTypes[entry.Key] = convertedType;
+                FoundTypes[entry.Key] = convertedType;
             }
 
             // Create sources for all found types.
             StringBuilder member = new StringBuilder();
             string foundMethods, foundFields, foundProperties, foundCtorParams, foundCtors;
 
-            foreach (KeyValuePair<string, Type> entry in foundTypes)
+            foreach (KeyValuePair<string, Type> entry in FoundTypes)
             {
-                foreach(MethodInfo method in entry.Value.GetMethods())
+                foreach (MethodInfo method in entry.Value.GetMethods())
                 {
                     member.Append(@$"""{method.Name}"", "); 
                 }
                 foundMethods = member.ToString();
                 member.Clear();
 
-                foreach(FieldInfo field in entry.Value.GetFields())
+                foreach (FieldInfo field in entry.Value.GetFields())
                 {
                     member.Append(@$"{{""{field.Name}"", ""{field.FieldType.Name}""}}, "); 
                 }
                 foundFields = member.ToString();
                 member.Clear();
 
-                foreach(PropertyInfo property in entry.Value.GetProperties())
+                foreach (PropertyInfo property in entry.Value.GetProperties())
                 {
                     member.Append(@$"{{""{property.Name}"", ""{property.PropertyType.Name}""}}, "); 
                 }
                 foundProperties = member.ToString();
                 member.Clear();
 
-                foreach(ConstructorInfo ctor in entry.Value.GetConstructors())
+                foreach (ConstructorInfo ctor in entry.Value.GetConstructors())
                 {
-                    foreach(ParameterInfo param in ctor.GetParameters())
+                    foreach (ParameterInfo param in ctor.GetParameters())
                     {
                         member.Append(@$"{{""{param.Name}"", ""{param.ParameterType.Name}""}}, "); 
                     }
@@ -89,7 +88,7 @@ namespace System.Text.Json.SourceGeneration
                 foundCtorParams = member.ToString();
                 member.Clear();
 
-                foreach(ConstructorInfo ctor in entry.Value.GetConstructors())
+                foreach (ConstructorInfo ctor in entry.Value.GetConstructors())
                 {
                     member.Append($@"""{ctor.Name}"", ");
                 }

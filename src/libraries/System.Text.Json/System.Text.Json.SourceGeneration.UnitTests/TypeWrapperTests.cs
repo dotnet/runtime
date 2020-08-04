@@ -2,12 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Immutable;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-
 using Microsoft.CodeAnalysis;
-
 using Xunit;
 
 namespace System.Text.Json.SourceGeneration.UnitTests
@@ -30,8 +29,8 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             // Compile the referenced assembly first.
             Compilation referencedCompilation = CompilationHelper.CreateCompilation(referencedSource);
 
-            //// Emit the image of the referenced assembly.
-            byte[] referencedImage = null;
+            // Emit the image of the referenced assembly.
+            byte[] referencedImage;
             using (MemoryStream ms = new MemoryStream())
             {
                 var emitResult = referencedCompilation.Emit(ms);
@@ -64,14 +63,14 @@ namespace System.Text.Json.SourceGeneration.UnitTests
 
             JsonSerializerSourceGenerator generator = new JsonSerializerSourceGenerator();
 
-            Compilation newCompilation = CompilationHelper.RunGenerators(compilation, out var generatorDiags, generator);
+            Compilation newCompilation = CompilationHelper.RunGenerators(compilation, out ImmutableArray<Diagnostic> generatorDiags, generator);
 
             // Make sure compilation was successful.
             Assert.Empty(generatorDiags);
             Assert.Empty(newCompilation.GetDiagnostics());
 
             // Should find both types since compilation above was successful.
-            Assert.Equal(2, generator.foundTypes.Count);
+            Assert.Equal(2, generator.FoundTypes.Count);
         }
 
         [Fact]
@@ -116,33 +115,63 @@ namespace System.Text.Json.SourceGeneration.UnitTests
 
             JsonSerializerSourceGenerator generator = new JsonSerializerSourceGenerator();
 
-            Compilation outCompilation = CompilationHelper.RunGenerators(compilation, out var generatorDiags, generator);
+            Compilation outCompilation = CompilationHelper.RunGenerators(compilation, out ImmutableArray<Diagnostic> generatorDiags, generator);
 
             // Check base functionality of found types.
-            Assert.Equal(1, generator.foundTypes.Count);
-            Assert.Equal("HelloWorld.MyType", generator.foundTypes["MyType"].FullName);
+            Assert.Equal(1, generator.FoundTypes.Count);
+            Type foundType = generator.FoundTypes.First().Value;
 
-            Type foundType = generator.foundTypes.First().Value;
+            Assert.Equal("HelloWorld.MyType", foundType.FullName);
 
             // Check for ConstructorInfoWrapper attribute usage.
-            string[] receivedCtorAttributeNames = foundType.GetConstructors().SelectMany(ctor => ctor.GetCustomAttributesData()).Cast<CustomAttributeData>().Select(attributeData => attributeData.AttributeType.Name).ToArray();
-            Assert.Equal(receivedCtorAttributeNames, new string[] { "JsonConstructorAttribute" });
+            (string, string[])[] receivedCtorsWithAttributeNames = foundType.GetConstructors().Select(ctor => (ctor.DeclaringType.FullName, ctor.GetCustomAttributesData().Cast<CustomAttributeData>().Select(attributeData => attributeData.AttributeType.Name).ToArray())).ToArray();
+            Assert.Equal(
+                receivedCtorsWithAttributeNames,
+                new (string, string[])[] {
+                    ("HelloWorld.MyType", new string[] { }),
+                    ("HelloWorld.MyType", new string[] { "JsonConstructorAttribute" })
+                });
 
             // Check for MethodInfoWrapper attribute usage.
-            string[] receivedMethodAttributeNames = foundType.GetMethods().SelectMany(method => method.GetCustomAttributesData()).Cast<CustomAttributeData>().Select(attributeData => attributeData.AttributeType.Name).ToArray();
-            Assert.Equal(receivedMethodAttributeNames, new string[] { "ObsoleteAttribute" });
+            (string, string[])[] receivedMethodsWithAttributeNames = foundType.GetMethods().Select(method => (method.Name, method.GetCustomAttributesData().Cast<CustomAttributeData>().Select(attributeData => attributeData.AttributeType.Name).ToArray())).Where(x => x.Item2.Any()).ToArray();
+            Assert.Equal(
+                receivedMethodsWithAttributeNames,
+                new (string, string[])[] { ("MyMethod", new string[] { "ObsoleteAttribute" }) });
 
             // Check for FieldInfoWrapper attribute usage.
-            string[] receivedFieldAttributeNames = foundType.GetFields().SelectMany(field => field.GetCustomAttributesData()).Cast<CustomAttributeData>().Select(attributeData => attributeData.AttributeType.Name).ToArray();
-            Assert.Equal(receivedFieldAttributeNames, new string[] { "JsonIncludeAttribute", "JsonPropertyNameAttribute", "JsonIgnoreAttribute" });
+            (string, string[])[] receivedFieldsWithAttributeNames = foundType.GetFields().Select(field => (field.Name, field.GetCustomAttributesData().Cast<CustomAttributeData>().Select(attributeData => attributeData.AttributeType.Name).ToArray())).Where(x => x.Item2.Any()).ToArray();
+            Assert.Equal(
+                receivedFieldsWithAttributeNames,
+                new (string, string[])[] {
+                    ("PublicDouble", new string[] { "JsonIncludeAttribute" }),
+                    ("PublicChar", new string[] { "JsonPropertyNameAttribute" }),
+                    ("PrivateDouble", new string[] { "JsonIgnoreAttribute" } )
+                });
 
             // Check for PropertyInfoWrapper attribute usage.
-            string[] receivedPropertyAttributeNames = foundType.GetProperties().SelectMany(property => property.GetCustomAttributesData()).Cast<CustomAttributeData>().Select(attributeData => attributeData.AttributeType.Name).ToArray();
-            Assert.Equal(receivedPropertyAttributeNames, new string[] { "JsonPropertyNameAttribute", "JsonExtensionDataAttribute", "JsonIgnoreAttribute" });
+            (string, string[])[] receivedPropertyWithAttributeNames  = foundType.GetProperties().Select(property => (property.Name, property.GetCustomAttributesData().Cast<CustomAttributeData>().Select(attributeData => attributeData.AttributeType.Name).ToArray())).Where(x => x.Item2.Any()).ToArray();
+            Assert.Equal(
+                receivedPropertyWithAttributeNames,
+                new (string, string[])[] {
+                    ("PublicPropertyInt", new string[] { "JsonPropertyNameAttribute" }),
+                    ("PublicPropertyString", new string[] { "JsonExtensionDataAttribute" }),
+                    ("PrivatePropertyInt", new string[] { "JsonIgnoreAttribute" } )
+                });
 
             // Check for MemberInfoWrapper attribute usage.
-            string[] receivedMemberAttributeNames = foundType.GetMembers().SelectMany(member => member.GetCustomAttributesData()).Cast<CustomAttributeData>().Select(attributeData => attributeData.AttributeType.Name).ToArray();
-            Assert.Equal(receivedMemberAttributeNames, new string[] { "JsonIncludeAttribute", "JsonPropertyNameAttribute", "JsonIgnoreAttribute", "JsonConstructorAttribute", "JsonPropertyNameAttribute", "JsonExtensionDataAttribute", "JsonIgnoreAttribute", "ObsoleteAttribute" });
+            (string, string[])[] receivedMembersWithAttributeNames = foundType.GetMembers().Select(member => (member.Name, member.GetCustomAttributesData().Cast<CustomAttributeData>().Select(attributeData => attributeData.AttributeType.Name).ToArray())).Where(x => x.Item2.Any()).ToArray();
+            Assert.Equal(
+                receivedMembersWithAttributeNames,
+                new (string, string[])[] {
+                    ("PublicDouble", new string[] { "JsonIncludeAttribute" }),
+                    ("PublicChar", new string[] { "JsonPropertyNameAttribute" }),
+                    ("PrivateDouble", new string[] { "JsonIgnoreAttribute" } ),
+                    (".ctor", new string[] { "JsonConstructorAttribute" }),
+                    ("PublicPropertyInt", new string[] { "JsonPropertyNameAttribute" }),
+                    ("PublicPropertyString", new string[] { "JsonExtensionDataAttribute" }),
+                    ("PrivatePropertyInt", new string[] { "JsonIgnoreAttribute" } ),
+                    ("MyMethod", new string[] { "ObsoleteAttribute" }),
+                });
         }
     }
 }
