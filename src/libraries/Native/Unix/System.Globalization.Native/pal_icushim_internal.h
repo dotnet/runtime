@@ -46,16 +46,20 @@
 
 #include "icu.h"
 
-#ifndef __typeof
-#define __typeof decltype
-#endif
-
 #define HAVE_SET_MAX_VARIABLE 1
 #define UDAT_STANDALONE_SHORTER_WEEKDAYS 1
 
 #endif
 
 #include "pal_compiler.h"
+
+#ifndef TYPEOF
+#ifdef __cplusplus
+#define TYPEOF decltype
+#else
+#define TYPEOF __typeof
+#endif // __cplusplus
+#endif // TYPEOF
 
 #if !defined(STATIC_ICU)
 // List of all functions from the ICU libraries that are used in the System.Globalization.Native.so
@@ -180,7 +184,7 @@
     FOR_ALL_OS_CONDITIONAL_ICU_FUNCTIONS
 
 // Declare pointers to all the used ICU functions
-#define PER_FUNCTION_BLOCK(fn, lib) EXTERN_C __typeof(fn)* fn##_ptr;
+#define PER_FUNCTION_BLOCK(fn, lib) EXTERN_C TYPEOF(fn)* fn##_ptr;
 FOR_ALL_ICU_FUNCTIONS
 #undef PER_FUNCTION_BLOCK
 
