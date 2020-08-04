@@ -1781,9 +1781,7 @@ void PEDecoder::LayoutILOnly(void *base, BOOL allowFullPE) const
         DWORD newProtection = PAGE_READONLY;
 #else
         DWORD newProtection = section->Characteristics & IMAGE_SCN_MEM_EXECUTE ?
-            section->Characteristics & IMAGE_SCN_MEM_WRITE ?
-                PAGE_EXECUTE_READWRITE :
-                PAGE_EXECUTE_READ :
+            PAGE_EXECUTE_READ :
             section->Characteristics & IMAGE_SCN_MEM_WRITE ?
                 PAGE_READWRITE :
                 PAGE_READONLY;
