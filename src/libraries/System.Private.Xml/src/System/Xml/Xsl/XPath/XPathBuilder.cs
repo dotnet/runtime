@@ -113,17 +113,21 @@ namespace System.Xml.Xsl.XPath
             return _f.Double(value);
         }
 
-        public virtual QilNode Operator(XPathOperator op, QilNode left, QilNode right)
+        public virtual QilNode Operator(XPathOperator op, [AllowNull] QilNode left, [AllowNull] QilNode right)
         {
             Debug.Assert(op != XPathOperator.Unknown);
-            switch (s_operatorGroup[(int)op])
+            XPathOperatorGroup opGroup = s_operatorGroup[(int)op];
+
+            Debug.Assert((opGroup != XPathOperatorGroup.Negate && right != null) || (opGroup == XPathOperatorGroup.Negate && right == null));
+
+            switch (opGroup)
             {
-                case XPathOperatorGroup.Logical: return LogicalOperator(op, left, right);
-                case XPathOperatorGroup.Equality: return EqualityOperator(op, left, right);
-                case XPathOperatorGroup.Relational: return RelationalOperator(op, left, right);
-                case XPathOperatorGroup.Arithmetic: return ArithmeticOperator(op, left, right);
-                case XPathOperatorGroup.Negate: return NegateOperator(op, left, right);
-                case XPathOperatorGroup.Union: return UnionOperator(op, left, right);
+                case XPathOperatorGroup.Logical: return LogicalOperator(op, left!, right!);
+                case XPathOperatorGroup.Equality: return EqualityOperator(op, left!, right!);
+                case XPathOperatorGroup.Relational: return RelationalOperator(op, left!, right!);
+                case XPathOperatorGroup.Arithmetic: return ArithmeticOperator(op, left!, right!);
+                case XPathOperatorGroup.Negate: return NegateOperator(op, left!);
+                case XPathOperatorGroup.Union: return UnionOperator(op, left, right!);
                 default:
                     Debug.Fail(op + " is not a valid XPathOperator");
                     return null;
@@ -272,10 +276,9 @@ namespace System.Xml.Xsl.XPath
             }
         }
 
-        private QilNode NegateOperator(XPathOperator op, QilNode left, QilNode right)
+        private QilNode NegateOperator(XPathOperator op, QilNode left)
         {
             Debug.Assert(op == XPathOperator.UnaryMinus);
-            Debug.Assert(right == null);
             return _f.Negate(_f.ConvertToNumber(left));
         }
 
@@ -296,7 +299,7 @@ namespace System.Xml.Xsl.XPath
             }
         }
 
-        private QilNode UnionOperator(XPathOperator op, QilNode left, QilNode right)
+        private QilNode UnionOperator(XPathOperator op, QilNode? left, QilNode right)
         {
             Debug.Assert(op == XPathOperator.Union);
             if (left == null)
@@ -1043,10 +1046,10 @@ namespace System.Xml.Xsl.XPath
                 }
                 else
                 {
-                    Debug.Assert(argTypes != null);
+                    Debug.Assert(args.Count == 0 || argTypes != null);
                     for (int i = 0; i < args.Count; i++)
                     {
-                        if (argTypes[i] == XmlTypeCode.Node && f.CannotBeNodeSet(args[i]))
+                        if (argTypes![i] == XmlTypeCode.Node && f.CannotBeNodeSet(args[i]))
                         {
                             throw new XPathCompileException(SR.XPath_NodeSetArgumentExpected, name, (i + 1).ToString(CultureInfo.InvariantCulture));
                         }

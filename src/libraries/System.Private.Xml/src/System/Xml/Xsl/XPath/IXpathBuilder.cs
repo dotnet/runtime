@@ -23,7 +23,7 @@ namespace System.Xml.Xsl.XPath
 
         Node Number(double value);
 
-        Node Operator(XPathOperator op, Node left, Node right);
+        Node Operator(XPathOperator op, [AllowNull] Node left, [AllowNull] Node right);
 
         Node Axis(XPathAxis xpathAxis, XPathNodeType nodeType, string? prefix, string? name);
 

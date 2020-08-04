@@ -82,7 +82,7 @@ namespace System.Xml.Xsl.Xslt
             return result;
         }
 
-        public QilNode Operator(XPathOperator op, QilNode left, QilNode right)
+        public QilNode Operator(XPathOperator op, [AllowNull] QilNode left, [AllowNull] QilNode right)
         {
             Debug.Assert(op == XPathOperator.Union);
             Debug.Assert(left != null);

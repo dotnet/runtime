@@ -367,9 +367,7 @@ namespace System.Xml.Xsl.XPath
                 op = XPathOperator.UnaryMinus;
                 int opPrec = s_XPathOperatorPrecedence[(int)op];
                 _scanner.NextLex();
-                Node right = default;
-                Debug.Assert(right != null);
-                opnd = _builder!.Operator(op, ParseSubExpr(opPrec), right);
+                opnd = _builder!.Operator(op, ParseSubExpr(opPrec), default(Node));
             }
             else
             {
@@ -424,9 +422,7 @@ namespace System.Xml.Xsl.XPath
             if (_scanner.Kind == LexKind.Union)
             {
                 PushPosInfo(startChar, _scanner.PrevLexEnd);
-                Node left = default;
-                Debug.Assert(left != null);
-                opnd1 = _builder!.Operator(XPathOperator.Union, left, opnd1);
+                opnd1 = _builder!.Operator(XPathOperator.Union, default(Node), opnd1);
                 PopPosInfo();
 
                 while (_scanner.Kind == LexKind.Union)

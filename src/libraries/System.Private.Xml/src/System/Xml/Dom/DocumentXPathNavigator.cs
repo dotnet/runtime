@@ -2198,7 +2198,7 @@ namespace System.Xml
             do
             {
                 end = current;
-                current = NextSibling(node);
+                current = NextSibling(current);
             }
             while (current != null
                    && current.IsText);
