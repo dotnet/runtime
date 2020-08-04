@@ -139,7 +139,6 @@ showSubsetHelp()
 assertInstalledDependency()
 {
   dependency="$(echo "$1" | awk '{print tolower($0)}')"
-  echo "Checking for $dependency..."
 
   if ! which $dependency > /dev/null; then
     echo "$dependency is required to build this repo. Make sure to install it and try again."
@@ -148,11 +147,8 @@ assertInstalledDependency()
   fi
 }
 
-assertInstalledDependency 'python3'
 assertInstalledDependency 'git'
 assertInstalledDependency 'cmake'
-echo "All dependencies fulfilled! Initiating build..."
-exit 1
 
 arguments=''
 cmakeargs=''

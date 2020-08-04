@@ -102,9 +102,8 @@ function Get-Help() {
 
 function Assert-InstalledDependency($dependencyName)
 {
-  Write-Host "Checking for $dependencyName..."
-  if (((Get-ItemProperty HKLM:\Software\Microsoft\Windows\CurrentVersion\Uninstall\*).DisplayName -Match
-        $dependencyName).Length -le 0)
+  $envPath = $Env:Path
+  if (-Not $envPath -Match $dependencyName)
   {
     Write-Host "$dependencyName is required to build this repo. Make sure to install it and try again."
     Write-Host "For a full list of requirements, see https://github.com/dotnet/runtime/blob/master/docs/workflow/requirements/windows-requirements.md"
@@ -114,7 +113,6 @@ function Assert-InstalledDependency($dependencyName)
 
 function Assert-GitLongPathsEnabled()
 {
-  Write-Host "Ensuring Git Long Paths are enabled..."
   # This needs to be in a variable. Otherwise, Invoke-Command complains about
   # an incompatible cast.
   $gitscript = [scriptblock]::Create("git config --get core.longpaths")
@@ -125,7 +123,6 @@ function Assert-GitLongPathsEnabled()
     Write-Host "For a full list of requirements, see https://github.com/dotnet/runtime/blob/master/docs/workflow/requirements/windows-requirements.md"
     exit 1
   }
-  Write-Host "Done!"
 }
 
 if ($help -or (($null -ne $properties) -and ($properties.Contains('/help') -or $properties.Contains('/?')))) {
@@ -138,14 +135,9 @@ if ($subset -eq 'help') {
   exit 0
 }
 
-Write-Host ""
-Assert-InstalledDependency("Python 3")
 Assert-InstalledDependency("CMake")
 Assert-InstalledDependency("Git")
-Assert-InstalledDependency("Visual Studio")
 Assert-GitLongPathsEnabled
-Write-Host "All dependencies fulfilled! Initiating Build..."
-Write-Host ""
 exit 0
 
 if ($vs) {
