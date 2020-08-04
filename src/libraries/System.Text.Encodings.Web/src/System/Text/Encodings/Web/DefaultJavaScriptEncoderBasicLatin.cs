@@ -103,7 +103,7 @@ namespace System.Text.Encodings.Web
 #endif
             Debug.Assert(textLength > 0 && ptr < end);
 
-            // For performance on certain platforms, avoid referencing the static table for every value.
+            // For performance on the Mono interpreter, avoid referencing the static table for every value.
             ReadOnlySpan<byte> allowListLocal = AllowList;
 
             do
@@ -284,7 +284,7 @@ namespace System.Text.Encodings.Web
 #endif
                 Debug.Assert(textLength > 0 && ptr < end);
 
-                // For performance on certain platforms, avoid referencing the static table for every value.
+                // For performance on the Mono interpreter, avoid referencing the static table for every value.
                 ReadOnlySpan<byte> allowListLocal = AllowList;
 
                 do

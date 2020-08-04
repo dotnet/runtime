@@ -67,18 +67,27 @@ namespace System.Text.Json
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int IndexOfQuoteOrAnyControlOrBackSlash(this ReadOnlySpan<byte> span)
         {
+#if NETCOREAPP
+            if (Vector.IsHardwareAccelerated ||
+                System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported)
+#else
+            // RuntimeFeature.IsDynamicCodeSupported is not available on netstandard 2.0.
+            // Since the System.Text.Json package doesn't have a ns2.0-only assembly, just avoid
+            // RuntimeFeature.IsDynamicCodeSupported instead of adding a new ns2.0-only assembly.
+
             if (Vector.IsHardwareAccelerated)
+#endif
             {
-                // For performance, use unsafe pointers and Vector.
-                return IndexOfOrLessThan_Vector(
-                        ref MemoryMarshal.GetReference(span),
-                        JsonConstants.Quote,
-                        JsonConstants.BackSlash,
-                        lessThan: 32,   // Space ' '
-                        span.Length);
+                // For performance, use loop unrolling and\or Vector.
+                return IndexOfOrLessThan_LoopUnroll_And_Vector(
+                    ref MemoryMarshal.GetReference(span),
+                    JsonConstants.Quote,
+                    JsonConstants.BackSlash,
+                    lessThan: 32,   // Space ' '
+                    span.Length);
             }
 
-            // For performance, avoid unsafe pointers.
+            // For performance, avoid loop unrolling and unsafe pointers.
             return IndexOfOrLessThan(
                 span,
                 JsonConstants.Quote,
@@ -100,9 +109,8 @@ namespace System.Text.Json
             return -1;
         }
 
-        private static unsafe int IndexOfOrLessThan_Vector(ref byte searchSpace, byte value0, byte value1, byte lessThan, int length)
+        private static unsafe int IndexOfOrLessThan_LoopUnroll_And_Vector(ref byte searchSpace, byte value0, byte value1, byte lessThan, int length)
         {
-            Debug.Assert(Vector.IsHardwareAccelerated);
             Debug.Assert(length >= 0);
 
             uint uValue0 = value0; // Use uint for comparisons to avoid unnecessary 8->32 extensions
@@ -111,7 +119,7 @@ namespace System.Text.Json
             IntPtr index = (IntPtr)0; // Use IntPtr for arithmetic to avoid unnecessary 64->32->64 truncations
             IntPtr nLength = (IntPtr)length;
 
-            if (length >= Vector<byte>.Count * 2)
+            if (Vector.IsHardwareAccelerated && length >= Vector<byte>.Count * 2)
             {
                 int unaligned = (int)Unsafe.AsPointer(ref searchSpace) & (Vector<byte>.Count - 1);
                 nLength = (IntPtr)((Vector<byte>.Count - unaligned) & (Vector<byte>.Count - 1));
