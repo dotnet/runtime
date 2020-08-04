@@ -35,20 +35,20 @@ namespace System.Threading.Tests
         {
             ExecutionContext defaultEC = ExecutionContext.Capture();
             var asyncLocal = new AsyncLocal<int>();
-            VerifyExecutionContext(defaultEC, asyncLocal, 0);
+            Assert.Equal(0, asyncLocal.Value);
 
             asyncLocal.Value = 1;
             ExecutionContext oneEC = ExecutionContext.Capture();
-            VerifyExecutionContext(oneEC, asyncLocal, 1);
+            Assert.Equal(1, asyncLocal.Value);
 
             ExecutionContext.Restore(defaultEC);
-            VerifyExecutionContext(defaultEC, asyncLocal, 0);
+            Assert.Equal(0, asyncLocal.Value);
 
             ExecutionContext.Restore(oneEC);
-            VerifyExecutionContext(defaultEC, asyncLocal, 1);
+            Assert.Equal(1, asyncLocal.Value);
 
             ExecutionContext.Restore(defaultEC);
-            VerifyExecutionContext(defaultEC, asyncLocal, 0);
+            Assert.Equal(0, asyncLocal.Value);
         }
 
         [Fact]
