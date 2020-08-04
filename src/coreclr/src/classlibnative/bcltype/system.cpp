@@ -615,18 +615,7 @@ void QCALLTYPE SystemNative::X86BaseCpuId(int cpuInfo[4], int functionId, int su
 
     BEGIN_QCALL;
 
-#if defined(_MSC_VER)
     __cpuidex(cpuInfo, functionId, subFunctionId);
-#else
-    // Clang/GCC don't directly expose a __cpuidex intrinsic
-    // and instead expose __cpuid_count in cpuid.h. However,
-    // this isn't easily imported on macOS and can't be directly
-    // imported outside the PAL layer on Unix in general, so
-    // we will just reuse the function getextcpuid function
-    // already exposed instead. It swaps several of the parameters
-    // so we need to ensure they are passed in correctly.
-    getextcpuid(subFunctionId, functionId, cpuInfo);
-#endif
 
     END_QCALL;
 }
