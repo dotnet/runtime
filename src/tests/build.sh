@@ -11,7 +11,7 @@ build_test_wrappers()
             __RuntimeFlavor="coreclr"
         fi
 
-        __Exclude="${__ProjectDir}/tests/issues.targets"
+        __Exclude="$__RepoRootDir/src/tests/issues.targets"
         __BuildLogRootName="Tests_XunitWrapper"
 
         export __Exclude __BuildLogRootName
@@ -50,7 +50,7 @@ build_mono_aot()
 {
     __RuntimeFlavor="mono"
     __MonoBinDir="$__RootBinDir/bin/mono/$__TargetOS.$__BuildArch.$__BuildType"
-    __Exclude="${__ProjectDir}/tests/issues.targets"
+    __Exclude="$__RepoRootDir/src/tests/issues.targets"
     __TestBinDir="$__TestWorkingDir"
     CORE_ROOT="$__TestBinDir"/Tests/Core_Root
     export __Exclude
