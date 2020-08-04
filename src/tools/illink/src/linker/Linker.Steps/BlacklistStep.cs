@@ -91,10 +91,10 @@ namespace Mono.Linker.Steps
 									.Where (res => res.Name.Equals ("ILLink.LinkAttributes.xml", StringComparison.OrdinalIgnoreCase))
 									.Cast<EmbeddedResource> ()) {
 					try {
-						Context.LogMessage (MessageContainer.CreateInfoMessage ($"Processing embedded {rsc.Name} from {asm.Name}"));
+						Context.LogMessage ($"Processing embedded {rsc.Name} from {asm.Name}");
 						steps_to_add.Push (GetExternalLinkAttributesStep (rsc, asm));
 					} catch (XmlException ex) {
-						Context.LogMessage (MessageContainer.CreateErrorMessage ($"Error processing {rsc.Name} from {asm.Name}: {ex}", 1003));
+						Context.LogError ($"Error processing {rsc.Name} from {asm.Name}: {ex}", 1003);
 					}
 				}
 			}

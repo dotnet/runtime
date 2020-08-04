@@ -496,7 +496,11 @@ namespace Mono.Linker
 
 		public void LogMessage (MessageContainer message)
 		{
-			if (!LogMessages || message == MessageContainer.Empty)
+			if (message == MessageContainer.Empty)
+				return;
+
+			if ((message.Category == MessageCategory.Diagnostic ||
+				message.Category == MessageCategory.Info) && !LogMessages)
 				return;
 
 			if (message.Category == MessageCategory.Warning &&
@@ -549,9 +553,6 @@ namespace Mono.Linker
 		/// <returns>New MessageContainer of 'Warning' category</returns>
 		public void LogWarning (string text, int code, MessageOrigin origin, string subcategory = MessageSubCategory.None)
 		{
-			if (!LogMessages)
-				return;
-
 			var version = GetWarningVersion (code);
 
 			if ((GeneralWarnAsError && (!WarnAsError.TryGetValue ((uint) code, out var warnAsError) || warnAsError)) ||
@@ -606,9 +607,6 @@ namespace Mono.Linker
 		/// <returns>New MessageContainer of 'Error' category</returns>
 		public void LogError (string text, int code, string subcategory = MessageSubCategory.None, MessageOrigin? origin = null, bool isWarnAsError = false, WarnVersion? version = null)
 		{
-			if (!LogMessages)
-				return;
-
 			var error = MessageContainer.CreateErrorMessage (text, code, subcategory, origin, isWarnAsError, version);
 			LogMessage (error);
 		}
