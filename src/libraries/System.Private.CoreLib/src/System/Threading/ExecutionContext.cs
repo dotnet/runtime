@@ -199,7 +199,7 @@ namespace System.Threading
             edi?.Throw();
         }
 
-        internal static void Restore(ExecutionContext? executionContext)
+        public static void Restore(ExecutionContext? executionContext)
         {
             Thread currentThread = Thread.CurrentThread;
 
