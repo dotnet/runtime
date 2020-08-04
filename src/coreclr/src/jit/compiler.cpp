@@ -9294,7 +9294,7 @@ bool Compiler::lvaIsOSRLocal(unsigned varNum)
 //    basicBlock - basic block of the node.
 //
 // Notes:
-//    the function should not be called after lowering for platforms that does not support
+//    the function should not be called after lowering for platforms that do not support
 //    emitting NULLCHECK nodes, like arm32. Use `Lowering::TransformUnusedIndirection`
 //    that handles it and calls this function when appropriate.
 //
