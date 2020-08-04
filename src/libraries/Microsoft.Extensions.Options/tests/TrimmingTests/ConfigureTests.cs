@@ -24,7 +24,7 @@ class Program
         ServiceProvider provider = services.BuildServiceProvider();
 
         OptionsA optionsA = provider.GetService<IOptions<OptionsA>>().Value;
-        OptionsB optionsB = provider.GetService<IOptions<OptionsB>>().Value;
+        OptionsB optionsB = provider.GetService<IOptionsMonitor<OptionsB>>().CurrentValue;
         OptionsC optionsC = provider.GetService<IOptions<OptionsC>>().Value;
         OptionsD optionsD = provider.GetService<IOptionsFactory<OptionsD>>().Create(string.Empty);
 
