@@ -448,8 +448,7 @@ void TieredCompilationManager::DeactivateTieringDelay()
         COUNT_T methodCount = methodsPendingCounting->GetCount();
         CodeVersionManager *codeVersionManager = GetAppDomain()->GetCodeVersionManager();
 
-        MethodDescBackpatchInfoTracker::PollForDebuggerSuspension();
-        MethodDescBackpatchInfoTracker::ConditionalLockHolder slotBackpatchLockHolder;
+        MethodDescBackpatchInfoTracker::ConditionalLockHolderForGCCoop slotBackpatchLockHolder;
 
         // Backpatching entry point slots requires cooperative GC mode, see
         // MethodDescBackpatchInfoTracker::Backpatch_Locked(). The code version manager's table lock is an unsafe lock that
@@ -825,11 +824,8 @@ void TieredCompilationManager::ActivateCodeVersion(NativeCodeVersion nativeCodeV
     HRESULT hr = S_OK;
     {
         bool mayHaveEntryPointSlotsToBackpatch = pMethod->MayHaveEntryPointSlotsToBackpatch();
-        if (mayHaveEntryPointSlotsToBackpatch)
-        {
-            MethodDescBackpatchInfoTracker::PollForDebuggerSuspension();
-        }
-        MethodDescBackpatchInfoTracker::ConditionalLockHolder slotBackpatchLockHolder(mayHaveEntryPointSlotsToBackpatch);
+        MethodDescBackpatchInfoTracker::ConditionalLockHolderForGCCoop slotBackpatchLockHolder(
+            mayHaveEntryPointSlotsToBackpatch);
 
         // Backpatching entry point slots requires cooperative GC mode, see
         // MethodDescBackpatchInfoTracker::Backpatch_Locked(). The code version manager's table lock is an unsafe lock that
