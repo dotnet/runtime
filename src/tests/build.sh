@@ -693,7 +693,7 @@ __Mono=0
 __MonoAot=0
 CORE_ROOT=
 
-source "$__ProjectRoot"/_build-commons.sh
+source $__RepoRootDir/src/coreclr/_build-commons.sh
 
 if [[ "${__BuildArch}" != "${__HostArch}" ]]; then
     __CrossBuild=1
