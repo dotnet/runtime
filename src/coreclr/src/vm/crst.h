@@ -362,13 +362,14 @@ private:
     {
         m_dwFlags = 0;
     }
+
     // ------------------------------- Holders ------------------------------
- public:
-     //
-     // CrstHolder is optimized for the common use that takes the lock in constructor
-     // and releases it in destructor. Users that require all Holder features
-     // can use CrstHolderWithState.
-     //
+public:
+    //
+    // CrstHolder is optimized for the common use that takes the lock in constructor
+    // and releases it in destructor. Users that require all Holder features
+    // can use CrstHolderWithState.
+    //
     class CrstHolder
     {
         CrstBase * m_pCrst;
@@ -397,11 +398,22 @@ private:
     // Generally, it's better to use a regular CrstHolder, and then use the Release() / Acquire() methods on it.
     // This just exists to convert legacy OS Critical Section patterns over to holders.
     typedef DacHolder<CrstBase *, CrstBase::ReleaseLock, CrstBase::AcquireLock, 0, CompareDefault> UnsafeCrstInverseHolder;
+
+    class CrstAndForbidSuspendForDebuggerHolder
+    {
+    private:
+        CrstBase *m_pCrst;
+        Thread *m_pThreadForExitingForbidRegion;
+
+    public:
+        CrstAndForbidSuspendForDebuggerHolder(CrstBase *pCrst);
+        ~CrstAndForbidSuspendForDebuggerHolder();
+    };
 };
 
 typedef CrstBase::CrstHolder CrstHolder;
 typedef CrstBase::CrstHolderWithState CrstHolderWithState;
-
+typedef CrstBase::CrstAndForbidSuspendForDebuggerHolder CrstAndForbidSuspendForDebuggerHolder;
 
 // The CRST.
 class Crst : public CrstBase
