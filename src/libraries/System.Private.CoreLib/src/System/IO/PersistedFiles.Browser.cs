@@ -5,10 +5,6 @@ namespace System.IO
 {
     internal static partial class PersistedFiles
     {
-        internal static string GetHomeDirectory()
-        {
-            string? home = Environment.GetEnvironmentVariable("HOME");
-            return string.IsNullOrEmpty(home) ? "/" : home;
-        }
+        internal static string GetHomeDirectory() => Environment.GetEnvironmentVariable("HOME");
     }
 }
