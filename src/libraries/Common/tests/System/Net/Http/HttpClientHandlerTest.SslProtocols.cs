@@ -82,7 +82,7 @@ namespace System.Net.Http.Functional.Tests
             // explicitly specifying it in the client and when not.
             foreach  (SslProtocols protocol in Enum.GetValues(typeof(SslProtocols)))
             {
-                if (protocol != SslProtocolSupport.None && (protocol & SslProtocolSupport.SupportedSslProtocols) == protocol)
+                if (protocol != SslProtocols.None && (protocol & SslProtocolSupport.SupportedSslProtocols) == protocol)
                 {
                     yield return new object[] { protocol, false };
                     yield return new object[] { protocol, true };
@@ -104,7 +104,7 @@ namespace System.Net.Http.Functional.Tests
             }
 #pragma warning restore 0618
             // These protocols are new, and might not be enabled everywhere yet
-            if (PlatformDetection.PlatformDetection.SupportsTls13)
+            if (PlatformDetection.SupportsTls13)
             {
 #if !NETFRAMEWORK
                 yield return new object[] { SslProtocols.Tls13, false };
