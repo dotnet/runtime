@@ -80,10 +80,13 @@ namespace System.Net.Http.Functional.Tests
         {
             // These protocols are all enabled by default, so we can connect with them both when
             // explicitly specifying it in the client and when not.
-            foreach (SslProtocols protocol in new[] { SslProtocols.Tls, SslProtocols.Tls11, SslProtocols.Tls12 })
+            foreach  (SslProtocols protocol in Enum.GetValues(typeof(SslProtocols)))
             {
-                yield return new object[] { protocol, false };
-                yield return new object[] { protocol, true };
+                if (protocol != 0 && (protocol & SslProtocolSupport.SupportedSslProtocols) == protocol)
+                {
+                    yield return new object[] { protocol, false };
+                    yield return new object[] { protocol, true };
+                }
             }
 
             // These protocols are disabled by default, so we can only connect with them explicitly.
