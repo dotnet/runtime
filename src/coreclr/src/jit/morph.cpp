@@ -13752,16 +13752,10 @@ DONE_MORPHING_CHILDREN:
                                 // otherwise we have a load operation
                                 //
                                 // Do we have a non matching small type load?
-                                // we may need to insert a cast operation
+                                // if so we need to insert a cast operation
                                 else if (!matchingTypes)
                                 {
-                                    if (!varDsc->lvNormalizeOnLoad())
-                                    {
-                                        // Since we aren't normalizing on a loads
-                                        // we need to insert a cast here.
-                                        //
-                                        addCastToType = typ;
-                                    }
+                                    addCastToType = typ;
                                 }
                             }
                             // we will fold the IND/ADDR and reduce to just the local variable
