@@ -12,7 +12,7 @@ namespace wasm_test_driver
 {
     class Program
     {
-        static void Main(string[] args)
+        public static void Main(string[] args)
         {
 	    string testAssemblyFile;
 
