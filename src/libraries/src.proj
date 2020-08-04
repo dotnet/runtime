@@ -50,7 +50,7 @@
   </Target>
 
   <Import Condition="'$(BuildTargetFramework)' == '$(NetCoreAppCurrent)'"
-          Project="$(MSBuildThisFileDirectory)\illink-sharedframeworks.targets" />
+          Project="$(MSBuildThisFileDirectory)\illink-sharedframework.targets" />
 
   <Target Name="RunApiCompat"
           Condition="'@(ApiCompatProject)' != ''"
