@@ -518,14 +518,9 @@ namespace System.Text.Json.Serialization
     public partial class JsonConverterAttribute : System.Text.Json.Serialization.JsonAttribute
     {
         protected JsonConverterAttribute() { }
-#if NETCOREAPP && !NETCOREAPP3_0
         public JsonConverterAttribute([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] System.Type converterType) { }
         [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
         public System.Type? ConverterType { get { throw null; } }
-#else
-        public JsonConverterAttribute(System.Type converterType) { }
-        public System.Type? ConverterType { get { throw null; } }
-#endif
         public virtual System.Text.Json.Serialization.JsonConverter? CreateConverter(System.Type typeToConvert) { throw null; }
     }
     public abstract partial class JsonConverterFactory : System.Text.Json.Serialization.JsonConverter

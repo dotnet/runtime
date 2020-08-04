@@ -3169,6 +3169,7 @@ inline regMaskTP genIntAllRegArgMask(unsigned numRegs)
 
 inline regMaskTP genFltAllRegArgMask(unsigned numRegs)
 {
+#ifndef TARGET_X86
     assert(numRegs <= MAX_FLOAT_REG_ARG);
 
     regMaskTP result = RBM_NONE;
@@ -3177,6 +3178,10 @@ inline regMaskTP genFltAllRegArgMask(unsigned numRegs)
         result |= fltArgMasks[i];
     }
     return result;
+#else
+    assert(!"no x86 float arg regs\n");
+    return RBM_NONE;
+#endif
 }
 
 /*

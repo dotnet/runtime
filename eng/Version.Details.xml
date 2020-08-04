@@ -18,9 +18,9 @@
       <Uri>https://github.com/dotnet/arcade</Uri>
       <Sha>f6192d1e284a08ac05041d05fa6e60dec74b24f5</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.ApiCompat" Version="5.0.0-beta.20374.1">
+    <Dependency Name="Microsoft.DotNet.ApiCompat" Version="5.0.0-beta.20381.6">
       <Uri>https://github.com/dotnet/arcade</Uri>
-      <Sha>f6192d1e284a08ac05041d05fa6e60dec74b24f5</Sha>
+      <Sha>39c3b73c4b2b79981405e865e5a4fa096662f13a</Sha>
     </Dependency>
     <Dependency Name="Microsoft.DotNet.GenAPI" Version="5.0.0-beta.20374.1">
       <Uri>https://github.com/dotnet/arcade</Uri>
@@ -186,13 +186,13 @@
       <Uri>https://github.com/mono/linker</Uri>
       <Sha>7c9b806037e88df7eb40a8151808730133676668</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.XHarness.TestRunners.Xunit" Version="1.0.0-prerelease.20380.2">
+    <Dependency Name="Microsoft.DotNet.XHarness.TestRunners.Xunit" Version="1.0.0-prerelease.20402.1">
       <Uri>https://github.com/dotnet/xharness</Uri>
-      <Sha>277bae290e5be657e4b8f2a5b77ab764e5cf9ccc</Sha>
+      <Sha>2cb87a26217ee107e7d764770c44d986b4333c10</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.XHarness.CLI" Version="1.0.0-prerelease.20380.2">
+    <Dependency Name="Microsoft.DotNet.XHarness.CLI" Version="1.0.0-prerelease.20402.1">
       <Uri>https://github.com/dotnet/xharness</Uri>
-      <Sha>277bae290e5be657e4b8f2a5b77ab764e5cf9ccc</Sha>
+      <Sha>2cb87a26217ee107e7d764770c44d986b4333c10</Sha>
     </Dependency>
   </ToolsetDependencies>
 </Dependencies>

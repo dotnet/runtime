@@ -8,6 +8,7 @@ XX                               Lower                                       XX
 XX                                                                           XX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 */
 
 #ifndef _LOWER_H_
@@ -531,6 +532,8 @@ public:
     // Return true if 'node' is a containable HWIntrinsic op.
     bool IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* containingNode, GenTree* node, bool* supportsRegOptional);
 #endif // FEATURE_HW_INTRINSICS
+
+    static void TransformUnusedIndirection(GenTreeIndir* ind, Compiler* comp, BasicBlock* block);
 
 private:
     static bool NodesAreEquivalentLeaves(GenTree* candidate, GenTree* storeInd);
