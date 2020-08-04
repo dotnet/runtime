@@ -1112,9 +1112,9 @@ namespace System.Net.Http
 
                         if (sendSize == -1)
                         {
+                            // Logically this is part of the else block above, but we can't await while holding the lock.
                             Debug.Assert(_creditWaiter != null);
                             sendSize = await _creditWaiter.AsValueTask().ConfigureAwait(false);
-                            _creditWaiter.UnregisterCancellation();
                         }
 
                         ReadOnlyMemory<byte> current;
