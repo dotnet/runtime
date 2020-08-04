@@ -218,7 +218,16 @@ namespace System.Globalization.Tests
             Assert.Equal(geoId, ri.GeoId);
             Assert.True(currencyEnglishName.Equals(ri.CurrencyEnglishName) ||
                         alternativeCurrencyEnglishName.Equals(ri.CurrencyEnglishName), "Wrong currency English Name");
-            Assert.Equal(currencyNativeName, ri.CurrencyNativeName);
+
+            if (PlatformDetection.IsBrowser)
+            {
+                // Browser's ICU doesn't support CurrencyNativeName
+                Assert.Equal(currencyEnglishName, ri.CurrencyNativeName);
+            }
+            else
+            {
+                Assert.Equal(currencyNativeName, ri.CurrencyNativeName);
+            }
             Assert.Equal(threeLetterISORegionName, ri.ThreeLetterISORegionName);
             Assert.Equal(threeLetterWindowsRegionName, ri.ThreeLetterWindowsRegionName);
         }
