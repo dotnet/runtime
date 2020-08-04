@@ -382,6 +382,8 @@ namespace System.IO
             }
 
 #if TARGET_BROWSER
+            // renaming a file doesn't return correct error code on emscripten if one of the parent paths does not exist,
+            // manually workaround it for now (https://github.com/dotnet/runtime/issues/40305)
             if (!Directory.Exists(Path.GetDirectoryName(sourceFullPath)))
             {
                 throw new DirectoryNotFoundException(SR.Format(SR.IO_PathNotFound_Path, sourceFullPath));
