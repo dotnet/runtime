@@ -6,6 +6,8 @@
 #include "sigbuilder.h"
 #include "ex.h"
 
+const mdToken g_tkCorEncodeToken[4] ={mdtTypeDef, mdtTypeRef, mdtTypeSpec, mdtBaseType};
+
 void SigBuilder::AppendByte(BYTE b)
 {
     STANDARD_VM_CONTRACT;
