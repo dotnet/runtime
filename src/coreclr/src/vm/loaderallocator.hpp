@@ -23,6 +23,7 @@ class FuncPtrStubs;
 #include "methoddescbackpatchinfo.h"
 #include "crossloaderallocatorhash.h"
 #include "onstackreplacement.h"
+#include "lockedrangelist.h"
 
 #define VPTRU_LoaderAllocator 0x3200
 
@@ -405,6 +406,13 @@ public:
     virtual LoaderAllocatorID* Id() =0;
     BOOL IsCollectible() { WRAPPER_NO_CONTRACT; return m_IsCollectible; }
 
+    // This function may only be called while the runtime is suspended
+    // As it does not lock around access to a RangeList
+    static PTR_LoaderAllocator GetAssociatedLoaderAllocator_Unsafe(TADDR ptr);
+
+    static void AssociateMemoryWithLoaderAllocator(BYTE *start, const BYTE *end, LoaderAllocator* pLoaderAllocator);
+    static void RemoveMemoryToLoaderAllocatorAssociation(LoaderAllocator* pLoaderAllocator);
+
 #ifdef DACCESS_COMPILE
     void EnumMemoryRegions(CLRDataEnumMemoryFlags flags);
 #endif
@@ -627,11 +635,15 @@ typedef VPTR(LoaderAllocator) PTR_LoaderAllocator;
 
 class GlobalLoaderAllocator : public LoaderAllocator
 {
+    friend class LoaderAllocator;
     VPTR_VTABLE_CLASS(GlobalLoaderAllocator, LoaderAllocator)
     VPTR_UNIQUE(VPTRU_LoaderAllocator+1)
 
     DAC_ALIGNAS(LoaderAllocator) // Align the first member to the alignment of the base class
     BYTE                m_ExecutableHeapInstance[sizeof(LoaderHeap)];
+
+    // Associate memory regions with loader allocator objects
+    LockedRangeList     m_memoryAssociations;
 
 protected:
     LoaderAllocatorID m_Id;
@@ -711,7 +723,6 @@ private:
 };
 
 typedef VPTR(AssemblyLoaderAllocator) PTR_AssemblyLoaderAllocator;
-
 
 #include "loaderallocator.inl"
 
