@@ -1,8 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#nullable enable
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Xml.XPath;
 
 namespace System.Xml.Xsl.XPath
@@ -13,7 +15,9 @@ namespace System.Xml.Xsl.XPath
         void StartBuild();
 
         // Should be called after build for result tree post-processing
-        Node EndBuild(Node result);
+        [return: MaybeNull]
+        [return: NotNullIfNotNull("result")]
+        Node EndBuild([AllowNull] Node result);
 
         Node String(string value);
 
@@ -21,7 +25,7 @@ namespace System.Xml.Xsl.XPath
 
         Node Operator(XPathOperator op, Node left, Node right);
 
-        Node Axis(XPathAxis xpathAxis, XPathNodeType nodeType, string prefix, string name);
+        Node Axis(XPathAxis xpathAxis, XPathNodeType nodeType, string? prefix, string? name);
 
         Node JoinStep(Node left, Node right);
 

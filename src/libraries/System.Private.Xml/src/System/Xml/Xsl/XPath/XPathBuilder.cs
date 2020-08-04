@@ -1,8 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#nullable enable
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Xml.Schema;
 using System.Xml.XPath;
@@ -69,7 +71,9 @@ namespace System.Xml.Xsl.XPath
             numFixupCurrent = numFixupPosition = numFixupLast = 0;
         }
 
-        public virtual QilNode EndBuild(QilNode result)
+        [return: MaybeNull]
+        [return: NotNullIfNotNull("result")]
+        public virtual QilNode EndBuild([AllowNull] QilNode result)
         {
             if (result == null)
             { // special door to clean builder state in exception handlers
@@ -321,7 +325,7 @@ namespace System.Xml.Xsl.XPath
             );
         }
 
-        private QilNode BuildAxisFilter(QilNode qilAxis, XPathAxis xpathAxis, XPathNodeType nodeType, string name, string nsUri)
+        private QilNode BuildAxisFilter(QilNode qilAxis, XPathAxis xpathAxis, XPathNodeType nodeType, string? name, string? nsUri)
         {
             XmlNodeKindFlags original = qilAxis.XmlType.NodeKinds;
             XmlNodeKindFlags required = AxisTypeMask(original, nodeType, xpathAxis);
@@ -383,7 +387,7 @@ namespace System.Xml.Xsl.XPath
                 /*All                  */ XmlNodeKindFlags.Any
         };
 
-        private QilNode BuildAxis(XPathAxis xpathAxis, XPathNodeType nodeType, string nsUri, string name)
+        private QilNode BuildAxis(XPathAxis xpathAxis, XPathNodeType nodeType, string? nsUri, string? name)
         {
             QilNode currentNode = GetCurrentNode();
             QilNode qilAxis;
@@ -406,7 +410,7 @@ namespace System.Xml.Xsl.XPath
                 // Can be done using BuildAxisFilter() but f.Root() sets wrong XmlNodeKindFlags
                 case XPathAxis.Root: return _f.Root(currentNode);
                 default:
-                    qilAxis = null;
+                    qilAxis = null!;
                     Debug.Fail("Invalid EnumValue 'XPathAxis'");
                     break;
             }
@@ -425,9 +429,9 @@ namespace System.Xml.Xsl.XPath
             return result;
         }
 
-        public virtual QilNode Axis(XPathAxis xpathAxis, XPathNodeType nodeType, string prefix, string name)
+        public virtual QilNode Axis(XPathAxis xpathAxis, XPathNodeType nodeType, string? prefix, string? name)
         {
-            string nsUri = prefix == null ? null : _environment.ResolvePrefix(prefix);
+            string? nsUri = prefix == null ? null : _environment.ResolvePrefix(prefix);
             return BuildAxis(xpathAxis, nodeType, nsUri, name);
         }
 
@@ -557,7 +561,7 @@ namespace System.Xml.Xsl.XPath
             Debug.Assert(!args.IsReadOnly, "Writable collection expected");
             if (prefix.Length == 0)
             {
-                FunctionInfo func;
+                FunctionInfo? func;
                 if (FunctionTable.TryGetValue(name, out func))
                 {
                     func.CastArguments(args, name, _f);
@@ -827,10 +831,10 @@ namespace System.Xml.Xsl.XPath
         {
             private new readonly QilPatternFactory f;
             private readonly QilNode _fixupCurrent, _fixupPosition, _fixupLast; // fixup nodes we are replacing
-            private QilIterator _current;
-            private QilNode _last;               // expressions we are using to replace fixupNodes
+            private QilIterator? _current;
+            private QilNode? _last;               // expressions we are using to replace fixupNodes
             private bool _justCount;          // Don't change tree, just count
-            private IXPathEnvironment _environment;  // temp solution
+            private IXPathEnvironment? _environment;  // temp solution
             public int numCurrent, numPosition, numLast; // here we are counting all replacements we have made
 
             public FixupVisitor(QilPatternFactory f, QilNode fixupCurrent, QilNode fixupPosition, QilNode fixupLast) : base(f.BaseFactory)
@@ -841,7 +845,7 @@ namespace System.Xml.Xsl.XPath
                 _fixupLast = fixupLast;
             }
 
-            public QilNode Fixup(QilNode inExpr, QilIterator current, QilNode last)
+            public QilNode Fixup(QilNode inExpr, QilIterator current, QilNode? last)
             {
                 QilDepthChecker.Check(inExpr);
                 _current = current;
@@ -975,11 +979,11 @@ namespace System.Xml.Xsl.XPath
             public T id;
             public int minArgs;
             public int maxArgs;
-            public XmlTypeCode[] argTypes;
+            public XmlTypeCode[]? argTypes;
 
             public const int Infinity = int.MaxValue;
 
-            public FunctionInfo(T id, int minArgs, int maxArgs, XmlTypeCode[] argTypes)
+            public FunctionInfo(T id, int minArgs, int maxArgs, XmlTypeCode[]? argTypes)
             {
                 Debug.Assert(maxArgs == 0 || maxArgs == Infinity || argTypes != null && argTypes.Length == maxArgs);
                 this.id = id;
@@ -1039,6 +1043,7 @@ namespace System.Xml.Xsl.XPath
                 }
                 else
                 {
+                    Debug.Assert(argTypes != null);
                     for (int i = 0; i < args.Count; i++)
                     {
                         if (argTypes[i] == XmlTypeCode.Node && f.CannotBeNodeSet(args[i]))
