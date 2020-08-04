@@ -15,9 +15,7 @@ extern "C"
         // Based on the Clang implementation provided in cpuid.h:
         // https://github.com/llvm/llvm-project/blob/master/clang/lib/Headers/cpuid.h
 
-        __asm("  xchgq  %%rbx,%q1\n" \
-              "  cpuid\n" \
-              "  xchgq  %%rbx,%q1" \
+        __asm("  cpuid\n" \
             : "=a"(cpuInfo[0]), "=r"(cpuInfo[1]), "=c"(cpuInfo[2]), "=d"(cpuInfo[3]) \
             : "0"(function_id)
         );
@@ -28,9 +26,7 @@ extern "C"
         // Based on the Clang implementation provided in cpuid.h:
         // https://github.com/llvm/llvm-project/blob/master/clang/lib/Headers/cpuid.h
 
-        __asm("  xchgq  %%rbx,%q1\n" \
-              "  cpuid\n" \
-              "  xchgq  %%rbx,%q1" \
+        __asm("  cpuid\n" \
             : "=a"(cpuInfo[0]), "=r"(cpuInfo[1]), "=c"(cpuInfo[2]), "=d"(cpuInfo[3]) \
             : "0"(function_id), "2"(subFunction_id)
         );
