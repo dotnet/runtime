@@ -317,4 +317,6 @@ public:
     virtual void Shutdown();
 };
 
+void reportGenerationBounds();
+
 #endif  // GCIMPL_H_

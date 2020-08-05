@@ -15,7 +15,7 @@
 int event_pipe_state = 0;
 EventPipeSession* pEventPipeSession = nullptr;
 uint64_t sessionId = (uint64_t)-1;
-bool gcGenAnalysis = false;
+int gcGenAnalysis = 0;
 int64_t gcGenAnalysisGen = 999;
 int64_t gcGenAnalysisBytes = 0;
 
@@ -30,18 +30,25 @@ void GCToEEInterface::SuspendEE(SUSPEND_REASON reason)
 
     g_pDebugInterface->SuspendForGarbageCollectionStarted();
     
-    if (GetIntConfigValue("GCGenAnalysisGen", nullptr, &gcGenAnalysisGen))
+    if (gcGenAnalysis == 0)
     {
-        if (GetIntConfigValue("GCGenAnalysisBytes", nullptr, &gcGenAnalysisBytes))
+        if (GetIntConfigValue("GCGenAnalysisGen", nullptr, &gcGenAnalysisGen))
         {
-            gcGenAnalysis = true;
+            if (GetIntConfigValue("GCGenAnalysisBytes", nullptr, &gcGenAnalysisBytes))
+            {
+                gcGenAnalysis = 1;
+            }
+            else
+            {
+                gcGenAnalysis = 2;
+            }
         }
     }
-    if (gcGenAnalysis && event_pipe_state == 0)
+    if (gcGenAnalysis == 1 && event_pipe_state == 0)
     {
         event_pipe_state = 1;
         LPCWSTR outputPath = nullptr;
-        outputPath = W("trace.nettrace");        
+        outputPath = W("gcgenaware.nettrace");
         NewHolder<EventPipeProviderConfiguration> pProviders = nullptr;
         int providerCnt = 1;
         pProviders = new EventPipeProviderConfiguration[providerCnt];
@@ -1652,7 +1659,7 @@ void GCToEEInterface::AnalyzeSurvivorsFinished(int condemnedGeneration, uint64_t
     
     if (event_pipe_state == 1)
     {
-        if (condemnedGeneration == gcGenAnalysisGen && promoted_bytes > (uint64_t)gcGenAnalysisBytes)
+        if (condemnedGeneration == gcGenAnalysisGen && (promoted_bytes > (uint64_t)gcGenAnalysisBytes))
         {
             event_pipe_state = 2;
             pEventPipeSession->Resume();

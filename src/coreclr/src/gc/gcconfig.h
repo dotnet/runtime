@@ -130,7 +130,7 @@ public:
     INT_CONFIG   (GCHeapHardLimitLOHPercent, "GCHeapHardLimitLOHPercent", "System.GC.HeapHardLimitLOHPercent", 0,        "Specifies the GC heap LOH usage as a percentage of the total memory")                    \
     INT_CONFIG   (GCHeapHardLimitPOHPercent, "GCHeapHardLimitPOHPercent", "System.GC.HeapHardLimitPOHPercent", 0,        "Specifies the GC heap POH usage as a percentage of the total memory")                    \
     INT_CONFIG   (GCEnabledInstructionSets,  "GCEnabledInstructionSets",  NULL,                                -1,       "Specifies whether GC can use AVX2 or AVX512F - 0 for neither, 1 for AVX2, 3 for AVX512F")\
-    INT_CONFIG   (GCGenAnalysisGen,       "GCGenAnalysisGen",       NULL,                             999,               "Specifies which generation to analysis")                                                 \
+    INT_CONFIG   (GCGenAnalysisGen,       "GCGenAnalysisGen",       NULL,                             -1,                "Specifies which generation to analysis")                                                 \
     INT_CONFIG   (GCGenAnalysisBytes,     "GCGenAnalysisBytes",     NULL,                             0,                 "Specifies how much promoted bytes to trigger generation analysis")                       \
 
 // This class is responsible for retreiving configuration information
