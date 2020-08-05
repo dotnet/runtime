@@ -13,8 +13,8 @@ namespace Mono.Linker.Tests.Cases.Warnings.WarningSuppression
 	[KeptAssembly ("library.dll")]
 	[SetupLinkerAction ("link", "library.dll")]
 	[SetupLinkerArgument ("--verbose")]
-	[SetupLinkerArgument ("--generate-warning-suppressions")]
-	public class CanGenerateWarningSuppressionFile
+	[SetupLinkerArgument ("--generate-warning-suppressions", "cs")]
+	public class CanGenerateWarningSuppressionFileCSharp
 	{
 		public static void Main ()
 		{
@@ -36,7 +36,7 @@ namespace Mono.Linker.Tests.Cases.Warnings.WarningSuppression
 		[Kept]
 		public static Type TriggerUnrecognizedPattern ()
 		{
-			return typeof (CanGenerateWarningSuppressionFile);
+			return typeof (CanGenerateWarningSuppressionFileCSharp);
 		}
 
 		[Kept]

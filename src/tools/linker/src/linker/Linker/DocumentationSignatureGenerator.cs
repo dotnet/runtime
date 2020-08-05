@@ -16,6 +16,12 @@ namespace Mono.Linker
 	/// </summary>
 	public sealed partial class DocumentationSignatureGenerator
 	{
+		internal const string MethodPrefix = "M:";
+		internal const string FieldPrefix = "F:";
+		internal const string EventPrefix = "E:";
+		internal const string PropertyPrefix = "P:";
+		internal const string TypePrefix = "T:";
+
 		public static readonly DocumentationSignatureGenerator Instance = new DocumentationSignatureGenerator ();
 
 		private DocumentationSignatureGenerator ()
@@ -47,31 +53,31 @@ namespace Mono.Linker
 
 		private void VisitMethod (MethodDefinition method, StringBuilder builder)
 		{
-			builder.Append ("M:");
+			builder.Append (MethodPrefix);
 			PartVisitor.Instance.VisitMethodDefinition (method, builder);
 		}
 
 		private void VisitField (FieldDefinition field, StringBuilder builder)
 		{
-			builder.Append ("F:");
+			builder.Append (FieldPrefix);
 			PartVisitor.Instance.VisitField (field, builder);
 		}
 
 		private void VisitEvent (EventDefinition evt, StringBuilder builder)
 		{
-			builder.Append ("E:");
+			builder.Append (EventPrefix);
 			PartVisitor.Instance.VisitEvent (evt, builder);
 		}
 
 		private void VisitProperty (PropertyDefinition property, StringBuilder builder)
 		{
-			builder.Append ("P:");
+			builder.Append (PropertyPrefix);
 			PartVisitor.Instance.VisitProperty (property, builder);
 		}
 
 		private void VisitTypeDefinition (TypeDefinition type, StringBuilder builder)
 		{
-			builder.Append ("T:");
+			builder.Append (TypePrefix);
 			PartVisitor.Instance.VisitTypeReference (type, builder);
 		}
 	}

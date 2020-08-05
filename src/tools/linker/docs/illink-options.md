@@ -170,12 +170,14 @@ warnings.
 
 ### Generating warning suppressions
 
-For each of the linked assemblies that triggered any warnings during the linking, the
-`--generate-warning-suppressions` option will generate a file containing a list with the
-necessary attributes to suppres these. The attributes contained in this files are
-assembly-level attributes of type `UnconditionalSuppressMessage` specifying the required
-`Scope` and `Target` properties for each of the warnings seen. The generated files are
-saved in the ouput directory and named `<AssemblyName>.WarningSuppressions.cs`.
+For each of the linked assemblies that triggered any warnings during linking, the
+`--generate-warning-suppressions [cs | xml]` option will generate a file containing a list
+with the necessary attributes to suppress these. The generated files can either be C# source
+files or XML files in a [format](data-formats.md#custom-attributes-annotations-format) that is supported by the linker,
+the emitted format depends upon the argument that is passed to this option (`cs` or `xml`.)
+The attributes contained in these files are assembly-level attributes of type `UnconditionalSuppressMessage`
+specifying the required `Scope` and `Target` properties for each of the warnings seen. The
+generated files are saved in the output directory and named `<AssemblyName>.WarningSuppressions.<extension>`.
 
 ## monolinker specific options
 

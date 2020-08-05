@@ -69,6 +69,10 @@ the error code. For example:
 
 - The value given for the --warn argument was not a valid warning version. Valid versions include integers in the range 0-9999, though not all of these map to distinct warning waves.
 
+#### `IL1017`: Invalid value 'value' for '--generate-warning-suppressions' option
+
+- Invalid value 'value' was used for command-line option '--generate-warning-suppressions'; must be 'cs' or 'xml'.
+
 ----
 ## Warning Codes
 

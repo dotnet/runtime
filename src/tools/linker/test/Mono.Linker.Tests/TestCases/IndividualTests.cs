@@ -58,9 +58,9 @@ namespace Mono.Linker.Tests.TestCases
 		}
 
 		[Test]
-		public void CanGenerateWarningSuppressionFile ()
+		public void CanGenerateWarningSuppressionFileCSharp ()
 		{
-			var testcase = CreateIndividualCase (typeof (CanGenerateWarningSuppressionFile));
+			var testcase = CreateIndividualCase (typeof (CanGenerateWarningSuppressionFileCSharp));
 			var result = Run (testcase);
 			string[] expectedAssemblies = new string[] { "test", "library" };
 
@@ -72,6 +72,19 @@ namespace Mono.Linker.Tests.TestCases
 				Assert.IsTrue (File.ReadAllLines (outputPath).SequenceEqual (
 					File.ReadAllLines (TestsDirectory.Combine ($"TestCases/Dependencies/WarningSuppressionExpectations{i + 1}.cs"))));
 			}
+		}
+
+		[Test]
+		public void CanGenerateWarningSuppressionFileXml ()
+		{
+			var testcase = CreateIndividualCase (typeof (CanGenerateWarningSuppressionFileXml));
+			var result = Run (testcase);
+			var outputPath = result.OutputAssemblyPath.Parent.Combine ("library.WarningSuppressions.xml");
+			if (!outputPath.Exists ())
+				Assert.Fail ($"An XML file with a list of UnconditionalSuppressMessage attributes was expected to exist at {outputPath}");
+
+			Assert.IsTrue (File.ReadAllLines (outputPath).SequenceEqual (
+				File.ReadAllLines (TestsDirectory.Combine ($"TestCases/Dependencies/WarningSuppressionExpectations3.xml"))));
 		}
 
 		[Test]
