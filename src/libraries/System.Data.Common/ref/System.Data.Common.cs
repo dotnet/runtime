@@ -2441,6 +2441,13 @@ namespace System.Data.Common
         public virtual System.Threading.Tasks.ValueTask DisposeAsync() { throw null; }
         public abstract void Rollback();
         public virtual System.Threading.Tasks.Task RollbackAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public virtual bool SupportsSavepoints { get { throw null; } }
+        public virtual System.Threading.Tasks.Task SaveAsync(string savepointName, System.Threading.CancellationToken cancellationToken = default) { throw null; }
+        public virtual System.Threading.Tasks.Task RollbackAsync(string savepointName, System.Threading.CancellationToken cancellationToken = default) { throw null; }
+        public virtual System.Threading.Tasks.Task ReleaseAsync(string savepointName, System.Threading.CancellationToken cancellationToken = default) { throw null; }
+        public virtual void Save(string savepointName) { throw null; }
+        public virtual void Rollback(string savepointName) { throw null; }
+        public virtual void Release(string savepointName) { throw null; }
     }
     public enum GroupByBehavior
     {
