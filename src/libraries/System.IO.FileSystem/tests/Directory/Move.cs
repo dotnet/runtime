@@ -33,7 +33,6 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/40305", TestPlatforms.Browser)]
         public void NonExistentDirectory()
         {
             DirectoryInfo valid = Directory.CreateDirectory(GetTestFilePath());
@@ -202,7 +201,6 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/40305", TestPlatforms.Browser)]
         public void Path_Longer_Than_MaxLongPath_Throws_Exception()
         {
             string testDir = GetTestFilePath();
