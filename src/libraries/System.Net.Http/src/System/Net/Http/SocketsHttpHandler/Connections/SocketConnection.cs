@@ -3,6 +3,7 @@
 
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
+using System.Net.Http;
 using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
@@ -39,6 +40,10 @@ namespace System.Net.Connections
                 }
 
                 _stream.DisposeWithoutClosingConnection();
+            }
+            catch (SocketException socketException)
+            {
+                return ValueTask.FromException(SocketsHttpConnectionFactory.MapSocketException(socketException));
             }
             catch (Exception ex)
             {

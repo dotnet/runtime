@@ -160,7 +160,9 @@ namespace System.Net.Http.Functional.Tests
 
             using HttpClient client = CreateHttpClient(handler);
 
-            await Assert.ThrowsAnyAsync<HttpRequestException>(() => client.GetStringAsync($"http://{Guid.NewGuid():N}.com/foo"));
+            HttpRequestException e = await Assert.ThrowsAnyAsync<HttpRequestException>(() => client.GetStringAsync($"http://{Guid.NewGuid():N}.com/foo"));
+            NetworkException networkException = Assert.IsType<NetworkException>(e.InnerException);
+            Assert.Equal(NetworkError.HostNotFound, networkException.NetworkError);
         }
     }
 
