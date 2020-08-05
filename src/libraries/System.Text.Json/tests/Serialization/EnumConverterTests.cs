@@ -329,7 +329,7 @@ namespace System.Text.Json.Serialization.Tests
                 8,
                 i =>
                 {
-                    dictionary = new Dictionary<MyEnum, int> { { (MyEnum)i, i } };
+                    dictionary = new Dictionary<MyEnum, int> { { (MyEnum)(46 + i), i } };
                     JsonSerializer.Serialize(dictionary, options);
                 }
             );
