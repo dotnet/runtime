@@ -860,7 +860,8 @@ class SuperPMIReplay:
             altjit_string = "*" if self.coreclr_args.altjit else ""
             altjit_flags = [
                 "-jitoption", "force", "AltJit=" + altjit_string,
-                "-jitoption", "force", "AltJitNgen=" + altjit_string
+                "-jitoption", "force", "AltJitNgen=" + altjit_string,
+                "-jitoption", "force", "EnableExtraSuperPmiQueries=0"
             ]
             flags += altjit_flags
 
@@ -1032,8 +1033,10 @@ class SuperPMIReplayAsmDiffs:
                 altjit_flags = [
                     "-jitoption", "force", "AltJit=" + altjit_string,
                     "-jitoption", "force", "AltJitNgen=" + altjit_string,
+                    "-jitoption", "force", "EnableExtraSuperPmiQueries=0",
                     "-jit2option", "force", "AltJit=" + altjit_string,
-                    "-jit2option", "force", "AltJitNgen=" + altjit_string
+                    "-jit2option", "force", "AltJitNgen=" + altjit_string,
+                    "-jit2option", "force", "EnableExtraSuperPmiQueries=0"
                 ]
                 flags += altjit_flags
 
@@ -1208,7 +1211,8 @@ class SuperPMIReplayAsmDiffs:
                 altjit_string = "*" if self.coreclr_args.altjit else ""
                 altjit_flags = [
                     "-jitoption", "force", "AltJit=" + altjit_string,
-                    "-jitoption", "force", "AltJitNgen=" + altjit_string
+                    "-jitoption", "force", "AltJitNgen=" + altjit_string,
+                    "-jitoption", "force", "EnableExtraSuperPmiQueries=0"
                 ]
 
                 async def create_asm(print_prefix, item, self, text_differences, base_asm_location, diff_asm_location):
