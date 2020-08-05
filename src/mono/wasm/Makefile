@@ -148,9 +148,15 @@ build-debugger-test-app:
 
 run-debugger-tests: build-debugger-test-app build-dbg-testsuite
 	if [ ! -z "$(TEST_FILTER)" ]; then \
-		TEST_SUITE_PATH=$(TOP)/src/mono/wasm/debugger/tests/bin/Debug/publish LC_ALL=en_US.UTF-8 $(DOTNET) test $(TOP)/src/mono/wasm/debugger/DebuggerTestSuite --filter FullyQualifiedName~$(TEST_FILTER); \
+		export TEST_SUITE_PATH=$(TOP)/src/mono/wasm/debugger/tests/bin/Debug/publish; \
+		export LC_ALL=en_US.UTF-8; \
+		$(DOTNET) test  $(TOP)/src/mono/wasm/debugger/DebuggerTestSuite --filter FullyQualifiedName~$(TEST_FILTER); \
+		unset TEST_SUITE_PATH LC_ALL; \
 	else \
-		TEST_SUITE_PATH=$(TOP)/src/mono/wasm/debugger/tests/bin/Debug/publish LC_ALL=en_US.UTF-8 $(DOTNET) test $(TOP)/src/mono/wasm/debugger/DebuggerTestSuite $(TEST_ARGS); \
+		export TEST_SUITE_PATH=$(TOP)/src/mono/wasm/debugger/tests/bin/Debug/publish; \
+		export LC_ALL=en_US.UTF-8; \
+		$(DOTNET) test  $(TOP)/src/mono/wasm/debugger/DebuggerTestSuite $(TEST_ARGS); \
+		unset TEST_SUITE_PATH LC_ALL; \
 	fi
 
 build-dbg-proxy:
