@@ -3,6 +3,7 @@
 
 #nullable enable
 using Internal.Cryptography;
+using System.Buffers.Binary;
 using System.Diagnostics;
 
 using static Interop.BCrypt;
@@ -359,7 +360,7 @@ namespace System.Security.Cryptography
                             offset = sizeof(KeyBlobMagicNumber) + sizeof(int); // skip Magic and cbKey
 
                             // Read out a (V1) BCRYPT_DSA_KEY_BLOB structure.
-                            dsaParams.Counter = FromBigEndian(Interop.BCrypt.Consume(dsaBlob, ref offset, 4));
+                            dsaParams.Counter = BinaryPrimitives.ReadInt32BigEndian(Interop.BCrypt.Consume(dsaBlob, ref offset, 4));
                             dsaParams.Seed = Interop.BCrypt.Consume(dsaBlob, ref offset, Sha1HashOutputSize);
                             dsaParams.Q = Interop.BCrypt.Consume(dsaBlob, ref offset, Sha1HashOutputSize);
 
@@ -393,7 +394,7 @@ namespace System.Security.Cryptography
                             offset = sizeof(BCRYPT_DSA_KEY_BLOB_V2) - 4; //skip to Count[4]
 
                             // Read out a BCRYPT_DSA_KEY_BLOB_V2 structure.
-                            dsaParams.Counter = FromBigEndian(Interop.BCrypt.Consume(dsaBlob, ref offset, 4));
+                            dsaParams.Counter = BinaryPrimitives.ReadInt32BigEndian(Interop.BCrypt.Consume(dsaBlob, ref offset, 4));
 
                             Debug.Assert(offset == sizeof(BCRYPT_DSA_KEY_BLOB_V2), $"Expected offset = sizeof(BCRYPT_DSA_KEY_BLOB_V2), got {offset} != {sizeof(BCRYPT_DSA_KEY_BLOB_V2)}");
 
@@ -420,11 +421,6 @@ namespace System.Security.Cryptography
                         return dsaParams;
                     }
                 }
-            }
-
-            private static int FromBigEndian(byte[] b)
-            {
-                return (b[0] << 24) | (b[1] << 16) | (b[2] << 8) | b[3];
             }
 
             /// <summary>
