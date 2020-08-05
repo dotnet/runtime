@@ -28,8 +28,6 @@
 #include <sched.h>
 #endif
 
-// Validate that our Signals enum values are correct for the platform
-c_static_assert(PAL_SIGKILL == SIGKILL);
 
 // Validate that our SysLogPriority values are correct for the platform
 c_static_assert(PAL_LOG_EMERG == LOG_EMERG);
@@ -653,47 +651,22 @@ int32_t SystemNative_SetRLimit(RLimitResources resourceType, const RLimit* limit
 
 int32_t SystemNative_Kill(int32_t pid, int32_t signal)
 {
-#if defined(TARGET_MIPS64)
-    //see kernel source code arch/mips/include/uapi/asm/signal.h
-
     switch (signal)
     {
-        case 7:
-              signal = SIGBUS;
-        case 10:
-              signal = SIGUSR1;
-        case 12:
-              signal = SIGUSR2;
-        case 17:
-              signal = SIGCHLD;
-        case 18:
-              signal = SIGCONT;
-        case 19:
-              signal = SIGSTOP;
-        case 20:
-              signal = SIGTSTP;
-        case 21:
-              signal = SIGTTIN;
-        case 22:
-              signal = SIGTTOU;
-        case 23:
-              signal = SIGURG;
-        case 24:
-              signal = SIGXCPU;
-        case 25:
-              signal = SIGXFSZ;
-        case 26:
-              signal = SIGVTALRM;
-        case 27:
-              signal = SIGPROF;
-        case 28:
-              signal = SIGWINCH;
-        case 31:
-              signal = SIGSYS;
+        case PAL_SIGKILL:
+             signal = SIGKILL;
+             break;
+
+        case PAL_SIGSTOP:
+             signal = SIGSTOP;
+             break;
+
         default:
-              assert_msg(false, "Unsupport signal", signal);  
+             assert_msg(false, "Unknown signal",signal);
+             errno = EINVAL;
+             return -1;
     }
-#endif
+
     return kill(pid, signal);
 }
 
