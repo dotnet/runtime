@@ -265,7 +265,7 @@ namespace System.Diagnostics
                 EnsureWorkingSetLimits();
                 return _maxWorkingSet;
             }
-            [MinimumOSPlatform("windows7.0")]
+            [SupportedOSPlatform("windows7.0")]
             set
             {
                 SetWorkingSetLimits(null, value);
@@ -285,7 +285,7 @@ namespace System.Diagnostics
                 EnsureWorkingSetLimits();
                 return _minWorkingSet;
             }
-            [MinimumOSPlatform("windows7.0")]
+            [SupportedOSPlatform("windows7.0")]
             set
             {
                 SetWorkingSetLimits(value, null);

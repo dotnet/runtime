@@ -17,7 +17,7 @@ namespace System.Net.Sockets
 
         internal void ReplaceHandleIfNecessaryAfterFailedConnect() { /* nop on Windows */ }
 
-        [MinimumOSPlatform("windows7.0")]
+        [SupportedOSPlatform("windows7.0")]
         public Socket(SocketInformation socketInformation)
         {
             InitializeSockets();
@@ -106,7 +106,7 @@ namespace System.Net.Sockets
             blocking = true;
         }
 
-        [MinimumOSPlatform("windows7.0")]
+        [SupportedOSPlatform("windows7.0")]
         public SocketInformation DuplicateAndClose(int targetProcessId)
         {
             ThrowIfDisposed();

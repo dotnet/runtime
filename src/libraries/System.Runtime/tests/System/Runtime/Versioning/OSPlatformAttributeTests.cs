@@ -48,9 +48,9 @@ namespace System.Runtime.Versioning.Tests
         [InlineData("Windows10.0")]
         [InlineData("OSX")]
         [InlineData("")]
-        public void TestMinimumOSPlatformAttribute(string platformName)
+        public void TestSupportedOSPlatformAttribute(string platformName)
         {
-            var tpa = new MinimumOSPlatformAttribute(platformName);
+            var tpa = new SupportedOSPlatformAttribute(platformName);
 
             Assert.Equal(platformName, tpa.PlatformName);
         }

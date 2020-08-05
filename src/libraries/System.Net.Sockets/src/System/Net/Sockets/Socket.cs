@@ -1989,7 +1989,7 @@ namespace System.Net.Sockets
             return realOptionLength;
         }
 
-        [MinimumOSPlatform("windows7.0")]
+        [SupportedOSPlatform("windows7.0")]
         public void SetIPProtectionLevel(IPProtectionLevel level)
         {
             if (level == IPProtectionLevel.Unspecified)
