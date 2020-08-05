@@ -12,10 +12,7 @@ namespace System.Collections.Generic
     internal interface IInternalStringEqualityComparer : IEqualityComparer<string?>
     {
         IEqualityComparer<string?> GetUnderlyingEqualityComparer();
-    }
 
-    internal static class InternalStringEqualityComparer
-    {
         /// <summary>
         /// Unwraps the internal equality comparer, if proxied.
         /// Otherwise returns the equality comparer itself or its default equivalent.

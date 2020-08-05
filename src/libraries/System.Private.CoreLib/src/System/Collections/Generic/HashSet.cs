@@ -932,7 +932,7 @@ namespace System.Collections.Generic
             {
                 if (typeof(T) == typeof(string))
                 {
-                    return (IEqualityComparer<T>)InternalStringEqualityComparer.GetUnderlyingEqualityComparer((IEqualityComparer<string?>?)_comparer);
+                    return (IEqualityComparer<T>)IInternalStringEqualityComparer.GetUnderlyingEqualityComparer((IEqualityComparer<string?>?)_comparer);
                 }
                 else
                 {

@@ -79,28 +79,7 @@ namespace System.Collections.Generic
             {
             }
 
-            public override bool Equals(string? x, string? y)
-            {
-                Debug.Assert(x != null && y != null, "This implementation is only called from first-party collection types that guarantee non-null parameters.");
-
-                // This is a slightly tweaked version of string.Equals(x, y).
-                // We bypass the null checks on 'x' and 'y' because our callers guarantee that they're not null.
-
-                if (ReferenceEquals(x, y))
-                {
-                    return true;
-                }
-
-                if (x.Length != y.Length)
-                {
-                    return false;
-                }
-
-                return SpanHelpers.SequenceEqual(
-                    ref Unsafe.As<char, byte>(ref x.GetRawStringData()),
-                    ref Unsafe.As<char, byte>(ref y.GetRawStringData()),
-                    ((nuint)x.Length) * 2);
-            }
+            public override bool Equals(string? x, string? y) => string.Equals(x, y);
 
             public override int GetHashCode(string? obj)
             {
@@ -117,25 +96,7 @@ namespace System.Collections.Generic
             {
             }
 
-            public override bool Equals(string? x, string? y)
-            {
-                Debug.Assert(x != null && y != null, "This implementation is only called from first-party collection types that guarantee non-null parameters.");
-
-                // This is a slightly tweaked version of string.EqualsOrdinalIgnoreCase(x, y).
-                // We bypass the null checks on 'x' and 'y' because our callers guarantee that they're not null.
-
-                if (ReferenceEquals(x, y))
-                {
-                    return true;
-                }
-
-                if (x.Length != y.Length) // non-linguistic equality requires same UTF-16 code unit count
-                {
-                    return false;
-                }
-
-                return CompareInfo.EqualsOrdinalIgnoreCase(ref x.GetRawStringData(), ref y.GetRawStringData(), x.Length);
-            }
+            public override bool Equals(string? x, string? y) => string.EqualsOrdinalIgnoreCase(x, y);
 
             public override int GetHashCode(string? obj)
             {
