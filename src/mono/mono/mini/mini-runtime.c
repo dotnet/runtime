@@ -1963,6 +1963,8 @@ enum {
 	ELF_MACHINE = EM_PPC64,
 #elif HOST_S390X
 	ELF_MACHINE = EM_S390,
+#elif HOST_RISCV
+	ELF_MACHINE = EM_RISCV,
 #endif
 	JIT_CODE_LOAD = 0
 };
@@ -4594,7 +4596,9 @@ mini_init (const char *filename, const char *runtime_version)
 	mono_simd_intrinsics_init ();
 #endif
 
+#ifndef ENABLE_NETCORE
 	mono_tasklets_init ();
+#endif
 
 	register_trampolines (domain);
 

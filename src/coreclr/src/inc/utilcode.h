@@ -4073,13 +4073,14 @@ HRESULT GetImageRuntimeVersionString(PVOID pMetaData, LPCSTR* pString);
 // The registry keys and values that contain the information regarding
 // the default registered unmanaged debugger.
 //*****************************************************************************
-constexpr WCHAR kDebugApplicationsPoliciesKey[] = W("SOFTWARE\\Policies\\Microsoft\\Windows\\Windows Error Reporting\\DebugApplications");
-constexpr WCHAR kDebugApplicationsKey[] = W("SOFTWARE\\Microsoft\\Windows\\Windows Error Reporting\\DebugApplications");
 
-constexpr WCHAR kUnmanagedDebuggerKey[] = W("SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\AeDebug");
-constexpr WCHAR kUnmanagedDebuggerValue[] = W("Debugger");
-constexpr WCHAR kUnmanagedDebuggerAutoValue[] = W("Auto");
-constexpr WCHAR kUnmanagedDebuggerAutoExclusionListKey[] = W("SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\AeDebug\\AutoExclusionList");
+#define kDebugApplicationsPoliciesKey W("SOFTWARE\\Policies\\Microsoft\\Windows\\Windows Error Reporting\\DebugApplications")
+#define kDebugApplicationsKey  W("SOFTWARE\\Microsoft\\Windows\\Windows Error Reporting\\DebugApplications")
+
+#define kUnmanagedDebuggerKey W("SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\AeDebug")
+#define kUnmanagedDebuggerValue W("Debugger")
+#define kUnmanagedDebuggerAutoValue W("Auto")
+#define kUnmanagedDebuggerAutoExclusionListKey W("SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\AeDebug\\AutoExclusionList")
 
 BOOL GetRegistryLongValue(HKEY    hKeyParent,              // Parent key.
                           LPCWSTR szKey,                   // Key name to look at.

@@ -4,7 +4,11 @@
     <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Browser</TargetFrameworks>
     <Nullable>enable</Nullable>
   </PropertyGroup>
-  <ItemGroup>
+  <PropertyGroup>
+    <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetsBrowser)' == 'true'">SR.SystemNetRequests_PlatformNotSupported</GeneratePlatformNotSupportedAssemblyMessage>
+    <NoWarn Condition="'$(GeneratePlatformNotSupportedAssemblyMessage)' != ''">$(NoWarn);CS0809</NoWarn>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(TargetsBrowser)' != 'true'">
     <Compile Include="System\Net\AuthenticationManager.cs" />
     <Compile Include="System\Net\Authorization.cs" />
     <Compile Include="System\Net\FileWebRequest.cs" />
@@ -77,7 +81,7 @@
              Link="Common\System\Net\ContextAwareResult.Windows.cs" />
     <Compile Include="System\Net\WebExceptionPal.Windows.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsUnix)' == 'true' or '$(TargetsBrowser)' == 'true' ">
+  <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
     <Compile Include="$(CommonPath)System\Net\ContextAwareResult.Unix.cs"
              Link="Common\System\Net\ContextAwareResult.Unix.cs" />
     <Compile Include="System\Net\WebExceptionPal.Unix.cs" />

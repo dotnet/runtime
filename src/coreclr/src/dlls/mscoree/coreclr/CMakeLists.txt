@@ -10,17 +10,17 @@ if (CLR_CMAKE_HOST_WIN32)
 
     list(APPEND CLR_SOURCES ${CMAKE_CURRENT_BINARY_DIR}/coreclr.def)
 
-    add_link_options(/ENTRY:CoreDllMain)
+    add_linker_flag("/ENTRY:CoreDllMain")
 
     # Incremental linking results in the linker inserting extra padding and routing function calls via thunks that can break the
     # invariants (e.g. size of region between Jit_PatchedCodeLast-Jit_PatchCodeStart needs to fit in a page).
-    add_link_options(/INCREMENTAL:NO)
+    add_linker_flag("/INCREMENTAL:NO")
 
     # Delay load libraries required for WinRT as that is not supported on all platforms
-    add_link_options("/DELAYLOAD:api-ms-win-core-winrt-l1-1-0.dll")
+    add_linker_flag("/DELAYLOAD:api-ms-win-core-winrt-l1-1-0.dll")
 
     # Delay load version.dll so that we can specify how to search when loading it as it is not part of Windows' known DLLs
-    add_link_options("/DELAYLOAD:version.dll")
+    add_linker_flag("/DELAYLOAD:version.dll")
 
     # No library groups for Win32
     set(START_LIBRARY_GROUP)
@@ -33,7 +33,7 @@ else(CLR_CMAKE_HOST_WIN32)
     if(CLR_CMAKE_TARGET_LINUX OR CLR_CMAKE_TARGET_FREEBSD OR CLR_CMAKE_TARGET_NETBSD OR CLR_CMAKE_TARGET_SUNOS)
         # This option is necessary to ensure that the overloaded delete operator defined inside
         # of the utilcode will be used instead of the standard library delete operator.
-        add_link_options("LINKER:-Bsymbolic")
+        add_linker_flag("-Wl,-Bsymbolic")
 
         # The following linked options can be inserted into the linker libraries list to
         # ensure proper resolving of circular references between a subset of the libraries.
@@ -109,7 +109,7 @@ set(CORECLR_LIBRARIES
     ildbsymlib
     utilcode
     v3binder
-    System.Globalization.Native-Static
+    System.Globalization.Native-static
     interop
 )
 
@@ -168,8 +168,10 @@ if(FEATURE_MERGE_JIT_AND_ENGINE)
     set(CLRJIT_STATIC clrjit_static)
 endif(FEATURE_MERGE_JIT_AND_ENGINE)
 
-target_link_libraries(coreclr PUBLIC ${CORECLR_LIBRARIES} ${CLRJIT_STATIC} cee_wks cee_wks_core)
-target_link_libraries(coreclr_static PUBLIC ${CORECLR_LIBRARIES} clrjit_static cee_wks_mergeable cee_wks_core)
+target_sources(coreclr PUBLIC $<TARGET_OBJECTS:cee_wks_core>)
+target_link_libraries(coreclr PUBLIC ${CORECLR_LIBRARIES} ${CLRJIT_STATIC} cee_wks)
+target_sources(coreclr_static PUBLIC $<TARGET_OBJECTS:cee_wks_core>)
+target_link_libraries(coreclr_static PUBLIC ${CORECLR_LIBRARIES} clrjit_static cee_wks_mergeable)
 
 # Create the runtime module index header file containing the coreclr build id
 # for xplat and the timestamp/size on Windows.

@@ -7233,8 +7233,17 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			} else if ((cmethod->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) && direct_icalls_enabled (cfg, cmethod)) {
 				direct_icall = TRUE;
 			} else if (fsig->pinvoke) {
-				MonoMethod *wrapper = mono_marshal_get_native_wrapper (cmethod, TRUE, cfg->compile_aot);
-				fsig = mono_method_signature_internal (wrapper);
+				if (cmethod->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) {
+					/*
+					 * Avoid calling mono_marshal_get_native_wrapper () too early, it might call managed
+					 * callbacks on netcore.
+					 */
+					fsig = mono_metadata_signature_dup_mempool (cfg->mempool, fsig);
+					fsig->pinvoke = FALSE;
+				} else {
+					MonoMethod *wrapper = mono_marshal_get_native_wrapper (cmethod, TRUE, cfg->compile_aot);
+					fsig = mono_method_signature_internal (wrapper);
+				}
 			} else if (constrained_class) {
 			} else {
 				fsig = mono_method_get_signature_checked (cmethod, image, token, generic_context, cfg->error);
@@ -7397,8 +7406,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				int costs;
 				gboolean always = FALSE;
 
-				if ((cmethod->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) ||
-					(cmethod->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL)) {
+				if (cmethod->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) {
 					/* Prevent inlining of methods that call wrappers */
 					INLINE_FAILURE ("wrapper call");
 					// FIXME? Does this write to cmethod impact tailcall_supported? Probably not.

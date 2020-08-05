@@ -63,7 +63,7 @@ namespace MS.Internal.Xml.Cache
         {
             get
             {
-                string value;
+                string? value;
                 XPathNode[] page;
                 XPathNode[]? pageEnd;
                 int idx, idxEnd;
@@ -94,7 +94,11 @@ namespace MS.Internal.Xml.Cache
                 if (_idxParent != 0)
                 {
                     Debug.Assert(_pageCurrent[_idxCurrent].NodeType == XPathNodeType.Text);
-                    return _pageParent![_idxParent].Value;
+
+                    value = _pageParent![_idxParent].Value;
+                    Debug.Assert(value != null);
+
+                    return value;
                 }
 
                 // Must be node with complex content, so concatenate the string values of all text descendants
@@ -113,10 +117,12 @@ namespace MS.Internal.Xml.Cache
                 while (XPathNodeHelper.GetTextFollowing(ref page, ref idx, pageEnd, idxEnd))
                 {
                     Debug.Assert(page[idx].NodeType == XPathNodeType.Element || page[idx].IsText);
+                    value = page[idx].Value;
+                    Debug.Assert(value != null);
 
                     if (s.Length == 0)
                     {
-                        s = page[idx].Value;
+                        s = value;
                     }
                     else
                     {
@@ -125,7 +131,7 @@ namespace MS.Internal.Xml.Cache
                             bldr = new StringBuilder();
                             bldr.Append(s);
                         }
-                        bldr.Append(page[idx].Value);
+                        bldr.Append(value);
                     }
                 }
 
@@ -193,7 +199,7 @@ namespace MS.Internal.Xml.Cache
         {
             get
             {
-                XPathNode[] page;
+                XPathNode[]? page;
                 int idx;
 
                 if (_idxParent != 0)
@@ -210,7 +216,7 @@ namespace MS.Internal.Xml.Cache
 
                 do
                 {
-                    switch (page[idx].NodeType)
+                    switch (page![idx].NodeType)
                     {
                         case XPathNodeType.Element:
                         case XPathNodeType.Root:
@@ -312,7 +318,7 @@ namespace MS.Internal.Xml.Cache
         /// </summary>
         public override bool MoveToFirstNamespace(XPathNamespaceScope namespaceScope)
         {
-            XPathNode[] page;
+            XPathNode[]? page;
             int idx;
 
             if (namespaceScope == XPathNamespaceScope.Local)
@@ -329,11 +335,11 @@ namespace MS.Internal.Xml.Cache
             while (idx != 0)
             {
                 // Don't include the xmlns:xml namespace node if scope is ExcludeXml
-                if (namespaceScope != XPathNamespaceScope.ExcludeXml || !page[idx].IsXmlNamespaceNode)
+                if (namespaceScope != XPathNamespaceScope.ExcludeXml || !page![idx].IsXmlNamespaceNode)
                 {
                     _pageParent = _pageCurrent;
                     _idxParent = _idxCurrent;
-                    _pageCurrent = page;
+                    _pageCurrent = page!;
                     _idxCurrent = idx;
                     return true;
                 }
@@ -351,7 +357,7 @@ namespace MS.Internal.Xml.Cache
         /// </summary>
         public override bool MoveToNextNamespace(XPathNamespaceScope scope)
         {
-            XPathNode[] page = _pageCurrent, pageParent;
+            XPathNode[]? page = _pageCurrent, pageParent;
             int idx = _idxCurrent, idxParent;
 
             // If current node is not a namespace node, return false
@@ -367,12 +373,13 @@ namespace MS.Internal.Xml.Cache
                 if (idx == 0)
                     return false;
 
+                Debug.Assert(page != null);
                 switch (scope)
                 {
                     case XPathNamespaceScope.Local:
                         // Once parent changes, there are no longer any local namespaces
                         idxParent = page[idx].GetParent(out pageParent);
-                        if (idxParent != _idxParent || (object)pageParent != (object?)_pageParent)
+                        if (idxParent != _idxParent || (object?)pageParent != (object?)_pageParent)
                             return false;
                         break;
 
@@ -614,7 +621,7 @@ namespace MS.Internal.Xml.Cache
             // If this navigator is positioned on a virtual node, then compute following of parent
             if (_idxParent != 0)
             {
-                if (!XPathNodeHelper.GetElementFollowing(ref _pageParent, ref _idxParent, pageEnd, idxEnd, _atomizedLocalName, namespaceURI))
+                if (!XPathNodeHelper.GetElementFollowing(ref _pageParent!, ref _idxParent, pageEnd, idxEnd, _atomizedLocalName, namespaceURI))
                     return false;
 
                 _pageCurrent = _pageParent;
@@ -713,7 +720,7 @@ namespace MS.Internal.Xml.Cache
             // If this navigator is positioned on a virtual node, then compute following of parent
             if (_idxParent != 0)
             {
-                if (!XPathNodeHelper.GetContentFollowing(ref _pageParent, ref _idxParent, pageEnd, idxEnd, type))
+                if (!XPathNodeHelper.GetContentFollowing(ref _pageParent!, ref _idxParent, pageEnd, idxEnd, type))
                     return false;
 
                 _pageCurrent = _pageParent;
@@ -812,7 +819,7 @@ namespace MS.Internal.Xml.Cache
             XPathDocumentNavigator? that = other as XPathDocumentNavigator;
             if (that != null)
             {
-                XPathNode[] pageThat;
+                XPathNode[]? pageThat;
                 int idxThat;
 
                 // If that current node's parent is virtualized, then start with the virtual parent
@@ -830,7 +837,7 @@ namespace MS.Internal.Xml.Cache
                 {
                     if (idxThat == _idxCurrent && pageThat == _pageCurrent)
                         return true;
-                    idxThat = pageThat[idxThat].GetParent(out pageThat);
+                    idxThat = pageThat![idxThat].GetParent(out pageThat);
                 }
             }
             return false;
@@ -852,7 +859,7 @@ namespace MS.Internal.Xml.Cache
             }
 
             // Yes, so primary location should be derived from parent node
-            return XPathNodeHelper.GetLocation(_pageParent, _idxParent);
+            return XPathNodeHelper.GetLocation(_pageParent!, _idxParent);
         }
 
         /// <summary>
@@ -901,7 +908,7 @@ namespace MS.Internal.Xml.Cache
                 // If the current node is virtualized, code its parent
                 if (_idxParent != 0)
                 {
-                    loc = (_pageParent![0].PageInfo.PageNumber - 1) << 16 | (_idxParent - 1);
+                    loc = (_pageParent![0].PageInfo!.PageNumber - 1) << 16 | (_idxParent - 1);
                     do
                     {
                         buf[idx++] = UniqueIdTbl[loc & 0x1f];
@@ -911,7 +918,7 @@ namespace MS.Internal.Xml.Cache
                 }
 
                 // Code the node itself
-                loc = (_pageCurrent[0].PageInfo.PageNumber - 1) << 16 | (_idxCurrent - 1);
+                loc = (_pageCurrent[0].PageInfo!.PageNumber - 1) << 16 | (_idxCurrent - 1);
                 do
                 {
                     buf[idx++] = UniqueIdTbl[loc & 0x1f];

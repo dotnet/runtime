@@ -306,9 +306,6 @@
 
     <!-- Windows all architecture excludes -->
     <ItemGroup Condition="'$(XunitTestBinBase)' != '' and '$(TargetsWindows)' == 'true' and '$(RuntimeFlavor)' == 'coreclr'">
-        <ExcludeList Include="$(XunitTestBinBase)/tracing/eventpipe/pauseonstart/pauseonstart/**">
-            <Issue>https://github.com/dotnet/runtime/issues/38847</Issue>
-        </ExcludeList>
     </ItemGroup>
 
     <!-- Windows x64 specific excludes -->
@@ -964,6 +961,9 @@
 
     <!-- Known failures for mono runtime on *all* architectures/operating systems -->
     <ItemGroup Condition="'$(RuntimeFlavor)' == 'mono'" >
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/Miscellaneous/CopyCtor/**">
+            <Issue>Handling for Copy constructors isn't present in mono interop</Issue>
+        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Interop/StringMarshalling/AnsiBSTR/AnsiBStrTest/**">
             <Issue>Crashes during LLVM AOT compilation.</Issue>
         </ExcludeList>
@@ -1625,16 +1625,7 @@
         <ExcludeList Include="$(XunitTestBinBase)/Loader/ContextualReflection/ContextualReflection/**">
             <Issue>https://github.com/dotnet/runtime/issues/34072</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/profiler/unittest/getappdomainstaticaddress/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/profiler/eventpipe/eventpipe/*">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/profiler/eventpipe/eventpipe_readevents/*">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/profiler/gc/gc/**">
+        <ExcludeList Include="$(XunitTestBinBase)/profiler/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/profiler/elt/slowpatheltenter/*">
