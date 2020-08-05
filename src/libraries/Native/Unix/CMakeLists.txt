@@ -208,7 +208,10 @@ elseif (CLR_CMAKE_TARGET_OSX OR CLR_CMAKE_TARGET_MACCATALYST OR CLR_CMAKE_TARGET
    # We cannot enable "stack-protector-strong" on OS X due to a bug in clang compiler (current version 7.0.2)
    add_compile_options(-fstack-protector)
 else ()
-   add_compile_options(-fstack-protector-strong)
+    check_c_compiler_flag_ssp(-fstack-protector-strong TARGET_HAS_STACK_PROTECTOR_STRONG)
+    if(TARGET_HAS_STACK_PROTECTOR_STRONG)
+        add_compile_options(-fstack-protector-strong)
+    endif()
 endif ()
 
 if (CLR_CMAKE_TARGET_LINUX)

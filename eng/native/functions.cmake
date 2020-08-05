@@ -1,3 +1,14 @@
+include(CheckCSourceCompiles)
+
+# License: https://github.com/clibs/cmocka/blob/master/cmake/Modules/COPYING-CMAKE-SCRIPTS
+# https://github.com/clibs/cmocka/blob/master/cmake/Modules/CheckCCompilerFlagSSP.cmake
+function(check_c_compiler_flag_ssp _FLAG _RESULT)
+    set(SAFE_CMAKE_REQUIRED_DEFINITIONS "${CMAKE_REQUIRED_DEFINITIONS}")
+    set(CMAKE_REQUIRED_DEFINITIONS "${_FLAG}")
+    check_c_source_compiles("int main(int argc, char **argv) { char buffer[256]; return buffer[argc]=0;}" ${_RESULT})
+    set(CMAKE_REQUIRED_DEFINITIONS "${SAFE_CMAKE_REQUIRED_DEFINITIONS}")
+endfunction(check_c_compiler_flag_ssp)
+
 function(clr_unknown_arch)
     if (WIN32)
         message(FATAL_ERROR "Only AMD64, ARM64, ARM and I386 are supported. Found: ${CMAKE_SYSTEM_PROCESSOR}")
