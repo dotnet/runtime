@@ -1846,6 +1846,14 @@ namespace System.Text.Json.Serialization.Tests
         public string Headline { get; set; }
     }
 
+    public class IndexViewModel
+    {
+        public List<ActiveOrUpcomingEvent> ActiveOrUpcomingEvents { get; set; }
+        public CampaignSummaryViewModel FeaturedCampaign { get; set; }
+        public bool IsNewAccount { get; set; }
+        public bool HasFeaturedCampaign => FeaturedCampaign != null;
+    }
+
     public class Parameterized_Class_With_ComplexTuple : ITestClassWithParameterizedCtor
     {
         public Tuple<

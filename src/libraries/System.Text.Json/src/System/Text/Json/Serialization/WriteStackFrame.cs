@@ -4,6 +4,7 @@
 using System.Collections;
 using System.Diagnostics;
 using System.Text.Json.Serialization;
+using System.Text.Json.Serialization.Metadata;
 
 namespace System.Text.Json
 {
@@ -82,6 +83,14 @@ namespace System.Text.Json
             JsonPropertyNameAsString = null;
             PolymorphicJsonPropertyInfo = null;
             PropertyState = StackFramePropertyState.None;
+        }
+
+        public void EndPropertyFast()
+        {
+            DeclaredJsonPropertyInfo = null!;
+            JsonPropertyNameAsString = null;
+            Debug.Assert(JsonPropertyNameAsString == null);
+            Debug.Assert(PropertyState == StackFramePropertyState.None);
         }
 
         /// <summary>

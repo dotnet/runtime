@@ -5,7 +5,7 @@ using System.Diagnostics;
 using System.Reflection;
 using System.Text.Json.Serialization;
 
-namespace System.Text.Json
+namespace System.Text.Json.Serialization.Metadata
 {
     /// <summary>
     /// Holds relevant state about a method parameter, like the default value of

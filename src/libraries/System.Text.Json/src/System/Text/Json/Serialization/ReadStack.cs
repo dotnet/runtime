@@ -6,11 +6,15 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Text.Json.Serialization;
+using System.Text.Json.Serialization.Metadata;
 
 namespace System.Text.Json
 {
+    /// <summary>
+    /// todo
+    /// </summary>
     [DebuggerDisplay("Path:{JsonPath()} Current: ClassType.{Current.JsonClassInfo.ClassType}, {Current.JsonClassInfo.Type.Name}")]
-    internal struct ReadStack
+    public struct ReadStack
     {
         internal static readonly char[] SpecialCharacters = { '.', ' ', '\'', '/', '"', '[', ']', '(', ')', '\t', '\n', '\r', '\f', '\b', '\\', '\u0085', '\u2028', '\u2029' };
 
@@ -32,31 +36,31 @@ namespace System.Text.Json
         /// <summary>
         /// Bytes consumed in the current loop.
         /// </summary>
-        public long BytesConsumed;
+        internal long BytesConsumed;
 
         // A field is used instead of a property to avoid value semantics.
-        public ReadStackFrame Current;
+        internal ReadStackFrame Current;
 
-        public bool IsContinuation => _continuationCount != 0;
-        public bool IsLastContinuation => _continuationCount == _count;
+        internal bool IsContinuation => _continuationCount != 0;
+        internal bool IsLastContinuation => _continuationCount == _count;
 
         /// <summary>
         /// Internal flag to let us know that we need to read ahead in the inner read loop.
         /// </summary>
-        public bool ReadAhead;
+        internal bool ReadAhead;
 
         // The bag of preservable references.
-        public ReferenceResolver ReferenceResolver;
+        internal ReferenceResolver ReferenceResolver;
 
         /// <summary>
         /// Whether we need to read ahead in the inner read loop.
         /// </summary>
-        public bool SupportContinuation;
+        internal bool SupportContinuation;
 
         /// <summary>
         /// Whether we can read without the need of saving state for stream and preserve references cases.
         /// </summary>
-        public bool UseFastPath;
+        internal bool UseFastPath;
 
         private void AddCurrent()
         {
@@ -79,9 +83,15 @@ namespace System.Text.Json
             _count++;
         }
 
-        public void Initialize(Type type, JsonSerializerOptions options, bool supportContinuation)
+        internal JsonConverter Initialize(Type type, JsonSerializerOptions options, bool supportContinuation)
         {
+            SupportContinuation = supportContinuation;
             JsonClassInfo jsonClassInfo = options.GetOrAddClassForRootType(type);
+            return Initialize(jsonClassInfo, supportContinuation);
+        }
+
+        internal JsonConverter Initialize(JsonClassInfo jsonClassInfo, bool supportContinuation = false)
+        {
             Current.JsonClassInfo = jsonClassInfo;
 
             // The initial JsonPropertyInfo will be used to obtain the converter.
@@ -89,17 +99,19 @@ namespace System.Text.Json
 
             Current.NumberHandling = Current.JsonPropertyInfo.NumberHandling;
 
+            JsonSerializerOptions options = jsonClassInfo.Options;
             bool preserveReferences = options.ReferenceHandler != null;
             if (preserveReferences)
             {
                 ReferenceResolver = options.ReferenceHandler!.CreateResolver(writing: false);
             }
 
-            SupportContinuation = supportContinuation;
             UseFastPath = !supportContinuation && !preserveReferences;
+
+            return jsonClassInfo.PropertyInfoForClassInfo.ConverterBase;
         }
 
-        public void Push()
+        internal void Push()
         {
             if (_continuationCount == 0)
             {
@@ -169,7 +181,7 @@ namespace System.Text.Json
             SetConstructorArgumentState();
         }
 
-        public void Pop(bool success)
+        internal void Pop(bool success)
         {
             Debug.Assert(_count > 0);
 
@@ -220,9 +232,12 @@ namespace System.Text.Json
             SetConstructorArgumentState();
         }
 
-        // Return a JSONPath using simple dot-notation when possible. When special characters are present, bracket-notation is used:
-        // $.x.y[0].z
-        // $['PropertyName.With.Special.Chars']
+        /// <summary>
+        /// Return a JSONPath using simple dot-notation when possible. When special characters are present, bracket-notation is used:
+        /// $.x.y[0].z
+        /// $['PropertyName.With.Special.Chars']
+        /// </summary>
+        /// <returns></returns>
         public string JsonPath()
         {
             StringBuilder sb = new StringBuilder("$");

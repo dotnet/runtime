@@ -4,6 +4,7 @@
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Serialization;
+using System.Text.Json.Serialization.Metadata;
 
 namespace System.Text.Json
 {
@@ -64,6 +65,41 @@ namespace System.Text.Json
             }
 
             Serialize<object?>(writer, value, inputType, options);
+        }
+
+
+        /// <summary>
+        /// todo
+        /// </summary>
+        /// <typeparam name="TValue"></typeparam>
+        /// <param name="writer"></param>
+        /// <param name="value"></param>
+        /// <param name="jsonClassInfo"></param>
+        /// <param name="state"></param>
+        /// <param name="options"></param>
+        public static void Serialize<TValue>(Utf8JsonWriter writer, TValue value, JsonClassInfo jsonClassInfo, ref WriteStack state, JsonSerializerOptions? options = null)
+        {
+            if (writer == null)
+            {
+                throw new ArgumentNullException(nameof(writer));
+            }
+
+            if (jsonClassInfo == null)
+            {
+                throw new ArgumentNullException(nameof(jsonClassInfo));
+            }
+
+            if (options == null)
+            {
+                options = JsonSerializerOptions.s_defaultOptions;
+            }
+
+            using (var output = new PooledByteBufferWriter(options.DefaultBufferSize))
+            {
+                JsonConverter jsonConverter = jsonClassInfo.PropertyInfoForClassInfo.ConverterBase;
+                bool success = WriteCore<TValue>(jsonConverter, writer, value, ref state, options);
+                Debug.Assert(success);
+            }
         }
 
         private static void Serialize<TValue>(Utf8JsonWriter writer, in TValue value, Type type, JsonSerializerOptions? options)

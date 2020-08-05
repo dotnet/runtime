@@ -4,6 +4,8 @@
 using System.Buffers;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Text.Json.Serialization;
+using System.Text.Json.Serialization.Metadata;
 
 namespace System.Text.Json
 {
@@ -43,6 +45,37 @@ namespace System.Text.Json
             }
 
             return Deserialize<TValue>(json, typeof(TValue), options);
+        }
+
+        /// <summary>
+        /// todo
+        /// </summary>
+        /// <typeparam name="TValue"></typeparam>
+        /// <param name="json"></param>
+        /// <param name="jsonClassInfo"></param>
+        /// <returns></returns>
+        [return: MaybeNull]
+        public static TValue Deserialize<TValue>(string json, JsonTypeInfo<TValue> jsonClassInfo)
+        {
+            if (json == null)
+            {
+                throw new ArgumentNullException(nameof(json));
+            }
+
+            if (jsonClassInfo == null)
+            {
+                throw new ArgumentNullException(nameof(jsonClassInfo));
+            }
+
+            ReadStack state = default;
+            state.Initialize(jsonClassInfo);
+
+            return Deserialize<TValue>(
+                jsonClassInfo.PropertyInfoForClassInfo.ConverterBase,
+                json,
+                typeof(TValue),
+                jsonClassInfo.Options,
+                ref state);
         }
 
         /// <summary>
@@ -87,12 +120,27 @@ namespace System.Text.Json
         [return: MaybeNull]
         private static TValue Deserialize<TValue>(string json, Type returnType, JsonSerializerOptions? options)
         {
-            const long ArrayPoolMaxSizeBeforeUsingNormalAlloc = 1024 * 1024;
-
             if (options == null)
             {
                 options = JsonSerializerOptions.s_defaultOptions;
             }
+
+            ReadStack state = default;
+            state.Initialize(returnType, options, supportContinuation: false);
+
+            JsonConverter jsonConverter = state.Current.JsonPropertyInfo!.ConverterBase;
+            return Deserialize<TValue>(jsonConverter, json, returnType, options, ref state);
+        }
+
+        [return: MaybeNull]
+        private static TValue Deserialize<TValue>(
+            JsonConverter jsonConverter,
+            string json,
+            Type returnType,
+            JsonSerializerOptions options,
+            ref ReadStack state)
+        {
+            const long ArrayPoolMaxSizeBeforeUsingNormalAlloc = 1024 * 1024;
 
             byte[]? tempArray = null;
 
@@ -112,7 +160,7 @@ namespace System.Text.Json
                 var readerState = new JsonReaderState(options.GetReaderOptions());
                 var reader = new Utf8JsonReader(utf8, isFinalBlock: true, readerState);
 
-                TValue value = ReadCore<TValue>(ref reader, returnType, options);
+                TValue value = ReadCore<TValue>(jsonConverter, ref reader, options, ref state);
 
                 // The reader should have thrown if we have remaining bytes.
                 Debug.Assert(reader.BytesConsumed == actualByteCount);

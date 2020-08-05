@@ -6,20 +6,28 @@ using System.Diagnostics;
 using System.Reflection;
 using System.Text.Json.Serialization;
 
-namespace System.Text.Json
+namespace System.Text.Json.Serialization.Metadata
 {
+    /// <summary>
+    /// todo
+    /// </summary>
     [DebuggerDisplay("MemberInfo={MemberInfo}")]
-    internal abstract class JsonPropertyInfo
+    public abstract class JsonPropertyInfo
     {
-        public static readonly JsonPropertyInfo s_missingProperty = GetPropertyPlaceholder();
+        internal static readonly JsonPropertyInfo s_missingProperty = GetPropertyPlaceholder();
 
         private JsonClassInfo? _runtimeClassInfo;
 
-        public ClassType ClassType;
+        internal ClassType ClassType;
 
+        internal JsonPropertyInfo() { }
+
+        /// <summary>
+        /// todo
+        /// </summary>
         public abstract JsonConverter ConverterBase { get; set; }
 
-        public static JsonPropertyInfo GetPropertyPlaceholder()
+        internal static JsonPropertyInfo GetPropertyPlaceholder()
         {
             JsonPropertyInfo info = new JsonPropertyInfo<object>();
 
@@ -34,7 +42,7 @@ namespace System.Text.Json
 
         // Create a property that is ignored at run-time. It uses the same type (typeof(sbyte)) to help
         // prevent issues with unsupported types and helps ensure we don't accidently (de)serialize it.
-        public static JsonPropertyInfo CreateIgnoredPropertyPlaceholder(MemberInfo memberInfo, JsonSerializerOptions options)
+        internal static JsonPropertyInfo CreateIgnoredPropertyPlaceholder(MemberInfo memberInfo, JsonSerializerOptions options)
         {
             JsonPropertyInfo jsonPropertyInfo = new JsonPropertyInfo<sbyte>();
             jsonPropertyInfo.Options = options;
@@ -48,9 +56,12 @@ namespace System.Text.Json
             return jsonPropertyInfo;
         }
 
-        public Type DeclaredPropertyType { get; private set; } = null!;
+        /// <summary>
+        /// todo
+        /// </summary>
+        public Type DeclaredPropertyType { get; internal set; } = null!;
 
-        public virtual void GetPolicies(JsonIgnoreCondition? ignoreCondition, JsonNumberHandling? parentTypeNumberHandling, bool defaultValueIsNull)
+        internal virtual void GetPolicies(JsonIgnoreCondition? ignoreCondition, JsonNumberHandling? parentTypeNumberHandling, bool defaultValueIsNull)
         {
             DetermineSerializationCapabilities(ignoreCondition);
             DeterminePropertyName();
@@ -232,20 +243,20 @@ namespace System.Text.Json
             }
         }
 
-        public static TAttribute? GetAttribute<TAttribute>(MemberInfo memberInfo) where TAttribute : Attribute
+        internal static TAttribute? GetAttribute<TAttribute>(MemberInfo memberInfo) where TAttribute : Attribute
         {
             return (TAttribute?)memberInfo.GetCustomAttribute(typeof(TAttribute), inherit: false);
         }
 
-        public abstract bool GetMemberAndWriteJson(object obj, ref WriteStack state, Utf8JsonWriter writer);
-        public abstract bool GetMemberAndWriteJsonExtensionData(object obj, ref WriteStack state, Utf8JsonWriter writer);
+        internal abstract bool GetMemberAndWriteJson(object obj, ref WriteStack state, Utf8JsonWriter writer);
+        internal abstract bool GetMemberAndWriteJsonExtensionData(object obj, ref WriteStack state, Utf8JsonWriter writer);
 
-        public abstract object? GetValueAsObject(object obj);
+        internal abstract object? GetValueAsObject(object obj);
 
-        public bool HasGetter { get; set; }
-        public bool HasSetter { get; set; }
+        internal bool HasGetter { get; set; }
+        internal bool HasSetter { get; set; }
 
-        public virtual void Initialize(
+        internal virtual void Initialize(
             Type parentClassType,
             Type declaredPropertyType,
             Type? runtimePropertyType,
@@ -267,13 +278,13 @@ namespace System.Text.Json
             Options = options;
         }
 
-        public bool IgnoreDefaultValuesOnRead { get; private set; }
-        public bool IgnoreDefaultValuesOnWrite { get; private set; }
+        internal bool IgnoreDefaultValuesOnRead { get; private set; }
+        internal bool IgnoreDefaultValuesOnWrite { get; private set; }
 
         /// <summary>
         /// True if the corresponding cref="JsonClassInfo.PropertyInfoForClassInfo"/> is this instance.
         /// </summary>
-        public bool IsForClassInfo { get; protected set; }
+        internal bool IsForClassInfo { get; set; }
 
         // There are 3 copies of the property name:
         // 1) NameAsString. The unescaped property name.
@@ -286,7 +297,7 @@ namespace System.Text.Json
         /// the value specified in JsonPropertyNameAttribute,
         /// or the value returned from PropertyNamingPolicy(clrPropertyName).
         /// </summary>
-        public string NameAsString { get; private set; } = null!;
+        public string NameAsString { get; internal set; } = null!;
 
         /// <summary>
         /// Utf8 version of NameAsString.
@@ -299,9 +310,9 @@ namespace System.Text.Json
         public byte[] EscapedNameSection = null!;
 
         // Options can be referenced here since all JsonPropertyInfos originate from a JsonClassInfo that is cached on JsonSerializerOptions.
-        protected JsonSerializerOptions Options { get; set; } = null!; // initialized in Init method
+        internal JsonSerializerOptions Options { get; set; } = null!; // initialized in Init method
 
-        public bool ReadJsonAndAddExtensionProperty(object obj, ref ReadStack state, ref Utf8JsonReader reader)
+        internal bool ReadJsonAndAddExtensionProperty(object obj, ref ReadStack state, ref Utf8JsonReader reader)
         {
             object propValue = GetValueAsObject(obj)!;
 
@@ -346,11 +357,11 @@ namespace System.Text.Json
             return true;
         }
 
-        public abstract bool ReadJsonAndSetMember(object obj, ref ReadStack state, ref Utf8JsonReader reader);
+        internal abstract bool ReadJsonAndSetMember(object obj, ref ReadStack state, ref Utf8JsonReader reader);
 
-        public abstract bool ReadJsonAsObject(ref ReadStack state, ref Utf8JsonReader reader, out object? value);
+        internal abstract bool ReadJsonAsObject(ref ReadStack state, ref Utf8JsonReader reader, out object? value);
 
-        public bool ReadJsonExtensionDataValue(ref ReadStack state, ref Utf8JsonReader reader, out object? value)
+        internal bool ReadJsonExtensionDataValue(ref ReadStack state, ref Utf8JsonReader reader, out object? value)
         {
             Debug.Assert(this == state.Current.JsonClassInfo.DataExtensionProperty);
 
@@ -372,11 +383,11 @@ namespace System.Text.Json
             return true;
         }
 
-        public Type ParentClassType { get; private set; } = null!;
+        internal Type ParentClassType { get; private set; } = null!;
 
-        public MemberInfo? MemberInfo { get; private set; }
+        internal MemberInfo? MemberInfo { get; private set; }
 
-        public JsonClassInfo RuntimeClassInfo
+        internal JsonClassInfo RuntimeClassInfo
         {
             get
             {
@@ -387,16 +398,31 @@ namespace System.Text.Json
 
                 return _runtimeClassInfo;
             }
+            set
+            {
+                // Used with code-gen
+                Debug.Assert(_runtimeClassInfo == null);
+                _runtimeClassInfo = value;
+            }
         }
 
-        public Type? RuntimePropertyType { get; private set; }
+        internal Type? RuntimePropertyType { get; set; }
 
-        public abstract void SetExtensionDictionaryAsObject(object obj, object? extensionDict);
+        internal JsonNumberHandling? NumberHandling { get; private set; }
 
-        public bool ShouldSerialize { get; private set; }
-        public bool ShouldDeserialize { get; private set; }
-        public bool IsIgnored { get; private set; }
 
-        public JsonNumberHandling? NumberHandling { get; private set; }
+        internal abstract void SetExtensionDictionaryAsObject(object obj, object? extensionDict);
+
+        /// <summary>
+        /// todo
+        /// </summary>
+        public bool ShouldSerialize { get; internal set; }
+
+        /// <summary>
+        /// todo
+        /// </summary>
+        public bool ShouldDeserialize { get; internal set; }
+
+        internal bool IsIgnored { get; private set; }
     }
 }
