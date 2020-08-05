@@ -10114,10 +10114,13 @@ MethodTableBuilder::SetupMethodTable2(
 
     EEClass *pClass = GetHalfBakedClass();
 
-    DWORD cbDict = bmtGenerics->HasInstantiation()
-                   ?  DictionaryLayout::GetDictionarySizeFromLayout(
-                          bmtGenerics->GetNumGenericArgs(), pClass->GetDictionaryLayout())
-                   : 0;
+    DWORD cbDictSlotSize = 0;
+    DWORD cbDictAllocSize = 0;
+    if (bmtGenerics->HasInstantiation())
+    {
+        cbDictSlotSize = DictionaryLayout::GetDictionarySlotSizeFromLayout(bmtGenerics->GetNumGenericArgs(), pClass->GetDictionaryLayout());
+        cbDictAllocSize = DictionaryLayout::GetDictionaryAllocSizeFromLayout(bmtGenerics->GetNumGenericArgs(), pClass->GetDictionaryLayout());
+    }
 
 #ifdef FEATURE_COLLECTIBLE_TYPES
     BOOL fCollectible = pLoaderModule->IsCollectible();
@@ -10150,7 +10153,7 @@ MethodTableBuilder::SetupMethodTable2(
                                    dwGCSize,
                                    bmtInterface->dwInterfaceMapSize,
                                    bmtGenerics->numDicts,
-                                   cbDict,
+                                   cbDictAllocSize,
                                    GetParentMethodTable(),
                                    GetClassLoader(),
                                    bmtAllocator,
@@ -10370,7 +10373,7 @@ MethodTableBuilder::SetupMethodTable2(
 
             PTR_Dictionary pDictionarySlots = pMT->GetPerInstInfo()[bmtGenerics->numDicts - 1].GetValue();
             DWORD* pSizeSlot = (DWORD*)(pDictionarySlots + bmtGenerics->GetNumGenericArgs());
-            *pSizeSlot = cbDict;
+            *pSizeSlot = cbDictSlotSize;
         }
     }
 

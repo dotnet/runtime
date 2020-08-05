@@ -4112,11 +4112,11 @@ void MethodTable::Save(DataImage *image, DWORD profilingFlags)
 
         if (!fIsWriteable)
         {
-            image->StoreInternedStructure(pDictionary, GetInstAndDictSize(), DataImage::ITEM_DICTIONARY);
+            image->StoreInternedStructure(pDictionary, GetInstAndDictSlotSize(), DataImage::ITEM_DICTIONARY);
         }
         else
         {
-            image->StoreStructure(pDictionary, GetInstAndDictSize(), DataImage::ITEM_DICTIONARY_WRITEABLE);
+            image->StoreStructure(pDictionary, GetInstAndDictSlotSize(), DataImage::ITEM_DICTIONARY_WRITEABLE);
         }
     }
 
@@ -8888,7 +8888,7 @@ MethodTable::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
 
     if (GetDictionary() != NULL)
     {
-        DacEnumMemoryRegion(dac_cast<TADDR>(GetDictionary()), GetInstAndDictSize());
+        DacEnumMemoryRegion(dac_cast<TADDR>(GetDictionary()), GetInstAndDictSlotSize());
     }
 
     VtableIndirectionSlotIterator it = IterateVtableIndirectionSlots();

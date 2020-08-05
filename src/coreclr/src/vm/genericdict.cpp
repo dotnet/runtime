@@ -71,11 +71,11 @@ DictionaryLayout* DictionaryLayout::Allocate(WORD              numSlots,
 
 //---------------------------------------------------------------------------------------
 //
-// Count the number of bytes that are required in a dictionary with the specified layout
+// Count the number of bytes that are required for slots in a dictionary with the specified layout
 // 
 //static
 DWORD 
-DictionaryLayout::GetDictionarySizeFromLayout(
+DictionaryLayout::GetDictionarySlotSizeFromLayout(
     DWORD                numGenericArgs, 
     PTR_DictionaryLayout pDictLayout)
 {
@@ -88,9 +88,34 @@ DictionaryLayout::GetDictionarySizeFromLayout(
     {
         bytes += sizeof(TADDR);                                 // Slot for dictionary size
         bytes += pDictLayout->m_numSlots * sizeof(TADDR);       // Slots for dictionary slots based on a dictionary layout
+    
     }
 
     return bytes;
+}
+
+//---------------------------------------------------------------------------------------
+//
+// Total number of bytes for a dictionary with the specified layout (including optional back pointer
+// used by expanded dictionaries).
+// 
+//static
+DWORD 
+DictionaryLayout::GetDictionaryAllocSizeFromLayout(
+    DWORD                numGenericArgs, 
+    PTR_DictionaryLayout pDictLayout)
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+    PRECONDITION(numGenericArgs > 0);
+    PRECONDITION(CheckPointer(pDictLayout, NULL_OK));
+
+    DWORD allocSize = GetDictionarySlotSizeFromLayout(numGenericArgs, pDictLayout);
+    if (pDictLayout != nullptr && pDictLayout->m_numSlots > pDictLayout->m_numInitialSlots)
+    {
+        // Bytes for back-pointer to previous dictionary used during dictionary expansion
+        allocSize += sizeof(PTR_Dictionary);
+    }
+    return allocSize;
 }
 
 #ifndef DACCESS_COMPILE
@@ -800,12 +825,12 @@ Dictionary* Dictionary::GetMethodDictionaryWithSizeCheck(MethodDesc* pMD, ULONG 
             InstantiatedMethodDesc* pIMD = pMD->AsInstantiatedMethodDesc();
             _ASSERTE(pDictLayout != NULL && pDictLayout->GetMaxSlots() > 0);
 
-            DWORD expectedDictionarySize = DictionaryLayout::GetDictionarySizeFromLayout(numGenericArgs, pDictLayout);
-            _ASSERT(currentDictionarySize < expectedDictionarySize);
+            DWORD expectedDictionarySlotSize = DictionaryLayout::GetDictionarySlotSizeFromLayout(numGenericArgs, pDictLayout);
+            _ASSERT(currentDictionarySize < expectedDictionarySlotSize);
 
-            // Reserve space for an extra pointer to the previous dictionary at the end
-            DWORD dictionarySizePlusBackPointer = expectedDictionarySize + sizeof(Dictionary *);
-            Dictionary* pNewDictionary = (Dictionary*)(void*)pIMD->GetLoaderAllocator()->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(dictionarySizePlusBackPointer));
+            DWORD expectedDictionaryAllocSize = DictionaryLayout::GetDictionaryAllocSizeFromLayout(numGenericArgs, pDictLayout);
+
+            Dictionary* pNewDictionary = (Dictionary*)(void*)pIMD->GetLoaderAllocator()->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(expectedDictionaryAllocSize));
 
             // Copy old dictionary entry contents
             for (DWORD i = 0; i < currentDictionarySize / sizeof(DictionaryEntry); i++)
@@ -815,7 +840,7 @@ Dictionary* Dictionary::GetMethodDictionaryWithSizeCheck(MethodDesc* pMD, ULONG 
             }
 
             DWORD* pSizeSlot = (DWORD*)(pNewDictionary + numGenericArgs);
-            *pSizeSlot = expectedDictionarySize;
+            *pSizeSlot = expectedDictionarySlotSize;
             *pNewDictionary->GetBackPointerSlot(numGenericArgs) = pDictionary;
 
             // Publish the new dictionary slots to the type.
@@ -858,14 +883,13 @@ Dictionary* Dictionary::GetTypeDictionaryWithSizeCheck(MethodTable* pMT, ULONG s
             DictionaryLayout* pDictLayout = pMT->GetClass()->GetDictionaryLayout();
             _ASSERTE(pDictLayout != NULL && pDictLayout->GetMaxSlots() > 0);
 
-            DWORD expectedDictionarySize = DictionaryLayout::GetDictionarySizeFromLayout(numGenericArgs, pDictLayout);
-            _ASSERT(currentDictionarySize < expectedDictionarySize);
+            DWORD expectedDictionarySlotSize = DictionaryLayout::GetDictionarySlotSizeFromLayout(numGenericArgs, pDictLayout);
+            _ASSERT(currentDictionarySlotSize < expectedDictionarySize);
 
-            // Reserve space for an extra pointer to the previous dictionary at the end
-            DWORD dictionarySizePlusBackPointer = expectedDictionarySize + sizeof(Dictionary *);
+            DWORD expectedDictionaryAllocSize = DictionaryLayout::GetDictionaryAllocSizeFromLayout(numGenericArgs, pDictLayout);
 
             // Expand type dictionary
-            Dictionary* pNewDictionary = (Dictionary*)(void*)pMT->GetLoaderAllocator()->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(dictionarySizePlusBackPointer));
+            Dictionary* pNewDictionary = (Dictionary*)(void*)pMT->GetLoaderAllocator()->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(expectedDictionaryAllocSize));
 
             // Copy old dictionary entry contents
             for (DWORD i = 0; i < currentDictionarySize / sizeof(DictionaryEntry); i++)
@@ -875,7 +899,7 @@ Dictionary* Dictionary::GetTypeDictionaryWithSizeCheck(MethodTable* pMT, ULONG s
             }
 
             DWORD* pSizeSlot = (DWORD*)(pNewDictionary + numGenericArgs);
-            *pSizeSlot = expectedDictionarySize;
+            *pSizeSlot = expectedDictionarySlotSize;
             *pNewDictionary->GetBackPointerSlot(numGenericArgs) = pDictionary;
 
             // Publish the new dictionary slots to the type.
@@ -1524,6 +1548,11 @@ Dictionary::PopulateEntry(
             while (dictionarySize > sizeOfInitialDictionary)
             {
                 pDictionary = *pDictionary->GetBackPointerSlot(numGenericArgs);
+                if (pDictionary == nullptr)
+                {
+                    // Initial dictionary allocated with higher numbers of slots than the initial layout slot count
+                    break;
+                }
                 dictionarySize = pDictionary->GetDictionarySlotsSize(numGenericArgs);
                 if (dictionarySize < minimumSizeOfDictionaryToPatch)
                 {
