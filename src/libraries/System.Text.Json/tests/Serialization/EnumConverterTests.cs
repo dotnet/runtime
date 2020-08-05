@@ -306,7 +306,7 @@ namespace System.Text.Json.Serialization.Tests
                 Converters = { new JsonStringEnumConverter() }
             };
 
-            const int MaxValue = 2097152; // value for MyEnum.V
+            const int MaxValue = (int)MyEnum.V;
 
             // Every value between 0 and MaxValue maps to a valid enum
             // identifier, and is a candidate to go into the name cache.
