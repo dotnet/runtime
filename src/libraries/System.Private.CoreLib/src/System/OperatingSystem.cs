@@ -79,5 +79,82 @@ namespace System
                 return _versionString;
             }
         }
+
+        public static bool IsBrowser() =>
+#if TARGET_BROWSER
+            true;
+#else
+            false;
+#endif
+
+        public static bool IsLinux() =>
+#if TARGET_LINUX
+            true;
+#else
+            false;
+#endif
+
+        public static bool IsFreeBSD() =>
+#if TARGET_FREEBSD
+            true;
+#else
+            false;
+#endif
+
+        //public static bool IsFreeBSDVersionAtLeast(int major, int minor = 0, int build = 0, int revision = 0);
+
+        public static bool IsAndroid() =>
+#if TARGET_ANDROID
+            true;
+#else
+            false;
+#endif
+
+        //public static bool IsAndroidVersionAtLeast(int major, int minor = 0, int build = 0, int revision = 0);
+
+        public static bool IsIOS() =>
+#if TARGET_IOS
+            true;
+#else
+            false;
+#endif
+
+        //public static bool IsIOSVersionAtLeast(int major, int minor = 0, int build = 0, int revision = 0);
+
+        public static bool IsMacOS() =>
+#if TARGET_OSX
+            true;
+#else
+            false;
+#endif
+
+        //public static bool IsMacOSVersionAtLeast(int major, int minor = 0, int build = 0, int revision = 0);
+
+        public static bool IsTvOS() =>
+#if TARGET_TVOS
+            true;
+#else
+            false;
+#endif
+
+        //public static bool IsTvOSVersionAtLeast(int major, int minor = 0, int build = 0, int revision = 0);
+
+        public static bool IsWatchOS() =>
+#if TARGET_WATCHOS
+            true;
+#else
+            false;
+#endif
+
+        //public static bool IsWatchOSVersionAtLeast(int major, int minor = 0, int build = 0, int revision = 0);
+
+        public static bool IsWindows() =>
+#if TARGET_WINDOWS
+            true;
+#else
+            false;
+#endif
+
+        //public static bool IsWindowsVersionAtLeast(int major, int minor = 0, int build = 0, int revision = 0);
     }
 }

@@ -47,5 +47,117 @@ namespace System.Tests
             Assert.Equal(os.Version, os2.Version);
             Assert.Equal(os.VersionString, os2.VersionString);
         }
+
+        [Fact, PlatformSpecific(TestPlatforms.Browser)]
+        public static void CheckBrowser()
+        {
+            Assert.True(OperatingSystem.IsBrowser());
+            Assert.False(OperatingSystem.IsLinux());
+            Assert.False(OperatingSystem.IsFreeBSD());
+            Assert.False(OperatingSystem.IsAndroid());
+            Assert.False(OperatingSystem.IsIOS());
+            Assert.False(OperatingSystem.IsMacOS());
+            Assert.False(OperatingSystem.IsTvOS());
+            Assert.False(OperatingSystem.IsWatchOS());
+            Assert.False(OperatingSystem.IsWindows());
+        }
+
+        [Fact, PlatformSpecific(TestPlatforms.Linux)]
+        public static void CheckLinux()
+        {
+            Assert.False(OperatingSystem.IsBrowser());
+            Assert.True(OperatingSystem.IsLinux());
+            Assert.False(OperatingSystem.IsFreeBSD());
+            Assert.False(OperatingSystem.IsAndroid());
+            Assert.False(OperatingSystem.IsIOS());
+            Assert.False(OperatingSystem.IsMacOS());
+            Assert.False(OperatingSystem.IsTvOS());
+            Assert.False(OperatingSystem.IsWatchOS());
+            Assert.False(OperatingSystem.IsWindows());
+        }
+
+        [Fact, PlatformSpecific(TestPlatforms.FreeBSD)]
+        public static void CheckFreeBSD()
+        {
+            Assert.False(OperatingSystem.IsBrowser());
+            Assert.False(OperatingSystem.IsLinux());
+            Assert.True(OperatingSystem.IsFreeBSD());
+            Assert.False(OperatingSystem.IsAndroid());
+            Assert.False(OperatingSystem.IsIOS());
+            Assert.False(OperatingSystem.IsMacOS());
+            Assert.False(OperatingSystem.IsTvOS());
+            Assert.False(OperatingSystem.IsWatchOS());
+            Assert.False(OperatingSystem.IsWindows());
+        }
+
+        [Fact, PlatformSpecific(TestPlatforms.Android)]
+        public static void CheckAndroid()
+        {
+            Assert.False(OperatingSystem.IsBrowser());
+            Assert.False(OperatingSystem.IsLinux());
+            Assert.False(OperatingSystem.IsFreeBSD());
+            Assert.True(OperatingSystem.IsAndroid());
+            Assert.False(OperatingSystem.IsIOS());
+            Assert.False(OperatingSystem.IsMacOS());
+            Assert.False(OperatingSystem.IsTvOS());
+            Assert.False(OperatingSystem.IsWatchOS());
+            Assert.False(OperatingSystem.IsWindows());
+        }
+
+        [Fact, PlatformSpecific(TestPlatforms.iOS)]
+        public static void CheckIOS()
+        {
+            Assert.False(OperatingSystem.IsBrowser());
+            Assert.False(OperatingSystem.IsLinux());
+            Assert.False(OperatingSystem.IsFreeBSD());
+            Assert.False(OperatingSystem.IsAndroid());
+            Assert.False(OperatingSystem.IsIOS());
+            Assert.False(OperatingSystem.IsMacOS());
+            Assert.False(OperatingSystem.IsTvOS());
+            Assert.False(OperatingSystem.IsWatchOS());
+            Assert.False(OperatingSystem.IsWindows());
+        }
+
+        [Fact, PlatformSpecific(TestPlatforms.OSX)]
+        public static void CheckMacOS()
+        {
+            Assert.False(OperatingSystem.IsBrowser());
+            Assert.False(OperatingSystem.IsLinux());
+            Assert.False(OperatingSystem.IsFreeBSD());
+            Assert.False(OperatingSystem.IsAndroid());
+            Assert.False(OperatingSystem.IsIOS());
+            Assert.True(OperatingSystem.IsMacOS());
+            Assert.False(OperatingSystem.IsTvOS());
+            Assert.False(OperatingSystem.IsWatchOS());
+            Assert.False(OperatingSystem.IsWindows());
+        }
+
+        [Fact, PlatformSpecific(TestPlatforms.tvOS)]
+        public static void CheckTvOS()
+        {
+            Assert.False(OperatingSystem.IsBrowser());
+            Assert.False(OperatingSystem.IsLinux());
+            Assert.False(OperatingSystem.IsFreeBSD());
+            Assert.False(OperatingSystem.IsAndroid());
+            Assert.False(OperatingSystem.IsIOS());
+            Assert.False(OperatingSystem.IsMacOS());
+            Assert.True(OperatingSystem.IsTvOS());
+            Assert.False(OperatingSystem.IsWatchOS());
+            Assert.False(OperatingSystem.IsWindows());
+        }
+
+        [Fact, PlatformSpecific(TestPlatforms.Windows)]
+        public static void CheckWindows()
+        {
+            Assert.False(OperatingSystem.IsBrowser());
+            Assert.False(OperatingSystem.IsLinux());
+            Assert.False(OperatingSystem.IsFreeBSD());
+            Assert.False(OperatingSystem.IsAndroid());
+            Assert.False(OperatingSystem.IsIOS());
+            Assert.False(OperatingSystem.IsMacOS());
+            Assert.False(OperatingSystem.IsTvOS());
+            Assert.False(OperatingSystem.IsWatchOS());
+            Assert.True(OperatingSystem.IsWindows());
+        }
     }
 }
