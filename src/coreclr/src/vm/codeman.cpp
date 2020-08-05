@@ -1354,7 +1354,7 @@ void EEJitManager::SetCpuInfo()
     int cpuidInfo[4];
 
     __cpuid(cpuidInfo, 0x00000000);
-    int maxCpuId = cpuidInfo[0];
+    uint32_t maxCpuId = static_cast<uint32_t>(cpuidInfo[0]);
 
     if (maxCpuId >= 1)
     {
@@ -1453,7 +1453,7 @@ void EEJitManager::SetCpuInfo()
     }
 
     __cpuid(cpuidInfo, 0x80000000);
-    int maxCpuIdEx = cpuidInfo[0];
+    uint32_t maxCpuIdEx = static_cast<uint32_t>(cpuidInfo[0]);
 
     if (maxCpuIdEx >= 0x80000001)
     {
