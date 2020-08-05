@@ -12,21 +12,21 @@ namespace System.Diagnostics
 
         private const bool CaseSensitiveEnvironmentVariables = false;
 
-        [MinimumOSPlatform("windows7.0")]
+        [SupportedOSPlatform("windows7.0")]
         public string? PasswordInClearText { get; set; }
 
-        [MinimumOSPlatform("windows7.0")]
+        [SupportedOSPlatform("windows7.0")]
         public string Domain
         {
             get => _domain ?? string.Empty;
             set => _domain = value;
         }
 
-        [MinimumOSPlatform("windows7.0")]
+        [SupportedOSPlatform("windows7.0")]
         public bool LoadUserProfile { get; set; }
 
         [CLSCompliant(false)]
-        [MinimumOSPlatform("windows7.0")]
+        [SupportedOSPlatform("windows7.0")]
         public SecureString? Password { get; set; }
     }
 }

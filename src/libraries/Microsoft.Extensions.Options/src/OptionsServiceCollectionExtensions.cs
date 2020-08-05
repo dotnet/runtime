@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -140,8 +141,10 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <typeparam name="TConfigureOptions">The type that will configure options.</typeparam>
         /// <param name="services">The <see cref="IServiceCollection"/> to add the services to.</param>
         /// <returns>The <see cref="IServiceCollection"/> so that additional calls can be chained.</returns>
-        public static IServiceCollection ConfigureOptions<TConfigureOptions>(this IServiceCollection services) where TConfigureOptions : class
-            => services.ConfigureOptions(typeof(TConfigureOptions));
+        public static IServiceCollection ConfigureOptions<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TConfigureOptions>(
+            this IServiceCollection services)
+            where TConfigureOptions : class
+                => services.ConfigureOptions(typeof(TConfigureOptions));
 
         private static bool IsAction(Type type)
             => (type.GetTypeInfo().IsGenericType && type.GetGenericTypeDefinition() == typeof(Action<>));
@@ -174,7 +177,9 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <param name="services">The <see cref="IServiceCollection"/> to add the services to.</param>
         /// <param name="configureType">The type that will configure options.</param>
         /// <returns>The <see cref="IServiceCollection"/> so that additional calls can be chained.</returns>
-        public static IServiceCollection ConfigureOptions(this IServiceCollection services, Type configureType)
+        public static IServiceCollection ConfigureOptions(
+            this IServiceCollection services,
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type configureType)
         {
             services.AddOptions();
             IEnumerable<Type> serviceTypes = FindConfigurationServices(configureType);

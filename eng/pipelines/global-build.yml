@@ -48,7 +48,6 @@ jobs:
       testGroup: innerloop
       nameSuffix: Runtime_Debug
       buildArgs: -c release -runtimeConfiguration debug
-      timeoutInMinutes: 120
 
 #
 # Build with Debug config and Release runtimeConfiguration

@@ -227,7 +227,7 @@ namespace System.Threading
             set => TrySetApartmentState(value);
         }
 
-        [MinimumOSPlatform("windows7.0")]
+        [SupportedOSPlatform("windows7.0")]
         public void SetApartmentState(ApartmentState state)
         {
             if (!TrySetApartmentState(state))

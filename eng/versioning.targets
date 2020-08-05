@@ -22,9 +22,9 @@
     </AssemblyMetadata>
   </ItemGroup>
 
-  <!-- Adds MinimumOSPlatform attribute for Windows Specific libraries -->
+  <!-- Adds SupportedOSPlatform attribute for Windows Specific libraries -->
   <ItemGroup Condition="'$(IsWindowsSpecific)' == 'true' and '$(IsTestProject)' != 'true'">
-    <AssemblyAttribute Include="System.Runtime.Versioning.MinimumOSPlatform">
+    <AssemblyAttribute Include="System.Runtime.Versioning.SupportedOSPlatform">
         <_Parameter1>$(MinimiumSupportedWindowsPlatform)</_Parameter1>
     </AssemblyAttribute>
   </ItemGroup>

@@ -44,7 +44,7 @@ namespace System.Security.Cryptography
             {
                 return _use40bitSalt;
             }
-            [MinimumOSPlatform("windows7.0")]
+            [SupportedOSPlatform("windows7.0")]
             set
             {
                 _use40bitSalt = value;
