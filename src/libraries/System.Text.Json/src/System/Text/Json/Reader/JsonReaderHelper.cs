@@ -69,9 +69,9 @@ namespace System.Text.Json
         {
 #if NETCOREAPP
             if (Vector.IsHardwareAccelerated ||
-                System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported)
+                System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeCompiled)
 #else
-            // RuntimeFeature.IsDynamicCodeSupported is not available on netstandard 2.0.
+            // RuntimeFeature.IsDynamicCodeCompiled is not available on netstandard 2.0.
             // Since the System.Text.Json package doesn't have a ns2.0-only assembly, just avoid
             // RuntimeFeature.IsDynamicCodeSupported instead of adding a new ns2.0-only assembly.
 
