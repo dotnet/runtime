@@ -20,6 +20,13 @@ namespace System.Net
         protected NetworkException(SerializationInfo serializationInfo, StreamingContext streamingContext)
             : base(serializationInfo, streamingContext)
         {
+            NetworkError = (NetworkError)serializationInfo.GetInt32("NetworkError");
+        }
+
+        public override void GetObjectData(SerializationInfo serializationInfo, StreamingContext streamingContext)
+        {
+            base.GetObjectData(serializationInfo, streamingContext);
+            serializationInfo.AddValue("NetworkError", (int)NetworkError);
         }
 
         /// <summary>Returns the specific kind of error.</summary>
