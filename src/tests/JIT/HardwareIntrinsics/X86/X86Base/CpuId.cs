@@ -27,7 +27,7 @@ namespace IntelHardwareIntrinsicTest
             (int eax, int ebx, int ecx, int edx) = X86Base.CpuId(0x00000000, 0x00000000);
 
             bool isAuthenticAmd = (ebx == 0x68747541) && (ecx == 0x444D4163) && (edx == 0x69746E65);
-            bool isGenuineIntel = (ebx == 0x756E6547) && (ecx == 0x6C65746E) && (edx == 0x6C656E69);
+            bool isGenuineIntel = (ebx == 0x756E6547) && (ecx == 0x6C65746E) && (edx == 0x49656E69);
 
             if (!isAuthenticAmd && !isGenuineIntel)
             {
