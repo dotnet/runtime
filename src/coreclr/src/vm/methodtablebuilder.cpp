@@ -10118,6 +10118,7 @@ MethodTableBuilder::SetupMethodTable2(
                    ?  DictionaryLayout::GetDictionarySizeFromLayout(
                           bmtGenerics->GetNumGenericArgs(), pClass->GetDictionaryLayout())
                    : 0;
+    DWORD cbDictPlusBackPointer = (cbDict != 0 ? cbDict + sizeof(Dictionary *) : 0);
 
 #ifdef FEATURE_COLLECTIBLE_TYPES
     BOOL fCollectible = pLoaderModule->IsCollectible();
@@ -10150,7 +10151,7 @@ MethodTableBuilder::SetupMethodTable2(
                                    dwGCSize,
                                    bmtInterface->dwInterfaceMapSize,
                                    bmtGenerics->numDicts,
-                                   cbDict,
+                                   cbDictPlusBackPointer,
                                    GetParentMethodTable(),
                                    GetClassLoader(),
                                    bmtAllocator,

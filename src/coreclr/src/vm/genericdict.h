@@ -171,7 +171,7 @@ public:
     DWORD GetMaxSlots();
     DWORD GetNumInitialSlots();
     DWORD GetNumUsedSlots();
-
+    
     PTR_DictionaryEntryLayout GetEntryLayout(DWORD i)
     {
         LIMITED_METHOD_CONTRACT;
@@ -299,6 +299,12 @@ private:
     {
         LIMITED_METHOD_CONTRACT;
         return VolatileLoadWithoutBarrier((DWORD*)GetSlotAddr(numGenericArgs, 0));
+    }
+    
+    inline Dictionary **GetBackPointerSlot(DWORD numGenericArgs)
+    {
+        LIMITED_METHOD_CONTRACT;
+        return (Dictionary **)((uint8_t *)m_pEntries + GetDictionarySlotsSize(numGenericArgs));
     }
 #endif // #ifndef DACCESS_COMPILE
 

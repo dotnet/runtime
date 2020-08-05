@@ -392,9 +392,10 @@ InstantiatedMethodDesc::NewInstantiatedMethodDesc(MethodTable *pExactMT,
 #endif // _DEBUG
             }
 
-            // Allocate space for the instantiation and dictionary
+            // Allocate space for the instantiation and dictionary; reserve an extra pointer for the dictionary linked list
             infoSize = DictionaryLayout::GetDictionarySizeFromLayout(methodInst.GetNumArgs(), pDL);
-            pInstOrPerInstInfo = (TypeHandle*)(void*)amt.Track(pAllocator->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(infoSize)));
+            DWORD sizePlusBackPointer = infoSize + sizeof(Dictionary *);
+            pInstOrPerInstInfo = (TypeHandle*)(void*)amt.Track(pAllocator->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(sizePlusBackPointer)));
             for (DWORD i = 0; i < methodInst.GetNumArgs(); i++)
                 pInstOrPerInstInfo[i] = methodInst[i];
 

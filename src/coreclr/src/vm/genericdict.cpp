@@ -769,6 +769,8 @@ Dictionary::Restore(
 #endif // FEATURE_PREJIT
 
 #if !defined(CROSSGEN_COMPILE)
+DWORD MethodDictionaryExpansionCount = 0;
+
 Dictionary* Dictionary::GetMethodDictionaryWithSizeCheck(MethodDesc* pMD, ULONG slotIndex)
 {
     CONTRACT(Dictionary*)
@@ -796,6 +798,8 @@ Dictionary* Dictionary::GetMethodDictionaryWithSizeCheck(MethodDesc* pMD, ULONG 
 
         if (currentDictionarySize <= (slotIndex * sizeof(DictionaryEntry)))
         {
+            InterlockedIncrement(&MethodDictionaryExpansionCount);
+
             DictionaryLayout* pDictLayout = pMD->GetDictionaryLayout();
             InstantiatedMethodDesc* pIMD = pMD->AsInstantiatedMethodDesc();
             _ASSERTE(pDictLayout != NULL && pDictLayout->GetMaxSlots() > 0);
@@ -803,7 +807,9 @@ Dictionary* Dictionary::GetMethodDictionaryWithSizeCheck(MethodDesc* pMD, ULONG 
             DWORD expectedDictionarySize = DictionaryLayout::GetDictionarySizeFromLayout(numGenericArgs, pDictLayout);
             _ASSERT(currentDictionarySize < expectedDictionarySize);
 
-            Dictionary* pNewDictionary = (Dictionary*)(void*)pIMD->GetLoaderAllocator()->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(expectedDictionarySize));
+            // Reserve space for an extra pointer to the previous dictionary at the end
+            DWORD dictionarySizePlusBackPointer = expectedDictionarySize + sizeof(Dictionary *);
+            Dictionary* pNewDictionary = (Dictionary*)(void*)pIMD->GetLoaderAllocator()->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(dictionarySizePlusBackPointer));
 
             // Copy old dictionary entry contents
             for (DWORD i = 0; i < currentDictionarySize / sizeof(DictionaryEntry); i++)
@@ -814,6 +820,7 @@ Dictionary* Dictionary::GetMethodDictionaryWithSizeCheck(MethodDesc* pMD, ULONG 
 
             DWORD* pSizeSlot = (DWORD*)(pNewDictionary + numGenericArgs);
             *pSizeSlot = expectedDictionarySize;
+            *pNewDictionary->GetBackPointerSlot(numGenericArgs) = pDictionary;
 
             // Publish the new dictionary slots to the type.
             FastInterlockExchangePointer(pIMD->m_pPerInstInfo.GetValuePtr(), pNewDictionary);
@@ -824,6 +831,8 @@ Dictionary* Dictionary::GetMethodDictionaryWithSizeCheck(MethodDesc* pMD, ULONG 
 
     RETURN pDictionary;
 }
+
+DWORD TypeDictionaryExpansionCount = 0;
 
 Dictionary* Dictionary::GetTypeDictionaryWithSizeCheck(MethodTable* pMT, ULONG slotIndex)
 {
@@ -852,14 +861,19 @@ Dictionary* Dictionary::GetTypeDictionaryWithSizeCheck(MethodTable* pMT, ULONG s
 
         if (currentDictionarySize <= (slotIndex * sizeof(DictionaryEntry)))
         {
+            InterlockedIncrement(&TypeDictionaryExpansionCount);
+
             DictionaryLayout* pDictLayout = pMT->GetClass()->GetDictionaryLayout();
             _ASSERTE(pDictLayout != NULL && pDictLayout->GetMaxSlots() > 0);
 
             DWORD expectedDictionarySize = DictionaryLayout::GetDictionarySizeFromLayout(numGenericArgs, pDictLayout);
             _ASSERT(currentDictionarySize < expectedDictionarySize);
 
+            // Reserve space for an extra pointer to the previous dictionary at the end
+            DWORD dictionarySizePlusBackPointer = expectedDictionarySize + sizeof(Dictionary *);
+
             // Expand type dictionary
-            Dictionary* pNewDictionary = (Dictionary*)(void*)pMT->GetLoaderAllocator()->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(expectedDictionarySize));
+            Dictionary* pNewDictionary = (Dictionary*)(void*)pMT->GetLoaderAllocator()->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(dictionarySizePlusBackPointer));
 
             // Copy old dictionary entry contents
             for (DWORD i = 0; i < currentDictionarySize / sizeof(DictionaryEntry); i++)
@@ -870,6 +884,7 @@ Dictionary* Dictionary::GetTypeDictionaryWithSizeCheck(MethodTable* pMT, ULONG s
 
             DWORD* pSizeSlot = (DWORD*)(pNewDictionary + numGenericArgs);
             *pSizeSlot = expectedDictionarySize;
+            *pNewDictionary->GetBackPointerSlot(numGenericArgs) = pDictionary;
 
             // Publish the new dictionary slots to the type.
             ULONG dictionaryIndex = pMT->GetNumDicts() - 1;
@@ -883,6 +898,23 @@ Dictionary* Dictionary::GetTypeDictionaryWithSizeCheck(MethodTable* pMT, ULONG s
     RETURN pDictionary;
 }
 #endif // !CROSSGEN_COMPILE
+
+extern DWORD PopulateEntryCountBegin = 0;
+extern DWORD PopulateEntryCountEnd = 0;
+extern DWORD PopulateEntryCountCount = 0;
+
+static const DWORD PopulateEntryRingBufferCount = 3000000;
+
+struct PopulateEntryRingBufferEntry
+{
+    MethodDesc *MD;
+    MethodTable *MT;
+    LPVOID Signature;
+    DWORD IndexSlot;
+    LPVOID ppSlot;
+};
+
+extern PopulateEntryRingBufferEntry PopulateEntryRingBuffer[PopulateEntryRingBufferCount] = { };
 
 //---------------------------------------------------------------------------------------
 //
@@ -903,6 +935,14 @@ Dictionary::PopulateEntry(
 
     CORINFO_GENERIC_HANDLE result = NULL;
     *ppSlot = NULL;
+
+    DWORD index = InterlockedIncrement(&PopulateEntryCountBegin);
+    PopulateEntryRingBufferEntry& entry = PopulateEntryRingBuffer[index];
+    entry.MD = pMD;
+    entry.MT = pMT;
+    entry.Signature = signature;
+    entry.IndexSlot = dictionaryIndexAndSlot;
+    entry.ppSlot = ppSlot;
 
     bool isReadyToRunModule = (pModule != NULL && pModule->IsReadyToRun());
 
@@ -1490,12 +1530,22 @@ Dictionary::PopulateEntry(
 #if !defined(CROSSGEN_COMPILE)
         if (slotIndex != 0)
         {
+            InterlockedIncrement(&PopulateEntryCountEnd);
+
             Dictionary* pDictionary = (pMT != NULL) ?
                 GetTypeDictionaryWithSizeCheck(pMT, slotIndex) :
                 GetMethodDictionaryWithSizeCheck(pMD, slotIndex);
-
-            VolatileStoreWithoutBarrier(pDictionary->GetSlotAddr(0, slotIndex), (DictionaryEntry)result);
-            *ppSlot = pDictionary->GetSlotAddr(0, slotIndex);
+            DWORD numGenericArgs = (pMT != NULL ? pMT->GetNumGenericArgs() : pMD->GetNumGenericMethodArgs());
+            DWORD minimumSizeOfDictionaryToPatch = (slotIndex + 1) * sizeof(DictionaryEntry *);
+            DictionaryEntry *slot = pDictionary->GetSlotAddr(0, slotIndex);
+            VolatileStoreWithoutBarrier(slot, (DictionaryEntry)result);
+            *ppSlot = slot;
+            while ((pDictionary = *pDictionary->GetBackPointerSlot(numGenericArgs)) != nullptr &&
+                pDictionary->GetDictionarySlotsSize(numGenericArgs) >= minimumSizeOfDictionaryToPatch)
+            {
+                InterlockedIncrement(&PopulateEntryCountCount);
+                VolatileStoreWithoutBarrier(pDictionary->GetSlotAddr(0, slotIndex), (DictionaryEntry)result);
+            }
         }
 #endif // !CROSSGEN_COMPILE
     }
