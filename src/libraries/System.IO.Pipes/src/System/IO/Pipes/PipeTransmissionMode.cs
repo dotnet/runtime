@@ -8,7 +8,7 @@ namespace System.IO.Pipes
     public enum PipeTransmissionMode
     {
         Byte = 0,
-        [SupportedOSPlatform("windows7.0")]
+        [SupportedOSPlatform("windows")]
         Message = 1,
     }
 }

@@ -83,7 +83,7 @@ namespace System.Net
             {
                 return GetTimeout(Interop.HttpApi.HTTP_TIMEOUT_TYPE.EntityBody);
             }
-            [SupportedOSPlatform("windows7.0")]
+            [SupportedOSPlatform("windows")]
             set
             {
                 SetTimespanTimeout(Interop.HttpApi.HTTP_TIMEOUT_TYPE.EntityBody, value);
@@ -121,7 +121,7 @@ namespace System.Net
             {
                 return GetTimeout(Interop.HttpApi.HTTP_TIMEOUT_TYPE.RequestQueue);
             }
-            [SupportedOSPlatform("windows7.0")]
+            [SupportedOSPlatform("windows")]
             set
             {
                 SetTimespanTimeout(Interop.HttpApi.HTTP_TIMEOUT_TYPE.RequestQueue, value);
@@ -157,7 +157,7 @@ namespace System.Net
             {
                 return GetTimeout(Interop.HttpApi.HTTP_TIMEOUT_TYPE.HeaderWait);
             }
-            [SupportedOSPlatform("windows7.0")]
+            [SupportedOSPlatform("windows")]
             set
             {
                 SetTimespanTimeout(Interop.HttpApi.HTTP_TIMEOUT_TYPE.HeaderWait, value);
@@ -177,7 +177,7 @@ namespace System.Net
                 //
                 return _minSendBytesPerSecond;
             }
-            [SupportedOSPlatform("windows7.0")]
+            [SupportedOSPlatform("windows")]
             set
             {
                 //
