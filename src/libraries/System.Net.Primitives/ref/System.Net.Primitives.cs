@@ -330,6 +330,7 @@ namespace System.Net
         InvalidAddress,
         HostNotFound,
         ConnectionRefused,
+        OperationAborted,
         ConnectionAborted,
         ConnectionReset,
     }

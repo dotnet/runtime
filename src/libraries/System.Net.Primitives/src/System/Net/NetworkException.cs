@@ -17,12 +17,14 @@ namespace System.Net
             NetworkError = error;
         }
 
+        /// <summary>Creates a new instance of the <see cref='System.Net.NetworkException'/> from serialized data.</summary>
         protected NetworkException(SerializationInfo serializationInfo, StreamingContext streamingContext)
             : base(serializationInfo, streamingContext)
         {
             NetworkError = (NetworkError)serializationInfo.GetInt32("NetworkError");
         }
 
+        /// <summary>Populates the serialization data for this object.</summary>
         public override void GetObjectData(SerializationInfo serializationInfo, StreamingContext streamingContext)
         {
             base.GetObjectData(serializationInfo, streamingContext);

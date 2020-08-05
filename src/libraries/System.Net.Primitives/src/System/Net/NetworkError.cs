@@ -3,18 +3,31 @@
 
 namespace System.Net
 {
+    /// <summary>Defines a set of error codes for use with <see cref='System.Net.NetworkException'/>.</summary>
     public enum NetworkError : int
     {
+        /// <summary>An unknown network error occurred.</summary>
         Unknown = 0,
 
-        // Errors from connection establishment
+        /// <summary>The requested address is already in use.</summary>
         AddressInUse,
+
+        /// <summary>The requested address is invalid.</summary>
         InvalidAddress,
+
+        /// <summary>No such host is known.</summary>
         HostNotFound,
+
+        /// <summary>No connection could be made because the remote host actively refused it.</summary>
         ConnectionRefused,
 
-        // Errors from connection use (e.g NetworkStream.Read/Write)
+        /// <summary>The operation was aborted by the user.</summary>
+        OperationAborted,
+
+        /// <summary>The connection was aborted by the local host.</summary>
         ConnectionAborted,
+
+        /// <summary>The connection was forcibly closed by the remote host.</summary>
         ConnectionReset,
     }
 }
