@@ -27,8 +27,12 @@
       <!-- https://github.com/dotnet/runtime/issues/40336 - need to also suppress the following on non-Windows:
            IL2008: Could not find type A specified in resource B
            IL2037: No members were resolved for 'GetDefaultInstance'
+           
+           and on 32-bit builds:
+           IL2012: Could not find field 'Padding' in type 'System.Runtime.CompilerServices.RawArrayData'
       -->
       <LinkerNoWarn Condition="'$(OS)' != 'Windows_NT'">$(LinkerNoWarn);IL2008;IL2037</LinkerNoWarn>
+      <LinkerNoWarn Condition="'$(Platform)' != 'x64' AND '$(Platform)' != 'arm64'">$(LinkerNoWarn);IL2012</LinkerNoWarn>
       <ILLinkArgs>$(ILLinkArgs) --nowarn $(LinkerNoWarn)</ILLinkArgs>
     </PropertyGroup>
 

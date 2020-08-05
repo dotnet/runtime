@@ -8,8 +8,8 @@
     <TargetingPackDir>{TargetingPackDir}</TargetingPackDir>
 
     <LinkerNoWarn>IL2006;IL2026</LinkerNoWarn>
-    <!-- https://github.com/dotnet/runtime/issues/40336 - need to suppress IL2008;IL2009 on non-Windows -->
-    <LinkerNoWarn Condition="!$(RuntimeIdentifier.StartsWith('win'))">$(LinkerNoWarn);IL2008;IL2009</LinkerNoWarn>
+    <!-- https://github.com/dotnet/runtime/issues/40336 - need to suppress IL2008;IL2009;IL2037 on non-Windows -->
+    <LinkerNoWarn Condition="!$(RuntimeIdentifier.StartsWith('win'))">$(LinkerNoWarn);IL2008;IL2009;IL2037</LinkerNoWarn>
     <_ExtraTrimmerArgs>{ExtraTrimmerArgs} $(_ExtraTrimmerArgs) --nowarn $(LinkerNoWarn)</_ExtraTrimmerArgs>
   </PropertyGroup>
 
