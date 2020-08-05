@@ -23,7 +23,17 @@
            IL2050: P/invoke method A declares a parameter with COM marshalling. Correctness of COM interop
                    cannot be guaranteed after trimming. Interfaces and interface members might be removed.
       -->
-      <ILLinkArgs>$(ILLinkArgs) --nowarn IL2006;IL2009;IL2025;IL2026;IL2035;IL2050</ILLinkArgs>
+      <LinkerNoWarn>IL2006;IL2009;IL2025;IL2026;IL2035;IL2050</LinkerNoWarn>
+      <!-- https://github.com/dotnet/runtime/issues/40336 - need to also suppress the following on non-Windows:
+           IL2008: Could not find type A specified in resource B
+           IL2037: No members were resolved for 'GetDefaultInstance'
+           
+           and on 32-bit builds:
+           IL2012: Could not find field 'Padding' in type 'System.Runtime.CompilerServices.RawArrayData'
+      -->
+      <LinkerNoWarn Condition="'$(OS)' != 'Windows_NT'">$(LinkerNoWarn);IL2008;IL2037</LinkerNoWarn>
+      <LinkerNoWarn Condition="'$(Platform)' != 'x64' AND '$(Platform)' != 'arm64'">$(LinkerNoWarn);IL2012</LinkerNoWarn>
+      <ILLinkArgs>$(ILLinkArgs) --nowarn $(LinkerNoWarn)</ILLinkArgs>
     </PropertyGroup>
 
      <!-- Retrieve CoreLib's targetpath via GetTargetPath as it isn't binplaced yet. -->
