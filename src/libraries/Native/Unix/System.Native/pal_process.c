@@ -653,6 +653,47 @@ int32_t SystemNative_SetRLimit(RLimitResources resourceType, const RLimit* limit
 
 int32_t SystemNative_Kill(int32_t pid, int32_t signal)
 {
+#if defined(TARGET_MIPS64)
+    //see kernel source code arch/mips/include/uapi/asm/signal.h
+
+    switch (signal)
+    {
+        case 7:
+              signal = SIGBUS;
+        case 10:
+              signal = SIGUSR1;
+        case 12:
+              signal = SIGUSR2;
+        case 17:
+              signal = SIGCHLD;
+        case 18:
+              signal = SIGCONT;
+        case 19:
+              signal = SIGSTOP;
+        case 20:
+              signal = SIGTSTP;
+        case 21:
+              signal = SIGTTIN;
+        case 22:
+              signal = SIGTTOU;
+        case 23:
+              signal = SIGURG;
+        case 24:
+              signal = SIGXCPU;
+        case 25:
+              signal = SIGXFSZ;
+        case 26:
+              signal = SIGVTALRM;
+        case 27:
+              signal = SIGPROF;
+        case 28:
+              signal = SIGWINCH;
+        case 31:
+              signal = SIGSYS;
+        default:
+              assert_msg(false, "Unsupport signal", signal);  
+    }
+#endif
     return kill(pid, signal);
 }
 
