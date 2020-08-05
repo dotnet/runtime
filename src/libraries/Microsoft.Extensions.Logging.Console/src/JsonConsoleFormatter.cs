@@ -8,6 +8,7 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -19,7 +20,6 @@ namespace Microsoft.Extensions.Logging.Console
     internal class JsonConsoleFormatter : ConsoleFormatter, IDisposable
     {
         private IDisposable _optionsReloadToken;
-        private char[] _singleCharArray = new char[1];
 
         public JsonConsoleFormatter(IOptionsMonitor<JsonConsoleFormatterOptions> options)
             : base (ConsoleFormatterNames.Json)
@@ -160,8 +160,11 @@ namespace Microsoft.Extensions.Logging.Console
                     writer.WriteNumber(key, sbyteValue);
                     break;
                 case char charValue:
-                    _singleCharArray[0] = charValue;
-                    writer.WriteString(key, _singleCharArray.AsSpan());
+#if NETCOREAPP
+                    writer.WriteString(key, MemoryMarshal.CreateSpan(ref charValue, 1));
+#else
+                    writer.WriteString(key, charValue.ToString());
+#endif
                     break;
                 case decimal decimalValue:
                     writer.WriteNumber(key, decimalValue);
