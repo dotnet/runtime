@@ -1,5 +1,40 @@
 <Project DefaultTargets="Build">
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props))" />
 
+  <ItemGroup>
+    <TestConsoleAppSourceFiles Include="ComObjectTypeTest.cs" />
+    <TestConsoleAppSourceFiles Include="InterfaceTypeTest.cs" />
+    <TestConsoleAppSourceFiles Include="TypeConverters\BooleanConverterTest.cs" />
+    <TestConsoleAppSourceFiles Include="TypeConverters\BooleanConverterTest.cs" />
+    <TestConsoleAppSourceFiles Include="TypeConverters\ByteConverterTest.cs" />
+    <TestConsoleAppSourceFiles Include="TypeConverters\SByteConverterTest.cs" />
+    <TestConsoleAppSourceFiles Include="TypeConverters\CharConverterTest.cs" />
+    <TestConsoleAppSourceFiles Include="TypeConverters\DoubleConverterTest.cs" />
+    <TestConsoleAppSourceFiles Include="TypeConverters\StringConverterTest.cs" />
+    <TestConsoleAppSourceFiles Include="TypeConverters\Int16ConverterTest.cs" />
+    <TestConsoleAppSourceFiles Include="TypeConverters\Int32ConverterTest.cs" />
+    <TestConsoleAppSourceFiles Include="TypeConverters\Int64ConverterTest.cs" />
+    <TestConsoleAppSourceFiles Include="TypeConverters\SingleConverterTest.cs" />
+    <TestConsoleAppSourceFiles Include="TypeConverters\UInt16ConverterTest.cs" />
+    <TestConsoleAppSourceFiles Include="TypeConverters\UInt32ConverterTest.cs" />
+    <TestConsoleAppSourceFiles Include="TypeConverters\UInt64ConverterTest.cs" />
+    <TestConsoleAppSourceFiles Include="TypeConverters\TypeConverterTest.cs" />
+    <TestConsoleAppSourceFiles Include="TypeConverters\DateTimeConverterTest.cs" />
+    <TestConsoleAppSourceFiles Include="TypeConverters\DateTimeOffsetConverterTest.cs" />
+    <TestConsoleAppSourceFiles Include="TypeConverters\DecimalConverterTest.cs" />
+    <TestConsoleAppSourceFiles Include="TypeConverters\TimeSpanConverterTest.cs" />
+    <TestConsoleAppSourceFiles Include="TypeConverters\GuidConverterTest.cs" />
+    <TestConsoleAppSourceFiles Include="TypeConverters\ArrayConverterTest.cs" />
+    <TestConsoleAppSourceFiles Include="TypeConverters\CollectionConverterTest.cs" />
+    <TestConsoleAppSourceFiles Include="TypeConverters\EnumConverterTest.cs" />
+    <TestConsoleAppSourceFiles Include="TypeConverters\EnumConverterTest.cs" />
+    <TestConsoleAppSourceFiles Include="TypeConverters\NullableConverterTest.cs" />
+    <TestConsoleAppSourceFiles Include="TypeConverters\TypeConverter_CustomTypeTest.cs" />
+    <TestConsoleAppSourceFiles Include="TypeConverters\UriTypeConverterTest.cs" />
+    <TestConsoleAppSourceFiles Include="TypeConverters\CultureInfoConverterTest.cs" />
+    <TestConsoleAppSourceFiles Include="TypeConverters\VersionConverterTest.cs" />
+    <TestConsoleAppSourceFiles Include="TypeConverters\ReferenceConverterTest.cs" />
+  </ItemGroup>
+
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets))" />
 </Project>

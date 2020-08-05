@@ -218,7 +218,7 @@ namespace System.ComponentModel
                     {
                         // We did not get a converter. Traverse up the base class chain until
                         // we find one in the stock hashtable.
-                        _converter = (TypeConverter)SearchIntrinsicTable(IntrinsicTypeConverters, _type);
+                        _converter = GetIntrinsicTypeConverter(_type);
                         Debug.Assert(_converter != null, "There is no intrinsic setup in the hashtable for the Object type");
                     }
                 }
