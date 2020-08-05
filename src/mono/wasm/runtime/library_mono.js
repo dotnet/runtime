@@ -43,6 +43,99 @@ var MonoSupportLib = {
 			module ["mono_wasm_load_icu_data"] = MONO.mono_wasm_load_icu_data;
 			module ["mono_wasm_globalization_init"] = MONO.mono_wasm_globalization_init;
 			module ["mono_wasm_get_loaded_files"] = MONO.mono_wasm_get_loaded_files;
+			module ["mono_wasm_new_root_buffer"] = MONO.mono_wasm_new_root_buffer;
+			module ["mono_wasm_new_root_collection"] = MONO.mono_wasm_new_root_collection;
+		},
+
+		auto_release_queue: [],
+		auto_release_is_pending: false,
+		
+		_flush_auto_release_queue: function () {
+			// We may not have a this-reference here
+			MONO.auto_release_is_pending = false;
+			for (var i = 0, l = MONO.auto_release_queue; i < l; i++)
+				MONO.auto_release_queue[i].release ();
+			MONO.auto_release_queue.length = 0;
+		},
+
+		_queue_for_auto_release: function (obj) {
+			if (!MONO.auto_release_is_pending) {
+				++MONO.pump_count;
+				MONO.auto_release_is_pending = true;
+				if (ENVIRONMENT_IS_WEB) {
+					window.setTimeout (MONO._flush_auto_release_queue, 0);
+				} else if (ENVIRONMENT_IS_WORKER) {
+					self.setTimeout (MONO._flush_auto_release_queue, 0);
+				} else if (ENVIRONMENT_IS_NODE) {
+					global.setTimeout (MONO._flush_auto_release_queue, 0);
+				} else {
+					MONO.timeout_queue.push (MONO._flush_auto_release_queue);
+				}
+			}
+		},
+
+		mono_wasm_new_root_buffer: function (capacity, autoRelease, msg) {
+			if (!MONO.mono_gc_register_root)
+				MONO.mono_gc_register_root = Module.cwrap ("mono_gc_register_root", "number", ["number", "number", "number", "number", "number", "string"]);
+			if (!MONO.mono_gc_deregister_root)
+				MONO.mono_gc_deregister_root = Module.cwrap ("mono_gc_deregister_root", null, ["number"]);
+
+			if (capacity <= 0)
+				throw new Error("capacity >= 1");
+
+			var offset = Module.malloc (capacity * 4);
+
+			var ctor = function MonoWasmRootBuffer () {
+				this.__capacity = capacity;
+				this.__offset = offset;
+				this.__buffer = new Int32Array (Module.HEAPU8.buffer, offset, capacity);
+				var MONO_ROOT_SOURCE_EXTERNAL = 0;
+				// char *start, size_t size, MonoGCDescriptor descr, MonoGCRootSource source, void *key, const char *msg
+				this.__handle = MONO.mono_gc_register_root (offset, capacity, 0, MONO_ROOT_SOURCE_EXTERNAL, 0, msg || "mono_wasm_new_root_buffer");
+			};
+			ctor.prototype.get = function (index) {
+				return this.__buffer[index];
+			};
+			ctor.prototype.set = function (index, value) {
+				this.__buffer[index] = value;
+				return value;
+			};
+			ctor.prototype.release = function () {
+				if (this.__handle)
+					MONO.mono_gc_deregister_root (this.__handle);
+				if (this.offset)
+					Module.free (this.__offset);
+
+				this.__handle = undefined;
+				this.__offset = undefined;
+				this.__buffer = null;
+			};
+
+			var result = new ctor ();
+			if (autoRelease)
+				MONO._queue_for_auto_release (result);
+			return result;
+		},
+
+		mono_wasm_new_root_collection: function (keys, autoRelease, msg) {
+			if (!Array.isArray(keys))
+				throw new Error("no keys");			
+
+			var result = MONO.mono_wasm_new_root_buffer (keys.length, autoRelease, msg);
+			for (var i = 0; i < keys.length; i++) {
+				var key = keys[i];
+				var index = i;
+				Object.defineProperty(result, key, {
+					configurable: false,
+					get: function () {
+						return this.__buffer[index];
+					},
+					set: function (value) {
+						this.__buffer[index] = value;
+					}
+				});
+			}
+			return result;
 		},
 
 		mono_text_decoder: undefined,
