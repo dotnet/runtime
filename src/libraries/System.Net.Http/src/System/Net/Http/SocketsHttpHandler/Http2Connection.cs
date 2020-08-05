@@ -997,7 +997,7 @@ namespace System.Net.Http
             }
             catch (Exception e)
             {
-                if (NetEventSource.Log.IsEnabled()) Trace($"{nameof(ProcessIncomingFramesAsync)}: {e.Message}");
+                if (NetEventSource.Log.IsEnabled()) Trace($"{nameof(HeartBeat)}: {e.Message}");
 
                 Abort(e);
             }
