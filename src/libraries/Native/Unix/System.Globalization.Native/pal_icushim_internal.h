@@ -53,14 +53,6 @@
 
 #include "pal_compiler.h"
 
-#ifndef TYPEOF
-#ifdef __cplusplus
-#define TYPEOF decltype
-#else
-#define TYPEOF __typeof
-#endif // __cplusplus
-#endif // TYPEOF
-
 #if !defined(STATIC_ICU)
 // List of all functions from the ICU libraries that are used in the System.Globalization.Native.so
 #define FOR_ALL_UNCONDITIONAL_ICU_FUNCTIONS \
