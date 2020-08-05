@@ -2763,4 +2763,11 @@
         </ExcludeList>
         <!-- End interpreter issues -->
     </ItemGroup>
+
+
+    <ItemGroup Condition=" '$(TargetArchitecture)' == 'wasm' " >
+   	<ExcludeList Include = "$(XunitTestBinBase)/Interop/ICastable/**">
+		<Issue> Depends on coreclr System.Private.CoreLib; can't be built for wasm.</Issue>
+   	<Exclude>
+   </ItemGroup>
 </Project>

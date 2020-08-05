@@ -12,7 +12,9 @@
     <TargetOS>Browser</TargetOS>
     <MicrosoftNetCoreAppRuntimePackDir>$(ArtifactsBinDir)microsoft.netcore.app.runtime.browser-wasm\$(Configuration)\runtimes\browser-wasm\</MicrosoftNetCoreAppRuntimePackDir>
     <BuildDir>$(MSBuildThisFileDirectory)\obj\$(Configuration)\wasm</BuildDir>
-    <AppDir>$(ArtifactsBinDir)/WasmAppBuilder/</AppDir>
+    <AppDir>$(ArtifactsBinDir)/WasmTestRunner/</AppDir>
+    <RuntimeIdentifier>browser-wasm</RuntimeIdentifier>  
+    <PlatformTarget>AnyCPU</PlatformTarget>   
   </PropertyGroup>
 
   <Target Name="RebuildWasmAppBuilder">
@@ -30,7 +32,7 @@
   <UsingTask TaskName="WasmAppBuilder" 
       AssemblyFile="$(ArtifactsBinDir)\WasmAppBuilder\$(Configuration)\$(NetCoreAppCurrent)\publish\WasmAppBuilder.dll"/>
 
-  <Target Name="BuildApp" DependsOnTargets="RebuildWasmAppBuilder;Build;ReadAssemblyNames">
+  <Target Name="BuildApp" DependsOnTargets="RebuildWasmAppBuilder;Build;Publish;ReadAssemblyNames">
     <ItemGroup>
       <AssemblySearchPaths Include="bin"/>
       <AssemblySearchPaths Include="$(MicrosoftNetCoreAppRuntimePackDir)\native"/>
@@ -38,16 +40,20 @@
       <AssemblySearchPaths Include="$(ArtifactsDir)/TargetingPack" />
     </ItemGroup>
   
-    <Message Importance="High" Text="@(TestAssemblyItems)"/>
+    <!-- <Message Importance="High" Text="@(TestAssemblyItems)"/> -->
 
     <WasmAppBuilder
       AppDir="$(AppDir)"
       MicrosoftNetCoreAppRuntimePackDir="$(MicrosoftNetCoreAppRuntimePackDir)"
-      MainAssembly="bin/net5.0/WasmTestRunner.dll"
+      MainAssembly="./bin/browser-wasm/publish/WasmTestRunner.dll"
       MainJS="$(MonoProjectRoot)\wasm\runtime-test.js"
       AssemblySearchPaths="@(AssemblySearchPaths)"
       ExtraAssemblies="@(TestAssemblyItems)"
       />
+
+    <Message Importance="High" Text="AppDir: $(AppDir)" />
+    <Message Importance="High" Text="ArtifactsBinDir: $(ArtifactsBinDir)" />
+
     <Exec Command="chmod a+x $(AppDir)/run-v8.sh" />
   </Target>
 
