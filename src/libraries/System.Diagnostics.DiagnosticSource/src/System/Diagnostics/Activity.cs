@@ -35,6 +35,7 @@ namespace System.Diagnostics
     {
 #pragma warning disable CA1825 // Array.Empty<T>() doesn't exist in all configurations
         private static readonly IEnumerable<KeyValuePair<string, string?>> s_emptyBaggageTags = new KeyValuePair<string, string?>[0];
+        private static readonly IEnumerable<KeyValuePair<string, object?>> s_emptyTagObjects = new KeyValuePair<string, object?>[0];
         private static readonly IEnumerable<ActivityLink> s_emptyLinks = new ActivityLink[0];
         private static readonly IEnumerable<ActivityEvent> s_emptyEvents = new ActivityEvent[0];
 #pragma warning restore CA1825
@@ -257,7 +258,7 @@ namespace System.Diagnostics
 #if ALLOW_PARTIALLY_TRUSTED_CALLERS
         [System.Security.SecuritySafeCriticalAttribute]
 #endif
-            get => _tags ?? Unsafe.As<IEnumerable<KeyValuePair<string, object?>>>(s_emptyBaggageTags);
+            get => _tags ?? s_emptyTagObjects;
         }
 
         /// <summary>
