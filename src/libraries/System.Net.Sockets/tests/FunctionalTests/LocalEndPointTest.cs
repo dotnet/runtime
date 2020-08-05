@@ -136,5 +136,19 @@ namespace System.Net.Sockets.Tests
                 Assert.Equal(accept.RemoteEndPoint, client.LocalEndPoint);
             }
         }
+
+        [Fact]
+        public void LocalEndPoint_IsCached()
+        {
+            using (Socket socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
+            {
+                socket.Bind(new IPEndPoint(IPAddress.Any, 0));
+
+                EndPoint localEndPointCall1 = socket.LocalEndPoint;
+                EndPoint localEndPointCall2 = socket.LocalEndPoint;
+
+                Assert.Same(localEndPointCall1, localEndPointCall2);
+            }
+        }
     }
 }
