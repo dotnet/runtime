@@ -3131,7 +3131,7 @@ mono_reflection_call_is_assignable_to (MonoClass *klass, MonoClass *oklass, Mono
 	error_init (error);
 
 	if (method == NULL) {
-		method = mono_class_get_method_from_name_checked (mono_class_get_type_builder_class (), "IsAssignableTo", 1, 0, error);
+		method = mono_class_get_method_from_name_checked (mono_class_get_type_builder_class (), "IsAssignableToInternal", 1, 0, error);
 		mono_error_assert_ok (error);
 		g_assert (method);
 	}
