@@ -45,7 +45,7 @@ namespace System.Runtime.Versioning
     /// applied to indicate support on multiple operating systems.
     /// </summary>
     /// <remarks>
-    /// Callers can apply a <see cref="System.Runtime.Versioning.MinimumOSPlatformAttribute" />
+    /// Callers can apply a <see cref="System.Runtime.Versioning.SupportedOSPlatformAttribute " />
     /// or use guards to prevent calls to APIs on unsupported operating systems.
     ///
     /// A given platform should only be specified once.
@@ -66,9 +66,9 @@ namespace System.Runtime.Versioning
 #else
     internal
 #endif
-        sealed class MinimumOSPlatformAttribute : OSPlatformAttribute
+        sealed class SupportedOSPlatformAttribute  : OSPlatformAttribute
     {
-        public MinimumOSPlatformAttribute(string platformName) : base(platformName)
+        public SupportedOSPlatformAttribute (string platformName) : base(platformName)
         {
         }
     }
@@ -133,9 +133,9 @@ namespace System.Runtime.Versioning
 #else
     internal
 #endif
-        sealed class RemovedInOSPlatformAttribute : OSPlatformAttribute
+        sealed class UnsupportedOSPlatformAttribute : OSPlatformAttribute
     {
-        public RemovedInOSPlatformAttribute(string platformName) : base(platformName)
+        public UnsupportedOSPlatformAttribute(string platformName) : base(platformName)
         {
         }
     }
