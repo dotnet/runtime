@@ -58,6 +58,21 @@ jobs:
 # build mono
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
+    jobTemplate: /eng/pipelines/common/global-build-job.yml
+    buildConfig: release
+    runtimeFlavor: mono
+    platforms:
+    - Browser_wasm
+    jobParameters:
+      buildArgs: -s mono+libs+installer -c $(_BuildConfig)
+      nameSuffix: wasm
+      isOfficialBuild: ${{ variables.isOfficialBuild }}
+      extraStepsTemplate: /eng/pipelines/common/upload-unsigned-artifacts-step.yml
+      extraStepsParameters:
+        name: MonoRuntimePacks
+
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
     jobTemplate: /eng/pipelines/mono/templates/build-job.yml
     runtimeFlavor: mono
     buildConfig: release
@@ -97,6 +112,21 @@ jobs:
         runKind: micro_mono
 
 # run coreclr microbenchmarks perf job
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
+    buildConfig: release
+    runtimeFlavor: wasm
+    platforms:
+    - Linux_x64
+    jobParameters:
+      testGroup: perf
+      liveLibrariesBuildConfig: Release
+      runtimeType: wasm
+      codeGenType: 'wasm'
+      projectFile: microbenchmarks.proj
+      runKind: micro
+
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
     jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
