@@ -43,17 +43,17 @@ namespace System.Net.Http.Tests
 
             var encodingSelectors = new HeaderEncodingSelector<HttpContent>[]
             {
-            (_, _) => null,
-            (_, _) => Encoding.ASCII,
-            (_, _) => Encoding.Latin1,
-            (_, _) => Encoding.UTF8,
-            (name, _) => name switch
-            {
-                "latin1" => Encoding.Latin1,
-                "utf8" => Encoding.UTF8,
-                "ascii" => Encoding.ASCII,
-                _ => null
-            }
+                (_, _) => null,
+                (_, _) => Encoding.ASCII,
+                (_, _) => Encoding.Latin1,
+                (_, _) => Encoding.UTF8,
+                (name, _) => name switch
+                {
+                    "latin1" => Encoding.Latin1,
+                    "utf8" => Encoding.UTF8,
+                    "ascii" => Encoding.ASCII,
+                    _ => null
+                }
             };
 
             foreach (MultipartContent multipartContent in multipartContents)

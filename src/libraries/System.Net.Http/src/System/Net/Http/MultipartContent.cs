@@ -19,7 +19,7 @@ namespace System.Net.Http
 
         private const string CrLf = "\r\n";
 
-        private const int CrlfLength = 2;
+        private const int CrLfLength = 2;
         private const int DashDashLength = 2;
         private const int ColonSpaceLength = 2;
         private const int CommaSpaceLength = 2;
@@ -377,12 +377,12 @@ namespace System.Net.Http
         protected internal override bool TryComputeLength(out long length)
         {
             // Start Boundary.
-            long currentLength = DashDashLength + _boundary.Length + CrlfLength;
+            long currentLength = DashDashLength + _boundary.Length + CrLfLength;
 
             if (_nestedContent.Count > 1)
             {
                 // Internal boundaries
-                currentLength += (_nestedContent.Count - 1) * (CrlfLength + DashDashLength + _boundary.Length + CrlfLength);
+                currentLength += (_nestedContent.Count - 1) * (CrLfLength + DashDashLength + _boundary.Length + CrLfLength);
             }
 
             foreach (HttpContent content in _nestedContent)
@@ -406,10 +406,10 @@ namespace System.Net.Http
                         currentLength += (valueCount - 1) * CommaSpaceLength;
                     }
 
-                    currentLength += CrlfLength;
+                    currentLength += CrLfLength;
                 }
 
-                currentLength += CrlfLength;
+                currentLength += CrLfLength;
 
                 // Content.
                 if (!content.TryComputeLength(out long tempContentLength))
@@ -421,7 +421,7 @@ namespace System.Net.Http
             }
 
             // Terminating boundary.
-            currentLength += CrlfLength + DashDashLength + _boundary.Length + DashDashLength + CrlfLength;
+            currentLength += CrLfLength + DashDashLength + _boundary.Length + DashDashLength + CrLfLength;
 
             length = currentLength;
             return true;
