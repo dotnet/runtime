@@ -96,21 +96,21 @@ jobs:
         projectFile: microbenchmarks.proj
         runKind: micro_mono
 
-# run coreclr microbenchmarks perf job
-- template: /eng/pipelines/common/platform-matrix.yml
-  parameters:
-    jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
-    buildConfig: release
-    runtimeFlavor: coreclr
-    platforms:
-    - Linux_x64
-    - Windows_NT_x64
-    - Windows_NT_x86
-    jobParameters:
-      testGroup: perf
-      liveLibrariesBuildConfig: Release
-      projectFile: microbenchmarks.proj
-      runKind: micro
+  # run coreclr microbenchmarks perf job
+  - template: /eng/pipelines/common/platform-matrix.yml
+    parameters:
+      jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
+      buildConfig: release
+      runtimeFlavor: coreclr
+      platforms:
+      - Linux_x64
+      - Windows_NT_x64
+      - Windows_NT_x86
+      jobParameters:
+        testGroup: perf
+        liveLibrariesBuildConfig: Release
+        projectFile: microbenchmarks.proj
+        runKind: micro
 
 # run coreclr crossgen perf job
 - template: /eng/pipelines/common/platform-matrix.yml
