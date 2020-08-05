@@ -183,10 +183,11 @@ namespace System.Globalization.Tests
             Assert.Equal("$", new RegionInfo("en-US").CurrencySymbol);
             if (PlatformDetection.IsNotBrowser)
             {
-                // For some reason Browser's ICU doesn't return this symbol
-                // despite the fact CNY currency is preserved in filter.json
-                // https://github.com/dotnet/icu/blob/8bd04d98c75cc7d8ac9026eab2c63e50294b0552/icu-filters/optimal.json#L103
-                Assert.Contains("￥", new RegionInfo("zh-CN").CurrencySymbol);
+                Assert.Contains(new RegionInfo("zh-CN").CurrencySymbol, new string[] { "\u00A5", "\uffe5" });
+            }
+            else
+            {
+                Assert.Equal("CN¥", new RegionInfo("zh-CN").CurrencySymbol);
             }
         }
 
