@@ -1895,7 +1895,7 @@ namespace System.Net.Http
             _nextPingRequestTimestamp = Environment.TickCount64 + (long)_keepAlivePingDelay.TotalMilliseconds;
         }
 
-        private bool ProcessPingAck(long payload)
+        private void ProcessPingAck(long payload)
         {
             if (_keepAliveState != KeepAliveState.PingSent)
                 ThrowProtocolError();
@@ -1903,7 +1903,6 @@ namespace System.Net.Http
                 ThrowProtocolError();
             _keepAliveState = KeepAliveState.None;
             RefreshPingTimestamp();
-            return true;
         }
 
         private void VerifyKeepAlive()
