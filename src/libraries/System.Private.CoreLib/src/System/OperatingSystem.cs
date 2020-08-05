@@ -8,6 +8,8 @@ namespace System
 {
     public sealed class OperatingSystem : ISerializable, ICloneable
     {
+        private const int OSXRevisionNumber = -1; // it is unavailable on OSX and Environment.OSVersion.Version.Revision returns -1
+
         private readonly Version _version;
         private readonly PlatformID _platform;
         private readonly string? _servicePack;
@@ -101,7 +103,8 @@ namespace System
             false;
 #endif
 
-        //public static bool IsFreeBSDVersionAtLeast(int major, int minor = 0, int build = 0, int revision = 0);
+        public static bool IsFreeBSDVersionAtLeast(int major, int minor = 0, int build = 0, int revision = 0)
+            => IsFreeBSD() && IsOSVersionAtLeast(major, minor, build, revision);
 
         public static bool IsAndroid() =>
 #if TARGET_ANDROID
@@ -110,7 +113,8 @@ namespace System
             false;
 #endif
 
-        //public static bool IsAndroidVersionAtLeast(int major, int minor = 0, int build = 0, int revision = 0);
+        public static bool IsAndroidVersionAtLeast(int major, int minor = 0, int build = 0, int revision = 0)
+            => IsAndroid() && IsOSVersionAtLeast(major, minor, build, revision);
 
         public static bool IsIOS() =>
 #if TARGET_IOS
@@ -119,7 +123,8 @@ namespace System
             false;
 #endif
 
-        //public static bool IsIOSVersionAtLeast(int major, int minor = 0, int build = 0, int revision = 0);
+        public static bool IsIOSVersionAtLeast(int major, int minor = 0, int build = 0)
+            => IsIOS() && IsOSVersionAtLeast(major, minor, build, OSXRevisionNumber);
 
         public static bool IsMacOS() =>
 #if TARGET_OSX
@@ -128,7 +133,8 @@ namespace System
             false;
 #endif
 
-        //public static bool IsMacOSVersionAtLeast(int major, int minor = 0, int build = 0, int revision = 0);
+        public static bool IsMacOSVersionAtLeast(int major, int minor = 0, int build = 0)
+            => IsMacOS() && IsOSVersionAtLeast(major, minor, build, OSXRevisionNumber);
 
         public static bool IsTvOS() =>
 #if TARGET_TVOS
@@ -137,7 +143,8 @@ namespace System
             false;
 #endif
 
-        //public static bool IsTvOSVersionAtLeast(int major, int minor = 0, int build = 0, int revision = 0);
+        public static bool IsTvOSVersionAtLeast(int major, int minor = 0, int build = 0)
+            => IsTvOS() && IsOSVersionAtLeast(major, minor, build, OSXRevisionNumber);
 
         public static bool IsWatchOS() =>
 #if TARGET_WATCHOS
@@ -146,7 +153,8 @@ namespace System
             false;
 #endif
 
-        //public static bool IsWatchOSVersionAtLeast(int major, int minor = 0, int build = 0, int revision = 0);
+        public static bool IsWatchOSVersionAtLeast(int major, int minor = 0, int build = 0)
+            => IsWatchOS() && IsOSVersionAtLeast(major, minor, build, OSXRevisionNumber);
 
         public static bool IsWindows() =>
 #if TARGET_WINDOWS
@@ -155,6 +163,27 @@ namespace System
             false;
 #endif
 
-        //public static bool IsWindowsVersionAtLeast(int major, int minor = 0, int build = 0, int revision = 0);
+        public static bool IsWindowsVersionAtLeast(int major, int minor = 0, int build = 0, int revision = 0)
+            => IsWindows() && IsOSVersionAtLeast(major, minor, build, revision);
+
+        private static bool IsOSVersionAtLeast(int major, int minor, int build, int revision)
+        {
+            Version current = Environment.OSVersion.Version;
+
+            if (current.Major != major)
+            {
+                return current.Major > major;
+            }
+            if (current.Minor != minor)
+            {
+                return current.Minor > minor;
+            }
+            if (current.Build != build)
+            {
+                return current.Build > build;
+            }
+
+            return current.Revision >= revision;
+        }
     }
 }

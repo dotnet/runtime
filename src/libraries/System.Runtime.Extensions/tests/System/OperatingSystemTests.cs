@@ -60,6 +60,14 @@ namespace System.Tests
             Assert.False(OperatingSystem.IsTvOS());
             Assert.False(OperatingSystem.IsWatchOS());
             Assert.False(OperatingSystem.IsWindows());
+
+            AssertVersionChecks(OperatingSystem.IsAndroidVersionAtLeast, false);
+            AssertVersionChecks(OperatingSystem.IsFreeBSDVersionAtLeast, false);
+            AssertVersionChecks(OperatingSystem.IsIOSVersionAtLeast, false);
+            AssertVersionChecks(OperatingSystem.IsMacOSVersionAtLeast, false);
+            AssertVersionChecks(OperatingSystem.IsTvOSVersionAtLeast, false);
+            AssertVersionChecks(OperatingSystem.IsWatchOSVersionAtLeast, false);
+            AssertVersionChecks(OperatingSystem.IsWindowsVersionAtLeast, false);
         }
 
         [Fact, PlatformSpecific(TestPlatforms.Linux)]
@@ -74,6 +82,14 @@ namespace System.Tests
             Assert.False(OperatingSystem.IsTvOS());
             Assert.False(OperatingSystem.IsWatchOS());
             Assert.False(OperatingSystem.IsWindows());
+
+            AssertVersionChecks(OperatingSystem.IsAndroidVersionAtLeast, false);
+            AssertVersionChecks(OperatingSystem.IsFreeBSDVersionAtLeast, false);
+            AssertVersionChecks(OperatingSystem.IsIOSVersionAtLeast, false);
+            AssertVersionChecks(OperatingSystem.IsMacOSVersionAtLeast, false);
+            AssertVersionChecks(OperatingSystem.IsTvOSVersionAtLeast, false);
+            AssertVersionChecks(OperatingSystem.IsWatchOSVersionAtLeast, false);
+            AssertVersionChecks(OperatingSystem.IsWindowsVersionAtLeast, false);
         }
 
         [Fact, PlatformSpecific(TestPlatforms.FreeBSD)]
@@ -88,6 +104,14 @@ namespace System.Tests
             Assert.False(OperatingSystem.IsTvOS());
             Assert.False(OperatingSystem.IsWatchOS());
             Assert.False(OperatingSystem.IsWindows());
+
+            AssertVersionChecks(OperatingSystem.IsAndroidVersionAtLeast, false);
+            AssertVersionChecks(OperatingSystem.IsFreeBSDVersionAtLeast, true);
+            AssertVersionChecks(OperatingSystem.IsIOSVersionAtLeast, false);
+            AssertVersionChecks(OperatingSystem.IsMacOSVersionAtLeast, false);
+            AssertVersionChecks(OperatingSystem.IsTvOSVersionAtLeast, false);
+            AssertVersionChecks(OperatingSystem.IsWatchOSVersionAtLeast, false);
+            AssertVersionChecks(OperatingSystem.IsWindowsVersionAtLeast, false);
         }
 
         [Fact, PlatformSpecific(TestPlatforms.Android)]
@@ -102,6 +126,14 @@ namespace System.Tests
             Assert.False(OperatingSystem.IsTvOS());
             Assert.False(OperatingSystem.IsWatchOS());
             Assert.False(OperatingSystem.IsWindows());
+
+            AssertVersionChecks(OperatingSystem.IsAndroidVersionAtLeast, true);
+            AssertVersionChecks(OperatingSystem.IsFreeBSDVersionAtLeast, false);
+            AssertVersionChecks(OperatingSystem.IsIOSVersionAtLeast, false);
+            AssertVersionChecks(OperatingSystem.IsMacOSVersionAtLeast, false);
+            AssertVersionChecks(OperatingSystem.IsTvOSVersionAtLeast, false);
+            AssertVersionChecks(OperatingSystem.IsWatchOSVersionAtLeast, false);
+            AssertVersionChecks(OperatingSystem.IsWindowsVersionAtLeast, false);
         }
 
         [Fact, PlatformSpecific(TestPlatforms.iOS)]
@@ -116,6 +148,14 @@ namespace System.Tests
             Assert.False(OperatingSystem.IsTvOS());
             Assert.False(OperatingSystem.IsWatchOS());
             Assert.False(OperatingSystem.IsWindows());
+
+            AssertVersionChecks(OperatingSystem.IsAndroidVersionAtLeast, false);
+            AssertVersionChecks(OperatingSystem.IsFreeBSDVersionAtLeast, false);
+            AssertVersionChecks(OperatingSystem.IsIOSVersionAtLeast, true);
+            AssertVersionChecks(OperatingSystem.IsMacOSVersionAtLeast, false);
+            AssertVersionChecks(OperatingSystem.IsTvOSVersionAtLeast, false);
+            AssertVersionChecks(OperatingSystem.IsWatchOSVersionAtLeast, false);
+            AssertVersionChecks(OperatingSystem.IsWindowsVersionAtLeast, false);
         }
 
         [Fact, PlatformSpecific(TestPlatforms.OSX)]
@@ -130,6 +170,14 @@ namespace System.Tests
             Assert.False(OperatingSystem.IsTvOS());
             Assert.False(OperatingSystem.IsWatchOS());
             Assert.False(OperatingSystem.IsWindows());
+
+            AssertVersionChecks(OperatingSystem.IsAndroidVersionAtLeast, false);
+            AssertVersionChecks(OperatingSystem.IsFreeBSDVersionAtLeast, false);
+            AssertVersionChecks(OperatingSystem.IsIOSVersionAtLeast, false);
+            AssertVersionChecks(OperatingSystem.IsMacOSVersionAtLeast, true);
+            AssertVersionChecks(OperatingSystem.IsTvOSVersionAtLeast, false);
+            AssertVersionChecks(OperatingSystem.IsWatchOSVersionAtLeast, false);
+            AssertVersionChecks(OperatingSystem.IsWindowsVersionAtLeast, false);
         }
 
         [Fact, PlatformSpecific(TestPlatforms.tvOS)]
@@ -144,6 +192,14 @@ namespace System.Tests
             Assert.True(OperatingSystem.IsTvOS());
             Assert.False(OperatingSystem.IsWatchOS());
             Assert.False(OperatingSystem.IsWindows());
+
+            AssertVersionChecks(OperatingSystem.IsAndroidVersionAtLeast, false);
+            AssertVersionChecks(OperatingSystem.IsFreeBSDVersionAtLeast, false);
+            AssertVersionChecks(OperatingSystem.IsIOSVersionAtLeast, false);
+            AssertVersionChecks(OperatingSystem.IsMacOSVersionAtLeast, false);
+            AssertVersionChecks(OperatingSystem.IsTvOSVersionAtLeast, true);
+            AssertVersionChecks(OperatingSystem.IsWatchOSVersionAtLeast, false);
+            AssertVersionChecks(OperatingSystem.IsWindowsVersionAtLeast, false);
         }
 
         [Fact, PlatformSpecific(TestPlatforms.Windows)]
@@ -158,6 +214,46 @@ namespace System.Tests
             Assert.False(OperatingSystem.IsTvOS());
             Assert.False(OperatingSystem.IsWatchOS());
             Assert.True(OperatingSystem.IsWindows());
+
+            AssertVersionChecks(OperatingSystem.IsAndroidVersionAtLeast, false);
+            AssertVersionChecks(OperatingSystem.IsFreeBSDVersionAtLeast, false);
+            AssertVersionChecks(OperatingSystem.IsIOSVersionAtLeast, false);
+            AssertVersionChecks(OperatingSystem.IsMacOSVersionAtLeast, false);
+            AssertVersionChecks(OperatingSystem.IsTvOSVersionAtLeast, false);
+            AssertVersionChecks(OperatingSystem.IsWatchOSVersionAtLeast, false);
+            AssertVersionChecks(OperatingSystem.IsWindowsVersionAtLeast, true);
+        }
+
+        private static void AssertVersionChecks(Func<int, int, int, int, bool> isOSVersionAtLeast, bool isCurrentOS)
+        {
+            Version current = Environment.OSVersion.Version;
+
+            Assert.False(isOSVersionAtLeast(current.Major + 1, current.Minor, current.Build, current.Revision));
+            Assert.False(isOSVersionAtLeast(current.Major, current.Minor + 1, current.Build, current.Revision));
+            Assert.False(isOSVersionAtLeast(current.Major, current.Minor, current.Build + 1, current.Revision));
+            Assert.False(isOSVersionAtLeast(current.Major, current.Minor, current.Build, current.Revision + 1));
+
+            Assert.Equal(isCurrentOS, isOSVersionAtLeast(current.Major, current.Minor, current.Build, current.Revision));
+
+            Assert.Equal(isCurrentOS, isOSVersionAtLeast(current.Major - 1, current.Minor, current.Build, current.Revision));
+            Assert.Equal(isCurrentOS, isOSVersionAtLeast(current.Major, current.Minor - 1, current.Build, current.Revision));
+            Assert.Equal(isCurrentOS, isOSVersionAtLeast(current.Major, current.Minor, current.Build - 1, current.Revision));
+            Assert.Equal(isCurrentOS, isOSVersionAtLeast(current.Major, current.Minor, current.Build, current.Revision - 1));
+        }
+
+        private static void AssertVersionChecks(Func<int, int, int, bool> isOSVersionAtLeast, bool isCurrentOS)
+        {
+            Version current = Environment.OSVersion.Version;
+
+            Assert.False(isOSVersionAtLeast(current.Major + 1, current.Minor, current.Build));
+            Assert.False(isOSVersionAtLeast(current.Major, current.Minor + 1, current.Build));
+            Assert.False(isOSVersionAtLeast(current.Major, current.Minor, current.Build + 1));
+
+            Assert.Equal(isCurrentOS, isOSVersionAtLeast(current.Major, current.Minor, current.Build));
+
+            Assert.Equal(isCurrentOS, isOSVersionAtLeast(current.Major - 1, current.Minor, current.Build));
+            Assert.Equal(isCurrentOS, isOSVersionAtLeast(current.Major, current.Minor - 1, current.Build));
+            Assert.Equal(isCurrentOS, isOSVersionAtLeast(current.Major, current.Minor, current.Build - 1));
         }
     }
 }
