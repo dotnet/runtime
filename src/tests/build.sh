@@ -368,7 +368,7 @@ build_Tests()
     fi
 
     if [[ "$__SkipNative" != 1 && "$__BuildArch" != "wasm" ]]; then
-        build_native "$__BuildArch" "$__TestDir" "$__ProjectRoot" "$__NativeTestIntermediatesDir" "CoreCLR test component"
+        build_native "$__BuildArch" "$__TestDir" "$__TryRunDir" "$__NativeTestIntermediatesDir" "CoreCLR test component"
 
         if [[ "$?" -ne 0 ]]; then
             echo "${__ErrMsgPrefix}${__MsgPrefix}Error: native test build failed. Refer to the build log files for details (above)"
@@ -706,7 +706,8 @@ __MsbuildDebugLogsDir="$__LogsDir/MsbuildDebugLogs"
 # Set the remaining variables based upon the determined build configuration
 __BinDir="$__RootBinDir/bin/coreclr/$__TargetOS.$__BuildArch.$__BuildType"
 __PackagesBinDir="$__BinDir/.nuget"
-__TestDir="${__RepoRootDir}/src/tests"
+__TestDir="$__RepoRootDir/src/tests"
+__TryRunDir="$__RepoRootDir/src/coreclr"
 __TestWorkingDir="$__RootBinDir/tests/coreclr/$__TargetOS.$__BuildArch.$__BuildType"
 __IntermediatesDir="$__RootBinDir/obj/coreclr/$__TargetOS.$__BuildArch.$__BuildType"
 __TestIntermediatesDir="$__RootBinDir/tests/coreclr/obj/$__TargetOS.$__BuildArch.$__BuildType"
