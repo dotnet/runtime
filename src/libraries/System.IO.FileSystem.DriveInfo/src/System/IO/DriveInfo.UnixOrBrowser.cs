@@ -42,7 +42,7 @@ namespace System.IO
             {
                 return Name;
             }
-            [MinimumOSPlatform("windows7.0")]
+            [SupportedOSPlatform("windows7.0")]
             set
             {
                 throw new PlatformNotSupportedException();
