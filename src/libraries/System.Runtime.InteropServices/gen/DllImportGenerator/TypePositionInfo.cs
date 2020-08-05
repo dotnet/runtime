@@ -3,7 +3,6 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
-using System.Text;
 
 namespace Microsoft.Interop
 {
@@ -153,6 +152,8 @@ namespace Microsoft.Interop
             var typeAsString = type.SpecialType switch
             {
                 SpecialType.System_Void => "void",
+                SpecialType.System_Boolean => "bool",
+                SpecialType.System_Char => "char",
                 SpecialType.System_SByte => "sbyte",
                 SpecialType.System_Byte => "byte",
                 SpecialType.System_Int16 => "short",
@@ -199,6 +200,8 @@ namespace Microsoft.Interop
             return type.SpecialType switch
             {
                 SpecialType.System_Void => "void",
+                SpecialType.System_Boolean => "byte", // [TODO] Determine marshalling default C++ bool or Windows' BOOL
+                SpecialType.System_Char => "ushort", // CLR character width (UTF-16)
                 SpecialType.System_SByte => "sbyte",
                 SpecialType.System_Byte => "byte",
                 SpecialType.System_Int16 => "short",

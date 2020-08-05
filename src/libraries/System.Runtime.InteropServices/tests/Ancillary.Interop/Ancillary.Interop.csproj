@@ -3,6 +3,7 @@
   <PropertyGroup>
     <TargetFramework>net5.0</TargetFramework>
     <LangVersion>8.0</LangVersion>
+    <RootNamespace>System.Runtime.InteropServices</RootNamespace>
   </PropertyGroup>
 
 </Project>
