@@ -53,7 +53,7 @@ public:
     static PEImageLayout* LoadFromFlat(PEImageLayout* pflatimage);
     static PEImageLayout* Load(PEImage* pOwner, BOOL bNTSafeLoad, BOOL bThrowOnError = TRUE);
     static PEImageLayout* LoadFlat(PEImage* pOwner);
-    static PEImageLayout* LoadConverted(PEImage* pOwner);
+    static PEImageLayout* LoadConverted(PEImage* pOwner, BOOL isInBundle = FALSE);
     static PEImageLayout* LoadNative(LPCWSTR fullPath);
     static PEImageLayout* Map(PEImage* pOwner);
 #endif
@@ -109,10 +109,11 @@ protected:
     CLRMapViewHolder m_FileView;
 public:
 #ifndef DACCESS_COMPILE
-    ConvertedImageLayout(PEImageLayout* source);
+    ConvertedImageLayout(PEImageLayout* source, BOOL isInBundle = FALSE);
     virtual ~ConvertedImageLayout();
 #endif
 private:
+    bool m_isInBundle;
     PT_RUNTIME_FUNCTION m_pExceptionDir;
 };
 

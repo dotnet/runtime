@@ -39,7 +39,7 @@ PEImageLayout* PEImageLayout::LoadFromFlat(PEImageLayout* pflatimage)
     return new ConvertedImageLayout(pflatimage);
 }
 
-PEImageLayout* PEImageLayout::LoadConverted(PEImage* pOwner)
+PEImageLayout* PEImageLayout::LoadConverted(PEImage* pOwner, BOOL isInBundle)
 {
     STANDARD_VM_CONTRACT;
 
@@ -47,7 +47,7 @@ PEImageLayout* PEImageLayout::LoadConverted(PEImage* pOwner)
     if (!pFlat->CheckFormat())
         ThrowHR(COR_E_BADIMAGEFORMAT);
 
-    return new ConvertedImageLayout(pFlat);
+    return new ConvertedImageLayout(pFlat, isInBundle);
 }
 
 PEImageLayout* PEImageLayout::Load(PEImage* pOwner, BOOL bNTSafeLoad, BOOL bThrowOnError)
@@ -59,7 +59,7 @@ PEImageLayout* PEImageLayout::Load(PEImage* pOwner, BOOL bNTSafeLoad, BOOL bThro
 #else
     if (pOwner->IsInBundle())
     {
-        return PEImageLayout::LoadConverted(pOwner);
+        return PEImageLayout::LoadConverted(pOwner, true);
     }
 
     PEImageLayoutHolder pAlloc(new LoadedImageLayout(pOwner,bNTSafeLoad,bThrowOnError));
@@ -386,7 +386,7 @@ RawImageLayout::RawImageLayout(const void *mapped, PEImage* pOwner, BOOL bTakeOw
     IfFailThrow(Init((void*)mapped,(bool)(bFixedUp!=FALSE)));
 }
 
-ConvertedImageLayout::ConvertedImageLayout(PEImageLayout* source)
+ConvertedImageLayout::ConvertedImageLayout(PEImageLayout* source, BOOL isInBundle)
 {
     CONTRACTL
     {
@@ -397,6 +397,7 @@ ConvertedImageLayout::ConvertedImageLayout(PEImageLayout* source)
     m_Layout=LAYOUT_LOADED;
     m_pOwner=source->m_pOwner;
     _ASSERTE(!source->IsMapped());
+    m_isInBundle = isInBundle;
 
     m_pExceptionDir = NULL;
 
@@ -440,12 +441,16 @@ ConvertedImageLayout::ConvertedImageLayout(PEImageLayout* source)
         ApplyBaseRelocations();
     }
 #elif !defined(TARGET_UNIX)
-    if (HasCorHeader() && (HasNativeHeader() || HasReadyToRunHeader()) && g_fAllowNativeImages)
+    if (m_isInBundle &&
+        HasCorHeader() &&
+        (HasNativeHeader() || HasReadyToRunHeader()) &&
+        g_fAllowNativeImages)
     {
-        //Do base relocation for PE, if necessary.
         if (!IsNativeMachineFormat())
             ThrowHR(COR_E_BADIMAGEFORMAT);
 
+        // Do base relocation for PE, if necessary.
+        // otherwise R2R will be disabled for this image.
         ApplyBaseRelocations();
 
         // Check if there is a static function table and install it. (except x86)
