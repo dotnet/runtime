@@ -111,22 +111,22 @@ jobs:
         projectFile: microbenchmarks.proj
         runKind: micro_mono
 
+  # run mono wasm microbenchmarks perf job
+  - template: /eng/pipelines/common/platform-matrix.yml
+    parameters:
+      jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
+      buildConfig: release
+      runtimeFlavor: wasm
+      platforms:
+      - Linux_x64
+      jobParameters:
+        testGroup: perf
+        liveLibrariesBuildConfig: Release
+        runtimeType: wasm
+        codeGenType: 'wasm'
+        projectFile: microbenchmarks.proj
+        runKind: micro
 # run coreclr microbenchmarks perf job
-- template: /eng/pipelines/common/platform-matrix.yml
-  parameters:
-    jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
-    buildConfig: release
-    runtimeFlavor: wasm
-    platforms:
-    - Linux_x64
-    jobParameters:
-      testGroup: perf
-      liveLibrariesBuildConfig: Release
-      runtimeType: wasm
-      codeGenType: 'wasm'
-      projectFile: microbenchmarks.proj
-      runKind: micro
-
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
     jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
