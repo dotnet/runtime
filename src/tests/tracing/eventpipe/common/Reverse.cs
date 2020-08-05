@@ -101,7 +101,7 @@ namespace Tracing.Tests.Common
                 socket.SendBufferSize = Math.Max(bufferSize, 1024);
                 socket.ReceiveBufferSize = Math.Max(bufferSize, 128);
                 socket.Bind(remoteEP);
-                socket.Listen(0);
+                socket.Listen(255);
                 _server = socket;
             }
         }
@@ -169,6 +169,7 @@ namespace Tracing.Tests.Common
                         File.Delete(_serverAddress);
                     socket.Close();
                     socket.Dispose();
+                    _clientSocket?.Shutdown(SocketShutdown.Both);
                     _clientSocket?.Close();
                     _clientSocket?.Dispose();
                     break;
