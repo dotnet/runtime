@@ -10,7 +10,7 @@ Module Name:
     unicode/utf8.c
 
 Abstract:
-    Functions to encode and decode UTF-8 strings. This is a port of the C# version from mscorlib.
+    Functions to encode and decode UTF-8 strings. This is a port of the C# version from Utf8Encoding.cs.
 
 Revision History:
 

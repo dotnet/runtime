@@ -19,14 +19,14 @@ namespace System.Data.OleDb
         private readonly Bindings _bindings;
 
         // unique to this ColumnBinding
-        private readonly OleDbParameter _parameter; // output value
+        private readonly OleDbParameter? _parameter; // output value
         private readonly int _parameterChangeID;
         private readonly int _offsetStatus;
         private readonly int _offsetLength;
         private readonly int _offsetValue;
 
         // Delegate ad hoc created 'Marshal.GetIDispatchForObject' reflection object cache
-        private static Func<object, IntPtr> s_getIDispatchForObject;
+        private static Func<object, IntPtr>? s_getIDispatchForObject;
 
         private readonly int _ordinal;
         private readonly int _maxLen;
@@ -42,15 +42,15 @@ namespace System.Data.OleDb
         // unique per current input value
         private int _valueBindingOffset;
         private int _valueBindingSize;
-        internal StringMemHandle _sptr;
+        internal StringMemHandle? _sptr;
         private GCHandle _pinnedBuffer;
 
         // value is cached via property getters so the original may be released
         // for Value, ValueByteArray, ValueString, ValueVariant
-        private object _value;
+        private object? _value;
 
         internal ColumnBinding(OleDbDataReader dataReader, int index, int indexForAccessor, int indexWithinAccessor,
-                                OleDbParameter parameter, RowBinding rowbinding, Bindings bindings, tagDBBINDING binding, int offset,
+                                OleDbParameter? parameter, RowBinding rowbinding, Bindings bindings, tagDBBINDING binding, int offset,
                                 bool ifIRowsetElseIRow)
         {
             Debug.Assert(null != rowbinding, "null rowbinding");
@@ -123,7 +123,7 @@ namespace System.Data.OleDb
 
         private Type ExpectedType
         {
-            get { return NativeDBType.FromDBType(DbType, false, false).dataType; }
+            get { return NativeDBType.FromDBType(DbType, false, false).dataType!; }
         }
 
         internal int Index
@@ -203,7 +203,7 @@ namespace System.Data.OleDb
         {
             _value = null;
 
-            StringMemHandle sptr = _sptr;
+            StringMemHandle? sptr = _sptr;
             _sptr = null;
 
             if (null != sptr)
@@ -274,8 +274,8 @@ namespace System.Data.OleDb
 
         internal object Value()
         {
-            object value = _value;
-            if (null == value)
+            object value;
+            if (null == _value)
             {
                 switch (StatusValue())
                 {
@@ -433,9 +433,9 @@ namespace System.Data.OleDb
                 }
                 _value = value;
             }
-            return value;
+            return _value!;
         }
-        internal void Value(object value)
+        internal void Value(object? value)
         {
             if (null == value)
             {
@@ -663,7 +663,7 @@ namespace System.Data.OleDb
         {
             Debug.Assert(((NativeDBType.BYREF | NativeDBType.BYTES) == DbType), "Value_ByRefBYTES");
             Debug.Assert((DBStatus.S_OK == StatusValue()), "Value_ByRefBYTES");
-            byte[] value = null;
+            byte[]? value = null;
             RowBinding bindings = RowBinding;
             bool mustRelease = false;
             RuntimeHelpers.PrepareConstrainedRegions();
@@ -948,7 +948,8 @@ namespace System.Data.OleDb
             Debug.Assert(NativeDBType.HCHAPTER == DbType, "Value_HCHAPTER");
             Debug.Assert(DBStatus.S_OK == StatusValue(), "Value_HCHAPTER");
 
-            return DataReader().ResetChapter(IndexForAccessor, IndexWithinAccessor, RowBinding, ValueOffset);
+            // TODO-NULLABLE: This shouldn't return null
+            return DataReader().ResetChapter(IndexForAccessor, IndexWithinAccessor, RowBinding, ValueOffset)!;
         }
 
         private sbyte Value_I1()
@@ -1042,15 +1043,15 @@ namespace System.Data.OleDb
             // lazy init reflection objects
             if (s_getIDispatchForObject == null)
             {
-                object delegateInstance = null;
-                MethodInfo mi = typeof(Marshal).GetMethod("GetIDispatchForObject", BindingFlags.Public | BindingFlags.Static);
+                object? delegateInstance = null;
+                MethodInfo? mi = typeof(Marshal).GetMethod("GetIDispatchForObject", BindingFlags.Public | BindingFlags.Static);
                 if (mi == null)
                 {
                     throw new NotSupportedException(SR.PlatformNotSupported_GetIDispatchForObject);
                 }
                 Volatile.Write(ref delegateInstance, mi.CreateDelegate(typeof(Func<object, IntPtr>)));
                 s_getIDispatchForObject = delegateInstance as Func<object, IntPtr>;
-                ptr = s_getIDispatchForObject(value);
+                ptr = s_getIDispatchForObject!(value);
             }
             RowBinding.WriteIntPtr(ValueOffset, ptr);
         }
@@ -1272,7 +1273,7 @@ namespace System.Data.OleDb
 
         internal byte[] ValueByteArray()
         {
-            byte[] value = (byte[])_value;
+            byte[]? value = (byte[]?)_value;
             if (null == value)
             {
                 switch (StatusValue())
@@ -1340,7 +1341,7 @@ namespace System.Data.OleDb
 
         internal OleDbDataReader ValueChapter()
         {
-            OleDbDataReader value = (OleDbDataReader)_value;
+            OleDbDataReader? value = (OleDbDataReader?)_value;
             if (null == value)
             {
                 switch (StatusValue())
@@ -1605,7 +1606,7 @@ namespace System.Data.OleDb
 
         internal string ValueString()
         {
-            string value = (string)_value;
+            string? value = (string?)_value;
             if (null == value)
             {
                 switch (StatusValue())
@@ -1652,7 +1653,7 @@ namespace System.Data.OleDb
 
         private object ValueVariant()
         {
-            object value = _value;
+            object? value = _value;
             if (null == value)
             {
                 value = Value_VARIANT();

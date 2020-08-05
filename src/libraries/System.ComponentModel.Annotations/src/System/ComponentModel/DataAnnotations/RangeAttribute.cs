@@ -84,9 +84,9 @@ namespace System.ComponentModel.DataAnnotations
         /// parameters, for which the invariant culture is always used for any conversions of the validated value.</remarks>
         public bool ConvertValueInInvariantCulture { get; set; }
 
-        private Func<object, object> Conversion { get; set; }
+        private Func<object, object?>? Conversion { get; set; }
 
-        private void Initialize(IComparable minimum, IComparable maximum, Func<object, object> conversion)
+        private void Initialize(IComparable minimum, IComparable maximum, Func<object, object?> conversion)
         {
             if (minimum.CompareTo(maximum) > 0)
             {
@@ -104,7 +104,7 @@ namespace System.ComponentModel.DataAnnotations
         /// <param name="value">The value to test for validity.</param>
         /// <returns><c>true</c> means the <paramref name="value" /> is valid</returns>
         /// <exception cref="InvalidOperationException"> is thrown if the current attribute is ill-formed.</exception>
-        public override bool IsValid(object value)
+        public override bool IsValid(object? value)
         {
             // Validate our properties and create the conversion function
             SetupConversion();
@@ -115,11 +115,11 @@ namespace System.ComponentModel.DataAnnotations
                 return true;
             }
 
-            object convertedValue;
+            object? convertedValue;
 
             try
             {
-                convertedValue = Conversion(value);
+                convertedValue = Conversion!(value);
             }
             catch (FormatException)
             {
@@ -207,7 +207,7 @@ namespace System.ComponentModel.DataAnnotations
                         ? converter.ConvertFromInvariantString((string)maximum)
                         : converter.ConvertFromString((string)maximum));
 
-                    Func<object, object> conversion;
+                    Func<object, object?> conversion;
                     if (ConvertValueInInvariantCulture)
                     {
                         conversion = value => value.GetType() == type

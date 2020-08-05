@@ -35,7 +35,7 @@ public:
 
         enum class PollEvents : uint8_t
         {
-            TIMEOUT  = 0x00, // implies timeout
+            NONE     = 0x00, // no events
             SIGNALED = 0x01, // ready for use
             HANGUP   = 0x02, // connection remotely closed
             ERR      = 0x04  // other error

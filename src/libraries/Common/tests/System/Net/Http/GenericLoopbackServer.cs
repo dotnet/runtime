@@ -6,6 +6,8 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Security.Authentication;
+using System.IO;
+using System.Net.Sockets;
 
 namespace System.Net.Test.Common
 {
@@ -16,6 +18,8 @@ namespace System.Net.Test.Common
     {
         public abstract GenericLoopbackServer CreateServer(GenericLoopbackOptions options = null);
         public abstract Task CreateServerAsync(Func<GenericLoopbackServer, Uri, Task> funcAsync, int millisecondsTimeout = 60_000, GenericLoopbackOptions options = null);
+
+        public abstract Task<GenericLoopbackConnection> CreateConnectionAsync(Socket socket, Stream stream, GenericLoopbackOptions options = null);
 
         public abstract Version Version { get; }
 
@@ -58,6 +62,8 @@ namespace System.Net.Test.Common
     {
         public abstract void Dispose();
 
+        public abstract Task InitializeConnectionAsync();
+
         /// <summary>Read request Headers and optionally request body as well.</summary>
         public abstract Task<HttpRequestData> ReadRequestDataAsync(bool readBody = true);
         /// <summary>Read complete request body if not done by ReadRequestData.</summary>
@@ -69,6 +75,9 @@ namespace System.Net.Test.Common
         public abstract Task SendResponseHeadersAsync(HttpStatusCode statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null, int requestId = 0);
         /// <summary>Sends Response body after SendResponse was called with isFinal: false.</summary>
         public abstract Task SendResponseBodyAsync(byte[] content, bool isFinal = true, int requestId = 0);
+
+        /// <summary>Reads Request, sends Response and closes connection.</summary>
+        public abstract Task<HttpRequestData> HandleRequestAsync(HttpStatusCode statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null, string content = "");
 
         /// <summary>Waits for the client to signal cancellation.</summary>
         public abstract Task WaitForCancellationAsync(bool ignoreIncomingData = true, int requestId = 0);
@@ -89,6 +98,8 @@ namespace System.Net.Test.Common
                 SslProtocols.Tls13 |
 #endif
                 SslProtocols.Tls12;
+
+        public int ListenBacklog { get; set; } = 1;
     }
 
     public struct HttpHeaderData
@@ -100,13 +111,15 @@ namespace System.Net.Test.Common
         public string Value { get; }
         public bool HuffmanEncoded { get; }
         public byte[] Raw { get; }
+        public Encoding ValueEncoding { get; }
 
-        public HttpHeaderData(string name, string value, bool huffmanEncoded = false, byte[] raw = null)
+        public HttpHeaderData(string name, string value, bool huffmanEncoded = false, byte[] raw = null, Encoding valueEncoding = null)
         {
             Name = name;
             Value = value;
             HuffmanEncoded = huffmanEncoded;
             Raw = raw;
+            ValueEncoding = valueEncoding;
         }
 
         public override string ToString() => Name == null ? "<empty>" : (Name + ": " + (Value ?? string.Empty));

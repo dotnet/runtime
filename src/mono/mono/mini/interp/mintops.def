@@ -795,6 +795,7 @@ OPDEF(MINT_INTRINS_RUNTIMEHELPERS_OBJECT_HAS_COMPONENT_SIZE, "intrins_runtimehel
 OPDEF(MINT_INTRINS_CLEAR_WITH_REFERENCES, "intrin_clear_with_references", 1, Pop2, Push0, MintOpNoArgs)
 OPDEF(MINT_INTRINS_MARVIN_BLOCK, "intrins_marvin_block", 1, Pop2, Push0, MintOpNoArgs)
 OPDEF(MINT_INTRINS_ASCII_CHARS_TO_UPPERCASE, "intrins_ascii_chars_to_uppercase", 1, Pop1, Push1, MintOpNoArgs)
+OPDEF(MINT_INTRINS_MEMORYMARSHAL_GETARRAYDATAREF, "intrins_memorymarshal_getarraydataref", 1, Pop1, Push1, MintOpNoArgs)
 OPDEF(MINT_INTRINS_ORDINAL_IGNORE_CASE_ASCII, "intrins_ordinal_ignore_case_ascii", 1, Pop2, Push1, MintOpNoArgs)
 OPDEF(MINT_INTRINS_64ORDINAL_IGNORE_CASE_ASCII, "intrins_64ordinal_ignore_case_ascii", 1, Pop2, Push1, MintOpNoArgs)
 OPDEF(MINT_INTRINS_U32_TO_DECSTR, "intrins_u32_to_decstr", 3, Pop1, Push1, MintOpNoArgs)

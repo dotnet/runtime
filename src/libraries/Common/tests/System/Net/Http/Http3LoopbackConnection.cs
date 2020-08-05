@@ -8,6 +8,7 @@ using System.Net.Quic;
 using System.Text;
 using System.Threading.Tasks;
 using System.Linq;
+using System.Net.Http.Functional.Tests;
 
 namespace System.Net.Test.Common
 {
@@ -82,6 +83,11 @@ namespace System.Net.Test.Common
         public Http3LoopbackStream GetOpenRequest(int requestId = 0)
         {
             return requestId == 0 ? _currentStream : _openStreams[requestId - 1];
+        }
+
+        public override Task InitializeConnectionAsync()
+        {
+            throw new NotImplementedException();
         }
 
         public async Task<Http3LoopbackStream> AcceptStreamAsync()
@@ -160,6 +166,14 @@ namespace System.Net.Test.Common
             }
 
             await GetOpenRequest(requestId).SendHeadersFrameAsync(headers).ConfigureAwait(false);
+        }
+
+        public override async Task<HttpRequestData> HandleRequestAsync(HttpStatusCode statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null, string content = "")
+        {
+            HttpRequestData request = await ReadRequestDataAsync().ConfigureAwait(false);
+            await SendResponseAsync(statusCode, headers, content).ConfigureAwait(false);
+            await CloseAsync(Http3LoopbackConnection.H3_NO_ERROR);
+            return request;
         }
 
         public override async Task WaitForCancellationAsync(bool ignoreIncomingData = true, int requestId = 0)

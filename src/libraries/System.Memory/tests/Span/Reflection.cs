@@ -40,7 +40,6 @@ namespace System.SpanTests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/39311", TestPlatforms.Browser)]
         public static void BinaryPrimitives_StaticWithSpanArgument()
         {
             Type type = typeof(BinaryPrimitives);

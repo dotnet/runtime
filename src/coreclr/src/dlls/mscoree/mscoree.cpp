@@ -444,7 +444,7 @@ HRESULT SetInternalSystemDirectory()
 }
 
 #if defined(CROSSGEN_COMPILE)
-void SetMscorlibPath(LPCWSTR wzSystemDirectory)
+void SetCoreLibPath(LPCWSTR wzSystemDirectory)
 {
     DWORD len = (DWORD)wcslen(wzSystemDirectory);
     bool appendSeparator = wzSystemDirectory[len-1] != DIRECTORY_SEPARATOR_CHAR_W;

@@ -63,7 +63,7 @@ namespace Microsoft.NET.HostModel.Bundle
         public override string ToString()
         {
             string os = IsWindows ? "win" : IsLinux ? "linux" : "osx";
-            return string.Format($"OS: {os} FrameworkVersion: {FrameworkVersion}");
+            return $"OS: {os} FrameworkVersion: {FrameworkVersion}";
         }
 
         static OSPlatform HostOS => RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? OSPlatform.Linux :

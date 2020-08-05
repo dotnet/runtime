@@ -138,6 +138,11 @@ namespace Internal.TypeSystem
             {
             }
 
+            internal InvalidProgramException(ExceptionStringID id)
+                : base(id)
+            {
+            }
+
             internal InvalidProgramException()
                 : base(ExceptionStringID.InvalidProgramDefault)
             {

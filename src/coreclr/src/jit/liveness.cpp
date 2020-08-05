@@ -1980,11 +1980,10 @@ void Compiler::fgComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VARSET_VALAR
                             GenTree* data =
                                 store->OperIs(GT_STOREIND) ? store->AsStoreInd()->Data() : store->AsBlk()->Data();
                             data->SetUnusedValue();
+
                             if (data->isIndir())
                             {
-                                // This is a block assignment. An indirection of the rhs is not considered
-                                // to happen until the assignment so mark it as non-faulting.
-                                data->gtFlags |= GTF_IND_NONFAULTING;
+                                Lowering::TransformUnusedIndirection(data->AsIndir(), this, block);
                             }
 
                             blockRange.Remove(store);
@@ -2109,38 +2108,75 @@ void Compiler::fgComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VARSET_VALAR
                 break;
 
             case GT_NOP:
+            {
                 // NOTE: we need to keep some NOPs around because they are referenced by calls. See the dead store
                 // removal code above (case GT_STORE_LCL_VAR) for more explanation.
                 if ((node->gtFlags & GTF_ORDER_SIDEEFF) != 0)
                 {
                     break;
                 }
-                __fallthrough;
+                fgTryRemoveNonLocal(node, &blockRange);
+            }
+            break;
+
+            case GT_BLK:
+            case GT_OBJ:
+            case GT_DYN_BLK:
+            {
+                bool removed = fgTryRemoveNonLocal(node, &blockRange);
+                if (!removed && node->IsUnusedValue())
+                {
+                    // IR doesn't expect dummy uses of `GT_OBJ/BLK/DYN_BLK`.
+                    JITDUMP("Replace an unused OBJ/BLK node [%06d] with a NULLCHECK\n", dspTreeID(node));
+                    gtChangeOperToNullCheck(node, block);
+                }
+            }
+            break;
 
             default:
-                assert(!node->OperIsLocal());
-                if (!node->IsValue() || node->IsUnusedValue())
-                {
-                    // We are only interested in avoiding the removal of nodes with direct side-effects
-                    // (as opposed to side effects of their children).
-                    // This default case should never include calls or assignments.
-                    assert(!node->OperRequiresAsgFlag() && !node->OperIs(GT_CALL));
-                    if (!node->gtSetFlags() && !node->OperMayThrow(this))
-                    {
-                        JITDUMP("Removing dead node:\n");
-                        DISPNODE(node);
-
-                        node->VisitOperands([](GenTree* operand) -> GenTree::VisitResult {
-                            operand->SetUnusedValue();
-                            return GenTree::VisitResult::Continue;
-                        });
-
-                        blockRange.Remove(node);
-                    }
-                }
+                fgTryRemoveNonLocal(node, &blockRange);
                 break;
         }
     }
+}
+
+//---------------------------------------------------------------------
+// fgTryRemoveNonLocal - try to remove a node if it is unused and has no direct
+//   side effects.
+//
+// Arguments
+//    node       - the non-local node to try;
+//    blockRange - the block range that contains the node.
+//
+// Return value:
+//    None
+//
+// Notes: local nodes are processed independently and are not expected in this function.
+//
+bool Compiler::fgTryRemoveNonLocal(GenTree* node, LIR::Range* blockRange)
+{
+    assert(!node->OperIsLocal());
+    if (!node->IsValue() || node->IsUnusedValue())
+    {
+        // We are only interested in avoiding the removal of nodes with direct side effects
+        // (as opposed to side effects of their children).
+        // This default case should never include calls or assignments.
+        assert(!node->OperRequiresAsgFlag() && !node->OperIs(GT_CALL));
+        if (!node->gtSetFlags() && !node->OperMayThrow(this))
+        {
+            JITDUMP("Removing dead node:\n");
+            DISPNODE(node);
+
+            node->VisitOperands([](GenTree* operand) -> GenTree::VisitResult {
+                operand->SetUnusedValue();
+                return GenTree::VisitResult::Continue;
+            });
+
+            blockRange->Remove(node);
+            return true;
+        }
+    }
+    return false;
 }
 
 // fgRemoveDeadStore - remove a store to a local which has no exposed uses.
@@ -2285,17 +2321,6 @@ bool Compiler::fgRemoveDeadStore(GenTree**        pTree,
             }
 #endif // DEBUG
             // Extract the side effects
-            if (rhsNode->TypeGet() == TYP_STRUCT)
-            {
-                // This is a block assignment. An indirection of the rhs is not considered to
-                // happen until the assignment, so we will extract the side effects from only
-                // the address.
-                if (rhsNode->OperIsIndir())
-                {
-                    assert(rhsNode->OperGet() != GT_NULLCHECK);
-                    rhsNode = rhsNode->AsIndir()->Addr();
-                }
-            }
             gtExtractSideEffList(rhsNode, &sideEffList);
         }
 

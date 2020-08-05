@@ -160,6 +160,7 @@ namespace System.Threading.Threads.Tests
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34543", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+        [PlatformSpecific(~TestPlatforms.Browser)] // System.Diagnostics.Process is not supported on this platform.
         [InlineData("STAMain.exe", "GetApartmentStateTest")]
         [InlineData("STAMain.exe", "SetApartmentStateTest")]
         [InlineData("STAMain.exe", "WaitAllNotSupportedOnSta_Test0")]

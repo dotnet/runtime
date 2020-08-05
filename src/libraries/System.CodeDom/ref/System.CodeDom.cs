@@ -993,7 +993,7 @@ namespace System.CodeDom.Compiler
         protected abstract void GenerateSnippetMember(System.CodeDom.CodeSnippetTypeMember e);
         protected virtual void GenerateSnippetStatement(System.CodeDom.CodeSnippetStatement e) { }
         protected void GenerateStatement(System.CodeDom.CodeStatement e) { }
-        protected void GenerateStatements(System.CodeDom.CodeStatementCollection stms) { }
+        protected void GenerateStatements(System.CodeDom.CodeStatementCollection stmts) { }
         protected abstract void GenerateThisReferenceExpression(System.CodeDom.CodeThisReferenceExpression e);
         protected abstract void GenerateThrowExceptionStatement(System.CodeDom.CodeThrowExceptionStatement e);
         protected abstract void GenerateTryCatchFinallyStatement(System.CodeDom.CodeTryCatchFinallyStatement e);

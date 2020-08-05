@@ -254,6 +254,7 @@ namespace System.Net.Sockets
     {
         public Socket(System.Net.Sockets.SafeSocketHandle handle) { }
         public Socket(System.Net.Sockets.AddressFamily addressFamily, System.Net.Sockets.SocketType socketType, System.Net.Sockets.ProtocolType protocolType) { }
+        [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")]
         public Socket(System.Net.Sockets.SocketInformation socketInformation) { }
         public Socket(System.Net.Sockets.SocketType socketType, System.Net.Sockets.ProtocolType protocolType) { }
         public System.Net.Sockets.AddressFamily AddressFamily { get { throw null; } }
