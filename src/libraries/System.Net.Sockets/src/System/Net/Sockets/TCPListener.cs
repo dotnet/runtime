@@ -112,7 +112,7 @@ namespace System.Net.Sockets
             }
         }
 
-        [SupportedOSPlatform("windows7.0")]
+        [SupportedOSPlatform("windows")]
         public void AllowNatTraversal(bool allowed)
         {
             if (_active)
