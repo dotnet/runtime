@@ -40,7 +40,7 @@ PEImageLayout* PEImageLayout::LoadFromFlat(PEImageLayout* pflatimage)
     _ASSERTE(!"how did we get here?");
     return new ConvertedImageLayout(pflatimage);
 
-    throw "how did we get here?";
+    throw "How did we get here?";
 }
 
 PEImageLayout* PEImageLayout::LoadConverted(PEImage* pOwner)
