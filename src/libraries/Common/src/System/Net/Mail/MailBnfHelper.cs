@@ -267,9 +267,9 @@ namespace System.Net.Mime
                 }
             }
 
-            if (start == offset)
+            if (start == offset && offset < data.Length)
             {
-                throw new FormatException(SR.ContentTypeInvalid);
+                throw new FormatException(SR.Format(SR.MailHeaderFieldInvalidCharacter, data[offset]));
             }
 
             return data.Substring(start, offset - start);

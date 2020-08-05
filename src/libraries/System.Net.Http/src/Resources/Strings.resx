@@ -264,9 +264,6 @@
   <data name="net_http_value_must_be_greater_than" xml:space="preserve">
     <value>The specified value must be greater than {0}.</value>
   </data>
-  <data name="ContentTypeInvalid" xml:space="preserve">
-    <value>The specified content type is invalid.</value>
-  </data>
   <data name="MailHeaderFieldInvalidCharacter" xml:space="preserve">
     <value>An invalid character was found in the mail header: '{0}'.</value>
   </data>
