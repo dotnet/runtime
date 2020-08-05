@@ -14,7 +14,7 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Emit;
 using Newtonsoft.Json.Linq;
 
-namespace WebAssembly.Net.BrowserDebug
+namespace Microsoft.WebAssembly.Diagnostics
 {
 
     internal class EvaluateExpression

@@ -20,7 +20,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json.Linq;
 
-namespace WebAssembly.Net.BrowserDebug
+namespace Microsoft.WebAssembly.Diagnostics
 {
     public class TestHarnessStartup
     {

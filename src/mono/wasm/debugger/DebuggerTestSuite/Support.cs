@@ -11,7 +11,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Linq;
-using WebAssembly.Net.BrowserDebug;
+using Microsoft.WebAssembly.Diagnostics;
 using Xunit;
 
 namespace DebuggerTests

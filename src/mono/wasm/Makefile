@@ -141,16 +141,16 @@ run-tests-%:
 	PATH="$(JSVU):$(PATH)" $(DOTNET) build $(TOP)/src/libraries/$*/tests/ /t:Test /p:TargetOS=Browser /p:TargetArchitecture=wasm /p:Configuration=$(CONFIG) $(MSBUILD_ARGS)
 
 build-debugger-test-app: 
-	$(DOTNET) build --configuration debug --nologo /p:TargetArchitecture=wasm /p:TargetOS=Browser /p:Configuration=Debug  $(TOP)/src/mono/wasm/debugger/tests
+	$(DOTNET) build --configuration debug --nologo /p:TargetArchitecture=wasm /p:TargetOS=Browser /p:Configuration=Debug /p:RuntimeConfiguration=$(CONFIG) $(TOP)/src/mono/wasm/debugger/tests
 	cp $(TOP)/src/mono/wasm/debugger/tests/debugger-driver.html $(TOP)/src/mono/wasm/debugger/tests/bin/Debug/publish
 	cp $(TOP)/src/mono/wasm/debugger/tests/other.js $(TOP)/src/mono/wasm/debugger/tests/bin/Debug/publish
 	cp $(TOP)/src/mono/wasm/debugger/tests/runtime-debugger.js $(TOP)/src/mono/wasm/debugger/tests/bin/Debug/publish
 
 run-debugger-tests: build-debugger-test-app build-dbg-testsuite
 	if [ ! -z "$(TEST_FILTER)" ]; then \
-		TEST_SUITE_PATH=$(TOP)/src/mono/wasm/debugger/tests/bin/Debug/publish LC_ALL=en_US.UTF-8 dotnet test  $(TOP)/src/mono/wasm/debugger/DebuggerTestSuite --filter FullyQualifiedName~$(TEST_FILTER); \
+		TEST_SUITE_PATH=$(TOP)/src/mono/wasm/debugger/tests/bin/Debug/publish LC_ALL=en_US.UTF-8 $(DOTNET) test $(TOP)/src/mono/wasm/debugger/DebuggerTestSuite --filter FullyQualifiedName~$(TEST_FILTER); \
 	else \
-		TEST_SUITE_PATH=$(TOP)/src/mono/wasm/debugger/tests/bin/Debug/publish LC_ALL=en_US.UTF-8 dotnet test  $(TOP)/src/mono/wasm/debugger/DebuggerTestSuite $(TEST_ARGS); \
+		TEST_SUITE_PATH=$(TOP)/src/mono/wasm/debugger/tests/bin/Debug/publish LC_ALL=en_US.UTF-8 $(DOTNET) test $(TOP)/src/mono/wasm/debugger/DebuggerTestSuite $(TEST_ARGS); \
 	fi
 
 build-dbg-proxy:

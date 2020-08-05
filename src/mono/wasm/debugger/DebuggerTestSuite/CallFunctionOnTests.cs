@@ -5,7 +5,7 @@ using System;
 using System.Linq;
 using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
-using WebAssembly.Net.BrowserDebug;
+using Microsoft.WebAssembly.Diagnostics;
 using Xunit;
 
 namespace DebuggerTests

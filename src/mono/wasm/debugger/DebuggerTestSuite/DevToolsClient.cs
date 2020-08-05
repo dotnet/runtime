@@ -10,7 +10,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 
-namespace WebAssembly.Net.BrowserDebug
+namespace Microsoft.WebAssembly.Diagnostics
 {
     internal class DevToolsClient : IDisposable
     {

@@ -121,7 +121,7 @@ public class WasmAppBuilder : Task
             File.Copy(assembly.Location, Path.Join(AppDir, config.AssemblyRoot, Path.GetFileName(assembly.Location)), true);
             if (DebugLevel > 0) {
                 var pdb = assembly.Location;
-                pdb = pdb.Replace(".dll", ".pdb");
+                pdb = Path.ChangeExtension(pdb, ".pdb");
                 if (File.Exists(pdb))
                     File.Copy(pdb, Path.Join(AppDir, config.AssemblyRoot, Path.GetFileName(pdb)), true);
             }
@@ -142,7 +142,7 @@ public class WasmAppBuilder : Task
             config.Assets.Add(new AssemblyEntry (Path.GetFileName(assembly.Location)));
             if (DebugLevel > 0) {
                 var pdb = assembly.Location;
-                pdb = pdb.Replace(".dll", ".pdb");
+                pdb = Path.ChangeExtension(pdb, ".pdb");
                 if (File.Exists(pdb))
                     config.Assets.Add(new AssemblyEntry (Path.GetFileName(pdb)));
             }

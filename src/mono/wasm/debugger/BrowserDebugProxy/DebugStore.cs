@@ -18,7 +18,7 @@ using Mono.Cecil.Pdb;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
-namespace WebAssembly.Net.BrowserDebug
+namespace Microsoft.WebAssembly.Diagnostics
 {
     internal class BreakpointRequest
     {

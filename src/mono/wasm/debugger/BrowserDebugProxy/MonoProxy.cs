@@ -12,7 +12,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Linq;
 
-namespace WebAssembly.Net.BrowserDebug
+namespace Microsoft.WebAssembly.Diagnostics
 {
 
     internal class MonoProxy : DevToolsProxy

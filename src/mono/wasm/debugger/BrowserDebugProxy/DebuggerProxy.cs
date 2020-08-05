@@ -6,7 +6,7 @@ using System.Net.WebSockets;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 
-namespace WebAssembly.Net.BrowserDebug
+namespace Microsoft.WebAssembly.Diagnostics
 {
 
     // This type is the public entrypoint that allows external code to attach the debugger proxy

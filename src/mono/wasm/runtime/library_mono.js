@@ -875,7 +875,7 @@ var MonoSupportLib = {
 		// Initializes the runtime and loads assemblies, debug information, and other files.
 		// @args is a dictionary-style Object with the following properties:
 		//    assembly_root: (required) the subfolder containing managed assemblies and pdbs
-		//    debug_level: (required)
+		//    debug_level or enable_debugging: (required)
 		//    assets: (required) a list of assets to load along with the runtime. each asset
 		//     is a dictionary-style Object with the following properties:
 		//        name: (required) the name of the asset, including extension.
@@ -978,6 +978,8 @@ var MonoSupportLib = {
 		},
 
 		_load_assets_and_runtime: function (args) {
+			if (args.enable_debugging)
+				args.debug_level = args.enable_debugging;
 			if (args.assembly_list)
 				throw new Error ("Invalid args (assembly_list was replaced by assets)");
 			if (args.runtime_assets)

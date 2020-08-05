@@ -41,7 +41,7 @@
       MainJS="$(MonoProjectRoot)wasm\runtime-test.js"
       DebugLevel="1"
       AssemblySearchPaths="@(AssemblySearchPaths)"
-      ExtraAssemblies="$(ArtifactsBinDir)\System.Runtime.InteropServices.JavaScript\$(NetCoreAppCurrent)-Browser-$(Configuration)\System.Runtime.InteropServices.JavaScript.dll"/>
+      ExtraAssemblies="$(ArtifactsBinDir)\System.Runtime.InteropServices.JavaScript\$(NetCoreAppCurrent)-Browser-$(RuntimeConfiguration)\System.Runtime.InteropServices.JavaScript.dll"/>
     <Exec Command="chmod a+x $(AppDir)/run-v8.sh" />
   </Target>
 
