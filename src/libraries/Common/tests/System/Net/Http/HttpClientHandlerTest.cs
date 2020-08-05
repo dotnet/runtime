@@ -236,6 +236,7 @@ namespace System.Net.Http.Functional.Tests
 
             using HttpClient client = CreateHttpClient(handler);
 
+            var options = new GenericLoopbackOptions { Address = TestHelper.GetIPv6LinkLocalAddress() };
             if (options.Address == null)
             {
                 throw new SkipTestException("Unable to find valid IPv6 LL address.");
@@ -263,6 +264,8 @@ namespace System.Net.Http.Functional.Tests
             handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
 
             using HttpClient client = CreateHttpClient(handler);
+
+            var options = new GenericLoopbackOptions { Address = address };
 
             await LoopbackServerFactory.CreateServerAsync(async (server, url) =>
             {
