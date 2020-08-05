@@ -3,8 +3,10 @@
 
 using System.Buffers.Binary;
 using System.Buffers.Text;
+using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Concurrent;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -255,7 +257,7 @@ namespace System.Diagnostics
 #if ALLOW_PARTIALLY_TRUSTED_CALLERS
         [System.Security.SecuritySafeCriticalAttribute]
 #endif
-            get => _tags?.Enumerate() ?? Unsafe.As<IEnumerable<KeyValuePair<string, object?>>>(s_emptyBaggageTags);
+            get => _tags ?? Unsafe.As<IEnumerable<KeyValuePair<string, object?>>>(s_emptyBaggageTags);
         }
 
         /// <summary>
@@ -264,7 +266,7 @@ namespace System.Diagnostics
         /// </summary>
         public IEnumerable<ActivityEvent> Events
         {
-            get => _events != null ? _events.Enumerate() : s_emptyEvents;
+            get => _events ?? s_emptyEvents;
         }
 
         /// <summary>
@@ -273,7 +275,7 @@ namespace System.Diagnostics
         /// </summary>
         public IEnumerable<ActivityLink> Links
         {
-            get => _links != null ? _links.Enumerate() : s_emptyLinks;
+            get => _links ?? s_emptyLinks;
         }
 
         /// <summary>
@@ -1238,7 +1240,7 @@ namespace System.Diagnostics
         }
 
         // We are not using the public LinkedList<T> because we need to ensure thread safety operation on the list.
-        private class LinkedList<T>
+        private class LinkedList<T> : IEnumerable<T>
         {
             private LinkedListNode<T> _first;
             private LinkedListNode<T> _last;
@@ -1269,18 +1271,12 @@ namespace System.Diagnostics
                 }
             }
 
-            public IEnumerable<T> Enumerate()
-            {
-                LinkedListNode<T>? current = _first;
-                do
-                {
-                    yield return current.Value;
-                    current = current.Next;
-                } while (current != null);
-            }
+            public Enumerator<T> GetEnumerator() => new Enumerator<T>(_first);
+            IEnumerator<T> IEnumerable<T>.GetEnumerator() => new Enumerator<T>(_first);
+            IEnumerator IEnumerable.GetEnumerator() => new Enumerator<T>(_first);
         }
 
-        private class TagsLinkedList
+        private class TagsLinkedList : IEnumerable<KeyValuePair<string, object?>>
         {
             private LinkedListNode<KeyValuePair<string, object?>>? _first;
             private LinkedListNode<KeyValuePair<string, object?>>? _last;
@@ -1382,6 +1378,10 @@ namespace System.Diagnostics
                 }
             }
 
+            public Enumerator<KeyValuePair<string, object?>> GetEnumerator() => new Enumerator<KeyValuePair<string, object?>>(_first);
+            IEnumerator<KeyValuePair<string, object?>> IEnumerable<KeyValuePair<string, object?>>.GetEnumerator() => new Enumerator<KeyValuePair<string, object?>>(_first);
+            IEnumerator IEnumerable.GetEnumerator() => new Enumerator<KeyValuePair<string, object?>>(_first);
+
             public IEnumerable<KeyValuePair<string, string?>> EnumerateStringValues()
             {
                 LinkedListNode<KeyValuePair<string, object?>>? current = _first;
@@ -1390,22 +1390,47 @@ namespace System.Diagnostics
                 {
                     if (current.Value.Value is string || current.Value.Value == null)
                     {
-                        yield return new KeyValuePair<string, string?>(current.Value.Key, (string?) current.Value.Value);
+                        yield return new KeyValuePair<string, string?>(current.Value.Key, (string?)current.Value.Value);
                     }
 
                     current = current.Next;
                 };
             }
+        }
 
-            public IEnumerable<KeyValuePair<string, object?>> Enumerate()
+        private struct Enumerator<T> : IEnumerator<T>
+        {
+            private readonly LinkedListNode<T>? _head;
+            private LinkedListNode<T>? _nextNode;
+            [AllowNull, MaybeNull] private T _currentItem;
+
+            public Enumerator(LinkedListNode<T>? head)
             {
-                LinkedListNode<KeyValuePair<string, object?>>? current = _first;
+                _nextNode = _head = head;
+                _currentItem = default;
+            }
 
-                while (current != null)
+            public T Current => _currentItem!;
+
+            object? IEnumerator.Current => Current;
+
+            public bool MoveNext()
+            {
+                if (_nextNode == null)
                 {
-                    yield return current.Value;
-                    current = current.Next;
-                };
+                    _currentItem = default;
+                    return false;
+                }
+
+                _currentItem = _nextNode.Value;
+                _nextNode = _nextNode.Next;
+                return true;
+            }
+
+            public void Reset() => _nextNode = _head;
+
+            public void Dispose()
+            {
             }
         }
 
