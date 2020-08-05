@@ -297,7 +297,7 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact, OuterLoop]
-        public static void VeryLargeDictionaryOfEnumsToSerialize()
+        public static void VeryLargeAmountOfEnumDictionaryKeysToSerialize()
         {
             // Ensure we don't throw OutOfMemoryException.
 
