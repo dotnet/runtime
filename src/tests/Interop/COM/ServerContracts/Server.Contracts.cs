@@ -203,6 +203,16 @@ namespace Server.Contract
         HResult Return_As_HResult_Struct(int hresultToReturn);
     }
 
+    [ComImport]
+    [Guid("592386A5-6837-444D-9DE3-250815D18556")]
+    [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+    public interface IErrorMarshalTesting_VtableGap
+    {
+        void _VtblGap1_2();
+        [PreserveSig]
+        HResult Return_As_HResult_Struct(int hresultToReturn);
+    }
+
     public enum IDispatchTesting_Exception
     {
         Disp,
