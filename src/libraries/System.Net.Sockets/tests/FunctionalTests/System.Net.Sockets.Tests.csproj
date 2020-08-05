@@ -23,6 +23,7 @@
     <Compile Include="IPPacketInformationTest.cs" />
     <Compile Include="KeepAliveTest.cs" />
     <Compile Include="LingerStateTest.cs" />
+    <Compile Include="LocalEndPointTest.cs" />
     <Compile Include="LoggingTest.cs" />
     <Compile Include="NetworkStreamTest.cs" />
     <Compile Include="ReceiveMessageFrom.cs" />

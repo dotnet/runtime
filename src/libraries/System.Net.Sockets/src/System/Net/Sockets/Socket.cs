@@ -27,7 +27,7 @@ namespace System.Net.Sockets
         // _rightEndPoint is null if the socket has not been bound.  Otherwise, it is any EndPoint of the
         // correct type (IPEndPoint, etc).
         internal EndPoint? _rightEndPoint;
-        private EndPoint? _localEndPoint; // Cached LocalEndPoint value. Will clear on error and on disconnect
+        private EndPoint? _localEndPoint; // Cached LocalEndPoint value. Will clear on connect, error and disconnect
         internal EndPoint? _remoteEndPoint;
 
         // These flags monitor if the socket was ever connected at any time and if it still is.
@@ -216,6 +216,7 @@ namespace System.Net.Sockets
                                 }
 
                                 _isConnected = true;
+                                _localEndPoint = null;
                                 break;
 
                             case SocketError.InvalidArgument:
@@ -225,6 +226,7 @@ namespace System.Net.Sockets
                                 // whether we're actually connected or not, err on the side of saying
                                 // we're connected.
                                 _isConnected = true;
+                                _localEndPoint = null;
                                 break;
                         }
                     }
@@ -318,6 +320,7 @@ namespace System.Net.Sockets
                     // Update the state if we've become connected after a non-blocking connect.
                     _isConnected = true;
                     _rightEndPoint = _nonBlockingConnectRightEndPoint;
+                    _localEndPoint = null;
                     _nonBlockingConnectInProgress = false;
                 }
 
@@ -364,6 +367,7 @@ namespace System.Net.Sockets
                         // Update the state if we've become connected after a non-blocking connect.
                         _isConnected = true;
                         _rightEndPoint = _nonBlockingConnectRightEndPoint;
+                        _localEndPoint = null;
                         _nonBlockingConnectInProgress = false;
                     }
 
@@ -475,6 +479,7 @@ namespace System.Net.Sockets
                     // Update the state if we've become connected after a non-blocking connect.
                     _isConnected = true;
                     _rightEndPoint = _nonBlockingConnectRightEndPoint;
+                    _localEndPoint = null;
                     _nonBlockingConnectInProgress = false;
                 }
 
@@ -4924,6 +4929,7 @@ namespace System.Net.Sockets
             // some point in time update the perf counter as well.
             _isConnected = true;
             _isDisconnected = false;
+            _localEndPoint = null;
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "now connected");
         }
 
