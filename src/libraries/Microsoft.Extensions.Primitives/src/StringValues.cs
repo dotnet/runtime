@@ -242,9 +242,7 @@ namespace Microsoft.Extensions.Primitives
                     }
                 });
 #else
-#pragma warning disable CS0618
-                var sb = new InplaceStringBuilder(length);
-#pragma warning restore CS0618
+                var sb = new StringBuilder(length);
                 bool hasAdded = false;
                 // Skip null and empty values
                 for (int i = 0; i < values.Length; i++)
