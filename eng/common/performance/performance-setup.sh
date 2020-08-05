@@ -146,7 +146,7 @@ done
 if [ "$repository" == "dotnet/performance" ] || [ "$repository" == "dotnet-performance" ]; then
     run_from_perf_repo=true
 fi
-echo "Line 149"
+
 if [ -z "$configurations" ]; then
     configurations="CompilationMode=$compilation_mode"
 fi
@@ -158,7 +158,7 @@ fi
 if [ -z "$baseline_core_root_directory" ]; then
     use_baseline_core_run=false
 fi
-echo "Line 161"
+
 payload_directory=$source_directory/Payload
 performance_directory=$payload_directory/performance
 workitem_directory=$source_directory/workitem
@@ -177,7 +177,7 @@ if [[ "$compare" == true ]]; then
     echo "Compare not available for arm64"
     exit 1
   fi
-echo "Line 180"
+
   queue=Ubuntu.1804.Amd64.Tiger.Perf.Open
 fi
 
@@ -193,7 +193,7 @@ if [[ "$internal" == true ]]; then
         queue=Ubuntu.1804.Amd64.Tiger.Perf
     fi
 fi
-echo "Line 196"
+
 if [[ "$mono_dotnet" != "" ]]; then
     configurations="$configurations LLVM=$llvm MonoInterpreter=$monointerpreter MonoAOT=$monoaot"
 fi
@@ -205,7 +205,7 @@ fi
 if [[ "$monointerpreter" == "true" ]]; then
     extra_benchmark_dotnet_arguments="$extra_benchmark_dotnet_arguments --category-exclusion-filter NoInterpreter"
 fi
-echo "Line 208"
+
 common_setup_arguments="--channel master --queue $queue --build-number $build_number --build-configs \"$configurations\" --architecture $architecture"
 setup_arguments="--repository https://github.com/$repository --branch $branch --get-perf-hash --commit-sha $commit_sha $common_setup_arguments"
 
@@ -215,7 +215,7 @@ setup_arguments="--repository https://github.com/$repository --branch $branch --
 dotnet_version=`cat global.json | python3 -c 'import json,sys;obj=json.load(sys.stdin);print(obj["tools"]["dotnet"])'`
 setup_arguments="--dotnet-versions $dotnet_version $setup_arguments"
 
-echo "Line 218"
+
 if [[ "$run_from_perf_repo" = true ]]; then
     payload_directory=
     workitem_directory=$source_directory
@@ -227,16 +227,16 @@ else
     docs_directory=$performance_directory/docs
     mv $docs_directory $workitem_directory
 fi
-echo "Line 230"
+
 if [[ "$wasm_runtime_loc" != "" ]]; then
     using_wasm=true
-    echo "Line 233"
+    
     wasm_dotnet_path=$payload_directory/dotnet-wasm
-    echo "Line 235"
+    
     mv $wasm_runtime_loc $wasm_dotnet_path
-    echo "Line 237"
+    
     extra_benchmark_dotnet_arguments="$extra_benchmark_dotnet_arguments --wasmMainJS \$HELIX_CORRELATION_PAYLOAD/dotnet-wasm/runtime-test.js --wasmEngine /home/helixbot/.jsvu/v8 --customRuntimePack \$HELIX_CORRELATION_PAYLOAD/dotnet-wasm"
-    echo "Line 239"
+    
 fi
 
 if [[ "$mono_dotnet" != "" ]]; then
@@ -254,12 +254,12 @@ if [[ "$use_baseline_core_run" = true ]]; then
   new_baseline_core_root=$payload_directory/Baseline_Core_Root
   mv $baseline_core_root_directory $new_baseline_core_root
 fi
-echo "Line 257"
+
 ci=true
 
 _script_dir=$(pwd)/eng/common
 . "$_script_dir/pipeline-logging-functions.sh"
-echo "Line 262"
+
 # Make sure all of our variables are available for future steps
 Write-PipelineSetVariable -name "UseCoreRun" -value "$use_core_run" -is_multi_job_variable false
 Write-PipelineSetVariable -name "UseBaselineCoreRun" -value "$use_baseline_core_run" -is_multi_job_variable false
