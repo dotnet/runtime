@@ -16,7 +16,6 @@ namespace System.Net.Security
             return new SslStreamCertificateContext(target, Array.Empty<X509Certificate2>());
         }
 
-
         private SslStreamCertificateContext(X509Certificate2 target, X509Certificate2[] intermediates)
         {
             if (intermediates.Length > 0)

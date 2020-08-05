@@ -13,7 +13,7 @@ namespace System.Net
         public SafeFreeSslCredentials(SslStreamCertificateContext? certificateContext, SslProtocols protocols, EncryptionPolicy policy)
             : base(IntPtr.Zero, true)
         {
-            if ( certificateContext != null)
+            if (certificateContext != null)
             {
                 // Make a defensive copy of the certificate. In some async cases the
                 // certificate can have been disposed before being provided to the handshake.
