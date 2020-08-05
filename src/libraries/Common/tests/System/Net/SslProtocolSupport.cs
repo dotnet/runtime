@@ -17,6 +17,8 @@ namespace System.Net.Test.Common
 #endif
             SslProtocols.Tls12 | SslProtocols.Tls11 | SslProtocols.Tls;
 
+        public const SslProtocols NonTls13Protocols = SslProtocols.Tls | SslProtocols.Tls11 | SslProtocols.Tls12;
+
         public static SslProtocols SupportedSslProtocols
         {
             get

@@ -32,8 +32,6 @@ namespace System.Net.Security.Tests
         protected abstract Task AuthenticateClientAsync(string targetHost, X509CertificateCollection clientCertificates, bool checkCertificateRevocation, SslProtocols? protocols = null);
         protected abstract Task AuthenticateServerAsync(X509Certificate serverCertificate, bool clientCertificateRequired, bool checkCertificateRevocation, SslProtocols? protocols = null);
 
-        private static SslProtocols NonTls13Protocols = SslProtocols.Tls | SslProtocols.Tls11 | SslProtocols.Tls12;
-
         public static IEnumerable<object[]> OneOrBothUseDefaulData()
         {
             yield return new object[] { null, null };
@@ -44,15 +42,15 @@ namespace System.Net.Security.Tests
             if (PlatformDetection.SupportsTls10)
             {
                 // Default only has Ssl3 and Tls1.0 for legacy reasons.
-                yield return new object[] { SslProtocols.Default, NonTls13Protocols };
-                yield return new object[] { NonTls13Protocols, SslProtocols.Default };
+                yield return new object[] { SslProtocols.Default, SslProtocolSupport.NonTls13Protocols };
+                yield return new object[] { SslProtocolSupport.NonTls13Protocols, SslProtocols.Default };
             }
 
 #pragma warning restore 0618
             if (PlatformDetection.SupportsTls11)
             {
-                yield return new object[] { NonTls13Protocols, SslProtocols.Tls11 };
-                yield return new object[] { SslProtocols.Tls11, NonTls13Protocols };
+                yield return new object[] { SslProtocolSupport.NonTls13Protocols, SslProtocols.Tls11 };
+                yield return new object[] { SslProtocols.Tls11, SslProtocolSupport.NonTls13Protocols };
             }
 
             if (PlatformDetection.SupportsTls12)
@@ -67,7 +65,7 @@ namespace System.Net.Security.Tests
                 yield return new object[] { SslProtocols.Tls13, null };
             }
 
-            if (PlatformDetection.SupportsTls10 || PlatformDetection.SupportsTls11 || PlatformDetection.SupportsTls12)
+            if ((SslProtocolSupport.SupportedSslProtocols & SslProtocolSupport.NonTls13Protocols) != 0)
             {
                 yield return new object[] { SslProtocols.Tls | SslProtocols.Tls11 | SslProtocols.Tls12, null };
                 yield return new object[] { null, SslProtocols.Tls | SslProtocols.Tls11 | SslProtocols.Tls12 };
