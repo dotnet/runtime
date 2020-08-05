@@ -8,6 +8,8 @@ namespace System.Globalization
 {
     public partial class JapaneseCalendar : Calendar
     {
+        private static readonly string [] s_abbreviatedEnglishEraName = { "M", "T", "S", "H", "R" };
+
         private static EraInfo[]? IcuGetJapaneseEras()
         {
             if (GlobalizationMode.Invariant)
@@ -23,17 +25,10 @@ namespace System.Globalization
                 return null;
             }
 
-            string[]? abbrevEnglishEraNames;
-            if (!CalendarData.EnumCalendarInfo("ja", CalendarId.JAPAN, CalendarDataType.AbbrevEraNames, out abbrevEnglishEraNames))
-            {
-                return null;
-            }
-
             List<EraInfo> eras = new List<EraInfo>();
             int lastMaxYear = GregorianCalendar.MaxYear;
 
             int latestEra = Interop.Globalization.GetLatestJapaneseEra();
-            int eraIndex = abbrevEnglishEraNames!.Length - 1;
 
             for (int i = latestEra; i >= 0; i--)
             {
@@ -49,16 +44,37 @@ namespace System.Globalization
                     break;
                 }
 
-                eras.Add(new EraInfo(i, dt.Year, dt.Month, dt.Day, dt.Year - 1, 1, lastMaxYear - dt.Year + 1,
-                    eraNames![i], GetAbbreviatedEraName(eraNames, i), eraIndex >= 0 ? abbrevEnglishEraNames![eraIndex--] : ""));
+                eras.Add(new EraInfo(i, dt.Year, dt.Month, dt.Day, dt.Year - 1, 1, lastMaxYear - dt.Year + 1, eraNames![i], GetAbbreviatedEraName(eraNames, i), ""));
 
                 lastMaxYear = dt.Year;
             }
+
+            string[] abbrevEnglishEraNames;
+            if (!CalendarData.EnumCalendarInfo("ja", CalendarId.JAPAN, CalendarDataType.AbbrevEraNames, out abbrevEnglishEraNames!))
+            {
+                // Failed to get English names. fallback to hardcoded data.
+                abbrevEnglishEraNames = s_abbreviatedEnglishEraName;
+            }
+
+            if (abbrevEnglishEraNames[abbrevEnglishEraNames.Length - 1].Length != 1 || abbrevEnglishEraNames[abbrevEnglishEraNames.Length - 1][0] > '\u007F')
+            {
+                // Couldn't get English names.
+                abbrevEnglishEraNames = s_abbreviatedEnglishEraName;
+            }
+
+            int startIndex = abbrevEnglishEraNames == s_abbreviatedEnglishEraName ? eras.Count - 1 : abbrevEnglishEraNames.Length - 1;
+
+            Debug.Assert(abbrevEnglishEraNames == s_abbreviatedEnglishEraName || eras.Count <= abbrevEnglishEraNames.Length);
 
             // remap the Era numbers, now that we know how many there will be
             for (int i = 0; i < eras.Count; i++)
             {
                 eras[i].era = eras.Count - i;
+                if (startIndex < abbrevEnglishEraNames.Length)
+                {
+                    eras[i].englishEraName = abbrevEnglishEraNames[startIndex];
+                }
+                startIndex--;
             }
 
             return eras.ToArray();

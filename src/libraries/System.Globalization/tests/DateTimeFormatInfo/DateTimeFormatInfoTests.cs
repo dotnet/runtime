@@ -191,8 +191,6 @@ namespace System.Globalization.Tests
         [Fact]
         public void JapaneseAbbreviatedEnglishEraNamesTest()
         {
-            Console.WriteLine($"*** {PlatformDetection.ICUVersion} ***");
-
             string [] eraNames = { "M", "T", "S", "H", "R" };
             var ci = new CultureInfo("ja-JP") { DateTimeFormat = { Calendar = new JapaneseCalendar() }};
 
