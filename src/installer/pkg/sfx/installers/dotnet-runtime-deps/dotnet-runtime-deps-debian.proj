@@ -1,5 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
-  <Sdk Name="Microsoft.DotNet.SharedFramework.Sdk" />
+<Project Sdk="Microsoft.Build.NoTargets">
   <PropertyGroup>
     <GenerateInstallers Condition="'$(BuildDebPackage)' != 'true'">false</GenerateInstallers>
   </PropertyGroup>

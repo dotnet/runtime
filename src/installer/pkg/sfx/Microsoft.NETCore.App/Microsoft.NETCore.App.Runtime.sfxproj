@@ -4,9 +4,10 @@
 
   <PropertyGroup>
     <PlatformPackageType>RuntimePack</PlatformPackageType>
-    <SharedFrameworkArchiveName>dotnet-runtime-internal</SharedFrameworkArchiveName>
-    <SharedFrameworkInstallerName Condition="'$(TargetOS)' != 'OSX'">dotnet-runtime</SharedFrameworkInstallerName>
-    <SharedFrameworkSymbolsArchiveName>dotnet-runtime-symbols</SharedFrameworkSymbolsArchiveName>
+    <ArchiveName>dotnet-runtime-internal</ArchiveName>
+    <InstallerName Condition="'$(TargetOS)' != 'OSX'">dotnet-runtime</InstallerName>
+    <GenerateSymbolsArchive>true</GenerateSymbolsArchive>
+    <SymbolsArchiveName>dotnet-runtime-symbols</SymbolsArchiveName>
     <VSInsertionShortComponentName>NetCore.SharedFramework</VSInsertionShortComponentName>
     <UseTemplatedPlatformManifest>true</UseTemplatedPlatformManifest>
     <GetSharedFrameworkFilesForReadyToRunDependsOn>

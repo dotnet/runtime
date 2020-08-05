@@ -1,5 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
-  <Sdk Name="Microsoft.DotNet.SharedFramework.Sdk" />
+<Project Sdk="Microsoft.Build.NoTargets">
 
   <PropertyGroup>
     <!--
@@ -9,16 +8,19 @@
     <SkipBuild Condition="'$(RuntimeFlavor)' == 'Mono'">true</SkipBuild>
     <BundleInstallerUpgradeCodeSeed>.NET Core Shared Framework Bundle Installer</BundleInstallerUpgradeCodeSeed>
     <BundleThemeDirectory>$(MSBuildProjectDirectory)</BundleThemeDirectory>
-    <PlatformPackageType>ToolPack</PlatformPackageType>
-    <SharedFrameworkName>Microsoft.NETCore.App</SharedFrameworkName>
-    <SharedFrameworkArchiveName>dotnet-runtime</SharedFrameworkArchiveName>
-    <GenerateArchive>true</GenerateArchive>
+    <ArchiveName>dotnet-runtime</ArchiveName>
+    <InstallerName>dotnet-runtime</InstallerName>
     <RuntimeIdentifiers>win-x86;win-x64;win-arm64;osx-x64</RuntimeIdentifiers>
     <BundleNameSuffix>Runtime</BundleNameSuffix>
     <MacOSBundleTemplate>$(MSBuildProjectDirectory)/shared-framework-distribution-template.xml</MacOSBundleTemplate>
-    <MacOSBundleIdentifierName>com.microsoft.dotnet.$(SharedFrameworkName).$(ProductVersion).osx.x64</MacOSBundleIdentifierName>
+    <MacOSBundleIdentifierName>com.microsoft.dotnet.Microsoft.NETCore.App.$(ProductVersion).osx.x64</MacOSBundleIdentifierName>
     <MacOSBundleResourcesPath>osx_resources</MacOSBundleResourcesPath>
   </PropertyGroup>
+  
+  <ItemGroup>
+    <PackageReference Include="Microsoft.DotNet.Build.Tasks.Installers" Version="5.0.0-dev.20404.8" />
+    <PackageReference Include="Microsoft.DotNet.Build.Tasks.Archives" Version="5.0.0-dev.20404.8" />
+  </ItemGroup>
 
   <ItemGroup>
     <BundleComponentReference Include="../Microsoft.NETCore.App/Microsoft.NETCore.App.Runtime.sfxproj" />
@@ -26,12 +28,12 @@
     <BundleComponentReference Include="../installers/dotnet-host.proj" />
   </ItemGroup>
 
-  <Target Name="PublishSharedFrameworkToDisk">
-    <Error Condition="'$(SharedFrameworkOutputPath)' == ''" Text="Publishing to disk requires the SharedFrameworkOutputPath to be set to the root of the path to write to." />
+  <Target Name="PublishToDisk">
+    <Error Condition="'$(OutputPath)' == ''" Text="Publishing to disk requires the OutputPath to be set to the root of the path to write to." />
 
     <MSBuild Projects="@(BundleComponentReference)"
-             Targets="PublishSharedFrameworkToDisk"
-             Properties="SharedFrameworkOutputPath=$(SharedFrameworkOutputPath)" />
+             Targets="PublishToDisk"
+             Properties="OutputPath=$(OutputPath)" />
   </Target>
 
 </Project>

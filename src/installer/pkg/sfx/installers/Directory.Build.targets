@@ -1,0 +1,5 @@
+<Project>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.DotNet.Build.Tasks.Installers" Version="5.0.0-dev.20404.8" />
+  </ItemGroup>
+</Project>

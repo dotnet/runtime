@@ -7,7 +7,7 @@
     <PlatformPackageType>RuntimePack</PlatformPackageType>
     <SharedFrameworkName>Microsoft.NETCore.App.Crossgen2</SharedFrameworkName>
     <OverridePackageId>Microsoft.NETCore.App.Crossgen2.$(RuntimeIdentifier)</OverridePackageId>
-    <SharedFrameworkArchiveName>dotnet-crossgen2</SharedFrameworkArchiveName>
+    <ArchiveName>dotnet-crossgen2</ArchiveName>
     <SharedFrameworkHostFileNameOverride>crossgen2</SharedFrameworkHostFileNameOverride>
     <RuntimeIdentifiers>win-x64;linux-x64;linux-musl-x64</RuntimeIdentifiers>
     <GenerateInstallers>false</GenerateInstallers>

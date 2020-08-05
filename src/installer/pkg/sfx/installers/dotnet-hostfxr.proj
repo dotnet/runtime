@@ -1,12 +1,10 @@
-<Project Sdk="Microsoft.NET.Sdk">
-  <Sdk Name="Microsoft.DotNet.SharedFramework.Sdk" />
-
+<Project Sdk="Microsoft.Build.NoTargets">
   <PropertyGroup>
     <SkipBuild Condition="'$(RuntimeFlavor)' == 'Mono'">true</SkipBuild>
     <GenerateInstallers>true</GenerateInstallers>
-    <SharedFrameworkArchiveName>dotnet-hostfxr-internal</SharedFrameworkArchiveName>
-    <SharedFrameworkInstallerName>dotnet-hostfxr</SharedFrameworkInstallerName>
-    <SharedFrameworkInstallerName Condition="'$(TargetOS)' == 'OSX'">dotnet-hostfxr-internal</SharedFrameworkInstallerName>
+    <ArchiveName>dotnet-hostfxr-internal</ArchiveName>
+    <InstallerName>dotnet-hostfxr</InstallerName>
+    <InstallerName Condition="'$(TargetOS)' == 'OSX'">dotnet-hostfxr-internal</InstallerName>
     <PackageBrandNameSuffix>Host FX Resolver</PackageBrandNameSuffix>
     <PlatformPackageType>ToolPack</PlatformPackageType>
     <VSInsertionShortComponentName>NetCore.HostFXR</VSInsertionShortComponentName>
@@ -21,14 +19,18 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Microsoft.DotNet.Build.Tasks.Archives" Version="5.0.0-dev.20404.8" />
+  </ItemGroup>
+
+  <ItemGroup>
     <CandleVariables Include="AuthoredRegistryKeys;RegKeyNugetVersionValue" Value="true" />
   </ItemGroup>
 
-  <Target Name="PublishSharedFrameworkToDisk">
-    <Error Condition="'$(SharedFrameworkOutputPath)' == ''" Text="Publishing to disk requires the SharedFrameworkOutputPath to be set to the root of the path to write to." />
+  <Target Name="PublishToDisk">
+    <Error Condition="'$(OutputPath)' == ''" Text="Publishing to disk requires the OutputPath to be set to the root of the path to write to." />
 
     <Copy SourceFiles="$(DotNetHostBinDir)\$(LibraryFilePrefix)hostfxr$(LibraryFileExtension)"
-          DestinationFolder="$(SharedFrameworkOutputPath)/host/fxr/$(Version)" />
+          DestinationFolder="$(OutputPath)/host/fxr/$(Version)" />
   </Target>
 
   <Target Name="AddLinuxPackageInformation" BeforeTargets="GetDebInstallerJsonProperties;GetRpmInstallerJsonProperties">

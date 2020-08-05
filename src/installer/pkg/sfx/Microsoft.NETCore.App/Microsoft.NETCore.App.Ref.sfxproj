@@ -4,7 +4,8 @@
   <PropertyGroup>
     <PlatformPackageType>TargetingPack</PlatformPackageType>
     <UseTemplatedPlatformManifest>true</UseTemplatedPlatformManifest>
-    <SharedFrameworkArchiveName>dotnet-targeting-pack</SharedFrameworkArchiveName>
+    <ArchiveName>dotnet-targeting-pack</ArchiveName>
+    <InstallerName>dotnet-targeting-pack</InstallerName>
     <VSInsertionShortComponentName>NetCore.TargetingPack</VSInsertionShortComponentName>
   </PropertyGroup>
 

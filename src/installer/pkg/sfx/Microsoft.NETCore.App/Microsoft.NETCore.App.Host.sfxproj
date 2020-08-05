@@ -5,7 +5,8 @@
     <SkipBuild Condition="'$(RuntimeFlavor)' == 'Mono'">true</SkipBuild>
     <PlatformPackageType>AppHostPack</PlatformPackageType>
     <UseTemplatedPlatformManifest>true</UseTemplatedPlatformManifest>
-    <SharedFrameworkArchiveName>dotnet-apphost-pack</SharedFrameworkArchiveName>
+    <ArchiveName>dotnet-apphost-pack</ArchiveName>
+    <InstallerName>dotnet-apphost-pack</InstallerName>
     <VSInsertionShortComponentName>NetCore.AppHostPack</VSInsertionShortComponentName>
   </PropertyGroup>
 
