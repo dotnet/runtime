@@ -769,8 +769,6 @@ Dictionary::Restore(
 #endif // FEATURE_PREJIT
 
 #if !defined(CROSSGEN_COMPILE)
-DWORD MethodDictionaryExpansionCount = 0;
-
 Dictionary* Dictionary::GetMethodDictionaryWithSizeCheck(MethodDesc* pMD, ULONG slotIndex)
 {
     CONTRACT(Dictionary*)
@@ -798,8 +796,6 @@ Dictionary* Dictionary::GetMethodDictionaryWithSizeCheck(MethodDesc* pMD, ULONG 
 
         if (currentDictionarySize <= (slotIndex * sizeof(DictionaryEntry)))
         {
-            InterlockedIncrement(&MethodDictionaryExpansionCount);
-
             DictionaryLayout* pDictLayout = pMD->GetDictionaryLayout();
             InstantiatedMethodDesc* pIMD = pMD->AsInstantiatedMethodDesc();
             _ASSERTE(pDictLayout != NULL && pDictLayout->GetMaxSlots() > 0);
@@ -832,8 +828,6 @@ Dictionary* Dictionary::GetMethodDictionaryWithSizeCheck(MethodDesc* pMD, ULONG 
     RETURN pDictionary;
 }
 
-DWORD TypeDictionaryExpansionCount = 0;
-
 Dictionary* Dictionary::GetTypeDictionaryWithSizeCheck(MethodTable* pMT, ULONG slotIndex)
 {
     CONTRACT(Dictionary*)
@@ -861,8 +855,6 @@ Dictionary* Dictionary::GetTypeDictionaryWithSizeCheck(MethodTable* pMT, ULONG s
 
         if (currentDictionarySize <= (slotIndex * sizeof(DictionaryEntry)))
         {
-            InterlockedIncrement(&TypeDictionaryExpansionCount);
-
             DictionaryLayout* pDictLayout = pMT->GetClass()->GetDictionaryLayout();
             _ASSERTE(pDictLayout != NULL && pDictLayout->GetMaxSlots() > 0);
 
@@ -899,23 +891,6 @@ Dictionary* Dictionary::GetTypeDictionaryWithSizeCheck(MethodTable* pMT, ULONG s
 }
 #endif // !CROSSGEN_COMPILE
 
-extern DWORD PopulateEntryCountBegin = 0;
-extern DWORD PopulateEntryCountEnd = 0;
-extern DWORD PopulateEntryCountCount = 0;
-
-static const DWORD PopulateEntryRingBufferCount = 3000000;
-
-struct PopulateEntryRingBufferEntry
-{
-    MethodDesc *MD;
-    MethodTable *MT;
-    LPVOID Signature;
-    DWORD IndexSlot;
-    LPVOID ppSlot;
-};
-
-extern PopulateEntryRingBufferEntry PopulateEntryRingBuffer[PopulateEntryRingBufferCount] = { };
-
 //---------------------------------------------------------------------------------------
 //
 DictionaryEntry
@@ -935,14 +910,6 @@ Dictionary::PopulateEntry(
 
     CORINFO_GENERIC_HANDLE result = NULL;
     *ppSlot = NULL;
-
-    DWORD index = InterlockedIncrement(&PopulateEntryCountBegin);
-    PopulateEntryRingBufferEntry& entry = PopulateEntryRingBuffer[index];
-    entry.MD = pMD;
-    entry.MT = pMT;
-    entry.Signature = signature;
-    entry.IndexSlot = dictionaryIndexAndSlot;
-    entry.ppSlot = ppSlot;
 
     bool isReadyToRunModule = (pModule != NULL && pModule->IsReadyToRun());
 
@@ -1530,20 +1497,39 @@ Dictionary::PopulateEntry(
 #if !defined(CROSSGEN_COMPILE)
         if (slotIndex != 0)
         {
-            InterlockedIncrement(&PopulateEntryCountEnd);
-
-            Dictionary* pDictionary = (pMT != NULL) ?
-                GetTypeDictionaryWithSizeCheck(pMT, slotIndex) :
-                GetMethodDictionaryWithSizeCheck(pMD, slotIndex);
-            DWORD numGenericArgs = (pMT != NULL ? pMT->GetNumGenericArgs() : pMD->GetNumGenericMethodArgs());
+            Dictionary* pDictionary;
+            DWORD numGenericArgs;
+            DictionaryLayout * pDictLayout;
+            if (pMT != NULL)
+            {
+                pDictionary = GetTypeDictionaryWithSizeCheck(pMT, slotIndex);
+                numGenericArgs = pMT->GetNumGenericArgs();
+                pDictLayout = pMT->GetClass()->GetDictionaryLayout();
+            }
+            else
+            {
+                pDictionary = GetMethodDictionaryWithSizeCheck(pMD, slotIndex);
+                numGenericArgs = pMD->GetNumGenericMethodArgs();
+                pDictLayout = pMD->GetDictionaryLayout();
+            }
             DWORD minimumSizeOfDictionaryToPatch = (slotIndex + 1) * sizeof(DictionaryEntry *);
+            DWORD sizeOfInitialDictionary = (numGenericArgs + 1 + pDictLayout->GetNumInitialSlots()) * sizeof(DictionaryEntry *);
+
             DictionaryEntry *slot = pDictionary->GetSlotAddr(0, slotIndex);
             VolatileStoreWithoutBarrier(slot, (DictionaryEntry)result);
             *ppSlot = slot;
-            while ((pDictionary = *pDictionary->GetBackPointerSlot(numGenericArgs)) != nullptr &&
-                pDictionary->GetDictionarySlotsSize(numGenericArgs) >= minimumSizeOfDictionaryToPatch)
+
+            // Backpatch previous versions of the generic dictionary
+            DWORD dictionarySize = pDictionary->GetDictionarySlotsSize(numGenericArgs);
+            while (dictionarySize > sizeOfInitialDictionary)
             {
-                InterlockedIncrement(&PopulateEntryCountCount);
+                pDictionary = *pDictionary->GetBackPointerSlot(numGenericArgs);
+                dictionarySize = pDictionary->GetDictionarySlotsSize(numGenericArgs);
+                if (dictionarySize < minimumSizeOfDictionaryToPatch)
+                {
+                    // Previous dictionary is too short to patch, end iteration
+                    break;
+                }
                 VolatileStoreWithoutBarrier(pDictionary->GetSlotAddr(0, slotIndex), (DictionaryEntry)result);
             }
         }

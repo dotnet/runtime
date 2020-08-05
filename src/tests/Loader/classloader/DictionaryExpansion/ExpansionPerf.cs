@@ -8,7 +8,7 @@ using System.Linq;
 
 class Test
 {
-    const int count = 100000;
+    const int count = 1000000;
     const int times = 10;
 
     public static int Main()
