@@ -21,6 +21,11 @@ namespace System.Globalization.Tests
             {
                 Assert.Equal(expected, value.IsNormalized());
             }
+            if (PlatformDetection.IsBrowser && (normalizationForm == NormalizationForm.FormKC || normalizationForm == NormalizationForm.FormKD))
+            {
+                // Browser's ICU doesn't support FormKC and FormKD
+                return;
+            }
             Assert.Equal(expected, value.IsNormalized(normalizationForm));
         }
 
@@ -55,6 +60,11 @@ namespace System.Globalization.Tests
             if (normalizationForm == NormalizationForm.FormC)
             {
                 Assert.Equal(expected, value.Normalize());
+            }
+            if (PlatformDetection.IsBrowser && (normalizationForm == NormalizationForm.FormKC || normalizationForm == NormalizationForm.FormKD))
+            {
+                // Browser's ICU doesn't support FormKC and FormKD
+                return;
             }
             Assert.Equal(expected, value.Normalize(normalizationForm));
         }
