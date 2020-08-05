@@ -115,7 +115,7 @@
     <value>An invalid IPEndPoint was specified.</value>
   </data>
   <data name="networkerror_unknown" xml:space="preserve">
-    <value>An unknown connection error occurred.</value>
+    <value>An unknown network error occurred.</value>
   </data>
   <data name="networkerror_addressinuse" xml:space="preserve">
     <value>The requested address is already in use.</value>
