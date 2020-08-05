@@ -4,6 +4,27 @@
 // Changes to this file must follow the https://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
 
+namespace System.Net.Connections
+{
+    class SocketsConnectionFactory : ConnectionFactory
+    {
+        // dual-mode IPv6 socket. See Socket(SocketType socketType, ProtocolType protocolType)
+        public SocketsConnectionFactory(Sockets.SocketType socketType, Sockets.ProtocolType protocolType) { }
+
+        // See Socket(AddressFamily addressFamily, SocketType socketType, ProtocolType protocolType)
+        public SocketsConnectionFactory(Sockets.AddressFamily addressFamily, Sockets.SocketType socketType, Sockets.ProtocolType protocolType) { }
+
+        // This must be thread-safe!
+        public override Threading.Tasks.ValueTask<Connection> ConnectAsync(EndPoint? endPoint, IConnectionProperties? options = null, Threading.CancellationToken cancellationToken = default) { throw null; }
+
+        // These exist to provide an easy way to shim the default behavior.
+        // Note: Connect must call this to create its socket.
+        protected virtual Sockets.Socket CreateSocket(Sockets.AddressFamily addressFamily, Sockets.SocketType socketType, Sockets.ProtocolType protocolType, EndPoint? endPoint, IConnectionProperties? options) { throw null; }
+        protected virtual IO.Stream CreateStream(Sockets.Socket socket, IConnectionProperties? options) { throw null; }
+        protected virtual IO.Pipelines.IDuplexPipe CreatePipe(Sockets.Socket socket, IConnectionProperties? options) { throw null; }
+    }
+}
+
 namespace System.Net.Sockets
 {
     public enum IOControlCode : long
