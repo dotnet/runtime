@@ -21,6 +21,7 @@ struct _MonoDebuggerCallbacks {
 	void (*single_step_from_context) (MonoContext *ctx);
 	void (*breakpoint_from_context) (MonoContext *ctx);
 	void (*free_domain_info) (MonoDomain *domain);
+	void (*unhandled_exception) (MonoException *exc);
 	void (*handle_exception) (MonoException *exc, MonoContext *throw_ctx,
 							  MonoContext *catch_ctx, StackFrameInfo *catch_frame);
 	void (*begin_exception_filter) (MonoException *exc, MonoContext *ctx, MonoContext *orig_ctx);

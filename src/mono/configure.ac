@@ -408,6 +408,13 @@ case "$host" in
 		host_sunos=yes
 		;;
 	*-*-darwin*)
+		# Temporary workaround for Apple Silicon
+		# config.guess returns arm-apple-darwin20.0.0
+		if test $ac_cv_host = arm-apple-darwin20.0.0 -o $ac_cv_target = arm-apple-darwin20.0.0; then
+		   echo "You are running on Apple Silicon, but using an old config.guess, invoke configure like this:"
+		   echo "Run configure using ./configure --host=aarch64-apple-darwin20.0.0 --target=aarch64-apple-darwin20.0.0"
+		   exit 1
+		fi
 		parallel_mark="Disabled_Currently_Hangs_On_MacOSX"
 		host_darwin=yes
 		target_mach=yes
@@ -448,6 +455,10 @@ case "$host" in
 			arm*-darwin*)
 				platform_ios=yes
 				has_dtrace=no
+				;;
+			aarch64*-darwin20*)
+				# OSX/arm64
+				support_boehm=no
 				;;
 			aarch64*-darwin*)
 				platform_ios=yes
@@ -1208,6 +1219,7 @@ if test "x$crash_reporting" != "xyes"; then
 CFLAGS="$CFLAGS -DDISABLE_CRASH_REPORTING=1"
 CXXFLAGS="$CXXFLAGS -DDISABLE_CRASH_REPORTING=1"
 fi
+AM_CONDITIONAL(DISABLE_CRASH_REPORTING, test x$crash_reporting != xyes)
 
 AC_ARG_ENABLE(monodroid, [ --enable-monodroid Enable runtime support for Monodroid (Xamarin.Android)], enable_monodroid=$enableval, enable_monodroid=no)
 AM_CONDITIONAL(ENABLE_MONODROID, test x$enable_monodroid = xyes)
@@ -2815,7 +2827,7 @@ if test x$host_win32 = xno; then
 	AC_CHECK_HEADERS(pthread_np.h)
 	AC_CHECK_FUNCS(pthread_mutex_timedlock)
 	AC_CHECK_FUNCS(pthread_getattr_np pthread_attr_get_np pthread_getname_np pthread_setname_np pthread_cond_timedwait_relative_np)
-	AC_CHECK_FUNCS(pthread_kill)
+	AC_CHECK_FUNCS(pthread_kill pthread_jit_write_protect_np)
 	AC_MSG_CHECKING(for PTHREAD_MUTEX_RECURSIVE)
 	AC_TRY_COMPILE([ #include <pthread.h>], [
 		pthread_mutexattr_t attr;
@@ -4673,7 +4685,7 @@ case "$host" in
 		ACCESS_UNALIGNED="yes"
 		BTLS_SUPPORTED=yes
 		BTLS_PLATFORM=s390x
-		CFLAGS="$CFLAGS -mbackchain -D__USE_STRING_INLINES"
+		CFLAGS="$CFLAGS -mbackchain"
 		;;
 	riscv32-*)
 		TARGET=RISCV32
@@ -4771,6 +4783,12 @@ if test "x$host" != "x$target"; then
 		AC_DEFINE(MONO_ARCH_ILP32, 1, [64 bit mode with 4 byte longs and pointers])
 		sizeof_register=8
 		AC_DEFINE(TARGET_WATCHOS, 1, [...])
+		;;
+	aarch64*darwin*)
+		TARGET=ARM64
+		# Both ios and osx/arm64 have the same aarc64-darwin triple,
+		# assume ios for now when cross compiling
+		TARGET_SYS=IOS
 		;;
 	aarch64-*)
 		TARGET=ARM64
@@ -4984,7 +5002,7 @@ if test "x$target_mach" = "xyes"; then
 	  CPPFLAGS_FOR_LIBGC="$CPPFLAGS_FOR_LIBGC -DTARGET_WATCHOS"
 	  CFLAGS_FOR_LIBGC="$CFLAGS_FOR_LIBGC -DTARGET_WATCHOS"
 	  BTLS_SUPPORTED=no
-   elif test "x$TARGET" = "xARM" -o "x$TARGET" = "xARM64" -o "x$TARGET" = "xARM6432"; then
+   elif test "x$TARGET_SYS" = "xIOS" -o "x$TARGET" = "xARM" -o "x$TARGET" = "xARM6432"; then
    	  AC_DEFINE(TARGET_IOS,1,[The JIT/AOT targets iOS])
 	  CPPFLAGS_FOR_LIBGC="$CPPFLAGS_FOR_LIBGC -DTARGET_IOS"
 	  CFLAGS_FOR_LIBGC="$CFLAGS_FOR_LIBGC -DTARGET_IOS"
@@ -5000,6 +5018,9 @@ if test "x$target_mach" = "xyes"; then
           CPPFLAGS_FOR_LIBGC="$CPPFLAGS_FOR_LIBGC -DTARGET_OSX"
           CFLAGS_FOR_LIBGC="$CFLAGS_FOR_LIBGC -DTARGET_OSX"
           target_osx=yes
+          if test "x$TARGET" = "xARM64"; then
+             BTLS_SUPPORTED=no
+          fi
        ], [
           AC_DEFINE(TARGET_IOS,1,[The JIT/AOT targets iOS])
           CPPFLAGS_FOR_LIBGC="$CPPFLAGS_FOR_LIBGC -DTARGET_IOS"
@@ -6863,7 +6884,7 @@ if test x$with_core = xonly; then
 	if test x$have_shim_globalization = xyes || test x$cross_compiling = xyes; then
 		ICU_SHIM_PATH=../../../libraries/Native/Unix/System.Globalization.Native
 		if test x$target_wasm = xyes && test x$with_static_icu = xyes; then
-			ICU_CFLAGS="-DTARGET_UNIX -DU_DISABLE_RENAMING"
+			ICU_CFLAGS="-DTARGET_UNIX -DU_DISABLE_RENAMING -DHAVE_UDAT_STANDALONE_SHORTER_WEEKDAYS -DHAVE_SET_MAX_VARIABLE"
 			have_sys_icu=yes
 		elif test x$target_osx = xyes; then
 			ORIG_CPPFLAGS=$CPPFLAGS

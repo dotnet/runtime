@@ -317,7 +317,7 @@ namespace System.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.AnyUnix)]  // Tests OS-specific environment
+        [PlatformSpecific(TestPlatforms.AnyUnix | TestPlatforms.Browser)]  // Tests OS-specific environment
         public void GetFolderPath_Unix_PersonalIsHomeAndUserProfile()
         {
             Assert.Equal(Environment.GetEnvironmentVariable("HOME"), Environment.GetFolderPath(Environment.SpecialFolder.Personal));

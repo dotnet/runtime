@@ -95,7 +95,7 @@ namespace System.Diagnostics
                 }
                 return _priorityLevel.Value;
             }
-            [MinimumOSPlatform("windows7.0")]
+            [SupportedOSPlatform("windows")]
             set
             {
                 PriorityLevelCore = value;

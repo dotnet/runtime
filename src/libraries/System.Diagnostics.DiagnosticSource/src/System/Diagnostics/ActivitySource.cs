@@ -145,7 +145,7 @@ namespace System.Diagnostics
                         {
                             if (!canUseContext.HasValue)
                             {
-                                canUseContext = Activity.TryConvertIdToContext(parentId, out ActivityContext ctx);
+                                canUseContext = Activity.TryConvertIdToContext(parentId, traceState: null, out ActivityContext ctx);
                                 if (canUseContext.Value)
                                 {
                                     dataWithContext = new ActivityCreationOptions<ActivityContext>(data.Source, data.Name, ctx, data.Kind, data.Tags, data.Links);

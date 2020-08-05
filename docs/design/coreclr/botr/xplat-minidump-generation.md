@@ -1,6 +1,6 @@
 # Introduction #
 
-Core dump generation on Linux and other non-Windows platforms has several challenges. Dumps can be very large and the default name/location of a dump is not consistent across all our supported platforms.  The size of a full core dumps can be controlled somewhat with the "coredump_filter" file/flags but even with the smallest settings may be still too large and may not contain all the managed state needed for debugging. By default, some platforms use _core_ as the name and place the core dump in the current directory from where the program is launched; others add the _pid_ to the name. Configuring the core name and location requires superuser permission. Requiring superuser to make this consistent is not a satisfactory option.
+Dump generation on Windows, Linux and other non-Windows platforms has several challenges. Dumps can be very large and the default name/location of a dump is not consistent across all our supported platforms.  The size of a full core dumps can be controlled somewhat with the "coredump_filter" file/flags but even with the smallest settings may be still too large and may not contain all the managed state needed for debugging. By default, some platforms use _core_ as the name and place the core dump in the current directory from where the program is launched; others add the _pid_ to the name. Configuring the core name and location requires superuser permission. Requiring superuser to make this consistent is not a satisfactory option.
 
 Our goal is to generate core dumps that are on par with WER (Windows Error Reporting) crash dumps on any supported Linux platform. To the very least we want to enable the following:
 - automatic generation of minimal size minidumps. The quality and quantity of the information contained in the dump should be on par with the information contained in a traditional Windows mini-dump.
@@ -12,7 +12,7 @@ Our solution at this time is to intercept any unhandled exception in the PAL lay
 
 We looked at the existing technologies like Breakpad and its derivatives (e.g.: an internal MS version called _msbreakpad_ from the SQL team....). Breakpad generates Windows minidumps but they are not compatible with existing tools like Windbg, etc. Msbreakpad even more so. There is a minidump to Linux core conversion utility but it seems like a wasted extra step. _Breakpad_ does allow the minidump to be generated in-process inside the signal handlers. It restricts the APIs to what was allowed in a "async" signal handler (like SIGSEGV) and has a small subset of the C++ runtime that was also similarly constrained. We also need to add the set of memory regions for the "managed" state which requires loading and using the _DAC_'s (*) enumerate memory interfaces. Loading modules is not allowed in an async signal handler but forking/execve is allowed so launching an utility that loads the _DAC_, enumerates the list of memory regions and writes the dump is the only reasonable option. It would also allow uploading the dump to a server too.
 
-\* The _DAC_ is a special build of parts of the coreclr runtime that allows inspection of the runtime's managed state (stacks, variables, GC state heaps) out of context. One of the many interfaces it provides is [ICLRDataEnumMemoryRegions](https://github.com/dotnet/runtime/blob/master/src/coreclr/src/debug/daccess/dacimpl.h) which enumerates all the managed state a minidump would require to enable a fuitful debugging experience.
+\* The _DAC_ is a special build of parts of the coreclr runtime that allows inspection of the runtime's managed state (stacks, variables, GC state heaps) out of context. One of the many interfaces it provides is [ICLRDataEnumMemoryRegions](https://github.com/dotnet/runtime/blob/master/src/coreclr/src/debug/daccess/dacimpl.h) which enumerates all the managed state a minidump would require to enable a fruitful debugging experience.
 
 _Breakpad_ could have still been used out of context in the generation utility but there seemed no value to their Windows-like minidump format when it would have to be converted to the native Linux core format away because in most scenarios using the platform tools like _lldb_ is necessary. It also adds a coreclr build dependency on Google's _Breakpad_ or SQL's _msbreakpad_ source repo. The only advantage is that the breakpad minidumps may be a little smaller because minidumps memory regions are byte granule and Linux core memory regions need to be page granule.
 
@@ -42,7 +42,11 @@ There will be some differences gathering the crash information but these platfor
 
 ### OS X ###
 
-Gathering the crash information on OS X will be quite a bit different than Linux and the core dump will be written in the Mach-O format instead of ELF. The OS X support currently has not been implemented.
+As of .NET Core 5.0, createdump is supported on MacOS but instead of the MachO dump format, it generates the ELF coredumps. This is because of time constraints developing a MachO dump writer on the generation side and a MachO reader for the diagnostics tooling side (dotnet-dump and CLRMD). This means the native debuggers like gdb and lldb will not work with these dumps but the dotnet-dump tool will allow the managed state to be analyzed. Because of this behavior an additional environment variable will need to be set (COMPlus_DbgEnableElfDumpOnMacOS=1) along with the ones below in the Configuration/Policy section.
+
+### Windows ###
+
+As of .NET Core 5.0, createdump and the below configuration environment variables are supported on Windows. It is implemented using the Windows MiniDumpWriteDump API. This allows consistent crash/unhandled exception dumps across all of our platforms. 
 
 # Configuration/Policy #
 

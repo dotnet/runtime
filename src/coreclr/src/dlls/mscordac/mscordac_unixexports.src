@@ -43,6 +43,9 @@ nativeStringResourceTable_mscorrc
 #PAL_InitializeDLL
 #PAL_TerminateEx
 #PAL_IsDebuggerPresent
+#PAL_OpenProcessMemory
+#PAL_CloseProcessMemory
+#PAL_ReadProcessMemory
 #PAL_ProbeMemory
 #PAL_Random
 #PAL_memcpy

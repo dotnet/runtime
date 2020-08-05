@@ -553,6 +553,8 @@ RETAIL_CONFIG_DWORD_INFO(INTERNAL_ThreadSuspendInjection, W("INTERNAL_ThreadSusp
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_DefaultStackSize, W("DefaultStackSize"), 0, "Stack size to use for new VM threads when thread is created with default stack size (dwStackSize == 0).")
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_Thread_DeadThreadCountThresholdForGCTrigger, W("Thread_DeadThreadCountThresholdForGCTrigger"), 75, "In the heuristics to clean up dead threads, this threshold must be reached before triggering a GC will be considered. Set to 0 to disable triggering a GC based on dead threads.")
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_Thread_DeadThreadGCTriggerPeriodMilliseconds, W("Thread_DeadThreadGCTriggerPeriodMilliseconds"), 1000 * 60 * 30, "In the heuristics to clean up dead threads, this much time must have elapsed since the previous max-generation GC before triggering another GC will be considered")
+RETAIL_CONFIG_DWORD_INFO(EXTERNAL_Thread_UseAllCpuGroups, W("Thread_UseAllCpuGroups"), 0, "Specifies whether to query and use CPU group information for determining the processor count.")
+RETAIL_CONFIG_DWORD_INFO(EXTERNAL_Thread_AssignCpuGroups, W("Thread_AssignCpuGroups"), 1, "Specifies whether to automatically distribute threads created by the CLR across CPU Groups. Effective only when Thread_UseAllCpuGroups and GCCpuGroup are enabled.")
 
 ///
 /// Threadpool
@@ -568,7 +570,6 @@ RETAIL_CONFIG_DWORD_INFO(INTERNAL_ThreadPool_UnfairSemaphoreSpinLimit, W("Thread
 #else // !TARGET_ARM64
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_ThreadPool_UnfairSemaphoreSpinLimit, W("ThreadPool_UnfairSemaphoreSpinLimit"), 0x46, "Maximum number of spins a thread pool worker thread performs before waiting for work")
 #endif // TARGET_ARM64
-RETAIL_CONFIG_DWORD_INFO(EXTERNAL_Thread_UseAllCpuGroups, W("Thread_UseAllCpuGroups"), 0, "Specifies if to automatically distribute thread across CPU Groups")
 
 CONFIG_DWORD_INFO(INTERNAL_ThreadpoolTickCountAdjustment, W("ThreadpoolTickCountAdjustment"), 0, "")
 
@@ -691,7 +692,6 @@ RETAIL_CONFIG_STRING_INFO(INTERNAL_EventNameFilter, W("EventNameFilter"), "")
 /// Interop
 ///
 CONFIG_DWORD_INFO_DIRECT_ACCESS(INTERNAL_ExposeExceptionsInCOM, W("ExposeExceptionsInCOM"), "")
-RETAIL_CONFIG_STRING_INFO_EX(EXTERNAL_PInvokeInline, W("PInvokeInline"), "", CLRConfig::EEConfig_default)
 RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_InteropValidatePinnedObjects, W("InteropValidatePinnedObjects"), 0, "After returning from a managed-to-unmanaged interop call, validate GC heap around objects pinned by IL stubs.")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_InteropLogArguments, W("InteropLogArguments"), 0, "Log all pinned arguments passed to an interop call")
 RETAIL_CONFIG_STRING_INFO(UNSUPPORTED_LogCCWRefCountChange, W("LogCCWRefCountChange"), "Outputs debug information and calls LogCCWRefCountChange_BREAKPOINT when AddRef or Release is called on a CCW.")

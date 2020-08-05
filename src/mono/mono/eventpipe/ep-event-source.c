@@ -210,7 +210,7 @@ ep_event_source_send_process_info (
 	os_info_utf16 = ep_rt_utf8_to_utf16_string (_ep_os_info, -1);
 	arch_info_utf16 = ep_rt_utf8_to_utf16_string (_ep_arch_info, -1);
 
-	EventData data [3] = { 0 };
+	EventData data [3] = { { 0 } };
 	if (command_line_utf16)
 		ep_event_data_init (&data[0], (uint64_t)command_line_utf16, (uint32_t)((ep_rt_utf16_string_len (command_line_utf16) + 1) * sizeof (ep_char16_t)), 0);
 	if (os_info_utf16)

@@ -3,10 +3,12 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Net.Connections;
 using System.Net.Security;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Diagnostics.CodeAnalysis;
+using System.Text;
 
 namespace System.Net.Http
 {
@@ -32,6 +34,11 @@ namespace System.Net.Http
                 throw new InvalidOperationException(SR.net_http_operation_started);
             }
         }
+
+        /// <summary>
+        /// Gets a value that indicates whether the handler is supported on the current platform.
+        /// </summary>
+        public static bool IsSupported => true;
 
         public bool UseCookies
         {
@@ -273,8 +280,82 @@ namespace System.Net.Http
             }
         }
 
+        /// <summary>
+        /// Gets or sets a value that indicates whether additional HTTP/2 connections can be established to the same server
+        /// when the maximum of concurrent streams is reached on all existing connections.
+        /// </summary>
+        public bool EnableMultipleHttp2Connections
+        {
+            get => _settings._enableMultipleHttp2Connections;
+            set
+            {
+                CheckDisposedOrStarted();
+
+                _settings._enableMultipleHttp2Connections = value;
+            }
+        }
+
+        internal bool SupportsAutomaticDecompression => true;
+        internal bool SupportsProxy => true;
+        internal bool SupportsRedirectConfiguration => true;
+
+        /// <summary>
+        /// When non-null, a custom factory used to open new TCP connections.
+        /// When null, a <see cref="SocketsHttpConnectionFactory"/> will be used.
+        /// </summary>
+        public ConnectionFactory? ConnectionFactory
+        {
+            get => _settings._connectionFactory;
+            set
+            {
+                CheckDisposedOrStarted();
+                _settings._connectionFactory = value;
+            }
+        }
+
+        /// <summary>
+        /// When non-null, a connection filter that is applied prior to any TLS encryption.
+        /// </summary>
+        public Func<HttpRequestMessage, Connection, CancellationToken, ValueTask<Connection>>? PlaintextFilter
+        {
+            get => _settings._plaintextFilter;
+            set
+            {
+                CheckDisposedOrStarted();
+                _settings._plaintextFilter = value;
+            }
+        }
+
         public IDictionary<string, object?> Properties =>
             _settings._properties ?? (_settings._properties = new Dictionary<string, object?>());
+
+        /// <summary>
+        /// Gets or sets a callback that returns the <see cref="Encoding"/> to encode the value for the specified request header name,
+        /// or <see langword="null"/> to use the default behavior.
+        /// </summary>
+        public HeaderEncodingSelector<HttpRequestMessage>? RequestHeaderEncodingSelector
+        {
+            get => _settings._requestHeaderEncodingSelector;
+            set
+            {
+                CheckDisposedOrStarted();
+                _settings._requestHeaderEncodingSelector = value;
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets a callback that returns the <see cref="Encoding"/> to decode the value for the specified response header name,
+        /// or <see langword="null"/> to use the default behavior.
+        /// </summary>
+        public HeaderEncodingSelector<HttpRequestMessage>? ResponseHeaderEncodingSelector
+        {
+            get => _settings._responseHeaderEncodingSelector;
+            set
+            {
+                CheckDisposedOrStarted();
+                _settings._responseHeaderEncodingSelector = value;
+            }
+        }
 
         protected override void Dispose(bool disposing)
         {

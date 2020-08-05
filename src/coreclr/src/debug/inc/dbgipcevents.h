@@ -848,7 +848,7 @@ typedef VMPTR_Base<DT_CONTEXT, void > VMPTR_CONTEXT;
 #endif
 
 // DomainFile is a base-class for a CLR module, with app-domain affinity.
-// For domain-neutral modules (like mscorlib), there is a DomainFile instance
+// For domain-neutral modules (like CoreLib), there is a DomainFile instance
 // for each appdomain the module lives in.
 // This is the canonical handle ICorDebug uses to a CLR module.
 DEFINE_VMPTR(class DomainFile,      PTR_DomainFile,     VMPTR_DomainFile);
@@ -984,20 +984,9 @@ struct MSLAYOUT IPCEventTypeNameMapping
             const char *            eventName;
 };
 
-constexpr IPCEventTypeNameMapping DbgIPCEventTypeNames[] =
-{
-    #define IPC_EVENT_TYPE0(type, val)  { type, #type },
-    #define IPC_EVENT_TYPE1(type, val)  { type, #type },
-    #define IPC_EVENT_TYPE2(type, val)  { type, #type },
-    #include "dbgipceventtypes.h"
-    #undef IPC_EVENT_TYPE2
-    #undef IPC_EVENT_TYPE1
-    #undef IPC_EVENT_TYPE0
-    { DB_IPCE_INVALID_EVENT, "DB_IPCE_Error" }
-};
+extern const IPCEventTypeNameMapping DbgIPCEventTypeNames[];
 
-const size_t nameCount = sizeof(DbgIPCEventTypeNames) / sizeof(DbgIPCEventTypeNames[0]);
-
+extern const size_t nameCount;
 
 struct MSLAYOUT IPCENames // We use a class/struct so that the function can remain in a shared header file
 {
@@ -1028,7 +1017,7 @@ struct MSLAYOUT IPCENames // We use a class/struct so that the function can rema
         #undef IPC_EVENT_TYPE0
         };
 
-        unsigned int i, lim;
+        size_t i, lim;
 
         if (eventType < DB_IPCE_DEBUGGER_FIRST)
         {

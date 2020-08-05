@@ -97,6 +97,19 @@ namespace ILCompiler
             return arrayMethod != null && arrayMethod.Kind == ArrayMethodKind.Address;
         }
 
+
+        /// <summary>
+        /// Returns true if '<paramref name="method"/>' is one of the special methods on multidimensional array types (set, get, address).
+        /// </summary>
+        public static bool IsArrayMethod(this MethodDesc method)
+        {
+            var arrayMethod = method as ArrayMethod;
+            return arrayMethod != null && (arrayMethod.Kind == ArrayMethodKind.Address || 
+                                           arrayMethod.Kind == ArrayMethodKind.Get || 
+                                           arrayMethod.Kind == ArrayMethodKind.Set || 
+                                           arrayMethod.Kind == ArrayMethodKind.Ctor);
+        }
+
         /// <summary>
         /// Gets a value indicating whether this type has any generic virtual methods.
         /// </summary>

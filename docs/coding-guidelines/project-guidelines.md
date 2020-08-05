@@ -1,38 +1,32 @@
 # Build Project Guidelines
-In order to work in dotnet/runtime repo you must first run build.cmd/sh from the root of the repo at least
-once before you can iterate and work on a given library project.
+In order to work in the dotnet/runtime repo you must first run build.cmd/sh from the root of the repo at least once before you can iterate and work on a given library project.
 
 ## Behind the scenes with build.cmd/sh
 
-- Setup tools (currently done in restore in build.cmd/sh)
+- Restore tools
 - Restore external dependencies
  - CoreCLR - Copy to `bin\runtime\$(BuildTargetFramework)-$(TargetOS)-$(Configuration)-$(TargetArchitecture)`
 - Build targeting pack
  - Build src\libraries\ref.proj which builds all references assembly projects. For reference assembly project information see [ref](#ref)
 - Build product
  - Build src\libraries\src.proj which builds all the source library projects. For source library project information see [src](#src).
-- Sign product
- - Build src\sign.proj
 
 # Build Pivots
 Below is a list of all the various options we pivot the project builds on:
 
-- **Target Frameworks:** NetFx (aka Desktop), netstandard (aka dotnet/Portable), NETCoreApp (aka .NET Core)
-- **Platform Runtimes:** NetFx (aka CLR/Desktop), CoreCLR, Mono
+- **Target Frameworks:** .NETFramework, .NETStandard, .NETCoreApp
+- **Platform Runtimes:** .NETFramework (aka CLR/Desktop), CoreCLR, Mono
 - **OS:** Windows_NT, Linux, OSX, FreeBSD, AnyOS
 - **Flavor:** Debug, Release
-- **Architecture:** x86, x64, arm, arm64, AnyCPU
 
 ## Individual build properties
 The following are the properties associated with each build pivot
 
-- `$(BuildTargetFramework) -> Any .NETCoreApp, .NETStandard or .NETFramework TFM, e.g. net5.0`
+- `$(BuildTargetFramework) -> Any .NETCoreApp or .NETFramework TFM, e.g. net5.0`
 - `$(TargetOS) -> Windows | Linux | OSX | FreeBSD | [defaults to running OS when empty]`
 - `$(Configuration) -> Release | [defaults to Debug when empty]`
 - `$(TargetArchitecture) - x86 | x64 | arm | arm64 | [defaults to x64 when empty]`
 - `$(RuntimeOS) - win7 | osx10.10 | ubuntu.14.04 | [any other RID OS+version] | [defaults to running OS when empty]` See [RIDs](https://github.com/dotnet/runtime/tree/master/src/libraries/pkg/Microsoft.NETCore.Platforms) for more info.
-
-For more information on various targets see also [.NET Standard](https://github.com/dotnet/standard/blob/master/docs/versions.md)
 
 ## Aggregate build properties
 Each project will define a set of supported TargetFrameworks
@@ -137,44 +131,34 @@ Reference assemblies are required for any library that has more than one impleme
 In the ref directory for the library there should be at most **one** `.csproj` that contains the latest API for the reference assembly for the library. That project can contain multiple entries in its `TargetFrameworks` property. Ref projects should use `<ProjectReference>` for its dependencies.
 
 ### ref output
-The output for the ref project build will be a flat targeting pack folder in the following directory:
+All ref outputs should be under
 
-`bin\ref\$(TargetFramework)`
-
-<BR/>//**CONSIDER**: Do we need a specific BuildTargetFramework version of TargetFramework for this output path to ensure all projects output to same targeting path?
+`bin\$(MSBuildProjectName)\ref\$(TargetFramework)`
 
 ## src
 In the src directory for a library there should be only **one** `.csproj` file that contains any information necessary to build the library in various target frameworks. All supported target frameworks should be listed in the `TargetFrameworks` property.
 
-All libraries should use `<Reference Include="..." />` for all their project references. That will cause them to be resolved against a targeting pack (i.e. `bin\ref\net5.0` or `\bin\ref\netstandard2.0`) based on the project target framework. There should not be any direct project references to other libraries. The only exception to that rule right now is for partial facades which directly reference System.Private.CoreLib and thus need to directly reference other partial facades to avoid type conflicts.
-<BR>//**CONSIDER**: just using Reference and use a reference to System.Private.CoreLib as a trigger to turn the other References into a ProjectReference automatically. That will allow us to have consistency where all projects just use Reference.
+All libraries should use `<Reference Include="..." />` for all their references to libraries that compose the shared framework of the current .NETCoreApp. That will cause them to be resolved against the locally built targeting pack which is located at `artifacts\bin\microsoft.netcore.app.ref`. The only exception to that rule right now is for partial facades which directly reference System.Private.CoreLib and thus need to directly reference other partial facades to avoid type conflicts.
+
+Other target frameworks than .NETCoreApp latest (i.e. `netstandard2.0`, `net461`, `netcoreapp3.0`) should use ProjectReference items to reference dependencies.
 
 ### src output
-The output for the src product build will be a flat runtime folder into the following directory:
+All src outputs are under
 
-`bin\runtime\$(BuildSettings)`
-
-Note: The `BuildSettings` is a global property and not the project setting because we need all projects to output to the same runtime directory no matter which compatible target framework we select and build the project with.
-```<BuildSettings>$(BuildTargetFramework)-$(TargetOS)-(Configuration)-(TargetArchitecture)</BuildSettings>```
+`bin\$(MSBuildProjectName)\$(TargetFramework)`
 
 ## pkg
 In the pkg directory for the library there should be only **one** `.pkgproj` for the primary package for the library. If the library has platform-specific implementations those should be split into platform specific projects in a subfolder for each platform. (see [Package projects](./package-projects.md))
 
-TODO: Outline changes needed for pkgprojs
-
 ## tests
 Similar to the src projects tests projects will define a `TargetFrameworks` property so they can list out the set of target frameworks they support.
 
-Tests should not have any `<Reference>` or `<ProjectReference>` items in their project because they will automatically reference everything in the targeting pack based on the TargetFramework they are building in. The only exception to this is a `<ProjectReference>` can be used to reference other test helper libraries or assets.
-
-In order to build and run a test project in a given build target framework a root level build.cmd/sh must have been completed for that build target framework first. Tests will run on the live built runtime at `bin\runtime\$(BuildSettings)`.
-TODO: We need update our test host so that it can run from the shared runtime directory as well as resolve assemblies from the test output directory.
+Tests don't need to reference default references which are part of the targeting packs (i.e. `mscorlib` on .NETFramework or `System.Runtime` on .NETCoreApp). Everything on top of targeting packs should be referenced via ProjectReference items for live built assets.
 
 ### tests output
 All test outputs should be under
 
-`bin\tests\$(MSBuildProjectName)\$(TargetFramework)` or
-`bin\tests\$(MSBuildProjectName)\netstandard2.0`
+`bin\$(MSBuildProjectName)\$(TargetFramework)`
 
 ## Facades
 Facade are unique in that they don't have any code and instead are generated by finding a contract reference assembly with the matching identity and generating type forwards for all the types to where they live in the implementation assemblies (aka facade seeds). There are also partial facades which contain some type forwards as well as some code definitions. All the various build configurations should be contained in the one csproj file per library.

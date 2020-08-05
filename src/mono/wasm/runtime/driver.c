@@ -108,20 +108,33 @@ mono_wasm_invoke_js (MonoString *str, int *is_exception)
 static void
 wasm_logger (const char *log_domain, const char *log_level, const char *message, mono_bool fatal, void *user_data)
 {
-	if (fatal) {
-		EM_ASM(
-			   var err = new Error();
-			   console.log ("Stacktrace: \n");
-			   console.log (err.stack);
-			   );
+	EM_ASM({
+		var message = Module.UTF8ToString ($3) + ": " + Module.UTF8ToString ($1);
+		if ($2)
+			console.trace (message);
 
-		fprintf (stderr, "%s\n", message);
-		fflush (stderr);
-
-		abort ();
-	} else {
-		fprintf (stdout, "L: %s\n", message);
-	}
+		switch (Module.UTF8ToString ($0)) {
+			case "critical":
+			case "error":
+				console.error (message);
+				break;
+			case "warning":
+				console.warn (message);
+				break;
+			case "message":
+				console.log (message);
+				break;
+			case "info":
+				console.info (message);
+				break;
+			case "debug":
+				console.debug (message);
+				break;
+			default:
+				console.log (message);
+				break;
+		}
+	}, log_level, message, fatal, log_domain);
 }
 
 #ifdef DRIVER_GEN
@@ -372,7 +385,7 @@ mono_wasm_load_runtime (const char *unused, int enable_debugging)
 	mono_jit_set_aot_mode (MONO_AOT_MODE_LLVMONLY);
 #endif
 #else
-	mono_jit_set_aot_mode (MONO_AOT_MODE_INTERP_LLVMONLY);
+	mono_jit_set_aot_mode (MONO_AOT_MODE_INTERP_ONLY);
 	if (enable_debugging) {
 		// Disable optimizations which interfere with debugging
 		interp_opts = "-all";
@@ -558,8 +571,9 @@ MonoClass* mono_get_uri_class(MonoException** exc)
 #define MARSHAL_TYPE_SAFEHANDLE 23
 
 // typed array marshalling
-#define MARSHAL_ARRAY_BYTE 11
-#define MARSHAL_ARRAY_UBYTE 12
+#define MARSHAL_ARRAY_BYTE 10
+#define MARSHAL_ARRAY_UBYTE 11
+#define MARSHAL_ARRAY_UBYTE_C 12
 #define MARSHAL_ARRAY_SHORT 13
 #define MARSHAL_ARRAY_USHORT 14
 #define MARSHAL_ARRAY_INT 15
@@ -573,6 +587,11 @@ mono_wasm_get_obj_type (MonoObject *obj)
 	if (!obj)
 		return 0;
 
+	/* Process obj before calling into the runtime, class_from_name () can invoke managed code */
+	MonoClass *klass = mono_object_get_class (obj);
+	MonoType *type = mono_class_get_type (klass);
+	obj = NULL;
+
 	if (!datetime_class)
 		datetime_class = mono_class_from_name (mono_get_corlib(), "System", "DateTime");
 	if (!datetimeoffset_class)
@@ -583,9 +602,6 @@ mono_wasm_get_obj_type (MonoObject *obj)
 	}
 	if (!safehandle_class)
 		safehandle_class = mono_class_from_name (mono_get_corlib(), "System.Runtime.InteropServices", "SafeHandle");
-
-	MonoClass *klass = mono_object_get_class (obj);
-	MonoType *type = mono_class_get_type (klass);
 
 	switch (mono_type_get_type (type)) {
 	// case MONO_TYPE_CHAR: prob should be done not as a number?

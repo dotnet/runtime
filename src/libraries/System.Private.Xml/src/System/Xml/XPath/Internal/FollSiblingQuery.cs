@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#nullable enable
 using System.Collections.Generic;
 using System.Xml.XPath;
 using StackNav = MS.Internal.Xml.XPath.ClonableStack<System.Xml.XPath.XPathNavigator>;
@@ -11,7 +12,7 @@ namespace MS.Internal.Xml.XPath
     {
         private readonly StackNav _elementStk;
         private readonly List<XPathNavigator> _parentStk;
-        private XPathNavigator _nextInput;
+        private XPathNavigator? _nextInput;
 
         public FollSiblingQuery(Query qyInput, string name, string prefix, XPathNodeType type) : base(qyInput, name, prefix, type)
         {
@@ -48,9 +49,9 @@ namespace MS.Internal.Xml.XPath
             return false;
         }
 
-        private XPathNavigator FetchInput()
+        private XPathNavigator? FetchInput()
         {
-            XPathNavigator input;
+            XPathNavigator? input;
             do
             {
                 input = qyInput.Advance();
@@ -62,7 +63,7 @@ namespace MS.Internal.Xml.XPath
             return input.Clone();
         }
 
-        public override XPathNavigator Advance()
+        public override XPathNavigator? Advance()
         {
             while (true)
             {
@@ -90,7 +91,7 @@ namespace MS.Internal.Xml.XPath
                 while (currentNode.IsDescendant(_nextInput))
                 {
                     _elementStk.Push(currentNode);
-                    currentNode = _nextInput;
+                    currentNode = _nextInput!;
                     _nextInput = qyInput.Advance();
                     if (_nextInput != null)
                     {

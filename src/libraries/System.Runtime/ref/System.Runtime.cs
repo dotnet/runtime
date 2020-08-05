@@ -3638,10 +3638,10 @@ namespace System
     }
     public static partial class StringNormalizationExtensions
     {
-        public static bool IsNormalized(this string value) { throw null; }
-        public static bool IsNormalized(this string value, System.Text.NormalizationForm normalizationForm) { throw null; }
-        public static string Normalize(this string value) { throw null; }
-        public static string Normalize(this string value, System.Text.NormalizationForm normalizationForm) { throw null; }
+        public static bool IsNormalized(this string strInput) { throw null; }
+        public static bool IsNormalized(this string strInput, System.Text.NormalizationForm normalizationForm) { throw null; }
+        public static string Normalize(this string strInput) { throw null; }
+        public static string Normalize(this string strInput, System.Text.NormalizationForm normalizationForm) { throw null; }
     }
     [System.FlagsAttribute]
     public enum StringSplitOptions
@@ -7564,10 +7564,12 @@ namespace System.Reflection
     public abstract partial class Assembly : System.Reflection.ICustomAttributeProvider, System.Runtime.Serialization.ISerializable
     {
         protected Assembly() { }
+        [System.ObsoleteAttribute("CodeBase and EscapedCodeBase are only included for .NET Framework compatibility. Use Location instead.", DiagnosticId = "SYSLIB0012", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public virtual string? CodeBase { get { throw null; } }
         public virtual System.Collections.Generic.IEnumerable<System.Reflection.CustomAttributeData> CustomAttributes { get { throw null; } }
         public virtual System.Collections.Generic.IEnumerable<System.Reflection.TypeInfo> DefinedTypes { [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Types might be removed")] get { throw null; } }
         public virtual System.Reflection.MethodInfo? EntryPoint { get { throw null; } }
+        [System.ObsoleteAttribute("CodeBase and EscapedCodeBase are only included for .NET Framework compatibility. Use Location instead.", DiagnosticId = "SYSLIB0012", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public virtual string EscapedCodeBase { get { throw null; } }
         public virtual System.Collections.Generic.IEnumerable<System.Type> ExportedTypes { [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Types might be removed")] get { throw null; } }
         public virtual string? FullName { get { throw null; } }
@@ -8833,6 +8835,7 @@ namespace System.Resources
         public virtual string BaseName { get { throw null; } }
         protected System.Resources.UltimateResourceFallbackLocation FallbackLocation { get { throw null; } set { } }
         public virtual bool IgnoreCase { get { throw null; } set { } }
+        [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicConstructors)]
         public virtual System.Type ResourceSetType { get { throw null; } }
         public static System.Resources.ResourceManager CreateFileBasedResourceManager(string baseName, string resourceDir, System.Type? usingResourceSet) { throw null; }
         protected static System.Globalization.CultureInfo GetNeutralResourcesLanguage(System.Reflection.Assembly a) { throw null; }
@@ -9969,12 +9972,12 @@ namespace System.Runtime.Versioning
         public static bool operator !=(System.Runtime.Versioning.FrameworkName? left, System.Runtime.Versioning.FrameworkName? right) { throw null; }
         public override string ToString() { throw null; }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Class | System.AttributeTargets.Constructor | System.AttributeTargets.Event | System.AttributeTargets.Field | System.AttributeTargets.Method | System.AttributeTargets.Module | System.AttributeTargets.Property | System.AttributeTargets.Struct, AllowMultiple = true, Inherited = false)]
-    public sealed class MinimumOSPlatformAttribute : System.Runtime.Versioning.OSPlatformAttribute
+    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Class | System.AttributeTargets.Constructor | System.AttributeTargets.Enum | System.AttributeTargets.Event | System.AttributeTargets.Field | System.AttributeTargets.Method | System.AttributeTargets.Module | System.AttributeTargets.Property | System.AttributeTargets.Struct, AllowMultiple = true, Inherited = false)]
+    public sealed class SupportedOSPlatformAttribute : System.Runtime.Versioning.OSPlatformAttribute
     {
-        public MinimumOSPlatformAttribute(string platformName) : base(platformName) { }
+        public SupportedOSPlatformAttribute(string platformName) : base(platformName) { }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Class | System.AttributeTargets.Constructor | System.AttributeTargets.Event | System.AttributeTargets.Field | System.AttributeTargets.Method | System.AttributeTargets.Module | System.AttributeTargets.Property | System.AttributeTargets.Struct, AllowMultiple = true, Inherited = false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Class | System.AttributeTargets.Constructor | System.AttributeTargets.Enum | System.AttributeTargets.Event | System.AttributeTargets.Field | System.AttributeTargets.Method | System.AttributeTargets.Module | System.AttributeTargets.Property | System.AttributeTargets.Struct, AllowMultiple = true, Inherited = false)]
     public sealed class ObsoletedInOSPlatformAttribute : System.Runtime.Versioning.OSPlatformAttribute
     {
         public ObsoletedInOSPlatformAttribute(string platformName) : base(platformName) { }
@@ -9987,10 +9990,10 @@ namespace System.Runtime.Versioning
         private protected OSPlatformAttribute(string platformName) { }
         public string PlatformName { get; }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Class | System.AttributeTargets.Constructor | System.AttributeTargets.Event | System.AttributeTargets.Field | System.AttributeTargets.Method | System.AttributeTargets.Module | System.AttributeTargets.Property | System.AttributeTargets.Struct, AllowMultiple = true, Inherited = false)]
-    public sealed class RemovedInOSPlatformAttribute : System.Runtime.Versioning.OSPlatformAttribute
+    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Class | System.AttributeTargets.Constructor | System.AttributeTargets.Enum | System.AttributeTargets.Event | System.AttributeTargets.Field | System.AttributeTargets.Method | System.AttributeTargets.Module | System.AttributeTargets.Property | System.AttributeTargets.Struct, AllowMultiple = true, Inherited = false)]
+    public sealed class UnsupportedOSPlatformAttribute : System.Runtime.Versioning.OSPlatformAttribute
     {
-        public RemovedInOSPlatformAttribute(string platformName) : base(platformName) { }
+        public UnsupportedOSPlatformAttribute(string platformName) : base(platformName) { }
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Constructor | System.AttributeTargets.Method | System.AttributeTargets.Property, Inherited=false)]
     [System.Diagnostics.ConditionalAttribute("RESOURCE_ANNOTATION_WORK")]
