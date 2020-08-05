@@ -8,7 +8,7 @@ namespace System.Globalization
 {
     public partial class JapaneseCalendar : Calendar
     {
-        private static readonly string [] s_abbreviatedEnglishEraName = { "M", "T", "S", "H", "R" };
+        private static readonly string [] s_abbreviatedEnglishEraNames = { "M", "T", "S", "H", "R" };
 
         private static EraInfo[]? IcuGetJapaneseEras()
         {
@@ -53,18 +53,18 @@ namespace System.Globalization
             if (!CalendarData.EnumCalendarInfo("ja", CalendarId.JAPAN, CalendarDataType.AbbrevEraNames, out abbrevEnglishEraNames!))
             {
                 // Failed to get English names. fallback to hardcoded data.
-                abbrevEnglishEraNames = s_abbreviatedEnglishEraName;
+                abbrevEnglishEraNames = s_abbreviatedEnglishEraNames;
             }
 
             if (abbrevEnglishEraNames[abbrevEnglishEraNames.Length - 1].Length != 1 || abbrevEnglishEraNames[abbrevEnglishEraNames.Length - 1][0] > '\u007F')
             {
                 // Couldn't get English names.
-                abbrevEnglishEraNames = s_abbreviatedEnglishEraName;
+                abbrevEnglishEraNames = s_abbreviatedEnglishEraNames;
             }
 
-            int startIndex = abbrevEnglishEraNames == s_abbreviatedEnglishEraName ? eras.Count - 1 : abbrevEnglishEraNames.Length - 1;
+            int startIndex = abbrevEnglishEraNames == s_abbreviatedEnglishEraNames ? eras.Count - 1 : abbrevEnglishEraNames.Length - 1;
 
-            Debug.Assert(abbrevEnglishEraNames == s_abbreviatedEnglishEraName || eras.Count <= abbrevEnglishEraNames.Length);
+            Debug.Assert(abbrevEnglishEraNames == s_abbreviatedEnglishEraNames || eras.Count <= abbrevEnglishEraNames.Length);
 
             // remap the Era numbers, now that we know how many there will be
             for (int i = 0; i < eras.Count; i++)
