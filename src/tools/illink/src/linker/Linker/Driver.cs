@@ -426,7 +426,17 @@ namespace Mono.Linker
 						continue;
 
 					case "--generate-warning-suppressions":
+						string generateWarningSuppressionsArgument = string.Empty;
+						if (!GetStringParam (token, l => generateWarningSuppressionsArgument = l))
+							return -1;
+
+						if (!GetWarningSuppressionWriterFileOutputKind (generateWarningSuppressionsArgument, out var fileOutputKind)) {
+							context.LogError ($"Invalid value '{generateWarningSuppressionsArgument}' for '--generate-warning-suppressions' option", 1017);
+							return -1;
+						}
+
 						context.OutputWarningSuppressions = true;
+						context.SetWarningSuppressionWriter (fileOutputKind);
 						continue;
 
 					case "--nowarn":
@@ -988,6 +998,23 @@ namespace Mono.Linker
 			Console.WriteLine ($"Invalid optimization value '{text}'");
 			optimization = 0;
 			return false;
+		}
+
+		static bool GetWarningSuppressionWriterFileOutputKind (string text, out WarningSuppressionWriter.FileOutputKind fileOutputKind)
+		{
+			switch (text.ToLowerInvariant ()) {
+			case "cs":
+				fileOutputKind = WarningSuppressionWriter.FileOutputKind.CSharp;
+				return true;
+
+			case "xml":
+				fileOutputKind = WarningSuppressionWriter.FileOutputKind.Xml;
+				return true;
+
+			default:
+				fileOutputKind = WarningSuppressionWriter.FileOutputKind.CSharp;
+				return false;
+			}
 		}
 
 		bool GetBoolParam (string token, Action<bool> action)

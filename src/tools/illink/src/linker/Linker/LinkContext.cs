@@ -172,7 +172,7 @@ namespace Mono.Linker
 
 		public KnownMembers MarkedKnownMembers { get; private set; }
 
-		public WarningSuppressionWriter WarningSuppressionWriter { get; }
+		public WarningSuppressionWriter WarningSuppressionWriter { get; private set; }
 
 		public HashSet<uint> NoWarn { get; set; }
 
@@ -236,7 +236,6 @@ namespace Mono.Linker
 			StripLinkAttributes = true;
 			PInvokes = new List<PInvokeInfo> ();
 			Suppressions = new UnconditionalSuppressMessageAttributeState (this);
-			WarningSuppressionWriter = new WarningSuppressionWriter (this);
 			NoWarn = new HashSet<uint> ();
 			GeneralWarnAsError = false;
 			WarnAsError = new Dictionary<uint, bool> ();
@@ -623,6 +622,11 @@ namespace Mono.Linker
 		{
 			// This should return an increasing WarnVersion for new warning waves.
 			return WarnVersion.ILLink5;
+		}
+
+		public void SetWarningSuppressionWriter (WarningSuppressionWriter.FileOutputKind fileOutputKind)
+		{
+			WarningSuppressionWriter = new WarningSuppressionWriter (this, fileOutputKind);
 		}
 	}
 
