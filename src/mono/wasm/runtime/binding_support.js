@@ -123,8 +123,88 @@ var BindingSupportLib = {
 			this.safehandle_get_handle = get_method ("SafeHandleGetHandle");
 			this.safehandle_release_by_handle = get_method ("SafeHandleReleaseByHandle");
 
+			// Allocate a set of local gc handles
+			this.num_local_handles = 32;
+			this.gc_handles = []
+			alloc_local_handles = Module.cwrap ('mono_wasm_alloc_local_handles', 'number', ['number', 'number']);
+			var numBytes = this.num_local_handles * 4;
+			var buf = Module._malloc (numBytes);
+			alloc_local_handles (buf, this.num_local_handles);
+			var arr = new Int32Array(Module.HEAP32.buffer, buf, numBytes);
+			for (i = 0; i < this.num_local_handles; ++i)
+				this.gc_handles [i] = arr [i];
+			this.gc_handle_index = 0;
+
 			this.init = true;
 		},
+
+		//
+		// GC SAFETY:
+		// The mono GC doesn't scan JS frames, so any call made to wasm can cause objects
+		// to be freed/moved. To prevent this, all object references need to be pinned
+		// using local GC handles.
+		// Usage:
+		// - Wrap the body of any function which handles mono objrefs with:
+		//   var mark = this.handle_frame_enter ();
+		//   <body>
+		//   this.handle_frame_exit (mark);
+		// - Objrefs in arguments and locals need to be pinned. Don't assume
+		//   the caller etc. pinned the arguments.
+		// - Inside the function, pin objrefs using this.pin_obj (objref).
+		// - Don't use pin_obj () inside loops, it allocates a new
+		//   local gc handle internally, so it can run out of handles.
+		//   Instead, allocate a handle outside the loop using
+		//   alloc_gc_handle () and set it inside the loop using set_gc_handle ():
+		//     var obj_h = this.alloc_gc_handle ();
+		//     for (...) {
+		//         obj = ...
+		//         this.set_gc_handle (obj_h, obj);
+		//     }
+		//
+
+		// Enter a new handle frame and push it on the handle frame stack
+		handle_frame_enter: function () {
+			return this.gc_handle_index;
+		},
+
+		// Exit the current handle frame. All GC handles allocated in the current
+		// handle frame will be freed.
+		handle_frame_exit: function (handle_index) {
+			for (var i = handle_index; i < this.gc_handle_index; ++i) {
+				addr = this.gc_handles [i];
+				var arr = new Int32Array (Module.HEAP32.buffer, addr, 4);
+				arr [0] = 0;
+			}
+
+			this.gc_handle_index = handle_index;
+		},
+
+		// Allocate a new local gc handle and use it to pin 'obj' until the current handle frame is exited
+		pin_obj: function (obj) {
+			var idx = this.gc_handle_index;
+			if (idx == 32)
+				throw "Local handle table overflow.";
+			this.gc_handle_index ++;
+			var addr = this.gc_handles [idx];
+			var arr = new Int32Array (Module.HEAP32.buffer, addr, 4);
+			arr [0] = obj;
+			return idx;
+		},
+
+		// Allocate a new local GC handle which is valid until the
+		// current handle frame is exited
+		alloc_gc_handle: function () {
+			return this.pin_obj (0);
+		},
+
+		// Set GC handle 'handle' to point to 'obj', pinning it
+		set_gc_handle: function (handle, obj) {
+			var addr = this.gc_handles [handle];
+			var arr = new Int32Array (Module.HEAP32.buffer, addr, 4);
+			arr [0] = obj;
+		},
+
+		/////////////////////////////////////////////////////////
 
 		get_js_obj: function (js_handle) {
 			if (js_handle > 0)
@@ -144,51 +224,71 @@ var BindingSupportLib = {
 			if (mono_array == 0)
 				return null;
 
+			var mark = this.handle_frame_enter ();
+			var ele_h = this.alloc_gc_handle ();
+
+			this.pin_obj (mono_array);
+
 			var res = [];
 			var len = this.mono_array_length (mono_array);
 			for (var i = 0; i < len; ++i)
 			{
 				var ele = this.mono_array_get (mono_array, i);
+				this.set_gc_handle (ele_h, ele);
 				if (this.is_nested_array(ele))
 					res.push(this.mono_array_to_js_array(ele));
 				else
 					res.push (this.unbox_mono_obj (ele));
 			}
 
+			this.handle_frame_exit (mark);
+
 			return res;
 		},
 
 		js_array_to_mono_array: function (js_array) {
+			var mark = this.handle_frame_enter ();
 			var mono_array = this.mono_obj_array_new (js_array.length);
+			this.pin_obj (mono_array);
+			var el_h = this.alloc_gc_handle ();
 			for (var i = 0; i < js_array.length; ++i) {
-				this.mono_obj_array_set (mono_array, i, this.js_to_mono_obj (js_array [i]));
+				var el = this.js_to_mono_obj (js_array [i]);
+				this.set_gc_handle (el_h, el);
+				this.mono_obj_array_set (mono_array, i, el);
 			}
+			this.handle_frame_exit (mark);
 			return mono_array;
 		},
 
 		unbox_mono_obj: function (mono_obj) {
 			if (mono_obj == 0)
 				return undefined;
+			var mark = this.handle_frame_enter ();
+			this.pin_obj (mono_obj);
 			var type = this.mono_get_obj_type (mono_obj);
 			//See MARSHAL_TYPE_ defines in driver.c
+			var res = null;
 			switch (type) {
 			case 1: // int
-				return this.mono_unbox_int (mono_obj);
+				res = this.mono_unbox_int (mono_obj);
+				break;
 			case 2: // float
-				return this.mono_unbox_float (mono_obj);
+				res = this.mono_unbox_float (mono_obj);
+				break;
 			case 3: //string
-				return this.conv_string (mono_obj);
+				res = this.conv_string (mono_obj);
+				break;
 			case 4: //vts
 				throw new Error ("no idea on how to unbox value types");
 			case 5: { // delegate
 				var obj = this.extract_js_obj (mono_obj);
 				obj.__mono_delegate_alive__ = true;
-				return function () {
+				res = function () {
 					return BINDING.invoke_delegate (obj, arguments);
 				};
+				break;
 			}
 			case 6: {// Task
-
 				if (typeof Promise === "undefined" || typeof Promise.resolve === "undefined")
 					throw new Error ("Promises are not supported thus C# Tasks can not work in this context.");
 
@@ -204,28 +304,23 @@ var BindingSupportLib = {
 				this.call_method (this.setup_js_cont, null, "mo", [ mono_obj, cont_obj ]);
 				obj.__mono_js_cont__ = cont_obj.__mono_gchandle__;
 				cont_obj.__mono_js_task__ = obj.__mono_gchandle__;
-				return promise;
+				res = promise;
+				break;
 			}
 
 			case 7: // ref type
-				return this.extract_js_obj (mono_obj);
-
+				res = this.extract_js_obj (mono_obj);
+				break;
 			case 8: // bool
-				return this.mono_unbox_int (mono_obj) != 0;
-
+				res = this.mono_unbox_int (mono_obj) != 0;
+				break;
 			case 9: // enum
 
 				if(this.mono_wasm_marshal_enum_as_int)
-				{
-					return this.mono_unbox_enum (mono_obj);
-				}
+					res = this.mono_unbox_enum (mono_obj);
 				else
-				{
-					enumValue = this.call_method(this.object_to_string, null, "m", [ mono_obj ]);
-				}
-
-				return enumValue;
-
+					res = this.call_method(this.object_to_string, null, "m", [ mono_obj ]);
+				break;
 			case 10: // arrays
 			case 11: 
 			case 12: 
@@ -240,13 +335,16 @@ var BindingSupportLib = {
 			}
 			case 20: // clr .NET DateTime
 				var dateValue = this.call_method(this.get_date_value, null, "md", [ mono_obj ]);
-				return new Date(dateValue);
+				res = new Date(dateValue);
+				break;
 			case 21: // clr .NET DateTimeOffset
 				var dateoffsetValue = this.call_method(this.object_to_string, null, "m", [ mono_obj ]);
-				return dateoffsetValue;
+				res = dateoffsetValue;
+				break;
 			case 22: // clr .NET Uri
 				var uriValue = this.call_method(this.object_to_string, null, "m", [ mono_obj ]);
-				return uriValue;
+				res = uriValue;
+				break;
 			case 23: // clr .NET SafeHandle
 				var addRef = true;
 				var js_handle = this.call_method(this.safehandle_get_handle, null, "mii", [ mono_obj, addRef ]);
@@ -258,10 +356,13 @@ var BindingSupportLib = {
 
 					this.mono_wasm_owned_objects_LMF.push(js_handle);
 				}
-				return requiredObject;
+				res = requiredObject;
+				break;
 			default:
 				throw new Error ("no idea on how to unbox object kind " + type);
 			}
+			this.handle_frame_exit (mark);
+			return res;
 		},
 
 		create_task_completion_source: function () {
@@ -290,6 +391,7 @@ var BindingSupportLib = {
 			heapBytes.set(new Uint8Array(typedArray.buffer, typedArray.byteOffset, numBytes));
 			return heapBytes;
 		},
+
 		js_to_mono_obj: function (js_obj) {
 			this.bindings_lazy_init ();
 
@@ -370,8 +472,6 @@ var BindingSupportLib = {
 			else {
 				throw new Error("Object '" + js_obj + "' is not a typed array");
 			} 
-
-
 		},
 		// Copy the existing typed array to the heap pointed to by the pinned array address
 		// 	 typed array memory -> copy to heap -> address of managed pinned array
@@ -570,7 +670,6 @@ var BindingSupportLib = {
 		},
 
 		extract_mono_obj: function (js_obj) {
-
 			if (js_obj === null || typeof js_obj === "undefined")
 				return 0;
 
@@ -578,7 +677,6 @@ var BindingSupportLib = {
 				var gc_handle = this.mono_wasm_register_obj(js_obj);
 				return this.wasm_get_raw_obj (gc_handle);
 			}
-
 
 			return this.wasm_get_raw_obj (js_obj.__mono_gchandle__);
 		},

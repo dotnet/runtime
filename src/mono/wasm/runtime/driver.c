@@ -41,6 +41,13 @@ void mono_free (void*);
 int32_t mini_parse_debug_option (const char *option);
 char *mono_method_get_full_name (MonoMethod *method);
 
+//
+// GC SAFETY:
+// - The stack frames of the entry points called from JS (mono_wasm_...) are not scanned during a GC.
+//   This means that object references used inside them can become invalid if they call any code which
+//   could cause a GC.
+//
+
 static MonoClass* datetime_class;
 static MonoClass* datetimeoffset_class;
 static MonoClass* uri_class;
