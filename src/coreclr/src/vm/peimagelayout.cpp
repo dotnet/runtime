@@ -36,7 +36,11 @@ PEImageLayout* PEImageLayout::CreateFromHMODULE(HMODULE hModule,PEImage* pOwner,
 PEImageLayout* PEImageLayout::LoadFromFlat(PEImageLayout* pflatimage)
 {
     STANDARD_VM_CONTRACT;
+
+    _ASSERTE(!"how did we get here?");
     return new ConvertedImageLayout(pflatimage);
+
+    throw "how did we get here?";
 }
 
 PEImageLayout* PEImageLayout::LoadConverted(PEImage* pOwner)

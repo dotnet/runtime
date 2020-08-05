@@ -1072,8 +1072,6 @@ PTR_PEImageLayout PEImage::CreateLayoutMapped()
     }
     else
     {
-        _ASSERTE(!"how did we get here?");
-        throw "how did we get here?";
         PEImageLayoutHolder flatPE(GetLayoutInternal(PEImageLayout::LAYOUT_FLAT,LAYOUT_CREATEIFNEEDED));
         if (!flatPE->CheckFormat() || !flatPE->IsILOnly())
             ThrowHR(COR_E_BADIMAGEFORMAT);
