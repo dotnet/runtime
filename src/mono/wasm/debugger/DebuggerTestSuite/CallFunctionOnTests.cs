@@ -536,7 +536,7 @@ namespace DebuggerTests
             });
         }
 
-        public static TheoryData<string, string, int, int, string, Func<string[], object>, bool> GettersTestData(bool use_cfo) => new TheoryData<string, string, int, int, string, Func<string[], object>, bool>
+        public static TheoryData<string, string, int, int, string, Func<string[], object>, string, bool> GettersTestData(string local_name, bool use_cfo) => new TheoryData<string, string, int, int, string, Func<string[], object>, string, bool>
         {
             // Chrome sends this one
             {
@@ -546,6 +546,7 @@ namespace DebuggerTests
                 12,
                 "function invokeGetter(arrayStr){ let result=this; const properties=JSON.parse(arrayStr); for(let i=0,n=properties.length;i<n;++i){ result=result[properties[i]]; } return result; }",
                 (arg_strs) => JArray.FromObject(arg_strs).ToString(),
+                local_name,
                 use_cfo
             },
             {
@@ -555,6 +556,7 @@ namespace DebuggerTests
                 12,
                 "function invokeGetter(arrayStr){ let result=this; const properties=JSON.parse(arrayStr); for(let i=0,n=properties.length;i<n;++i){ result=result[properties[i]]; } return result; }",
                 (arg_strs) => JArray.FromObject(arg_strs).ToString(),
+                local_name,
                 use_cfo
             },
 
@@ -566,6 +568,7 @@ namespace DebuggerTests
                 12,
                 "function(e){return this[e]}",
                 (args_str) => args_str?.Length > 0 ? args_str[0] : String.Empty,
+                local_name,
                 use_cfo
             },
             {
@@ -575,14 +578,17 @@ namespace DebuggerTests
                 12,
                 "function(e){return this[e]}",
                 (args_str) => args_str?.Length > 0 ? args_str[0] : String.Empty,
+                local_name,
                 use_cfo
             }
         };
 
         [Theory]
-        [MemberData(nameof(GettersTestData), parameters : false)]
-        [MemberData(nameof(GettersTestData), parameters : true)]
-        public async Task PropertyGettersOnObjectsTest(string eval_fn, string method_name, int line, int col, string cfo_fn, Func<string[], object> get_args_fn, bool use_cfo) => await CheckInspectLocalsAtBreakpointSite(
+        [MemberData(nameof(GettersTestData), "ptd", false)]
+        [MemberData(nameof(GettersTestData), "ptd", true)]
+        // [MemberData (nameof (GettersTestData), "swp", false)]
+        // [MemberData (nameof (GettersTestData), "swp", true)]
+        public async Task PropertyGettersTest(string eval_fn, string method_name, int line, int col, string cfo_fn, Func<string[], object> get_args_fn, string local_name, bool use_cfo) => await CheckInspectLocalsAtBreakpointSite(
             "dotnet://debugger-test.dll/debugger-cfo-test.cs", line, col,
             method_name,
             $"window.setTimeout(function() {{ {eval_fn} }}, 1);",
@@ -590,55 +596,56 @@ namespace DebuggerTests
             wait_for_event_fn : async(pause_location) =>
             {
                 var frame_locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
-                var dt = new DateTime(10, 9, 8, 7, 6, 5);
 
                 await CheckProps(frame_locals, new
                 {
                     ptd = TObject("DebuggerTests.ClassWithProperties"),
-                        swp = TObject("DebuggerTests.StructWithProperties"),
+                    swp = TObject("DebuggerTests.StructWithProperties")
                 }, "locals#0");
 
-                var ptd = GetAndAssertObjectWithName(frame_locals, "ptd");
+                var obj = GetAndAssertObjectWithName(frame_locals, local_name);
 
-                var ptd_props = await GetProperties(ptd?["value"] ? ["objectId"]?.Value<string>());
-                await CheckProps(ptd_props, new
+                var dt = new DateTime(4, 5, 6, 7, 8, 9);
+                var obj_props = await GetProperties(obj?["value"] ? ["objectId"]?.Value<string>());
+                await CheckProps(obj_props, new
                 {
-                    Int = TGetter("Int"),
-                        String = TGetter("String"),
-                        DT = TGetter("DT"),
-                        IntArray = TGetter("IntArray"),
-                        DTArray = TGetter("DTArray")
-                }, "ptd", num_fields : 7);
+                    V           = TNumber(0xDEADBEEF),
+                    Int         = TGetter("Int"),
+                    String      = TGetter("String"),
+                    DT          = TGetter("DT"),
+                    IntArray    = TGetter("IntArray"),
+                    DTArray     = TGetter("DTArray"),
+                    StringField = TString(null),
+
+                    // Auto properties show w/o getters, because they have
+                    // a backing field
+                    DTAutoProperty = TValueType("System.DateTime", dt.ToString())
+                }, local_name);
 
                 // Automatic properties don't have invokable getters, because we can get their
                 // value from the backing field directly
                 {
-                    dt = new DateTime(4, 5, 6, 7, 8, 9);
-                    var dt_auto_props = await GetObjectOnLocals(ptd_props, "DTAutoProperty");
-                    await CheckDateTime(ptd_props, "DTAutoProperty", dt);
+                    var dt_auto_props = await GetObjectOnLocals(obj_props, "DTAutoProperty");
+                    await CheckDateTime(obj_props, "DTAutoProperty", dt);
                 }
 
                 // Invoke getters, and check values
 
-                var res = await InvokeGetter(ptd, cfo_fn, get_args_fn(new [] { "Int" }));
-                Assert.True(res.IsOk, $"InvokeGetter failed with : {res}");
-                await CheckValue(res.Value["result"], TNumber(5), "ptd.Int");
-
-                res = await InvokeGetter(ptd, cfo_fn, get_args_fn(new [] { "String" }));
-                Assert.True(res.IsOk, $"InvokeGetter failed with : {res}");
-                await CheckValue(res.Value["result"], TString("foobar"), "ptd.String");
-
                 dt = new DateTime(3, 4, 5, 6, 7, 8);
-                res = await InvokeGetter(ptd, cfo_fn, get_args_fn(new [] { "DT" }));
-                Assert.True(res.IsOk, $"InvokeGetter failed with : {res}");
-                await CheckValue(res.Value["result"], TValueType("System.DateTime", dt.ToString()), "ptd.DT");
+                var res = await InvokeGetter(obj, get_args_fn(new [] { "Int" }), cfo_fn);
+                await CheckValue(res.Value["result"], JObject.FromObject(new { type = "number", value = (0xDEADBEEF + (uint) dt.Month) }), $"{local_name}.Int");
+
+                res = await InvokeGetter(obj, get_args_fn(new [] { "String" }), cfo_fn);
+                await CheckValue(res.Value["result"], JObject.FromObject(new { type = "string", value = $"String property, V: 0xDEADBEEF" }), $"{local_name}.String");
+
+                res = await InvokeGetter(obj, get_args_fn(new [] { "DT" }), cfo_fn);
+                await CheckValue(res.Value["result"], TValueType("System.DateTime", dt.ToString()), $"{local_name}.DT");
                 await CheckDateTimeValue(res.Value["result"], dt);
 
                 // Check arrays through getters
 
-                res = await InvokeGetter(ptd, cfo_fn, get_args_fn(new [] { "IntArray" }));
-                Assert.True(res.IsOk, $"InvokeGetter failed with : {res}");
-                await CheckValue(res.Value["result"], TArray("int[]", 2), "ptd.IntArray");
+                res = await InvokeGetter(obj, get_args_fn(new [] { "IntArray" }), cfo_fn);
+                await CheckValue(res.Value["result"], TArray("int[]", 2), $"{local_name}.IntArray");
                 {
                     var arr_elems = await GetProperties(res.Value["result"] ? ["objectId"]?.Value<string>());
                     var exp_elems = new []
@@ -647,12 +654,11 @@ namespace DebuggerTests
                         TNumber(20)
                     };
 
-                    await CheckProps(arr_elems, exp_elems, "ptd.IntArray");
+                    await CheckProps(arr_elems, exp_elems, $"{local_name}.IntArray");
                 }
 
-                res = await InvokeGetter(ptd, cfo_fn, get_args_fn(new [] { "DTArray" }));
-                Assert.True(res.IsOk, $"InvokeGetter failed with : {res}");
-                await CheckValue(res.Value["result"], TArray("System.DateTime[]", 2), "ptd.DTArray");
+                res = await InvokeGetter(obj, get_args_fn(new [] { "DTArray" }), cfo_fn);
+                await CheckValue(res.Value["result"], TArray("System.DateTime[]", 2), $"{local_name}.DTArray");
                 {
                     var dt0 = new DateTime(6, 7, 8, 9, 10, 11);
                     var dt1 = new DateTime(1, 2, 3, 4, 5, 6);
@@ -664,7 +670,7 @@ namespace DebuggerTests
                         TValueType("System.DateTime", dt1.ToString()),
                     };
 
-                    await CheckProps(arr_elems, exp_elems, "ptd.DTArray");
+                    await CheckProps(arr_elems, exp_elems, $"{local_name}.DTArray");
                 }
             });
 
@@ -686,14 +692,21 @@ namespace DebuggerTests
 
                 var swp = GetAndAssertObjectWithName(frame_locals, "swp");
 
+                var dt = new DateTime(4, 5, 6, 7, 8, 9);
                 var swp_props = await GetProperties(swp?["value"] ? ["objectId"]?.Value<string>());
                 await CheckProps(swp_props, new
                 {
-                    Int = TSymbol("int { get; }"),
-                        String = TSymbol("string { get; }"),
-                        DT = TSymbol("System.DateTime { get; }"),
-                        IntArray = TSymbol("int[] { get; }"),
-                        DTArray = TSymbol("System.DateTime[] { get; }")
+                    V              = TNumber(0xDEADBEEF),
+                    Int            = TSymbol("uint { get; }"),
+                    String         = TSymbol("string { get; }"),
+                    DT             = TSymbol("System.DateTime { get; }"),
+                    IntArray       = TSymbol("int[] { get; }"),
+                    DTArray        = TSymbol("System.DateTime[] { get; }"),
+                    StringField    = TString(null),
+
+                    // Auto properties show w/o getters, because they have
+                    // a backing field
+                    DTAutoProperty = TValueType("System.DateTime", dt.ToString())
                 }, "swp");
             });
 
@@ -753,15 +766,6 @@ namespace DebuggerTests
                 return res;
             }
         }
-
-        async Task<Result> InvokeGetter(JToken obj, string fn, object arguments) => await ctx.cli.SendCommand(
-            "Runtime.callFunctionOn",
-            JObject.FromObject(new
-            {
-                functionDeclaration = fn,
-                    objectId = obj["value"] ? ["objectId"]?.Value<string>(),
-                    arguments = new [] { new { value = arguments } }
-            }), ctx.token);
 
         /*
          * 1. runs `Runtime.callFunctionOn` on the objectId,

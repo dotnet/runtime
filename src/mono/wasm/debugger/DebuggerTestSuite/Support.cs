@@ -432,6 +432,21 @@ namespace DebuggerTests
             return wait_res;
         }
 
+        internal async Task<Result> InvokeGetter(JToken obj, object arguments, string fn = "function(e){return this[e]}",bool expect_ok = true)
+        {
+            var req = JObject.FromObject(new
+            {
+                functionDeclaration = fn,
+                objectId            = obj["value"]?["objectId"]?.Value<string>(),
+                arguments           = new[] { new { value = arguments } }
+            });
+
+            var res = await ctx.cli.SendCommand("Runtime.callFunctionOn", req, ctx.token);
+            Assert.True(expect_ok == res.IsOk, $"InvokeGetter failed for {req} with {res}");
+
+            return res;
+        }
+
         internal async Task<JObject> StepAndCheck(StepKind kind, string script_loc, int line, int column, string function_name,
             Func<JObject, Task> wait_for_event_fn = null, Action<JToken> locals_fn = null, int times = 1)
         {
@@ -883,6 +898,9 @@ namespace DebuggerTests
             JObject.FromObject(new { type = "string", value = @value, description = @value });
 
         internal static JObject TNumber(int value) =>
+            JObject.FromObject(new { type = "number", value = @value.ToString(), description = value.ToString() });
+
+        internal static JObject TNumber(uint value) =>
             JObject.FromObject(new { type = "number", value = @value.ToString(), description = value.ToString() });
 
         internal static JObject TValueType(string className, string description = null, object members = null) =>

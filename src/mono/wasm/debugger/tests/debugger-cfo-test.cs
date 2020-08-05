@@ -26,15 +26,15 @@ namespace DebuggerTests
 
         public static void PropertyGettersTest()
         {
-            var ptd = new ClassWithProperties { DTAutoProperty = new DateTime(4, 5, 6, 7, 8, 9) };
-            var swp = new StructWithProperties();
+            var ptd = new ClassWithProperties { DTAutoProperty = new DateTime(4, 5, 6, 7, 8, 9), V = 0xDEADBEEF };
+            var swp = new StructWithProperties { DTAutoProperty = new DateTime(4, 5, 6, 7, 8, 9), V = 0xDEADBEEF };
             System.Console.WriteLine("break here");
         }
 
         public static async System.Threading.Tasks.Task PropertyGettersTestAsync()
         {
-            var ptd = new ClassWithProperties { DTAutoProperty = new DateTime(4, 5, 6, 7, 8, 9) };
-            var swp = new StructWithProperties();
+            var ptd = new ClassWithProperties { DTAutoProperty = new DateTime (4, 5, 6, 7, 8, 9), V = 0xDEADBEEF };
+            var swp = new StructWithProperties { DTAutoProperty = new DateTime (4, 5, 6, 7, 8, 9), V = 0xDEADBEEF };
             System.Console.WriteLine("break here");
             await System.Threading.Tasks.Task.CompletedTask;
         }
@@ -42,8 +42,9 @@ namespace DebuggerTests
 
     class ClassWithProperties
     {
-        public int Int { get { return 5; } }
-        public string String { get { return "foobar"; } }
+        public uint V;
+        public uint Int { get { return V + (uint)DT.Month; } }
+        public string String { get { return $"String property, V: 0x{V:X}"; } }
         public DateTime DT { get { return new DateTime(3, 4, 5, 6, 7, 8); } }
 
         public int[] IntArray { get { return new int[] { 10, 20 }; } }
@@ -54,11 +55,14 @@ namespace DebuggerTests
 
     struct StructWithProperties
     {
-        public int Int { get { return 5; } }
-        public string String { get { return "foobar"; } }
+        public uint V;
+        public uint Int { get { return V + (uint)DT.Month; } }
+        public string String { get { return $"String property, V: 0x{V:X}"; } }
         public DateTime DT { get { return new DateTime(3, 4, 5, 6, 7, 8); } }
 
         public int[] IntArray { get { return new int[] { 10, 20 }; } }
         public DateTime[] DTArray { get { return new DateTime[] { new DateTime(6, 7, 8, 9, 10, 11), new DateTime(1, 2, 3, 4, 5, 6) }; } }
+        public DateTime DTAutoProperty { get; set; }
+        public string StringField;
     }
 }
