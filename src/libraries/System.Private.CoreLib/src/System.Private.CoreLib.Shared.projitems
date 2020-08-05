@@ -47,7 +47,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Activator.RuntimeType.cs" Condition="'$(TargetsCoreRT)' != 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\AggregateException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\AppContext.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\AppContext.Browser.cs" Condition="'$(TargetsBrowser)' == 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\AppContext.AnyOS.cs" Condition="'$(TargetsBrowser)' != 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\AppDomain.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\AppDomainSetup.cs" />
@@ -1708,14 +1707,8 @@
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetCwd.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.GetCwd.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetEUid.cs">
-      <Link>Common\Interop\Unix\System.Native\Interop.GetEUid.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetHostName.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.GetHostName.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetPwUid.cs">
-      <Link>Common\Interop\Unix\System.Native\Interop.GetPwUid.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetRandomBytes.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.GetRandomBytes.cs</Link>
@@ -1794,7 +1787,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Environment.NoRegistry.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Environment.UnixOrBrowser.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Environment.OSVersion.OSX.cs" Condition="'$(IsOSXLike)' == 'true'" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Environment.OSVersion.Unix.cs" Condition="'$(IsOSXLike)' != 'true' and '$(TargetsBrowser)' != 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Environment.GetFolderPathCore.Unix.cs" Condition="'$(TargetsiOS)' != 'true' and '$(TargetstvOS)' != 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CalendarData.Unix.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CultureData.Unix.cs" />
@@ -1802,14 +1794,11 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\GlobalizationMode.Unix.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\HijriCalendar.Unix.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Guid.Unix.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\IO\DriveInfoInternal.Unix.cs" Condition="'$(TargetsBrowser)' != 'true'"/>
-    <Compile Include="$(MSBuildThisFileDirectory)System\IO\DriveInfoInternal.Browser.cs" Condition="'$(TargetsBrowser)' == 'true'"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\FileStream.Lock.OSX.cs" Condition="'$(IsOSXLike)' == 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\FileStream.Lock.Unix.cs" Condition="'$(IsOSXLike)' != 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\FileStream.Unix.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\Path.Unix.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\PathInternal.Unix.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\IO\PersistedFiles.Unix.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\PersistedFiles.Names.Unix.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\PasteArguments.Unix.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Loader\LibraryNameVariation.Unix.cs" />
@@ -1822,14 +1811,26 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\TimeZoneInfo.Unix.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetEUid.cs">
+      <Link>Common\Interop\Unix\System.Native\Interop.GetEUid.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetPwUid.cs">
+      <Link>Common\Interop\Unix\System.Native\Interop.GetPwUid.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.GetPid.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.GetPid.cs</Link>
     </Compile>
     <Compile Include="$(MSBuildThisFileDirectory)System\Environment.Unix.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Environment.OSVersion.Unix.cs" Condition="'$(IsOSXLike)' != 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\TimeZoneInfo.GetDisplayName.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\IO\DriveInfoInternal.Unix.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\IO\PersistedFiles.Unix.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsBrowser)' == 'true'">
+    <Compile Include="$(MSBuildThisFileDirectory)System\AppContext.Browser.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Environment.Browser.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\IO\DriveInfoInternal.Browser.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\IO\PersistedFiles.Browser.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\TimeZoneInfo.GetDisplayName.Invariant.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(IsOSXLike)' == 'true'">
