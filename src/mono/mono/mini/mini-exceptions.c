@@ -1060,7 +1060,8 @@ ves_icall_get_trace (MonoException *exc, gint32 skip, MonoBoolean need_file_info
 
 	MONO_HANDLE_PIN (res);
 
-	MonoObjectHandle sf_h = MONO_HANDLE_NEW (MonoObject, NULL);
+	MonoObjectHandle sf_h;
+	sf_h = MONO_HANDLE_NEW (MonoObject, NULL);
 
 	for (i = skip; i < len; i++) {
 		MonoJitInfo *ji;
