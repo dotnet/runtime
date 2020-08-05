@@ -87,7 +87,7 @@ namespace System.Net
             // Creating a Uri from the cooked Uri should really always work: If not, we log at least.
             if (!isValid)
             {
-                if (NetEventSource.IsEnabled)
+                if (NetEventSource.Log.IsEnabled())
                     NetEventSource.Error(this, SR.Format(SR.net_log_listener_cant_create_uri, _cookedUriScheme, _cookedUriHost, _cookedUriPath, _cookedUriQuery));
             }
         }
@@ -112,7 +112,7 @@ namespace System.Net
             // Log that we weren't able to create a Uri from the raw string.
             if (!isValid)
             {
-                if (NetEventSource.IsEnabled)
+                if (NetEventSource.Log.IsEnabled())
                     NetEventSource.Error(this, SR.Format(SR.net_log_listener_cant_create_uri, _cookedUriScheme, _cookedUriHost, _rawPath, _cookedUriQuery));
             }
         }
@@ -161,7 +161,7 @@ namespace System.Net
 
             if (result != ParsingResult.Success)
             {
-                if (NetEventSource.IsEnabled)
+                if (NetEventSource.Log.IsEnabled())
                     NetEventSource.Error(this, SR.Format(SR.net_log_listener_cant_convert_raw_path, _rawPath, encoding.EncodingName));
             }
 
@@ -242,7 +242,7 @@ namespace System.Net
             int codePointValue;
             if (!int.TryParse(codePoint, NumberStyles.HexNumber, null, out codePointValue))
             {
-                if (NetEventSource.IsEnabled)
+                if (NetEventSource.Log.IsEnabled())
                     NetEventSource.Error(this, SR.Format(SR.net_log_listener_cant_convert_percent_value, codePoint));
                 return false;
             }
@@ -257,13 +257,13 @@ namespace System.Net
             }
             catch (ArgumentOutOfRangeException)
             {
-                if (NetEventSource.IsEnabled)
+                if (NetEventSource.Log.IsEnabled())
                     NetEventSource.Error(this, SR.Format(SR.net_log_listener_cant_convert_percent_value, codePoint));
             }
             catch (EncoderFallbackException e)
             {
                 // If utf8Encoding.GetBytes() fails
-                if (NetEventSource.IsEnabled) NetEventSource.Error(this, SR.Format(SR.net_log_listener_cant_convert_to_utf8, unicodeString, e.Message));
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, SR.Format(SR.net_log_listener_cant_convert_to_utf8, unicodeString, e.Message));
             }
 
             return false;
@@ -274,7 +274,7 @@ namespace System.Net
             byte encodedValue;
             if (!byte.TryParse(escapedCharacter, NumberStyles.HexNumber, null, out encodedValue))
             {
-                if (NetEventSource.IsEnabled) NetEventSource.Error(this, SR.Format(SR.net_log_listener_cant_convert_percent_value, escapedCharacter));
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, SR.Format(SR.net_log_listener_cant_convert_percent_value, escapedCharacter));
                 return false;
             }
 
@@ -312,12 +312,12 @@ namespace System.Net
             }
             catch (DecoderFallbackException e)
             {
-                if (NetEventSource.IsEnabled) NetEventSource.Error(this, SR.Format(SR.net_log_listener_cant_convert_bytes, GetOctetsAsString(_rawOctets), e.Message));
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, SR.Format(SR.net_log_listener_cant_convert_bytes, GetOctetsAsString(_rawOctets), e.Message));
             }
             catch (EncoderFallbackException e)
             {
                 // If utf8Encoding.GetBytes() fails
-                if (NetEventSource.IsEnabled) NetEventSource.Error(this, SR.Format(SR.net_log_listener_cant_convert_to_utf8, decodedString, e.Message));
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, SR.Format(SR.net_log_listener_cant_convert_to_utf8, decodedString, e.Message));
             }
 
             return false;

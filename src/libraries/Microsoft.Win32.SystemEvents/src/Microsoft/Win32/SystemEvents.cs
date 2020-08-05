@@ -1114,7 +1114,9 @@ namespace Microsoft.Win32
             }
         }
 
+#if FEATURE_CER
         [PrePrepareMethod]
+#endif
         private static void Shutdown(object? sender, EventArgs e)
         {
             Shutdown();

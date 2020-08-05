@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#nullable enable
+
 using Xunit;
 
 namespace System.Data.Common.Tests
@@ -32,6 +34,13 @@ namespace System.Data.Common.Tests
             Assert.Equal(4060, e.ErrorCode);
         }
 
+        [Fact]
+        public void IsTransient_is_false_by_default()
+            => Assert.False(new CustomDbException().IsTransient);
+
+        [Fact]
+        public void SqlState_is_null_by_default()
+            => Assert.Null(new CustomDbException().SqlState);
 
         private class CustomDbException : DbException
         {

@@ -2374,20 +2374,14 @@ void ILBlittablePtrMarshaler::EmitConvertContentsNativeToCLR(ILCodeStream* pslIL
     pslILEmit->EmitLabel(pNullRefLabel);
 }
 
-bool ILBlittablePtrMarshaler::CanUsePinnedLayoutClass()
+bool ILBlittablePtrMarshaler::CanMarshalViaPinning()
 {
     return IsCLRToNative(m_dwMarshalFlags) && !IsByref(m_dwMarshalFlags) && !IsFieldMarshal(m_dwMarshalFlags);
 }
 
-void ILBlittablePtrMarshaler::EmitConvertSpaceAndContentsCLRToNativeTemp(ILCodeStream* pslILEmit)
+void ILBlittablePtrMarshaler::EmitMarshalViaPinning(ILCodeStream* pslILEmit)
 {
     STANDARD_VM_CONTRACT;
-
-    if (!CanUsePinnedLayoutClass())
-    {
-        ILLayoutClassPtrMarshalerBase::EmitConvertSpaceAndContentsCLRToNativeTemp(pslILEmit);
-        return;
-    }
 
     ILCodeLabel* pSkipAddLabel = pslILEmit->NewCodeLabel();
     LocalDesc managedTypePinned = GetManagedType();

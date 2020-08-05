@@ -11,7 +11,7 @@ namespace System.Collections.Generic.Tests
 {
     public abstract partial class ComparersGenericTests<T>
     {
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBinaryFormatterSupported))]
         public void EqualityComparer_SerializationRoundtrip()
         {
             var bf = new BinaryFormatter();

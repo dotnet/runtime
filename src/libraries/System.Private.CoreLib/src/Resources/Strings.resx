@@ -1756,6 +1756,9 @@
   <data name="ArgumentOutOfRange_IndexString" xml:space="preserve">
     <value>Index was out of range. Must be non-negative and less than the length of the string.</value>
   </data>
+  <data name="ArgumentOutOfRange_InputTooLarge" xml:space="preserve">
+    <value>Input is too large to be processed.</value>
+  </data>
   <data name="ArgumentOutOfRange_InvalidEraValue" xml:space="preserve">
     <value>Era value was not valid.</value>
   </data>
@@ -2223,6 +2226,12 @@
   </data>
   <data name="Format_NoFormatSpecifier" xml:space="preserve">
     <value>No format specifiers were provided.</value>
+  </data>
+  <data name="Format_BadHexChar" xml:space="preserve">
+    <value>The input is not a valid hex string as it contains a non-hex character.</value>
+  </data>
+  <data name="Format_BadHexLength" xml:space="preserve">
+    <value>The input is not a valid hex string as its length is not a multiple of 2.</value>
   </data>
   <data name="Format_BadQuote" xml:space="preserve">
     <value>Cannot find a matching quote character for the character '{0}'.</value>
@@ -3756,5 +3765,11 @@
   </data>
   <data name="Arg_MustBeHalf" xml:space="preserve">
     <value>Object must be of type Half.</value>
+  </data>
+  <data name="Arg_MustBeRune" xml:space="preserve">
+    <value>Object must be of type Rune.</value>
+  </data>
+  <data name="BinaryFormatter_SerializationDisallowed" xml:space="preserve">
+    <value>BinaryFormatter serialization and deserialization are disabled within this application. See https://aka.ms/binaryformatter for more information.</value>
   </data>
 </root>

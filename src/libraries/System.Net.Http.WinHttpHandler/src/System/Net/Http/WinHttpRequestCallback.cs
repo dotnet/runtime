@@ -27,11 +27,11 @@ namespace System.Net.Http
             IntPtr statusInformation,
             uint statusInformationLength)
         {
-            if (NetEventSource.IsEnabled) WinHttpTraceHelper.TraceCallbackStatus(null, handle, context, internetStatus);
+            if (NetEventSource.Log.IsEnabled()) WinHttpTraceHelper.TraceCallbackStatus(null, handle, context, internetStatus);
 
             if (Environment.HasShutdownStarted)
             {
-                if (NetEventSource.IsEnabled) NetEventSource.Info(null, "Environment.HasShutdownStarted returned True");
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, "Environment.HasShutdownStarted returned True");
                 return;
             }
 
@@ -257,7 +257,7 @@ namespace System.Net.Http
                     ref certHandleSize))
                 {
                     int lastError = Marshal.GetLastWin32Error();
-                    if (NetEventSource.IsEnabled) NetEventSource.Error(state, $"Error getting WINHTTP_OPTION_SERVER_CERT_CONTEXT, {lastError}");
+                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(state, $"Error getting WINHTTP_OPTION_SERVER_CERT_CONTEXT, {lastError}");
 
                     if (lastError == Interop.WinHttp.ERROR_WINHTTP_INCORRECT_HANDLE_STATE)
                     {
@@ -327,7 +327,7 @@ namespace System.Net.Http
         {
             Debug.Assert(state != null, "OnRequestError: state is null");
 
-            if (NetEventSource.IsEnabled) WinHttpTraceHelper.TraceAsyncError(state, asyncResult);
+            if (NetEventSource.Log.IsEnabled()) WinHttpTraceHelper.TraceAsyncError(state, asyncResult);
 
             Exception innerException = WinHttpException.CreateExceptionUsingError(unchecked((int)asyncResult.dwError), "WINHTTP_CALLBACK_STATUS_REQUEST_ERROR");
 
@@ -368,7 +368,7 @@ namespace System.Net.Http
                 case Interop.WinHttp.API_QUERY_DATA_AVAILABLE:
                     if (asyncResult.dwError == Interop.WinHttp.ERROR_WINHTTP_OPERATION_CANCELLED)
                     {
-                        if (NetEventSource.IsEnabled) NetEventSource.Error(state, "QUERY_DATA_AVAILABLE - ERROR_WINHTTP_OPERATION_CANCELLED");
+                        if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(state, "QUERY_DATA_AVAILABLE - ERROR_WINHTTP_OPERATION_CANCELLED");
                         state.LifecycleAwaitable.SetCanceled();
                     }
                     else
@@ -381,7 +381,7 @@ namespace System.Net.Http
                 case Interop.WinHttp.API_READ_DATA:
                     if (asyncResult.dwError == Interop.WinHttp.ERROR_WINHTTP_OPERATION_CANCELLED)
                     {
-                        if (NetEventSource.IsEnabled) NetEventSource.Error(state, "API_READ_DATA - ERROR_WINHTTP_OPERATION_CANCELLED");
+                        if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(state, "API_READ_DATA - ERROR_WINHTTP_OPERATION_CANCELLED");
                         state.LifecycleAwaitable.SetCanceled();
                     }
                     else
@@ -393,7 +393,7 @@ namespace System.Net.Http
                 case Interop.WinHttp.API_WRITE_DATA:
                     if (asyncResult.dwError == Interop.WinHttp.ERROR_WINHTTP_OPERATION_CANCELLED)
                     {
-                        if (NetEventSource.IsEnabled) NetEventSource.Error(state, "API_WRITE_DATA - ERROR_WINHTTP_OPERATION_CANCELLED");
+                        if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(state, "API_WRITE_DATA - ERROR_WINHTTP_OPERATION_CANCELLED");
                         state.TcsInternalWriteDataToRequestStream.TrySetCanceled();
                     }
                     else

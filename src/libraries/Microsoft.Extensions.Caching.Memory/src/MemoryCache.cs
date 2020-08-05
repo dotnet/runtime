@@ -23,7 +23,7 @@ namespace Microsoft.Extensions.Caching.Memory
         private readonly ConcurrentDictionary<object, CacheEntry> _entries;
         private long _cacheSize;
         private bool _disposed;
-        private ILogger _logger;
+        private readonly ILogger _logger;
 
         // We store the delegates locally to prevent allocations
         // every time a new CacheEntry is created.
@@ -212,6 +212,14 @@ namespace Microsoft.Extensions.Caching.Memory
                     entry.SetExpired(EvictionReason.Capacity);
 
                     TriggerOvercapacityCompaction();
+                }
+                else
+                {
+                    if (_options.SizeLimit.HasValue)
+                    {
+                        // Entry could not be added due to being expired, reset cache size
+                        Interlocked.Add(ref _cacheSize, -entry.Size.Value);
+                    }
                 }
 
                 entry.InvokeEvictionCallbacks();

@@ -7,6 +7,7 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Win32.SafeHandles;
+using System.Runtime.Versioning;
 
 namespace System.IO.Pipes
 {
@@ -178,6 +179,7 @@ namespace System.IO.Pipes
         }
 
         // Blocks until the other end of the pipe has read in all written buffer.
+        [MinimumOSPlatform("windows7.0")]
         public void WaitForPipeDrain()
         {
             CheckWriteOperations();

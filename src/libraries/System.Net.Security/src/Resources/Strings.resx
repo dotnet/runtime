@@ -443,4 +443,7 @@
   <data name="net_ssl_ciphersuites_policy_not_supported" xml:space="preserve">
     <value>CipherSuitesPolicy is not supported on this platform.</value>
   </data>
+  <data name="SystemNetSecurity_PlatformNotSupported" xml:space="preserve">
+    <value>System.Net.Security is not supported on this platform.</value>
+  </data>
 </root>

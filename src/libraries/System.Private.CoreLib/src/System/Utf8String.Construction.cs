@@ -352,7 +352,7 @@ namespace System
         }
 #endif // !SYSTEM_PRIVATE_CORELIB
 
-#if !NETSTANDARD2_0
+#if (!NETSTANDARD2_0 && !NETFRAMEWORK)
         /// <summary>
         /// Creates a new <see cref="Utf8String"/> instance, allowing the provided delegate to populate the
         /// instance data of the returned object.

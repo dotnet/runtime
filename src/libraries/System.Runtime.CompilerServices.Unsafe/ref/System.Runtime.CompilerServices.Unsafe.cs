@@ -17,7 +17,7 @@ namespace System.Runtime.CompilerServices
         public static unsafe ref T AsRef<T>(void* source) { throw null; }
         public static ref T AsRef<T>(in T source) { throw null; }
 #if NETSTANDARD2_1
-        [return: System.Diagnostics.CodeAnalysis.MaybeNull]
+        [return: System.Diagnostics.CodeAnalysis.MaybeNullAttribute]
         [return: System.Diagnostics.CodeAnalysis.NotNullIfNotNull("o")]
 #endif
         public static T As<T>(object? o) where T : class? { throw null; }

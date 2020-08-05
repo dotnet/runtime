@@ -133,7 +133,8 @@ namespace System.IO.Compression
                         _bufferOffset = 0;
 
                         int numRead = 0;
-                        while (_bufferCount < _buffer.Length && ((numRead = await _stream.ReadAsync(new Memory<byte>(_buffer, _bufferCount, _buffer.Length - _bufferCount)).ConfigureAwait(false)) > 0))
+                        while (_bufferCount < _buffer.Length &&
+                              ((numRead = await _stream.ReadAsync(new Memory<byte>(_buffer, _bufferCount, _buffer.Length - _bufferCount), cancellationToken).ConfigureAwait(false)) > 0))
                         {
                             _bufferCount += numRead;
                             if (_bufferCount > _buffer.Length)

@@ -42,7 +42,7 @@ extern "C"
 }
 
 
-#if defined(_WIN32)
+#if !defined(TARGET_LINUX)
 
 bool coreclr_resolver_t::resolve_coreclr(const pal::string_t& libcoreclr_path, coreclr_resolver_contract_t& coreclr_resolver_contract)
 {

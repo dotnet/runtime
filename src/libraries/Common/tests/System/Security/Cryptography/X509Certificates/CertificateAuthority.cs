@@ -488,7 +488,7 @@ ResponderID ::= CHOICE {
                     }
                 }
 
-                writer.WriteGeneralizedTime(now);
+                writer.WriteGeneralizedTime(now, omitFractionalSeconds: true);
 
                 using (writer.PushSequence())
                 {

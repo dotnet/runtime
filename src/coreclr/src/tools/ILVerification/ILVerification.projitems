@@ -13,14 +13,17 @@
     <Compile Include="$(MSBuildThisFileDirectory)Verifier.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)VerifierError.cs" />
   </ItemGroup>
+  <PropertyGroup>
+    <ToolsCommonPath>$(MSBuildThisFileDirectory)..\Common\</ToolsCommonPath>
+  </PropertyGroup>
   <ItemGroup>
     <EmbeddedResource Include="$(MSBuildThisFileDirectory)Strings.resx">
       <LogicalName>ILVerification.Strings.resources</LogicalName>
     </EmbeddedResource>
+    <EmbeddedResource Include="$(ToolsCommonPath)TypeSystem\Common\Properties\Resources.resx">
+      <LogicalName>Internal.TypeSystem.Strings.resources</LogicalName>
+    </EmbeddedResource>
   </ItemGroup>
-  <PropertyGroup>
-    <ToolsCommonPath>$(MSBuildThisFileDirectory)..\Common\</ToolsCommonPath>
-  </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(ToolsCommonPath)TypeSystem\CodeGen\MethodDesc.CodeGen.cs">
       <Link>TypeSystem\CodeGen\MethodDesc.CodeGen.cs</Link>
@@ -48,6 +51,9 @@
     </Compile>
     <Compile Include="$(ToolsCommonPath)TypeSystem\Common\TypeSystemException.cs">
       <Link>TypeSystem\Common\TypeSystemException.cs</Link>
+    </Compile>
+    <Compile Include="$(ToolsCommonPath)TypeSystem\Common\TypeSystemException.Resources.cs">
+      <Link>TypeSystem\Common\TypeSystemException.Resources.cs</Link>
     </Compile>
     <Compile Include="$(ToolsCommonPath)TypeSystem\Common\Utilities\CustomAttributeTypeNameParser.cs">
       <Link>Utilities\CustomAttributeTypeNameParser.cs</Link>

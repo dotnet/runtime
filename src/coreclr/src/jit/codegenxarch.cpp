@@ -2694,11 +2694,7 @@ void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* node)
     {
         assert(dstAddr->OperIsLocalAddr());
         dstLclNum = dstAddr->AsLclVarCommon()->GetLclNum();
-
-        if (dstAddr->OperIs(GT_LCL_FLD_ADDR))
-        {
-            dstOffset = dstAddr->AsLclFld()->GetLclOffs();
-        }
+        dstOffset = dstAddr->AsLclVarCommon()->GetLclOffs();
     }
 
     regNumber srcIntReg = REG_NA;
@@ -2819,11 +2815,9 @@ void CodeGen::genCodeForLoadOffset(instruction ins, emitAttr size, regNumber dst
 
     if (baseNode->OperIsLocalAddr())
     {
-        if (baseNode->gtOper == GT_LCL_FLD_ADDR)
-        {
-            offset += baseNode->AsLclFld()->GetLclOffs();
-        }
-        emit->emitIns_R_S(ins, size, dst, baseNode->AsLclVarCommon()->GetLclNum(), offset);
+        const GenTreeLclVarCommon* lclVar = baseNode->AsLclVarCommon();
+        offset += lclVar->GetLclOffs();
+        emit->emitIns_R_S(ins, size, dst, lclVar->GetLclNum(), offset);
     }
     else
     {
@@ -2873,12 +2867,9 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* node)
     else
     {
         assert(dstAddr->OperIsLocalAddr());
-        dstLclNum = dstAddr->AsLclVarCommon()->GetLclNum();
-
-        if (dstAddr->OperIs(GT_LCL_FLD_ADDR))
-        {
-            dstOffset = dstAddr->AsLclFld()->GetLclOffs();
-        }
+        const GenTreeLclVarCommon* lclVar = dstAddr->AsLclVarCommon();
+        dstLclNum                         = lclVar->GetLclNum();
+        dstOffset                         = lclVar->GetLclOffs();
     }
 
     unsigned  srcLclNum         = BAD_VAR_NUM;
@@ -2893,11 +2884,7 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* node)
     if (src->OperIs(GT_LCL_VAR, GT_LCL_FLD))
     {
         srcLclNum = src->AsLclVarCommon()->GetLclNum();
-
-        if (src->OperIs(GT_LCL_FLD))
-        {
-            srcOffset = src->AsLclFld()->GetLclOffs();
-        }
+        srcOffset = src->AsLclVarCommon()->GetLclOffs();
     }
     else
     {
@@ -2929,11 +2916,7 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* node)
         {
             assert(srcAddr->OperIsLocalAddr());
             srcLclNum = srcAddr->AsLclVarCommon()->GetLclNum();
-
-            if (srcAddr->OperIs(GT_LCL_FLD_ADDR))
-            {
-                srcOffset = srcAddr->AsLclFld()->GetLclOffs();
-            }
+            srcOffset = srcAddr->AsLclVarCommon()->GetLclOffs();
         }
     }
 
@@ -4812,10 +4795,10 @@ void CodeGen::genCodeForSwap(GenTreeOp* tree)
     var_types            type2   = varDsc2->TypeGet();
 
     // We must have both int or both fp regs
-    assert(!varTypeIsFloating(type1) || varTypeIsFloating(type2));
+    assert(!varTypeUsesFloatReg(type1) || varTypeUsesFloatReg(type2));
 
     // FP swap is not yet implemented (and should have NYI'd in LSRA)
-    assert(!varTypeIsFloating(type1));
+    assert(!varTypeUsesFloatReg(type1));
 
     regNumber oldOp1Reg     = lcl1->GetRegNum();
     regMaskTP oldOp1RegMask = genRegMask(oldOp1Reg);
@@ -4999,7 +4982,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
                 genConsumeReg(putArgRegNode);
 
                 // Validate the putArgRegNode has the right type.
-                assert(varTypeIsFloating(putArgRegNode->TypeGet()) == genIsValidFloatReg(argReg));
+                assert(varTypeUsesFloatReg(putArgRegNode->TypeGet()) == genIsValidFloatReg(argReg));
                 if (putArgRegNode->GetRegNum() != argReg)
                 {
                     inst_RV_RV(ins_Move_Extend(putArgRegNode->TypeGet(), false), argReg, putArgRegNode->GetRegNum());
@@ -5910,12 +5893,14 @@ void CodeGen::genCompareInt(GenTree* treeNode)
 {
     assert(treeNode->OperIsCompare() || treeNode->OperIs(GT_CMP));
 
-    GenTreeOp* tree      = treeNode->AsOp();
-    GenTree*   op1       = tree->gtOp1;
-    GenTree*   op2       = tree->gtOp2;
-    var_types  op1Type   = op1->TypeGet();
-    var_types  op2Type   = op2->TypeGet();
-    regNumber  targetReg = tree->GetRegNum();
+    GenTreeOp* tree          = treeNode->AsOp();
+    GenTree*   op1           = tree->gtOp1;
+    GenTree*   op2           = tree->gtOp2;
+    var_types  op1Type       = op1->TypeGet();
+    var_types  op2Type       = op2->TypeGet();
+    regNumber  targetReg     = tree->GetRegNum();
+    emitter*   emit          = GetEmitter();
+    bool       canReuseFlags = false;
 
     genConsumeOperands(tree);
 
@@ -5947,6 +5932,11 @@ void CodeGen::genCompareInt(GenTree* treeNode)
     }
     else if (op1->isUsedFromReg() && op2->IsIntegralConst(0))
     {
+        if (compiler->opts.OptimizationEnabled())
+        {
+            canReuseFlags = true;
+        }
+
         // We're comparing a register to 0 so we can generate "test reg1, reg1"
         // instead of the longer "cmp reg1, 0"
         ins = INS_test;
@@ -5997,7 +5987,15 @@ void CodeGen::genCompareInt(GenTree* treeNode)
     // TYP_UINT and TYP_ULONG should not appear here, only small types can be unsigned
     assert(!varTypeIsUnsigned(type) || varTypeIsSmall(type));
 
-    GetEmitter()->emitInsBinary(ins, emitTypeSize(type), op1, op2);
+    bool needsOCFlags = !tree->OperIs(GT_EQ, GT_NE);
+    if (canReuseFlags && emit->AreFlagsSetToZeroCmp(op1->GetRegNum(), emitTypeSize(type), needsOCFlags))
+    {
+        JITDUMP("Not emitting compare due to flags being already set\n");
+    }
+    else
+    {
+        emit->emitInsBinary(ins, emitTypeSize(type), op1, op2);
+    }
 
     // Are we evaluating this into a register?
     if (targetReg != REG_NA)
@@ -6783,7 +6781,7 @@ void CodeGen::genSSE2BitwiseOp(GenTree* treeNode)
             break;
 
         case GT_INTRINSIC:
-            assert(treeNode->AsIntrinsic()->gtIntrinsicId == CORINFO_INTRINSIC_Abs);
+            assert(treeNode->AsIntrinsic()->gtIntrinsicName == NI_System_Math_Abs);
 
             // Abs(x) = set sign-bit to zero
             // Abs(f) = f & 0x7fffffff
@@ -6861,7 +6859,7 @@ void CodeGen::genSSE2BitwiseOp(GenTree* treeNode)
 //    ii) treeNode oper is a GT_INTRINSIC
 //   iii) treeNode type is a floating point type
 //    iv) treeNode is not used from memory
-//     v) tree oper is CORINFO_INTRINSIC_Round, _Ceiling, or _Floor
+//     v) tree oper is NI_System_Math{F}_Round, _Ceiling, or _Floor
 //    vi) caller of this routine needs to call genProduceReg()
 void CodeGen::genSSE41RoundOp(GenTreeOp* treeNode)
 {
@@ -6889,18 +6887,18 @@ void CodeGen::genSSE41RoundOp(GenTreeOp* treeNode)
 
     unsigned ival = 0;
 
-    // v) tree oper is CORINFO_INTRINSIC_Round, _Ceiling, or _Floor
-    switch (treeNode->AsIntrinsic()->gtIntrinsicId)
+    // v) tree oper is NI_System_Math{F}_Round, _Ceiling, or _Floor
+    switch (treeNode->AsIntrinsic()->gtIntrinsicName)
     {
-        case CORINFO_INTRINSIC_Round:
+        case NI_System_Math_Round:
             ival = 4;
             break;
 
-        case CORINFO_INTRINSIC_Ceiling:
+        case NI_System_Math_Ceiling:
             ival = 10;
             break;
 
-        case CORINFO_INTRINSIC_Floor:
+        case NI_System_Math_Floor:
             ival = 9;
             break;
 
@@ -7022,9 +7020,9 @@ void CodeGen::genSSE41RoundOp(GenTreeOp* treeNode)
 void CodeGen::genIntrinsic(GenTree* treeNode)
 {
     // Right now only Sqrt/Abs are treated as math intrinsics.
-    switch (treeNode->AsIntrinsic()->gtIntrinsicId)
+    switch (treeNode->AsIntrinsic()->gtIntrinsicName)
     {
-        case CORINFO_INTRINSIC_Sqrt:
+        case NI_System_Math_Sqrt:
         {
             // Both operand and its result must be of the same floating point type.
             GenTree* srcNode = treeNode->AsOp()->gtOp1;
@@ -7036,13 +7034,13 @@ void CodeGen::genIntrinsic(GenTree* treeNode)
             break;
         }
 
-        case CORINFO_INTRINSIC_Abs:
+        case NI_System_Math_Abs:
             genSSE2BitwiseOp(treeNode);
             break;
 
-        case CORINFO_INTRINSIC_Round:
-        case CORINFO_INTRINSIC_Ceiling:
-        case CORINFO_INTRINSIC_Floor:
+        case NI_System_Math_Round:
+        case NI_System_Math_Ceiling:
+        case NI_System_Math_Floor:
             genSSE41RoundOp(treeNode->AsOp());
             break;
 
@@ -7065,9 +7063,9 @@ void CodeGen::genIntrinsic(GenTree* treeNode)
 //
 void CodeGen::genBitCast(var_types targetType, regNumber targetReg, var_types srcType, regNumber srcReg)
 {
-    const bool srcFltReg = varTypeIsFloating(srcType) || varTypeIsSIMD(srcType);
+    const bool srcFltReg = varTypeUsesFloatReg(srcType) || varTypeIsSIMD(srcType);
     assert(srcFltReg == genIsValidFloatReg(srcReg));
-    const bool dstFltReg = varTypeIsFloating(targetType) || varTypeIsSIMD(targetType);
+    const bool dstFltReg = varTypeUsesFloatReg(targetType) || varTypeIsSIMD(targetType);
     assert(dstFltReg == genIsValidFloatReg(targetReg));
     if (srcFltReg != dstFltReg)
     {
@@ -7818,7 +7816,7 @@ void CodeGen::genStoreRegToStackArg(var_types type, regNumber srcReg, int offset
         else
 #endif // TARGET_X86
         {
-            assert((varTypeIsFloating(type) && genIsValidFloatReg(srcReg)) ||
+            assert((varTypeUsesFloatReg(type) && genIsValidFloatReg(srcReg)) ||
                    (varTypeIsIntegralOrI(type) && genIsValidIntReg(srcReg)));
             ins = ins_Store(type);
         }
@@ -7926,11 +7924,8 @@ void CodeGen::genPutStructArgStk(GenTreePutArgStk* putArgStk)
         {
             assert(srcAddr->OperIsLocalAddr());
 
-            srcLclNum = srcAddr->AsLclVarCommon()->GetLclNum();
-            if (srcAddr->OperGet() == GT_LCL_FLD_ADDR)
-            {
-                srcLclOffset = srcAddr->AsLclFld()->GetLclOffs();
-            }
+            srcLclNum    = srcAddr->AsLclVarCommon()->GetLclNum();
+            srcLclOffset = srcAddr->AsLclVarCommon()->GetLclOffs();
         }
 
         for (int i = numSlots - 1; i >= 0; --i)

@@ -112,18 +112,6 @@ namespace System.Xml.Xsl.XPath
             }
         }
 
-#if XML10_FIFTH_EDITION
-        private char PeekNextChar() {
-            Debug.Assert(-1 <= curIndex && curIndex <= xpathExpr.Length);
-            if (curIndex + 1 < xpathExpr.Length) {
-                return xpathExpr[curIndex + 1];
-            }
-            else {
-                return '\0';
-            }
-        }
-#endif
-
         public string Name
         {
             get
@@ -346,11 +334,7 @@ namespace System.Xml.Xsl.XPath
                     ScanNumber();
                     break;
                 default:
-                    if (_xmlCharType.IsStartNCNameSingleChar(_curChar)
-#if XML10_FIFTH_EDITION
-                        || xmlCharType.IsNCNameHighSurrogateChar(curChar)
-#endif
-                        )
+                    if (_xmlCharType.IsStartNCNameSingleChar(_curChar))
                     {
                         _kind = LexKind.Name;
                         _name = ScanNCName();
@@ -380,11 +364,7 @@ namespace System.Xml.Xsl.XPath
                                     _prefix = _name;
                                     _name = "*";
                                 }
-                                else if (_xmlCharType.IsStartNCNameSingleChar(_curChar)
-#if XML10_FIFTH_EDITION
-                                    || xmlCharType.IsNCNameHighSurrogateChar(curChar)
-#endif
-                                    )
+                                else if (_xmlCharType.IsStartNCNameSingleChar(_curChar))
                                 {
                                     _prefix = _name;
                                     _name = ScanNCName();
@@ -547,11 +527,7 @@ namespace System.Xml.Xsl.XPath
 
         private string ScanNCName()
         {
-            Debug.Assert(_xmlCharType.IsStartNCNameSingleChar(_curChar)
-#if XML10_FIFTH_EDITION
-                || xmlCharType.IsNCNameHighSurrogateChar(curChar)
-#endif
-                );
+            Debug.Assert(_xmlCharType.IsStartNCNameSingleChar(_curChar));
             int start = _curIndex;
             while (true)
             {
@@ -559,12 +535,6 @@ namespace System.Xml.Xsl.XPath
                 {
                     NextChar();
                 }
-#if XML10_FIFTH_EDITION
-                else if (xmlCharType.IsNCNameSurrogateChar(PeekNextChar(), curChar)) {
-                    NextChar();
-                    NextChar();
-                }
-#endif
                 else
                 {
                     break;

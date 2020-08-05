@@ -68,6 +68,7 @@ namespace ILCompiler.Reflection.ReadyToRun
                 case Machine.Amd64:
                     return ((Amd64.Registers)regnum).ToString();
                 case Machine.Arm:
+                case Machine.ArmThumb2:
                     return ((Arm.Registers)regnum).ToString();
                 case Machine.Arm64:
                     return ((Arm64.Registers)regnum).ToString();

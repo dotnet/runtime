@@ -4,6 +4,7 @@
 using Internal.Cryptography;
 using Internal.NativeCrypto;
 using System.IO;
+using System.Runtime.Versioning;
 
 namespace System.Security.Cryptography
 {
@@ -26,12 +27,15 @@ namespace System.Security.Cryptography
             _impl = RSA.Create(dwKeySize);
         }
 
+        [MinimumOSPlatform("windows7.0")]
         public RSACryptoServiceProvider(int dwKeySize, CspParameters parameters) =>
             throw new PlatformNotSupportedException(SR.Format(SR.Cryptography_CAPI_Required, nameof(CspParameters)));
 
+        [MinimumOSPlatform("windows7.0")]
         public RSACryptoServiceProvider(CspParameters parameters) =>
             throw new PlatformNotSupportedException(SR.Format(SR.Cryptography_CAPI_Required, nameof(CspParameters)));
 
+        [MinimumOSPlatform("windows7.0")]
         public CspKeyContainerInfo CspKeyContainerInfo =>
             throw new PlatformNotSupportedException(SR.Format(SR.Cryptography_CAPI_Required, nameof(CspKeyContainerInfo)));
 

@@ -416,7 +416,6 @@ namespace System.Net.Mail
 
             internal void GetConnection()
             {
-                if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
                 if (_connection._isConnected)
                 {
                     throw new InvalidOperationException(SR.SmtpAlreadyConnected);
@@ -433,7 +432,7 @@ namespace System.Net.Mail
                     try
                     {
                         _connection.EndInitializeConnection(result);
-                        if (NetEventSource.IsEnabled) NetEventSource.Info(this, "Connect returned");
+                        if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "Connect returned");
 
                         Handshake();
                     }
@@ -452,7 +451,7 @@ namespace System.Net.Mail
                     try
                     {
                         thisPtr._connection.EndInitializeConnection(result);
-                        if (NetEventSource.IsEnabled) NetEventSource.Info(null, $"Connect returned {thisPtr}");
+                        if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, $"Connect returned {thisPtr}");
 
                         thisPtr.Handshake();
                     }

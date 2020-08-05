@@ -615,10 +615,6 @@ void GenTree::CopyReg(GenTree* from)
 //    GT_COPY/GT_RELOAD is considered having a reg if it
 //    has a reg assigned to any of its positions.
 //
-// Assumption:
-//    In order for this to work properly, gtClearReg must be called
-//    prior to setting the register value.
-//
 bool GenTree::gtHasReg() const
 {
     bool hasReg = false;
@@ -2786,7 +2782,7 @@ bool Compiler::gtIsLikelyRegVar(GenTree* tree)
     }
 
 #ifdef TARGET_X86
-    if (varTypeIsFloating(tree->TypeGet()))
+    if (varTypeUsesFloatReg(tree->TypeGet()))
         return false;
     if (varTypeIsLong(tree->TypeGet()))
         return false;
@@ -3254,16 +3250,50 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
         switch (oper)
         {
 #ifdef TARGET_ARM
-            case GT_CNS_LNG:
-                costSz = 9;
-                costEx = 4;
-                goto COMMON_CNS;
-
             case GT_CNS_STR:
                 // Uses movw/movt
-                costSz = 7;
-                costEx = 3;
+                costSz = 8;
+                costEx = 2;
                 goto COMMON_CNS;
+
+            case GT_CNS_LNG:
+            {
+                GenTreeIntConCommon* con = tree->AsIntConCommon();
+
+                INT64 lngVal = con->LngValue();
+                INT32 loVal  = (INT32)(lngVal & 0xffffffff);
+                INT32 hiVal  = (INT32)(lngVal >> 32);
+
+                if (lngVal == 0)
+                {
+                    costSz = 1;
+                    costEx = 1;
+                }
+                else
+                {
+                    // Minimum of one instruction to setup hiVal,
+                    // and one instruction to setup loVal
+                    costSz = 4 + 4;
+                    costEx = 1 + 1;
+
+                    if (!codeGen->validImmForInstr(INS_mov, (target_ssize_t)hiVal) &&
+                        !codeGen->validImmForInstr(INS_mvn, (target_ssize_t)hiVal))
+                    {
+                        // Needs extra instruction: movw/movt
+                        costSz += 4;
+                        costEx += 1;
+                    }
+
+                    if (!codeGen->validImmForInstr(INS_mov, (target_ssize_t)loVal) &&
+                        !codeGen->validImmForInstr(INS_mvn, (target_ssize_t)loVal))
+                    {
+                        // Needs extra instruction: movw/movt
+                        costSz += 4;
+                        costEx += 1;
+                    }
+                }
+                goto COMMON_CNS;
+            }
 
             case GT_CNS_INT:
             {
@@ -3271,61 +3301,87 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                 //  applied to it.
                 // Any constant that requires a reloc must use the movw/movt sequence
                 //
-                GenTreeIntConCommon* con = tree->AsIntConCommon();
+                GenTreeIntConCommon* con    = tree->AsIntConCommon();
+                INT32                conVal = con->IconValue();
 
-                if (con->ImmedValNeedsReloc(this) ||
-                    !codeGen->validImmForInstr(INS_mov, (target_ssize_t)tree->AsIntCon()->gtIconVal))
+                if (con->ImmedValNeedsReloc(this))
                 {
-                    // Uses movw/movt
-                    costSz = 7;
-                    costEx = 3;
+                    // Requires movw/movt
+                    costSz = 8;
+                    costEx = 2;
                 }
-                else if (((unsigned)tree->AsIntCon()->gtIconVal) <= 0x00ff)
+                else if (codeGen->validImmForInstr(INS_add, (target_ssize_t)conVal))
                 {
-                    // mov  Rd, <const8>
-                    costSz = 1;
+                    // Typically included with parent oper
+                    costSz = 2;
+                    costEx = 1;
+                }
+                else if (codeGen->validImmForInstr(INS_mov, (target_ssize_t)conVal) &&
+                         codeGen->validImmForInstr(INS_mvn, (target_ssize_t)conVal))
+                {
+                    // Uses mov or mvn
+                    costSz = 4;
                     costEx = 1;
                 }
                 else
                 {
-                    // Uses movw/mvn
-                    costSz = 3;
-                    costEx = 1;
+                    // Needs movw/movt
+                    costSz = 8;
+                    costEx = 2;
                 }
                 goto COMMON_CNS;
             }
 
 #elif defined TARGET_XARCH
 
-            case GT_CNS_LNG:
-                costSz = 10;
-                costEx = 3;
-                goto COMMON_CNS;
-
             case GT_CNS_STR:
+#ifdef TARGET_AMD64
+                costSz = 10;
+                costEx = 2;
+#else // TARGET_X86
                 costSz = 4;
                 costEx = 1;
+#endif
                 goto COMMON_CNS;
 
+            case GT_CNS_LNG:
             case GT_CNS_INT:
             {
+                GenTreeIntConCommon* con       = tree->AsIntConCommon();
+                ssize_t              conVal    = (oper == GT_CNS_LNG) ? (ssize_t)con->LngValue() : con->IconValue();
+                bool                 fitsInVal = true;
+
+#ifdef TARGET_X86
+                if (oper == GT_CNS_LNG)
+                {
+                    INT64 lngVal = con->LngValue();
+
+                    conVal = (ssize_t)lngVal; // truncate to 32-bits
+
+                    fitsInVal = ((INT64)conVal == lngVal);
+                }
+#endif // TARGET_X86
+
                 // If the constant is a handle then it will need to have a relocation
                 //  applied to it.
                 //
-                GenTreeIntConCommon* con = tree->AsIntConCommon();
-
                 bool iconNeedsReloc = con->ImmedValNeedsReloc(this);
 
-                if (!iconNeedsReloc && con->FitsInI8())
+                if (iconNeedsReloc)
+                {
+                    costSz = 4;
+                    costEx = 1;
+                }
+                else if (fitsInVal && GenTreeIntConCommon::FitsInI8(conVal))
                 {
                     costSz = 1;
                     costEx = 1;
                 }
-#if defined(TARGET_AMD64)
-                else if (iconNeedsReloc || !con->FitsInI32())
+#ifdef TARGET_AMD64
+                else if (!GenTreeIntConCommon::FitsInI32(conVal))
                 {
                     costSz = 10;
-                    costEx = 3;
+                    costEx = 2;
                 }
 #endif // TARGET_AMD64
                 else
@@ -3333,21 +3389,83 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                     costSz = 4;
                     costEx = 1;
                 }
+#ifdef TARGET_X86
+                if (oper == GT_CNS_LNG)
+                {
+                    costSz += fitsInVal ? 1 : 4;
+                    costEx += 1;
+                }
+#endif // TARGET_X86
+
                 goto COMMON_CNS;
             }
 
 #elif defined(TARGET_ARM64)
-            case GT_CNS_LNG:
+
             case GT_CNS_STR:
+            case GT_CNS_LNG:
             case GT_CNS_INT:
-                // TODO-ARM64-NYI: Need cost estimates.
-                costSz = 1;
-                costEx = 1;
+            {
+                GenTreeIntConCommon* con            = tree->AsIntConCommon();
+                bool                 iconNeedsReloc = con->ImmedValNeedsReloc(this);
+                INT64                imm            = con->LngValue();
+                emitAttr             size           = EA_SIZE(emitActualTypeSize(tree));
+
+                if (iconNeedsReloc)
+                {
+                    costSz = 8;
+                    costEx = 2;
+                }
+                else if (emitter::emitIns_valid_imm_for_add(imm, size))
+                {
+                    costSz = 2;
+                    costEx = 1;
+                }
+                else if (emitter::emitIns_valid_imm_for_mov(imm, size))
+                {
+                    costSz = 4;
+                    costEx = 1;
+                }
+                else
+                {
+                    // Arm64 allows any arbitrary 16-bit constant to be loaded into a register halfword
+                    // There are three forms
+                    //    movk which loads into any halfword preserving the remaining halfwords
+                    //    movz which loads into any halfword zeroing the remaining halfwords
+                    //    movn which loads into any halfword zeroing the remaining halfwords then bitwise inverting
+                    //    the register
+                    // In some cases it is preferable to use movn, because it has the side effect of filling the
+                    // other halfwords
+                    // with ones
+
+                    // Determine whether movn or movz will require the fewest instructions to populate the immediate
+                    bool preferMovz       = false;
+                    bool preferMovn       = false;
+                    int  instructionCount = 4;
+
+                    for (int i = (size == EA_8BYTE) ? 48 : 16; i >= 0; i -= 16)
+                    {
+                        if (!preferMovn && (uint16_t(imm >> i) == 0x0000))
+                        {
+                            preferMovz = true; // by using a movk to start we can save one instruction
+                            instructionCount--;
+                        }
+                        else if (!preferMovz && (uint16_t(imm >> i) == 0xffff))
+                        {
+                            preferMovn = true; // by using a movn to start we can save one instruction
+                            instructionCount--;
+                        }
+                    }
+
+                    costEx = instructionCount;
+                    costSz = 4 * instructionCount;
+                }
+            }
                 goto COMMON_CNS;
 
 #else
-            case GT_CNS_LNG:
             case GT_CNS_STR:
+            case GT_CNS_LNG:
             case GT_CNS_INT:
 #error "Unknown TARGET"
 #endif
@@ -3506,6 +3624,8 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
 
             level = gtSetEvalOrder(op1);
 
+            GenTreeIntrinsic* intrinsic;
+
             /* Special handling for some operators */
 
             switch (oper)
@@ -3567,54 +3687,82 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                     break;
 
                 case GT_INTRINSIC:
-                    // GT_INTRINSIC intrinsics Sin, Cos, Sqrt, Abs ... have higher costs.
-                    // TODO: tune these costs target specific as some of these are
-                    // target intrinsics and would cost less to generate code.
-                    switch (tree->AsIntrinsic()->gtIntrinsicId)
+                    intrinsic = tree->AsIntrinsic();
+                    if (intrinsic->gtIntrinsicId == CORINFO_INTRINSIC_Illegal)
                     {
-                        default:
-                            assert(!"missing case for gtIntrinsicId");
-                            costEx = 12;
-                            costSz = 12;
-                            break;
+                        // named intrinsic
+                        assert(intrinsic->gtIntrinsicName != NI_Illegal);
 
-                        case CORINFO_INTRINSIC_Sin:
-                        case CORINFO_INTRINSIC_Cos:
-                        case CORINFO_INTRINSIC_Sqrt:
-                        case CORINFO_INTRINSIC_Cbrt:
-                        case CORINFO_INTRINSIC_Cosh:
-                        case CORINFO_INTRINSIC_Sinh:
-                        case CORINFO_INTRINSIC_Tan:
-                        case CORINFO_INTRINSIC_Tanh:
-                        case CORINFO_INTRINSIC_Asin:
-                        case CORINFO_INTRINSIC_Asinh:
-                        case CORINFO_INTRINSIC_Acos:
-                        case CORINFO_INTRINSIC_Acosh:
-                        case CORINFO_INTRINSIC_Atan:
-                        case CORINFO_INTRINSIC_Atanh:
-                        case CORINFO_INTRINSIC_Atan2:
-                        case CORINFO_INTRINSIC_Log10:
-                        case CORINFO_INTRINSIC_Pow:
-                        case CORINFO_INTRINSIC_Exp:
-                        case CORINFO_INTRINSIC_Ceiling:
-                        case CORINFO_INTRINSIC_Floor:
-                        case CORINFO_INTRINSIC_Object_GetType:
-                            // Giving intrinsics a large fixed execution cost is because we'd like to CSE
-                            // them, even if they are implemented by calls. This is different from modeling
-                            // user calls since we never CSE user calls.
-                            costEx = 36;
-                            costSz = 4;
-                            break;
+                        // GT_INTRINSIC intrinsics Sin, Cos, Sqrt, Abs ... have higher costs.
+                        // TODO: tune these costs target specific as some of these are
+                        // target intrinsics and would cost less to generate code.
+                        switch (intrinsic->gtIntrinsicName)
+                        {
+                            default:
+                                assert(!"missing case for gtIntrinsicName");
+                                costEx = 12;
+                                costSz = 12;
+                                break;
 
-                        case CORINFO_INTRINSIC_Abs:
-                            costEx = 5;
-                            costSz = 15;
-                            break;
+                            case NI_System_Math_Sin:
+                            case NI_System_Math_Cos:
+                            case NI_System_Math_Sqrt:
+                            case NI_System_Math_Cbrt:
+                            case NI_System_Math_Cosh:
+                            case NI_System_Math_Sinh:
+                            case NI_System_Math_Tan:
+                            case NI_System_Math_Tanh:
+                            case NI_System_Math_Asin:
+                            case NI_System_Math_Asinh:
+                            case NI_System_Math_Acos:
+                            case NI_System_Math_Acosh:
+                            case NI_System_Math_Atan:
+                            case NI_System_Math_Atanh:
+                            case NI_System_Math_Atan2:
+                            case NI_System_Math_Log10:
+                            case NI_System_Math_Pow:
+                            case NI_System_Math_Exp:
+                            case NI_System_Math_Ceiling:
+                            case NI_System_Math_Floor:
+                                // Giving intrinsics a large fixed execution cost is because we'd like to CSE
+                                // them, even if they are implemented by calls. This is different from modeling
+                                // user calls since we never CSE user calls.
+                                costEx = 36;
+                                costSz = 4;
+                                break;
 
-                        case CORINFO_INTRINSIC_Round:
-                            costEx = 3;
-                            costSz = 4;
-                            break;
+                            case NI_System_Math_Abs:
+                                costEx = 5;
+                                costSz = 15;
+                                break;
+
+                            case NI_System_Math_Round:
+                                costEx = 3;
+                                costSz = 4;
+                                break;
+                        }
+                    }
+                    else
+                    {
+                        // old style intrinsic
+                        assert(intrinsic->gtIntrinsicName == NI_Illegal);
+
+                        switch (intrinsic->gtIntrinsicId)
+                        {
+                            default:
+                                assert(!"missing case for gtIntrinsicId");
+                                costEx = 12;
+                                costSz = 12;
+                                break;
+
+                            case CORINFO_INTRINSIC_Object_GetType:
+                                // Giving intrinsics a large fixed execution cost is because we'd like to CSE
+                                // them, even if they are implemented by calls. This is different from modeling
+                                // user calls since we never CSE user calls.
+                                costEx = 36;
+                                costSz = 4;
+                                break;
+                        }
                     }
                     level++;
                     break;
@@ -4097,10 +4245,10 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
 
             case GT_INTRINSIC:
 
-                switch (tree->AsIntrinsic()->gtIntrinsicId)
+                switch (tree->AsIntrinsic()->gtIntrinsicName)
                 {
-                    case CORINFO_INTRINSIC_Atan2:
-                    case CORINFO_INTRINSIC_Pow:
+                    case NI_System_Math_Atan2:
+                    case NI_System_Math_Pow:
                         // These math intrinsics are actually implemented by user calls.
                         // Increase the Sethi 'complexity' by two to reflect the argument
                         // register requirement.
@@ -4157,7 +4305,7 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
             // so if possible it was set above.
             tryToSwap = false;
         }
-        else if ((oper == GT_INTRINSIC) && IsIntrinsicImplementedByUserCall(tree->AsIntrinsic()->gtIntrinsicId))
+        else if ((oper == GT_INTRINSIC) && IsIntrinsicImplementedByUserCall(tree->AsIntrinsic()->gtIntrinsicName))
         {
             // We do not swap operand execution order for intrinsics that are implemented by user calls
             // because of trickiness around ensuring the execution order does not change during rationalization.
@@ -5359,7 +5507,7 @@ bool GenTree::OperRequiresCallFlag(Compiler* comp)
             return true;
 
         case GT_INTRINSIC:
-            return comp->IsIntrinsicImplementedByUserCall(this->AsIntrinsic()->gtIntrinsicId);
+            return comp->IsIntrinsicImplementedByUserCall(this->AsIntrinsic()->gtIntrinsicName);
 
 #if FEATURE_FIXED_OUT_ARGS && !defined(TARGET_64BIT)
         case GT_LSH:
@@ -6674,6 +6822,173 @@ void GenTreeIntCon::FixupInitBlkValue(var_types asgType)
     }
 }
 
+//----------------------------------------------------------------------------
+// UsesDivideByConstOptimized:
+//    returns true if rationalize will use the division by constant
+//    optimization for this node.
+//
+// Arguments:
+//    this - a GenTreeOp node
+//    comp - the compiler instance
+//
+// Return Value:
+//    Return true iff the node is a GT_DIV,GT_UDIV, GT_MOD or GT_UMOD with
+//    an integer constant and we can perform the division operation using
+//    a reciprocal multiply or a shift operation.
+//
+bool GenTreeOp::UsesDivideByConstOptimized(Compiler* comp)
+{
+    if (!comp->opts.OptimizationEnabled())
+    {
+        return false;
+    }
+
+    if (!OperIs(GT_DIV, GT_MOD, GT_UDIV, GT_UMOD))
+    {
+        return false;
+    }
+#if defined(TARGET_ARM64)
+    if (OperIs(GT_MOD, GT_UMOD))
+    {
+        // MOD, UMOD not supported for ARM64
+        return false;
+    }
+#endif // TARGET_ARM64
+
+    bool     isSignedDivide = OperIs(GT_DIV, GT_MOD);
+    GenTree* dividend       = gtGetOp1()->gtEffectiveVal(/*commaOnly*/ true);
+    GenTree* divisor        = gtGetOp2()->gtEffectiveVal(/*commaOnly*/ true);
+
+#if !defined(TARGET_64BIT)
+    if (dividend->OperIs(GT_LONG))
+    {
+        return false;
+    }
+#endif
+
+    if (dividend->IsCnsIntOrI())
+    {
+        // We shouldn't see a divmod with constant operands here but if we do then it's likely
+        // because optimizations are disabled or it's a case that's supposed to throw an exception.
+        // Don't optimize this.
+        return false;
+    }
+
+    ssize_t divisorValue;
+    if (divisor->IsCnsIntOrI())
+    {
+        divisorValue = static_cast<ssize_t>(divisor->AsIntCon()->IconValue());
+    }
+    else
+    {
+        ValueNum vn = divisor->gtVNPair.GetLiberal();
+        if (comp->vnStore->IsVNConstant(vn))
+        {
+            divisorValue = comp->vnStore->CoercedConstantValue<ssize_t>(vn);
+        }
+        else
+        {
+            return false;
+        }
+    }
+
+    const var_types divType = TypeGet();
+
+    if (divisorValue == 0)
+    {
+        // x / 0 and x % 0 can't be optimized because they are required to throw an exception.
+        return false;
+    }
+    else if (isSignedDivide)
+    {
+        if (divisorValue == -1)
+        {
+            // x / -1 can't be optimized because INT_MIN / -1 is required to throw an exception.
+            return false;
+        }
+        else if (isPow2(divisorValue))
+        {
+            return true;
+        }
+    }
+    else // unsigned divide
+    {
+        if (divType == TYP_INT)
+        {
+            // Clear up the upper 32 bits of the value, they may be set to 1 because constants
+            // are treated as signed and stored in ssize_t which is 64 bit in size on 64 bit targets.
+            divisorValue &= UINT32_MAX;
+        }
+
+        size_t unsignedDivisorValue = (size_t)divisorValue;
+        if (isPow2(unsignedDivisorValue))
+        {
+            return true;
+        }
+    }
+
+    const bool isDiv = OperIs(GT_DIV, GT_UDIV);
+
+    if (isDiv)
+    {
+        if (isSignedDivide)
+        {
+            // If the divisor is the minimum representable integer value then the result is either 0 or 1
+            if ((divType == TYP_INT && divisorValue == INT_MIN) || (divType == TYP_LONG && divisorValue == INT64_MIN))
+            {
+                return true;
+            }
+        }
+        else
+        {
+            // If the divisor is greater or equal than 2^(N - 1) then the result is either 0 or 1
+            if (((divType == TYP_INT) && (divisorValue > (UINT32_MAX / 2))) ||
+                ((divType == TYP_LONG) && (divisorValue > (UINT64_MAX / 2))))
+            {
+                return true;
+            }
+        }
+    }
+
+// TODO-ARM-CQ: Currently there's no GT_MULHI for ARM32
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
+    if (!comp->opts.MinOpts() && ((divisorValue >= 3) || !isSignedDivide))
+    {
+        // All checks pass we can perform the division operation using a reciprocal multiply.
+        return true;
+    }
+#endif
+
+    return false;
+}
+
+//------------------------------------------------------------------------
+// CheckDivideByConstOptimized:
+//      Checks if we can use the division by constant optimization
+//      on this node
+//      and if so sets the flag GTF_DIV_BY_CNS_OPT and
+//      set GTF_DONT_CSE on the constant node
+//
+// Arguments:
+//    this       - a GenTreeOp node
+//    comp       - the compiler instance
+//
+void GenTreeOp::CheckDivideByConstOptimized(Compiler* comp)
+{
+    if (UsesDivideByConstOptimized(comp))
+    {
+        gtFlags |= GTF_DIV_BY_CNS_OPT;
+
+        // Now set DONT_CSE on the GT_CNS_INT divisor, note that
+        // with ValueNumbering we can have a non GT_CNS_INT divisior
+        GenTree* divisor = gtGetOp2()->gtEffectiveVal(/*commaOnly*/ true);
+        if (divisor->OperIs(GT_CNS_INT))
+        {
+            divisor->gtFlags |= GTF_DONT_CSE;
+        }
+    }
+}
+
 //
 //------------------------------------------------------------------------
 // gtBlockOpInit: Initializes a BlkOp GenTree
@@ -7414,7 +7729,8 @@ GenTree* Compiler::gtCloneExpr(
             case GT_INTRINSIC:
                 copy = new (this, GT_INTRINSIC)
                     GenTreeIntrinsic(tree->TypeGet(), tree->AsOp()->gtOp1, tree->AsOp()->gtOp2,
-                                     tree->AsIntrinsic()->gtIntrinsicId, tree->AsIntrinsic()->gtMethodHandle);
+                                     tree->AsIntrinsic()->gtIntrinsicId, tree->AsIntrinsic()->gtIntrinsicName,
+                                     tree->AsIntrinsic()->gtMethodHandle);
 #ifdef FEATURE_READYTORUN_COMPILER
                 copy->AsIntrinsic()->gtEntryPoint = tree->AsIntrinsic()->gtEntryPoint;
 #endif
@@ -9899,6 +10215,18 @@ void Compiler::gtDispNode(GenTree* tree, IndentStack* indentStack, __in __in_z _
                 }
                 goto DASH;
 
+            case GT_DIV:
+            case GT_MOD:
+            case GT_UDIV:
+            case GT_UMOD:
+                if (tree->gtFlags & GTF_DIV_BY_CNS_OPT)
+                {
+                    printf("M"); // We will use a Multiply by reciprical
+                    --msgLength;
+                    break;
+                }
+                goto DASH;
+
             case GT_LCL_FLD:
             case GT_LCL_VAR:
             case GT_LCL_VAR_ADDR:
@@ -10566,16 +10894,30 @@ void Compiler::gtDispConst(GenTree* tree)
                 else if ((tree->AsIntCon()->gtIconVal > -1000) && (tree->AsIntCon()->gtIconVal < 1000))
                 {
                     printf(" %ld", dspIconVal);
-#ifdef TARGET_64BIT
                 }
+#ifdef TARGET_64BIT
                 else if ((tree->AsIntCon()->gtIconVal & 0xFFFFFFFF00000000LL) != 0)
                 {
-                    printf(" 0x%llx", dspIconVal);
-#endif
+                    if (dspIconVal >= 0)
+                    {
+                        printf(" 0x%llx", dspIconVal);
+                    }
+                    else
+                    {
+                        printf(" -0x%llx", -dspIconVal);
+                    }
                 }
+#endif
                 else
                 {
-                    printf(" 0x%X", dspIconVal);
+                    if (dspIconVal >= 0)
+                    {
+                        printf(" 0x%X", dspIconVal);
+                    }
+                    else
+                    {
+                        printf(" -0x%X", -dspIconVal);
+                    }
                 }
 
                 if (tree->IsIconHandle())
@@ -10900,7 +11242,7 @@ void Compiler::gtDispLeaf(GenTree* tree, IndentStack* indentStack)
             break;
 
         case GT_PHYSREG:
-            printf(" %s", getRegName(tree->AsPhysReg()->gtSrcReg, varTypeIsFloating(tree)));
+            printf(" %s", getRegName(tree->AsPhysReg()->gtSrcReg, varTypeUsesFloatReg(tree)));
             break;
 
         case GT_IL_OFFSET:
@@ -11149,80 +11491,98 @@ void Compiler::gtDispTree(GenTree*     tree,
 
         if (tree->gtOper == GT_INTRINSIC)
         {
-            switch (tree->AsIntrinsic()->gtIntrinsicId)
-            {
-                case CORINFO_INTRINSIC_Sin:
-                    printf(" sin");
-                    break;
-                case CORINFO_INTRINSIC_Cos:
-                    printf(" cos");
-                    break;
-                case CORINFO_INTRINSIC_Cbrt:
-                    printf(" cbrt");
-                    break;
-                case CORINFO_INTRINSIC_Sqrt:
-                    printf(" sqrt");
-                    break;
-                case CORINFO_INTRINSIC_Abs:
-                    printf(" abs");
-                    break;
-                case CORINFO_INTRINSIC_Round:
-                    printf(" round");
-                    break;
-                case CORINFO_INTRINSIC_Cosh:
-                    printf(" cosh");
-                    break;
-                case CORINFO_INTRINSIC_Sinh:
-                    printf(" sinh");
-                    break;
-                case CORINFO_INTRINSIC_Tan:
-                    printf(" tan");
-                    break;
-                case CORINFO_INTRINSIC_Tanh:
-                    printf(" tanh");
-                    break;
-                case CORINFO_INTRINSIC_Asin:
-                    printf(" asin");
-                    break;
-                case CORINFO_INTRINSIC_Asinh:
-                    printf(" asinh");
-                    break;
-                case CORINFO_INTRINSIC_Acos:
-                    printf(" acos");
-                    break;
-                case CORINFO_INTRINSIC_Acosh:
-                    printf(" acosh");
-                    break;
-                case CORINFO_INTRINSIC_Atan:
-                    printf(" atan");
-                    break;
-                case CORINFO_INTRINSIC_Atan2:
-                    printf(" atan2");
-                    break;
-                case CORINFO_INTRINSIC_Atanh:
-                    printf(" atanh");
-                    break;
-                case CORINFO_INTRINSIC_Log10:
-                    printf(" log10");
-                    break;
-                case CORINFO_INTRINSIC_Pow:
-                    printf(" pow");
-                    break;
-                case CORINFO_INTRINSIC_Exp:
-                    printf(" exp");
-                    break;
-                case CORINFO_INTRINSIC_Ceiling:
-                    printf(" ceiling");
-                    break;
-                case CORINFO_INTRINSIC_Floor:
-                    printf(" floor");
-                    break;
-                case CORINFO_INTRINSIC_Object_GetType:
-                    printf(" objGetType");
-                    break;
+            GenTreeIntrinsic* intrinsic = tree->AsIntrinsic();
 
-                default:
-                    unreached();
+            if (intrinsic->gtIntrinsicId == CORINFO_INTRINSIC_Illegal)
+            {
+                // named intrinsic
+                assert(intrinsic->gtIntrinsicName != NI_Illegal);
+                switch (intrinsic->gtIntrinsicName)
+                {
+                    case NI_System_Math_Sin:
+                        printf(" sin");
+                        break;
+                    case NI_System_Math_Cos:
+                        printf(" cos");
+                        break;
+                    case NI_System_Math_Cbrt:
+                        printf(" cbrt");
+                        break;
+                    case NI_System_Math_Sqrt:
+                        printf(" sqrt");
+                        break;
+                    case NI_System_Math_Abs:
+                        printf(" abs");
+                        break;
+                    case NI_System_Math_Round:
+                        printf(" round");
+                        break;
+                    case NI_System_Math_Cosh:
+                        printf(" cosh");
+                        break;
+                    case NI_System_Math_Sinh:
+                        printf(" sinh");
+                        break;
+                    case NI_System_Math_Tan:
+                        printf(" tan");
+                        break;
+                    case NI_System_Math_Tanh:
+                        printf(" tanh");
+                        break;
+                    case NI_System_Math_Asin:
+                        printf(" asin");
+                        break;
+                    case NI_System_Math_Asinh:
+                        printf(" asinh");
+                        break;
+                    case NI_System_Math_Acos:
+                        printf(" acos");
+                        break;
+                    case NI_System_Math_Acosh:
+                        printf(" acosh");
+                        break;
+                    case NI_System_Math_Atan:
+                        printf(" atan");
+                        break;
+                    case NI_System_Math_Atan2:
+                        printf(" atan2");
+                        break;
+                    case NI_System_Math_Atanh:
+                        printf(" atanh");
+                        break;
+                    case NI_System_Math_Log10:
+                        printf(" log10");
+                        break;
+                    case NI_System_Math_Pow:
+                        printf(" pow");
+                        break;
+                    case NI_System_Math_Exp:
+                        printf(" exp");
+                        break;
+                    case NI_System_Math_Ceiling:
+                        printf(" ceiling");
+                        break;
+                    case NI_System_Math_Floor:
+                        printf(" floor");
+                        break;
+
+                    default:
+                        unreached();
+                }
+            }
+            else
+            {
+                // old style intrinsic
+                assert(intrinsic->gtIntrinsicName == NI_Illegal);
+                switch (intrinsic->gtIntrinsicId)
+                {
+                    case CORINFO_INTRINSIC_Object_GetType:
+                        printf(" objGetType");
+                        break;
+
+                    default:
+                        unreached();
+                }
             }
         }
 
@@ -15159,7 +15519,7 @@ GenTree* Compiler::gtNewTempAssign(
     // see "Zero init inlinee locals:" in fgInlinePrependStatements
     // thus we may need to set compFloatingPointUsed to true here.
     //
-    if (varTypeIsFloating(dstTyp) && (compFloatingPointUsed == false))
+    if (varTypeUsesFloatReg(dstTyp) && (compFloatingPointUsed == false))
     {
         compFloatingPointUsed = true;
     }
@@ -16176,11 +16536,7 @@ bool GenTree::DefinesLocalAddr(Compiler* comp, unsigned width, GenTreeLclVarComm
             *pLclVarTree                    = addrArgLcl;
             if (pIsEntire != nullptr)
             {
-                unsigned lclOffset = 0;
-                if (addrArg->OperIsLocalField())
-                {
-                    lclOffset = addrArg->AsLclFld()->GetLclOffs();
-                }
+                unsigned lclOffset = addrArgLcl->GetLclOffs();
 
                 if (lclOffset != 0)
                 {
@@ -17286,7 +17642,9 @@ CORINFO_CLASS_HANDLE Compiler::gtGetStructHandleIfPresent(GenTree* tree)
                             {
                                 CORINFO_FIELD_HANDLE fieldHnd = fieldSeq->m_fieldHnd;
                                 CorInfoType fieldCorType      = info.compCompHnd->getFieldType(fieldHnd, &structHnd);
-                                assert(fieldCorType == CORINFO_TYPE_VALUECLASS);
+                                // With unsafe code and type casts
+                                // this can return a primitive type and have nullptr for structHnd
+                                // see runtime/issues/38541
                             }
                         }
                     }
@@ -18449,7 +18807,7 @@ bool GenTree::isCommutativeSIMDIntrinsic()
     }
 }
 
-// Returns true for the SIMD Instrinsic instructions that have MemoryLoad semantics, false otherwise
+// Returns true for the SIMD Intrinsic instructions that have MemoryLoad semantics, false otherwise
 bool GenTreeSIMD::OperIsMemoryLoad() const
 {
     if (gtSIMDIntrinsicID == SIMDIntrinsicInitArray)
@@ -18671,7 +19029,7 @@ GenTreeHWIntrinsic* Compiler::gtNewScalarHWIntrinsicNode(
         GenTreeHWIntrinsic(type, gtNewArgList(op1, op2, op3), hwIntrinsicID, TYP_UNKNOWN, 0);
 }
 
-// Returns true for the HW Instrinsic instructions that have MemoryLoad semantics, false otherwise
+// Returns true for the HW Intrinsic instructions that have MemoryLoad semantics, false otherwise
 bool GenTreeHWIntrinsic::OperIsMemoryLoad() const
 {
 #if defined(TARGET_XARCH) || defined(TARGET_ARM64)
@@ -18714,7 +19072,7 @@ bool GenTreeHWIntrinsic::OperIsMemoryLoad() const
     return false;
 }
 
-// Returns true for the HW Instrinsic instructions that have MemoryStore semantics, false otherwise
+// Returns true for the HW Intrinsic instructions that have MemoryStore semantics, false otherwise
 bool GenTreeHWIntrinsic::OperIsMemoryStore() const
 {
 #if defined(TARGET_XARCH) || defined(TARGET_ARM64)
@@ -18750,7 +19108,7 @@ bool GenTreeHWIntrinsic::OperIsMemoryStore() const
     return false;
 }
 
-// Returns true for the HW Instrinsic instructions that have MemoryLoad semantics, false otherwise
+// Returns true for the HW Intrinsic instructions that have MemoryLoad semantics, false otherwise
 bool GenTreeHWIntrinsic::OperIsMemoryLoadOrStore() const
 {
 #if defined(TARGET_XARCH) || defined(TARGET_ARM64)
@@ -18976,7 +19334,7 @@ regNumber ReturnTypeDesc::GetABIReturnReg(unsigned idx) const
         }
         else
         {
-            noway_assert(varTypeIsFloating(regType0));
+            noway_assert(varTypeUsesFloatReg(regType0));
             resultReg = REG_FLOATRET;
         }
     }
@@ -18997,9 +19355,9 @@ regNumber ReturnTypeDesc::GetABIReturnReg(unsigned idx) const
         }
         else
         {
-            noway_assert(varTypeIsFloating(regType1));
+            noway_assert(varTypeUsesFloatReg(regType1));
 
-            if (varTypeIsFloating(regType0))
+            if (varTypeUsesFloatReg(regType0))
             {
                 resultReg = REG_FLOATRET_1;
             }
@@ -19159,6 +19517,25 @@ regNumber GenTree::ExtractTempReg(regMaskTP mask /* = (regMaskTP)-1 */)
     regMaskTP tempRegMask = genFindLowestBit(availableSet);
     gtRsvdRegs &= ~tempRegMask;
     return genRegNumFromMask(tempRegMask);
+}
+
+//------------------------------------------------------------------------
+// GetLclOffs: if `this` is a field or a field address it returns offset
+// of the field inside the struct, for not a field it returns 0.
+//
+// Return Value:
+//    The offset value.
+//
+uint16_t GenTreeLclVarCommon::GetLclOffs() const
+{
+    if (OperIsLocalField())
+    {
+        return AsLclFld()->GetLclOffs();
+    }
+    else
+    {
+        return 0;
+    }
 }
 
 #ifdef TARGET_ARM
