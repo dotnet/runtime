@@ -10,7 +10,7 @@ namespace System.Runtime.Intrinsics.X86
     /// This class provides access to the x86 base hardware instructions via intrinsics
     /// </summary>
     [Intrinsic]
-    public abstract class X86Base
+    public abstract partial class X86Base
     {
         internal X86Base() { }
 
@@ -78,8 +78,5 @@ namespace System.Runtime.Intrinsics.X86
             __cpuidex(cpuInfo, functionId, subFunctionId);
             return (cpuInfo[0], cpuInfo[1], cpuInfo[2], cpuInfo[3]);
         }
-
-        [DllImport(RuntimeHelpers.QCall)]
-        private static extern unsafe void __cpuidex(int* cpuInfo, int functionId, int subFunctionId);
     }
 }
