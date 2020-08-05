@@ -86,7 +86,8 @@ namespace Microsoft.Extensions.Logging.Console.Test
                 Assert.Equal(formatter.FormatterOptions.IncludeScopes, logger.Options.IncludeScopes);
                 Assert.Equal(formatter.FormatterOptions.UseUtcTimestamp, logger.Options.UseUtcTimestamp);
                 Assert.Equal(formatter.FormatterOptions.TimestampFormat, logger.Options.TimestampFormat);
-                Assert.Equal(formatter.FormatterOptions.DisableColors, logger.Options.DisableColors);   
+                Assert.Equal(formatter.FormatterOptions.ColorBehavior, 
+                    logger.Options.DisableColors ? LoggerColorBehavior.Disabled : LoggerColorBehavior.Enabled);   
             }
             else
             {
@@ -102,7 +103,8 @@ namespace Microsoft.Extensions.Logging.Console.Test
             // kept for deprecated apis:
             if (formatter is SimpleConsoleFormatter defaultFormatter)
             {
-                defaultFormatter.FormatterOptions.DisableColors = deprecatedFromOptions.DisableColors;
+                defaultFormatter.FormatterOptions.ColorBehavior = deprecatedFromOptions.DisableColors ? 
+                    LoggerColorBehavior.Disabled : LoggerColorBehavior.Enabled;
                 defaultFormatter.FormatterOptions.IncludeScopes = deprecatedFromOptions.IncludeScopes;
                 defaultFormatter.FormatterOptions.TimestampFormat = deprecatedFromOptions.TimestampFormat;
                 defaultFormatter.FormatterOptions.UseUtcTimestamp = deprecatedFromOptions.UseUtcTimestamp;

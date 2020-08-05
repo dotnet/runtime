@@ -17,5 +17,12 @@
     <type fullname="System.Runtime.InteropServices.IDispatch" />
     <type fullname="System.Runtime.InteropServices.IMarshal" />
     <type fullname="Internal.Runtime.InteropServices.IClassFactory2" />
+
+    <!-- GetActualImplementationForArrayGenericIListOrIReadOnlyListMethod depends on slots of these interfaces not changing -->
+    <type fullname="System.Collections.Generic.IEnumerable`1" />
+    <type fullname="System.Collections.Generic.ICollection`1" />
+    <type fullname="System.Collections.Generic.IReadOnlyCollection`1" />
+    <type fullname="System.Collections.Generic.IList`1" />
+    <type fullname="System.Collections.Generic.IReadOnlyList`1" />
   </assembly>
 </linker>
