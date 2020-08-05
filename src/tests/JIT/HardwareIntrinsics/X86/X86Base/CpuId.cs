@@ -41,7 +41,7 @@ namespace IntelHardwareIntrinsicTest
                 // POPCNT and didn't actually implement LZCNT and begin using the LZCNT bit until 2013. So
                 // while everything happens to line up today, it doesn't always and may not always do so.
 
-                Console.WriteLine($"Unrecognized CPU vendor: EBX: {ebx:X8}, ECX: {ecx:X8}, EDX: {edx:X8}";
+                Console.WriteLine($"Unrecognized CPU vendor: EBX: {ebx:X8}, ECX: {ecx:X8}, EDX: {edx:X8}");
                 testResult = Fail;
             }
 
