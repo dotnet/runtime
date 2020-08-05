@@ -14,11 +14,6 @@ namespace System.Runtime.InteropServices.RuntimeInformationTests
             yield return new object[] { OSPlatform.Linux };
             yield return new object[] { OSPlatform.OSX };
             yield return new object[] { OSPlatform.Browser };
-            yield return new object[] { OSPlatform.macOS };
-            yield return new object[] { OSPlatform.iOS };
-            yield return new object[] { OSPlatform.tvOS };
-            yield return new object[] { OSPlatform.watchOS };
-            yield return new object[] { OSPlatform.Android };
         }
 
         [Fact]

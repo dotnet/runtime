@@ -7,24 +7,13 @@ namespace System.Runtime.InteropServices
     {
         private readonly string _osPlatform;
 
-        public static OSPlatform Android { get; } = new OSPlatform("ANDROID");
-
         public static OSPlatform Browser { get; } = new OSPlatform("BROWSER");
 
         public static OSPlatform FreeBSD { get; } = new OSPlatform("FREEBSD");
 
         public static OSPlatform Linux { get; } = new OSPlatform("LINUX");
 
-        public static OSPlatform macOS { get; } = new OSPlatform("MACOS");
-
-        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)] // superseded by macOS
         public static OSPlatform OSX { get; } = new OSPlatform("OSX");
-
-        public static OSPlatform iOS { get; } = new OSPlatform("IOS");
-
-        public static OSPlatform tvOS { get; } = new OSPlatform("TVOS");
-
-        public static OSPlatform watchOS { get; } = new OSPlatform("WATCHOS");
 
         public static OSPlatform Windows { get; } = new OSPlatform("WINDOWS");
 
