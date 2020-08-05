@@ -20,7 +20,7 @@ namespace MS.Internal.Xml.XPath
             _matchSelf = other._matchSelf;
         }
 
-        public override object Evaluate(XPathNodeIterator context)
+        public override object Evaluate(XPathNodeIterator? context)
         {
             base.Evaluate(context);
 

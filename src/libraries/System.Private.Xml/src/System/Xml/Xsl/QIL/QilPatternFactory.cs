@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#nullable enable
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection;
@@ -33,7 +34,7 @@ namespace System.Xml.Xsl.Qil
 
         #region Convenience methods
 
-        public QilLiteral String(string val)
+        public QilLiteral String(string? val)
         {
             return _f.LiteralString(val);
         }
@@ -186,7 +187,7 @@ namespace System.Xml.Xsl.Qil
             return _f.Parameter(t);
         }
 
-        public QilParameter Parameter(QilNode defaultValue, QilName name, XmlQueryType t)
+        public QilParameter Parameter(QilNode? defaultValue, QilName? name, XmlQueryType t)
         {
             return _f.Parameter(defaultValue, name, t);
         }
@@ -226,7 +227,7 @@ namespace System.Xml.Xsl.Qil
         private static void CheckLogicArg(QilNode arg)
         {
             Debug.Assert(arg != null, "Argument shouldn't be null");
-            Debug.Assert(arg.XmlType.TypeCode == XmlTypeCode.Boolean && arg.XmlType.IsSingleton,
+            Debug.Assert(arg.XmlType!.TypeCode == XmlTypeCode.Boolean && arg.XmlType.IsSingleton,
                 "The operand must be boolean-typed"
             );
         }
@@ -443,7 +444,7 @@ namespace System.Xml.Xsl.Qil
         {
             if (!_debug)
             {
-                if (values.XmlType.IsSingleton)
+                if (values.XmlType!.IsSingleton)
                     return values;
             }
             return _f.StrConcat(values);
@@ -551,7 +552,7 @@ namespace System.Xml.Xsl.Qil
                 //((Filter (For $Binding) (True ) ) => ($binding))
                 if (expr.NodeType == QilNodeType.True)
                 {
-                    return variable.Binding;
+                    return variable.Binding!;
                 }
                 // The following optimization is not safe if the iterator has side effects
                 //((Filter (For $Binding) (False) ) => (Sequence))
@@ -598,7 +599,7 @@ namespace System.Xml.Xsl.Qil
         public QilFunction Function(QilList args, QilNode defn, QilNode sideEffects)
         {
             Debug.Assert(args.NodeType == QilNodeType.FormalParameterList);
-            return _f.Function(args, defn, sideEffects, defn.XmlType);
+            return _f.Function(args, defn, sideEffects, defn.XmlType!);
         }
 
         public QilNode Invoke(QilFunction func, QilList args)

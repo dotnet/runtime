@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#nullable enable
 namespace System.Xml.Xsl.XsltOld
 {
     using System;
@@ -43,9 +44,9 @@ namespace System.Xml.Xsl.XsltOld
         private static readonly Hashtable s_table = CreatePropsTable();
         //        private static HtmlElementProps  s_otherElements = Create(false, false, false, false, false, false, false);
 
-        public static HtmlElementProps GetProps(string name)
+        public static HtmlElementProps? GetProps(string name)
         {
-            HtmlElementProps result = (HtmlElementProps)s_table[name];
+            HtmlElementProps? result = (HtmlElementProps?)s_table[name];
             return result;
             // We can do this but in case of Xml/Html mixed output this doesn't have big sence.
             //            return result != null ?  result : s_otherElements;
@@ -154,9 +155,9 @@ namespace System.Xml.Xsl.XsltOld
         private static readonly Hashtable s_table = CreatePropsTable();
         //      private static HtmlElementProps  s_otherAttributes = Create(false, false, false);
 
-        public static HtmlAttributeProps GetProps(string name)
+        public static HtmlAttributeProps? GetProps(string name)
         {
-            HtmlAttributeProps result = (HtmlAttributeProps)s_table[name];
+            HtmlAttributeProps? result = (HtmlAttributeProps?)s_table[name];
             return result;
             // We can do this but in case of Xml/Html mixed output this doesn't have big sence.
             //          return result != null ?  result : s_otherElements;

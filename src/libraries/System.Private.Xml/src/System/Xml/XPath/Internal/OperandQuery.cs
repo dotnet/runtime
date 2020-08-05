@@ -18,7 +18,7 @@ namespace MS.Internal.Xml.XPath
             this.val = val;
         }
 
-        public override object Evaluate(XPathNodeIterator nodeIterator)
+        public override object Evaluate(XPathNodeIterator? nodeIterator)
         {
             return val;
         }

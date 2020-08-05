@@ -162,7 +162,7 @@ namespace MS.Internal.Xml.XPath
         private readonly CultureInfo _cinfo;
         private readonly XmlDataType _dataType;
 
-        public XPathComparerHelper(XmlSortOrder order, XmlCaseOrder caseOrder, string lang, XmlDataType dataType)
+        public XPathComparerHelper(XmlSortOrder order, XmlCaseOrder caseOrder, string? lang, XmlDataType dataType)
         {
             if (lang == null)
             {

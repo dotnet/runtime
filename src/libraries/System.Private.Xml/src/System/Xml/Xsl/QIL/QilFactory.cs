@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#nullable enable
 using System.Collections.Generic;
 
 namespace System.Xml.Xsl.Qil
@@ -236,7 +237,7 @@ namespace System.Xml.Xsl.Qil
             return n;
         }
 
-        public QilParameter Parameter(QilNode defaultValue, QilNode name, XmlQueryType xmlType)
+        public QilParameter Parameter(QilNode? defaultValue, QilNode? name, XmlQueryType xmlType)
         {
             QilParameter n = new QilParameter(QilNodeType.Parameter, defaultValue, name, xmlType);
             n.XmlType = _typeCheck.CheckParameter(n);
@@ -274,7 +275,7 @@ namespace System.Xml.Xsl.Qil
             return n;
         }
 
-        public QilLiteral LiteralString(string value)
+        public QilLiteral LiteralString(string? value)
         {
             QilLiteral n = new QilLiteral(QilNodeType.LiteralString, value);
             n.XmlType = _typeCheck.CheckLiteralString(n);

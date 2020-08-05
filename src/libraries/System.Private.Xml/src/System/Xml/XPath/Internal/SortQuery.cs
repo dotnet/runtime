@@ -69,7 +69,7 @@ namespace MS.Internal.Xml.XPath
             _results.Sort(_comparer);
         }
 
-        public override object Evaluate(XPathNodeIterator context)
+        public override object Evaluate(XPathNodeIterator? context)
         {
             _qyInput.Evaluate(context);
             _results.Clear();

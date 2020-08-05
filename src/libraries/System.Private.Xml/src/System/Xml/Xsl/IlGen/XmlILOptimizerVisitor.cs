@@ -1,8 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#nullable enable
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Xml.Schema;
 using System.Xml.XPath;
 using System.Xml.Xsl.Qil;
@@ -114,7 +116,7 @@ namespace System.Xml.Xsl.IlGen
             }
 
             // Continue visitation
-            return base.Visit(nd);
+            return base.Visit(nd!);
         }
 
         /// <summary>
@@ -122,7 +124,7 @@ namespace System.Xml.Xsl.IlGen
         /// </summary>
         protected override QilNode VisitReference(QilNode oldNode)
         {
-            QilNode newNode = _subs.FindReplacement(oldNode);
+            QilNode? newNode = _subs.FindReplacement(oldNode);
 
             if (newNode == null)
                 newNode = oldNode;
@@ -133,7 +135,7 @@ namespace System.Xml.Xsl.IlGen
             {
                 if (newNode.NodeType == QilNodeType.Let || newNode.NodeType == QilNodeType.For)
                 {
-                    QilNode binding = ((QilIterator)oldNode).Binding;
+                    QilNode binding = ((QilIterator)oldNode).Binding!;
 
                     if (IsLiteral(binding))
                         return Replace(XmlILOptimization.EliminateLiteralVariables, newNode, binding.ShallowClone(f));
@@ -141,11 +143,11 @@ namespace System.Xml.Xsl.IlGen
             }
             if (this[XmlILOptimization.EliminateUnusedGlobals])
             {
-                if (IsGlobalValue(newNode))
-                    OptimizerPatterns.Write(newNode).AddPattern(OptimizerPatternName.IsReferenced);
+                if (IsGlobalValue(newNode!))
+                    OptimizerPatterns.Write(newNode!).AddPattern(OptimizerPatternName.IsReferenced);
             }
 
-            return base.VisitReference(newNode);
+            return base.VisitReference(newNode!);
         }
 
         /// <summary>
@@ -167,7 +169,8 @@ namespace System.Xml.Xsl.IlGen
         /// <summary>
         /// Called when all replacements have already been made and all annotations are complete.
         /// </summary>
-        protected override QilNode NoReplace(QilNode node)
+        [return: NotNullIfNotNull("node")]
+        protected override QilNode? NoReplace(QilNode? node)
         {
             // Calculate MaybeSideEffects pattern.  This is done here rather than using P because every node needs
             // to compute it and P has no good way of matching every node type.
@@ -252,12 +255,12 @@ namespace System.Xml.Xsl.IlGen
                         if (IsConstructedExpression(ndFunc.Definition))
                         {
                             // Perform state analysis on function's content
-                            ndFunc.Definition = _contentAnalyzer.Analyze(ndFunc, ndFunc.Definition);
+                            ndFunc.Definition = _contentAnalyzer.Analyze(ndFunc, ndFunc.Definition)!;
                         }
                     }
 
                     // Perform state analysis on the root expression
-                    local0.Root = _contentAnalyzer.Analyze(null, local0.Root);
+                    local0.Root = _contentAnalyzer.Analyze(null, local0.Root)!;
 
                     // Make sure that root expression is pushed to writer
                     XmlILConstructInfo.Write(local0.Root).PushToWriterLast = true;
@@ -289,7 +292,7 @@ namespace System.Xml.Xsl.IlGen
             QilNode local2 = local0[1];
             if (this[XmlILOptimization.FoldNone])
             {
-                if ((object)((local1).XmlType) == (object)XmlQueryTypeFactory.None)
+                if ((object?)((local1).XmlType) == (object)XmlQueryTypeFactory.None)
                 {
                     // PATTERN: [FoldNone] (DataSource $x:* ^ (None? (TypeOf $x)) *) => (Nop $x)
                     if (AllowReplace(XmlILOptimization.FoldNone, local0))
@@ -300,7 +303,7 @@ namespace System.Xml.Xsl.IlGen
             }
             if (this[XmlILOptimization.FoldNone])
             {
-                if ((object)((local2).XmlType) == (object)XmlQueryTypeFactory.None)
+                if ((object?)((local2).XmlType) == (object)XmlQueryTypeFactory.None)
                 {
                     // PATTERN: [FoldNone] (DataSource * $x:* ^ (None? (TypeOf $x))) => (Nop $x)
                     if (AllowReplace(XmlILOptimization.FoldNone, local0))
@@ -331,7 +334,7 @@ namespace System.Xml.Xsl.IlGen
             QilNode local1 = local0[0];
             if (this[XmlILOptimization.FoldNone])
             {
-                if ((object)((local1).XmlType) == (object)XmlQueryTypeFactory.None)
+                if ((object?)((local1).XmlType) == (object)XmlQueryTypeFactory.None)
                 {
                     // PATTERN: [FoldNone] (Error $x:* ^ (None? (TypeOf $x))) => (Nop $x)
                     if (AllowReplace(XmlILOptimization.FoldNone, local0))
@@ -348,7 +351,7 @@ namespace System.Xml.Xsl.IlGen
             QilNode local1 = local0[0];
             if (this[XmlILOptimization.FoldNone])
             {
-                if ((object)((local1).XmlType) == (object)XmlQueryTypeFactory.None)
+                if ((object?)((local1).XmlType) == (object)XmlQueryTypeFactory.None)
                 {
                     // PATTERN: [FoldNone] (Warning $x:* ^ (None? (TypeOf $x))) => (Nop $x)
                     if (AllowReplace(XmlILOptimization.FoldNone, local0))
@@ -366,7 +369,7 @@ namespace System.Xml.Xsl.IlGen
         protected override QilNode VisitLet(QilIterator local0)
         {
             QilNode local1 = local0[0];
-            if (((((local0).XmlType).IsSingleton) && (!(IsGlobalVariable(local0)))) && (this[XmlILOptimization.NormalizeSingletonLet]))
+            if (((((local0).XmlType)!.IsSingleton) && (!(IsGlobalVariable(local0)))) && (this[XmlILOptimization.NormalizeSingletonLet]))
             {
                 // PATTERN: [NormalizeSingletonLet] $iter:(Let $bind:*) ^ (Single? (TypeOf $iter)) ^ ~((GlobalVariable? $iter)) => { ... }
                 if (AllowReplace(XmlILOptimization.NormalizeSingletonLet, local0))
@@ -405,7 +408,7 @@ namespace System.Xml.Xsl.IlGen
                 if (local1.NodeType == QilNodeType.For)
                 {
                     QilNode local2 = local1[0];
-                    if (((local2).XmlType).IsSingleton)
+                    if (((local2).XmlType)!.IsSingleton)
                     {
                         // PATTERN: [EliminatePositionOf] (PositionOf (For $x:* ^ (Single? (TypeOf $x)))) => (LiteralInt32 1)
                         if (AllowReplace(XmlILOptimization.EliminatePositionOf, local0))
@@ -438,7 +441,7 @@ namespace System.Xml.Xsl.IlGen
             QilNode local2 = local0[1];
             if (this[XmlILOptimization.FoldNone])
             {
-                if ((object)((local1).XmlType) == (object)XmlQueryTypeFactory.None)
+                if ((object?)((local1).XmlType) == (object)XmlQueryTypeFactory.None)
                 {
                     // PATTERN: [FoldNone] (And $x:* ^ (None? (TypeOf $x)) *) => (Nop $x)
                     if (AllowReplace(XmlILOptimization.FoldNone, local0))
@@ -449,7 +452,7 @@ namespace System.Xml.Xsl.IlGen
             }
             if (this[XmlILOptimization.FoldNone])
             {
-                if ((object)((local2).XmlType) == (object)XmlQueryTypeFactory.None)
+                if ((object?)((local2).XmlType) == (object)XmlQueryTypeFactory.None)
                 {
                     // PATTERN: [FoldNone] (And * $x:* ^ (None? (TypeOf $x))) => (Nop $x)
                     if (AllowReplace(XmlILOptimization.FoldNone, local0))
@@ -511,7 +514,7 @@ namespace System.Xml.Xsl.IlGen
             QilNode local2 = local0[1];
             if (this[XmlILOptimization.FoldNone])
             {
-                if ((object)((local1).XmlType) == (object)XmlQueryTypeFactory.None)
+                if ((object?)((local1).XmlType) == (object)XmlQueryTypeFactory.None)
                 {
                     // PATTERN: [FoldNone] (Or $x:* ^ (None? (TypeOf $x)) *) => (Nop $x)
                     if (AllowReplace(XmlILOptimization.FoldNone, local0))
@@ -522,7 +525,7 @@ namespace System.Xml.Xsl.IlGen
             }
             if (this[XmlILOptimization.FoldNone])
             {
-                if ((object)((local2).XmlType) == (object)XmlQueryTypeFactory.None)
+                if ((object?)((local2).XmlType) == (object)XmlQueryTypeFactory.None)
                 {
                     // PATTERN: [FoldNone] (Or * $x:* ^ (None? (TypeOf $x))) => (Nop $x)
                     if (AllowReplace(XmlILOptimization.FoldNone, local0))
@@ -583,7 +586,7 @@ namespace System.Xml.Xsl.IlGen
             QilNode local1 = local0[0];
             if (this[XmlILOptimization.FoldNone])
             {
-                if ((object)((local1).XmlType) == (object)XmlQueryTypeFactory.None)
+                if ((object?)((local1).XmlType) == (object)XmlQueryTypeFactory.None)
                 {
                     // PATTERN: [FoldNone] (Not $x:* ^ (None? (TypeOf $x))) => (Nop $x)
                     if (AllowReplace(XmlILOptimization.FoldNone, local0))
@@ -627,7 +630,7 @@ namespace System.Xml.Xsl.IlGen
             QilNode local3 = local0[2];
             if (this[XmlILOptimization.FoldNone])
             {
-                if ((object)((local1).XmlType) == (object)XmlQueryTypeFactory.None)
+                if ((object?)((local1).XmlType) == (object)XmlQueryTypeFactory.None)
                 {
                     // PATTERN: [FoldNone] (Conditional $x:* ^ (None? (TypeOf $x)) * *) => (Nop $x)
                     if (AllowReplace(XmlILOptimization.FoldNone, local0))
@@ -740,7 +743,7 @@ namespace System.Xml.Xsl.IlGen
             QilNode local1 = local0[0];
             if (this[XmlILOptimization.FoldNone])
             {
-                if ((object)((local1).XmlType) == (object)XmlQueryTypeFactory.None)
+                if ((object?)((local1).XmlType) == (object)XmlQueryTypeFactory.None)
                 {
                     // PATTERN: [FoldNone] (Length $x:* ^ (None? (TypeOf $x))) => (Nop $x)
                     if (AllowReplace(XmlILOptimization.FoldNone, local0))
@@ -765,7 +768,7 @@ namespace System.Xml.Xsl.IlGen
             }
             if (this[XmlILOptimization.EliminateLength])
             {
-                if ((((local1).XmlType).IsSingleton) && (!OptimizerPatterns.Read(local1).MatchesPattern(OptimizerPatternName.MaybeSideEffects)))
+                if ((((local1).XmlType)!.IsSingleton) && (!OptimizerPatterns.Read(local1).MatchesPattern(OptimizerPatternName.MaybeSideEffects)))
                 {
                     // PATTERN: [EliminateLength] (Length $x:* ^ (Single? (TypeOf $x)) ^ (NoSideEffects? $x)) => (LiteralInt32 1)
                     if (AllowReplace(XmlILOptimization.EliminateLength, local0))
@@ -826,7 +829,7 @@ namespace System.Xml.Xsl.IlGen
             QilNode local2 = local0[1];
             if (this[XmlILOptimization.FoldNone])
             {
-                if ((object)((local1).XmlType) == (object)XmlQueryTypeFactory.None)
+                if ((object?)((local1).XmlType) == (object)XmlQueryTypeFactory.None)
                 {
                     // PATTERN: [FoldNone] (Union $x:* ^ (None? (TypeOf $x)) *) => (Nop $x)
                     if (AllowReplace(XmlILOptimization.FoldNone, local0))
@@ -837,7 +840,7 @@ namespace System.Xml.Xsl.IlGen
             }
             if (this[XmlILOptimization.FoldNone])
             {
-                if ((object)((local2).XmlType) == (object)XmlQueryTypeFactory.None)
+                if ((object?)((local2).XmlType) == (object)XmlQueryTypeFactory.None)
                 {
                     // PATTERN: [FoldNone] (Union * $x:* ^ (None? (TypeOf $x))) => (Nop $x)
                     if (AllowReplace(XmlILOptimization.FoldNone, local0))
@@ -941,7 +944,7 @@ namespace System.Xml.Xsl.IlGen
             QilNode local2 = local0[1];
             if (this[XmlILOptimization.FoldNone])
             {
-                if ((object)((local1).XmlType) == (object)XmlQueryTypeFactory.None)
+                if ((object?)((local1).XmlType) == (object)XmlQueryTypeFactory.None)
                 {
                     // PATTERN: [FoldNone] (Intersection $x:* ^ (None? (TypeOf $x)) *) => (Nop $x)
                     if (AllowReplace(XmlILOptimization.FoldNone, local0))
@@ -952,7 +955,7 @@ namespace System.Xml.Xsl.IlGen
             }
             if (this[XmlILOptimization.FoldNone])
             {
-                if ((object)((local2).XmlType) == (object)XmlQueryTypeFactory.None)
+                if ((object?)((local2).XmlType) == (object)XmlQueryTypeFactory.None)
                 {
                     // PATTERN: [FoldNone] (Intersection * $x:* ^ (None? (TypeOf $x))) => (Nop $x)
                     if (AllowReplace(XmlILOptimization.FoldNone, local0))
@@ -1042,7 +1045,7 @@ namespace System.Xml.Xsl.IlGen
             QilNode local2 = local0[1];
             if (this[XmlILOptimization.FoldNone])
             {
-                if ((object)((local1).XmlType) == (object)XmlQueryTypeFactory.None)
+                if ((object?)((local1).XmlType) == (object)XmlQueryTypeFactory.None)
                 {
                     // PATTERN: [FoldNone] (Difference $x:* ^ (None? (TypeOf $x)) *) => (Nop $x)
                     if (AllowReplace(XmlILOptimization.FoldNone, local0))
@@ -1053,7 +1056,7 @@ namespace System.Xml.Xsl.IlGen
             }
             if (this[XmlILOptimization.FoldNone])
             {
-                if ((object)((local2).XmlType) == (object)XmlQueryTypeFactory.None)
+                if ((object?)((local2).XmlType) == (object)XmlQueryTypeFactory.None)
                 {
                     // PATTERN: [FoldNone] (Difference * $x:* ^ (None? (TypeOf $x))) => (Nop $x)
                     if (AllowReplace(XmlILOptimization.FoldNone, local0))
@@ -1142,7 +1145,7 @@ namespace System.Xml.Xsl.IlGen
             QilNode local1 = local0[0];
             if (this[XmlILOptimization.FoldNone])
             {
-                if ((object)((local1).XmlType) == (object)XmlQueryTypeFactory.None)
+                if ((object?)((local1).XmlType) == (object)XmlQueryTypeFactory.None)
                 {
                     // PATTERN: [FoldNone] (Average $x:* ^ (None? (TypeOf $x))) => (Nop $x)
                     if (AllowReplace(XmlILOptimization.FoldNone, local0))
@@ -1153,7 +1156,7 @@ namespace System.Xml.Xsl.IlGen
             }
             if (this[XmlILOptimization.EliminateAverage])
             {
-                if (((local1).XmlType).Cardinality == XmlQueryCardinality.Zero)
+                if (((local1).XmlType)!.Cardinality == XmlQueryCardinality.Zero)
                 {
                     // PATTERN: [EliminateAverage] (Average $x:* ^ (Empty? (TypeOf $x))) => (Nop $x)
                     if (AllowReplace(XmlILOptimization.EliminateAverage, local0))
@@ -1170,7 +1173,7 @@ namespace System.Xml.Xsl.IlGen
             QilNode local1 = local0[0];
             if (this[XmlILOptimization.FoldNone])
             {
-                if ((object)((local1).XmlType) == (object)XmlQueryTypeFactory.None)
+                if ((object?)((local1).XmlType) == (object)XmlQueryTypeFactory.None)
                 {
                     // PATTERN: [FoldNone] (Sum $x:* ^ (None? (TypeOf $x))) => (Nop $x)
                     if (AllowReplace(XmlILOptimization.FoldNone, local0))
@@ -1181,7 +1184,7 @@ namespace System.Xml.Xsl.IlGen
             }
             if (this[XmlILOptimization.EliminateSum])
             {
-                if (((local1).XmlType).Cardinality == XmlQueryCardinality.Zero)
+                if (((local1).XmlType)!.Cardinality == XmlQueryCardinality.Zero)
                 {
                     // PATTERN: [EliminateSum] (Sum $x:* ^ (Empty? (TypeOf $x))) => (Nop $x)
                     if (AllowReplace(XmlILOptimization.EliminateSum, local0))
@@ -1198,7 +1201,7 @@ namespace System.Xml.Xsl.IlGen
             QilNode local1 = local0[0];
             if (this[XmlILOptimization.FoldNone])
             {
-                if ((object)((local1).XmlType) == (object)XmlQueryTypeFactory.None)
+                if ((object?)((local1).XmlType) == (object)XmlQueryTypeFactory.None)
                 {
                     // PATTERN: [FoldNone] (Minimum $x:* ^ (None? (TypeOf $x))) => (Nop $x)
                     if (AllowReplace(XmlILOptimization.FoldNone, local0))
@@ -1209,7 +1212,7 @@ namespace System.Xml.Xsl.IlGen
             }
             if (this[XmlILOptimization.EliminateMinimum])
             {
-                if (((local1).XmlType).Cardinality == XmlQueryCardinality.Zero)
+                if (((local1).XmlType)!.Cardinality == XmlQueryCardinality.Zero)
                 {
                     // PATTERN: [EliminateMinimum] (Minimum $x:* ^ (Empty? (TypeOf $x))) => (Nop $x)
                     if (AllowReplace(XmlILOptimization.EliminateMinimum, local0))
@@ -1226,7 +1229,7 @@ namespace System.Xml.Xsl.IlGen
             QilNode local1 = local0[0];
             if (this[XmlILOptimization.FoldNone])
             {
-                if ((object)((local1).XmlType) == (object)XmlQueryTypeFactory.None)
+                if ((object?)((local1).XmlType) == (object)XmlQueryTypeFactory.None)
                 {
                     // PATTERN: [FoldNone] (Maximum $x:* ^ (None? (TypeOf $x))) => (Nop $x)
                     if (AllowReplace(XmlILOptimization.FoldNone, local0))
@@ -1237,7 +1240,7 @@ namespace System.Xml.Xsl.IlGen
             }
             if (this[XmlILOptimization.EliminateMaximum])
             {
-                if (((local1).XmlType).Cardinality == XmlQueryCardinality.Zero)
+                if (((local1).XmlType)!.Cardinality == XmlQueryCardinality.Zero)
                 {
                     // PATTERN: [EliminateMaximum] (Maximum $x:* ^ (Empty? (TypeOf $x))) => (Nop $x)
                     if (AllowReplace(XmlILOptimization.EliminateMaximum, local0))
@@ -1257,7 +1260,7 @@ namespace System.Xml.Xsl.IlGen
             QilNode local1 = local0[0];
             if (this[XmlILOptimization.FoldNone])
             {
-                if ((object)((local1).XmlType) == (object)XmlQueryTypeFactory.None)
+                if ((object?)((local1).XmlType) == (object)XmlQueryTypeFactory.None)
                 {
                     // PATTERN: [FoldNone] (Negate $x:* ^ (None? (TypeOf $x))) => (Nop $x)
                     if (AllowReplace(XmlILOptimization.FoldNone, local0))
@@ -1270,7 +1273,7 @@ namespace System.Xml.Xsl.IlGen
             {
                 if (local1.NodeType == QilNodeType.LiteralDecimal)
                 {
-                    decimal local2 = (decimal)((QilLiteral)local1).Value;
+                    decimal local2 = (decimal)((QilLiteral)local1).Value!;
                     // PATTERN: [EliminateNegate] (Negate (LiteralDecimal $x:*)) => (LiteralDecimal { -{$x} })
                     if (AllowReplace(XmlILOptimization.EliminateNegate, local0))
                     {
@@ -1282,7 +1285,7 @@ namespace System.Xml.Xsl.IlGen
             {
                 if (local1.NodeType == QilNodeType.LiteralDouble)
                 {
-                    double local2 = (double)((QilLiteral)local1).Value;
+                    double local2 = (double)((QilLiteral)local1).Value!;
                     // PATTERN: [EliminateNegate] (Negate (LiteralDouble $x:*)) => (LiteralDouble { -{$x} })
                     if (AllowReplace(XmlILOptimization.EliminateNegate, local0))
                     {
@@ -1294,7 +1297,7 @@ namespace System.Xml.Xsl.IlGen
             {
                 if (local1.NodeType == QilNodeType.LiteralInt32)
                 {
-                    int local2 = (int)((QilLiteral)local1).Value;
+                    int local2 = (int)((QilLiteral)local1).Value!;
                     // PATTERN: [EliminateNegate] (Negate (LiteralInt32 $x:*)) => (LiteralInt32 { -{$x} })
                     if (AllowReplace(XmlILOptimization.EliminateNegate, local0))
                     {
@@ -1306,7 +1309,7 @@ namespace System.Xml.Xsl.IlGen
             {
                 if (local1.NodeType == QilNodeType.LiteralInt64)
                 {
-                    long local2 = (long)((QilLiteral)local1).Value;
+                    long local2 = (long)((QilLiteral)local1).Value!;
                     // PATTERN: [EliminateNegate] (Negate (LiteralInt64 $x:*)) => (LiteralInt64 { -{$x} })
                     if (AllowReplace(XmlILOptimization.EliminateNegate, local0))
                     {
@@ -1323,7 +1326,7 @@ namespace System.Xml.Xsl.IlGen
             QilNode local2 = local0[1];
             if (this[XmlILOptimization.FoldNone])
             {
-                if ((object)((local1).XmlType) == (object)XmlQueryTypeFactory.None)
+                if ((object?)((local1).XmlType) == (object)XmlQueryTypeFactory.None)
                 {
                     // PATTERN: [FoldNone] (Add $x:* ^ (None? (TypeOf $x)) *) => (Nop $x)
                     if (AllowReplace(XmlILOptimization.FoldNone, local0))
@@ -1334,7 +1337,7 @@ namespace System.Xml.Xsl.IlGen
             }
             if (this[XmlILOptimization.FoldNone])
             {
-                if ((object)((local2).XmlType) == (object)XmlQueryTypeFactory.None)
+                if ((object?)((local2).XmlType) == (object)XmlQueryTypeFactory.None)
                 {
                     // PATTERN: [FoldNone] (Add * $x:* ^ (None? (TypeOf $x))) => (Nop $x)
                     if (AllowReplace(XmlILOptimization.FoldNone, local0))
@@ -1380,7 +1383,7 @@ namespace System.Xml.Xsl.IlGen
             QilNode local2 = local0[1];
             if (this[XmlILOptimization.FoldNone])
             {
-                if ((object)((local1).XmlType) == (object)XmlQueryTypeFactory.None)
+                if ((object?)((local1).XmlType) == (object)XmlQueryTypeFactory.None)
                 {
                     // PATTERN: [FoldNone] (Subtract $x:* ^ (None? (TypeOf $x)) *) => (Nop $x)
                     if (AllowReplace(XmlILOptimization.FoldNone, local0))
@@ -1391,7 +1394,7 @@ namespace System.Xml.Xsl.IlGen
             }
             if (this[XmlILOptimization.FoldNone])
             {
-                if ((object)((local2).XmlType) == (object)XmlQueryTypeFactory.None)
+                if ((object?)((local2).XmlType) == (object)XmlQueryTypeFactory.None)
                 {
                     // PATTERN: [FoldNone] (Subtract * $x:* ^ (None? (TypeOf $x))) => (Nop $x)
                     if (AllowReplace(XmlILOptimization.FoldNone, local0))
@@ -1423,7 +1426,7 @@ namespace System.Xml.Xsl.IlGen
             QilNode local2 = local0[1];
             if (this[XmlILOptimization.FoldNone])
             {
-                if ((object)((local1).XmlType) == (object)XmlQueryTypeFactory.None)
+                if ((object?)((local1).XmlType) == (object)XmlQueryTypeFactory.None)
                 {
                     // PATTERN: [FoldNone] (Multiply $x:* ^ (None? (TypeOf $x)) *) => (Nop $x)
                     if (AllowReplace(XmlILOptimization.FoldNone, local0))
@@ -1434,7 +1437,7 @@ namespace System.Xml.Xsl.IlGen
             }
             if (this[XmlILOptimization.FoldNone])
             {
-                if ((object)((local2).XmlType) == (object)XmlQueryTypeFactory.None)
+                if ((object?)((local2).XmlType) == (object)XmlQueryTypeFactory.None)
                 {
                     // PATTERN: [FoldNone] (Multiply * $x:* ^ (None? (TypeOf $x))) => (Nop $x)
                     if (AllowReplace(XmlILOptimization.FoldNone, local0))
@@ -1480,7 +1483,7 @@ namespace System.Xml.Xsl.IlGen
             QilNode local2 = local0[1];
             if (this[XmlILOptimization.FoldNone])
             {
-                if ((object)((local1).XmlType) == (object)XmlQueryTypeFactory.None)
+                if ((object?)((local1).XmlType) == (object)XmlQueryTypeFactory.None)
                 {
                     // PATTERN: [FoldNone] (Divide $x:* ^ (None? (TypeOf $x)) *) => (Nop $x)
                     if (AllowReplace(XmlILOptimization.FoldNone, local0))
@@ -1491,7 +1494,7 @@ namespace System.Xml.Xsl.IlGen
             }
             if (this[XmlILOptimization.FoldNone])
             {
-                if ((object)((local2).XmlType) == (object)XmlQueryTypeFactory.None)
+                if ((object?)((local2).XmlType) == (object)XmlQueryTypeFactory.None)
                 {
                     // PATTERN: [FoldNone] (Divide * $x:* ^ (None? (TypeOf $x))) => (Nop $x)
                     if (AllowReplace(XmlILOptimization.FoldNone, local0))
@@ -1523,7 +1526,7 @@ namespace System.Xml.Xsl.IlGen
             QilNode local2 = local0[1];
             if (this[XmlILOptimization.FoldNone])
             {
-                if ((object)((local1).XmlType) == (object)XmlQueryTypeFactory.None)
+                if ((object?)((local1).XmlType) == (object)XmlQueryTypeFactory.None)
                 {
                     // PATTERN: [FoldNone] (Modulo $x:* ^ (None? (TypeOf $x)) *) => (Nop $x)
                     if (AllowReplace(XmlILOptimization.FoldNone, local0))
@@ -1534,7 +1537,7 @@ namespace System.Xml.Xsl.IlGen
             }
             if (this[XmlILOptimization.FoldNone])
             {
-                if ((object)((local2).XmlType) == (object)XmlQueryTypeFactory.None)
+                if ((object?)((local2).XmlType) == (object)XmlQueryTypeFactory.None)
                 {
                     // PATTERN: [FoldNone] (Modulo * $x:* ^ (None? (TypeOf $x))) => (Nop $x)
                     if (AllowReplace(XmlILOptimization.FoldNone, local0))
@@ -1568,7 +1571,7 @@ namespace System.Xml.Xsl.IlGen
             QilNode local1 = local0[0];
             if (this[XmlILOptimization.FoldNone])
             {
-                if ((object)((local1).XmlType) == (object)XmlQueryTypeFactory.None)
+                if ((object?)((local1).XmlType) == (object)XmlQueryTypeFactory.None)
                 {
                     // PATTERN: [FoldNone] (StrLength $x:* ^ (None? (TypeOf $x))) => (Nop $x)
                     if (AllowReplace(XmlILOptimization.FoldNone, local0))
@@ -1581,7 +1584,7 @@ namespace System.Xml.Xsl.IlGen
             {
                 if (local1.NodeType == QilNodeType.LiteralString)
                 {
-                    string local2 = (string)((QilLiteral)local1).Value;
+                    string local2 = (string)((QilLiteral)local1).Value!;
                     // PATTERN: [EliminateStrLength] (StrLength (LiteralString $x:*)) => (LiteralInt32 { {$x}.Length })
                     if (AllowReplace(XmlILOptimization.EliminateStrLength, local0))
                     {
@@ -1598,7 +1601,7 @@ namespace System.Xml.Xsl.IlGen
             QilNode local2 = local0[1];
             if (this[XmlILOptimization.FoldNone])
             {
-                if ((object)((local1).XmlType) == (object)XmlQueryTypeFactory.None)
+                if ((object?)((local1).XmlType) == (object)XmlQueryTypeFactory.None)
                 {
                     // PATTERN: [FoldNone] (StrConcat $x:* ^ (None? (TypeOf $x)) *) => (Nop $x)
                     if (AllowReplace(XmlILOptimization.FoldNone, local0))
@@ -1609,7 +1612,7 @@ namespace System.Xml.Xsl.IlGen
             }
             if (this[XmlILOptimization.FoldNone])
             {
-                if ((object)((local2).XmlType) == (object)XmlQueryTypeFactory.None)
+                if ((object?)((local2).XmlType) == (object)XmlQueryTypeFactory.None)
                 {
                     // PATTERN: [FoldNone] (StrConcat * $x:* ^ (None? (TypeOf $x))) => (Nop $x)
                     if (AllowReplace(XmlILOptimization.FoldNone, local0))
@@ -1618,7 +1621,7 @@ namespace System.Xml.Xsl.IlGen
                     }
                 }
             }
-            if ((((local2).XmlType).IsSingleton) && (this[XmlILOptimization.EliminateStrConcatSingle]))
+            if ((((local2).XmlType)!.IsSingleton) && (this[XmlILOptimization.EliminateStrConcatSingle]))
             {
                 // PATTERN: [EliminateStrConcatSingle] (StrConcat * $x:*) ^ (Single? (TypeOf $x)) => (Nop $x)
                 if (AllowReplace(XmlILOptimization.EliminateStrConcatSingle, local0))
@@ -1630,7 +1633,7 @@ namespace System.Xml.Xsl.IlGen
             {
                 if (local1.NodeType == QilNodeType.LiteralString)
                 {
-                    string local3 = (string)((QilLiteral)local1).Value;
+                    string local3 = (string)((QilLiteral)local1).Value!;
                     if (local2.NodeType == QilNodeType.Sequence)
                     {
                         if (AreLiteralArgs(local2))
@@ -1659,7 +1662,7 @@ namespace System.Xml.Xsl.IlGen
             QilNode local2 = local0[1];
             if (this[XmlILOptimization.FoldNone])
             {
-                if ((object)((local1).XmlType) == (object)XmlQueryTypeFactory.None)
+                if ((object?)((local1).XmlType) == (object)XmlQueryTypeFactory.None)
                 {
                     // PATTERN: [FoldNone] (StrParseQName $x:* ^ (None? (TypeOf $x)) *) => (Nop $x)
                     if (AllowReplace(XmlILOptimization.FoldNone, local0))
@@ -1670,7 +1673,7 @@ namespace System.Xml.Xsl.IlGen
             }
             if (this[XmlILOptimization.FoldNone])
             {
-                if ((object)((local2).XmlType) == (object)XmlQueryTypeFactory.None)
+                if ((object?)((local2).XmlType) == (object)XmlQueryTypeFactory.None)
                 {
                     // PATTERN: [FoldNone] (StrParseQName * $x:* ^ (None? (TypeOf $x))) => (Nop $x)
                     if (AllowReplace(XmlILOptimization.FoldNone, local0))
@@ -1691,7 +1694,7 @@ namespace System.Xml.Xsl.IlGen
             QilNode local2 = local0[1];
             if (this[XmlILOptimization.FoldNone])
             {
-                if ((object)((local1).XmlType) == (object)XmlQueryTypeFactory.None)
+                if ((object?)((local1).XmlType) == (object)XmlQueryTypeFactory.None)
                 {
                     // PATTERN: [FoldNone] (Ne $x:* ^ (None? (TypeOf $x)) *) => (Nop $x)
                     if (AllowReplace(XmlILOptimization.FoldNone, local0))
@@ -1702,7 +1705,7 @@ namespace System.Xml.Xsl.IlGen
             }
             if (this[XmlILOptimization.FoldNone])
             {
-                if ((object)((local2).XmlType) == (object)XmlQueryTypeFactory.None)
+                if ((object?)((local2).XmlType) == (object)XmlQueryTypeFactory.None)
                 {
                     // PATTERN: [FoldNone] (Ne * $x:* ^ (None? (TypeOf $x))) => (Nop $x)
                     if (AllowReplace(XmlILOptimization.FoldNone, local0))
@@ -1747,15 +1750,15 @@ namespace System.Xml.Xsl.IlGen
                     QilNode local4 = local1[1];
                     if (local4.NodeType == QilNodeType.LiteralType)
                     {
-                        XmlQueryType local5 = (XmlQueryType)((QilLiteral)local4).Value;
+                        XmlQueryType local5 = (XmlQueryType)((QilLiteral)local4).Value!;
                         if ((IsPrimitiveNumeric((local3).XmlType)) && (IsPrimitiveNumeric(local5)))
                         {
-                            if ((IsLiteral((local2))) && (CanFoldXsltConvertNonLossy(local2, (local3).XmlType)))
+                            if ((IsLiteral((local2))) && (CanFoldXsltConvertNonLossy(local2, (local3).XmlType!)))
                             {
                                 // PATTERN: [NormalizeXsltConvertNe] (Ne (XsltConvert $expr:* (LiteralType $typ:*)) ^ (PrimitiveNumeric? (TypeOf $expr)) ^ (PrimitiveNumeric? $typ) $lit:* ^ (Literal? $lit) ^ (CanFoldXsltConvertNonLossy? $lit (TypeOf $expr))) => (Ne $expr (FoldXsltConvert $lit (TypeOf $expr)))
                                 if (AllowReplace(XmlILOptimization.NormalizeXsltConvertNe, local0))
                                 {
-                                    return Replace(XmlILOptimization.NormalizeXsltConvertNe, local0, VisitNe(f.Ne(local3, FoldXsltConvert(local2, (local3).XmlType))));
+                                    return Replace(XmlILOptimization.NormalizeXsltConvertNe, local0, VisitNe(f.Ne(local3, FoldXsltConvert(local2, (local3).XmlType!))));
                                 }
                             }
                         }
@@ -1767,12 +1770,12 @@ namespace System.Xml.Xsl.IlGen
                 if (local1.NodeType == QilNodeType.XsltGenerateId)
                 {
                     QilNode local3 = local1[0];
-                    if (((local3).XmlType).IsSingleton)
+                    if (((local3).XmlType)!.IsSingleton)
                     {
                         if (local2.NodeType == QilNodeType.XsltGenerateId)
                         {
                             QilNode local4 = local2[0];
-                            if (((local4).XmlType).IsSingleton)
+                            if (((local4).XmlType)!.IsSingleton)
                             {
                                 // PATTERN: [NormalizeIdNe] (Ne (XsltGenerateId $arg1:*) ^ (Single? (TypeOf $arg1)) (XsltGenerateId $arg2:*) ^ (Single? (TypeOf $arg2))) => (Not (Is $arg1 $arg2))
                                 if (AllowReplace(XmlILOptimization.NormalizeIdNe, local0))
@@ -1791,7 +1794,7 @@ namespace System.Xml.Xsl.IlGen
                     QilNode local3 = local1[0];
                     if (local2.NodeType == QilNodeType.LiteralInt32)
                     {
-                        int local4 = (int)((QilLiteral)local2).Value;
+                        int local4 = (int)((QilLiteral)local2).Value!;
                         if (local4 == 0)
                         {
                             // PATTERN: [NormalizeLengthNe] (Ne (Length $expr:*) (LiteralInt32 0)) => (Not (IsEmpty $expr))
@@ -1809,7 +1812,7 @@ namespace System.Xml.Xsl.IlGen
                 {
                     if (local2.NodeType == QilNodeType.LiteralInt32)
                     {
-                        int local4 = (int)((QilLiteral)local2).Value;
+                        int local4 = (int)((QilLiteral)local2).Value!;
                         // PATTERN: [AnnotateMaxLengthNe] (Ne $len:(Length *) (LiteralInt32 $num:*)) => (AddPattern $len {MaxPosition}) ^ (AddArgument $len {MaxPosition} $num) ^ { }
                         if (AllowReplace(XmlILOptimization.AnnotateMaxLengthNe, local0))
                         {
@@ -1827,7 +1830,7 @@ namespace System.Xml.Xsl.IlGen
             QilNode local2 = local0[1];
             if (this[XmlILOptimization.FoldNone])
             {
-                if ((object)((local1).XmlType) == (object)XmlQueryTypeFactory.None)
+                if ((object?)((local1).XmlType) == (object)XmlQueryTypeFactory.None)
                 {
                     // PATTERN: [FoldNone] (Eq $x:* ^ (None? (TypeOf $x)) *) => (Nop $x)
                     if (AllowReplace(XmlILOptimization.FoldNone, local0))
@@ -1838,7 +1841,7 @@ namespace System.Xml.Xsl.IlGen
             }
             if (this[XmlILOptimization.FoldNone])
             {
-                if ((object)((local2).XmlType) == (object)XmlQueryTypeFactory.None)
+                if ((object?)((local2).XmlType) == (object)XmlQueryTypeFactory.None)
                 {
                     // PATTERN: [FoldNone] (Eq * $x:* ^ (None? (TypeOf $x))) => (Nop $x)
                     if (AllowReplace(XmlILOptimization.FoldNone, local0))
@@ -1883,15 +1886,15 @@ namespace System.Xml.Xsl.IlGen
                     QilNode local4 = local1[1];
                     if (local4.NodeType == QilNodeType.LiteralType)
                     {
-                        XmlQueryType local5 = (XmlQueryType)((QilLiteral)local4).Value;
+                        XmlQueryType local5 = (XmlQueryType)((QilLiteral)local4).Value!;
                         if ((IsPrimitiveNumeric((local3).XmlType)) && (IsPrimitiveNumeric(local5)))
                         {
-                            if ((IsLiteral((local2))) && (CanFoldXsltConvertNonLossy(local2, (local3).XmlType)))
+                            if ((IsLiteral((local2))) && (CanFoldXsltConvertNonLossy(local2, (local3).XmlType!)))
                             {
                                 // PATTERN: [NormalizeXsltConvertEq] (Eq (XsltConvert $expr:* (LiteralType $typ:*)) ^ (PrimitiveNumeric? (TypeOf $expr)) ^ (PrimitiveNumeric? $typ) $lit:* ^ (Literal? $lit) ^ (CanFoldXsltConvertNonLossy? $lit (TypeOf $expr))) => (Eq $expr (FoldXsltConvert $lit (TypeOf $expr)))
                                 if (AllowReplace(XmlILOptimization.NormalizeXsltConvertEq, local0))
                                 {
-                                    return Replace(XmlILOptimization.NormalizeXsltConvertEq, local0, VisitEq(f.Eq(local3, FoldXsltConvert(local2, (local3).XmlType))));
+                                    return Replace(XmlILOptimization.NormalizeXsltConvertEq, local0, VisitEq(f.Eq(local3, FoldXsltConvert(local2, (local3).XmlType!))));
                                 }
                             }
                         }
@@ -1922,12 +1925,12 @@ namespace System.Xml.Xsl.IlGen
                 if (local1.NodeType == QilNodeType.XsltGenerateId)
                 {
                     QilNode local3 = local1[0];
-                    if (((local3).XmlType).IsSingleton)
+                    if (((local3).XmlType)!.IsSingleton)
                     {
                         if (local2.NodeType == QilNodeType.XsltGenerateId)
                         {
                             QilNode local4 = local2[0];
-                            if (((local4).XmlType).IsSingleton)
+                            if (((local4).XmlType)!.IsSingleton)
                             {
                                 // PATTERN: [NormalizeIdEq] (Eq (XsltGenerateId $arg1:*) ^ (Single? (TypeOf $arg1)) (XsltGenerateId $arg2:*) ^ (Single? (TypeOf $arg2))) => (Is $arg1 $arg2)
                                 if (AllowReplace(XmlILOptimization.NormalizeIdEq, local0))
@@ -1944,7 +1947,7 @@ namespace System.Xml.Xsl.IlGen
                 if (local1.NodeType == QilNodeType.XsltGenerateId)
                 {
                     QilNode local3 = local1[0];
-                    if (((local3).XmlType).IsSingleton)
+                    if (((local3).XmlType)!.IsSingleton)
                     {
                         if (local2.NodeType == QilNodeType.StrConcat)
                         {
@@ -1956,7 +1959,7 @@ namespace System.Xml.Xsl.IlGen
                                 if (local6.NodeType == QilNodeType.For)
                                 {
                                     QilNode local7 = local6[0];
-                                    if (!((local7).XmlType).MaybeMany)
+                                    if (!((local7).XmlType)!.MaybeMany)
                                     {
                                         if (local8.NodeType == QilNodeType.XsltGenerateId)
                                         {
@@ -1990,7 +1993,7 @@ namespace System.Xml.Xsl.IlGen
                         if (local5.NodeType == QilNodeType.For)
                         {
                             QilNode local6 = local5[0];
-                            if (!((local6).XmlType).MaybeMany)
+                            if (!((local6).XmlType)!.MaybeMany)
                             {
                                 if (local7.NodeType == QilNodeType.XsltGenerateId)
                                 {
@@ -2000,7 +2003,7 @@ namespace System.Xml.Xsl.IlGen
                                         if (local2.NodeType == QilNodeType.XsltGenerateId)
                                         {
                                             QilNode local9 = local2[0];
-                                            if (((local9).XmlType).IsSingleton)
+                                            if (((local9).XmlType)!.IsSingleton)
                                             {
                                                 // PATTERN: [NormalizeIdEq] (Eq (StrConcat * (Loop $iter:(For $bind:* ^ (AtMostOne? (TypeOf $bind))) (XsltGenerateId $iter))) (XsltGenerateId $arg:*) ^ (Single? (TypeOf $arg))) => (Not (IsEmpty (Filter $iterNew:(For $bind) (Is $arg $iterNew))))
                                                 if (AllowReplace(XmlILOptimization.NormalizeIdEq, local0))
@@ -2026,11 +2029,11 @@ namespace System.Xml.Xsl.IlGen
                     {
                         QilNode local4 = local3[0];
                         QilNode local5 = local3[1];
-                        if ((((local4).XmlType).IsSingleton) && (!((local5).XmlType).MaybeMany))
+                        if ((((local4).XmlType)!.IsSingleton) && (!((local5).XmlType)!.MaybeMany))
                         {
                             if (local2.NodeType == QilNodeType.LiteralInt32)
                             {
-                                int local6 = (int)((QilLiteral)local2).Value;
+                                int local6 = (int)((QilLiteral)local2).Value!;
                                 if (local6 == 1)
                                 {
                                     // PATTERN: [NormalizeMuenchian] (Eq (Length (Union $arg1:* $arg2:*) ^ (Single? (TypeOf $arg1)) ^ (AtMostOne? (TypeOf $arg2))) (LiteralInt32 1)) => (IsEmpty (Filter $iterNew:(For $arg2) (Not (Is $arg1 $iterNew))))
@@ -2054,11 +2057,11 @@ namespace System.Xml.Xsl.IlGen
                     {
                         QilNode local4 = local3[0];
                         QilNode local5 = local3[1];
-                        if ((!((local4).XmlType).MaybeMany) && (((local5).XmlType).IsSingleton))
+                        if ((!((local4).XmlType)!.MaybeMany) && (((local5).XmlType)!.IsSingleton))
                         {
                             if (local2.NodeType == QilNodeType.LiteralInt32)
                             {
-                                int local6 = (int)((QilLiteral)local2).Value;
+                                int local6 = (int)((QilLiteral)local2).Value!;
                                 if (local6 == 1)
                                 {
                                     // PATTERN: [NormalizeMuenchian] (Eq (Length (Union $arg1:* $arg2:*) ^ (AtMostOne? (TypeOf $arg1)) ^ (Single? (TypeOf $arg2))) (LiteralInt32 1)) => (IsEmpty (Filter $iterNew:(For $arg1) (Not (Is $iterNew $arg2))))
@@ -2079,7 +2082,7 @@ namespace System.Xml.Xsl.IlGen
                 {
                     if (local2.NodeType == QilNodeType.LiteralInt32)
                     {
-                        int local4 = (int)((QilLiteral)local2).Value;
+                        int local4 = (int)((QilLiteral)local2).Value!;
                         // PATTERN: [AnnotateMaxLengthEq] (Eq $len:(Length *) (LiteralInt32 $num:*)) => (AddPattern $len {MaxPosition}) ^ (AddArgument $len {MaxPosition} $num) ^ { }
                         if (AllowReplace(XmlILOptimization.AnnotateMaxLengthEq, local0))
                         {
@@ -2097,7 +2100,7 @@ namespace System.Xml.Xsl.IlGen
             QilNode local2 = local0[1];
             if (this[XmlILOptimization.FoldNone])
             {
-                if ((object)((local1).XmlType) == (object)XmlQueryTypeFactory.None)
+                if ((object?)((local1).XmlType) == (object)XmlQueryTypeFactory.None)
                 {
                     // PATTERN: [FoldNone] (Gt $x:* ^ (None? (TypeOf $x)) *) => (Nop $x)
                     if (AllowReplace(XmlILOptimization.FoldNone, local0))
@@ -2108,7 +2111,7 @@ namespace System.Xml.Xsl.IlGen
             }
             if (this[XmlILOptimization.FoldNone])
             {
-                if ((object)((local2).XmlType) == (object)XmlQueryTypeFactory.None)
+                if ((object?)((local2).XmlType) == (object)XmlQueryTypeFactory.None)
                 {
                     // PATTERN: [FoldNone] (Gt * $x:* ^ (None? (TypeOf $x))) => (Nop $x)
                     if (AllowReplace(XmlILOptimization.FoldNone, local0))
@@ -2153,15 +2156,15 @@ namespace System.Xml.Xsl.IlGen
                     QilNode local4 = local1[1];
                     if (local4.NodeType == QilNodeType.LiteralType)
                     {
-                        XmlQueryType local5 = (XmlQueryType)((QilLiteral)local4).Value;
+                        XmlQueryType local5 = (XmlQueryType)((QilLiteral)local4).Value!;
                         if ((IsPrimitiveNumeric((local3).XmlType)) && (IsPrimitiveNumeric(local5)))
                         {
-                            if ((IsLiteral((local2))) && (CanFoldXsltConvertNonLossy(local2, (local3).XmlType)))
+                            if ((IsLiteral((local2))) && (CanFoldXsltConvertNonLossy(local2, (local3).XmlType!)))
                             {
                                 // PATTERN: [NormalizeXsltConvertGt] (Gt (XsltConvert $expr:* (LiteralType $typ:*)) ^ (PrimitiveNumeric? (TypeOf $expr)) ^ (PrimitiveNumeric? $typ) $lit:* ^ (Literal? $lit) ^ (CanFoldXsltConvertNonLossy? $lit (TypeOf $expr))) => (Gt $expr (FoldXsltConvert $lit (TypeOf $expr)))
                                 if (AllowReplace(XmlILOptimization.NormalizeXsltConvertGt, local0))
                                 {
-                                    return Replace(XmlILOptimization.NormalizeXsltConvertGt, local0, VisitGt(f.Gt(local3, FoldXsltConvert(local2, (local3).XmlType))));
+                                    return Replace(XmlILOptimization.NormalizeXsltConvertGt, local0, VisitGt(f.Gt(local3, FoldXsltConvert(local2, (local3).XmlType!))));
                                 }
                             }
                         }
@@ -2175,7 +2178,7 @@ namespace System.Xml.Xsl.IlGen
                     QilNode local3 = local1[0];
                     if (local2.NodeType == QilNodeType.LiteralInt32)
                     {
-                        int local4 = (int)((QilLiteral)local2).Value;
+                        int local4 = (int)((QilLiteral)local2).Value!;
                         if (local4 == 0)
                         {
                             // PATTERN: [NormalizeLengthGt] (Gt (Length $expr:*) (LiteralInt32 0)) => (Not (IsEmpty $expr))
@@ -2193,7 +2196,7 @@ namespace System.Xml.Xsl.IlGen
                 {
                     if (local2.NodeType == QilNodeType.LiteralInt32)
                     {
-                        int local4 = (int)((QilLiteral)local2).Value;
+                        int local4 = (int)((QilLiteral)local2).Value!;
                         // PATTERN: [AnnotateMaxLengthGt] (Gt $len:(Length *) (LiteralInt32 $num:*)) => (AddPattern $len {MaxPosition}) ^ (AddArgument $len {MaxPosition} $num) ^ { }
                         if (AllowReplace(XmlILOptimization.AnnotateMaxLengthGt, local0))
                         {
@@ -2211,7 +2214,7 @@ namespace System.Xml.Xsl.IlGen
             QilNode local2 = local0[1];
             if (this[XmlILOptimization.FoldNone])
             {
-                if ((object)((local1).XmlType) == (object)XmlQueryTypeFactory.None)
+                if ((object?)((local1).XmlType) == (object)XmlQueryTypeFactory.None)
                 {
                     // PATTERN: [FoldNone] (Ge $x:* ^ (None? (TypeOf $x)) *) => (Nop $x)
                     if (AllowReplace(XmlILOptimization.FoldNone, local0))
@@ -2222,7 +2225,7 @@ namespace System.Xml.Xsl.IlGen
             }
             if (this[XmlILOptimization.FoldNone])
             {
-                if ((object)((local2).XmlType) == (object)XmlQueryTypeFactory.None)
+                if ((object?)((local2).XmlType) == (object)XmlQueryTypeFactory.None)
                 {
                     // PATTERN: [FoldNone] (Ge * $x:* ^ (None? (TypeOf $x))) => (Nop $x)
                     if (AllowReplace(XmlILOptimization.FoldNone, local0))
@@ -2267,15 +2270,15 @@ namespace System.Xml.Xsl.IlGen
                     QilNode local4 = local1[1];
                     if (local4.NodeType == QilNodeType.LiteralType)
                     {
-                        XmlQueryType local5 = (XmlQueryType)((QilLiteral)local4).Value;
+                        XmlQueryType local5 = (XmlQueryType)((QilLiteral)local4).Value!;
                         if ((IsPrimitiveNumeric((local3).XmlType)) && (IsPrimitiveNumeric(local5)))
                         {
-                            if ((IsLiteral((local2))) && (CanFoldXsltConvertNonLossy(local2, (local3).XmlType)))
+                            if ((IsLiteral((local2))) && (CanFoldXsltConvertNonLossy(local2, (local3).XmlType!)))
                             {
                                 // PATTERN: [NormalizeXsltConvertGe] (Ge (XsltConvert $expr:* (LiteralType $typ:*)) ^ (PrimitiveNumeric? (TypeOf $expr)) ^ (PrimitiveNumeric? $typ) $lit:* ^ (Literal? $lit) ^ (CanFoldXsltConvertNonLossy? $lit (TypeOf $expr))) => (Ge $expr (FoldXsltConvert $lit (TypeOf $expr)))
                                 if (AllowReplace(XmlILOptimization.NormalizeXsltConvertGe, local0))
                                 {
-                                    return Replace(XmlILOptimization.NormalizeXsltConvertGe, local0, VisitGe(f.Ge(local3, FoldXsltConvert(local2, (local3).XmlType))));
+                                    return Replace(XmlILOptimization.NormalizeXsltConvertGe, local0, VisitGe(f.Ge(local3, FoldXsltConvert(local2, (local3).XmlType!))));
                                 }
                             }
                         }
@@ -2288,7 +2291,7 @@ namespace System.Xml.Xsl.IlGen
                 {
                     if (local2.NodeType == QilNodeType.LiteralInt32)
                     {
-                        int local4 = (int)((QilLiteral)local2).Value;
+                        int local4 = (int)((QilLiteral)local2).Value!;
                         // PATTERN: [AnnotateMaxLengthGe] (Ge $len:(Length *) (LiteralInt32 $num:*)) => (AddPattern $len {MaxPosition}) ^ (AddArgument $len {MaxPosition} $num) ^ { }
                         if (AllowReplace(XmlILOptimization.AnnotateMaxLengthGe, local0))
                         {
@@ -2306,7 +2309,7 @@ namespace System.Xml.Xsl.IlGen
             QilNode local2 = local0[1];
             if (this[XmlILOptimization.FoldNone])
             {
-                if ((object)((local1).XmlType) == (object)XmlQueryTypeFactory.None)
+                if ((object?)((local1).XmlType) == (object)XmlQueryTypeFactory.None)
                 {
                     // PATTERN: [FoldNone] (Lt $x:* ^ (None? (TypeOf $x)) *) => (Nop $x)
                     if (AllowReplace(XmlILOptimization.FoldNone, local0))
@@ -2317,7 +2320,7 @@ namespace System.Xml.Xsl.IlGen
             }
             if (this[XmlILOptimization.FoldNone])
             {
-                if ((object)((local2).XmlType) == (object)XmlQueryTypeFactory.None)
+                if ((object?)((local2).XmlType) == (object)XmlQueryTypeFactory.None)
                 {
                     // PATTERN: [FoldNone] (Lt * $x:* ^ (None? (TypeOf $x))) => (Nop $x)
                     if (AllowReplace(XmlILOptimization.FoldNone, local0))
@@ -2362,15 +2365,15 @@ namespace System.Xml.Xsl.IlGen
                     QilNode local4 = local1[1];
                     if (local4.NodeType == QilNodeType.LiteralType)
                     {
-                        XmlQueryType local5 = (XmlQueryType)((QilLiteral)local4).Value;
+                        XmlQueryType local5 = (XmlQueryType)((QilLiteral)local4).Value!;
                         if ((IsPrimitiveNumeric((local3).XmlType)) && (IsPrimitiveNumeric(local5)))
                         {
-                            if ((IsLiteral((local2))) && (CanFoldXsltConvertNonLossy(local2, (local3).XmlType)))
+                            if ((IsLiteral((local2))) && (CanFoldXsltConvertNonLossy(local2, (local3).XmlType!)))
                             {
                                 // PATTERN: [NormalizeXsltConvertLt] (Lt (XsltConvert $expr:* (LiteralType $typ:*)) ^ (PrimitiveNumeric? (TypeOf $expr)) ^ (PrimitiveNumeric? $typ) $lit:* ^ (Literal? $lit) ^ (CanFoldXsltConvertNonLossy? $lit (TypeOf $expr))) => (Lt $expr (FoldXsltConvert $lit (TypeOf $expr)))
                                 if (AllowReplace(XmlILOptimization.NormalizeXsltConvertLt, local0))
                                 {
-                                    return Replace(XmlILOptimization.NormalizeXsltConvertLt, local0, VisitLt(f.Lt(local3, FoldXsltConvert(local2, (local3).XmlType))));
+                                    return Replace(XmlILOptimization.NormalizeXsltConvertLt, local0, VisitLt(f.Lt(local3, FoldXsltConvert(local2, (local3).XmlType!))));
                                 }
                             }
                         }
@@ -2383,7 +2386,7 @@ namespace System.Xml.Xsl.IlGen
                 {
                     if (local2.NodeType == QilNodeType.LiteralInt32)
                     {
-                        int local4 = (int)((QilLiteral)local2).Value;
+                        int local4 = (int)((QilLiteral)local2).Value!;
                         // PATTERN: [AnnotateMaxLengthLt] (Lt $len:(Length *) (LiteralInt32 $num:*)) => (AddPattern $len {MaxPosition}) ^ (AddArgument $len {MaxPosition} $num) ^ { }
                         if (AllowReplace(XmlILOptimization.AnnotateMaxLengthLt, local0))
                         {
@@ -2401,7 +2404,7 @@ namespace System.Xml.Xsl.IlGen
             QilNode local2 = local0[1];
             if (this[XmlILOptimization.FoldNone])
             {
-                if ((object)((local1).XmlType) == (object)XmlQueryTypeFactory.None)
+                if ((object?)((local1).XmlType) == (object)XmlQueryTypeFactory.None)
                 {
                     // PATTERN: [FoldNone] (Le $x:* ^ (None? (TypeOf $x)) *) => (Nop $x)
                     if (AllowReplace(XmlILOptimization.FoldNone, local0))
@@ -2412,7 +2415,7 @@ namespace System.Xml.Xsl.IlGen
             }
             if (this[XmlILOptimization.FoldNone])
             {
-                if ((object)((local2).XmlType) == (object)XmlQueryTypeFactory.None)
+                if ((object?)((local2).XmlType) == (object)XmlQueryTypeFactory.None)
                 {
                     // PATTERN: [FoldNone] (Le * $x:* ^ (None? (TypeOf $x))) => (Nop $x)
                     if (AllowReplace(XmlILOptimization.FoldNone, local0))
@@ -2457,15 +2460,15 @@ namespace System.Xml.Xsl.IlGen
                     QilNode local4 = local1[1];
                     if (local4.NodeType == QilNodeType.LiteralType)
                     {
-                        XmlQueryType local5 = (XmlQueryType)((QilLiteral)local4).Value;
+                        XmlQueryType local5 = (XmlQueryType)((QilLiteral)local4).Value!;
                         if ((IsPrimitiveNumeric((local3).XmlType)) && (IsPrimitiveNumeric(local5)))
                         {
-                            if ((IsLiteral((local2))) && (CanFoldXsltConvertNonLossy(local2, (local3).XmlType)))
+                            if ((IsLiteral((local2))) && (CanFoldXsltConvertNonLossy(local2, (local3).XmlType!)))
                             {
                                 // PATTERN: [NormalizeXsltConvertLe] (Le (XsltConvert $expr:* (LiteralType $typ:*)) ^ (PrimitiveNumeric? (TypeOf $expr)) ^ (PrimitiveNumeric? $typ) $lit:* ^ (Literal? $lit) ^ (CanFoldXsltConvertNonLossy? $lit (TypeOf $expr))) => (Le $expr (FoldXsltConvert $lit (TypeOf $expr)))
                                 if (AllowReplace(XmlILOptimization.NormalizeXsltConvertLe, local0))
                                 {
-                                    return Replace(XmlILOptimization.NormalizeXsltConvertLe, local0, VisitLe(f.Le(local3, FoldXsltConvert(local2, (local3).XmlType))));
+                                    return Replace(XmlILOptimization.NormalizeXsltConvertLe, local0, VisitLe(f.Le(local3, FoldXsltConvert(local2, (local3).XmlType!))));
                                 }
                             }
                         }
@@ -2478,7 +2481,7 @@ namespace System.Xml.Xsl.IlGen
                 {
                     if (local2.NodeType == QilNodeType.LiteralInt32)
                     {
-                        int local4 = (int)((QilLiteral)local2).Value;
+                        int local4 = (int)((QilLiteral)local2).Value!;
                         // PATTERN: [AnnotateMaxLengthLe] (Le $len:(Length *) (LiteralInt32 $num:*)) => (AddPattern $len {MaxPosition}) ^ (AddArgument $len {MaxPosition} $num) ^ { }
                         if (AllowReplace(XmlILOptimization.AnnotateMaxLengthLe, local0))
                         {
@@ -2499,7 +2502,7 @@ namespace System.Xml.Xsl.IlGen
             QilNode local2 = local0[1];
             if (this[XmlILOptimization.FoldNone])
             {
-                if ((object)((local1).XmlType) == (object)XmlQueryTypeFactory.None)
+                if ((object?)((local1).XmlType) == (object)XmlQueryTypeFactory.None)
                 {
                     // PATTERN: [FoldNone] (Is $x:* ^ (None? (TypeOf $x)) *) => (Nop $x)
                     if (AllowReplace(XmlILOptimization.FoldNone, local0))
@@ -2510,7 +2513,7 @@ namespace System.Xml.Xsl.IlGen
             }
             if (this[XmlILOptimization.FoldNone])
             {
-                if ((object)((local2).XmlType) == (object)XmlQueryTypeFactory.None)
+                if ((object?)((local2).XmlType) == (object)XmlQueryTypeFactory.None)
                 {
                     // PATTERN: [FoldNone] (Is * $x:* ^ (None? (TypeOf $x))) => (Nop $x)
                     if (AllowReplace(XmlILOptimization.FoldNone, local0))
@@ -2539,7 +2542,7 @@ namespace System.Xml.Xsl.IlGen
             QilNode local2 = local0[1];
             if (this[XmlILOptimization.FoldNone])
             {
-                if ((object)((local1).XmlType) == (object)XmlQueryTypeFactory.None)
+                if ((object?)((local1).XmlType) == (object)XmlQueryTypeFactory.None)
                 {
                     // PATTERN: [FoldNone] (After $x:* ^ (None? (TypeOf $x)) *) => (Nop $x)
                     if (AllowReplace(XmlILOptimization.FoldNone, local0))
@@ -2550,7 +2553,7 @@ namespace System.Xml.Xsl.IlGen
             }
             if (this[XmlILOptimization.FoldNone])
             {
-                if ((object)((local2).XmlType) == (object)XmlQueryTypeFactory.None)
+                if ((object?)((local2).XmlType) == (object)XmlQueryTypeFactory.None)
                 {
                     // PATTERN: [FoldNone] (After * $x:* ^ (None? (TypeOf $x))) => (Nop $x)
                     if (AllowReplace(XmlILOptimization.FoldNone, local0))
@@ -2579,7 +2582,7 @@ namespace System.Xml.Xsl.IlGen
             QilNode local2 = local0[1];
             if (this[XmlILOptimization.FoldNone])
             {
-                if ((object)((local1).XmlType) == (object)XmlQueryTypeFactory.None)
+                if ((object?)((local1).XmlType) == (object)XmlQueryTypeFactory.None)
                 {
                     // PATTERN: [FoldNone] (Before $x:* ^ (None? (TypeOf $x)) *) => (Nop $x)
                     if (AllowReplace(XmlILOptimization.FoldNone, local0))
@@ -2590,7 +2593,7 @@ namespace System.Xml.Xsl.IlGen
             }
             if (this[XmlILOptimization.FoldNone])
             {
-                if ((object)((local2).XmlType) == (object)XmlQueryTypeFactory.None)
+                if ((object?)((local2).XmlType) == (object)XmlQueryTypeFactory.None)
                 {
                     // PATTERN: [FoldNone] (Before * $x:* ^ (None? (TypeOf $x))) => (Nop $x)
                     if (AllowReplace(XmlILOptimization.FoldNone, local0))
@@ -2622,7 +2625,7 @@ namespace System.Xml.Xsl.IlGen
             QilNode local2 = local0[1];
             if (this[XmlILOptimization.FoldNone])
             {
-                if ((object)((local1).XmlType) == (object)XmlQueryTypeFactory.None)
+                if ((object?)((local1).XmlType) == (object)XmlQueryTypeFactory.None)
                 {
                     // PATTERN: [FoldNone] (Loop $i:* ^ (None? (TypeOf $i)) *) => (Nop (First $i))
                     if (AllowReplace(XmlILOptimization.FoldNone, local0))
@@ -2700,7 +2703,7 @@ namespace System.Xml.Xsl.IlGen
                 if (local1.NodeType == QilNodeType.For)
                 {
                     QilNode local3 = local1[0];
-                    if (((local3).XmlType).IsSingleton)
+                    if (((local3).XmlType!).IsSingleton)
                     {
                         if (local2.NodeType == QilNodeType.TextCtor)
                         {
@@ -2716,7 +2719,7 @@ namespace System.Xml.Xsl.IlGen
             }
             if (this[XmlILOptimization.EliminateIteratorUsedAtMostOnce])
             {
-                if ((((local1).NodeType == QilNodeType.Let) || ((((QilNode)(local1)[0]).XmlType).IsSingleton)) && (!OptimizerPatterns.Read(local1).MatchesPattern(OptimizerPatternName.MaybeSideEffects)))
+                if ((((local1).NodeType == QilNodeType.Let) || ((((QilNode)(local1)[0]).XmlType!).IsSingleton)) && (!OptimizerPatterns.Read(local1).MatchesPattern(OptimizerPatternName.MaybeSideEffects)))
                 {
                     if (_nodeCounter.Count(local2, local1) <= 1)
                     {
@@ -2854,7 +2857,7 @@ namespace System.Xml.Xsl.IlGen
                 if (local1.NodeType == QilNodeType.For)
                 {
                     QilNode local3 = local1[0];
-                    if (!((local3).XmlType).MaybeMany)
+                    if (!((local3).XmlType!).MaybeMany)
                     {
                         // PATTERN: [AnnotateSingletonLoop] $outer:(Loop (For $bind:* ^ (AtMostOne? (TypeOf $bind))) $ret:*) => (InheritPattern $outer $ret {IsDocOrderDistinct}) ^ (InheritPattern $outer $ret {SameDepth}) ^ { }
                         if (AllowReplace(XmlILOptimization.AnnotateSingletonLoop, local0))
@@ -2935,7 +2938,7 @@ namespace System.Xml.Xsl.IlGen
             QilNode local2 = local0[1];
             if (this[XmlILOptimization.FoldNone])
             {
-                if ((object)((local1).XmlType) == (object)XmlQueryTypeFactory.None)
+                if ((object?)((local1).XmlType) == (object)XmlQueryTypeFactory.None)
                 {
                     // PATTERN: [FoldNone] (Filter $i:* ^ (None? (TypeOf $i)) *) => (Nop (First $i))
                     if (AllowReplace(XmlILOptimization.FoldNone, local0))
@@ -2946,7 +2949,7 @@ namespace System.Xml.Xsl.IlGen
             }
             if (this[XmlILOptimization.FoldNone])
             {
-                if ((object)((local2).XmlType) == (object)XmlQueryTypeFactory.None)
+                if ((object?)((local2).XmlType) == (object)XmlQueryTypeFactory.None)
                 {
                     // PATTERN: [FoldNone] (Filter $i:* $w:* ^ (None? (TypeOf $w))) => (Loop $i $w)
                     if (AllowReplace(XmlILOptimization.FoldNone, local0))
@@ -3000,7 +3003,7 @@ namespace System.Xml.Xsl.IlGen
                                 {
                                     if (local7.NodeType == QilNodeType.LiteralType)
                                     {
-                                        XmlQueryType local8 = (XmlQueryType)((QilLiteral)local7).Value;
+                                        XmlQueryType local8 = (XmlQueryType)((QilLiteral)local7).Value!;
                                         if ((local8) == (XmlQueryTypeFactory.Attribute))
                                         {
                                             if (local9.NodeType == QilNodeType.Eq)
@@ -3079,7 +3082,7 @@ namespace System.Xml.Xsl.IlGen
                         {
                             if (local5.NodeType == QilNodeType.LiteralInt32)
                             {
-                                int local6 = (int)((QilLiteral)local5).Value;
+                                int local6 = (int)((QilLiteral)local5).Value!;
                                 // PATTERN: [AnnotateMaxPositionEq] $outer:(Filter $iter:* (Eq (PositionOf $iter) (LiteralInt32 $num:*))) => (AddPattern $iter {MaxPosition}) ^ (AddArgument $iter {MaxPosition} $num) ^ { }
                                 if (AllowReplace(XmlILOptimization.AnnotateMaxPositionEq, local0))
                                 {
@@ -3103,7 +3106,7 @@ namespace System.Xml.Xsl.IlGen
                         {
                             if (local5.NodeType == QilNodeType.LiteralInt32)
                             {
-                                int local6 = (int)((QilLiteral)local5).Value;
+                                int local6 = (int)((QilLiteral)local5).Value!;
                                 // PATTERN: [AnnotateMaxPositionLe] $outer:(Filter $iter:* (Le (PositionOf $iter) (LiteralInt32 $num:*))) => (AddPattern $iter {MaxPosition}) ^ (AddArgument $iter {MaxPosition} $num) ^ { }
                                 if (AllowReplace(XmlILOptimization.AnnotateMaxPositionLe, local0))
                                 {
@@ -3127,7 +3130,7 @@ namespace System.Xml.Xsl.IlGen
                         {
                             if (local5.NodeType == QilNodeType.LiteralInt32)
                             {
-                                int local6 = (int)((QilLiteral)local5).Value;
+                                int local6 = (int)((QilLiteral)local5).Value!;
                                 // PATTERN: [AnnotateMaxPositionLt] $outer:(Filter $iter:* (Lt (PositionOf $iter) (LiteralInt32 $num:*))) => (AddPattern $iter {MaxPosition}) ^ (AddArgument $iter {MaxPosition} { {$num} - 1 }) ^ { }
                                 if (AllowReplace(XmlILOptimization.AnnotateMaxPositionLt, local0))
                                 {
@@ -3169,7 +3172,7 @@ namespace System.Xml.Xsl.IlGen
                                 {
                                     if (local6.NodeType == QilNodeType.LiteralType)
                                     {
-                                        XmlQueryType local7 = (XmlQueryType)((QilLiteral)local6).Value;
+                                        XmlQueryType local7 = (XmlQueryType)((QilLiteral)local6).Value!;
                                         if ((local7) == (XmlQueryTypeFactory.Element))
                                         {
                                             if (local8.NodeType == QilNodeType.Eq)
@@ -3215,7 +3218,7 @@ namespace System.Xml.Xsl.IlGen
                             {
                                 if (local5.NodeType == QilNodeType.LiteralType)
                                 {
-                                    XmlQueryType local6 = (XmlQueryType)((QilLiteral)local5).Value;
+                                    XmlQueryType local6 = (XmlQueryType)((QilLiteral)local5).Value!;
                                     if (MatchesContentTest(local6))
                                     {
                                         // PATTERN: [AnnotateFilterContentKind] $outer:(Filter $iter:(For $bind:* ^ (Pattern? $bind {Axis})) (IsType $iter (LiteralType $kind:* ^ (ContentTest? $kind)))) => (AddPattern $outer {FilterContentKind}) ^ (AddArgument $outer {KindTestType} $kind) ^ { }
@@ -3245,7 +3248,7 @@ namespace System.Xml.Xsl.IlGen
                             {
                                 if (local6.NodeType == QilNodeType.LiteralType)
                                 {
-                                    XmlQueryType local7 = (XmlQueryType)((QilLiteral)local6).Value;
+                                    XmlQueryType local7 = (XmlQueryType)((QilLiteral)local6).Value!;
                                     if ((local7) == (XmlQueryTypeFactory.Attribute))
                                     {
                                         // PATTERN: [AnnotateFilterAttributeKind] $outer:(Filter $iter:(For (Content *)) (IsType $iter (LiteralType $kind:*) ^ (Equal? $kind (ConstructType {Attribute})))) => (AddPattern $outer {FilterAttributeKind}) ^ { }
@@ -3272,7 +3275,7 @@ namespace System.Xml.Xsl.IlGen
             QilNode local2 = local0[1];
             if (this[XmlILOptimization.FoldNone])
             {
-                if ((object)((local1).XmlType) == (object)XmlQueryTypeFactory.None)
+                if ((object?)((local1).XmlType) == (object)XmlQueryTypeFactory.None)
                 {
                     // PATTERN: [FoldNone] (Sort $i:* ^ (None? (TypeOf $i)) *) => (Nop (First $i))
                     if (AllowReplace(XmlILOptimization.FoldNone, local0))
@@ -3286,7 +3289,7 @@ namespace System.Xml.Xsl.IlGen
                 if (local1.NodeType == QilNodeType.For)
                 {
                     QilNode local3 = local1[0];
-                    if (((local3).XmlType).IsSingleton)
+                    if (((local3).XmlType)!.IsSingleton)
                     {
                         // PATTERN: [EliminateSort] (Sort (For $bind:* ^ (Single? (TypeOf $bind))) *) => (Nop $bind)
                         if (AllowReplace(XmlILOptimization.EliminateSort, local0))
@@ -3311,7 +3314,7 @@ namespace System.Xml.Xsl.IlGen
                     QilNode local4 = local1[1];
                     if (local4.NodeType == QilNodeType.LiteralType)
                     {
-                        XmlQueryType local5 = (XmlQueryType)((QilLiteral)local4).Value;
+                        XmlQueryType local5 = (XmlQueryType)((QilLiteral)local4).Value!;
                         if ((((local3).XmlType) == (XmlQueryTypeFactory.IntX)) && ((local5) == (XmlQueryTypeFactory.DoubleX)))
                         {
                             // PATTERN: [NormalizeSortXsltConvert] (SortKey (XsltConvert $expr:* (LiteralType $typ:*)) ^ (Equal? (TypeOf $expr) (ConstructType {IntX})) ^ (Equal? $typ (ConstructType {DoubleX})) $coll:*) => (SortKey $expr $coll)
@@ -3331,7 +3334,7 @@ namespace System.Xml.Xsl.IlGen
             QilNode local1 = local0[0];
             if (this[XmlILOptimization.FoldNone])
             {
-                if ((object)((local1).XmlType) == (object)XmlQueryTypeFactory.None)
+                if ((object?)((local1).XmlType) == (object)XmlQueryTypeFactory.None)
                 {
                     // PATTERN: [FoldNone] (DocOrderDistinct $x:* ^ (None? (TypeOf $x))) => (Nop $x)
                     if (AllowReplace(XmlILOptimization.FoldNone, local0))
@@ -3483,7 +3486,7 @@ namespace System.Xml.Xsl.IlGen
                         QilNode local3 = local2[0];
                         if (!(IsDocOrderDistinct(local3)))
                         {
-                            if ((!OptimizerPatterns.Read(local2).MatchesPattern(OptimizerPatternName.IsPositional)) && ((local3).XmlType.IsSubtypeOf(XmlQueryTypeFactory.NodeNotRtfS)))
+                            if ((!OptimizerPatterns.Read(local2).MatchesPattern(OptimizerPatternName.IsPositional)) && ((local3).XmlType!.IsSubtypeOf(XmlQueryTypeFactory.NodeNotRtfS)))
                             {
                                 if (((!(OptimizerPatterns.Read((QilNode)(local1)).MatchesPattern(OptimizerPatternName.FilterElements))) && (!(OptimizerPatterns.Read((QilNode)(local1)).MatchesPattern(OptimizerPatternName.FilterContentKind)))) && (!(OptimizerPatterns.Read((QilNode)(local1)).MatchesPattern(OptimizerPatternName.FilterAttributeKind))))
                                 {
@@ -3606,10 +3609,10 @@ namespace System.Xml.Xsl.IlGen
             QilNode local1 = local0[0];
             QilNode local2 = local0[1];
             QilNode local3 = local0[2];
-            XmlQueryType local4 = (XmlQueryType)((QilFunction)local0).XmlType;
-            if (((local0).XmlType.IsSubtypeOf(XmlQueryTypeFactory.NodeS)) && (this[XmlILOptimization.AnnotateIndex1]))
+            XmlQueryType? local4 = (XmlQueryType?)((QilFunction)local0).XmlType;
+            if (((local0).XmlType!.IsSubtypeOf(XmlQueryTypeFactory.NodeS)) && (this[XmlILOptimization.AnnotateIndex1]))
             {
-                if (((local1.Count == 2) && (((QilNode)(local1)[0]).XmlType.IsSubtypeOf(XmlQueryTypeFactory.Node))) && ((((QilNode)(local1)[1]).XmlType) == (XmlQueryTypeFactory.StringX)))
+                if (((local1.Count == 2) && (((QilNode)(local1)[0]).XmlType!.IsSubtypeOf(XmlQueryTypeFactory.Node))) && ((((QilNode)(local1)[1]).XmlType) == (XmlQueryTypeFactory.StringX)))
                 {
                     if (local2.NodeType == QilNodeType.Filter)
                     {
@@ -3778,7 +3781,7 @@ namespace System.Xml.Xsl.IlGen
             QilNode local1 = local0[0];
             if (this[XmlILOptimization.FoldNone])
             {
-                if ((object)((local1).XmlType) == (object)XmlQueryTypeFactory.None)
+                if ((object?)((local1).XmlType) == (object)XmlQueryTypeFactory.None)
                 {
                     // PATTERN: [FoldNone] (Content $x:* ^ (None? (TypeOf $x))) => (Nop $x)
                     if (AllowReplace(XmlILOptimization.FoldNone, local0))
@@ -3804,7 +3807,7 @@ namespace System.Xml.Xsl.IlGen
             QilNode local2 = local0[1];
             if (this[XmlILOptimization.FoldNone])
             {
-                if ((object)((local1).XmlType) == (object)XmlQueryTypeFactory.None)
+                if ((object?)((local1).XmlType) == (object)XmlQueryTypeFactory.None)
                 {
                     // PATTERN: [FoldNone] (Attribute $x:* ^ (None? (TypeOf $x)) *) => (Nop $x)
                     if (AllowReplace(XmlILOptimization.FoldNone, local0))
@@ -3815,7 +3818,7 @@ namespace System.Xml.Xsl.IlGen
             }
             if (this[XmlILOptimization.FoldNone])
             {
-                if ((object)((local2).XmlType) == (object)XmlQueryTypeFactory.None)
+                if ((object?)((local2).XmlType) == (object)XmlQueryTypeFactory.None)
                 {
                     // PATTERN: [FoldNone] (Attribute * $x:* ^ (None? (TypeOf $x))) => (Nop $x)
                     if (AllowReplace(XmlILOptimization.FoldNone, local0))
@@ -3840,7 +3843,7 @@ namespace System.Xml.Xsl.IlGen
             QilNode local1 = local0[0];
             if (this[XmlILOptimization.FoldNone])
             {
-                if ((object)((local1).XmlType) == (object)XmlQueryTypeFactory.None)
+                if ((object?)((local1).XmlType) == (object)XmlQueryTypeFactory.None)
                 {
                     // PATTERN: [FoldNone] (Parent $x:* ^ (None? (TypeOf $x))) => (Nop $x)
                     if (AllowReplace(XmlILOptimization.FoldNone, local0))
@@ -3865,7 +3868,7 @@ namespace System.Xml.Xsl.IlGen
             QilNode local1 = local0[0];
             if (this[XmlILOptimization.FoldNone])
             {
-                if ((object)((local1).XmlType) == (object)XmlQueryTypeFactory.None)
+                if ((object?)((local1).XmlType) == (object)XmlQueryTypeFactory.None)
                 {
                     // PATTERN: [FoldNone] (Root $x:* ^ (None? (TypeOf $x))) => (Nop $x)
                     if (AllowReplace(XmlILOptimization.FoldNone, local0))
@@ -3890,7 +3893,7 @@ namespace System.Xml.Xsl.IlGen
             QilNode local1 = local0[0];
             if (this[XmlILOptimization.FoldNone])
             {
-                if ((object)((local1).XmlType) == (object)XmlQueryTypeFactory.None)
+                if ((object?)((local1).XmlType) == (object)XmlQueryTypeFactory.None)
                 {
                     // PATTERN: [FoldNone] (Descendant $x:* ^ (None? (TypeOf $x))) => (Nop $x)
                     if (AllowReplace(XmlILOptimization.FoldNone, local0))
@@ -3915,7 +3918,7 @@ namespace System.Xml.Xsl.IlGen
             QilNode local1 = local0[0];
             if (this[XmlILOptimization.FoldNone])
             {
-                if ((object)((local1).XmlType) == (object)XmlQueryTypeFactory.None)
+                if ((object?)((local1).XmlType) == (object)XmlQueryTypeFactory.None)
                 {
                     // PATTERN: [FoldNone] (DescendantOrSelf $x:* ^ (None? (TypeOf $x))) => (Nop $x)
                     if (AllowReplace(XmlILOptimization.FoldNone, local0))
@@ -3940,7 +3943,7 @@ namespace System.Xml.Xsl.IlGen
             QilNode local1 = local0[0];
             if (this[XmlILOptimization.FoldNone])
             {
-                if ((object)((local1).XmlType) == (object)XmlQueryTypeFactory.None)
+                if ((object?)((local1).XmlType) == (object)XmlQueryTypeFactory.None)
                 {
                     // PATTERN: [FoldNone] (Ancestor $x:* ^ (None? (TypeOf $x))) => (Nop $x)
                     if (AllowReplace(XmlILOptimization.FoldNone, local0))
@@ -3965,7 +3968,7 @@ namespace System.Xml.Xsl.IlGen
             QilNode local1 = local0[0];
             if (this[XmlILOptimization.FoldNone])
             {
-                if ((object)((local1).XmlType) == (object)XmlQueryTypeFactory.None)
+                if ((object?)((local1).XmlType) == (object)XmlQueryTypeFactory.None)
                 {
                     // PATTERN: [FoldNone] (AncestorOrSelf $x:* ^ (None? (TypeOf $x))) => (Nop $x)
                     if (AllowReplace(XmlILOptimization.FoldNone, local0))
@@ -3990,7 +3993,7 @@ namespace System.Xml.Xsl.IlGen
             QilNode local1 = local0[0];
             if (this[XmlILOptimization.FoldNone])
             {
-                if ((object)((local1).XmlType) == (object)XmlQueryTypeFactory.None)
+                if ((object?)((local1).XmlType) == (object)XmlQueryTypeFactory.None)
                 {
                     // PATTERN: [FoldNone] (Preceding $x:* ^ (None? (TypeOf $x))) => (Nop $x)
                     if (AllowReplace(XmlILOptimization.FoldNone, local0))
@@ -4015,7 +4018,7 @@ namespace System.Xml.Xsl.IlGen
             QilNode local1 = local0[0];
             if (this[XmlILOptimization.FoldNone])
             {
-                if ((object)((local1).XmlType) == (object)XmlQueryTypeFactory.None)
+                if ((object?)((local1).XmlType) == (object)XmlQueryTypeFactory.None)
                 {
                     // PATTERN: [FoldNone] (FollowingSibling $x:* ^ (None? (TypeOf $x))) => (Nop $x)
                     if (AllowReplace(XmlILOptimization.FoldNone, local0))
@@ -4040,7 +4043,7 @@ namespace System.Xml.Xsl.IlGen
             QilNode local1 = local0[0];
             if (this[XmlILOptimization.FoldNone])
             {
-                if ((object)((local1).XmlType) == (object)XmlQueryTypeFactory.None)
+                if ((object?)((local1).XmlType) == (object)XmlQueryTypeFactory.None)
                 {
                     // PATTERN: [FoldNone] (PrecedingSibling $x:* ^ (None? (TypeOf $x))) => (Nop $x)
                     if (AllowReplace(XmlILOptimization.FoldNone, local0))
@@ -4066,7 +4069,7 @@ namespace System.Xml.Xsl.IlGen
             QilNode local2 = local0[1];
             if (this[XmlILOptimization.FoldNone])
             {
-                if ((object)((local1).XmlType) == (object)XmlQueryTypeFactory.None)
+                if ((object?)((local1).XmlType) == (object)XmlQueryTypeFactory.None)
                 {
                     // PATTERN: [FoldNone] (NodeRange $x:* ^ (None? (TypeOf $x)) *) => (Nop $x)
                     if (AllowReplace(XmlILOptimization.FoldNone, local0))
@@ -4077,7 +4080,7 @@ namespace System.Xml.Xsl.IlGen
             }
             if (this[XmlILOptimization.FoldNone])
             {
-                if ((object)((local2).XmlType) == (object)XmlQueryTypeFactory.None)
+                if ((object?)((local2).XmlType) == (object)XmlQueryTypeFactory.None)
                 {
                     // PATTERN: [FoldNone] (NodeRange * $x:* ^ (None? (TypeOf $x))) => (Nop $x)
                     if (AllowReplace(XmlILOptimization.FoldNone, local0))
@@ -4103,7 +4106,7 @@ namespace System.Xml.Xsl.IlGen
             QilNode local2 = local0[1];
             if (this[XmlILOptimization.FoldNone])
             {
-                if ((object)((local1).XmlType) == (object)XmlQueryTypeFactory.None)
+                if ((object?)((local1).XmlType) == (object)XmlQueryTypeFactory.None)
                 {
                     // PATTERN: [FoldNone] (Deref $x:* ^ (None? (TypeOf $x)) *) => (Nop $x)
                     if (AllowReplace(XmlILOptimization.FoldNone, local0))
@@ -4114,7 +4117,7 @@ namespace System.Xml.Xsl.IlGen
             }
             if (this[XmlILOptimization.FoldNone])
             {
-                if ((object)((local2).XmlType) == (object)XmlQueryTypeFactory.None)
+                if ((object?)((local2).XmlType) == (object)XmlQueryTypeFactory.None)
                 {
                     // PATTERN: [FoldNone] (Deref * $x:* ^ (None? (TypeOf $x))) => (Nop $x)
                     if (AllowReplace(XmlILOptimization.FoldNone, local0))
@@ -4135,7 +4138,7 @@ namespace System.Xml.Xsl.IlGen
             QilNode local2 = local0[1];
             if (this[XmlILOptimization.FoldNone])
             {
-                if ((object)((local1).XmlType) == (object)XmlQueryTypeFactory.None)
+                if ((object?)((local1).XmlType) == (object)XmlQueryTypeFactory.None)
                 {
                     // PATTERN: [FoldNone] (ElementCtor $x:* ^ (None? (TypeOf $x)) *) => (Nop $x)
                     if (AllowReplace(XmlILOptimization.FoldNone, local0))
@@ -4146,7 +4149,7 @@ namespace System.Xml.Xsl.IlGen
             }
             if (this[XmlILOptimization.FoldNone])
             {
-                if ((object)((local2).XmlType) == (object)XmlQueryTypeFactory.None)
+                if ((object?)((local2).XmlType) == (object)XmlQueryTypeFactory.None)
                 {
                     // PATTERN: [FoldNone] (ElementCtor * $x:* ^ (None? (TypeOf $x))) => (Nop $x)
                     if (AllowReplace(XmlILOptimization.FoldNone, local0))
@@ -4162,7 +4165,7 @@ namespace System.Xml.Xsl.IlGen
                 {
                     // The analysis occasionally makes small changes to the content of constructors, which is
                     // why the result of Analyze is assigned to $ctor.Right.
-                    local0.Right = _elemAnalyzer.Analyze(local0, local2);
+                    local0.Right = _elemAnalyzer.Analyze(local0, local2)!;
                 }
             }
             return NoReplace(local0);
@@ -4174,7 +4177,7 @@ namespace System.Xml.Xsl.IlGen
             QilNode local2 = local0[1];
             if (this[XmlILOptimization.FoldNone])
             {
-                if ((object)((local1).XmlType) == (object)XmlQueryTypeFactory.None)
+                if ((object?)((local1).XmlType) == (object)XmlQueryTypeFactory.None)
                 {
                     // PATTERN: [FoldNone] (AttributeCtor $x:* ^ (None? (TypeOf $x)) *) => (Nop $x)
                     if (AllowReplace(XmlILOptimization.FoldNone, local0))
@@ -4185,7 +4188,7 @@ namespace System.Xml.Xsl.IlGen
             }
             if (this[XmlILOptimization.FoldNone])
             {
-                if ((object)((local2).XmlType) == (object)XmlQueryTypeFactory.None)
+                if ((object?)((local2).XmlType) == (object)XmlQueryTypeFactory.None)
                 {
                     // PATTERN: [FoldNone] (AttributeCtor * $x:* ^ (None? (TypeOf $x))) => (Nop $x)
                     if (AllowReplace(XmlILOptimization.FoldNone, local0))
@@ -4199,7 +4202,7 @@ namespace System.Xml.Xsl.IlGen
                 // PATTERN: [AnnotateConstruction] $ctor:(AttributeCtor * $content:*) => { ... }
                 if (AllowReplace(XmlILOptimization.AnnotateConstruction, local0))
                 {
-                    local0.Right = _contentAnalyzer.Analyze(local0, local2);
+                    local0.Right = _contentAnalyzer.Analyze(local0, local2)!;
                 }
             }
             return NoReplace(local0);
@@ -4210,7 +4213,7 @@ namespace System.Xml.Xsl.IlGen
             QilNode local1 = local0[0];
             if (this[XmlILOptimization.FoldNone])
             {
-                if ((object)((local1).XmlType) == (object)XmlQueryTypeFactory.None)
+                if ((object?)((local1).XmlType) == (object)XmlQueryTypeFactory.None)
                 {
                     // PATTERN: [FoldNone] (CommentCtor $x:* ^ (None? (TypeOf $x))) => (Nop $x)
                     if (AllowReplace(XmlILOptimization.FoldNone, local0))
@@ -4224,7 +4227,7 @@ namespace System.Xml.Xsl.IlGen
                 // PATTERN: [AnnotateConstruction] $ctor:(CommentCtor $content:*) => { ... }
                 if (AllowReplace(XmlILOptimization.AnnotateConstruction, local0))
                 {
-                    local0.Child = _contentAnalyzer.Analyze(local0, local1);
+                    local0.Child = _contentAnalyzer.Analyze(local0, local1)!;
                 }
             }
             return NoReplace(local0);
@@ -4236,7 +4239,7 @@ namespace System.Xml.Xsl.IlGen
             QilNode local2 = local0[1];
             if (this[XmlILOptimization.FoldNone])
             {
-                if ((object)((local1).XmlType) == (object)XmlQueryTypeFactory.None)
+                if ((object?)((local1).XmlType) == (object)XmlQueryTypeFactory.None)
                 {
                     // PATTERN: [FoldNone] (PICtor $x:* ^ (None? (TypeOf $x)) *) => (Nop $x)
                     if (AllowReplace(XmlILOptimization.FoldNone, local0))
@@ -4247,7 +4250,7 @@ namespace System.Xml.Xsl.IlGen
             }
             if (this[XmlILOptimization.FoldNone])
             {
-                if ((object)((local2).XmlType) == (object)XmlQueryTypeFactory.None)
+                if ((object?)((local2).XmlType) == (object)XmlQueryTypeFactory.None)
                 {
                     // PATTERN: [FoldNone] (PICtor * $x:* ^ (None? (TypeOf $x))) => (Nop $x)
                     if (AllowReplace(XmlILOptimization.FoldNone, local0))
@@ -4261,7 +4264,7 @@ namespace System.Xml.Xsl.IlGen
                 // PATTERN: [AnnotateConstruction] $ctor:(PICtor * $content:*) => { ... }
                 if (AllowReplace(XmlILOptimization.AnnotateConstruction, local0))
                 {
-                    local0.Right = _contentAnalyzer.Analyze(local0, local2);
+                    local0.Right = _contentAnalyzer.Analyze(local0, local2)!;
                 }
             }
             return NoReplace(local0);
@@ -4272,7 +4275,7 @@ namespace System.Xml.Xsl.IlGen
             QilNode local1 = local0[0];
             if (this[XmlILOptimization.FoldNone])
             {
-                if ((object)((local1).XmlType) == (object)XmlQueryTypeFactory.None)
+                if ((object?)((local1).XmlType) == (object)XmlQueryTypeFactory.None)
                 {
                     // PATTERN: [FoldNone] (TextCtor $x:* ^ (None? (TypeOf $x))) => (Nop $x)
                     if (AllowReplace(XmlILOptimization.FoldNone, local0))
@@ -4297,7 +4300,7 @@ namespace System.Xml.Xsl.IlGen
             QilNode local1 = local0[0];
             if (this[XmlILOptimization.FoldNone])
             {
-                if ((object)((local1).XmlType) == (object)XmlQueryTypeFactory.None)
+                if ((object?)((local1).XmlType) == (object)XmlQueryTypeFactory.None)
                 {
                     // PATTERN: [FoldNone] (RawTextCtor $x:* ^ (None? (TypeOf $x))) => (Nop $x)
                     if (AllowReplace(XmlILOptimization.FoldNone, local0))
@@ -4322,7 +4325,7 @@ namespace System.Xml.Xsl.IlGen
             QilNode local1 = local0[0];
             if (this[XmlILOptimization.FoldNone])
             {
-                if ((object)((local1).XmlType) == (object)XmlQueryTypeFactory.None)
+                if ((object?)((local1).XmlType) == (object)XmlQueryTypeFactory.None)
                 {
                     // PATTERN: [FoldNone] (DocumentCtor $x:* ^ (None? (TypeOf $x))) => (Nop $x)
                     if (AllowReplace(XmlILOptimization.FoldNone, local0))
@@ -4336,7 +4339,7 @@ namespace System.Xml.Xsl.IlGen
                 // PATTERN: [AnnotateConstruction] $ctor:(DocumentCtor $content:*) => { ... }
                 if (AllowReplace(XmlILOptimization.AnnotateConstruction, local0))
                 {
-                    local0.Child = _contentAnalyzer.Analyze(local0, local1);
+                    local0.Child = _contentAnalyzer.Analyze(local0, local1)!;
                 }
             }
             return NoReplace(local0);
@@ -4348,7 +4351,7 @@ namespace System.Xml.Xsl.IlGen
             QilNode local2 = local0[1];
             if (this[XmlILOptimization.FoldNone])
             {
-                if ((object)((local1).XmlType) == (object)XmlQueryTypeFactory.None)
+                if ((object?)((local1).XmlType) == (object)XmlQueryTypeFactory.None)
                 {
                     // PATTERN: [FoldNone] (NamespaceDecl $x:* ^ (None? (TypeOf $x)) *) => (Nop $x)
                     if (AllowReplace(XmlILOptimization.FoldNone, local0))
@@ -4359,7 +4362,7 @@ namespace System.Xml.Xsl.IlGen
             }
             if (this[XmlILOptimization.FoldNone])
             {
-                if ((object)((local2).XmlType) == (object)XmlQueryTypeFactory.None)
+                if ((object?)((local2).XmlType) == (object)XmlQueryTypeFactory.None)
                 {
                     // PATTERN: [FoldNone] (NamespaceDecl * $x:* ^ (None? (TypeOf $x))) => (Nop $x)
                     if (AllowReplace(XmlILOptimization.FoldNone, local0))
@@ -4393,7 +4396,7 @@ namespace System.Xml.Xsl.IlGen
             QilNode local2 = local0[1];
             if (this[XmlILOptimization.FoldNone])
             {
-                if ((object)((local1).XmlType) == (object)XmlQueryTypeFactory.None)
+                if ((object?)((local1).XmlType) == (object)XmlQueryTypeFactory.None)
                 {
                     // PATTERN: [FoldNone] (RtfCtor $x:* ^ (None? (TypeOf $x)) *) => (Nop $x)
                     if (AllowReplace(XmlILOptimization.FoldNone, local0))
@@ -4407,7 +4410,7 @@ namespace System.Xml.Xsl.IlGen
                 // PATTERN: [AnnotateConstruction] $ctor:(RtfCtor $content:* *) => { ... }
                 if (AllowReplace(XmlILOptimization.AnnotateConstruction, local0))
                 {
-                    local0.Left = _contentAnalyzer.Analyze(local0, local1);
+                    local0.Left = _contentAnalyzer.Analyze(local0, local1)!;
                 }
             }
             if (this[XmlILOptimization.AnnotateSingleTextRtf])
@@ -4435,7 +4438,7 @@ namespace System.Xml.Xsl.IlGen
             QilNode local1 = local0[0];
             if (this[XmlILOptimization.FoldNone])
             {
-                if ((object)((local1).XmlType) == (object)XmlQueryTypeFactory.None)
+                if ((object?)((local1).XmlType) == (object)XmlQueryTypeFactory.None)
                 {
                     // PATTERN: [FoldNone] (NameOf $x:* ^ (None? (TypeOf $x))) => (Nop $x)
                     if (AllowReplace(XmlILOptimization.FoldNone, local0))
@@ -4452,7 +4455,7 @@ namespace System.Xml.Xsl.IlGen
             QilNode local1 = local0[0];
             if (this[XmlILOptimization.FoldNone])
             {
-                if ((object)((local1).XmlType) == (object)XmlQueryTypeFactory.None)
+                if ((object?)((local1).XmlType) == (object)XmlQueryTypeFactory.None)
                 {
                     // PATTERN: [FoldNone] (LocalNameOf $x:* ^ (None? (TypeOf $x))) => (Nop $x)
                     if (AllowReplace(XmlILOptimization.FoldNone, local0))
@@ -4469,7 +4472,7 @@ namespace System.Xml.Xsl.IlGen
             QilNode local1 = local0[0];
             if (this[XmlILOptimization.FoldNone])
             {
-                if ((object)((local1).XmlType) == (object)XmlQueryTypeFactory.None)
+                if ((object?)((local1).XmlType) == (object)XmlQueryTypeFactory.None)
                 {
                     // PATTERN: [FoldNone] (NamespaceUriOf $x:* ^ (None? (TypeOf $x))) => (Nop $x)
                     if (AllowReplace(XmlILOptimization.FoldNone, local0))
@@ -4486,7 +4489,7 @@ namespace System.Xml.Xsl.IlGen
             QilNode local1 = local0[0];
             if (this[XmlILOptimization.FoldNone])
             {
-                if ((object)((local1).XmlType) == (object)XmlQueryTypeFactory.None)
+                if ((object?)((local1).XmlType) == (object)XmlQueryTypeFactory.None)
                 {
                     // PATTERN: [FoldNone] (PrefixOf $x:* ^ (None? (TypeOf $x))) => (Nop $x)
                     if (AllowReplace(XmlILOptimization.FoldNone, local0))
@@ -4507,7 +4510,7 @@ namespace System.Xml.Xsl.IlGen
             QilNode local2 = local0[1];
             if (this[XmlILOptimization.FoldNone])
             {
-                if ((object)((local1).XmlType) == (object)XmlQueryTypeFactory.None)
+                if ((object?)((local1).XmlType) == (object)XmlQueryTypeFactory.None)
                 {
                     // PATTERN: [FoldNone] (TypeAssert $x:* ^ (None? (TypeOf $x)) *) => (Nop $x)
                     if (AllowReplace(XmlILOptimization.FoldNone, local0))
@@ -4520,8 +4523,8 @@ namespace System.Xml.Xsl.IlGen
             {
                 if (local2.NodeType == QilNodeType.LiteralType)
                 {
-                    XmlQueryType local3 = (XmlQueryType)((QilLiteral)local2).Value;
-                    if ((local1).XmlType.NeverSubtypeOf(local3))
+                    XmlQueryType local3 = (XmlQueryType)((QilLiteral)local2).Value!;
+                    if ((local1).XmlType!.NeverSubtypeOf(local3))
                     {
                         // PATTERN: [EliminateTypeAssert] (TypeAssert $opnd:* (LiteralType $typ:*) ^ (NeverSubtypeOf? (TypeOf $opnd) $typ)) => (Error (LiteralString ""))
                         if (AllowReplace(XmlILOptimization.EliminateTypeAssert, local0))
@@ -4535,8 +4538,8 @@ namespace System.Xml.Xsl.IlGen
             {
                 if (local2.NodeType == QilNodeType.LiteralType)
                 {
-                    XmlQueryType local3 = (XmlQueryType)((QilLiteral)local2).Value;
-                    if ((local1).XmlType.Prime.NeverSubtypeOf(local3.Prime))
+                    XmlQueryType local3 = (XmlQueryType)((QilLiteral)local2).Value!;
+                    if ((local1).XmlType!.Prime.NeverSubtypeOf(local3.Prime))
                     {
                         // PATTERN: [EliminateTypeAssert] (TypeAssert $opnd:* (LiteralType $typ:*) ^ (NeverSubtypeOf? (Prime (TypeOf $opnd)) (Prime $typ))) => (Conditional (IsEmpty $opnd) (Sequence) (Error (LiteralString "")))
                         if (AllowReplace(XmlILOptimization.EliminateTypeAssert, local0))
@@ -4550,8 +4553,8 @@ namespace System.Xml.Xsl.IlGen
             {
                 if (local2.NodeType == QilNodeType.LiteralType)
                 {
-                    XmlQueryType local3 = (XmlQueryType)((QilLiteral)local2).Value;
-                    if ((local1).XmlType.IsSubtypeOf(local3))
+                    XmlQueryType local3 = (XmlQueryType)((QilLiteral)local2).Value!;
+                    if ((local1).XmlType!.IsSubtypeOf(local3))
                     {
                         // PATTERN: [EliminateTypeAssertOptional] (TypeAssert $opnd:* (LiteralType $base:*) ^ (SubtypeOf? (TypeOf $opnd) $base)) => $opnd
                         if (AllowReplace(XmlILOptimization.EliminateTypeAssertOptional, local0))
@@ -4570,7 +4573,7 @@ namespace System.Xml.Xsl.IlGen
             QilNode local2 = local0[1];
             if (this[XmlILOptimization.FoldNone])
             {
-                if ((object)((local1).XmlType) == (object)XmlQueryTypeFactory.None)
+                if ((object?)((local1).XmlType) == (object)XmlQueryTypeFactory.None)
                 {
                     // PATTERN: [FoldNone] (IsType $x:* ^ (None? (TypeOf $x)) *) => (Nop $x)
                     if (AllowReplace(XmlILOptimization.FoldNone, local0))
@@ -4585,8 +4588,8 @@ namespace System.Xml.Xsl.IlGen
                 {
                     if (local2.NodeType == QilNodeType.LiteralType)
                     {
-                        XmlQueryType local3 = (XmlQueryType)((QilLiteral)local2).Value;
-                        if ((local1).XmlType.IsSubtypeOf(local3))
+                        XmlQueryType local3 = (XmlQueryType)((QilLiteral)local2).Value!;
+                        if ((local1).XmlType!.IsSubtypeOf(local3))
                         {
                             // PATTERN: [EliminateIsType] (IsType $opnd:* ^ (NoSideEffects? $opnd) (LiteralType $base:*) ^ (SubtypeOf? (TypeOf $opnd) $base)) => (True)
                             if (AllowReplace(XmlILOptimization.EliminateIsType, local0))
@@ -4603,8 +4606,8 @@ namespace System.Xml.Xsl.IlGen
                 {
                     if (local2.NodeType == QilNodeType.LiteralType)
                     {
-                        XmlQueryType local3 = (XmlQueryType)((QilLiteral)local2).Value;
-                        if ((local1).XmlType.NeverSubtypeOf(local3))
+                        XmlQueryType local3 = (XmlQueryType)((QilLiteral)local2).Value!;
+                        if ((local1).XmlType!.NeverSubtypeOf(local3))
                         {
                             // PATTERN: [EliminateIsType] (IsType $opnd:* ^ (NoSideEffects? $opnd) (LiteralType $typ:*) ^ (NeverSubtypeOf? (TypeOf $opnd) $typ)) => (False)
                             if (AllowReplace(XmlILOptimization.EliminateIsType, local0))
@@ -4619,8 +4622,8 @@ namespace System.Xml.Xsl.IlGen
             {
                 if (local2.NodeType == QilNodeType.LiteralType)
                 {
-                    XmlQueryType local3 = (XmlQueryType)((QilLiteral)local2).Value;
-                    if ((local1).XmlType.Prime.NeverSubtypeOf(local3.Prime))
+                    XmlQueryType local3 = (XmlQueryType)((QilLiteral)local2).Value!;
+                    if ((local1).XmlType!.Prime.NeverSubtypeOf(local3.Prime))
                     {
                         // PATTERN: [EliminateIsType] (IsType $opnd:* (LiteralType $typ:*) ^ (NeverSubtypeOf? (Prime (TypeOf $opnd)) (Prime $typ))) => (IsEmpty $opnd)
                         if (AllowReplace(XmlILOptimization.EliminateIsType, local0))
@@ -4636,8 +4639,8 @@ namespace System.Xml.Xsl.IlGen
                 {
                     if (local2.NodeType == QilNodeType.LiteralType)
                     {
-                        XmlQueryType local3 = (XmlQueryType)((QilLiteral)local2).Value;
-                        if ((local1).XmlType.IsSubtypeOf(local3))
+                        XmlQueryType local3 = (XmlQueryType)((QilLiteral)local2).Value!;
+                        if ((local1).XmlType!.IsSubtypeOf(local3))
                         {
                             // PATTERN: [EliminateIsType] (IsType $opnd:* ^ ~((NoSideEffects? $opnd)) (LiteralType $base:*) ^ (SubtypeOf? (TypeOf $opnd) $base)) => (Loop (Let $opnd) (True))
                             if (AllowReplace(XmlILOptimization.EliminateIsType, local0))
@@ -4654,8 +4657,8 @@ namespace System.Xml.Xsl.IlGen
                 {
                     if (local2.NodeType == QilNodeType.LiteralType)
                     {
-                        XmlQueryType local3 = (XmlQueryType)((QilLiteral)local2).Value;
-                        if ((local1).XmlType.NeverSubtypeOf(local3))
+                        XmlQueryType local3 = (XmlQueryType)((QilLiteral)local2).Value!;
+                        if ((local1).XmlType!.NeverSubtypeOf(local3))
                         {
                             // PATTERN: [EliminateIsType] (IsType $opnd:* ^ ~((NoSideEffects? $opnd)) (LiteralType $typ:*) ^ (NeverSubtypeOf? (TypeOf $opnd) $typ)) => (Loop (Let $opnd) (False))
                             if (AllowReplace(XmlILOptimization.EliminateIsType, local0))
@@ -4674,7 +4677,7 @@ namespace System.Xml.Xsl.IlGen
             QilNode local1 = local0[0];
             if (this[XmlILOptimization.FoldNone])
             {
-                if ((object)((local1).XmlType) == (object)XmlQueryTypeFactory.None)
+                if ((object?)((local1).XmlType) == (object)XmlQueryTypeFactory.None)
                 {
                     // PATTERN: [FoldNone] (IsEmpty $x:* ^ (None? (TypeOf $x))) => (Nop $x)
                     if (AllowReplace(XmlILOptimization.FoldNone, local0))
@@ -4699,7 +4702,7 @@ namespace System.Xml.Xsl.IlGen
             }
             if (this[XmlILOptimization.EliminateIsEmpty])
             {
-                if ((!((local1).XmlType).MaybeEmpty) && (!OptimizerPatterns.Read(local1).MatchesPattern(OptimizerPatternName.MaybeSideEffects)))
+                if ((!((local1).XmlType)!.MaybeEmpty) && (!OptimizerPatterns.Read(local1).MatchesPattern(OptimizerPatternName.MaybeSideEffects)))
                 {
                     // PATTERN: [EliminateIsEmpty] (IsEmpty $expr:* ^ (NonEmpty? (TypeOf $expr)) ^ (NoSideEffects? $expr)) => (False)
                     if (AllowReplace(XmlILOptimization.EliminateIsEmpty, local0))
@@ -4710,7 +4713,7 @@ namespace System.Xml.Xsl.IlGen
             }
             if (this[XmlILOptimization.EliminateIsEmpty])
             {
-                if (!((local1).XmlType).MaybeEmpty)
+                if (!((local1).XmlType)!.MaybeEmpty)
                 {
                     // PATTERN: [EliminateIsEmpty] (IsEmpty $expr:* ^ (NonEmpty? (TypeOf $expr))) => (Loop (Let $expr) (False))
                     if (AllowReplace(XmlILOptimization.EliminateIsEmpty, local0))
@@ -4730,7 +4733,7 @@ namespace System.Xml.Xsl.IlGen
             QilNode local1 = local0[0];
             if (this[XmlILOptimization.FoldNone])
             {
-                if ((object)((local1).XmlType) == (object)XmlQueryTypeFactory.None)
+                if ((object?)((local1).XmlType) == (object)XmlQueryTypeFactory.None)
                 {
                     // PATTERN: [FoldNone] (XPathNodeValue $x:* ^ (None? (TypeOf $x))) => (Nop $x)
                     if (AllowReplace(XmlILOptimization.FoldNone, local0))
@@ -4747,7 +4750,7 @@ namespace System.Xml.Xsl.IlGen
             QilNode local1 = local0[0];
             if (this[XmlILOptimization.FoldNone])
             {
-                if ((object)((local1).XmlType) == (object)XmlQueryTypeFactory.None)
+                if ((object?)((local1).XmlType) == (object)XmlQueryTypeFactory.None)
                 {
                     // PATTERN: [FoldNone] (XPathFollowing $x:* ^ (None? (TypeOf $x))) => (Nop $x)
                     if (AllowReplace(XmlILOptimization.FoldNone, local0))
@@ -4772,7 +4775,7 @@ namespace System.Xml.Xsl.IlGen
             QilNode local1 = local0[0];
             if (this[XmlILOptimization.FoldNone])
             {
-                if ((object)((local1).XmlType) == (object)XmlQueryTypeFactory.None)
+                if ((object?)((local1).XmlType) == (object)XmlQueryTypeFactory.None)
                 {
                     // PATTERN: [FoldNone] (XPathPreceding $x:* ^ (None? (TypeOf $x))) => (Nop $x)
                     if (AllowReplace(XmlILOptimization.FoldNone, local0))
@@ -4797,7 +4800,7 @@ namespace System.Xml.Xsl.IlGen
             QilNode local1 = local0[0];
             if (this[XmlILOptimization.FoldNone])
             {
-                if ((object)((local1).XmlType) == (object)XmlQueryTypeFactory.None)
+                if ((object?)((local1).XmlType) == (object)XmlQueryTypeFactory.None)
                 {
                     // PATTERN: [FoldNone] (XPathNamespace $x:* ^ (None? (TypeOf $x))) => (Nop $x)
                     if (AllowReplace(XmlILOptimization.FoldNone, local0))
@@ -4825,7 +4828,7 @@ namespace System.Xml.Xsl.IlGen
             QilNode local1 = local0[0];
             if (this[XmlILOptimization.FoldNone])
             {
-                if ((object)((local1).XmlType) == (object)XmlQueryTypeFactory.None)
+                if ((object?)((local1).XmlType) == (object)XmlQueryTypeFactory.None)
                 {
                     // PATTERN: [FoldNone] (XsltGenerateId $x:* ^ (None? (TypeOf $x))) => (Nop $x)
                     if (AllowReplace(XmlILOptimization.FoldNone, local0))
@@ -4843,7 +4846,7 @@ namespace System.Xml.Xsl.IlGen
             QilNode local2 = local0[1];
             if (this[XmlILOptimization.FoldNone])
             {
-                if ((object)((local1).XmlType) == (object)XmlQueryTypeFactory.None)
+                if ((object?)((local1).XmlType) == (object)XmlQueryTypeFactory.None)
                 {
                     // PATTERN: [FoldNone] (XsltCopy $x:* ^ (None? (TypeOf $x)) *) => (Nop $x)
                     if (AllowReplace(XmlILOptimization.FoldNone, local0))
@@ -4854,7 +4857,7 @@ namespace System.Xml.Xsl.IlGen
             }
             if (this[XmlILOptimization.FoldNone])
             {
-                if ((object)((local2).XmlType) == (object)XmlQueryTypeFactory.None)
+                if ((object?)((local2).XmlType) == (object)XmlQueryTypeFactory.None)
                 {
                     // PATTERN: [FoldNone] (XsltCopy * $x:* ^ (None? (TypeOf $x))) => (Nop $x)
                     if (AllowReplace(XmlILOptimization.FoldNone, local0))
@@ -4868,7 +4871,7 @@ namespace System.Xml.Xsl.IlGen
                 // PATTERN: [AnnotateConstruction] $ctor:(XsltCopy * $content:*) => { ... }
                 if (AllowReplace(XmlILOptimization.AnnotateConstruction, local0))
                 {
-                    local0.Right = _contentAnalyzer.Analyze(local0, local2);
+                    local0.Right = _contentAnalyzer.Analyze(local0, local2)!;
                 }
             }
             return NoReplace(local0);
@@ -4879,7 +4882,7 @@ namespace System.Xml.Xsl.IlGen
             QilNode local1 = local0[0];
             if (this[XmlILOptimization.FoldNone])
             {
-                if ((object)((local1).XmlType) == (object)XmlQueryTypeFactory.None)
+                if ((object?)((local1).XmlType) == (object)XmlQueryTypeFactory.None)
                 {
                     // PATTERN: [FoldNone] (XsltCopyOf $x:* ^ (None? (TypeOf $x))) => (Nop $x)
                     if (AllowReplace(XmlILOptimization.FoldNone, local0))
@@ -4905,7 +4908,7 @@ namespace System.Xml.Xsl.IlGen
             QilNode local2 = local0[1];
             if (this[XmlILOptimization.FoldNone])
             {
-                if ((object)((local1).XmlType) == (object)XmlQueryTypeFactory.None)
+                if ((object?)((local1).XmlType) == (object)XmlQueryTypeFactory.None)
                 {
                     // PATTERN: [FoldNone] (XsltConvert $x:* ^ (None? (TypeOf $x)) *) => (Nop $x)
                     if (AllowReplace(XmlILOptimization.FoldNone, local0))
@@ -4920,7 +4923,7 @@ namespace System.Xml.Xsl.IlGen
                 {
                     if (local2.NodeType == QilNodeType.LiteralType)
                     {
-                        XmlQueryType local3 = (XmlQueryType)((QilLiteral)local2).Value;
+                        XmlQueryType local3 = (XmlQueryType)((QilLiteral)local2).Value!;
                         if (CanFoldXsltConvert(local1, local3))
                         {
                             // PATTERN: [FoldXsltConvertLiteral] (XsltConvert $lit:* ^ (Literal? $lit) (LiteralType $typ:*) ^ (CanFoldXsltConvert? $lit $typ)) => (FoldXsltConvert $lit $typ)
@@ -4936,7 +4939,7 @@ namespace System.Xml.Xsl.IlGen
             {
                 if (local2.NodeType == QilNodeType.LiteralType)
                 {
-                    XmlQueryType local3 = (XmlQueryType)((QilLiteral)local2).Value;
+                    XmlQueryType local3 = (XmlQueryType)((QilLiteral)local2).Value!;
                     if (((local1).XmlType) == (local3))
                     {
                         // PATTERN: [EliminateXsltConvert] (XsltConvert $expr:* (LiteralType $typ:*) ^ (Equal? (TypeOf $expr) $typ)) => $expr
@@ -4964,7 +4967,7 @@ namespace System.Xml.Xsl.IlGen
 
         private class NodeCounter : QilVisitor
         {
-            protected QilNode target;
+            protected QilNode? target;
             protected int cnt;
 
             /// <summary>
@@ -4981,7 +4984,7 @@ namespace System.Xml.Xsl.IlGen
             protected override QilNode Visit(QilNode n)
             {
                 if (n == null)
-                    return null;
+                    return null!;
 
                 if (n == this.target)
                     this.cnt++;
@@ -5001,7 +5004,7 @@ namespace System.Xml.Xsl.IlGen
         private class NodeFinder : QilVisitor
         {
             protected bool result;
-            protected QilNode target, parent;
+            protected QilNode? target, parent;
 
             /// <summary>
             /// Returns true if "target" node exists within the subtree of "expr".
@@ -5027,7 +5030,7 @@ namespace System.Xml.Xsl.IlGen
 
                     if (!this.result)
                     {
-                        QilNode parentOld = this.parent;
+                        QilNode? parentOld = this.parent;
                         this.parent = expr;
                         VisitChildren(expr);
                         this.parent = parentOld;
@@ -5071,7 +5074,7 @@ namespace System.Xml.Xsl.IlGen
         private class EqualityIndexVisitor : QilVisitor
         {
             protected bool result;
-            protected QilNode ctxt, key;
+            protected QilNode? ctxt, key;
 
             /// <summary>
             /// Returns true if the subtree of "expr" meets the following requirements:
@@ -5173,7 +5176,7 @@ namespace System.Xml.Xsl.IlGen
         /// <summary>
         /// Return true if "typ" is xs:decimal=, xs:integer=, xs:int=, xs:double=, or xs:float=.
         /// </summary>
-        private bool IsPrimitiveNumeric(XmlQueryType typ)
+        private bool IsPrimitiveNumeric(XmlQueryType? typ)
         {
             if (typ == XmlQueryTypeFactory.IntX) return true;
             if (typ == XmlQueryTypeFactory.IntegerX) return true;
@@ -5212,7 +5215,7 @@ namespace System.Xml.Xsl.IlGen
             if (_qil.IsDebug)
                 return true;
 
-            if (nd.XmlType.IsNode)
+            if (nd.XmlType!.IsNode)
             {
                 switch (nd.NodeType)
                 {
@@ -5252,7 +5255,7 @@ namespace System.Xml.Xsl.IlGen
 
                     case QilNodeType.Invoke:
                         // Return true if the function might return nodes
-                        return !((QilInvoke)nd).Function.XmlType.IsAtomicValue;
+                        return !((QilInvoke)nd).Function.XmlType!.IsAtomicValue;
                 }
             }
 
@@ -5304,7 +5307,7 @@ namespace System.Xml.Xsl.IlGen
                 return nd;
 
             Debug.Assert(nd is QilLiteral, "All literals except True, False, and QName must use QilLiteral");
-            return ((QilLiteral)nd).Value;
+            return ((QilLiteral)nd).Value!;
         }
 
         /// <summary>
@@ -5386,7 +5389,7 @@ namespace System.Xml.Xsl.IlGen
                 return false;
 
             // Convert back to source type; if conversion cannot be folded, a XsltConvert node is returned
-            ndDest = FoldXsltConvert(ndDest, ndLiteral.XmlType);
+            ndDest = FoldXsltConvert(ndDest, ndLiteral.XmlType!);
             if (ndDest.NodeType == QilNodeType.XsltConvert)
                 return false;
 
@@ -5406,7 +5409,7 @@ namespace System.Xml.Xsl.IlGen
                 if (typTarget.IsAtomicValue)
                 {
                     // Convert the literal to an XmlAtomicValue
-                    XmlAtomicValue value = new XmlAtomicValue(ndLiteral.XmlType.SchemaType, ExtractLiteralValue(ndLiteral));
+                    XmlAtomicValue value = new XmlAtomicValue(ndLiteral.XmlType!.SchemaType, ExtractLiteralValue(ndLiteral));
                     value = XsltConvert.ConvertToType(value, typTarget);
 
                     if (typTarget == XmlQueryTypeFactory.StringX)

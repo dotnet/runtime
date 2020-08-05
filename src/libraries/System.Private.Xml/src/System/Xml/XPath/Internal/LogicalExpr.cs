@@ -39,7 +39,7 @@ namespace MS.Internal.Xml.XPath
             _opnd2.SetXsltContext(context);
         }
 
-        public override object Evaluate(XPathNodeIterator nodeIterator)
+        public override object Evaluate(XPathNodeIterator? nodeIterator)
         {
             Operator.Op op = _op;
             object val1 = _opnd1.Evaluate(nodeIterator);

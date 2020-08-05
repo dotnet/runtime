@@ -102,7 +102,7 @@ namespace MS.Internal.Xml.XPath
             return false;
         }
 
-        public override object Evaluate(XPathNodeIterator nodeIterator)
+        public override object Evaluate(XPathNodeIterator? nodeIterator)
         {
             ResetCount();
             Reset();

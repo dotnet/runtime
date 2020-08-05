@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#nullable enable
 namespace System.Xml.Xsl.XsltOld
 {
     using System;
@@ -10,9 +11,9 @@ namespace System.Xml.Xsl.XsltOld
 
     internal class DocumentScope
     {
-        protected NamespaceDecl scopes;
+        protected NamespaceDecl? scopes;
 
-        internal NamespaceDecl Scopes
+        internal NamespaceDecl? Scopes
         {
             get { return this.scopes; }
         }
@@ -23,11 +24,11 @@ namespace System.Xml.Xsl.XsltOld
             return this.scopes;
         }
 
-        internal string ResolveAtom(string prefix)
+        internal string? ResolveAtom(string prefix)
         {
             Debug.Assert(prefix != null && prefix.Length > 0);
 
-            for (NamespaceDecl scope = this.scopes; scope != null; scope = scope.Next)
+            for (NamespaceDecl? scope = this.scopes; scope != null; scope = scope.Next)
             {
                 if (Ref.Equal(scope.Prefix, prefix))
                 {
@@ -39,11 +40,11 @@ namespace System.Xml.Xsl.XsltOld
             return null;
         }
 
-        internal string ResolveNonAtom(string prefix)
+        internal string? ResolveNonAtom(string prefix)
         {
             Debug.Assert(prefix != null && prefix.Length > 0);
 
-            for (NamespaceDecl scope = this.scopes; scope != null; scope = scope.Next)
+            for (NamespaceDecl? scope = this.scopes; scope != null; scope = scope.Next)
             {
                 if (scope.Prefix == prefix)
                 {

@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#nullable enable
 namespace System.Xml.Xsl.XsltOld
 {
     using System;
@@ -59,7 +60,7 @@ namespace System.Xml.Xsl.XsltOld
                         break;
                     }
 
-                    XPathNavigator nav = result as XPathNavigator;
+                    XPathNavigator? nav = result as XPathNavigator;
                     if (nav != null)
                     {
                         processor.PushActionFrame(CopyNodeSetAction.GetAction(), new XPathSingletonIterator(nav));
@@ -67,7 +68,7 @@ namespace System.Xml.Xsl.XsltOld
                         break;
                     }
 
-                    string value = XmlConvert.ToXPathString(result);
+                    string? value = XmlConvert.ToXPathString(result);
                     if (processor.TextEvent(value))
                     {
                         frame.Finished();

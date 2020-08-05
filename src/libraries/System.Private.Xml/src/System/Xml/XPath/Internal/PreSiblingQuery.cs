@@ -41,7 +41,7 @@ namespace MS.Internal.Xml.XPath
             return true;
         }
 
-        public override object Evaluate(XPathNodeIterator context)
+        public override object Evaluate(XPathNodeIterator? context)
         {
             base.Evaluate(context);
 

@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#nullable enable
 using System.Diagnostics;
 using System.Text;
 using System.Xml.XPath;
@@ -11,7 +12,7 @@ namespace System.Xml.Xsl.XsltOld
     internal sealed class RecordBuilder
     {
         private int _outputState;
-        private RecordBuilder _next;
+        private RecordBuilder? _next;
 
         private readonly IRecordOutput _output;
 
@@ -31,7 +32,7 @@ namespace System.Xml.Xsl.XsltOld
         private readonly BuilderInfo _dummy = new BuilderInfo();
 
         // Current position in the list
-        private BuilderInfo _currentInfo;
+        private BuilderInfo? _currentInfo;
         // Builder state
         private bool _popScope;
         private int _recordState;
@@ -50,7 +51,7 @@ namespace System.Xml.Xsl.XsltOld
 
         private const string PrefixFormat = "xp_{0}";
 
-        internal RecordBuilder(IRecordOutput output, XmlNameTable nameTable)
+        internal RecordBuilder(IRecordOutput output, XmlNameTable? nameTable)
         {
             Debug.Assert(output != null);
             _output = output;
@@ -69,7 +70,7 @@ namespace System.Xml.Xsl.XsltOld
             set { _outputState = value; }
         }
 
-        internal RecordBuilder Next
+        internal RecordBuilder? Next
         {
             get { return _next; }
             set { _next = value; }
@@ -100,9 +101,9 @@ namespace System.Xml.Xsl.XsltOld
             get { return _scopeManager; }
         }
 
-        private void ValueAppend(string s, bool disableOutputEscaping)
+        private void ValueAppend(string? s, bool disableOutputEscaping)
         {
-            _currentInfo.ValueAppend(s, disableOutputEscaping);
+            _currentInfo!.ValueAppend(s, disableOutputEscaping);
         }
 
         private bool CanOutput(int state)
@@ -124,7 +125,7 @@ namespace System.Xml.Xsl.XsltOld
             }
         }
 
-        internal Processor.OutputResult BeginEvent(int state, XPathNodeType nodeType, string prefix, string name, string nspace, bool empty, object htmlProps, bool search)
+        internal Processor.OutputResult BeginEvent(int state, XPathNodeType nodeType, string? prefix, string? name, string? nspace, bool empty, object? htmlProps, bool search)
         {
             if (!CanOutput(state))
             {
@@ -176,7 +177,7 @@ namespace System.Xml.Xsl.XsltOld
             return CheckRecordBegin(state);
         }
 
-        internal Processor.OutputResult TextEvent(int state, string text, bool disableOutputEscaping)
+        internal Processor.OutputResult TextEvent(int state, string? text, bool disableOutputEscaping)
         {
             if (!CanOutput(state))
             {
@@ -191,7 +192,7 @@ namespace System.Xml.Xsl.XsltOld
 
             if ((state & StateMachine.BeginRecord) != 0)
             {
-                _currentInfo.Depth = _recordDepth;
+                _currentInfo!.Depth = _recordDepth;
                 _currentInfo.NodeType = XmlNodeType.Text;
             }
 
@@ -260,7 +261,7 @@ namespace System.Xml.Xsl.XsltOld
             {
                 Debug.Assert(_attributeList[attrib] != null && _attributeList[attrib] is BuilderInfo);
 
-                BuilderInfo attribute = (BuilderInfo)_attributeList[attrib];
+                BuilderInfo attribute = (BuilderInfo)_attributeList[attrib]!;
 
                 if (Ref.Equal(attribute.LocalName, name))
                 {
@@ -283,7 +284,7 @@ namespace System.Xml.Xsl.XsltOld
         {
             Debug.Assert(_attributeCount == 0);
 
-            _currentInfo.NodeType = XmlNodeType.Element;
+            _currentInfo!.NodeType = XmlNodeType.Element;
             _currentInfo.Prefix = prefix;
             _currentInfo.LocalName = name;
             _currentInfo.NamespaceURI = nspace;
@@ -298,7 +299,7 @@ namespace System.Xml.Xsl.XsltOld
             Debug.Assert(_attributeCount == 0);
             OutputScope elementScope = _scopeManager.CurrentElementScope;
 
-            _currentInfo.NodeType = XmlNodeType.EndElement;
+            _currentInfo!.NodeType = XmlNodeType.EndElement;
             _currentInfo.Prefix = elementScope.Prefix;
             _currentInfo.LocalName = elementScope.Name;
             _currentInfo.NamespaceURI = elementScope.Namespace;
@@ -315,7 +316,7 @@ namespace System.Xml.Xsl.XsltOld
             return _attributeCount++;
         }
 
-        private void BeginAttribute(string prefix, string name, string nspace, object htmlAttrProps, bool search)
+        private void BeginAttribute(string prefix, string name, string nspace, object? htmlAttrProps, bool search)
         {
             int attrib = FindAttribute(name, nspace, ref prefix);
 
@@ -326,7 +327,7 @@ namespace System.Xml.Xsl.XsltOld
 
             Debug.Assert(_attributeList[attrib] != null && _attributeList[attrib] is BuilderInfo);
 
-            BuilderInfo attribute = (BuilderInfo)_attributeList[attrib];
+            BuilderInfo attribute = (BuilderInfo)_attributeList[attrib]!;
             attribute.Initialize(prefix, name, nspace);
             attribute.Depth = _recordDepth;
             attribute.NodeType = XmlNodeType.Attribute;
@@ -357,7 +358,7 @@ namespace System.Xml.Xsl.XsltOld
             }
             else
             {
-                string nspaceDeclared = _scopeManager.ResolveNamespace(name, out thisScope);
+                string? nspaceDeclared = _scopeManager.ResolveNamespace(name, out thisScope);
                 if (nspaceDeclared != null)
                 {
                     if (!Ref.Equal(nspace, nspaceDeclared))
@@ -379,7 +380,7 @@ namespace System.Xml.Xsl.XsltOld
 
         private bool BeginProcessingInstruction(string prefix, string name, string nspace)
         {
-            _currentInfo.NodeType = XmlNodeType.ProcessingInstruction;
+            _currentInfo!.NodeType = XmlNodeType.ProcessingInstruction;
             _currentInfo.Prefix = prefix;
             _currentInfo.LocalName = name;
             _currentInfo.NamespaceURI = nspace;
@@ -389,7 +390,7 @@ namespace System.Xml.Xsl.XsltOld
 
         private void BeginComment()
         {
-            _currentInfo.NodeType = XmlNodeType.Comment;
+            _currentInfo!.NodeType = XmlNodeType.Comment;
             _currentInfo.Depth = _recordDepth;
         }
 
@@ -489,7 +490,7 @@ namespace System.Xml.Xsl.XsltOld
             for (int attr = 0; attr < _attributeCount; attr++)
             {
                 Debug.Assert(_attributeList[attr] is BuilderInfo);
-                BuilderInfo info = (BuilderInfo)_attributeList[attr];
+                BuilderInfo info = (BuilderInfo)_attributeList[attr]!;
 
                 if (Ref.Equal(info.Prefix, _atoms.Xml))
                 {
@@ -530,7 +531,7 @@ namespace System.Xml.Xsl.XsltOld
             else
             {
                 bool thisScope = false;
-                string nspace = _scopeManager.ResolveNamespace(_mainNode.Prefix, out thisScope);
+                string? nspace = _scopeManager.ResolveNamespace(_mainNode.Prefix, out thisScope);
                 if (nspace != null)
                 {
                     if (!Ref.Equal(_mainNode.NamespaceURI, nspace))
@@ -560,7 +561,7 @@ namespace System.Xml.Xsl.XsltOld
             for (int attr = 0; attr < attributeCount; attr++)
             {
                 Debug.Assert(_attributeList[attr] is BuilderInfo);
-                BuilderInfo info = (BuilderInfo)_attributeList[attr];
+                BuilderInfo info = (BuilderInfo)_attributeList[attr]!;
 
 
                 if (Ref.Equal(info.NamespaceURI, _atoms.Empty))
@@ -576,7 +577,7 @@ namespace System.Xml.Xsl.XsltOld
                     else
                     {
                         bool thisScope = false;
-                        string nspace = _scopeManager.ResolveNamespace(info.Prefix, out thisScope);
+                        string? nspace = _scopeManager.ResolveNamespace(info.Prefix, out thisScope);
                         if (nspace != null)
                         {
                             if (!Ref.Equal(info.NamespaceURI, nspace))
@@ -604,17 +605,17 @@ namespace System.Xml.Xsl.XsltOld
         {
             for (int i = _namespaceCount - 1; i >= 0; i--)
             {
-                BuilderInfo attribute = (BuilderInfo)_attributeList[NewAttribute()];
-                attribute.Initialize((BuilderInfo)_namespaceList[i]);
+                BuilderInfo attribute = (BuilderInfo)_attributeList[NewAttribute()]!;
+                attribute.Initialize((BuilderInfo)_namespaceList[i]!);
             }
         }
 
         private void AnalyzeComment()
         {
             Debug.Assert(_mainNode.NodeType == XmlNodeType.Comment);
-            Debug.Assert((object)_currentInfo == (object)_mainNode);
+            Debug.Assert((object?)_currentInfo == (object)_mainNode);
 
-            StringBuilder newComment = null;
+            StringBuilder? newComment = null;
             string comment = _mainNode.Value;
             bool minus = false;
             int index = 0, begin = 0;
@@ -663,7 +664,7 @@ namespace System.Xml.Xsl.XsltOld
             Debug.Assert(_mainNode.NodeType == XmlNodeType.ProcessingInstruction || _mainNode.NodeType == XmlNodeType.XmlDeclaration);
             //Debug.Assert((object) this.currentInfo == (object) this.mainNode);
 
-            StringBuilder newPI = null;
+            StringBuilder? newPI = null;
             string pi = _mainNode.Value;
             bool question = false;
             int index = 0, begin = 0;
@@ -745,7 +746,7 @@ namespace System.Xml.Xsl.XsltOld
 
             Debug.Assert(_namespaceList[index] != null && _namespaceList[index] is BuilderInfo);
 
-            BuilderInfo ns = (BuilderInfo)_namespaceList[index];
+            BuilderInfo ns = (BuilderInfo)_namespaceList[index]!;
             if (prefix == _atoms.Empty)
             {
                 ns.Initialize(_atoms.Empty, _atoms.Xmlns, _atoms.XmlnsNamespace);
@@ -770,7 +771,7 @@ namespace System.Xml.Xsl.XsltOld
 
         internal string GetPrefixForNamespace(string nspace)
         {
-            string prefix = null;
+            string? prefix = null;
 
             if (_scopeManager.FindPrefix(nspace, out prefix))
             {

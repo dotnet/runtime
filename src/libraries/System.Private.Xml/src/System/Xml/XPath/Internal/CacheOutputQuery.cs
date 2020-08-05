@@ -39,7 +39,7 @@ namespace MS.Internal.Xml.XPath
             input.SetXsltContext(context);
         }
 
-        public override object Evaluate(XPathNodeIterator context)
+        public override object Evaluate(XPathNodeIterator? context)
         {
             outputBuffer.Clear();
             count = 0;

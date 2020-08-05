@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#nullable enable
 using System.Diagnostics;
 using System.Xml;
 using System.Text;
@@ -14,7 +15,7 @@ namespace System.Xml.Xsl.Xslt
     {
         private readonly XPathQilFactory _f;
         private readonly StringBuilder _builder;
-        private QilList _concat;
+        private QilList? _concat;
         private bool _inUse;
 
         public QilStrConcatenator(XPathQilFactory f)
@@ -56,12 +57,12 @@ namespace System.Xml.Xsl.Xslt
             _builder.Append(value);
         }
 
-        public void Append(QilNode value)
+        public void Append(QilNode? value)
         {
             Debug.Assert(_inUse, "Reset() wasn't called");
             if (value != null)
             {
-                Debug.Assert(value.XmlType.TypeCode == XmlTypeCode.String);
+                Debug.Assert(value.XmlType!.TypeCode == XmlTypeCode.String);
                 if (value.NodeType == QilNodeType.LiteralString)
                 {
                     _builder.Append((string)(QilLiteral)value);
@@ -69,7 +70,7 @@ namespace System.Xml.Xsl.Xslt
                 else
                 {
                     FlushBuilder();
-                    _concat.Add(value);
+                    _concat!.Add(value);
                 }
             }
         }

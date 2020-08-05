@@ -11,7 +11,7 @@ namespace MS.Internal.Xml.XPath
         public ParentQuery(Query qyInput, string Name, string Prefix, XPathNodeType Type) : base(qyInput, Name, Prefix, Type) { }
         private ParentQuery(ParentQuery other) : base(other) { }
 
-        public override object Evaluate(XPathNodeIterator context)
+        public override object Evaluate(XPathNodeIterator? context)
         {
             base.Evaluate(context);
 

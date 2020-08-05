@@ -61,7 +61,7 @@ namespace MS.Internal.Xml.XPath
             }
         }
 
-        public override object Evaluate(XPathNodeIterator nodeIterator)
+        public override object Evaluate(XPathNodeIterator? nodeIterator)
         {
             if (xsltContext == null)
             {
@@ -75,14 +75,14 @@ namespace MS.Internal.Xml.XPath
                 argVals[i] = _args[i].Evaluate(nodeIterator);
                 if (argVals[i] is XPathNodeIterator)
                 {// ForBack Compat. To protect our queries from users.
-                    Debug.Assert(nodeIterator.Current != null);
+                    Debug.Assert(nodeIterator!.Current != null);
                     argVals[i] = new XPathSelectionIterator(nodeIterator.Current, _args[i]);
                 }
             }
             try
             {
                 Debug.Assert(_function != null);
-                object? retVal = ProcessResult(_function.Invoke(xsltContext, argVals, nodeIterator.Current));
+                object? retVal = ProcessResult(_function.Invoke(xsltContext, argVals, nodeIterator!.Current!));
 
                 // ProcessResult may return null when the input value is XmlNode and here doesn't seem to be the case.
                 Debug.Assert(retVal != null);

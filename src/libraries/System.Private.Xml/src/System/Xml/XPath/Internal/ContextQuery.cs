@@ -14,10 +14,12 @@ namespace MS.Internal.Xml.XPath
         {
             this.count = 0;
         }
+
         protected ContextQuery(ContextQuery other) : base(other)
         {
             this.contextNode = other.contextNode;   // Don't need to clone here
         }
+
         public override void Reset()
         {
             count = 0;
@@ -25,9 +27,9 @@ namespace MS.Internal.Xml.XPath
 
         public override XPathNavigator? Current { get { return contextNode; } }
 
-        public override object Evaluate(XPathNodeIterator context)
+        public override object Evaluate(XPathNodeIterator? context)
         {
-            contextNode = context.Current; // We don't clone here. Because we never move it.
+            contextNode = context!.Current; // We don't clone here. Because we never move it.
             count = 0;
             return this;
         }

@@ -11,7 +11,7 @@ namespace MS.Internal.Xml.XPath
         public DocumentOrderQuery(Query qyParent) : base(qyParent) { }
         private DocumentOrderQuery(DocumentOrderQuery other) : base(other) { }
 
-        public override object Evaluate(XPathNodeIterator context)
+        public override object Evaluate(XPathNodeIterator? context)
         {
             base.Evaluate(context);
 

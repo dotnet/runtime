@@ -48,7 +48,7 @@ namespace MS.Internal.Xml.XPath
             _opnd2.SetXsltContext(context);
         }
 
-        public override object Evaluate(XPathNodeIterator nodeIterator)
+        public override object Evaluate(XPathNodeIterator? nodeIterator)
         {
             return GetValue(_op,
                 XmlConvert.ToXPathDouble(_opnd1.Evaluate(nodeIterator)),

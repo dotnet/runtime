@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#nullable enable
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -53,15 +54,15 @@ namespace System.Xml.Xsl.Qil
                         if (this.nodeType == QilNodeType.Sequence)
                         {
                             for (int i = 0; i < _count; i++)
-                                xt = XmlQueryTypeFactory.Sequence(xt, _members[i].XmlType);
+                                xt = XmlQueryTypeFactory.Sequence(xt, _members[i].XmlType!);
 
                             Debug.Assert(!xt.IsDod, "Sequences do not preserve DocOrderDistinct");
                         }
                         else if (this.nodeType == QilNodeType.BranchList)
                         {
-                            xt = _members[0].XmlType;
+                            xt = _members[0].XmlType!;
                             for (int i = 1; i < _count; i++)
-                                xt = XmlQueryTypeFactory.Choice(xt, _members[i].XmlType);
+                                xt = XmlQueryTypeFactory.Choice(xt, _members[i].XmlType!);
                         }
                     }
 
@@ -145,7 +146,7 @@ namespace System.Xml.Xsl.Qil
             if (index < _count)
                 Array.Copy(_members, index + 1, _members, index, _count - index);
 
-            _members[_count] = null;
+            _members[_count] = null!;
 
             // Invalidate XmlType
             this.xmlType = null;

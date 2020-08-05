@@ -39,7 +39,7 @@ namespace MS.Internal.Xml.XPath
             }
         }
 
-        public override object Evaluate(XPathNodeIterator nodeIterator)
+        public override object Evaluate(XPathNodeIterator? nodeIterator)
         {
             if (xsltContext == null)
             {
