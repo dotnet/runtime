@@ -303,7 +303,7 @@ namespace System.Net.Http
                     frameHeader = await ReadFrameAsync().ConfigureAwait(false);
                     if (NetEventSource.Log.IsEnabled()) Trace($"Frame {frameNum}: {frameHeader}.");
 
-                    _keepAlive.ProcessFrame();
+                    _keepAlive.RefreshTimestamp();
 
                     // Process the frame.
                     switch (frameHeader.Type)
@@ -693,7 +693,7 @@ namespace System.Net.Http
             }
             else
             {
-                LogExceptions(SendPingAckAsync(pingContentLong));
+                LogExceptions(SendPingAsync(pingContentLong, isAck: true));
             }
             _incomingBuffer.Discard(frameHeader.PayloadLength);
         }
@@ -944,30 +944,16 @@ namespace System.Net.Http
             });
 
         /// <param name="pingContent">The 8-byte ping content to send, read as a big-endian integer.</param>
-        private Task SendPingAckAsync(long pingContent) =>
-            PerformWriteAsync(FrameHeader.Size + FrameHeader.PingLength, (thisRef: this, pingContent), static (state, writeBuffer) =>
+        /// <param name="isAck">Determine whether the frame is ping or ping ack.</param>
+        private Task SendPingAsync(long pingContent, bool isAck = false) =>
+            PerformWriteAsync(FrameHeader.Size + FrameHeader.PingLength, (thisRef: this, pingContent, isAck), static (state, writeBuffer) =>
             {
                 if (NetEventSource.Log.IsEnabled()) state.thisRef.Trace("Started writing.");
 
                 Debug.Assert(sizeof(long) == FrameHeader.PingLength);
 
                 Span<byte> span = writeBuffer.Span;
-                FrameHeader.WriteTo(span, FrameHeader.PingLength, FrameType.Ping, FrameFlags.Ack, streamId: 0);
-                BinaryPrimitives.WriteInt64BigEndian(span.Slice(FrameHeader.Size), state.pingContent);
-
-                return true;
-            });
-
-        /// <param name="pingContent">The 8-byte ping content to send, read as a big-endian integer.</param>
-        private Task SendPingAsync(long pingContent) =>
-            PerformWriteAsync(FrameHeader.Size + FrameHeader.PingLength, (thisRef: this, pingContent), static (state, writeBuffer) =>
-            {
-                if (NetEventSource.Log.IsEnabled()) state.thisRef.Trace("Started writing.");
-
-                Debug.Assert(sizeof(long) == FrameHeader.PingLength);
-
-                Span<byte> span = writeBuffer.Span;
-                FrameHeader.WriteTo(span, FrameHeader.PingLength, FrameType.Ping, FrameFlags.None, streamId: 0);
+                FrameHeader.WriteTo(span, FrameHeader.PingLength, FrameType.Ping, state.isAck ? FrameFlags.Ack: FrameFlags.None, streamId: 0);
                 BinaryPrimitives.WriteInt64BigEndian(span.Slice(FrameHeader.Size), state.pingContent);
 
                 return true;

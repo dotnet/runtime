@@ -136,7 +136,7 @@ namespace System.Net.Http.Functional.Tests
             {
                 using HttpClientHandler handler = CreateHttpClientHandler();
                 handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
-                
+
                 var socketsHandler = (SocketsHttpHandler)GetUnderlyingSocketsHttpHandler(handler);
                 socketsHandler.ConnectionFactory = connectionFactory;
 
@@ -288,17 +288,17 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         public void DefaultValues()
         {
-            using (var handler = new SocketsHttpHandler())
-            {
-                Assert.Equal(TimeSpan.FromSeconds(20), handler.KeepAlivePingTimeout);
-                Assert.Equal(TimeSpan.FromSeconds(0), handler.KeepAlivePingDelay);
-                Assert.Equal(HttpKeepAlivePingPolicy.Always, handler.KeepAlivePingPolicy);
-            }
+            using var handler = new SocketsHttpHandler();
+
+            Assert.Equal(TimeSpan.FromSeconds(20), handler.KeepAlivePingTimeout);
+            Assert.Equal(Timeout.InfiniteTimeSpan, handler.KeepAlivePingDelay);
+            Assert.Equal(HttpKeepAlivePingPolicy.Always, handler.KeepAlivePingPolicy);
+
         }
 
         public static IEnumerable<object[]> KeepAliveTestDataSource()
         {
-            yield return new object[] { TimeSpan.FromSeconds(0), TimeSpan.FromSeconds(0), HttpKeepAlivePingPolicy.Always, false, false, false };
+            yield return new object[] { Timeout.InfiniteTimeSpan, TimeSpan.FromSeconds(0), HttpKeepAlivePingPolicy.Always, false, false, false };
             yield return new object[] { TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(0), HttpKeepAlivePingPolicy.WithActiveRequests, true, false, false };
             yield return new object[] { TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(0), HttpKeepAlivePingPolicy.Always, true, true, false };
             yield return new object[] { TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(5), HttpKeepAlivePingPolicy.WithActiveRequests, true, true, true };
@@ -323,27 +323,26 @@ namespace System.Net.Http.Functional.Tests
                     };
                     handler.SslOptions.RemoteCertificateValidationCallback = (_, __, ___, ____) => true;
 
-                    using (HttpClient client = new HttpClient(handler))
-                    {
-                        client.DefaultRequestVersion = HttpVersion.Version20;
-                        // Warmup request to create connection.
-                        await client.GetStringAsync(uri);
-                        //_output.WriteLine("* start req");
-                        // Request under the test scope.
-                        if (expectRequestFail)
-                            await Assert.ThrowsAsync<HttpRequestException>(() => client.GetStringAsync(uri));
-                        else
-                            await client.GetStringAsync(uri);
+                    using HttpClient client = new HttpClient(handler);
+                    client.DefaultRequestVersion = HttpVersion.Version20;
 
-                        //_output.WriteLine("* done");
-                        // Let connection live for a while.
-                        await Task.Delay(pingTimeout);
-                        //_output.WriteLine("* definitely done");
-                    }
+                    // Warmup request to create connection.
+                    await client.GetStringAsync(uri);
+                    //_output.WriteLine("* start req");
+                    // Request under the test scope.
+                    if (expectRequestFail)
+                        await Assert.ThrowsAsync<HttpRequestException>(() => client.GetStringAsync(uri));
+                    else
+                        await client.GetStringAsync(uri);
+
+                    //_output.WriteLine("* done");
+                    // Let connection live for a while.
+                    await Task.Delay(pingTimeout);
+                    //_output.WriteLine("* definitely done");
                 },
                 async server =>
                 {
-                    Http2LoopbackConnection connection = await server.EstablishConnectionAsync();
+                    using Http2LoopbackConnection connection = await server.EstablishConnectionAsync();
                     //_output.WriteLine("Connection established");
                     // Warmup the connection.
                     int streamId1 = await connection.ReadRequestHeaderAsync();
@@ -388,11 +387,11 @@ namespace System.Net.Http.Functional.Tests
                         //_output.WriteLine("ack sent");
                     }
                     else
+                    {
                         await Assert.ThrowsAsync<OperationCanceledException>(() => connection.ReadPingAsync(pingTimeout));
+                    }
                     await connection.WaitForClientDisconnectAsync(true);
                 });
-
-
         }
     }
 

@@ -37,7 +37,7 @@ namespace System.Net.Http
         /// <summary>Timer used to initiate cleaning of the pools.</summary>
         private readonly Timer? _cleaningTimer;
         /// <summary>Heart beat timer currently used for Http2 ping only.</summary>
-        private readonly Timer _heartBeatTimer;
+        private readonly Timer? _heartBeatTimer;
         /// <summary>The maximum number of connections allowed per pool. <see cref="int.MaxValue"/> indicates unlimited.</summary>
         private readonly int _maxConnectionsPerServer;
         // Temporary
@@ -104,6 +104,8 @@ namespace System.Net.Http
                     // Create the timer.  Ensure the Timer has a weak reference to this manager; otherwise, it
                     // can introduce a cycle that keeps the HttpConnectionPoolManager rooted by the Timer
                     // implementation until the handler is Disposed (or indefinitely if it's not).
+                    var thisRef = new WeakReference<HttpConnectionPoolManager>(this);
+
                     _cleaningTimer = new Timer(static s =>
                     {
                         var wr = (WeakReference<HttpConnectionPoolManager>)s!;
@@ -111,7 +113,21 @@ namespace System.Net.Http
                         {
                             thisRef.RemoveStalePools();
                         }
-                    }, new WeakReference<HttpConnectionPoolManager>(this), Timeout.Infinite, Timeout.Infinite);
+                    }, thisRef, Timeout.Infinite, Timeout.Infinite);
+
+
+                    // For now heart beat is used only for ping functionality.
+                    if (_settings._keepAlivePingDelay != Timeout.InfiniteTimeSpan)
+                    {
+                        _heartBeatTimer = new Timer(static state =>
+                        {
+                            var wr = (WeakReference<HttpConnectionPoolManager>)state!;
+                            if (wr.TryGetTarget(out HttpConnectionPoolManager? thisRef))
+                            {
+                                thisRef.HeartBeat();
+                            }
+                        }, thisRef, TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(1));
+                    }
                 }
                 finally
                 {
@@ -132,15 +148,6 @@ namespace System.Net.Http
                     _proxyCredentials = _proxy.Credentials ?? settings._defaultProxyCredentials;
                 }
             }
-
-            _heartBeatTimer = new Timer(static state =>
-                {
-                var wr = (WeakReference<HttpConnectionPoolManager>)state!;
-                if (wr.TryGetTarget(out HttpConnectionPoolManager? thisRef))
-                {
-                    thisRef.HeartBeat();
-                }
-            }, new WeakReference<HttpConnectionPoolManager>(this), TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(1));
         }
 
         /// <summary>
@@ -464,7 +471,7 @@ namespace System.Net.Http
         public void Dispose()
         {
             _cleaningTimer?.Dispose();
-            _heartBeatTimer.Dispose();
+            _heartBeatTimer?.Dispose();
             foreach (KeyValuePair<HttpConnectionKey, HttpConnectionPool> pool in _pools)
             {
                 pool.Value.Dispose();

@@ -10,8 +10,8 @@ namespace System.Net.Http
     /// </summary>
     internal static partial class HttpHandlerDefaults
     {
-        public static readonly TimeSpan DefaultKeepAlivePingTimeout = TimeSpan.FromSeconds(20);
-        public static readonly TimeSpan DefaultKeepAlivePingDelay = TimeSpan.FromSeconds(0);
+        public static TimeSpan DefaultKeepAlivePingTimeout => TimeSpan.FromTicks(TimeSpan.TicksPerSecond * 20);
+        public static readonly TimeSpan DefaultKeepAlivePingDelay = Timeout.InfiniteTimeSpan;
         public const HttpKeepAlivePingPolicy DefaultKeepAlivePingPolicy = HttpKeepAlivePingPolicy.Always;
     }
 }
