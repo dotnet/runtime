@@ -267,14 +267,13 @@ ClassLoader::CreateTypeHandleForNonCanonicalGenericInstantiation(
     // problem however because whenever we need to load a value from the dictionary of this type beyond its size, we
     // will expand the dictionary at that point.
     DWORD cbInstAndDict = pOldMT->GetInstAndDictSize();
-    DWORD cbInstAndDictPlusBackPointer = (cbInstAndDict != 0 ? cbInstAndDict + sizeof(Dictionary *) : 0);
 
     // Allocate from the high frequence heap of the correct domain
     S_SIZE_T allocSize = safe_cbMT;
     allocSize += cbOptional;
     allocSize += cbIMap;
     allocSize += cbPerInst;
-    allocSize += cbInstAndDictPlusBackPointer;
+    allocSize += cbInstAndDict;
 
     if (allocSize.IsOverflow())
     {
