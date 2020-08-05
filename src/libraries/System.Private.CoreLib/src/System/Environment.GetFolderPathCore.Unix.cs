@@ -97,6 +97,12 @@ namespace System
                 case SpecialFolder.UserProfile:
                 case SpecialFolder.MyDocuments: // same value as Personal
                     return home;
+#if TARGET_OSX
+                case SpecialFolder.ApplicationData:
+                    return "/Library/Application Support";
+                case SpecialFolder.LocalApplicationData:
+                  return Path.Combine(home, "Library/Application Support");
+#else
                 case SpecialFolder.ApplicationData:
                     return GetXdgConfig(home);
                 case SpecialFolder.LocalApplicationData:
@@ -108,7 +114,7 @@ namespace System
                         data = Path.Combine(home, ".local", "share");
                     }
                     return data;
-
+#endif
                 case SpecialFolder.Desktop:
                 case SpecialFolder.DesktopDirectory:
                     return ReadXdgDirectory(home, "XDG_DESKTOP_DIR", "Desktop");
