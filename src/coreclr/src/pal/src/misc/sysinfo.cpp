@@ -568,7 +568,7 @@ PAL_GetLogicalProcessorCacheSizeFromOS()
 #if defined(HOST_ARM64) && !defined(TARGET_OSX)
     if(cacheSize == 0)
     {
-        uint64_t size;
+        size_t size;
 
         if(ReadMemoryValueFromFile("/sys/devices/system/cpu/cpu0/cache/index0/size", &size))
             cacheSize = std::max(cacheSize, size);
