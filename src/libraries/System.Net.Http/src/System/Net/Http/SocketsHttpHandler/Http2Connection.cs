@@ -136,7 +136,7 @@ namespace System.Net.Http
 
             _keepAlivePingDelay = _pool.Settings._keepAlivePingDelay;
             _keepAlivePingTimeout = _pool.Settings._keepAlivePingTimeout;
-            _nextPingRequestTimestamp = Environment.TickCount64 + (long)_pool.Settings._keepAlivePingDelay.TotalMilliseconds;
+            _nextPingRequestTimestamp = Environment.TickCount64 + (long)_keepAlivePingDelay.TotalMilliseconds;
             _keepAlivePingPolicy = _pool.Settings._keepAlivePingPolicy;
 
             if (NetEventSource.Log.IsEnabled()) TraceConnection(_stream);
@@ -1909,7 +1909,7 @@ namespace System.Net.Http
             if (_keepAlivePingPolicy == HttpKeepAlivePingPolicy.WithActiveRequests && _httpStreams.Count == 0)
                 return;
 
-            var now = Environment.TickCount64;
+            long now = Environment.TickCount64;
             switch (_keepAliveState)
             {
                 case KeepAliveState.None:
