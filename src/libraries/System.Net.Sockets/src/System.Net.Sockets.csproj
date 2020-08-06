@@ -14,8 +14,9 @@
   </PropertyGroup>
   <ItemGroup Condition="'$(TargetsBrowser)' != 'true'">
     <!-- All configurations -->
-    <Compile Include="System\Net\Connections\SocketsConnectionFactory.cs" />
     <Compile Include="System\Net\Connections\SocketConnection.cs" />
+    <Compile Include="System\Net\Connections\SocketConnectionNetworkStream.cs" />
+    <Compile Include="System\Net\Connections\SocketsConnectionFactory.cs" />
     <Compile Include="System\Net\Connections\TaskSocketAsyncEventArgs.cs" />
     <Compile Include="System\Net\Sockets\SocketReceiveFromResult.cs" />
     <Compile Include="System\Net\Sockets\SocketReceiveMessageFromResult.cs" />

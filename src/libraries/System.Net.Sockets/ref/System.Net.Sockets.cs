@@ -6,7 +6,7 @@
 
 namespace System.Net.Connections
 {
-    class SocketsConnectionFactory : ConnectionFactory
+    public class SocketsConnectionFactory : ConnectionFactory
     {
         // dual-mode IPv6 socket. See Socket(SocketType socketType, ProtocolType protocolType)
         public SocketsConnectionFactory(Sockets.SocketType socketType, Sockets.ProtocolType protocolType) { }
