@@ -1100,16 +1100,14 @@ namespace DebuggerTests
                     "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.ValueTypesTest:MethodUpdatingValueTypeMembers'); }, 1);",
                     debugger_test_loc, lines[0], 12, "MethodUpdatingValueTypeMembers");
 
-                var dt = new DateTime(1, 2, 3, 4, 5, 6);
-                await CheckLocals(pause_location, dt);
+                await CheckLocals(pause_location, new DateTime(1, 2, 3, 4, 5, 6), new DateTime(4, 5, 6, 7, 8, 9));
 
                 // Resume
-                dt = new DateTime(9, 8, 7, 6, 5, 4);
                 pause_location = await SendCommandAndCheck(JObject.FromObject(new { }), "Debugger.resume", debugger_test_loc, lines[1], 12, "MethodUpdatingValueTypeMembers");
-                await CheckLocals(pause_location, dt);
+                await CheckLocals(pause_location, new DateTime(9, 8, 7, 6, 5, 4), new DateTime(5, 1, 3, 7, 9, 10));
             });
 
-            async Task CheckLocals(JToken pause_location, DateTime dt)
+            async Task CheckLocals(JToken pause_location, DateTime obj_dt, DateTime vt_dt)
             {
                 var locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
                 await CheckProps(locals, new
@@ -1122,20 +1120,20 @@ namespace DebuggerTests
                 {
                     await CheckProps(obj_props, new
                     {
-                        DT = TValueType("System.DateTime", dt.ToString())
+                        DT = TValueType("System.DateTime", obj_dt.ToString())
                     }, "locals#obj.DT", num_fields : 5);
 
-                    await CheckDateTime(obj_props, "DT", dt);
+                    await CheckDateTime(obj_props, "DT", obj_dt);
                 }
 
-                var vt_props = await GetObjectOnLocals(locals, "obj");
+                var vt_props = await GetObjectOnLocals(locals, "vt");
                 {
                     await CheckProps(vt_props, new
                     {
-                        DT = TValueType("System.DateTime", dt.ToString())
+                        DT = TValueType("System.DateTime", vt_dt.ToString())
                     }, "locals#obj.DT", num_fields : 5);
 
-                    await CheckDateTime(vt_props, "DT", dt);
+                    await CheckDateTime(vt_props, "DT", vt_dt);
                 }
             }
         }
