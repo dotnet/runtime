@@ -23,14 +23,14 @@ namespace System.Net.Mail.Tests
         }
 
         [Theory]
-        [MemberData(Address, "test\"Display\"Name")]
-        [MemberData(Address, "\"John Doe\"")]
-        [MemberData(Address, "Hello \"world hello\" world")]
-        [MemberData(Address, "Hello \"world")]
-        [MemberData(Address, "Hello \"\"world")]
-        [MemberData(Address, "\"\"")]
-        [MemberData(Address, "\"")]
-        [MemberData(Address, "Hello \\\"world hello\\\" world")]
+        [InlineData(Address, "test\"Display\"Name")]
+        [InlineData(Address, "\"John Doe\"")]
+        [InlineData(Address, "Hello \"world hello\" world")]
+        [InlineData(Address, "Hello \"world")]
+        [InlineData(Address, "Hello \"\"world")]
+        [InlineData(Address, "\"\"")]
+        [InlineData(Address, "\"")]
+        [InlineData(Address, "Hello \\\"world hello\\\" world")]
         public void MailAddress_WithDoubleQuotesDisplayAndMailAddress_ToStringShouldReturnDisplayNameEscapeSequenceAndAddressInAngleBrackets(string address, string displayNameWithDoubleQuotes)
         {
             MailAddress mailAddress = new MailAddress(address, displayNameWithDoubleQuotes);
