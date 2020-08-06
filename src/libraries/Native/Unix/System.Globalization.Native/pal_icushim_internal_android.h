@@ -425,6 +425,7 @@ void u_charsToUChars(const char * cs, UChar * us, int32_t length);
 void u_getVersion(UVersionInfo versionArray);
 int32_t u_strlen(const UChar * s);
 UChar * u_strncpy(UChar * dst, const UChar * src, int32_t n);
+int32_t u_strToUpper (UChar *dest, int32_t destCapacity, const UChar *src, int32_t srcLength, const char *locale, UErrorCode *pErrorCode);
 UChar32 u_tolower(UChar32 c);
 UChar32 u_toupper(UChar32 c);
 void ucal_add(UCalendar * cal, UCalendarDateFields field, int32_t amount, UErrorCode * status);

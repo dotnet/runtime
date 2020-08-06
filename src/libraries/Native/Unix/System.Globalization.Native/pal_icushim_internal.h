@@ -60,6 +60,7 @@
     PER_FUNCTION_BLOCK(u_getVersion, libicuuc) \
     PER_FUNCTION_BLOCK(u_strlen, libicuuc) \
     PER_FUNCTION_BLOCK(u_strncpy, libicuuc) \
+    PER_FUNCTION_BLOCK(u_strToUpper, libicuuc) \
     PER_FUNCTION_BLOCK(u_tolower, libicuuc) \
     PER_FUNCTION_BLOCK(u_toupper, libicuuc) \
     PER_FUNCTION_BLOCK(ucal_add, libicui18n) \
@@ -187,6 +188,7 @@ FOR_ALL_ICU_FUNCTIONS
 #define u_getVersion(...) u_getVersion_ptr(__VA_ARGS__)
 #define u_strlen(...) u_strlen_ptr(__VA_ARGS__)
 #define u_strncpy(...) u_strncpy_ptr(__VA_ARGS__)
+#define u_strToUpper(...) u_strToUpper_ptr(__VA_ARGS__)
 #define u_tolower(...) u_tolower_ptr(__VA_ARGS__)
 #define u_toupper(...) u_toupper_ptr(__VA_ARGS__)
 #define ucal_add(...) ucal_add_ptr(__VA_ARGS__)
