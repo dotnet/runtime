@@ -159,11 +159,7 @@ namespace System.Reflection.Tests
             Assert.Null(typeof(AssemblyTests).Assembly.GetFile("NonExistentfile.dll"));
             Assert.NotNull(typeof(AssemblyTests).Assembly.GetFile("System.Reflection.Tests.dll"));
 
-            // For browser, Location is null.
-            string name = (PlatformDetection.IsNotBrowser) ?
-                typeof(AssemblyTests).Assembly.Location
-                : "/System.Reflection.Tests.dll";
-
+            string name = AssemblyPathHelper.GetAssemblyLocation(typeof(AssemblyTests).Assembly);
             Assert.Equal(typeof(AssemblyTests).Assembly.GetFile("System.Reflection.Tests.dll").Name, name);
         }
 
@@ -173,11 +169,7 @@ namespace System.Reflection.Tests
             Assert.NotNull(typeof(AssemblyTests).Assembly.GetFiles());
             Assert.Equal(1, typeof(AssemblyTests).Assembly.GetFiles().Length);
 
-            // For browser, Location is null.
-            string name = (PlatformDetection.IsNotBrowser) ?
-                typeof(AssemblyTests).Assembly.Location
-                : "/System.Reflection.Tests.dll";
-
+            string name = AssemblyPathHelper.GetAssemblyLocation(typeof(AssemblyTests).Assembly);    
             Assert.Equal(typeof(AssemblyTests).Assembly.GetFiles()[0].Name, name);
         }
 

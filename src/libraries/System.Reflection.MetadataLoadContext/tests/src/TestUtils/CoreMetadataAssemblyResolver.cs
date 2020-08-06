@@ -25,14 +25,6 @@ namespace System.Reflection.Tests
                 if (_coreAssembly == null)
                 {
                     _coreAssembly = context.LoadFromStream(TestUtils.CreateStreamForCoreAssembly());
-                    //if (PlatformDetection.IsNotBrowser)
-                    //{
-                    //    _coreAssembly = context.LoadFromStream(TestUtils.CreateStreamForCoreAssembly());
-                    //}
-                    //else
-                    //{
-                    //    _coreAssembly = context.LoadFromAssemblyName(assemblyName);
-                    //}
                 }
 
                 return _coreAssembly;

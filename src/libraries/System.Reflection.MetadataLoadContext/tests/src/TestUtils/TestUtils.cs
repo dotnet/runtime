@@ -253,6 +253,9 @@ namespace System.Reflection.Tests
 
         private static readonly Lazy<bool> s_useRuntimeTypesForTests = new Lazy<bool>(() =>
         {
+            if (PlatformDetection.IsBrowser)
+                return false;
+
             var loc = AssemblyPathHelper.GetAssemblyLocation(typeof(TestUtils).Assembly);
 
             if (File.Exists(Path.Combine(loc, "UseRuntimeTypes.txt")))

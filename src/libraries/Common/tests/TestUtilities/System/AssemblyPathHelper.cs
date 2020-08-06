@@ -15,7 +15,7 @@ namespace System
             // plus extension.
             return (PlatformDetection.IsNotBrowser) ?
                 a.Location
-                : a.GetName().Name + ".dll";
+                : "/" + a.GetName().Name + ".dll";
         }
     }
 }
