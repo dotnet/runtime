@@ -10,16 +10,16 @@ namespace System.Formats.Asn1.Tests.Writer
     {
         public static IEnumerable<object[]> ShortValidCases { get; } = new object[][]
         {
-            //new object[]
-            //{
-            //    string.Empty,
-            //    "00",
-            //},
-            //new object[]
-            //{
-            //    "hi",
-            //    "026869",
-            //},
+            new object[]
+            {
+                string.Empty,
+                "00",
+            },
+            new object[]
+            {
+                "hi",
+                "026869",
+            },
             new object[]
             {
                 "Dr. & Mrs. Smith\u2010Jones \uFE60 children",
