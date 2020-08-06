@@ -3,7 +3,9 @@
 
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
+using System.IO.Pipelines;
 using System.Net.Sockets;
+using System.Runtime.ExceptionServices;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -11,15 +13,24 @@ namespace System.Net.Connections
 {
     internal sealed class SocketConnection : Connection, IConnectionProperties
     {
-        private readonly SocketConnectionNetworkStream _stream;
+        private Socket _socket;
+        private ISocketStreamProvider _streamProvider;
+        private Lazy<Stream> _stream;
+        private Lazy<IDuplexPipe> _pipe;
+        private readonly IConnectionProperties? _connectionProperties;
 
-        public override EndPoint? RemoteEndPoint => _stream.Socket.RemoteEndPoint;
-        public override EndPoint? LocalEndPoint => _stream.Socket.LocalEndPoint;
+
+        public override EndPoint? RemoteEndPoint => _socket.RemoteEndPoint;
+        public override EndPoint? LocalEndPoint => _socket.LocalEndPoint;
         public override IConnectionProperties ConnectionProperties => this;
 
-        public SocketConnection(Socket socket)
+        public SocketConnection(Socket socket, ISocketStreamProvider streamProvider, IConnectionProperties? connectionProperties)
         {
-            _stream = new SocketConnectionNetworkStream(socket, this);
+            _socket = socket;
+            _streamProvider = streamProvider;
+            _connectionProperties = connectionProperties;
+            _stream = new Lazy<Stream>(() => _streamProvider.CreateStream(socket, this), true);
+            _pipe = new Lazy<IDuplexPipe>(() => _streamProvider.CreatePipe(socket, this), true);
         }
 
         protected override ValueTask CloseAsyncCore(ConnectionCloseMethod method, CancellationToken cancellationToken)
@@ -35,10 +46,14 @@ namespace System.Net.Connections
                 {
                     // Dispose must be called first in order to cause a connection reset,
                     // as NetworkStream.Dispose() will call Shutdown(Both).
-                    _stream.Socket.Dispose();
+                    _socket.Dispose();
                 }
 
-                _stream.DisposeWithoutClosingConnection();
+                if (_stream.IsValueCreated) _stream.Value.Dispose();
+            }
+            catch (SocketException socketException)
+            {
+                return ValueTask.FromException(ExceptionDispatchInfo.SetCurrentStackTrace(NetworkErrorHelper.MapSocketException(socketException)));
             }
             catch (Exception ex)
             {
@@ -48,18 +63,25 @@ namespace System.Net.Connections
             return default;
         }
 
-        protected override Stream CreateStream() => _stream;
+        protected override Stream CreateStream() => _stream.Value;
+        protected override IDuplexPipe CreatePipe() => _pipe.Value;
 
         bool IConnectionProperties.TryGet(Type propertyKey, [NotNullWhen(true)] out object? property)
         {
             if (propertyKey == typeof(Socket))
             {
-                property = _stream.Socket;
+                property = _stream;
                 return true;
             }
 
             property = null;
             return false;
+        }
+
+        internal interface ISocketStreamProvider
+        {
+            Stream CreateStream(Socket socket, IConnectionProperties connectionProperties);
+            IDuplexPipe CreatePipe(Socket socket, IConnectionProperties connectionProperties);
         }
     }
 }

@@ -12,12 +12,11 @@ namespace System.Net.Connections
     /// <summary>
     /// TODO
     /// </summary>
-    public class SocketsConnectionFactory : ConnectionFactory
+    public class SocketsConnectionFactory : ConnectionFactory, SocketConnection.ISocketStreamProvider
     {
-        // dual-mode IPv6 socket. See Socket(SocketType socketType, ProtocolType protocolType)
-        public SocketsConnectionFactory(SocketType socketType, ProtocolType protocolType)
-        {
-        }
+        private readonly AddressFamily _addressFamily;
+        private readonly SocketType _socketType;
+        private readonly ProtocolType _protocolType;
 
         // See Socket(AddressFamily addressFamily, SocketType socketType, ProtocolType protocolType)
         public SocketsConnectionFactory(
@@ -25,15 +24,59 @@ namespace System.Net.Connections
             SocketType socketType,
             ProtocolType protocolType)
         {
+            _addressFamily = addressFamily;
+            _socketType = socketType;
+            _protocolType = protocolType;
+        }
+
+        // dual-mode IPv6 socket. See Socket(SocketType socketType, ProtocolType protocolType)
+        public SocketsConnectionFactory(SocketType socketType, ProtocolType protocolType)
+            : this(AddressFamily.InterNetworkV6, socketType, protocolType)
+        {
         }
 
         // This must be thread-safe!
-        public override ValueTask<Connection> ConnectAsync(
+        public override async ValueTask<Connection> ConnectAsync(
             EndPoint? endPoint,
             IConnectionProperties? options = null,
             CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
+            Socket socket = CreateSocket(_addressFamily, _socketType, _protocolType, endPoint, options);
+
+            try
+            {
+                using var args = new TaskSocketAsyncEventArgs();
+                args.RemoteEndPoint = endPoint;
+
+                if (socket.ConnectAsync(args))
+                {
+                    using (cancellationToken.UnsafeRegister(o => Socket.CancelConnectAsync((SocketAsyncEventArgs)o!), args))
+                    {
+                        await args.Task.ConfigureAwait(false);
+                    }
+                }
+
+                if (args.SocketError != SocketError.Success)
+                {
+                    Exception ex = args.SocketError == SocketError.OperationAborted && cancellationToken.IsCancellationRequested
+                        ? (Exception)new OperationCanceledException(cancellationToken)
+                        : new SocketException((int)args.SocketError);
+
+                    throw ex;
+                }
+
+                return new SocketConnection(socket);
+            }
+            catch (SocketException socketException)
+            {
+                socket.Dispose();
+                throw NetworkErrorHelper.MapSocketException(socketException);
+            }
+            catch
+            {
+                socket.Dispose();
+                throw;
+            }
         }
 
         // These exist to provide an easy way to shim the default behavior.
@@ -45,17 +88,34 @@ namespace System.Net.Connections
             EndPoint? endPoint,
             IConnectionProperties? options)
         {
-            throw new NotImplementedException();
+            return new Socket(addressFamily, socketType, protocolType)
+            {
+                NoDelay = true
+            };
         }
 
-        protected virtual Stream CreateStream(Socket socket, IConnectionProperties? options)
-        {
-            throw new NotImplementedException();
-        }
+        protected virtual Stream CreateStream(Socket socket, IConnectionProperties? options) => new NetworkStream(socket, ownsSocket: true);
 
-        protected virtual IDuplexPipe CreatePipe(Socket socket, IConnectionProperties? options)
+        protected virtual IDuplexPipe CreatePipe(Socket socket, IConnectionProperties? options) => new DuplexStreamPipe(CreateStream(socket, options));
+
+        Stream SocketConnection.ISocketStreamProvider.CreateStream(Socket socket, IConnectionProperties options) => CreateStream(socket, options);
+
+        IDuplexPipe SocketConnection.ISocketStreamProvider.CreatePipe(Socket socket, IConnectionProperties options) => CreatePipe(socket, options);
+
+        private sealed class DuplexStreamPipe : IDuplexPipe
         {
-            throw new NotImplementedException();
+            private static readonly StreamPipeReaderOptions s_readerOpts = new StreamPipeReaderOptions(leaveOpen: true);
+            private static readonly StreamPipeWriterOptions s_writerOpts = new StreamPipeWriterOptions(leaveOpen: true);
+
+            public DuplexStreamPipe(Stream stream)
+            {
+                Input = PipeReader.Create(stream, s_readerOpts);
+                Output = PipeWriter.Create(stream, s_writerOpts);
+            }
+
+            public PipeReader Input { get; }
+
+            public PipeWriter Output { get; }
         }
     }
 }

@@ -95,7 +95,8 @@ namespace System.Net.Sockets.Tests
 
             using SocketsConnectionFactory factory = new SocketsConnectionFactory(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
 
-            await Assert.ThrowsAsync<SocketException>(() => factory.ConnectAsync(endPoint).AsTask());
+            NetworkException ex = await Assert.ThrowsAsync<NetworkException>(() => factory.ConnectAsync(endPoint).AsTask());
+            Assert.Equal(NetworkError.ConnectionRefused, ex.NetworkError);
         }
 
         [Fact]
@@ -111,7 +112,6 @@ namespace System.Net.Sockets.Tests
             endPoint = RecreateUdsEndpoint(endPoint);
             using var server = SocketTestServer.SocketTestServerFactory(SocketImplementationType.Async, endPoint, protocolType);
             using SocketsConnectionFactory factory = new SocketsConnectionFactory(endPoint.AddressFamily, socketType, protocolType);
-            
 
             using Connection connection = await factory.ConnectAsync(server.EndPoint);
 
