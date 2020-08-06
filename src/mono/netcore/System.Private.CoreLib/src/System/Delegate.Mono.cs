@@ -177,7 +177,7 @@ namespace System
                 return null;
             }
 
-            return CreateDelegate_internal(type, null, info, throwOnBindFailure);
+            return CreateDelegate_internal(type, target, info, throwOnBindFailure);
         }
 
         [RequiresUnreferencedCode("The target method might be removed")]

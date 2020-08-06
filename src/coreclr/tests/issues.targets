@@ -961,6 +961,9 @@
 
     <!-- Known failures for mono runtime on *all* architectures/operating systems -->
     <ItemGroup Condition="'$(RuntimeFlavor)' == 'mono'" >
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/CollectibleAssemblies/ByRefLocals/**">
+            <Issue>https://github.com/dotnet/runtime/issues/40394</Issue>
+        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/Miscellaneous/CopyCtor/**">
             <Issue>Handling for Copy constructors isn't present in mono interop</Issue>
         </ExcludeList>

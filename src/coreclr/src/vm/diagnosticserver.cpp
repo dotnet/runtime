@@ -74,6 +74,8 @@ DWORD WINAPI DiagnosticServer::DiagnosticsServerThread(LPVOID)
                 continue;
             }
 
+            STRESS_LOG2(LF_DIAGNOSTICS_PORT, LL_INFO10, "DiagnosticServer - received IPC message with command set (%d) and command id (%d)\n", message.GetHeader().CommandSet, message.GetHeader().CommandId);
+
             switch ((DiagnosticsIpc::DiagnosticServerCommandSet)message.GetHeader().CommandSet)
             {
             case DiagnosticsIpc::DiagnosticServerCommandSet::EventPipe:
