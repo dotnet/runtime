@@ -61,6 +61,7 @@ namespace DebuggerTests
 
         public struct SimpleStruct
         {
+            public uint V { get { return 0xDEADBEEF + (uint)dt.Month; } set { } }
             public string str_member;
             public DateTime dt;
             public GenericStruct<DateTime> gs;
