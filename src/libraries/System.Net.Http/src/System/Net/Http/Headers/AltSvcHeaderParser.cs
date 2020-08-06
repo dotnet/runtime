@@ -306,20 +306,15 @@ namespace System.Net.Http.Headers
         /// </summary>
         private static bool TryReadAlpnHexDigit(char ch, out int nibble)
         {
-            if ((uint)(ch - '0') <= '9' - '0') // ch >= '0' && ch <= '9'
+            int result = HexConverter.FromUpperChar(ch);
+            if (result == 0xFF)
             {
-                nibble = ch - '0';
-                return true;
+                nibble = 0;
+                return false;
             }
 
-            if ((uint)(ch - 'A') <= 'F' - 'A') // ch >= 'A' && ch <= 'F'
-            {
-                nibble = ch - 'A' + 10;
-                return true;
-            }
-
-            nibble = 0;
-            return false;
+            nibble = result;
+            return true;
         }
 
         private static bool TryReadQuotedAltAuthority(string value, int startIndex, out string? host, out int port, out int readLength)

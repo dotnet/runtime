@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Text.Json.Serialization;
 
 namespace System.Text.Json
 {
@@ -32,8 +33,8 @@ namespace System.Text.Json
         public JsonClassInfo JsonClassInfo;
         public StackFrameObjectState ObjectState; // State tracking the current object.
 
-        // Preserve reference.
-        public string? MetadataId;
+        // Validate EndObject token on array with preserve semantics.
+        public bool ValidateEndTokenOnArray;
 
         // For performance, we order the properties by the first deserialize and PropertyIndex helps find the right slot quicker.
         public int PropertyIndex;
@@ -42,6 +43,9 @@ namespace System.Text.Json
         // Holds relevant state when deserializing objects with parameterized constructors.
         public int CtorArgumentStateIndex;
         public ArgumentState? CtorArgumentState;
+
+        // Whether to use custom number handling.
+        public JsonNumberHandling? NumberHandling;
 
         public void EndConstructorParameter()
         {
@@ -56,9 +60,10 @@ namespace System.Text.Json
             JsonPropertyName = null;
             JsonPropertyNameAsString = null;
             PropertyState = StackFramePropertyState.None;
-            MetadataId = null;
+            ValidateEndTokenOnArray = false;
 
             // No need to clear these since they are overwritten each time:
+            //  NumberHandling
             //  UseExtensionProperty
         }
 

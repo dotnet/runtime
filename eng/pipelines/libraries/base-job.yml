@@ -4,7 +4,7 @@ parameters:
   archType: ''
   osSubgroup: ''
   crossrootfsDir: ''
-  framework: ''
+  framework: 'net5.0'
   isOfficialAllConfigurations: false
   isSourceBuild: false
   liveRuntimeBuildConfig: ''
@@ -20,14 +20,15 @@ parameters:
   testDisplayName: ''
   testScope: ''
   pool: ''
+  runTests: false
 
 jobs:
   - template: /eng/common/templates/job/job.yml
     parameters:
-      ${{ if notIn(parameters.framework, 'allConfigurations', 'net472') }}:
+      ${{ if notIn(parameters.framework, 'allConfigurations', 'net48') }}:
         displayName: ${{ format('Libraries {0} {1}{2} {3} {4}', parameters.displayName, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
         name: ${{ format('libraries_{0}_{1}{2}_{3}_{4}', parameters.name, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
-      ${{ if in(parameters.framework, 'allConfigurations', 'net472') }}:
+      ${{ if in(parameters.framework, 'allConfigurations', 'net48') }}:
         displayName: ${{ format('Libraries {0} {1} {2} {3} {4}', parameters.displayName, parameters.osGroup, parameters.framework, parameters.archType, parameters.buildConfig) }}
         name: ${{ format('libraries_{0}_{1}_{2}{3}_{4}_{5}', parameters.name, parameters.framework, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
 
@@ -91,6 +92,9 @@ jobs:
         - ${{ if ne(parameters.liveRuntimeBuildConfig, '') }}:
           - _runtimeDownloadPath: '$(Build.SourcesDirectory)/artifacts/transport/${{ parameters.runtimeFlavor }}'
           - _runtimeConfigurationArg: -rc ${{ parameters.liveRuntimeBuildConfig }}
+          - ${{ if eq(parameters.runTests, true) }}:
+            - _runtimeArtifactName: '$(runtimeFlavorName)Product_${{ parameters.runtimeVariant}}_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{ parameters.liveRuntimeBuildConfig }}'
+            - _runtimeArtifactsPathArg: ' /p:RuntimeArtifactsPath=$(_runtimeDownloadPath)'
           - ${{ if eq(parameters.testDisplayName, '') }}:
             - _testRunNamePrefixSuffix: $(runtimeFlavorName)_${{ parameters.liveRuntimeBuildConfig }}
           - ${{ if ne(parameters.testDisplayName, '') }}:
@@ -121,4 +125,13 @@ jobs:
 
       steps:
       - template: /eng/pipelines/common/clone-checkout-bundle-step.yml
+
+      - ${{ if and(ne(parameters.liveRuntimeBuildConfig, ''), eq(parameters.runTests, true)) }}:
+        - template: /eng/pipelines/common/download-artifact-step.yml
+          parameters:
+            unpackFolder: $(_runtimeDownloadPath)
+            artifactFileName: '$(_runtimeArtifactName)$(archiveExtension)'
+            artifactName: '$(_runtimeArtifactName)'
+            displayName: '$(runtimeFlavorName) build drop'
+
       - ${{ parameters.steps }}

@@ -7,7 +7,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
 {
     public sealed partial class BinaryFormatter : IFormatter
     {
-        [Obsolete(Obsoletions.InsecureSerializationMessage, DiagnosticId = Obsoletions.InsecureSerializationDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [Obsolete(Obsoletions.BinaryFormatterMessage, DiagnosticId = Obsoletions.BinaryFormatterDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public object Deserialize(Stream serializationStream)
         {
             // don't refactor the 'throw' into a helper method; linker will have difficulty trimming
@@ -39,6 +39,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
             };
             try
             {
+                BinaryFormatterEventSource.Log.DeserializationStart();
                 var parser = new BinaryParser(serializationStream, reader);
                 return reader.Deserialize(parser);
             }
@@ -50,9 +51,13 @@ namespace System.Runtime.Serialization.Formatters.Binary
             {
                 throw new SerializationException(SR.Serialization_CorruptedStream, e);
             }
+            finally
+            {
+                BinaryFormatterEventSource.Log.DeserializationStop();
+            }
         }
 
-        [Obsolete(Obsoletions.InsecureSerializationMessage, DiagnosticId = Obsoletions.InsecureSerializationDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [Obsolete(Obsoletions.BinaryFormatterMessage, DiagnosticId = Obsoletions.BinaryFormatterDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public void Serialize(Stream serializationStream, object graph)
         {
             // don't refactor the 'throw' into a helper method; linker will have difficulty trimming
@@ -73,10 +78,18 @@ namespace System.Runtime.Serialization.Formatters.Binary
                 _assemblyFormat = _assemblyFormat,
             };
 
-            var sow = new ObjectWriter(_surrogates, _context, formatterEnums, _binder);
-            BinaryFormatterWriter binaryWriter = new BinaryFormatterWriter(serializationStream, sow, _typeFormat);
-            sow.Serialize(graph, binaryWriter);
-            _crossAppDomainArray = sow._crossAppDomainArray;
+            try
+            {
+                BinaryFormatterEventSource.Log.SerializationStart();
+                var sow = new ObjectWriter(_surrogates, _context, formatterEnums, _binder);
+                BinaryFormatterWriter binaryWriter = new BinaryFormatterWriter(serializationStream, sow, _typeFormat);
+                sow.Serialize(graph, binaryWriter);
+                _crossAppDomainArray = sow._crossAppDomainArray;
+            }
+            finally
+            {
+                BinaryFormatterEventSource.Log.SerializationStop();
+            }
         }
     }
 }

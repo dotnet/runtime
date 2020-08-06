@@ -198,7 +198,6 @@ namespace Microsoft.Extensions.Logging.Test
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/38337", TestPlatforms.Browser)]
         public void TestInvalidActivityTrackingOptions()
         {
             Assert.Throws<ArgumentException>(() =>

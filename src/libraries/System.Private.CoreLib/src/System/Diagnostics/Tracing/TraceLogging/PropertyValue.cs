@@ -217,7 +217,7 @@ namespace System.Diagnostics.Tracing
             {
                 Type type = property.PropertyType;
 
-                if (!Statics.IsValueType(type))
+                if (!type.IsValueType)
                 {
                     var getter = (Func<TContainer, object?>)GetGetMethod(property, type);
                     return container => new PropertyValue(getter((TContainer)container.ReferenceValue!));

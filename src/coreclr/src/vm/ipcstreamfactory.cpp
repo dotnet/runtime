@@ -12,8 +12,10 @@ Volatile<bool> IpcStreamFactory::s_isShutdown = false;
 
 bool IpcStreamFactory::ClientConnectionState::GetIpcPollHandle(IpcStream::DiagnosticsIpc::IpcPollHandle *pIpcPollHandle, ErrorCallback callback)
 {
+    STRESS_LOG0(LF_DIAGNOSTICS_PORT, LL_INFO1000, "IpcStreamFactory::ClientConnectionState::GetIpcPollHandle - ENTER.\n");
     if (_pStream == nullptr)
     {
+        STRESS_LOG0(LF_DIAGNOSTICS_PORT, LL_INFO10, "IpcStreamFactory::ClientConnectionState::GetIpcPollHandle - cache was empty!\n");
         // cache is empty, reconnect, e.g., there was a disconnect
         IpcStream *pConnection = _pIpc->Connect(callback);
         if (pConnection == nullptr)
@@ -22,6 +24,11 @@ bool IpcStreamFactory::ClientConnectionState::GetIpcPollHandle(IpcStream::Diagno
                 callback("Failed to connect to client connection", -1);
             return false;
         }
+#ifdef TARGET_UNIX
+        STRESS_LOG1(LF_DIAGNOSTICS_PORT, LL_INFO10, "IpcStreamFactory::ClientConnectionState::GetIpcPollHandle - returned connection { _clientSocket = %d }\n", pConnection->_clientSocket);
+#else
+        STRESS_LOG2(LF_DIAGNOSTICS_PORT, LL_INFO10, "IpcStreamFactory::ClientConnectionState::GetIpcPollHandle - returned connection { _hPipe = %d, _oOverlap.hEvent = %d }\n", pConnection->_hPipe, pConnection->_oOverlap.hEvent);
+#endif
         if (!DiagnosticsIpc::SendIpcAdvertise_V1(pConnection))
         {
             if (callback != nullptr)
@@ -33,6 +40,7 @@ bool IpcStreamFactory::ClientConnectionState::GetIpcPollHandle(IpcStream::Diagno
         _pStream = pConnection;
     }
     *pIpcPollHandle = { nullptr, _pStream, 0, this };
+    STRESS_LOG0(LF_DIAGNOSTICS_PORT, LL_INFO10, "IpcStreamFactory::ClientConnectionState::GetIpcPollHandle - EXIT.\n");
     return true;
 }
 
@@ -139,6 +147,7 @@ int32_t IpcStreamFactory::GetNextTimeout(int32_t currentTimeoutMs)
 
 IpcStream *IpcStreamFactory::GetNextAvailableStream(ErrorCallback callback)
 {
+    STRESS_LOG0(LF_DIAGNOSTICS_PORT, LL_INFO10, "IpcStreamFactory::GetNextAvailableStream - ENTER");
     IpcStream *pStream = nullptr;
     CQuickArrayList<IpcStream::DiagnosticsIpc::IpcPollHandle> rgIpcPollHandles;
 
@@ -166,9 +175,29 @@ IpcStream *IpcStreamFactory::GetNextAvailableStream(ErrorCallback callback)
             s_pollTimeoutInfinite :
             GetNextTimeout(pollTimeoutMs);
 
-        int32_t retval = IpcStream::DiagnosticsIpc::Poll(rgIpcPollHandles.Ptr(), (uint32_t)rgIpcPollHandles.Size(), pollTimeoutMs, callback);
         nPollAttempts++;
         STRESS_LOG2(LF_DIAGNOSTICS_PORT, LL_INFO10, "IpcStreamFactory::GetNextAvailableStream - Poll attempt: %d, timeout: %dms.\n", nPollAttempts, pollTimeoutMs);
+        for (uint32_t i = 0; i < rgIpcPollHandles.Size(); i++)
+        {
+            if (rgIpcPollHandles[i].pIpc != nullptr)
+            {
+#ifdef TARGET_UNIX
+                STRESS_LOG2(LF_DIAGNOSTICS_PORT, LL_INFO10, "\tSERVER IpcPollHandle[%d] = { _serverSocket = %d }\n", i, rgIpcPollHandles[i].pIpc->_serverSocket);
+#else
+                STRESS_LOG3(LF_DIAGNOSTICS_PORT, LL_INFO10, "\tSERVER IpcPollHandle[%d] = { _hPipe = %d, _oOverlap.hEvent = %d }\n", i, rgIpcPollHandles[i].pIpc->_hPipe, rgIpcPollHandles[i].pIpc->_oOverlap.hEvent);
+#endif
+            }
+            else
+            {
+#ifdef TARGET_UNIX
+                STRESS_LOG2(LF_DIAGNOSTICS_PORT, LL_INFO10, "\tCLIENT IpcPollHandle[%d] = { _clientSocket = %d }\n", i, rgIpcPollHandles[i].pStream->_clientSocket);
+#else
+                STRESS_LOG3(LF_DIAGNOSTICS_PORT, LL_INFO10, "\tCLIENT IpcPollHandle[%d] = { _hPipe = %d, _oOverlap.hEvent = %d }\n", i, rgIpcPollHandles[i].pStream->_hPipe, rgIpcPollHandles[i].pStream->_oOverlap.hEvent);
+#endif
+            }
+        }
+        int32_t retval = IpcStream::DiagnosticsIpc::Poll(rgIpcPollHandles.Ptr(), (uint32_t)rgIpcPollHandles.Size(), pollTimeoutMs, callback);
+        bool fSawError = false;
 
         if (retval != 0)
         {
@@ -178,27 +207,43 @@ IpcStream *IpcStreamFactory::GetNextAvailableStream(ErrorCallback callback)
                 {
                     case IpcStream::DiagnosticsIpc::PollEvents::HANGUP:
                         ((ConnectionState*)(rgIpcPollHandles[i].pUserData))->Reset(callback);
-                        STRESS_LOG1(LF_DIAGNOSTICS_PORT, LL_INFO10, "IpcStreamFactory::GetNextAvailableStream - Poll attempt: %d, connection hung up.\n", nPollAttempts);
+                        STRESS_LOG2(LF_DIAGNOSTICS_PORT, LL_INFO10, "IpcStreamFactory::GetNextAvailableStream - HUP :: Poll attempt: %d, connection %d hung up.\n", nPollAttempts, i);
                         pollTimeoutMs = s_pollTimeoutMinMs;
                         break;
                     case IpcStream::DiagnosticsIpc::PollEvents::SIGNALED:
                         if (pStream == nullptr) // only use first signaled stream; will get others on subsequent calls
                             pStream = ((ConnectionState*)(rgIpcPollHandles[i].pUserData))->GetConnectedStream(callback);
+                        STRESS_LOG2(LF_DIAGNOSTICS_PORT, LL_INFO10, "IpcStreamFactory::GetNextAvailableStream - SIG :: Poll attempt: %d, connection %d signalled.\n", nPollAttempts, i);
                         break;
                     case IpcStream::DiagnosticsIpc::PollEvents::ERR:
-                        return nullptr;
+                        STRESS_LOG2(LF_DIAGNOSTICS_PORT, LL_INFO10, "IpcStreamFactory::GetNextAvailableStream - ERR :: Poll attempt: %d, connection %d errored.\n", nPollAttempts, i);
+                        fSawError = true;
+                        break;
+                    case IpcStream::DiagnosticsIpc::PollEvents::NONE:
+                        STRESS_LOG2(LF_DIAGNOSTICS_PORT, LL_INFO10, "IpcStreamFactory::GetNextAvailableStream - NON :: Poll attempt: %d, connection %d had no events.\n", nPollAttempts, i);
+                        break;
                     default:
-                        // TODO: Error handling
+                        STRESS_LOG2(LF_DIAGNOSTICS_PORT, LL_INFO10, "IpcStreamFactory::GetNextAvailableStream - UNK :: Poll attempt: %d, connection %d had invalid PollEvent.\n", nPollAttempts, i);
+                        fSawError = true;
                         break;
                 }
             }
         }
+
+
+        if (pStream == nullptr && fSawError)
+            return nullptr;
 
         // clear the view
         while (rgIpcPollHandles.Size() > 0)
             rgIpcPollHandles.Pop();
     }
 
+#ifdef TARGET_UNIX
+    STRESS_LOG2(LF_DIAGNOSTICS_PORT, LL_INFO10, "IpcStreamFactory::GetNextAvailableStream - EXIT :: Poll attempt: %d, stream using handle %d.\n", nPollAttempts, pStream->_clientSocket);
+#else
+    STRESS_LOG2(LF_DIAGNOSTICS_PORT, LL_INFO10, "IpcStreamFactory::GetNextAvailableStream - EXIT :: Poll attempt: %d, stream using handle %d.\n", nPollAttempts, pStream->_hPipe);
+#endif
     return pStream;
 }
 

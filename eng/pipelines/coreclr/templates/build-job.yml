@@ -133,7 +133,7 @@ jobs:
     - ${{ if and(eq(variables['System.TeamProject'], 'internal'), ne(variables['Build.Reason'], 'PullRequest')) }}:
       - template: /eng/pipelines/common/restore-internal-tools.yml
 
-    - ${{ if in(parameters.osGroup, 'OSX', 'iOS','tvOS') }}: 
+    - ${{ if in(parameters.osGroup, 'OSX', 'iOS','tvOS') }}:
       - script: |
           du -sh $(Build.SourcesDirectory)/*
           df -h
@@ -147,15 +147,11 @@ jobs:
       - script: set __TestIntermediateDir=int&&$(coreClrRepoRootDir)build-runtime$(scriptExt) $(buildConfig) $(archType) -ci $(enforcePgoArg) $(officialBuildIdArg) $(clrInterpreterBuildArg)
         displayName: Build CoreCLR Runtime
 
-    - ${{ if in(parameters.osGroup, 'OSX', 'iOS','tvOS') }}: 
+    - ${{ if in(parameters.osGroup, 'OSX', 'iOS','tvOS') }}:
       - script: |
           du -sh $(Build.SourcesDirectory)/*
           df -h
         displayName: Disk Usage after Build
-
-    - ${{ if and(eq(parameters.osGroup, 'Windows_NT'), ne(parameters.archType, 'x86')) }}:
-      - script: set __TestIntermediateDir=int&&$(coreClrRepoRootDir)build-runtime$(scriptExt) $(buildConfig) $(archType) -ci -linuxdac $(officialBuildIdArg)
-        displayName: Build Cross OS Linux DAC for Windows
 
     # Build CoreCLR Managed Components
     - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -subset clr.corelib+clr.nativecorelib+clr.tools+clr.packages $(crossArg) -arch $(archType) $(osArg) -c $(buildConfig) $(officialBuildIdArg) -ci
@@ -196,6 +192,13 @@ jobs:
           archiveExtension: $(archiveExtension)
           artifactName: $(buildProductArtifactName)
           displayName: 'product build'
+
+    - ${{ if and(ne(parameters.osGroup, 'OSX'), ne(parameters.archType, 'x86'), ne(parameters.compilerName, 'gcc'), ne(parameters.testGroup, 'clrTools')) }}:
+      - template: /eng/pipelines/coreclr/templates/crossdac-build.yml
+        parameters:
+          archType: ${{ parameters.archType }}
+          osGroup: ${{ parameters.osGroup }}
+          osSubgroup: ${{ parameters.osSubgroup }}
 
     - ${{ if and(ne(parameters.compilerName, 'gcc'), ne(parameters.testGroup, ''), ne(parameters.testGroup, 'clrTools')) }}:
       # Publish test native components for consumption by test execution.

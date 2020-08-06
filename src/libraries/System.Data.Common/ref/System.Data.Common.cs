@@ -2079,8 +2079,8 @@ namespace System.Data.Common
         public System.Data.Common.DbCommand? UpdateCommand { get { throw null; } set { } }
         protected virtual int AddToBatch(System.Data.IDbCommand command) { throw null; }
         protected virtual void ClearBatch() { }
-        protected virtual System.Data.Common.RowUpdatedEventArgs CreateRowUpdatedEvent(System.Data.DataRow dataRow, System.Data.IDbCommand command, System.Data.StatementType statementType, System.Data.Common.DataTableMapping tableMapping) { throw null; }
-        protected virtual System.Data.Common.RowUpdatingEventArgs CreateRowUpdatingEvent(System.Data.DataRow dataRow, System.Data.IDbCommand command, System.Data.StatementType statementType, System.Data.Common.DataTableMapping tableMapping) { throw null; }
+        protected virtual System.Data.Common.RowUpdatedEventArgs CreateRowUpdatedEvent(System.Data.DataRow dataRow, System.Data.IDbCommand? command, System.Data.StatementType statementType, System.Data.Common.DataTableMapping tableMapping) { throw null; }
+        protected virtual System.Data.Common.RowUpdatingEventArgs CreateRowUpdatingEvent(System.Data.DataRow dataRow, System.Data.IDbCommand? command, System.Data.StatementType statementType, System.Data.Common.DataTableMapping tableMapping) { throw null; }
         protected override void Dispose(bool disposing) { }
         protected virtual int ExecuteBatch() { throw null; }
         public override int Fill(System.Data.DataSet dataSet) { throw null; }
@@ -2441,6 +2441,13 @@ namespace System.Data.Common
         public virtual System.Threading.Tasks.ValueTask DisposeAsync() { throw null; }
         public abstract void Rollback();
         public virtual System.Threading.Tasks.Task RollbackAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public virtual bool SupportsSavepoints { get { throw null; } }
+        public virtual System.Threading.Tasks.Task SaveAsync(string savepointName, System.Threading.CancellationToken cancellationToken = default) { throw null; }
+        public virtual System.Threading.Tasks.Task RollbackAsync(string savepointName, System.Threading.CancellationToken cancellationToken = default) { throw null; }
+        public virtual System.Threading.Tasks.Task ReleaseAsync(string savepointName, System.Threading.CancellationToken cancellationToken = default) { throw null; }
+        public virtual void Save(string savepointName) { throw null; }
+        public virtual void Rollback(string savepointName) { throw null; }
+        public virtual void Release(string savepointName) { throw null; }
     }
     public enum GroupByBehavior
     {
@@ -2462,8 +2469,8 @@ namespace System.Data.Common
     }
     public partial class RowUpdatedEventArgs : System.EventArgs
     {
-        public RowUpdatedEventArgs(System.Data.DataRow dataRow, System.Data.IDbCommand command, System.Data.StatementType statementType, System.Data.Common.DataTableMapping tableMapping) { }
-        public System.Data.IDbCommand Command { get { throw null; } }
+        public RowUpdatedEventArgs(System.Data.DataRow dataRow, System.Data.IDbCommand? command, System.Data.StatementType statementType, System.Data.Common.DataTableMapping tableMapping) { }
+        public System.Data.IDbCommand? Command { get { throw null; } }
         public System.Exception? Errors { get { throw null; } set { } }
         public int RecordsAffected { get { throw null; } }
         public System.Data.DataRow Row { get { throw null; } }
@@ -2476,7 +2483,7 @@ namespace System.Data.Common
     }
     public partial class RowUpdatingEventArgs : System.EventArgs
     {
-        public RowUpdatingEventArgs(System.Data.DataRow dataRow, System.Data.IDbCommand command, System.Data.StatementType statementType, System.Data.Common.DataTableMapping tableMapping) { }
+        public RowUpdatingEventArgs(System.Data.DataRow dataRow, System.Data.IDbCommand? command, System.Data.StatementType statementType, System.Data.Common.DataTableMapping tableMapping) { }
         protected virtual System.Data.IDbCommand? BaseCommand { get { throw null; } set { } }
         public System.Data.IDbCommand? Command { get { throw null; } set { } }
         public System.Exception? Errors { get { throw null; } set { } }

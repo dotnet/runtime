@@ -11,8 +11,18 @@ namespace System.Globalization.Tests
         public static IEnumerable<object[]> EnglishName_TestData()
         {
             yield return new object[] { CultureInfo.CurrentCulture.Name, CultureInfo.CurrentCulture.EnglishName };
-            yield return new object[] { "en-US", "English (United States)" };
-            yield return new object[] { "fr-FR", "French (France)" };
+
+            if (PlatformDetection.IsNotBrowser)
+            {
+                yield return new object[] { "en-US", "English (United States)" };
+                yield return new object[] { "fr-FR", "French (France)" };
+            }
+            else
+            {
+                // Browser's ICU doesn't contain CultureInfo.EnglishName
+                yield return new object[] { "en-US", "en (US)" };
+                yield return new object[] { "fr-FR", "fr (FR)" };
+            }
         }
 
         [Theory]

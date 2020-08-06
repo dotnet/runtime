@@ -138,7 +138,7 @@
   <data name="ObjectDisposed_Generic" xml:space="preserve">
     <value>Cannot access a disposed object.</value>
   </data>
-  <data name="Cryptography_PlatformNotSupported" xml:space="preserve">
-    <value>System.Security.Cryptography is not supported on this platform.</value>
+  <data name="SystemSecurityCryptographyEncoding_PlatformNotSupported" xml:space="preserve">
+    <value>System.Security.Cryptography.Encoding is not supported on this platform.</value>
   </data>
 </root>

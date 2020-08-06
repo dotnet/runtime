@@ -41,12 +41,6 @@ set EXECUTION_DIR=%~dp0
 
 :argparser_end
 
-if not defined RUNTIME_PATH (
-  echo error: -r^|--runtime-path argument is required.
-  call :usage
-  exit /b -1
-)
-
 :: Don't use a globally installed SDK.
 set DOTNET_MULTILEVEL_LOOKUP=0
 

@@ -275,7 +275,7 @@ namespace System.Text
 
 #if (!NETSTANDARD2_0 && !NETFRAMEWORK)
                 // TODO_UTF8STRING: Can we call string.FastAllocate directly?
-                return string.Create(utf16CharCount, (pbData: (IntPtr)pData, cbData: Length), (chars, state) =>
+                return string.Create(utf16CharCount, (pbData: (IntPtr)pData, cbData: Length), static (chars, state) =>
                 {
                     OperationStatus status = Utf8.ToUtf16(new ReadOnlySpan<byte>((byte*)state.pbData, state.cbData), chars, out _, out _, replaceInvalidSequences: false);
                     Debug.Assert(status == OperationStatus.Done, "Did somebody mutate this Utf8String instance unexpectedly?");

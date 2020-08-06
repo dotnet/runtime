@@ -10,6 +10,4 @@ internal static partial class Interop
         [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetPid")]
         internal static extern int GetPid();
     }
-
-    internal static uint GetCurrentProcessId() => (uint)Sys.GetPid();
 }

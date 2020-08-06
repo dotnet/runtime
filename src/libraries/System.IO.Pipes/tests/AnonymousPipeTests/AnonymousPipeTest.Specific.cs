@@ -85,7 +85,7 @@ namespace System.IO.Pipes.Tests
             // On Linux, setting the buffer size of the server will also set the buffer size of the
             // client, regardless of the direction of the flow
 
-            int desiredBufferSize = 4096;
+            int desiredBufferSize = Environment.SystemPageSize;
             using (var server = new AnonymousPipeServerStream(PipeDirection.Out, HandleInheritability.None, desiredBufferSize))
             {
                 Assert.Equal(desiredBufferSize, server.OutBufferSize);

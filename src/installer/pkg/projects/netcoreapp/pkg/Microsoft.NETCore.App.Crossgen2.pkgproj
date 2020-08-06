@@ -38,7 +38,7 @@
           DependsOnTargets="ConvertItems"
           BeforeTargets="GetPackageFiles">
     <ItemGroup>
-      <RuntimeFile Include="@(File->HasMetadata('TargetPath'))" />
+      <RuntimeFile Include="@(File->HasMetadata('TargetPath'))" Exclude="$(PackageIconFullPath)" />
       <File Remove="@(RuntimeFile)" />
     </ItemGroup>
 

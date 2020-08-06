@@ -9,7 +9,7 @@ namespace Internal.TypeSystem
     /// <summary>
     /// Base type for all type system exceptions.
     /// </summary>
-    public abstract class TypeSystemException : Exception
+    public abstract partial class TypeSystemException : Exception
     {
         private string[] _arguments;
 
@@ -43,53 +43,19 @@ namespace Internal.TypeSystem
             _arguments = args;
         }
 
-        private static string GetFormatString(ExceptionStringID id)
-        {
-            switch (id)
-            {
-                case ExceptionStringID.ClassLoadGeneral: return SR.ClassLoadGeneral;
-                case ExceptionStringID.ClassLoadBadFormat: return SR.ClassLoadBadFormat;
-                case ExceptionStringID.ClassLoadExplicitGeneric: return SR.ClassLoadExplicitGeneric;
-                case ExceptionStringID.ClassLoadExplicitLayout: return SR.ClassLoadExplicitLayout;
-                case ExceptionStringID.ClassLoadValueClassTooLarge: return SR.ClassLoadValueClassTooLarge;
-                case ExceptionStringID.ClassLoadRankTooLarge: return SR.ClassLoadRankTooLarge;
-                case ExceptionStringID.MissingMethod: return SR.MissingMethod;
-                case ExceptionStringID.MissingField: return SR.MissingField;
-                case ExceptionStringID.InvalidProgramDefault: return SR.InvalidProgramDefault;
-                case ExceptionStringID.InvalidProgramSpecific: return SR.InvalidProgramSpecific;
-                case ExceptionStringID.InvalidProgramVararg: return SR.InvalidProgramVararg;
-                case ExceptionStringID.InvalidProgramCallVirtFinalize: return SR.InvalidProgramCallVirtFinalize;
-                case ExceptionStringID.InvalidProgramUnmanagedCallersOnly: return SR.InvalidProgramUnmanagedCallersOnly;
-                case ExceptionStringID.InvalidProgramCallAbstractMethod: return SR.InvalidProgramCallAbstractMethod;
-                case ExceptionStringID.InvalidProgramCallVirtStatic: return SR.InvalidProgramCallVirtStatic;
-                case ExceptionStringID.InvalidProgramNonStaticMethod: return SR.InvalidProgramNonStaticMethod;
-                case ExceptionStringID.InvalidProgramGenericMethod: return SR.InvalidProgramGenericMethod;
-                case ExceptionStringID.InvalidProgramNonBlittableTypes: return SR.InvalidProgramNonBlittableTypes;
-                case ExceptionStringID.BadImageFormatGeneric: return SR.BadImageFormatGeneric;
-                case ExceptionStringID.FileLoadErrorGeneric: return SR.FileLoadErrorGeneric;
-            }
-#if !DEBUG
-            throw new Exception($"Unknown Exception string id {id}");
-#else
-            return null;
-#endif
-        }
-
         private static string GetExceptionString(ExceptionStringID id, string[] args)
         {
             string formatString = GetFormatString(id);
-#if !DEBUG
             try
             {
-#endif
-                return String.Format(formatString, (object[])args);
-#if !DEBUG
+                if (formatString != null)
+                {
+                    return String.Format(formatString, (object[])args);
+                }
             }
-            catch
-            {
-                return "[TEMPORARY EXCEPTION MESSAGE] " + id.ToString() + ": " + String.Join(", ", args);
-            }
-#endif
+            catch {}
+            
+            return "[TEMPORARY EXCEPTION MESSAGE] " + id.ToString() + ": " + String.Join(", ", args);
         }
 
         /// <summary>
@@ -169,6 +135,11 @@ namespace Internal.TypeSystem
         {
             internal InvalidProgramException(ExceptionStringID id, string method)
                 : base(id, method)
+            {
+            }
+
+            internal InvalidProgramException(ExceptionStringID id)
+                : base(id)
             {
             }
 
