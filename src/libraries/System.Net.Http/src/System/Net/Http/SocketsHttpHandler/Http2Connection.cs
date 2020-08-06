@@ -1902,7 +1902,6 @@ namespace System.Net.Http
             if (Interlocked.Read(ref _keepAlivePingPayload) != payload)
                 ThrowProtocolError();
             _keepAliveState = KeepAliveState.None;
-            RefreshPingTimestamp();
         }
 
         private void VerifyKeepAlive()
