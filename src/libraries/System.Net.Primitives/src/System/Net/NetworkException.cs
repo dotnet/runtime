@@ -12,10 +12,7 @@ namespace System.Net
     {
         /// <summary>Creates a new instance of the <see cref='System.Net.NetworkException'/> class with the specified error code.</summary>
         public NetworkException(NetworkError error, Exception? innerException = null)
-            : base(GetExceptionMessage(error), innerException)
-        {
-            NetworkError = error;
-        }
+            : this(GetExceptionMessage(error), error, innerException) {}
 
         /// <summary>Creates a new instance of the <see cref='System.Net.NetworkException'/> class with the specified error code and message.</summary>
         public NetworkException(string message, NetworkError error, Exception? innerException = null)
