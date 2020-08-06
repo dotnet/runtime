@@ -7826,6 +7826,7 @@ interp_cleanup (void)
 #endif
 #if PROFILE_INTERP
 	fclose (profile_trace);
+	printf ("Total ops: %ld\n", total_executed_opcodes);
 #endif
 }
 
