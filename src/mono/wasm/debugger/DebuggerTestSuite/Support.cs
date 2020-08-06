@@ -796,7 +796,7 @@ namespace DebuggerTests
         }
 
         /* @fn_args is for use with `Runtime.callFunctionOn` only */
-        internal async Task<JToken> GetProperties(string id, JToken fn_args = null)
+        internal async Task<JToken> GetProperties(string id, JToken fn_args = null, bool expect_ok = true)
         {
             if (ctx.UseCallFunctionOnBeforeGetProperties && !id.StartsWith("dotnet:scope:"))
             {
@@ -810,7 +810,9 @@ namespace DebuggerTests
                     cfo_args["arguments"] = fn_args;
 
                 var result = await ctx.cli.SendCommand("Runtime.callFunctionOn", cfo_args, ctx.token);
-                AssertEqual(true, result.IsOk, $"Runtime.getProperties failed for {cfo_args.ToString ()}, with Result: {result}");
+                AssertEqual(expect_ok, result.IsOk, $"Runtime.getProperties returned {result.IsOk} instead of {expect_ok}, for {cfo_args.ToString ()}, with Result: {result}");
+                if (!result.IsOk)
+                    return null;
                 id = result.Value["result"] ? ["objectId"]?.Value<string>();
             }
 
@@ -820,8 +822,9 @@ namespace DebuggerTests
             });
 
             var frame_props = await ctx.cli.SendCommand("Runtime.getProperties", get_prop_req, ctx.token);
+            AssertEqual(expect_ok, frame_props.IsOk, $"Runtime.getProperties returned {frame_props.IsOk} instead of {expect_ok}, for {get_prop_req}, with Result: {frame_props}");
             if (!frame_props.IsOk)
-                Assert.True(false, $"Runtime.getProperties failed for {get_prop_req.ToString ()}, with Result: {frame_props}");
+                return null;
 
             var locals = frame_props.Value["result"];
             // FIXME: Should be done when generating the list in library_mono.js, but not sure yet
