@@ -298,7 +298,7 @@ namespace System.Net.Http
                 if ((value.Ticks <  TimeSpan.TicksPerSecond && value != Timeout.InfiniteTimeSpan) ||
                     (value.TotalMilliseconds > int.MaxValue))
                 {
-                    throw new ArgumentOutOfRangeException(nameof(value), value, SR.Format(SR.ArgumentOutOfRange_Bounds_Lower_Upper_Named, 'TimeSpan.FromSeconds(1)', 'TimeSpan(int.MaxValue)', nameof(value)));
+                    throw new ArgumentOutOfRangeException(nameof(value), value, SR.Format(SR.ArgumentOutOfRange_Bounds_Lower_Upper_Named, "TimeSpan.FromSeconds(1)", "TimeSpan(int.MaxValue)", nameof(value)));
                 }
 
                 CheckDisposedOrStarted();
@@ -324,7 +324,7 @@ namespace System.Net.Http
                 if ((value.Ticks <  TimeSpan.TicksPerSecond && value != Timeout.InfiniteTimeSpan) ||
                     (value.TotalMilliseconds > int.MaxValue))
                 {
-                    throw new ArgumentOutOfRangeException(nameof(value), value, SR.Format(SR.ArgumentOutOfRange_Bounds_Lower_Upper_Named, 'TimeSpan.FromSeconds(1)', 'TimeSpan(int.MaxValue)', nameof(value)));
+                    throw new ArgumentOutOfRangeException(nameof(value), value, SR.Format(SR.ArgumentOutOfRange_Bounds_Lower_Upper_Named, "TimeSpan.FromSeconds(1)", "TimeSpan(int.MaxValue)", nameof(value)));
                 }
 
                 CheckDisposedOrStarted();

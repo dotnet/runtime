@@ -103,12 +103,12 @@ namespace System.Net.Http
             PingSent
         }
 
+        private readonly long _keepAlivePingDelay;
+        private readonly long _keepAlivePingTimeout;
+        private readonly HttpKeepAlivePingPolicy _keepAlivePingPolicy;
         private long _keepAlivePingPayload;
-        private readonly TimeSpan _keepAlivePingDelay;
-        private readonly TimeSpan _keepAlivePingTimeout;
         private long _nextPingRequestTimestamp;
         private long _keepAlivePingTimeoutTimestamp;
-        private HttpKeepAlivePingPolicy _keepAlivePingPolicy;
         private volatile KeepAliveState _keepAliveState;
 
         public Http2Connection(HttpConnectionPool pool, Connection connection)
@@ -134,9 +134,9 @@ namespace System.Net.Http
             _pendingWindowUpdate = 0;
             _idleSinceTickCount = Environment.TickCount64;
 
-            _keepAlivePingDelay = _pool.Settings._keepAlivePingDelay;
-            _keepAlivePingTimeout = _pool.Settings._keepAlivePingTimeout;
-            _nextPingRequestTimestamp = Environment.TickCount64 + (long)_keepAlivePingDelay.TotalMilliseconds;
+            _keepAlivePingDelay = (long)_pool.Settings._keepAlivePingDelay.TotalMilliseconds;
+            _keepAlivePingTimeout = (long)_pool.Settings._keepAlivePingTimeout.TotalMilliseconds;
+            _nextPingRequestTimestamp = Environment.TickCount64 + _keepAlivePingDelay;
             _keepAlivePingPolicy = _pool.Settings._keepAlivePingPolicy;
 
             if (NetEventSource.Log.IsEnabled()) TraceConnection(_stream);
@@ -1892,7 +1892,7 @@ namespace System.Net.Http
 
         private void RefreshPingTimestamp()
         {
-            _nextPingRequestTimestamp = Environment.TickCount64 + (long)_keepAlivePingDelay.TotalMilliseconds;
+            _nextPingRequestTimestamp = Environment.TickCount64 + _keepAlivePingDelay;
         }
 
         private void ProcessPingAck(long payload)
@@ -1914,11 +1914,11 @@ namespace System.Net.Http
             {
                 case KeepAliveState.None:
                     // Check whether keep alive delay has passed since last frame received
-                    if (_keepAlivePingDelay != Timeout.InfiniteTimeSpan && now > _nextPingRequestTimestamp)
+                    if (now > _nextPingRequestTimestamp && _keepAlivePingDelay != Timeout.InfiniteTimeSpan.TotalMilliseconds)
                     {
                         // Set the status directly to ping sent and set the timestamp
                         _keepAliveState = KeepAliveState.PingSent;
-                        _keepAlivePingTimeoutTimestamp = now + (long)_keepAlivePingTimeout.TotalMilliseconds;
+                        _keepAlivePingTimeoutTimestamp = now + _keepAlivePingTimeout;
 
                         long pingPayload = Interlocked.Increment(ref _keepAlivePingPayload);
                         SendPingAsync(pingPayload);

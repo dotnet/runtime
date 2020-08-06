@@ -321,34 +321,29 @@ namespace System.Net.Http.Functional.Tests
                         KeepAlivePingPolicy = keepAlivePingPolicy,
                         KeepAlivePingDelay = keepAlivePingDelay
                     };
-                    handler.SslOptions.RemoteCertificateValidationCallback = (_, __, ___, ____) => true;
+                    handler.SslOptions.RemoteCertificateValidationCallback = delegate { return true; };
 
                     using HttpClient client = new HttpClient(handler);
                     client.DefaultRequestVersion = HttpVersion.Version20;
 
                     // Warmup request to create connection.
                     await client.GetStringAsync(uri);
-                    //_output.WriteLine("* start req");
                     // Request under the test scope.
                     if (expectRequestFail)
                         await Assert.ThrowsAsync<HttpRequestException>(() => client.GetStringAsync(uri));
                     else
                         await client.GetStringAsync(uri);
 
-                    //_output.WriteLine("* done");
                     // Let connection live for a while.
                     await Task.Delay(pingTimeout);
-                    //_output.WriteLine("* definitely done");
                 },
                 async server =>
                 {
                     using Http2LoopbackConnection connection = await server.EstablishConnectionAsync();
-                    //_output.WriteLine("Connection established");
                     // Warmup the connection.
                     int streamId1 = await connection.ReadRequestHeaderAsync();
                     await connection.SendDefaultResponseAsync(streamId1);
 
-                    //_output.WriteLine("Warm up done");
                     // Request under the test scope.
                     int streamId2 = await connection.ReadRequestHeaderAsync();
 
@@ -359,13 +354,10 @@ namespace System.Net.Http.Functional.Tests
                     }
                     else
                     {
-                        //_output.WriteLine("Waiting on ping");
                         PingFrame ping = await connection.ReadPingAsync(pingTimeout);
-                        //_output.WriteLine("Ping received");
                         await Task.Delay(pongDelay);
 
                         await connection.SendPingAckAsync(ping.Data);
-                        //_output.WriteLine("Pong sent");
                     }
 
                     // Send response and close the stream.
@@ -376,15 +368,11 @@ namespace System.Net.Http.Functional.Tests
                         return;
                     }
                     await connection.SendDefaultResponseAsync(streamId2);
-                    //_output.WriteLine("Sent default response");
                     // Test ping with no active stream.
                     if (expectPingWithoutStream)
                     {
-                        //_output.WriteLine("Expecting last ping");
                         PingFrame ping = await connection.ReadPingAsync(pingTimeout);
-                        //_output.WriteLine("receivedping");
                         await connection.SendPingAckAsync(ping.Data);
-                        //_output.WriteLine("ack sent");
                     }
                     else
                     {
