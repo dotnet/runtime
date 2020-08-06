@@ -15,8 +15,6 @@ using Microsoft.Build.Utilities;
 
 public class WasmBundleTask : Task
 {
-    [Required]
-    public string? AppDir { get; set; }
     public string? InputDirectory { get; set; }
     public string? FileName { get; set; } 
 
@@ -27,7 +25,7 @@ public class WasmBundleTask : Task
         var directoryInfo = new DirectoryInfo(InputDirectory!);
         
         foreach (var entry in directoryInfo.EnumerateFiles("*", SearchOption.AllDirectories)) {
-            
+
             var relativePath = entry.FullName.Substring(InputDirectory!.Length).Trim('/');
             indices.Add(new object[] { relativePath, entry.Length });
 

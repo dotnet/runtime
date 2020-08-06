@@ -16,22 +16,21 @@ public class TimeZoneLoader : Task
 {
     public string? InputDirectory { get; set; }
     public string? OutputDirectory { get; set; }
+    public string? Version { get; set; }
 
     private void DownloadTimeZoneData() {
+        List<string> files = new List<string>() {"africa", "antarctica", "asia", "australasia", "etcetera", "europe", "northamerica", "southamerica", "zone1970.tab"};
         using (var client = new WebClient())
         {
-            client.DownloadFile("https://data.iana.org/time-zones/tzdata-latest.tar.gz", $"{InputDirectory}/tzdata.tar.gz");
+            foreach (var file in files) {
+                client.DownloadFile($"https://data.iana.org/time-zones/tzdb-{Version}/{file}", $"{InputDirectory}/{file}");
+            }
         }
 
-        string[] files = {"africa", "antarctica", "asia", "australasia", "etcetera", "europe", "northamerica", "southamerica"};
+        files.Remove("zone1970.tab");        
 
         using (Process process = new Process()) {
             process.StartInfo.UseShellExecute = false;
-            process.StartInfo.FileName = "tar";
-            process.StartInfo.Arguments = $"xvzf \"{InputDirectory}/tzdata.tar.gz\" -C \"{InputDirectory}\"";
-            process.Start();
-            process.WaitForExit();
-
             process.StartInfo.FileName = "zic";
             foreach (var f in files) {
                 process.StartInfo.Arguments = $"-d \"{OutputDirectory}\" \"{InputDirectory}/{f}\"";

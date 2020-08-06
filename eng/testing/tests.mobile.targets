@@ -167,7 +167,8 @@
   <Target Condition="'$(TargetOS)' == 'Browser'" Name="LoadTimeZone" >
     <TimeZoneLoader
       InputDirectory="$(BundleDir)obj/data/input"
-      OutputDirectory="$(BundleDir)obj/data/output"/>
+      OutputDirectory="$(BundleDir)obj/data/output"
+      Version="2020a"/>
   </Target>
 
   <UsingTask TaskName="WasmBundleTask"
@@ -175,8 +176,7 @@
   <Target Condition="'$(TargetOS)' == 'Browser'" Name="BundleWasmTestData" DependsOnTargets="LoadTimeZone">
     <WasmBundleTask
       InputDirectory="$(BundleDir)obj/data/output"
-      FileName="$(MicrosoftNetCoreAppRuntimePackRidDir)dotnet.timezones.blat" 
-      AppDir="$(BundleDir)"/>
+      FileName="$(MicrosoftNetCoreAppRuntimePackRidDir)dotnet.timezones.blat" />
   </Target>
 
   <Target Name="AddTestRunnersToPublishedFiles"
