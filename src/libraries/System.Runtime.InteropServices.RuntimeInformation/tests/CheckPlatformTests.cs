@@ -129,7 +129,6 @@ namespace System.Runtime.InteropServices.RuntimeInformationTests
         [Fact, PlatformSpecific(TestPlatforms.Browser)]  // Tests RuntimeInformation OS platform
         public void CheckBrowser()
         {
-            Assert.True(RuntimeInformation.IsOSPlatform(OSPlatform.Browser));
             Assert.True(RuntimeInformation.IsOSPlatform(OSPlatform.Create("BROWSER")));
             Assert.True(RuntimeInformation.IsOSPlatform(OSPlatform.Create("browser")));
 

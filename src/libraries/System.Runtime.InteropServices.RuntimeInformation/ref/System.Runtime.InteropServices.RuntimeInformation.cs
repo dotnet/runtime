@@ -18,7 +18,6 @@ namespace System.Runtime.InteropServices
     {
         private readonly object _dummy;
         private readonly int _dummyPrimitive;
-        public static System.Runtime.InteropServices.OSPlatform Browser { get { throw null; } }
         public static System.Runtime.InteropServices.OSPlatform FreeBSD { get { throw null; } }
         public static System.Runtime.InteropServices.OSPlatform Linux { get { throw null; } }
         public static System.Runtime.InteropServices.OSPlatform OSX { get { throw null; } }
