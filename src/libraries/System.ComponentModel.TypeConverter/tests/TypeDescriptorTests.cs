@@ -484,7 +484,11 @@ namespace System.ComponentModel.Tests
         [InlineData(typeof(ClassIBase), typeof(IBaseConverter))]
         [InlineData(typeof(ClassIDerived), typeof(IBaseConverter))]
         [InlineData(typeof(Uri), typeof(UriTypeConverter))]
+        [InlineData(typeof(DerivedUri), typeof(UriTypeConverter))]
+        [InlineData(typeof(TwiceDerivedUri), typeof(UriTypeConverter))]
         [InlineData(typeof(CultureInfo), typeof(CultureInfoConverter))]
+        [InlineData(typeof(DerivedCultureInfo), typeof(CultureInfoConverter))]
+        [InlineData(typeof(TwiceDerivedCultureInfo), typeof(CultureInfoConverter))]
         [InlineData(typeof(Version), typeof(VersionConverter))]
         [InlineData(typeof(IComponent), typeof(ComponentConverter))]
         [InlineData(typeof(IFooComponent), typeof(ReferenceConverter))]
@@ -1158,6 +1162,28 @@ namespace System.ComponentModel.Tests
         interface IFooComponent
         {
             bool Flag { get; set; }
+        }
+
+        class DerivedUri : Uri
+        {
+            protected DerivedUri() : base("https://hello")
+            {
+            }
+        }
+
+        class TwiceDerivedUri : DerivedUri
+        {
+        }
+
+        class DerivedCultureInfo : CultureInfo
+        {
+            protected DerivedCultureInfo() : base("hello")
+            {
+            }
+        }
+
+        class TwiceDerivedCultureInfo : DerivedCultureInfo
+        {
         }
     }
 }

@@ -1414,8 +1414,30 @@ namespace System.ComponentModel
                     }
                     else
                     {
+                        // Uri and CultureInfo are the only types that can be derived from for which we have intrinsic converters.
+                        // Check if the calling type derives from either and return the appropriate converter.
+
+                        // We should have fetched converters for these types above.
+                        Debug.Assert(callingType != typeof(Uri) && callingType != typeof(CultureInfo));
+
+                        Type key = null;
+
+                        Type baseType = callingType.BaseType;
+                        while (baseType != null && baseType != typeof(object))
+                        {
+                            if (baseType == typeof(Uri) || baseType == typeof(CultureInfo))
+                            {
+                                key = baseType;
+                                break;
+                            }
+
+                            baseType = baseType.BaseType;
+                        }
+
                         // Handle other reference and value types. An instance of TypeConverter itself created and returned below.
-                        converterData = IntrinsicTypeConverters[typeof(object)];
+                        key ??= typeof(object);
+
+                        converterData = IntrinsicTypeConverters[key];
                     }
                 }
 
