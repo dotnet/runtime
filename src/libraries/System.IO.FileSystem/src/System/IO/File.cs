@@ -646,13 +646,13 @@ namespace System.IO
             FileSystem.MoveFile(fullSourceFileName, fullDestFileName, overwrite);
         }
 
-        [SupportedOSPlatform("windows7.0")]
+        [SupportedOSPlatform("windows")]
         public static void Encrypt(string path)
         {
             FileSystem.Encrypt(path ?? throw new ArgumentNullException(nameof(path)));
         }
 
-        [SupportedOSPlatform("windows7.0")]
+        [SupportedOSPlatform("windows")]
         public static void Decrypt(string path)
         {
             FileSystem.Decrypt(path ?? throw new ArgumentNullException(nameof(path)));

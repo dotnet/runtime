@@ -1139,54 +1139,6 @@ void ResumeAtJit(PCONTEXT pContext, LPVOID oldESP)
 #ifndef TARGET_UNIX
 #pragma warning(push)
 #pragma warning(disable: 4035)
-extern "C" DWORD __stdcall getcpuid(DWORD arg, unsigned char result[16])
-{
-    LIMITED_METHOD_CONTRACT
-
-    __asm
-    {
-        push    ebx
-        push    esi
-        mov     eax, arg
-        cpuid
-        mov     esi, result
-        mov     [esi+ 0], eax
-        mov     [esi+ 4], ebx
-        mov     [esi+ 8], ecx
-        mov     [esi+12], edx
-        pop     esi
-        pop     ebx
-    }
-}
-
-// The following function uses Deterministic Cache Parameter leafs to determine the cache hierarchy information on Prescott & Above platforms.
-//  This function takes 3 arguments:
-//     Arg1 is an input to ECX. Used as index to specify which cache level to return infoformation on by CPUID.
-//     Arg2 is an input to EAX. For deterministic code enumeration, we pass in 4H in arg2.
-//     Arg3 is a pointer to the return buffer
-//   No need to check whether or not CPUID is supported because we have already called CPUID with success to come here.
-
-extern "C" DWORD __stdcall getextcpuid(DWORD arg1, DWORD arg2, unsigned char result[16])
-{
-    LIMITED_METHOD_CONTRACT
-
-    __asm
-    {
-        push    ebx
-        push    esi
-        mov     ecx, arg1
-        mov     eax, arg2
-        cpuid
-        mov     esi, result
-        mov     [esi+ 0], eax
-        mov     [esi+ 4], ebx
-        mov     [esi+ 8], ecx
-        mov     [esi+12], edx
-        pop     esi
-        pop     ebx
-    }
-}
-
 extern "C" DWORD __stdcall xmmYmmStateSupport()
 {
     // No CONTRACT
@@ -1207,41 +1159,30 @@ extern "C" DWORD __stdcall xmmYmmStateSupport()
     done:
     }
 }
-
 #pragma warning(pop)
 
 #else // !TARGET_UNIX
 
-extern "C" DWORD __stdcall getcpuid(DWORD arg, unsigned char result[16])
+void __cpuid(int cpuInfo[4], int function_id)
 {
-    DWORD eax;
-    __asm("  xor %%ecx, %%ecx\n" \
-            "  cpuid\n" \
-            "  mov %%eax, 0(%[result])\n" \
-            "  mov %%ebx, 4(%[result])\n" \
-            "  mov %%ecx, 8(%[result])\n" \
-            "  mov %%edx, 12(%[result])\n" \
-        : "=a"(eax) /*output in eax*/\
-        : "a"(arg), [result]"r"(result) /*inputs - arg in eax, result in any register*/\
-        : "ebx", "ecx", "edx", "memory" /* registers that are clobbered, *result is clobbered */
-        );
-    return eax;
+    // Based on the Clang implementation provided in cpuid.h:
+    // https://github.com/llvm/llvm-project/blob/master/clang/lib/Headers/cpuid.h
+
+    __asm("  cpuid"
+        : "=a"(cpuInfo[0]), "=b"(cpuInfo[1]), "=c"(cpuInfo[2]), "=d"(cpuInfo[3]) \
+        : "0"(function_id)
+    );
 }
 
-extern "C" DWORD __stdcall getextcpuid(DWORD arg1, DWORD arg2, unsigned char result[16])
+void __cpuidex(int cpuInfo[4], int function_id, int subFunction_id)
 {
-    DWORD eax;
-    DWORD ecx;
-    __asm("  cpuid\n" \
-            "  mov %%eax, 0(%[result])\n" \
-            "  mov %%ebx, 4(%[result])\n" \
-            "  mov %%ecx, 8(%[result])\n" \
-            "  mov %%edx, 12(%[result])\n" \
-        : "=a"(eax), "=c"(ecx) /*output in eax, ecx is rewritten*/\
-        : "c"(arg1), "a"(arg2), [result]"r"(result) /*inputs - arg1 in ecx, arg2 in eax, result in any register*/\
-        : "ebx", "edx", "memory" /* registers that are clobbered, *result is clobbered */
-        );
-    return eax;
+    // Based on the Clang implementation provided in cpuid.h:
+    // https://github.com/llvm/llvm-project/blob/master/clang/lib/Headers/cpuid.h
+
+    __asm("  cpuid"
+        : "=a"(cpuInfo[0]), "=b"(cpuInfo[1]), "=c"(cpuInfo[2]), "=d"(cpuInfo[3]) \
+        : "0"(function_id), "2"(subFunction_id)
+    );
 }
 
 extern "C" DWORD __stdcall xmmYmmStateSupport()

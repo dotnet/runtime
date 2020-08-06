@@ -24,6 +24,8 @@ void core_initialize_internals ();
 #endif
 
 // Blazor specific custom routines - see dotnet_support.js for backing code
+extern void* mono_wasm_invoke_js_blazor (MonoString **exceptionMessage, void *callInfo, void* arg0, void* arg1, void* arg2);
+// The following two are for back-compat and will eventually be removed
 extern void* mono_wasm_invoke_js_marshalled (MonoString **exceptionMessage, void *asyncHandleLongPtr, MonoString *funcName, MonoString *argsJson);
 extern void* mono_wasm_invoke_js_unmarshalled (MonoString **exceptionMessage, MonoString *funcName, void* arg0, void* arg1, void* arg2);
 
@@ -348,6 +350,8 @@ void mono_initialize_internals ()
 	// TODO: what happens when two types in different assemblies have the same FQN?
 
 	// Blazor specific custom routines - see dotnet_support.js for backing code
+	mono_add_internal_call ("WebAssembly.JSInterop.InternalCalls::InvokeJS", mono_wasm_invoke_js_blazor);
+	// The following two are for back-compat and will eventually be removed
 	mono_add_internal_call ("WebAssembly.JSInterop.InternalCalls::InvokeJSMarshalled", mono_wasm_invoke_js_marshalled);
 	mono_add_internal_call ("WebAssembly.JSInterop.InternalCalls::InvokeJSUnmarshalled", mono_wasm_invoke_js_unmarshalled);
 
@@ -358,7 +362,7 @@ void mono_initialize_internals ()
 }
 
 EMSCRIPTEN_KEEPALIVE void
-mono_wasm_load_runtime (const char *unused, int enable_debugging)
+mono_wasm_load_runtime (const char *unused, int debug_level)
 {
 	const char *interp_opts = "";
 
@@ -386,10 +390,18 @@ mono_wasm_load_runtime (const char *unused, int enable_debugging)
 #endif
 #else
 	mono_jit_set_aot_mode (MONO_AOT_MODE_INTERP_ONLY);
-	if (enable_debugging) {
+
+	/*
+	 * debug_level > 0 enables debugging and sets the debug log level to debug_level
+	 * debug_level == 0 disables debugging and enables interpreter optimizations
+	 * debug_level < 0 enabled debugging and disables debug logging.
+	 *
+	 * Note: when debugging is enabled interpreter optimizations are disabled.
+	 */
+	if (debug_level) {
 		// Disable optimizations which interfere with debugging
 		interp_opts = "-all";
-		mono_wasm_enable_debugging (enable_debugging);
+		mono_wasm_enable_debugging (debug_level);
 	}
 #endif
 
