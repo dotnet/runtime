@@ -5,8 +5,6 @@ namespace System.Runtime.InteropServices
 {
     public readonly struct OSPlatform : IEquatable<OSPlatform>
     {
-        private readonly string _osPlatform;
-
         public static OSPlatform Browser { get; } = new OSPlatform("BROWSER");
 
         public static OSPlatform FreeBSD { get; } = new OSPlatform("FREEBSD");
@@ -17,15 +15,14 @@ namespace System.Runtime.InteropServices
 
         public static OSPlatform Windows { get; } = new OSPlatform("WINDOWS");
 
-        internal bool IsCurrent { get; } // this information is cached because it's frequently used
+        internal string Name { get; }
 
         private OSPlatform(string osPlatform)
         {
             if (osPlatform == null) throw new ArgumentNullException(nameof(osPlatform));
             if (osPlatform.Length == 0) throw new ArgumentException(SR.Argument_EmptyValue, nameof(osPlatform));
 
-            _osPlatform = osPlatform;
-            IsCurrent = RuntimeInformation.IsCurrentOSPlatform(osPlatform);
+            Name = osPlatform;
         }
 
         /// <summary>
@@ -39,12 +36,12 @@ namespace System.Runtime.InteropServices
 
         public bool Equals(OSPlatform other)
         {
-            return Equals(other._osPlatform);
+            return Equals(other.Name);
         }
 
         internal bool Equals(string? other)
         {
-            return string.Equals(_osPlatform, other, StringComparison.OrdinalIgnoreCase);
+            return string.Equals(Name, other, StringComparison.OrdinalIgnoreCase);
         }
 
         public override bool Equals(object? obj)
@@ -54,12 +51,12 @@ namespace System.Runtime.InteropServices
 
         public override int GetHashCode()
         {
-            return _osPlatform == null ? 0 : _osPlatform.GetHashCode(StringComparison.OrdinalIgnoreCase);
+            return Name == null ? 0 : Name.GetHashCode(StringComparison.OrdinalIgnoreCase);
         }
 
         public override string ToString()
         {
-            return _osPlatform ?? string.Empty;
+            return Name ?? string.Empty;
         }
 
         public static bool operator ==(OSPlatform left, OSPlatform right)
