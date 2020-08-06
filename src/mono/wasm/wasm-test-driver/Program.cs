@@ -5,7 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Reflection;
-
+using System.Reflection.PortableExecutable;
 using System.Diagnostics;
 
 namespace wasm_test_driver
@@ -28,23 +28,38 @@ namespace wasm_test_driver
             // "/Users/naricc/workspace/runtime-webassembly-ci/src/common/wasm-test-runner/bin/Release/publish/";
 	
 
-	    List<AssemblyName> benchmarkAssemblyNames = File.ReadAllLines(testAssemblyFile).Select( file => AssemblyName.GetAssemblyName(file)).ToList();
+	    List<Tuple<AssemblyName, string>> benchmarkAssemblyNames = File.ReadAllLines(testAssemblyFile).Select( file => Tuple.Create(AssemblyName.GetAssemblyName(file), file)).ToList();
 
             ProcessStartInfo processStartInfo = new ProcessStartInfo("sh");
 
 	    processStartInfo.WorkingDirectory = testRunnerPath;
 	    processStartInfo.UseShellExecute = true;
 
-	    foreach (AssemblyName assemblyName in benchmarkAssemblyNames)
+	    foreach (Tuple<AssemblyName, string> assemblyNameFile in benchmarkAssemblyNames)
 	    {
-			processStartInfo.Arguments = $"run-v8.sh {assemblyName.Name}";
+		        AssemblyName assemblyName = assemblyNameFile.Item1;
+			string fileName = assemblyNameFile.Item2;
 
-			Console.WriteLine($"---- Starting test {assemblyName.Name} ----");
-			Process testProcess = Process.Start(processStartInfo);
-			testProcess.WaitForExit();
+			if (hasMain(fileName) )
+			 {
 
-			Console.WriteLine($"{assemblyName} exit code: {testProcess.ExitCode}");
+				processStartInfo.Arguments = $"run-v8.sh {assemblyName.Name}";
+
+				Console.WriteLine($"---- Starting test {assemblyName.Name} ----");
+				Process testProcess = Process.Start(processStartInfo);
+				testProcess.WaitForExit();
+
+				Console.WriteLine($"WasmTestDriver: {fileName} {assemblyName} exit code: {testProcess.ExitCode}");
+			}
+
 	    }
         }
+
+	static bool hasMain(string assemblyFile)
+	{
+		var stream = new FileStream(assemblyFile, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+
+	        return new PEReader(stream).PEHeaders.CorHeader.EntryPointTokenOrRelativeVirtualAddress > 0;
+	}
     }
 }
