@@ -949,13 +949,14 @@ CONTEXT_GetThreadContextFromPort(
     mach_msg_type_number_t StateCount;
     thread_state_flavor_t StateFlavor;
 
+#if defined(HOST_AMD64)
     if (lpContext->ContextFlags & (CONTEXT_CONTROL | CONTEXT_INTEGER | CONTEXT_SEGMENTS) & CONTEXT_AREA_MASK)
     {
-
-#if defined(HOST_AMD64)
         x86_thread_state64_t State;
         StateFlavor = x86_THREAD_STATE64;
 #elif defined(HOST_ARM64)
+    if (lpContext->ContextFlags & (CONTEXT_CONTROL | CONTEXT_INTEGER) & CONTEXT_AREA_MASK)
+    {
         arm_thread_state64_t State;
         StateFlavor = ARM_THREAD_STATE64;
 #else
@@ -1136,7 +1137,7 @@ CONTEXT_GetThreadContextFromThreadState(
         break;
 #elif defined(HOST_ARM64)
         case ARM_THREAD_STATE64:
-            if (lpContext->ContextFlags & (CONTEXT_CONTROL | CONTEXT_INTEGER | CONTEXT_SEGMENTS) & CONTEXT_AREA_MASK)
+            if (lpContext->ContextFlags & (CONTEXT_CONTROL | CONTEXT_INTEGER) & CONTEXT_AREA_MASK)
             {
                 arm_thread_state64_t *pState = (arm_thread_state64_t*)threadState;
                 memcpy(&lpContext->X0, &pState->__x[0], 29 * 8);

@@ -669,7 +669,7 @@ HijackFaultingThread(
     threadContext.ContextFlags = CONTEXT_FLOATING_POINT;
     CONTEXT_GetThreadContextFromThreadState(ARM_NEON_STATE64, (thread_state_t)&exceptionInfo.FloatState, &threadContext);
 
-    threadContext.ContextFlags |= CONTEXT_CONTROL | CONTEXT_INTEGER | CONTEXT_SEGMENTS;
+    threadContext.ContextFlags |= CONTEXT_CONTROL | CONTEXT_INTEGER;
     CONTEXT_GetThreadContextFromThreadState(ARM_THREAD_STATE64, (thread_state_t)&exceptionInfo.ThreadState, &threadContext);
 #else
 #error Unexpected architecture
@@ -1528,7 +1528,11 @@ InjectActivationInternal(CPalThread* pThread)
                 // The ActivationHandler will use the context to resume the execution of the thread
                 // after the activation function returns.
                 CONTEXT *pContext = (CONTEXT *)contextAddress;
+#if defined(HOST_AMD64) || defined(HOST_X86)
                 pContext->ContextFlags = CONTEXT_FULL | CONTEXT_SEGMENTS;
+#else
+                pContext->ContextFlags = CONTEXT_FULL;
+#endif
 #ifdef XSTATE_SUPPORTED
                 if (XmmYmmStateSupport() == 1)
                 {
