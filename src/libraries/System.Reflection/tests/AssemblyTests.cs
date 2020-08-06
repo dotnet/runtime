@@ -169,7 +169,7 @@ namespace System.Reflection.Tests
             Assert.NotNull(typeof(AssemblyTests).Assembly.GetFiles());
             Assert.Equal(1, typeof(AssemblyTests).Assembly.GetFiles().Length);
 
-            string name = AssemblyPathHelper.GetAssemblyLocation(typeof(AssemblyTests).Assembly);    
+            string name = AssemblyPathHelper.GetAssemblyLocation(typeof(AssemblyTests).Assembly);
             Assert.Equal(typeof(AssemblyTests).Assembly.GetFiles()[0].Name, name);
         }
 
