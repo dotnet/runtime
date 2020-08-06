@@ -13,22 +13,22 @@ namespace System.Net.Connections
 {
     internal sealed class SocketConnection : Connection, IConnectionProperties
     {
-        private Socket _socket;
-        private ISocketStreamProvider _streamProvider;
-        private Lazy<Stream> _stream;
-        private Lazy<IDuplexPipe> _pipe;
-        private readonly IConnectionProperties? _connectionProperties;
+        private readonly Socket _socket;
+        private readonly ISocketStreamProvider _streamProvider;
+        private readonly Lazy<Stream> _stream;
+        private readonly Lazy<IDuplexPipe> _pipe;
+        private readonly IConnectionProperties? _options;
 
 
         public override EndPoint? RemoteEndPoint => _socket.RemoteEndPoint;
         public override EndPoint? LocalEndPoint => _socket.LocalEndPoint;
         public override IConnectionProperties ConnectionProperties => this;
 
-        public SocketConnection(Socket socket, ISocketStreamProvider streamProvider, IConnectionProperties? connectionProperties)
+        public SocketConnection(Socket socket, ISocketStreamProvider streamProvider, IConnectionProperties? options)
         {
             _socket = socket;
             _streamProvider = streamProvider;
-            _connectionProperties = connectionProperties;
+            _options = options;
             _stream = new Lazy<Stream>(() => _streamProvider.CreateStream(socket, this), true);
             _pipe = new Lazy<IDuplexPipe>(() => _streamProvider.CreatePipe(socket, this), true);
         }
@@ -72,6 +72,11 @@ namespace System.Net.Connections
             {
                 property = _stream;
                 return true;
+            }
+
+            if (_options != null)
+            {
+                return _options.TryGet(propertyKey, out property);
             }
 
             property = null;

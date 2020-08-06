@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Browser</TargetFrameworks>
@@ -15,7 +15,6 @@
   <ItemGroup Condition="'$(TargetsBrowser)' != 'true'">
     <!-- All configurations -->
     <Compile Include="System\Net\Connections\SocketConnection.cs" />
-    <Compile Include="System\Net\Connections\SocketConnectionNetworkStream.cs" />
     <Compile Include="System\Net\Connections\SocketsConnectionFactory.cs" />
     <Compile Include="System\Net\Connections\TaskSocketAsyncEventArgs.cs" />
     <Compile Include="System\Net\Sockets\SocketReceiveFromResult.cs" />

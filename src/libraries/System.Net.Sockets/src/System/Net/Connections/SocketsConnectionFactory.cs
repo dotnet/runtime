@@ -58,14 +58,16 @@ namespace System.Net.Connections
 
                 if (args.SocketError != SocketError.Success)
                 {
-                    Exception ex = args.SocketError == SocketError.OperationAborted && cancellationToken.IsCancellationRequested
-                        ? (Exception)new OperationCanceledException(cancellationToken)
-                        : new SocketException((int)args.SocketError);
+                    if (args.SocketError == SocketError.OperationAborted && cancellationToken.IsCancellationRequested)
+                    {
+                        throw new OperationCanceledException(cancellationToken);
+                    }
 
-                    throw ex;
+                    SocketException ex = new SocketException((int)args.SocketError);
+                    throw NetworkErrorHelper.MapSocketException(ex);
                 }
 
-                return new SocketConnection(socket);
+                return new SocketConnection(socket, this, options);
             }
             catch (SocketException socketException)
             {
