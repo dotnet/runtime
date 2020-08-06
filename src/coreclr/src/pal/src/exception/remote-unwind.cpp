@@ -1368,86 +1368,128 @@ StepWithCompactEncodingRBPFrame(const libunwindInfo* info, compact_unwind_encodi
 #endif
 
 #if defined(TARGET_ARM64)
+inline static bool
+ReadCompactEncodingRegister(const libunwindInfo* info, unw_word_t* addr, DWORD64* reg)
+{
+    *addr -= sizeof(uint64_t);
+    if (!ReadValue64(info, addr, (uint64_t*)reg)) {
+        return false;
+    }
+    return true;
+}
+
+inline static bool
+ReadCompactEncodingRegisterPair(const libunwindInfo* info, unw_word_t* addr, DWORD64*second, DWORD64* first)
+{
+    // Registers are effectively pushed in pairs
+    //
+    // *addr -= 8
+    // **addr = *first
+    // *addr -= 8
+    // **addr = *second
+    if (!ReadCompactEncodingRegister(info, addr, first)) {
+        return false;
+    }
+    if (!ReadCompactEncodingRegister(info, addr, second)) {
+        return false;
+    }
+    return true;
+}
+
+inline static bool
+ReadCompactEncodingRegisterPair(const libunwindInfo* info, unw_word_t* addr, NEON128*second, NEON128* first)
+{
+    if (!ReadCompactEncodingRegisterPair(info, addr, &first->Low, &second->Low)) {
+        return false;
+    }
+    first->High = 0;
+    second->High = 0;
+    return true;
+}
+
+// Saved registers are pushed
+// + in pairs
+// + in register number order (after the option frame registers)
+// + after the callers SP
+//
+// Given C++ code that generates this prologue spill sequence
+//
+// sub     sp, sp, #128            ; =128
+// stp     d15, d14, [sp, #16]     ; 16-byte Folded Spill
+// stp     d13, d12, [sp, #32]     ; 16-byte Folded Spill
+// stp     d11, d10, [sp, #48]     ; 16-byte Folded Spill
+// stp     d9, d8, [sp, #64]       ; 16-byte Folded Spill
+// stp     x22, x21, [sp, #80]     ; 16-byte Folded Spill
+// stp     x20, x19, [sp, #96]     ; 16-byte Folded Spill
+// stp     x29, x30, [sp, #112]    ; 16-byte Folded Spill
+// add     x29, sp, #112           ; =112
+//
+// The compiler generates:
+//   compactEncoding = 0x04000f03;
 static bool
-StepWithCompactEncodingArm64Frame(const libunwindInfo* info, compact_unwind_encoding_t compactEncoding)
+StepWithCompactEncodingArm64(const libunwindInfo* info, compact_unwind_encoding_t compactEncoding, bool hasFrame)
 {
     CONTEXT* context = info->Context;
 
-    unw_word_t fp = context->Fp;
-    unw_word_t sp = context->Sp;
+    unw_word_t callerSp;
 
-    // caller Sp is callee Fp less saved FP and LR
-    context->Sp = fp + (sizeof(uint64_t) * 2);
+    if (hasFrame) {
+        // caller Sp is callee Fp plus saved FP and LR
+        callerSp = context->Fp + 2 * sizeof(uint64_t);
+    } else {
+        // Get the leat significant bit in UNWIND_ARM64_FRAMELESS_STACK_SIZE_MASK
+        uint64_t stackSizeScale = UNWIND_ARM64_FRAMELESS_STACK_SIZE_MASK & ~(UNWIND_ARM64_FRAMELESS_STACK_SIZE_MASK - 1);
+        uint64_t stackSize = (compactEncoding & UNWIND_ARM64_FRAMELESS_STACK_SIZE_MASK) / stackSizeScale * 16;
 
+        callerSp = context->Sp + stackSize;
+    }
+
+    context->Sp = callerSp;
+
+    // return address is stored in Lr
     context->Pc = context->Lr;
 
-    unw_word_t addr = fp;
+    unw_word_t addr = callerSp;
 
-    if (!ReadValue64(info, &addr, (uint64_t*)&context->Fp)) {
-        return false;
+    if (hasFrame &&
+        !ReadCompactEncodingRegisterPair(info, &addr, &context->Lr, &context->Fp)) {
+            return false;
     }
-    addr += sizeof(uint64_t);
-
-
-    if (!ReadValue64(info, &addr, (uint64_t*)&context->Lr)) {
-        return false;
+    if (compactEncoding & UNWIND_ARM64_FRAME_X19_X20_PAIR &&
+        !ReadCompactEncodingRegisterPair(info, &addr, &context->X[19], &context->X[20])) {
+            return false;
     }
-    addr += sizeof(uint64_t);
-
-    if (compactEncoding & UNWIND_ARM64_FRAME_X19_X20_PAIR)
-    {
-        if (!ReadValue64(info, &addr, (uint64_t*)&context->X[19])) {
+    if (compactEncoding & UNWIND_ARM64_FRAME_X21_X22_PAIR &&
+        !ReadCompactEncodingRegisterPair(info, &addr, &context->X[21], &context->X[22])) {
             return false;
-        }
-        addr += sizeof(uint64_t);
-        if (!ReadValue64(info, &addr, (uint64_t*)&context->X[20])) {
-            return false;
-        }
-        addr += sizeof(uint64_t);
     }
-    if (compactEncoding & UNWIND_ARM64_FRAME_X21_X22_PAIR)
-    {
-        if (!ReadValue64(info, &addr, (uint64_t*)&context->X[21])) {
+    if (compactEncoding & UNWIND_ARM64_FRAME_X23_X24_PAIR &&
+        !ReadCompactEncodingRegisterPair(info, &addr, &context->X[23], &context->X[24])) {
             return false;
-        }
-        addr += sizeof(uint64_t);
-        if (!ReadValue64(info, &addr, (uint64_t*)&context->X[22])) {
-            return false;
-        }
-        addr += sizeof(uint64_t);
     }
-    if (compactEncoding & UNWIND_ARM64_FRAME_X23_X24_PAIR)
-    {
-        if (!ReadValue64(info, &addr, (uint64_t*)&context->X[23])) {
+    if (compactEncoding & UNWIND_ARM64_FRAME_X25_X26_PAIR &&
+        !ReadCompactEncodingRegisterPair(info, &addr, &context->X[25], &context->X[26])) {
             return false;
-        }
-        addr += sizeof(uint64_t);
-        if (!ReadValue64(info, &addr, (uint64_t*)&context->X[24])) {
-            return false;
-        }
-        addr += sizeof(uint64_t);
     }
-    if (compactEncoding & UNWIND_ARM64_FRAME_X25_X26_PAIR)
-    {
-        if (!ReadValue64(info, &addr, (uint64_t*)&context->X[25])) {
+    if (compactEncoding & UNWIND_ARM64_FRAME_X27_X28_PAIR &&
+        !ReadCompactEncodingRegisterPair(info, &addr, &context->X[27], &context->X[28])) {
             return false;
-        }
-        addr += sizeof(uint64_t);
-        if (!ReadValue64(info, &addr, (uint64_t*)&context->X[26])) {
-            return false;
-        }
-        addr += sizeof(uint64_t);
     }
-    if (compactEncoding & UNWIND_ARM64_FRAME_X27_X28_PAIR)
-    {
-        if (!ReadValue64(info, &addr, (uint64_t*)&context->X[27])) {
+    if (compactEncoding & UNWIND_ARM64_FRAME_D8_D9_PAIR &&
+        !ReadCompactEncodingRegisterPair(info, &addr, &context->V[8], &context->V[9])) {
             return false;
-        }
-        addr += sizeof(uint64_t);
-        if (!ReadValue64(info, &addr, (uint64_t*)&context->X[28])) {
+    }
+    if (compactEncoding & UNWIND_ARM64_FRAME_D10_D11_PAIR &&
+        !ReadCompactEncodingRegisterPair(info, &addr, &context->V[10], &context->V[11])) {
             return false;
-        }
-        addr += sizeof(uint64_t);
+    }
+    if (compactEncoding & UNWIND_ARM64_FRAME_D12_D13_PAIR &&
+        !ReadCompactEncodingRegisterPair(info, &addr, &context->V[12], &context->V[13])) {
+            return false;
+    }
+    if (compactEncoding & UNWIND_ARM64_FRAME_D14_D15_PAIR &&
+        !ReadCompactEncodingRegisterPair(info, &addr, &context->V[14], &context->V[15])) {
+            return false;
     }
 
     TRACE("SUCCESS: compact step encoding %08x pc %p sp %p fp %p lr %p\n",
@@ -1473,9 +1515,10 @@ StepWithCompactEncoding(const libunwindInfo* info, compact_unwind_encoding_t com
         case UNWIND_X86_64_MODE_STACK_IMMD:
         case UNWIND_X86_64_MODE_STACK_IND:
             break;
-            
+
+        case UNWIND_X86_64_MODE_DWARF:
+            return false;
     }
-    ERROR("Invalid encoding %08x\n", compactEncoding);
 #elif defined(TARGET_ARM64)
     if (compactEncoding == 0)
     {
@@ -1485,15 +1528,18 @@ StepWithCompactEncoding(const libunwindInfo* info, compact_unwind_encoding_t com
     switch (compactEncoding & UNWIND_ARM64_MODE_MASK)
     {
         case UNWIND_ARM64_MODE_FRAME:
-            return StepWithCompactEncodingArm64Frame(info, compactEncoding);
+            return StepWithCompactEncodingArm64(info, compactEncoding, true);
 
         case UNWIND_ARM64_MODE_FRAMELESS:
-            break;
+            return StepWithCompactEncodingArm64(info, compactEncoding, false);
+
+        case UNWIND_ARM64_MODE_DWARF:
+            return false;
     }
-    ERROR("Invalid encoding %08x\n", compactEncoding);
 #else
-    ERROR("Unsupported architecture. encoding %08x\n", compactEncoding);
+#error unsupported architecture
 #endif
+    ERROR("Invalid encoding %08x\n", compactEncoding);
     return false;
 }
 
