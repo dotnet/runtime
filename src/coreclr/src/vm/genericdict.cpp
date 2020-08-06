@@ -872,7 +872,7 @@ Dictionary* Dictionary::GetTypeDictionaryWithSizeCheck(MethodTable* pMT, ULONG s
 
             DWORD expectedDictionarySlotSize;
             DWORD expectedDictionaryAllocSize = DictionaryLayout::GetDictionarySizeFromLayout(numGenericArgs, pDictLayout, &expectedDictionarySlotSize);
-            _ASSERT(currentDictionarySlotSize < expectedDictionarySize);
+            _ASSERT(currentDictionarySize < expectedDictionarySlotSize);
 
             // Expand type dictionary
             Dictionary* pNewDictionary = (Dictionary*)(void*)pMT->GetLoaderAllocator()->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(expectedDictionaryAllocSize));
