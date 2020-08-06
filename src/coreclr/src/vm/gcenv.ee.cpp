@@ -12,13 +12,6 @@
 
 #include "gcrefmap.h"
 
-int event_pipe_state = 0;
-EventPipeSession* pEventPipeSession = nullptr;
-uint64_t sessionId = (uint64_t)-1;
-int gcGenAnalysis = 0;
-int64_t gcGenAnalysisGen = 999;
-int64_t gcGenAnalysisBytes = 0;
-
 void GCToEEInterface::SuspendEE(SUSPEND_REASON reason)
 {
     WRAPPER_NO_CONTRACT;
@@ -29,50 +22,6 @@ void GCToEEInterface::SuspendEE(SUSPEND_REASON reason)
     _ASSERTE(reason == SUSPEND_FOR_GC || reason == SUSPEND_FOR_GC_PREP);
 
     g_pDebugInterface->SuspendForGarbageCollectionStarted();
-    
-    if (gcGenAnalysis == 0)
-    {
-        if (GetIntConfigValue("GCGenAnalysisGen", nullptr, &gcGenAnalysisGen))
-        {
-            if (GetIntConfigValue("GCGenAnalysisBytes", nullptr, &gcGenAnalysisBytes))
-            {
-                gcGenAnalysis = 1;
-            }
-            else
-            {
-                gcGenAnalysis = 2;
-            }
-        }
-    }
-    if (gcGenAnalysis == 1 && event_pipe_state == 0)
-    {
-        event_pipe_state = 1;
-        LPCWSTR outputPath = nullptr;
-        outputPath = W("gcgenaware.nettrace");
-        NewHolder<EventPipeProviderConfiguration> pProviders = nullptr;
-        int providerCnt = 1;
-        pProviders = new EventPipeProviderConfiguration[providerCnt];
-        const uint64_t GenAwareKeyword                  = 0x10000000000; // This keyword is necessary for the start and stop events
-        const uint64_t GCHeapAndTypeNamesKeyword        = 0x00001000000; // This keyword is necessary for the type names
-        const uint64_t GCHeapSurvivalAndMovementKeyword = 0x00000400000; // This keyword is necessary for the generation range data.
-        const uint64_t GCHeapDumpKeyword                = 0x00000100000; // This keyword is necessary for enabling walking the heap
-        const uint64_t TypeKeyword                      = 0x00000080000; // This keyword is necessary for enabling BulkType events
-        const uint64_t keyword                          = GenAwareKeyword|GCHeapAndTypeNamesKeyword|GCHeapSurvivalAndMovementKeyword|GCHeapDumpKeyword|TypeKeyword;
-        pProviders[0] = EventPipeProviderConfiguration(W("Microsoft-Windows-DotNETRuntime"), keyword, 5, nullptr);
-        sessionId = EventPipe::Enable(
-            outputPath,
-            1024,
-            pProviders,
-            providerCnt,
-            EventPipeSessionType::File,
-            EventPipeSerializationFormat::NetTraceV4,
-            false,
-            nullptr
-        );
-        pEventPipeSession= EventPipe::GetSession(sessionId);
-        pEventPipeSession->Pause();
-        EventPipe::StartStreaming(sessionId);
-    }
 
     ThreadSuspend::SuspendEE((ThreadSuspend::SUSPEND_REASON)reason);
 
@@ -82,19 +31,10 @@ void GCToEEInterface::SuspendEE(SUSPEND_REASON reason)
 void GCToEEInterface::RestartEE(bool bFinishedGC)
 {
     WRAPPER_NO_CONTRACT;
-    CONTRACT_VIOLATION(ThrowsViolation);
 
     g_pDebugInterface->ResumeForGarbageCollectionStarted();
 
     ThreadSuspend::RestartEE(bFinishedGC, TRUE);
-
-    if (event_pipe_state == 2)
-    {
-        event_pipe_state = 3;
-        EventPipe::Disable(sessionId);
-        // Writing an empty file to indicate completion
-        fclose(fopen("trace.nettrace.completed","w+"));
-    }
 }
 
 VOID GCToEEInterface::SyncBlockCacheWeakPtrScan(HANDLESCANPROC scanProc, uintptr_t lp1, uintptr_t lp2)
@@ -1657,19 +1597,20 @@ void GCToEEInterface::AnalyzeSurvivorsFinished(int condemnedGeneration, uint64_t
         }
     }
     
-    if (event_pipe_state == 1)
+    if (gcGenAnalysisState == 1)
     {
         if (condemnedGeneration == gcGenAnalysisGen && (promoted_bytes > (uint64_t)gcGenAnalysisBytes))
         {
-            event_pipe_state = 2;
-            pEventPipeSession->Resume();
+            gcGenAnalysisState = 2;
+            gcGenAnalysisEventPipeSession->Resume();
             FireEtwGenAwareBegin();
             s_forcedGCInProgress = true;
             GCProfileWalkHeap();
             s_forcedGCInProgress = false;
             reportGenerationBounds();
             FireEtwGenAwareEnd();
-            pEventPipeSession->Pause();
+            gcGenAnalysisEventPipeSession->Pause();
+            EnableFinalization(true);
         }
     }
 }

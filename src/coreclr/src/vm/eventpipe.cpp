@@ -143,6 +143,13 @@ void EventPipe::FinishInitialize()
     }
 }
 
+int gcGenAnalysisState = 0;
+EventPipeSession* gcGenAnalysisEventPipeSession = nullptr;
+uint64_t gcGenAnalysisEventPipeSessionId = (uint64_t)-1;
+int gcGenAnalysis = 0;
+int64_t gcGenAnalysisGen = -1;
+int64_t gcGenAnalysisBytes = 0;
+
 //
 // If EventPipe environment variables are specified, parse them and start a session
 //
@@ -236,6 +243,51 @@ void EventPipe::EnableViaEnvironmentVariables()
             nullptr
         );
         EventPipe::StartStreaming(sessionID);
+    }
+    if (gcGenAnalysis == 0)
+    {
+        if (CLRConfig::IsConfigOptionSpecified(L"GCGenAnalysisGen"))
+        {
+            gcGenAnalysisGen = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_GCGenAnalysisGen);
+            if (CLRConfig::IsConfigOptionSpecified(L"GCGenAnalysisBytes"))
+            {
+                gcGenAnalysisBytes = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_GCGenAnalysisBytes);
+                gcGenAnalysis = 1;
+            }
+            else
+            {
+                gcGenAnalysis = 2;
+            }
+        }
+    }
+    if (gcGenAnalysis == 1 && gcGenAnalysisState == 0)
+    {
+        gcGenAnalysisState = 1;
+        LPCWSTR outputPath = nullptr;
+        outputPath = W("gcgenaware.nettrace");
+        NewHolder<EventPipeProviderConfiguration> pProviders = nullptr;
+        int providerCnt = 1;
+        pProviders = new EventPipeProviderConfiguration[providerCnt];
+        const uint64_t GenAwareKeyword                  = 0x10000000000; // This keyword is necessary for the start and stop events
+        const uint64_t GCHeapAndTypeNamesKeyword        = 0x00001000000; // This keyword is necessary for the type names
+        const uint64_t GCHeapSurvivalAndMovementKeyword = 0x00000400000; // This keyword is necessary for the generation range data.
+        const uint64_t GCHeapDumpKeyword                = 0x00000100000; // This keyword is necessary for enabling walking the heap
+        const uint64_t TypeKeyword                      = 0x00000080000; // This keyword is necessary for enabling BulkType events
+        const uint64_t keyword                          = GenAwareKeyword|GCHeapAndTypeNamesKeyword|GCHeapSurvivalAndMovementKeyword|GCHeapDumpKeyword|TypeKeyword;
+        pProviders[0] = EventPipeProviderConfiguration(W("Microsoft-Windows-DotNETRuntime"), keyword, 5, nullptr);
+        gcGenAnalysisEventPipeSessionId = EventPipe::Enable(
+            outputPath,
+            1024,
+            pProviders,
+            providerCnt,
+            EventPipeSessionType::File,
+            EventPipeSerializationFormat::NetTraceV4,
+            false,
+            nullptr
+        );
+        gcGenAnalysisEventPipeSession= EventPipe::GetSession(gcGenAnalysisEventPipeSessionId);
+        gcGenAnalysisEventPipeSession->Pause();
+        EventPipe::StartStreaming(gcGenAnalysisEventPipeSessionId);
     }
 }
 

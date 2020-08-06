@@ -709,6 +709,12 @@ RETAIL_CONFIG_DWORD_INFO(INTERNAL_EventPipeRundown, W("EventPipeRundown"), 1, "E
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_EventPipeCircularMB, W("EventPipeCircularMB"), 1024, "The EventPipe circular buffer size in megabytes.")
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_EventPipeProcNumbers, W("EventPipeProcNumbers"), 0, "Enable/disable capturing processor numbers in EventPipe event headers")
 
+// 
+// Generational Aware Analysis
+// 
+RETAIL_CONFIG_DWORD_INFO(INTERNAL_GCGenAnalysisGen, W("GCGenAnalysisGen"), 0, "TBD")
+RETAIL_CONFIG_DWORD_INFO(INTERNAL_GCGenAnalysisBytes, W("GCGenAnalysisBytes"), 0, "TBD")
+
 //
 // Diagnostics Ports
 //

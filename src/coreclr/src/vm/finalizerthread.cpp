@@ -7,6 +7,7 @@
 #include "finalizerthread.h"
 #include "threadsuspend.h"
 #include "jithost.h"
+#include "eventpipe.h"
 
 #ifdef FEATURE_COMINTEROP
 #include "runtimecallablewrapper.h"
@@ -218,7 +219,8 @@ void FinalizerThread::WaitForFinalizerEvent (CLREvent *event)
 
 static BOOL s_FinalizerThreadOK = FALSE;
 
-
+extern int gcGenAnalysisState;
+extern uint64_t gcGenAnalysisEventPipeSessionId;
 
 VOID FinalizerThread::FinalizerThreadWorker(void *args)
 {
@@ -267,6 +269,13 @@ VOID FinalizerThread::FinalizerThreadWorker(void *args)
             g_TriggerHeapDump = FALSE;
         }
 #endif
+        if (gcGenAnalysisState == 2)
+        {
+            gcGenAnalysisState = 3;
+            EventPipe::Disable(gcGenAnalysisEventPipeSessionId);
+            // Writing an empty file to indicate completion
+            fclose(fopen("trace.nettrace.completed","w+"));
+        }
 
         if (!bPriorityBoosted)
         {

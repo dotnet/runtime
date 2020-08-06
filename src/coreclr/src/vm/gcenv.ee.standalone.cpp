@@ -18,6 +18,12 @@
 #include "eventpipe.h"
 #include "eventpipesession.h"
 extern bool s_forcedGCInProgress;
+extern int gcGenAnalysisState;
+extern EventPipeSession* gcGenAnalysisEventPipeSession;
+extern uint64_t gcGenAnalysisEventPipeSessionId;
+extern int gcGenAnalysis;
+extern int64_t gcGenAnalysisGen;
+extern int64_t gcGenAnalysisBytes;
 
 // the method table for the WeakReference class
 extern MethodTable* pWeakReferenceMT;
