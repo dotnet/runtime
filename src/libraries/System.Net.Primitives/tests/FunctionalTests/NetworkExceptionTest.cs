@@ -22,13 +22,13 @@ namespace System.Net.Primitives.Functional.Tests
         [Fact]
         public static void Create_InnerExceptionAndMessage_Success()
         {
-            const string message = "Hello";
+            const string Message = "Hello";
             Exception inner = new Exception();
 
-            NetworkException e = NetworkException.Create(NetworkError.Unknown, inner, message);
+            NetworkException e = NetworkException.Create(NetworkError.Unknown, inner, Message);
 
             Assert.Equal(inner, e.InnerException);
-            Assert.Equal(message, e.Message);
+            Assert.Equal(Message, e.Message);
         }
     }
 }
