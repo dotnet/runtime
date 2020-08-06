@@ -1,4 +1,4 @@
-TOP=../../../../..
+TOP=../../../../../..
 
 DOTNET_Q_ARGS=--nologo -v:q -consoleloggerparameters:NoSummary
 
@@ -13,7 +13,7 @@ clean:
 	rm -rf bin
 
 run:
-	cd bin/$(CONFIG)/publish && ~/.jsvu/v8 --expose_wasm runtime.js -- --run WasmSample.dll
+	cd bin/$(CONFIG)/publish && python server.py
 
 runtimepack:
 	EMSDK_PATH=$(abspath $(TOP)/src/mono/wasm/emsdk) $(TOP)/build.sh -c $(CONFIG) -os Browser -arch wasm -subset Mono+Libs
