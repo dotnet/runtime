@@ -162,35 +162,12 @@
 
   </Target>
 
-  <Target Condition="'$(TargetOS)' == 'Browser'" Name="PrepareChromiumCorrelationPayload">
-    <PropertyGroup>
-      <!-- Version number to revision number mapping from http://omahaproxy.appspot.com/ -->
-      <!-- 84.0.4147.105 is 768962 for example -->
-      <ChromiumRevision>768966</ChromiumRevision>
-      <ChromiumUrl>https://storage.googleapis.com/chromium-browser-snapshots/Win_x64/$(ChromiumRevision)/chrome-win.zip</ChromiumUrl>
-      <SeleniumUrl>https://storage.googleapis.com/chromium-browser-snapshots/Win_x64/$(ChromiumRevision)/chromedriver_win32.zip</SeleniumUrl>
-    </PropertyGroup>
-    <DownloadFile DestinationFileName="chromium_$(ChromiumRevision).zip" DestinationFolder="$(TestHostRootPath)chromiumdownload" SourceUrl="$(ChromiumUrl)" />
-    <DownloadFile DestinationFileName="selenium_$(ChromiumRevision).zip" DestinationFolder="$(TestHostRootPath)chromiumdownload" SourceUrl="$(SeleniumUrl)" />
-    <ItemGroup>
-      <ChromiumZips Include="$(TestHostRootPath)chromiumdownload\*.zip" />
-    </ItemGroup>
-    <Unzip DestinationFolder="$(TestHostRootPath)chromiumdir" SourceFiles="@(ChromiumZips)" />
-    <ItemGroup>
-      <ChromiumFiles Include="$(TestHostRootPath)chromiumdir\chrome-win\**" />
-      <ChromiumFiles Include="$(TestHostRootPath)chromiumdir\chromedriver_win32\**" />
-    </ItemGroup>
-    <Move SourceFiles="@(ChromiumFiles)" DestinationFolder="$(TestHostRootPath)chromiumdirmerged\%(RecursiveDir)" />
-    <MakeDir Directories="$(TestArchiveRuntimeRoot)" />
-    <ZipDirectory SourceDirectory="$(TestHostRootPath)chromiumdirmerged" DestinationFile="$(TestArchiveRuntimeFile)" Overwrite="true" />
-  </Target>
-
   <!--
     Collect all the tasks needed to be run once, to prepare the Helix correlation payload directory.
     There's no actual work here; this target just causes its dependent targets to be run.
   -->
   <Target Name="PrepareCorrelationPayloadDirectory"
-          DependsOnTargets="CreateAllScenarioTestEnvFiles;CompressRuntimeDirectory;PrepareChromiumCorrelationPayload" >
+          DependsOnTargets="CreateAllScenarioTestEnvFiles;CompressRuntimeDirectory" >
     <Message Importance="High" Text="Correlation directory prepared" />
   </Target>
 
