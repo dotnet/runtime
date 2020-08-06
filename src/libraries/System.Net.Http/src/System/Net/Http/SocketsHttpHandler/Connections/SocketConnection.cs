@@ -43,7 +43,7 @@ namespace System.Net.Connections
             }
             catch (SocketException socketException)
             {
-                return ValueTask.FromException(SocketsHttpConnectionFactory.MapSocketException(socketException));
+                return ValueTask.FromException(ExceptionDispatchInfo.SetCurrentStackTrace(SocketsHttpConnectionFactory.MapSocketException(socketException)));
             }
             catch (Exception ex)
             {
