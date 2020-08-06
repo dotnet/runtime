@@ -92,11 +92,11 @@ namespace System
         {
             if (platform == null)
             {
-                throw new ArgumentNullException(nameof(platform));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.platform);
             }
             if (platform.Length == 0)
             {
-                throw new ArgumentException(SR.Arg_EmptyOrNullString, nameof(platform));
+                ThrowHelper.ThrowArgumentException(ExceptionResource.Argument_EmptyOrNullString, ExceptionArgument.platform);
             }
 
 #if TARGET_BROWSER
