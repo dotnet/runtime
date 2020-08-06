@@ -699,8 +699,6 @@ namespace System
                     return "prefix";
                 case ExceptionArgument.suffix:
                     return "suffix";
-                case ExceptionArgument.platform:
-                    return "platform";
                 default:
                     Debug.Fail("The enum value is not defined, please check the ExceptionArgument Enum.");
                     return "";
@@ -857,8 +855,6 @@ namespace System
                     return SR.Argument_SpansMustHaveSameLength;
                 case ExceptionResource.Argument_InvalidFlag:
                     return SR.Argument_InvalidFlag;
-                case ExceptionResource.Argument_EmptyOrNullString:
-                    return SR.Arg_EmptyOrNullString;
                 default:
                     Debug.Fail("The enum value is not defined, please check the ExceptionResource Enum.");
                     return "";
@@ -961,7 +957,6 @@ namespace System
         options,
         prefix,
         suffix,
-        platform,
     }
 
     //
@@ -1036,6 +1031,5 @@ namespace System
         Arg_TypeNotSupported,
         Argument_SpansMustHaveSameLength,
         Argument_InvalidFlag,
-        Argument_EmptyOrNullString,
     }
 }

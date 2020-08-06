@@ -9,7 +9,7 @@ namespace System
     public sealed class OperatingSystem : ISerializable, ICloneable
     {
 #if TARGET_UNIX && !TARGET_OSX
-        private static string? s_osPlatformName;
+        private static string s_osPlatformName = Interop.Sys.GetUnixName();
 #endif
 
         private readonly Version _version;
@@ -92,11 +92,7 @@ namespace System
         {
             if (platform == null)
             {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.platform);
-            }
-            if (platform.Length == 0)
-            {
-                ThrowHelper.ThrowArgumentException(ExceptionResource.Argument_EmptyOrNullString, ExceptionArgument.platform);
+                throw new ArgumentNullException(nameof(platform));
             }
 
 #if TARGET_BROWSER
@@ -106,7 +102,7 @@ namespace System
 #elif TARGET_OSX
             return platform.Equals("OSX", StringComparison.OrdinalIgnoreCase) || platform.Equals("MACOS", StringComparison.OrdinalIgnoreCase);
 #elif TARGET_UNIX
-            return platform.Equals(s_osPlatformName ??= Interop.Sys.GetUnixName(), StringComparison.OrdinalIgnoreCase);
+            return platform.Equals(s_osPlatformName, StringComparison.OrdinalIgnoreCase);
 #else
 #error Unknown OS
 #endif

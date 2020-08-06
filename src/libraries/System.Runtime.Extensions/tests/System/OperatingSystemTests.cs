@@ -52,14 +52,12 @@ namespace System.Tests
         public static void IsOSPlatform_InvalidArgs_Throws()
         {
             AssertExtensions.Throws<ArgumentNullException>("platform", () => OperatingSystem.IsOSPlatform(null));
-            AssertExtensions.Throws<ArgumentException>("platform", () => OperatingSystem.IsOSPlatform(string.Empty));
         }
 
         [Fact]
         public static void IsOSPlatformVersionAtLeast_InvalidArgs_Throws()
         {
             AssertExtensions.Throws<ArgumentNullException>("platform", () => OperatingSystem.IsOSPlatformVersionAtLeast(null, 1));
-            AssertExtensions.Throws<ArgumentException>("platform", () => OperatingSystem.IsOSPlatformVersionAtLeast(string.Empty, 1));
         }
 
         [Fact, PlatformSpecific(TestPlatforms.Browser)]
