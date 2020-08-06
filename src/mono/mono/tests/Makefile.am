@@ -293,6 +293,7 @@ TESTS_CS_SRC=		\
 	assemblyresolve_event4.cs	\
 	assemblyresolve_event5.cs	\
 	assemblyresolve_event6.cs	\
+	assemblyresolve_event7.cs	\
 	checked.cs		\
 	char-isnumber.cs	\
 	field-layout.cs		\

@@ -1511,6 +1511,7 @@ assembly_name_to_aname (MonoAssemblyName *assembly, char *p) {
 		p++;
 	}
 	assembly->name = p;
+	s = p;
 	while (*p && (isalnum (*p) || *p == '.' || *p == '-' || *p == '_' || *p == '$' || *p == '@' || g_ascii_isspace (*p)))
 		p++;
 	if (quoted) {
@@ -1519,8 +1520,11 @@ assembly_name_to_aname (MonoAssemblyName *assembly, char *p) {
 		*p = 0;
 		p++;
 	}
-	if (*p != ',')
+	if (*p != ',') {
+		g_strchomp (s);
+		assembly->name = s;
 		return 1;
+		}
 	*p = 0;
 	/* Remove trailing whitespace */
 	s = p - 1;
@@ -1530,8 +1534,13 @@ assembly_name_to_aname (MonoAssemblyName *assembly, char *p) {
 	while (g_ascii_isspace (*p))
 		p++;
 	while (*p) {
-		if ((*p == 'V' || *p == 'v') && g_ascii_strncasecmp (p, "Version=", 8) == 0) {
-			p += 8;
+		if ((*p == 'V' || *p == 'v') && g_ascii_strncasecmp (p, "Version", 7) == 0) {
+			p += 7;
+			while (*p && *p != '=')
+				p++;
+			p++;
+			while (*p && g_ascii_isspace (*p))
+				p++;
 			assembly->major = strtoul (p, &s, 10);
 			if (s == p || *s != '.')
 				return 1;
@@ -1548,19 +1557,31 @@ assembly_name_to_aname (MonoAssemblyName *assembly, char *p) {
 			if (s == p)
 				return 1;
 			p = s;
-		} else if ((*p == 'C' || *p == 'c') && g_ascii_strncasecmp (p, "Culture=", 8) == 0) {
-			p += 8;
-			if (g_ascii_strncasecmp (p, "neutral", 7) == 0) {
+		} else if ((*p == 'C' || *p == 'c') && g_ascii_strncasecmp (p, "Culture", 7) == 0) {
+			p += 7;
+			while (*p && *p != '=')
+				p++;
+			p++;
+			while (*p && g_ascii_isspace (*p))
+				p++;
+			if (g_ascii_strncasecmp (p, "neutral", 7) == 0 && (p [7] == ' ' || p [7] == ',')) {
 				assembly->culture = "";
 				p += 7;
 			} else {
 				assembly->culture = p;
-				while (*p && *p != ',') {
-					p++;
+			while (*p && *p != ','){
+				if (*p == ' ')
+					*p = 0;
+			p++;
 				}
 			}
-		} else if ((*p == 'P' || *p == 'p') && g_ascii_strncasecmp (p, "PublicKeyToken=", 15) == 0) {
-			p += 15;
+		} else if ((*p == 'P' || *p == 'p') && g_ascii_strncasecmp (p, "PublicKeyToken", 14) == 0) {
+			p += 14;
+			while (*p && *p != '=')
+				p++;
+			p++;
+			while (*p && g_ascii_isspace (*p))
+				p++;
 			if (strncmp (p, "null", 4) == 0) {
 				p += 4;
 			} else {
