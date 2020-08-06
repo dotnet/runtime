@@ -118,7 +118,7 @@
     <value>An unknown network error occurred.</value>
   </data>
   <data name="networkerror_addressinuse" xml:space="preserve">
-    <value>The requested address is already in use.</value>
+    <value>The requested EndPoint is already in use.</value>
   </data>
   <data name="networkerror_invalidaddress" xml:space="preserve">
     <value>The requested address is invalid.</value>
