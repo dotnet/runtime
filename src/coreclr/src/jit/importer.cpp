@@ -1392,8 +1392,8 @@ GenTree* Compiler::impAssignStructPtr(GenTree*             destAddr,
     }
     else if (asgType == TYP_STRUCT)
     {
-        asgType     = impNormStructType(structHnd);
-        src->gtType = asgType;
+        // It should already have the appropriate type.
+        assert(asgType == impNormStructType(structHnd));
     }
     if ((dest == nullptr) && (destAddr->OperGet() == GT_ADDR))
     {
@@ -4886,7 +4886,14 @@ GenTree* Compiler::impArrayAccessIntrinsic(
 
     if (intrinsicID != CORINFO_INTRINSIC_Array_Address)
     {
-        arrElem = gtNewOperNode(GT_IND, elemType, arrElem);
+        if (varTypeIsStruct(elemType))
+        {
+            arrElem = gtNewObjNode(sig->retTypeClass, arrElem);
+        }
+        else
+        {
+            arrElem = gtNewOperNode(GT_IND, elemType, arrElem);
+        }
     }
 
     if (intrinsicID == CORINFO_INTRINSIC_Array_Set)
