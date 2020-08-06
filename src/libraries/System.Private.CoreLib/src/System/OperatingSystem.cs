@@ -8,7 +8,9 @@ namespace System
 {
     public sealed class OperatingSystem : ISerializable, ICloneable
     {
-        private const int OSXRevisionNumber = -1; // it is unavailable on OSX and Environment.OSVersion.Version.Revision returns -1
+#if TARGET_UNIX && !TARGET_OSX
+        private static string? s_osPlatformName;
+#endif
 
         private readonly Version _version;
         private readonly PlatformID _platform;
@@ -82,6 +84,33 @@ namespace System
             }
         }
 
+        public static bool IsOSPlatform(string platform)
+        {
+            if (platform == null)
+            {
+                throw new ArgumentNullException(nameof(platform));
+            }
+            if (platform.Length == 0)
+            {
+                throw new ArgumentException(SR.Arg_EmptyOrNullString, nameof(platform));
+            }
+
+#if TARGET_BROWSER
+            return platform.Equals("BROWSER", StringComparison.OrdinalIgnoreCase);
+#elif TARGET_WINDOWS
+            return platform.Equals("WINDOWS", StringComparison.OrdinalIgnoreCase);
+#elif TARGET_OSX
+            return platform.Equals("OSX", StringComparison.OrdinalIgnoreCase) || platform.Equals("MACOS", StringComparison.OrdinalIgnoreCase);
+#elif TARGET_UNIX
+            return platform.Equals(s_osPlatformName ??= Interop.Sys.GetUnixName(), StringComparison.OrdinalIgnoreCase);
+#else
+#error Unknown OS
+#endif
+        }
+
+        public static bool IsOSPlatformVersionAtLeast(string platform, int major, int minor = 0, int build = 0, int revision = 0)
+            => IsOSPlatform(platform) && IsOSVersionAtLeast(major, minor, build, revision);
+
         public static bool IsBrowser() =>
 #if TARGET_BROWSER
             true;
@@ -124,7 +153,7 @@ namespace System
 #endif
 
         public static bool IsIOSVersionAtLeast(int major, int minor = 0, int build = 0)
-            => IsIOS() && IsOSVersionAtLeast(major, minor, build, OSXRevisionNumber);
+            => IsIOS() && IsOSVersionAtLeast(major, minor, build, 0);
 
         public static bool IsMacOS() =>
 #if TARGET_OSX
@@ -134,7 +163,7 @@ namespace System
 #endif
 
         public static bool IsMacOSVersionAtLeast(int major, int minor = 0, int build = 0)
-            => IsMacOS() && IsOSVersionAtLeast(major, minor, build, OSXRevisionNumber);
+            => IsMacOS() && IsOSVersionAtLeast(major, minor, build, 0);
 
         public static bool IsTvOS() =>
 #if TARGET_TVOS
@@ -144,7 +173,7 @@ namespace System
 #endif
 
         public static bool IsTvOSVersionAtLeast(int major, int minor = 0, int build = 0)
-            => IsTvOS() && IsOSVersionAtLeast(major, minor, build, OSXRevisionNumber);
+            => IsTvOS() && IsOSVersionAtLeast(major, minor, build, 0);
 
         public static bool IsWatchOS() =>
 #if TARGET_WATCHOS
@@ -154,7 +183,7 @@ namespace System
 #endif
 
         public static bool IsWatchOSVersionAtLeast(int major, int minor = 0, int build = 0)
-            => IsWatchOS() && IsOSVersionAtLeast(major, minor, build, OSXRevisionNumber);
+            => IsWatchOS() && IsOSVersionAtLeast(major, minor, build, 0);
 
         public static bool IsWindows() =>
 #if TARGET_WINDOWS
@@ -183,7 +212,8 @@ namespace System
                 return current.Build > build;
             }
 
-            return current.Revision >= revision;
+            return current.Revision >= revision
+                || (current.Revision == -1 && revision == 0); // it is unavailable on OSX and Environment.OSVersion.Version.Revision returns -1
         }
     }
 }
