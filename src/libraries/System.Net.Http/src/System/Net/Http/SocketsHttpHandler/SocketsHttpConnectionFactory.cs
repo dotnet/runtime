@@ -82,31 +82,13 @@ namespace System.Net.Http
             catch (SocketException socketException)
             {
                 socket.Dispose();
-                throw MapSocketException(socketException);
+                throw NetworkErrorHelper.MapSocketException(socketException);
             }
             catch
             {
                 socket.Dispose();
                 throw;
             }
-        }
-
-        internal static NetworkException MapSocketException(SocketException socketException)
-        {
-            NetworkError error = socketException.SocketErrorCode switch
-            {
-                SocketError.AddressAlreadyInUse => NetworkError.AddressInUse,
-                SocketError.AddressFamilyNotSupported => NetworkError.InvalidAddress,
-                SocketError.AddressNotAvailable => NetworkError.InvalidAddress,
-                SocketError.HostNotFound => NetworkError.HostNotFound,
-                SocketError.ConnectionRefused => NetworkError.ConnectionRefused,
-                SocketError.OperationAborted => NetworkError.OperationAborted,
-                SocketError.ConnectionAborted => NetworkError.ConnectionAborted,
-                SocketError.ConnectionReset => NetworkError.ConnectionReset,
-                _ => NetworkError.Unknown
-            };
-
-            return NetworkException.Create(error, socketException);
         }
     }
 }

@@ -5,6 +5,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Net.Http;
 using System.Net.Sockets;
+using System.Runtime.ExceptionServices;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -43,7 +44,7 @@ namespace System.Net.Connections
             }
             catch (SocketException socketException)
             {
-                return ValueTask.FromException(ExceptionDispatchInfo.SetCurrentStackTrace(SocketsHttpConnectionFactory.MapSocketException(socketException)));
+                return ValueTask.FromException(ExceptionDispatchInfo.SetCurrentStackTrace(NetworkErrorHelper.MapSocketException(socketException)));
             }
             catch (Exception ex)
             {
