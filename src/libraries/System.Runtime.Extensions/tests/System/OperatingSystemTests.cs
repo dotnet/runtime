@@ -507,7 +507,7 @@ namespace System.Tests
             Assert.False(isOSVersionAtLeast(current.Major + 1, current.Minor, current.Build, current.Revision));
             Assert.False(isOSVersionAtLeast(current.Major, current.Minor + 1, current.Build, current.Revision));
             Assert.False(isOSVersionAtLeast(current.Major, current.Minor, current.Build + 1, current.Revision));
-            Assert.False(isOSVersionAtLeast(current.Major, current.Minor, current.Build, current.Revision + 1));
+            Assert.False(isOSVersionAtLeast(current.Major, current.Minor, current.Build, Math.Max(current.Revision + 1, 1))); // OSX Revision reports -1
 
             Assert.Equal(isCurrentOS, isOSVersionAtLeast(current.Major, current.Minor, current.Build, current.Revision));
 
