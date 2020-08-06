@@ -9,11 +9,11 @@ namespace System.Net
         /// <summary>An unknown network error occurred.</summary>
         Unknown = 0,
 
-        /// <summary>The requested address is already in use.</summary>
-        AddressInUse,
+        /// <summary>The requested EndPoint is already in use.</summary>
+        EndPointInUse,
 
-        /// <summary>The requested address is invalid.</summary>
-        InvalidAddress,
+        /// <summary>The requested EndPoint is invalid.</summary>
+        InvalidEndPoint,
 
         /// <summary>No such host is known.</summary>
         HostNotFound,
