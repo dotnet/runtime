@@ -2,33 +2,50 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
-using System.Threading;
-using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Logging.Console;
+using System.IO;
 
 class Program
 {
+    private static int ConstructorCallCount = 0;
+    private static int WriteCallCount = 0;
+
     static int Main(string[] args)
     {
         IServiceCollection descriptors = new ServiceCollection();
-        descriptors.AddHostedService<MyHost>();
+        descriptors.AddLogging(builder =>
+        {
+            builder.AddConsoleFormatter<CustomFormatter, CustomOptions>();
+            builder.AddConsole(o => { o.FormatterName = "custom"; });
+        });
 
         ServiceProvider provider = descriptors.BuildServiceProvider();
 
-        foreach (IHostedService h in provider.GetServices<IHostedService>())
+        ILoggerProvider logger = provider.GetRequiredService<ILoggerProvider>();
+        logger.CreateLogger("log").LogError("Hello");
+
+        if (ConstructorCallCount != 1 ||
+            WriteCallCount != 1)
         {
-            if (!(h is MyHost))
-            {
-                return -1;
-            }
+            return -1;
         }
 
         return 100;
     }
 
-    private class MyHost : IHostedService
+    private class CustomFormatter : ConsoleFormatter
     {
-        public Task StartAsync(CancellationToken cancellationToken) => Task.CompletedTask;
-        public Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;
+        public CustomFormatter() : base("Custom")
+        {
+            ConstructorCallCount++;
+        }
+        public override void Write<TState>(in LogEntry<TState> logEntry, IExternalScopeProvider scopeProvider, TextWriter textWriter)
+        {
+            WriteCallCount++;
+        }
     }
+
+    private class CustomOptions : ConsoleFormatterOptions { }
 }
