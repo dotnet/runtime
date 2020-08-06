@@ -745,6 +745,7 @@ jobs:
     platforms:
     - OSX_x64
     - Linux_arm64
+    - Browser_wasm
     helixQueueGroup: pr
     helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
     jobParameters:

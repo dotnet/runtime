@@ -18,13 +18,23 @@ public static class Program
 		var assembly = Assembly.Load(assemblyName);
 
 		Console.WriteLine("EntryPoint");
-		var mainMethod = assembly.EntryPoint;
+		MethodInfo mainMethod = assembly.EntryPoint;
+
 
 		Console.WriteLine("Invoke");
 	
 		if (mainMethod != null)
 		{	
-			return (int)mainMethod.Invoke (null, new object [] { args } );
+			ParameterInfo[] mainMethodParameters = mainMethod.GetParameters();
+
+			if ( mainMethodParameters.Length > 0)
+		        {
+				return (int)mainMethod.Invoke (null, new object [] { args } );
+			}
+		        else
+			{
+				return (int)mainMethod.Invoke (null, null);
+			}
 		}
 		else
 		{
