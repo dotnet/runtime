@@ -3,13 +3,11 @@
 
 using System.IO;
 using System.IO.Pipelines;
-using System.Net.Connections;
 using System.Net.Sockets;
-using System.Runtime.ExceptionServices;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace System.Net.Http
+namespace System.Net.Connections
 {
     /// <summary>
     /// TODO

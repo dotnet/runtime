@@ -23,6 +23,9 @@ namespace System.Net.Sockets.Tests
             return SocketTestServerFactory(type, DefaultNumConnections, DefaultReceiveBufferSize, address, out port);
         }
 
+        public static SocketTestServer SocketTestServerFactory(SocketImplementationType type, IPAddress address)
+            => SocketTestServerFactory(type, address, out _);
+
         public static SocketTestServer SocketTestServerFactory(
             SocketImplementationType type,
             int numConnections,

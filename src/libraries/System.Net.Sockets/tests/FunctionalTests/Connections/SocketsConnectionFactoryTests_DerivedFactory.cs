@@ -5,7 +5,7 @@ using Xunit;
 
 namespace System.Net.Sockets.Tests
 {
-    public class SocketConnectionFactoryTests_DerivedFactory
+    public class SocketsConnectionFactoryTests_DerivedFactory
     {
         [Fact]
         public void DerivedFactory_CanShimSocket()
