@@ -56,7 +56,10 @@ namespace System.Globalization
                 abbrevEnglishEraNames = s_abbreviatedEnglishEraNames;
             }
 
-            if (abbrevEnglishEraNames[abbrevEnglishEraNames.Length - 1].Length != 1 || abbrevEnglishEraNames[abbrevEnglishEraNames.Length - 1][0] > '\u007F')
+            // Check if we are getting the English Name at the end of the returned list.
+            // ICU usually return long list including all Era names written in Japanese characters except the recent eras which actually we support will be returned in English.
+            // We have the following check as older ICU versions doesn't carry the English names (e.g. ICU version 50).
+            if (abbrevEnglishEraNames[abbrevEnglishEraNames.Length - 1].Length == 0 || abbrevEnglishEraNames[abbrevEnglishEraNames.Length - 1][0] > '\u007F')
             {
                 // Couldn't get English names.
                 abbrevEnglishEraNames = s_abbreviatedEnglishEraNames;
