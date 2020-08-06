@@ -348,7 +348,7 @@ namespace System.ComponentModel
                     Hashtable intrinsicEditors = GetEditorTable(editorBaseType);
                     if (intrinsicEditors != null)
                     {
-                        editor = SearchIntrinsicTable(intrinsicEditors, _type);
+                        editor = GetIntrinsicTypeEditor(intrinsicEditors, _type);
                     }
 
                     // As a quick sanity check, check to see that the editor we got back is of

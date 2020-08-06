@@ -5,7 +5,6 @@ using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel.Design;
 using System.Diagnostics;
-using System.Drawing;
 using System.Globalization;
 using System.Linq;
 using System.Reflection;
@@ -39,7 +38,6 @@ namespace System.ComponentModel
         //
         private static Hashtable s_editorTables;
         private static Dictionary<object, IntrinsicTypeConverterData> s_intrinsicTypeConverters;
-        //private static Dictionary<Type, Func<object>> s_converterConstructorFuncs;
 
         // For converters, etc that are bound to class attribute data, rather than a class
         // type, we have special key sentinel values that we put into the hash table.
@@ -121,13 +119,14 @@ namespace System.ComponentModel
                 _cacheConverterInstance = cacheConverterInstance;
             }
 
-            public TypeConverter GetOrCreateConverterInstance(Type genericParameterType)
+            public TypeConverter GetOrCreateConverterInstance(Type innerType)
             {
-                if (_converterInstance == null || !_cacheConverterInstance)
+                if (!_cacheConverterInstance)
                 {
-                    _converterInstance = _constructionFunc(genericParameterType);
+                    return _constructionFunc(innerType);
                 }
 
+                _converterInstance ??= _constructionFunc(innerType);
                 return _converterInstance;
             }
         }
@@ -1262,7 +1261,7 @@ namespace System.ComponentModel
         /// for types as needed. These instances are stored back into the table
         /// for the base type, and for the original component type, for fast access.
         /// </summary>
-        private static object SearchIntrinsicTable(Hashtable table, Type callingType)
+        private static object GetIntrinsicTypeEditor(Hashtable table, Type callingType)
         {
             object hashEntry = null;
 
@@ -1333,46 +1332,7 @@ namespace System.ComponentModel
                     }
                 }
 
-                // Special case converters
-                //
-                if (hashEntry == null)
-                {
-                    if (callingType.IsGenericType && callingType.GetGenericTypeDefinition() == typeof(Nullable<>))
-                    {
-                        // Check if it is a nullable value
-                        hashEntry = table[s_intrinsicNullableKey];
-                    }
-                    else if (callingType.IsInterface)
-                    {
-                        // Finally, check to see if the component type is some unknown interface.
-                        // We have a custom converter for that.
-                        hashEntry = table[s_intrinsicReferenceKey];
-                    }
-                }
-
-                // Interfaces do not derive from object, so we
-                // must handle the case of no hash entry here.
-                //
-                if (hashEntry == null)
-                {
-                    hashEntry = table[typeof(object)];
-                }
-
-                // If the entry is a type, create an instance of it and then
-                // replace the entry. This way we only need to create once.
-                // We can only do this if the object doesn't want a type
-                // in its constructor.
-                //
-                Type type = hashEntry as Type;
-
-                if (type != null)
-                {
-                    hashEntry = CreateInstance(type, callingType);
-                    if (type.GetConstructor(s_typeConstructor) == null)
-                    {
-                        table[callingType] = hashEntry;
-                    }
-                }
+                Debug.Assert(hashEntry != null);
             }
 
             return hashEntry;
@@ -1401,13 +1361,13 @@ namespace System.ComponentModel
                     {
                         converterData = IntrinsicTypeConverters[typeof(Array)];
                     }
-                    else if (Nullable.GetUnderlyingType(callingType) != null)
+                    else if (callingType.IsGenericType && callingType.GetGenericTypeDefinition() == typeof(Nullable<>))
                     {
                         converterData = IntrinsicTypeConverters[s_intrinsicNullableKey];
                     }
                     else if (typeof(ICollection).IsAssignableFrom(callingType))
                     {
-                        converterData = IntrinsicTypeConverters[s_intrinsicNullableKey];
+                        converterData = IntrinsicTypeConverters[typeof(ICollection)];
                     }
                     else if (callingType.IsInterface)
                     {
