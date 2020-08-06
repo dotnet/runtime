@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <StringResourcesPath>../../src/Resources/Strings.resx</StringResourcesPath>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -90,6 +90,8 @@
          Link="ProductionCode\System\Net\Http\EmptyReadStream.cs" />
     <Compile Include="..\..\src\System\Net\Http\FormUrlEncodedContent.cs"
              Link="ProductionCode\System\Net\Http\FormUrlEncodedContent.cs" />
+    <Compile Include="..\..\src\System\Net\Http\HeaderEncodingSelector.cs"
+             Link="ProductionCode\System\Net\Http\HeaderEncodingSelector.cs" />
     <Compile Include="..\..\src\System\Net\Http\Headers\AltSvcHeaderParser.cs"
              Link="ProductionCode\System\Net\Http\Headers\AltSvcHeaderParser.cs" />
     <Compile Include="..\..\src\System\Net\Http\Headers\AltSvcHeaderValue.cs"
@@ -286,6 +288,7 @@
     <Compile Include="Headers\MediaTypeHeaderParserTest.cs" />
     <Compile Include="Headers\MediaTypeHeaderValueTest.cs" />
     <Compile Include="Headers\MediaTypeWithQualityHeaderValueTest.cs" />
+    <Compile Include="Headers\MultipartContentTest.cs" />
     <Compile Include="Headers\NameValueHeaderValueTest.cs" />
     <Compile Include="Headers\NameValueWithParametersHeaderValueTest.cs" />
     <Compile Include="Headers\ObjectCollectionTest.cs" />

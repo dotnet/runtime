@@ -41,6 +41,10 @@
     <XMLResults>$HELIX_WORKITEM_ROOT/testResults.xml</XMLResults>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(WasmDotnet)' == 'true'">
+    <CliArguments>$(CliArguments) --wasm</CliArguments>
+  </PropertyGroup>
+
   <PropertyGroup Condition="'$(MonoDotnet)' == 'true' and '$(AGENT_OS)' == 'Windows_NT'">
     <CoreRunArgument>--corerun %HELIX_CORRELATION_PAYLOAD%\dotnet-mono\shared\Microsoft.NETCore.App\5.0.0\corerun.exe</CoreRunArgument>
   </PropertyGroup>
@@ -65,7 +69,7 @@
   </PropertyGroup>
   
   <PropertyGroup>
-    <WorkItemTimeout>2:30</WorkItemTimeout>
+    <WorkItemTimeout>12:30</WorkItemTimeout>
     <WorkItemTimeout Condition="'$(HelixSourcePrefix)' != 'official'">0:15</WorkItemTimeout>
   </PropertyGroup>
 

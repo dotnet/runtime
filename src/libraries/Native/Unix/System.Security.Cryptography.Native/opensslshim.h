@@ -35,6 +35,7 @@
 #include <openssl/x509v3.h>
 
 #include "pal_crypto_config.h"
+#include "pal_compiler.h"
 #define OPENSSL_VERSION_1_1_1_RTM 0x10101000L
 #define OPENSSL_VERSION_1_1_0_RTM 0x10100000L
 #define OPENSSL_VERSION_1_0_2_RTM 0x10002000L
@@ -579,12 +580,12 @@ void SSL_get0_alpn_selected(const SSL* ssl, const unsigned char** protocol, unsi
     LIGHTUP_FUNCTION(EC_POINT_set_affine_coordinates_GF2m) \
 
 // Declare pointers to all the used OpenSSL functions
-#define REQUIRED_FUNCTION(fn) extern __typeof(fn)* fn##_ptr;
-#define NEW_REQUIRED_FUNCTION(fn) extern __typeof(fn)* fn##_ptr;
-#define LIGHTUP_FUNCTION(fn) extern __typeof(fn)* fn##_ptr;
-#define FALLBACK_FUNCTION(fn) extern __typeof(fn)* fn##_ptr;
-#define RENAMED_FUNCTION(fn,oldfn) extern __typeof(fn)* fn##_ptr;
-#define LEGACY_FUNCTION(fn) extern __typeof(fn)* fn##_ptr;
+#define REQUIRED_FUNCTION(fn) extern TYPEOF(fn)* fn##_ptr;
+#define NEW_REQUIRED_FUNCTION(fn) extern TYPEOF(fn)* fn##_ptr;
+#define LIGHTUP_FUNCTION(fn) extern TYPEOF(fn)* fn##_ptr;
+#define FALLBACK_FUNCTION(fn) extern TYPEOF(fn)* fn##_ptr;
+#define RENAMED_FUNCTION(fn,oldfn) extern TYPEOF(fn)* fn##_ptr;
+#define LEGACY_FUNCTION(fn) extern TYPEOF(fn)* fn##_ptr;
 FOR_ALL_OPENSSL_FUNCTIONS
 #undef LEGACY_FUNCTION
 #undef RENAMED_FUNCTION

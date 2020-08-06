@@ -643,6 +643,12 @@ void QCALLTYPE COMModule::SetFieldRVAContent(QCall::ModuleHandle pModule, INT32 
     if (pContent != NULL)
         memcpy(pvBlob, pContent, length);
 
+    if (pReflectionModule->IsCollectible())
+    {
+        GCX_COOP();
+        LoaderAllocator::AssociateMemoryWithLoaderAllocator((BYTE*)pvBlob, ((BYTE*)pvBlob) + length, pReflectionModule->GetLoaderAllocator());
+    }
+
     // set FieldRVA into metadata. Note that this is not final RVA in the image if save to disk. We will do another round of fix up upon save.
     IfFailThrow( pRCW->GetEmitter()->SetFieldRVA(tkField, dwRVA) );
 

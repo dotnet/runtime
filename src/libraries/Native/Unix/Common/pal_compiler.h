@@ -33,3 +33,11 @@
 #define EXTERN_C extern
 #endif // __cplusplus
 #endif // EXTERN_C
+
+#ifndef TYPEOF
+#ifdef __cplusplus
+#define TYPEOF decltype
+#else
+#define TYPEOF __typeof
+#endif // __cplusplus
+#endif // TYPEOF
