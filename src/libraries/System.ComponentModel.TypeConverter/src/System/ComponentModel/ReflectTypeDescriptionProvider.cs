@@ -1332,7 +1332,46 @@ namespace System.ComponentModel
                     }
                 }
 
-                Debug.Assert(hashEntry != null);
+                // Special case converters
+                //
+                if (hashEntry == null)
+                {
+                    if (callingType.IsGenericType && callingType.GetGenericTypeDefinition() == typeof(Nullable<>))
+                    {
+                        // Check if it is a nullable value
+                        hashEntry = table[s_intrinsicNullableKey];
+                    }
+                    else if (callingType.IsInterface)
+                    {
+                        // Finally, check to see if the component type is some unknown interface.
+                        // We have a custom converter for that.
+                        hashEntry = table[s_intrinsicReferenceKey];
+                    }
+                }
+
+                // Interfaces do not derive from object, so we
+                // must handle the case of no hash entry here.
+                //
+                if (hashEntry == null)
+                {
+                    hashEntry = table[typeof(object)];
+                }
+
+                // If the entry is a type, create an instance of it and then
+                // replace the entry. This way we only need to create once.
+                // We can only do this if the object doesn't want a type
+                // in its constructor.
+                //
+                Type type = hashEntry as Type;
+
+                if (type != null)
+                {
+                    hashEntry = CreateInstance(type, callingType);
+                    if (type.GetConstructor(s_typeConstructor) == null)
+                    {
+                        table[callingType] = hashEntry;
+                    }
+                }
             }
 
             return hashEntry;
