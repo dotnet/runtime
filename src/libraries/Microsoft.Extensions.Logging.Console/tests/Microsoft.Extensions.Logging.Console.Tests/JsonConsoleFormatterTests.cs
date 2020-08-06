@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Globalization;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using Microsoft.Extensions.Logging.Test.Console;
@@ -302,7 +303,7 @@ namespace Microsoft.Extensions.Logging.Console.Test
                 var serializedValueMatch = Regex.Match(message, "\"" + propertyName + "\":(.*?),");
                 Assert.Equal(2, serializedValueMatch.Groups.Count);
                 string jsonValue = serializedValueMatch.Groups[1].Value;
-                Assert.True(double.TryParse(jsonValue, out var floatingPointValue), "The json doesn not contain a floating point value: " + jsonValue);
+                Assert.True(double.TryParse(jsonValue, NumberStyles.Any, CultureInfo.InvariantCulture, out var floatingPointValue), "The json doesn not contain a floating point value: " + jsonValue);
                 Assert.Equal(1.2, floatingPointValue, 2);
             }
         }
