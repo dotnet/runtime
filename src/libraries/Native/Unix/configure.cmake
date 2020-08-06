@@ -498,6 +498,20 @@ check_c_source_compiles(
      }
      "
      HAVE_GETNAMEINFO_SIGNED_FLAGS)
+
+check_c_source_compiles(
+    "
+    #include <signal.h>
+    int main(void){
+        int flags = -1;
+        struct sigaction action;
+        action.sa_flags = flags;
+        int result = sigaction(SIGTTOU, &action, 0);
+        return 0;
+    }
+    "
+    HAVE_SIGACTION_SIGNED_FLAGS
+)
 set(CMAKE_REQUIRED_FLAGS ${PREVIOUS_CMAKE_REQUIRED_FLAGS})
 
 set(HAVE_SUPPORT_FOR_DUAL_MODE_IPV4_PACKET_INFO 0)

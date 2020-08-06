@@ -19,6 +19,12 @@
 #include <pthread.h>
 #include <signal.h>
 
+#if HAVE_SIGACTION_SIGNED_FLAGS
+typedef long NativeFlagsType;
+#else
+typedef unsigned long NativeFlagsType;
+#endif
+
 int32_t SystemNative_GetWindowSize(WinSize* windowSize)
 {
     assert(windowSize != NULL);
@@ -108,7 +114,7 @@ static void InstallTTOUHandler(void (*handler)(int), int flags)
     struct sigaction action;
     memset(&action, 0, sizeof(action));
     action.sa_handler = handler;
-    action.sa_flags = flags;
+    action.sa_flags = (NativeFlagsType)flags;
     int rvSigaction = sigaction(SIGTTOU, &action, NULL);
     assert(rvSigaction == 0);
     (void)rvSigaction;
