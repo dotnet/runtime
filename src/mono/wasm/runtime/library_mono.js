@@ -73,6 +73,12 @@ var MonoSupportLib = {
 			},
 		},
 
+		mono_wasm_get_exception_object: function() {
+			var exception_obj = MONO.active_exception;
+			MONO.active_exception = null;
+			return exception_obj ;
+		},
+
 		mono_wasm_get_call_stack: function() {
 			if (!this.mono_wasm_current_bp_id)
 				this.mono_wasm_current_bp_id = Module.cwrap ("mono_wasm_current_bp_id", 'number');
@@ -114,8 +120,10 @@ var MonoSupportLib = {
 					continue;
 				}
 
-				if (i + 1 < var_list.length)
-					o.value = _fixup_value(var_list[i + 1].value);
+				if (i + 1 < var_list.length) {
+					_fixup_value(var_list[i + 1].value);
+					o = Object.assign (o, var_list [i + 1]);
+				}
 
 				out_list.push (o);
 				i += 2;
@@ -145,6 +153,25 @@ var MonoSupportLib = {
 			return final_var_list;
 		},
 
+		// Given `dotnet:object:foo:bar`,
+		// returns [ 'dotnet', 'object', 'foo:bar']
+		_split_object_id: function (id, delimiter = ':', count = 3) {
+			if (id === undefined || id == "")
+				return [];
+
+			if (delimiter === undefined) delimiter = ':';
+			if (count === undefined) count = 3;
+
+			var var_arr = id.split (delimiter);
+			var result = var_arr.splice (0, count - 1);
+
+			if (var_arr.length > 0)
+				result.push (var_arr.join (delimiter));
+			return result;
+		},
+
+		//
+		// @var_list: [ { index: <var_id>, name: <var_name> }, .. ]
 		mono_wasm_get_variables: function(scope, var_list) {
 			if (!this.mono_wasm_get_var_info)
 				this.mono_wasm_get_var_info = Module.cwrap ("mono_wasm_get_var_info", null, [ 'number', 'number', 'number']);
@@ -153,26 +180,34 @@ var MonoSupportLib = {
 			var numBytes = var_list.length * Int32Array.BYTES_PER_ELEMENT;
 			var ptr = Module._malloc(numBytes);
 			var heapBytes = new Int32Array(Module.HEAP32.buffer, ptr, numBytes);
-			for (let i=0; i<var_list.length; i++)
-				heapBytes[i] = var_list[i];
+			for (let i=0; i<var_list.length; i++) {
+				heapBytes[i] = var_list[i].index;
+			}
 
 			this._async_method_objectId = 0;
 			this.mono_wasm_get_var_info (scope, heapBytes.byteOffset, var_list.length);
 			Module._free(heapBytes.byteOffset);
 			var res = MONO._fixup_name_value_objects (this.var_info);
 
-			//Async methods are special in the way that local variables can be lifted to generated class fields
-			//value of "this" comes here either
 			for (let i in res) {
-				var name = res [i].name;
-				if (name != undefined && name.indexOf ('>') > 0)
-					res [i].name = name.substring (1, name.indexOf ('>'));
-			}
+				var res_name = res [i].name;
 
-			if (this._async_method_objectId != 0) {
-				for (let i in res) {
-					if (res [i].value.isValueType != undefined && res [i].value.isValueType)
-						res [i].value.objectId = `dotnet:valuetype:${this._async_method_objectId}:${res [i].fieldOffset}`;
+				var value = res[i].value;
+				if (this._async_method_objectId != 0) {
+					//Async methods are special in the way that local variables can be lifted to generated class fields
+					//value of "this" comes here either
+					if (res_name !== undefined && res_name.indexOf ('>') > 0) {
+						// For async methods, we get the names too, so use that
+						// ALTHOUGH, the name wouldn't have `<>` for method args
+						res [i].name = res_name.substring (1, res_name.indexOf ('>'));
+					}
+
+					if (value.isValueType)
+						value.objectId = `dotnet:valuetype:${this._async_method_objectId}:${res [i].fieldOffset}`;
+				} else if (res_name === undefined && var_list [i] !== undefined) {
+					// For non-async methods, we just have the var id, but we have the name
+					// from the caller
+					res [i].name = var_list [i].name;
 				}
 			}
 
@@ -181,6 +216,7 @@ var MonoSupportLib = {
 
 			return res;
 		},
+
 
 		mono_wasm_get_object_properties: function(objId, expandValueTypes) {
 			if (!this.mono_wasm_get_object_properties_info)
@@ -191,8 +227,10 @@ var MonoSupportLib = {
 
 			var res = MONO._filter_automatic_properties (MONO._fixup_name_value_objects (this.var_info));
 			for (var i = 0; i < res.length; i++) {
-				if (res [i].value.isValueType != undefined && res [i].value.isValueType)
-					res [i].value.objectId = `dotnet:valuetype:${objId}:${res [i].fieldOffset}`;
+				var res_val = res [i].value;
+				// we might not have a `.value`, like in case of getters which have a `.get` instead
+				if (res_val !== undefined && res_val.isValueType != undefined && res_val.isValueType)
+					res_val.objectId = `dotnet:valuetype:${objId}:${res [i].fieldOffset}`;
 			}
 
 			this.var_info = [];
@@ -209,8 +247,14 @@ var MonoSupportLib = {
 
 			var res = MONO._fixup_name_value_objects (this.var_info);
 			for (var i = 0; i < res.length; i++) {
-				if (res [i].value.isValueType != undefined && res [i].value.isValueType)
+				var prop_value = res [i].value;
+				if (prop_value.isValueType) {
 					res [i].value.objectId = `dotnet:array:${objId}:${i}`;
+				} else if (prop_value.objectId !== undefined && prop_value.objectId.startsWith("dotnet:pointer")) {
+					prop_value.objectId = this._get_updated_ptr_id (prop_value.objectId, {
+						varName: `[${i}]`
+					});
+				}
 			}
 
 			this.var_info = [];
@@ -255,11 +299,25 @@ var MonoSupportLib = {
 
 			for (let i in var_list) {
 				var value = var_list [i].value;
-				if (value == undefined || value.type != "object")
+				if (value === undefined)
 					continue;
 
-				if (value.isValueType != true || value.expanded != true) // undefined would also give us false
+				if (value.objectId !== undefined && value.objectId.startsWith ("dotnet:pointer:")) {
+					var ptr_args = this._get_ptr_args (value.objectId);
+					if (ptr_args.varName === undefined) {
+						// It might have been already set in some cases, like arrays
+						// where the name would be `0`, but we want `[0]` for pointers,
+						// so the deref would look like `*[0]`
+						value.objectId = this._get_updated_ptr_id (value.objectId, {
+							varName: var_list [i].name
+						});
+					}
+				}
+
+				if (value.type != "object" || value.isValueType != true || value.expanded != true) // undefined would also give us false
 					continue;
+
+				// Generate objectId for expanded valuetypes
 
 				var objectId = value.objectId;
 				if (objectId == undefined)
@@ -309,6 +367,104 @@ var MonoSupportLib = {
 			}
 		},
 
+		_get_cfo_res_details: function (objectId, args) {
+			if (!(objectId in this._call_function_res_cache))
+				throw new Error(`Could not find any object with id ${objectId}`);
+
+			var real_obj = this._call_function_res_cache [objectId];
+
+			var descriptors = Object.getOwnPropertyDescriptors (real_obj);
+			if (args.accessorPropertiesOnly) {
+				Object.keys (descriptors).forEach (k => {
+					if (descriptors [k].get === undefined)
+						Reflect.deleteProperty (descriptors, k);
+				});
+			}
+
+			var res_details = [];
+			Object.keys (descriptors).forEach (k => {
+				var new_obj;
+				var prop_desc = descriptors [k];
+				if (typeof prop_desc.value == "object") {
+					// convert `{value: { type='object', ... }}`
+					// to      `{ name: 'foo', value: { type='object', ... }}
+					new_obj = Object.assign ({ name: k }, prop_desc);
+				} else if (prop_desc.value !== undefined) {
+					// This is needed for values that were not added by us,
+					// thus are like { value: 5 }
+					// instead of    { value: { type = 'number', value: 5 }}
+					//
+					// This can happen, for eg., when `length` gets added for arrays
+					// or `__proto__`.
+					new_obj = {
+						name: k,
+						// merge/add `type` and `description` to `d.value`
+						value: Object.assign ({ type: (typeof prop_desc.value), description: '' + prop_desc.value },
+												prop_desc)
+					};
+				} else if (prop_desc.get !== undefined) {
+					// The real_obj has the actual getter. We are just returning a placeholder
+					// If the caller tries to run function on the cfo_res object,
+					// that accesses this property, then it would be run on `real_obj`,
+					// which *has* the original getter
+					new_obj = {
+						name: k,
+						get: {
+							className: "Function",
+							description: `get ${k} () {}`,
+							type: "function"
+						}
+					};
+				} else {
+					new_obj = { name: k, value: { type: "symbol", value: "<Unknown>", description: "<Unknown>"} };
+				}
+
+				res_details.push (new_obj);
+			});
+
+			return { __value_as_json_string__: JSON.stringify (res_details) };
+		},
+
+		_get_ptr_args: function (objectId) {
+			var parts = this._split_object_id (objectId);
+			if (parts.length != 3)
+				throw new Error (`Bug: Unexpected objectId format for a pointer, expected 3 parts: ${objectId}`);
+			return JSON.parse (parts [2]);
+		},
+
+		_get_updated_ptr_id: function (objectId, new_args) {
+			var old_args = {};
+			if (typeof (objectId) === 'string' && objectId.length)
+				old_args = this._get_ptr_args (objectId);
+
+			return `dotnet:pointer:${JSON.stringify ( Object.assign (old_args, new_args) )}`;
+		},
+
+		_get_deref_ptr_value: function (objectId) {
+			if (!this.mono_wasm_get_deref_ptr_value_info)
+				this.mono_wasm_get_deref_ptr_value_info = Module.cwrap("mono_wasm_get_deref_ptr_value", null, ['number', 'number']);
+
+			var ptr_args = this._get_ptr_args (objectId);
+			if (ptr_args.ptr_addr == 0 || ptr_args.klass_addr == 0)
+				throw new Error (`Both ptr_addr and klass_addr need to be non-zero, to dereference a pointer. objectId: ${objectId}`);
+
+			this.var_info = [];
+			var value_addr = new DataView (Module.HEAPU8.buffer).getUint32 (ptr_args.ptr_addr, /* littleEndian */ true);
+			this.mono_wasm_get_deref_ptr_value_info (value_addr, ptr_args.klass_addr);
+
+			var res = MONO._fixup_name_value_objects(this.var_info);
+			if (res.length > 0) {
+				if (ptr_args.varName === undefined)
+					throw new Error (`Bug: no varName found for the pointer. objectId: ${objectId}`);
+
+				res [0].name = `*${ptr_args.varName}`;
+			}
+
+			res = this._post_process_details (res);
+			this.var_info = [];
+			return res;
+		},
+
 		mono_wasm_get_details: function (objectId, args) {
 			var parts = objectId.split(":");
 			if (parts[0] != "dotnet")
@@ -334,51 +490,11 @@ var MonoSupportLib = {
 					var containerObjectId = parts[2];
 					return this._get_details_for_value_type(objectId, () => this.mono_wasm_get_object_properties(containerObjectId, true));
 
-				case "cfo_res": {
-					if (!(objectId in this._call_function_res_cache))
-						throw new Error(`Could not find any object with id ${objectId}`);
+				case "cfo_res":
+					return this._get_cfo_res_details (objectId, args);
 
-					var real_obj = this._call_function_res_cache [objectId];
-					if (args.accessorPropertiesOnly) {
-						// var val_accessors = JSON.stringify ([
-						//  {
-						//      name: "__proto__",
-						//      get: { type: "function", className: "Function", description: "function get __proto__ () {}", objectId: "dotnet:cfo_res:9999" },
-						//      set: { type: "function", className: "Function", description: "function set __proto__ () {}", objectId: "dotnet:cfo_res:8888" },
-						//      isOwn: false
-						//  }], undefined, 4);
-						return { __value_as_json_string__:  "[]" };
-					}
-
-					// behaving as if (args.ownProperties == true)
-					var descriptors = Object.getOwnPropertyDescriptors (real_obj);
-					var own_properties = [];
-					Object.keys (descriptors).forEach (k => {
-						var new_obj;
-						var prop_desc = descriptors [k];
-						if (typeof prop_desc.value == "object") {
-							// convert `{value: { type='object', ... }}`
-							// to      `{ name: 'foo', value: { type='object', ... }}
-							new_obj = Object.assign ({ name: k}, prop_desc);
-						} else {
-							// This is needed for values that were not added by us,
-							// thus are like { value: 5 }
-							// instead of    { value: { type = 'number', value: 5 }}
-							//
-							// This can happen, for eg., when `length` gets added for arrays
-							// or `__proto__`.
-							new_obj = {
-								name: k,
-								// merge/add `type` and `description` to `d.value`
-								value: Object.assign ({ type: (typeof prop_desc.value), description: '' + prop_desc.value },
-														prop_desc)
-							};
-						}
-
-						own_properties.push (new_obj);
-					});
-
-					return { __value_as_json_string__: JSON.stringify (own_properties) };
+				case "pointer": {
+					return this._get_deref_ptr_value (objectId);
 				}
 
 				default:
@@ -397,39 +513,83 @@ var MonoSupportLib = {
 				delete this._cache_call_function_res[objectId];
 		},
 
+		_invoke_getter_on_object: function (objectId, name) {
+			if (!this.mono_wasm_invoke_getter_on_object)
+				this.mono_wasm_invoke_getter_on_object = Module.cwrap ("mono_wasm_invoke_getter_on_object", 'void', [ 'number', 'string' ]);
+
+			if (objectId < 0) {
+				// invalid id
+				return [];
+			}
+
+			this.mono_wasm_invoke_getter_on_object (objectId, name);
+			var getter_res = MONO._post_process_details (MONO.var_info);
+
+			MONO.var_info = [];
+			return getter_res [0];
+		},
+
+		_create_proxy_from_object_id: function (objectId) {
+			var details = this.mono_wasm_get_details(objectId);
+
+			if (this._is_object_id_array (objectId))
+				return details.map (p => p.value);
+
+			var objIdParts = objectId.split (':');
+			var objIdNum = -1;
+			if (objectId.startsWith ("dotnet:object:"))
+				objIdNum = objIdParts [2];
+
+			var proxy = {};
+			Object.keys (details).forEach (p => {
+				var prop = details [p];
+				if (prop.get !== undefined) {
+					// TODO: `set`
+
+					// We don't add a `get` for non-object types right now,
+					// so, we shouldn't get here with objIdNum==-1
+					Object.defineProperty (proxy,
+							prop.name,
+							{ get () { return MONO._invoke_getter_on_object (objIdNum, prop.name); } }
+					);
+				} else {
+					proxy [prop.name] = prop.value;
+				}
+			});
+
+			return proxy;
+		},
+
 		mono_wasm_call_function_on: function (request) {
+			if (request.arguments != undefined && !Array.isArray (request.arguments))
+				throw new Error (`"arguments" should be an array, but was ${request.arguments}`);
+
 			var objId = request.objectId;
 			var proxy;
 
 			if (objId in this._call_function_res_cache) {
 				proxy = this._call_function_res_cache [objId];
 			} else if (!objId.startsWith ('dotnet:cfo_res:')) {
-				var details = this.mono_wasm_get_details(objId);
-				var target_is_array = this._is_object_id_array (objId);
-				proxy = target_is_array ? [] : {};
-
-				Object.keys(details).forEach(p => {
-					var prop = details[p];
-					if (target_is_array) {
-						proxy.push(prop.value);
-					} else {
-						if (prop.name != undefined)
-							proxy [prop.name] = prop.value;
-						else // when can this happen??
-							proxy[''+p] = prop.value;
-					}
-				});
+				proxy = this._create_proxy_from_object_id (objId);
 			}
 
-			var fn_args = request.arguments != undefined ? request.arguments.map(a => a.value) : [];
+			var fn_args = request.arguments != undefined ? request.arguments.map(a => JSON.stringify(a.value)) : [];
 			var fn_eval_str = `var fn = ${request.functionDeclaration}; fn.call (proxy, ...[${fn_args}]);`;
 
 			var fn_res = eval (fn_eval_str);
-			if (request.returnByValue)
+			if (fn_res == undefined) // should we just return undefined?
+				throw Error ('Function returned undefined result');
+
+			// primitive type
+			if (Object (fn_res) !== fn_res)
 				return fn_res;
 
-			if (fn_res == undefined)
-				throw Error ('Function returned undefined result');
+			// return .value, if it is a primitive type
+			if (fn_res.value !== undefined && Object (fn_res.value.value) !== fn_res.value.value)
+				return fn_res.value;
+
+			if (request.returnByValue)
+				return {type: "object", value: fn_res};
 
 			var fn_res_id = this._cache_call_function_res (fn_res);
 			if (Object.getPrototypeOf (fn_res) == Array.prototype) {
@@ -445,15 +605,38 @@ var MonoSupportLib = {
 			}
 		},
 
+		_clear_per_step_state: function () {
+			this._next_value_type_id_var = 0;
+			this._value_types_cache = {};
+		},
+
+		mono_wasm_debugger_resume: function () {
+			this._clear_per_step_state ();
+		},
+		
 		mono_wasm_start_single_stepping: function (kind) {
 			console.log (">> mono_wasm_start_single_stepping " + kind);
 			if (!this.mono_wasm_setup_single_step)
 				this.mono_wasm_setup_single_step = Module.cwrap ("mono_wasm_setup_single_step", 'number', [ 'number']);
 
-			this._next_value_type_id_var = 0;
-			this._value_types_cache = {};
+			this._clear_per_step_state ();
 
 			return this.mono_wasm_setup_single_step (kind);
+		},
+
+		mono_wasm_set_pause_on_exceptions: function (state) {
+			if (!this.mono_wasm_pause_on_exceptions)
+				this.mono_wasm_pause_on_exceptions = Module.cwrap ("mono_wasm_pause_on_exceptions", 'number', [ 'number']);
+			var state_enum = 0;
+			switch (state) {
+				case 'uncaught':
+					state_enum = 1; //EXCEPTION_MODE_UNCAUGHT
+					break;
+				case 'all':
+					state_enum = 2; //EXCEPTION_MODE_ALL
+					break;
+			}
+			return this.mono_wasm_pause_on_exceptions (state_enum);
 		},
 
 		mono_wasm_runtime_ready: function () {
@@ -461,8 +644,7 @@ var MonoSupportLib = {
 			// DO NOT REMOVE - magic debugger init function
 			console.debug ("mono_wasm_runtime_ready", "fe00e07a-5519-4dfe-b35a-f867dbaf2e28");
 
-			this._next_value_type_id_var = 0;
-			this._value_types_cache = {};
+			this._clear_per_step_state ();
 
 			// FIXME: where should this go?
 			this._next_call_function_res_id = 0;
@@ -484,7 +666,7 @@ var MonoSupportLib = {
 		},
 
 		// Set environment variable NAME to VALUE
-		// Should be called before mono_load_runtime_and_bcl () in most cases
+		// Should be called before mono_load_runtime_and_bcl () in most cases 
 		mono_wasm_setenv: function (name, value) {
 			if (!this.wasm_setenv)
 				this.wasm_setenv = Module.cwrap ('mono_wasm_setenv', null, ['string', 'string']);
@@ -663,12 +845,12 @@ var MonoSupportLib = {
 
 		// deprecated
 		mono_load_runtime_and_bcl: function (
-			unused_vfs_prefix, deploy_prefix, enable_debugging, file_list, loaded_cb, fetch_file_cb
+			unused_vfs_prefix, deploy_prefix, debug_level, file_list, loaded_cb, fetch_file_cb
 		) {
 			var args = {
 				fetch_file_cb: fetch_file_cb,
 				loaded_cb: loaded_cb,
-				enable_debugging: enable_debugging,
+				debug_level: debug_level,
 				assembly_root: deploy_prefix,
 				assets: []
 			};
@@ -693,7 +875,7 @@ var MonoSupportLib = {
 		// Initializes the runtime and loads assemblies, debug information, and other files.
 		// @args is a dictionary-style Object with the following properties:
 		//    assembly_root: (required) the subfolder containing managed assemblies and pdbs
-		//    enable_debugging: (required)
+		//    debug_level or enable_debugging: (required)
 		//    assets: (required) a list of assets to load along with the runtime. each asset
 		//     is a dictionary-style Object with the following properties:
 		//        name: (required) the name of the asset, including extension.
@@ -777,7 +959,7 @@ var MonoSupportLib = {
 
 			if (ENVIRONMENT_IS_SHELL || ENVIRONMENT_IS_NODE) {
 				try {
-					load_runtime ("unused", args.enable_debugging);
+					load_runtime ("unused", args.debug_level);
 				} catch (ex) {
 					print ("MONO_WASM: load_runtime () failed: " + ex);
 					print ("MONO_WASM: Stacktrace: \n");
@@ -787,7 +969,7 @@ var MonoSupportLib = {
 					wasm_exit (1);
 				}
 			} else {
-				load_runtime ("unused", args.enable_debugging);
+				load_runtime ("unused", args.debug_level);
 			}
 
 			MONO.mono_wasm_runtime_ready ();
@@ -795,6 +977,8 @@ var MonoSupportLib = {
 		},
 
 		_load_assets_and_runtime: function (args) {
+			if (args.enable_debugging)
+				args.debug_level = args.enable_debugging;
 			if (args.assembly_list)
 				throw new Error ("Invalid args (assembly_list was replaced by assets)");
 			if (args.runtime_assets)
@@ -999,16 +1183,31 @@ var MonoSupportLib = {
 			});
 		},
 
-		_mono_wasm_add_getter_var: function(className) {
+		_mono_wasm_add_getter_var: function(className, invokable) {
 			fixed_class_name = MONO._mono_csharp_fixup_class_name (className);
-			var value = `${fixed_class_name} { get; }`;
-			MONO.var_info.push({
-				value: {
-					type: "symbol",
-					value: value,
-					description: value
-				}
-			});
+			if (invokable != 0) {
+				var name;
+				if (MONO.var_info.length > 0)
+					name = MONO.var_info [MONO.var_info.length - 1].name;
+				name = (name === undefined) ? "" : name;
+
+				MONO.var_info.push({
+					get: {
+						className: "Function",
+						description: `get ${name} () {}`,
+						type: "function",
+					}
+				});
+			} else {
+				var value = `${fixed_class_name} { get; }`;
+				MONO.var_info.push({
+					value: {
+						type: "symbol",
+						description: value,
+						value: value,
+					}
+				});
+			}
 		},
 
 		_mono_wasm_add_array_var: function(className, objectId, length) {
@@ -1069,7 +1268,7 @@ var MonoSupportLib = {
 				break;
 
 			case "getter":
-				MONO._mono_wasm_add_getter_var (str_value);
+				MONO._mono_wasm_add_getter_var (str_value, value);
 				break;
 
 			case "array":
@@ -1077,13 +1276,26 @@ var MonoSupportLib = {
 				break;
 
 			case "pointer": {
-				MONO.var_info.push ({
-					value: {
-						type: "symbol",
-						value: str_value,
-						description: str_value
-					}
-				});
+				var fixed_value_str = MONO._mono_csharp_fixup_class_name (str_value);
+				if (value.klass_addr == 0 || value.ptr_addr == 0 || fixed_value_str.startsWith ('(void*')) {
+					// null or void*, which we can't deref
+					MONO.var_info.push({
+						value: {
+							type: "symbol",
+							value: fixed_value_str,
+							description: fixed_value_str
+						}
+					});
+				} else {
+					MONO.var_info.push({
+						value: {
+							type: "object",
+							className: fixed_value_str,
+							description: fixed_value_str,
+							objectId: this._get_updated_ptr_id ('', value)
+						}
+					});
+				}
 				}
 				break;
 
