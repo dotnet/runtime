@@ -11642,7 +11642,7 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
             // TODO-1stClassStructs: improve this.
             if (op1->IsLocal() || (op1->TypeGet() != TYP_STRUCT))
             {
-                // Consider using GTF_IND_ASG_LHS here, as GTF_DONT_CSE here is used to indicate
+                // TODO-Cleanup: consider using GTF_IND_ASG_LHS here, as GTF_DONT_CSE here is used to indicate
                 // that this GT_IND is the LHS of an assignment
                 //
                 op1->gtFlags |= GTF_DONT_CSE;
@@ -13656,8 +13656,9 @@ DONE_MORPHING_CHILDREN:
             var_types addCastToType;
 
             foldAndReturnTemp = false;
-            isStore           = (tree->gtFlags & GTF_DONT_CSE) == GTF_DONT_CSE;
-            addCastToType     = TYP_VOID; // TYP_VOID means we don't need to insert a cast
+            isStore           = (tree->gtFlags & GTF_DONT_CSE) != 0;
+            ;
+            addCastToType = TYP_VOID; // TYP_VOID means we don't need to insert a cast
 
             temp  = nullptr;
             ival1 = 0;
@@ -13689,7 +13690,7 @@ DONE_MORPHING_CHILDREN:
                     {
                         unsigned   lclNum  = temp->AsLclVarCommon()->GetLclNum();
                         LclVarDsc* varDsc  = &lvaTable[lclNum];
-                        var_types  lclType = lvaTable[lclNum].lvType;
+                        var_types  lclType = varDsc->lvType;
 
                         // We will try to optimize when we have a promoted struct promoted with a zero lvFldOffset
                         if (varDsc->lvPromoted && (varDsc->lvFldOffset == 0))
@@ -13732,7 +13733,7 @@ DONE_MORPHING_CHILDREN:
                             }
                         }
 
-                        // If the sizes match and we dont have a float or TYP_STRUCT,
+                        // If the sizes match and we don't have a float or TYP_STRUCT,
                         // then we will fold the IND/ADDR and use the LCL_VAR directly
                         //
                         if (matchingWidths && matchingFloat && (typ != TYP_STRUCT))
@@ -13763,6 +13764,7 @@ DONE_MORPHING_CHILDREN:
                             tree->gtType = typ = temp->TypeGet();
                             foldAndReturnTemp  = true;
                         }
+
                         if (!foldAndReturnTemp)
                         {
                             // Assumes that when Lookup returns "false" it will leave "fieldSeq" unmodified (i.e.
@@ -13781,6 +13783,7 @@ DONE_MORPHING_CHILDREN:
                                 foldAndReturnTemp = true;
                             }
                         }
+
                         // Otherwise will will fold this into a GT_LCL_FLD below
                         //   where we check (temp != nullptr)
                     }
@@ -13985,6 +13988,10 @@ DONE_MORPHING_CHILDREN:
                     DEBUG_DESTROY_NODE(temp);
 
                     temp = fgMorphTree(result);
+                }
+                else
+                {
+                    assert(addCastToType == TYP_VOID);
                 }
 
                 return temp;
