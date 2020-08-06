@@ -11,8 +11,15 @@ namespace System.Net
     public class NetworkException : IOException
     {
         /// <summary>Creates a new instance of the <see cref='System.Net.NetworkException'/> class with the specified error code.</summary>
-        protected NetworkException(NetworkError error, Exception? innerException = null, string? message = null)
-            : base(message ?? GetExceptionMessage(error), innerException)
+        public NetworkException(NetworkError error, Exception? innerException = null)
+            : base(GetExceptionMessage(error), innerException)
+        {
+            NetworkError = error;
+        }
+
+        /// <summary>Creates a new instance of the <see cref='System.Net.NetworkException'/> class with the specified error code and message.</summary>
+        public NetworkException(string message, NetworkError error, Exception? innerException = null)
+            : base(message, innerException)
         {
             NetworkError = error;
         }
@@ -33,12 +40,6 @@ namespace System.Net
 
         /// <summary>Returns the specific kind of error.</summary>
         public NetworkError NetworkError { get; }
-
-        /// <summary>Creates a new instance of the <see cref='System.Net.NetworkException'/> class with the specified error code.</summary>
-        public static NetworkException Create(NetworkError error, Exception? innerException = null, string? message = null)
-        {
-            return new NetworkException(error, innerException, message);
-        }
 
         private static string GetExceptionMessage(NetworkError error) => error switch
         {

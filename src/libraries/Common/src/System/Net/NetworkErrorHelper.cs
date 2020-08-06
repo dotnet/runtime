@@ -20,7 +20,7 @@ namespace System.Net
                 _ => NetworkError.Unknown
             };
 
-            return NetworkException.Create(error, socketException);
+            return new NetworkException(error, socketException);
         }
     }
 }

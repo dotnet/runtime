@@ -12,7 +12,7 @@ namespace System.Net.Primitives.Functional.Tests
         {
             foreach (NetworkError error in Enum.GetValues(typeof(NetworkError)))
             {
-                NetworkException e = NetworkException.Create(error);
+                NetworkException e = new NetworkException(error);
                 Assert.Equal(error, e.NetworkError);
                 Assert.Null(e.InnerException);
                 Assert.NotNull(e.Message);
@@ -25,7 +25,7 @@ namespace System.Net.Primitives.Functional.Tests
             const string Message = "Hello";
             Exception inner = new Exception();
 
-            NetworkException e = NetworkException.Create(NetworkError.Unknown, inner, Message);
+            NetworkException e = new NetworkException(Message, NetworkError.Unknown, inner);
 
             Assert.Equal(inner, e.InnerException);
             Assert.Equal(Message, e.Message);
