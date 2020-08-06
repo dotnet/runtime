@@ -44,7 +44,7 @@ namespace MS.Internal.Xml.XPath
             _opnd2.SetXsltContext(context);
         }
 
-        public override object Evaluate(XPathNodeIterator? nodeIterator)
+        public override object Evaluate(XPathNodeIterator nodeIterator)
         {
             object n1 = _opnd1.Evaluate(nodeIterator);
             if (((bool)n1) == _isOr)

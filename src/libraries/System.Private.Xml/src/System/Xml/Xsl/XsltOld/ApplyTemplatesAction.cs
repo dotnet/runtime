@@ -164,7 +164,7 @@ namespace System.Xml.Xsl.XsltOld
                     }
                     else
                     {
-                        frame.InitNewNodeSet(processor.StartQuery(frame.NodeSet, _selectKey));
+                        frame.InitNewNodeSet(processor.StartQuery(frame.NodeSet!, _selectKey));
                     }
                     if (processor.SortArray.Count != 0)
                     {

@@ -60,13 +60,13 @@ namespace System.Xml.Xsl.XsltOld
                     if (_sortContainer != null)
                     {
                         processor.InitSortArray();
-                        processor.PushActionFrame(_sortContainer, frame.NodeSet);
+                        processor.PushActionFrame(_sortContainer, frame.NodeSet!);
                         frame.State = ProcessedSort;
                         break;
                     }
                     goto case ProcessedSort;
                 case ProcessedSort:
-                    frame.InitNewNodeSet(processor.StartQuery(frame.NodeSet, _selectKey));
+                    frame.InitNewNodeSet(processor.StartQuery(frame.NodeSet!, _selectKey));
                     if (_sortContainer != null)
                     {
                         Debug.Assert(processor.SortArray.Count != 0);

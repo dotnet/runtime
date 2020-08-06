@@ -29,7 +29,7 @@ namespace MS.Internal.Xml.XPath
             this.count = 0;
         }
 
-        public override object Evaluate(XPathNodeIterator? context)
+        public override object Evaluate(XPathNodeIterator context)
         {
             base.Evaluate(context);
             outputBuffer.Clear();

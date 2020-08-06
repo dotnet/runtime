@@ -28,7 +28,7 @@ namespace MS.Internal.Xml.XPath
             _child.SetXsltContext(xsltContext);
         }
 
-        public override object Evaluate(XPathNodeIterator? nodeIterator)
+        public override object Evaluate(XPathNodeIterator nodeIterator)
         {
             base.Evaluate(nodeIterator);
 

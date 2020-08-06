@@ -601,7 +601,7 @@ namespace System.Xml.Xsl.XsltOld
             string? result;
 
             Query query = this.GetValueQuery(key, GetValueOfContext());
-            object value = query.Evaluate(context.NodeSet);
+            object value = query.Evaluate(context.NodeSet!);
             if (value is XPathNodeIterator)
             {
                 XPathNavigator? n = query.Advance();
@@ -657,26 +657,26 @@ namespace System.Xml.Xsl.XsltOld
             }
         }
 
-        internal XPathNodeIterator StartQuery(XPathNodeIterator? context, int key)
+        internal XPathNodeIterator StartQuery(XPathNodeIterator context, int key)
         {
             Query query = GetCompiledQuery(key);
             object result = query.Evaluate(context);
             if (result is XPathNodeIterator)
             {
-                return new XPathSelectionIterator(context!.Current!, query);
+                return new XPathSelectionIterator(context.Current!, query);
             }
             throw XsltException.Create(SR.XPath_NodeSetExpected);
         }
 
         internal object Evaluate(ActionFrame context, int key)
         {
-            return GetValueQuery(key).Evaluate(context.NodeSet);
+            return GetValueQuery(key).Evaluate(context.NodeSet!);
         }
 
         internal object RunQuery(ActionFrame context, int key)
         {
             Query query = GetCompiledQuery(key);
-            object value = query.Evaluate(context.NodeSet);
+            object value = query.Evaluate(context.NodeSet!);
             XPathNodeIterator? it = value as XPathNodeIterator;
             if (it != null)
             {

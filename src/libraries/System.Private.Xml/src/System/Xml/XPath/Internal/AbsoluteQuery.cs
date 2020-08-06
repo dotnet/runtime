@@ -12,9 +12,9 @@ namespace MS.Internal.Xml.XPath
         public AbsoluteQuery() : base() { }
         private AbsoluteQuery(AbsoluteQuery other) : base(other) { }
 
-        public override object Evaluate(XPathNodeIterator? context)
+        public override object Evaluate(XPathNodeIterator context)
         {
-            Debug.Assert(context!.Current != null);
+            Debug.Assert(context.Current != null);
             base.contextNode = context.Current.Clone();
             base.contextNode.MoveToRoot();
             count = 0;

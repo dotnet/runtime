@@ -44,7 +44,7 @@ namespace MS.Internal.Xml.XPath
             return XmlConvert.ToXPathDouble(arg);
         }
 
-        public override object Evaluate(XPathNodeIterator? nodeIterator) =>
+        public override object Evaluate(XPathNodeIterator nodeIterator) =>
             _ftype switch
             {
                 FT.FuncNumber => (object)Number(nodeIterator),
@@ -55,7 +55,7 @@ namespace MS.Internal.Xml.XPath
                 _ => throw new InvalidOperationException(),
             };
 
-        private double Number(XPathNodeIterator? nodeIterator)
+        private double Number(XPathNodeIterator nodeIterator)
         {
             if (_arg == null)
             {
@@ -84,7 +84,7 @@ namespace MS.Internal.Xml.XPath
             return double.NaN;
         }
 
-        private double Sum(XPathNodeIterator? nodeIterator)
+        private double Sum(XPathNodeIterator nodeIterator)
         {
             double sum = 0;
             Debug.Assert(_arg != null);
@@ -97,19 +97,19 @@ namespace MS.Internal.Xml.XPath
             return sum;
         }
 
-        private double Floor(XPathNodeIterator? nodeIterator)
+        private double Floor(XPathNodeIterator nodeIterator)
         {
             Debug.Assert(_arg != null);
             return Math.Floor((double)_arg.Evaluate(nodeIterator));
         }
 
-        private double Ceiling(XPathNodeIterator? nodeIterator)
+        private double Ceiling(XPathNodeIterator nodeIterator)
         {
             Debug.Assert(_arg != null);
             return Math.Ceiling((double)_arg.Evaluate(nodeIterator));
         }
 
-        private double Round(XPathNodeIterator? nodeIterator)
+        private double Round(XPathNodeIterator nodeIterator)
         {
             Debug.Assert(_arg != null);
             double n = XmlConvert.ToXPathDouble(_arg.Evaluate(nodeIterator));

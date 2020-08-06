@@ -54,7 +54,7 @@ namespace MS.Internal.Xml.XPath
         // -------------------- Query ------------------
         public virtual void SetXsltContext(XsltContext context) { }
 
-        public abstract object Evaluate(XPathNodeIterator? nodeIterator);
+        public abstract object Evaluate(XPathNodeIterator nodeIterator);
         public abstract XPathNavigator? Advance();
 
         public virtual XPathNavigator? MatchNode(XPathNavigator? current)

@@ -48,7 +48,7 @@ namespace MS.Internal.Xml.XPath
             qy2.SetXsltContext(xsltContext);
         }
 
-        public override object Evaluate(XPathNodeIterator? context)
+        public override object Evaluate(XPathNodeIterator context)
         {
             qy1.Evaluate(context);
             qy2.Evaluate(context);

@@ -30,26 +30,26 @@ namespace MS.Internal.Xml.XPath
             }
         }
 
-        private XPathNavigator? EvaluateArg(XPathNodeIterator? context)
+        private XPathNavigator? EvaluateArg(XPathNodeIterator context)
         {
             if (_arg == null)
             {
-                return context!.Current;
+                return context.Current;
             }
             _arg.Evaluate(context);
             return _arg.Advance();
         }
 
-        public override object Evaluate(XPathNodeIterator? context)
+        public override object Evaluate(XPathNodeIterator context)
         {
             XPathNavigator? argVal;
 
             switch (_funcType)
             {
                 case FT.FuncPosition:
-                    return (double)context!.CurrentPosition;
+                    return (double)context.CurrentPosition;
                 case FT.FuncLast:
-                    return (double)context!.Count;
+                    return (double)context.Count;
                 case FT.FuncNameSpaceUri:
                     argVal = EvaluateArg(context);
                     if (argVal != null)

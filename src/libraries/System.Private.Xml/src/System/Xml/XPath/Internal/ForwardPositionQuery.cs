@@ -15,7 +15,7 @@ namespace MS.Internal.Xml.XPath
         }
         protected ForwardPositionQuery(ForwardPositionQuery other) : base(other) { }
 
-        public override object Evaluate(XPathNodeIterator? context)
+        public override object Evaluate(XPathNodeIterator context)
         {
             base.Evaluate(context);
 

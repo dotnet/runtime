@@ -13,10 +13,10 @@ namespace MS.Internal.Xml.XPath
         public IDQuery(Query arg) : base(arg) { }
         private IDQuery(IDQuery other) : base(other) { }
 
-        public override object Evaluate(XPathNodeIterator? context)
+        public override object Evaluate(XPathNodeIterator context)
         {
             object argVal = base.Evaluate(context);
-            Debug.Assert(context!.Current != null);
+            Debug.Assert(context.Current != null);
             XPathNavigator contextNode = context.Current.Clone();
 
             switch (GetXPathType(argVal))

@@ -35,7 +35,7 @@ namespace MS.Internal.Xml.XPath
             }
         }
 
-        public override object Evaluate(XPathNodeIterator? nodeIterator) =>
+        public override object Evaluate(XPathNodeIterator nodeIterator) =>
             _funcType switch
             {
                 FT.FuncBoolean => toBoolean(nodeIterator),
@@ -55,7 +55,7 @@ namespace MS.Internal.Xml.XPath
             return str.Length > 0;
         }
 
-        internal bool toBoolean(XPathNodeIterator? nodeIterator)
+        internal bool toBoolean(XPathNodeIterator nodeIterator)
         {
             object result = _arg!.Evaluate(nodeIterator);
             if (result is XPathNodeIterator) return _arg.Advance() != null;
@@ -72,7 +72,7 @@ namespace MS.Internal.Xml.XPath
 
         public override XPathResultType StaticType { get { return XPathResultType.Boolean; } }
 
-        private bool Not(XPathNodeIterator? nodeIterator)
+        private bool Not(XPathNodeIterator nodeIterator)
         {
             return !(bool)_arg!.Evaluate(nodeIterator);
         }

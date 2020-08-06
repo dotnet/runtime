@@ -21,7 +21,7 @@ namespace MS.Internal.Xml.XPath
             return currentNode;
         }
 
-        public override object Evaluate(XPathNodeIterator? nodeIterator)
+        public override object Evaluate(XPathNodeIterator nodeIterator)
         {
             return qyInput.Evaluate(nodeIterator);
         }
