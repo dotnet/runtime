@@ -84,6 +84,10 @@ namespace System
             }
         }
 
+        /// <summary>
+        /// Indicates whether the current application is running on the specified platform.
+        /// </summary>
+        /// <param name="platform">Case-insensitive platform name. Examples: Browser, Linux, FreeBSD, Android, iOS, macOS, tvOS, watchOS, Windows.</param>
         public static bool IsOSPlatform(string platform)
         {
             if (platform == null)
@@ -108,9 +112,16 @@ namespace System
 #endif
         }
 
+        /// <summary>
+        /// Check for the OS with a >= version comparison. Used to guard APIs that were added in the given OS release.
+        /// </summary>
+        /// <param name="platform">Case-insensitive platform name. Examples: Browser, Linux, FreeBSD, Android, iOS, macOS, tvOS, watchOS, Windows.</param>
         public static bool IsOSPlatformVersionAtLeast(string platform, int major, int minor = 0, int build = 0, int revision = 0)
             => IsOSPlatform(platform) && IsOSVersionAtLeast(major, minor, build, revision);
 
+        /// <summary>
+        /// Indicates whether the current application is running as WASM in a Browser.
+        /// </summary>
         public static bool IsBrowser() =>
 #if TARGET_BROWSER
             true;
@@ -118,6 +129,9 @@ namespace System
             false;
 #endif
 
+        /// <summary>
+        /// Indicates whether the current application is running on Linux.
+        /// </summary>
         public static bool IsLinux() =>
 #if TARGET_LINUX
             true;
@@ -125,6 +139,9 @@ namespace System
             false;
 #endif
 
+        /// <summary>
+        /// Indicates whether the current application is running on FreeBSD.
+        /// </summary>
         public static bool IsFreeBSD() =>
 #if TARGET_FREEBSD
             true;
@@ -132,9 +149,15 @@ namespace System
             false;
 #endif
 
+        /// <summary>
+        /// Check for the FreeBSD version (returned by 'uname') with a >= version comparison. Used to guard APIs that were added in the given FreeBSD release.
+        /// </summary>
         public static bool IsFreeBSDVersionAtLeast(int major, int minor = 0, int build = 0, int revision = 0)
             => IsFreeBSD() && IsOSVersionAtLeast(major, minor, build, revision);
 
+        /// <summary>
+        /// Indicates whether the current application is running on Android.
+        /// </summary>
         public static bool IsAndroid() =>
 #if TARGET_ANDROID
             true;
@@ -142,9 +165,15 @@ namespace System
             false;
 #endif
 
+        /// <summary>
+        /// Check for the Android version (returned by 'uname') with a >= version comparison. Used to guard APIs that were added in the given Android release.
+        /// </summary>
         public static bool IsAndroidVersionAtLeast(int major, int minor = 0, int build = 0, int revision = 0)
             => IsAndroid() && IsOSVersionAtLeast(major, minor, build, revision);
 
+        /// <summary>
+        /// Indicates whether the current application is running on iOS.
+        /// </summary>
         public static bool IsIOS() =>
 #if TARGET_IOS
             true;
@@ -152,9 +181,15 @@ namespace System
             false;
 #endif
 
+        /// <summary>
+        /// Check for the iOS version (returned by 'libobjc.get_operatingSystemVersion') with a >= version comparison. Used to guard APIs that were added in the given iOS release.
+        /// </summary>
         public static bool IsIOSVersionAtLeast(int major, int minor = 0, int build = 0)
             => IsIOS() && IsOSVersionAtLeast(major, minor, build, 0);
 
+        /// <summary>
+        /// Indicates whether the current application is running on macOS.
+        /// </summary>
         public static bool IsMacOS() =>
 #if TARGET_OSX
             true;
@@ -162,9 +197,15 @@ namespace System
             false;
 #endif
 
+        /// <summary>
+        /// Check for the macOS version (returned by 'libobjc.get_operatingSystemVersion') with a >= version comparison. Used to guard APIs that were added in the given macOS release.
+        /// </summary>
         public static bool IsMacOSVersionAtLeast(int major, int minor = 0, int build = 0)
             => IsMacOS() && IsOSVersionAtLeast(major, minor, build, 0);
 
+        /// <summary>
+        /// Indicates whether the current application is running on tvOS.
+        /// </summary>
         public static bool IsTvOS() =>
 #if TARGET_TVOS
             true;
@@ -172,9 +213,15 @@ namespace System
             false;
 #endif
 
+        /// <summary>
+        /// Check for the tvOS version (returned by 'libobjc.get_operatingSystemVersion') with a >= version comparison. Used to guard APIs that were added in the given tvOS release.
+        /// </summary>
         public static bool IsTvOSVersionAtLeast(int major, int minor = 0, int build = 0)
             => IsTvOS() && IsOSVersionAtLeast(major, minor, build, 0);
 
+        /// <summary>
+        /// Indicates whether the current application is running on watchOS.
+        /// </summary>
         public static bool IsWatchOS() =>
 #if TARGET_WATCHOS
             true;
@@ -182,9 +229,15 @@ namespace System
             false;
 #endif
 
+        /// <summary>
+        /// Check for the watchOS version (returned by 'libobjc.get_operatingSystemVersion') with a >= version comparison. Used to guard APIs that were added in the given watchOS release.
+        /// </summary>
         public static bool IsWatchOSVersionAtLeast(int major, int minor = 0, int build = 0)
             => IsWatchOS() && IsOSVersionAtLeast(major, minor, build, 0);
 
+        /// <summary>
+        /// Indicates whether the current application is running on Windows.
+        /// </summary>
         public static bool IsWindows() =>
 #if TARGET_WINDOWS
             true;
@@ -192,6 +245,9 @@ namespace System
             false;
 #endif
 
+        /// <summary>
+        /// Check for the Windows version (returned by 'RtlGetVersion') with a >= version comparison. Used to guard APIs that were added in the given Windows release.
+        /// </summary>
         public static bool IsWindowsVersionAtLeast(int major, int minor = 0, int build = 0, int revision = 0)
             => IsWindows() && IsOSVersionAtLeast(major, minor, build, revision);
 
