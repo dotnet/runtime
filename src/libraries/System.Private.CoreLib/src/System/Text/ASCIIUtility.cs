@@ -650,7 +650,10 @@ namespace System.Text
             Debug.Assert(Sse2.IsSupported || AdvSimd.Arm64.IsSupported, "Sse2 or AdvSimd64 required.");
             Debug.Assert(BitConverter.IsLittleEndian, "This SSE2/Arm64 implementation assumes little-endian.");
 
-            Vector128<byte> bitmask = Vector128.Create((ushort)0x1001).AsByte();
+            Vector128<byte> bitmask = BitConverter.IsLittleEndian ?
+                Vector128.Create(0x80402010_08040201).AsByte() :
+                Vector128.Create(0x01020408_10204080).AsByte();
+
             Vector128<ushort> firstVector, secondVector;
             uint currentMask;
             char* pOriginalBuffer = pBuffer;
