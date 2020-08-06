@@ -9,6 +9,7 @@ using System.Xml.XPath;
 
 namespace System.Xml.Xsl.XPath
 {
+    // TODO-NULLABLE: Replace [MaybeNull] with ? once https://github.com/dotnet/runtime/pull/40197 is in.
     internal interface IXPathBuilder<Node>
     {
         // Should be called once per build
