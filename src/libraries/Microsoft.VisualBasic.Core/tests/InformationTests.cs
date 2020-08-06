@@ -204,6 +204,9 @@ namespace Microsoft.VisualBasic.Tests
             yield return new object[] { new char[0, 0], "Char(,)" };
             yield return new object[] { default(int?), "Nothing" };
             yield return new object[] { (int?)0, "Integer" };
+#if TARGET_WINDOWS
+            yield return new object[] { Interaction.CreateObject("Scripting.Dictionary"), "Dictionary" };
+#endif
         }
 
         [Theory]

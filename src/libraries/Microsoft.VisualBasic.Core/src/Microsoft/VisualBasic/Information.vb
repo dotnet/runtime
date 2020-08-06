@@ -498,6 +498,27 @@ UnmangleName:
 
             Dim Result As String = COMObjectName
 
+#If TARGET_WINDOWS Then
+            Dim pTypeInfo As UnsafeNativeMethods.ITypeInfo = Nothing
+            Dim hr As Integer
+            Dim ClassName As String = Nothing
+            Dim DocString As String = Nothing
+            Dim HelpContext As Integer
+            Dim HelpFile As String = Nothing
+
+            Dim pDispatch As UnsafeNativeMethods.IDispatch = TryCast(VarName, UnsafeNativeMethods.IDispatch)
+
+            If pDispatch IsNot Nothing Then
+                hr = pDispatch.GetTypeInfo(0, UnsafeNativeMethods.LCID_US_ENGLISH, pTypeInfo)
+                If hr >= 0 Then
+                    hr = pTypeInfo.GetDocumentation(-1, ClassName, DocString, HelpContext, HelpFile)
+                    If hr >= 0 Then
+                        Result = ClassName
+                    End If
+                End If
+            End If
+#End If
+
             If Result.Chars(0) = "_"c Then
                 Result = Result.Substring(1)
             End If
