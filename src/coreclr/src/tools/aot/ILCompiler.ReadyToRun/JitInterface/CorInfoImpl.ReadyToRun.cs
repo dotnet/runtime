@@ -1012,7 +1012,7 @@ namespace Internal.JitInterface
                             CorInfoHelpFunc.CORINFO_HELP_GETGENERICS_NONGCSTATIC_BASE);
                     }
 
-                    if (_compilation.SymbolNodeFactory.VerifyTypeAndFieldLayout)
+                    if (_compilation.SymbolNodeFactory.VerifyTypeAndFieldLayout && (fieldOffset <= FieldFixupSignature.MaxCheckableOffset))
                     {
                         // ENCODE_CHECK_FIELD_OFFSET
                         _methodCodeNode.Fixups.Add(_compilation.SymbolNodeFactory.CheckFieldOffset(field));
@@ -1066,7 +1066,7 @@ namespace Internal.JitInterface
                     else
                     if (helperId != ReadyToRunHelperId.Invalid)
                     {
-                        if (_compilation.SymbolNodeFactory.VerifyTypeAndFieldLayout)
+                        if (_compilation.SymbolNodeFactory.VerifyTypeAndFieldLayout && (fieldOffset <= FieldFixupSignature.MaxCheckableOffset))
                         {
                             // ENCODE_CHECK_FIELD_OFFSET
                             _methodCodeNode.Fixups.Add(_compilation.SymbolNodeFactory.CheckFieldOffset(field));
@@ -1922,7 +1922,7 @@ namespace Internal.JitInterface
             if (!type.IsValueType)
                 return false;
 
-            return !_compilation.IsLayoutFixedInCurrentVersionBubble(type) || _compilation.SymbolNodeFactory.VerifyTypeAndFieldLayout;
+            return !_compilation.IsLayoutFixedInCurrentVersionBubble(type) || (_compilation.SymbolNodeFactory.VerifyTypeAndFieldLayout && !((MetadataType)type).IsNonVersionable());
         }
 
         private bool HasLayoutMetadata(TypeDesc type)
@@ -1963,6 +1963,9 @@ namespace Internal.JitInterface
                 if (pMT.IsValueType)
                 {
                     // ENCODE_CHECK_FIELD_OFFSET
+                    if (pResult->offset > FieldFixupSignature.MaxCheckableOffset)
+                        throw new RequiresRuntimeJitException(callerMethod.ToString() + " -> " + field.ToString());
+
                     _methodCodeNode.Fixups.Add(_compilation.SymbolNodeFactory.CheckFieldOffset(field));
                     // No-op other than generating the check field offset fixup
                 }
@@ -1978,7 +1981,7 @@ namespace Internal.JitInterface
             }
             else if (pMT.IsValueType)
             {
-                if (_compilation.SymbolNodeFactory.VerifyTypeAndFieldLayout)
+                if (_compilation.SymbolNodeFactory.VerifyTypeAndFieldLayout && !callerMethod.IsNonVersionable() && (pResult->offset <= FieldFixupSignature.MaxCheckableOffset))
                 {
                     // ENCODE_CHECK_FIELD_OFFSET
                     _methodCodeNode.Fixups.Add(_compilation.SymbolNodeFactory.CheckFieldOffset(field));
@@ -1987,7 +1990,7 @@ namespace Internal.JitInterface
             }
             else if (_compilation.IsInheritanceChainLayoutFixedInCurrentVersionBubble(pMT.BaseType))
             {
-                if (_compilation.SymbolNodeFactory.VerifyTypeAndFieldLayout)
+                if (_compilation.SymbolNodeFactory.VerifyTypeAndFieldLayout && !callerMethod.IsNonVersionable() && (pResult->offset <= FieldFixupSignature.MaxCheckableOffset))
                 {
                     // ENCODE_CHECK_FIELD_OFFSET
                     _methodCodeNode.Fixups.Add(_compilation.SymbolNodeFactory.CheckFieldOffset(field));
@@ -2009,7 +2012,7 @@ namespace Internal.JitInterface
             {
                 PreventRecursiveFieldInlinesOutsideVersionBubble(field, callerMethod);
 
-                if (_compilation.SymbolNodeFactory.VerifyTypeAndFieldLayout)
+                if (_compilation.SymbolNodeFactory.VerifyTypeAndFieldLayout && !callerMethod.IsNonVersionable() && (pResult->offset <= FieldFixupSignature.MaxCheckableOffset))
                 {
                     // ENCODE_CHECK_FIELD_OFFSET
                     _methodCodeNode.Fixups.Add(_compilation.SymbolNodeFactory.CheckFieldOffset(field));

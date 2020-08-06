@@ -109,7 +109,7 @@ namespace System.Net.Tests
             yield return new object[] {new HttpWebRequestParameters { AllowAutoRedirect = true, AutomaticDecompression = DecompressionMethods.GZip,
                 MaximumAutomaticRedirections = 2, MaximumResponseHeadersLength = 100, PreAuthenticate = true, SslProtocols = SecurityProtocolType.Tls12, Timeout = 100000}, true};
             yield return new object[] {new HttpWebRequestParameters { AllowAutoRedirect = false, AutomaticDecompression = DecompressionMethods.GZip,
-                MaximumAutomaticRedirections = 2, MaximumResponseHeadersLength = 100, PreAuthenticate = true, SslProtocols = SecurityProtocolType.Tls12, Timeout = 10000,
+                MaximumAutomaticRedirections = 2, MaximumResponseHeadersLength = 100, PreAuthenticate = true, SslProtocols = SecurityProtocolType.Tls12, Timeout = 100000,
                 NewServerCertificateValidationCallback = true }, false};
             yield return new object[] {new HttpWebRequestParameters { AllowAutoRedirect = true, AutomaticDecompression = DecompressionMethods.GZip,
                 MaximumAutomaticRedirections = 2, MaximumResponseHeadersLength = 100, PreAuthenticate = true, SslProtocols = SecurityProtocolType.Tls12, Timeout = 100000,
@@ -1688,62 +1688,60 @@ namespace System.Net.Tests
         public void GetResponseAsync_ParametersAreCachableButDifferent_CreateNewClient()
         {
             RemoteExecutor.Invoke(async (async) =>
-             {
-                 using (var listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
-                 {
-                     listener.Bind(new IPEndPoint(IPAddress.Loopback, 0));
-                     listener.Listen(1);
-                     var ep = (IPEndPoint)listener.LocalEndPoint;
-                     var uri = new Uri($"http://{ep.Address}:{ep.Port}/");
+            {
+                using (var listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
+                {
+                    listener.Bind(new IPEndPoint(IPAddress.Loopback, 0));
+                    listener.Listen(1);
+                    var ep = (IPEndPoint)listener.LocalEndPoint;
+                    var uri = new Uri($"http://{ep.Address}:{ep.Port}/");
+                    var referenceParameters = new HttpWebRequestParameters
+                    {
+                        AllowAutoRedirect = true,
+                        AutomaticDecompression = DecompressionMethods.GZip,
+                        MaximumAutomaticRedirections = 2,
+                        MaximumResponseHeadersLength = 100,
+                        PreAuthenticate = true,
+                        SslProtocols = SecurityProtocolType.Tls12,
+                        Timeout = 100000
+                    };
+                    HttpWebRequest firstRequest = WebRequest.CreateHttp(uri);
+                    referenceParameters.Configure(firstRequest);
+                    firstRequest.Method = HttpMethod.Get.Method;
 
-                     var referenceParameters = new HttpWebRequestParameters
-                     {
-                         AllowAutoRedirect = true,
-                         AutomaticDecompression = DecompressionMethods.GZip,
-                         MaximumAutomaticRedirections = 2,
-                         MaximumResponseHeadersLength = 100,
-                         PreAuthenticate = true,
-                         SslProtocols = SecurityProtocolType.Tls12,
-                         Timeout = 100000
-                     };
-                     HttpWebRequest firstRequest = WebRequest.CreateHttp(uri);
-                     referenceParameters.Configure(firstRequest);
-                     firstRequest.Method = HttpMethod.Get.Method;
+                    string responseContent = "Test response.";
+                    Task<WebResponse> firstResponseTask = bool.Parse(async) ? firstRequest.GetResponseAsync() : Task.Run(() => firstRequest.GetResponse());
+                    using (Socket server = await listener.AcceptAsync())
+                    using (var serverStream = new NetworkStream(server, ownsSocket: false))
+                    using (var serverReader = new StreamReader(serverStream))
+                    {
+                        await ReplyToClient(responseContent, server, serverReader);
+                        await VerifyResponse(responseContent, firstResponseTask);
 
-                     string responseContent = "Test response.";
+                        foreach (object[] caseRow in CachableWebRequestParameters())
+                        {
+                            var currentParameters = (HttpWebRequestParameters)caseRow[0];
+                            bool connectionReused = (bool)caseRow[1];
+                            Task<Socket> secondAccept = listener.AcceptAsync();
 
-                     Task<WebResponse> firstResponseTask = bool.Parse(async) ? firstRequest.GetResponseAsync() : Task.Run(() => firstRequest.GetResponse());
-                     using (Socket server = await listener.AcceptAsync())
-                     using (var serverStream = new NetworkStream(server, ownsSocket: false))
-                     using (var serverReader = new StreamReader(serverStream))
-                     {
-                         await ReplyToClient(responseContent, server, serverReader);
-                         await VerifyResponse(responseContent, firstResponseTask);
+                            HttpWebRequest currentRequest = WebRequest.CreateHttp(uri);
+                            currentParameters.Configure(currentRequest);
 
-                         foreach (object[] caseRow in CachableWebRequestParameters())
-                         {
-                             var currentParameters = (HttpWebRequestParameters)caseRow[0];
-                             bool connectionReused = (bool)caseRow[1];
-                             Task<Socket> secondAccept = listener.AcceptAsync();
-
-                             HttpWebRequest currentRequest = WebRequest.CreateHttp(uri);
-                             currentParameters.Configure(currentRequest);
-
-                             Task<WebResponse> currentResponseTask = bool.Parse(async) ? currentRequest.GetResponseAsync() : Task.Run(() => currentRequest.GetResponse());
-                             if (connectionReused)
-                             {
-                                 await ReplyToClient(responseContent, server, serverReader);
-                                 Assert.False(secondAccept.IsCompleted);
-                                 await VerifyResponse(responseContent, currentResponseTask);
-                             }
-                             else
-                             {
-                                 await VerifyNewConnection(responseContent, secondAccept, currentResponseTask);
-                             }
-                         }
-                     }
-                 }
-             }, (this is HttpWebRequestTest_Async).ToString()).Dispose();
+                            Task<WebResponse> currentResponseTask = bool.Parse(async) ? currentRequest.GetResponseAsync() : Task.Run(() => currentRequest.GetResponse());
+                            if (connectionReused)
+                            {
+                                await ReplyToClient(responseContent, server, serverReader);
+                                Assert.False(secondAccept.IsCompleted);
+                                await VerifyResponse(responseContent, currentResponseTask);
+                            }
+                            else
+                            {
+                                await VerifyNewConnection(responseContent, secondAccept, currentResponseTask);
+                            }
+                        }
+                    }
+                }
+            }, (this is HttpWebRequestTest_Async).ToString()).Dispose();
         }
 
         [Fact]

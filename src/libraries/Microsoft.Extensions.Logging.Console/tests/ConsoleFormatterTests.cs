@@ -126,7 +126,7 @@ namespace Microsoft.Extensions.Logging.Console.Test
             // Arrange
             var t = SetUp(
                 new ConsoleLoggerOptions { FormatterName = formatterName },
-                new SimpleConsoleFormatterOptions { TimestampFormat = "yyyy-MM-ddTHH:mm:sszz ", UseUtcTimestamp = false },
+                new SimpleConsoleFormatterOptions { TimestampFormat = "yyyy-MM-ddTHH:mm:sszz ", UseUtcTimestamp = false, ColorBehavior = LoggerColorBehavior.Enabled },
                 new ConsoleFormatterOptions { TimestampFormat = "yyyy-MM-ddTHH:mm:sszz ", UseUtcTimestamp = false },
                 new JsonConsoleFormatterOptions {
                     TimestampFormat = "yyyy-MM-ddTHH:mm:sszz ",

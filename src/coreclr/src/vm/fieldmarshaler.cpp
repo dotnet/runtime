@@ -277,7 +277,7 @@ bool IsFieldBlittable(
             }
             else
             {
-                isBlittable = !valueTypeHandle.GetMethodTable()->HasInstantiation() && valueTypeHandle.GetMethodTable()->IsBlittable();
+                isBlittable = valueTypeHandle.GetMethodTable()->IsBlittable();
             }
             break;
         default:

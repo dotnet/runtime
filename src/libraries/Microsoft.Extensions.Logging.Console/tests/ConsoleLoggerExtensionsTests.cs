@@ -157,7 +157,7 @@ namespace Microsoft.Extensions.Logging.Test
         public void AddSimpleConsole_ChangeProperties_IsReadFromLoggingConfiguration()
         {
             var configuration = new ConfigurationBuilder().AddInMemoryCollection(new[] {
-                new KeyValuePair<string, string>("Console:FormatterOptions:DisableColors", "true"),
+                new KeyValuePair<string, string>("Console:FormatterOptions:ColorBehavior", "Disabled"),
                 new KeyValuePair<string, string>("Console:FormatterOptions:SingleLine", "true"),
                 new KeyValuePair<string, string>("Console:FormatterOptions:TimestampFormat", "HH:mm "),
                 new KeyValuePair<string, string>("Console:FormatterOptions:UseUtcTimestamp", "true"),
@@ -176,7 +176,7 @@ namespace Microsoft.Extensions.Logging.Test
             var logger = (ConsoleLogger)consoleLoggerProvider.CreateLogger("Category");
             Assert.Equal(ConsoleFormatterNames.Simple, logger.Options.FormatterName);
             var formatter = Assert.IsType<SimpleConsoleFormatter>(logger.Formatter);
-            Assert.True(formatter.FormatterOptions.DisableColors);
+            Assert.Equal(LoggerColorBehavior.Disabled, formatter.FormatterOptions.ColorBehavior);
             Assert.True(formatter.FormatterOptions.SingleLine);
             Assert.Equal("HH:mm ", formatter.FormatterOptions.TimestampFormat);
             Assert.True(formatter.FormatterOptions.UseUtcTimestamp);
@@ -424,7 +424,7 @@ namespace Microsoft.Extensions.Logging.Test
             Assert.Equal("HH:mm:ss ", formatter.FormatterOptions.TimestampFormat);  // ignore FormatterOptions, using deprecated one
             Assert.False(formatter.FormatterOptions.UseUtcTimestamp);               // not set anywhere, defaulted to false
             Assert.False(formatter.FormatterOptions.IncludeScopes);                 // setup using lambda wins over config
-            Assert.True(formatter.FormatterOptions.DisableColors);                  // setup using lambda
+            Assert.Equal(LoggerColorBehavior.Disabled, formatter.FormatterOptions.ColorBehavior);                  // setup using lambda
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
@@ -467,7 +467,7 @@ namespace Microsoft.Extensions.Logging.Test
             Assert.Equal("HH:mm ", formatter.FormatterOptions.TimestampFormat);     // ignore deprecated, using FormatterOptions instead
             Assert.False(formatter.FormatterOptions.UseUtcTimestamp);               // not set anywhere, defaulted to false
             Assert.True(formatter.FormatterOptions.IncludeScopes);                  // ignore deprecated set in lambda use FormatterOptions instead
-            Assert.False(formatter.FormatterOptions.DisableColors);                 // ignore deprecated set in lambda, defaulted to false
+            Assert.Equal(LoggerColorBehavior.Default, formatter.FormatterOptions.ColorBehavior);                 // ignore deprecated set in lambda, defaulted to false
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
