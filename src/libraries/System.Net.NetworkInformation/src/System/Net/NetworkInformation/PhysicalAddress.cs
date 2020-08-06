@@ -90,7 +90,7 @@ namespace System.Net.NetworkInformation
 
         public override string ToString()
         {
-            return Convert.ToHexString(_address.AsSpan());
+            return HexConverter.ToString(_address.AsSpan(), HexConverter.Casing.Upper);
         }
 
         public byte[] GetAddressBytes()
