@@ -1628,7 +1628,6 @@ namespace System.Text
 
             Vector128<byte> asciiVector;
             Vector128<byte> utf16FirstHalfVector;
-            uint mask;
             bool containsNonAsciiBytes;
 
             // First, perform an unaligned read of the first part of the input buffer.
