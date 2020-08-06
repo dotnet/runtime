@@ -95,8 +95,9 @@ namespace System.Net.Sockets.Tests
 
             using SocketsConnectionFactory factory = new SocketsConnectionFactory(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
 
-            NetworkException ex = await Assert.ThrowsAsync<NetworkException>(() => factory.ConnectAsync(endPoint).AsTask());
-            Assert.Equal(NetworkError.ConnectionRefused, ex.NetworkError);
+            await Assert.ThrowsAsync<SocketException>(() => factory.ConnectAsync(endPoint).AsTask());
+            //NetworkException ex = await Assert.ThrowsAsync<NetworkException>(() => factory.ConnectAsync(endPoint).AsTask());
+            //Assert.Equal(NetworkError.ConnectionRefused, ex.NetworkError);
         }
 
         [Fact]

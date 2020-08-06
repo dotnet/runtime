@@ -64,15 +64,17 @@ namespace System.Net.Connections
                     }
 
                     SocketException ex = new SocketException((int)args.SocketError);
-                    throw NetworkErrorHelper.MapSocketException(ex);
+                    //throw NetworkErrorHelper.MapSocketException(ex);
+                    throw ex;
                 }
 
                 return new SocketConnection(socket, this, options);
             }
-            catch (SocketException socketException)
+            catch (SocketException)
             {
                 socket.Dispose();
-                throw NetworkErrorHelper.MapSocketException(socketException);
+                //throw NetworkErrorHelper.MapSocketException(socketException);
+                throw;
             }
             catch
             {
