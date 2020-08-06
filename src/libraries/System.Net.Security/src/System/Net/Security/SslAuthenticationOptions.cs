@@ -78,15 +78,21 @@ namespace System.Net.Security
                     CertificateContext = SslStreamCertificateContext.Create(certificateWithKey);
                 }
             }
+
+            if (sslServerAuthenticationOptions.RemoteCertificateValidationCallback != null)
+            {
+                CertValidationDelegate = sslServerAuthenticationOptions.RemoteCertificateValidationCallback;
+            }
         }
 
-        internal SslAuthenticationOptions(ServerOptionsSelectionCallback optionCallback, object? state)
+        internal SslAuthenticationOptions(ServerOptionsSelectionCallback optionCallback, object? state, RemoteCertificateValidationCallback? remoteCallback)
         {
             CheckCertName = false;
             TargetHost = string.Empty;
             IsServer = true;
             UserState = state;
             ServerOptionDelegate = optionCallback;
+            CertValidationDelegate = remoteCallback;
         }
 
         internal void UpdateOptions(SslServerAuthenticationOptions sslServerAuthenticationOptions)
@@ -107,6 +113,11 @@ namespace System.Net.Security
             {
                 // given cert is X509Certificate2 with key. We can use it directly.
                 CertificateContext = SslStreamCertificateContext.Create(certificateWithKey);
+            }
+
+            if (sslServerAuthenticationOptions.RemoteCertificateValidationCallback != null)
+            {
+                CertValidationDelegate = sslServerAuthenticationOptions.RemoteCertificateValidationCallback;
             }
         }
 

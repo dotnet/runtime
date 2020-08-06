@@ -596,6 +596,7 @@ namespace System.Net.Security
                 {
                     if (NetEventSource.Log.IsEnabled())
                         NetEventSource.Log.UsingCachedCredential(this);
+
                     _credentialsHandle = cachedCredentialHandle;
                     _selectedClientCertificate = clientCertificate;
                     cachedCred = true;

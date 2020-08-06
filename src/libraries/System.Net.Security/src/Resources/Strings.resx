@@ -174,7 +174,7 @@
     <value>The remote certificate is invalid according to the validation procedure: {0}</value>
   </data>
   <data name="net_ssl_io_cert_custom_validation" xml:space="preserve">
-    <value>The remote certificate was rejected by RemoteCertificateValidationCallback.</value>
+    <value>The remote certificate was rejected by the provided RemoteCertificateValidationCallback.</value>
   </data>
   <data name="net_ssl_io_no_server_cert" xml:space="preserve">
     <value>The server mode SSL must use a certificate with the associated private key.</value>

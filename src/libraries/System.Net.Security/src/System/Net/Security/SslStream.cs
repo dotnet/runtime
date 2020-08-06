@@ -432,7 +432,7 @@ namespace System.Net.Security
 
         public Task AuthenticateAsServerAsync(ServerOptionsSelectionCallback optionsCallback, object? state, CancellationToken cancellationToken = default)
         {
-            ValidateCreateContext(new SslAuthenticationOptions(optionsCallback, state));
+            ValidateCreateContext(new SslAuthenticationOptions(optionsCallback, state, _userCertificateValidationCallback));
             return ProcessAuthentication(isAsync: true, isApm: false, cancellationToken)!;
         }
 
