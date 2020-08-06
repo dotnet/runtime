@@ -12,8 +12,6 @@ namespace System.Net
             NetworkError error = socketException.SocketErrorCode switch
             {
                 SocketError.AddressAlreadyInUse => NetworkError.EndPointInUse,
-                SocketError.AddressFamilyNotSupported => NetworkError.InvalidEndPoint,
-                SocketError.AddressNotAvailable => NetworkError.InvalidEndPoint,
                 SocketError.HostNotFound => NetworkError.HostNotFound,
                 SocketError.ConnectionRefused => NetworkError.ConnectionRefused,
                 SocketError.OperationAborted => NetworkError.OperationAborted,

@@ -12,9 +12,6 @@ namespace System.Net
         /// <summary>The requested EndPoint is already in use.</summary>
         EndPointInUse,
 
-        /// <summary>The requested EndPoint is invalid.</summary>
-        InvalidEndPoint,
-
         /// <summary>No such host is known.</summary>
         HostNotFound,
 
