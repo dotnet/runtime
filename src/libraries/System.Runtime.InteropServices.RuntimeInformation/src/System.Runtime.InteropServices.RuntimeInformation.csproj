@@ -7,7 +7,6 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System\Runtime\InteropServices\RuntimeInformation\RuntimeInformation.cs" />
-    <Compile Include="System\Runtime\InteropServices\RuntimeInformation\RuntimeInformation.PlatformVersion.cs" />
     <Compile Include="System\Runtime\InteropServices\RuntimeInformation\Architecture.cs" />
     <Compile Include="System\Runtime\InteropServices\RuntimeInformation\OSPlatform.cs" />
   </ItemGroup>
