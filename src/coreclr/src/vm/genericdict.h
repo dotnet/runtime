@@ -146,13 +146,11 @@ public:
     // Create an initial dictionary layout containing numSlots slots
     static DictionaryLayout* Allocate(WORD numSlots, LoaderAllocator *pAllocator, AllocMemTracker *pamTracker);
 
-    // Number of bytes to be stored in the "size" slot of the dictionary. This doesn't include
-    // the optional final back-pointer used by expanded dictionaries.
-    static DWORD GetDictionarySlotSizeFromLayout(DWORD numGenericArgs, PTR_DictionaryLayout pDictLayout);
-
     // Total number of bytes used for this dictionary, which might be stored inline in
-    // another structure (e.g. MethodTable)
-    static DWORD GetDictionaryAllocSizeFromLayout(DWORD numGenericArgs, PTR_DictionaryLayout pDictLayout);
+    // another structure (e.g. MethodTable). This may include the final back-pointer
+    // to previous dictionaries after dictionary expansion; pSlotSize is used to return
+    // the size to be stored in the "size slot" of the dictionary.
+    static DWORD GetDictionarySizeFromLayout(DWORD numGenericArgs, PTR_DictionaryLayout pDictLayout, DWORD *pSlotSize);
 
     static BOOL FindToken(MethodTable*                      pMT,
                           LoaderAllocator*                  pAllocator,

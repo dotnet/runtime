@@ -10118,8 +10118,7 @@ MethodTableBuilder::SetupMethodTable2(
     DWORD cbDictAllocSize = 0;
     if (bmtGenerics->HasInstantiation())
     {
-        cbDictSlotSize = DictionaryLayout::GetDictionarySlotSizeFromLayout(bmtGenerics->GetNumGenericArgs(), pClass->GetDictionaryLayout());
-        cbDictAllocSize = DictionaryLayout::GetDictionaryAllocSizeFromLayout(bmtGenerics->GetNumGenericArgs(), pClass->GetDictionaryLayout());
+        cbDictAllocSize = DictionaryLayout::GetDictionarySizeFromLayout(bmtGenerics->GetNumGenericArgs(), pClass->GetDictionaryLayout(), &cbDictSlotSize);
     }
 
 #ifdef FEATURE_COLLECTIBLE_TYPES

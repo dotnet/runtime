@@ -71,51 +71,39 @@ DictionaryLayout* DictionaryLayout::Allocate(WORD              numSlots,
 
 //---------------------------------------------------------------------------------------
 //
-// Count the number of bytes that are required for slots in a dictionary with the specified layout
+// Total number of bytes for a dictionary with the specified layout (including optional back pointer
+// used by expanded dictionaries). The pSlotSize argument is used to return the size
+// to be stored in the size slot of the dictionary (not including the optional back pointer).
 // 
 //static
 DWORD 
-DictionaryLayout::GetDictionarySlotSizeFromLayout(
+DictionaryLayout::GetDictionarySizeFromLayout(
     DWORD                numGenericArgs, 
-    PTR_DictionaryLayout pDictLayout)
+    PTR_DictionaryLayout pDictLayout,
+    DWORD*               pSlotSize)
 {
     LIMITED_METHOD_DAC_CONTRACT;
     PRECONDITION(numGenericArgs > 0);
     PRECONDITION(CheckPointer(pDictLayout, NULL_OK));
+    PRECONDITION(CheckPointer(pSlotSize));
 
-    DWORD bytes = numGenericArgs * sizeof(TypeHandle);          // Slots for instantiation arguments
+    DWORD slotBytes = numGenericArgs * sizeof(TypeHandle); // Slots for instantiation arguments
+    DWORD extraAllocBytes = 0;
     if (pDictLayout != NULL)
     {
-        bytes += sizeof(TADDR);                                 // Slot for dictionary size
-        bytes += pDictLayout->m_numSlots * sizeof(TADDR);       // Slots for dictionary slots based on a dictionary layout
-    
+        DWORD numSlots = VolatileLoadWithoutBarrier(&pDictLayout->m_numSlots);
+
+        slotBytes += sizeof(TADDR);                        // Slot for dictionary size
+        slotBytes += numSlots * sizeof(TADDR);             // Slots for dictionary slots based on a dictionary layout
+
+        if (numSlots > pDictLayout->m_numInitialSlots)
+        {
+            extraAllocBytes = sizeof(PTR_Dictionary);      // Slot for the back-pointer in expanded dictionaries
+        }
     }
 
-    return bytes;
-}
-
-//---------------------------------------------------------------------------------------
-//
-// Total number of bytes for a dictionary with the specified layout (including optional back pointer
-// used by expanded dictionaries).
-// 
-//static
-DWORD 
-DictionaryLayout::GetDictionaryAllocSizeFromLayout(
-    DWORD                numGenericArgs, 
-    PTR_DictionaryLayout pDictLayout)
-{
-    LIMITED_METHOD_DAC_CONTRACT;
-    PRECONDITION(numGenericArgs > 0);
-    PRECONDITION(CheckPointer(pDictLayout, NULL_OK));
-
-    DWORD allocSize = GetDictionarySlotSizeFromLayout(numGenericArgs, pDictLayout);
-    if (pDictLayout != nullptr && pDictLayout->m_numSlots > pDictLayout->m_numInitialSlots)
-    {
-        // Bytes for back-pointer to previous dictionary used during dictionary expansion
-        allocSize += sizeof(PTR_Dictionary);
-    }
-    return allocSize;
+    *pSlotSize = slotBytes;
+    return slotBytes + extraAllocBytes;
 }
 
 #ifndef DACCESS_COMPILE
@@ -825,10 +813,9 @@ Dictionary* Dictionary::GetMethodDictionaryWithSizeCheck(MethodDesc* pMD, ULONG 
             InstantiatedMethodDesc* pIMD = pMD->AsInstantiatedMethodDesc();
             _ASSERTE(pDictLayout != NULL && pDictLayout->GetMaxSlots() > 0);
 
-            DWORD expectedDictionarySlotSize = DictionaryLayout::GetDictionarySlotSizeFromLayout(numGenericArgs, pDictLayout);
+            DWORD expectedDictionarySlotSize;
+            DWORD expectedDictionaryAllocSize = DictionaryLayout::GetDictionarySizeFromLayout(numGenericArgs, pDictLayout, &expectedDictionarySlotSize);
             _ASSERT(currentDictionarySize < expectedDictionarySlotSize);
-
-            DWORD expectedDictionaryAllocSize = DictionaryLayout::GetDictionaryAllocSizeFromLayout(numGenericArgs, pDictLayout);
 
             Dictionary* pNewDictionary = (Dictionary*)(void*)pIMD->GetLoaderAllocator()->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(expectedDictionaryAllocSize));
 
@@ -883,10 +870,9 @@ Dictionary* Dictionary::GetTypeDictionaryWithSizeCheck(MethodTable* pMT, ULONG s
             DictionaryLayout* pDictLayout = pMT->GetClass()->GetDictionaryLayout();
             _ASSERTE(pDictLayout != NULL && pDictLayout->GetMaxSlots() > 0);
 
-            DWORD expectedDictionarySlotSize = DictionaryLayout::GetDictionarySlotSizeFromLayout(numGenericArgs, pDictLayout);
+            DWORD expectedDictionarySlotSize;
+            DWORD expectedDictionaryAllocSize = DictionaryLayout::GetDictionarySizeFromLayout(numGenericArgs, pDictLayout, &expectedDictionarySlotSize);
             _ASSERT(currentDictionarySlotSize < expectedDictionarySize);
-
-            DWORD expectedDictionaryAllocSize = DictionaryLayout::GetDictionaryAllocSizeFromLayout(numGenericArgs, pDictLayout);
 
             // Expand type dictionary
             Dictionary* pNewDictionary = (Dictionary*)(void*)pMT->GetLoaderAllocator()->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(expectedDictionaryAllocSize));
@@ -1550,7 +1536,7 @@ Dictionary::PopulateEntry(
                 pDictionary = *pDictionary->GetBackPointerSlot(numGenericArgs);
                 if (pDictionary == nullptr)
                 {
-                    // Initial dictionary allocated with higher numbers of slots than the initial layout slot count
+                    // Initial dictionary allocated with higher number of slots than the initial layout slot count
                     break;
                 }
                 dictionarySize = pDictionary->GetDictionarySlotsSize(numGenericArgs);

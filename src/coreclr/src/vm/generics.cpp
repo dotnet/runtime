@@ -266,8 +266,8 @@ ClassLoader::CreateTypeHandleForNonCanonicalGenericInstantiation(
     // creating this type. In other words: this type will have a smaller dictionary that its layout. This is not a
     // problem however because whenever we need to load a value from the dictionary of this type beyond its size, we
     // will expand the dictionary at that point.
-    DWORD cbInstAndDictSlotSize = pOldMT->GetInstAndDictSlotSize();
-    DWORD cbInstAndDictAllocSize = pOldMT->GetInstAndDictAllocSize();
+    DWORD cbInstAndDictSlotSize;
+    DWORD cbInstAndDictAllocSize = pOldMT->GetInstAndDictSize(&cbInstAndDictSlotSize);
 
     // Allocate from the high frequence heap of the correct domain
     S_SIZE_T allocSize = safe_cbMT;

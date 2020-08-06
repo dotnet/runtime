@@ -386,17 +386,16 @@ InstantiatedMethodDesc::NewInstantiatedMethodDesc(MethodTable *pExactMT,
                 {
                     SString name;
                     TypeString::AppendMethodDebug(name, pGenericMDescInRepMT);
+                    DWORD dictionarySlotSize;
+                    DWORD dictionaryAllocSize = DictionaryLayout::GetDictionarySizeFromLayout(pGenericMDescInRepMT->GetNumGenericMethodArgs(), pDL, &dictionarySlotSize);
                     LOG((LF_JIT, LL_INFO1000, "GENERICS: Created new dictionary layout for dictionary of slot size %d / alloc size %d for %S\n",
-                        DictionaryLayout::GetDictionarySlotSizeFromLayout(pGenericMDescInRepMT->GetNumGenericMethodArgs(), pDL),
-                        DictionaryLayout::GetDictionaryAllocSizeFromLayout(pGenericMDescInRepMT->GetNumGenericMethodArgs(), pDL),
-                        name.GetUnicode()));
+                        dictionarySlotSize, dictionaryAllocSize, name.GetUnicode()));
                 }
 #endif // _DEBUG
             }
 
             // Allocate space for the instantiation and dictionary
-            infoSize = DictionaryLayout::GetDictionarySlotSizeFromLayout(methodInst.GetNumArgs(), pDL);
-            DWORD allocSize = DictionaryLayout::GetDictionaryAllocSizeFromLayout(methodInst.GetNumArgs(), pDL);
+            DWORD allocSize = DictionaryLayout::GetDictionarySizeFromLayout(methodInst.GetNumArgs(), pDL, &infoSize);
             pInstOrPerInstInfo = (TypeHandle*)(void*)amt.Track(pAllocator->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(allocSize)));
             for (DWORD i = 0; i < methodInst.GetNumArgs(); i++)
                 pInstOrPerInstInfo[i] = methodInst[i];

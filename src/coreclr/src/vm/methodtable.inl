@@ -1092,27 +1092,14 @@ inline DWORD MethodTable::GetInterfaceMapSize()
 //==========================================================================================
 // These are the generic dictionaries themselves and are come after
 //  the interface map.  In principle they need not be inline in the method table.
-inline DWORD MethodTable::GetInstAndDictSlotSize()
+inline DWORD MethodTable::GetInstAndDictSize(DWORD *pSlotSize)
 {
     LIMITED_METHOD_DAC_CONTRACT;
 
     if (!HasInstantiation())
-        return 0;
+        return *pSlotSize = 0;
     else
-        return DictionaryLayout::GetDictionarySlotSizeFromLayout(GetNumGenericArgs(), GetClass()->GetDictionaryLayout());
-}
-
-//==========================================================================================
-// These are the generic dictionaries themselves and are come after
-//  the interface map.  In principle they need not be inline in the method table.
-inline DWORD MethodTable::GetInstAndDictAllocSize()
-{
-    LIMITED_METHOD_DAC_CONTRACT;
-
-    if (!HasInstantiation())
-        return 0;
-    else
-        return DictionaryLayout::GetDictionaryAllocSizeFromLayout(GetNumGenericArgs(), GetClass()->GetDictionaryLayout());
+        return DictionaryLayout::GetDictionarySizeFromLayout(GetNumGenericArgs(), GetClass()->GetDictionaryLayout(), pSlotSize);
 }
 
 //==========================================================================================
