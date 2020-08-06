@@ -7,6 +7,19 @@ namespace System.Tests
 {
     public static class OperatingSystemTests
     {
+        private static readonly string[] AllKnownPlatformNames = new[]
+        {
+            "Android",
+            "macOS",
+            "iOS",
+            "tvOS",
+            "watchOS",
+            "Windows",
+            "Linux",
+            "FreeBSD",
+            "Browser"
+        };
+
         [Theory]
         [InlineData(PlatformID.Other, "1.0.0.0")]
         [InlineData(PlatformID.MacOSX, "1.2")]
@@ -61,446 +74,115 @@ namespace System.Tests
         }
 
         [Fact, PlatformSpecific(TestPlatforms.Browser)]
-        public static void CheckBrowser()
-        {
-            Assert.True(OperatingSystem.IsBrowser());
-            Assert.True(OperatingSystem.IsOSPlatform("BROWSER"));
-            Assert.True(OperatingSystem.IsOSPlatform("browser"));
-            Assert.False(OperatingSystem.IsLinux());
-            Assert.False(OperatingSystem.IsOSPlatform("LINUX"));
-            Assert.False(OperatingSystem.IsOSPlatform("linux"));
-            Assert.False(OperatingSystem.IsFreeBSD());
-            Assert.False(OperatingSystem.IsOSPlatform("FREEBSD"));
-            Assert.False(OperatingSystem.IsOSPlatform("freebsd"));
-            Assert.False(OperatingSystem.IsAndroid());
-            Assert.False(OperatingSystem.IsOSPlatform("ANDROID"));
-            Assert.False(OperatingSystem.IsOSPlatform("android"));
-            Assert.False(OperatingSystem.IsIOS());
-            Assert.False(OperatingSystem.IsOSPlatform("IOS"));
-            Assert.False(OperatingSystem.IsOSPlatform("iOS"));
-            Assert.False(OperatingSystem.IsOSPlatform("ios"));
-            Assert.False(OperatingSystem.IsMacOS());
-            Assert.False(OperatingSystem.IsOSPlatform("MACOS"));
-            Assert.False(OperatingSystem.IsOSPlatform("macOS"));
-            Assert.False(OperatingSystem.IsOSPlatform("macos"));
-            Assert.False(OperatingSystem.IsTvOS());
-            Assert.False(OperatingSystem.IsOSPlatform("TVOS"));
-            Assert.False(OperatingSystem.IsOSPlatform("tvOS"));
-            Assert.False(OperatingSystem.IsOSPlatform("tvos"));
-            Assert.False(OperatingSystem.IsWatchOS());
-            Assert.False(OperatingSystem.IsOSPlatform("WATCHOS"));
-            Assert.False(OperatingSystem.IsOSPlatform("watchOS"));
-            Assert.False(OperatingSystem.IsOSPlatform("watchios"));
-            Assert.False(OperatingSystem.IsWindows());
-            Assert.False(OperatingSystem.IsOSPlatform("WINDOWS"));
-            Assert.False(OperatingSystem.IsOSPlatform("windows"));
+        public static void TestIsOSPlatform_Browser() => TestIsOSPlatform("BROWSER", OperatingSystem.IsBrowser);
 
-            AssertVersionChecks((major, minor, build, revision) => OperatingSystem.IsOSPlatformVersionAtLeast("BROWSER", major, minor, build, revision), true);
-            AssertVersionChecks((major, minor, build, revision) => OperatingSystem.IsOSPlatformVersionAtLeast("LINUX", major, minor, build, revision), false);
-            AssertVersionChecks(OperatingSystem.IsAndroidVersionAtLeast, false);
-            AssertVersionChecks((major, minor, build, revision) => OperatingSystem.IsOSPlatformVersionAtLeast("ANDROID", major, minor, build, revision), false);
-            AssertVersionChecks(OperatingSystem.IsFreeBSDVersionAtLeast, false);
-            AssertVersionChecks((major, minor, build, revision) => OperatingSystem.IsOSPlatformVersionAtLeast("FREEBSD", major, minor, build, revision), false);
-            AssertVersionChecks(OperatingSystem.IsIOSVersionAtLeast, false);
-            AssertVersionChecks((major, minor, build, revision) => OperatingSystem.IsOSPlatformVersionAtLeast("IOS", major, minor, build, revision), false);
-            AssertVersionChecks(OperatingSystem.IsMacOSVersionAtLeast, false);
-            AssertVersionChecks((major, minor, build, revision) => OperatingSystem.IsOSPlatformVersionAtLeast("MACOS", major, minor, build, revision), false);
-            AssertVersionChecks(OperatingSystem.IsTvOSVersionAtLeast, false);
-            AssertVersionChecks((major, minor, build, revision) => OperatingSystem.IsOSPlatformVersionAtLeast("TVOS", major, minor, build, revision), false);
-            AssertVersionChecks(OperatingSystem.IsWatchOSVersionAtLeast, false);
-            AssertVersionChecks((major, minor, build, revision) => OperatingSystem.IsOSPlatformVersionAtLeast("WATCHTV", major, minor, build, revision), false);
-            AssertVersionChecks(OperatingSystem.IsWindowsVersionAtLeast, false);
-            AssertVersionChecks((major, minor, build, revision) => OperatingSystem.IsOSPlatformVersionAtLeast("WINDOWS", major, minor, build, revision), false);
-        }
+        [Fact, PlatformSpecific(TestPlatforms.Browser)]
+        public static void TestIsOSVersionAtLeast_Browser() => TestIsOSVersionAtLeast("BROWSER");
 
         [Fact, PlatformSpecific(TestPlatforms.Linux)]
-        public static void CheckLinux()
-        {
-            Assert.False(OperatingSystem.IsBrowser());
-            Assert.False(OperatingSystem.IsOSPlatform("BROWSER"));
-            Assert.False(OperatingSystem.IsOSPlatform("browser"));
-            Assert.True(OperatingSystem.IsLinux());
-            Assert.True(OperatingSystem.IsOSPlatform("LINUX"));
-            Assert.True(OperatingSystem.IsOSPlatform("linux"));
-            Assert.False(OperatingSystem.IsFreeBSD());
-            Assert.False(OperatingSystem.IsOSPlatform("FREEBSD"));
-            Assert.False(OperatingSystem.IsOSPlatform("freebsd"));
-            Assert.False(OperatingSystem.IsAndroid());
-            Assert.False(OperatingSystem.IsOSPlatform("ANDROID"));
-            Assert.False(OperatingSystem.IsOSPlatform("android"));
-            Assert.False(OperatingSystem.IsIOS());
-            Assert.False(OperatingSystem.IsOSPlatform("IOS"));
-            Assert.False(OperatingSystem.IsOSPlatform("iOS"));
-            Assert.False(OperatingSystem.IsOSPlatform("ios"));
-            Assert.False(OperatingSystem.IsMacOS());
-            Assert.False(OperatingSystem.IsOSPlatform("MACOS"));
-            Assert.False(OperatingSystem.IsOSPlatform("macOS"));
-            Assert.False(OperatingSystem.IsOSPlatform("macos"));
-            Assert.False(OperatingSystem.IsTvOS());
-            Assert.False(OperatingSystem.IsOSPlatform("TVOS"));
-            Assert.False(OperatingSystem.IsOSPlatform("tvOS"));
-            Assert.False(OperatingSystem.IsOSPlatform("tvos"));
-            Assert.False(OperatingSystem.IsWatchOS());
-            Assert.False(OperatingSystem.IsOSPlatform("WATCHOS"));
-            Assert.False(OperatingSystem.IsOSPlatform("watchOS"));
-            Assert.False(OperatingSystem.IsOSPlatform("watchios"));
-            Assert.False(OperatingSystem.IsWindows());
-            Assert.False(OperatingSystem.IsOSPlatform("WINDOWS"));
-            Assert.False(OperatingSystem.IsOSPlatform("windows"));
+        public static void TestIsOSPlatform_Linux() => TestIsOSPlatform("Linux", OperatingSystem.IsLinux);
 
-            AssertVersionChecks((major, minor, build, revision) => OperatingSystem.IsOSPlatformVersionAtLeast("BROWSER", major, minor, build, revision), false);
-            AssertVersionChecks((major, minor, build, revision) => OperatingSystem.IsOSPlatformVersionAtLeast("LINUX", major, minor, build, revision), true);
-            AssertVersionChecks(OperatingSystem.IsAndroidVersionAtLeast, false);
-            AssertVersionChecks((major, minor, build, revision) => OperatingSystem.IsOSPlatformVersionAtLeast("ANDROID", major, minor, build, revision), false);
-            AssertVersionChecks(OperatingSystem.IsFreeBSDVersionAtLeast, false);
-            AssertVersionChecks((major, minor, build, revision) => OperatingSystem.IsOSPlatformVersionAtLeast("FREEBSD", major, minor, build, revision), false);
-            AssertVersionChecks(OperatingSystem.IsIOSVersionAtLeast, false);
-            AssertVersionChecks((major, minor, build, revision) => OperatingSystem.IsOSPlatformVersionAtLeast("IOS", major, minor, build, revision), false);
-            AssertVersionChecks(OperatingSystem.IsMacOSVersionAtLeast, false);
-            AssertVersionChecks((major, minor, build, revision) => OperatingSystem.IsOSPlatformVersionAtLeast("MACOS", major, minor, build, revision), false);
-            AssertVersionChecks(OperatingSystem.IsTvOSVersionAtLeast, false);
-            AssertVersionChecks((major, minor, build, revision) => OperatingSystem.IsOSPlatformVersionAtLeast("TVOS", major, minor, build, revision), false);
-            AssertVersionChecks(OperatingSystem.IsWatchOSVersionAtLeast, false);
-            AssertVersionChecks((major, minor, build, revision) => OperatingSystem.IsOSPlatformVersionAtLeast("WATCHTV", major, minor, build, revision), false);
-            AssertVersionChecks(OperatingSystem.IsWindowsVersionAtLeast, false);
-            AssertVersionChecks((major, minor, build, revision) => OperatingSystem.IsOSPlatformVersionAtLeast("WINDOWS", major, minor, build, revision), false);
-        }
+        [Fact, PlatformSpecific(TestPlatforms.Linux)]
+        public static void TestIsOSVersionAtLeast_Linux() => TestIsOSVersionAtLeast("Linux");
 
         [Fact, PlatformSpecific(TestPlatforms.FreeBSD)]
-        public static void CheckFreeBSD()
-        {
-            Assert.False(OperatingSystem.IsBrowser());
-            Assert.False(OperatingSystem.IsOSPlatform("BROWSER"));
-            Assert.False(OperatingSystem.IsOSPlatform("browser"));
-            Assert.False(OperatingSystem.IsLinux());
-            Assert.False(OperatingSystem.IsOSPlatform("LINUX"));
-            Assert.False(OperatingSystem.IsOSPlatform("linux"));
-            Assert.True(OperatingSystem.IsFreeBSD());
-            Assert.True(OperatingSystem.IsOSPlatform("FREEBSD"));
-            Assert.True(OperatingSystem.IsOSPlatform("freebsd"));
-            Assert.False(OperatingSystem.IsAndroid());
-            Assert.False(OperatingSystem.IsOSPlatform("ANDROID"));
-            Assert.False(OperatingSystem.IsOSPlatform("android"));
-            Assert.False(OperatingSystem.IsIOS());
-            Assert.False(OperatingSystem.IsOSPlatform("IOS"));
-            Assert.False(OperatingSystem.IsOSPlatform("iOS"));
-            Assert.False(OperatingSystem.IsOSPlatform("ios"));
-            Assert.False(OperatingSystem.IsMacOS());
-            Assert.False(OperatingSystem.IsOSPlatform("MACOS"));
-            Assert.False(OperatingSystem.IsOSPlatform("macOS"));
-            Assert.False(OperatingSystem.IsOSPlatform("macos"));
-            Assert.False(OperatingSystem.IsTvOS());
-            Assert.False(OperatingSystem.IsOSPlatform("TVOS"));
-            Assert.False(OperatingSystem.IsOSPlatform("tvOS"));
-            Assert.False(OperatingSystem.IsOSPlatform("tvos"));
-            Assert.False(OperatingSystem.IsWatchOS());
-            Assert.False(OperatingSystem.IsOSPlatform("WATCHOS"));
-            Assert.False(OperatingSystem.IsOSPlatform("watchOS"));
-            Assert.False(OperatingSystem.IsOSPlatform("watchios"));
-            Assert.False(OperatingSystem.IsWindows());
-            Assert.False(OperatingSystem.IsOSPlatform("WINDOWS"));
-            Assert.False(OperatingSystem.IsOSPlatform("windows"));
+        public static void TestIsOSPlatform_FreeBSD() => TestIsOSPlatform("FreeBSD", OperatingSystem.IsFreeBSD);
 
-            AssertVersionChecks((major, minor, build, revision) => OperatingSystem.IsOSPlatformVersionAtLeast("BROWSER", major, minor, build, revision), false);
-            AssertVersionChecks((major, minor, build, revision) => OperatingSystem.IsOSPlatformVersionAtLeast("LINUX", major, minor, build, revision), false);
-            AssertVersionChecks(OperatingSystem.IsAndroidVersionAtLeast, false);
-            AssertVersionChecks((major, minor, build, revision) => OperatingSystem.IsOSPlatformVersionAtLeast("ANDROID", major, minor, build, revision), false);
-            AssertVersionChecks(OperatingSystem.IsFreeBSDVersionAtLeast, true);
-            AssertVersionChecks((major, minor, build, revision) => OperatingSystem.IsOSPlatformVersionAtLeast("FREEBSD", major, minor, build, revision), true);
-            AssertVersionChecks(OperatingSystem.IsIOSVersionAtLeast, false);
-            AssertVersionChecks((major, minor, build, revision) => OperatingSystem.IsOSPlatformVersionAtLeast("IOS", major, minor, build, revision), false);
-            AssertVersionChecks(OperatingSystem.IsMacOSVersionAtLeast, false);
-            AssertVersionChecks((major, minor, build, revision) => OperatingSystem.IsOSPlatformVersionAtLeast("MACOS", major, minor, build, revision), false);
-            AssertVersionChecks(OperatingSystem.IsTvOSVersionAtLeast, false);
-            AssertVersionChecks((major, minor, build, revision) => OperatingSystem.IsOSPlatformVersionAtLeast("TVOS", major, minor, build, revision), false);
-            AssertVersionChecks(OperatingSystem.IsWatchOSVersionAtLeast, false);
-            AssertVersionChecks((major, minor, build, revision) => OperatingSystem.IsOSPlatformVersionAtLeast("WATCHTV", major, minor, build, revision), false);
-            AssertVersionChecks(OperatingSystem.IsWindowsVersionAtLeast, false);
-            AssertVersionChecks((major, minor, build, revision) => OperatingSystem.IsOSPlatformVersionAtLeast("WINDOWS", major, minor, build, revision), false);
-        }
+        [Fact, PlatformSpecific(TestPlatforms.FreeBSD)]
+        public static void TestIsOSVersionAtLeast_FreeBSD() => TestIsOSVersionAtLeast("FreeBSD");
 
         [Fact, PlatformSpecific(TestPlatforms.Android)]
-        public static void CheckAndroid()
-        {
-            Assert.False(OperatingSystem.IsBrowser());
-            Assert.False(OperatingSystem.IsOSPlatform("BROWSER"));
-            Assert.False(OperatingSystem.IsOSPlatform("browser"));
-            Assert.False(OperatingSystem.IsLinux());
-            Assert.False(OperatingSystem.IsOSPlatform("LINUX"));
-            Assert.False(OperatingSystem.IsOSPlatform("linux"));
-            Assert.False(OperatingSystem.IsFreeBSD());
-            Assert.False(OperatingSystem.IsOSPlatform("FREEBSD"));
-            Assert.False(OperatingSystem.IsOSPlatform("freebsd"));
-            Assert.True(OperatingSystem.IsAndroid());
-            Assert.True(OperatingSystem.IsOSPlatform("ANDROID"));
-            Assert.True(OperatingSystem.IsOSPlatform("android"));
-            Assert.False(OperatingSystem.IsIOS());
-            Assert.False(OperatingSystem.IsOSPlatform("IOS"));
-            Assert.False(OperatingSystem.IsOSPlatform("iOS"));
-            Assert.False(OperatingSystem.IsOSPlatform("ios"));
-            Assert.False(OperatingSystem.IsMacOS());
-            Assert.False(OperatingSystem.IsOSPlatform("MACOS"));
-            Assert.False(OperatingSystem.IsOSPlatform("macOS"));
-            Assert.False(OperatingSystem.IsOSPlatform("macos"));
-            Assert.False(OperatingSystem.IsTvOS());
-            Assert.False(OperatingSystem.IsOSPlatform("TVOS"));
-            Assert.False(OperatingSystem.IsOSPlatform("tvOS"));
-            Assert.False(OperatingSystem.IsOSPlatform("tvos"));
-            Assert.False(OperatingSystem.IsWatchOS());
-            Assert.False(OperatingSystem.IsOSPlatform("WATCHOS"));
-            Assert.False(OperatingSystem.IsOSPlatform("watchOS"));
-            Assert.False(OperatingSystem.IsOSPlatform("watchios"));
-            Assert.False(OperatingSystem.IsWindows());
-            Assert.False(OperatingSystem.IsOSPlatform("WINDOWS"));
-            Assert.False(OperatingSystem.IsOSPlatform("windows"));
+        public static void TestIsOSPlatform_Android() => TestIsOSPlatform("Android", OperatingSystem.IsAndroid);
 
-            AssertVersionChecks((major, minor, build, revision) => OperatingSystem.IsOSPlatformVersionAtLeast("BROWSER", major, minor, build, revision), false);
-            AssertVersionChecks((major, minor, build, revision) => OperatingSystem.IsOSPlatformVersionAtLeast("LINUX", major, minor, build, revision), false);
-            AssertVersionChecks(OperatingSystem.IsAndroidVersionAtLeast, true);
-            AssertVersionChecks((major, minor, build, revision) => OperatingSystem.IsOSPlatformVersionAtLeast("ANDROID", major, minor, build, revision), true);
-            AssertVersionChecks(OperatingSystem.IsFreeBSDVersionAtLeast, false);
-            AssertVersionChecks((major, minor, build, revision) => OperatingSystem.IsOSPlatformVersionAtLeast("FREEBSD", major, minor, build, revision), false);
-            AssertVersionChecks(OperatingSystem.IsIOSVersionAtLeast, false);
-            AssertVersionChecks((major, minor, build, revision) => OperatingSystem.IsOSPlatformVersionAtLeast("IOS", major, minor, build, revision), false);
-            AssertVersionChecks(OperatingSystem.IsMacOSVersionAtLeast, false);
-            AssertVersionChecks((major, minor, build, revision) => OperatingSystem.IsOSPlatformVersionAtLeast("MACOS", major, minor, build, revision), false);
-            AssertVersionChecks(OperatingSystem.IsTvOSVersionAtLeast, false);
-            AssertVersionChecks((major, minor, build, revision) => OperatingSystem.IsOSPlatformVersionAtLeast("TVOS", major, minor, build, revision), false);
-            AssertVersionChecks(OperatingSystem.IsWatchOSVersionAtLeast, false);
-            AssertVersionChecks((major, minor, build, revision) => OperatingSystem.IsOSPlatformVersionAtLeast("WATCHTV", major, minor, build, revision), false);
-            AssertVersionChecks(OperatingSystem.IsWindowsVersionAtLeast, false);
-            AssertVersionChecks((major, minor, build, revision) => OperatingSystem.IsOSPlatformVersionAtLeast("WINDOWS", major, minor, build, revision), false);
-        }
+        [Fact, PlatformSpecific(TestPlatforms.Android)]
+        public static void TestIsOSVersionAtLeast_Android() => TestIsOSVersionAtLeast("Android");
 
         [Fact, PlatformSpecific(TestPlatforms.iOS)]
-        public static void CheckIOS()
-        {
-            Assert.False(OperatingSystem.IsBrowser());
-            Assert.False(OperatingSystem.IsOSPlatform("BROWSER"));
-            Assert.False(OperatingSystem.IsOSPlatform("browser"));
-            Assert.False(OperatingSystem.IsLinux());
-            Assert.False(OperatingSystem.IsOSPlatform("LINUX"));
-            Assert.False(OperatingSystem.IsOSPlatform("linux"));
-            Assert.False(OperatingSystem.IsFreeBSD());
-            Assert.False(OperatingSystem.IsOSPlatform("FREEBSD"));
-            Assert.False(OperatingSystem.IsOSPlatform("freebsd"));
-            Assert.False(OperatingSystem.IsAndroid());
-            Assert.False(OperatingSystem.IsOSPlatform("ANDROID"));
-            Assert.False(OperatingSystem.IsOSPlatform("android"));
-            Assert.False(OperatingSystem.IsIOS());
-            Assert.True(OperatingSystem.IsOSPlatform("IOS"));
-            Assert.True(OperatingSystem.IsOSPlatform("iOS"));
-            Assert.True(OperatingSystem.IsOSPlatform("ios"));
-            Assert.False(OperatingSystem.IsMacOS());
-            Assert.False(OperatingSystem.IsOSPlatform("MACOS"));
-            Assert.False(OperatingSystem.IsOSPlatform("macOS"));
-            Assert.False(OperatingSystem.IsOSPlatform("macos"));
-            Assert.False(OperatingSystem.IsTvOS());
-            Assert.False(OperatingSystem.IsOSPlatform("TVOS"));
-            Assert.False(OperatingSystem.IsOSPlatform("tvOS"));
-            Assert.False(OperatingSystem.IsOSPlatform("tvos"));
-            Assert.False(OperatingSystem.IsWatchOS());
-            Assert.False(OperatingSystem.IsOSPlatform("WATCHOS"));
-            Assert.False(OperatingSystem.IsOSPlatform("watchOS"));
-            Assert.False(OperatingSystem.IsOSPlatform("watchios"));
-            Assert.False(OperatingSystem.IsWindows());
-            Assert.False(OperatingSystem.IsOSPlatform("WINDOWS"));
-            Assert.False(OperatingSystem.IsOSPlatform("windows"));
+        public static void TestIsOSPlatform_IOS() => TestIsOSPlatform("iOS", OperatingSystem.IsIOS);
 
-            AssertVersionChecks((major, minor, build, revision) => OperatingSystem.IsOSPlatformVersionAtLeast("BROWSER", major, minor, build, revision), false);
-            AssertVersionChecks((major, minor, build, revision) => OperatingSystem.IsOSPlatformVersionAtLeast("LINUX", major, minor, build, revision), false);
-            AssertVersionChecks(OperatingSystem.IsAndroidVersionAtLeast, false);
-            AssertVersionChecks((major, minor, build, revision) => OperatingSystem.IsOSPlatformVersionAtLeast("ANDROID", major, minor, build, revision), false);
-            AssertVersionChecks(OperatingSystem.IsFreeBSDVersionAtLeast, false);
-            AssertVersionChecks((major, minor, build, revision) => OperatingSystem.IsOSPlatformVersionAtLeast("FREEBSD", major, minor, build, revision), false);
-            AssertVersionChecks(OperatingSystem.IsIOSVersionAtLeast, true);
-            AssertVersionChecks((major, minor, build, revision) => OperatingSystem.IsOSPlatformVersionAtLeast("IOS", major, minor, build, revision), true);
-            AssertVersionChecks((major, minor, build, revision) => OperatingSystem.IsOSPlatformVersionAtLeast("iOS", major, minor, build, revision), true);
-            AssertVersionChecks((major, minor, build) => OperatingSystem.IsOSPlatformVersionAtLeast("IOS", major, minor, build), true);
-            AssertVersionChecks((major, minor, build) => OperatingSystem.IsOSPlatformVersionAtLeast("iOS", major, minor, build), true);
-            AssertVersionChecks(OperatingSystem.IsMacOSVersionAtLeast, false);
-            AssertVersionChecks((major, minor, build, revision) => OperatingSystem.IsOSPlatformVersionAtLeast("MACOS", major, minor, build, revision), false);
-            AssertVersionChecks(OperatingSystem.IsTvOSVersionAtLeast, false);
-            AssertVersionChecks((major, minor, build, revision) => OperatingSystem.IsOSPlatformVersionAtLeast("TVOS", major, minor, build, revision), false);
-            AssertVersionChecks(OperatingSystem.IsWatchOSVersionAtLeast, false);
-            AssertVersionChecks((major, minor, build, revision) => OperatingSystem.IsOSPlatformVersionAtLeast("WATCHTV", major, minor, build, revision), false);
-            AssertVersionChecks(OperatingSystem.IsWindowsVersionAtLeast, false);
-            AssertVersionChecks((major, minor, build, revision) => OperatingSystem.IsOSPlatformVersionAtLeast("WINDOWS", major, minor, build, revision), false);
-        }
+        [Fact, PlatformSpecific(TestPlatforms.iOS)]
+        public static void TestIsOSVersionAtLeast_IOS() => TestIsOSVersionAtLeast("iOS");
 
         [Fact, PlatformSpecific(TestPlatforms.OSX)]
-        public static void CheckMacOS()
-        {
-            Assert.False(OperatingSystem.IsBrowser());
-            Assert.False(OperatingSystem.IsOSPlatform("BROWSER"));
-            Assert.False(OperatingSystem.IsOSPlatform("browser"));
-            Assert.False(OperatingSystem.IsLinux());
-            Assert.False(OperatingSystem.IsOSPlatform("LINUX"));
-            Assert.False(OperatingSystem.IsOSPlatform("linux"));
-            Assert.False(OperatingSystem.IsFreeBSD());
-            Assert.False(OperatingSystem.IsOSPlatform("FREEBSD"));
-            Assert.False(OperatingSystem.IsOSPlatform("freebsd"));
-            Assert.False(OperatingSystem.IsAndroid());
-            Assert.False(OperatingSystem.IsOSPlatform("ANDROID"));
-            Assert.False(OperatingSystem.IsOSPlatform("android"));
-            Assert.False(OperatingSystem.IsIOS());
-            Assert.False(OperatingSystem.IsOSPlatform("IOS"));
-            Assert.False(OperatingSystem.IsOSPlatform("iOS"));
-            Assert.False(OperatingSystem.IsOSPlatform("ios"));
-            Assert.True(OperatingSystem.IsMacOS());
-            Assert.True(OperatingSystem.IsOSPlatform("MACOS")); // both MACOS and OSX are supported
-            Assert.True(OperatingSystem.IsOSPlatform("macOS"));
-            Assert.True(OperatingSystem.IsOSPlatform("macos"));
-            Assert.True(OperatingSystem.IsOSPlatform("OSX"));
-            Assert.True(OperatingSystem.IsOSPlatform("osx"));
-            Assert.False(OperatingSystem.IsTvOS());
-            Assert.False(OperatingSystem.IsOSPlatform("TVOS"));
-            Assert.False(OperatingSystem.IsOSPlatform("tvOS"));
-            Assert.False(OperatingSystem.IsOSPlatform("tvos"));
-            Assert.False(OperatingSystem.IsWatchOS());
-            Assert.False(OperatingSystem.IsOSPlatform("WATCHOS"));
-            Assert.False(OperatingSystem.IsOSPlatform("watchOS"));
-            Assert.False(OperatingSystem.IsOSPlatform("watchios"));
-            Assert.False(OperatingSystem.IsWindows());
-            Assert.False(OperatingSystem.IsOSPlatform("WINDOWS"));
-            Assert.False(OperatingSystem.IsOSPlatform("windows"));
+        public static void TestIsOSPlatform_MacOS() => TestIsOSPlatform("macOS", OperatingSystem.IsMacOS);
 
-            AssertVersionChecks((major, minor, build, revision) => OperatingSystem.IsOSPlatformVersionAtLeast("BROWSER", major, minor, build, revision), false);
-            AssertVersionChecks((major, minor, build, revision) => OperatingSystem.IsOSPlatformVersionAtLeast("LINUX", major, minor, build, revision), false);
-            AssertVersionChecks(OperatingSystem.IsAndroidVersionAtLeast, false);
-            AssertVersionChecks((major, minor, build, revision) => OperatingSystem.IsOSPlatformVersionAtLeast("ANDROID", major, minor, build, revision), false);
-            AssertVersionChecks(OperatingSystem.IsFreeBSDVersionAtLeast, false);
-            AssertVersionChecks((major, minor, build, revision) => OperatingSystem.IsOSPlatformVersionAtLeast("FREEBSD", major, minor, build, revision), false);
-            AssertVersionChecks(OperatingSystem.IsIOSVersionAtLeast, false);
-            AssertVersionChecks((major, minor, build, revision) => OperatingSystem.IsOSPlatformVersionAtLeast("IOS", major, minor, build, revision), false);
-            AssertVersionChecks(OperatingSystem.IsMacOSVersionAtLeast, true);
-            AssertVersionChecks((major, minor, build, revision) => OperatingSystem.IsOSPlatformVersionAtLeast("MACOS", major, minor, build, revision), true);
-            AssertVersionChecks((major, minor, build, revision) => OperatingSystem.IsOSPlatformVersionAtLeast("macOS", major, minor, build, revision), true);
-            AssertVersionChecks((major, minor, build, revision) => OperatingSystem.IsOSPlatformVersionAtLeast("OSX", major, minor, build, revision), true);
-            AssertVersionChecks((major, minor, build, revision) => OperatingSystem.IsOSPlatformVersionAtLeast("osx", major, minor, build, revision), true);
-            AssertVersionChecks((major, minor, build) => OperatingSystem.IsOSPlatformVersionAtLeast("MACOS", major, minor, build), true);
-            AssertVersionChecks((major, minor, build) => OperatingSystem.IsOSPlatformVersionAtLeast("macOS", major, minor, build), true);
-            AssertVersionChecks((major, minor, build) => OperatingSystem.IsOSPlatformVersionAtLeast("OSX", major, minor, build), true);
-            AssertVersionChecks((major, minor, build) => OperatingSystem.IsOSPlatformVersionAtLeast("osx", major, minor, build), true);
-            AssertVersionChecks(OperatingSystem.IsTvOSVersionAtLeast, false);
-            AssertVersionChecks((major, minor, build, revision) => OperatingSystem.IsOSPlatformVersionAtLeast("TVOS", major, minor, build, revision), false);
-            AssertVersionChecks(OperatingSystem.IsWatchOSVersionAtLeast, false);
-            AssertVersionChecks((major, minor, build, revision) => OperatingSystem.IsOSPlatformVersionAtLeast("WATCHTV", major, minor, build, revision), false);
-            AssertVersionChecks(OperatingSystem.IsWindowsVersionAtLeast, false);
-            AssertVersionChecks((major, minor, build, revision) => OperatingSystem.IsOSPlatformVersionAtLeast("WINDOWS", major, minor, build, revision), false);
+        [Fact, PlatformSpecific(TestPlatforms.OSX)]
+        public static void TestIsOSVersionAtLeast_MacOS() => TestIsOSVersionAtLeast("macOS");
+
+        [Fact, PlatformSpecific(TestPlatforms.OSX)]
+        public static void OSX_Is_Treated_as_macOS()
+        {
+            // we prefer "macOS", but still accept "OSX"
+
+            Assert.True(OperatingSystem.IsOSPlatform("OSX"));
+
+            AssertVersionChecks(true, (major, minor, build, revision) => OperatingSystem.IsOSPlatformVersionAtLeast("OSX", major, minor, build, revision));
+            AssertVersionChecks(true, (major, minor, build, revision) => OperatingSystem.IsOSPlatformVersionAtLeast("osx", major, minor, build, revision));
+            AssertVersionChecks(true, (major, minor, build) => OperatingSystem.IsOSPlatformVersionAtLeast("OSX", major, minor, build));
+            AssertVersionChecks(true, (major, minor, build) => OperatingSystem.IsOSPlatformVersionAtLeast("osx", major, minor, build));
         }
 
         [Fact, PlatformSpecific(TestPlatforms.tvOS)]
-        public static void CheckTvOS()
-        {
-            Assert.False(OperatingSystem.IsBrowser());
-            Assert.False(OperatingSystem.IsOSPlatform("BROWSER"));
-            Assert.False(OperatingSystem.IsOSPlatform("browser"));
-            Assert.False(OperatingSystem.IsLinux());
-            Assert.False(OperatingSystem.IsOSPlatform("LINUX"));
-            Assert.False(OperatingSystem.IsOSPlatform("linux"));
-            Assert.False(OperatingSystem.IsFreeBSD());
-            Assert.False(OperatingSystem.IsOSPlatform("FREEBSD"));
-            Assert.False(OperatingSystem.IsOSPlatform("freebsd"));
-            Assert.False(OperatingSystem.IsAndroid());
-            Assert.False(OperatingSystem.IsOSPlatform("ANDROID"));
-            Assert.False(OperatingSystem.IsOSPlatform("android"));
-            Assert.False(OperatingSystem.IsIOS());
-            Assert.False(OperatingSystem.IsOSPlatform("IOS"));
-            Assert.False(OperatingSystem.IsOSPlatform("iOS"));
-            Assert.False(OperatingSystem.IsOSPlatform("ios"));
-            Assert.False(OperatingSystem.IsMacOS());
-            Assert.False(OperatingSystem.IsOSPlatform("MACOS"));
-            Assert.False(OperatingSystem.IsOSPlatform("macOS"));
-            Assert.False(OperatingSystem.IsOSPlatform("macos"));
-            Assert.True(OperatingSystem.IsTvOS());
-            Assert.True(OperatingSystem.IsOSPlatform("TVOS"));
-            Assert.True(OperatingSystem.IsOSPlatform("tvOS"));
-            Assert.True(OperatingSystem.IsOSPlatform("tvos"));
-            Assert.False(OperatingSystem.IsWatchOS());
-            Assert.False(OperatingSystem.IsOSPlatform("WATCHOS"));
-            Assert.False(OperatingSystem.IsOSPlatform("watchOS"));
-            Assert.False(OperatingSystem.IsOSPlatform("watchios"));
-            Assert.False(OperatingSystem.IsWindows());
-            Assert.False(OperatingSystem.IsOSPlatform("WINDOWS"));
-            Assert.False(OperatingSystem.IsOSPlatform("windows"));
+        public static void TestIsOSPlatform_TvOS() => TestIsOSPlatform("tvOS", OperatingSystem.IsTvOS);
 
-            AssertVersionChecks((major, minor, build, revision) => OperatingSystem.IsOSPlatformVersionAtLeast("BROWSER", major, minor, build, revision), false);
-            AssertVersionChecks((major, minor, build, revision) => OperatingSystem.IsOSPlatformVersionAtLeast("LINUX", major, minor, build, revision), false);
-            AssertVersionChecks(OperatingSystem.IsAndroidVersionAtLeast, false);
-            AssertVersionChecks((major, minor, build, revision) => OperatingSystem.IsOSPlatformVersionAtLeast("ANDROID", major, minor, build, revision), false);
-            AssertVersionChecks(OperatingSystem.IsFreeBSDVersionAtLeast, false);
-            AssertVersionChecks((major, minor, build, revision) => OperatingSystem.IsOSPlatformVersionAtLeast("FREEBSD", major, minor, build, revision), false);
-            AssertVersionChecks(OperatingSystem.IsIOSVersionAtLeast, false);
-            AssertVersionChecks((major, minor, build, revision) => OperatingSystem.IsOSPlatformVersionAtLeast("IOS", major, minor, build, revision), false);
-            AssertVersionChecks(OperatingSystem.IsMacOSVersionAtLeast, false);
-            AssertVersionChecks((major, minor, build, revision) => OperatingSystem.IsOSPlatformVersionAtLeast("MACOS", major, minor, build, revision), false);
-            AssertVersionChecks(OperatingSystem.IsTvOSVersionAtLeast, true);
-            AssertVersionChecks((major, minor, build, revision) => OperatingSystem.IsOSPlatformVersionAtLeast("TVOS", major, minor, build, revision), true);
-            AssertVersionChecks((major, minor, build, revision) => OperatingSystem.IsOSPlatformVersionAtLeast("tvOS", major, minor, build, revision), true);
-            AssertVersionChecks((major, minor, build) => OperatingSystem.IsOSPlatformVersionAtLeast("TVOS", major, minor, build), true);
-            AssertVersionChecks((major, minor, build) => OperatingSystem.IsOSPlatformVersionAtLeast("tvOS", major, minor, build), true);
-            AssertVersionChecks(OperatingSystem.IsWatchOSVersionAtLeast, false);
-            AssertVersionChecks((major, minor, build, revision) => OperatingSystem.IsOSPlatformVersionAtLeast("WATCHTV", major, minor, build, revision), false);
-            AssertVersionChecks(OperatingSystem.IsWindowsVersionAtLeast, false);
-            AssertVersionChecks((major, minor, build, revision) => OperatingSystem.IsOSPlatformVersionAtLeast("WINDOWS", major, minor, build, revision), false);
-        }
+        [Fact, PlatformSpecific(TestPlatforms.tvOS)]
+        public static void TestIsOSVersionAtLeast_TvOS() => TestIsOSVersionAtLeast("tvOS");
 
         [Fact, PlatformSpecific(TestPlatforms.Windows)]
-        public static void CheckWindows()
-        {
-            Assert.False(OperatingSystem.IsBrowser());
-            Assert.False(OperatingSystem.IsOSPlatform("BROWSER"));
-            Assert.False(OperatingSystem.IsOSPlatform("browser"));
-            Assert.False(OperatingSystem.IsLinux());
-            Assert.False(OperatingSystem.IsOSPlatform("LINUX"));
-            Assert.False(OperatingSystem.IsOSPlatform("linux"));
-            Assert.False(OperatingSystem.IsFreeBSD());
-            Assert.False(OperatingSystem.IsOSPlatform("FREEBSD"));
-            Assert.False(OperatingSystem.IsOSPlatform("freebsd"));
-            Assert.False(OperatingSystem.IsAndroid());
-            Assert.False(OperatingSystem.IsOSPlatform("ANDROID"));
-            Assert.False(OperatingSystem.IsOSPlatform("android"));
-            Assert.False(OperatingSystem.IsIOS());
-            Assert.False(OperatingSystem.IsOSPlatform("IOS"));
-            Assert.False(OperatingSystem.IsOSPlatform("iOS"));
-            Assert.False(OperatingSystem.IsOSPlatform("ios"));
-            Assert.False(OperatingSystem.IsMacOS());
-            Assert.False(OperatingSystem.IsOSPlatform("MACOS"));
-            Assert.False(OperatingSystem.IsOSPlatform("macOS"));
-            Assert.False(OperatingSystem.IsOSPlatform("macos"));
-            Assert.False(OperatingSystem.IsTvOS());
-            Assert.False(OperatingSystem.IsOSPlatform("TVOS"));
-            Assert.False(OperatingSystem.IsOSPlatform("tvOS"));
-            Assert.False(OperatingSystem.IsOSPlatform("tvos"));
-            Assert.False(OperatingSystem.IsWatchOS());
-            Assert.False(OperatingSystem.IsOSPlatform("WATCHOS"));
-            Assert.False(OperatingSystem.IsOSPlatform("watchOS"));
-            Assert.False(OperatingSystem.IsOSPlatform("watchios"));
-            Assert.True(OperatingSystem.IsWindows());
-            Assert.True(OperatingSystem.IsOSPlatform("WINDOWS"));
-            Assert.True(OperatingSystem.IsOSPlatform("windows"));
+        public static void TestIsOSPlatform_Windows() => TestIsOSPlatform("Windows", OperatingSystem.IsWindows);
 
-            AssertVersionChecks((major, minor, build, revision) => OperatingSystem.IsOSPlatformVersionAtLeast("BROWSER", major, minor, build, revision), false);
-            AssertVersionChecks((major, minor, build, revision) => OperatingSystem.IsOSPlatformVersionAtLeast("LINUX", major, minor, build, revision), false);
-            AssertVersionChecks(OperatingSystem.IsAndroidVersionAtLeast, false);
-            AssertVersionChecks((major, minor, build, revision) => OperatingSystem.IsOSPlatformVersionAtLeast("ANDROID", major, minor, build, revision), false);
-            AssertVersionChecks(OperatingSystem.IsFreeBSDVersionAtLeast, false);
-            AssertVersionChecks((major, minor, build, revision) => OperatingSystem.IsOSPlatformVersionAtLeast("FREEBSD", major, minor, build, revision), false);
-            AssertVersionChecks(OperatingSystem.IsIOSVersionAtLeast, false);
-            AssertVersionChecks((major, minor, build, revision) => OperatingSystem.IsOSPlatformVersionAtLeast("IOS", major, minor, build, revision), false);
-            AssertVersionChecks(OperatingSystem.IsMacOSVersionAtLeast, false);
-            AssertVersionChecks((major, minor, build, revision) => OperatingSystem.IsOSPlatformVersionAtLeast("MACOS", major, minor, build, revision), false);
-            AssertVersionChecks(OperatingSystem.IsTvOSVersionAtLeast, false);
-            AssertVersionChecks((major, minor, build, revision) => OperatingSystem.IsOSPlatformVersionAtLeast("TVOS", major, minor, build, revision), false);
-            AssertVersionChecks(OperatingSystem.IsWatchOSVersionAtLeast, false);
-            AssertVersionChecks((major, minor, build, revision) => OperatingSystem.IsOSPlatformVersionAtLeast("WATCHTV", major, minor, build, revision), false);
-            AssertVersionChecks(OperatingSystem.IsWindowsVersionAtLeast, true);
-            AssertVersionChecks((major, minor, build, revision) => OperatingSystem.IsOSPlatformVersionAtLeast("WINDOWS", major, minor, build, revision), true);
-            AssertVersionChecks((major, minor, build, revision) => OperatingSystem.IsOSPlatformVersionAtLeast("windows", major, minor, build, revision), true);
+        [Fact, PlatformSpecific(TestPlatforms.Windows)]
+        public static void TestIsOSVersionAtLeast_Windows() => TestIsOSVersionAtLeast("Windows");
+
+        private static void TestIsOSPlatform(string currentOSName, Func<bool> currentOSCheck)
+        {
+            foreach (string platfromName in AllKnownPlatformNames)
+            {
+                bool expected = currentOSName.Equals(platfromName, StringComparison.OrdinalIgnoreCase);
+
+                Assert.Equal(expected, OperatingSystem.IsOSPlatform(platfromName));
+                Assert.Equal(expected, OperatingSystem.IsOSPlatform(platfromName.ToUpper()));
+                Assert.Equal(expected, OperatingSystem.IsOSPlatform(platfromName.ToLower()));
+            }
+
+            Assert.True(currentOSCheck());
+
+            bool[] allResults = new bool[]
+            {
+                OperatingSystem.IsBrowser(),
+                OperatingSystem.IsLinux(),
+                OperatingSystem.IsFreeBSD(),
+                OperatingSystem.IsAndroid(),
+                OperatingSystem.IsIOS(),
+                OperatingSystem.IsMacOS(),
+                OperatingSystem.IsTvOS(),
+                OperatingSystem.IsWatchOS(),
+                OperatingSystem.IsWindows()
+            };
+
+            Assert.Single(allResults, true);
         }
 
-        private static void AssertVersionChecks(Func<int, int, int, int, bool> isOSVersionAtLeast, bool isCurrentOS)
+        private static void TestIsOSVersionAtLeast(string currentOSName)
+        {
+            foreach (string platfromName in AllKnownPlatformNames)
+            {
+                bool isCurrentOS = currentOSName.Equals(platfromName, StringComparison.OrdinalIgnoreCase);
+
+                AssertVersionChecks(isCurrentOS, (major, minor, build, revision) => OperatingSystem.IsOSPlatformVersionAtLeast(platfromName, major, minor, build, revision));
+                AssertVersionChecks(isCurrentOS, (major, minor, build, revision) => OperatingSystem.IsOSPlatformVersionAtLeast(platfromName.ToLower(), major, minor, build, revision));
+                AssertVersionChecks(isCurrentOS, (major, minor, build, revision) => OperatingSystem.IsOSPlatformVersionAtLeast(platfromName.ToUpper(), major, minor, build, revision));
+            }
+            
+            AssertVersionChecks(currentOSName.Equals("Android", StringComparison.OrdinalIgnoreCase), OperatingSystem.IsAndroidVersionAtLeast);
+            AssertVersionChecks(currentOSName.Equals("iOS", StringComparison.OrdinalIgnoreCase), OperatingSystem.IsIOSVersionAtLeast);
+            AssertVersionChecks(currentOSName.Equals("macOS", StringComparison.OrdinalIgnoreCase), OperatingSystem.IsMacOSVersionAtLeast);
+            AssertVersionChecks(currentOSName.Equals("tvOS", StringComparison.OrdinalIgnoreCase), OperatingSystem.IsTvOSVersionAtLeast);
+            AssertVersionChecks(currentOSName.Equals("watchOS", StringComparison.OrdinalIgnoreCase), OperatingSystem.IsWatchOSVersionAtLeast);
+            AssertVersionChecks(currentOSName.Equals("Windows", StringComparison.OrdinalIgnoreCase), OperatingSystem.IsWindowsVersionAtLeast);
+        }
+
+        private static void AssertVersionChecks(bool isCurrentOS, Func<int, int, int, int, bool> isOSVersionAtLeast)
         {
             Version current = Environment.OSVersion.Version;
 
@@ -517,7 +199,7 @@ namespace System.Tests
             Assert.Equal(isCurrentOS, isOSVersionAtLeast(current.Major, current.Minor, current.Build, current.Revision - 1));
         }
 
-        private static void AssertVersionChecks(Func<int, int, int, bool> isOSVersionAtLeast, bool isCurrentOS)
+        private static void AssertVersionChecks(bool isCurrentOS, Func<int, int, int, bool> isOSVersionAtLeast)
         {
             Version current = Environment.OSVersion.Version;
 
