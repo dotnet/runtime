@@ -281,7 +281,7 @@ namespace System.Net.Http
         }
 
         /// <summary>
-        /// Gets or sets the keep alive ping delay. The client will send a keep alive ping to the serveer if it
+        /// Gets or sets the keep alive ping delay. The client will send a keep alive ping to the server if it
         /// doesn't receive any frames on a connection for this period of time. This property is used together with
         /// <see cref="SocketsHttpHandler.KeepAlivePingTimeout"/> to close broken connections.
         /// <para>
