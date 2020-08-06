@@ -4,6 +4,7 @@
 using System.IO;
 using System.IO.Pipelines;
 using System.Net.Connections;
+using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -53,7 +54,7 @@ namespace System.Net.Sockets.Tests
         [Fact]
         public async Task Constructor2_ConnectAsync_Success_CreatesIPv6DualModeSocket()
         {
-            using var server = SocketTestServer.SocketTestServerFactory(SocketImplementationType.Async, IPAddress.Loopback);
+            using var server = SocketTestServer.SocketTestServerFactory(SocketImplementationType.Async, IPAddress.IPv6Loopback);
             using SocketsConnectionFactory factory = new SocketsConnectionFactory(SocketType.Stream, ProtocolType.Tcp);
             using Connection connection = await factory.ConnectAsync(server.EndPoint);
 
@@ -76,16 +77,9 @@ namespace System.Net.Sockets.Tests
         public void ConnectAsync_NullEndpoint_ThrowsArgumentNullException()
         {
             using SocketsConnectionFactory factory = new SocketsConnectionFactory(SocketType.Stream, ProtocolType.Tcp);
-            Assert.Throws<ArgumentNullException>(() => factory.ConnectAsync(null));
+            Assert.ThrowsAsync<ArgumentNullException>(() => factory.ConnectAsync(null).AsTask());
         }
 
-        [Fact]
-        public void ConnectAsync_MismatchingEndpoint_ThrowsArgumentException()
-        {
-            using SocketsConnectionFactory factory = new SocketsConnectionFactory(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-            throw new NotImplementedException("TODO");
-        }
-       
         [Fact]
         public async Task ConnectAsync_WhenRefused_ThrowsNetworkException()
         {
@@ -100,10 +94,19 @@ namespace System.Net.Sockets.Tests
             //Assert.Equal(NetworkError.ConnectionRefused, ex.NetworkError);
         }
 
+        // On Windows, failing connections take > 1 sec when address not found,
+        // making it easy to test the - otherwise platform-independent - cancellation logic
         [Fact]
-        public void ConnectAsync_WhenCancelled_ThrowsTaskCancelledException()
+        [PlatformSpecific(TestPlatforms.Windows)] 
+        public async Task ConnectAsync_WhenCancelled_ThrowsTaskCancelledException()
         {
-            throw new NotImplementedException("TODO");
+            using SocketsConnectionFactory factory = new SocketsConnectionFactory(SocketType.Stream, ProtocolType.Tcp);
+            IPEndPoint doesNotExist = new IPEndPoint(IPAddress.Parse("1.2.3.4"), 23);
+
+            CancellationTokenSource cts = new CancellationTokenSource();
+            cts.CancelAfter(100);
+
+            await Assert.ThrowsAsync<TaskCanceledException>(() => factory.ConnectAsync(doesNotExist, cancellationToken: cts.Token).AsTask());
         }
 
         [Theory]
@@ -158,7 +161,7 @@ namespace System.Net.Sockets.Tests
         public async Task Connection_Dispose_ClosesSocket(bool disposeAsync)
         {
             using var server = SocketTestServer.SocketTestServerFactory(SocketImplementationType.Async, IPAddress.Loopback);
-            using SocketsConnectionFactory factory = new SocketsConnectionFactory(SocketType.Stream, ProtocolType.Tcp);
+            using SocketsConnectionFactory factory = new SocketsConnectionFactory(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
             Connection connection = await factory.ConnectAsync(server.EndPoint);
             Stream stream = connection.Stream;
             connection.ConnectionProperties.TryGet(out Socket socket);

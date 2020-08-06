@@ -18,6 +18,9 @@ namespace System.Net.Connections
         private readonly SocketType _socketType;
         private readonly ProtocolType _protocolType;
 
+        // use same message as the default ctor
+        private static readonly string s_cancellationMessage = new OperationCanceledException().Message;
+
         // See Socket(AddressFamily addressFamily, SocketType socketType, ProtocolType protocolType)
         public SocketsConnectionFactory(
             AddressFamily addressFamily,
@@ -41,6 +44,8 @@ namespace System.Net.Connections
             IConnectionProperties? options = null,
             CancellationToken cancellationToken = default)
         {
+            if (endPoint == null) throw new ArgumentNullException(nameof(endPoint));
+
             Socket socket = CreateSocket(_addressFamily, _socketType, _protocolType, endPoint, options);
 
             try
@@ -58,12 +63,12 @@ namespace System.Net.Connections
 
                 if (args.SocketError != SocketError.Success)
                 {
+                    SocketException ex = new SocketException((int)args.SocketError);
                     if (args.SocketError == SocketError.OperationAborted && cancellationToken.IsCancellationRequested)
                     {
-                        throw new OperationCanceledException(cancellationToken);
+                        throw new TaskCanceledException(s_cancellationMessage, ex, cancellationToken);
                     }
 
-                    SocketException ex = new SocketException((int)args.SocketError);
                     //throw NetworkErrorHelper.MapSocketException(ex);
                     throw ex;
                 }
@@ -92,10 +97,19 @@ namespace System.Net.Connections
             EndPoint? endPoint,
             IConnectionProperties? options)
         {
-            return new Socket(addressFamily, socketType, protocolType)
+            Socket socket = new Socket(addressFamily, socketType, protocolType);
+
+            if (protocolType == ProtocolType.Tcp)
             {
-                NoDelay = true
-            };
+                socket.NoDelay = true;
+            }
+
+            if (addressFamily == AddressFamily.InterNetworkV6)
+            {
+                socket.DualMode = true;
+            }
+
+            return socket;
         }
 
         protected virtual Stream CreateStream(Socket socket, IConnectionProperties? options) => new NetworkStream(socket, ownsSocket: true);

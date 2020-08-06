@@ -71,7 +71,7 @@ namespace System.Net.Connections
         {
             if (propertyKey == typeof(Socket))
             {
-                property = _stream;
+                property = _socket;
                 return true;
             }
 
