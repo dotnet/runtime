@@ -4201,9 +4201,9 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
 
                     // We are constructing a chain of intrinsics similar to:
                     //    return FMA.MultiplyAddScalar(
-                    //        Vector128.CreateScalar(x),
-                    //        Vector128.CreateScalar(y),
-                    //        Vector128.CreateScalar(z)
+                    //        Vector128.CreateScalarUnsafe(x),
+                    //        Vector128.CreateScalarUnsafe(y),
+                    //        Vector128.CreateScalarUnsafe(z)
                     //    ).ToScalar();
 
                     GenTree* op3 = gtNewSimdHWIntrinsicNode(TYP_SIMD16, impPopStack().val,
@@ -4217,7 +4217,38 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
 
                     retNode = gtNewSimdHWIntrinsicNode(callType, res, NI_Vector128_ToScalar, callType, 16);
                 }
-#endif // TARGET_XARCH
+#elif defined(TARGET_ARM64)
+                if (compExactlyDependsOn(InstructionSet_AdvSimd))
+                {
+                    assert(varTypeIsFloating(callType));
+
+                    // We are constructing a chain of intrinsics similar to:
+                    //    return AdvSimd.FusedMultiplyAddScalar(
+                    //        Vector64.Create{ScalarUnsafe}(z),
+                    //        Vector64.Create{ScalarUnsafe}(y),
+                    //        Vector64.Create{ScalarUnsafe}(x)
+                    //    ).ToScalar();
+
+                    NamedIntrinsic createVector64 =
+                        (callType == TYP_DOUBLE) ? NI_Vector64_Create : NI_Vector64_CreateScalarUnsafe;
+
+                    constexpr unsigned int simdSize = 8;
+
+                    GenTree* op3 =
+                        gtNewSimdHWIntrinsicNode(TYP_SIMD8, impPopStack().val, createVector64, callType, simdSize);
+                    GenTree* op2 =
+                        gtNewSimdHWIntrinsicNode(TYP_SIMD8, impPopStack().val, createVector64, callType, simdSize);
+                    GenTree* op1 =
+                        gtNewSimdHWIntrinsicNode(TYP_SIMD8, impPopStack().val, createVector64, callType, simdSize);
+
+                    // Note that AdvSimd.FusedMultiplyAddScalar(op1,op2,op3) corresponds to op1 + op2 * op3
+                    // while Math{F}.FusedMultiplyAddScalar(op1,op2,op3) corresponds to op1 * op2 + op3
+                    retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD8, op3, op2, op1, NI_AdvSimd_FusedMultiplyAddScalar,
+                                                       callType, simdSize);
+
+                    retNode = gtNewSimdHWIntrinsicNode(callType, retNode, NI_Vector64_ToScalar, callType, simdSize);
+                }
+#endif
                 break;
             }
 #endif // FEATURE_HW_INTRINSICS
