@@ -21,7 +21,7 @@ with all needed prerequisites to build. As the example bellow may become stale, 
 
 ```sh
 TAG=mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-cross-freebsd-11-20200430154008-a84b0d2
-docker run --rm --volume $(pwd):$(pwd) --workdir $(pwd) --env ROOTFS_DIR=/crossrootfs/x64 -ti  $TAG ./build.sh -cross -FreeBSD
+docker run --rm --volume $(pwd):$(pwd) --workdir $(pwd) --env ROOTFS_DIR=/crossrootfs/x64 -ti  $TAG ./build.sh -cross -os FreeBSD
 ```
 
 Build using Toolchain Setup
