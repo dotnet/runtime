@@ -203,6 +203,8 @@ namespace System.Net.Test.Common
                     return PingFrame.ReadFrom(header, data);
                 case FrameType.GoAway:
                     return GoAwayFrame.ReadFrom(header, data);
+                case FrameType.Continuation:
+                    return ContinuationFrame.ReadFrom(header, data);
                 default:
                     return header;
             }
@@ -543,14 +545,30 @@ namespace System.Net.Test.Common
             }
             Assert.Equal(FrameType.Headers, frame.Type);
             HeadersFrame headersFrame = (HeadersFrame) frame;
+            bool endOfStream = (frame.Flags & FrameFlags.EndStream) == FrameFlags.EndStream;
 
-            // TODO CONTINUATION support
-            Assert.Equal(FrameFlags.EndHeaders, FrameFlags.EndHeaders & headersFrame.Flags);
+            using MemoryStream buffer = new MemoryStream();
+            await buffer.WriteAsync(headersFrame.Data);
+
+            // Continuations?
+            while ((FrameFlags.EndHeaders & frame.Flags) == FrameFlags.None)
+            {
+                frame = await ReadFrameAsync(_timeout).ConfigureAwait(false);
+                if (frame == null)
+                {
+                    throw new IOException("Failed to read Headers frame.");
+                }
+                Assert.Equal(FrameType.Continuation, frame.Type);
+                ContinuationFrame continuationFrame = (ContinuationFrame)frame;
+                await buffer.WriteAsync(continuationFrame.Data);
+            }
+
+            Assert.Equal(FrameFlags.EndHeaders, FrameFlags.EndHeaders & frame.Flags);
 
             int streamId = headersFrame.StreamId;
             requestData.RequestId = streamId;
 
-            Memory<byte> data = headersFrame.Data;
+            Memory<byte> data = buffer.ToArray();
             int i = 0;
             while (i < data.Length)
             {
@@ -567,7 +585,7 @@ namespace System.Net.Test.Common
             requestData.Method = requestData.GetSingleHeaderValue(":method");
             requestData.Path = requestData.GetSingleHeaderValue(":path");
 
-            if (readBody && (frame.Flags & FrameFlags.EndStream) == 0)
+            if (readBody && !endOfStream)
             {
                 // Read body until end of stream if needed.
                 requestData.Body = await ReadBodyAsync().ConfigureAwait(false);

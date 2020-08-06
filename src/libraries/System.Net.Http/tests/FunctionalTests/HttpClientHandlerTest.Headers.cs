@@ -46,6 +46,39 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
+        public async Task SendAsync_LargeHeaders_CorrectlyWritten()
+        {
+            string largeHeaderValue = new string('a', 1024);
+            int count = 20;
+
+            await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
+            {
+                using HttpClient client = CreateHttpClient();
+
+                var message = new HttpRequestMessage(HttpMethod.Get, uri) { Version = UseVersion };
+                for (int i = 0; i < count; i++)
+                {
+                    message.Headers.TryAddWithoutValidation("large-header" + i, largeHeaderValue);
+                }
+                var response = await client.SendAsync(TestAsync, message).ConfigureAwait(false);
+            },
+            async server =>
+            {
+                HttpRequestData requestData = await server.HandleRequestAsync(HttpStatusCode.OK);
+
+                if (requestData.Path == "/setup")
+                {
+                    return;
+                }
+
+                for (int i = 0; i < count; i++)
+                {
+                    Assert.Equal(largeHeaderValue, requestData.GetSingleHeaderValue("large-header" + i));
+                }
+            });
+        }
+
+        [Fact]
         public async Task SendAsync_DefaultHeaders_CorrectlyWritten()
         {
             const string Version = "2017-04-17";
@@ -383,7 +416,7 @@ namespace System.Net.Http.Functional.Tests
 
                     using HttpClient client = CreateHttpClient(handler);
 
-                    await client.SendAsync(requestMessage);
+                    await client.SendAsync(TestAsync, requestMessage);
 
                     foreach ((string name, _, _) in s_nonAsciiHeaders)
                     {
@@ -439,7 +472,7 @@ namespace System.Net.Http.Functional.Tests
 
                     using HttpClient client = CreateHttpClient(handler);
 
-                    using HttpResponseMessage response = await client.SendAsync(requestMessage);
+                    using HttpResponseMessage response = await client.SendAsync(TestAsync, requestMessage);
 
                     foreach ((string name, Encoding valueEncoding, string[] values) in s_nonAsciiHeaders)
                     {
