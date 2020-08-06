@@ -12,6 +12,7 @@ using Microsoft.Extensions.Configuration.UserSecrets.Test;
 using Newtonsoft.Json.Linq;
 using Xunit;
 
+// [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Context for unit tests.")]
 [assembly: UserSecretsId(ConfigurationExtensionTest.TestSecretsId)]
 
 namespace Microsoft.Extensions.Configuration.UserSecrets.Test

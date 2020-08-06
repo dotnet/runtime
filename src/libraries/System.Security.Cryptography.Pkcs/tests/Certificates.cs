@@ -48,7 +48,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
                 + "86b73d334e8b3afa7fb8eb31483efc0c7ccb0f8c1ca94d8be4f0daade4498501d02e6f92dd7b2f4401550896eb511ef14417"
                 + "cbb5a1b360d67998d334").HexToByteArray();
 
-            // password = "1111"
+            // password is 1111
             public static byte[] s_RSAKeyTransfer1Pfx =
                  ("308205d20201033082058e06092a864886f70d010701a082057f0482057b308205773082034806092a864886f70d010701a0"
                 + "82033904820335308203313082032d060b2a864886f70d010c0a0102a08202a6308202a2301c060a2a864886f70d010c0103"
@@ -93,7 +93,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
                 + "41da152963e700a6f37faf7678f084a9fb4fe88f7b2cbc6cdeb0b9fdcc6a8a16843e7bc281a71dc6eb8bbc4092d299bf7599"
                 + "a3492c99c9a3acf41b29").HexToByteArray();
 
-            // password = "1111"
+            // password is 1111
             public static byte[] s_RSAKeyTransfer2Pfx =
                  ("308205d20201033082058e06092a864886f70d010701a082057f0482057b308205773082034806092a864886f70d010701a0"
                 + "82033904820335308203313082032d060b2a864886f70d010c0a0102a08202a6308202a2301c060a2a864886f70d010c0103"
@@ -138,7 +138,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
                 + "5207e7c70d843deda8754af8ef1029e0b68c35d88c30d7da2f85d1a20dd4099facf373341b50a8a213f735421062e1477459"
                 + "6e27a32e23b3f3fcfec3").HexToByteArray();
 
-            // password = "1111"
+            // password is 1111
             public static byte[] s_RSAKeyTransfer3Pfx =
                  ("308205d20201033082058e06092a864886f70d010701a082057f0482057b308205773082034806092a864886f70d010701a0"
                 + "82033904820335308203313082032d060b2a864886f70d010c0a0102a08202a6308202a2301c060a2a864886f70d010c0103"
@@ -184,7 +184,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
                 + "e2fce3d019fa70d54646975b6dc2a3ba72d5a5274c1866da6d7a5df47938e034a075d11957d653b5c78e5291e4401045576f"
                 + "6d4eda81bef3c369af56121e49a083c8d1adb09f291822e99a429646").HexToByteArray();
 
-            // Password = "1111"
+            // password is 1111
             //
             // Built by:
             //
@@ -237,7 +237,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
                 + "74227900cfefbe2fdac92b4f769cf2bf3befb485f282a85bfb09454b797ce5286de560c219fb0dd6fce0442adbfef4f767e9"
                 + "ac81cf3e9701baf81efc73a0ed88576adff12413b827").HexToByteArray();
 
-            // password = "1111"
+            // password is 1111
             public static byte[] s_RSASha256KeyTransfer1Pfx =
                  ("308205de0201033082059a06092a864886f70d010701a082058b04820587308205833082034806092a864886f70d010701a0"
                 + "82033904820335308203313082032d060b2a864886f70d010c0a0102a08202a6308202a2301c060a2a864886f70d010c0103"
@@ -283,7 +283,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
                 + "90ebcdbce563b8d4209efc1b04750f46c8c6117ccb96b26b5f02b0b5f961ab01b0c3b4cdb2530cbc5dcf37786712a3476ce7"
                 + "32c5c544c328db5ebc3a338b18fe32aedaffedd973ef").HexToByteArray();
 
-            // password = "1111"
+            // password is 1111
             public static byte[] s_RSASha384KeyTransfer1Pfx =
                  ("308205de0201033082059a06092a864886f70d010701a082058b04820587308205833082034806092a864886f70d010701a0"
                 + "82033904820335308203313082032d060b2a864886f70d010c0a0102a08202a6308202a2301c060a2a864886f70d010c0103"
@@ -329,7 +329,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
                 + "b966d3ea397fe25457b8a703fb43ddab1c52272d6a12476df1df1826c90fb679cebc4c04efc764fd8ce3277305c3bcdf1637"
                 + "91784d778663194097180584e5e8ab69039908bf6f86").HexToByteArray();
 
-            // password = "1111"
+            // password is 1111
             public static byte[] s_RSASha512KeyTransfer1Pfx =
                  ("308205de0201033082059a06092a864886f70d010701a082058b04820587308205833082034806092a864886f70d010701a0"
                 + "82033904820335308203313082032d060b2a864886f70d010c0a0102a08202a6308202a2301c060a2a864886f70d010c0103"
@@ -487,7 +487,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
                 + "31124ABBB4C3D3D49C220CCB6F2F94176B8225A0E2ADDB0F4A72E6B021601CD297AC45A0CAB95EBAC4001C8167899868"
                 + "3188DB9364AAD52D4E28169CC898B621FF84").HexToByteArray();
 
-            // password = "1111"
+            // password is 1111
             public static byte[] s_RSAKeyTransferPfx_ExplicitSki =
                 ("308209810201033082094706092A864886F70D010701A08209380482093430820930308203E706092A864886F70D0107"
                 + "06A08203D8308203D4020100308203CD06092A864886F70D010701301C060A2A864886F70D010C0106300E0408101C5A"

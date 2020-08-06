@@ -53,7 +53,11 @@
                 "src/libraries/System.Net.Http/tests/UnitTests/HttpEnvironmentProxyTest.cs",
                 "src/libraries/System.Net.Mail/tests/Functional/SmtpClientTest.cs",
                 "src/libraries/System.Security.Cryptography.Xml/tests/SignedXmlTest.cs",
-                "src/libraries/System.Security.Cryptography.Xml/tests/TestHelpers.cs"
+                "src/libraries/System.Security.Cryptography.Xml/tests/TestHelpers.cs",
+                "src/libraries/System.Security.Cryptography.X509Certificates/tests/PfxTests.cs",
+                "src/libraries/System.Management/src/System/Management/ManagementScope.cs",
+                "src/libraries/System.Security.Cryptography.Algorithms/tests/Rfc2898Tests.cs",
+                "src/libraries/Common/tests/System/Net/Http/PostScenarioTest.cs"
             ],
             "placeholder": [
                 "\"anotherpassword\"",
@@ -63,7 +67,10 @@
                 "\"rightpassword\"",
                 "\"testcertificate\"",
                 "\"unused\"",
-                "\"wrongpassword\""
+                "\"wrongpassword\"",
+                "\"NotVerySecret\"",
+                "\"MyPassword\"",
+                "\"PasswordGoesHere\""
             ]
         }
     ]

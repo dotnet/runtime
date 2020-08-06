@@ -136,6 +136,7 @@ namespace System.Security.Cryptography.Pkcs.Tests.Pkcs12
             "21300906052B0E03021A050004148B12EE39C54B03EF4C1B0C2D8A3A9624D629" +
             "285A0408E398C69C57E4782102020400").HexToByteArray();
 
+        // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Unit test PKCS#12.")]
         internal static readonly ReadOnlyMemory<byte> HighPbeIterationCount3Des = (
             "308209c40201033082098906092a864886f70d010701a082097a04820976" +
             "308209723082043006092a864886f70d010706a08204213082041d020100" +
@@ -222,7 +223,7 @@ namespace System.Security.Cryptography.Pkcs.Tests.Pkcs12
             "2b0e03021a05000414c429b968eeca558cc2ec486f89b78c024bdecf2804" +
             "087cbeafa8089685a102030927c1").HexToByteArray();
 
-        // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Unit test dummy credentials.")]
+        // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Unit test password.")]
         internal const string OracleWalletPassword = "123Wallet";
     }
 }
