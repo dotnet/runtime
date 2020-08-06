@@ -73,7 +73,6 @@ typedef enum
 typedef enum
 {
     PAL_SIGKILL = 9, /* kill the specified process */
-    PAL_SIGSTOP = 19,
 } Signals;
 
 /**
