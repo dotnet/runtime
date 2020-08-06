@@ -113,6 +113,7 @@ namespace Microsoft.Extensions.Configuration.UserSecrets.Test
         public void AddUserSecrets_With_SecretsId_Passed_Explicitly()
         {
             var userSecretsId = Guid.NewGuid().ToString();
+            // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Unit test password.")]
             SetSecret(userSecretsId, "Facebook:AppSecret", "value1");
 
             var builder = new ConfigurationBuilder().AddUserSecrets(userSecretsId);
