@@ -295,14 +295,13 @@ namespace System.Net.Http
             get => _settings._keepAlivePingDelay;
             set
             {
-                if ((value.Ticks <  TimeSpan.TicksPerSecond && value != Timeout.InfiniteTimeSpan) ||
-                    (value.TotalMilliseconds > int.MaxValue))
+                if (value.Ticks < TimeSpan.TicksPerSecond && value != Timeout.InfiniteTimeSpan)
                 {
-                    throw new ArgumentOutOfRangeException(nameof(value), value, SR.Format(SR.ArgumentOutOfRange_Bounds_Lower_Upper_Named, "TimeSpan.FromSeconds(1)", "TimeSpan(int.MaxValue)", nameof(value)));
+                    throw new ArgumentOutOfRangeException(nameof(value), value, SR.Format(SR.net_http_value_must_be_greater_than_or_equal, "1 second"));
                 }
 
                 CheckDisposedOrStarted();
-                _settings._keepAlivePingDelay = value;
+                _settings._keepAlivePingDelay = value.TotalMilliseconds > int.MaxValue? TimeSpan.FromMilliseconds(int.MaxValue) : value;
             }
         }
 
@@ -321,14 +320,13 @@ namespace System.Net.Http
             get => _settings._keepAlivePingTimeout;
             set
             {
-                if ((value.Ticks <  TimeSpan.TicksPerSecond && value != Timeout.InfiniteTimeSpan) ||
-                    (value.TotalMilliseconds > int.MaxValue))
+                if (value.Ticks < TimeSpan.TicksPerSecond && value != Timeout.InfiniteTimeSpan)
                 {
-                    throw new ArgumentOutOfRangeException(nameof(value), value, SR.Format(SR.ArgumentOutOfRange_Bounds_Lower_Upper_Named, "TimeSpan.FromSeconds(1)", "TimeSpan(int.MaxValue)", nameof(value)));
+                    throw new ArgumentOutOfRangeException(nameof(value), value, SR.Format(SR.net_http_value_must_be_greater_than_or_equal, "1 second"));
                 }
 
                 CheckDisposedOrStarted();
-                _settings._keepAlivePingTimeout = value;
+                _settings._keepAlivePingTimeout = value.TotalMilliseconds > int.MaxValue? TimeSpan.FromMilliseconds(int.MaxValue) : value;
             }
         }
 

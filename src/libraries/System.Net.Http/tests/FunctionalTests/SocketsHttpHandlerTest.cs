@@ -293,8 +293,31 @@ namespace System.Net.Http.Functional.Tests
             Assert.Equal(TimeSpan.FromSeconds(20), handler.KeepAlivePingTimeout);
             Assert.Equal(Timeout.InfiniteTimeSpan, handler.KeepAlivePingDelay);
             Assert.Equal(HttpKeepAlivePingPolicy.Always, handler.KeepAlivePingPolicy);
-
         }
+
+        [Fact]
+        public void SettersExceptions()
+        {
+            using var handler = new SocketsHttpHandler();
+
+            Assert.Throws<ArgumentOutOfRangeException>(() => handler.KeepAlivePingTimeout = TimeSpan.FromMilliseconds(500));
+            Assert.Throws<ArgumentOutOfRangeException>(() => handler.KeepAlivePingTimeout = TimeSpan.FromMilliseconds(500));
+        }
+
+        [Theory]
+        [InlineData(1000, 1000)]
+        [InlineData(int.MaxValue - 1, int.MaxValue - 1)]
+        [InlineData(int.MaxValue, int.MaxValue)]
+        // Setter starts clamp the value
+        [InlineData((double)int.MaxValue + 1, (double)int.MaxValue)]
+        public void Setters(double milliseconds, double expectedMilliseconds)
+        {
+            using var handler = new SocketsHttpHandler();
+
+            handler.KeepAlivePingTimeout = TimeSpan.FromMilliseconds(milliseconds);
+            Assert.Equal(TimeSpan.FromMilliseconds(expectedMilliseconds), handler.KeepAlivePingTimeout);
+        }
+
 
         public static IEnumerable<object[]> KeepAliveTestDataSource()
         {
