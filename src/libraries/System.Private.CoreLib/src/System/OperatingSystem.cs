@@ -116,6 +116,10 @@ namespace System
         /// Check for the OS with a >= version comparison. Used to guard APIs that were added in the given OS release.
         /// </summary>
         /// <param name="platform">Case-insensitive platform name. Examples: Browser, Linux, FreeBSD, Android, iOS, macOS, tvOS, watchOS, Windows.</param>
+        /// <param name="major">Major OS version number.</param>
+        /// <param name="minor">Minor OS version number (optional).</param>
+        /// <param name="build">Build OS version number (optional).</param>
+        /// <param name="revision">Revision OS version number (optional).</param>
         public static bool IsOSPlatformVersionAtLeast(string platform, int major, int minor = 0, int build = 0, int revision = 0)
             => IsOSPlatform(platform) && IsOSVersionAtLeast(major, minor, build, revision);
 
