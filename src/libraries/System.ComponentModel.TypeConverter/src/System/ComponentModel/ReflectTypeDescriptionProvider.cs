@@ -132,11 +132,15 @@ namespace System.ComponentModel
         }
 
         /// <summary>
-        /// This is a table we create for intrinsic types.
-        /// There should be entries here ONLY for intrinsic
-        /// types, as all other types we should be able to
-        /// add attributes directly as metadata.
+        /// This is a table we create for intrinsic types.There should be entries here ONLY for
+        /// intrinsic types, as all other types we should be able to add attributes directly as metadata.
         /// </summary>
+        /// <remarks>
+        /// <see cref="Uri"/> and <see cref="CultureInfo"/> are the only types that can be inherited for which
+        /// we have intrinsic converters for. The appropriate converter needs to be fetched when look-ups are done
+        /// for deriving types. When adding to this cache, consider whether the type can be inherited and add the
+        /// appropriate logic to handle this in <see cref="GetIntrinsicTypeConverter(Type)"/> below.
+        /// </remarks>
         private static Dictionary<object, IntrinsicTypeConverterData> IntrinsicTypeConverters
             => LazyInitializer.EnsureInitialized(ref s_intrinsicTypeConverters, () => new Dictionary<object, IntrinsicTypeConverterData>(27)
         {
