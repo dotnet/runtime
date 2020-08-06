@@ -24,7 +24,7 @@ namespace System.Xml.Xsl.Xslt
         private IPatternBuilder? _ptrnBuilder;
         private readonly XPathParser _predicateParser = new XPathParser();
 
-        public QilNode? Parse(XPathScanner scanner, IPatternBuilder ptrnBuilder)
+        public QilNode Parse(XPathScanner scanner, IPatternBuilder ptrnBuilder)
         {
             Debug.Assert(_scanner == null && _ptrnBuilder == null);
             Debug.Assert(scanner != null && ptrnBuilder != null);
@@ -45,7 +45,7 @@ namespace System.Xml.Xsl.Xslt
                 _scanner = null;
 #endif
             }
-            return result;
+            return result!;
         }
 
         /*

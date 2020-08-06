@@ -71,9 +71,8 @@ namespace System.Xml.Xsl.XPath
             numFixupCurrent = numFixupPosition = numFixupLast = 0;
         }
 
-        [return: MaybeNull]
         [return: NotNullIfNotNull("result")]
-        public virtual QilNode EndBuild([AllowNull] QilNode result)
+        public virtual QilNode? EndBuild(QilNode? result)
         {
             if (result == null)
             { // special door to clean builder state in exception handlers
@@ -113,7 +112,7 @@ namespace System.Xml.Xsl.XPath
             return _f.Double(value);
         }
 
-        public virtual QilNode Operator(XPathOperator op, [AllowNull] QilNode left, [AllowNull] QilNode right)
+        public virtual QilNode Operator(XPathOperator op, QilNode? left, QilNode? right)
         {
             Debug.Assert(op != XPathOperator.Unknown);
             XPathOperatorGroup opGroup = s_operatorGroup[(int)op];

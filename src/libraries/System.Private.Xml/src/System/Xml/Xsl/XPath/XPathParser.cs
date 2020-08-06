@@ -57,11 +57,7 @@ namespace System.Xml.Xsl.XPath
 #endif
             }
             Debug.Assert(_posInfo.Count == 0, "PushPosInfo() and PopPosInfo() calls have been unbalanced");
-            // Many callers assume that the return value is not null.
-            // TODO: Should we instead make this method nullable?
-            // When is it possible to fall into the catch block?
-            Debug.Assert(result != null);
-            return result;
+            return result!;
         }
 
         #region Location paths and node tests

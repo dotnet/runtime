@@ -115,8 +115,7 @@ namespace System.Xml
         {
             get
             {
-                XmlAttribute? attribute = _source as XmlAttribute;
-                if (attribute != null
+                if (_source is XmlAttribute attribute
                     && attribute.IsNamespace)
                 {
                     return string.Empty;
@@ -155,8 +154,7 @@ namespace System.Xml
         {
             get
             {
-                XmlAttribute? attribute = _source as XmlAttribute;
-                if (attribute != null
+                if (_source is XmlAttribute attribute
                     && attribute.IsNamespace)
                 {
                     return string.Empty;
@@ -183,7 +181,10 @@ namespace System.Xml
                         return ValueText;
                     default:
                         Debug.Assert(_source.Value != null);
-                        // TODO: It could be better to switch this to nullable even if that implies switching it in the base type.
+                        // TODO-NULLABLE: Consider switching this.Value to nullable even if that implies switching it in the base type.
+                        // Also consider the following:
+                        //   * this.SetValue() does not accept null.
+                        //   * _source.Value is nullable.
                         return _source.Value;
                 }
             }
@@ -223,7 +224,8 @@ namespace System.Xml
                            && nextSibling.IsText);
                     value = builder.ToString();
                 }
-                // TODO: Not sure if this is right, maybe we should change to return string.Empty in case of null.
+                // TODO-NULLABLE: Consider making this nullable given that _source.Value is nullable,
+                // OR we could change this getter to return string.Empty if _source.Value == null.
                 Debug.Assert(value != null);
                 return value;
             }
@@ -241,8 +243,7 @@ namespace System.Xml
         {
             get
             {
-                XmlElement? element = _source as XmlElement;
-                if (element != null)
+                if (_source is XmlElement element)
                 {
                     return element.IsEmpty;
                 }
@@ -272,8 +273,7 @@ namespace System.Xml
         {
             get
             {
-                XmlElement? element = _source as XmlElement;
-                if (element != null
+                if (_source is XmlElement element
                     && element.HasAttributes)
                 {
                     XmlAttributeCollection attributes = element.Attributes;
@@ -297,8 +297,7 @@ namespace System.Xml
 
         public override bool MoveToAttribute(string localName, string namespaceURI)
         {
-            XmlElement? element = _source as XmlElement;
-            if (element != null
+            if (_source is XmlElement element
                 && element.HasAttributes)
             {
                 XmlAttributeCollection attributes = element.Attributes;
@@ -326,8 +325,7 @@ namespace System.Xml
 
         public override bool MoveToFirstAttribute()
         {
-            XmlElement? element = _source as XmlElement;
-            if (element != null
+            if (_source is XmlElement element
                 && element.HasAttributes)
             {
                 XmlAttributeCollection attributes = element.Attributes;
@@ -347,8 +345,7 @@ namespace System.Xml
 
         public override bool MoveToNextAttribute()
         {
-            XmlAttribute? attribute = _source as XmlAttribute;
-            if (attribute == null
+            if (!(_source is XmlAttribute attribute)
                 || attribute.IsNamespace)
             {
                 return false;
@@ -378,8 +375,7 @@ namespace System.Xml
             while (node != null
                    && node.NodeType != XmlNodeType.Element)
             {
-                XmlAttribute? attribute = node as XmlAttribute;
-                if (attribute != null)
+                if (node is XmlAttribute attribute)
                 {
                     node = attribute.OwnerElement;
                 }
@@ -473,8 +469,7 @@ namespace System.Xml
 
         public override bool MoveToFirstNamespace(XPathNamespaceScope scope)
         {
-            XmlElement? element = _source as XmlElement;
-            if (element == null)
+            if (!(_source is XmlElement element))
             {
                 return false;
             }
@@ -577,8 +572,7 @@ namespace System.Xml
 
         public override bool MoveToNextNamespace(XPathNamespaceScope scope)
         {
-            XmlAttribute? attribute = _source as XmlAttribute;
-            if (attribute == null
+            if (!(_source is XmlAttribute attribute)
                 || !attribute.IsNamespace)
             {
                 return false;
@@ -856,8 +850,7 @@ namespace System.Xml
                 _source = parent;
                 return true;
             }
-            XmlAttribute? attribute = _source as XmlAttribute;
-            if (attribute != null)
+            if (_source is XmlAttribute attribute)
             {
                 parent = attribute.IsNamespace ? _namespaceParent : attribute.OwnerElement;
                 if (parent != null)
@@ -877,8 +870,7 @@ namespace System.Xml
                 XmlNode? parent = _source.ParentNode;
                 if (parent == null)
                 {
-                    XmlAttribute? attribute = _source as XmlAttribute;
-                    if (attribute == null)
+                    if (!(_source is XmlAttribute attribute))
                     {
                         break;
                     }
@@ -895,8 +887,7 @@ namespace System.Xml
 
         public override bool MoveTo(XPathNavigator other)
         {
-            DocumentXPathNavigator? that = other as DocumentXPathNavigator;
-            if (that != null
+            if (other is DocumentXPathNavigator that
                 && _document == that._document)
             {
                 _source = that._source;
@@ -977,8 +968,7 @@ namespace System.Xml
         public override bool MoveToFollowing(string localName, string namespaceUri, XPathNavigator? end)
         {
             XmlNode? pastFollowing = null;
-            DocumentXPathNavigator? that = end as DocumentXPathNavigator;
-            if (that != null)
+            if (end is DocumentXPathNavigator that)
             {
                 if (_document != that._document)
                 {
@@ -1053,8 +1043,7 @@ namespace System.Xml
         public override bool MoveToFollowing(XPathNodeType type, XPathNavigator? end)
         {
             XmlNode? pastFollowing = null;
-            DocumentXPathNavigator? that = end as DocumentXPathNavigator;
-            if (that != null)
+            if (end is DocumentXPathNavigator that)
             {
                 if (_document != that._document)
                 {
@@ -1232,8 +1221,7 @@ namespace System.Xml
 
         public override bool IsSamePosition(XPathNavigator other)
         {
-            DocumentXPathNavigator? that = other as DocumentXPathNavigator;
-            if (that != null)
+            if (other is DocumentXPathNavigator that)
             {
                 this.CalibrateText();
                 that.CalibrateText();
@@ -1246,8 +1234,7 @@ namespace System.Xml
 
         public override bool IsDescendant(XPathNavigator? other)
         {
-            DocumentXPathNavigator? that = other as DocumentXPathNavigator;
-            if (that != null)
+            if (other is DocumentXPathNavigator that)
             {
                 return IsDescendant(_source, that._source);
             }
@@ -1289,7 +1276,6 @@ namespace System.Xml
                 throw new InvalidOperationException(SR.XmlDocument_NoSchemaInfo);
             }
 
-            // TODO: should we guard against null in above condition instead?
             // DocumentSchemaValidator assumes that ownedDocument can never be null.
             Debug.Assert(ownerDocument != null);
             DocumentSchemaValidator validator = new DocumentSchemaValidator(ownerDocument, schemas, validationEventHandler);
@@ -1304,8 +1290,7 @@ namespace System.Xml
             {
                 return parent;
             }
-            XmlAttribute? attribute = node as XmlAttribute;
-            if (attribute != null)
+            if (node is XmlAttribute attribute)
             {
                 return attribute.OwnerElement;
             }
@@ -1339,7 +1324,6 @@ namespace System.Xml
                 {
                     XmlElement? element = ((XmlAttribute)node1).OwnerElement;
                     Debug.Assert(element != null);
-                    // TODO: Should this also check for null instead?
                     if (element.HasAttributes)
                     {
                         XmlAttributeCollection attributes = element.Attributes;
@@ -1382,8 +1366,7 @@ namespace System.Xml
 
         public override XmlNodeOrder ComparePosition(XPathNavigator? other)
         {
-            DocumentXPathNavigator? that = other as DocumentXPathNavigator;
-            if (that == null)
+            if (!(other is DocumentXPathNavigator that))
             {
                 return XmlNodeOrder.Unknown;
             }
@@ -1436,7 +1419,6 @@ namespace System.Xml
                     return XmlNodeOrder.Before;
                 }
                 Debug.Assert(node2 != null);
-                // TODO: What ensures that node2 is not null.
                 parent2 = OwnerNode(node2);
             }
             else if (depth1 > depth2)
@@ -1452,7 +1434,6 @@ namespace System.Xml
                     return XmlNodeOrder.After;
                 }
                 Debug.Assert(node1 != null);
-                // TODO: What ensures that node1 is not null.
                 parent1 = OwnerNode(node1);
             }
 
@@ -1622,8 +1603,7 @@ namespace System.Xml
 
         public override XmlWriter ReplaceRange(XPathNavigator lastSiblingToReplace)
         {
-            DocumentXPathNavigator? that = lastSiblingToReplace as DocumentXPathNavigator;
-            if (that == null)
+            if (!(lastSiblingToReplace is DocumentXPathNavigator that))
             {
                 if (lastSiblingToReplace == null)
                 {
@@ -1680,8 +1660,7 @@ namespace System.Xml
 
         public override void DeleteRange(XPathNavigator lastSiblingToDelete)
         {
-            DocumentXPathNavigator? that = lastSiblingToDelete as DocumentXPathNavigator;
-            if (that == null)
+            if (!(lastSiblingToDelete is DocumentXPathNavigator that))
             {
                 if (lastSiblingToDelete == null)
                 {
@@ -1845,8 +1824,7 @@ namespace System.Xml
 
             while (node != null)
             {
-                XmlElement? element = node as XmlElement;
-                if (element != null
+                if (node is XmlElement element
                     && element.HasAttributes)
                 {
                     elements.Add(element);
@@ -1876,8 +1854,7 @@ namespace System.Xml
             Debug.Assert(node != null, "Undefined navigator position");
             Debug.Assert(node == _document || node.OwnerDocument == _document, "Navigator switched documents");
             _source = node;
-            XmlAttribute? attribute = node as XmlAttribute;
-            if (attribute != null)
+            if (node is XmlAttribute attribute)
             {
                 XmlElement? element = attribute.OwnerElement;
                 if (element != null)
@@ -2121,8 +2098,7 @@ namespace System.Xml
                 XmlNode? parent = bottom.ParentNode;
                 if (parent == null)
                 {
-                    XmlAttribute? attribute = bottom as XmlAttribute;
-                    if (attribute == null)
+                    if (!(bottom is XmlAttribute attribute))
                     {
                         break;
                     }

@@ -63,9 +63,8 @@ namespace System.Xml.Xsl.Xslt
             filter.Variable.Binding = newBinding;
         }
 
-        [return: MaybeNull]
         [return: NotNullIfNotNull("result")]
-        public virtual QilNode EndBuild([AllowNull] QilNode result)
+        public virtual QilNode? EndBuild(QilNode? result)
         {
             Debug.Assert(_inTheBuild, "StartBuild() wasn't called");
             if (result == null)
@@ -82,7 +81,7 @@ namespace System.Xml.Xsl.Xslt
             return result;
         }
 
-        public QilNode Operator(XPathOperator op, [AllowNull] QilNode left, [AllowNull] QilNode right)
+        public QilNode Operator(XPathOperator op, QilNode? left, QilNode? right)
         {
             Debug.Assert(op == XPathOperator.Union);
             Debug.Assert(left != null);
