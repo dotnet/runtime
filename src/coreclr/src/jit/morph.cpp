@@ -13657,11 +13657,12 @@ DONE_MORPHING_CHILDREN:
 
             foldAndReturnTemp = false;
             isStore           = (tree->gtFlags & GTF_DONT_CSE) != 0;
-            ;
-            addCastToType = TYP_VOID; // TYP_VOID means we don't need to insert a cast
+            addCastToType     = TYP_VOID; // TYP_VOID means we don't need to insert a cast
 
             temp  = nullptr;
             ival1 = 0;
+
+            assert(typ != TYP_UINT); // We never generate a GT_IND of a UINT
 
             // Don't remove a volatile GT_IND, even if the address points to a local variable.
             if ((tree->gtFlags & GTF_IND_VOLATILE) == 0)
@@ -13688,81 +13689,86 @@ DONE_MORPHING_CHILDREN:
                     }
                     else if (temp->OperIsLocal())
                     {
-                        unsigned   lclNum  = temp->AsLclVarCommon()->GetLclNum();
-                        LclVarDsc* varDsc  = &lvaTable[lclNum];
-                        var_types  lclType = varDsc->lvType;
-
-                        // We will try to optimize when we have a promoted struct promoted with a zero lvFldOffset
-                        if (varDsc->lvPromoted && (varDsc->lvFldOffset == 0))
+                        if (temp->OperIs(GT_LCL_VAR))
                         {
-                            noway_assert(varTypeIsStruct(varDsc));
+                            unsigned   lclNum  = temp->AsLclVarCommon()->GetLclNum();
+                            LclVarDsc* varDsc  = &lvaTable[lclNum];
+                            var_types  lclType = varDsc->lvType;
 
-                            // We will try to optimize when we have a single field struct that is being struct promoted
-                            if (varDsc->lvFieldCnt == 1)
+                            // We will try to optimize when we have a promoted struct promoted with a zero lvFldOffset
+                            if (varDsc->lvPromoted && (varDsc->lvFldOffset == 0))
                             {
-                                unsigned lclNumFld = varDsc->lvFieldLclStart;
-                                // just grab the promoted field
-                                LclVarDsc* fieldVarDsc = &lvaTable[lclNumFld];
+                                noway_assert(varTypeIsStruct(varDsc));
 
-                                // Also make sure that the tree type matches the fieldVarType and that it's lvFldOffset
-                                // is zero
-                                if (fieldVarDsc->TypeGet() == typ && (fieldVarDsc->lvFldOffset == 0))
+                                // We will try to optimize when we have a single field struct that is being struct
+                                // promoted
+                                if (varDsc->lvFieldCnt == 1)
                                 {
-                                    // We can just use the existing promoted field LclNum
-                                    temp->AsLclVarCommon()->SetLclNum(lclNumFld);
-                                    temp->gtType = fieldVarDsc->TypeGet();
+                                    unsigned lclNumFld = varDsc->lvFieldLclStart;
+                                    // just grab the promoted field
+                                    LclVarDsc* fieldVarDsc = &lvaTable[lclNumFld];
 
-                                    foldAndReturnTemp = true;
+                                    // Also make sure that the tree type matches the fieldVarType and that it's
+                                    // lvFldOffset
+                                    // is zero
+                                    if (fieldVarDsc->TypeGet() == typ && (fieldVarDsc->lvFldOffset == 0))
+                                    {
+                                        // We can just use the existing promoted field LclNum
+                                        temp->AsLclVarCommon()->SetLclNum(lclNumFld);
+                                        temp->gtType = fieldVarDsc->TypeGet();
+
+                                        foldAndReturnTemp = true;
+                                    }
                                 }
                             }
-                        }
-                        bool matchingTypes  = (lclType == typ);
-                        bool matchingWidths = (genTypeSize(lclType) == genTypeSize(typ));
-                        bool matchingFloat  = (varTypeIsFloating(lclType) == varTypeIsFloating(typ));
+                            bool matchingTypes  = (lclType == typ);
+                            bool matchingWidths = (genTypeSize(lclType) == genTypeSize(typ));
+                            bool matchingFloat  = (varTypeIsFloating(lclType) == varTypeIsFloating(typ));
 
-                        // TYP_BOOL and TYP_UBYTE are also matching types
-                        if (!matchingTypes)
-                        {
-                            if ((lclType == TYP_BOOL) && (typ == TYP_UBYTE))
+                            // TYP_BOOL and TYP_UBYTE are also matching types
+                            if (!matchingTypes)
                             {
-                                matchingTypes = true;
+                                if ((lclType == TYP_BOOL) && (typ == TYP_UBYTE))
+                                {
+                                    matchingTypes = true;
+                                }
+                                else if ((lclType == TYP_UBYTE) && (typ == TYP_BOOL))
+                                {
+                                    matchingTypes = true;
+                                }
                             }
-                            else if ((lclType == TYP_UBYTE) && (typ == TYP_BOOL))
-                            {
-                                matchingTypes = true;
-                            }
-                        }
 
-                        // If the sizes match and we don't have a float or TYP_STRUCT,
-                        // then we will fold the IND/ADDR and use the LCL_VAR directly
-                        //
-                        if (matchingWidths && matchingFloat && (typ != TYP_STRUCT))
-                        {
-                            // For some small types we might need to change to normalize loads or insert a cast here
+                            // If the sizes match and we don't have a float or TYP_STRUCT,
+                            // then we will fold the IND/ADDR and use the LCL_VAR directly
                             //
-                            if (varTypeIsSmall(typ))
+                            if (matchingWidths && matchingFloat && (typ != TYP_STRUCT))
                             {
-                                // For any stores of small types, we will force loads to be normalized
-                                // this is necessary as we need to zero/sign extend any load
-                                // after this kind of store.
+                                // For some small types we might need to change to normalize loads or insert a cast here
                                 //
-                                if (isStore)
+                                if (varTypeIsSmall(typ))
                                 {
-                                    varDsc->lvForceLoadNormalize = true;
+                                    // For any stores of small types, we will force loads to be normalized
+                                    // this is necessary as we need to zero/sign extend any load
+                                    // after this kind of store.
+                                    //
+                                    if (isStore)
+                                    {
+                                        varDsc->lvForceLoadNormalize = true;
+                                    }
+                                    // otherwise we have a load operation
+                                    //
+                                    // Do we have a non matching small type load?
+                                    // if so we need to insert a cast operation
+                                    else if (!matchingTypes)
+                                    {
+                                        addCastToType = typ;
+                                    }
                                 }
-                                // otherwise we have a load operation
+                                // we will fold the IND/ADDR and reduce to just the local variable
                                 //
-                                // Do we have a non matching small type load?
-                                // if so we need to insert a cast operation
-                                else if (!matchingTypes)
-                                {
-                                    addCastToType = typ;
-                                }
+                                tree->gtType = typ = temp->TypeGet();
+                                foldAndReturnTemp  = true;
                             }
-                            // we will fold the IND/ADDR and reduce to just the local variable
-                            //
-                            tree->gtType = typ = temp->TypeGet();
-                            foldAndReturnTemp  = true;
                         }
 
                         if (!foldAndReturnTemp)
@@ -13784,12 +13790,12 @@ DONE_MORPHING_CHILDREN:
                             }
                         }
 
-                        // Otherwise will will fold this into a GT_LCL_FLD below
-                        //   where we check (temp != nullptr)
+                        // Otherwise will will fold this GT_LCL_VAR into a GT_LCL_FLD below
+                        //   where we check: if ((temp != nullptr) && !foldAndReturnTemp)
                     }
-                    else // !temp->OperIsLocal()
+                    else // X/temp is somethinge else, not an OperIsLocal()
                     {
-                        // We don't try to fold away the GT_IND/GT_ADDR for this case
+                        // We don't try to fold away the GT_IND/GT_ADDR/temp for this case
                         temp = nullptr;
                     }
                 }
