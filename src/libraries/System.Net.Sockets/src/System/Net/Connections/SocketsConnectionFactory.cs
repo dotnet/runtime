@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 namespace System.Net.Connections
 {
     /// <summary>
-    /// TODO
+    /// A <see cref="ConnectionFactory"/> to establish socket-based connections.
     /// </summary>
     public class SocketsConnectionFactory : ConnectionFactory, SocketConnection.IDataChannelProvider
     {
@@ -21,7 +21,12 @@ namespace System.Net.Connections
         // use same message as the default ctor
         private static readonly string s_cancellationMessage = new OperationCanceledException().Message;
 
-        // See Socket(AddressFamily addressFamily, SocketType socketType, ProtocolType protocolType)
+        /// <summary>
+        /// Initializes a new instance of the <see cref="SocketsConnectionFactory"/> class.
+        /// </summary>
+        /// <param name="addressFamily">The <see cref="AddressFamily"/> to forward to the socket.</param>
+        /// <param name="socketType">The <see cref="SocketType"/> to forward to the socket.</param>
+        /// <param name="protocolType">The <see cref="ProtocolType"/> to forward to the socket.</param>
         public SocketsConnectionFactory(
             AddressFamily addressFamily,
             SocketType socketType,
@@ -32,13 +37,19 @@ namespace System.Net.Connections
             _protocolType = protocolType;
         }
 
-        // dual-mode IPv6 socket. See Socket(SocketType socketType, ProtocolType protocolType)
+        /// <summary>
+        /// Initializes a new instance of the <see cref="SocketsConnectionFactory"/> class
+        /// that will forward <see cref="AddressFamily.InterNetworkV6"/> to the Socket constructor.
+        /// </summary>
+        /// <param name="socketType">The <see cref="SocketType"/> to forward to the socket.</param>
+        /// <param name="protocolType">The <see cref="ProtocolType"/> to forward to the socket.</param>
+        /// <remarks>The created socket will be an IPv6 socket with <see cref="Socket.DualMode"/> enabled.</remarks>
         public SocketsConnectionFactory(SocketType socketType, ProtocolType protocolType)
             : this(AddressFamily.InterNetworkV6, socketType, protocolType)
         {
         }
 
-        // This must be thread-safe!
+        /// <inheritdoc />
         public override async ValueTask<Connection> ConnectAsync(
             EndPoint? endPoint,
             IConnectionProperties? options = null,
@@ -86,8 +97,15 @@ namespace System.Net.Connections
             }
         }
 
-        // These exist to provide an easy way to shim the default behavior.
-        // Note: Connect must call this to create its socket.
+        /// <summary>
+        /// Creates the socket that shall be used with the connection.
+        /// </summary>
+        /// <param name="addressFamily">The <see cref="AddressFamily"/> to forward to the socket.</param>
+        /// <param name="socketType">The <see cref="SocketType"/> to forward to the socket.</param>
+        /// <param name="protocolType">The <see cref="ProtocolType"/> to forward to the socket.</param>
+        /// <param name="endPoint">The <see cref="EndPoint"/> this socket will be connected to.</param>
+        /// <param name="options">Properties, if any, that might change how the socket is initialized.</param>
+        /// <returns>A new unconnected <see cref="Socket"/>.</returns>
         protected virtual Socket CreateSocket(
             AddressFamily addressFamily,
             SocketType socketType,
@@ -110,8 +128,20 @@ namespace System.Net.Connections
             return socket;
         }
 
+        /// <summary>
+        /// Creates the <see cref="Stream"/> for the connected socket.
+        /// </summary>
+        /// <param name="socket">The connected <see cref="Socket"/>.</param>
+        /// <param name="options">Properties, if any, that might change how the stream is initialized.</param>
+        /// <returns>A new <see cref="Stream"/>.</returns>
         protected virtual Stream CreateStream(Socket socket, IConnectionProperties? options) => new NetworkStream(socket, ownsSocket: true);
 
+        /// <summary>
+        /// Creates the <see cref="IDuplexPipe"/> for the connected socket.
+        /// </summary>
+        /// <param name="socket">The connected <see cref="Socket"/>.</param>
+        /// <param name="options">Properties, if any, that might change how the pipe is initialized.</param>
+        /// <returns>A new <see cref="IDuplexPipe"/>.</returns>
         protected virtual IDuplexPipe CreatePipe(Socket socket, IConnectionProperties? options) => new SocketConnection.DuplexStreamPipe(CreateStream(socket, options));
 
         Stream SocketConnection.IDataChannelProvider.CreateStreamForConnection(Socket socket, IConnectionProperties options) => CreateStream(socket, options);
