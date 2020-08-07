@@ -7,7 +7,6 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System\Runtime\InteropServices\RuntimeInformation\RuntimeInformation.cs" />
-    <Compile Include="System\Runtime\InteropServices\RuntimeInformation\RuntimeInformation.PlatformVersion.cs" />
     <Compile Include="System\Runtime\InteropServices\RuntimeInformation\Architecture.cs" />
     <Compile Include="System\Runtime\InteropServices\RuntimeInformation\OSPlatform.cs" />
   </ItemGroup>
@@ -16,8 +15,6 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
     <Compile Include="System\Runtime\InteropServices\RuntimeInformation\RuntimeInformation.Unix.cs" />
-    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetUnixName.cs"
-             Link="Common\Interop\Unix\System.Native\Interop.GetUnixName.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetUnixVersion.cs"
              Link="Common\Interop\Unix\System.Native\Interop.GetUnixVersion.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetOSArchitecture.cs"
@@ -46,6 +43,5 @@
     <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.InteropServices" />
     <Reference Include="System.Threading" />
-    <Reference Include="System.Memory" />
   </ItemGroup>
 </Project>
