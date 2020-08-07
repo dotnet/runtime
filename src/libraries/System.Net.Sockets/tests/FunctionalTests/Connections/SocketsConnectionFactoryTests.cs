@@ -89,9 +89,8 @@ namespace System.Net.Sockets.Tests
 
             using SocketsConnectionFactory factory = new SocketsConnectionFactory(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
 
-            await Assert.ThrowsAsync<SocketException>(() => factory.ConnectAsync(endPoint).AsTask());
-            //NetworkException ex = await Assert.ThrowsAsync<NetworkException>(() => factory.ConnectAsync(endPoint).AsTask());
-            //Assert.Equal(NetworkError.ConnectionRefused, ex.NetworkError);
+            NetworkException ex = await Assert.ThrowsAsync<NetworkException>(() => factory.ConnectAsync(endPoint).AsTask());
+            Assert.Equal(NetworkError.ConnectionRefused, ex.NetworkError);
         }
 
         // On Windows, failing connections take > 1 sec when the destination address is not found,

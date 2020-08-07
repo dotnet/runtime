@@ -53,8 +53,7 @@ namespace System.Net.Connections
             }
             catch (SocketException socketException)
             {
-                //return ValueTask.FromException(ExceptionDispatchInfo.SetCurrentStackTrace(NetworkErrorHelper.MapSocketException(socketException)));
-                return ValueTask.FromException(ExceptionDispatchInfo.SetCurrentStackTrace(socketException));
+                return ValueTask.FromException(ExceptionDispatchInfo.SetCurrentStackTrace(NetworkErrorHelper.MapSocketException(socketException)));
             }
             catch (Exception ex)
             {

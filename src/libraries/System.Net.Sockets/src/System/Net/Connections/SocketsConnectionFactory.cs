@@ -69,17 +69,15 @@ namespace System.Net.Connections
                         throw new TaskCanceledException(s_cancellationMessage, ex, cancellationToken);
                     }
 
-                    //throw NetworkErrorHelper.MapSocketException(ex);
-                    throw ex;
+                    throw NetworkErrorHelper.MapSocketException(ex);
                 }
 
                 return new SocketConnection(socket, this, options);
             }
-            catch (SocketException)
+            catch (SocketException socketException)
             {
                 socket.Dispose();
-                //throw NetworkErrorHelper.MapSocketException(socketException);
-                throw;
+                throw NetworkErrorHelper.MapSocketException(socketException);
             }
             catch
             {
