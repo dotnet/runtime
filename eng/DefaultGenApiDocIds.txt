@@ -1,6 +1,5 @@
 // These attributes should be excluded from reference assemblies.
 
-T:System.ComponentModel.DesignerAttribute
 T:System.ComponentModel.Design.Serialization.DesignerSerializerAttribute
 T:System.ComponentModel.Design.Serialization.RootDesignerSerializerAttribute
 T:System.ComponentModel.EditorAttribute

@@ -570,7 +570,7 @@ mono_type_get_object_checked (MonoDomain *domain, MonoType *type, MonoError *err
 	res->type = type;
 	mono_g_hash_table_insert_internal (domain->type_hash, type, res);
 
-	if (type->type == MONO_TYPE_VOID)
+	if (type->type == MONO_TYPE_VOID && !type->byref)
 		domain->typeof_void = (MonoObject*)res;
 
 	mono_domain_unlock (domain);

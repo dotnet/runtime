@@ -1408,7 +1408,7 @@ namespace System.Xml
             }
         }
 
-        internal virtual string? GetXPAttribute(string localName, string namespaceURI)
+        internal virtual string GetXPAttribute(string localName, string namespaceURI)
         {
             return string.Empty;
         }

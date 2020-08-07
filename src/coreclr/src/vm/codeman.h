@@ -1116,7 +1116,7 @@ public:
 private :
     PTR_HostCodeHeap    m_cleanupList;
     //When EH Clauses are resolved we need to atomically update the TypeHandle
-    Crst                m_EHClauseCritSec;
+    Crst                m_JitLoadCritSec;
 
 #if !defined CROSSGEN_COMPILE
     // must hold critical section to access this structure.

@@ -124,7 +124,7 @@ namespace System.Net.Http
             }
 
             _http2Enabled = _poolManager.Settings._maxHttpVersion >= HttpVersion.Version20;
-            _http3Enabled = _poolManager.Settings._maxHttpVersion >= HttpVersion.Version30;
+            _http3Enabled = _poolManager.Settings._maxHttpVersion >= Http3Connection.HttpVersion30;
 
             switch (kind)
             {
@@ -259,7 +259,7 @@ namespace System.Net.Http
             if (NetEventSource.Log.IsEnabled()) Trace($"{this}");
         }
 
-        private static readonly List<SslApplicationProtocol> s_http3ApplicationProtocols = new List<SslApplicationProtocol>() { SslApplicationProtocol.Http3 };
+        private static readonly List<SslApplicationProtocol> s_http3ApplicationProtocols = new List<SslApplicationProtocol>() { Http3Connection.Http3ApplicationProtocol };
         private static readonly List<SslApplicationProtocol> s_http2ApplicationProtocols = new List<SslApplicationProtocol>() { SslApplicationProtocol.Http2, SslApplicationProtocol.Http11 };
 
         private static SslClientAuthenticationOptions ConstructSslOptions(HttpConnectionPoolManager poolManager, string sslHostName)
@@ -883,7 +883,7 @@ namespace System.Net.Http
             {
                 int parseIdx = 0;
 
-                while (AltSvcHeaderParser.Parser.TryParseValue(altSvcHeaderValue, null, ref parseIdx, out object? parsedValue))
+                if (AltSvcHeaderParser.Parser.TryParseValue(altSvcHeaderValue, null, ref parseIdx, out object? parsedValue))
                 {
                     var value = (AltSvcHeaderValue?)parsedValue;
 
