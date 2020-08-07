@@ -3,6 +3,8 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Linq;
 using System.Reflection;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -22,33 +24,49 @@ namespace System.Text.Json.SourceGeneration
         public void Execute(SourceGeneratorContext context)
         {
             JsonSerializableSyntaxReceiver receiver = (JsonSerializableSyntaxReceiver)context.SyntaxReceiver;
-
             MetadataLoadContext metadataLoadContext = new MetadataLoadContext(context.Compilation);
 
-            INamedTypeSymbol namedTypeSymbol;
-            ITypeSymbol typeSymbol;
-            IdentifierNameSyntax identifierNameNode;
-            SemanticModel semanticModel;
-            Type convertedType;
-            TypeDeclarationSyntax typeDeclarationNode;
+            // Filter classes and structs with JsonSerializable attribute semantically.
+            INamedTypeSymbol jsonSerializableAttributeSymbol = context.Compilation.GetTypeByMetadataName("System.Text.Json.Serialization.JsonSerializableAttribute");
 
-            // Map type name to type objects.
-            foreach (KeyValuePair<string, TypeDeclarationSyntax> entry in receiver.InternalClassTypes)
+            if (jsonSerializableAttributeSymbol == null)
             {
-                typeDeclarationNode = entry.Value;
-                semanticModel = context.Compilation.GetSemanticModel(typeDeclarationNode.SyntaxTree);
-                namedTypeSymbol = (INamedTypeSymbol)semanticModel.GetDeclaredSymbol(typeDeclarationNode);
-                convertedType = new TypeWrapper(namedTypeSymbol, metadataLoadContext);
-                FoundTypes[entry.Key] = convertedType;
+                return;
             }
 
-            foreach (KeyValuePair<string, IdentifierNameSyntax> entry in receiver.ExternalClassTypes)
+            // Find classes with JsonSerializable Attributes.
+            foreach (TypeDeclarationSyntax typeDeclarationNode in receiver.TypesWithAttributes)
             {
-                identifierNameNode = entry.Value;
-                semanticModel = context.Compilation.GetSemanticModel(identifierNameNode.SyntaxTree);
-                typeSymbol = context.Compilation.GetSemanticModel(identifierNameNode.SyntaxTree).GetTypeInfo(identifierNameNode).ConvertedType;
-                convertedType = new TypeWrapper(typeSymbol, metadataLoadContext);
-                FoundTypes[entry.Key] = convertedType;
+                SemanticModel model = context.Compilation.GetSemanticModel(typeDeclarationNode.SyntaxTree);
+
+                // Check if it contains a JsonSerializableAttribute.
+                INamedTypeSymbol typeSymbol = (INamedTypeSymbol)model.GetDeclaredSymbol(typeDeclarationNode);
+                if(typeSymbol.GetAttributes().Any(attr => attr.AttributeClass.Equals(jsonSerializableAttributeSymbol, SymbolEqualityComparer.Default)))
+                {
+                    // JsonSerializableAttribute has AllowMultiple as False, should have a single attribute.
+                    AttributeListSyntax attributeList = typeDeclarationNode.AttributeLists.Single();
+                    IEnumerable<AttributeSyntax> serializableAttributes = attributeList.Attributes.Where(node => node is AttributeSyntax).Cast<AttributeSyntax>();
+                    AttributeSyntax attributeNode = serializableAttributes.First();
+                    Debug.Assert(serializableAttributes.Count() == 1);
+
+                    // Check if the attribute is being passed a type.
+                    if (attributeNode.DescendantNodes().Where(node => node is TypeOfExpressionSyntax).Any())
+                    {
+                        // Get JsonSerializable attribute arguments.
+                        AttributeArgumentSyntax attributeArgumentNode = (AttributeArgumentSyntax)attributeNode.DescendantNodes().Where(node => node is AttributeArgumentSyntax).SingleOrDefault();
+                        // Get external class token from arguments.
+                        IdentifierNameSyntax externalTypeNode = (IdentifierNameSyntax)attributeArgumentNode?.DescendantNodes().Where(node => node is IdentifierNameSyntax).SingleOrDefault();
+
+                        // Get non-user owned typeSymbol from IdentifierNameSyntax and add to found types.
+                        ITypeSymbol externalTypeSymbol = model.GetTypeInfo(externalTypeNode).ConvertedType;
+                        FoundTypes[typeDeclarationNode.Identifier.Text] = new TypeWrapper(externalTypeSymbol, metadataLoadContext);
+                    }
+                    else
+                    {
+                        // Add user owned type into found types.
+                        FoundTypes[typeDeclarationNode.Identifier.Text] = new TypeWrapper(typeSymbol, metadataLoadContext);
+                    }
+                }
             }
 
             // Create sources for all found types.

@@ -12,7 +12,6 @@
 
   <ItemGroup>
     <Compile Include="CompilationHelper.cs" />
-
     <Compile Include="JsonSourceGeneratorTests.cs" />
     <Compile Include="TypeWrapperTests.cs" />
   </ItemGroup>
