@@ -537,9 +537,9 @@ namespace System.Net.Http
 
         private void HeartBeat()
         {
-            foreach (HttpConnectionPool pool in _pools.Values)
+            foreach (KeyValuePair<HttpConnectionKey, HttpConnectionPool> pool in _pools)
             {
-                pool.HeartBeat();
+                pool.Value.HeartBeat();
             }
         }
 

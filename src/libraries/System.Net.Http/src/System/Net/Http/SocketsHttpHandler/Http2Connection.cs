@@ -1906,8 +1906,13 @@ namespace System.Net.Http
 
         private void VerifyKeepAlive()
         {
-            if (_keepAlivePingPolicy == HttpKeepAlivePingPolicy.WithActiveRequests && _httpStreams.Count == 0)
-                return;
+            if (_keepAlivePingPolicy == HttpKeepAlivePingPolicy.WithActiveRequests)
+            {
+                lock(SyncObject)
+                {
+                    if(_httpStreams.Count == 0) return;
+                }
+            }
 
             long now = Environment.TickCount64;
             switch (_keepAliveState)
