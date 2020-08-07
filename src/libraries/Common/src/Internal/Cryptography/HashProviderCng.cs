@@ -34,7 +34,7 @@ namespace Internal.Cryptography
                 dwFlags |= BCryptOpenAlgorithmProviderFlags.BCRYPT_ALG_HANDLE_HMAC_FLAG;
             }
 
-            _hAlgorithm = Interop.BCrypt.BCryptAlgorithmCache.GetCachedBCryptAlgorithmHandle(hashAlgId, dwFlags);
+            _hAlgorithm = Interop.BCrypt.BCryptAlgorithmCache.GetCachedBCryptAlgorithmHandle(hashAlgId, dwFlags, out _hashSize);
 
             // Win7 won't set hHash, Win8+ will; and both will set _hHash.
             // So keep hHash trapped in this scope to prevent (mis-)use of it.
@@ -56,17 +56,6 @@ namespace Internal.Cryptography
                     _hHash = hHash;
                     _reusable = true;
                 }
-            }
-
-            unsafe
-            {
-                int cbSizeOfHashSize;
-                int hashSize;
-                Debug.Assert(_hHash != null);
-                NTSTATUS ntStatus = Interop.BCrypt.BCryptGetProperty(_hHash, Interop.BCrypt.BCryptPropertyStrings.BCRYPT_HASH_LENGTH, &hashSize, sizeof(int), out cbSizeOfHashSize, 0);
-                if (ntStatus != NTSTATUS.STATUS_SUCCESS)
-                    throw Interop.BCrypt.CreateCryptographicException(ntStatus);
-                _hashSize = hashSize;
             }
         }
 

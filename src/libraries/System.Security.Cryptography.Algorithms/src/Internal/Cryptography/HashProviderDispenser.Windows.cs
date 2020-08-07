@@ -49,20 +49,8 @@ namespace Internal.Cryptography
                 // Fall back to a shared handle with no using or dispose.
                 SafeBCryptAlgorithmHandle cachedAlgorithmHandle = BCryptAlgorithmCache.GetCachedBCryptAlgorithmHandle(
                     hashAlgorithmId,
-                    BCryptOpenAlgorithmProviderFlags.None);
-
-                NTSTATUS ntStatus = Interop.BCrypt.BCryptGetProperty(
-                    cachedAlgorithmHandle,
-                    Interop.BCrypt.BCryptPropertyStrings.BCRYPT_HASH_LENGTH,
-                    &hashSize,
-                    sizeof(int),
-                    out _,
-                    0);
-
-                if (ntStatus != NTSTATUS.STATUS_SUCCESS)
-                {
-                    throw Interop.BCrypt.CreateCryptographicException(ntStatus);
-                }
+                    BCryptOpenAlgorithmProviderFlags.None,
+                    out hashSize);
 
                 if (destination.Length < hashSize)
                 {
@@ -124,7 +112,7 @@ namespace Internal.Cryptography
                 {
                     try
                     {
-                        ntStatus = Interop.BCrypt.BCryptHash((uint)algHandle, null /* pbSecret */, 0 /* cbSecret */, pSrc, source.Length, pDest, digestSizeInBytes);
+                        ntStatus = Interop.BCrypt.BCryptHash((uint)algHandle, pbSecret: null, cbSecret: 0, pSrc, source.Length, pDest, digestSizeInBytes);
                     }
                     catch (EntryPointNotFoundException)
                     {
