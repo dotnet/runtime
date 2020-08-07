@@ -64,7 +64,9 @@ namespace System.Xml.Xsl.IlGen
             if (storageType == typeof(int) || storageType == typeof(long) ||
                 storageType == typeof(decimal) || storageType == typeof(double))
             {
-                Type aggType = Type.GetType("System.Xml.Xsl.Runtime." + storageType.Name + "Aggregator")!;
+                string aggTypeName = "System.Xml.Xsl.Runtime." + storageType.Name + "Aggregator";
+                Type? aggType = Type.GetType(aggTypeName);
+                Debug.Assert(aggType != null, $"Could not find type `{aggTypeName}`");
                 AggAvg = XmlILMethods.GetMethod(aggType, "Average");
                 AggAvgResult = XmlILMethods.GetMethod(aggType, "get_AverageResult");
                 AggCreate = XmlILMethods.GetMethod(aggType, "Create");
@@ -94,7 +96,9 @@ namespace System.Xml.Xsl.IlGen
                 SeqAdd = XmlILMethods.GetMethod(SeqType, "Add");
             }
 
-            SeqEmpty = SeqType.GetField("Empty")!;
+            FieldInfo? seqEmpty = SeqType.GetField("Empty");
+            Debug.Assert(seqEmpty != null, "Field `Empty` could not be found");
+            SeqEmpty = seqEmpty;
             SeqReuse = XmlILMethods.GetMethod(SeqType, "CreateOrReuse", SeqType);
             SeqReuseSgl = XmlILMethods.GetMethod(SeqType, "CreateOrReuse", SeqType, storageType);
             SeqSortByKeys = XmlILMethods.GetMethod(SeqType, "SortByKeys");
@@ -1095,7 +1099,6 @@ namespace System.Xml.Xsl.IlGen
         }
 
         [MemberNotNull(nameof(_locXOut))]
-#pragma warning disable CS8774 // Member must have non-null value when exiting
         private void EnsureWriter()
         {
             // If write variable has not yet been initialized, do it now
@@ -1104,8 +1107,9 @@ namespace System.Xml.Xsl.IlGen
                 _locXOut = DeclareLocal("$$$xwrtChk", typeof(XmlQueryOutput));
                 _initWriters = true;
             }
+
+            Debug.Assert(_locXOut != null);
         }
-#pragma warning restore CS8774
 
 
         //-----------------------------------------------

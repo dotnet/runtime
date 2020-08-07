@@ -11,7 +11,7 @@ namespace System.Xml.Xsl
         public abstract string Message { get; }
     }
 
-    public delegate void XsltMessageEncounteredEventHandler(object? sender, XsltMessageEncounteredEventArgs e);
+    public delegate void XsltMessageEncounteredEventHandler(object sender, XsltMessageEncounteredEventArgs e);
 
     public class XsltArgumentList
     {

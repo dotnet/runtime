@@ -34,8 +34,8 @@ namespace System.Xml.Xsl
         // Compiled stylesheet state
         //
         private Stylesheet? _CompiledStylesheet;
-        private List<TheQuery>? _QueryStore;
-        private RootAction? _RootAction;
+        private List<TheQuery> _QueryStore = null!;
+        private RootAction _RootAction = null!;
 
         public XslTransform() { }
 
@@ -120,7 +120,7 @@ namespace System.Xml.Xsl
         public XmlReader Transform(XPathNavigator input, XsltArgumentList? args, XmlResolver? resolver)
         {
             CheckCommand();
-            Processor processor = new Processor(input, args, resolver, _CompiledStylesheet, _QueryStore!, _RootAction!, null);
+            Processor processor = new Processor(input, args, resolver, _CompiledStylesheet, _QueryStore, _RootAction, null);
             return processor.StartReader();
         }
 
@@ -132,7 +132,7 @@ namespace System.Xml.Xsl
         public void Transform(XPathNavigator input, XsltArgumentList? args, XmlWriter output, XmlResolver? resolver)
         {
             CheckCommand();
-            Processor processor = new Processor(input, args, resolver, _CompiledStylesheet, _QueryStore!, _RootAction!, null);
+            Processor processor = new Processor(input, args, resolver, _CompiledStylesheet, _QueryStore, _RootAction, null);
             processor.Execute(output);
         }
 
@@ -143,7 +143,7 @@ namespace System.Xml.Xsl
         public void Transform(XPathNavigator input, XsltArgumentList? args, Stream output, XmlResolver? resolver)
         {
             CheckCommand();
-            Processor processor = new Processor(input, args, resolver, _CompiledStylesheet, _QueryStore!, _RootAction!, null);
+            Processor processor = new Processor(input, args, resolver, _CompiledStylesheet, _QueryStore, _RootAction, null);
             processor.Execute(output);
         }
 
@@ -155,14 +155,14 @@ namespace System.Xml.Xsl
         public void Transform(XPathNavigator input, XsltArgumentList? args, TextWriter output, XmlResolver? resolver)
         {
             CheckCommand();
-            Processor processor = new Processor(input, args, resolver, _CompiledStylesheet, _QueryStore!, _RootAction!, null);
+            Processor processor = new Processor(input, args, resolver, _CompiledStylesheet, _QueryStore, _RootAction, null);
             processor.Execute(output);
         }
 
         public void Transform(XPathNavigator input, XsltArgumentList? args, TextWriter output)
         {
             CheckCommand();
-            Processor processor = new Processor(input, args, _DocumentResolver, _CompiledStylesheet, _QueryStore!, _RootAction!, null);
+            Processor processor = new Processor(input, args, _DocumentResolver, _CompiledStylesheet, _QueryStore, _RootAction, null);
             processor.Execute(output);
         }
 
@@ -273,7 +273,7 @@ namespace System.Xml.Xsl
 
             Debug.Assert(compiler.CompiledStylesheet != null);
             Debug.Assert(compiler.QueryStore != null);
-            Debug.Assert(compiler.QueryStore != null);
+            Debug.Assert(compiler.RootAction != null);
             _CompiledStylesheet = compiler.CompiledStylesheet;
             _QueryStore = compiler.QueryStore;
             _RootAction = compiler.RootAction;

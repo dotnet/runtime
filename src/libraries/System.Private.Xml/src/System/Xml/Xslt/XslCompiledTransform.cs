@@ -420,7 +420,7 @@ namespace System.Xml.Xsl
 
         // SxS: This method does not take any resource name and does not expose any resources to the caller.
         // It's OK to suppress the SxS warning.
-        public void Transform(XmlReader input, XsltArgumentList? arguments, XmlWriter results, XmlResolver documentResolver)
+        public void Transform(XmlReader input, XsltArgumentList? arguments, XmlWriter results, XmlResolver? documentResolver)
         {
 #if FEATURE_COMPILED_XSL
             CheckArguments(input, results);
@@ -433,7 +433,7 @@ namespace System.Xml.Xsl
 
         // SxS: This method does not take any resource name and does not expose any resources to the caller.
         // It's OK to suppress the SxS warning.
-        public void Transform(IXPathNavigable input, XsltArgumentList? arguments, XmlWriter results, XmlResolver documentResolver)
+        public void Transform(IXPathNavigable input, XsltArgumentList? arguments, XmlWriter results, XmlResolver? documentResolver)
         {
 #if FEATURE_COMPILED_XSL
             CheckArguments(input, results);

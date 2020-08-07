@@ -845,7 +845,9 @@ namespace System.Xml.Xsl.IlGen
         {
             if (ndCopy.NodeType == QilNodeType.AttributeCtor)
             {
-                AnalyzeAttributeCtor((ndCopy as QilBinary)!, info);
+                QilBinary? binaryNode = ndCopy as QilBinary;
+                Debug.Assert(binaryNode != null);
+                AnalyzeAttributeCtor(binaryNode, info);
             }
             else
             {
@@ -862,7 +864,8 @@ namespace System.Xml.Xsl.IlGen
         {
             if (ndAttr.Left.NodeType == QilNodeType.LiteralQName)
             {
-                QilName ndName = (ndAttr.Left as QilName)!;
+                QilName? ndName = ndAttr.Left as QilName;
+                Debug.Assert(ndName != null);
                 XmlQualifiedName qname;
                 int idx;
 
