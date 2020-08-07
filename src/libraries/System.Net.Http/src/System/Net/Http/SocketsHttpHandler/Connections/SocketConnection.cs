@@ -3,7 +3,9 @@
 
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
+using System.Net.Http;
 using System.Net.Sockets;
+using System.Runtime.ExceptionServices;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -11,7 +13,7 @@ namespace System.Net.Connections
 {
     internal sealed class SocketConnection : Connection, IConnectionProperties
     {
-        private readonly SocketConnectionNetworkStream _stream;
+        private readonly NetworkStream _stream;
 
         public override EndPoint? RemoteEndPoint => _stream.Socket.RemoteEndPoint;
         public override EndPoint? LocalEndPoint => _stream.Socket.LocalEndPoint;
@@ -19,7 +21,7 @@ namespace System.Net.Connections
 
         public SocketConnection(Socket socket)
         {
-            _stream = new SocketConnectionNetworkStream(socket, this);
+            _stream = new NetworkStream(socket, ownsSocket: true);
         }
 
         protected override ValueTask CloseAsyncCore(ConnectionCloseMethod method, CancellationToken cancellationToken)
@@ -38,7 +40,11 @@ namespace System.Net.Connections
                     _stream.Socket.Dispose();
                 }
 
-                _stream.DisposeWithoutClosingConnection();
+                _stream.Dispose();
+            }
+            catch (SocketException socketException)
+            {
+                return ValueTask.FromException(ExceptionDispatchInfo.SetCurrentStackTrace(NetworkErrorHelper.MapSocketException(socketException)));
             }
             catch (Exception ex)
             {
@@ -60,42 +66,6 @@ namespace System.Net.Connections
 
             property = null;
             return false;
-        }
-
-        // This is done to couple disposal of the SocketConnection and the NetworkStream.
-        private sealed class SocketConnectionNetworkStream : NetworkStream
-        {
-            private readonly SocketConnection _connection;
-
-            public SocketConnectionNetworkStream(Socket socket, SocketConnection connection) : base(socket, ownsSocket: true)
-            {
-                _connection = connection;
-            }
-
-            public void DisposeWithoutClosingConnection()
-            {
-                base.Dispose(true);
-            }
-
-            protected override void Dispose(bool disposing)
-            {
-                if (disposing)
-                {
-                    // This will call base.Dispose().
-                    _connection.Dispose();
-                }
-                else
-                {
-                    base.Dispose(disposing);
-                }
-            }
-
-            public override ValueTask DisposeAsync()
-            {
-                // This will call base.Dispose().
-                Dispose(true);
-                return default;
-            }
         }
     }
 }
