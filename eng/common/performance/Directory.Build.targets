@@ -2,7 +2,7 @@
  <Target Name="UpdateTargetingAndRuntimePack"
          AfterTargets="ResolveFrameworkReferences">
     <PropertyGroup>
-        <ArtifactsBinDir>$(BuildSourcesDirectory)/artifacts/bin/</ArtifactsBinDir>
+        <ArtifactsBinDir>/home/repos/runtime/artifacts/bin/</ArtifactsBinDir>
         <MicrosoftNetCoreAppRefPackDir>$(ArtifactsBinDir)microsoft.netcore.app.ref</MicrosoftNetCoreAppRefPackDir>
         <MicrosoftNetCoreAppRuntimePackDir>$(ArtifactsBinDir)microsoft.netcore.app.runtime.browser-wasm/$(Configuration)</MicrosoftNetCoreAppRuntimePackDir>
     </PropertyGroup>
