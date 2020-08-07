@@ -14,7 +14,7 @@ namespace System.Net.Connections
     internal sealed class SocketConnection : Connection, IConnectionProperties
     {
         private readonly Socket _socket;
-        private readonly SocketsConnectionFactory _streamProvider;
+        private readonly IDataChannelProvider _factory;
         private Stream? _stream;
         private IDuplexPipe? _pipe;
         private readonly IConnectionProperties? _options;
@@ -23,10 +23,10 @@ namespace System.Net.Connections
         public override EndPoint? LocalEndPoint => _socket.LocalEndPoint;
         public override IConnectionProperties ConnectionProperties => this;
 
-        public SocketConnection(Socket socket, SocketsConnectionFactory streamProvider, IConnectionProperties? options)
+        public SocketConnection(Socket socket, IDataChannelProvider factory, IConnectionProperties? options)
         {
             _socket = socket;
-            _streamProvider = streamProvider;
+            _factory = factory;
             _options = options;
         }
 
@@ -67,7 +67,7 @@ namespace System.Net.Connections
         {
             if (_stream == null)
             {
-                _stream = _streamProvider.CreateStreamForConnection(_socket, this);
+                _stream = _factory.CreateStreamForConnection(_socket, this);
             }
             return _stream;
         }
@@ -76,7 +76,7 @@ namespace System.Net.Connections
         {
             if (_pipe == null)
             {
-                _pipe = _streamProvider.CreatePipeForConnection(_socket, this);
+                _pipe = _factory.CreatePipeForConnection(_socket, this);
             }
 
             return _pipe;
@@ -97,6 +97,28 @@ namespace System.Net.Connections
 
             property = null;
             return false;
+        }
+
+        internal interface IDataChannelProvider
+        {
+            Stream CreateStreamForConnection(Socket socket, IConnectionProperties options);
+            IDuplexPipe CreatePipeForConnection(Socket socket, IConnectionProperties options);
+        }
+
+        internal sealed class DuplexStreamPipe : IDuplexPipe
+        {
+            private static readonly StreamPipeReaderOptions s_readerOpts = new StreamPipeReaderOptions(leaveOpen: true);
+            private static readonly StreamPipeWriterOptions s_writerOpts = new StreamPipeWriterOptions(leaveOpen: true);
+
+            public DuplexStreamPipe(Stream stream)
+            {
+                Input = PipeReader.Create(stream, s_readerOpts);
+                Output = PipeWriter.Create(stream, s_writerOpts);
+            }
+
+            public PipeReader Input { get; }
+
+            public PipeWriter Output { get; }
         }
     }
 }

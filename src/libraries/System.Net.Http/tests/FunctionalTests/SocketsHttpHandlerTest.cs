@@ -152,7 +152,7 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         public async Task CustomConnectionFactory_SyncRequest_Fails()
         {
-            await using ConnectionFactory connectionFactory = new SocketsHttpConnectionFactory();
+            await using ConnectionFactory connectionFactory = new SocketsConnectionFactory(SocketType.Stream, ProtocolType.Tcp);
             using SocketsHttpHandler handler = new SocketsHttpHandler
             {
                 ConnectionFactory = connectionFactory

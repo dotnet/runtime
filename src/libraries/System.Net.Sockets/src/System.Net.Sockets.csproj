@@ -14,7 +14,6 @@
   </PropertyGroup>
   <ItemGroup Condition="'$(TargetsBrowser)' != 'true'">
     <!-- All configurations -->
-    <Compile Include="System\Net\Connections\SocketConnection.cs" />
     <Compile Include="System\Net\Connections\SocketsConnectionFactory.cs" />
     <Compile Include="System\Net\Connections\TaskSocketAsyncEventArgs.cs" />
     <Compile Include="System\Net\Sockets\SocketReceiveFromResult.cs" />
@@ -98,6 +97,8 @@
              Link="Common\System\Net\Sockets\ProtocolType.cs" />
     <Compile Include="$(CommonPath)System\Net\Sockets\SocketType.cs"
              Link="Common\System\Net\Sockets\SocketType.cs" />
+    <Compile Include="$(CommonPath)System\Net\Sockets\SocketConnection.cs"
+             Link="Common\System\Net\Sockets\SocketConnection.cs" />
     <Compile Include="$(CommonPath)System\Net\NetworkErrorHelper.cs"
              Link="Common\System\Net\NetworkErrorHelper.cs" />
   </ItemGroup>

@@ -18,9 +18,9 @@ namespace System.Net.Http
 
         bool IConnectionProperties.TryGet(Type propertyKey, [NotNullWhen(true)] out object? property)
         {
-            if (propertyKey == typeof(DnsEndPointWithProperties))
+            if (propertyKey == typeof(HttpRequestMessage))
             {
-                property = this;
+                property = InitialRequest;
                 return true;
             }
 

@@ -12,7 +12,7 @@ namespace System.Net.Connections
     /// <summary>
     /// TODO
     /// </summary>
-    public class SocketsConnectionFactory : ConnectionFactory
+    public class SocketsConnectionFactory : ConnectionFactory, SocketConnection.IDataChannelProvider
     {
         private readonly AddressFamily _addressFamily;
         private readonly SocketType _socketType;
@@ -112,26 +112,10 @@ namespace System.Net.Connections
 
         protected virtual Stream CreateStream(Socket socket, IConnectionProperties? options) => new NetworkStream(socket, ownsSocket: true);
 
-        protected virtual IDuplexPipe CreatePipe(Socket socket, IConnectionProperties? options) => new DuplexStreamPipe(CreateStream(socket, options));
+        protected virtual IDuplexPipe CreatePipe(Socket socket, IConnectionProperties? options) => new SocketConnection.DuplexStreamPipe(CreateStream(socket, options));
 
-        internal Stream CreateStreamForConnection(Socket socket, IConnectionProperties options) => CreateStream(socket, options);
+        Stream SocketConnection.IDataChannelProvider.CreateStreamForConnection(Socket socket, IConnectionProperties options) => CreateStream(socket, options);
 
-        internal IDuplexPipe CreatePipeForConnection(Socket socket, IConnectionProperties options) => CreatePipe(socket, options);
-
-        private sealed class DuplexStreamPipe : IDuplexPipe
-        {
-            private static readonly StreamPipeReaderOptions s_readerOpts = new StreamPipeReaderOptions(leaveOpen: true);
-            private static readonly StreamPipeWriterOptions s_writerOpts = new StreamPipeWriterOptions(leaveOpen: true);
-
-            public DuplexStreamPipe(Stream stream)
-            {
-                Input = PipeReader.Create(stream, s_readerOpts);
-                Output = PipeWriter.Create(stream, s_writerOpts);
-            }
-
-            public PipeReader Input { get; }
-
-            public PipeWriter Output { get; }
-        }
+        IDuplexPipe SocketConnection.IDataChannelProvider.CreatePipeForConnection(Socket socket, IConnectionProperties options) => CreatePipe(socket, options);
     }
 }

@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using System.IO;
+using System.IO.Pipelines;
 using System.Net.Connections;
 using System.Net.Quic;
 using System.Net.Security;
@@ -48,6 +49,15 @@ namespace System.Net.Http
             }
         }
 
+        // This used to provide the default Stream & Pipe creation methods for SocketConnection
+        private class SyncConnectionDataChannelProvider : SocketConnection.IDataChannelProvider
+        {
+            public static SyncConnectionDataChannelProvider Instance { get; } = new SyncConnectionDataChannelProvider();
+
+            public IDuplexPipe CreatePipeForConnection(Socket socket, IConnectionProperties options) => new SocketConnection.DuplexStreamPipe(new NetworkStream(socket, ownsSocket: true));
+            public Stream CreateStreamForConnection(Socket socket, IConnectionProperties options) => new NetworkStream(socket, ownsSocket: true);
+        }
+
         public static Connection Connect(string host, int port, CancellationToken cancellationToken)
         {
             // For synchronous connections, we can just create a socket and make the connection.
@@ -67,7 +77,7 @@ namespace System.Net.Http
                 throw CreateWrappedException(e, host, port, cancellationToken);
             }
 
-            return new SocketConnection(socket);
+            return new SocketConnection(socket, SyncConnectionDataChannelProvider.Instance, null);
         }
 
         public static ValueTask<SslStream> EstablishSslConnectionAsync(SslClientAuthenticationOptions sslOptions, HttpRequestMessage request, bool async, Stream stream, CancellationToken cancellationToken)
