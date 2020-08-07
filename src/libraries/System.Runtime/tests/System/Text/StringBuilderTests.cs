@@ -2231,12 +2231,12 @@ namespace System.Text.Tests
             Assert.True(sb1.Equals(sb2));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public static unsafe void FailureOnLargeString()
         {
             RemoteExecutor.Invoke(() => // Uses lots of memory
             {
-                AssertExtensions.Throws<ArgumentOutOfRangeException>("valueCount", () =>
+                AssertExtensions.ThrowsAny<ArgumentOutOfRangeException, OutOfMemoryException>(() =>
                 {
                     StringBuilder sb = new StringBuilder();
                     sb.Append(new char[2_000_000_000]);
