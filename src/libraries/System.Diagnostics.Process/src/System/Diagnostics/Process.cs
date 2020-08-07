@@ -20,6 +20,7 @@ namespace System.Diagnostics
     ///       processes. Enables you to start and stop system processes.
     ///    </para>
     /// </devdoc>
+    [Designer("System.Diagnostics.Design.ProcessDesigner, System.Design, Version=4.0.0.0, PublicKeyToken=b03f5f7f11d50a3a")]
     public partial class Process : Component
     {
         private bool _haveProcessId;
