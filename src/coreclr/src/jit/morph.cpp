@@ -13728,9 +13728,9 @@ DONE_MORPHING_CHILDREN:
                             }
                             // otherwise we have a load operation
                             //
-                            // For loads signed/unsigned differences do matter.
+                            // And for loads signed/unsigned differences do matter.
                             //
-                            if (varTypeIsUnsigned(lvaTable[lclNum].lvType) == varTypeIsUnsigned(typ))
+                            else if (varTypeIsUnsigned(lvaTable[lclNum].lvType) == varTypeIsUnsigned(typ))
                             {
                                 tree->gtType = typ = temp->TypeGet();
                                 foldAndReturnTemp  = true;
