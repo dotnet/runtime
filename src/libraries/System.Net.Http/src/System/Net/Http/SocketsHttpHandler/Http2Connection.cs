@@ -134,12 +134,18 @@ namespace System.Net.Http
             _pendingWindowUpdate = 0;
             _idleSinceTickCount = Environment.TickCount64;
 
-            _keepAlivePingDelay = (long)_pool.Settings._keepAlivePingDelay.TotalMilliseconds;
-            _keepAlivePingTimeout = (long)_pool.Settings._keepAlivePingTimeout.TotalMilliseconds;
+
+            _keepAlivePingDelay = TimeSpanToMs(_pool.Settings._keepAlivePingDelay);
+            _keepAlivePingTimeout = TimeSpanToMs(_pool.Settings._keepAlivePingTimeout);
             _nextPingRequestTimestamp = Environment.TickCount64 + _keepAlivePingDelay;
             _keepAlivePingPolicy = _pool.Settings._keepAlivePingPolicy;
 
             if (NetEventSource.Log.IsEnabled()) TraceConnection(_stream);
+
+            static long TimeSpanToMs(TimeSpan value) {
+                double milliseconds = value.TotalMilliseconds;
+                return (long)(milliseconds > int.MaxValue? int.MaxValue : milliseconds);
+            }
         }
 
         private object SyncObject => _httpStreams;
@@ -1908,9 +1914,9 @@ namespace System.Net.Http
         {
             if (_keepAlivePingPolicy == HttpKeepAlivePingPolicy.WithActiveRequests)
             {
-                lock(SyncObject)
+                lock (SyncObject)
                 {
-                    if(_httpStreams.Count == 0) return;
+                    if (_httpStreams.Count == 0) return;
                 }
             }
 
@@ -1919,7 +1925,7 @@ namespace System.Net.Http
             {
                 case KeepAliveState.None:
                     // Check whether keep alive delay has passed since last frame received
-                    if (now > _nextPingRequestTimestamp && _keepAlivePingDelay != Timeout.InfiniteTimeSpan.TotalMilliseconds)
+                    if (now > _nextPingRequestTimestamp)
                     {
                         // Set the status directly to ping sent and set the timestamp
                         _keepAliveState = KeepAliveState.PingSent;

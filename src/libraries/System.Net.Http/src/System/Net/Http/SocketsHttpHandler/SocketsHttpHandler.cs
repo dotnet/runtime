@@ -301,7 +301,7 @@ namespace System.Net.Http
                 }
 
                 CheckDisposedOrStarted();
-                _settings._keepAlivePingDelay = value.TotalMilliseconds > int.MaxValue? TimeSpan.FromMilliseconds(int.MaxValue) : value;
+                _settings._keepAlivePingDelay = value;
             }
         }
 
@@ -326,7 +326,7 @@ namespace System.Net.Http
                 }
 
                 CheckDisposedOrStarted();
-                _settings._keepAlivePingTimeout = value.TotalMilliseconds > int.MaxValue? TimeSpan.FromMilliseconds(int.MaxValue) : value;
+                _settings._keepAlivePingTimeout = value;
             }
         }
 
