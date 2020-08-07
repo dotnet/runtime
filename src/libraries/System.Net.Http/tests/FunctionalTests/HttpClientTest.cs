@@ -157,26 +157,22 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [Theory]
-        [InlineData(null)]
-        [InlineData("/something.html")]
-        public void GetAsync_NoBaseAddress_InvalidUri_ThrowsException(string uri)
+        [Fact]
+        public void GetAsync_NoBaseAddress_InvalidUri_ThrowsException()
         {
             using (var client = new HttpClient(new CustomResponseHandler((r, c) => Task.FromResult(new HttpResponseMessage()))))
             {
-                Assert.Throws<InvalidOperationException>(() => { client.GetAsync(uri == null ? null : new Uri(uri, UriKind.RelativeOrAbsolute)); });
+                Assert.Throws<InvalidOperationException>(() => { client.GetAsync(new Uri("/something.html", UriKind.RelativeOrAbsolute)); });
             }
         }
 
-        [Theory]
-        [InlineData(null)]
-        [InlineData("/")]
-        public async Task GetAsync_BaseAddress_ValidUri_Success(string uri)
+        [Fact]
+        public async Task GetAsync_BaseAddress_ValidUri_Success()
         {
             using (var client = new HttpClient(new CustomResponseHandler((r,c) => Task.FromResult(new HttpResponseMessage()))))
             {
                 client.BaseAddress = new Uri(CreateFakeUri());
-                using (HttpResponseMessage response = await client.GetAsync(uri, HttpCompletionOption.ResponseHeadersRead))
+                using (HttpResponseMessage response = await client.GetAsync("/", HttpCompletionOption.ResponseHeadersRead))
                 {
                     Assert.Equal(HttpStatusCode.OK, response.StatusCode);
                 }
@@ -571,6 +567,49 @@ namespace System.Net.Http.Functional.Tests
             Assert.Throws<ObjectDisposedException>(() => { client.Timeout = TimeSpan.FromSeconds(1); });
         }
 
+        [Fact]
+        public void StartRequest_Throws_ArgumentNullException()
+        {
+            var client = new HttpClient();
+
+            Assert.Equal("requestUri", Assert.Throws<ArgumentNullException>(() => { client.DeleteAsync((string)null); }).ParamName);
+            Assert.Equal("requestUri", Assert.Throws<ArgumentNullException>(() => { client.DeleteAsync((Uri)null); }).ParamName);
+            Assert.Equal("requestUri", Assert.Throws<ArgumentNullException>(() => { client.DeleteAsync((string)null, default); }).ParamName);
+            Assert.Equal("requestUri", Assert.Throws<ArgumentNullException>(() => { client.DeleteAsync((Uri)null, default); }).ParamName);
+            Assert.Equal("requestUri", Assert.Throws<ArgumentNullException>(() => { client.GetAsync((string)null); }).ParamName);
+            Assert.Equal("requestUri", Assert.Throws<ArgumentNullException>(() => { client.GetAsync((Uri)null); }).ParamName);
+            Assert.Equal("requestUri", Assert.Throws<ArgumentNullException>(() => { client.GetAsync((string)null, (HttpCompletionOption)default); }).ParamName);
+            Assert.Equal("requestUri", Assert.Throws<ArgumentNullException>(() => { client.GetAsync((Uri)null, (HttpCompletionOption)default); }).ParamName);
+            Assert.Equal("requestUri", Assert.Throws<ArgumentNullException>(() => { client.GetAsync((string)null, (CancellationToken)default); }).ParamName);
+            Assert.Equal("requestUri", Assert.Throws<ArgumentNullException>(() => { client.GetAsync((Uri)null, (CancellationToken)default); }).ParamName);
+            Assert.Equal("requestUri", Assert.Throws<ArgumentNullException>(() => { client.GetAsync((string)null, default, default); }).ParamName);
+            Assert.Equal("requestUri", Assert.Throws<ArgumentNullException>(() => { client.GetAsync((Uri)null, default, default); }).ParamName);
+            Assert.Equal("requestUri", Assert.Throws<ArgumentNullException>(() => { client.GetByteArrayAsync((string)null); }).ParamName);
+            Assert.Equal("requestUri", Assert.Throws<ArgumentNullException>(() => { client.GetByteArrayAsync((Uri)null); }).ParamName);
+            Assert.Equal("requestUri", Assert.Throws<ArgumentNullException>(() => { client.GetByteArrayAsync((string)null, default); }).ParamName);
+            Assert.Equal("requestUri", Assert.Throws<ArgumentNullException>(() => { client.GetByteArrayAsync((Uri)null, default); }).ParamName);
+            Assert.Equal("requestUri", Assert.Throws<ArgumentNullException>(() => { client.GetStreamAsync((string)null); }).ParamName);
+            Assert.Equal("requestUri", Assert.Throws<ArgumentNullException>(() => { client.GetStreamAsync((Uri)null); }).ParamName);
+            Assert.Equal("requestUri", Assert.Throws<ArgumentNullException>(() => { client.GetStreamAsync((string)null, default); }).ParamName);
+            Assert.Equal("requestUri", Assert.Throws<ArgumentNullException>(() => { client.GetStreamAsync((Uri)null, default); }).ParamName);
+            Assert.Equal("requestUri", Assert.Throws<ArgumentNullException>(() => { client.GetStringAsync((string)null); }).ParamName);
+            Assert.Equal("requestUri", Assert.Throws<ArgumentNullException>(() => { client.GetStringAsync((Uri)null); }).ParamName);
+            Assert.Equal("requestUri", Assert.Throws<ArgumentNullException>(() => { client.GetStringAsync((string)null, default); }).ParamName);
+            Assert.Equal("requestUri", Assert.Throws<ArgumentNullException>(() => { client.GetStringAsync((Uri)null, default); }).ParamName);
+            Assert.Equal("requestUri", Assert.Throws<ArgumentNullException>(() => { client.PostAsync((string)null, new ByteArrayContent(new byte[1])); }).ParamName);
+            Assert.Equal("requestUri", Assert.Throws<ArgumentNullException>(() => { client.PostAsync((Uri)null, new ByteArrayContent(new byte[1])); }).ParamName);
+            Assert.Equal("requestUri", Assert.Throws<ArgumentNullException>(() => { client.PostAsync((string)null, new ByteArrayContent(new byte[1]), default); }).ParamName);
+            Assert.Equal("requestUri", Assert.Throws<ArgumentNullException>(() => { client.PostAsync((Uri)null, new ByteArrayContent(new byte[1]), default); }).ParamName);
+            Assert.Equal("requestUri", Assert.Throws<ArgumentNullException>(() => { client.PutAsync((string)null, new ByteArrayContent(new byte[1])); }).ParamName);
+            Assert.Equal("requestUri", Assert.Throws<ArgumentNullException>(() => { client.PutAsync((Uri)null, new ByteArrayContent(new byte[1])); }).ParamName);
+            Assert.Equal("requestUri", Assert.Throws<ArgumentNullException>(() => { client.PutAsync((string)null, new ByteArrayContent(new byte[1]), default); }).ParamName);
+            Assert.Equal("requestUri", Assert.Throws<ArgumentNullException>(() => { client.PutAsync((Uri)null, new ByteArrayContent(new byte[1]), default); }).ParamName);
+            Assert.Equal("requestUri", Assert.Throws<ArgumentNullException>(() => { client.PatchAsync((string)null, new ByteArrayContent(new byte[1])); }).ParamName);
+            Assert.Equal("requestUri", Assert.Throws<ArgumentNullException>(() => { client.PatchAsync((Uri)null, new ByteArrayContent(new byte[1])); }).ParamName);
+            Assert.Equal("requestUri", Assert.Throws<ArgumentNullException>(() => { client.PatchAsync((string)null, new ByteArrayContent(new byte[1]), default); }).ParamName);
+            Assert.Equal("requestUri", Assert.Throws<ArgumentNullException>(() => { client.PatchAsync((Uri)null, new ByteArrayContent(new byte[1]), default); }).ParamName);
+        }
+
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
@@ -748,7 +787,7 @@ namespace System.Net.Http.Functional.Tests
         {
             int currentThreadId = Thread.CurrentThread.ManagedThreadId;
 
-            var client = new HttpClient(new CustomResponseHandler((r, c) => 
+            var client = new HttpClient(new CustomResponseHandler((r, c) =>
             {
                 Assert.Equal(currentThreadId, Thread.CurrentThread.ManagedThreadId);
                 return Task.FromResult(new HttpResponseMessage()
@@ -768,7 +807,7 @@ namespace System.Net.Http.Functional.Tests
                             Assert.Equal(currentThreadId, Thread.CurrentThread.ManagedThreadId);
                         })
                     }, completionOption);
-                    
+
                 Stream contentStream = response.Content.ReadAsStream();
                 Assert.Equal(currentThreadId, Thread.CurrentThread.ManagedThreadId);
             }
@@ -804,7 +843,7 @@ namespace System.Net.Http.Functional.Tests
                         }, completionOption);
 
                         Stream contentStream = response.Content.ReadAsStream();
-                        Assert.Equal(currentThreadId, Thread.CurrentThread.ManagedThreadId);                        
+                        Assert.Equal(currentThreadId, Thread.CurrentThread.ManagedThreadId);
                         using (StreamReader sr = new StreamReader(contentStream))
                         {
                             Assert.Equal(content, sr.ReadToEnd());
@@ -857,13 +896,13 @@ namespace System.Net.Http.Functional.Tests
                     Assert.IsNotType<TimeoutException>(ex.InnerException);
                 },
                 async server =>
-                { 
+                {
                     await server.AcceptConnectionAsync(async connection =>
                     {
                         try
                         {
                             await connection.ReadRequestHeaderAsync();
-                            cts.Cancel();                        
+                            cts.Cancel();
                             await connection.ReadRequestBodyAsync();
                         }
                         catch { }
@@ -901,7 +940,7 @@ namespace System.Net.Http.Functional.Tests
                     Assert.IsType<TimeoutException>(ex.InnerException);
                 },
                 async server =>
-                { 
+                {
                     await server.AcceptConnectionAsync(async connection =>
                     {
                         try
@@ -959,7 +998,7 @@ namespace System.Net.Http.Functional.Tests
                         }
                         catch { }
                     });
-                }); 
+                });
         }
 
         [Fact]
@@ -999,7 +1038,7 @@ namespace System.Net.Http.Functional.Tests
                         }
                         catch { }
                     });
-                }); 
+                });
         }
 
         [Fact]

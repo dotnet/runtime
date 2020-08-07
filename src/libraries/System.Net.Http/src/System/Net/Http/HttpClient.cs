@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Net.Http.Headers;
 using System.Runtime.CompilerServices;
+using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -135,16 +136,16 @@ namespace System.Net.Http
 
         #region Simple Get Overloads
 
-        public Task<string> GetStringAsync(string? requestUri) =>
+        public Task<string> GetStringAsync(string requestUri) =>
             GetStringAsync(CreateUri(requestUri));
 
-        public Task<string> GetStringAsync(Uri? requestUri) =>
+        public Task<string> GetStringAsync(Uri requestUri) =>
             GetStringAsync(requestUri, CancellationToken.None);
 
-        public Task<string> GetStringAsync(string? requestUri, CancellationToken cancellationToken) =>
+        public Task<string> GetStringAsync(string requestUri, CancellationToken cancellationToken) =>
             GetStringAsync(CreateUri(requestUri), cancellationToken);
 
-        public Task<string> GetStringAsync(Uri? requestUri, CancellationToken cancellationToken) =>
+        public Task<string> GetStringAsync(Uri requestUri, CancellationToken cancellationToken) =>
             GetStringAsyncCore(GetAsync(requestUri, HttpCompletionOption.ResponseHeadersRead, cancellationToken), cancellationToken);
 
         private async Task<string> GetStringAsyncCore(Task<HttpResponseMessage> getTask, CancellationToken cancellationToken)
@@ -192,16 +193,16 @@ namespace System.Net.Http
             }
         }
 
-        public Task<byte[]> GetByteArrayAsync(string? requestUri) =>
+        public Task<byte[]> GetByteArrayAsync(string requestUri) =>
             GetByteArrayAsync(CreateUri(requestUri));
 
-        public Task<byte[]> GetByteArrayAsync(Uri? requestUri) =>
+        public Task<byte[]> GetByteArrayAsync(Uri requestUri) =>
             GetByteArrayAsync(requestUri, CancellationToken.None);
 
-        public Task<byte[]> GetByteArrayAsync(string? requestUri, CancellationToken cancellationToken) =>
+        public Task<byte[]> GetByteArrayAsync(string requestUri, CancellationToken cancellationToken) =>
             GetByteArrayAsync(CreateUri(requestUri), cancellationToken);
 
-        public Task<byte[]> GetByteArrayAsync(Uri? requestUri, CancellationToken cancellationToken) =>
+        public Task<byte[]> GetByteArrayAsync(Uri requestUri, CancellationToken cancellationToken) =>
             GetByteArrayAsyncCore(GetAsync(requestUri, HttpCompletionOption.ResponseHeadersRead, cancellationToken), cancellationToken);
 
         private async Task<byte[]> GetByteArrayAsyncCore(Task<HttpResponseMessage> getTask, CancellationToken cancellationToken)
@@ -280,16 +281,16 @@ namespace System.Net.Http
             }
         }
 
-        public Task<Stream> GetStreamAsync(string? requestUri) =>
+        public Task<Stream> GetStreamAsync(string requestUri) =>
             GetStreamAsync(CreateUri(requestUri));
 
-        public Task<Stream> GetStreamAsync(string? requestUri, CancellationToken cancellationToken) =>
+        public Task<Stream> GetStreamAsync(string requestUri, CancellationToken cancellationToken) =>
             GetStreamAsync(CreateUri(requestUri), cancellationToken);
 
-        public Task<Stream> GetStreamAsync(Uri? requestUri) =>
+        public Task<Stream> GetStreamAsync(Uri requestUri) =>
             GetStreamAsync(requestUri, CancellationToken.None);
 
-        public Task<Stream> GetStreamAsync(Uri? requestUri, CancellationToken cancellationToken) =>
+        public Task<Stream> GetStreamAsync(Uri requestUri, CancellationToken cancellationToken) =>
             FinishGetStreamAsync(GetAsync(requestUri, HttpCompletionOption.ResponseHeadersRead, cancellationToken), cancellationToken);
 
         private async Task<Stream> FinishGetStreamAsync(Task<HttpResponseMessage> getTask, CancellationToken cancellationToken)
@@ -306,137 +307,147 @@ namespace System.Net.Http
 
         #region REST Send Overloads
 
-        public Task<HttpResponseMessage> GetAsync(string? requestUri)
+        public Task<HttpResponseMessage> GetAsync(string requestUri)
         {
             return GetAsync(CreateUri(requestUri));
         }
 
-        public Task<HttpResponseMessage> GetAsync(Uri? requestUri)
+        public Task<HttpResponseMessage> GetAsync(Uri requestUri)
         {
             return GetAsync(requestUri, defaultCompletionOption);
         }
 
-        public Task<HttpResponseMessage> GetAsync(string? requestUri, HttpCompletionOption completionOption)
+        public Task<HttpResponseMessage> GetAsync(string requestUri, HttpCompletionOption completionOption)
         {
             return GetAsync(CreateUri(requestUri), completionOption);
         }
 
-        public Task<HttpResponseMessage> GetAsync(Uri? requestUri, HttpCompletionOption completionOption)
+        public Task<HttpResponseMessage> GetAsync(Uri requestUri, HttpCompletionOption completionOption)
         {
             return GetAsync(requestUri, completionOption, CancellationToken.None);
         }
 
-        public Task<HttpResponseMessage> GetAsync(string? requestUri, CancellationToken cancellationToken)
+        public Task<HttpResponseMessage> GetAsync(string requestUri, CancellationToken cancellationToken)
         {
             return GetAsync(CreateUri(requestUri), cancellationToken);
         }
 
-        public Task<HttpResponseMessage> GetAsync(Uri? requestUri, CancellationToken cancellationToken)
+        public Task<HttpResponseMessage> GetAsync(Uri requestUri, CancellationToken cancellationToken)
         {
             return GetAsync(requestUri, defaultCompletionOption, cancellationToken);
         }
 
-        public Task<HttpResponseMessage> GetAsync(string? requestUri, HttpCompletionOption completionOption,
+        public Task<HttpResponseMessage> GetAsync(string requestUri, HttpCompletionOption completionOption,
             CancellationToken cancellationToken)
         {
             return GetAsync(CreateUri(requestUri), completionOption, cancellationToken);
         }
 
-        public Task<HttpResponseMessage> GetAsync(Uri? requestUri, HttpCompletionOption completionOption,
+        public Task<HttpResponseMessage> GetAsync(Uri requestUri, HttpCompletionOption completionOption,
             CancellationToken cancellationToken)
         {
+            if (requestUri is null) throw new ArgumentNullException(nameof(requestUri));
+
             return SendAsync(CreateRequestMessage(HttpMethod.Get, requestUri), completionOption, cancellationToken);
         }
 
-        public Task<HttpResponseMessage> PostAsync(string? requestUri, HttpContent content)
+        public Task<HttpResponseMessage> PostAsync(string requestUri, HttpContent content)
         {
             return PostAsync(CreateUri(requestUri), content);
         }
 
-        public Task<HttpResponseMessage> PostAsync(Uri? requestUri, HttpContent content)
+        public Task<HttpResponseMessage> PostAsync(Uri requestUri, HttpContent content)
         {
             return PostAsync(requestUri, content, CancellationToken.None);
         }
 
-        public Task<HttpResponseMessage> PostAsync(string? requestUri, HttpContent content,
+        public Task<HttpResponseMessage> PostAsync(string requestUri, HttpContent content,
             CancellationToken cancellationToken)
         {
             return PostAsync(CreateUri(requestUri), content, cancellationToken);
         }
 
-        public Task<HttpResponseMessage> PostAsync(Uri? requestUri, HttpContent content,
+        public Task<HttpResponseMessage> PostAsync(Uri requestUri, HttpContent content,
             CancellationToken cancellationToken)
         {
+            if (requestUri is null) throw new ArgumentNullException(nameof(requestUri));
+
             HttpRequestMessage request = CreateRequestMessage(HttpMethod.Post, requestUri);
             request.Content = content;
             return SendAsync(request, cancellationToken);
         }
 
-        public Task<HttpResponseMessage> PutAsync(string? requestUri, HttpContent content)
+        public Task<HttpResponseMessage> PutAsync(string requestUri, HttpContent content)
         {
             return PutAsync(CreateUri(requestUri), content);
         }
 
-        public Task<HttpResponseMessage> PutAsync(Uri? requestUri, HttpContent content)
+        public Task<HttpResponseMessage> PutAsync(Uri requestUri, HttpContent content)
         {
             return PutAsync(requestUri, content, CancellationToken.None);
         }
 
-        public Task<HttpResponseMessage> PutAsync(string? requestUri, HttpContent content,
+        public Task<HttpResponseMessage> PutAsync(string requestUri, HttpContent content,
             CancellationToken cancellationToken)
         {
             return PutAsync(CreateUri(requestUri), content, cancellationToken);
         }
 
-        public Task<HttpResponseMessage> PutAsync(Uri? requestUri, HttpContent content,
+        public Task<HttpResponseMessage> PutAsync(Uri requestUri, HttpContent content,
             CancellationToken cancellationToken)
         {
+            if (requestUri is null) throw new ArgumentNullException(nameof(requestUri));
+
             HttpRequestMessage request = CreateRequestMessage(HttpMethod.Put, requestUri);
             request.Content = content;
             return SendAsync(request, cancellationToken);
         }
 
-        public Task<HttpResponseMessage> PatchAsync(string? requestUri, HttpContent content)
+        public Task<HttpResponseMessage> PatchAsync(string requestUri, HttpContent content)
         {
             return PatchAsync(CreateUri(requestUri), content);
         }
 
-        public Task<HttpResponseMessage> PatchAsync(Uri? requestUri, HttpContent content)
+        public Task<HttpResponseMessage> PatchAsync(Uri requestUri, HttpContent content)
         {
             return PatchAsync(requestUri, content, CancellationToken.None);
         }
 
-        public Task<HttpResponseMessage> PatchAsync(string? requestUri, HttpContent content,
+        public Task<HttpResponseMessage> PatchAsync(string requestUri, HttpContent content,
             CancellationToken cancellationToken)
         {
             return PatchAsync(CreateUri(requestUri), content, cancellationToken);
         }
 
-        public Task<HttpResponseMessage> PatchAsync(Uri? requestUri, HttpContent content,
+        public Task<HttpResponseMessage> PatchAsync(Uri requestUri, HttpContent content,
             CancellationToken cancellationToken)
         {
+            if (requestUri is null) throw new ArgumentNullException(nameof(requestUri));
+
             HttpRequestMessage request = CreateRequestMessage(HttpMethod.Patch, requestUri);
             request.Content = content;
             return SendAsync(request, cancellationToken);
         }
 
-        public Task<HttpResponseMessage> DeleteAsync(string? requestUri)
+        public Task<HttpResponseMessage> DeleteAsync(string requestUri)
         {
             return DeleteAsync(CreateUri(requestUri));
         }
 
-        public Task<HttpResponseMessage> DeleteAsync(Uri? requestUri)
+        public Task<HttpResponseMessage> DeleteAsync(Uri requestUri)
         {
             return DeleteAsync(requestUri, CancellationToken.None);
         }
 
-        public Task<HttpResponseMessage> DeleteAsync(string? requestUri, CancellationToken cancellationToken)
+        public Task<HttpResponseMessage> DeleteAsync(string requestUri, CancellationToken cancellationToken)
         {
             return DeleteAsync(CreateUri(requestUri), cancellationToken);
         }
 
-        public Task<HttpResponseMessage> DeleteAsync(Uri? requestUri, CancellationToken cancellationToken)
+        public Task<HttpResponseMessage> DeleteAsync(Uri requestUri, CancellationToken cancellationToken)
         {
+            if (requestUri is null) throw new ArgumentNullException(nameof(requestUri));
+
             return SendAsync(CreateRequestMessage(HttpMethod.Delete, requestUri), cancellationToken);
         }
 
@@ -799,6 +810,7 @@ namespace System.Net.Http
             }
         }
 
+        [return: NotNullIfNotNull("uri")]
         private Uri? CreateUri(string? uri) =>
             string.IsNullOrEmpty(uri) ? null : new Uri(uri, UriKind.RelativeOrAbsolute);
 
