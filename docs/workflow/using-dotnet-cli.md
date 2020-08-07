@@ -17,7 +17,7 @@ For other walkthroughs see:
     artifacts\packages\<configuration>\Shipping\
 ```
 
-2. Acquired the latest nightly .NET SDK from [here](https://github.com/dotnet/installer) and added it's root folder to your [path](requirements/windows-requirements.md#adding-to-the-default-path-variable)
+2. Acquired the latest nightly .NET SDK from [here](https://github.com/dotnet/installer) and added its root folder to your [path](requirements/windows-requirements.md#adding-to-the-default-path-variable)
 
 ## First Run
 
