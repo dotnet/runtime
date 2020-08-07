@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk" DefaultTargets="BuildApp">
   <ItemGroup>
-     <TestAssemblyList Include="/Users/naricc/workspace/runtime-webassembly-ci//artifacts/tests/coreclr/browser.wasm.Debug/test_assemblies.txt" />
+     <TestAssemblyList Include="$(ArtifactsDir)/tests/coreclr/browser.wasm.$(Configuration)/test_assemblies.txt" />
   </ItemGroup>
 
   <PropertyGroup>
