@@ -869,6 +869,12 @@ namespace DebuggerTests
             return bp1_res;
         }
 
+        internal async Task<Result> SetPauseOnException(string state)
+        {
+            var exc_res = await ctx.cli.SendCommand("Debugger.setPauseOnExceptions", JObject.FromObject(new { state = state }), ctx.token);
+            return exc_res;
+        }
+
         internal async Task<Result> SetBreakpointInMethod(string assembly, string type, string method, int lineOffset = 0, int col = 0)
         {
             var req = JObject.FromObject(new { assemblyName = assembly, typeName = type, methodName = method, lineOffset = lineOffset });

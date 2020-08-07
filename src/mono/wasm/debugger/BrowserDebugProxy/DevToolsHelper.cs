@@ -175,6 +175,8 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         public static MonoCommands GetCallStack() => new MonoCommands("MONO.mono_wasm_get_call_stack()");
 
+        public static MonoCommands GetExceptionObject () => new MonoCommands ("MONO.mono_wasm_get_exception_object()");
+
         public static MonoCommands IsRuntimeReady() => new MonoCommands("MONO.mono_wasm_runtime_is_ready");
 
         public static MonoCommands StartSingleStepping(StepKind kind) => new MonoCommands($"MONO.mono_wasm_start_single_stepping ({(int)kind})");
@@ -200,6 +202,8 @@ namespace Microsoft.WebAssembly.Diagnostics
         public static MonoCommands CallFunctionOn(JToken args) => new MonoCommands($"MONO.mono_wasm_call_function_on ({args.ToString ()})");
 
         public static MonoCommands Resume() => new MonoCommands($"MONO.mono_wasm_debugger_resume ()");
+
+        public static MonoCommands SetPauseOnExceptions (string state) => new MonoCommands ($"MONO.mono_wasm_set_pause_on_exceptions(\"{state}\")");
     }
 
     internal enum MonoErrorCodes
