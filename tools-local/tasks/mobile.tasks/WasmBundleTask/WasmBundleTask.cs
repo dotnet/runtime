@@ -52,7 +52,7 @@ public class WasmBundleTask : Task
         if (FileName == null) {
             throw new ArgumentException($"Invalid file name");
         }
-        using (var file = File.OpenWrite(FileName))
+        using (var file = File.Open(FileName, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.ReadWrite))
         {
             var jsonBytes = data.json_bytes;
             var stream = data.stream;
