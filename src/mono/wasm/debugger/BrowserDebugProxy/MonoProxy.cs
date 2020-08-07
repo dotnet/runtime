@@ -99,9 +99,9 @@ namespace Microsoft.WebAssembly.Diagnostics
                         //TODO figure out how to stich out more frames and, in particular what happens when real wasm is on the stack
                         var top_func = args?["callFrames"] ? [0] ? ["functionName"]?.Value<string>();
 
-                        if (top_func == "mono_wasm_fire_bp" || top_func == "_mono_wasm_fire_bp")
+                        if (top_func == "mono_wasm_fire_bp" || top_func == "_mono_wasm_fire_bp" || top_func == "_mono_wasm_fire_exception")
                         {
-                            return await OnBreakpointHit(sessionId, args, token);
+                            return await OnPause(sessionId, args, token);
                         }
                         break;
                     }
@@ -329,6 +329,14 @@ namespace Microsoft.WebAssembly.Diagnostics
                         return true;
                     }
 
+                case "Debugger.setPauseOnExceptions": 
+                    {
+                        string state = args["state"].Value<string> ();
+                        await SendMonoCommand(id, MonoCommands.SetPauseOnExceptions (state), token);
+                        // Pass this on to JS too
+                        return false;
+                    }
+
                     // Protocol extensions
                 case "DotnetDebugger.getMethodLocation":
                     {
@@ -449,12 +457,14 @@ namespace Microsoft.WebAssembly.Diagnostics
         }
 
         //static int frame_id=0;
-        async Task<bool> OnBreakpointHit(SessionId sessionId, JObject args, CancellationToken token)
+        async Task<bool> OnPause(SessionId sessionId, JObject args, CancellationToken token)
         {
             //FIXME we should send release objects every now and then? Or intercept those we inject and deal in the runtime
             var res = await SendMonoCommand(sessionId, MonoCommands.GetCallStack(), token);
             var orig_callframes = args?["callFrames"]?.Values<JObject>();
             var context = GetContext(sessionId);
+            JObject data = null;
+            var reason = "other";//other means breakpoint
 
             if (res.IsErr)
             {
@@ -486,8 +496,24 @@ namespace Microsoft.WebAssembly.Diagnostics
             {
                 var function_name = frame["functionName"]?.Value<string>();
                 var url = frame["url"]?.Value<string>();
-                if ("mono_wasm_fire_bp" == function_name ||"_mono_wasm_fire_bp" == function_name)
+                if ("mono_wasm_fire_bp" == function_name ||"_mono_wasm_fire_bp" == function_name ||
+                    "_mono_wasm_fire_exception" == function_name)
                 {
+                    if ("_mono_wasm_fire_exception" == function_name) {
+                        var exception_obj_id = await SendMonoCommand(sessionId, MonoCommands.GetExceptionObject (), token);
+                        var res_val = exception_obj_id.Value? ["result"]? ["value"];
+                        var exception_dotnet_obj_id = new DotnetObjectId("object", res_val?["exception_id"]?.Value<string> ());
+                        data = JObject.FromObject (new {
+                            type        = "object",
+                            subtype     = "error",
+                            className   = res_val? ["class_name"]?.Value<string>(),
+                            uncaught    = res_val? ["uncaught"]?.Value<bool>(),
+                            description = res_val? ["message"]?.Value<string>() + "\n",
+                            objectId    = exception_dotnet_obj_id.ToString()
+                        });
+                        reason = "exception";
+                    }
+
                     var frames = new List<Frame>();
                     int frame_id = 0;
                     var the_mono_frames = res.Value?["result"] ? ["value"] ? ["frames"]?.Values<JObject>();
@@ -580,7 +606,8 @@ namespace Microsoft.WebAssembly.Diagnostics
             var o = JObject.FromObject(new
             {
                 callFrames,
-                reason = "other", //other means breakpoint
+                reason,
+                data,
                 hitBreakpoints = bp_list,
             });
 
