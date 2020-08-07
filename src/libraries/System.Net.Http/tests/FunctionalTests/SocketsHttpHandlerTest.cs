@@ -2310,6 +2310,47 @@ namespace System.Net.Http.Functional.Tests
     {
         public SocketsHttpHandlerTest_HttpClientHandlerTest_Headers_Http2(ITestOutputHelper output) : base(output) { }
         protected override Version UseVersion => HttpVersion.Version20;
+
+        [Fact]
+        public async Task SendAsync_LargeHeaders_Continuation_CorrectlyWritten()
+        {
+            string largeHeaderValue = new string('a', 1024);
+            int count = 20;
+
+            await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
+            {
+                using HttpClient client = CreateHttpClient();
+                client.DefaultRequestVersion = UseVersion;
+
+                // Primes the connection, i.e. forces it to exchange SETTINGS whose ACK sometimes flushed the headers as well.
+                // See: https://github.com/dotnet/runtime/issues/860 for repro description.
+                await client.GetAsync(uri);
+
+                var message = new HttpRequestMessage(HttpMethod.Get, uri) { Version = UseVersion };
+                for (int i = 0; i < count; i++)
+                {
+                    message.Headers.TryAddWithoutValidation("large-header" + i, largeHeaderValue);
+                }
+                var response = await client.SendAsync(TestAsync, message).ConfigureAwait(false);
+            },
+            async server =>
+            {
+                // Discard the first request which only primes the connection.
+                await server.HandleRequestAsync(HttpStatusCode.OK);
+
+                HttpRequestData requestData = await server.HandleRequestAsync(HttpStatusCode.OK);
+
+                if (requestData.Path == "/setup")
+                {
+                    return;
+                }
+
+                for (int i = 0; i < count; i++)
+                {
+                    Assert.Equal(largeHeaderValue, requestData.GetSingleHeaderValue("large-header" + i));
+                }
+            });
+        }
     }
 
     [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.SupportsAlpn))]
