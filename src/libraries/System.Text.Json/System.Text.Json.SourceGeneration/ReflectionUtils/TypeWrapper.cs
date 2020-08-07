@@ -143,7 +143,12 @@ namespace System.Reflection
 
         public override MemberInfo[] GetMembers(BindingFlags bindingAttr)
         {
-            throw new NotImplementedException();
+            var members = new List<MemberInfo>();
+            foreach (ISymbol m in _typeSymbol.GetMembers())
+            {
+                members.Add(new MemberInfoWrapper(m, _metadataLoadContext));
+            }
+            return members.ToArray();
         }
 
         public override MethodInfo[] GetMethods(BindingFlags bindingAttr)

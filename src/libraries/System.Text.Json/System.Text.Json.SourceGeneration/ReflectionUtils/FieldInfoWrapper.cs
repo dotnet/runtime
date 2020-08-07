@@ -48,6 +48,16 @@ namespace System.Reflection
             throw new NotImplementedException();
         }
 
+        public override IList<CustomAttributeData> GetCustomAttributesData()
+        {
+            var attributes = new List<CustomAttributeData>();
+            foreach (AttributeData a in _field.GetAttributes())
+            {
+                attributes.Add(new CustomAttributeDataWrapper(a, _metadataLoadContext));
+            }
+            return attributes;
+        }
+
         public override bool IsDefined(Type attributeType, bool inherit)
         {
             throw new NotImplementedException();

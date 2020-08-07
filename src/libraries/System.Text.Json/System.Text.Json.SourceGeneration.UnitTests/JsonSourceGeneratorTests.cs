@@ -48,15 +48,16 @@ namespace System.Text.Json.SourceGeneration.UnitTests
 
             JsonSerializerSourceGenerator generator = new JsonSerializerSourceGenerator();
 
-            Compilation newCompilation = CompilationHelper.RunGenerators(compilation, out var generatorDiags, generator);
+            Compilation newCompilation = CompilationHelper.RunGenerators(compilation, out ImmutableArray<Diagnostic> generatorDiags, generator);
 
             // Make sure compilation was successful.
             Assert.Empty(generatorDiags);
             Assert.Empty(newCompilation.GetDiagnostics());
 
             // Check base functionality of found types.
-            Assert.Equal(1, generator.foundTypes.Count);
-            Assert.Equal("HelloWorld.MyType", generator.foundTypes["MyType"].FullName);
+            Assert.Equal(1, generator.FoundTypes.Count);
+            Type myType = generator.FoundTypes["MyType"];
+            Assert.Equal("HelloWorld.MyType", myType.FullName);
 
             // Check for received fields, properties and methods in created type.
             string[] expectedPropertyNames = { "PrivatePropertyInt", "PrivatePropertyString", "PublicPropertyInt", "PublicPropertyString",};
@@ -111,10 +112,12 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             Assert.Empty(newCompilation.GetDiagnostics());
 
             // Check base functionality of found types.
-            Assert.Equal(2, generator.foundTypes.Count);
+            Assert.Equal(2, generator.FoundTypes.Count);
+            Type myType = generator.FoundTypes["MyType"];
+            Type notMyType = generator.FoundTypes["NotMyType"];
 
             // Check for MyType.
-            Assert.Equal("HelloWorld.MyType", generator.foundTypes["MyType"].FullName);
+            Assert.Equal("HelloWorld.MyType", myType.FullName);
 
             // Check for received fields, properties and methods for MyType.
             string[] expectedFieldNamesMyType = { "PrivateChar", "PrivateDouble", "PublicChar", "PublicDouble" };
@@ -123,7 +126,7 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             CheckFieldsPropertiesMethods("MyType", ref generator, expectedFieldNamesMyType, expectedPropertyNamesMyType, expectedMethodNamesMyType);
 
             // Check for NotMyType.
-            Assert.Equal("System.Text.Json.Serialization.JsonConverterAttribute", generator.foundTypes["NotMyType"].FullName);
+            Assert.Equal("System.Text.Json.Serialization.JsonConverterAttribute", generator.FoundTypes["NotMyType"].FullName);
 
             // Check for received fields, properties and methods for NotMyType.
             string[] expectedFieldNamesNotMyType = { };
@@ -184,10 +187,10 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             Assert.Empty(newCompilation.GetDiagnostics());
 
             // Check base functionality of found types.
-            Assert.Equal(2, generator.foundTypes.Count);
+            Assert.Equal(2, generator.FoundTypes.Count);
 
             // Check for MyType.
-            Assert.Equal("HelloWorld.MyType", generator.foundTypes["MyType"].FullName);
+            Assert.Equal("HelloWorld.MyType", generator.FoundTypes["MyType"].FullName);
 
             // Check for received fields, properties and methods for MyType.
             string[] expectedFieldNamesMyType = { "PrivateChar", "PrivateDouble", "PublicChar", "PublicDouble" };
@@ -196,7 +199,7 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             CheckFieldsPropertiesMethods("MyType", ref generator, expectedFieldNamesMyType, expectedPropertyNamesMyType, expectedMethodNamesMyType);
 
             // Check for NotMyType.
-            Assert.Equal("System.Text.Json.Serialization.JsonConverterAttribute", generator.foundTypes["NotMyType"].FullName);
+            Assert.Equal("System.Text.Json.Serialization.JsonConverterAttribute", generator.FoundTypes["NotMyType"].FullName);
 
             // Check for received fields, properties and methods for NotMyType.
             string[] expectedFieldNamesNotMyType = { };
@@ -207,9 +210,9 @@ namespace System.Text.Json.SourceGeneration.UnitTests
 
         private void CheckFieldsPropertiesMethods(string typeName, ref JsonSerializerSourceGenerator generator, string[] expectedFields, string[] expectedProperties, string[] expectedMethods)
         {
-            string[] receivedFields = generator.foundTypes[typeName].GetFields().Select(field => field.Name).OrderBy(s => s).ToArray();
-            string[] receivedProperties = generator.foundTypes[typeName].GetProperties().Select(property => property.Name).OrderBy(s => s).ToArray();
-            string[] receivedMethods = generator.foundTypes[typeName].GetMethods().Select(method => method.Name).OrderBy(s => s).ToArray();
+            string[] receivedFields = generator.FoundTypes[typeName].GetFields().Select(field => field.Name).OrderBy(s => s).ToArray();
+            string[] receivedProperties = generator.FoundTypes[typeName].GetProperties().Select(property => property.Name).OrderBy(s => s).ToArray();
+            string[] receivedMethods = generator.FoundTypes[typeName].GetMethods().Select(method => method.Name).OrderBy(s => s).ToArray();
 
             Assert.Equal(expectedFields, receivedFields);
             Assert.Equal(expectedProperties, receivedProperties);

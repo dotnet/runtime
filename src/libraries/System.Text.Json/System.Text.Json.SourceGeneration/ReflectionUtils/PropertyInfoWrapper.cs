@@ -48,6 +48,16 @@ namespace System.Reflection
             throw new NotSupportedException();
         }
 
+        public override IList<CustomAttributeData> GetCustomAttributesData()
+        {
+            var attributes = new List<CustomAttributeData>();
+            foreach (AttributeData a in _property.GetAttributes())
+            {
+                attributes.Add(new CustomAttributeDataWrapper(a, _metadataLoadContext));
+            }
+            return attributes;
+        }
+
         public override MethodInfo GetGetMethod(bool nonPublic)
         {
             return _property.GetMethod!.AsMethodInfo(_metadataLoadContext);

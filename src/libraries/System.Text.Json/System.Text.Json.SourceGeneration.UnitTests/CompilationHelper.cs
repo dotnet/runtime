@@ -4,24 +4,22 @@
 
 using System.Collections.Generic;
 using System.Collections.Immutable;
-using System.Linq;
 using System.Reflection;
 using System.Text.Json.Serialization;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
-using Xunit;
 
 namespace System.Text.Json.SourceGeneration.UnitTests
 {
     public class CompilationHelper
     {
-        public static Compilation CreateCompilation(string source)
+        public static Compilation CreateCompilation(string source, MetadataReference[] additionalReferences = null)
         {
             // Bypass System.Runtime error.
             Assembly systemRuntimeAssembly = Assembly.Load("System.Runtime, Version=5.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a");
             string systemRuntimeAssemblyPath = systemRuntimeAssembly.Location;
 
-            MetadataReference[] references = new MetadataReference[] {
+            List<MetadataReference> references = new List<MetadataReference> {
                 MetadataReference.CreateFromFile(typeof(object).Assembly.Location),
                 MetadataReference.CreateFromFile(typeof(Attribute).Assembly.Location),
                 MetadataReference.CreateFromFile(typeof(JsonSerializableAttribute).Assembly.Location),
@@ -31,10 +29,19 @@ namespace System.Text.Json.SourceGeneration.UnitTests
                 MetadataReference.CreateFromFile(systemRuntimeAssemblyPath),
             };
 
+            // Add additional references as needed.
+            if (additionalReferences != null)
+            {
+                foreach (MetadataReference reference in additionalReferences)
+                {
+                    references.Add(reference);
+                }
+            }
+
             return CSharpCompilation.Create(
                 "TestAssembly",
                 syntaxTrees: new[] { CSharpSyntaxTree.ParseText(source) },
-                references: references,
+                references: references.ToArray(),
                 options: new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary)
             );
         }
