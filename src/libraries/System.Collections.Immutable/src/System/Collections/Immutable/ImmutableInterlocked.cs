@@ -525,7 +525,7 @@ namespace System.Collections.Immutable
 
                 if (priorCollection.IsEmpty)
                 {
-                    value = default(T)!;
+                    value = default;
                     return false;
                 }
 
@@ -580,7 +580,7 @@ namespace System.Collections.Immutable
 
                 if (priorCollection.IsEmpty)
                 {
-                    value = default(T)!;
+                    value = default;
                     return false;
                 }
 
