@@ -14,6 +14,3 @@ clean:
 
 run:
 	cd bin/$(CONFIG)/publish && python server.py
-
-runtimepack:
-	EMSDK_PATH=$(abspath $(TOP)/src/mono/wasm/emsdk) $(TOP)/build.sh -c $(CONFIG) -os Browser -arch wasm -subset Mono+Libs
