@@ -192,10 +192,6 @@ if(TARGET_ARCH_NAME MATCHES "^(arm|armel)$")
   endif (NOT DEFINED CLR_ARM_FPU_CAPABILITY)
 
   add_definitions (-DCLR_ARM_FPU_CAPABILITY=${CLR_ARM_FPU_CAPABILITY})
-
-  if(TARGET_ARCH_NAME STREQUAL "armel")
-    add_compile_options(-mfloat-abi=softfp)
-  endif()
 elseif(TARGET_ARCH_NAME STREQUAL "x86")
   add_compile_options(-m32)
   add_compile_options(-Wno-error=unused-command-line-argument)
