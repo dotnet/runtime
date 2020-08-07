@@ -12,6 +12,10 @@ namespace System.Net.Connections
     /// <summary>
     /// A <see cref="ConnectionFactory"/> to establish socket-based connections.
     /// </summary>
+    /// <remarks>
+    /// When constructed with <see cref="ProtocolType.Tcp"/>, this factory will create connections with <see cref="Socket.NoDelay"/> enabled.
+    /// In case of IPv6 sockets <see cref="Socket.DualMode"/> is also enabled.
+    /// </remarks>
     public class SocketsConnectionFactory : ConnectionFactory, SocketConnection.IDataChannelProvider
     {
         private readonly AddressFamily _addressFamily;
@@ -106,6 +110,10 @@ namespace System.Net.Connections
         /// <param name="endPoint">The <see cref="EndPoint"/> this socket will be connected to.</param>
         /// <param name="options">Properties, if any, that might change how the socket is initialized.</param>
         /// <returns>A new unconnected <see cref="Socket"/>.</returns>
+        /// <remarks>
+        /// In case of TCP sockets, the default implementation of this method will create a socket with <see cref="Socket.NoDelay"/> enabled.
+        /// In case of IPv6 sockets <see cref="Socket.DualMode"/> is also be enabled.
+        /// </remarks>
         protected virtual Socket CreateSocket(
             AddressFamily addressFamily,
             SocketType socketType,
