@@ -9736,6 +9736,10 @@ GenTree* Compiler::fgMorphOneAsgBlockOp(GenTree* tree)
 
         asg->ChangeType(asgType);
         dest->gtFlags |= GTF_DONT_CSE;
+        if (dest->OperIs(GT_IND))
+        {
+            dest->gtFlags |= GTF_IND_ASG_LHS;  // Mark this GT_IND as being the left side of an assignment
+        }
         asg->gtFlags &= ~GTF_EXCEPT;
         asg->gtFlags |= ((dest->gtFlags | src->gtFlags) & GTF_ALL_EFFECT);
         // Un-set GTF_REVERSE_OPS, and it will be set later if appropriate.
@@ -11642,10 +11646,11 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
             // TODO-1stClassStructs: improve this.
             if (op1->IsLocal() || (op1->TypeGet() != TYP_STRUCT))
             {
-                // TODO-Cleanup: consider using GTF_IND_ASG_LHS here, as GTF_DONT_CSE here is used to indicate
-                // that this GT_IND is the LHS of an assignment
-                //
                 op1->gtFlags |= GTF_DONT_CSE;
+                if (op1->OperIs(GT_IND))
+                {
+                    op1->gtFlags |= GTF_IND_ASG_LHS;  // Mark this GT_IND as being the left side of an assignment
+                }
             }
             break;
 
@@ -12740,6 +12745,10 @@ DONE_MORPHING_CHILDREN:
             if (op1->IsLocal() || (op1->TypeGet() != TYP_STRUCT))
             {
                 op1->gtFlags |= GTF_DONT_CSE;
+                if (op1->OperIs(GT_IND))
+                {
+                    op1->gtFlags |= GTF_IND_ASG_LHS;  // Mark this GT_IND as being the left side of an assignment
+                }
             }
             break;
 
@@ -13656,7 +13665,7 @@ DONE_MORPHING_CHILDREN:
             var_types addCastToType;
 
             foldAndReturnTemp = false;
-            isStore           = (tree->gtFlags & GTF_DONT_CSE) != 0;
+            isStore           = (tree->gtFlags & GTF_IND_ASG_LHS) != 0;
             addCastToType     = TYP_VOID; // TYP_VOID means we don't need to insert a cast
 
             temp  = nullptr;
