@@ -8,4 +8,6 @@
     <ProjectReference Include="..\BrowserDebugProxy\BrowserDebugProxy.csproj" />
   </ItemGroup>
 
+  <Target Name="GetFilesToPackage" />
+
 </Project>

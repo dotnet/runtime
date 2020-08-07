@@ -57,7 +57,7 @@
     <DefaultCoreClrSubsets>clr.runtime+linuxdac+clr.corelib+clr.nativecorelib+clr.tools+clr.packages</DefaultCoreClrSubsets>
 
     <DefaultMonoSubsets Condition="'$(MonoEnableLLVM)' == 'true' and '$(MonoLLVMDir)' == ''">mono.llvm+</DefaultMonoSubsets>
-    <DefaultMonoSubsets>$(DefaultMonoSubsets)mono.runtime+mono.corelib</DefaultMonoSubsets>
+    <DefaultMonoSubsets>$(DefaultMonoSubsets)mono.runtime+mono.corelib+mono.packages</DefaultMonoSubsets>
 
     <DefaultLibrariesSubsets>libs.native+libs.ref+libs.src+libs.pretest+libs.packages</DefaultLibrariesSubsets>
 
@@ -92,6 +92,7 @@
     <SubsetName Include="Mono" Description="The Mono runtime and CoreLib." />
     <SubsetName Include="Mono.Runtime" Description="The Mono .NET runtime." />
     <SubsetName Include="Mono.CoreLib" Description="The managed System.Private.CoreLib library for Mono." />
+    <SubsetName Include="Mono.Packages" Description="The projects that produce NuGet packages for the Mono runtime." />
 
     <!-- Libs -->
     <SubsetName Include="Libs" Description="The libraries native part, refs and source assemblies, test infra and packages, but NOT the tests (use Libs.Tests to request those explicitly)" />
@@ -165,6 +166,10 @@
   <!-- Mono sets -->
   <ItemGroup Condition="$(_subset.Contains('+mono.llvm+')) or '$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'Browser'">
     <ProjectToBuild Include="$(MonoProjectRoot)llvm\llvm-init.proj" Category="mono" />
+  </ItemGroup>
+
+  <ItemGroup Condition="$(_subset.Contains('+mono.packages+'))">
+    <ProjectToBuild Include="$(MonoProjectRoot)netcore\nuget\mono-packages.proj" Category="mono" Pack="true" />
   </ItemGroup>
 
   <ItemGroup Condition="$(_subset.Contains('+mono.runtime+'))">
