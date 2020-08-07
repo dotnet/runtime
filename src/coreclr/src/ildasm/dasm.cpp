@@ -3378,11 +3378,12 @@ void PrettyPrintOverrideDecl(ULONG i, __inout __nullterminated char* szString, v
             }
             else if (TypeFromToken(tkDeclSigTok) == mdtMemberRef)
             {
+                const char *pszMemberNameUnused;
                 if (SUCCEEDED(g_pImport->GetNameAndSigOfMemberRef(
                     tkDeclSigTok,
                     &pComSigDecl,
                     &cComSigDecl,
-                    NULL)))
+                    &pszMemberNameUnused)))
                 {
                     successfullyGotDeclSig = true;
                 }
