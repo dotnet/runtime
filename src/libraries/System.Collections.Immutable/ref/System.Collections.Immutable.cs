@@ -122,9 +122,9 @@ namespace System.Collections.Immutable
         public System.ReadOnlyMemory<T> AsMemory() { throw null; }
         public System.ReadOnlySpan<T> AsSpan() { throw null; }
 #endif
-        public System.Collections.Immutable.ImmutableArray<TOther> As<TOther>() where TOther : class { throw null; }
-        public System.Collections.Immutable.ImmutableArray<TOther> CastArray<TOther>() where TOther : class { throw null; }
-        public static System.Collections.Immutable.ImmutableArray<T> CastUp<TDerived>(System.Collections.Immutable.ImmutableArray<TDerived> items) where TDerived : class, T { throw null; }
+        public System.Collections.Immutable.ImmutableArray<TOther> As<TOther>() where TOther : class? { throw null; }
+        public System.Collections.Immutable.ImmutableArray<TOther> CastArray<TOther>() where TOther : class? { throw null; }
+        public static System.Collections.Immutable.ImmutableArray<T> CastUp<TDerived>(System.Collections.Immutable.ImmutableArray<TDerived> items) where TDerived : class?, T { throw null; }
         public System.Collections.Immutable.ImmutableArray<T> Clear() { throw null; }
         public bool Contains(T item) { throw null; }
         public void CopyTo(int sourceIndex, T[] destination, int destinationIndex, int length) { }
@@ -268,8 +268,7 @@ namespace System.Collections.Immutable
         public static System.Collections.Immutable.ImmutableDictionary<TKey, TValue> Create<TKey, TValue>() where TKey : notnull { throw null; }
         public static System.Collections.Immutable.ImmutableDictionary<TKey, TValue> Create<TKey, TValue>(System.Collections.Generic.IEqualityComparer<TKey>? keyComparer) where TKey : notnull { throw null; }
         public static System.Collections.Immutable.ImmutableDictionary<TKey, TValue> Create<TKey, TValue>(System.Collections.Generic.IEqualityComparer<TKey>? keyComparer, System.Collections.Generic.IEqualityComparer<TValue>? valueComparer) where TKey : notnull { throw null; }
-        [return: System.Diagnostics.CodeAnalysis.MaybeNullAttribute]
-        public static TValue GetValueOrDefault<TKey, TValue>(this System.Collections.Immutable.IImmutableDictionary<TKey, TValue> dictionary, TKey key) where TKey : notnull { throw null; }
+        public static TValue? GetValueOrDefault<TKey, TValue>(this System.Collections.Immutable.IImmutableDictionary<TKey, TValue> dictionary, TKey key) where TKey : notnull { throw null; }
         public static TValue GetValueOrDefault<TKey, TValue>(this System.Collections.Immutable.IImmutableDictionary<TKey, TValue> dictionary, TKey key, TValue defaultValue) where TKey : notnull { throw null; }
         public static System.Collections.Immutable.ImmutableDictionary<TKey, TValue> ToImmutableDictionary<TKey, TValue>(this System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<TKey, TValue>> source) where TKey : notnull { throw null; }
         public static System.Collections.Immutable.ImmutableDictionary<TKey, TValue> ToImmutableDictionary<TKey, TValue>(this System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<TKey, TValue>> source, System.Collections.Generic.IEqualityComparer<TKey>? keyComparer) where TKey : notnull { throw null; }
@@ -367,8 +366,7 @@ namespace System.Collections.Immutable
             public bool ContainsKey(TKey key) { throw null; }
             public bool ContainsValue(TValue value) { throw null; }
             public System.Collections.Immutable.ImmutableDictionary<TKey, TValue>.Enumerator GetEnumerator() { throw null; }
-            [return: System.Diagnostics.CodeAnalysis.MaybeNullAttribute]
-            public TValue GetValueOrDefault(TKey key) { throw null; }
+            public TValue? GetValueOrDefault(TKey key) { throw null; }
             public TValue GetValueOrDefault(TKey key, TValue defaultValue) { throw null; }
             public bool Remove(System.Collections.Generic.KeyValuePair<TKey, TValue> item) { throw null; }
             public bool Remove(TKey key) { throw null; }
@@ -520,8 +518,8 @@ namespace System.Collections.Immutable
         public static bool TryPop<T>(ref System.Collections.Immutable.ImmutableStack<T> location, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out T value) { throw null; }
         public static bool TryRemove<TKey, TValue>(ref System.Collections.Immutable.ImmutableDictionary<TKey, TValue> location, TKey key, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TValue value) where TKey : notnull { throw null; }
         public static bool TryUpdate<TKey, TValue>(ref System.Collections.Immutable.ImmutableDictionary<TKey, TValue> location, TKey key, TValue newValue, TValue comparisonValue) where TKey : notnull { throw null; }
-        public static bool Update<T>(ref T location, System.Func<T, T> transformer) where T : class { throw null; }
-        public static bool Update<T, TArg>(ref T location, System.Func<T, TArg, T> transformer, TArg transformerArgument) where T : class { throw null; }
+        public static bool Update<T>(ref T location, System.Func<T, T> transformer) where T : class? { throw null; }
+        public static bool Update<T, TArg>(ref T location, System.Func<T, TArg, T> transformer, TArg transformerArgument) where T : class? { throw null; }
         public static bool Update<T>(ref System.Collections.Immutable.ImmutableArray<T> location, Func<System.Collections.Immutable.ImmutableArray<T>, System.Collections.Immutable.ImmutableArray<T>> transformer) { throw null; }
         public static bool Update<T, TArg>(ref System.Collections.Immutable.ImmutableArray<T> location, Func<System.Collections.Immutable.ImmutableArray<T>, TArg, System.Collections.Immutable.ImmutableArray<T>> transformer, TArg transformerArgument) { throw null; }
     }
@@ -572,14 +570,12 @@ namespace System.Collections.Immutable
         public void CopyTo(T[] array) { }
         public void CopyTo(T[] array, int arrayIndex) { }
         public bool Exists(System.Predicate<T> match) { throw null; }
-        [return: System.Diagnostics.CodeAnalysis.MaybeNullAttribute]
-        public T Find(System.Predicate<T> match) { throw null; }
+        public T? Find(System.Predicate<T> match) { throw null; }
         public System.Collections.Immutable.ImmutableList<T> FindAll(System.Predicate<T> match) { throw null; }
         public int FindIndex(int startIndex, int count, System.Predicate<T> match) { throw null; }
         public int FindIndex(int startIndex, System.Predicate<T> match) { throw null; }
         public int FindIndex(System.Predicate<T> match) { throw null; }
-        [return: System.Diagnostics.CodeAnalysis.MaybeNullAttribute]
-        public T FindLast(System.Predicate<T> match) { throw null; }
+        public T? FindLast(System.Predicate<T> match) { throw null; }
         public int FindLastIndex(int startIndex, int count, System.Predicate<T> match) { throw null; }
         public int FindLastIndex(int startIndex, System.Predicate<T> match) { throw null; }
         public int FindLastIndex(System.Predicate<T> match) { throw null; }
@@ -662,14 +658,12 @@ namespace System.Collections.Immutable
             public void CopyTo(T[] array) { }
             public void CopyTo(T[] array, int arrayIndex) { }
             public bool Exists(System.Predicate<T> match) { throw null; }
-            [return: System.Diagnostics.CodeAnalysis.MaybeNullAttribute]
-            public T Find(System.Predicate<T> match) { throw null; }
+            public T? Find(System.Predicate<T> match) { throw null; }
             public System.Collections.Immutable.ImmutableList<T> FindAll(System.Predicate<T> match) { throw null; }
             public int FindIndex(int startIndex, int count, System.Predicate<T> match) { throw null; }
             public int FindIndex(int startIndex, System.Predicate<T> match) { throw null; }
             public int FindIndex(System.Predicate<T> match) { throw null; }
-            [return: System.Diagnostics.CodeAnalysis.MaybeNullAttribute]
-            public T FindLast(System.Predicate<T> match) { throw null; }
+            public T? FindLast(System.Predicate<T> match) { throw null; }
             public int FindLastIndex(int startIndex, int count, System.Predicate<T> match) { throw null; }
             public int FindLastIndex(int startIndex, System.Predicate<T> match) { throw null; }
             public int FindLastIndex(System.Predicate<T> match) { throw null; }
@@ -866,8 +860,7 @@ namespace System.Collections.Immutable
             public bool ContainsKey(TKey key) { throw null; }
             public bool ContainsValue(TValue value) { throw null; }
             public System.Collections.Immutable.ImmutableSortedDictionary<TKey, TValue>.Enumerator GetEnumerator() { throw null; }
-            [return: System.Diagnostics.CodeAnalysis.MaybeNullAttribute]
-            public TValue GetValueOrDefault(TKey key) { throw null; }
+            public TValue? GetValueOrDefault(TKey key) { throw null; }
             public TValue GetValueOrDefault(TKey key, TValue defaultValue) { throw null; }
             public bool Remove(System.Collections.Generic.KeyValuePair<TKey, TValue> item) { throw null; }
             public bool Remove(TKey key) { throw null; }
@@ -928,10 +921,8 @@ namespace System.Collections.Immutable
         public bool IsEmpty { get { throw null; } }
         public T this[int index] { get { throw null; } }
         public System.Collections.Generic.IComparer<T> KeyComparer { get { throw null; } }
-        [System.Diagnostics.CodeAnalysis.MaybeNullAttribute]
-        public T Max { get { throw null; } }
-        [System.Diagnostics.CodeAnalysis.MaybeNullAttribute]
-        public T Min { get { throw null; } }
+        public T? Max { get { throw null; } }
+        public T? Min { get { throw null; } }
         bool System.Collections.Generic.ICollection<T>.IsReadOnly { get { throw null; } }
         T System.Collections.Generic.IList<T>.this[int index] { get { throw null; } set { } }
         bool System.Collections.ICollection.IsSynchronized { get { throw null; } }
@@ -996,10 +987,8 @@ namespace System.Collections.Immutable
             public int Count { get { throw null; } }
             public T this[int index] { get { throw null; } }
             public System.Collections.Generic.IComparer<T> KeyComparer { get { throw null; } set { } }
-            [System.Diagnostics.CodeAnalysis.MaybeNullAttribute]
-            public T Max { get { throw null; } }
-            [System.Diagnostics.CodeAnalysis.MaybeNullAttribute]
-            public T Min { get { throw null; } }
+            public T? Max { get { throw null; } }
+            public T? Min { get { throw null; } }
             bool System.Collections.Generic.ICollection<T>.IsReadOnly { get { throw null; } }
             bool System.Collections.ICollection.IsSynchronized { get { throw null; } }
             object System.Collections.ICollection.SyncRoot { get { throw null; } }
@@ -1083,32 +1072,24 @@ namespace System.Linq
 {
     public static partial class ImmutableArrayExtensions
     {
-        [return: System.Diagnostics.CodeAnalysis.MaybeNullAttribute]
-        public static T Aggregate<T>(this System.Collections.Immutable.ImmutableArray<T> immutableArray, System.Func<T, T, T> func) { throw null; }
+        public static T? Aggregate<T>(this System.Collections.Immutable.ImmutableArray<T> immutableArray, System.Func<T, T, T> func) { throw null; }
         public static TAccumulate Aggregate<TAccumulate, T>(this System.Collections.Immutable.ImmutableArray<T> immutableArray, TAccumulate seed, System.Func<TAccumulate, T, TAccumulate> func) { throw null; }
         public static TResult Aggregate<TAccumulate, TResult, T>(this System.Collections.Immutable.ImmutableArray<T> immutableArray, TAccumulate seed, System.Func<TAccumulate, T, TAccumulate> func, System.Func<TAccumulate, TResult> resultSelector) { throw null; }
         public static bool All<T>(this System.Collections.Immutable.ImmutableArray<T> immutableArray, System.Func<T, bool> predicate) { throw null; }
         public static bool Any<T>(this System.Collections.Immutable.ImmutableArray<T> immutableArray) { throw null; }
         public static bool Any<T>(this System.Collections.Immutable.ImmutableArray<T> immutableArray, System.Func<T, bool> predicate) { throw null; }
         public static bool Any<T>(this System.Collections.Immutable.ImmutableArray<T>.Builder builder) { throw null; }
-        [return: System.Diagnostics.CodeAnalysis.MaybeNullAttribute]
-        public static T ElementAtOrDefault<T>(this System.Collections.Immutable.ImmutableArray<T> immutableArray, int index) { throw null; }
+        public static T? ElementAtOrDefault<T>(this System.Collections.Immutable.ImmutableArray<T> immutableArray, int index) { throw null; }
         public static T ElementAt<T>(this System.Collections.Immutable.ImmutableArray<T> immutableArray, int index) { throw null; }
-        [return: System.Diagnostics.CodeAnalysis.MaybeNullAttribute]
-        public static T FirstOrDefault<T>(this System.Collections.Immutable.ImmutableArray<T> immutableArray) { throw null; }
-        [return: System.Diagnostics.CodeAnalysis.MaybeNullAttribute]
-        public static T FirstOrDefault<T>(this System.Collections.Immutable.ImmutableArray<T> immutableArray, System.Func<T, bool> predicate) { throw null; }
-        [return: System.Diagnostics.CodeAnalysis.MaybeNullAttribute]
-        public static T FirstOrDefault<T>(this System.Collections.Immutable.ImmutableArray<T>.Builder builder) { throw null; }
+        public static T? FirstOrDefault<T>(this System.Collections.Immutable.ImmutableArray<T> immutableArray) { throw null; }
+        public static T? FirstOrDefault<T>(this System.Collections.Immutable.ImmutableArray<T> immutableArray, System.Func<T, bool> predicate) { throw null; }
+        public static T? FirstOrDefault<T>(this System.Collections.Immutable.ImmutableArray<T>.Builder builder) { throw null; }
         public static T First<T>(this System.Collections.Immutable.ImmutableArray<T> immutableArray) { throw null; }
         public static T First<T>(this System.Collections.Immutable.ImmutableArray<T> immutableArray, System.Func<T, bool> predicate) { throw null; }
         public static T First<T>(this System.Collections.Immutable.ImmutableArray<T>.Builder builder) { throw null; }
-        [return: System.Diagnostics.CodeAnalysis.MaybeNullAttribute]
-        public static T LastOrDefault<T>(this System.Collections.Immutable.ImmutableArray<T> immutableArray) { throw null; }
-        [return: System.Diagnostics.CodeAnalysis.MaybeNullAttribute]
-        public static T LastOrDefault<T>(this System.Collections.Immutable.ImmutableArray<T> immutableArray, System.Func<T, bool> predicate) { throw null; }
-        [return: System.Diagnostics.CodeAnalysis.MaybeNullAttribute]
-        public static T LastOrDefault<T>(this System.Collections.Immutable.ImmutableArray<T>.Builder builder) { throw null; }
+        public static T? LastOrDefault<T>(this System.Collections.Immutable.ImmutableArray<T> immutableArray) { throw null; }
+        public static T? LastOrDefault<T>(this System.Collections.Immutable.ImmutableArray<T> immutableArray, System.Func<T, bool> predicate) { throw null; }
+        public static T? LastOrDefault<T>(this System.Collections.Immutable.ImmutableArray<T>.Builder builder) { throw null; }
         public static T Last<T>(this System.Collections.Immutable.ImmutableArray<T> immutableArray) { throw null; }
         public static T Last<T>(this System.Collections.Immutable.ImmutableArray<T> immutableArray, System.Func<T, bool> predicate) { throw null; }
         public static T Last<T>(this System.Collections.Immutable.ImmutableArray<T>.Builder builder) { throw null; }
@@ -1117,10 +1098,8 @@ namespace System.Linq
         public static bool SequenceEqual<TDerived, TBase>(this System.Collections.Immutable.ImmutableArray<TBase> immutableArray, System.Collections.Generic.IEnumerable<TDerived> items, System.Collections.Generic.IEqualityComparer<TBase>? comparer = null) where TDerived : TBase { throw null; }
         public static bool SequenceEqual<TDerived, TBase>(this System.Collections.Immutable.ImmutableArray<TBase> immutableArray, System.Collections.Immutable.ImmutableArray<TDerived> items, System.Collections.Generic.IEqualityComparer<TBase>? comparer = null) where TDerived : TBase { throw null; }
         public static bool SequenceEqual<TDerived, TBase>(this System.Collections.Immutable.ImmutableArray<TBase> immutableArray, System.Collections.Immutable.ImmutableArray<TDerived> items, System.Func<TBase, TBase, bool> predicate) where TDerived : TBase { throw null; }
-        [return: System.Diagnostics.CodeAnalysis.MaybeNullAttribute]
-        public static T SingleOrDefault<T>(this System.Collections.Immutable.ImmutableArray<T> immutableArray) { throw null; }
-        [return: System.Diagnostics.CodeAnalysis.MaybeNullAttribute]
-        public static T SingleOrDefault<T>(this System.Collections.Immutable.ImmutableArray<T> immutableArray, System.Func<T, bool> predicate) { throw null; }
+        public static T? SingleOrDefault<T>(this System.Collections.Immutable.ImmutableArray<T> immutableArray) { throw null; }
+        public static T? SingleOrDefault<T>(this System.Collections.Immutable.ImmutableArray<T> immutableArray, System.Func<T, bool> predicate) { throw null; }
         public static T Single<T>(this System.Collections.Immutable.ImmutableArray<T> immutableArray) { throw null; }
         public static T Single<T>(this System.Collections.Immutable.ImmutableArray<T> immutableArray, System.Func<T, bool> predicate) { throw null; }
         public static T[] ToArray<T>(this System.Collections.Immutable.ImmutableArray<T> immutableArray) { throw null; }

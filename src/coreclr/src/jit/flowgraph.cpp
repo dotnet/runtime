@@ -14704,9 +14704,9 @@ bool Compiler::fgOptimizeSwitchBranches(BasicBlock* block)
             LIR::ReadOnlyRange range(zeroConstNode, switchTree);
             m_pLowering->LowerRange(block, range);
         }
-        else
+        else if (fgStmtListThreaded)
         {
-            // Re-link the nodes for this statement.
+            gtSetStmtInfo(switchStmt);
             fgSetStmtSeq(switchStmt);
         }
 
