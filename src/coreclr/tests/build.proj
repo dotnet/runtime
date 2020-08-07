@@ -62,7 +62,12 @@
 
   <Target Name="BuildWasmUtilities" AfterTargets="Build" Condition="'$(TargetArchitecture)' == 'wasm' " >
 	<CallTarget Targets="GenerateTestAssemblyList" />
-	<MSBuild Projects="$(RepoRoot)/src/mono/wasm/wasm-test-driver/WasmTestDriver.csproj;$(RepoRoot)/src/mono/wasm/wasm-test-runner/WasmTestRunner.csproj" Targets="Restore;Build" /> 
+	<ItemGroup>
+		<WasmProjects Include="$(RepoRoot)/src/mono/wasm/wasm-test-driver/WasmTestDriver.csproj" />
+		<WasmProjects Include="$(RepoRoot)/src/mono/wasm/wasm-test-runner/WasmTestRunner.csproj" />
+	</ItemGroup>
+	<MSBuild Projects="@(WasmProjects)" Targets="Restore" />
+	<MSBuild Projects="@(WasmProjects)" /> 
   </Target>
 
   <!-- Override RestorePackages from dir.traversal.targets and do a batch restore -->
