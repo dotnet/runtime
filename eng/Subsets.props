@@ -70,6 +70,7 @@
     <_subset>$(_subset.Replace('+mono+', '+$(DefaultMonoSubsets)+'))</_subset>
     <_subset>$(_subset.Replace('+libs+', '+$(DefaultLibrariesSubsets)+'))</_subset>
     <_subset>$(_subset.Replace('+installer+', '+$(DefaultInstallerSubsets)+'))</_subset>
+    <_subset>$(_subset.Replace('+installer.nocorehost+', '+$(DefaultInstallerSubsets.Replace('corehost+', ''))+'))</_subset>
 
     <!-- Surround _subset in dashes to simplify checks below -->
     <_subset>+$(_subset.Trim('+'))+</_subset>
@@ -106,6 +107,7 @@
     <!-- Installer -->
     <SubsetName Include="Installer" Description="The .NET Core hosts, hosting libraries, bundles, and installers. Includes these projects' tests." />
     <SubsetName Include="CoreHost" Description="The .NET Core hosts." />
+    <SubsetName Include="Installer.NoCoreHost" Description="Hosting libraries, bundles, and installers. Includes these projects' tests." />
     <SubsetName Include="Installer.Managed" Description="The managed .NET hosting projects. This includes HostModel." />
     <SubsetName Include="Installer.DepProjs" Description="The dependency projects. These gather shared framework files and run crossgen on them to turn them into ready-to-run (R2R) assemblies for the current platform." />
     <SubsetName Include="Installer.PkgProjs" Description="The packaging projects. These produce NETCoreApp assets: NuGet packages, installers, zips, and Linux packages." />
