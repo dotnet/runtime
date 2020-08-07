@@ -161,6 +161,35 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
+        public void GetFile_InMemory()
+        {
+            var inMemBlob = File.ReadAllBytes(SourceTestAssemblyPath);
+            var asm = Assembly.Load(inMemBlob);
+            var methods = asm.GetType("GetFileMethods");
+            var getFile = methods.GetMethod("GetFile");
+            try
+            {
+                getFile.Invoke(obj: null, parameters: new[] { "TestAssembly.dll" });
+                Assert.True(false);
+            }
+            catch (TargetInvocationException e)
+            {
+                Assert.IsType<InvalidOperationException>(e.InnerException);
+            }
+
+            var getFiles = methods.GetMethod("GetFiles");
+            try
+            {
+                getFiles.Invoke(obj: null, parameters: null);
+                Assert.True(false);
+            }
+            catch (TargetInvocationException e)
+            {
+                Assert.IsType<InvalidOperationException>(e.InnerException);
+            }
+        }
+
+        [Fact]
         public void GetFiles()
         {
             Assert.NotNull(typeof(AssemblyTests).Assembly.GetFiles());

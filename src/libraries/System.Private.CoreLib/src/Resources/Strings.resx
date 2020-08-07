@@ -2641,6 +2641,9 @@
   <data name="InvalidOperation_WrongAsyncResultOrEndWriteCalledMultiple" xml:space="preserve">
     <value>Either the IAsyncResult object did not come from the corresponding async method on this type, or EndWrite was called multiple times with the same IAsyncResult.</value>
   </data>
+  <data name="InvalidOperation_NoFileTableInInMemoryAssemblies" xml:space="preserve">
+    <value>This assembly was loaded from memory and does not have a file table.</value>
+  </data>
   <data name="InvalidProgram_Default" xml:space="preserve">
     <value>Common Language Runtime detected an invalid program.</value>
   </data>

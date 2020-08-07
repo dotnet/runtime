@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.IO;
 using System.Reflection;
 using System.Threading;
 
@@ -16,4 +17,10 @@ internal static class Program
          }
          return sum;
     }
+}
+
+public static class GetFileMethods
+{
+    public static FileStream GetFile(string name) => typeof(GetFileMethods).Assembly.GetFile(name);
+    public static FileStream[] GetFiles() => typeof(GetFileMethods).Assembly.GetFiles();
 }
