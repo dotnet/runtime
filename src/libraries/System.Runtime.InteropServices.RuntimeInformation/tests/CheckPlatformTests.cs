@@ -51,9 +51,6 @@ namespace System.Runtime.InteropServices.RuntimeInformationTests
             Assert.True(RuntimeInformation.IsOSPlatform(OSPlatform.OSX));
             Assert.True(RuntimeInformation.IsOSPlatform(OSPlatform.Create("OSX")));
             Assert.True(RuntimeInformation.IsOSPlatform(OSPlatform.Create("osx")));
-            Assert.False(RuntimeInformation.IsOSPlatform(OSPlatform.Create("MACOS")));
-            Assert.False(RuntimeInformation.IsOSPlatform(OSPlatform.Create("macOS")));
-            Assert.False(RuntimeInformation.IsOSPlatform(OSPlatform.Create("macos")));
 
             Assert.False(RuntimeInformation.IsOSPlatform(OSPlatform.Create("FREEBSD")));
             Assert.False(RuntimeInformation.IsOSPlatform(OSPlatform.Create("NETBSD")));
