@@ -2230,5 +2230,23 @@ namespace System.Text.Tests
 
             Assert.True(sb1.Equals(sb2));
         }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public static unsafe void FailureOnLargeString()
+        {
+            RemoteExecutor.Invoke(() => // Uses lots of memory
+            {
+                AssertExtensions.ThrowsAny<ArgumentOutOfRangeException, OutOfMemoryException>(() =>
+                {
+                    StringBuilder sb = new StringBuilder();
+                    sb.Append(new char[2_000_000_000]);
+                    sb.Length--;
+                    string s = new string('x', 500_000_000);
+                    sb.Append(s); // This should throw, not AV
+                });
+
+                return RemoteExecutor.SuccessExitCode; // workaround https://github.com/dotnet/arcade/issues/5865
+            }).Dispose();
+        }
     }
 }
