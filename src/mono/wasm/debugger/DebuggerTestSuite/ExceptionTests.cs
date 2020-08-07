@@ -35,38 +35,28 @@ namespace DebuggerTests
                     $"'{entry_method_name}'" +
                     "); }, 1);";
 
-                JObject pause_location;
-
-                //skipping js caught exception
-                await EvaluateAndCheck(eval_expr,  null, 0, 0, null);
-                do 
-                {
-                    pause_location = await SendCommandAndCheck(JObject.FromObject(new { }), "Debugger.resume",  null, 0, 0, null);
-                } while (pause_location["callFrames"] ? [0] ? ["functionName"]?.Value<string>() != "run");
-
+                var pause_location = await EvaluateAndCheck(eval_expr,  null, 0, 0, null);
                 //stop in the managed caught exception
-                CheckLocation(debugger_test_loc, line, col, scripts, pause_location["callFrames"][0]["location"]);
-                Assert.Equal("exception", pause_location["reason"]);
+                pause_location = await WaitForManagedException(pause_location);
+
+                AssertEqual("run", pause_location["callFrames"] ? [0] ? ["functionName"]?.Value<string>(), "pause0");
+                
                 await CheckValue(pause_location["data"], JObject.FromObject(new
                 {
                     type = "object",
-                        subtype = "error",
-                        className = "DebuggerTests.CustomException",
-                        uncaught = false
+                    subtype = "error",
+                    className = "DebuggerTests.CustomException",
+                    uncaught = false
                 }), "exception0.data");
 
                 var exception_members = await GetProperties(pause_location["data"]["objectId"]?.Value<string>());
                 CheckString(exception_members, "message", "not implemented caught");
 
-                //skipping js caught exception
-                do
-                {
-                    pause_location = await SendCommandAndCheck(JObject.FromObject(new { }), "Debugger.resume",  null, 0, 0, null);
-                } while (pause_location["callFrames"] ? [0] ? ["functionName"]?.Value<string>() != "run");
+                pause_location = await WaitForManagedException(null);
+                AssertEqual("run", pause_location["callFrames"] ? [0] ? ["functionName"]?.Value<string>(), "pause1");
 
                 //stop in the uncaught exception
                 CheckLocation(debugger_test_loc, 28, 16, scripts, pause_location["callFrames"][0]["location"]);
-                Assert.Equal("exception", pause_location["reason"]);
 
                 await CheckValue(pause_location["data"], JObject.FromObject(new
                 {
@@ -250,5 +240,26 @@ namespace DebuggerTests
             });
         }
 
+        async Task<JObject> WaitForManagedException(JObject pause_location)
+        {
+            while (true)
+            {
+                if (pause_location != null)
+                {
+                    AssertEqual("exception", pause_location ["reason"]?.Value<string> (), $"Expected to only pause because of an exception. {pause_location}");
+
+                    // return in case of a managed exception, and ignore JS ones
+                    if (pause_location["data"]?["objectId"]?.Value<string> ()?.StartsWith("dotnet:object:") == true)
+                    {
+                        break;
+                    }
+                }
+
+                pause_location = await SendCommandAndCheck(JObject.FromObject(new { }), "Debugger.resume",  null, 0, 0, null);
+            }
+
+            return pause_location;
+        }
     }
 }
+
