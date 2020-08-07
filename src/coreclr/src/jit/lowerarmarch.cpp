@@ -517,6 +517,76 @@ void Lowering::LowerSIMD(GenTreeSIMD* simdNode)
 #endif // FEATURE_SIMD
 
 #ifdef FEATURE_HW_INTRINSICS
+
+//----------------------------------------------------------------------------------------------
+// LowerHWIntrinsicFusedMultiplyAddScalar: Lowers AdvSimd_FusedMultiplyAddScalar intrinsics
+//   when some of the operands are negated by "containing" such negation.
+//
+//  Arguments:
+//     node - The original hardware intrinsic node
+//
+// |  op1 | op2 | op3 |
+// |  +   |  +  |  +  | AdvSimd_FusedMultiplyAddScalar
+// |  +   |  +  |  -  | AdvSimd_FusedMultiplySubtractScalar
+// |  +   |  -  |  +  | AdvSimd_FusedMultiplySubtractScalar
+// |  +   |  -  |  -  | AdvSimd_FusedMultiplyAddScalar
+// |  -   |  +  |  +  | AdvSimd_FusedMultiplySubtractNegatedScalar
+// |  -   |  +  |  -  | AdvSimd_FusedMultiplyAddNegatedScalar
+// |  -   |  -  |  +  | AdvSimd_FusedMultiplyAddNegatedScalar
+// |  -   |  -  |  -  | AdvSimd_FusedMultiplySubtractNegatedScalar
+//
+void Lowering::LowerHWIntrinsicFusedMultiplyAddScalar(GenTreeHWIntrinsic* node)
+{
+    assert(node->gtHWIntrinsicId == NI_AdvSimd_FusedMultiplyAddScalar);
+
+    const HWIntrinsic intrin(node);
+
+    GenTree* op1 = intrin.op1;
+    GenTree* op2 = intrin.op2;
+    GenTree* op3 = intrin.op3;
+
+    auto lowerOperand = [this](GenTree* op) {
+        bool wasNegated = false;
+
+        if (op->OperIsHWIntrinsic() &&
+            ((op->AsHWIntrinsic()->gtHWIntrinsicId == NI_AdvSimd_Arm64_DuplicateToVector64) ||
+             (op->AsHWIntrinsic()->gtHWIntrinsicId == NI_Vector64_CreateScalarUnsafe)))
+        {
+            GenTreeHWIntrinsic* createVector64 = op->AsHWIntrinsic();
+            GenTree*            valueOp        = createVector64->gtGetOp1();
+
+            if (valueOp->OperIs(GT_NEG))
+            {
+                createVector64->gtOp1 = valueOp->gtGetOp1();
+                BlockRange().Remove(valueOp);
+                wasNegated = true;
+            }
+        }
+
+        return wasNegated;
+    };
+
+    const bool op1WasNegated = lowerOperand(op1);
+    const bool op2WasNegated = lowerOperand(op2);
+    const bool op3WasNegated = lowerOperand(op3);
+
+    if (op1WasNegated)
+    {
+        if (op2WasNegated != op3WasNegated)
+        {
+            node->gtHWIntrinsicId = NI_AdvSimd_FusedMultiplyAddNegatedScalar;
+        }
+        else
+        {
+            node->gtHWIntrinsicId = NI_AdvSimd_FusedMultiplySubtractNegatedScalar;
+        }
+    }
+    else if (op2WasNegated != op3WasNegated)
+    {
+        node->gtHWIntrinsicId = NI_AdvSimd_FusedMultiplySubtractScalar;
+    }
+}
+
 //----------------------------------------------------------------------------------------------
 // Lowering::LowerHWIntrinsic: Perform containment analysis for a hardware intrinsic node.
 //
@@ -572,6 +642,10 @@ void Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
             LowerHWIntrinsicCmpOp(node, GT_NE);
             return;
         }
+
+        case NI_AdvSimd_FusedMultiplyAddScalar:
+            LowerHWIntrinsicFusedMultiplyAddScalar(node);
+            break;
 
         default:
             break;

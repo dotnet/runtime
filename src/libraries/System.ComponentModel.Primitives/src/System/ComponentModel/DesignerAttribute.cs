@@ -11,7 +11,7 @@ namespace System.ComponentModel
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Interface, AllowMultiple = true, Inherited = true)]
     public sealed class DesignerAttribute : Attribute
     {
-        private string _typeId;
+        private string? _typeId;
 
         /// <summary>
         /// Initializes a new instance of the <see cref='System.ComponentModel.DesignerAttribute'/> class using the name of the type that
@@ -20,7 +20,7 @@ namespace System.ComponentModel
         public DesignerAttribute(string designerTypeName)
         {
             DesignerTypeName = designerTypeName ?? throw new ArgumentNullException(nameof(designerTypeName));
-            DesignerBaseTypeName = typeof(IDesigner).FullName;
+            DesignerBaseTypeName = "System.ComponentModel.Design.IDesigner, System, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089";
         }
 
         /// <summary>
@@ -34,8 +34,8 @@ namespace System.ComponentModel
                 throw new ArgumentNullException(nameof(designerType));
             }
 
-            DesignerTypeName = designerType.AssemblyQualifiedName;
-            DesignerBaseTypeName = typeof(IDesigner).FullName;
+            DesignerTypeName = designerType.AssemblyQualifiedName!;
+            DesignerBaseTypeName = "System.ComponentModel.Design.IDesigner, System, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089";
         }
 
         /// <summary>
@@ -64,7 +64,7 @@ namespace System.ComponentModel
             }
 
             DesignerTypeName = designerTypeName;
-            DesignerBaseTypeName = designerBaseType.AssemblyQualifiedName;
+            DesignerBaseTypeName = designerBaseType.AssemblyQualifiedName!;
         }
 
         /// <summary>
@@ -82,8 +82,8 @@ namespace System.ComponentModel
                 throw new ArgumentNullException(nameof(designerBaseType));
             }
 
-            DesignerTypeName = designerType.AssemblyQualifiedName;
-            DesignerBaseTypeName = designerBaseType.AssemblyQualifiedName;
+            DesignerTypeName = designerType.AssemblyQualifiedName!;
+            DesignerBaseTypeName = designerBaseType.AssemblyQualifiedName!;
         }
 
         /// <summary>
@@ -121,7 +121,7 @@ namespace System.ComponentModel
             }
         }
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             if (obj == this)
             {

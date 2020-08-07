@@ -9,7 +9,7 @@ using System.Runtime.Versioning;
 
 namespace System.Configuration
 {
-    [MinimumOSPlatform("windows7.0")]
+    [SupportedOSPlatform("windows")]
     public sealed class DpapiProtectedConfigurationProvider : ProtectedConfigurationProvider
     {
         private bool _useMachineProtection = true;

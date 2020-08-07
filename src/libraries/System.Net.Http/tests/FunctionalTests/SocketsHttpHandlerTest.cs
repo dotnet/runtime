@@ -2323,7 +2323,7 @@ namespace System.Net.Http.Functional.Tests
     public sealed class SocketsHttpHandler_HttpClientHandler_Finalization_Http3_Test : HttpClientHandler_Finalization_Test
     {
         public SocketsHttpHandler_HttpClientHandler_Finalization_Http3_Test(ITestOutputHelper output) : base(output) { }
-        protected override Version UseVersion => HttpVersion.Version30;
+        protected override Version UseVersion => HttpVersion30;
     }
 
     [ConditionalClass(typeof(QuicConnection), nameof(QuicConnection.IsQuicSupported))]
@@ -2336,34 +2336,34 @@ namespace System.Net.Http.Functional.Tests
     public sealed class SocketsHttpHandlerTest_Cookies_Http3 : HttpClientHandlerTest_Cookies
     {
         public SocketsHttpHandlerTest_Cookies_Http3(ITestOutputHelper output) : base(output) { }
-        protected override Version UseVersion => HttpVersion.Version30;
+        protected override Version UseVersion => HttpVersion30;
     }
 
     [ConditionalClass(typeof(QuicConnection), nameof(QuicConnection.IsQuicSupported))]
     public sealed class SocketsHttpHandlerTest_HttpClientHandlerTest_Http3 : HttpClientHandlerTest
     {
         public SocketsHttpHandlerTest_HttpClientHandlerTest_Http3(ITestOutputHelper output) : base(output) { }
-        protected override Version UseVersion => HttpVersion.Version30;
+        protected override Version UseVersion => HttpVersion30;
     }
 
     [ConditionalClass(typeof(QuicConnection), nameof(QuicConnection.IsQuicSupported))]
     public sealed class SocketsHttpHandlerTest_HttpClientHandlerTest_Headers_Http3 : HttpClientHandlerTest_Headers
     {
         public SocketsHttpHandlerTest_HttpClientHandlerTest_Headers_Http3(ITestOutputHelper output) : base(output) { }
-        protected override Version UseVersion => HttpVersion.Version30;
+        protected override Version UseVersion => HttpVersion30;
     }
 
     [ConditionalClass(typeof(QuicConnection), nameof(QuicConnection.IsQuicSupported))]
     public sealed class SocketsHttpHandler_HttpClientHandler_Cancellation_Test_Http3 : HttpClientHandler_Cancellation_Test
     {
         public SocketsHttpHandler_HttpClientHandler_Cancellation_Test_Http3(ITestOutputHelper output) : base(output) { }
-        protected override Version UseVersion => HttpVersion.Version30;
+        protected override Version UseVersion => HttpVersion30;
     }
 
     [ConditionalClass(typeof(QuicConnection), nameof(QuicConnection.IsQuicSupported))]
     public sealed class SocketsHttpHandler_HttpClientHandler_AltSvc_Test_Http3 : HttpClientHandler_AltSvc_Test
     {
         public SocketsHttpHandler_HttpClientHandler_AltSvc_Test_Http3(ITestOutputHelper output) : base(output) { }
-        protected override Version UseVersion => HttpVersion.Version30;
+        protected override Version UseVersion => HttpVersion30;
     }
 }

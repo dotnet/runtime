@@ -17,7 +17,7 @@ namespace System.ComponentModel.Tests
         {
             var attribute = new DesignerAttribute(designerTypeName);
             Assert.Equal(designerTypeName, attribute.DesignerTypeName);
-            Assert.Equal(typeof(IDesigner).FullName, attribute.DesignerBaseTypeName);
+            Assert.Equal("System.ComponentModel.Design.IDesigner, System, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089", attribute.DesignerBaseTypeName);
         }
 
         [Theory]
@@ -28,7 +28,7 @@ namespace System.ComponentModel.Tests
         {
             var attribute = new DesignerAttribute(designerType);
             Assert.Equal(designerType.AssemblyQualifiedName, attribute.DesignerTypeName);
-            Assert.Equal(typeof(IDesigner).FullName, attribute.DesignerBaseTypeName);
+            Assert.Equal("System.ComponentModel.Design.IDesigner, System, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089", attribute.DesignerBaseTypeName);
         }
 
         [Theory]
