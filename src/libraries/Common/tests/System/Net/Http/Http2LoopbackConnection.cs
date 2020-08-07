@@ -550,13 +550,13 @@ namespace System.Net.Test.Common
             using MemoryStream buffer = new MemoryStream();
             await buffer.WriteAsync(headersFrame.Data);
 
-            // Continuations?
-            while ((FrameFlags.EndHeaders & frame.Flags) == FrameFlags.None)
+            // Receive CONTINUATION frames for request.
+            while ((FrameFlags.EndHeaders & frame.Flags) != FrameFlags.EndHeaders)
             {
                 frame = await ReadFrameAsync(_timeout).ConfigureAwait(false);
                 if (frame == null)
                 {
-                    throw new IOException("Failed to read Headers frame.");
+                    throw new IOException("Failed to read Continuation frame.");
                 }
                 Assert.Equal(FrameType.Continuation, frame.Type);
                 ContinuationFrame continuationFrame = (ContinuationFrame)frame;

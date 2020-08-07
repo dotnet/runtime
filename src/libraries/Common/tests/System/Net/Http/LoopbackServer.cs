@@ -573,6 +573,7 @@ namespace System.Net.Test.Common
                                 _readStart = 0;
                                 _readEnd = dataLength;
                                 _readBuffer = newBuffer;
+                                startSearch = dataLength;
                             }
                         }
 
