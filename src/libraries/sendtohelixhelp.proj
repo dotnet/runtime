@@ -96,6 +96,10 @@
     <HelixPreCommand Condition="'$(TargetsWindows)' != 'true'" Include="export MONO_ENV_OPTIONS='$(MonoEnvOptions)'" />
   </ItemGroup>
 
+  <ItemGroup Condition="'$(Scenario)' == 'WasmTestOnBrowser'">
+    <HelixPreCommand Include="export TESTINBROWSER=-browser" />
+  </ItemGroup>
+
   <!-- HelixPreCommands is a set of commands run before the work item command. We use it here to inject
        setting up the per-scenario environment.
   -->
@@ -105,8 +109,8 @@
          (which is when this project is invoked to call the "CreateTestEnvFile" target).
     -->
     <TestEnvFileName></TestEnvFileName>
-    <TestEnvFileName Condition=" '$(Scenario)' != '' and '$(TargetsWindows)' == 'true' ">SetStressModes_$(Scenario).cmd</TestEnvFileName>
-    <TestEnvFileName Condition=" '$(Scenario)' != '' and '$(TargetsWindows)' != 'true' ">SetStressModes_$(Scenario).sh</TestEnvFileName>
+    <TestEnvFileName Condition=" '$(Scenario)' != '' and '$(TargetsWindows)' == 'true'">SetStressModes_$(Scenario).cmd</TestEnvFileName>
+    <TestEnvFileName Condition=" '$(Scenario)' != '' and '$(TargetsWindows)' != 'true' and '$(TargetOS)' != 'Browser'">SetStressModes_$(Scenario).sh</TestEnvFileName>
   </PropertyGroup>
 
   <ItemGroup Condition=" '$(TestEnvFileName)' != '' and '$(TargetsWindows)' == 'true' ">
@@ -163,9 +167,19 @@
     <Message Importance="High" Text="Using WorkItemArchiveWildCard: $(WorkItemArchiveWildCard)" />
     <Message Importance="High" Text="Using Timeout: $(_timeoutSpan)" />
 
+    <PropertyGroup Condition="'$(TargetOS)' == 'Browser'">
+      <!-- Version number to revision number mapping from http://omahaproxy.appspot.com/ -->
+      <!-- 84.0.4147.105 is 768962 for example -->
+      <ChromiumRevision>768968</ChromiumRevision>
+      <ChromiumUrl>https://storage.googleapis.com/chromium-browser-snapshots/Linux_x64/$(ChromiumRevision)/chrome-linux.zip</ChromiumUrl>
+      <SeleniumUrl>https://storage.googleapis.com/chromium-browser-snapshots/Linux_x64/$(ChromiumRevision)/chromedriver_linux64.zip</SeleniumUrl>
+    </PropertyGroup>
+
     <ItemGroup>
       <HelixCorrelationPayload Include="$(HelixCorrelationPayload)"
                                Condition="'$(TargetOS)' != 'Browser' or '$(HelixCorrelationPayload)' != ''" />
+      <HelixCorrelationPayload Include="chromium" Uri="$(ChromiumUrl)" Condition="'$(TargetOS)' == 'Browser'" />
+      <HelixCorrelationPayload Include="chromedriver" Uri="$(SeleniumUrl)" Condition="'$(TargetOS)' == 'Browser'" />
 
       <_WorkItem Include="$(WorkItemArchiveWildCard)" Exclude="$(HelixCorrelationPayload)" />
 
