@@ -3,7 +3,6 @@
 
 using System.Collections;
 using System.Collections.Generic;
-using System.Runtime.InteropServices;
 using System.Security.Authentication;
 
 namespace System.Net.Test.Common
@@ -29,7 +28,7 @@ namespace System.Net.Test.Common
 #pragma warning restore 0618
 #if !NETSTANDARD2_0
                 // TLS 1.3 is new
-                if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) && PlatformDetection.OpenSslVersion >= new Version(1, 1, 1))
+                if (OperatingSystem.IsLinux() && PlatformDetection.OpenSslVersion >= new Version(1, 1, 1))
                 {
                     supported |= SslProtocols.Tls13;
                 }

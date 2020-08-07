@@ -3,7 +3,6 @@
 
 using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.InteropServices;
 using System.Text;
 using Xunit;
 
@@ -112,7 +111,7 @@ namespace System.IO.Tests
             try
             {
                 // Operation succeeds when being run by the Unix superuser
-                if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && geteuid() == 0)
+                if (!OperatingSystem.IsWindows() && geteuid() == 0)
                 {
                     Write(path, new string[] { "text" });
                     Assert.Equal(new string[] { "text" }, Read(path));
@@ -300,7 +299,7 @@ namespace System.IO.Tests
             try
             {
                 // Operation succeeds when being run by the Unix superuser
-                if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && geteuid() == 0)
+                if (!OperatingSystem.IsWindows() && geteuid() == 0)
                 {
                     Write(path, new string[] { "text" });
                     Assert.Equal(new string[] { "text" }, Read(path));

@@ -8,7 +8,6 @@ using System.IO;
 using System.IO.Pipes;
 using System.Linq;
 using System.Net;
-using System.Runtime.InteropServices;
 using System.Security;
 using System.Text;
 using System.Threading;
@@ -52,7 +51,7 @@ namespace System.Diagnostics.Tests
 
         private void AssertNonZeroWindowsZeroUnix(long value)
         {
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            if (OperatingSystem.IsWindows())
             {
                 Assert.NotEqual(0, value);
             }
@@ -64,7 +63,7 @@ namespace System.Diagnostics.Tests
 
         private void AssertNonZeroAllZeroDarwin(long value)
         {
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+            if (OperatingSystem.IsMacOS())
             {
                 Assert.Equal(0, value);
             }
@@ -422,7 +421,7 @@ namespace System.Diagnostics.Tests
 
             Assert.NotEqual(Environment.ProcessId, _process.Id);
 
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            if (OperatingSystem.IsWindows())
             {
                 Assert.Equal(_process.Id, Interop.GetProcessId(_process.SafeHandle));
             }
@@ -517,14 +516,14 @@ namespace System.Diagnostics.Tests
                 Assert.InRange((long)p.MinWorkingSet, 0, long.MaxValue);
             }
 
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX) || RuntimeInformation.IsOSPlatform(OSPlatform.Create("FREEBSD"))) {
+            if (OperatingSystem.IsMacOS() || OperatingSystem.IsFreeBSD()) {
                 return; // doesn't support getting/setting working set for other processes
             }
 
             long curValue = (long)_process.MaxWorkingSet;
             Assert.InRange(curValue, 0, long.MaxValue);
 
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            if (OperatingSystem.IsWindows())
             {
                 try
                 {
@@ -572,14 +571,14 @@ namespace System.Diagnostics.Tests
                 Assert.InRange((long)p.MinWorkingSet, 0, long.MaxValue);
             }
 
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX) || RuntimeInformation.IsOSPlatform(OSPlatform.Create("FREEBSD"))) {
+            if (OperatingSystem.IsMacOS() || OperatingSystem.IsFreeBSD()) {
                 return; // doesn't support getting/setting working set for other processes
             }
 
             long curValue = (long)_process.MinWorkingSet;
             Assert.InRange(curValue, 0, long.MaxValue);
 
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            if (OperatingSystem.IsWindows())
             {
                 try
                 {
@@ -758,7 +757,7 @@ namespace System.Diagnostics.Tests
         {
             CreateDefaultProcess();
 
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+            if (OperatingSystem.IsMacOS())
             {
                 // resident memory can be 0 on OSX.
                 Assert.InRange(_process.WorkingSet64, 0, long.MaxValue);
@@ -1815,7 +1814,7 @@ namespace System.Diagnostics.Tests
         {
             CreateDefaultProcess();
 
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+            if (OperatingSystem.IsMacOS())
             {
                 // resident memory can be 0 on OSX.
 #pragma warning disable 0618

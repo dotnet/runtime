@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Reflection;
-using System.Runtime.InteropServices;
 using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
@@ -21,7 +20,7 @@ namespace System.Configuration.Tests
             {
                 MakeAssemblyGetEntryAssemblyReturnNull();
 
-                string expectedFilePathEnding = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ?
+                string expectedFilePathEnding = OperatingSystem.IsWindows() ?
                     "dotnet.exe.config" :
                     "dotnet.config";
 

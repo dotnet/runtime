@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Linq;
-using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -115,7 +114,7 @@ namespace System.IO.Tests
             try
             {
                 // Operation succeeds when being run by the Unix superuser
-                if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && geteuid() == 0)
+                if (!OperatingSystem.IsWindows() && geteuid() == 0)
                 {
                     await WriteAsync(path, "text");
                     Assert.Equal("text", await ReadAsync(path));
