@@ -1,17 +1,17 @@
 
 # Using your .NET Runtime build with .NET SDK
 
-This walkthrough explains how to run against your local CoreCLR build using .NET SDK only.
+This walkthrough explains how to run your own app against your local build using only the .NET SDK.
 
 For other walkthroughs see:
 
-- [Using Your Build - Update CoreCLR from raw binary output](./testing/using-your-build.md)
+- [Using Your Build - Update from raw build output](./testing/using-your-build.md)
 - [Using CoreRun To Run .NET Application](./testing/using-corerun.md)
 - [Dogfooding .NET SDK](https://github.com/dotnet/runtime/blob/master/docs/project/dogfooding.md).
 
 ## Prerequisites
 
-1. Successfully built CoreCLR repository and thus have files of the form shown below. From now on we call this folder NuGet package folder.
+1. Successfully built this repository and thus have files of the form shown below. From now on we call this folder NuGet package folder.
 
 ```
     artifacts\packages\<configuration>\Shipping\
@@ -33,8 +33,7 @@ The build script creates NuGet packages and puts them to `artifacts\packages\<co
 
 Please run `dotnet new nugetconfig` in the app folder and update the created `NuGet.Config` file:
 
-* **set path to local CoreCLR NuGet folder!!**
-* add address to dotnet core tools NuGet feed
+* ** adjust path below to point to your in-repo NuGet folder**
 
 ```xml
 <?xml version="1.0" encoding="utf-8"?>
@@ -43,8 +42,7 @@ Please run `dotnet new nugetconfig` in the app folder and update the created `Nu
     <!--To inherit the global NuGet package sources remove the <clear/> line below -->
     <clear />
 
-    <add key="local CoreCLR" value="C:\runtime\artifacts\artifacts\packages\Release\Shipping\" /> <!-- CHANGE THIS PATH to your local output path -->
-    <add key="dotnet-core" value="https://dotnet.myget.org/F/dotnet-core/api/v3/index.json" /> <!-- link to corefx NuGet feed -->
+    <add key="local runtime" value="C:\runtime\artifacts\artifacts\packages\Release\Shipping\" /> <!-- CHANGE THIS PATH to your local output path -->
   </packageSources>
 </configuration>
 ```
@@ -78,14 +76,14 @@ Microsoft.NETCore.App.Runtime.win-x64.5.0.0-dev.nupkg
 
 ### 4. Change Program.cs
 
-To make sure that you run against your local coreclr build please change your `Main` method in `Program.cs` file to:
+To make sure that you run against your local build of this repo please change your `Main` method in `Program.cs` file to:
 
 ```cs
 static void Main(string[] args)
 {
-	var coreAssemblyInfo = System.Diagnostics.FileVersionInfo.GetVersionInfo(typeof(object).Assembly.Location);
-	Console.WriteLine($"Hello World from .NET {coreAssemblyInfo.ProductVersion}");
-	Console.WriteLine($"The location is {typeof(object).Assembly.Location}");
+    var coreAssemblyInfo = System.Diagnostics.FileVersionInfo.GetVersionInfo(typeof(object).Assembly.Location);
+    Console.WriteLine($"Hello World from .NET {coreAssemblyInfo.ProductVersion}");
+    Console.WriteLine($"The location is {typeof(object).Assembly.Location}");
 }
 ```
 
@@ -101,32 +99,32 @@ dotnet publish
 Make sure that restoring done by `dotnet publish` installed the explicit version of the Runtime that you have specified:
 
 ```
-C:\coreclr\helloworld>dotnet publish
+c:\runtime\helloworld>dotnet publish
 Microsoft (R) Build Engine version 16.7.0-preview-20360-03+188921e2f for .NET
 Copyright (C) Microsoft Corporation. All rights reserved.
 
   Determining projects to restore...
-  Restored C:\coreclr\helloworld\helloworld.csproj (in 114 ms).
+  Restored c:\runtime\helloworld\helloworld.csproj (in 114 ms).
   You are using a preview version of .NET. See: https://aka.ms/dotnet-core-preview
-  helloworld -> C:\coreclr\helloworld\bin\Debug\net5.0\win-x64\helloworld.dll
-  helloworld -> C:\coreclr\helloworld\bin\Debug\net5.0\win-x64\publish\
+  helloworld -> c:\runtime\helloworld\bin\Debug\net5.0\win-x64\helloworld.dll
+  helloworld -> c:\runtime\helloworld\bin\Debug\net5.0\win-x64\publish\
 ```
 
 If you see something like the message below it means that it has failed to restore your local runtime packages. In such case double check your `NuGet.config` file and paths used in it.
 
 ```
-C:\coreclr\helloworld>dotnet publish
+c:\runtime\helloworld>dotnet publish
 Microsoft (R) Build Engine version 16.7.0-preview-20360-03+188921e2f for .NET
 Copyright (C) Microsoft Corporation. All rights reserved.
 
   Determining projects to restore...
-C:\coreclr\helloworld\helloworld.csproj : error NU1102: Unable to find package Microsoft.NETCore.App.Runtime.win-x64 with version (= 5.0.0-does-not-exist)
-C:\coreclr\helloworld\helloworld.csproj : error NU1102:   - Found 25 version(s) in nuget [ Nearest version: 5.0.0-preview.1.20120.5 ]
-C:\coreclr\helloworld\helloworld.csproj : error NU1102:   - Found 1 version(s) in local CoreCLR [ Nearest version: 5.0.0-dev ]
-C:\coreclr\helloworld\helloworld.csproj : error NU1102: Unable to find package Microsoft.NETCore.App.Host.win-x64 with version (= 5.0.0-does-not-exist)
-C:\coreclr\helloworld\helloworld.csproj : error NU1102:   - Found 27 version(s) in nuget [ Nearest version: 5.0.0-preview.1.20120.5 ]
-C:\coreclr\helloworld\helloworld.csproj : error NU1102:   - Found 1 version(s) in local CoreCLR [ Nearest version: 5.0.0-dev ]
-  Failed to restore C:\coreclr\helloworld\helloworld.csproj (in 519 ms).
+c:\runtime\helloworld\helloworld.csproj : error NU1102: Unable to find package Microsoft.NETCore.App.Runtime.win-x64 with version (= 5.0.0-does-not-exist)
+c:\runtime\helloworld\helloworld.csproj : error NU1102:   - Found 25 version(s) in nuget [ Nearest version: 5.0.0-preview.1.20120.5 ]
+c:\runtime\helloworld\helloworld.csproj : error NU1102:   - Found 1 version(s) in local runtime [ Nearest version: 5.0.0-dev ]
+c:\runtime\helloworld\helloworld.csproj : error NU1102: Unable to find package Microsoft.NETCore.App.Host.win-x64 with version (= 5.0.0-does-not-exist)
+c:\runtime\helloworld\helloworld.csproj : error NU1102:   - Found 27 version(s) in nuget [ Nearest version: 5.0.0-preview.1.20120.5 ]
+c:\runtime\helloworld\helloworld.csproj : error NU1102:   - Found 1 version(s) in local runtime [ Nearest version: 5.0.0-dev ]
+  Failed to restore c:\runtime\helloworld\helloworld.csproj (in 519 ms).
 ```
 
 ### 6. Run the app
@@ -142,15 +140,15 @@ Running the app should tell you the version and where the location of System.Pri
 
 ```
 Hello World from .NET 5.0.0-dev
-The location is C:\coreclr\helloworld\bin\Debug\net5.0\win-x64\publish\System.Private.CoreLib.dll
+The location is c:\runtime\helloworld\bin\Debug\net5.0\win-x64\publish\System.Private.CoreLib.dll
 ```
 
-**Congratulations! You have just run your first app against local CoreCLR build!**
+**Congratulations! You have just run your first app against your local build of this repo**
 
-## Update CoreCLR using runtime nuget package
+## Update using runtime nuget package
 
-Updating CoreCLR from raw binary output is easier for quick one-off testing but using the nuget package is better
-for referencing your CoreCLR build in your actual application because of it does not require manual copying of files
+Updating the runtime from raw binary output is easier for quick one-off testing but using the nuget package is better
+for referencing your build in your actual application because of it does not require manual copying of files
 around each time the application is built and plugs into the rest of the tool chain. This set of instructions will cover
 the further steps needed to consume the runtime nuget package.
 
