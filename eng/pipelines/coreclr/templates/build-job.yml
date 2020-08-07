@@ -170,17 +170,16 @@ jobs:
     # Sign and add entitlements to these MacOS binaries
     - ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest')) }}:
       - ${{ if eq(parameters.osGroup, 'OSX') }}:
-        - task: UseDotNet@2
-          displayName: 'Use .NET Core SDK 2.1.808'
-          inputs:
-            packageType: sdk
-            version: 2.1.808
 
         - template: /eng/pipelines/common/macos-sign-with-entitlements.yml
           parameters:
-            fileToSign: createdump
-            fileToSignFolder: $(buildProductRootFolderPath)
-            entitlementsFile: $(Build.SourcesDirectory)/eng/pipelines/common/createdump-entitlements.plist
+            filesToSign: 
+            - name: createdump
+              path: $(buildProductRootFolderPath)
+              entitlementsFile: $(Build.SourcesDirectory)/eng/pipelines/common/createdump-entitlements.plist
+            - name: corerun
+              path: $(buildProductRootFolderPath)
+              entitlementsFile: $(Build.SourcesDirectory)/eng/pipelines/common/entitlements.plist
 
         - task: CopyFiles@2
           displayName: 'Copy signed createdump to sharedFramework'
@@ -189,12 +188,6 @@ jobs:
             sourceFolder: $(buildProductRootFolderPath)
             targetFolder: $(buildProductRootFolderPath)/sharedFramework
             overWrite: true
-
-        - template: /eng/pipelines/common/macos-sign-with-entitlements.yml
-          parameters:
-            fileToSign: corerun
-            fileToSignFolder: $(buildProductRootFolderPath)
-            entitlementsFile: $(Build.SourcesDirectory)/eng/pipelines/common/entitlements.plist
 
     # Sign on Windows
     - ${{ if and(eq(parameters.osGroup, 'Windows_NT'), eq(parameters.signBinaries, 'true'), ne(parameters.testGroup, 'clrTools')) }}:

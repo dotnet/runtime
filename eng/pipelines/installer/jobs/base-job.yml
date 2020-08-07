@@ -467,25 +467,17 @@ jobs:
       displayName: Build CoreHost
 
     - ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest')) }}:
-      - task: UseDotNet@2
-        displayName: 'Use .NET Core SDK 2.1.808'
-        inputs:
-          packageType: sdk
-          version: 2.1.808
-
       - template: /eng/pipelines/common/macos-sign-with-entitlements.yml
         parameters:
-          fileToSign: dotnet
-          fileToSignFolder: $(Build.SourcesDirectory)/artifacts/bin/osx-${{ parameters.archType }}.$(_BuildConfig)/corehost
-          entitlementsFile: $(Build.SourcesDirectory)/eng/pipelines/common/entitlements.plist
+          filesToSign: 
+          - name: dotnet
+            path: $(Build.SourcesDirectory)/artifacts/bin/osx-${{ parameters.archType }}.$(_BuildConfig)/corehost
+            entitlementsFile: $(Build.SourcesDirectory)/eng/pipelines/common/entitlements.plist
+          - name: apphost
+            path: $(Build.SourcesDirectory)/artifacts/bin/osx-${{ parameters.archType }}.$(_BuildConfig)/corehost
+            entitlementsFile: $(Build.SourcesDirectory)/eng/pipelines/common/entitlements.plist
 
-      - template: /eng/pipelines/common/macos-sign-with-entitlements.yml
-        parameters:
-          fileToSign: apphost
-          fileToSignFolder: $(Build.SourcesDirectory)/artifacts/bin/osx-${{ parameters.archType }}.$(_BuildConfig)/corehost
-          entitlementsFile: $(Build.SourcesDirectory)/eng/pipelines/common/entitlements.plist
-
-    - script: $(BaseJobBuildCommand) -subset installer.packages
+    - script: $(BaseJobBuildCommand) -subset installer.nocorehost
       displayName: Build and Package
 
   - ${{ if in(parameters.osGroup, 'OSX', 'iOS','tvOS') }}: 
