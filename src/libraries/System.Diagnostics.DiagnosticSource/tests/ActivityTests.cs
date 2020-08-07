@@ -1511,9 +1511,8 @@ namespace System.Diagnostics.Tests
         [Fact]
         public void StructEnumerator_TagsLinkedList()
         {
-            /*
-             * This test verifies the presence of the struct Enumerator on TagsLinkedList used by customers dynamically to avoid allocations.
-             */
+            // Note: This test verifies the presence of the struct Enumerator on TagsLinkedList used by customers dynamically to avoid allocations.
+
             Activity a = new Activity("TestActivity");
             a.AddTag("Tag1", true);
 
@@ -1535,9 +1534,8 @@ namespace System.Diagnostics.Tests
         [Fact]
         public void StructEnumerator_GenericLinkedList()
         {
-            /*
-             * This test verifies the presence of the struct Enumerator on LinkedList<T> used by customers dynamically to avoid allocations.
-             */
+            // Note: This test verifies the presence of the struct Enumerator on LinkedList<T> used by customers dynamically to avoid allocations.
+
             Activity a = new Activity("TestActivity");
             a.AddEvent(new ActivityEvent());
 

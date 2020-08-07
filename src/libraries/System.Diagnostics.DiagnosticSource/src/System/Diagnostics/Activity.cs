@@ -1398,11 +1398,7 @@ namespace System.Diagnostics
             }
         }
 
-        /*
-         * Note:
-         *  Some customers use this Enumerator dynamically to avoid allocations.
-         *  See: https://github.com/dotnet/runtime/pull/40362
-         */
+        // Note: Some customers use this Enumerator dynamically to avoid allocations.
         private struct Enumerator<T> : IEnumerator<T>
         {
             private readonly LinkedListNode<T>? _head;
