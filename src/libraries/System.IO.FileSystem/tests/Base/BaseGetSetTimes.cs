@@ -78,7 +78,7 @@ namespace System.IO.Tests
         }
 
         [ConditionalFact(nameof(isNotHFS))] // OSX HFS driver format does not support millisec granularity
-        [PlatformSpecific(~TestPlatforms.Browser)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/40530", TestPlatforms.Browser)]
         public void TimesIncludeMillisecondPart()
         {
             T item = GetExistingItem();
