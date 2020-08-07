@@ -41,7 +41,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [PlatformSpecific(~TestPlatforms.Browser)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/40528", TestPlatforms.Browser)]
         public void SettingUpdatesProperties()
         {
             T item = GetExistingItem();
