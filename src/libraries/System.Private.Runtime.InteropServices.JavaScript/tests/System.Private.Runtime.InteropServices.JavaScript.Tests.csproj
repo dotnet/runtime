@@ -19,6 +19,6 @@
   </ItemGroup>
   <ItemGroup>
     <!-- Part of the shared framework but not exposed. -->
-    <ProjectReference Include="..\src\System.Runtime.InteropServices.JavaScript.csproj" />
+    <ProjectReference Include="..\src\System.Private.Runtime.InteropServices.JavaScript.csproj" />
   </ItemGroup>
 </Project>
