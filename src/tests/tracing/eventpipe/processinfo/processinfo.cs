@@ -75,6 +75,9 @@ namespace Tracing.Tests.ProcessInfoValidation
             Process currentProcess = Process.GetCurrentProcess();
             int pid = currentProcess.Id;
             Logger.logger.Log($"Test PID: {pid}");
+            string envKey = "TESTKEY";
+            string envVal = "TESTVAL";
+            System.Environment.SetEnvironmentVariable(envKey, envVal);
 
             Stream stream = ConnectionHelper.GetStandardTransport(pid);
 
@@ -82,7 +85,7 @@ namespace Tracing.Tests.ProcessInfoValidation
             var processInfoMessage = new IpcMessage(0x04, 0x00);
             Logger.logger.Log($"Wrote: {processInfoMessage}");
             IpcMessage response = IpcClient.SendMessage(stream, processInfoMessage);
-            Logger.logger.Log($"Received: {response}");
+            Logger.logger.Log($"Received: <omitted>");
 
             Utils.Assert(response.Header.CommandSet == 0xFF, $"Response must have Server command set. Expected: 0xFF, Received: 0x{response.Header.CommandSet:X2}"); // server
             Utils.Assert(response.Header.CommandId == 0x00, $"Response must have OK command id. Expected: 0x00, Received: 0x{response.Header.CommandId:X2}"); // OK
@@ -93,6 +96,7 @@ namespace Tracing.Tests.ProcessInfoValidation
             // LPCWSTR CommandLine;
             // LPCWSTR OS;
             // LPCWSTR Arch;
+            // LPCWSTR Env;
 
             int totalSize = response.Payload.Length;
             Logger.logger.Log($"Total size of Payload == {totalSize} b");
@@ -190,6 +194,35 @@ namespace Tracing.Tests.ProcessInfoValidation
             };
 
             Utils.Assert(expectedArchValue.Equals(arch), $"OS must match current Operating System. Expected: \"{expectedArchValue}\", Received: \"{arch}\"");
+
+            // VALIDATE ENV
+            // env block is an array of strings of the form "key=value" delimited by null
+            // e.g., "key=value\0key=value\0";
+            start = end;
+            end = start + 4 /* sizeof(uint32_t) */;
+            UInt32 envCount = BitConverter.ToUInt32(response.Payload[start..end]);
+            Logger.logger.Log($"envCount: {envCount}");
+
+            var env = new Dictionary<string,string>();
+            for (int i = 0; i < envCount; i++)
+            {
+                start = end;
+                end = start + 4 /* sizeof(uint32_t) */;
+                UInt32 pairLength = BitConverter.ToUInt32(response.Payload[start..end]);
+
+                start = end;
+                end = start + ((int)pairLength * sizeof(char));
+                Utils.Assert(end <= totalSize, $"String end can't exceed payload size. Expected: <{totalSize}, Received: {end} (decoded length: {pairLength})");
+                string envPair = System.Text.Encoding.Unicode.GetString(response.Payload[start..end]).TrimEnd('\0');
+                string[] parts = envPair.Split('=');
+                Utils.Assert(parts.Count() == 2, $"Malformed environment entry when splitting element on '='.  Expected: 2 parts, Received: {parts.Count()} parts {envPair}");
+                env[parts[0]] = parts[1];
+            }
+            Logger.logger.Log($"finished parsing env");
+
+
+            Utils.Assert(env.ContainsKey(envKey) && env[envKey].Equals(envVal), $"Did not find test environment key in the environment block.");
+            Logger.logger.Log($"Saw test values in env");
 
             Utils.Assert(end == totalSize, $"Full payload should have been read. Expected: {totalSize}, Received: {end}");
 

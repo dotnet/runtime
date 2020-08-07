@@ -41,8 +41,13 @@ struct ProcessInfoPayload
     LPCWSTR OS;
     LPCWSTR Arch;
     GUID RuntimeCookie;
+    NewArrayHolder<const WCHAR> Environment = nullptr;
+    void EnsureEnv();
     uint16_t GetSize();
     bool Flatten(BYTE * &lpBuffer, uint16_t& cbSize);
+private:
+    uint32_t _nEnvEntries = 0;
+    uint32_t _nWchars = 0;
 };
 
 class ProcessDiagnosticsProtocolHelper

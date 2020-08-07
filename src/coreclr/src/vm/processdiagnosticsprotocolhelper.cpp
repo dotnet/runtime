@@ -11,7 +11,7 @@
 
 #ifdef FEATURE_PERFTRACING
 
-static inline uint32_t GetStringLength(const WCHAR *&value)
+static inline uint32_t GetStringLength(const WCHAR *value)
 {
     return static_cast<uint32_t>(wcslen(value) + 1);
 }
@@ -47,6 +47,7 @@ uint16_t ProcessInfoPayload::GetSize()
     // LPCWSTR CommandLine; -> 4 bytes + strlen * sizeof(WCHAR)
     // LPCWSTR OS;          -> 4 bytes + strlen * sizeof(WCHAR)
     // LPCWSTR Arch;        -> 4 bytes + strlen * sizeof(WCHAR)
+    // Array<LPCWSTR> Environment; -> 4 bytes + total bytes of strings
 
     S_UINT16 size = S_UINT16(0);
     size += sizeof(ProcessId);
@@ -66,6 +67,12 @@ uint16_t ProcessInfoPayload::GetSize()
     size += Arch != nullptr ?
         S_UINT16(GetStringLength(Arch) * sizeof(WCHAR)) :
         S_UINT16(0);
+
+    EnsureEnv();
+
+    size += sizeof(uint32_t);
+    size += S_UINT16(_nEnvEntries * sizeof(uint32_t));
+    size += S_UINT16(_nWchars * sizeof(WCHAR));
 
     ASSERT(!size.IsOverflow());
     return size.Value();
@@ -108,10 +115,66 @@ bool ProcessInfoPayload::Flatten(BYTE * &lpBuffer, uint16_t &cbSize)
     if (fSuccess)
         fSuccess &= TryWriteString(lpBuffer, cbSize, Arch);
 
+    // Array<LPCWSTR>
+    memcpy(lpBuffer, &_nEnvEntries, sizeof(_nEnvEntries));
+    lpBuffer += sizeof(_nEnvEntries);
+    cbSize -= sizeof(_nEnvEntries);
+
+    LPCWSTR cursor = Environment;
+    for (uint32_t i = 0; i < _nEnvEntries; i++)
+    {
+        if (!fSuccess)
+            break;
+
+        int len = wcslen(cursor) + 1;
+        fSuccess &= TryWriteString(lpBuffer, cbSize, cursor);
+        cursor += len;
+    }
+
     // Assert we've used the whole buffer we were given
     ASSERT(cbSize == 0);
 
     return fSuccess;
+}
+
+void ProcessInfoPayload::EnsureEnv()
+{
+    if (Environment != nullptr)
+        return;
+
+    // env block is an array of strings of the form "key=value" delimited by null and terminated by null
+    // e.g., "key=value\0key=value\0\0";
+    LPWSTR envBlock = GetEnvironmentStringsW();
+    LPWSTR envCursor = envBlock;
+    // first calculate the buffer size
+    uint32_t nWchars = 0;
+    uint32_t nEntries = 0;
+    while(*envCursor != 0) 
+    {
+        int len = wcslen(envCursor) + 1;
+        nEntries++;
+        nWchars += len;
+        envCursor += len;
+    }
+    LPWSTR tmpEnv = new WCHAR[nWchars + 1];
+    envCursor = envBlock;
+    LPWSTR payloadCursor = tmpEnv;
+
+    // copy out the Environment block
+    while(*envCursor != 0) 
+    {
+        // len characters
+        int len = wcslen(envCursor) + 1;
+        wcscpy(payloadCursor, envCursor);
+        envCursor += len;
+        payloadCursor += len;
+    }
+    *payloadCursor = W('\0');
+    Environment = tmpEnv;
+    FreeEnvironmentStringsW(envBlock);
+
+    _nEnvEntries = nEntries;
+    _nWchars = nWchars;
 }
 
 void ProcessDiagnosticsProtocolHelper::GetProcessInfo(DiagnosticsIpc::IpcMessage& message, IpcStream *pStream)
@@ -146,6 +209,9 @@ void ProcessDiagnosticsProtocolHelper::GetProcessInfo(DiagnosticsIpc::IpcMessage
 
     // Get the cookie
     payload.RuntimeCookie = DiagnosticsIpc::GetAdvertiseCookie_V1();
+
+    // Get the environment block
+    payload.EnsureEnv();
 
     DiagnosticsIpc::IpcMessage ProcessInfoResponse;
     const bool fSuccess = ProcessInfoResponse.Initialize(DiagnosticsIpc::GenericSuccessHeader, payload) ?
