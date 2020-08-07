@@ -76,7 +76,6 @@ namespace System.Diagnostics
 
         private byte _w3CIdFlags;
 
-
         private TagsLinkedList? _tags;
         private LinkedList<KeyValuePair<string, string?>>? _baggage;
         private LinkedList<ActivityLink>? _links;
