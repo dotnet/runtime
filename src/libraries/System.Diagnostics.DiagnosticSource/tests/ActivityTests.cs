@@ -1508,6 +1508,54 @@ namespace System.Diagnostics.Tests
             Assert.Equal(resultCount, a.TagObjects.Count());
         }
 
+        [Fact]
+        public void StructEnumerator_TagsLinkedList()
+        {
+            /*
+             * This test verifies the presence of the struct Enumerator on TagsLinkedList used by customers dynamically to avoid allocations.
+             */
+            Activity a = new Activity("TestActivity");
+            a.AddTag("Tag1", true);
+
+            IEnumerable<KeyValuePair<string, object>> enumerable = a.TagObjects;
+
+            bool foundGetEnumerator = false;
+            foreach (MethodInfo method in enumerable.GetType().GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.NonPublic))
+            {
+                if(method.Name == "GetEnumerator" && !method.ReturnType.IsInterface && method.ReturnType.IsValueType)
+                {
+                    foundGetEnumerator = true;
+                    break;
+                }
+            }
+
+            Assert.True(foundGetEnumerator);
+        }
+
+        [Fact]
+        public void StructEnumerator_GenericLinkedList()
+        {
+            /*
+             * This test verifies the presence of the struct Enumerator on LinkedList<T> used by customers dynamically to avoid allocations.
+             */
+            Activity a = new Activity("TestActivity");
+            a.AddEvent(new ActivityEvent());
+
+            IEnumerable<ActivityEvent> enumerable = a.Events;
+
+            bool foundGetEnumerator = false;
+            foreach (MethodInfo method in enumerable.GetType().GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.NonPublic))
+            {
+                if (method.Name == "GetEnumerator" && !method.ReturnType.IsInterface && method.ReturnType.IsValueType)
+                {
+                    foundGetEnumerator = true;
+                    break;
+                }
+            }
+
+            Assert.True(foundGetEnumerator);
+        }
+
         public void Dispose()
         {
             Activity.Current = null;
