@@ -92,9 +92,9 @@ namespace DebuggerTests
                 await CheckValue(pause_location["data"], JObject.FromObject(new
                 {
                     type = "object",
-                        subtype = "error",
-                        className = "TypeError",
-                        uncaught = false
+                    subtype = "error",
+                    className = "TypeError",
+                    uncaught = false
                 }), "exception0.data");
 
                 var exception_members = await GetProperties(pause_location["data"]["objectId"]?.Value<string>());
@@ -262,4 +262,3 @@ namespace DebuggerTests
         }
     }
 }
-
