@@ -1203,7 +1203,7 @@ EEJitManager::EEJitManager()
     m_CodeHeapCritSec( CrstSingleUseLock,
                         CrstFlags(CRST_UNSAFE_ANYMODE|CRST_DEBUGGER_THREAD|CRST_TAKEN_DURING_SHUTDOWN)),
     m_CPUCompileFlags(),
-    m_EHClauseCritSec( CrstSingleUseLock )
+    m_JitLoadCritSec( CrstSingleUseLock )
 {
     CONTRACTL {
         THROWS;
@@ -1702,8 +1702,8 @@ BOOL EEJitManager::LoadJIT()
     if (IsJitLoaded())
         return TRUE;
 
-    // Abuse m_EHClauseCritSec to ensure that the JIT is loaded on one thread only
-    CrstHolder chRead(&m_EHClauseCritSec);
+    // Use m_JitLoadCritSec to ensure that the JIT is loaded on one thread only
+    CrstHolder chRead(&m_JitLoadCritSec);
 
     // Did someone load the JIT before we got the lock?
     if (IsJitLoaded())
@@ -3048,21 +3048,14 @@ TypeHandle EEJitManager::ResolveEHClause(EE_ILEXCEPTION_CLAUSE* pEHClause,
     TypeHandle typeHnd = TypeHandle();
     mdToken typeTok = mdTokenNil;
 
+    // CachedTypeHandle's are filled in at JIT time, and not cached when accessed multiple times
+    if (HasCachedTypeHandle(pEHClause))
     {
-        CrstHolder chRead(&m_EHClauseCritSec);
-        if (HasCachedTypeHandle(pEHClause))
-        {
-            typeHnd = TypeHandle::FromPtr(pEHClause->TypeHandle);
-        }
-        else
-        {
-            typeTok = pEHClause->ClassToken;
-        }
+        return TypeHandle::FromPtr(pEHClause->TypeHandle);
     }
-
-    if (!typeHnd.IsNull())
+    else
     {
-        return typeHnd;
+        typeTok = pEHClause->ClassToken;
     }
 
     MethodDesc* pMD = pCf->GetFunction();
@@ -3100,43 +3093,8 @@ TypeHandle EEJitManager::ResolveEHClause(EE_ILEXCEPTION_CLAUSE* pEHClause,
         }
     }
 
-    typeHnd = ClassLoader::LoadTypeDefOrRefOrSpecThrowing(pModule, typeTok, &typeContext,
-                                                          ClassLoader::ReturnNullIfNotFound);
-
-    // If the type (pModule,typeTok) was not loaded or not
-    // restored then the exception object won't have this type, because an
-    // object of this type has not been allocated.
-    if (typeHnd.IsNull())
-        return typeHnd;
-
-    // We can cache any exception specification except:
-    //   - If the type contains type variables in generic code,
-    //     e.g. catch E<T> where T is a type variable.
-    // We CANNOT cache E<T> in non-shared instantiations of generic code because
-    // there is only one EHClause cache for the IL, shared across all instantiations.
-    //
-    if((k & hasAnyVarsMask) == 0)
-    {
-        CrstHolder chWrite(&m_EHClauseCritSec);
-
-        // Note another thread might have beaten us to it ...
-        if (!HasCachedTypeHandle(pEHClause))
-        {
-            // We should never cache a NULL typeHnd.
-            _ASSERTE(!typeHnd.IsNull());
-            pEHClause->TypeHandle = typeHnd.AsPtr();
-            SetHasCachedTypeHandle(pEHClause);
-        }
-        else
-        {
-            // If we raced in here with another thread and got held up on the lock, then we just need to return the
-            // type handle that the other thread put into the clause.
-            // The typeHnd we found and the typeHnd the racing thread found should always be the same
-            _ASSERTE(typeHnd.AsPtr() == pEHClause->TypeHandle);
-            typeHnd = TypeHandle::FromPtr(pEHClause->TypeHandle);
-        }
-    }
-    return typeHnd;
+    return ClassLoader::LoadTypeDefOrRefOrSpecThrowing(pModule, typeTok, &typeContext,
+                                                       ClassLoader::ReturnNullIfNotFound);
 }
 
 void EEJitManager::RemoveJitData (CodeHeader * pCHdr, size_t GCinfo_len, size_t EHinfo_len)
