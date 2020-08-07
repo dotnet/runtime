@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#nullable enable
 #if DontUse
 // XPathContext is not used any more but comments in it and Replacer visitor may be used to
 // optimize code XSLT generates on last().
