@@ -76,20 +76,11 @@ namespace System.Diagnostics
 
         private byte _w3CIdFlags;
 
-        /*
-         * Note:
-         *  DynamicDependency is used here to prevent the linker from removing the struct GetEnumerator on the internal types.
-         *  Some customers use this GetEnumerator dynamically to avoid allocations.
-         *  See: https://github.com/dotnet/runtime/pull/40362
-         */
-        [DynamicDependency(DynamicallyAccessedMemberTypes.PublicMethods, typeof(TagsLinkedList))]
-        private TagsLinkedList? _tags;
-        [DynamicDependency(DynamicallyAccessedMemberTypes.PublicMethods, typeof(LinkedList<ActivityLink>))]
-        private LinkedList<ActivityLink>? _links;
-        [DynamicDependency(DynamicallyAccessedMemberTypes.PublicMethods, typeof(LinkedList<ActivityEvent>))]
-        private LinkedList<ActivityEvent>? _events;
 
+        private TagsLinkedList? _tags;
         private LinkedList<KeyValuePair<string, string?>>? _baggage;
+        private LinkedList<ActivityLink>? _links;
+        private LinkedList<ActivityEvent>? _events;
         private ConcurrentDictionary<string, object>? _customProperties;
         private string? _displayName;
 
@@ -1280,8 +1271,8 @@ namespace System.Diagnostics
             }
 
             public Enumerator<T> GetEnumerator() => new Enumerator<T>(_first);
-            IEnumerator<T> IEnumerable<T>.GetEnumerator() => new Enumerator<T>(_first);
-            IEnumerator IEnumerable.GetEnumerator() => new Enumerator<T>(_first);
+            IEnumerator<T> IEnumerable<T>.GetEnumerator() => GetEnumerator();
+            IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
         }
 
         private class TagsLinkedList : IEnumerable<KeyValuePair<string, object?>>
@@ -1387,8 +1378,8 @@ namespace System.Diagnostics
             }
 
             public Enumerator<KeyValuePair<string, object?>> GetEnumerator() => new Enumerator<KeyValuePair<string, object?>>(_first);
-            IEnumerator<KeyValuePair<string, object?>> IEnumerable<KeyValuePair<string, object?>>.GetEnumerator() => new Enumerator<KeyValuePair<string, object?>>(_first);
-            IEnumerator IEnumerable.GetEnumerator() => new Enumerator<KeyValuePair<string, object?>>(_first);
+            IEnumerator<KeyValuePair<string, object?>> IEnumerable<KeyValuePair<string, object?>>.GetEnumerator() => GetEnumerator();
+            IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
             public IEnumerable<KeyValuePair<string, string?>> EnumerateStringValues()
             {
