@@ -161,8 +161,8 @@ namespace DebuggerTests
                     await CheckValue(eo["exceptionDetails"] ? ["exception"], JObject.FromObject(new
                     {
                         type = "object",
-                            subtype = "error",
-                            className = "Error" // BUG?: "DebuggerTests.CustomException"
+                        subtype = "error",
+                        className = "Error" // BUG?: "DebuggerTests.CustomException"
                     }), "exception");
 
                     return;
