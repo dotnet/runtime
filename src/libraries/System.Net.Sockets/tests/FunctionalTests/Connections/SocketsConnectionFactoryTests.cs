@@ -94,8 +94,8 @@ namespace System.Net.Sockets.Tests
             //Assert.Equal(NetworkError.ConnectionRefused, ex.NetworkError);
         }
 
-        // On Windows, failing connections take > 1 sec when address not found,
-        // making it easy to test the - otherwise platform-independent - cancellation logic
+        // On Windows, failing connections take > 1 sec when the destination address is not found,
+        // making it easy to test the cancellation logic
         [Fact]
         [PlatformSpecific(TestPlatforms.Windows)] 
         public async Task ConnectAsync_WhenCancelled_ThrowsTaskCancelledException()
@@ -130,6 +130,20 @@ namespace System.Net.Sockets.Tests
 
             // The test server should echo the data:
             Assert.Equal(sendData, receiveData);
+        }
+
+        [Theory]
+        [MemberData(nameof(ConnectData))]
+        public async Task Connection_EndpointsAreCorrect(EndPoint endPoint, SocketType socketType, ProtocolType protocolType)
+        {
+            endPoint = RecreateUdsEndpoint(endPoint);
+            using var server = SocketTestServer.SocketTestServerFactory(SocketImplementationType.Async, endPoint, protocolType);
+            using SocketsConnectionFactory factory = new SocketsConnectionFactory(endPoint.AddressFamily, socketType, protocolType);
+            using Connection connection = await factory.ConnectAsync(server.EndPoint);
+
+            // Checking for .ToString() result, because UnixDomainSocketEndPoint equality doesn't seem to be implemented
+            Assert.Equal(server.EndPoint.ToString(), connection.RemoteEndPoint.ToString()); 
+            Assert.IsType(endPoint.GetType(), connection.LocalEndPoint);
         }
 
         [Theory]
