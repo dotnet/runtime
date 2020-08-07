@@ -14,8 +14,8 @@
       one per test project, but RepoDirectoriesProvider may need some tweaking to share.
     -->
     <MSBuild Projects="$(InstallerProjectRoot)pkg\sfx\bundle\Microsoft.NETCore.App.Bundle.bundleproj"
-             Targets="PublishSharedFrameworkToDisk"
-             Properties="SharedFrameworkOutputPath=$(TestsOutputDir)sharedFrameworkPublish/" />
+             Targets="PublishToDisk"
+             Properties="OutputPath=$(TestsOutputDir)sharedFrameworkPublish/" />
 
     <!-- Create files with a name that describes what a test dir is. Useful if path abbreviated. -->
     <WriteLinesToFile
