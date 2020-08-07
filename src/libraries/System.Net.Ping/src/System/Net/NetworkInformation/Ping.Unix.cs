@@ -18,8 +18,8 @@ namespace System.Net.NetworkInformation
         private const int IcmpHeaderLengthInBytes = 8;
         private const int MinIpHeaderLengthInBytes = 20;
         private const int MaxIpHeaderLengthInBytes = 60;
-        private static readonly bool _sendIpHeader = RuntimeInformation.IsOSPlatform(OSPlatform.OSX);
-        private static readonly bool _needsConnect = RuntimeInformation.IsOSPlatform(OSPlatform.Linux);
+        private static readonly bool _sendIpHeader = OperatingSystem.IsMacOS();
+        private static readonly bool _needsConnect = OperatingSystem.IsLinux();
         [ThreadStatic]
         private static Random? t_idGenerator;
 
@@ -91,7 +91,7 @@ namespace System.Net.NetworkInformation
             Socket socket = new Socket(addrFamily, SocketType.Raw, socketConfig.ProtocolType);
             socket.ReceiveTimeout = socketConfig.Timeout;
             socket.SendTimeout = socketConfig.Timeout;
-            if (addrFamily == AddressFamily.InterNetworkV6 && RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+            if (addrFamily == AddressFamily.InterNetworkV6 && OperatingSystem.IsMacOS())
             {
                 socket.DualMode = false;
             }
