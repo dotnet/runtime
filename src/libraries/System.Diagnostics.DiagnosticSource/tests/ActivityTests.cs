@@ -1518,17 +1518,11 @@ namespace System.Diagnostics.Tests
 
             IEnumerable<KeyValuePair<string, object>> enumerable = a.TagObjects;
 
-            bool foundGetEnumerator = false;
-            foreach (MethodInfo method in enumerable.GetType().GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.NonPublic))
-            {
-                if(method.Name == "GetEnumerator" && !method.ReturnType.IsInterface && method.ReturnType.IsValueType)
-                {
-                    foundGetEnumerator = true;
-                    break;
-                }
-            }
+            MethodInfo method = enumerable.GetType().GetMethod("GetEnumerator", BindingFlags.Instance | BindingFlags.Public);
 
-            Assert.True(foundGetEnumerator);
+            Assert.NotNull(method);
+            Assert.False(method.ReturnType.IsInterface);
+            Assert.True(method.ReturnType.IsValueType);
         }
 
         [Fact]
@@ -1541,17 +1535,11 @@ namespace System.Diagnostics.Tests
 
             IEnumerable<ActivityEvent> enumerable = a.Events;
 
-            bool foundGetEnumerator = false;
-            foreach (MethodInfo method in enumerable.GetType().GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.NonPublic))
-            {
-                if (method.Name == "GetEnumerator" && !method.ReturnType.IsInterface && method.ReturnType.IsValueType)
-                {
-                    foundGetEnumerator = true;
-                    break;
-                }
-            }
+            MethodInfo method = enumerable.GetType().GetMethod("GetEnumerator", BindingFlags.Instance | BindingFlags.Public);
 
-            Assert.True(foundGetEnumerator);
+            Assert.NotNull(method);
+            Assert.False(method.ReturnType.IsInterface);
+            Assert.True(method.ReturnType.IsValueType);
         }
 
         public void Dispose()
