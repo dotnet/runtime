@@ -49,6 +49,8 @@ namespace System.Threading.Tests
 
             ExecutionContext.Restore(defaultEC);
             Assert.Equal(0, asyncLocal.Value);
+
+            Assert.Throws<InvalidOperationException>(() => ExecutionContext.Restore(null!));
         }
 
         [Fact]

@@ -244,7 +244,7 @@ namespace System.Threading.Tasks.Sources
             Debug.Assert(_continuation != null);
             Debug.Assert(_executionContext != null);
 
-            ExecutionContext? currentContext = ExecutionContext.Capture();
+            ExecutionContext? currentContext = ExecutionContext.CaptureForRestore();
             // Restore the captured ExecutionContext before executing anything.
             ExecutionContext.Restore(_executionContext);
 
@@ -259,7 +259,7 @@ namespace System.Threading.Tasks.Sources
                     finally
                     {
                         // Restore the current ExecutionContext.
-                        ExecutionContext.Restore(currentContext);
+                        ExecutionContext.RestoreInternal(currentContext);
                     }
                 }
                 else
@@ -284,7 +284,7 @@ namespace System.Threading.Tasks.Sources
                         // Set sync context back to what it was prior to coming in
                         SynchronizationContext.SetSynchronizationContext(syncContext);
                         // Restore the current ExecutionContext.
-                        ExecutionContext.Restore(currentContext);
+                        ExecutionContext.RestoreInternal(currentContext);
                     }
 
                     // Now rethrow the exception; if there is one.
@@ -301,7 +301,7 @@ namespace System.Threading.Tasks.Sources
             finally
             {
                 // Restore the current ExecutionContext.
-                ExecutionContext.Restore(currentContext);
+                ExecutionContext.RestoreInternal(currentContext);
             }
         }
 
