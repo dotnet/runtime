@@ -14,23 +14,20 @@ namespace System.Net.Connections
     internal sealed class SocketConnection : Connection, IConnectionProperties
     {
         private readonly Socket _socket;
-        private readonly ISocketStreamProvider _streamProvider;
-        private readonly Lazy<Stream> _stream;
-        private readonly Lazy<IDuplexPipe> _pipe;
+        private readonly SocketsConnectionFactory _streamProvider;
+        private Stream? _stream;
+        private IDuplexPipe? _pipe;
         private readonly IConnectionProperties? _options;
-
 
         public override EndPoint? RemoteEndPoint => _socket.RemoteEndPoint;
         public override EndPoint? LocalEndPoint => _socket.LocalEndPoint;
         public override IConnectionProperties ConnectionProperties => this;
 
-        public SocketConnection(Socket socket, ISocketStreamProvider streamProvider, IConnectionProperties? options)
+        public SocketConnection(Socket socket, SocketsConnectionFactory streamProvider, IConnectionProperties? options)
         {
             _socket = socket;
             _streamProvider = streamProvider;
             _options = options;
-            _stream = new Lazy<Stream>(() => _streamProvider.CreateStream(socket, this), true);
-            _pipe = new Lazy<IDuplexPipe>(() => _streamProvider.CreatePipe(socket, this), true);
         }
 
         protected override ValueTask CloseAsyncCore(ConnectionCloseMethod method, CancellationToken cancellationToken)
@@ -49,7 +46,10 @@ namespace System.Net.Connections
                     _socket.Dispose();
                 }
 
-                if (_stream.IsValueCreated) _stream.Value.Dispose();
+                if (_stream != null)
+                {
+                    return _stream.DisposeAsync();
+                }
             }
             catch (SocketException socketException)
             {
@@ -63,8 +63,24 @@ namespace System.Net.Connections
             return default;
         }
 
-        protected override Stream CreateStream() => _stream.Value;
-        protected override IDuplexPipe CreatePipe() => _pipe.Value;
+        protected override Stream CreateStream()
+        {
+            if (_stream == null)
+            {
+                _stream = _streamProvider.CreateStreamForConnection(_socket, this);
+            }
+            return _stream;
+        }
+
+        protected override IDuplexPipe CreatePipe()
+        {
+            if (_pipe == null)
+            {
+                _pipe = _streamProvider.CreatePipeForConnection(_socket, this);
+            }
+
+            return _pipe;
+        }
 
         bool IConnectionProperties.TryGet(Type propertyKey, [NotNullWhen(true)] out object? property)
         {
@@ -81,12 +97,6 @@ namespace System.Net.Connections
 
             property = null;
             return false;
-        }
-
-        internal interface ISocketStreamProvider
-        {
-            Stream CreateStream(Socket socket, IConnectionProperties connectionProperties);
-            IDuplexPipe CreatePipe(Socket socket, IConnectionProperties connectionProperties);
         }
     }
 }

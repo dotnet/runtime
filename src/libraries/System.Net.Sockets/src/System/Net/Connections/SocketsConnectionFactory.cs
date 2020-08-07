@@ -12,7 +12,7 @@ namespace System.Net.Connections
     /// <summary>
     /// TODO
     /// </summary>
-    public class SocketsConnectionFactory : ConnectionFactory, SocketConnection.ISocketStreamProvider
+    public class SocketsConnectionFactory : ConnectionFactory
     {
         private readonly AddressFamily _addressFamily;
         private readonly SocketType _socketType;
@@ -114,9 +114,9 @@ namespace System.Net.Connections
 
         protected virtual IDuplexPipe CreatePipe(Socket socket, IConnectionProperties? options) => new DuplexStreamPipe(CreateStream(socket, options));
 
-        Stream SocketConnection.ISocketStreamProvider.CreateStream(Socket socket, IConnectionProperties options) => CreateStream(socket, options);
+        internal Stream CreateStreamForConnection(Socket socket, IConnectionProperties options) => CreateStream(socket, options);
 
-        IDuplexPipe SocketConnection.ISocketStreamProvider.CreatePipe(Socket socket, IConnectionProperties options) => CreatePipe(socket, options);
+        internal IDuplexPipe CreatePipeForConnection(Socket socket, IConnectionProperties options) => CreatePipe(socket, options);
 
         private sealed class DuplexStreamPipe : IDuplexPipe
         {
