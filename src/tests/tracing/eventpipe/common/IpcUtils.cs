@@ -144,8 +144,10 @@ namespace Tracing.Tests.Common
                 }
                 finally
                 {
+                    Logger.logger.Log($"----------------------------------------");
                     Logger.logger.Log($"Subprocess stdout: {stdoutSb.ToString()}");
                     Logger.logger.Log($"Subprocess stderr: {stderrSb.ToString()}");
+                    Logger.logger.Log($"----------------------------------------");
                 }
 
 
