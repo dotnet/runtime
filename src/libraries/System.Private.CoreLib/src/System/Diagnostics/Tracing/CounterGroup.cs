@@ -204,19 +204,24 @@ namespace System.Diagnostics.Tracing
             {
                 DateTime now;
                 TimeSpan elapsed;
+                int pollingIntervalInMilliseconds;
+                DiagnosticCounter[] counters;
                 lock (s_counterGroupLock)
                 {
                     now = DateTime.UtcNow;
                     elapsed = now - _timeStampSinceCollectionStarted;
+                    pollingIntervalInMilliseconds = _pollingIntervalInMilliseconds;
+                    counters = new DiagnosticCounter[_counters.Count];
+                    _counters.CopyTo(counters);
                 }
 
                 // MUST keep out of the scope of s_counterGroupLock because this will cause WritePayload
                 // callback can be re-entrant to CounterGroup (i.e. it's possible it calls back into EnableTimer()
                 // above, since WritePayload callback can contain user code that can invoke EventSource constructor
                 // and lead to a deadlock. (See https://github.com/dotnet/runtime/issues/40190 for details)
-                foreach (DiagnosticCounter counter in _counters)
+                foreach (DiagnosticCounter counter in counters)
                 {
-                    counter.WritePayload((float)elapsed.TotalSeconds, _pollingIntervalInMilliseconds);
+                    counter.WritePayload((float)elapsed.TotalSeconds, pollingIntervalInMilliseconds);
                 }
 
                 lock (s_counterGroupLock)
@@ -239,16 +244,15 @@ namespace System.Diagnostics.Tracing
         private static void PollForValues()
         {
             AutoResetEvent? sleepEvent = null;
-            int maxOnTimersCnt = 64; // initialize the maximum size of CounterGroups' callbacks cache to be 64.
 
             // Cache of onTimer callbacks for each CounterGroup.
             // We cache these outside of the scope of s_counterGroupLock because
             // calling into the callbacks can cause a re-entrancy into CounterGroup.Enable()
             // and result in a deadlock. (See https://github.com/dotnet/runtime/issues/40190 for details)
-            Action[] onTimers = new Action[maxOnTimersCnt];
+            List<Action> onTimers = new List<Action>();
             while (true)
             {
-                int numCounterGroups = 0;
+                onTimers.Clear();
                 int sleepDurationInMilliseconds = int.MaxValue;
                 lock (s_counterGroupLock)
                 {
@@ -258,14 +262,7 @@ namespace System.Diagnostics.Tracing
                         DateTime now = DateTime.UtcNow;
                         if (counterGroup._nextPollingTimeStamp < now + new TimeSpan(0, 0, 0, 0, 1))
                         {
-                            if (numCounterGroups == maxOnTimersCnt)
-                            {
-                                maxOnTimersCnt *= 2;
-                                Action[] newOnTimers = new Action[maxOnTimersCnt];
-                                onTimers.CopyTo(newOnTimers, 0);
-                                onTimers = newOnTimers;
-                            }
-                            onTimers[numCounterGroups++] = () => counterGroup.OnTimer();
+                            onTimers.Add(() => counterGroup.OnTimer());
                         }
 
                         int millisecondsTillNextPoll = (int)((counterGroup._nextPollingTimeStamp - now).TotalMilliseconds);
@@ -273,9 +270,9 @@ namespace System.Diagnostics.Tracing
                         sleepDurationInMilliseconds = Math.Min(sleepDurationInMilliseconds, millisecondsTillNextPoll);
                     }
                 }
-                for (int i = 0; i < numCounterGroups; i++)
+                foreach (Action onTimer in onTimers)
                 {
-                    onTimers[i].Invoke();
+                    onTimer.Invoke();
                 }
                 if (sleepDurationInMilliseconds == int.MaxValue)
                 {
