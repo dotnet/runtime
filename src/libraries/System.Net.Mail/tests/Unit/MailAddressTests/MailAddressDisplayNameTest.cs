@@ -24,11 +24,9 @@ namespace System.Net.Mail.Tests
 
         [Theory]
         [InlineData(Address, "test\"Display\"Name")]
-        [InlineData(Address, "\"John Doe\"")]
         [InlineData(Address, "Hello \"world hello\" world")]
         [InlineData(Address, "Hello \"world")]
         [InlineData(Address, "Hello \"\"world")]
-        [InlineData(Address, "\"\"")]
         [InlineData(Address, "\"")]
         [InlineData(Address, "Hello \\\"world hello\\\" world")]
         public void MailAddress_WithDoubleQuotesDisplayAndMailAddress_ToStringShouldReturnDisplayNameEscapeSequenceAndAddressInAngleBrackets(string address, string displayNameWithDoubleQuotes)
@@ -37,6 +35,31 @@ namespace System.Net.Mail.Tests
             Assert.Equal(displayNameWithDoubleQuotes, mailAddress.DisplayName);
             Assert.Equal(string.Format("\"{0}\" <{1}>", displayNameWithDoubleQuotes.Replace("\"", "\\\""), Address), mailAddress.ToString());
         }
+
+        [Theory]
+        [InlineData(Address, "\"John Doe\"")]
+        [InlineData(Address, "\"\"")]
+        public void MailAddress_WithDoubleQuotesInBeginningAndInEndingDisplayAndMailAddress_ToStringShouldReturnDisplayNameEscapeSequenceAndAddressInAngleBrackets(string address, string displayNameWithDoubleQuotesInBeginningAndInEnding)
+        {
+            if (displayNameWithDoubleQuotesInBeginningAndInEnding.Length >= 2 && displayNameWithDoubleQuotesInBeginningAndInEnding[0] == '\"' && displayNameWithDoubleQuotesInBeginningAndInEnding[^1] == '\"')
+            {
+
+                displayNameWithDoubleQuotesInBeginningAndInEnding = displayNameWithDoubleQuotesInBeginningAndInEnding.Substring(1, displayNameWithDoubleQuotesInBeginningAndInEnding.Length - 2);
+            }
+
+            MailAddress mailAddress = new MailAddress(address, displayNameWithDoubleQuotesInBeginningAndInEnding);
+            Assert.Equal(displayNameWithDoubleQuotesInBeginningAndInEnding, mailAddress.DisplayName);
+
+            if (string.IsNullOrEmpty(displayNameWithDoubleQuotesInBeginningAndInEnding))
+            {
+                Assert.Equal($"{Address}", mailAddress.ToString());
+            }
+            else
+            {
+                Assert.Equal($"\"{displayNameWithDoubleQuotesInBeginningAndInEnding.Replace("\"", "\\\"")}\" <{Address}>", mailAddress.ToString());
+            }
+        }
+
 
         [Fact]
         public void MailAddress_WithNoDisplayName_AndOnlyAddress_ToStringShouldOutputAddressOnlyWithNoAngleBrackets()
