@@ -118,7 +118,7 @@ namespace System.Security.Cryptography
 
         internal static ECParameters ExportPublicParametersFromPrivateKey(SafeSecKeyRefHandle handle)
         {
-            // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Unit test password.")]
+            // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Password for temporary operation. See code comments for more details.")]
             const string ExportPassword = "DotnetExportPassphrase";
             byte[] keyBlob = Interop.AppleCrypto.SecKeyExport(handle, exportPrivate: true, password: ExportPassword);
             EccKeyFormatHelper.ReadEncryptedPkcs8(keyBlob, ExportPassword, out _, out ECParameters key);
@@ -132,7 +132,7 @@ namespace System.Security.Cryptography
         {
             // Apple requires all private keys to be exported encrypted, but since we're trying to export
             // as parsed structures we will need to decrypt it for the user.
-            // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Unit test password.")]
+            // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Password for temporary operation. See code comments for more details.")]
             const string ExportPassword = "DotnetExportPassphrase";
             SecKeyPair keys = GetOrGenerateKeys(keySizeInBits);
 
