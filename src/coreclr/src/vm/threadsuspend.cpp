@@ -2262,6 +2262,8 @@ void Thread::RareDisablePreemptiveGC()
     // waiting for GC
     _ASSERTE ((m_StateNC & Thread::TSNC_OwnsSpinLock) == 0);
 
+    _ASSERTE(!MethodDescBackpatchInfoTracker::IsLockOwnedByCurrentThread() || IsInForbidSuspendForDebuggerRegion());
+
     if (!GCHeapUtilities::IsGCHeapInitialized())
     {
         goto Exit;
@@ -2561,6 +2563,8 @@ void Thread::RareEnablePreemptiveGC()
     // holding a spin lock in coop mode and transit to preemp mode will cause deadlock on GC
     _ASSERTE ((m_StateNC & Thread::TSNC_OwnsSpinLock) == 0);
 
+    _ASSERTE(!MethodDescBackpatchInfoTracker::IsLockOwnedByCurrentThread() || IsInForbidSuspendForDebuggerRegion());
+
     FastInterlockOr (&m_fPreemptiveGCDisabled, 0);
 
 #if defined(STRESS_HEAP) && defined(_DEBUG)
@@ -2582,7 +2586,7 @@ void Thread::RareEnablePreemptiveGC()
         // for GC, the fact that we are leaving the EE means that it no longer needs to
         // suspend us.  But if we are doing a non-GC suspend, we need to block now.
         // Give the debugger precedence over user suspensions:
-        while (m_State & TS_DebugSuspendPending)
+        while ((m_State & TS_DebugSuspendPending) && !IsInForbidSuspendForDebuggerRegion())
         {
 
 #ifdef DEBUGGING_SUPPORTED
@@ -4609,7 +4613,11 @@ bool Thread::SysStartSuspendForDebug(AppDomain *pAppDomain)
             // and the moment we enable TrapReturningThreads in MarkForSuspension.  However,
             // nothing bad happens if the thread has transitioned to preemptive before marking
             // the thread for suspension; the thread will later be identified as Synced in
-            // SysSweepThreadsForDebug
+            // SysSweepThreadsForDebug.
+            //
+            // If the thread transitions to preemptive mode and into a forbid-suspend-for-debugger
+            // region, SysSweepThreadsForDebug would similarly identify the thread as synced
+            // after it leaves the forbid region.
 #else  // DISABLE_THREADSUSPEND
             // Resume the thread and let it run to a safe point
             thread->ResumeThread();
@@ -4625,23 +4633,32 @@ bool Thread::SysStartSuspendForDebug(AppDomain *pAppDomain)
             // they attempt to re-enter they will trip.
             thread->MarkForSuspension(TS_DebugSuspendPending);
 
+            if (
 #ifdef DISABLE_THREADSUSPEND
-            // There'a a race above between the moment we first check m_fPreemptiveGCDisabled
-            // and the moment we enable TrapReturningThreads in MarkForSuspension.  To account
-            // for that we check whether the thread moved into cooperative mode, and if it had
-            // we mark it as a DebugWillSync thread, that will be handled later in
-            // SysSweepThreadsForDebug
-            if (thread->m_fPreemptiveGCDisabled)
+                // There'a a race above between the moment we first check m_fPreemptiveGCDisabled
+                // and the moment we enable TrapReturningThreads in MarkForSuspension.  To account
+                // for that we check whether the thread moved into cooperative mode, and if it had
+                // we mark it as a DebugWillSync thread, that will be handled later in
+                // SysSweepThreadsForDebug.
+                thread->m_fPreemptiveGCDisabled ||
+#endif // DISABLE_THREADSUSPEND
+                // The thread may have been suspended in a forbid-suspend-for-debugger region, or
+                // before the state change to set TS_DebugSuspendPending is made visible to other
+                // threads, the thread may have transitioned into a forbid region. In either case,
+                // flag the thread as TS_DebugWillSync and let SysSweepThreadsForDebug later
+                // identify the thread as synced after the thread leaves the forbid region.
+                thread->IsInForbidSuspendForDebuggerRegion())
             {
                 // Remember that this thread will be running to a safe point
                 FastInterlockIncrement(&m_DebugWillSyncCount);
                 thread->SetThreadState(TS_DebugWillSync);
             }
-#else  // DISABLE_THREADSUSPEND
+
+#ifndef DISABLE_THREADSUSPEND
             if (str == STR_Success) {
                 thread->ResumeThread();
             }
-#endif // DISABLE_THREADSUSPEND
+#endif // !DISABLE_THREADSUSPEND
 
             LOG((LF_CORDB, LL_INFO1000,
                  "[0x%x] SUSPEND: gc enabled.\n", thread->GetThreadId()));
@@ -4720,9 +4737,10 @@ bool Thread::SysSweepThreadsForDebug(bool forceSync)
         // this thread will happen after any earlier writes on a different
         // thread.
         FastInterlockOr(&thread->m_fPreemptiveGCDisabled, 0);
-        if (!thread->m_fPreemptiveGCDisabled)
+        if (!thread->m_fPreemptiveGCDisabled && !thread->IsInForbidSuspendForDebuggerRegion())
         {
-            // If the thread toggled to preemptive mode, then it's synced.
+            // If the thread toggled to preemptive mode and is not in a
+            // forbid-suspend-for-debugger region, then it's synced.
             goto Label_MarkThreadAsSynced;
         }
         else
@@ -4756,7 +4774,7 @@ RetrySuspension:
         else if (str == STR_SwitchedOut)
         {
             // The thread was switched b/c of fiber-mode stuff.
-            if (!thread->m_fPreemptiveGCDisabled)
+            if (!thread->m_fPreemptiveGCDisabled && !thread->IsInForbidSuspendForDebuggerRegion())
             {
                 goto Label_MarkThreadAsSynced;
             }
@@ -4771,15 +4789,27 @@ RetrySuspension:
         }
         else if (!thread->m_fPreemptiveGCDisabled)
         {
-            // If the thread toggled to preemptive mode, then it's synced.
+            // If the thread toggled to preemptive mode and is not in a
+            // forbid-suspend-for-debugger region, then it's synced.
 
             // We can safely resume the thread here b/c it's in PreemptiveMode and the
             // EE will trap anybody trying to re-enter cooperative. So letting it run free
             // won't hurt the runtime.
+            //
+            // If the thread is in a forbid-suspend-for-debugger region, the thread needs to
+            // be resumed to give it a chance to leave the forbid region. The EE will also
+            // trap the thread if it tries to re-enter a forbid region.
             _ASSERTE(str == STR_Success);
             thread->ResumeThread();
 
-            goto Label_MarkThreadAsSynced;
+            if (!thread->IsInForbidSuspendForDebuggerRegion())
+            {
+                goto Label_MarkThreadAsSynced;
+            }
+            else
+            {
+                continue;
+            }
         }
 #if defined(FEATURE_HIJACK) && !defined(TARGET_UNIX)
         // If the thread is in jitted code, HandledJitCase will try to hijack it; and the hijack

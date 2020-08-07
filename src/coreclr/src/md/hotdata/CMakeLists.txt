@@ -33,8 +33,10 @@ add_library_clr(mdhotdata_dac ${MDHOTDATA_SOURCES})
 set_target_properties(mdhotdata_dac PROPERTIES DAC_COMPONENT TRUE)
 target_precompile_header(TARGET mdhotdata_dac HEADER external.h)
 
-add_library_clr(mdhotdata_full OBJECT ${MDHOTDATA_SOURCES})
-target_precompile_header(TARGET mdhotdata_full HEADER external.h)
+add_library_clr(mdhotdata_full_obj OBJECT ${MDHOTDATA_SOURCES})
+target_precompile_header(TARGET mdhotdata_full_obj HEADER external.h)
+add_library(mdhotdata_full INTERFACE)
+target_sources(mdhotdata_full INTERFACE $<TARGET_OBJECTS:mdhotdata_full_obj>)
 
 add_library_clr(mdhotdata_crossgen ${MDHOTDATA_SOURCES})
 set_target_properties(mdhotdata_crossgen PROPERTIES CROSSGEN_COMPONENT TRUE)

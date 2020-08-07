@@ -104,7 +104,7 @@ namespace System.Security.Cryptography
         public bool UseSalt
         {
             get { return false; }
-            [MinimumOSPlatform("windows7.0")]
+            [SupportedOSPlatform("windows")]
             set
             {
                 // Don't allow a true value

@@ -22,6 +22,7 @@
     <Compile Include="System\IO\FileCleanupTestBase.cs" />
     <Compile Include="System\TestEnvironment.cs" />
     <Compile Include="System\ThreadCultureChange.cs" />
+    <Compile Include="System\AssemblyPathHelper.cs" />
     <!-- We don't compile per but and instead use runtime platform checks. -->
     <Compile Include="System\PlatformDetection.cs" />
     <Compile Include="System\PlatformDetection.Unix.cs" />

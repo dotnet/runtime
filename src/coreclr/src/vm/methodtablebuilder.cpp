@@ -8764,8 +8764,10 @@ MethodTableBuilder::HandleGCForExplicitLayout()
         if (bmtParent->NumParentPointerSeries != 0)
         {
             size_t ParentGCSize = CGCDesc::ComputeSize(bmtParent->NumParentPointerSeries);
-            memcpy( (PVOID) (((BYTE*) pMT) - ParentGCSize),  (PVOID) (((BYTE*) GetParentMethodTable()) - ParentGCSize), ParentGCSize - sizeof(UINT) );
-
+            memcpy( (PVOID) (((BYTE*) pMT) - ParentGCSize),
+                    (PVOID) (((BYTE*) GetParentMethodTable()) - ParentGCSize),
+                    ParentGCSize - sizeof(size_t)   // sizeof(size_t) is the NumSeries count
+                  );
         }
 
         UINT32 dwInstanceSliceOffset = AlignUp(HasParent() ? GetParentMethodTable()->GetNumInstanceFieldBytes() : 0, TARGET_POINTER_SIZE);
@@ -8778,6 +8780,16 @@ MethodTableBuilder::HandleGCForExplicitLayout()
 
             pSeries->SetSeriesSize( (size_t) bmtGCSeries->pSeries[i].len - (size_t) pMT->GetBaseSize() );
             pSeries->SetSeriesOffset(bmtGCSeries->pSeries[i].offset + OBJECT_SIZE + dwInstanceSliceOffset);
+            pSeries++;
+        }
+
+        // Adjust the inherited series - since the base size has increased by "# new field instance bytes", we need to
+        // subtract that from all the series (since the series always has BaseSize subtracted for it - see gcdesc.h)
+        CGCDescSeries *pHighest = CGCDesc::GetCGCDescFromMT(pMT)->GetHighestSeries();
+        while (pSeries <= pHighest)
+        {
+            CONSISTENCY_CHECK(CheckPointer(GetParentMethodTable()));
+            pSeries->SetSeriesSize( pSeries->GetSeriesSize() - ((size_t) pMT->GetBaseSize() - (size_t) GetParentMethodTable()->GetBaseSize()) );
             pSeries++;
         }
     }

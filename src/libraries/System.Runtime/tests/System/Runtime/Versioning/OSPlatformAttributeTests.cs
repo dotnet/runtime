@@ -37,9 +37,9 @@ namespace System.Runtime.Versioning.Tests
         [InlineData("Windows8.0")]
         [InlineData("Android4.1")]
         [InlineData("")]
-        public void TestRemovedInOSPlatformAttribute(string platformName)
+        public void TestUnsupportedOSPlatformAttribute(string platformName)
         {
-            var tpa = new RemovedInOSPlatformAttribute(platformName);
+            var tpa = new UnsupportedOSPlatformAttribute(platformName);
 
             Assert.Equal(platformName, tpa.PlatformName);
         }
@@ -48,9 +48,9 @@ namespace System.Runtime.Versioning.Tests
         [InlineData("Windows10.0")]
         [InlineData("OSX")]
         [InlineData("")]
-        public void TestMinimumOSPlatformAttribute(string platformName)
+        public void TestSupportedOSPlatformAttribute(string platformName)
         {
-            var tpa = new MinimumOSPlatformAttribute(platformName);
+            var tpa = new SupportedOSPlatformAttribute(platformName);
 
             Assert.Equal(platformName, tpa.PlatformName);
         }

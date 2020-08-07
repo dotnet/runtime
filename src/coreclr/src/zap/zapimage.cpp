@@ -1894,7 +1894,6 @@ void ZapImage::TryCompileMethodStub(LPVOID pContext, CORINFO_METHOD_HANDLE hStub
 //-----------------------------------------------------------------------------
 BOOL ZapImage::IsVTableGapMethod(mdMethodDef md)
 {
-#ifdef FEATURE_COMINTEROP
     HRESULT hr;
     DWORD dwAttributes;
 
@@ -1916,9 +1915,6 @@ BOOL ZapImage::IsVTableGapMethod(mdMethodDef md)
 
     // If we make it to here we have a vtable gap method.
     return TRUE;
-#else
-    return FALSE;
-#endif // FEATURE_COMINTEROP
 }
 
 //-----------------------------------------------------------------------------

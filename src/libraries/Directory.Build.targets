@@ -185,6 +185,10 @@
         <Private>false</Private>
       </ProjectReference>
     </ItemGroup>
+    <!-- Disable TargetArchitectureMismatch warning when we reference CoreLib which is platform specific. -->
+    <PropertyGroup Condition="@(ProjectReference->AnyHaveMetadataValue('Identity', '$(CoreLibProject)'))">
+      <ResolveAssemblyWarnOrErrorOnTargetArchitectureMismatch>None</ResolveAssemblyWarnOrErrorOnTargetArchitectureMismatch>
+    </PropertyGroup>
   </Target>
 
   <!-- Used for packaging -->

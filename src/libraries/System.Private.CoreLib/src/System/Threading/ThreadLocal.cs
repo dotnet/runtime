@@ -305,8 +305,7 @@ namespace System.Threading
             }
         }
 
-        [return: MaybeNull]
-        private T GetValueSlow()
+        private T? GetValueSlow()
         {
             // If the object has been disposed, the id will be -1.
             int id = ~_idComplement;
@@ -538,8 +537,7 @@ namespace System.Threading
 
         /// <summary>Gets the value of the ThreadLocal&lt;T&gt; for debugging display purposes. It takes care of getting
         /// the value for the current thread in the ThreadLocal mode.</summary>
-        [MaybeNull]
-        internal T ValueForDebugDisplay
+        internal T? ValueForDebugDisplay
         {
             get
             {
@@ -548,7 +546,7 @@ namespace System.Threading
 
                 LinkedSlot? slot;
                 if (slotArray == null || id >= slotArray.Length || (slot = slotArray[id].Value) == null || !_initialized)
-                    return default!;
+                    return default;
                 return slot._value;
             }
         }
@@ -672,7 +670,7 @@ namespace System.Threading
             internal volatile LinkedSlotVolatile[]? _slotArray;
 
             // The value for this slot.
-            [AllowNull, MaybeNull] internal T _value = default;
+            internal T? _value;
         }
 
         /// <summary>
@@ -804,8 +802,7 @@ namespace System.Threading
         public bool IsValueCreated => _tlocal.IsValueCreated;
 
         /// <summary>Returns the value of the ThreadLocal object.</summary>
-        [MaybeNull]
-        public T Value => _tlocal.ValueForDebugDisplay;
+        public T? Value => _tlocal.ValueForDebugDisplay;
 
         /// <summary>Return all values for all threads that have accessed this instance.</summary>
         public List<T>? Values => _tlocal.ValuesForDebugDisplay;
