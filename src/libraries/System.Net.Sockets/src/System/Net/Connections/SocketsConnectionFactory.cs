@@ -60,6 +60,10 @@ namespace System.Net.Connections
             CancellationToken cancellationToken = default)
         {
             if (endPoint == null) throw new ArgumentNullException(nameof(endPoint));
+            if (cancellationToken.IsCancellationRequested)
+            {
+                throw new TaskCanceledException(s_cancellationMessage, innerException: null, cancellationToken);
+            }
 
             Socket socket = CreateSocket(_addressFamily, _socketType, _protocolType, endPoint, options);
 

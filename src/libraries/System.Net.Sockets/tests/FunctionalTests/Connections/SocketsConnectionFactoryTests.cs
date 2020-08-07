@@ -108,6 +108,17 @@ namespace System.Net.Sockets.Tests
             await Assert.ThrowsAsync<TaskCanceledException>(() => factory.ConnectAsync(doesNotExist, cancellationToken: cts.Token).AsTask());
         }
 
+        [Fact]
+        public async Task ConnectAsync_WhenCancelledBeforeInvocation_ThrowsTaskCancelledException()
+        {
+            using SocketsConnectionFactory factory = new SocketsConnectionFactory(SocketType.Stream, ProtocolType.Tcp);
+            IPEndPoint doesNotExist = new IPEndPoint(IPAddress.Parse("1.2.3.4"), 23);
+
+            CancellationToken cancellationToken = new CancellationToken(true);
+
+            await Assert.ThrowsAsync<TaskCanceledException>(() => factory.ConnectAsync(doesNotExist, cancellationToken: cancellationToken).AsTask());
+        }
+
         [Theory]
         [MemberData(nameof(ConnectData))]
         public async Task Connection_Stream_ReadWrite_Success(EndPoint endPoint, SocketType socketType, ProtocolType protocolType)
