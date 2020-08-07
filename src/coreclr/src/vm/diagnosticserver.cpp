@@ -32,7 +32,7 @@ DWORD WINAPI DiagnosticServer::DiagnosticsServerThread(LPVOID)
 #endif
         GC_TRIGGERS;
         MODE_PREEMPTIVE;
-        PRECONDITION(s_shuttingDown || IpcStreamFactory::HasActiveConnections());
+        PRECONDITION(s_shuttingDown || IpcStreamFactory::HasActivePorts());
     }
     CONTRACTL_END;
 
