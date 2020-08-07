@@ -79,7 +79,7 @@ var testArguments = arguments;
 
 function test_exit (exit_code) {
 	if (is_browser) {
-		// Notify the puppeteer script
+		// Notify the selenium script
 		Module.exit_code = exit_code;
 		print ("WASM EXIT " + exit_code);
 		var tests_done_elem = document.createElement ("label");
