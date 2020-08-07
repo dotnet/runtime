@@ -35,7 +35,7 @@
     <RuntimeSpecificFrameworkSuffix>Mono.LLVM.AOT</RuntimeSpecificFrameworkSuffix>
   </PropertyGroup>
   <PropertyGroup Condition="'$(RuntimeSpecificFrameworkSuffix)' != ''">
-    <PackageId>$(SharedFrameworkName).Runtime.$(RuntimeSpecificFrameworkSuffix)</PackageId>
+    <OverridePackageId>$(SharedFrameworkName).Runtime.$(RuntimeSpecificFrameworkSuffix).$(RuntimeIdentifier)</OverridePackageId>
   </PropertyGroup>
 
   <ItemGroup>
