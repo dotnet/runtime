@@ -69,7 +69,8 @@ namespace System.Text.Json.Serialization.Converters
                         ReadPropertyValue(obj, ref state, ref tempReader, jsonPropertyInfo, useExtensionProperty);
                     }
 
-                    ArrayPool<FoundProperty>.Shared.Return(properties, clearArray: true);
+                    ArrayPool<FoundProperty>.Shared.Return(argumentState.FoundProperties!, clearArray: true);
+                    argumentState.FoundProperties = null;
                 }
             }
             else
@@ -122,6 +123,7 @@ namespace System.Text.Json.Serialization.Converters
                     }
 
                     ArrayPool<FoundPropertyAsync>.Shared.Return(argumentState.FoundPropertiesAsync!, clearArray: true);
+                    argumentState.FoundPropertiesAsync = null;
                 }
             }
 
