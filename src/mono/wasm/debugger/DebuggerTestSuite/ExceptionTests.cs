@@ -204,8 +204,8 @@ namespace DebuggerTests
                     await CheckValue(eo["exceptionDetails"] ? ["exception"], JObject.FromObject(new
                     {
                         type = "object",
-                            subtype = "error",
-                            className = "RangeError"
+                        subtype = "error",
+                        className = "RangeError"
                     }), "exception");
 
                     return;
