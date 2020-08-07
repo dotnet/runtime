@@ -198,14 +198,17 @@ namespace System.Net.Http
 
         internal void OnStopped(bool aborted = false)
         {
-            if (_sendStatus == MessageShouldEmitTelemetry && Interlocked.Exchange(ref _sendStatus, MessageAlreadySent) == MessageShouldEmitTelemetry)
+            if (HttpTelemetry.Log.IsEnabled())
             {
-                if (aborted)
+                if (Interlocked.Exchange(ref _sendStatus, MessageAlreadySent) == MessageShouldEmitTelemetry)
                 {
-                    HttpTelemetry.Log.RequestAborted();
-                }
+                    if (aborted)
+                    {
+                        HttpTelemetry.Log.RequestAborted();
+                    }
 
-                HttpTelemetry.Log.RequestStop();
+                    HttpTelemetry.Log.RequestStop();
+                }
             }
         }
 
