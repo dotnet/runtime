@@ -1018,7 +1018,7 @@ namespace System.Xml.Xsl.Xslt
                 return result | s_operatorType[(int)op];
             }
 
-            public virtual XslFlags Axis(XPathAxis xpathAxis, XPathNodeType nodeType, string prefix, string name)
+            public virtual XslFlags Axis(XPathAxis xpathAxis, XPathNodeType nodeType, string? prefix, string? name)
             {
                 _typeDonor = null;
                 if (xpathAxis == XPathAxis.Self && nodeType == XPathNodeType.All && prefix == null && name == null)

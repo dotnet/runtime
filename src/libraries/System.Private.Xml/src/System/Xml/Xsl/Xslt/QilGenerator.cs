@@ -2329,7 +2329,7 @@ namespace System.Xml.Xsl.Xslt
 
         private QilNode CompileNodeSetExpression(string expr)
         {
-            QilNode result = _f.TryEnsureNodeSet(CompileXPathExpression(expr));
+            QilNode? result = _f.TryEnsureNodeSet(CompileXPathExpression(expr));
             if (result == null)
             {
                 // The expression is never a node-set

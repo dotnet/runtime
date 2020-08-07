@@ -114,7 +114,7 @@ namespace System.Xml.Xsl.Xslt
                                 throw new XslLoadException(SR.Xslt_CurrentNotAllowed);
                             }
                             // NOTE: This is the only place where the current node (and not the context node) must be used
-                            return ((IXPathEnvironment)this).GetCurrent();
+                            return ((IXPathEnvironment)this).GetCurrent()!;
                         case FuncId.Key:
                             if (!_allowKey)
                             {
@@ -124,7 +124,7 @@ namespace System.Xml.Xsl.Xslt
                         case FuncId.Document: return CompileFnDocument(args[0], args.Count > 1 ? args[1] : null);
                         case FuncId.FormatNumber: return CompileFormatNumber(args[0], args[1], args.Count > 2 ? args[2] : null);
                         case FuncId.UnparsedEntityUri: return CompileUnparsedEntityUri(args[0]);
-                        case FuncId.GenerateId: return CompileGenerateId(args.Count > 0 ? args[0] : env.GetCurrent());
+                        case FuncId.GenerateId: return CompileGenerateId(args.Count > 0 ? args[0] : env.GetCurrent()!);
                         case FuncId.SystemProperty: return CompileSystemProperty(args[0]);
                         case FuncId.ElementAvailable: return CompileElementAvailable(args[0]);
                         case FuncId.FunctionAvailable: return CompileFunctionAvailable(args[0]);
@@ -182,7 +182,7 @@ namespace System.Xml.Xsl.Xslt
                     else if (name == "namespace-uri")
                     {
                         FunctionInfo.CheckArity(/*minArg:*/1, /*maxArg:*/1, name, args.Count);
-                        return _f.InvokeMsNamespaceUri(_f.ConvertToString(args[0]), env.GetCurrent());
+                        return _f.InvokeMsNamespaceUri(_f.ConvertToString(args[0]), env.GetCurrent()!);
                     }
                     else if (name == "number")
                     {
@@ -429,7 +429,7 @@ namespace System.Xml.Xsl.Xslt
                 }
                 QilIterator i = _f.Let(name);
                 QilNode resolvedName = ResolveQNameDynamic(/*ignoreDefaultNs:*/true, i);
-                result = _f.Invoke(_generalKey, _f.ActualParameterList(i, resolvedName, key, env.GetCurrent()));
+                result = _f.Invoke(_generalKey, _f.ActualParameterList(i, resolvedName, key, env.GetCurrent()!));
                 result = _f.Loop(i, result);
             }
             return result;
@@ -440,14 +440,14 @@ namespace System.Xml.Xsl.Xslt
             Debug.Assert(defList != null && defList.Count > 0);
             if (defList.Count == 1)
             {
-                return _f.Invoke(defList[0].Function!, _f.ActualParameterList(env.GetCurrent(), key));
+                return _f.Invoke(defList[0].Function!, _f.ActualParameterList(env.GetCurrent()!, key));
             }
 
             QilIterator i = _f.Let(key);
             QilNode result = _f.Sequence();
             foreach (Key keyDef in defList)
             {
-                result.Add(_f.Invoke(keyDef.Function!, _f.ActualParameterList(env.GetCurrent(), i)));
+                result.Add(_f.Invoke(keyDef.Function!, _f.ActualParameterList(env.GetCurrent()!, i)));
             }
             return _f.Loop(i, result);
         }

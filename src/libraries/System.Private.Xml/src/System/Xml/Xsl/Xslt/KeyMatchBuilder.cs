@@ -11,6 +11,7 @@ using System.Xml.XPath;
 using MS.Internal.Xml;
 using System.Xml.Xsl.XPath;
 using System.Xml.Xsl.Qil;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Xml.Xsl.Xslt
 {
@@ -34,7 +35,8 @@ namespace System.Xml.Xsl.Xslt
             _depth++;
         }
 
-        public override QilNode EndBuild(QilNode result)
+        [return: NotNullIfNotNull("result")]
+        public override QilNode? EndBuild(QilNode? result)
         {
             _depth--;
             Debug.Assert(0 <= _depth && _depth <= 1, "this shouldn't happen");
