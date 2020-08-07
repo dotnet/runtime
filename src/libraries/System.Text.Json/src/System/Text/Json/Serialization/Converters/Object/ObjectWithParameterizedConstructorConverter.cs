@@ -93,7 +93,6 @@ namespace System.Text.Json.Serialization.Converters
 
                 if (argumentState.FoundPropertyCount > 0)
                 {
-                    // Set the properties we've parsed so far.
                     for (int i = 0; i < argumentState.FoundPropertyCount; i++)
                     {
                         JsonPropertyInfo jsonPropertyInfo = argumentState.FoundPropertiesAsync![i].Item1;
@@ -210,7 +209,7 @@ namespace System.Text.Json.Serialization.Converters
                             argumentState.FoundProperties =
                                 ArrayPool<FoundProperty>.Shared.Rent(Math.Max(1, state.Current.JsonClassInfo.PropertyCache!.Count));
                         }
-                        else if (state.Current.PropertyIndex - 1 == argumentState.FoundProperties.Length)
+                        else if (argumentState.FoundPropertyCount == argumentState.FoundProperties.Length)
                         {
                             // Rare case where we can't fit all the JSON properties in the rented pool; we have to grow.
                             // This could happen if there are duplicate properties in the JSON.
