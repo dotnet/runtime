@@ -20,7 +20,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         HashSet<SessionId> sessions = new HashSet<SessionId>();
         Dictionary<SessionId, ExecutionContext> contexts = new Dictionary<SessionId, ExecutionContext>();
 
-        public MonoProxy(ILoggerFactory loggerFactory, bool hideWebDriver = true) : base(loggerFactory) { this.hideWebDriver = true; }
+        public MonoProxy(ILoggerFactory loggerFactory, bool hideWebDriver = true) : base(loggerFactory) { this.hideWebDriver = hideWebDriver; }
 
         readonly bool hideWebDriver;
 
