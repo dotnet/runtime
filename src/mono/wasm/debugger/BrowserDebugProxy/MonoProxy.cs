@@ -20,7 +20,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         HashSet<SessionId> sessions = new HashSet<SessionId>();
         Dictionary<SessionId, ExecutionContext> contexts = new Dictionary<SessionId, ExecutionContext>();
 
-        public MonoProxy(ILoggerFactory loggerFactory, bool hideWebDriver = true) : base(loggerFactory) { hideWebDriver = true; }
+        public MonoProxy(ILoggerFactory loggerFactory, bool hideWebDriver = true) : base(loggerFactory) { this.hideWebDriver = hideWebDriver; }
 
         readonly bool hideWebDriver;
 
@@ -148,8 +148,6 @@ namespace Microsoft.WebAssembly.Diagnostics
             var res = await SendMonoCommand(sessionId, MonoCommands.IsRuntimeReady(), token);
             return res.Value?["result"] ? ["value"]?.Value<bool>() ?? false;
         }
-
-        static int bpIdGenerator;
 
         protected override async Task<bool> AcceptCommand(MessageId id, string method, JObject args, CancellationToken token)
         {
