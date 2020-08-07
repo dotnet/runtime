@@ -260,7 +260,7 @@ void DiagnosticServer::PauseForDiagnosticsMonitor()
         if (dwFiveSecondWait == WAIT_TIMEOUT)
         {
             CLRConfigStringHolder dotnetDiagnosticPortString = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_DOTNET_DiagnosticPorts);
-            LPCWSTR dotnetDiagnosticPortPrintable = dotnetDiagnosticPortString == nullptr ? W("") : dotnetDiagnosticPortString;
+            LPWSTR dotnetDiagnosticPortPrintable = dotnetDiagnosticPortString == nullptr ? W("") : dotnetDiagnosticPortString;
             wprintf(W("The runtime has been configured to pause during startup and is awaiting a Diagnostics IPC ResumeStartup command from a server in the following list:\n"));
             wprintf(W("DOTNET_DiagnosticPorts=\"%s\"\n"), dotnetDiagnosticPortPrintable);
             fflush(stdout);
