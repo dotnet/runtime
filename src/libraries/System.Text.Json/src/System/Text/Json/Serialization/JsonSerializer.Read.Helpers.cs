@@ -10,7 +10,8 @@ namespace System.Text.Json
     public static partial class JsonSerializer
     {
         // Members accessed by the serializer when deserializing.
-        private const DynamicallyAccessedMemberTypes MembersAccessedOnRead = DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.PublicProperties;
+        private const DynamicallyAccessedMemberTypes MembersAccessedOnRead =
+            DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.PublicFields;
 
         private static TValue? ReadCore<TValue>(ref Utf8JsonReader reader, Type returnType, JsonSerializerOptions options)
         {
