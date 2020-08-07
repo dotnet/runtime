@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.Text.Json;
 using System.Text.RegularExpressions;
@@ -308,6 +309,35 @@ namespace Microsoft.Extensions.Logging.Console.Test
             }
         }
 
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        public void Log_StateAndScopeContainsNullValue_SerializesNull()
+        {
+            // Arrange
+            var t = SetUp(
+                new ConsoleLoggerOptions { FormatterName = ConsoleFormatterNames.Json },
+                simpleOptions: null,
+                systemdOptions: null,
+                jsonOptions: new JsonConsoleFormatterOptions
+                {
+                    JsonWriterOptions = new JsonWriterOptions() { Indented = false },
+                    IncludeScopes = true
+                }
+            );
+            var logger = (ILogger)t.Logger;
+            var sink = t.Sink;
+
+            // Act
+            using (logger.BeginScope(new WithNullValue("ScopeKey")))
+            {
+                logger.Log(LogLevel.Information, 0, state: new WithNullValue("LogKey"), exception: null, formatter: (a, b) => string.Empty);
+            }
+
+            // Assert
+            string message = sink.Writes[0].Message;
+            Assert.Contains("\"ScopeKey\":null", message);
+            Assert.Contains("\"LogKey\":null", message);
+        }
+
         public static TheoryData<object, string> SpecialCaseValues
         {
             get
@@ -364,6 +394,41 @@ namespace Microsoft.Extensions.Logging.Console.Test
                     { (float?)1.2f }
                 };
                 return data;
+            }
+        }
+
+        internal class WithNullValue : IReadOnlyList<KeyValuePair<string, object>>
+        {
+            private readonly string _key;
+
+            public WithNullValue(string key)
+            {
+                _key = key;
+            }
+
+            int IReadOnlyCollection<KeyValuePair<string, object>>.Count { get; } = 1;
+
+            KeyValuePair<string, object> IReadOnlyList<KeyValuePair<string, object>>.this[int index]
+            {
+                get
+                {
+                    if (index == 0)
+                    {
+                        return new KeyValuePair<string, object>(_key, null);
+                    }
+
+                    throw new ArgumentOutOfRangeException(nameof(index));
+                }
+            }
+
+            IEnumerator<KeyValuePair<string, object>> IEnumerable<KeyValuePair<string, object>>.GetEnumerator()
+            {
+                yield return new KeyValuePair<string, object>(_key, null);
+            }
+
+            System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
+            {
+                return ((IEnumerable<KeyValuePair<string, object>>)this).GetEnumerator();
             }
         }
     }

@@ -193,6 +193,9 @@ namespace Microsoft.Extensions.Logging.Console
                 case ushort ushortValue:
                     writer.WriteNumber(key, ushortValue);
                     break;
+                case null:
+                    writer.WriteNull(key);
+                    break;
                 default:
                     writer.WriteString(key, ToInvariantString(item.Value));
                     break;
