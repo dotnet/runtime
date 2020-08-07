@@ -135,7 +135,7 @@ namespace System.IO.Tests
         }
 
         [ConditionalFact(nameof(isNotHFS))] // OSX HFS driver format does not support nanosecond granularity.
-        [PlatformSpecific(~TestPlatforms.Browser)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/40532", TestPlatforms.Browser)]
         public void SetUptoNanoseconds()
         {
             string file = GetTestFilePath();
