@@ -14,7 +14,7 @@ namespace System.Net.Http
     {
         private const int MessageNotYetSent = 0;
         private const int MessageAlreadySent = 1;
-        private const int MessageShouldEmitTelemetry = 2;
+        private const int MessageAlreadySent_StopNotYetCalled = 2;
 
         // Track whether the message has been sent.
         // The message should only be sent if this field is equal to MessageNotYetSent.
@@ -190,8 +190,8 @@ namespace System.Net.Http
 
         internal void MarkAsTrackedByTelemetry()
         {
-            Debug.Assert(_sendStatus != MessageShouldEmitTelemetry);
-            _sendStatus = MessageShouldEmitTelemetry;
+            Debug.Assert(_sendStatus != MessageAlreadySent_StopNotYetCalled);
+            _sendStatus = MessageAlreadySent_StopNotYetCalled;
         }
 
         internal void OnAborted() => OnStopped(aborted: true);
@@ -200,7 +200,7 @@ namespace System.Net.Http
         {
             if (HttpTelemetry.Log.IsEnabled())
             {
-                if (Interlocked.Exchange(ref _sendStatus, MessageAlreadySent) == MessageShouldEmitTelemetry)
+                if (Interlocked.Exchange(ref _sendStatus, MessageAlreadySent) == MessageAlreadySent_StopNotYetCalled)
                 {
                     if (aborted)
                     {
