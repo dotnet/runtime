@@ -21,8 +21,8 @@ namespace Tracing.Tests.Common
 {
     public static class Utils
     {
-        public static readonly string DiagnosticsMonitorAddressEnvKey = "DOTNET_DiagnosticsMonitorAddress";
-        public static readonly string DiagnosticsMonitorPauseOnStartEnvKey = "DOTNET_DiagnosticsMonitorPauseOnStart";
+        public static readonly string DiagnosticPortsEnvKey = "DOTNET_DiagnosticPorts";
+        public static readonly string DiagnosticPortSuspend = "DOTNET_DiagnosticPortSuspend";
 
         public static async Task<T> WaitTillTimeout<T>(Task<T> task, TimeSpan timeout)
         {

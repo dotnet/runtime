@@ -712,7 +712,7 @@ RETAIL_CONFIG_DWORD_INFO(INTERNAL_EventPipeProcNumbers, W("EventPipeProcNumbers"
 //
 // Diagnostics Ports
 //
-RRETAIL_CONFIG_DWORD_INFO_EX(EXTERNAL_DOTNET_DiagnosticPortSuspend, W("DOTNET_DiagnosticPortSuspend"), 1, "This will cause the runtime to pause during startup before major subsystems are started.  Resume using the Diagnostics IPC ResumeStartup command.", CLRConfig::DontPrependCOMPlus_);
+RETAIL_CONFIG_DWORD_INFO_EX(EXTERNAL_DOTNET_DiagnosticPortSuspend, W("DOTNET_DiagnosticPortSuspend"), 0, "This will cause the runtime to pause during startup before major subsystems are started.  Resume using the Diagnostics IPC ResumeStartup command.", CLRConfig::DontPrependCOMPlus_);
 RETAIL_CONFIG_STRING_INFO_EX(EXTERNAL_DOTNET_DiagnosticPorts, W("DOTNET_DiagnosticPorts"), "A semicolon delimited list of additional Diagnostic Ports, where a Diagnostic Port is a NamedPipe path without '\\\\.\\pipe\\' on Windows or the full path of Unix Domain Socket on Linux/Unix followed by optional tags, e.g., '<path>,listen,nosuspend;<path>,connect'", CLRConfig::DontPrependCOMPlus_);
 
 //

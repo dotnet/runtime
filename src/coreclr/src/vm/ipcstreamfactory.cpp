@@ -15,11 +15,11 @@ CQuickArrayList<LPSTR> split(LPSTR string, LPCSTR delimiters)
 {
     CQuickArrayList<LPSTR> parts;
     char *context;
-    char *portConfig = nullptr;
+    char *part = nullptr;
     for (char *cursor = string; ; cursor = nullptr)
     {
-        if ((portConfig = strtok_s(cursor, delimiters, &context)) != nullptr)
-            parts.Push(portConfig);
+        if ((part = strtok_s(cursor, delimiters, &context)) != nullptr)
+            parts.Push(part);
         else
             break;
     }
@@ -110,11 +110,14 @@ bool IpcStreamFactory::Configure(ErrorCallback callback)
 
             ASSERT(portConfigParts.Size() >= 1);
             if (portConfigParts.Size() == 0)
+            {
+                fSuccess &= false;
                 continue;
+            }
 
-            builder.WithPath(portConfigParts.Pop());
-            while (portConfigParts.Size() > 0)
+            while (portConfigParts.Size() > 1)
                 builder.WithTag(portConfigParts.Pop());
+            builder.WithPath(portConfigParts.Pop());
 
             const bool fBuildSuccess = BuildAndAddPort(builder, callback);
             STRESS_LOG1(LF_DIAGNOSTICS_PORT, LL_INFO10, "IpcStreamFactory::Configure - Diagnostic Port creation succeeded? %d \n", fBuildSuccess);
