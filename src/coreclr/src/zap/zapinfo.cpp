@@ -2174,7 +2174,8 @@ DWORD FilterNamedIntrinsicMethodAttribs(ZapInfo* pZapInfo, DWORD attribs, CORINF
         // On Arm64 AdvSimd ISA is required by CoreCLR, so we can expand Vector64<T> and Vector128<T> generic methods (e.g. Vector64<byte>.get_Zero)
         // as well as Vector64 and Vector128 methods (e.g. Vector128.CreateScalarUnsafe).
         fTreatAsRegularMethodCall |= !fIsPlatformHWIntrinsic && fIsHWIntrinsic
-            && (strstr(className, "Vector64") != className) && (strstr(className, "Vector128") != className);
+            && (strncmp(className, "Vector64", _countof("Vector64") - 1) != 0)
+            && (strncmp(className, "Vector128", _countof("Vector128") - 1) != 0);
 #else
         fTreatAsRegularMethodCall |= !fIsPlatformHWIntrinsic && fIsHWIntrinsic;
 #endif 
