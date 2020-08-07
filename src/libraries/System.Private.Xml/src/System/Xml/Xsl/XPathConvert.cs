@@ -8,7 +8,9 @@
 *
 */
 
+#nullable enable
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 
 namespace System.Xml.Xsl
@@ -2016,8 +2018,9 @@ namespace System.Xml.Xsl
                 AssertValid();
             }
 
-            public int CompareTo(object obj)
+            public int CompareTo(object? obj)
             {
+                Debug.Assert(obj != null);
                 BigInteger bi = (BigInteger)obj;
                 AssertValid();
                 bi.AssertValid();
