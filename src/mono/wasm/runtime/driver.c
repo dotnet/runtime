@@ -24,6 +24,8 @@ void core_initialize_internals ();
 #endif
 
 // Blazor specific custom routines - see dotnet_support.js for backing code
+extern void* mono_wasm_invoke_js_blazor (MonoString **exceptionMessage, void *callInfo, void* arg0, void* arg1, void* arg2);
+// The following two are for back-compat and will eventually be removed
 extern void* mono_wasm_invoke_js_marshalled (MonoString **exceptionMessage, void *asyncHandleLongPtr, MonoString *funcName, MonoString *argsJson);
 extern void* mono_wasm_invoke_js_unmarshalled (MonoString **exceptionMessage, MonoString *funcName, void* arg0, void* arg1, void* arg2);
 
@@ -348,6 +350,8 @@ void mono_initialize_internals ()
 	// TODO: what happens when two types in different assemblies have the same FQN?
 
 	// Blazor specific custom routines - see dotnet_support.js for backing code
+	mono_add_internal_call ("WebAssembly.JSInterop.InternalCalls::InvokeJS", mono_wasm_invoke_js_blazor);
+	// The following two are for back-compat and will eventually be removed
 	mono_add_internal_call ("WebAssembly.JSInterop.InternalCalls::InvokeJSMarshalled", mono_wasm_invoke_js_marshalled);
 	mono_add_internal_call ("WebAssembly.JSInterop.InternalCalls::InvokeJSUnmarshalled", mono_wasm_invoke_js_unmarshalled);
 
@@ -358,7 +362,7 @@ void mono_initialize_internals ()
 }
 
 EMSCRIPTEN_KEEPALIVE void
-mono_wasm_load_runtime (const char *unused, int enable_debugging)
+mono_wasm_load_runtime (const char *unused, int debug_level)
 {
 	const char *interp_opts = "";
 
@@ -370,6 +374,16 @@ mono_wasm_load_runtime (const char *unused, int enable_debugging)
     // corlib assemblies.
 	monoeg_g_setenv ("COMPlus_DebugWriteToStdErr", "1", 0);
 #endif
+
+	const char *appctx_keys[2];
+	appctx_keys [0] = "APP_CONTEXT_BASE_DIRECTORY";
+	appctx_keys [1] = "RUNTIME_IDENTIFIER";
+
+	const char *appctx_values[2];
+	appctx_values [0] = "/";
+	appctx_values [1] = "browser-wasm";
+
+	monovm_initialize (2, appctx_keys, appctx_values);
 
 	mini_parse_debug_option ("top-runtime-invoke-unhandled");
 
@@ -386,10 +400,18 @@ mono_wasm_load_runtime (const char *unused, int enable_debugging)
 #endif
 #else
 	mono_jit_set_aot_mode (MONO_AOT_MODE_INTERP_ONLY);
-	if (enable_debugging) {
+
+	/*
+	 * debug_level > 0 enables debugging and sets the debug log level to debug_level
+	 * debug_level == 0 disables debugging and enables interpreter optimizations
+	 * debug_level < 0 enabled debugging and disables debug logging.
+	 *
+	 * Note: when debugging is enabled interpreter optimizations are disabled.
+	 */
+	if (debug_level) {
 		// Disable optimizations which interfere with debugging
 		interp_opts = "-all";
-		mono_wasm_enable_debugging (enable_debugging);
+		mono_wasm_enable_debugging (debug_level);
 	}
 #endif
 
@@ -502,6 +524,8 @@ mono_wasm_assembly_get_entry_point (MonoAssembly *assembly)
 	uint32_t entry = mono_image_get_entry_point (image);
 	if (!entry)
 		return NULL;
+	
+	mono_domain_ensure_entry_assembly (root_domain, assembly);
 
 	return mono_get_method (image, entry, NULL);
 }

@@ -139,7 +139,7 @@ namespace System.IO
 
                 return new string(volumeName);
             }
-            [SupportedOSPlatform("windows7.0")]
+            [SupportedOSPlatform("windows")]
             set
             {
                 uint oldMode;

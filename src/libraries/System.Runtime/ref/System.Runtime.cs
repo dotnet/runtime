@@ -3044,6 +3044,24 @@ namespace System
         public object Clone() { throw null; }
         public void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public override string ToString() { throw null; }
+        public static bool IsOSPlatform(string platform) { throw null; }
+        public static bool IsOSPlatformVersionAtLeast(string platform, int major, int minor = 0, int build = 0, int revision = 0) { throw null; }
+        public static bool IsBrowser() { throw null; }
+        public static bool IsLinux() { throw null; }
+        public static bool IsFreeBSD() { throw null; }
+        public static bool IsFreeBSDVersionAtLeast(int major, int minor = 0, int build = 0, int revision = 0) { throw null; }
+        public static bool IsAndroid() { throw null; }
+        public static bool IsAndroidVersionAtLeast(int major, int minor = 0, int build = 0, int revision = 0) { throw null; }
+        public static bool IsIOS() { throw null; }
+        public static bool IsIOSVersionAtLeast(int major, int minor = 0, int build = 0) { throw null; }
+        public static bool IsMacOS() { throw null; }
+        public static bool IsMacOSVersionAtLeast(int major, int minor = 0, int build = 0) { throw null; }
+        public static bool IsTvOS() { throw null; }
+        public static bool IsTvOSVersionAtLeast(int major, int minor = 0, int build = 0) { throw null; }
+        public static bool IsWatchOS() { throw null; }
+        public static bool IsWatchOSVersionAtLeast(int major, int minor = 0, int build = 0) { throw null; }
+        public static bool IsWindows() { throw null; }
+        public static bool IsWindowsVersionAtLeast(int major, int minor = 0, int build = 0, int revision = 0) { throw null; }
     }
     public partial class OperationCanceledException : System.SystemException
     {

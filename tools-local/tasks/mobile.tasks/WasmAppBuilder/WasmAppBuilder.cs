@@ -29,6 +29,7 @@ public class WasmAppBuilder : Task
     public string? MainJS { get; set; }
     [Required]
     public ITaskItem[]? AssemblySearchPaths { get; set; }
+    public int DebugLevel { get; set; }
     public ITaskItem[]? ExtraAssemblies { get; set; }
     public ITaskItem[]? FilesToIncludeInFileSystem { get; set; }
     public ITaskItem[]? RemoteSources { get; set; }
@@ -41,8 +42,8 @@ public class WasmAppBuilder : Task
     {
         [JsonPropertyName("assembly_root")]
         public string AssemblyRoot { get; set; } = "managed";
-        [JsonPropertyName("enable_debugging")]
-        public int EnableDebugging { get; set; } = 0;
+        [JsonPropertyName("debug_level")]
+        public int DebugLevel { get; set; } = 0;
         [JsonPropertyName("assets")]
         public List<object> Assets { get; } = new List<object>();
         [JsonPropertyName("remote_sources")]
@@ -116,8 +117,15 @@ public class WasmAppBuilder : Task
         // Create app
         Directory.CreateDirectory(AppDir!);
         Directory.CreateDirectory(Path.Join(AppDir, config.AssemblyRoot));
-        foreach (var assembly in _assemblies!.Values)
+        foreach (var assembly in _assemblies!.Values) {
             File.Copy(assembly.Location, Path.Join(AppDir, config.AssemblyRoot, Path.GetFileName(assembly.Location)), true);
+            if (DebugLevel > 0) {
+                var pdb = assembly.Location;
+                pdb = Path.ChangeExtension(pdb, ".pdb");
+                if (File.Exists(pdb))
+                    File.Copy(pdb, Path.Join(AppDir, config.AssemblyRoot, Path.GetFileName(pdb)), true);
+            }
+        }
 
         List<string> nativeAssets = new List<string>() { "dotnet.wasm", "dotnet.js", "dotnet.timezones.blat" };
 
@@ -130,8 +138,17 @@ public class WasmAppBuilder : Task
             File.Copy(Path.Join (MicrosoftNetCoreAppRuntimePackDir, "native", f), Path.Join(AppDir, f), true);
         File.Copy(MainJS!, Path.Join(AppDir, "runtime.js"),  true);
 
-        foreach (var assembly in _assemblies.Values)
+        foreach (var assembly in _assemblies.Values) {
             config.Assets.Add(new AssemblyEntry (Path.GetFileName(assembly.Location)));
+            if (DebugLevel > 0) {
+                var pdb = assembly.Location;
+                pdb = Path.ChangeExtension(pdb, ".pdb");
+                if (File.Exists(pdb))
+                    config.Assets.Add(new AssemblyEntry (Path.GetFileName(pdb)));
+            }
+        }
+
+        config.DebugLevel = DebugLevel;
 
         if (FilesToIncludeInFileSystem != null)
         {

@@ -40,13 +40,13 @@ namespace System.Security.Cryptography
         {
         }
 
-        [SupportedOSPlatform("windows7.0")]
+        [SupportedOSPlatform("windows")]
         public RSACryptoServiceProvider(int dwKeySize, CspParameters? parameters)
             : this(dwKeySize, parameters, false)
         {
         }
 
-        [SupportedOSPlatform("windows7.0")]
+        [SupportedOSPlatform("windows")]
         public RSACryptoServiceProvider(CspParameters? parameters)
             : this(0, parameters, true)
         {
@@ -174,7 +174,7 @@ namespace System.Security.Cryptography
         /// <summary>
         /// CspKeyContainerInfo property
         /// </summary>
-        [SupportedOSPlatform("windows7.0")]
+        [SupportedOSPlatform("windows")]
         public CspKeyContainerInfo CspKeyContainerInfo
         {
             get

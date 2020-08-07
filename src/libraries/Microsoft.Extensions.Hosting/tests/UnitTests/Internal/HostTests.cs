@@ -840,6 +840,78 @@ namespace Microsoft.Extensions.Hosting.Internal
         }
 
         [Fact]
+        public async Task HostShutdownFiresApplicationLifetimeStoppedBeforeHostLifetimeStopped()
+        {
+            var stoppingCalls = 0;
+            var startedCalls = 0;
+            var disposingCalls = 0;
+
+            FakeHostLifetime fakeHostLifetime = null;
+            ApplicationLifetime applicationLifetime = null;
+
+            using (var host = CreateBuilder()
+                .ConfigureServices((services) =>
+                {
+                    Action started = () =>
+                    {
+                        startedCalls++;
+                    };
+
+                    Action stopping = () =>
+                    {
+                        stoppingCalls++;
+                    };
+
+                    Action disposing = () =>
+                    {
+                        disposingCalls++;
+                    };
+
+                    services.AddSingleton<IHostedService>(_ => new DelegateHostedService(started, stopping, disposing));
+
+                    services.AddSingleton<IHostLifetime>(_ =>
+                    {
+                        fakeHostLifetime = new FakeHostLifetime();
+
+                        fakeHostLifetime.StopAction = () =>
+                        {
+                            Assert.Equal(1, startedCalls);
+                            Assert.Equal(1, stoppingCalls);
+                            Assert.True(applicationLifetime.ApplicationStopped.IsCancellationRequested);
+                        };
+                        return fakeHostLifetime;
+                    }
+                    );
+
+                })
+                .Build())
+            {
+                var lifetime = host.Services.GetRequiredService<IHostApplicationLifetime>();
+                var hostLifetime = host.Services.GetRequiredService<IHostLifetime>();
+                applicationLifetime = lifetime as ApplicationLifetime;
+                Assert.NotNull(applicationLifetime);
+
+                Assert.Equal(0, startedCalls);
+
+                await host.StartAsync();
+                Assert.Equal(1, startedCalls);
+                Assert.Equal(0, stoppingCalls);
+                Assert.Equal(0, disposingCalls);
+
+                Assert.True(lifetime.ApplicationStarted.IsCancellationRequested);
+                Assert.False(lifetime.ApplicationStopping.IsCancellationRequested);
+                Assert.False(lifetime.ApplicationStopped.IsCancellationRequested);
+
+                await host.StopAsync();
+
+                Assert.True(lifetime.ApplicationStopping.IsCancellationRequested);
+                Assert.True(lifetime.ApplicationStopped.IsCancellationRequested);
+                Assert.Equal(1, startedCalls);
+                Assert.Equal(1, stoppingCalls);
+            }
+        }
+
+        [Fact]
         public async Task HostStopApplicationFiresStopOnHostedService()
         {
             var stoppingCalls = 0;
@@ -1214,6 +1286,8 @@ namespace Microsoft.Extensions.Hosting.Internal
                 DisposeCalled = true;
             }
         }
+
+
 
         private class DelegateHostedService : IHostedService, IDisposable
         {

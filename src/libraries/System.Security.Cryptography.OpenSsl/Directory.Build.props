@@ -2,5 +2,7 @@
   <Import Project="..\Directory.Build.props" />
   <PropertyGroup>
     <StrongNameKeyId>Microsoft</StrongNameKeyId>
+    <IncludePlatformAttributes>true</IncludePlatformAttributes>
+    <UnsupportedOSPlatform>windows</UnsupportedOSPlatform>
   </PropertyGroup>
 </Project>
