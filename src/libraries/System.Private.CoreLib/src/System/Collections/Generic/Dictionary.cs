@@ -1461,7 +1461,7 @@ namespace System.Collections.Generic
                 private readonly Dictionary<TKey, TValue> _dictionary;
                 private int _index;
                 private readonly int _version;
-                [AllowNull, MaybeNull] private TKey _currentKey;
+                private TKey? _currentKey;
 
                 internal Enumerator(Dictionary<TKey, TValue> dictionary)
                 {
@@ -1653,7 +1653,7 @@ namespace System.Collections.Generic
                 private readonly Dictionary<TKey, TValue> _dictionary;
                 private int _index;
                 private readonly int _version;
-                [AllowNull, MaybeNull] private TValue _currentValue;
+                private TValue? _currentValue;
 
                 internal Enumerator(Dictionary<TKey, TValue> dictionary)
                 {

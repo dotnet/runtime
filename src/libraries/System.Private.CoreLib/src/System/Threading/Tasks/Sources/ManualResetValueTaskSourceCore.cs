@@ -31,7 +31,7 @@ namespace System.Threading.Tasks.Sources
         /// <summary>Whether the current operation has completed.</summary>
         private bool _completed;
         /// <summary>The result with which the operation succeeded, or the default value if it hasn't yet completed or failed.</summary>
-        [AllowNull, MaybeNull] private TResult _result;
+        private TResult? _result;
         /// <summary>The exception with which the operation failed, or null if it hasn't yet completed or completed successfully.</summary>
         private ExceptionDispatchInfo? _error;
         /// <summary>The current version of this value, used to help prevent misuse.</summary>
@@ -98,7 +98,7 @@ namespace System.Threading.Tasks.Sources
             }
 
             _error?.Throw();
-            return _result;
+            return _result!;
         }
 
         /// <summary>Schedules the continuation action for this operation.</summary>

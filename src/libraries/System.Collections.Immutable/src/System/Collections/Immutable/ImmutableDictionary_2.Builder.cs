@@ -466,8 +466,7 @@ namespace System.Collections.Immutable
             /// </summary>
             /// <param name="key">The key to search for.</param>
             /// <returns>The value for the key, or the default value of type <typeparamref name="TValue"/> if no matching key was found.</returns>
-            [return: MaybeNull]
-            public TValue GetValueOrDefault(TKey key)
+            public TValue? GetValueOrDefault(TKey key)
             {
                 return this.GetValueOrDefault(key, default(TValue)!);
             }

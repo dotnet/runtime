@@ -111,8 +111,7 @@ namespace Microsoft.Extensions.DependencyInjection
         public static T GetRequiredService<T>(this System.IServiceProvider provider) where T : notnull { throw null; }
         public static System.Collections.Generic.IEnumerable<object?> GetServices(this System.IServiceProvider provider, System.Type serviceType) { throw null; }
         public static System.Collections.Generic.IEnumerable<T> GetServices<T>(this System.IServiceProvider provider) { throw null; }
-        [return: System.Diagnostics.CodeAnalysis.MaybeNullAttribute]
-        public static T GetService<T>(this System.IServiceProvider provider) { throw null; }
+        public static T? GetService<T>(this System.IServiceProvider provider) { throw null; }
     }
 }
 namespace Microsoft.Extensions.DependencyInjection.Extensions
