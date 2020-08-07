@@ -76,10 +76,20 @@ namespace System.Diagnostics
 
         private byte _w3CIdFlags;
 
+        /*
+         * Note:
+         *  DynamicDependency is used here to prevent the linker from removing the struct GetEnumerator on the internal types.
+         *  Some customers use this GetEnumerator dynamically to avoid allocations.
+         *  See: https://github.com/dotnet/runtime/pull/40362
+         */
+        [DynamicDependency(DynamicallyAccessedMemberTypes.PublicMethods, typeof(TagsLinkedList))]
         private TagsLinkedList? _tags;
-        private LinkedList<KeyValuePair<string, string?>>? _baggage;
+        [DynamicDependency(DynamicallyAccessedMemberTypes.PublicMethods, typeof(LinkedList<ActivityLink>))]
         private LinkedList<ActivityLink>? _links;
+        [DynamicDependency(DynamicallyAccessedMemberTypes.PublicMethods, typeof(LinkedList<ActivityEvent>))]
         private LinkedList<ActivityEvent>? _events;
+
+        private LinkedList<KeyValuePair<string, string?>>? _baggage;
         private ConcurrentDictionary<string, object>? _customProperties;
         private string? _displayName;
 
@@ -255,9 +265,6 @@ namespace System.Diagnostics
         /// </summary>
         public IEnumerable<KeyValuePair<string, object?>> TagObjects
         {
-#if ALLOW_PARTIALLY_TRUSTED_CALLERS
-        [System.Security.SecuritySafeCriticalAttribute]
-#endif
             get => _tags ?? s_emptyTagObjects;
         }
 
