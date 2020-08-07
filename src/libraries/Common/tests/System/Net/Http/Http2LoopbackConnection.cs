@@ -639,9 +639,7 @@ namespace System.Net.Test.Common
             Assert.Equal(0, frame.StreamId);
             Assert.False(frame.AckFlag);
 
-            PingFrame ping = frame as PingFrame;
-            Assert.NotNull(ping);
-            return ping;
+            return Assert.IsAssignableFrom<PingFrame>(frame);
         }
 
         public async Task SendPingAckAsync(byte[] payload)
