@@ -1779,9 +1779,9 @@ int LinearScan::BuildIntrinsic(GenTree* tree)
     assert(op1->TypeGet() == tree->TypeGet());
     RefPosition* internalFloatDef = nullptr;
 
-    switch (tree->AsIntrinsic()->gtIntrinsicId)
+    switch (tree->AsIntrinsic()->gtIntrinsicName)
     {
-        case CORINFO_INTRINSIC_Abs:
+        case NI_System_Math_Abs:
             // Abs(float x) = x & 0x7fffffff
             // Abs(double x) = x & 0x7ffffff ffffffff
 
@@ -1798,16 +1798,16 @@ int LinearScan::BuildIntrinsic(GenTree* tree)
             break;
 
 #ifdef TARGET_X86
-        case CORINFO_INTRINSIC_Cos:
-        case CORINFO_INTRINSIC_Sin:
+        case NI_System_Math_Cos:
+        case NI_System_Math_Sin:
             NYI_X86("Math intrinsics Cos and Sin");
             break;
 #endif // TARGET_X86
 
-        case CORINFO_INTRINSIC_Sqrt:
-        case CORINFO_INTRINSIC_Round:
-        case CORINFO_INTRINSIC_Ceiling:
-        case CORINFO_INTRINSIC_Floor:
+        case NI_System_Math_Sqrt:
+        case NI_System_Math_Round:
+        case NI_System_Math_Ceiling:
+        case NI_System_Math_Floor:
             break;
 
         default:

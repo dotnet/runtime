@@ -9,9 +9,9 @@ namespace System.Data.Odbc
         {
         }
 
-        internal string _name;
-        internal string _typename;
-        internal Type _type;
+        internal string? _name;
+        internal string? _typename;
+        internal Type? _type;
         internal ODBC32.SQL_TYPE? _dbtype;
     }
 
@@ -19,9 +19,9 @@ namespace System.Data.Odbc
     // Cache
     //
     //  This is a on-demand cache, only caching what the user requests.
-    //  The reational is that for ForwardOnly access (the default and LCD of drivers)
+    //  The rationale is that for ForwardOnly access (the default and LCD of drivers)
     //  we cannot obtain the data more than once, and even GetData(0) (to determine is-null)
-    //  still obtains data for fixed lenght types.
+    //  still obtains data for fixed length types.
 
     //  So simple code like:
     //      if (!rReader.IsDBNull(i))
@@ -39,8 +39,8 @@ namespace System.Data.Odbc
         //Data
 
         private readonly bool[] _isBadValue;
-        private DbSchemaInfo[] _schema;
-        private readonly object[] _values;
+        private DbSchemaInfo?[]? _schema;
+        private readonly object?[] _values;
         private readonly OdbcDataReader _record;
         internal int _count;
         internal bool _randomaccess = true;
@@ -56,13 +56,13 @@ namespace System.Data.Odbc
         }
 
         //Accessor
-        internal object this[int i]
+        internal object? this[int i]
         {
             get
             {
                 if (_isBadValue[i])
                 {
-                    OverflowException innerException = (OverflowException)Values[i];
+                    OverflowException innerException = (OverflowException)Values[i]!;
                     throw new OverflowException(innerException.Message, innerException);
                 }
                 return Values[i];
@@ -87,7 +87,7 @@ namespace System.Data.Odbc
             _isBadValue[i] = true;
         }
 
-        internal object[] Values
+        internal object?[] Values
         {
             get
             {
@@ -95,7 +95,7 @@ namespace System.Data.Odbc
             }
         }
 
-        internal object AccessIndex(int i)
+        internal object? AccessIndex(int i)
         {
             //Note: We could put this directly in this[i], instead of having an explicit overload.
             //However that means that EVERY access into the cache takes the hit of checking, so
@@ -106,7 +106,7 @@ namespace System.Data.Odbc
             //      ....
             //  return cache[i];
 
-            object[] values = this.Values;
+            object?[] values = this.Values;
             if (_randomaccess)
             {
                 //Random
@@ -130,11 +130,8 @@ namespace System.Data.Odbc
             {
                 _schema = new DbSchemaInfo[Count];
             }
-            if (_schema[i] == null)
-            {
-                _schema[i] = new DbSchemaInfo();
-            }
-            return _schema[i];
+
+            return _schema[i] ??= new DbSchemaInfo();
         }
 
         internal void FlushValues()

@@ -1,12 +1,14 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <RootNamespace>System.Net.Requests</RootNamespace>
-    <AssemblyName>System.Net.Requests</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Browser</TargetFrameworks>
     <Nullable>enable</Nullable>
   </PropertyGroup>
-  <ItemGroup>
+  <PropertyGroup>
+    <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetsBrowser)' == 'true'">SR.SystemNetRequests_PlatformNotSupported</GeneratePlatformNotSupportedAssemblyMessage>
+    <NoWarn Condition="'$(GeneratePlatformNotSupportedAssemblyMessage)' != ''">$(NoWarn);CS0809</NoWarn>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(TargetsBrowser)' != 'true'">
     <Compile Include="System\Net\AuthenticationManager.cs" />
     <Compile Include="System\Net\Authorization.cs" />
     <Compile Include="System\Net\FileWebRequest.cs" />
@@ -79,12 +81,13 @@
              Link="Common\System\Net\ContextAwareResult.Windows.cs" />
     <Compile Include="System\Net\WebExceptionPal.Windows.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsUnix)' == 'true' or '$(TargetsBrowser)' == 'true' ">
+  <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
     <Compile Include="$(CommonPath)System\Net\ContextAwareResult.Unix.cs"
              Link="Common\System\Net\ContextAwareResult.Unix.cs" />
     <Compile Include="System\Net\WebExceptionPal.Unix.cs" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Principal.Windows\src\System.Security.Principal.Windows.csproj" />
     <Reference Include="Microsoft.Win32.Primitives" />
     <Reference Include="System.Collections" />
     <Reference Include="System.Collections.NonGeneric" />
@@ -103,7 +106,6 @@
     <Reference Include="System.Security.Claims" />
     <Reference Include="System.Security.Cryptography.X509Certificates" />
     <Reference Include="System.Security.Principal" />
-    <Reference Include="System.Security.Principal.Windows" />
     <Reference Include="System.Threading" />
     <Reference Include="System.Threading.Thread" />
   </ItemGroup>

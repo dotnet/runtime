@@ -24,6 +24,12 @@ static int log_level = 1;
 
 #define DEBUG_PRINTF(level, ...) do { if (G_UNLIKELY ((level) <= log_level)) { fprintf (stdout, __VA_ARGS__); } } while (0)
 
+enum {
+	EXCEPTION_MODE_NONE,
+	EXCEPTION_MODE_UNCAUGHT,
+	EXCEPTION_MODE_ALL
+};
+
 //functions exported to be used by JS
 G_BEGIN_DECLS
 
@@ -34,6 +40,7 @@ EMSCRIPTEN_KEEPALIVE void mono_wasm_enum_frames (void);
 EMSCRIPTEN_KEEPALIVE void mono_wasm_get_var_info (int scope, int* pos, int len);
 EMSCRIPTEN_KEEPALIVE void mono_wasm_clear_all_breakpoints (void);
 EMSCRIPTEN_KEEPALIVE int mono_wasm_setup_single_step (int kind);
+EMSCRIPTEN_KEEPALIVE int mono_wasm_pause_on_exceptions (int state);
 EMSCRIPTEN_KEEPALIVE void mono_wasm_get_object_properties (int object_id, gboolean expand_value_types);
 EMSCRIPTEN_KEEPALIVE void mono_wasm_get_array_values (int object_id);
 EMSCRIPTEN_KEEPALIVE void mono_wasm_get_array_value_expanded (int object_id, int idx);
@@ -43,6 +50,7 @@ EMSCRIPTEN_KEEPALIVE void mono_wasm_get_deref_ptr_value (void *value_addr, MonoC
 //JS functions imported that we use
 extern void mono_wasm_add_frame (int il_offset, int method_token, const char *assembly_name, const char *method_name);
 extern void mono_wasm_fire_bp (void);
+extern void mono_wasm_fire_exception (int exception_obj_id, const char* message, const char* class_name, gboolean uncaught);
 extern void mono_wasm_add_obj_var (const char*, const char*, guint64);
 extern void mono_wasm_add_value_type_unexpanded_var (const char*, const char*);
 extern void mono_wasm_begin_value_type_var (const char*, const char*);
@@ -57,6 +65,7 @@ extern void mono_wasm_add_typed_value (const char *type, const char *str_value, 
 G_END_DECLS
 
 static void describe_object_properties_for_klass (void *obj, MonoClass *klass, gboolean isAsyncLocalThis, gboolean expandValueType);
+static void handle_exception (MonoException *exc, MonoContext *throw_ctx, MonoContext *catch_ctx, StackFrameInfo *catch_frame);
 
 //FIXME move all of those fields to the profiler object
 static gboolean debugger_enabled;
@@ -65,6 +74,7 @@ static int event_request_id;
 static GHashTable *objrefs;
 static GHashTable *obj_to_objref;
 static int objref_id = 0;
+static int pause_on_exc = EXCEPTION_MODE_NONE;
 
 static const char*
 all_getters_allowed_class_names[] = {
@@ -363,6 +373,8 @@ mono_wasm_debugger_init (void)
 
 	obj_to_objref = g_hash_table_new (NULL, NULL);
 	objrefs = g_hash_table_new_full (NULL, NULL, NULL, mono_debugger_free_objref);
+
+	mini_get_dbg_callbacks ()->handle_exception = handle_exception;
 }
 
 MONO_API void
@@ -371,6 +383,14 @@ mono_wasm_enable_debugging (int debug_level)
 	DEBUG_PRINTF (1, "DEBUGGING ENABLED\n");
 	debugger_enabled = TRUE;
 	log_level = debug_level;
+}
+
+EMSCRIPTEN_KEEPALIVE int
+mono_wasm_pause_on_exceptions (int state)
+{
+	pause_on_exc = state;
+	DEBUG_PRINTF (1, "setting pause on exception: %d\n", pause_on_exc);
+	return 1;
 }
 
 EMSCRIPTEN_KEEPALIVE int
@@ -427,6 +447,50 @@ mono_wasm_setup_single_step (int kind)
 	}
 	return isBPOnNativeCode;
 }
+
+static int 
+get_object_id(MonoObject *obj) 
+{
+	ObjRef *ref;
+	if (!obj)
+		return 0;
+
+	ref = (ObjRef *)g_hash_table_lookup (obj_to_objref, GINT_TO_POINTER (~((gsize)obj)));
+	if (ref)
+		return ref->id;
+	ref = g_new0 (ObjRef, 1);
+	ref->id = mono_atomic_inc_i32 (&objref_id);
+	ref->handle = mono_gchandle_new_weakref_internal (obj, FALSE);
+	g_hash_table_insert (objrefs, GINT_TO_POINTER (ref->id), ref);
+	g_hash_table_insert (obj_to_objref, GINT_TO_POINTER (~((gsize)obj)), ref);
+	return ref->id;
+}
+
+static void
+handle_exception (MonoException *exc, MonoContext *throw_ctx, MonoContext *catch_ctx, StackFrameInfo *catch_frame)
+{
+	ERROR_DECL (error);
+	DEBUG_PRINTF (1, "handle exception - %d - %p - %p - %p\n", pause_on_exc, exc, throw_ctx, catch_ctx);
+
+	if (pause_on_exc == EXCEPTION_MODE_NONE)
+		return;
+	if (pause_on_exc == EXCEPTION_MODE_UNCAUGHT && catch_ctx != NULL)
+		return;
+
+	int obj_id = get_object_id ((MonoObject *)exc);
+	const char *error_message = mono_string_to_utf8_checked_internal (exc->message, error);
+
+	if (!is_ok (error))
+		error_message = "Failed to get exception message.";
+
+	const char *class_name = mono_class_full_name (mono_object_class (exc));
+	DEBUG_PRINTF (2, "handle exception - calling mono_wasm_fire_exc(): %d - message - %s, class_name: %s\n", obj_id,  error_message, class_name);
+
+	mono_wasm_fire_exception (obj_id, error_message, class_name, !catch_ctx);
+
+	DEBUG_PRINTF (2, "handle exception - done\n");
+}
+
 
 EMSCRIPTEN_KEEPALIVE void
 mono_wasm_clear_all_breakpoints (void)
@@ -565,23 +629,6 @@ mono_wasm_current_bp_id (void)
 
 	DEBUG_PRINTF (1, "Found BP %p with id %d\n", evt, evt->id);
 	return evt->id;
-}
-
-static int get_object_id(MonoObject *obj) 
-{
-	ObjRef *ref;
-	if (!obj)
-		return 0;
-
-	ref = (ObjRef *)g_hash_table_lookup (obj_to_objref, GINT_TO_POINTER (~((gsize)obj)));
-	if (ref)
-		return ref->id;
-	ref = g_new0 (ObjRef, 1);
-	ref->id = mono_atomic_inc_i32 (&objref_id);
-	ref->handle = mono_gchandle_new_weakref_internal (obj, FALSE);
-	g_hash_table_insert (objrefs, GINT_TO_POINTER (ref->id), ref);
-	g_hash_table_insert (obj_to_objref, GINT_TO_POINTER (~((gsize)obj)), ref);
-	return ref->id;
 }
 
 static gboolean

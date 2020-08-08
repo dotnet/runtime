@@ -9,10 +9,11 @@ namespace System.Reflection.Emit
     public sealed partial class AssemblyBuilder : System.Reflection.Assembly
     {
         internal AssemblyBuilder() { }
+        [System.ObsoleteAttribute("CodeBase and EscapedCodeBase are only included for .NET Framework compatibility. Use Location instead.", DiagnosticId = "SYSLIB0012", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public override string? CodeBase { get { throw null; } }
         public override System.Reflection.MethodInfo? EntryPoint { get { throw null; } }
         public override string? FullName { get { throw null; } }
-        [Obsolete("The Global Assembly Cache is not supported.", DiagnosticId = "SYSLIB0005", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("The Global Assembly Cache is not supported.", DiagnosticId = "SYSLIB0005", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public override bool GlobalAssemblyCache { get { throw null; } }
         public override long HostContext { get { throw null; } }
         public override string ImageRuntimeVersion { get { throw null; } }
@@ -41,7 +42,7 @@ namespace System.Reflection.Emit
         public override System.Reflection.Module? GetModule(string name) { throw null; }
         public override System.Reflection.Module[] GetModules(bool getResourceModules) { throw null; }
         public override System.Reflection.AssemblyName GetName(bool copiedName) { throw null; }
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Types might be removed")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Assembly references might be removed")]
         public override System.Reflection.AssemblyName[] GetReferencedAssemblies() { throw null; }
         public override System.Reflection.Assembly GetSatelliteAssembly(System.Globalization.CultureInfo culture) { throw null; }
         public override System.Reflection.Assembly GetSatelliteAssembly(System.Globalization.CultureInfo culture, System.Version? version) { throw null; }
@@ -364,7 +365,7 @@ namespace System.Reflection.Emit
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Fields might be removed")]
         public override System.Reflection.FieldInfo[] GetFields(System.Reflection.BindingFlags bindingFlags) { throw null; }
         public override int GetHashCode() { throw null; }
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Fields might be removed")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Methods might be removed")]
         public override System.Reflection.MethodInfo[] GetMethods(System.Reflection.BindingFlags bindingFlags) { throw null; }
         public override void GetPEKind(out System.Reflection.PortableExecutableKinds peKind, out System.Reflection.ImageFileMachine machine) { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Types might be removed")]

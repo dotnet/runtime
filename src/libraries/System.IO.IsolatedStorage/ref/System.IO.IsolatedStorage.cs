@@ -63,7 +63,6 @@ namespace System.IO.IsolatedStorage
         public bool DirectoryExists(string path) { throw null; }
         public void Dispose() { }
         public bool FileExists(string path) { throw null; }
-        ~IsolatedStorageFile() { }
         public System.DateTimeOffset GetCreationTime(string path) { throw null; }
         public string[] GetDirectoryNames() { throw null; }
         public string[] GetDirectoryNames(string searchPattern) { throw null; }
@@ -111,8 +110,8 @@ namespace System.IO.IsolatedStorage
         public override long Length { get { throw null; } }
         public override long Position { get { throw null; } set { } }
         public override Microsoft.Win32.SafeHandles.SafeFileHandle SafeFileHandle { get { throw null; } }
-        public override System.IAsyncResult BeginRead(byte[] buffer, int offset, int numBytes, System.AsyncCallback? userCallback, object? stateObject) { throw null; }
-        public override System.IAsyncResult BeginWrite(byte[] buffer, int offset, int numBytes, System.AsyncCallback? userCallback, object? stateObject) { throw null; }
+        public override System.IAsyncResult BeginRead(byte[] array, int offset, int numBytes, System.AsyncCallback? userCallback, object? stateObject) { throw null; }
+        public override System.IAsyncResult BeginWrite(byte[] array, int offset, int numBytes, System.AsyncCallback? userCallback, object? stateObject) { throw null; }
         protected override void Dispose(bool disposing) { }
         public override System.Threading.Tasks.ValueTask DisposeAsync() { throw null; }
         public override int EndRead(System.IAsyncResult asyncResult) { throw null; }

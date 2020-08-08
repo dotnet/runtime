@@ -436,6 +436,12 @@ namespace System.Net.Sockets
 
         public static unsafe IPPacketInformation GetIPPacketInformation(Interop.Winsock.ControlDataIPv6* controlBuffer)
         {
+            if (controlBuffer->length == (UIntPtr)sizeof(Interop.Winsock.ControlData))
+            {
+                // IPv4 client connectiong to dual mode socket.
+                return GetIPPacketInformation((Interop.Winsock.ControlData*)controlBuffer);
+            }
+
             IPAddress address = controlBuffer->length != UIntPtr.Zero ?
                 new IPAddress(new ReadOnlySpan<byte>(controlBuffer->address, Interop.Winsock.IPv6AddressLength)) :
                 IPAddress.IPv6None;
@@ -451,7 +457,6 @@ namespace System.Net.Sockets
             bytesTransferred = 0;
             receiveAddress = socketAddress;
             ipPacketInformation = default(IPPacketInformation);
-
             fixed (byte* ptrBuffer = buffer)
             fixed (byte* ptrSocketAddress = socketAddress.Buffer)
             {

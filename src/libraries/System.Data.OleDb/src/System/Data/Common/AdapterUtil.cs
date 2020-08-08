@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Configuration;
 using System.Data.SqlTypes;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
 using System.Runtime.Versioning;
@@ -66,13 +67,13 @@ namespace System.Data.Common
             TraceExceptionAsReturnValue(e);
             return e;
         }
-        internal static ArgumentException Argument(string error, Exception inner)
+        internal static ArgumentException Argument(string error, Exception? inner)
         {
             ArgumentException e = new ArgumentException(error, inner);
             TraceExceptionAsReturnValue(e);
             return e;
         }
-        internal static ArgumentException Argument(string error, string parameter)
+        internal static ArgumentException Argument(string error, string? parameter)
         {
             ArgumentException e = new ArgumentException(error, parameter);
             TraceExceptionAsReturnValue(e);
@@ -118,7 +119,7 @@ namespace System.Data.Common
         {
             return InvalidCast(error, null);
         }
-        internal static InvalidCastException InvalidCast(string error, Exception inner)
+        internal static InvalidCastException InvalidCast(string error, Exception? inner)
         {
             InvalidCastException e = new InvalidCastException(error, inner);
             TraceExceptionAsReturnValue(e);
@@ -136,7 +137,7 @@ namespace System.Data.Common
             TraceExceptionAsReturnValue(e);
             return e;
         }
-        internal static InvalidOperationException InvalidOperation(string error, Exception inner)
+        internal static InvalidOperationException InvalidOperation(string error, Exception? inner)
         {
             InvalidOperationException e = new InvalidOperationException(error, inner);
             TraceExceptionAsReturnValue(e);
@@ -158,7 +159,7 @@ namespace System.Data.Common
         {
             return InvalidOperation(error);
         }
-        internal static InvalidOperationException DataAdapter(string error, Exception inner)
+        internal static InvalidOperationException DataAdapter(string error, Exception? inner)
         {
             return InvalidOperation(error, inner);
         }
@@ -366,7 +367,7 @@ namespace System.Data.Common
         {
             return ADP.InvalidOperation(SR.GetString(SR.ADP_InvalidDataDirectory));
         }
-        internal static ArgumentException InvalidKeyname(string parameterName)
+        internal static ArgumentException InvalidKeyname(string? parameterName)
         {
             return Argument(SR.GetString(SR.ADP_InvalidKey), parameterName);
         }
@@ -376,7 +377,7 @@ namespace System.Data.Common
         }
         internal static ArgumentException ConvertFailed(Type fromType, Type toType, Exception innerException)
         {
-            return ADP.Argument(SR.GetString(SR.SqlConvert_ConvertFailed, fromType.FullName, toType.FullName), innerException);
+            return ADP.Argument(SR.GetString(SR.SqlConvert_ConvertFailed, fromType.FullName!, toType.FullName!), innerException);
         }
 
         //
@@ -424,7 +425,7 @@ namespace System.Data.Common
         {
             return InvalidConnectionOptionValue(key, null);
         }
-        internal static Exception InvalidConnectionOptionValue(string key, Exception inner)
+        internal static Exception InvalidConnectionOptionValue(string key, Exception? inner)
         {
             return Argument(SR.GetString(SR.ADP_InvalidConnectionOptionValue, key), inner);
         }
@@ -509,7 +510,7 @@ namespace System.Data.Common
             return OpenReaderExists(null);
         }
 
-        internal static Exception OpenReaderExists(Exception e)
+        internal static Exception OpenReaderExists(Exception? e)
         {
             return InvalidOperation(SR.GetString(SR.ADP_OpenReaderExists), e);
         }
@@ -698,7 +699,7 @@ namespace System.Data.Common
         }
         internal static ArgumentException UnknownDataTypeCode(Type dataType, TypeCode typeCode)
         {
-            return Argument(SR.GetString(SR.ADP_UnknownDataTypeCode, ((int)typeCode).ToString(CultureInfo.InvariantCulture), dataType.FullName));
+            return Argument(SR.GetString(SR.ADP_UnknownDataTypeCode, ((int)typeCode).ToString(CultureInfo.InvariantCulture), dataType.FullName!));
         }
         internal static ArgumentException InvalidOffsetValue(int value)
         {
@@ -909,7 +910,7 @@ namespace System.Data.Common
             return (0 == CultureInfo.InvariantCulture.CompareInfo.Compare(strvalue, strconst, CompareOptions.IgnoreCase));
         }
 
-        internal static Delegate FindBuilder(MulticastDelegate mcd)
+        internal static Delegate? FindBuilder(MulticastDelegate? mcd)
         { // V1.2.3300
             if (null != mcd)
             {
@@ -927,20 +928,20 @@ namespace System.Data.Common
         internal static readonly bool IsWindowsNT = (PlatformID.Win32NT == Environment.OSVersion.Platform);
         internal static readonly bool IsPlatformNT5 = (ADP.IsWindowsNT && (Environment.OSVersion.Version.Major >= 5));
 
-        internal static SysTx.Transaction GetCurrentTransaction()
+        internal static SysTx.Transaction? GetCurrentTransaction()
         {
-            SysTx.Transaction transaction = SysTx.Transaction.Current;
+            SysTx.Transaction? transaction = SysTx.Transaction.Current;
             return transaction;
         }
 
-        internal static void SetCurrentTransaction(SysTx.Transaction transaction)
+        internal static void SetCurrentTransaction(SysTx.Transaction? transaction)
         {
             SysTx.Transaction.Current = transaction;
         }
 
-        internal static SysTx.IDtcTransaction GetOletxTransaction(SysTx.Transaction transaction)
+        internal static SysTx.IDtcTransaction? GetOletxTransaction(SysTx.Transaction? transaction)
         {
-            SysTx.IDtcTransaction oleTxTransaction = null;
+            SysTx.IDtcTransaction? oleTxTransaction = null;
 
             if (null != transaction)
             {
@@ -1092,11 +1093,11 @@ namespace System.Data.Common
 
         }
 
-        internal static object ClassesRootRegistryValue(string subkey, string queryvalue)
+        internal static object? ClassesRootRegistryValue(string subkey, string queryvalue)
         {
             try
             {
-                using (RegistryKey key = Registry.ClassesRoot.OpenSubKey(subkey, false))
+                using (RegistryKey? key = Registry.ClassesRoot.OpenSubKey(subkey, false))
                 {
                     return ((null != key) ? key.GetValue(queryvalue) : null);
                 }
@@ -1110,11 +1111,11 @@ namespace System.Data.Common
             }
         }
 
-        internal static object LocalMachineRegistryValue(string subkey, string queryvalue)
+        internal static object? LocalMachineRegistryValue(string subkey, string queryvalue)
         {
             try
             {
-                using (RegistryKey key = Registry.LocalMachine.OpenSubKey(subkey, false))
+                using (RegistryKey? key = Registry.LocalMachine.OpenSubKey(subkey, false))
                 {
                     return ((null != key) ? key.GetValue(queryvalue) : null);
                 }
@@ -1132,14 +1133,14 @@ namespace System.Data.Common
         internal static void CheckVersionMDAC(bool ifodbcelseoledb)
         {
             int major, minor, build;
-            string version;
+            string? version;
 
             try
             {
-                version = (string)ADP.LocalMachineRegistryValue("Software\\Microsoft\\DataAccess", "FullInstallVer");
+                version = (string?)ADP.LocalMachineRegistryValue("Software\\Microsoft\\DataAccess", "FullInstallVer");
                 if (ADP.IsEmpty(version))
                 {
-                    string filename = (string)ADP.ClassesRootRegistryValue(System.Data.OleDb.ODB.DataLinks_CLSID, string.Empty);
+                    string filename = (string)ADP.ClassesRootRegistryValue(System.Data.OleDb.ODB.DataLinks_CLSID, string.Empty)!;
                     FileVersionInfo versionInfo = ADP.GetVersionInfo(filename);
                     major = versionInfo.FileMajorPart;
                     minor = versionInfo.FileMinorPart;
@@ -1183,7 +1184,7 @@ namespace System.Data.Common
 
         // the return value is true if the string was quoted and false if it was not
         // this allows the caller to determine if it is an error or not for the quotedString to not be quoted
-        internal static bool RemoveStringQuotes(string quotePrefix, string quoteSuffix, string quotedString, out string unquotedString)
+        internal static bool RemoveStringQuotes(string? quotePrefix, string? quoteSuffix, string? quotedString, out string? unquotedString)
         {
             int prefixLength;
             if (quotePrefix == null)
@@ -1229,7 +1230,7 @@ namespace System.Data.Common
             // is the prefix present?
             if (prefixLength > 0)
             {
-                if (quotedString.StartsWith(quotePrefix, StringComparison.Ordinal) == false)
+                if (quotedString.StartsWith(quotePrefix!, StringComparison.Ordinal) == false)
                 {
                     unquotedString = quotedString;
                     return false;
@@ -1239,7 +1240,7 @@ namespace System.Data.Common
             // is the suffix present?
             if (suffixLength > 0)
             {
-                if (quotedString.EndsWith(quoteSuffix, StringComparison.Ordinal) == false)
+                if (quotedString.EndsWith(quoteSuffix!, StringComparison.Ordinal) == false)
                 {
                     unquotedString = quotedString;
                     return false;
@@ -1279,12 +1280,12 @@ namespace System.Data.Common
         }
 
         // TODO: are those names appropriate for common code?
-        internal static int SrcCompare(string strA, string strB)
+        internal static int SrcCompare(string? strA, string? strB)
         { // this is null safe
             return ((strA == strB) ? 0 : 1);
         }
 
-        internal static int DstCompare(string strA, string strB)
+        internal static int DstCompare(string? strA, string? strB)
         { // this is null safe
             return CultureInfo.CurrentCulture.CompareInfo.Compare(strA, strB, ADP.compareOptions);
         }
@@ -1312,23 +1313,23 @@ namespace System.Data.Common
         }
 #endif
 
-        internal static bool IsEmpty(string str)
+        internal static bool IsEmpty([NotNullWhen(false)] string? str)
         {
             return ((null == str) || (0 == str.Length));
         }
 
-        internal static bool IsEmptyArray(string[] array)
+        internal static bool IsEmptyArray([NotNullWhen(false)] string?[]? array)
         {
             return ((null == array) || (0 == array.Length));
         }
 
-        internal static bool IsNull(object value)
+        internal static bool IsNull([NotNullWhen(false)] object? value)
         {
             if ((null == value) || (DBNull.Value == value))
             {
                 return true;
             }
-            INullable nullable = (value as INullable);
+            INullable? nullable = (value as INullable);
             return ((null != nullable) && nullable.IsNull);
         }
     }

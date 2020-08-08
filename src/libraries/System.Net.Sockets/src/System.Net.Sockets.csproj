@@ -1,6 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <AssemblyName>System.Net.Sockets</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Browser</TargetFrameworks>
     <Nullable>enable</Nullable>
@@ -81,6 +80,8 @@
              Link="Common\System\Net\SocketAddress.cs" />
     <Compile Include="$(CommonPath)System\Net\TcpValidationHelpers.cs"
              Link="Common\System\Net\TcpValidationHelpers.cs" />
+    <Compile Include="$(CommonPath)System\Threading\Tasks\TaskToApm.cs"
+             Link="Common\System\Threading\Tasks\TaskToApm.cs" />
     <!-- System.Net.Internals -->
     <Compile Include="$(CommonPath)System\Net\Internals\IPEndPointExtensions.cs"
              Link="Common\System\Net\Internals\IPEndPointExtensions.cs" />
@@ -94,6 +95,8 @@
              Link="Common\System\Net\Sockets\ProtocolType.cs" />
     <Compile Include="$(CommonPath)System\Net\Sockets\SocketType.cs"
              Link="Common\System\Net\Sockets\SocketType.cs" />
+    <Compile Include="$(CommonPath)System\Net\NetworkErrorHelper.cs"
+             Link="Common\System\Net\NetworkErrorHelper.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
     <!-- Windows: CoreCLR -->
@@ -216,8 +219,6 @@
              Link="Common\System\Net\SocketProtocolSupportPal.Unix" />
     <Compile Include="$(CommonPath)System\Net\Sockets\SocketErrorPal.Unix.cs"
              Link="Common\System\Net\Sockets\SocketErrorPal.Unix" />
-    <Compile Include="$(CommonPath)System\Threading\Tasks\TaskToApm.cs"
-             Link="Common\System\Threading\Tasks\TaskToApm.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Errors.cs"
              Link="Common\Interop\Unix\Interop.Errors.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs"
@@ -302,6 +303,7 @@
              Link="Common\Interop\Unix\System.Native\Interop.Write.cs" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Principal.Windows\src\System.Security.Principal.Windows.csproj" />
     <Reference Include="Microsoft.Win32.Primitives" />
     <Reference Include="System.Collections" />
     <Reference Include="System.Collections.Concurrent" />
@@ -315,7 +317,6 @@
     <Reference Include="System.Runtime.InteropServices" />
     <Reference Include="System.Runtime.InteropServices.RuntimeInformation" />
     <Reference Include="System.Security.Claims" />
-    <Reference Include="System.Security.Principal.Windows" />
     <Reference Include="System.Threading" />
     <Reference Include="System.Threading.Overlapped" />
     <Reference Include="System.Threading.ThreadPool" />

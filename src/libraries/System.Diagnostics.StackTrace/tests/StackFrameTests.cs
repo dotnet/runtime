@@ -8,7 +8,6 @@ using Xunit;
 
 namespace System.Diagnostics.Tests
 {
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/39223", TestPlatforms.Browser)]
     public class StackFrameTests
     {
         [Fact]

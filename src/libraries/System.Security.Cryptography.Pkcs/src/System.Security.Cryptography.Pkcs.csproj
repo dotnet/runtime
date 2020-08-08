@@ -5,18 +5,15 @@
     <IncludeDllSafeSearchPathAttribute>true</IncludeDllSafeSearchPathAttribute>
     <NoWarn>$(NoWarn);CA5384</NoWarn>
     <Nullable>enable</Nullable>
-    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent);netstandard2.0;netstandard2.0-Windows_NT;netstandard2.1;netstandard2.1-Windows_NT;netcoreapp3.0-Windows_NT;netcoreapp3.0;net461-Windows_NT;$(NetFrameworkCurrent)-Windows_NT</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent);netstandard2.0;netstandard2.0-Windows_NT;netstandard2.1;netstandard2.1-Windows_NT;netcoreapp3.0-Windows_NT;netcoreapp3.0;net461-Windows_NT</TargetFrameworks>
     <ExcludeCurrentNetCoreAppFromPackage>true</ExcludeCurrentNetCoreAppFromPackage>
-    <ExcludeCurrentFullFrameworkFromPackage>true</ExcludeCurrentFullFrameworkFromPackage>
   </PropertyGroup>
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
   <PropertyGroup>
     <IsPartialFacadeAssembly Condition="$(TargetFramework.StartsWith('net4'))">true</IsPartialFacadeAssembly>
     <OmitResources Condition="$(TargetFramework.StartsWith('net4'))">true</OmitResources>
-    <!-- Currently the netstandard build is locked to the $(NetFrameworkCurrent) API -->
+    <!-- Currently the netstandard build is locked to the net472 API -->
     <AssemblyVersion Condition="$(TargetFramework.StartsWith('netstandard'))">4.0.4.0</AssemblyVersion>
-  </PropertyGroup>
-  <PropertyGroup>
     <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetsBrowser)' == 'true'">SR.SystemSecurityCryptographyPkcs_PlatformNotSupported</GeneratePlatformNotSupportedAssemblyMessage>
   </PropertyGroup>
   <Import Project="$(CommonPath)System\Security\Cryptography\Asn1\AsnXml.targets" Condition="'$(IsPartialFacadeAssembly)' != 'true'" />
@@ -317,39 +314,6 @@
   <!-- Internal types (platform: AnyOS) -->
   <ItemGroup Condition="'$(TargetsWindows)' != 'true' and '$(IsPartialFacadeAssembly)' != 'true'">
     <Compile Include="Internal\Cryptography\Pal\AnyOS\PkcsPal.AnyOS.cs" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(IsPartialFacadeAssembly)' == 'true'">
-    <Reference Include="mscorlib" />
-    <Reference Include="System.Security" />
-  </ItemGroup>
-  <ItemGroup Condition="$(TargetFramework.StartsWith('$(NetCoreAppCurrent)')) or $(TargetFramework.StartsWith('netcoreapp3.0')) or '$(TargetFramework)' == 'netstandard2.1'">
-    <Reference Include="System.Runtime" />
-    <Reference Include="System.Runtime.Numerics" />
-    <Reference Include="System.Collections" />
-    <Reference Include="System.Collections.NonGeneric" />
-    <Reference Include="System.Collections.Concurrent" />
-    <Reference Include="System.Security.Cryptography.Csp" />
-    <Reference Include="System.Security.Cryptography.Encoding" />
-    <Reference Include="System.Security.Cryptography.X509Certificates" />
-    <Reference Include="System.Resources.ResourceManager" />
-    <Reference Include="System.Runtime.InteropServices" />
-    <Reference Include="System.Diagnostics.Debug" />
-    <Reference Include="System.Diagnostics.Tools" />
-    <Reference Include="System.Runtime.Extensions" />
-    <Reference Include="System.Runtime.InteropServices.RuntimeInformation" />
-    <Reference Include="System.Security.Cryptography.Primitives" />
-    <Reference Include="System.Security.Cryptography.Algorithms" />
-    <Reference Include="System.Threading" />
-    <Reference Include="System.Linq" />
-    <Reference Include="System.Text.Encoding.Extensions" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true' and '$(TargetFramework)' != 'netstandard2.1'">
-    <Reference Include="System.Buffers" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true'">
-    <Reference Include="System.Formats.Asn1" />
-    <Reference Include="System.Memory" />
-    <Reference Include="System.Security.Cryptography.Cng" />
   </ItemGroup>
   <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true'">
     <Compile Include="$(CommonPath)System\Memory\PointerMemoryManager.cs"
@@ -666,5 +630,48 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="@(AsnXml)" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(IsPartialFacadeAssembly)' == 'true'">
+    <Reference Include="System.Security" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true'">
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Formats.Asn1\src\System.Formats.Asn1.csproj" />
+  </ItemGroup>
+  <ItemGroup Condition="$(TargetFramework.StartsWith('netstandard2.0'))">
+    <PackageReference Include="System.Buffers"  Version="$(SystemBuffersVersion)" />
+    <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />
+    <PackageReference Include="System.Security.Cryptography.Cng" Version="$(SystemSecurityCryptographyCngVersion)" />
+    <!-- Ref assembly for netstandard2.0 isn't live built anymore. -->
+    <PackageDownload Include="$(MSBuildProjectName)" Version="[$(SystemSecurityCryptographyPkcsVersion)]" />
+    <ResolvedMatchingContract Include="$(NuGetPackageRoot)$(MSBuildProjectName.ToLowerInvariant())\$(SystemSecurityCryptographyPkcsVersion)\ref\$(TargetFramework)\$(MSBuildProjectName).dll" />
+  </ItemGroup>
+  <ItemGroup Condition="$(TargetFramework.StartsWith('netstandard2.1')) or
+                        $(TargetFramework.StartsWith('netcoreapp3.0')) or
+                        $(TargetFramework.StartsWith('$(NetCoreAppCurrent)'))">
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Cryptography.Cng\src\System.Security.Cryptography.Cng.csproj" />
+  </ItemGroup>
+  <ItemGroup Condition="$(TargetFramework.StartsWith('$(NetCoreAppCurrent)')) or
+                        $(TargetFramework.StartsWith('netcoreapp3.0'))">
+    <Reference Include="System.Buffers" />
+    <Reference Include="System.Collections" />
+    <Reference Include="System.Collections.Concurrent" />
+    <Reference Include="System.Collections.NonGeneric" />
+    <Reference Include="System.Diagnostics.Debug" />
+    <Reference Include="System.Diagnostics.Tools" />
+    <Reference Include="System.Linq" />
+    <Reference Include="System.Memory" />
+    <Reference Include="System.Resources.ResourceManager" />
+    <Reference Include="System.Runtime" />
+    <Reference Include="System.Runtime.Extensions" />
+    <Reference Include="System.Runtime.InteropServices" />
+    <Reference Include="System.Runtime.InteropServices.RuntimeInformation" />
+    <Reference Include="System.Runtime.Numerics" />
+    <Reference Include="System.Security.Cryptography.Algorithms" />
+    <Reference Include="System.Security.Cryptography.Csp" />
+    <Reference Include="System.Security.Cryptography.Encoding" />
+    <Reference Include="System.Security.Cryptography.Primitives" />
+    <Reference Include="System.Security.Cryptography.X509Certificates" />
+    <Reference Include="System.Text.Encoding.Extensions" />
+    <Reference Include="System.Threading" />
   </ItemGroup>
 </Project>

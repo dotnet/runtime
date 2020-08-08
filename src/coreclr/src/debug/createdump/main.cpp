@@ -35,9 +35,19 @@ int __cdecl main(const int argc, const char* argv[])
                                                  MiniDumpWithFullMemoryInfo |
                                                  MiniDumpWithThreadInfo |
                                                  MiniDumpWithTokenInformation);
+    const char* dumpType = "minidump with heap";
     const char* dumpPathTemplate = nullptr;
     int exitCode = 0;
     int pid = 0;
+
+#ifdef __APPLE__
+    char* enabled = getenv("COMPlus_DbgEnableElfDumpOnMacOS");
+    if (enabled == nullptr || strcmp(enabled, "1") != 0)
+    {
+        fprintf(stderr, "MachO coredumps are not supported. To enable ELF coredumps on MacOS, set the COMPlus_DbgEnableElfDumpOnMacOS environment variable to 1.\n");
+        return -1;
+    }
+#endif
 
 #ifdef HOST_UNIX
     exitCode = PAL_InitializeDLL();
@@ -60,11 +70,13 @@ int __cdecl main(const int argc, const char* argv[])
             }
             else if ((strcmp(*argv, "-n") == 0) || (strcmp(*argv, "--normal") == 0))
             {
+                dumpType = "minidump";
                 minidumpType = (MINIDUMP_TYPE)(MiniDumpNormal |
                                                MiniDumpWithThreadInfo);
             }
             else if ((strcmp(*argv, "-h") == 0) || (strcmp(*argv, "--withheap") == 0))
             {
+                dumpType = "minidump with heap";
                 minidumpType = (MINIDUMP_TYPE)(MiniDumpWithPrivateReadWriteMemory |
                                                MiniDumpWithDataSegs |
                                                MiniDumpWithHandleData |
@@ -75,11 +87,13 @@ int __cdecl main(const int argc, const char* argv[])
             }
             else if ((strcmp(*argv, "-t") == 0) || (strcmp(*argv, "--triage") == 0))
             {
+                dumpType = "triage minidump";
                 minidumpType = (MINIDUMP_TYPE)(MiniDumpFilterTriage |
                                                MiniDumpWithThreadInfo);
             }
             else if ((strcmp(*argv, "-u") == 0) || (strcmp(*argv, "--full") == 0))
             {
+                dumpType = "full dump";
                 minidumpType = (MINIDUMP_TYPE)(MiniDumpWithFullMemory |
                                                MiniDumpWithDataSegs |
                                                MiniDumpWithHandleData |
@@ -122,24 +136,6 @@ int __cdecl main(const int argc, const char* argv[])
 
         snprintf(dumpPath, MAX_LONGPATH, dumpPathTemplate, pid);
 
-        const char* dumpType = "minidump";
-        switch (minidumpType)
-        {
-            case MiniDumpWithPrivateReadWriteMemory:
-                dumpType = "minidump with heap";
-                break;
-
-            case MiniDumpFilterTriage:
-                dumpType = "triage minidump";
-                break;
-
-            case MiniDumpWithFullMemory:
-                dumpType = "full dump";
-                break;
-
-            default:
-                break;
-        }
         printf("Writing %s to file %s\n", dumpType, (char*)dumpPath);
 
         if (CreateDump(dumpPath, pid, minidumpType))

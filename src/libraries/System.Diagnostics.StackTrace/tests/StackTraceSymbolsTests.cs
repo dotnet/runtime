@@ -7,13 +7,12 @@ using Xunit;
 
 namespace System.Diagnostics.SymbolStore.Tests
 {
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/39223", TestPlatforms.Browser)]
     public class StackTraceSymbolsTests
     {
         [Fact]
         public void StackTraceSymbolsDoNotLockFile()
         {
-            var asmPath = typeof(StackTraceSymbolsTests).Assembly.Location;
+            var asmPath = AssemblyPathHelper.GetAssemblyLocation(typeof(StackTraceSymbolsTests).Assembly);
             var pdbPath = Path.ChangeExtension(asmPath, ".pdb");
 
             Assert.True(File.Exists(pdbPath));

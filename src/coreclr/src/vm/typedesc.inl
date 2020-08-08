@@ -22,7 +22,7 @@ inline PTR_MethodTable  TypeDesc::GetMethodTable() {
         return NULL;
 
     if (GetInternalCorElementType() == ELEMENT_TYPE_FNPTR)
-        return MscorlibBinder::GetElementType(ELEMENT_TYPE_U);
+        return CoreLibBinder::GetElementType(ELEMENT_TYPE_U);
 
     _ASSERTE(HasTypeParam());
     ParamTypeDesc* asParam = dac_cast<PTR_ParamTypeDesc>(this);

@@ -155,7 +155,7 @@ namespace System.Data.Common
         internal static bool ConvertToBoolean(object value)
         {
             Debug.Assert(null != value, "ConvertToBoolean(null)");
-            string svalue = (value as string);
+            string? svalue = (value as string);
             if (null != svalue)
             {
                 if (StringComparer.OrdinalIgnoreCase.Equals(svalue, "true") || StringComparer.OrdinalIgnoreCase.Equals(svalue, "yes"))
@@ -194,7 +194,7 @@ namespace System.Data.Common
         internal static bool ConvertToIntegratedSecurity(object value)
         {
             Debug.Assert(null != value, "ConvertToIntegratedSecurity(null)");
-            string svalue = (value as string);
+            string? svalue = (value as string);
             if (null != svalue)
             {
                 if (StringComparer.OrdinalIgnoreCase.Equals(svalue, "sspi") || StringComparer.OrdinalIgnoreCase.Equals(svalue, "true") || StringComparer.OrdinalIgnoreCase.Equals(svalue, "yes"))

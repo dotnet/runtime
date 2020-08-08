@@ -31,7 +31,6 @@ namespace System.Composition.UnitTests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/23972", TargetFrameworkMonikers.NetFramework)]
         public void AnImportMetadataConstraintMatchesMetadataOnTheExport()
         {
             var cc = CreateContainer(typeof(SomeSetting), typeof(SomeSettingUser));
@@ -40,7 +39,6 @@ namespace System.Composition.UnitTests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/23972", TargetFrameworkMonikers.NetFramework)]
         public void AnImportMetadataConstraintMatchesMetadataOnTheExportEvenIfDiscoveryHasCompletedForTheExport()
         {
             var cc = CreateContainer(typeof(SomeSetting), typeof(SomeSettingUser));
@@ -50,7 +48,6 @@ namespace System.Composition.UnitTests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/23972", TargetFrameworkMonikers.NetFramework)]
         public void ImportMetadataConstraintsComposeWithOtherRelationshipTypes()
         {
             var cc = CreateContainer(typeof(SomeSetting), typeof(ManySettingUser));
@@ -62,7 +59,6 @@ namespace System.Composition.UnitTests
         public class SomeSetting<T> { }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/23972", TargetFrameworkMonikers.NetFramework)]
         public void ConstraintsCanBeAppliedToGenerics()
         {
             var contract = new CompositionContract(typeof(SomeSetting<string>), null, new Dictionary<string, object>
@@ -86,7 +82,6 @@ namespace System.Composition.UnitTests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/23972", TargetFrameworkMonikers.NetFramework)]
         public void ItemEqualityIsUsedWhenMatchingMetadataValuesThatAreArrays()
         {
             var c = CreateContainer(typeof(Presenter), typeof(Controller));

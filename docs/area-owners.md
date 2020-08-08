@@ -1,6 +1,10 @@
-If you need to tag folks on an issue or PR, you will generally want to tag the owners (not the lead).
+# Pull Requests Tagging
 
-Note: Editing this file doesn't update the mapping used by the `@msftbot` issue notification bot to tag owners. Some area owners prefer not to get those notifications. To update those notifications, contact any one of `@danmosemsft`, `@jeffschw`, `@ericstj`, or `@karelz`. If you're a community member interested in these notifications, you won't appear in this table but we can add you to notifications - just let us know.
+If you need to tag folks on an issue or PR, you will generally want to tag the owners (not the lead) for [area](#areas) to which the change or issue is closest to. For areas which are large and can be operating system or architecture specific it's better to tag owners of [OS](#operating-systems) or [Architecture](#architectures).
+
+## Areas
+
+Note: Editing this file doesn't update the mapping used by the `@msftbot` issue notification bot to tag owners. Some area owners prefer not to get those notifications. To update those notifications, contact any one of `@danmosemsft`, `@jeffschw`, `@marek-safar`, `@ericstj`, or `@karelz`. If you're a community member interested in these notifications, you won't appear in this table but we can add you to notifications - just let us know.
 
 | Area                                           | Lead          | Owners (area experts to tag in PR's and issues)     | Description                                                                                                                                                                                                                                                                               |
 |------------------------------------------------|---------------|-----------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
@@ -121,3 +125,20 @@ Note: Editing this file doesn't update the mapping used by the `@msftbot` issue 
 | area-UWP                                       | @tommcdon     | @jashook                                            | UWP-specific issues including Microsoft.NETCore.UniversalWindowsPlatform and Microsoft.Net.UWPCoreRuntimeSdk                                                                                                                                                                              |
 | area-VM-coreclr                                | @mangod9      | @mangod9                                            |                                                                                                                                                                                                                                                                                           |
 | area-VM-meta-mono                              | @SamMonoRT    | @lambdageek @CoffeeFlux                             |                                                                                                                                                                                                                                                                                           |
+## Operating Systems
+
+| Operating System | Lead          | Owners (area experts to tag in PR's and issues)     | Description  |
+|------------------|---------------|-----------------------------------------------------|--------------|
+| os-alpine        |               |                                                     |              |
+| os-android       | @steveisok    | @akoeplinger                                        |              |
+| os-freebsd       |               |                                                     |              |
+| os-mac-os-x      | @steveisok    |                                                     |              |
+| os-ios           | @steveisok    | @vargaz                                             |              |
+| os-tvos          | @steveisok    | @vargaz                                             |              |
+
+## Architectures
+
+| Architecture    | Lead          | Owners (area experts to tag in PR's and issues)     | Description  |
+|-----------------|---------------|-----------------------------------------------------|--------------|
+| arch-wasm       | @lewing       | @lewing @BrzVlad                                    |              |
+

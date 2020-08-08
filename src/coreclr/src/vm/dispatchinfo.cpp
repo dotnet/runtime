@@ -432,7 +432,7 @@ ComMTMethodProps * DispatchMemberInfo::GetMemberProps(OBJECTREF MemberInfoObj, C
     GCPROTECT_BEGIN(MemberInfoObj);
     {
         MethodTable *pMemberInfoClass = MemberInfoObj->GetMethodTable();
-        if (MscorlibBinder::IsClass(pMemberInfoClass, CLASS__METHOD))
+        if (CoreLibBinder::IsClass(pMemberInfoClass, CLASS__METHOD))
         {
             // Retrieve the MethodDesc from the MethodInfo.
             MethodDescCallSite getMethodHandle(METHOD__METHOD_BASE__GET_METHODDESC, &MemberInfoObj);
@@ -441,7 +441,7 @@ ComMTMethodProps * DispatchMemberInfo::GetMemberProps(OBJECTREF MemberInfoObj, C
             if (pMeth)
                 pMemberProps = pMemberMap->GetMethodProps(pMeth->GetMemberDef(), pMeth->GetModule());
         }
-        else if (MscorlibBinder::IsClass(pMemberInfoClass, CLASS__RT_FIELD_INFO))
+        else if (CoreLibBinder::IsClass(pMemberInfoClass, CLASS__RT_FIELD_INFO))
         {
             MethodDescCallSite getFieldHandle(METHOD__RTFIELD__GET_FIELDHANDLE, &MemberInfoObj);
             ARG_SLOT arg = ObjToArgSlot(MemberInfoObj);
@@ -449,7 +449,7 @@ ComMTMethodProps * DispatchMemberInfo::GetMemberProps(OBJECTREF MemberInfoObj, C
             if (pFld)
                 pMemberProps = pMemberMap->GetMethodProps(pFld->GetMemberDef(), pFld->GetModule());
         }
-        else if (MscorlibBinder::IsClass(pMemberInfoClass, CLASS__PROPERTY))
+        else if (CoreLibBinder::IsClass(pMemberInfoClass, CLASS__PROPERTY))
         {
             MethodDescCallSite getToken(METHOD__PROPERTY__GET_TOKEN, &MemberInfoObj);
             ARG_SLOT arg = ObjToArgSlot(MemberInfoObj);
@@ -672,7 +672,7 @@ void DispatchMemberInfo::DetermineCultureAwareness()
     CONTRACTL_END;
 
     // Load the LCIDConversionAttribute type.
-    MethodTable * pLcIdConvAttrClass = MscorlibBinder::GetClass(CLASS__LCID_CONVERSION_TYPE);
+    MethodTable * pLcIdConvAttrClass = CoreLibBinder::GetClass(CLASS__LCID_CONVERSION_TYPE);
 
     // Check to see if the attribute is set.
     OBJECTREF MemberInfoObj = GetMemberInfoObject();
@@ -739,7 +739,7 @@ void DispatchMemberInfo::SetUpParamMarshalerInfo()
     {
         MethodTable *pMemberInfoMT = MemberInfoObj->GetMethodTable();
 
-        if (MscorlibBinder::IsClass(pMemberInfoMT, CLASS__METHOD))
+        if (CoreLibBinder::IsClass(pMemberInfoMT, CLASS__METHOD))
         {
             MethodDescCallSite getMethodHandle(METHOD__METHOD_BASE__GET_METHODDESC, &MemberInfoObj);
             ARG_SLOT arg = ObjToArgSlot(MemberInfoObj);
@@ -747,11 +747,11 @@ void DispatchMemberInfo::SetUpParamMarshalerInfo()
             if (pMeth)
                 SetUpMethodMarshalerInfo(pMeth, FALSE);
         }
-        else if (MscorlibBinder::IsClass(pMemberInfoMT, CLASS__FIELD))
+        else if (CoreLibBinder::IsClass(pMemberInfoMT, CLASS__FIELD))
         {
             // We don't support non-default marshalling behavior for field getter/setter stubs invoked via IDispatch.
         }
-        else if (MscorlibBinder::IsClass(pMemberInfoMT, CLASS__PROPERTY))
+        else if (CoreLibBinder::IsClass(pMemberInfoMT, CLASS__PROPERTY))
         {
             BOOL isGetter = FALSE;
             MethodDescCallSite getSetter(METHOD__PROPERTY__GET_SETTER, &MemberInfoObj);
@@ -1602,7 +1602,7 @@ void DispatchInfo::InvokeMemberWorker(DispatchMemberInfo*   pDispMemberInfo,
                         COMPlusThrowHR(DISP_E_BADPARAMCOUNT);
 
                     // Retrieve the method descriptor that will be called on.
-                    MethodDesc *pMD = GetFieldInfoMD(METHOD__FIELD__GET_VALUE, pObjs->MemberInfo->GetTypeHandle());
+                    MethodDesc *pMD = GetFieldInfoMD(METHOD__FIELD_INFO__GET_VALUE, pObjs->MemberInfo->GetTypeHandle());
                     MethodDescCallSite getValue(pMD, &pObjs->MemberInfo);
 
                     // Prepare the arguments that will be passed to Invoke.
@@ -1624,7 +1624,7 @@ void DispatchInfo::InvokeMemberWorker(DispatchMemberInfo*   pDispMemberInfo,
                         COMPlusThrowHR(DISP_E_NONAMEDARGS);
 
                     // Retrieve the method descriptor that will be called on.
-                    MethodDesc *pMD = GetFieldInfoMD(METHOD__FIELD__SET_VALUE, pObjs->MemberInfo->GetTypeHandle());
+                    MethodDesc *pMD = GetFieldInfoMD(METHOD__FIELD_INFO__SET_VALUE, pObjs->MemberInfo->GetTypeHandle());
                     MethodDescCallSite setValue(pMD, &pObjs->MemberInfo);
 
                     // Prepare the arguments that will be passed to Invoke.
@@ -2540,7 +2540,7 @@ bool DispatchInfo::IsPropertyAccessorVisible(bool fIsSetter, OBJECTREF* pMemberI
 
     MethodTable *pMemberInfoClass = (*pMemberInfo)->GetMethodTable();
 
-    if (MscorlibBinder::IsClass(pMemberInfoClass, CLASS__PROPERTY))
+    if (CoreLibBinder::IsClass(pMemberInfoClass, CLASS__PROPERTY))
     {
         // Get the property's MethodDesc
         MethodDesc* pMDForProperty = NULL;
@@ -2606,14 +2606,14 @@ MethodDesc* DispatchInfo::GetFieldInfoMD(BinderMethodID Method, TypeHandle hndFi
     MethodDesc *pMD;
 
     // If the current class is the standard implementation then return the cached method desc
-    if (MscorlibBinder::IsClass(hndFieldInfoType.GetMethodTable(), CLASS__FIELD))
+    if (CoreLibBinder::IsClass(hndFieldInfoType.GetMethodTable(), CLASS__FIELD))
     {
-        pMD = MscorlibBinder::GetMethod(Method);
+        pMD = CoreLibBinder::GetMethod(Method);
     }
     else
     {
         pMD = MemberLoader::FindMethod(hndFieldInfoType.GetMethodTable(),
-                MscorlibBinder::GetMethodName(Method), MscorlibBinder::GetMethodSig(Method));
+                CoreLibBinder::GetMethodName(Method), CoreLibBinder::GetMethodSig(Method));
     }
     _ASSERTE(pMD && "Unable to find specified FieldInfo method");
 
@@ -2635,14 +2635,14 @@ MethodDesc* DispatchInfo::GetPropertyInfoMD(BinderMethodID Method, TypeHandle hn
     MethodDesc *pMD;
 
     // If the current class is the standard implementation then return the cached method desc if present.
-    if (MscorlibBinder::IsClass(hndPropInfoType.GetMethodTable(), CLASS__PROPERTY))
+    if (CoreLibBinder::IsClass(hndPropInfoType.GetMethodTable(), CLASS__PROPERTY))
     {
-        pMD = MscorlibBinder::GetMethod(Method);
+        pMD = CoreLibBinder::GetMethod(Method);
     }
     else
     {
         pMD = MemberLoader::FindMethod(hndPropInfoType.GetMethodTable(),
-                MscorlibBinder::GetMethodName(Method), MscorlibBinder::GetMethodSig(Method));
+                CoreLibBinder::GetMethodName(Method), CoreLibBinder::GetMethodSig(Method));
     }
     _ASSERTE(pMD && "Unable to find specified PropertyInfo method");
 
@@ -2664,14 +2664,14 @@ MethodDesc* DispatchInfo::GetMethodInfoMD(BinderMethodID Method, TypeHandle hndM
     MethodDesc *pMD;
 
     // If the current class is the standard implementation then return the cached method desc.
-    if (MscorlibBinder::IsClass(hndMethodInfoType.GetMethodTable(), CLASS__METHOD))
+    if (CoreLibBinder::IsClass(hndMethodInfoType.GetMethodTable(), CLASS__METHOD))
     {
-        pMD = MscorlibBinder::GetMethod(Method);
+        pMD = CoreLibBinder::GetMethod(Method);
     }
     else
     {
         pMD = MemberLoader::FindMethod(hndMethodInfoType.GetMethodTable(),
-                MscorlibBinder::GetMethodName(Method), MscorlibBinder::GetMethodSig(Method));
+                CoreLibBinder::GetMethodName(Method), CoreLibBinder::GetMethodSig(Method));
     }
     _ASSERTE(pMD && "Unable to find specified MethodInfo method");
 
@@ -2691,7 +2691,7 @@ MethodDesc* DispatchInfo::GetCustomAttrProviderMD(TypeHandle hndCustomAttrProvid
     CONTRACT_END;
 
     MethodTable *pMT = hndCustomAttrProvider.AsMethodTable();
-    MethodDesc *pMD = pMT->GetMethodDescForInterfaceMethod(MscorlibBinder::GetMethod(METHOD__ICUSTOM_ATTR_PROVIDER__GET_CUSTOM_ATTRIBUTES), TRUE /* throwOnConflict */);
+    MethodDesc *pMD = pMT->GetMethodDescForInterfaceMethod(CoreLibBinder::GetMethod(METHOD__ICUSTOM_ATTR_PROVIDER__GET_CUSTOM_ATTRIBUTES), TRUE /* throwOnConflict */);
 
     // Return the specified method desc.
     RETURN pMD;
@@ -2889,7 +2889,7 @@ OBJECTREF DispatchInfo::GetOleAutBinder()
     if (m_hndOleAutBinder)
         return ObjectFromHandle(m_hndOleAutBinder);
 
-    MethodTable *pOleAutBinderClass = MscorlibBinder::GetClass(CLASS__OLE_AUT_BINDER);
+    MethodTable *pOleAutBinderClass = CoreLibBinder::GetClass(CLASS__OLE_AUT_BINDER);
 
     // Allocate an instance of the OleAutBinder class.
     OBJECTREF OleAutBinder = AllocateObject(pOleAutBinderClass);
@@ -3021,7 +3021,7 @@ MethodDesc* DispatchInfo::GetInvokeMemberMD()
     }
     CONTRACT_END;
 
-    RETURN MscorlibBinder::GetMethod(METHOD__CLASS__INVOKE_MEMBER);
+    RETURN CoreLibBinder::GetMethod(METHOD__CLASS__INVOKE_MEMBER);
 }
 
 // Virtual method to retrieve the object associated with this DispatchInfo that
@@ -3526,7 +3526,7 @@ MethodDesc* DispatchExInfo::GetIReflectMD(BinderMethodID Method)
     CONTRACT_END;
 
     MethodTable *pMT = m_pSimpleWrapperOwner->GetMethodTable();
-    MethodDesc *pMD = pMT->GetMethodDescForInterfaceMethod(MscorlibBinder::GetMethod(Method), TRUE /* throwOnConflict */);
+    MethodDesc *pMD = pMT->GetMethodDescForInterfaceMethod(CoreLibBinder::GetMethod(Method), TRUE /* throwOnConflict */);
 
     // Return the specified method desc.
     RETURN pMD;
@@ -3546,7 +3546,7 @@ MethodDesc* DispatchExInfo::GetIExpandoMD(BinderMethodID Method)
     CONTRACT_END;
 
     MethodTable *pMT = m_pSimpleWrapperOwner->GetMethodTable();
-    MethodDesc *pMD = pMT->GetMethodDescForInterfaceMethod(MscorlibBinder::GetMethod(Method), TRUE /* throwOnConflict */);
+    MethodDesc *pMD = pMT->GetMethodDescForInterfaceMethod(CoreLibBinder::GetMethod(Method), TRUE /* throwOnConflict */);
 
     // Return the specified method desc.
     RETURN pMD;

@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#nullable enable
 using System;
 using System.Diagnostics;
 using System.Xml.XPath;
@@ -33,7 +34,7 @@ namespace MS.Internal.Xml.Cache
         private ushort _idxSimilar;                     // Page index of next node in document order that has local name with same hashcode
         private ushort _posOffset;                      // Line position offset of node (added to LinePositionBase)
         private uint _props;                          // Node properties (broken down into bits below)
-        private string _value;                          // String value of node
+        private string? _value;                          // String value of node
 
         private const uint NodeTypeMask = 0xF;
         private const uint HasAttributeBit = 0x10;
@@ -124,7 +125,7 @@ namespace MS.Internal.Xml.Cache
         /// </summary>
         public string BaseUri
         {
-            get { return _info.BaseUri; }
+            get { return _info.BaseUri ?? string.Empty; }
         }
 
         /// <summary>
@@ -159,7 +160,7 @@ namespace MS.Internal.Xml.Cache
         /// <summary>
         /// Returns information about the node page.  Only the 0th node on each page has this property defined.
         /// </summary>
-        public XPathNodePageInfo PageInfo
+        public XPathNodePageInfo? PageInfo
         {
             get { return _info.PageInfo; }
         }
@@ -169,13 +170,15 @@ namespace MS.Internal.Xml.Cache
         /// </summary>
         public int GetRoot(out XPathNode[] pageNode)
         {
-            return _info.Document.GetRootNode(out pageNode);
+            int idx = _info.Document.GetRootNode(out pageNode!);
+            Debug.Assert(pageNode != null);
+            return idx;
         }
 
         /// <summary>
         /// Returns the parent of this node.  If this node has no parent, then 0 is returned.
         /// </summary>
-        public int GetParent(out XPathNode[] pageNode)
+        public int GetParent(out XPathNode[]? pageNode)
         {
             pageNode = _info.ParentPage;
             return _idxParent;
@@ -184,7 +187,7 @@ namespace MS.Internal.Xml.Cache
         /// <summary>
         /// Returns the next sibling of this node.  If this node has no next sibling, then 0 is returned.
         /// </summary>
-        public int GetSibling(out XPathNode[] pageNode)
+        public int GetSibling(out XPathNode[]? pageNode)
         {
             pageNode = _info.SiblingPage;
             return _idxSibling;
@@ -194,7 +197,7 @@ namespace MS.Internal.Xml.Cache
         /// Returns the next element in document order that has the same local name hashcode as this element.
         /// If there are no similar elements, then 0 is returned.
         /// </summary>
-        public int GetSimilarElement(out XPathNode[] pageNode)
+        public int GetSimilarElement(out XPathNode[]? pageNode)
         {
             pageNode = _info.SimilarElementPage;
             return _idxSimilar;
@@ -204,11 +207,11 @@ namespace MS.Internal.Xml.Cache
         /// Returns true if this node's name matches the specified localName and namespaceName.  Assume
         /// that localName has been atomized, but namespaceName has not.
         /// </summary>
-        public bool NameMatch(string localName, string namespaceName)
+        public bool NameMatch(string? localName, string namespaceName)
         {
-            Debug.Assert(localName == null || (object)Document.NameTable.Get(localName) == (object)localName, "localName must be atomized.");
+            Debug.Assert(localName == null || (object?)Document.NameTable.Get(localName) == (object)localName, "localName must be atomized.");
 
-            return (object)_info.LocalName == (object)localName &&
+            return (object)_info.LocalName == (object?)localName &&
                    _info.NamespaceUri == namespaceName;
         }
 
@@ -216,12 +219,12 @@ namespace MS.Internal.Xml.Cache
         /// Returns true if this is an Element node with a name that matches the specified localName and
         /// namespaceName.  Assume that localName has been atomized, but namespaceName has not.
         /// </summary>
-        public bool ElementMatch(string localName, string namespaceName)
+        public bool ElementMatch(string? localName, string namespaceName)
         {
-            Debug.Assert(localName == null || (object)Document.NameTable.Get(localName) == (object)localName, "localName must be atomized.");
+            Debug.Assert(localName == null || (object?)Document.NameTable.Get(localName) == (object)localName, "localName must be atomized.");
 
             return NodeType == XPathNodeType.Element &&
-                   (object)_info.LocalName == (object)localName &&
+                   (object)_info.LocalName == (object?)localName &&
                    _info.NamespaceUri == namespaceName;
         }
 
@@ -333,7 +336,7 @@ namespace MS.Internal.Xml.Cache
         /// <summary>
         /// Return the precomputed String value of this node (null if no value exists, i.e. document node, element node with complex content, etc).
         /// </summary>
-        public string Value
+        public string? Value
         {
             get { return _value; }
         }
@@ -385,7 +388,7 @@ namespace MS.Internal.Xml.Cache
         /// <summary>
         /// Set this node's value.
         /// </summary>
-        public void SetValue(string value)
+        public void SetValue(string? value)
         {
             _value = value;
         }

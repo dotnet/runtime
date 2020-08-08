@@ -985,19 +985,32 @@ size_t GCToOSInterface::GetCacheSizePerLogicalCpu(bool trueSize)
 //  true if setting the affinity was successful, false otherwise.
 bool GCToOSInterface::SetThreadAffinity(uint16_t procNo)
 {
-#if HAVE_PTHREAD_GETAFFINITY_NP
+#if HAVE_SCHED_SETAFFINITY || HAVE_PTHREAD_SETAFFINITY_NP
     cpu_set_t cpuSet;
     CPU_ZERO(&cpuSet);
     CPU_SET((int)procNo, &cpuSet);
 
+    // Snap's default strict confinement does not allow sched_setaffinity(<nonzeroPid>, ...) without manually connecting the
+    // process-control plug. sched_setaffinity(<currentThreadPid>, ...) is also currently not allowed, only
+    // sched_setaffinity(0, ...). pthread_setaffinity_np(pthread_self(), ...) seems to call
+    // sched_setaffinity(<currentThreadPid>, ...) in at least one implementation, and does not work. To work around those
+    // issues, use sched_setaffinity(0, ...) if available and only otherwise fall back to pthread_setaffinity_np(). See the
+    // following for more information:
+    // - https://github.com/dotnet/runtime/pull/38795
+    // - https://github.com/dotnet/runtime/issues/1634
+    // - https://forum.snapcraft.io/t/requesting-autoconnect-for-interfaces-in-pigmeat-process-control-home/17987/13
+#if HAVE_SCHED_SETAFFINITY
+    int st = sched_setaffinity(0, sizeof(cpu_set_t), &cpuSet);
+#else
     int st = pthread_setaffinity_np(pthread_self(), sizeof(cpu_set_t), &cpuSet);
+#endif
 
     return (st == 0);
 
-#else  // HAVE_PTHREAD_GETAFFINITY_NP
+#else  // !(HAVE_SCHED_SETAFFINITY || HAVE_PTHREAD_SETAFFINITY_NP)
     // There is no API to manage thread affinity, so let's ignore the request
     return false;
-#endif // HAVE_PTHREAD_GETAFFINITY_NP
+#endif // HAVE_SCHED_SETAFFINITY || HAVE_PTHREAD_SETAFFINITY_NP
 }
 
 // Boosts the calling thread's thread priority to a level higher than the default

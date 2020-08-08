@@ -7,7 +7,9 @@ using System.Linq;
 using System.Net.Security;
 using System.Net.Sockets;
 using System.Security.Authentication;
+using System.Security.Cryptography.X509Certificates;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -15,6 +17,9 @@ namespace System.Net.Test.Common
 {
     public sealed partial class LoopbackServer : GenericLoopbackServer, IDisposable
     {
+        private static readonly byte[] s_newLineBytes = new byte[] { (byte)'\r', (byte)'\n' };
+        private static readonly byte[] s_colonSpaceBytes = new byte[] { (byte)':', (byte)' ' };
+
         private Socket _listenSocket;
         private Options _options;
         private Uri _uri;
@@ -101,26 +106,8 @@ namespace System.Net.Test.Common
                 catch (SocketException ex) when (ex.SocketErrorCode == SocketError.InvalidArgument && PlatformDetection.IsOSXLike) { }
 
                 Stream stream = new NetworkStream(s, ownsSocket: false);
-                if (_options.UseSsl)
-                {
-                    var sslStream = new SslStream(stream, false, delegate { return true; });
-                    using (var cert = Configuration.Certificates.GetServerCertificate())
-                    {
-                        await sslStream.AuthenticateAsServerAsync(
-                            cert,
-                            clientCertificateRequired: true, // allowed but not required
-                            enabledSslProtocols: _options.SslProtocols,
-                            checkCertificateRevocation: false).ConfigureAwait(false);
-                    }
-                    stream = sslStream;
-                }
 
-                if (_options.StreamWrapper != null)
-                {
-                    stream = _options.StreamWrapper(stream);
-                }
-
-                return new Connection(s, stream);
+                return await Connection.CreateAsync(s, stream, _options);
             }
             catch (Exception)
             {
@@ -386,7 +373,6 @@ namespace System.Net.Test.Common
 
         public class Options : GenericLoopbackOptions
         {
-            public int ListenBacklog { get; set; } = 1;
             public bool WebSocketEndpoint { get; set; } = false;
             public Func<Stream, Stream> StreamWrapper { get; set; }
             public string Username { get; set; }
@@ -432,6 +418,30 @@ namespace System.Net.Test.Common
             public Socket Socket => _socket;
             public Stream Stream => _stream;
             public StreamWriter Writer => _writer;
+
+            public static async Task<Connection> CreateAsync(Socket socket, Stream stream, Options httpOptions)
+            {
+                if (httpOptions.UseSsl)
+                {
+                    var sslStream = new SslStream(stream, false, delegate { return true; });
+                    using (X509Certificate2 cert = Configuration.Certificates.GetServerCertificate())
+                    {
+                        await sslStream.AuthenticateAsServerAsync(
+                            cert,
+                            clientCertificateRequired: true, // allowed but not required
+                            enabledSslProtocols: httpOptions.SslProtocols,
+                            checkCertificateRevocation: false).ConfigureAwait(false);
+                    }
+                    stream = sslStream;
+                }
+
+                if (httpOptions.StreamWrapper != null)
+                {
+                    stream = httpOptions.StreamWrapper(stream);
+                }
+
+                return new Connection(socket, stream);
+            }
 
             public async Task<int> ReadAsync(Memory<byte> buffer, int offset, int size)
             {
@@ -533,6 +543,16 @@ namespace System.Net.Test.Common
 
             public async Task<string> ReadLineAsync()
             {
+                byte[] lineBytes = await ReadLineBytesAsync().ConfigureAwait(false);
+
+                if (lineBytes is null)
+                    return null;
+
+                return Encoding.ASCII.GetString(lineBytes);
+            }
+
+            private async Task<byte[]> ReadLineBytesAsync()
+            {
                 int index = 0;
                 int startSearch = _readStart;
 
@@ -578,7 +598,7 @@ namespace System.Net.Test.Common
                     if (_readBuffer[_readStart + stringLength] == '\n') { stringLength--; }
                     if (_readBuffer[_readStart + stringLength] == '\r') { stringLength--; }
 
-                    string line = System.Text.Encoding.ASCII.GetString(_readBuffer, _readStart, stringLength + 1);
+                    byte[] line = _readBuffer.AsSpan(_readStart, stringLength + 1).ToArray();
                     _readStart = index + 1;
                     return line;
                 }
@@ -594,13 +614,18 @@ namespace System.Net.Test.Common
                     // This seems to help avoid connection reset issues caused by buffered data
                     // that has not been sent/acked when the graceful shutdown timeout expires.
                     // This may throw if the socket was already closed, so eat any exception.
-                    _socket.Shutdown(SocketShutdown.Send);
+                    _socket?.Shutdown(SocketShutdown.Send);
                 }
                 catch (Exception) { }
 
                 _writer.Dispose();
                 _stream.Dispose();
-                _socket.Dispose();
+                _socket?.Dispose();
+            }
+
+            public override Task InitializeConnectionAsync()
+            {
+                return Task.CompletedTask;
             }
 
             public async Task<List<string>> ReadRequestHeaderAsync()
@@ -609,6 +634,32 @@ namespace System.Net.Test.Common
                 string line;
                 while (!string.IsNullOrEmpty(line = await ReadLineAsync().ConfigureAwait(false)))
                 {
+                    lines.Add(line);
+                }
+
+                if (line == null)
+                {
+                    throw new IOException("Unexpected EOF trying to read request header");
+                }
+
+                return lines;
+            }
+
+            private async Task<List<byte[]>> ReadRequestHeaderBytesAsync()
+            {
+                var lines = new List<byte[]>();
+
+                byte[] line;
+
+                while (true)
+                {
+                    line = await ReadLineBytesAsync().ConfigureAwait(false);
+
+                    if (line is null || line.Length == 0)
+                    {
+                        break;
+                    }
+
                     lines.Add(line);
                 }
 
@@ -658,24 +709,24 @@ namespace System.Net.Test.Common
 
             public override async Task<HttpRequestData> ReadRequestDataAsync(bool readBody = true)
             {
-                List<string> headerLines = null;
                 HttpRequestData requestData = new HttpRequestData();
 
-                headerLines = await ReadRequestHeaderAsync().ConfigureAwait(false);
+                List<byte[]> headerLines = await ReadRequestHeaderBytesAsync().ConfigureAwait(false);
 
                 // Parse method and path
-                string[] splits = headerLines[0].Split(' ');
+                string[] splits = Encoding.ASCII.GetString(headerLines[0]).Split(' ');
                 requestData.Method = splits[0];
                 requestData.Path = splits[1];
 
                 // Convert header lines to key/value pairs
                 // Skip first line since it's the status line
-                foreach (var line in headerLines.Skip(1))
+                foreach (byte[] lineBytes in headerLines.Skip(1))
                 {
+                    string line = Encoding.ASCII.GetString(lineBytes);
                     int offset = line.IndexOf(':');
                     string name = line.Substring(0, offset);
                     string value = line.Substring(offset + 1).TrimStart();
-                    requestData.Headers.Add(new HttpHeaderData(name, value));
+                    requestData.Headers.Add(new HttpHeaderData(name, value, raw: lineBytes));
                 }
 
                 if (requestData.Method != "GET")
@@ -755,7 +806,7 @@ namespace System.Net.Test.Common
 
             public override async Task SendResponseAsync(HttpStatusCode? statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null, string content = null, bool isFinal = true, int requestId = 0)
             {
-                string headerString = null;
+                MemoryStream headerBytes = new MemoryStream();
                 int contentLength = -1;
                 bool isChunked = false;
                 bool hasContentLength  = false;
@@ -780,22 +831,39 @@ namespace System.Net.Test.Common
                             isChunked = true;
                         }
 
-                        headerString = headerString + $"{headerData.Name}: {headerData.Value}\r\n";
+                        byte[] nameBytes = Encoding.ASCII.GetBytes(headerData.Name);
+                        headerBytes.Write(nameBytes, 0, nameBytes.Length);
+                        headerBytes.Write(s_colonSpaceBytes, 0, s_colonSpaceBytes.Length);
+
+                        byte[] valueBytes = (headerData.ValueEncoding ?? Encoding.ASCII).GetBytes(headerData.Value);
+                        headerBytes.Write(valueBytes, 0, valueBytes.Length);
+                        headerBytes.Write(s_newLineBytes, 0, s_newLineBytes.Length);
                     }
                 }
 
                 bool endHeaders = content != null || isFinal;
                 if (statusCode != null)
                 {
-                    // If we need to send status line, prepped it to headers and possibly add missing headers to the end.
-                    headerString =
+                    byte[] temp = headerBytes.ToArray();
+
+                    headerBytes.SetLength(0);
+
+                    byte[] headerStartBytes = Encoding.ASCII.GetBytes(
                         $"HTTP/1.1 {(int)statusCode} {GetStatusDescription((HttpStatusCode)statusCode)}\r\n" +
-                        (!hasContentLength && !isChunked && content != null ? $"Content-length: {content.Length}\r\n" : "") +
-                        headerString +
-                        (endHeaders ? "\r\n" : "");
+                        (!hasContentLength && !isChunked && content != null ? $"Content-length: {content.Length}\r\n" : ""));
+
+                    headerBytes.Write(headerStartBytes, 0, headerStartBytes.Length);
+                    headerBytes.Write(temp, 0, temp.Length);
+
+                    if (endHeaders)
+                    {
+                        headerBytes.Write(s_newLineBytes, 0, s_newLineBytes.Length);
+                    }
                 }
 
-                await SendResponseAsync(headerString).ConfigureAwait(false);
+                headerBytes.Position = 0;
+                await headerBytes.CopyToAsync(_stream).ConfigureAwait(false);
+
                 if (content != null)
                 {
                     await SendResponseBodyAsync(content, isFinal: isFinal, requestId: requestId).ConfigureAwait(false);
@@ -824,6 +892,35 @@ namespace System.Net.Test.Common
                 await SendResponseAsync(Encoding.UTF8.GetString(body)).ConfigureAwait(false);
             }
 
+            public override async Task<HttpRequestData> HandleRequestAsync(HttpStatusCode statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null, string content = "")
+            {
+                HttpRequestData requestData = await ReadRequestDataAsync().ConfigureAwait(false);
+
+                // For historical reasons, we added Date and "Connection: close" (to improve test reliability)
+                bool hasDate = false;
+                List<HttpHeaderData> newHeaders = new List<HttpHeaderData>();
+                if (headers != null)
+                {
+                    foreach (var header in headers)
+                    {
+                        newHeaders.Add(header);
+                        if (header.Name.Equals("Date", StringComparison.OrdinalIgnoreCase))
+                        {
+                            hasDate = true;
+                        }
+                    }
+                }
+
+                newHeaders.Add(new HttpHeaderData("Connection", "Close"));
+                if (!hasDate)
+                {
+                    newHeaders.Add(new HttpHeaderData("Date", "{DateTimeOffset.UtcNow:R}"));
+                }
+
+                await SendResponseAsync(statusCode, newHeaders, content: content).ConfigureAwait(false);
+                return requestData;
+            }
+
             public override async Task WaitForCancellationAsync(bool ignoreIncomingData = true, int requestId = 0)
             {
                 var buffer = new byte[1024];
@@ -848,31 +945,7 @@ namespace System.Net.Test.Common
         {
             using (Connection connection = await EstablishConnectionAsync().ConfigureAwait(false))
             {
-                HttpRequestData requestData = await connection.ReadRequestDataAsync().ConfigureAwait(false);
-
-                // For historical reasons, we added Date and "Connection: close" (to improve test reliability)
-                bool hasDate = false;
-                List<HttpHeaderData> newHeaders = new List<HttpHeaderData>();
-                if (headers != null)
-                {
-                    foreach (var header in headers)
-                    {
-                        newHeaders.Add(header);
-                        if (header.Name.Equals("Date", StringComparison.OrdinalIgnoreCase))
-                        {
-                            hasDate = true;
-                        }
-                    }
-                }
-
-                newHeaders.Add(new HttpHeaderData("Connection", "Close"));
-                if (!hasDate)
-                {
-                    newHeaders.Add(new HttpHeaderData("Date", "{DateTimeOffset.UtcNow:R}"));
-                }
-
-                await connection.SendResponseAsync(statusCode, newHeaders, content: content).ConfigureAwait(false);
-                return requestData;
+                return await connection.HandleRequestAsync(statusCode, headers, content).ConfigureAwait(false);
             }
         }
 
@@ -896,12 +969,20 @@ namespace System.Net.Test.Common
             return LoopbackServer.CreateServerAsync((server, uri) => funcAsync(server, uri), options: CreateOptions(options));
         }
 
+        public override async Task<GenericLoopbackConnection> CreateConnectionAsync(Socket socket, Stream stream, GenericLoopbackOptions options = null)
+        {
+            return await LoopbackServer.Connection.CreateAsync(socket, stream, CreateOptions(options));
+        }
+
         private static LoopbackServer.Options CreateOptions(GenericLoopbackOptions options)
         {
             LoopbackServer.Options newOptions = new LoopbackServer.Options();
             if (options != null)
             {
                 newOptions.Address = options.Address;
+                newOptions.UseSsl = options.UseSsl;
+                newOptions.SslProtocols = options.SslProtocols;
+                newOptions.ListenBacklog = options.ListenBacklog;
             }
             return newOptions;
         }

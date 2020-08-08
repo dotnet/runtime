@@ -62,6 +62,11 @@ SET_DEFAULT_DEBUG_CHANNEL(DEBUG); // some headers have code with asserts, so do 
 #include <procfs.h>
 #endif // HAVE_PROCFS_H
 
+#ifdef __APPLE__
+#include <mach/mach.h>
+#include <mach/mach_vm.h>
+#endif // __APPLE__
+
 #if HAVE_MACH_EXCEPTIONS
 #include "../exception/machexception.h"
 #endif // HAVE_MACH_EXCEPTIONS
@@ -69,6 +74,7 @@ SET_DEFAULT_DEBUG_CHANNEL(DEBUG); // some headers have code with asserts, so do 
 using namespace CorUnix;
 
 extern "C" void DBG_DebugBreak_End();
+extern size_t OffsetWithinPage(off_t addr);
 
 #if HAVE_PROCFS_CTL
 #define CTL_ATTACH      "attach"
@@ -539,6 +545,184 @@ SetThreadContext(
     }
 
     return ret;
+}
+
+/*++
+Function:
+  PAL_OpenProcessMemory
+
+Abstract
+  Creates the handle for PAL_ReadProcessMemory.
+
+Parameter
+  processId : process id to read memory
+  pHandle : returns a platform specific handle or UINT32_MAX if failed
+
+Return
+  true successful, false invalid process id or not supported.
+--*/
+BOOL
+PALAPI
+PAL_OpenProcessMemory(
+    IN DWORD processId,
+    OUT DWORD* pHandle
+)
+{
+    ENTRY("PAL_OpenProcessMemory(pid=%d)\n", processId);
+    _ASSERTE(pHandle != nullptr);
+    *pHandle = UINT32_MAX;
+#ifdef __APPLE__
+    mach_port_name_t port;
+    kern_return_t result = ::task_for_pid(mach_task_self(), (int)processId, &port);
+    if (result != KERN_SUCCESS)
+    {
+        ERROR("task_for_pid(%d) FAILED %x %s\n", processId, result, mach_error_string(result));
+        LOGEXIT("PAL_OpenProcessMemory FALSE\n");
+        return FALSE;
+    }
+    *pHandle = port;
+#else
+    char memPath[128];
+    _snprintf_s(memPath, sizeof(memPath), sizeof(memPath), "/proc/%lu/mem", processId);
+
+    int fd = open(memPath, O_RDONLY);
+    if (fd == -1)
+    {
+        ERROR("open(%s) FAILED %d (%s)\n", memPath, errno, strerror(errno));
+        LOGEXIT("PAL_OpenProcessMemory FALSE\n");
+        return FALSE;
+    }
+    *pHandle = fd;
+#endif
+    LOGEXIT("PAL_OpenProcessMemory TRUE\n");
+    return TRUE;
+}
+
+/*++
+Function:
+  PAL_CloseProcessMemory
+
+Abstract
+  Closes the PAL_OpenProcessMemory handle.
+
+Parameter
+  handle : from PAL_OpenProcessMemory
+
+Return
+  none
+--*/
+VOID
+PALAPI
+PAL_CloseProcessMemory(
+    IN DWORD handle
+)
+{
+    ENTRY("PAL_CloseProcessMemory(handle=%x)\n", handle);
+    if (handle != UINT32_MAX)
+    {
+#ifdef __APPLE__
+        kern_return_t result = ::mach_port_deallocate(mach_task_self(), (mach_port_name_t)handle);
+        if (result != KERN_SUCCESS)
+        {
+            ERROR("mach_port_deallocate FAILED %x %s\n", result, mach_error_string(result));
+        }
+#else
+        close(handle);
+#endif
+    }
+    LOGEXIT("PAL_CloseProcessMemory\n");
+}
+
+/*++
+Function:
+  PAL_ReadProcessMemory
+
+Abstract
+  Reads process memory. 
+
+Parameter
+  handle : from PAL_OpenProcessMemory
+  address : address of memory to read
+  buffer : buffer to read memory to
+  size : number of bytes to read
+  numberOfBytesRead: number of bytes read (optional)
+
+Return
+  true read memory is successful, false if not.
+--*/
+BOOL
+PALAPI
+PAL_ReadProcessMemory(
+    IN DWORD handle,
+    IN ULONG64 address,
+    IN LPVOID buffer,
+    IN SIZE_T size,
+    OUT SIZE_T* numberOfBytesRead)
+{
+    ENTRY("PAL_ReadProcessMemory(handle=%x, address=%p buffer=%p size=%d)\n", handle, (void*)address, buffer, size);
+    _ASSERTE(handle != 0);
+    _ASSERTE(numberOfBytesRead != nullptr);
+    BOOL result = TRUE;
+    size_t read = 0;
+#ifdef __APPLE__
+    vm_map_t task = (vm_map_t)handle;
+
+    // vm_read_overwrite usually requires that the address be page-aligned
+    // and the size be a multiple of the page size.  We can't differentiate
+    // between the cases in which that's required and those in which it
+    // isn't, so we do it all the time.
+    const size_t pageSize = GetVirtualPageSize();
+    vm_address_t addressAligned = ALIGN_DOWN(address, pageSize);
+    size_t offset = OffsetWithinPage(address);
+    size_t bytesToRead;
+
+    char *data = (char*)malloc(pageSize);
+    if (data == nullptr)
+    {
+        ERROR("malloc(%d) FAILED\n", pageSize);
+        result = FALSE;
+        goto exit;
+    }
+
+    while (size > 0)
+    {
+        vm_size_t bytesRead;
+        
+        bytesToRead = pageSize - offset;
+        if (bytesToRead > size)
+        {
+            bytesToRead = size;
+        }
+        bytesRead = pageSize;
+        kern_return_t result = ::vm_read_overwrite(task, addressAligned, pageSize, (vm_address_t)data, &bytesRead);
+        if (result != KERN_SUCCESS || bytesRead != pageSize)
+        {
+            ERROR("vm_read_overwrite failed for %d bytes from %p: %x %s\n", pageSize, (void*)addressAligned, result, mach_error_string(result));
+            result = FALSE;
+            goto exit;
+        }
+        memcpy((LPSTR)buffer + read , data + offset, bytesToRead);
+        addressAligned = addressAligned + pageSize;
+        read += bytesToRead;
+        size -= bytesToRead;
+        offset = 0;
+    }
+
+exit:
+    if (data != nullptr)
+    {
+        free(data);
+    }
+#else
+    read = pread(handle, buffer, size, address);
+    if (read == (size_t)-1)
+    {
+        result = FALSE;
+    }
+#endif
+    *numberOfBytesRead = read;
+    LOGEXIT("PAL_ReadProcessMemory result=%d bytes read=%d\n", result, read);
+    return result;
 }
 
 /*++

@@ -1375,6 +1375,14 @@ BOOL MethodTable::IsEquivalentTo_Worker(MethodTable *pOtherMT COMMA_INDEBUG(Type
         if (!pOtherMT->IsArray() || GetRank() != pOtherMT->GetRank())
             return FALSE;
 
+        if (IsMultiDimArray() != pOtherMT->IsMultiDimArray())
+        {
+            // A non-multidimensional array is not equivalent to an SzArray.
+            // This case is handling the case of a Rank 1 multidimensional array
+            // when compared to a normal array.
+            return FALSE;
+        }
+
         // arrays of structures have their own unshared MTs and will take this path
         return (GetArrayElementTypeHandle().IsEquivalentTo(pOtherMT->GetArrayElementTypeHandle() COMMA_INDEBUG(&newVisited)));
     }
@@ -3238,7 +3246,7 @@ void MethodTable::DoRunClassInitThrowing()
         // managed code to re-enter into this codepath, causing a locking order violation.
         pInitLock.Release();
 
-        if (MscorlibBinder::GetException(kTypeInitializationException) != gc.pInitException->GetMethodTable())
+        if (CoreLibBinder::GetException(kTypeInitializationException) != gc.pInitException->GetMethodTable())
         {
             DefineFullyQualifiedNameForClassWOnStack();
             LPCWSTR wszName = GetFullyQualifiedNameForClassW(this);
@@ -3342,7 +3350,7 @@ void MethodTable::DoRunClassInitThrowing()
                                 GetLoaderAllocator()->RegisterFailedTypeInitForCleanup(pEntry);
                             }
 
-                            _ASSERTE(g_pThreadAbortExceptionClass == MscorlibBinder::GetException(kThreadAbortException));
+                            _ASSERTE(g_pThreadAbortExceptionClass == CoreLibBinder::GetException(kThreadAbortException));
 
                             if(gc.pInnerException->GetMethodTable() == g_pThreadAbortExceptionClass)
                             {
@@ -4101,14 +4109,15 @@ void MethodTable::Save(DataImage *image, DWORD profilingFlags)
             fIsWriteable = FALSE;
         }
 
-
+        DWORD slotSize;
+        DWORD allocSize = GetInstAndDictSize(&slotSize);
         if (!fIsWriteable)
         {
-            image->StoreInternedStructure(pDictionary, GetInstAndDictSize(), DataImage::ITEM_DICTIONARY);
+            image->StoreInternedStructure(pDictionary, slotSize, DataImage::ITEM_DICTIONARY);
         }
         else
         {
-            image->StoreStructure(pDictionary, GetInstAndDictSize(), DataImage::ITEM_DICTIONARY_WRITEABLE);
+            image->StoreStructure(pDictionary, slotSize, DataImage::ITEM_DICTIONARY_WRITEABLE);
         }
     }
 
@@ -5956,7 +5965,7 @@ CorElementType MethodTable::GetInternalCorElementType()
         break;
 
     case enum_flag_Category_PrimitiveValueType:
-        // This path should only be taken for the builtin mscorlib types
+        // This path should only be taken for the builtin CoreLib types
         // and primitive valuetypes
         ret = GetClass()->GetInternalCorElementType();
         _ASSERTE((ret != ELEMENT_TYPE_CLASS) &&
@@ -8880,7 +8889,9 @@ MethodTable::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
 
     if (GetDictionary() != NULL)
     {
-        DacEnumMemoryRegion(dac_cast<TADDR>(GetDictionary()), GetInstAndDictSize());
+        DWORD slotSize;
+        DWORD allocSize = GetInstAndDictSize(&slotSize);
+        DacEnumMemoryRegion(dac_cast<TADDR>(GetDictionary()), slotSize);
     }
 
     VtableIndirectionSlotIterator it = IterateVtableIndirectionSlots();

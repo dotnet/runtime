@@ -83,7 +83,7 @@ namespace System.Xml.Schema
             remove { _validationEventHandler -= value; }
         }
 
-        internal XmlResolver XmlResolver
+        internal XmlResolver? XmlResolver
         {
             set
             {
