@@ -239,6 +239,14 @@ Namespace Microsoft.VisualBasic.CompilerServices
 
         <System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never),
          ComImport(),
+         Guid("B196B283-BAB4-101A-B69C-00AA00341D07"),
+         InterfaceTypeAttribute(ComInterfaceType.InterfaceIsIUnknown)>
+        Public Interface IProvideClassInfo
+            Function GetClassInfo() As <MarshalAs(UnmanagedType.Interface)> ITypeInfo
+        End Interface
+
+        <System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never),
+         ComImport(),
          Guid("00020402-0000-0000-C000-000000000046"),
          InterfaceTypeAttribute(ComInterfaceType.InterfaceIsIUnknown)>
         Public Interface ITypeLib
