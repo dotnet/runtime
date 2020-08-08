@@ -35,10 +35,10 @@ namespace Internal.Cryptography.Pal
             TimeSpan timeout,
             bool disableAia)
         {
-            // An input value of 0 on the timeout is "take all the time you need".
+            // An input value of 0 on the timeout is treated as 15 seconds, to match Windows.
             if (timeout == TimeSpan.Zero)
             {
-                timeout = TimeSpan.MaxValue;
+                timeout = TimeSpan.FromSeconds(15);
             }
 
             // Let Unspecified mean Local, so only convert if the source was UTC.
@@ -55,14 +55,14 @@ namespace Internal.Cryptography.Pal
             {
             }
 
-            TimeSpan remainingDownloadTime = timeout;
+            TimeSpan downloadTimeout = timeout;
 
             OpenSslX509ChainProcessor chainPal = OpenSslX509ChainProcessor.InitiateChain(
                 ((OpenSslX509CertificateReader)cert).SafeHandle,
                 customTrustStore,
                 trustMode,
                 verificationTime,
-                remainingDownloadTime);
+                downloadTimeout);
 
             Interop.Crypto.X509VerifyStatusCode status = chainPal.FindFirstChain(extraStore);
 
