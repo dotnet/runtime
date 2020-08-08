@@ -174,6 +174,10 @@ struct _MonoAssemblyName {
 #else
 	uint16_t major, minor, build, revision, arch;
 #endif
+	//Add members for correct work with mono_stringify_assembly_name
+	MonoBoolean without_version;
+	MonoBoolean without_culture;
+	MonoBoolean without_public_key_token;
 };
 
 struct MonoTypeNameParse {
