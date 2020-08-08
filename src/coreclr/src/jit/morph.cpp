@@ -13683,6 +13683,11 @@ DONE_MORPHING_CHILDREN:
                         unsigned   lclNum = temp->AsLclVarCommon()->GetLclNum();
                         LclVarDsc* varDsc = &lvaTable[lclNum];
 
+                        // Note that fgMorph uses GTF_DONT_CSE to mark the left side of an assignment
+                        // Thus stores have this flag and load do not have this flag
+                        //
+                        bool isLoad = (tree->gtFlags & GTF_DONT_CSE) == 0;
+
                         // We will try to optimize when we have a promoted struct promoted with a zero lvFldOffset
                         if (varDsc->lvPromoted && (varDsc->lvFldOffset == 0))
                         {
@@ -13709,15 +13714,31 @@ DONE_MORPHING_CHILDREN:
                         }
                         // If the type of the IND (typ) is a "small int", and the type of the local has the
                         // same width, then we can reduce to just the local variable -- it will be
-                        // correctly normalized, and signed/unsigned differences won't matter.
+                        // correctly normalized.
                         //
                         // The below transformation cannot be applied if the local var needs to be normalized on load.
                         else if (varTypeIsSmall(typ) && (genTypeSize(lvaTable[lclNum].lvType) == genTypeSize(typ)) &&
                                  !lvaTable[lclNum].lvNormalizeOnLoad())
                         {
-                            tree->gtType = typ = temp->TypeGet();
-                            foldAndReturnTemp  = true;
+                            // For any stores of small types, we will force loads to be normalized
+                            // this is necessary as we need to zero/sign extend any load
+                            // after this kind of store.
+                            //
+                            if (!isLoad)
+                            {
+                                varDsc->lvForceLoadNormalize = true;
+                            }
+                            // otherwise we have a load operation
+                            //
+                            // And for loads signed/unsigned differences do matter.
+                            //
+                            else if (varTypeIsUnsigned(lvaTable[lclNum].lvType) == varTypeIsUnsigned(typ))
+                            {
+                                tree->gtType = typ = temp->TypeGet();
+                                foldAndReturnTemp  = true;
+                            }
                         }
+                        // For matching types we can fold
                         else if (!varTypeIsStruct(typ) && (lvaTable[lclNum].lvType == typ) &&
                                  !lvaTable[lclNum].lvNormalizeOnLoad())
                         {
