@@ -25,6 +25,8 @@ namespace System.Net.Http
         private static readonly HttpMethod s_patchMethod = new HttpMethod("PATCH", -1);
         private static readonly HttpMethod s_connectMethod = new HttpMethod("CONNECT", http3StaticTableIndex: H3StaticTable.MethodConnect);
 
+        private static Dictionary<HttpMethod, HttpMethod> s_knownMethods;
+
         public static HttpMethod Get
         {
             get { return s_getMethod; }
@@ -175,19 +177,23 @@ namespace System.Net.Http
             if (method._http3Index != null)
                 return method;
 
-            return method._method.ToUpperInvariant() switch
+            if (s_knownMethods is null)
             {
-                "GET" => s_getMethod,
-                "PUT" => s_putMethod,
-                "POST" => s_postMethod,
-                "DELETE" => s_deleteMethod,
-                "HEAD" => s_headMethod,
-                "OPTIONS" => s_optionsMethod,
-                "TRACE" => s_traceMethod,
-                "PATCH" => s_patchMethod,
-                "CONNECT" => s_connectMethod,
-                _ => method
-            };
+                s_knownMethods = new Dictionary<HttpMethod, HttpMethod>(9)
+                {
+                    { s_getMethod, s_getMethod },
+                    { s_putMethod, s_putMethod },
+                    { s_postMethod, s_postMethod },
+                    { s_deleteMethod, s_deleteMethod },
+                    { s_headMethod, s_headMethod },
+                    { s_optionsMethod, s_optionsMethod },
+                    { s_traceMethod, s_traceMethod },
+                    { s_patchMethod, s_patchMethod },
+                    { s_connectMethod, s_connectMethod }
+                };
+            }
+
+            return s_knownMethods.TryGetValue(method, out HttpMethod normalized) ? normalized : method;
         }
 
         internal bool MustHaveRequestBody
