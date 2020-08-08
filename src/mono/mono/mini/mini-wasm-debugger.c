@@ -1378,7 +1378,7 @@ mono_wasm_get_array_values (int object_id, int start_idx, int count, gboolean ex
 	return describe_array_values (object_id, start_idx, count, expand_value_types);
 }
 
-EMSCRIPTEN_KEEPALIVE
+EMSCRIPTEN_KEEPALIVE gboolean
 mono_wasm_invoke_getter_on_object (int object_id, const char* name)
 {
 	MonoObject *obj = get_object_from_id (object_id);
