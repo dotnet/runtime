@@ -78,6 +78,7 @@ namespace Tracing.Tests.ProcessInfoValidation
             string envKey = "TESTKEY";
             string envVal = "TESTVAL";
             System.Environment.SetEnvironmentVariable(envKey, envVal);
+            System.Environment.SetEnvironmentVariable("foo", "");
 
             Stream stream = ConnectionHelper.GetStandardTransport(pid);
 
@@ -214,9 +215,8 @@ namespace Tracing.Tests.ProcessInfoValidation
                 end = start + ((int)pairLength * sizeof(char));
                 Utils.Assert(end <= totalSize, $"String end can't exceed payload size. Expected: <{totalSize}, Received: {end} (decoded length: {pairLength})");
                 string envPair = System.Text.Encoding.Unicode.GetString(response.Payload[start..end]).TrimEnd('\0');
-                string[] parts = envPair.Split('=');
-                string value = string.Join('=', parts[1..]);
-                env[parts[0]] = value;
+                int equalsIndex = envPair.IndexOf('=');
+                env[envPair[0..equalsIndex]] = envPair[(equalsIndex+1)..];
             }
             Logger.logger.Log($"finished parsing env");
 
