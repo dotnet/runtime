@@ -83,6 +83,7 @@ namespace System
             buffer[startingIndex] = (char)(packedResult >> 8);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void EncodeToUtf16(ReadOnlySpan<byte> bytes, Span<char> chars, Casing casing = Casing.Upper)
         {
             Debug.Assert(chars.Length >= bytes.Length * 2);
