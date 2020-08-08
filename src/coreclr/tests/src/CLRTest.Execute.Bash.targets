@@ -257,6 +257,15 @@ fi
       <PropertyGroup>
       <_CLRTestRunFile Condition="'$(CLRTestIsHosted)'=='true'">"$CORE_ROOT/corerun"</_CLRTestRunFile>
 
+      <BashCLRTestPreCommands Condition="'$(TargetArchitecture)' == 'wasm'">
+   <![CDATA[
+# Build wasm app containing the test dll
+$DOTNET_HOST build /Users/naricc/workspace/runtime-webassembly-ci/src/mono/wasm/wasm-test-runner/WasmTestRunner.csproj /p:TestAssembly=$(OutputPath)/$(MsBuildProjectName).dll
+
+
+   ]]>
+      </BashCLRTestPreCommands>
+
       <BashCLRTestLaunchCmds Condition="'$(CLRTestKind)' == 'BuildAndRun'">
     <![CDATA[
 $(BashLinkerTestLaunchCmds)
