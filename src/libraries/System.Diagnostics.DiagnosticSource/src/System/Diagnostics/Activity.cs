@@ -1401,13 +1401,12 @@ namespace System.Diagnostics
         // Note: Some customers use this Enumerator dynamically to avoid allocations.
         private struct Enumerator<T> : IEnumerator<T>
         {
-            private readonly LinkedListNode<T>? _head;
             private LinkedListNode<T>? _nextNode;
             [AllowNull, MaybeNull] private T _currentItem;
 
             public Enumerator(LinkedListNode<T>? head)
             {
-                _nextNode = _head = head;
+                _nextNode = head;
                 _currentItem = default;
             }
 
@@ -1428,7 +1427,7 @@ namespace System.Diagnostics
                 return true;
             }
 
-            public void Reset() => _nextNode = _head;
+            public void Reset() => throw new NotSupportedException();
 
             public void Dispose()
             {
