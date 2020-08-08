@@ -215,9 +215,8 @@ namespace Tracing.Tests.ProcessInfoValidation
                 Utils.Assert(end <= totalSize, $"String end can't exceed payload size. Expected: <{totalSize}, Received: {end} (decoded length: {pairLength})");
                 string envPair = System.Text.Encoding.Unicode.GetString(response.Payload[start..end]).TrimEnd('\0');
                 string[] parts = envPair.Split('=');
-                // second part is allowed to be empty
-                Utils.Assert(parts.Count() == 2, $"Malformed environment entry when splitting element on '='.  Expected: 2 parts, Received: {parts.Count()}");
-                env[parts[0]] = parts[1];
+                string value = string.Join('=', parts[1..]);
+                env[parts[0]] = value;
             }
             Logger.logger.Log($"finished parsing env");
 
