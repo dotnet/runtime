@@ -29,7 +29,7 @@ if [ "$os" = "SunOS" ]; then
     CPUName=$(isainfo -n)
 else
     # For rest of the operating systems, use uname(1) to determine what the CPU is.
-    CPUName=$(uname -m)
+    CPUName=${CPUName:=$(uname -m)}
 fi
 
 case "$CPUName" in
