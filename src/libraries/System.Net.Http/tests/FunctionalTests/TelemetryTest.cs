@@ -5,6 +5,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics.Tracing;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
@@ -57,7 +58,12 @@ namespace System.Net.Http.Functional.Tests
                         },
                         async server =>
                         {
-                            await server.HandleRequestAsync();
+                            await server.AcceptConnectionAsync(async connection =>
+                            {
+                                await Task.Delay(300);
+                                await connection.ReadRequestDataAsync();
+                                await connection.SendResponseAsync();
+                            });
                         });
 
                     await Task.Delay(300);
@@ -87,14 +93,23 @@ namespace System.Net.Http.Functional.Tests
                 var events = new ConcurrentQueue<EventWrittenEventArgs>();
                 await listener.RunWithCallbackAsync(events.Enqueue, async () =>
                 {
+                    var semaphore = new SemaphoreSlim(0, 1);
                     await GetFactoryForVersion(Version.Parse(useVersionString)).CreateClientAndServerAsync(
                         async uri =>
                         {
                             using HttpClient client = CreateHttpClient(useVersionString);
-                            client.Timeout = TimeSpan.FromMilliseconds(100);
+                            client.Timeout = TimeSpan.FromMilliseconds(300);
                             await Assert.ThrowsAsync<TaskCanceledException>(async () => await client.GetStringAsync(uri));
+                            semaphore.Release();
                         },
-                        server => Task.CompletedTask);
+                        async server =>
+                        {
+                            await server.AcceptConnectionAsync(async connection =>
+                            {
+                                Assert.True(await semaphore.WaitAsync(TimeSpan.FromSeconds(5)));
+                                connection.Dispose();
+                            });
+                        });
 
                     await Task.Delay(300);
                 });
