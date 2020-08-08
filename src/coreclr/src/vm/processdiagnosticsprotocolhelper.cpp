@@ -126,7 +126,7 @@ bool ProcessInfoPayload::Flatten(BYTE * &lpBuffer, uint16_t &cbSize)
         if (!fSuccess)
             break;
 
-        int len = wcslen(cursor) + 1;
+        uint32_t len = wcslen(cursor) + 1;
         fSuccess &= TryWriteString(lpBuffer, cbSize, cursor);
         cursor += len;
     }
@@ -151,7 +151,7 @@ void ProcessInfoPayload::EnsureEnv()
     uint32_t nEntries = 0;
     while(*envCursor != 0) 
     {
-        int len = wcslen(envCursor) + 1;
+        uint32_t len = wcslen(envCursor) + 1;
         nEntries++;
         nWchars += len;
         envCursor += len;
@@ -164,7 +164,7 @@ void ProcessInfoPayload::EnsureEnv()
     while(*envCursor != 0) 
     {
         // len characters
-        int len = wcslen(envCursor) + 1;
+        uint32_t len = wcslen(envCursor) + 1;
         wcscpy(payloadCursor, envCursor);
         envCursor += len;
         payloadCursor += len;
