@@ -908,7 +908,7 @@ namespace DebuggerTests
         internal static JObject TString(string value) =>
             value == null ?
             TObject("string", is_null : true) :
-            JObject.FromObject(new { type = "string", value = @value, description = @value });
+            JObject.FromObject(new { type = "string", value = @value });
 
         internal static JObject TNumber(int value) =>
             JObject.FromObject(new { type = "number", value = @value.ToString(), description = value.ToString() });
