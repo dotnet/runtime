@@ -260,13 +260,13 @@ fi
       <BashCLRTestPreCommands Condition="'$(TargetArchitecture)' == 'wasm'">
    <![CDATA[
 # Build wasm app containing the test dll
-$DOTNET_HOST build /Users/naricc/workspace/runtime-webassembly-ci/src/mono/wasm/wasm-test-runner/WasmTestRunner.csproj /p:TestAssembly=$(OutputPath)/$(MsBuildProjectName).dll
+$DOTNET_HOST build /Users/naricc/workspace/runtime-webassembly-ci/src/mono/wasm/wasm-test-runner/WasmTestRunner.csproj /p:TestAssembly=$(OutputPath)/$(MsBuildProjectName).dll /p:TestBinDir=`pwd`
 
 
    ]]>
       </BashCLRTestPreCommands>
 
-      <BashCLRTestLaunchCmds Condition="'$(CLRTestKind)' == 'BuildAndRun'">
+      <BashCLRTestLaunchCmds Condition="'$(CLRTestKind)' == 'BuildAndRun' And $(TargetArchitecture) != 'wasm' ">
     <![CDATA[
 $(BashLinkerTestLaunchCmds)
 
@@ -285,6 +285,7 @@ fi
 
 echo $LAUNCHER $ExePath %24(printf "'%s' " "${CLRTestExecutionArguments[@]}")
 $LAUNCHER $ExePath "${CLRTestExecutionArguments[@]}"
+
 CLRTestExitCode=$?
 
 if [ ! -z ${RunCrossGen+x} ]%3B then
@@ -293,6 +294,13 @@ fi
 
 $(BashLinkerTestCleanupCmds)
       ]]></BashCLRTestLaunchCmds>
+      <BashCLRTestLaunchCmds Condition="'$(CLRTestKind)' == 'BuildAndRun' And $(TargetArchitecture) == 'wasm' ">
+      <![CDATA[
+cd WasmApp
+./run-v8.sh $(MsBuildProjectName)
+CLRTestExitCode=$?
+      ]]>
+      </BashCLRTestLaunchCmds>
       <BashCLRTestLaunchCmds Condition="'$(CLRTestKind)' == 'RunOnly'"><![CDATA[
 echo export CDPATH="$%28dirname "${BASH_SOURCE[0]}")"
 export CDPATH="$%28dirname "${BASH_SOURCE[0]}")"

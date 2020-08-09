@@ -1,8 +1,4 @@
 <Project Sdk="Microsoft.NET.Sdk" DefaultTargets="BuildApp">
-  <ItemGroup>
-     <TestAssemblyList Include="/Users/naricc/workspace/runtime-webassembly-ci//artifacts/tests/coreclr/browser.wasm.Debug/test_assemblies.txt" />
-  </ItemGroup>
-
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <OutputPath>bin</OutputPath>
@@ -12,7 +8,7 @@
     <TargetOS>Browser</TargetOS>
     <MicrosoftNetCoreAppRuntimePackDir>$(ArtifactsBinDir)microsoft.netcore.app.runtime.browser-wasm\$(Configuration)\runtimes\browser-wasm\</MicrosoftNetCoreAppRuntimePackDir>
     <BuildDir>$(MSBuildThisFileDirectory)\obj\$(Configuration)\wasm</BuildDir>
-    <AppDir>$(ArtifactsBinDir)/WasmTestRunner/</AppDir>
+    <AppDir>$(TestBinDir)/WasmApp/</AppDir>
     <RuntimeIdentifier>browser-wasm</RuntimeIdentifier>  
     <PlatformTarget>AnyCPU</PlatformTarget>   
   </PropertyGroup>
@@ -22,25 +18,22 @@
              Properties="Configuration=$(Configuration)" Targets="Restore;Build;Publish" />
   </Target>
 
-  <Target Name="ReadAssemblyNames">
-       <ReadLinesFromFile File="@(TestAssemblyList)" >
-            <Output TaskParameter="Lines" ItemName="TestAssemblyItems"/>
-       </ReadLinesFromFile>
-  </Target>
-
-
   <UsingTask TaskName="WasmAppBuilder" 
       AssemblyFile="$(ArtifactsBinDir)\WasmAppBuilder\$(Configuration)\$(NetCoreAppCurrent)\publish\WasmAppBuilder.dll"/>
 
-  <Target Name="BuildApp" DependsOnTargets="RebuildWasmAppBuilder;Build;Publish;ReadAssemblyNames">
+  <Target Name="BuildApp" DependsOnTargets="RebuildWasmAppBuilder;Build;Publish">
     <ItemGroup>
       <AssemblySearchPaths Include="bin"/>
       <AssemblySearchPaths Include="$(MicrosoftNetCoreAppRuntimePackDir)\native"/>
       <AssemblySearchPaths Include="$(MicrosoftNetCoreAppRuntimePackDir)\lib\$(NetCoreAppCurrent)"/>
       <AssemblySearchPaths Include="$(ArtifactsDir)/TargetingPack" />
     </ItemGroup>
+
+    <ItemGroup>
+	<TestAssemblies Include="$(TestAssembly)" />
+    </ItemGroup>
   
-    <!-- <Message Importance="High" Text="@(TestAssemblyItems)"/> -->
+    <Message Importance="High" Text="!!! @(TestAssemblies)"/> 
 
     <WasmAppBuilder
       AppDir="$(AppDir)"
@@ -48,10 +41,11 @@
       MainAssembly="./bin/browser-wasm/publish/WasmTestRunner.dll"
       MainJS="$(MonoProjectRoot)\wasm\runtime-test.js"
       AssemblySearchPaths="@(AssemblySearchPaths)"
-      ExtraAssemblies="@(TestAssemblyItems)"
+      ExtraAssemblies="@(TestAssemblies)"
       />
 
     <Message Importance="High" Text="AppDir: $(AppDir)" />
+    <Message Importance="High" Text="TestBinDir: $(TestBinDir)" />
     <Message Importance="High" Text="ArtifactsBinDir: $(ArtifactsBinDir)" />
 
     <Exec Command="chmod a+x $(AppDir)/run-v8.sh" />
