@@ -534,9 +534,9 @@ void SystemNative_FreeHostEntry(HostEntry* entry)
 
 // There were several versions of glibc that had the flags parameter of getnameinfo unsigned
 #if HAVE_GETNAMEINFO_SIGNED_FLAGS
-typedef int32_t NativeFlagsType;
+typedef int NativeFlagsType;
 #else
-typedef uint32_t NativeFlagsType;
+typedef unsigned int NativeFlagsType;
 #endif
 
 static inline NativeFlagsType ConvertGetNameInfoFlagsToNative(int32_t flags)

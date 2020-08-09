@@ -503,14 +503,14 @@ check_c_source_compiles(
     "
     #include <signal.h>
     int main(void){
-        int flags = -1;
+        unsigned long flags = 0;
         struct sigaction action;
         action.sa_flags = flags;
         int result = sigaction(SIGTTOU, &action, 0);
         return 0;
     }
     "
-    HAVE_SIGACTION_SIGNED_FLAGS
+    HAVE_SIGACTION_ULONG_FLAGS
 )
 set(CMAKE_REQUIRED_FLAGS ${PREVIOUS_CMAKE_REQUIRED_FLAGS})
 

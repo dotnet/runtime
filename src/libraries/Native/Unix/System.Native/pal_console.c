@@ -19,10 +19,11 @@
 #include <pthread.h>
 #include <signal.h>
 
-#if HAVE_SIGACTION_SIGNED_FLAGS
-typedef long NativeFlagsType;
-#else
+#if HAVE_SIGACTION_ULONG_FLAGS
+// uClibc
 typedef unsigned long NativeFlagsType;
+#else
+typedef int NativeFlagsType;
 #endif
 
 int32_t SystemNative_GetWindowSize(WinSize* windowSize)
