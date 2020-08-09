@@ -160,6 +160,7 @@ Namespace Microsoft.VisualBasic
 
             Dim Result As String = COMObjectName
 
+#If TARGET_WINDOWS Then
             Dim pTypeInfo As UnsafeNativeMethods.ITypeInfo = Nothing
             Dim hr As Integer
             Dim ClassName As String = Nothing
@@ -204,6 +205,7 @@ Namespace Microsoft.VisualBasic
                 End If
 
             Loop While (False)
+#End If
 
 
             If Result.Chars(0) = "_"c Then
@@ -554,6 +556,7 @@ UnmangleName:
 
             Dim Result As String = COMObjectName
 
+#If TARGET_WINDOWS Then
             Dim pTypeInfo As UnsafeNativeMethods.ITypeInfo = Nothing
             Dim hr As Integer
             Dim ClassName As String = Nothing
@@ -572,6 +575,7 @@ UnmangleName:
                     End If
                 End If
             End If
+#End If
 
             If Result.Chars(0) = "_"c Then
                 Result = Result.Substring(1)
