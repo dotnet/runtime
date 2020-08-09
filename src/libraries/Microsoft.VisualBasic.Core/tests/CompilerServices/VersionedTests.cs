@@ -108,8 +108,10 @@ namespace Microsoft.VisualBasic.Tests
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows))]
         [MemberData(nameof(TypeName_ComObject_TestData))]
-        public void TypeName_ComObject(object expression, string expected)
+        public void TypeName_ComObject(string progId, string expected)
         {
+            Type type = Type.GetTypeFromProgID(progId);
+            object expression = Activator.CreateInstance(type);
             Assert.Equal(expected, Versioned.TypeName(expression));
         }
 
@@ -141,14 +143,9 @@ namespace Microsoft.VisualBasic.Tests
 
         public static IEnumerable<object[]> TypeName_ComObject_TestData()
         {
-            yield return new object[] { TypeName_ComObject_Create("ADODB.Stream"), "Stream" };
-            yield return new object[] { TypeName_ComObject_Create("MSXML2.DOMDocument"), "DOMDocument" };
-            yield return new object[] { TypeName_ComObject_Create("Scripting.Dictionary"), "Dictionary" };
-        }
-
-        private static object TypeName_ComObject_Create(string progId)
-        {
-            return Activator.CreateInstance(Type.GetTypeFromProgID(progId));
+            yield return new object[] { "ADODB.Stream", "Stream" };
+            yield return new object[] { "MSXML2.DOMDocument", "DOMDocument" };
+            yield return new object[] { "Scripting.Dictionary", "Dictionary" };
         }
 
         [Theory]
