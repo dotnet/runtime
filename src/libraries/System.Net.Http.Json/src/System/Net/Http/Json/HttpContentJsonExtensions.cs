@@ -1,8 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Diagnostics;
 using System.IO;
+using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
 using System.Threading;
@@ -14,18 +14,24 @@ namespace System.Net.Http.Json
     {
         public static Task<object?> ReadFromJsonAsync(this HttpContent content, Type type, JsonSerializerOptions? options = null, CancellationToken cancellationToken = default)
         {
-            ValidateContent(content);
-            Debug.Assert(content.Headers.ContentType != null);
-            Encoding? sourceEncoding = JsonContent.GetEncoding(content.Headers.ContentType.CharSet);
+            if (content == null)
+            {
+                throw new ArgumentNullException(nameof(content));
+            }
+
+            Encoding? sourceEncoding = JsonContent.GetEncoding(content.Headers.ContentType?.CharSet);
 
             return ReadFromJsonAsyncCore(content, type, sourceEncoding, options, cancellationToken);
         }
 
         public static Task<T?> ReadFromJsonAsync<T>(this HttpContent content, JsonSerializerOptions? options = null, CancellationToken cancellationToken = default)
         {
-            ValidateContent(content);
-            Debug.Assert(content.Headers.ContentType != null);
-            Encoding? sourceEncoding = JsonContent.GetEncoding(content.Headers.ContentType.CharSet);
+            if (content == null)
+            {
+                throw new ArgumentNullException(nameof(content));
+            }
+
+            Encoding? sourceEncoding = JsonContent.GetEncoding(content.Headers.ContentType?.CharSet);
 
             return ReadFromJsonAsyncCore<T>(content, sourceEncoding, options, cancellationToken);
         }
@@ -42,7 +48,20 @@ namespace System.Net.Http.Json
 
             using (contentStream)
             {
-                return await JsonSerializer.DeserializeAsync(contentStream, type, options ?? JsonContent.s_defaultSerializerOptions, cancellationToken).ConfigureAwait(false);
+                try
+                {
+                    return await JsonSerializer.DeserializeAsync(contentStream, type, options ?? JsonContent.s_defaultSerializerOptions, cancellationToken).ConfigureAwait(false);
+                }
+                catch (JsonException je)
+                {
+                    NotSupportedException? nse = ValidateContent(content.Headers.ContentType);
+                    if (nse != null)
+                    {
+                        throw new AggregateException(je, nse);
+                    }
+
+                    throw;
+                }
             }
         }
 
@@ -58,25 +77,35 @@ namespace System.Net.Http.Json
 
             using (contentStream)
             {
-                return await JsonSerializer.DeserializeAsync<T>(contentStream, options ?? JsonContent.s_defaultSerializerOptions, cancellationToken).ConfigureAwait(false);
+                try
+                {
+                    return await JsonSerializer.DeserializeAsync<T>(contentStream, options ?? JsonContent.s_defaultSerializerOptions, cancellationToken).ConfigureAwait(false);
+                }
+                catch (JsonException je)
+                {
+                    NotSupportedException? nse = ValidateContent(content.Headers.ContentType);
+                    if (nse != null)
+                    {
+                        throw new AggregateException(je, nse);
+                    }
+
+                    throw;
+                }
             }
         }
 
-        private static void ValidateContent(HttpContent content)
+        private static NotSupportedException? ValidateContent(MediaTypeHeaderValue? mediaTypeHeader)
         {
-            if (content == null)
-            {
-                throw new ArgumentNullException(nameof(content));
-            }
-
-            string? mediaType = content.Headers.ContentType?.MediaType;
+            string? mediaType = mediaTypeHeader?.MediaType;
 
             if (mediaType == null ||
                 !mediaType.Equals(JsonContent.JsonMediaType, StringComparison.OrdinalIgnoreCase) &&
                 !IsValidStructuredSyntaxJsonSuffix(mediaType.AsSpan()))
             {
-                throw new NotSupportedException(SR.Format(SR.ContentTypeNotSupported, mediaType));
+                return new NotSupportedException(SR.Format(SR.ContentTypeNotSupported, mediaType));
             }
+
+            return null;
         }
 
         private static bool IsValidStructuredSyntaxJsonSuffix(ReadOnlySpan<char> mediaType)
