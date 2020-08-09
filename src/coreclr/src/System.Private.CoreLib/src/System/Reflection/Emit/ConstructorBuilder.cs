@@ -45,6 +45,10 @@ namespace System.Reflection.Emit
         {
             return m_methodBuilder.GetTypeBuilder();
         }
+        internal SignatureHelper GetMethodSignature()
+        {
+            return m_methodBuilder.GetMethodSignature();
+        }
         #endregion
 
         #region Object Overrides
