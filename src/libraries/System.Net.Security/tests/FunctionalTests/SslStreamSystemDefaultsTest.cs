@@ -67,8 +67,8 @@ namespace System.Net.Security.Tests
 
             if ((SslProtocolSupport.SupportedSslProtocols & SslProtocolSupport.NonTls13Protocols) != 0)
             {
-                yield return new object[] { SslProtocols.Tls | SslProtocols.Tls11 | SslProtocols.Tls12, null };
-                yield return new object[] { null, SslProtocols.Tls | SslProtocols.Tls11 | SslProtocols.Tls12 };
+                yield return new object[] { SslProtocolSupport.NonTls13Protocols, null };
+                yield return new object[] { null, SslProtocolSupport.NonTls13Protocols };
             }
         }
 

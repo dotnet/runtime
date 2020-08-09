@@ -84,8 +84,14 @@ namespace System.Net.Http.Functional.Tests
             {
                 if (protocol != SslProtocols.None && (protocol & SslProtocolSupport.SupportedSslProtocols) == protocol)
                 {
-                    yield return new object[] { protocol, false };
                     yield return new object[] { protocol, true };
+#pragma warning disable 0618 // SSL2/3 are deprecated
+                     // On certain platforms these are completely disabled and cannot be used at all.
+                    if (protocol != SslProtocols.Ssl2 && protocol != SslProtocols.Ssl3)
+                    {
+                        yield return new object[] { protocol, false };
+                    }
+#pragma warning restore 0618
                 }
             }
         }
@@ -111,9 +117,9 @@ namespace System.Net.Http.Functional.Tests
                     // will by default block < TLS 1.2
 #pragma warning disable 0618 // SSL2/3 are deprecated
 #if !NETFRAMEWORK
-                    handler.SslProtocols = SslProtocols.Ssl2 | SslProtocols.Ssl3 | SslProtocols.Tls | SslProtocols.Tls11 | SslProtocols.Tls12 | SslProtocols.Tls13;
+                    handler.SslProtocols = SslProtocols.Tls | SslProtocols.Tls11 | SslProtocols.Tls12 | SslProtocols.Tls13;
 #else
-                    handler.SslProtocols = SslProtocols.Ssl2 | SslProtocols.Ssl3 | SslProtocols.Tls | SslProtocols.Tls11 | SslProtocols.Tls12;
+                    handler.SslProtocols = SslProtocols.Tls | SslProtocols.Tls11 | SslProtocols.Tls12;
 #endif
 #pragma warning restore 0618
                 }

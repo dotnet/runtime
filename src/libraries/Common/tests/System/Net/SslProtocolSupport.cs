@@ -25,11 +25,6 @@ namespace System.Net.Test.Common
             {
                 SslProtocols supported = SslProtocols.None;
 #pragma warning disable 0618 // SSL2/3 are deprecated
-                if (PlatformDetection.SupportsSsl2)
-                {
-                    supported |= SslProtocols.Ssl2;
-                }
-
                 if (PlatformDetection.SupportsSsl3)
                 {
                     supported |= SslProtocols.Ssl3;
