@@ -36,7 +36,7 @@ namespace System.Text.Json.Serialization.Converters
                 ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(TypeToConvert);
             }
 
-            object objValue = jsonClassInfo.Deserialize!(ref reader, ref state, jsonClassInfo.Options);
+            object objValue = jsonClassInfo.Deserialize(ref reader, ref state, jsonClassInfo.Options);
 
             Debug.Assert(objValue is T);
             value = (T)objValue;
