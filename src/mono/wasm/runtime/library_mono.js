@@ -1,6 +1,15 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+/**
+ * @typedef WasmId
+ * @type {object}
+ * @property {string} idStr - full object id string
+ * @property {string} scheme - eg, object, valuetype, array ..
+ * @property {string} value - string part after `dotnet:scheme:` of the id string
+ * @property {object} o - value parsed as JSON
+ */
+
 var MonoSupportLib = {
 	$MONO__postset: 'MONO.export_functions (Module);',
 	$MONO: {
@@ -9,6 +18,10 @@ var MonoSupportLib = {
 		_vt_stack: [],
 		mono_wasm_runtime_is_ready : false,
 		mono_wasm_ignore_pdb_load_errors: true,
+
+		/** @type {object.<string, object>} */
+		_id_table: {},
+
 		pump_message: function () {
 			if (!this.mono_background_exec)
 				this.mono_background_exec = Module.cwrap ("mono_background_exec", null);
@@ -98,30 +111,19 @@ var MonoSupportLib = {
 		},
 
 		_fixup_name_value_objects: function (var_list) {
-			var out_list = [];
-
-			var _fixup_value = function (value) {
-				if (value != null && value != undefined) {
-					var descr = value.description;
-					if (descr == null || descr == undefined)
-						value.description = '' + value.value;
-				}
-				return value;
-			};
+			let out_list = [];
 
 			var i = 0;
 			while (i < var_list.length) {
-				var o = var_list [i];
-				var name = o.name;
+				let o = var_list [i];
+				const name = o.name;
 				if (name == null || name == undefined) {
 					i ++;
-					o.value = _fixup_value(o.value);
 					out_list.push (o);
 					continue;
 				}
 
 				if (i + 1 < var_list.length) {
-					_fixup_value(var_list[i + 1].value);
 					o = Object.assign (o, var_list [i + 1]);
 				}
 
@@ -133,8 +135,8 @@ var MonoSupportLib = {
 		},
 
 		_filter_automatic_properties: function (props) {
-			var names_found = {};
-			var final_var_list = [];
+			let names_found = {};
+			let final_var_list = [];
 
 			for (var i in props) {
 				var p = props [i];
@@ -153,46 +155,116 @@ var MonoSupportLib = {
 			return final_var_list;
 		},
 
-		// Given `dotnet:object:foo:bar`,
-		// returns [ 'dotnet', 'object', 'foo:bar']
-		_split_object_id: function (id, delimiter = ':', count = 3) {
-			if (id === undefined || id == "")
-				return [];
+		/** Given `dotnet:object:foo:bar`,
+		 * returns { scheme:'object', value: 'foo:bar' }
+		 *
+		 * Given `dotnet:pointer:{ b: 3 }`
+		 * returns { scheme:'object', value: '{b:3}`, o: {b:3}
+		 *
+		 * @param  {string} idStr
+		 * @param  {boolean} [throwOnError=false]
+		 *
+		 * @returns {WasmId}
+		 */
+		_parse_object_id: function (idStr, throwOnError = false) {
+			if (idStr === undefined || idStr == "" || !idStr.startsWith ('dotnet:')) {
+				if (throwOnError)
+					throw new Error (`Invalid id: ${idStr}`);
 
-			if (delimiter === undefined) delimiter = ':';
-			if (count === undefined) count = 3;
+				return undefined;
+			}
 
-			var var_arr = id.split (delimiter);
-			var result = var_arr.splice (0, count - 1);
+			const [, scheme, ...rest] = idStr.split(':');
+			let res = {
+				scheme,
+				value: rest.join (':'),
+				idStr,
+				o: {}
+			};
 
-			if (var_arr.length > 0)
-				result.push (var_arr.join (delimiter));
-			return result;
+			try {
+				res.o = JSON.parse(res.value);
+			// eslint-disable-next-line no-empty
+			} catch (e) {}
+
+			return res;
+		},
+
+		/**
+		 * @param  {WasmId} id
+		 * @returns {object[]}
+		 */
+		_get_vt_properties: function (id) {
+			let entry = this._id_table [id.idStr];
+			if (entry !== undefined && entry.members !== undefined)
+				return entry.members;
+
+			if (!isNaN (id.o.containerId))
+				this._get_object_properties (id.o.containerId, true);
+			else if (!isNaN (id.o.arrayId))
+				this._get_array_values (id, Number (id.o.arrayIdx), 1, true);
+			else
+				throw new Error (`Invalid valuetype id (${id.idStr}). Can't get properties for it.`);
+
+			entry = this._get_id_props (id.idStr);
+			if (entry !== undefined && entry.members !== undefined)
+				return entry.members;
+
+			throw new Error (`Unknown valuetype id: ${id.idStr}`);
+		},
+
+		/**
+		 *
+		 * @callback GetIdArgsCallback
+		 * @param {object} var
+		 * @param {number} idx
+		 * @returns {object}
+		 */
+
+		/**
+		 * @param  {object[]} vars
+		 * @param  {GetIdArgsCallback} getIdArgs
+		 * @returns {object}
+		 */
+		_assign_vt_ids: function (vars, getIdArgs)
+		{
+			vars.forEach ((v, i) => {
+				// we might not have a `.value`, like in case of getters which have a `.get` instead
+				const value = v.value;
+				if (value === undefined || !value.isValueType)
+					return;
+
+				if (value.objectId !== undefined)
+					throw new Error (`Bug: Trying to assign valuetype id, but the var already has one: ${v}`);
+
+				value.objectId = this._new_or_add_id_props ({ scheme: 'valuetype', idArgs: getIdArgs (v, i), props: value._props });
+				delete value._props;
+			});
+
+			return vars;
 		},
 
 		//
 		// @var_list: [ { index: <var_id>, name: <var_name> }, .. ]
 		mono_wasm_get_variables: function(scope, var_list) {
-			if (!this.mono_wasm_get_var_info)
-				this.mono_wasm_get_var_info = Module.cwrap ("mono_wasm_get_var_info", null, [ 'number', 'number', 'number']);
-
-			this.var_info = [];
-			var numBytes = var_list.length * Int32Array.BYTES_PER_ELEMENT;
-			var ptr = Module._malloc(numBytes);
-			var heapBytes = new Int32Array(Module.HEAP32.buffer, ptr, numBytes);
+			const numBytes = var_list.length * Int32Array.BYTES_PER_ELEMENT;
+			const ptr = Module._malloc(numBytes);
+			let heapBytes = new Int32Array(Module.HEAP32.buffer, ptr, numBytes);
 			for (let i=0; i<var_list.length; i++) {
 				heapBytes[i] = var_list[i].index;
 			}
 
 			this._async_method_objectId = 0;
-			this.mono_wasm_get_var_info (scope, heapBytes.byteOffset, var_list.length);
+			let { res_ok, res } = this.mono_wasm_get_local_vars_info (scope, heapBytes.byteOffset, var_list.length);
 			Module._free(heapBytes.byteOffset);
-			var res = MONO._fixup_name_value_objects (this.var_info);
+			if (!res_ok)
+				throw new Error (`Failed to get locals for scope ${scope}`);
+
+			if (this._async_method_objectId != 0)
+				this._assign_vt_ids (res, v => ({ containerId: this._async_method_objectId, fieldOffset: v.fieldOffset }));
 
 			for (let i in res) {
-				var res_name = res [i].name;
-
-				var value = res[i].value;
+				const res_name = res [i].name;
 				if (this._async_method_objectId != 0) {
 					//Async methods are special in the way that local variables can be lifted to generated class fields
 					//value of "this" comes here either
@@ -201,9 +273,6 @@ var MonoSupportLib = {
 						// ALTHOUGH, the name wouldn't have `<>` for method args
 						res [i].name = res_name.substring (1, res_name.indexOf ('>'));
 					}
-
-					if (value.isValueType)
-						value.objectId = `dotnet:valuetype:${this._async_method_objectId}:${res [i].fieldOffset}`;
 				} else if (res_name === undefined && var_list [i] !== undefined) {
 					// For non-async methods, we just have the var id, but we have the name
 					// from the caller
@@ -212,70 +281,49 @@ var MonoSupportLib = {
 			}
 
 			this._post_process_details(res);
-			this.var_info = []
+			return res;
+		},
+
+		/**
+		 * @param  {number} idNum
+		 * @param  {boolean} expandValueTypes
+		 * @returns {object}
+		 */
+		_get_object_properties: function(idNum, expandValueTypes) {
+			let { res_ok, res } = this.mono_wasm_get_object_properties_info (idNum, expandValueTypes);
+			if (!res_ok)
+				throw new Error (`Failed to get properties for ${idNum}`);
+
+			res = MONO._filter_automatic_properties (res);
+			res = this._assign_vt_ids (res, v => ({ containerId: idNum, fieldOffset: v.fieldOffset }));
+			res = this._post_process_details (res);
 
 			return res;
 		},
 
+		/**
+		 * @param  {WasmId} id
+		 * @param  {number} [startIdx=0]
+		 * @param  {number} [count=-1]
+		 * @param  {boolean} [expandValueTypes=false]
+		 * @returns {object[]}
+		 */
+		_get_array_values: function (id, startIdx = 0, count = -1, expandValueTypes = false) {
+			if (isNaN (id.o.arrayId) || isNaN (startIdx))
+				throw new Error (`Invalid array id: ${id.idStr}`);
 
-		mono_wasm_get_object_properties: function(objId, expandValueTypes) {
-			if (!this.mono_wasm_get_object_properties_info)
-				this.mono_wasm_get_object_properties_info = Module.cwrap ("mono_wasm_get_object_properties", null, [ 'number', 'bool' ]);
+			let { res_ok, res } = this.mono_wasm_get_array_values_info (id.o.arrayId, startIdx, count, expandValueTypes);
+			if (!res_ok)
+				throw new Error (`Failed to get properties for array id ${id.idStr}`);
 
-			this.var_info = [];
-			this.mono_wasm_get_object_properties_info (objId, expandValueTypes);
+			res = this._assign_vt_ids (res, (_, i) => ({ arrayId: id.o.arrayId, arrayIdx: Number (startIdx) + i}));
 
-			var res = MONO._filter_automatic_properties (MONO._fixup_name_value_objects (this.var_info));
-			for (var i = 0; i < res.length; i++) {
-				var res_val = res [i].value;
-				// we might not have a `.value`, like in case of getters which have a `.get` instead
-				if (res_val !== undefined && res_val.isValueType != undefined && res_val.isValueType)
-					res_val.objectId = `dotnet:valuetype:${objId}:${res [i].fieldOffset}`;
+			for (let i = 0; i < res.length; i ++) {
+				let value = res [i].value;
+				if (value.objectId !== undefined && value.objectId.startsWith("dotnet:pointer"))
+					this._new_or_add_id_props ({ objectId: value.objectId, props: { varName: `[${i}]` } });
 			}
-
-			this.var_info = [];
-
-			return res;
-		},
-
-		mono_wasm_get_array_values: function(objId) {
-			if (!this.mono_wasm_get_array_values_info)
-				this.mono_wasm_get_array_values_info = Module.cwrap ("mono_wasm_get_array_values", null, [ 'number' ]);
-
-			this.var_info = [];
-			this.mono_wasm_get_array_values_info (objId);
-
-			var res = MONO._fixup_name_value_objects (this.var_info);
-			for (var i = 0; i < res.length; i++) {
-				var prop_value = res [i].value;
-				if (prop_value.isValueType) {
-					res [i].value.objectId = `dotnet:array:${objId}:${i}`;
-				} else if (prop_value.objectId !== undefined && prop_value.objectId.startsWith("dotnet:pointer")) {
-					prop_value.objectId = this._get_updated_ptr_id (prop_value.objectId, {
-						varName: `[${i}]`
-					});
-				}
-			}
-
-			this.var_info = [];
-
-			return res;
-		},
-
-		mono_wasm_get_array_value_expanded: function(objId, idx) {
-			if (!this.mono_wasm_get_array_value_expanded_info)
-				this.mono_wasm_get_array_value_expanded_info = Module.cwrap ("mono_wasm_get_array_value_expanded", null, [ 'number', 'number' ]);
-
-			this.var_info = [];
-			this.mono_wasm_get_array_value_expanded_info (objId, idx);
-
-			var res = MONO._fixup_name_value_objects (this.var_info);
-			// length should be exactly one!
-			if (res [0].value.isValueType != undefined && res [0].value.isValueType)
-				res [0].value.objectId = `dotnet:array:${objId}:${idx}`;
-
-			this.var_info = [];
-
+			res = this._post_process_details (res);
 			return res;
 		},
 
@@ -289,8 +337,13 @@ var MonoSupportLib = {
 			return details;
 		},
 
-		_next_value_type_id: function () {
-			return ++this._next_value_type_id_var;
+		/**
+		 * Gets the next id number to use for generating ids
+		 *
+		 * @returns {number}
+		 */
+		_next_id: function () {
+			return ++this._next_id_var;
 		},
 
 		_extract_and_cache_value_types: function (var_list) {
@@ -298,82 +351,46 @@ var MonoSupportLib = {
 				return var_list;
 
 			for (let i in var_list) {
-				var value = var_list [i].value;
+				let value = var_list [i].value;
 				if (value === undefined)
 					continue;
 
 				if (value.objectId !== undefined && value.objectId.startsWith ("dotnet:pointer:")) {
-					var ptr_args = this._get_ptr_args (value.objectId);
-					if (ptr_args.varName === undefined) {
-						// It might have been already set in some cases, like arrays
-						// where the name would be `0`, but we want `[0]` for pointers,
-						// so the deref would look like `*[0]`
-						value.objectId = this._get_updated_ptr_id (value.objectId, {
-							varName: var_list [i].name
-						});
-					}
+					let ptr_args = this._get_id_props (value.objectId);
+					if (ptr_args === undefined)
+						throw new Error (`Bug: Expected to find an entry for pointer id: ${value.objectId}`);
+
+					// It might have been already set in some cases, like arrays
+					// where the name would be `0`, but we want `[0]` for pointers,
+					// so the deref would look like `*[0]`
+					ptr_args.varName = ptr_args.varName || var_list [i].name;
 				}
 
 				if (value.type != "object" || value.isValueType != true || value.expanded != true) // undefined would also give us false
 					continue;
 
 				// Generate objectId for expanded valuetypes
-
-				var objectId = value.objectId;
-				if (objectId == undefined)
-					objectId = `dotnet:valuetype:${this._next_value_type_id ()}`;
-				value.objectId = objectId;
+				value.objectId = value.objectId || this._new_or_add_id_props ({ scheme: 'valuetype' });
 
 				this._extract_and_cache_value_types (value.members);
 
-				this._value_types_cache [objectId] = value.members;
+				const new_props = Object.assign ({ members: value.members }, value.__extra_vt_props);
+
+				this._new_or_add_id_props ({ objectId: value.objectId, props: new_props });
 				delete value.members;
+				delete value.__extra_vt_props;
 			}
 
 			return var_list;
-		},
-
-		_get_details_for_value_type: function (objectId, fetchDetailsFn) {
-			if (objectId in this._value_types_cache)
-				return this._value_types_cache[objectId];
-
-			this._post_process_details (fetchDetailsFn());
-			if (objectId in this._value_types_cache)
-				return this._value_types_cache[objectId];
-
-			// return error
-			throw new Error (`Could not get details for ${objectId}`);
-		},
-
-		_is_object_id_array: function (objectId) {
-			// Keep this in sync with `_get_array_details`
-			return (objectId.startsWith ('dotnet:array:') && objectId.split (':').length == 3);
-		},
-
-		_get_array_details: function (objectId, objectIdParts) {
-			// Keep this in sync with `_is_object_id_array`
-			switch (objectIdParts.length) {
-				case 3:
-					return this._post_process_details (this.mono_wasm_get_array_values(objectIdParts[2]));
-
-				case 4:
-					var arrayObjectId = objectIdParts[2];
-					var arrayIdx = objectIdParts[3];
-					return this._get_details_for_value_type(
-									objectId, () => this.mono_wasm_get_array_value_expanded(arrayObjectId, arrayIdx));
-
-				default:
-					throw new Error (`object id format not supported : ${objectId}`);
-			}
 		},
 
 		_get_cfo_res_details: function (objectId, args) {
 			if (!(objectId in this._call_function_res_cache))
 				throw new Error(`Could not find any object with id ${objectId}`);
 
-			var real_obj = this._call_function_res_cache [objectId];
+			const real_obj = this._call_function_res_cache [objectId];
 
-			var descriptors = Object.getOwnPropertyDescriptors (real_obj);
+			const descriptors = Object.getOwnPropertyDescriptors (real_obj);
 			if (args.accessorPropertiesOnly) {
 				Object.keys (descriptors).forEach (k => {
 					if (descriptors [k].get === undefined)
@@ -381,10 +398,10 @@ var MonoSupportLib = {
 				});
 			}
 
-			var res_details = [];
+			let res_details = [];
 			Object.keys (descriptors).forEach (k => {
-				var new_obj;
-				var prop_desc = descriptors [k];
+				let new_obj;
+				let prop_desc = descriptors [k];
 				if (typeof prop_desc.value == "object") {
 					// convert `{value: { type='object', ... }}`
 					// to      `{ name: 'foo', value: { type='object', ... }}
@@ -425,34 +442,77 @@ var MonoSupportLib = {
 			return { __value_as_json_string__: JSON.stringify (res_details) };
 		},
 
-		_get_ptr_args: function (objectId) {
-			var parts = this._split_object_id (objectId);
-			if (parts.length != 3)
-				throw new Error (`Bug: Unexpected objectId format for a pointer, expected 3 parts: ${objectId}`);
-			return JSON.parse (parts [2]);
+		/**
+		 * Generates a new id, and a corresponding entry for associated properties
+		 *    like `dotnet:pointer:{ a: 4 }`
+		 * The third segment of that `{a:4}` is the idArgs parameter
+		 *
+		 * Only `scheme` or `objectId` can be set.
+		 * if `scheme`, then a new id is generated, and it's properties set
+		 * if `objectId`, then it's properties are updated
+		 *
+		 * @param {object} args
+		 * @param  {string} [args.scheme=undefined] scheme second part of `dotnet:pointer:..`
+		 * @param  {string} [args.objectId=undefined] objectId
+		 * @param  {object} [args.idArgs={}] The third segment of the objectId
+		 * @param  {object} [args.props={}] Properties for the generated id
+		 *
+		 * @returns {string} generated/updated id string
+		 */
+		_new_or_add_id_props: function ({ scheme = undefined, objectId = undefined, idArgs = {}, props = {} }) {
+			if (scheme === undefined && objectId === undefined)
+				throw new Error (`Either scheme or objectId must be given`);
+
+			if (scheme !== undefined && objectId !== undefined)
+				throw new Error (`Both scheme, and objectId cannot be given`);
+
+			if (objectId !== undefined && Object.entries (idArgs).length > 0)
+				throw new Error (`Both objectId, and idArgs cannot be given`);
+
+			if (Object.entries (idArgs).length == 0) {
+				// We want to generate a new id, only if it doesn't have other
+				// attributes that it can use to uniquely identify.
+				// Eg, we don't do this for `dotnet:valuetype:{containerId:4, fieldOffset: 24}`
+				idArgs.num = this._next_id ();
+			}
+
+			let idStr;
+			if (objectId !== undefined) {
+				idStr = objectId;
+				const old_props = this._id_table [idStr];
+				if (old_props === undefined)
+					throw new Error (`ObjectId not found in the id table: ${idStr}`);
+
+				this._id_table [idStr] = Object.assign (old_props, props);
+			} else {
+				idStr = `dotnet:${scheme}:${JSON.stringify (idArgs)}`;
+				this._id_table [idStr] = props;
+			}
+
+			return idStr;
 		},
 
-		_get_updated_ptr_id: function (objectId, new_args) {
-			var old_args = {};
-			if (typeof (objectId) === 'string' && objectId.length)
-				old_args = this._get_ptr_args (objectId);
-
-			return `dotnet:pointer:${JSON.stringify ( Object.assign (old_args, new_args) )}`;
+		/**
+		 * @param  {string} objectId
+		 * @returns {object}
+		 */
+		_get_id_props: function (objectId) {
+			return this._id_table [objectId];
 		},
 
 		_get_deref_ptr_value: function (objectId) {
-			if (!this.mono_wasm_get_deref_ptr_value_info)
-				this.mono_wasm_get_deref_ptr_value_info = Module.cwrap("mono_wasm_get_deref_ptr_value", null, ['number', 'number']);
+			const ptr_args = this._get_id_props (objectId);
+			if (ptr_args === undefined)
+				throw new Error (`Unknown pointer id: ${objectId}`);
 
-			var ptr_args = this._get_ptr_args (objectId);
 			if (ptr_args.ptr_addr == 0 || ptr_args.klass_addr == 0)
 				throw new Error (`Both ptr_addr and klass_addr need to be non-zero, to dereference a pointer. objectId: ${objectId}`);
 
-			this.var_info = [];
-			var value_addr = new DataView (Module.HEAPU8.buffer).getUint32 (ptr_args.ptr_addr, /* littleEndian */ true);
-			this.mono_wasm_get_deref_ptr_value_info (value_addr, ptr_args.klass_addr);
+			const value_addr = new DataView (Module.HEAPU8.buffer).getUint32 (ptr_args.ptr_addr, /* littleEndian */ true);
+			let { res_ok, res } = this.mono_wasm_get_deref_ptr_value_info (value_addr, ptr_args.klass_addr);
+			if (!res_ok)
+				throw new Error (`Failed to dereference pointer ${objectId}`);
 
-			var res = MONO._fixup_name_value_objects(this.var_info);
 			if (res.length > 0) {
 				if (ptr_args.varName === undefined)
 					throw new Error (`Bug: no varName found for the pointer. objectId: ${objectId}`);
@@ -461,34 +521,25 @@ var MonoSupportLib = {
 			}
 
 			res = this._post_process_details (res);
-			this.var_info = [];
 			return res;
 		},
 
 		mono_wasm_get_details: function (objectId, args) {
-			var parts = objectId.split(":");
-			if (parts[0] != "dotnet")
-				throw new Error ("Can't handle non-dotnet object ids. ObjectId: " + objectId);
+			let id = this._parse_object_id (objectId, true);
 
-			switch (parts[1]) {
-				case "object":
-					if (parts.length != 3)
-						throw new Error(`exception this time: Invalid object id format: ${objectId}`);
+			switch (id.scheme) {
+				case "object": {
+					if (isNaN (id.value))
+						throw new Error (`Invalid objectId: ${objectId}. Expected a numeric id.`);
 
-					return this._post_process_details(this.mono_wasm_get_object_properties(parts[2], false));
+					return this._get_object_properties(id.value, false);
+				}
 
 				case "array":
-					return this._get_array_details(objectId, parts);
+					return this._get_array_values (id);
 
 				case "valuetype":
-					if (parts.length != 3 && parts.length != 4) {
-						// dotnet:valuetype:vtid
-						// dotnet:valuetype:containerObjectId:vtId
-						throw new Error(`Invalid object id format: ${objectId}`);
-					}
-
-					var containerObjectId = parts[2];
-					return this._get_details_for_value_type(objectId, () => this.mono_wasm_get_object_properties(containerObjectId, true));
+					return this._get_vt_properties(id);
 
 				case "cfo_res":
 					return this._get_cfo_res_details (objectId, args);
@@ -503,7 +554,7 @@ var MonoSupportLib = {
 		},
 
 		_cache_call_function_res: function (obj) {
-			var id = `dotnet:cfo_res:${this._next_call_function_res_id++}`;
+			const id = `dotnet:cfo_res:${this._next_call_function_res_id++}`;
 			this._call_function_res_cache[id] = obj;
 			return id;
 		},
@@ -513,44 +564,69 @@ var MonoSupportLib = {
 				delete this._cache_call_function_res[objectId];
 		},
 
-		_invoke_getter_on_object: function (objectId, name) {
-			if (!this.mono_wasm_invoke_getter_on_object)
-				this.mono_wasm_invoke_getter_on_object = Module.cwrap ("mono_wasm_invoke_getter_on_object", 'void', [ 'number', 'string' ]);
+		/**
+		 * @param  {string} objectIdStr objectId
+		 * @param  {string} name property name
+		 * @returns {object} return value
+		 */
+		_invoke_getter: function (objectIdStr, name) {
+			const id = this._parse_object_id (objectIdStr);
+			if (id === undefined)
+				throw new Error (`Invalid object id: ${objectIdStr}`);
 
-			if (objectId < 0) {
-				// invalid id
-				return [];
+			let getter_res;
+			if (id.scheme == 'object') {
+				if (isNaN (id.o) || id.o < 0)
+					throw new Error (`Invalid object id: ${objectIdStr}`);
+
+				let { res_ok, res } = this.mono_wasm_invoke_getter_on_object_info (id.o, name);
+				if (!res_ok)
+					throw new Error (`Invoking getter on ${objectIdStr} failed`);
+
+				getter_res = res;
+			} else if (id.scheme == 'valuetype') {
+				const id_props = this._get_id_props (objectIdStr);
+				if (id_props === undefined)
+					throw new Error (`Unknown valuetype id: ${objectIdStr}`);
+
+				if (typeof id_props.value64 !== 'string' || isNaN (id_props.klass))
+					throw new Error (`Bug: Cannot invoke getter on ${objectIdStr}, because of missing or invalid klass/value64 fields. idProps: ${JSON.stringify (id_props)}`);
+
+				const dataPtr = Module._malloc (id_props.value64.length);
+				const dataHeap = new Uint8Array (Module.HEAPU8.buffer, dataPtr, id_props.value64.length);
+				dataHeap.set (new Uint8Array (this._base64_to_uint8 (id_props.value64)));
+
+				let { res_ok, res } = this.mono_wasm_invoke_getter_on_value_info (dataHeap.byteOffset, id_props.klass, name);
+				Module._free (dataHeap.byteOffset);
+
+				if (!res_ok) {
+					console.debug (`Invoking getter on valuetype ${objectIdStr}, with props: ${JSON.stringify (id_props)} failed`);
+					throw new Error (`Invoking getter on valuetype ${objectIdStr} failed`);
+				}
+				getter_res = res;
+			} else {
+				throw new Error (`Only object, and valuetypes supported for getters, id: ${objectIdStr}`);
 			}
 
-			this.mono_wasm_invoke_getter_on_object (objectId, name);
-			var getter_res = MONO._post_process_details (MONO.var_info);
-
-			MONO.var_info = [];
-			return getter_res [0];
+			getter_res = MONO._post_process_details (getter_res);
+			return getter_res.length > 0 ? getter_res [0] : {};
 		},
 
 		_create_proxy_from_object_id: function (objectId) {
-			var details = this.mono_wasm_get_details(objectId);
+			const details = this.mono_wasm_get_details(objectId);
 
-			if (this._is_object_id_array (objectId))
+			if (objectId.startsWith ('dotnet:array:'))
 				return details.map (p => p.value);
 
-			var objIdParts = objectId.split (':');
-			var objIdNum = -1;
-			if (objectId.startsWith ("dotnet:object:"))
-				objIdNum = objIdParts [2];
-
-			var proxy = {};
+			let proxy = {};
 			Object.keys (details).forEach (p => {
 				var prop = details [p];
 				if (prop.get !== undefined) {
 					// TODO: `set`
 
-					// We don't add a `get` for non-object types right now,
-					// so, we shouldn't get here with objIdNum==-1
 					Object.defineProperty (proxy,
 							prop.name,
-							{ get () { return MONO._invoke_getter_on_object (objIdNum, prop.name); } }
+							{ get () { return MONO._invoke_getter (objectId, prop.name); } }
 					);
 				} else {
 					proxy [prop.name] = prop.value;
@@ -564,21 +640,27 @@ var MonoSupportLib = {
 			if (request.arguments != undefined && !Array.isArray (request.arguments))
 				throw new Error (`"arguments" should be an array, but was ${request.arguments}`);
 
-			var objId = request.objectId;
-			var proxy;
+			const objId = request.objectId;
+			let proxy;
 
-			if (objId in this._call_function_res_cache) {
-				proxy = this._call_function_res_cache [objId];
-			} else if (!objId.startsWith ('dotnet:cfo_res:')) {
+			if (objId.startsWith ('dotnet:cfo_res:')) {
+				if (objId in this._call_function_res_cache)
+					proxy = this._call_function_res_cache [objId];
+				else
+					throw new Error (`Unknown object id ${objId}`);
+			} else {
 				proxy = this._create_proxy_from_object_id (objId);
 			}
 
-			var fn_args = request.arguments != undefined ? request.arguments.map(a => JSON.stringify(a.value)) : [];
-			var fn_eval_str = `var fn = ${request.functionDeclaration}; fn.call (proxy, ...[${fn_args}]);`;
+			const fn_args = request.arguments != undefined ? request.arguments.map(a => JSON.stringify(a.value)) : [];
+			const fn_eval_str = `var fn = ${request.functionDeclaration}; fn.call (proxy, ...[${fn_args}]);`;
 
-			var fn_res = eval (fn_eval_str);
-			if (fn_res == undefined) // should we just return undefined?
-				throw Error ('Function returned undefined result');
+			const fn_res = eval (fn_eval_str);
+			if (fn_res === undefined)
+				return { type: "undefined" };
+
+			if (fn_res === null || (fn_res.subtype === 'null' && fn_res.value === undefined))
+				return fn_res;
 
 			// primitive type
 			if (Object (fn_res) !== fn_res)
@@ -591,7 +673,7 @@ var MonoSupportLib = {
 			if (request.returnByValue)
 				return {type: "object", value: fn_res};
 
-			var fn_res_id = this._cache_call_function_res (fn_res);
+			const fn_res_id = this._cache_call_function_res (fn_res);
 			if (Object.getPrototypeOf (fn_res) == Array.prototype) {
 				return {
 					type: "object",
@@ -606,14 +688,14 @@ var MonoSupportLib = {
 		},
 
 		_clear_per_step_state: function () {
-			this._next_value_type_id_var = 0;
-			this._value_types_cache = {};
+			this._next_id_var = 0;
+			this._id_table = {};
 		},
 
 		mono_wasm_debugger_resume: function () {
 			this._clear_per_step_state ();
 		},
-		
+
 		mono_wasm_start_single_stepping: function (kind) {
 			console.log (">> mono_wasm_start_single_stepping " + kind);
 			if (!this.mono_wasm_setup_single_step)
@@ -639,6 +721,42 @@ var MonoSupportLib = {
 			return this.mono_wasm_pause_on_exceptions (state_enum);
 		},
 
+		_register_c_fn: function (name, ...args) {
+			Object.defineProperty (this._c_fn_table, name + '_wrapper', { value: Module.cwrap (name, ...args) });
+		},
+
+		/**
+		 * Calls `Module.cwrap` for the function name,
+		 * and creates a wrapper around it that returns
+		 *     `{ bool result, object var_info }
+		 *
+		 * @param  {string} name C function name
+		 * @param  {string} ret_type
+		 * @param  {string[]} params
+		 *
+		 * @returns {void}
+		 */
+		_register_c_var_fn: function (name, ret_type, params) {
+			if (ret_type !== 'bool')
+				throw new Error (`Bug: Expected a C function signature that returns bool`);
+
+			this._register_c_fn (name, ret_type, params);
+			Object.defineProperty (this, name + '_info', {
+				value: function (...args) {
+					MONO.var_info = [];
+					const res_ok = MONO._c_fn_table [name + '_wrapper'] (...args);
+					let res = MONO.var_info;
+					MONO.var_info = [];
+					if (res_ok) {
+						res = this._fixup_name_value_objects (res);
+						return { res_ok, res };
+					}
+
+					return { res_ok, res: undefined };
+				}
+			});
+		},
+
 		mono_wasm_runtime_ready: function () {
 			this.mono_wasm_runtime_is_ready = true;
 			// DO NOT REMOVE - magic debugger init function
@@ -649,6 +767,14 @@ var MonoSupportLib = {
 			// FIXME: where should this go?
 			this._next_call_function_res_id = 0;
 			this._call_function_res_cache = {};
+
+			this._c_fn_table = {};
+			this._register_c_var_fn ('mono_wasm_get_object_properties',   'bool', [ 'number', 'bool' ]);
+			this._register_c_var_fn ('mono_wasm_get_array_values',        'bool', [ 'number', 'number', 'number', 'bool' ]);
+			this._register_c_var_fn ('mono_wasm_invoke_getter_on_object', 'bool', [ 'number', 'string' ]);
+			this._register_c_var_fn ('mono_wasm_invoke_getter_on_value',  'bool', [ 'number', 'number', 'string' ]);
+			this._register_c_var_fn ('mono_wasm_get_local_vars',          'bool', [ 'number', 'number', 'number']);
+			this._register_c_var_fn ('mono_wasm_get_deref_ptr_value',     'bool', [ 'number', 'number']);
 		},
 
 		mono_wasm_set_breakpoint: function (assembly, method_token, il_offset) {
@@ -666,7 +792,7 @@ var MonoSupportLib = {
 		},
 
 		// Set environment variable NAME to VALUE
-		// Should be called before mono_load_runtime_and_bcl () in most cases 
+		// Should be called before mono_load_runtime_and_bcl () in most cases
 		mono_wasm_setenv: function (name, value) {
 			if (!this.wasm_setenv)
 				this.wasm_setenv = Module.cwrap ('mono_wasm_setenv', null, ['string', 'string']);
@@ -678,7 +804,7 @@ var MonoSupportLib = {
 				this.wasm_parse_runtime_options = Module.cwrap ('mono_wasm_parse_runtime_options', null, ['number', 'number']);
 			var argv = Module._malloc (options.length * 4);
 			var wasm_strdup = Module.cwrap ('mono_wasm_strdup', 'number', ['string']);
-			aindex = 0;
+			let aindex = 0;
 			for (var i = 0; i < options.length; ++i) {
 				Module.setValue (argv + (aindex * 4), wasm_strdup (options [i]), "i32");
 				aindex += 1;
@@ -1155,7 +1281,7 @@ var MonoSupportLib = {
 
 		mono_wasm_add_null_var: function(className)
 		{
-			fixed_class_name = MONO._mono_csharp_fixup_class_name(Module.UTF8ToString (className));
+			let fixed_class_name = MONO._mono_csharp_fixup_class_name(Module.UTF8ToString (className));
 			if (!fixed_class_name) {
 				// Eg, when a @className is passed from js itself, like
 				// mono_wasm_add_null_var ("string")
@@ -1179,12 +1305,13 @@ var MonoSupportLib = {
 				value: {
 					type: "string",
 					value: var_value,
+					description: var_value
 				}
 			});
 		},
 
 		_mono_wasm_add_getter_var: function(className, invokable) {
-			fixed_class_name = MONO._mono_csharp_fixup_class_name (className);
+			const fixed_class_name = MONO._mono_csharp_fixup_class_name (className);
 			if (invokable != 0) {
 				var name;
 				if (MONO.var_info.length > 0)
@@ -1211,7 +1338,7 @@ var MonoSupportLib = {
 		},
 
 		_mono_wasm_add_array_var: function(className, objectId, length) {
-			fixed_class_name = MONO._mono_csharp_fixup_class_name(className);
+			const fixed_class_name = MONO._mono_csharp_fixup_class_name(className);
 			if (objectId == 0) {
 				MONO.mono_wasm_add_null_var (fixed_class_name);
 				return;
@@ -1223,42 +1350,121 @@ var MonoSupportLib = {
 					subtype: "array",
 					className: fixed_class_name,
 					description: `${fixed_class_name}(${length})`,
-					objectId: "dotnet:array:"+ objectId,
+					objectId: this._new_or_add_id_props ({ scheme: 'array', idArgs: { arrayId: objectId } })
 				}
 			});
 		},
 
+		// FIXME: improve
+		_base64_to_uint8: function (base64String) {
+			const byteCharacters = atob (base64String);
+			const byteNumbers = new Array(byteCharacters.length);
+			for (let i = 0; i < byteCharacters.length; i++) {
+				byteNumbers[i] = byteCharacters.charCodeAt(i);
+			}
+
+			return new Uint8Array (byteNumbers);
+		},
+
+		_begin_value_type_var: function(className, args) {
+			if (args === undefined || (typeof args !== 'object')) {
+				console.debug (`_begin_value_type_var: Expected an args object`);
+				return;
+			}
+
+			const fixed_class_name = MONO._mono_csharp_fixup_class_name(className);
+			const toString = args.toString;
+			const base64String = btoa (String.fromCharCode (...new Uint8Array (Module.HEAPU8.buffer, args.value_addr, args.value_size)));
+			const vt_obj = {
+				value: {
+					type            : "object",
+					className       : fixed_class_name,
+					description     : (toString == 0 ? fixed_class_name: Module.UTF8ToString (toString)),
+					expanded        : true,
+					isValueType     : true,
+					__extra_vt_props: { klass: args.klass, value64: base64String },
+					members         : []
+				}
+			};
+			if (MONO._vt_stack.length == 0)
+				MONO._old_var_info = MONO.var_info;
+
+			MONO.var_info = vt_obj.value.members;
+			MONO._vt_stack.push (vt_obj);
+		},
+
+		_end_value_type_var: function() {
+			let top_vt_obj_popped = MONO._vt_stack.pop ();
+			top_vt_obj_popped.value.members = MONO._filter_automatic_properties (
+								MONO._fixup_name_value_objects (top_vt_obj_popped.value.members));
+
+			if (MONO._vt_stack.length == 0) {
+				MONO.var_info = MONO._old_var_info;
+				MONO.var_info.push(top_vt_obj_popped);
+			} else {
+				var top_obj = MONO._vt_stack [MONO._vt_stack.length - 1];
+				top_obj.value.members.push (top_vt_obj_popped);
+				MONO.var_info = top_obj.value.members;
+			}
+		},
+
+		_add_valuetype_unexpanded_var: function(className, args) {
+			if (args === undefined || (typeof args !== 'object')) {
+				console.debug (`_add_valuetype_unexpanded_var: Expected an args object`);
+				return;
+			}
+
+			const fixed_class_name = MONO._mono_csharp_fixup_class_name (className);
+			const toString = args.toString;
+
+			MONO.var_info.push ({
+				value: {
+					type: "object",
+					className: fixed_class_name,
+					description: (toString == 0 ? fixed_class_name : Module.UTF8ToString (toString)),
+					isValueType: true
+				}
+			});
+		},
+
+
 		mono_wasm_add_typed_value: function (type, str_value, value) {
-			var type_str = type;
+			let type_str = type;
 			if (typeof type != 'string')
 				type_str = Module.UTF8ToString (type);
-			if (typeof str_value != 'string')
 				str_value = Module.UTF8ToString (str_value);
 
 			switch (type_str) {
-			case "bool":
+			case "bool": {
+				const v = value != 0;
 				MONO.var_info.push ({
 					value: {
 						type: "boolean",
-						value: value != 0
+						value: v,
+						description: v.toString ()
 					}
 				});
 				break;
+			}
 
-			case "char":
+			case "char": {
+				const v = `${value} '${String.fromCharCode (value)}'`;
 				MONO.var_info.push ({
 					value: {
 						type: "symbol",
-						value: `${value} '${String.fromCharCode (value)}'`
+						value: v,
+						description: v
 					}
 				});
 				break;
+			}
 
 			case "number":
 				MONO.var_info.push ({
 					value: {
 						type: "number",
-						value: value
+						value: value,
+						description: '' + value
 					}
 				});
 				break;
@@ -1275,8 +1481,20 @@ var MonoSupportLib = {
 				MONO._mono_wasm_add_array_var (str_value, value.objectId, value.length);
 				break;
 
+			case "begin_vt":
+				MONO._begin_value_type_var (str_value, value);
+				break;
+
+			case "end_vt":
+				MONO._end_value_type_var ();
+				break;
+
+			case "unexpanded_vt":
+				MONO._add_valuetype_unexpanded_var (str_value, value);
+				break;
+
 			case "pointer": {
-				var fixed_value_str = MONO._mono_csharp_fixup_class_name (str_value);
+				const fixed_value_str = MONO._mono_csharp_fixup_class_name (str_value);
 				if (value.klass_addr == 0 || value.ptr_addr == 0 || fixed_value_str.startsWith ('(void*')) {
 					// null or void*, which we can't deref
 					MONO.var_info.push({
@@ -1292,7 +1510,7 @@ var MonoSupportLib = {
 							type: "object",
 							className: fixed_value_str,
 							description: fixed_value_str,
-							objectId: this._get_updated_ptr_id ('', value)
+							objectId: this._new_or_add_id_props ({ scheme: 'pointer', props: value })
 						}
 					});
 				}
@@ -1300,7 +1518,7 @@ var MonoSupportLib = {
 				break;
 
 			default: {
-				var msg = `'${str_value}' ${value}`;
+				const msg = `'${str_value}' ${value}`;
 
 				MONO.var_info.push ({
 					value: {
@@ -1390,55 +1608,6 @@ var MonoSupportLib = {
 		MONO._async_method_objectId = objectId;
 	},
 
-	mono_wasm_begin_value_type_var: function(className, toString) {
-		fixed_class_name = MONO._mono_csharp_fixup_class_name(Module.UTF8ToString (className));
-		var vt_obj = {
-			value: {
-				type: "object",
-				className: fixed_class_name,
-				description: (toString == 0 ? fixed_class_name : Module.UTF8ToString (toString)),
-				// objectId will be generated by MonoProxy
-				expanded: true,
-				isValueType: true,
-				members: []
-			}
-		};
-		if (MONO._vt_stack.length == 0)
-			MONO._old_var_info = MONO.var_info;
-
-		MONO.var_info = vt_obj.value.members;
-		MONO._vt_stack.push (vt_obj);
-	},
-
-	mono_wasm_end_value_type_var: function() {
-		var top_vt_obj_popped = MONO._vt_stack.pop ();
-		top_vt_obj_popped.value.members = MONO._filter_automatic_properties (
-							MONO._fixup_name_value_objects (top_vt_obj_popped.value.members));
-
-		if (MONO._vt_stack.length == 0) {
-			MONO.var_info = MONO._old_var_info;
-			MONO.var_info.push(top_vt_obj_popped);
-		} else {
-			var top_obj = MONO._vt_stack [MONO._vt_stack.length - 1];
-			top_obj.value.members.push (top_vt_obj_popped);
-			MONO.var_info = top_obj.value.members;
-		}
-	},
-
-	mono_wasm_add_value_type_unexpanded_var: function (className, toString) {
-		fixed_class_name = MONO._mono_csharp_fixup_class_name(Module.UTF8ToString (className));
-		MONO.var_info.push({
-			value: {
-				type: "object",
-				className: fixed_class_name,
-				description: (toString == 0 ? fixed_class_name : Module.UTF8ToString (toString)),
-				// objectId added when enumerating object's properties
-				expanded: false,
-				isValueType: true
-			}
-		});
-	},
-
 	mono_wasm_add_enum_var: function(className, members, value) {
 		// FIXME: flags
 		//
@@ -1446,13 +1615,13 @@ var MonoSupportLib = {
 		// group0: Monday:0
 		// group1: Monday
 		// group2: 0
-		var re = new RegExp (`[,]?([^,:]+):(${value}(?=,)|${value}$)`, 'g')
-		var members_str = Module.UTF8ToString (members);
+		const re = new RegExp (`[,]?([^,:]+):(${value}(?=,)|${value}$)`, 'g')
+		const members_str = Module.UTF8ToString (members);
 
-		var match = re.exec(members_str);
-		var member_name = match == null ? ('' + value) : match [1];
+		const match = re.exec(members_str);
+		const member_name = match == null ? ('' + value) : match [1];
 
-		fixed_class_name = MONO._mono_csharp_fixup_class_name(Module.UTF8ToString (className));
+		const fixed_class_name = MONO._mono_csharp_fixup_class_name(Module.UTF8ToString (className));
 		MONO.var_info.push({
 			value: {
 				type: "object",
@@ -1475,7 +1644,7 @@ var MonoSupportLib = {
 			return;
 		}
 
-		fixed_class_name = MONO._mono_csharp_fixup_class_name(Module.UTF8ToString (className));
+		const fixed_class_name = MONO._mono_csharp_fixup_class_name(Module.UTF8ToString (className));
 		MONO.var_info.push({
 			value: {
 				type: "object",
@@ -1512,11 +1681,11 @@ var MonoSupportLib = {
 			return `${ret_sig} ${method_name} (${args_sig})`;
 		}
 
-		var tgt_sig;
+		let tgt_sig;
 		if (targetName != 0)
 			tgt_sig = args_to_sig (Module.UTF8ToString (targetName));
 
-		var type_name = MONO._mono_csharp_fixup_class_name (Module.UTF8ToString (className));
+		const type_name = MONO._mono_csharp_fixup_class_name (Module.UTF8ToString (className));
 
 		if (objectId == -1) {
 			// Target property
@@ -1586,6 +1755,7 @@ var MonoSupportLib = {
 
 	mono_wasm_fire_bp: function () {
 		console.log ("mono_wasm_fire_bp");
+		// eslint-disable-next-line no-debugger
 		debugger;
 	},
 
