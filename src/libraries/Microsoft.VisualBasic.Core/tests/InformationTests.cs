@@ -206,19 +206,6 @@ namespace Microsoft.VisualBasic.Tests
             yield return new object[] { (int?)0, "Integer" };
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows))]
-        [MemberData(nameof(TypeName_ComObject_TestData))]
-        public void TypeName_ComObject(object expression, string expected)
-        {
-            Assert.Equal(expected, Information.TypeName(expression));
-        }
-
-        public static IEnumerable<object[]> TypeName_ComObject_TestData()
-        {
-            yield return new object[] { Interaction.CreateObject("ADODB.Stream"), "Stream" };
-            yield return new object[] { Interaction.CreateObject("Scripting.Dictionary"), "Dictionary" };
-        }
-
         [Theory]
         [InlineData(null, null)]
         [InlineData("System.Object", "Object")]

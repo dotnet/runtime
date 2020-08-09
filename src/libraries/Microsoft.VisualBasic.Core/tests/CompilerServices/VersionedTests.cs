@@ -106,6 +106,13 @@ namespace Microsoft.VisualBasic.Tests
             Assert.Equal(expected, Versioned.TypeName(expression));
         }
 
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows))]
+        [MemberData(nameof(TypeName_ComObject_TestData))]
+        public void TypeName_ComObject(object expression, string expected)
+        {
+            Assert.Equal(expected, Versioned.TypeName(expression));
+        }
+
         public static IEnumerable<object[]> TypeName_TestData()
         {
             yield return new object[] { null, "Nothing" };
@@ -130,6 +137,18 @@ namespace Microsoft.VisualBasic.Tests
             yield return new object[] { new char[0, 0], "Char(,)" };
             yield return new object[] { default(int?), "Nothing" };
             yield return new object[] { (int?)0, "Integer" };
+        }
+
+        public static IEnumerable<object[]> TypeName_ComObject_TestData()
+        {
+            yield return new object[] { TypeName_ComObject_Create("ADODB.Stream"), "Stream" };
+            yield return new object[] { TypeName_ComObject_Create("MSXML2.DOMDocument"), "DOMDocument" };
+            yield return new object[] { TypeName_ComObject_Create("Scripting.Dictionary"), "Dictionary" };
+        }
+
+        private static object TypeName_ComObject_Create(string progId)
+        {
+            return Activator.CreateInstance(Type.GetTypeFromProgID(progId));
         }
 
         [Theory]
