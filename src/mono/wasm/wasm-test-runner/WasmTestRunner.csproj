@@ -30,7 +30,7 @@
     </ItemGroup>
 
     <ItemGroup>
-	<TestAssemblies Include="$(TestAssembly)" />
+	    <TestAssemblies Include="$(TestAssembly)" />
     </ItemGroup>
   
     <Message Importance="High" Text="!!! @(TestAssemblies)"/> 
