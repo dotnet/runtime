@@ -356,7 +356,7 @@ namespace System.Text.Json.Serialization.Tests
                 };
 
                 Dictionary<T, int> dictionary;
-                for (int i = 1; i < 60; i++)
+                for (int i = 1; i <= 64; i++)
                 {
                     dictionary = BuildDictionary(i);
                     JsonSerializer.Serialize(dictionary, options);
@@ -427,7 +427,6 @@ namespace System.Text.Json.Serialization.Tests
             E = 1 << 4,
             F = 1 << 5,
             G = 1 << 6,
-            H = 1 << 7,
         }
 
         [Flags]
@@ -440,7 +439,6 @@ namespace System.Text.Json.Serialization.Tests
             E = 1 << 4,
             F = 1 << 5,
             G = 1 << 6,
-            H = 1 << 7,
         }
 
         [Flags]
@@ -453,7 +451,6 @@ namespace System.Text.Json.Serialization.Tests
             E = 1 << 4,
             F = 1 << 5,
             G = 1 << 6,
-            H = 1 << 7,
         }
 
         [Flags]
@@ -466,7 +463,6 @@ namespace System.Text.Json.Serialization.Tests
             E = 1 << 4,
             F = 1 << 5,
             G = 1 << 6,
-            H = 1 << 7,
         }
 
         [Flags]
@@ -479,7 +475,6 @@ namespace System.Text.Json.Serialization.Tests
             E = 1 << 4,
             F = 1 << 5,
             G = 1 << 6,
-            H = 1 << 7,
         }
 
         [Flags]
@@ -492,7 +487,6 @@ namespace System.Text.Json.Serialization.Tests
             E = 1 << 4,
             F = 1 << 5,
             G = 1 << 6,
-            H = 1 << 7,
         }
 
         [Flags]
@@ -505,7 +499,6 @@ namespace System.Text.Json.Serialization.Tests
             E = 1 << 4,
             F = 1 << 5,
             G = 1 << 6,
-            H = 1 << 7,
         }
 
         [Flags]
@@ -518,7 +511,6 @@ namespace System.Text.Json.Serialization.Tests
             E = 1 << 4,
             F = 1 << 5,
             G = 1 << 6,
-            H = 1 << 7 - 1,
         }
     }
 }
