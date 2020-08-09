@@ -54,7 +54,7 @@ namespace System.Net.Http.Json
                 }
                 catch (JsonException je)
                 {
-                    NotSupportedException? nse = ValidateContent(content.Headers.ContentType);
+                    NotSupportedException? nse = ValidateContentType(content.Headers.ContentType);
                     if (nse != null)
                     {
                         throw new AggregateException(je, nse);
@@ -83,7 +83,7 @@ namespace System.Net.Http.Json
                 }
                 catch (JsonException je)
                 {
-                    NotSupportedException? nse = ValidateContent(content.Headers.ContentType);
+                    NotSupportedException? nse = ValidateContentType(content.Headers.ContentType);
                     if (nse != null)
                     {
                         throw new AggregateException(je, nse);
@@ -94,7 +94,7 @@ namespace System.Net.Http.Json
             }
         }
 
-        private static NotSupportedException? ValidateContent(MediaTypeHeaderValue? mediaTypeHeader)
+        private static NotSupportedException? ValidateContentType(MediaTypeHeaderValue? mediaTypeHeader)
         {
             string? mediaType = mediaTypeHeader?.MediaType;
 
