@@ -10,6 +10,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Microsoft.WebAssembly.Diagnostics;
 using Xunit;
@@ -301,6 +302,7 @@ namespace DebuggerTests
                 var val = l["value"];
                 Assert.Equal("number", val["type"]?.Value<string>());
                 Assert.Equal(value, val["value"].Value<T>());
+                Assert.Equal(value.ToString(), val["description"].Value<T>().ToString());
                 return;
             }
             Assert.True(false, $"Could not find variable '{name}'");
@@ -308,32 +310,14 @@ namespace DebuggerTests
 
         internal void CheckString(JToken locals, string name, string value)
         {
-            foreach (var l in locals)
-            {
-                if (name != l["name"]?.Value<string>())
-                    continue;
-                var val = l["value"];
-                if (value == null)
-                {
-                    Assert.Equal("object", val["type"]?.Value<string>());
-                    Assert.Equal("null", val["subtype"]?.Value<string>());
-                }
-                else
-                {
-                    Assert.Equal("string", val["type"]?.Value<string>());
-                    Assert.Equal(value, val["value"]?.Value<string>());
-                }
-                return;
-            }
-            Assert.True(false, $"Could not find variable '{name}'");
+            var l = GetAndAssertObjectWithName(locals, name);
+            CheckValue(l["value"], TString(value), name).Wait();
         }
 
         internal JToken CheckSymbol(JToken locals, string name, string value)
         {
             var l = GetAndAssertObjectWithName(locals, name);
-            var val = l["value"];
-            Assert.Equal("symbol", val["type"]?.Value<string>());
-            Assert.Equal(value, val["value"]?.Value<string>());
+            CheckValue(l["value"], TSymbol(value), name).Wait();
             return l;
         }
 
@@ -341,14 +325,8 @@ namespace DebuggerTests
         {
             var l = GetAndAssertObjectWithName(locals, name);
             var val = l["value"];
-            Assert.Equal("object", val["type"]?.Value<string>());
+            CheckValue(val, TObject(class_name, is_null: is_null), name).Wait();
             Assert.True(val["isValueType"] == null || !val["isValueType"].Value<bool>());
-            Assert.Equal(class_name, val["className"]?.Value<string>());
-
-            var has_null_subtype = val["subtype"] != null && val["subtype"]?.Value<string>() == "null";
-            Assert.Equal(is_null, has_null_subtype);
-            if (subtype != null)
-                Assert.Equal(subtype, val["subtype"]?.Value<string>());
 
             return l;
         }
@@ -368,31 +346,34 @@ namespace DebuggerTests
 
         internal async Task CheckDateTimeValue(JToken value, DateTime expected)
         {
-            AssertEqual("System.DateTime", value["className"]?.Value<string>(), "className");
-            AssertEqual(expected.ToString(), value["description"]?.Value<string>(), "description");
+            await CheckDateTimeMembers(value, expected);
 
-            var members = await GetProperties(value["objectId"]?.Value<string>());
-
-            // not checking everything
-            CheckNumber(members, "Year", expected.Year);
-            CheckNumber(members, "Month", expected.Month);
-            CheckNumber(members, "Day", expected.Day);
-            CheckNumber(members, "Hour", expected.Hour);
-            CheckNumber(members, "Minute", expected.Minute);
-            CheckNumber(members, "Second", expected.Second);
+            var res = await InvokeGetter(JObject.FromObject(new { value = value }), "Date");
+            await CheckDateTimeMembers(res.Value["result"], expected.Date);
 
             // FIXME: check some float properties too
+
+            async Task CheckDateTimeMembers(JToken v, DateTime exp_dt)
+            {
+                AssertEqual("System.DateTime", v["className"]?.Value<string>(), "className");
+                AssertEqual(exp_dt.ToString(), v["description"]?.Value<string>(), "description");
+
+                var members = await GetProperties(v["objectId"]?.Value<string>());
+
+                // not checking everything
+                CheckNumber(members, "Year", exp_dt.Year);
+                CheckNumber(members, "Month", exp_dt.Month);
+                CheckNumber(members, "Day", exp_dt.Day);
+                CheckNumber(members, "Hour", exp_dt.Hour);
+                CheckNumber(members, "Minute", exp_dt.Minute);
+                CheckNumber(members, "Second", exp_dt.Second);
+            }
         }
 
         internal JToken CheckBool(JToken locals, string name, bool expected)
         {
             var l = GetAndAssertObjectWithName(locals, name);
-            var val = l["value"];
-            Assert.Equal("boolean", val["type"]?.Value<string>());
-            if (val["value"] == null)
-                Assert.True(false, "expected bool value not found for variable named {name}");
-            Assert.Equal(expected, val["value"]?.Value<bool>());
-
+            CheckValue(l["value"], TBool(expected), name).Wait();
             return l;
         }
 
@@ -405,41 +386,21 @@ namespace DebuggerTests
         internal JToken CheckValueType(JToken locals, string name, string class_name)
         {
             var l = GetAndAssertObjectWithName(locals, name);
-            var val = l["value"];
-            Assert.Equal("object", val["type"]?.Value<string>());
-            Assert.True(val["isValueType"] != null && val["isValueType"].Value<bool>());
-            Assert.Equal(class_name, val["className"]?.Value<string>());
+            CheckValue(l["value"], TValueType(class_name), name).Wait();
             return l;
         }
 
         internal JToken CheckEnum(JToken locals, string name, string class_name, string descr)
         {
             var l = GetAndAssertObjectWithName(locals, name);
-            var val = l["value"];
-            Assert.Equal("object", val["type"]?.Value<string>());
-            Assert.True(val["isEnum"] != null && val["isEnum"].Value<bool>());
-            Assert.Equal(class_name, val["className"]?.Value<string>());
-            Assert.Equal(descr, val["description"]?.Value<string>());
+            CheckValue(l["value"], TEnum(class_name, descr), name).Wait();
             return l;
         }
 
-        internal void CheckArray(JToken locals, string name, string class_name)
-        {
-            foreach (var l in locals)
-            {
-                if (name != l["name"]?.Value<string>())
-                    continue;
-
-                var val = l["value"];
-                Assert.Equal("object", val["type"]?.Value<string>());
-                Assert.Equal("array", val["subtype"]?.Value<string>());
-                Assert.Equal(class_name, val["className"]?.Value<string>());
-
-                //FIXME: elements?
-                return;
-            }
-            Assert.True(false, $"Could not find variable '{name}'");
-        }
+        internal void CheckArray(JToken locals, string name, string class_name, int length)
+           => CheckValue(
+                GetAndAssertObjectWithName(locals, name)["value"],
+                TArray(class_name, length), name).Wait();
 
         internal JToken GetAndAssertObjectWithName(JToken obj, string name)
         {
@@ -480,6 +441,23 @@ namespace DebuggerTests
             var wait_res = await ctx.insp.WaitFor(Inspector.PAUSE);
             AssertLocation(wait_res, "locals_inner");
             return wait_res;
+        }
+
+        internal async Task<Result> InvokeGetter(JToken obj, object arguments, string fn = "function(e){return this[e]}", bool expect_ok = true, bool? returnByValue = null)
+        {
+            var req = JObject.FromObject(new
+            {
+                functionDeclaration = fn,
+                objectId            = obj["value"]?["objectId"]?.Value<string>(),
+                arguments           = new[] { new { value = arguments } }
+            });
+            if (returnByValue != null)
+                req["returnByValue"] = returnByValue.Value;
+
+            var res = await ctx.cli.SendCommand("Runtime.callFunctionOn", req, ctx.token);
+            Assert.True(expect_ok == res.IsOk, $"InvokeGetter failed for {req} with {res}");
+
+            return res;
         }
 
         internal async Task<JObject> StepAndCheck(StepKind kind, string script_loc, int line, int column, string function_name,
@@ -796,7 +774,7 @@ namespace DebuggerTests
         }
 
         /* @fn_args is for use with `Runtime.callFunctionOn` only */
-        internal async Task<JToken> GetProperties(string id, JToken fn_args = null)
+        internal async Task<JToken> GetProperties(string id, JToken fn_args = null, bool expect_ok = true)
         {
             if (ctx.UseCallFunctionOnBeforeGetProperties && !id.StartsWith("dotnet:scope:"))
             {
@@ -810,7 +788,9 @@ namespace DebuggerTests
                     cfo_args["arguments"] = fn_args;
 
                 var result = await ctx.cli.SendCommand("Runtime.callFunctionOn", cfo_args, ctx.token);
-                AssertEqual(true, result.IsOk, $"Runtime.getProperties failed for {cfo_args.ToString ()}, with Result: {result}");
+                AssertEqual(expect_ok, result.IsOk, $"Runtime.getProperties returned {result.IsOk} instead of {expect_ok}, for {cfo_args.ToString ()}, with Result: {result}");
+                if (!result.IsOk)
+                    return null;
                 id = result.Value["result"] ? ["objectId"]?.Value<string>();
             }
 
@@ -820,8 +800,9 @@ namespace DebuggerTests
             });
 
             var frame_props = await ctx.cli.SendCommand("Runtime.getProperties", get_prop_req, ctx.token);
+            AssertEqual(expect_ok, frame_props.IsOk, $"Runtime.getProperties returned {frame_props.IsOk} instead of {expect_ok}, for {get_prop_req}, with Result: {frame_props}");
             if (!frame_props.IsOk)
-                Assert.True(false, $"Runtime.getProperties failed for {get_prop_req.ToString ()}, with Result: {frame_props}");
+                return null;
 
             var locals = frame_props.Value["result"];
             // FIXME: Should be done when generating the list in library_mono.js, but not sure yet
@@ -927,9 +908,12 @@ namespace DebuggerTests
         internal static JObject TString(string value) =>
             value == null ?
             TObject("string", is_null : true) :
-            JObject.FromObject(new { type = "string", value = @value, description = @value });
+            JObject.FromObject(new { type = "string", value = @value });
 
         internal static JObject TNumber(int value) =>
+            JObject.FromObject(new { type = "number", value = @value.ToString(), description = value.ToString() });
+
+        internal static JObject TNumber(uint value) =>
             JObject.FromObject(new { type = "number", value = @value.ToString(), description = value.ToString() });
 
         internal static JObject TValueType(string className, string description = null, object members = null) =>
@@ -985,6 +969,65 @@ namespace DebuggerTests
             this.token = token;
             this.scripts = scripts;
         }
+    }
+
+    class DotnetObjectId
+    {
+        public string Scheme { get; }
+        public string Value { get; }
+
+        JObject value_json;
+        public JObject ValueAsJson
+        {
+            get
+            {
+                if (value_json == null)
+                {
+                    try
+                    {
+                        value_json = JObject.Parse(Value);
+                    }
+                    catch (JsonReaderException) { }
+                }
+
+                return value_json;
+            }
+        }
+
+        public static bool TryParse(JToken jToken, out DotnetObjectId objectId) => TryParse(jToken?.Value<string>(), out objectId);
+
+        public static bool TryParse(string id, out DotnetObjectId objectId)
+        {
+            objectId = null;
+            if (id == null)
+            {
+                return false;
+            }
+
+            if (!id.StartsWith("dotnet:"))
+            {
+                return false;
+            }
+
+            var parts = id.Split(":", 3);
+
+            if (parts.Length < 3)
+            {
+                return false;
+            }
+
+            objectId = new DotnetObjectId(parts[1], parts[2]);
+
+            return true;
+        }
+
+        public DotnetObjectId(string scheme, string value)
+        {
+            Scheme = scheme;
+            Value = value;
+        }
+
+        public override string ToString() => $"dotnet:{Scheme}:{Value}";
     }
 
     enum StepKind

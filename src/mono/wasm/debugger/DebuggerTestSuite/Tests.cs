@@ -372,14 +372,14 @@ namespace DebuggerTests
                     CheckObject(locals, "list", "System.Collections.Generic.Dictionary<Math[], Math.IsMathNull>");
                     CheckObject(locals, "list_null", "System.Collections.Generic.Dictionary<Math[], Math.IsMathNull>", is_null : true);
 
-                    CheckArray(locals, "list_arr", "System.Collections.Generic.Dictionary<Math[], Math.IsMathNull>[]");
+                    CheckArray(locals, "list_arr", "System.Collections.Generic.Dictionary<Math[], Math.IsMathNull>[]", 1);
                     CheckObject(locals, "list_arr_null", "System.Collections.Generic.Dictionary<Math[], Math.IsMathNull>[]", is_null : true);
 
                     // Unused locals
                     CheckObject(locals, "list_unused", "System.Collections.Generic.Dictionary<Math[], Math.IsMathNull>");
                     CheckObject(locals, "list_null_unused", "System.Collections.Generic.Dictionary<Math[], Math.IsMathNull>", is_null : true);
 
-                    CheckObject(locals, "list_arr_unused", "System.Collections.Generic.Dictionary<Math[], Math.IsMathNull>[]");
+                    CheckArray(locals, "list_arr_unused", "System.Collections.Generic.Dictionary<Math[], Math.IsMathNull>[]", 1);
                     CheckObject(locals, "list_arr_null_unused", "System.Collections.Generic.Dictionary<Math[], Math.IsMathNull>[]", is_null : true);
                 }
             );
@@ -638,9 +638,11 @@ namespace DebuggerTests
                 CheckValueType(this_props, "SimpleStructProperty", "Math.SimpleStruct");
 
                 var ss_props = await GetObjectOnLocals(this_props, "SimpleStructProperty");
-                Assert.Equal(2, ss_props.Count());
-                CheckValueType(ss_props, "dt", "System.DateTime");
-                CheckValueType(ss_props, "gs", "Math.GenericStruct<System.DateTime>");
+                var dt = new DateTime(2020, 1, 2, 3, 4, 5);
+                await CheckProps(ss_props, new {
+                    dt = TValueType("System.DateTime", dt.ToString()),
+                    gs = TValueType("Math.GenericStruct<System.DateTime>")
+                }, "ss_props");
 
                 await CheckDateTime(ss_props, "dt", new DateTime(2020, 1, 2, 3, 4, 5));
 
@@ -829,7 +831,7 @@ namespace DebuggerTests
                         CheckObject(locals, "this", "Math.NestedInMath");
                         //FIXME: check fields
                         CheckValueType(locals, "ss", "Math.SimpleStruct");
-                        CheckArray(locals, "ss_arr", "Math.SimpleStruct[]");
+                        CheckArray(locals, "ss_arr", "Math.SimpleStruct[]", 0);
                         // TODO: struct fields
                     }
                 );
@@ -863,29 +865,40 @@ namespace DebuggerTests
 
                 var pause_location = await EvaluateAndCheck(
                     "window.setTimeout(function() { invoke_method_with_structs(); }, 1);",
-                    debugger_test_loc, 22, 8, "MethodWithLocalStructs",
-                    locals_fn: (locals) =>
-                    {
-                        Assert.Equal(3, locals.Count());
+                    debugger_test_loc, 22, 8, "MethodWithLocalStructs");
 
-                        CheckValueType(locals, "ss_local", "DebuggerTests.ValueTypesTest.SimpleStruct");
-                        CheckValueType(locals, "gs_local", "DebuggerTests.ValueTypesTest.GenericStruct<DebuggerTests.ValueTypesTest>");
-                        CheckObject(locals, "vt_local", "DebuggerTests.ValueTypesTest");
-                    }
-                );
+                var locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
+                await CheckProps(locals, new
+                {
+                    ss_local = TValueType("DebuggerTests.ValueTypesTest.SimpleStruct"),
+                    gs_local = TValueType("DebuggerTests.ValueTypesTest.GenericStruct<DebuggerTests.ValueTypesTest>"),
+                    vt_local = TObject("DebuggerTests.ValueTypesTest")
+                }, "locals");
 
                 var dt = new DateTime(2021, 2, 3, 4, 6, 7);
+                var vt_local_props = await GetObjectOnFrame(pause_location["callFrames"][0], "vt_local");
+                Assert.Equal(5, vt_local_props.Count());
+
+                CheckString(vt_local_props, "StringField", "string#0");
+                CheckValueType(vt_local_props, "SimpleStructField", "DebuggerTests.ValueTypesTest.SimpleStruct");
+                CheckValueType(vt_local_props, "SimpleStructProperty", "DebuggerTests.ValueTypesTest.SimpleStruct");
+                await CheckDateTime(vt_local_props, "DT", new DateTime(2020, 1, 2, 3, 4, 5));
+                CheckEnum(vt_local_props, "RGB", "DebuggerTests.RGB", "Blue");
+
                 // Check ss_local's properties
                 var ss_local_props = await GetObjectOnFrame(pause_location["callFrames"][0], "ss_local");
                 await CheckProps(ss_local_props, new
                 {
+                    V          = TGetter("V"),
                     str_member = TString("set in MethodWithLocalStructs#SimpleStruct#str_member"),
-                        dt = TValueType("System.DateTime", dt.ToString()),
-                        gs = TValueType("DebuggerTests.ValueTypesTest.GenericStruct<System.DateTime>"),
-                        Kind = TEnum("System.DateTimeKind", "Utc")
+                    dt         = TValueType("System.DateTime", dt.ToString()),
+                    gs         = TValueType("DebuggerTests.ValueTypesTest.GenericStruct<System.DateTime>"),
+                    Kind       = TEnum("System.DateTimeKind", "Utc")
                 }, "ss_local");
 
                 {
+                    var gres = await InvokeGetter(GetAndAssertObjectWithName(locals, "ss_local"), "V");
+                    await CheckValue(gres.Value["result"], TNumber(0xDEADBEEF + 2), $"ss_local#V");
                     // Check ss_local.dt
                     await CheckDateTime(ss_local_props, "dt", dt);
 
@@ -905,43 +918,30 @@ namespace DebuggerTests
                 }, "gs_local");
 
                 // Check vt_local's properties
-                var vt_local_props = await GetObjectOnFrame(pause_location["callFrames"][0], "vt_local");
-                Assert.Equal(5, vt_local_props.Count());
 
-                CheckString(vt_local_props, "StringField", "string#0");
-                CheckValueType(vt_local_props, "SimpleStructField", "DebuggerTests.ValueTypesTest.SimpleStruct");
-                CheckValueType(vt_local_props, "SimpleStructProperty", "DebuggerTests.ValueTypesTest.SimpleStruct");
-                await CheckDateTime(vt_local_props, "DT", new DateTime(2020, 1, 2, 3, 4, 5));
-                CheckEnum(vt_local_props, "RGB", "DebuggerTests.RGB", "Blue");
-
+                var exp = new[]
                 {
-                    // SimpleStructProperty
-                    dt = new DateTime(2022, 3, 4, 5, 7, 8);
-                    var ssp_props = await CompareObjectPropertiesFor(vt_local_props, "SimpleStructProperty",
+                    ("SimpleStructProperty", 2, "Utc"),
+                    ("SimpleStructField", 5, "Local")
+                };
+
+                foreach (var (name, bias, dt_kind) in exp)
+                {
+                    dt = new DateTime(2020 + bias, 1 + bias, 2 + bias, 3 + bias, 5 + bias, 6 + bias);
+                    var ssp_props = await CompareObjectPropertiesFor(vt_local_props, name,
                         new
                         {
-                            str_member = TString("SimpleStructProperty#string#0#SimpleStruct#str_member"),
-                                dt = TValueType("System.DateTime", dt.ToString()),
-                                gs = TValueType("DebuggerTests.ValueTypesTest.GenericStruct<System.DateTime>"),
-                                Kind = TEnum("System.DateTimeKind", "Utc")
+                            V          = TGetter("V"),
+                            str_member = TString($"{name}#string#0#SimpleStruct#str_member"),
+                            dt         = TValueType("System.DateTime", dt.ToString()),
+                            gs         = TValueType("DebuggerTests.ValueTypesTest.GenericStruct<System.DateTime>"),
+                            Kind       = TEnum("System.DateTimeKind", dt_kind)
                         },
-                        label: "vt_local_props.SimpleStructProperty");
+                        label: $"vt_local_props.{name}");
 
                     await CheckDateTime(ssp_props, "dt", dt);
-
-                    // SimpleStructField
-                    dt = new DateTime(2025, 6, 7, 8, 10, 11);
-                    var ssf_props = await CompareObjectPropertiesFor(vt_local_props, "SimpleStructField",
-                        new
-                        {
-                            str_member = TString("SimpleStructField#string#0#SimpleStruct#str_member"),
-                                dt = TValueType("System.DateTime", dt.ToString()),
-                                gs = TValueType("DebuggerTests.ValueTypesTest.GenericStruct<System.DateTime>"),
-                                Kind = TEnum("System.DateTimeKind", "Local")
-                        },
-                        label: "vt_local_props.SimpleStructField");
-
-                    await CheckDateTime(ssf_props, "dt", dt);
+                    var gres = await InvokeGetter(GetAndAssertObjectWithName(vt_local_props, name), "V");
+                    await CheckValue(gres.Value["result"], TNumber(0xDEADBEEF + (uint) dt.Month), $"{name}#V");
                 }
 
                 // FIXME: check ss_local.gs.List's members
@@ -968,20 +968,19 @@ namespace DebuggerTests
 
                 var pause_location = await EvaluateAndCheck(
                     "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.ValueTypesTest:TestStructsAsMethodArgs'); }, 1);",
-                    debugger_test_loc, 34, 12, "MethodWithStructArgs",
-                    locals_fn: (locals) =>
-                    {
-                        Assert.Equal(3, locals.Count());
-
-                        CheckString(locals, "label", "TestStructsAsMethodArgs#label");
-                        CheckValueType(locals, "ss_arg", "DebuggerTests.ValueTypesTest.SimpleStruct");
-                        CheckNumber(locals, "x", 3);
-                    }
-                );
+                    debugger_test_loc, 34, 12, "MethodWithStructArgs");
+                var locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
+                {
+                    Assert.Equal(3, locals.Count());
+                    CheckString(locals, "label", "TestStructsAsMethodArgs#label");
+                    CheckValueType(locals, "ss_arg", "DebuggerTests.ValueTypesTest.SimpleStruct");
+                    CheckNumber(locals, "x", 3);
+                }
 
                 var dt = new DateTime(2025, 6, 7, 8, 10, 11);
                 var ss_local_as_ss_arg = new
                 {
+                    V = TGetter("V"),
                     str_member = TString("ss_local#SimpleStruct#string#0#SimpleStruct#str_member"),
                     dt = TValueType("System.DateTime", dt.ToString()),
                     gs = TValueType("DebuggerTests.ValueTypesTest.GenericStruct<System.DateTime>"),
@@ -998,6 +997,9 @@ namespace DebuggerTests
                 var ss_arg_props = await GetObjectOnFrame(pause_location["callFrames"][0], "ss_arg");
                 await CheckProps(ss_arg_props, ss_local_as_ss_arg, "ss_arg");
 
+                var res = await InvokeGetter(GetAndAssertObjectWithName(locals, "ss_arg"), "V");
+                await CheckValue(res.Value["result"], TNumber(0xDEADBEEF + (uint) dt.Month), "ss_arg#V");
+
                 {
                     // Check ss_local.dt
                     await CheckDateTime(ss_arg_props, "dt", dt);
@@ -1007,19 +1009,19 @@ namespace DebuggerTests
                 }
 
                 pause_location = await StepAndCheck(StepKind.Over, debugger_test_loc, 38, 8, "MethodWithStructArgs", times : 4,
-                    locals_fn: (locals) =>
-                    {
-                        Assert.Equal(3, locals.Count());
+                    locals_fn: (l) => { /* non-null to make sure that locals get fetched */ });
+                locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
+                {
+                    Assert.Equal(3, locals.Count());
 
-                        CheckString(locals, "label", "TestStructsAsMethodArgs#label");
-                        CheckValueType(locals, "ss_arg", "DebuggerTests.ValueTypesTest.SimpleStruct");
-                        CheckNumber(locals, "x", 3);
-
-                    }
-                );
+                    CheckString(locals, "label", "TestStructsAsMethodArgs#label");
+                    CheckValueType(locals, "ss_arg", "DebuggerTests.ValueTypesTest.SimpleStruct");
+                    CheckNumber(locals, "x", 3);
+                }
 
                 var ss_arg_updated = new
                 {
+                    V = TGetter("V"),
                     str_member = TString("ValueTypesTest#MethodWithStructArgs#updated#ss_arg#str_member"),
                     dt = TValueType("System.DateTime", dt.ToString()),
                     gs = TValueType("DebuggerTests.ValueTypesTest.GenericStruct<System.DateTime>"),
@@ -1027,7 +1029,10 @@ namespace DebuggerTests
                 };
 
                 ss_arg_props = await GetObjectOnFrame(pause_location["callFrames"][0], "ss_arg");
-                await CheckProps(ss_arg_props, ss_arg_updated, "ss_ar");
+                await CheckProps(ss_arg_props, ss_arg_updated, "ss_arg");
+
+                res = await InvokeGetter(GetAndAssertObjectWithName(locals, "ss_arg"), "V");
+                await CheckValue(res.Value["result"], TNumber(0xDEADBEEF + (uint) dt.Month), "ss_arg#V");
 
                 {
                     // Check ss_local.gs
@@ -1059,7 +1064,7 @@ namespace DebuggerTests
 
                 pause_location = await StepAndCheck(StepKind.Over, debugger_test_loc, 28, 12, "TestStructsAsMethodArgs",
                     times : 2, locals_fn: (l) => { /* non-null to make sure that locals get fetched */ });
-                var locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
+                locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
                 await CheckProps(locals, new
                     {
                         ss_local = TValueType("DebuggerTests.ValueTypesTest.SimpleStruct"),
@@ -1092,7 +1097,7 @@ namespace DebuggerTests
                 ctx = new DebugTestContext(cli, insp, token, scripts);
                 var debugger_test_loc = "dotnet://debugger-test.dll/debugger-valuetypes-test.cs";
 
-                var lines = new [] { 202, 205 };
+                var lines = new [] { 203, 206 };
                 await SetBreakpoint(debugger_test_loc, lines[0], 12);
                 await SetBreakpoint(debugger_test_loc, lines[1], 12);
 
@@ -1100,16 +1105,14 @@ namespace DebuggerTests
                     "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.ValueTypesTest:MethodUpdatingValueTypeMembers'); }, 1);",
                     debugger_test_loc, lines[0], 12, "MethodUpdatingValueTypeMembers");
 
-                var dt = new DateTime(1, 2, 3, 4, 5, 6);
-                await CheckLocals(pause_location, dt);
+                await CheckLocals(pause_location, new DateTime(1, 2, 3, 4, 5, 6), new DateTime(4, 5, 6, 7, 8, 9));
 
                 // Resume
-                dt = new DateTime(9, 8, 7, 6, 5, 4);
                 pause_location = await SendCommandAndCheck(JObject.FromObject(new { }), "Debugger.resume", debugger_test_loc, lines[1], 12, "MethodUpdatingValueTypeMembers");
-                await CheckLocals(pause_location, dt);
+                await CheckLocals(pause_location, new DateTime(9, 8, 7, 6, 5, 4), new DateTime(5, 1, 3, 7, 9, 10));
             });
 
-            async Task CheckLocals(JToken pause_location, DateTime dt)
+            async Task CheckLocals(JToken pause_location, DateTime obj_dt, DateTime vt_dt)
             {
                 var locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
                 await CheckProps(locals, new
@@ -1122,20 +1125,20 @@ namespace DebuggerTests
                 {
                     await CheckProps(obj_props, new
                     {
-                        DT = TValueType("System.DateTime", dt.ToString())
+                        DT = TValueType("System.DateTime", obj_dt.ToString())
                     }, "locals#obj.DT", num_fields : 5);
 
-                    await CheckDateTime(obj_props, "DT", dt);
+                    await CheckDateTime(obj_props, "DT", obj_dt);
                 }
 
-                var vt_props = await GetObjectOnLocals(locals, "obj");
+                var vt_props = await GetObjectOnLocals(locals, "vt");
                 {
                     await CheckProps(vt_props, new
                     {
-                        DT = TValueType("System.DateTime", dt.ToString())
+                        DT = TValueType("System.DateTime", vt_dt.ToString())
                     }, "locals#obj.DT", num_fields : 5);
 
-                    await CheckDateTime(vt_props, "DT", dt);
+                    await CheckDateTime(vt_props, "DT", vt_dt);
                 }
             }
         }
@@ -1153,7 +1156,7 @@ namespace DebuggerTests
                 ctx = new DebugTestContext(cli, insp, token, scripts);
                 var debugger_test_loc = "dotnet://debugger-test.dll/debugger-valuetypes-test.cs";
 
-                var lines = new [] { 211, 213 };
+                var lines = new [] { 212, 214 };
                 await SetBreakpoint(debugger_test_loc, lines[0], 12);
                 await SetBreakpoint(debugger_test_loc, lines[1], 12);
 
@@ -1186,7 +1189,7 @@ namespace DebuggerTests
                 ctx = new DebugTestContext(cli, insp, token, scripts);
                 var debugger_test_loc = "dotnet://debugger-test.dll/debugger-valuetypes-test.cs";
 
-                var lines = new [] { 222, 224 };
+                var lines = new [] { 223, 225 };
                 await SetBreakpoint(debugger_test_loc, lines[0], 12);
                 await SetBreakpoint(debugger_test_loc, lines[1], 12);
 
@@ -1259,13 +1262,17 @@ namespace DebuggerTests
                 var ss_local_props = await GetObjectOnFrame(pause_location["callFrames"][0], "ss_local");
                 await CheckProps(ss_local_props, new
                 {
+                    V          = TGetter("V"),
                     str_member = TString("set in MethodWithLocalStructsStaticAsync#SimpleStruct#str_member"),
-                        dt = TValueType("System.DateTime", dt.ToString()),
-                        gs = TValueType("DebuggerTests.ValueTypesTest.GenericStruct<System.DateTime>"),
-                        Kind = TEnum("System.DateTimeKind", "Utc")
+                    dt         = TValueType("System.DateTime", dt.ToString()),
+                    gs         = TValueType("DebuggerTests.ValueTypesTest.GenericStruct<System.DateTime>"),
+                    Kind       = TEnum("System.DateTimeKind", "Utc")
                 }, "ss_local");
 
                 {
+                    var gres = await InvokeGetter(GetAndAssertObjectWithName(locals, "ss_local"), "V");
+                    await CheckValue(gres.Value["result"], TNumber(0xDEADBEEF + 2), $"ss_local#V");
+
                     // Check ss_local.dt
                     await CheckDateTime(ss_local_props, "dt", dt);
 
@@ -1294,10 +1301,10 @@ namespace DebuggerTests
         }
 
         [Theory]
-        [InlineData(134, 12, "MethodWithLocalsForToStringTest", false, false)]
-        [InlineData(144, 12, "MethodWithArgumentsForToStringTest", true, false)]
-        [InlineData(189, 12, "MethodWithArgumentsForToStringTestAsync", true, true)]
-        [InlineData(179, 12, "MethodWithArgumentsForToStringTestAsync", false, true)]
+        [InlineData(135, 12, "MethodWithLocalsForToStringTest", false, false)]
+        [InlineData(145, 12, "MethodWithArgumentsForToStringTest", true, false)]
+        [InlineData(190, 12, "MethodWithArgumentsForToStringTestAsync", true, true)]
+        [InlineData(180, 12, "MethodWithArgumentsForToStringTestAsync", false, true)]
         public async Task InspectLocalsForToStringDescriptions(int line, int col, string method_name, bool call_other, bool invoke_async)
         {
             var insp = new Inspector();
@@ -1476,6 +1483,43 @@ namespace DebuggerTests
                 var script_id = top_frame["functionLocation"]["scriptId"].Value<string>();
                 AssertEqual("dotnet://System.Console.dll/Console.cs", scripts[script_id], "Expected to stopped in System.Console.WriteLine");
             });
+        }
+
+        [Fact]
+        public async Task InvalidValueTypeData()
+        {
+            await CheckInspectLocalsAtBreakpointSite(
+                "dotnet://debugger-test.dll/debugger-test.cs", 85, 8,
+                "OuterMethod",
+                "window.setTimeout(function() { invoke_static_method ('[debugger-test] Math:OuterMethod'); })",
+                wait_for_event_fn : async(pause_location) =>
+                {
+                    var new_id = await CreateNewId(@"MONO._new_or_add_id_props ({ scheme: 'valuetype', idArgs: { containerId: 1 }, props: { klass: 3, value64: 4 }});");
+                    await _invoke_getter(new_id, "NonExistant", expect_ok : false);
+
+                    new_id = await CreateNewId(@"MONO._new_or_add_id_props ({ scheme: 'valuetype', idArgs: { containerId: 1 }, props: { klass: 3 }});");
+                    await _invoke_getter(new_id, "NonExistant", expect_ok : false);
+
+                    new_id = await CreateNewId(@"MONO._new_or_add_id_props ({ scheme: 'valuetype', idArgs: { containerId: 1 }, props: { klass: 3, value64: 'AA' }});");
+                    await _invoke_getter(new_id, "NonExistant", expect_ok : false);
+                });
+
+            async Task<string> CreateNewId(string expr)
+            {
+                var res = await ctx.cli.SendCommand("Runtime.evaluate", JObject.FromObject(new { expression = expr }), ctx.token);
+                Assert.True(res.IsOk, "Expected Runtime.evaluate to succeed");
+                AssertEqual("string", res.Value["result"] ? ["type"]?.Value<string>(), "Expected Runtime.evaluate to return a string type result");
+                return res.Value["result"] ? ["value"]?.Value<string>();
+            }
+
+            async Task<Result> _invoke_getter(string obj_id, string property_name, bool expect_ok)
+            {
+                var expr = $"MONO._invoke_getter ('{obj_id}', '{property_name}')";
+                var res = await ctx.cli.SendCommand("Runtime.evaluate", JObject.FromObject(new { expression = expr }), ctx.token);
+                AssertEqual(expect_ok, res.IsOk, "Runtime.evaluate result not as expected for {expr}");
+
+                return res;
+            }
         }
 
         //TODO add tests covering basic stepping behavior as step in/out/over
