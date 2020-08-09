@@ -1,0 +1,6 @@
+﻿<linker>
+  <assembly fullname="Microsoft.VisualBasic.Core">
+    <!-- Required for type querying via IDispatch -->
+    <type fullname="Microsoft.VisualBasic.CompilerServices.UnsafeNativeMethods/*"/>
+  </assembly>
+</linker>
