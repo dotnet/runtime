@@ -36,7 +36,7 @@ namespace System.Net.Http
 
             private ArrayBuffer _responseBuffer; // mutable struct, do not make this readonly
             private int _pendingWindowUpdate;
-            private CancelableCreditWaiter? _creditWaiter;
+            private CreditWaiter? _creditWaiter;
             private int _availableCredit;
 
             private StreamCompletionState _requestCompletionState;
@@ -426,7 +426,7 @@ namespace System.Net.Http
                 lock (SyncObject)
                 {
                     _availableCredit = checked(_availableCredit + amount);
-                    if (_availableCredit > 0 && _creditWaiter != null && _creditWaiter.IsPending)
+                    if (_availableCredit > 0 && _creditWaiter != null)
                     {
                         int granted = Math.Min(_availableCredit, _creditWaiter.Amount);
                         if (_creditWaiter.TrySetResult(granted))
@@ -1100,11 +1100,10 @@ namespace System.Net.Http
                             {
                                 if (_creditWaiter is null)
                                 {
-                                    _creditWaiter = new CancelableCreditWaiter(SyncObject, _requestBodyCancellationSource.Token);
+                                    _creditWaiter = new CreditWaiter(_requestBodyCancellationSource.Token);
                                 }
                                 else
                                 {
-                                    Debug.Assert(!_creditWaiter.IsPending);
                                     _creditWaiter.ResetForAwait(_requestBodyCancellationSource.Token);
                                 }
                                 _creditWaiter.Amount = buffer.Length;
@@ -1113,9 +1112,9 @@ namespace System.Net.Http
 
                         if (sendSize == -1)
                         {
+                            // Logically this is part of the else block above, but we can't await while holding the lock.
                             Debug.Assert(_creditWaiter != null);
                             sendSize = await _creditWaiter.AsValueTask().ConfigureAwait(false);
-                            _creditWaiter.CleanUp();
                         }
 
                         ReadOnlyMemory<byte> current;

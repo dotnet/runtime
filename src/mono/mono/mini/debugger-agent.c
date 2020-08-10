@@ -1085,18 +1085,18 @@ finish_agent_init (gboolean on_startup)
 		// FIXME: Generated address
 		// FIXME: Races with transport_connect ()
 
-		char *argv [ ] = {
-			agent_config.launch,
-			agent_config.transport,
-			agent_config.address,
-			NULL
-		};
 #ifdef G_OS_WIN32
 		// Nothing. FIXME? g_spawn_async_with_pipes is easy enough to provide for Windows if needed.
 #elif !HAVE_G_SPAWN
 		g_printerr ("g_spawn_async_with_pipes not supported on this platform\n");
 		exit (1);
 #else
+		char *argv [ ] = {
+			agent_config.launch,
+			agent_config.transport,
+			agent_config.address,
+			NULL
+		};
 		int res = g_spawn_async_with_pipes (NULL, argv, NULL, (GSpawnFlags)0, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
 		if (!res) {
 			g_printerr ("Failed to execute '%s'.\n", agent_config.launch);

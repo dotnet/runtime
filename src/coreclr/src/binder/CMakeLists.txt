@@ -82,11 +82,13 @@ endif(CLR_CMAKE_TARGET_WIN32)
 convert_to_absolute_path(BINDER_SOURCES ${BINDER_SOURCES})
 convert_to_absolute_path(BINDER_CROSSGEN_SOURCES ${BINDER_CROSSGEN_SOURCES})
 
-add_library_clr(v3binder
+add_library_clr(v3binder_obj
     OBJECT
     ${BINDER_SOURCES}
 )
-add_dependencies(v3binder eventing_headers)
+add_dependencies(v3binder_obj eventing_headers)
+add_library(v3binder INTERFACE)
+target_sources(v3binder INTERFACE $<TARGET_OBJECTS:v3binder_obj>)
 
 add_library_clr(v3binder_crossgen
     STATIC
