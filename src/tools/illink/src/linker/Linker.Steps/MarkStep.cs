@@ -829,7 +829,14 @@ namespace Mono.Linker.Steps
 			bool providerInLinkedAssembly = Annotations.GetAction (GetAssemblyFromCustomAttributeProvider (provider)) == AssemblyAction.Link;
 
 			foreach (CustomAttribute ca in provider.CustomAttributes) {
-				if (_context.Annotations.HasLinkerAttribute<RemoveAttributeInstancesAttribute> (ca.AttributeType.Resolve ()) && providerInLinkedAssembly)
+				TypeDefinition type = ca.AttributeType.Resolve ();
+
+				if (type == null) {
+					HandleUnresolvedType (ca.AttributeType);
+					continue;
+				}
+
+				if (_context.Annotations.HasLinkerAttribute<RemoveAttributeInstancesAttribute> (type) && providerInLinkedAssembly)
 					continue;
 
 				_assemblyLevelAttributes.Enqueue (new AttributeProviderPair (ca, provider));
