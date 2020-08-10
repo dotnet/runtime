@@ -94,18 +94,20 @@ namespace System.Net.Http.Functional.Tests
                 await listener.RunWithCallbackAsync(events.Enqueue, async () =>
                 {
                     var semaphore = new SemaphoreSlim(0, 1);
+                    var cts = new CancellationTokenSource();
+
                     await GetFactoryForVersion(Version.Parse(useVersionString)).CreateClientAndServerAsync(
                         async uri =>
                         {
                             using HttpClient client = CreateHttpClient(useVersionString);
-                            client.Timeout = TimeSpan.FromMilliseconds(300);
-                            await Assert.ThrowsAsync<TaskCanceledException>(async () => await client.GetStringAsync(uri));
+                            await Assert.ThrowsAsync<TaskCanceledException>(async () => await client.GetStringAsync(uri, cts.Token));
                             semaphore.Release();
                         },
                         async server =>
                         {
                             await server.AcceptConnectionAsync(async connection =>
                             {
+                                cts.CancelAfter(TimeSpan.FromMilliseconds(300));
                                 Assert.True(await semaphore.WaitAsync(TimeSpan.FromSeconds(5)));
                                 connection.Dispose();
                             });
