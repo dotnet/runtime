@@ -410,6 +410,12 @@ namespace System.Reflection
                 throw new ArgumentNullException(nameof(name), SR.ArgumentNull_FileName);
             if (name.Length == 0)
                 throw new ArgumentException(SR.Argument_EmptyFileName);
+            if (Location == "")
+            {
+                // Throw if the assembly was loaded from memory, indicated by Location returning an empty string
+                throw new FileNotFoundException(SR.IO_NoFileTableInInMemoryAssemblies);
+            }
+
 
             string location = Location;
             if (location != null && Path.GetFileName(location) == name)
@@ -423,6 +429,12 @@ namespace System.Reflection
 
         public override FileStream[] GetFiles(bool getResourceModules)
         {
+            if (Location == "")
+            {
+                // Throw if the assembly was loaded from memory, indicated by Location returning an empty string
+                throw new FileNotFoundException(SR.IO_NoFileTableInInMemoryAssemblies);
+            }
+
             string[] names = (string[])GetFilesInternal(null, getResourceModules);
             if (names == null)
                 return Array.Empty<FileStream>();
