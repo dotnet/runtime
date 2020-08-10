@@ -101,6 +101,7 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <!-- Determine what architecture we are building on. -->
     <BuildArchitecture>$([System.Runtime.InteropServices.RuntimeInformation]::ProcessArchitecture.ToString().ToLowerInvariant())</BuildArchitecture>
+    <HostArchitecture Condition="'$(HostArchitecture)' = ''">$(BuildArchitecture)</HostArchitecture>
   </PropertyGroup>
 
   <Import Project="$(RepositoryEngineeringDir)Analyzers.props" />
