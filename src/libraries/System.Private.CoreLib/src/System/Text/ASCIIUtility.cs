@@ -1598,7 +1598,7 @@ namespace System.Text
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool ContainsNonAsciiValue(Vector128<byte> value)
+        public static bool ContainsNonAsciiByte(Vector128<byte> value)
         {
             if (!AdvSimd.Arm64.IsSupported)
             {
@@ -1640,7 +1640,7 @@ namespace System.Text
             else if (AdvSimd.Arm64.IsSupported)
             {
                 asciiVector = AdvSimd.LoadVector128(pAsciiBuffer);
-                containsNonAsciiBytes = ContainsNonAsciiValue(asciiVector);
+                containsNonAsciiBytes = ContainsNonAsciiByte(asciiVector);
             }
             else
             {
@@ -1663,7 +1663,7 @@ namespace System.Text
                 utf16FirstHalfVector = Sse2.UnpackLow(asciiVector, zeroVector);
                 Sse2.Store((byte*)pUtf16Buffer, utf16FirstHalfVector); // unaligned
             }
-            else if (AdvSimd.Arm64.IsSupported)
+            else if (AdvSimd.IsSupported)
             {
                 utf16FirstHalfVector = AdvSimd.ZeroExtendWideningLower(asciiVector.GetLower()).AsByte();
                 AdvSimd.Store((byte*)pUtf16Buffer, utf16FirstHalfVector); // unaligned
@@ -1701,7 +1701,7 @@ namespace System.Text
                 else if (AdvSimd.Arm64.IsSupported)
                 {
                     asciiVector = AdvSimd.LoadVector128(pAsciiBuffer + currentOffset);
-                    containsNonAsciiBytes = ContainsNonAsciiValue(asciiVector);
+                    containsNonAsciiBytes = ContainsNonAsciiByte(asciiVector);
                 }
                 else
                 {
