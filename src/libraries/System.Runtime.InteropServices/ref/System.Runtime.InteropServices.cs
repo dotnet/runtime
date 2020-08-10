@@ -181,7 +181,7 @@ namespace System.Runtime.InteropServices
         public override System.Reflection.Module Module { get { throw null; } }
         public override string Name { get { throw null; } }
         public override System.Type? ReflectedType { get { throw null; } }
-        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows7.0")]
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public override void AddEventHandler(object target, System.Delegate handler) { }
         public override System.Reflection.MethodInfo? GetAddMethod(bool nonPublic) { throw null; }
         public override object[] GetCustomAttributes(bool inherit) { throw null; }
@@ -191,7 +191,7 @@ namespace System.Runtime.InteropServices
         public override System.Reflection.MethodInfo? GetRaiseMethod(bool nonPublic) { throw null; }
         public override System.Reflection.MethodInfo? GetRemoveMethod(bool nonPublic) { throw null; }
         public override bool IsDefined(System.Type attributeType, bool inherit) { throw null; }
-        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows7.0")]
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public override void RemoveEventHandler(object target, System.Delegate handler) { }
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, Inherited=false)]
@@ -222,7 +222,7 @@ namespace System.Runtime.InteropServices
         public System.Type EventProvider { get { throw null; } }
         public System.Type SourceInterface { get { throw null; } }
     }
-    [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows7.0")]
+    [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
     public static partial class ComEventsHelper
     {
