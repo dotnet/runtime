@@ -15,10 +15,10 @@ namespace System.IO
      */
     internal sealed class StdInReader : TextReader
     {
-        private static string? s_clearToEol;     // string written to clear from cursor to end of line
 
         private static int _readLineIndex; //int that keeps track of current index in string oof _readLineSB
-        private static int _linesFromTop;
+        private static int _linesFromTop; //int that tells us how far from the top we are so we don't overwrite console text when home is pressed
+        private static int _linesFromLeft;
         private readonly StringBuilder _readLineSB; // SB that holds readLine output.  This is a field simply to enable reuse; it's only used in ReadLine.
         private readonly Stack<ConsoleKeyInfo> _tmpKeys = new Stack<ConsoleKeyInfo>(); // temporary working stack; should be empty outside of ReadLine
         private readonly Stack<ConsoleKeyInfo> _availableKeys = new Stack<ConsoleKeyInfo>(); // a queue of already processed key infos available for reading
@@ -140,6 +140,9 @@ namespace System.IO
 
             // Don't carry over chars from previous ReadLine call.
             _readLineSB.Clear();
+            _readLineIndex = 0;
+            _linesFromTop = Console.CursorTop;
+            _linesFromLeft = Console.CursorLeft;
 
             Interop.Sys.InitializeConsoleBeforeRead();
             try
@@ -151,7 +154,17 @@ namespace System.IO
                     // unprocessed data, or from an actual stdin read.
                     bool previouslyProcessed;
                     ConsoleKeyInfo keyInfo = ReadKey(out previouslyProcessed);
-                    if (!consumeKeys && (keyInfo.Key != ConsoleKey.Backspace || keyInfo.Key != ConsoleKey.LeftArrow || keyInfo.Key != ConsoleKey.RightArrow || keyInfo.Key != ConsoleKey.Home || keyInfo.Key != ConsoleKey.End)) // backspace, left arrow, and right arrow are the only character not written out in the below if/elses.
+                    List<ConsoleKey> denyList = new List<ConsoleKey>
+                    {
+                       ConsoleKey.Backspace,
+                       ConsoleKey.LeftArrow,
+                       ConsoleKey.RightArrow,
+                       ConsoleKey.Home,
+                       ConsoleKey.End,
+                       ConsoleKey.LeftArrow,
+                       ConsoleKey.RightArrow
+                    };
+                    if (!consumeKeys && !denyList.Contains(keyInfo.Key)) // keys here are the only characters not written out in the below if/elses.
                     {
                         _tmpKeys.Push(keyInfo);
                     }
@@ -174,55 +187,65 @@ namespace System.IO
                     {
                         return false;
                     }
+                    // Alt + B/F is what macOS will send in place of Alt + Left/Right
+                    else if ((keyInfo.Key == ConsoleKey.B || keyInfo.Key == ConsoleKey.LeftArrow) && keyInfo.Modifiers == ConsoleModifiers.Alt)
+                    {
+                        if (_readLineIndex == 0)
+                            continue;
+
+                        _readLineIndex--;
+
+                        while (_readLineIndex > 0  &&
+                               (_readLineSB[_readLineIndex-1] != ' ' || _readLineSB[_readLineIndex] == ' ') )
+                        {
+                            _readLineIndex--;
+                        }
+
+                        int lines = _linesFromTop + (_readLineIndex / ConsolePal.WindowWidth);
+                        int leftover = _linesFromLeft + (_readLineIndex % ConsolePal.WindowWidth);
+                        ConsolePal.SetCursorPosition(leftover, lines);
+
+                    }
+                    else if ((keyInfo.Key == ConsoleKey.F || keyInfo.Key == ConsoleKey.RightArrow) && keyInfo.Modifiers == ConsoleModifiers.Alt)
+                    {
+                        if (_readLineIndex == _readLineSB.Length)
+                             continue;
+
+                        _readLineIndex++;
+
+                        while (_readLineIndex < _readLineSB.Length  &&
+                               (_readLineSB[_readLineIndex-1] != ' ' || _readLineSB[_readLineIndex] == ' ') )
+                        {
+                            _readLineIndex++;
+                        }
+
+                        int lines = _linesFromTop + (_readLineIndex / ConsolePal.WindowWidth);
+                        int leftover = _linesFromLeft + (_readLineIndex % ConsolePal.WindowWidth);
+                        ConsolePal.SetCursorPosition(leftover, lines);
+                    }
                     else if (keyInfo.Key == ConsoleKey.Backspace)
                     {
-                        int len = _readLineSB.Length;
-                        if (len > 0)
+                        if (_readLineSB.Length > 0 && !previouslyProcessed && _readLineIndex > 0)
                         {
-                            if (!previouslyProcessed)
-                            {
-                                // The ReadLine input may wrap across terminal rows and we need to handle that.
-                                // note: ConsolePal will cache the cursor position to avoid making many slow cursor position fetch operations.
-                                if (ConsolePal.TryGetCursorPosition(out int left, out int top, reinitializeForRead: true) &&
-                                    left == 0 && top > _linesFromTop)
-                                {
-                                    if (s_clearToEol == null)
-                                    {
-                                        s_clearToEol = ConsolePal.TerminalFormatStrings.Instance.ClrEol ?? string.Empty;
-                                    }
-
-                                    // Move to end of previous line
-                                    ConsolePal.SetCursorPosition(ConsolePal.WindowWidth, top - 1);
-                                    // Clear from cursor to end of the line
-                                    ConsolePal.WriteStdoutAnsiString(s_clearToEol, mayChangeCursorPosition: false);
-                                }
-                                else if (left > 0)
-                                {
-                                    _readLineSB.Remove(--_readLineIndex, 1);
-                                    Console.Write("\r" + _readLineSB.ToString().Substring((ConsolePal.WindowWidth * (top - _linesFromTop))) + " ");
-                                    ConsolePal.SetCursorPosition(left - 1, top);
-                                }
-                            }
+                            _readLineSB.Remove(_readLineIndex - 1, 1);
+                            _readLineIndex--;
+                            ConsolePal.SetCursorPosition(_linesFromLeft, +_linesFromTop);
+                            Console.Write(_readLineSB.ToString()+' ');
+                            int lines = _linesFromTop + (_readLineIndex / ConsolePal.WindowWidth);
+                            int leftover = _linesFromLeft + (_readLineIndex % ConsolePal.WindowWidth);
+                            ConsolePal.SetCursorPosition(leftover, lines);
                         }
                     }
                     else if (keyInfo.Key == ConsoleKey.Delete)
                     {
-                        int len = _readLineSB.Length;
-                        if (len > 0)
+                        if (_readLineSB.Length > 0 && !previouslyProcessed && _readLineIndex < _readLineSB.Length)
                         {
-                            if (!previouslyProcessed)
-                            {
-                                // The ReadLine input may wrap accross terminal rows and we need to handle that.
-                                // note: ConsolePal will cache the cursor position to avoid making many slow cursor position fetch operations.
-                                ConsolePal.TryGetCursorPosition(out int left, out int top, reinitializeForRead: true);
-                                //Debug.WriteLine("(" + len % top + ") < " + left);
-                                if ((len % ConsolePal.WindowWidth) > (left + 1))
-                                {
-                                    _readLineSB.Remove(_readLineIndex + 1, 1);
-                                    Console.Write("\r" + _readLineSB.ToString().Substring((ConsolePal.WindowWidth * (top - _linesFromTop))) + " ");
-                                    ConsolePal.SetCursorPosition(left, top);
-                                }
-                            }
+                            _readLineSB.Remove(_readLineIndex, 1);
+                            ConsolePal.SetCursorPosition(_linesFromLeft, +_linesFromTop);
+                            Console.Write(_readLineSB.ToString()+' ');
+                            int lines = _linesFromTop + (_readLineIndex / ConsolePal.WindowWidth);
+                            int leftover = _linesFromLeft + (_readLineIndex % ConsolePal.WindowWidth);
+                            ConsolePal.SetCursorPosition(leftover, lines);
                         }
                     }
                     else if (keyInfo.Key == ConsoleKey.LeftArrow)
@@ -255,19 +278,13 @@ namespace System.IO
                         {
                             if (!previouslyProcessed)
                             {
-                                // The ReadLine input may wrap accross terminal rows and we need to handle that.
-                                // note: ConsolePal will cache the cursor position to avoid making many slow cursor position fetch operations.
                                 if (ConsolePal.TryGetCursorPosition(out int left, out int top, reinitializeForRead: true) &&
                                     left == ConsolePal.WindowWidth && top < ConsolePal.WindowHeight)
                                 {
-                                    // Move to beginning of next line
                                     ConsolePal.SetCursorPosition(0, top + 1);
-                                    // Clear from cursor to end of the line
-                                    ConsolePal.WriteStdoutAnsiString(s_clearToEol, mayChangeCursorPosition: false);
                                 }
                                 else
                                 {
-                                    // Move cursor to the right and update the index
                                     ConsolePal.SetCursorPosition(left + 1, top);
                                     _readLineIndex++;
                                 }
@@ -277,12 +294,12 @@ namespace System.IO
                     else if (keyInfo.Key == ConsoleKey.Home)
                     {
                         _readLineIndex = 0;
-                        ConsolePal.SetCursorPosition(0, 0);
+                        ConsolePal.SetCursorPosition(_linesFromLeft, _linesFromTop);
                     }
                     else if (keyInfo.Key == ConsoleKey.End)
                     {
-                        _readLineIndex = _readLineSB.Length - 1;
-                        int lines = _readLineSB.Length / ConsolePal.WindowWidth;
+                        _readLineIndex = _readLineSB.Length;
+                        int lines = _linesFromTop + (_readLineSB.Length / ConsolePal.WindowWidth);
                         int leftover = _readLineSB.Length % ConsolePal.WindowWidth;
                         ConsolePal.SetCursorPosition(leftover, lines);
                     }
@@ -314,7 +331,7 @@ namespace System.IO
                         if (!previouslyProcessed)
                         {
                             ConsolePal.TryGetCursorPosition(out int left, out int top, reinitializeForRead: true);
-                            ConsolePal.SetCursorPosition(0, top);
+                            ConsolePal.SetCursorPosition(_linesFromLeft, top);
                             Console.Write(_readLineSB.ToString().Substring(ConsolePal.WindowWidth * (top - _linesFromTop)));
                             if (left < ConsolePal.WindowWidth)
                                 ConsolePal.SetCursorPosition(left + 1, top);
