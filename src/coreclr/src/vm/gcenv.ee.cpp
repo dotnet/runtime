@@ -1599,7 +1599,9 @@ void GCToEEInterface::AnalyzeSurvivorsFinished(int condemnedGeneration, uint64_t
     
     if (gcGenAnalysisState == 1)
     {
+#ifndef GEN_ANALYSIS_STRESS
         if (condemnedGeneration == gcGenAnalysisGen && (promoted_bytes > (uint64_t)gcGenAnalysisBytes))
+#endif
         {
             gcGenAnalysisState = 2;
             gcGenAnalysisEventPipeSession->Resume();

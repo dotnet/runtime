@@ -244,6 +244,7 @@ void EventPipe::EnableViaEnvironmentVariables()
         );
         EventPipe::StartStreaming(sessionID);
     }
+#ifndef GEN_ANALYSIS_STRESS
     if (gcGenAnalysis == 0)
     {
         if (CLRConfig::IsConfigOptionSpecified(W("GCGenAnalysisGen")))
@@ -261,6 +262,7 @@ void EventPipe::EnableViaEnvironmentVariables()
         }
     }
     if (gcGenAnalysis == 1 && gcGenAnalysisState == 0)
+#endif
     {
         LPCWSTR outputPath = nullptr;
         outputPath = W("gcgenaware.nettrace");
