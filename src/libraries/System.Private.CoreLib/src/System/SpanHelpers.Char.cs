@@ -897,7 +897,7 @@ namespace System
                     do
                     {
                         Vector256<ushort> search = LoadVector256(ref searchStart, offset);
-                        // We preform the Or at non-Vector level as we are using the maximum number of non-preserved registers (+ 1),
+                        // We perform the Or at non-Vector level as we are using the maximum number of non-preserved registers (+ 1),
                         // and more causes them first to be pushed to stack and then popped on exit to preseve their values.
                         int matches = Avx2.MoveMask(Avx2.CompareEqual(values0, search).AsByte());
                         // Bitwise Or to combine the flagged matches for the second, third, fourth and fifth values to our match flags
