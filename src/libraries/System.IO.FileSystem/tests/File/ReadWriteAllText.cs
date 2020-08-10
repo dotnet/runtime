@@ -85,6 +85,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/40065", TestPlatforms.Browser)]
         public void OpenFile_ThrowsIOException()
         {
             string path = GetTestFilePath();
@@ -118,7 +119,7 @@ namespace System.IO.Tests
             try
             {
                 // Operation succeeds when being run by the Unix superuser
-                if (!OperatingSystem.IsWindows() && geteuid() == 0)
+                if (PlatformDetection.IsSuperUser)
                 {
                     Write(path, "text");
                     Assert.Equal("text", Read(path));

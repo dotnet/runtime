@@ -696,13 +696,13 @@ namespace System.IO.MemoryMappedFiles.Tests
         public void WriteToReadOnlyFile_ReadWrite(MemoryMappedFileAccess access)
         {
             WriteToReadOnlyFile(access, access == MemoryMappedFileAccess.Read ||
-                            (!OperatingSystem.IsWindows() && PlatformDetection.IsSuperUser));
+                            PlatformDetection.IsSuperUser);
         }
 
         [Fact]
         public void WriteToReadOnlyFile_CopyOnWrite()
         {
-            WriteToReadOnlyFile(MemoryMappedFileAccess.CopyOnWrite, (!OperatingSystem.IsWindows() && PlatformDetection.IsSuperUser));
+            WriteToReadOnlyFile(MemoryMappedFileAccess.CopyOnWrite, PlatformDetection.IsSuperUser);
         }
 
         /// <summary>
