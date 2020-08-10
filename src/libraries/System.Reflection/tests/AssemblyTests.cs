@@ -167,7 +167,7 @@ namespace System.Reflection.Tests
         {
             var inMemBlob = File.ReadAllBytes(SourceTestAssemblyPath);
             var asm = Assembly.Load(inMemBlob);
-            Assert.Throws<ArgumentNullException>(() => asm.GetFile(null));
+            Assert.Throws<Exception>(() => asm.GetFile(null));
             Assert.Throws<FileNotFoundException>(() => asm.GetFile(s_sourceTestAssemblyName));
             Assert.Throws<FileNotFoundException>(() => asm.GetFiles());
             Assert.Throws<FileNotFoundException>(() => asm.GetFiles(getResourceModules: true));
