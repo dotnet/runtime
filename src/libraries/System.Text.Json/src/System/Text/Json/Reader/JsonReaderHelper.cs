@@ -67,49 +67,15 @@ namespace System.Text.Json
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int IndexOfQuoteOrAnyControlOrBackSlash(this ReadOnlySpan<byte> span)
         {
-#if NETCOREAPP
-            if (Vector.IsHardwareAccelerated ||
-                System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeCompiled)
-#else
-            // RuntimeFeature.IsDynamicCodeCompiled is not available on netstandard 2.0.
-            // Since the System.Text.Json package doesn't have a ns2.0-only assembly, just avoid
-            // RuntimeFeature.IsDynamicCodeSupported instead of adding a new ns2.0-only assembly.
-
-            if (Vector.IsHardwareAccelerated)
-#endif
-            {
-                // For performance, use loop unrolling and\or Vector.
-                return IndexOfOrLessThan_LoopUnroll_And_Vector(
+            return IndexOfOrLessThan(
                     ref MemoryMarshal.GetReference(span),
                     JsonConstants.Quote,
                     JsonConstants.BackSlash,
                     lessThan: 32,   // Space ' '
                     span.Length);
-            }
-
-            // For performance, avoid loop unrolling and unsafe pointers.
-            return IndexOfOrLessThan(
-                span,
-                JsonConstants.Quote,
-                JsonConstants.BackSlash,
-                lessThan: 32);   // Space ' '
         }
 
-        private static unsafe int IndexOfOrLessThan(ReadOnlySpan<byte> span, byte value0, byte value1, byte lessThan)
-        {
-            for (int i = 0; i < span.Length; i++)
-            {
-                byte value = span[i];
-                if (value0 == value || value1 == value || lessThan > value)
-                {
-                    return i;
-                }
-            }
-
-            return -1;
-        }
-
-        private static unsafe int IndexOfOrLessThan_LoopUnroll_And_Vector(ref byte searchSpace, byte value0, byte value1, byte lessThan, int length)
+        private static unsafe int IndexOfOrLessThan(ref byte searchSpace, byte value0, byte value1, byte lessThan, int length)
         {
             Debug.Assert(length >= 0);
 
@@ -124,7 +90,6 @@ namespace System.Text.Json
                 int unaligned = (int)Unsafe.AsPointer(ref searchSpace) & (Vector<byte>.Count - 1);
                 nLength = (IntPtr)((Vector<byte>.Count - unaligned) & (Vector<byte>.Count - 1));
             }
-
         SequentialScan:
             uint lookUp;
             while ((byte*)nLength >= (byte*)8)
