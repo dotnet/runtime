@@ -105,6 +105,11 @@ namespace System.Net.Test.Common
                     }
                 }
 
+                if (_options.ClearTextVersion is null)
+                {
+                    throw new Exception($"HTTP server does not accept clear text connections, either set '{nameof(HttpAgnosticOptions.UseSsl)}' or set up '{nameof(HttpAgnosticOptions.ClearTextVersion)}' in server options.");
+                }
+
                 var buffer = new byte[24];
                 var position = 0;
                 while (position < buffer.Length)
@@ -135,7 +140,7 @@ namespace System.Net.Test.Common
                         return connection = await Http11LoopbackServerFactory.Singleton.CreateConnectionAsync(socket, stream, options).ConfigureAwait(false);
                     }
                 }
-                
+
                 throw new Exception($"HTTP/{_options.ClearTextVersion} server cannot establish connection due to unexpected data: '{prefix}'");
             }
             catch
@@ -189,13 +194,10 @@ namespace System.Net.Test.Common
 
     public class HttpAgnosticOptions : GenericLoopbackOptions
     {
+        // Default null will raise an exception for any clear text protocol version
+        // Use HttpVersion.Unknown to use protocol version detection for clear text.
         public Version ClearTextVersion { get; set; }
         public List<SslApplicationProtocol> SslApplicationProtocols { get; set; }
-
-        public HttpAgnosticOptions()
-        {
-            ClearTextVersion = HttpVersion.Version11;
-        }
     }
 
     public sealed class HttpAgnosticLoopbackServerFactory : LoopbackServerFactory

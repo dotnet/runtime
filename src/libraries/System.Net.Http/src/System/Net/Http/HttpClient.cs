@@ -58,6 +58,14 @@ namespace System.Net.Http
             }
         }
 
+        /// <summary>
+        /// Gets or sets the default value of <see cref="HttpRequestMessage.VersionPolicy" /> for implicitly created requests in convenience methods,
+        /// e.g.: <see cref="GetAsync(string?)" />, <see cref="PostAsync(string?, HttpContent)" />.
+        /// </summary>
+        /// <remarks>
+        /// Note that this property has no effect on any of the <see cref="Send(HttpRequestMessage)" /> and <see cref="SendAsync(HttpRequestMessage)" /> overloads
+        /// since they accept fully initialized <see cref="HttpRequestMessage" />.
+        /// </remarks>
         public HttpVersionPolicy DefaultVersionPolicy
         {
             get => _defaultVersionPolicy;

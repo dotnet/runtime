@@ -423,7 +423,10 @@ namespace System.Net.Http
             }
 
             // Do not allow upgrades for synchronous requests, that might lead to asynchronous code-paths.
-            request.VersionPolicy = HttpVersionPolicy.RequestVersionOrLower;
+            if (request.VersionPolicy == HttpVersionPolicy.RequestVersionOrHigher)
+            {
+                throw new NotSupportedException(SR.Format(SR.net_http_upgrade_not_enabled_sync, nameof(Send), request.VersionPolicy));
+            }
 
             CheckDisposed();
             HttpMessageHandlerStage handler = _handler ?? SetupHandlerChain();

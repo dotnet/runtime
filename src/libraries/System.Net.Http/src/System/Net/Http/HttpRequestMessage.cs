@@ -42,6 +42,9 @@ namespace System.Net.Http
             }
         }
 
+        /// <summary>
+        /// Gets or sets the policy determining how <see cref="Version" /> is interpreted and how is the final HTTP version negotiated with the server.
+        /// </summary>
         public HttpVersionPolicy VersionPolicy
         {
             get { return _versionPolicy; }

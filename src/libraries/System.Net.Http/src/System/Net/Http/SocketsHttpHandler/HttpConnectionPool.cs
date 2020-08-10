@@ -341,15 +341,15 @@ namespace System.Net.Http
             // Do not even attempt at getting/creating a connection if it's already obvious we cannot provided the one requested.
             if (request.VersionPolicy != HttpVersionPolicy.RequestVersionOrLower)
             {
-                if (request.Version.Major >= 3 && !_http3Enabled)
+                if (request.Version.Major == 3 && !_http3Enabled)
                 {
-                    return ValueTask.FromException<(HttpConnectionBase? connection, bool isNewConnection, HttpResponseMessage? failureResponse)>
-                        (new HttpRequestException(SR.Format(SR.net_http_requested_version_not_enabled, request.Version, request.VersionPolicy, 3)));
+                    return ValueTask.FromException<(HttpConnectionBase? connection, bool isNewConnection, HttpResponseMessage? failureResponse)>(
+                        new HttpRequestException(SR.Format(SR.net_http_requested_version_not_enabled, request.Version, request.VersionPolicy, 3)));
                 }
-                if (request.Version.Major >= 2 && !_http2Enabled)
+                if (request.Version.Major == 2 && !_http2Enabled)
                 {
-                    return ValueTask.FromException<(HttpConnectionBase? connection, bool isNewConnection, HttpResponseMessage? failureResponse)>
-                        (new HttpRequestException(SR.Format(SR.net_http_requested_version_not_enabled, request.Version, request.VersionPolicy, 2)));
+                    return ValueTask.FromException<(HttpConnectionBase? connection, bool isNewConnection, HttpResponseMessage? failureResponse)>(
+                        new HttpRequestException(SR.Format(SR.net_http_requested_version_not_enabled, request.Version, request.VersionPolicy, 2)));
                 }
             }
 
@@ -366,8 +366,8 @@ namespace System.Net.Http
                 {
                     if (IsAltSvcBlocked(authority))
                     {
-                        return ValueTask.FromException<(HttpConnectionBase? connection, bool isNewConnection, HttpResponseMessage? failureResponse)>
-                            (new HttpRequestException(SR.Format(SR.net_http_requested_version_cannot_establish, request.Version, request.VersionPolicy, 3)));
+                        return ValueTask.FromException<(HttpConnectionBase? connection, bool isNewConnection, HttpResponseMessage? failureResponse)>(
+                            new HttpRequestException(SR.Format(SR.net_http_requested_version_cannot_establish, request.Version, request.VersionPolicy, 3)));
                     }
 
                     return GetHttp3ConnectionAsync(request, authority, cancellationToken);
@@ -376,8 +376,8 @@ namespace System.Net.Http
             // If we got here, we cannot provide HTTP/3 connection. Do not continue if downgrade is not allowed.
             if (request.Version.Major >= 3 && request.VersionPolicy != HttpVersionPolicy.RequestVersionOrLower)
             {
-                return ValueTask.FromException<(HttpConnectionBase? connection, bool isNewConnection, HttpResponseMessage? failureResponse)>
-                    (new HttpRequestException(SR.Format(SR.net_http_requested_version_cannot_establish, request.Version, request.VersionPolicy, 3)));
+                return ValueTask.FromException<(HttpConnectionBase? connection, bool isNewConnection, HttpResponseMessage? failureResponse)>(
+                    new HttpRequestException(SR.Format(SR.net_http_requested_version_cannot_establish, request.Version, request.VersionPolicy, 3)));
             }
 
             if (_http2Enabled && (request.Version.Major >= 2 || (request.VersionPolicy == HttpVersionPolicy.RequestVersionOrHigher && IsSecure)) &&
@@ -389,8 +389,8 @@ namespace System.Net.Http
             // If we got here, we cannot provide HTTP/2 connection. Do not continue if downgrade is not allowed.
             if (request.Version.Major >= 2 && request.VersionPolicy != HttpVersionPolicy.RequestVersionOrLower)
             {
-                return ValueTask.FromException<(HttpConnectionBase? connection, bool isNewConnection, HttpResponseMessage? failureResponse)>
-                    (new HttpRequestException(SR.Format(SR.net_http_requested_version_cannot_establish, request.Version, request.VersionPolicy, 2)));
+                return ValueTask.FromException<(HttpConnectionBase? connection, bool isNewConnection, HttpResponseMessage? failureResponse)>(
+                    new HttpRequestException(SR.Format(SR.net_http_requested_version_cannot_establish, request.Version, request.VersionPolicy, 2)));
             }
 
             return GetHttpConnectionAsync(request, async, cancellationToken);

@@ -1087,9 +1087,10 @@ namespace System.Net.Http.Functional.Tests
                 {
                     try
                     {
-                        await server.AcceptConnectionSendResponseAndCloseAsync();
+                        HttpRequestData requestData = await server.AcceptConnectionSendResponseAndCloseAsync();
+                        Assert.Equal(expectedResult, requestData.Version);
                     }
-                    catch (Exception ex)
+                    catch (Exception ex) when (expectedResult is Type)
                     {
                         _output.WriteLine("Server exception: " + ex.ToString());
                     }
