@@ -27,7 +27,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         // hashset treats 0 as unset
         public override int GetHashCode() => sessionId?.GetHashCode() ?? -1;
 
-        public override bool Equals(object obj) => (obj is SessionId) ? ((SessionId) obj).sessionId == sessionId : false;
+        public override bool Equals(object obj) => (obj is SessionId) ? ((SessionId)obj).sessionId == sessionId : false;
 
         public static bool operator ==(SessionId a, SessionId b) => a.sessionId == b.sessionId;
 
@@ -55,7 +55,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         public override int GetHashCode() => (sessionId?.GetHashCode() ?? 0) ^ id.GetHashCode();
 
-        public override bool Equals(object obj) => (obj is MessageId) ? ((MessageId) obj).sessionId == sessionId && ((MessageId) obj).id == id : false;
+        public override bool Equals(object obj) => (obj is MessageId) ? ((MessageId)obj).sessionId == sessionId && ((MessageId)obj).id == id : false;
     }
 
     internal class DotnetObjectId
@@ -106,7 +106,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             if (result != null && error != null)
                 throw new ArgumentException($"Both {nameof(result)} and {nameof(error)} arguments cannot be non-null.");
 
-            bool resultHasError = String.Compare((result?["result"] as JObject) ? ["subtype"]?.Value<string>(), "error") == 0;
+            bool resultHasError = String.Compare((result?["result"] as JObject)?["subtype"]?.Value<string>(), "error") == 0;
             if (result != null && resultHasError)
             {
                 this.Value = null;
@@ -142,8 +142,8 @@ namespace Microsoft.WebAssembly.Diagnostics
                 return JObject.FromObject(new
                 {
                     target.id,
-                        target.sessionId,
-                        result = Value
+                    target.sessionId,
+                    result = Value
                 });
             }
             else
@@ -151,15 +151,15 @@ namespace Microsoft.WebAssembly.Diagnostics
                 return JObject.FromObject(new
                 {
                     target.id,
-                        target.sessionId,
-                        error = Error
+                    target.sessionId,
+                    error = Error
                 });
             }
         }
 
         public override string ToString()
         {
-            return $"[Result: IsOk: {IsOk}, IsErr: {IsErr}, Value: {Value?.ToString ()}, Error: {Error?.ToString ()} ]";
+            return $"[Result: IsOk: {IsOk}, IsErr: {IsErr}, Value: {Value?.ToString()}, Error: {Error?.ToString()} ]";
         }
     }
 
@@ -175,7 +175,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         public static MonoCommands GetCallStack() => new MonoCommands("MONO.mono_wasm_get_call_stack()");
 
-        public static MonoCommands GetExceptionObject () => new MonoCommands ("MONO.mono_wasm_get_exception_object()");
+        public static MonoCommands GetExceptionObject() => new MonoCommands("MONO.mono_wasm_get_exception_object()");
 
         public static MonoCommands IsRuntimeReady() => new MonoCommands("MONO.mono_wasm_runtime_is_ready");
 
@@ -190,7 +190,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         public static MonoCommands GetScopeVariables(int scopeId, params VarInfo[] vars)
         {
             var var_ids = vars.Select(v => new { index = v.Index, name = v.Name }).ToArray();
-            return new MonoCommands($"MONO.mono_wasm_get_variables({scopeId}, {JsonConvert.SerializeObject (var_ids)})");
+            return new MonoCommands($"MONO.mono_wasm_get_variables({scopeId}, {JsonConvert.SerializeObject(var_ids)})");
         }
 
         public static MonoCommands SetBreakpoint(string assemblyName, uint methodToken, int ilOffset) => new MonoCommands($"MONO.mono_wasm_set_breakpoint (\"{assemblyName}\", {methodToken}, {ilOffset})");
@@ -199,11 +199,11 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         public static MonoCommands ReleaseObject(DotnetObjectId objectId) => new MonoCommands($"MONO.mono_wasm_release_object('{objectId}')");
 
-        public static MonoCommands CallFunctionOn(JToken args) => new MonoCommands($"MONO.mono_wasm_call_function_on ({args.ToString ()})");
+        public static MonoCommands CallFunctionOn(JToken args) => new MonoCommands($"MONO.mono_wasm_call_function_on ({args.ToString()})");
 
         public static MonoCommands Resume() => new MonoCommands($"MONO.mono_wasm_debugger_resume ()");
 
-        public static MonoCommands SetPauseOnExceptions (string state) => new MonoCommands ($"MONO.mono_wasm_set_pause_on_exceptions(\"{state}\")");
+        public static MonoCommands SetPauseOnExceptions(string state) => new MonoCommands($"MONO.mono_wasm_set_pause_on_exceptions(\"{state}\")");
     }
 
     internal enum MonoErrorCodes
