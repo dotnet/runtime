@@ -182,7 +182,7 @@ public partial class Program
         IsFalse(IsAssignableTo<Dictionary<IDisposable, object>, Dictionary<IDisposable, IDisposable>>());
         IsFalse(IsAssignableTo<Dictionary<IDisposable, object>, Dictionary<IDisposable, int>>());
         IsFalse(IsAssignableTo<KeyValuePair<int, object>, KeyValuePair<int, int>>());
-        IsFalse(IsAssignableTo<KeyValuePair<KeyValuePair<IEnumerable<int>, IEnumerable<uint>>, IEnumerable<int>, IEnumerable<int>>>());
+        IsFalse(IsAssignableTo<KeyValuePair<IEnumerable<int>, IEnumerable<uint>>, KeyValuePair<IEnumerable<int>, IEnumerable<int>>>());
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]

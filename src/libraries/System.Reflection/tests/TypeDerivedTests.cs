@@ -25,5 +25,17 @@ namespace System.Reflection.Tests
             Assert.False(testType.IsAssignableFrom(compareType));
             Assert.False(compareType.IsAssignableFrom(testType));
         }
+
+        [Fact]
+        public void IsAssignableFrom_NullUnderlyingSystemType()
+        {
+            var testType = new TypeWithNullUnderlyingSystemType();
+            Assert.Null(testType.UnderlyingSystemType);
+            Assert.True(testType.IsAssignableTo(testType));
+
+            Type compareType = typeof(int);
+            Assert.False(testType.IsAssignableTo(compareType));
+            Assert.False(compareType.IsAssignableTo(testType));
+        }
     }
 }
