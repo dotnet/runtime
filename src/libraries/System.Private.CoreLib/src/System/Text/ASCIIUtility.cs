@@ -240,6 +240,7 @@ namespace System.Text
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static bool ContainsNonAsciiByte_Sse2(uint sseMask)
         {
+            Debug.Assert(sseMask != uint.MaxValue);
             if (!Sse2.IsSupported)
             {
                 throw new PlatformNotSupportedException();
@@ -250,6 +251,7 @@ namespace System.Text
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static bool ContainsNonAsciiByte_AdvSimd(uint advSimdIndex)
         {
+            Debug.Assert(advSimdIndex != uint.MaxValue);
             if (!AdvSimd.IsSupported)
             {
                 throw new PlatformNotSupportedException();
@@ -271,7 +273,8 @@ namespace System.Text
                 Vector128.Create((ushort)0x1001).AsByte() :
                 Vector128.Create((ushort)0x0110).AsByte();
 
-            uint currentSseMaskOrAdvSimdIndex, secondSseMaskOrAdvSimdIndex;
+            uint currentSseMask = uint.MaxValue, secondSseMask = uint.MaxValue;
+            uint currentAdvSimdIndex = uint.MaxValue, secondAdvSimdIndex = uint.MaxValue;
             byte* pOriginalBuffer = pBuffer;
 
             // This method is written such that control generally flows top-to-bottom, avoiding
@@ -288,16 +291,16 @@ namespace System.Text
 
             if (Sse2.IsSupported)
             {
-                currentSseMaskOrAdvSimdIndex = (uint)Sse2.MoveMask(Sse2.LoadVector128(pBuffer)); // unaligned load
-                if (ContainsNonAsciiByte_Sse2(currentSseMaskOrAdvSimdIndex))
+                currentSseMask = (uint)Sse2.MoveMask(Sse2.LoadVector128(pBuffer)); // unaligned load
+                if (ContainsNonAsciiByte_Sse2(currentSseMask))
                 {
                     goto FoundNonAsciiDataInCurrentMask;
                 }
             }
             else if (AdvSimd.Arm64.IsSupported)
             {
-                currentSseMaskOrAdvSimdIndex = (uint)GetIndexOfFirstNonAsciiByteInLane_AdvSimd(AdvSimd.LoadVector128(pBuffer), bitmask); // unaligned load
-                if (ContainsNonAsciiByte_AdvSimd(currentSseMaskOrAdvSimdIndex))
+                currentAdvSimdIndex = (uint)GetIndexOfFirstNonAsciiByteInLane_AdvSimd(AdvSimd.LoadVector128(pBuffer), bitmask); // unaligned load
+                if (ContainsNonAsciiByte_AdvSimd(currentAdvSimdIndex))
                 {
                     goto FoundNonAsciiDataInCurrentMask;
                 }
@@ -346,9 +349,9 @@ namespace System.Text
                         Vector128<byte> firstVector = Sse2.LoadAlignedVector128(pBuffer);
                         Vector128<byte> secondVector = Sse2.LoadAlignedVector128(pBuffer + SizeOfVector128);
 
-                        currentSseMaskOrAdvSimdIndex = (uint)Sse2.MoveMask(firstVector);
-                        secondSseMaskOrAdvSimdIndex = (uint)Sse2.MoveMask(secondVector);
-                        if (ContainsNonAsciiByte_Sse2(currentSseMaskOrAdvSimdIndex | secondSseMaskOrAdvSimdIndex))
+                        currentSseMask = (uint)Sse2.MoveMask(firstVector);
+                        secondSseMask = (uint)Sse2.MoveMask(secondVector);
+                        if (ContainsNonAsciiByte_Sse2(currentSseMask | secondSseMask))
                         {
                             goto FoundNonAsciiDataInInnerLoop;
                         }
@@ -358,9 +361,9 @@ namespace System.Text
                         Vector128<byte> firstVector = AdvSimd.LoadVector128(pBuffer);
                         Vector128<byte> secondVector = AdvSimd.LoadVector128(pBuffer + SizeOfVector128);
 
-                        currentSseMaskOrAdvSimdIndex = (uint)GetIndexOfFirstNonAsciiByteInLane_AdvSimd(firstVector, bitmask);
-                        secondSseMaskOrAdvSimdIndex = (uint)GetIndexOfFirstNonAsciiByteInLane_AdvSimd(secondVector, bitmask);
-                        if (ContainsNonAsciiByte_AdvSimd(currentSseMaskOrAdvSimdIndex) || ContainsNonAsciiByte_AdvSimd(secondSseMaskOrAdvSimdIndex))
+                        currentAdvSimdIndex = (uint)GetIndexOfFirstNonAsciiByteInLane_AdvSimd(firstVector, bitmask);
+                        secondAdvSimdIndex = (uint)GetIndexOfFirstNonAsciiByteInLane_AdvSimd(secondVector, bitmask);
+                        if (ContainsNonAsciiByte_AdvSimd(currentAdvSimdIndex) || ContainsNonAsciiByte_AdvSimd(secondAdvSimdIndex))
                         {
                             goto FoundNonAsciiDataInInnerLoop;
                         }
@@ -393,16 +396,16 @@ namespace System.Text
 
             if (Sse2.IsSupported)
             {
-                currentSseMaskOrAdvSimdIndex = (uint)Sse2.MoveMask(Sse2.LoadAlignedVector128(pBuffer));
-                if (ContainsNonAsciiByte_Sse2(currentSseMaskOrAdvSimdIndex))
+                currentSseMask = (uint)Sse2.MoveMask(Sse2.LoadAlignedVector128(pBuffer));
+                if (ContainsNonAsciiByte_Sse2(currentSseMask))
                 {
                     goto FoundNonAsciiDataInCurrentMask;
                 }
             }
             else if (AdvSimd.Arm64.IsSupported)
             {
-                currentSseMaskOrAdvSimdIndex = (uint)GetIndexOfFirstNonAsciiByteInLane_AdvSimd(AdvSimd.LoadVector128(pBuffer), bitmask);
-                if (ContainsNonAsciiByte_AdvSimd(currentSseMaskOrAdvSimdIndex))
+                currentAdvSimdIndex = (uint)GetIndexOfFirstNonAsciiByteInLane_AdvSimd(AdvSimd.LoadVector128(pBuffer), bitmask);
+                if (ContainsNonAsciiByte_AdvSimd(currentAdvSimdIndex))
                 {
                     goto FoundNonAsciiDataInCurrentMask;
                 }
@@ -427,8 +430,8 @@ namespace System.Text
 
                 if (Sse2.IsSupported)
                 {
-                    currentSseMaskOrAdvSimdIndex = (uint)Sse2.MoveMask(Sse2.LoadVector128(pBuffer)); // unaligned load
-                    if (ContainsNonAsciiByte_Sse2(currentSseMaskOrAdvSimdIndex))
+                    currentSseMask = (uint)Sse2.MoveMask(Sse2.LoadVector128(pBuffer)); // unaligned load
+                    if (ContainsNonAsciiByte_Sse2(currentSseMask))
                     {
                         goto FoundNonAsciiDataInCurrentMask;
                     }
@@ -436,8 +439,8 @@ namespace System.Text
                 }
                 else if (AdvSimd.Arm64.IsSupported)
                 {
-                    currentSseMaskOrAdvSimdIndex = (uint)GetIndexOfFirstNonAsciiByteInLane_AdvSimd(AdvSimd.LoadVector128(pBuffer), bitmask); // unaligned load
-                    if (ContainsNonAsciiByte_AdvSimd(currentSseMaskOrAdvSimdIndex))
+                    currentAdvSimdIndex = (uint)GetIndexOfFirstNonAsciiByteInLane_AdvSimd(AdvSimd.LoadVector128(pBuffer), bitmask); // unaligned load
+                    if (ContainsNonAsciiByte_AdvSimd(currentAdvSimdIndex))
                     {
                         goto FoundNonAsciiDataInCurrentMask;
                     }
@@ -462,18 +465,18 @@ namespace System.Text
 
             if (Sse2.IsSupported)
             {
-                if (!ContainsNonAsciiByte_Sse2(currentSseMaskOrAdvSimdIndex))
+                if (!ContainsNonAsciiByte_Sse2(currentSseMask))
                 {
                     pBuffer += SizeOfVector128;
-                    currentSseMaskOrAdvSimdIndex = secondSseMaskOrAdvSimdIndex;
+                    currentSseMask = secondSseMask;
                 }
             }
             else if (AdvSimd.IsSupported)
             {
-                if (!ContainsNonAsciiByte_AdvSimd(currentSseMaskOrAdvSimdIndex))
+                if (!ContainsNonAsciiByte_AdvSimd(currentAdvSimdIndex))
                 {
                     pBuffer += SizeOfVector128;
-                    currentSseMaskOrAdvSimdIndex = secondSseMaskOrAdvSimdIndex;
+                    currentAdvSimdIndex = secondSseMask;
                 }
             }
             else
@@ -488,13 +491,13 @@ namespace System.Text
 
             if (Sse2.IsSupported)
             {
-                Debug.Assert(ContainsNonAsciiByte_Sse2(currentSseMaskOrAdvSimdIndex), "Shouldn't be here unless we see non-ASCII data.");
-                pBuffer += (uint)BitOperations.TrailingZeroCount(currentSseMaskOrAdvSimdIndex);
+                Debug.Assert(ContainsNonAsciiByte_Sse2(currentSseMask), "Shouldn't be here unless we see non-ASCII data.");
+                pBuffer += (uint)BitOperations.TrailingZeroCount(currentSseMask);
             }
             else if (AdvSimd.Arm64.IsSupported)
             {
-                Debug.Assert(ContainsNonAsciiByte_AdvSimd(currentSseMaskOrAdvSimdIndex), "Shouldn't be here unless we see non-ASCII data.");
-                pBuffer += currentSseMaskOrAdvSimdIndex;
+                Debug.Assert(ContainsNonAsciiByte_AdvSimd(currentAdvSimdIndex), "Shouldn't be here unless we see non-ASCII data.");
+                pBuffer += currentAdvSimdIndex;
             }
             else
             {
