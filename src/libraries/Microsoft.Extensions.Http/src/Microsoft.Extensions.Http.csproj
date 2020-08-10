@@ -12,6 +12,8 @@
              Link="Common\src\Extensions\TypeNameHelper\TypeNameHelper.cs" />
     <Compile Include="$(CommonPath)Extensions\ValueStopwatch\ValueStopwatch.cs"
              Link="Common\src\Extensions\ValueStopwatch\ValueStopwatch.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\DynamicallyAccessedMembersAttribute.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\DynamicallyAccessedMemberTypes.cs" />
   </ItemGroup>
 
   <ItemGroup>

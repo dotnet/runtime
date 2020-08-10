@@ -26,6 +26,7 @@ namespace System.Diagnostics
         public MonitoringDescriptionAttribute(string description) { }
         public override string Description { get { throw null; } }
     }
+    [System.ComponentModel.DesignerAttribute("System.Diagnostics.Design.ProcessDesigner, System.Design, Version=4.0.0.0, PublicKeyToken=b03f5f7f11d50a3a")]
     public partial class Process : System.ComponentModel.Component, System.IDisposable
     {
         public Process() { }
@@ -117,17 +118,18 @@ namespace System.Diagnostics
         public static System.Diagnostics.Process Start(string fileName, string arguments) { throw null; }
         [System.CLSCompliantAttribute(false)]
         [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
-        public static System.Diagnostics.Process Start(string fileName, string userName, System.Security.SecureString password, string domain) { throw null; }
+        public static System.Diagnostics.Process? Start(string fileName, string userName, System.Security.SecureString password, string domain) { throw null; }
         [System.CLSCompliantAttribute(false)]
         [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
-        public static System.Diagnostics.Process Start(string fileName, string arguments, string userName, System.Security.SecureString password, string domain) { throw null; }
+        public static System.Diagnostics.Process? Start(string fileName, string arguments, string userName, System.Security.SecureString password, string domain) { throw null; }
         public override string ToString() { throw null; }
         public void WaitForExit() { }
         public bool WaitForExit(int milliseconds) { throw null; }
-        public System.Threading.Tasks.Task WaitForExitAsync(System.Threading.CancellationToken cancellationToken = default) { throw null; }
+        public System.Threading.Tasks.Task WaitForExitAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public bool WaitForInputIdle() { throw null; }
         public bool WaitForInputIdle(int milliseconds) { throw null; }
     }
+    [System.ComponentModel.DesignerAttribute("System.Diagnostics.Design.ProcessModuleDesigner, System.Design, Version=4.0.0.0, PublicKeyToken=b03f5f7f11d50a3a")]
     public partial class ProcessModule : System.ComponentModel.Component
     {
         internal ProcessModule() { }
@@ -194,6 +196,7 @@ namespace System.Diagnostics
         public System.Diagnostics.ProcessWindowStyle WindowStyle { get { throw null; } set { } }
         public string WorkingDirectory { get { throw null; } set { } }
     }
+    [System.ComponentModel.DesignerAttribute("System.Diagnostics.Design.ProcessThreadDesigner, System.Design, Version=4.0.0.0, PublicKeyToken=b03f5f7f11d50a3a")]
     public partial class ProcessThread : System.ComponentModel.Component
     {
         internal ProcessThread() { }

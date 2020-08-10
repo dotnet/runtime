@@ -4,7 +4,6 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Runtime.InteropServices;
 using Xunit;
 
 namespace System.Security.Cryptography.X509Certificates.Tests
@@ -436,7 +435,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 yield return new object[] { X509KeyStorageFlags.DefaultKeySet };
 
 #if !NO_EPHEMERALKEYSET_AVAILABLE
-                if (!RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+                if (!OperatingSystem.IsMacOS())
                     yield return new object[] { X509KeyStorageFlags.EphemeralKeySet };
 #endif
             }

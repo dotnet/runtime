@@ -29,7 +29,7 @@ namespace System.Resources
     public class ResourceSet : IDisposable, IEnumerable
     {
         protected IResourceReader Reader = null!;
-        internal Hashtable? Table; // TODO-NULLABLE: Avoid nulling out in Dispose
+        internal Hashtable? Table;
 
         private Hashtable? _caseInsensitiveTable;  // For case-insensitive lookups.
 
@@ -90,11 +90,11 @@ namespace System.Resources
             {
                 // Close the Reader in a thread-safe way.
                 IResourceReader? copyOfReader = Reader;
-                Reader = null!; // TODO-NULLABLE: Avoid nulling out in Dispose
+                Reader = null!;
                 if (copyOfReader != null)
                     copyOfReader.Close();
             }
-            Reader = null!; // TODO-NULLABLE: Avoid nulling out in Dispose
+            Reader = null!;
             _caseInsensitiveTable = null;
             Table = null;
         }

@@ -112,7 +112,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 mem.Write(buff, 0, result.Count);
 
                 if (result.EndOfMessage)
-                    return Encoding.UTF8.GetString(mem.GetBuffer(), 0, (int) mem.Length);
+                    return Encoding.UTF8.GetString(mem.GetBuffer(), 0, (int)mem.Length);
             }
         }
 
@@ -278,11 +278,11 @@ namespace Microsoft.WebAssembly.Diagnostics
         public async Task Run(Uri browserUri, WebSocket ideSocket)
         {
             Log("info", $"DevToolsProxy: Starting on {browserUri}");
-            using(this.ide = ideSocket)
+            using (this.ide = ideSocket)
             {
                 Log("verbose", $"DevToolsProxy: IDE waiting for connection on {browserUri}");
                 queues.Add(new DevToolsQueue(this.ide));
-                using(this.browser = new ClientWebSocket())
+                using (this.browser = new ClientWebSocket())
                 {
                     this.browser.Options.KeepAliveInterval = Timeout.InfiniteTimeSpan;
                     await this.browser.ConnectAsync(browserUri, CancellationToken.None);
@@ -304,7 +304,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                             //logger.LogTrace ("pump {0} {1}", task, pending_ops.IndexOf (task));
                             if (task == pending_ops[0])
                             {
-                                var msg = ((Task<string>) task).Result;
+                                var msg = ((Task<string>)task).Result;
                                 if (msg != null)
                                 {
                                     pending_ops[0] = ReadOne(browser, x.Token); //queue next read
@@ -313,7 +313,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                             }
                             else if (task == pending_ops[1])
                             {
-                                var msg = ((Task<string>) task).Result;
+                                var msg = ((Task<string>)task).Result;
                                 if (msg != null)
                                 {
                                     pending_ops[1] = ReadOne(ide, x.Token); //queue next read
@@ -322,12 +322,12 @@ namespace Microsoft.WebAssembly.Diagnostics
                             }
                             else if (task == pending_ops[2])
                             {
-                                var res = ((Task<bool>) task).Result;
+                                var res = ((Task<bool>)task).Result;
                                 throw new Exception("side task must always complete with an exception, what's going on???");
                             }
                             else if (task == pending_ops[3])
                             {
-                                var res = ((Task<bool>) task).Result;
+                                var res = ((Task<bool>)task).Result;
                                 Log("verbose", $"DevToolsProxy: Client initiated close from {browserUri}");
                                 x.Cancel();
                             }

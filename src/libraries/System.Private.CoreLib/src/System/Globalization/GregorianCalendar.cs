@@ -35,7 +35,7 @@ namespace System.Globalization
         public override CalendarAlgorithmType AlgorithmType => CalendarAlgorithmType.SolarCalendar;
 
         /// <summary>
-        /// Internal method to provide a default intance of GregorianCalendar.
+        /// Internal method to provide a default instance of GregorianCalendar.
         /// Used by NLS+ implementation
         /// </summary>
         internal static Calendar GetDefaultInstance() => s_defaultInstance ??= new GregorianCalendar();

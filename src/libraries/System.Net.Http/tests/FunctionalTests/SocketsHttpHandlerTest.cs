@@ -160,7 +160,8 @@ namespace System.Net.Http.Functional.Tests
 
             using HttpClient client = CreateHttpClient(handler);
 
-            await Assert.ThrowsAnyAsync<HttpRequestException>(() => client.GetStringAsync($"http://{Guid.NewGuid():N}.com/foo"));
+            HttpRequestException e = await Assert.ThrowsAnyAsync<HttpRequestException>(() => client.GetStringAsync($"http://{Guid.NewGuid():N}.com/foo"));
+            NetworkException networkException = Assert.IsType<NetworkException>(e.InnerException);
         }
     }
 
@@ -2167,7 +2168,7 @@ namespace System.Net.Http.Functional.Tests
                 Assert.True(connection1.IsInvalid);
                 Assert.False(connection0.IsInvalid);
 
-                Http2LoopbackConnection connection2 = await PrepareConnection(server, client, MaxConcurrentStreams, readTimeout: 7, expectedWarpUpTasks:2).ConfigureAwait(false);
+                Http2LoopbackConnection connection2 = await PrepareConnection(server, client, MaxConcurrentStreams, readTimeout: 15, expectedWarpUpTasks:2).ConfigureAwait(false);
 
                 AcquireAllStreamSlots(server, client, sendTasks, MaxConcurrentStreams);
 
@@ -2204,13 +2205,13 @@ namespace System.Net.Http.Functional.Tests
         private async Task<Http2LoopbackConnection> PrepareConnection(Http2LoopbackServer server, HttpClient client, uint maxConcurrentStreams, int readTimeout = 3, int expectedWarpUpTasks = 1)
         {
             Task<HttpResponseMessage> warmUpTask = client.GetAsync(server.Address);
-            Http2LoopbackConnection connection = await GetConnection(server, maxConcurrentStreams, readTimeout).TimeoutAfter(TestHelper.PassingTestTimeoutMilliseconds).ConfigureAwait(false);
+            Http2LoopbackConnection connection = await GetConnection(server, maxConcurrentStreams, readTimeout).TimeoutAfter(TestHelper.PassingTestTimeoutMilliseconds * 2).ConfigureAwait(false);
             // Wait until the client confirms MaxConcurrentStreams setting took into effect.
             Task settingAckReceived = connection.SettingAckWaiter;
             while (true)
             {
                 Task handleRequestTask = HandleAllPendingRequests(connection, expectedWarpUpTasks);
-                await Task.WhenAll(warmUpTask, handleRequestTask).TimeoutAfter(TestHelper.PassingTestTimeoutMilliseconds).ConfigureAwait(false);
+                await Task.WhenAll(warmUpTask, handleRequestTask).TimeoutAfter(TestHelper.PassingTestTimeoutMilliseconds * 2).ConfigureAwait(false);
                 Assert.True(warmUpTask.Result.IsSuccessStatusCode);
                 warmUpTask.Result.Dispose();
                 if (settingAckReceived.IsCompleted)
@@ -2323,7 +2324,7 @@ namespace System.Net.Http.Functional.Tests
     public sealed class SocketsHttpHandler_HttpClientHandler_Finalization_Http3_Test : HttpClientHandler_Finalization_Test
     {
         public SocketsHttpHandler_HttpClientHandler_Finalization_Http3_Test(ITestOutputHelper output) : base(output) { }
-        protected override Version UseVersion => HttpVersion.Version30;
+        protected override Version UseVersion => HttpVersion30;
     }
 
     [ConditionalClass(typeof(QuicConnection), nameof(QuicConnection.IsQuicSupported))]
@@ -2336,34 +2337,34 @@ namespace System.Net.Http.Functional.Tests
     public sealed class SocketsHttpHandlerTest_Cookies_Http3 : HttpClientHandlerTest_Cookies
     {
         public SocketsHttpHandlerTest_Cookies_Http3(ITestOutputHelper output) : base(output) { }
-        protected override Version UseVersion => HttpVersion.Version30;
+        protected override Version UseVersion => HttpVersion30;
     }
 
     [ConditionalClass(typeof(QuicConnection), nameof(QuicConnection.IsQuicSupported))]
     public sealed class SocketsHttpHandlerTest_HttpClientHandlerTest_Http3 : HttpClientHandlerTest
     {
         public SocketsHttpHandlerTest_HttpClientHandlerTest_Http3(ITestOutputHelper output) : base(output) { }
-        protected override Version UseVersion => HttpVersion.Version30;
+        protected override Version UseVersion => HttpVersion30;
     }
 
     [ConditionalClass(typeof(QuicConnection), nameof(QuicConnection.IsQuicSupported))]
     public sealed class SocketsHttpHandlerTest_HttpClientHandlerTest_Headers_Http3 : HttpClientHandlerTest_Headers
     {
         public SocketsHttpHandlerTest_HttpClientHandlerTest_Headers_Http3(ITestOutputHelper output) : base(output) { }
-        protected override Version UseVersion => HttpVersion.Version30;
+        protected override Version UseVersion => HttpVersion30;
     }
 
     [ConditionalClass(typeof(QuicConnection), nameof(QuicConnection.IsQuicSupported))]
     public sealed class SocketsHttpHandler_HttpClientHandler_Cancellation_Test_Http3 : HttpClientHandler_Cancellation_Test
     {
         public SocketsHttpHandler_HttpClientHandler_Cancellation_Test_Http3(ITestOutputHelper output) : base(output) { }
-        protected override Version UseVersion => HttpVersion.Version30;
+        protected override Version UseVersion => HttpVersion30;
     }
 
     [ConditionalClass(typeof(QuicConnection), nameof(QuicConnection.IsQuicSupported))]
     public sealed class SocketsHttpHandler_HttpClientHandler_AltSvc_Test_Http3 : HttpClientHandler_AltSvc_Test
     {
         public SocketsHttpHandler_HttpClientHandler_AltSvc_Test_Http3(ITestOutputHelper output) : base(output) { }
-        protected override Version UseVersion => HttpVersion.Version30;
+        protected override Version UseVersion => HttpVersion30;
     }
 }

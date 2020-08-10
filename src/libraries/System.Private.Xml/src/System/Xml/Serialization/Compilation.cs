@@ -163,7 +163,7 @@ namespace System.Xml.Serialization
                         serializerPath = Path.Combine(Path.GetDirectoryName(type.Assembly.Location), serializerName + ".dll");
                     }
 
-                    if ((string.IsNullOrEmpty(serializerPath) || !File.Exists(serializerPath)) && !string.IsNullOrEmpty(Assembly.GetEntryAssembly().Location))
+                    if ((string.IsNullOrEmpty(serializerPath) || !File.Exists(serializerPath)) && !string.IsNullOrEmpty(Assembly.GetEntryAssembly()?.Location))
                     {
                         serializerPath = Path.Combine(Path.GetDirectoryName(Assembly.GetEntryAssembly().Location), serializerName + ".dll");
                     }

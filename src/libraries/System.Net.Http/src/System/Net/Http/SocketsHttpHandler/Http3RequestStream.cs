@@ -12,8 +12,6 @@ using System.Threading.Tasks;
 using System.Runtime.CompilerServices;
 using System.Net.Http.QPack;
 using System.Runtime.ExceptionServices;
-using System.Buffers;
-using System.Diagnostics.CodeAnalysis;
 
 namespace System.Net.Http
 {
@@ -292,11 +290,9 @@ namespace System.Net.Http
         /// <summary>
         /// Waits for the initial response headers to be completed, including e.g. Expect 100 Continue.
         /// </summary>
-        /// <param name="cancellationToken"></param>
-        /// <returns></returns>
         private async Task ReadResponseAsync(CancellationToken cancellationToken)
         {
-            Debug.Assert(_response != null);
+            Debug.Assert(_response == null);
             do
             {
                 _headerState = HeaderState.StatusHeader;
@@ -313,6 +309,7 @@ namespace System.Net.Http
                 }
 
                 await ReadHeadersAsync(payloadLength, cancellationToken).ConfigureAwait(false);
+                Debug.Assert(_response != null);
             }
             while ((int)_response.StatusCode < 200);
 
@@ -886,7 +883,7 @@ namespace System.Net.Http
 
                 _response = new HttpResponseMessage()
                 {
-                    Version = HttpVersion.Version30,
+                    Version = Http3Connection.HttpVersion30,
                     RequestMessage = _request,
                     Content = new HttpConnectionResponseContent(),
                     StatusCode = (HttpStatusCode)statusCode
