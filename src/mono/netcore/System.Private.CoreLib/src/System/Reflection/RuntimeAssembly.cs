@@ -107,6 +107,7 @@ namespace System.Reflection
 
         public override Module ManifestModule => GetManifestModuleInternal();
 
+        [Obsolete(Obsoletions.GlobalAssemblyCacheMessage, DiagnosticId = Obsoletions.GlobalAssemblyCacheDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public override bool GlobalAssemblyCache => false;
 
         public override long HostContext => 0;
@@ -150,6 +151,7 @@ namespace System.Reflection
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         public extern override string[] GetManifestResourceNames();
 
+        [RequiresUnreferencedCode("Types might be removed")]
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         public extern override Type[] GetExportedTypes();
 
@@ -252,6 +254,7 @@ namespace System.Reflection
             return AssemblyName.Create(_mono_assembly, CodeBase);
         }
 
+        [RequiresUnreferencedCode("Types might be removed")]
         public override Type GetType(string name, bool throwOnError, bool ignoreCase)
         {
             if (name == null)
@@ -358,6 +361,7 @@ namespace System.Reflection
             }
         }
 
+        [RequiresUnreferencedCode("Assembly references might be removed")]
         public override AssemblyName[] GetReferencedAssemblies() => RuntimeAssembly.GetReferencedAssemblies (this);
 
         public override Assembly GetSatelliteAssembly(CultureInfo culture)
@@ -417,12 +421,10 @@ namespace System.Reflection
             }
 
 
-            string location = Location;
-            if (location != null && Path.GetFileName(location) == name)
-                return new FileStream(location, FileMode.Open, FileAccess.Read);
-            string filename = (string)GetFilesInternal(name, true);
-            if (filename != null)
-                return new FileStream(filename, FileMode.Open, FileAccess.Read);
+            RuntimeModule? m = (RuntimeModule?)GetModule(name);
+
+            if (m != null)
+                return new FileStream(m.FullyQualifiedName, FileMode.Open, FileAccess.Read);
             else
                 return null;
         }
@@ -435,26 +437,19 @@ namespace System.Reflection
                 throw new FileNotFoundException(SR.IO_NoFileTableInInMemoryAssemblies);
             }
 
-            string[] names = (string[])GetFilesInternal(null, getResourceModules);
-            if (names == null)
+            Module[] modules = GetModules(getResourceModules);
+
+            if (modules.Length == 0)
                 return Array.Empty<FileStream>();
 
-            string location = Location;
+            FileStream[] res = new FileStream[modules.Length];
 
-            FileStream[] res;
-            if (location != string.Empty)
+            for (int i = 0; i < modules.Length; i++)
             {
-                res = new FileStream[names.Length + 1];
-                res[0] = new FileStream(location, FileMode.Open, FileAccess.Read);
-                for (int i = 0; i < names.Length; ++i)
-                    res[i + 1] = new FileStream(names[i], FileMode.Open, FileAccess.Read);
+                RuntimeModule m = (RuntimeModule)modules[i];
+                res[i] = new FileStream(m.FullyQualifiedName, FileMode.Open, FileAccess.Read);
             }
-            else
-            {
-                res = new FileStream[names.Length];
-                for (int i = 0; i < names.Length; ++i)
-                    res[i] = new FileStream(names[i], FileMode.Open, FileAccess.Read);
-            }
+
             return res;
         }
 

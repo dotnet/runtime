@@ -104,7 +104,7 @@ namespace System.IO.Tests
                 // If configured to expose the handle, do so.  This influences the stream's need to ensure the position is in sync.
                 if (exposeHandle)
                 {
-                    var ignored = src.SafeFileHandle;
+                    _ = src.SafeFileHandle;
                 }
 
                 // If configured to "preWrite", do a write before we start reading.
@@ -177,6 +177,7 @@ namespace System.IO.Tests
 
         [Theory]
         [InlineData(10, 1024)]
+        [PlatformSpecific(~TestPlatforms.Browser)] // IO.Pipes not supported
         public async Task AnonymousPipeViaFileStream_AllDataCopied(int writeSize, int numWrites)
         {
             long totalLength = writeSize * numWrites;

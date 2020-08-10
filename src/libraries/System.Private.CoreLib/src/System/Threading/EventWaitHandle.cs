@@ -4,6 +4,7 @@
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
+using System.Runtime.Versioning;
 
 namespace System.Threading
 {
@@ -27,6 +28,7 @@ namespace System.Threading
             CreateEventCore(initialState, mode, name, out createdNew);
         }
 
+        [SupportedOSPlatform("windows")]
         public static EventWaitHandle OpenExisting(string name)
         {
             switch (OpenExistingWorker(name, out EventWaitHandle? result))
@@ -43,6 +45,7 @@ namespace System.Threading
             }
         }
 
+        [SupportedOSPlatform("windows")]
         public static bool TryOpenExisting(string name, [NotNullWhen(true)] out EventWaitHandle? result) =>
             OpenExistingWorker(name, out result!) == OpenExistingResult.Success;
     }

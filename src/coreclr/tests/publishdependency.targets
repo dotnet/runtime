@@ -16,6 +16,7 @@
     <!-- These projects are individually restored in order. Each
          subsequent restore only copies files that don't already exist
          in CORE_ROOT, so assets from the first project file win. -->
+    <CoreRootProjectFiles Include="$(RepoRoot)src\coreclr\tests\src\Common\test_dependencies_fs\test_dependencies.fsproj" />
     <CoreRootProjectFiles Include="$(RepoRoot)src\coreclr\tests\src\Common\test_dependencies\test_dependencies.csproj" />
   </ItemGroup>
 

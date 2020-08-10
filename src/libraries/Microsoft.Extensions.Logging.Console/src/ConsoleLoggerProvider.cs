@@ -6,7 +6,6 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
-using Microsoft.Extensions.Logging.Configuration;
 using Microsoft.Extensions.Options;
 
 namespace Microsoft.Extensions.Logging.Console
@@ -154,7 +153,7 @@ namespace Microsoft.Extensions.Logging.Console
             {
                 defaultFormatter.FormatterOptions = new SimpleConsoleFormatterOptions()
                 {
-                    DisableColors = deprecatedFromOptions.DisableColors,
+                    ColorBehavior = deprecatedFromOptions.DisableColors ? LoggerColorBehavior.Disabled : LoggerColorBehavior.Enabled,
                     IncludeScopes = deprecatedFromOptions.IncludeScopes,
                     TimestampFormat = deprecatedFromOptions.TimestampFormat,
                     UseUtcTimestamp = deprecatedFromOptions.UseUtcTimestamp,

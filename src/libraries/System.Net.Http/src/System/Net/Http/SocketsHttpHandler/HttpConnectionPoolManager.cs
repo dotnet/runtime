@@ -102,7 +102,7 @@ namespace System.Net.Http
                     // Create the timer.  Ensure the Timer has a weak reference to this manager; otherwise, it
                     // can introduce a cycle that keeps the HttpConnectionPoolManager rooted by the Timer
                     // implementation until the handler is Disposed (or indefinitely if it's not).
-                    _cleaningTimer = new Timer(s =>
+                    _cleaningTimer = new Timer(static s =>
                     {
                         var wr = (WeakReference<HttpConnectionPoolManager>)s!;
                         if (wr.TryGetTarget(out HttpConnectionPoolManager? thisRef))

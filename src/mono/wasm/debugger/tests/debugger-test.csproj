@@ -1,0 +1,49 @@
+<Project Sdk="Microsoft.NET.Sdk" DefaultTargets="BuildApp">
+  <PropertyGroup>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <TargetArchitecture>wasm</TargetArchitecture>
+    <TargetOS>Browser</TargetOS>
+    <MicrosoftNetCoreAppRuntimePackDir>$(ArtifactsBinDir)microsoft.netcore.app.runtime.browser-wasm\Release\runtimes\browser-wasm\</MicrosoftNetCoreAppRuntimePackDir>
+    <BuildDir>$(MSBuildThisFileDirectory)obj\$(Configuration)\wasm</BuildDir>
+    <AppDir>$(MSBuildThisFileDirectory)bin\$(Configuration)\publish</AppDir>
+    <RuntimeBuildConfig Condition="'$(RuntimeBuildConfig)' == ''">$(Configuration)</RuntimeBuildConfig>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <OutputType>Library</OutputType>
+    <NoWarn>219</NoWarn>
+    <DebugType>portable</DebugType>
+  </PropertyGroup>
+
+  <Target Name="RebuildWasmAppBuilder">
+    <ItemGroup>
+      <WasmAppBuildProject Include="$(RepoTasksDir)mobile.tasks\WasmAppBuilder\WasmAppBuilder.csproj" />
+    </ItemGroup>
+
+    <MSBuild Projects="@(WasmAppBuildProject)"
+             Properties="Configuration=$(Configuration);MSBuildRestoreSessionId=$([System.Guid]::NewGuid())"
+             Targets="Restore"/>
+
+    <MSBuild Projects="@(WasmAppBuildProject)"
+             Properties="Configuration=$(Configuration)"
+             Targets="Build;Publish"/>
+  </Target>
+
+  <UsingTask TaskName="WasmAppBuilder" 
+             AssemblyFile="$(ArtifactsBinDir)WasmAppBuilder\$(Configuration)\$(NetCoreAppCurrent)\publish\WasmAppBuilder.dll"/>
+
+  <Target Name="BuildApp" DependsOnTargets="RebuildWasmAppBuilder;Build">
+    <ItemGroup>
+      <AssemblySearchPaths Include="$(MicrosoftNetCoreAppRuntimePackDir)native"/>
+      <AssemblySearchPaths Include="$(MicrosoftNetCoreAppRuntimePackDir)lib\$(NetCoreAppCurrent)"/>
+    </ItemGroup>
+    <WasmAppBuilder
+      AppDir="$(AppDir)"
+      MicrosoftNetCoreAppRuntimePackDir="$(MicrosoftNetCoreAppRuntimePackDir)"
+      MainAssembly="$(ArtifactsBinDir)debugger-test/wasm/Debug/debugger-test.dll"
+      MainJS="$(MonoProjectRoot)wasm\runtime-test.js"
+      DebugLevel="1"
+      AssemblySearchPaths="@(AssemblySearchPaths)"
+      ExtraAssemblies="$(ArtifactsBinDir)\System.Private.Runtime.InteropServices.JavaScript\$(NetCoreAppCurrent)-Browser-$(RuntimeConfiguration)\System.Private.Runtime.InteropServices.JavaScript.dll"/>
+    <Exec Command="chmod a+x $(AppDir)/run-v8.sh" />
+  </Target>
+
+</Project>

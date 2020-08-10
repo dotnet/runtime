@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Security;
+using System.Runtime.Versioning;
 
 namespace System.Diagnostics
 {
@@ -11,17 +12,21 @@ namespace System.Diagnostics
 
         private const bool CaseSensitiveEnvironmentVariables = false;
 
+        [SupportedOSPlatform("windows")]
         public string? PasswordInClearText { get; set; }
 
+        [SupportedOSPlatform("windows")]
         public string Domain
         {
             get => _domain ?? string.Empty;
             set => _domain = value;
         }
 
+        [SupportedOSPlatform("windows")]
         public bool LoadUserProfile { get; set; }
 
         [CLSCompliant(false)]
+        [SupportedOSPlatform("windows")]
         public SecureString? Password { get; set; }
     }
 }

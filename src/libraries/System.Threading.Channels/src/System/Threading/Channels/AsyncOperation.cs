@@ -51,8 +51,7 @@ namespace System.Threading.Channels
         /// <summary>Only relevant to cancelable operations; 0 if the operation hasn't had completion reserved, 1 if it has.</summary>
         private volatile int _completionReserved;
         /// <summary>The result of the operation.</summary>
-        [MaybeNull, AllowNull]
-        private TResult _result = default;
+        private TResult? _result;
         /// <summary>Any error that occurred during the operation.</summary>
         private ExceptionDispatchInfo? _error;
         /// <summary>The continuation callback.</summary>
@@ -89,7 +88,7 @@ namespace System.Threading.Channels
             {
                 Debug.Assert(!_pooled, "Cancelable operations can't be pooled");
                 CancellationToken = cancellationToken;
-                _registration = UnsafeRegister(cancellationToken, s =>
+                _registration = UnsafeRegister(cancellationToken, static s =>
                 {
                     var thisRef = (AsyncOperation<TResult>)s!;
                     thisRef.TrySetCanceled(thisRef.CancellationToken);
@@ -273,7 +272,7 @@ namespace System.Threading.Channels
                 }
                 else if (sc != null)
                 {
-                    sc.Post(s =>
+                    sc.Post(static s =>
                     {
                         var t = (Tuple<Action<object?>, object>)s!;
                         t.Item1(t.Item2);
@@ -395,7 +394,7 @@ namespace System.Threading.Channels
                     // Otherwise fall through to invoke it synchronously.
                     if (_runContinuationsAsynchronously || sc != SynchronizationContext.Current)
                     {
-                        sc.Post(s => ((AsyncOperation<TResult>)s!).SetCompletionAndInvokeContinuation(), this);
+                        sc.Post(static s => ((AsyncOperation<TResult>)s!).SetCompletionAndInvokeContinuation(), this);
                         return;
                     }
                 }
@@ -408,7 +407,7 @@ namespace System.Threading.Channels
                     Debug.Assert(ts != null, "Expected a TaskScheduler");
                     if (_runContinuationsAsynchronously || ts != TaskScheduler.Current)
                     {
-                        Task.Factory.StartNew(s => ((AsyncOperation<TResult>)s!).SetCompletionAndInvokeContinuation(), this,
+                        Task.Factory.StartNew(static s => ((AsyncOperation<TResult>)s!).SetCompletionAndInvokeContinuation(), this,
                             CancellationToken.None, TaskCreationOptions.DenyChildAttach, ts);
                         return;
                     }
@@ -429,7 +428,7 @@ namespace System.Threading.Channels
             }
             else
             {
-                ExecutionContext.Run(_executionContext, s =>
+                ExecutionContext.Run(_executionContext, static s =>
                 {
                     var thisRef = (AsyncOperation<TResult>)s!;
                     Action<object?> c = thisRef._continuation!;
@@ -454,7 +453,6 @@ namespace System.Threading.Channels
         }
 
         /// <summary>The item being written.</summary>
-        [MaybeNull, AllowNull]
-        public TData Item { get; set; } = default!;
+        public TData? Item { get; set; }
     }
 }

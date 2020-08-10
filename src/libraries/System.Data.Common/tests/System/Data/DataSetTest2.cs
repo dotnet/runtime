@@ -540,7 +540,7 @@ namespace System.Data.Tests
 
         #region test namespaces
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
         public void InferXmlSchema_BasicXml()
         {
             StringBuilder sb = new StringBuilder();
@@ -572,7 +572,7 @@ namespace System.Data.Tests
             Assert.Equal("Discontinued", ds.Tables[1].Columns[2].ColumnName);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
         public void InferXmlSchema_WithoutIgnoreNameSpaces()
         {
             StringBuilder sb = new StringBuilder();
@@ -597,7 +597,7 @@ namespace System.Data.Tests
             Assert.Equal(8, ds.Tables.Count);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
         public void InferXmlSchema_IgnoreNameSpace()
         {
             StringBuilder sb = new StringBuilder();
@@ -637,7 +637,7 @@ namespace System.Data.Tests
             Assert.Equal("Discontinued", ds.Tables[2].Columns["Discontinued"].ColumnName);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
         public void InferXmlSchema_IgnoreNameSpaces() //Ignoring 2 namespaces
         {
             StringBuilder sb = new StringBuilder();
@@ -667,7 +667,7 @@ namespace System.Data.Tests
         #endregion
 
         #region inferringTables
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
         public void InferXmlSchema_inferringTables1()
         {
             //According to the msdn documantaion :
@@ -691,7 +691,7 @@ namespace System.Data.Tests
             Assert.Equal("Element1_Text", ds.Tables[0].Columns["Element1_Text"].ColumnName);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
         public void InferXmlSchema_inferringTables2()
         {
             //According to the msdn documantaion :
@@ -741,7 +741,7 @@ namespace System.Data.Tests
             Assert.Equal("Element2", ds.Tables[0].Columns["Element2"].ColumnName);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
         public void InferXmlSchema_inferringTables4()
         {
             //According to the msdn documantaion :
@@ -766,7 +766,7 @@ namespace System.Data.Tests
             Assert.Equal("attr2", ds.Tables[0].Columns["attr2"].ColumnName);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
         public void InferXmlSchema_inferringTables5()
         {
             //According to the msdn documantaion :
@@ -791,7 +791,7 @@ namespace System.Data.Tests
         #endregion
 
         #region inferringColumns
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
         public void InferXmlSchema_inferringColumns1()
         {
             //ms-help://MS.MSDNQTR.2003FEB.1033/cpguide/html/cpconinferringcolumns.htm
@@ -815,7 +815,7 @@ namespace System.Data.Tests
             Assert.Equal(typeof(string), ds.Tables[0].Columns["attr2"].DataType);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
         public void InferXmlSchema_inferringColumns2()
         {
             //ms-help://MS.MSDNQTR.2003FEB.1033/cpguide/html/cpconinferringcolumns.htm
@@ -850,7 +850,7 @@ namespace System.Data.Tests
 
         #region Inferring Relationships
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
         public void InferXmlSchema_inferringRelationships1()
         {
             //ms-help://MS.MSDNQTR.2003FEB.1033/cpguide/html/cpconinferringrelationships.htm
@@ -914,7 +914,7 @@ namespace System.Data.Tests
 
         #region Inferring Element Text
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
         public void InferXmlSchema_elementText1()
         {
             //ms-help://MS.MSDNQTR.2003FEB.1033/cpguide/html/cpconinferringelementtext.htm
@@ -942,7 +942,7 @@ namespace System.Data.Tests
             Assert.Equal(typeof(string), ds.Tables["Element1"].Columns["Element1_Text"].DataType);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
         public void InferXmlSchema_elementText2()
         {
             //ms-help://MS.MSDNQTR.2003FEB.1033/cpguide/html/cpconinferringelementtext.htm
@@ -988,7 +988,7 @@ namespace System.Data.Tests
             Assert.Equal(culInfo, ds.Locale);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
         public void DataSetSpecificCulture()
         {
             using (new ThreadCultureChange("cs-CZ"))
@@ -2235,7 +2235,7 @@ namespace System.Data.Tests
             // Tables[2] ParentRelations[0] name
             Assert.Equal("Stock_Price", ds.Tables[2].ParentRelations[0].RelationName);
         }
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
         public void ReadXml_Strm3()
         {
             DataSet ds = new DataSet("TestDataSet");
@@ -2264,7 +2264,7 @@ namespace System.Data.Tests
             Assert.Equal(MappingType.Hidden, ds.Tables["Price"].Columns["Stock_Id"].ColumnMapping);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
         public void ReadXml_Strm4()
         {
             _ds = new DataSet("Stocks");
@@ -2365,7 +2365,7 @@ namespace System.Data.Tests
             Assert.Equal(_ds.Tables[toTable].Select(toTestSelect)[0]["Stock_Id"], _ds.Tables[toCompareTable].Select(toCompareSelect)[0]["Stock_Id"]);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
         public void ReadXml_Strm5()
         {
             string xmlData;
@@ -2589,7 +2589,7 @@ namespace System.Data.Tests
             return desc;
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
         public void ReadXml_Strm6()
         {
             // TC1
@@ -2608,7 +2608,7 @@ namespace System.Data.Tests
             Assert.Equal(3, ds.Tables["c"].Rows.Count);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
         public void ReadXmlSchema_2()
         {
             var ds = new DataSet();
@@ -3070,7 +3070,7 @@ namespace System.Data.Tests
             Assert.Equal(expectedNodesCout, actualNodeCount);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
         public void WriteXml_Stream()
         {
             {
@@ -3515,7 +3515,7 @@ namespace System.Data.Tests
             Assert.Equal("data8", dt.Rows[0]["&ID"]);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBinaryFormatterSupported), nameof(PlatformDetection.IsNotInvariantGlobalization))]
         public void Bug537229_BinFormatSerializer_Test()
         {
             DataSet ds = new DataSet();

@@ -1,12 +1,11 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <AssemblyName>System.Net.Ping</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Browser</TargetFrameworks>
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <PropertyGroup>
-    <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetsBrowser)' == 'true'">SR.Ping_PlatformNotSupported</GeneratePlatformNotSupportedAssemblyMessage>
+    <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetsBrowser)' == 'true'">SR.SystemNetPing_PlatformNotSupported</GeneratePlatformNotSupportedAssemblyMessage>
   </PropertyGroup>
   <ItemGroup Condition="'$(TargetsBrowser)' != 'true'">
     <Compile Include="System\Net\NetworkInformation\IPStatus.cs" />
@@ -105,6 +104,5 @@
   <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
     <Reference Include="System.Diagnostics.Process" />
     <Reference Include="System.IO.FileSystem" />
-    <Reference Include="System.Runtime.InteropServices.RuntimeInformation" />
   </ItemGroup>
 </Project>

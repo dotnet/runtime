@@ -156,7 +156,9 @@ void CodeGen::genStackPointerAdjustment(ssize_t spDelta, regNumber tmpReg, bool*
     // Even though INS_add is specified here, the encoder will choose either
     // an INS_add or an INS_sub and encode the immediate as a positive value
     //
-    if (genInstrWithConstant(INS_add, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, spDelta, tmpReg, true))
+    bool wasTempRegisterUsedForImm =
+        !genInstrWithConstant(INS_add, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, spDelta, tmpReg, true);
+    if (wasTempRegisterUsedForImm)
     {
         if (pTmpRegIsZero != nullptr)
         {
@@ -4699,7 +4701,7 @@ void CodeGen::genStoreIndTypeSIMD12(GenTree* treeNode)
 
     genConsumeOperands(treeNode->AsOp());
 
-    // Need an addtional integer register to extract upper 4 bytes from data.
+    // Need an additional integer register to extract upper 4 bytes from data.
     regNumber tmpReg = treeNode->GetSingleTempReg();
     assert(tmpReg != addr->GetRegNum());
 
@@ -4766,16 +4768,13 @@ void CodeGen::genStoreLclTypeSIMD12(GenTree* treeNode)
 {
     assert((treeNode->OperGet() == GT_STORE_LCL_FLD) || (treeNode->OperGet() == GT_STORE_LCL_VAR));
 
-    unsigned offs   = 0;
-    unsigned varNum = treeNode->AsLclVarCommon()->GetLclNum();
+    GenTreeLclVarCommon* lclVar = treeNode->AsLclVarCommon();
+
+    unsigned offs   = lclVar->GetLclOffs();
+    unsigned varNum = lclVar->GetLclNum();
     assert(varNum < compiler->lvaCount);
 
-    if (treeNode->OperGet() == GT_STORE_LCL_FLD)
-    {
-        offs = treeNode->AsLclFld()->GetLclOffs();
-    }
-
-    GenTree* op1 = treeNode->AsOp()->gtOp1;
+    GenTree* op1 = lclVar->gtGetOp1();
 
     if (op1->isContained())
     {
@@ -4792,8 +4791,8 @@ void CodeGen::genStoreLclTypeSIMD12(GenTree* treeNode)
     }
     regNumber operandReg = genConsumeReg(op1);
 
-    // Need an addtional integer register to extract upper 4 bytes from data.
-    regNumber tmpReg = treeNode->GetSingleTempReg();
+    // Need an additional integer register to extract upper 4 bytes from data.
+    regNumber tmpReg = lclVar->GetSingleTempReg();
 
     // store lower 8 bytes
     GetEmitter()->emitIns_S_R(INS_str, EA_8BYTE, operandReg, varNum, offs);
@@ -4813,14 +4812,14 @@ void CodeGen::genStoreLclTypeSIMD12(GenTree* treeNode)
 // genProfilingEnterCallback: Generate the profiling function enter callback.
 //
 // Arguments:
-//     initReg          - register to use as scratch register
-//     pInitRegModified - OUT parameter. *pInitRegModified set to 'true' if 'initReg' is
-//                        not zero after this call.
+//     initReg        - register to use as scratch register
+//     pInitRegZeroed - OUT parameter. *pInitRegZeroed set to 'false' if 'initReg' is
+//                      set to non-zero value after this call.
 //
 // Return Value:
 //     None
 //
-void CodeGen::genProfilingEnterCallback(regNumber initReg, bool* pInitRegModified)
+void CodeGen::genProfilingEnterCallback(regNumber initReg, bool* pInitRegZeroed)
 {
     assert(compiler->compGeneratingProlog);
 
@@ -4848,7 +4847,7 @@ void CodeGen::genProfilingEnterCallback(regNumber initReg, bool* pInitRegModifie
 
     if ((genRegMask(initReg) & RBM_PROFILER_ENTER_TRASH) != RBM_NONE)
     {
-        *pInitRegModified = true;
+        *pInitRegZeroed = false;
     }
 }
 
@@ -9595,19 +9594,16 @@ void CodeGen::genArm64EmitterUnitTests()
 //      on Windows as well just to be consistent, even though it should not be necessary.
 //
 // Arguments:
-//      frameSize          - the size of the stack frame being allocated.
-//      initReg            - register to use as a scratch register.
-//      pInitRegModified   - OUT parameter. *pInitRegModified is set to 'true' if and only if
-//                           this call sets 'initReg' to a non-zero value.
-//      maskArgRegsLiveIn  - incoming argument registers that are currently live.
+//      frameSize         - the size of the stack frame being allocated.
+//      initReg           - register to use as a scratch register.
+//      pInitRegZeroed    - OUT parameter. *pInitRegZeroed is set to 'false' if and only if
+//                          this call sets 'initReg' to a non-zero value. Otherwise, it is unchanged.
+//      maskArgRegsLiveIn - incoming argument registers that are currently live.
 //
 // Return value:
 //      None
 //
-void CodeGen::genAllocLclFrame(unsigned  frameSize,
-                               regNumber initReg,
-                               bool*     pInitRegModified,
-                               regMaskTP maskArgRegsLiveIn)
+void CodeGen::genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pInitRegZeroed, regMaskTP maskArgRegsLiveIn)
 {
     assert(compiler->compGeneratingProlog);
 
@@ -9644,7 +9640,7 @@ void CodeGen::genAllocLclFrame(unsigned  frameSize,
             instGen_Set_Reg_To_Imm(EA_PTRSIZE, initReg, -(ssize_t)probeOffset);
             GetEmitter()->emitIns_R_R_R(INS_ldr, EA_4BYTE, REG_ZR, REG_SPBASE, initReg);
             regSet.verifyRegUsed(initReg);
-            *pInitRegModified = true;
+            *pInitRegZeroed = false; // The initReg does not contain zero
 
             lastTouchDelta -= pageSize;
         }
@@ -9704,7 +9700,7 @@ void CodeGen::genAllocLclFrame(unsigned  frameSize,
         GetEmitter()->emitIns_R_R(INS_cmp, EA_PTRSIZE, rLimit, rOffset); // If equal, we need to probe again
         GetEmitter()->emitIns_J(INS_bls, NULL, -4);
 
-        *pInitRegModified = true;
+        *pInitRegZeroed = false; // The initReg does not contain zero
 
         compiler->unwindPadding();
 
@@ -9719,7 +9715,7 @@ void CodeGen::genAllocLclFrame(unsigned  frameSize,
         compiler->unwindPadding();
 
         regSet.verifyRegUsed(initReg);
-        *pInitRegModified = true;
+        *pInitRegZeroed = false; // The initReg does not contain zero
     }
 }
 

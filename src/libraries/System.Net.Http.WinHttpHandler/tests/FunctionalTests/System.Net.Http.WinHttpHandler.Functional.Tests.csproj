@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetFrameworkCurrent)-Windows_NT</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;net48-Windows_NT</TargetFrameworks>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <DefineConstants>$(DefineConstants);WINHTTPHANDLER_TEST</DefineConstants>
     <LangVersion>8.0</LangVersion>
@@ -117,6 +117,8 @@
              Link="Common\System\Net\Http\LoopbackServer.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Http\LoopbackServer.AuthenticationHelpers.cs"
              Link="Common\System\Net\Http\LoopbackServer.AuthenticationHelpers.cs" />
+    <Compile Include="$(CommonTestPath)System\Net\SslProtocolSupport.cs"
+             Link="Common\System\Net\SslProtocolSupport.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Http\TestHelper.cs"
              Link="Common\System\Net\Http\TestHelper.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Http\PostScenarioTest.cs"
@@ -129,6 +131,8 @@
              Link="Common\System\Net\Http\SchSendAuxRecordHttpTest.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Http\SyncBlockingContent.cs"
              Link="Common\System\Net\Http\SyncBlockingContent.cs" />
+    <Compile Include="$(CommonTestPath)System\Net\Http\ThrowingContent.cs"
+             Link="Common\System\Net\Http\ThrowingContent.cs" />
     <Compile Include="$(CommonTestPath)System\Threading\Tasks\TaskTimeoutExtensions.cs"
              Link="Common\System\Threading\Tasks\TaskTimeoutExtensions.cs" />
     <Compile Include="$(CommonTestPath)System\Threading\TrackingSynchronizationContext.cs"
@@ -141,5 +145,14 @@
   <ItemGroup>
     <PackageReference Include="Newtonsoft.Json" Version="$(NewtonsoftJsonVersion)" />
     <PackageReference Include="System.Net.TestData" Version="$(SystemNetTestDataVersion)" />
+    <ProjectReference Include="..\..\src\System.Net.Http.WinHttpHandler.csproj" />
+  </ItemGroup>
+  <ItemGroup Condition="$(TargetFramework.StartsWith('$(NetCoreAppCurrent)'))">
+    <ProjectReference Include="$(LibrariesProjectRoot)System.DirectoryServices.Protocols\src\System.DirectoryServices.Protocols.csproj" />
+  </ItemGroup>
+  <ItemGroup Condition="$(TargetFramework.StartsWith('net48'))">
+    <Reference Include="System.DirectoryServices.Protocols" />
+    <Reference Include="System.Net.Http" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Net.Http.Json\src\System.Net.Http.Json.csproj" />
   </ItemGroup>
 </Project>

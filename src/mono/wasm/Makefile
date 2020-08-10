@@ -17,7 +17,7 @@ NATIVE_DIR?=$(OBJDIR)/native/net5.0-Browser-$(CONFIG)-wasm
 BUILDS_BIN_DIR?=$(BINDIR)/native/net5.0-Browser-$(CONFIG)-wasm
 ICU_LIBDIR?=
 
-all: build-native timezone-data
+all: build-native timezone-data icu-data
 
 #
 # EMSCRIPTEN SETUP
@@ -54,7 +54,8 @@ MONO_LIBS = \
 	${NATIVE_DIR}/System.Native/libSystem.Native.a \
 	${NATIVE_DIR}/System.IO.Compression.Native/libSystem.IO.Compression.Native.a \
 	$(ICU_LIBDIR)/libicuuc.a \
-	$(ICU_LIBDIR)/libicui18n.a
+	$(ICU_LIBDIR)/libicui18n.a \
+	$(ICU_LIBDIR)/libicudata.a
 
 EMCC_FLAGS=--profiling-funcs -s WASM=1 -s ALLOW_MEMORY_GROWTH=1 -s BINARYEN=1 -s ALIASING_FUNCTION_POINTERS=0 -s NO_EXIT_RUNTIME=1 -s "EXTRA_EXPORTED_RUNTIME_METHODS=['ccall', 'FS_createPath', 'FS_createDataFile', 'cwrap', 'setValue', 'getValue', 'UTF8ToString', 'UTF8ArrayToString', 'addFunction']" -s "EXPORTED_FUNCTIONS=['_putchar']" --source-map-base http://example.com  -emit-llvm -s FORCE_FILESYSTEM=1 -s USE_ZLIB=1
 EMCC_DEBUG_FLAGS =-g -Os -s ASSERTIONS=1 -DENABLE_NETCORE=1 -DDEBUG=1
@@ -87,7 +88,7 @@ $(BUILDS_OBJ_DIR)/pinvoke.o: runtime/pinvoke.c runtime/pinvoke.h $(BUILDS_OBJ_DI
 	$(EMCC) $(EMCC_FLAGS) $(1) -Oz -DGEN_PINVOKE=1 -I$(BUILDS_OBJ_DIR) -I$(MONO_INCLUDE_DIR) runtime/pinvoke.c -c -o $$@
 
 $(BUILDS_OBJ_DIR)/corebindings.o: runtime/corebindings.c | $(BUILDS_OBJ_DIR)
-	$(EMCC) $(1) -Oz -I$(MONO_INCLUDE_DIR) runtime/corebindings.c -c -o $$@
+	$(EMCC) $(EMCC_FLAGS) $(1) -Oz -I$(MONO_INCLUDE_DIR) runtime/corebindings.c -c -o $$@
 
 build-native: $(BUILDS_BIN_DIR)/dotnet.js
 
@@ -100,7 +101,7 @@ $(eval $(call InterpBuildTemplate,$(EMCC_RELEASE_FLAGS),$(MONO_LIBS)))
 endif
 
 build:
-	EMSDK_PATH=$(PWD)/emsdk $(DOTNET) build /p:TargetArchitecture=wasm /p:TargetOS=Browser /p:Configuration=$(CONFIG) $(TOP)/src/libraries/src.proj /t:NativeBinPlace
+	EMSDK_PATH=$(PWD)/emsdk $(DOTNET) build /p:TargetArchitecture=wasm /p:TargetOS=Browser /p:Configuration=$(CONFIG) $(TOP)/src/libraries/src.proj /t:BuildWasmRuntimes
 
 clean-emsdk:
 	$(RM) -rf $(EMSDK_LOCAL_PATH)
@@ -113,6 +114,9 @@ clean:
 
 timezone-data:
 	cp runtime/dotnet.timezones.blat $(BUILDS_BIN_DIR)
+
+icu-data:
+	cp $(ICU_LIBDIR)/icudt.dat $(BUILDS_BIN_DIR)
 
 runtime:
 	EMSDK_PATH=$(TOP)/src/mono/wasm/emsdk $(TOP)/build.sh --subset mono --arch wasm --os Browser -c $(CONFIG) /p:ContinueOnError=false  /p:StopOnFirstFailure=true
@@ -135,3 +139,27 @@ run-tests-jsc-%:
 
 run-tests-%:
 	PATH="$(JSVU):$(PATH)" $(DOTNET) build $(TOP)/src/libraries/$*/tests/ /t:Test /p:TargetOS=Browser /p:TargetArchitecture=wasm /p:Configuration=$(CONFIG) $(MSBUILD_ARGS)
+
+build-debugger-test-app: 
+	$(DOTNET) build --configuration debug --nologo /p:TargetArchitecture=wasm /p:TargetOS=Browser /p:Configuration=Debug /p:RuntimeConfiguration=$(CONFIG) $(TOP)/src/mono/wasm/debugger/tests
+	cp $(TOP)/src/mono/wasm/debugger/tests/debugger-driver.html $(TOP)/src/mono/wasm/debugger/tests/bin/Debug/publish
+	cp $(TOP)/src/mono/wasm/debugger/tests/other.js $(TOP)/src/mono/wasm/debugger/tests/bin/Debug/publish
+	cp $(TOP)/src/mono/wasm/debugger/tests/runtime-debugger.js $(TOP)/src/mono/wasm/debugger/tests/bin/Debug/publish
+
+run-debugger-tests: build-debugger-test-app build-dbg-testsuite
+	if [ ! -z "$(TEST_FILTER)" ]; then \
+		export TEST_SUITE_PATH=$(TOP)/src/mono/wasm/debugger/tests/bin/Debug/publish; \
+		export LC_ALL=en_US.UTF-8; \
+		$(DOTNET) test  $(TOP)/src/mono/wasm/debugger/DebuggerTestSuite --filter FullyQualifiedName~$(TEST_FILTER); \
+		unset TEST_SUITE_PATH LC_ALL; \
+	else \
+		export TEST_SUITE_PATH=$(TOP)/src/mono/wasm/debugger/tests/bin/Debug/publish; \
+		export LC_ALL=en_US.UTF-8; \
+		$(DOTNET) test  $(TOP)/src/mono/wasm/debugger/DebuggerTestSuite $(TEST_ARGS); \
+		unset TEST_SUITE_PATH LC_ALL; \
+	fi
+
+build-dbg-proxy:
+	$(DOTNET) build $(TOP)/src/mono/wasm/debugger/BrowserDebugHost
+build-dbg-testsuite:
+	$(DOTNET) build $(TOP)/src/mono/wasm/debugger/DebuggerTestSuite

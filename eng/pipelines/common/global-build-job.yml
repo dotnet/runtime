@@ -25,10 +25,16 @@ jobs:
     dependsOn: checkout
     pool: ${{ parameters.pool }}
     container: ${{ parameters.container }}
-    timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
     condition: and(succeeded(), ${{ parameters.condition }})
     workspace:
       clean: all
+
+    # macOS hosted pool machines are slower so we need to give a greater timeout for global-build
+    # which builds multiple subsets.
+    ${{ if and(contains(parameters.pool.vmImage, 'macOS'), eq(parameters.timeoutInMinutes, '')) }}:
+      timeoutInMinutes: 120
+    ${{ if or(not(contains(parameters.pool.vmImage, 'macOS')), ne(parameters.timeoutInMinutes, '')) }}:
+      timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
 
     variables:
       - name: _osParameter

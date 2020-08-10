@@ -23,6 +23,7 @@ namespace System.Data
     /// <summary>
     /// Represents an in-memory cache of data.
     /// </summary>
+    [Designer("Microsoft.VSDesigner.Data.VS.DataSetDesigner, Microsoft.VSDesigner, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
     [DefaultProperty(nameof(DataSetName))]
     [Serializable]
     [XmlSchemaProvider(nameof(GetDataSetSchema))]
@@ -304,9 +305,9 @@ namespace System.Data
                     {
                         BinaryFormatter bf = new BinaryFormatter(null, new StreamingContext(context.State, false));
                         MemoryStream memStream = new MemoryStream();
-#pragma warning disable MSLIB0003 // Issue https://github.com/dotnet/runtime/issues/39289 tracks finding an alternative to BinaryFormatter
+#pragma warning disable SYSLIB0011 // Issue https://github.com/dotnet/runtime/issues/39289 tracks finding an alternative to BinaryFormatter
                         bf.Serialize(memStream, Tables[i]);
-#pragma warning restore MSLIB0003
+#pragma warning restore SYSLIB0011
                         memStream.Position = 0;
                         info.AddValue(string.Format(CultureInfo.InvariantCulture, "DataSet.Tables_{0}", i), memStream.GetBuffer());
                     }
@@ -384,9 +385,9 @@ namespace System.Data
                         MemoryStream memStream = new MemoryStream(buffer);
                         memStream.Position = 0;
                         BinaryFormatter bf = new BinaryFormatter(null, new StreamingContext(context.State, false));
-#pragma warning disable MSLIB0003 // Issue https://github.com/dotnet/runtime/issues/39289 tracks finding an alternative to BinaryFormatter
+#pragma warning disable SYSLIB0011 // Issue https://github.com/dotnet/runtime/issues/39289 tracks finding an alternative to BinaryFormatter
                         DataTable dt = (DataTable)bf.Deserialize(memStream);
-#pragma warning restore MSLIB0003
+#pragma warning restore SYSLIB0011
                         Tables.Add(dt);
                     }
 

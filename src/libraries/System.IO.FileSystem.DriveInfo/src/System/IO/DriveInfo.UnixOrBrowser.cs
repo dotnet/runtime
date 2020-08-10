@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Security;
+using System.Runtime.Versioning;
 
 namespace System.IO
 {
@@ -41,6 +42,7 @@ namespace System.IO
             {
                 return Name;
             }
+            [SupportedOSPlatform("windows")]
             set
             {
                 throw new PlatformNotSupportedException();

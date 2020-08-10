@@ -53,8 +53,8 @@ namespace Microsoft.Extensions.Logging.Console
             string timestampFormat = FormatterOptions.TimestampFormat;
             if (timestampFormat != null)
             {
-                DateTime dateTime = GetCurrentDateTime();
-                timestamp = dateTime.ToString(timestampFormat);
+                DateTimeOffset dateTimeOffset = GetCurrentDateTime();
+                timestamp = dateTimeOffset.ToString(timestampFormat);
             }
             if (timestamp != null)
             {
@@ -86,10 +86,6 @@ namespace Microsoft.Extensions.Logging.Console
 
             // scope information
             WriteScopeInformation(textWriter, scopeProvider, singleLine);
-            if (singleLine)
-            {
-                textWriter.Write(' ');
-            }
             WriteMessage(textWriter, message, singleLine);
 
             // Example:
@@ -112,6 +108,7 @@ namespace Microsoft.Extensions.Logging.Console
             {
                 if (singleLine)
                 {
+                    textWriter.Write(' ');
                     WriteReplacing(textWriter, Environment.NewLine, " ", message);
                 }
                 else
@@ -129,9 +126,9 @@ namespace Microsoft.Extensions.Logging.Console
             }
         }
 
-        private DateTime GetCurrentDateTime()
+        private DateTimeOffset GetCurrentDateTime()
         {
-            return FormatterOptions.UseUtcTimestamp ? DateTime.UtcNow : DateTime.Now;
+            return FormatterOptions.UseUtcTimestamp ? DateTimeOffset.UtcNow : DateTimeOffset.Now;
         }
 
         private static string GetLogLevelString(LogLevel logLevel)
@@ -150,7 +147,9 @@ namespace Microsoft.Extensions.Logging.Console
 
         private ConsoleColors GetLogLevelConsoleColors(LogLevel logLevel)
         {
-            if (FormatterOptions.DisableColors)
+            bool disableColors = (FormatterOptions.ColorBehavior == LoggerColorBehavior.Disabled) ||
+                (FormatterOptions.ColorBehavior == LoggerColorBehavior.Default && System.Console.IsOutputRedirected);
+            if (disableColors)
             {
                 return new ConsoleColors(null, null);
             }

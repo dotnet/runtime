@@ -297,41 +297,11 @@ wasm_invoke_iiliiii (void *target_func, InterpMethodArguments *margs)
 }
 
 static void
-wasm_invoke_iiiliiii (void *target_func, InterpMethodArguments *margs)
-{
-	typedef int (*T)(int arg_0, int arg_1, gint64 arg_2, int arg_3, int arg_4, int arg_5, int arg_6);
-	T func = (T)target_func;
-	int res = func ((int)(gssize)margs->iargs [0], (int)(gssize)margs->iargs [1], get_long_arg (margs, 2), (int)(gssize)margs->iargs [4], (int)(gssize)margs->iargs [5], (int)(gssize)margs->iargs [6], (int)(gssize)margs->iargs [7]);
-	*(int*)margs->retval = res;
-
-}
-
-static void
 wasm_invoke_iiil (void *target_func, InterpMethodArguments *margs)
 {
 	typedef int (*T)(int arg_0, int arg_1, gint64 arg_2);
 	T func = (T)target_func;
 	int res = func ((int)(gssize)margs->iargs [0], (int)(gssize)margs->iargs [1], get_long_arg (margs, 2));
-	*(int*)margs->retval = res;
-
-}
-
-static void
-wasm_invoke_iiilli (void *target_func, InterpMethodArguments *margs)
-{
-	typedef int (*T)(int arg_0, int arg_1, gint64 arg_2, gint64 arg_3, int arg_4);
-	T func = (T)target_func;
-	int res = func ((int)(gssize)margs->iargs [0], (int)(gssize)margs->iargs [1], get_long_arg (margs, 2), get_long_arg (margs, 4), (int)(gssize)margs->iargs [6]);
-	*(int*)margs->retval = res;
-
-}
-
-static void
-wasm_invoke_il (void *target_func, InterpMethodArguments *margs)
-{
-	typedef int (*T)(gint64 arg_0);
-	T func = (T)target_func;
-	int res = func (get_long_arg (margs, 0));
 	*(int*)margs->retval = res;
 
 }
@@ -1193,15 +1163,6 @@ wasm_invoke_viil (void *target_func, InterpMethodArguments *margs)
 }
 
 static void
-wasm_invoke_vlii (void *target_func, InterpMethodArguments *margs)
-{
-	typedef void (*T)(gint64 arg_0, int arg_1, int arg_2);
-	T func = (T)target_func;
-	func (get_long_arg (margs, 0), (int)(gssize)margs->iargs [2], (int)(gssize)margs->iargs [3]);
-
-}
-
-static void
 wasm_invoke_fifff (void *target_func, InterpMethodArguments *margs)
 {
 	typedef float (*T)(int arg_0, float arg_1, float arg_2, float arg_3);
@@ -1566,6 +1527,104 @@ wasm_invoke_viiiif (void *target_func, InterpMethodArguments *margs)
 
 }
 
+static void
+wasm_invoke_iffffiii (void *target_func, InterpMethodArguments *margs)
+{
+	typedef int (*T)(float arg_0, float arg_1, float arg_2, float arg_3, int arg_4, int arg_5, int arg_6);
+	T func = (T)target_func;
+	int res = func (*(float*)&margs->fargs [FIDX (0)], *(float*)&margs->fargs [FIDX (1)], *(float*)&margs->fargs [FIDX (2)], *(float*)&margs->fargs [FIDX (3)], (int)(gssize)margs->iargs [0], (int)(gssize)margs->iargs [1], (int)(gssize)margs->iargs [2]);
+	*(int*)margs->retval = res;
+
+}
+
+static void
+wasm_invoke_iffiii (void *target_func, InterpMethodArguments *margs)
+{
+	typedef int (*T)(float arg_0, float arg_1, int arg_2, int arg_3, int arg_4);
+	T func = (T)target_func;
+	int res = func (*(float*)&margs->fargs [FIDX (0)], *(float*)&margs->fargs [FIDX (1)], (int)(gssize)margs->iargs [0], (int)(gssize)margs->iargs [1], (int)(gssize)margs->iargs [2]);
+	*(int*)margs->retval = res;
+
+}
+
+static void
+wasm_invoke_viiiiffii (void *target_func, InterpMethodArguments *margs)
+{
+	typedef void (*T)(int arg_0, int arg_1, int arg_2, int arg_3, float arg_4, float arg_5, int arg_6, int arg_7);
+	T func = (T)target_func;
+	func ((int)(gssize)margs->iargs [0], (int)(gssize)margs->iargs [1], (int)(gssize)margs->iargs [2], (int)(gssize)margs->iargs [3], *(float*)&margs->fargs [FIDX (0)], *(float*)&margs->fargs [FIDX (1)], (int)(gssize)margs->iargs [4], (int)(gssize)margs->iargs [5]);
+
+}
+
+static void
+wasm_invoke_iiiliiii (void *target_func, InterpMethodArguments *margs)
+{
+	typedef int (*T)(int arg_0, int arg_1, gint64 arg_2, int arg_3, int arg_4, int arg_5, int arg_6);
+	T func = (T)target_func;
+	int res = func ((int)(gssize)margs->iargs [0], (int)(gssize)margs->iargs [1], get_long_arg (margs, 2), (int)(gssize)margs->iargs [4], (int)(gssize)margs->iargs [5], (int)(gssize)margs->iargs [6], (int)(gssize)margs->iargs [7]);
+	*(int*)margs->retval = res;
+
+}
+
+static void
+wasm_invoke_iiilli (void *target_func, InterpMethodArguments *margs)
+{
+	typedef int (*T)(int arg_0, int arg_1, gint64 arg_2, gint64 arg_3, int arg_4);
+	T func = (T)target_func;
+	int res = func ((int)(gssize)margs->iargs [0], (int)(gssize)margs->iargs [1], get_long_arg (margs, 2), get_long_arg (margs, 4), (int)(gssize)margs->iargs [6]);
+	*(int*)margs->retval = res;
+
+}
+
+static void
+wasm_invoke_il (void *target_func, InterpMethodArguments *margs)
+{
+	typedef int (*T)(gint64 arg_0);
+	T func = (T)target_func;
+	int res = func (get_long_arg (margs, 0));
+	*(int*)margs->retval = res;
+
+}
+
+static void
+wasm_invoke_iff (void *target_func, InterpMethodArguments *margs)
+{
+	typedef int (*T)(float arg_0, float arg_1);
+	T func = (T)target_func;
+	int res = func (*(float*)&margs->fargs [FIDX (0)], *(float*)&margs->fargs [FIDX (1)]);
+	*(int*)margs->retval = res;
+
+}
+
+static void
+wasm_invoke_ifff (void *target_func, InterpMethodArguments *margs)
+{
+	typedef int (*T)(float arg_0, float arg_1, float arg_2);
+	T func = (T)target_func;
+	int res = func (*(float*)&margs->fargs [FIDX (0)], *(float*)&margs->fargs [FIDX (1)], *(float*)&margs->fargs [FIDX (2)]);
+	*(int*)margs->retval = res;
+
+}
+
+static void
+wasm_invoke_iffff (void *target_func, InterpMethodArguments *margs)
+{
+	typedef int (*T)(float arg_0, float arg_1, float arg_2, float arg_3);
+	T func = (T)target_func;
+	int res = func (*(float*)&margs->fargs [FIDX (0)], *(float*)&margs->fargs [FIDX (1)], *(float*)&margs->fargs [FIDX (2)], *(float*)&margs->fargs [FIDX (3)]);
+	*(int*)margs->retval = res;
+
+}
+
+static void
+wasm_invoke_vlii (void *target_func, InterpMethodArguments *margs)
+{
+	typedef void (*T)(gint64 arg_0, int arg_1, int arg_2);
+	T func = (T)target_func;
+	func (get_long_arg (margs, 0), (int)(gssize)margs->iargs [2], (int)(gssize)margs->iargs [3]);
+
+}
+
 static const char* interp_to_native_signatures [] = {
 "DD",
 "DDD",
@@ -1589,12 +1648,17 @@ static const char* interp_to_native_signatures [] = {
 "ID",
 "IDIII",
 "IF",
+"IFF",
+"IFFF",
+"IFFFF",
 "IFFFFFFI",
+"IFFFFIII",
 "IFFFFIIII",
 "IFFI",
 "IFFIF",
 "IFFIFI",
 "IFFII",
+"IFFIII",
 "IFI",
 "IFIII",
 "II",
@@ -1713,6 +1777,7 @@ static const char* interp_to_native_signatures [] = {
 "VIIIFIII",
 "VIIII",
 "VIIIIF",
+"VIIIIFFII",
 "VIIIII",
 "VIIIIII",
 "VIIIIIII",
@@ -1753,12 +1818,17 @@ wasm_invoke_i,
 wasm_invoke_id,
 wasm_invoke_idiii,
 wasm_invoke_if,
+wasm_invoke_iff,
+wasm_invoke_ifff,
+wasm_invoke_iffff,
 wasm_invoke_iffffffi,
+wasm_invoke_iffffiii,
 wasm_invoke_iffffiiii,
 wasm_invoke_iffi,
 wasm_invoke_iffif,
 wasm_invoke_iffifi,
 wasm_invoke_iffii,
+wasm_invoke_iffiii,
 wasm_invoke_ifi,
 wasm_invoke_ifiii,
 wasm_invoke_ii,
@@ -1877,6 +1947,7 @@ wasm_invoke_viiifii,
 wasm_invoke_viiifiii,
 wasm_invoke_viiii,
 wasm_invoke_viiiif,
+wasm_invoke_viiiiffii,
 wasm_invoke_viiiii,
 wasm_invoke_viiiiii,
 wasm_invoke_viiiiiii,

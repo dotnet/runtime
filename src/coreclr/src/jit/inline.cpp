@@ -1624,7 +1624,7 @@ void InlineStrategy::DumpXml(FILE* file, unsigned indent)
 
     // Root context will be null if we're not optimizing the method.
     //
-    // Note there are cases of this in mscorlib even in release builds,
+    // Note there are cases of this in System.Private.CoreLib even in release builds,
     // eg Task.NotifyDebuggerOfWaitCompletion.
     //
     // For such methods there aren't any inlines.

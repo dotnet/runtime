@@ -1392,8 +1392,8 @@ GenTree* Compiler::impAssignStructPtr(GenTree*             destAddr,
     }
     else if (asgType == TYP_STRUCT)
     {
-        asgType     = impNormStructType(structHnd);
-        src->gtType = asgType;
+        // It should already have the appropriate type.
+        assert(asgType == impNormStructType(structHnd));
     }
     if ((dest == nullptr) && (destAddr->OperGet() == GT_ADDR))
     {
@@ -2117,11 +2117,18 @@ GenTree* Compiler::impRuntimeLookupToTree(CORINFO_RESOLVED_TOKEN* pResolvedToken
                                       nullptr DEBUGARG("impRuntimeLookup indirectOffset"));
         }
 
+        // The last indirection could be subject to a size check (dynamic dictionary expansion)
+        bool isLastIndirectionWithSizeCheck =
+            ((i == pRuntimeLookup->indirections - 1) && (pRuntimeLookup->sizeOffset != CORINFO_NO_SIZE_CHECK));
+
         if (i != 0)
         {
             slotPtrTree = gtNewOperNode(GT_IND, TYP_I_IMPL, slotPtrTree);
             slotPtrTree->gtFlags |= GTF_IND_NONFAULTING;
-            slotPtrTree->gtFlags |= GTF_IND_INVARIANT;
+            if (!isLastIndirectionWithSizeCheck)
+            {
+                slotPtrTree->gtFlags |= GTF_IND_INVARIANT;
+            }
         }
 
         if ((i == 1 && pRuntimeLookup->indirectFirstOffset) || (i == 2 && pRuntimeLookup->indirectSecondOffset))
@@ -2131,8 +2138,7 @@ GenTree* Compiler::impRuntimeLookupToTree(CORINFO_RESOLVED_TOKEN* pResolvedToken
 
         if (pRuntimeLookup->offsets[i] != 0)
         {
-            // The last indirection could be subject to a size check (dynamic dictionary expansion)
-            if (i == pRuntimeLookup->indirections - 1 && pRuntimeLookup->sizeOffset != CORINFO_NO_SIZE_CHECK)
+            if (isLastIndirectionWithSizeCheck)
             {
                 lastIndOfTree = impCloneExpr(slotPtrTree, &slotPtrTree, NO_CLASS_HANDLE, (unsigned)CHECK_SPILL_ALL,
                                              nullptr DEBUGARG("impRuntimeLookup indirectOffset"));
@@ -3623,31 +3629,6 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
         GenTree* op1;
         GenTree* op2;
 
-        case CORINFO_INTRINSIC_Sin:
-        case CORINFO_INTRINSIC_Cbrt:
-        case CORINFO_INTRINSIC_Sqrt:
-        case CORINFO_INTRINSIC_Abs:
-        case CORINFO_INTRINSIC_Cos:
-        case CORINFO_INTRINSIC_Round:
-        case CORINFO_INTRINSIC_Cosh:
-        case CORINFO_INTRINSIC_Sinh:
-        case CORINFO_INTRINSIC_Tan:
-        case CORINFO_INTRINSIC_Tanh:
-        case CORINFO_INTRINSIC_Asin:
-        case CORINFO_INTRINSIC_Asinh:
-        case CORINFO_INTRINSIC_Acos:
-        case CORINFO_INTRINSIC_Acosh:
-        case CORINFO_INTRINSIC_Atan:
-        case CORINFO_INTRINSIC_Atan2:
-        case CORINFO_INTRINSIC_Atanh:
-        case CORINFO_INTRINSIC_Log10:
-        case CORINFO_INTRINSIC_Pow:
-        case CORINFO_INTRINSIC_Exp:
-        case CORINFO_INTRINSIC_Ceiling:
-        case CORINFO_INTRINSIC_Floor:
-            retNode = impMathIntrinsic(method, sig, callType, intrinsicID, tailCall);
-            break;
-
 #if defined(TARGET_XARCH) || defined(TARGET_ARM64)
         // TODO-ARM-CQ: reenable treating Interlocked operation as intrinsic
 
@@ -3921,7 +3902,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
             {
                 JITDUMP("Expanding as special intrinsic\n");
                 impPopStack();
-                op1 = new (this, GT_INTRINSIC) GenTreeIntrinsic(genActualType(callType), op1, intrinsicID, method);
+                op1 = new (this, GT_INTRINSIC) GenTreeIntrinsic(genActualType(callType), op1, intrinsicID, ni, method);
 
                 // Set the CALL flag to indicate that the operator is implemented by a call.
                 // Set also the EXCEPTION flag because the native implementation of
@@ -4218,7 +4199,6 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
 
 #ifdef FEATURE_HW_INTRINSICS
             case NI_System_Math_FusedMultiplyAdd:
-            case NI_System_MathF_FusedMultiplyAdd:
             {
 #ifdef TARGET_XARCH
                 if (compExactlyDependsOn(InstructionSet_FMA) && supportSIMDTypes())
@@ -4227,9 +4207,9 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
 
                     // We are constructing a chain of intrinsics similar to:
                     //    return FMA.MultiplyAddScalar(
-                    //        Vector128.CreateScalar(x),
-                    //        Vector128.CreateScalar(y),
-                    //        Vector128.CreateScalar(z)
+                    //        Vector128.CreateScalarUnsafe(x),
+                    //        Vector128.CreateScalarUnsafe(y),
+                    //        Vector128.CreateScalarUnsafe(z)
                     //    ).ToScalar();
 
                     GenTree* op3 = gtNewSimdHWIntrinsicNode(TYP_SIMD16, impPopStack().val,
@@ -4243,20 +4223,66 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
 
                     retNode = gtNewSimdHWIntrinsicNode(callType, res, NI_Vector128_ToScalar, callType, 16);
                 }
-#endif // TARGET_XARCH
+#elif defined(TARGET_ARM64)
+                if (compExactlyDependsOn(InstructionSet_AdvSimd))
+                {
+                    assert(varTypeIsFloating(callType));
+
+                    // We are constructing a chain of intrinsics similar to:
+                    //    return AdvSimd.FusedMultiplyAddScalar(
+                    //        Vector64.Create{ScalarUnsafe}(z),
+                    //        Vector64.Create{ScalarUnsafe}(y),
+                    //        Vector64.Create{ScalarUnsafe}(x)
+                    //    ).ToScalar();
+
+                    NamedIntrinsic createVector64 =
+                        (callType == TYP_DOUBLE) ? NI_Vector64_Create : NI_Vector64_CreateScalarUnsafe;
+
+                    constexpr unsigned int simdSize = 8;
+
+                    GenTree* op3 =
+                        gtNewSimdHWIntrinsicNode(TYP_SIMD8, impPopStack().val, createVector64, callType, simdSize);
+                    GenTree* op2 =
+                        gtNewSimdHWIntrinsicNode(TYP_SIMD8, impPopStack().val, createVector64, callType, simdSize);
+                    GenTree* op1 =
+                        gtNewSimdHWIntrinsicNode(TYP_SIMD8, impPopStack().val, createVector64, callType, simdSize);
+
+                    // Note that AdvSimd.FusedMultiplyAddScalar(op1,op2,op3) corresponds to op1 + op2 * op3
+                    // while Math{F}.FusedMultiplyAddScalar(op1,op2,op3) corresponds to op1 * op2 + op3
+                    retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD8, op3, op2, op1, NI_AdvSimd_FusedMultiplyAddScalar,
+                                                       callType, simdSize);
+
+                    retNode = gtNewSimdHWIntrinsicNode(callType, retNode, NI_Vector64_ToScalar, callType, simdSize);
+                }
+#endif
                 break;
             }
 #endif // FEATURE_HW_INTRINSICS
 
+            case NI_System_Math_Sin:
+            case NI_System_Math_Cbrt:
+            case NI_System_Math_Sqrt:
+            case NI_System_Math_Abs:
+            case NI_System_Math_Cos:
             case NI_System_Math_Round:
-            case NI_System_MathF_Round:
+            case NI_System_Math_Cosh:
+            case NI_System_Math_Sinh:
+            case NI_System_Math_Tan:
+            case NI_System_Math_Tanh:
+            case NI_System_Math_Asin:
+            case NI_System_Math_Asinh:
+            case NI_System_Math_Acos:
+            case NI_System_Math_Acosh:
+            case NI_System_Math_Atan:
+            case NI_System_Math_Atan2:
+            case NI_System_Math_Atanh:
+            case NI_System_Math_Log10:
+            case NI_System_Math_Pow:
+            case NI_System_Math_Exp:
+            case NI_System_Math_Ceiling:
+            case NI_System_Math_Floor:
             {
-                // Math.Round and MathF.Round used to be a traditional JIT intrinsic. In order
-                // to simplify the transition, we will just treat it as if it was still the
-                // old intrinsic, CORINFO_INTRINSIC_Round. This should end up flowing properly
-                // everywhere else.
-
-                retNode = impMathIntrinsic(method, sig, callType, CORINFO_INTRINSIC_Round, tailCall);
+                retNode = impMathIntrinsic(method, sig, callType, ni, tailCall);
                 break;
             }
 
@@ -4345,14 +4371,14 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
 GenTree* Compiler::impMathIntrinsic(CORINFO_METHOD_HANDLE method,
                                     CORINFO_SIG_INFO*     sig,
                                     var_types             callType,
-                                    CorInfoIntrinsics     intrinsicID,
+                                    NamedIntrinsic        intrinsicName,
                                     bool                  tailCall)
 {
     GenTree* op1;
     GenTree* op2;
 
     assert(callType != TYP_STRUCT);
-    assert(IsMathIntrinsic(intrinsicID));
+    assert(IsMathIntrinsic(intrinsicName));
 
     op1 = nullptr;
 
@@ -4363,12 +4389,12 @@ GenTree* Compiler::impMathIntrinsic(CORINFO_METHOD_HANDLE method,
     //  a) For back compatibility reasons on desktop .NET Framework 4.6 / 4.6.1
     //  b) It will be non-trivial task or too late to re-materialize a surviving
     //     tail prefixed GT_INTRINSIC as tail call in rationalizer.
-    if (!IsIntrinsicImplementedByUserCall(intrinsicID) || !tailCall)
+    if (!IsIntrinsicImplementedByUserCall(intrinsicName) || !tailCall)
 #else
     // On x86 RyuJIT, importing intrinsics that are implemented as user calls can cause incorrect calculation
     // of the depth of the stack if these intrinsics are used as arguments to another call. This causes bad
     // code generation for certain EH constructs.
-    if (!IsIntrinsicImplementedByUserCall(intrinsicID))
+    if (!IsIntrinsicImplementedByUserCall(intrinsicName))
 #endif
     {
         switch (sig->numArgs)
@@ -4383,7 +4409,8 @@ GenTree* Compiler::impMathIntrinsic(CORINFO_METHOD_HANDLE method,
                     op1 = gtNewCastNode(callType, op1, false, callType);
                 }
 
-                op1 = new (this, GT_INTRINSIC) GenTreeIntrinsic(genActualType(callType), op1, intrinsicID, method);
+                op1 = new (this, GT_INTRINSIC)
+                    GenTreeIntrinsic(genActualType(callType), op1, CORINFO_INTRINSIC_Illegal, intrinsicName, method);
                 break;
 
             case 2:
@@ -4402,14 +4429,15 @@ GenTree* Compiler::impMathIntrinsic(CORINFO_METHOD_HANDLE method,
                     op1 = gtNewCastNode(callType, op1, false, callType);
                 }
 
-                op1 = new (this, GT_INTRINSIC) GenTreeIntrinsic(genActualType(callType), op1, op2, intrinsicID, method);
+                op1 = new (this, GT_INTRINSIC) GenTreeIntrinsic(genActualType(callType), op1, op2,
+                                                                CORINFO_INTRINSIC_Illegal, intrinsicName, method);
                 break;
 
             default:
-                NO_WAY("Unsupported number of args for Math Instrinsic");
+                NO_WAY("Unsupported number of args for Math Intrinsic");
         }
 
-        if (IsIntrinsicImplementedByUserCall(intrinsicID))
+        if (IsIntrinsicImplementedByUserCall(intrinsicName))
         {
             op1->gtFlags |= GTF_CALL;
         }
@@ -4474,31 +4502,99 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
         {
             result = NI_System_Enum_HasFlag;
         }
-        else if (strncmp(className, "Math", 4) == 0)
+        else if (strcmp(className, "Math") == 0 || strcmp(className, "MathF") == 0)
         {
-            className += 4;
-
-            if (className[0] == '\0')
+            if (strcmp(methodName, "FusedMultiplyAdd") == 0)
             {
-                if (strcmp(methodName, "FusedMultiplyAdd") == 0)
-                {
-                    result = NI_System_Math_FusedMultiplyAdd;
-                }
-                else if (strcmp(methodName, "Round") == 0)
-                {
-                    result = NI_System_Math_Round;
-                }
+                result = NI_System_Math_FusedMultiplyAdd;
             }
-            else if (strcmp(className, "F") == 0)
+            else if (strcmp(methodName, "Round") == 0)
             {
-                if (strcmp(methodName, "FusedMultiplyAdd") == 0)
-                {
-                    result = NI_System_MathF_FusedMultiplyAdd;
-                }
-                else if (strcmp(methodName, "Round") == 0)
-                {
-                    result = NI_System_MathF_Round;
-                }
+                result = NI_System_Math_Round;
+            }
+            else if (strcmp(methodName, "Sin") == 0)
+            {
+                result = NI_System_Math_Sin;
+            }
+            else if (strcmp(methodName, "Cos") == 0)
+            {
+                result = NI_System_Math_Cos;
+            }
+            else if (strcmp(methodName, "Cbrt") == 0)
+            {
+                result = NI_System_Math_Cbrt;
+            }
+            else if (strcmp(methodName, "Sqrt") == 0)
+            {
+                result = NI_System_Math_Sqrt;
+            }
+            else if (strcmp(methodName, "Abs") == 0)
+            {
+                result = NI_System_Math_Abs;
+            }
+            else if (strcmp(methodName, "Cosh") == 0)
+            {
+                result = NI_System_Math_Cosh;
+            }
+            else if (strcmp(methodName, "Sinh") == 0)
+            {
+                result = NI_System_Math_Sinh;
+            }
+            else if (strcmp(methodName, "Tan") == 0)
+            {
+                result = NI_System_Math_Tan;
+            }
+            else if (strcmp(methodName, "Tanh") == 0)
+            {
+                result = NI_System_Math_Tanh;
+            }
+            else if (strcmp(methodName, "Asin") == 0)
+            {
+                result = NI_System_Math_Asin;
+            }
+            else if (strcmp(methodName, "Asinh") == 0)
+            {
+                result = NI_System_Math_Asinh;
+            }
+            else if (strcmp(methodName, "Acos") == 0)
+            {
+                result = NI_System_Math_Acos;
+            }
+            else if (strcmp(methodName, "Acosh") == 0)
+            {
+                result = NI_System_Math_Acosh;
+            }
+            else if (strcmp(methodName, "Atan") == 0)
+            {
+                result = NI_System_Math_Atan;
+            }
+            else if (strcmp(methodName, "Atan2") == 0)
+            {
+                result = NI_System_Math_Atan2;
+            }
+            else if (strcmp(methodName, "Atanh") == 0)
+            {
+                result = NI_System_Math_Atanh;
+            }
+            else if (strcmp(methodName, "Log10") == 0)
+            {
+                result = NI_System_Math_Log10;
+            }
+            else if (strcmp(methodName, "Pow") == 0)
+            {
+                result = NI_System_Math_Pow;
+            }
+            else if (strcmp(methodName, "Exp") == 0)
+            {
+                result = NI_System_Math_Exp;
+            }
+            else if (strcmp(methodName, "Ceiling") == 0)
+            {
+                result = NI_System_Math_Ceiling;
+            }
+            else if (strcmp(methodName, "Floor") == 0)
+            {
+                result = NI_System_Math_Floor;
             }
         }
         else if (strcmp(className, "GC") == 0)
@@ -4796,7 +4892,14 @@ GenTree* Compiler::impArrayAccessIntrinsic(
 
     if (intrinsicID != CORINFO_INTRINSIC_Array_Address)
     {
-        arrElem = gtNewOperNode(GT_IND, elemType, arrElem);
+        if (varTypeIsStruct(elemType))
+        {
+            arrElem = gtNewObjNode(sig->retTypeClass, arrElem);
+        }
+        else
+        {
+            arrElem = gtNewOperNode(GT_IND, elemType, arrElem);
+        }
     }
 
     if (intrinsicID == CORINFO_INTRINSIC_Array_Set)
@@ -7709,7 +7812,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
         // If this is a call to JitTestLabel.Mark, do "early inlining", and record the test attribute.
 
         // This recognition should really be done by knowing the methHnd of the relevant Mark method(s).
-        // These should be in mscorlib.h, and available through a JIT/EE interface call.
+        // These should be in corelib.h, and available through a JIT/EE interface call.
         const char* modName;
         const char* className;
         const char* methodName;
@@ -7944,9 +8047,9 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                 // This is for a non-virtual, non-interface etc. call
                 call = gtNewCallNode(CT_USER_FUNC, callInfo->hMethod, callRetTyp, nullptr, ilOffset);
 
-                // We remove the nullcheck for the GetType call instrinsic.
+                // We remove the nullcheck for the GetType call intrinsic.
                 // TODO-CQ: JIT64 does not introduce the null check for many more helper calls
-                // and instrinsics.
+                // and intrinsics.
                 if (callInfo->nullInstanceCheck &&
                     !((mflags & CORINFO_FLG_INTRINSIC) != 0 && (intrinsicID == CORINFO_INTRINSIC_Object_GetType)))
                 {
@@ -8577,7 +8680,7 @@ DONE:
 
         if (canTailCall &&
             !impTailCallRetTypeCompatible(info.compRetType, info.compMethodInfo->args.retTypeClass, callRetTyp,
-                                          callInfo->sig.retTypeClass))
+                                          sig->retTypeClass))
         {
             canTailCall             = false;
             szCanTailCallFailReason = "Return types are not tail call compatible";
@@ -13188,10 +13291,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                             // via an underlying address, just null check the address.
                             if (op1->OperIs(GT_FIELD, GT_IND, GT_OBJ))
                             {
-                                op1->ChangeOper(GT_NULLCHECK);
-                                block->bbFlags |= BBF_HAS_NULLCHECK;
-                                optMethodFlags |= OMF_HAS_NULLCHECK;
-                                op1->gtType = TYP_BYTE;
+                                gtChangeOperToNullCheck(op1, block);
                             }
                             else
                             {
@@ -20072,10 +20172,10 @@ void Compiler::impMarkInlineCandidateHelper(GenTreeCall*           call,
 // Returns true if the given intrinsic will be implemented by target-specific
 // instructions
 
-bool Compiler::IsTargetIntrinsic(CorInfoIntrinsics intrinsicId)
+bool Compiler::IsTargetIntrinsic(NamedIntrinsic intrinsicName)
 {
 #if defined(TARGET_XARCH)
-    switch (intrinsicId)
+    switch (intrinsicName)
     {
         // AMD64/x86 has SSE2 instructions to directly compute sqrt/abs and SSE4.1
         // instructions to directly compute round/ceiling/floor.
@@ -20086,37 +20186,37 @@ bool Compiler::IsTargetIntrinsic(CorInfoIntrinsics intrinsicId)
         //       a CQ problem, it may be necessary to change the implementation of
         //       the helper calls to decrease call overhead or switch back to the
         //       x87 instructions. This is tracked by #7097.
-        case CORINFO_INTRINSIC_Sqrt:
-        case CORINFO_INTRINSIC_Abs:
+        case NI_System_Math_Sqrt:
+        case NI_System_Math_Abs:
             return true;
 
-        case CORINFO_INTRINSIC_Round:
-        case CORINFO_INTRINSIC_Ceiling:
-        case CORINFO_INTRINSIC_Floor:
+        case NI_System_Math_Round:
+        case NI_System_Math_Ceiling:
+        case NI_System_Math_Floor:
             return compOpportunisticallyDependsOn(InstructionSet_SSE41);
 
         default:
             return false;
     }
 #elif defined(TARGET_ARM64)
-    switch (intrinsicId)
+    switch (intrinsicName)
     {
-        case CORINFO_INTRINSIC_Sqrt:
-        case CORINFO_INTRINSIC_Abs:
-        case CORINFO_INTRINSIC_Round:
-        case CORINFO_INTRINSIC_Floor:
-        case CORINFO_INTRINSIC_Ceiling:
+        case NI_System_Math_Sqrt:
+        case NI_System_Math_Abs:
+        case NI_System_Math_Round:
+        case NI_System_Math_Floor:
+        case NI_System_Math_Ceiling:
             return true;
 
         default:
             return false;
     }
 #elif defined(TARGET_ARM)
-    switch (intrinsicId)
+    switch (intrinsicName)
     {
-        case CORINFO_INTRINSIC_Sqrt:
-        case CORINFO_INTRINSIC_Abs:
-        case CORINFO_INTRINSIC_Round:
+        case NI_System_Math_Sqrt:
+        case NI_System_Math_Abs:
+        case NI_System_Math_Round:
             return true;
 
         default:
@@ -20134,41 +20234,41 @@ bool Compiler::IsTargetIntrinsic(CorInfoIntrinsics intrinsicId)
 // Returns true if the given intrinsic will be implemented by calling System.Math
 // methods.
 
-bool Compiler::IsIntrinsicImplementedByUserCall(CorInfoIntrinsics intrinsicId)
+bool Compiler::IsIntrinsicImplementedByUserCall(NamedIntrinsic intrinsicName)
 {
     // Currently, if a math intrinsic is not implemented by target-specific
     // instructions, it will be implemented by a System.Math call. In the
     // future, if we turn to implementing some of them with helper calls,
     // this predicate needs to be revisited.
-    return !IsTargetIntrinsic(intrinsicId);
+    return !IsTargetIntrinsic(intrinsicName);
 }
 
-bool Compiler::IsMathIntrinsic(CorInfoIntrinsics intrinsicId)
+bool Compiler::IsMathIntrinsic(NamedIntrinsic intrinsicName)
 {
-    switch (intrinsicId)
+    switch (intrinsicName)
     {
-        case CORINFO_INTRINSIC_Sin:
-        case CORINFO_INTRINSIC_Cbrt:
-        case CORINFO_INTRINSIC_Sqrt:
-        case CORINFO_INTRINSIC_Abs:
-        case CORINFO_INTRINSIC_Cos:
-        case CORINFO_INTRINSIC_Round:
-        case CORINFO_INTRINSIC_Cosh:
-        case CORINFO_INTRINSIC_Sinh:
-        case CORINFO_INTRINSIC_Tan:
-        case CORINFO_INTRINSIC_Tanh:
-        case CORINFO_INTRINSIC_Asin:
-        case CORINFO_INTRINSIC_Asinh:
-        case CORINFO_INTRINSIC_Acos:
-        case CORINFO_INTRINSIC_Acosh:
-        case CORINFO_INTRINSIC_Atan:
-        case CORINFO_INTRINSIC_Atan2:
-        case CORINFO_INTRINSIC_Atanh:
-        case CORINFO_INTRINSIC_Log10:
-        case CORINFO_INTRINSIC_Pow:
-        case CORINFO_INTRINSIC_Exp:
-        case CORINFO_INTRINSIC_Ceiling:
-        case CORINFO_INTRINSIC_Floor:
+        case NI_System_Math_Sin:
+        case NI_System_Math_Cbrt:
+        case NI_System_Math_Sqrt:
+        case NI_System_Math_Abs:
+        case NI_System_Math_Cos:
+        case NI_System_Math_Round:
+        case NI_System_Math_Cosh:
+        case NI_System_Math_Sinh:
+        case NI_System_Math_Tan:
+        case NI_System_Math_Tanh:
+        case NI_System_Math_Asin:
+        case NI_System_Math_Asinh:
+        case NI_System_Math_Acos:
+        case NI_System_Math_Acosh:
+        case NI_System_Math_Atan:
+        case NI_System_Math_Atan2:
+        case NI_System_Math_Atanh:
+        case NI_System_Math_Log10:
+        case NI_System_Math_Pow:
+        case NI_System_Math_Exp:
+        case NI_System_Math_Ceiling:
+        case NI_System_Math_Floor:
             return true;
         default:
             return false;
@@ -20177,7 +20277,7 @@ bool Compiler::IsMathIntrinsic(CorInfoIntrinsics intrinsicId)
 
 bool Compiler::IsMathIntrinsic(GenTree* tree)
 {
-    return (tree->OperGet() == GT_INTRINSIC) && IsMathIntrinsic(tree->AsIntrinsic()->gtIntrinsicId);
+    return (tree->OperGet() == GT_INTRINSIC) && IsMathIntrinsic(tree->AsIntrinsic()->gtIntrinsicName);
 }
 
 //------------------------------------------------------------------------

@@ -1234,9 +1234,12 @@ namespace System.Tests
             yield return new object[] { "uri://a:2147483648", UriKind.Absolute };
             yield return new object[] { "uri://a:80:80", UriKind.Absolute };
 
-            // Invalid unicode
-            yield return new object[] { "http://\uD800", UriKind.Absolute };
-            yield return new object[] { "http://\uDC00", UriKind.Absolute };
+            if (PlatformDetection.IsNotInvariantGlobalization)
+            {
+                // Invalid unicode
+                yield return new object[] { "http://\uD800", UriKind.Absolute };
+                yield return new object[] { "http://\uDC00", UriKind.Absolute };
+            }
         }
 
         [Theory]

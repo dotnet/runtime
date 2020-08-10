@@ -6,8 +6,8 @@ using System.Collections;
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using System.Threading;
+using System.Runtime.Versioning;
 
 namespace System.Net.Sockets
 {
@@ -17,6 +17,7 @@ namespace System.Net.Sockets
 
         internal void ReplaceHandleIfNecessaryAfterFailedConnect() { /* nop on Windows */ }
 
+        [SupportedOSPlatform("windows")]
         public Socket(SocketInformation socketInformation)
         {
             InitializeSockets();
@@ -105,6 +106,7 @@ namespace System.Net.Sockets
             blocking = true;
         }
 
+        [SupportedOSPlatform("windows")]
         public SocketInformation DuplicateAndClose(int targetProcessId)
         {
             ThrowIfDisposed();
@@ -123,6 +125,30 @@ namespace System.Net.Sockets
             Close(timeout: -1);
 
             return info;
+        }
+
+        public IAsyncResult BeginAccept(int receiveSize, AsyncCallback? callback, object? state)
+        {
+            return BeginAccept(acceptSocket: null, receiveSize, callback, state);
+        }
+
+        // This is the truly async version that uses AcceptEx.
+        public IAsyncResult BeginAccept(Socket? acceptSocket, int receiveSize, AsyncCallback? callback, object? state)
+        {
+            return BeginAcceptCommon(acceptSocket, receiveSize, callback, state);
+        }
+
+        public Socket EndAccept(out byte[] buffer, IAsyncResult asyncResult)
+        {
+            Socket socket = EndAccept(out byte[] innerBuffer, out int bytesTransferred, asyncResult);
+            buffer = new byte[bytesTransferred];
+            Buffer.BlockCopy(innerBuffer, 0, buffer, 0, bytesTransferred);
+            return socket;
+        }
+
+        public Socket EndAccept(out byte[] buffer, out int bytesTransferred, IAsyncResult asyncResult)
+        {
+            return EndAcceptCommon(out buffer!, out bytesTransferred, asyncResult);
         }
 
         private void EnsureDynamicWinsockMethods()

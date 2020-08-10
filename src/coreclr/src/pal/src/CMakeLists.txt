@@ -41,6 +41,10 @@ include_directories(include)
 
 # Compile options
 
+if(CLR_CMAKE_USE_SYSTEM_LIBUNWIND)
+  add_definitions(-DFEATURE_USE_SYSTEM_LIBUNWIND)
+endif(CLR_CMAKE_USE_SYSTEM_LIBUNWIND)
+
 if(CLR_CMAKE_TARGET_OSX)
   add_definitions(-DTARGET_OSX)
   add_definitions(-DXSTATE_SUPPORTED)
@@ -263,10 +267,12 @@ endif(CLR_CMAKE_TARGET_OSX)
 # > warning for library: libtracepointprovider.a the table of contents is empty (no object file members in the library define global symbols)
 #
 if(CLR_CMAKE_TARGET_LINUX)
-  add_library(tracepointprovider
+  add_library(tracepointprovider_obj
     OBJECT
     misc/tracepointprovider.cpp
   )
+  add_library(tracepointprovider INTERFACE)
+  target_sources(tracepointprovider INTERFACE $<TARGET_OBJECTS:tracepointprovider_obj>)
 endif(CLR_CMAKE_TARGET_LINUX)
 
 if(CLR_CMAKE_TARGET_OSX)

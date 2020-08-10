@@ -7,6 +7,9 @@ using System.Security.Permissions;
 
 namespace System.Data.OleDb
 {
+#if NET50_OBSOLETIONS
+    [Obsolete(Obsoletions.CodeAccessSecurityMessage, DiagnosticId = Obsoletions.CodeAccessSecurityDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+#endif
     public sealed class OleDbPermission : DBDataPermission
     {
         public OleDbPermission() : base(default(PermissionState)) { }

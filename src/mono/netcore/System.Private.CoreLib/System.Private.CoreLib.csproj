@@ -123,7 +123,7 @@
     <FeatureManagedEtw>true</FeatureManagedEtw>
     <FeaturePortableTimer Condition="'$(TargetsBrowser)' != 'true'">true</FeaturePortableTimer>
     <FeaturePortableThreadPool Condition="'$(TargetsBrowser)' != 'true'">true</FeaturePortableThreadPool>
-    <FeaturePerfTracing>true</FeaturePerfTracing>
+    <FeaturePerfTracing Condition="'$(TargetsBrowser)' != 'true'">true</FeaturePerfTracing>
     <FeatureDefaultInterfaces>true</FeatureDefaultInterfaces>
   </PropertyGroup>
 
@@ -132,12 +132,6 @@
     <DefineConstants Condition="'$(FeatureManagedEtwChannels)' == 'true'">$(DefineConstants);FEATURE_MANAGED_ETW_CHANNELS</DefineConstants>
     <DefineConstants Condition="'$(FeaturePerfTracing)' == 'true'">$(DefineConstants);FEATURE_PERFTRACING</DefineConstants>
     <DefineConstants Condition="'$(FeatureDefaultInterfaces)' == 'true'">$(DefineConstants);FEATURE_DEFAULT_INTERFACES</DefineConstants>
-    <DefineConstants Condition="'$(TargetsUnix)' == 'true'">$(DefineConstants);TARGET_UNIX</DefineConstants>
-    <DefineConstants Condition="'$(TargetsWindows)' == 'true'">$(DefineConstants);TARGET_WINDOWS</DefineConstants>
-    <DefineConstants Condition="'$(TargetsOSX)' == 'true'">$(DefineConstants);TARGET_OSX</DefineConstants>
-    <DefineConstants Condition="'$(TargetsiOS)' == 'true'">$(DefineConstants);TARGET_IOS</DefineConstants>
-    <DefineConstants Condition="'$(TargetstvOS)' == 'true'">$(DefineConstants);TARGET_TVOS</DefineConstants>
-    <DefineConstants Condition="'$(TargetsBrowser)' == 'true'">$(DefineConstants);TARGET_BROWSER</DefineConstants>
   </PropertyGroup>
 
   <!-- ILLinker settings -->
@@ -163,6 +157,7 @@
       <Compile Include="$(BclSourcesRoot)\Mono\MonoListItem.cs" />
       <Compile Include="$(BclSourcesRoot)\Mono\MonoDomain.cs" />
       <Compile Include="$(BclSourcesRoot)\Mono\MonoDomainSetup.cs" />
+      <Compile Include="$(BclSourcesRoot)\Mono\MonoPInvokeCallbackAttribute.cs" />
       <Compile Include="$(BclSourcesRoot)\Mono\RuntimeHandles.cs" />
       <Compile Include="$(BclSourcesRoot)\System\ArgIterator.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Array.Mono.cs" />
@@ -265,6 +260,7 @@
       <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\MarshalAsAttribute.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\NativeLibrary.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\SafeHandle.Mono.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Runtime\Intrinsics\X86\X86Base.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Runtime\Loader\AssemblyLoadContext.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Runtime\Remoting\Contexts\Context.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Security\DynamicSecurityMethodAttribute.cs" />

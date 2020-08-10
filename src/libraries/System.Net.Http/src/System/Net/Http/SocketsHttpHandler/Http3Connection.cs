@@ -9,11 +9,16 @@ using System.IO;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Net.Http.Headers;
+using System.Net.Security;
 
 namespace System.Net.Http
 {
     internal sealed class Http3Connection : HttpConnectionBase, IDisposable
     {
+        // TODO: once HTTP/3 is standardized, create APIs for these.
+        public static readonly Version HttpVersion30 = new Version(3, 0);
+        public static readonly SslApplicationProtocol Http3ApplicationProtocol = new SslApplicationProtocol("h3");
+
         /// <summary>
         /// If we receive a settings frame larger than this, tear down the connection with an error.
         /// </summary>

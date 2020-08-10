@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworkIdentifier>.NETCoreApp</TargetFrameworkIdentifier>
+    <OutputType>exe</OutputType>
+    <CLRTestKind>BuildAndRun</CLRTestKind>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <CLRTestPriority>0</CLRTestPriority>
+    <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
+    <JitOptimizationSensitive>true</JitOptimizationSensitive>
+    <!-- ilasm round-trip testing doesn't work, as test expects unchanged assembly name.
+         Issue: https://github.com/dotnet/runtime/issues/39935
+    -->
+    <IlasmRoundTripIncompatible>true</IlasmRoundTripIncompatible>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(MSBuildProjectName).cs" />
+    <ProjectReference Include="../common/common.csproj" />
+  </ItemGroup>
+</Project>

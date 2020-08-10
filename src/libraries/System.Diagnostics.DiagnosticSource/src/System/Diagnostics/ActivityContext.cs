@@ -59,7 +59,41 @@ namespace System.Diagnostics
         /// </remarks>
         public bool IsRemote { get; }
 
-        public bool Equals(ActivityContext value) =>  SpanId.Equals(value.SpanId) && TraceId.Equals(value.TraceId) && TraceFlags == value.TraceFlags && TraceState == value.TraceState;
+        /// <summary>
+        /// Parse W3C trace context headers to ActivityContext object.
+        /// </summary>
+        /// <param name="traceParent">W3C trace parent header.</param>
+        /// <param name="traceState">W3C trace state.</param>
+        /// <param name="context">The ActivityContext object created from the parsing operation.</param>
+        public static bool TryParse(string traceParent, string? traceState, out ActivityContext context)
+        {
+            if (traceParent == null)
+            {
+                throw new ArgumentNullException(nameof(traceParent));
+            }
+
+            return Activity.TryConvertIdToContext(traceParent, traceState, out context);
+        }
+
+        /// <summary>
+        /// Parse W3C trace context headers to ActivityContext object.
+        /// </summary>
+        /// <param name="traceParent">W3C trace parent header.</param>
+        /// <param name="traceState">Trace state.</param>
+        /// <returns>
+        /// The ActivityContext object created from the parsing operation.
+        /// </returns>
+        public static ActivityContext Parse(string traceParent, string? traceState)
+        {
+            if (!TryParse(traceParent, traceState, out ActivityContext context))
+            {
+                throw new ArgumentException(SR.InvalidTraceParent);
+            }
+
+            return context;
+        }
+
+        public bool Equals(ActivityContext value) =>  SpanId.Equals(value.SpanId) && TraceId.Equals(value.TraceId) && TraceFlags == value.TraceFlags && TraceState == value.TraceState && IsRemote == value.IsRemote;
 
         public override bool Equals(object? obj) => (obj is ActivityContext context) ? Equals(context) : false;
         public static bool operator ==(ActivityContext left, ActivityContext right) => left.Equals(right);

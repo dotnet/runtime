@@ -14,7 +14,7 @@ namespace System.Threading.Tasks
     internal class RendezvousAwaitable<TResult> : ICriticalNotifyCompletion
     {
         /// <summary>Sentinel object indicating that the operation has completed prior to OnCompleted being called.</summary>
-        private static readonly Action s_completionSentinel = () => Debug.Fail("Completion sentinel should never be invoked");
+        private static readonly Action s_completionSentinel = static () => Debug.Fail("Completion sentinel should never be invoked");
 
         /// <summary>
         /// The continuation to invoke when the operation completes, or <see cref="s_completionSentinel"/> if the operation
@@ -24,7 +24,7 @@ namespace System.Threading.Tasks
         /// <summary>The exception representing the failed async operation, if it failed.</summary>
         private ExceptionDispatchInfo? _error;
         /// <summary>The result of the async operation, if it succeeded.</summary>
-        [AllowNull] private TResult _result = default;
+        private TResult? _result;
 #if DEBUG
         private bool _resultSet;
 #endif
@@ -64,7 +64,7 @@ namespace System.Threading.Tasks
             }
 
             // The operation completed successfully.  Clear and return the result.
-            TResult result = _result;
+            TResult result = _result!;
             _result = default(TResult);
 #if DEBUG
             _resultSet = false;

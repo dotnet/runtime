@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#nullable enable
 using System.Diagnostics;
 using System.Xml;
 using System.Xml.XPath;
@@ -16,12 +17,12 @@ namespace MS.Internal.Xml.XPath
     // So we don't need to call DecideNextNode() when needInput == true && stack is empty.
     internal sealed class CacheChildrenQuery : ChildrenQuery
     {
-        private XPathNavigator _nextInput;
+        private XPathNavigator? _nextInput;
         private readonly StackNav _elementStk;
         private readonly StackInt _positionStk;
         private bool _needInput;
 #if DEBUG
-        private XPathNavigator _lastNode;
+        private XPathNavigator? _lastNode;
 #endif
 
         public CacheChildrenQuery(Query qyInput, string name, string prefix, XPathNodeType type) : base(qyInput, name, prefix, type)
@@ -53,7 +54,7 @@ namespace MS.Internal.Xml.XPath
 #endif
         }
 
-        public override XPathNavigator Advance()
+        public override XPathNavigator? Advance()
         {
             do
             {
@@ -85,7 +86,7 @@ namespace MS.Internal.Xml.XPath
                 }
                 else
                 {
-                    if (!currentNode.MoveToNext() || !DecideNextNode())
+                    if (!currentNode!.MoveToNext() || !DecideNextNode())
                     {
                         _needInput = true;
                         continue;
@@ -104,9 +105,9 @@ namespace MS.Internal.Xml.XPath
             _nextInput = GetNextInput();
             if (_nextInput != null)
             {
-                if (CompareNodes(currentNode, _nextInput) == XmlNodeOrder.After)
+                if (CompareNodes(currentNode!, _nextInput) == XmlNodeOrder.After)
                 {
-                    _elementStk.Push(currentNode);
+                    _elementStk.Push(currentNode!);
                     _positionStk.Push(position);
                     currentNode = _nextInput;
                     _nextInput = null;
@@ -120,9 +121,9 @@ namespace MS.Internal.Xml.XPath
             return true;
         }
 
-        private XPathNavigator GetNextInput()
+        private XPathNavigator? GetNextInput()
         {
-            XPathNavigator result;
+            XPathNavigator? result;
             if (_nextInput != null)
             {
                 result = _nextInput;

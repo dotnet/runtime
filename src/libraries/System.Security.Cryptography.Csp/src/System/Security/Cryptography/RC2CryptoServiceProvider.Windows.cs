@@ -4,6 +4,7 @@
 using Internal.Cryptography;
 using Internal.NativeCrypto;
 using System.ComponentModel;
+using System.Runtime.Versioning;
 
 namespace System.Security.Cryptography
 {
@@ -43,6 +44,7 @@ namespace System.Security.Cryptography
             {
                 return _use40bitSalt;
             }
+            [SupportedOSPlatform("windows")]
             set
             {
                 _use40bitSalt = value;

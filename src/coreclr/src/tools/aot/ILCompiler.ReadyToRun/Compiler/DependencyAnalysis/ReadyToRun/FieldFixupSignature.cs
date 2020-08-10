@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics;
 
 using Internal.JitInterface;
 using Internal.Text;
@@ -13,17 +14,19 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
     public class FieldFixupSignature : Signature
     {
+        public const int MaxCheckableOffset = 0x1FFFFFFF;
         private readonly ReadyToRunFixupKind _fixupKind;
 
         private readonly FieldDesc _fieldDesc;
 
-        public FieldFixupSignature(ReadyToRunFixupKind fixupKind, FieldDesc fieldDesc)
+        public FieldFixupSignature(ReadyToRunFixupKind fixupKind, FieldDesc fieldDesc, NodeFactory factory)
         {
             _fixupKind = fixupKind;
             _fieldDesc = fieldDesc;
 
             // Ensure types in signature are loadable and resolvable, otherwise we'll fail later while emitting the signature
             ((CompilerTypeSystemContext)fieldDesc.Context).EnsureLoadableType(fieldDesc.OwningType);
+            Debug.Assert(factory.SignatureContext.GetTargetModule(_fieldDesc) != null);
         }
 
         public override int ClassCode => 271828182;

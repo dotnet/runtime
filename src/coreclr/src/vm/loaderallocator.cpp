@@ -662,6 +662,11 @@ BOOL QCALLTYPE LoaderAllocator::Destroy(QCall::LoaderAllocatorHandle pLoaderAllo
         STRESS_LOG1(LF_CLASSLOADER, LL_INFO100, "Begin LoaderAllocator::Destroy for loader allocator %p\n", reinterpret_cast<void *>(static_cast<PTR_LoaderAllocator>(pLoaderAllocator)));
         LoaderAllocatorID *pID = pLoaderAllocator->Id();
 
+        {
+            GCX_COOP();
+            LoaderAllocator::RemoveMemoryToLoaderAllocatorAssociation(pLoaderAllocator);
+        }
+
         // This will probably change for shared code unloading
         _ASSERTE(pID->GetType() == LAT_Assembly);
 
@@ -1008,7 +1013,7 @@ void LoaderAllocator::SetupManagedTracking(LOADERALLOCATORREF * pKeepLoaderAlloc
     // Initialize managed loader allocator reference holder
     //
 
-    MethodTable *pMT = MscorlibBinder::GetClass(CLASS__LOADERALLOCATOR);
+    MethodTable *pMT = CoreLibBinder::GetClass(CLASS__LOADERALLOCATOR);
 
     *pKeepLoaderAllocatorAlive = (LOADERALLOCATORREF)AllocateObject(pMT);
 
@@ -1982,6 +1987,44 @@ UMEntryThunkCache *LoaderAllocator::GetUMEntryThunkCache()
     }
     _ASSERTE(m_pUMEntryThunkCache);
     return m_pUMEntryThunkCache;
+}
+
+/* static */
+void LoaderAllocator::RemoveMemoryToLoaderAllocatorAssociation(LoaderAllocator* pLoaderAllocator)
+{
+    CONTRACTL {
+        THROWS;
+        MODE_COOPERATIVE;
+    } CONTRACTL_END;
+
+    GlobalLoaderAllocator* pGlobalAllocator = (GlobalLoaderAllocator*)SystemDomain::GetGlobalLoaderAllocator();
+    pGlobalAllocator->m_memoryAssociations.RemoveRanges(pLoaderAllocator);
+}
+
+/* static */
+void LoaderAllocator::AssociateMemoryWithLoaderAllocator(BYTE *start, const BYTE *end, LoaderAllocator* pLoaderAllocator)
+{
+    CONTRACTL {
+        THROWS;
+        MODE_COOPERATIVE;
+    } CONTRACTL_END;
+
+    GlobalLoaderAllocator* pGlobalAllocator = (GlobalLoaderAllocator*)SystemDomain::GetGlobalLoaderAllocator();
+    pGlobalAllocator->m_memoryAssociations.AddRange(start, end, pLoaderAllocator);
+}
+
+/* static */
+PTR_LoaderAllocator LoaderAllocator::GetAssociatedLoaderAllocator_Unsafe(TADDR ptr)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    GlobalLoaderAllocator* pGlobalAllocator = (GlobalLoaderAllocator*)SystemDomain::GetGlobalLoaderAllocator();
+    LoaderAllocator* pLoaderAllocator;
+    if (pGlobalAllocator->m_memoryAssociations.IsInRangeWorker_Unlocked(ptr, reinterpret_cast<TADDR *>(&pLoaderAllocator)))
+    {
+        return pLoaderAllocator;
+    }
+    return NULL;
 }
 
 #endif // !CROSSGEN_COMPILE
