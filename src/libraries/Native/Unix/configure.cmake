@@ -406,9 +406,9 @@ check_c_source_compiles(
     HAVE_SENDFILE_7)
 
 check_symbol_exists(
-    clonefile
-    "sys/clonefile.h"
-    HAVE_CLONEFILE)
+    fcopyfile
+    copyfile.h
+    HAVE_FCOPYFILE)
 
 check_include_files(
      "sys/sockio.h"
