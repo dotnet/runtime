@@ -1,6 +1,5 @@
 # Licensed to the .NET Foundation under one or more agreements.
 # The .NET Foundation licenses this file to you under the MIT license.
-# See the LICENSE file in the project root for more information.
 
 project(hostfxr)
 
@@ -13,6 +12,7 @@ include_directories(../../fxr)
 # CMake does not recommend using globbing since it messes with the freshness checks
 set(SOURCES
     ./hostpolicy_resolver.cpp
+    $<TARGET_OBJECTS:libhostfxr_static>
 )
 
 set(HEADERS
@@ -49,4 +49,4 @@ if(CLR_CMAKE_HOST_UNIX)
 endif(CLR_CMAKE_HOST_UNIX)
 
 install_with_stripped_symbols(hostfxr TARGETS corehost)
-target_link_libraries(hostfxr libhostcommon libhostfxr_static)
+target_link_libraries(hostfxr libhostcommon)

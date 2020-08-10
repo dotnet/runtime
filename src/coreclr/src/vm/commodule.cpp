@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 
 #include "common.h"
@@ -644,6 +643,12 @@ void QCALLTYPE COMModule::SetFieldRVAContent(QCall::ModuleHandle pModule, INT32 
     if (pContent != NULL)
         memcpy(pvBlob, pContent, length);
 
+    if (pReflectionModule->IsCollectible())
+    {
+        GCX_COOP();
+        LoaderAllocator::AssociateMemoryWithLoaderAllocator((BYTE*)pvBlob, ((BYTE*)pvBlob) + length, pReflectionModule->GetLoaderAllocator());
+    }
+
     // set FieldRVA into metadata. Note that this is not final RVA in the image if save to disk. We will do another round of fix up upon save.
     IfFailThrow( pRCW->GetEmitter()->SetFieldRVA(tkField, dwRVA) );
 
@@ -959,7 +964,7 @@ Object* GetTypesInner(Module* pModule)
 
     if (pModule->IsResource())
     {
-        refArrClasses = (PTRARRAYREF) AllocateObjectArray(0, MscorlibBinder::GetClass(CLASS__CLASS));
+        refArrClasses = (PTRARRAYREF) AllocateObjectArray(0, CoreLibBinder::GetClass(CLASS__CLASS));
         RETURN(OBJECTREFToObject(refArrClasses));
     }
 
@@ -977,7 +982,7 @@ Object* GetTypesInner(Module* pModule)
     // Allocate the COM+ array
     bSystemAssembly = (pModule->GetAssembly() == SystemDomain::SystemAssembly());
     AllocSize = dwNumTypeDefs;
-    refArrClasses = (PTRARRAYREF) AllocateObjectArray(AllocSize, MscorlibBinder::GetClass(CLASS__CLASS));
+    refArrClasses = (PTRARRAYREF) AllocateObjectArray(AllocSize, CoreLibBinder::GetClass(CLASS__CLASS));
 
     int curPos = 0;
     OBJECTREF throwable = 0;

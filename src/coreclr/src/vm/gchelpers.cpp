@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*
  * GCHELPERS.CPP
@@ -758,7 +757,7 @@ OBJECTREF AllocatePrimitiveArray(CorElementType type, DWORD cElements)
     // Fetch the proper array type
     if (g_pPredefinedArrayTypes[type] == NULL)
     {
-        TypeHandle elemType = TypeHandle(MscorlibBinder::GetElementType(type));
+        TypeHandle elemType = TypeHandle(CoreLibBinder::GetElementType(type));
         TypeHandle typHnd = ClassLoader::LoadArrayTypeThrowing(elemType, ELEMENT_TYPE_SZARRAY, 0);
         g_pPredefinedArrayTypes[type] = typHnd;
     }

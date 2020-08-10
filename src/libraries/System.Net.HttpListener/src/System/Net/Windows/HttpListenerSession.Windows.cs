@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Runtime.InteropServices;
 using System.Threading;
@@ -24,7 +23,7 @@ namespace System.Net
                         if (_requestQueueBoundHandle == null)
                         {
                             _requestQueueBoundHandle = ThreadPoolBoundHandle.BindHandle(RequestQueueHandle);
-                            if (NetEventSource.IsEnabled) NetEventSource.Info($"ThreadPoolBoundHandle.BindHandle({RequestQueueHandle}) -> {_requestQueueBoundHandle}");
+                            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info($"ThreadPoolBoundHandle.BindHandle({RequestQueueHandle}) -> {_requestQueueBoundHandle}");
                         }
                     }
                 }
@@ -65,7 +64,7 @@ namespace System.Net
             {
                 if (!RequestQueueHandle.IsInvalid)
                 {
-                    if (NetEventSource.IsEnabled) NetEventSource.Info($"Dispose ThreadPoolBoundHandle: {_requestQueueBoundHandle}");
+                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Info($"Dispose ThreadPoolBoundHandle: {_requestQueueBoundHandle}");
                     _requestQueueBoundHandle?.Dispose();
                     RequestQueueHandle.Dispose();
 

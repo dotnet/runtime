@@ -121,7 +121,7 @@
     <value>The destination is too small to hold the encoded value.</value>
   </data>
   <data name="Cbor_PopMajorTypeMismatch" xml:space="preserve">
-    <value>Cannot perform the requested operation, the current context is '{0}'.</value>
+    <value>Cannot perform the requested operation, the current major type context is '{0}'.</value>
   </data>
   <data name="Cbor_NotAtEndOfDefiniteLengthDataItem" xml:space="preserve">
     <value>Not at end of the definite-length data item.</value>
@@ -177,8 +177,8 @@
   <data name="Cbor_Reader_NotAFloatEncoding" xml:space="preserve">
     <value>Data item does not encode a floating point number.</value>
   </data>
-  <data name="Cbor_Reader_ReadingDoubleAsSingle" xml:space="preserve">
-    <value>Attempting to read double-precision floating point encoding as a single-precision value.</value>
+  <data name="Cbor_Reader_ReadingAsLowerPrecision" xml:space="preserve">
+    <value>Attempting to read floating point encoding as a lower-precision value.</value>
   </data>
   <data name="Cbor_Reader_NotABooleanEncoding" xml:space="preserve">
     <value>CBOR simple value does not encode a boolean value.</value>

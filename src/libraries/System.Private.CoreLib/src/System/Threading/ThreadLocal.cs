@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -306,8 +305,7 @@ namespace System.Threading
             }
         }
 
-        [return: MaybeNull]
-        private T GetValueSlow()
+        private T? GetValueSlow()
         {
             // If the object has been disposed, the id will be -1.
             int id = ~_idComplement;
@@ -539,8 +537,7 @@ namespace System.Threading
 
         /// <summary>Gets the value of the ThreadLocal&lt;T&gt; for debugging display purposes. It takes care of getting
         /// the value for the current thread in the ThreadLocal mode.</summary>
-        [MaybeNull]
-        internal T ValueForDebugDisplay
+        internal T? ValueForDebugDisplay
         {
             get
             {
@@ -549,7 +546,7 @@ namespace System.Threading
 
                 LinkedSlot? slot;
                 if (slotArray == null || id >= slotArray.Length || (slot = slotArray[id].Value) == null || !_initialized)
-                    return default!;
+                    return default;
                 return slot._value;
             }
         }
@@ -673,7 +670,7 @@ namespace System.Threading
             internal volatile LinkedSlotVolatile[]? _slotArray;
 
             // The value for this slot.
-            [AllowNull, MaybeNull] internal T _value = default;
+            internal T? _value;
         }
 
         /// <summary>
@@ -682,7 +679,7 @@ namespace System.Threading
         private class IdManager
         {
             // The next ID to try
-            private int _nextIdToTry = 0;
+            private int _nextIdToTry;
 
             // Stores whether each ID is free or not. Additionally, the object is also used as a lock for the IdManager.
             private readonly List<bool> _freeIds = new List<bool>();
@@ -805,8 +802,7 @@ namespace System.Threading
         public bool IsValueCreated => _tlocal.IsValueCreated;
 
         /// <summary>Returns the value of the ThreadLocal object.</summary>
-        [MaybeNull]
-        public T Value => _tlocal.ValueForDebugDisplay;
+        public T? Value => _tlocal.ValueForDebugDisplay;
 
         /// <summary>Return all values for all threads that have accessed this instance.</summary>
         public List<T>? Values => _tlocal.ValuesForDebugDisplay;

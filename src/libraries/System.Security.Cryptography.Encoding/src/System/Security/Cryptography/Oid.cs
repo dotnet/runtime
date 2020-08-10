@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Diagnostics;
@@ -30,6 +29,7 @@ namespace System.Security.Cryptography
         {
             _value = value;
             _friendlyName = friendlyName;
+            _hasInitializedFriendlyName = friendlyName != null;
         }
 
         public Oid(Oid oid)
@@ -39,6 +39,7 @@ namespace System.Security.Cryptography
             _value = oid._value;
             _friendlyName = oid._friendlyName;
             _group = oid._group;
+            _hasInitializedFriendlyName = oid._hasInitializedFriendlyName;
         }
 
         public static Oid FromFriendlyName(string friendlyName, OidGroup group)
@@ -87,9 +88,10 @@ namespace System.Security.Cryptography
         {
             get
             {
-                if (_friendlyName == null && _value != null)
+                if (!_hasInitializedFriendlyName && _value != null)
                 {
                     _friendlyName = OidLookup.ToFriendlyName(_value, _group, fallBackToAllGroups: true);
+                    _hasInitializedFriendlyName = true;
                 }
 
                 return _friendlyName;
@@ -98,13 +100,20 @@ namespace System.Security.Cryptography
             {
                 // If _friendlyName has not been set, permit it to be set once, or to
                 // the same value for "initialize once" behavior.
-                if (_friendlyName != null && !_friendlyName.Equals(value, StringComparison.Ordinal))
+                if (_hasInitializedFriendlyName)
                 {
-                    throw new PlatformNotSupportedException(SR.Cryptography_Oid_SetOnceFriendlyName);
+                    if ((_friendlyName != null && !_friendlyName.Equals(value, StringComparison.Ordinal)) ||
+                        (_friendlyName is null && value != null))
+                    {
+                        throw new PlatformNotSupportedException(SR.Cryptography_Oid_SetOnceFriendlyName);
+                    }
+
+                    // Already initialized, no meaningful mutation, we so we can exit early.
+                    return;
                 }
 
                 // If we can find the matching OID value, then update it as well
-                if (_friendlyName == null && value != null)
+                if (value != null)
                 {
                     // If FindOidInfo fails, we return a null String
                     string? oidValue = OidLookup.ToOid(value, _group, fallBackToAllGroups: true);
@@ -126,11 +135,12 @@ namespace System.Security.Cryptography
                             throw new PlatformNotSupportedException(SR.Cryptography_Oid_SetOnceValue);
                         }
                     }
-
-                    // Ensure we don't mutate _friendlyName until we are sure we can
-                    // set _value if we are going to.
-                    _friendlyName = value;
                 }
+
+                // Ensure we don't mutate _friendlyName until we are sure we can
+                // set _value if we are going to.
+                _friendlyName = value;
+                _hasInitializedFriendlyName = true;
             }
         }
 
@@ -142,10 +152,12 @@ namespace System.Security.Cryptography
             _value = value;
             _friendlyName = friendlyName;
             _group = group;
+            _hasInitializedFriendlyName = true;
         }
 
-        private string? _value = null;
-        private string? _friendlyName = null;
+        private string? _value;
+        private string? _friendlyName;
+        private bool _hasInitializedFriendlyName;
         private readonly OidGroup _group = OidGroup.All;
     }
 }

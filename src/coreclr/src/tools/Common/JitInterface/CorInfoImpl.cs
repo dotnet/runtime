@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -136,20 +135,16 @@ namespace Internal.JitInterface
 
         private CORINFO_MODULE_STRUCT_* _methodScope; // Needed to resolve CORINFO_EH_CLAUSE tokens
 
-        private bool _isFallbackBodyCompilation; // True if we're compiling a fallback method body after compiling the real body failed
-
-        private void CompileMethodInternal(IMethodNode methodCodeNodeNeedingCode, MethodIL methodIL = null)
+        private void CompileMethodInternal(IMethodNode methodCodeNodeNeedingCode, MethodIL methodIL)
         {
-            _isFallbackBodyCompilation = methodIL != null;
-
-            CORINFO_METHOD_INFO methodInfo;
-            methodIL = Get_CORINFO_METHOD_INFO(MethodBeingCompiled, methodIL, &methodInfo);
-
-            // This is e.g. an "extern" method in C# without a DllImport or InternalCall.
+            // methodIL must not be null
             if (methodIL == null)
             {
                 ThrowHelper.ThrowInvalidProgramException(ExceptionStringID.InvalidProgramSpecific, MethodBeingCompiled);
             }
+
+            CORINFO_METHOD_INFO methodInfo;
+            Get_CORINFO_METHOD_INFO(MethodBeingCompiled, methodIL, &methodInfo);
 
             _methodScope = methodInfo.scope;
 
@@ -429,16 +424,12 @@ namespace Internal.JitInterface
         private FieldDesc HandleToObject(CORINFO_FIELD_STRUCT_* field) { return (FieldDesc)HandleToObject((IntPtr)field); }
         private CORINFO_FIELD_STRUCT_* ObjectToHandle(FieldDesc field) { return (CORINFO_FIELD_STRUCT_*)ObjectToHandle((Object)field); }
 
-        private MethodIL Get_CORINFO_METHOD_INFO(MethodDesc method, MethodIL methodIL, CORINFO_METHOD_INFO* methodInfo)
+        private bool Get_CORINFO_METHOD_INFO(MethodDesc method, MethodIL methodIL, CORINFO_METHOD_INFO* methodInfo)
         {
-            // MethodIL can be provided externally for the case of a method whose IL was replaced because we couldn't compile it.
-            if (methodIL == null)
-                methodIL = _compilation.GetMethodIL(method);
-
             if (methodIL == null)
             {
                 *methodInfo = default(CORINFO_METHOD_INFO);
-                return null;
+                return false;
             }
 
             methodInfo->ftn = ObjectToHandle(method);
@@ -466,7 +457,7 @@ namespace Internal.JitInterface
             Get_CORINFO_SIG_INFO(method, &methodInfo->args);
             Get_CORINFO_SIG_INFO(methodIL.GetLocals(), &methodInfo->locals);
 
-            return methodIL;
+            return true;
         }
 
         private void Get_CORINFO_SIG_INFO(MethodDesc method, CORINFO_SIG_INFO* sig, bool suppressHiddenArgument = false)
@@ -511,6 +502,53 @@ namespace Internal.JitInterface
             }
         }
 
+        private bool TryGetUnmanagedCallingConventionFromModOpt(MethodSignature signature, out CorInfoCallConv callConv)
+        {
+            callConv = CorInfoCallConv.CORINFO_CALLCONV_UNMANAGED;
+            if (!signature.HasEmbeddedSignatureData || signature.GetEmbeddedSignatureData() == null)
+                return false;
+
+            bool found = false;
+            foreach (EmbeddedSignatureData data in signature.GetEmbeddedSignatureData())
+            {
+                if (data.kind != EmbeddedSignatureDataKind.OptionalCustomModifier)
+                    continue;
+
+                // We only care about the modifiers for the return type. These will be at the start of
+                // the signature, so will be first in the array of embedded signature data.
+                if (data.index != MethodSignature.IndexOfCustomModifiersOnReturnType)
+                    break;
+
+                if (!(data.type is DefType defType))
+                    continue;
+
+                if (defType.Namespace != "System.Runtime.CompilerServices")
+                    continue;
+
+                // Look for a recognized calling convention in metadata.
+                CorInfoCallConv? callConvLocal = defType.Name switch
+                {
+                    "CallConvCdecl"     => CorInfoCallConv.CORINFO_CALLCONV_C,
+                    "CallConvStdcall"   => CorInfoCallConv.CORINFO_CALLCONV_STDCALL,
+                    "CallConvFastcall"  => CorInfoCallConv.CORINFO_CALLCONV_FASTCALL,
+                    "CallConvThiscall"  => CorInfoCallConv.CORINFO_CALLCONV_THISCALL,
+                    _ => null
+                };
+
+                if (callConvLocal.HasValue)
+                {
+                    // Error if there are multiple recognized calling conventions
+                    if (found)
+                        ThrowHelper.ThrowInvalidProgramException(ExceptionStringID.InvalidProgramMultipleCallConv, MethodBeingCompiled);
+ 
+                    callConv = callConvLocal.Value;
+                    found = true;
+                }
+            }
+
+            return found;
+        }
+
         private void Get_CORINFO_SIG_INFO(MethodSignature signature, CORINFO_SIG_INFO* sig)
         {
             sig->callConv = (CorInfoCallConv)(signature.Flags & MethodSignatureFlags.UnmanagedCallingConventionMask);
@@ -520,6 +558,22 @@ namespace Internal.JitInterface
                 ThrowHelper.ThrowBadImageFormatException();
 
             if (!signature.IsStatic) sig->callConv |= CorInfoCallConv.CORINFO_CALLCONV_HASTHIS;
+
+            // Unmanaged calling convention indicates modopt should be read
+            if (sig->callConv == CorInfoCallConv.CORINFO_CALLCONV_UNMANAGED)
+            {
+                if (TryGetUnmanagedCallingConventionFromModOpt(signature, out CorInfoCallConv callConvMaybe))
+                {
+                    sig->callConv = callConvMaybe;
+                }
+                else
+                {
+                    // Use platform default
+                    sig->callConv = _compilation.TypeSystemContext.Target.IsWindows
+                        ? CorInfoCallConv.CORINFO_CALLCONV_STDCALL
+                        : CorInfoCallConv.CORINFO_CALLCONV_C;
+                }
+            }
 
             TypeDesc returnType = signature.ReturnType;
 
@@ -620,8 +674,18 @@ namespace Internal.JitInterface
             return (CORINFO_CONTEXT_STRUCT*)(((ulong)ObjectToHandle(type)) | (ulong)CorInfoContextFlags.CORINFO_CONTEXTFLAGS_CLASS);
         }
 
+        private static CORINFO_CONTEXT_STRUCT* contextFromMethodBeingCompiled()
+        {
+            return (CORINFO_CONTEXT_STRUCT*)1;
+        }
+
         private MethodDesc methodFromContext(CORINFO_CONTEXT_STRUCT* contextStruct)
         {
+            if (contextStruct == contextFromMethodBeingCompiled())
+            {
+                return MethodBeingCompiled;
+            }
+
             if (((ulong)contextStruct & (ulong)CorInfoContextFlags.CORINFO_CONTEXTFLAGS_MASK) == (ulong)CorInfoContextFlags.CORINFO_CONTEXTFLAGS_CLASS)
             {
                 return null;
@@ -634,18 +698,28 @@ namespace Internal.JitInterface
 
         private TypeDesc typeFromContext(CORINFO_CONTEXT_STRUCT* contextStruct)
         {
+            if (contextStruct == contextFromMethodBeingCompiled())
+            {
+                return MethodBeingCompiled.OwningType;
+            }
+
             if (((ulong)contextStruct & (ulong)CorInfoContextFlags.CORINFO_CONTEXTFLAGS_MASK) == (ulong)CorInfoContextFlags.CORINFO_CONTEXTFLAGS_CLASS)
             {
                 return HandleToObject((CORINFO_CLASS_STRUCT_*)((ulong)contextStruct & ~(ulong)CorInfoContextFlags.CORINFO_CONTEXTFLAGS_MASK));
             }
             else
             {
-                return methodFromContext(contextStruct).OwningType;
+                return HandleToObject((CORINFO_METHOD_STRUCT_*)((ulong)contextStruct & ~(ulong)CorInfoContextFlags.CORINFO_CONTEXTFLAGS_MASK)).OwningType;
             }
         }
 
         private TypeSystemEntity entityFromContext(CORINFO_CONTEXT_STRUCT* contextStruct)
         {
+            if (contextStruct == contextFromMethodBeingCompiled())
+            {
+                return MethodBeingCompiled.HasInstantiation ? (TypeSystemEntity)MethodBeingCompiled: (TypeSystemEntity)MethodBeingCompiled.OwningType;
+            }
+
             return (TypeSystemEntity)HandleToObject((IntPtr)((ulong)contextStruct & ~(ulong)CorInfoContextFlags.CORINFO_CONTEXTFLAGS_MASK));
         }
 
@@ -741,7 +815,7 @@ namespace Internal.JitInterface
                 // do a dynamic check instead.
                 if (
                     !HardwareIntrinsicHelpers.IsIsSupportedMethod(method)
-                    || !_compilation.IsHardwareInstrinsicWithRuntimeDeterminedSupport(method))
+                    || !_compilation.IsHardwareIntrinsicWithRuntimeDeterminedSupport(method))
 #endif
                 {
                     result |= CorInfoFlag.CORINFO_FLG_JIT_INTRINSIC;
@@ -784,8 +858,9 @@ namespace Internal.JitInterface
 
         private bool getMethodInfo(CORINFO_METHOD_STRUCT_* ftn, CORINFO_METHOD_INFO* info)
         {
-            MethodIL methodIL = Get_CORINFO_METHOD_INFO(HandleToObject(ftn), null, info);
-            return methodIL != null;
+            MethodDesc method = HandleToObject(ftn);
+            MethodIL methodIL = _compilation.GetMethodIL(method);
+            return Get_CORINFO_METHOD_INFO(method, methodIL, info);
         }
 
         private CorInfoInline canInline(CORINFO_METHOD_STRUCT_* callerHnd, CORINFO_METHOD_STRUCT_* calleeHnd, ref uint pRestrictions)
@@ -990,8 +1065,17 @@ namespace Internal.JitInterface
                 else
                 {
                     var methodContext = (MethodDesc)typeOrMethodContext;
-                    Debug.Assert(methodContext.GetTypicalMethodDefinition() == owningMethod.GetTypicalMethodDefinition() ||
+                    // Allow cases where the method's do not have instantiations themselves, if
+                    // 1. The method defining the context is generic, but the target method is not
+                    // 2. Both methods are not generic
+                    // 3. The methods are the same generic
+                    // AND
+                    // The methods are on the same type
+                    Debug.Assert((methodContext.HasInstantiation && !owningMethod.HasInstantiation) ||
+                        (!methodContext.HasInstantiation && !owningMethod.HasInstantiation) ||
+                        methodContext.GetTypicalMethodDefinition() == owningMethod.GetTypicalMethodDefinition() ||
                         (owningMethod.Name == "CreateDefaultInstance" && methodContext.Name == "CreateInstance"));
+                    Debug.Assert(methodContext.OwningType.HasSameTypeDefinition(owningMethod.OwningType));
                     typeInst = methodContext.OwningType.Instantiation;
                     methodInst = methodContext.Instantiation;
                 }
@@ -1014,7 +1098,9 @@ namespace Internal.JitInterface
             // to the runtime determined form (e.g. Foo<__Canon> becomes Foo<T__Canon>).
 
             var methodIL = (MethodIL)HandleToObject((IntPtr)pResolvedToken.tokenScope);
-            var typeOrMethodContext = HandleToObject((IntPtr)pResolvedToken.tokenContext);
+
+            var typeOrMethodContext = (pResolvedToken.tokenContext == contextFromMethodBeingCompiled()) ?
+                MethodBeingCompiled : HandleToObject((IntPtr)pResolvedToken.tokenContext);
 
             object result = ResolveTokenInScope(methodIL, typeOrMethodContext, pResolvedToken.token);
 
@@ -1060,7 +1146,9 @@ namespace Internal.JitInterface
         private void resolveToken(ref CORINFO_RESOLVED_TOKEN pResolvedToken)
         {
             var methodIL = (MethodIL)HandleToObject((IntPtr)pResolvedToken.tokenScope);
-            var typeOrMethodContext = HandleToObject((IntPtr)pResolvedToken.tokenContext);
+
+            var typeOrMethodContext = (pResolvedToken.tokenContext == contextFromMethodBeingCompiled()) ?
+                MethodBeingCompiled : HandleToObject((IntPtr)pResolvedToken.tokenContext);
 
             object result = ResolveTokenInScope(methodIL, typeOrMethodContext, pResolvedToken.token);
 
@@ -1160,6 +1248,11 @@ namespace Internal.JitInterface
             var methodIL = (MethodIL)HandleToObject((IntPtr)module);
             var methodSig = (MethodSignature)methodIL.GetObject((int)sigTOK);
             Get_CORINFO_SIG_INFO(methodSig, sig);
+
+            if (sig->callConv == CorInfoCallConv.CORINFO_CALLCONV_UNMANAGED)
+            {
+                throw new NotImplementedException();
+            }
 
 #if !READYTORUN
             // Check whether we need to report this as a fat pointer call
@@ -1618,18 +1711,19 @@ namespace Internal.JitInterface
             return (byte*)GetPin(StringToUTF8(helpFunc.ToString()));
         }
 
-        private CorInfoInitClassResult initClass(CORINFO_FIELD_STRUCT_* field, CORINFO_METHOD_STRUCT_* method, CORINFO_CONTEXT_STRUCT* context, bool speculative)
+        private CorInfoInitClassResult initClass(CORINFO_FIELD_STRUCT_* field, CORINFO_METHOD_STRUCT_* method, CORINFO_CONTEXT_STRUCT* context)
         {
             FieldDesc fd = field == null ? null : HandleToObject(field);
             Debug.Assert(fd == null || fd.IsStatic);
 
-            MethodDesc md = HandleToObject(method);
+            MethodDesc md = method == null ? MethodBeingCompiled : HandleToObject(method);
             TypeDesc type = fd != null ? fd.OwningType : typeFromContext(context);
 
-            if (_isFallbackBodyCompilation ||
+            if (
 #if READYTORUN
                 IsClassPreInited(type)
 #else
+                _isFallbackBodyCompilation ||
                 !_compilation.HasLazyStaticConstructor(type)
 #endif
                 )
@@ -1672,6 +1766,13 @@ namespace Internal.JitInterface
 
             if (typeToInit.IsCanonicalSubtype(CanonicalFormKind.Any))
             {
+                if (fd == null && method != null && context == contextFromMethodBeingCompiled())
+                {
+                    // If we're inling a call to a method in our own type, then we should already
+                    // have triggered the .cctor when caller was itself called.
+                    return CorInfoInitClassResult.CORINFO_INITCLASS_NOT_REQUIRED;
+                }
+
                 // Shared generic code has to use helper. Moreover, tell JIT not to inline since
                 // inlining of generic dictionary lookups is not supported.
                 return CorInfoInitClassResult.CORINFO_INITCLASS_USE_HELPER | CorInfoInitClassResult.CORINFO_INITCLASS_DONT_INLINE;
@@ -1686,10 +1787,7 @@ namespace Internal.JitInterface
                 // Handled above
                 Debug.Assert(!typeToInit.IsBeforeFieldInit);
 
-                // Note that jit has both methods the same if asking whether to emit cctor
-                // for a given method's code (as opposed to inlining codegen).
-                MethodDesc contextMethod = methodFromContext(context);
-                if (contextMethod != MethodBeingCompiled && typeToInit == MethodBeingCompiled.OwningType)
+                if (method != null && typeToInit == MethodBeingCompiled.OwningType)
                 {
                     // If we're inling a call to a method in our own type, then we should already
                     // have triggered the .cctor when caller was itself called.
@@ -2401,12 +2499,6 @@ namespace Internal.JitInterface
         { throw new NotImplementedException("getThreadTLSIndex"); }
         private void* getInlinedCallFrameVptr(ref void* ppIndirection)
         { throw new NotImplementedException("getInlinedCallFrameVptr"); }
-
-        private int* getAddrOfCaptureThreadGlobal(ref void* ppIndirection)
-        {
-            ppIndirection = null;
-            return null;
-        }
 
         private Dictionary<CorInfoHelpFunc, ISymbolNode> _helperCache = new Dictionary<CorInfoHelpFunc, ISymbolNode>();
         private void* getHelperFtn(CorInfoHelpFunc ftnNum, ref void* ppIndirection)

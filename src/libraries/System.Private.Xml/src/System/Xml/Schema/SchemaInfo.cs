@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #nullable enable
 using System;
@@ -34,8 +33,8 @@ namespace System.Xml.Schema
 
         private XmlQualifiedName _docTypeName = XmlQualifiedName.Empty;
         private string _internalDtdSubset = string.Empty;
-        private bool _hasNonCDataAttributes = false;
-        private bool _hasDefaultAttributes = false;
+        private bool _hasNonCDataAttributes;
+        private bool _hasDefaultAttributes;
 
         private readonly Dictionary<string, bool> _targetNamespaces = new Dictionary<string, bool>();
         private readonly Dictionary<XmlQualifiedName, SchemaAttDef> _attributeDecls = new Dictionary<XmlQualifiedName, SchemaAttDef>();

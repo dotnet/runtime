@@ -20,8 +20,10 @@
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\class-inlines.h" />
     <ClCompile Include="$(MonoSourceLocation)\mono\metadata\class-init.c" />
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\class-init.h" />
+    <ClInclude Include="$(MonoSourceLocation)\mono\metadata\class-init-internals.h" />
     <ClCompile Include="$(MonoSourceLocation)\mono\metadata\class-accessors.c" />
     <ClInclude Include="$(MonosourceLocation)\mono\metadata\class-private-definition.h" />
+    <ClCompile Include="$(MonoSourceLocation)\mono\metadata\class-setup-vtable.c" />
     <ClCompile Include="$(MonoSourceLocation)\mono\metadata\cominterop.c" />
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\cominterop.h" />
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\console-io.h" />

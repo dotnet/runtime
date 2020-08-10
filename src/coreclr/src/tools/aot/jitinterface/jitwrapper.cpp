@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #include <stdarg.h>
 #include <stdlib.h>
@@ -27,11 +26,11 @@ private:
     uint64_t corJitFlags;
 };
 
-static const GUID JITEEVersionIdentifier = { /* 2ca8d539-5db9-4831-8f1b-ade425f036bd */
-    0x2ca8d539,
-    0x5db9,
-    0x4831,
-    { 0x8f, 0x1b, 0xad, 0xe4, 0x25, 0xf0, 0x36, 0xbd }
+static const GUID JITEEVersionIdentifier = { /* a5eec3a4-4176-43a7-8c2b-a05b551d4f49 */
+    0xa5eec3a4,
+    0x4176,
+    0x43a7,
+    {0x8c, 0x2b, 0xa0, 0x5b, 0x55, 0x1d, 0x4f, 0x49}
 };
 
 class Jit

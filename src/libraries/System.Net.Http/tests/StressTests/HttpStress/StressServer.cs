@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Buffers;
@@ -199,8 +198,7 @@ namespace HttpStress
             });
             endpoints.MapGet("/variables", async context =>
             {
-                string queryString = context.Request.QueryString.Value;
-                NameValueCollection nameValueCollection = HttpUtility.ParseQueryString(queryString);
+                NameValueCollection nameValueCollection = HttpUtility.ParseQueryString(context.Request.QueryString.Value!);
 
                 StringBuilder sb = new StringBuilder();
                 for (int i = 0; i < nameValueCollection.Count; i++)

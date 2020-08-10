@@ -8,6 +8,7 @@
     <Compile Include="System\ComponentModel\ComponentCollectionTests.cs" />
     <Compile Include="System\ComponentModel\ComponentTests.cs" />
     <Compile Include="System\ComponentModel\DescriptionAttributeTests.cs" />
+    <Compile Include="System\ComponentModel\DesignerAttributeTests.cs" />
     <Compile Include="System\ComponentModel\DesignerCategoryAttributeTests.cs" />
     <Compile Include="System\ComponentModel\DesignerSerializationVisibilityAttributeTests.cs" />
     <Compile Include="System\ComponentModel\DesignOnlyAttributeTests.cs" />

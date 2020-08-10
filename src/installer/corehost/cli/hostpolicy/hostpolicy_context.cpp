@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #include "hostpolicy_context.h"
 
@@ -106,12 +105,22 @@ int hostpolicy_context_t::initialize(hostpolicy_init_t &hostpolicy_init, const a
     clr_path = probe_paths.coreclr;
     if (clr_path.empty() || !pal::realpath(&clr_path))
     {
-        trace::error(_X("Could not resolve CoreCLR path. For more details, enable tracing by setting COREHOST_TRACE environment variable to 1"));
-        return StatusCode::CoreClrResolveFailure;
-    }
+        // in a single-file case we may not need coreclr,
+        // otherwise fail early.
+        if (!bundle::info_t::is_single_file_bundle())
+        {
+            trace::error(_X("Could not resolve CoreCLR path. For more details, enable tracing by setting COREHOST_TRACE environment variable to 1"));
+            return StatusCode::CoreClrResolveFailure;
+        }
 
-    // Get path in which CoreCLR is present.
-    clr_dir = get_directory(clr_path);
+        // save for tracing purposes.
+        clr_dir = clr_path;
+    }
+    else
+    {
+        // Get path in which CoreCLR is present.
+        clr_dir = get_directory(clr_path);
+    }
 
     // If this is a self-contained single-file bundle,
     // System.Private.CoreLib.dll is expected to be within the bundle, unless it is explicitly excluded from the bundle.
@@ -222,8 +231,20 @@ int hostpolicy_context_t::initialize(hostpolicy_init_t &hostpolicy_init, const a
         pal::stringstream_t ptr_stream;
         ptr_stream << "0x" << std::hex << (size_t)(&bundle_probe);
 
-        coreclr_properties.add(common_property::BundleProbe, ptr_stream.str().c_str());
+        if (!coreclr_properties.add(common_property::BundleProbe, ptr_stream.str().c_str()))
+        {
+            log_duplicate_property_error(coreclr_property_bag_t::common_property_to_string(common_property::StartUpHooks));
+            return StatusCode::LibHostDuplicateProperty;
+        }
     }
+
+#if defined(HOSTPOLICY_EMBEDDED)
+    if (!coreclr_properties.add(common_property::HostPolicyEmbedded, _X("true")))
+    {
+        log_duplicate_property_error(coreclr_property_bag_t::common_property_to_string(common_property::StartUpHooks));
+        return StatusCode::LibHostDuplicateProperty;
+    }
+#endif
 
     return StatusCode::Success;
 }

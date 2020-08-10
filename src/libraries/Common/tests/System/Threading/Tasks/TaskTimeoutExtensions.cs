@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -60,6 +59,20 @@ namespace System.Threading.Tasks
                 throw new TimeoutException($"Task timed out after {timeout}");
             }
         }
+
+#if !NETFRAMEWORK
+        public static Task TimeoutAfter(this ValueTask task, int millisecondsTimeout)
+            => task.AsTask().TimeoutAfter(TimeSpan.FromMilliseconds(millisecondsTimeout));
+
+        public static Task TimeoutAfter(this ValueTask task, TimeSpan timeout)
+            => task.AsTask().TimeoutAfter(timeout);
+
+        public static Task<TResult> TimeoutAfter<TResult>(this ValueTask<TResult> task, int millisecondsTimeout)
+            => task.AsTask().TimeoutAfter(TimeSpan.FromMilliseconds(millisecondsTimeout));
+
+        public static Task<TResult> TimeoutAfter<TResult>(this ValueTask<TResult> task, TimeSpan timeout)
+            => task.AsTask().TimeoutAfter(timeout);
+#endif
 
         public static async Task WhenAllOrAnyFailed(this Task[] tasks, int millisecondsTimeout)
         {

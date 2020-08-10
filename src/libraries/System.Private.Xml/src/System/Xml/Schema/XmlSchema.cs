@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #nullable enable
 namespace System.Xml.Schema
@@ -31,11 +30,11 @@ namespace System.Xml.Schema
         private XmlAttribute[]? _moreAttributes;
 
         // compiled info
-        private bool _isCompiled = false;
-        private bool _isCompiledBySet = false;
-        private bool _isPreprocessed = false;
-        private bool _isRedefined = false;
-        private int _errorCount = 0;
+        private bool _isCompiled;
+        private bool _isCompiledBySet;
+        private bool _isPreprocessed;
+        private bool _isRedefined;
+        private int _errorCount;
         private XmlSchemaObjectTable? _attributes;
         private XmlSchemaObjectTable _attributeGroups = new XmlSchemaObjectTable();
         private XmlSchemaObjectTable _elements = new XmlSchemaObjectTable();

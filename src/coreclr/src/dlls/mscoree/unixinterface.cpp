@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 
 //*****************************************************************************
@@ -24,6 +23,12 @@
 
 // Holder for const wide strings
 typedef NewArrayHolder<const WCHAR> ConstWStringHolder;
+
+// Specifies whether coreclr is embedded or standalone
+extern bool g_coreclr_embedded;
+
+// Specifies whether hostpolicy is embedded in executable or standalone
+extern bool g_hostpolicy_embedded;
 
 // Holder for array of wide strings
 class ConstWStringArrayHolder : public NewArrayHolder<LPCWSTR>
@@ -114,7 +119,8 @@ static void ConvertConfigPropertiesToUnicode(
     int propertyCount,
     LPCWSTR** propertyKeysWRef,
     LPCWSTR** propertyValuesWRef,
-    BundleProbe** bundleProbe)
+    BundleProbe** bundleProbe,
+    bool* hostPolicyEmbedded)
 {
     LPCWSTR* propertyKeysW = new (nothrow) LPCWSTR[propertyCount];
     ASSERTE_ALL_BUILDS(propertyKeysW != nullptr);
@@ -132,6 +138,11 @@ static void ConvertConfigPropertiesToUnicode(
             // If this application is a single-file bundle, the bundle-probe callback 
             // is passed in as the value of "BUNDLE_PROBE" property (encoded as a string).
             *bundleProbe = (BundleProbe*)_wcstoui64(propertyValuesW[propertyIndex], nullptr, 0);
+        }
+        else if (strcmp(propertyKeys[propertyIndex], "HOSTPOLICY_EMBEDDED") == 0)
+        {
+            // The HOSTPOLICY_EMBEDDED property indicates if the executable has hostpolicy statically linked in
+            *hostPolicyEmbedded = (wcscmp(propertyValuesW[propertyIndex], W("true")) == 0);
         }
     }
 
@@ -171,8 +182,23 @@ int coreclr_initialize(
             unsigned int* domainId)
 {
     HRESULT hr;
+
+    LPCWSTR* propertyKeysW;
+    LPCWSTR* propertyValuesW;
+    BundleProbe* bundleProbe = nullptr;
+    bool hostPolicyEmbedded = false;
+
+    ConvertConfigPropertiesToUnicode(
+        propertyKeys,
+        propertyValues,
+        propertyCount,
+        &propertyKeysW,
+        &propertyValuesW,
+        &bundleProbe,
+        &hostPolicyEmbedded);
+
 #ifdef TARGET_UNIX
-    DWORD error = PAL_InitializeCoreCLR(exePath);
+    DWORD error = PAL_InitializeCoreCLR(exePath, g_coreclr_embedded);
     hr = HRESULT_FROM_WIN32(error);
 
     // If PAL initialization failed, then we should return right away and avoid
@@ -183,24 +209,14 @@ int coreclr_initialize(
     }
 #endif
 
+    g_hostpolicy_embedded = hostPolicyEmbedded;
+
     ReleaseHolder<ICLRRuntimeHost4> host;
 
     hr = CorHost2::CreateObject(IID_ICLRRuntimeHost4, (void**)&host);
     IfFailRet(hr);
 
     ConstWStringHolder appDomainFriendlyNameW = StringToUnicode(appDomainFriendlyName);
-
-    LPCWSTR* propertyKeysW;
-    LPCWSTR* propertyValuesW;
-    BundleProbe* bundleProbe = nullptr;
-
-    ConvertConfigPropertiesToUnicode(
-        propertyKeys,
-        propertyValues,
-        propertyCount,
-        &propertyKeysW,
-        &propertyValuesW,
-        &bundleProbe);
 
     if (bundleProbe != nullptr)
     {

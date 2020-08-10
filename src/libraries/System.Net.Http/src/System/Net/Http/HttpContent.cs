@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Buffers;
 using System.Diagnostics;
@@ -144,12 +143,10 @@ namespace System.Net.Http
         protected HttpContent()
         {
             // Log to get an ID for the current content. This ID is used when the content gets associated to a message.
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this);
 
             // We start with the assumption that we can calculate the content length.
             _canCalculateLength = true;
-
-            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
         }
 
         public Task<string> ReadAsStringAsync() =>
@@ -158,7 +155,7 @@ namespace System.Net.Http
         public Task<string> ReadAsStringAsync(CancellationToken cancellationToken)
         {
             CheckDisposed();
-            return WaitAndReturnAsync(LoadIntoBufferAsync(cancellationToken), this, s => s.ReadBufferedContentAsString());
+            return WaitAndReturnAsync(LoadIntoBufferAsync(cancellationToken), this, static s => s.ReadBufferedContentAsString());
         }
 
         private string ReadBufferedContentAsString()
@@ -243,7 +240,7 @@ namespace System.Net.Http
         public Task<byte[]> ReadAsByteArrayAsync(CancellationToken cancellationToken)
         {
             CheckDisposed();
-            return WaitAndReturnAsync(LoadIntoBufferAsync(cancellationToken), this, s => s.ReadBufferedContentAsByteArray());
+            return WaitAndReturnAsync(LoadIntoBufferAsync(cancellationToken), this, static s => s.ReadBufferedContentAsByteArray());
         }
 
         internal byte[] ReadBufferedContentAsByteArray()
@@ -254,6 +251,36 @@ namespace System.Net.Http
             return _bufferedContent.ToArray();
         }
 
+        public Stream ReadAsStream() =>
+            ReadAsStream(CancellationToken.None);
+
+        public Stream ReadAsStream(CancellationToken cancellationToken)
+        {
+            CheckDisposed();
+
+            // _contentReadStream will be either null (nothing yet initialized), a Stream (it was previously
+            // initialized in TryReadAsStream/ReadAsStream), or a Task<Stream> (it was previously initialized
+            // in ReadAsStreamAsync).
+
+            if (_contentReadStream == null) // don't yet have a Stream
+            {
+                Stream s = TryGetBuffer(out ArraySegment<byte> buffer) ?
+                    new MemoryStream(buffer.Array!, buffer.Offset, buffer.Count, writable: false) :
+                    CreateContentReadStream(cancellationToken);
+                _contentReadStream = s;
+                return s;
+            }
+            else if (_contentReadStream is Stream stream) // have a Stream
+            {
+                return stream;
+            }
+            else // have a Task<Stream>
+            {
+                // Throw if ReadAsStreamAsync has been called previously since _contentReadStream contains a cached task.
+                throw new HttpRequestException(SR.net_http_content_read_as_stream_has_task);
+            }
+        }
+
         public Task<Stream> ReadAsStreamAsync() =>
             ReadAsStreamAsync(CancellationToken.None);
 
@@ -262,7 +289,7 @@ namespace System.Net.Http
             CheckDisposed();
 
             // _contentReadStream will be either null (nothing yet initialized), a Stream (it was previously
-            // initialized in TryReadAsStream), or a Task<Stream> (it was previously initialized here
+            // initialized in TryReadAsStream/ReadAsStream), or a Task<Stream> (it was previously initialized here
             // in ReadAsStreamAsync).
 
             if (_contentReadStream == null) // don't yet have a Stream
@@ -291,7 +318,7 @@ namespace System.Net.Http
             CheckDisposed();
 
             // _contentReadStream will be either null (nothing yet initialized), a Stream (it was previously
-            // initialized here in TryReadAsStream), or a Task<Stream> (it was previously initialized
+            // initialized in TryReadAsStream/ReadAsStream), or a Task<Stream> (it was previously initialized here
             // in ReadAsStreamAsync).
 
             if (_contentReadStream == null) // don't yet have a Stream
@@ -430,7 +457,7 @@ namespace System.Net.Http
             // We're only comfortable disposing of the HttpContent instance like this because LoadIntoBuffer is internal and
             // we're only using it on content instances we get back from a handler's Send call that haven't been given out to the user yet.
             // If we were to ever make LoadIntoBuffer public, we'd need to rethink this.
-            CancellationTokenRegistration cancellationRegistration = cancellationToken.Register(s => ((HttpContent)s!).Dispose(), this);
+            CancellationTokenRegistration cancellationRegistration = cancellationToken.Register(static s => ((HttpContent)s!).Dispose(), this);
 
             try
             {
@@ -440,7 +467,7 @@ namespace System.Net.Http
             }
             catch (Exception e)
             {
-                if (NetEventSource.IsEnabled) NetEventSource.Error(this, e);
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, e);
 
                 if (CancellationHelper.ShouldWrapInOperationCanceledException(e, cancellationToken))
                 {
@@ -523,9 +550,15 @@ namespace System.Net.Http
             }
             catch (Exception e)
             {
-                if (NetEventSource.IsEnabled) NetEventSource.Error(this, e);
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, e);
                 throw;
             }
+        }
+
+        protected virtual Stream CreateContentReadStream(CancellationToken cancellationToken)
+        {
+            LoadIntoBuffer(MaxBufferSize, cancellationToken);
+            return _bufferedContent!;
         }
 
         protected virtual Task<Stream> CreateContentReadStreamAsync()
@@ -674,7 +707,7 @@ namespace System.Net.Http
             if (task == null)
             {
                 var e = new InvalidOperationException(SR.net_http_content_no_task_returned);
-                if (NetEventSource.IsEnabled) NetEventSource.Error(this, e);
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, e);
                 throw e;
             }
         }

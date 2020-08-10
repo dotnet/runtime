@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -79,7 +78,7 @@ namespace System.Net.Http.Functional.Tests
 
                 string connectionPreface = (await server.AcceptConnectionAsync()).PrefixString;
 
-                Assert.Equal("PRI * HTTP/2.0\r\n\r\nSM\r\n\r\n", connectionPreface);
+                Assert.Equal(Http2LoopbackConnection.Http2Prefix, connectionPreface);
             }
         }
 
@@ -2271,7 +2270,7 @@ namespace System.Net.Http.Functional.Tests
                     cancellationTokenSource.Cancel();
 
                     // Cancellation may not propagate immediately. So wait a brief time to try to ensure it propagates.
-                    await Task.Delay(500);
+                    await Task.Delay(3000);
 
                     // Attempting to write on the request body should now fail with OperationCanceledException.
                     Exception e = await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => { await SendAndReceiveRequestDataAsync(contentBytes, requestStream, connection, streamId); });

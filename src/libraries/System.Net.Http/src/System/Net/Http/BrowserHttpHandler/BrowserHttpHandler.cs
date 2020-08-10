@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -32,6 +31,9 @@ namespace System.Net.Http
         // This partial implementation contains members common to Browser WebAssembly running on .NET Core.
         private static readonly JSObject? s_fetch = (JSObject)System.Runtime.InteropServices.JavaScript.Runtime.GetGlobalObject("fetch");
         private static readonly JSObject? s_window = (JSObject)System.Runtime.InteropServices.JavaScript.Runtime.GetGlobalObject("window");
+
+        private static readonly HttpRequestOptionsKey<bool> EnableStreamingResponse = new HttpRequestOptionsKey<bool>("WebAssemblyEnableStreamingResponse");
+        private static readonly HttpRequestOptionsKey<IDictionary<string, object>> FetchOptions = new HttpRequestOptionsKey<IDictionary<string, object>>("WebAssemblyFetchOptions");
 
         /// <summary>
         /// Gets whether the current Browser supports streaming responses
@@ -121,6 +123,10 @@ namespace System.Net.Http
             set => throw new PlatformNotSupportedException();
         }
 
+        public bool SupportsAutomaticDecompression => false;
+        public bool SupportsProxy => false;
+        public bool SupportsRedirectConfiguration => false;
+
         private Dictionary<string, object?>? _properties;
         public IDictionary<string, object?> Properties => _properties ??= new Dictionary<string, object?>();
 
@@ -130,8 +136,7 @@ namespace System.Net.Http
             {
                 var requestObject = new JSObject();
 
-                if (request.Properties.TryGetValue("WebAssemblyFetchOptions", out object? fetchOptionsValue) &&
-                    fetchOptionsValue is IDictionary<string, object> fetchOptions)
+                if (request.Options.TryGetValue(FetchOptions, out IDictionary<string, object>? fetchOptions))
                 {
                     foreach (KeyValuePair<string, object> item in fetchOptions)
                     {
@@ -146,11 +151,11 @@ namespace System.Net.Http
                 {
                     if (request.Content is StringContent)
                     {
-                        requestObject.SetObjectProperty("body", await request.Content.ReadAsStringAsync().ConfigureAwait(continueOnCapturedContext: true));
+                        requestObject.SetObjectProperty("body", await request.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(continueOnCapturedContext: true));
                     }
                     else
                     {
-                        using (Uint8Array uint8Buffer = Uint8Array.From(await request.Content.ReadAsByteArrayAsync().ConfigureAwait(continueOnCapturedContext: true)))
+                        using (Uint8Array uint8Buffer = Uint8Array.From(await request.Content.ReadAsByteArrayAsync(cancellationToken).ConfigureAwait(continueOnCapturedContext: true)))
                         {
                             requestObject.SetObjectProperty("body", uint8Buffer);
                         }
@@ -222,9 +227,13 @@ namespace System.Net.Http
 
                 HttpResponseMessage httpResponse = new HttpResponseMessage((HttpStatusCode)status.Status);
 
-                bool streamingEnabled = request.Properties.TryGetValue("WebAssemblyEnableStreamingResponse", out object? streamingEnabledValue) && (bool)(streamingEnabledValue ?? false);
+                bool streamingEnabled = false;
+                if (StreamingSupported)
+                {
+                    request.Options.TryGetValue(EnableStreamingResponse, out streamingEnabled);
+                }
 
-                httpResponse.Content = StreamingSupported && streamingEnabled
+                httpResponse.Content = streamingEnabled
                     ? new StreamContent(wasmHttpReadStream = new WasmHttpReadStream(status))
                     : (HttpContent)new BrowserHttpContent(status);
 
@@ -371,7 +380,7 @@ namespace System.Net.Http
             protected override async Task SerializeToStreamAsync(Stream stream, TransportContext? context, CancellationToken cancellationToken)
             {
                 byte[] data = await GetResponseData().ConfigureAwait(continueOnCapturedContext: true);
-                await stream.WriteAsync(data, 0, data.Length, cancellationToken).ConfigureAwait(continueOnCapturedContext: true);
+                await stream.WriteAsync(data, cancellationToken).ConfigureAwait(continueOnCapturedContext: true);
             }
             protected internal override bool TryComputeLength(out long length)
             {

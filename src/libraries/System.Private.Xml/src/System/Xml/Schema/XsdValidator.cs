@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #nullable enable
 namespace System.Xml.Schema
@@ -24,10 +23,10 @@ namespace System.Xml.Schema
 
         private Hashtable _attPresence;
         private XmlNamespaceManager _nsManager;
-        private bool _bManageNamespaces = false;
+        private bool _bManageNamespaces;
         private Hashtable? _IDs;
         private IdRefNode? _idRefListHead;
-        private Parser? _inlineSchemaParser = null;
+        private Parser? _inlineSchemaParser;
         private XmlSchemaContentProcessing _processContents;
 
         private static readonly XmlSchemaDatatype s_dtCDATA = XmlSchemaDatatype.FromXmlTokenizedType(XmlTokenizedType.CDATA)!;
@@ -69,12 +68,13 @@ namespace System.Xml.Schema
         [MemberNotNull(nameof(_xsdSchema))]
         private void Init()
         {
-            _nsManager = reader.NamespaceManager;
+            _nsManager = reader.NamespaceManager!;
             if (_nsManager == null)
             {
                 _nsManager = new XmlNamespaceManager(NameTable);
                 _bManageNamespaces = true;
             }
+
             _validationStack = new HWStack(STACK_INCREMENT);
             textValue = new StringBuilder();
             _attPresence = new Hashtable();

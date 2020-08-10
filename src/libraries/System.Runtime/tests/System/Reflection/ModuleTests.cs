@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -82,7 +81,15 @@ namespace System.Reflection.Tests
         [Fact]
         public void FullyQualifiedName()
         {
-            Assert.Equal(Assembly.GetExecutingAssembly().Location, Module.FullyQualifiedName);
+            var loc = AssemblyPathHelper.GetAssemblyLocation(Assembly.GetExecutingAssembly());
+
+            // Browser will include the path (/), so strip it
+            if (PlatformDetection.IsBrowser && loc.Length > 1)
+            {
+                loc = loc.Substring(1);
+            }
+
+            Assert.Equal(loc, Module.FullyQualifiedName);
         }
 
         [Fact]

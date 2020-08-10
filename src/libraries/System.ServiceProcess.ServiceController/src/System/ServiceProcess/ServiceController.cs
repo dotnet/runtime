@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Microsoft.Win32.SafeHandles;
 using System;
@@ -18,6 +17,7 @@ namespace System.ServiceProcess
 {
     /// This class represents an NT service. It allows you to connect to a running or stopped service
     /// and manipulate it or get information about it.
+    [Designer("System.ServiceProcess.Design.ServiceControllerDesigner, System.Design, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
     public class ServiceController : Component
     {
         private string _machineName; // Never null

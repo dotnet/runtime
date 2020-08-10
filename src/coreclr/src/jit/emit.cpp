@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -3868,7 +3867,7 @@ AGAIN:
             {
                 if (tgtIG)
                 {
-                    printf("to G_M%03u_IG%02u\n", emitComp->compMethodID, tgtIG->igNum);
+                    printf(" to G_M%03u_IG%02u\n", emitComp->compMethodID, tgtIG->igNum);
                 }
                 else
                 {
@@ -7693,7 +7692,12 @@ regMaskTP emitter::emitGetGCRegsKilledByNoGCCall(CorInfoHelpFunc helper)
             break;
 
         case CORINFO_HELP_PROF_FCN_LEAVE:
+#if defined(TARGET_ARM)
+            // profiler scratch remains gc live
+            result = RBM_PROFILER_LEAVE_TRASH & ~RBM_PROFILER_RET_SCRATCH;
+#else
             result = RBM_PROFILER_LEAVE_TRASH;
+#endif
             break;
 
         case CORINFO_HELP_PROF_FCN_TAILCALL:

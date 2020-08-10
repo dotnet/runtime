@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 
@@ -85,8 +84,8 @@ namespace Internal.NativeFormat
         MethodLdToken               = 0x08,
         AllocateObject              = 0x09,
         DefaultConstructor          = 0x0a,
-        TlsIndex                    = 0x0b,
-        TlsOffset                   = 0x0c,
+        ThreadStaticIndex           = 0x0b,
+        // unused                   = 0x0c,
         Method                      = 0x0d,
         IsInst                      = 0x0e,
         CastClass                   = 0x0f,

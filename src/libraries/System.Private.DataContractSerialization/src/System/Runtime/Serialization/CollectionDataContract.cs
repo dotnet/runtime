@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 
@@ -154,6 +153,12 @@ namespace System.Runtime.Serialization
         internal CollectionDataContract(Type type) : base(new CollectionDataContractCriticalHelper(type))
         {
             InitCollectionDataContract(this);
+        }
+
+        private CollectionDataContract(Type type, CollectionKind kind, Type itemType, MethodInfo getEnumeratorMethod, string deserializationExceptionMessage)
+                    : base(new CollectionDataContractCriticalHelper(type, kind, itemType, getEnumeratorMethod, deserializationExceptionMessage))
+        {
+            InitCollectionDataContract(GetSharedTypeContract(type));
         }
 
         private CollectionDataContract(Type type, CollectionKind kind, Type itemType, MethodInfo getEnumeratorMethod, MethodInfo addMethod, ConstructorInfo constructor)
@@ -333,6 +338,16 @@ namespace System.Runtime.Serialization
             { return _helper.InvalidCollectionInSharedContractMessage; }
         }
 
+        internal string DeserializationExceptionMessage
+        {
+            get { return _helper.DeserializationExceptionMessage; }
+        }
+
+        internal bool IsReadOnlyContract
+        {
+            get { return DeserializationExceptionMessage != null; }
+        }
+
         private XmlFormatCollectionWriterDelegate CreateXmlFormatWriterDelegate()
         {
             return new XmlFormatWriterGenerator().GenerateCollectionWriter(this);
@@ -376,6 +391,11 @@ namespace System.Runtime.Serialization
                     {
                         if (_helper.XmlFormatReaderDelegate == null)
                         {
+                            if (IsReadOnlyContract)
+                            {
+                                ThrowInvalidDataContractException(_helper.DeserializationExceptionMessage, type: null);
+                            }
+
                             XmlFormatCollectionReaderDelegate tempDelegate = CreateXmlFormatReaderDelegate();
                             Interlocked.MemoryBarrier();
                             _helper.XmlFormatReaderDelegate = tempDelegate;
@@ -408,6 +428,11 @@ namespace System.Runtime.Serialization
                             if (UnderlyingType.IsInterface && (Kind == CollectionKind.Enumerable || Kind == CollectionKind.Collection || Kind == CollectionKind.GenericEnumerable))
                             {
                                 throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidDataContractException(SR.Format(SR.GetOnlyCollectionMustHaveAddMethod, GetClrTypeFullName(UnderlyingType))));
+                            }
+
+                            if (IsReadOnlyContract)
+                            {
+                                ThrowInvalidDataContractException(_helper.DeserializationExceptionMessage, type: null);
                             }
 
                             if (Kind != CollectionKind.Array && AddMethod == null)
@@ -452,6 +477,7 @@ namespace System.Runtime.Serialization
             private CollectionKind _kind;
             private readonly MethodInfo _getEnumeratorMethod, _addMethod;
             private readonly ConstructorInfo _constructor;
+            private readonly string _deserializationExceptionMessage;
             private DataContract _itemContract;
             private DataContract _sharedTypeContract;
             private DataContractDictionary _knownDataContracts;
@@ -466,7 +492,7 @@ namespace System.Runtime.Serialization
             private XmlFormatCollectionReaderDelegate _xmlFormatReaderDelegate;
             private XmlFormatGetOnlyCollectionReaderDelegate _xmlFormatGetOnlyCollectionReaderDelegate;
             private XmlFormatCollectionWriterDelegate _xmlFormatWriterDelegate;
-            private bool _isConstructorCheckRequired = false;
+            private bool _isConstructorCheckRequired;
 
             internal static Type[] KnownInterfaces
             {
@@ -560,6 +586,23 @@ namespace System.Runtime.Serialization
                     throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new NotSupportedException(SR.SupportForMultidimensionalArraysNotPresent));
                 this.StableName = DataContract.GetStableName(type);
                 Init(CollectionKind.Array, type.GetElementType(), null);
+            }
+
+            // read-only collection
+            internal CollectionDataContractCriticalHelper(Type type, CollectionKind kind, Type itemType, MethodInfo getEnumeratorMethod, string deserializationExceptionMessage)
+                : base(type)
+            {
+                if (getEnumeratorMethod == null)
+                    throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidDataContractException(SR.Format(SR.CollectionMustHaveGetEnumeratorMethod, GetClrTypeFullName(type))));
+                if (itemType == null)
+                    throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidDataContractException(SR.Format(SR.CollectionMustHaveItemType, GetClrTypeFullName(type))));
+
+                CollectionDataContractAttribute collectionContractAttribute;
+                this.StableName = DataContract.GetCollectionStableName(type, itemType, out collectionContractAttribute);
+
+                Init(kind, itemType, collectionContractAttribute);
+                _getEnumeratorMethod = getEnumeratorMethod;
+                _deserializationExceptionMessage = deserializationExceptionMessage;
             }
 
             // collection
@@ -677,6 +720,8 @@ namespace System.Runtime.Serialization
 
             internal bool IsDictionary => KeyName != null;
 
+            public string DeserializationExceptionMessage => _deserializationExceptionMessage;
+
             public XmlDictionaryString ChildElementNamespace
             {
                 get { return _childElementNamespace; }
@@ -742,7 +787,7 @@ namespace System.Runtime.Serialization
 
             private delegate void IncrementCollectionCountDelegate(XmlWriterDelegator xmlWriter, object obj, XmlObjectSerializerWriteContext context);
 
-            private IncrementCollectionCountDelegate _incrementCollectionCountDelegate = null;
+            private IncrementCollectionCountDelegate _incrementCollectionCountDelegate;
 
             private static void DummyIncrementCollectionCount(XmlWriterDelegator xmlWriter, object obj, XmlObjectSerializerWriteContext context) { }
 
@@ -1028,15 +1073,21 @@ namespace System.Runtime.Serialization
                 return HandleIfInvalidCollection(type, tryCreate, false/*hasCollectionDataContract*/, false/*isBaseTypeCollection*/,
                     SR.CollectionTypeCannotBeBuiltIn, null, ref dataContract);
             }
+
             MethodInfo addMethod, getEnumeratorMethod;
             bool hasCollectionDataContract = IsCollectionDataContract(type);
+            bool isReadOnlyContract = false;
+            string deserializationExceptionMessage = null;
             Type baseType = type.BaseType;
             bool isBaseTypeCollection = (baseType != null && baseType != Globals.TypeOfObject
                 && baseType != Globals.TypeOfValueType && baseType != Globals.TypeOfUri) ? IsCollection(baseType) : false;
 
+            // Avoid creating an invalid collection contract for Serializable types since we can create a ClassDataContract instead
+            bool createContractWithException = isBaseTypeCollection && !type.IsSerializable;
+
             if (type.IsDefined(Globals.TypeOfDataContractAttribute, false))
             {
-                return HandleIfInvalidCollection(type, tryCreate, hasCollectionDataContract, isBaseTypeCollection,
+                return HandleIfInvalidCollection(type, tryCreate, hasCollectionDataContract, createContractWithException,
                     SR.CollectionTypeCannotHaveDataContract, null, ref dataContract);
             }
 
@@ -1047,9 +1098,10 @@ namespace System.Runtime.Serialization
 
             if (!Globals.TypeOfIEnumerable.IsAssignableFrom(type))
             {
-                return HandleIfInvalidCollection(type, tryCreate, hasCollectionDataContract, isBaseTypeCollection,
+                return HandleIfInvalidCollection(type, tryCreate, hasCollectionDataContract, createContractWithException,
                     SR.CollectionTypeIsNotIEnumerable, null, ref dataContract);
             }
+
             if (type.IsInterface)
             {
                 Type interfaceTypeToCheck = type.IsGenericType ? type.GetGenericTypeDefinition() : type;
@@ -1071,14 +1123,10 @@ namespace System.Runtime.Serialization
                             else
                             {
                                 itemType = genericArgs[0];
-
-                                // ICollection<T> has AddMethod
-                                var collectionType = Globals.TypeOfICollectionGeneric.MakeGenericType(itemType);
-                                if (collectionType.IsAssignableFrom(type))
+                                if (interfaceTypeToCheck == Globals.TypeOfICollectionGeneric || interfaceTypeToCheck == Globals.TypeOfIListGeneric)
                                 {
-                                    addMethod = collectionType.GetMethod(Globals.AddMethodName);
+                                    addMethod = Globals.TypeOfICollectionGeneric.MakeGenericType(itemType).GetMethod(Globals.AddMethodName);
                                 }
-
                                 getEnumeratorMethod = Globals.TypeOfIEnumerableGeneric.MakeGenericType(itemType).GetMethod(Globals.GetEnumeratorMethodName);
                             }
                         }
@@ -1111,11 +1159,22 @@ namespace System.Runtime.Serialization
             ConstructorInfo defaultCtor = null;
             if (!type.IsValueType)
             {
-                defaultCtor = type.GetConstructor(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, Array.Empty<Type>());
+                defaultCtor = type.GetConstructor(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null, Array.Empty<Type>(), null);
                 if (defaultCtor == null && constructorRequired)
                 {
-                    return HandleIfInvalidCollection(type, tryCreate, hasCollectionDataContract, isBaseTypeCollection/*createContractWithException*/,
-                        SR.CollectionTypeDoesNotHaveDefaultCtor, null, ref dataContract);
+                    // All collection types could be considered read-only collections except collection types that are marked [Serializable].
+                    // Collection types marked [Serializable] cannot be read-only collections for backward compatibility reasons.
+                    // DataContract types and POCO types cannot be collection types, so they don't need to be factored in
+                    if (type.IsSerializable)
+                    {
+                        return HandleIfInvalidCollection(type, tryCreate, hasCollectionDataContract, createContractWithException,
+                            SR.CollectionTypeDoesNotHaveDefaultCtor, null, ref dataContract);
+                    }
+                    else
+                    {
+                        isReadOnlyContract = true;
+                        GetReadOnlyCollectionExceptionMessages(type, SR.CollectionTypeDoesNotHaveDefaultCtor, null, out deserializationExceptionMessage);
+                    }
                 }
             }
 
@@ -1147,7 +1206,7 @@ namespace System.Runtime.Serialization
 
             if (kind == CollectionKind.None)
             {
-                return HandleIfInvalidCollection(type, tryCreate, hasCollectionDataContract, isBaseTypeCollection,
+                return HandleIfInvalidCollection(type, tryCreate, hasCollectionDataContract, createContractWithException,
                     SR.CollectionTypeIsNotIEnumerable, null, ref dataContract);
             }
 
@@ -1161,17 +1220,33 @@ namespace System.Runtime.Serialization
                                      out getEnumeratorMethod, out addMethod);
                 if (addMethod == null)
                 {
-                    return HandleIfInvalidCollection(type, tryCreate, hasCollectionDataContract, isBaseTypeCollection/*createContractWithException*/,
-                        SR.CollectionTypeDoesNotHaveAddMethod, DataContract.GetClrTypeFullName(itemType), ref dataContract);
+                    // All collection types could be considered read-only collections except collection types that are marked [Serializable].
+                    // Collection types marked [Serializable] cannot be read-only collections for backward compatibility reasons.
+                    // DataContract types and POCO types cannot be collection types, so they don't need to be factored in.
+                    if (type.IsSerializable)
+                    {
+                        return HandleIfInvalidCollection(type, tryCreate, hasCollectionDataContract, createContractWithException,
+                            SR.CollectionTypeDoesNotHaveAddMethod, DataContract.GetClrTypeFullName(itemType), ref dataContract);
+                    }
+                    else
+                    {
+                        isReadOnlyContract = true;
+                        GetReadOnlyCollectionExceptionMessages(type, SR.CollectionTypeDoesNotHaveAddMethod, DataContract.GetClrTypeFullName(itemType), out deserializationExceptionMessage);
+                    }
                 }
+
                 if (tryCreate)
-                    dataContract = new CollectionDataContract(type, kind, itemType, getEnumeratorMethod, addMethod, defaultCtor, !constructorRequired);
+                {
+                    dataContract = isReadOnlyContract ?
+                        new CollectionDataContract(type, kind, itemType, getEnumeratorMethod, deserializationExceptionMessage) :
+                        new CollectionDataContract(type, kind, itemType, getEnumeratorMethod, addMethod, defaultCtor, !constructorRequired);
+                }
             }
             else
             {
                 if (multipleDefinitions)
                 {
-                    return HandleIfInvalidCollection(type, tryCreate, hasCollectionDataContract, isBaseTypeCollection/*createContractWithException*/,
+                    return HandleIfInvalidCollection(type, tryCreate, hasCollectionDataContract, createContractWithException,
                         SR.CollectionTypeHasMultipleDefinitionsOfInterface, KnownInterfaces[(int)kind - 1].Name, ref dataContract);
                 }
                 Type[] addMethodTypeArray = null;
@@ -1204,11 +1279,9 @@ namespace System.Runtime.Serialization
                                      true /*addMethodOnInterface*/,
                                      out getEnumeratorMethod, out addMethod);
 
-                    dataContract = DataContract.GetDataContractFromGeneratedAssembly(type);
-                    if (dataContract == null)
-                    {
-                        dataContract = new CollectionDataContract(type, kind, itemType, getEnumeratorMethod, addMethod, defaultCtor, !constructorRequired);
-                    }
+                    dataContract = isReadOnlyContract ?
+                        new CollectionDataContract(type, kind, itemType, getEnumeratorMethod, deserializationExceptionMessage) :
+                        new CollectionDataContract(type, kind, itemType, getEnumeratorMethod, addMethod, defaultCtor, !constructorRequired);
                 }
             }
 
@@ -1239,6 +1312,11 @@ namespace System.Runtime.Serialization
             return false;
         }
 
+        private static void GetReadOnlyCollectionExceptionMessages(Type type, string message, string param, out string deserializationExceptionMessage)
+        {
+            deserializationExceptionMessage = GetInvalidCollectionMessage(message, SR.Format(SR.ReadOnlyCollectionDeserialization, GetClrTypeFullName(type)), param);
+        }
+
         private static string GetInvalidCollectionMessage(string message, string nestedMessage, string param)
         {
             return (param == null) ? SR.Format(message, nestedMessage) : SR.Format(message, nestedMessage, param);
@@ -1260,7 +1338,7 @@ namespace System.Runtime.Serialization
 
             if (addMethodOnInterface)
             {
-                addMethod = type.GetMethod(Globals.AddMethodName, BindingFlags.Instance | BindingFlags.Public, addMethodTypeArray);
+                addMethod = type.GetMethod(Globals.AddMethodName, BindingFlags.Instance | BindingFlags.Public, null, addMethodTypeArray, null);
                 if (addMethod == null || addMethod.GetParameters()[0].ParameterType != addMethodTypeArray[0])
                 {
                     FindCollectionMethodsOnInterface(type, interfaceType, ref addMethod, ref getEnumeratorMethod);
@@ -1268,7 +1346,7 @@ namespace System.Runtime.Serialization
                     {
                         Type[] parentInterfaceTypes = interfaceType.GetInterfaces();
                         // The for loop below depeneds on the order for the items in parentInterfaceTypes, which
-                        // doesn't seem right. But it's the behavior of DCS on the .NET Framework.
+                        // doesnt' seem right. But it's the behavior of DCS on the full framework.
                         // Sorting the array to make sure the behavior is consistent with Desktop's.
                         Array.Sort(parentInterfaceTypes, (x, y) => string.Compare(x.FullName, y.FullName));
                         foreach (Type parentInterfaceType in parentInterfaceTypes)
@@ -1288,9 +1366,7 @@ namespace System.Runtime.Serialization
             else
             {
                 // GetMethod returns Add() method with parameter closest matching T in assignability/inheritance chain
-                addMethod = type.GetMethod(Globals.AddMethodName, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, addMethodTypeArray);
-                if (addMethod == null)
-                    return;
+                addMethod = type.GetMethod(Globals.AddMethodName, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null, addMethodTypeArray, null);
             }
 
             if (getEnumeratorMethod == null)
@@ -1298,7 +1374,7 @@ namespace System.Runtime.Serialization
                 getEnumeratorMethod = type.GetMethod(Globals.GetEnumeratorMethodName, BindingFlags.Instance | BindingFlags.Public, Array.Empty<Type>());
                 if (getEnumeratorMethod == null || !Globals.TypeOfIEnumerator.IsAssignableFrom(getEnumeratorMethod.ReturnType))
                 {
-                    Type ienumerableInterface = interfaceType.GetInterfaces().Where(t => t.FullName.StartsWith("System.Collections.Generic.IEnumerable", StringComparison.Ordinal)).FirstOrDefault();
+                    Type ienumerableInterface = interfaceType.GetInterfaces().Where(t => t.FullName.StartsWith("System.Collections.Generic.IEnumerable")).FirstOrDefault();
                     if (ienumerableInterface == null)
                         ienumerableInterface = Globals.TypeOfIEnumerable;
                     getEnumeratorMethod = GetTargetMethodWithName(Globals.GetEnumeratorMethodName, type, ienumerableInterface);

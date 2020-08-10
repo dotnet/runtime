@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Internal.Cryptography;
 using Internal.Cryptography.Pal;
@@ -136,10 +135,61 @@ namespace System.Security.Cryptography.X509Certificates
 
         public void Import(byte[] rawData)
         {
+            if (rawData == null)
+                throw new ArgumentNullException(nameof(rawData));
+
+            Import(rawData.AsSpan());
+        }
+
+        /// <summary>
+        ///   Imports the certificates from the provided data into this collection.
+        /// </summary>
+        /// <param name="rawData">
+        ///   The certificate data to read.
+        /// </param>
+        public void Import(ReadOnlySpan<byte> rawData)
+        {
             Import(rawData, password: null, keyStorageFlags: X509KeyStorageFlags.DefaultKeySet);
         }
 
-        public void Import(byte[] rawData, string? password, X509KeyStorageFlags keyStorageFlags)
+        public void Import(byte[] rawData, string? password, X509KeyStorageFlags keyStorageFlags = 0)
+        {
+            if (rawData == null)
+                throw new ArgumentNullException(nameof(rawData));
+
+            Import(rawData.AsSpan(), password.AsSpan(), keyStorageFlags);
+        }
+
+        /// <summary>
+        ///   Imports the certificates from the provided data into this collection.
+        /// </summary>
+        /// <param name="rawData">
+        ///   The certificate data to read.
+        /// </param>
+        /// <param name="password">
+        ///   The password required to access the certificate data.
+        /// </param>
+        /// <param name="keyStorageFlags">
+        ///   A bitwise combination of the enumeration values that control where and how to import the certificate.
+        /// </param>
+        public void Import(ReadOnlySpan<byte> rawData, string? password, X509KeyStorageFlags keyStorageFlags = 0)
+        {
+            Import(rawData, password.AsSpan(), keyStorageFlags);
+        }
+
+        /// <summary>
+        ///   Imports the certificates from the provided data into this collection.
+        /// </summary>
+        /// <param name="rawData">
+        ///   The certificate data to read.
+        /// </param>
+        /// <param name="password">
+        ///   The password required to access the certificate data.
+        /// </param>
+        /// <param name="keyStorageFlags">
+        ///   A bitwise combination of the enumeration values that control where and how to import the certificate.
+        /// </param>
+        public void Import(ReadOnlySpan<byte> rawData, ReadOnlySpan<char> password, X509KeyStorageFlags keyStorageFlags = 0)
         {
             if (rawData == null)
                 throw new ArgumentNullException(nameof(rawData));
@@ -158,7 +208,33 @@ namespace System.Security.Cryptography.X509Certificates
             Import(fileName, password: null, keyStorageFlags: X509KeyStorageFlags.DefaultKeySet);
         }
 
-        public void Import(string fileName, string? password, X509KeyStorageFlags keyStorageFlags)
+        public void Import(string fileName, string? password, X509KeyStorageFlags keyStorageFlags = 0)
+        {
+            if (fileName == null)
+                throw new ArgumentNullException(nameof(fileName));
+
+            X509Certificate.ValidateKeyStorageFlags(keyStorageFlags);
+
+            using (var safePasswordHandle = new SafePasswordHandle(password))
+            using (ILoaderPal storePal = StorePal.FromFile(fileName, safePasswordHandle, keyStorageFlags))
+            {
+                storePal.MoveTo(this);
+            }
+        }
+
+        /// <summary>
+        ///   Imports the certificates from the specified file a into this collection.
+        /// </summary>
+        /// <param name="fileName">
+        ///   The name of the file containing the certificate information.
+        /// </param>
+        /// <param name="password">
+        ///   The password required to access the certificate data.
+        /// </param>
+        /// <param name="keyStorageFlags">
+        ///   A bitwise combination of the enumeration values that control where and how to import the certificate.
+        /// </param>
+        public void Import(string fileName, ReadOnlySpan<char> password, X509KeyStorageFlags keyStorageFlags = 0)
         {
             if (fileName == null)
                 throw new ArgumentNullException(nameof(fileName));

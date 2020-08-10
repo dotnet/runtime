@@ -177,6 +177,9 @@
   <data name="MissingOutputFile" xml:space="preserve">
     <value>Output filename must be specified (/out &lt;file&gt;)</value>
   </data>
+  <data name="InputWasNotLoadable" xml:space="preserve">
+    <value>No input files are loadable</value>
+  </data>
   <data name="NoInputFiles" xml:space="preserve">
     <value>No input files specified</value>
   </data>
@@ -278,5 +281,8 @@
   </data>
   <data name="ManagedCppNotSupported" xml:space="preserve">
     <value>Error: managed C++ is not supported: '{0}'</value>
+  </data>
+  <data name="VerifyTypeAndFieldLayoutOption" xml:space="preserve">
+    <value>Verify that struct type layout and field offsets match between compile time and runtime. Use only for diagnostic purposes.</value>
   </data>
 </root>

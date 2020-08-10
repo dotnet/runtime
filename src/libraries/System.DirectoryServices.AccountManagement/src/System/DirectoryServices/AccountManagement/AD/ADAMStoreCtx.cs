@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Diagnostics;
@@ -19,8 +18,8 @@ namespace System.DirectoryServices.AccountManagement
     internal partial class ADAMStoreCtx : ADStoreCtx
     {
         private const int mappingIndex = 1;
-        private List<string> _cachedBindableObjectList = null;
-        private string _cachedBindableObjectFilter = null;
+        private List<string> _cachedBindableObjectList;
+        private string _cachedBindableObjectFilter;
         private readonly object _objectListLock = new object();
 
         public ADAMStoreCtx(DirectoryEntry ctxBase, bool ownCtxBase, string username, string password, string serverName, ContextOptions options) : base(ctxBase, ownCtxBase, username, password, options)

@@ -1,11 +1,10 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection;
-using System.Diagnostics.CodeAnalysis;
 
 namespace System.Text.Json.Serialization.Converters
 {
@@ -22,11 +21,13 @@ namespace System.Text.Json.Serialization.Converters
             return true;
         }
 
-        [DynamicDependency("#ctor", typeof(ObjectDefaultConverter<>))]
-        [DynamicDependency("#ctor", typeof(LargeObjectWithParameterizedConstructorConverter<>))]
-        [DynamicDependency("#ctor", typeof(SmallObjectWithParameterizedConstructorConverter<,,,,>))]
         public override JsonConverter CreateConverter(Type typeToConvert, JsonSerializerOptions options)
         {
+            if (IsKeyValuePair(typeToConvert))
+            {
+                return CreateKeyValuePairConverter(typeToConvert, options);
+            }
+
             JsonConverter converter;
             Type converterType;
 
@@ -76,6 +77,34 @@ namespace System.Text.Json.Serialization.Converters
                     culture: null)!;
 
             converter.ConstructorInfo = constructor!;
+            return converter;
+        }
+
+        private bool IsKeyValuePair(Type typeToConvert)
+        {
+            if (!typeToConvert.IsGenericType)
+                return false;
+
+            Type generic = typeToConvert.GetGenericTypeDefinition();
+            return (generic == typeof(KeyValuePair<,>));
+        }
+
+        private JsonConverter CreateKeyValuePairConverter(Type type, JsonSerializerOptions options)
+        {
+            Debug.Assert(IsKeyValuePair(type));
+
+            Type keyType = type.GetGenericArguments()[0];
+            Type valueType = type.GetGenericArguments()[1];
+
+            JsonConverter converter = (JsonConverter)Activator.CreateInstance(
+                typeof(KeyValuePairConverter<,>).MakeGenericType(new Type[] { keyType, valueType }),
+                BindingFlags.Instance | BindingFlags.Public,
+                binder: null,
+                args: null,
+                culture: null)!;
+
+            converter.Initialize(options);
+
             return converter;
         }
 

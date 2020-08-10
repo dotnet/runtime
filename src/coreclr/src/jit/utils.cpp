@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 // ===================================================================================================
 // Portions of the code implemented below are based on the 'Berkeley SoftFloat Release 3e' algorithms.
@@ -129,7 +128,7 @@ const char* varTypeName(var_types vt)
     return varTypeNames[vt];
 }
 
-#if defined(DEBUG) || defined(LATE_DISASM)
+#if defined(DEBUG) || defined(LATE_DISASM) || DUMP_GC_TABLES
 /*****************************************************************************
  *
  *  Return the name of the given register.
@@ -165,7 +164,7 @@ const char* getRegName(unsigned reg,
 {
     return getRegName((regNumber)reg, isFloat);
 }
-#endif // defined(DEBUG) || defined(LATE_DISASM)
+#endif // defined(DEBUG) || defined(LATE_DISASM) || DUMP_GC_TABLES
 
 #if defined(DEBUG)
 
@@ -768,11 +767,11 @@ void ConfigMethodRange::InitRanges(const WCHAR* rangeStr, unsigned capacity)
             }
             else if ((L'A' <= *p) && (*p <= L'F'))
             {
-                n = (*p++) - L'A';
+                n = (*p++) - L'A' + 10;
             }
             else if ((L'a' <= *p) && (*p <= L'f'))
             {
-                n = (*p++) - L'a';
+                n = (*p++) - L'a' + 10;
             }
 
             int j = 16 * i + n;

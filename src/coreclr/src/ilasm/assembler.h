@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 /************************************************************************/
 /*                           Assembler.h                                */
 /************************************************************************/
@@ -16,6 +15,9 @@
 
 #include "asmenum.h"
 #include "asmtemplates.h"
+
+#include "portable_pdb.h"
+#include "portablepdbmdi.h"
 
 // Disable the "initialization of static local vars is no thread safe" error
 #ifdef _MSC_VER
@@ -641,6 +643,7 @@ struct Instr
 	unsigned column_end;
     unsigned pc;
     ISymUnmanagedDocumentWriter* pWriter;
+    Document* pOwnerDocument;
 };
 #define INSTR_POOL_SIZE 16
 
@@ -733,6 +736,12 @@ struct Indx
     }
 };
 
+typedef enum {
+    CLASSIC,        // default - classic PDB format, currently not supported for CoreCLR
+    PORTABLE,
+    // EMBEDDED     // for future use
+} PdbFormat;
+
 class Assembler {
 public:
     Assembler();
@@ -770,8 +779,8 @@ public:
     mdToken m_tkSysEnum;
     BOOL    m_fDidCoInitialise;
 
-    IMetaDataDispenserEx *m_pDisp;
-    IMetaDataEmit2      *m_pEmitter;
+    IMetaDataDispenserEx2 *m_pDisp;
+    IMetaDataEmit3      *m_pEmitter;
     ICeeFileGen        *m_pCeeFileGen;
     IMetaDataImport2    *m_pImporter;			// Import interface.
     HCEEFILE m_pCeeFile;
@@ -843,7 +852,7 @@ public:
     void    AddToImplList(mdToken);
     void    ClearBoundList(void);
     //--------------------------------------------------------------------------------
-    BOOL Init();
+    BOOL Init(BOOL generatePdb, PdbFormat pdbFormat);
     void ProcessLabel(__in_z __in char *pszName);
     GlobalLabel *FindGlobalLabel(LPCUTF8 pszName);
     GlobalFixup *AddDeferredGlobalFixup(__in __nullterminated char *pszLabel, BYTE* reference);
@@ -1050,6 +1059,20 @@ public:
 	GUID	m_guidLangVendor;
 	GUID	m_guidDoc;
 
+    // Portable PDB paraphernalia
+public:
+    PdbFormat           m_pdbFormat;
+    PortablePdbWriter* m_pPortablePdbWriter;
+    char                m_szPdbFileName[MAX_FILENAME_LENGTH * 3 + 1];
+    WCHAR               m_wzPdbFileName[MAX_FILENAME_LENGTH];
+
+    // Sets the pdb file name of the assembled file.
+    void SetPdbFileName(__in __nullterminated char* szName);
+    // Saves the pdb file.
+    HRESULT SavePdbFile();
+    // Checks whether pdb generation is portable
+    BOOL IsPortablePdb();
+
     // Security paraphernalia
 public:
     void AddPermissionDecl(CorDeclSecurity action, mdToken type, NVPair *pairs)
@@ -1224,7 +1247,7 @@ public:
     Clockwork* bClock;
     void SetClock(Clockwork* val) { bClock = val; };
     // ENC paraphernalia
-    HRESULT InitMetaDataForENC(__in __nullterminated WCHAR* wzOrigFileName);
+    HRESULT InitMetaDataForENC(__in __nullterminated WCHAR* wzOrigFileName, BOOL generatePdb, PdbFormat pdbFormat);
     BOOL EmitFieldsMethodsENC(Class* pClass);
     BOOL EmitEventsPropsENC(Class* pClass);
     HRESULT CreateDeltaFiles(__in __nullterminated WCHAR *pwzOutputFilename);

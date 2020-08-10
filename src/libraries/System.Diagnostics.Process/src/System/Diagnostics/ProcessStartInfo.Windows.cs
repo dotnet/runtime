@@ -1,8 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Security;
+using System.Runtime.Versioning;
 
 namespace System.Diagnostics
 {
@@ -12,17 +12,21 @@ namespace System.Diagnostics
 
         private const bool CaseSensitiveEnvironmentVariables = false;
 
+        [SupportedOSPlatform("windows")]
         public string? PasswordInClearText { get; set; }
 
+        [SupportedOSPlatform("windows")]
         public string Domain
         {
             get => _domain ?? string.Empty;
             set => _domain = value;
         }
 
+        [SupportedOSPlatform("windows")]
         public bool LoadUserProfile { get; set; }
 
         [CLSCompliant(false)]
+        [SupportedOSPlatform("windows")]
         public SecureString? Password { get; set; }
     }
 }

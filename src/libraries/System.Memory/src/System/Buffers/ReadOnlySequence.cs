@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -18,8 +17,8 @@ namespace System.Buffers
     public readonly partial struct ReadOnlySequence<T>
     {
         // The data is essentially two SequencePositions, however the Start and End SequencePositions are deconstructed to improve packing.
-        [AllowNull] private readonly object? _startObject;
-        [AllowNull] private readonly object? _endObject;
+        private readonly object? _startObject;
+        private readonly object? _endObject;
         private readonly int _startInteger;
         private readonly int _endInteger;
 

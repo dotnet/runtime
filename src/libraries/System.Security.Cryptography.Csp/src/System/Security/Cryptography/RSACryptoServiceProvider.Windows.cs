@@ -1,9 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
+using System.Buffers.Binary;
 using System.Diagnostics;
 using System.IO;
+using System.Runtime.Versioning;
 using Internal.Cryptography;
 using Internal.NativeCrypto;
 using Microsoft.Win32.SafeHandles;
@@ -18,7 +19,7 @@ namespace System.Security.Cryptography
         private readonly bool _randomKeyContainer;
         private SafeKeyHandle? _safeKeyHandle;
         private SafeProvHandle? _safeProvHandle;
-        private static volatile CspProviderFlags s_useMachineKeyStore = 0;
+        private static volatile CspProviderFlags s_useMachineKeyStore;
         private bool _disposed;
 
         public RSACryptoServiceProvider()
@@ -39,11 +40,13 @@ namespace System.Security.Cryptography
         {
         }
 
+        [SupportedOSPlatform("windows")]
         public RSACryptoServiceProvider(int dwKeySize, CspParameters? parameters)
             : this(dwKeySize, parameters, false)
         {
         }
 
+        [SupportedOSPlatform("windows")]
         public RSACryptoServiceProvider(CspParameters? parameters)
             : this(0, parameters, true)
         {
@@ -171,6 +174,7 @@ namespace System.Security.Cryptography
         /// <summary>
         /// CspKeyContainerInfo property
         /// </summary>
+        [SupportedOSPlatform("windows")]
         public CspKeyContainerInfo CspKeyContainerInfo
         {
             get
@@ -192,7 +196,7 @@ namespace System.Security.Cryptography
             get
             {
                 byte[] keySize = CapiHelper.GetKeyParameter(SafeKeyHandle, Constants.CLR_KEYLEN);
-                _keySize = (keySize[0] | (keySize[1] << 8) | (keySize[2] << 16) | (keySize[3] << 24));
+                _keySize = BinaryPrimitives.ReadInt32LittleEndian(keySize);
                 return _keySize;
             }
         }

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //*****************************************************************************
 // File: rstype.cpp
 //
@@ -684,7 +683,7 @@ HRESULT CordbType::GetType(CorElementType *pType)
         // Determining if something is a VC or not can involve asking the EE.
         // We could do it ourselves based on the metadata but it's non-trivial
         // determining if a class has System.ValueType as a parent (we have
-        // to find and OpenScope the mscorlib.dll which we don't currently do
+        // to find and OpenScope the System.Private.CoreLib.dll which we don't currently do
         // on the right-side).  But the IsValueClass call can fail if the
         // class is not yet loaded on the right side.  In that case we
         // ignore the failure and return ELEMENT_TYPE_CLASS

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 // ============================================================
 //
 // BaseAssemblySpec.inl
@@ -321,7 +320,7 @@ inline BOOL BaseAssemblySpec::CompareEx(BaseAssemblySpec *pSpec, DWORD dwCompare
 
 
     // If the assemblySpec contains the binding context, then check if they match.
-    if (!(pSpec->IsAssemblySpecForMscorlib() && IsAssemblySpecForMscorlib()))
+    if (!(pSpec->IsAssemblySpecForCoreLib() && IsAssemblySpecForCoreLib()))
     {
         if (!AreSameBinderInstance(pSpec->m_pBindingContext, m_pBindingContext))
         {

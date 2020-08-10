@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -49,10 +49,10 @@ namespace MS.Internal.Xml.XPath
         //The recursive is like
         //ParseOrExpr->ParseAndExpr->ParseEqualityExpr->ParseRelationalExpr...->ParseFilterExpr->ParsePredicate->ParseExpression
         //So put 200 limitation here will max cause about 2000~3000 depth stack.
-        private int _parseDepth = 0;
+        private int _parseDepth;
         private const int MaxParseDepth = 200;
 
-        private AstNode ParseExpression(AstNode qyInput)
+        private AstNode ParseExpression(AstNode? qyInput)
         {
             if (++_parseDepth > MaxParseDepth)
             {
@@ -64,7 +64,7 @@ namespace MS.Internal.Xml.XPath
         }
 
         //>> OrExpr ::= ( OrExpr 'or' )? AndExpr
-        private AstNode ParseOrExpr(AstNode qyInput)
+        private AstNode ParseOrExpr(AstNode? qyInput)
         {
             AstNode opnd = ParseAndExpr(qyInput);
 
@@ -80,7 +80,7 @@ namespace MS.Internal.Xml.XPath
         }
 
         //>> AndExpr ::= ( AndExpr 'and' )? EqualityExpr
-        private AstNode ParseAndExpr(AstNode qyInput)
+        private AstNode ParseAndExpr(AstNode? qyInput)
         {
             AstNode opnd = ParseEqualityExpr(qyInput);
 
@@ -97,7 +97,7 @@ namespace MS.Internal.Xml.XPath
 
         //>> EqualityOp ::= '=' | '!='
         //>> EqualityExpr    ::= ( EqualityExpr EqualityOp )? RelationalExpr
-        private AstNode ParseEqualityExpr(AstNode qyInput)
+        private AstNode ParseEqualityExpr(AstNode? qyInput)
         {
             AstNode opnd = ParseRelationalExpr(qyInput);
 
@@ -119,7 +119,7 @@ namespace MS.Internal.Xml.XPath
 
         //>> RelationalOp ::= '<' | '>' | '<=' | '>='
         //>> RelationalExpr    ::= ( RelationalExpr RelationalOp )? AdditiveExpr
-        private AstNode ParseRelationalExpr(AstNode qyInput)
+        private AstNode ParseRelationalExpr(AstNode? qyInput)
         {
             AstNode opnd = ParseAdditiveExpr(qyInput);
 
@@ -143,7 +143,7 @@ namespace MS.Internal.Xml.XPath
 
         //>> AdditiveOp   ::= '+' | '-'
         //>> AdditiveExpr ::= ( AdditiveExpr AdditiveOp )? MultiplicativeExpr
-        private AstNode ParseAdditiveExpr(AstNode qyInput)
+        private AstNode ParseAdditiveExpr(AstNode? qyInput)
         {
             AstNode opnd = ParseMultiplicativeExpr(qyInput);
 
@@ -165,7 +165,7 @@ namespace MS.Internal.Xml.XPath
 
         //>> MultiplicativeOp   ::= '*' | 'div' | 'mod'
         //>> MultiplicativeExpr ::= ( MultiplicativeExpr MultiplicativeOp )? UnaryExpr
-        private AstNode ParseMultiplicativeExpr(AstNode qyInput)
+        private AstNode ParseMultiplicativeExpr(AstNode? qyInput)
         {
             AstNode opnd = ParseUnaryExpr(qyInput);
 
@@ -187,7 +187,7 @@ namespace MS.Internal.Xml.XPath
         }
 
         //>> UnaryExpr    ::= UnionExpr | '-' UnaryExpr
-        private AstNode ParseUnaryExpr(AstNode qyInput)
+        private AstNode ParseUnaryExpr(AstNode? qyInput)
         {
             bool minus = false;
             while (_scanner.Kind == XPathScanner.LexKind.Minus)
@@ -207,7 +207,7 @@ namespace MS.Internal.Xml.XPath
         }
 
         //>> UnionExpr ::= ( UnionExpr '|' )? PathExpr
-        private AstNode ParseUnionExpr(AstNode qyInput)
+        private AstNode ParseUnionExpr(AstNode? qyInput)
         {
             AstNode opnd = ParsePathExpr(qyInput);
 
@@ -240,7 +240,7 @@ namespace MS.Internal.Xml.XPath
         //>> PathOp   ::= '/' | '//'
         //>> PathExpr ::= LocationPath |
         //>>              FilterExpr ( PathOp  RelativeLocationPath )?
-        private AstNode ParsePathExpr(AstNode qyInput)
+        private AstNode ParsePathExpr(AstNode? qyInput)
         {
             AstNode opnd;
             if (IsPrimaryExpr(_scanner))
@@ -266,7 +266,7 @@ namespace MS.Internal.Xml.XPath
         }
 
         //>> FilterExpr ::= PrimaryExpr | FilterExpr Predicate
-        private AstNode ParseFilterExpr(AstNode qyInput)
+        private AstNode ParseFilterExpr(AstNode? qyInput)
         {
             AstNode opnd = ParsePrimaryExpr(qyInput);
             while (_scanner.Kind == XPathScanner.LexKind.LBracket)
@@ -293,7 +293,7 @@ namespace MS.Internal.Xml.XPath
         }
 
         //>> LocationPath ::= RelativeLocationPath | AbsoluteLocationPath
-        private AstNode ParseLocationPath(AstNode qyInput)
+        private AstNode ParseLocationPath(AstNode? qyInput)
         {
             if (_scanner.Kind == XPathScanner.LexKind.Slash)
             {
@@ -319,9 +319,9 @@ namespace MS.Internal.Xml.XPath
 
         //>> PathOp   ::= '/' | '//'
         //>> RelativeLocationPath ::= ( RelativeLocationPath PathOp )? Step
-        private AstNode ParseRelativeLocationPath(AstNode qyInput)
+        private AstNode ParseRelativeLocationPath(AstNode? qyInput)
         {
-            AstNode opnd = qyInput;
+            AstNode? opnd = qyInput;
             do
             {
                 opnd = ParseStep(opnd);
@@ -357,7 +357,7 @@ namespace MS.Internal.Xml.XPath
         }
 
         //>> Step ::= '.' | '..' | ( AxisName '::' | '@' )? NodeTest Predicate*
-        private AstNode ParseStep(AstNode qyInput)
+        private AstNode ParseStep(AstNode? qyInput)
         {
             AstNode opnd;
             if (XPathScanner.LexKind.Dot == _scanner.Kind)
@@ -401,7 +401,7 @@ namespace MS.Internal.Xml.XPath
         }
 
         //>> NodeTest ::= NameTest | 'comment ()' | 'text ()' | 'node ()' | 'processing-instruction ('  Literal ? ')'
-        private AstNode ParseNodeTest(AstNode qyInput, Axis.AxisType axisType, XPathNodeType nodeType)
+        private AstNode ParseNodeTest(AstNode? qyInput, Axis.AxisType axisType, XPathNodeType nodeType)
         {
             string nodeName, nodePrefix;
 
@@ -470,10 +470,10 @@ namespace MS.Internal.Xml.XPath
         }
 
         //>> PrimaryExpr ::= Literal | Number | VariableReference | '(' Expr ')' | FunctionCall
-        private AstNode ParsePrimaryExpr(AstNode qyInput)
+        private AstNode ParsePrimaryExpr(AstNode? qyInput)
         {
             Debug.Assert(IsPrimaryExpr(_scanner));
-            AstNode opnd = null;
+            AstNode? opnd = null;
             switch (_scanner.Kind)
             {
                 case XPathScanner.LexKind.String:
@@ -510,7 +510,7 @@ namespace MS.Internal.Xml.XPath
             return opnd;
         }
 
-        private AstNode ParseMethod(AstNode qyInput)
+        private AstNode ParseMethod(AstNode? qyInput)
         {
             List<AstNode> argList = new List<AstNode>();
             string name = _scanner.Name;
@@ -532,7 +532,7 @@ namespace MS.Internal.Xml.XPath
             PassToken(XPathScanner.LexKind.RParens);
             if (prefix.Length == 0)
             {
-                ParamInfo pi;
+                ParamInfo? pi;
                 if (s_functionTable.TryGetValue(name, out pi))
                 {
                     int argCount = argList.Count;
@@ -620,7 +620,7 @@ namespace MS.Internal.Xml.XPath
         //>>                       | IdKeyPattern (('/' | '//') RelativePathPattern)?
         private AstNode ParseLocationPathPattern()
         {
-            AstNode opnd = null;
+            AstNode? opnd = null;
             switch (_scanner.Kind)
             {
                 case XPathScanner.LexKind.Slash:
@@ -661,7 +661,7 @@ namespace MS.Internal.Xml.XPath
         }
 
         //>> IdKeyPattern ::= 'id' '(' Literal ')' | 'key' '(' Literal ',' Literal ')'
-        private AstNode ParseIdKeyPattern()
+        private AstNode? ParseIdKeyPattern()
         {
             Debug.Assert(_scanner.CanBeFunction);
             List<AstNode> argList = new List<AstNode>();
@@ -698,7 +698,7 @@ namespace MS.Internal.Xml.XPath
 
         //>> PathOp   ::= '/' | '//'
         //>> RelativePathPattern ::= ( RelativePathPattern PathOp )? StepPattern
-        private AstNode ParseRelativePathPattern(AstNode qyInput)
+        private AstNode ParseRelativePathPattern(AstNode? qyInput)
         {
             AstNode opnd = ParseStepPattern(qyInput);
             if (XPathScanner.LexKind.SlashSlash == _scanner.Kind)
@@ -716,7 +716,7 @@ namespace MS.Internal.Xml.XPath
 
         //>> StepPattern    ::=    ChildOrAttributeAxisSpecifier NodeTest Predicate*
         //>> ChildOrAttributeAxisSpecifier    ::=    @ ? | ('child' | 'attribute') '::'
-        private AstNode ParseStepPattern(AstNode qyInput)
+        private AstNode ParseStepPattern(AstNode? qyInput)
         {
             AstNode opnd;
             Axis.AxisType axisType = Axis.AxisType.Child;

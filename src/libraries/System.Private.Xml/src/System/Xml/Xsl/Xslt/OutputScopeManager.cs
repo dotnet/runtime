@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Diagnostics;
@@ -18,10 +17,10 @@ namespace System.Xml.Xsl.Xslt
             public string nsUri;
         }
         private ScopeReord[] _records = new ScopeReord[32];
-        private int _lastRecord = 0;
-        private int _lastScopes = 0;  // This is cash of records[lastRecord].scopeCount field;
-                                      // most often we will have PushScope()/PopScope pare over the same record.
-                                      // It has sence to avoid adresing this field through array access.
+        private int _lastRecord;
+        private int _lastScopes;  // Cache of records[lastRecord].scopeCount field;
+                                  // most often we will have PushScope()/PopScope over the same record.
+                                  // It makes sense to avoid accessing this field through the array.
 
         public OutputScopeManager()
         {

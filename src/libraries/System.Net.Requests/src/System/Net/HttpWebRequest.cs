@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -33,7 +32,7 @@ namespace System.Net
         // as the underlying System.Net.Http API doesn't support it.
         private int _continueTimeout = DefaultContinueTimeout;
 
-        private bool _allowReadStreamBuffering = false;
+        private bool _allowReadStreamBuffering;
         private CookieContainer? _cookieContainer;
         private ICredentials? _credentials;
         private IWebProxy? _proxy = WebRequest.DefaultWebProxy;
@@ -42,10 +41,10 @@ namespace System.Net
 
         private static int _defaultMaxResponseHeadersLength = HttpHandlerDefaults.DefaultMaxResponseHeadersLength;
 
-        private int _beginGetRequestStreamCalled = 0;
-        private int _beginGetResponseCalled = 0;
-        private int _endGetRequestStreamCalled = 0;
-        private int _endGetResponseCalled = 0;
+        private int _beginGetRequestStreamCalled;
+        private int _beginGetResponseCalled;
+        private int _endGetRequestStreamCalled;
+        private int _endGetResponseCalled;
 
         private int _maximumAllowedRedirections = HttpHandlerDefaults.DefaultMaxAutomaticRedirections;
         private int _maximumResponseHeadersLen = _defaultMaxResponseHeadersLength;
@@ -65,7 +64,7 @@ namespace System.Net
         private TaskCompletionSource<WebResponse>? _responseOperation;
         private AsyncCallback? _requestStreamCallback;
         private AsyncCallback? _responseCallback;
-        private int _abortCalled = 0;
+        private int _abortCalled;
         private CancellationTokenSource? _sendRequestCts;
         private X509CertificateCollection? _clientCertificates;
         private Booleans _booleans = Booleans.Default;
@@ -1019,7 +1018,7 @@ namespace System.Net
             try
             {
                 _sendRequestCts = new CancellationTokenSource();
-                return SendRequest().GetAwaiter().GetResult();
+                return SendRequest(async: false).GetAwaiter().GetResult();
             }
             catch (Exception ex)
             {
@@ -1110,7 +1109,7 @@ namespace System.Net
             return stream;
         }
 
-        private async Task<WebResponse> SendRequest()
+        private async Task<WebResponse> SendRequest(bool async)
         {
             if (RequestSubmitted)
             {
@@ -1171,10 +1170,10 @@ namespace System.Net
 
                 request.Version = ProtocolVersion;
 
-                _sendRequestTask = client.SendAsync(
-                    request,
-                    _allowReadStreamBuffering ? HttpCompletionOption.ResponseContentRead : HttpCompletionOption.ResponseHeadersRead,
-                    _sendRequestCts!.Token);
+                _sendRequestTask = async ?
+                    client.SendAsync(request, _allowReadStreamBuffering ? HttpCompletionOption.ResponseContentRead : HttpCompletionOption.ResponseHeadersRead, _sendRequestCts!.Token) :
+                    Task.FromResult(client.Send(request, _allowReadStreamBuffering ? HttpCompletionOption.ResponseContentRead : HttpCompletionOption.ResponseHeadersRead, _sendRequestCts!.Token));
+
                 HttpResponseMessage responseMessage = await _sendRequestTask.ConfigureAwait(false);
 
                 HttpWebResponse response = new HttpWebResponse(responseMessage, _requestUri, _cookieContainer);
@@ -1211,7 +1210,7 @@ namespace System.Net
 
             _sendRequestCts = new CancellationTokenSource();
             _responseCallback = callback;
-            _responseOperation = SendRequest().ToApm(callback, state);
+            _responseOperation = SendRequest(async: true).ToApm(callback, state);
 
             return _responseOperation.Task;
         }

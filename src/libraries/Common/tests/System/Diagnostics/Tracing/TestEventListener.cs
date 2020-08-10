@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -13,24 +12,27 @@ namespace System.Diagnostics.Tracing
         private readonly string _targetSourceName;
         private readonly Guid _targetSourceGuid;
         private readonly EventLevel _level;
+        private readonly double? _eventCounterInterval;
 
         private Action<EventWrittenEventArgs> _eventWritten;
         private List<EventSource> _tmpEventSourceList = new List<EventSource>();
 
-        public TestEventListener(string targetSourceName, EventLevel level)
+        public TestEventListener(string targetSourceName, EventLevel level, double? eventCounterInterval = null)
         {
             // Store the arguments
             _targetSourceName = targetSourceName;
             _level = level;
+            _eventCounterInterval = eventCounterInterval;
 
             LoadSourceList();
         }
 
-        public TestEventListener(Guid targetSourceGuid, EventLevel level)
+        public TestEventListener(Guid targetSourceGuid, EventLevel level, double? eventCounterInterval = null)
         {
             // Store the arguments
             _targetSourceGuid = targetSourceGuid;
             _level = level;
+            _eventCounterInterval = eventCounterInterval;
 
             LoadSourceList();
         }
@@ -81,7 +83,15 @@ namespace System.Diagnostics.Tracing
             if (source.Name.Equals(_targetSourceName) ||
                 source.Guid.Equals(_targetSourceGuid))
             {
-                EnableEvents(source, _level);
+                if (_eventCounterInterval != null)
+                {
+                    var args = new Dictionary<string, string> { { "EventCounterIntervalSec", _eventCounterInterval?.ToString() } };
+                    EnableEvents(source, _level, EventKeywords.All, args);
+                }
+                else
+                {
+                    EnableEvents(source, _level);
+                }
             }
         }
 

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*============================================================
 **
@@ -1951,18 +1950,6 @@ public:
         AssemblySpec *pSpec,
         BOOL fThrowOnFileNotFound) DAC_EMPTY_RET(NULL);
 
-    HRESULT BindAssemblySpecForHostedBinder(
-        AssemblySpec *   pSpec,
-        IAssemblyName *  pAssemblyName,
-        ICLRPrivBinder * pBinder,
-        PEAssembly **    ppAssembly) DAC_EMPTY_RET(E_FAIL);
-
-    HRESULT BindHostedPrivAssembly(
-        PEAssembly *       pParentPEAssembly,
-        ICLRPrivAssembly * pPrivAssembly,
-        IAssemblyName *    pAssemblyName,
-        PEAssembly **      ppAssembly) DAC_EMPTY_RET(S_OK);
-
     //****************************************************************************************
     //
     //****************************************************************************************
@@ -2750,7 +2737,6 @@ public:
 #endif // DACCESS_COMPILE
 
     //****************************************************************************************
-    // Routines to deal with the base library (currently mscorlib.dll)
     LPCWSTR BaseLibrary()
     {
         WRAPPER_NO_CONTRACT;
@@ -2763,11 +2749,11 @@ public:
     {
         WRAPPER_NO_CONTRACT;
 
-        // See if it is the installation path to mscorlib
+        // See if it is the installation path to CoreLib
         if (path.EqualsCaseInsensitive(m_BaseLibrary))
             return TRUE;
 
-        // Or, it might be the GAC location of mscorlib
+        // Or, it might be the GAC location of CoreLib
         if (System()->SystemAssembly() != NULL
             && path.EqualsCaseInsensitive(System()->SystemAssembly()->GetManifestFile()->GetPath()))
             return TRUE;
@@ -2779,7 +2765,7 @@ public:
     {
         WRAPPER_NO_CONTRACT;
 
-        // See if it is the installation path to mscorlib.resources
+        // See if it is the installation path to corelib.resources
         SString s(SString::Ascii,g_psBaseLibrarySatelliteAssemblyName);
         if (path.EqualsCaseInsensitive(s))
             return TRUE;
@@ -2855,7 +2841,7 @@ private:
 #ifdef FEATURE_PREJIT
 protected:
 
-    // These flags let the correct native image of mscorlib to be loaded.
+    // These flags let the correct native image of CoreLib to be loaded.
     // This is important for hardbinding to it
 
     SVAL_DECL(BOOL, s_fForceDebug);

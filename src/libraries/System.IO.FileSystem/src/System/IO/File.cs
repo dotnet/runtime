@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Buffers;
@@ -8,6 +7,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.ExceptionServices;
+using System.Runtime.Versioning;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -328,7 +328,7 @@ namespace System.IO
         public static byte[] ReadAllBytes(string path)
         {
             // bufferSize == 1 used to avoid unnecessary buffer in FileStream
-            using (FileStream fs = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize: 1))
+            using (FileStream fs = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize: 1, FileOptions.SequentialScan))
             {
                 long fileLength = fs.Length;
                 if (fileLength > int.MaxValue)
@@ -646,11 +646,13 @@ namespace System.IO
             FileSystem.MoveFile(fullSourceFileName, fullDestFileName, overwrite);
         }
 
+        [SupportedOSPlatform("windows")]
         public static void Encrypt(string path)
         {
             FileSystem.Encrypt(path ?? throw new ArgumentNullException(nameof(path)));
         }
 
+        [SupportedOSPlatform("windows")]
         public static void Decrypt(string path)
         {
             FileSystem.Decrypt(path ?? throw new ArgumentNullException(nameof(path)));

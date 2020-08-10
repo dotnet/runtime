@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Runtime.InteropServices;
 using System.Text;
@@ -29,7 +28,6 @@ namespace System.IO.Tests
         [Fact]
         public void NullParameters()
         {
-            string path = GetTestFilePath();
             Assert.Throws<ArgumentNullException>(() => Write(null, "Text"));
             Assert.Throws<ArgumentNullException>(() => Read(null));
         }
@@ -59,7 +57,6 @@ namespace System.IO.Tests
         [Fact]
         public void InvalidParameters()
         {
-            string path = GetTestFilePath();
             Assert.Throws<ArgumentException>(() => Write(string.Empty, "Text"));
             Assert.Throws<ArgumentException>(() => Read(""));
         }

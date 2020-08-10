@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //
 
 
@@ -194,6 +193,24 @@ inline Thread::CurrentPrepareCodeConfigHolder::~CurrentPrepareCodeConfigHolder()
     _ASSERTE(config == m_config);
     m_thread->m_currentPrepareCodeConfig = config->GetNextInSameThread();
     config->SetNextInSameThread(nullptr);
+}
+
+inline void Thread::EnterForbidSuspendForDebuggerRegion()
+{
+    WRAPPER_NO_CONTRACT;
+    _ASSERTE(this == GetThread());
+
+    _ASSERTE(!m_isInForbidSuspendForDebuggerRegion);
+    m_isInForbidSuspendForDebuggerRegion = true;
+}
+
+inline void Thread::ExitForbidSuspendForDebuggerRegion()
+{
+    WRAPPER_NO_CONTRACT;
+    _ASSERTE(this == GetThread());
+
+    _ASSERTE(m_isInForbidSuspendForDebuggerRegion);
+    m_isInForbidSuspendForDebuggerRegion = false;
 }
 
 #ifdef HOST_WINDOWS

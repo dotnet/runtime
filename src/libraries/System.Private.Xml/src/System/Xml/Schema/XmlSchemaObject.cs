@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #nullable enable
 namespace System.Xml.Schema
@@ -10,8 +9,8 @@ namespace System.Xml.Schema
 
     public abstract class XmlSchemaObject
     {
-        private int _lineNum = 0;
-        private int _linePos = 0;
+        private int _lineNum;
+        private int _linePos;
         private string? _sourceUri;
         private XmlSerializerNamespaces? _namespaces;
         private XmlSchemaObject? _parent;

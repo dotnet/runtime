@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*============================================================
 **
@@ -295,7 +294,7 @@ namespace System
 
         public static void WaitForPendingFinalizers()
         {
-            // QCalls can not be exposed from mscorlib directly, need to wrap it.
+            // QCalls can not be exposed directly, need to wrap it.
             _WaitForPendingFinalizers();
         }
 
@@ -660,7 +659,7 @@ namespace System
         /// If pinned is set to true, <typeparamref name="T"/> must not be a reference type or a type that contains object references.
         /// </remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)] // forced to ensure no perf drop for small memory buffers (hot path)
-        public static T[] AllocateUninitializedArray<T>(int length, bool pinned = false)
+        public static T[] AllocateUninitializedArray<T>(int length, bool pinned = false) // T[] rather than T?[] to match `new T[length]` behavior
         {
             if (!pinned)
             {
@@ -706,7 +705,7 @@ namespace System
         /// <remarks>
         /// If pinned is set to true, <typeparamref name="T"/> must not be a reference type or a type that contains object references.
         /// </remarks>
-        public static T[] AllocateArray<T>(int length, bool pinned = false)
+        public static T[] AllocateArray<T>(int length, bool pinned = false) // T[] rather than T?[] to match `new T[length]` behavior
         {
             GC_ALLOC_FLAGS flags = GC_ALLOC_FLAGS.GC_ALLOC_NO_FLAGS;
 

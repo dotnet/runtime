@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Debug = System.Diagnostics.Debug;
 
@@ -71,6 +70,8 @@ namespace Internal.TypeSystem.Interop
 
                 TypeDesc parameterType = (i == 0) ? methodSig.ReturnType : methodSig[i - 1];  //first item is the return type
                 marshallers[i] = CreateMarshaller(parameterType,
+                                                    parameterIndex,
+                                                    methodSig.GetEmbeddedSignatureData(),
                                                     MarshallerType.Argument,
                                                     parameterMetadata.MarshalAsDescriptor,
                                                     direction,
@@ -88,6 +89,9 @@ namespace Internal.TypeSystem.Interop
         public static bool IsMarshallingRequired(MethodDesc targetMethod)
         {
             Debug.Assert(targetMethod.IsPInvoke);
+
+            if (targetMethod.IsUnmanagedCallersOnly)
+                return true;
 
             PInvokeFlags flags = targetMethod.GetPInvokeMethodMetadata().Flags;
 
@@ -119,6 +123,8 @@ namespace Internal.TypeSystem.Interop
 
                 MarshallerKind marshallerKind = MarshalHelpers.GetMarshallerKind(
                     parameterType,
+                    parameterIndex: i,
+                    customModifierData: methodSig.GetEmbeddedSignatureData(),
                     parameterMetadata.MarshalAsDescriptor,
                     parameterMetadata.Return,
                     isAnsi: true,

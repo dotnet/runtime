@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Buffers;
 using System.Buffers.Binary;
@@ -1028,6 +1027,12 @@ namespace System.Globalization.Tests
 
             Assert.Equal(expectedToLower, Rune.ToLowerInvariant(originalRune).Value);
             Assert.Equal(expectedToLower, Rune.ToLower(originalRune, CultureInfo.GetCultureInfo("tr-TR")).Value);
+        }
+
+        [Fact]
+        public void TestGetCultureInfo_PredefinedOnly_ReturnsSame()
+        {
+            Assert.Equal(CultureInfo.GetCultureInfo("en-US"), CultureInfo.GetCultureInfo("en-US", predefinedOnly: true));
         }
 
         private static byte[] GetExpectedInvariantOrdinalSortKey(ReadOnlySpan<char> input)

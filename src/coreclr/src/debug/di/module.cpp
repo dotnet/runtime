@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 //*****************************************************************************
 // File: module.cpp
@@ -1200,6 +1199,10 @@ HRESULT CordbModule::QueryInterface(REFIID id, void **pInterface)
     else if (id == IID_ICorDebugModule3)
     {
         *pInterface = static_cast<ICorDebugModule3*>(this);
+    }
+    else if (id == IID_ICorDebugModule4)
+    {
+        *pInterface = static_cast<ICorDebugModule4*>(this);
     }
     else if (id == IID_IUnknown)
     {
@@ -2750,6 +2753,24 @@ HRESULT CordbModule::GetJITCompilerFlags(DWORD *pdwFlags )
 
     }
     EX_CATCH_HRESULT(hr);
+    return hr;
+}
+
+HRESULT CordbModule::IsMappedLayout(BOOL *isMapped)
+{
+    VALIDATE_POINTER_TO_OBJECT(isMapped, BOOL*);
+    FAIL_IF_NEUTERED(this);
+
+    HRESULT hr = S_OK;
+    CordbProcess *pProcess = GetProcess();
+
+    ATT_REQUIRE_STOPPED_MAY_FAIL(pProcess);
+    PUBLIC_API_BEGIN(pProcess);
+    {
+        hr = pProcess->GetDAC()->IsModuleMapped(m_vmModule, isMapped);
+    }
+    PUBLIC_API_END(hr);
+
     return hr;
 }
 

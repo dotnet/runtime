@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Data.Common;
 
@@ -179,7 +178,7 @@ namespace System.Data.OleDb
         internal readonly DbType enumDbType;    // enum System.Data.DbType
         internal readonly short dbType;        // OLE DB DBTYPE_
         internal readonly short wType;         // OLE DB DBTYPE_ we ask OleDB Provider to bind as
-        internal readonly Type dataType;      // CLR Type
+        internal readonly Type? dataType;      // CLR Type
 
         internal readonly int dbPart;    // the DBPart w or w/out length
         internal readonly bool isfixed;   // IsFixedLength
@@ -190,7 +189,7 @@ namespace System.Data.OleDb
         internal readonly string dataSourceType; // ICommandWithParameters.SetParameterInfo standard type name
         internal readonly StringMemHandle dbString;  // ptr to native allocated memory for dataSourceType string
 
-        private NativeDBType(byte maxpre, int fixlen, bool isfixed, bool islong, OleDbType enumOleDbType, short dbType, string dbstring, Type dataType, short wType, DbType enumDbType)
+        private NativeDBType(byte maxpre, int fixlen, bool isfixed, bool islong, OleDbType enumOleDbType, short dbType, string dbstring, Type? dataType, short wType, DbType enumDbType)
         {
             this.enumOleDbType = enumOleDbType;
             this.dbType = dbType;
@@ -266,7 +265,7 @@ namespace System.Data.OleDb
 
         internal static NativeDBType FromSystemType(object value)
         {
-            IConvertible ic = (value as IConvertible);
+            IConvertible? ic = (value as IConvertible);
             if (null != ic)
             {
                 return ic.GetTypeCode() switch

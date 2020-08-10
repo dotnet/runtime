@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 // ============================================================
 //
 // CoreAssemblySpec.cpp
@@ -92,7 +91,7 @@ VOID  AssemblySpec::Bind(AppDomain      *pAppDomain,
         STANDARD_VM_CHECK;
         PRECONDITION(CheckPointer(pResult));
         PRECONDITION(CheckPointer(pAppDomain));
-        PRECONDITION(IsMscorlib() == FALSE); // This should never be called for MSCORLIB (explicit loading)
+        PRECONDITION(IsCoreLib() == FALSE); // This should never be called for CoreLib (explicit loading)
     }
     CONTRACTL_END;
 
@@ -117,7 +116,7 @@ VOID  AssemblySpec::Bind(AppDomain      *pAppDomain,
     ReleaseHolder<ICLRPrivAssembly> pPrivAsm;
     _ASSERTE(pBinder != NULL);
 
-    if (m_wszCodeBase == NULL && IsMscorlibSatellite())
+    if (m_wszCodeBase == NULL && IsCoreLibSatellite())
     {
         StackSString sSystemDirectory(SystemDomain::System()->SystemDirectory());
         StackSString tmpString;
@@ -141,7 +140,7 @@ VOID  AssemblySpec::Bind(AppDomain      *pAppDomain,
         // For name based binding these arguments shouldn't have been changed from default
         _ASSERTE(!fNgenExplicitBind && !fExplicitBindToNativeImage);
         SafeComHolder<IAssemblyName> pName;
-        hr = CreateAssemblyNameObject(&pName, assemblyDisplayName, true /*parseDisplayName*/);
+        hr = CreateAssemblyNameObject(&pName, assemblyDisplayName);
         if (SUCCEEDED(hr))
         {
             hr = pBinder->BindAssemblyByName(pName, &pPrivAsm);

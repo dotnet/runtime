@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 //
 
@@ -209,20 +208,12 @@ TODO: Talk about initializing strutures before use
 //
 //////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-#if !defined(SELECTANY)
-#if defined(__GNUC__)
-    #define SELECTANY extern __attribute__((weak))
-#else
-    #define SELECTANY extern __declspec(selectany)
-#endif
-#endif
-
-SELECTANY const GUID JITEEVersionIdentifier = { /* 2ca8d539-5db9-4831-8f1b-ade425f036bd */
-    0x2ca8d539,
-    0x5db9,
-    0x4831,
-    {0x8f, 0x1b, 0xad, 0xe4, 0x25, 0xf0, 0x36, 0xbd}
-  };
+constexpr GUID JITEEVersionIdentifier = { /* a5eec3a4-4176-43a7-8c2b-a05b551d4f49 */
+    0xa5eec3a4,
+    0x4176,
+    0x43a7,
+    {0x8c, 0x2b, 0xa0, 0x5b, 0x55, 0x1d, 0x4f, 0x49}
+};
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////
 //
@@ -722,6 +713,7 @@ enum CorInfoCallConv
     CORINFO_CALLCONV_FIELD      = 0x6,
     CORINFO_CALLCONV_LOCAL_SIG  = 0x7,
     CORINFO_CALLCONV_PROPERTY   = 0x8,
+    CORINFO_CALLCONV_UNMANAGED  = 0x9,
     CORINFO_CALLCONV_NATIVEVARARG = 0xb,    // used ONLY for IL stub PInvoke vararg calls
 
     CORINFO_CALLCONV_MASK       = 0x0f,     // Calling convention is bottom 4 bits
@@ -899,28 +891,6 @@ enum CorInfoException
 
 enum CorInfoIntrinsics
 {
-    CORINFO_INTRINSIC_Sin,
-    CORINFO_INTRINSIC_Cos,
-    CORINFO_INTRINSIC_Cbrt,
-    CORINFO_INTRINSIC_Sqrt,
-    CORINFO_INTRINSIC_Abs,
-    CORINFO_INTRINSIC_Round,
-    CORINFO_INTRINSIC_Cosh,
-    CORINFO_INTRINSIC_Sinh,
-    CORINFO_INTRINSIC_Tan,
-    CORINFO_INTRINSIC_Tanh,
-    CORINFO_INTRINSIC_Asin,
-    CORINFO_INTRINSIC_Asinh,
-    CORINFO_INTRINSIC_Acos,
-    CORINFO_INTRINSIC_Acosh,
-    CORINFO_INTRINSIC_Atan,
-    CORINFO_INTRINSIC_Atan2,
-    CORINFO_INTRINSIC_Atanh,
-    CORINFO_INTRINSIC_Log10,
-    CORINFO_INTRINSIC_Pow,
-    CORINFO_INTRINSIC_Exp,
-    CORINFO_INTRINSIC_Ceiling,
-    CORINFO_INTRINSIC_Floor,
     CORINFO_INTRINSIC_GetChar,              // fetch character out of string
     CORINFO_INTRINSIC_Array_GetDimLength,   // Get number of elements in a given dimension of an array
     CORINFO_INTRINSIC_Array_Get,            // Get the value of an element in an array
@@ -1038,9 +1008,8 @@ enum CorInfoInitClassResult
     CORINFO_INITCLASS_NOT_REQUIRED  = 0x00, // No class initialization required, but the class is not actually initialized yet
                                             // (e.g. we are guaranteed to run the static constructor in method prolog)
     CORINFO_INITCLASS_INITIALIZED   = 0x01, // Class initialized
-    CORINFO_INITCLASS_SPECULATIVE   = 0x02, // Class may be initialized speculatively
-    CORINFO_INITCLASS_USE_HELPER    = 0x04, // The JIT must insert class initialization helper call.
-    CORINFO_INITCLASS_DONT_INLINE   = 0x08, // The JIT should not inline the method requesting the class initialization. The class
+    CORINFO_INITCLASS_USE_HELPER    = 0x02, // The JIT must insert class initialization helper call.
+    CORINFO_INITCLASS_DONT_INLINE   = 0x04, // The JIT should not inline the method requesting the class initialization. The class
                                             // initialization requires helper class now, but will not require initialization
                                             // if the method is compiled standalone. Or the method cannot be inlined due to some
                                             // requirement around class initialization such as shared generics.
@@ -1105,9 +1074,7 @@ typedef struct CORINFO_VarArgInfo *         CORINFO_VARARGS_HANDLE;
 // Generic tokens are resolved with respect to a context, which is usually the method
 // being compiled. The CORINFO_CONTEXT_HANDLE indicates which exact instantiation
 // (or the open instantiation) is being referred to.
-// CORINFO_CONTEXT_HANDLE is more tightly scoped than CORINFO_MODULE_HANDLE. For cases
-// where the exact instantiation does not matter, CORINFO_MODULE_HANDLE is used.
-typedef CORINFO_METHOD_HANDLE               CORINFO_CONTEXT_HANDLE;
+typedef struct CORINFO_CONTEXT_STRUCT_*     CORINFO_CONTEXT_HANDLE;
 
 typedef struct CORINFO_DEPENDENCY_STRUCT_
 {
@@ -1124,6 +1091,7 @@ enum CorInfoContextFlags
     CORINFO_CONTEXTFLAGS_MASK   = 0x01
 };
 
+#define METHOD_BEING_COMPILED_CONTEXT() ((CORINFO_CONTEXT_HANDLE)1)
 #define MAKE_CLASSCONTEXT(c)  (CORINFO_CONTEXT_HANDLE((size_t) (c) | CORINFO_CONTEXTFLAGS_CLASS))
 #define MAKE_METHODCONTEXT(m) (CORINFO_CONTEXT_HANDLE((size_t) (m) | CORINFO_CONTEXTFLAGS_METHOD))
 
@@ -1254,6 +1222,7 @@ enum CORINFO_RUNTIME_LOOKUP_KIND
     CORINFO_LOOKUP_THISOBJ,
     CORINFO_LOOKUP_METHODPARAM,
     CORINFO_LOOKUP_CLASSPARAM,
+    CORINFO_LOOKUP_NOT_SUPPORTED, // Returned for attempts to inline dictionary lookups
 };
 
 struct CORINFO_LOOKUP_KIND
@@ -2462,8 +2431,8 @@ public:
             CORINFO_FIELD_HANDLE    field,          // Non-NULL - inquire about cctor trigger before static field access
                                                     // NULL - inquire about cctor trigger in method prolog
             CORINFO_METHOD_HANDLE   method,         // Method referencing the field or prolog
-            CORINFO_CONTEXT_HANDLE  context,        // Exact context of method
-            BOOL                    speculative = FALSE     // TRUE means don't actually run it
+                                                    // NULL - method being compiled
+            CORINFO_CONTEXT_HANDLE  context         // Exact context of method
             ) = 0;
 
     // This used to be called "loadClass".  This records the fact

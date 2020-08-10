@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //*****************************************************************************
 // MSCoree.cpp
 //*****************************************************************************
@@ -445,7 +444,7 @@ HRESULT SetInternalSystemDirectory()
 }
 
 #if defined(CROSSGEN_COMPILE)
-void SetMscorlibPath(LPCWSTR wzSystemDirectory)
+void SetCoreLibPath(LPCWSTR wzSystemDirectory)
 {
     DWORD len = (DWORD)wcslen(wzSystemDirectory);
     bool appendSeparator = wzSystemDirectory[len-1] != DIRECTORY_SEPARATOR_CHAR_W;

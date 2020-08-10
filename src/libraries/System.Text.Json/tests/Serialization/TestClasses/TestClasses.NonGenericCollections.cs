@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections;
 using System.Collections.Generic;
@@ -217,6 +216,16 @@ namespace System.Text.Json.Serialization.Tests
         public WrapperForIList(IEnumerable<object> items)
         {
             _list = new List<object>(items);
+        }
+
+        public WrapperForIList(IEnumerable items)
+        {
+            _list = new List<object>();
+
+            foreach (object item in items)
+            {
+                _list.Add(item);
+            }
         }
 
         public object this[int index] { get => ((IList)_list)[index]; set => ((IList)_list)[index] = value; }

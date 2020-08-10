@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics.CodeAnalysis;
 
@@ -31,23 +30,20 @@ namespace System.Linq
         /// <param name="index">The 0-based index to access.</param>
         /// <param name="found"><c>true</c> if the sequence contains an element at that index, <c>false</c> otherwise.</param>
         /// <returns>The element if <paramref name="found"/> is <c>true</c>, otherwise, the default value of <typeparamref name="TElement"/>.</returns>
-        [return: MaybeNull]
-        TElement TryGetElementAt(int index, out bool found);
+        TElement? TryGetElementAt(int index, out bool found);
 
         /// <summary>
         /// Gets the first item in this sequence.
         /// </summary>
         /// <param name="found"><c>true</c> if the sequence contains an element, <c>false</c> otherwise.</param>
         /// <returns>The element if <paramref name="found"/> is <c>true</c>, otherwise, the default value of <typeparamref name="TElement"/>.</returns>
-        [return: MaybeNull]
-        TElement TryGetFirst(out bool found);
+        TElement? TryGetFirst(out bool found);
 
         /// <summary>
         /// Gets the last item in this sequence.
         /// </summary>
         /// <param name="found"><c>true</c> if the sequence contains an element, <c>false</c> otherwise.</param>
         /// <returns>The element if <paramref name="found"/> is <c>true</c>, otherwise, the default value of <typeparamref name="TElement"/>.</returns>
-        [return: MaybeNull]
-        TElement TryGetLast(out bool found);
+        TElement? TryGetLast(out bool found);
     }
 }

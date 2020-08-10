@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 
@@ -166,6 +165,17 @@ namespace Internal.TypeSystem
                 case TypeFlags.Array:
                 case TypeFlags.SzArray:
                     return ((ArrayType)thisType).CanCastArrayTo(otherType, protect);
+
+                case TypeFlags.ByRef:
+                case TypeFlags.Pointer:
+                    if (otherType.Category == thisType.Category)
+                    {
+                        return ((ParameterizedType)thisType).CanCastParamTo(((ParameterizedType)otherType).ParameterType, protect);
+                    }
+                    return false;
+
+                case TypeFlags.FunctionPointer:
+                    return false;
 
                 default:
                     Debug.Assert(thisType.IsDefType);

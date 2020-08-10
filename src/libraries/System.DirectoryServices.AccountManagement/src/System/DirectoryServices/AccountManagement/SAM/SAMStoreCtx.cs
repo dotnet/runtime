@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Collections;
@@ -17,10 +16,10 @@ namespace System.DirectoryServices.AccountManagement
 
         private readonly bool _ownCtxBase;    // if true, we "own" ctxBase and must Dispose of it when we're done
 
-        private bool _disposed = false;
+        private bool _disposed;
 
         internal NetCred Credentials { get { return _credentials; } }
-        private readonly NetCred _credentials = null;
+        private readonly NetCred _credentials;
 
         internal AuthenticationTypes AuthTypes { get { return _authTypes; } }
         private readonly AuthenticationTypes _authTypes;
@@ -1005,9 +1004,9 @@ namespace System.DirectoryServices.AccountManagement
         }
 
         private readonly object _computerInfoLock = new object();
-        private Nullable<bool> _isLSAM = null;
-        private string _machineUserSuppliedName = null;
-        private string _machineFlatName = null;
+        private Nullable<bool> _isLSAM;
+        private string _machineUserSuppliedName;
+        private string _machineFlatName;
 
         // computerInfoLock must be held coming in here
         private void LoadComputerInfo()

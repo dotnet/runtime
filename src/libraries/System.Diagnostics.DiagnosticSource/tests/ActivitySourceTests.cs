@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Linq;
@@ -319,17 +318,20 @@ namespace System.Diagnostics.Tests
                 links.Add(new ActivityLink(new ActivityContext(ActivityTraceId.CreateRandom(), ActivitySpanId.CreateRandom(), ActivityTraceFlags.None, "key1-value1")));
                 links.Add(new ActivityLink(new ActivityContext(ActivityTraceId.CreateRandom(), ActivitySpanId.CreateRandom(), ActivityTraceFlags.None, "key2-value2")));
 
-                List<KeyValuePair<string, string>> attributes = new List<KeyValuePair<string, string>>();
-                attributes.Add(new KeyValuePair<string, string>("tag1", "tagValue1"));
-                attributes.Add(new KeyValuePair<string, string>("tag2", "tagValue2"));
-                attributes.Add(new KeyValuePair<string, string>("tag3", "tagValue3"));
+                List<KeyValuePair<string, object>> attributes = new List<KeyValuePair<string, object>>();
+                attributes.Add(new KeyValuePair<string, object>("tag1", "tagValue1"));
+                attributes.Add(new KeyValuePair<string, object>("tag2", "tagValue2"));
+                attributes.Add(new KeyValuePair<string, object>("tag3", "tagValue3"));
 
-                using (Activity activity = source.StartActivity("a1", ActivityKind.Client, ctx, attributes, links))
+                DateTimeOffset startTime = DateTimeOffset.UtcNow;
+
+                using (Activity activity = source.StartActivity("a1", ActivityKind.Client, ctx, attributes, links, startTime))
                 {
                     Assert.NotNull(activity);
                     Assert.Equal("a1", activity.OperationName);
                     Assert.Equal("a1", activity.DisplayName);
                     Assert.Equal(ActivityKind.Client, activity.Kind);
+                    Assert.Equal(startTime, activity.StartTimeUtc);
 
                     Assert.Equal(ctx.TraceId, activity.TraceId);
                     Assert.Equal(ctx.SpanId, activity.ParentSpanId);
@@ -337,7 +339,7 @@ namespace System.Diagnostics.Tests
                     Assert.Equal(ctx.TraceState, activity.TraceStateString);
                     Assert.Equal(ActivityIdFormat.W3C, activity.IdFormat);
 
-                    foreach (KeyValuePair<string, string> pair in attributes)
+                    foreach (KeyValuePair<string, object> pair in attributes)
                     {
                         Assert.NotEqual(default, activity.Tags.FirstOrDefault((p) => pair.Key == p.Key && pair.Value == pair.Value));
                     }
@@ -377,6 +379,214 @@ namespace System.Diagnostics.Tests
                 using Activity a = aSource.StartActivity("a", ActivityKind.Server, new ActivityContext(ActivityTraceId.CreateRandom(), ActivitySpanId.CreateRandom(), 0));
                 using Activity b = aSource.StartActivity("b");
                 Assert.Equal(a.Context, b.Parent.Context);
+            }).Dispose();
+        }
+
+        [Fact]
+        public void TestActivityContextParsing()
+        {
+            const string w3cId = "00-99d43cb30a4cdb4fbeee3a19c29201b0-e82825765f051b47-01";
+            Assert.True(ActivityContext.TryParse(w3cId, "k=v", out ActivityContext context));
+            Assert.Equal("99d43cb30a4cdb4fbeee3a19c29201b0", context.TraceId.ToHexString());
+            Assert.Equal("e82825765f051b47", context.SpanId.ToHexString());
+            Assert.Equal(ActivityTraceFlags.Recorded, context.TraceFlags);
+            Assert.Equal("k=v", context.TraceState);
+
+            context = ActivityContext.Parse(w3cId, "k=v");
+            Assert.Equal("99d43cb30a4cdb4fbeee3a19c29201b0", context.TraceId.ToHexString());
+            Assert.Equal("e82825765f051b47", context.SpanId.ToHexString());
+            Assert.Equal(ActivityTraceFlags.Recorded, context.TraceFlags);
+            Assert.Equal("k=v", context.TraceState);
+
+            context = ActivityContext.Parse(w3cId, null);
+            Assert.Null(context.TraceState);
+
+            Assert.Throws<ArgumentNullException>(() => ActivityContext.TryParse(null, "k=v", out context));
+            Assert.Throws<ArgumentNullException>(() => ActivityContext.Parse(null, null));
+            Assert.Throws<ArgumentException>(() => ActivityContext.Parse("BadW3C", null));
+
+            const string invalidW3CContext = "00-Z9d43cb30a4cdb4fbeee3a19c29201b0-e82825765f051b47-01";
+            Assert.False(ActivityContext.TryParse(invalidW3CContext, null, out context));
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void TestCreatingActivityUsingDifferentParentIds()
+        {
+            RemoteExecutor.Invoke(() => {
+
+                const string w3cId = "00-99d43cb30a4cdb4fbeee3a19c29201b0-e82825765f051b47-01";
+                const string hierarchicalId = "SomeId";
+
+                int callingByContext = 0;
+                int callingByParentId = 0;
+
+                using ActivitySource aSource = new ActivitySource("ParentIdsTest");
+                using ActivityListener listener1 = new ActivityListener();  // will have context callback only
+                using ActivityListener listener2 = new ActivityListener();  // will have parent id  callback only
+                using ActivityListener listener3 = new ActivityListener();  // will have both context and parent Id callbacks
+
+                listener1.ShouldListenTo = listener2.ShouldListenTo = listener3.ShouldListenTo = (activitySource) => activitySource.Name == "ParentIdsTest";
+                listener1.GetRequestedDataUsingContext = listener3.GetRequestedDataUsingContext = (ref ActivityCreationOptions<ActivityContext> activityOptions) =>
+                {
+                    callingByContext++;
+
+                    Assert.Equal(new ActivityContext(ActivityTraceId.CreateFromString(w3cId.AsSpan(3,  32)), ActivitySpanId.CreateFromString(w3cId.AsSpan(36, 16)), ActivityTraceFlags.Recorded),
+                                 activityOptions.Parent);
+
+                    return ActivityDataRequest.AllData;
+                };
+                listener2.GetRequestedDataUsingParentId = listener3.GetRequestedDataUsingParentId = (ref ActivityCreationOptions<string> activityOptions) =>
+                {
+                    callingByParentId++;
+                    return ActivityDataRequest.AllData;
+                };
+
+                ActivitySource.AddActivityListener(listener1);
+                ActivitySource.AddActivityListener(listener2);
+                ActivitySource.AddActivityListener(listener3);
+
+
+                // Create Activity using hierarchical Id, should trigger calling listener 2 and listener 3 only.
+                using Activity a = aSource.StartActivity("a", ActivityKind.Client, hierarchicalId);
+                Assert.Equal(2, callingByParentId);
+                Assert.Equal(0, callingByContext);
+
+                // Create Activity using W3C Id, should trigger calling all listeners.
+                using Activity b = aSource.StartActivity("b", ActivityKind.Client, w3cId);
+                Assert.Equal(4, callingByParentId);
+                Assert.Equal(1, callingByContext);
+
+                ActivityTraceId traceId = ActivityTraceId.CreateFromString("99d43cb30a4cdb4fbeee3a19c29201b0".AsSpan());
+
+                Assert.NotEqual("99d43cb30a4cdb4fbeee3a19c29201b0", a.TraceId.ToHexString());
+                Assert.Equal("99d43cb30a4cdb4fbeee3a19c29201b0", b.TraceId.ToHexString());
+            }).Dispose();
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void TestActivityContextIsRemote()
+        {
+            RemoteExecutor.Invoke(() => {
+                ActivityContext ctx = new ActivityContext(ActivityTraceId.CreateRandom(), ActivitySpanId.CreateRandom(), default);
+                Assert.False(ctx.IsRemote);
+
+                bool isRemote = false;
+
+                using ActivitySource aSource = new ActivitySource("RemoteContext");
+                using ActivityListener listener = new ActivityListener();
+                listener.ShouldListenTo = (activitySource) => activitySource.Name == "RemoteContext";
+
+                listener.GetRequestedDataUsingContext = (ref ActivityCreationOptions<ActivityContext> activityOptions) =>
+                {
+                    isRemote = activityOptions.Parent.IsRemote;
+                    return ActivityDataRequest.AllData;
+                };
+
+                ActivitySource.AddActivityListener(listener);
+
+                foreach (bool b in new bool[] { true, false })
+                {
+                    ctx = new ActivityContext(ActivityTraceId.CreateRandom(), ActivitySpanId.CreateRandom(), default, default, b);
+                    Assert.Equal(b, ctx.IsRemote);
+
+                    aSource.StartActivity("a1", default, ctx);
+                    Assert.Equal(b , isRemote);
+                }
+            }).Dispose();
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void TestTraceIdAutoGeneration()
+        {
+            RemoteExecutor.Invoke(() => {
+
+                using ActivitySource aSource = new ActivitySource("TraceIdAutoGeneration");
+                using ActivityListener listener = new ActivityListener();
+                listener.ShouldListenTo = (activitySource) => activitySource.Name == "TraceIdAutoGeneration";
+
+                ActivityContext ctx = default;
+
+                listener.GetRequestedDataUsingContext = (ref ActivityCreationOptions<ActivityContext> activityOptions) =>
+                {
+                    ctx = activityOptions.Parent;
+                    return ActivityDataRequest.AllData;
+                };
+
+                ActivitySource.AddActivityListener(listener);
+
+                using (aSource.StartActivity("a1", default, ctx))
+                {
+                    Assert.Equal(default, ctx);
+                }
+
+                listener.AutoGenerateRootContextTraceId = true;
+
+                Activity activity = aSource.StartActivity("a2", default, ctx);
+
+                Assert.NotNull(activity);
+                Assert.NotEqual(default, ctx);
+                Assert.Equal(ctx.TraceId, activity.TraceId);
+                Assert.Equal(ctx.SpanId.ToHexString(), activity.ParentSpanId.ToHexString());
+                Assert.Equal(default(ActivitySpanId).ToHexString(), ctx.SpanId.ToHexString());
+            }).Dispose();
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void TestTraceIdAutoGenerationWithNullParentId()
+        {
+            RemoteExecutor.Invoke(() => {
+
+                using ActivitySource aSource = new ActivitySource("TraceIdAutoGenerationWithNullParent");
+                using ActivityListener listener = new ActivityListener();
+                listener.ShouldListenTo = (activitySource) => activitySource.Name == "TraceIdAutoGenerationWithNullParent";
+
+                ActivityContext ctx = default;
+
+                listener.GetRequestedDataUsingContext = (ref ActivityCreationOptions<ActivityContext> activityOptions) =>
+                {
+                    ctx = activityOptions.Parent;
+                    return ActivityDataRequest.AllData;
+                };
+
+                listener.AutoGenerateRootContextTraceId = true;
+                ActivitySource.AddActivityListener(listener);
+
+                Activity activity = aSource.StartActivity("a2", default, null);
+
+                Assert.NotNull(activity);
+                Assert.NotEqual(default, ctx);
+                Assert.Equal(ctx.TraceId, activity.TraceId);
+                Assert.Equal(ctx.SpanId.ToHexString(), activity.ParentSpanId.ToHexString());
+                Assert.Equal(default(ActivitySpanId).ToHexString(), ctx.SpanId.ToHexString());
+            }).Dispose();
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void TestEventNotificationOrder()
+        {
+            RemoteExecutor.Invoke(() => {
+
+                Activity parent = Activity.Current;
+                Activity child = null;
+
+                using ActivitySource aSource = new ActivitySource("EventNotificationOrder");
+                using ActivityListener listener = new ActivityListener();
+
+                listener.ShouldListenTo = (activitySource) => activitySource.Name == "EventNotificationOrder";
+                listener.GetRequestedDataUsingContext = (ref ActivityCreationOptions<ActivityContext> activityOptions) => ActivityDataRequest.AllData;
+                listener.ActivityStopped = a => Assert.Equal(child, Activity.Current);
+
+                ActivitySource.AddActivityListener(listener);
+
+                using (child = aSource.StartActivity("a1"))
+                {
+                    Assert.NotNull(child);
+                    // by the end of this block, the stop event notification will fire and ActivityListener.ActivityStopped will get called.
+                    // assert there that the created activity is still set as Current activity.
+                }
+
+                // Now the Current should be restored back.
+                Assert.Equal(parent, Activity.Current);
             }).Dispose();
         }
 

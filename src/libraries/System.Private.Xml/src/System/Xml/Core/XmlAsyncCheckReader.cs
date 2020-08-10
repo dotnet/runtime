@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading.Tasks;
@@ -11,7 +11,7 @@ namespace System.Xml
 {
     internal class XmlAsyncCheckReader : XmlReader
     {
-        private readonly XmlReader _coreReader = null;
+        private readonly XmlReader _coreReader;
         private Task _lastTask = Task.CompletedTask;
 
         internal XmlReader CoreReader
@@ -65,7 +65,7 @@ namespace System.Xml
         {
             get
             {
-                XmlReaderSettings settings = _coreReader.Settings;
+                XmlReaderSettings? settings = _coreReader.Settings;
                 if (null != settings)
                 {
                     settings = settings.Clone();
@@ -152,7 +152,7 @@ namespace System.Xml
             }
         }
 
-        public override string BaseURI
+        public override string? BaseURI
         {
             get
             {
@@ -206,7 +206,7 @@ namespace System.Xml
             }
         }
 
-        public override IXmlSchemaInfo SchemaInfo
+        public override IXmlSchemaInfo? SchemaInfo
         {
             get
             {
@@ -419,13 +419,13 @@ namespace System.Xml
             }
         }
 
-        public override string GetAttribute(string name)
+        public override string? GetAttribute(string name)
         {
             CheckAsync();
             return _coreReader.GetAttribute(name);
         }
 
-        public override string GetAttribute(string name, string namespaceURI)
+        public override string? GetAttribute(string name, string? namespaceURI)
         {
             CheckAsync();
             return _coreReader.GetAttribute(name, namespaceURI);
@@ -446,7 +446,7 @@ namespace System.Xml
             }
         }
 
-        public override string this[string name]
+        public override string? this[string name]
         {
             get
             {
@@ -461,7 +461,7 @@ namespace System.Xml
             return _coreReader.MoveToAttribute(name);
         }
 
-        public override bool MoveToAttribute(string name, string ns)
+        public override bool MoveToAttribute(string name, string? ns)
         {
             CheckAsync();
             return _coreReader.MoveToAttribute(name, ns);
@@ -542,7 +542,7 @@ namespace System.Xml
             }
         }
 
-        public override string LookupNamespace(string prefix)
+        public override string? LookupNamespace(string prefix)
         {
             CheckAsync();
             return _coreReader.LookupNamespace(prefix);
@@ -755,7 +755,7 @@ namespace System.Xml
             _coreReader.Dispose();
         }
 
-        internal override XmlNamespaceManager NamespaceManager
+        internal override XmlNamespaceManager? NamespaceManager
         {
             get
             {
@@ -764,7 +764,7 @@ namespace System.Xml
             }
         }
 
-        internal override IDtdInfo DtdInfo
+        internal override IDtdInfo? DtdInfo
         {
             get
             {
@@ -931,12 +931,12 @@ namespace System.Xml
             return _readerAsIXmlNamespaceResolver.GetNamespacesInScope(scope);
         }
 
-        string IXmlNamespaceResolver.LookupNamespace(string prefix)
+        string? IXmlNamespaceResolver.LookupNamespace(string prefix)
         {
             return _readerAsIXmlNamespaceResolver.LookupNamespace(prefix);
         }
 
-        string IXmlNamespaceResolver.LookupPrefix(string namespaceName)
+        string? IXmlNamespaceResolver.LookupPrefix(string namespaceName)
         {
             return _readerAsIXmlNamespaceResolver.LookupPrefix(namespaceName);
         }
@@ -993,12 +993,12 @@ namespace System.Xml
             return _readerAsIXmlNamespaceResolver.GetNamespacesInScope(scope);
         }
 
-        string IXmlNamespaceResolver.LookupNamespace(string prefix)
+        string? IXmlNamespaceResolver.LookupNamespace(string prefix)
         {
             return _readerAsIXmlNamespaceResolver.LookupNamespace(prefix);
         }
 
-        string IXmlNamespaceResolver.LookupPrefix(string namespaceName)
+        string? IXmlNamespaceResolver.LookupPrefix(string namespaceName)
         {
             return _readerAsIXmlNamespaceResolver.LookupPrefix(namespaceName);
         }
@@ -1014,7 +1014,6 @@ namespace System.Xml
         {
             _readerAsIXmlSchemaInfo = (IXmlSchemaInfo)reader;
         }
-
 
         #region IXmlSchemaInfo members
 
@@ -1042,7 +1041,7 @@ namespace System.Xml
             }
         }
 
-        XmlSchemaSimpleType IXmlSchemaInfo.MemberType
+        XmlSchemaSimpleType? IXmlSchemaInfo.MemberType
         {
             get
             {
@@ -1050,7 +1049,7 @@ namespace System.Xml
             }
         }
 
-        XmlSchemaType IXmlSchemaInfo.SchemaType
+        XmlSchemaType? IXmlSchemaInfo.SchemaType
         {
             get
             {
@@ -1058,7 +1057,7 @@ namespace System.Xml
             }
         }
 
-        XmlSchemaElement IXmlSchemaInfo.SchemaElement
+        XmlSchemaElement? IXmlSchemaInfo.SchemaElement
         {
             get
             {
@@ -1066,7 +1065,7 @@ namespace System.Xml
             }
         }
 
-        XmlSchemaAttribute IXmlSchemaInfo.SchemaAttribute
+        XmlSchemaAttribute? IXmlSchemaInfo.SchemaAttribute
         {
             get
             {

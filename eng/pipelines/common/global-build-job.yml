@@ -7,11 +7,13 @@ parameters:
   osSubgroup: ''
   container: ''
   crossrootfsDir: ''
-  variables: {}
+  variables: []
   timeoutInMinutes: ''
   pool: ''
   condition: true
   isOfficialBuild: false
+  runtimeFlavor: 'coreclr'
+  helixQueues: ''
   extraStepsTemplate: ''
   extraStepsParameters: {}
 
@@ -23,10 +25,16 @@ jobs:
     dependsOn: checkout
     pool: ${{ parameters.pool }}
     container: ${{ parameters.container }}
-    timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
     condition: and(succeeded(), ${{ parameters.condition }})
     workspace:
       clean: all
+
+    # macOS hosted pool machines are slower so we need to give a greater timeout for global-build
+    # which builds multiple subsets.
+    ${{ if and(contains(parameters.pool.vmImage, 'macOS'), eq(parameters.timeoutInMinutes, '')) }}:
+      timeoutInMinutes: 120
+    ${{ if or(not(contains(parameters.pool.vmImage, 'macOS')), ne(parameters.timeoutInMinutes, '')) }}:
+      timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
 
     variables:
       - name: _osParameter
@@ -40,13 +48,20 @@ jobs:
       - name: _crossBuildPropertyArg
         value: /p:CrossBuild=${{ ne(parameters.crossrootfsDir, '') }}
 
+      - name: _cxx11Parameter
+        ${{ if and(eq(parameters.osGroup, 'Linux'), eq(parameters.archType, 'arm64')) }}:
+          value: /p:MonoLLVMUseCxx11Abi=true
+        ${{ if and(eq(parameters.osGroup, 'Linux'), not(eq(parameters.archType, 'arm64'))) }}:
+          value: /p:MonoLLVMUseCxx11Abi=false
+
       - name: _officialBuildParameter
         ${{ if eq(parameters.isOfficialBuild, true) }}:
           value: /p:OfficialBuildId=$(Build.BuildNumber)
         ${{ if ne(parameters.isOfficialBuild, true) }}:
           value: ''
 
-      - ${{ parameters.variables }}
+      - ${{ each variable in parameters.variables }}:
+        - ${{ variable }}
 
     steps:
     - template: /eng/pipelines/common/clone-checkout-bundle-step.yml
@@ -64,7 +79,7 @@ jobs:
         displayName: Disk Usage before Build
 
     # Build
-    - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -ci -arch ${{ parameters.archType }} $(_osParameter) ${{ parameters.buildArgs }} $(_officialBuildParameter) $(_crossBuildPropertyArg)
+    - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -ci -arch ${{ parameters.archType }} $(_osParameter) ${{ parameters.buildArgs }} $(_officialBuildParameter) $(_crossBuildPropertyArg) $(_cxx11Parameter)
       displayName: Build product
 
     - ${{ if in(parameters.osGroup, 'OSX', 'iOS','tvOS') }}: 
@@ -81,6 +96,8 @@ jobs:
           osSubgroup: ${{ parameters.osSubgroup }}
           archType: ${{ parameters.archType }}
           buildConfig: ${{ parameters.buildConfig }}
+          runtimeFlavor: ${{ parameters.runtimeFlavor }}
+          helixQueues: ${{ parameters.helixQueues }}
           ${{ insert }}: ${{ parameters.extraStepsParameters }}
 
     - task: PublishBuildArtifacts@1

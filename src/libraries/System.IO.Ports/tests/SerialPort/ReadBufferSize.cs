@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.IO.PortsTests;
@@ -300,7 +299,6 @@ namespace System.IO.Ports.Tests
                 SerialPortProperties serPortProp = new SerialPortProperties();
                 Random rndGen = new Random(-55);
                 int bytesToRead = readBufferSize < 4096 ? 4096 : readBufferSize;
-                int origBaudRate = com1.BaudRate;
                 int origReadTimeout = com1.ReadTimeout;
                 int bytesRead;
 

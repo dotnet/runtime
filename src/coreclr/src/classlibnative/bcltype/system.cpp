@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //
 // File: System.cpp
 //
@@ -608,9 +607,17 @@ BOOL QCALLTYPE SystemNative::WinRTSupported()
 
 #endif // FEATURE_COMINTEROP
 
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
 
+void QCALLTYPE SystemNative::X86BaseCpuId(int cpuInfo[4], int functionId, int subFunctionId)
+{
+    QCALL_CONTRACT;
 
+    BEGIN_QCALL;
 
+    __cpuidex(cpuInfo, functionId, subFunctionId);
 
+    END_QCALL;
+}
 
-
+#endif // defined(TARGET_X86) || defined(TARGET_AMD64)

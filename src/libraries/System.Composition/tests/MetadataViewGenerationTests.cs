@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -22,7 +21,6 @@ namespace System.Composition.Lightweight.UnitTests
         public class Named { public string Name { get; set; } }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/23972", TargetFrameworkMonikers.NetFramework)]
         public void AConcreteTypeWithWritablePropertiesIsAMetadataView()
         {
             var cc = new ContainerConfiguration()
@@ -40,7 +38,6 @@ namespace System.Composition.Lightweight.UnitTests
         public class OptionallyNamed {[DefaultValue("B")] public string Name { get; set; } }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/23972", TargetFrameworkMonikers.NetFramework)]
         public void MetadataViewsCanCarryDefaultValues()
         {
             var cc = new ContainerConfiguration()
@@ -63,7 +60,6 @@ namespace System.Composition.Lightweight.UnitTests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/23972", TargetFrameworkMonikers.NetFramework)]
         public void AConcreteTypeWithDictionaryConstructorIsAMetadataView()
         {
             var cc = new ContainerConfiguration()
@@ -81,7 +77,6 @@ namespace System.Composition.Lightweight.UnitTests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/23972", TargetFrameworkMonikers.NetFramework)]
         public void AConcreteTypeWithUnsupportedConstructorsCannotBeUsedAsAMetadataView()
         {
             var cc = new ContainerConfiguration()
@@ -106,7 +101,6 @@ namespace System.Composition.Lightweight.UnitTests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/23972", TargetFrameworkMonikers.NetFramework)]
         public void UnsupportedMetadataViewMessageIsInformative()
         {
             var cc = new ContainerConfiguration().WithParts(typeof(ImportsWithMetadataInterface), typeof(ExportsWithMetadata)).CreateContainer();
@@ -124,7 +118,6 @@ namespace System.Composition.Lightweight.UnitTests
         public class HasOrder { }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/23972", TargetFrameworkMonikers.NetFramework)]
         public void ReadOnlyPropertiesOnMetadataViewsAreIgnored()
         {
             var c = new ContainerConfiguration()

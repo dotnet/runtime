@@ -1,7 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
+using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -38,7 +39,7 @@ namespace System
         [ConditionalFact(nameof(ManualTestsEnabled))]
         public static void InPeek()
         {
-            Console.WriteLine("Please type \"peek\" (without the quotes). You shouldn't see it as you type:");
+            Console.WriteLine("Please type \"peek\" (without the quotes). You should see it as you type:");
             foreach (char c in new[] { 'p', 'e', 'e', 'k' })
             {
                 Assert.Equal(c, Console.In.Peek());
@@ -64,6 +65,68 @@ namespace System
             {
                 Assert.Equal(k, Console.ReadKey(intercept: true).Key);
             }
+            AssertUserExpectedResults("\"console\" correctly not echoed as you typed it");
+        }
+
+        [ConditionalTheory(nameof(ManualTestsEnabled))]
+        [MemberData(nameof(GetKeyChords))]
+        public static void ReadKey_KeyChords(ConsoleKeyInfo expected)
+        {
+            Console.Write($"Please type key chord {RenderKeyChord(expected)}: ");
+            var actual = Console.ReadKey(intercept: true);
+            Console.WriteLine();
+
+            Assert.Equal(expected.Key, actual.Key);
+            Assert.Equal(expected.Modifiers, actual.Modifiers);
+            Assert.Equal(expected.KeyChar, actual.KeyChar);
+
+            static string RenderKeyChord(ConsoleKeyInfo key)
+            {
+                string modifiers = "";
+                if (key.Modifiers.HasFlag(ConsoleModifiers.Control)) modifiers += "Ctrl+";
+                if (key.Modifiers.HasFlag(ConsoleModifiers.Alt)) modifiers += "Alt+";
+                if (key.Modifiers.HasFlag(ConsoleModifiers.Shift)) modifiers += "Shift+";
+                return modifiers + key.Key;
+            }
+        }
+
+        public static IEnumerable<object[]> GetKeyChords()
+        {
+            yield return MkConsoleKeyInfo('\x01', ConsoleKey.A, ConsoleModifiers.Control);
+            yield return MkConsoleKeyInfo('\x01', ConsoleKey.A, ConsoleModifiers.Control | ConsoleModifiers.Alt);
+            yield return MkConsoleKeyInfo('\r', ConsoleKey.Enter, (ConsoleModifiers)0);
+
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                // windows will report '\n' as 'Ctrl+Enter', which is typically not picked up by Unix terminals
+                yield return MkConsoleKeyInfo('\n', ConsoleKey.Enter, ConsoleModifiers.Control);
+            }
+            else
+            {
+                yield return MkConsoleKeyInfo('\n', ConsoleKey.J, ConsoleModifiers.Control);
+            }
+
+            static object[] MkConsoleKeyInfo (char keyChar, ConsoleKey consoleKey, ConsoleModifiers modifiers)
+            {
+                return new object[]
+                {
+                    new ConsoleKeyInfo(keyChar, consoleKey, 
+                        control: modifiers.HasFlag(ConsoleModifiers.Control),
+                        alt: modifiers.HasFlag(ConsoleModifiers.Alt),
+                        shift: modifiers.HasFlag(ConsoleModifiers.Shift))
+                };
+            }
+        }
+
+        [ConditionalFact(nameof(ManualTestsEnabled))]
+        public static void OpenStandardInput()
+        {
+            Console.WriteLine("Please type \"console\" (without the quotes). You shouldn't see it as you type:");
+            var stream = Console.OpenStandardInput();
+            var textReader = new System.IO.StreamReader(stream);
+            var result = textReader.ReadLine();
+
+            Assert.Equal("console", result);
             AssertUserExpectedResults("\"console\" correctly not echoed as you typed it");
         }
 
@@ -168,8 +231,19 @@ namespace System
         private static void AssertUserExpectedResults(string expected)
         {
             Console.Write($"Did you see {expected}? [y/n] ");
-            Assert.Equal(ConsoleKey.Y, Console.ReadKey().Key);
+            ConsoleKeyInfo info = Console.ReadKey();
             Console.WriteLine();
+
+            switch (info.Key)
+            {
+                case ConsoleKey.Y or ConsoleKey.N:
+                    Assert.Equal(ConsoleKey.Y, info.Key);
+                    break;
+
+                default:
+                    AssertUserExpectedResults(expected);
+                    break;
+            };
         }
     }
 }

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -291,10 +290,10 @@ int LinearScan::BuildNode(GenTree* tree)
             BuildUse(op1);
             srcCount = 1;
 
-            switch (tree->AsIntrinsic()->gtIntrinsicId)
+            switch (tree->AsIntrinsic()->gtIntrinsicName)
             {
-                case CORINFO_INTRINSIC_Abs:
-                case CORINFO_INTRINSIC_Sqrt:
+                case NI_System_Math_Abs:
+                case NI_System_Math_Sqrt:
                     assert(dstCount == 1);
                     BuildDef(tree);
                     break;
@@ -764,7 +763,11 @@ int LinearScan::BuildNode(GenTree* tree)
         {
             assert(dstCount == 1);
             regNumber argReg  = tree->GetRegNum();
-            regMaskTP argMask = genRegMask(argReg);
+            regMaskTP argMask = RBM_NONE;
+            if (argReg != REG_COUNT)
+            {
+                argMask = genRegMask(argReg);
+            }
 
             // If type of node is `long` then it is actually `double`.
             // The actual `long` types must have been transformed as a field list with two fields.

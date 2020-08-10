@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //*****************************************************************************
 // File: inspect.cpp
 //
@@ -137,7 +136,7 @@ GetTypeFieldValueFlags(TypeHandle typeHandle,
         // Perform extra checks to identify well-known classes.
         //
 
-        if ((&g_Mscorlib)->IsClass(typeHandle.GetMethodTable(), CLASS__STRING))
+        if ((&g_CoreLib)->IsClass(typeHandle.GetMethodTable(), CLASS__STRING))
         {
             otherFlags |= CLRDATA_VALUE_IS_STRING;
         }

@@ -13,36 +13,8 @@
     <ProjectReference Include="Microsoft.NETCore.ILDAsm\Microsoft.NETCore.ILDAsm.proj" />
   </ItemGroup>
 
-  <!-- Generate a version.txt file we include in our packages
-       The InitializeSourceControlInformationFromSourceControlManager is part of Microsoft.Build.Tasks.Git
-       and is responsible for setting SourceRevisionId -->
-  <Target Name="GenerateVersionInfoFileForPackages"
-          BeforeTargets="Build"
-          DependsOnTargets="InitializeSourceControlInformationFromSourceControlManager">
 
-    <Error Condition="'$(SourceRevisionId)' == ''" Text="SourceRevisionId is not set, which means the SourceLink targets are not included in the build. Those are needed to produce a correct sha for our build outputs." />
-
-    <MakeDir Directories="$([System.IO.Path]::GetDirectoryName($(VersionTxtFile)))" />
-    <WriteLinesToFile
-      File="$(VersionTxtFile)"
-      Lines="$(SourceRevisionId)"
-      Overwrite="true" />
-  </Target>
-
-  <!-- Update the project references with additional properties calculated during the execution phase.
-       _InitializeAssemblyVersion is provided by Arcade. It sets the AssemblyVersion and FileVersion properties.
-       We depend on this private Arcade target instead of the SDK-defined GetAssemblyVersion since the packaging
-       build does not use the .NET SDK -->
-  <Target Name="UpdateAdditionalProperties"
-          BeforeTargets="Build"
-          DependsOnTargets="_InitializeAssemblyVersion">
-    <ItemGroup>
-      <!-- Pass the FileVersion calculated by _InitializeAssemblyVersion to referenced projects -->
-      <ProjectReference Update="@(ProjectReference)"
-                        AdditionalProperties="%(ProjectReference.AdditionalProperties);FileVersion=$(FileVersion)" />
-    </ItemGroup>
-  </Target>
-
+  <Import Project="versioning.targets" />
   <Import Sdk="Microsoft.Build.Traversal" Project="Sdk.targets" />
 
   <!-- Ordering matters! Overwriting the Pack target which should just invoke Build. -->

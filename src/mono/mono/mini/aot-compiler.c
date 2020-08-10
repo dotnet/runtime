@@ -3761,7 +3761,13 @@ encode_method_ref (MonoAotCompile *acfg, MonoMethod *method, guint8 *buf, guint8
 		case MONO_WRAPPER_NATIVE_TO_MANAGED: {
 			g_assert (info);
 			encode_method_ref (acfg, info->d.native_to_managed.method, p, &p);
-			encode_klass_ref (acfg, info->d.native_to_managed.klass, p, &p);
+			MonoClass *klass = info->d.native_to_managed.klass;
+			if (!klass) {
+				encode_value (0, p, &p);
+			} else {
+				encode_value (1, p, &p);
+				encode_klass_ref (acfg, klass, p, &p);
+			}
 			break;
 		}
 		default:
@@ -12288,6 +12294,9 @@ compile_asm (MonoAotCompile *acfg)
 #define LD_NAME "gcc"
 #define LD_OPTIONS "-dynamiclib -Wl,-Bsymbolic"
 #elif defined(TARGET_AMD64) && defined(TARGET_MACH)
+#define LD_NAME "clang"
+#define LD_OPTIONS "--shared"
+#elif defined(TARGET_ARM64) && defined(TARGET_OSX)
 #define LD_NAME "clang"
 #define LD_OPTIONS "--shared"
 #elif defined(TARGET_WIN32_MSVC)

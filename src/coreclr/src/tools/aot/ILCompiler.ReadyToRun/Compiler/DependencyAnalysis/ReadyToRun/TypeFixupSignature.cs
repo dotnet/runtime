@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Diagnostics;
@@ -43,7 +42,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 SignatureContext innerContext = dataBuilder.EmitFixup(factory, _fixupKind, targetModule, factory.SignatureContext);
                 dataBuilder.EmitTypeSignature(_typeDesc, innerContext);
 
-                if (_fixupKind == ReadyToRunFixupKind.Check_TypeLayout)
+                if ((_fixupKind == ReadyToRunFixupKind.Check_TypeLayout) ||
+                    (_fixupKind == ReadyToRunFixupKind.Verify_TypeLayout))
                 {
                     EncodeTypeLayout(dataBuilder, _typeDesc);
                 }
@@ -81,16 +81,16 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             if (defType.IsHomogeneousAggregate)
             {
-                CorElementType elementType = (defType.ValueTypeShapeCharacteristics & ValueTypeShapeCharacteristics.AggregateMask) switch
+                ReadyToRunHFAElemType hfaElementType = (defType.ValueTypeShapeCharacteristics & ValueTypeShapeCharacteristics.AggregateMask) switch
                 {
-                    ValueTypeShapeCharacteristics.Float32Aggregate => CorElementType.ELEMENT_TYPE_R4,
-                    ValueTypeShapeCharacteristics.Float64Aggregate => CorElementType.ELEMENT_TYPE_R8,
-                    ValueTypeShapeCharacteristics.Vector64Aggregate => CorElementType.ELEMENT_TYPE_R8,
+                    ValueTypeShapeCharacteristics.Float32Aggregate => ReadyToRunHFAElemType.Float32,
+                    ValueTypeShapeCharacteristics.Float64Aggregate => ReadyToRunHFAElemType.Float64,
+                    ValueTypeShapeCharacteristics.Vector64Aggregate => ReadyToRunHFAElemType.Vector64,
                     // See MethodTable::GetHFAType
-                    ValueTypeShapeCharacteristics.Vector128Aggregate => CorElementType.ELEMENT_TYPE_VALUETYPE,
-                    _ => CorElementType.Invalid
+                    ValueTypeShapeCharacteristics.Vector128Aggregate => ReadyToRunHFAElemType.Vector128,
+                    _ => throw new NotSupportedException()
                 };
-                dataBuilder.EmitUInt((uint)elementType);
+                dataBuilder.EmitUInt((uint)hfaElementType);
             }
             
             if (alignment != pointerSize)

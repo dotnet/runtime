@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #pragma once
 
@@ -34,3 +33,11 @@
 #define EXTERN_C extern
 #endif // __cplusplus
 #endif // EXTERN_C
+
+#ifndef TYPEOF
+#ifdef __cplusplus
+#define TYPEOF decltype
+#else
+#define TYPEOF __typeof
+#endif // __cplusplus
+#endif // TYPEOF

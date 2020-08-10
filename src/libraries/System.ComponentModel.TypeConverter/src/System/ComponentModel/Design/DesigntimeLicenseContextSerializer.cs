@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Runtime.Serialization.Formatters.Binary;
 using System.Runtime.Serialization;
@@ -27,14 +26,18 @@ namespace System.ComponentModel.Design
         public static void Serialize(Stream o, string cryptoKey, DesigntimeLicenseContext context)
         {
             IFormatter formatter = new BinaryFormatter();
+#pragma warning disable SYSLIB0011 // Issue https://github.com/dotnet/runtime/issues/39293 tracks finding an alternative to BinaryFormatter
             formatter.Serialize(o, new object[] { cryptoKey, context._savedLicenseKeys });
+#pragma warning restore SYSLIB0011
         }
 
         internal static void Deserialize(Stream o, string cryptoKey, RuntimeLicenseContext context)
         {
+#pragma warning disable SYSLIB0011 // Issue https://github.com/dotnet/runtime/issues/39293 tracks finding an alternative to BinaryFormatter
             IFormatter formatter = new BinaryFormatter();
 
             object obj = formatter.Deserialize(o);
+#pragma warning restore SYSLIB0011
 
             if (obj is object[] value)
             {

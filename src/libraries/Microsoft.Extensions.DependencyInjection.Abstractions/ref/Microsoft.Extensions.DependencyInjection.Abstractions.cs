@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 // ------------------------------------------------------------------------------
 // Changes to this file must follow the https://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
@@ -15,6 +14,7 @@ namespace Microsoft.Extensions.DependencyInjection
         public static object GetServiceOrCreateInstance(System.IServiceProvider provider, System.Type type) { throw null; }
         public static T GetServiceOrCreateInstance<T>(System.IServiceProvider provider) { throw null; }
     }
+    [System.AttributeUsageAttribute(System.AttributeTargets.All)]
     public partial class ActivatorUtilitiesConstructorAttribute : System.Attribute
     {
         public ActivatorUtilitiesConstructorAttribute() { }
@@ -39,7 +39,7 @@ namespace Microsoft.Extensions.DependencyInjection
     {
         object GetRequiredService(System.Type serviceType);
     }
-    public delegate object ObjectFactory(System.IServiceProvider serviceProvider, object[] arguments);
+    public delegate object ObjectFactory(System.IServiceProvider serviceProvider, object?[]? arguments);
     public static partial class ServiceCollectionServiceExtensions
     {
         public static Microsoft.Extensions.DependencyInjection.IServiceCollection AddScoped(this Microsoft.Extensions.DependencyInjection.IServiceCollection services, System.Type serviceType) { throw null; }
@@ -70,9 +70,10 @@ namespace Microsoft.Extensions.DependencyInjection
     {
         public ServiceDescriptor(System.Type serviceType, System.Func<System.IServiceProvider, object> factory, Microsoft.Extensions.DependencyInjection.ServiceLifetime lifetime) { }
         public ServiceDescriptor(System.Type serviceType, object instance) { }
-        public ServiceDescriptor(System.Type serviceType, System.Type implementationType, Microsoft.Extensions.DependencyInjection.ServiceLifetime lifetime) { }
+        public ServiceDescriptor(System.Type serviceType, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)] System.Type implementationType, Microsoft.Extensions.DependencyInjection.ServiceLifetime lifetime) { }
         public System.Func<System.IServiceProvider, object>? ImplementationFactory { get { throw null; } }
         public object? ImplementationInstance { get { throw null; } }
+        [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)]
         public System.Type? ImplementationType { get { throw null; } }
         public Microsoft.Extensions.DependencyInjection.ServiceLifetime Lifetime { get { throw null; } }
         public System.Type ServiceType { get { throw null; } }
@@ -110,8 +111,7 @@ namespace Microsoft.Extensions.DependencyInjection
         public static T GetRequiredService<T>(this System.IServiceProvider provider) where T : notnull { throw null; }
         public static System.Collections.Generic.IEnumerable<object?> GetServices(this System.IServiceProvider provider, System.Type serviceType) { throw null; }
         public static System.Collections.Generic.IEnumerable<T> GetServices<T>(this System.IServiceProvider provider) { throw null; }
-        [return: System.Diagnostics.CodeAnalysis.MaybeNullAttribute]
-        public static T GetService<T>(this System.IServiceProvider provider) { throw null; }
+        public static T? GetService<T>(this System.IServiceProvider provider) { throw null; }
     }
 }
 namespace Microsoft.Extensions.DependencyInjection.Extensions

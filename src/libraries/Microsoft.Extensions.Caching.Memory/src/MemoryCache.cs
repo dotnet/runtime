@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Concurrent;
@@ -22,9 +21,9 @@ namespace Microsoft.Extensions.Caching.Memory
     public class MemoryCache : IMemoryCache
     {
         private readonly ConcurrentDictionary<object, CacheEntry> _entries;
-        private long _cacheSize = 0;
+        private long _cacheSize;
         private bool _disposed;
-        private ILogger _logger;
+        private readonly ILogger _logger;
 
         // We store the delegates locally to prevent allocations
         // every time a new CacheEntry is created.
@@ -214,6 +213,14 @@ namespace Microsoft.Extensions.Caching.Memory
 
                     TriggerOvercapacityCompaction();
                 }
+                else
+                {
+                    if (_options.SizeLimit.HasValue)
+                    {
+                        // Entry could not be added due to being expired, reset cache size
+                        Interlocked.Add(ref _cacheSize, -entry.Size.Value);
+                    }
+                }
 
                 entry.InvokeEvictionCallbacks();
                 if (priorEntry != null)
@@ -222,7 +229,7 @@ namespace Microsoft.Extensions.Caching.Memory
                 }
             }
 
-            StartScanForExpiredItems();
+            StartScanForExpiredItems(utcNow);
         }
 
         /// <inheritdoc />
@@ -257,7 +264,7 @@ namespace Microsoft.Extensions.Caching.Memory
                 }
             }
 
-            StartScanForExpiredItems();
+            StartScanForExpiredItems(utcNow);
 
             return found;
         }
@@ -306,9 +313,10 @@ namespace Microsoft.Extensions.Caching.Memory
 
         // Called by multiple actions to see how long it's been since we last checked for expired items.
         // If sufficient time has elapsed then a scan is initiated on a background task.
-        private void StartScanForExpiredItems()
+        private void StartScanForExpiredItems(DateTimeOffset? utcNow = null)
         {
-            DateTimeOffset now = _options.Clock.UtcNow;
+            // Since fetching time is expensive, minimize it in the hot paths
+            DateTimeOffset now = utcNow ?? _options.Clock.UtcNow;
             if (_options.ExpirationScanFrequency < now - _lastExpirationScan)
             {
                 _lastExpirationScan = now;

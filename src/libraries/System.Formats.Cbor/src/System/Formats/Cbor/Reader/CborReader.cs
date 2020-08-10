@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -13,17 +12,17 @@ namespace System.Formats.Cbor
     public partial class CborReader
     {
         private readonly ReadOnlyMemory<byte> _data;
-        private int _offset = 0;
+        private int _offset;
 
         private Stack<StackFrame>? _nestedDataItems;
-        private CborMajorType? _currentMajorType = null; // major type of the currently written data item. Null iff at the root context
+        private CborMajorType? _currentMajorType; // major type of the currently written data item. Null iff at the root context
         private int? _definiteLength; // predetermined definite-length of current data item context
-        private int _itemsRead = 0; // number of items read in the current context
-        private int _frameOffset = 0; // buffer offset particular to the current data item context
-        private bool _isTagContext = false; // true if reader is expecting a tagged value
+        private int _itemsRead; // number of items read in the current context
+        private int _frameOffset; // buffer offset particular to the current data item context
+        private bool _isTagContext; // true if reader is expecting a tagged value
 
         // Map-specific book-keeping
-        private int? _currentKeyOffset = null; // offset for the current key encoding
+        private int? _currentKeyOffset; // offset for the current key encoding
         private (int Offset, int Length)? _previousKeyEncodingRange; // previous key encoding range
         private HashSet<(int Offset, int Length)>? _keyEncodingRanges; // all key encoding ranges up to encoding equality
 

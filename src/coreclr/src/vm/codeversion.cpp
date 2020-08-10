@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 // ===========================================================================
 // File: CodeVersion.cpp
 //
@@ -1760,7 +1759,8 @@ PCODE CodeVersionManager::PublishVersionableCodeIfNecessary(
         do
         {
             bool mayHaveEntryPointSlotsToBackpatch = doPublish && pMethodDesc->MayHaveEntryPointSlotsToBackpatch();
-            MethodDescBackpatchInfoTracker::ConditionalLockHolder slotBackpatchLockHolder(mayHaveEntryPointSlotsToBackpatch);
+            MethodDescBackpatchInfoTracker::ConditionalLockHolderForGCCoop slotBackpatchLockHolder(
+                mayHaveEntryPointSlotsToBackpatch);
 
             // Try a faster check to see if we can avoid checking the currently active code version
             // - For the default code version, if a profiler is attached it may be notified of JIT events and may request rejit

@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Linq;
 using System.Runtime.InteropServices;
@@ -27,7 +26,6 @@ namespace System.IO.Tests
         [Fact]
         public async Task NullParametersAsync()
         {
-            string path = GetTestFilePath();
             await Assert.ThrowsAsync<ArgumentNullException>("path", async () => await WriteAsync(null, "Text"));
             await Assert.ThrowsAsync<ArgumentNullException>("path", async () => await ReadAsync(null));
         }
@@ -55,7 +53,6 @@ namespace System.IO.Tests
         [Fact]
         public async Task InvalidParametersAsync()
         {
-            string path = GetTestFilePath();
             await Assert.ThrowsAsync<ArgumentException>("path", async () => await WriteAsync(string.Empty, "Text"));
             await Assert.ThrowsAsync<ArgumentException>("path", async () => await ReadAsync(""));
         }

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 
 //
@@ -19,7 +18,11 @@
 
 #include "gcpriv.h"
 
+#if defined(TARGET_AMD64) && defined(TARGET_WINDOWS)
+#define USE_VXSORT
+#else
 #define USE_INTROSORT
+#endif
 
 // We just needed a simple random number generator for testing.
 class gc_rand
@@ -80,8 +83,6 @@ int compact_ratio = 0;
 
 // See comments in reset_memory.
 BOOL reset_mm_p = TRUE;
-
-bool g_fFinalizerRunOnShutDown = false;
 
 #ifdef FEATURE_SVR_GC
 bool g_built_with_svr_gc = true;
@@ -2078,6 +2079,10 @@ uint8_t* tree_search (uint8_t* tree, uint8_t* old_address);
 
 #ifdef USE_INTROSORT
 #define _sort introsort::sort
+#elif defined(USE_VXSORT)
+// in this case we have do_vxsort which takes an additional range that
+// all items to be sorted are contained in
+// so do not #define _sort
 #else //USE_INTROSORT
 #define _sort qsort1
 void qsort1(uint8_t** low, uint8_t** high, unsigned int depth);
@@ -2099,6 +2104,7 @@ uint8_t**   gc_heap::g_mark_list_copy;
 #endif //PARALLEL_MARK_LIST_SORT
 
 size_t      gc_heap::mark_list_size;
+bool        gc_heap::mark_list_overflow;
 #endif //MARK_LIST
 
 seg_mapping* seg_mapping_table;
@@ -8133,7 +8139,8 @@ void rqsort1( uint8_t* *low, uint8_t* *high)
     }
 }
 
-#ifdef USE_INTROSORT
+// vxsort uses introsort as a fallback if the AVX2 instruction set is not supported
+#if defined(USE_INTROSORT) || defined(USE_VXSORT)
 class introsort
 {
 
@@ -8257,18 +8264,111 @@ private:
 
 };
 
-#endif //USE_INTROSORT
+#endif //defined(USE_INTROSORT) || defined(USE_VXSORT)
+
+#ifdef USE_VXSORT
+static void do_vxsort (uint8_t** item_array, ptrdiff_t item_count, uint8_t* range_low, uint8_t* range_high)
+{
+    // above this threshold, using AVX2 for sorting will likely pay off
+    // despite possible downclocking on some devices
+    const size_t AVX2_THRESHOLD_SIZE = 8 * 1024;
+
+    // above this threshold, using AVX51F for sorting will likely pay off
+    // despite possible downclocking on current devices
+    const size_t AVX512F_THRESHOLD_SIZE = 128 * 1024;
+
+    if (item_count <= 1)
+        return;
+
+    if (IsSupportedInstructionSet (InstructionSet::AVX2) && (item_count > AVX2_THRESHOLD_SIZE))
+    {
+        // is the range small enough for a 32-bit sort?
+        // the 32-bit sort is almost twice as fast
+        ptrdiff_t range = range_high - range_low;
+        assert(sizeof(uint8_t*) == (1 << 3));
+        ptrdiff_t scaled_range = range >> 3;
+        if ((uint32_t)scaled_range == scaled_range)
+        {
+            dprintf (3, ("Sorting mark lists as 32-bit offsets"));
+
+            do_pack_avx2 (item_array, item_count, range_low);
+
+            int32_t* item_array_32 = (int32_t*)item_array;
+
+            // use AVX512F only if the list is large enough to pay for downclocking impact
+            if (IsSupportedInstructionSet (InstructionSet::AVX512F) && (item_count > AVX512F_THRESHOLD_SIZE))
+            {
+                do_vxsort_avx512 (item_array_32, &item_array_32[item_count - 1]);
+            }
+            else
+            {
+                do_vxsort_avx2 (item_array_32, &item_array_32[item_count - 1]);
+            }
+
+            do_unpack_avx2 (item_array_32, item_count, range_low);
+        }
+        else
+        {
+            dprintf(3, ("Sorting mark lists"));
+
+            // use AVX512F only if the list is large enough to pay for downclocking impact
+            if (IsSupportedInstructionSet (InstructionSet::AVX512F) && (item_count > AVX512F_THRESHOLD_SIZE))
+            {
+                do_vxsort_avx512 (item_array, &item_array[item_count - 1]);
+            }
+            else
+            {
+                do_vxsort_avx2 (item_array, &item_array[item_count - 1]);
+            }
+        }
+    }
+    else
+    {
+        dprintf (3, ("Sorting mark lists"));
+        introsort::sort (item_array, &item_array[item_count - 1], 0);
+    }
+#ifdef _DEBUG
+    // check the array is sorted
+    for (ptrdiff_t i = 0; i < item_count - 1; i++)
+    {
+        assert (item_array[i] <= item_array[i + 1]);
+    }
+    // check that the ends of the array are indeed in range
+    // together with the above this implies all elements are in range
+    assert ((range_low <= item_array[0]) && (item_array[item_count - 1] <= range_high));
+#endif
+}
+#endif //USE_VXSORT
 
 #ifdef MULTIPLE_HEAPS
 #ifdef PARALLEL_MARK_LIST_SORT
+NOINLINE
 void gc_heap::sort_mark_list()
 {
+    if (settings.condemned_generation >= max_generation)
+    {
+        // fake a mark list overflow so merge_mark_lists knows to quit early
+        mark_list_index = mark_list_end + 1;
+        return;
+    }
+
     // if this heap had a mark list overflow, we don't do anything
     if (mark_list_index > mark_list_end)
     {
 //        printf("sort_mark_list: overflow on heap %d\n", heap_number);
+        mark_list_overflow = true;
         return;
     }
+
+#ifdef BACKGROUND_GC
+    // we are not going to use the mark list if background GC is running
+    // so let's not waste time sorting it
+    if (gc_heap::background_running_p())
+    {
+        mark_list_index = mark_list_end + 1;
+        return;
+    }
+#endif //BACKGROUND_GC
 
     // if any other heap had a mark list overflow, we fake one too,
     // so we don't use an incomplete mark list by mistake
@@ -8284,9 +8384,98 @@ void gc_heap::sort_mark_list()
 
 //    unsigned long start = GetCycleCount32();
 
+    // compute total mark list size and total ephemeral size
+    size_t total_mark_list_size = 0;
+    size_t total_ephemeral_size = 0;
+    uint8_t* low = (uint8_t*)~0;
+    uint8_t* high = 0;
+    for (int i = 0; i < n_heaps; i++)
+    {
+        gc_heap* hp = g_heaps[i];
+        size_t ephemeral_size = heap_segment_allocated (hp->ephemeral_heap_segment) - hp->gc_low;
+        total_ephemeral_size += ephemeral_size;
+        total_mark_list_size += (hp->mark_list_index - hp->mark_list);
+        low = min (low, hp->gc_low);
+        high = max (high, heap_segment_allocated (hp->ephemeral_heap_segment));
+    }
+
+    // give up if the mark list size is unreasonably large
+    if (total_mark_list_size > (total_ephemeral_size / 256))
+    {
+        mark_list_index = mark_list_end + 1;
+        // let's not count this as a mark list overflow
+        mark_list_overflow = false;
+        return;
+    }
+
+#ifdef USE_VXSORT
+    ptrdiff_t item_count = mark_list_index - mark_list;
+//#define WRITE_SORT_DATA
+#if defined(_DEBUG) || defined(WRITE_SORT_DATA)
+        // in debug, make a copy of the mark list
+        // for checking and debugging purposes
+    uint8_t** mark_list_copy = &g_mark_list_copy[heap_number * mark_list_size];
+    uint8_t** mark_list_copy_index = &mark_list_copy[item_count];
+    for (ptrdiff_t i = 0; i < item_count; i++)
+    {
+        uint8_t* item = mark_list[i];
+        mark_list_copy[i] = item;
+    }
+#endif // defined(_DEBUG) || defined(WRITE_SORT_DATA)
+
+    ptrdiff_t start = get_cycle_count();
+
+    do_vxsort (mark_list, item_count, low, high);
+
+    ptrdiff_t elapsed_cycles = get_cycle_count() - start;
+
+#ifdef WRITE_SORT_DATA
+    char file_name[256];
+    sprintf_s (file_name, _countof(file_name), "sort_data_gc%d_heap%d", settings.gc_index, heap_number);
+
+    FILE* f;
+    errno_t err = fopen_s (&f, file_name, "wb");
+
+    if (err == 0)
+    {
+        size_t magic = 'SDAT';
+        if (fwrite (&magic, sizeof(magic), 1, f) != 1)
+            dprintf (3, ("fwrite failed\n"));
+        if (fwrite (&elapsed_cycles, sizeof(elapsed_cycles), 1, f) != 1)
+            dprintf (3, ("fwrite failed\n"));
+        if (fwrite (&low, sizeof(low), 1, f) != 1)
+            dprintf (3, ("fwrite failed\n"));
+        if (fwrite (&item_count, sizeof(item_count), 1, f) != 1)
+            dprintf (3, ("fwrite failed\n"));
+        if (fwrite (mark_list_copy, sizeof(mark_list_copy[0]), item_count, f) != item_count)
+            dprintf (3, ("fwrite failed\n"));
+        if (fwrite (&magic, sizeof(magic), 1, f) != 1)
+            dprintf (3, ("fwrite failed\n"));
+        if (fclose (f) != 0)
+            dprintf (3, ("fclose failed\n"));
+    }
+#endif
+
+#ifdef _DEBUG
+    // in debug, sort the copy as well using the proven sort, so we can check we got the right result
+    if (mark_list_copy_index > mark_list_copy)
+    {
+        introsort::sort (mark_list_copy, mark_list_copy_index - 1, 0);
+    }
+    for (ptrdiff_t i = 0; i < item_count; i++)
+    {
+        uint8_t* item = mark_list[i];
+        assert (mark_list_copy[i] == item);
+    }
+#endif //_DEBUG
+
+#else //USE_VXSORT
     dprintf (3, ("Sorting mark lists"));
     if (mark_list_index > mark_list)
-        _sort (mark_list, mark_list_index - 1, 0);
+    {
+        introsort::sort (mark_list, mark_list_index - 1, 0);
+    }
+#endif
 
 //    printf("first phase of sort_mark_list for heap %d took %u cycles to sort %u entries\n", this->heap_number, GetCycleCount32() - start, mark_list_index - mark_list);
 //    start = GetCycleCount32();
@@ -8617,6 +8806,67 @@ void gc_heap::combine_mark_lists()
 }
 #endif // PARALLEL_MARK_LIST_SORT
 #endif //MULTIPLE_HEAPS
+
+void gc_heap::grow_mark_list ()
+{
+    // with vectorized sorting, we can use bigger mark lists
+#ifdef USE_VXSORT
+#ifdef MULTIPLE_HEAPS
+    const size_t MAX_MARK_LIST_SIZE = IsSupportedInstructionSet (InstructionSet::AVX2) ? 1000 * 1024 : 200 * 1024;
+#else //MULTIPLE_HEAPS
+    const size_t MAX_MARK_LIST_SIZE = IsSupportedInstructionSet (InstructionSet::AVX2) ? 32 * 1024 : 16 * 1024;
+#endif //MULTIPLE_HEAPS
+#else
+#ifdef MULTIPLE_HEAPS
+    const size_t MAX_MARK_LIST_SIZE = 200 * 1024;
+#else //MULTIPLE_HEAPS
+    const size_t MAX_MARK_LIST_SIZE = 16 * 1024;
+#endif //MULTIPLE_HEAPS
+#endif
+
+    size_t new_mark_list_size = min (mark_list_size * 2, MAX_MARK_LIST_SIZE);
+    if (new_mark_list_size == mark_list_size)
+        return;
+
+#ifdef MULTIPLE_HEAPS
+    uint8_t** new_mark_list = make_mark_list (new_mark_list_size * n_heaps);
+
+#ifdef PARALLEL_MARK_LIST_SORT
+    uint8_t** new_mark_list_copy = make_mark_list (new_mark_list_size * n_heaps);
+#endif //PARALLEL_MARK_LIST_SORT
+
+    if (new_mark_list != nullptr
+#ifdef PARALLEL_MARK_LIST_SORT
+        && new_mark_list_copy != nullptr
+#endif //PARALLEL_MARK_LIST_SORT
+        )
+    {
+        delete[] g_mark_list;
+        g_mark_list = new_mark_list;
+#ifdef PARALLEL_MARK_LIST_SORT
+        delete[] g_mark_list_copy;
+        g_mark_list_copy = new_mark_list_copy;
+#endif //PARALLEL_MARK_LIST_SORT
+        mark_list_size = new_mark_list_size;
+    }
+    else
+    {
+        delete[] new_mark_list;
+#ifdef PARALLEL_MARK_LIST_SORT
+        delete[] new_mark_list_copy;
+#endif //PARALLEL_MARK_LIST_SORT
+    }
+
+#else //MULTIPLE_HEAPS
+    uint8_t** new_mark_list = make_mark_list (new_mark_list_size);
+    if (new_mark_list != nullptr)
+    {
+        delete[] mark_list;
+        g_mark_list = new_mark_list;
+        mark_list_size = new_mark_list_size;
+    }
+#endif //MULTIPLE_HEAPS
+}
 #endif //MARK_LIST
 
 class seg_free_spaces
@@ -10101,6 +10351,10 @@ HRESULT gc_heap::initialize_gc (size_t soh_segment_size,
                                          static_cast<int>(GCEventStatus::GetEnabledKeywords(GCEventProvider_Private)));
 #endif // __linux__
 
+#ifdef USE_VXSORT
+    InitSupportedInstructionSet ((int32_t)GCConfig::GetGCEnabledInstructionSets());
+#endif
+
     if (!init_semi_shared())
     {
         hres = E_FAIL;
@@ -10128,7 +10382,7 @@ gc_heap::init_semi_shared()
 
 #ifdef MARK_LIST
 #ifdef MULTIPLE_HEAPS
-    mark_list_size = min (150*1024, max (8192, soh_segment_size/(2*10*32)));
+    mark_list_size = min (100*1024, max (8192, soh_segment_size/(2*10*32)));
     g_mark_list = make_mark_list (mark_list_size*n_heaps);
 
     min_balance_threshold = alloc_quantum_balance_units * CLR_SIZE * 2;
@@ -12195,7 +12449,7 @@ BOOL gc_heap::a_fit_free_list_uoh_p (size_t size,
 #endif //FEATURE_LOH_COMPACTION
 
             // must fit exactly or leave formattable space
-            if ((diff == 0) || (diff > (ptrdiff_t)Align (min_obj_size, align_const)))
+            if ((diff == 0) || (diff >= (ptrdiff_t)Align (min_obj_size, align_const)))
             {
 #ifdef BACKGROUND_GC
                 cookie = bgc_alloc_lock->uoh_alloc_set (free_list);
@@ -12407,7 +12661,7 @@ found_no_fit:
     return FALSE;
 }
 
-BOOL gc_heap::loh_a_fit_segment_end_p (int gen_number,
+BOOL gc_heap::uoh_a_fit_segment_end_p (int gen_number,
                                        size_t size,
                                        alloc_context* acontext,
                                        uint32_t flags,
@@ -12974,7 +13228,7 @@ BOOL gc_heap::uoh_try_fit (int gen_number,
 
     if (!a_fit_free_list_uoh_p (size, acontext, flags, align_const, gen_number))
     {
-        can_allocate = loh_a_fit_segment_end_p (gen_number, size,
+        can_allocate = uoh_a_fit_segment_end_p (gen_number, size,
                                                 acontext, flags, align_const,
                                                 commit_failed_p, oom_r);
 
@@ -17836,12 +18090,12 @@ uint8_t* gc_heap::find_object (uint8_t* interior)
     {
         // this is a pointer to a UOH object
         heap_segment* seg = find_segment (interior, FALSE);
-        if (seg
-#ifdef FEATURE_CONSERVATIVE_GC
-            && (GCConfig::GetConservativeGC() || interior <= heap_segment_allocated(seg))
-#endif
-            )
+        if (seg)
         {
+#ifdef FEATURE_CONSERVATIVE_GC
+            if (interior >= heap_segment_allocated(seg))
+                return 0;
+#endif
             // If interior falls within the first free object at the beginning of a generation,
             // we don't have brick entry for it, and we may incorrectly treat it as on large object heap.
             int align_const = get_alignment_constant (heap_segment_read_only_p (seg)
@@ -19872,10 +20126,10 @@ void gc_heap::process_mark_overflow_internal (int condemned_gen_number,
             int align_const = get_alignment_constant (i < uoh_start_generation);
 
             PREFIX_ASSUME(seg != NULL);
-            uint8_t*  o = max (heap_segment_mem (seg), min_add);
 
             while (seg)
             {
+                uint8_t*  o = max (heap_segment_mem (seg), min_add);
                 uint8_t*  end = heap_segment_allocated (seg);
 
                 while ((o < end) && (o <= max_add))
@@ -22035,7 +22289,12 @@ void gc_heap::plan_phase (int condemned_gen_number)
                  (mark_list_index - &mark_list[0]), ((mark_list_end - &mark_list[0]))));
 
     if (mark_list_index >= (mark_list_end + 1))
+    {
         mark_list_index = mark_list_end + 1;
+#ifndef MULTIPLE_HEAPS // in Server GC, we check for mark list overflow in sort_mark_list
+        mark_list_overflow = true;
+#endif
+    }
 #else
     dprintf (3, ("mark_list length: %Id",
                  (mark_list_index - &mark_list[0])));
@@ -22049,7 +22308,12 @@ void gc_heap::plan_phase (int condemned_gen_number)
         )
     {
 #ifndef MULTIPLE_HEAPS
-        _sort (&mark_list[0], mark_list_index-1, 0);
+#ifdef USE_VXSORT
+        do_vxsort (mark_list, mark_list_index - mark_list, slow, shigh);
+#else //USE_VXSORT
+        _sort (&mark_list[0], mark_list_index - 1, 0);
+#endif //USE_VXSORT
+
         //printf ("using mark list at GC #%d", dd_collection_count (dynamic_data_of (0)));
         //verify_qsort_array (&mark_list[0], mark_list_index-1);
 #endif //!MULTIPLE_HEAPS
@@ -24126,17 +24390,24 @@ void gc_heap::relocate_address (uint8_t** pold_address THREAD_NUMBER_DCL)
     }
 
 #ifdef FEATURE_LOH_COMPACTION
-    if (loh_compacted_p)
+    if (settings.loh_compaction)
     {
         heap_segment* pSegment = seg_mapping_table_segment_of ((uint8_t*)old_address);
-        size_t flags = pSegment->flags;
-        if ((flags & heap_segment_flags_loh)
-#ifdef FEATURE_BASICFREEZE
-            && !(flags & heap_segment_flags_readonly)
+#ifdef MULTIPLE_HEAPS
+        if (heap_segment_heap (pSegment)->loh_compacted_p)
+#else
+        if (loh_compacted_p)
 #endif
-            )
         {
-            *pold_address = old_address + loh_node_relocation_distance (old_address);
+            size_t flags = pSegment->flags;
+            if ((flags & heap_segment_flags_loh)
+#ifdef FEATURE_BASICFREEZE
+                && !(flags & heap_segment_flags_readonly)
+#endif
+                )
+            {
+                *pold_address = old_address + loh_node_relocation_distance (old_address);
+            }
         }
     }
 #endif //FEATURE_LOH_COMPACTION
@@ -35186,8 +35457,7 @@ HRESULT GCHeap::Initialize()
         {
             gc_heap::heap_hard_limit_oh[2] = min_segment_size_hard_limit;
         }
-        // This tells the system there is a hard limit, but otherwise we will not compare against this value.
-        gc_heap::heap_hard_limit = 1;
+        gc_heap::heap_hard_limit = gc_heap::heap_hard_limit_oh[0] + gc_heap::heap_hard_limit_oh[1] + gc_heap::heap_hard_limit_oh[2];
     }
     else
     {
@@ -35222,8 +35492,7 @@ HRESULT GCHeap::Initialize()
             {
                 gc_heap::heap_hard_limit_oh[2] = (size_t)(gc_heap::total_physical_mem * (uint64_t)percent_of_mem_poh / (uint64_t)100);
             }
-            // This tells the system there is a hard limit, but otherwise we will not compare against this value.
-            gc_heap::heap_hard_limit = 1;
+            gc_heap::heap_hard_limit = gc_heap::heap_hard_limit_oh[0] + gc_heap::heap_hard_limit_oh[1] + gc_heap::heap_hard_limit_oh[2];
         }
     }
 
@@ -37043,6 +37312,12 @@ void gc_heap::do_post_gc()
 #else
     record_interesting_info_per_heap();
 #endif //MULTIPLE_HEAPS
+    if (mark_list_overflow)
+    {
+        grow_mark_list();
+        mark_list_overflow = false;
+    }
+
     record_global_mechanisms();
 #endif //GC_CONFIG_DRIVEN
 }
@@ -37825,26 +38100,6 @@ size_t GCHeap::GetFinalizablePromotedCount()
 #endif //MULTIPLE_HEAPS
 }
 
-bool GCHeap::ShouldRestartFinalizerWatchDog()
-{
-    // This condition was historically used as part of the condition to detect finalizer thread timeouts
-    return gc_heap::gc_lock.lock != -1;
-}
-
-void GCHeap::SetFinalizeQueueForShutdown(bool fHasLock)
-{
-#ifdef MULTIPLE_HEAPS
-    for (int hn = 0; hn < gc_heap::n_heaps; hn++)
-    {
-        gc_heap* hp = gc_heap::g_heaps [hn];
-        hp->finalize_queue->SetSegForShutDown(fHasLock);
-    }
-
-#else //MULTIPLE_HEAPS
-    pGenGCHeap->finalize_queue->SetSegForShutDown(fHasLock);
-#endif //MULTIPLE_HEAPS
-}
-
 //---------------------------------------------------------------------------
 // Finalized class tracking
 //---------------------------------------------------------------------------
@@ -37977,18 +38232,9 @@ CFinalize::RegisterForFinalization (int gen, Object* obj, size_t size)
     } CONTRACTL_END;
 
     EnterFinalizeLock();
+
     // Adjust gen
-    unsigned int dest = 0;
-
-    if (g_fFinalizerRunOnShutDown)
-    {
-        //put it in the finalizer queue and sort out when
-        //dequeueing
-        dest = FinalizerListSeg;
-    }
-
-    else
-        dest = gen_segment (gen);
+    unsigned int dest = gen_segment (gen);
 
     // Adjust boundary for segments so that GC will keep objects alive.
     Object*** s_i = &SegQueue (FreeList);
@@ -38044,24 +38290,9 @@ CFinalize::GetNextFinalizableObject (BOOL only_non_critical)
     Object* obj = 0;
     EnterFinalizeLock();
 
-retry:
     if (!IsSegEmpty(FinalizerListSeg))
     {
-        if (g_fFinalizerRunOnShutDown)
-        {
-            obj = *(SegQueueLimit (FinalizerListSeg)-1);
-            if (method_table(obj)->HasCriticalFinalizer())
-            {
-                MoveItem ((SegQueueLimit (FinalizerListSeg)-1),
-                          FinalizerListSeg, CriticalFinalizerListSeg);
-                goto retry;
-            }
-            else
-                --SegQueueLimit (FinalizerListSeg);
-        }
-        else
-            obj =  *(--SegQueueLimit (FinalizerListSeg));
-
+        obj =  *(--SegQueueLimit (FinalizerListSeg));
     }
     else if (!only_non_critical && !IsSegEmpty(CriticalFinalizerListSeg))
     {
@@ -38078,52 +38309,10 @@ retry:
     return obj;
 }
 
-void
-CFinalize::SetSegForShutDown(BOOL fHasLock)
-{
-    int i;
-
-    if (!fHasLock)
-        EnterFinalizeLock();
-    for (i = 0; i <= max_generation; i++)
-    {
-        unsigned int seg = gen_segment (i);
-        Object** startIndex = SegQueueLimit (seg)-1;
-        Object** stopIndex  = SegQueue (seg);
-        for (Object** po = startIndex; po >= stopIndex; po--)
-        {
-            Object* obj = *po;
-            if (method_table(obj)->HasCriticalFinalizer())
-            {
-                MoveItem (po, seg, CriticalFinalizerListSeg);
-            }
-            else
-            {
-                MoveItem (po, seg, FinalizerListSeg);
-            }
-        }
-    }
-    if (!fHasLock)
-        LeaveFinalizeLock();
-}
-
-void
-CFinalize::DiscardNonCriticalObjects()
-{
-    //empty the finalization queue
-    Object** startIndex = SegQueueLimit (FinalizerListSeg)-1;
-    Object** stopIndex  = SegQueue (FinalizerListSeg);
-    for (Object** po = startIndex; po >= stopIndex; po--)
-    {
-        MoveItem (po, FinalizerListSeg, FreeList);
-    }
-}
-
 size_t
 CFinalize::GetNumberFinalizableObjects()
 {
-    return SegQueueLimit (FinalizerListSeg) -
-        (g_fFinalizerRunOnShutDown ? m_Array : SegQueue(FinalizerListSeg));
+    return SegQueueLimit(FinalizerListSeg) - SegQueue(FinalizerListSeg);
 }
 
 void
@@ -38420,8 +38609,8 @@ void gc_heap::walk_heap_per_heap (walk_fn fn, void* context, int gen_number, BOO
                      generation_allocation_start (gen));
 
     uint8_t*       end = heap_segment_allocated (seg);
-    BOOL small_object_segments = TRUE;
-    int align_const = get_alignment_constant (small_object_segments);
+    int align_const = get_alignment_constant (TRUE);
+    BOOL walk_pinned_object_heap = walk_large_object_heap_p;
 
     while (1)
 
@@ -38436,20 +38625,25 @@ void gc_heap::walk_heap_per_heap (walk_fn fn, void* context, int gen_number, BOO
             }
             else
             {
-                if (small_object_segments && walk_large_object_heap_p)
-
+                if (walk_large_object_heap_p)
                 {
-                    small_object_segments = FALSE;
-                    align_const = get_alignment_constant (small_object_segments);
+                    walk_large_object_heap_p = FALSE;
                     seg = generation_start_segment (large_object_generation);
-                    x = heap_segment_mem (seg);
-                    end = heap_segment_allocated (seg);
-                    continue;
+                }
+                else if (walk_pinned_object_heap)
+                {
+                    walk_pinned_object_heap = FALSE;
+                    seg = generation_start_segment (pinned_object_generation);
                 }
                 else
                 {
                     break;
                 }
+
+                align_const = get_alignment_constant (FALSE);
+                x = heap_segment_mem (seg);
+                end = heap_segment_allocated (seg);
+                continue;
             }
         }
 
@@ -38835,11 +39029,6 @@ bool GCHeap::IsConcurrentGCEnabled()
 #else
     return FALSE;
 #endif //BACKGROUND_GC
-}
-
-void GCHeap::SetFinalizeRunOnShutdown(bool value)
-{
-    g_fFinalizerRunOnShutDown = value;
 }
 
 void PopulateDacVars(GcDacVars *gcDacVars)

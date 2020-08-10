@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 //
 // This is used internally to create best fit behavior as per the original windows best fit behavior.
@@ -41,7 +40,7 @@ namespace System.Text
     internal sealed class InternalEncoderBestFitFallbackBuffer : EncoderFallbackBuffer
     {
         // Our variables
-        private char _cBestFit = '\0';
+        private char _cBestFit;
         private readonly InternalEncoderBestFitFallback _oFallback;
         private int _iCount = -1;
         private int _iSize;

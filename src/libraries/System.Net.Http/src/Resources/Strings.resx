@@ -180,6 +180,9 @@
   <data name="net_http_content_stream_copy_error" xml:space="preserve">
     <value>Error while copying content to a stream.</value>
   </data>
+  <data name="net_http_content_read_as_stream_has_task" xml:space="preserve">
+    <value>The content's stream has already been retrieved via async ReadAsStreamAsync and cannot be subsequently accessed synchronously.</value>
+  </data>
   <data name="net_http_argument_empty_string" xml:space="preserve">
     <value>The value cannot be null or empty.</value>
   </data>
@@ -431,6 +434,9 @@
   </data>
   <data name="net_http_http2_stream_error" xml:space="preserve">
     <value>The HTTP/2 server reset the stream. HTTP/2 error code '{0}' (0x{1}).</value>
+  </data>
+  <data name="net_http_http2_connection_not_established" xml:space="preserve">
+    <value>An HTTP/2 connection could not be established because the server did not complete the HTTP/2 handshake.</value>
   </data>
   <data name="net_MethodNotImplementedException" xml:space="preserve">
     <value>This method is not implemented by this class.</value>

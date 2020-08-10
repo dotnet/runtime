@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -18,7 +17,6 @@ namespace System.Net.Mail
 
         public Authorization? Authenticate(string? challenge, NetworkCredential? credential, object sessionCookie, string? spn, ChannelBinding? channelBindingToken)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this, "Authenticate");
             try
             {
                 lock (_sessions)
@@ -79,10 +77,6 @@ namespace System.Net.Mail
             catch (NullReferenceException)
             {
                 return null;
-            }
-            finally
-            {
-                if (NetEventSource.IsEnabled) NetEventSource.Exit(this, "Authenticate");
             }
         }
 

@@ -1,5 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
-// See the LICENSE file in the project root for more information.
+// The .NET Foundation licenses this file to you under the MIT license.
 
 // Copyright (c) 2007 Novell, Inc
 //
@@ -870,7 +870,7 @@ namespace System.Data.Tests
             Assert.Equal(3, row["ParentID"]);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
         public void XmlTest8()
         {
             MakeParentTable1();
@@ -910,7 +910,7 @@ namespace System.Data.Tests
             Assert.Equal("3", row["DepartmentID"]);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
         public void XmlTest9()
         {
             MakeParentTable1();

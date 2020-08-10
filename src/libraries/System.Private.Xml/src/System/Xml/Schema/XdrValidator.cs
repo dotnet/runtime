@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #nullable enable
 namespace System.Xml.Schema
@@ -21,10 +20,10 @@ namespace System.Xml.Schema
         private Hashtable _attPresence;
         private XmlQualifiedName _name = XmlQualifiedName.Empty;
         private XmlNamespaceManager _nsManager;
-        private bool _isProcessContents = false;
+        private bool _isProcessContents;
         private Hashtable? _IDs;
         private IdRefNode? _idRefListHead;
-        private Parser? _inlineSchemaParser = null;
+        private Parser? _inlineSchemaParser;
         private const string x_schema = "x-schema:";
 
         internal XdrValidator(BaseValidator validator) : base(validator)
@@ -32,7 +31,7 @@ namespace System.Xml.Schema
             Init();
         }
 
-        internal XdrValidator(XmlValidatingReaderImpl reader, XmlSchemaCollection schemaCollection, IValidationEventHandling eventHandling) : base(reader, schemaCollection, eventHandling)
+        internal XdrValidator(XmlValidatingReaderImpl reader, XmlSchemaCollection schemaCollection, IValidationEventHandling? eventHandling) : base(reader, schemaCollection, eventHandling)
         {
             Init();
         }
@@ -43,7 +42,7 @@ namespace System.Xml.Schema
         [MemberNotNull(nameof(_attPresence))]
         private void Init()
         {
-            _nsManager = reader.NamespaceManager;
+            _nsManager = reader.NamespaceManager!;
             if (_nsManager == null)
             {
                 _nsManager = new XmlNamespaceManager(NameTable);
