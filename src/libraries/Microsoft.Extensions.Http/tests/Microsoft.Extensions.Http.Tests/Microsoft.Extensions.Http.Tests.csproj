@@ -1,0 +1,35 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>$(NetCoreAppCurrent);net461</TargetFrameworks>
+    <EnableDefaultItems>true</EnableDefaultItems>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="$(LibrariesProjectRoot)Microsoft.Extensions.Logging\tests\DI.Common\Common\src\TestSink.cs"
+             Link="tests\DI.Common\Common\src\TestSink.cs" />
+    <Compile Include="$(LibrariesProjectRoot)Microsoft.Extensions.Logging\tests\DI.Common\Common\src\WriteContext.cs"
+             Link="tests\DI.Common\Common\src\WriteContext.cs" />
+    <Compile Include="$(LibrariesProjectRoot)Microsoft.Extensions.Logging\tests\DI.Common\Common\src\BeginScopeContext.cs"
+             Link="tests\DI.Common\Common\src\BeginScopeContext.cs" />
+    <Compile Include="$(LibrariesProjectRoot)Microsoft.Extensions.Logging\tests\DI.Common\Common\src\ITestSink.cs"
+             Link="tests\DI.Common\Common\src\ITestSink.cs" />
+    <Compile Include="$(LibrariesProjectRoot)Microsoft.Extensions.Logging\tests\DI.Common\Common\src\TestLogger.cs"
+             Link="tests\DI.Common\Common\src\TestLogger.cs" />
+    <Compile Include="$(LibrariesProjectRoot)Microsoft.Extensions.Logging\tests\DI.Common\Common\src\TestLoggerFactory.cs"
+             Link="tests\DI.Common\Common\src\TestLoggerFactory.cs" />
+    <Compile Include="$(CommonPath)..\tests\Extensions\SingleThreadedSynchronizationContext.cs"
+             Link="Shared\SingleThreadedSynchronizationContext.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Moq" Version="$(MoqVersion)" />
+    <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.Http\src\Microsoft.Extensions.Http.csproj" SkipUseReferenceAssembly="true" />
+  	<ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.DependencyInjection\src\Microsoft.Extensions.DependencyInjection.csproj" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)' == 'net461'">
+    <Reference Include="System.Net.Http" />
+  </ItemGroup>
+
+</Project>

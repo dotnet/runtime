@@ -254,11 +254,6 @@ namespace System.IO
                 case '\r':
                     return ConsoleKey.Enter;
 
-                case '\n':
-                    // Windows compatibility; LF is Ctrl+Enter
-                    isCtrl = true;
-                    return ConsoleKey.Enter;
-
                 case (char)(0x1B):
                     return ConsoleKey.Escape;
 

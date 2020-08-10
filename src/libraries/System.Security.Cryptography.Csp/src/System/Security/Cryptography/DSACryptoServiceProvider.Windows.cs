@@ -50,7 +50,7 @@ namespace System.Security.Cryptography
         /// for the cryptographic service provider (CSP).
         /// </summary>
         /// <param name="parameters">The parameters for the CSP.</param>
-        [MinimumOSPlatform("windows7.0")]
+        [SupportedOSPlatform("windows")]
         public DSACryptoServiceProvider(CspParameters? parameters)
             : this(0, parameters)
         {
@@ -63,7 +63,7 @@ namespace System.Security.Cryptography
         /// <param name="dwKeySize">The size of the key for the cryptographic algorithm in bits.</param>
         /// <param name="parameters">The parameters for the CSP.</param>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA5350", Justification = "SHA1 is required by the FIPS 186-2 DSA spec.")]
-        [MinimumOSPlatform("windows7.0")]
+        [SupportedOSPlatform("windows")]
         public DSACryptoServiceProvider(int dwKeySize, CspParameters? parameters)
         {
             if (dwKeySize < 0)
@@ -185,7 +185,7 @@ namespace System.Security.Cryptography
         /// <summary>
         /// Gets a CspKeyContainerInfo object that describes additional information about a cryptographic key pair.
         /// </summary>
-        [MinimumOSPlatform("windows7.0")]
+        [SupportedOSPlatform("windows")]
         public CspKeyContainerInfo CspKeyContainerInfo
         {
             get

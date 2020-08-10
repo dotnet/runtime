@@ -1019,9 +1019,9 @@ namespace System.Net.Http.Functional.Tests
                 yield return new object[] { HttpVersion.Version11, HttpVersionPolicy.RequestVersionOrHigher, HttpVersion.Version20, useSsl, useSsl ? (object)HttpVersion.Version20 : typeof(HttpRequestException) };
                 if (QuicConnection.IsQuicSupported)
                 {
-                    yield return new object[] { HttpVersion.Version11, HttpVersionPolicy.RequestVersionOrLower, HttpVersion.Version30, useSsl, HttpVersion.Version11 };
-                    yield return new object[] { HttpVersion.Version11, HttpVersionPolicy.RequestVersionExact, HttpVersion.Version30, useSsl, HttpVersion.Version11 };
-                    yield return new object[] { HttpVersion.Version11, HttpVersionPolicy.RequestVersionOrHigher, HttpVersion.Version30, useSsl, useSsl ? HttpVersion.Version30 : HttpVersion.Version11 };
+                    yield return new object[] { HttpVersion.Version11, HttpVersionPolicy.RequestVersionOrLower, HttpVersion30, useSsl, HttpVersion.Version11 };
+                    yield return new object[] { HttpVersion.Version11, HttpVersionPolicy.RequestVersionExact, HttpVersion30, useSsl, HttpVersion.Version11 };
+                    yield return new object[] { HttpVersion.Version11, HttpVersionPolicy.RequestVersionOrHigher, HttpVersion30, useSsl, useSsl ? HttpVersion30 : HttpVersion.Version11 };
                 }
 
                 yield return new object[] { HttpVersion.Version20, HttpVersionPolicy.RequestVersionOrLower, HttpVersion.Version11, useSsl, HttpVersion.Version11 };
@@ -1032,22 +1032,22 @@ namespace System.Net.Http.Functional.Tests
                 yield return new object[] { HttpVersion.Version20, HttpVersionPolicy.RequestVersionOrHigher, HttpVersion.Version20, useSsl, HttpVersion.Version20 };
                 if (QuicConnection.IsQuicSupported)
                 {
-                    yield return new object[] { HttpVersion.Version20, HttpVersionPolicy.RequestVersionOrLower, HttpVersion.Version30, useSsl, useSsl ? HttpVersion.Version20 : HttpVersion.Version11 };
-                    yield return new object[] { HttpVersion.Version20, HttpVersionPolicy.RequestVersionExact, HttpVersion.Version30, useSsl, HttpVersion.Version20 };
-                    yield return new object[] { HttpVersion.Version20, HttpVersionPolicy.RequestVersionOrHigher, HttpVersion.Version30, useSsl, useSsl ? (object)HttpVersion.Version30 : typeof(HttpRequestException) };
+                    yield return new object[] { HttpVersion.Version20, HttpVersionPolicy.RequestVersionOrLower, HttpVersion30, useSsl, useSsl ? HttpVersion.Version20 : HttpVersion.Version11 };
+                    yield return new object[] { HttpVersion.Version20, HttpVersionPolicy.RequestVersionExact, HttpVersion30, useSsl, HttpVersion.Version20 };
+                    yield return new object[] { HttpVersion.Version20, HttpVersionPolicy.RequestVersionOrHigher, HttpVersion30, useSsl, useSsl ? (object)HttpVersion30 : typeof(HttpRequestException) };
                 }
 
                 if (QuicConnection.IsQuicSupported)
                 {
-                    yield return new object[] { HttpVersion.Version30, HttpVersionPolicy.RequestVersionOrLower, HttpVersion.Version11, useSsl, useSsl ? HttpVersion.Version30 : HttpVersion.Version11 };
-                    yield return new object[] { HttpVersion.Version30, HttpVersionPolicy.RequestVersionExact, HttpVersion.Version11, useSsl, typeof(HttpRequestException) };
-                    yield return new object[] { HttpVersion.Version30, HttpVersionPolicy.RequestVersionOrHigher, HttpVersion.Version11, useSsl, typeof(HttpRequestException) };
-                    yield return new object[] { HttpVersion.Version30, HttpVersionPolicy.RequestVersionOrLower, HttpVersion.Version20, useSsl, useSsl ? HttpVersion.Version30 : HttpVersion.Version11 };
-                    yield return new object[] { HttpVersion.Version30, HttpVersionPolicy.RequestVersionExact, HttpVersion.Version20, useSsl, typeof(HttpRequestException) };
-                    yield return new object[] { HttpVersion.Version30, HttpVersionPolicy.RequestVersionOrHigher, HttpVersion.Version20, useSsl, typeof(HttpRequestException) };
-                    yield return new object[] { HttpVersion.Version30, HttpVersionPolicy.RequestVersionOrLower, HttpVersion.Version30, useSsl, useSsl ? HttpVersion.Version30 : HttpVersion.Version11 };
-                    yield return new object[] { HttpVersion.Version30, HttpVersionPolicy.RequestVersionExact, HttpVersion.Version30, useSsl, useSsl ? (object)HttpVersion.Version30 : typeof(HttpRequestException) };
-                    yield return new object[] { HttpVersion.Version30, HttpVersionPolicy.RequestVersionOrHigher, HttpVersion.Version30, useSsl, useSsl ? (object)HttpVersion.Version30 : typeof(HttpRequestException) };
+                    yield return new object[] { HttpVersion30, HttpVersionPolicy.RequestVersionOrLower, HttpVersion.Version11, useSsl, useSsl ? HttpVersion30 : HttpVersion.Version11 };
+                    yield return new object[] { HttpVersion30, HttpVersionPolicy.RequestVersionExact, HttpVersion.Version11, useSsl, typeof(HttpRequestException) };
+                    yield return new object[] { HttpVersion30, HttpVersionPolicy.RequestVersionOrHigher, HttpVersion.Version11, useSsl, typeof(HttpRequestException) };
+                    yield return new object[] { HttpVersion30, HttpVersionPolicy.RequestVersionOrLower, HttpVersion.Version20, useSsl, useSsl ? HttpVersion30 : HttpVersion.Version11 };
+                    yield return new object[] { HttpVersion30, HttpVersionPolicy.RequestVersionExact, HttpVersion.Version20, useSsl, typeof(HttpRequestException) };
+                    yield return new object[] { HttpVersion30, HttpVersionPolicy.RequestVersionOrHigher, HttpVersion.Version20, useSsl, typeof(HttpRequestException) };
+                    yield return new object[] { HttpVersion30, HttpVersionPolicy.RequestVersionOrLower, HttpVersion30, useSsl, useSsl ? HttpVersion30 : HttpVersion.Version11 };
+                    yield return new object[] { HttpVersion30, HttpVersionPolicy.RequestVersionExact, HttpVersion30, useSsl, useSsl ? (object)HttpVersion30 : typeof(HttpRequestException) };
+                    yield return new object[] { HttpVersion30, HttpVersionPolicy.RequestVersionOrHigher, HttpVersion30, useSsl, useSsl ? (object)HttpVersion30 : typeof(HttpRequestException) };
                 }
             }
         }

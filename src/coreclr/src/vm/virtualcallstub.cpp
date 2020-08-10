@@ -2765,7 +2765,7 @@ DispatchHolder *VirtualCallStubManager::GenerateDispatchStub(PCODE            ad
         TADDR slot = holder->stub()->implTargetSlot(&slotType);
         pMD->RecordAndBackpatchEntryPointSlot(m_loaderAllocator, slot, slotType);
 
-        // RecordAndBackpatchEntryPointSlot() takes a lock that would exit and reenter cooperative GC mode
+        // RecordAndBackpatchEntryPointSlot() may exit and reenter cooperative GC mode
         *pMayHaveReenteredCooperativeGCMode = true;
     }
 #endif
@@ -2827,7 +2827,7 @@ DispatchHolder *VirtualCallStubManager::GenerateDispatchStubLong(PCODE          
         TADDR slot = holder->stub()->implTargetSlot(&slotType);
         pMD->RecordAndBackpatchEntryPointSlot(m_loaderAllocator, slot, slotType);
 
-        // RecordAndBackpatchEntryPointSlot() takes a lock that would exit and reenter cooperative GC mode
+        // RecordAndBackpatchEntryPointSlot() may exit and reenter cooperative GC mode
         *pMayHaveReenteredCooperativeGCMode = true;
     }
 #endif
@@ -3020,7 +3020,7 @@ ResolveCacheElem *VirtualCallStubManager::GenerateResolveCacheElem(void *addrOfC
             (TADDR)&e->target,
             EntryPointSlots::SlotType_Normal);
 
-        // RecordAndBackpatchEntryPointSlot() takes a lock that would exit and reenter cooperative GC mode
+        // RecordAndBackpatchEntryPointSlot() may exit and reenter cooperative GC mode
         *pMayHaveReenteredCooperativeGCMode = true;
     }
 #endif

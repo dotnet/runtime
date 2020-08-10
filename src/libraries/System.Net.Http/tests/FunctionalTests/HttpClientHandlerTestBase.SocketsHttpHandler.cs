@@ -21,7 +21,6 @@ namespace System.Net.Http.Functional.Tests
             {
                 handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
             }
-
             return handler;
         }
 

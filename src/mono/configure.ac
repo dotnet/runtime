@@ -6884,7 +6884,7 @@ if test x$with_core = xonly; then
 	if test x$have_shim_globalization = xyes || test x$cross_compiling = xyes; then
 		ICU_SHIM_PATH=../../../libraries/Native/Unix/System.Globalization.Native
 		if test x$target_wasm = xyes && test x$with_static_icu = xyes; then
-			ICU_CFLAGS="-DTARGET_UNIX -DU_DISABLE_RENAMING"
+			ICU_CFLAGS="-DTARGET_UNIX -DU_DISABLE_RENAMING -DHAVE_UDAT_STANDALONE_SHORTER_WEEKDAYS -DHAVE_SET_MAX_VARIABLE"
 			have_sys_icu=yes
 		elif test x$target_osx = xyes; then
 			ORIG_CPPFLAGS=$CPPFLAGS

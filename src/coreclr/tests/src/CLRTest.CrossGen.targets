@@ -86,10 +86,10 @@ if [ ! -z ${RunCrossGen2+x} ]%3B then
       __ResponseFile="$__OutputFile.rsp"
       rm $__ResponseFile
 
-      // Suppress the GC stress COMPlus for the duration of Crossgen2 execution
-      local gcStressModeToRestore = $COMPlus_GCStress;
-      local heapVerifyModeToRestore = $COMPlus_HeapVerify;
-      local readyToRunModeToRestore = $COMPlus_ReadyToRun;
+      # Suppress the GC stress COMPlus for the duration of Crossgen2 execution
+      local gcStressModeToRestore=$COMPlus_GCStress;
+      local heapVerifyModeToRestore=$COMPlus_HeapVerify;
+      local readyToRunModeToRestore=$COMPlus_ReadyToRun;
       export COMPlus_GCStress=
       export COMPlus_HeapVerify=
       export COMPlus_ReadyToRun=
@@ -111,6 +111,7 @@ if [ ! -z ${RunCrossGen2+x} ]%3B then
       echo -r:$CORE_ROOT/System.*.dll>>$__ResponseFile
       echo -r:$CORE_ROOT/Microsoft.*.dll>>$__ResponseFile
       echo -r:$CORE_ROOT/mscorlib.dll>>$__ResponseFile
+      echo --verify-type-and-field-layout>>$__ResponseFile
       echo --targetarch:$(TargetArchitecture)>>$__ResponseFile
       echo -O>>$__ResponseFile
 
@@ -126,7 +127,7 @@ if [ ! -z ${RunCrossGen2+x} ]%3B then
   }
 
     if [ ! -z ${CompositeBuildMode+x} ]%3B then
-        ExtraCrossGen2Args+= --composite
+        ExtraCrossGen2Args+=" --composite"
         OneFileCrossgen2 "$PWD/composite-r2r.dll" "$PWD/IL/*.dll"
     else
         ExtraCrossGen2Args+= -r:$PWD/IL/*.dll
@@ -249,6 +250,7 @@ if defined RunCrossGen2 (
     echo !__InputFile!>>!__ResponseFile!
     echo -o:!__OutputFile!>>!__ResponseFile!
     echo --targetarch:$(TargetArchitecture)>>!__ResponseFile!
+    echo --verify-type-and-field-layout>>!__ResponseFile!
     echo -O>>!__ResponseFile!
     echo -r:!CORE_ROOT!\System.*.dll>>!__ResponseFile!
     echo -r:!CORE_ROOT!\Microsoft.*.dll>>!__ResponseFile!

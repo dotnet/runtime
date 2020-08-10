@@ -435,6 +435,9 @@
   <data name="net_http_http2_stream_error" xml:space="preserve">
     <value>The HTTP/2 server reset the stream. HTTP/2 error code '{0}' (0x{1}).</value>
   </data>
+  <data name="net_http_http2_connection_not_established" xml:space="preserve">
+    <value>An HTTP/2 connection could not be established because the server did not complete the HTTP/2 handshake.</value>
+  </data>
   <data name="net_MethodNotImplementedException" xml:space="preserve">
     <value>This method is not implemented by this class.</value>
   </data>

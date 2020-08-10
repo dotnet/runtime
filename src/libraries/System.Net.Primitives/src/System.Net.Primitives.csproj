@@ -34,6 +34,8 @@
     <Compile Include="System\Net\IWebProxy.cs" />
     <Compile Include="System\Net\NetEventSource.Primitives.cs" />
     <Compile Include="System\Net\NetworkCredential.cs" />
+    <Compile Include="System\Net\NetworkException.cs" />
+    <Compile Include="System\Net\NetworkError.cs" />
     <Compile Include="System\Net\TransportContext.cs" />
     <Compile Include="System\Net\SocketException.cs" />
     <Compile Include="System\Net\SecureProtocols\NegotiateEnumTypes.cs" />

@@ -293,6 +293,7 @@ namespace System.Net.Http
         public MultipartContent() { }
         public MultipartContent(string subtype) { }
         public MultipartContent(string subtype, string boundary) { }
+        public System.Net.Http.HeaderEncodingSelector<System.Net.Http.HttpContent>? HeaderEncodingSelector { get { throw null; } set { } }
         public virtual void Add(System.Net.Http.HttpContent content) { }
         protected override System.IO.Stream CreateContentReadStream(System.Threading.CancellationToken cancellationToken) { throw null; }
         protected override System.Threading.Tasks.Task<System.IO.Stream> CreateContentReadStreamAsync() { throw null; }
@@ -336,6 +337,7 @@ namespace System.Net.Http
     public sealed partial class SocketsHttpHandler : System.Net.Http.HttpMessageHandler
     {
         public SocketsHttpHandler() { }
+        public static bool IsSupported { get { throw null; } }
         public bool AllowAutoRedirect { get { throw null; } set { } }
         public System.Net.DecompressionMethods AutomaticDecompression { get { throw null; } set { } }
         public System.Net.Connections.ConnectionFactory? ConnectionFactory { get { throw null; } set { } }
