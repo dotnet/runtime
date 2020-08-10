@@ -34,7 +34,7 @@ build_test_wrappers()
 
         nextCommand="\"${__DotNetCli}\" msbuild \"${__ProjectDir}/tests/src/runtest.proj\" /nodereuse:false /p:BuildWrappers=true /p:TestBuildMode=$__TestBuildMode /p:TargetsWindows=false $__Logging /p:TargetOS=$__TargetOS /p:Configuration=$__BuildType /p:TargetArchitecture=$__BuildArch /p:RuntimeFlavor=$__RuntimeFlavor \"/bl:${__RepoRootDir}/artifacts/log/${__BuildType}/build_test_wrappers_${__RuntimeFlavor}.binlog\" ${__UnprocessedBuildArgs[@]}"
 
-	echo "!!! ${nextComand}"
+	echo "!!! next command: ${nextComand}"
         eval $nextCommand
 
         local exitCode="$?"
@@ -476,6 +476,7 @@ build_MSBuild_projects()
             buildArgs+=("${__UnprocessedBuildArgs[@]}")
             buildArgs+=("\"/p:CopyNativeProjectBinaries=${__CopyNativeProjectsAfterCombinedTestBuild}\"");
             buildArgs+=("/p:__SkipPackageRestore=true");
+	    buildArgs+=("/bl:testlog.binlog")
 
             # Disable warnAsError - coreclr issue 19922
             nextCommand="\"$__RepoRootDir/eng/common/msbuild.sh\" $__ArcadeScriptArgs --warnAsError false ${buildArgs[@]}"

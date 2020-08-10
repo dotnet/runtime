@@ -2766,9 +2766,9 @@
 
 
     <ItemGroup Condition=" '$(TargetArchitecture)' == 'wasm' " >
-   	<ExcludeList Include = "$(XunitTestBinBase)/Interop/ICastable/**">
-		<Issue> Depends on coreclr System.Private.CoreLib; can't be built for wasm.</Issue>
-   	<Exclude>
+   	    <ExcludeList Include = "$(XunitTestBinBase)/Interop/ICastable/**">
+		    <Issue> Depends on coreclr System.Private.CoreLib; can't be built for wasm.</Issue>
+   	    </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/tracing/tracevalidation/rundown/rundown/**">
             <Issue>needs triage</Issue>
         </ExcludeList>

@@ -23,8 +23,9 @@
     </ItemGroup>
 
     <ItemGroup>
-      <AllProjects Include="$(TestRoot)**\*.csproj" Exclude="@(DisabledProjects)" />
-      <AllProjects Include="$(TestRoot)**\*.ilproj" Exclude="@(DisabledProjects)" />
+      <!-- <AllProjects Include="$(TestRoot)**\*.csproj" Exclude="@(DisabledProjects)" />
+      <AllProjects Include="$(TestRoot)**\*.ilproj" Exclude="@(DisabledProjects)" /> -->
+      <AllProjects Include="$(TestRoot)/JIT/methodical/divrem/div/i4div_cs_do.csproj" />
     </ItemGroup>
 
     <!-- All the test projects are partitioned into the test groups as defined below.

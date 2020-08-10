@@ -7,7 +7,7 @@
   </PropertyGroup>
 
   <!-- All CLRTests need to be of a certain "kind". These kinds are enumerated below.
-  By default all tests are BuildAndRun. This means that the build system will Build them
+  By default all tests anre BuildAndRun. This means that the build system will Build them
   and construct a run-batch-script for them. -->
   <Choose>
     <When Condition=" '$(CLRTestKind)'=='SharedLibrary'">
@@ -27,6 +27,7 @@
       </PropertyGroup>
     </When>
     <When Condition=" '$(CLRTestKind)'=='BuildOnly'">
+
       <PropertyGroup>
         <_CLRTestNeedsToRun>false</_CLRTestNeedsToRun>
         <GenerateRunScript>false</GenerateRunScript>
@@ -192,12 +193,15 @@
 
   <Target Name="CopyAllNativeProjectReferenceBinaries" DependsOnTargets="ResolveCmakeNativeProjectReference;ConsolidateNativeProjectReference" />
 
+  <!-- Condition="'$(_CopyNativeProjectBinaries)' == 'true' And '$(GenerateRunScript)' != 'false' And ('$(_WillCLRTestProjectBuild)' == 'true')" -->
   <!-- Build shell or command scripts whenever we copy native binaries -->
   <Import Project="CLRTest.Execute.targets" />
   <Target Name="CreateExecuteScript"
           BeforeTargets="Build;CopyAllNativeProjectReferenceBinaries"
-          Condition="'$(_CopyNativeProjectBinaries)' == 'true' And '$(GenerateRunScript)' != 'false' And ('$(_WillCLRTestProjectBuild)' == 'true')"
-          DependsOnTargets="GenerateExecutionScriptsInternal" />
+          Condition="'$(GenerateRunScript)' != 'false' And ('$(_WillCLRTestProjectBuild)' == 'true')" 
+          DependsOnTargets="GenerateExecutionScriptsInternal" >
+      <Message Importance="High" text="CLRTestKind: $(CLRTestKind)" />
+  </Target>
 
   <Target Name="UpdateReferenceItems"
           BeforeTargets="BeforeResolveReferences"

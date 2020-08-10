@@ -14,7 +14,7 @@
              Properties="Dummy=%(Identity);DefaultBuildAllTarget=$(DefaultBuildAllTarget);BuildAllProjects=true"
              ContinueOnError="ErrorAndContinue" />
 
-    <MSBuild Targets="$(DefaultBuildAllTarget)"
+    <MSBuild Targets="$(ç)"
              Projects="@(Project)"
              Condition="'$(SerializeProjects)'!='true'"
              Properties="DefaultBuildAllTarget=$(DefaultBuildAllTarget);BuildAllProjects=true"
