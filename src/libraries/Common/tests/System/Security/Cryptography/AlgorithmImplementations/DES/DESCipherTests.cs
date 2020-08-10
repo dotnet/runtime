@@ -301,6 +301,69 @@ namespace System.Security.Cryptography.Encryption.Des.Tests
             );
         }
 
+        [Theory]
+        [InlineData(CipherMode.CBC, 0)]
+        [InlineData(CipherMode.CFB, 8)]
+        [InlineData(CipherMode.ECB, 0)]
+        public static void EncryptorReuse_LeadsToSameResults(CipherMode cipherMode, int feedbackSize)
+        {
+            // AppleCCCryptor does not allow calling Reset on CFB cipher.
+            // this test validates that the behavior is taken into consideration.
+            var input = "b72606c98d8e4fabf08839abf7a0ac61".HexToByteArray();
+
+            using (DES des = DESFactory.Create())
+            {
+                des.Mode = cipherMode;
+
+                if (feedbackSize > 0)
+                {
+                    des.FeedbackSize = feedbackSize;
+                }
+
+                using (ICryptoTransform transform = des.CreateEncryptor())
+                {
+                    byte[] output1 = transform.TransformFinalBlock(input, 0, input.Length);
+                    byte[] output2 = transform.TransformFinalBlock(input, 0, input.Length);
+
+                    Assert.Equal(output1, output2);
+                }
+            }
+        }
+
+        [Theory]
+        [InlineData(CipherMode.CBC, 0)]
+        [InlineData(CipherMode.CFB, 8)]
+        [InlineData(CipherMode.ECB, 0)]
+        public static void DecryptorReuse_LeadsToSameResults(CipherMode cipherMode, int feedbackSize)
+        {
+            // AppleCCCryptor does not allow calling Reset on CFB cipher.
+            // this test validates that the behavior is taken into consideration.
+            var input = "4e6f77206973207468652074696d6520666f7220616c6c20".HexToByteArray();
+            var key = "4a575d02515d40b0".HexToByteArray();
+            var iv = "ab27e9f02affa532".HexToByteArray();
+
+            using (DES des = DESFactory.Create())
+            {
+                des.Mode = cipherMode;
+                des.Key = key;
+                des.IV = iv;
+                des.Padding = PaddingMode.None;
+
+                if (feedbackSize > 0)
+                {
+                    des.FeedbackSize = feedbackSize;
+                }
+
+                using (ICryptoTransform transform = des.CreateDecryptor())
+                {
+                    byte[] output1 = transform.TransformFinalBlock(input, 0, input.Length);
+                    byte[] output2 = transform.TransformFinalBlock(input, 0, input.Length);
+
+                    Assert.Equal(output1, output2);
+                }
+            }
+        }
+
         [Fact]
         public static void VerifyKnownTransform_CFB8_NoPadding_3()
         {

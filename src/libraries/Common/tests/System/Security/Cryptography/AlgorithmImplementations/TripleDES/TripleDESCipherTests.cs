@@ -236,6 +236,71 @@ namespace System.Security.Cryptography.Encryption.TripleDes.Tests
             );
         }
 
+        [Theory]
+        [InlineData(CipherMode.CBC, 0)]
+        [InlineData(CipherMode.CFB, 8)]
+        [InlineData(CipherMode.CFB, 64)]
+        [InlineData(CipherMode.ECB, 0)]
+        public static void EncryptorReuse_LeadsToSameResults(CipherMode cipherMode, int feedbackSize)
+        {
+            // AppleCCCryptor does not allow calling Reset on CFB cipher.
+            // this test validates that the behavior is taken into consideration.
+            var input = "b72606c98d8e4fabf08839abf7a0ac61".HexToByteArray();
+
+            using (TripleDES tdes = TripleDESFactory.Create())
+            {
+                tdes.Mode = cipherMode;
+
+                if (feedbackSize > 0)
+                {
+                    tdes.FeedbackSize = feedbackSize;
+                }
+
+                using (ICryptoTransform transform = tdes.CreateEncryptor())
+                {
+                    byte[] output1 = transform.TransformFinalBlock(input, 0, input.Length);
+                    byte[] output2 = transform.TransformFinalBlock(input, 0, input.Length);
+
+                    Assert.Equal(output1, output2);
+                }
+            }
+        }
+
+        [Theory]
+        [InlineData(CipherMode.CBC, 0)]
+        [InlineData(CipherMode.CFB, 8)]
+        [InlineData(CipherMode.CFB, 64)]
+        [InlineData(CipherMode.ECB, 0)]
+        public static void DecryptorReuse_LeadsToSameResults(CipherMode cipherMode, int feedbackSize)
+        {
+            // AppleCCCryptor does not allow calling Reset on CFB cipher.
+            // this test validates that the behavior is taken into consideration.
+            var input = "896072ab28e5fdfc9e8b3610627bf27a".HexToByteArray();
+            var key = "c179d0fdd073a1910e51f1d5fe70047ac179d0fdd073a191".HexToByteArray();
+            var iv = "b956d5426d02b247".HexToByteArray();
+
+            using (TripleDES tdes = TripleDESFactory.Create())
+            {
+                tdes.Mode = cipherMode;
+                tdes.Key = key;
+                tdes.IV = iv;
+                tdes.Padding = PaddingMode.None;
+
+                if (feedbackSize > 0)
+                {
+                    tdes.FeedbackSize = feedbackSize;
+                }
+
+                using (ICryptoTransform transform = tdes.CreateDecryptor())
+                {
+                    byte[] output1 = transform.TransformFinalBlock(input, 0, input.Length);
+                    byte[] output2 = transform.TransformFinalBlock(input, 0, input.Length);
+
+                    Assert.Equal(output1, output2);
+                }
+            }
+        }
+
         [Fact]
         public static void VerifyKnownTransform_CFB64_NoPadding_1()
         {

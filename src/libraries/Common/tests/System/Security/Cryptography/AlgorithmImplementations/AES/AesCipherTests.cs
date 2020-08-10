@@ -881,6 +881,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
                 aes.Mode = cipherMode;
                 aes.Key = key;
                 aes.IV = iv;
+                aes.Padding = PaddingMode.None;
 
                 if (feedbackSize > 0)
                 {
