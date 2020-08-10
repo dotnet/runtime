@@ -110,7 +110,7 @@ namespace ObjectStackAllocation
                 Console.WriteLine("GCStress is enabled");
                 expectedAllocationKind = AllocationKind.Undefined;
             }
-            else if (!SPCOptimizationsEnabled()) {
+            else if (!SPCOptimizationsEnabled() && !Crossgen2Test()) {
                 Console.WriteLine("System.Private.CoreLib.dll optimizations are disabled");
                 expectedAllocationKind = AllocationKind.Heap;
             }
@@ -179,6 +179,12 @@ namespace ObjectStackAllocation
         static bool GCStressEnabled()
         {
             return Environment.GetEnvironmentVariable("COMPlus_GCStress") != null;
+        }
+
+        static bool Crossgen2Test()
+        {
+            // CrossGen2 doesn't respect the debuggable attribute
+            return Environment.GetEnvironmentVariable("RunCrossGen2") != null;
         }
 
         static void CallTestAndVerifyAllocation(Test test, int expectedResult, AllocationKind expectedAllocationsKind)

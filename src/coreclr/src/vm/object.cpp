@@ -187,9 +187,7 @@ TypeHandle Object::GetGCSafeTypeHandleIfPossible() const
     //         MT of the innermost element is not getting unloaded. This then ensures the
     //         MT of the original object (i.e., array) itself must not be getting
     //         unloaded either, since the MTs of arrays and of their elements are
-    //         allocated on the same loader heap, except the case where the array is
-    //         Object[], in which case its MT is in mscorlib and thus doesn't unload.
-
+    //         allocated on the same loader allocator.
     Module * pLoaderModule = pMT->GetLoaderModule();
 
     // Don't look up types that are unloading due to Collectible Assemblies. Haven't been
@@ -1536,7 +1534,7 @@ void Nullable::CheckFieldOffsets(TypeHandle nullableType)
     MethodTable* nullableMT = nullableType.GetMethodTable();
 
         // insure that the managed version of the table is the same as the
-        // unmanaged.  Note that we can't do this in mscorlib.h because this
+        // unmanaged.  Note that we can't do this in corelib.h because this
         // class is generic and field layout depends on the instantiation.
 
     _ASSERTE(nullableMT->GetNumInstanceFields() == 2);

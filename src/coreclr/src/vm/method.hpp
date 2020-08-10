@@ -2511,7 +2511,7 @@ class StoredSigMethodDesc : public MethodDesc
 {
   public:
     // Put the sig RVA in here - this allows us to avoid
-    // touching the method desc table when mscorlib is prejitted.
+    // touching the method desc table when CoreLib is prejitted.
 
     RelativePointer<TADDR>           m_pSig;
     DWORD           m_cSig;
@@ -3071,7 +3071,7 @@ public:
         return (ndirect.m_wFlags & kThisCall) != 0;
     }
 
-    // Returns TRUE if this MethodDesc is internal call from mscorlib to mscorwks
+    // Returns TRUE if this MethodDesc is internal call from CoreLib to VM
     BOOL IsQCall() const
     {
         LIMITED_METHOD_DAC_CONTRACT;

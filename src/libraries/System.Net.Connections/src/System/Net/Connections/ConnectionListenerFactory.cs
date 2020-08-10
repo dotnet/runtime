@@ -11,7 +11,7 @@ namespace System.Net.Connections
     /// </summary>
     public abstract class ConnectionListenerFactory : IAsyncDisposable, IDisposable
     {
-        public abstract ValueTask<ConnectionListener> BindAsync(EndPoint? endPoint, IConnectionProperties? options = null, CancellationToken cancellationToken = default);
+        public abstract ValueTask<ConnectionListener> ListenAsync(EndPoint? endPoint, IConnectionProperties? options = null, CancellationToken cancellationToken = default);
 
         public void Dispose()
         {

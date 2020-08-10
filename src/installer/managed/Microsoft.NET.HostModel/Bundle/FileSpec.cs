@@ -31,10 +31,7 @@ namespace Microsoft.NET.HostModel.Bundle
                    !string.IsNullOrWhiteSpace(BundleRelativePath);
         }
 
-        public override string ToString()
-        {
-            return string.Format($"SourcePath: {SourcePath}, RelativePath: {BundleRelativePath} {(Excluded ? "[Excluded]" : "")}");
-        }
+        public override string ToString() => $"SourcePath: {SourcePath}, RelativePath: {BundleRelativePath} {(Excluded ? "[Excluded]" : "")}";
     }
 }
 

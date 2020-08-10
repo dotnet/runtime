@@ -371,7 +371,6 @@ namespace System.Threading.Tasks.Tests
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/38931", TestPlatforms.Browser)]
         public async Task NonGeneric_CreateFromValueTaskSource_Success(bool sync)
         {
             var vt = new ValueTask(sync ? ManualResetValueTaskSourceFactory.Completed(0) : ManualResetValueTaskSourceFactory.Delay(1, 0), 0);
@@ -386,7 +385,6 @@ namespace System.Threading.Tasks.Tests
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/38931", TestPlatforms.Browser)]
         public async Task Generic_CreateFromValueTaskSource_Success(bool sync)
         {
             var vt = new ValueTask<int>(sync ? ManualResetValueTaskSourceFactory.Completed(42) : ManualResetValueTaskSourceFactory.Delay(1, 42), 0);
@@ -401,7 +399,6 @@ namespace System.Threading.Tasks.Tests
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/38931", TestPlatforms.Browser)]
         public async Task NonGeneric_CreateFromValueTaskSource_Faulted(bool sync)
         {
             var vt = new ValueTask(sync ? ManualResetValueTaskSourceFactory.Completed(0, new FormatException()) : ManualResetValueTaskSourceFactory.Delay(1, 0, new FormatException()), 0);
@@ -420,7 +417,6 @@ namespace System.Threading.Tasks.Tests
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/38931", TestPlatforms.Browser)]
         public async Task Generic_CreateFromValueTaskSource_Faulted(bool sync)
         {
             var vt = new ValueTask<int>(sync ? ManualResetValueTaskSourceFactory.Completed(0, new FormatException()) : ManualResetValueTaskSourceFactory.Delay(1, 0, new FormatException()), 0);
@@ -439,7 +435,6 @@ namespace System.Threading.Tasks.Tests
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/38931", TestPlatforms.Browser)]
         public async Task NonGeneric_CreateFromValueTaskSource_Canceled(bool sync)
         {
             var vt = new ValueTask(sync ? ManualResetValueTaskSourceFactory.Completed(0, new OperationCanceledException()) : ManualResetValueTaskSourceFactory.Delay(1, 0, new OperationCanceledException()), 0);
@@ -458,7 +453,6 @@ namespace System.Threading.Tasks.Tests
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/38931", TestPlatforms.Browser)]
         public async Task Generic_CreateFromValueTaskSource_Canceled(bool sync)
         {
             var vt = new ValueTask<int>(sync ? ManualResetValueTaskSourceFactory.Completed(0, new OperationCanceledException()) : ManualResetValueTaskSourceFactory.Delay(1, 0, new OperationCanceledException()), 0);
@@ -578,7 +572,6 @@ namespace System.Threading.Tasks.Tests
         [InlineData(null)]
         [InlineData(false)]
         [InlineData(true)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/38931", TestPlatforms.Browser)]
         public async Task NonGeneric_CreateFromTask_Await_Normal(bool? continueOnCapturedContext)
         {
             var t = new ValueTask(Task.Delay(1));
@@ -593,7 +586,6 @@ namespace System.Threading.Tasks.Tests
         [InlineData(null)]
         [InlineData(false)]
         [InlineData(true)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/38931", TestPlatforms.Browser)]
         public async Task Generic_CreateFromTask_Await_Normal(bool? continueOnCapturedContext)
         {
             var t = new ValueTask<int>(Task.Delay(1).ContinueWith(_ => 42));
@@ -608,7 +600,6 @@ namespace System.Threading.Tasks.Tests
         [InlineData(null)]
         [InlineData(false)]
         [InlineData(true)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/38931", TestPlatforms.Browser)]
         public async Task CreateFromValueTaskSource_Await_Normal(bool? continueOnCapturedContext)
         {
             var mre = new ManualResetValueTaskSource<int>();
@@ -625,7 +616,6 @@ namespace System.Threading.Tasks.Tests
         [InlineData(null)]
         [InlineData(false)]
         [InlineData(true)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/38931", TestPlatforms.Browser)]
         public async Task Generic_CreateFromValueTaskSource_Await_Normal(bool? continueOnCapturedContext)
         {
             var mre = new ManualResetValueTaskSource<int>();
@@ -815,7 +805,6 @@ namespace System.Threading.Tasks.Tests
         [InlineData(CtorMode.Result, true)]
         [InlineData(CtorMode.Task, true)]
         [InlineData(CtorMode.ValueTaskSource, true)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/38931", TestPlatforms.Browser)]
         public async Task Generic_Awaiter_ContinuesOnCapturedContext(CtorMode mode, bool sync)
         {
             await Task.Run(async () =>
@@ -854,7 +843,6 @@ namespace System.Threading.Tasks.Tests
         [InlineData(CtorMode.Result, false, true)]
         [InlineData(CtorMode.Task, false, true)]
         [InlineData(CtorMode.ValueTaskSource, false, true)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/38931", TestPlatforms.Browser)]
         public async Task NonGeneric_ConfiguredAwaiter_ContinuesOnCapturedContext(CtorMode mode, bool continueOnCapturedContext, bool sync)
         {
             await Task.Run(async () =>
@@ -893,7 +881,6 @@ namespace System.Threading.Tasks.Tests
         [InlineData(CtorMode.Result, false, true)]
         [InlineData(CtorMode.Task, false, true)]
         [InlineData(CtorMode.ValueTaskSource, false, true)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/38931", TestPlatforms.Browser)]
         public async Task Generic_ConfiguredAwaiter_ContinuesOnCapturedContext(CtorMode mode, bool continueOnCapturedContext, bool sync)
         {
             await Task.Run(async () =>

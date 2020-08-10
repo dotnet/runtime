@@ -626,7 +626,7 @@ class PEAssembly : public PEFile
         PEImage *          pPEImageNI,
         ICLRPrivAssembly * pHostAssembly);
 
-    // This opens the canonical mscorlib.dll
+    // This opens the canonical System.Private.CoreLib.dll
     static PEAssembly *OpenSystem(IUnknown *pAppCtx);
 #ifdef DACCESS_COMPILE
     virtual void EnumMemoryRegions(CLRDataEnumMemoryFlags flags);

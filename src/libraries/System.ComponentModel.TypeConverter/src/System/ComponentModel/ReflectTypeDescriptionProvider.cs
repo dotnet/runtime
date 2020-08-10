@@ -5,7 +5,6 @@ using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel.Design;
 using System.Diagnostics;
-using System.Drawing;
 using System.Globalization;
 using System.Linq;
 using System.Reflection;
@@ -38,7 +37,7 @@ namespace System.ComponentModel
         // This is where we store the various converters, etc for the intrinsic types.
         //
         private static Hashtable s_editorTables;
-        private static Hashtable s_intrinsicTypeConverters;
+        private static Dictionary<object, IntrinsicTypeConverterData> s_intrinsicTypeConverters;
 
         // For converters, etc that are bound to class attribute data, rather than a class
         // type, we have special key sentinel values that we put into the hash table.
@@ -94,45 +93,88 @@ namespace System.ComponentModel
         private static Hashtable EditorTables => LazyInitializer.EnsureInitialized(ref s_editorTables, () => new Hashtable(4));
 
         /// <summary>
-        /// This is a table we create for intrinsic types.
-        /// There should be entries here ONLY for intrinsic
-        /// types, as all other types we should be able to
-        /// add attributes directly as metadata.
+        /// Provides a way to create <see cref="TypeConverter"/> instances, and cache them where applicable.
         /// </summary>
-        private static Hashtable IntrinsicTypeConverters => LazyInitializer.EnsureInitialized(ref s_intrinsicTypeConverters, () => new Hashtable
+        private class IntrinsicTypeConverterData
+        {
+            private readonly Func<Type, TypeConverter> _constructionFunc;
+
+            private readonly bool _cacheConverterInstance;
+
+            private TypeConverter _converterInstance;
+
+            /// <summary>
+            /// Creates a new instance of <see cref="IntrinsicTypeConverterData"/>.
+            /// </summary>
+            /// <param name="constructionFunc">
+            /// A func that creates a new <see cref="TypeConverter"/> instance.
+            /// </param>
+            /// <param name="cacheConverterInstance">
+            /// Indicates whether to cache created <see cref="TypeConverter"/> instances. This is false when the converter handles multiple types,
+            /// specifically <see cref="EnumConverter"/>, <see cref="NullableConverter"/>, and <see cref="ReferenceConverter"/>.
+            /// </param>
+            public IntrinsicTypeConverterData(Func<Type, TypeConverter> constructionFunc, bool cacheConverterInstance = true)
+            {
+                _constructionFunc = constructionFunc;
+                _cacheConverterInstance = cacheConverterInstance;
+            }
+
+            public TypeConverter GetOrCreateConverterInstance(Type innerType)
+            {
+                if (!_cacheConverterInstance)
+                {
+                    return _constructionFunc(innerType);
+                }
+
+                _converterInstance ??= _constructionFunc(innerType);
+                return _converterInstance;
+            }
+        }
+
+        /// <summary>
+        /// This is a table we create for intrinsic types.There should be entries here ONLY for
+        /// intrinsic types, as all other types we should be able to add attributes directly as metadata.
+        /// </summary>
+        /// <remarks>
+        /// <see cref="Uri"/> and <see cref="CultureInfo"/> are the only types that can be inherited for which
+        /// we have intrinsic converters for. The appropriate converter needs to be fetched when look-ups are done
+        /// for deriving types. When adding to this cache, consider whether the type can be inherited and add the
+        /// appropriate logic to handle this in <see cref="GetIntrinsicTypeConverter(Type)"/> below.
+        /// </remarks>
+        private static Dictionary<object, IntrinsicTypeConverterData> IntrinsicTypeConverters
+            => LazyInitializer.EnsureInitialized(ref s_intrinsicTypeConverters, () => new Dictionary<object, IntrinsicTypeConverterData>(27)
         {
             // Add the intrinsics
             //
-            [typeof(bool)] = typeof(BooleanConverter),
-            [typeof(byte)] = typeof(ByteConverter),
-            [typeof(sbyte)] = typeof(SByteConverter),
-            [typeof(char)] = typeof(CharConverter),
-            [typeof(double)] = typeof(DoubleConverter),
-            [typeof(string)] = typeof(StringConverter),
-            [typeof(int)] = typeof(Int32Converter),
-            [typeof(short)] = typeof(Int16Converter),
-            [typeof(long)] = typeof(Int64Converter),
-            [typeof(float)] = typeof(SingleConverter),
-            [typeof(ushort)] = typeof(UInt16Converter),
-            [typeof(uint)] = typeof(UInt32Converter),
-            [typeof(ulong)] = typeof(UInt64Converter),
-            [typeof(object)] = typeof(TypeConverter),
-            [typeof(void)] = typeof(TypeConverter),
-            [typeof(CultureInfo)] = typeof(CultureInfoConverter),
-            [typeof(DateTime)] = typeof(DateTimeConverter),
-            [typeof(DateTimeOffset)] = typeof(DateTimeOffsetConverter),
-            [typeof(decimal)] = typeof(DecimalConverter),
-            [typeof(TimeSpan)] = typeof(TimeSpanConverter),
-            [typeof(Guid)] = typeof(GuidConverter),
-            [typeof(Uri)] = typeof(UriTypeConverter),
-            [typeof(Version)] = typeof(VersionConverter),
+            [typeof(bool)] = new IntrinsicTypeConverterData((type) => new BooleanConverter()),
+            [typeof(byte)] = new IntrinsicTypeConverterData((type) => new ByteConverter()),
+            [typeof(sbyte)] = new IntrinsicTypeConverterData((type) => new SByteConverter()),
+            [typeof(char)] = new IntrinsicTypeConverterData((type) => new CharConverter()),
+            [typeof(double)] = new IntrinsicTypeConverterData((type) => new DoubleConverter()),
+            [typeof(string)] = new IntrinsicTypeConverterData((type) => new StringConverter()),
+            [typeof(int)] = new IntrinsicTypeConverterData((type) => new Int32Converter()),
+            [typeof(short)] = new IntrinsicTypeConverterData((type) => new Int16Converter()),
+            [typeof(long)] = new IntrinsicTypeConverterData((type) => new Int64Converter()),
+            [typeof(float)] = new IntrinsicTypeConverterData((type) => new SingleConverter()),
+            [typeof(ushort)] = new IntrinsicTypeConverterData((type) => new UInt16Converter()),
+            [typeof(uint)] = new IntrinsicTypeConverterData((type) => new UInt32Converter()),
+            [typeof(ulong)] = new IntrinsicTypeConverterData((type) => new UInt64Converter()),
+            [typeof(object)] = new IntrinsicTypeConverterData((type) => new TypeConverter()),
+            [typeof(CultureInfo)] = new IntrinsicTypeConverterData((type) => new CultureInfoConverter()),
+            [typeof(DateTime)] = new IntrinsicTypeConverterData((type) => new DateTimeConverter()),
+            [typeof(DateTimeOffset)] = new IntrinsicTypeConverterData((type) => new DateTimeOffsetConverter()),
+            [typeof(decimal)] = new IntrinsicTypeConverterData((type) => new DecimalConverter()),
+            [typeof(TimeSpan)] = new IntrinsicTypeConverterData((type) => new TimeSpanConverter()),
+            [typeof(Guid)] = new IntrinsicTypeConverterData((type) => new GuidConverter()),
+            [typeof(Uri)] = new IntrinsicTypeConverterData((type) => new UriTypeConverter()),
+            [typeof(Version)] = new IntrinsicTypeConverterData((type) => new VersionConverter()),
             // Special cases for things that are not bound to a specific type
             //
-            [typeof(Array)] = typeof(ArrayConverter),
-            [typeof(ICollection)] = typeof(CollectionConverter),
-            [typeof(Enum)] = typeof(EnumConverter),
-            [s_intrinsicNullableKey] = typeof(NullableConverter),
-            [s_intrinsicReferenceKey] = typeof(ReferenceConverter),
+            [typeof(Array)] = new IntrinsicTypeConverterData((type) => new ArrayConverter()),
+            [typeof(ICollection)] = new IntrinsicTypeConverterData((type) => new CollectionConverter()),
+            [typeof(Enum)] = new IntrinsicTypeConverterData((type) => new EnumConverter(type), cacheConverterInstance: false),
+            [s_intrinsicNullableKey] = new IntrinsicTypeConverterData((type) => new NullableConverter(type), cacheConverterInstance: false),
+            [s_intrinsicReferenceKey] = new IntrinsicTypeConverterData((type) => new ReferenceConverter(type), cacheConverterInstance: false),
         });
 
         private static Hashtable PropertyCache => LazyInitializer.EnsureInitialized(ref s_propertyCache, () => new Hashtable());
@@ -1216,14 +1258,14 @@ namespace System.ComponentModel
 
         /// <summary>
         /// Searches the provided intrinsic hashtable for a match with the object type.
-        /// At the beginning, the hashtable contains types for the various converters.
+        /// At the beginning, the hashtable contains types for the various editors.
         /// As this table is searched, the types for these objects
         /// are replaced with instances, so we only create as needed. This method
         /// does the search up the base class hierarchy and will create instances
         /// for types as needed. These instances are stored back into the table
         /// for the base type, and for the original component type, for fast access.
         /// </summary>
-        private static object SearchIntrinsicTable(Hashtable table, Type callingType)
+        private static object GetIntrinsicTypeEditor(Hashtable table, Type callingType)
         {
             object hashEntry = null;
 
@@ -1337,6 +1379,77 @@ namespace System.ComponentModel
             }
 
             return hashEntry;
+        }
+
+        /// <summary>
+        /// Searches the intrinsic converter dictionary for a match with the object type.
+        /// The strongly-typed dictionary maps object types to converter data objects which lazily
+        /// creates (and caches for re-use, where applicable) converter instances.
+        /// </summary>
+        private static TypeConverter GetIntrinsicTypeConverter(Type callingType)
+        {
+            TypeConverter converter;
+
+            // We take a lock on this dictionary. Nothing in this code calls out to
+            // other methods that lock, so it should be fairly safe to grab this lock.
+            lock (IntrinsicTypeConverters)
+            {
+                if (!IntrinsicTypeConverters.TryGetValue(callingType, out IntrinsicTypeConverterData converterData))
+                {
+                    if (callingType.IsEnum)
+                    {
+                        converterData = IntrinsicTypeConverters[typeof(Enum)];
+                    }
+                    else if (callingType.IsArray)
+                    {
+                        converterData = IntrinsicTypeConverters[typeof(Array)];
+                    }
+                    else if (callingType.IsGenericType && callingType.GetGenericTypeDefinition() == typeof(Nullable<>))
+                    {
+                        converterData = IntrinsicTypeConverters[s_intrinsicNullableKey];
+                    }
+                    else if (typeof(ICollection).IsAssignableFrom(callingType))
+                    {
+                        converterData = IntrinsicTypeConverters[typeof(ICollection)];
+                    }
+                    else if (callingType.IsInterface)
+                    {
+                        converterData = IntrinsicTypeConverters[s_intrinsicReferenceKey];
+                    }
+                    else
+                    {
+                        // Uri and CultureInfo are the only types that can be derived from for which we have intrinsic converters.
+                        // Check if the calling type derives from either and return the appropriate converter.
+
+                        // We should have fetched converters for these types above.
+                        Debug.Assert(callingType != typeof(Uri) && callingType != typeof(CultureInfo));
+
+                        Type key = null;
+
+                        Type baseType = callingType.BaseType;
+                        while (baseType != null && baseType != typeof(object))
+                        {
+                            if (baseType == typeof(Uri) || baseType == typeof(CultureInfo))
+                            {
+                                key = baseType;
+                                break;
+                            }
+
+                            baseType = baseType.BaseType;
+                        }
+
+                        // Handle other reference and value types. An instance of TypeConverter itself created and returned below.
+                        key ??= typeof(object);
+
+                        converterData = IntrinsicTypeConverters[key];
+                    }
+                }
+
+                // This needs to be done within the lock as the dictionary value may be mutated in the following method call.
+                converter = converterData.GetOrCreateConverterInstance(callingType);
+            }
+
+            return converter;
         }
     }
 }

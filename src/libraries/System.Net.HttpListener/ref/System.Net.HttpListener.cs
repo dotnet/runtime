@@ -139,11 +139,11 @@ namespace System.Net
     {
         internal HttpListenerTimeoutManager() { }
         public System.TimeSpan DrainEntityBody { get { throw null; } set { } }
-        public System.TimeSpan EntityBody { get { throw null; } [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")] set { } }
-        public System.TimeSpan HeaderWait { get { throw null; } [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")] set { } }
+        public System.TimeSpan EntityBody { get { throw null; } [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")] set { } }
+        public System.TimeSpan HeaderWait { get { throw null; } [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")] set { } }
         public System.TimeSpan IdleConnection { get { throw null; } set { } }
-        public long MinSendBytesPerSecond { get { throw null; } [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")] set { } }
-        public System.TimeSpan RequestQueue { get { throw null; } [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")] set { } }
+        public long MinSendBytesPerSecond { get { throw null; } [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")] set { } }
+        public System.TimeSpan RequestQueue { get { throw null; } [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")] set { } }
     }
 }
 namespace System.Net.WebSockets

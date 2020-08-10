@@ -150,12 +150,12 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                     {
                         foreach (X509ChainStatus chainStatus in chain.ChainStatus)
                         {
-                            _log.WriteLine(string.Format($"X509Certificate2.Verify error: {testName}, {chainStatus.Status}, {chainStatus.StatusInformation}"));
+                            _log.WriteLine($"X509Certificate2.Verify error: {testName}, {chainStatus.Status}, {chainStatus.StatusInformation}");
                         }
                     }
                     else
                     {
-                        _log.WriteLine(string.Format($"X509Certificate2.Verify expected error; received none: {testName}"));
+                        _log.WriteLine($"X509Certificate2.Verify expected error; received none: {testName}");
                     }
                 }
             }

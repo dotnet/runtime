@@ -22,7 +22,7 @@ namespace System.Runtime.InteropServices
             }
         }
 
-        [MinimumOSPlatform("windows7.0")]
+        [SupportedOSPlatform("windows")]
         public object? WrappedObject { get; }
     }
 }

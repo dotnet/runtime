@@ -46,3 +46,5 @@ set(HEADERS
 set(SKIP_VERSIONING 1)
 set(BUILD_OBJECT_LIBRARY 1)
 include(../../lib_static.cmake)
+
+add_definitions(-DHOSTPOLICY_EMBEDDED)

@@ -35,10 +35,8 @@ namespace System.Threading
         private readonly T _PreviousValue_k__BackingField;
         private readonly T _CurrentValue_k__BackingField;
         private readonly int _dummyPrimitive;
-        [System.Diagnostics.CodeAnalysis.MaybeNullAttribute]
-        public T CurrentValue { get { throw null; } }
-        [System.Diagnostics.CodeAnalysis.MaybeNullAttribute]
-        public T PreviousValue { get { throw null; } }
+        public T? CurrentValue { get { throw null; } }
+        public T? PreviousValue { get { throw null; } }
         public bool ThreadContextChanged { get { throw null; } }
     }
     public sealed partial class AsyncLocal<T>
@@ -115,11 +113,11 @@ namespace System.Threading
         public EventWaitHandle(bool initialState, System.Threading.EventResetMode mode) { }
         public EventWaitHandle(bool initialState, System.Threading.EventResetMode mode, string? name) { }
         public EventWaitHandle(bool initialState, System.Threading.EventResetMode mode, string? name, out bool createdNew) { throw null; }
-        [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")]
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public static System.Threading.EventWaitHandle OpenExisting(string name) { throw null; }
         public bool Reset() { throw null; }
         public bool Set() { throw null; }
-        [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")]
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public static bool TryOpenExisting(string name, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out System.Threading.EventWaitHandle? result) { throw null; }
     }
     public sealed partial class ExecutionContext : System.IDisposable, System.Runtime.Serialization.ISerializable
@@ -153,61 +151,61 @@ namespace System.Threading
     public static partial class Interlocked
     {
         public static int Add(ref int location1, int value) { throw null; }
+        public static long Add(ref long location1, long value) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static uint Add(ref uint location1, uint value) { throw null; }
-        public static long Add(ref long location1, long value) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static ulong Add(ref ulong location1, ulong value) { throw null; }
         public static int And(ref int location1, int value) { throw null; }
+        public static long And(ref long location1, long value) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static uint And(ref uint location1, uint value) { throw null; }
-        public static long And(ref long location1, long value) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static ulong And(ref ulong location1, ulong value) { throw null; }
         public static double CompareExchange(ref double location1, double value, double comparand) { throw null; }
         public static int CompareExchange(ref int location1, int value, int comparand) { throw null; }
-        [System.CLSCompliantAttribute(false)]
-        public static uint CompareExchange(ref uint location1, uint value, uint comparand) { throw null; }
         public static long CompareExchange(ref long location1, long value, long comparand) { throw null; }
-        [System.CLSCompliantAttribute(false)]
-        public static ulong CompareExchange(ref ulong location1, ulong value, ulong comparand) { throw null; }
         public static System.IntPtr CompareExchange(ref System.IntPtr location1, System.IntPtr value, System.IntPtr comparand) { throw null; }
         [return: System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute("location1")]
         public static object? CompareExchange(ref object? location1, object? value, object? comparand) { throw null; }
         public static float CompareExchange(ref float location1, float value, float comparand) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static uint CompareExchange(ref uint location1, uint value, uint comparand) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static ulong CompareExchange(ref ulong location1, ulong value, ulong comparand) { throw null; }
         [return: System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute("location1")]
         public static T CompareExchange<T>(ref T location1, T value, T comparand) where T : class? { throw null; }
         public static int Decrement(ref int location) { throw null; }
+        public static long Decrement(ref long location) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static uint Decrement(ref uint location) { throw null; }
-        public static long Decrement(ref long location) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static ulong Decrement(ref ulong location) { throw null; }
         public static double Exchange(ref double location1, double value) { throw null; }
         public static int Exchange(ref int location1, int value) { throw null; }
-        [System.CLSCompliantAttribute(false)]
-        public static uint Exchange(ref uint location1, uint value) { throw null; }
         public static long Exchange(ref long location1, long value) { throw null; }
-        [System.CLSCompliantAttribute(false)]
-        public static ulong Exchange(ref ulong location1, ulong value) { throw null; }
         public static System.IntPtr Exchange(ref System.IntPtr location1, System.IntPtr value) { throw null; }
         [return: System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute("location1")]
         public static object? Exchange([System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute("value")] ref object? location1, object? value) { throw null; }
         public static float Exchange(ref float location1, float value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static uint Exchange(ref uint location1, uint value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static ulong Exchange(ref ulong location1, ulong value) { throw null; }
         [return: System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute("location1")]
         public static T Exchange<T>([System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute("value")] ref T location1, T value) where T : class? { throw null; }
         public static int Increment(ref int location) { throw null; }
+        public static long Increment(ref long location) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static uint Increment(ref uint location) { throw null; }
-        public static long Increment(ref long location) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static ulong Increment(ref ulong location) { throw null; }
         public static void MemoryBarrier() { }
         public static void MemoryBarrierProcessWide() { }
         public static int Or(ref int location1, int value) { throw null; }
+        public static long Or(ref long location1, long value) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static uint Or(ref uint location1, uint value) { throw null; }
-        public static long Or(ref long location1, long value) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static ulong Or(ref ulong location1, ulong value) { throw null; }
         public static long Read(ref long location) { throw null; }
@@ -350,11 +348,11 @@ namespace System.Threading
         public Semaphore(int initialCount, int maximumCount) { }
         public Semaphore(int initialCount, int maximumCount, string? name) { }
         public Semaphore(int initialCount, int maximumCount, string? name, out bool createdNew) { throw null; }
-        [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")]
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public static System.Threading.Semaphore OpenExisting(string name) { throw null; }
         public int Release() { throw null; }
         public int Release(int releaseCount) { throw null; }
-        [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")]
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public static bool TryOpenExisting(string name, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out System.Threading.Semaphore? result) { throw null; }
     }
     public partial class SemaphoreFullException : System.SystemException

@@ -191,7 +191,17 @@ namespace System.Net.Http
                 {
                     int bytesRead = await _stream.ReadAsync(_incomingBuffer.AvailableMemory).ConfigureAwait(false);
                     _incomingBuffer.Commit(bytesRead);
-                    if (bytesRead == 0) ThrowPrematureEOF(FrameHeader.Size);
+                    if (bytesRead == 0)
+                    {
+                        if (_incomingBuffer.ActiveLength == 0)
+                        {
+                            ThrowMissingFrame();
+                        }
+                        else
+                        {
+                            ThrowPrematureEOF(FrameHeader.Size);
+                        }
+                    }
                 }
                 while (_incomingBuffer.ActiveLength < FrameHeader.Size);
             }
@@ -229,33 +239,44 @@ namespace System.Net.Http
 
             void ThrowPrematureEOF(int requiredBytes) =>
                 throw new IOException(SR.Format(SR.net_http_invalid_response_premature_eof_bytecount, requiredBytes - _incomingBuffer.ActiveLength));
+
+            void ThrowMissingFrame() =>
+                throw new IOException(SR.net_http_invalid_response_missing_frame);
+
         }
 
         private async Task ProcessIncomingFramesAsync()
         {
             try
             {
-                // Read the initial settings frame.
-                FrameHeader frameHeader = await ReadFrameAsync(initialFrame: true).ConfigureAwait(false);
-                if (frameHeader.Type != FrameType.Settings || frameHeader.AckFlag)
+                FrameHeader frameHeader;
+                try
                 {
-                    ThrowProtocolError();
-                }
-                if (NetEventSource.Log.IsEnabled()) Trace($"Frame 0: {frameHeader}.");
+                    // Read the initial settings frame.
+                    frameHeader = await ReadFrameAsync(initialFrame: true).ConfigureAwait(false);
+                    if (frameHeader.Type != FrameType.Settings || frameHeader.AckFlag)
+                    {
+                        ThrowProtocolError();
+                    }
 
-                // Process the initial SETTINGS frame. This will send an ACK.
-                ProcessSettingsFrame(frameHeader);
+                    if (NetEventSource.Log.IsEnabled()) Trace($"Frame 0: {frameHeader}.");
+
+                    // Process the initial SETTINGS frame. This will send an ACK.
+                    ProcessSettingsFrame(frameHeader);
+                }
+                catch (IOException e)
+                {
+                    throw new IOException(SR.net_http_http2_connection_not_established, e);
+                }
 
                 // Keep processing frames as they arrive.
                 for (long frameNum = 1; ; frameNum++)
                 {
-                    // We could just call ReadFrameAsync here, but we add this code before it for two reasons:
-                    // 1. To provide a better error message when we're unable to read another frame.  We otherwise
-                    //    generally output an error message that's relatively obscure.
-                    // 2. To avoid another state machine allocation in the relatively common case where we
-                    //    currently don't have enough data buffered and issuing a read for the frame header
-                    //    completes asynchronously, but that read ends up also reading enough data to fulfill
-                    //    the entire frame's needs (not just the header).
+                    // We could just call ReadFrameAsync here, but we add this code
+                    // to avoid another state machine allocation in the relatively common case where we
+                    // currently don't have enough data buffered and issuing a read for the frame header
+                    // completes asynchronously, but that read ends up also reading enough data to fulfill
+                    // the entire frame's needs (not just the header).
                     if (_incomingBuffer.ActiveLength < FrameHeader.Size)
                     {
                         _incomingBuffer.EnsureAvailableSpace(FrameHeader.Size - _incomingBuffer.ActiveLength);
@@ -266,10 +287,8 @@ namespace System.Net.Http
                             _incomingBuffer.Commit(bytesRead);
                             if (bytesRead == 0)
                             {
-                                string message = _incomingBuffer.ActiveLength == 0 ?
-                                    SR.net_http_invalid_response_missing_frame :
-                                    SR.Format(SR.net_http_invalid_response_premature_eof_bytecount, FrameHeader.Size - _incomingBuffer.ActiveLength);
-                                throw new IOException(message);
+                                // ReadFrameAsync below will detect that the frame is incomplete and throw the appropriate error.
+                                break;
                             }
                         }
                         while (_incomingBuffer.ActiveLength < FrameHeader.Size);
@@ -471,7 +490,7 @@ namespace System.Net.Http
                 //  - On stream 0, the origin will be specified. HTTP/2 can service multiple origins per connection, and so the server can report origins other than what our pool is using.
                 //  - Otherwise, the origin is implicitly defined by the request stream and must be of length 0.
 
-                if ((frameHeader.StreamId != 0 && originLength == 0) || (frameHeader.StreamId == 0 && span.Length >= originLength && span.Slice(originLength).SequenceEqual(_pool.Http2AltSvcOriginUri)))
+                if ((frameHeader.StreamId != 0 && originLength == 0) || (frameHeader.StreamId == 0 && span.Length >= originLength && span.Slice(0, originLength).SequenceEqual(_pool.Http2AltSvcOriginUri)))
                 {
                     span = span.Slice(originLength);
 
@@ -974,12 +993,12 @@ namespace System.Net.Http
             headerBuffer.Commit(bytesWritten);
         }
 
-        private void WriteLiteralHeader(string name, ReadOnlySpan<string> values, ref ArrayBuffer headerBuffer)
+        private void WriteLiteralHeader(string name, ReadOnlySpan<string> values, Encoding? valueEncoding, ref ArrayBuffer headerBuffer)
         {
             if (NetEventSource.Log.IsEnabled()) Trace($"{nameof(name)}={name}, {nameof(values)}={string.Join(", ", values.ToArray())}");
 
             int bytesWritten;
-            while (!HPackEncoder.EncodeLiteralHeaderFieldWithoutIndexingNewName(name, values, HttpHeaderParser.DefaultSeparator, headerBuffer.AvailableSpan, out bytesWritten))
+            while (!HPackEncoder.EncodeLiteralHeaderFieldWithoutIndexingNewName(name, values, HttpHeaderParser.DefaultSeparator, valueEncoding, headerBuffer.AvailableSpan, out bytesWritten))
             {
                 headerBuffer.EnsureAvailableSpace(headerBuffer.AvailableLength + 1);
             }
@@ -987,12 +1006,12 @@ namespace System.Net.Http
             headerBuffer.Commit(bytesWritten);
         }
 
-        private void WriteLiteralHeaderValues(ReadOnlySpan<string> values, string? separator, ref ArrayBuffer headerBuffer)
+        private void WriteLiteralHeaderValues(ReadOnlySpan<string> values, string? separator, Encoding? valueEncoding, ref ArrayBuffer headerBuffer)
         {
             if (NetEventSource.Log.IsEnabled()) Trace($"{nameof(values)}={string.Join(separator, values.ToArray())}");
 
             int bytesWritten;
-            while (!HPackEncoder.EncodeStringLiterals(values, separator, headerBuffer.AvailableSpan, out bytesWritten))
+            while (!HPackEncoder.EncodeStringLiterals(values, separator, valueEncoding, headerBuffer.AvailableSpan, out bytesWritten))
             {
                 headerBuffer.EnsureAvailableSpace(headerBuffer.AvailableLength + 1);
             }
@@ -1000,12 +1019,12 @@ namespace System.Net.Http
             headerBuffer.Commit(bytesWritten);
         }
 
-        private void WriteLiteralHeaderValue(string value, ref ArrayBuffer headerBuffer)
+        private void WriteLiteralHeaderValue(string value, Encoding? valueEncoding, ref ArrayBuffer headerBuffer)
         {
             if (NetEventSource.Log.IsEnabled()) Trace($"{nameof(value)}={value}");
 
             int bytesWritten;
-            while (!HPackEncoder.EncodeStringLiteral(value, headerBuffer.AvailableSpan, out bytesWritten))
+            while (!HPackEncoder.EncodeStringLiteral(value, valueEncoding, headerBuffer.AvailableSpan, out bytesWritten))
             {
                 headerBuffer.EnsureAvailableSpace(headerBuffer.AvailableLength + 1);
             }
@@ -1026,7 +1045,7 @@ namespace System.Net.Http
             headerBuffer.Commit(bytes.Length);
         }
 
-        private void WriteHeaderCollection(HttpHeaders headers, ref ArrayBuffer headerBuffer)
+        private void WriteHeaderCollection(HttpRequestMessage request, HttpHeaders headers, ref ArrayBuffer headerBuffer)
         {
             if (NetEventSource.Log.IsEnabled()) Trace("");
 
@@ -1035,12 +1054,16 @@ namespace System.Net.Http
                 return;
             }
 
+            HeaderEncodingSelector<HttpRequestMessage>? encodingSelector = _pool.Settings._requestHeaderEncodingSelector;
+
             ref string[]? tmpHeaderValuesArray = ref t_headerValues;
             foreach (KeyValuePair<HeaderDescriptor, object> header in headers.HeaderStore)
             {
                 int headerValuesCount = HttpHeaders.GetValuesAsStrings(header.Key, header.Value, ref tmpHeaderValuesArray);
                 Debug.Assert(headerValuesCount > 0, "No values for header??");
                 ReadOnlySpan<string> headerValues = tmpHeaderValuesArray.AsSpan(0, headerValuesCount);
+
+                Encoding? valueEncoding = encodingSelector?.Invoke(header.Key.Name, request);
 
                 KnownHeader? knownHeader = header.Key.KnownHeader;
                 if (knownHeader != null)
@@ -1058,7 +1081,7 @@ namespace System.Net.Http
                                 if (string.Equals(value, "trailers", StringComparison.OrdinalIgnoreCase))
                                 {
                                     WriteBytes(knownHeader.Http2EncodedName, ref headerBuffer);
-                                    WriteLiteralHeaderValue(value, ref headerBuffer);
+                                    WriteLiteralHeaderValue(value, valueEncoding, ref headerBuffer);
                                     break;
                                 }
                             }
@@ -1081,13 +1104,13 @@ namespace System.Net.Http
                             }
                         }
 
-                        WriteLiteralHeaderValues(headerValues, separator, ref headerBuffer);
+                        WriteLiteralHeaderValues(headerValues, separator, valueEncoding, ref headerBuffer);
                     }
                 }
                 else
                 {
                     // The header is not known: fall back to just encoding the header name and value(s).
-                    WriteLiteralHeader(header.Key.Name, headerValues, ref headerBuffer);
+                    WriteLiteralHeader(header.Key.Name, headerValues, valueEncoding, ref headerBuffer);
                 }
             }
         }
@@ -1142,7 +1165,7 @@ namespace System.Net.Http
 
             if (request.HasHeaders)
             {
-                WriteHeaderCollection(request.Headers, ref headerBuffer);
+                WriteHeaderCollection(request, request.Headers, ref headerBuffer);
             }
 
             // Determine cookies to send.
@@ -1152,7 +1175,9 @@ namespace System.Net.Http
                 if (cookiesFromContainer != string.Empty)
                 {
                     WriteBytes(KnownHeaders.Cookie.Http2EncodedName, ref headerBuffer);
-                    WriteLiteralHeaderValue(cookiesFromContainer, ref headerBuffer);
+
+                    Encoding? cookieEncoding = _pool.Settings._requestHeaderEncodingSelector?.Invoke(KnownHeaders.Cookie.Name, request);
+                    WriteLiteralHeaderValue(cookiesFromContainer, cookieEncoding, ref headerBuffer);
                 }
             }
 
@@ -1163,12 +1188,12 @@ namespace System.Net.Http
                 if (normalizedMethod.MustHaveRequestBody)
                 {
                     WriteBytes(KnownHeaders.ContentLength.Http2EncodedName, ref headerBuffer);
-                    WriteLiteralHeaderValue("0", ref headerBuffer);
+                    WriteLiteralHeaderValue("0", valueEncoding: null, ref headerBuffer);
                 }
             }
             else
             {
-                WriteHeaderCollection(request.Content.Headers, ref headerBuffer);
+                WriteHeaderCollection(request, request.Content.Headers, ref headerBuffer);
             }
         }
 

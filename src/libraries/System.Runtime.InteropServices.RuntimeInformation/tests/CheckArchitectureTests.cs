@@ -44,5 +44,13 @@ namespace System.Runtime.InteropServices.RuntimeInformationTests
             Assert.Equal(osArch, RuntimeInformation.OSArchitecture);
             Assert.Equal(processArch, RuntimeInformation.ProcessArchitecture);
         }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Browser)]
+        public void VerifyBrowserArchitecture()
+        {
+            Assert.Equal(Architecture.Wasm, RuntimeInformation.OSArchitecture);
+            Assert.Equal(Architecture.Wasm, RuntimeInformation.ProcessArchitecture);
+        }
     }
 }

@@ -18,6 +18,8 @@ parameters:
   liveLibrariesBuildConfig: ''    # optional -- live-live libraries configuration to use for the run
   runtimeType: 'coreclr'          # optional -- Sets the runtime as coreclr or mono
   codeGenType: 'JIT'              # optional -- Decides on the codegen technology if running on mono
+  projectFile: ''                 # required -- project file to build helix workitems
+  runKind: ''                     # required -- test category
 
 jobs:
 - template: xplat-pipeline-job.yml
@@ -51,7 +53,7 @@ jobs:
     - IsInternal: ''
     - HelixApiAccessToken: ''
     - HelixPreCommandStemWindows: 'py -3 -m venv %HELIX_WORKITEM_PAYLOAD%\.venv;call %HELIX_WORKITEM_PAYLOAD%\.venv\Scripts\activate.bat;set PYTHONPATH=;py -3 -m pip install --user azure.storage.blob==12.0.0 --force-reinstall;py -3 -m pip install --user azure.storage.queue==12.0.0 --force-reinstall;set "PERFLAB_UPLOAD_TOKEN=$(PerfCommandUploadToken)"'
-    - HelixPreCommandStemLinux: 'sudo apt-get -y install python3-venv;python3 -m venv $HELIX_WORKITEM_PAYLOAD/.venv;source $HELIX_WORKITEM_PAYLOAD/.venv/Scripts/activate;export PYTHONPATH=;pip3 install --user azure.storage.blob==12.0.0 --force-reinstall;pip3 install --user azure.storage.queue==12.0.0 --force-reinstall;export PERFLAB_UPLOAD_TOKEN="$(PerfCommandUploadTokenLinux)"'
+    - HelixPreCommandStemLinux: 'sudo apt-get -y install python3-venv;python3 -m venv $HELIX_WORKITEM_PAYLOAD/.venv;source $HELIX_WORKITEM_PAYLOAD/.venv/Scripts/activate;export PYTHONPATH=;pip3 install --user azure.storage.blob==12.0.0 --force-reinstall;pip3 install --user azure.storage.queue==12.0.0 --force-reinstall;sudo apt-get -y install nodejs;sudo apt-get -y install npm;npm install --prefix $HELIX_WORKITEM_PAYLOAD jsvu -g;$HELIX_WORKITEM_PAYLOAD/bin/jsvu --os=linux64 --engines=v8;export PERFLAB_UPLOAD_TOKEN="$(PerfCommandUploadTokenLinux)"'
     - ExtraMSBuildLogsWindows: 'set MSBUILDDEBUGCOMM=1;set "MSBUILDDEBUGPATH=%HELIX_WORKITEM_UPLOAD_ROOT%"'
     - ExtraMSBuildLogsLinux: 'export MSBUILDDEBUGCOMM=1;export "MSBUILDDEBUGPATH=$HELIX_WORKITEM_UPLOAD_ROOT"'
     - HelixPreCommand: ''
@@ -71,7 +73,7 @@ jobs:
       - ${{ if eq( parameters.osGroup, 'Windows_NT') }}:
         - HelixPreCommand: $(ExtraMSBuildLogsWindows)
       - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
-          - HelixPreCommand: $(ExtraMSBuildLogsLinux)
+          - HelixPreCommand: $(ExtraMSBuildLogsLinux);npm install --prefix $HELIX_WORKITEM_PAYLOAD jsvu -g;$HELIX_WORKITEM_PAYLOAD/bin/jsvu --os=linux64 --engines=v8
     
 
     - ${{ if and(eq(parameters.codeGenType, 'Interpreter'), eq(parameters.runtimeType, 'mono')) }}:
@@ -102,11 +104,11 @@ jobs:
             _Framework: ${{ framework }}
     steps:
     - ${{ parameters.steps }}
-    - powershell: $(Build.SourcesDirectory)\eng\common\performance\performance-setup.ps1 $(IsInternal)$(Interpreter) -Framework $(_Framework) ${{ parameters.extraSetupParameters }}
+    - powershell: $(Build.SourcesDirectory)\eng\common\performance\performance-setup.ps1 $(IsInternal)$(Interpreter) -Framework $(_Framework) -Kind ${{ parameters.runKind }} ${{ parameters.extraSetupParameters }}
       displayName: Performance Setup (Windows)
       condition: and(succeeded(), eq(variables['Agent.Os'], 'Windows_NT'))
       continueOnError: ${{ parameters.continueOnError }}
-    - script: $(Build.SourcesDirectory)/eng/common/performance/performance-setup.sh $(IsInternal)$(Interpreter) --framework $(_Framework) ${{ parameters.extraSetupParameters }}
+    - script: $(Build.SourcesDirectory)/eng/common/performance/performance-setup.sh $(IsInternal)$(Interpreter) --framework $(_Framework) --kind ${{ parameters.runKind }} ${{ parameters.extraSetupParameters }}
       displayName: Performance Setup (Unix)
       condition: and(succeeded(), ne(variables['Agent.Os'], 'Windows_NT'))
       continueOnError: ${{ parameters.continueOnError }}
@@ -132,10 +134,11 @@ jobs:
         WorkItemTimeout: 4:00 # 4 hours
         WorkItemDirectory: '$(WorkItemDirectory)' # WorkItemDirectory can not be empty, so we send it some docs to keep it happy
         CorrelationPayloadDirectory: '$(PayloadDirectory)' # it gets checked out to a folder with shorter path than WorkItemDirectory so we can avoid file name too long exceptions
+        ProjectFile: ${{ parameters.projectFile }}
     - task: PublishPipelineArtifact@1
       displayName: Publish Logs
       inputs:
         targetPath: $(Build.SourcesDirectory)/artifacts/log
-        artifactName: 'Performance_Run_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)_${{ parameters.runtimeType }}_${{ parameters.codeGenType }}'
+        artifactName: 'Performance_Run_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)_${{ parameters.runtimeType }}_${{ parameters.codeGenType }}_${{ parameters.runKind }}'
       continueOnError: true
       condition: always()

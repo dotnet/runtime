@@ -184,29 +184,11 @@
     </PropertyGroup>
   </Target>
 
-  <!-- ILLinkTrimAssembly
-       Examines the "input assembly" for IL that is unreachable from public API and trims that,
-       rewriting the assembly to an "output assembly"
-  -->
-  <UsingTask TaskName="ILLink" AssemblyFile="$(ILLinkTasksPath)" />
-  <Target Name="ILLinkTrimAssembly" Condition="'$(ILLinkTrimAssembly)' == 'true'">
+  <!-- ILLink.Tasks arguments common to runs for both individual libraries and for the entire runtime pack -->
+  <Target Name="SetCommonILLinkArgs">
     <PropertyGroup>
-      <ILLinkArgs>$(ILLinkArgs)-r $(TargetName)</ILLinkArgs>
-      <!-- default action for core assemblies -->
-      <ILLinkArgs>$(ILLinkArgs) -c skip</ILLinkArgs>
-      <!-- default action for non-core assemblies -->
-      <ILLinkArgs>$(ILLinkArgs) -u skip</ILLinkArgs>
-      <!-- trim the target assembly -->
-      <ILLinkArgs>$(ILLinkArgs) -p link $(TargetName)</ILLinkArgs>
       <!-- keep type-forward assemblies (facades) -->
       <ILLinkArgs>$(ILLinkArgs) -t</ILLinkArgs>
-      <ILLinkArgs Condition="'$(ILLinkRewritePDBs)' == 'true' and Exists('$(ILLinkTrimAssemblySymbols)')">$(ILLinkArgs) -b true</ILLinkArgs>
-      <!-- don't remove the embedded root xml resource since ILLink may run again on the assembly -->
-      <ILLinkArgs Condition="'$(ILLinkTrimXml)' != ''">$(ILLinkArgs) --strip-descriptors false</ILLinkArgs>
-      <!-- pass the non-embedded root xml file on the command line -->
-      <ILLinkArgs Condition="'$(ILLinkTrimXmlLibraryBuild)' != ''">$(ILLinkArgs) -x "$(ILLinkTrimXmlLibraryBuild)"</ILLinkArgs>
-      <!-- don't remove the embedded substitutions xml resource since ILLink may run again on the assembly -->
-      <ILLinkArgs Condition="'$(ILLinkSubstitutionsXml)' != ''">$(ILLinkArgs) --strip-substitutions false</ILLinkArgs>
       <!-- don't remove the embedded link attributes xml resource since ILLink may run again on the assembly -->
       <!-- and ignore the link attributes xml file during the library build, since we need the attributes preserved until the final app is linked -->
       <ILLinkArgs>$(ILLinkArgs) --strip-link-attributes false --ignore-link-attributes true</ILLinkArgs>
@@ -214,8 +196,47 @@
       <ILLinkArgs>$(ILLinkArgs) --skip-unresolved true</ILLinkArgs>
       <!-- keep interface implementations -->
       <ILLinkArgs>$(ILLinkArgs) --disable-opt unusedinterfaces</ILLinkArgs>
+    </PropertyGroup>
+  </Target>
+
+  <!-- ILLinkTrimAssembly
+       Examines the "input assembly" for IL that is unreachable from public API and trims that,
+       rewriting the assembly to an "output assembly"
+  -->
+  <UsingTask TaskName="ILLink" AssemblyFile="$(ILLinkTasksPath)" />
+  <Target Name="ILLinkTrimAssembly"
+          Condition="'$(ILLinkTrimAssembly)' == 'true'"
+          DependsOnTargets="SetCommonILLinkArgs">
+    <PropertyGroup>
+      <ILLinkArgs>$(ILLinkArgs) -r $(TargetName)</ILLinkArgs>
+      <!-- default action for core assemblies -->
+      <ILLinkArgs>$(ILLinkArgs) -c skip</ILLinkArgs>
+      <!-- default action for non-core assemblies -->
+      <ILLinkArgs>$(ILLinkArgs) -u skip</ILLinkArgs>
+      <!-- trim the target assembly -->
+      <ILLinkArgs>$(ILLinkArgs) -p link $(TargetName)</ILLinkArgs>
+      <ILLinkArgs Condition="'$(ILLinkRewritePDBs)' == 'true' and Exists('$(ILLinkTrimAssemblySymbols)')">$(ILLinkArgs) -b true</ILLinkArgs>
+      <!-- don't remove the embedded root xml resource since ILLink may run again on the assembly -->
+      <ILLinkArgs Condition="'$(ILLinkTrimXml)' != ''">$(ILLinkArgs) --strip-descriptors false</ILLinkArgs>
+      <!-- pass the non-embedded root xml file on the command line -->
+      <ILLinkArgs Condition="'$(ILLinkTrimXmlLibraryBuild)' != ''">$(ILLinkArgs) -x "$(ILLinkTrimXmlLibraryBuild)"</ILLinkArgs>
+      <!-- don't remove the embedded substitutions xml resource since ILLink may run again on the assembly -->
+      <ILLinkArgs Condition="'$(ILLinkSubstitutionsXml)' != ''">$(ILLinkArgs) --strip-substitutions false</ILLinkArgs>
       <!-- keep DynamicDependencyAttribute unless a project explicitly disables it -->
       <ILLinkArgs Condition="'$(ILLinkKeepDepAttributes)' != 'false'">$(ILLinkArgs) --keep-dep-attributes true</ILLinkArgs>
+      <!-- suppress warnings with the following codes:
+           IL2006: The generic parameter 'T' from A with dynamically accessed member kinds B is passed into the generic parameter
+                   'T' from 'System.Lazy<T>' which requires dynamically accessed member kinds 'PublicParameterlessConstructor'
+           IL2008: Could not find type A specified in resource B
+           IL2009: Could not find method A in type B specified in resource C
+           IL2012: Could not find field A in type B specified in resource C
+           IL2025: Duplicate preserve of A in B
+           IL2026: Calling A which has B can break functionality when trimming application code. The target method might be removed.
+           IL2035: Unresolved assembly A in DynamicDependencyAttribute on B
+           IL2050: P/invoke method A declares a parameter with COM marshalling. Correctness of COM interop
+                   cannot be guaranteed after trimming. Interfaces and interface members might be removed.
+      -->
+      <ILLinkArgs>$(ILLinkArgs) --nowarn IL2006;IL2008;IL2009;IL2012;IL2025;IL2026;IL2035;IL2050</ILLinkArgs>
     </PropertyGroup>
 
     <MakeDir Directories="$(ILLinkTrimInputPath)" />
@@ -255,9 +276,8 @@
     <!-- When running from Desktop MSBuild, DOTNET_HOST_PATH is not set.
          In this case, explicitly specify the path to the dotnet host. -->
     <PropertyGroup Condition=" '$(DOTNET_HOST_PATH)' == '' ">
-      <_DotNetHostDirectory>$(NetCoreRoot)</_DotNetHostDirectory>
-      <_DotNetHostFileName>dotnet</_DotNetHostFileName>
-      <_DotNetHostFileName Condition=" '$(OS)' == 'Windows_NT' ">dotnet.exe</_DotNetHostFileName>
+      <_DotNetHostDirectory>$(DotNetRoot)</_DotNetHostDirectory>
+      <_DotNetHostFileName>$([System.IO.Path]::GetFileName('$(DotNetTool)'))</_DotNetHostFileName>
     </PropertyGroup>
 
     <ILLink AssemblyPaths="$(ILLinkTrimInputAssembly)"

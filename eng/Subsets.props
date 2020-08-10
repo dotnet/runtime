@@ -57,7 +57,7 @@
     <DefaultCoreClrSubsets>clr.runtime+linuxdac+clr.corelib+clr.nativecorelib+clr.tools+clr.packages</DefaultCoreClrSubsets>
 
     <DefaultMonoSubsets Condition="'$(MonoEnableLLVM)' == 'true' and '$(MonoLLVMDir)' == ''">mono.llvm+</DefaultMonoSubsets>
-    <DefaultMonoSubsets>$(DefaultMonoSubsets)mono.runtime+mono.corelib</DefaultMonoSubsets>
+    <DefaultMonoSubsets>$(DefaultMonoSubsets)mono.runtime+mono.corelib+mono.packages</DefaultMonoSubsets>
 
     <DefaultLibrariesSubsets>libs.native+libs.ref+libs.src+libs.pretest+libs.packages</DefaultLibrariesSubsets>
 
@@ -70,6 +70,7 @@
     <_subset>$(_subset.Replace('+mono+', '+$(DefaultMonoSubsets)+'))</_subset>
     <_subset>$(_subset.Replace('+libs+', '+$(DefaultLibrariesSubsets)+'))</_subset>
     <_subset>$(_subset.Replace('+installer+', '+$(DefaultInstallerSubsets)+'))</_subset>
+    <_subset>$(_subset.Replace('+installer.nocorehost+', '+$(DefaultInstallerSubsets.Replace('corehost+', ''))+'))</_subset>
 
     <!-- Surround _subset in dashes to simplify checks below -->
     <_subset>+$(_subset.Trim('+'))+</_subset>
@@ -92,6 +93,7 @@
     <SubsetName Include="Mono" Description="The Mono runtime and CoreLib." />
     <SubsetName Include="Mono.Runtime" Description="The Mono .NET runtime." />
     <SubsetName Include="Mono.CoreLib" Description="The managed System.Private.CoreLib library for Mono." />
+    <SubsetName Include="Mono.Packages" Description="The projects that produce NuGet packages for the Mono runtime." />
 
     <!-- Libs -->
     <SubsetName Include="Libs" Description="The libraries native part, refs and source assemblies, test infra and packages, but NOT the tests (use Libs.Tests to request those explicitly)" />
@@ -105,6 +107,7 @@
     <!-- Installer -->
     <SubsetName Include="Installer" Description="The .NET Core hosts, hosting libraries, bundles, and installers. Includes these projects' tests." />
     <SubsetName Include="CoreHost" Description="The .NET Core hosts." />
+    <SubsetName Include="Installer.NoCoreHost" Description="Hosting libraries, bundles, and installers. Includes these projects' tests." />
     <SubsetName Include="Installer.Managed" Description="The managed .NET hosting projects. This includes HostModel." />
     <SubsetName Include="Installer.DepProjs" Description="The dependency projects. These gather shared framework files and run crossgen on them to turn them into ready-to-run (R2R) assemblies for the current platform." />
     <SubsetName Include="Installer.PkgProjs" Description="The packaging projects. These produce NETCoreApp assets: NuGet packages, installers, zips, and Linux packages." />
@@ -167,6 +170,10 @@
     <ProjectToBuild Include="$(MonoProjectRoot)llvm\llvm-init.proj" Category="mono" />
   </ItemGroup>
 
+  <ItemGroup Condition="$(_subset.Contains('+mono.packages+'))">
+    <ProjectToBuild Include="$(MonoProjectRoot)netcore\nuget\mono-packages.proj" Category="mono" Pack="true" />
+  </ItemGroup>
+
   <ItemGroup Condition="$(_subset.Contains('+mono.runtime+'))">
     <ProjectToBuild Include="$(MonoProjectRoot)mono.proj" Category="mono" />
   </ItemGroup>
@@ -215,15 +222,11 @@
   <ItemGroup Condition="$(_subset.Contains('+installer.depprojs+'))">
     <DepprojProjectToBuild Condition="'$(RuntimeFlavor)' == 'CoreCLR'" Include="$(InstallerProjectRoot)pkg\projects\**\*.depproj" SignPhase="R2RBinaries" BuildInParallel="false" />
     <DepprojProjectToBuild Condition="'$(RuntimeFlavor)' == 'Mono'" Include="$(InstallerProjectRoot)pkg\projects\**\*.depproj" SignPhase="Binaries" BuildInParallel="false" />
-    <!-- Disable netstandard infra for now and discuss if we should delete it: https://github.com/dotnet/runtime/issues/2294-->
-    <DepprojProjectToBuild Remove="$(InstallerProjectRoot)pkg\projects\netstandard\src\netstandard.depproj" BuildInParallel="true" />
     <ProjectToBuild Include="@(DepprojProjectToBuild)" Pack="true" Category="installer" />
   </ItemGroup>
 
   <ItemGroup Condition="$(_subset.Contains('+installer.pkgprojs+'))">
     <PkgprojProjectToBuild Include="$(InstallerProjectRoot)pkg\projects\**\*.pkgproj" SignPhase="MsiFiles" BuildInParallel="false" />
-    <!-- Disable netstandard infra for now and discuss if we should delete it: https://github.com/dotnet/runtime/issues/2294-->
-    <PkgprojProjectToBuild Remove="$(InstallerProjectRoot)pkg\projects\netstandard\pkg\NETStandard.Library.Ref.pkgproj" BuildInParallel="true" />
     <ProjectToBuild Include="@(PkgprojProjectToBuild)" Pack="true" Category="installer" />
   </ItemGroup>
 
