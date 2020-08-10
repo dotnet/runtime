@@ -3,25 +3,54 @@ Linear Scan Register Allocation: Design and Implementation Notes
 Table of Contents
 -----------------
 
-[Overview](#overview)
-
-[Preconditions](#preconditions)
-
-[Post-Conditions](#post-conditions)
-
-[LSRA Phases](#lsra-phases)
-
-[Key Data Structures](#key-data-structures)
-
-[Dumps and Debugging Support](#dumps-and-debugging-support)
-
-[LSRA Stress Modes](#lsra-stress-modes)
-
-[Assertions & Validation](#assertions-validation)
-
-[Future Extensions and Enhancements](#future-extensions-and-enhancements)
-
-[References](#references)
+  * [Overview](#overview)
+  * [Preconditions](#preconditions)
+    + [Lowered IR Form (LIR)](#lowered-ir-form-lir)
+    + [Register Requirements](#register-requirements)
+  * [Post-Conditions](#post-conditions)
+  * [LSRA Phases](#lsra-phases)
+    + [Liveness and Candidate Identification](#liveness-and-candidate-identification)
+    + [Block Ordering](#block-ordering)
+    + [Building Intervals and RefPositions](#building-intervals-and-refpositions)
+    + [Register allocation (doLinearScan)](#register-allocation-dolinearscan)
+  * [Key Data Structures](#key-data-structures)
+    + [Live In](#live-in)
+    + [currentLiveVars](#currentlivevars)
+    + [Referenceable](#referenceable)
+    + [Interval](#interval)
+    + [RegRecord](#regrecord)
+    + [RefPosition](#refposition)
+    + [GenTree Nodes](#gentree-nodes)
+    + [VarToRegMap](#vartoregmap)
+  * [Dumps and Debugging Support](#dumps-and-debugging-support)
+  * [LSRA Stress Modes](#lsra-stress-modes)
+  * [Assertions & Validation](#assertions--validation)
+  * [Future Extensions and Enhancements](#future-extensions-and-enhancements)
+  * [Feature Enhancements](#feature-enhancements)
+    + [Support for Allocating Consecutive Registers](#support-for-allocating-consecutive-registers)
+  * [Code Quality Enhancements](#code-quality-enhancements)
+    + [Merge Allocation of Free and Busy Registers](#merge-allocation-of-free-and-busy-registers)
+    + [Auto-tuning of register selection](#auto-tuning-of-register-selection)
+    + [Pre-allocating high frequency lclVars](#pre-allocating-high-frequency-lclvars)
+    + [Avoid Splitting Loop Backedges](#avoid-splitting-loop-backedges)
+    + [Enable EHWriteThru by default](#enable-ehwritethru-by-default)
+    + [Avoid Spill When Stack Copy is Valid](#avoid-spill-when-stack-copy-is-valid)
+    + [Rematerialization](#rematerialization)
+    + [Improving Reg-Optional Support](#improving-reg-optional-support)
+      - [Reg-Optional Defs](#reg-optional-defs)
+      - [Don't Pre-determine Reg-Optional Operand](#dont-pre-determine-reg-optional-operand)
+      - [Don't Mark DelayFree for Duplicate Operands](#dont-mark-delayfree-for-duplicate-operands)
+    + [Improving Preferencing](#improving-preferencing)
+    + [Leveraging SSA form](#leveraging-ssa-form)
+    + [Spanning trees for physical registers](#spanning-trees-for-physical-registers)
+    + [Improve the handling of def/use conflicts](#improve-the-handling-of-defuse-conflicts)
+  * [Throughput Enhancements](#throughput-enhancements)
+    + [Allocation Window for Min-Opts and Tier 0](#allocation-window-for-min-opts-and-tier-0)
+    + [Distinguish Intra-Block versus Inter-Block Variables](#distinguish-intra-block-versus-inter-block-variables)
+    + [Improve the VarToRegMap](#improve-the-vartoregmap)
+    + [Other Throughput Investigations](#other-throughput-investigations)
+  * [Test and Cleanup Issues](#test-and-cleanup-issues)
+  * [References](#references)
 
 Overview
 --------
