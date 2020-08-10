@@ -1296,7 +1296,7 @@ GetProcInfo(unw_word_t ip, unw_proc_info_t *pip, const libunwindInfo* info, bool
     return false;
 }
 
-#if defined(TARGET_X86) || defined(TARGET_AMD64)
+#if defined(TARGET_AMD64)
 static bool
 StepWithCompactEncodingRBPFrame(const libunwindInfo* info, compact_unwind_encoding_t compactEncoding)
 {
@@ -1501,7 +1501,7 @@ StepWithCompactEncodingArm64(const libunwindInfo* info, compact_unwind_encoding_
 static bool
 StepWithCompactEncoding(const libunwindInfo* info, compact_unwind_encoding_t compactEncoding, unw_word_t functionStart)
 {
-#if defined(TARGET_X86) || defined(TARGET_AMD64)
+#if defined(TARGET_AMD64)
     if (compactEncoding == 0)
     {
         TRACE("Compact unwind missing for %p\n", (void*)info->Context->Rip);
@@ -2011,7 +2011,7 @@ PAL_VirtualUnwindOutOfProc(CONTEXT *context, KNONVOLATILE_CONTEXT_POINTERS *cont
 #ifdef __APPLE__
     unw_proc_info_t procInfo;
     bool step;
-#if defined(TARGET_X86) || defined(TARGET_AMD64)
+#if defined(TARGET_AMD64)
     TRACE("Unwind: rip %p rsp %p rbp %p\n", (void*)context->Rip, (void*)context->Rsp, (void*)context->Rbp);
     result = GetProcInfo(context->Rip, &procInfo, &info, &step, false);
 #elif defined(TARGET_ARM64)

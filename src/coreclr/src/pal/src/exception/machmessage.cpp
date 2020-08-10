@@ -1035,7 +1035,7 @@ thread_act_t MachMessage::GetThreadFromState(thread_state_flavor_t eFlavor, thre
     for (mach_msg_type_number_t i = 0; i < cThreads; i++)
     {
         // Get the general register state of each thread.
-#if defined(HOST_AMD64) || defined(HOST_X86)
+#if defined(HOST_AMD64)
         x86_thread_state_t threadState;
         mach_msg_type_number_t count = x86_THREAD_STATE_COUNT;
         machret = thread_get_state(pThreads[i], x86_THREAD_STATE, (thread_state_t)&threadState, &count);

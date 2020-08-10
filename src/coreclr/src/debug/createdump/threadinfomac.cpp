@@ -25,7 +25,7 @@ ThreadInfo::Initialize()
     m_ppid = 0;
     m_tgid = 0;
 
-#if defined(TARGET_AMD64) || defined(TARGET_X86)
+#if defined(TARGET_AMD64)
     x86_thread_state64_t state;
     mach_msg_type_number_t stateCount = x86_THREAD_STATE64_COUNT;
     kern_return_t result = ::thread_get_state(Port(), x86_THREAD_STATE64, (thread_state_t)&state, &stateCount);

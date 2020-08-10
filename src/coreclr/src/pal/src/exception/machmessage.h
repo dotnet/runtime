@@ -87,7 +87,7 @@ struct MachExceptionInfo
     exception_type_t ExceptionType;
     mach_msg_type_number_t SubcodeCount;
     MACH_EH_TYPE(exception_data_type_t) Subcodes[2];
-#if defined(HOST_AMD64) || defined(HOST_X86)
+#if defined(HOST_AMD64)
     x86_thread_state_t ThreadState;
     x86_float_state_t FloatState;
     x86_debug_state_t DebugState;

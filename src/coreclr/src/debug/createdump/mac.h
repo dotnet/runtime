@@ -68,7 +68,7 @@ typedef struct elf64_note {
   Elf64_Word n_type;    /* Content type */
 } Elf64_Nhdr;
 
-#if defined(TARGET_AMD64) || defined(TARGET_X86)
+#if defined(TARGET_AMD64)
 struct user_fpregs_struct
 {
   unsigned short int    cwd;

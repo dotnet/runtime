@@ -356,7 +356,7 @@ PAL_ERROR CorUnix::CPalThread::DisableMachExceptions()
     return palError;
 }
 
-#if defined(HOST_AMD64) || defined(HOST_X86)
+#if defined(HOST_AMD64)
 // Since HijackFaultingThread pushed the context, exception record and info on the stack, we need to adjust the
 // signature of PAL_DispatchException such that the corresponding arguments are considered to be on the stack
 // per GCC64 calling convention rules. Hence, the first 6 dummy arguments (corresponding to RDI, RSI, RDX,RCX, R8, R9).
@@ -446,7 +446,7 @@ BuildExceptionRecord(
         }
         else
         {
-#if defined(HOST_AMD64) || defined(HOST_X86)
+#if defined(HOST_AMD64)
             exceptionCode = EXCEPTION_ACCESS_VIOLATION;
 #elif defined(HOST_ARM64)
             switch (exceptionInfo.Subcodes[0])
@@ -497,7 +497,7 @@ BuildExceptionRecord(
         {
             switch (exceptionInfo.Subcodes[0])
             {
-#if defined(HOST_AMD64) || defined(HOST_X86)
+#if defined(HOST_AMD64)
                 case EXC_I386_DIV:
                     exceptionCode = EXCEPTION_INT_DIVIDE_BY_ZERO;
                     break;
@@ -545,7 +545,7 @@ BuildExceptionRecord(
 
     // Trace, breakpoint, etc. Details in subcode field.
     case EXC_BREAKPOINT:
-#if defined(HOST_AMD64) || defined(HOST_X86)
+#if defined(HOST_AMD64)
         if (exceptionInfo.Subcodes[0] == EXC_I386_SGL)
         {
             exceptionCode = EXCEPTION_SINGLE_STEP;
@@ -655,7 +655,7 @@ HijackFaultingThread(
     // Fill in the exception record from the exception info
     BuildExceptionRecord(exceptionInfo, &exceptionRecord);
 
-#if defined(HOST_AMD64) || defined(HOST_X86)
+#if defined(HOST_AMD64)
     void **targetSP = (void **)threadContext.Rsp;
 
     threadContext.ContextFlags = CONTEXT_FLOATING_POINT;
@@ -793,7 +793,7 @@ HijackFaultingThread(
     exceptionRecord.ExceptionFlags = EXCEPTION_IS_SIGNAL;
     exceptionRecord.ExceptionRecord = NULL;
 
-#if defined(HOST_AMD64) || defined(HOST_X86)
+#if defined(HOST_AMD64)
     NONPAL_ASSERTE(exceptionInfo.ThreadState.tsh.flavor == x86_THREAD_STATE64);
 
     // Make a copy of the thread state because the one in exceptionInfo needs to be preserved to restore
@@ -845,7 +845,7 @@ HijackFaultingThread(
     // PAL_DispatchExceptionWrapper has an ebp frame, its local variables
     // are the context and exception record, and it has just "called"
     // PAL_DispatchException.
-#if defined(HOST_AMD64) || defined(HOST_X86)
+#if defined(HOST_AMD64)
     *--FramePointer = (void *)ts64.__rip;
     *--FramePointer = (void *)ts64.__rbp;
 
@@ -875,7 +875,7 @@ HijackFaultingThread(
     MachExceptionInfo *pMachExceptionInfo = (MachExceptionInfo *)FramePointer;
     *pMachExceptionInfo = exceptionInfo;
 
-#if defined(HOST_AMD64) || defined(HOST_X86)
+#if defined(HOST_AMD64)
     // Push arguments to PAL_DispatchException
     FramePointer = (void **)((ULONG_PTR)FramePointer - 3 * sizeof(void *));
 
@@ -1047,7 +1047,7 @@ SEHExceptionThread(void *args)
                 for (int i = 0; i < subcode_count; i++)
                     NONPAL_TRACE("ExceptionNotification subcode[%d] = %llx\n", i, (uint64_t) sMessage.GetExceptionCode(i));
 
-#if defined(HOST_AMD64) || defined(HOST_X86)
+#if defined(HOST_AMD64)
                 x86_thread_state64_t threadStateActual;
                 unsigned int count = sizeof(threadStateActual) / sizeof(unsigned);
                 machret = thread_get_state(thread, x86_THREAD_STATE64, (thread_state_t)&threadStateActual, &count);
@@ -1220,7 +1220,7 @@ MachExceptionInfo::MachExceptionInfo(mach_port_t thread, MachMessage& message)
     for (int i = 0; i < SubcodeCount; i++)
         Subcodes[i] = message.GetExceptionCode(i);
 
-#if defined(HOST_AMD64) || defined(HOST_X86)
+#if defined(HOST_AMD64)
     mach_msg_type_number_t count = x86_THREAD_STATE_COUNT;
     machret = thread_get_state(thread, x86_THREAD_STATE, (thread_state_t)&ThreadState, &count);
     CHECK_MACH("thread_get_state", machret);
@@ -1263,7 +1263,7 @@ Return value :
 --*/
 void MachExceptionInfo::RestoreState(mach_port_t thread)
 {
-#if defined(HOST_AMD64) || defined(HOST_X86)
+#if defined(HOST_AMD64)
     // If we are restarting a breakpoint, we need to bump the IP back one to
     // point at the actual int 3 instructions.
     if (ExceptionType == EXC_BREAKPOINT)
@@ -1457,7 +1457,7 @@ InjectActivationInternal(CPalThread* pThread)
 
     if (palError == NO_ERROR)
     {
-#if defined(HOST_AMD64) || defined(HOST_X86)
+#if defined(HOST_AMD64)
         x86_exception_state64_t ExceptionState;
         const thread_state_flavor_t exceptionFlavor = x86_EXCEPTION_STATE64;
         const mach_msg_type_number_t exceptionCount = x86_EXCEPTION_STATE64_COUNT;
@@ -1484,7 +1484,7 @@ InjectActivationInternal(CPalThread* pThread)
                                    &count);
         _ASSERT_MSG(MachRet == KERN_SUCCESS, "thread_get_state for *_EXCEPTION_STATE64\n");
 
-#if defined(HOST_AMD64) || defined(HOST_X86)
+#if defined(HOST_AMD64)
         // Inject the activation only if the thread doesn't have a pending hardware exception
         static const int MaxHardwareExceptionVector = 31;
         if (ExceptionState.__trapno > MaxHardwareExceptionVector)
@@ -1501,7 +1501,7 @@ InjectActivationInternal(CPalThread* pThread)
                                        &count);
             _ASSERT_MSG(MachRet == KERN_SUCCESS, "thread_get_state for *_THREAD_STATE64\n");
 
-#if defined(HOST_AMD64) || defined(HOST_X86)
+#if defined(HOST_AMD64)
             if ((g_safeActivationCheckFunction != NULL) && g_safeActivationCheckFunction(ThreadState.__rip, /* checkingCurrentThread */ FALSE))
             {
                 // TODO: it would be nice to preserve the red zone in case a jitter would want to use it
@@ -1528,7 +1528,7 @@ InjectActivationInternal(CPalThread* pThread)
                 // The ActivationHandler will use the context to resume the execution of the thread
                 // after the activation function returns.
                 CONTEXT *pContext = (CONTEXT *)contextAddress;
-#if defined(HOST_AMD64) || defined(HOST_X86)
+#if defined(HOST_AMD64)
                 pContext->ContextFlags = CONTEXT_FULL | CONTEXT_SEGMENTS;
 #else
                 pContext->ContextFlags = CONTEXT_FULL;
@@ -1542,7 +1542,7 @@ InjectActivationInternal(CPalThread* pThread)
                 MachRet = CONTEXT_GetThreadContextFromPort(threadPort, pContext);
                 _ASSERT_MSG(MachRet == KERN_SUCCESS, "CONTEXT_GetThreadContextFromPort\n");
 
-#if defined(HOST_AMD64) || defined(HOST_X86)
+#if defined(HOST_AMD64)
                 size_t returnAddressAddress = contextAddress - sizeof(size_t);
                 *(size_t*)(returnAddressAddress) =  ActivationHandlerReturnOffset + (size_t)ActivationHandlerWrapper;
 
