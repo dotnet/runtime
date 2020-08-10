@@ -4129,11 +4129,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 GenTree* typeTo   = impStackTop(1).val;
                 GenTree* typeFrom = impStackTop(0).val;
 
-                GenTreeIntCon* node = impTypeIsAssignable(typeTo, typeFrom);
-                if (node != nullptr)
-                {
-                    retNode = node;
-                }
+                retNode = impTypeIsAssignable(typeTo, typeFrom);
                 break;
             }
 
@@ -4142,11 +4138,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 GenTree* typeTo   = impStackTop(0).val;
                 GenTree* typeFrom = impStackTop(1).val;
 
-                GenTreeIntCon* node = impTypeIsAssignable(typeTo, typeFrom);
-                if (node != nullptr)
-                {
-                    retNode = node;
-                }
+                retNode = impTypeIsAssignable(typeTo, typeFrom);
                 break;
             }
 
@@ -4351,7 +4343,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
     return retNode;
 }
 
-GenTreeIntCon* Compiler::impTypeIsAssignable(GenTree* typeTo, GenTree* typeFrom)
+GenTree* Compiler::impTypeIsAssignable(GenTree* typeTo, GenTree* typeFrom)
 {
     // Optimize patterns like:
     //
