@@ -103,7 +103,7 @@ namespace System.Net.Http
                 if (NetEventSource.Log.IsEnabled()) Trace("Connection closing.");
                 _pool.DecrementConnectionCount();
 
-                if (HttpTelemetry.Log.IsEnabled()) _currentRequest?.OnStopped();
+                if (HttpTelemetry.Log.IsEnabled()) _currentRequest?.OnAborted();
 
                 if (disposing)
                 {
