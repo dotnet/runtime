@@ -833,6 +833,36 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
                 feedbackSize: 128);
         }
 
+        [Theory]
+        [InlineData(CipherMode.CBC, 0)]
+        [InlineData(CipherMode.CFB, 128)]
+        [InlineData(CipherMode.CFB, 8)]
+        [InlineData(CipherMode.ECB, 0)]
+        public static void EncryptorReuse_LeadsToSameResults(CipherMode cipherMode, int feedbackSize)
+        {
+            // AppleCCCryptor does not allow calling Reset on CFB cipher.
+            // this test validates that the behavior is taken into consideration.
+            var input = "b72606c98d8e4fabf08839abf7a0ac61".HexToByteArray();
+
+            using (Aes aes = AesFactory.Create())
+            {
+                aes.Mode = cipherMode;
+
+                if (feedbackSize > 0)
+                {
+                    aes.FeedbackSize = feedbackSize;
+                }
+
+                using (ICryptoTransform transform = aes.CreateEncryptor())
+                {
+                    byte[] output1 = transform.TransformFinalBlock(input, 0, input.Length);
+                    byte[] output2 = transform.TransformFinalBlock(input, 0, input.Length);
+
+                    Assert.Equal(output1, output2);
+                }
+            }
+        }
+
         [Fact]
         public static void VerifyKnownTransform_CFB128_256_NoPadding_0_Extended()
         {
