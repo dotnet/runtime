@@ -167,7 +167,7 @@ namespace System.Net.Http
         [MemberNotNull(nameof(_version))]
         private void InitializeValues(HttpMethod method, Uri? requestUri)
         {
-            if (method == null)
+            if (method is null)
             {
                 throw new ArgumentNullException(nameof(method));
             }
