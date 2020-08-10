@@ -92,7 +92,7 @@ namespace Microsoft.Win32.SafeHandles
             return ((fileinfo.Mode & Interop.Sys.FileTypes.S_IFMT) == Interop.Sys.FileTypes.S_IFDIR);
         }
 
-        // Each thread will have its own copy. This locks the file and avoids race conditions if the handle had the last error.
+        // Each thread will have its own copy. This prevents race conditions if the handle had the last error.
         [ThreadStatic]
         internal static Interop.ErrorInfo? t_lastCloseErrorInfo;
 

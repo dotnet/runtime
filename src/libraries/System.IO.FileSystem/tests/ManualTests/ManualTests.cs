@@ -12,20 +12,11 @@ namespace System.IO.ManualTests
     {
         public static bool ManualTestsEnabled => !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("MANUAL_TESTS"));
 
-        [Fact]//[ConditionalFact(nameof(ManualTestsEnabled))]
+        [ConditionalFact(nameof(ManualTestsEnabled))]
         [PlatformSpecific(TestPlatforms.AnyUnix)]
         public static void Throw_FileStreamDispose_WhenRemoteMountRunsOutOfSpace()
         {
             /*
-            Pre-requisites to run this test:
-
-            - The remote machine has a folder ~/share, where a small ext4 1MB drive is mounted.
-            - The remote drive is almost full.
-            - The remote drive has one file, called "copyme.txt", large enough that if we attempt to programatically copy it into
-              the same folder, the action should fail because the file is slightly larger than the available free space in the disk.
-            - The local machine has a folder named "mountedremote" located in the local user's home folder.
-            - The remote folder is mounted into "mountedremote".too
-
 
             Example of mounting a remote folder using sshfs and two Linux machines:
 
@@ -68,7 +59,7 @@ namespace System.IO.ManualTests
                 File.WriteAllBytes(largefile, new byte[925696]);
             }
 
-            // Craete original file if not exists
+            // Create original file if not exists
             if (!File.Exists(origin))
             {
                 File.WriteAllBytes(origin, new byte[8192]);
