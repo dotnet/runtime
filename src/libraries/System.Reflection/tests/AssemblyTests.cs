@@ -30,14 +30,16 @@ namespace System.Reflection.Tests
 {
     public class AssemblyTests : FileCleanupTestBase
     {
-        private string SourceTestAssemblyPath { get; } = Path.Combine(Environment.CurrentDirectory, "TestAssembly.dll");
+        private const string s_sourceTestAssemblyName = "TestAssembly.dll";
+
+        private string SourceTestAssemblyPath { get; } = Path.Combine(Environment.CurrentDirectory, s_sourceTestAssemblyName);
         private string DestTestAssemblyPath { get; }
         private string LoadFromTestPath { get; }
 
         public AssemblyTests()
         {
             // Assembly.Location does not return the file path for single-file deployment targets.
-            DestTestAssemblyPath = Path.Combine(base.TestDirectory, "TestAssembly.dll");
+            DestTestAssemblyPath = Path.Combine(base.TestDirectory, s_sourceTestAssemblyName);
             LoadFromTestPath = Path.Combine(base.TestDirectory, "System.Reflection.Tests.dll");
             File.Copy(SourceTestAssemblyPath, DestTestAssemblyPath);
             string currAssemblyPath = Path.Combine(Environment.CurrentDirectory, "System.Reflection.Tests.dll");
@@ -165,28 +167,11 @@ namespace System.Reflection.Tests
         {
             var inMemBlob = File.ReadAllBytes(SourceTestAssemblyPath);
             var asm = Assembly.Load(inMemBlob);
-            var methods = asm.GetType("GetFileMethods");
-            var getFile = methods.GetMethod("GetFile");
-            try
-            {
-                getFile.Invoke(obj: null, parameters: new[] { "TestAssembly.dll" });
-                Assert.True(false);
-            }
-            catch (TargetInvocationException e)
-            {
-                Assert.IsType<InvalidOperationException>(e.InnerException);
-            }
-
-            var getFiles = methods.GetMethod("GetFiles");
-            try
-            {
-                getFiles.Invoke(obj: null, parameters: null);
-                Assert.True(false);
-            }
-            catch (TargetInvocationException e)
-            {
-                Assert.IsType<InvalidOperationException>(e.InnerException);
-            }
+            Assert.Throws<FileNotFoundException>(() => asm.GetFile(null));
+            Assert.Throws<FileNotFoundException>(() => asm.GetFile(s_sourceTestAssemblyName));
+            Assert.Throws<FileNotFoundException>(() => asm.GetFiles());
+            Assert.Throws<FileNotFoundException>(() => asm.GetFiles(getResourceModules: true));
+            Assert.Throws<FileNotFoundException>(() => asm.GetFiles(getResourceModules: false));
         }
 
         [Fact]

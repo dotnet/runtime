@@ -359,7 +359,7 @@ namespace System.Reflection
             if (Location == "")
             {
                 // Throw if the assembly was loaded from memory, indicated by Location returning an empty string
-                throw new InvalidOperationException(SR.InvalidOperation_NoFileTableInInMemoryAssemblies);
+                throw new FileNotFoundException(SR.InvalidOperation_NoFileTableInInMemoryAssemblies);
             }
 
             RuntimeModule? m = (RuntimeModule?)GetModule(name);
@@ -376,7 +376,7 @@ namespace System.Reflection
             if (Location == "")
             {
                 // Throw if the assembly was loaded from memory, indicated by Location returning an empty string
-                throw new InvalidOperationException(SR.InvalidOperation_NoFileTableInInMemoryAssemblies);
+                throw new FileNotFoundException(SR.InvalidOperation_NoFileTableInInMemoryAssemblies);
             }
 
             Module[] m = GetModules(getResourceModules);

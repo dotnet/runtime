@@ -18,9 +18,3 @@ internal static class Program
          return sum;
     }
 }
-
-public static class GetFileMethods
-{
-    public static FileStream GetFile(string name) => typeof(GetFileMethods).Assembly.GetFile(name);
-    public static FileStream[] GetFiles() => typeof(GetFileMethods).Assembly.GetFiles();
-}
