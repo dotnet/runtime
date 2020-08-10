@@ -78,7 +78,6 @@ namespace Tracing.Tests.ProcessInfoValidation
             string envKey = "TESTKEY";
             string envVal = "TESTVAL";
             System.Environment.SetEnvironmentVariable(envKey, envVal);
-            System.Environment.SetEnvironmentVariable("foo", "");
 
             Stream stream = ConnectionHelper.GetStandardTransport(pid);
 
