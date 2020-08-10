@@ -92,8 +92,9 @@ namespace Microsoft.Win32.SafeHandles
             return ((fileinfo.Mode & Interop.Sys.FileTypes.S_IFMT) == Interop.Sys.FileTypes.S_IFDIR);
         }
 
+        // Each thread will have its own copy. This locks the file and avoids race conditions if the handle had the last error.
         [ThreadStatic]
-        internal Interop.ErrorInfo? t_lastCloseErrorInfo;
+        internal static Interop.ErrorInfo? t_lastCloseErrorInfo;
 
         protected override bool ReleaseHandle()
         {
@@ -112,7 +113,6 @@ namespace Microsoft.Win32.SafeHandles
             if (result != 0)
             {
                 t_lastCloseErrorInfo = Interop.Sys.GetLastErrorInfo();
-                Debug.Fail($"Close failed with result {result} and error {t_lastCloseErrorInfo}");
             }
             return result == 0;
         }

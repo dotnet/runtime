@@ -272,13 +272,13 @@ namespace System.IO
                     // Throw these errors as exceptions when disposing
                     if (_fileHandle != null && !_fileHandle.IsClosed && disposing)
                     {
-                        _fileHandle.t_lastCloseErrorInfo = null;
+                        SafeFileHandle.t_lastCloseErrorInfo = null;
 
                         _fileHandle.Dispose();
 
-                        if (_fileHandle.t_lastCloseErrorInfo != null)
+                        if (SafeFileHandle.t_lastCloseErrorInfo != null)
                         {
-                            throw Interop.GetExceptionForIoErrno(_fileHandle.t_lastCloseErrorInfo.GetValueOrDefault(), _path, isDirectory: false);
+                            throw Interop.GetExceptionForIoErrno(SafeFileHandle.t_lastCloseErrorInfo.GetValueOrDefault(), _path, isDirectory: false);
                         }
                     }
                 }

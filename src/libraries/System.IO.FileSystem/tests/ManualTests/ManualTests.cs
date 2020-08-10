@@ -11,15 +11,15 @@ namespace System.IO.ManualTests
     public class FileSystemManualTests
     {
         public static bool ManualTestsEnabled => !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("MANUAL_TESTS"));
-        
-        [ConditionalFact(nameof(ManualTestsEnabled))]
+
+        [Fact]//[ConditionalFact(nameof(ManualTestsEnabled))]
         [PlatformSpecific(TestPlatforms.AnyUnix)]
         public static void Throw_FileStreamDispose_WhenRemoteMountRunsOutOfSpace()
         {
             /*
             Pre-requisites to run this test:
 
-            - The remote machine has a folder ~/share, where a small 1MB drive is mounted.
+            - The remote machine has a folder ~/share, where a small ext4 1MB drive is mounted.
             - The remote drive is almost full.
             - The remote drive has one file, called "copyme.txt", large enough that if we attempt to programatically copy it into
               the same folder, the action should fail because the file is slightly larger than the available free space in the disk.
@@ -31,13 +31,12 @@ namespace System.IO.ManualTests
 
             In remote machine:
                 - Install openssh-server.
-                - Create a partition of 1 MB. You can use gparted and a spare USB drive. The filesystem does not seem to matter, but the bug could be repro'd with ext4.
-                - Mount the drive in the 
+                - Create an ext4 partition of 1 MB size.
                 - Fill the new drive with files until almost full, leave a couple of bytes free.
                 - Make sure to also include a small file that is larger than the available free space left and name it "copyme.txt".
                 
             In local machine:
-                - Install sshfs and openssh-client
+                - Install sshfs and openssh-client.
                 - Create a local folder inside the current user's home, named "mountedremote":
                     $ mkdir ~/mountedremote
                 - Mount the remote folder into "mountedremote":
@@ -48,27 +47,43 @@ namespace System.IO.ManualTests
                 - Unmount the folder:
                     $ fusermount -u ~/mountedremote
             */
-            
+
             string mountedPath = $"{Environment.GetEnvironmentVariable("HOME")}/mountedremote";
-            string origin      = $"{mountedPath}/copyme.txt";
+            string largefile = $"{mountedPath}/largefile.txt";
+            string origin = $"{mountedPath}/copyme.txt";
             string destination = $"{mountedPath}/destination.txt";
 
-            Assert.True(File.Exists(origin));
+            // Ensure the remote folder exists
+            Assert.True(Directory.Exists(mountedPath));
 
+            // Delete copied file if exists
             if (File.Exists(destination))
             {
                 File.Delete(destination);
             }
 
+            // Create huge file if not exists
+            if (!File.Exists(largefile))
+            {
+                File.WriteAllBytes(largefile, new byte[925696]);
+            }
+
+            // Craete original file if not exists
+            if (!File.Exists(origin))
+            {
+                File.WriteAllBytes(origin, new byte[8192]);
+            }
+
+            Assert.True(File.Exists(largefile));
+            Assert.True(File.Exists(origin));
+
+            using FileStream originStream = new FileStream(origin, FileMode.Open, FileAccess.Read);
+            Stream destinationStream = new FileStream(destination, FileMode.Create, FileAccess.Write);
+            originStream.CopyTo(destinationStream, 1);
+
             Assert.Throws<IOException>(() =>
             {
-                using (FileStream originStream = new FileStream(origin, FileMode.Open, FileAccess.Read))
-                {
-                    using (Stream destinationStream = new FileStream(destination, FileMode.Create, FileAccess.Write))
-                    {
-                        originStream.CopyTo(destinationStream, 1);
-                    }
-                }
+                destinationStream.Dispose();
             });
         }
     }
