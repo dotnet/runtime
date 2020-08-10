@@ -27,7 +27,7 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
-        public void IsAssignableFrom_NullUnderlyingSystemType()
+        public void IsAssignableTo_NullUnderlyingSystemType()
         {
             var testType = new TypeWithNullUnderlyingSystemType();
             Assert.Null(testType.UnderlyingSystemType);
