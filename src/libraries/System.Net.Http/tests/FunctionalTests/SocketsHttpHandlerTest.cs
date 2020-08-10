@@ -163,6 +163,45 @@ namespace System.Net.Http.Functional.Tests
             HttpRequestException e = await Assert.ThrowsAnyAsync<HttpRequestException>(() => client.GetStringAsync($"http://{Guid.NewGuid():N}.com/foo"));
             Assert.IsType<NetworkException>(e.InnerException);
         }
+
+        class CustomConnectionFactory : SocketsConnectionFactory
+        {
+            public CustomConnectionFactory() : base(SocketType.Stream, ProtocolType.Tcp) { }
+
+            public HttpRequestMessage LastHttpRequestMessage { get; private set; }
+
+            public override ValueTask<Connection> ConnectAsync(EndPoint endPoint, IConnectionProperties options = null, CancellationToken cancellationToken = default)
+            {
+                if (options.TryGet(out HttpRequestMessage message))
+                {
+                    LastHttpRequestMessage = message;
+                }
+
+                return base.ConnectAsync(endPoint, options, cancellationToken);
+            }
+        }
+
+        [Fact]
+        public Task CustomConnectionFactory_ConnectAsync_CanCaptureHttpRequestMessage()
+        {
+            return LoopbackServer.CreateClientAndServerAsync(async uri =>
+            {
+                using var connectionFactory = new CustomConnectionFactory();
+                using var handler = new SocketsHttpHandler()
+                {
+                    ConnectionFactory = connectionFactory
+                };
+                using HttpClient client = CreateHttpClient(handler);
+
+                using var request = new HttpRequestMessage(HttpMethod.Get, uri);
+
+                using HttpResponseMessage response = await client.SendAsync(request);
+                string content = await response.Content.ReadAsStringAsync();
+
+                Assert.Equal("OK", content);
+                Assert.Same(request, connectionFactory.LastHttpRequestMessage);
+            }, server => server.HandleRequestAsync(content: "OK"));
+        }
     }
 
     public sealed class SocketsHttpHandler_ConnectionFactoryTest_Http2 : SocketsHttpHandler_ConnectionFactoryTest
