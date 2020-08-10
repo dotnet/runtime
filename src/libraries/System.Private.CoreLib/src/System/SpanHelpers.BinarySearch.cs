@@ -75,7 +75,7 @@ namespace System
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public int CompareTo([AllowNull] T other) => _comparer.Compare(_value, other);
+            public int CompareTo(T? other) => _comparer.Compare(_value, other);
         }
     }
 }

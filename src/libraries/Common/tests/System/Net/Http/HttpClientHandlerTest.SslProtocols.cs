@@ -80,33 +80,19 @@ namespace System.Net.Http.Functional.Tests
         {
             // These protocols are all enabled by default, so we can connect with them both when
             // explicitly specifying it in the client and when not.
-            foreach (SslProtocols protocol in new[] { SslProtocols.Tls, SslProtocols.Tls11, SslProtocols.Tls12 })
+            foreach (SslProtocols protocol in Enum.GetValues(typeof(SslProtocols)))
             {
-                yield return new object[] { protocol, false };
-                yield return new object[] { protocol, true };
-            }
-
-            // These protocols are disabled by default, so we can only connect with them explicitly.
-            // On certain platforms these are completely disabled and cannot be used at all.
-#pragma warning disable 0618
-            if (PlatformDetection.SupportsSsl3)
-            {
-#if !NETFRAMEWORK
-                yield return new object[] { SslProtocols.Ssl3, true };
-#endif
-            }
-            if (PlatformDetection.IsWindows && !PlatformDetection.IsWindows10Version1607OrGreater)
-            {
-                yield return new object[] { SslProtocols.Ssl2, true };
-            }
+                if (protocol != SslProtocols.None && (protocol & SslProtocolSupport.SupportedSslProtocols) == protocol)
+                {
+                    yield return new object[] { protocol, true };
+#pragma warning disable 0618 // SSL2/3 are deprecated
+                     // On certain platforms these are completely disabled and cannot be used at all.
+                    if (protocol != SslProtocols.Ssl2 && protocol != SslProtocols.Ssl3)
+                    {
+                        yield return new object[] { protocol, false };
+                    }
 #pragma warning restore 0618
-            // These protocols are new, and might not be enabled everywhere yet
-            if (PlatformDetection.IsUbuntu1810OrHigher)
-            {
-#if !NETFRAMEWORK
-                yield return new object[] { SslProtocols.Tls13, false };
-                yield return new object[] { SslProtocols.Tls13, true };
-#endif
+                }
             }
         }
 
@@ -129,11 +115,13 @@ namespace System.Net.Http.Functional.Tests
                     // restrictions on minimum TLS/SSL version
                     // We currently know that some platforms like Debian 10 OpenSSL
                     // will by default block < TLS 1.2
+#pragma warning disable 0618 // SSL2/3 are deprecated
 #if !NETFRAMEWORK
                     handler.SslProtocols = SslProtocols.Tls | SslProtocols.Tls11 | SslProtocols.Tls12 | SslProtocols.Tls13;
 #else
                     handler.SslProtocols = SslProtocols.Tls | SslProtocols.Tls11 | SslProtocols.Tls12;
 #endif
+#pragma warning restore 0618
                 }
 
                 var options = new LoopbackServer.Options { UseSsl = true, SslProtocols = acceptedProtocol };

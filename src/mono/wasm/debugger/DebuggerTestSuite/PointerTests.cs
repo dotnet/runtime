@@ -534,12 +534,10 @@ namespace DebuggerTests
                 var complex = GetAndAssertObjectWithName(locals, "complex");
 
                 // try to deref the non-pointer object, as a pointer
-                var props = await GetProperties(complex["value"]["objectId"].Value<string>().Replace(":object:", ":pointer:"));
-                Assert.Empty(props.Values());
+                await GetProperties(complex["value"]["objectId"].Value<string>().Replace(":object:", ":pointer:"), expect_ok: false);
 
                 // try to deref an invalid pointer id
-                props = await GetProperties("dotnet:pointer:123897");
-                Assert.Empty(props.Values());
+                await GetProperties("dotnet:pointer:123897", expect_ok: false);
             });
 
         async Task<JToken[]> CheckArrayElements(JToken array, JToken[] exp_elems)

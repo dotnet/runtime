@@ -3,8 +3,6 @@
     <OutputType>Exe</OutputType>
     <CLRTestKind>BuildAndRun</CLRTestKind>
     <CLRTestPriority>0</CLRTestPriority>
-    <!-- Disable for ilasm round-trip test failure: https://github.com/dotnet/runtime/issues/38508 -->
-    <IlasmRoundTripIncompatible>true</IlasmRoundTripIncompatible>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="CompatibleWithTest.il" />
