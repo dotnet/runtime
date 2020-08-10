@@ -1511,7 +1511,7 @@ InjectActivationInternal(CPalThread* pThread)
                 *(--sp) = ThreadState.__rbp;
                 size_t rbpAddress = (size_t)sp;
 #elif defined(HOST_ARM64)
-            if ((g_safeActivationCheckFunction != NULL) && g_safeActivationCheckFunction(arm_thread_state64_get_lr(ThreadState), /* checkingCurrentThread */ FALSE))
+            if ((g_safeActivationCheckFunction != NULL) && g_safeActivationCheckFunction(arm_thread_state64_get_ip(ThreadState), /* checkingCurrentThread */ FALSE))
             {
                 // TODO: it would be nice to preserve the red zone in case a jitter would want to use it
                 // Do we really care about unwinding through the wrapper?
