@@ -2231,10 +2231,10 @@ namespace System.Text.Tests
             Assert.True(sb1.Equals(sb2));
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/40625")] // Hangs expanding the SB
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public static unsafe void FailureOnLargeString()
         {
+            RemoteInvokeOptions options = new RemoteInvokeOptions { TimeOut = 600 * 1000 }; // Takes a long time on debug builds
             RemoteExecutor.Invoke(() => // Uses lots of memory
             {
                 AssertExtensions.ThrowsAny<ArgumentOutOfRangeException, OutOfMemoryException>(() =>
@@ -2247,7 +2247,7 @@ namespace System.Text.Tests
                 });
 
                 return RemoteExecutor.SuccessExitCode; // workaround https://github.com/dotnet/arcade/issues/5865
-            }).Dispose();
+            }, options).Dispose();
         }
     }
 }
