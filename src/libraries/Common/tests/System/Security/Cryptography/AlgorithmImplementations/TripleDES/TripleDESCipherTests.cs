@@ -102,6 +102,21 @@ namespace System.Security.Cryptography.Encryption.TripleDes.Tests
         }
 
         [Fact]
+        public static void VerifyKnownTransform_CFB64_PKCS7_2()
+        {
+            // NIST CAVS TDESMMT.ZIP TCFB8MMT2.rsp, [DECRYPT] COUNT=2
+            TestTripleDESTransformDirectKey(
+                CipherMode.CFB,
+                PaddingMode.PKCS7,
+                key: "fbb667e340586b5b5ef7c87049b93257fbb667e340586b5b".HexToByteArray(),
+                iv: "459e8b8736715791".HexToByteArray(),
+                plainBytes: "061704".HexToByteArray(),
+                cipherBytes: "931f41eccdab4f99".HexToByteArray(),
+                feedbackSize: 64
+            );
+        }
+
+        [Fact]
         public static void VerifyKnownTransform_CFB8_NoPadding_3()
         {
             // NIST CAVS TDESMMT.ZIP TCFB8MMT2.rsp, [DECRYPT] COUNT=3

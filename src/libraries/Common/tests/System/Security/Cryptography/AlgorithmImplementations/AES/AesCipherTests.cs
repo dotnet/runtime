@@ -669,6 +669,19 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         }
 
         [Fact]
+        public static void VerifyKnownTransform_CFB8_128_PKCS7_4()
+        {
+            TestAesTransformDirectKey(
+                CipherMode.CFB,
+                PaddingMode.PKCS7,
+                key: "5d5e7f20e0a66d3e09e0e5a9912f8a46".HexToByteArray(),
+                iv: "052d7ea0ad1f2956a23b27afe1d87b6b".HexToByteArray(),
+                plainBytes: "b84a90fc6d".HexToByteArray(),
+                cipherBytes: "1a9a61c307a4".HexToByteArray(),
+                feedbackSize: 8);
+        }
+
+        [Fact]
         public static void VerifyKnownTransform_CFB8_128_NoPadding_0_Extended()
         {
             // NIST CAVP AESMMT.ZIP CFB8MMT128.rsp, [ENCRYPT] COUNT=0
