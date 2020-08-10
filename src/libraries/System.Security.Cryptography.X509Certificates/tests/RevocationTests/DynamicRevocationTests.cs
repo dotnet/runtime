@@ -4,7 +4,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using System.Security.Cryptography.X509Certificates.Tests.Common;
 using Xunit;
 
@@ -526,7 +525,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
 
                         // [ActiveIssue("https://github.com/dotnet/runtime/issues/31246")]
                         // Linux reports this code at more levels than Windows does.
-                        if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+                        if (OperatingSystem.IsLinux())
                         {
                             issuerExtraProblems |= X509ChainStatusFlags.NotValidForUsage;
                         }
@@ -610,7 +609,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
 
                         // [ActiveIssue("https://github.com/dotnet/runtime/issues/31246")]
                         // Linux reports this code at more levels than Windows does.
-                        if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+                        if (OperatingSystem.IsLinux())
                         {
                             issuerExtraProblems |= X509ChainStatusFlags.NotValidForUsage;
                         }

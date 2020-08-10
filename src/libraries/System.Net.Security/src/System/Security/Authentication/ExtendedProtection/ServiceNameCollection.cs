@@ -133,7 +133,7 @@ namespace System.Security.Authentication.ExtendedProtection
         /// <summary>
         /// Normalize, check for duplicates, and add if the value is unique.
         /// </summary>
-        private void AddIfNew([MaybeNull]string serviceName)
+        private void AddIfNew(string serviceName)
         {
             if (string.IsNullOrEmpty(serviceName))
             {
@@ -164,6 +164,7 @@ namespace System.Security.Authentication.ExtendedProtection
         // prefix/host:port
         // prefix/host/DistinguishedName
         // prefix/host:port/DistinguishedName
+        [return: NotNullIfNotNull("inputServiceName")]
         private static string? NormalizeServiceName(string? inputServiceName)
         {
             if (string.IsNullOrWhiteSpace(inputServiceName))

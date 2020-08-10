@@ -3,7 +3,6 @@
 
 using Microsoft.Win32.SafeHandles;
 using System.Collections.Generic;
-using System.Runtime.InteropServices;
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 

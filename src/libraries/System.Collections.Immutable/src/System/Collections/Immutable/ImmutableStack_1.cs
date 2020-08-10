@@ -27,8 +27,7 @@ namespace System.Collections.Immutable
         /// <summary>
         /// The element on the top of the stack.
         /// </summary>
-        [MaybeNull]
-        private readonly T _head = default!;
+        private readonly T? _head;
 
         /// <summary>
         /// A stack that contains the rest of the elements (under the top element).

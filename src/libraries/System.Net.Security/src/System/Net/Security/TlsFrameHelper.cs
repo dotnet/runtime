@@ -111,7 +111,6 @@ namespace System.Net.Security
             None = 0,
             Http11 = 1,
             Http2 = 2,
-            Http3 = 4,
             Other = 128
         }
 
@@ -672,10 +671,6 @@ namespace System.Net.Security
                     if (protocol.SequenceEqual(SslApplicationProtocol.Http2.Protocol.Span))
                     {
                         alpn |= ApplicationProtocolInfo.Http2;
-                    }
-                    else if (protocol.SequenceEqual(SslApplicationProtocol.Http3.Protocol.Span))
-                    {
-                        alpn |= ApplicationProtocolInfo.Http3;
                     }
                     else
                     {
