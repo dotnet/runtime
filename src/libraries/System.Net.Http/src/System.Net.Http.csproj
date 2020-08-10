@@ -695,7 +695,6 @@
     <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.Extensions" />
     <Reference Include="System.Runtime.InteropServices" />
-    <Reference Include="System.Runtime.InteropServices.RuntimeInformation" />
     <Reference Include="System.Security.Claims" Condition="'$(TargetsWindows)' == 'true'" />
     <Reference Include="System.Security.Cryptography.Algorithms" />
     <Reference Include="System.Security.Cryptography.Csp" />
