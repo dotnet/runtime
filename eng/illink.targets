@@ -25,6 +25,7 @@
 
   <!-- Inputs and outputs of ILLinkTrimAssembly -->
   <PropertyGroup>
+    <ILLinkDirectory Condition="'$(ILLinkDirectory)' == ''">$(MSBuildProjectDirectory)\ILLink\</ILLinkDirectory>
     <ILLinkTasksDir>$([MSBuild]::NormalizeDirectory('$(PkgMicrosoft_NET_ILLink_Tasks)', 'tools'))</ILLinkTasksDir>
     <ILLinkTasksPath Condition="'$(ILLinkTasksPath)' == '' and '$(MSBuildRuntimeType)' == 'core'">$(ILLinkTasksDir)net5.0/ILLink.Tasks.dll</ILLinkTasksPath>
     <ILLinkTasksPath Condition="'$(ILLinkTasksPath)' == '' and '$(MSBuildRuntimeType)' != 'core'">$(ILLinkTasksDir)net472/ILLink.Tasks.dll</ILLinkTasksPath>
@@ -35,13 +36,15 @@
     <ILLinkTrimInputSymbols>$(ILLinkTrimInputPath)$(TargetName).pdb</ILLinkTrimInputSymbols>
     <ILLinkTrimOutputPath>$(IntermediateOutputPath)</ILLinkTrimOutputPath>
 
-    <ILLinkTrimXml Condition="'$(ILLinkTrimXml)' == '' and Exists('$(MSBuildProjectDirectory)/ILLinkTrim.xml')">$(MSBuildProjectDirectory)/ILLinkTrim.xml</ILLinkTrimXml>
+    <ILLinkTrimXml Condition="'$(ILLinkTrimXml)' == '' and Exists('$(ILLinkDirectory)ILLinkTrim.xml')">$(ILLinkDirectory)ILLinkTrim.xml</ILLinkTrimXml>
     <!-- ILLinkTrim_LibraryBuild.xml files are only used during building the library, not an app. They shouldn't be embedded into the assembly. -->
-    <ILLinkTrimXmlLibraryBuild Condition="'$(ILLinkTrimXmlLibraryBuild)' == '' and Exists('$(MSBuildProjectDirectory)/ILLinkTrim_LibraryBuild.xml')">$(MSBuildProjectDirectory)/ILLinkTrim_LibraryBuild.xml</ILLinkTrimXmlLibraryBuild>
+    <ILLinkTrimXmlLibraryBuild Condition="'$(ILLinkTrimXmlLibraryBuild)' == '' and Exists('$(ILLinkDirectory)ILLinkTrim_LibraryBuild.xml')">$(ILLinkDirectory)ILLinkTrim_LibraryBuild.xml</ILLinkTrimXmlLibraryBuild>
     <ILLinkDescriptorsXmlIntermediatePath>$(IntermediateOutputPath)ILLink.Descriptors.xml</ILLinkDescriptorsXmlIntermediatePath>
 
     <ILLinkSubstitutionsXmlIntermediatePath>$(IntermediateOutputPath)ILLink.Substitutions.xml</ILLinkSubstitutionsXmlIntermediatePath>
     <ILLinkLinkAttributesXmlIntermediatePath>$(IntermediateOutputPath)ILLink.LinkAttributes.xml</ILLinkLinkAttributesXmlIntermediatePath>
+
+    <ILLinkSuppressionsXmlFile>$(ILLinkDirectory)ILLink.Suppressions</ILLinkSuppressionsXmlFile>
 
     <!-- if building a PDB, tell illink to rewrite the symbols file -->
     <ILLinkRewritePDBs Condition="'$(ILLinkRewritePDBs)' == '' and '$(DebugSymbols)' != 'false'">true</ILLinkRewritePDBs>
@@ -57,17 +60,29 @@
   -->
   <ItemGroup Condition="'$(BinPlaceILLinkTrimAssembly)' == 'true'">
     <BinPlaceTargetFramework Include="$(BuildSettings)">
-      <RuntimePath>$(ArtifactsBinDir)ILLinkTrimAssembly/$(BuildSettings)/trimmed</RuntimePath>
+      <RuntimePath>$(ILLinkTrimAssemblyArtifactsRootDir)/trimmed</RuntimePath>
       <ItemName>TrimmedItem</ItemName>
     </BinPlaceTargetFramework>
     <BinPlaceTargetFramework Include="$(BuildSettings)">
-      <RuntimePath>$(ArtifactsBinDir)ILLinkTrimAssembly/$(BuildSettings)/reports</RuntimePath>
+      <RuntimePath>$(ILLinkTrimAssemblyArtifactsRootDir)/reports</RuntimePath>
       <ItemName>TrimmingReport</ItemName>
     </BinPlaceTargetFramework>
     <BinPlaceTargetFramework Include="$(BuildSettings)">
-      <RuntimePath>$(ArtifactsBinDir)ILLinkTrimAssembly/$(BuildSettings)/pretrimmed</RuntimePath>
+      <RuntimePath>$(ILLinkTrimAssemblyArtifactsRootDir)/pretrimmed</RuntimePath>
       <ItemName>PreTrimmedItem</ItemName>
     </BinPlaceTargetFramework>
+  </ItemGroup>
+
+  <ItemGroup>
+    <BinPlaceTargetFrameworks Include="$(NetCoreAppCurrent)">
+      <RuntimePath>$(ILLinkTrimAssemblySuppressionsXmlsDir)</RuntimePath>
+      <ItemName>ILLinkSuppressionsXmls</ItemName>
+    </BinPlaceTargetFrameworks>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ILLinkSuppressionsXmls Condition="Exists('$(ILLinkSuppressionsXmlFile).xml')" Include="$(ILLinkSuppressionsXmlFile).xml" />
+    <ILLinkSuppressionsXmls Update="@(ILLinkSuppressionsXmls)" TargetPath="%(FileName).$(AssemblyName).xml" />
   </ItemGroup>
 
   <Target Name="_EmbedILLinkXmls"
