@@ -5,6 +5,7 @@ Imports System
 Imports System.Reflection
 Imports System.Text
 Imports System.Runtime.InteropServices
+Imports System.Runtime.Versioning
 Imports Microsoft.Win32
 
 Imports Microsoft.VisualBasic.CompilerServices
@@ -117,6 +118,7 @@ Namespace Microsoft.VisualBasic
         ' User interaction functions.
         '============================================================================
 
+        <SupportedOSPlatform("windows")>
         Public Sub Beep()
 #If TARGET_WINDOWS Then
             UnsafeNativeMethods.MessageBeep(0)
@@ -315,6 +317,7 @@ Namespace Microsoft.VisualBasic
         ' Registry functions.
         '============================================================================
 
+        <SupportedOSPlatform("windows")>
         Public Sub DeleteSetting(ByVal AppName As String, Optional ByVal Section As String = Nothing, Optional ByVal Key As String = Nothing)
             Dim AppSection As String
             Dim UserKey As RegistryKey
@@ -346,6 +349,7 @@ Namespace Microsoft.VisualBasic
             End Try
         End Sub
 
+        <SupportedOSPlatform("windows")>
         Public Function GetAllSettings(ByVal AppName As String, ByVal Section As String) As String(,)
             Dim rk As RegistryKey
             Dim sAppSect As String
@@ -404,6 +408,7 @@ Namespace Microsoft.VisualBasic
             End Try
         End Function
 
+        <SupportedOSPlatform("windows")>
         Public Function GetSetting(ByVal AppName As String, ByVal Section As String, ByVal Key As String, Optional ByVal [Default] As String = "") As String
             Dim rk As RegistryKey = Nothing
             Dim sAppSect As String
@@ -443,6 +448,7 @@ Namespace Microsoft.VisualBasic
             End If
         End Function
 
+        <SupportedOSPlatform("windows")>
         Public Sub SaveSetting(ByVal AppName As String, ByVal Section As String, ByVal Key As String, ByVal Setting As String)
             Dim rk As RegistryKey
             Dim sIniSect As String
@@ -534,6 +540,7 @@ Namespace Microsoft.VisualBasic
             End Try
         End Function
 
+        <SupportedOSPlatform("windows")>
         Public Function GetObject(Optional ByVal PathName As String = Nothing, Optional ByVal [Class] As String = Nothing) As Object
             'Only works for Com2 objects, not for COM+ objects.
 
