@@ -481,6 +481,36 @@ namespace DebuggerTests
                 // callFunctionOn
                 result = await ctx.cli.SendCommand("Runtime.callFunctionOn", cfo_args, ctx.token);
                 await CheckValue(result.Value["result"], TNumber(5), "cfo-res");
+
+                cfo_args = JObject.FromObject(new
+                {
+                    functionDeclaration = "function () { return 'test value'; }",
+                        objectId = obj_id
+                });
+
+                // value of @returnByValue doesn't matter, as the returned value
+                // is a primitive
+                if (return_by_val)
+                    cfo_args["returnByValue"] = return_by_val;
+
+                // callFunctionOn
+                result = await ctx.cli.SendCommand("Runtime.callFunctionOn", cfo_args, ctx.token);
+                await CheckValue(result.Value["result"], JObject.FromObject(new { type = "string", value = "test value" }), "cfo-res");
+
+                cfo_args = JObject.FromObject(new
+                {
+                    functionDeclaration = "function () { return null; }",
+                        objectId = obj_id
+                });
+
+                // value of @returnByValue doesn't matter, as the returned value
+                // is a primitive
+                if (return_by_val)
+                    cfo_args["returnByValue"] = return_by_val;
+
+                // callFunctionOn
+                result = await ctx.cli.SendCommand("Runtime.callFunctionOn", cfo_args, ctx.token);
+                await CheckValue(result.Value["result"], JObject.Parse("{ type: 'object', subtype: 'null', value: null }"), "cfo-res");
             });
         }
 
@@ -536,7 +566,7 @@ namespace DebuggerTests
             });
         }
 
-        public static TheoryData<string, string, int, int, string, Func<string[], object>, bool> GettersTestData(bool use_cfo) => new TheoryData<string, string, int, int, string, Func<string[], object>, bool>
+        public static TheoryData<string, string, int, int, string, Func<string[], object>, string, bool> GettersTestData(string local_name, bool use_cfo) => new TheoryData<string, string, int, int, string, Func<string[], object>, string, bool>
         {
             // Chrome sends this one
             {
@@ -546,6 +576,7 @@ namespace DebuggerTests
                 12,
                 "function invokeGetter(arrayStr){ let result=this; const properties=JSON.parse(arrayStr); for(let i=0,n=properties.length;i<n;++i){ result=result[properties[i]]; } return result; }",
                 (arg_strs) => JArray.FromObject(arg_strs).ToString(),
+                local_name,
                 use_cfo
             },
             {
@@ -555,6 +586,7 @@ namespace DebuggerTests
                 12,
                 "function invokeGetter(arrayStr){ let result=this; const properties=JSON.parse(arrayStr); for(let i=0,n=properties.length;i<n;++i){ result=result[properties[i]]; } return result; }",
                 (arg_strs) => JArray.FromObject(arg_strs).ToString(),
+                local_name,
                 use_cfo
             },
 
@@ -566,6 +598,7 @@ namespace DebuggerTests
                 12,
                 "function(e){return this[e]}",
                 (args_str) => args_str?.Length > 0 ? args_str[0] : String.Empty,
+                local_name,
                 use_cfo
             },
             {
@@ -575,14 +608,17 @@ namespace DebuggerTests
                 12,
                 "function(e){return this[e]}",
                 (args_str) => args_str?.Length > 0 ? args_str[0] : String.Empty,
+                local_name,
                 use_cfo
             }
         };
 
         [Theory]
-        [MemberData(nameof(GettersTestData), parameters : false)]
-        [MemberData(nameof(GettersTestData), parameters : true)]
-        public async Task PropertyGettersOnObjectsTest(string eval_fn, string method_name, int line, int col, string cfo_fn, Func<string[], object> get_args_fn, bool use_cfo) => await CheckInspectLocalsAtBreakpointSite(
+        [MemberData(nameof(GettersTestData), "ptd", false)]
+        [MemberData(nameof(GettersTestData), "ptd", true)]
+        [MemberData(nameof (GettersTestData), "swp", false)]
+        [MemberData(nameof (GettersTestData), "swp", true)]
+        public async Task PropertyGettersTest(string eval_fn, string method_name, int line, int col, string cfo_fn, Func<string[], object> get_args_fn, string local_name, bool use_cfo) => await CheckInspectLocalsAtBreakpointSite(
             "dotnet://debugger-test.dll/debugger-cfo-test.cs", line, col,
             method_name,
             $"window.setTimeout(function() {{ {eval_fn} }}, 1);",
@@ -590,55 +626,56 @@ namespace DebuggerTests
             wait_for_event_fn : async(pause_location) =>
             {
                 var frame_locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
-                var dt = new DateTime(10, 9, 8, 7, 6, 5);
 
                 await CheckProps(frame_locals, new
                 {
                     ptd = TObject("DebuggerTests.ClassWithProperties"),
-                        swp = TObject("DebuggerTests.StructWithProperties"),
+                    swp = TObject("DebuggerTests.StructWithProperties")
                 }, "locals#0");
 
-                var ptd = GetAndAssertObjectWithName(frame_locals, "ptd");
+                var obj = GetAndAssertObjectWithName(frame_locals, local_name);
 
-                var ptd_props = await GetProperties(ptd?["value"] ? ["objectId"]?.Value<string>());
-                await CheckProps(ptd_props, new
+                var dt = new DateTime(4, 5, 6, 7, 8, 9);
+                var obj_props = await GetProperties(obj?["value"] ? ["objectId"]?.Value<string>());
+                await CheckProps(obj_props, new
                 {
-                    Int = TGetter("Int"),
-                        String = TGetter("String"),
-                        DT = TGetter("DT"),
-                        IntArray = TGetter("IntArray"),
-                        DTArray = TGetter("DTArray")
-                }, "ptd", num_fields : 7);
+                    V           = TNumber(0xDEADBEEF),
+                    Int         = TGetter("Int"),
+                    String      = TGetter("String"),
+                    DT          = TGetter("DT"),
+                    IntArray    = TGetter("IntArray"),
+                    DTArray     = TGetter("DTArray"),
+                    StringField = TString(null),
+
+                    // Auto properties show w/o getters, because they have
+                    // a backing field
+                    DTAutoProperty = TValueType("System.DateTime", dt.ToString())
+                }, local_name);
 
                 // Automatic properties don't have invokable getters, because we can get their
                 // value from the backing field directly
                 {
-                    dt = new DateTime(4, 5, 6, 7, 8, 9);
-                    var dt_auto_props = await GetObjectOnLocals(ptd_props, "DTAutoProperty");
-                    await CheckDateTime(ptd_props, "DTAutoProperty", dt);
+                    var dt_auto_props = await GetObjectOnLocals(obj_props, "DTAutoProperty");
+                    await CheckDateTime(obj_props, "DTAutoProperty", dt);
                 }
 
                 // Invoke getters, and check values
 
-                var res = await InvokeGetter(ptd, cfo_fn, get_args_fn(new [] { "Int" }));
-                Assert.True(res.IsOk, $"InvokeGetter failed with : {res}");
-                await CheckValue(res.Value["result"], JObject.FromObject(new { type = "number", value = 5 }), "ptd.Int");
-
-                res = await InvokeGetter(ptd, cfo_fn, get_args_fn(new [] { "String" }));
-                Assert.True(res.IsOk, $"InvokeGetter failed with : {res}");
-                await CheckValue(res.Value["result"], JObject.FromObject(new { type = "string", value = "foobar" }), "ptd.String");
-
                 dt = new DateTime(3, 4, 5, 6, 7, 8);
-                res = await InvokeGetter(ptd, cfo_fn, get_args_fn(new [] { "DT" }));
-                Assert.True(res.IsOk, $"InvokeGetter failed with : {res}");
-                await CheckValue(res.Value["result"], TValueType("System.DateTime", dt.ToString()), "ptd.DT");
+                var res = await InvokeGetter(obj, get_args_fn(new [] { "Int" }), cfo_fn);
+                await CheckValue(res.Value["result"], JObject.FromObject(new { type = "number", value = (0xDEADBEEF + (uint) dt.Month) }), $"{local_name}.Int");
+
+                res = await InvokeGetter(obj, get_args_fn(new [] { "String" }), cfo_fn);
+                await CheckValue(res.Value["result"], JObject.FromObject(new { type = "string", value = $"String property, V: 0xDEADBEEF" }), $"{local_name}.String");
+
+                res = await InvokeGetter(obj, get_args_fn(new [] { "DT" }), cfo_fn);
+                await CheckValue(res.Value["result"], TValueType("System.DateTime", dt.ToString()), $"{local_name}.DT");
                 await CheckDateTimeValue(res.Value["result"], dt);
 
                 // Check arrays through getters
 
-                res = await InvokeGetter(ptd, cfo_fn, get_args_fn(new [] { "IntArray" }));
-                Assert.True(res.IsOk, $"InvokeGetter failed with : {res}");
-                await CheckValue(res.Value["result"], TArray("int[]", 2), "ptd.IntArray");
+                res = await InvokeGetter(obj, get_args_fn(new [] { "IntArray" }), cfo_fn);
+                await CheckValue(res.Value["result"], TArray("int[]", 2), $"{local_name}.IntArray");
                 {
                     var arr_elems = await GetProperties(res.Value["result"] ? ["objectId"]?.Value<string>());
                     var exp_elems = new []
@@ -647,12 +684,11 @@ namespace DebuggerTests
                         TNumber(20)
                     };
 
-                    await CheckProps(arr_elems, exp_elems, "ptd.IntArray");
+                    await CheckProps(arr_elems, exp_elems, $"{local_name}.IntArray");
                 }
 
-                res = await InvokeGetter(ptd, cfo_fn, get_args_fn(new [] { "DTArray" }));
-                Assert.True(res.IsOk, $"InvokeGetter failed with : {res}");
-                await CheckValue(res.Value["result"], TArray("System.DateTime[]", 2), "ptd.DTArray");
+                res = await InvokeGetter(obj, get_args_fn(new [] { "DTArray" }), cfo_fn);
+                await CheckValue(res.Value["result"], TArray("System.DateTime[]", 2), $"{local_name}.DTArray");
                 {
                     var dt0 = new DateTime(6, 7, 8, 9, 10, 11);
                     var dt1 = new DateTime(1, 2, 3, 4, 5, 6);
@@ -664,44 +700,20 @@ namespace DebuggerTests
                         TValueType("System.DateTime", dt1.ToString()),
                     };
 
-                    await CheckProps(arr_elems, exp_elems, "ptd.DTArray");
+                    await CheckProps(arr_elems, exp_elems, $"{local_name}.DTArray");
+
+                    res = await InvokeGetter(arr_elems[0], "Date");
+                    await CheckDateTimeValue(res.Value["result"], dt0.Date);
                 }
             });
 
         [Theory]
-        [InlineData("invoke_static_method_async ('[debugger-test] DebuggerTests.CallFunctionOnTest:PropertyGettersTestAsync');", "MoveNext", 38, 12)]
-        [InlineData("invoke_static_method ('[debugger-test] DebuggerTests.CallFunctionOnTest:PropertyGettersTest');", "PropertyGettersTest", 30, 12)]
-        public async Task PropertyGettersOnStructsTest(string eval_fn, string method_name, int line, int col) => await CheckInspectLocalsAtBreakpointSite(
-            "dotnet://debugger-test.dll/debugger-cfo-test.cs", line, col,
-            method_name,
-            $"window.setTimeout(function() {{ {eval_fn} }}, 1);",
-            wait_for_event_fn : async(pause_location) =>
-            {
-                var frame_locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
-                await CheckProps(frame_locals, new
-                {
-                    ptd = TObject("DebuggerTests.ClassWithProperties"),
-                        swp = TObject("DebuggerTests.StructWithProperties"),
-                }, "locals#0");
-
-                var swp = GetAndAssertObjectWithName(frame_locals, "swp");
-
-                var swp_props = await GetProperties(swp?["value"] ? ["objectId"]?.Value<string>());
-                await CheckProps(swp_props, new
-                {
-                    Int = TSymbol("int { get; }"),
-                        String = TSymbol("string { get; }"),
-                        DT = TSymbol("System.DateTime { get; }"),
-                        IntArray = TSymbol("int[] { get; }"),
-                        DTArray = TSymbol("System.DateTime[] { get; }")
-                }, "swp");
-            });
-
-        [Theory]
-        [InlineData("invoke_static_method ('[debugger-test] DebuggerTests.CallFunctionOnTest:PropertyGettersTest');", "dotnet://debugger-test.dll/debugger-cfo-test.cs", 30, 12, false)]
+        [InlineData("invoke_static_method_async ('[debugger-test] DebuggerTests.CallFunctionOnTest:PropertyGettersTestAsync');", "dotnet://debugger-test.dll/debugger-cfo-test.cs", 38, 12, true)]
+        [InlineData("invoke_static_method_async ('[debugger-test] DebuggerTests.CallFunctionOnTest:PropertyGettersTestAsync');", "dotnet://debugger-test.dll/debugger-cfo-test.cs", 38, 12, false)]
         [InlineData("invoke_static_method ('[debugger-test] DebuggerTests.CallFunctionOnTest:PropertyGettersTest');", "dotnet://debugger-test.dll/debugger-cfo-test.cs", 30, 12, true)]
-        [InlineData("invoke_getters_js_test ();", "/other.js", 29, 1, false)]
-        [InlineData("invoke_getters_js_test ();", "/other.js", 29, 1, true)]
+        [InlineData("invoke_static_method ('[debugger-test] DebuggerTests.CallFunctionOnTest:PropertyGettersTest');", "dotnet://debugger-test.dll/debugger-cfo-test.cs", 30, 12, false)]
+        [InlineData("invoke_getters_js_test ();", "/other.js", 30, 1, false)]
+        [InlineData("invoke_getters_js_test ();", "/other.js", 30, 1, true)]
         public async Task CheckAccessorsOnObjectsWithCFO(string eval_fn, string bp_loc, int line, int col, bool roundtrip)
         {
             await RunCallFunctionOn(
@@ -754,14 +766,126 @@ namespace DebuggerTests
             }
         }
 
-        async Task<Result> InvokeGetter(JToken obj, string fn, object arguments) => await ctx.cli.SendCommand(
-            "Runtime.callFunctionOn",
-            JObject.FromObject(new
+        public static TheoryData<string, string, int, int, bool> NegativeTestsData(bool use_cfo = false) => new TheoryData<string, string, int, int, bool>
+        { { "invoke_static_method ('[debugger-test] DebuggerTests.CallFunctionOnTest:MethodForNegativeTests', null);", "dotnet://debugger-test.dll/debugger-cfo-test.cs", 45, 12, use_cfo },
+            { "negative_cfo_test ();", "/other.js", 62, 1, use_cfo }
+        };
+
+        [Theory]
+        [MemberData(nameof(NegativeTestsData), false)]
+        public async Task RunOnInvalidCfoId(string eval_fn, string bp_loc, int line, int col, bool use_cfo) => await RunCallFunctionOn(
+            eval_fn, "function() { return this; }", "ptd",
+            bp_loc, line, col,
+            test_fn : async(cfo_result) =>
             {
-                functionDeclaration = fn,
-                    objectId = obj["value"] ? ["objectId"]?.Value<string>(),
-                    arguments = new [] { new { value = arguments } }
-            }), ctx.token);
+                var ptd_id = cfo_result.Value?["result"] ? ["objectId"]?.Value<string>();
+
+                var cfo_args = JObject.FromObject(new
+                {
+                    functionDeclaration = "function () { return 0; }",
+                        objectId = ptd_id + "_invalid"
+                });
+
+                var res = await ctx.cli.SendCommand("Runtime.callFunctionOn", cfo_args, ctx.token);
+                Assert.True(res.IsErr);
+            });
+
+        [Theory]
+        [MemberData(nameof(NegativeTestsData), false)]
+        public async Task RunOnInvalidThirdSegmentOfObjectId(string eval_fn, string bp_loc, int line, int col, bool use_cfo)
+        {
+            var insp = new Inspector();
+            //Collect events
+            var scripts = SubscribeToScripts(insp);
+
+            await Ready();
+            await insp.Ready(async(cli, token) =>
+            {
+                ctx = new DebugTestContext(cli, insp, token, scripts);
+                ctx.UseCallFunctionOnBeforeGetProperties = use_cfo;
+                await SetBreakpoint(bp_loc, line, col);
+
+                // callFunctionOn
+                var eval_expr = $"window.setTimeout(function() {{ {eval_fn} }}, 1);";
+                var result = await ctx.cli.SendCommand("Runtime.evaluate", JObject.FromObject(new { expression = eval_expr }), ctx.token);
+                var pause_location = await ctx.insp.WaitFor(Inspector.PAUSE);
+
+                var frame_locals = await GetProperties(pause_location["callFrames"][0]["scopeChain"][0]["object"]["objectId"].Value<string>());
+                var ptd = GetAndAssertObjectWithName(frame_locals, "ptd");
+                var ptd_id = ptd["value"]["objectId"].Value<string>();
+
+                var cfo_args = JObject.FromObject(new
+                {
+                    functionDeclaration = "function () { return 0; }",
+                        objectId = ptd_id + "_invalid"
+                });
+
+                var res = await ctx.cli.SendCommand("Runtime.callFunctionOn", cfo_args, ctx.token);
+                Assert.True(res.IsErr);
+            });
+        }
+
+        [Theory]
+        [MemberData(nameof(NegativeTestsData), false)]
+        [MemberData(nameof(NegativeTestsData), true)]
+        public async Task InvalidPropertyGetters(string eval_fn, string bp_loc, int line, int col, bool use_cfo)
+        {
+            var insp = new Inspector();
+            //Collect events
+            var scripts = SubscribeToScripts(insp);
+
+            await Ready();
+            await insp.Ready(async(cli, token) =>
+            {
+                ctx = new DebugTestContext(cli, insp, token, scripts);
+                await SetBreakpoint(bp_loc, line, col);
+                ctx.UseCallFunctionOnBeforeGetProperties = use_cfo;
+
+                // callFunctionOn
+                var eval_expr = $"window.setTimeout(function() {{ {eval_fn} }}, 1);";
+                await SendCommand("Runtime.evaluate", JObject.FromObject(new { expression = eval_expr }));
+                var pause_location = await ctx.insp.WaitFor(Inspector.PAUSE);
+
+                var frame_locals = await GetProperties(pause_location["callFrames"][0]["scopeChain"][0]["object"]["objectId"].Value<string>());
+                var ptd = GetAndAssertObjectWithName(frame_locals, "ptd");
+                var ptd_id = ptd["value"]["objectId"].Value<string>();
+
+                var invalid_args = new object[] { "NonExistant", String.Empty, null, 12310 };
+                foreach (var invalid_arg in invalid_args)
+                {
+                    var getter_res = await InvokeGetter(JObject.FromObject(new { value = new { objectId = ptd_id } }), invalid_arg);
+                    AssertEqual("undefined", getter_res.Value["result"] ? ["type"]?.ToString(), $"Expected to get undefined result for non-existant accessor - {invalid_arg}");
+                }
+            });
+        }
+
+        [Theory]
+        [MemberData(nameof(NegativeTestsData), false)]
+        public async Task ReturnNullFromCFO(string eval_fn, string bp_loc, int line, int col, bool use_cfo) => await RunCallFunctionOn(
+            eval_fn, "function() { return this; }", "ptd",
+            bp_loc, line, col,
+            test_fn : async(result) =>
+            {
+                var is_js = bp_loc.EndsWith(".js");
+                var ptd = JObject.FromObject(new { value = new { objectId = result.Value?["result"] ? ["objectId"]?.Value<string>() } });
+
+                var null_value_json = JObject.Parse("{ 'type': 'object', 'subtype': 'null', 'value': null }");
+                foreach (var returnByValue in new bool?[] { null, false, true })
+                {
+                    var res = await InvokeGetter(ptd, "StringField", returnByValue : returnByValue);
+                    if (is_js)
+                    {
+                        // In js case, it doesn't know the className, so the result looks slightly different
+                        Assert.True(
+                            JObject.DeepEquals(res.Value["result"], null_value_json),
+                            $"[StringField#returnByValue = {returnByValue}] Json didn't match. Actual: {res.Value ["result"]} vs {null_value_json}");
+                    }
+                    else
+                    {
+                        await CheckValue(res.Value["result"], TString(null), "StringField");
+                    }
+                }
+            });
 
         /*
          * 1. runs `Runtime.callFunctionOn` on the objectId,

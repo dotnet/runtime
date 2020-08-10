@@ -343,10 +343,8 @@ namespace System
         public static int FindLastIndex<T>(T[] array, int startIndex, int count, System.Predicate<T> match) { throw null; }
         public static int FindLastIndex<T>(T[] array, int startIndex, System.Predicate<T> match) { throw null; }
         public static int FindLastIndex<T>(T[] array, System.Predicate<T> match) { throw null; }
-        [return: System.Diagnostics.CodeAnalysis.MaybeNullAttribute]
-        public static T FindLast<T>(T[] array, System.Predicate<T> match) { throw null; }
-        [return: System.Diagnostics.CodeAnalysis.MaybeNullAttribute]
-        public static T Find<T>(T[] array, System.Predicate<T> match) { throw null; }
+        public static T? FindLast<T>(T[] array, System.Predicate<T> match) { throw null; }
+        public static T? Find<T>(T[] array, System.Predicate<T> match) { throw null; }
         public static void ForEach<T>(T[] array, System.Action<T> action) { }
         public System.Collections.IEnumerator GetEnumerator() { throw null; }
         public int GetLength(int dimension) { throw null; }
@@ -816,7 +814,7 @@ namespace System
         public CLSCompliantAttribute(bool isCompliant) { }
         public bool IsCompliant { get { throw null; } }
     }
-    public delegate int Comparison<in T>([System.Diagnostics.CodeAnalysis.AllowNullAttribute] T x, [System.Diagnostics.CodeAnalysis.AllowNullAttribute] T y);
+    public delegate int Comparison<in T>(T x, T y);
     public abstract partial class ContextBoundObject : System.MarshalByRefObject
     {
         protected ContextBoundObject() { }
@@ -2298,7 +2296,7 @@ namespace System
     }
     public partial interface IComparable<in T>
     {
-        int CompareTo([System.Diagnostics.CodeAnalysis.AllowNullAttribute] T other);
+        int CompareTo(T? other);
     }
     [System.CLSCompliantAttribute(false)]
     public partial interface IConvertible
@@ -2331,7 +2329,7 @@ namespace System
     }
     public partial interface IEquatable<T>
     {
-        bool Equals([System.Diagnostics.CodeAnalysis.AllowNullAttribute] T other);
+        bool Equals(T? other);
     }
     public partial interface IFormatProvider
     {
@@ -5375,7 +5373,7 @@ namespace System.Collections.Generic
     }
     public partial interface IComparer<in T>
     {
-        int Compare([System.Diagnostics.CodeAnalysis.AllowNullAttribute] T x, [System.Diagnostics.CodeAnalysis.AllowNullAttribute] T y);
+        int Compare(T? x, T? y);
     }
     public partial interface IDictionary<TKey, TValue> : System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<TKey, TValue>>, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<TKey, TValue>>, System.Collections.IEnumerable
     {
@@ -5397,7 +5395,7 @@ namespace System.Collections.Generic
     }
     public partial interface IEqualityComparer<in T>
     {
-        bool Equals([System.Diagnostics.CodeAnalysis.AllowNullAttribute] T x, [System.Diagnostics.CodeAnalysis.AllowNullAttribute] T y);
+        bool Equals(T? x, T? y);
         int GetHashCode([System.Diagnostics.CodeAnalysis.DisallowNullAttribute] T obj);
     }
     public partial interface IList<T> : System.Collections.Generic.ICollection<T>, System.Collections.Generic.IEnumerable<T>, System.Collections.IEnumerable

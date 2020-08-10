@@ -4,7 +4,7 @@
 var BindingSupportLib = {
 	$BINDING__postset: 'BINDING.export_functions (Module);',
 	$BINDING: {
-		BINDING_ASM: "[System.Runtime.InteropServices.JavaScript]System.Runtime.InteropServices.JavaScript.Runtime",
+		BINDING_ASM: "[System.Private.Runtime.InteropServices.JavaScript]System.Runtime.InteropServices.JavaScript.Runtime",
 		mono_wasm_object_registry: [],
 		mono_wasm_ref_counter: 0,
 		mono_wasm_free_list: [],

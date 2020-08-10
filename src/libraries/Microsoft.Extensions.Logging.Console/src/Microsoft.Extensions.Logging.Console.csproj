@@ -28,6 +28,11 @@
              Link="Common\Interop\Windows\Interop.GetStdHandle.cs" />
   </ItemGroup>
 
+  <ItemGroup Condition="'$(TargetFramework)' != '$(NetCoreAppCurrent)'">
+    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\DynamicallyAccessedMembersAttribute.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\DynamicallyAccessedMemberTypes.cs" />
+  </ItemGroup>
+  
   <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0' or
                         $(TargetFramework.StartsWith('net4'))">
     <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Bcl.AsyncInterfaces\src\Microsoft.Bcl.AsyncInterfaces.csproj" />

@@ -35,7 +35,7 @@ namespace System.Net.Security.Tests
 
                 using (var sslStream = new SslStream(client.GetStream(), false, AllowAnyServerCertificate, null, EncryptionPolicy.RequireEncryption))
                 {
-                    await sslStream.AuthenticateAsClientAsync("localhost", null, SslProtocols.Tls, false);
+                    await sslStream.AuthenticateAsClientAsync("localhost", null, SslProtocols.None, false);
 
                     TransportContext context = sslStream.TransportContext;
                     CheckTransportContext(context);

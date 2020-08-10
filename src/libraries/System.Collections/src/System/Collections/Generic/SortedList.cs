@@ -685,7 +685,7 @@ namespace System.Collections.Generic
                 return true;
             }
 
-            value = default(TValue)!;
+            value = default;
             return false;
         }
 
@@ -761,8 +761,8 @@ namespace System.Collections.Generic
         private struct Enumerator : IEnumerator<KeyValuePair<TKey, TValue>>, IDictionaryEnumerator
         {
             private readonly SortedList<TKey, TValue> _sortedList;
-            [AllowNull] private TKey _key;
-            [AllowNull] private TValue _value;
+            private TKey? _key;
+            private TValue? _value;
             private int _index;
             private readonly int _version;
             private readonly int _getEnumeratorRetType;  // What should Enumerator.Current return?
@@ -796,7 +796,7 @@ namespace System.Collections.Generic
                         throw new InvalidOperationException(SR.InvalidOperation_EnumOpCantHappen);
                     }
 
-                    return _key;
+                    return _key!;
                 }
             }
 
@@ -827,17 +827,11 @@ namespace System.Collections.Generic
                         throw new InvalidOperationException(SR.InvalidOperation_EnumOpCantHappen);
                     }
 
-                    return new DictionaryEntry(_key, _value);
+                    return new DictionaryEntry(_key!, _value);
                 }
             }
 
-            public KeyValuePair<TKey, TValue> Current
-            {
-                get
-                {
-                    return new KeyValuePair<TKey, TValue>(_key, _value);
-                }
-            }
+            public KeyValuePair<TKey, TValue> Current => new KeyValuePair<TKey, TValue>(_key!, _value!);
 
             object? IEnumerator.Current
             {
@@ -850,11 +844,11 @@ namespace System.Collections.Generic
 
                     if (_getEnumeratorRetType == DictEntry)
                     {
-                        return new DictionaryEntry(_key, _value);
+                        return new DictionaryEntry(_key!, _value);
                     }
                     else
                     {
-                        return new KeyValuePair<TKey, TValue>(_key, _value);
+                        return new KeyValuePair<TKey, TValue>(_key!, _value!);
                     }
                 }
             }
@@ -890,7 +884,7 @@ namespace System.Collections.Generic
             private readonly SortedList<TKey, TValue> _sortedList;
             private int _index;
             private readonly int _version;
-            [AllowNull] private TKey _currentKey = default!;
+            private TKey? _currentKey;
 
             internal SortedListKeyEnumerator(SortedList<TKey, TValue> sortedList)
             {
@@ -923,13 +917,7 @@ namespace System.Collections.Generic
                 return false;
             }
 
-            public TKey Current
-            {
-                get
-                {
-                    return _currentKey;
-                }
-            }
+            public TKey Current => _currentKey!;
 
             object? IEnumerator.Current
             {
@@ -960,7 +948,7 @@ namespace System.Collections.Generic
             private readonly SortedList<TKey, TValue> _sortedList;
             private int _index;
             private readonly int _version;
-            [AllowNull] private TValue _currentValue = default!;
+            private TValue? _currentValue;
 
             internal SortedListValueEnumerator(SortedList<TKey, TValue> sortedList)
             {
@@ -993,13 +981,7 @@ namespace System.Collections.Generic
                 return false;
             }
 
-            public TValue Current
-            {
-                get
-                {
-                    return _currentValue;
-                }
-            }
+            public TValue Current => _currentValue!;
 
             object? IEnumerator.Current
             {

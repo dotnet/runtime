@@ -26,7 +26,7 @@ namespace DebuggerTests
             etype_name: "int",
             local_var_name_prefix: "int",
             array : new [] { TNumber(4), TNumber(70), TNumber(1) },
-            array_elements : null,
+            array_elem_props: null,
             test_prev_frame : test_prev_frame,
             frame_idx : frame_idx,
             use_cfo : use_cfo);
@@ -47,7 +47,7 @@ namespace DebuggerTests
                 TValueType("DebuggerTests.Point"),
                     TValueType("DebuggerTests.Point"),
             },
-            array_elements : new []
+            array_elem_props: new []
             {
                 TPoint(5, -2, "point_arr#Id#0", "Green"),
                     TPoint(123, 0, "point_arr#Id#1", "Blue")
@@ -73,7 +73,7 @@ namespace DebuggerTests
                     TObject("DebuggerTests.SimpleClass", is_null : true),
                     TObject("DebuggerTests.SimpleClass")
             },
-            array_elements : new []
+            array_elem_props: new []
             {
                 TSimpleClass(5, -2, "class_arr#Id#0", "Green"),
                     null, // Element is null
@@ -100,7 +100,7 @@ namespace DebuggerTests
                     TObject("DebuggerTests.GenericClass<int>"),
                     TObject("DebuggerTests.GenericClass<int>")
             },
-            array_elements : new []
+            array_elem_props : new []
             {
                 null, // Element is null
                 new
@@ -136,7 +136,7 @@ namespace DebuggerTests
                 TValueType("DebuggerTests.SimpleGenericStruct<DebuggerTests.Point>"),
                     TValueType("DebuggerTests.SimpleGenericStruct<DebuggerTests.Point>")
             },
-            array_elements : new []
+            array_elem_props : new []
             {
                 new
                 {
@@ -171,7 +171,7 @@ namespace DebuggerTests
                 TValueType("DebuggerTests.SimpleGenericStruct<DebuggerTests.Point[]>"),
                     TValueType("DebuggerTests.SimpleGenericStruct<DebuggerTests.Point[]>")
             },
-            array_elements : new []
+            array_elem_props : new []
             {
                 new
                 {
@@ -199,7 +199,7 @@ namespace DebuggerTests
             use_cfo : use_cfo);
 
         async Task TestSimpleArrayLocals(int line, int col, string entry_method_name, string method_name, string etype_name,
-            string local_var_name_prefix, object[] array, object[] array_elements,
+            string local_var_name_prefix, object[] array, object[] array_elem_props,
             bool test_prev_frame = false, int frame_idx = 0, bool use_cfo = false)
         {
             var insp = new Inspector();
@@ -223,8 +223,8 @@ namespace DebuggerTests
 
                 var locals = await GetProperties(pause_location["callFrames"][frame_idx]["callFrameId"].Value<string>());
                 Assert.Equal(4, locals.Count());
-                CheckArray(locals, $"{local_var_name_prefix}_arr", $"{etype_name}[]");
-                CheckArray(locals, $"{local_var_name_prefix}_arr_empty", $"{etype_name}[]");
+                CheckArray(locals, $"{local_var_name_prefix}_arr", $"{etype_name}[]", array?.Length ?? 0);
+                CheckArray(locals, $"{local_var_name_prefix}_arr_empty", $"{etype_name}[]", 0);
                 CheckObject(locals, $"{local_var_name_prefix}_arr_null", $"{etype_name}[]", is_null : true);
                 CheckBool(locals, "call_other", test_prev_frame);
 
@@ -250,13 +250,13 @@ namespace DebuggerTests
 
                 await CheckProps(prefix_arr, array, local_arr_name);
 
-                if (array_elements?.Length > 0)
+                if (array_elem_props?.Length > 0)
                 {
-                    for (int i = 0; i < array_elements.Length; i++)
+                    for (int i = 0; i < array_elem_props.Length; i++)
                     {
                         var i_str = i.ToString();
                         var label = $"{local_var_name_prefix}_arr[{i}]";
-                        if (array_elements[i] == null)
+                        if (array_elem_props[i] == null)
                         {
                             var act_i = prefix_arr.FirstOrDefault(jt => jt["name"]?.Value<string>() == i_str);
                             Assert.True(act_i != null, $"[{label}] Couldn't find array element [{i_str}]");
@@ -265,7 +265,7 @@ namespace DebuggerTests
                         }
                         else
                         {
-                            await CompareObjectPropertiesFor(prefix_arr, i_str, array_elements[i], label : label);
+                            await CompareObjectPropertiesFor(prefix_arr, i_str, array_elem_props[i], label : label);
                         }
                     }
                 }
@@ -600,6 +600,96 @@ namespace DebuggerTests
                     label: "this#0");
             });
         }
+
+        [Fact]
+        public async Task InvalidArrayId() => await CheckInspectLocalsAtBreakpointSite(
+            "DebuggerTests.Container", "PlaceholderMethod", 1, "PlaceholderMethod",
+            "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.ArrayTestsClass:ObjectArrayMembers'); }, 1);",
+            wait_for_event_fn : async(pause_location) =>
+            {
+
+                int frame_idx = 1;
+                var frame_locals = await GetProperties(pause_location["callFrames"][frame_idx]["callFrameId"].Value<string>());
+                var c_obj = GetAndAssertObjectWithName(frame_locals, "c");
+                var c_obj_id = c_obj["value"] ? ["objectId"]?.Value<string>();
+                Assert.NotNull(c_obj_id);
+
+                // Invalid format
+                await GetProperties("dotnet:array:4123", expect_ok : false);
+
+                // Invalid object id
+                await GetProperties("dotnet:array:{ \"arrayId\": 234980 }", expect_ok : false);
+
+                // Trying to access object as an array
+                if (!DotnetObjectId.TryParse (c_obj_id, out var id) || id.Scheme != "object")
+                    Assert.True(false, "Unexpected object id format. Maybe this test is out of sync with the object id format in library_mono.js?");
+
+                if (!int.TryParse(id.Value, out var idNum))
+                    Assert.True(false, "Expected a numeric value part of the object id: {c_obj_id}");
+                await GetProperties($"dotnet:array:{{\"arrayId\":{idNum}}}", expect_ok : false);
+            });
+
+        [Fact]
+        public async Task InvalidValueTypeArrayIndex() => await CheckInspectLocalsAtBreakpointSite(
+            "DebuggerTests.Container", "PlaceholderMethod", 1, "PlaceholderMethod",
+            "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.ArrayTestsClass:ObjectArrayMembers'); }, 1);",
+            locals_fn : async(locals) =>
+            {
+                var this_obj = GetAndAssertObjectWithName(locals, "this");
+                var c_obj = GetAndAssertObjectWithName(await GetProperties(this_obj["value"]["objectId"].Value<string>()), "c");
+                var c_obj_id = c_obj["value"] ? ["objectId"]?.Value<string>();
+                Assert.NotNull(c_obj_id);
+
+                var c_props = await GetProperties(c_obj_id);
+
+                var pf_arr = GetAndAssertObjectWithName(c_props, "PointsField");
+                var pf_arr_elems = await GetProperties(pf_arr["value"]["objectId"].Value<string>());
+
+                if (!DotnetObjectId.TryParse(pf_arr_elems[0]["value"] ? ["objectId"]?.Value<string>(), out var id))
+                    Assert.True(false, "Couldn't parse objectId for PointsFields' elements");
+
+                AssertEqual("valuetype", id.Scheme, "Expected a valuetype id");
+                var id_args = id.ValueAsJson;
+                Assert.True(id_args["arrayId"] != null, "ObjectId format for array seems to have changed. Expected to find 'arrayId' in the value. Update this test");
+                Assert.True(id_args != null, "Expected to get a json as the value part of {id}");
+
+                // Try one valid query, to confirm that the id format hasn't changed!
+                id_args["arrayIdx"] = 0;
+                await GetProperties($"dotnet:valuetype:{id_args.ToString (Newtonsoft.Json.Formatting.None)}", expect_ok : true);
+
+                id_args["arrayIdx"] = 12399;
+                await GetProperties($"dotnet:valuetype:{id_args.ToString (Newtonsoft.Json.Formatting.None)}", expect_ok : false);
+
+                id_args["arrayIdx"] = -1;
+                await GetProperties($"dotnet:valuetype:{id_args.ToString (Newtonsoft.Json.Formatting.None)}", expect_ok : false);
+
+                id_args["arrayIdx"] = "qwe";
+                await GetProperties($"dotnet:valuetype:{id_args.ToString (Newtonsoft.Json.Formatting.None)}", expect_ok : false);
+            });
+
+        [Fact]
+        public async Task InvalidAccessors() => await CheckInspectLocalsAtBreakpointSite(
+            "DebuggerTests.Container", "PlaceholderMethod", 1, "PlaceholderMethod",
+            "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.ArrayTestsClass:ObjectArrayMembers'); }, 1);",
+            locals_fn : async(locals) =>
+            {
+                var this_obj = GetAndAssertObjectWithName(locals, "this");
+                var c_obj = GetAndAssertObjectWithName(await GetProperties(this_obj["value"]["objectId"].Value<string>()), "c");
+                var c_obj_id = c_obj["value"] ? ["objectId"]?.Value<string>();
+                Assert.NotNull(c_obj_id);
+
+                var c_props = await GetProperties(c_obj_id);
+
+                var pf_arr = GetAndAssertObjectWithName(c_props, "PointsField");
+
+                var invalid_accessors = new object[] { "NonExistant", "10000", "-2", 10000, -2, null, String.Empty };
+                foreach (var invalid_accessor in invalid_accessors)
+                {
+                    // var res = await InvokeGetter (JObject.FromObject (new { value = new { objectId = obj_id } }), invalid_accessor, expect_ok: true);
+                    var res = await InvokeGetter(pf_arr, invalid_accessor, expect_ok : true);
+                    AssertEqual("undefined", res.Value["result"] ? ["type"]?.ToString(), "Expected to get undefined result for non-existant accessor");
+                }
+            });
 
     }
 }

@@ -3,7 +3,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-FreeBSD;$(NetCoreAppCurrent)-illumos;$(NetCoreAppCurrent)-Solaris;$(NetCoreAppCurrent)-Linux;$(NetCoreAppCurrent)-OSX;$(NetCoreAppCurrent)-iOS;$(NetCoreAppCurrent)-tvOS;$(NetCoreAppCurrent);netcoreapp2.0-FreeBSD;netcoreapp2.0-Linux;netcoreapp2.0-OSX;netcoreapp2.0-Windows_NT;netstandard2.0;net461-Windows_NT</TargetFrameworks>
     <ExcludeCurrentNetCoreAppFromPackage>true</ExcludeCurrentNetCoreAppFromPackage>
-    <NoWarn>$(NoWarn);CA2249</NoWarn>
+    <NoWarn>$(NoWarn);CA2249;CA1838</NoWarn>
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->

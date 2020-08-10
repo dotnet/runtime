@@ -11,6 +11,7 @@
     <TestAssemblies Condition="'$(TestAssemblies)' == ''">true</TestAssemblies>
     <TestPackages Condition="'$(TestPackages)' == ''">false</TestPackages>
     <TestTrimming Condition="'$(TestTrimming)' == ''">false</TestTrimming>
+    <ContinueOnError Condition="'$(TestTrimming)' == 'true'">true</ContinueOnError>
   </PropertyGroup>
   
   <!-- Projects that don't support code coverage measurement. -->
@@ -38,6 +39,7 @@
                       Condition="'$(TestPackages)' == 'true'" />
     <ProjectReference Include="$(MSBuildThisFileDirectory)*\tests\**\*.TrimmingTests.proj"
                       Exclude="@(ProjectExclusions)"
+                      BuildInParallel="false"
                       Condition="'$(TestTrimming)' == 'true'" />
   </ItemGroup>
 
