@@ -16,7 +16,7 @@ namespace System.Net.Connections
     /// When constructed with <see cref="ProtocolType.Tcp"/>, this factory will create connections with <see cref="Socket.NoDelay"/> enabled.
     /// In case of IPv6 sockets <see cref="Socket.DualMode"/> is also enabled.
     /// </remarks>
-    public class SocketsConnectionFactory : ConnectionFactory, SocketConnection.IDataChannelProvider
+    public class SocketsConnectionFactory : ConnectionFactory
     {
         private readonly AddressFamily _addressFamily;
         private readonly SocketType _socketType;
@@ -156,8 +156,8 @@ namespace System.Net.Connections
         /// <returns>A new <see cref="IDuplexPipe"/>.</returns>
         protected virtual IDuplexPipe CreatePipe(Socket socket, IConnectionProperties? options) => new SocketConnection.DuplexStreamPipe(CreateStream(socket, options));
 
-        Stream SocketConnection.IDataChannelProvider.CreateStreamForConnection(Socket socket, IConnectionProperties options) => CreateStream(socket, options);
+        internal Stream CreateStreamForConnection(Socket socket, IConnectionProperties? options) => CreateStream(socket, options);
 
-        IDuplexPipe SocketConnection.IDataChannelProvider.CreatePipeForConnection(Socket socket, IConnectionProperties options) => CreatePipe(socket, options);
+        internal IDuplexPipe CreatePipeForConnection(Socket socket, IConnectionProperties? options) => CreatePipe(socket, options);
     }
 }

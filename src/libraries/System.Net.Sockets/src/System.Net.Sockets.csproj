@@ -313,7 +313,7 @@
     <Reference Include="System.Collections.Concurrent" />
     <Reference Include="System.Diagnostics.Tracing" />
     <Reference Include="System.IO.FileSystem" />
-    <Reference Include="System.IO.PipeLines" />
+    <Reference Include="System.IO.Pipelines" />
     <Reference Include="System.Memory" />
     <Reference Include="System.Net.Connections" />
     <Reference Include="System.Net.NameResolution" />

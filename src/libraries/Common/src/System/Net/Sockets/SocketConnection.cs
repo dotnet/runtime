@@ -14,16 +14,17 @@ namespace System.Net.Connections
     internal sealed class SocketConnection : Connection, IConnectionProperties
     {
         private readonly Socket _socket;
-        private readonly IDataChannelProvider _factory;
-        private Stream? _stream;
-        private IDuplexPipe? _pipe;
+        private readonly SocketsConnectionFactory? _factory;
         private readonly IConnectionProperties? _options;
-
+        private Stream? _stream;
+#if SYSTEM_NET_SOCKETS_DLL
+        private IDuplexPipe? _pipe;
+#endif
         public override EndPoint? RemoteEndPoint => _socket.RemoteEndPoint;
         public override EndPoint? LocalEndPoint => _socket.LocalEndPoint;
         public override IConnectionProperties ConnectionProperties => this;
 
-        public SocketConnection(Socket socket, IDataChannelProvider factory, IConnectionProperties? options)
+        public SocketConnection(Socket socket, SocketsConnectionFactory? factory, IConnectionProperties? options)
         {
             _socket = socket;
             _factory = factory;
@@ -46,10 +47,7 @@ namespace System.Net.Connections
                     _socket.Dispose();
                 }
 
-                if (_stream != null)
-                {
-                    return _stream.DisposeAsync();
-                }
+                return _stream?.DisposeAsync() ?? default;
             }
             catch (SocketException socketException)
             {
@@ -59,27 +57,6 @@ namespace System.Net.Connections
             {
                 return ValueTask.FromException(ex);
             }
-
-            return default;
-        }
-
-        protected override Stream CreateStream()
-        {
-            if (_stream == null)
-            {
-                _stream = _factory.CreateStreamForConnection(_socket, this);
-            }
-            return _stream;
-        }
-
-        protected override IDuplexPipe CreatePipe()
-        {
-            if (_pipe == null)
-            {
-                _pipe = _factory.CreatePipeForConnection(_socket, this);
-            }
-
-            return _pipe;
         }
 
         bool IConnectionProperties.TryGet(Type propertyKey, [NotNullWhen(true)] out object? property)
@@ -90,20 +67,14 @@ namespace System.Net.Connections
                 return true;
             }
 
-            if (_options != null)
-            {
-                return _options.TryGet(propertyKey, out property);
-            }
-
             property = null;
             return false;
         }
 
-        internal interface IDataChannelProvider
-        {
-            Stream CreateStreamForConnection(Socket socket, IConnectionProperties options);
-            IDuplexPipe CreatePipeForConnection(Socket socket, IConnectionProperties options);
-        }
+#if SYSTEM_NET_SOCKETS_DLL
+        protected override Stream CreateStream() => _stream ??= _factory!.CreateStreamForConnection(_socket, _options);
+
+        protected override IDuplexPipe CreatePipe() => _pipe ??= _factory!.CreatePipeForConnection(_socket, _options);
 
         internal sealed class DuplexStreamPipe : IDuplexPipe
         {
@@ -120,5 +91,9 @@ namespace System.Net.Connections
 
             public PipeWriter Output { get; }
         }
+#else
+        // Synchronous HttpClient path, no extensibility:
+        protected override Stream CreateStream() => _stream ??= new NetworkStream(_socket, ownsSocket: true);
+#endif
     }
 }

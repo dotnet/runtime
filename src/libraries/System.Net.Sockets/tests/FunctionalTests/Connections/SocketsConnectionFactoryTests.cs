@@ -108,7 +108,7 @@ namespace System.Net.Sockets.Tests
             Assert.Equal(NetworkError.ConnectionRefused, ex.NetworkError);
         }
 
-        // [OuterLoop] // TimedOut and HostNotFound is slow on Windows
+        [OuterLoop] // TimedOut and HostNotFound is slow on Windows
         [ConditionalFact(nameof(PlatformHasReliableConnectionFailures))]
         public async Task ConnectAsync_WhenHostNotFound_ThrowsNetworkException()
         {
@@ -122,7 +122,7 @@ namespace System.Net.Sockets.Tests
             Assert.Equal(NetworkError.HostNotFound, ex.NetworkError);
         }
 
-        // [OuterLoop] // TimedOut and HostNotFound is slow on Windows
+        [OuterLoop] // TimedOut and HostNotFound is slow on Windows
         [ConditionalFact(nameof(PlatformHasReliableConnectionFailures))]
         public async Task ConnectAsync_TimedOut_ThrowsNetworkException()
         {
