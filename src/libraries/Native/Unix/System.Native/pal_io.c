@@ -262,7 +262,6 @@ static int32_t ConvertOpenFlags(int32_t flags)
 
 intptr_t SystemNative_Open(const char* path, int32_t flags, int32_t mode)
 {
-    //fprintf(stderr, "SystemNative_Open %s flags: %i  mode: %i\n ", path, flags, mode);
 // these two ifdefs are for platforms where we dont have the open version of CLOEXEC and thus
 // must simulate it by doing a fcntl with the SETFFD version after the open instead
 #if !HAVE_O_CLOEXEC
