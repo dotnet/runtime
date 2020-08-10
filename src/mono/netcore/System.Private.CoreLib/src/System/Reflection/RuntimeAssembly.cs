@@ -420,7 +420,6 @@ namespace System.Reflection
                 throw new FileNotFoundException(SR.IO_NoFileTableInInMemoryAssemblies);
             }
 
-
             RuntimeModule? m = (RuntimeModule?)GetModule(name);
 
             if (m != null)
