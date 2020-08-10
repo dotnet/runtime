@@ -21,7 +21,7 @@ namespace System.ComponentModel.Composition.Hosting
     [DebuggerTypeProxy(typeof(DirectoryCatalogDebuggerProxy))]
     public partial class DirectoryCatalog : ComposablePartCatalog, INotifyComposablePartCatalogChanged, ICompositionElement
     {
-        private static readonly bool s_isWindows =
+        private static bool IsWindows =>
 #if NETSTANDARD || NETCOREAPP2_0
             RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
 #else
@@ -744,7 +744,7 @@ namespace System.ComponentModel.Composition.Hosting
         {
             string[] files = Directory.GetFiles(_fullPath, _searchPattern);
 
-            if (!s_isWindows)
+            if (!IsWindows)
             {
                 return files;
             }
@@ -755,7 +755,7 @@ namespace System.ComponentModel.Composition.Hosting
         private static string GetFullPath(string path)
         {
             var fullPath = IOPath.GetFullPath(path);
-            return s_isWindows ? fullPath.ToUpperInvariant() : fullPath;
+            return IsWindows ? fullPath.ToUpperInvariant() : fullPath;
         }
 
         [MemberNotNull(nameof(_path))]
