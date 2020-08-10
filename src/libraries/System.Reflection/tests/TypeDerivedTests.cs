@@ -36,6 +36,9 @@ namespace System.Reflection.Tests
             Type compareType = typeof(int);
             Assert.False(testType.IsAssignableTo(compareType));
             Assert.False(compareType.IsAssignableTo(testType));
+
+            Assert.False(testType.IsAssignableTo(null));
+            Assert.False(typeof(object).IsAssignableTo(null));
         }
     }
 }
