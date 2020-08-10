@@ -78,7 +78,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         }
 
         [Fact]
-        public static void DecryptKnownCFB256_128()
+        public static void DecryptKnownCFB128_256()
         {
             byte[] encryptedBytes = new byte[]
             {
@@ -122,7 +122,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         }
 
         [Fact]
-        public static void DecryptKnownCFB192_128()
+        public static void DecryptKnownCFB128_192()
         {
             byte[] encryptedBytes = new byte[]
             {
@@ -393,7 +393,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         }
 
         [Fact]
-        public static void VerifyKnownTransform_CFB256_128_NoPadding()
+        public static void VerifyKnownTransform_CFB128_256_NoPadding()
         {
             TestAesTransformDirectKey(
                 CipherMode.CFB,
@@ -406,7 +406,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         }
 
         [Fact]
-        public static void VerifyKnownTransform_CFB256_8_NoPadding()
+        public static void VerifyKnownTransform_CFB8_256_NoPadding()
         {
             TestAesTransformDirectKey(
                 CipherMode.CFB,
@@ -481,7 +481,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         }
 
         [Fact]
-        public static void VerifyKnownTransform_CFB192_128_NoPadding()
+        public static void VerifyKnownTransform_CFB128_192_NoPadding()
         {
             TestAesTransformDirectKey(
                 CipherMode.CFB,
@@ -494,7 +494,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         }
 
         [Fact]
-        public static void VerifyKnownTransform_CFB192_8_NoPadding()
+        public static void VerifyKnownTransform_CFB8_192_NoPadding()
         {
             TestAesTransformDirectKey(
                 CipherMode.CFB,
@@ -519,7 +519,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         }
 
         [Fact]
-        public static void VerifyKnownTransform_CFB192_128_NoPadding_2()
+        public static void VerifyKnownTransform_CFB128_192_NoPadding_2()
         {
             TestAesTransformDirectKey(
                 CipherMode.CFB,

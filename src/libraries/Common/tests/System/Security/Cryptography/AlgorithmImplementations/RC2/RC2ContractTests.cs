@@ -48,7 +48,7 @@ namespace System.Security.Cryptography.Encryption.RC2.Tests
                     rc2.FeedbackSize = feedbackSize;
 
                     // however, for CFB only few sizes are valid. Those should throw in the
-                    // actual AES instantiation.
+                    // actual RC2 instantiation.
 
                     Assert.Throws<CryptographicException>(() => rc2.CreateDecryptor());
                     Assert.Throws<CryptographicException>(() => rc2.CreateEncryptor());

@@ -483,8 +483,6 @@ namespace System.Security.Cryptography.Encryption.Des.Tests
             }
         }
 
-
-
         [Theory]
         [InlineData(true, true)]
         [InlineData(true, false)]

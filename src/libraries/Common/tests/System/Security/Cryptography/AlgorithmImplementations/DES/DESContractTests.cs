@@ -45,7 +45,7 @@ namespace System.Security.Cryptography.Encryption.Des.Tests
                     des.FeedbackSize = feedbackSize;
 
                     // however, for CFB only few sizes are valid. Those should throw in the
-                    // actual AES instantiation.
+                    // actual DES instantiation.
 
                     Assert.Throws<CryptographicException>(() => des.CreateDecryptor());
                     Assert.Throws<CryptographicException>(() => des.CreateEncryptor());
