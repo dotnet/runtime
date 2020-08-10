@@ -13,7 +13,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 {
     internal class InspectorClient : DevToolsClient
     {
-        List < (int, TaskCompletionSource<Result>) > pending_cmds = new List < (int, TaskCompletionSource<Result>) > ();
+        List<(int, TaskCompletionSource<Result>)> pending_cmds = new List<(int, TaskCompletionSource<Result>)>();
         Func<string, JObject, CancellationToken, Task> onEvent;
         int next_cmd_id;
 
@@ -57,8 +57,8 @@ namespace Microsoft.WebAssembly.Diagnostics
             var o = JObject.FromObject(new
             {
                 id = id,
-                    method = method,
-                    @params = args
+                method = method,
+                @params = args
             });
 
             var tcs = new TaskCompletionSource<Result>();

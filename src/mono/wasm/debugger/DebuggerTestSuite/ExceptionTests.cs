@@ -4,8 +4,8 @@
 using System;
 using System.Linq;
 using System.Threading.Tasks;
-using Newtonsoft.Json.Linq;
 using Microsoft.WebAssembly.Diagnostics;
+using Newtonsoft.Json.Linq;
 using Xunit;
 
 namespace DebuggerTests
@@ -24,7 +24,7 @@ namespace DebuggerTests
             string entry_method_name = "[debugger-test] DebuggerTests.ExceptionTestsClass:TestExceptions";
 
             await Ready();
-            await insp.Ready(async(cli, token) =>
+            await insp.Ready(async (cli, token) =>
             {
                 ctx = new DebugTestContext(cli, insp, token, scripts);
                 var debugger_test_loc = "dotnet://debugger-test.dll/debugger-exception-test.cs";
@@ -35,12 +35,12 @@ namespace DebuggerTests
                     $"'{entry_method_name}'" +
                     "); }, 1);";
 
-                var pause_location = await EvaluateAndCheck(eval_expr,  null, 0, 0, null);
+                var pause_location = await EvaluateAndCheck(eval_expr, null, 0, 0, null);
                 //stop in the managed caught exception
                 pause_location = await WaitForManagedException(pause_location);
 
-                AssertEqual("run", pause_location["callFrames"] ? [0] ? ["functionName"]?.Value<string>(), "pause0");
-                
+                AssertEqual("run", pause_location["callFrames"]?[0]?["functionName"]?.Value<string>(), "pause0");
+
                 await CheckValue(pause_location["data"], JObject.FromObject(new
                 {
                     type = "object",
@@ -53,7 +53,7 @@ namespace DebuggerTests
                 CheckString(exception_members, "message", "not implemented caught");
 
                 pause_location = await WaitForManagedException(null);
-                AssertEqual("run", pause_location["callFrames"] ? [0] ? ["functionName"]?.Value<string>(), "pause1");
+                AssertEqual("run", pause_location["callFrames"]?[0]?["functionName"]?.Value<string>(), "pause1");
 
                 //stop in the uncaught exception
                 CheckLocation(debugger_test_loc, 28, 16, scripts, pause_location["callFrames"][0]["location"]);
@@ -79,7 +79,7 @@ namespace DebuggerTests
             var scripts = SubscribeToScripts(insp);
 
             await Ready();
-            await insp.Ready(async(cli, token) =>
+            await insp.Ready(async (cli, token) =>
             {
                 ctx = new DebugTestContext(cli, insp, token, scripts);
 
@@ -127,7 +127,7 @@ namespace DebuggerTests
             string entry_method_name = "[debugger-test] DebuggerTests.ExceptionTestsClass:TestExceptions";
 
             await Ready();
-            await insp.Ready(async(cli, token) =>
+            await insp.Ready(async (cli, token) =>
             {
                 ctx = new DebugTestContext(cli, insp, token, scripts);
 
@@ -146,9 +146,9 @@ namespace DebuggerTests
                     var eo = JObject.Parse(ae.Message);
 
                     // AssertEqual (line, eo ["exceptionDetails"]?["lineNumber"]?.Value<int> (), "lineNumber");
-                    AssertEqual("Uncaught", eo["exceptionDetails"] ? ["text"]?.Value<string>(), "text");
+                    AssertEqual("Uncaught", eo["exceptionDetails"]?["text"]?.Value<string>(), "text");
 
-                    await CheckValue(eo["exceptionDetails"] ? ["exception"], JObject.FromObject(new
+                    await CheckValue(eo["exceptionDetails"]?["exception"], JObject.FromObject(new
                     {
                         type = "object",
                         subtype = "error",
@@ -170,7 +170,7 @@ namespace DebuggerTests
             var scripts = SubscribeToScripts(insp);
 
             await Ready();
-            await insp.Ready(async(cli, token) =>
+            await insp.Ready(async (cli, token) =>
             {
                 ctx = new DebugTestContext(cli, insp, token, scripts);
 
@@ -188,10 +188,10 @@ namespace DebuggerTests
                     Console.WriteLine($"{ae}");
                     var eo = JObject.Parse(ae.Message);
 
-                    AssertEqual(line, eo["exceptionDetails"] ? ["lineNumber"]?.Value<int>(), "lineNumber");
-                    AssertEqual("Uncaught", eo["exceptionDetails"] ? ["text"]?.Value<string>(), "text");
+                    AssertEqual(line, eo["exceptionDetails"]?["lineNumber"]?.Value<int>(), "lineNumber");
+                    AssertEqual("Uncaught", eo["exceptionDetails"]?["text"]?.Value<string>(), "text");
 
-                    await CheckValue(eo["exceptionDetails"] ? ["exception"], JObject.FromObject(new
+                    await CheckValue(eo["exceptionDetails"]?["exception"], JObject.FromObject(new
                     {
                         type = "object",
                         subtype = "error",
@@ -217,7 +217,7 @@ namespace DebuggerTests
             //Collect events
             var scripts = SubscribeToScripts(insp);
             await Ready();
-            await insp.Ready(async(cli, token) =>
+            await insp.Ready(async (cli, token) =>
             {
                 ctx = new DebugTestContext(cli, insp, token, scripts);
 
@@ -246,16 +246,16 @@ namespace DebuggerTests
             {
                 if (pause_location != null)
                 {
-                    AssertEqual("exception", pause_location ["reason"]?.Value<string> (), $"Expected to only pause because of an exception. {pause_location}");
+                    AssertEqual("exception", pause_location["reason"]?.Value<string>(), $"Expected to only pause because of an exception. {pause_location}");
 
                     // return in case of a managed exception, and ignore JS ones
-                    if (pause_location["data"]?["objectId"]?.Value<string> ()?.StartsWith("dotnet:object:") == true)
+                    if (pause_location["data"]?["objectId"]?.Value<string>()?.StartsWith("dotnet:object:") == true)
                     {
                         break;
                     }
                 }
 
-                pause_location = await SendCommandAndCheck(JObject.FromObject(new { }), "Debugger.resume",  null, 0, 0, null);
+                pause_location = await SendCommandAndCheck(JObject.FromObject(new { }), "Debugger.resume", null, 0, 0, null);
             }
 
             return pause_location;
