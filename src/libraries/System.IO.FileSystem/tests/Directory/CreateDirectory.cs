@@ -225,7 +225,7 @@ namespace System.IO.Tests
         [Theory,
             MemberData(nameof(PathsWithComponentLongerThanMaxComponent))]
         [PlatformSpecific(TestPlatforms.Browser)] // Browser specific test in case the check changes in the future
-        public void DirectoryWithComponentLongerThanMaxComponentAsPath_BrowserDoesNotThrowsException(string path)
+        public void DirectoryWithComponentLongerThanMaxComponentAsPath_BrowserDoesNotThrowException(string path)
         {
             DirectoryInfo result = Create(path);
             Assert.True(Directory.Exists(path));
