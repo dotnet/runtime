@@ -547,7 +547,8 @@ namespace System.Text.Json
             return jsonClassInfo;
         }
 
-        internal bool HasCustomConverters => _converters.Count > 0;
+        // todo:
+        // internal bool HasCustomConverters => _converters.Count > 0;
 
         internal bool TypeIsCached(Type type)
         {

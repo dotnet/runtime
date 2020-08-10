@@ -23,12 +23,13 @@ namespace System.Text.Json.Serialization
             {
                 if (_boolean == null)
                 {
-                    if (_options.HasCustomConverters)
-                    {
-                        JsonConverter<bool> converter = (JsonConverter<bool>)_options.GetConverter(typeof(bool));
-                        _boolean = new JsonValueInfo<bool>(converter, _options);
-                    }
-                    else
+                    // todo: support obtaining existing converter
+                    //if (_options.HasCustomConverters)
+                    //{
+                        //JsonConverter<bool> converter = (JsonConverter<bool>)_options.GetConverter(typeof(bool));
+                        //_boolean = new JsonValueInfo<bool>(converter, _options);
+                    //}
+                    //else
                     {
                         if (s_boolean == null)
                         {
@@ -54,12 +55,13 @@ namespace System.Text.Json.Serialization
             {
                 if (_dateTimeOffset == null)
                 {
-                    if (_options.HasCustomConverters)
-                    {
-                        JsonConverter<DateTimeOffset> converter = (JsonConverter<DateTimeOffset>)_options.GetConverter(typeof(DateTimeOffset));
-                        _dateTimeOffset = new JsonValueInfo<DateTimeOffset>(converter, _options);
-                    }
-                    else
+                    // todo: support obtaining existing converter
+                    //if (_options.HasCustomConverters)
+                    //{
+                        //JsonConverter<DateTimeOffset> converter = (JsonConverter<DateTimeOffset>)_options.GetConverter(typeof(DateTimeOffset));
+                        //_dateTimeOffset = new JsonValueInfo<DateTimeOffset>(converter, _options);
+                    //}
+                    //else
                     {
                         if (s_dateTimeOffset == null)
                         {
@@ -85,12 +87,13 @@ namespace System.Text.Json.Serialization
             {
                 if (_int32 == null)
                 {
-                    if (_options.HasCustomConverters)
-                    {
-                        JsonConverter<int> converter = (JsonConverter<int>)_options.GetConverter(typeof(int));
-                        _int32 = new JsonValueInfo<int>(converter, _options);
-                    }
-                    else
+                    // todo: support obtaining existing converter
+                    //if (_options.HasCustomConverters)
+                    //{
+                        //JsonConverter<int> converter = (JsonConverter<int>)_options.GetConverter(typeof(int));
+                        //_int32 = new JsonValueInfo<int>(converter, _options);
+                    //}
+                    //else
                     {
                         if (s_int32 == null)
                         {
@@ -116,12 +119,13 @@ namespace System.Text.Json.Serialization
             {
                 if (_string == null)
                 {
-                    if (_options.HasCustomConverters)
-                    {
-                        JsonConverter<string> converter = (JsonConverter<string>)_options.GetConverter(typeof(string));
-                        _string = new JsonValueInfo<string>(converter, _options);
-                    }
-                    else
+                    // todo: support obtaining existing converter
+                    //if (_options.HasCustomConverters)
+                    //{
+                        //JsonConverter<string> converter = (JsonConverter<string>)_options.GetConverter(typeof(string));
+                        //_string = new JsonValueInfo<string>(converter, _options);
+                    //}
+                    //else
                     {
                         if (s_string == null)
                         {

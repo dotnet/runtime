@@ -29,8 +29,23 @@ namespace System.Text.Json.Serialization.Metadata
             DeserializeDelegate deserializeFunc,
             JsonSerializerOptions? options) : base(typeof(T), options, ClassType.Object)
         {
+            if (createObjectFunc == null)
+            {
+                throw new ArgumentNullException(nameof(createObjectFunc));
+            }
+
             CreateObject = createObjectFunc;
+
+            if (serializeFunc == null)
+            {
+                throw new ArgumentNullException(nameof(serializeFunc));
+            }
             Serialize = serializeFunc;
+
+            if (deserializeFunc == null)
+            {
+                throw new ArgumentNullException(nameof(deserializeFunc));
+            }
             Deserialize = deserializeFunc;
 
             JsonConverter converter = new ObjectCodeGenConverter<T>();

@@ -37,8 +37,10 @@ namespace System.Text.Json.Serialization.Tests.CodeGen
                 DefaultBufferSize = 1
             };
 
+            JsonSerializerContext context = new JsonSerializerContext(options);
+
             JsonTypeInfo<List<IndexViewModel>> typeInfo = KnownCollectionTypeInfos<IndexViewModel>.
-                GetList(JsonContext.Default.IndexViewModel, JsonContext.Default);
+                GetList(JsonContext.Default.IndexViewModel, context);
 
             using (MemoryStream stream = new MemoryStream(utf8))
             {

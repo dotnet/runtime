@@ -24,11 +24,12 @@ namespace System.Text.Json.Serialization.Metadata
         /// </summary>
         public static JsonTypeInfo<List<T>> GetList(JsonClassInfo elementInfo, JsonSerializerContext context)
         {
-            if (context._options.HasCustomConverters)
-            {
-                JsonConverter<List<T>> converter = (JsonConverter<List<T>>)context._options.GetConverter(typeof(List<T>));
-                return new JsonCollectionTypeInfo<List<T>>(CreateList, converter, elementInfo, context._options);
-            }
+            // todo: support obtaining existing converter
+            //if (context._options.HasCustomConverters)
+            //{
+                //JsonConverter<List<T>> converter = (JsonConverter<List<T>>)context._options.GetConverter(typeof(List<T>));
+                //return new JsonCollectionTypeInfo<List<T>>(CreateList, converter, elementInfo, context._options);
+            //}
 
             if (s_list == null)
             {
