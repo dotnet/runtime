@@ -181,6 +181,7 @@ namespace System.Runtime.InteropServices
         public override System.Reflection.Module Module { get { throw null; } }
         public override string Name { get { throw null; } }
         public override System.Type? ReflectedType { get { throw null; } }
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows7.0")]
         public override void AddEventHandler(object target, System.Delegate handler) { }
         public override System.Reflection.MethodInfo? GetAddMethod(bool nonPublic) { throw null; }
         public override object[] GetCustomAttributes(bool inherit) { throw null; }
@@ -190,6 +191,7 @@ namespace System.Runtime.InteropServices
         public override System.Reflection.MethodInfo? GetRaiseMethod(bool nonPublic) { throw null; }
         public override System.Reflection.MethodInfo? GetRemoveMethod(bool nonPublic) { throw null; }
         public override bool IsDefined(System.Type attributeType, bool inherit) { throw null; }
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows7.0")]
         public override void RemoveEventHandler(object target, System.Delegate handler) { }
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, Inherited=false)]
@@ -220,6 +222,7 @@ namespace System.Runtime.InteropServices
         public System.Type EventProvider { get { throw null; } }
         public System.Type SourceInterface { get { throw null; } }
     }
+    [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows7.0")]
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
     public static partial class ComEventsHelper
     {
@@ -313,11 +316,11 @@ namespace System.Runtime.InteropServices
         public DefaultParameterValueAttribute(object? value) { }
         public object? Value { get { throw null; } }
     }
+    [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
     public sealed partial class DispatchWrapper
     {
         public DispatchWrapper(object? obj) { }
-        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public object? WrappedObject { get { throw null; } }
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Event | System.AttributeTargets.Field | System.AttributeTargets.Method | System.AttributeTargets.Property, Inherited=false)]
@@ -1030,16 +1033,23 @@ namespace System.Runtime.InteropServices
         public struct ComInterfaceDispatch
         {
             public System.IntPtr Vtable;
+            [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
             public unsafe static T GetInstance<T>(ComInterfaceDispatch* dispatchPtr) where T : class { throw null; }
         }
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public System.IntPtr GetOrCreateComInterfaceForObject(object instance, CreateComInterfaceFlags flags) { throw null; }
         protected unsafe abstract ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count);
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public object GetOrCreateObjectForComInstance(System.IntPtr externalComObject, CreateObjectFlags flags) { throw null; }
         protected abstract object CreateObject(System.IntPtr externalComObject, CreateObjectFlags flags);
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public object GetOrRegisterObjectForComInstance(System.IntPtr externalComObject, CreateObjectFlags flags, object wrapper) { throw null; }
         protected abstract void ReleaseObjects(System.Collections.IEnumerable objects);
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public static void RegisterForTrackerSupport(ComWrappers instance) { }
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public static void RegisterForMarshalling(ComWrappers instance) { }
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         protected static void GetIUnknownImpl(out System.IntPtr fpQueryInterface, out System.IntPtr fpAddRef, out System.IntPtr fpRelease) { throw null; }
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Method, Inherited = false)]

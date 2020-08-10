@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections;
+using System.Runtime.Versioning;
 
 namespace System.Runtime.InteropServices
 {
@@ -34,12 +35,14 @@ namespace System.Runtime.InteropServices
         {
             public IntPtr Vtable;
 
+            [SupportedOSPlatform("windows")]
             public static unsafe T GetInstance<T>(ComInterfaceDispatch* dispatchPtr) where T : class
             {
                 throw new PlatformNotSupportedException();
             }
         }
 
+        [SupportedOSPlatform("windows")]
         public IntPtr GetOrCreateComInterfaceForObject(object instance, CreateComInterfaceFlags flags)
         {
             throw new PlatformNotSupportedException();
@@ -47,6 +50,7 @@ namespace System.Runtime.InteropServices
 
         protected abstract unsafe ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count);
 
+        [SupportedOSPlatform("windows")]
         public object GetOrCreateObjectForComInstance(IntPtr externalComObject, CreateObjectFlags flags)
         {
             throw new PlatformNotSupportedException();
@@ -54,6 +58,7 @@ namespace System.Runtime.InteropServices
 
         protected abstract object? CreateObject(IntPtr externalComObject, CreateObjectFlags flags);
 
+        [SupportedOSPlatform("windows")]
         public object GetOrRegisterObjectForComInstance(IntPtr externalComObject, CreateObjectFlags flags, object wrapper)
         {
             throw new PlatformNotSupportedException();
@@ -61,16 +66,19 @@ namespace System.Runtime.InteropServices
 
         protected abstract void ReleaseObjects(IEnumerable objects);
 
+        [SupportedOSPlatform("windows")]
         public static void RegisterForTrackerSupport(ComWrappers instance)
         {
             throw new PlatformNotSupportedException();
         }
 
+        [SupportedOSPlatform("windows")]
         public static void RegisterForMarshalling(ComWrappers instance)
         {
             throw new PlatformNotSupportedException();
         }
 
+        [SupportedOSPlatform("windows")]
         protected static void GetIUnknownImpl(out IntPtr fpQueryInterface, out IntPtr fpAddRef, out IntPtr fpRelease)
         {
             throw new PlatformNotSupportedException();
