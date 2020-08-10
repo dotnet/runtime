@@ -23,8 +23,6 @@ namespace System.IO.ManualTests
             In remote machine:
                 - Install openssh-server.
                 - Create an ext4 partition of 1 MB size.
-                - Fill the new drive with files until almost full, leave a couple of bytes free.
-                - Make sure to also include a small file that is larger than the available free space left and name it "copyme.txt".
                 
             In local machine:
                 - Install sshfs and openssh-client.
