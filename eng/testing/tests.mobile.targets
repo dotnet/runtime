@@ -165,10 +165,13 @@
   <UsingTask TaskName="TimeZoneLoader"
              AssemblyFile="$(WasmBundleTaskTasksAssemblyPath)" />
   <Target Condition="'$(TargetOS)' == 'Browser'" Name="LoadTimeZone" >
+    <PropertyGroup>
+      <TimeZoneDataVersion>2020a</TimeZoneDataVersion>
+    </PropertyGroup>
     <TimeZoneLoader
       InputDirectory="$(BundleDir)obj/data/input"
       OutputDirectory="$(BundleDir)obj/data/output"
-      Version="2020a"/>
+      Version="$(TimeZoneDataVersion)"/>
   </Target>
 
   <UsingTask TaskName="WasmBundleTask"

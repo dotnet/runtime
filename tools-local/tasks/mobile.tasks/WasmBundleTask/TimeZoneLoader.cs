@@ -14,26 +14,35 @@ using Microsoft.Build.Utilities;
 
 public class TimeZoneLoader : Task
 {
+    [Required]
     public string? InputDirectory { get; set; }
+
+    [Required]
     public string? OutputDirectory { get; set; }
+
+    [Required]
     public string? Version { get; set; }
 
-    private void DownloadTimeZoneData() {
+    private void DownloadTimeZoneData() 
+    {
         List<string> files = new List<string>() {"africa", "antarctica", "asia", "australasia", "etcetera", "europe", "northamerica", "southamerica", "zone1970.tab"};
         using (var client = new WebClient())
         {
-            foreach (var file in files) {
-                client.DownloadFile($"https://data.iana.org/time-zones/tzdb-{Version}/{file}", $"{InputDirectory}/{file}");
+            foreach (var file in files) 
+            {
+                client.DownloadFile($"https://data.iana.org/time-zones/tzdb-{Version}/{file}", $"{Path.Combine(InputDirectory!, file)}");
             }
         }
 
         files.Remove("zone1970.tab");        
 
-        using (Process process = new Process()) {
+        using (Process process = new Process()) 
+        {
             process.StartInfo.UseShellExecute = false;
             process.StartInfo.FileName = "zic";
-            foreach (var f in files) {
-                process.StartInfo.Arguments = $"-d \"{OutputDirectory}\" \"{InputDirectory}/{f}\"";
+            foreach (var f in files) 
+            {
+                process.StartInfo.Arguments = $"-d \"{OutputDirectory}\" \"{Path.Combine(InputDirectory!, f)}\"";
                 process.Start();
                 process.WaitForExit();
             }
@@ -41,26 +50,29 @@ public class TimeZoneLoader : Task
         File.Copy(Path.Combine(InputDirectory!,"zone1970.tab"), Path.Combine(OutputDirectory!,"zone1970.tab"));
     }
 
-    private void FilterTimeZoneData(string[] areas) {
+    private void FilterTimeZoneData(string[] areas) 
+    {
         var directoryInfo = new DirectoryInfo (OutputDirectory!);
-        foreach (var entry in directoryInfo.EnumerateDirectories()) {
-            if (Array.IndexOf(areas, entry.Name) == -1) {
+        foreach (var entry in directoryInfo.EnumerateDirectories()) 
+        {
+            if (Array.IndexOf(areas, entry.Name) == -1) 
+            {
                 Directory.Delete(entry.FullName, true);
             }
         }
     }
 
-    private void FilterZoneTab(string[] filters) {
+    private void FilterZoneTab(string[] filters) 
+    {
         var oldPath = Path.Combine(OutputDirectory!, "zone1970.tab");
         var path = Path.Combine(OutputDirectory!, "zone.tab");
-        var fileInfo = new FileInfo(oldPath);
-        using (var readStream = fileInfo.OpenRead())
-        using (StreamReader sr = new StreamReader(readStream))
-        using (FileStream fs = File.OpenWrite(path)) 
-        using (StreamWriter sw = new StreamWriter(fs)){
+        using (StreamReader sr = new StreamReader(oldPath))
+        using (StreamWriter sw = new StreamWriter(path))
+        {
             string? line;
             while ((line = sr.ReadLine()) != null) {
-                if (filters.Any(x => Regex.IsMatch(line, $@"\b{x}\b"))) {
+                if (filters.Any(x => Regex.IsMatch(line, $@"\b{x}\b"))) 
+                {
                     sw.WriteLine(line);
                 }
             }
@@ -68,16 +80,14 @@ public class TimeZoneLoader : Task
         File.Delete(oldPath);
     }
 
-    public override bool Execute() {
-        if (InputDirectory == null) {
-            InputDirectory = Path.Combine(Directory.GetCurrentDirectory(), "obj", "data", "input");
-        }
-        Directory.CreateDirectory(InputDirectory);
+    public override bool Execute() 
+    {
 
-        if (OutputDirectory == null) {
-            OutputDirectory = Path.Combine(Directory.GetCurrentDirectory(), "obj", "data", "output");
-        }
-        Directory.CreateDirectory(OutputDirectory);
+        if (!Directory.Exists(InputDirectory))
+            Directory.CreateDirectory(InputDirectory!);
+        
+        if (!Directory.Exists(OutputDirectory))
+            Directory.CreateDirectory(OutputDirectory!);
 
         DownloadTimeZoneData();
 
