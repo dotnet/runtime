@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics;
 using System.Security.Cryptography;
 
 namespace Internal.Cryptography
@@ -19,17 +20,21 @@ namespace Internal.Cryptography
             bool encrypting)
         {
             // The algorithm pointer is a static pointer, so not having any cleanup code is correct.
-            IntPtr algorithm;
-            switch ((cipherMode, feedbackSize))
+            IntPtr algorithm = IntPtr.Zero;
+
+            switch (cipherMode)
             {
-                case (CipherMode.CBC, _):
+                case CipherMode.CBC:
                     algorithm = Interop.Crypto.EvpDesCbc();
                     break;
-                case (CipherMode.ECB, _):
+                case CipherMode.ECB:
                     algorithm = Interop.Crypto.EvpDesEcb();
                     break;
-                case (CipherMode.CFB, 1):
+                case CipherMode.CFB:
+
+                    Debug.Assert(feedbackSize == 1, "TripleDES with CFB should have FeedbackSize set to 1");
                     algorithm = Interop.Crypto.EvpDesCfb8();
+
                     break;
                 default:
                     throw new NotSupportedException();

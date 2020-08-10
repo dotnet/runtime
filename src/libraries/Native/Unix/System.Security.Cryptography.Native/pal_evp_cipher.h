@@ -102,7 +102,6 @@ Direct shim to EVP_aes_128_ecb.
 */
 PALEXPORT const EVP_CIPHER* CryptoNative_EvpAes128Ecb(void);
 
-
 /*
 Function:
 EvpAes128Cbc

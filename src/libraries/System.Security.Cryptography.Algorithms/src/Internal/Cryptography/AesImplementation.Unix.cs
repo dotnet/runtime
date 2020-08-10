@@ -44,21 +44,20 @@ namespace Internal.Cryptography
             Tuple.Create(256, 0, CipherMode.ECB, (Func<IntPtr>)Interop.Crypto.EvpAes256Ecb),
             Tuple.Create(256, 8, CipherMode.CFB, (Func<IntPtr>)Interop.Crypto.EvpAes256Cfb8),
             Tuple.Create(256, 128, CipherMode.CFB, (Func<IntPtr>)Interop.Crypto.EvpAes256Cfb128),
-
         };
 
         private static IntPtr GetAlgorithm(int keySize, int feedback, CipherMode cipherMode)
         {
             bool foundKeysize = false;
 
-            foreach (var triplet in s_algorithmInitializers)
+            foreach (var tuple in s_algorithmInitializers)
             {
-                if (triplet.Item1 == keySize && (triplet.Item2 == 0 || triplet.Item2 == feedback) && triplet.Item3 == cipherMode)
+                if (tuple.Item1 == keySize && (tuple.Item2 == 0 || tuple.Item2 == feedback) && tuple.Item3 == cipherMode)
                 {
-                    return triplet.Item4();
+                    return tuple.Item4();
                 }
 
-                if (triplet.Item1 == keySize)
+                if (tuple.Item1 == keySize)
                 {
                     foundKeysize = true;
                 }

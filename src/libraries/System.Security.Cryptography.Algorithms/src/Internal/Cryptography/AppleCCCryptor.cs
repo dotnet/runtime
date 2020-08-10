@@ -162,21 +162,23 @@ namespace Internal.Cryptography
 
         private Interop.AppleCrypto.PAL_ChainingMode GetPalChainMode(Interop.AppleCrypto.PAL_SymmetricAlgorithm algorithm, CipherMode cipherMode, int feedbackSizeInBytes)
         {
-            switch ((algorithm, cipherMode, feedbackSizeInBytes))
+            switch (cipherMode)
             {
-                case (_, CipherMode.CBC, _):
+                case CipherMode.CBC:
                     return Interop.AppleCrypto.PAL_ChainingMode.CBC;
-                case (_, CipherMode.ECB, _):
+                case CipherMode.ECB:
                     return Interop.AppleCrypto.PAL_ChainingMode.ECB;
-                    // let's be consistent across all platforms,
-                    // and do not support CFB for anything else than AES.
-                case (_, CipherMode.CFB, 1):
-                    return Interop.AppleCrypto.PAL_ChainingMode.CFB8;
-                case (Interop.AppleCrypto.PAL_SymmetricAlgorithm.AES, CipherMode.CFB, 16):
-                case (Interop.AppleCrypto.PAL_SymmetricAlgorithm.TripleDES, CipherMode.CFB, 8):
+                case CipherMode.CFB:
+                    if (feedbackSizeInBytes == 1)
+                    {
+                        return Interop.AppleCrypto.PAL_ChainingMode.CFB8;
+                    }
+
+                    Debug.Assert(
+                        (algorithm == Interop.AppleCrypto.PAL_SymmetricAlgorithm.AES && feedbackSizeInBytes == 16) ||
+                        (algorithm == Interop.AppleCrypto.PAL_SymmetricAlgorithm.TripleDES && feedbackSizeInBytes == 8));
+
                     return Interop.AppleCrypto.PAL_ChainingMode.CFB;
-                case (_, CipherMode.CFB, _):
-                    throw new PlatformNotSupportedException(SR.Format(SR.Cryptography_CipherModeFeedbackNotSupported, feedbackSizeInBytes * 8, cipherMode));
                 default:
                     throw new PlatformNotSupportedException(SR.Format(SR.Cryptography_CipherModeNotSupported, cipherMode));
             }
