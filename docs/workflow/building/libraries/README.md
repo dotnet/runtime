@@ -9,11 +9,11 @@ Here is one example of a daily workflow for a developer working mainly on the li
 git clean -xdf
 git pull upstream master & git push origin master
 :: Build Debug libraries on top of Release runtime:
-build clr+libs -rc Release
+build.cmd clr+libs -rc Release
 :: The above you may only perform once in a day, or when you pull down significant new changes.
 
 :: If you use Visual Studio, you might open System.Text.RegularExpressions.sln here.
-build -vs System.Text.RegularExpressions
+build.cmd -vs System.Text.RegularExpressions
 
 :: Switch to working on a given library (RegularExpressions in this case)
 cd src\libraries\System.Text.RegularExpressions

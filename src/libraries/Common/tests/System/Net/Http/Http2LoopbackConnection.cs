@@ -18,6 +18,8 @@ namespace System.Net.Test.Common
 {
     public class Http2LoopbackConnection : GenericLoopbackConnection
     {
+        public const string Http2Prefix = "PRI * HTTP/2.0\r\n\r\nSM\r\n\r\n";
+
         private Socket _connectionSocket;
         private Stream _connectionStream;
         private TaskCompletionSource<bool> _ignoredSettingsAckPromise;
@@ -58,7 +60,6 @@ namespace System.Net.Test.Common
 
                     var protocols = new List<SslApplicationProtocol>();
                     protocols.Add(SslApplicationProtocol.Http2);
-                    protocols.Add(SslApplicationProtocol.Http11);
                     options.ApplicationProtocols = protocols;
 
                     options.ServerCertificate = cert;
@@ -697,7 +698,11 @@ namespace System.Net.Test.Common
 
         public override void Dispose()
         {
-            ShutdownIgnoringErrorsAsync(_lastStreamId).GetAwaiter().GetResult();
+            // Might have been already shutdown manually via WaitForConnectionShutdownAsync which nulls the _connectionStream.
+            if (_connectionStream != null)
+            {
+                ShutdownIgnoringErrorsAsync(_lastStreamId).GetAwaiter().GetResult();
+            }
         }
 
         //
@@ -781,6 +786,29 @@ namespace System.Net.Test.Common
         {
             int streamId = requestId == 0 ? _lastStreamId : requestId;
             return SendResponseBodyAsync(streamId, body, isFinal);
+        }
+
+        public override async Task<HttpRequestData> HandleRequestAsync(HttpStatusCode statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null, string content = "")
+        {
+            (int streamId, HttpRequestData requestData) = await ReadAndParseRequestHeaderAsync().ConfigureAwait(false);
+
+            // We are about to close the connection, after we send the response.
+            // So, send a GOAWAY frame now so the client won't inadvertantly try to reuse the connection.
+            await SendGoAway(streamId).ConfigureAwait(false);
+
+            if (string.IsNullOrEmpty(content))
+            {
+                await SendResponseHeadersAsync(streamId, endStream: true, statusCode, isTrailingHeader: false, headers : headers).ConfigureAwait(false);
+            }
+            else
+            {
+                await SendResponseHeadersAsync(streamId, endStream: false, statusCode, isTrailingHeader: false, headers : headers).ConfigureAwait(false);
+                await SendResponseBodyAsync(streamId, Encoding.ASCII.GetBytes(content)).ConfigureAwait(false);
+            }
+
+            await WaitForConnectionShutdownAsync().ConfigureAwait(false);
+
+            return requestData;
         }
 
         public override async Task WaitForCancellationAsync(bool ignoreIncomingData = true, int requestId = 0)

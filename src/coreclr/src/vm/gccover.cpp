@@ -1222,7 +1222,7 @@ bool IsGcCoverageInterrupt(LPVOID ip)
 // original instruction. Only one instruction must be used,
 // because multiple threads can be executing the same code stream.
 
-void RemoveGcCoverageInterrupt(TADDR instrPtr, BYTE * savedInstrPtr)
+void RemoveGcCoverageInterrupt(TADDR instrPtr, BYTE * savedInstrPtr, GCCoverageInfo* gcCover, DWORD offset)
 {
 #ifdef TARGET_ARM
         if (GetARMInstructionLength(savedInstrPtr) == 2)
@@ -1234,6 +1234,17 @@ void RemoveGcCoverageInterrupt(TADDR instrPtr, BYTE * savedInstrPtr)
 #else
         *(BYTE *)instrPtr = *savedInstrPtr;
 #endif
+
+#ifdef TARGET_X86
+    // Epilog checking relies on precise control of when instrumentation for the  first prolog 
+    // instruction is enabled or disabled. In particular, if a function has multiple epilogs, or
+    // the first execution of the function terminates via an exception, and subsequent completions
+    // do not, then the function may trigger a false stress fault if epilog checks are not disabled.
+    if (offset == 0)
+    {
+        gcCover->doingEpilogChecks = false;
+    }
+#endif // TARGET_X86
 
         FlushInstructionCache(GetCurrentProcess(), (LPCVOID)instrPtr, 4);
 }
@@ -1290,7 +1301,7 @@ BOOL OnGcCoverageInterrupt(PCONTEXT regs)
         // where the call could be coming from a thread unknown to the CLR and
         // we haven't created a thread yet - see PreStubWorker_Preemptive().
         _ASSERTE(pMD->HasUnmanagedCallersOnlyAttribute());
-        RemoveGcCoverageInterrupt(instrPtr, savedInstrPtr);
+        RemoveGcCoverageInterrupt(instrPtr, savedInstrPtr, gcCover, offset);
         return TRUE;
     }
 
@@ -1304,7 +1315,7 @@ BOOL OnGcCoverageInterrupt(PCONTEXT regs)
     // anything for this method at this point.
     if (!pThread->PreemptiveGCDisabled() && pMD->HasUnmanagedCallersOnlyAttribute())
     {
-        RemoveGcCoverageInterrupt(instrPtr, savedInstrPtr);
+        RemoveGcCoverageInterrupt(instrPtr, savedInstrPtr, gcCover, offset);
         return TRUE;
     }
 
@@ -1315,7 +1326,7 @@ BOOL OnGcCoverageInterrupt(PCONTEXT regs)
         Frame* pFrame = pThread->GetFrame();
         if (InlinedCallFrame::FrameHasActiveCall(pFrame))
         {
-            RemoveGcCoverageInterrupt(instrPtr, savedInstrPtr);
+            RemoveGcCoverageInterrupt(instrPtr, savedInstrPtr, gcCover, offset);
             return TRUE;
         }
     }
@@ -1325,7 +1336,7 @@ BOOL OnGcCoverageInterrupt(PCONTEXT regs)
     // location.
     if (!pThread->CheckForAndDoRedirectForGCStress(regs))
     {
-        RemoveGcCoverageInterrupt(instrPtr, savedInstrPtr);
+        RemoveGcCoverageInterrupt(instrPtr, savedInstrPtr, gcCover, offset);
     }
 
 #else // !USE_REDIRECT_FOR_GCSTRESS
@@ -1440,12 +1451,10 @@ void DoGcStress (PCONTEXT regs, NativeCodeVersion nativeCodeVersion)
     bool bShouldUpdateProlog = true;
     if (gcCover->doingEpilogChecks) {
         if (offset == 0) {
-            if (gcCover->callerThread == 0) {
-                if (FastInterlockCompareExchangePointer(&gcCover->callerThread, pThread, 0) == 0) {
-                    gcCover->callerRegs = *regs;
-                    gcCover->gcCount = GCHeapUtilities::GetGCHeap()->GetGcCount();
-                    bShouldUpdateProlog = false;
-                }
+            if ((gcCover->callerThread == 0) && (FastInterlockCompareExchangePointer(&gcCover->callerThread, pThread, 0) == 0)) {
+                gcCover->callerRegs = *regs;
+                gcCover->gcCount = GCHeapUtilities::GetGCHeap()->GetGcCount();
+                bShouldUpdateProlog = false;
             }
             else {
                 // We have been in this routine before.  Give up on epilog checking because

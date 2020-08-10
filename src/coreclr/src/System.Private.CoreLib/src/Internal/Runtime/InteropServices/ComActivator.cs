@@ -25,7 +25,7 @@ namespace Internal.Runtime.InteropServices
         void CreateInstance(
             [MarshalAs(UnmanagedType.Interface)] object? pUnkOuter,
             ref Guid riid,
-            [MarshalAs(UnmanagedType.Interface)] out object? ppvObject);
+            out IntPtr ppvObject);
 
         void LockServer([MarshalAs(UnmanagedType.Bool)] bool fLock);
     }
@@ -51,7 +51,7 @@ namespace Internal.Runtime.InteropServices
         new void CreateInstance(
             [MarshalAs(UnmanagedType.Interface)] object? pUnkOuter,
             ref Guid riid,
-            [MarshalAs(UnmanagedType.Interface)] out object? ppvObject);
+            out IntPtr ppvObject);
 
         new void LockServer([MarshalAs(UnmanagedType.Bool)] bool fLock);
 
@@ -66,7 +66,7 @@ namespace Internal.Runtime.InteropServices
             [MarshalAs(UnmanagedType.Interface)] object? pUnkReserved,
             ref Guid riid,
             [MarshalAs(UnmanagedType.BStr)] string bstrKey,
-            [MarshalAs(UnmanagedType.Interface)] out object ppvObject);
+            out IntPtr ppvObject);
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -493,28 +493,32 @@ $@"{nameof(UnregisterClassForTypeInternal)} arguments:
 #endif
             }
 
-            public static void ValidateObjectIsMarshallableAsInterface(object obj, Type interfaceType)
+            public static IntPtr GetObjectAsInterface(object obj, Type interfaceType)
             {
 #if FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
-                // If the requested "interface type" is type object then return
-                // because type object is always marshallable.
+                // If the requested "interface type" is type object then return as IUnknown
                 if (interfaceType == typeof(object))
                 {
-                    return;
+                    return Marshal.GetIUnknownForObject(obj);
                 }
 
                 Debug.Assert(interfaceType.IsInterface);
 
-                // The intent of this call is to validate the interface can be
+                // The intent of this call is to get AND validate the interface can be
                 // marshalled to native code. An exception will be thrown if the
                 // type is unable to be marshalled to native code.
                 // Scenarios where this is relevant:
                 //  - Interfaces that use Generics
                 //  - Interfaces that define implementation
-                IntPtr ptr = Marshal.GetComInterfaceForObject(obj, interfaceType, CustomQueryInterfaceMode.Ignore);
+                IntPtr interfaceMaybe = Marshal.GetComInterfaceForObject(obj, interfaceType, CustomQueryInterfaceMode.Ignore);
 
-                // Decrement the above 'Marshal.GetComInterfaceForObject()'
-                Marshal.Release(ptr);
+                if (interfaceMaybe == IntPtr.Zero)
+                {
+                    // E_NOINTERFACE
+                    throw new InvalidCastException();
+                }
+
+                return interfaceMaybe;
 #else
                 throw new PlatformNotSupportedException();
 #endif
@@ -544,18 +548,18 @@ $@"{nameof(UnregisterClassForTypeInternal)} arguments:
             public void CreateInstance(
                 [MarshalAs(UnmanagedType.Interface)] object? pUnkOuter,
                 ref Guid riid,
-                [MarshalAs(UnmanagedType.Interface)] out object? ppvObject)
+                out IntPtr ppvObject)
             {
 #if FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
                 Type interfaceType = BasicClassFactory.GetValidatedInterfaceType(_classType, ref riid, pUnkOuter);
 
-                ppvObject = Activator.CreateInstance(_classType)!;
+                object obj = Activator.CreateInstance(_classType)!;
                 if (pUnkOuter != null)
                 {
-                    ppvObject = BasicClassFactory.CreateAggregatedObject(pUnkOuter, ppvObject);
+                    obj = BasicClassFactory.CreateAggregatedObject(pUnkOuter, obj);
                 }
 
-                BasicClassFactory.ValidateObjectIsMarshallableAsInterface(ppvObject, interfaceType);
+                ppvObject = BasicClassFactory.GetObjectAsInterface(obj, interfaceType);
 #else
                 throw new PlatformNotSupportedException();
 #endif
@@ -593,7 +597,7 @@ $@"{nameof(UnregisterClassForTypeInternal)} arguments:
             public void CreateInstance(
                 [MarshalAs(UnmanagedType.Interface)] object? pUnkOuter,
                 ref Guid riid,
-                [MarshalAs(UnmanagedType.Interface)] out object? ppvObject)
+                out IntPtr ppvObject)
             {
 #if FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
                 CreateInstanceInner(pUnkOuter, ref riid, key: null, isDesignTime: true, out ppvObject);
@@ -640,7 +644,7 @@ $@"{nameof(UnregisterClassForTypeInternal)} arguments:
                 [MarshalAs(UnmanagedType.Interface)] object? pUnkReserved,
                 ref Guid riid,
                 [MarshalAs(UnmanagedType.BStr)] string bstrKey,
-                [MarshalAs(UnmanagedType.Interface)] out object ppvObject)
+                out IntPtr ppvObject)
             {
 #if FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
                 Debug.Assert(pUnkReserved == null);
@@ -655,18 +659,18 @@ $@"{nameof(UnregisterClassForTypeInternal)} arguments:
                 ref Guid riid,
                 string? key,
                 bool isDesignTime,
-                out object ppvObject)
+                out IntPtr ppvObject)
             {
 #if FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
                 Type interfaceType = BasicClassFactory.GetValidatedInterfaceType(_classType, ref riid, pUnkOuter);
 
-                ppvObject = _licenseProxy.AllocateAndValidateLicense(_classType, key, isDesignTime);
+                object obj = _licenseProxy.AllocateAndValidateLicense(_classType, key, isDesignTime);
                 if (pUnkOuter != null)
                 {
-                    ppvObject = BasicClassFactory.CreateAggregatedObject(pUnkOuter, ppvObject);
+                    obj = BasicClassFactory.CreateAggregatedObject(pUnkOuter, obj);
                 }
 
-                BasicClassFactory.ValidateObjectIsMarshallableAsInterface(ppvObject, interfaceType);
+                ppvObject = BasicClassFactory.GetObjectAsInterface(obj, interfaceType);
 #else
                 throw new PlatformNotSupportedException();
 #endif
