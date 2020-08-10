@@ -118,6 +118,6 @@
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
   <data name="SystemRuntimeInteropServicesJavaScript_PlatformNotSupported" xml:space="preserve">
-    <value>System.Runtime.InteropServices.JavaScript is not supported on this platform.</value>
+    <value>System.Private.Runtime.InteropServices.JavaScript is not supported on this platform.</value>
   </data>
 </root>

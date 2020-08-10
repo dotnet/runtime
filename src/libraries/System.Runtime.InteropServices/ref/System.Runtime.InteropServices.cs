@@ -500,7 +500,7 @@ namespace System.Runtime.InteropServices
         [return: System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute("o")]
         public static object? CreateWrapperOfType(object? o, System.Type t) { throw null; }
         [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
-        public static TWrapper CreateWrapperOfType<T, TWrapper>([System.Diagnostics.CodeAnalysis.AllowNullAttribute] T o) { throw null; }
+        public static TWrapper CreateWrapperOfType<T, TWrapper>(T? o) { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public static void DestroyStructure(System.IntPtr ptr, System.Type structuretype) { }
         public static void DestroyStructure<T>(System.IntPtr ptr) { }
@@ -548,7 +548,7 @@ namespace System.Runtime.InteropServices
         public static void GetNativeVariantForObject(object? obj, System.IntPtr pDstNativeVariant) { }
         [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        public static void GetNativeVariantForObject<T>([System.Diagnostics.CodeAnalysis.AllowNullAttribute] T obj, System.IntPtr pDstNativeVariant) { }
+        public static void GetNativeVariantForObject<T>(T? obj, System.IntPtr pDstNativeVariant) { }
         [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public static object GetObjectForIUnknown(System.IntPtr pUnk) { throw null; }
         [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
@@ -556,8 +556,7 @@ namespace System.Runtime.InteropServices
         public static object? GetObjectForNativeVariant(System.IntPtr pSrcNativeVariant) { throw null; }
         [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        [return: System.Diagnostics.CodeAnalysis.MaybeNullAttribute]
-        public static T GetObjectForNativeVariant<T>(System.IntPtr pSrcNativeVariant) { throw null; }
+        public static T? GetObjectForNativeVariant<T>(System.IntPtr pSrcNativeVariant) { throw null; }
         [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public static object?[] GetObjectsForNativeVariants(System.IntPtr aSrcNativeVariant, int cVars) { throw null; }
@@ -594,8 +593,7 @@ namespace System.Runtime.InteropServices
         public static void PtrToStructure(System.IntPtr ptr, object structure) { }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public static object? PtrToStructure(System.IntPtr ptr, System.Type structureType) { throw null; }
-        [return: System.Diagnostics.CodeAnalysis.MaybeNullAttribute]
-        public static T PtrToStructure<T>(System.IntPtr ptr) { throw null; }
+        public static T? PtrToStructure<T>(System.IntPtr ptr) { throw null; }
         public static void PtrToStructure<T>(System.IntPtr ptr, [System.Diagnostics.CodeAnalysis.DisallowNullAttribute] T structure) { }
         [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public static int QueryInterface(System.IntPtr pUnk, ref System.Guid iid, out System.IntPtr ppv) { throw null; }

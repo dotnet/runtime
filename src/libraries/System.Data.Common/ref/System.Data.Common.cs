@@ -403,21 +403,15 @@ namespace System.Data
     }
     public static partial class DataRowExtensions
     {
-        [return: System.Diagnostics.CodeAnalysis.MaybeNullAttribute]
-        public static T Field<T>(this System.Data.DataRow row, System.Data.DataColumn column) { throw null; }
-        [return: System.Diagnostics.CodeAnalysis.MaybeNullAttribute]
-        public static T Field<T>(this System.Data.DataRow row, System.Data.DataColumn column, System.Data.DataRowVersion version) { throw null; }
-        [return: System.Diagnostics.CodeAnalysis.MaybeNullAttribute]
-        public static T Field<T>(this System.Data.DataRow row, int columnIndex) { throw null; }
-        [return: System.Diagnostics.CodeAnalysis.MaybeNullAttribute]
-        public static T Field<T>(this System.Data.DataRow row, int columnIndex, System.Data.DataRowVersion version) { throw null; }
-        [return: System.Diagnostics.CodeAnalysis.MaybeNullAttribute]
-        public static T Field<T>(this System.Data.DataRow row, string columnName) { throw null; }
-        [return: System.Diagnostics.CodeAnalysis.MaybeNullAttribute]
-        public static T Field<T>(this System.Data.DataRow row, string columnName, System.Data.DataRowVersion version) { throw null; }
-        public static void SetField<T>(this System.Data.DataRow row, System.Data.DataColumn column, [System.Diagnostics.CodeAnalysis.AllowNullAttribute] T value) { }
-        public static void SetField<T>(this System.Data.DataRow row, int columnIndex, [System.Diagnostics.CodeAnalysis.AllowNullAttribute] T value) { }
-        public static void SetField<T>(this System.Data.DataRow row, string columnName, [System.Diagnostics.CodeAnalysis.AllowNullAttribute] T value) { }
+        public static T? Field<T>(this System.Data.DataRow row, System.Data.DataColumn column) { throw null; }
+        public static T? Field<T>(this System.Data.DataRow row, System.Data.DataColumn column, System.Data.DataRowVersion version) { throw null; }
+        public static T? Field<T>(this System.Data.DataRow row, int columnIndex) { throw null; }
+        public static T? Field<T>(this System.Data.DataRow row, int columnIndex, System.Data.DataRowVersion version) { throw null; }
+        public static T? Field<T>(this System.Data.DataRow row, string columnName) { throw null; }
+        public static T? Field<T>(this System.Data.DataRow row, string columnName, System.Data.DataRowVersion version) { throw null; }
+        public static void SetField<T>(this System.Data.DataRow row, System.Data.DataColumn column, T? value) { }
+        public static void SetField<T>(this System.Data.DataRow row, int columnIndex, T? value) { }
+        public static void SetField<T>(this System.Data.DataRow row, string columnName, T? value) { }
     }
     [System.FlagsAttribute]
     public enum DataRowState
@@ -1057,8 +1051,8 @@ namespace System.Data
         [System.ComponentModel.BrowsableAttribute(false)]
         public bool IsSynchronized { get { throw null; } }
         public virtual System.Data.DataViewSetting this[System.Data.DataTable table] { get { throw null; } set { } }
-        [System.Diagnostics.CodeAnalysis.MaybeNullAttribute]
-        public virtual System.Data.DataViewSetting this[int index] { get { throw null; } set { } }
+        [System.Diagnostics.CodeAnalysis.DisallowNullAttribute]
+        public virtual System.Data.DataViewSetting? this[int index] { get { throw null; } set { } }
         public virtual System.Data.DataViewSetting? this[string tableName] { get { throw null; } }
         [System.ComponentModel.BrowsableAttribute(false)]
         public object SyncRoot { get { throw null; } }
@@ -1563,8 +1557,7 @@ namespace System.Data
     public static partial class TypedTableBaseExtensions
     {
         public static System.Data.EnumerableRowCollection<TRow> AsEnumerable<TRow>(this System.Data.TypedTableBase<TRow> source) where TRow : System.Data.DataRow { throw null; }
-        [return: System.Diagnostics.CodeAnalysis.MaybeNullAttribute]
-        public static TRow ElementAtOrDefault<TRow>(this System.Data.TypedTableBase<TRow> source, int index) where TRow : System.Data.DataRow { throw null; }
+        public static TRow? ElementAtOrDefault<TRow>(this System.Data.TypedTableBase<TRow> source, int index) where TRow : System.Data.DataRow { throw null; }
         public static System.Data.OrderedEnumerableRowCollection<TRow> OrderByDescending<TRow, TKey>(this System.Data.TypedTableBase<TRow> source, System.Func<TRow, TKey> keySelector) where TRow : System.Data.DataRow { throw null; }
         public static System.Data.OrderedEnumerableRowCollection<TRow> OrderByDescending<TRow, TKey>(this System.Data.TypedTableBase<TRow> source, System.Func<TRow, TKey> keySelector, System.Collections.Generic.IComparer<TKey> comparer) where TRow : System.Data.DataRow { throw null; }
         public static System.Data.OrderedEnumerableRowCollection<TRow> OrderBy<TRow, TKey>(this System.Data.TypedTableBase<TRow> source, System.Func<TRow, TKey> keySelector) where TRow : System.Data.DataRow { throw null; }

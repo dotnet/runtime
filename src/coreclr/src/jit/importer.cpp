@@ -2117,11 +2117,18 @@ GenTree* Compiler::impRuntimeLookupToTree(CORINFO_RESOLVED_TOKEN* pResolvedToken
                                       nullptr DEBUGARG("impRuntimeLookup indirectOffset"));
         }
 
+        // The last indirection could be subject to a size check (dynamic dictionary expansion)
+        bool isLastIndirectionWithSizeCheck =
+            ((i == pRuntimeLookup->indirections - 1) && (pRuntimeLookup->sizeOffset != CORINFO_NO_SIZE_CHECK));
+
         if (i != 0)
         {
             slotPtrTree = gtNewOperNode(GT_IND, TYP_I_IMPL, slotPtrTree);
             slotPtrTree->gtFlags |= GTF_IND_NONFAULTING;
-            slotPtrTree->gtFlags |= GTF_IND_INVARIANT;
+            if (!isLastIndirectionWithSizeCheck)
+            {
+                slotPtrTree->gtFlags |= GTF_IND_INVARIANT;
+            }
         }
 
         if ((i == 1 && pRuntimeLookup->indirectFirstOffset) || (i == 2 && pRuntimeLookup->indirectSecondOffset))
@@ -2131,8 +2138,7 @@ GenTree* Compiler::impRuntimeLookupToTree(CORINFO_RESOLVED_TOKEN* pResolvedToken
 
         if (pRuntimeLookup->offsets[i] != 0)
         {
-            // The last indirection could be subject to a size check (dynamic dictionary expansion)
-            if (i == pRuntimeLookup->indirections - 1 && pRuntimeLookup->sizeOffset != CORINFO_NO_SIZE_CHECK)
+            if (isLastIndirectionWithSizeCheck)
             {
                 lastIndOfTree = impCloneExpr(slotPtrTree, &slotPtrTree, NO_CLASS_HANDLE, (unsigned)CHECK_SPILL_ALL,
                                              nullptr DEBUGARG("impRuntimeLookup indirectOffset"));

@@ -1,4 +1,4 @@
-TOP=../../../../..
+TOP=../../../../../..
 
 DOTNET_Q_ARGS=--nologo -v:q -consoleloggerparameters:NoSummary
 
