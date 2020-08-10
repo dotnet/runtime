@@ -3,6 +3,7 @@
 
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
+using System.IO.Pipelines;
 using System.Net.Connections;
 using System.Threading.Tasks;
 using Xunit;
@@ -49,6 +50,23 @@ namespace System.Net.Sockets.Tests
             }
         }
 
+        class CustomDuplexPipe : IDuplexPipe
+        {
+            private static readonly StreamPipeReaderOptions s_readerOpts = new StreamPipeReaderOptions(leaveOpen: true);
+            private static readonly StreamPipeWriterOptions s_writerOpts = new StreamPipeWriterOptions(leaveOpen: true);
+
+            public CustomDuplexPipe(Stream stream, CustomConnectionOptionsValues optionValues)
+            {
+                Input = PipeReader.Create(stream, s_readerOpts);
+                Output = PipeWriter.Create(stream, s_writerOpts);
+                OptionValues = optionValues;
+            }
+
+            public PipeReader Input { get; }
+            public PipeWriter Output { get; }
+            public CustomConnectionOptionsValues OptionValues { get; }
+        }
+
         private sealed class CustomFactory : SocketsConnectionFactory
         {
             public CustomFactory() : base(SocketType.Stream, ProtocolType.Tcp)
@@ -72,6 +90,12 @@ namespace System.Net.Sockets.Tests
             {
                 options.TryGet(out CustomConnectionOptionsValues vals);
                 return new CustomNetworkStream(socket, vals);
+            }
+
+            protected override IDuplexPipe CreatePipe(Socket socket, IConnectionProperties options)
+            {
+                options.TryGet(out CustomConnectionOptionsValues vals);
+                return new CustomDuplexPipe(CreateStream(socket, options), vals);
             }
         }
 
@@ -101,9 +125,13 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        public void DerivedFactory_CanShimPipe()
+        public async Task DerivedFactory_CanShimPipe()
         {
-            // TODO
+            using var server = SocketTestServer.SocketTestServerFactory(SocketImplementationType.Async, _endPoint);
+            Connection connection = await _factory.ConnectAsync(server.EndPoint, _options);
+
+            CustomDuplexPipe pipe = Assert.IsType<CustomDuplexPipe>(connection.Pipe);
+            Assert.Same(_options.Values, pipe.OptionValues);
         }
     }
 }
