@@ -5,9 +5,9 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
 {
     internal static class MsQuicStatusCodes
     {
-        internal static readonly uint Success = OperatingSystem.IsWindows() ? Windows.Success : Linux.Success;
-        internal static readonly uint Pending = OperatingSystem.IsWindows() ? Windows.Pending : Linux.Pending;
-        internal static readonly uint InternalError = OperatingSystem.IsWindows() ? Windows.InternalError : Linux.InternalError;
+        internal static uint Success => OperatingSystem.IsWindows() ? Windows.Success : Linux.Success;
+        internal static uint Pending => OperatingSystem.IsWindows() ? Windows.Pending : Linux.Pending;
+        internal static uint InternalError => OperatingSystem.IsWindows() ? Windows.InternalError : Linux.InternalError;
 
         // TODO return better error messages here.
         public static string GetError(uint status) => OperatingSystem.IsWindows() ? Windows.GetError(status) : Linux.GetError(status);

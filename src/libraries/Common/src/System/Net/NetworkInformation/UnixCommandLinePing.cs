@@ -133,7 +133,7 @@ namespace System.Net.NetworkInformation
 
             if (ttl > 0)
             {
-                if (OperatingSystem.IsFreeBSD() | OperatingSystem.IsMacOS())
+                if (OperatingSystem.IsFreeBSD() || OperatingSystem.IsMacOS())
                 {
                     // OSX and FreeBSD use -h to set hop limit for IPv6 and -m ttl for IPv4
                     if (ipv4)
@@ -156,7 +156,7 @@ namespace System.Net.NetworkInformation
 
             if (fragmentOption != PingFragmentOptions.Default)
             {
-                if (OperatingSystem.IsFreeBSD() | OperatingSystem.IsMacOS())
+                if (OperatingSystem.IsFreeBSD() || OperatingSystem.IsMacOS())
                 {
                     // The bit is off by default on OSX & FreeBSD
                     if (fragmentOption == PingFragmentOptions.Dont) {
