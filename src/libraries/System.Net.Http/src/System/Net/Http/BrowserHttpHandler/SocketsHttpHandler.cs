@@ -6,11 +6,14 @@ using System.Net.Security;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Diagnostics.CodeAnalysis;
+using System.Net.Connections;
 
 namespace System.Net.Http
 {
     public sealed class SocketsHttpHandler : HttpMessageHandler
     {
+        public static bool IsSupported => false;
+
         public bool UseCookies
         {
             get => throw new PlatformNotSupportedException();
@@ -127,9 +130,39 @@ namespace System.Net.Http
             set => throw new PlatformNotSupportedException();
         }
 
+        public ConnectionFactory? ConnectionFactory
+        {
+            get => throw new PlatformNotSupportedException();
+            set => throw new PlatformNotSupportedException();
+        }
+
+        public Func<HttpRequestMessage, Connection, CancellationToken, ValueTask<Connection>>? PlaintextFilter
+        {
+            get => throw new PlatformNotSupportedException();
+            set => throw new PlatformNotSupportedException();
+        }
+
         public IDictionary<string, object?> Properties => throw new PlatformNotSupportedException();
+
+        public HeaderEncodingSelector<HttpRequestMessage>? RequestHeaderEncodingSelector
+        {
+            get => throw new PlatformNotSupportedException();
+            set => throw new PlatformNotSupportedException();
+        }
+
+        public HeaderEncodingSelector<HttpRequestMessage>? ResponseHeaderEncodingSelector
+        {
+            get => throw new PlatformNotSupportedException();
+            set => throw new PlatformNotSupportedException();
+        }
 
         protected internal override Task<HttpResponseMessage> SendAsync(
             HttpRequestMessage request, CancellationToken cancellationToken) => throw new PlatformNotSupportedException();
+
+        public bool EnableMultipleHttp2Connections
+        {
+            get => throw new PlatformNotSupportedException();
+            set => throw new PlatformNotSupportedException();
+        }
     }
 }

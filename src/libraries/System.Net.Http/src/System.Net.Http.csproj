@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <WindowsRID>win</WindowsRID>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -29,6 +29,7 @@
     <Compile Include="System\Net\Http\EmptyContent.cs" />
     <Compile Include="System\Net\Http\EmptyReadStream.cs" />
     <Compile Include="System\Net\Http\FormUrlEncodedContent.cs" />
+    <Compile Include="System\Net\Http\HeaderEncodingSelector.cs" />
     <Compile Include="System\Net\Http\Headers\AltSvcHeaderParser.cs" />
     <Compile Include="System\Net\Http\Headers\AltSvcHeaderValue.cs" />
     <Compile Include="System\Net\Http\Headers\KnownHeader.cs" />
@@ -45,6 +46,8 @@
     <Compile Include="System\Net\Http\HttpParseResult.cs" />
     <Compile Include="System\Net\Http\HttpRequestException.cs" />
     <Compile Include="System\Net\Http\HttpRequestMessage.cs" />
+    <Compile Include="System\Net\Http\HttpRequestOptions.cs" />
+    <Compile Include="System\Net\Http\HttpRequestOptionsKey.cs" />
     <Compile Include="System\Net\Http\HttpResponseMessage.cs" />
     <Compile Include="System\Net\Http\HttpRuleParser.cs" />
     <Compile Include="System\Net\Http\HttpTelemetry.cs" />
@@ -106,6 +109,8 @@
              Link="Common\System\IO\StreamHelpers.CopyValidation.cs" />
     <Compile Include="$(CommonPath)System\Net\Security\SslClientAuthenticationOptionsExtensions.cs"
              Link="Common\System\Net\Security\SslClientAuthenticationOptionsExtensions.cs" />
+    <Compile Include="$(CommonPath)System\Net\NetworkErrorHelper.cs"
+             Link="Common\System\Net\NetworkErrorHelper.cs" />
     <Compile Include="$(CommonPath)System\IO\DelegatingStream.cs"
              Link="Common\System\IO\DelegatingStream.cs" />
     <Compile Include="$(CommonPath)System\IO\ReadOnlyMemoryStream.cs"
@@ -169,6 +174,10 @@
     <Compile Include="System\Net\Http\SocketsHttpHandler\RedirectHandler.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\SocketsHttpHandler.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\SystemProxyInfo.cs" />
+    <Compile Include="System\Net\Http\SocketsHttpHandler\Connections\SocketConnection.cs" />
+    <Compile Include="System\Net\Http\SocketsHttpHandler\Connections\TaskSocketAsyncEventArgs.cs" />
+    <Compile Include="System\Net\Http\SocketsHttpHandler\DnsEndPointWithProperties.cs" />
+    <Compile Include="System\Net\Http\SocketsHttpHandler\SocketsHttpConnectionFactory.cs" />
     <Compile Include="$(CommonPath)System\Net\NTAuthentication.Common.cs"
              Link="Common\System\Net\NTAuthentication.Common.cs" />
     <Compile Include="$(CommonPath)System\Net\ContextFlagsPal.cs"
@@ -429,20 +438,28 @@
              Link="Common\Interop\Windows\Interop.Libraries.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Interop.UNICODE_STRING.cs"
             Link="Common\Interop\Windows\Interop.UNICODE_STRING.cs" />
-    <Compile Include="$(CommonPath)\Interop\Windows\Crypt32\Interop.CertEnumCertificatesInStore.cs"
-             Link="Common\Interop\Windows\Crypt32\Interop.CertEnumCertificatesInStore.cs" />
-    <Compile Include="$(CommonPath)\Interop\Windows\Crypt32\Interop.certificates_types.cs"
-             Link="Common\Interop\Windows\Crypt32\Interop.certificates_types.cs" />
-    <Compile Include="$(CommonPath)\Interop\Windows\Crypt32\Interop.certificates.cs"
-             Link="Common\Interop\Windows\Crypt32\Interop.certificates.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CERT_CONTEXT.cs"
+             Link="Common\Interop\Windows\Crypt32\Interop.CERT_CONTEXT.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CERT_INFO.cs"
+             Link="Common\Interop\Windows\Crypt32\Interop.CERT_INFO.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CERT_PUBLIC_KEY_INFO.cs"
+             Link="Common\Interop\Windows\Crypt32\Interop.CERT_PUBLIC_KEY_INFO.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CRYPT_ALGORITHM_IDENTIFIER.cs"
+             Link="Common\Interop\Windows\Crypt32\Interop.Interop.CRYPT_ALGORITHM_IDENTIFIER.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CRYPT_BIT_BLOB.cs"
+             Link="Common\Interop\Windows\Crypt32\Interop.Interop.CRYPT_BIT_BLOB.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.DATA_BLOB.cs"
+             Link="Common\Interop\Windows\Crypt32\Interop.DATA_BLOB.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.MsgEncodingType.cs"
+             Link="Common\Interop\Windows\Crypt32\Interop.Interop.MsgEncodingType.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CertFreeCertificateContext.cs"
+             Link="Common\Interop\Windows\Crypt32\Interop.Interop.CertFreeCertificateContext.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FormatMessage.cs"
              Link="Common\Interop\Windows\Kernel32\Interop.FormatMessage.cs" />
     <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.GetModuleHandle.cs"
              Link="Common\Interop\Windows\Kernel32\Interop.GetModuleHandle.cs" />
     <Compile Include="$(CommonPath)\Interop\Windows\Interop.HRESULT_FROM_WIN32.cs"
              Link="Common\Interop\Windows\Interop.HRESULT_FROM_WIN32.cs" />
-    <Compile Include="$(CommonPath)\Interop\Windows\SChannel\UnmanagedCertificateContext.IntPtr.cs"
-             Link="Common\Interop\Windows\SChannel\UnmanagedCertificateContext.IntPtr.cs" />
     <Compile Include="$(CommonPath)\Interop\Windows\WinHttp\Interop.SafeWinHttpHandle.cs"
              Link="Common\Interop\Windows\WinHttp\Interop.SafeWinHttpHandle.cs" />
     <Compile Include="$(CommonPath)\Interop\Windows\WinHttp\Interop.winhttp_types.cs"
@@ -471,12 +488,8 @@
              Link="Common\System\Net\Security\CertificateHelper.Windows.cs" />
     <Compile Include="$(CommonPath)\System\Runtime\ExceptionServices\ExceptionStackTrace.cs"
              Link="Common\System\Runtime\ExceptionServices\ExceptionStackTrace.cs" />
-    <Compile Include="$(CommonPath)\System\Threading\Tasks\RendezvousAwaitable.cs"
-             Link="Common\System\Threading\Tasks\RendezvousAwaitable.cs" />
     <Compile Include="$(CommonPath)System\Threading\Tasks\TaskToApm.cs"
              Link="Common\System\Threading\Tasks\TaskToApm.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\SChannel\Interop.SecPkgContext_ApplicationProtocol.cs"
-             Link="Common\Interop\Windows\SChannel\Interop.SecPkgContext_ApplicationProtocol.cs" />
     <Compile Include="$(CommonPath)System\Net\Security\SecurityBuffer.Windows.cs"
              Link="Common\System\Net\Security\SecurityBuffer.Windows.cs" />
     <Compile Include="$(CommonPath)System\Net\Security\SecurityBufferType.Windows.cs"
@@ -503,8 +516,6 @@
              Link="Common\Interop\Windows\SspiCli\SecPkgContext_NegotiationInfoW.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\SspiCli\NegotiationInfoClass.cs"
              Link="Common\Interop\Windows\SspiCli\NegotiationInfoClass.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\SChannel\SecPkgContext_ConnectionInfo.cs"
-             Link="Common\Interop\Windows\SChannel\SecPkgContext_ConnectionInfo.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\SChannel\SecPkgContext_CipherInfo.cs"
              Link="Common\Interop\Windows\SChannel\SecPkgContext_CipherInfo.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\SspiCli\SSPISecureChannelType.cs"
@@ -661,6 +672,7 @@
     <Compile Include="System\Net\Http\SocketsHttpHandler\HttpNoProxy.cs" />
     <Compile Include="System\Net\Http\BrowserHttpHandler\SystemProxyInfo.Browser.cs" />
     <Compile Include="System\Net\Http\BrowserHttpHandler\SocketsHttpHandler.cs" />
+    <Compile Include="System\Net\Http\BrowserHttpHandler\SocketsHttpConnectionFactory.cs" />
     <Compile Include="System\Net\Http\BrowserHttpHandler\BrowserHttpHandler.cs" />
   </ItemGroup>
   <ItemGroup>
@@ -672,7 +684,9 @@
     <Reference Include="System.Diagnostics.DiagnosticSource" />
     <Reference Include="System.Diagnostics.Tracing" />
     <Reference Include="System.IO.Compression" />
+    <Reference Include="System.IO.Pipelines" />
     <Reference Include="System.Memory" />
+    <Reference Include="System.Net.Connections" />
     <Reference Include="System.Net.NameResolution" />
     <Reference Include="System.Net.NetworkInformation" />
     <Reference Include="System.Net.Primitives" />
@@ -681,8 +695,6 @@
     <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.Extensions" />
     <Reference Include="System.Runtime.InteropServices" />
-    <Reference Include="System.Runtime.InteropServices.RuntimeInformation" />
-    <Reference Include="System.Runtime.InteropServices.JavaScript" Condition="'$(TargetsBrowser)' == 'true'" />
     <Reference Include="System.Security.Claims" Condition="'$(TargetsWindows)' == 'true'" />
     <Reference Include="System.Security.Cryptography.Algorithms" />
     <Reference Include="System.Security.Cryptography.Csp" />
@@ -704,7 +716,7 @@
     <Reference Include="System.Security.Cryptography.Primitives" />
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsBrowser)' == 'true'">
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.InteropServices.JavaScript\src\System.Runtime.InteropServices.JavaScript.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Private.Runtime.InteropServices.JavaScript\src\System.Private.Runtime.InteropServices.JavaScript.csproj" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="msquic.dll" Condition="Exists('msquic.dll')">

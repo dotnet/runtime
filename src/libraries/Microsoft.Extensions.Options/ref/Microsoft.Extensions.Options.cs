@@ -13,8 +13,8 @@ namespace Microsoft.Extensions.DependencyInjection
         public static Microsoft.Extensions.Options.OptionsBuilder<TOptions> AddOptions<TOptions>(this Microsoft.Extensions.DependencyInjection.IServiceCollection services, string name) where TOptions : class { throw null; }
         public static Microsoft.Extensions.DependencyInjection.IServiceCollection ConfigureAll<TOptions>(this Microsoft.Extensions.DependencyInjection.IServiceCollection services, System.Action<TOptions> configureOptions) where TOptions : class { throw null; }
         public static Microsoft.Extensions.DependencyInjection.IServiceCollection ConfigureOptions(this Microsoft.Extensions.DependencyInjection.IServiceCollection services, object configureInstance) { throw null; }
-        public static Microsoft.Extensions.DependencyInjection.IServiceCollection ConfigureOptions(this Microsoft.Extensions.DependencyInjection.IServiceCollection services, System.Type configureType) { throw null; }
-        public static Microsoft.Extensions.DependencyInjection.IServiceCollection ConfigureOptions<TConfigureOptions>(this Microsoft.Extensions.DependencyInjection.IServiceCollection services) where TConfigureOptions : class { throw null; }
+        public static Microsoft.Extensions.DependencyInjection.IServiceCollection ConfigureOptions(this Microsoft.Extensions.DependencyInjection.IServiceCollection services, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicConstructors)] System.Type configureType) { throw null; }
+        public static Microsoft.Extensions.DependencyInjection.IServiceCollection ConfigureOptions<[System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)] TConfigureOptions>(this Microsoft.Extensions.DependencyInjection.IServiceCollection services) where TConfigureOptions : class { throw null; }
         public static Microsoft.Extensions.DependencyInjection.IServiceCollection Configure<TOptions>(this Microsoft.Extensions.DependencyInjection.IServiceCollection services, System.Action<TOptions> configureOptions) where TOptions : class { throw null; }
         public static Microsoft.Extensions.DependencyInjection.IServiceCollection Configure<TOptions>(this Microsoft.Extensions.DependencyInjection.IServiceCollection services, string name, System.Action<TOptions> configureOptions) where TOptions : class { throw null; }
         public static Microsoft.Extensions.DependencyInjection.IServiceCollection PostConfigureAll<TOptions>(this Microsoft.Extensions.DependencyInjection.IServiceCollection services, System.Action<TOptions> configureOptions) where TOptions : class { throw null; }
@@ -106,28 +106,28 @@ namespace Microsoft.Extensions.Options
         string Name { get; }
         Microsoft.Extensions.Primitives.IChangeToken GetChangeToken();
     }
-    public partial interface IOptionsFactory<TOptions> where TOptions : class
+    public partial interface IOptionsFactory<[System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] TOptions> where TOptions : class
     {
         TOptions Create(string name);
     }
-    public partial interface IOptionsMonitorCache<TOptions> where TOptions : class
+    public partial interface IOptionsMonitorCache<[System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] TOptions> where TOptions : class
     {
         void Clear();
         TOptions GetOrAdd(string name, System.Func<TOptions> createOptions);
         bool TryAdd(string name, TOptions options);
         bool TryRemove(string name);
     }
-    public partial interface IOptionsMonitor<out TOptions>
+    public partial interface IOptionsMonitor<[System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] out TOptions>
     {
         TOptions CurrentValue { get; }
         TOptions Get(string name);
         System.IDisposable OnChange(System.Action<TOptions, string> listener);
     }
-    public partial interface IOptionsSnapshot<out TOptions> : Microsoft.Extensions.Options.IOptions<TOptions> where TOptions : class
+    public partial interface IOptionsSnapshot<[System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] out TOptions> : Microsoft.Extensions.Options.IOptions<TOptions> where TOptions : class
     {
         TOptions Get(string name);
     }
-    public partial interface IOptions<out TOptions> where TOptions : class
+    public partial interface IOptions<[System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] out TOptions> where TOptions : class
     {
         TOptions Value { get; }
     }
@@ -142,7 +142,7 @@ namespace Microsoft.Extensions.Options
     public static partial class Options
     {
         public static readonly string DefaultName;
-        public static Microsoft.Extensions.Options.IOptions<TOptions> Create<TOptions>(TOptions options) where TOptions : class { throw null; }
+        public static Microsoft.Extensions.Options.IOptions<TOptions> Create<[System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] TOptions>(TOptions options) where TOptions : class { throw null; }
     }
     public partial class OptionsBuilder<TOptions> where TOptions : class
     {
@@ -174,7 +174,7 @@ namespace Microsoft.Extensions.Options
         public virtual Microsoft.Extensions.Options.OptionsBuilder<TOptions> Validate<TDep1, TDep2, TDep3, TDep4, TDep5>(System.Func<TOptions, TDep1, TDep2, TDep3, TDep4, TDep5, bool> validation) { throw null; }
         public virtual Microsoft.Extensions.Options.OptionsBuilder<TOptions> Validate<TDep1, TDep2, TDep3, TDep4, TDep5>(System.Func<TOptions, TDep1, TDep2, TDep3, TDep4, TDep5, bool> validation, string failureMessage) { throw null; }
     }
-    public partial class OptionsCache<TOptions> : Microsoft.Extensions.Options.IOptionsMonitorCache<TOptions> where TOptions : class
+    public partial class OptionsCache<[System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] TOptions> : Microsoft.Extensions.Options.IOptionsMonitorCache<TOptions> where TOptions : class
     {
         public OptionsCache() { }
         public void Clear() { }
@@ -182,14 +182,14 @@ namespace Microsoft.Extensions.Options
         public virtual bool TryAdd(string name, TOptions options) { throw null; }
         public virtual bool TryRemove(string name) { throw null; }
     }
-    public partial class OptionsFactory<TOptions> : Microsoft.Extensions.Options.IOptionsFactory<TOptions> where TOptions : class
+    public partial class OptionsFactory<[System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] TOptions> : Microsoft.Extensions.Options.IOptionsFactory<TOptions> where TOptions : class
     {
         public OptionsFactory(System.Collections.Generic.IEnumerable<Microsoft.Extensions.Options.IConfigureOptions<TOptions>> setups, System.Collections.Generic.IEnumerable<Microsoft.Extensions.Options.IPostConfigureOptions<TOptions>> postConfigures) { }
         public OptionsFactory(System.Collections.Generic.IEnumerable<Microsoft.Extensions.Options.IConfigureOptions<TOptions>> setups, System.Collections.Generic.IEnumerable<Microsoft.Extensions.Options.IPostConfigureOptions<TOptions>> postConfigures, System.Collections.Generic.IEnumerable<Microsoft.Extensions.Options.IValidateOptions<TOptions>> validations) { }
         public TOptions Create(string name) { throw null; }
         protected virtual TOptions CreateInstance(string name) { throw null; }
     }
-    public partial class OptionsManager<TOptions> : Microsoft.Extensions.Options.IOptions<TOptions>, Microsoft.Extensions.Options.IOptionsSnapshot<TOptions> where TOptions : class
+    public partial class OptionsManager<[System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] TOptions> : Microsoft.Extensions.Options.IOptions<TOptions>, Microsoft.Extensions.Options.IOptionsSnapshot<TOptions> where TOptions : class
     {
         public OptionsManager(Microsoft.Extensions.Options.IOptionsFactory<TOptions> factory) { }
         public TOptions Value { get { throw null; } }
@@ -197,9 +197,9 @@ namespace Microsoft.Extensions.Options
     }
     public static partial class OptionsMonitorExtensions
     {
-        public static System.IDisposable OnChange<TOptions>(this Microsoft.Extensions.Options.IOptionsMonitor<TOptions> monitor, System.Action<TOptions> listener) { throw null; }
+        public static System.IDisposable OnChange<[System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] TOptions>(this Microsoft.Extensions.Options.IOptionsMonitor<TOptions> monitor, System.Action<TOptions> listener) { throw null; }
     }
-    public partial class OptionsMonitor<TOptions> : Microsoft.Extensions.Options.IOptionsMonitor<TOptions>, System.IDisposable where TOptions : class
+    public partial class OptionsMonitor<[System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] TOptions> : Microsoft.Extensions.Options.IOptionsMonitor<TOptions>, System.IDisposable where TOptions : class
     {
         public OptionsMonitor(Microsoft.Extensions.Options.IOptionsFactory<TOptions> factory, System.Collections.Generic.IEnumerable<Microsoft.Extensions.Options.IOptionsChangeTokenSource<TOptions>> sources, Microsoft.Extensions.Options.IOptionsMonitorCache<TOptions> cache) { }
         public TOptions CurrentValue { get { throw null; } }
@@ -215,7 +215,7 @@ namespace Microsoft.Extensions.Options
         public string OptionsName { get { throw null; } }
         public System.Type OptionsType { get { throw null; } }
     }
-    public partial class OptionsWrapper<TOptions> : Microsoft.Extensions.Options.IOptions<TOptions> where TOptions : class
+    public partial class OptionsWrapper<[System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] TOptions> : Microsoft.Extensions.Options.IOptions<TOptions> where TOptions : class
     {
         public OptionsWrapper(TOptions options) { }
         public TOptions Value { get { throw null; } }

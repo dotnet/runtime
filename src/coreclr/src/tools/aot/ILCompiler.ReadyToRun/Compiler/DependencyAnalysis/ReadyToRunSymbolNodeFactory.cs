@@ -70,7 +70,7 @@ namespace ILCompiler.DependencyAnalysis
                     _codegenNodeFactory,
                     _codegenNodeFactory.HelperImports,
                     ReadyToRunHelper.DelayLoad_Helper,
-                    new FieldFixupSignature(ReadyToRunFixupKind.FieldAddress, key)
+                    new FieldFixupSignature(ReadyToRunFixupKind.FieldAddress, key, _codegenNodeFactory)
                 );
             });
 
@@ -78,7 +78,7 @@ namespace ILCompiler.DependencyAnalysis
             {
                 return new PrecodeHelperImport(
                     _codegenNodeFactory,
-                    new FieldFixupSignature(ReadyToRunFixupKind.FieldOffset, key)
+                    new FieldFixupSignature(ReadyToRunFixupKind.FieldOffset, key, _codegenNodeFactory)
                 );
             });
 
@@ -94,7 +94,7 @@ namespace ILCompiler.DependencyAnalysis
             {
                 return new PrecodeHelperImport(
                     _codegenNodeFactory,
-                    new FieldFixupSignature(_verifyTypeAndFieldLayout ? ReadyToRunFixupKind.Verify_FieldOffset : ReadyToRunFixupKind.Check_FieldOffset, key)
+                    new FieldFixupSignature(_verifyTypeAndFieldLayout ? ReadyToRunFixupKind.Verify_FieldOffset : ReadyToRunFixupKind.Check_FieldOffset, key, _codegenNodeFactory)
                 );
             });
 
@@ -356,7 +356,7 @@ namespace ILCompiler.DependencyAnalysis
         {
             return new PrecodeHelperImport(
                 _codegenNodeFactory,
-                new FieldFixupSignature(ReadyToRunFixupKind.FieldHandle, field));
+                new FieldFixupSignature(ReadyToRunFixupKind.FieldHandle, field, _codegenNodeFactory));
         }
 
         private ISymbolNode CreateCctorTrigger(TypeDesc type)

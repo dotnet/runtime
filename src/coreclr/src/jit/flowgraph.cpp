@@ -175,6 +175,8 @@ void Compiler::fgInit()
 #ifdef FEATURE_SIMD
     fgPreviousCandidateSIMDFieldAsgStmt = nullptr;
 #endif
+
+    fgHasSwitch = false;
 }
 
 bool Compiler::fgHaveProfileData()
@@ -476,7 +478,8 @@ void Compiler::fgEnsureFirstBBisScratch()
 
     noway_assert(fgLastBB != nullptr);
 
-    block->bbFlags |= (BBF_INTERNAL | BBF_IMPORTED);
+    // Set the expected flags
+    block->bbFlags |= (BBF_INTERNAL | BBF_IMPORTED | BBF_JMP_TARGET | BBF_HAS_LABEL);
 
     // This new first BB has an implicit ref, and no others.
     block->bbRefs = 1;
@@ -1865,7 +1868,7 @@ bool Compiler::fgReachable(BasicBlock* b1, BasicBlock* b2)
  *  it again.
  */
 
-void Compiler::fgUpdateChangedFlowGraph()
+void Compiler::fgUpdateChangedFlowGraph(bool computeDoms)
 {
     // We need to clear this so we don't hit an assert calling fgRenumberBlocks().
     fgDomsComputed = false;
@@ -1875,7 +1878,11 @@ void Compiler::fgUpdateChangedFlowGraph()
 
     fgComputePreds();
     fgComputeEnterBlocksSet();
-    fgComputeReachability();
+    fgComputeReachabilitySets();
+    if (computeDoms)
+    {
+        fgComputeDoms();
+    }
 }
 
 /*****************************************************************************
@@ -3722,7 +3729,8 @@ PhaseStatus Compiler::fgInsertGCPolls()
     {
         noway_assert(opts.OptimizationEnabled());
         fgReorderBlocks();
-        fgUpdateChangedFlowGraph();
+        constexpr bool computeDoms = false;
+        fgUpdateChangedFlowGraph(computeDoms);
     }
 #ifdef DEBUG
     if (verbose)
@@ -7250,7 +7258,7 @@ bool Compiler::fgIsThrow(GenTree* tree)
         return true;
     }
 
-    // TODO-CQ: there are a bunch of managed methods in [mscorlib]System.ThrowHelper
+    // TODO-CQ: there are a bunch of managed methods in System.ThrowHelper
     // that would be nice to recognize.
 
     return false;
@@ -14696,9 +14704,9 @@ bool Compiler::fgOptimizeSwitchBranches(BasicBlock* block)
             LIR::ReadOnlyRange range(zeroConstNode, switchTree);
             m_pLowering->LowerRange(block, range);
         }
-        else
+        else if (fgStmtListThreaded)
         {
-            // Re-link the nodes for this statement.
+            gtSetStmtInfo(switchStmt);
             fgSetStmtSeq(switchStmt);
         }
 

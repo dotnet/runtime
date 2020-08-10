@@ -12,8 +12,6 @@ using System.Threading.Tasks;
 using System.Runtime.CompilerServices;
 using System.Net.Http.QPack;
 using System.Runtime.ExceptionServices;
-using System.Buffers;
-using System.Diagnostics.CodeAnalysis;
 
 namespace System.Net.Http
 {
@@ -292,11 +290,9 @@ namespace System.Net.Http
         /// <summary>
         /// Waits for the initial response headers to be completed, including e.g. Expect 100 Continue.
         /// </summary>
-        /// <param name="cancellationToken"></param>
-        /// <returns></returns>
         private async Task ReadResponseAsync(CancellationToken cancellationToken)
         {
-            Debug.Assert(_response != null);
+            Debug.Assert(_response == null);
             do
             {
                 _headerState = HeaderState.StatusHeader;
@@ -313,6 +309,7 @@ namespace System.Net.Http
                 }
 
                 await ReadHeadersAsync(payloadLength, cancellationToken).ConfigureAwait(false);
+                Debug.Assert(_response != null);
             }
             while ((int)_response.StatusCode < 200);
 
@@ -548,7 +545,8 @@ namespace System.Net.Http
                 string cookiesFromContainer = _connection.Pool.Settings._cookieContainer!.GetCookieHeader(request.RequestUri);
                 if (cookiesFromContainer != string.Empty)
                 {
-                    BufferLiteralHeaderWithStaticNameReference(H3StaticTable.Cookie, cookiesFromContainer);
+                    Encoding? valueEncoding = _connection.Pool.Settings._requestHeaderEncodingSelector?.Invoke(HttpKnownHeaderNames.Cookie, request);
+                    BufferLiteralHeaderWithStaticNameReference(H3StaticTable.Cookie, cookiesFromContainer, valueEncoding);
                 }
             }
 
@@ -590,11 +588,15 @@ namespace System.Net.Http
                 return;
             }
 
+            HeaderEncodingSelector<HttpRequestMessage>? encodingSelector = _connection.Pool.Settings._requestHeaderEncodingSelector;
+
             foreach (KeyValuePair<HeaderDescriptor, object> header in headers.HeaderStore)
             {
                 int headerValuesCount = HttpHeaders.GetValuesAsStrings(header.Key, header.Value, ref _headerValues);
                 Debug.Assert(headerValuesCount > 0, "No values for header??");
                 ReadOnlySpan<string> headerValues = _headerValues.AsSpan(0, headerValuesCount);
+
+                Encoding? valueEncoding = encodingSelector?.Invoke(header.Key.Name, _request);
 
                 KnownHeader? knownHeader = header.Key.KnownHeader;
                 if (knownHeader != null)
@@ -612,7 +614,7 @@ namespace System.Net.Http
                             {
                                 if (string.Equals(value, "trailers", StringComparison.OrdinalIgnoreCase))
                                 {
-                                    BufferLiteralHeaderWithoutNameReference("TE", value);
+                                    BufferLiteralHeaderWithoutNameReference("TE", value, valueEncoding);
                                     break;
                                 }
                             }
@@ -635,13 +637,13 @@ namespace System.Net.Http
                             }
                         }
 
-                        BufferLiteralHeaderValues(headerValues, separator);
+                        BufferLiteralHeaderValues(headerValues, separator, valueEncoding);
                     }
                 }
                 else
                 {
                     // The header is not known: fall back to just encoding the header name and value(s).
-                    BufferLiteralHeaderWithoutNameReference(header.Key.Name, headerValues, ", ");
+                    BufferLiteralHeaderWithoutNameReference(header.Key.Name, headerValues, HttpHeaderParser.DefaultSeparator, valueEncoding);
                 }
             }
         }
@@ -656,40 +658,40 @@ namespace System.Net.Http
             _sendBuffer.Commit(bytesWritten);
         }
 
-        private void BufferLiteralHeaderWithStaticNameReference(int nameIndex, string value)
+        private void BufferLiteralHeaderWithStaticNameReference(int nameIndex, string value, Encoding? valueEncoding = null)
         {
             int bytesWritten;
-            while (!QPackEncoder.EncodeLiteralHeaderFieldWithStaticNameReference(nameIndex, value, _sendBuffer.AvailableSpan, out bytesWritten))
+            while (!QPackEncoder.EncodeLiteralHeaderFieldWithStaticNameReference(nameIndex, value, valueEncoding, _sendBuffer.AvailableSpan, out bytesWritten))
             {
                 _sendBuffer.Grow();
             }
             _sendBuffer.Commit(bytesWritten);
         }
 
-        private void BufferLiteralHeaderWithoutNameReference(string name, ReadOnlySpan<string> values, string separator)
+        private void BufferLiteralHeaderWithoutNameReference(string name, ReadOnlySpan<string> values, string separator, Encoding? valueEncoding)
         {
             int bytesWritten;
-            while (!QPackEncoder.EncodeLiteralHeaderFieldWithoutNameReference(name, values, separator, _sendBuffer.AvailableSpan, out bytesWritten))
+            while (!QPackEncoder.EncodeLiteralHeaderFieldWithoutNameReference(name, values, separator, valueEncoding, _sendBuffer.AvailableSpan, out bytesWritten))
             {
                 _sendBuffer.Grow();
             }
             _sendBuffer.Commit(bytesWritten);
         }
 
-        private void BufferLiteralHeaderWithoutNameReference(string name, string value)
+        private void BufferLiteralHeaderWithoutNameReference(string name, string value, Encoding? valueEncoding)
         {
             int bytesWritten;
-            while (!QPackEncoder.EncodeLiteralHeaderFieldWithoutNameReference(name, value, _sendBuffer.AvailableSpan, out bytesWritten))
+            while (!QPackEncoder.EncodeLiteralHeaderFieldWithoutNameReference(name, value, valueEncoding, _sendBuffer.AvailableSpan, out bytesWritten))
             {
                 _sendBuffer.Grow();
             }
             _sendBuffer.Commit(bytesWritten);
         }
 
-        private void BufferLiteralHeaderValues(ReadOnlySpan<string> values, string? separator)
+        private void BufferLiteralHeaderValues(ReadOnlySpan<string> values, string? separator, Encoding? valueEncoding)
         {
             int bytesWritten;
-            while (!QPackEncoder.EncodeValueString(values, separator, _sendBuffer.AvailableSpan, out bytesWritten))
+            while (!QPackEncoder.EncodeValueString(values, separator, valueEncoding, _sendBuffer.AvailableSpan, out bytesWritten))
             {
                 _sendBuffer.Grow();
             }
@@ -881,7 +883,7 @@ namespace System.Net.Http
 
                 _response = new HttpResponseMessage()
                 {
-                    Version = HttpVersion.Version30,
+                    Version = Http3Connection.HttpVersion30,
                     RequestMessage = _request,
                     Content = new HttpConnectionResponseContent(),
                     StatusCode = (HttpStatusCode)statusCode
@@ -917,7 +919,13 @@ namespace System.Net.Http
             }
             else
             {
-                string headerValue = staticValue ?? _connection.GetResponseHeaderValueWithCaching(descriptor, literalValue);
+                string? headerValue = staticValue;
+
+                if (headerValue is null)
+                {
+                    Encoding? encoding = _connection.Pool.Settings._responseHeaderEncodingSelector?.Invoke(descriptor.Name, _request);
+                    headerValue = _connection.GetResponseHeaderValueWithCaching(descriptor, literalValue, encoding);
+                }
 
                 switch (_headerState)
                 {

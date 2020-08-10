@@ -50,7 +50,7 @@ namespace Microsoft.Extensions.Logging.Console
     public partial class ConsoleLoggerOptions
     {
         public ConsoleLoggerOptions() { }
-        [System.ObsoleteAttribute("ConsoleLoggerOptions.DisableColors has been deprecated. Please use SimpleConsoleFormatterOptions.DisableColors instead.", false)]
+        [System.ObsoleteAttribute("ConsoleLoggerOptions.DisableColors has been deprecated. Please use SimpleConsoleFormatterOptions.ColorBehavior instead.", false)]
         public bool DisableColors { get { throw null; } set { } }
         [System.ObsoleteAttribute("ConsoleLoggerOptions.Format has been deprecated. Please use ConsoleLoggerOptions.FormatterName instead.", false)]
         public Microsoft.Extensions.Logging.Console.ConsoleLoggerFormat Format { get { throw null; } set { } }
@@ -77,10 +77,16 @@ namespace Microsoft.Extensions.Logging.Console
         public JsonConsoleFormatterOptions() { }
         public System.Text.Json.JsonWriterOptions JsonWriterOptions { get { throw null; } set { } }
     }
+    public enum LoggerColorBehavior
+    {
+        Default = 0,
+        Enabled = 1,
+        Disabled = 2,
+    }
     public partial class SimpleConsoleFormatterOptions : Microsoft.Extensions.Logging.Console.ConsoleFormatterOptions
     {
         public SimpleConsoleFormatterOptions() { }
-        public bool DisableColors { get { throw null; } set { } }
+        public Microsoft.Extensions.Logging.Console.LoggerColorBehavior ColorBehavior { get { throw null; } set { } }
         public bool SingleLine { get { throw null; } set { } }
     }
 }

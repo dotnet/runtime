@@ -36,7 +36,7 @@ namespace System.Net.Http
 
             private ArrayBuffer _responseBuffer; // mutable struct, do not make this readonly
             private int _pendingWindowUpdate;
-            private CancelableCreditWaiter? _creditWaiter;
+            private CreditWaiter? _creditWaiter;
             private int _availableCredit;
 
             private StreamCompletionState _requestCompletionState;
@@ -144,6 +144,8 @@ namespace System.Net.Http
             }
 
             public int StreamId { get; private set; }
+
+            public bool SendRequestFinished => _requestCompletionState != StreamCompletionState.InProgress;
 
             public HttpResponseMessage GetAndClearResponse()
             {
@@ -424,7 +426,7 @@ namespace System.Net.Http
                 lock (SyncObject)
                 {
                     _availableCredit = checked(_availableCredit + amount);
-                    if (_availableCredit > 0 && _creditWaiter != null && _creditWaiter.IsPending)
+                    if (_availableCredit > 0 && _creditWaiter != null)
                     {
                         int granted = Math.Min(_availableCredit, _creditWaiter.Amount);
                         if (_creditWaiter.TrySetResult(granted))
@@ -540,24 +542,26 @@ namespace System.Net.Http
                             throw new HttpRequestException(SR.Format(SR.net_http_invalid_response_header_name, Encoding.ASCII.GetString(name)));
                         }
 
+                        Encoding? valueEncoding = _connection._pool.Settings._responseHeaderEncodingSelector?.Invoke(descriptor.Name, _request);
+
                         // Note we ignore the return value from TryAddWithoutValidation;
                         // if the header can't be added, we silently drop it.
                         if (_responseProtocolState == ResponseProtocolState.ExpectingTrailingHeaders)
                         {
                             Debug.Assert(_trailers != null);
-                            string headerValue = descriptor.GetHeaderValue(value);
+                            string headerValue = descriptor.GetHeaderValue(value, valueEncoding);
                             _trailers.TryAddWithoutValidation((descriptor.HeaderType & HttpHeaderType.Request) == HttpHeaderType.Request ? descriptor.AsCustomHeader() : descriptor, headerValue);
                         }
                         else if ((descriptor.HeaderType & HttpHeaderType.Content) == HttpHeaderType.Content)
                         {
                             Debug.Assert(_response != null && _response.Content != null);
-                            string headerValue = descriptor.GetHeaderValue(value);
+                            string headerValue = descriptor.GetHeaderValue(value, valueEncoding);
                             _response.Content.Headers.TryAddWithoutValidation(descriptor, headerValue);
                         }
                         else
                         {
                             Debug.Assert(_response != null);
-                            string headerValue = _connection.GetResponseHeaderValueWithCaching(descriptor, value);
+                            string headerValue = _connection.GetResponseHeaderValueWithCaching(descriptor, value, valueEncoding);
                             _response.Headers.TryAddWithoutValidation((descriptor.HeaderType & HttpHeaderType.Request) == HttpHeaderType.Request ? descriptor.AsCustomHeader() : descriptor, headerValue);
                         }
                     }
@@ -1096,11 +1100,10 @@ namespace System.Net.Http
                             {
                                 if (_creditWaiter is null)
                                 {
-                                    _creditWaiter = new CancelableCreditWaiter(SyncObject, _requestBodyCancellationSource.Token);
+                                    _creditWaiter = new CreditWaiter(_requestBodyCancellationSource.Token);
                                 }
                                 else
                                 {
-                                    Debug.Assert(!_creditWaiter.IsPending);
                                     _creditWaiter.ResetForAwait(_requestBodyCancellationSource.Token);
                                 }
                                 _creditWaiter.Amount = buffer.Length;
@@ -1109,9 +1112,9 @@ namespace System.Net.Http
 
                         if (sendSize == -1)
                         {
+                            // Logically this is part of the else block above, but we can't await while holding the lock.
                             Debug.Assert(_creditWaiter != null);
                             sendSize = await _creditWaiter.AsValueTask().ConfigureAwait(false);
-                            _creditWaiter.CleanUp();
                         }
 
                         ReadOnlyMemory<byte> current;

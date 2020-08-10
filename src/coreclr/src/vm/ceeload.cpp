@@ -481,7 +481,7 @@ void Module::InitializeNativeImage(AllocMemTracker* pamTracker)
     if (GCStress<cfg_instr_ngen>::IsEnabled())
     {
         // Setting up gc coverage requires the base system classes
-        //  to be initialized. So we must defer this for mscorlib.
+        //  to be initialized. So we must defer this for CoreLib.
         if(!IsSystem())
         {
             SetupGcCoverageForNativeImage(this);
@@ -1512,11 +1512,11 @@ static bool IsLikelyDependencyOf(Module * pModule, Module * pOtherModule)
         if (!pOtherModule->IsLowLevelSystemAssemblyByName())
             return true;
 
-        // Every module depends upon mscorlib
+        // Every module depends upon CoreLib
         if (pModule->IsSystem())
             return true;
 
-        // mscorlib does not depend upon any other module
+        // CoreLib does not depend upon any other module
         if (pOtherModule->IsSystem())
             return false;
     }
@@ -1526,7 +1526,7 @@ static bool IsLikelyDependencyOf(Module * pModule, Module * pOtherModule)
             return false;
     }
 
-    // At this point neither pModule or pOtherModule is mscorlib
+    // At this point neither pModule or pOtherModule is CoreLib
 
 #ifndef DACCESS_COMPILE
     //
@@ -1591,8 +1591,8 @@ PTR_Module Module::ComputePreferredZapModuleHelper(
             RETURN dac_cast<PTR_Module>(pOpenModule);
     }
 
-    // The initial value of pCurrentPZM is the pDefinitionModule or mscorlib
-    Module* pCurrentPZM = (pDefinitionModule != NULL) ? pDefinitionModule : MscorlibBinder::GetModule();
+    // The initial value of pCurrentPZM is the pDefinitionModule or CoreLib
+    Module* pCurrentPZM = (pDefinitionModule != NULL) ? pDefinitionModule : CoreLibBinder::GetModule();
     bool preferredZapModuleBasedOnValueType = false;
 
     for (DWORD i = 0; i < totalArgs; i++)
@@ -1626,7 +1626,7 @@ PTR_Module Module::ComputePreferredZapModuleHelper(
                 //     pCurrentPZM is a dependency of pParamPZM
                 // and pParamPZM is not a dependency of pCurrentPZM
                 //
-                // note that the second condition is alway true when pCurrentPZM is mscorlib
+                // note that the second condition is alway true when pCurrentPZM is CoreLib
                 //
                 if (!IsLikelyDependencyOf(pParamPZM, pCurrentPZM))
                 {
@@ -2691,7 +2691,7 @@ ModuleIndex Module::AllocateModuleIndex()
 
     // For various reasons, the IDs issued by the IdDispenser start at 1.
     // Domain neutral module IDs have historically started at 0, and we
-    // have always assigned ID 0 to mscorlib. Thus, to make it so that
+    // have always assigned ID 0 to CoreLib. Thus, to make it so that
     // domain neutral module IDs start at 0, we will subtract 1 from the
     // ID that we got back from the ID dispenser.
     ModuleIndex index((SIZE_T)(val-1));
@@ -2861,7 +2861,7 @@ void Module::SetDomainFile(DomainFile *pDomainFile)
     m_ModuleID->SetDomainFile(pDomainFile);
 
     // Allocate static handles now.
-    // NOTE: Bootstrapping issue with mscorlib - we will manually allocate later
+    // NOTE: Bootstrapping issue with CoreLib - we will manually allocate later
     // If the assembly is collectible, we don't initialize static handles for them
     // as it is currently initialized through the DomainLocalModule::PopulateClass in MethodTable::CheckRunClassInitThrowing
     // (If we don't do this, it would allocate here unused regular static handles that will be overridden later)
@@ -4207,10 +4207,10 @@ OBJECTHANDLE Module::ResolveStringRef(DWORD token, BaseDomain *pDomain, bool bNe
         }
         /* Unfortunately, this assert won't work in some cases of generics, consider the following scenario:
 
-            1) Generic type in mscorlib.
+            1) Generic type in CoreLib.
             2) Instantiation of generic (1) (via valuetype) in another module
             3) other module now holds a copy of the code of the generic for that particular instantiation
-               however, it is resolving the string literals against mscorlib, which breaks the invariant
+               however, it is resolving the string literals against CoreLib, which breaks the invariant
                this assert was based on (no string fixups against other modules). In fact, with NoStringInterning,
                our behavior is not very intuitive.
         */
@@ -4758,7 +4758,7 @@ DomainAssembly * Module::LoadAssembly(mdAssemblyRef kAssemblyRef)
     if (pDomainAssembly != NULL)
     {
         _ASSERTE(
-            pDomainAssembly->IsSystem() ||                  // GetAssemblyIfLoaded will not find mscorlib (see AppDomain::FindCachedFile)
+            pDomainAssembly->IsSystem() ||                  // GetAssemblyIfLoaded will not find CoreLib (see AppDomain::FindCachedFile)
             !pDomainAssembly->IsLoaded() ||                 // GetAssemblyIfLoaded will not find not-yet-loaded assemblies
             GetAssemblyIfLoaded(kAssemblyRef, NULL, FALSE, pDomainAssembly->GetFile()->GetHostAssembly()) != NULL);     // GetAssemblyIfLoaded should find all remaining cases
 

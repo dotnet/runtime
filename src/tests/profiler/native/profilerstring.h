@@ -7,6 +7,7 @@
 #include <assert.h>
 #include <cstring>
 #include <string>
+#include <algorithm>
 
 #ifdef _WIN32
 #define WCHAR(str) L##str
@@ -23,7 +24,6 @@
 // here is to provide the easy ones to avoid all the copying and transforming. If more complex
 // string operations become necessary we should either write them in C++ or convert the string to
 // 32 bit and call the c runtime ones.
-using std::max;
 
 #define WCHAR(str) u##str
 inline size_t wcslen(const char16_t *str)
@@ -80,7 +80,7 @@ private:
         size_t otherLen = wcslen(other) + 1;
         if (buffer == nullptr || otherLen > bufferLen)
         {
-            bufferLen = max(DefaultStringLength, otherLen);
+            bufferLen = std::max(DefaultStringLength, otherLen);
             if (buffer != nullptr)
             {
                 delete[] buffer;
@@ -225,20 +225,22 @@ public:
 
         if (bufferLen > printBufferLen)
         {
-            delete[] printBuffer;
-            printBuffer = nullptr;
-            printBufferLen = 0;
-        }
+            if (printBuffer != nullptr)
+            {
+                delete[] printBuffer;
+            }
 
-        if (printBuffer == nullptr)
-        {
             printBuffer = new wchar_t[bufferLen];
+            printBufferLen = bufferLen;
         }
 
         for (size_t i = 0; i < bufferLen; ++i)
         {
-            printBuffer[i] = (wchar_t)buffer[i];
+            printBuffer[i] = CAST_CHAR(buffer[i]);
         }
+
+        // Make sure it's null terminated
+        printBuffer[bufferLen - 1] = '\0';
 
         return printBuffer;
     }

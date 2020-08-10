@@ -61,6 +61,7 @@
 #include <mono/metadata/mono-endian.h>
 #include <mono/metadata/environment.h>
 #include <mono/metadata/mono-mlist.h>
+#include <mono/metadata/handle.h>
 #include <mono/utils/mono-merp.h>
 #include <mono/utils/mono-mmap.h>
 #include <mono/utils/mono-logger-internals.h>
@@ -1047,19 +1048,28 @@ ves_icall_get_trace (MonoException *exc, gint32 skip, MonoBoolean need_file_info
 		return res;
 	}
 
+	HANDLE_FUNCTION_ENTER ();
+
+	MONO_HANDLE_PIN (ta);
+
 	len = mono_array_length_internal (ta) / TRACE_IP_ENTRY_SIZE;
 
 	res = mono_array_new_checked (domain, mono_defaults.stack_frame_class, len > skip ? len - skip : 0, error);
-	if (mono_error_set_pending_exception (error))
-		return NULL;
+	if (!is_ok (error))
+		goto fail;
+
+	MONO_HANDLE_PIN (res);
+
+	MonoObjectHandle sf_h;
+	sf_h = MONO_HANDLE_NEW (MonoObject, NULL);
 
 	for (i = skip; i < len; i++) {
 		MonoJitInfo *ji;
 		MonoStackFrame *sf = (MonoStackFrame *)mono_object_new_checked (domain, mono_defaults.stack_frame_class, error);
-		if (!is_ok (error)) {
-			mono_error_set_pending_exception (error);
-			return NULL;
-		}
+		if (!is_ok (error))
+			goto fail;
+		MONO_HANDLE_ASSIGN_RAW (sf_h, sf);
+
 		ExceptionTraceIp trace_ip;
 		memcpy (&trace_ip, mono_array_addr_fast (ta, ExceptionTraceIp, i), sizeof (ExceptionTraceIp));
 		gpointer ip = trace_ip.ip;
@@ -1091,18 +1101,14 @@ ves_icall_get_trace (MonoException *exc, gint32 skip, MonoBoolean need_file_info
 			s = mono_method_get_name_full (method, TRUE, FALSE, MONO_TYPE_NAME_FORMAT_REFLECTION);
 			MonoString *name = mono_string_new_checked (domain, s, error);
 			g_free (s);
-			if (!is_ok (error)) {
-				mono_error_set_pending_exception (error);
-				return NULL;
-			}
+			if (!is_ok (error))
+				goto fail;
 			MONO_OBJECT_SETREF_INTERNAL (sf, internal_method_name, name);
 		}
 		else {
 			MonoReflectionMethod *rm = mono_method_get_object_checked (domain, method, NULL, error);
-			if (!is_ok (error)) {
-				mono_error_set_pending_exception (error);
-				return NULL;
-			}
+			if (!is_ok (error))
+				goto fail;
 			MONO_OBJECT_SETREF_INTERNAL (sf, method, rm);
 		}
 
@@ -1129,10 +1135,8 @@ ves_icall_get_trace (MonoException *exc, gint32 skip, MonoBoolean need_file_info
 		if (need_file_info) {
 			if (location && location->source_file) {
 				MonoString *filename = mono_string_new_checked (domain, location->source_file, error);
-				if (!is_ok (error)) {
-					mono_error_set_pending_exception (error);
-					return NULL;
-				}
+				if (!is_ok (error))
+					goto fail;
 				MONO_OBJECT_SETREF_INTERNAL (sf, filename, filename);
 				sf->line = location->row;
 				sf->column = location->column;
@@ -1145,8 +1149,13 @@ ves_icall_get_trace (MonoException *exc, gint32 skip, MonoBoolean need_file_info
 		mono_debug_free_source_location (location);
 		mono_array_setref_internal (res, i - skip, sf);
 	}
+	goto exit;
 
-	return res;
+ fail:
+	mono_error_set_pending_exception (error);
+	res = NULL;
+ exit:
+	HANDLE_FUNCTION_RETURN_VAL (res);
 }
 
 static void
@@ -2366,15 +2375,8 @@ handle_exception_first_pass (MonoContext *ctx, MonoObject *obj, gint32 *out_filt
 		if (method->wrapper_type == MONO_WRAPPER_NATIVE_TO_MANAGED && ftnptr_eh_callback) {
 			result = MONO_FIRST_PASS_CALLBACK_TO_NATIVE;
 		}
-
-#if defined(HOST_ANDROID) || defined(TARGET_ANDROID)
-		//ignore the try catch in the .. icall_wrapper call
-		if (method->wrapper_type == WRAPPER_SUBTYPE_ICALL_WRAPPER) {
-			*ctx = new_ctx;
-			continue;
-		}
-#endif
-
+				
+				
 		for (i = clause_index_start; i < ji->num_clauses; i++) {
 			MonoJitExceptionInfo *ei = &ji->clauses [i];
 			gboolean filtered = FALSE;

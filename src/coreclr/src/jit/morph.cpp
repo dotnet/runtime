@@ -5742,7 +5742,9 @@ GenTree* Compiler::fgMorphStackArgForVarArgs(unsigned lclNum, var_types varType,
         GenTree* tree;
         if (varTypeIsStruct(varType))
         {
-            tree = new (this, GT_BLK) GenTreeBlk(GT_BLK, TYP_STRUCT, ptrArg, typGetBlkLayout(varDsc->lvExactSize));
+            CORINFO_CLASS_HANDLE typeHnd = varDsc->lvVerTypeInfo.GetClassHandle();
+            assert(typeHnd != nullptr);
+            tree = gtNewObjNode(typeHnd, ptrArg);
         }
         else
         {
@@ -7901,21 +7903,54 @@ GenTree* Compiler::fgCreateCallDispatcherAndGetResult(GenTreeCall*          orig
 
     // Add return value arg.
     GenTree*     retValArg;
-    GenTree*     retVal    = nullptr;
-    unsigned int newRetLcl = BAD_VAR_NUM;
+    GenTree*     retVal           = nullptr;
+    unsigned int newRetLcl        = BAD_VAR_NUM;
+    GenTree*     copyToRetBufNode = nullptr;
 
-    // Use existing retbuf if there is one.
     if (origCall->HasRetBufArg())
     {
         JITDUMP("Transferring retbuf\n");
         GenTree* retBufArg = origCall->gtCallArgs->GetNode();
-        assert((info.compRetBuffArg != BAD_VAR_NUM) && retBufArg->OperIsLocal() &&
-               (retBufArg->AsLclVarCommon()->GetLclNum() == info.compRetBuffArg));
 
-        retValArg = retBufArg;
+        assert(info.compRetBuffArg != BAD_VAR_NUM);
+        assert(retBufArg->OperIsLocal());
+        assert(retBufArg->AsLclVarCommon()->GetLclNum() == info.compRetBuffArg);
+
+        if (info.compRetBuffDefStack)
+        {
+            // Use existing retbuf.
+            retValArg = retBufArg;
+        }
+        else
+        {
+            // Caller return buffer argument retBufArg can point to GC heap while the dispatcher expects
+            // the return value argument retValArg to point to the stack.
+            // We use a temporary stack allocated return buffer to hold the value during the dispatcher call
+            // and copy the value back to the caller return buffer after that.
+            unsigned int tmpRetBufNum = lvaGrabTemp(true DEBUGARG("substitute local for return buffer"));
+
+            constexpr bool unsafeValueClsCheck = false;
+            lvaSetStruct(tmpRetBufNum, origCall->gtRetClsHnd, unsafeValueClsCheck);
+            lvaSetVarAddrExposed(tmpRetBufNum);
+
+            var_types tmpRetBufType = lvaGetDesc(tmpRetBufNum)->TypeGet();
+
+            retValArg = gtNewOperNode(GT_ADDR, TYP_I_IMPL, gtNewLclvNode(tmpRetBufNum, tmpRetBufType));
+
+            var_types callerRetBufType = lvaGetDesc(info.compRetBuffArg)->TypeGet();
+
+            GenTree* dstAddr = gtNewLclvNode(info.compRetBuffArg, callerRetBufType);
+            GenTree* dst     = gtNewObjNode(info.compMethodInfo->args.retTypeClass, dstAddr);
+            GenTree* src     = gtNewLclvNode(tmpRetBufNum, tmpRetBufType);
+
+            constexpr bool isVolatile  = false;
+            constexpr bool isCopyBlock = true;
+            copyToRetBufNode           = gtNewBlkOpNode(dst, src, isVolatile, isCopyBlock);
+        }
+
         if (origCall->gtType != TYP_VOID)
         {
-            retVal = gtClone(retValArg);
+            retVal = gtClone(retBufArg);
         }
     }
     else if (origCall->gtType != TYP_VOID)
@@ -7969,22 +8004,30 @@ GenTree* Compiler::fgCreateCallDispatcherAndGetResult(GenTreeCall*          orig
     GenTree* retAddrSlot           = gtNewOperNode(GT_ADDR, TYP_I_IMPL, gtNewLclvNode(lvaRetAddrVar, TYP_I_IMPL));
     callDispatcherNode->gtCallArgs = gtPrependNewCallArg(retAddrSlot, callDispatcherNode->gtCallArgs);
 
+    GenTree* finalTree = callDispatcherNode;
+
+    if (copyToRetBufNode != nullptr)
+    {
+        finalTree = gtNewOperNode(GT_COMMA, TYP_VOID, callDispatcherNode, copyToRetBufNode);
+    }
+
     if (origCall->gtType == TYP_VOID)
     {
-        return callDispatcherNode;
+        return finalTree;
     }
 
     assert(retVal != nullptr);
-    GenTree* comma = gtNewOperNode(GT_COMMA, origCall->TypeGet(), callDispatcherNode, retVal);
+    finalTree = gtNewOperNode(GT_COMMA, origCall->TypeGet(), finalTree, retVal);
+
     // The JIT seems to want to CSE this comma and messes up multi-reg ret
     // values in the process. Just avoid CSE'ing this tree entirely in that
     // case.
     if (origCall->HasMultiRegRetVal())
     {
-        comma->gtFlags |= GTF_DONT_CSE;
+        finalTree->gtFlags |= GTF_DONT_CSE;
     }
 
-    return comma;
+    return finalTree;
 }
 
 //------------------------------------------------------------------------
@@ -8905,7 +8948,7 @@ GenTree* Compiler::fgMorphCall(GenTreeCall* call)
 
         GenTree* dest = call->gtCallArgs->GetNode();
         assert(dest->OperGet() != GT_ARGPLACE); // If it was, we'd be in a remorph, which we've already excluded above.
-        if (dest->gtType == TYP_BYREF && !(dest->OperGet() == GT_ADDR && dest->AsOp()->gtOp1->OperGet() == GT_LCL_VAR))
+        if (dest->TypeIs(TYP_BYREF) && !dest->IsLocalAddrExpr())
         {
             // We'll exempt helper calls from this, assuming that the helper implementation
             // follows the old convention, and does whatever barrier is required.
@@ -13640,6 +13683,11 @@ DONE_MORPHING_CHILDREN:
                         unsigned   lclNum = temp->AsLclVarCommon()->GetLclNum();
                         LclVarDsc* varDsc = &lvaTable[lclNum];
 
+                        // Note that fgMorph uses GTF_DONT_CSE to mark the left side of an assignment
+                        // Thus stores have this flag and load do not have this flag
+                        //
+                        bool isLoad = (tree->gtFlags & GTF_DONT_CSE) == 0;
+
                         // We will try to optimize when we have a promoted struct promoted with a zero lvFldOffset
                         if (varDsc->lvPromoted && (varDsc->lvFldOffset == 0))
                         {
@@ -13666,15 +13714,31 @@ DONE_MORPHING_CHILDREN:
                         }
                         // If the type of the IND (typ) is a "small int", and the type of the local has the
                         // same width, then we can reduce to just the local variable -- it will be
-                        // correctly normalized, and signed/unsigned differences won't matter.
+                        // correctly normalized.
                         //
                         // The below transformation cannot be applied if the local var needs to be normalized on load.
                         else if (varTypeIsSmall(typ) && (genTypeSize(lvaTable[lclNum].lvType) == genTypeSize(typ)) &&
                                  !lvaTable[lclNum].lvNormalizeOnLoad())
                         {
-                            tree->gtType = typ = temp->TypeGet();
-                            foldAndReturnTemp  = true;
+                            // For any stores of small types, we will force loads to be normalized
+                            // this is necessary as we need to zero/sign extend any load
+                            // after this kind of store.
+                            //
+                            if (!isLoad)
+                            {
+                                varDsc->lvForceLoadNormalize = true;
+                            }
+                            // otherwise we have a load operation
+                            //
+                            // And for loads signed/unsigned differences do matter.
+                            //
+                            else if (varTypeIsUnsigned(lvaTable[lclNum].lvType) == varTypeIsUnsigned(typ))
+                            {
+                                tree->gtType = typ = temp->TypeGet();
+                                foldAndReturnTemp  = true;
+                            }
                         }
+                        // For matching types we can fold
                         else if (!varTypeIsStruct(typ) && (lvaTable[lclNum].lvType == typ) &&
                                  !lvaTable[lclNum].lvNormalizeOnLoad())
                         {

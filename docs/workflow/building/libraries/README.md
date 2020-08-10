@@ -9,11 +9,11 @@ Here is one example of a daily workflow for a developer working mainly on the li
 git clean -xdf
 git pull upstream master & git push origin master
 :: Build Debug libraries on top of Release runtime:
-build -subset clr+libs -runtimeConfiguration Release
+build.cmd clr+libs -rc Release
 :: The above you may only perform once in a day, or when you pull down significant new changes.
 
 :: If you use Visual Studio, you might open System.Text.RegularExpressions.sln here.
-build -vs System.Text.RegularExpressions
+build.cmd -vs System.Text.RegularExpressions
 
 :: Switch to working on a given library (RegularExpressions in this case)
 cd src\libraries\System.Text.RegularExpressions
@@ -33,7 +33,7 @@ The instructions for Linux and macOS are essentially the same:
 git clean -xdf
 git pull upstream master & git push origin master
 # Build Debug libraries on top of Release runtime:
-./build.sh -subset clr+libs -runtimeconfiguration Release
+./build.sh clr+libs -rc Release
 # The above you may only perform once in a day, or when you pull down significant new changes.
 
 # Switch to working on a given library (RegularExpressions in this case)
@@ -56,12 +56,12 @@ These example commands will build a release CoreCLR (and CoreLib), debug librari
 
 For Linux:
 ```bash
-./build.sh -runtimeConfiguration Release
+./build.sh -rc Release
 ```
 
 For Windows:
 ```bat
-./build.cmd -runtimeConfiguration Release
+./build.cmd -rc Release
 ```
 
 Detailed information about building and testing runtimes and the libraries is in the documents linked below.
@@ -83,26 +83,20 @@ For more details on the build settings see [project-guidelines](../../../coding-
 
 If you invoke the `build` script without any actions, the default action chain `-restore -build` is executed.
 
-By default the `build` script only builds the product libraries and none of the tests. If you want to include tests, you want to add the subset `-subset libtests`. If you want to run the tests you want to use the `-test` action instead of the `-build`, e.g. `build.cmd/sh -subset libs.tests -test`. To specify just the libraries, use `-subset libs`.
+By default the `build` script only builds the product libraries and none of the tests. If you want to include tests, you want to add the subset `libs.tests`. If you want to run the tests you want to use the `-test` action instead of the `-build`, e.g. `build.cmd/sh libs.tests -test`. To specify just the libraries, use `libs`.
 
 **Examples**
 - Building in release mode for platform x64 (restore and build are implicit here as no actions are passed in)
 ```bash
-./build.sh -subset libs -c Release -arch x64
+./build.sh libs -c Release -arch x64
 ```
 
 - Building the src assemblies and build and run tests (running all tests takes a considerable amount of time!)
 ```bash
-./build.sh -subset libs -test
+./build.sh libs -test
 ```
 
-- Building for different target frameworks (restore and build are implicit again as no action is passed in)
-```bash
-./build.sh -subset libs -framework net5.0
-./build.sh -subset libs -framework net472
-```
-
-- Clean the entire solution
+- Clean the entire artifacts folder
 ```bash
 ./build.sh -clean
 ```
@@ -199,24 +193,24 @@ You can use the same workflow for mono runtime by using `mono.corelib+libs.prete
 By default the libraries will attempt to build using the CoreCLR version of `System.Private.CoreLib.dll`. In order to build against the Mono version you need to use the `/p:RuntimeFlavor=Mono` argument.
 
 ```
-.\build.cmd -subset libs /p:RuntimeFlavor=Mono
+.\build.cmd libs /p:RuntimeFlavor=Mono
 ```
 
 ### Building all for other OSes
 
 By default, building from the root will only build the libraries for the OS you are running on. One can
-build for another OS by specifying `./build.sh -subset libs -os [value]`.
+build for another OS by specifying `./build.sh libs -os [value]`.
 
 Note that you cannot generally build native components for another OS but you can for managed components so if you need to do that you can do it at the individual project level or build all via passing `/p:BuildNative=false`.
 
 ### Building in Release or Debug
 
 By default, building from the root or within a project will build the libraries in Debug mode.
-One can build in Debug or Release mode from the root by doing `./build.sh -subset libs -c Release` or `./build.sh -subset libs -c Debug`.
+One can build in Debug or Release mode from the root by doing `./build.sh libs -c Release` or `./build.sh libs`.
 
 ### Building other Architectures
 
-One can build 32- or 64-bit binaries or for any architecture by specifying in the root `./build.sh -subset libs -arch [value]` or in a project `/p:TargetArchitecture=[value]` after the `dotnet build` command.
+One can build 32- or 64-bit binaries or for any architecture by specifying in the root `./build.sh libs -arch [value]` or in a project `/p:TargetArchitecture=[value]` after the `dotnet build` command.
 
 ## Working in Visual Studio
 
@@ -227,3 +221,17 @@ If you are working on Windows, and use Visual Studio, you can open individual li
 For more details about running tests inside Visual Studio, [go here](../../testing/visualstudio.md).
 
 For more about running tests, read the [running tests](../../testing/libraries/testing.md) document.
+
+## Build packages
+To build a library's package, simply invoke `dotnet pack` on the src project after you successfully built the .NETCoreApp vertical from root:
+
+```
+build libs
+dotnet pack src\libraries\System.Text.Json\src\
+```
+
+Same as for `dotnet build` or `dotnet publish`, you can specify the desired configuration via the `-c` flag:
+
+```
+dotnet pack src\libraries\System.Text.Json\src\ -c Release
+```

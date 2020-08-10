@@ -977,7 +977,7 @@ struct PortableTailCallFrame
 
 class TailCallTls
 {
-    friend class MscorlibBinder;
+    friend class CoreLibBinder;
 
     PortableTailCallFrame* m_frame;
     char* m_argBuffer;
@@ -4750,6 +4750,21 @@ public:
 
 private:
     PrepareCodeConfig *m_currentPrepareCodeConfig;
+
+#ifndef DACCESS_COMPILE
+public:
+    bool IsInForbidSuspendForDebuggerRegion() const
+    {
+        LIMITED_METHOD_CONTRACT;
+        return m_isInForbidSuspendForDebuggerRegion;
+    }
+
+    void EnterForbidSuspendForDebuggerRegion();
+    void ExitForbidSuspendForDebuggerRegion();
+#endif
+
+private:
+    bool m_isInForbidSuspendForDebuggerRegion;
 };
 
 // End of class Thread

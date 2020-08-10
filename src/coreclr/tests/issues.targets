@@ -306,9 +306,6 @@
 
     <!-- Windows all architecture excludes -->
     <ItemGroup Condition="'$(XunitTestBinBase)' != '' and '$(TargetsWindows)' == 'true' and '$(RuntimeFlavor)' == 'coreclr'">
-        <ExcludeList Include="$(XunitTestBinBase)/tracing/eventpipe/pauseonstart/pauseonstart/**">
-            <Issue>https://github.com/dotnet/runtime/issues/38847</Issue>
-        </ExcludeList>
     </ItemGroup>
 
     <!-- Windows x64 specific excludes -->
@@ -675,9 +672,6 @@
         <ExcludeList Include="$(XunitTestBinBase)/GC/Scenarios/Dynamo/dynamo/*">
             <Issue>https://github.com/dotnet/runtime/issues/10001</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/SIMD/MinMax_ro/*">
-            <Issue>https://github.com/dotnet/runtime/issues/38799</Issue>
-        </ExcludeList>
     </ItemGroup>
 
     <!-- Unix arm32 specific -->
@@ -884,9 +878,6 @@
 
     <!-- Crossgen2 specific -->
     <ItemGroup Condition="'$(XunitTestBinBase)' != '' and '$(TestBuildMode)' == 'crossgen2' and '$(RuntimeFlavor)' == 'coreclr'">
-        <ExcludeList Include="$(XunitTestBinBase)/baseservices/threading/paramthreadstart/ThreadStartBool_1/*">
-            <Issue>https://github.com/dotnet/runtime/issues/33887</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/baseservices/TieredCompilation/BasicTest_DefaultMode_R2r/*">
             <Issue>https://github.com/dotnet/runtime/issues/38291</Issue>
         </ExcludeList>
@@ -920,14 +911,8 @@
         <ExcludeList Include="$(XunitTestBinBase)/Interop/IJW/FixupCallsHostWhenLoaded/FixupCallsHostWhenLoaded/*">
             <Issue>https://github.com/dotnet/runtime/issues/38096</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Generics/Arrays/TypeParameters/MultiDim/**/*">
-            <Issue>https://github.com/dotnet/runtime/issues/38260</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/tailcall_v4/hijacking/*">
             <Issue>https://github.com/dotnet/runtime/issues/7597</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/opt/ObjectStackAllocation/ObjectStackAllocationTests/*">
-            <Issue>Not compatible with crossgen2</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/clr-x64-JIT/v4.0/devdiv374539/DevDiv_374539/*">
             <Issue>https://github.com/dotnet/runtime/issues/32732</Issue>
@@ -937,9 +922,6 @@
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/v2.1/DDB/B168384/LdfldaHack/*">
             <Issue>https://github.com/dotnet/runtime/issues/615</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/V1.2-Beta1/b219940/b219940/*">
-            <Issue>https://github.com/dotnet/runtime/issues/37579</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/GitHub_27924/GitHub_27924/*">
             <Issue>https://github.com/dotnet/runtime/issues/34316</Issue>
@@ -959,9 +941,6 @@
         <ExcludeList Include="$(XunitTestBinBase)/Loader/binding/tracing/BinderTracingTest.Basic/*">
             <Issue>https://github.com/dotnet/runtime/issues/38290</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/regressions/Dev12_518401/dev12_518401/dev12_518401/*">
-            <Issue>https://github.com/dotnet/runtime/issues/38260</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/tracing/tracevalidation/tracelogging/tracelogging/*">
             <Issue>https://github.com/dotnet/runtime/issues/32728</Issue>
         </ExcludeList>
@@ -979,6 +958,12 @@
 
     <!-- Known failures for mono runtime on *all* architectures/operating systems -->
     <ItemGroup Condition="'$(RuntimeFlavor)' == 'mono'" >
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/CollectibleAssemblies/ByRefLocals/**">
+            <Issue>https://github.com/dotnet/runtime/issues/40394</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/Miscellaneous/CopyCtor/**">
+            <Issue>Handling for Copy constructors isn't present in mono interop</Issue>
+        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Interop/StringMarshalling/AnsiBSTR/AnsiBStrTest/**">
             <Issue>Crashes during LLVM AOT compilation.</Issue>
         </ExcludeList>
@@ -1640,16 +1625,13 @@
         <ExcludeList Include="$(XunitTestBinBase)/Loader/ContextualReflection/ContextualReflection/**">
             <Issue>https://github.com/dotnet/runtime/issues/34072</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/profiler/unittest/getappdomainstaticaddress/**">
+        <ExcludeList Include="$(XunitTestBinBase)/profiler/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/profiler/eventpipe/eventpipe/*">
+        <ExcludeList Include="$(XunitTestBinBase)/profiler/elt/slowpatheltenter/*">
             <Issue>needs triage</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/profiler/eventpipe/eventpipe_readevents/*">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/profiler/gc/gc/**">
+        <ExcludeList Include="$(XunitTestBinBase)/profiler/elt/slowpatheltleave/*">
             <Issue>needs triage</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/profiler/unittest/metadatagetdispenser/**">

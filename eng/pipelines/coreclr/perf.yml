@@ -17,25 +17,8 @@ trigger:
     - README.md
     - SECURITY.md
     - THIRD-PARTY-NOTICES.TXT
-
-
-pr:
-  branches:
-    include:
-    - master
-  paths:
-    include:
-    - '*'
-    - src/libraries/System.Private.CoreLib/*
-    exclude:
-    - docs/*
-    - CODE-OF-CONDUCT.md
-    - CONTRIBUTING.md
-    - LICENSE.TXT
-    - PATENTS.TXT
-    - README.md
-    - SECURITY.md
-    - THIRD-PARTY-NOTICES.TXT
+  
+pr: none
 
 jobs:
 #
@@ -43,6 +26,7 @@ jobs:
 #
 - template: /eng/pipelines/common/checkout-job.yml
 
+# build coreclr and libraries
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
     jobTemplate: /eng/pipelines/common/build-coreclr-and-libraries-job.yml
@@ -54,6 +38,22 @@ jobs:
     jobParameters:
       testGroup: perf
 
+# build mono
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/common/global-build-job.yml
+    buildConfig: release
+    runtimeFlavor: mono
+    platforms:
+    - Browser_wasm
+    jobParameters:
+      buildArgs: -s mono+libs+installer -c $(_BuildConfig)
+      nameSuffix: wasm
+      isOfficialBuild: ${{ variables.isOfficialBuild }}
+      extraStepsTemplate: /eng/pipelines/common/upload-unsigned-artifacts-step.yml
+      extraStepsParameters:
+        name: MonoRuntimePacks
+
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
     jobTemplate: /eng/pipelines/mono/templates/build-job.yml
@@ -62,6 +62,7 @@ jobs:
     platforms:
     - Linux_x64
 
+# run mono perf job
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
     jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
@@ -73,21 +74,42 @@ jobs:
       testGroup: perf
       liveLibrariesBuildConfig: Release
       runtimeType: mono
+      projectFile: microbenchmarks.proj
+      runKind: micro_mono
 
-- ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest')) }}:
-  - template: /eng/pipelines/common/platform-matrix.yml
-    parameters:
-      jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
-      buildConfig: release
-      runtimeFlavor: mono
-      platforms:
-      - Linux_x64
-      jobParameters:
-        testGroup: perf
-        liveLibrariesBuildConfig: Release
-        runtimeType: mono
-        codeGenType: 'Interpreter'
+# run mono interpreter job
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
+    buildConfig: release
+    runtimeFlavor: mono
+    platforms:
+    - Linux_x64
+    jobParameters:
+      testGroup: perf
+      liveLibrariesBuildConfig: Release
+      runtimeType: mono
+      codeGenType: 'Interpreter'
+      projectFile: microbenchmarks.proj
+      runKind: micro_mono
 
+# run mono wasm microbenchmarks perf job
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
+    buildConfig: release
+    runtimeFlavor: wasm
+    platforms:
+    - Linux_x64
+    jobParameters:
+      testGroup: perf
+      liveLibrariesBuildConfig: Release
+      runtimeType: wasm
+      codeGenType: 'wasm'
+      projectFile: microbenchmarks.proj
+      runKind: micro
+      
+# run coreclr microbenchmarks perf job
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
     jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
@@ -100,3 +122,22 @@ jobs:
     jobParameters:
       testGroup: perf
       liveLibrariesBuildConfig: Release
+      projectFile: microbenchmarks.proj
+      runKind: micro
+
+# run coreclr crossgen perf job
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
+    buildConfig: release
+    runtimeFlavor: coreclr
+    platforms:
+    #- Linux_x64
+    - Windows_NT_x64
+    - Windows_NT_x86
+    jobParameters:
+      testGroup: perf
+      liveLibrariesBuildConfig: Release
+      projectFile: crossgen_perf.proj
+      runKind: crossgen_scenarios
+

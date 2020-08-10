@@ -24,10 +24,11 @@
       "StableVersions": [
         "1.0.0"
       ],
-      "BaselineVersion": "1.0.0",
+      "BaselineVersion": "5.0.0",
       "InboxOn": {},
       "AssemblyVersionInPackageVersion": {
-        "1.0.0.0": "1.0.0"
+        "1.0.0.0": "1.0.0",
+        "5.0.0.0": "5.0.0"
       }
     },
     "Microsoft.Bcl.HashCode": {
@@ -3353,7 +3354,9 @@
         "4.6.0"
       ],
       "BaselineVersion": "5.0.0",
-      "InboxOn": {},
+      "InboxOn": {
+        "net5.0": "5.0.0.0"
+      },
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.5.0",
         "4.0.0.1": "4.5.2",
@@ -5122,7 +5125,7 @@
         "4.1.1.0": "4.3.0"
       }
     },
-    "System.Runtime.InteropServices.JavaScript": {
+    "System.Private.Runtime.InteropServices.JavaScript": {
       "InboxOn": {
         "net5.0": "5.0.0.0"
       }

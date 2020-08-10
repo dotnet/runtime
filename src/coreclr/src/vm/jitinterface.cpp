@@ -515,7 +515,12 @@ CEEInfo::ConvToJitSig(
             static_assert_no_msg(CORINFO_CALLCONV_FASTCALL == (CorInfoCallConv)IMAGE_CEE_UNMANAGED_CALLCONV_FASTCALL);
 
             CorUnmanagedCallingConvention callConvMaybe;
-            if (S_OK == MetaSig::TryGetUnmanagedCallingConventionFromModOpt(module, pSig, cbSig, &callConvMaybe))
+            UINT errorResID;
+            HRESULT hr = MetaSig::TryGetUnmanagedCallingConventionFromModOpt(module, pSig, cbSig, &callConvMaybe, &errorResID);
+            if (FAILED(hr))
+                COMPlusThrowHR(hr, errorResID);
+
+            if (hr == S_OK)
             {
                 sigRet->callConv = (CorInfoCallConv)callConvMaybe;
             }
@@ -621,7 +626,7 @@ CORINFO_CLASS_HANDLE CEEInfo::getTokenTypeAsHandle (CORINFO_RESOLVED_TOKEN * pRe
         classID = CLASS__FIELD_HANDLE;
     }
 
-    tokenType = CORINFO_CLASS_HANDLE(MscorlibBinder::GetClass(classID));
+    tokenType = CORINFO_CLASS_HANDLE(CoreLibBinder::GetClass(classID));
 
     EE_TO_JIT_TRANSITION();
 
@@ -1360,25 +1365,25 @@ bool CEEInfo::tryResolveToken(CORINFO_RESOLVED_TOKEN* resolvedToken)
 }
 
 /*********************************************************************/
-// We have a few frequently used constants in mscorlib that are defined as
+// We have a few frequently used constants in CoreLib that are defined as
 // readonly static fields for historic reasons. Check for them here and
 // allow them to be treated as actual constants by the JIT.
 static CORINFO_FIELD_ACCESSOR getFieldIntrinsic(FieldDesc * field)
 {
     STANDARD_VM_CONTRACT;
 
-    if (MscorlibBinder::GetField(FIELD__STRING__EMPTY) == field)
+    if (CoreLibBinder::GetField(FIELD__STRING__EMPTY) == field)
     {
         return CORINFO_FIELD_INTRINSIC_EMPTY_STRING;
     }
     else
-    if ((MscorlibBinder::GetField(FIELD__INTPTR__ZERO) == field) ||
-        (MscorlibBinder::GetField(FIELD__UINTPTR__ZERO) == field))
+    if ((CoreLibBinder::GetField(FIELD__INTPTR__ZERO) == field) ||
+        (CoreLibBinder::GetField(FIELD__UINTPTR__ZERO) == field))
     {
         return CORINFO_FIELD_INTRINSIC_ZERO;
     }
     else
-    if (MscorlibBinder::GetField(FIELD__BITCONVERTER__ISLITTLEENDIAN) == field)
+    if (CoreLibBinder::GetField(FIELD__BITCONVERTER__ISLITTLEENDIAN) == field)
     {
         return CORINFO_FIELD_INTRINSIC_ISLITTLEENDIAN;
     }
@@ -4242,16 +4247,16 @@ CORINFO_CLASS_HANDLE CEEInfo::getBuiltinClass(CorInfoClassId classId)
         result = CORINFO_CLASS_HANDLE(g_TypedReferenceMT);
         break;
     case CLASSID_TYPE_HANDLE:
-        result = CORINFO_CLASS_HANDLE(MscorlibBinder::GetClass(CLASS__TYPE_HANDLE));
+        result = CORINFO_CLASS_HANDLE(CoreLibBinder::GetClass(CLASS__TYPE_HANDLE));
         break;
     case CLASSID_FIELD_HANDLE:
-        result = CORINFO_CLASS_HANDLE(MscorlibBinder::GetClass(CLASS__FIELD_HANDLE));
+        result = CORINFO_CLASS_HANDLE(CoreLibBinder::GetClass(CLASS__FIELD_HANDLE));
         break;
     case CLASSID_METHOD_HANDLE:
-        result = CORINFO_CLASS_HANDLE(MscorlibBinder::GetClass(CLASS__METHOD_HANDLE));
+        result = CORINFO_CLASS_HANDLE(CoreLibBinder::GetClass(CLASS__METHOD_HANDLE));
         break;
     case CLASSID_ARGUMENT_HANDLE:
-        result = CORINFO_CLASS_HANDLE(MscorlibBinder::GetClass(CLASS__ARGUMENT_HANDLE));
+        result = CORINFO_CLASS_HANDLE(CoreLibBinder::GetClass(CLASS__ARGUMENT_HANDLE));
         break;
     case CLASSID_STRING:
         result = CORINFO_CLASS_HANDLE(g_pStringClass);
@@ -5188,10 +5193,10 @@ void CEEInfo::getCallInfo(
             // null since the virtual method resolves to System.Enum's implementation and that's a reference type.
             // We can't do this for any other method since ToString and Equals have different semantics for enums
             // and their underlying type.
-            if (pMD->GetSlot() == MscorlibBinder::GetMethod(METHOD__OBJECT__GET_HASH_CODE)->GetSlot())
+            if (pMD->GetSlot() == CoreLibBinder::GetMethod(METHOD__OBJECT__GET_HASH_CODE)->GetSlot())
             {
                 // Pretend this was a "constrained. UnderlyingType" instruction prefix
-                constrainedType = TypeHandle(MscorlibBinder::GetElementType(constrainedType.GetVerifierCorElementType()));
+                constrainedType = TypeHandle(CoreLibBinder::GetElementType(constrainedType.GetVerifierCorElementType()));
 
                 // Native image signature encoder will use this field. It needs to match that pretended type, a bogus signature
                 // would be produced otherwise.
@@ -6812,8 +6817,8 @@ void CEEInfo::setMethodAttribs (
             }
             else
             {
-                // Don't cache inlining hints inside mscorlib during NGen of other assemblies,
-                // since mscorlib is loaded domain neutral and will survive worker process recycling,
+                // Don't cache inlining hints inside CoreLib during NGen of other assemblies,
+                // since CoreLib is loaded domain neutral and will survive worker process recycling,
                 // causing determinism problems.
                 Module * pModule = ftn->GetModule();
                 if (pModule->IsSystem() && pModule->HasNativeImage())
@@ -6898,8 +6903,8 @@ mdToken FindGenericMethodArgTypeSpec(IMDInternalImport* pInternalImport)
 /*********************************************************************
 
 IL is the most efficient and portable way to implement certain low level methods
-in mscorlib.dll. Unfortunately, there is no good way to link IL into mscorlib.dll today.
-Until we find a good way to link IL into mscorlib.dll, we will provide the IL implementation here.
+in CoreLib. Unfortunately, there is no good way to link IL into CoreLib today.
+Until we find a good way to link IL into CoreLib, we will provide the IL implementation here.
 
 - All IL intrinsincs are members of System.Runtime.CompilerServices.JitHelpers class
 - All IL intrinsincs should be kept very simple. Implement the minimal reusable version of
@@ -6914,11 +6919,11 @@ bool getILIntrinsicImplementationForUnsafe(MethodDesc * ftn,
 {
     STANDARD_VM_CONTRACT;
 
-    _ASSERTE(MscorlibBinder::IsClass(ftn->GetMethodTable(), CLASS__UNSAFE));
+    _ASSERTE(CoreLibBinder::IsClass(ftn->GetMethodTable(), CLASS__UNSAFE));
 
     mdMethodDef tk = ftn->GetMemberDef();
 
-    if (tk == MscorlibBinder::GetMethod(METHOD__UNSAFE__AS_POINTER)->GetMemberDef())
+    if (tk == CoreLibBinder::GetMethod(METHOD__UNSAFE__AS_POINTER)->GetMemberDef())
     {
         // Return the argument that was passed in.
         static const BYTE ilcode[] = { CEE_LDARG_0, CEE_CONV_U, CEE_RET };
@@ -6929,13 +6934,13 @@ bool getILIntrinsicImplementationForUnsafe(MethodDesc * ftn,
         methInfo->options = (CorInfoOptions)0;
         return true;
     }
-    if (tk == MscorlibBinder::GetMethod(METHOD__UNSAFE__SIZEOF)->GetMemberDef())
+    if (tk == CoreLibBinder::GetMethod(METHOD__UNSAFE__SIZEOF)->GetMemberDef())
     {
         _ASSERTE(ftn->HasMethodInstantiation());
         Instantiation inst = ftn->GetMethodInstantiation();
 
         _ASSERTE(ftn->GetNumGenericMethodArgs() == 1);
-        mdToken tokGenericArg = FindGenericMethodArgTypeSpec(MscorlibBinder::GetModule()->GetMDImport());
+        mdToken tokGenericArg = FindGenericMethodArgTypeSpec(CoreLibBinder::GetModule()->GetMDImport());
 
         static BYTE ilcode[] = { CEE_PREFIX1, (CEE_SIZEOF & 0xFF), 0,0,0,0, CEE_RET };
 
@@ -6951,10 +6956,10 @@ bool getILIntrinsicImplementationForUnsafe(MethodDesc * ftn,
         methInfo->options = (CorInfoOptions)0;
         return true;
     }
-    else if (tk == MscorlibBinder::GetMethod(METHOD__UNSAFE__BYREF_AS)->GetMemberDef() ||
-             tk == MscorlibBinder::GetMethod(METHOD__UNSAFE__OBJECT_AS)->GetMemberDef() ||
-             tk == MscorlibBinder::GetMethod(METHOD__UNSAFE__AS_REF_POINTER)->GetMemberDef() ||
-             tk == MscorlibBinder::GetMethod(METHOD__UNSAFE__AS_REF_IN)->GetMemberDef())
+    else if (tk == CoreLibBinder::GetMethod(METHOD__UNSAFE__BYREF_AS)->GetMemberDef() ||
+             tk == CoreLibBinder::GetMethod(METHOD__UNSAFE__OBJECT_AS)->GetMemberDef() ||
+             tk == CoreLibBinder::GetMethod(METHOD__UNSAFE__AS_REF_POINTER)->GetMemberDef() ||
+             tk == CoreLibBinder::GetMethod(METHOD__UNSAFE__AS_REF_IN)->GetMemberDef())
     {
         // Return the argument that was passed in.
         static const BYTE ilcode[] = { CEE_LDARG_0, CEE_RET };
@@ -6965,10 +6970,10 @@ bool getILIntrinsicImplementationForUnsafe(MethodDesc * ftn,
         methInfo->options = (CorInfoOptions)0;
         return true;
     }
-    else if (tk == MscorlibBinder::GetMethod(METHOD__UNSAFE__BYREF_ADD)->GetMemberDef() ||
-             tk == MscorlibBinder::GetMethod(METHOD__UNSAFE__PTR_ADD)->GetMemberDef())
+    else if (tk == CoreLibBinder::GetMethod(METHOD__UNSAFE__BYREF_ADD)->GetMemberDef() ||
+             tk == CoreLibBinder::GetMethod(METHOD__UNSAFE__PTR_ADD)->GetMemberDef())
     {
-        mdToken tokGenericArg = FindGenericMethodArgTypeSpec(MscorlibBinder::GetModule()->GetMDImport());
+        mdToken tokGenericArg = FindGenericMethodArgTypeSpec(CoreLibBinder::GetModule()->GetMDImport());
 
         static BYTE ilcode[] = { CEE_LDARG_1,
             CEE_PREFIX1, (CEE_SIZEOF & 0xFF), 0,0,0,0,
@@ -6990,9 +6995,9 @@ bool getILIntrinsicImplementationForUnsafe(MethodDesc * ftn,
         methInfo->options = (CorInfoOptions)0;
         return true;
     }
-    else if (tk == MscorlibBinder::GetMethod(METHOD__UNSAFE__BYREF_INTPTR_ADD)->GetMemberDef())
+    else if (tk == CoreLibBinder::GetMethod(METHOD__UNSAFE__BYREF_INTPTR_ADD)->GetMemberDef())
     {
-        mdToken tokGenericArg = FindGenericMethodArgTypeSpec(MscorlibBinder::GetModule()->GetMDImport());
+        mdToken tokGenericArg = FindGenericMethodArgTypeSpec(CoreLibBinder::GetModule()->GetMDImport());
 
         static BYTE ilcode[] = { CEE_LDARG_1,
             CEE_PREFIX1, (CEE_SIZEOF & 0xFF), 0,0,0,0,
@@ -7013,7 +7018,7 @@ bool getILIntrinsicImplementationForUnsafe(MethodDesc * ftn,
         methInfo->options = (CorInfoOptions)0;
         return true;
     }
-    else if (tk == MscorlibBinder::GetMethod(METHOD__UNSAFE__BYREF_ADD_BYTE_OFFSET)->GetMemberDef())
+    else if (tk == CoreLibBinder::GetMethod(METHOD__UNSAFE__BYREF_ADD_BYTE_OFFSET)->GetMemberDef())
     {
         static BYTE ilcode[] = { CEE_LDARG_0, CEE_LDARG_1, CEE_ADD, CEE_RET };
 
@@ -7024,7 +7029,7 @@ bool getILIntrinsicImplementationForUnsafe(MethodDesc * ftn,
         methInfo->options = (CorInfoOptions)0;
         return true;
     }
-    else if (tk == MscorlibBinder::GetMethod(METHOD__UNSAFE__BYREF_ARE_SAME)->GetMemberDef())
+    else if (tk == CoreLibBinder::GetMethod(METHOD__UNSAFE__BYREF_ARE_SAME)->GetMemberDef())
     {
         // Compare the two arguments
         static const BYTE ilcode[] = { CEE_LDARG_0, CEE_LDARG_1, CEE_PREFIX1, (CEE_CEQ & 0xFF), CEE_RET };
@@ -7035,7 +7040,7 @@ bool getILIntrinsicImplementationForUnsafe(MethodDesc * ftn,
         methInfo->options = (CorInfoOptions)0;
         return true;
     }
-    else if (tk == MscorlibBinder::GetMethod(METHOD__UNSAFE__BYREF_IS_ADDRESS_GREATER_THAN)->GetMemberDef())
+    else if (tk == CoreLibBinder::GetMethod(METHOD__UNSAFE__BYREF_IS_ADDRESS_GREATER_THAN)->GetMemberDef())
     {
         // Compare the two arguments
         static const BYTE ilcode[] = { CEE_LDARG_0, CEE_LDARG_1, CEE_PREFIX1, (CEE_CGT_UN & 0xFF), CEE_RET };
@@ -7046,7 +7051,7 @@ bool getILIntrinsicImplementationForUnsafe(MethodDesc * ftn,
         methInfo->options = (CorInfoOptions)0;
         return true;
     }
-    else if (tk == MscorlibBinder::GetMethod(METHOD__UNSAFE__BYREF_IS_ADDRESS_LESS_THAN)->GetMemberDef())
+    else if (tk == CoreLibBinder::GetMethod(METHOD__UNSAFE__BYREF_IS_ADDRESS_LESS_THAN)->GetMemberDef())
     {
         // Compare the two arguments
         static const BYTE ilcode[] = { CEE_LDARG_0, CEE_LDARG_1, CEE_PREFIX1, (CEE_CLT_UN & 0xFF), CEE_RET };
@@ -7057,7 +7062,7 @@ bool getILIntrinsicImplementationForUnsafe(MethodDesc * ftn,
         methInfo->options = (CorInfoOptions)0;
         return true;
     }
-    else if (tk == MscorlibBinder::GetMethod(METHOD__UNSAFE__BYREF_NULLREF)->GetMemberDef())
+    else if (tk == CoreLibBinder::GetMethod(METHOD__UNSAFE__BYREF_NULLREF)->GetMemberDef())
     {
         static const BYTE ilcode[] = { CEE_LDC_I4_0, CEE_CONV_U, CEE_RET };
         methInfo->ILCode = const_cast<BYTE*>(ilcode);
@@ -7067,7 +7072,7 @@ bool getILIntrinsicImplementationForUnsafe(MethodDesc * ftn,
         methInfo->options = (CorInfoOptions)0;
         return true;
     }
-    else if (tk == MscorlibBinder::GetMethod(METHOD__UNSAFE__BYREF_IS_NULL)->GetMemberDef())
+    else if (tk == CoreLibBinder::GetMethod(METHOD__UNSAFE__BYREF_IS_NULL)->GetMemberDef())
     {
         // 'ldnull' opcode would produce type o, and we can't compare & against o (ECMA-335, Table III.4).
         // However, we can compare & against native int, so we'll use that instead.
@@ -7080,7 +7085,7 @@ bool getILIntrinsicImplementationForUnsafe(MethodDesc * ftn,
         methInfo->options = (CorInfoOptions)0;
         return true;
     }
-    else if (tk == MscorlibBinder::GetMethod(METHOD__UNSAFE__BYREF_INIT_BLOCK_UNALIGNED)->GetMemberDef())
+    else if (tk == CoreLibBinder::GetMethod(METHOD__UNSAFE__BYREF_INIT_BLOCK_UNALIGNED)->GetMemberDef())
     {
         static const BYTE ilcode[] = { CEE_LDARG_0, CEE_LDARG_1, CEE_LDARG_2, CEE_PREFIX1, (CEE_UNALIGNED & 0xFF), 0x01, CEE_PREFIX1, (CEE_INITBLK & 0xFF), CEE_RET };
         methInfo->ILCode = const_cast<BYTE*>(ilcode);
@@ -7090,7 +7095,7 @@ bool getILIntrinsicImplementationForUnsafe(MethodDesc * ftn,
         methInfo->options = (CorInfoOptions)0;
         return true;
     }
-    else if (tk == MscorlibBinder::GetMethod(METHOD__UNSAFE__BYREF_BYTE_OFFSET)->GetMemberDef())
+    else if (tk == CoreLibBinder::GetMethod(METHOD__UNSAFE__BYREF_BYTE_OFFSET)->GetMemberDef())
     {
         static const BYTE ilcode[] =
         {
@@ -7107,13 +7112,13 @@ bool getILIntrinsicImplementationForUnsafe(MethodDesc * ftn,
         methInfo->options = (CorInfoOptions)0;
         return true;
     }
-    else if (tk == MscorlibBinder::GetMethod(METHOD__UNSAFE__BYREF_READ_UNALIGNED)->GetMemberDef() ||
-             tk == MscorlibBinder::GetMethod(METHOD__UNSAFE__PTR_READ_UNALIGNED)->GetMemberDef())
+    else if (tk == CoreLibBinder::GetMethod(METHOD__UNSAFE__BYREF_READ_UNALIGNED)->GetMemberDef() ||
+             tk == CoreLibBinder::GetMethod(METHOD__UNSAFE__PTR_READ_UNALIGNED)->GetMemberDef())
     {
         _ASSERTE(ftn->HasMethodInstantiation());
         Instantiation inst = ftn->GetMethodInstantiation();
         _ASSERTE(ftn->GetNumGenericMethodArgs() == 1);
-        mdToken tokGenericArg = FindGenericMethodArgTypeSpec(MscorlibBinder::GetModule()->GetMDImport());
+        mdToken tokGenericArg = FindGenericMethodArgTypeSpec(CoreLibBinder::GetModule()->GetMDImport());
 
         static const BYTE ilcode[]
         {
@@ -7130,13 +7135,13 @@ bool getILIntrinsicImplementationForUnsafe(MethodDesc * ftn,
         methInfo->options = (CorInfoOptions)0;
         return true;
     }
-    else if (tk == MscorlibBinder::GetMethod(METHOD__UNSAFE__BYREF_WRITE_UNALIGNED)->GetMemberDef() ||
-             tk == MscorlibBinder::GetMethod(METHOD__UNSAFE__PTR_WRITE_UNALIGNED)->GetMemberDef())
+    else if (tk == CoreLibBinder::GetMethod(METHOD__UNSAFE__BYREF_WRITE_UNALIGNED)->GetMemberDef() ||
+             tk == CoreLibBinder::GetMethod(METHOD__UNSAFE__PTR_WRITE_UNALIGNED)->GetMemberDef())
     {
         _ASSERTE(ftn->HasMethodInstantiation());
         Instantiation inst = ftn->GetMethodInstantiation();
         _ASSERTE(ftn->GetNumGenericMethodArgs() == 1);
-        mdToken tokGenericArg = FindGenericMethodArgTypeSpec(MscorlibBinder::GetModule()->GetMDImport());
+        mdToken tokGenericArg = FindGenericMethodArgTypeSpec(CoreLibBinder::GetModule()->GetMDImport());
 
         static const BYTE ilcode[]
         {
@@ -7154,7 +7159,7 @@ bool getILIntrinsicImplementationForUnsafe(MethodDesc * ftn,
         methInfo->options = (CorInfoOptions)0;
         return true;
     }
-    else if (tk == MscorlibBinder::GetMethod(METHOD__UNSAFE__SKIPINIT)->GetMemberDef())
+    else if (tk == CoreLibBinder::GetMethod(METHOD__UNSAFE__SKIPINIT)->GetMemberDef())
     {
         static BYTE ilcode[] = { CEE_RET };
 
@@ -7174,13 +7179,13 @@ bool getILIntrinsicImplementationForMemoryMarshal(MethodDesc * ftn,
 {
     STANDARD_VM_CONTRACT;
 
-    _ASSERTE(MscorlibBinder::IsClass(ftn->GetMethodTable(), CLASS__MEMORY_MARSHAL));
+    _ASSERTE(CoreLibBinder::IsClass(ftn->GetMethodTable(), CLASS__MEMORY_MARSHAL));
 
     mdMethodDef tk = ftn->GetMemberDef();
 
-    if (tk == MscorlibBinder::GetMethod(METHOD__MEMORY_MARSHAL__GET_ARRAY_DATA_REFERENCE)->GetMemberDef())
+    if (tk == CoreLibBinder::GetMethod(METHOD__MEMORY_MARSHAL__GET_ARRAY_DATA_REFERENCE)->GetMemberDef())
     {
-        mdToken tokRawSzArrayData = MscorlibBinder::GetField(FIELD__RAW_ARRAY_DATA__DATA)->GetMemberDef();
+        mdToken tokRawSzArrayData = CoreLibBinder::GetField(FIELD__RAW_ARRAY_DATA__DATA)->GetMemberDef();
 
         static BYTE ilcode[] = { CEE_LDARG_0,
                                  CEE_LDFLDA,0,0,0,0,
@@ -7208,7 +7213,7 @@ bool getILIntrinsicImplementationForVolatile(MethodDesc * ftn,
     STANDARD_VM_CONTRACT;
 
     //
-    // This replaces the implementations of Volatile.* in mscorlib with more efficient ones.
+    // This replaces the implementations of Volatile.* in CoreLib with more efficient ones.
     // We do this because we cannot otherwise express these in C#.  What we *want* to do is
     // to treat the byref args to these methods as "volatile."  In pseudo-C#, this would look
     // like:
@@ -7222,7 +7227,7 @@ bool getILIntrinsicImplementationForVolatile(MethodDesc * ftn,
     // we substitute raw IL bodies for these methods that use the correct volatile instructions.
     //
 
-    _ASSERTE(MscorlibBinder::IsClass(ftn->GetMethodTable(), CLASS__VOLATILE));
+    _ASSERTE(CoreLibBinder::IsClass(ftn->GetMethodTable(), CLASS__VOLATILE));
 
     const size_t VolatileMethodBodySize = 6;
 
@@ -7271,7 +7276,7 @@ bool getILIntrinsicImplementationForVolatile(MethodDesc * ftn,
         //
         // Ordinary volatile loads and stores only guarantee atomicity for pointer-sized (or smaller) data.
         // So, on 32-bit platforms we must use Interlocked operations instead for the 64-bit types.
-        // The implementation in mscorlib already does this, so we will only substitute a new
+        // The implementation in CoreLib already does this, so we will only substitute a new
         // IL body if we're running on a 64-bit platform.
         //
         IN_TARGET_64BIT(VOLATILE_IMPL(Long,  CEE_LDIND_I8, CEE_STIND_I8))
@@ -7282,7 +7287,7 @@ bool getILIntrinsicImplementationForVolatile(MethodDesc * ftn,
     mdMethodDef md = ftn->GetMemberDef();
     for (unsigned i = 0; i < NumItems(volatileImpls); i++)
     {
-        if (md == MscorlibBinder::GetMethod(volatileImpls[i].methodId)->GetMemberDef())
+        if (md == CoreLibBinder::GetMethod(volatileImpls[i].methodId)->GetMemberDef())
         {
             methInfo->ILCode = const_cast<BYTE*>(volatileImpls[i].body);
             methInfo->ILCodeSize = VolatileMethodBodySize;
@@ -7301,14 +7306,14 @@ bool getILIntrinsicImplementationForInterlocked(MethodDesc * ftn,
 {
     STANDARD_VM_CONTRACT;
 
-    _ASSERTE(MscorlibBinder::IsClass(ftn->GetMethodTable(), CLASS__INTERLOCKED));
+    _ASSERTE(CoreLibBinder::IsClass(ftn->GetMethodTable(), CLASS__INTERLOCKED));
 
     // We are only interested if ftn's token and CompareExchange<T> token match
-    if (ftn->GetMemberDef() != MscorlibBinder::GetMethod(METHOD__INTERLOCKED__COMPARE_EXCHANGE_T)->GetMemberDef())
+    if (ftn->GetMemberDef() != CoreLibBinder::GetMethod(METHOD__INTERLOCKED__COMPARE_EXCHANGE_T)->GetMemberDef())
         return false;
 
     // Get MethodDesc for non-generic System.Threading.Interlocked.CompareExchange()
-    MethodDesc* cmpxchgObject = MscorlibBinder::GetMethod(METHOD__INTERLOCKED__COMPARE_EXCHANGE_OBJECT);
+    MethodDesc* cmpxchgObject = CoreLibBinder::GetMethod(METHOD__INTERLOCKED__COMPARE_EXCHANGE_OBJECT);
 
     // Setup up the body of the method
     static BYTE il[] = {
@@ -7341,11 +7346,11 @@ bool getILIntrinsicImplementationForRuntimeHelpers(MethodDesc * ftn,
 {
     STANDARD_VM_CONTRACT;
 
-    _ASSERTE(MscorlibBinder::IsClass(ftn->GetMethodTable(), CLASS__RUNTIME_HELPERS));
+    _ASSERTE(CoreLibBinder::IsClass(ftn->GetMethodTable(), CLASS__RUNTIME_HELPERS));
 
     mdMethodDef tk = ftn->GetMemberDef();
 
-    if (tk == MscorlibBinder::GetMethod(METHOD__RUNTIME_HELPERS__IS_REFERENCE_OR_CONTAINS_REFERENCES)->GetMemberDef())
+    if (tk == CoreLibBinder::GetMethod(METHOD__RUNTIME_HELPERS__IS_REFERENCE_OR_CONTAINS_REFERENCES)->GetMemberDef())
     {
         _ASSERTE(ftn->HasMethodInstantiation());
         Instantiation inst = ftn->GetMethodInstantiation();
@@ -7373,7 +7378,7 @@ bool getILIntrinsicImplementationForRuntimeHelpers(MethodDesc * ftn,
         return true;
     }
 
-    if (tk == MscorlibBinder::GetMethod(METHOD__RUNTIME_HELPERS__IS_BITWISE_EQUATABLE)->GetMemberDef())
+    if (tk == CoreLibBinder::GetMethod(METHOD__RUNTIME_HELPERS__IS_BITWISE_EQUATABLE)->GetMemberDef())
     {
         _ASSERTE(ftn->HasMethodInstantiation());
         Instantiation inst = ftn->GetMethodInstantiation();
@@ -7391,22 +7396,22 @@ bool getILIntrinsicImplementationForRuntimeHelpers(MethodDesc * ftn,
         // n.b. This doesn't imply that the type's CompareTo method can be memcmp-implemented,
         // as a method like CompareTo may need to take a type's signedness into account.
 
-        if (methodTable == MscorlibBinder::GetClass(CLASS__BOOLEAN)
-            || methodTable == MscorlibBinder::GetClass(CLASS__BYTE)
-            || methodTable == MscorlibBinder::GetClass(CLASS__SBYTE)
+        if (methodTable == CoreLibBinder::GetClass(CLASS__BOOLEAN)
+            || methodTable == CoreLibBinder::GetClass(CLASS__BYTE)
+            || methodTable == CoreLibBinder::GetClass(CLASS__SBYTE)
 #ifdef FEATURE_UTF8STRING
-            || methodTable == MscorlibBinder::GetClass(CLASS__CHAR8)
+            || methodTable == CoreLibBinder::GetClass(CLASS__CHAR8)
 #endif // FEATURE_UTF8STRING
-            || methodTable == MscorlibBinder::GetClass(CLASS__CHAR)
-            || methodTable == MscorlibBinder::GetClass(CLASS__INT16)
-            || methodTable == MscorlibBinder::GetClass(CLASS__UINT16)
-            || methodTable == MscorlibBinder::GetClass(CLASS__INT32)
-            || methodTable == MscorlibBinder::GetClass(CLASS__UINT32)
-            || methodTable == MscorlibBinder::GetClass(CLASS__INT64)
-            || methodTable == MscorlibBinder::GetClass(CLASS__UINT64)
-            || methodTable == MscorlibBinder::GetClass(CLASS__INTPTR)
-            || methodTable == MscorlibBinder::GetClass(CLASS__UINTPTR)
-            || methodTable == MscorlibBinder::GetClass(CLASS__RUNE)
+            || methodTable == CoreLibBinder::GetClass(CLASS__CHAR)
+            || methodTable == CoreLibBinder::GetClass(CLASS__INT16)
+            || methodTable == CoreLibBinder::GetClass(CLASS__UINT16)
+            || methodTable == CoreLibBinder::GetClass(CLASS__INT32)
+            || methodTable == CoreLibBinder::GetClass(CLASS__UINT32)
+            || methodTable == CoreLibBinder::GetClass(CLASS__INT64)
+            || methodTable == CoreLibBinder::GetClass(CLASS__UINT64)
+            || methodTable == CoreLibBinder::GetClass(CLASS__INTPTR)
+            || methodTable == CoreLibBinder::GetClass(CLASS__UINTPTR)
+            || methodTable == CoreLibBinder::GetClass(CLASS__RUNE)
             || methodTable->IsEnum())
         {
             methInfo->ILCode = const_cast<BYTE*>(returnTrue);
@@ -7423,9 +7428,9 @@ bool getILIntrinsicImplementationForRuntimeHelpers(MethodDesc * ftn,
         return true;
     }
 
-    if (tk == MscorlibBinder::GetMethod(METHOD__RUNTIME_HELPERS__GET_METHOD_TABLE)->GetMemberDef())
+    if (tk == CoreLibBinder::GetMethod(METHOD__RUNTIME_HELPERS__GET_METHOD_TABLE)->GetMemberDef())
     {
-        mdToken tokRawData = MscorlibBinder::GetField(FIELD__RAW_DATA__DATA)->GetMemberDef();
+        mdToken tokRawData = CoreLibBinder::GetField(FIELD__RAW_DATA__DATA)->GetMemberDef();
 
         // In the CLR, an object is laid out as follows.
         // [ object_header || MethodTable* (64-bit pointer) || instance_data ]
@@ -7460,7 +7465,7 @@ bool getILIntrinsicImplementationForRuntimeHelpers(MethodDesc * ftn,
         return true;
     }
 
-    if (tk == MscorlibBinder::GetMethod(METHOD__RUNTIME_HELPERS__ENUM_EQUALS)->GetMemberDef())
+    if (tk == CoreLibBinder::GetMethod(METHOD__RUNTIME_HELPERS__ENUM_EQUALS)->GetMemberDef())
     {
         // Normally we would follow the above pattern and unconditionally replace the IL,
         // relying on generic type constraints to guarantee that it will only ever be instantiated
@@ -7500,7 +7505,7 @@ bool getILIntrinsicImplementationForRuntimeHelpers(MethodDesc * ftn,
             return true;
         }
     }
-    else if (tk == MscorlibBinder::GetMethod(METHOD__RUNTIME_HELPERS__ENUM_COMPARE_TO)->GetMemberDef())
+    else if (tk == CoreLibBinder::GetMethod(METHOD__RUNTIME_HELPERS__ENUM_COMPARE_TO)->GetMemberDef())
     {
         // The the comment above on why this is is not an unconditional replacement.  This case handles
         // Enums backed by 8 byte values.
@@ -7521,12 +7526,12 @@ bool getILIntrinsicImplementationForRuntimeHelpers(MethodDesc * ftn,
         {
             static BYTE ilcode[8][9];
 
-            TypeHandle thUnderlyingType = MscorlibBinder::GetElementType(et);
+            TypeHandle thUnderlyingType = CoreLibBinder::GetElementType(et);
 
-            TypeHandle thIComparable = TypeHandle(MscorlibBinder::GetClass(CLASS__ICOMPARABLEGENERIC)).Instantiate(Instantiation(&thUnderlyingType, 1));
+            TypeHandle thIComparable = TypeHandle(CoreLibBinder::GetClass(CLASS__ICOMPARABLEGENERIC)).Instantiate(Instantiation(&thUnderlyingType, 1));
 
             MethodDesc* pCompareToMD = thUnderlyingType.AsMethodTable()->GetMethodDescForInterfaceMethod(
-                thIComparable, MscorlibBinder::GetMethod(METHOD__ICOMPARABLEGENERIC__COMPARE_TO), TRUE /* throwOnConflict */);
+                thIComparable, CoreLibBinder::GetMethod(METHOD__ICOMPARABLEGENERIC__COMPARE_TO), TRUE /* throwOnConflict */);
 
             // Call CompareTo method on the primitive type
             int tokCompareTo = pCompareToMD->GetMemberDef();
@@ -7562,10 +7567,10 @@ bool getILIntrinsicImplementationForActivator(MethodDesc* ftn,
 {
     STANDARD_VM_CONTRACT;
 
-    _ASSERTE(MscorlibBinder::IsClass(ftn->GetMethodTable(), CLASS__ACTIVATOR));
+    _ASSERTE(CoreLibBinder::IsClass(ftn->GetMethodTable(), CLASS__ACTIVATOR));
 
     // We are only interested if ftn's token and CreateInstance<T> token match
-    if (ftn->GetMemberDef() != MscorlibBinder::GetMethod(METHOD__ACTIVATOR__CREATE_INSTANCE_OF_T)->GetMemberDef())
+    if (ftn->GetMemberDef() != CoreLibBinder::GetMethod(METHOD__ACTIVATOR__CREATE_INSTANCE_OF_T)->GetMemberDef())
         return false;
 
     _ASSERTE(ftn->HasMethodInstantiation());
@@ -7579,7 +7584,7 @@ bool getILIntrinsicImplementationForActivator(MethodDesc* ftn,
         return false;
 
     // Replace the body with implementation that just returns "default"
-    MethodDesc* createDefaultInstance = MscorlibBinder::GetMethod(METHOD__ACTIVATOR__CREATE_DEFAULT_INSTANCE_OF_T);
+    MethodDesc* createDefaultInstance = CoreLibBinder::GetMethod(METHOD__ACTIVATOR__CREATE_DEFAULT_INSTANCE_OF_T);
     COR_ILMETHOD_DECODER header(createDefaultInstance->GetILHeader(FALSE), createDefaultInstance->GetMDImport(), NULL);
     getMethodInfoILMethodHeaderHelper(&header, methInfo);
     *pSig = SigPointer(header.LocalVarSig, header.cbLocalVarSig);
@@ -7622,27 +7627,27 @@ getMethodInfoHelper(
 
         if (ftn->IsJitIntrinsic())
         {
-            if (MscorlibBinder::IsClass(pMT, CLASS__UNSAFE))
+            if (CoreLibBinder::IsClass(pMT, CLASS__UNSAFE))
             {
                 fILIntrinsic = getILIntrinsicImplementationForUnsafe(ftn, methInfo);
             }
-            else if (MscorlibBinder::IsClass(pMT, CLASS__MEMORY_MARSHAL))
+            else if (CoreLibBinder::IsClass(pMT, CLASS__MEMORY_MARSHAL))
             {
                 fILIntrinsic = getILIntrinsicImplementationForMemoryMarshal(ftn, methInfo);
             }
-            else if (MscorlibBinder::IsClass(pMT, CLASS__INTERLOCKED))
+            else if (CoreLibBinder::IsClass(pMT, CLASS__INTERLOCKED))
             {
                 fILIntrinsic = getILIntrinsicImplementationForInterlocked(ftn, methInfo);
             }
-            else if (MscorlibBinder::IsClass(pMT, CLASS__VOLATILE))
+            else if (CoreLibBinder::IsClass(pMT, CLASS__VOLATILE))
             {
                 fILIntrinsic = getILIntrinsicImplementationForVolatile(ftn, methInfo);
             }
-            else if (MscorlibBinder::IsClass(pMT, CLASS__RUNTIME_HELPERS))
+            else if (CoreLibBinder::IsClass(pMT, CLASS__RUNTIME_HELPERS))
             {
                 fILIntrinsic = getILIntrinsicImplementationForRuntimeHelpers(ftn, methInfo);
             }
-            else if (MscorlibBinder::IsClass(pMT, CLASS__ACTIVATOR))
+            else if (CoreLibBinder::IsClass(pMT, CLASS__ACTIVATOR))
             {
                 SigPointer localSig;
                 fILIntrinsic = getILIntrinsicImplementationForActivator(ftn, methInfo, &localSig);
@@ -7874,8 +7879,8 @@ bool containsStackCrawlMarkLocal(MethodDesc* ftn)
         mdToken token;
         IfFailThrow(ptr.GetToken(&token));
 
-        // We are inside mscorlib - simple token match is sufficient
-        if (token == MscorlibBinder::GetClass(CLASS__STACKCRAWMARK)->GetCl())
+        // We are inside CoreLib - simple token match is sufficient
+        if (token == CoreLibBinder::GetClass(CLASS__STACKCRAWMARK)->GetCl())
             return TRUE;
     }
 
@@ -8780,16 +8785,16 @@ CorInfoIntrinsics CEEInfo::getIntrinsicID(CORINFO_METHOD_HANDLE methodHnd,
                     *pMustExpand = true;
                 }
             }
-            else if (pMT->HasSameTypeDefAs(MscorlibBinder::GetClass(CLASS__SPAN)))
+            else if (pMT->HasSameTypeDefAs(CoreLibBinder::GetClass(CLASS__SPAN)))
             {
-                if (method->HasSameMethodDefAs(MscorlibBinder::GetMethod(METHOD__SPAN__GET_ITEM)))
+                if (method->HasSameMethodDefAs(CoreLibBinder::GetMethod(METHOD__SPAN__GET_ITEM)))
                 {
                     result = CORINFO_INTRINSIC_Span_GetItem;
                 }
             }
-            else if (pMT->HasSameTypeDefAs(MscorlibBinder::GetClass(CLASS__READONLY_SPAN)))
+            else if (pMT->HasSameTypeDefAs(CoreLibBinder::GetClass(CLASS__READONLY_SPAN)))
             {
-                if (method->HasSameMethodDefAs(MscorlibBinder::GetMethod(METHOD__READONLY_SPAN__GET_ITEM)))
+                if (method->HasSameMethodDefAs(CoreLibBinder::GetMethod(METHOD__READONLY_SPAN__GET_ITEM)))
                 {
                     result = CORINFO_INTRINSIC_ReadOnlySpan_GetItem;
                 }
@@ -9112,18 +9117,18 @@ CORINFO_CLASS_HANDLE CEEInfo::getDefaultEqualityComparerClassHelper(CORINFO_CLAS
     TypeHandle elemTypeHnd(elemType);
 
     // Special case for byte
-    if (elemTypeHnd.AsMethodTable()->HasSameTypeDefAs(MscorlibBinder::GetClass(CLASS__ELEMENT_TYPE_U1)))
+    if (elemTypeHnd.AsMethodTable()->HasSameTypeDefAs(CoreLibBinder::GetClass(CLASS__ELEMENT_TYPE_U1)))
     {
-        return CORINFO_CLASS_HANDLE(MscorlibBinder::GetClass(CLASS__BYTE_EQUALITYCOMPARER));
+        return CORINFO_CLASS_HANDLE(CoreLibBinder::GetClass(CLASS__BYTE_EQUALITYCOMPARER));
     }
 
     // Else we'll need to find the appropriate instantation
     Instantiation inst(&elemTypeHnd, 1);
 
     // If T implements IEquatable<T>
-    if (elemTypeHnd.CanCastTo(TypeHandle(MscorlibBinder::GetClass(CLASS__IEQUATABLEGENERIC)).Instantiate(inst)))
+    if (elemTypeHnd.CanCastTo(TypeHandle(CoreLibBinder::GetClass(CLASS__IEQUATABLEGENERIC)).Instantiate(inst)))
     {
-        TypeHandle resultTh = ((TypeHandle)MscorlibBinder::GetClass(CLASS__GENERIC_EQUALITYCOMPARER)).Instantiate(inst);
+        TypeHandle resultTh = ((TypeHandle)CoreLibBinder::GetClass(CLASS__GENERIC_EQUALITYCOMPARER)).Instantiate(inst);
         return CORINFO_CLASS_HANDLE(resultTh.GetMethodTable());
     }
 
@@ -9131,7 +9136,7 @@ CORINFO_CLASS_HANDLE CEEInfo::getDefaultEqualityComparerClassHelper(CORINFO_CLAS
     if (Nullable::IsNullableType(elemTypeHnd))
     {
         Instantiation nullableInst = elemTypeHnd.AsMethodTable()->GetInstantiation();
-        TypeHandle nullableComparer = TypeHandle(MscorlibBinder::GetClass(CLASS__IEQUATABLEGENERIC)).Instantiate(nullableInst);
+        TypeHandle nullableComparer = TypeHandle(CoreLibBinder::GetClass(CLASS__IEQUATABLEGENERIC)).Instantiate(nullableInst);
         if (nullableInst[0].CanCastTo(nullableComparer))
         {
             return CORINFO_CLASS_HANDLE(nullableComparer.GetMethodTable());
@@ -9158,7 +9163,7 @@ CORINFO_CLASS_HANDLE CEEInfo::getDefaultEqualityComparerClassHelper(CORINFO_CLAS
             case ELEMENT_TYPE_I8:
             case ELEMENT_TYPE_U8:
             {
-                targetClass = MscorlibBinder::GetClass(CLASS__ENUM_EQUALITYCOMPARER);
+                targetClass = CoreLibBinder::GetClass(CLASS__ENUM_EQUALITYCOMPARER);
                 break;
             }
 
@@ -9174,7 +9179,7 @@ CORINFO_CLASS_HANDLE CEEInfo::getDefaultEqualityComparerClassHelper(CORINFO_CLAS
     }
 
     // Default case
-    TypeHandle resultTh = ((TypeHandle)MscorlibBinder::GetClass(CLASS__OBJECT_EQUALITYCOMPARER)).Instantiate(inst);
+    TypeHandle resultTh = ((TypeHandle)CoreLibBinder::GetClass(CLASS__OBJECT_EQUALITYCOMPARER)).Instantiate(inst);
 
     return CORINFO_CLASS_HANDLE(resultTh.GetMethodTable());
 }
@@ -13546,7 +13551,7 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
             if (CORCOMPILE_IS_PCODE_TAGGED(result))
             {
                 // There is a rare case where the function entrypoint may not be aligned. This could happen only for FCalls,
-                // only on x86 and only if we failed to hardbind the fcall (e.g. ngen image for mscorlib.dll does not exist
+                // only on x86 and only if we failed to hardbind the fcall (e.g. ngen image for CoreLib does not exist
                 // and /nodependencies flag for ngen was used). The function entrypoints should be aligned in all other cases.
                 //
                 // We will wrap the unaligned method entrypoint by funcptr stub with aligned entrypoint.
@@ -13835,7 +13840,8 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
             DWORD baseOffset = CorSigUncompressData(pBlob);
             DWORD fieldOffset = CorSigUncompressData(pBlob);
             FieldDesc* pField = ZapSig::DecodeField(currentModule, pInfoModule, pBlob);
-            pField->GetEnclosingMethodTable()->CheckRestore();
+            MethodTable *pEnclosingMT = pField->GetApproxEnclosingMethodTable();
+            pEnclosingMT->CheckRestore();
             DWORD actualFieldOffset = pField->GetOffset();
             if (!pField->IsStatic() && !pField->IsFieldOfValueType())
             {
@@ -13844,10 +13850,10 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
 
             DWORD actualBaseOffset = 0;
             if (!pField->IsStatic() && 
-                pField->GetEnclosingMethodTable()->GetParentMethodTable() != NULL &&
-                !pField->GetEnclosingMethodTable()->IsValueType())
+                pEnclosingMT->GetParentMethodTable() != NULL &&
+                !pEnclosingMT->IsValueType())
             {
-                actualBaseOffset = ReadyToRunInfo::GetFieldBaseOffset(pField->GetEnclosingMethodTable());
+                actualBaseOffset = ReadyToRunInfo::GetFieldBaseOffset(pEnclosingMT);
             }
 
             if ((fieldOffset != actualFieldOffset) || (baseOffset != actualBaseOffset))
@@ -13858,7 +13864,7 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
 
                 SString fatalErrorString;
                 fatalErrorString.Printf(W("Verify_FieldOffset '%s.%s' %d!=%d || %d!=%d"), 
-                    GetFullyQualifiedNameForClassW(pField->GetEnclosingMethodTable()),
+                    GetFullyQualifiedNameForClassW(pEnclosingMT),
                     ssFieldName.GetUnicode(),
                     fieldOffset,
                     actualFieldOffset,

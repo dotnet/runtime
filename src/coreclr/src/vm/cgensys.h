@@ -95,21 +95,22 @@ inline void GetSpecificCpuInfo(CORINFO_CPU * cpuInfo)
 #endif // !TARGET_X86
 
 #if (defined(TARGET_X86) || defined(TARGET_AMD64)) && !defined(CROSSGEN_COMPILE)
-extern "C" DWORD __stdcall getcpuid(DWORD arg, unsigned char result[16]);
-extern "C" DWORD __stdcall getextcpuid(DWORD arg1, DWORD arg2, unsigned char result[16]);
+#ifdef TARGET_UNIX
+// MSVC directly defines intrinsics for __cpuid and __cpuidex matching the below signatures
+// We define matching signatures for use on Unix platforms.
+
+extern "C" void __stdcall __cpuid(int cpuInfo[4], int function_id);
+extern "C" void __stdcall __cpuidex(int cpuInfo[4], int function_id, int subFunction_id);
+#endif // TARGET_UNIX
 extern "C" DWORD __stdcall xmmYmmStateSupport();
 #endif
 
 inline bool TargetHasAVXSupport()
 {
 #if (defined(TARGET_X86) || defined(TARGET_AMD64)) && !defined(CROSSGEN_COMPILE)
-    unsigned char buffer[16];
-    // All x86/AMD64 targets support cpuid.
-    (void) getcpuid(1, buffer);
-    // getcpuid executes cpuid with eax set to its first argument, and ecx cleared.
-    // It returns the resulting eax, ebx, ecx and edx (in that order) in buffer[].
-    // The AVX feature is ECX bit 28.
-    return ((buffer[11] & 0x10) != 0);
+    int cpuInfo[4];
+    __cpuid(cpuInfo, 0x00000001);           // All x86/AMD64 targets support cpuid.
+    return ((cpuInfo[3] & (1 << 28)) != 0); // The AVX feature is ECX bit 28.
 #endif // (defined(TARGET_X86) || defined(TARGET_AMD64)) && !defined(CROSSGEN_COMPILE)
     return false;
 }
@@ -143,7 +144,7 @@ BOOL GetAnyThunkTarget (T_CONTEXT *pctx, TADDR *pTarget, TADDR *pTargetMethodDes
 
 //
 // ResetProcessorStateHolder saves/restores processor state around calls to
-// mscorlib during exception handling.
+// CoreLib during exception handling.
 //
 class ResetProcessorStateHolder
 {

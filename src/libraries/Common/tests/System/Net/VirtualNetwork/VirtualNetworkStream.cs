@@ -12,13 +12,15 @@ namespace System.Net.Test.Common
         private readonly VirtualNetwork _network;
         private MemoryStream _readStream;
         private readonly bool _isServer;
+        private readonly bool _gracefulShutdown;
         private SemaphoreSlim _readStreamLock = new SemaphoreSlim(1, 1);
         private TaskCompletionSource _flushTcs;
 
-        public VirtualNetworkStream(VirtualNetwork network, bool isServer)
+        public VirtualNetworkStream(VirtualNetwork network, bool isServer, bool gracefulShutdown = false)
         {
             _network = network;
             _isServer = isServer;
+            _gracefulShutdown = gracefulShutdown;
         }
 
         public int DelayMilliseconds { get; set; }
@@ -79,7 +81,10 @@ namespace System.Net.Test.Common
             {
                 if (_readStream == null || (_readStream.Position >= _readStream.Length))
                 {
-                    _readStream = new MemoryStream(_network.ReadFrame(_isServer));
+                    byte[] frame = _network.ReadFrame(_isServer);
+                    if (frame.Length == 0) return 0;
+
+                    _readStream = new MemoryStream(frame);
                 }
 
                 return _readStream.Read(buffer, offset, count);
@@ -102,7 +107,10 @@ namespace System.Net.Test.Common
 
                 if (_readStream == null || (_readStream.Position >= _readStream.Length))
                 {
-                    _readStream = new MemoryStream(await _network.ReadFrameAsync(_isServer, cancellationToken).ConfigureAwait(false));
+                    byte[] frame = await _network.ReadFrameAsync(_isServer, cancellationToken).ConfigureAwait(false);
+                    if (frame.Length == 0) return 0;
+
+                    _readStream = new MemoryStream(frame);
                 }
 
                 return await _readStream.ReadAsync(buffer, offset, count, cancellationToken).ConfigureAwait(false);
@@ -147,10 +155,22 @@ namespace System.Net.Test.Common
             if (disposing)
             {
                 Disposed = true;
-                _network.BreakConnection();
+                if (_gracefulShutdown)
+                {
+                    GracefulShutdown();
+                }
+                else
+                {
+                    _network.BreakConnection();
+                }
             }
 
             base.Dispose(disposing);
+        }
+
+        public void GracefulShutdown()
+        {
+            _network.GracefulShutdown(_isServer);
         }
     }
 }

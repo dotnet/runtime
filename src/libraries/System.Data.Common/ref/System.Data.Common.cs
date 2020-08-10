@@ -65,7 +65,7 @@ namespace System.Data
     {
         internal ConstraintCollection() { }
         public System.Data.Constraint this[int index] { get { throw null; } }
-        public System.Data.Constraint this[string name] { get { throw null; } }
+        public System.Data.Constraint? this[string? name] { get { throw null; } }
         protected override System.Collections.ArrayList List { get { throw null; } }
         public event System.ComponentModel.CollectionChangeEventHandler? CollectionChanged { add { } remove { } }
         public void Add(System.Data.Constraint constraint) { }
@@ -167,7 +167,7 @@ namespace System.Data
         public System.Data.DataColumn this[int index] { get { throw null; } }
         public System.Data.DataColumn? this[string name] { get { throw null; } }
         protected override System.Collections.ArrayList List { get { throw null; } }
-        public event System.ComponentModel.CollectionChangeEventHandler CollectionChanged { add { } remove { } }
+        public event System.ComponentModel.CollectionChangeEventHandler? CollectionChanged { add { } remove { } }
         public System.Data.DataColumn Add() { throw null; }
         public void Add(System.Data.DataColumn column) { }
         public System.Data.DataColumn Add(string? columnName) { throw null; }
@@ -261,7 +261,7 @@ namespace System.Data
     {
         protected DataRelationCollection() { }
         public abstract System.Data.DataRelation this[int index] { get; }
-        public abstract System.Data.DataRelation? this[string name] { get; }
+        public abstract System.Data.DataRelation? this[string? name] { get; }
         public event System.ComponentModel.CollectionChangeEventHandler? CollectionChanged { add { } remove { } }
         public virtual System.Data.DataRelation Add(System.Data.DataColumn parentColumn, System.Data.DataColumn childColumn) { throw null; }
         public virtual System.Data.DataRelation Add(System.Data.DataColumn[] parentColumns, System.Data.DataColumn[] childColumns) { throw null; }
@@ -274,7 +274,7 @@ namespace System.Data
         public virtual void AddRange(System.Data.DataRelation[]? relations) { }
         public virtual bool CanRemove(System.Data.DataRelation? relation) { throw null; }
         public virtual void Clear() { }
-        public virtual bool Contains(string name) { throw null; }
+        public virtual bool Contains(string? name) { throw null; }
         public void CopyTo(System.Data.DataRelation[] array, int index) { }
         protected abstract System.Data.DataSet GetDataSet();
         public virtual int IndexOf(System.Data.DataRelation? relation) { throw null; }
@@ -378,8 +378,8 @@ namespace System.Data
         public void Add(System.Data.DataRow row) { }
         public System.Data.DataRow Add(params object?[] values) { throw null; }
         public void Clear() { }
-        public bool Contains(object key) { throw null; }
-        public bool Contains(object[] keys) { throw null; }
+        public bool Contains(object? key) { throw null; }
+        public bool Contains(object?[] keys) { throw null; }
         public override void CopyTo(System.Array ar, int index) { }
         public void CopyTo(System.Data.DataRow[] array, int index) { }
         public System.Data.DataRow? Find(object? key) { throw null; }
@@ -403,21 +403,15 @@ namespace System.Data
     }
     public static partial class DataRowExtensions
     {
-        [return: System.Diagnostics.CodeAnalysis.MaybeNullAttribute]
-        public static T Field<T>(this System.Data.DataRow row, System.Data.DataColumn column) { throw null; }
-        [return: System.Diagnostics.CodeAnalysis.MaybeNullAttribute]
-        public static T Field<T>(this System.Data.DataRow row, System.Data.DataColumn column, System.Data.DataRowVersion version) { throw null; }
-        [return: System.Diagnostics.CodeAnalysis.MaybeNullAttribute]
-        public static T Field<T>(this System.Data.DataRow row, int columnIndex) { throw null; }
-        [return: System.Diagnostics.CodeAnalysis.MaybeNullAttribute]
-        public static T Field<T>(this System.Data.DataRow row, int columnIndex, System.Data.DataRowVersion version) { throw null; }
-        [return: System.Diagnostics.CodeAnalysis.MaybeNullAttribute]
-        public static T Field<T>(this System.Data.DataRow row, string columnName) { throw null; }
-        [return: System.Diagnostics.CodeAnalysis.MaybeNullAttribute]
-        public static T Field<T>(this System.Data.DataRow row, string columnName, System.Data.DataRowVersion version) { throw null; }
-        public static void SetField<T>(this System.Data.DataRow row, System.Data.DataColumn column, [System.Diagnostics.CodeAnalysis.AllowNullAttribute] T value) { }
-        public static void SetField<T>(this System.Data.DataRow row, int columnIndex, [System.Diagnostics.CodeAnalysis.AllowNullAttribute] T value) { }
-        public static void SetField<T>(this System.Data.DataRow row, string columnName, [System.Diagnostics.CodeAnalysis.AllowNullAttribute] T value) { }
+        public static T? Field<T>(this System.Data.DataRow row, System.Data.DataColumn column) { throw null; }
+        public static T? Field<T>(this System.Data.DataRow row, System.Data.DataColumn column, System.Data.DataRowVersion version) { throw null; }
+        public static T? Field<T>(this System.Data.DataRow row, int columnIndex) { throw null; }
+        public static T? Field<T>(this System.Data.DataRow row, int columnIndex, System.Data.DataRowVersion version) { throw null; }
+        public static T? Field<T>(this System.Data.DataRow row, string columnName) { throw null; }
+        public static T? Field<T>(this System.Data.DataRow row, string columnName, System.Data.DataRowVersion version) { throw null; }
+        public static void SetField<T>(this System.Data.DataRow row, System.Data.DataColumn column, T? value) { }
+        public static void SetField<T>(this System.Data.DataRow row, int columnIndex, T? value) { }
+        public static void SetField<T>(this System.Data.DataRow row, string columnName, T? value) { }
     }
     [System.FlagsAttribute]
     public enum DataRowState
@@ -477,6 +471,7 @@ namespace System.Data
         object System.ComponentModel.ICustomTypeDescriptor.GetPropertyOwner(System.ComponentModel.PropertyDescriptor pd) { throw null; }
 #nullable enable
     }
+    [System.ComponentModel.DesignerAttribute("Microsoft.VSDesigner.Data.VS.DataSetDesigner, Microsoft.VSDesigner, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
     [System.ComponentModel.DefaultPropertyAttribute("DataSetName")]
     [System.Xml.Serialization.XmlRootAttribute("DataSet")]
     [System.Xml.Serialization.XmlSchemaProviderAttribute("GetDataSetSchema")]
@@ -868,6 +863,7 @@ namespace System.Data
         public override bool NextResult() { throw null; }
         public override bool Read() { throw null; }
     }
+    [System.ComponentModel.DesignerAttribute("Microsoft.VSDesigner.Data.VS.DataViewDesigner, Microsoft.VSDesigner, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
     [System.ComponentModel.DefaultEventAttribute("PositionChanged")]
     [System.ComponentModel.DefaultPropertyAttribute("Table")]
     public partial class DataView : System.ComponentModel.MarshalByValueComponent, System.Collections.ICollection, System.Collections.IEnumerable, System.Collections.IList, System.ComponentModel.IBindingList, System.ComponentModel.IBindingListView, System.ComponentModel.ISupportInitialize, System.ComponentModel.ISupportInitializeNotification, System.ComponentModel.ITypedList
@@ -965,6 +961,7 @@ namespace System.Data
         protected void UpdateIndex() { }
         protected virtual void UpdateIndex(bool force) { }
     }
+    [System.ComponentModel.DesignerAttribute("Microsoft.VSDesigner.Data.VS.DataViewManagerDesigner, Microsoft.VSDesigner, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
     public partial class DataViewManager : System.ComponentModel.MarshalByValueComponent, System.Collections.ICollection, System.Collections.IEnumerable, System.Collections.IList, System.ComponentModel.IBindingList, System.ComponentModel.ITypedList
     {
         public DataViewManager() { }
@@ -1054,8 +1051,8 @@ namespace System.Data
         [System.ComponentModel.BrowsableAttribute(false)]
         public bool IsSynchronized { get { throw null; } }
         public virtual System.Data.DataViewSetting this[System.Data.DataTable table] { get { throw null; } set { } }
-        [System.Diagnostics.CodeAnalysis.MaybeNullAttribute]
-        public virtual System.Data.DataViewSetting this[int index] { get { throw null; } set { } }
+        [System.Diagnostics.CodeAnalysis.DisallowNullAttribute]
+        public virtual System.Data.DataViewSetting? this[int index] { get { throw null; } set { } }
         public virtual System.Data.DataViewSetting? this[string tableName] { get { throw null; } }
         [System.ComponentModel.BrowsableAttribute(false)]
         public object SyncRoot { get { throw null; } }
@@ -1560,8 +1557,7 @@ namespace System.Data
     public static partial class TypedTableBaseExtensions
     {
         public static System.Data.EnumerableRowCollection<TRow> AsEnumerable<TRow>(this System.Data.TypedTableBase<TRow> source) where TRow : System.Data.DataRow { throw null; }
-        [return: System.Diagnostics.CodeAnalysis.MaybeNullAttribute]
-        public static TRow ElementAtOrDefault<TRow>(this System.Data.TypedTableBase<TRow> source, int index) where TRow : System.Data.DataRow { throw null; }
+        public static TRow? ElementAtOrDefault<TRow>(this System.Data.TypedTableBase<TRow> source, int index) where TRow : System.Data.DataRow { throw null; }
         public static System.Data.OrderedEnumerableRowCollection<TRow> OrderByDescending<TRow, TKey>(this System.Data.TypedTableBase<TRow> source, System.Func<TRow, TKey> keySelector) where TRow : System.Data.DataRow { throw null; }
         public static System.Data.OrderedEnumerableRowCollection<TRow> OrderByDescending<TRow, TKey>(this System.Data.TypedTableBase<TRow> source, System.Func<TRow, TKey> keySelector, System.Collections.Generic.IComparer<TKey> comparer) where TRow : System.Data.DataRow { throw null; }
         public static System.Data.OrderedEnumerableRowCollection<TRow> OrderBy<TRow, TKey>(this System.Data.TypedTableBase<TRow> source, System.Func<TRow, TKey> keySelector) where TRow : System.Data.DataRow { throw null; }
@@ -2441,6 +2437,13 @@ namespace System.Data.Common
         public virtual System.Threading.Tasks.ValueTask DisposeAsync() { throw null; }
         public abstract void Rollback();
         public virtual System.Threading.Tasks.Task RollbackAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public virtual bool SupportsSavepoints { get { throw null; } }
+        public virtual System.Threading.Tasks.Task SaveAsync(string savepointName, System.Threading.CancellationToken cancellationToken = default) { throw null; }
+        public virtual System.Threading.Tasks.Task RollbackAsync(string savepointName, System.Threading.CancellationToken cancellationToken = default) { throw null; }
+        public virtual System.Threading.Tasks.Task ReleaseAsync(string savepointName, System.Threading.CancellationToken cancellationToken = default) { throw null; }
+        public virtual void Save(string savepointName) { throw null; }
+        public virtual void Rollback(string savepointName) { throw null; }
+        public virtual void Release(string savepointName) { throw null; }
     }
     public enum GroupByBehavior
     {

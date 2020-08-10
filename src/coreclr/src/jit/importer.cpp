@@ -1392,8 +1392,8 @@ GenTree* Compiler::impAssignStructPtr(GenTree*             destAddr,
     }
     else if (asgType == TYP_STRUCT)
     {
-        asgType     = impNormStructType(structHnd);
-        src->gtType = asgType;
+        // It should already have the appropriate type.
+        assert(asgType == impNormStructType(structHnd));
     }
     if ((dest == nullptr) && (destAddr->OperGet() == GT_ADDR))
     {
@@ -2117,11 +2117,18 @@ GenTree* Compiler::impRuntimeLookupToTree(CORINFO_RESOLVED_TOKEN* pResolvedToken
                                       nullptr DEBUGARG("impRuntimeLookup indirectOffset"));
         }
 
+        // The last indirection could be subject to a size check (dynamic dictionary expansion)
+        bool isLastIndirectionWithSizeCheck =
+            ((i == pRuntimeLookup->indirections - 1) && (pRuntimeLookup->sizeOffset != CORINFO_NO_SIZE_CHECK));
+
         if (i != 0)
         {
             slotPtrTree = gtNewOperNode(GT_IND, TYP_I_IMPL, slotPtrTree);
             slotPtrTree->gtFlags |= GTF_IND_NONFAULTING;
-            slotPtrTree->gtFlags |= GTF_IND_INVARIANT;
+            if (!isLastIndirectionWithSizeCheck)
+            {
+                slotPtrTree->gtFlags |= GTF_IND_INVARIANT;
+            }
         }
 
         if ((i == 1 && pRuntimeLookup->indirectFirstOffset) || (i == 2 && pRuntimeLookup->indirectSecondOffset))
@@ -2131,8 +2138,7 @@ GenTree* Compiler::impRuntimeLookupToTree(CORINFO_RESOLVED_TOKEN* pResolvedToken
 
         if (pRuntimeLookup->offsets[i] != 0)
         {
-            // The last indirection could be subject to a size check (dynamic dictionary expansion)
-            if (i == pRuntimeLookup->indirections - 1 && pRuntimeLookup->sizeOffset != CORINFO_NO_SIZE_CHECK)
+            if (isLastIndirectionWithSizeCheck)
             {
                 lastIndOfTree = impCloneExpr(slotPtrTree, &slotPtrTree, NO_CLASS_HANDLE, (unsigned)CHECK_SPILL_ALL,
                                              nullptr DEBUGARG("impRuntimeLookup indirectOffset"));
@@ -4201,9 +4207,9 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
 
                     // We are constructing a chain of intrinsics similar to:
                     //    return FMA.MultiplyAddScalar(
-                    //        Vector128.CreateScalar(x),
-                    //        Vector128.CreateScalar(y),
-                    //        Vector128.CreateScalar(z)
+                    //        Vector128.CreateScalarUnsafe(x),
+                    //        Vector128.CreateScalarUnsafe(y),
+                    //        Vector128.CreateScalarUnsafe(z)
                     //    ).ToScalar();
 
                     GenTree* op3 = gtNewSimdHWIntrinsicNode(TYP_SIMD16, impPopStack().val,
@@ -4217,7 +4223,38 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
 
                     retNode = gtNewSimdHWIntrinsicNode(callType, res, NI_Vector128_ToScalar, callType, 16);
                 }
-#endif // TARGET_XARCH
+#elif defined(TARGET_ARM64)
+                if (compExactlyDependsOn(InstructionSet_AdvSimd))
+                {
+                    assert(varTypeIsFloating(callType));
+
+                    // We are constructing a chain of intrinsics similar to:
+                    //    return AdvSimd.FusedMultiplyAddScalar(
+                    //        Vector64.Create{ScalarUnsafe}(z),
+                    //        Vector64.Create{ScalarUnsafe}(y),
+                    //        Vector64.Create{ScalarUnsafe}(x)
+                    //    ).ToScalar();
+
+                    NamedIntrinsic createVector64 =
+                        (callType == TYP_DOUBLE) ? NI_Vector64_Create : NI_Vector64_CreateScalarUnsafe;
+
+                    constexpr unsigned int simdSize = 8;
+
+                    GenTree* op3 =
+                        gtNewSimdHWIntrinsicNode(TYP_SIMD8, impPopStack().val, createVector64, callType, simdSize);
+                    GenTree* op2 =
+                        gtNewSimdHWIntrinsicNode(TYP_SIMD8, impPopStack().val, createVector64, callType, simdSize);
+                    GenTree* op1 =
+                        gtNewSimdHWIntrinsicNode(TYP_SIMD8, impPopStack().val, createVector64, callType, simdSize);
+
+                    // Note that AdvSimd.FusedMultiplyAddScalar(op1,op2,op3) corresponds to op1 + op2 * op3
+                    // while Math{F}.FusedMultiplyAddScalar(op1,op2,op3) corresponds to op1 * op2 + op3
+                    retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD8, op3, op2, op1, NI_AdvSimd_FusedMultiplyAddScalar,
+                                                       callType, simdSize);
+
+                    retNode = gtNewSimdHWIntrinsicNode(callType, retNode, NI_Vector64_ToScalar, callType, simdSize);
+                }
+#endif
                 break;
             }
 #endif // FEATURE_HW_INTRINSICS
@@ -4855,7 +4892,14 @@ GenTree* Compiler::impArrayAccessIntrinsic(
 
     if (intrinsicID != CORINFO_INTRINSIC_Array_Address)
     {
-        arrElem = gtNewOperNode(GT_IND, elemType, arrElem);
+        if (varTypeIsStruct(elemType))
+        {
+            arrElem = gtNewObjNode(sig->retTypeClass, arrElem);
+        }
+        else
+        {
+            arrElem = gtNewOperNode(GT_IND, elemType, arrElem);
+        }
     }
 
     if (intrinsicID == CORINFO_INTRINSIC_Array_Set)
@@ -7768,7 +7812,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
         // If this is a call to JitTestLabel.Mark, do "early inlining", and record the test attribute.
 
         // This recognition should really be done by knowing the methHnd of the relevant Mark method(s).
-        // These should be in mscorlib.h, and available through a JIT/EE interface call.
+        // These should be in corelib.h, and available through a JIT/EE interface call.
         const char* modName;
         const char* className;
         const char* methodName;
@@ -13247,10 +13291,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                             // via an underlying address, just null check the address.
                             if (op1->OperIs(GT_FIELD, GT_IND, GT_OBJ))
                             {
-                                op1->ChangeOper(GT_NULLCHECK);
-                                block->bbFlags |= BBF_HAS_NULLCHECK;
-                                optMethodFlags |= OMF_HAS_NULLCHECK;
-                                op1->gtType = TYP_BYTE;
+                                gtChangeOperToNullCheck(op1, block);
                             }
                             else
                             {

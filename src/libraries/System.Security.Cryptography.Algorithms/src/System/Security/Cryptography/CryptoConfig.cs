@@ -188,7 +188,7 @@ namespace System.Security.Cryptography
                 ht.Add("System.Security.Cryptography.DSA", DSACryptoServiceProviderType);
 
                 // Windows will register the public ECDsaCng type.  Non-Windows gets a special handler.
-                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                if (OperatingSystem.IsWindows())
                 {
                     ht.Add(ECDsaIdentifier, ECDsaCngType);
                 }
