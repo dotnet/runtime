@@ -476,7 +476,7 @@ namespace System.Text
                 if (!ContainsNonAsciiByte_AdvSimd(currentAdvSimdIndex))
                 {
                     pBuffer += SizeOfVector128;
-                    currentAdvSimdIndex = secondSseMask;
+                    currentAdvSimdIndex = secondAdvSimdIndex;
                 }
             }
             else
