@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 using Xunit;
@@ -106,7 +105,7 @@ namespace System.IO.Tests
             try
             {
                 // Operation succeeds when being run by the Unix superuser
-                if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && geteuid() == 0)
+                if (!OperatingSystem.IsWindows() && geteuid() == 0)
                 {
                     File.WriteAllBytes(path, Encoding.UTF8.GetBytes("text"));
                     Assert.Equal(Encoding.UTF8.GetBytes("text"), File.ReadAllBytes(path));

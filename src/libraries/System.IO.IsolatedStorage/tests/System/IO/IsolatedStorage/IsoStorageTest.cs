@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-using System.Runtime.InteropServices;
 using Xunit;
 
 namespace System.IO.IsolatedStorage
@@ -78,7 +77,7 @@ namespace System.IO.IsolatedStorage
                 };
 
                 // https://github.com/dotnet/runtime/issues/2092
-                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
+                if (OperatingSystem.IsWindows()
                     && !PlatformDetection.IsInAppContainer)
                 {
                     validScopes.Add(PresetScopes.MachineStoreForApplication);

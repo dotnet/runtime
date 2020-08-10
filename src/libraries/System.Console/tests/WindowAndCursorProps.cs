@@ -4,7 +4,6 @@
 using System;
 using System.Diagnostics;
 using System.IO;
-using System.Runtime.InteropServices;
 using Microsoft.DotNet.RemoteExecutor;
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
@@ -323,7 +322,7 @@ public class WindowAndCursorProps
     [OuterLoop] // clears the screen, not very inner-loop friendly
     public static void Clear_Invoke_Success()
     {
-        if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows) || (!Console.IsInputRedirected && !Console.IsOutputRedirected))
+        if (!OperatingSystem.IsWindows() || (!Console.IsInputRedirected && !Console.IsOutputRedirected))
         {
             // Nothing to verify; just run the code.
             Console.Clear();
@@ -341,7 +340,7 @@ public class WindowAndCursorProps
     [PlatformSpecific(~TestPlatforms.Browser)]
     public static void SetCursorPosition_Invoke_Success()
     {
-        if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows) || (!Console.IsInputRedirected && !Console.IsOutputRedirected))
+        if (!OperatingSystem.IsWindows() || (!Console.IsInputRedirected && !Console.IsOutputRedirected))
         {
             int origLeft = Console.CursorLeft;
             int origTop = Console.CursorTop;
@@ -383,7 +382,7 @@ public class WindowAndCursorProps
             Assert.Equal(origTop, Console.CursorTop);
             Assert.Equal(origTuple, Console.GetCursorPosition());
         }
-        else if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        else if (!OperatingSystem.IsWindows())
         {
             Assert.Equal(0, Console.CursorLeft);
             Assert.Equal(0, Console.CursorTop);
@@ -405,7 +404,7 @@ public class WindowAndCursorProps
             Console.CursorLeft = origLeft;
             Assert.Equal(origLeft, Console.CursorLeft);
         }
-        else if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        else if (!OperatingSystem.IsWindows())
         {
             Assert.Equal(0, Console.CursorLeft);
         }
@@ -448,7 +447,7 @@ public class WindowAndCursorProps
             Console.CursorTop = origTop;
             Assert.Equal(origTop, Console.CursorTop);
         }
-        else if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        else if (!OperatingSystem.IsWindows())
         {
             Assert.Equal(0, Console.CursorTop);
         }
