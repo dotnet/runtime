@@ -8,6 +8,7 @@ using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Threading.Tasks;
+using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 
 namespace System.Net.Security.Tests
@@ -83,10 +84,31 @@ namespace System.Net.Security.Tests
             listener.Stop();
         }
 
-        [Fact]
+        [ConditionalFact]
         [PlatformSpecific(TestPlatforms.Linux)] // This only applies where OpenSsl is used.
         public async Task SslStream_SendReceiveOverNetworkStream_AuthenticationException()
         {
+            SslProtocols clientProtocol;
+            SslProtocols serverProtocol;
+
+            // Try to find protocol mismatch.
+            if (PlatformDetection.SupportsTls12 && (PlatformDetection.SupportsTls10 || PlatformDetection.SupportsTls11))
+            {
+                // OpenSSL 1.0 where new is Tls12
+                clientProtocol = SslProtocols.Tls | SslProtocols.Tls11;
+                serverProtocol = SslProtocols.Tls12;
+            }
+            else if (PlatformDetection.SupportsTls12 && PlatformDetection.SupportsTls13)
+            {
+                // OpenSSl 1.1 where new is 1.3 and legacy is 1.2
+                clientProtocol = SslProtocols.Tls13;
+                serverProtocol = SslProtocols.Tls12;
+            }
+            else
+            {
+                throw new SkipTestException("Did not find disjoined sets");
+            }
+
             TcpListener listener = new TcpListener(IPAddress.Loopback, 0);
 
             using (X509Certificate2 serverCertificate = Configuration.Certificates.GetServerCertificate())
@@ -117,13 +139,13 @@ namespace System.Net.Security.Tests
                     Task clientAuthenticationTask = clientStream.AuthenticateAsClientAsync(
                         serverCertificate.GetNameInfo(X509NameType.SimpleName, false),
                         null,
-                        SslProtocols.Tls11,
+                        clientProtocol,
                         false);
 
                     AuthenticationException e = await Assert.ThrowsAsync<AuthenticationException>(() => serverStream.AuthenticateAsServerAsync(
                         serverCertificate,
                         false,
-                        SslProtocols.Tls12,
+                        serverProtocol,
                         false));
 
                     Assert.NotNull(e.InnerException);
