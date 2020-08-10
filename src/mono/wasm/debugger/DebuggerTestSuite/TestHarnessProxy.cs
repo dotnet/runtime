@@ -13,14 +13,6 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Microsoft.WebAssembly.Diagnostics
 {
-    public class TestHarnessOptions : ProxyOptions
-    {
-        public string ChromePath { get; set; }
-        public string AppPath { get; set; }
-        public string PagePath { get; set; }
-        public string NodeApp { get; set; }
-    }
-
     public class TestHarnessProxy
     {
         static IWebHost host;
