@@ -17,9 +17,10 @@ namespace Internal.Cryptography
     //
     internal abstract class UniversalCryptoTransform : ICryptoTransform
     {
-        public static ICryptoTransform Create(PaddingMode paddingMode,
-                                              BasicSymmetricCipher cipher,
-                                              bool encrypting)
+        public static ICryptoTransform Create(
+            PaddingMode paddingMode,
+            BasicSymmetricCipher cipher,
+            bool encrypting)
         {
             if (encrypting)
                 return new UniversalCryptoEncryptor(paddingMode, cipher);

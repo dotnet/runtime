@@ -253,7 +253,6 @@ namespace System.Security.Cryptography.Encryption.Des.Tests
             }
         }
 
-
         [Fact]
         public static void VerifyKnownTransform_CFB8_NoPadding_0()
         {
@@ -429,6 +428,7 @@ namespace System.Security.Cryptography.Encryption.Des.Tests
                 feedbackSize: 8
             );
         }
+
         private static void TestDESTransformDirectKey(
             CipherMode cipherMode,
             PaddingMode paddingMode,

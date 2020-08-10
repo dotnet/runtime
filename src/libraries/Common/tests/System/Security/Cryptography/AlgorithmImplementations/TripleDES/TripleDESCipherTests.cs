@@ -221,8 +221,6 @@ namespace System.Security.Cryptography.Encryption.TripleDes.Tests
             );
         }
 
-
-
         [Fact]
         public static void VerifyKnownTransform_CFB64_NoPadding_0()
         {
