@@ -246,10 +246,10 @@ void EventPipe::EnableViaEnvironmentVariables()
     }
     if (gcGenAnalysis == 0)
     {
-        if (CLRConfig::IsConfigOptionSpecified(L"GCGenAnalysisGen"))
+        if (CLRConfig::IsConfigOptionSpecified(W("GCGenAnalysisGen")))
         {
             gcGenAnalysisGen = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_GCGenAnalysisGen);
-            if (CLRConfig::IsConfigOptionSpecified(L"GCGenAnalysisBytes"))
+            if (CLRConfig::IsConfigOptionSpecified(W("GCGenAnalysisBytes")))
             {
                 gcGenAnalysisBytes = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_GCGenAnalysisBytes);
                 gcGenAnalysis = 1;
@@ -262,7 +262,6 @@ void EventPipe::EnableViaEnvironmentVariables()
     }
     if (gcGenAnalysis == 1 && gcGenAnalysisState == 0)
     {
-        gcGenAnalysisState = 1;
         LPCWSTR outputPath = nullptr;
         outputPath = W("gcgenaware.nettrace");
         NewHolder<EventPipeProviderConfiguration> pProviders = nullptr;
@@ -285,9 +284,13 @@ void EventPipe::EnableViaEnvironmentVariables()
             false,
             nullptr
         );
-        gcGenAnalysisEventPipeSession= EventPipe::GetSession(gcGenAnalysisEventPipeSessionId);
-        gcGenAnalysisEventPipeSession->Pause();
-        EventPipe::StartStreaming(gcGenAnalysisEventPipeSessionId);
+        if (gcGenAnalysisEventPipeSessionId > 0)
+        {
+            gcGenAnalysisEventPipeSession= EventPipe::GetSession(gcGenAnalysisEventPipeSessionId);
+            gcGenAnalysisEventPipeSession->Pause();
+            EventPipe::StartStreaming(gcGenAnalysisEventPipeSessionId);
+            gcGenAnalysisState = 1;
+        }
     }
 }
 

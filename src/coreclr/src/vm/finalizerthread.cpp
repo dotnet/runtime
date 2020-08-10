@@ -8,6 +8,7 @@
 #include "threadsuspend.h"
 #include "jithost.h"
 #include "eventpipe.h"
+#include "eventpipesession.h"
 
 #ifdef FEATURE_COMINTEROP
 #include "runtimecallablewrapper.h"
@@ -220,7 +221,11 @@ void FinalizerThread::WaitForFinalizerEvent (CLREvent *event)
 static BOOL s_FinalizerThreadOK = FALSE;
 
 extern int gcGenAnalysisState;
+extern EventPipeSession* gcGenAnalysisEventPipeSession;
 extern uint64_t gcGenAnalysisEventPipeSessionId;
+extern int gcGenAnalysis;
+extern int64_t gcGenAnalysisGen;
+extern int64_t gcGenAnalysisBytes;
 
 VOID FinalizerThread::FinalizerThreadWorker(void *args)
 {
