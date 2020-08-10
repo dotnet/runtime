@@ -8,16 +8,27 @@ using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 
+
+
 namespace System.Net.Sockets.Tests
 {
     public class SocketsConnectionFactoryTests
     {
-        public static readonly TheoryData<EndPoint, SocketType, ProtocolType> ConnectData = new TheoryData<EndPoint, SocketType, ProtocolType>()
+        public static TheoryData<EndPoint, SocketType, ProtocolType> GetConnectData()
         {
-            { new IPEndPoint(IPAddress.Loopback, 0), SocketType.Stream, ProtocolType.Tcp },
-            { new IPEndPoint(IPAddress.IPv6Loopback, 0), SocketType.Stream, ProtocolType.Tcp },
-            { new UnixDomainSocketEndPoint("/replaced/in/test"), SocketType.Stream, ProtocolType.Unspecified }
-        };
+            var result = new TheoryData<EndPoint, SocketType, ProtocolType>()
+            {
+                { new IPEndPoint(IPAddress.Loopback, 0), SocketType.Stream, ProtocolType.Tcp },
+                { new IPEndPoint(IPAddress.IPv6Loopback, 0), SocketType.Stream, ProtocolType.Tcp },
+            };
+
+            if (Socket.OSSupportsUnixDomainSockets)
+            {
+                result.Add(new UnixDomainSocketEndPoint("/replaced/in/test"), SocketType.Stream, ProtocolType.Unspecified);
+            }
+
+            return result;
+        }
 
         // to avoid random names in TheoryData, we replace the path in test code:
         private static EndPoint RecreateUdsEndpoint(EndPoint endPoint)
@@ -40,7 +51,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [Theory]
-        [MemberData(nameof(ConnectData))]
+        [MemberData(nameof(GetConnectData))]
         public async Task Constructor3_ConnectAsync_Success_PropagatesConstructorArgumentsToSocket(EndPoint endPoint, SocketType socketType, ProtocolType protocolType)
         {
             endPoint = RecreateUdsEndpoint(endPoint);
@@ -80,7 +91,11 @@ namespace System.Net.Sockets.Tests
             Assert.ThrowsAsync<ArgumentNullException>(() => factory.ConnectAsync(null).AsTask());
         }
 
-        [Fact]
+        // TODO: On OSX and Windows7 connection failures seem to fail with unexpected SocketErrors that are mapped to NetworkError.Unknown. This needs an investigation.
+        // Related: https://github.com/dotnet/runtime/pull/40565
+        public static bool PlatformHasReliableConnectionFailures => !PlatformDetection.IsOSX && !PlatformDetection.IsWindows7 && !PlatformDetection.IsFreeBSD;
+
+        [ConditionalFact(nameof(PlatformHasReliableConnectionFailures))]
         public async Task ConnectAsync_WhenRefused_ThrowsNetworkException()
         {
             using Socket notListening = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
@@ -93,8 +108,33 @@ namespace System.Net.Sockets.Tests
             Assert.Equal(NetworkError.ConnectionRefused, ex.NetworkError);
         }
 
-        // On Windows, failing connections take > 1 sec when the destination address is not found,
-        // making it easy to test the cancellation logic
+        // [OuterLoop] // TimedOut and HostNotFound is slow on Windows
+        [ConditionalFact(nameof(PlatformHasReliableConnectionFailures))]
+        public async Task ConnectAsync_WhenHostNotFound_ThrowsNetworkException()
+        {
+            using SocketsConnectionFactory factory = new SocketsConnectionFactory(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+
+            // Unassigned as per https://www.iana.org/assignments/service-names-port-numbers/service-names-port-numbers.txt
+            int unusedPort = 8;
+            DnsEndPoint endPoint = new DnsEndPoint(System.Net.Test.Common.Configuration.Sockets.InvalidHost, unusedPort);
+
+            NetworkException ex = await Assert.ThrowsAsync<NetworkException>(() => factory.ConnectAsync(endPoint).AsTask());
+            Assert.Equal(NetworkError.HostNotFound, ex.NetworkError);
+        }
+
+        // [OuterLoop] // TimedOut and HostNotFound is slow on Windows
+        [ConditionalFact(nameof(PlatformHasReliableConnectionFailures))]
+        public async Task ConnectAsync_TimedOut_ThrowsNetworkException()
+        {
+            using SocketsConnectionFactory factory = new SocketsConnectionFactory(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+
+            IPEndPoint doesNotExist = new IPEndPoint(IPAddress.Parse("1.2.3.4"), 23);
+
+            // SocketError.TimedOut currently maps to SocketError.Unknown, so no asserion
+            await Assert.ThrowsAsync<NetworkException>(() => factory.ConnectAsync(doesNotExist).AsTask());
+        }
+
+        // On Windows, connection timeout takes 21 seconds. Abusing this behavior to test the cancellation logic
         [Fact]
         [PlatformSpecific(TestPlatforms.Windows)] 
         public async Task ConnectAsync_WhenCancelled_ThrowsTaskCancelledException()
@@ -120,7 +160,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [Theory]
-        [MemberData(nameof(ConnectData))]
+        [MemberData(nameof(GetConnectData))]
         public async Task Connection_Stream_ReadWrite_Success(EndPoint endPoint, SocketType socketType, ProtocolType protocolType)
         {
             endPoint = RecreateUdsEndpoint(endPoint);
@@ -143,7 +183,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [Theory]
-        [MemberData(nameof(ConnectData))]
+        [MemberData(nameof(GetConnectData))]
         public async Task Connection_EndpointsAreCorrect(EndPoint endPoint, SocketType socketType, ProtocolType protocolType)
         {
             endPoint = RecreateUdsEndpoint(endPoint);
@@ -157,7 +197,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [Theory]
-        [MemberData(nameof(ConnectData))]
+        [MemberData(nameof(GetConnectData))]
         public async Task Connection_Pipe_ReadWrite_Success(EndPoint endPoint, SocketType socketType, ProtocolType protocolType)
         {
             endPoint = RecreateUdsEndpoint(endPoint);
