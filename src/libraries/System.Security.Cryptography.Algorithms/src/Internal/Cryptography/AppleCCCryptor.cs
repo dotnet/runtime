@@ -17,6 +17,11 @@ namespace Internal.Cryptography
         // Reset operation is not supported on stream cipher
         private readonly bool _supportsReset;
 
+        private Interop.AppleCrypto.PAL_SymmetricAlgorithm _algorithm;
+        private CipherMode _cipherMode;
+        private byte[] _key;
+        private int _feedbackSizeInBytes;
+
         public AppleCCCryptor(
             Interop.AppleCrypto.PAL_SymmetricAlgorithm algorithm,
             CipherMode cipherMode,
@@ -33,7 +38,12 @@ namespace Internal.Cryptography
             // CFB is streaming cipher, calling CCCryptorReset is not implemented (and is effectively noop)
             _supportsReset = cipherMode != CipherMode.CFB;
 
-            OpenCryptor(algorithm, cipherMode, key, feedbackSizeInBytes);
+            _algorithm = algorithm;
+            _cipherMode = cipherMode;
+            _key = key;
+            _feedbackSizeInBytes = feedbackSizeInBytes;
+
+            OpenCryptor();
         }
 
         protected override void Dispose(bool disposing)
@@ -128,29 +138,25 @@ namespace Internal.Cryptography
         }
 
         [MemberNotNull(nameof(_cryptor))]
-        private unsafe void OpenCryptor(
-            Interop.AppleCrypto.PAL_SymmetricAlgorithm algorithm,
-            CipherMode cipherMode,
-            byte[] key,
-            int feedbackSizeInBytes)
+        private unsafe void OpenCryptor()
         {
             int ret;
             int ccStatus;
 
             byte[]? iv = IV;
 
-            fixed (byte* pbKey = key)
+            fixed (byte* pbKey = _key)
             fixed (byte* pbIv = iv)
             {
                 ret = Interop.AppleCrypto.CryptorCreate(
                     _encrypting
                         ? Interop.AppleCrypto.PAL_SymmetricOperation.Encrypt
                         : Interop.AppleCrypto.PAL_SymmetricOperation.Decrypt,
-                    algorithm,
-                    GetPalChainMode(algorithm, cipherMode, feedbackSizeInBytes),
+                    _algorithm,
+                    GetPalChainMode(_algorithm, _cipherMode, _feedbackSizeInBytes),
                     Interop.AppleCrypto.PAL_PaddingMode.None,
                     pbKey,
-                    key.Length,
+                    _key.Length,
                     pbIv,
                     Interop.AppleCrypto.PAL_SymmetricOptions.None,
                     out _cryptor,
@@ -188,20 +194,25 @@ namespace Internal.Cryptography
         {
             if (!_supportsReset)
             {
-                return;
+                // when CryptorReset is not supported,
+                // dispose & reopen
+                _cryptor?.Dispose();
+                OpenCryptor();
             }
-
-            int ret;
-            int ccStatus;
-
-            byte[]? iv = IV;
-
-            fixed (byte* pbIv = iv)
+            else
             {
-                ret = Interop.AppleCrypto.CryptorReset(_cryptor, pbIv, out ccStatus);
-            }
+                int ret;
+                int ccStatus;
 
-            ProcessInteropError(ret, ccStatus);
+                byte[]? iv = IV;
+
+                fixed (byte* pbIv = iv)
+                {
+                    ret = Interop.AppleCrypto.CryptorReset(_cryptor, pbIv, out ccStatus);
+                }
+
+                ProcessInteropError(ret, ccStatus);
+            }
         }
 
         private static void ProcessInteropError(int functionReturnCode, int ccStatus)
