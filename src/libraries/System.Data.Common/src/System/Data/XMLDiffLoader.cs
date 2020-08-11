@@ -196,7 +196,7 @@ namespace System.Data
                 ssync.Read(); // we may be inside a column
                 while (iRowDepth < ssync.Depth)
                 {
-                    if (XmlNodeType.Element == ssync.NodeType)
+                    if (ssync.NodeType == XmlNodeType.Element)
                     {
                         DataColumn col = table.Columns[XmlConvert.DecodeName(ssync.LocalName), ssync.NamespaceURI];
                         //if (col == null)
@@ -250,7 +250,7 @@ namespace System.Data
 
                 while (iRowDepth < ssync.Depth)
                 {
-                    if (XmlNodeType.Element == ssync.NodeType)
+                    if (ssync.NodeType == XmlNodeType.Element)
                     {
                         DataColumn col = table.Columns[XmlConvert.DecodeName(ssync.LocalName), ssync.NamespaceURI];
                         //if (col == null)

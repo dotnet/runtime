@@ -50,7 +50,7 @@ namespace System.Data.Common
         internal static void CheckArgumentLength(string value, string parameterName)
         {
             CheckArgumentNull(value, parameterName);
-            if (0 == value.Length)
+            if (value.Length == 0)
             {
                 throw Argument(SR.Format(SR.ADP_EmptyString, parameterName));
             }
@@ -58,7 +58,7 @@ namespace System.Data.Common
         internal static void CheckArgumentLength(Array value, string parameterName)
         {
             CheckArgumentNull(value, parameterName);
-            if (0 == value.Length)
+            if (value.Length == 0)
             {
                 throw Argument(SR.Format(SR.ADP_EmptyArray, parameterName));
             }
@@ -728,7 +728,7 @@ namespace System.Data.Common
                         countModifed++;
                         break;
                     default:
-                        Debug.Assert(0 == (rowStates & dataRow.RowState), "flagged RowState");
+                        Debug.Assert((rowStates & dataRow.RowState) == 0, "flagged RowState");
                         break;
                 }
             }
@@ -753,7 +753,7 @@ namespace System.Data.Common
                             dataRows[countModifed++] = dataRow;
                             break;
                         default:
-                            Debug.Assert(0 == (rowStates & dataRow.RowState), "flagged RowState");
+                            Debug.Assert((rowStates & dataRow.RowState) == 0, "flagged RowState");
                             break;
                     }
                 }
@@ -763,7 +763,7 @@ namespace System.Data.Common
                 int index = 0;
                 foreach (DataRow dataRow in rowCollection)
                 {
-                    if (0 != (dataRow.RowState & rowStates))
+                    if ((dataRow.RowState & rowStates) != 0)
                     {
                         dataRows[index++] = dataRow;
                         if (index == dataRows.Length)
@@ -785,10 +785,10 @@ namespace System.Data.Common
             Dictionary<string, int> hash = new Dictionary<string, int>(columnNameArray.Length);
 
             int startIndex = columnNameArray.Length; // lowest non-unique index
-            for (int i = columnNameArray.Length - 1; 0 <= i; --i)
+            for (int i = columnNameArray.Length - 1; i >= 0; --i)
             {
                 string columnName = columnNameArray[i];
-                if ((null != columnName) && (0 < columnName.Length))
+                if ((columnName != null) && (columnName.Length > 0))
                 {
                     columnName = columnName.ToLowerInvariant();
                     int index;
@@ -808,7 +808,7 @@ namespace System.Data.Common
             for (int i = startIndex; i < columnNameArray.Length; ++i)
             {
                 string columnName = columnNameArray[i];
-                if (0 == columnName.Length)
+                if (columnName.Length == 0)
                 {
                     // generate a unique name
                     columnNameArray[i] = "Column";

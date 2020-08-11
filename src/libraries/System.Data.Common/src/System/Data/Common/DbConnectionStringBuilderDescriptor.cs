@@ -22,13 +22,13 @@ namespace System.Data.Common
         public override bool CanResetValue(object component)
         {
             DbConnectionStringBuilder? builder = (component as DbConnectionStringBuilder);
-            return ((null != builder) && builder.ShouldSerialize(DisplayName));
+            return ((builder != null) && builder.ShouldSerialize(DisplayName));
         }
 
         public override object? GetValue(object component)
         {
             DbConnectionStringBuilder? builder = (component as DbConnectionStringBuilder);
-            if (null != builder)
+            if (builder != null)
             {
                 object? value;
                 if (builder.TryGetValue(DisplayName, out value))
@@ -42,7 +42,7 @@ namespace System.Data.Common
         public override void ResetValue(object component)
         {
             DbConnectionStringBuilder? builder = (component as DbConnectionStringBuilder);
-            if (null != builder)
+            if (builder != null)
             {
                 builder.Remove(DisplayName);
 
@@ -56,7 +56,7 @@ namespace System.Data.Common
         public override void SetValue(object component, object? value)
         {
             DbConnectionStringBuilder? builder = (component as DbConnectionStringBuilder);
-            if (null != builder)
+            if (builder != null)
             {
                 // via the editor, empty string does a defacto Reset
                 if ((typeof(string) == PropertyType) && string.Empty.Equals(value))
@@ -75,7 +75,7 @@ namespace System.Data.Common
         public override bool ShouldSerializeValue(object component)
         {
             DbConnectionStringBuilder? builder = (component as DbConnectionStringBuilder);
-            return ((null != builder) && builder.ShouldSerialize(DisplayName));
+            return ((builder != null) && builder.ShouldSerialize(DisplayName));
         }
     }
 }

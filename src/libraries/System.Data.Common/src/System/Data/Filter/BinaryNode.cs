@@ -317,7 +317,7 @@ namespace System.Data
                     resultType = ResultType(leftStorage, rightStorage, (left is ConstNode), (right is ConstNode), op);
                 }
 
-                if (StorageType.Empty == resultType)
+                if (resultType == StorageType.Empty)
                 {
                     SetTypeMismatchError(op, typeofLeft, typeofRight);
                 }
@@ -849,37 +849,37 @@ namespace System.Data
                         if ((vLeft == DBNull.Value) || (left.IsSqlColumn && DataStorage.IsObjectSqlNull(vLeft)) ||
                              (vRight == DBNull.Value) || (right.IsSqlColumn && DataStorage.IsObjectSqlNull(vRight)))
                             return DBNull.Value;
-                        return (0 == BinaryCompare(vLeft, vRight, resultType, Operators.EqualTo));
+                        return (BinaryCompare(vLeft, vRight, resultType, Operators.EqualTo) == 0);
 
                     case Operators.GreaterThen:
                         if ((vLeft == DBNull.Value) || (left.IsSqlColumn && DataStorage.IsObjectSqlNull(vLeft)) ||
                              (vRight == DBNull.Value) || (right.IsSqlColumn && DataStorage.IsObjectSqlNull(vRight)))
                             return DBNull.Value;
-                        return (0 < BinaryCompare(vLeft, vRight, resultType, op));
+                        return (BinaryCompare(vLeft, vRight, resultType, op) > 0);
 
                     case Operators.LessThen:
                         if ((vLeft == DBNull.Value) || (left.IsSqlColumn && DataStorage.IsObjectSqlNull(vLeft)) ||
                              (vRight == DBNull.Value) || (right.IsSqlColumn && DataStorage.IsObjectSqlNull(vRight)))
                             return DBNull.Value;
-                        return (0 > BinaryCompare(vLeft, vRight, resultType, op));
+                        return (BinaryCompare(vLeft, vRight, resultType, op) < 0);
 
                     case Operators.GreaterOrEqual:
                         if ((vLeft == DBNull.Value) || (left.IsSqlColumn && DataStorage.IsObjectSqlNull(vLeft)) ||
                              (vRight == DBNull.Value) || (right.IsSqlColumn && DataStorage.IsObjectSqlNull(vRight)))
                             return DBNull.Value;
-                        return (0 <= BinaryCompare(vLeft, vRight, resultType, op));
+                        return (BinaryCompare(vLeft, vRight, resultType, op) >= 0);
 
                     case Operators.LessOrEqual:
                         if (((vLeft == DBNull.Value) || (left.IsSqlColumn && DataStorage.IsObjectSqlNull(vLeft))) ||
                              ((vRight == DBNull.Value) || (right.IsSqlColumn && DataStorage.IsObjectSqlNull(vRight))))
                             return DBNull.Value;
-                        return (0 >= BinaryCompare(vLeft, vRight, resultType, op));
+                        return (BinaryCompare(vLeft, vRight, resultType, op) <= 0);
 
                     case Operators.NotEqual:
                         if (((vLeft == DBNull.Value) || (left.IsSqlColumn && DataStorage.IsObjectSqlNull(vLeft))) ||
                              ((vRight == DBNull.Value) || (right.IsSqlColumn && DataStorage.IsObjectSqlNull(vRight))))
                             return DBNull.Value;
-                        return (0 != BinaryCompare(vLeft, vRight, resultType, op));
+                        return (BinaryCompare(vLeft, vRight, resultType, op) != 0);
 
                     case Operators.Is:
                         vLeft = BinaryNode.Eval(left, row, version, recordNos);
@@ -1098,7 +1098,7 @@ namespace System.Data
 
                             resultType = DataStorage.GetStorageType(vLeft.GetType());
 
-                            if (0 == BinaryCompare(vLeft, vRight, resultType, Operators.EqualTo))
+                            if (BinaryCompare(vLeft, vRight, resultType, Operators.EqualTo) == 0)
                             {
                                 value = true;
                                 break;
@@ -1563,11 +1563,11 @@ namespace System.Data
                 case match_all:
                     return true;
                 case match_exact:
-                    return (0 == table!.Compare(s1, substring));
+                    return (table!.Compare(s1, substring) == 0);
                 case match_middle:
-                    return (0 <= table!.IndexOf(s1, substring));
+                    return (table!.IndexOf(s1, substring) >= 0);
                 case match_left:
-                    return (0 == table!.IndexOf(s1, substring));
+                    return (table!.IndexOf(s1, substring) == 0);
                 case match_right:
                     string s2 = substring.TrimEnd(s_trimChars);
                     return table!.IsSuffix(s1, s2);

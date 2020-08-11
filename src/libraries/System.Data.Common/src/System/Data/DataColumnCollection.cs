@@ -77,7 +77,7 @@ namespace System.Data
         {
             get
             {
-                if (null == name)
+                if (name == null)
                 {
                     throw ExceptionBuilder.ArgumentNull(nameof(name));
                 }
@@ -87,11 +87,11 @@ namespace System.Data
                 {
                     // Case-Insensitive compares
                     int index = IndexOfCaseInsensitive(name);
-                    if (0 <= index)
+                    if (index >= 0)
                     {
                         column = (DataColumn)_list[index]!;
                     }
-                    else if (-2 == index)
+                    else if (index == -2)
                     {
                         throw ExceptionBuilder.CaseInsensitiveNameConflict(name);
                     }
@@ -345,7 +345,7 @@ namespace System.Data
                     }
                 }
 
-                if (0 < _table.RecordCapacity)
+                if (_table.RecordCapacity > 0)
                 {
                     // adding a column to table with existing rows
                     column.SetCapacity(_table.RecordCapacity);
@@ -693,7 +693,7 @@ namespace System.Data
         /// </summary>
         public int IndexOf(string? columnName)
         {
-            if ((null != columnName) && (0 < columnName.Length))
+            if ((columnName != null) && (columnName.Length > 0))
             {
                 int count = Count;
                 DataColumn? column;
@@ -773,7 +773,7 @@ namespace System.Data
 
         internal void MoveTo(DataColumn column, int newPosition)
         {
-            if (0 > newPosition || newPosition > Count - 1)
+            if (newPosition < 0 || newPosition > Count - 1)
             {
                 throw ExceptionBuilder.InvalidOrdinal("ordinal", newPosition);
             }
@@ -830,7 +830,7 @@ namespace System.Data
             {
                 _columnFromName.Add(name, column);
 
-                if (null != column)
+                if (column != null)
                 {
                     column._hashCode = _table.GetSpecialHashCode(name);
                 }

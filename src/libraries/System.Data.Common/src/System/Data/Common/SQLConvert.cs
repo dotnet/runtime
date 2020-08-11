@@ -349,7 +349,7 @@ namespace System.Data.Common
         {
             if (type == typeof(System.Numerics.BigInteger))
             {
-                if ((DBNull.Value == value) || (null == value)) { return DBNull.Value; }
+                if ((value == DBNull.Value) || (value == null)) { return DBNull.Value; }
                 return BigIntegerStorage.ConvertToBigInteger(value, formatProvider);
             }
             else if (value is System.Numerics.BigInteger)
@@ -402,7 +402,7 @@ namespace System.Data.Common
                                 goto default;
                 */
                 default: // destination is CLR
-                    if ((DBNull.Value == value) || (null == value))
+                    if ((value == DBNull.Value) || (value == null))
                     {
                         return DBNull.Value;
                     }
@@ -428,7 +428,7 @@ namespace System.Data.Common
                         case StorageType.SqlString:
                             throw ExceptionBuilder.ConvertFailed(valueType, type);
                         default: // source is CLR type
-                            if (StorageType.String == stype)
+                            if (stype == StorageType.String)
                             { // destination is string
                                 switch (vtype)
                                 { // source's  type
@@ -475,20 +475,20 @@ namespace System.Data.Common
                                         break;
                                     default:
                                         IConvertible? iconvertible = (value as IConvertible);
-                                        if (null != iconvertible)
+                                        if (iconvertible != null)
                                         {
                                             return iconvertible.ToString(formatProvider);
                                         }
                                         // catch additional classes like Guid
                                         IFormattable? iformattable = (value as IFormattable);
-                                        if (null != iformattable)
+                                        if (iformattable != null)
                                         {
                                             return iformattable.ToString(null, formatProvider);
                                         }
                                         return value.ToString()!;
                                 }
                             }
-                            else if (StorageType.TimeSpan == stype)
+                            else if (stype == StorageType.TimeSpan)
                             {
                                 // destination is TimeSpan
                                 return vtype switch
@@ -499,19 +499,19 @@ namespace System.Data.Common
                                     _ => (TimeSpan)value,
                                 };
                             }
-                            else if (StorageType.DateTimeOffset == stype)
+                            else if (stype == StorageType.DateTimeOffset)
                             { // destination is DateTimeOffset
                                 return (DateTimeOffset)value;
                             }
-                            else if (StorageType.String == vtype)
+                            else if (vtype == StorageType.String)
                             { // if source is string
                                 switch (stype)
                                 { // type of destination
                                     case StorageType.String:
                                         return (string)value;
                                     case StorageType.Boolean:
-                                        if ("1" == (string)value) return true;
-                                        if ("0" == (string)value) return false;
+                                        if ((string)value == "1") return true;
+                                        if ((string)value == "0") return false;
                                         break;
                                     case StorageType.Char:
                                         return ((IConvertible)(string)value).ToChar(formatProvider);
@@ -601,8 +601,8 @@ namespace System.Data.Common
                 //                    }
                 //                    goto default;
                 case StorageType.Boolean:
-                    if ("1" == (string)value) return true;
-                    if ("0" == (string)value) return false;
+                    if ((string)value == "1") return true;
+                    if ((string)value == "0") return false;
                     return XmlConvert.ToBoolean((string)value);
                 case StorageType.Char:
                     return XmlConvert.ToChar((string)value);
@@ -646,7 +646,7 @@ namespace System.Data.Common
                     };
                 default:
                     {
-                        if ((DBNull.Value == value) || (null == value))
+                        if ((value == DBNull.Value) || (value == null))
                         {
                             return DBNull.Value;
                         }
@@ -723,13 +723,13 @@ namespace System.Data.Common
                                 return XmlConvert.ToString((DateTimeOffset)value);
                             default:
                                 IConvertible? iconvertible = (value as IConvertible);
-                                if (null != iconvertible)
+                                if (iconvertible != null)
                                 {
                                     return iconvertible.ToString(System.Globalization.CultureInfo.InvariantCulture);
                                 }
                                 // catch additional classes like Guid
                                 IFormattable? iformattable = (value as IFormattable);
-                                if (null != iformattable)
+                                if (iformattable != null)
                                 {
                                     return iformattable.ToString(null, System.Globalization.CultureInfo.InvariantCulture);
                                 }

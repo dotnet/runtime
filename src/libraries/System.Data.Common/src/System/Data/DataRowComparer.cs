@@ -51,9 +51,9 @@ namespace System.Data
 
         private static bool CompareArray(Array a, Array? b)
         {
-            if ((null == b) ||
-                (1 != a.Rank) ||
-                (1 != b.Rank) ||
+            if ((b == null) ||
+                (a.Rank != 1) ||
+                (b.Rank != 1) ||
                 (a.Length != b.Length))
             {
                 // automatically consider array's with Rank>1 not-equal
@@ -62,7 +62,7 @@ namespace System.Data
 
             int index1 = a.GetLowerBound(0);
             int index2 = b.GetLowerBound(0);
-            if (a.GetType() == b.GetType() && (0 == index1) && (0 == index2))
+            if (a.GetType() == b.GetType() && (index1 == 0) && (index2 == 0))
             {
                 switch (Type.GetTypeCode(a.GetType().GetElementType()))
                 {

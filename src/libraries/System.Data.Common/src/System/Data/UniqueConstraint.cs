@@ -133,7 +133,7 @@ namespace System.Data
         [Conditional("DEBUG")]
         private void AssertConstraintAndKeyIndexes()
         {
-            Debug.Assert(null != _constraintIndex, "null UniqueConstraint index");
+            Debug.Assert(_constraintIndex != null, "null UniqueConstraint index");
 
             // ideally, we would like constraintIndex and key.GetSortIndex to share the same index underneath: Debug.Assert(_constraintIndex == key.GetSortIndex)
             // but, there is a scenario where constraint and key indexes are built from the same list of columns but in a different order
@@ -147,7 +147,7 @@ namespace System.Data
 
         internal void ConstraintIndexClear()
         {
-            if (null != _constraintIndex)
+            if (_constraintIndex != null)
             {
                 _constraintIndex.RemoveRef();
                 _constraintIndex = null;
@@ -156,7 +156,7 @@ namespace System.Data
 
         internal void ConstraintIndexInitialize()
         {
-            if (null == _constraintIndex)
+            if (_constraintIndex == null)
             {
                 _constraintIndex = _key.GetSortIndex();
                 _constraintIndex.AddRef();
@@ -223,7 +223,7 @@ namespace System.Data
                 for (int i = 0; i < uniqueKeys.Length; i++)
                 {
                     Range r = index.FindRecords((object[])uniqueKeys[i]);
-                    if (1 < r.Count)
+                    if (r.Count > 1)
                     {
                         DataRow[] rows = index.GetRows(r);
                         string error = ExceptionBuilder.UniqueConstraintViolationText(_key.ColumnsReference, (object[])uniqueKeys[i]);

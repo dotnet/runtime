@@ -278,13 +278,13 @@ namespace System.Data
             info.AddValue("DataSet.RemotingVersion", new Version(2, 0));
 
             // SqlHotFix 299, SerializationFormat enumeration types don't exist in V1.1 SP1
-            if (SerializationFormat.Xml != remotingFormat)
+            if (remotingFormat != SerializationFormat.Xml)
             {
                 info.AddValue("DataSet.RemotingFormat", remotingFormat);
             }
 
             // SqlHotFix 299, SchemaSerializationMode enumeration types don't exist in V1.1 SP1
-            if (SchemaSerializationMode.IncludeSchema != SchemaSerializationMode)
+            if (SchemaSerializationMode != SchemaSerializationMode.IncludeSchema)
             {
                 //SkipSchemaDuringSerialization
                 info.AddValue("SchemaSerializationMode.DataSet", SchemaSerializationMode);
@@ -827,7 +827,7 @@ namespace System.Data
             get
             {
                 // used for comparing not formating/parsing
-                Debug.Assert(null != _culture, "DataSet.Locale: null culture");
+                Debug.Assert(_culture != null, "DataSet.Locale: null culture");
                 return _culture;
             }
             set
@@ -1279,7 +1279,7 @@ namespace System.Data
             {
                 DataSet? dsNew = null;
                 bool fEnforceConstraints = false;
-                if (0 != (rowStates & ~(DataRowState.Added | DataRowState.Deleted | DataRowState.Modified | DataRowState.Unchanged)))
+                if ((rowStates & ~(DataRowState.Added | DataRowState.Deleted | DataRowState.Modified | DataRowState.Unchanged)) != 0)
                 {
                     throw ExceptionBuilder.InvalidRowState(rowStates);
                 }
@@ -1297,10 +1297,10 @@ namespace System.Data
                 // copy the changes to a cloned table
                 for (int i = 0; i < bitMatrix.Length; ++i)
                 {
-                    Debug.Assert(0 <= bitMatrix[i].HasChanges, "negative change count");
-                    if (0 < bitMatrix[i].HasChanges)
+                    Debug.Assert(bitMatrix[i].HasChanges >= 0, "negative change count");
+                    if (bitMatrix[i].HasChanges > 0)
                     {
-                        if (null == dsNew)
+                        if (dsNew == null)
                         {
                             dsNew = Clone();
                             fEnforceConstraints = dsNew.EnforceConstraints;
@@ -1311,7 +1311,7 @@ namespace System.Data
                         DataTable destTable = dsNew.Tables[table.TableName, table.Namespace]!;
                         Debug.Assert(bitMatrix[i].HasChanges <= table.Rows.Count, "to many changes");
 
-                        for (int j = 0; 0 < bitMatrix[i].HasChanges; ++j)
+                        for (int j = 0; bitMatrix[i].HasChanges > 0; ++j)
                         {
                             // Loop through the rows.
                             if (bitMatrix[i][j])
@@ -1323,7 +1323,7 @@ namespace System.Data
                     }
                 }
 
-                if (null != dsNew)
+                if (dsNew != null)
                 {
                     dsNew.EnforceConstraints = fEnforceConstraints;
                 }
@@ -1347,18 +1347,18 @@ namespace System.Data
                 {
                     DataRow row = rows[rowIndex];
                     DataRowState rowState = row.RowState;
-                    Debug.Assert(DataRowState.Added == rowState ||
-                                 DataRowState.Deleted == rowState ||
-                                 DataRowState.Modified == rowState ||
-                                 DataRowState.Unchanged == rowState,
+                    Debug.Assert(rowState == DataRowState.Added ||
+                                 rowState == DataRowState.Deleted ||
+                                 rowState == DataRowState.Modified ||
+                                 rowState == DataRowState.Unchanged,
                                  "unexpected DataRowState");
 
                     // if bit not already set and row is modified
-                    if ((0 != (rowStates & rowState)) && !bitMatrix[tableIndex][rowIndex])
+                    if (((rowStates & rowState) != 0) && !bitMatrix[tableIndex][rowIndex])
                     {
                         bitMatrix[tableIndex][rowIndex] = true;
 
-                        if (DataRowState.Deleted != rowState)
+                        if (rowState != DataRowState.Deleted)
                         {
                             MarkRelatedRowsAsModified(bitMatrix, row);
                         }
@@ -1384,7 +1384,7 @@ namespace System.Data
                     {
                         bitMatrix[relatedTableIndex][relatedRowIndex] = true;
 
-                        if (DataRowState.Deleted != relatedRow.RowState)
+                        if (relatedRow.RowState != DataRowState.Deleted)
                         {
                             // recurse into related rows
                             MarkRelatedRowsAsModified(bitMatrix, relatedRow);
@@ -2294,7 +2294,7 @@ namespace System.Data
             long logScopeId = DataCommonEventSource.Log.EnterScope("<ds.DataSet.InferSchema|INFO> {0}, mode={1}", ObjectID, mode);
             try
             {
-                if (null == excludedNamespaces)
+                if (excludedNamespaces == null)
                 {
                     excludedNamespaces = Array.Empty<string>();
                 }
@@ -3057,7 +3057,7 @@ namespace System.Data
 
         internal void RaiseMergeFailed(DataTable? table, string conflict, MissingSchemaAction missingSchemaAction)
         {
-            if (MissingSchemaAction.Error == missingSchemaAction)
+            if (missingSchemaAction == MissingSchemaAction.Error)
             {
                 throw ExceptionBuilder.MergeFailed(conflict);
             }
@@ -3079,7 +3079,7 @@ namespace System.Data
         internal void OnRemovedTable(DataTable table)
         {
             DataViewManager? viewManager = _defaultViewManager;
-            if (null != viewManager)
+            if (viewManager != null)
             {
                 viewManager.DataViewSettings.Remove(table);
             }
@@ -3464,7 +3464,7 @@ namespace System.Data
                 var adapter = new LoadAdapter();
                 adapter.FillLoadOption = loadOption;
                 adapter.MissingSchemaAction = MissingSchemaAction.AddWithKey;
-                if (null != errorHandler)
+                if (errorHandler != null)
                 {
                     adapter.FillError += errorHandler;
                 }
@@ -3491,7 +3491,7 @@ namespace System.Data
             for (int i = 0; i < tables.Length; i++)
             {
                 DataTable? tempDT = Tables[tables[i]];
-                if (null == tempDT)
+                if (tempDT == null)
                 {
                     tempDT = new DataTable(tables[i]);
                     Tables.Add(tempDT);

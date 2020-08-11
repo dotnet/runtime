@@ -70,7 +70,7 @@ namespace System.Data
             }
         }
 
-        internal bool HasPropertyChanged => 0 < _countColumnChange;
+        internal bool HasPropertyChanged => _countColumnChange > 0;
 
         internal int RBTreeNodeId
         {
@@ -144,12 +144,12 @@ namespace System.Data
                     {
                         return DataRowState.Detached; // 2
                     }
-                    if (0 < _columns.ColumnsImplementingIChangeTrackingCount)
+                    if (_columns.ColumnsImplementingIChangeTrackingCount > 0)
                     {
                         foreach (DataColumn dc in _columns.ColumnsImplementingIChangeTracking)
                         {
                             object value = this[dc];
-                            if ((DBNull.Value != value) && ((IChangeTracking)value).IsChanged)
+                            if ((value != DBNull.Value) && ((IChangeTracking)value).IsChanged)
                             {
                                 return DataRowState.Modified; // 3 + _columns.columnsImplementingIChangeTracking.Count
                             }
@@ -288,7 +288,7 @@ namespace System.Data
                 {
                     throw ExceptionBuilder.EditInRowChanging();
                 }
-                if ((-1 != rowID) && column.ReadOnly)
+                if ((rowID != -1) && column.ReadOnly)
                 {
                     throw ExceptionBuilder.ReadOnly(column.ColumnName);
                 }
@@ -309,14 +309,14 @@ namespace System.Data
                     // user removed column from table during OnColumnChanging event
                     throw ExceptionBuilder.ColumnNotInTheTable(column.ColumnName, _table.TableName);
                 }
-                if ((-1 != rowID) && column.ReadOnly)
+                if ((rowID != -1) && column.ReadOnly)
                 {
                     // user adds row to table during OnColumnChanging event
                     throw ExceptionBuilder.ReadOnly(column.ColumnName);
                 }
 
-                object? proposed = ((null != e) ? e.ProposedValue : value);
-                if (null == proposed)
+                object? proposed = ((e != null) ? e.ProposedValue : value);
+                if (proposed == null)
                 {
                     if (column.IsValueType)
                     {
@@ -337,7 +337,7 @@ namespace System.Data
                     if (immediate)
                     {
                         Debug.Assert(!_inChangingEvent, "how are we in a changing event to cancel?");
-                        Debug.Assert(-1 != _tempRecord, "how no propsed record to cancel?");
+                        Debug.Assert(_tempRecord != -1, "how no propsed record to cancel?");
                         CancelEdit();
                     }
                     throw;
@@ -346,7 +346,7 @@ namespace System.Data
 
                 // note: we intentionally do not try/catch this event.
                 // infinite loops are possible if user calls Item or ItemArray during the event
-                if (null != e)
+                if (e != null)
                 {
                     _table.OnColumnChanged(e); // user may call CancelEdit or EndEdit
                 }
@@ -432,7 +432,7 @@ namespace System.Data
             }
             set
             {
-                if (null == value)
+                if (value == null)
                 {
                     throw ExceptionBuilder.ArgumentNull(nameof(ItemArray));
                 }
@@ -455,7 +455,7 @@ namespace System.Data
                         // may throw exception if user removes column from table during event
                         DataColumn column = _columns[i];
 
-                        if ((-1 != rowID) && column.ReadOnly)
+                        if ((rowID != -1) && column.ReadOnly)
                         {
                             throw ExceptionBuilder.ReadOnly(column.ColumnName);
                         }
@@ -464,7 +464,7 @@ namespace System.Data
                         // note: we intentionally do not try/catch this event.
                         // note: we also allow user to do anything at this point
                         // infinite loops are possible if user calls Item or ItemArray during the event
-                        if (null != e)
+                        if (e != null)
                         {
                             e.InitializeColumnChangeEvent(column, item);
                             _table.OnColumnChanging(e);
@@ -475,7 +475,7 @@ namespace System.Data
                             // user removed column from table during OnColumnChanging event
                             throw ExceptionBuilder.ColumnNotInTheTable(column.ColumnName, _table.TableName);
                         }
-                        if ((-1 != rowID) && column.ReadOnly)
+                        if ((rowID != -1) && column.ReadOnly)
                         {
                             // user adds row to table during OnColumnChanging event
                             throw ExceptionBuilder.ReadOnly(column.ColumnName);
@@ -486,8 +486,8 @@ namespace System.Data
                             BeginEditInternal();
                         }
 
-                        object? proposed = (null != e) ? e.ProposedValue : item;
-                        if (null == proposed)
+                        object? proposed = (e != null) ? e.ProposedValue : item;
+                        if (proposed == null)
                         {
                             if (column.IsValueType)
                             {
@@ -509,7 +509,7 @@ namespace System.Data
                             if (immediate)
                             {
                                 Debug.Assert(!_inChangingEvent, "how are we in a changing event to cancel?");
-                                Debug.Assert(-1 != _tempRecord, "how no propsed record to cancel?");
+                                Debug.Assert(_tempRecord != -1, "how no propsed record to cancel?");
                                 CancelEdit();
                             }
                             throw;
@@ -518,7 +518,7 @@ namespace System.Data
 
                         // note: we intentionally do not try/catch this event.
                         // infinite loops are possible if user calls Item or ItemArray during the event
-                        if (null != e)
+                        if (e != null)
                         {
                             _table.OnColumnChanged(e);  // user may call CancelEdit or EndEdit
                         }
@@ -548,7 +548,7 @@ namespace System.Data
                         foreach (DataColumn dc in _columns.ColumnsImplementingIChangeTracking)
                         {
                             object value = this[dc];
-                            if (DBNull.Value != value)
+                            if (value != DBNull.Value)
                             {
                                 IChangeTracking tracking = (IChangeTracking)value;
                                 if (tracking.IsChanged)
@@ -604,9 +604,9 @@ namespace System.Data
             ResetLastChangedColumn(); // shouldn't have to do this
 
             _tempRecord = _table.NewRecord(_newRecord);
-            Debug.Assert(-1 != _tempRecord, "missing temp record");
-            Debug.Assert(0 == _countColumnChange, "unexpected column change count");
-            Debug.Assert(null == _lastChangedColumn, "unexpected last column change");
+            Debug.Assert(_tempRecord != -1, "missing temp record");
+            Debug.Assert(_countColumnChange == 0, "unexpected column change count");
+            Debug.Assert(_lastChangedColumn == null, "unexpected last column change");
             return true;
         }
 
@@ -622,7 +622,7 @@ namespace System.Data
             }
 
             _table.FreeRecord(ref _tempRecord);
-            Debug.Assert(-1 == _tempRecord, "unexpected temp record");
+            Debug.Assert(_tempRecord == -1, "unexpected temp record");
             ResetLastChangedColumn();
         }
 
@@ -834,7 +834,7 @@ namespace System.Data
         internal DataColumn GetDataColumn(string columnName)
         {
             DataColumn? column = _columns[columnName];
-            if (null != column)
+            if (column != null)
             {
                 return column;
             }
@@ -1029,21 +1029,21 @@ namespace System.Data
             }
             else if (_oldRecord == -1)
             {
-                Debug.Assert(0 != (DataViewRowState.Added & viewState), "not DataViewRowState.Added");
+                Debug.Assert((DataViewRowState.Added & viewState) != 0, "not DataViewRowState.Added");
                 return DataRowVersion.Default;
             }
             else if (_newRecord == -1)
             {
-                Debug.Assert(_action == DataRowAction.Rollback || 0 != (DataViewRowState.Deleted & viewState), "not DataViewRowState.Deleted");
+                Debug.Assert(_action == DataRowAction.Rollback || (DataViewRowState.Deleted & viewState) != 0, "not DataViewRowState.Deleted");
                 return DataRowVersion.Original;
             }
-            else if (0 != (DataViewRowState.ModifiedCurrent & viewState))
+            else if ((DataViewRowState.ModifiedCurrent & viewState) != 0)
             {
                 return DataRowVersion.Default;
             }
             else
             {
-                Debug.Assert(0 != (DataViewRowState.ModifiedOriginal & viewState), "not DataViewRowState.ModifiedOriginal");
+                Debug.Assert((DataViewRowState.ModifiedOriginal & viewState) != 0, "not DataViewRowState.ModifiedOriginal");
                 return DataRowVersion.Original;
             }
         }
@@ -1191,7 +1191,7 @@ namespace System.Data
                                     value = this[dc];
                                 else
                                     value = this[dc, DataRowVersion.Original];
-                                if (DBNull.Value != value)
+                                if (value != DBNull.Value)
                                 {
                                     if (((IChangeTracking)value).IsChanged)
                                     {
@@ -1208,7 +1208,7 @@ namespace System.Data
                             value = this[dc];
                         else
                             value = this[dc, DataRowVersion.Original];
-                        if (DBNull.Value != value)
+                        if (value != DBNull.Value)
                         {
                             IChangeTracking tracking = (IChangeTracking)value;
                             if (tracking.IsChanged)
@@ -1405,7 +1405,7 @@ namespace System.Data
             }
 
             DataRowState state = RowState;
-            if ((DataRowState.Added == state) || (DataRowState.Modified == state))
+            if ((state == DataRowState.Added) || (state == DataRowState.Modified))
             {
                 //Copy current record for the row in Added, Modified state.
                 for (int i = 0; i < _columns.Count; i++)
@@ -1416,7 +1416,7 @@ namespace System.Data
                 storeIndex++;
             }
 
-            if (-1 != _tempRecord)
+            if (_tempRecord != -1)
             {
                 //Copy temp record for the row in edit mode.
                 for (int i = 0; i < _columns.Count; i++)

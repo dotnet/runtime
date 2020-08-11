@@ -452,9 +452,9 @@ namespace System.Data
         private bool IsOperatorIn(ExpressionNode? enode)
         {
             BinaryNode? bnode = (enode as BinaryNode);
-            if (null != bnode)
+            if (bnode != null)
             {
-                if (Operators.In == bnode._op ||
+                if (bnode._op == Operators.In ||
                     IsOperatorIn(bnode._right) ||
                     IsOperatorIn(bnode._left))
                 {
@@ -657,7 +657,7 @@ namespace System.Data
                     return 1;
 
                 StorageType leftType = DataStorage.GetStorageType(vLeft.GetType());
-                if (StorageType.Char == leftType)
+                if (leftType == StorageType.Char)
                 {
                     if ((isRConst) || (!expr._right.IsSqlColumn))
                         vRight = Convert.ToChar(vRight, _table.FormatProvider);
@@ -675,7 +675,7 @@ namespace System.Data
                 {
                     resultType = expr.ResultType(leftType, rightType, isLConst, isRConst, expr._op);
                 }
-                if (StorageType.Empty == resultType)
+                if (resultType == StorageType.Empty)
                 {
                     expr.SetTypeMismatchError(expr._op, vLeft.GetType(), vRight.GetType());
                 }
@@ -686,8 +686,8 @@ namespace System.Data
                 // This fix is restricted to DataTable.Select("GuidColumn = 'string literal'") types of queries
                 NameNode? namedNode = null;
                 System.Globalization.CompareInfo? comparer =
-                    ((isLConst && !isRConst && (leftType == StorageType.String) && (rightType == StorageType.Guid) && (null != (namedNode = expr._right as NameNode)) && (namedNode._column!.DataType == typeof(Guid))) ||
-                     (isRConst && !isLConst && (rightType == StorageType.String) && (leftType == StorageType.Guid) && (null != (namedNode = expr._left as NameNode)) && (namedNode._column!.DataType == typeof(Guid))))
+                    ((isLConst && !isRConst && (leftType == StorageType.String) && (rightType == StorageType.Guid) && ((namedNode = expr._right as NameNode) != null) && (namedNode._column!.DataType == typeof(Guid))) ||
+                     (isRConst && !isLConst && (rightType == StorageType.String) && (leftType == StorageType.Guid) && ((namedNode = expr._left as NameNode) != null) && (namedNode._column!.DataType == typeof(Guid))))
                      ? System.Globalization.CultureInfo.InvariantCulture.CompareInfo : null;
 
                 c = expr.BinaryCompare(vLeft, vRight, resultType, expr._op, comparer);

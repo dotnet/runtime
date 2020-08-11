@@ -50,7 +50,7 @@ namespace System.Data.Common
 
         [Browsable(false)]
         [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
-        public int Count => (null != _items) ? _items.Count : 0;
+        public int Count => (_items != null) ? _items.Count : 0;
 
         private Type ItemType => typeof(DataTableMapping);
 
@@ -105,7 +105,7 @@ namespace System.Data.Common
 
         private void AddEnumerableRange(IEnumerable values, bool doClone)
         {
-            if (null == values)
+            if (values == null)
             {
                 throw ADP.ArgumentNull(nameof(values));
             }
@@ -147,7 +147,7 @@ namespace System.Data.Common
 
         public void Clear()
         {
-            if (0 < Count)
+            if (Count > 0)
             {
                 ClearWithoutEvents();
             }
@@ -155,7 +155,7 @@ namespace System.Data.Common
 
         private void ClearWithoutEvents()
         {
-            if (null != _items)
+            if (_items != null)
             {
                 foreach (DataTableMapping item in _items)
                 {
@@ -165,9 +165,9 @@ namespace System.Data.Common
             }
         }
 
-        public bool Contains(string? value) => (-1 != IndexOf(value));
+        public bool Contains(string? value) => (IndexOf(value) != -1);
 
-        public bool Contains(object? value) => (-1 != IndexOf(value));
+        public bool Contains(object? value) => (IndexOf(value) != -1);
 
         public void CopyTo(Array array, int index) => ((ICollection)ArrayList()).CopyTo(array, index);
 
@@ -176,7 +176,7 @@ namespace System.Data.Common
         public DataTableMapping GetByDataSetTable(string dataSetTable)
         {
             int index = IndexOfDataSetTable(dataSetTable);
-            if (0 > index)
+            if (index < 0)
             {
                 throw ADP.TablesDataSetTable(dataSetTable);
             }
@@ -187,7 +187,7 @@ namespace System.Data.Common
 
         public int IndexOf(object? value)
         {
-            if (null != value)
+            if (value != null)
             {
                 ValidateType(value);
                 for (int i = 0; i < Count; ++i)
@@ -208,7 +208,7 @@ namespace System.Data.Common
                 for (int i = 0; i < Count; ++i)
                 {
                     string value = _items![i].SourceTable;
-                    if ((null != value) && (0 == ADP.SrcCompare(sourceTable, value)))
+                    if ((value != null) && (ADP.SrcCompare(sourceTable, value) == 0))
                     {
                         return i;
                     }
@@ -224,7 +224,7 @@ namespace System.Data.Common
                 for (int i = 0; i < Count; ++i)
                 {
                     string value = _items![i].DataSetTable;
-                    if ((null != value) && (0 == ADP.DstCompare(dataSetTable, value)))
+                    if ((value != null) && (ADP.DstCompare(dataSetTable, value) == 0))
                     {
                         return i;
                     }
@@ -241,7 +241,7 @@ namespace System.Data.Common
 
         public void Insert(int index, DataTableMapping value)
         {
-            if (null == value)
+            if (value == null)
             {
                 throw ADP.TablesAddNullAttempt(nameof(value));
             }
@@ -282,7 +282,7 @@ namespace System.Data.Common
 
         private void RemoveIndex(int index)
         {
-            Debug.Assert((null != _items) && (0 <= index) && (index < Count), "RemoveIndex, invalid");
+            Debug.Assert((_items != null) && (index >= 0) && (index < Count), "RemoveIndex, invalid");
             _items[index].Parent = null;
             _items.RemoveAt(index);
         }
@@ -295,13 +295,13 @@ namespace System.Data.Common
 
         public void Remove(DataTableMapping value)
         {
-            if (null == value)
+            if (value == null)
             {
                 throw ADP.TablesAddNullAttempt(nameof(value));
             }
             int index = IndexOf(value);
 
-            if (-1 != index)
+            if (index != -1)
             {
                 RemoveIndex(index);
             }
@@ -321,7 +321,7 @@ namespace System.Data.Common
 
         private void ValidateType([NotNull] object? value)
         {
-            if (null == value)
+            if (value == null)
             {
                 throw ADP.TablesAddNullAttempt(nameof(value));
             }
@@ -333,11 +333,11 @@ namespace System.Data.Common
 
         private void Validate(int index, [NotNull] DataTableMapping? value)
         {
-            if (null == value)
+            if (value == null)
             {
                 throw ADP.TablesAddNullAttempt(nameof(value));
             }
-            if (null != value.Parent)
+            if (value.Parent != null)
             {
                 if (this != value.Parent)
                 {
@@ -356,7 +356,7 @@ namespace System.Data.Common
                 {
                     name = ADP.SourceTable + index.ToString(System.Globalization.CultureInfo.InvariantCulture);
                     index++;
-                } while (-1 != IndexOf(name));
+                } while (IndexOf(name) != -1);
                 value.SourceTable = name;
             }
             else
@@ -368,7 +368,7 @@ namespace System.Data.Common
         internal void ValidateSourceTable(int index, string? value)
         {
             int pindex = IndexOf(value);
-            if ((-1 != pindex) && (index != pindex))
+            if ((pindex != -1) && (index != pindex))
             {
                 // must be non-null and unique
                 throw ADP.TablesUniqueSourceTable(value);
@@ -378,10 +378,10 @@ namespace System.Data.Common
         [EditorBrowsable(EditorBrowsableState.Advanced)]
         public static DataTableMapping? GetTableMappingBySchemaAction(DataTableMappingCollection? tableMappings, string sourceTable, string dataSetTable, MissingMappingAction mappingAction)
         {
-            if (null != tableMappings)
+            if (tableMappings != null)
             {
                 int index = tableMappings.IndexOf(sourceTable);
-                if (-1 != index)
+                if (index != -1)
                 {
                     return tableMappings._items![index];
                 }

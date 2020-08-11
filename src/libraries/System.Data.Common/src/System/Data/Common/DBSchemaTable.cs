@@ -106,14 +106,14 @@ namespace System.Data.Common
         private DataColumn? CachedDataColumn(ColumnEnum column, ColumnEnum column2)
         {
             DataColumn? dataColumn = _columnCache[(int)column];
-            if (null == dataColumn)
+            if (dataColumn == null)
             {
                 int index = _columns.IndexOf(s_DBCOLUMN_NAME[(int)column]);
-                if ((-1 == index) && (column != column2))
+                if ((index == -1) && (column != column2))
                 {
                     index = _columns.IndexOf(s_DBCOLUMN_NAME[(int)column2]);
                 }
-                if (-1 != index)
+                if (index != -1)
                 {
                     dataColumn = _columns[index];
                     _columnCache[(int)column] = dataColumn;

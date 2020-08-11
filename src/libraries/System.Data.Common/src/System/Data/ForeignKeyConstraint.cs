@@ -241,7 +241,7 @@ namespace System.Data
                     DataRow[] rows = childIndex.GetRows(range);
                     foreach (DataRow childRow in rows)
                     {
-                        if (DataRowState.Detached != childRow.RowState)
+                        if (childRow.RowState != DataRowState.Detached)
                         {
                             if (childRow._inCascade)
                                 continue;
@@ -256,7 +256,7 @@ namespace System.Data
         {
             Debug.Assert(row.Table.DataSet != null);
 
-            if (-1 == row._newRecord)
+            if (row._newRecord == -1)
             {
                 return;
             }
@@ -401,7 +401,7 @@ namespace System.Data
         {
             Debug.Assert(Table?.DataSet != null && row.Table.DataSet != null);
 
-            if (-1 == row._newRecord)
+            if (row._newRecord == -1)
             {
                 return;
             }
@@ -601,7 +601,7 @@ namespace System.Data
                             {
                                 DataColumn column = _parentKey.ColumnsReference[lo];
                                 object? value = column.ConvertValue(childValues[lo]);
-                                if (0 != column.CompareValueTo(childRow._tempRecord, value))
+                                if (column.CompareValueTo(childRow._tempRecord, value) != 0)
                                 {
                                     break;
                                 }

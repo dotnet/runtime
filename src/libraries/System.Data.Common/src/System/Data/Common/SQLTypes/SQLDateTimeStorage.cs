@@ -91,13 +91,13 @@ namespace System.Data.Common
 
         public override int CompareValueTo(int recordNo, object? value)
         {
-            Debug.Assert(null != value, "null value");
+            Debug.Assert(value != null, "null value");
             return _values[recordNo].CompareTo((SqlDateTime)value);
         }
 
         public override object ConvertValue(object? value)
         {
-            if (null != value)
+            if (value != null)
             {
                 return SqlConvert.ConvertToSqlDateTime(value);
             }
@@ -127,7 +127,7 @@ namespace System.Data.Common
         public override void SetCapacity(int capacity)
         {
             SqlDateTime[] newValues = new SqlDateTime[capacity];
-            if (null != _values)
+            if (_values != null)
             {
                 Array.Copy(_values, newValues, Math.Min(capacity, _values.Length));
             }

@@ -20,7 +20,7 @@ namespace System.Data.Common
         // users must get enumerators off of the datareader interfaces
         public DbEnumerator(IDataReader reader)
         {
-            if (null == reader)
+            if (reader == null)
             {
                 throw ADP.ArgumentNull(nameof(reader));
             }
@@ -29,7 +29,7 @@ namespace System.Data.Common
 
         public DbEnumerator(IDataReader reader, bool closeReader)
         {
-            if (null == reader)
+            if (reader == null)
             {
                 throw ADP.ArgumentNull(nameof(reader));
             }
@@ -52,12 +52,12 @@ namespace System.Data.Common
 
         public bool MoveNext()
         {
-            if (null == _schemaInfo)
+            if (_schemaInfo == null)
             {
                 BuildSchemaInfo();
             }
 
-            Debug.Assert(null != _schemaInfo && null != _descriptors, "unable to build schema information!");
+            Debug.Assert(_schemaInfo != null && _descriptors != null, "unable to build schema information!");
             _current = null;
 
             if (_reader.Read())

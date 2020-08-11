@@ -15,7 +15,7 @@ namespace System.Data.Common
         internal static DbSchemaRow[] GetSortedSchemaRows(DataTable dataTable, bool returnProviderSpecificTypes)
         {
             DataColumn? sortindex = dataTable.Columns[SchemaMappingUnsortedIndex];
-            if (null == sortindex)
+            if (sortindex == null)
             {
                 sortindex = new DataColumn(SchemaMappingUnsortedIndex, typeof(int));
                 dataTable.Columns.Add(sortindex);
@@ -29,7 +29,7 @@ namespace System.Data.Common
 
             const DataViewRowState rowStates = DataViewRowState.Unchanged | DataViewRowState.Added | DataViewRowState.ModifiedCurrent;
             DataRow[] dataRows = dataTable.Select(null, "ColumnOrdinal ASC", rowStates);
-            Debug.Assert(null != dataRows, "GetSchemaRows: unexpected null dataRows");
+            Debug.Assert(dataRows != null, "GetSchemaRows: unexpected null dataRows");
 
             DbSchemaRow[] schemaRows = new DbSchemaRow[dataRows.Length];
 
@@ -58,7 +58,7 @@ namespace System.Data.Common
         {
             get
             {
-                Debug.Assert(null != _schemaTable.ColumnName, "no column ColumnName");
+                Debug.Assert(_schemaTable.ColumnName != null, "no column ColumnName");
                 object value = _dataRow[_schemaTable.ColumnName, DataRowVersion.Default];
                 if (!Convert.IsDBNull(value))
                 {
@@ -72,7 +72,7 @@ namespace System.Data.Common
         {
             get
             {
-                Debug.Assert(null != _schemaTable.Size, "no column Size");
+                Debug.Assert(_schemaTable.Size != null, "no column Size");
                 object value = _dataRow[_schemaTable.Size, DataRowVersion.Default];
                 if (!Convert.IsDBNull(value))
                 {
@@ -86,7 +86,7 @@ namespace System.Data.Common
         {
             get
             {
-                if (null != _schemaTable.BaseColumnName)
+                if (_schemaTable.BaseColumnName != null)
                 {
                     object value = _dataRow[_schemaTable.BaseColumnName, DataRowVersion.Default];
                     if (!Convert.IsDBNull(value))
@@ -102,7 +102,7 @@ namespace System.Data.Common
         {
             get
             {
-                if (null != _schemaTable.BaseServerName)
+                if (_schemaTable.BaseServerName != null)
                 {
                     object value = _dataRow[_schemaTable.BaseServerName, DataRowVersion.Default];
                     if (!Convert.IsDBNull(value))
@@ -119,7 +119,7 @@ namespace System.Data.Common
         {
             get
             {
-                if (null != _schemaTable.BaseCatalogName)
+                if (_schemaTable.BaseCatalogName != null)
                 {
                     object value = _dataRow[_schemaTable.BaseCatalogName, DataRowVersion.Default];
                     if (!Convert.IsDBNull(value))
@@ -135,7 +135,7 @@ namespace System.Data.Common
         {
             get
             {
-                if (null != _schemaTable.BaseSchemaName)
+                if (_schemaTable.BaseSchemaName != null)
                 {
                     object value = _dataRow[_schemaTable.BaseSchemaName, DataRowVersion.Default];
                     if (!Convert.IsDBNull(value))
@@ -151,7 +151,7 @@ namespace System.Data.Common
         {
             get
             {
-                if (null != _schemaTable.BaseTableName)
+                if (_schemaTable.BaseTableName != null)
                 {
                     object value = _dataRow[_schemaTable.BaseTableName, DataRowVersion.Default];
                     if (!Convert.IsDBNull(value))
@@ -167,7 +167,7 @@ namespace System.Data.Common
         {
             get
             {
-                if (null != _schemaTable.IsAutoIncrement)
+                if (_schemaTable.IsAutoIncrement != null)
                 {
                     object value = _dataRow[_schemaTable.IsAutoIncrement, DataRowVersion.Default];
                     if (!Convert.IsDBNull(value))
@@ -183,7 +183,7 @@ namespace System.Data.Common
         {
             get
             {
-                if (null != _schemaTable.IsUnique)
+                if (_schemaTable.IsUnique != null)
                 {
                     object value = _dataRow[_schemaTable.IsUnique, DataRowVersion.Default];
                     if (!Convert.IsDBNull(value))
@@ -199,7 +199,7 @@ namespace System.Data.Common
         {
             get
             {
-                if (null != _schemaTable.IsRowVersion)
+                if (_schemaTable.IsRowVersion != null)
                 {
                     object value = _dataRow[_schemaTable.IsRowVersion, DataRowVersion.Default];
                     if (!Convert.IsDBNull(value))
@@ -215,7 +215,7 @@ namespace System.Data.Common
         {
             get
             {
-                if (null != _schemaTable.IsKey)
+                if (_schemaTable.IsKey != null)
                 {
                     object value = _dataRow[_schemaTable.IsKey, DataRowVersion.Default];
                     if (!Convert.IsDBNull(value))
@@ -231,7 +231,7 @@ namespace System.Data.Common
         {
             get
             {
-                if (null != _schemaTable.IsExpression)
+                if (_schemaTable.IsExpression != null)
                 {
                     object value = _dataRow[_schemaTable.IsExpression, DataRowVersion.Default];
                     if (!Convert.IsDBNull(value))
@@ -247,7 +247,7 @@ namespace System.Data.Common
         {
             get
             {
-                if (null != _schemaTable.IsHidden)
+                if (_schemaTable.IsHidden != null)
                 {
                     object value = _dataRow[_schemaTable.IsHidden, DataRowVersion.Default];
                     if (!Convert.IsDBNull(value))
@@ -263,7 +263,7 @@ namespace System.Data.Common
         {
             get
             {
-                if (null != _schemaTable.IsLong)
+                if (_schemaTable.IsLong != null)
                 {
                     object value = _dataRow[_schemaTable.IsLong, DataRowVersion.Default];
                     if (!Convert.IsDBNull(value))
@@ -279,7 +279,7 @@ namespace System.Data.Common
         {
             get
             {
-                if (null != _schemaTable.IsReadOnly)
+                if (_schemaTable.IsReadOnly != null)
                 {
                     object value = _dataRow[_schemaTable.IsReadOnly, DataRowVersion.Default];
                     if (!Convert.IsDBNull(value))
@@ -295,7 +295,7 @@ namespace System.Data.Common
         {
             get
             {
-                if (null != _schemaTable.DataType)
+                if (_schemaTable.DataType != null)
                 {
                     object value = _dataRow[_schemaTable.DataType, DataRowVersion.Default];
                     if (!Convert.IsDBNull(value))
@@ -311,7 +311,7 @@ namespace System.Data.Common
         {
             get
             {
-                if (null != _schemaTable.AllowDBNull)
+                if (_schemaTable.AllowDBNull != null)
                 {
                     object value = _dataRow[_schemaTable.AllowDBNull, DataRowVersion.Default];
                     if (!Convert.IsDBNull(value))

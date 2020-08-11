@@ -164,13 +164,13 @@ namespace System.Data.Common
 
         public override int CompareValueTo(int recordNo, object? value)
         {
-            Debug.Assert(null != value, "null value");
+            Debug.Assert(value != null, "null value");
             return _values[recordNo].CompareTo((SqlInt16)value);
         }
 
         public override object ConvertValue(object? value)
         {
-            if (null != value)
+            if (value != null)
             {
                 return SqlConvert.ConvertToSqlInt16(value);
             }
@@ -200,7 +200,7 @@ namespace System.Data.Common
         public override void SetCapacity(int capacity)
         {
             SqlInt16[] newValues = new SqlInt16[capacity];
-            if (null != _values)
+            if (_values != null)
             {
                 Array.Copy(_values, newValues, Math.Min(capacity, _values.Length));
             }

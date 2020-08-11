@@ -48,7 +48,7 @@ namespace System.Data
             {
                 _relation = relations[_relationName];
             }
-            if (null == _relation)
+            if (_relation == null)
             {
                 throw ExprException.BindFailure(_relationName!); // this operation is not clone specific, throw generic exception
             }

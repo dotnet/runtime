@@ -63,7 +63,7 @@ namespace System.Data.Common
         [EditorBrowsable(EditorBrowsableState.Never)]
         public virtual bool ShouldSerializeAcceptChangesDuringFill()
         {
-            return (0 == _fillLoadOption);
+            return (_fillLoadOption == 0);
         }
 
         [DefaultValue(true)]
@@ -86,7 +86,7 @@ namespace System.Data.Common
             get
             {
                 LoadOption fillLoadOption = _fillLoadOption;
-                return ((0 != fillLoadOption) ? _fillLoadOption : LoadOption.OverwriteChanges);
+                return ((fillLoadOption != 0) ? _fillLoadOption : LoadOption.OverwriteChanges);
             }
             set
             {
@@ -111,7 +111,7 @@ namespace System.Data.Common
         }
 
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public virtual bool ShouldSerializeFillLoadOption() => 0 != _fillLoadOption;
+        public virtual bool ShouldSerializeFillLoadOption() => _fillLoadOption != 0;
 
         [DefaultValue(System.Data.MissingMappingAction.Passthrough)]
         public MissingMappingAction MissingMappingAction
@@ -167,10 +167,10 @@ namespace System.Data.Common
             get
             {
                 DataTableMappingCollection? mappings = _tableMappings;
-                if (null == mappings)
+                if (mappings == null)
                 {
                     mappings = CreateTableMappings();
-                    if (null == mappings)
+                    if (mappings == null)
                     {
                         mappings = new DataTableMappingCollection();
                     }
@@ -184,7 +184,7 @@ namespace System.Data.Common
 
         protected virtual bool ShouldSerializeTableMappings() => true;
 
-        protected bool HasTableMappings() => ((null != _tableMappings) && (0 < TableMappings.Count));
+        protected bool HasTableMappings() => ((_tableMappings != null) && (TableMappings.Count > 0));
 
         public event FillErrorEventHandler? FillError
         {
@@ -218,7 +218,7 @@ namespace System.Data.Common
             _missingMappingAction = from._missingMappingAction;
             _missingSchemaAction = from._missingSchemaAction;
 
-            if ((null != from._tableMappings) && (0 < from.TableMappings.Count))
+            if ((from._tableMappings != null) && (from.TableMappings.Count > 0))
             {
                 DataTableMappingCollection parameters = TableMappings;
                 foreach (object parameter in from.TableMappings)
@@ -256,11 +256,11 @@ namespace System.Data.Common
             long logScopeId = DataCommonEventSource.Log.EnterScope("<comm.DataAdapter.FillSchema|API> {0}, dataSet, schemaType={1}, srcTable, dataReader", ObjectID, schemaType);
             try
             {
-                if (null == dataSet)
+                if (dataSet == null)
                 {
                     throw ADP.ArgumentNull(nameof(dataSet));
                 }
-                if ((SchemaType.Source != schemaType) && (SchemaType.Mapped != schemaType))
+                if ((schemaType != SchemaType.Source) && (schemaType != SchemaType.Mapped))
                 {
                     throw ADP.InvalidSchemaType(schemaType);
                 }
@@ -268,7 +268,7 @@ namespace System.Data.Common
                 {
                     throw ADP.FillSchemaRequiresSourceTableName(nameof(srcTable));
                 }
-                if ((null == dataReader) || dataReader.IsClosed)
+                if ((dataReader == null) || dataReader.IsClosed)
                 {
                     throw ADP.FillRequires(nameof(dataReader));
                 }
@@ -288,15 +288,15 @@ namespace System.Data.Common
             long logScopeId = DataCommonEventSource.Log.EnterScope("<comm.DataAdapter.FillSchema|API> {0}, dataTable, schemaType, dataReader", ObjectID);
             try
             {
-                if (null == dataTable)
+                if (dataTable == null)
                 {
                     throw ADP.ArgumentNull(nameof(dataTable));
                 }
-                if ((SchemaType.Source != schemaType) && (SchemaType.Mapped != schemaType))
+                if ((schemaType != SchemaType.Source) && (schemaType != SchemaType.Mapped))
                 {
                     throw ADP.InvalidSchemaType(schemaType);
                 }
-                if ((null == dataReader) || dataReader.IsClosed)
+                if ((dataReader == null) || dataReader.IsClosed)
                 {
                     throw ADP.FillRequires(nameof(dataReader));
                 }
@@ -320,12 +320,12 @@ namespace System.Data.Common
                 DataReaderContainer readerHandler = DataReaderContainer.Create(dataReader, ReturnProviderSpecificTypes);
 
                 AssertReaderHandleFieldCount(readerHandler);
-                if (0 >= readerHandler.FieldCount)
+                if (readerHandler.FieldCount <= 0)
                 {
                     continue;
                 }
                 string? tmp = null;
-                if (null != dataset)
+                if (dataset != null)
                 {
                     tmp = DataAdapter.GetSourceTableName(srcTable!, schemaCount);
                     schemaCount++; // don't increment if no SchemaTable ( a non-row returning result )
@@ -333,14 +333,14 @@ namespace System.Data.Common
 
                 SchemaMapping mapping = new SchemaMapping(this, dataset, datatable, readerHandler, true, schemaType, tmp, false, null, null);
 
-                if (null != datatable)
+                if (datatable != null)
                 {
                     // do not read remaining results in single DataTable case
                     return mapping.DataTable;
                 }
-                else if (null != mapping.DataTable)
+                else if (mapping.DataTable != null)
                 {
-                    if (null == dataTables)
+                    if (dataTables == null)
                     {
                         dataTables = new DataTable[1] { mapping.DataTable };
                     }
@@ -352,7 +352,7 @@ namespace System.Data.Common
             } while (dataReader.NextResult()); // FillSchema does not capture errors for FillError event
 
             object? value = dataTables;
-            if ((null == value) && (null == datatable))
+            if ((value == null) && (datatable == null))
             {
                 value = Array.Empty<DataTable>();
             }
@@ -369,7 +369,7 @@ namespace System.Data.Common
             long logScopeId = DataCommonEventSource.Log.EnterScope("<comm.DataAdapter.Fill|API> {0}, dataSet, srcTable, dataReader, startRecord, maxRecords", ObjectID);
             try
             {
-                if (null == dataSet)
+                if (dataSet == null)
                 {
                     throw ADP.FillRequires(nameof(dataSet));
                 }
@@ -377,7 +377,7 @@ namespace System.Data.Common
                 {
                     throw ADP.FillRequiresSourceTableName(nameof(srcTable));
                 }
-                if (null == dataReader)
+                if (dataReader == null)
                 {
                     throw ADP.FillRequires(nameof(dataReader));
                 }
@@ -415,15 +415,15 @@ namespace System.Data.Common
             try
             {
                 ADP.CheckArgumentLength(dataTables, nameof(dataTables));
-                if ((null == dataTables) || (0 == dataTables.Length) || (null == dataTables[0]))
+                if ((dataTables == null) || (dataTables.Length == 0) || (dataTables[0] == null))
                 {
                     throw ADP.FillRequires("dataTable");
                 }
-                if (null == dataReader)
+                if (dataReader == null)
                 {
                     throw ADP.FillRequires(nameof(dataReader));
                 }
-                if ((1 < dataTables.Length) && ((0 != startRecord) || (0 != maxRecords)))
+                if ((dataTables.Length > 1) && ((startRecord != 0) || (maxRecords != 0)))
                 {
                     throw ADP.NotSupported(); // FillChildren is not supported with FillPage
                 }
@@ -433,14 +433,14 @@ namespace System.Data.Common
                 DataSet? commonDataSet = dataTables[0].DataSet;
                 try
                 {
-                    if (null != commonDataSet)
+                    if (commonDataSet != null)
                     {
                         enforceContraints = commonDataSet.EnforceConstraints;
                         commonDataSet.EnforceConstraints = false;
                     }
                     for (int i = 0; i < dataTables.Length; ++i)
                     {
-                        Debug.Assert(null != dataTables[i], "null DataTable Fill");
+                        Debug.Assert(dataTables[i] != null, "null DataTable Fill");
 
                         if (dataReader.IsClosed)
                         {
@@ -468,14 +468,14 @@ namespace System.Data.Common
                                 continue;
                             }
                         }
-                        if ((0 < i) && !FillNextResult(readerHandler))
+                        if ((i > 0) && !FillNextResult(readerHandler))
                         {
                             break;
                         }
                         // user must Close/Dispose of the dataReader
                         // user will have to call NextResult to access remaining results
                         int count = FillFromReader(null, dataTables[i], null, readerHandler, startRecord, maxRecords, null, null);
-                        if (0 == i)
+                        if (i == 0)
                         {
                             result = count;
                         }
@@ -508,7 +508,7 @@ namespace System.Data.Common
             do
             {
                 AssertReaderHandleFieldCount(dataReader);
-                if (0 >= dataReader.FieldCount)
+                if (dataReader.FieldCount <= 0)
                 {
                     continue; // loop to next result
                 }
@@ -516,15 +516,15 @@ namespace System.Data.Common
                 SchemaMapping? mapping = FillMapping(dataset, datatable, srcTable, dataReader, schemaCount, parentChapterColumn, parentChapterValue);
                 schemaCount++; // don't increment if no SchemaTable ( a non-row returning result )
 
-                if (null == mapping)
+                if (mapping == null)
                 {
                     continue; // loop to next result
                 }
-                if (null == mapping.DataValues)
+                if (mapping.DataValues == null)
                 {
                     continue; // loop to next result
                 }
-                if (null == mapping.DataTable)
+                if (mapping.DataTable == null)
                 {
                     continue; // loop to next result
                 }
@@ -532,7 +532,7 @@ namespace System.Data.Common
                 try
                 {
                     // startRecord and maxRecords only apply to the first resultset
-                    if ((1 == schemaCount) && ((0 < startRecord) || (0 < maxRecords)))
+                    if ((schemaCount == 1) && ((startRecord > 0) || (maxRecords > 0)))
                     {
                         rowsAddedToDataSet = FillLoadDataRowChunk(mapping, startRecord, maxRecords);
                     }
@@ -540,7 +540,7 @@ namespace System.Data.Common
                     {
                         int count = FillLoadDataRow(mapping);
 
-                        if (1 == schemaCount)
+                        if (schemaCount == 1)
                         {
                             // only return LoadDataRow count for first resultset
                             // not secondary or chaptered results
@@ -552,7 +552,7 @@ namespace System.Data.Common
                 {
                     mapping.DataTable.EndLoadData();
                 }
-                if (null != datatable)
+                if (datatable != null)
                 {
                     break; // do not read remaining results in single DataTable case
                 }
@@ -565,7 +565,7 @@ namespace System.Data.Common
         {
             DataReaderContainer dataReader = mapping.DataReader;
 
-            while (0 < startRecord)
+            while (startRecord > 0)
             {
                 if (!dataReader.Read())
                 {
@@ -576,7 +576,7 @@ namespace System.Data.Common
             }
 
             int rowsAddedToDataSet = 0;
-            if (0 < maxRecords)
+            if (maxRecords > 0)
             {
                 while ((rowsAddedToDataSet < maxRecords) && dataReader.Read())
                 {
@@ -644,9 +644,9 @@ namespace System.Data.Common
 
         private SchemaMapping FillMappingInternal(DataSet? dataset, DataTable? datatable, string? srcTable, DataReaderContainer dataReader, int schemaCount, DataColumn? parentChapterColumn, object? parentChapterValue)
         {
-            bool withKeyInfo = (Data.MissingSchemaAction.AddWithKey == MissingSchemaAction);
+            bool withKeyInfo = (MissingSchemaAction == Data.MissingSchemaAction.AddWithKey);
             string? tmp = null;
-            if (null != dataset)
+            if (dataset != null)
             {
                 tmp = DataAdapter.GetSourceTableName(srcTable!, schemaCount);
             }
@@ -711,7 +711,7 @@ namespace System.Data.Common
 
         internal int IndexOfDataSetTable(string dataSetTable)
         {
-            if (null != _tableMappings)
+            if (_tableMappings != null)
             {
                 return TableMappings.IndexOfDataSetTable(dataSetTable);
             }
@@ -731,7 +731,7 @@ namespace System.Data.Common
 
             if (!fillErrorEvent.Continue)
             {
-                if (null != fillErrorEvent.Errors)
+                if (fillErrorEvent.Errors != null)
                 {
                     throw fillErrorEvent.Errors;
                 }
@@ -767,7 +767,7 @@ namespace System.Data.Common
         private static string GetSourceTableName(string srcTable, int index)
         {
             //if ((null != srcTable) && (0 <= index) && (index < srcTable.Length)) {
-            if (0 == index)
+            if (index == 0)
             {
                 return srcTable; //[index];
             }

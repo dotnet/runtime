@@ -47,7 +47,7 @@ namespace System.Data.SqlTypes
 
         private static SerializationInfo SqlTypeExceptionSerialization(SerializationInfo? si, StreamingContext sc)
         {
-            if ((null != si) && (1 == si.MemberCount))
+            if ((si != null) && (si.MemberCount == 1))
             {
                 string? message = si.GetString("SqlTypeExceptionMessage");
                 SqlTypeException fakeValue = new SqlTypeException(message);
@@ -82,7 +82,7 @@ namespace System.Data.SqlTypes
 
         private static SerializationInfo SqlNullValueExceptionSerialization(SerializationInfo si, StreamingContext sc)
         {
-            if ((null != si) && (1 == si.MemberCount))
+            if ((si != null) && (si.MemberCount == 1))
             {
                 string? message = si.GetString("SqlNullValueExceptionMessage");
                 SqlNullValueException fakeValue = new SqlNullValueException(message);
@@ -117,7 +117,7 @@ namespace System.Data.SqlTypes
 
         private static SerializationInfo SqlTruncateExceptionSerialization(SerializationInfo si, StreamingContext sc)
         {
-            if ((null != si) && (1 == si.MemberCount))
+            if ((si != null) && (si.MemberCount == 1))
             {
                 string? message = si.GetString("SqlTruncateExceptionMessage");
                 SqlTruncateException fakeValue = new SqlTruncateException(message);

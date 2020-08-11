@@ -709,7 +709,7 @@ namespace System.Data
             if (_dsElement != null)
             {
                 string mainName = GetStringAttribute(_dsElement, Keywords.MSD_MAINDATATABLE, "");
-                if (null != mainName)
+                if (mainName != null)
                 {
                     ds.MainTableName = XmlConvert.DecodeName(mainName);
                 }
@@ -749,7 +749,7 @@ namespace System.Data
                         foreach (XmlSchemaAnnotated el in items)
                         {
                             XmlSchemaElement sel = el as XmlSchemaElement;
-                            if (null != sel)
+                            if (sel != null)
                             {
                                 if (sel.RefName.Name.Length != 0)
                                 {
@@ -1400,7 +1400,7 @@ namespace System.Data
 
             DataColumn[] key = BuildKey(keyNode, table);
 
-            if (0 < key.Length)
+            if (key.Length > 0)
             {
                 UniqueConstraint found = (UniqueConstraint)key[0].Table.Constraints.FindConstraint(new UniqueConstraint(name, key));
 
@@ -1579,7 +1579,7 @@ namespace System.Data
                 {
                     value = GetStringAttribute(node, Keywords.MSD_CASESENSITIVE, "");
                 }
-                if (0 < value.Length)
+                if (value.Length > 0)
                 {
                     if ((value == Keywords.TRUE) || (value == "True"))
                         table.CaseSensitive = true;
@@ -1588,9 +1588,9 @@ namespace System.Data
                 }
 
                 value = GetMsdataAttribute(node, Keywords.MSD_LOCALE);
-                if (null != value)
+                if (value != null)
                 { // set by user
-                    if (0 < value.Length)
+                    if (value.Length > 0)
                     {
                         // <... msdata:Locale="en-US"/>
                         table.Locale = new CultureInfo(value);
@@ -2541,9 +2541,9 @@ namespace System.Data
             List<DataTable> tableSequenceList = new List<DataTable>();
 
             string value = GetMsdataAttribute(node, Keywords.MSD_LOCALE);
-            if (null != value)
+            if (value != null)
             { // set by user
-                if (0 != value.Length)
+                if (value.Length != 0)
                 {
                     // <... msdata:Locale="en-US"/>
                     _ds.Locale = new CultureInfo(value);

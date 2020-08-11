@@ -142,7 +142,7 @@ namespace System.Data.Common
         }
 
         private static bool CompareInsensitiveInvariant(string strvalue, string strconst) =>
-            (0 == StringComparer.OrdinalIgnoreCase.Compare(strvalue, strconst));
+            (StringComparer.OrdinalIgnoreCase.Compare(strvalue, strconst) == 0);
 
         [System.Diagnostics.Conditional("DEBUG")]
         static partial void DebugTraceKeyValuePair(string keyname, string? keyvalue, Dictionary<string, string>? synonyms);
@@ -150,7 +150,7 @@ namespace System.Data.Common
         private static string GetKeyName(StringBuilder buffer)
         {
             int count = buffer.Length;
-            while ((0 < count) && char.IsWhiteSpace(buffer[count - 1]))
+            while ((count > 0) && char.IsWhiteSpace(buffer[count - 1]))
             {
                 count--; // trailing whitespace
             }
@@ -167,7 +167,7 @@ namespace System.Data.Common
                 {
                     index++; // leading whitespace
                 }
-                while ((0 < count) && char.IsWhiteSpace(buffer[count - 1]))
+                while ((count > 0) && char.IsWhiteSpace(buffer[count - 1]))
                 {
                     count--; // trailing whitespace
                 }
@@ -212,16 +212,16 @@ namespace System.Data.Common
                 switch (parserState)
                 {
                     case ParserState.NothingYet: // [\\s;]*
-                        if ((';' == currentChar) || char.IsWhiteSpace(currentChar))
+                        if ((currentChar == ';') || char.IsWhiteSpace(currentChar))
                         {
                             continue;
                         }
-                        if ('\0' == currentChar)
+                        if (currentChar == '\0')
                         { parserState = ParserState.NullTermination; continue; }
                         if (char.IsControl(currentChar))
                         { throw ADP.ConnectionStringSyntax(startposition); }
                         startposition = currentPosition;
-                        if ('=' != currentChar)
+                        if (currentChar != '=')
                         {
                             parserState = ParserState.Key;
                             break;
@@ -233,7 +233,7 @@ namespace System.Data.Common
                         }
 
                     case ParserState.Key: // (?<key>([^=\\s\\p{Cc}]|\\s+[^=\\s\\p{Cc}]|\\s+==|==)+)
-                        if ('=' == currentChar)
+                        if (currentChar == '=')
                         { parserState = ParserState.KeyEqual; continue; }
                         if (char.IsWhiteSpace(currentChar))
                         { break; }
@@ -242,7 +242,7 @@ namespace System.Data.Common
                         break;
 
                     case ParserState.KeyEqual: // \\s*=(?!=)\\s*
-                        if (!useOdbcRules && '=' == currentChar)
+                        if (!useOdbcRules && currentChar == '=')
                         { parserState = ParserState.Key; break; }
                         keyname = GetKeyName(buffer);
                         if (string.IsNullOrEmpty(keyname))
@@ -256,19 +256,19 @@ namespace System.Data.Common
                         { continue; }
                         if (useOdbcRules)
                         {
-                            if ('{' == currentChar)
+                            if (currentChar == '{')
                             { parserState = ParserState.BraceQuoteValue; break; }
                         }
                         else
                         {
-                            if ('\'' == currentChar)
+                            if (currentChar == '\'')
                             { parserState = ParserState.SingleQuoteValue; continue; }
-                            if ('"' == currentChar)
+                            if (currentChar == '"')
                             { parserState = ParserState.DoubleQuoteValue; continue; }
                         }
-                        if (';' == currentChar)
+                        if (currentChar == ';')
                         { goto ParserExit; }
-                        if ('\0' == currentChar)
+                        if (currentChar == '\0')
                         { goto ParserExit; }
                         if (char.IsControl(currentChar))
                         { throw ADP.ConnectionStringSyntax(startposition); }
@@ -278,47 +278,47 @@ namespace System.Data.Common
                     case ParserState.UnquotedValue: // "((?![\"'\\s])" + "([^;\\s\\p{Cc}]|\\s+[^;\\s\\p{Cc}])*" + "(?<![\"']))"
                         if (char.IsWhiteSpace(currentChar))
                         { break; }
-                        if (char.IsControl(currentChar) || ';' == currentChar)
+                        if (char.IsControl(currentChar) || currentChar == ';')
                         { goto ParserExit; }
                         break;
 
                     case ParserState.DoubleQuoteValue: // "(\"([^\"\u0000]|\"\")*\")"
-                        if ('"' == currentChar)
+                        if (currentChar == '"')
                         { parserState = ParserState.DoubleQuoteValueQuote; continue; }
-                        if ('\0' == currentChar)
+                        if (currentChar == '\0')
                         { throw ADP.ConnectionStringSyntax(startposition); }
                         break;
 
                     case ParserState.DoubleQuoteValueQuote:
-                        if ('"' == currentChar)
+                        if (currentChar == '"')
                         { parserState = ParserState.DoubleQuoteValue; break; }
                         keyvalue = GetKeyValue(buffer, false);
                         parserState = ParserState.QuotedValueEnd;
                         goto case ParserState.QuotedValueEnd;
 
                     case ParserState.SingleQuoteValue: // "('([^'\u0000]|'')*')"
-                        if ('\'' == currentChar)
+                        if (currentChar == '\'')
                         { parserState = ParserState.SingleQuoteValueQuote; continue; }
-                        if ('\0' == currentChar)
+                        if (currentChar == '\0')
                         { throw ADP.ConnectionStringSyntax(startposition); }
                         break;
 
                     case ParserState.SingleQuoteValueQuote:
-                        if ('\'' == currentChar)
+                        if (currentChar == '\'')
                         { parserState = ParserState.SingleQuoteValue; break; }
                         keyvalue = GetKeyValue(buffer, false);
                         parserState = ParserState.QuotedValueEnd;
                         goto case ParserState.QuotedValueEnd;
 
                     case ParserState.BraceQuoteValue: // "(\\{([^\\}\u0000]|\\}\\})*\\})"
-                        if ('}' == currentChar)
+                        if (currentChar == '}')
                         { parserState = ParserState.BraceQuoteValueQuote; break; }
-                        if ('\0' == currentChar)
+                        if (currentChar == '\0')
                         { throw ADP.ConnectionStringSyntax(startposition); }
                         break;
 
                     case ParserState.BraceQuoteValueQuote:
-                        if ('}' == currentChar)
+                        if (currentChar == '}')
                         { parserState = ParserState.BraceQuoteValue; break; }
                         keyvalue = GetKeyValue(buffer, false);
                         parserState = ParserState.QuotedValueEnd;
@@ -327,14 +327,14 @@ namespace System.Data.Common
                     case ParserState.QuotedValueEnd:
                         if (char.IsWhiteSpace(currentChar))
                         { continue; }
-                        if (';' == currentChar)
+                        if (currentChar == ';')
                         { goto ParserExit; }
-                        if ('\0' == currentChar)
+                        if (currentChar == '\0')
                         { parserState = ParserState.NullTermination; continue; }
                         throw ADP.ConnectionStringSyntax(startposition);  // unbalanced single quote
 
                     case ParserState.NullTermination: // [\\s;\u0000]*
-                        if ('\0' == currentChar)
+                        if (currentChar == '\0')
                         { continue; }
                         if (char.IsWhiteSpace(currentChar))
                         { continue; }
@@ -367,7 +367,7 @@ namespace System.Data.Common
                     keyvalue = GetKeyValue(buffer, true);
 
                     char tmpChar = keyvalue[keyvalue.Length - 1];
-                    if (!useOdbcRules && (('\'' == tmpChar) || ('"' == tmpChar)))
+                    if (!useOdbcRules && ((tmpChar == '\'') || (tmpChar == '"')))
                     {
                         throw ADP.ConnectionStringSyntax(startposition);    // unquoted value must not end in quote, except for odbc
                     }
@@ -390,7 +390,7 @@ namespace System.Data.Common
                 default:
                     throw ADP.InternalError(ADP.InternalErrorCode.InvalidParserState2);
             }
-            if ((';' == currentChar) && (currentPosition < connectionString.Length))
+            if ((currentChar == ';') && (currentPosition < connectionString.Length))
             {
                 currentPosition++;
             }
@@ -400,28 +400,28 @@ namespace System.Data.Common
 #pragma warning disable CA2249 // Consider using 'string.Contains' instead of 'string.IndexOf'. This file is built into libraries that don't have string.Contains(char).
         private static bool IsValueValidInternal(string? keyvalue)
         {
-            if (null != keyvalue)
+            if (keyvalue != null)
             {
 #if DEBUG
                 bool compValue = s_connectionStringValidValueRegex.IsMatch(keyvalue);
-                Debug.Assert((-1 == keyvalue.IndexOf('\u0000')) == compValue, "IsValueValid mismatch with regex");
+                Debug.Assert((keyvalue.IndexOf('\u0000') == -1) == compValue, "IsValueValid mismatch with regex");
 #endif
                 // string.Contains(char) is .NetCore2.1+ specific
-                return (-1 == keyvalue.IndexOf('\u0000'));
+                return (keyvalue.IndexOf('\u0000') == -1);
             }
             return true;
         }
 
         private static bool IsKeyNameValid([NotNullWhen(true)] string? keyname)
         {
-            if (null != keyname)
+            if (keyname != null)
             {
 #if DEBUG
                 bool compValue = s_connectionStringValidKeyRegex.IsMatch(keyname);
-                Debug.Assert(((0 < keyname.Length) && (';' != keyname[0]) && !char.IsWhiteSpace(keyname[0]) && (-1 == keyname.IndexOf('\u0000'))) == compValue, "IsValueValid mismatch with regex");
+                Debug.Assert(((keyname.Length > 0) && (keyname[0] != ';') && !char.IsWhiteSpace(keyname[0]) && (keyname.IndexOf('\u0000') == -1)) == compValue, "IsValueValid mismatch with regex");
 #endif
                 // string.Contains(char) is .NetCore2.1+ specific
-                return ((0 < keyname.Length) && (';' != keyname[0]) && !char.IsWhiteSpace(keyname[0]) && (-1 == keyname.IndexOf('\u0000')));
+                return ((keyname.Length > 0) && (keyname[0] != ';') && !char.IsWhiteSpace(keyname[0]) && (keyname.IndexOf('\u0000') == -1));
             }
             return false;
         }
@@ -434,10 +434,10 @@ namespace System.Data.Common
             Regex parser = (firstKey ? s_connectionStringRegexOdbc : s_connectionStringRegex);
 
             const int KeyIndex = 1, ValueIndex = 2;
-            Debug.Assert(KeyIndex == parser.GroupNumberFromName("key"), "wrong key index");
-            Debug.Assert(ValueIndex == parser.GroupNumberFromName("value"), "wrong value index");
+            Debug.Assert(parser.GroupNumberFromName("key") == KeyIndex, "wrong key index");
+            Debug.Assert(parser.GroupNumberFromName("value") == ValueIndex, "wrong value index");
 
-            if (null != connectionString)
+            if (connectionString != null)
             {
                 Match match = parser.Match(connectionString);
                 if (!match.Success || (match.Length != connectionString.Length))
@@ -450,7 +450,7 @@ namespace System.Data.Common
                 {
                     string keyname = (firstKey ? keypair.Value : keypair.Value.Replace("==", "=")).ToLowerInvariant();
                     string? keyvalue = keyvalues[indexValue++].Value;
-                    if (0 < keyvalue.Length)
+                    if (keyvalue.Length > 0)
                     {
                         if (!firstKey)
                         {
@@ -473,7 +473,7 @@ namespace System.Data.Common
                     }
                     DebugTraceKeyValuePair(keyname, keyvalue, synonyms);
                     string? synonym;
-                    string? realkeyname = null != synonyms ?
+                    string? realkeyname = synonyms != null ?
                         (synonyms.TryGetValue(keyname, out synonym) ? synonym : null) : keyname;
 
                     if (!IsKeyNameValid(realkeyname))
@@ -506,7 +506,7 @@ namespace System.Data.Common
             }
             catch (ArgumentException f)
             {
-                if (null != e)
+                if (e != null)
                 {
                     string msg1 = e.Message;
                     string msg2 = f.Message;
@@ -534,7 +534,7 @@ namespace System.Data.Common
                 }
                 e = null;
             }
-            if (null != e)
+            if (e != null)
             {
                 Debug.Fail("ParseInternal code threw exception vs regex mismatch");
             }
@@ -543,7 +543,7 @@ namespace System.Data.Common
 
         private static NameValuePair? ParseInternal(Dictionary<string, string?> parsetable, string connectionString, bool buildChain, Dictionary<string, string>? synonyms, bool firstKey)
         {
-            Debug.Assert(null != connectionString, "null connectionstring");
+            Debug.Assert(connectionString != null, "null connectionstring");
             StringBuilder buffer = new StringBuilder();
             NameValuePair? localKeychain = null, keychain = null;
 #if DEBUG
@@ -569,7 +569,7 @@ namespace System.Data.Common
                     Debug.Assert(IsValueValidInternal(keyvalue), "parse failure, invalid keyvalue");
 #endif
                     string? synonym;
-                    string? realkeyname = null != synonyms ?
+                    string? realkeyname = synonyms != null ?
                         (synonyms.TryGetValue(keyname, out synonym) ? synonym : null) :
                         keyname;
 
@@ -582,7 +582,7 @@ namespace System.Data.Common
                         parsetable[realkeyname] = keyvalue; // last key-value pair wins (or first)
                     }
 
-                    if (null != localKeychain)
+                    if (localKeychain != null)
                     {
                         localKeychain = localKeychain.Next = new NameValuePair(realkeyname, keyvalue, nextStartPosition - startPosition);
                     }
@@ -610,9 +610,9 @@ namespace System.Data.Common
             int copyPosition = 0;
             NameValuePair? head = null, tail = null, next = null;
             StringBuilder builder = new StringBuilder(_usersConnectionString.Length);
-            for (NameValuePair? current = _keyChain; null != current; current = current.Next)
+            for (NameValuePair? current = _keyChain; current != null; current = current.Next)
             {
-                if ((KEY.Password != current.Name) && (SYNONYM.Pwd != current.Name))
+                if ((current.Name != KEY.Password) && (current.Name != SYNONYM.Pwd))
                 {
                     builder.Append(_usersConnectionString, copyPosition, current.Length);
                     if (fakePassword)
@@ -636,7 +636,7 @@ namespace System.Data.Common
 
                 if (fakePassword)
                 {
-                    if (null != tail)
+                    if (tail != null)
                     {
                         tail = tail.Next = next;
                     }

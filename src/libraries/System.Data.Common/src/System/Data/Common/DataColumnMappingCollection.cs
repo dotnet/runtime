@@ -77,7 +77,7 @@ namespace System.Data.Common
         {
             get
             {
-                return ((null != _items) ? _items.Count : 0);
+                return ((_items != null) ? _items.Count : 0);
             }
         }
 
@@ -153,7 +153,7 @@ namespace System.Data.Common
 
         private void AddEnumerableRange(IEnumerable values, bool doClone)
         {
-            if (null == values)
+            if (values == null)
             {
                 throw ADP.ArgumentNull(nameof(values));
             }
@@ -188,7 +188,7 @@ namespace System.Data.Common
         // object browser calls properties to display their value, and we want this delayed
         private List<DataColumnMapping> ArrayList()
         {
-            if (null == _items)
+            if (_items == null)
             {
                 _items = new List<DataColumnMapping>();
             }
@@ -197,7 +197,7 @@ namespace System.Data.Common
 
         public void Clear()
         {
-            if (0 < Count)
+            if (Count > 0)
             {
                 ClearWithoutEvents();
             }
@@ -205,7 +205,7 @@ namespace System.Data.Common
 
         private void ClearWithoutEvents()
         {
-            if (null != _items)
+            if (_items != null)
             {
                 foreach (DataColumnMapping item in _items)
                 {
@@ -217,12 +217,12 @@ namespace System.Data.Common
 
         public bool Contains(string? value)
         {
-            return (-1 != IndexOf(value));
+            return (IndexOf(value) != -1);
         }
 
         public bool Contains(object? value)
         {
-            return (-1 != IndexOf(value));
+            return (IndexOf(value) != -1);
         }
 
         public void CopyTo(Array array, int index)
@@ -238,7 +238,7 @@ namespace System.Data.Common
         public DataColumnMapping GetByDataSetColumn(string value)
         {
             int index = IndexOfDataSetColumn(value);
-            if (0 > index)
+            if (index < 0)
             {
                 throw ADP.ColumnsDataSetColumn(value);
             }
@@ -252,7 +252,7 @@ namespace System.Data.Common
 
         public int IndexOf(object? value)
         {
-            if (null != value)
+            if (value != null)
             {
                 ValidateType(value);
                 for (int i = 0; i < Count; ++i)
@@ -273,7 +273,7 @@ namespace System.Data.Common
                 int count = Count;
                 for (int i = 0; i < count; ++i)
                 {
-                    if (0 == ADP.SrcCompare(sourceColumn, _items![i].SourceColumn))
+                    if (ADP.SrcCompare(sourceColumn, _items![i].SourceColumn) == 0)
                     {
                         return i;
                     }
@@ -289,7 +289,7 @@ namespace System.Data.Common
                 int count = Count;
                 for (int i = 0; i < count; ++i)
                 {
-                    if (0 == ADP.DstCompare(dataSetColumn, _items![i].DataSetColumn))
+                    if (ADP.DstCompare(dataSetColumn, _items![i].DataSetColumn) == 0)
                     {
                         return i;
                     }
@@ -306,7 +306,7 @@ namespace System.Data.Common
 
         public void Insert(int index, DataColumnMapping value)
         {
-            if (null == value)
+            if (value == null)
             {
                 throw ADP.ColumnsAddNullAttempt(nameof(value));
             }
@@ -347,7 +347,7 @@ namespace System.Data.Common
 
         private void RemoveIndex(int index)
         {
-            Debug.Assert((null != _items) && (0 <= index) && (index < Count), "RemoveIndex, invalid");
+            Debug.Assert((_items != null) && (index >= 0) && (index < Count), "RemoveIndex, invalid");
             _items[index].Parent = null;
             _items.RemoveAt(index);
         }
@@ -360,13 +360,13 @@ namespace System.Data.Common
 
         public void Remove(DataColumnMapping value)
         {
-            if (null == value)
+            if (value == null)
             {
                 throw ADP.ColumnsAddNullAttempt(nameof(value));
             }
             int index = IndexOf(value);
 
-            if (-1 != index)
+            if (index != -1)
             {
                 RemoveIndex(index);
             }
@@ -378,7 +378,7 @@ namespace System.Data.Common
 
         private void Replace(int index, DataColumnMapping newValue)
         {
-            Debug.Assert((null != _items) && (0 <= index) && (index < Count), "RemoveIndex, invalid");
+            Debug.Assert((_items != null) && (index >= 0) && (index < Count), "RemoveIndex, invalid");
             Validate(index, newValue);
             _items[index].Parent = null;
             newValue.Parent = this;
@@ -387,7 +387,7 @@ namespace System.Data.Common
 
         private void ValidateType([NotNull] object? value)
         {
-            if (null == value)
+            if (value == null)
             {
                 throw ADP.ColumnsAddNullAttempt(nameof(value));
             }
@@ -399,11 +399,11 @@ namespace System.Data.Common
 
         private void Validate(int index, [NotNull] DataColumnMapping? value)
         {
-            if (null == value)
+            if (value == null)
             {
                 throw ADP.ColumnsAddNullAttempt(nameof(value));
             }
-            if (null != value.Parent)
+            if (value.Parent != null)
             {
                 if (this != value.Parent)
                 {
@@ -423,7 +423,7 @@ namespace System.Data.Common
                 {
                     name = ADP.SourceColumn + index.ToString(System.Globalization.CultureInfo.InvariantCulture);
                     index++;
-                } while (-1 != IndexOf(name));
+                } while (IndexOf(name) != -1);
                 value.SourceColumn = name;
             }
             else
@@ -435,7 +435,7 @@ namespace System.Data.Common
         internal void ValidateSourceColumn(int index, string? value)
         {
             int pindex = IndexOf(value);
-            if ((-1 != pindex) && (index != pindex))
+            if ((pindex != -1) && (index != pindex))
             { // must be non-null and unique
                 throw ADP.ColumnsUniqueSourceColumn(value);
             }
@@ -444,10 +444,10 @@ namespace System.Data.Common
         [EditorBrowsable(EditorBrowsableState.Advanced)]
         public static DataColumn? GetDataColumn(DataColumnMappingCollection? columnMappings, string sourceColumn, Type? dataType, DataTable dataTable, MissingMappingAction mappingAction, MissingSchemaAction schemaAction)
         {
-            if (null != columnMappings)
+            if (columnMappings != null)
             {
                 int index = columnMappings.IndexOf(sourceColumn);
-                if (-1 != index)
+                if (index != -1)
                 {
                     return columnMappings._items![index].GetDataColumnBySchemaAction(dataTable, dataType, schemaAction);
                 }
@@ -473,10 +473,10 @@ namespace System.Data.Common
         [EditorBrowsable(EditorBrowsableState.Advanced)]
         public static DataColumnMapping? GetColumnMappingBySchemaAction(DataColumnMappingCollection? columnMappings, string sourceColumn, MissingMappingAction mappingAction)
         {
-            if (null != columnMappings)
+            if (columnMappings != null)
             {
                 int index = columnMappings.IndexOf(sourceColumn);
-                if (-1 != index)
+                if (index != -1)
                 {
                     return columnMappings._items![index];
                 }

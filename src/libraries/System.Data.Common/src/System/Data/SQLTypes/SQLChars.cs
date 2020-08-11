@@ -270,7 +270,7 @@ namespace System.Data.SqlTypes
                 // still allow setting length to zero, which will make it not Null.
                 // If the buffer is null, raise exception
                 //
-                if (null == _rgchBuf)
+                if (_rgchBuf == null)
                     throw new SqlTypeException(SR.SqlMisc_NoBufferMessage);
 
                 if (value > _rgchBuf.Length)

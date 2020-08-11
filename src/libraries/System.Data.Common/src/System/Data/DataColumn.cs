@@ -127,7 +127,7 @@ namespace System.Data
             _columnName = columnName ?? string.Empty;
 
             SimpleType? stype = SimpleType.CreateSimpleType(typeCode, dataType);
-            if (null != stype)
+            if (stype != null)
             {
                 SimpleType = stype;
             }
@@ -146,7 +146,7 @@ namespace System.Data
             TypeLimiter.EnsureTypeIsAllowed(type);
             _dataType = type;
             _storageType = typeCode;
-            if (StorageType.DateTime != typeCode)
+            if (typeCode != StorageType.DateTime)
             {
                 // revert _dateTimeMode back to default, when column type is changed
                 _dateTimeMode = DataSetDateTime.UnspecifiedLocal;
@@ -208,7 +208,7 @@ namespace System.Data
         [RefreshProperties(RefreshProperties.All)]
         public bool AutoIncrement
         {
-            get { return ((null != _autoInc) && (_autoInc.Auto)); }
+            get { return ((_autoInc != null) && (_autoInc.Auto)); }
             set
             {
                 DataCommonEventSource.Log.Trace("<ds.DataColumn.set_AutoIncrement|API> {0}, {1}", ObjectID, value);
@@ -244,7 +244,7 @@ namespace System.Data
 
         internal object AutoIncrementCurrent
         {
-            get { return ((null != _autoInc) ? _autoInc.Current : AutoIncrementSeed); }
+            get { return ((_autoInc != null) ? _autoInc.Current : AutoIncrementSeed); }
             set
             {
                 if ((BigInteger)AutoIncrementSeed != BigIntegerStorage.ConvertToBigInteger(value, FormatProvider))
@@ -267,7 +267,7 @@ namespace System.Data
         [DefaultValue((long)0)]
         public long AutoIncrementSeed
         {
-            get { return ((null != _autoInc) ? _autoInc.Seed : 0L); }
+            get { return ((_autoInc != null) ? _autoInc.Seed : 0L); }
             set
             {
                 DataCommonEventSource.Log.Trace("<ds.DataColumn.set_AutoIncrementSeed|API> {0}, {1}", ObjectID, value);
@@ -285,7 +285,7 @@ namespace System.Data
         [DefaultValue((long)1)]
         public long AutoIncrementStep
         {
-            get { return ((null != _autoInc) ? _autoInc.Step : 1L); }
+            get { return ((_autoInc != null) ? _autoInc.Step : 1L); }
             set
             {
                 DataCommonEventSource.Log.Trace("<ds.DataColumn.set_AutoIncrementStep|API> {0}, {1}", ObjectID, value);
@@ -412,11 +412,11 @@ namespace System.Data
 
         internal IFormatProvider FormatProvider =>
             // used for formating/parsing not comparing
-            ((null != _table) ? _table.FormatProvider : CultureInfo.CurrentCulture);
+            ((_table != null) ? _table.FormatProvider : CultureInfo.CurrentCulture);
 
         internal CultureInfo Locale =>
             // used for comparing not formating/parsing
-            ((null != _table) ? _table.Locale : CultureInfo.CurrentCulture);
+            ((_table != null) ? _table.Locale : CultureInfo.CurrentCulture);
 
         internal int ObjectID => _objectID;
 
@@ -554,7 +554,7 @@ namespace System.Data
                     }
 
                     SimpleType = SimpleType.CreateSimpleType(typeCode, value);
-                    if (StorageType.String == typeCode)
+                    if (typeCode == StorageType.String)
                     {
                         _maxLength = -1;
                     }
@@ -569,7 +569,7 @@ namespace System.Data
                             AutoIncrement = false;
                         }
 
-                        if (null != _autoInc)
+                        if (_autoInc != null)
                         {
                             // if you already have data you can't change the data type
                             // if you don't have data - you wouldn't have incremented AutoIncrementCurrent.
@@ -861,7 +861,7 @@ namespace System.Data
         {
             get
             {
-                Debug.Assert(null != _storage, "no storage");
+                Debug.Assert(_storage != null, "no storage");
                 return _storage._isCloneable;
             }
         }
@@ -870,7 +870,7 @@ namespace System.Data
         {
             get
             {
-                Debug.Assert(null != _storage, "no storage");
+                Debug.Assert(_storage != null, "no storage");
                 return _storage._isStringType;
             }
         }
@@ -879,7 +879,7 @@ namespace System.Data
         {
             get
             {
-                Debug.Assert(null != _storage, "no storage");
+                Debug.Assert(_storage != null, "no storage");
                 return _storage._isValueType;
             }
         }
@@ -910,7 +910,7 @@ namespace System.Data
                     }
                 }
             }
-            else if (-1 < _maxLength)
+            else if (_maxLength > -1)
             {
                 SimpleType = SimpleType.CreateLimitedStringType(_maxLength);
             }
@@ -938,7 +938,7 @@ namespace System.Data
                         int oldValue = _maxLength;
                         _maxLength = Math.Max(value, -1);
 
-                        if (((oldValue < 0) || (value < oldValue)) && (null != _table) && _table.EnforceConstraints)
+                        if (((oldValue < 0) || (value < oldValue)) && (_table != null) && _table.EnforceConstraints)
                         {
                             if (!CheckMaxLength())
                             {
@@ -1028,9 +1028,9 @@ namespace System.Data
                     }
                 }
 
-                if ((null != _sortIndex) && (-1 == ordinal))
+                if ((_sortIndex != null) && (ordinal == -1))
                 {
-                    Debug.Assert(2 <= _sortIndex.RefCount, "bad sortIndex refcount");
+                    Debug.Assert(_sortIndex.RefCount >= 2, "bad sortIndex refcount");
                     _sortIndex.RemoveRef();
                     _sortIndex.RemoveRef(); // second should remove it from index collection
                     _sortIndex = null;
@@ -1133,7 +1133,7 @@ namespace System.Data
             get
             {
                 _table!._recordManager.VerifyRecord(record);
-                Debug.Assert(null != _storage, "null storage");
+                Debug.Assert(_storage != null, "null storage");
                 return _storage.Get(record);
             }
             set
@@ -1141,10 +1141,10 @@ namespace System.Data
                 try
                 {
                     _table!._recordManager.VerifyRecord(record);
-                    Debug.Assert(null != _storage, "no storage");
-                    Debug.Assert(null != value, "setting null, expecting dbnull");
+                    Debug.Assert(_storage != null, "no storage");
+                    Debug.Assert(value != null, "setting null, expecting dbnull");
                     _storage.Set(record, value);
-                    Debug.Assert(null != _table, "storage with no DataTable on column");
+                    Debug.Assert(_table != null, "storage with no DataTable on column");
                 }
                 catch (Exception e)
                 {
@@ -1174,7 +1174,7 @@ namespace System.Data
 
         internal void InitializeRecord(int record)
         {
-            Debug.Assert(null != _storage, "no storage");
+            Debug.Assert(_storage != null, "no storage");
             _storage.Set(record, DefaultValue);
         }
 
@@ -1183,9 +1183,9 @@ namespace System.Data
             // just silently set the value
             try
             {
-                Debug.Assert(null != value, "setting null, expecting dbnull");
-                Debug.Assert(null != _table, "storage with no DataTable on column");
-                Debug.Assert(null != _storage, "no storage");
+                Debug.Assert(value != null, "setting null, expecting dbnull");
+                Debug.Assert(_table != null, "storage with no DataTable on column");
+                Debug.Assert(_storage != null, "no storage");
                 _storage.Set(record, value);
             }
             catch (Exception e)
@@ -1203,7 +1203,7 @@ namespace System.Data
 
         internal void FreeRecord(int record)
         {
-            Debug.Assert(null != _storage, "no storage");
+            Debug.Assert(_storage != null, "no storage");
             _storage.Set(record, _storage._nullValue);
         }
 
@@ -1239,7 +1239,7 @@ namespace System.Data
                                 for (IEnumerator e = _table.Constraints.GetEnumerator(); e.MoveNext();)
                                 {
                                     UniqueConstraint? o = (e.Current as UniqueConstraint);
-                                    if ((null != o) && (o.ColumnsReference.Length == 1) && (o.ColumnsReference[0] == this))
+                                    if ((o != null) && (o.ColumnsReference.Length == 1) && (o.ColumnsReference[0] == this))
                                         oldConstraint = o;
                                 }
                                 Debug.Assert(oldConstraint != null, "Should have found a column to remove from the collection.");
@@ -1377,7 +1377,7 @@ namespace System.Data
 
         internal bool CheckMaxLength()
         {
-            if ((0 <= _maxLength) && (null != Table) && (0 < Table.Rows.Count))
+            if ((_maxLength >= 0) && (Table != null) && (Table.Rows.Count > 0))
             {
                 Debug.Assert(IsStringType, "not a String or SqlString column");
                 foreach (DataRow dr in Table.Rows)
@@ -1397,7 +1397,7 @@ namespace System.Data
 
         internal void CheckMaxLength(DataRow dr)
         {
-            if (0 <= _maxLength)
+            if (_maxLength >= 0)
             {
                 Debug.Assert(IsStringType, "not a String or SqlString column");
                 if (_maxLength < GetStringLength(dr.GetDefaultRecord()))
@@ -1454,7 +1454,7 @@ namespace System.Data
         {
             if (!AllowDBNull)
             {
-                Debug.Assert(null != _storage, "no storage");
+                Debug.Assert(_storage != null, "no storage");
                 if (_storage.IsNull(row.GetDefaultRecord()))
                 {
                     throw ExceptionBuilder.NullValues(ColumnName);
@@ -1474,7 +1474,7 @@ namespace System.Data
 
         internal int Compare(int record1, int record2)
         {
-            Debug.Assert(null != _storage, "null storage");
+            Debug.Assert(_storage != null, "null storage");
             return _storage.Compare(record1, record2);
         }
 
@@ -1505,19 +1505,19 @@ namespace System.Data
 
         internal int CompareValueTo(int record1, object? value)
         {
-            Debug.Assert(null != _storage, "null storage");
+            Debug.Assert(_storage != null, "null storage");
             return _storage.CompareValueTo(record1, value);
         }
 
         internal object? ConvertValue(object? value)
         {
-            Debug.Assert(null != _storage, "null storage");
+            Debug.Assert(_storage != null, "null storage");
             return _storage.ConvertValue(value);
         }
 
         internal void Copy(int srcRecordNo, int dstRecordNo)
         {
-            Debug.Assert(null != _storage, "null storage");
+            Debug.Assert(_storage != null, "null storage");
             _storage.Copy(srcRecordNo, dstRecordNo);
         }
 
@@ -1530,7 +1530,7 @@ namespace System.Data
             clone.SimpleType = SimpleType;
 
             clone._allowNull = _allowNull;
-            if (null != _autoInc)
+            if (_autoInc != null)
             {
                 clone._autoInc = _autoInc.Clone();
             }
@@ -1594,7 +1594,7 @@ namespace System.Data
 
         private int GetStringLength(int record)
         {
-            Debug.Assert(null != _storage, "no storage");
+            Debug.Assert(_storage != null, "no storage");
             return _storage.GetStringLength(record);
         }
 
@@ -1604,7 +1604,7 @@ namespace System.Data
             {
                 object value = _autoInc!.Current;
                 _autoInc.MoveAfter();
-                Debug.Assert(null != _storage, "no storage");
+                Debug.Assert(_storage != null, "no storage");
                 _storage.Set(record, value);
             }
             else
@@ -1639,7 +1639,7 @@ namespace System.Data
 
         internal bool IsNull(int record)
         {
-            Debug.Assert(null != _storage, "no storage");
+            Debug.Assert(_storage != null, "no storage");
             return _storage.IsNull(record);
         }
 
@@ -1806,7 +1806,7 @@ namespace System.Data
 
         internal void CopyValueIntoStore(int record, object store, BitArray nullbits, int storeIndex)
         {
-            Debug.Assert(null != _storage, "no storage");
+            Debug.Assert(_storage != null, "no storage");
             _storage.CopyValueInternal(record, store, nullbits, storeIndex);
         }
 
@@ -1847,7 +1847,7 @@ namespace System.Data
                 dependency = oldExpression.GetDependency();
                 foreach (DataColumn col in dependency)
                 {
-                    Debug.Assert(null != col, "null datacolumn in expression dependencies");
+                    Debug.Assert(col != null, "null datacolumn in expression dependencies");
                     col.RemoveDependentColumn(this);
                     if (col._table != _table)
                     {
@@ -1941,7 +1941,7 @@ namespace System.Data
             get { return _step; }
             set
             {
-                if (0 == value)
+                if (value == 0)
                 {
                     throw ExceptionBuilder.AutoIncrementSeed();
                 }
@@ -1968,7 +1968,7 @@ namespace System.Data
 
         internal override void SetCurrentAndIncrement(object value)
         {
-            Debug.Assert(null != value && DataColumn.IsAutoIncrementType(value.GetType()) && !(value is BigInteger), "unexpected value for autoincrement");
+            Debug.Assert(value != null && DataColumn.IsAutoIncrementType(value.GetType()) && !(value is BigInteger), "unexpected value for autoincrement");
             long v = (long)SqlConvert.ChangeType2(value, StorageType.Int64, typeof(long), CultureInfo.InvariantCulture);
             if (BoundaryCheck(v))
             {
@@ -1977,7 +1977,7 @@ namespace System.Data
         }
 
         private bool BoundaryCheck(BigInteger value) =>
-            ((_step < 0) && (value <= _current)) || ((0 < _step) && (_current <= value));
+            ((_step < 0) && (value <= _current)) || ((_step > 0) && (_current <= value));
     }
 
     /// <summary>the auto stepped value with BigInteger representation</summary>
@@ -2022,7 +2022,7 @@ namespace System.Data
             get { return (long)_step; }
             set
             {
-                if (0 == value)
+                if (value == 0)
                 {
                     throw ExceptionBuilder.AutoIncrementSeed();
                 }
@@ -2057,6 +2057,6 @@ namespace System.Data
         }
 
         private bool BoundaryCheck(BigInteger value) =>
-           ((_step < 0) && (value <= _current)) || ((0 < _step) && (_current <= value));
+           ((_step < 0) && (value <= _current)) || ((_step > 0) && (_current <= value));
     }
 }

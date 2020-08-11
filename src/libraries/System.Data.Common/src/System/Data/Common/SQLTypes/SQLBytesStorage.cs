@@ -89,7 +89,7 @@ namespace System.Data.Common
         public override void SetCapacity(int capacity)
         {
             SqlBytes[] newValues = new SqlBytes[capacity];
-            if (null != _values)
+            if (_values != null)
             {
                 Array.Copy(_values, newValues, Math.Min(capacity, _values.Length));
             }

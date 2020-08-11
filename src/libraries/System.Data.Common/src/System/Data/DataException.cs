@@ -288,7 +288,7 @@ namespace System.Data
         // this method accepts BID format as an argument, this attribute allows FXCopBid rule to validate calls to it
         private static void TraceException(string trace, Exception e)
         {
-            Debug.Assert(null != e, "TraceException: null Exception");
+            Debug.Assert(e != null, "TraceException: null Exception");
             if (e != null)
             {
                 DataCommonEventSource.Log.Trace(trace, e);
@@ -693,7 +693,7 @@ namespace System.Data
         /// <summary>throw DataException for multitarget failure</summary>
         internal static void ThrowMultipleTargetConverter(Exception? innerException)
         {
-            string res = (null != innerException) ? SR.Xml_MultipleTargetConverterError : SR.Xml_MultipleTargetConverterEmpty;
+            string res = (innerException != null) ? SR.Xml_MultipleTargetConverterError : SR.Xml_MultipleTargetConverterEmpty;
             ThrowDataException(res, innerException);
         }
 

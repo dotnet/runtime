@@ -147,7 +147,7 @@ namespace System.Data.Common
             _nullValue = nullValue;
             _isCloneable = isICloneable;
             _isCustomDefinedType = IsTypeCustomType(_storageTypeCode);
-            _isStringType = ((StorageType.String == _storageTypeCode) || (StorageType.SqlString == _storageTypeCode));
+            _isStringType = ((_storageTypeCode == StorageType.String) || (_storageTypeCode == StorageType.SqlString));
             _isValueType = DetermineIfValueType(_storageTypeCode, type);
         }
 
@@ -169,7 +169,7 @@ namespace System.Data.Common
 
         public virtual object Aggregate(int[] recordNos, AggregateType kind)
         {
-            if (AggregateType.Count == kind)
+            if (kind == AggregateType.Count)
             {
                 return AggregateCount(recordNos);
             }
@@ -259,7 +259,7 @@ namespace System.Data.Common
 
         public virtual void SetCapacity(int capacity)
         {
-            if (null == _dbNullBits)
+            if (_dbNullBits == null)
             {
                 _dbNullBits = new BitArray(capacity);
             }
@@ -284,7 +284,7 @@ namespace System.Data.Common
         public static DataStorage CreateStorage(DataColumn column, Type dataType, StorageType typeCode)
         {
             Debug.Assert(typeCode == GetStorageType(dataType), "Incorrect storage type specified");
-            if ((StorageType.Empty == typeCode) && (null != dataType))
+            if ((typeCode == StorageType.Empty) && (dataType != null))
             {
                 if (typeof(INullable).IsAssignableFrom(dataType))
                 { // Udt, OracleTypes
@@ -358,7 +358,7 @@ namespace System.Data.Common
                 }
             }
             TypeCode tcode = Type.GetTypeCode(dataType);
-            if (TypeCode.Object != tcode)
+            if (tcode != TypeCode.Object)
             { // enum -> Int64/Int32/Int16/Byte
                 return (StorageType)tcode;
             }
@@ -378,12 +378,12 @@ namespace System.Data.Common
 
         internal static bool IsTypeCustomType(StorageType typeCode)
         {
-            return ((StorageType.Object == typeCode) || (StorageType.Empty == typeCode) || (StorageType.CharArray == typeCode));
+            return ((typeCode == StorageType.Object) || (typeCode == StorageType.Empty) || (typeCode == StorageType.CharArray));
         }
 
         internal static bool IsSqlType(StorageType storageType)
         {
-            return (StorageType.SqlBinary <= storageType);
+            return (storageType >= StorageType.SqlBinary);
         }
 
         public static bool IsSqlType(Type dataType)
@@ -473,7 +473,7 @@ namespace System.Data.Common
                 revertibleChangeTracking = false;
                 xmlSerializable = true;
             }
-            else if (StorageType.Empty != typeCode)
+            else if (typeCode != StorageType.Empty)
             {
                 sqlType = false;
                 nullable = false;
@@ -511,18 +511,18 @@ namespace System.Data.Common
         internal static bool ImplementsINullableValue(StorageType typeCode, Type dataType)
         {
             Debug.Assert(typeCode == GetStorageType(dataType), "typeCode mismatches dataType");
-            return ((StorageType.Empty == typeCode) && dataType.IsGenericType && (dataType.GetGenericTypeDefinition() == typeof(System.Nullable<>)));
+            return ((typeCode == StorageType.Empty) && dataType.IsGenericType && (dataType.GetGenericTypeDefinition() == typeof(System.Nullable<>)));
         }
 
         public static bool IsObjectNull(object value)
         {
-            return ((null == value) || (DBNull.Value == value) || IsObjectSqlNull(value));
+            return ((value == null) || (value == DBNull.Value) || IsObjectSqlNull(value));
         }
 
         public static bool IsObjectSqlNull(object value)
         {
             INullable? inullable = (value as INullable);
-            return ((null != inullable) && inullable.IsNull);
+            return ((inullable != null) && inullable.IsNull);
         }
 
         internal object GetEmptyStorageInternal(int recordCount)
@@ -560,9 +560,9 @@ namespace System.Data.Common
         internal static Type GetType(string value)
         {
             Type? dataType = Type.GetType(value); // throwOnError=false, ignoreCase=fase
-            if (null == dataType)
+            if (dataType == null)
             {
-                if ("System.Numerics.BigInteger" == value)
+                if (value == "System.Numerics.BigInteger")
                 {
                     dataType = typeof(System.Numerics.BigInteger);
                 }
@@ -580,7 +580,7 @@ namespace System.Data.Common
         /// <exception cref="InvalidOperationException">when type implements IDynamicMetaObjectProvider and not IXmlSerializable</exception>
         internal static string GetQualifiedName(Type type)
         {
-            Debug.Assert(null != type, "null type");
+            Debug.Assert(type != null, "null type");
             ObjectStorage.VerifyIDynamicMetaObjectProvider(type);
             return type.AssemblyQualifiedName!;
         }

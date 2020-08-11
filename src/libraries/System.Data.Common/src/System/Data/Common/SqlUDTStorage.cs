@@ -69,7 +69,7 @@ namespace System.Data.Common
 
         public override int CompareValueTo(int recordNo1, object? value)
         {
-            if (DBNull.Value == value)
+            if (value == DBNull.Value)
             {
                 // it is not meaningful compare UDT with DBNull.Value
                 value = _nullValue;
@@ -101,12 +101,12 @@ namespace System.Data.Common
 
         public override void Set(int recordNo, object value)
         {
-            if (DBNull.Value == value)
+            if (value == DBNull.Value)
             {
                 _values[recordNo] = _nullValue;
                 SetNullBit(recordNo, true);
             }
-            else if (null == value)
+            else if (value == null)
             {
                 if (_isValueType)
                 {
@@ -168,13 +168,13 @@ namespace System.Data.Common
         [MethodImpl(MethodImplOptions.NoInlining)]
         public override object ConvertXmlToObject(XmlReader xmlReader, XmlRootAttribute xmlAttrib)
         {
-            if (null == xmlAttrib)
+            if (xmlAttrib == null)
             {
                 string typeName = xmlReader.GetAttribute(Keywords.MSD_INSTANCETYPE, Keywords.MSDNS);
                 if (typeName == null)
                 {
                     string xsdTypeName = xmlReader.GetAttribute(Keywords.MSD_INSTANCETYPE, Keywords.XSINS); // this xsd type
-                    if (null != xsdTypeName)
+                    if (xsdTypeName != null)
                     {
                         typeName = XSDSchema.XsdtoClr(xsdTypeName).FullName!;
                     }
@@ -213,7 +213,7 @@ namespace System.Data.Common
 
         public override void ConvertObjectToXml(object value, XmlWriter xmlWriter, XmlRootAttribute? xmlAttrib)
         {
-            if (null == xmlAttrib)
+            if (xmlAttrib == null)
             {
                 Debug.Assert(xmlWriter is DataTextWriter, "Invalid DataTextWriter is being passed to customer");
                 ((IXmlSerializable)value).WriteXml(xmlWriter);

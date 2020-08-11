@@ -92,7 +92,7 @@ namespace System.Data.Common
             if (valueNo1 == s_defaultValue || valueNo2 == s_defaultValue)
             {
                 int bitCheck = CompareBits(recordNo1, recordNo2);
-                if (0 != bitCheck)
+                if (bitCheck != 0)
                 {
                     return bitCheck;
                 }
@@ -102,8 +102,8 @@ namespace System.Data.Common
 
         public override int CompareValueTo(int recordNo, object? value)
         {
-            System.Diagnostics.Debug.Assert(0 <= recordNo, "Invalid record");
-            System.Diagnostics.Debug.Assert(null != value, "null value");
+            System.Diagnostics.Debug.Assert(recordNo >= 0, "Invalid record");
+            System.Diagnostics.Debug.Assert(value != null, "null value");
 
             if (_nullValue == value)
             {
@@ -111,7 +111,7 @@ namespace System.Data.Common
             }
 
             DateTimeOffset valueNo1 = _values[recordNo];
-            if ((s_defaultValue == valueNo1) && !HasValue(recordNo))
+            if ((valueNo1 == s_defaultValue) && !HasValue(recordNo))
             {
                 return -1;
             }
@@ -122,7 +122,7 @@ namespace System.Data.Common
         {
             if (_nullValue != value)
             {
-                if (null != value)
+                if (value != null)
                 {
                     value = ((DateTimeOffset)value);
                 }
@@ -152,7 +152,7 @@ namespace System.Data.Common
 
         public override void Set(int record, object value)
         {
-            System.Diagnostics.Debug.Assert(null != value, "null value");
+            System.Diagnostics.Debug.Assert(value != null, "null value");
             if (_nullValue == value)
             {
                 _values[record] = s_defaultValue;
@@ -168,7 +168,7 @@ namespace System.Data.Common
         public override void SetCapacity(int capacity)
         {
             DateTimeOffset[] newValues = new DateTimeOffset[capacity];
-            if (null != _values)
+            if (_values != null)
             {
                 Array.Copy(_values, newValues, Math.Min(capacity, _values.Length));
             }

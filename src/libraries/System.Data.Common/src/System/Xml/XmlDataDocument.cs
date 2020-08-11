@@ -3017,7 +3017,7 @@ namespace System.Xml
                 // same as Everett
             }
 
-            if (null == retValue)
+            if (retValue == null)
             {
                 retValue = new DataTable[ds.Tables.Count];
                 List<DataTable> tableList = new List<DataTable>();

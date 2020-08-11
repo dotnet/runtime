@@ -28,7 +28,7 @@ namespace System.Data.ProviderBase
             for (int i = 0; i < length; ++i)
             {
                 fieldNames[i] = reader.GetName(i);
-                Debug.Assert(null != fieldNames[i]);
+                Debug.Assert(fieldNames[i] != null);
             }
             _fieldNames = fieldNames;
             _defaultLocaleID = defaultLocaleID;
@@ -36,12 +36,12 @@ namespace System.Data.ProviderBase
 
         public int GetOrdinal(string fieldName)
         {
-            if (null == fieldName)
+            if (fieldName == null)
             {
                 throw ADP.ArgumentNull(nameof(fieldName));
             }
             int index = IndexOf(fieldName);
-            if (-1 == index)
+            if (index == -1)
             {
                 throw ADP.IndexOutOfRange(fieldName);
             }
@@ -50,13 +50,13 @@ namespace System.Data.ProviderBase
 
         public int IndexOf(string fieldName)
         {
-            if (null == _fieldNameLookup)
+            if (_fieldNameLookup == null)
             {
                 GenerateLookup();
             }
             int index;
             object? value = _fieldNameLookup![fieldName];
-            if (null != value)
+            if (value != null)
             {
                 // via case sensitive search, first match with lowest ordinal matches
                 index = (int)value;
@@ -65,7 +65,7 @@ namespace System.Data.ProviderBase
             {
                 // via case insensitive search, first match with lowest ordinal matches
                 index = LinearIndexOf(fieldName, CompareOptions.IgnoreCase);
-                if (-1 == index)
+                if (index == -1)
                 {
                     // do the slow search now (kana, width insensitive comparison)
                     index = LinearIndexOf(fieldName, ADP.DefaultCompareOptions);
@@ -77,13 +77,13 @@ namespace System.Data.ProviderBase
         private int LinearIndexOf(string fieldName, CompareOptions compareOptions)
         {
             CompareInfo? compareInfo = _compareInfo;
-            if (null == compareInfo)
+            if (compareInfo == null)
             {
-                if (-1 != _defaultLocaleID)
+                if (_defaultLocaleID != -1)
                 {
                     compareInfo = CompareInfo.GetCompareInfo(_defaultLocaleID);
                 }
-                if (null == compareInfo)
+                if (compareInfo == null)
                 {
                     compareInfo = CultureInfo.InvariantCulture.CompareInfo;
                 }
@@ -92,7 +92,7 @@ namespace System.Data.ProviderBase
             int length = _fieldNames.Length;
             for (int i = 0; i < length; ++i)
             {
-                if (0 == compareInfo.Compare(fieldName, _fieldNames[i], compareOptions))
+                if (compareInfo.Compare(fieldName, _fieldNames[i], compareOptions) == 0)
                 {
                     _fieldNameLookup![fieldName] = i; // add an exact match for the future
                     return i;
@@ -108,7 +108,7 @@ namespace System.Data.ProviderBase
             Hashtable hash = new Hashtable(length);
 
             // via case sensitive search, first match with lowest ordinal matches
-            for (int i = length - 1; 0 <= i; --i)
+            for (int i = length - 1; i >= 0; --i)
             {
                 string fieldName = _fieldNames[i];
                 hash[fieldName] = i;

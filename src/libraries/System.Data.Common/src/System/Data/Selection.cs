@@ -110,25 +110,25 @@ namespace System.Data
             DataCommonEventSource.Log.Trace("<ds.Index.Index|API> {0}, table={1}, recordStates={2}",
                             ObjectID, (table != null) ? table.ObjectID : 0, recordStates);
             Debug.Assert(indexFields != null);
-            Debug.Assert(null != table, "null table");
+            Debug.Assert(table != null, "null table");
             if ((recordStates &
                  (~(DataViewRowState.CurrentRows | DataViewRowState.OriginalRows))) != 0)
             {
                 throw ExceptionBuilder.RecordStateRange();
             }
             _table = table;
-            _listeners = new Listeners<DataViewListener>(ObjectID, listener => null != listener);
+            _listeners = new Listeners<DataViewListener>(ObjectID, listener => listener != null);
 
             _indexFields = indexFields;
             _recordStates = recordStates;
             _comparison = comparison;
 
             _isSharable = (rowFilter == null) && (comparison == null); // a filter or comparison make an index unsharable
-            if (null != rowFilter)
+            if (rowFilter != null)
             {
                 _rowFilter = new WeakReference(rowFilter);
                 DataExpression? expr = (rowFilter as DataExpression);
-                if (null != expr)
+                if (expr != null)
                 {
                     _hasRemoteAggregate = expr.HasRemoteAggregate();
                 }
@@ -144,7 +144,7 @@ namespace System.Data
             if (!_isSharable ||
                 _indexFields.Length != indexDesc.Length ||
                 _recordStates != recordStates ||
-                null != rowFilter)
+                rowFilter != null)
             {
                 return false;
             }
@@ -167,7 +167,7 @@ namespace System.Data
 
         public DataViewRowState RecordStates => _recordStates;
 
-        public IFilter? RowFilter => (IFilter?)((null != _rowFilter) ? _rowFilter.Target : null);
+        public IFilter? RowFilter => (IFilter?)((_rowFilter != null) ? _rowFilter.Target : null);
 
         public int GetRecord(int recordIndex)
         {
@@ -229,8 +229,8 @@ namespace System.Data
             _table._indexesLock.EnterWriteLock();
             try
             {
-                Debug.Assert(0 <= _refCount, "AddRef on disposed index");
-                Debug.Assert(null != _records, "null records");
+                Debug.Assert(_refCount >= 0, "AddRef on disposed index");
+                Debug.Assert(_records != null, "null records");
                 if (_refCount == 0)
                 {
                     _table.ShadowIndexCopy();
@@ -276,7 +276,7 @@ namespace System.Data
                         InsertRecord(record, true);
                     }
                 }
-                else if ((null != _comparison) && (-1 != record))
+                else if ((_comparison != null) && (record != -1))
                 {
                     // when removing a record, the DataRow has already been updated to the newer record
                     // depending on changeRecord, either the new or old record needs be backdated to record
@@ -302,11 +302,11 @@ namespace System.Data
         // only used for main tree compare, not satalite tree
         private int CompareRecords(int record1, int record2)
         {
-            if (null != _comparison)
+            if (_comparison != null)
             {
                 return CompareDataRows(record1, record2);
             }
-            if (0 < _indexFields.Length)
+            if (_indexFields.Length > 0)
             {
                 for (int i = 0; i < _indexFields.Length; i++)
                 {
@@ -322,8 +322,8 @@ namespace System.Data
             {
                 var (row1, row2) = (_table._recordManager[record1], _table._recordManager[record2]);
 
-                Debug.Assert(null != row1, "record1 no datarow");
-                Debug.Assert(null != row2, "record2 no datarow");
+                Debug.Assert(row1 != null, "record1 no datarow");
+                Debug.Assert(row2 != null, "record2 no datarow");
 
                 // Need to use compare because subtraction will wrap
                 // to positive for very large neg numbers, etc.
@@ -344,28 +344,28 @@ namespace System.Data
         private int CompareDuplicateRecords(int record1, int record2)
         {
 #if DEBUG
-            if (null != _comparison)
+            if (_comparison != null)
             {
-                Debug.Assert(0 == CompareDataRows(record1, record2), "duplicate record not a duplicate by user function");
+                Debug.Assert(CompareDataRows(record1, record2) == 0, "duplicate record not a duplicate by user function");
             }
             else if (record1 != record2)
             {
                 for (int i = 0; i < _indexFields.Length; i++)
                 {
                     int c = _indexFields[i].Column.Compare(record1, record2);
-                    Debug.Assert(0 == c, "duplicate record not a duplicate");
+                    Debug.Assert(c == 0, "duplicate record not a duplicate");
                 }
             }
 #endif
             var (row1, row2) = (_table._recordManager[record1], _table._recordManager[record2]);
-            Debug.Assert(null != row1, "record1 no datarow");
-            Debug.Assert(null != row2, "record2 no datarow");
+            Debug.Assert(row1 != null, "record1 no datarow");
+            Debug.Assert(row2 != null, "record2 no datarow");
 
-            if (null == row1)
+            if (row1 == null)
             {
-                return ((null == row2) ? 0 : -1);
+                return ((row2 == null) ? 0 : -1);
             }
-            else if (null == row2)
+            else if (row2 == null)
             {
                 return 1;
             }
@@ -444,7 +444,7 @@ namespace System.Data
         /// </summary>
         private int GetIndex(int record, int changeRecord)
         {
-            Debug.Assert(null != _comparison, "missing comparison");
+            Debug.Assert(_comparison != null, "missing comparison");
 
             int index;
             DataRow row = _table._recordManager[record]!;
@@ -480,7 +480,7 @@ namespace System.Data
                         break;
                 }
 #if DEBUG
-                if (-1 != a)
+                if (a != -1)
                 {
                     _table._recordManager.VerifyRecord(a, row);
                 }
@@ -515,7 +515,7 @@ namespace System.Data
         public int FindRecordByKey(object? key)
         {
             int nodeId = FindNodeByKey(key);
-            if (IndexTree.NIL != nodeId)
+            if (nodeId != IndexTree.NIL)
             {
                 return _records.GetIndexByNode(nodeId);
             }
@@ -525,7 +525,7 @@ namespace System.Data
         public int FindRecordByKey(object?[] key)
         {
             int nodeId = FindNodeByKeys(key);
-            if (IndexTree.NIL != nodeId)
+            if (nodeId != IndexTree.NIL)
             {
                 return _records.GetIndexByNode(nodeId);
             }
@@ -541,7 +541,7 @@ namespace System.Data
             }
 
             x = _records.root;
-            if (IndexTree.NIL != x)
+            if (x != IndexTree.NIL)
             {
                 // otherwise storage may not exist
                 DataColumn column = _indexFields[0].Column;
@@ -550,7 +550,7 @@ namespace System.Data
                 x = _records.root;
                 if (_indexFields[0].IsDescending)
                 {
-                    while (IndexTree.NIL != x)
+                    while (x != IndexTree.NIL)
                     {
                         c = column.CompareValueTo(_records.Key(x), key);
                         if (c == 0) { break; }
@@ -560,7 +560,7 @@ namespace System.Data
                 }
                 else
                 {
-                    while (IndexTree.NIL != x)
+                    while (x != IndexTree.NIL)
                     {
                         c = column.CompareValueTo(_records.Key(x), key);
                         if (c == 0) { break; }
@@ -575,14 +575,14 @@ namespace System.Data
         private int FindNodeByKeys(object?[]? originalKey)
         {
             int x, c;
-            c = ((null != originalKey) ? originalKey.Length : 0);
-            if (originalKey is null || 0 == c || _indexFields.Length != c)
+            c = ((originalKey != null) ? originalKey.Length : 0);
+            if (originalKey is null || c == 0 || _indexFields.Length != c)
             {
                 throw ExceptionBuilder.IndexKeyLength(_indexFields.Length, c);
             }
 
             x = _records.root;
-            if (IndexTree.NIL != x)
+            if (x != IndexTree.NIL)
             {
                 // otherwise storage may not exist
                 // copy array to avoid changing original
@@ -593,7 +593,7 @@ namespace System.Data
                 }
 
                 x = _records.root;
-                while (IndexTree.NIL != x)
+                while (x != IndexTree.NIL)
                 {
                     c = CompareRecordToKey(_records.Key(x), key);
                     if (c == 0) { break; }
@@ -608,11 +608,11 @@ namespace System.Data
         {
             int x, c;
             x = _records.root;
-            if (IndexTree.NIL != x)
+            if (x != IndexTree.NIL)
             {
                 // otherwise storage may not exist
                 x = _records.root;
-                while (IndexTree.NIL != x)
+                while (x != IndexTree.NIL)
                 {
                     c = CompareRecords(_records.Key(x), record);
                     if (c == 0) { break; }
@@ -629,7 +629,7 @@ namespace System.Data
         internal Range FindRecords<TKey, TRow>(ComparisonBySelector<TKey, TRow> comparison, TKey key) where TRow : DataRow
         {
             int x = _records.root;
-            while (IndexTree.NIL != x)
+            while (x != IndexTree.NIL)
             {
                 int c = comparison(key, (TRow)_table._recordManager[_records.Key(x)]!);
                 if (c == 0) { break; }
@@ -644,7 +644,7 @@ namespace System.Data
             // fill range with the min and max indexes of matching record (i.e min and max of satelite tree)
             // min index is the index of the node in main tree, and max is the min + size of satelite tree-1
 
-            if (IndexTree.NIL == nodeId)
+            if (nodeId == IndexTree.NIL)
             {
                 return default;
             }
@@ -688,8 +688,8 @@ namespace System.Data
         /// <summary>Determine if the record that needs backdating is the newRecord or oldRecord or neither</summary>
         private static int GetReplaceAction(DataViewRowState oldState)
         {
-            return ((0 != (DataViewRowState.CurrentRows & oldState)) ? ReplaceNewRecordForCompare :    // Added/ModifiedCurrent/Unchanged
-                    ((0 != (DataViewRowState.OriginalRows & oldState)) ? ReplaceOldRecordForCompare :   // Deleted/ModififedOriginal
+            return (((DataViewRowState.CurrentRows & oldState) != 0) ? ReplaceNewRecordForCompare :    // Added/ModifiedCurrent/Unchanged
+                    (((DataViewRowState.OriginalRows & oldState) != 0) ? ReplaceOldRecordForCompare :   // Deleted/ModififedOriginal
                       DoNotReplaceCompareRecord));                                                      // None
         }
 
@@ -700,7 +700,7 @@ namespace System.Data
         public DataRow[] GetRows(Range range)
         {
             DataRow[] newRows = _table.NewRowArray(range.Count);
-            if (0 < newRows.Length)
+            if (newRows.Length > 0)
             {
                 RBTree<int>.RBTreeEnumerator iterator = GetEnumerator(range.Min);
                 for (int i = 0; i < newRows.Length && iterator.MoveNext(); i++)
@@ -717,7 +717,7 @@ namespace System.Data
 
             // this improves performance when the is no filter, like with the default view (creating after rows added)
             // we know the records are in the correct order, just append to end, duplicates not possible
-            bool append = (0 == _indexFields.Length);
+            bool append = (_indexFields.Length == 0);
 
             _records = new IndexTree(this);
 
@@ -789,7 +789,7 @@ namespace System.Data
             // this improves performance when the is no filter, like with the default view (creating before rows added)
             // we know can append when the new record is the last row in table, normal insertion pattern
             bool append = false;
-            if ((0 == _indexFields.Length) && (null != _table))
+            if ((_indexFields.Length == 0) && (_table != null))
             {
                 DataRow row = _table._recordManager[record];
                 append = (_table.Rows.IndexOf(row) + 1 == _table.Rows.Count);
@@ -819,19 +819,19 @@ namespace System.Data
         public bool IsKeyInIndex(object key)
         {
             int x_id = FindNodeByKey(key);
-            return (IndexTree.NIL != x_id);
+            return (x_id != IndexTree.NIL);
         }
 
         public bool IsKeyInIndex(object[] key)
         {
             int x_id = FindNodeByKeys(key);
-            return (IndexTree.NIL != x_id);
+            return (x_id != IndexTree.NIL);
         }
 
         public bool IsKeyRecordInIndex(int record)
         {
             int x_id = FindNodeByKeyRecord(record);
-            return (IndexTree.NIL != x_id);
+            return (x_id != IndexTree.NIL);
         }
 
         private bool DoListChanged => (!_suspendEvents && _listeners.HasListeners && !_table.AreIndexEventsSuspended);
@@ -866,9 +866,9 @@ namespace System.Data
 
         private void MaintainDataView(ListChangedType changedType, int record, bool trackAddRemove)
         {
-            Debug.Assert(-1 <= record, "bad record#");
+            Debug.Assert(record >= -1, "bad record#");
 
-            _listeners.Notify(changedType, ((0 <= record) ? _table._recordManager[record] : null), trackAddRemove,
+            _listeners.Notify(changedType, ((record >= 0) ? _table._recordManager[record] : null), trackAddRemove,
                 delegate (DataViewListener listener, ListChangedType type, DataRow? row, bool track)
                 {
                     listener.MaintainDataView(changedType, row, track);
@@ -937,7 +937,7 @@ namespace System.Data
             DataCommonEventSource.Log.Trace("<ds.Index.RecordStateChanged|API> {0}, oldRecord={1}, oldOldState={2}, oldNewState={3}, newRecord={4}, newOldState={5}, newNewState={6}",
                 ObjectID, oldRecord, oldOldState, oldNewState, newRecord, newOldState, newNewState);
 
-            Debug.Assert((-1 == oldRecord) || (-1 == newRecord) ||
+            Debug.Assert((oldRecord == -1) || (newRecord == -1) ||
                          _table._recordManager[oldRecord] == _table._recordManager[newRecord],
                          "not the same DataRow when updating oldRecord and newRecord");
 
@@ -946,7 +946,7 @@ namespace System.Data
             if (oldAction == -1 && newAction == 1 && AcceptRecord(newRecord))
             {
                 int oldRecordIndex;
-                if ((null != _comparison) && oldAction < 0)
+                if ((_comparison != null) && oldAction < 0)
                 { // when oldRecord is being removed, allow GetIndexByKey updating the DataRow for Comparison<DataRow>
                     oldRecordIndex = GetIndex(oldRecord, GetReplaceAction(oldOldState));
                 }
@@ -955,7 +955,7 @@ namespace System.Data
                     oldRecordIndex = GetIndex(oldRecord);
                 }
 
-                if ((null == _comparison) && oldRecordIndex != -1 && CompareRecords(oldRecord, newRecord) == 0)
+                if ((_comparison == null) && oldRecordIndex != -1 && CompareRecords(oldRecord, newRecord) == 0)
                 {
                     _records.UpdateNodeKey(oldRecord, newRecord);    //change in place, as Both records have same key value
 
@@ -1024,7 +1024,7 @@ namespace System.Data
 
         internal static int IndexOfReference<T>(List<T?>? list, T item) where T : class
         {
-            if (null != list)
+            if (list != null)
             {
                 for (int i = 0; i < list.Count; ++i)
                 {
@@ -1038,7 +1038,7 @@ namespace System.Data
         }
         internal static bool ContainsReference<T>(List<T?> list, T item) where T : class
         {
-            return (0 <= IndexOfReference(list, item));
+            return (IndexOfReference(list, item) >= 0);
         }
     }
 
@@ -1063,12 +1063,12 @@ namespace System.Data
             _listenerReaderCount = 0;
         }
 
-        internal bool HasListeners => (0 < _listeners.Count);
+        internal bool HasListeners => (_listeners.Count > 0);
 
         /// <remarks>Only call from inside a lock</remarks>
         internal void Add(TElem listener)
         {
-            Debug.Assert(null != listener, "null listener");
+            Debug.Assert(listener != null, "null listener");
             Debug.Assert(!Index.ContainsReference(_listeners, listener), "already contains reference");
             _listeners.Add(listener);
         }
@@ -1081,13 +1081,13 @@ namespace System.Data
         /// <remarks>Only call from inside a lock</remarks>
         internal void Remove(TElem listener)
         {
-            Debug.Assert(null != listener, "null listener");
+            Debug.Assert(listener != null, "null listener");
 
             int index = IndexOfReference(listener);
-            Debug.Assert(0 <= index, "listeners don't contain listener");
+            Debug.Assert(index >= 0, "listeners don't contain listener");
             _listeners[index] = null;
 
-            if (0 == _listenerReaderCount)
+            if (_listenerReaderCount == 0)
             {
                 _listeners.RemoveAt(index);
                 _listeners.TrimExcess();
@@ -1099,11 +1099,11 @@ namespace System.Data
         /// </summary>
         internal void Notify<T1, T2, T3>(T1 arg1, T2 arg2, T3 arg3, Action<TElem, T1, T2, T3> action)
         {
-            Debug.Assert(null != action, "no action");
-            Debug.Assert(0 <= _listenerReaderCount, "negative _listEventCount");
+            Debug.Assert(action != null, "no action");
+            Debug.Assert(_listenerReaderCount >= 0, "negative _listEventCount");
 
             int count = _listeners.Count;
-            if (0 < count)
+            if (count > 0)
             {
                 int nullIndex = -1;
 
@@ -1133,7 +1133,7 @@ namespace System.Data
                 {
                     _listenerReaderCount--;
                 }
-                if (0 == _listenerReaderCount)
+                if (_listenerReaderCount == 0)
                 {
                     RemoveNullListeners(nullIndex);
                 }
@@ -1142,11 +1142,11 @@ namespace System.Data
 
         private void RemoveNullListeners(int nullIndex)
         {
-            Debug.Assert((-1 == nullIndex) || (null == _listeners[nullIndex]), "non-null listener");
-            Debug.Assert(0 == _listenerReaderCount, "0 < _listenerReaderCount");
-            for (int i = nullIndex; 0 <= i; --i)
+            Debug.Assert((nullIndex == -1) || (_listeners[nullIndex] == null), "non-null listener");
+            Debug.Assert(_listenerReaderCount == 0, "0 < _listenerReaderCount");
+            for (int i = nullIndex; i >= 0; --i)
             {
-                if (null == _listeners[i])
+                if (_listeners[i] == null)
                 {
                     _listeners.RemoveAt(i);
                 }

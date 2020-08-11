@@ -528,7 +528,7 @@ namespace System.Data
             Debug.Assert(col.ColumnName.StartsWith("xml", StringComparison.OrdinalIgnoreCase), "column name should start with xml");
             string tempColumnName;
 
-            if ('x' == col.ColumnName[0])
+            if (col.ColumnName[0] == 'x')
             {
                 tempColumnName = "_x0078_"; // lower case xml... -> _x0078_ml...
             }

@@ -75,7 +75,7 @@ namespace System.Data
         {
             get
             {
-                return (null != _expr);
+                return (_expr != null);
             }
         }
 
@@ -128,12 +128,12 @@ namespace System.Data
             {
                 result = _expr.Eval(row, version);
                 // if the type is a SqlType (StorageType.Uri < _storageType), convert DBNull values.
-                if (result != DBNull.Value || StorageType.Uri < _storageType)
+                if (result != DBNull.Value || _storageType > StorageType.Uri)
                 {
                     // we need to convert the return value to the column.Type;
                     try
                     {
-                        if (StorageType.Object != _storageType)
+                        if (_storageType != StorageType.Object)
                         {
                             // TODO: _dataType can be null, probably a bug
                             result = SqlConvert.ChangeType2(result, _storageType, _dataType!, _table!.FormatProvider);

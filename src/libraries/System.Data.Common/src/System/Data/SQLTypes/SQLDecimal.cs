@@ -1049,7 +1049,7 @@ namespace System.Data.SqlTypes
                 iCurChar++;
                 cwchStr--;
             }
-            if (2 == cwchStr && '0' == rgwchStr[iCurChar] && '.' == rgwchStr[iCurChar + 1])
+            if (cwchStr == 2 && rgwchStr[iCurChar] == '0' && rgwchStr[iCurChar + 1] == '.')
             {
                 rgwchStr[iCurChar] = '.';
                 rgwchStr[iCurChar + 1] = '0';
@@ -1508,7 +1508,7 @@ namespace System.Data.SqlTypes
                 // If need to decrease scale
                 if (lScaleAdjust < 0)
                 {
-                    Debug.Assert(s_NUMERIC_MAX_PRECISION == ResPrec);
+                    Debug.Assert(ResPrec == s_NUMERIC_MAX_PRECISION);
 
                     // have to adjust - might yet end up fitting.
                     // Cannot call AdjustScale - number cannot fit in a numeric, so
@@ -2105,7 +2105,7 @@ namespace System.Data.SqlTypes
                 dwlAccum += rguiData[iData];
                 rguiData[iData] = (uint)dwlAccum;       // equivalent to mod x_dwlBaseUI4
                 dwlAccum >>= 32;                        // equivalent to dwlAccum /= x_dwlBaseUI4;
-                if (0 == dwlAccum)
+                if (dwlAccum == 0)
                 {
                     StoreFromWorkingArray(rguiData);
                     return;
@@ -2814,7 +2814,7 @@ namespace System.Data.SqlTypes
                 //Note: We are sure that scale of arguments is the same,
                 //      so LAbsCmp() will not modify its argument.
                 int lResult = snumArg1.LAbsCmp(snumArg2);
-                if (0 == lResult)
+                if (lResult == 0)
                     return EComparison.EQ;
 
                 //if both positive, result same as result from LAbsCmp;

@@ -109,14 +109,14 @@ namespace System.Data
 
         private object SmallestDecimal(object constant)
         {
-            if (null == constant)
+            if (constant == null)
             {
                 return 0d;
             }
             else
             {
                 string? sval = (constant as string);
-                if (null != sval)
+                if (sval != null)
                 {
                     decimal r12;
                     if (decimal.TryParse(sval, NumberStyles.Number, NumberFormatInfo.InvariantInfo, out r12))
@@ -133,7 +133,7 @@ namespace System.Data
                 else
                 {
                     IConvertible? convertible = (constant as IConvertible);
-                    if (null != convertible)
+                    if (convertible != null)
                     {
                         try
                         {
@@ -183,14 +183,14 @@ namespace System.Data
 
         private object SmallestNumeric(object constant)
         {
-            if (null == constant)
+            if (constant == null)
             {
                 return 0;
             }
             else
             {
                 string? sval = (constant as string);
-                if (null != sval)
+                if (sval != null)
                 {
                     int i4;
                     if (int.TryParse(sval, NumberStyles.Integer, NumberFormatInfo.InvariantInfo, out i4))
@@ -211,7 +211,7 @@ namespace System.Data
                 else
                 {
                     IConvertible? convertible = (constant as IConvertible);
-                    if (null != convertible)
+                    if (convertible != null)
                     {
                         try
                         {

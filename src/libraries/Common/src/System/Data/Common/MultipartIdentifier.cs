@@ -68,7 +68,7 @@ namespace System.Data.Common
                 throw ADP.InvalidMultipartNameToManyParts(property, name, limit);
             }
 
-            if (-1 != leftQuote.IndexOf(separator) || -1 != rightQuote.IndexOf(separator) || leftQuote.Length != rightQuote.Length)
+            if (leftQuote.IndexOf(separator) != -1 || rightQuote.IndexOf(separator) != -1 || leftQuote.Length != rightQuote.Length)
             {
                 throw ADP.InvalidMultipartNameIncorrectUsageOfQuotes(property, name);
             }
@@ -100,7 +100,7 @@ namespace System.Data.Common
                                 IncrementStringCount(name, parsedNames, ref stringCount, property);
                             }
                             else
-                            if (-1 != (quoteIndex = leftQuote.IndexOf(testchar)))
+                            if ((quoteIndex = leftQuote.IndexOf(testchar)) != -1)
                             { // If we are a left quote
                                 rightQuoteChar = rightQuote[quoteIndex]; // record the corresponding right quote for the left quote
                                 sb.Length = 0;
@@ -111,7 +111,7 @@ namespace System.Data.Common
                                 state = MPIState.MPI_ParseQuote;
                             }
                             else
-                            if (-1 != rightQuote.IndexOf(testchar))
+                            if (rightQuote.IndexOf(testchar) != -1)
                             { // If we shouldn't see a right quote
                                 throw ADP.InvalidMultipartNameIncorrectUsageOfQuotes(property, name);
                             }
@@ -133,12 +133,12 @@ namespace System.Data.Common
                                 state = MPIState.MPI_Value;
                             }
                             else // Quotes are not valid inside a non-quoted name
-                            if (-1 != rightQuote.IndexOf(testchar))
+                            if (rightQuote.IndexOf(testchar) != -1)
                             {
                                 throw ADP.InvalidMultipartNameIncorrectUsageOfQuotes(property, name);
                             }
                             else
-                            if (-1 != leftQuote.IndexOf(testchar))
+                            if (leftQuote.IndexOf(testchar) != -1)
                             {
                                 throw ADP.InvalidMultipartNameIncorrectUsageOfQuotes(property, name);
                             }
@@ -146,7 +146,7 @@ namespace System.Data.Common
                             if (IsWhitespace(testchar))
                             { // If it is Whitespace
                                 parsedNames[stringCount] = sb.ToString(); // Set the currently parsed string
-                                if (null == whitespaceSB)
+                                if (whitespaceSB == null)
                                 {
                                     whitespaceSB = new StringBuilder();
                                 }

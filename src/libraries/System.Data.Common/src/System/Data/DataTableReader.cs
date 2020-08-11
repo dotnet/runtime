@@ -393,7 +393,7 @@ namespace System.Data
                 throw ADP.InvalidDestinationBufferIndex(buffer.Length, bufferIndex, nameof(bufferIndex));
             }
 
-            if (0 < byteCount)
+            if (byteCount > 0)
             {
                 Array.Copy(tempBuffer, dataIndex, buffer, bufferIndex, byteCount);
             }
@@ -456,7 +456,7 @@ namespace System.Data
                 throw ADP.InvalidDestinationBufferIndex(buffer.Length, bufferIndex, nameof(bufferIndex));
             }
 
-            if (0 < charCount)
+            if (charCount > 0)
             {
                 Array.Copy(tempBuffer, dataIndex, buffer, bufferIndex, charCount);
             }
@@ -907,7 +907,7 @@ namespace System.Data
                 throw ExceptionBuilder.InvalidCurrentRowInDataTableReader();
             }
             // user may have called clear (which removes the rows without raing event) or deleted part of rows without raising event!if so reader is invalid.
-            if (0 > _rowCounter || _currentDataTable.Rows.Count <= _rowCounter)
+            if (_rowCounter < 0 || _currentDataTable.Rows.Count <= _rowCounter)
             {
                 ReaderIsInvalid = true;
                 throw ExceptionBuilder.InvalidDataTableReader(_currentDataTable.TableName);
@@ -921,7 +921,7 @@ namespace System.Data
                 throw ExceptionBuilder.InvalidDataTableReader(_currentDataTable.TableName);
             }
 
-            if (0 > rowPosition || _currentDataTable.Rows.Count <= rowPosition)
+            if (rowPosition < 0 || _currentDataTable.Rows.Count <= rowPosition)
             {
                 ReaderIsInvalid = true;
                 throw ExceptionBuilder.InvalidDataTableReader(_currentDataTable.TableName);

@@ -46,7 +46,7 @@ namespace System.Data
             get
             {
                 DataRow[]? rows = _dataRows;
-                return (((null != rows) && (0 < rows.Length)) ? rows[0] : null);
+                return (((rows != null) && (rows.Length > 0)) ? rows[0] : null);
             }
             set
             {
@@ -59,7 +59,7 @@ namespace System.Data
             get
             {
                 DataRow[]? dataRows = _dataRows;
-                return ((null != dataRows) ? dataRows.Length : 0);
+                return ((dataRows != null) ? dataRows.Length : 0);
             }
         }
 
@@ -71,7 +71,7 @@ namespace System.Data
         public void CopyToRows(DataRow[] array, int arrayIndex)
         {
             DataRow[]? dataRows = _dataRows;
-            if (null != dataRows)
+            if (dataRows != null)
             {
                 dataRows.CopyTo(array, arrayIndex);
             }

@@ -19,7 +19,7 @@ namespace System.Data
         {
             get
             {
-                return ((null != _table) ? _table.FormatProvider : System.Globalization.CultureInfo.CurrentCulture);
+                return ((_table != null) ? _table.FormatProvider : System.Globalization.CultureInfo.CurrentCulture);
             }
         }
 

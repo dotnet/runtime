@@ -16,7 +16,7 @@ namespace System.Data.ProviderBase
             if (returnProviderSpecificTypes)
             {
                 DbDataReader? providerSpecificDataReader = (dataReader as DbDataReader);
-                if (null != providerSpecificDataReader)
+                if (providerSpecificDataReader != null)
                 {
                     return new ProviderSpecificDataReader(dataReader, providerSpecificDataReader);
                 }
@@ -26,7 +26,7 @@ namespace System.Data.ProviderBase
 
         protected DataReaderContainer(IDataReader dataReader)
         {
-            Debug.Assert(null != dataReader, "null dataReader");
+            Debug.Assert(dataReader != null, "null dataReader");
             _dataReader = dataReader;
         }
 
@@ -48,8 +48,8 @@ namespace System.Data.ProviderBase
         internal string GetName(int ordinal)
         {
             string fieldName = _dataReader.GetName(ordinal);
-            Debug.Assert(null != fieldName, "null GetName");
-            return ((null != fieldName) ? fieldName : "");
+            Debug.Assert(fieldName != null, "null GetName");
+            return ((fieldName != null) ? fieldName : "");
         }
         internal DataTable GetSchemaTable()
         {
@@ -76,7 +76,7 @@ namespace System.Data.ProviderBase
 
             internal ProviderSpecificDataReader(IDataReader dataReader, DbDataReader dbDataReader) : base(dataReader)
             {
-                Debug.Assert(null != dataReader, "null dbDataReader");
+                Debug.Assert(dataReader != null, "null dbDataReader");
                 _providerSpecificDataReader = dbDataReader;
                 _fieldCount = VisibleFieldCount;
             }
@@ -93,15 +93,15 @@ namespace System.Data.ProviderBase
                 get
                 {
                     int fieldCount = _providerSpecificDataReader.VisibleFieldCount;
-                    Debug.Assert(0 <= fieldCount, "negative FieldCount");
-                    return ((0 <= fieldCount) ? fieldCount : 0);
+                    Debug.Assert(fieldCount >= 0, "negative FieldCount");
+                    return ((fieldCount >= 0) ? fieldCount : 0);
                 }
             }
 
             internal override Type GetFieldType(int ordinal)
             {
                 Type fieldType = _providerSpecificDataReader.GetProviderSpecificFieldType(ordinal);
-                Debug.Assert(null != fieldType, "null FieldType");
+                Debug.Assert(fieldType != null, "null FieldType");
                 return fieldType;
             }
             internal override object GetValue(int ordinal)
@@ -133,8 +133,8 @@ namespace System.Data.ProviderBase
                 get
                 {
                     int fieldCount = _dataReader.FieldCount;
-                    Debug.Assert(0 <= fieldCount, "negative FieldCount");
-                    return ((0 <= fieldCount) ? fieldCount : 0);
+                    Debug.Assert(fieldCount >= 0, "negative FieldCount");
+                    return ((fieldCount >= 0) ? fieldCount : 0);
                 }
             }
 

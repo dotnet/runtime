@@ -54,7 +54,7 @@ namespace System.Data.Common
             get { return _sourceColumnName ?? string.Empty; }
             set
             {
-                if ((null != Parent) && (0 != ADP.SrcCompare(_sourceColumnName, value)))
+                if ((Parent != null) && (ADP.SrcCompare(_sourceColumnName, value) != 0))
                 {
                     Parent.ValidateSourceColumn(-1, value);
                 }
@@ -79,7 +79,7 @@ namespace System.Data.Common
         [EditorBrowsable(EditorBrowsableState.Advanced)]
         public static DataColumn? GetDataColumnBySchemaAction(string? sourceColumn, string? dataSetColumn, DataTable dataTable, Type? dataType, MissingSchemaAction schemaAction)
         {
-            if (null == dataTable)
+            if (dataTable == null)
             {
                 throw ADP.ArgumentNull(nameof(dataTable));
             }
@@ -88,20 +88,20 @@ namespace System.Data.Common
                 return null;
             }
             DataColumnCollection columns = dataTable.Columns;
-            Debug.Assert(null != columns, "GetDataColumnBySchemaAction: unexpected null DataColumnCollection");
+            Debug.Assert(columns != null, "GetDataColumnBySchemaAction: unexpected null DataColumnCollection");
 
             int index = columns.IndexOf(dataSetColumn);
-            if ((0 <= index) && (index < columns.Count))
+            if ((index >= 0) && (index < columns.Count))
             {
                 DataColumn dataColumn = columns[index];
-                Debug.Assert(null != dataColumn, "GetDataColumnBySchemaAction: unexpected null dataColumn");
+                Debug.Assert(dataColumn != null, "GetDataColumnBySchemaAction: unexpected null dataColumn");
 
                 if (!string.IsNullOrEmpty(dataColumn.Expression))
                 {
                     throw ADP.ColumnSchemaExpression(sourceColumn, dataSetColumn);
                 }
 
-                if ((null == dataType) || (dataType.IsArray == dataColumn.DataType.IsArray))
+                if ((dataType == null) || (dataType.IsArray == dataColumn.DataType.IsArray))
                 {
                     return dataColumn;
                 }
@@ -158,7 +158,7 @@ namespace System.Data.Common
 
             public override object ConvertTo(ITypeDescriptorContext context, CultureInfo culture, object value, Type destinationType)
             {
-                if (null == destinationType)
+                if (destinationType == null)
                 {
                     throw ADP.ArgumentNull(nameof(destinationType));
                 }

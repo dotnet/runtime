@@ -141,7 +141,7 @@ namespace System.Data
         {
             // Since Cast does not have the signature Cast_T_R(..) this call is routed through the non-generic base class EnumerableDataTable
 
-            if ((null != source) && source.ElementType.Equals(typeof(TResult)))
+            if ((source != null) && source.ElementType.Equals(typeof(TResult)))
             {
                 return (EnumerableRowCollection<TResult>)source;
             }

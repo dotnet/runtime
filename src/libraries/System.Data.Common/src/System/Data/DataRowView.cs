@@ -75,7 +75,7 @@ namespace System.Data
             get
             {
                 DataColumn? column = _dataView.Table!.Columns[property];
-                if (null != column)
+                if (column != null)
                 {
                     return Row[column, RowVersionDefault];
                 }
@@ -88,7 +88,7 @@ namespace System.Data
             set
             {
                 DataColumn? column = _dataView.Table!.Columns[property];
-                if (null == column)
+                if (column == null)
                 {
                     throw ExceptionBuilder.SetFailed(property);
                 }
@@ -131,7 +131,7 @@ namespace System.Data
                 _delayBeginEdit = false;
                 Row.BeginEdit();
             }
-            if (DataRowVersion.Original == RowVersionDefault)
+            if (RowVersionDefault == DataRowVersion.Original)
             {
                 throw ExceptionBuilder.SetFailed(column.ColumnName);
             }

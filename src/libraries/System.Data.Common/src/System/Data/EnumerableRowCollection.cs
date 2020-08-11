@@ -100,13 +100,13 @@ namespace System.Data
         /// </summary>
         internal EnumerableRowCollection(EnumerableRowCollection<TRow>? source, IEnumerable<TRow> enumerableRows, Func<TRow, TRow>? selector)
         {
-            Debug.Assert(null != enumerableRows, "null enumerableRows");
+            Debug.Assert(enumerableRows != null, "null enumerableRows");
 
             _enumerableRows = enumerableRows;
             _selector = selector;
-            if (null != source)
+            if (source != null)
             {
-                if (null == source._selector)
+                if (source._selector == null)
                 {
                     _table = source._table;
                 }
@@ -143,7 +143,7 @@ namespace System.Data
         /// <returns>LinqDataView repesenting the LINQ query</returns>
         internal LinqDataView GetLinqDataView() // Called by AsLinqDataView
         {
-            if ((null == _table) || !typeof(DataRow).IsAssignableFrom(typeof(TRow)))
+            if ((_table == null) || !typeof(DataRow).IsAssignableFrom(typeof(TRow)))
             {
                 throw DataSetUtil.NotSupported(SR.ToLDVUnsupported);
             }
@@ -153,7 +153,7 @@ namespace System.Data
             #region BuildSinglePredicate
 
             Func<DataRow, bool>? finalPredicate = null; // Conjunction of all .Where(..) predicates
-            if ((null != _selector) && (0 < _listOfPredicates.Count))
+            if ((_selector != null) && (_listOfPredicates.Count > 0))
             {
                 // Hook up all individual predicates into one predicate
                 // This lambda is a conjunction of multiple predicates set by the user
@@ -176,7 +176,7 @@ namespace System.Data
                         return true;
                     };
             }
-            else if (null != _selector)
+            else if (_selector != null)
             {
                 finalPredicate =
                     (DataRow row) =>
@@ -188,7 +188,7 @@ namespace System.Data
                         return true;
                     };
             }
-            else if (0 < _listOfPredicates.Count)
+            else if (_listOfPredicates.Count > 0)
             {
                 finalPredicate =
                     (DataRow row) =>
@@ -216,7 +216,7 @@ namespace System.Data
 
 
             // Filter AND Sort
-            if ((null != finalPredicate) && (0 < _sortExpression.Count))
+            if ((finalPredicate != null) && (_sortExpression.Count > 0))
             {
                 // A lot more work here because constructor does not know type K,
                 // so the responsibility to create appropriate delegate comparers
@@ -235,7 +235,7 @@ namespace System.Data
                                        _sortExpression.Select((TRow)(object)row)),
                                 _sortExpression.CloneCast<DataRow>());
             }
-            else if (null != finalPredicate)
+            else if (finalPredicate != null)
             {
                 // Only Filtering
                 view = new LinqDataView(
@@ -245,7 +245,7 @@ namespace System.Data
                                     null,
                                     _sortExpression.CloneCast<DataRow>());
             }
-            else if (0 < _sortExpression.Count)
+            else if (_sortExpression.Count > 0)
             {
                 // Only Sorting
                 view = new LinqDataView(

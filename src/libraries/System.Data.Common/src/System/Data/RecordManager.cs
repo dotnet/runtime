@@ -117,9 +117,9 @@ namespace System.Data
 
         internal void FreeRecord(ref int record)
         {
-            Debug.Assert(-1 <= record && record < _recordCapacity, "invalid record");
+            Debug.Assert(record >= -1 && record < _recordCapacity, "invalid record");
             //            Debug.Assert(record < lastFreeRecord, "Attempt to Free() <outofbounds> record");
-            if (-1 != record)
+            if (record != -1)
             {
                 _rows[record] = null;
 
@@ -226,11 +226,11 @@ namespace System.Data
                 {
                     DataColumn dstColumn = _table.Columns[i];
                     DataColumn? srcColumn = src.Columns[dstColumn.ColumnName];
-                    if (null != srcColumn)
+                    if (srcColumn != null)
                     {
                         object value = srcColumn[record];
                         ICloneable? cloneableObject = value as ICloneable;
-                        if (null != cloneableObject)
+                        if (cloneableObject != null)
                         {
                             dstColumn[newRecord] = cloneableObject.Clone();
                         }
@@ -239,7 +239,7 @@ namespace System.Data
                             dstColumn[newRecord] = value;
                         }
                     }
-                    else if (-1 == copy)
+                    else if (copy == -1)
                     {
                         dstColumn.Init(newRecord);
                     }
@@ -247,7 +247,7 @@ namespace System.Data
             }
             catch (Exception e) when (Common.ADP.IsCatchableOrSecurityExceptionType(e))
             {
-                if (-1 == copy)
+                if (copy == -1)
                 {
                     FreeRecord(ref newRecord);
                 }
@@ -266,9 +266,9 @@ namespace System.Data
         [Conditional("DEBUG")]
         internal void VerifyRecord(int record)
         {
-            Debug.Assert((record < _lastFreeRecord) && (-1 == _freeRecordList.IndexOf(record)), "accessing free record");
+            Debug.Assert((record < _lastFreeRecord) && (_freeRecordList.IndexOf(record) == -1), "accessing free record");
             var r = _rows[record];
-            Debug.Assert((null == r) ||
+            Debug.Assert((r == null) ||
                          (record == r._oldRecord) ||
                          (record == r._newRecord) ||
                          (record == r._tempRecord), "record of a different row");
@@ -277,8 +277,8 @@ namespace System.Data
         [Conditional("DEBUG")]
         internal void VerifyRecord(int record, DataRow? row)
         {
-            Debug.Assert((record < _lastFreeRecord) && (-1 == _freeRecordList.IndexOf(record)), "accessing free record");
-            Debug.Assert((null == _rows[record]) || (row == _rows[record]), "record of a different row");
+            Debug.Assert((record < _lastFreeRecord) && (_freeRecordList.IndexOf(record) == -1), "accessing free record");
+            Debug.Assert((_rows[record] == null) || (row == _rows[record]), "record of a different row");
         }
     }
 }

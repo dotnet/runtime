@@ -160,7 +160,7 @@ namespace System.Data.Common
             if (valueNo1.Equals(DefaultValue) || valueNo2.Equals(DefaultValue))
             {
                 int bitCheck = CompareBits(recordNo1, recordNo2);
-                if (0 != bitCheck)
+                if (bitCheck != 0)
                     return bitCheck;
             }
             //return valueNo1.CompareTo(valueNo2);
@@ -169,8 +169,8 @@ namespace System.Data.Common
 
         public override int CompareValueTo(int recordNo, object? value)
         {
-            System.Diagnostics.Debug.Assert(0 <= recordNo, "Invalid record");
-            System.Diagnostics.Debug.Assert(null != value, "null value");
+            System.Diagnostics.Debug.Assert(recordNo >= 0, "Invalid record");
+            System.Diagnostics.Debug.Assert(value != null, "null value");
 
             if (_nullValue == value)
             {
@@ -178,7 +178,7 @@ namespace System.Data.Common
             }
 
             ulong valueNo1 = _values[recordNo];
-            if ((DefaultValue == valueNo1) && !HasValue(recordNo))
+            if ((valueNo1 == DefaultValue) && !HasValue(recordNo))
             {
                 return -1;
             }
@@ -190,7 +190,7 @@ namespace System.Data.Common
         {
             if (_nullValue != value)
             {
-                if (null != value)
+                if (value != null)
                 {
                     value = ((IConvertible)value).ToUInt64(FormatProvider);
                 }
@@ -220,7 +220,7 @@ namespace System.Data.Common
 
         public override void Set(int record, object value)
         {
-            System.Diagnostics.Debug.Assert(null != value, "null value");
+            System.Diagnostics.Debug.Assert(value != null, "null value");
             if (_nullValue == value)
             {
                 _values[record] = DefaultValue;
@@ -236,7 +236,7 @@ namespace System.Data.Common
         public override void SetCapacity(int capacity)
         {
             ulong[] newValues = new ulong[capacity];
-            if (null != _values)
+            if (_values != null)
             {
                 Array.Copy(_values, newValues, Math.Min(capacity, _values.Length));
             }

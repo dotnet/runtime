@@ -85,7 +85,7 @@ namespace System.Data
         }
         internal static bool IsRelational(int op)
         {
-            return ((EqualTo <= op) && (op <= NotEqual));
+            return ((op >= EqualTo) && (op <= NotEqual));
         }
 
         /// <summary>

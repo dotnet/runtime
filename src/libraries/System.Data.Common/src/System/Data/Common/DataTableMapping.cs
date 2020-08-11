@@ -32,7 +32,7 @@ namespace System.Data.Common
         {
             SourceTable = sourceTable;
             DataSetTable = dataSetTable;
-            if ((null != columnMappings) && (0 < columnMappings.Length))
+            if ((columnMappings != null) && (columnMappings.Length > 0))
             {
                 ColumnMappings.AddRange(columnMappings);
             }
@@ -50,7 +50,7 @@ namespace System.Data.Common
             get
             {
                 DataColumnMappingCollection? columnMappings = _columnMappings;
-                if (null == columnMappings)
+                if (columnMappings == null)
                 {
                     columnMappings = new DataColumnMappingCollection();
                     _columnMappings = columnMappings;
@@ -86,7 +86,7 @@ namespace System.Data.Common
             get { return _sourceTableName ?? string.Empty; }
             set
             {
-                if ((null != Parent) && (0 != ADP.SrcCompare(_sourceTableName, value)))
+                if ((Parent != null) && (ADP.SrcCompare(_sourceTableName, value) != 0))
                 {
                     Parent.ValidateSourceTable(-1, value);
                 }
@@ -100,7 +100,7 @@ namespace System.Data.Common
             clone._dataSetTableName = _dataSetTableName;
             clone._sourceTableName = _sourceTableName;
 
-            if ((null != _columnMappings) && (0 < ColumnMappings.Count))
+            if ((_columnMappings != null) && (ColumnMappings.Count > 0))
             {
                 DataColumnMappingCollection parameters = clone.ColumnMappings;
                 foreach (ICloneable parameter in ColumnMappings)
@@ -126,7 +126,7 @@ namespace System.Data.Common
         [EditorBrowsable(EditorBrowsableState.Advanced)]
         public DataTable? GetDataTableBySchemaAction(DataSet dataSet, MissingSchemaAction schemaAction)
         {
-            if (null == dataSet)
+            if (dataSet == null)
             {
                 throw ADP.ArgumentNull(nameof(dataSet));
             }
@@ -138,7 +138,7 @@ namespace System.Data.Common
             }
             DataTableCollection tables = dataSet.Tables;
             int index = tables.IndexOf(dataSetTable);
-            if ((0 <= index) && (index < tables.Count))
+            if ((index >= 0) && (index < tables.Count))
             {
                 return tables[index];
             }
@@ -180,7 +180,7 @@ namespace System.Data.Common
 
             public override object ConvertTo(ITypeDescriptorContext context, CultureInfo culture, object value, Type destinationType)
             {
-                if (null == destinationType)
+                if (destinationType == null)
                 {
                     throw ADP.ArgumentNull(nameof(destinationType));
                 }

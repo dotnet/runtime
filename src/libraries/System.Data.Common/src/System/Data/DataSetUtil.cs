@@ -9,7 +9,7 @@ internal static class DataSetUtil
 {
     internal static void CheckArgumentNull<T>(T argumentValue, string argumentName) where T : class
     {
-        if (null == argumentValue)
+        if (argumentValue == null)
         {
             throw ArgumentNull(argumentName);
         }
@@ -17,7 +17,7 @@ internal static class DataSetUtil
 
     private static T TraceException<T>(string trace, T e)
     {
-        Debug.Assert(null != e, "TraceException: null Exception");
+        Debug.Assert(e != null, "TraceException: null Exception");
         return e;
     }
 

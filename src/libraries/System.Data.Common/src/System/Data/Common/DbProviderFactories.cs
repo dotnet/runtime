@@ -56,7 +56,7 @@ namespace System.Data.Common
             ADP.CheckArgumentNull(providerRow, nameof(providerRow));
 
             DataColumn? assemblyQualifiedNameColumn = providerRow.Table.Columns[AssemblyQualifiedNameColumnName];
-            if (null == assemblyQualifiedNameColumn)
+            if (assemblyQualifiedNameColumn == null)
             {
                 throw ADP.Argument(SR.ADP_DbProviderFactories_NoAssemblyQualifiedName);
             }
@@ -172,7 +172,7 @@ namespace System.Data.Common
             }
 
             FieldInfo? providerInstance = providerFactoryClass.GetField(InstanceFieldName, BindingFlags.DeclaredOnly | BindingFlags.Public | BindingFlags.Static);
-            if (null == providerInstance)
+            if (providerInstance == null)
             {
                 throw ADP.InvalidOperation(SR.ADP_DbProviderFactories_NoInstance);
             }
@@ -181,7 +181,7 @@ namespace System.Data.Common
                 throw ADP.InvalidOperation(SR.ADP_DbProviderFactories_NoInstance);
             }
             object? factory = providerInstance.GetValue(null);
-            if (null == factory)
+            if (factory == null)
             {
                 throw ADP.InvalidOperation(SR.ADP_DbProviderFactories_NoInstance);
             }
@@ -192,7 +192,7 @@ namespace System.Data.Common
         private static Type GetProviderTypeFromTypeName(string assemblyQualifiedName)
         {
             Type? providerType = Type.GetType(assemblyQualifiedName);
-            if (null == providerType)
+            if (providerType == null)
             {
                 throw ADP.Argument(SR.Format(SR.ADP_DbProviderFactories_FactoryNotLoadable, assemblyQualifiedName));
             }

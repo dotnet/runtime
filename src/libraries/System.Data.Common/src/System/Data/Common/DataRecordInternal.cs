@@ -17,8 +17,8 @@ namespace System.Data.Common
         // copy all runtime data information
         internal DataRecordInternal(SchemaInfo[] schemaInfo, object[] values, PropertyDescriptorCollection descriptors, FieldNameLookup fieldNameLookup)
         {
-            Debug.Assert(null != schemaInfo, "invalid attempt to instantiate DataRecordInternal with null schema information");
-            Debug.Assert(null != values, "invalid attempt to instantiate DataRecordInternal with null value[]");
+            Debug.Assert(schemaInfo != null, "invalid attempt to instantiate DataRecordInternal with null schema information");
+            Debug.Assert(values != null, "invalid attempt to instantiate DataRecordInternal with null value[]");
             _schemaInfo = schemaInfo;
             _values = values;
             _propertyDescriptors = descriptors;
@@ -35,7 +35,7 @@ namespace System.Data.Common
 
         public override int GetValues(object[] values)
         {
-            if (null == values)
+            if (values == null)
             {
                 throw ADP.ArgumentNull(nameof(values));
             }
@@ -120,7 +120,7 @@ namespace System.Data.Common
             ndataIndex = (int)dataIndex;
 
             // if no buffer is passed in, return the number of characters we have
-            if (null == buffer)
+            if (buffer == null)
                 return cbytes;
 
             try
@@ -191,7 +191,7 @@ namespace System.Data.Common
 
 
             // if no buffer is passed in, return the number of characters we have
-            if (null == buffer)
+            if (buffer == null)
             {
                 return cchars;
             }
@@ -293,7 +293,7 @@ namespace System.Data.Common
         public override bool IsDBNull(int i)
         {
             object o = _values[i];
-            return (null == o || Convert.IsDBNull(o));
+            return (o == null || Convert.IsDBNull(o));
         }
 
         //

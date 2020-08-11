@@ -51,7 +51,7 @@ namespace System.Data
 
             List<DataColumn>? existingColumns = null; // need to cache existing columns
 
-            if (MissingSchemaAction.Add == _missingSchemaAction)
+            if (_missingSchemaAction == MissingSchemaAction.Add)
             {
                 existingColumns = new List<DataColumn>(); // need to cache existing columns
                 foreach (DataTable dt in _dataSet.Tables)
@@ -69,7 +69,7 @@ namespace System.Data
                 //column expression at this point. We need to set it after adding relations
             }
 
-            if (MissingSchemaAction.Ignore != _missingSchemaAction)
+            if (_missingSchemaAction != MissingSchemaAction.Ignore)
             {
                 // Add all independent constraints
                 MergeConstraints(source);
@@ -81,7 +81,7 @@ namespace System.Data
                 }
             }
 
-            if (MissingSchemaAction.Add == _missingSchemaAction)
+            if (_missingSchemaAction == MissingSchemaAction.Add)
             {
                 // for which other options we should add expressions also?
                 foreach (DataTable sourceTable in source.Tables)
@@ -196,7 +196,7 @@ namespace System.Data
         {
             int rowsCount = src.Rows.Count;
             bool wasEmpty = dst.Rows.Count == 0;
-            if (0 < rowsCount)
+            if (rowsCount > 0)
             {
                 Index? ndxSearch = null;
                 DataKey key = default(DataKey);
@@ -268,7 +268,7 @@ namespace System.Data
                     dst = MergeSchema(row.Table);
                     if (dst == null)
                     {
-                        Debug.Assert(MissingSchemaAction.Ignore == _missingSchemaAction, "MergeSchema failed");
+                        Debug.Assert(_missingSchemaAction == MissingSchemaAction.Ignore, "MergeSchema failed");
                         _dataSet.EnforceConstraints = fEnforce;
                         return;
                     }
@@ -281,7 +281,7 @@ namespace System.Data
                         // Getting our own copy instead. ndxSearch = dst.primaryKey.Key.GetSortIndex();
                         // IMO, Better would be to reuse index
                         // ndxSearch = dst.primaryKey.Key.GetSortIndex(DataViewRowState.OriginalRows | DataViewRowState.Added );
-                        if (null != ndxSearch)
+                        if (ndxSearch != null)
                         {
                             ndxSearch.RemoveRef();
                             ndxSearch = null;
@@ -298,7 +298,7 @@ namespace System.Data
                 }
 
                 DataRow? targetRow = null;
-                if (0 < dst!.Rows.Count && ndxSearch != null)
+                if (dst!.Rows.Count > 0 && ndxSearch != null)
                 {
                     targetRow = dst.FindMergeTarget(row, key, ndxSearch);
                 }
@@ -310,7 +310,7 @@ namespace System.Data
                     targetRow.Table.EvaluateExpressions(targetRow, DataRowAction.Change, null);
                 }
             }
-            if (null != ndxSearch)
+            if (ndxSearch != null)
             {
                 ndxSearch.RemoveRef();
                 ndxSearch = null;
@@ -344,21 +344,21 @@ namespace System.Data
             if (targetTable == null)
             {
                 // in case of standalone table, we make sure that targetTable is not null, so if this check passes, it will be when it is called via detaset
-                if (MissingSchemaAction.Add == _missingSchemaAction)
+                if (_missingSchemaAction == MissingSchemaAction.Add)
                 {
                     targetTable = table.Clone(table.DataSet); // if we are here mainly we are called from DataSet.Merge at this point we don't set
                     //expression columns, since it might have refer to other columns via relation, so it won't find the table and we get exception;
                     // do it after adding relations.
                     _dataSet!.Tables.Add(targetTable);
                 }
-                else if (MissingSchemaAction.Error == _missingSchemaAction)
+                else if (_missingSchemaAction == MissingSchemaAction.Error)
                 {
                     throw ExceptionBuilder.MergeMissingDefinition(table.TableName);
                 }
             }
             else
             {
-                if (MissingSchemaAction.Ignore != _missingSchemaAction)
+                if (_missingSchemaAction != MissingSchemaAction.Ignore)
                 {
                     // Do the columns
                     int oldCount = targetTable.Columns.Count;
@@ -368,7 +368,7 @@ namespace System.Data
                         DataColumn? dest = (targetTable.Columns.Contains(src.ColumnName, true)) ? targetTable.Columns[src.ColumnName] : null;
                         if (dest == null)
                         {
-                            if (MissingSchemaAction.Add == _missingSchemaAction)
+                            if (_missingSchemaAction == MissingSchemaAction.Add)
                             {
                                 dest = src.Clone();
                                 targetTable.Columns.Add(dest);
@@ -496,7 +496,7 @@ namespace System.Data
                     Constraint? cons = dest.Table!.Constraints.FindConstraint(dest);
                     if (cons == null)
                     {
-                        if (MissingSchemaAction.Add == _missingSchemaAction)
+                        if (_missingSchemaAction == MissingSchemaAction.Add)
                         {
                             try
                             {
@@ -510,7 +510,7 @@ namespace System.Data
                                 dest.Table.Constraints.Add(dest);
                             }
                         }
-                        else if (MissingSchemaAction.Error == _missingSchemaAction)
+                        else if (_missingSchemaAction == MissingSchemaAction.Error)
                         {
                             _dataSet.RaiseMergeFailed(table,
                                 SR.Format(SR.DataMerge_MissingConstraint, src.GetType().FullName, src.ConstraintName),
@@ -529,8 +529,8 @@ namespace System.Data
         private void MergeRelation(DataRelation relation)
         {
             Debug.Assert(_dataSet != null);
-            Debug.Assert(MissingSchemaAction.Error == _missingSchemaAction ||
-                         MissingSchemaAction.Add == _missingSchemaAction,
+            Debug.Assert(_missingSchemaAction == MissingSchemaAction.Error ||
+                         _missingSchemaAction == MissingSchemaAction.Add,
                          "Unexpected value of MissingSchemaAction parameter : " + _missingSchemaAction.ToString());
             DataRelation? destRelation = null;
 
@@ -554,7 +554,7 @@ namespace System.Data
                     DataColumn dest = destRelation.ParentKey.ColumnsReference[i];
                     DataColumn src = relation.ParentKey.ColumnsReference[i];
 
-                    if (0 != string.Compare(dest.ColumnName, src.ColumnName, false, dest.Table!.Locale))
+                    if (string.Compare(dest.ColumnName, src.ColumnName, false, dest.Table!.Locale) != 0)
                     {
                         _dataSet.RaiseMergeFailed(null,
                             SR.Format(SR.DataMerge_ReltionKeyColumnsMismatch, relation.RelationName),
@@ -564,7 +564,7 @@ namespace System.Data
                     dest = destRelation.ChildKey.ColumnsReference[i];
                     src = relation.ChildKey.ColumnsReference[i];
 
-                    if (0 != string.Compare(dest.ColumnName, src.ColumnName, false, dest.Table!.Locale))
+                    if (string.Compare(dest.ColumnName, src.ColumnName, false, dest.Table!.Locale) != 0)
                     {
                         _dataSet.RaiseMergeFailed(null,
                             SR.Format(SR.DataMerge_ReltionKeyColumnsMismatch, relation.RelationName),
@@ -574,7 +574,7 @@ namespace System.Data
             }
             else
             {
-                if (MissingSchemaAction.Add == _missingSchemaAction)
+                if (_missingSchemaAction == MissingSchemaAction.Add)
                 {
                     // create identical realtion in the current dataset
                     DataTable parent = _IgnoreNSforTableLookup ?
@@ -607,7 +607,7 @@ namespace System.Data
                 }
                 else
                 {
-                    Debug.Assert(MissingSchemaAction.Error == _missingSchemaAction, "Unexpected value of MissingSchemaAction parameter : " + _missingSchemaAction.ToString());
+                    Debug.Assert(_missingSchemaAction == MissingSchemaAction.Error, "Unexpected value of MissingSchemaAction parameter : " + _missingSchemaAction.ToString());
                     throw ExceptionBuilder.MergeMissingDefinition(relation.RelationName);
                 }
             }
@@ -618,7 +618,7 @@ namespace System.Data
 
         private void MergeExtendedProperties(PropertyCollection src, PropertyCollection dst)
         {
-            if (MissingSchemaAction.Ignore == _missingSchemaAction)
+            if (_missingSchemaAction == MissingSchemaAction.Ignore)
             {
                 return;
             }

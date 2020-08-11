@@ -92,7 +92,7 @@ namespace System.Data
 
         internal void RegisterMetaDataEvents(DataTable? table)
         {
-            Debug.Assert(null == _table, "DataViewListener already registered table");
+            Debug.Assert(_table == null, "DataViewListener already registered table");
             _table = table;
             if (table != null)
             {
@@ -148,9 +148,9 @@ namespace System.Data
 
         internal void RegisterListChangedEvent(Index index)
         {
-            Debug.Assert(null == _index, "DataviewListener already registered index");
+            Debug.Assert(_index == null, "DataviewListener already registered index");
             _index = index;
-            if (null != index)
+            if (index != null)
             {
                 lock (index)
                 {
@@ -189,7 +189,7 @@ namespace System.Data
             List<DataViewListener> listeners = table.GetListeners();
             lock (listeners)
             {
-                for (int i = listeners.Count - 1; 0 <= i; --i)
+                for (int i = listeners.Count - 1; i >= 0; --i)
                 {
                     DataViewListener listener = listeners[i];
                     if (!listener._dvWeak.IsAlive)

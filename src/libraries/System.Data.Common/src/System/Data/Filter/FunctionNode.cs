@@ -487,22 +487,22 @@ namespace System.Data
                         }
                     }
 
-                    if (StorageType.Object != mytype)
+                    if (mytype != StorageType.Object)
                     {
                         if ((mytype == StorageType.Guid) && (storageType == StorageType.String))
                             return new Guid((string)argumentValues[0]);
 
                         if (ExpressionNode.IsFloatSql(storageType) && ExpressionNode.IsIntegerSql(mytype))
                         {
-                            if (StorageType.Single == storageType)
+                            if (storageType == StorageType.Single)
                             {
                                 return SqlConvert.ChangeType2((float)SqlConvert.ChangeType2(argumentValues[0], StorageType.Single, typeof(float), FormatProvider), mytype, type, FormatProvider);
                             }
-                            else if (StorageType.Double == storageType)
+                            else if (storageType == StorageType.Double)
                             {
                                 return SqlConvert.ChangeType2((double)SqlConvert.ChangeType2(argumentValues[0], StorageType.Double, typeof(double), FormatProvider), mytype, type, FormatProvider);
                             }
-                            else if (StorageType.Decimal == storageType)
+                            else if (storageType == StorageType.Decimal)
                             {
                                 return SqlConvert.ChangeType2((decimal)SqlConvert.ChangeType2(argumentValues[0], StorageType.Decimal, typeof(decimal), FormatProvider), mytype, type, FormatProvider);
                             }

@@ -220,7 +220,7 @@ namespace System.Data
             info.AddValue("DataTable.RemotingVersion", new Version(2, 0));
 
             // SqlHotFix 299, SerializationFormat enumeration types don't exist in V1.1 SP1
-            if (SerializationFormat.Xml != remotingFormat)
+            if (remotingFormat != SerializationFormat.Xml)
             {
                 info.AddValue("DataTable.RemotingFormat", remotingFormat);
             }
@@ -649,7 +649,7 @@ namespace System.Data
             for (int i = 0; i < colCount; i++)
             {
                 string expr = info.GetString(string.Format(CultureInfo.InvariantCulture, "DataTable_{0}.DataColumn_{1}.Expression", serIndex, i))!;
-                if (0 != expr.Length)
+                if (expr.Length != 0)
                 {
                     Columns[i].Expression = expr;
                 }
@@ -694,7 +694,7 @@ namespace System.Data
                     default:
                         throw ExceptionBuilder.InvalidRowState(rowState);
                 }
-                if (-1 != row._tempRecord)
+                if (row._tempRecord != -1)
                 {
                     rowStates[bitIndex + 2] = true;
                     editRowCount++;
@@ -946,15 +946,15 @@ namespace System.Data
             }
         }
 
-        internal bool AreIndexEventsSuspended => 0 < _suspendIndexEvents;
+        internal bool AreIndexEventsSuspended => _suspendIndexEvents > 0;
 
         internal void RestoreIndexEvents(bool forceReset)
         {
             DataCommonEventSource.Log.Trace("<ds.DataTable.RestoreIndexEvents|Info> {0}, {1}", ObjectID, _suspendIndexEvents);
-            if (0 < _suspendIndexEvents)
+            if (_suspendIndexEvents > 0)
             {
                 _suspendIndexEvents--;
-                if (0 == _suspendIndexEvents)
+                if (_suspendIndexEvents == 0)
                 {
                     Exception? first = null;
                     SetShadowIndexes();
@@ -981,13 +981,13 @@ namespace System.Data
                             catch (Exception e) when (ADP.IsCatchableExceptionType(e))
                             {
                                 ExceptionBuilder.TraceExceptionWithoutRethrow(e);
-                                if (null == first)
+                                if (first == null)
                                 {
                                     first = e;
                                 }
                             }
                         }
-                        if (null != first)
+                        if (first != null)
                         {
                             throw first;
                         }
@@ -1017,7 +1017,7 @@ namespace System.Data
                 {
                     case 0:
                         _isTypedDataTable = (byte)((GetType() != typeof(DataTable)) ? 1 : 2);
-                        return (1 == _isTypedDataTable);
+                        return (_isTypedDataTable == 1);
                     case 1:
                         return true;
                     default:
@@ -1057,7 +1057,7 @@ namespace System.Data
         {
             // this method is used design-time scenarios via reflection
             //   by the property grid context menu to show the Reset option or not
-            SetCaseSensitiveValue((null != _dataSet) && _dataSet.CaseSensitive, true, true);
+            SetCaseSensitiveValue((_dataSet != null) && _dataSet.CaseSensitive, true, true);
             _caseSensitiveUserSet = false;
         }
 
@@ -1092,7 +1092,7 @@ namespace System.Data
             {
                 if (!AreIndexEventsSuspended)
                 {
-                    for (int i = _indexes.Count - 1; 0 <= i; --i)
+                    for (int i = _indexes.Count - 1; i >= 0; --i)
                     {
                         Index index = _indexes[i];
                         if (index.RefCount <= 1)
@@ -1209,9 +1209,9 @@ namespace System.Data
             get
             {
                 DataView? view = _defaultView;
-                if (null == view)
+                if (view == null)
                 {
-                    if (null != _dataSet)
+                    if (_dataSet != null)
                     {
                         view = _dataSet.DefaultViewManager.CreateDataView(this);
                     }
@@ -1222,7 +1222,7 @@ namespace System.Data
                     }
 
                     view = Interlocked.CompareExchange(ref _defaultView, view, null);
-                    if (null == view)
+                    if (view == null)
                     {
                         view = _defaultView;
                     }
@@ -1326,7 +1326,7 @@ namespace System.Data
             {
                 // used for Formating/Parsing
                 // https://docs.microsoft.com/en-us/dotnet/api/system.globalization.cultureinfo.isneutralculture
-                if (null == _formatProvider)
+                if (_formatProvider == null)
                 {
                     CultureInfo culture = Locale;
                     if (culture.IsNeutralCulture)
@@ -1369,7 +1369,7 @@ namespace System.Data
             get
             {
                 // used for Comparing not Formatting/Parsing
-                Debug.Assert(null != _culture, "null culture");
+                Debug.Assert(_culture != null, "null culture");
                 return _culture;
             }
             set
@@ -1378,11 +1378,11 @@ namespace System.Data
                 try
                 {
                     bool userSet = true;
-                    if (null == value)
+                    if (value == null)
                     {
                         // reset Locale to inherit from DataSet
                         userSet = false;
-                        value = (null != _dataSet) ? _dataSet.Locale : _culture;
+                        value = (_dataSet != null) ? _dataSet.Locale : _culture;
                     }
                     if (_culture != value && !_culture.Equals(value))
                     {
@@ -1394,7 +1394,7 @@ namespace System.Data
                         {
                             _cultureUserSet = true;
                             SetLocaleValue(value, true, false);
-                            if ((null == DataSet) || DataSet.ValidateLocaleConstraint())
+                            if ((DataSet == null) || DataSet.ValidateLocaleConstraint())
                             {
                                 flag = false;
                                 SetLocaleValue(value, true, true);
@@ -1440,7 +1440,7 @@ namespace System.Data
 
         internal bool SetLocaleValue(CultureInfo culture, bool userSet, bool resetIndexes)
         {
-            Debug.Assert(null != culture, "SetLocaleValue: no locale");
+            Debug.Assert(culture != null, "SetLocaleValue: no locale");
             if (userSet || resetIndexes || (!_cultureUserSet && !_culture.Equals(culture)))
             {
                 _culture = culture;
@@ -1533,8 +1533,8 @@ namespace System.Data
                 Debug.Assert(nRel.Length == _nestedParentRelations.Length, "nestedParent cache is broken");
                 for (int i = 0; i < nRel.Length; i++)
                 {
-                    Debug.Assert(null != nRel[i], "null relation");
-                    Debug.Assert(null != _nestedParentRelations[i], "null relation");
+                    Debug.Assert(nRel[i] != null, "null relation");
+                    Debug.Assert(_nestedParentRelations[i] != null, "null relation");
                     Debug.Assert(nRel[i] == _nestedParentRelations[i], "unequal relations");
                 }
 #endif
@@ -1554,7 +1554,7 @@ namespace System.Data
             {
                 if (relation.Nested)
                 {
-                    if (null == nestedParents)
+                    if (nestedParents == null)
                     {
                         nestedParents = new List<DataRelation>();
                     }
@@ -1562,7 +1562,7 @@ namespace System.Data
                 }
             }
 
-            return (null == nestedParents) || (nestedParents.Count == 0) ?
+            return (nestedParents == null) || (nestedParents.Count == 0) ?
                 Array.Empty<DataRelation>() :
                 nestedParents.ToArray();
         }
@@ -1593,9 +1593,9 @@ namespace System.Data
             get
             {
                 UniqueConstraint? primayKeyConstraint = _primaryKey;
-                if (null != primayKeyConstraint)
+                if (primayKeyConstraint != null)
                 {
-                    Debug.Assert(2 <= primayKeyConstraint.ConstraintIndex.RefCount, "bad primaryKey index RefCount");
+                    Debug.Assert(primayKeyConstraint.ConstraintIndex.RefCount >= 2, "bad primaryKey index RefCount");
                     return primayKeyConstraint.Key.ToArray();
                 }
                 return Array.Empty<DataColumn>();
@@ -1663,17 +1663,17 @@ namespace System.Data
                     oldKey.ConstraintIndex.RemoveRef();
 
                     // if PrimaryKey is removed, reset LoadDataRow indexes
-                    if (null != _loadIndex)
+                    if (_loadIndex != null)
                     {
                         _loadIndex.RemoveRef();
                         _loadIndex = null;
                     }
-                    if (null != _loadIndexwithOriginalAdded)
+                    if (_loadIndexwithOriginalAdded != null)
                     {
                         _loadIndexwithOriginalAdded.RemoveRef();
                         _loadIndexwithOriginalAdded = null;
                     }
-                    if (null != _loadIndexwithCurrentDeleted)
+                    if (_loadIndexwithCurrentDeleted != null)
                     {
                         _loadIndexwithCurrentDeleted.RemoveRef();
                         _loadIndexwithCurrentDeleted = null;
@@ -1751,7 +1751,7 @@ namespace System.Data
                             {
                                 throw ExceptionBuilder.NoTableName();
                             }
-                            if ((0 == string.Compare(value, _dataSet.DataSetName, true, _dataSet.Locale)) && !_fNestedInDataset)
+                            if ((string.Compare(value, _dataSet.DataSetName, true, _dataSet.Locale) == 0) && !_fNestedInDataset)
                             {
                                 throw ExceptionBuilder.DatasetConflictingName(_dataSet.DataSetName);
                             }
@@ -1808,7 +1808,7 @@ namespace System.Data
             get
             {
                 string? encodedTblName = _encodedTableName;
-                if (null == encodedTblName)
+                if (encodedTblName == null)
                 {
                     encodedTblName = XmlConvert.EncodeLocalName(TableName);
                     _encodedTableName = encodedTblName;
@@ -1897,7 +1897,7 @@ namespace System.Data
                 }
             }
         }
-        internal bool IsNamespaceInherited() => null == _tableNamespace;
+        internal bool IsNamespaceInherited() => _tableNamespace == null;
 
         internal void CheckCascadingNamespaceConflict(string realNamespace)
         {
@@ -2815,7 +2815,7 @@ namespace System.Data
             long logScopeId = DataCommonEventSource.Log.EnterScope("<ds.DataTable.Clear|INFO> {0}, clearAll={1}", ObjectID, clearAll);
             try
             {
-                Debug.Assert(null == _rowDiffId, "wasn't previously cleared");
+                Debug.Assert(_rowDiffId == null, "wasn't previously cleared");
                 _rowDiffId = null;
 
                 if (_dataSet != null)
@@ -3047,7 +3047,7 @@ namespace System.Data
             var builder = new StringBuilder();
             foreach (IndexField field in indexDesc)
             {
-                if (0 < builder.Length)
+                if (builder.Length > 0)
                 {
                     builder.Append(", ");
                 }
@@ -3192,11 +3192,11 @@ namespace System.Data
         internal int GetSpecialHashCode(string name)
         {
             int i;
-            for (i = 0; (i < name.Length) && (0x3000 > name[i]); ++i) ;
+            for (i = 0; (i < name.Length) && (name[i] < 0x3000); ++i) ;
 
             if (name.Length == i)
             {
-                if (null == _hashCodeProvider)
+                if (_hashCodeProvider == null)
                 {
                     // it should use the CaseSensitive property, but V1 shipped this way
                     _hashCodeProvider = StringComparer.Create(Locale, true);
@@ -3402,7 +3402,7 @@ namespace System.Data
             int record = _recordManager.NewRecordBase();
 
             int count = _columnCollection.Count;
-            if (-1 == sourceRecord)
+            if (sourceRecord == -1)
             {
                 for (int i = 0; i < count; ++i)
                 {
@@ -3471,7 +3471,7 @@ namespace System.Data
 
         private void NewRowCreated(DataRow row)
         {
-            if (null != _onTableNewRowDelegate)
+            if (_onTableNewRowDelegate != null)
             {
                 DataTableNewRowEventArgs eventArg = new DataTableNewRowEventArgs(row);
                 OnTableNewRow(eventArg);
@@ -3480,7 +3480,7 @@ namespace System.Data
 
         internal DataRow NewRow(int record)
         {
-            if (-1 == record)
+            if (record == -1)
             {
                 record = NewRecord(-1);
             }
@@ -3508,9 +3508,9 @@ namespace System.Data
         {
             if (IsTypedDataTable)
             {
-                if (0 == size)
+                if (size == 0)
                 {
-                    if (null == _emptyDataRowArray)
+                    if (_emptyDataRowArray == null)
                     {
                         _emptyDataRowArray = (DataRow[])Array.CreateInstance(GetRowType(), 0);
                     }
@@ -3520,12 +3520,12 @@ namespace System.Data
             }
             else
             {
-                return ((0 == size) ? Array.Empty<DataRow>() : new DataRow[size]);
+                return ((size == 0) ? Array.Empty<DataRow>() : new DataRow[size]);
             }
         }
 
         internal bool NeedColumnChangeEvents =>
-            (IsTypedDataTable || (null != _onColumnChangingDelegate) || (null != _onColumnChangedDelegate));
+            (IsTypedDataTable || (_onColumnChangingDelegate != null) || (_onColumnChangedDelegate != null));
 
         protected internal virtual void OnColumnChanging(DataColumnChangeEventArgs e)
         {
@@ -3567,9 +3567,9 @@ namespace System.Data
 
         private DataRowChangeEventArgs? OnRowChanged(DataRowChangeEventArgs? args, DataRow eRow, DataRowAction eAction)
         {
-            if ((null != _onRowChangedDelegate) || IsTypedDataTable)
+            if ((_onRowChangedDelegate != null) || IsTypedDataTable)
             {
-                if (null == args)
+                if (args == null)
                 {
                     args = new DataRowChangeEventArgs(eRow, eAction);
                 }
@@ -3580,9 +3580,9 @@ namespace System.Data
 
         private DataRowChangeEventArgs? OnRowChanging(DataRowChangeEventArgs? args, DataRow eRow, DataRowAction eAction)
         {
-            if ((null != _onRowChangingDelegate) || IsTypedDataTable)
+            if ((_onRowChangingDelegate != null) || IsTypedDataTable)
             {
-                if (null == args)
+                if (args == null)
                 {
                     args = new DataRowChangeEventArgs(eRow, eAction);
                 }
@@ -3596,7 +3596,7 @@ namespace System.Data
         /// </summary>
         protected virtual void OnRowChanged(DataRowChangeEventArgs e)
         {
-            Debug.Assert((null != e) && ((null != _onRowChangedDelegate) || IsTypedDataTable), "OnRowChanged arguments");
+            Debug.Assert((e != null) && ((_onRowChangedDelegate != null) || IsTypedDataTable), "OnRowChanged arguments");
             if (_onRowChangedDelegate != null)
             {
                 DataCommonEventSource.Log.Trace("<ds.DataTable.OnRowChanged|INFO> {0}", ObjectID);
@@ -3609,7 +3609,7 @@ namespace System.Data
         /// </summary>
         protected virtual void OnRowChanging(DataRowChangeEventArgs e)
         {
-            Debug.Assert((null != e) && ((null != _onRowChangingDelegate) || IsTypedDataTable), "OnRowChanging arguments");
+            Debug.Assert((e != null) && ((_onRowChangingDelegate != null) || IsTypedDataTable), "OnRowChanging arguments");
             if (_onRowChangingDelegate != null)
             {
                 DataCommonEventSource.Log.Trace("<ds.DataTable.OnRowChanging|INFO> {0}", ObjectID);
@@ -3622,7 +3622,7 @@ namespace System.Data
         /// </summary>
         protected virtual void OnRowDeleting(DataRowChangeEventArgs e)
         {
-            Debug.Assert((null != e) && ((null != _onRowDeletingDelegate) || IsTypedDataTable), "OnRowDeleting arguments");
+            Debug.Assert((e != null) && ((_onRowDeletingDelegate != null) || IsTypedDataTable), "OnRowDeleting arguments");
             if (_onRowDeletingDelegate != null)
             {
                 DataCommonEventSource.Log.Trace("<ds.DataTable.OnRowDeleting|INFO> {0}", ObjectID);
@@ -3635,7 +3635,7 @@ namespace System.Data
         /// </summary>
         protected virtual void OnRowDeleted(DataRowChangeEventArgs e)
         {
-            Debug.Assert((null != e) && ((null != _onRowDeletedDelegate) || IsTypedDataTable), "OnRowDeleted arguments");
+            Debug.Assert((e != null) && ((_onRowDeletedDelegate != null) || IsTypedDataTable), "OnRowDeleted arguments");
             if (_onRowDeletedDelegate != null)
             {
                 DataCommonEventSource.Log.Trace("<ds.DataTable.OnRowDeleted|INFO> {0}", ObjectID);
@@ -3682,7 +3682,7 @@ namespace System.Data
         internal IndexField[] ParseSortString(string? sortString)
         {
             IndexField[] indexDesc = Array.Empty<IndexField>();
-            if ((null != sortString) && (0 < sortString.Length))
+            if ((sortString != null) && (sortString.Length > 0))
             {
                 string[] split = sortString.Split(',', StringSplitOptions.TrimEntries);
                 indexDesc = new IndexField[split.Length];
@@ -3746,7 +3746,7 @@ namespace System.Data
                 for (int i = 0; i < numIndexes; i++)
                 {
                     Index ndx = _shadowIndexes[i]; // shadowindexes may change, see ShadowIndexCopy()
-                    if (0 < ndx.RefCount)
+                    if (ndx.RefCount > 0)
                     {
                         ndx.RecordChanged(record);
                     }
@@ -3772,7 +3772,7 @@ namespace System.Data
                 for (int i = 0; i < numIndexes; i++)
                 {
                     Index ndx = _shadowIndexes[i]; // shadowindexes may change, see ShadowIndexCopy()
-                    if (0 < ndx.RefCount)
+                    if (ndx.RefCount > 0)
                     {
                         ndx.RecordChanged(oldIndex[i], newIndex[i]);
                     }
@@ -3793,7 +3793,7 @@ namespace System.Data
                 for (int i = 0; i < numIndexes; i++)
                 {
                     Index ndx = _shadowIndexes[i]; // shadowindexes may change, see ShadowIndexCopy()
-                    if (0 < ndx.RefCount)
+                    if (ndx.RefCount > 0)
                     {
                         ndx.RecordStateChanged(record, oldState, newState);
                     }
@@ -3816,7 +3816,7 @@ namespace System.Data
                 for (int i = 0; i < numIndexes; i++)
                 {
                     Index ndx = _shadowIndexes[i]; // shadowindexes may change, see ShadowIndexCopy()
-                    if (0 < ndx.RefCount)
+                    if (ndx.RefCount > 0)
                     {
                         if (record1 != -1 && record2 != -1)
                         {
@@ -4039,7 +4039,7 @@ namespace System.Data
 
         internal void ResetInternalIndexes(DataColumn? column)
         {
-            Debug.Assert(null != _indexes, "unexpected null indexes");
+            Debug.Assert(_indexes != null, "unexpected null indexes");
             SetShadowIndexes();
             try
             {
@@ -4050,9 +4050,9 @@ namespace System.Data
                 for (int i = 0; i < numIndexes; i++)
                 {
                     Index ndx = _shadowIndexes[i]; // shadowindexes may change, see ShadowIndexCopy()
-                    if (0 < ndx.RefCount)
+                    if (ndx.RefCount > 0)
                     {
-                        if (null == column)
+                        if (column == null)
                         {
                             ndx.Reset();
                         }
@@ -4091,14 +4091,14 @@ namespace System.Data
         {
             try
             {
-                if (UpdatingCurrent(eRow, eAction) && (IsTypedDataTable || (null != _onRowChangedDelegate)))
+                if (UpdatingCurrent(eRow, eAction) && (IsTypedDataTable || (_onRowChangedDelegate != null)))
                 {
                     args = OnRowChanged(args, eRow, eAction);
                 }
                 // check if we deleting good row
-                else if (DataRowAction.Delete == eAction && eRow._newRecord == -1 && (IsTypedDataTable || (null != _onRowDeletedDelegate)))
+                else if (eAction == DataRowAction.Delete && eRow._newRecord == -1 && (IsTypedDataTable || (_onRowDeletedDelegate != null)))
                 {
-                    if (null == args)
+                    if (args == null)
                     {
                         args = new DataRowChangeEventArgs(eRow, eAction);
                     }
@@ -4114,7 +4114,7 @@ namespace System.Data
 
         private DataRowChangeEventArgs? RaiseRowChanging(DataRowChangeEventArgs? args, DataRow eRow, DataRowAction eAction)
         {
-            if (UpdatingCurrent(eRow, eAction) && (IsTypedDataTable || (null != _onRowChangingDelegate)))
+            if (UpdatingCurrent(eRow, eAction) && (IsTypedDataTable || (_onRowChangingDelegate != null)))
             {
                 eRow._inChangingEvent = true;
 
@@ -4129,13 +4129,13 @@ namespace System.Data
                 }
             }
             // check if we deleting good row
-            else if (DataRowAction.Delete == eAction && eRow._newRecord != -1 && (IsTypedDataTable || (null != _onRowDeletingDelegate)))
+            else if (eAction == DataRowAction.Delete && eRow._newRecord != -1 && (IsTypedDataTable || (_onRowDeletingDelegate != null)))
             {
                 eRow._inDeletingEvent = true;
                 // don't catch
                 try
                 {
-                    if (null == args)
+                    if (args == null)
                     {
                         args = new DataRowChangeEventArgs(eRow, eAction);
                     }
@@ -4350,8 +4350,8 @@ namespace System.Data
             // if the newRecord is changing, the propertychanged event should be allowed to triggered for ListChangedType.Changed or .Moved
             // unless the specific condition is known that no data has changed, like DataRow.SetModified()
             if (!suppressEnsurePropertyChanged && !row.HasPropertyChanged && (row._newRecord != proposedRecord)
-                && (-1 != proposedRecord)
-                && (-1 != row._newRecord))
+                && (proposedRecord != -1)
+                && (row._newRecord != -1))
             {
                 // DataRow will believe multiple edits occurred and
                 // DataView.ListChanged event w/ ListChangedType.ItemChanged will raise DataRowView.PropertyChanged event and
@@ -4364,7 +4364,7 @@ namespace System.Data
             // Check whether we need to update indexes
             if (LiveIndexes.Count != 0)
             {
-                if ((-1 == currentRecord) && (-1 != proposedRecord) && (-1 != row._oldRecord) && (proposedRecord != row._oldRecord))
+                if ((currentRecord == -1) && (proposedRecord != -1) && (row._oldRecord != -1) && (proposedRecord != row._oldRecord))
                 {
                     // the transition from DataRowState.Deleted -> DataRowState.Modified
                     // with same orginal record but new current record
@@ -4401,7 +4401,7 @@ namespace System.Data
             // free the 'currentRecord' only after all the indexes have been updated.
             // Corruption! { if (currentRecord != row.oldRecord) { FreeRecord(ref currentRecord); } }
             // RecordStateChanged raises ListChanged event at which time user may do work
-            if (-1 != currentRecord)
+            if (currentRecord != -1)
             {
                 if (currentRecord != row._oldRecord)
                 {
@@ -4474,7 +4474,7 @@ namespace System.Data
                 // Check whether we need to update indexes
                 if (LiveIndexes.Count != 0)
                 {
-                    if ((-1 == originalRecord) && (-1 != proposedRecord) && (-1 != row._newRecord) && (proposedRecord != row._newRecord))
+                    if ((originalRecord == -1) && (proposedRecord != -1) && (row._newRecord != -1) && (proposedRecord != row._newRecord))
                     {
                         // the transition from DataRowState.Added -> DataRowState.Modified
                         // with same current record but new original record
@@ -4525,9 +4525,9 @@ namespace System.Data
 
         private void RestoreShadowIndexes()
         {
-            Debug.Assert(1 <= _shadowCount, "unexpected negative shadow count");
+            Debug.Assert(_shadowCount >= 1, "unexpected negative shadow count");
             _shadowCount--;
-            if (0 == _shadowCount)
+            if (_shadowCount == 0)
             {
                 _shadowIndexes = null;
             }
@@ -4535,15 +4535,15 @@ namespace System.Data
 
         private void SetShadowIndexes()
         {
-            if (null == _shadowIndexes)
+            if (_shadowIndexes == null)
             {
-                Debug.Assert(0 == _shadowCount, "unexpected count");
+                Debug.Assert(_shadowCount == 0, "unexpected count");
                 _shadowIndexes = LiveIndexes;
                 _shadowCount = 1;
             }
             else
             {
-                Debug.Assert(1 <= _shadowCount, "unexpected negative shadow count");
+                Debug.Assert(_shadowCount >= 1, "unexpected negative shadow count");
                 _shadowCount++;
             }
         }
@@ -4552,7 +4552,7 @@ namespace System.Data
         {
             if (_shadowIndexes == _indexes)
             {
-                Debug.Assert(0 < _indexes.Count, "unexpected");
+                Debug.Assert(_indexes.Count > 0, "unexpected");
                 _shadowIndexes = new List<Index>(_indexes);
             }
         }
@@ -4575,7 +4575,7 @@ namespace System.Data
                 }
 
                 _inDataLoad = true;
-                Debug.Assert(null == _loadIndex, "loadIndex should already be null");
+                Debug.Assert(_loadIndex == null, "loadIndex should already be null");
                 _loadIndex = null;
 
                 // LoadDataRow may have been called before BeginLoadData and already
@@ -4676,7 +4676,7 @@ namespace System.Data
                     if (_loadIndex != null)
                     {
                         // not expecting LiveIndexes to clear the index we use between calls to LoadDataRow
-                        Debug.Assert(2 <= _loadIndex.RefCount, "bad loadIndex.RefCount");
+                        Debug.Assert(_loadIndex.RefCount >= 2, "bad loadIndex.RefCount");
 
                         int result = _loadIndex.FindRecord(record);
                         if (result != -1)
@@ -4762,7 +4762,7 @@ namespace System.Data
                         indextoUse = _loadIndexwithOriginalAdded;
                     }
                     // not expecting LiveIndexes to clear the index we use between calls to LoadDataRow
-                    Debug.Assert(2 <= indextoUse!.RefCount, "bad indextoUse.RefCount");
+                    Debug.Assert(indextoUse!.RefCount >= 2, "bad indextoUse.RefCount");
                 }
                 if (_inDataLoad && !AreIndexEventsSuspended)
                 {
@@ -4970,7 +4970,7 @@ namespace System.Data
                 Common.LoadAdapter adapter = new Common.LoadAdapter();
                 adapter.FillLoadOption = loadOption;
                 adapter.MissingSchemaAction = MissingSchemaAction.AddWithKey;
-                if (null != errorHandler)
+                if (errorHandler != null)
                 {
                     adapter.FillError += errorHandler;
                 }
@@ -5027,7 +5027,7 @@ namespace System.Data
                         // values array is being reused by DataAdapter, do not modify the values array
                         for (int count = 0; count < values.Length; count++)
                         {
-                            if (null == values[count])
+                            if (values[count] == null)
                             {
                                 _columnCollection[count].Copy(resultRecord, recordNo);
                             }
@@ -5046,7 +5046,7 @@ namespace System.Data
                             deletedRowUpsertCount++;
                         }
                     }
-                    if (0 == deletedRowUpsertCount)
+                    if (deletedRowUpsertCount == 0)
                     {
                         return dataRow!;
                     }
@@ -5137,7 +5137,7 @@ namespace System.Data
                             // let see if the incomming value has the same values as existing row, so compare records
                             foreach (DataColumn dc in dataRow.Table.Columns)
                             {
-                                if (0 != dc.Compare(dataRow._newRecord, recordNo))
+                                if (dc.Compare(dataRow._newRecord, recordNo) != 0)
                                 {
                                     action = DataRowAction.Change;
                                     break;
@@ -5182,10 +5182,10 @@ namespace System.Data
             finally
             {
                 Debug.Assert(dataRow._tempRecord == recordNo, "tempRecord has been changed in event handler");
-                if (DataRowState.Detached == dataRow.RowState)
+                if (dataRow.RowState == DataRowState.Detached)
                 {
                     // 'row.Table.Remove(row);'
-                    if (-1 != cacheTempRecord)
+                    if (cacheTempRecord != -1)
                     {
                         FreeRecord(ref cacheTempRecord);
                     }
@@ -5195,11 +5195,11 @@ namespace System.Data
                     if (dataRow._tempRecord != recordNo)
                     {
                         // 'row.EndEdit(); row.BeginEdit(); '
-                        if (-1 != cacheTempRecord)
+                        if (cacheTempRecord != -1)
                         {
                             FreeRecord(ref cacheTempRecord);
                         }
-                        if (-1 != recordNo)
+                        if (recordNo != -1)
                         {
                             FreeRecord(ref recordNo);
                         }
@@ -5367,7 +5367,7 @@ namespace System.Data
                         {
                             DataSet? ds = null;
                             string? tablenamespace = _tableNamespace;
-                            if (null == DataSet)
+                            if (DataSet == null)
                             {
                                 ds = new DataSet();
 
@@ -5390,7 +5390,7 @@ namespace System.Data
                                 XmlDataTreeWriter xmldataWriter = new XmlDataTreeWriter(this, writeHierarchy);
                                 xmldataWriter.Save(writer, /*mode == XmlWriteMode.WriteSchema*/true);
                             }
-                            if (null != ds)
+                            if (ds != null)
                             {
                                 ds.Tables.Remove(this);
                                 _tableNamespace = tablenamespace;
@@ -5519,7 +5519,7 @@ namespace System.Data
                 string? tablenamespace = _tableNamespace; //SQL BU Defect Tracking 286968
 
                 // Generate SchemaTree and write it out
-                if (null == DataSet)
+                if (DataSet == null)
                 {
                     ds = new DataSet();
                     // if user set values on DataTable, it isn't necessary
@@ -5541,7 +5541,7 @@ namespace System.Data
                     XmlTreeGen treeGen = new XmlTreeGen(SchemaFormat.Public);
                     treeGen.Save(null, this, writer, writeHierarchy);
                 }
-                if (null != ds)
+                if (ds != null)
                 {
                     ds.Tables.Remove(this);
                     _tableNamespace = tablenamespace;
@@ -6855,7 +6855,7 @@ namespace System.Data
             // evaluates all expressions for all rows in table
             // this improves performance by only computing expressions when they are present
             // and iterating over the rows instead of computing their position multiple times
-            if ((null != _dependentColumns) && (0 < _dependentColumns.Count))
+            if ((_dependentColumns != null) && (_dependentColumns.Count > 0))
             {
                 foreach (DataRow row in Rows)
                 {

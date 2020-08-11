@@ -28,7 +28,7 @@ namespace System.Diagnostics
             // If we get back 0, the process is still alive.
             int output = Interop.Sys.Kill(processId, Interop.Sys.Signals.None);
             // If kill set errno=EPERM, assume querying process is alive.
-            return output == 0 || (-1 == output && Interop.Error.EPERM == Interop.Sys.GetLastError());
+            return output == 0 || (output == -1 && Interop.Sys.GetLastError() == Interop.Error.EPERM);
         }
 
         /// <summary>Gets the ProcessInfo for the specified process ID on the specified machine.</summary>

@@ -153,7 +153,7 @@ namespace System.Data.Common
             }
             set
             {
-                if (1 != value)
+                if (value != 1)
                 {
                     throw ADP.NotSupported();
                 }
@@ -192,7 +192,7 @@ namespace System.Data.Common
         {
             get
             {
-                if (System.Data.MissingMappingAction.Passthrough == MissingMappingAction)
+                if (MissingMappingAction == System.Data.MissingMappingAction.Passthrough)
                 {
                     return System.Data.MissingMappingAction.Passthrough;
                 }
@@ -205,7 +205,7 @@ namespace System.Data.Common
             get
             {
                 System.Data.MissingSchemaAction action = MissingSchemaAction;
-                if ((System.Data.MissingSchemaAction.Add == action) || (System.Data.MissingSchemaAction.AddWithKey == action))
+                if ((action == System.Data.MissingSchemaAction.Add) || (action == System.Data.MissingSchemaAction.AddWithKey))
                 {
                     return System.Data.MissingSchemaAction.Ignore;
                 }
@@ -309,7 +309,7 @@ namespace System.Data.Common
             try
             {
                 IDbCommand? command = _IDbDataAdapter.SelectCommand;
-                if (DesignMode && ((null == command) || (null == command.Connection) || string.IsNullOrEmpty(command.CommandText)))
+                if (DesignMode && ((command == null) || (command.Connection == null) || string.IsNullOrEmpty(command.CommandText)))
                 {
                     return Array.Empty<DataTable>(); // design-time support
                 }
@@ -342,11 +342,11 @@ namespace System.Data.Common
             long logScopeId = DataCommonEventSource.Log.EnterScope("<comm.DbDataAdapter.FillSchema|API> {0}, dataSet, schemaType, command, srcTable, behavior={1}", ObjectID, behavior);
             try
             {
-                if (null == dataSet)
+                if (dataSet == null)
                 {
                     throw ADP.ArgumentNull(nameof(dataSet));
                 }
-                if ((SchemaType.Source != schemaType) && (SchemaType.Mapped != schemaType))
+                if ((schemaType != SchemaType.Source) && (schemaType != SchemaType.Mapped))
                 {
                     throw ADP.InvalidSchemaType(schemaType);
                 }
@@ -354,7 +354,7 @@ namespace System.Data.Common
                 {
                     throw ADP.FillSchemaRequiresSourceTableName(nameof(srcTable));
                 }
-                if (null == command)
+                if (command == null)
                 {
                     throw ADP.MissingSelectCommand(ADP.FillSchema);
                 }
@@ -372,21 +372,21 @@ namespace System.Data.Common
             long logScopeId = DataCommonEventSource.Log.EnterScope("<comm.DbDataAdapter.FillSchema|API> {0}, dataTable, schemaType, command, behavior={1}", ObjectID, behavior);
             try
             {
-                if (null == dataTable)
+                if (dataTable == null)
                 {
                     throw ADP.ArgumentNull(nameof(dataTable));
                 }
-                if ((SchemaType.Source != schemaType) && (SchemaType.Mapped != schemaType))
+                if ((schemaType != SchemaType.Source) && (schemaType != SchemaType.Mapped))
                 {
                     throw ADP.InvalidSchemaType(schemaType);
                 }
-                if (null == command)
+                if (command == null)
                 {
                     throw ADP.MissingSelectCommand(ADP.FillSchema);
                 }
                 string srcTableName = dataTable.TableName;
                 int index = IndexOfDataSetTable(srcTableName);
-                if (-1 != index)
+                if (index != -1)
                 {
                     srcTableName = TableMappings[index].SourceTable;
                 }
@@ -401,7 +401,7 @@ namespace System.Data.Common
         private object? FillSchemaInternal(DataSet? dataset, DataTable? datatable, SchemaType schemaType, IDbCommand command, string srcTable, CommandBehavior behavior)
         {
             object? dataTables = null;
-            bool restoreNullConnection = (null == command.Connection);
+            bool restoreNullConnection = (command.Connection == null);
             try
             {
                 IDbConnection activeConnection = DbDataAdapter.GetConnection3(this, command, ADP.FillSchema);
@@ -412,7 +412,7 @@ namespace System.Data.Common
                     QuietOpen(activeConnection, out originalState);
                     using (IDataReader dataReader = command.ExecuteReader(behavior | CommandBehavior.SchemaOnly | CommandBehavior.KeyInfo))
                     {
-                        if (null != datatable)
+                        if (datatable != null)
                         { // delegate to next set of protected FillSchema methods
                             dataTables = FillSchema(datatable, schemaType, dataReader);
                         }
@@ -491,7 +491,7 @@ namespace System.Data.Common
             long logScopeId = DataCommonEventSource.Log.EnterScope("<comm.DbDataAdapter.Fill|API> {0}, dataSet, startRecord, maxRecords, srcTable, command, behavior={1}", ObjectID, behavior);
             try
             {
-                if (null == dataSet)
+                if (dataSet == null)
                 {
                     throw ADP.FillRequires(nameof(dataSet));
                 }
@@ -507,7 +507,7 @@ namespace System.Data.Common
                 {
                     throw ADP.FillRequiresSourceTableName(nameof(srcTable));
                 }
-                if (null == command)
+                if (command == null)
                 {
                     throw ADP.MissingSelectCommand(ADP.Fill);
                 }
@@ -572,7 +572,7 @@ namespace System.Data.Common
             long logScopeId = DataCommonEventSource.Log.EnterScope("<comm.DbDataAdapter.Fill|API> {0}, dataTables[], startRecord, maxRecords, command, behavior={1}", ObjectID, behavior);
             try
             {
-                if ((null == dataTables) || (0 == dataTables.Length) || (null == dataTables[0]))
+                if ((dataTables == null) || (dataTables.Length == 0) || (dataTables[0] == null))
                 {
                     throw ADP.FillRequires("dataTable");
                 }
@@ -584,15 +584,15 @@ namespace System.Data.Common
                 {
                     throw ADP.InvalidMaxRecords(nameof(maxRecords), maxRecords);
                 }
-                if ((1 < dataTables.Length) && ((0 != startRecord) || (0 != maxRecords)))
+                if ((dataTables.Length > 1) && ((startRecord != 0) || (maxRecords != 0)))
                 {
                     throw ADP.OnlyOneTableForStartRecordOrMaxRecords();
                 }
-                if (null == command)
+                if (command == null)
                 {
                     throw ADP.MissingSelectCommand(ADP.Fill);
                 }
-                if (1 == dataTables.Length)
+                if (dataTables.Length == 1)
                 {
                     behavior |= CommandBehavior.SingleResult;
                 }
@@ -607,7 +607,7 @@ namespace System.Data.Common
         private int FillInternal(DataSet? dataset, DataTable[]? datatables, int startRecord, int maxRecords, string? srcTable, IDbCommand command, CommandBehavior behavior)
         {
             int rowsAddedToDataSet = 0;
-            bool restoreNullConnection = (null == command.Connection);
+            bool restoreNullConnection = (command.Connection == null);
             try
             {
                 IDbConnection activeConnection = DbDataAdapter.GetConnection3(this, command, ADP.Fill);
@@ -615,7 +615,7 @@ namespace System.Data.Common
 
                 // the default is MissingSchemaAction.Add, the user must explicitly
                 // set MisingSchemaAction.AddWithKey to get key information back in the dataset
-                if (Data.MissingSchemaAction.AddWithKey == MissingSchemaAction)
+                if (MissingSchemaAction == Data.MissingSchemaAction.AddWithKey)
                 {
                     behavior |= CommandBehavior.KeyInfo;
                 }
@@ -630,7 +630,7 @@ namespace System.Data.Common
                     {
                         dataReader = command.ExecuteReader(behavior);
 
-                        if (null != datatables)
+                        if (datatables != null)
                         { // delegate to next set of protected Fill methods
                             rowsAddedToDataSet = Fill(datatables, dataReader, startRecord, maxRecords);
                         }
@@ -641,7 +641,7 @@ namespace System.Data.Common
                     }
                     finally
                     {
-                        if (null != dataReader)
+                        if (dataReader != null)
                         {
                             dataReader.Dispose();
                         }
@@ -692,16 +692,16 @@ namespace System.Data.Common
         {
             IDataParameter[]? value = null;
             IDbCommand? select = _IDbDataAdapter.SelectCommand;
-            if (null != select)
+            if (select != null)
             {
                 IDataParameterCollection parameters = select.Parameters;
-                if (null != parameters)
+                if (parameters != null)
                 {
                     value = new IDataParameter[parameters.Count];
                     parameters.CopyTo(value, 0);
                 }
             }
-            if (null == value)
+            if (value == null)
             {
                 value = Array.Empty<IDataParameter>();
             }
@@ -712,13 +712,13 @@ namespace System.Data.Common
         {
             DataTableMapping? tableMapping = null;
             int index = IndexOfDataSetTable(dataTable.TableName);
-            if (-1 != index)
+            if (index != -1)
             {
                 tableMapping = TableMappings[index];
             }
-            if (null == tableMapping)
+            if (tableMapping == null)
             {
-                if (System.Data.MissingMappingAction.Error == MissingMappingAction)
+                if (MissingMappingAction == System.Data.MissingMappingAction.Error)
                 {
                     throw ADP.MissingTableMappingDestination(dataTable.TableName);
                 }
@@ -750,13 +750,13 @@ namespace System.Data.Common
 
             foreach (IDataParameter parameter in parameters)
             {
-                if ((null != parameter) && (0 != (ParameterDirection.Input & parameter.Direction)))
+                if ((parameter != null) && ((ParameterDirection.Input & parameter.Direction) != 0))
                 {
                     string columnName = parameter.SourceColumn;
                     if (!string.IsNullOrEmpty(columnName))
                     {
                         DataColumn? dataColumn = mappings.GetDataColumn(columnName, null, row.Table, missingMapping, missingSchema);
-                        if (null != dataColumn)
+                        if (dataColumn != null)
                         {
                             DataRowVersion version = DbDataAdapter.GetParameterSourceVersion(typeIndex, parameter);
                             parameter.Value = row[dataColumn, version];
@@ -767,9 +767,9 @@ namespace System.Data.Common
                         }
 
                         DbParameter? dbparameter = (parameter as DbParameter);
-                        if ((null != dbparameter) && dbparameter.SourceColumnNullMapping)
+                        if ((dbparameter != null) && dbparameter.SourceColumnNullMapping)
                         {
-                            Debug.Assert(DbType.Int32 == parameter.DbType, "unexpected DbType");
+                            Debug.Assert(parameter.DbType == DbType.Int32, "unexpected DbType");
                             parameter.Value = ADP.IsNull(parameter.Value) ? s_parameterValueNullValue : s_parameterValueNonNullValue;
                         }
                     }
@@ -779,17 +779,17 @@ namespace System.Data.Common
 
         private void ParameterOutput(IDataParameter parameter, DataRow row, DataTableMapping mappings, MissingMappingAction missingMapping, MissingSchemaAction missingSchema)
         {
-            if (0 != (ParameterDirection.Output & parameter.Direction))
+            if ((ParameterDirection.Output & parameter.Direction) != 0)
             {
                 object? value = parameter.Value;
-                if (null != value)
+                if (value != null)
                 {
                     // null means default, meaning we leave the current DataRow value alone
                     string columnName = parameter.SourceColumn;
                     if (!string.IsNullOrEmpty(columnName))
                     {
                         DataColumn? dataColumn = mappings.GetDataColumn(columnName, null, row.Table, missingMapping, missingSchema);
-                        if (null != dataColumn)
+                        if (dataColumn != null)
                         {
                             if (dataColumn.ReadOnly)
                             {
@@ -820,7 +820,7 @@ namespace System.Data.Common
 
             foreach (IDataParameter parameter in parameters)
             {
-                if (null != parameter)
+                if (parameter != null)
                 {
                     ParameterOutput(parameter, row, mappings, missingMapping, missingSchema);
                 }
@@ -846,25 +846,25 @@ namespace System.Data.Common
             try
             {
                 int rowsAffected = 0;
-                if (null == dataRows)
+                if (dataRows == null)
                 {
                     throw ADP.ArgumentNull(nameof(dataRows));
                 }
-                else if (0 != dataRows.Length)
+                else if (dataRows.Length != 0)
                 {
                     DataTable? dataTable = null;
                     for (int i = 0; i < dataRows.Length; ++i)
                     {
-                        if ((null != dataRows[i]) && (dataTable != dataRows[i].Table))
+                        if ((dataRows[i] != null) && (dataTable != dataRows[i].Table))
                         {
-                            if (null != dataTable)
+                            if (dataTable != null)
                             {
                                 throw ADP.UpdateMismatchRowTable(i);
                             }
                             dataTable = dataRows[i].Table;
                         }
                     }
-                    if (null != dataTable)
+                    if (dataTable != null)
                     {
                         DataTableMapping tableMapping = GetTableMapping(dataTable);
                         rowsAffected = Update(dataRows, tableMapping);
@@ -883,20 +883,20 @@ namespace System.Data.Common
             long logScopeId = DataCommonEventSource.Log.EnterScope("<comm.DbDataAdapter.Update|API> {0}, dataTable", ObjectID);
             try
             {
-                if (null == dataTable)
+                if (dataTable == null)
                 {
                     throw ADP.UpdateRequiresDataTable(nameof(dataTable));
                 }
 
                 DataTableMapping? tableMapping = null;
                 int index = IndexOfDataSetTable(dataTable.TableName);
-                if (-1 != index)
+                if (index != -1)
                 {
                     tableMapping = TableMappings[index];
                 }
-                if (null == tableMapping)
+                if (tableMapping == null)
                 {
-                    if (System.Data.MissingMappingAction.Error == MissingMappingAction)
+                    if (MissingMappingAction == System.Data.MissingMappingAction.Error)
                     {
                         throw ADP.MissingTableMappingDestination(dataTable.TableName);
                     }
@@ -915,7 +915,7 @@ namespace System.Data.Common
             long logScopeId = DataCommonEventSource.Log.EnterScope("<comm.DbDataAdapter.Update|API> {0}, dataSet, srcTable='{1}'", ObjectID, srcTable);
             try
             {
-                if (null == dataSet)
+                if (dataSet == null)
                 {
                     throw ADP.UpdateRequiresNonNullDataSet(nameof(dataSet));
                 }
@@ -927,17 +927,17 @@ namespace System.Data.Common
                 int rowsAffected = 0;
 
                 DataTableMapping? tableMapping = GetTableMappingBySchemaAction(srcTable, srcTable, UpdateMappingAction);
-                Debug.Assert(null != tableMapping, "null TableMapping when MissingMappingAction.Error");
+                Debug.Assert(tableMapping != null, "null TableMapping when MissingMappingAction.Error");
 
                 // the ad-hoc scenario of no dataTable just returns
                 // ad-hoc scenario is defined as MissingSchemaAction.Add or MissingSchemaAction.Ignore
                 System.Data.MissingSchemaAction schemaAction = UpdateSchemaAction;
                 DataTable? dataTable = tableMapping.GetDataTableBySchemaAction(dataSet, schemaAction);
-                if (null != dataTable)
+                if (dataTable != null)
                 {
                     rowsAffected = UpdateFromDataTable(dataTable, tableMapping);
                 }
-                else if (!HasTableMappings() || (-1 == TableMappings.IndexOf(tableMapping)))
+                else if (!HasTableMappings() || (TableMappings.IndexOf(tableMapping) == -1))
                 {
                     //throw error since the user didn't explicitly map this tableName to Ignore.
                     throw ADP.UpdateRequiresSourceTable(srcTable);
@@ -955,8 +955,8 @@ namespace System.Data.Common
             long logScopeId = DataCommonEventSource.Log.EnterScope("<comm.DbDataAdapter.Update|API> {0}, dataRows[], tableMapping", ObjectID);
             try
             {
-                Debug.Assert((null != dataRows) && (0 < dataRows.Length), "Update: bad dataRows");
-                Debug.Assert(null != tableMapping, "Update: bad DataTableMapping");
+                Debug.Assert((dataRows != null) && (dataRows.Length > 0), "Update: bad dataRows");
+                Debug.Assert(tableMapping != null, "Update: bad DataTableMapping");
 
                 // If records were affected, increment row count by one - that is number of rows affected in dataset.
                 int cumulativeDataRowsAffected = 0;
@@ -966,10 +966,10 @@ namespace System.Data.Common
 
                 bool useSelectConnectionState = false;
                 IDbCommand? tmpcmd = _IDbDataAdapter.SelectCommand;
-                if (null != tmpcmd)
+                if (tmpcmd != null)
                 {
                     connections[0] = tmpcmd.Connection;
-                    if (null != connections[0])
+                    if (connections[0] != null)
                     {
                         connectionStates[0] = connections[0]!.State;
                         useSelectConnectionState = true;
@@ -992,7 +992,7 @@ namespace System.Data.Common
                 {
                     try
                     {
-                        if (1 != maxBatchCommands)
+                        if (maxBatchCommands != 1)
                         {
                             InitializeBatching();
                         }
@@ -1002,7 +1002,7 @@ namespace System.Data.Common
                         // for each row which is either insert, update, or delete
                         foreach (DataRow dataRow in dataRows)
                         {
-                            if (null == dataRow)
+                            if (dataRow == null)
                             {
                                 continue; // foreach DataRow
                             }
@@ -1041,7 +1041,7 @@ namespace System.Data.Common
                             try
                             {
                                 dataRow.RowError = null;
-                                if (null != dataCommand)
+                                if (dataCommand != null)
                                 {
                                     // prepare the parameters for the user who then can modify them during OnRowUpdating
                                     ParameterInput(dataCommand.Parameters, statementType, dataRow, tableMapping);
@@ -1063,24 +1063,24 @@ namespace System.Data.Common
 
                             // handle the status from RowUpdating event
                             UpdateStatus rowUpdatingStatus = rowUpdatingEvent.Status;
-                            if (UpdateStatus.Continue != rowUpdatingStatus)
+                            if (rowUpdatingStatus != UpdateStatus.Continue)
                             {
-                                if (UpdateStatus.ErrorsOccurred == rowUpdatingStatus)
+                                if (rowUpdatingStatus == UpdateStatus.ErrorsOccurred)
                                 {
                                     UpdatingRowStatusErrors(rowUpdatingEvent, dataRow);
                                     continue; // foreach DataRow
                                 }
-                                else if (UpdateStatus.SkipCurrentRow == rowUpdatingStatus)
+                                else if (rowUpdatingStatus == UpdateStatus.SkipCurrentRow)
                                 {
-                                    if (DataRowState.Unchanged == dataRow.RowState)
+                                    if (dataRow.RowState == DataRowState.Unchanged)
                                     {
                                         cumulativeDataRowsAffected++;
                                     }
                                     continue; // foreach DataRow
                                 }
-                                else if (UpdateStatus.SkipAllRemainingRows == rowUpdatingStatus)
+                                else if (rowUpdatingStatus == UpdateStatus.SkipAllRemainingRows)
                                 {
-                                    if (DataRowState.Unchanged == dataRow.RowState)
+                                    if (dataRow.RowState == DataRowState.Unchanged)
                                     {
                                         cumulativeDataRowsAffected++;
                                     }
@@ -1096,9 +1096,9 @@ namespace System.Data.Common
                             rowUpdatingEvent = null;
                             RowUpdatedEventArgs? rowUpdatedEvent = null;
 
-                            if (1 == maxBatchCommands)
+                            if (maxBatchCommands == 1)
                             {
-                                if (null != dataCommand)
+                                if (dataCommand != null)
                                 {
                                     batchCommands[0]._commandIdentifier = 0;
                                     batchCommands[0]._parameterCount = dataCommand.Parameters.Count;
@@ -1115,9 +1115,9 @@ namespace System.Data.Common
 
                                 try
                                 {
-                                    if (null != dataCommand)
+                                    if (dataCommand != null)
                                     {
-                                        if (0 == (UpdateRowSource.FirstReturnedRecord & dataCommand.UpdatedRowSource))
+                                        if ((UpdateRowSource.FirstReturnedRecord & dataCommand.UpdatedRowSource) == 0)
                                         {
                                             // append the command to the commandset. If an exception
                                             // occurs, then the user must append and continue
@@ -1156,7 +1156,7 @@ namespace System.Data.Common
                                     errors = e;
                                 }
 
-                                if (null != errors)
+                                if (errors != null)
                                 {
                                     // TODO: See above comment on dataCommand being null
                                     rowUpdatedEvent = CreateRowUpdatedEvent(dataRow, dataCommand, StatementType.Batch, tableMapping);
@@ -1173,7 +1173,7 @@ namespace System.Data.Common
                                     }
 
                                     cumulativeDataRowsAffected += UpdatedRowStatus(rowUpdatedEvent, batchCommands, commandCount);
-                                    if (UpdateStatus.SkipAllRemainingRows == rowUpdatedEvent.Status)
+                                    if (rowUpdatedEvent.Status == UpdateStatus.SkipAllRemainingRows)
                                     {
                                         break;
                                     }
@@ -1187,14 +1187,14 @@ namespace System.Data.Common
                             // this try/catch for any exceptions during the execution, population, output parameters
                             try
                             {
-                                if (1 != maxBatchCommands)
+                                if (maxBatchCommands != 1)
                                 {
                                     IDbConnection connection = DbDataAdapter.GetConnection1(this);
 
                                     ConnectionState state = UpdateConnectionOpen(connection, StatementType.Batch, connections, connectionStates, useSelectConnectionState);
                                     rowUpdatedEvent.AdapterInit(rowBatch);
 
-                                    if (ConnectionState.Open == state)
+                                    if (state == ConnectionState.Open)
                                     {
                                         UpdateBatchExecute(batchCommands, commandCount, rowUpdatedEvent);
                                     }
@@ -1205,11 +1205,11 @@ namespace System.Data.Common
                                         rowUpdatedEvent.Status = UpdateStatus.ErrorsOccurred;
                                     }
                                 }
-                                else if (null != dataCommand)
+                                else if (dataCommand != null)
                                 {
                                     IDbConnection connection = DbDataAdapter.GetConnection4(this, dataCommand, statementType, isCommandFromRowUpdating);
                                     ConnectionState state = UpdateConnectionOpen(connection, statementType, connections, connectionStates, useSelectConnectionState);
-                                    if (ConnectionState.Open == state)
+                                    if (state == ConnectionState.Open)
                                     {
                                         UpdateRowExecute(rowUpdatedEvent, dataCommand, statementType);
                                         batchCommands[0]._recordsAffected = rowUpdatedEvent.RecordsAffected;
@@ -1237,7 +1237,7 @@ namespace System.Data.Common
                                 rowUpdatedEvent.Status = UpdateStatus.ErrorsOccurred;
                             }
 
-                            bool clearBatchOnSkipAll = (UpdateStatus.ErrorsOccurred == rowUpdatedEvent.Status);
+                            bool clearBatchOnSkipAll = (rowUpdatedEvent.Status == UpdateStatus.ErrorsOccurred);
 
                             {
                                 Exception? errors = rowUpdatedEvent.Errors;
@@ -1254,9 +1254,9 @@ namespace System.Data.Common
 
                             cumulativeDataRowsAffected += UpdatedRowStatus(rowUpdatedEvent, batchCommands, commandCount);
 
-                            if (UpdateStatus.SkipAllRemainingRows == rowUpdatedEvent.Status)
+                            if (rowUpdatedEvent.Status == UpdateStatus.SkipAllRemainingRows)
                             {
-                                if (clearBatchOnSkipAll && 1 != maxBatchCommands)
+                                if (clearBatchOnSkipAll && maxBatchCommands != 1)
                                 {
                                     ClearBatch();
                                     commandCount = 0;
@@ -1264,7 +1264,7 @@ namespace System.Data.Common
                                 break; // from update
                             }
 
-                            if (1 != maxBatchCommands)
+                            if (maxBatchCommands != 1)
                             {
                                 ClearBatch();
                                 commandCount = 0;
@@ -1277,7 +1277,7 @@ namespace System.Data.Common
                         } // foreach DataRow
 
                         // must handle the last batch
-                        if (1 != maxBatchCommands && 0 < commandCount)
+                        if (maxBatchCommands != 1 && commandCount > 0)
                         {
                             // TODO: See above comment on dataCommand being null
                             // TODO: DataRow is null because we call AdapterInit below, which populates rows
@@ -1298,7 +1298,7 @@ namespace System.Data.Common
                                 }
                                 rowUpdatedEvent.AdapterInit(finalRowBatch);
 
-                                if (ConnectionState.Open == state)
+                                if (state == ConnectionState.Open)
                                 {
                                     UpdateBatchExecute(batchCommands, commandCount, rowUpdatedEvent);
                                 }
@@ -1332,7 +1332,7 @@ namespace System.Data.Common
                     }
                     finally
                     {
-                        if (1 != maxBatchCommands)
+                        if (maxBatchCommands != 1)
                         {
                             TerminateBatching();
                         }
@@ -1393,15 +1393,15 @@ namespace System.Data.Common
                     batchCommands[bc]._recordsAffected = rowAffected;
                 }
 
-                if ((null == batchCommands[bc]._errors) && batchCommands[bc]._recordsAffected.HasValue)
+                if ((batchCommands[bc]._errors == null) && batchCommands[bc]._recordsAffected.HasValue)
                 {
                     // determine possible concurrency violations per datarow
-                    if ((StatementType.Update == statementType) || (StatementType.Delete == statementType))
+                    if ((statementType == StatementType.Update) || (statementType == StatementType.Delete))
                     {
                         checkRecordsAffected++;
-                        if (0 == rowAffected)
+                        if (rowAffected == 0)
                         {
-                            if (null == rows)
+                            if (rows == null)
                             {
                                 rows = new List<DataRow>();
                             }
@@ -1412,10 +1412,10 @@ namespace System.Data.Common
                     }
 
                     // map output parameters to the datarow
-                    if (((StatementType.Insert == statementType) || (StatementType.Update == statementType))
-                        && (0 != (UpdateRowSource.OutputParameters & batchCommand._updatedRowSource)) && (0 != rowAffected))
+                    if (((statementType == StatementType.Insert) || (statementType == StatementType.Update))
+                        && ((UpdateRowSource.OutputParameters & batchCommand._updatedRowSource) != 0) && (rowAffected != 0))
                     {
-                        if (StatementType.Insert == statementType)
+                        if (statementType == StatementType.Insert)
                         {
                             // AcceptChanges for 'added' rows so backend generated keys that are returned
                             // propagte into the datatable correctly.
@@ -1431,17 +1431,17 @@ namespace System.Data.Common
                 }
             }
 
-            if (null == rowUpdatedEvent.Errors)
+            if (rowUpdatedEvent.Errors == null)
             {
                 // Only error if RecordsAffect == 0, not -1.  A value of -1 means no count was received from server,
                 // do not error in that situation (means 'set nocount on' was executed on server).
-                if (UpdateStatus.Continue == rowUpdatedEvent.Status)
+                if (rowUpdatedEvent.Status == UpdateStatus.Continue)
                 {
-                    if ((0 < checkRecordsAffected) && ((0 == rowUpdatedEvent.RecordsAffected) || hasConcurrencyViolation))
+                    if ((checkRecordsAffected > 0) && ((rowUpdatedEvent.RecordsAffected == 0) || hasConcurrencyViolation))
                     {
                         // bug50526, an exception if no records affected and attempted an Update/Delete
-                        Debug.Assert(null == rowUpdatedEvent.Errors, "Continue - but contains an exception");
-                        DataRow[] rowsInError = (null != rows) ? rows.ToArray() : rowUpdatedEvent.Rows!;
+                        Debug.Assert(rowUpdatedEvent.Errors == null, "Continue - but contains an exception");
+                        DataRow[] rowsInError = (rows != null) ? rows.ToArray() : rowUpdatedEvent.Rows!;
                         rowUpdatedEvent.Errors = ADP.UpdateConcurrencyViolation(StatementType.Batch, commandCount - rowsInError.Length, commandCount, rowsInError);
                         rowUpdatedEvent.Status = UpdateStatus.ErrorsOccurred;
                     }
@@ -1451,7 +1451,7 @@ namespace System.Data.Common
 
         private ConnectionState UpdateConnectionOpen(IDbConnection connection, StatementType statementType, IDbConnection?[] connections, ConnectionState[] connectionStates, bool useSelectConnectionState)
         {
-            Debug.Assert(null != connection, "unexpected null connection");
+            Debug.Assert(connection != null, "unexpected null connection");
             int index = (int)statementType;
             if (connection != connections[index])
             {
@@ -1475,7 +1475,7 @@ namespace System.Data.Common
         {
             int rowsAffected = 0;
             DataRow[] dataRows = ADP.SelectAdapterRows(dataTable, false);
-            if ((null != dataRows) && (0 < dataRows.Length))
+            if ((dataRows != null) && (dataRows.Length > 0))
             {
                 rowsAffected = Update(dataRows, tableMapping);
             }
@@ -1484,18 +1484,18 @@ namespace System.Data.Common
 
         private void UpdateRowExecute(RowUpdatedEventArgs rowUpdatedEvent, IDbCommand dataCommand, StatementType cmdIndex)
         {
-            Debug.Assert(null != rowUpdatedEvent, "null rowUpdatedEvent");
-            Debug.Assert(null != dataCommand, "null dataCommand");
+            Debug.Assert(rowUpdatedEvent != null, "null rowUpdatedEvent");
+            Debug.Assert(dataCommand != null, "null dataCommand");
             Debug.Assert(rowUpdatedEvent.Command == dataCommand, "dataCommand differs from rowUpdatedEvent");
 
             bool insertAcceptChanges = true;
             UpdateRowSource updatedRowSource = dataCommand.UpdatedRowSource;
-            if ((StatementType.Delete == cmdIndex) || (0 == (UpdateRowSource.FirstReturnedRecord & updatedRowSource)))
+            if ((cmdIndex == StatementType.Delete) || ((UpdateRowSource.FirstReturnedRecord & updatedRowSource) == 0))
             {
                 int recordsAffected = dataCommand.ExecuteNonQuery();
                 rowUpdatedEvent.AdapterInit(recordsAffected);
             }
-            else if ((StatementType.Insert == cmdIndex) || (StatementType.Update == cmdIndex))
+            else if ((cmdIndex == StatementType.Insert) || (cmdIndex == StatementType.Update))
             {
                 // we only care about the first row of the first result
                 using (IDataReader dataReader = dataCommand.ExecuteReader(CommandBehavior.SequentialAccess))
@@ -1508,22 +1508,22 @@ namespace System.Data.Common
                         {
                             // advance to the first row returning result set
                             // determined by actually having columns in the result set
-                            if (0 < readerHandler.FieldCount)
+                            if (readerHandler.FieldCount > 0)
                             {
                                 getData = true;
                                 break;
                             }
                         } while (dataReader.NextResult());
 
-                        if (getData && (0 != dataReader.RecordsAffected))
+                        if (getData && (dataReader.RecordsAffected != 0))
                         {
                             SchemaMapping mapping = new SchemaMapping(this, null, rowUpdatedEvent.Row.Table, readerHandler, false, SchemaType.Mapped, rowUpdatedEvent.TableMapping.SourceTable, true, null, null);
 
-                            if ((null != mapping.DataTable) && (null != mapping.DataValues))
+                            if ((mapping.DataTable != null) && (mapping.DataValues != null))
                             {
                                 if (dataReader.Read())
                                 {
-                                    if ((StatementType.Insert == cmdIndex) && insertAcceptChanges)
+                                    if ((cmdIndex == StatementType.Insert) && insertAcceptChanges)
                                     {
                                         rowUpdatedEvent.Row.AcceptChanges();
                                         insertAcceptChanges = false;
@@ -1551,10 +1551,10 @@ namespace System.Data.Common
             }
 
             // map the parameter results to the dataSet
-            if (((StatementType.Insert == cmdIndex) || (StatementType.Update == cmdIndex))
-                && (0 != (UpdateRowSource.OutputParameters & updatedRowSource)) && (0 != rowUpdatedEvent.RecordsAffected))
+            if (((cmdIndex == StatementType.Insert) || (cmdIndex == StatementType.Update))
+                && ((UpdateRowSource.OutputParameters & updatedRowSource) != 0) && (rowUpdatedEvent.RecordsAffected != 0))
             {
-                if ((StatementType.Insert == cmdIndex) && insertAcceptChanges)
+                if ((cmdIndex == StatementType.Insert) && insertAcceptChanges)
                 {
                     rowUpdatedEvent.Row.AcceptChanges();
                 }
@@ -1570,9 +1570,9 @@ namespace System.Data.Common
                     {
                         case StatementType.Update:
                         case StatementType.Delete:
-                            if (0 == rowUpdatedEvent.RecordsAffected)
+                            if (rowUpdatedEvent.RecordsAffected == 0)
                             {
-                                Debug.Assert(null == rowUpdatedEvent.Errors, "Continue - but contains an exception");
+                                Debug.Assert(rowUpdatedEvent.Errors == null, "Continue - but contains an exception");
                                 rowUpdatedEvent.Errors = ADP.UpdateConcurrencyViolation(cmdIndex, rowUpdatedEvent.RecordsAffected, 1, new DataRow[] { rowUpdatedEvent.Row });
                                 rowUpdatedEvent.Status = UpdateStatus.ErrorsOccurred;
                             }
@@ -1584,7 +1584,7 @@ namespace System.Data.Common
 
         private int UpdatedRowStatus(RowUpdatedEventArgs rowUpdatedEvent, BatchCommandInfo[] batchCommands, int commandCount)
         {
-            Debug.Assert(null != rowUpdatedEvent, "null rowUpdatedEvent");
+            Debug.Assert(rowUpdatedEvent != null, "null rowUpdatedEvent");
             int cumulativeDataRowsAffected = 0;
             switch (rowUpdatedEvent.Status)
             {
@@ -1606,7 +1606,7 @@ namespace System.Data.Common
 
         private int UpdatedRowStatusContinue(RowUpdatedEventArgs rowUpdatedEvent, BatchCommandInfo[] batchCommands, int commandCount)
         {
-            Debug.Assert(null != batchCommands, "null batchCommands?");
+            Debug.Assert(batchCommands != null, "null batchCommands?");
             int cumulativeDataRowsAffected = 0;
             // 1. We delay accepting the changes until after we fire RowUpdatedEvent
             //    so the user has a chance to call RejectChanges for any given reason
@@ -1623,12 +1623,12 @@ namespace System.Data.Common
             {
                 var batchCommand = batchCommands[i];
                 DataRow row = batchCommand._row;
-                if ((null == batchCommand._errors) && batchCommand._recordsAffected != null && (0 != batchCommand._recordsAffected.Value))
+                if ((batchCommand._errors == null) && batchCommand._recordsAffected != null && (batchCommand._recordsAffected.Value != 0))
                 {
-                    Debug.Assert(null != row, "null dataRow?");
+                    Debug.Assert(row != null, "null dataRow?");
                     if (acdu)
                     {
-                        if (0 != ((DataRowState.Added | DataRowState.Deleted | DataRowState.Modified) & row.RowState))
+                        if (((DataRowState.Added | DataRowState.Deleted | DataRowState.Modified) & row.RowState) != 0)
                         {
                             row.AcceptChanges();
                         }
@@ -1641,9 +1641,9 @@ namespace System.Data.Common
 
         private int UpdatedRowStatusErrors(RowUpdatedEventArgs rowUpdatedEvent, BatchCommandInfo[] batchCommands, int commandCount)
         {
-            Debug.Assert(null != batchCommands, "null batchCommands?");
+            Debug.Assert(batchCommands != null, "null batchCommands?");
             Exception? errors = rowUpdatedEvent.Errors;
-            if (null == errors)
+            if (errors == null)
             {
                 // user changed status to ErrorsOccurred without supplying an exception message
                 errors = ADP.RowUpdatedErrors();
@@ -1657,7 +1657,7 @@ namespace System.Data.Common
             for (int i = 0; i < commandCount; i++)
             {
                 DataRow row = batchCommands[i]._row;
-                Debug.Assert(null != row, "null dataRow?");
+                Debug.Assert(row != null, "null dataRow?");
 
                 if (batchCommands[i]._errors is Exception commandErrors)
                 { // will exist if 0 == RecordsAffected
@@ -1693,15 +1693,15 @@ namespace System.Data.Common
 
         private int UpdatedRowStatusSkip(BatchCommandInfo[] batchCommands, int commandCount)
         {
-            Debug.Assert(null != batchCommands, "null batchCommands?");
+            Debug.Assert(batchCommands != null, "null batchCommands?");
 
             int cumulativeDataRowsAffected = 0;
 
             for (int i = 0; i < commandCount; i++)
             {
                 DataRow row = batchCommands[i]._row;
-                Debug.Assert(null != row, "null dataRow?");
-                if (0 != ((DataRowState.Detached | DataRowState.Unchanged) & row.RowState))
+                Debug.Assert(row != null, "null dataRow?");
+                if (((DataRowState.Detached | DataRowState.Unchanged) & row.RowState) != 0)
                 {
                     cumulativeDataRowsAffected++;
                 }
@@ -1711,10 +1711,10 @@ namespace System.Data.Common
 
         private void UpdatingRowStatusErrors(RowUpdatingEventArgs rowUpdatedEvent, DataRow dataRow)
         {
-            Debug.Assert(null != dataRow, "null dataRow");
+            Debug.Assert(dataRow != null, "null dataRow");
             Exception? errors = rowUpdatedEvent.Errors;
 
-            if (null == errors)
+            if (errors == null)
             {
                 // user changed status to ErrorsOccurred without supplying an exception message
                 errors = ADP.RowUpdatingErrors();
@@ -1732,24 +1732,24 @@ namespace System.Data.Common
         private static IDbConnection GetConnection1(DbDataAdapter adapter)
         {
             IDbCommand? command = adapter._IDbDataAdapter.SelectCommand;
-            if (null == command)
+            if (command == null)
             {
                 command = adapter._IDbDataAdapter.InsertCommand;
-                if (null == command)
+                if (command == null)
                 {
                     command = adapter._IDbDataAdapter.UpdateCommand;
-                    if (null == command)
+                    if (command == null)
                     {
                         command = adapter._IDbDataAdapter.DeleteCommand;
                     }
                 }
             }
             IDbConnection? connection = null;
-            if (null != command)
+            if (command != null)
             {
                 connection = command.Connection;
             }
-            if (null == connection)
+            if (connection == null)
             {
                 throw ADP.UpdateConnectionRequired(StatementType.Batch, false);
             }
@@ -1758,10 +1758,10 @@ namespace System.Data.Common
 
         private static IDbConnection GetConnection3(DbDataAdapter adapter, IDbCommand command, string method)
         {
-            Debug.Assert(null != command, "GetConnection3: null command");
+            Debug.Assert(command != null, "GetConnection3: null command");
             Debug.Assert(!string.IsNullOrEmpty(method), "missing method name");
             IDbConnection? connection = command.Connection;
-            if (null == connection)
+            if (connection == null)
             {
                 throw ADP.ConnectionRequired_Res(method);
             }
@@ -1770,9 +1770,9 @@ namespace System.Data.Common
 
         private static IDbConnection GetConnection4(DbDataAdapter adapter, IDbCommand command, StatementType statementType, bool isCommandFromRowUpdating)
         {
-            Debug.Assert(null != command, "GetConnection4: null command");
+            Debug.Assert(command != null, "GetConnection4: null command");
             IDbConnection? connection = command.Connection;
-            if (null == connection)
+            if (connection == null)
             {
                 throw ADP.UpdateConnectionRequired(statementType, isCommandFromRowUpdating);
             }
@@ -1798,7 +1798,7 @@ namespace System.Data.Common
             // close the connection if:
             // * it was closed on first use and adapter has opened it, AND
             // * provider's implementation did not ask to keep this connection open
-            if ((null != connection) && (ConnectionState.Closed == originalState))
+            if ((connection != null) && (originalState == ConnectionState.Closed))
             {
                 // we don't have to check the current connection state because
                 // it is supposed to be safe to call Close multiple times
@@ -1811,9 +1811,9 @@ namespace System.Data.Common
         // where we would Open the connection and not close it
         private static void QuietOpen(IDbConnection connection, out ConnectionState originalState)
         {
-            Debug.Assert(null != connection, "QuietOpen: null connection");
+            Debug.Assert(connection != null, "QuietOpen: null connection");
             originalState = connection.State;
-            if (ConnectionState.Closed == originalState)
+            if (originalState == ConnectionState.Closed)
             {
                 connection.Open();
             }

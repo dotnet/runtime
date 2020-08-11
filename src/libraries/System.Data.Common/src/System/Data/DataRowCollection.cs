@@ -99,7 +99,7 @@ namespace System.Data
             }
         }
 
-        public int IndexOf(DataRow? row) => (null == row) || (row.Table != _table) || ((0 == row.RBTreeNodeId) && (row.RowState == DataRowState.Detached)) ?
+        public int IndexOf(DataRow? row) => (row == null) || (row.Table != _table) || ((row.RBTreeNodeId == 0) && (row.RowState == DataRowState.Detached)) ?
             -1 :
             _list.IndexOf(row.RBTreeNodeId, row);
 
@@ -176,7 +176,7 @@ namespace System.Data
         /// </summary>
         public void Remove(DataRow row)
         {
-            if ((null == row) || (row.Table != _table) || (-1 == row.rowID))
+            if ((row == null) || (row.Table != _table) || (row.rowID == -1))
             {
                 throw ExceptionBuilder.RowOutOfRange();
             }

@@ -121,7 +121,7 @@ namespace System.Data
         /// </summary>
         private void SetText(string? errorText)
         {
-            if (null == errorText)
+            if (errorText == null)
             {
                 errorText = string.Empty;
             }

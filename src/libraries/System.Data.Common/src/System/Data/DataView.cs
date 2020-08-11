@@ -190,7 +190,7 @@ namespace System.Data
             }
 
             _comparison = comparison;
-            SetIndex2("", RowState, ((null != predicate) ? new RowPredicateFilter(predicate) : null), true);
+            SetIndex2("", RowState, ((predicate != null) ? new RowPredicateFilter(predicate) : null), true);
         }
 
         /// <summary>
@@ -280,7 +280,7 @@ namespace System.Data
             }
         }
 
-        private int CountFromIndex => ((null != _index) ? _index.RecordCount : 0) + ((null != _addNewRow) ? 1 : 0);
+        private int CountFromIndex => ((_index != null) ? _index.RecordCount : 0) + ((_addNewRow != null) ? 1 : 0);
 
         /// <summary>
         /// Gets the <see cref='System.Data.DataViewManager'/> associated with this <see cref='System.Data.DataView'/> .
@@ -326,7 +326,7 @@ namespace System.Data
                 }
 
                 CultureInfo locale = (_table != null ? _table.Locale : CultureInfo.CurrentCulture);
-                if (null == _rowFilter || (string.Compare(RowFilter, value, false, locale) != 0))
+                if (_rowFilter == null || (string.Compare(RowFilter, value, false, locale) != 0))
                 {
                     DataExpression newFilter = new DataExpression(_table, value);
                     SetIndex(_sort, _recordStates, newFilter);
@@ -344,13 +344,13 @@ namespace System.Data
             get
             {
                 RowPredicateFilter? filter = (GetFilter() as RowPredicateFilter);
-                return ((null != filter) ? filter._predicateFilter : null);
+                return ((filter != null) ? filter._predicateFilter : null);
             }
             set
             {
                 if (!ReferenceEquals(RowPredicate, value))
                 {
-                    SetIndex(Sort, RowStateFilter, ((null != value) ? new RowPredicateFilter(value) : null));
+                    SetIndex(Sort, RowStateFilter, ((value != null) ? new RowPredicateFilter(value) : null));
                 }
             }
         }
@@ -362,15 +362,15 @@ namespace System.Data
             /// <summary></summary>
             internal RowPredicateFilter(Predicate<DataRow> predicate)
             {
-                Debug.Assert(null != predicate, "null predicate");
+                Debug.Assert(predicate != null, "null predicate");
                 _predicateFilter = predicate;
             }
 
             /// <summary></summary>
             bool IFilter.Invoke(DataRow row, DataRowVersion version)
             {
-                Debug.Assert(DataRowVersion.Default != version, "not expecting Default");
-                Debug.Assert(DataRowVersion.Proposed != version, "not expecting Proposed");
+                Debug.Assert(version != DataRowVersion.Default, "not expecting Default");
+                Debug.Assert(version != DataRowVersion.Proposed, "not expecting Proposed");
                 return _predicateFilter(row);
             }
         }
@@ -441,7 +441,7 @@ namespace System.Data
                 }
 
                 CultureInfo locale = (_table != null ? _table.Locale : CultureInfo.CurrentCulture);
-                if (string.Compare(_sort, value, false, locale) != 0 || (null != _comparison))
+                if (string.Compare(_sort, value, false, locale) != 0 || (_comparison != null))
                 {
                     CheckSort(value);
                     _comparison = null; // clear the delegate to allow the Sort string to be effective
@@ -553,7 +553,7 @@ namespace System.Data
                     _rowViewCache[_addNewRow].EndEdit();
                 }
 
-                Debug.Assert(null == _addNewRow, "AddNew addNewRow is not null");
+                Debug.Assert(_addNewRow == null, "AddNew addNewRow is not null");
 
                 // TODO: This will throw NRE if _table isn't set (e.g. default ctor)
                 _addNewRow = _table!.NewRow();
@@ -639,7 +639,7 @@ namespace System.Data
 
         public void CopyTo(Array array, int index)
         {
-            if (null != _index)
+            if (_index != null)
             {
                 RBTree<int>.RBTreeEnumerator iterator = _index.GetEnumerator(0);
                 while (iterator.MoveNext())
@@ -651,7 +651,7 @@ namespace System.Data
                     }
                 }
             }
-            if (null != _addNewRow)
+            if (_addNewRow != null)
             {
                 array.SetValue(_rowViewCache[_addNewRow], index);
             }
@@ -659,7 +659,7 @@ namespace System.Data
 
         private void CopyTo(DataRowView[] array, int index)
         {
-            if (null != _index)
+            if (_index != null)
             {
                 RBTree<int>.RBTreeEnumerator iterator = _index.GetEnumerator(0);
                 while (iterator.MoveNext())
@@ -671,7 +671,7 @@ namespace System.Data
                     }
                 }
             }
-            if (null != _addNewRow)
+            if (_addNewRow != null)
             {
                 array[index] = _rowViewCache[_addNewRow];
             }
@@ -684,7 +684,7 @@ namespace System.Data
 
         internal void Delete(DataRow row)
         {
-            if (null != row)
+            if (row != null)
             {
                 long logScopeId = DataCommonEventSource.Log.EnterScope("<ds.DataView.Delete|API> {0}, row={1}", ObjectID, row._objectID);
                 try
@@ -786,13 +786,13 @@ namespace System.Data
 
         internal void FinishAddNew(bool success)
         {
-            Debug.Assert(null != _addNewRow, "null addNewRow");
+            Debug.Assert(_addNewRow != null, "null addNewRow");
             DataCommonEventSource.Log.Trace("<ds.DataView.FinishAddNew|INFO> {0}, success={1}", ObjectID, success);
 
             DataRow newRow = _addNewRow;
             if (success)
             {
-                if (DataRowState.Detached == newRow.RowState)
+                if (newRow.RowState == DataRowState.Detached)
                 {
                     // MaintainDataView will translate the ItemAdded from the RowCollection into
                     // into either an ItemMoved or no event, since it didn't change position.
@@ -856,7 +856,7 @@ namespace System.Data
             throw ExceptionBuilder.CanNotClear();
         }
 
-        bool IList.Contains(object? value) => (0 <= IndexOf(value as DataRowView));
+        bool IList.Contains(object? value) => (IndexOf(value as DataRowView) >= 0);
 
         int IList.IndexOf(object? value) => IndexOf(value as DataRowView);
 
@@ -864,13 +864,13 @@ namespace System.Data
         /// <remarks>Behavioral change: will now return -1 once a DataRowView becomes detached.</remarks>
         internal int IndexOf(DataRowView? rowview)
         {
-            if (null != rowview)
+            if (rowview != null)
             {
                 if (ReferenceEquals(_addNewRow, rowview.Row))
                 {
                     return Count - 1;
                 }
-                if ((null != _index) && (DataRowState.Detached != rowview.Row.RowState))
+                if ((_index != null) && (rowview.Row.RowState != DataRowState.Detached))
                 {
                     DataRowView? cached; // verify the DataRowView is one we currently track - not something previously detached
                     if (_rowViewCache.TryGetValue(rowview.Row, out cached) && cached == (object)rowview)
@@ -898,7 +898,7 @@ namespace System.Data
         void IList.Remove(object? value)
         {
             int index = IndexOf(value as DataRowView);
-            if (0 <= index)
+            if (index >= 0)
             {
                 // must delegate to IList.RemoveAt
                 ((IList)this).RemoveAt(index);
@@ -1015,7 +1015,7 @@ namespace System.Data
                 Index? findIndex = null;
                 try
                 {
-                    if ((null == _findIndexes) || !_findIndexes.TryGetValue(property.Name, out findIndex))
+                    if ((_findIndexes == null) || !_findIndexes.TryGetValue(property.Name, out findIndex))
                     {
                         created = true;
                         findIndex = _table!.GetIndex(property.Name, _recordStates, GetFilter());
@@ -1031,7 +1031,7 @@ namespace System.Data
                 }
                 finally
                 {
-                    if (created && (null != findIndex))
+                    if (created && (findIndex != null))
                     {
                         findIndex.RemoveRef();
                         if (findIndex.RefCount == 1)
@@ -1111,7 +1111,7 @@ namespace System.Data
             resultString.Append('[');
             resultString.Append(property.Name);
             resultString.Append(']');
-            if (ListSortDirection.Descending == direction)
+            if (direction == ListSortDirection.Descending)
             {
                 resultString.Append(" DESC");
             }
@@ -1259,7 +1259,7 @@ namespace System.Data
 
         protected virtual void IndexListChanged(object sender, ListChangedEventArgs e)
         {
-            if (ListChangedType.Reset != e.ListChangedType)
+            if (e.ListChangedType != ListChangedType.Reset)
             {
                 OnListChanged(e);
             }
@@ -1269,7 +1269,7 @@ namespace System.Data
                 FinishAddNew(false);
             }
 
-            if (ListChangedType.Reset == e.ListChangedType)
+            if (e.ListChangedType == ListChangedType.Reset)
             {
                 OnListChanged(e);
             }
@@ -1279,7 +1279,7 @@ namespace System.Data
         {
             _rowViewBuffer.Clear();
 
-            if ((ListChangedType.ItemAdded == e.ListChangedType) && (null != _addNewMoved))
+            if ((e.ListChangedType == ListChangedType.ItemAdded) && (_addNewMoved != null))
             {
                 if (_addNewMoved.NewIndex == _addNewMoved.OldIndex)
                 {
@@ -1304,7 +1304,7 @@ namespace System.Data
             switch (changedType)
             {
                 case ListChangedType.ItemAdded:
-                    Debug.Assert(null != row, "MaintainDataView.ItemAdded with null DataRow");
+                    Debug.Assert(row != null, "MaintainDataView.ItemAdded with null DataRow");
                     if (trackAddRemove)
                     {
                         if (_rowViewBuffer.TryGetValue(row, out buffer))
@@ -1318,7 +1318,7 @@ namespace System.Data
                     {
                         // DataView.AddNew().Row was added to DataRowCollection
                         int index = IndexOfDataRowView(_rowViewCache[_addNewRow]);
-                        Debug.Assert(0 <= index, "ItemAdded was actually deleted");
+                        Debug.Assert(index >= 0, "ItemAdded was actually deleted");
 
                         _addNewRow = null;
                         _addNewMoved = new ListChangedEventArgs(ListChangedType.ItemMoved, index, Count - 1);
@@ -1333,14 +1333,14 @@ namespace System.Data
                     }
                     break;
                 case ListChangedType.ItemDeleted:
-                    Debug.Assert(null != row, "MaintainDataView.ItemDeleted with null DataRow");
+                    Debug.Assert(row != null, "MaintainDataView.ItemDeleted with null DataRow");
                     Debug.Assert(row != _addNewRow, "addNewRow being deleted");
 
                     if (trackAddRemove)
                     {
                         // help turn expression add/remove into a changed/move
                         _rowViewCache.TryGetValue(row, out buffer);
-                        if (null != buffer)
+                        if (buffer != null)
                         {
                             _rowViewBuffer.Add(row, buffer);
                         }
@@ -1355,7 +1355,7 @@ namespace System.Data
                     }
                     break;
                 case ListChangedType.Reset:
-                    Debug.Assert(null == row, "MaintainDataView.Reset with non-null DataRow");
+                    Debug.Assert(row == null, "MaintainDataView.Reset with non-null DataRow");
                     ResetRowViewCache();
                     break;
                 case ListChangedType.ItemChanged:
@@ -1389,18 +1389,18 @@ namespace System.Data
                     case ListChangedType.ItemMoved:
                         // ItemMoved - a column value affecting sort order changed
                         // ItemMoved - a state change in equivalent fields
-                        Debug.Assert(((ListChangedType.ItemChanged == e.ListChangedType) && ((e.NewIndex == e.OldIndex) || (-1 == e.OldIndex))) ||
-                                     (ListChangedType.ItemMoved == e.ListChangedType && (e.NewIndex != e.OldIndex) && (0 <= e.OldIndex)),
+                        Debug.Assert(((e.ListChangedType == ListChangedType.ItemChanged) && ((e.NewIndex == e.OldIndex) || (e.OldIndex == -1))) ||
+                                     (e.ListChangedType == ListChangedType.ItemMoved && (e.NewIndex != e.OldIndex) && (e.OldIndex >= 0)),
                                      "unexpected ItemChanged|ItemMoved");
 
-                        Debug.Assert(0 <= e.NewIndex, "negative NewIndex");
-                        if (0 <= e.NewIndex)
+                        Debug.Assert(e.NewIndex >= 0, "negative NewIndex");
+                        if (e.NewIndex >= 0)
                         {
                             DataRow dr = GetRow(e.NewIndex);
                             if (dr.HasPropertyChanged)
                             {
                                 col = dr.LastChangedColumn;
-                                propertyName = (null != col) ? col.ColumnName : string.Empty;
+                                propertyName = (col != null) ? col.ColumnName : string.Empty;
                             }
                         }
 
@@ -1427,7 +1427,7 @@ namespace System.Data
                         _onListChanged(this, e);
                     }
                 }
-                if (null != propertyName)
+                if (propertyName != null)
                 {
                     // empty string if more than 1 column changed
                     this[e.NewIndex].RaisePropertyChangedEvent(propertyName);
@@ -1467,7 +1467,7 @@ namespace System.Data
             Dictionary<DataRow, DataRowView> rvc = new Dictionary<DataRow, DataRowView>(CountFromIndex, DataRowReferenceComparer.s_default);
             DataRowView? drv;
 
-            if (null != _index)
+            if (_index != null)
             {
                 // this improves performance by iterating of the index instead of computing record by index
                 RBTree<int>.RBTreeEnumerator iterator = _index.GetEnumerator(0);
@@ -1481,10 +1481,10 @@ namespace System.Data
                     rvc.Add(row, drv);
                 }
             }
-            if (null != _addNewRow)
+            if (_addNewRow != null)
             {
                 _rowViewCache.TryGetValue(_addNewRow, out drv);
-                Debug.Assert(null != drv, "didn't contain addNewRow");
+                Debug.Assert(drv != null, "didn't contain addNewRow");
                 rvc.Add(_addNewRow, drv);
             }
             Debug.Assert(rvc.Count == CountFromIndex, "didn't add expected count");
@@ -1540,8 +1540,8 @@ namespace System.Data
             _recordStates = newRowStates;
             _rowFilter = newRowFilter;
 
-            Debug.Assert((0 == (DataViewRowState.ModifiedCurrent & newRowStates)) ||
-                         (0 == (DataViewRowState.ModifiedOriginal & newRowStates)),
+            Debug.Assert(((DataViewRowState.ModifiedCurrent & newRowStates) == 0) ||
+                         ((DataViewRowState.ModifiedOriginal & newRowStates) == 0),
                          "asking DataViewRowState for both Original & Current records");
 
             if (_fEndInitInProgress)
@@ -1557,11 +1557,11 @@ namespace System.Data
             else
             {
                 // new code path for RelatedView
-                Debug.Assert(null == _comparison, "RelatedView should not have a comparison function");
+                Debug.Assert(_comparison == null, "RelatedView should not have a comparison function");
                 UpdateIndex(true, false);
             }
 
-            if (null != _findIndexes)
+            if (_findIndexes != null)
             {
                 Dictionary<string, Index> indexes = _findIndexes;
                 _findIndexes = null;
@@ -1590,7 +1590,7 @@ namespace System.Data
                     {
                         if (_table != null)
                         {
-                            if (null != SortComparison)
+                            if (SortComparison != null)
                             {
                                 // because an Index with a Comparison<DataRow is not sharable, directly create the index here
                                 newIndex = new Index(_table, SortComparison, ((DataViewRowState)_recordStates), GetFilter());
@@ -1694,7 +1694,7 @@ namespace System.Data
             DataTable dt = new DataTable();
             dt.Locale = _table!.Locale;
             dt.CaseSensitive = _table.CaseSensitive;
-            dt.TableName = ((null != tableName) ? tableName : _table.TableName);
+            dt.TableName = ((tableName != null) ? tableName : _table.TableName);
             dt.Namespace = _table.Namespace;
             dt.Prefix = _table.Prefix;
 
@@ -1764,7 +1764,7 @@ namespace System.Data
         /// </summary>
         public virtual bool Equals(DataView? view)
         {
-            if ((null == view) ||
+            if ((view == null) ||
                Table != view.Table ||
                Count != view.Count ||
                !string.Equals(RowFilter, view.RowFilter, StringComparison.OrdinalIgnoreCase) ||  // case insensitive

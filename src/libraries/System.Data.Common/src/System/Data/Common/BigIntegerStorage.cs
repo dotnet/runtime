@@ -29,7 +29,7 @@ namespace System.Data.Common
             if (valueNo1.IsZero || valueNo2.IsZero)
             {
                 int bitCheck = CompareBits(recordNo1, recordNo2);
-                if (0 != bitCheck)
+                if (bitCheck != 0)
                 {
                     return bitCheck;
                 }
@@ -40,8 +40,8 @@ namespace System.Data.Common
 
         public override int CompareValueTo(int recordNo, object? value)
         {
-            Debug.Assert(0 <= recordNo, "Invalid record");
-            Debug.Assert(null != value, "null value");
+            Debug.Assert(recordNo >= 0, "Invalid record");
+            Debug.Assert(value != null, "null value");
 
             if (_nullValue == value)
             {
@@ -95,7 +95,7 @@ namespace System.Data.Common
         {
             if (_nullValue != value)
             {
-                if (null != value)
+                if (value != null)
                 {
                     value = ConvertToBigInteger(value, FormatProvider);
                 }
@@ -125,7 +125,7 @@ namespace System.Data.Common
 
         public override void Set(int record, object value)
         {
-            Debug.Assert(null != value, "null value");
+            Debug.Assert(value != null, "null value");
             if (_nullValue == value)
             {
                 _values[record] = BigInteger.Zero;
@@ -141,7 +141,7 @@ namespace System.Data.Common
         public override void SetCapacity(int capacity)
         {
             BigInteger[] newValues = new BigInteger[capacity];
-            if (null != _values)
+            if (_values != null)
             {
                 Array.Copy(_values, newValues, Math.Min(capacity, _values.Length));
             }

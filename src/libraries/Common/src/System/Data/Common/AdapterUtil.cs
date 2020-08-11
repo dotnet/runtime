@@ -223,7 +223,7 @@ namespace System.Data.Common
 
         internal static void CheckArgumentNull([NotNull] object? value, string parameterName)
         {
-            if (null == value)
+            if (value == null)
             {
                 throw ArgumentNull(parameterName);
             }
@@ -473,20 +473,20 @@ namespace System.Data.Common
         }
 
         internal static bool CompareInsensitiveInvariant(string? strvalue, string? strconst) =>
-            0 == CultureInfo.InvariantCulture.CompareInfo.Compare(strvalue, strconst, CompareOptions.IgnoreCase);
+            CultureInfo.InvariantCulture.CompareInfo.Compare(strvalue, strconst, CompareOptions.IgnoreCase) == 0;
 
         internal static int DstCompare(string strA, string strB) => CultureInfo.CurrentCulture.CompareInfo.Compare(strA, strB, ADP.DefaultCompareOptions);
 
-        internal static bool IsEmptyArray([NotNullWhen(false)] string?[]? array) => (null == array) || (0 == array.Length);
+        internal static bool IsEmptyArray([NotNullWhen(false)] string?[]? array) => (array == null) || (array.Length == 0);
 
         internal static bool IsNull(object? value)
         {
-            if ((null == value) || (DBNull.Value == value))
+            if ((value == null) || (value == DBNull.Value))
             {
                 return true;
             }
             INullable? nullable = (value as INullable);
-            return ((null != nullable) && nullable.IsNull);
+            return ((nullable != null) && nullable.IsNull);
         }
 
         internal static Exception InvalidSeekOrigin(string parameterName)

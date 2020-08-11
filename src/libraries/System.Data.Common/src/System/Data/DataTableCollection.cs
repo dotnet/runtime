@@ -626,7 +626,7 @@ namespace System.Data
         internal int InternalIndexOf(string? tableName)
         {
             int cachedI = -1;
-            if ((null != tableName) && (0 < tableName.Length))
+            if ((tableName != null) && (tableName.Length > 0))
             {
                 int count = _list.Count;
                 int result = 0;
@@ -663,7 +663,7 @@ namespace System.Data
         internal int InternalIndexOf(string tableName, string tableNamespace)
         {
             int cachedI = -1;
-            if ((null != tableName) && (0 < tableName.Length))
+            if ((tableName != null) && (tableName.Length > 0))
             {
                 int count = _list.Count;
                 int result = 0;
@@ -699,7 +699,7 @@ namespace System.Data
         /// <summary>
         /// Makes a default name with the given index.  e.g. Table1, Table2, ... Tablei
         /// </summary>
-        private string MakeName(int index) => 1 == index ?
+        private string MakeName(int index) => index == 1 ?
             "Table1" :
             "Table" + index.ToString(System.Globalization.CultureInfo.InvariantCulture);
 

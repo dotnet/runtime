@@ -65,7 +65,7 @@ namespace System.Data
         }
 
         internal DataColumn[] ColumnsReference => _columns;
-        internal bool HasValue => null != _columns;
+        internal bool HasValue => _columns != null;
         internal DataTable Table => _columns[0].Table!;
         internal void CheckState()
         {

@@ -825,7 +825,7 @@ namespace System.Data
             for (int i = foundColumns.Length - 1; i >= 0; --i)
             {
                 // Check all columns
-                if (null == foundColumns[i])
+                if (foundColumns[i] == null)
                 {              // Got data for this column ?
                     c = collection[i];                      // No. Get column for this index
 
@@ -1066,7 +1066,7 @@ namespace System.Data
                     // Check all columns
                     c = collection[i];                      // Get column for this index
 
-                    c[row._tempRecord] = null != foundColumns[i] ? foundColumns[i] : DBNull.Value;
+                    c[row._tempRecord] = foundColumns[i] != null ? foundColumns[i] : DBNull.Value;
                     // Set column to loaded value of to
                     // DBNull if value is missing.
                 }
@@ -1091,7 +1091,7 @@ namespace System.Data
                 for (int i = foundColumns.Length - 1; i >= 0; --i)
                 {
                     // Check all columns
-                    if (null == foundColumns[i])
+                    if (foundColumns[i] == null)
                     {          // Got data for this column ?
                         c = collection[i];                  // No. Get column for this index
 
@@ -1185,7 +1185,7 @@ namespace System.Data
                         }
                     }
 
-                    if (null == columnValue)
+                    if (columnValue == null)
                     {                  // If no value,
                         columnValue = DBNull.Value;             // change to DBNull;
                     }
@@ -1242,7 +1242,7 @@ namespace System.Data
                             case XmlNodeType.Whitespace:
                             case XmlNodeType.CDATA:
                             case XmlNodeType.SignificantWhitespace:
-                                if (0 == text.Length)
+                                if (text.Length == 0)
                                 {                 // In case we do not have value already
                                     text = _dataReader.Value;            // Get value.
 
@@ -1342,7 +1342,7 @@ namespace System.Data
                     _dataReader.Read();                              // We're done here. To the next element.
                 }
 
-                if (0 == text.Length && xsiNilString != null && XmlConvert.ToBoolean(xsiNilString))
+                if (text.Length == 0 && xsiNilString != null && XmlConvert.ToBoolean(xsiNilString))
                 {
                     foundColumns[column.Ordinal] = DBNull.Value;
                     // If no data and NIL attribute is true set value to null

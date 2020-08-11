@@ -327,7 +327,7 @@ namespace System.Data
         {
             get
             {
-                return (0 != _inUseSatelliteTreeCount);
+                return (_inUseSatelliteTreeCount != 0);
             }
         }
 
@@ -394,7 +394,7 @@ namespace System.Data
 
         private bool Successor(ref int nodeId, ref int mainTreeNodeId)
         {
-            if (NIL == nodeId)
+            if (nodeId == NIL)
             {   // find first node, using branchNodeId as the root
                 nodeId = Minimum(mainTreeNodeId);
                 mainTreeNodeId = NIL;
@@ -403,17 +403,17 @@ namespace System.Data
             {   // find next node
                 nodeId = Successor(nodeId);
 
-                if ((NIL == nodeId) && (NIL != mainTreeNodeId))
+                if ((nodeId == NIL) && (mainTreeNodeId != NIL))
                 {   // done with satellite branch, move back to main tree
                     nodeId = Successor(mainTreeNodeId);
                     mainTreeNodeId = NIL;
                 }
             }
-            if (NIL != nodeId)
+            if (nodeId != NIL)
             {   // test for satellite branch
-                if (NIL != Next(nodeId))
+                if (Next(nodeId) != NIL)
                 {   // find first node of satellite branch
-                    if (NIL != mainTreeNodeId)
+                    if (mainTreeNodeId != NIL)
                     {   // satellite branch has satellite branch - very bad
                         throw ExceptionBuilder.InternalRBTreeError(RBTreeError.NestedSatelliteTreeEnumerator);
                     }
@@ -547,8 +547,8 @@ namespace System.Data
         // corruption happens when the data changes without telling the tree or when multi-threads do simultanous write operations
         private int Compare(int root_id, int x_id, int z_id)
         {
-            Debug.Assert(NIL != x_id, "nil left");
-            Debug.Assert(NIL != z_id, "nil right");
+            Debug.Assert(x_id != NIL, "nil left");
+            Debug.Assert(z_id != NIL, "nil right");
             return (root_id == NIL) ? CompareNode(Key(x_id), Key(z_id)) : CompareSateliteTreeNode(Key(x_id), Key(z_id));
         }
 #endif
@@ -577,7 +577,7 @@ namespace System.Data
 
             if (_accessMethod == TreeAccessMethod.KEY_SEARCH_AND_INDEX && !append)
             {
-                Debug.Assert(-1 == position, "KEY_SEARCH_AND_INDEX with bad position");
+                Debug.Assert(position == -1, "KEY_SEARCH_AND_INDEX with bad position");
                 while (z_id != NIL)  // in-order traverse and find node with a NILL left or right child
                 {
                     IncreaseSize(z_id);
@@ -588,14 +588,14 @@ namespace System.Data
                     if (c < 0)
                     {
 #if VerifySort
-                        Debug.Assert((NIL == Left(z_id)) || (0 > Compare(root_id, Left(z_id), z_id)), "Left is not left");
+                        Debug.Assert((Left(z_id) == NIL) || (Compare(root_id, Left(z_id), z_id) < 0), "Left is not left");
 #endif
                         z_id = Left(z_id);
                     }
                     else if (c > 0)
                     {
 #if VerifySort
-                        Debug.Assert((NIL == Right(z_id)) || (0 < Compare(root_id, Right(z_id), z_id)), "Right is not right");
+                        Debug.Assert((Right(z_id) == NIL) || (Compare(root_id, Right(z_id), z_id) > 0), "Right is not right");
 #endif
                         z_id = Right(z_id);
                     }
@@ -1226,14 +1226,14 @@ namespace System.Data
                 if (c < 0)
                 {
 #if VerifySort
-                    Debug.Assert((NIL == Left(x_id)) || (0 > Compare(root_id, Left(x_id), x_id)), "Search duplicate Left is not left");
+                    Debug.Assert((Left(x_id) == NIL) || (Compare(root_id, Left(x_id), x_id) < 0), "Search duplicate Left is not left");
 #endif
                     x_id = Left(x_id);
                 }
                 else
                 {
 #if VerifySort
-                    Debug.Assert((NIL == Right(x_id)) || (0 < Compare(root_id, Right(x_id), x_id)), "Search duplicate Right is not right");
+                    Debug.Assert((Right(x_id) == NIL) || (Compare(root_id, Right(x_id), x_id) > 0), "Search duplicate Right is not right");
 #endif
                     x_id = Right(x_id);
                 }
@@ -1256,14 +1256,14 @@ namespace System.Data
                 if (c < 0)
                 {
 #if VerifySort
-                    Debug.Assert((NIL == Left(x_id)) || (0 > Compare(NIL, Left(x_id), x_id)), "Search Left is not left");
+                    Debug.Assert((Left(x_id) == NIL) || (Compare(NIL, Left(x_id), x_id) < 0), "Search Left is not left");
 #endif
                     x_id = Left(x_id);
                 }
                 else
                 {
 #if VerifySort
-                    Debug.Assert((NIL == Right(x_id)) || (0 < Compare(NIL, Right(x_id), x_id)), "Search Right is not right");
+                    Debug.Assert((Right(x_id) == NIL) || (Compare(NIL, Right(x_id), x_id) > 0), "Search Right is not right");
 #endif
                     x_id = Right(x_id);
                 }
@@ -1344,13 +1344,13 @@ namespace System.Data
         // this improves performance when used heavily, like with the default view (creating before rows added)
         public int GetIndexByNode(int node)
         {
-            Debug.Assert(NIL != node, "GetIndexByNode(NIL)");
+            Debug.Assert(node != NIL, "GetIndexByNode(NIL)");
 
-            if (0 == _inUseSatelliteTreeCount)
+            if (_inUseSatelliteTreeCount == 0)
             {   // compute from the main tree when no satellite branches exist
                 return ComputeIndexByNode(node);
             }
-            else if (NIL != Next(node))
+            else if (Next(node) != NIL)
             {   // node is a main tree node
 #if VerifyIndex && VerifyPath
                 (new NodePath(Next(node), node)).VerifyPath(this);
@@ -1385,11 +1385,11 @@ namespace System.Data
 #if VerifyIndex && VerifyPath
             path.VerifyPath(this);
 #endif
-            if (0 == _inUseSatelliteTreeCount)
+            if (_inUseSatelliteTreeCount == 0)
             {   // compute from the main tree when no satellite branches exist
                 return ComputeIndexByNode(path._nodeID);
             }
-            else if (NIL == path._mainTreeNodeID)
+            else if (path._mainTreeNodeID == NIL)
             {   // compute from the main tree accounting for satellite branches
                 return ComputeIndexWithSatelliteByNode(path._nodeID);
             }
@@ -1444,7 +1444,7 @@ namespace System.Data
         private NodePath GetNodeByIndex(int userIndex)
         {
             int x_id, satelliteRootId;
-            if (0 == _inUseSatelliteTreeCount)
+            if (_inUseSatelliteTreeCount == 0)
             {
                 // if rows were only contigously append, then using (userIndex -= _pageTable[i].InUseCount) would
                 // be faster for the first 12 pages (about 5248) nodes before (log2 of Count) becomes faster again.
@@ -1461,7 +1461,7 @@ namespace System.Data
             }
             if (x_id == NIL)
             {
-                if (TreeAccessMethod.INDEX_ONLY == _accessMethod)
+                if (_accessMethod == TreeAccessMethod.INDEX_ONLY)
                 {
                     throw ExceptionBuilder.RowOutOfRange(userIndex);
                 }
@@ -1510,7 +1510,7 @@ namespace System.Data
         {
             while (x_id != NIL)
             {
-                Debug.Assert(NIL == Next(x_id), "has unexpected satellite tree");
+                Debug.Assert(Next(x_id) == NIL, "has unexpected satellite tree");
 
                 int y_id = Left(x_id);
                 int rank = SubTreeSize(y_id) + 1;
@@ -1904,39 +1904,39 @@ namespace System.Data
 #if VerifyPath
             internal void VerifyPath(RBTree<K> tree)
             {
-                Debug.Assert(null != tree, "null tree");
-                Debug.Assert((NIL == _nodeID && NIL == _mainTreeNodeID) || (NIL != _nodeID), "MainTreeNodeID is not NIL");
+                Debug.Assert(tree != null, "null tree");
+                Debug.Assert((_nodeID == NIL && _mainTreeNodeID == NIL) || (_nodeID != NIL), "MainTreeNodeID is not NIL");
 
-                if (NIL != _mainTreeNodeID)
+                if (_mainTreeNodeID != NIL)
                 {
-                    Debug.Assert(NIL != tree.Next(_mainTreeNodeID), "MainTreeNodeID should have a Next");
+                    Debug.Assert(tree.Next(_mainTreeNodeID) != NIL, "MainTreeNodeID should have a Next");
                     int node = _mainTreeNodeID;
-                    while (NIL != tree.Parent(node))
+                    while (tree.Parent(node) != NIL)
                     {
                         node = tree.Parent(node);
                     }
                     Debug.Assert(tree.root == node, "MainTreeNodeID parent change doesn't align");
                 }
-                if (NIL != _nodeID)
+                if (_nodeID != NIL)
                 {
-                    Debug.Assert(NIL == tree.Next(_nodeID), "NodeID should not have a Next");
+                    Debug.Assert(tree.Next(_nodeID) == NIL, "NodeID should not have a Next");
                     int node = _nodeID;
-                    if (NIL == _mainTreeNodeID)
+                    if (_mainTreeNodeID == NIL)
                     {
-                        while (NIL != tree.Parent(node))
+                        while (tree.Parent(node) != NIL)
                         {
                             node = tree.Parent(node);
                         }
                     }
                     else
                     {
-                        while (NIL != tree.Parent(node))
+                        while (tree.Parent(node) != NIL)
                         {
-                            Debug.Assert(NIL == tree.Next(node), "duplicate node should not have a next");
+                            Debug.Assert(tree.Next(node) == NIL, "duplicate node should not have a next");
                             node = tree.Parent(node);
                         }
                     }
-                    Debug.Assert((NIL == _mainTreeNodeID && tree.root == node) ||
+                    Debug.Assert((_mainTreeNodeID == NIL && tree.root == node) ||
                                  (tree.Next(_mainTreeNodeID) == node), "NodeID parent change doesn't align");
                 }
             }
@@ -2058,7 +2058,7 @@ namespace System.Data
             {
                 _tree = tree;
                 _version = tree._version;
-                if (0 == position)
+                if (position == 0)
                 {
                     _index = NIL;
                     _mainTreeNodeId = tree.root;
@@ -2066,7 +2066,7 @@ namespace System.Data
                 else
                 {
                     _index = tree.ComputeNodeByIndex(position - 1, out _mainTreeNodeId);
-                    if (NIL == _index)
+                    if (_index == NIL)
                     {
                         throw ExceptionBuilder.InternalRBTreeError(RBTreeError.IndexOutOFRangeinGetNodeByIndex);
                     }

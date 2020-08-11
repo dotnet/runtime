@@ -191,7 +191,7 @@ namespace System.Data.SqlTypes
 
         public static SqlBoolean Parse(string s)
         {
-            if (null == s)
+            if (s == null)
                 // Let Boolean.Parse throw exception
                 return new SqlBoolean(bool.Parse(s!));
             if (s == SQLResource.NullString)
@@ -199,7 +199,7 @@ namespace System.Data.SqlTypes
 
             s = s.TrimStart();
             char wchFirst = s[0];
-            if (char.IsNumber(wchFirst) || ('-' == wchFirst) || ('+' == wchFirst))
+            if (char.IsNumber(wchFirst) || (wchFirst == '-') || (wchFirst == '+'))
             {
                 return new SqlBoolean(int.Parse(s, null));
             }

@@ -135,7 +135,7 @@ namespace System.Data
 
         internal static void Bind(DataRelation? relation, List<DataColumn> list)
         {
-            if (null != relation)
+            if (relation != null)
             {
                 // add the ends of the relationship the expression depends on
                 foreach (DataColumn c in relation.ChildColumnsReference)
@@ -197,14 +197,14 @@ namespace System.Data
             {
                 if (rows[i].RowState == DataRowState.Deleted)
                 {
-                    if (DataRowAction.Rollback != rows[i]._action)
+                    if (rows[i]._action != DataRowAction.Rollback)
                     {
                         continue;
                     }
-                    Debug.Assert(DataRowVersion.Original == version, "wrong version");
+                    Debug.Assert(version == DataRowVersion.Original, "wrong version");
                     version = DataRowVersion.Original;
                 }
-                else if ((DataRowAction.Rollback == rows[i]._action) && (rows[i].RowState == DataRowState.Added))
+                else if ((rows[i]._action == DataRowAction.Rollback) && (rows[i].RowState == DataRowState.Added))
                 {
                     continue;
                 }
