@@ -170,7 +170,6 @@
         <Targets Condition="'$(TargetArchitecture)' == 'x86'">ios-simulator-32</Targets>
 
         <TestTimeout>$(_workItemTimeout)</TestTimeout>
-        <WorkItemTimeout>00:30:00</WorkItemTimeout>
         <LaunchTimeout>$(_workItemTimeout)</LaunchTimeout>
       </XHarnessAppBundleToTest>
     </ItemGroup>
