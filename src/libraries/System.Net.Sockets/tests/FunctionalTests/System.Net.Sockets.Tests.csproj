@@ -49,8 +49,6 @@
     <Compile Include="MulticastOptionTest.cs" />
     <Compile Include="UdpClientTest.cs" />
     <Compile Include="UnixDomainSocketTest.cs" />
-    <Compile Include="Connections\SocketsConnectionFactoryTests.cs" />
-    <Compile Include="Connections\SocketsConnectionFactoryTests_DerivedFactory.cs" />
     <!-- Common Sockets files -->
     <Compile Include="$(CommonTestPath)System\Net\Configuration.cs" Link="SocketCommon\Configuration.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Configuration.Sockets.cs" Link="SocketCommon\Configuration.Sockets.cs" />

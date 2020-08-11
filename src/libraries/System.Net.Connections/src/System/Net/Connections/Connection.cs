@@ -90,7 +90,7 @@ namespace System.Net.Connections
             }
         }
 
-        private sealed class DuplexStreamPipe : IDuplexPipe
+        internal sealed class DuplexStreamPipe : IDuplexPipe
         {
             private static readonly StreamPipeReaderOptions s_readerOpts = new StreamPipeReaderOptions(leaveOpen: true);
             private static readonly StreamPipeWriterOptions s_writerOpts = new StreamPipeWriterOptions(leaveOpen: true);

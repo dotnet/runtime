@@ -17,9 +17,8 @@ namespace System.Net.Connections
         private readonly SocketsConnectionFactory? _factory;
         private readonly IConnectionProperties? _options;
         private Stream? _stream;
-#if SYSTEM_NET_SOCKETS_DLL
         private IDuplexPipe? _pipe;
-#endif
+
         public override EndPoint? RemoteEndPoint => _socket.RemoteEndPoint;
         public override EndPoint? LocalEndPoint => _socket.LocalEndPoint;
         public override IConnectionProperties ConnectionProperties => this;
@@ -73,29 +72,8 @@ namespace System.Net.Connections
             return false;
         }
 
-#if SYSTEM_NET_SOCKETS_DLL
         protected override Stream CreateStream() => _stream ??= _factory!.CreateStreamForConnection(_socket, _options);
 
         protected override IDuplexPipe CreatePipe() => _pipe ??= _factory!.CreatePipeForConnection(_socket, _options);
-
-        internal sealed class DuplexStreamPipe : IDuplexPipe
-        {
-            private static readonly StreamPipeReaderOptions s_readerOpts = new StreamPipeReaderOptions(leaveOpen: true);
-            private static readonly StreamPipeWriterOptions s_writerOpts = new StreamPipeWriterOptions(leaveOpen: true);
-
-            public DuplexStreamPipe(Stream stream)
-            {
-                Input = PipeReader.Create(stream, s_readerOpts);
-                Output = PipeWriter.Create(stream, s_writerOpts);
-            }
-
-            public PipeReader Input { get; }
-
-            public PipeWriter Output { get; }
-        }
-#else
-        // Synchronous HttpClient path, no extensibility:
-        protected override Stream CreateStream() => _stream ??= new NetworkStream(_socket, ownsSocket: true);
-#endif
     }
 }

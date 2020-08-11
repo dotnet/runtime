@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Browser</TargetFrameworks>
@@ -14,8 +14,6 @@
   </PropertyGroup>
   <ItemGroup Condition="'$(TargetsBrowser)' != 'true'">
     <!-- All configurations -->
-    <Compile Include="System\Net\Connections\SocketsConnectionFactory.cs" />
-    <Compile Include="System\Net\Connections\TaskSocketAsyncEventArgs.cs" />
     <Compile Include="System\Net\Sockets\SocketReceiveFromResult.cs" />
     <Compile Include="System\Net\Sockets\SocketReceiveMessageFromResult.cs" />
     <Compile Include="System\Net\Sockets\SocketsTelemetry.cs" />
@@ -97,8 +95,6 @@
              Link="Common\System\Net\Sockets\ProtocolType.cs" />
     <Compile Include="$(CommonPath)System\Net\Sockets\SocketType.cs"
              Link="Common\System\Net\Sockets\SocketType.cs" />
-    <Compile Include="$(CommonPath)System\Net\Sockets\SocketConnection.cs"
-             Link="Common\System\Net\Sockets\SocketConnection.cs" />
     <Compile Include="$(CommonPath)System\Net\NetworkErrorHelper.cs"
              Link="Common\System\Net\NetworkErrorHelper.cs" />
   </ItemGroup>
@@ -313,9 +309,7 @@
     <Reference Include="System.Collections.Concurrent" />
     <Reference Include="System.Diagnostics.Tracing" />
     <Reference Include="System.IO.FileSystem" />
-    <Reference Include="System.IO.Pipelines" />
     <Reference Include="System.Memory" />
-    <Reference Include="System.Net.Connections" />
     <Reference Include="System.Net.NameResolution" />
     <Reference Include="System.Net.Primitives" />
     <Reference Include="System.Runtime" />

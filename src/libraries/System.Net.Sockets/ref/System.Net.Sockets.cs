@@ -4,18 +4,6 @@
 // Changes to this file must follow the https://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
 
-namespace System.Net.Connections
-{
-    public partial class SocketsConnectionFactory : System.Net.Connections.ConnectionFactory
-    {
-        public SocketsConnectionFactory(System.Net.Sockets.AddressFamily addressFamily, System.Net.Sockets.SocketType socketType, System.Net.Sockets.ProtocolType protocolType) { }
-        public SocketsConnectionFactory(System.Net.Sockets.SocketType socketType, System.Net.Sockets.ProtocolType protocolType) { }
-        public override System.Threading.Tasks.ValueTask<System.Net.Connections.Connection> ConnectAsync(System.Net.EndPoint? endPoint, System.Net.Connections.IConnectionProperties? options = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
-        protected virtual System.IO.Pipelines.IDuplexPipe CreatePipe(System.Net.Sockets.Socket socket, System.Net.Connections.IConnectionProperties? options) { throw null; }
-        protected virtual System.Net.Sockets.Socket CreateSocket(System.Net.Sockets.AddressFamily addressFamily, System.Net.Sockets.SocketType socketType, System.Net.Sockets.ProtocolType protocolType, System.Net.EndPoint? endPoint, System.Net.Connections.IConnectionProperties? options) { throw null; }
-        protected virtual System.IO.Stream CreateStream(System.Net.Sockets.Socket socket, System.Net.Connections.IConnectionProperties? options) { throw null; }
-    }
-}
 namespace System.Net.Sockets
 {
     public enum IOControlCode : long
