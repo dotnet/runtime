@@ -604,7 +604,10 @@ namespace System.Diagnostics
                     }
 
                     ProcessThreadCollection newThreads = new ProcessThreadCollection(newThreadsArray);
-                    _threads = newThreads;
+                    if (Interlocked.CompareExchange(ref _threads, newThreads, null) != null)
+                    {
+                        newThreads.Dispose();
+                    }
                 }
                 return _threads;
             }
@@ -1127,6 +1130,7 @@ namespace System.Diagnostics
         public void Refresh()
         {
             _processInfo = null;
+            _threads?.Dispose();
             _threads = null;
             _modules = null;
             _exited = false;
