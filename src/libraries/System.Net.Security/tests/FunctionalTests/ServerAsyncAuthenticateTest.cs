@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.IO;
 using System.Net.Sockets;
 using System.Net.Test.Common;
 using System.Security.Authentication;
@@ -190,6 +191,68 @@ namespace System.Net.Security.Tests
                     },
                     null, CancellationToken.None);
                 await Assert.ThrowsAsync<InvalidOperationException>(() => t2);
+            }
+        }
+
+        [Fact]
+        public async Task ServerAsyncAuthenticate_VerificationDelegate_Success()
+        {
+            bool validationCallbackCalled = false;
+            var serverOptions = new SslServerAuthenticationOptions() { ServerCertificate = _serverCertificate, ClientCertificateRequired = true, };
+            var clientOptions = new SslClientAuthenticationOptions() { TargetHost = _serverCertificate.GetNameInfo(X509NameType.SimpleName, false) };
+            clientOptions.RemoteCertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) => true;
+            serverOptions.RemoteCertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) =>
+            {
+                validationCallbackCalled = true;
+                return true;
+            };
+
+            (SslStream client, SslStream server) = TestHelper.GetConnectedSslStreams();
+            using (client)
+            using (server)
+            {
+                Task t1 = client.AuthenticateAsClientAsync(clientOptions, CancellationToken.None);
+                Task t2 = server.AuthenticateAsServerAsync(
+                    (stream, clientHelloInfo, userState, cancellationToken) =>
+                    {
+                        Assert.Equal(server, stream);
+                        Assert.Equal(clientOptions.TargetHost, clientHelloInfo.ServerName);
+                        return new ValueTask<SslServerAuthenticationOptions>(OptionsTask(serverOptions));
+                    },
+                    null, CancellationToken.None);
+
+                await TestConfiguration.WhenAllOrAnyFailedWithTimeout(t1, t2);
+                Assert.True(validationCallbackCalled);
+            }
+        }
+
+        [Fact]
+        public async Task ServerAsyncAuthenticate_ConstructorVerificationDelegate_Success()
+        {
+            bool validationCallbackCalled = false;
+            var serverOptions = new SslServerAuthenticationOptions() { ServerCertificate = _serverCertificate, ClientCertificateRequired = true, };
+            var clientOptions = new SslClientAuthenticationOptions() { TargetHost = _serverCertificate.GetNameInfo(X509NameType.SimpleName, false) };
+            clientOptions.RemoteCertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) => true;
+
+            (Stream clientStream, Stream serverStream) = TestHelper.GetConnectedStreams();
+            var client = new SslStream(clientStream);
+            var server = new SslStream(serverStream, false, (sender, certificate, chain, sslPolicyErrors) => { validationCallbackCalled = true; return true;});
+
+            using (client)
+            using (server)
+            {
+                Task t1 = client.AuthenticateAsClientAsync(clientOptions, CancellationToken.None);
+                Task t2 = server.AuthenticateAsServerAsync(
+                    (stream, clientHelloInfo, userState, cancellationToken) =>
+                    {
+                        Assert.Equal(server, stream);
+                        Assert.Equal(clientOptions.TargetHost, clientHelloInfo.ServerName);
+                        return new ValueTask<SslServerAuthenticationOptions>(OptionsTask(serverOptions));
+                    },
+                    null, CancellationToken.None);
+
+                await TestConfiguration.WhenAllOrAnyFailedWithTimeout(t1, t2);
+                Assert.True(validationCallbackCalled);
             }
         }
 

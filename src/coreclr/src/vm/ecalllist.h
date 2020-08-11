@@ -1088,6 +1088,12 @@ FCFuncStart(gPalOleAut32Funcs)
 FCFuncEnd()
 #endif
 
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
+FCFuncStart(gX86BaseFuncs)
+    QCFuncElement("__cpuidex", SystemNative::X86BaseCpuId)
+FCFuncEnd()
+#endif // defined(TARGET_X86) || defined(TARGET_AMD64)
+
 #ifdef FEATURE_COMINTEROP
 
 //
@@ -1234,6 +1240,10 @@ FCClassElement("Variant", "System", gVariantFuncs)
 FCClassElement("WaitHandle", "System.Threading", gWaitHandleFuncs)
 FCClassElement("WeakReference", "System", gWeakReferenceFuncs)
 FCClassElement("WeakReference`1", "System", gWeakReferenceOfTFuncs)
+
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
+FCClassElement("X86Base", "System.Runtime.Intrinsics.X86", gX86BaseFuncs)
+#endif // defined(TARGET_X86) || defined(TARGET_AMD64)
 
 #if defined(FEATURE_EVENTSOURCE_XPLAT)
 FCClassElement("XplatEventLogger", "System.Diagnostics.Tracing", gEventLogger)

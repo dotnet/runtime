@@ -4224,7 +4224,7 @@ void Compiler::EndPhase(Phases phase)
 //  code:CILJit::compileMethod function.
 //
 //  For an overview of the structure of the JIT, see:
-//   https://github.com/dotnet/runtime/blob/master/docs/design/coreclr/botr/ryujit-overview.md
+//   https://github.com/dotnet/runtime/blob/master/docs/design/coreclr/jit/ryujit-overview.md
 //
 //  Also called for inlinees, though they will only be run through the first few phases.
 //

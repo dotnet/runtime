@@ -354,20 +354,22 @@ namespace System.Net.Http
                 request.RequestUri.PathAndQuery,
                 request.Version.Major,
                 request.Version.Minor);
+
+            request.MarkAsTrackedByTelemetry();
+
             try
             {
                 return await SendAsyncHelper(request, async, doRequestAuth, cancellationToken).ConfigureAwait(false);
             }
-            catch (Exception e) when (LogException(e))
+            catch when (LogException(request))
             {
                 // This code should never run.
                 throw;
             }
 
-            static bool LogException(Exception e)
+            static bool LogException(HttpRequestMessage request)
             {
-                HttpTelemetry.Log.RequestAborted();
-                HttpTelemetry.Log.RequestStop();
+                request.OnAborted();
 
                 // Returning false means the catch handler isn't run.
                 // So the exception isn't considered to be caught so it will now propagate up the stack.

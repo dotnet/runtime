@@ -490,7 +490,7 @@ namespace System.Net.Http
                 //  - On stream 0, the origin will be specified. HTTP/2 can service multiple origins per connection, and so the server can report origins other than what our pool is using.
                 //  - Otherwise, the origin is implicitly defined by the request stream and must be of length 0.
 
-                if ((frameHeader.StreamId != 0 && originLength == 0) || (frameHeader.StreamId == 0 && span.Length >= originLength && span.Slice(originLength).SequenceEqual(_pool.Http2AltSvcOriginUri)))
+                if ((frameHeader.StreamId != 0 && originLength == 0) || (frameHeader.StreamId == 0 && span.Length >= originLength && span.Slice(0, originLength).SequenceEqual(_pool.Http2AltSvcOriginUri)))
                 {
                     span = span.Slice(originLength);
 

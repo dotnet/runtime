@@ -35,10 +35,8 @@ namespace System.Threading
         private readonly T _PreviousValue_k__BackingField;
         private readonly T _CurrentValue_k__BackingField;
         private readonly int _dummyPrimitive;
-        [System.Diagnostics.CodeAnalysis.MaybeNullAttribute]
-        public T CurrentValue { get { throw null; } }
-        [System.Diagnostics.CodeAnalysis.MaybeNullAttribute]
-        public T PreviousValue { get { throw null; } }
+        public T? CurrentValue { get { throw null; } }
+        public T? PreviousValue { get { throw null; } }
         public bool ThreadContextChanged { get { throw null; } }
     }
     public sealed partial class AsyncLocal<T>
@@ -115,11 +113,11 @@ namespace System.Threading
         public EventWaitHandle(bool initialState, System.Threading.EventResetMode mode) { }
         public EventWaitHandle(bool initialState, System.Threading.EventResetMode mode, string? name) { }
         public EventWaitHandle(bool initialState, System.Threading.EventResetMode mode, string? name, out bool createdNew) { throw null; }
-        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows7.0")]
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public static System.Threading.EventWaitHandle OpenExisting(string name) { throw null; }
         public bool Reset() { throw null; }
         public bool Set() { throw null; }
-        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows7.0")]
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public static bool TryOpenExisting(string name, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out System.Threading.EventWaitHandle? result) { throw null; }
     }
     public sealed partial class ExecutionContext : System.IDisposable, System.Runtime.Serialization.ISerializable
@@ -350,11 +348,11 @@ namespace System.Threading
         public Semaphore(int initialCount, int maximumCount) { }
         public Semaphore(int initialCount, int maximumCount, string? name) { }
         public Semaphore(int initialCount, int maximumCount, string? name, out bool createdNew) { throw null; }
-        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows7.0")]
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public static System.Threading.Semaphore OpenExisting(string name) { throw null; }
         public int Release() { throw null; }
         public int Release(int releaseCount) { throw null; }
-        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows7.0")]
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public static bool TryOpenExisting(string name, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out System.Threading.Semaphore? result) { throw null; }
     }
     public partial class SemaphoreFullException : System.SystemException

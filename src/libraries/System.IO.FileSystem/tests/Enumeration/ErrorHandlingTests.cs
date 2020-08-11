@@ -102,6 +102,7 @@ namespace System.IO.Tests
         }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/40531", TestPlatforms.Browser)]
     public void VariableLengthFileNames_AllCreatableFilesAreEnumerable()
     {
         DirectoryInfo testDirectory = Directory.CreateDirectory(GetTestFilePath());
@@ -119,6 +120,7 @@ namespace System.IO.Tests
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/40531", TestPlatforms.Browser)]
     public void VariableLengthDirectoryNames_AllCreatableDirectoriesAreEnumerable()
     {
         DirectoryInfo testDirectory = Directory.CreateDirectory(GetTestFilePath());

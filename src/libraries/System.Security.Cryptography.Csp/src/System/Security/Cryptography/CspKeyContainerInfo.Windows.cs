@@ -7,7 +7,7 @@ using System.Runtime.Versioning;
 
 namespace System.Security.Cryptography
 {
-    [SupportedOSPlatform("windows7.0")]
+    [SupportedOSPlatform("windows")]
     public sealed class CspKeyContainerInfo
     {
         private readonly CspParameters _parameters;

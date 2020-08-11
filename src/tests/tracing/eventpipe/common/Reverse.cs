@@ -102,7 +102,6 @@ namespace Tracing.Tests.Common
                 socket.ReceiveBufferSize = Math.Max(bufferSize, 128);
                 socket.Bind(remoteEP);
                 socket.Listen(255);
-                socket.LingerState.Enabled = false;
                 _server = socket;
             }
         }
@@ -166,20 +165,13 @@ namespace Tracing.Tests.Common
                     }
                     break;
                 case Socket socket:
-                    try
-                    {
-                        socket.Shutdown(SocketShutdown.Both);
-                    }
-                    catch {}
-                    finally
-                    {
-                        _clientSocket?.Close();
-                        socket.Close();
-                        socket.Dispose();
-                        _clientSocket?.Dispose();
-                        if (File.Exists(_serverAddress))
-                            File.Delete(_serverAddress);
-                    }
+                    if (File.Exists(_serverAddress))
+                        File.Delete(_serverAddress);
+                    socket.Close();
+                    socket.Dispose();
+                    _clientSocket?.Shutdown(SocketShutdown.Both);
+                    _clientSocket?.Close();
+                    _clientSocket?.Dispose();
                     break;
                 default:
                     throw new ArgumentException("Invalid server type");
