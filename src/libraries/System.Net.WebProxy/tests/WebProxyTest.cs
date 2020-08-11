@@ -111,7 +111,6 @@ namespace System.Net.Tests
             var p = new WebProxy();
             AssertExtensions.Throws<ArgumentNullException>("destination", () => p.GetProxy(null));
             AssertExtensions.Throws<ArgumentNullException>("host", () => p.IsBypassed(null));
-            AssertExtensions.Throws<ArgumentNullException>("c", () => p.BypassList = null);
             Assert.ThrowsAny<ArgumentException>(() => p.BypassList = new string[] { "*.com" });
         }
 
