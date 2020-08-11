@@ -3264,11 +3264,10 @@ mono_interp_box_nullable (InterpFrame* frame, const guint16* ip, stackval* sp, M
 }
 
 static int
-mono_interp_box_vt (InterpFrame* frame, const guint16* ip, stackval* sp)
+mono_interp_box_vt (InterpFrame* frame, const guint16* ip, stackval* sp, MonoObjectHandle tmp_handle)
 {
 	InterpMethod* const imethod = frame->imethod;
 
-	MonoObject* o; // See the comment about GC safety.
 	MonoVTable * const vtable = (MonoVTable*)imethod->data_items [ip [1]];
 	MonoClass* const c = vtable->klass;
 
@@ -3277,26 +3276,27 @@ mono_interp_box_vt (InterpFrame* frame, const guint16* ip, stackval* sp)
 	guint16 offset = ip [2];
 	guint16 pop_vt_sp = !ip [3];
 
-	OBJREF (o) = mono_gc_alloc_obj (vtable, m_class_get_instance_size (vtable->klass));
+	MonoObject* o = mono_gc_alloc_obj (vtable, m_class_get_instance_size (vtable->klass));
+	MONO_HANDLE_ASSIGN_RAW (tmp_handle, o);
 	mono_value_copy_internal (mono_object_get_data (o), sp [-1 - offset].data.p, c);
+	MONO_HANDLE_ASSIGN_RAW (tmp_handle, NULL);
 
-	sp [-1 - offset].data.p = o;
+	sp [-1 - offset].data.o = o;
 	return pop_vt_sp ? ALIGN_TO (size, MINT_VT_ALIGNMENT) : 0;
 }
 
 static void
-mono_interp_box (InterpFrame* frame, const guint16* ip, stackval* sp)
+mono_interp_box (InterpFrame* frame, const guint16* ip, stackval* sp, MonoObjectHandle tmp_handle)
 {
-	MonoObject *o; // See the comment about GC safety.
 	MonoVTable * const vtable = (MonoVTable*)frame->imethod->data_items [ip [1]];
-
-	OBJREF (o) = mono_gc_alloc_obj (vtable, m_class_get_instance_size (vtable->klass));
-
 	guint16 const offset = ip [2];
 
+	MonoObject *o = mono_gc_alloc_obj (vtable, m_class_get_instance_size (vtable->klass));
+	MONO_HANDLE_ASSIGN_RAW (tmp_handle, o);
 	stackval_to_data (m_class_get_byval_arg (vtable->klass), &sp [-1 - offset], mono_object_get_data (o), FALSE);
+	MONO_HANDLE_ASSIGN_RAW (tmp_handle, NULL);
 
-	sp [-1 - offset].data.p = o;
+	sp [-1 - offset].data.o = o;
 }
 
 static int
@@ -3435,6 +3435,24 @@ interp_exec_method (InterpFrame *frame, ThreadContext *context, FrameClauseArgs 
 #include "mintops.def"
 	};
 #endif
+
+	HANDLE_FUNCTION_ENTER ();
+	/*
+	 * GC SAFETY:
+	 *
+	 *  The interpreter executes in gc unsafe (non-preempt) mode. On wasm, we cannot rely on
+	 * scanning the stack or any registers. In order to make the code GC safe, every objref
+	 * handled by the code needs to be kept alive and pinned in any of the following ways:
+	 * - the object needs to be stored on the interpreter stack. In order to make sure the
+	 * object actually gets stored on the interp stack and the store is not optimized out,
+	 * the store/variable should be volatile.
+	 * - if the execution of an opcode requires an object not coming from interp stack to be
+	 * kept alive, the tmp_handle below can be used. This handle will keep only one object
+	 * pinned by the GC. Ideally, once this object is no longer needed, the handle should be
+	 * cleared. If we will need to have more objects pinned simultaneously, additional handles
+	 * can be reserved here.
+	 */
+	MonoObjectHandle tmp_handle = MONO_HANDLE_NEW (MonoObject, NULL);
 
 	if (method_entry (context, frame,
 #if DEBUG_INTERP
@@ -5945,12 +5963,12 @@ call_newobj:
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_BOX) {
-			mono_interp_box (frame, ip, sp);
+			mono_interp_box (frame, ip, sp, tmp_handle);
 			ip += 3;
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_BOX_VT) {
-			vt_sp -= mono_interp_box_vt (frame, ip, sp);
+			vt_sp -= mono_interp_box_vt (frame, ip, sp, tmp_handle);
 			ip += 4;
 			MINT_IN_BREAK;
 		}
@@ -7380,6 +7398,8 @@ exit_clause:
 		context->stack_pointer = (guchar*)frame->stack;
 
 	DEBUG_LEAVE ();
+
+	HANDLE_FUNCTION_RETURN ();
 }
 
 static void
