@@ -68,5 +68,24 @@ namespace System.Diagnostics.Tests
         {
             public ModuleCollectionSubClass() : base() { }
         }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void ModulesAreDisposedWhenProcessIsDisposed()
+        {
+            Process process = CreateDefaultProcess();
+
+            ProcessModuleCollection modulesCollection = process.Modules;
+            int expectedCount = 0;
+            int disposedCount = 0;
+            foreach (ProcessModule processModule in modulesCollection)
+            {
+                expectedCount += 1;
+                processModule.Disposed += (_, __) => disposedCount += 1;
+            }
+
+            process.Dispose();
+
+            Assert.Equal(expectedCount, disposedCount);
+        }
     }
 }

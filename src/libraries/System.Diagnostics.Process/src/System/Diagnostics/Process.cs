@@ -300,7 +300,11 @@ namespace System.Diagnostics
                 if (_modules == null)
                 {
                     EnsureState(State.HaveNonExitedId | State.IsLocal);
-                    _modules = ProcessManager.GetModules(_processId);
+                    var newModules = ProcessManager.GetModules(_processId);
+                    if (Interlocked.CompareExchange(ref _modules, newModules, null) != null)
+                    {
+                        newModules.Dispose();
+                    }
                 }
                 return _modules;
             }
@@ -1132,6 +1136,7 @@ namespace System.Diagnostics
             _processInfo = null;
             _threads?.Dispose();
             _threads = null;
+            _modules?.Dispose();
             _modules = null;
             _exited = false;
             _haveWorkingSetLimits = false;
