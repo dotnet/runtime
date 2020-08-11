@@ -19,6 +19,7 @@ namespace System.Net.Sockets.Tests
     public abstract class SocketHelperBase
     {
         public abstract Task<Socket> AcceptAsync(Socket s);
+        public abstract Task<(Socket socket, byte[] buffer)> AcceptAsync(Socket s, int receiveSize);
         public abstract Task<Socket> AcceptAsync(Socket s, Socket acceptSocket);
         public abstract Task ConnectAsync(Socket s, EndPoint endPoint);
         public abstract Task MultiConnectAsync(Socket s, IPAddress[] addresses, int port);
@@ -37,13 +38,15 @@ namespace System.Net.Sockets.Tests
         public virtual bool ConnectAfterDisconnectResultsInInvalidOperationException => false;
         public virtual bool SupportsMultiConnect => true;
         public virtual bool SupportsAcceptIntoExistingSocket => true;
-        public virtual void Listen(Socket s, int backlog)  { s.Listen(backlog); }
+        public virtual bool SupportsAcceptReceive => false;
+        public virtual void Listen(Socket s, int backlog) { s.Listen(backlog); }
     }
 
     public class SocketHelperArraySync : SocketHelperBase
     {
         public override Task<Socket> AcceptAsync(Socket s) =>
             Task.Run(() => s.Accept());
+        public override Task<(Socket socket, byte[] buffer)> AcceptAsync(Socket s, int receiveSize) => throw new NotSupportedException();
         public override Task<Socket> AcceptAsync(Socket s, Socket acceptSocket) => throw new NotSupportedException();
         public override Task ConnectAsync(Socket s, EndPoint endPoint) =>
             Task.Run(() => s.Connect(endPoint));
@@ -92,8 +95,20 @@ namespace System.Net.Sockets.Tests
     public sealed class SocketHelperApm : SocketHelperBase
     {
         public override bool DisposeDuringOperationResultsInDisposedException => true;
+        public override bool SupportsAcceptReceive => true;
+
         public override Task<Socket> AcceptAsync(Socket s) =>
             Task.Factory.FromAsync(s.BeginAccept, s.EndAccept, null);
+        public override async Task<(Socket socket, byte[] buffer)> AcceptAsync(Socket s, int receiveSize)
+        {
+            byte[] buffer = null;
+
+            IAsyncResult BeginAccept(AsyncCallback callback, object state) => s.BeginAccept(receiveSize, callback, state);
+            Socket EndAccept(IAsyncResult iar) => s.EndAccept(out buffer, iar);
+
+            Socket socket = await Task.Factory.FromAsync(BeginAccept, EndAccept, null);
+            return (socket, buffer);
+        }
         public override Task<Socket> AcceptAsync(Socket s, Socket acceptSocket) =>
             Task.Factory.FromAsync(s.BeginAccept, s.EndAccept, acceptSocket, 0, null);
         public override Task ConnectAsync(Socket s, EndPoint endPoint) =>
@@ -142,6 +157,8 @@ namespace System.Net.Sockets.Tests
     {
         public override Task<Socket> AcceptAsync(Socket s) =>
             s.AcceptAsync();
+        public override Task<(Socket socket, byte[] buffer)> AcceptAsync(Socket s, int receiveSize)
+            => throw new NotSupportedException();
         public override Task<Socket> AcceptAsync(Socket s, Socket acceptSocket) =>
             s.AcceptAsync(acceptSocket);
         public override Task ConnectAsync(Socket s, EndPoint endPoint) =>
@@ -165,9 +182,24 @@ namespace System.Net.Sockets.Tests
     public sealed class SocketHelperEap : SocketHelperBase
     {
         public override bool ValidatesArrayArguments => false;
+        public override bool SupportsAcceptReceive => true;
 
         public override Task<Socket> AcceptAsync(Socket s) =>
             InvokeAsync(s, e => e.AcceptSocket, e => s.AcceptAsync(e));
+        public override Task<(Socket socket, byte[] buffer)> AcceptAsync(Socket s, int receiveSize) =>
+            InvokeAsync(s, e =>
+            {
+                byte[] buffer = new byte[receiveSize];
+                Array.Copy(e.Buffer, buffer, receiveSize);
+                return (e.AcceptSocket, buffer);
+            }, e =>
+            {
+                // The buffer needs to be large enough for the two special sockaddr buffers that AcceptEx requires
+                // see comments SocketAsyncEventArgs.StartOperationAccept()
+                int bufferLength = receiveSize + 2 * (72 + 16); // 2 * (IPV6 size + 16)
+                e.SetBuffer(new byte[bufferLength], 0, bufferLength);
+                return s.AcceptAsync(e);
+            });
         public override Task<Socket> AcceptAsync(Socket s, Socket acceptSocket) =>
             InvokeAsync(s, e => e.AcceptSocket, e =>
             {
@@ -261,6 +293,7 @@ namespace System.Net.Sockets.Tests
         //
 
         public Task<Socket> AcceptAsync(Socket s) => _socketHelper.AcceptAsync(s);
+        public Task<(Socket socket, byte[] buffer)> AcceptAsync(Socket s, int receiveSize) => _socketHelper.AcceptAsync(s, receiveSize);
         public Task<Socket> AcceptAsync(Socket s, Socket acceptSocket) => _socketHelper.AcceptAsync(s, acceptSocket);
         public Task ConnectAsync(Socket s, EndPoint endPoint) => _socketHelper.ConnectAsync(s, endPoint);
         public Task MultiConnectAsync(Socket s, IPAddress[] addresses, int port) => _socketHelper.MultiConnectAsync(s, addresses, port);
@@ -279,6 +312,7 @@ namespace System.Net.Sockets.Tests
         public bool ConnectAfterDisconnectResultsInInvalidOperationException => _socketHelper.ConnectAfterDisconnectResultsInInvalidOperationException;
         public bool SupportsMultiConnect => _socketHelper.SupportsMultiConnect;
         public bool SupportsAcceptIntoExistingSocket => _socketHelper.SupportsAcceptIntoExistingSocket;
+        public bool SupportsAcceptReceive => _socketHelper.SupportsAcceptReceive;
         public void Listen(Socket s, int backlog) => _socketHelper.Listen(s, backlog);
     }
 

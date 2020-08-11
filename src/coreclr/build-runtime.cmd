@@ -550,7 +550,7 @@ if %__BuildNative% EQU 1 (
 
     if /i "%__BuildArch%" == "arm64" goto SkipCopyUcrt
 
-    set "__UCRTDir=%UniversalCRTSDKDIR%Redist\ucrxxxt\DLLs\%__BuildArch%\"
+    set "__UCRTDir=%UniversalCRTSDKDIR%Redist\ucrt\DLLs\%__BuildArch%\"
     if not exist "!__UCRTDir!" set "__UCRTDir=%UniversalCRTSDKDIR%Redist\%UCRTVersion%\ucrt\DLLs\%__BuildArch%\"
     if not exist "!__UCRTDir!" (
         echo %__ErrMsgPrefix%%__MsgPrefix%Error: Please install the Redistributable Universal C Runtime.

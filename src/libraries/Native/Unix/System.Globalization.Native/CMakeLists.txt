@@ -59,6 +59,10 @@ set(NATIVEGLOBALIZATION_SOURCES
     entrypoints.c
 )
 
+if (MSVC)
+    set_source_files_properties(${NATIVEGLOBALIZATION_SOURCES} PROPERTIES LANGUAGE CXX)
+endif()
+
 include_directories("../Common")
 
 if (GEN_SHARED_LIB)
@@ -75,14 +79,15 @@ if (GEN_SHARED_LIB)
     install_with_stripped_symbols (System.Globalization.Native PROGRAMS .)
 endif()
 
-add_library(System.Globalization.Native-Static
+add_library(System.Globalization.Native_obj
     OBJECT
     ${NATIVEGLOBALIZATION_SOURCES}
 )
 
-set_target_properties(System.Globalization.Native-Static PROPERTIES OUTPUT_NAME System.Globalization.Native  CLEAN_DIRECT_OUTPUT 1)
+set_target_properties(System.Globalization.Native_obj PROPERTIES OUTPUT_NAME System.Globalization.Native  CLEAN_DIRECT_OUTPUT 1)
 
-install (TARGETS System.Globalization.Native-Static DESTINATION .)
+add_library(System.Globalization.Native-static INTERFACE)
+target_sources(System.Globalization.Native-static INTERFACE $<TARGET_OBJECTS:System.Globalization.Native_obj>)
 
 if(NOT CLR_CMAKE_TARGET_OSX AND NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS AND NOT CLR_CMAKE_TARGET_ANDROID)
     if (GEN_SHARED_LIB)

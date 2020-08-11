@@ -13840,7 +13840,8 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
             DWORD baseOffset = CorSigUncompressData(pBlob);
             DWORD fieldOffset = CorSigUncompressData(pBlob);
             FieldDesc* pField = ZapSig::DecodeField(currentModule, pInfoModule, pBlob);
-            pField->GetEnclosingMethodTable()->CheckRestore();
+            MethodTable *pEnclosingMT = pField->GetApproxEnclosingMethodTable();
+            pEnclosingMT->CheckRestore();
             DWORD actualFieldOffset = pField->GetOffset();
             if (!pField->IsStatic() && !pField->IsFieldOfValueType())
             {
@@ -13849,10 +13850,10 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
 
             DWORD actualBaseOffset = 0;
             if (!pField->IsStatic() && 
-                pField->GetEnclosingMethodTable()->GetParentMethodTable() != NULL &&
-                !pField->GetEnclosingMethodTable()->IsValueType())
+                pEnclosingMT->GetParentMethodTable() != NULL &&
+                !pEnclosingMT->IsValueType())
             {
-                actualBaseOffset = ReadyToRunInfo::GetFieldBaseOffset(pField->GetEnclosingMethodTable());
+                actualBaseOffset = ReadyToRunInfo::GetFieldBaseOffset(pEnclosingMT);
             }
 
             if ((fieldOffset != actualFieldOffset) || (baseOffset != actualBaseOffset))
@@ -13863,7 +13864,7 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
 
                 SString fatalErrorString;
                 fatalErrorString.Printf(W("Verify_FieldOffset '%s.%s' %d!=%d || %d!=%d"), 
-                    GetFullyQualifiedNameForClassW(pField->GetEnclosingMethodTable()),
+                    GetFullyQualifiedNameForClassW(pEnclosingMT),
                     ssFieldName.GetUnicode(),
                     fieldOffset,
                     actualFieldOffset,

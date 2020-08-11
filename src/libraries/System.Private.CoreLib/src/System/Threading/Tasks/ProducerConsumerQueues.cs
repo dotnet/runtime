@@ -239,7 +239,7 @@ namespace System.Threading.Tasks
 
             if (first == segment.m_state.m_last)
             {
-                result = default!;
+                result = default;
                 return false;
             }
 

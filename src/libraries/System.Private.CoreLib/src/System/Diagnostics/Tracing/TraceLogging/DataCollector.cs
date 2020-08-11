@@ -1,11 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#if ES_BUILD_STANDALONE
 using System;
 using System.Diagnostics;
-using Environment = Microsoft.Diagnostics.Tracing.Internal.Environment;
-#endif
 using System.Runtime.InteropServices;
 
 #if ES_BUILD_STANDALONE

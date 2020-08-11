@@ -1606,6 +1606,7 @@ Thread::Thread()
     m_DeserializationTracker = NULL;
 
     m_currentPrepareCodeConfig = nullptr;
+    m_isInForbidSuspendForDebuggerRegion = false;
 
 #ifdef _DEBUG
     memset(dangerousObjRefs, 0, sizeof(dangerousObjRefs));

@@ -12,7 +12,7 @@ namespace System.Reflection.Tests
         {
             using (MetadataLoadContext lc = new MetadataLoadContext(new EmptyCoreMetadataAssemblyResolver()))
             {
-                Assembly a = lc.LoadFromAssemblyPath(typeof(TopLevelType).Assembly.Location);
+                Assembly a = lc.LoadFromAssemblyPath(AssemblyPathHelper.GetAssemblyLocation(typeof(TopLevelType).Assembly));
 
 #pragma warning disable SYSLIB0012
                 Assert.Throws<NotSupportedException>(() => a.CodeBase);

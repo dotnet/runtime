@@ -390,8 +390,6 @@ DEFINE_METHOD(STUBFIELDINFO,        CTOR,                   .ctor,              
 #endif
 
 DEFINE_CLASS(FIELD,                 Reflection,             RuntimeFieldInfo)
-DEFINE_METHOD(FIELD,                SET_VALUE,              SetValue,                   IM_Obj_Obj_BindingFlags_Binder_CultureInfo_RetVoid)
-DEFINE_METHOD(FIELD,                GET_VALUE,              GetValue,                   IM_Obj_RetObj)
 
 DEFINE_CLASS(FIELD_HANDLE,          System,                 RuntimeFieldHandle)
 DEFINE_FIELD(FIELD_HANDLE,          M_FIELD,                m_ptr)
@@ -399,6 +397,8 @@ DEFINE_FIELD(FIELD_HANDLE,          M_FIELD,                m_ptr)
 DEFINE_CLASS(I_RT_FIELD_INFO,       System,                 IRuntimeFieldInfo)
 
 DEFINE_CLASS(FIELD_INFO,            Reflection,             FieldInfo)
+DEFINE_METHOD(FIELD_INFO,           SET_VALUE,              SetValue,                   IM_Obj_Obj_BindingFlags_Binder_CultureInfo_RetVoid)
+DEFINE_METHOD(FIELD_INFO,           GET_VALUE,              GetValue,                   IM_Obj_RetObj)
 
 
 DEFINE_CLASS(GUID,                  System,                 Guid)

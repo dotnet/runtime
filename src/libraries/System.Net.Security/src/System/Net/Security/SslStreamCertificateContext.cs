@@ -18,7 +18,6 @@ namespace System.Net.Security
             }
 
             X509Certificate2[] intermediates = Array.Empty<X509Certificate2>();
-
             using (X509Chain chain = new X509Chain())
             {
                 if (additionalCertificates != null)
@@ -32,11 +31,14 @@ namespace System.Net.Security
                 chain.ChainPolicy.VerificationFlags = X509VerificationFlags.AllFlags;
                 chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
                 chain.ChainPolicy.DisableCertificateDownloads = offline;
-                chain.Build(target);
+                bool chainStatus = chain.Build(target);
 
-                // No leaf, no root.
-                int count = chain.ChainElements.Count - 2;
+                if (!chainStatus && NetEventSource.IsEnabled)
+                {
+                    NetEventSource.Error(null, $"Failed to build chain for {target.Subject}");
+                }
 
+                int count = chain.ChainElements.Count - (TrimRootCertificate ? 1 : 2);
                 foreach (X509ChainStatus status in chain.ChainStatus)
                 {
                     if (status.Status.HasFlag(X509ChainStatusFlags.PartialChain))
@@ -48,7 +50,7 @@ namespace System.Net.Security
                 }
 
                 // Count can be zero for a self-signed certificate, or a cert issued directly from a root.
-                if (count > 0)
+                if (count > 0 && chain.ChainElements.Count > 1)
                 {
                     intermediates = new X509Certificate2[count];
                     for (int i = 0; i < count; i++)
@@ -70,10 +72,10 @@ namespace System.Net.Security
             return new SslStreamCertificateContext(target, intermediates);
         }
 
-        private SslStreamCertificateContext(X509Certificate2 target, X509Certificate2[] intermediates)
+        internal SslStreamCertificateContext Duplicate()
         {
-            Certificate = target;
-            IntermediateCertificates = intermediates;
+            return new SslStreamCertificateContext(new X509Certificate2(Certificate), IntermediateCertificates);
+
         }
     }
 }

@@ -18,7 +18,7 @@ namespace System.IO
         public long TotalFreeSpace { get { throw null; } }
         public long TotalSize { get { throw null; } }
         [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
-        public string VolumeLabel { get { throw null; } [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")] set { } }
+        public string VolumeLabel { get { throw null; } [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")] set { } }
         public static System.IO.DriveInfo[] GetDrives() { throw null; }
         void System.Runtime.Serialization.ISerializable.GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public override string ToString() { throw null; }

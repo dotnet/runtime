@@ -257,40 +257,24 @@ namespace System.Net.Security
         public static unsafe int AcquireCredentialsHandle(
             string package,
             Interop.SspiCli.CredentialUse intent,
-            ref Interop.SspiCli.SCHANNEL_CRED authdata,
+            Interop.SspiCli.SCHANNEL_CRED* authdata,
             out SafeFreeCredentials outCredential)
         {
             int errorCode = -1;
             long timeStamp;
 
-            // If there is a certificate, wrap it into an array.
-            // Not threadsafe.
-            IntPtr copiedPtr = authdata.paCred;
-            try
-            {
-                IntPtr certArrayPtr = new IntPtr(&copiedPtr);
-                if (copiedPtr != IntPtr.Zero)
-                {
-                    authdata.paCred = certArrayPtr;
-                }
+            outCredential = new SafeFreeCredential_SECURITY();
 
-                outCredential = new SafeFreeCredential_SECURITY();
-
-                errorCode = Interop.SspiCli.AcquireCredentialsHandleW(
+            errorCode = Interop.SspiCli.AcquireCredentialsHandleW(
                                 null,
                                 package,
                                 (int)intent,
                                 null,
-                                ref authdata,
+                                authdata,
                                 null,
                                 null,
                                 ref outCredential._handle,
                                 out timeStamp);
-            }
-            finally
-            {
-                authdata.paCred = copiedPtr;
-            }
 
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Verbose(null, $"{nameof(Interop.SspiCli.AcquireCredentialsHandleW)} returns 0x{errorCode:x}, handle = {outCredential}");
 
@@ -453,28 +437,50 @@ namespace System.Net.Security
                     if (inSecBuffers.Count > 2)
                     {
                         inUnmanagedBuffer[2].BufferType = inSecBuffers._item2.Type;
-                        inUnmanagedBuffer[2].cbBuffer = inSecBuffers._item2.Token.Length;
-                        inUnmanagedBuffer[2].pvBuffer = inSecBuffers._item2.UnmanagedToken != null ?
-                            (IntPtr)inSecBuffers._item2.UnmanagedToken.DangerousGetHandle() :
-                            (IntPtr)pinnedToken2;
+                        if (inSecBuffers._item2.UnmanagedToken != null)
+                        {
+                            Debug.Assert(inSecBuffers._item2.Type == SecurityBufferType.SECBUFFER_CHANNEL_BINDINGS);
+                            inUnmanagedBuffer[2].pvBuffer = (IntPtr)inSecBuffers._item2.UnmanagedToken.DangerousGetHandle();
+                            inUnmanagedBuffer[2].cbBuffer = ((ChannelBinding)inSecBuffers._item2.UnmanagedToken).Size;
+                        }
+                        else
+                        {
+                            inUnmanagedBuffer[2].cbBuffer = inSecBuffers._item2.Token.Length;
+                            inUnmanagedBuffer[2].pvBuffer = (IntPtr)pinnedToken2;
+                        }
+
                     }
 
                     if (inSecBuffers.Count > 1)
                     {
                         inUnmanagedBuffer[1].BufferType = inSecBuffers._item1.Type;
-                        inUnmanagedBuffer[1].cbBuffer = inSecBuffers._item1.Token.Length;
-                        inUnmanagedBuffer[1].pvBuffer = inSecBuffers._item1.UnmanagedToken != null ?
-                            (IntPtr)inSecBuffers._item1.UnmanagedToken.DangerousGetHandle() :
-                            (IntPtr)pinnedToken1;
+                        if (inSecBuffers._item1.UnmanagedToken != null)
+                        {
+                            Debug.Assert(inSecBuffers._item1.Type == SecurityBufferType.SECBUFFER_CHANNEL_BINDINGS);
+                            inUnmanagedBuffer[1].pvBuffer = (IntPtr)inSecBuffers._item1.UnmanagedToken.DangerousGetHandle();
+                            inUnmanagedBuffer[1].cbBuffer = ((ChannelBinding)inSecBuffers._item1.UnmanagedToken).Size;
+                        }
+                        else
+                        {
+                            inUnmanagedBuffer[1].cbBuffer = inSecBuffers._item1.Token.Length;
+                            inUnmanagedBuffer[1].pvBuffer = (IntPtr)pinnedToken1;
+                        }
                     }
 
                     if (inSecBuffers.Count > 0)
                     {
                         inUnmanagedBuffer[0].BufferType = inSecBuffers._item0.Type;
-                        inUnmanagedBuffer[0].cbBuffer = inSecBuffers._item0.Token.Length;
-                        inUnmanagedBuffer[0].pvBuffer = inSecBuffers._item0.UnmanagedToken != null ?
-                            (IntPtr)inSecBuffers._item0.UnmanagedToken.DangerousGetHandle() :
-                            (IntPtr)pinnedToken0;
+                        if (inSecBuffers._item0.UnmanagedToken != null)
+                        {
+                            Debug.Assert(inSecBuffers._item0.Type == SecurityBufferType.SECBUFFER_CHANNEL_BINDINGS);
+                            inUnmanagedBuffer[0].pvBuffer = (IntPtr)inSecBuffers._item0.UnmanagedToken.DangerousGetHandle();
+                            inUnmanagedBuffer[0].cbBuffer = ((ChannelBinding)inSecBuffers._item0.UnmanagedToken).Size;
+                        }
+                        else
+                        {
+                            inUnmanagedBuffer[0].cbBuffer = inSecBuffers._item0.Token.Length;
+                            inUnmanagedBuffer[0].pvBuffer = (IntPtr)pinnedToken0;
+                        }
                     }
 
                     fixed (byte* pinnedOutBytes = outSecBuffer.token)
@@ -685,28 +691,50 @@ namespace System.Net.Security
                     if (inSecBuffers.Count > 2)
                     {
                         inUnmanagedBuffer[2].BufferType = inSecBuffers._item2.Type;
-                        inUnmanagedBuffer[2].cbBuffer = inSecBuffers._item2.Token.Length;
-                        inUnmanagedBuffer[2].pvBuffer = inSecBuffers._item2.UnmanagedToken != null ?
-                            (IntPtr)inSecBuffers._item2.UnmanagedToken.DangerousGetHandle() :
-                            (IntPtr)pinnedToken2;
+                        if (inSecBuffers._item2.UnmanagedToken != null)
+                        {
+                            Debug.Assert(inSecBuffers._item2.Type == SecurityBufferType.SECBUFFER_CHANNEL_BINDINGS);
+                            inUnmanagedBuffer[2].pvBuffer = (IntPtr)inSecBuffers._item2.UnmanagedToken.DangerousGetHandle();
+                            inUnmanagedBuffer[2].cbBuffer = ((ChannelBinding)inSecBuffers._item2.UnmanagedToken).Size;
+                        }
+                        else
+                        {
+                            inUnmanagedBuffer[2].cbBuffer = inSecBuffers._item2.Token.Length;
+                            inUnmanagedBuffer[2].pvBuffer = (IntPtr)pinnedToken2;
+                        }
+
                     }
 
                     if (inSecBuffers.Count > 1)
                     {
                         inUnmanagedBuffer[1].BufferType = inSecBuffers._item1.Type;
-                        inUnmanagedBuffer[1].cbBuffer = inSecBuffers._item1.Token.Length;
-                        inUnmanagedBuffer[1].pvBuffer = inSecBuffers._item1.UnmanagedToken != null ?
-                            (IntPtr)inSecBuffers._item1.UnmanagedToken.DangerousGetHandle() :
-                            (IntPtr)pinnedToken1;
+                        if (inSecBuffers._item1.UnmanagedToken != null)
+                        {
+                            Debug.Assert(inSecBuffers._item1.Type == SecurityBufferType.SECBUFFER_CHANNEL_BINDINGS);
+                            inUnmanagedBuffer[1].pvBuffer = (IntPtr)inSecBuffers._item1.UnmanagedToken.DangerousGetHandle();
+                            inUnmanagedBuffer[1].cbBuffer = ((ChannelBinding)inSecBuffers._item1.UnmanagedToken).Size;
+                        }
+                        else
+                        {
+                            inUnmanagedBuffer[1].cbBuffer = inSecBuffers._item1.Token.Length;
+                            inUnmanagedBuffer[1].pvBuffer = (IntPtr)pinnedToken1;
+                        }
                     }
 
                     if (inSecBuffers.Count > 0)
                     {
                         inUnmanagedBuffer[0].BufferType = inSecBuffers._item0.Type;
-                        inUnmanagedBuffer[0].cbBuffer = inSecBuffers._item0.Token.Length;
-                        inUnmanagedBuffer[0].pvBuffer = inSecBuffers._item0.UnmanagedToken != null ?
-                            (IntPtr)inSecBuffers._item0.UnmanagedToken.DangerousGetHandle() :
-                            (IntPtr)pinnedToken0;
+                        if (inSecBuffers._item0.UnmanagedToken != null)
+                        {
+                            Debug.Assert(inSecBuffers._item0.Type == SecurityBufferType.SECBUFFER_CHANNEL_BINDINGS);
+                            inUnmanagedBuffer[0].pvBuffer = (IntPtr)inSecBuffers._item0.UnmanagedToken.DangerousGetHandle();
+                            inUnmanagedBuffer[0].cbBuffer = ((ChannelBinding)inSecBuffers._item0.UnmanagedToken).Size;
+                        }
+                        else
+                        {
+                            inUnmanagedBuffer[0].cbBuffer = inSecBuffers._item0.Token.Length;
+                            inUnmanagedBuffer[0].pvBuffer = (IntPtr)pinnedToken0;
+                        }
                     }
 
                     fixed (byte* pinnedOutBytes = outSecBuffer.token)

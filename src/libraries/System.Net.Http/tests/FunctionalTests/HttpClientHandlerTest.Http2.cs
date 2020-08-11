@@ -2954,6 +2954,52 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
+        [Theory]
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(2)]
+        public async Task Http2SendAsync_LargeHeaders_CorrectlyWritten(int continuationCount)
+        {
+            // Intentionally larger than 2x16K in total because that's the limit that will trigger a CONTINUATION frame in HTTP2.
+            string largeHeaderValue = new string('a', 1024);
+            int count = continuationCount * 16 + 1;
+
+            await Http2LoopbackServer.CreateClientAndServerAsync(async uri =>
+            {
+                using HttpClient client = CreateHttpClient();
+
+                var message = new HttpRequestMessage(HttpMethod.Get, uri) { Version = UseVersion };
+                for (int i = 0; i < count; i++)
+                {
+                    message.Headers.TryAddWithoutValidation("large-header" + i, largeHeaderValue);
+                }
+                var response = await client.SendAsync(TestAsync, message).ConfigureAwait(false);
+            },
+            async server =>
+            {
+                // Primes the connection, i.e. forces it to exchange SETTINGS whose ACK sometimes flushed the headers as well.
+                // See: https://github.com/dotnet/runtime/issues/860 for repro description.
+                (Http2LoopbackConnection connection, SettingsFrame clientSettings) = await server.EstablishConnectionGetSettingsAsync();
+
+                // Read individual frames and assert number of CONTINUATIONs.
+                int receivedContinuations = 0;
+                int streamId = 0;
+                await foreach (Frame frame in connection.ReadRequestHeadersFrames())
+                {
+                    if (frame.Type == FrameType.Headers)
+                    {
+                        streamId = ((HeadersFrame)frame).StreamId;
+                    }
+                    if (frame.Type == FrameType.Continuation)
+                    {
+                        ++receivedContinuations;
+                    }
+                }
+                Assert.Equal(continuationCount, receivedContinuations);
+                await connection.SendResponseAsync(HttpStatusCode.OK, requestId: streamId);
+            });
+        }
+
         [Fact]
         public async Task InboundWindowSize_Exceeded_Throw()
         {
