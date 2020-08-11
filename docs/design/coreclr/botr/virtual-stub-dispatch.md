@@ -91,7 +91,7 @@ The following is a small class structure (modeled in C#), and what the resulting
 
 ![Figure 1](images/virtualstubdispatch-fig1.png)
 
-Thus, looking at this map, we see that the first column of the sub-maps of the slot maps correspond to the slot number in the classic virtual table view (remember that System.Object contributes four virtual methods of its own, which are omitted for clarity). Searches for method implementations are always bottom-up. Thus, if I had an object of type _B_ and I wished to invoke _I.Foo_, I would look for a mapping of _I.Foo_ starting at _B_'s slot map. Not finding it there, I would look in _A_'s slot map and find it there. It states that virtual slot 0 of _I_ (corresponding to _I.Foo_) is implemented by virtual slot 0. Then I return to _B_'s slot map and search for an implementation for slot 0, and find that it is implemented by slot 1 in its own implementation table.
+Thus, looking at this map, we see that the first column of the sub-maps of the slot maps correspond to the slot number in the classic virtual table view (remember that System.Object contributes four virtual methods of its own, which are omitted for clarity). Searches for method implementations are always bottom-up. Thus, if I had an object of type _B_ and I wished to invoke _I.Foo_, I would look for a mapping of _I.Foo_ starting at _B_'s slot map. Not finding it there, I would look in _A_'s slot map and find it there. It states that virtual slot 0 of _I_ (corresponding to _I.Foo_) is implemented by virtual slot 4. Then I return to _B_'s slot map and search for an implementation for virtual slot 4, and find that it is implemented by slot 1 in its own implementation table.
 
 ### Additional Uses
 
