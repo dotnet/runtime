@@ -11,6 +11,8 @@ namespace Internal.Cryptography.Pal
 {
     internal sealed partial class ChainPal
     {
+        private static readonly TimeSpan s_maxUrlRetrievalTimeout = TimeSpan.FromMinutes(1);
+
         public static IChainPal FromHandle(IntPtr chainContext)
         {
             throw new PlatformNotSupportedException();
@@ -35,10 +37,17 @@ namespace Internal.Cryptography.Pal
             TimeSpan timeout,
             bool disableAia)
         {
-            // An input value of 0 on the timeout is treated as 15 seconds, to match Windows.
             if (timeout == TimeSpan.Zero)
             {
+                // An input value of 0 on the timeout is treated as 15 seconds, to match Windows.
                 timeout = TimeSpan.FromSeconds(15);
+            }
+            else if (timeout > s_maxUrlRetrievalTimeout || timeout < TimeSpan.Zero)
+            {
+                // Windows has a max timeout of 1 minute, so we'll match. Windows also treats
+                // the timeout as unsigned, so a negative value gets treated as a large positive
+                // value that is also clamped.
+                timeout = s_maxUrlRetrievalTimeout;
             }
 
             // Let Unspecified mean Local, so only convert if the source was UTC.
