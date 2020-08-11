@@ -127,32 +127,34 @@ namespace System.Net.Security.Tests
             Assert.Contains(currentHandshakes, h => h > 0);
             Assert.Equal(0, currentHandshakes[^1]);
 
-
             double[] openedSessions = eventCounters
                 .Where(pair => pair.Key.EndsWith("-sessions-open"))
                 .Select(pair => pair.Value[^1])
                 .ToArray();
 
-            // Events should be emitted for all 4 sessions-open counters
-            Assert.Equal(4, openedSessions.Length);
+            // Events should be emitted for all 5 sessions-open counters
+            Assert.Equal(5, openedSessions.Length);
             Assert.All(openedSessions, oc => Assert.Equal(0, oc));
 
 
-            double[][] handshakeDurations = eventCounters
-                .Where(pair => pair.Key.EndsWith("-handshake-duration"))
+            double[] allHandshakeDurations = eventCounters["all-handshake-duration"];
+            double[][] tlsHandshakeDurations = eventCounters
+                .Where(pair => pair.Key.StartsWith("tls") && pair.Key.EndsWith("-handshake-duration"))
                 .Select(pair => pair.Value)
                 .ToArray();
 
-            // Events should be emitted for all 4 handshake-duration counters
-            Assert.Equal(4, handshakeDurations.Length);
+            // Events should be emitted for all 4 tls**-handshake-duration counters
+            Assert.Equal(4, tlsHandshakeDurations.Length);
 
             if (shouldHaveFailures)
             {
-                Assert.All(handshakeDurations, durations => Assert.All(durations, d => Assert.Equal(0, d)));
+                Assert.All(tlsHandshakeDurations, durations => Assert.All(durations, d => Assert.Equal(0, d)));
+                Assert.All(allHandshakeDurations, d => Assert.Equal(0, d));
             }
             else
             {
-                Assert.Contains(handshakeDurations, durations => durations.Any(d => d > 0));
+                Assert.Contains(tlsHandshakeDurations, durations => durations.Any(d => d > 0));
+                Assert.Contains(allHandshakeDurations, d => d > 0);
             }
         }
     }

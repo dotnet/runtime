@@ -18,10 +18,12 @@ namespace System.Net.Security
         private PollingCounter? _totalTlsHandshakesCounter;
         private PollingCounter? _currentTlsHandshakesCounter;
         private PollingCounter? _failedTlsHandshakesCounter;
+        private PollingCounter? _sessionsOpenCounter;
         private PollingCounter? _sessionsOpenTls10Counter;
         private PollingCounter? _sessionsOpenTls11Counter;
         private PollingCounter? _sessionsOpenTls12Counter;
         private PollingCounter? _sessionsOpenTls13Counter;
+        private EventCounter? _handshakeDurationCounter;
         private EventCounter? _handshakeDurationTls10Counter;
         private EventCounter? _handshakeDurationTls11Counter;
         private EventCounter? _handshakeDurationTls12Counter;
@@ -30,6 +32,7 @@ namespace System.Net.Security
         private long _finishedTlsHandshakes; // Successfully and failed
         private long _startedTlsHandshakes;
         private long _failedTlsHandshakes;
+        private long _sessionsOpen;
         private long _sessionsOpenTls10;
         private long _sessionsOpenTls11;
         private long _sessionsOpenTls12;
@@ -60,6 +63,11 @@ namespace System.Net.Security
                     DisplayName = "Total TLS handshakes failed"
                 };
 
+                _sessionsOpenCounter ??= new PollingCounter("all-sessions-open", this, () => Interlocked.Read(ref _sessionsOpen))
+                {
+                    DisplayName = "All Sessions Active"
+                };
+
                 _sessionsOpenTls10Counter ??= new PollingCounter("tls10-sessions-open", this, () => Interlocked.Read(ref _sessionsOpenTls10))
                 {
                     DisplayName = "TLS 1.0 Sessions Active"
@@ -78,6 +86,12 @@ namespace System.Net.Security
                 _sessionsOpenTls13Counter ??= new PollingCounter("tls13-sessions-open", this, () => Interlocked.Read(ref _sessionsOpenTls13))
                 {
                     DisplayName = "TLS 1.3 Sessions Active"
+                };
+
+                _handshakeDurationCounter ??= new EventCounter("all-handshake-duration", this)
+                {
+                    DisplayName = "Handshake Duration",
+                    DisplayUnits = "ms"
                 };
 
                 _handshakeDurationTls10Counter ??= new EventCounter("tls10-handshake-duration", this)
@@ -154,7 +168,7 @@ namespace System.Net.Security
             Interlocked.Increment(ref _finishedTlsHandshakes);
 
             long dummy = 0;
-            ref long connectionsOpen = ref dummy;
+            ref long protocolSessionsOpen = ref dummy;
             EventCounter? handshakeDurationCounter = null;
 
             Debug.Assert(Enum.GetValues<SslProtocols>()[^1] == SslProtocols.Tls13, "Make sure to add a counter for new SslProtocols");
@@ -162,32 +176,35 @@ namespace System.Net.Security
             switch (protocol)
             {
                 case SslProtocols.Tls:
-                    connectionsOpen = ref _sessionsOpenTls10;
+                    protocolSessionsOpen = ref _sessionsOpenTls10;
                     handshakeDurationCounter = _handshakeDurationTls10Counter;
                     break;
 
                 case SslProtocols.Tls11:
-                    connectionsOpen = ref _sessionsOpenTls11;
+                    protocolSessionsOpen = ref _sessionsOpenTls11;
                     handshakeDurationCounter = _handshakeDurationTls11Counter;
                     break;
 
                 case SslProtocols.Tls12:
-                    connectionsOpen = ref _sessionsOpenTls12;
+                    protocolSessionsOpen = ref _sessionsOpenTls12;
                     handshakeDurationCounter = _handshakeDurationTls12Counter;
                     break;
 
                 case SslProtocols.Tls13:
-                    connectionsOpen = ref _sessionsOpenTls13;
+                    protocolSessionsOpen = ref _sessionsOpenTls13;
                     handshakeDurationCounter = _handshakeDurationTls13Counter;
                     break;
             }
 
             if (connectionOpen)
             {
-                Interlocked.Increment(ref connectionsOpen);
+                Interlocked.Increment(ref protocolSessionsOpen);
+                Interlocked.Increment(ref _sessionsOpen);
             }
 
-            handshakeDurationCounter?.WriteMetric(stopwatch.GetElapsedTime().TotalMilliseconds);
+            double duration = stopwatch.GetElapsedTime().TotalMilliseconds;
+            handshakeDurationCounter?.WriteMetric(duration);
+            _handshakeDurationCounter!.WriteMetric(duration);
 
             if (IsEnabled(EventLevel.Informational, EventKeywords.None))
             {
@@ -219,6 +236,9 @@ namespace System.Net.Security
                     break;
             }
 
+            Debug.Assert(count >= 0);
+
+            count = Interlocked.Decrement(ref _sessionsOpen);
             Debug.Assert(count >= 0);
         }
 
