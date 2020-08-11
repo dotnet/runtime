@@ -641,6 +641,8 @@ def call_msbuild(args):
                 "/p:Configuration=%s" % args.build_type,
                 "/p:__LogsDir=%s" % args.logs_dir]
 
+    command += ["/bl:runtest.binlog"]
+
     print(" ".join(command))
 
     sys.stdout.flush() # flush output before creating sub-process

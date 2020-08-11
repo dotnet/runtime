@@ -163,6 +163,9 @@ do
         arm64)
             buildArch="arm64"
             ;;
+        wasm)
+            buildArch="wasm"
+            ;;
         debug|Debug)
             buildConfiguration="Debug"
             ;;

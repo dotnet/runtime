@@ -71,9 +71,9 @@ class CoreclrArguments:
         self.require_built_core_root = require_built_core_root
         self.require_built_test_dir = require_built_test_dir
 
-        self.valid_arches = ["x64", "x86", "arm", "arm64"]
+        self.valid_arches = ["x64", "x86", "arm", "arm64", "wasm"]
         self.valid_build_types = ["Debug", "Checked", "Release"]
-        self.valid_host_os = ["Windows_NT", "OSX", "Linux", "illumos", "Solaris"]
+        self.valid_host_os = ["Windows_NT", "OSX", "Linux", "illumos", "Solaris", "browser"]
 
         self.__initialize__(args)
 
@@ -226,12 +226,17 @@ class CoreclrArguments:
             return test_location
 
         def check_and_return_default_core_root(core_root):
+            print("!!! check_and_return_default_core_root: Test Location: " + self.test_location)
+
             if core_root is not None:
                 # core_root was specified on the command-line, so use that one. But verify it.
                 return os.path.isdir(core_root) or not self.require_built_core_root
 
             # No core_root specified; use a default location if possible.
+          
             default_core_root = os.path.join(self.test_location, "Tests", "Core_Root")
+
+            print("!!! Default core root: " + default_core_root )
             if os.path.isdir(default_core_root) or not self.require_built_core_root:
                 return default_core_root
 

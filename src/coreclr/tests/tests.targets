@@ -37,8 +37,10 @@
     <ItemGroup>
       <IncludeTraitsItems Include="$(IncludeTraits)" />
       <ExcludeTraitsItems Include="$(ExcludeTraits)" />
+      
     </ItemGroup>
 
+    
     <Error Condition="'$(CORE_ROOT)' == ''" Text="CORE_ROOT is not set." />
     <PropertyGroup>
       <XunitConsoleRunner>$(CORE_ROOT)\xunit.console.dll</XunitConsoleRunner>
@@ -52,8 +54,10 @@
       <!-- Color output doesn't work well when capturing the output in the CI system -->
       <XunitArgs>$(XunitArgs) -nocolor</XunitArgs>
 
-      <CorerunExecutable Condition="'$(RunningOnUnix)' == 'true'">$(CORE_ROOT)\corerun</CorerunExecutable>
+      <CorerunExecutable Condition="'$(RunningOnUnix)' == 'true' And '$(TargetArchitecture)' != 'wasm'"  >$(CORE_ROOT)\corerun</CorerunExecutable>
       <CorerunExecutable Condition="'$(RunningOnUnix)' != 'true'">$(CORE_ROOT)\corerun.exe</CorerunExecutable>
+      <CorerunExecutable Condition="'$(TargetArchitecture)' == 'wasm'"> $(DotnetRoot)/dotnet</CorerunExecutable>
+
     </PropertyGroup>
 
     <!-- Work around cmd command length limit by using relative paths
@@ -69,6 +73,7 @@
       <XunitCommandLine>$(CorerunExecutable) $(XunitConsoleRunner) @(TestAssemblies->'%(Identity)', ' ') $(XunitArgs)</XunitCommandLine>
     </PropertyGroup>
 
+    <Message  Importance="High" Text="test.targets: core_root: $(CORE_ROOT)" />
     <Exec Command="$(XunitCommandLine)"
           WorkingDirectory="$(BaseOutputPathWithConfig)"/>
 

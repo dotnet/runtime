@@ -33,7 +33,11 @@
 	    <TestAssemblies Include="$(TestAssembly)" />
     </ItemGroup>
   
-    <Message Importance="High" Text="!!! @(TestAssemblies)"/> 
+    <Message Importance="High" Text="TestAssemblies: @(TestAssemblies)"/> 
+    <Message Importance="High" Text="AppDir: $(AppDir)" />
+    <Message Importance="High" Text="TestBinDir: $(TestBinDir)" />
+    <Message Importance="High" Text="ArtifactsBinDir: $(ArtifactsBinDir)" />
+
 
     <WasmAppBuilder
       AppDir="$(AppDir)"
@@ -44,9 +48,7 @@
       ExtraAssemblies="@(TestAssemblies)"
       />
 
-    <Message Importance="High" Text="AppDir: $(AppDir)" />
-    <Message Importance="High" Text="TestBinDir: $(TestBinDir)" />
-    <Message Importance="High" Text="ArtifactsBinDir: $(ArtifactsBinDir)" />
+
 
     <Exec Command="chmod a+x $(AppDir)/run-v8.sh" />
   </Target>
