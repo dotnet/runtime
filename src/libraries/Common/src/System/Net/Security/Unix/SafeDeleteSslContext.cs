@@ -29,7 +29,7 @@ namespace System.Net.Security
         public SafeDeleteSslContext(SafeFreeSslCredentials credential, SslAuthenticationOptions sslAuthenticationOptions)
             : base(credential)
         {
-            Debug.Assert((null != credential) && !credential.IsInvalid, "Invalid credential used in SafeDeleteSslContext");
+            Debug.Assert((credential != null) && !credential.IsInvalid, "Invalid credential used in SafeDeleteSslContext");
 
             try
             {
@@ -52,7 +52,7 @@ namespace System.Net.Security
         {
             get
             {
-                return (null == _sslContext) || _sslContext.IsInvalid;
+                return (_sslContext == null) || _sslContext.IsInvalid;
             }
         }
 
@@ -60,7 +60,7 @@ namespace System.Net.Security
         {
             if (disposing)
             {
-                if (null != _sslContext)
+                if (_sslContext != null)
                 {
                     _sslContext.Dispose();
                     _sslContext = null!;

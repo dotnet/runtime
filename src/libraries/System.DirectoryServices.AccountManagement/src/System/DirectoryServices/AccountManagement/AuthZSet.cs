@@ -244,7 +244,7 @@ namespace System.DirectoryServices.AccountManagement
 
                 // sidIssuerName is null only if SID was not resolved
                 // return a fake principal back
-                if (null == _groupSidList[_currentGroup].sidIssuerName)
+                if (_groupSidList[_currentGroup].sidIssuerName == null)
                 {
                     string name = _groupSidList[_currentGroup].name;
                     // Create a Principal object to represent it

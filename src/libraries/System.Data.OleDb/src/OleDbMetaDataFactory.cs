@@ -73,12 +73,12 @@ namespace System.Data.OleDb
             // 3) the provider does not support the necessary schema rowset
 
             DataColumn? populationMechanism = metaDataCollectionsTable.Columns[_populationMechanism];
-            if ((null == populationMechanism) || (typeof(string) != populationMechanism.DataType))
+            if ((populationMechanism == null) || (typeof(string) != populationMechanism.DataType))
             {
                 throw ADP.InvalidXmlMissingColumn(DbMetaDataCollectionNames.MetaDataCollections, _populationMechanism);
             }
             DataColumn? collectionName = metaDataCollectionsTable.Columns[_collectionName];
-            if ((null == collectionName) || (typeof(string) != collectionName.DataType))
+            if ((collectionName == null) || (typeof(string) != collectionName.DataType))
             {
                 throw ADP.InvalidXmlMissingColumn(DbMetaDataCollectionNames.MetaDataCollections, _collectionName);
             }
@@ -86,7 +86,7 @@ namespace System.Data.OleDb
             if (restrictionsTable != null)
             {
                 restrictionCollectionName = restrictionsTable.Columns[_collectionName];
-                if ((null == restrictionCollectionName) || (typeof(string) != restrictionCollectionName.DataType))
+                if ((restrictionCollectionName == null) || (typeof(string) != restrictionCollectionName.DataType))
                 {
                     throw ADP.InvalidXmlMissingColumn(DbMetaDataCollectionNames.Restrictions, _collectionName);
                 }
@@ -432,7 +432,7 @@ namespace System.Data.OleDb
                 {
                     newRow[isSearchable] = DBNull.Value;
                     newRow[isSearchableWithLike] = DBNull.Value;
-                    if (DBNull.Value != sourceRow[searchable])
+                    if (sourceRow[searchable] != DBNull.Value)
                     {
                         long searchableValue = (long)(sourceRow[searchable]);
                         switch (searchableValue)
@@ -473,7 +473,7 @@ namespace System.Data.OleDb
         {
             // verify the existance of the table in the data set
             DataTable? reservedWordsTable = CollectionDataSet.Tables[DbMetaDataCollectionNames.ReservedWords];
-            if (null == reservedWordsTable)
+            if (reservedWordsTable == null)
             {
                 throw ADP.UnableToBuildCollection(DbMetaDataCollectionNames.ReservedWords);
             }
@@ -482,7 +482,7 @@ namespace System.Data.OleDb
             reservedWordsTable = CloneAndFilterCollection(DbMetaDataCollectionNames.ReservedWords, null);
 
             DataColumn? reservedWordColumn = reservedWordsTable.Columns[DbMetaDataColumnNames.ReservedWord];
-            if (null == reservedWordColumn)
+            if (reservedWordColumn == null)
             {
                 throw ADP.UnableToBuildCollection(DbMetaDataCollectionNames.ReservedWords);
             }

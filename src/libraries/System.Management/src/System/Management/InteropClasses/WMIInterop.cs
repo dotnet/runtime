@@ -39,7 +39,7 @@ namespace System.Management
 
         public static implicit operator IntPtr(IWbemClassObjectFreeThreaded wbemClassObject)
         {
-            if (null == wbemClassObject)
+            if (wbemClassObject == null)
                 return IntPtr.Zero;
             return wbemClassObject.pWbemClassObject;
         }
@@ -1531,14 +1531,14 @@ namespace System.Management
             {
                 // If we CANNOT call CoGetObjectContext, assume we are not in the 'no context MTA' for safety
                 // (NOTE: This call is expected to always succeed)
-                if (0 != Interop.Ole32.CoGetObjectContext(IID_IComThreadingInfo, out pComThreadingInfo))
+                if (Interop.Ole32.CoGetObjectContext(IID_IComThreadingInfo, out pComThreadingInfo) != 0)
                     return false;
 
                 WmiNetUtilsHelper.APTTYPE aptType;
 
                 // If we CANNOT get the apartment type, assume we are not in the 'no context MTA' for safety
                 // (NOTE: This call is expected to always succeed)
-                if (0 != WmiNetUtilsHelper.GetCurrentApartmentType_f(3, pComThreadingInfo, out aptType))
+                if (WmiNetUtilsHelper.GetCurrentApartmentType_f(3, pComThreadingInfo, out aptType) != 0)
                     return false;
 
                 // If we are not in the MTA, return false
@@ -1546,7 +1546,7 @@ namespace System.Management
                     return false;
 
                 // If we CAN get to the IObjectContext interface, we have a 'context'
-                if (0 == Marshal.QueryInterface(pComThreadingInfo, ref IID_IObjectContext, out pObjectContext))
+                if (Marshal.QueryInterface(pComThreadingInfo, ref IID_IObjectContext, out pObjectContext) == 0)
                     return false;
             }
             finally

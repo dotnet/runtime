@@ -14,7 +14,7 @@ namespace System.Reflection.Context.Delegation
 
         public DelegatingType(Type type)
         {
-            Debug.Assert(null != type);
+            Debug.Assert(type != null);
 
             _typeInfo = type.GetTypeInfo();
             if (_typeInfo == null)

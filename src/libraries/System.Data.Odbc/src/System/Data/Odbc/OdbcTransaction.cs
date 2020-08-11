@@ -39,7 +39,7 @@ namespace System.Data.Odbc
             get
             {
                 OdbcConnection? connection = _connection;
-                if (null == connection)
+                if (connection == null)
                 {
                     throw ADP.TransactionZombied(this);
                 }
@@ -68,7 +68,7 @@ namespace System.Data.Odbc
         public override void Commit()
         {
             OdbcConnection? connection = _connection;
-            if (null == connection)
+            if (connection == null)
             {
                 throw ADP.TransactionZombied(this);
             }
@@ -77,7 +77,7 @@ namespace System.Data.Odbc
 
             //Note: SQLEndTran success if not actually in a transaction, so we have to throw
             //since the IDbTransaction spec indicates this is an error for the managed packages
-            if (null == _handle)
+            if (_handle == null)
             {
                 throw ODBC.NotInTransaction();
             }
@@ -102,7 +102,7 @@ namespace System.Data.Odbc
             {
                 OdbcConnectionHandle? handle = _handle;
                 _handle = null;
-                if (null != handle)
+                if (handle != null)
                 {
                     try
                     {
@@ -142,7 +142,7 @@ namespace System.Data.Odbc
         public override void Rollback()
         {
             OdbcConnection? connection = _connection;
-            if (null == connection)
+            if (connection == null)
             {
                 throw ADP.TransactionZombied(this);
             }
@@ -150,7 +150,7 @@ namespace System.Data.Odbc
 
             //Note: SQLEndTran success if not actually in a transaction, so we have to throw
             //since the IDbTransaction spec indicates this is an error for the managed packages
-            if (null == _handle)
+            if (_handle == null)
             {
                 throw ODBC.NotInTransaction();
             }

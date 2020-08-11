@@ -45,17 +45,17 @@ namespace System.Net.Security
                 if (_thumbPrint.Length > 0)
                 {
                     hashCode ^= _thumbPrint[0];
-                    if (1 < _thumbPrint.Length)
+                    if (_thumbPrint.Length > 1)
                     {
                         hashCode ^= (_thumbPrint[1] << 8);
                     }
 
-                    if (2 < _thumbPrint.Length)
+                    if (_thumbPrint.Length > 2)
                     {
                         hashCode ^= (_thumbPrint[2] << 16);
                     }
 
-                    if (3 < _thumbPrint.Length)
+                    if (_thumbPrint.Length > 3)
                     {
                         hashCode ^= (_thumbPrint[3] << 24);
                     }

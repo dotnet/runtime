@@ -51,7 +51,7 @@ namespace System.Data.ProviderBase
 
             // NOTE - We copied this code from System.Security.Principal.Win32.CreateWellKnownSid...
 
-            if (0 == UnsafeNativeMethods.CreateWellKnownSid((int)sidType, null, resultSid, ref length))
+            if (UnsafeNativeMethods.CreateWellKnownSid((int)sidType, null, resultSid, ref length) == 0)
             {
                 IntegratedSecurityError(Win32_CreateWellKnownSid);
             }
@@ -61,7 +61,7 @@ namespace System.Data.ProviderBase
         public override bool Equals(object? value)
         {
             bool result = ((this == NoIdentity) || (this == value));
-            if (!result && (null != value))
+            if (!result && (value != null))
             {
                 DbConnectionPoolIdentity that = ((DbConnectionPoolIdentity)value);
                 result = ((_sidString == that._sidString) && (_isRestricted == that._isRestricted) && (_isNetwork == that._isNetwork));
@@ -84,7 +84,7 @@ namespace System.Data.ProviderBase
             // passing 1,2,3,4,5 instead of true/false so that with a debugger
             // we could determine more easily which Win32 method call failed
             int lastError = Marshal.GetHRForLastWin32Error();
-            if ((Win32_CheckTokenMembership != caller) || (E_NotImpersonationToken != lastError))
+            if ((caller != Win32_CheckTokenMembership) || (lastError != E_NotImpersonationToken))
             {
                 Marshal.ThrowExceptionForHR(lastError); // will only throw if (hresult < 0)
             }

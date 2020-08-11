@@ -29,7 +29,7 @@ namespace System.Data.OleDb
 
         private OleDbException(string? message, Exception? inner, string? source, OleDbHResult errorCode, OleDbErrorCollection errors) : base(message, inner)
         {
-            Debug.Assert(null != errors, "OleDbException without OleDbErrorCollection");
+            Debug.Assert(errors != null, "OleDbException without OleDbErrorCollection");
             Source = source;
             HResult = (int)errorCode;
             this.oledbErrors = errors;
@@ -37,7 +37,7 @@ namespace System.Data.OleDb
 
         public override void GetObjectData(SerializationInfo si, StreamingContext context)
         {
-            if (null == si)
+            if (si == null)
             {
                 throw new ArgumentNullException(nameof(si));
             }
@@ -60,7 +60,7 @@ namespace System.Data.OleDb
             get
             {
                 OleDbErrorCollection errors = this.oledbErrors;
-                return ((null != errors) ? errors : new OleDbErrorCollection(null));
+                return ((errors != null) ? errors : new OleDbErrorCollection(null));
             }
         }
 
@@ -71,7 +71,7 @@ namespace System.Data.OleDb
             string? source = null;
             OleDbHResult hr = 0;
 
-            if (null != errorInfo)
+            if (errorInfo != null)
             {
                 hr = errorInfo.GetDescription(out message);
 
@@ -79,21 +79,21 @@ namespace System.Data.OleDb
             }
 
             int count = errors.Count;
-            if (0 < errors.Count)
+            if (errors.Count > 0)
             {
                 StringBuilder builder = new StringBuilder();
 
-                if ((null != message) && (message != errors[0].Message))
+                if ((message != null) && (message != errors[0].Message))
                 {
                     builder.Append(message.TrimEnd(ODB.ErrorTrimCharacters));
-                    if (1 < count)
+                    if (count > 1)
                     {
                         builder.Append(Environment.NewLine);
                     }
                 }
                 for (int i = 0; i < count; ++i)
                 {
-                    if (0 < i)
+                    if (i > 0)
                     {
                         builder.Append(Environment.NewLine);
                     }
@@ -110,8 +110,8 @@ namespace System.Data.OleDb
 
         internal static OleDbException CombineExceptions(List<OleDbException> exceptions)
         {
-            Debug.Assert(0 < exceptions.Count, "missing exceptions");
-            if (1 < exceptions.Count)
+            Debug.Assert(exceptions.Count > 0, "missing exceptions");
+            if (exceptions.Count > 1)
             {
                 OleDbErrorCollection errors = new OleDbErrorCollection(null);
                 StringBuilder builder = new StringBuilder();

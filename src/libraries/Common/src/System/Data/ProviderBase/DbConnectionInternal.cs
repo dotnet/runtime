@@ -171,10 +171,10 @@ namespace System.Data.ProviderBase
 
         internal void AddWeakReference(object value, int tag)
         {
-            if (null == _referenceCollection)
+            if (_referenceCollection == null)
             {
                 _referenceCollection = CreateReferenceCollection();
-                if (null == _referenceCollection)
+                if (_referenceCollection == null)
                 {
                     throw ADP.InternalError(ADP.InternalErrorCode.CreateReferenceCollectionReturnedNull);
                 }
@@ -285,7 +285,7 @@ namespace System.Data.ProviderBase
         internal void NotifyWeakReference(int message)
         {
             DbReferenceCollection? referenceCollection = ReferenceCollection;
-            if (null != referenceCollection)
+            if (referenceCollection != null)
             {
                 referenceCollection.Notify(message);
             }
@@ -334,7 +334,7 @@ namespace System.Data.ProviderBase
                     connectionFactory.SetInnerConnectionTo(outerConnection, this);
                     throw;
                 }
-                if (null == openConnection)
+                if (openConnection == null)
                 {
                     connectionFactory.SetInnerConnectionTo(outerConnection, this);
                     throw ADP.InternalConnectionError(ADP.ConnectionError.GetConnectionReturnsNull);
@@ -355,9 +355,9 @@ namespace System.Data.ProviderBase
             // ReclaimEmancipatedObjects.
 
             //3 // The following tests are retail assertions of things we can't allow to happen.
-            if (null == expectedOwner)
+            if (expectedOwner == null)
             {
-                if (null != _owningObject.Target)
+                if (_owningObject.Target != null)
                 {
                     throw ADP.InternalError(ADP.InternalErrorCode.UnpooledObjectHasOwner);      // new unpooled object has an owner
                 }
@@ -366,7 +366,7 @@ namespace System.Data.ProviderBase
             {
                 throw ADP.InternalError(ADP.InternalErrorCode.UnpooledObjectHasWrongOwner); // unpooled object has incorrect owner
             }
-            if (0 != _pooledCount)
+            if (_pooledCount != 0)
             {
                 throw ADP.InternalError(ADP.InternalErrorCode.PushingObjectSecondTime);         // pushing object onto stack a second time
             }
@@ -392,16 +392,16 @@ namespace System.Data.ProviderBase
             // you call this method to prevent race conditions with Clear and
             // ReclaimEmancipatedObjects.
 
-            if (null != _owningObject.Target)
+            if (_owningObject.Target != null)
             {
                 throw ADP.InternalError(ADP.InternalErrorCode.PooledObjectHasOwner);        // pooled connection already has an owner!
             }
             _owningObject.Target = newOwner;
             _pooledCount--;
             //3 // The following tests are retail assertions of things we can't allow to happen.
-            if (null != Pool)
+            if (Pool != null)
             {
-                if (0 != _pooledCount)
+                if (_pooledCount != 0)
                 {
                     throw ADP.InternalError(ADP.InternalErrorCode.PooledObjectInPoolMoreThanOnce);  // popping object off stack with multiple pooledCount
                 }
@@ -415,7 +415,7 @@ namespace System.Data.ProviderBase
         internal void RemoveWeakReference(object value)
         {
             DbReferenceCollection? referenceCollection = ReferenceCollection;
-            if (null != referenceCollection)
+            if (referenceCollection != null)
             {
                 referenceCollection.Remove(value);
             }

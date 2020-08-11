@@ -55,7 +55,7 @@ namespace System.Data.ProviderBase
         {
             //--------------------
             // Preconditions
-            Debug.Assert(0 <= milliseconds);
+            Debug.Assert(milliseconds >= 0);
 
             //--------------------
             // Method body
@@ -78,7 +78,7 @@ namespace System.Data.ProviderBase
         {
             //--------------------
             // Preconditions
-            Debug.Assert(0 <= seconds || InfiniteTimeout == seconds);  // no need to support negative seconds at present
+            Debug.Assert(seconds >= 0 || InfiniteTimeout == seconds);  // no need to support negative seconds at present
 
             //--------------------
             // Method body
@@ -151,7 +151,7 @@ namespace System.Data.ProviderBase
                 else
                 {
                     milliseconds = ADP.TimerRemainingMilliseconds(_timerExpire);
-                    if (0 > milliseconds)
+                    if (milliseconds < 0)
                     {
                         milliseconds = 0;
                     }
@@ -159,7 +159,7 @@ namespace System.Data.ProviderBase
 
                 //--------------------
                 // Postconditions
-                Debug.Assert(0 <= milliseconds); // This property guarantees no negative return values
+                Debug.Assert(milliseconds >= 0); // This property guarantees no negative return values
 
                 return milliseconds;
             }

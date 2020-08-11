@@ -22,7 +22,7 @@ namespace System.Data.OleDb
         // DataLinks (the unknown parameter) is created via Activator.CreateInstance outside of the SafeHandle
         internal OleDbServicesWrapper(object? unknown) : base()
         {
-            if (null != unknown)
+            if (unknown != null)
             {
                 RuntimeHelpers.PrepareConstrainedRegions();
                 try
@@ -68,12 +68,12 @@ namespace System.Data.OleDb
             }
             if (hr < 0)
             { // ignore infomsg
-                if (OleDbHResult.REGDB_E_CLASSNOTREG == hr)
+                if (hr == OleDbHResult.REGDB_E_CLASSNOTREG)
                 {
                     throw ODB.ProviderUnavailable(constr.Provider, null);
                 }
                 Exception? e = OleDbConnection.ProcessResults(hr, null, null);
-                Debug.Assert(null != e, "CreateProviderError");
+                Debug.Assert(e != null, "CreateProviderError");
                 throw e;
             }
             else if (datasrcWrapper.IsInvalid)
@@ -117,7 +117,7 @@ namespace System.Data.OleDb
 
                 // since the delegate lifetime is longer than the original instance used to create it
                 // we double check before each usage to verify the delegates function pointer
-                if ((null == QueryInterface) || (method != Marshal.GetFunctionPointerForDelegate(QueryInterface)))
+                if ((QueryInterface == null) || (method != Marshal.GetFunctionPointerForDelegate(QueryInterface)))
                 {
                     QueryInterface = (UnsafeNativeMethods.IUnknownQueryInterface)Marshal.GetDelegateForFunctionPointer(method, typeof(UnsafeNativeMethods.IUnknownQueryInterface));
                     constr.DangerousDataSourceIUnknownQueryInterface = QueryInterface;
@@ -134,7 +134,7 @@ namespace System.Data.OleDb
 
                 // since the delegate lifetime is longer than the original instance used to create it
                 // we double check before each usage to verify the delegates function pointer
-                if ((null == Initialize) || (method != Marshal.GetFunctionPointerForDelegate(Initialize)))
+                if ((Initialize == null) || (method != Marshal.GetFunctionPointerForDelegate(Initialize)))
                 {
                     Initialize = (UnsafeNativeMethods.IDBInitializeInitialize)Marshal.GetDelegateForFunctionPointer(method, typeof(UnsafeNativeMethods.IDBInitializeInitialize));
                     constr.DangerousIDBInitializeInitialize = Initialize;
@@ -144,11 +144,11 @@ namespace System.Data.OleDb
                 hr = Initialize(base.handle);
 
                 // we don't ever expect DB_E_ALREADYINITIALIZED, but since we checked in V1.0 - its propagated along
-                if ((0 <= hr) || (OleDbHResult.DB_E_ALREADYINITIALIZED == hr))
+                if ((hr >= 0) || (hr == OleDbHResult.DB_E_ALREADYINITIALIZED))
                 {
                     // call IUnknown::QueryInterface via the delegate
                     hr = (OleDbHResult)QueryInterface(base.handle, ref ODB.IID_IDBCreateSession, ref idbCreateSession);
-                    if ((0 <= hr) && (IntPtr.Zero != idbCreateSession))
+                    if ((hr >= 0) && (idbCreateSession != IntPtr.Zero))
                     {
                         // native COM rules are the QI result is the 'this' pointer
                         // the pointer stored at that location is the vtable
@@ -160,18 +160,18 @@ namespace System.Data.OleDb
 
                         // since the delegate lifetime is longer than the original instance used to create it
                         // we double check before each usage to verify the delegates function pointer
-                        if ((null == CreateSession) || (method != Marshal.GetFunctionPointerForDelegate(CreateSession)))
+                        if ((CreateSession == null) || (method != Marshal.GetFunctionPointerForDelegate(CreateSession)))
                         {
                             CreateSession = (UnsafeNativeMethods.IDBCreateSessionCreateSession)Marshal.GetDelegateForFunctionPointer(method, typeof(UnsafeNativeMethods.IDBCreateSessionCreateSession));
                             constr.DangerousIDBCreateSessionCreateSession = CreateSession;
                         }
 
                         // if I have a delegate for CreateCommand directly ask for IDBCreateCommand
-                        if (null != constr.DangerousIDBCreateCommandCreateCommand)
+                        if (constr.DangerousIDBCreateCommandCreateCommand != null)
                         {
                             // call IDBCreateSession::CreateSession via the delegate directly for IDBCreateCommand
                             hr = CreateSession(idbCreateSession, IntPtr.Zero, ref ODB.IID_IDBCreateCommand, ref sessionWrapper);
-                            if ((0 <= hr) && !sessionWrapper.IsInvalid)
+                            if ((hr >= 0) && !sessionWrapper.IsInvalid)
                             {
                                 // double check the cached delegate is correct
                                 sessionWrapper.VerifyIDBCreateCommand(constr);
@@ -181,7 +181,7 @@ namespace System.Data.OleDb
                         {
                             // otherwise ask for IUnknown (it may be first time usage or IDBCreateCommand not supported)
                             hr = CreateSession(idbCreateSession, IntPtr.Zero, ref ODB.IID_IUnknown, ref sessionWrapper);
-                            if ((0 <= hr) && !sessionWrapper.IsInvalid)
+                            if ((hr >= 0) && !sessionWrapper.IsInvalid)
                             {
                                 // and check support for IDBCreateCommand and create delegate for CreateCommand
                                 sessionWrapper.QueryInterfaceIDBCreateCommand(constr);
@@ -192,7 +192,7 @@ namespace System.Data.OleDb
             }
             finally
             {
-                if (IntPtr.Zero != idbCreateSession)
+                if (idbCreateSession != IntPtr.Zero)
                 {
                     // release the QI for IDBCreateSession
                     Marshal.Release(idbCreateSession);
@@ -251,7 +251,7 @@ namespace System.Data.OleDb
             // If constr.HaveQueriedForCreateCommand is true and constr.DangerousIDBCreateCommandCreateCommand is not null, that means that another thread has set it after we
             //     determined we needed to call QueryInterfaceIDBCreateCommand -- otherwise we would have called VerifyIDBCreateCommand instead
             // In that case, we still need to set our local DangerousIDBCreateCommandCreateCommand, so we want to go through the if block even though the cache has been set on constr already
-            if (!constr.HaveQueriedForCreateCommand || (null != constr.DangerousIDBCreateCommandCreateCommand))
+            if (!constr.HaveQueriedForCreateCommand || (constr.DangerousIDBCreateCommandCreateCommand != null))
             {
                 IntPtr idbCreateCommand = IntPtr.Zero;
                 RuntimeHelpers.PrepareConstrainedRegions();
@@ -265,7 +265,7 @@ namespace System.Data.OleDb
                     UnsafeNativeMethods.IUnknownQueryInterface QueryInterface = (UnsafeNativeMethods.IUnknownQueryInterface)Marshal.GetDelegateForFunctionPointer(method, typeof(UnsafeNativeMethods.IUnknownQueryInterface));
 
                     int hresult = QueryInterface(base.handle, ref ODB.IID_IDBCreateCommand, ref idbCreateCommand);
-                    if ((0 <= hresult) && (IntPtr.Zero != idbCreateCommand))
+                    if ((hresult >= 0) && (idbCreateCommand != IntPtr.Zero))
                     {
                         vtable = Marshal.ReadIntPtr(idbCreateCommand, 0);
                         method = Marshal.ReadIntPtr(vtable, 3 * IntPtr.Size);
@@ -279,7 +279,7 @@ namespace System.Data.OleDb
                 }
                 finally
                 {
-                    if (IntPtr.Zero != idbCreateCommand)
+                    if (idbCreateCommand != IntPtr.Zero)
                     {
                         IntPtr ptr = base.handle;
                         base.handle = idbCreateCommand;
@@ -296,7 +296,7 @@ namespace System.Data.OleDb
             // only used from within OleDbConnectionInternal.ctor->DataSourceWrapper.InitializeAndCreateSession
 
             Debug.Assert(constr.HaveQueriedForCreateCommand, "expected HaveQueriedForCreateCommand");
-            Debug.Assert(null != constr.DangerousIDBCreateCommandCreateCommand, "expected DangerousIDBCreateCommandCreateCommand");
+            Debug.Assert(constr.DangerousIDBCreateCommandCreateCommand != null, "expected DangerousIDBCreateCommandCreateCommand");
 
             // native COM rules are the QI result is the 'this' pointer
             // the pointer stored at that location is the vtable
@@ -309,7 +309,7 @@ namespace System.Data.OleDb
 
             // since the delegate lifetime is longer than the original instance used to create it
             // we double check before each usage to verify the delegates function pointer
-            if ((null == CreateCommand) || (method != Marshal.GetFunctionPointerForDelegate(CreateCommand)))
+            if ((CreateCommand == null) || (method != Marshal.GetFunctionPointerForDelegate(CreateCommand)))
             {
                 CreateCommand = (UnsafeNativeMethods.IDBCreateCommandCreateCommand)Marshal.GetDelegateForFunctionPointer(method, typeof(UnsafeNativeMethods.IDBCreateCommandCreateCommand));
                 constr.DangerousIDBCreateCommandCreateCommand = CreateCommand;
@@ -324,7 +324,7 @@ namespace System.Data.OleDb
             // if (null == CreateCommand), the IDBCreateCommand isn't supported - aka E_NOINTERFACE
             OleDbHResult hr = OleDbHResult.E_NOINTERFACE;
             UnsafeNativeMethods.IDBCreateCommandCreateCommand? CreateCommand = DangerousIDBCreateCommandCreateCommand;
-            if (null != CreateCommand)
+            if (CreateCommand != null)
             {
                 bool mustRelease = false;
                 RuntimeHelpers.PrepareConstrainedRegions();
@@ -389,7 +389,7 @@ namespace System.Data.OleDb
             object unknown = _unknown;
             _unknown = null!;
             _value = null!;
-            if (null != unknown)
+            if (unknown != null)
             {
                 Marshal.ReleaseComObject(unknown);
             }
@@ -405,14 +405,14 @@ namespace System.Data.OleDb
         {
             _unknown = unknown;
             _value = (unknown as UnsafeNativeMethods.IDBProperties)!;
-            Debug.Assert(null != _value, "null IDBProperties");
+            Debug.Assert(_value != null, "null IDBProperties");
         }
 
         internal UnsafeNativeMethods.IDBProperties Value
         {
             get
             {
-                Debug.Assert(null != _value, "null IDBProperties");
+                Debug.Assert(_value != null, "null IDBProperties");
                 return _value;
             }
         }
@@ -422,7 +422,7 @@ namespace System.Data.OleDb
             object unknown = _unknown;
             _unknown = null!;
             _value = null!;
-            if (null != unknown)
+            if (unknown != null)
             {
                 Marshal.ReleaseComObject(unknown);
             }
@@ -453,7 +453,7 @@ namespace System.Data.OleDb
             object unknown = _unknown;
             _unknown = null!;
             _value = null!;
-            if (null != unknown)
+            if (unknown != null)
             {
                 Marshal.ReleaseComObject(unknown);
             }
@@ -469,14 +469,14 @@ namespace System.Data.OleDb
         {
             _unknown = unknown;
             _value = (unknown as UnsafeNativeMethods.IOpenRowset)!;
-            Debug.Assert(null != _value, "null IOpenRowsetWrapper");
+            Debug.Assert(_value != null, "null IOpenRowsetWrapper");
         }
 
         internal UnsafeNativeMethods.IOpenRowset Value
         {
             get
             {
-                Debug.Assert(null != _value, "null IDBProperties");
+                Debug.Assert(_value != null, "null IDBProperties");
                 return _value;
             }
         }
@@ -486,7 +486,7 @@ namespace System.Data.OleDb
             object unknown = _unknown;
             _unknown = null!;
             _value = null!;
-            if (null != unknown)
+            if (unknown != null)
             {
                 Marshal.ReleaseComObject(unknown);
             }
@@ -517,7 +517,7 @@ namespace System.Data.OleDb
             object unknown = _unknown;
             _unknown = null!;
             _value = null!;
-            if (null != unknown)
+            if (unknown != null)
             {
                 Marshal.ReleaseComObject(unknown);
             }

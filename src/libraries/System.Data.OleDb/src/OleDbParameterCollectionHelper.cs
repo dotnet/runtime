@@ -17,7 +17,7 @@ namespace System.Data.OleDb
         {
             get
             {
-                return ((null != _items) ? _items.Count : 0);
+                return ((_items != null) ? _items.Count : 0);
             }
         }
 
@@ -27,7 +27,7 @@ namespace System.Data.OleDb
             {
                 List<OleDbParameter>? items = _items;
 
-                if (null == items)
+                if (items == null)
                 {
                     items = new List<OleDbParameter>();
                     _items = items;
@@ -80,7 +80,7 @@ namespace System.Data.OleDb
         public override void AddRange(System.Array values)
         {
             OnChange();
-            if (null == values)
+            if (values == null)
             {
                 throw ADP.ArgumentNull(nameof(values));
             }
@@ -110,7 +110,7 @@ namespace System.Data.OleDb
             OnChange();
             List<OleDbParameter> items = InnerList;
 
-            if (null != items)
+            if (items != null)
             {
                 foreach (OleDbParameter item in items)
                 {
@@ -122,7 +122,7 @@ namespace System.Data.OleDb
 
         public override bool Contains(object value)
         {
-            return (-1 != IndexOf(value));
+            return (IndexOf(value) != -1);
         }
 
         public override void CopyTo(Array array, int index)
@@ -153,7 +153,7 @@ namespace System.Data.OleDb
 
         private static int IndexOf(System.Collections.IEnumerable items, string parameterName)
         {
-            if (null != items)
+            if (items != null)
             {
                 int i = 0;
 
@@ -169,7 +169,7 @@ namespace System.Data.OleDb
 
                 foreach (OleDbParameter parameter in items)
                 {
-                    if (0 == ADP.DstCompare(parameterName, parameter.ParameterName))
+                    if (ADP.DstCompare(parameterName, parameter.ParameterName) == 0)
                     {
                         return i;
                     }
@@ -186,13 +186,13 @@ namespace System.Data.OleDb
 
         public override int IndexOf(object value)
         {
-            if (null != value)
+            if (value != null)
             {
                 ValidateType(value);
 
                 List<OleDbParameter> items = InnerList;
 
-                if (null != items)
+                if (items != null)
                 {
                     int count = items.Count;
 
@@ -229,7 +229,7 @@ namespace System.Data.OleDb
             OnChange();
             ValidateType(value);
             int index = IndexOf(value);
-            if (-1 != index)
+            if (index != -1)
             {
                 RemoveIndex(index);
             }
@@ -256,7 +256,7 @@ namespace System.Data.OleDb
         private void RemoveIndex(int index)
         {
             List<OleDbParameter> items = InnerList;
-            Debug.Assert((null != items) && (0 <= index) && (index < Count), "RemoveIndex, invalid");
+            Debug.Assert((items != null) && (index >= 0) && (index < Count), "RemoveIndex, invalid");
             OleDbParameter item = items[index];
             items.RemoveAt(index);
             item.ResetParent();
@@ -265,7 +265,7 @@ namespace System.Data.OleDb
         private void Replace(int index, object newValue)
         {
             List<OleDbParameter> items = InnerList;
-            Debug.Assert((null != items) && (0 <= index) && (index < Count), "Replace Index invalid");
+            Debug.Assert((items != null) && (index >= 0) && (index < Count), "Replace Index invalid");
             ValidateType(newValue);
             Validate(index, newValue);
             OleDbParameter item = items[index];
@@ -293,13 +293,13 @@ namespace System.Data.OleDb
 
         private void Validate(int index, object value)
         {
-            if (null == value)
+            if (value == null)
             {
                 throw ADP.ParameterNull(nameof(value), this, s_itemType);
             }
 
             object? parent = ((OleDbParameter)value).CompareExchangeParent(this, null);
-            if (null != parent)
+            if (parent != null)
             {
                 if (this != parent)
                 {
@@ -312,21 +312,21 @@ namespace System.Data.OleDb
             }
 
             string name = ((OleDbParameter)value).ParameterName;
-            if (0 == name.Length)
+            if (name.Length == 0)
             {
                 index = 1;
                 do
                 {
                     name = ADP.Parameter + index.ToString(CultureInfo.CurrentCulture);
                     index++;
-                } while (-1 != IndexOf(name));
+                } while (IndexOf(name) != -1);
                 ((OleDbParameter)value).ParameterName = name;
             }
         }
 
         private void ValidateType(object value)
         {
-            if (null == value)
+            if (value == null)
             {
                 throw ADP.ParameterNull(nameof(value), this, s_itemType);
             }

@@ -45,7 +45,7 @@ namespace System.Data.ProviderBase
 
         internal DbConnectionPoolGroup(DbConnectionOptions connectionOptions, DbConnectionPoolKey key, DbConnectionPoolGroupOptions poolGroupOptions)
         {
-            Debug.Assert(null != connectionOptions, "null connection options");
+            Debug.Assert(connectionOptions != null, "null connection options");
 
             _connectionOptions = connectionOptions;
             _poolKey = key;
@@ -72,7 +72,7 @@ namespace System.Data.ProviderBase
             set
             {
                 _providerInfo = value;
-                if (null != value)
+                if (value != null)
                 {
                     _providerInfo!.PoolGroup = this;
                 }
@@ -139,7 +139,7 @@ namespace System.Data.ProviderBase
             // PoolGroupOptions will only be null when we're not supposed to pool
             // connections.
             DbConnectionPool? pool = null;
-            if (null != _poolGroupOptions)
+            if (_poolGroupOptions != null)
             {
                 DbConnectionPoolIdentity? currentIdentity = DbConnectionPoolIdentity.NoIdentity;
 
@@ -159,7 +159,7 @@ namespace System.Data.ProviderBase
                     }
                 }
 
-                if (null != currentIdentity)
+                if (currentIdentity != null)
                 {
                     if (!_poolCollection.TryGetValue(currentIdentity, out pool)) // find the pool
                     {
@@ -202,7 +202,7 @@ namespace System.Data.ProviderBase
                 }
             }
 
-            if (null == pool)
+            if (pool == null)
             {
                 lock (this)
                 {
@@ -245,7 +245,7 @@ namespace System.Data.ProviderBase
                             // Empty pool during pruning indicates zero or low activity, but
                             //  an error state indicates the pool needs to stay around to
                             //  throttle new connection attempts.
-                            if ((!pool.ErrorOccurred) && (0 == pool.Count))
+                            if ((!pool.ErrorOccurred) && (pool.Count == 0))
                             {
                                 // Order is important here.  First we remove the pool
                                 // from the collection of pools so no one will try

@@ -48,7 +48,7 @@ namespace System.Data.OleDb
         {
             StringBuilder builder = new StringBuilder();
             builder.Append("tagDBPARAMBINDINFO_x86").Append(Environment.NewLine);
-            if (IntPtr.Zero != pwszDataSourceType)
+            if (pwszDataSourceType != IntPtr.Zero)
             {
                 builder.Append("pwszDataSourceType =").Append(Marshal.PtrToStringUni(pwszDataSourceType)).Append(Environment.NewLine);
             }
@@ -76,7 +76,7 @@ namespace System.Data.OleDb
         {
             StringBuilder builder = new StringBuilder();
             builder.Append("tagDBPARAMBINDINFO").Append(Environment.NewLine);
-            if (IntPtr.Zero != pwszDataSourceType)
+            if (pwszDataSourceType != IntPtr.Zero)
             {
                 builder.Append("pwszDataSourceType =").Append(Marshal.PtrToStringUni(pwszDataSourceType)).Append(Environment.NewLine);
             }

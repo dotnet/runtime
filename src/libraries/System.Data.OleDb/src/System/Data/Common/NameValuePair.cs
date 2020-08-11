@@ -24,7 +24,7 @@ namespace System.Data.Common
         {
             get
             {
-                Debug.Assert(0 < _length, "NameValuePair zero Length usage");
+                Debug.Assert(_length > 0, "NameValuePair zero Length usage");
                 return _length;
             }
         }
@@ -37,7 +37,7 @@ namespace System.Data.Common
             get { return _next; }
             set
             {
-                if ((null != _next) || (null == value))
+                if ((_next != null) || (value == null))
                 {
                     throw ADP.InternalError(ADP.InternalErrorCode.NameValuePairNext);
                 }

@@ -432,7 +432,7 @@ namespace Microsoft.Extensions.Logging.EventSource
                     {
                         return false;
                     }
-                    if (!(LogLevel.Trace <= (LogLevel)level && (LogLevel)level <= LogLevel.None))
+                    if (!((LogLevel)level >= LogLevel.Trace && (LogLevel)level <= LogLevel.None))
                     {
                         return false;
                     }

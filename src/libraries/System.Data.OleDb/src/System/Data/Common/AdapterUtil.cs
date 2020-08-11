@@ -195,7 +195,7 @@ namespace System.Data.Common
         internal static void CheckArgumentLength(string value, string parameterName)
         {
             CheckArgumentNull(value, parameterName);
-            if (0 == value.Length)
+            if (value.Length == 0)
             {
                 throw Argument(SR.GetString(SR.ADP_EmptyString, parameterName));
             }
@@ -203,7 +203,7 @@ namespace System.Data.Common
 
         internal static void CheckArgumentNull(object value, string parameterName)
         {
-            if (null == value)
+            if (value == null)
             {
                 throw ArgumentNull(parameterName);
             }
@@ -711,8 +711,8 @@ namespace System.Data.Common
         }
         internal static Exception ParameterConversionFailed(object value, Type destType, Exception inner)
         {
-            Debug.Assert(null != value, "null value on conversion failure");
-            Debug.Assert(null != inner, "null inner on conversion failure");
+            Debug.Assert(value != null, "null value on conversion failure");
+            Debug.Assert(inner != null, "null inner on conversion failure");
 
             Exception e;
             string message = SR.GetString(SR.ADP_ParameterConversionFailed, value.GetType().Name, destType.Name);
@@ -907,12 +907,12 @@ namespace System.Data.Common
 
         internal static bool CompareInsensitiveInvariant(string strvalue, string strconst)
         {
-            return (0 == CultureInfo.InvariantCulture.CompareInfo.Compare(strvalue, strconst, CompareOptions.IgnoreCase));
+            return (CultureInfo.InvariantCulture.CompareInfo.Compare(strvalue, strconst, CompareOptions.IgnoreCase) == 0);
         }
 
         internal static Delegate? FindBuilder(MulticastDelegate? mcd)
         { // V1.2.3300
-            if (null != mcd)
+            if (mcd != null)
             {
                 Delegate[] d = mcd.GetInvocationList();
                 for (int i = 0; i < d.Length; i++)
@@ -925,7 +925,7 @@ namespace System.Data.Common
             return null;
         }
 
-        internal static readonly bool IsWindowsNT = (PlatformID.Win32NT == Environment.OSVersion.Platform);
+        internal static readonly bool IsWindowsNT = (Environment.OSVersion.Platform == PlatformID.Win32NT);
         internal static readonly bool IsPlatformNT5 = (ADP.IsWindowsNT && (Environment.OSVersion.Version.Major >= 5));
 
         internal static SysTx.Transaction? GetCurrentTransaction()
@@ -943,7 +943,7 @@ namespace System.Data.Common
         {
             SysTx.IDtcTransaction? oleTxTransaction = null;
 
-            if (null != transaction)
+            if (transaction != null)
             {
                 oleTxTransaction = SysTx.TransactionInterop.GetDtcTransaction(transaction);
             }
@@ -1099,7 +1099,7 @@ namespace System.Data.Common
             {
                 using (RegistryKey? key = Registry.ClassesRoot.OpenSubKey(subkey, false))
                 {
-                    return ((null != key) ? key.GetValue(queryvalue) : null);
+                    return ((key != null) ? key.GetValue(queryvalue) : null);
                 }
             }
             catch (SecurityException e)
@@ -1117,7 +1117,7 @@ namespace System.Data.Common
             {
                 using (RegistryKey? key = Registry.LocalMachine.OpenSubKey(subkey, false))
                 {
-                    return ((null != key) ? key.GetValue(queryvalue) : null);
+                    return ((key != null) ? key.GetValue(queryvalue) : null);
                 }
             }
             catch (SecurityException e)
@@ -1315,22 +1315,22 @@ namespace System.Data.Common
 
         internal static bool IsEmpty([NotNullWhen(false)] string? str)
         {
-            return ((null == str) || (0 == str.Length));
+            return ((str == null) || (str.Length == 0));
         }
 
         internal static bool IsEmptyArray([NotNullWhen(false)] string?[]? array)
         {
-            return ((null == array) || (0 == array.Length));
+            return ((array == null) || (array.Length == 0));
         }
 
         internal static bool IsNull([NotNullWhen(false)] object? value)
         {
-            if ((null == value) || (DBNull.Value == value))
+            if ((value == null) || (value == DBNull.Value))
             {
                 return true;
             }
             INullable? nullable = (value as INullable);
-            return ((null != nullable) && nullable.IsNull);
+            return ((nullable != null) && nullable.IsNull);
         }
     }
 }

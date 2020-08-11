@@ -14,7 +14,7 @@ namespace System.Reflection.Context.Projection
         public ProjectingLocalVariableInfo(LocalVariableInfo variable, Projector projector)
             : base(variable)
         {
-            Debug.Assert(null != projector);
+            Debug.Assert(projector != null);
 
             _projector = projector;
         }

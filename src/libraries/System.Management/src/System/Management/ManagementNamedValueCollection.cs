@@ -60,7 +60,7 @@ namespace System.Management
             IWbemContext wbemContext = null;
 
             // Only build a context if we have something to put in it
-            if (0 < Count)
+            if (Count > 0)
             {
                 int status = (int)ManagementStatus.NoError;
 
@@ -141,7 +141,7 @@ namespace System.Management
                 // If we can clone the value, do so. Otherwise throw.
                 object val = base.BaseGet(name);
 
-                if (null != val)
+                if (val != null)
                 {
                     Type valueType = val.GetType();
 

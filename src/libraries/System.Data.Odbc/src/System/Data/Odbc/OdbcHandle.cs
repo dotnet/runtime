@@ -27,13 +27,13 @@ namespace System.Data.Odbc
                 switch (handleType)
                 {
                     case ODBC32.SQL_HANDLE.ENV:
-                        Debug.Assert(null == parentHandle, "did not expect a parent handle");
+                        Debug.Assert(parentHandle == null, "did not expect a parent handle");
                         retcode = Interop.Odbc.SQLAllocHandle(handleType, IntPtr.Zero, out base.handle);
                         break;
                     case ODBC32.SQL_HANDLE.DBC:
                     case ODBC32.SQL_HANDLE.STMT:
                         // must addref before calling native so it won't be released just after
-                        Debug.Assert(null != parentHandle, "expected a parent handle"); // safehandle can't be null
+                        Debug.Assert(parentHandle != null, "expected a parent handle"); // safehandle can't be null
                         parentHandle.DangerousAddRef(ref mustRelease);
 
                         retcode = Interop.Odbc.SQLAllocHandle(handleType, parentHandle, out base.handle);
@@ -68,7 +68,7 @@ namespace System.Data.Odbc
                 }
             }
 
-            if ((ADP.PtrZero == base.handle) || (ODBC32.RetCode.SUCCESS != retcode))
+            if ((base.handle == ADP.PtrZero) || (ODBC32.RetCode.SUCCESS != retcode))
             {
                 //
                 throw ODBC.CantAllocateEnvironmentHandle(retcode);
@@ -108,7 +108,7 @@ namespace System.Data.Odbc
                     }
                 }
             }
-            if (ADP.PtrZero == base.handle)
+            if (base.handle == ADP.PtrZero)
             {
                 throw ODBC.FailedToGetDescriptorHandle(retcode);
             }
@@ -157,7 +157,7 @@ namespace System.Data.Odbc
 
                     // case 0: ThreadAbortException setting handle before HandleType
                     default:
-                        Debug.Assert(ADP.PtrZero == handle, "unknown handle type");
+                        Debug.Assert(handle == ADP.PtrZero, "unknown handle type");
                         break;
                 }
             }
@@ -166,7 +166,7 @@ namespace System.Data.Odbc
             // our reference on our parent.
             OdbcHandle? parentHandle = _parentHandle;
             _parentHandle = null;
-            if (null != parentHandle)
+            if (parentHandle != null)
             {
                 parentHandle.DangerousRelease();
                 parentHandle = null;

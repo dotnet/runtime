@@ -350,7 +350,7 @@ namespace System.DirectoryServices.AccountManagement
         {
             QbeMatchType valueToMatch = (QbeMatchType)filter.Value;
 
-            if (null == valueToMatch.Value)
+            if (valueToMatch.Value == null)
             {
                 if ((de.Properties.Contains(winNTPropertyName) == false) ||
                      (de.Properties[winNTPropertyName].Count == 0) ||
@@ -440,7 +440,7 @@ namespace System.DirectoryServices.AccountManagement
             QbeMatchType valueToMatch = (QbeMatchType)filter.Value;
             bool result = false;
 
-            if (null == valueToMatch.Value)
+            if (valueToMatch.Value == null)
             {
                 if ((de.Properties.Contains(winNTPropertyName) == false) ||
                      (de.Properties[winNTPropertyName].Count == 0) ||

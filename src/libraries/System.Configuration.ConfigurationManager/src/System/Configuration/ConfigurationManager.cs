@@ -18,7 +18,7 @@ namespace System.Configuration
 
         // to be used by System.Diagnostics to avoid false config results during config init
         internal static bool SetConfigurationSystemInProgress
-            => (InitState.NotStarted < s_initState) && (s_initState < InitState.Completed);
+            => (s_initState > InitState.NotStarted) && (s_initState < InitState.Completed);
 
         internal static bool SupportsUserConfig
         {
@@ -221,7 +221,7 @@ namespace System.Configuration
         /// </summary>
         private static void PreloadConfiguration(Configuration configuration)
         {
-            if (null == configuration) return;
+            if (configuration == null) return;
 
             // Preload root-level sections.
             foreach (ConfigurationSection section in configuration.Sections) { }
@@ -233,7 +233,7 @@ namespace System.Configuration
 
         private static void PreloadConfigurationSectionGroup(ConfigurationSectionGroup sectionGroup)
         {
-            if (null == sectionGroup) return;
+            if (sectionGroup == null) return;
 
             // Preload sections just by iterating.
             foreach (ConfigurationSection section in sectionGroup.Sections) { }

@@ -193,7 +193,7 @@ namespace System.Data.OleDb
         {
             this.enumOleDbType = enumOleDbType;
             this.dbType = dbType;
-            this.dbPart = (-1 == fixlen) ? VarblDbPart : FixedDbPart;
+            this.dbPart = (fixlen == -1) ? VarblDbPart : FixedDbPart;
             this.isfixed = isfixed;
             this.islong = islong;
             this.maxpre = maxpre;
@@ -209,7 +209,7 @@ namespace System.Data.OleDb
         {
             get
             {
-                return (-1 == fixlen);
+                return (fixlen == -1);
             }
         }
 
@@ -266,7 +266,7 @@ namespace System.Data.OleDb
         internal static NativeDBType FromSystemType(object value)
         {
             IConvertible? ic = (value as IConvertible);
-            if (null != ic)
+            if (ic != null)
             {
                 return ic.GetTypeCode() switch
                 {
@@ -419,7 +419,7 @@ namespace System.Data.OleDb
                 //case BYREF:
                 //case RESERVED:
                 default:
-                    if (0 != (NativeDBType.VECTOR & dbType))
+                    if ((NativeDBType.VECTOR & dbType) != 0)
                     {
                         throw ODB.DBBindingGetVector();
                     }

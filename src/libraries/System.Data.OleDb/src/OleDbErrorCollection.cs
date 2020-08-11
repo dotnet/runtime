@@ -16,7 +16,7 @@ namespace System.Data.OleDb
         {
             ArrayList items = new ArrayList();
             UnsafeNativeMethods.IErrorRecords? errorRecords = (errorInfo as UnsafeNativeMethods.IErrorRecords);
-            if (null != errorRecords)
+            if (errorRecords != null)
             {
                 int recordCount = errorRecords.GetRecordCount();
 
@@ -44,7 +44,7 @@ namespace System.Data.OleDb
             get
             {
                 ArrayList items = this.items;
-                return ((null != items) ? items.Count : 0);
+                return ((items != null) ? items.Count : 0);
             }
         }
 

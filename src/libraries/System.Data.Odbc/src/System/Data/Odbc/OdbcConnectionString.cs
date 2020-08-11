@@ -22,10 +22,10 @@ namespace System.Data.Odbc
                 int position = 0;
                 _expandedConnectionString = ExpandDataDirectories(ref filename, ref position);
             }
-            if (validate || (null == _expandedConnectionString))
+            if (validate || (_expandedConnectionString == null))
             {
                 // do not check string length if it was expanded because the final result may be shorter than the original
-                if ((null != connectionString) && (ODBC32.MAX_CONNECTION_STRING_LENGTH < connectionString.Length))
+                if ((connectionString != null) && (ODBC32.MAX_CONNECTION_STRING_LENGTH < connectionString.Length))
                 { // MDAC 83536
                     throw ODBC.ConnectionStringTooLong();
                 }

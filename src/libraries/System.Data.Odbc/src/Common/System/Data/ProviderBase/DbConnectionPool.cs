@@ -137,9 +137,9 @@ namespace System.Data.ProviderBase
                             DbConnectionPoolIdentity identity,
                             DbConnectionPoolProviderInfo? connectionPoolProviderInfo)
         {
-            Debug.Assert(null != connectionPoolGroup, "null connectionPoolGroup");
+            Debug.Assert(connectionPoolGroup != null, "null connectionPoolGroup");
 
-            if ((null != identity) && identity.IsRestricted)
+            if ((identity != null) && identity.IsRestricted)
             {
                 throw ADP.InternalError(ADP.InternalErrorCode.AttemptingToPoolOnRestrictedToken);
             }
@@ -201,7 +201,7 @@ namespace System.Data.ProviderBase
         {
             get
             {
-                if (State.Running != _state) // Don't allow connection create when not running.
+                if (_state != State.Running) // Don't allow connection create when not running.
                     return false;
 
                 int totalObjects = Count;
@@ -227,7 +227,7 @@ namespace System.Data.ProviderBase
 
         internal bool IsRunning
         {
-            get { return State.Running == _state; }
+            get { return _state == State.Running; }
         }
 
         private int MaxPoolSize
@@ -263,7 +263,7 @@ namespace System.Data.ProviderBase
 
         private bool UsingIntegrateSecurity
         {
-            get { return (null != _identity && DbConnectionPoolIdentity.NoIdentity != _identity); }
+            get { return (_identity != null && _identity != DbConnectionPoolIdentity.NoIdentity); }
         }
 
         private void CleanupCallback(object? state)
@@ -356,7 +356,7 @@ namespace System.Data.ProviderBase
                 {
                     obj = _objectList[i];
 
-                    if (null != obj)
+                    if (obj != null)
                     {
                         obj.DoNotPoolThisConnection();
                     }
@@ -394,7 +394,7 @@ namespace System.Data.ProviderBase
             try
             {
                 newObj = _connectionFactory.CreatePooledConnection(this, owningObject, _connectionPoolGroup.ConnectionOptions, _connectionPoolGroup.PoolKey, userOptions);
-                if (null == newObj)
+                if (newObj == null)
                 {
                     throw ADP.InternalError(ADP.InternalErrorCode.CreateObjectReturnedNull);    // CreateObject succeeded, but null object
                 }
@@ -462,7 +462,7 @@ namespace System.Data.ProviderBase
 
                 Debug.Assert(timerIsNotDisposed, "ErrorCallback timer has been disposed");
 
-                if (30000 < _errorWait)
+                if (_errorWait > 30000)
                 {
                     _errorWait = 60000;
                 }
@@ -731,7 +731,7 @@ namespace System.Data.ProviderBase
         private bool TryGetConnection(DbConnection owningObject, uint waitForMultipleObjectsTimeout, bool allowCreate, bool onlyOneCheckConnection, DbConnectionOptions? userOptions, out DbConnectionInternal? connection)
         {
             DbConnectionInternal? obj = null;
-            if (null == obj)
+            if (obj == null)
             {
                 Interlocked.Increment(ref _waitCount);
 
@@ -774,7 +774,7 @@ namespace System.Data.ProviderBase
                                 }
                                 catch
                                 {
-                                    if (null == obj)
+                                    if (obj == null)
                                     {
                                         Interlocked.Decrement(ref _waitCount);
                                     }
@@ -784,24 +784,24 @@ namespace System.Data.ProviderBase
                                 {
                                     // Ensure that we release this waiter, regardless
                                     // of any exceptions that may be thrown.
-                                    if (null != obj)
+                                    if (obj != null)
                                     {
                                         Interlocked.Decrement(ref _waitCount);
                                     }
                                 }
 
-                                if (null == obj)
+                                if (obj == null)
                                 {
                                     // If we were not able to create an object, check to see if
                                     // we reached MaxPoolSize.  If so, we will no longer wait on
                                     // the CreationHandle, but instead wait for a free object or
                                     // the timeout.
-                                    if (Count >= MaxPoolSize && 0 != MaxPoolSize)
+                                    if (Count >= MaxPoolSize && MaxPoolSize != 0)
                                     {
                                         if (!ReclaimEmancipatedObjects())
                                         {
                                             // modify handle array not to wait on creation mutex anymore
-                                            Debug.Assert(2 == CREATION_HANDLE, "creation handle changed value");
+                                            Debug.Assert(CREATION_HANDLE == 2, "creation handle changed value");
                                             allowCreate = false;
                                         }
                                     }
@@ -854,10 +854,10 @@ namespace System.Data.ProviderBase
                             _waitHandles.CreationSemaphore.Release(1);
                         }
                     }
-                } while (null == obj);
+                } while (obj == null);
             }
 
-            if (null != obj)
+            if (obj != null)
             {
                 PrepareConnection(owningObject, obj);
             }
@@ -932,7 +932,7 @@ namespace System.Data.ProviderBase
             // following assert to fire, which really mucks up stress against
             //  checked bits.
 
-            if (null != obj)
+            if (obj != null)
             {
             }
             return (obj);
@@ -943,7 +943,7 @@ namespace System.Data.ProviderBase
             // called by pooler to ensure pool requests are currently being satisfied -
             // creation mutex has not been obtained
 
-            if (State.Running == _state)
+            if (_state == State.Running)
             {
                 // in case WaitForPendingOpen ever failed with no subsequent OpenAsync calls,
                 // start it back up again
@@ -994,7 +994,7 @@ namespace System.Data.ProviderBase
 
                                         // We do not need to check error flag here, since we know if
                                         // CreateObject returned null, we are in error case.
-                                        if (null != newObj)
+                                        if (newObj != null)
                                         {
                                             PutNewObject(newObj);
                                         }
@@ -1027,7 +1027,7 @@ namespace System.Data.ProviderBase
 
         internal void PutNewObject(DbConnectionInternal obj)
         {
-            Debug.Assert(null != obj, "why are we adding a null object to the pool?");
+            Debug.Assert(obj != null, "why are we adding a null object to the pool?");
             // Debug.Assert(obj.CanBePooled,    "non-poolable object in pool");
 
 
@@ -1037,7 +1037,7 @@ namespace System.Data.ProviderBase
 
         internal void PutObject(DbConnectionInternal obj, object owningObject)
         {
-            Debug.Assert(null != obj, "null obj?");
+            Debug.Assert(obj != null, "null obj?");
 
 
             // Once a connection is closing (which is the state that we're in at
@@ -1063,7 +1063,7 @@ namespace System.Data.ProviderBase
 
         private void QueuePoolCreateRequest()
         {
-            if (State.Running == _state)
+            if (_state == State.Running)
             {
                 // Make sure we're at quota by posting a callback to the threadpool.
                 ThreadPool.QueueUserWorkItem(_poolCreateRequest);
@@ -1085,7 +1085,7 @@ namespace System.Data.ProviderBase
                 {
                     DbConnectionInternal obj = _objectList[i];
 
-                    if (null != obj)
+                    if (obj != null)
                     {
                         bool locked = false;
 
@@ -1149,7 +1149,7 @@ namespace System.Data.ProviderBase
             // deactivate timer callbacks
             Timer? t = _cleanupTimer;
             _cleanupTimer = null;
-            if (null != t)
+            if (t != null)
             {
                 t.Dispose();
             }
@@ -1168,7 +1168,7 @@ namespace System.Data.ProviderBase
             }
             else
             {
-                if ((oldConnection != null) || (Count < MaxPoolSize) || (0 == MaxPoolSize))
+                if ((oldConnection != null) || (Count < MaxPoolSize) || (MaxPoolSize == 0))
                 {
                     // If we have an odd number of total objects, reclaim any dead objects.
                     // If we did not find any objects to reclaim, create a new one.

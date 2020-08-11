@@ -30,7 +30,7 @@ namespace System.DirectoryServices.AccountManagement
 
                 for (int i = 0; i < MyAttribute.Length; i++)
                 {
-                    if (MyAttribute[i].Context == null && null == defaultRdn)
+                    if (MyAttribute[i].Context == null && defaultRdn == null)
                     {
                         defaultRdn = MyAttribute[i].RdnPrefix;
                     }
@@ -56,7 +56,7 @@ namespace System.DirectoryServices.AccountManagement
 
             for (int i = 0; i < MyAttribute.Length; i++)
             {
-                if (MyAttribute[i].Context == null && null == defaultObjectClass)
+                if (MyAttribute[i].Context == null && defaultObjectClass == null)
                 {
                     defaultObjectClass = MyAttribute[i].ObjectClass;
                 }
@@ -85,7 +85,7 @@ namespace System.DirectoryServices.AccountManagement
 
                 for (int i = 0; i < MyAttribute.Length; i++)
                 {
-                    if (MyAttribute[i].Context == null && null == defaultObjectClass)
+                    if (MyAttribute[i].Context == null && defaultObjectClass == null)
                     {
                         defaultObjectClass = MyAttribute[i].ObjectClass;
                     }

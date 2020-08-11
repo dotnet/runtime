@@ -10,7 +10,7 @@ namespace System.Reflection.Context.Delegation
     {
         public DelegatingEventInfo(EventInfo @event)
         {
-            Debug.Assert(null != @event);
+            Debug.Assert(@event != null);
 
             UnderlyingEvent = @event;
         }

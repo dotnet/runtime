@@ -21,7 +21,7 @@ namespace System.Data.ProviderBase
 #if DEBUG
 
             int activateCount = Interlocked.Increment(ref _activateCount);
-            Debug.Assert(1 == activateCount, "activated multiple times?");
+            Debug.Assert(activateCount == 1, "activated multiple times?");
 #endif // DEBUG
 
             Activate();
@@ -65,8 +65,8 @@ namespace System.Data.ProviderBase
             ////////////////////////////////////////////////////////////////
             // DON'T MESS WITH THIS CODE UNLESS YOU KNOW WHAT YOU'RE DOING!
             ////////////////////////////////////////////////////////////////
-            Debug.Assert(null != owningObject, "null owningObject");
-            Debug.Assert(null != connectionFactory, "null connectionFactory");
+            Debug.Assert(owningObject != null, "null owningObject");
+            Debug.Assert(connectionFactory != null, "null connectionFactory");
 
 
             // if an exception occurs after the state change but before the try block
@@ -90,7 +90,7 @@ namespace System.Data.ProviderBase
                         // The singleton closed classes won't have owners and
                         // connection pools, and we won't want to put them back
                         // into the pool.
-                        if (null != connectionPool)
+                        if (connectionPool != null)
                         {
                             connectionPool.PutObject(this, owningObject);   // PutObject calls Deactivate for us...
                                                                             // NOTE: Before we leave the PutObject call, another

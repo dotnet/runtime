@@ -11,7 +11,7 @@ namespace System.Data.OleDb
 
         internal OleDbInfoMessageEventArgs(OleDbException exception)
         {
-            Debug.Assert(null != exception, "OleDbInfoMessageEventArgs without OleDbException");
+            Debug.Assert(exception != null, "OleDbInfoMessageEventArgs without OleDbException");
             this.exception = exception;
         }
 

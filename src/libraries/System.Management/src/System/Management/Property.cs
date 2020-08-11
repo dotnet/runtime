@@ -20,7 +20,7 @@ namespace System.Management
     {
         public static object GetSafeObject(object theValue)
         {
-            if (null == theValue)
+            if (theValue == null)
                 return null;
             else if (theValue.GetType().IsPrimitive)
                 return ((IConvertible)theValue).ToType(typeof(object), null);
@@ -138,7 +138,7 @@ namespace System.Management
                 RefreshPropertyInfo();
                 return ValueTypeSafety.GetSafeObject(MapWmiValueToValue(propertyValue,
                         (CimType)(propertyType & ~(int)tag_CIMTYPE_ENUMERATION.CIM_FLAG_ARRAY),
-                        (0 != (propertyType & (int)tag_CIMTYPE_ENUMERATION.CIM_FLAG_ARRAY))));
+                        ((propertyType & (int)tag_CIMTYPE_ENUMERATION.CIM_FLAG_ARRAY) != 0)));
             }
             set
             {
@@ -146,7 +146,7 @@ namespace System.Management
 
                 object newValue = MapValueToWmiValue(value,
                             (CimType)(propertyType & ~(int)tag_CIMTYPE_ENUMERATION.CIM_FLAG_ARRAY),
-                            (0 != (propertyType & (int)tag_CIMTYPE_ENUMERATION.CIM_FLAG_ARRAY)));
+                            ((propertyType & (int)tag_CIMTYPE_ENUMERATION.CIM_FLAG_ARRAY) != 0));
 
                 int status = parent.wbemObject.Put_(propertyName, 0, ref newValue, 0);
 
@@ -284,7 +284,7 @@ namespace System.Management
         {
             object val = null;
 
-            if ((System.DBNull.Value != wmiValue) && (null != wmiValue))
+            if ((System.DBNull.Value != wmiValue) && (wmiValue != null))
             {
                 if (isArray)
                 {
@@ -376,7 +376,7 @@ namespace System.Management
         {
             object wmiValue = System.DBNull.Value;
             CultureInfo culInfo = CultureInfo.InvariantCulture;
-            if (null != val)
+            if (val != null)
             {
                 if (isArray)
                 {
@@ -600,7 +600,7 @@ namespace System.Management
             isArray = false;
             type = 0;
 
-            if (null != val)
+            if (val != null)
             {
                 isArray = val.GetType().IsArray;
                 Type valueType = val.GetType();

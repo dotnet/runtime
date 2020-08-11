@@ -52,7 +52,7 @@ namespace System.Data.Odbc
             get
             {
                 ParameterDirection direction = _direction;
-                return ((0 != direction) ? direction : ParameterDirection.Input);
+                return ((direction != 0) ? direction : ParameterDirection.Input);
             }
             set
             {
@@ -108,7 +108,7 @@ namespace System.Data.Odbc
             get
             {
                 int size = _size;
-                if (0 == size)
+                if (size == 0)
                 {
                     size = ValueSize(Value);
                 }
@@ -131,7 +131,7 @@ namespace System.Data.Odbc
 
         private bool ShouldSerializeSize()
         {
-            return (0 != _size);
+            return (_size != 0);
         }
 
         [AllowNull]
@@ -140,7 +140,7 @@ namespace System.Data.Odbc
             get
             {
                 string? sourceColumn = _sourceColumn;
-                return ((null != sourceColumn) ? sourceColumn : string.Empty);
+                return ((sourceColumn != null) ? sourceColumn : string.Empty);
             }
             set
             {
@@ -165,7 +165,7 @@ namespace System.Data.Odbc
             get
             {
                 DataRowVersion sourceVersion = _sourceVersion;
-                return ((0 != sourceVersion) ? sourceVersion : DataRowVersion.Current);
+                return ((sourceVersion != 0) ? sourceVersion : DataRowVersion.Current);
             }
             set
             {

@@ -16,7 +16,7 @@ namespace System.Reflection.Context.Delegation
 
         public DelegatingAssembly(Assembly assembly)
         {
-            Debug.Assert(null != assembly);
+            Debug.Assert(assembly != null);
 
             UnderlyingAssembly = assembly;
         }

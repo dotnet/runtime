@@ -32,7 +32,7 @@ namespace System.Data.OleDb
                 finally
                 {
                     hr = transaction.StartTransaction(isolevel, 0, IntPtr.Zero, out transactionLevel);
-                    if (0 <= hr)
+                    if (hr >= 0)
                     {
                         _mustComplete = true;
                     }
@@ -87,7 +87,7 @@ namespace System.Data.OleDb
                     finally
                     {
                         hr = (OleDbHResult)NativeOledbWrapper.ITransactionCommit(DangerousGetHandle());
-                        if ((0 <= (int)hr) || (OleDbHResult.XACT_E_NOTRANSACTION == hr))
+                        if (((int)hr >= 0) || (hr == OleDbHResult.XACT_E_NOTRANSACTION))
                         {
                             _mustComplete = false;
                         }
@@ -105,7 +105,7 @@ namespace System.Data.OleDb
 
             protected override bool ReleaseHandle()
             {
-                if (_mustComplete && (IntPtr.Zero != base.handle))
+                if (_mustComplete && (base.handle != IntPtr.Zero))
                 {
                     NativeOledbWrapper.ITransactionAbort(base.handle);
                     _mustComplete = false;
@@ -157,7 +157,7 @@ namespace System.Data.OleDb
         {
             get
             {
-                if (null == _transaction)
+                if (_transaction == null)
                 {
                     throw ADP.TransactionZombied(this);
                 }
@@ -175,11 +175,11 @@ namespace System.Data.OleDb
 
         public OleDbTransaction Begin(IsolationLevel isolevel)
         {
-            if (null == _transaction)
+            if (_transaction == null)
             {
                 throw ADP.TransactionZombied(this);
             }
-            else if ((null != _nestedTransaction) && _nestedTransaction.IsAlive)
+            else if ((_nestedTransaction != null) && _nestedTransaction.IsAlive)
             {
                 throw ADP.ParallelTransactionsNotSupported(Connection);
             }
@@ -196,7 +196,7 @@ namespace System.Data.OleDb
             }
             finally
             {
-                if (null != wrapper)
+                if (wrapper != null)
                 {
                     Marshal.ReleaseComObject(wrapper);
                 }
@@ -223,7 +223,7 @@ namespace System.Data.OleDb
 
         public override void Commit()
         {
-            if (null == _transaction)
+            if (_transaction == null)
             {
                 throw ADP.TransactionZombied(this);
             }
@@ -232,14 +232,14 @@ namespace System.Data.OleDb
 
         private void CommitInternal()
         {
-            if (null == _transaction)
+            if (_transaction == null)
             {
                 return;
             }
-            if (null != _nestedTransaction)
+            if (_nestedTransaction != null)
             {
                 OleDbTransaction? transaction = (OleDbTransaction?)_nestedTransaction.Target;
-                if ((null != transaction) && _nestedTransaction.IsAlive)
+                if ((transaction != null) && _nestedTransaction.IsAlive)
                 {
                     transaction.CommitInternal();
                 }
@@ -282,12 +282,12 @@ namespace System.Data.OleDb
 
         private void DisposeManaged()
         {
-            if (null != _parentTransaction)
+            if (_parentTransaction != null)
             {
                 _parentTransaction._nestedTransaction = null;
                 //_parentTransaction = null;
             }
-            else if (null != _parentConnection)
+            else if (_parentConnection != null)
             {
                 _parentConnection.LocalTransaction = null;
             }
@@ -297,13 +297,13 @@ namespace System.Data.OleDb
         private void ProcessResults(OleDbHResult hr)
         {
             Exception? e = OleDbConnection.ProcessResults(hr, _parentConnection, this);
-            if (null != e)
+            if (e != null)
             { throw e; }
         }
 
         public override void Rollback()
         {
-            if (null == _transaction)
+            if (_transaction == null)
             {
                 throw ADP.TransactionZombied(this);
             }
@@ -315,12 +315,12 @@ namespace System.Data.OleDb
         internal OleDbHResult RollbackInternal(bool exceptionHandling)
         {
             OleDbHResult hr = 0;
-            if (null != _transaction)
+            if (_transaction != null)
             {
-                if (null != _nestedTransaction)
+                if (_nestedTransaction != null)
                 {
                     OleDbTransaction? transaction = (OleDbTransaction?)_nestedTransaction.Target;
-                    if ((null != transaction) && _nestedTransaction.IsAlive)
+                    if ((transaction != null) && _nestedTransaction.IsAlive)
                     {
                         hr = transaction.RollbackInternal(exceptionHandling);
                         if (exceptionHandling && (hr < 0))
@@ -351,10 +351,10 @@ namespace System.Data.OleDb
 
         internal static OleDbTransaction TransactionLast(OleDbTransaction head)
         {
-            if (null != head._nestedTransaction)
+            if (head._nestedTransaction != null)
             {
                 OleDbTransaction? current = (OleDbTransaction?)head._nestedTransaction.Target;
-                if ((null != current) && head._nestedTransaction.IsAlive)
+                if ((current != null) && head._nestedTransaction.IsAlive)
                 {
                     return TransactionLast(current);
                 }
@@ -364,7 +364,7 @@ namespace System.Data.OleDb
 
         internal static OleDbTransaction? TransactionUpdate(OleDbTransaction? transaction)
         {
-            if ((null != transaction) && (null == transaction._transaction))
+            if ((transaction != null) && (transaction._transaction == null))
             {
                 return null;
             }

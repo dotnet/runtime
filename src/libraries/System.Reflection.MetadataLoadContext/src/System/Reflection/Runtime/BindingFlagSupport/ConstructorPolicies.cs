@@ -35,7 +35,7 @@ namespace System.Reflection.Runtime.BindingFlagSupport
         {
             MethodAttributes methodAttributes = member.Attributes;
             visibility = methodAttributes & MethodAttributes.MemberAccessMask;
-            isStatic = (0 != (methodAttributes & MethodAttributes.Static));
+            isStatic = ((methodAttributes & MethodAttributes.Static) != 0);
             isVirtual = false;
             isNewSlot = false;
         }

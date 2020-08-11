@@ -10,7 +10,7 @@ namespace System.Reflection.Context.Delegation
         public DelegatingManifestResourceInfo(ManifestResourceInfo resource)
             : base(resource.ReferencedAssembly, resource.FileName, resource.ResourceLocation)
         {
-            Debug.Assert(null != resource);
+            Debug.Assert(resource != null);
 
             UnderlyingResource = resource;
         }

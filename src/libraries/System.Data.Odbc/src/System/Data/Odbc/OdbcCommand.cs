@@ -69,7 +69,7 @@ namespace System.Data.Odbc
         {
             if (ConnectionState.Fetching == _cmdState)
             {
-                if (null != _weakDataReaderReference && !_weakDataReaderReference.IsAlive)
+                if (_weakDataReaderReference != null && !_weakDataReaderReference.IsAlive)
                 {
                     if (_cmdWrapper != null)
                     {
@@ -83,10 +83,10 @@ namespace System.Data.Odbc
 
         private void DisposeDataReader()
         {
-            if (null != _weakDataReaderReference)
+            if (_weakDataReaderReference != null)
             {
                 IDisposable? reader = (IDisposable?)_weakDataReaderReference.Target;
-                if ((null != reader) && _weakDataReaderReference.IsAlive)
+                if ((reader != null) && _weakDataReaderReference.IsAlive)
                 {
                     ((IDisposable)reader).Dispose();
                 }
@@ -116,7 +116,7 @@ namespace System.Data.Odbc
 
             _transaction = null;
 
-            if (null != _connection)
+            if (_connection != null)
             {
                 _connection.RemoveWeakReference(this);
                 _connection = null;
@@ -161,7 +161,7 @@ namespace System.Data.Odbc
             get
             {
                 string? value = _commandText;
-                return ((null != value) ? value : string.Empty);
+                return ((value != null) ? value : string.Empty);
             }
             set
             {
@@ -215,7 +215,7 @@ namespace System.Data.Odbc
             get
             {
                 CommandType cmdType = _commandType;
-                return ((0 != cmdType) ? cmdType : CommandType.Text);
+                return ((cmdType != 0) ? cmdType : CommandType.Text);
             }
             set
             {
@@ -246,7 +246,7 @@ namespace System.Data.Odbc
                 {
                     PropertyChanging();
                     this.DisconnectFromDataReaderAndConnection();
-                    Debug.Assert(null == _cmdWrapper, "has CMDWrapper when setting connection");
+                    Debug.Assert(_cmdWrapper == null, "has CMDWrapper when setting connection");
                     _connection = value;
                     //OnSchemaChanged();
                 }
@@ -312,7 +312,7 @@ namespace System.Data.Odbc
         {
             get
             {
-                return (null != _parameterCollection);
+                return (_parameterCollection != null);
             }
         }
 
@@ -323,7 +323,7 @@ namespace System.Data.Odbc
         {
             get
             {
-                if (null == _parameterCollection)
+                if (_parameterCollection == null)
                 {
                     _parameterCollection = new OdbcParameterCollection();
                 }
@@ -339,7 +339,7 @@ namespace System.Data.Odbc
         {
             get
             {
-                if ((null != _transaction) && (null == _transaction.Connection))
+                if ((_transaction != null) && (_transaction.Connection == null))
                 {
                     _transaction = null;       // Dawn of the Dead
                 }
@@ -403,7 +403,7 @@ namespace System.Data.Odbc
             {
                 _cmdWrapper = new CMDWrapper(_connection!);
 
-                Debug.Assert(null != _connection, "GetStatementHandle without connection?");
+                Debug.Assert(_connection != null, "GetStatementHandle without connection?");
                 _connection.AddWeakReference(this, OdbcReferenceCollection.CommandTag);
             }
 
@@ -414,12 +414,12 @@ namespace System.Data.Odbc
 
             // if there is already a statement handle we need to do some cleanup
             //
-            if (null == _cmdWrapper.StatementHandle)
+            if (_cmdWrapper.StatementHandle == null)
             {
                 _isPrepared = false;
                 _cmdWrapper.CreateStatementHandle();
             }
-            else if ((null != _parameterCollection) && _parameterCollection.RebindCollection)
+            else if ((_parameterCollection != null) && _parameterCollection.RebindCollection)
             {
                 _cmdWrapper.FreeStatementHandle(ODBC32.STMT.RESET_PARAMS);
             }
@@ -435,11 +435,11 @@ namespace System.Data.Odbc
         public override void Cancel()
         {
             CMDWrapper? wrapper = _cmdWrapper;
-            if (null != wrapper)
+            if (wrapper != null)
             {
                 wrapper.Canceling = true;
                 OdbcStatementHandle? stmt = wrapper.StatementHandle;
-                if (null != stmt)
+                if (stmt != null)
                 {
                     lock (stmt)
                     {
@@ -472,7 +472,7 @@ namespace System.Data.Odbc
             clone.Transaction = this.Transaction;
             clone.UpdatedRowSource = UpdatedRowSource;
 
-            if ((null != _parameterCollection) && (0 < Parameters.Count))
+            if ((_parameterCollection != null) && (Parameters.Count > 0))
             {
                 OdbcParameterCollection parameters = clone.Parameters;
                 foreach (ICloneable parameter in Parameters)
@@ -492,13 +492,13 @@ namespace System.Data.Odbc
         private void CloseCommandWrapper()
         {
             CMDWrapper? wrapper = _cmdWrapper;
-            if (null != wrapper)
+            if (wrapper != null)
             {
                 try
                 {
                     wrapper.Dispose();
 
-                    if (null != _connection)
+                    if (_connection != null)
                     {
                         _connection.RemoveWeakReference(this);
                     }
@@ -512,7 +512,7 @@ namespace System.Data.Odbc
 
         internal void CloseFromConnection()
         {
-            if (null != _parameterCollection)
+            if (_parameterCollection != null)
             {
                 _parameterCollection.RebindCollection = true;
             }
@@ -591,7 +591,7 @@ namespace System.Data.Odbc
                 DisposeDeadDataReader();    // this is a no-op if cmdState is not Fetching
                 ValidateConnectionAndTransaction(method);  // cmdState will change to Executing
 
-                if (0 != (CommandBehavior.SingleRow & behavior))
+                if ((CommandBehavior.SingleRow & behavior) != 0)
                 {
                     // CommandBehavior.SingleRow implies CommandBehavior.SingleResult
                     behavior |= CommandBehavior.SingleResult;
@@ -602,12 +602,12 @@ namespace System.Data.Odbc
                 OdbcStatementHandle stmt = GetStatementHandle().StatementHandle!;
                 _cmdWrapper!.Canceling = false;
 
-                if (null != _weakDataReaderReference)
+                if (_weakDataReaderReference != null)
                 {
                     if (_weakDataReaderReference.IsAlive)
                     {
                         object? target = _weakDataReaderReference.Target;
-                        if (null != target && _weakDataReaderReference.IsAlive)
+                        if (target != null && _weakDataReaderReference.IsAlive)
                         {
                             if (!((OdbcDataReader)target).IsClosed)
                             {
@@ -683,13 +683,13 @@ namespace System.Data.Odbc
                     //Handle Parameters
                     //Note: We use the internal variable as to not instante a new object collection,
                     //for the common case of using no parameters.
-                    if ((null != _parameterCollection) && (0 < _parameterCollection.Count))
+                    if ((_parameterCollection != null) && (_parameterCollection.Count > 0))
                     {
                         int parameterBufferSize = _parameterCollection.CalcParameterBufferSize(this);
 
-                        if (null == parameterBuffer || parameterBuffer.Length < parameterBufferSize)
+                        if (parameterBuffer == null || parameterBuffer.Length < parameterBufferSize)
                         {
-                            if (null != parameterBuffer)
+                            if (parameterBuffer != null)
                             {
                                 parameterBuffer.Dispose();
                             }
@@ -831,10 +831,10 @@ namespace System.Data.Odbc
             {
                 if (ConnectionState.Fetching != _cmdState)
                 {
-                    if (null != localReader)
+                    if (localReader != null)
                     {
                         // clear bindings so we don't grab output parameters on a failed execute
-                        if (null != _parameterCollection)
+                        if (_parameterCollection != null)
                         {
                             _parameterCollection.ClearBindings();
                         }
@@ -854,7 +854,7 @@ namespace System.Data.Odbc
             object? value = null;
             using (IDataReader reader = ExecuteReaderObject(0, ADP.ExecuteScalar, false))
             {
-                if (reader.Read() && (0 < reader.FieldCount))
+                if (reader.Read() && (reader.FieldCount > 0))
                 {
                     value = reader.GetValue(0);
                 }
@@ -889,7 +889,7 @@ namespace System.Data.Odbc
 
             ValidateOpenConnection(ADP.Prepare);
 
-            if (0 != (ConnectionState.Fetching & _connection!.InternalState))
+            if ((ConnectionState.Fetching & _connection!.InternalState) != 0)
             {
                 throw ADP.OpenReaderExists();
             }
@@ -944,7 +944,7 @@ namespace System.Data.Odbc
             // see if we have a connection
             OdbcConnection? connection = Connection;
 
-            if (null == connection)
+            if (connection == null)
             {
                 throw ADP.ConnectionRequired(methodName);
             }
@@ -960,7 +960,7 @@ namespace System.Data.Odbc
 
         private void ValidateConnectionAndTransaction(string method)
         {
-            if (null == _connection)
+            if (_connection == null)
             {
                 throw ADP.ConnectionRequired(method);
             }
@@ -1049,7 +1049,7 @@ namespace System.Data.Odbc
 
         internal void Dispose()
         {
-            if (null != _dataReaderBuf)
+            if (_dataReaderBuf != null)
             {
                 _dataReaderBuf.Dispose();
                 _dataReaderBuf = null;
@@ -1058,7 +1058,7 @@ namespace System.Data.Odbc
 
             CNativeBuffer? buffer = _nativeParameterBuffer;
             _nativeParameterBuffer = null;
-            if (null != buffer)
+            if (buffer != null)
             {
                 buffer.Dispose();
             }
@@ -1069,7 +1069,7 @@ namespace System.Data.Odbc
         private void DisposeDescriptorHandle()
         {
             OdbcDescriptorHandle? handle = _hdesc;
-            if (null != handle)
+            if (handle != null)
             {
                 _hdesc = null;
                 handle.Dispose();
@@ -1081,7 +1081,7 @@ namespace System.Data.Odbc
             DisposeDescriptorHandle();
 
             OdbcStatementHandle? handle = _stmt;
-            if (null != handle)
+            if (handle != null)
             {
                 _stmt = null;
                 handle.Dispose();
@@ -1091,7 +1091,7 @@ namespace System.Data.Odbc
         internal void DisposeKeyInfoStatementHandle()
         {
             OdbcStatementHandle? handle = _keyinfostmt;
-            if (null != handle)
+            if (handle != null)
             {
                 _keyinfostmt = null;
                 handle.Dispose();
@@ -1103,7 +1103,7 @@ namespace System.Data.Odbc
             DisposeDescriptorHandle();
 
             OdbcStatementHandle? handle = _stmt;
-            if (null != handle)
+            if (handle != null)
             {
                 try
                 {
@@ -1128,7 +1128,7 @@ namespace System.Data.Odbc
         internal void FreeKeyInfoStatementHandle(ODBC32.STMT stmt)
         {
             OdbcStatementHandle? handle = _keyinfostmt;
-            if (null != handle)
+            if (handle != null)
             {
                 try
                 {
@@ -1153,7 +1153,7 @@ namespace System.Data.Odbc
         internal OdbcDescriptorHandle GetDescriptorHandle(ODBC32.SQL_ATTR attribute)
         {
             OdbcDescriptorHandle? hdesc = _hdesc;
-            if (null == hdesc)
+            if (hdesc == null)
             {
                 _hdesc = hdesc = new OdbcDescriptorHandle(_stmt!, attribute);
             }

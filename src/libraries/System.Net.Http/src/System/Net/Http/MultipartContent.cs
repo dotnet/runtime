@@ -90,9 +90,9 @@ namespace System.Net.Http
 
             foreach (char ch in boundary)
             {
-                if (('0' <= ch && ch <= '9') || // Digit.
-                    ('a' <= ch && ch <= 'z') || // alpha.
-                    ('A' <= ch && ch <= 'Z') || // ALPHA.
+                if ((ch >= '0' && ch <= '9') || // Digit.
+                    (ch >= 'a' && ch <= 'z') || // alpha.
+                    (ch >= 'A' && ch <= 'Z') || // ALPHA.
                     (AllowedMarks.Contains(ch))) // Marks.
                 {
                     // Valid.

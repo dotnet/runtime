@@ -172,7 +172,7 @@ namespace System.Reflection.TypeLoading
             {
 #if DEBUG
                 // There's a point at which this check becomes gluttonous, even by checked build standards...
-                if (_nextFreeEntry >= 5000 && (0 != (_nextFreeEntry % 100)))
+                if (_nextFreeEntry >= 5000 && ((_nextFreeEntry % 100) != 0))
                     return;
 
                 Debug.Assert(_nextFreeEntry >= 0 && _nextFreeEntry <= _entries.Length);

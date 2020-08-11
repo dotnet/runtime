@@ -485,7 +485,7 @@ namespace System.DirectoryServices.AccountManagement
 
                     object val = rosf.GetValueForProperty(propertyName);
 
-                    if (null != val)
+                    if (val != null)
                         return val;
 
                     if (propertyName.StartsWith(PropertyNames.AcctInfoPrefix, StringComparison.Ordinal))

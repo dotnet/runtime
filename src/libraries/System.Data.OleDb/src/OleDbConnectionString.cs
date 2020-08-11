@@ -90,7 +90,7 @@ namespace System.Data.OleDb
         internal OleDbConnectionString(string connectionString, bool validate) : base(connectionString)
         {
             string? prompt = this[KEY.Prompt];
-            PossiblePrompt = ((!ADP.IsEmpty(prompt) && (0 != string.Compare(prompt, VALUES.NoPrompt, StringComparison.OrdinalIgnoreCase)))
+            PossiblePrompt = ((!ADP.IsEmpty(prompt) && (string.Compare(prompt, VALUES.NoPrompt, StringComparison.OrdinalIgnoreCase) != 0))
                               || !ADP.IsEmpty(this[KEY.WindowHandle]));
 
             if (!IsEmpty)
@@ -106,7 +106,7 @@ namespace System.Data.OleDb
                     { // fail via new FileStream vs. GetFullPath
                         udlFileName = ADP.GetFullPath(udlFileName);
                     }
-                    if (null != udlFileName)
+                    if (udlFileName != null)
                     {
                         udlConnectionString = LoadStringFromStorage(udlFileName);
 
@@ -163,7 +163,7 @@ namespace System.Data.OleDb
 
         protected internal override string Expand()
         {
-            if (null != _expandedConnectionString)
+            if (_expandedConnectionString != null)
             {
                 return _expandedConnectionString;
             }
@@ -212,7 +212,7 @@ namespace System.Data.OleDb
                 object? value = connection.GetDataSourcePropertyValue(OleDbPropertySetGuid.DataSourceInfo, ODB.DBPROP_MULTIPLERESULTS);
                 if (value is int)
                 {// not OleDbPropertyStatus
-                    supportMultipleResults = (ODB.DBPROPVAL_MR_NOTSUPPORTED != (int)value);
+                    supportMultipleResults = ((int)value != ODB.DBPROPVAL_MR_NOTSUPPORTED);
                 }
                 _supportMultipleResults = supportMultipleResults;
                 _hasSupportMultipleResults = true;
@@ -232,7 +232,7 @@ namespace System.Data.OleDb
                     if (value is int)
                     {
                         poolsize = (int)value;
-                        poolsize = ((0 < poolsize) ? poolsize : 0);
+                        poolsize = ((poolsize > 0) ? poolsize : 0);
                         UDL._PoolSize = poolsize;
                     }
                     UDL._PoolSizeInit = true;
@@ -246,25 +246,25 @@ namespace System.Data.OleDb
             string? udlConnectionString = null;
             Dictionary<string, string>? udlcache = UDL._Pool;
 
-            if ((null == udlcache) || !udlcache.TryGetValue(udlfilename, out udlConnectionString))
+            if ((udlcache == null) || !udlcache.TryGetValue(udlfilename, out udlConnectionString))
             {
                 udlConnectionString = LoadStringFromFileStorage(udlfilename);
-                if (null != udlConnectionString)
+                if (udlConnectionString != null)
                 {
                     Debug.Assert(!ADP.IsEmpty(udlfilename), "empty filename didn't fail");
 
-                    if (0 < UdlPoolSize)
+                    if (UdlPoolSize > 0)
                     {
                         Debug.Assert(udlfilename == ADP.GetFullPath(udlfilename), "only cache full path filenames");
 
-                        if (null == udlcache)
+                        if (udlcache == null)
                         {
                             udlcache = new Dictionary<string, string>();
                             udlcache[udlfilename] = udlConnectionString;
 
                             lock (UDL._PoolLock)
                             {
-                                if (null != UDL._Pool)
+                                if (UDL._Pool != null)
                                 {
                                     udlcache = UDL._Pool;
                                 }
@@ -275,7 +275,7 @@ namespace System.Data.OleDb
                                 }
                             }
                         }
-                        if (null != udlcache)
+                        if (udlcache != null)
                         {
                             lock (udlcache)
                             {
@@ -303,7 +303,7 @@ namespace System.Data.OleDb
                 using (FileStream fstream = new FileStream(udlfilename, FileMode.Open, FileAccess.Read, FileShare.Read))
                 {
                     long length = fstream.Length;
-                    if (length < hdrlength || (0 != length % ADP.CharSize))
+                    if (length < hdrlength || (length % ADP.CharSize != 0))
                     {
                         failure = ADP.InvalidUDL();
                     }
@@ -338,7 +338,7 @@ namespace System.Data.OleDb
 
                 throw ADP.UdlFileError(e);
             }
-            if (null != failure)
+            if (failure != null)
             {
                 throw failure;
             }
@@ -359,19 +359,19 @@ namespace System.Data.OleDb
             }
 
             string? progid = ConvertValueToString(KEY.Data_Provider, null);
-            if (null != progid)
+            if (progid != null)
             {
                 progid = progid.Trim();
-                if (0 < progid.Length)
+                if (progid.Length > 0)
                 { // don't fail on empty 'Data Provider' value
                     ValidateProvider(progid);
                 }
             }
             progid = ConvertValueToString(KEY.RemoteProvider, null);
-            if (null != progid)
+            if (progid != null)
             {
                 progid = progid.Trim();
-                if (0 < progid.Length)
+                if (progid.Length > 0)
                 { // don't fail on empty 'Data Provider' value
                     ValidateProvider(progid);
                 }
@@ -389,16 +389,16 @@ namespace System.Data.OleDb
             if (!hasOleDBServices)
             { // don't touch registry if they have OLE DB Services
                 string? classid = (string?)ADP.ClassesRootRegistryValue(progid + "\\CLSID", string.Empty);
-                if ((null != classid) && (0 < classid.Length))
+                if ((classid != null) && (classid.Length > 0))
                 {
                     // CLSID detection of 'Microsoft OLE DB Provider for ODBC Drivers'
                     Guid classidProvider = new Guid(classid);
-                    if (ODB.CLSID_MSDASQL == classidProvider)
+                    if (classidProvider == ODB.CLSID_MSDASQL)
                     {
                         throw ODB.MSDASQLNotSupported();
                     }
                     object? tmp = ADP.ClassesRootRegistryValue("CLSID\\{" + classidProvider.ToString("D", CultureInfo.InvariantCulture) + "}", ODB.OLEDB_SERVICES);
-                    if (null != tmp)
+                    if (tmp != null)
                     {
                         // @devnote: some providers like MSDataShape don't have the OLEDB_SERVICES value
                         // the MSDataShape provider doesn't support the 'Ole Db Services' keyword
@@ -434,7 +434,7 @@ namespace System.Data.OleDb
 
         internal static bool IsMSDASQL(string progid)
         {
-            return (("msdasql" == progid) || progid.StartsWith("msdasql.", StringComparison.Ordinal) || ("microsoft ole db provider for odbc drivers" == progid));
+            return ((progid == "msdasql") || progid.StartsWith("msdasql.", StringComparison.Ordinal) || (progid == "microsoft ole db provider for odbc drivers"));
         }
 
         private static void ValidateProvider(string progid)
@@ -443,7 +443,7 @@ namespace System.Data.OleDb
             {
                 throw ODB.NoProviderSpecified();
             }
-            if (ODB.MaxProgIdLength <= progid.Length)
+            if (progid.Length >= ODB.MaxProgIdLength)
             {
                 throw ODB.InvalidProviderSpecified();
             }

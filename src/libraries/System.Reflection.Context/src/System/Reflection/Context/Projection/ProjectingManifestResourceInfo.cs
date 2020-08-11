@@ -14,7 +14,7 @@ namespace System.Reflection.Context.Projection
         public ProjectingManifestResourceInfo(ManifestResourceInfo resource, Projector projector)
             : base(resource)
         {
-            Debug.Assert(null != projector);
+            Debug.Assert(projector != null);
 
             _projector = projector;
         }

@@ -21,12 +21,12 @@ namespace System.Data.OleDb
 
         protected override void NotifyItem(int message, int tag, object value)
         {
-            bool canceling = (Canceling == message);
-            if (CommandTag == tag)
+            bool canceling = (message == Canceling);
+            if (tag == CommandTag)
             {
                 ((OleDbCommand)value).CloseCommandFromConnection(canceling);
             }
-            else if (DataReaderTag == tag)
+            else if (tag == DataReaderTag)
             {
                 ((OleDbDataReader)value).CloseReaderFromConnection(canceling);
             }

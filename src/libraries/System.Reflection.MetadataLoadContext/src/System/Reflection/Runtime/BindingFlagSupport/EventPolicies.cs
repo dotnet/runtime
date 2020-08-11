@@ -41,9 +41,9 @@ namespace System.Reflection.Runtime.BindingFlagSupport
 
             MethodAttributes methodAttributes = accessorMethod.Attributes;
             visibility = methodAttributes & MethodAttributes.MemberAccessMask;
-            isStatic = (0 != (methodAttributes & MethodAttributes.Static));
-            isVirtual = (0 != (methodAttributes & MethodAttributes.Virtual));
-            isNewSlot = (0 != (methodAttributes & MethodAttributes.NewSlot));
+            isStatic = ((methodAttributes & MethodAttributes.Static) != 0);
+            isVirtual = ((methodAttributes & MethodAttributes.Virtual) != 0);
+            isNewSlot = ((methodAttributes & MethodAttributes.NewSlot) != 0);
         }
 
         //

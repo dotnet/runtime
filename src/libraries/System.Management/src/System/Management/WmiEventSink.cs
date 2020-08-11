@@ -72,23 +72,23 @@ namespace System.Management
                 this.className = className;
                 this.isLocal = false;
 
-                if (null != path)
+                if (path != null)
                 {
                     this.path = new ManagementPath(path);
-                    if ((0 == string.Compare(this.path.Server, ".", StringComparison.OrdinalIgnoreCase)) ||
-                        (0 == string.Compare(this.path.Server, System.Environment.MachineName, StringComparison.OrdinalIgnoreCase)))
+                    if ((string.Compare(this.path.Server, ".", StringComparison.OrdinalIgnoreCase) == 0) ||
+                        (string.Compare(this.path.Server, System.Environment.MachineName, StringComparison.OrdinalIgnoreCase) == 0))
                     {
                         this.isLocal = true;
                     }
                 }
 
-                if (null != scope)
+                if (scope != null)
                 {
                     this.scope = (ManagementScope)scope.Clone();
-                    if (null == path) // use scope to see if sink is local
+                    if (path == null) // use scope to see if sink is local
                     {
-                        if ((0 == string.Compare(this.scope.Path.Server, ".", StringComparison.OrdinalIgnoreCase)) ||
-                            (0 == string.Compare(this.scope.Path.Server, System.Environment.MachineName, StringComparison.OrdinalIgnoreCase)))
+                        if ((string.Compare(this.scope.Path.Server, ".", StringComparison.OrdinalIgnoreCase) == 0) ||
+                            (string.Compare(this.scope.Path.Server, System.Environment.MachineName, StringComparison.OrdinalIgnoreCase) == 0))
                         {
                             this.isLocal = true;
                         }
@@ -112,7 +112,7 @@ namespace System.Management
             {
                 try
                 {
-                    return (null != stub) ? (IWbemObjectSink)stub : null;
+                    return (stub != null) ? (IWbemObjectSink)stub : null;
                 }
                 catch
                 {
@@ -152,15 +152,15 @@ namespace System.Management
                 if (flags == (int)tag_WBEM_STATUS_TYPE.WBEM_STATUS_COMPLETE)
                 {
                     // Is this a Put? If so fire the ObjectPut event
-                    if (null != path)
+                    if (path != null)
                     {
-                        if (null == className)
+                        if (className == null)
                             path.RelativePath = message;
                         else
                             path.RelativePath = className;
 
                         // Fire the internal event (if anyone is interested)
-                        if (null != InternalObjectPut)
+                        if (InternalObjectPut != null)
                         {
                             try
                             {
@@ -193,7 +193,7 @@ namespace System.Management
                     // Unhook and tidy up
                     watcher.RemoveSink(this);
                 }
-                else if (0 != (flags & (int)tag_WBEM_STATUS_TYPE.WBEM_STATUS_PROGRESS))
+                else if ((flags & (int)tag_WBEM_STATUS_TYPE.WBEM_STATUS_PROGRESS) != 0)
                 {
                     // Fire Progress event
                     ProgressEventArgs args = new ProgressEventArgs(context,
@@ -222,7 +222,7 @@ namespace System.Management
                  * We force a release of the stub here so as to allow
                  * unsecapp.exe to die as soon as possible.
                  */
-                if (null != stub)
+                if (stub != null)
                 {
                     System.Runtime.InteropServices.Marshal.ReleaseComObject(stub);
                     stub = null;
@@ -288,7 +288,7 @@ namespace System.Management
         {
             Marshal.AddRef(pIWbemClassObject);
             IWbemClassObjectFreeThreaded obj = new IWbemClassObjectFreeThreaded(pIWbemClassObject);
-            if (null != managementObject)
+            if (managementObject != null)
             {
                 try
                 {

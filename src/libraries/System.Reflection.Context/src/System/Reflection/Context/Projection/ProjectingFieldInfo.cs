@@ -13,7 +13,7 @@ namespace System.Reflection.Context.Projection
         public ProjectingFieldInfo(FieldInfo field, Projector projector)
             : base(field)
         {
-            Debug.Assert(null != projector);
+            Debug.Assert(projector != null);
 
             Projector = projector;
         }

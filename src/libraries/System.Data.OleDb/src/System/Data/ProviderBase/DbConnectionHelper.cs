@@ -34,7 +34,7 @@ namespace System.Data.OleDb
 
             //  Match the original connection's behavior for whether the connection was never opened,
             //  but ensure Clone is in the closed state.
-            if (DbConnectionClosedNeverOpened.SingletonInstance == connection._innerConnection)
+            if (connection._innerConnection == DbConnectionClosedNeverOpened.SingletonInstance)
             {
                 _innerConnection = DbConnectionClosedNeverOpened.SingletonInstance;
             }
@@ -57,7 +57,7 @@ namespace System.Data.OleDb
             get
             {
                 System.Data.ProviderBase.DbConnectionPoolGroup? poolGroup = PoolGroup;
-                return ((null != poolGroup) ? poolGroup.ConnectionOptions : null);
+                return ((poolGroup != null) ? poolGroup.ConnectionOptions : null);
             }
         }
 
@@ -65,7 +65,7 @@ namespace System.Data.OleDb
         {
             bool hidePassword = InnerConnection.ShouldHidePassword;
             DbConnectionOptions? connectionOptions = UserConnectionOptions;
-            return ((null != connectionOptions) ? connectionOptions.UsersConnectionString(hidePassword) : "");
+            return ((connectionOptions != null) ? connectionOptions.UsersConnectionString(hidePassword) : "");
         }
 
         private void ConnectionString_Set(string? value)
@@ -124,7 +124,7 @@ namespace System.Data.OleDb
             set
             {
                 // when a poolgroup expires and the connection eventually activates, the pool entry will be replaced
-                Debug.Assert(null != value, "null poolGroup");
+                Debug.Assert(value != null, "null poolGroup");
                 _poolGroup = value;
             }
         }
@@ -249,17 +249,17 @@ namespace System.Data.OleDb
 
         internal void PermissionDemand()
         {
-            Debug.Assert(DbConnectionClosedConnecting.SingletonInstance == _innerConnection, "not connecting");
+            Debug.Assert(_innerConnection == DbConnectionClosedConnecting.SingletonInstance, "not connecting");
 
             System.Data.ProviderBase.DbConnectionPoolGroup? poolGroup = PoolGroup;
-            DbConnectionOptions? connectionOptions = ((null != poolGroup) ? poolGroup.ConnectionOptions : null);
-            if ((null == connectionOptions) || connectionOptions.IsEmpty)
+            DbConnectionOptions? connectionOptions = ((poolGroup != null) ? poolGroup.ConnectionOptions : null);
+            if ((connectionOptions == null) || connectionOptions.IsEmpty)
             {
                 throw ADP.NoConnectionString();
             }
 
             DbConnectionOptions? userConnectionOptions = UserConnectionOptions;
-            Debug.Assert(null != userConnectionOptions, "null UserConnectionOptions");
+            Debug.Assert(userConnectionOptions != null, "null UserConnectionOptions");
         }
 
         internal void RemoveWeakReference(object value)
@@ -272,13 +272,13 @@ namespace System.Data.OleDb
         internal void SetInnerConnectionEvent(DbConnectionInternal to)
         {
             // Set's the internal connection without verifying that it's a specific value
-            Debug.Assert(null != _innerConnection, "null InnerConnection");
-            Debug.Assert(null != to, "to null InnerConnection");
+            Debug.Assert(_innerConnection != null, "null InnerConnection");
+            Debug.Assert(to != null, "to null InnerConnection");
 
             ConnectionState originalState = _innerConnection.State & ConnectionState.Open;
             ConnectionState currentState = to.State & ConnectionState.Open;
 
-            if ((originalState != currentState) && (ConnectionState.Closed == currentState))
+            if ((originalState != currentState) && (currentState == ConnectionState.Closed))
             {
                 // Increment the close count whenever we switch to Closed
                 unchecked
@@ -287,11 +287,11 @@ namespace System.Data.OleDb
 
             _innerConnection = to;
 
-            if (ConnectionState.Closed == originalState && ConnectionState.Open == currentState)
+            if (originalState == ConnectionState.Closed && currentState == ConnectionState.Open)
             {
                 OnStateChange(DbConnectionInternal.StateChangeOpen);
             }
-            else if (ConnectionState.Open == originalState && ConnectionState.Closed == currentState)
+            else if (originalState == ConnectionState.Open && currentState == ConnectionState.Closed)
             {
                 OnStateChange(DbConnectionInternal.StateChangeClosed);
             }
@@ -311,9 +311,9 @@ namespace System.Data.OleDb
         internal bool SetInnerConnectionFrom(DbConnectionInternal to, DbConnectionInternal from)
         {
             // Set's the internal connection, verifying that it's a specific value before doing so.
-            Debug.Assert(null != _innerConnection, "null InnerConnection");
-            Debug.Assert(null != from, "from null InnerConnection");
-            Debug.Assert(null != to, "to null InnerConnection");
+            Debug.Assert(_innerConnection != null, "null InnerConnection");
+            Debug.Assert(from != null, "from null InnerConnection");
+            Debug.Assert(to != null, "to null InnerConnection");
 
             bool result = (from == Interlocked.CompareExchange<DbConnectionInternal>(ref _innerConnection, to, from));
             return result;
@@ -324,8 +324,8 @@ namespace System.Data.OleDb
         internal void SetInnerConnectionTo(DbConnectionInternal to)
         {
             // Set's the internal connection without verifying that it's a specific value
-            Debug.Assert(null != _innerConnection, "null InnerConnection");
-            Debug.Assert(null != to, "to null InnerConnection");
+            Debug.Assert(_innerConnection != null, "null InnerConnection");
+            Debug.Assert(to != null, "to null InnerConnection");
             _innerConnection = to;
         }
     }

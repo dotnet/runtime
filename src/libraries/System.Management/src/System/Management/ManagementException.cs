@@ -735,7 +735,7 @@ namespace System.Management
                 msg = GetMessage ((ManagementStatus)((COMException)e).ErrorCode);
             }
 
-            if (null == msg)
+            if (msg == null)
                 msg = e.Message;
 
             return msg;

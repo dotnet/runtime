@@ -461,7 +461,7 @@ namespace System.DirectoryServices.AccountManagement
             {
                 TrustRelationshipInformation TRI = currentDom.GetTrustRelationship(targetDomain);
 
-                if (TrustDirection.Outbound == TRI.TrustDirection || TrustDirection.Bidirectional == TRI.TrustDirection)
+                if (TRI.TrustDirection == TrustDirection.Outbound || TRI.TrustDirection == TrustDirection.Bidirectional)
                 {
                     return true;
                 }
@@ -479,7 +479,7 @@ namespace System.DirectoryServices.AccountManagement
             {
                 ForestTrustRelationshipInformation FTC = currentForest.GetTrustRelationship(targetdom.Forest.Name);
 
-                if (TrustDirection.Outbound == FTC.TrustDirection || TrustDirection.Bidirectional == FTC.TrustDirection)
+                if (FTC.TrustDirection == TrustDirection.Outbound || FTC.TrustDirection == TrustDirection.Bidirectional)
                 {
                     return true;
                 }

@@ -422,7 +422,7 @@ internal static partial class Interop
                                  Ssl.SslGetPeerFinished(context, bindingHandle.CertHashPtr, bindingHandle.Length) :
                                  Ssl.SslGetFinished(context, bindingHandle.CertHashPtr, bindingHandle.Length);
 
-            if (0 == certHashLength)
+            if (certHashLength == 0)
             {
                 throw CreateSslException(SR.net_ssl_get_channel_binding_token_failed);
             }
@@ -560,14 +560,14 @@ internal static partial class Interop
 
             int retVal = Ssl.SslCtxUseCertificate(contextPtr, certPtr);
 
-            if (1 != retVal)
+            if (retVal != 1)
             {
                 throw CreateSslException(SR.net_ssl_use_cert_failed);
             }
 
             retVal = Ssl.SslCtxUsePrivateKey(contextPtr, keyPtr);
 
-            if (1 != retVal)
+            if (retVal != 1)
             {
                 throw CreateSslException(SR.net_ssl_use_private_key_failed);
             }
@@ -575,7 +575,7 @@ internal static partial class Interop
             //check private key
             retVal = Ssl.SslCtxCheckPrivateKey(contextPtr);
 
-            if (1 != retVal)
+            if (retVal != 1)
             {
                 throw CreateSslException(SR.net_ssl_check_private_key_failed);
             }

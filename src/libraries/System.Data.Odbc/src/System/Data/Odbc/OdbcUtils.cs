@@ -364,7 +364,7 @@ namespace System.Data.Odbc
             if (text != null)
             {
                 int iNul = text.IndexOf('\0');
-                _len = (0 > iNul) ? text.Length : iNul;
+                _len = (iNul < 0) ? text.Length : iNul;
             }
             else
             {
@@ -421,7 +421,7 @@ namespace System.Data.Odbc
                     {
                         curidx = GetTokenFromBracket(curidx);
                     }
-                    else if (' ' != _quote && currentchar == _quote)
+                    else if (_quote != ' ' && currentchar == _quote)
                     { // if the ODBC driver does not support quoted identifiers it returns a single blank character
                         curidx = GetTokenFromQuote(curidx);
                     }
@@ -541,7 +541,7 @@ namespace System.Data.Odbc
                 return false;
             }
 
-            if (0 == string.Compare(_sqlstatement, tempidx, tokenString, 0, tokenString.Length, StringComparison.OrdinalIgnoreCase))
+            if (string.Compare(_sqlstatement, tempidx, tokenString, 0, tokenString.Length, StringComparison.OrdinalIgnoreCase) == 0)
             {
                 // Reset current position and token
                 _idx = 0;

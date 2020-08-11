@@ -92,7 +92,7 @@ namespace System.Management
         {
             object wmiValue = System.DBNull.Value;
 
-            if (null != qualVal)
+            if (qualVal != null)
             {
                 if (qualVal is Array)
                 {

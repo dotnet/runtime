@@ -76,9 +76,9 @@ namespace System.Data.OleDb
                 else
                 {
                     OleDbConnectionString? constr = this.OleDbConnectionStringValue;
-                    value = (null != constr) ? constr.ConnectTimeout : ADP.DefaultConnectionTimeout;
+                    value = (constr != null) ? constr.ConnectTimeout : ADP.DefaultConnectionTimeout;
                 }
-                if (null != value)
+                if (value != null)
                 {
                     return Convert.ToInt32(value, CultureInfo.InvariantCulture);
                 }
@@ -95,11 +95,11 @@ namespace System.Data.OleDb
             get
             {
                 OleDbConnectionString? constr = (OleDbConnectionString?)UserConnectionOptions;
-                object? value = (null != constr) ? constr.InitialCatalog : string.Empty;
-                if ((null != value) && !((string)value).StartsWith(DbConnectionOptions.DataDirectory, StringComparison.OrdinalIgnoreCase))
+                object? value = (constr != null) ? constr.InitialCatalog : string.Empty;
+                if ((value != null) && !((string)value).StartsWith(DbConnectionOptions.DataDirectory, StringComparison.OrdinalIgnoreCase))
                 {
                     OleDbConnectionInternal connection = GetOpenConnection();
-                    if (null != connection)
+                    if (connection != null)
                     {
                         if (connection.HasSession)
                         {
@@ -113,7 +113,7 @@ namespace System.Data.OleDb
                     else
                     {
                         constr = this.OleDbConnectionStringValue;
-                        value = (null != constr) ? constr.InitialCatalog : string.Empty;
+                        value = (constr != null) ? constr.InitialCatalog : string.Empty;
                     }
                 }
                 return Convert.ToString(value, CultureInfo.InvariantCulture)!;
@@ -128,13 +128,13 @@ namespace System.Data.OleDb
             get
             {
                 OleDbConnectionString? constr = (OleDbConnectionString?)UserConnectionOptions;
-                object? value = (null != constr) ? constr.DataSource : string.Empty;
-                if ((null != value) && !((string)value).StartsWith(DbConnectionOptions.DataDirectory, StringComparison.OrdinalIgnoreCase))
+                object? value = (constr != null) ? constr.DataSource : string.Empty;
+                if ((value != null) && !((string)value).StartsWith(DbConnectionOptions.DataDirectory, StringComparison.OrdinalIgnoreCase))
                 {
                     if (IsOpen)
                     {
                         value = GetDataSourceValue(OleDbPropertySetGuid.DBInit, ODB.DBPROP_INIT_DATASOURCE);
-                        if ((null == value) || ((value is string) && (0 == (value as string)!.Length)))
+                        if ((value == null) || ((value is string) && ((value as string)!.Length == 0)))
                         {
                             value = GetDataSourceValue(OleDbPropertySetGuid.DataSourceInfo, ODB.DBPROP_DATASOURCENAME);
                         }
@@ -142,7 +142,7 @@ namespace System.Data.OleDb
                     else
                     {
                         constr = this.OleDbConnectionStringValue;
-                        value = (null != constr) ? constr.DataSource : string.Empty;
+                        value = (constr != null) ? constr.DataSource : string.Empty;
                     }
                 }
                 return Convert.ToString(value, CultureInfo.InvariantCulture)!;
@@ -151,7 +151,7 @@ namespace System.Data.OleDb
 
         internal bool IsOpen
         {
-            get { return (null != GetOpenConnection()); }
+            get { return (GetOpenConnection() != null); }
         }
 
         internal OleDbTransaction? LocalTransaction
@@ -160,7 +160,7 @@ namespace System.Data.OleDb
             {
                 OleDbConnectionInternal openConnection = GetOpenConnection();
 
-                if (null != openConnection)
+                if (openConnection != null)
                 {
                     openConnection.LocalTransaction = value;
                 }
@@ -176,8 +176,8 @@ namespace System.Data.OleDb
             get
             {
                 OleDbConnectionString? constr = this.OleDbConnectionStringValue;
-                string? value = ((null != constr) ? constr.ConvertValueToString(ODB.Provider, null) : null);
-                return ((null != value) ? value : string.Empty);
+                string? value = ((constr != null) ? constr.ConvertValueToString(ODB.Provider, null) : null);
+                return ((value != null) ? value : string.Empty);
             }
         }
 
@@ -185,7 +185,7 @@ namespace System.Data.OleDb
         {
             get
             {
-                Debug.Assert(null != this.PoolGroup, "PoolGroup must never be null when accessing ProviderInfo");
+                Debug.Assert(this.PoolGroup != null, "PoolGroup must never be null when accessing ProviderInfo");
                 return (OleDbConnectionPoolGroupProviderInfo)PoolGroup!.ProviderInfo!;
             }
         }
@@ -254,43 +254,43 @@ namespace System.Data.OleDb
 
         internal UnsafeNativeMethods.ICommandText? ICommandText()
         {
-            Debug.Assert(null != GetOpenConnection(), "ICommandText closed");
+            Debug.Assert(GetOpenConnection() != null, "ICommandText closed");
             return GetOpenConnection().ICommandText();
         }
 
         private IDBPropertiesWrapper IDBProperties()
         {
-            Debug.Assert(null != GetOpenConnection(), "IDBProperties closed");
+            Debug.Assert(GetOpenConnection() != null, "IDBProperties closed");
             return GetOpenConnection().IDBProperties();
         }
 
         internal IOpenRowsetWrapper IOpenRowset()
         {
-            Debug.Assert(null != GetOpenConnection(), "IOpenRowset closed");
+            Debug.Assert(GetOpenConnection() != null, "IOpenRowset closed");
             return GetOpenConnection().IOpenRowset();
         }
 
         internal int SqlSupport()
         {
-            Debug.Assert(null != this.OleDbConnectionStringValue, "no OleDbConnectionString SqlSupport");
+            Debug.Assert(this.OleDbConnectionStringValue != null, "no OleDbConnectionString SqlSupport");
             return this.OleDbConnectionStringValue.GetSqlSupport(this);
         }
 
         internal bool SupportMultipleResults()
         {
-            Debug.Assert(null != this.OleDbConnectionStringValue, "no OleDbConnectionString SupportMultipleResults");
+            Debug.Assert(this.OleDbConnectionStringValue != null, "no OleDbConnectionString SupportMultipleResults");
             return this.OleDbConnectionStringValue.GetSupportMultipleResults(this);
         }
 
         internal bool SupportIRow(OleDbCommand cmd)
         {
-            Debug.Assert(null != this.OleDbConnectionStringValue, "no OleDbConnectionString SupportIRow");
+            Debug.Assert(this.OleDbConnectionStringValue != null, "no OleDbConnectionString SupportIRow");
             return this.OleDbConnectionStringValue.GetSupportIRow(this, cmd);
         }
 
         internal int QuotedIdentifierCase()
         {
-            Debug.Assert(null != this.OleDbConnectionStringValue, "no OleDbConnectionString QuotedIdentifierCase");
+            Debug.Assert(this.OleDbConnectionStringValue != null, "no OleDbConnectionString QuotedIdentifierCase");
 
             int quotedIdentifierCase;
             object? value = GetDataSourcePropertyValue(OleDbPropertySetGuid.DataSourceInfo, ODB.DBPROP_QUOTEDIDENTIFIERCASE);
@@ -330,7 +330,7 @@ namespace System.Data.OleDb
         internal void CheckStateOpen(string method)
         {
             ConnectionState state = State;
-            if (ConnectionState.Open != state)
+            if (state != ConnectionState.Open)
             {
                 throw ADP.OpenConnectionRequired(method, state);
             }
@@ -426,25 +426,25 @@ namespace System.Data.OleDb
             CheckStateOpen(ADP.GetOleDbSchemaTable);
             OleDbConnectionInternal connection = GetOpenConnection();
 
-            if (OleDbSchemaGuid.DbInfoLiterals == schema)
+            if (schema == OleDbSchemaGuid.DbInfoLiterals)
             {
-                if ((null == restrictions) || (0 == restrictions.Length))
+                if ((restrictions == null) || (restrictions.Length == 0))
                 {
                     return connection.BuildInfoLiterals();
                 }
                 throw ODB.InvalidRestrictionsDbInfoLiteral("restrictions");
             }
-            else if (OleDbSchemaGuid.SchemaGuids == schema)
+            else if (schema == OleDbSchemaGuid.SchemaGuids)
             {
-                if ((null == restrictions) || (0 == restrictions.Length))
+                if ((restrictions == null) || (restrictions.Length == 0))
                 {
                     return connection.BuildSchemaGuids();
                 }
                 throw ODB.InvalidRestrictionsSchemaGuids("restrictions");
             }
-            else if (OleDbSchemaGuid.DbInfoKeywords == schema)
+            else if (schema == OleDbSchemaGuid.DbInfoKeywords)
             {
-                if ((null == restrictions) || (0 == restrictions.Length))
+                if ((restrictions == null) || (restrictions.Length == 0))
                 {
                     return connection.BuildInfoKeywords();
                 }
@@ -459,7 +459,7 @@ namespace System.Data.OleDb
             {
                 using (IDBSchemaRowsetWrapper wrapper = connection.IDBSchemaRowset())
                 {
-                    if (null == wrapper.Value)
+                    if (wrapper.Value == null)
                     {
                         throw ODB.SchemaRowsetsNotSupported(Provider);
                     }
@@ -470,7 +470,7 @@ namespace System.Data.OleDb
 
         internal DataTable? GetSchemaRowset(Guid schema, object?[] restrictions)
         {
-            Debug.Assert(null != GetOpenConnection(), "GetSchemaRowset closed");
+            Debug.Assert(GetOpenConnection() != null, "GetSchemaRowset closed");
             return GetOpenConnection().GetSchemaRowset(schema, restrictions);
         }
 
@@ -479,7 +479,7 @@ namespace System.Data.OleDb
             bool result = false;
             OleDbConnectionInternal openConnection = GetOpenConnection();
 
-            if (null != openConnection)
+            if (openConnection != null)
             {
                 result = openConnection.HasLiveReader(cmd);
             }
@@ -489,7 +489,7 @@ namespace System.Data.OleDb
         internal void OnInfoMessage(UnsafeNativeMethods.IErrorInfo errorInfo, OleDbHResult errorCode)
         {
             OleDbInfoMessageEventHandler? handler = (OleDbInfoMessageEventHandler?)Events[EventInfoMessage];
-            if (null != handler)
+            if (handler != null)
             {
                 try
                 {
@@ -516,7 +516,7 @@ namespace System.Data.OleDb
 
             // need to manually enlist in some cases, because
             // native OLE DB doesn't know about SysTx transactions.
-            if ((0 != (ODB.DBPROPVAL_OS_TXNENLISTMENT & ((OleDbConnectionString)(this.ConnectionOptions!)).OleDbServices))
+            if (((ODB.DBPROPVAL_OS_TXNENLISTMENT & ((OleDbConnectionString)(this.ConnectionOptions!)).OleDbServices) != 0)
                         && ADP.NeedManualEnlistment())
             {
                 GetOpenConnection().EnlistTransactionInternal(SysTx.Transaction.Current);
@@ -536,19 +536,19 @@ namespace System.Data.OleDb
                     if (hr < 0)
                     {
                         Exception? e = OleDbConnection.ProcessResults(hr, null, this);
-                        if (OleDbHResult.DB_E_ERRORSOCCURRED == hr)
+                        if (hr == OleDbHResult.DB_E_ERRORSOCCURRED)
                         {
                             StringBuilder builder = new StringBuilder();
-                            Debug.Assert(1 == propSet.PropertySetCount, "too many PropertySets");
+                            Debug.Assert(propSet.PropertySetCount == 1, "too many PropertySets");
 
                             ItagDBPROP[] dbprops = propSet.GetPropertySet(0, out propertySet);
-                            Debug.Assert(1 == dbprops.Length, "too many Properties");
+                            Debug.Assert(dbprops.Length == 1, "too many Properties");
 
                             ODB.PropsetSetFailure(builder, description, dbprops[0].dwStatus);
 
                             e = ODB.PropsetSetFailure(builder.ToString(), e!);
                         }
-                        if (null != e)
+                        if (e != null)
                         {
                             throw e;
                         }
@@ -573,7 +573,7 @@ namespace System.Data.OleDb
 
         internal static Exception? ProcessResults(OleDbHResult hresult, OleDbConnection? connection, object? src)
         {
-            if ((0 <= (int)hresult) && ((null == connection) || (null == connection.Events[EventInfoMessage])))
+            if (((int)hresult >= 0) && ((connection == null) || (connection.Events[EventInfoMessage] == null)))
             {
                 SafeNativeMethods.Wrapper.ClearErrorInfo();
                 return null;
@@ -583,7 +583,7 @@ namespace System.Data.OleDb
             Exception? e = null;
             UnsafeNativeMethods.IErrorInfo? errorInfo = null;
             OleDbHResult hr = UnsafeNativeMethods.GetErrorInfo(0, out errorInfo);  // 0 - IErrorInfo exists, 1 - no IErrorInfo
-            if ((OleDbHResult.S_OK == hr) && (null != errorInfo))
+            if ((hr == OleDbHResult.S_OK) && (errorInfo != null))
             {
                 if (hresult < 0)
                 {
@@ -596,14 +596,14 @@ namespace System.Data.OleDb
                     e = OleDbException.CreateException(errorInfo, hresult, null);
                     //}
 
-                    if (OleDbHResult.DB_E_OBJECTOPEN == hresult)
+                    if (hresult == OleDbHResult.DB_E_OBJECTOPEN)
                     {
                         e = ADP.OpenReaderExists(e);
                     }
 
                     ResetState(connection);
                 }
-                else if (null != connection)
+                else if (connection != null)
                 {
                     connection.OnInfoMessage(errorInfo, hresult);
                 }
@@ -612,17 +612,17 @@ namespace System.Data.OleDb
                 }
                 Marshal.ReleaseComObject(errorInfo);
             }
-            else if (0 < hresult)
+            else if (hresult > 0)
             {
                 // @devnote: OnInfoMessage with no ErrorInfo
             }
             else if ((int)hresult < 0)
             {
-                e = ODB.NoErrorInformation((null != connection) ? connection.Provider : null, hresult, null); // OleDbException
+                e = ODB.NoErrorInformation((connection != null) ? connection.Provider : null, hresult, null); // OleDbException
 
                 ResetState(connection);
             }
-            if (null != e)
+            if (e != null)
             {
                 ADP.TraceExceptionAsReturnValue(e);
             }
@@ -639,7 +639,7 @@ namespace System.Data.OleDb
 
         private static void ResetState(OleDbConnection? connection)
         {
-            if (null != connection)
+            if (connection != null)
             {
                 connection.ResetState();
             }

@@ -1233,7 +1233,7 @@ namespace System.IO.Ports
                     bool raiseEvent = false;
                     try
                     {
-                        raiseEvent = stream.IsOpen && (SerialData.Eof == e.EventType || BytesToRead >= _receivedBytesThreshold);
+                        raiseEvent = stream.IsOpen && (e.EventType == SerialData.Eof || BytesToRead >= _receivedBytesThreshold);
                     }
                     catch
                     {

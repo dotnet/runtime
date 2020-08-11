@@ -14,7 +14,7 @@ namespace System.Reflection.Context.Projection
         public ProjectingAssembly(Assembly assembly, Projector projector)
             : base(assembly)
         {
-            Debug.Assert(null != projector);
+            Debug.Assert(projector != null);
 
             Projector = projector;
         }

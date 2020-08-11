@@ -153,14 +153,14 @@ namespace System.Management
             ManagementObject newObject = new ManagementObject();
             newObject.wbemObject = wbemObject;
 
-            if (null != mgObj)
+            if (mgObj != null)
             {
                 newObject.scope = ManagementScope._Clone(mgObj.scope);
 
-                if (null != mgObj.path)
+                if (mgObj.path != null)
                     newObject.path = ManagementPath._Clone(mgObj.path);
 
-                if (null != mgObj.options)
+                if (mgObj.options != null)
                     newObject.options = ObjectGetOptions._Clone(mgObj.options);
 
                 // We set isBound last since assigning to Scope, Path
@@ -380,7 +380,7 @@ namespace System.Management
             // We may use this to set the scope path
             string nsPath = string.Empty;
 
-            if ((null != path) && !path.IsEmpty)
+            if ((path != null) && !path.IsEmpty)
             {
                 //If this is a ManagementObject then the path has to be an instance,
                 // and if this is a ManagementClass the path has to be a class.
@@ -393,7 +393,7 @@ namespace System.Management
                 // we don't have a scope
                 nsPath = path.GetNamespacePath((int)tag_WBEM_GET_TEXT_FLAGS.WBEMPATH_GET_SERVER_AND_NAMESPACE_ONLY);
 
-                if ((null != scope) && (scope.Path.NamespacePath.Length > 0))
+                if ((scope != null) && (scope.Path.NamespacePath.Length > 0))
                 {
                     // If the scope has a path too, the namespace portion of
                     // scope.path takes precedence over what is specified in path
@@ -410,10 +410,10 @@ namespace System.Management
                     this.path = ManagementPath._Clone(null, new IdentifierChangedEventHandler(HandleIdentifierChange));
             }
 
-            if (null != options)
+            if (options != null)
                 this.options = ObjectGetOptions._Clone(options, new IdentifierChangedEventHandler(HandleIdentifierChange));
 
-            if (null != scope)
+            if (scope != null)
                 this.scope = ManagementScope._Clone(scope, new IdentifierChangedEventHandler(HandleIdentifierChange));
             else
             {
@@ -510,9 +510,9 @@ namespace System.Management
             }
             set
             {
-                if (null != value)
+                if (value != null)
                 {
-                    if (null != scope)
+                    if (scope != null)
                         scope.IdentifierChanged -= new IdentifierChangedEventHandler(HandleIdentifierChange);
 
                     scope = ManagementScope._Clone((ManagementScope)value, new IdentifierChangedEventHandler(HandleIdentifierChange));
@@ -565,7 +565,7 @@ namespace System.Management
             }
             set
             {
-                ManagementPath newPath = (null != value) ? value : new ManagementPath();
+                ManagementPath newPath = (value != null) ? value : new ManagementPath();
 
                 //If the new path contains a namespace path and the scope is currently defaulted,
                 //we want to set the scope to the new namespace path provided
@@ -578,7 +578,7 @@ namespace System.Management
                     (GetType() == typeof(ManagementClass) && newPath.IsClass) ||
                     newPath.IsEmpty)
                 {
-                    if (null != path)
+                    if (path != null)
                         path.IdentifierChanged -= new IdentifierChangedEventHandler(HandleIdentifierChange);
 
                     path = ManagementPath._Clone((ManagementPath)value, new IdentifierChangedEventHandler(HandleIdentifierChange));
@@ -632,9 +632,9 @@ namespace System.Management
             }
             set
             {
-                if (null != value)
+                if (value != null)
                 {
-                    if (null != options)
+                    if (options != null)
                         options.IdentifierChanged -= new IdentifierChangedEventHandler(HandleIdentifierChange);
 
                     options = ObjectGetOptions._Clone((ObjectGetOptions)value, new IdentifierChangedEventHandler(HandleIdentifierChange));
@@ -774,12 +774,12 @@ namespace System.Management
 
             Initialize(false); // this may throw
 
-            if ((null == path) || (path.Path.Length == 0))
+            if ((path == null) || (path.Path.Length == 0))
                 throw new InvalidOperationException();
             else
             {
                 ObjectGetOptions gOptions =
-                    (null == options) ? new ObjectGetOptions() : options;
+                    (options == null) ? new ObjectGetOptions() : options;
 
                 SecurityHandler securityHandler = null;
                 int status = (int)ManagementStatus.NoError;
@@ -896,9 +896,9 @@ namespace System.Management
         {
             Initialize(false);
 
-            if ((null == path) || (path.Path.Length == 0))
+            if ((path == null) || (path.Path.Length == 0))
                 throw new InvalidOperationException();
-            else if (null == watcher)
+            else if (watcher == null)
                 throw new ArgumentNullException(nameof(watcher));
             else
             {
@@ -1032,13 +1032,13 @@ namespace System.Management
             bool classDefinitionsOnly,
             EnumerationOptions options)
         {
-            if ((null == path) || (path.Path.Length == 0))
+            if ((path == null) || (path.Path.Length == 0))
                 throw new InvalidOperationException();
 
             Initialize(false);
 
             IEnumWbemClassObject enumWbem = null;
-            EnumerationOptions o = (null != options) ? options : new EnumerationOptions();
+            EnumerationOptions o = (options != null) ? options : new EnumerationOptions();
             RelatedObjectQuery q = new RelatedObjectQuery(
                 path.Path,
                 relatedClass,
@@ -1149,17 +1149,17 @@ namespace System.Management
             bool classDefinitionsOnly,
             EnumerationOptions options)
         {
-            if ((null == path) || (path.Path.Length == 0))
+            if ((path == null) || (path.Path.Length == 0))
                 throw new InvalidOperationException();
 
             Initialize(true);
 
-            if (null == watcher)
+            if (watcher == null)
                 throw new ArgumentNullException(nameof(watcher));
             else
             {
                 // Ensure we switch off ReturnImmediately as this is invalid for async calls
-                EnumerationOptions o = (null != options)
+                EnumerationOptions o = (options != null)
                     ? (EnumerationOptions)options.Clone() : new EnumerationOptions();
                 o.ReturnImmediately = false;
 
@@ -1270,14 +1270,14 @@ namespace System.Management
             bool classDefinitionsOnly,
             EnumerationOptions options)
         {
-            if ((null == path) || (path.Path.Length == 0))
+            if ((path == null) || (path.Path.Length == 0))
                 throw new InvalidOperationException();
 
             Initialize(false);
 
             IEnumWbemClassObject enumWbem = null;
             EnumerationOptions o =
-                (null != options) ? options : new EnumerationOptions();
+                (options != null) ? options : new EnumerationOptions();
             RelationshipQuery q = new RelationshipQuery(path.Path, relationshipClass,
                 relationshipQualifier, thisRole, classDefinitionsOnly);
 
@@ -1378,9 +1378,9 @@ namespace System.Management
             bool classDefinitionsOnly,
             EnumerationOptions options)
         {
-            if ((null == path) || (path.Path.Length == 0))
+            if ((path == null) || (path.Path.Length == 0))
                 throw new InvalidOperationException();
-            if (null == watcher)
+            if (watcher == null)
                 throw new ArgumentNullException(nameof(watcher));
             else
             {
@@ -1388,7 +1388,7 @@ namespace System.Management
 
                 // Ensure we switch off ReturnImmediately as this is invalid for async calls
                 EnumerationOptions o =
-                    (null != options) ? (EnumerationOptions)options.Clone() :
+                    (options != null) ? (EnumerationOptions)options.Clone() :
                     new EnumerationOptions();
                 o.ReturnImmediately = false;
 
@@ -1465,7 +1465,7 @@ namespace System.Management
         {
             ManagementPath newPath = null;
             Initialize(true);
-            PutOptions o = (null != options) ? options : new PutOptions();
+            PutOptions o = (options != null) ? options : new PutOptions();
 
             IWbemServices wbemServices = scope.GetIWbemServices();
 
@@ -1623,13 +1623,13 @@ namespace System.Management
         /// <param name=' options'>A <see cref='System.Management.PutOptions'/> used to specify additional options for the commit operation.</param>
         public void Put(ManagementOperationObserver watcher, PutOptions options)
         {
-            if (null == watcher)
+            if (watcher == null)
                 throw new ArgumentNullException(nameof(watcher));
             else
             {
                 Initialize(false);
 
-                PutOptions o = (null == options) ?
+                PutOptions o = (options == null) ?
                     new PutOptions() : (PutOptions)options.Clone();
 
                 // If someone has registered for progress, make sure we flag it
@@ -1761,7 +1761,7 @@ namespace System.Management
             destinationScope = new ManagementScope(path, scope);
             destinationScope.Initialize();
 
-            PutOptions o = (null != options) ? options : new PutOptions();
+            PutOptions o = (options != null) ? options : new PutOptions();
             IWbemServices wbemServices = destinationScope.GetIWbemServices();
             ManagementPath newPath = null;
 
@@ -1884,7 +1884,7 @@ namespace System.Management
         /// <param name='options'>The options for how the object should be put.</param>
         public void CopyTo(ManagementOperationObserver watcher, ManagementPath path, PutOptions options)
         {
-            if (null == watcher)
+            if (watcher == null)
                 throw new ArgumentNullException(nameof(watcher));
             else
             {
@@ -1894,7 +1894,7 @@ namespace System.Management
                 destinationScope = new ManagementScope(path, scope);
                 destinationScope.Initialize();
 
-                PutOptions o = (null != options) ? (PutOptions)options.Clone() : new PutOptions();
+                PutOptions o = (options != null) ? (PutOptions)options.Clone() : new PutOptions();
 
                 // If someone has registered for progress, make sure we flag it
                 if (watcher.HaveListenersForProgress)
@@ -1962,11 +1962,11 @@ namespace System.Management
         /// <param name='options'>The options for how to delete the object. </param>
         public void Delete(DeleteOptions options)
         {
-            if ((null == path) || (path.Path.Length == 0))
+            if ((path == null) || (path.Path.Length == 0))
                 throw new InvalidOperationException();
 
             Initialize(false);
-            DeleteOptions o = (null != options) ? options : new DeleteOptions();
+            DeleteOptions o = (options != null) ? options : new DeleteOptions();
             IWbemServices wbemServices = scope.GetIWbemServices();
 
             SecurityHandler securityHandler = null;
@@ -2026,14 +2026,14 @@ namespace System.Management
         /// <param name='options'>The options for how to delete the object.</param>
         public void Delete(ManagementOperationObserver watcher, DeleteOptions options)
         {
-            if ((null == path) || (path.Path.Length == 0))
+            if ((path == null) || (path.Path.Length == 0))
                 throw new InvalidOperationException();
-            else if (null == watcher)
+            else if (watcher == null)
                 throw new ArgumentNullException(nameof(watcher));
             else
             {
                 Initialize(false);
-                DeleteOptions o = (null != options) ? (DeleteOptions)options.Clone() : new DeleteOptions();
+                DeleteOptions o = (options != null) ? (DeleteOptions)options.Clone() : new DeleteOptions();
 
                 // If someone has registered for progress, make sure we flag it
                 if (watcher.HaveListenersForProgress)
@@ -2150,9 +2150,9 @@ namespace System.Management
         {
             object result = null;
 
-            if ((null == path) || (path.Path.Length == 0))
+            if ((path == null) || (path.Path.Length == 0))
                 throw new InvalidOperationException();
-            else if (null == methodName)
+            else if (methodName == null)
                 throw new ArgumentNullException(nameof(methodName));
             else
             {
@@ -2195,11 +2195,11 @@ namespace System.Management
             string methodName,
             object[] args)
         {
-            if ((null == path) || (path.Path.Length == 0))
+            if ((path == null) || (path.Path.Length == 0))
                 throw new InvalidOperationException();
-            else if (null == watcher)
+            else if (watcher == null)
                 throw new ArgumentNullException(nameof(watcher));
-            else if (null == methodName)
+            else if (methodName == null)
                 throw new ArgumentNullException(nameof(methodName));
             else
             {
@@ -2296,14 +2296,14 @@ namespace System.Management
         {
             ManagementBaseObject outParameters = null;
 
-            if ((null == path) || (path.Path.Length == 0))
+            if ((path == null) || (path.Path.Length == 0))
                 throw new InvalidOperationException();
-            else if (null == methodName)
+            else if (methodName == null)
                 throw new ArgumentNullException(nameof(methodName));
             else
             {
                 Initialize(false);
-                InvokeMethodOptions o = (null != options) ? options : new InvokeMethodOptions();
+                InvokeMethodOptions o = (options != null) ? options : new InvokeMethodOptions();
                 SecurityHandler securityHandler = null;
                 int status = (int)ManagementStatus.NoError;
 
@@ -2311,7 +2311,7 @@ namespace System.Management
                 {
                     securityHandler = scope.GetSecurityHandler();
 
-                    IWbemClassObjectFreeThreaded inParams = (null == inParameters) ? null : inParameters.wbemObject;
+                    IWbemClassObjectFreeThreaded inParams = (inParameters == null) ? null : inParameters.wbemObject;
                     IWbemClassObjectFreeThreaded outParams = null;
 
                     status = scope.GetSecuredIWbemServicesHandler(scope.GetIWbemServices()).ExecMethod_(
@@ -2362,16 +2362,16 @@ namespace System.Management
             ManagementBaseObject inParameters,
             InvokeMethodOptions options)
         {
-            if ((null == path) || (path.Path.Length == 0))
+            if ((path == null) || (path.Path.Length == 0))
                 throw new InvalidOperationException();
-            else if (null == watcher)
+            else if (watcher == null)
                 throw new ArgumentNullException(nameof(watcher));
-            else if (null == methodName)
+            else if (methodName == null)
                 throw new ArgumentNullException(nameof(methodName));
             else
             {
                 Initialize(false);
-                InvokeMethodOptions o = (null != options) ?
+                InvokeMethodOptions o = (options != null) ?
                     (InvokeMethodOptions)options.Clone() : new InvokeMethodOptions();
 
                 // If someone has registered for progress, make sure we flag it
@@ -2387,7 +2387,7 @@ namespace System.Management
 
                 IWbemClassObjectFreeThreaded inParams = null;
 
-                if (null != inParameters)
+                if (inParameters != null)
                     inParams = inParameters.wbemObject;
 
                 status = scope.GetSecuredIWbemServicesHandler(scope.GetIWbemServices()).ExecMethodAsync_(
@@ -2448,18 +2448,18 @@ namespace System.Management
             inParametersClass = null;
             outParametersClass = null;
 
-            if (null == methodName)
+            if (methodName == null)
                 throw new ArgumentNullException(nameof(methodName));
             else
             {
                 Initialize(false);
 
                 // Do we have the class?
-                if (null == wmiClass)
+                if (wmiClass == null)
                 {
                     ManagementPath classPath = ClassPath;
 
-                    if ((null == classPath) || !(classPath.IsClass))
+                    if ((classPath == null) || !(classPath.IsClass))
                         throw new InvalidOperationException();
                     else
                     {
@@ -2547,7 +2547,7 @@ namespace System.Management
         /// </returns>
         public override string ToString()
         {
-            if (null != path)
+            if (path != null)
                 return path.Path;
             else
                 return "";
@@ -2569,7 +2569,7 @@ namespace System.Management
                 // Make sure we have some kind of path if we get here. Note that
                 // we don't use a set to the Path property since that would trigger
                 // an IdentifierChanged event
-                if (null == path)
+                if (path == null)
                 {
                     path = new ManagementPath();
                     path.IdentifierChanged += new IdentifierChangedEventHandler(HandleIdentifierChange);
@@ -2579,7 +2579,7 @@ namespace System.Management
                 if (!IsBound && (getObject == true))
                     needToGetObject = true;
 
-                if (null == scope)
+                if (scope == null)
                 {
                     // If our object has a valid namespace path, use that
                     string nsPath = path.GetNamespacePath((int)tag_WBEM_GET_TEXT_FLAGS.WBEMPATH_GET_SERVER_AND_NAMESPACE_ONLY);
@@ -2587,7 +2587,7 @@ namespace System.Management
                     // Set the scope - note that we do not set through
                     // the Scope property since that would trigger an IdentifierChanged
                     // event and reset isBound to false.
-                    if (0 < nsPath.Length)
+                    if (nsPath.Length > 0)
                         scope = new ManagementScope(nsPath);
                     else
                     {
@@ -2598,12 +2598,12 @@ namespace System.Management
                     // Hook ourselves up to this scope for future change notifications
                     scope.IdentifierChanged += new IdentifierChangedEventHandler(HandleIdentifierChange);
                 }
-                else if ((null == scope.Path) || scope.Path.IsEmpty)
+                else if ((scope.Path == null) || scope.Path.IsEmpty)
                 {
                     // We have a scope but an empty path - use the object's path or the default
                     string nsPath = path.GetNamespacePath((int)tag_WBEM_GET_TEXT_FLAGS.WBEMPATH_GET_SERVER_AND_NAMESPACE_ONLY);
 
-                    if (0 < nsPath.Length)
+                    if (nsPath.Length > 0)
                         scope.Path = new ManagementPath(nsPath);
                     else
                         scope.Path = ManagementPath.DefaultPath;
@@ -2628,7 +2628,7 @@ namespace System.Management
                         // Again we don't use the set to the Options property
                         // since that would trigger an IdentifierChangedEvent and
                         // force isBound=false.
-                        if (null == options)
+                        if (options == null)
                         {
                             options = new ObjectGetOptions();
                             options.IdentifierChanged += new IdentifierChangedEventHandler(HandleIdentifierChange);
@@ -2701,9 +2701,9 @@ namespace System.Management
         {
             int status = (int)ManagementStatus.NoError;
 
-            if (null != inParamsClass)
+            if (inParamsClass != null)
             {
-                if ((null != args) && (0 < args.Length))
+                if ((args != null) && (args.Length > 0))
                 {
                     int maxIndex = args.GetUpperBound(0);
                     int minIndex = args.GetLowerBound(0);
@@ -2732,7 +2732,7 @@ namespace System.Management
 
                             if (status >= 0)
                             {
-                                if (null == propertyName)
+                                if (propertyName == null)
                                     break;
 
                                 status = inParamsClass.GetPropertyQualifierSet_(propertyName, out qualifierSet);
@@ -2746,7 +2746,7 @@ namespace System.Management
 
                                         // If the id is in range, map the value into the args array
                                         int idIndex = (int)id;
-                                        if ((0 <= idIndex) && (topId >= idIndex))
+                                        if ((idIndex >= 0) && (topId >= idIndex))
                                             inParams[propertyName] = args[minIndex + idIndex];
                                     }
                                     finally
@@ -2785,9 +2785,9 @@ namespace System.Management
 
             int status = (int)ManagementStatus.NoError;
 
-            if (null != outParamsClass)
+            if (outParamsClass != null)
             {
-                if ((null != args) && (0 < args.Length))
+                if ((args != null) && (args.Length > 0))
                 {
                     maxIndex = args.GetUpperBound(0);
                     minIndex = args.GetLowerBound(0);
@@ -2816,7 +2816,7 @@ namespace System.Management
 
                         if (status >= 0)
                         {
-                            if (null == propertyName)
+                            if (propertyName == null)
                                 break;
 
                             // Handle the result parameter separately
@@ -2837,7 +2837,7 @@ namespace System.Management
 
                                         // If the id is in range, map the value into the args array
                                         int idIndex = (int)id;
-                                        if ((0 <= idIndex) && (topId >= idIndex))
+                                        if ((idIndex >= 0) && (topId >= idIndex))
                                             args[minIndex + idIndex] = outParams[propertyName];
                                     }
                                     finally

@@ -31,12 +31,12 @@ namespace System.Data.OleDb
             finally
             {
                 base.handle = SafeNativeMethods.CoTaskMemAlloc(countOfBytes);
-                if (ADP.PtrZero != base.handle)
+                if (base.handle != ADP.PtrZero)
                 {
                     SafeNativeMethods.ZeroMemory(base.handle, (int)countOfBytes);
                 }
             }
-            if (ADP.PtrZero == base.handle)
+            if (base.handle == ADP.PtrZero)
             {
                 throw new OutOfMemoryException();
             }
@@ -44,10 +44,10 @@ namespace System.Data.OleDb
 
         internal DBPropSet(UnsafeNativeMethods.IDBProperties properties, PropertyIDSet? propidset, out OleDbHResult hr) : this()
         {
-            Debug.Assert(null != properties, "null IDBProperties");
+            Debug.Assert(properties != null, "null IDBProperties");
 
             int propidsetcount = 0;
-            if (null != propidset)
+            if (propidset != null)
             {
                 propidsetcount = propidset.Count;
             }
@@ -62,10 +62,10 @@ namespace System.Data.OleDb
 
         internal DBPropSet(UnsafeNativeMethods.IRowsetInfo properties, PropertyIDSet? propidset, out OleDbHResult hr) : this()
         {
-            Debug.Assert(null != properties, "null IRowsetInfo");
+            Debug.Assert(properties != null, "null IRowsetInfo");
 
             int propidsetcount = 0;
-            if (null != propidset)
+            if (propidset != null)
             {
                 propidsetcount = propidset.Count;
             }
@@ -80,10 +80,10 @@ namespace System.Data.OleDb
 
         internal DBPropSet(UnsafeNativeMethods.ICommandProperties properties, PropertyIDSet? propidset, out OleDbHResult hr) : this()
         {
-            Debug.Assert(null != properties, "null ICommandProperties");
+            Debug.Assert(properties != null, "null ICommandProperties");
 
             int propidsetcount = 0;
-            if (null != propidset)
+            if (propidset != null)
             {
                 propidsetcount = propidset.Count;
             }
@@ -115,7 +115,7 @@ namespace System.Data.OleDb
         {
             get
             {
-                return (IntPtr.Zero == base.handle);
+                return (base.handle == IntPtr.Zero);
             }
         }
 
@@ -124,13 +124,13 @@ namespace System.Data.OleDb
             // NOTE: The SafeHandle class guarantees this will be called exactly once and is non-interrutible.
             IntPtr ptr = base.handle;
             base.handle = IntPtr.Zero;
-            if (ADP.PtrZero != ptr)
+            if (ptr != ADP.PtrZero)
             {
                 int count = this.propertySetCount;
                 for (int i = 0, offset = 0; i < count; ++i, offset += ODB.SizeOf_tagDBPROPSET)
                 {
                     IntPtr rgProperties = Marshal.ReadIntPtr(ptr, offset);
-                    if (ADP.PtrZero != rgProperties)
+                    if (rgProperties != ADP.PtrZero)
                     {
                         int cProperties = Marshal.ReadInt32(ptr, offset + ADP.PtrSize);
 
@@ -216,8 +216,8 @@ namespace System.Data.OleDb
                     throw ADP.InternalError(ADP.InternalErrorCode.InvalidBuffer);
                 }
             }
-            Debug.Assert(Guid.Empty != propertySet, "invalid propertySet");
-            Debug.Assert((null != properties) && (0 < properties.Length), "invalid properties");
+            Debug.Assert(propertySet != Guid.Empty, "invalid propertySet");
+            Debug.Assert((properties != null) && (properties.Length > 0), "invalid properties");
 
             IntPtr countOfBytes = (IntPtr)(properties.Length * ODB.SizeOf_tagDBPROP);
             tagDBPROPSET propset = new tagDBPROPSET(properties.Length, propertySet);
@@ -237,7 +237,7 @@ namespace System.Data.OleDb
                 {
                     // must allocate and clear the memory without interruption
                     propset.rgProperties = SafeNativeMethods.CoTaskMemAlloc(countOfBytes);
-                    if (ADP.PtrZero != propset.rgProperties)
+                    if (propset.rgProperties != ADP.PtrZero)
                     {
                         // clearing is important so that we don't treat existing
                         // garbage as important information during releaseHandle
@@ -247,14 +247,14 @@ namespace System.Data.OleDb
                         Marshal.StructureToPtr(propset, propsetPtr, false/*deleteold*/);
                     }
                 }
-                if (ADP.PtrZero == propset.rgProperties)
+                if (propset.rgProperties == ADP.PtrZero)
                 {
                     throw new OutOfMemoryException();
                 }
 
                 for (int i = 0; i < properties.Length; ++i)
                 {
-                    Debug.Assert(null != properties[i], "null tagDBPROP " + i.ToString(CultureInfo.InvariantCulture));
+                    Debug.Assert(properties[i] != null, "null tagDBPROP " + i.ToString(CultureInfo.InvariantCulture));
                     IntPtr propertyPtr = ADP.IntPtrOffset(propset.rgProperties, i * ODB.SizeOf_tagDBPROP);
                     Marshal.StructureToPtr(properties[i], propertyPtr, false/*deleteold*/);
                 }

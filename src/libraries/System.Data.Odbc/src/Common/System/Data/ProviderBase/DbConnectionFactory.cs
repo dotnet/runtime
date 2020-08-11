@@ -12,7 +12,7 @@ namespace System.Data.ProviderBase
     {
         internal bool TryGetConnection(DbConnection owningConnection, TaskCompletionSource<DbConnectionInternal>? retry, DbConnectionOptions? userOptions, DbConnectionInternal? oldConnection, out DbConnectionInternal? connection)
         {
-            Debug.Assert(null != owningConnection, "null owningConnection?");
+            Debug.Assert(owningConnection != null, "null owningConnection?");
 
             DbConnectionPoolGroup poolGroup;
             DbConnectionPool? connectionPool;
@@ -35,7 +35,7 @@ namespace System.Data.ProviderBase
                 poolGroup = GetConnectionPoolGroup(owningConnection)!;
                 // Doing this on the callers thread is important because it looks up the WindowsIdentity from the thread.
                 connectionPool = GetConnectionPool(owningConnection, poolGroup);
-                if (null == connectionPool)
+                if (connectionPool == null)
                 {
                     // If GetConnectionPool returns null, we can be certain that
                     // this connection should not be pooled via DbConnectionPool

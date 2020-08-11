@@ -176,12 +176,12 @@ namespace System.Management
             {
                 ManagementNamedValueCollection oldContext = context;
 
-                if (null != value)
+                if (value != null)
                     context = (ManagementNamedValueCollection)value.Clone();
                 else
                     context = new ManagementNamedValueCollection();
 
-                if (null != oldContext)
+                if (oldContext != null)
                     oldContext.IdentifierChanged -= new IdentifierChangedEventHandler(HandleIdentifierChange);
 
                 //register for change events in this object
@@ -566,7 +566,7 @@ namespace System.Management
         {
             ManagementNamedValueCollection newContext = null;
 
-            if (null != Context)
+            if (Context != null)
                 newContext = (ManagementNamedValueCollection)Context.Clone();
 
             return new EnumerationOptions(newContext, Timeout, blockSize, Rewindable,
@@ -718,7 +718,7 @@ namespace System.Management
         {
             ManagementNamedValueCollection newContext = null;
 
-            if (null != Context)
+            if (Context != null)
                 newContext = (ManagementNamedValueCollection)Context.Clone();
 
             return new EventWatcherOptions(newContext, Timeout, blockSize);
@@ -862,7 +862,7 @@ namespace System.Management
         {
             ManagementNamedValueCollection newContext = null;
 
-            if (null != Context)
+            if (Context != null)
                 newContext = (ManagementNamedValueCollection)Context.Clone();
 
             return new ObjectGetOptions(newContext, Timeout, UseAmendedQualifiers);
@@ -1022,7 +1022,7 @@ namespace System.Management
         {
             ManagementNamedValueCollection newContext = null;
 
-            if (null != Context)
+            if (Context != null)
                 newContext = (ManagementNamedValueCollection)Context.Clone();
 
             return new PutOptions(newContext, Timeout, UseAmendedQualifiers, Type);
@@ -1109,7 +1109,7 @@ namespace System.Management
         {
             ManagementNamedValueCollection newContext = null;
 
-            if (null != Context)
+            if (Context != null)
                 newContext = (ManagementNamedValueCollection)Context.Clone();
 
             return new DeleteOptions(newContext, Timeout);
@@ -1196,7 +1196,7 @@ namespace System.Management
         {
             ManagementNamedValueCollection newContext = null;
 
-            if (null != Context)
+            if (Context != null)
                 newContext = (ManagementNamedValueCollection)Context.Clone();
 
             return new InvokeMethodOptions(newContext, Timeout);
@@ -1296,7 +1296,7 @@ namespace System.Management
         /// </value>
         public string Locale
         {
-            get { return (null != locale) ? locale : string.Empty; }
+            get { return (locale != null) ? locale : string.Empty; }
             set
             {
                 if (locale != value)
@@ -1444,7 +1444,7 @@ namespace System.Management
         /// </remarks>
         public string Authority
         {
-            get { return (null != authority) ? authority : string.Empty; }
+            get { return (authority != null) ? authority : string.Empty; }
             set
             {
                 if (authority != value)
@@ -1656,7 +1656,7 @@ namespace System.Management
         {
             ManagementNamedValueCollection newContext = null;
 
-            if (null != Context)
+            if (Context != null)
                 newContext = (ManagementNamedValueCollection)Context.Clone();
             return new ConnectionOptions(locale, username, GetSecurePassword(),
                     authority, impersonation, authentication, enablePrivileges, newContext, Timeout);

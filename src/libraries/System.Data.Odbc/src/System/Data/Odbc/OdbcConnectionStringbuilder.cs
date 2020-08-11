@@ -67,7 +67,7 @@ namespace System.Data.Odbc
             set
             {
                 ADP.CheckArgumentNull(keyword, nameof(keyword));
-                if (null != value)
+                if (value != null)
                 {
                     Keywords index;
                     if (s_keywords.TryGetValue(keyword, out index))
@@ -122,7 +122,7 @@ namespace System.Data.Odbc
             get
             {
                 string[]? knownKeywords = _knownKeywords;
-                if (null == knownKeywords)
+                if (knownKeywords == null)
                 {
                     knownKeywords = s_validKeywords;
 
@@ -143,7 +143,7 @@ namespace System.Data.Odbc
                             count++;
                         }
                     }
-                    if (0 < count)
+                    if (count > 0)
                     {
                         string[] tmp = new string[knownKeywords.Length + count];
                         knownKeywords.CopyTo(tmp, 0);

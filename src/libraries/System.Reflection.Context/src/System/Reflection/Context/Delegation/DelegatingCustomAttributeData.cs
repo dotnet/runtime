@@ -10,7 +10,7 @@ namespace System.Reflection.Context.Delegation
     {
         public DelegatingCustomAttributeData(CustomAttributeData attribute)
         {
-            Debug.Assert(null != attribute);
+            Debug.Assert(attribute != null);
 
             UnderlyingAttribute = attribute;
         }

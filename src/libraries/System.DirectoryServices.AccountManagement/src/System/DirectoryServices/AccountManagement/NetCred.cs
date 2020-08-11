@@ -32,7 +32,7 @@ namespace System.DirectoryServices.AccountManagement
         {
             get
             {
-                if (null == _parsedUserName)
+                if (_parsedUserName == null)
                 {
                     SplitUsername(_username, ref _parsedUserName, ref _domainname);
                 }
@@ -45,7 +45,7 @@ namespace System.DirectoryServices.AccountManagement
         {
             get
             {
-                if (null == _parsedUserName)
+                if (_parsedUserName == null)
                 {
                     SplitUsername(_username, ref _parsedUserName, ref _domainname);
                 }

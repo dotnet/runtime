@@ -18,7 +18,7 @@ namespace System.Reflection.Context.Virtual
             public PropertyGetter(VirtualPropertyBase property, Func<object, object> getter, IEnumerable<Attribute> getterAttributes)
                 : base(property)
             {
-                Debug.Assert(null != getter);
+                Debug.Assert(getter != null);
 
                 _getter = getter;
                 _attributes = getterAttributes ?? CollectionServices.Empty<Attribute>();

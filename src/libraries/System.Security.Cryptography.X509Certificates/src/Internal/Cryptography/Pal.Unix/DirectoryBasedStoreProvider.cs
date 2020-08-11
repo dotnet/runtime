@@ -51,7 +51,7 @@ namespace Internal.Cryptography.Pal
 
             _storePath = GetStorePath(storeName);
 
-            if (0 != (openFlags & OpenFlags.OpenExistingOnly))
+            if ((openFlags & OpenFlags.OpenExistingOnly) != 0)
             {
                 if (!Directory.Exists(_storePath))
                 {

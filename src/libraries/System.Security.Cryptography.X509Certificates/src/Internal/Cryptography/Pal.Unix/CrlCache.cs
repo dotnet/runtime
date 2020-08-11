@@ -115,7 +115,7 @@ namespace Internal.Cryptography.Pal
                     if (!Interop.Crypto.X509StoreAddCrl(store, crl))
                     {
                         // Ignore error "cert already in store", throw on anything else. In any case the error queue will be cleared.
-                        if (X509_R_CERT_ALREADY_IN_HASH_TABLE == Interop.Crypto.ErrPeekLastError())
+                        if (Interop.Crypto.ErrPeekLastError() == X509_R_CERT_ALREADY_IN_HASH_TABLE)
                         {
                             Interop.Crypto.ErrClearError();
                         }
@@ -146,7 +146,7 @@ namespace Internal.Cryptography.Pal
                     if (!Interop.Crypto.X509StoreAddCrl(store, crl))
                     {
                         // Ignore error "cert already in store", throw on anything else. In any case the error queue will be cleared.
-                        if (X509_R_CERT_ALREADY_IN_HASH_TABLE == Interop.Crypto.ErrPeekLastError())
+                        if (Interop.Crypto.ErrPeekLastError() == X509_R_CERT_ALREADY_IN_HASH_TABLE)
                         {
                             Interop.Crypto.ErrClearError();
                         }

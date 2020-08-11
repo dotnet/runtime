@@ -10,7 +10,7 @@ namespace System.Reflection.Context.Delegation
     {
         public DelegatingParameterInfo(ParameterInfo parameter)
         {
-            Debug.Assert(null != parameter);
+            Debug.Assert(parameter != null);
 
             UnderlyingParameter = parameter;
         }

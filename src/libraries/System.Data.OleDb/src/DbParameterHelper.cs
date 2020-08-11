@@ -30,7 +30,7 @@ namespace System.Data.OleDb
             source.CloneHelper(this);
 
             ICloneable? cloneable = (_value as ICloneable);
-            if (null != cloneable)
+            if (cloneable != null)
             {
                 _value = cloneable.Clone();
             }
@@ -54,7 +54,7 @@ namespace System.Data.OleDb
             get
             {
                 ParameterDirection direction = _direction;
-                return ((0 != direction) ? direction : ParameterDirection.Input);
+                return ((direction != 0) ? direction : ParameterDirection.Input);
             }
             set
             {
@@ -101,7 +101,7 @@ namespace System.Data.OleDb
             get
             {
                 int size = _size;
-                if (0 == size)
+                if (size == 0)
                 {
                     size = ValueSize(Value);
                 }
@@ -123,7 +123,7 @@ namespace System.Data.OleDb
 
         private void ResetSize()
         {
-            if (0 != _size)
+            if (_size != 0)
             {
                 PropertyChanging();
                 _size = 0;
@@ -132,7 +132,7 @@ namespace System.Data.OleDb
 
         private bool ShouldSerializeSize()
         { // V1.2.3300
-            return (0 != _size);
+            return (_size != 0);
         }
 
         [AllowNull]
@@ -141,7 +141,7 @@ namespace System.Data.OleDb
             get
             {
                 string? sourceColumn = _sourceColumn;
-                return ((null != sourceColumn) ? sourceColumn : string.Empty);
+                return ((sourceColumn != null) ? sourceColumn : string.Empty);
             }
             set
             {
@@ -166,7 +166,7 @@ namespace System.Data.OleDb
             get
             {
                 DataRowVersion sourceVersion = _sourceVersion;
-                return ((0 != sourceVersion) ? sourceVersion : DataRowVersion.Current);
+                return ((sourceVersion != 0) ? sourceVersion : DataRowVersion.Current);
             }
             set
             {
@@ -249,17 +249,17 @@ namespace System.Data.OleDb
             if (!ADP.IsNull(value))
             {
                 string? svalue = (value as string);
-                if (null != svalue)
+                if (svalue != null)
                 {
                     return svalue.Length;
                 }
                 byte[]? bvalue = (value as byte[]);
-                if (null != bvalue)
+                if (bvalue != null)
                 {
                     return bvalue.Length;
                 }
                 char[]? cvalue = (value as char[]);
-                if (null != cvalue)
+                if (cvalue != null)
                 {
                     return cvalue.Length;
                 }

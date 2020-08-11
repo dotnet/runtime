@@ -47,7 +47,7 @@ namespace System.Data.ProviderBase
             foreach (KeyValuePair<DbConnectionPoolKey, DbConnectionPoolGroup> entry in connectionPoolGroups)
             {
                 DbConnectionPoolGroup poolGroup = entry.Value;
-                if (null != poolGroup)
+                if (poolGroup != null)
                 {
                     poolGroup.Clear();
                 }
@@ -59,7 +59,7 @@ namespace System.Data.ProviderBase
             ADP.CheckArgumentNull(connection, nameof(connection));
 
             DbConnectionPoolGroup? poolGroup = GetConnectionPoolGroup(connection);
-            if (null != poolGroup)
+            if (poolGroup != null)
             {
                 poolGroup.Clear();
             }
@@ -86,15 +86,15 @@ namespace System.Data.ProviderBase
 
         internal DbConnectionInternal? CreateNonPooledConnection(DbConnection owningConnection, DbConnectionPoolGroup poolGroup, DbConnectionOptions? userOptions)
         {
-            Debug.Assert(null != owningConnection, "null owningConnection?");
-            Debug.Assert(null != poolGroup, "null poolGroup?");
+            Debug.Assert(owningConnection != null, "null owningConnection?");
+            Debug.Assert(poolGroup != null, "null poolGroup?");
 
             DbConnectionOptions connectionOptions = poolGroup.ConnectionOptions;
             DbConnectionPoolGroupProviderInfo poolGroupProviderInfo = poolGroup.ProviderInfo!;
             DbConnectionPoolKey poolKey = poolGroup.PoolKey;
 
             DbConnectionInternal? newConnection = CreateConnection(connectionOptions, poolKey, poolGroupProviderInfo, null, owningConnection, userOptions);
-            if (null != newConnection)
+            if (newConnection != null)
             {
                 newConnection.MakeNonPooledObject(owningConnection);
             }
@@ -103,11 +103,11 @@ namespace System.Data.ProviderBase
 
         internal DbConnectionInternal? CreatePooledConnection(DbConnectionPool pool, DbConnection? owningObject, DbConnectionOptions options, DbConnectionPoolKey poolKey, DbConnectionOptions? userOptions)
         {
-            Debug.Assert(null != pool, "null pool?");
+            Debug.Assert(pool != null, "null pool?");
             DbConnectionPoolGroupProviderInfo poolGroupProviderInfo = pool.PoolGroup.ProviderInfo!;
 
             DbConnectionInternal? newConnection = CreateConnection(options, poolKey, poolGroupProviderInfo, pool, owningObject, userOptions);
-            if (null != newConnection)
+            if (newConnection != null)
             {
                 newConnection.MakePooledConnection(pool);
             }
@@ -151,8 +151,8 @@ namespace System.Data.ProviderBase
         {
             // if poolgroup is disabled, it will be replaced with a new entry
 
-            Debug.Assert(null != owningObject, "null owningObject?");
-            Debug.Assert(null != connectionPoolGroup, "null connectionPoolGroup?");
+            Debug.Assert(owningObject != null, "null owningObject?");
+            Debug.Assert(connectionPoolGroup != null, "null connectionPoolGroup?");
 
             // It is possible that while the outer connection object has
             // been sitting around in a closed and unused state in some long
@@ -163,17 +163,17 @@ namespace System.Data.ProviderBase
             // re-create the pool entry whenever it's disabled.
 
             // however, don't rebuild connectionOptions if no pooling is involved - let new connections do that work
-            if (connectionPoolGroup.IsDisabled && (null != connectionPoolGroup.PoolGroupOptions))
+            if (connectionPoolGroup.IsDisabled && (connectionPoolGroup.PoolGroupOptions != null))
             {
                 // reusing existing pool option in case user originally used SetConnectionPoolOptions
                 DbConnectionPoolGroupOptions? poolOptions = connectionPoolGroup.PoolGroupOptions;
 
                 // get the string to hash on again
                 DbConnectionOptions? connectionOptions = connectionPoolGroup.ConnectionOptions;
-                Debug.Assert(null != connectionOptions, "prevent expansion of connectionString");
+                Debug.Assert(connectionOptions != null, "prevent expansion of connectionString");
 
                 connectionPoolGroup = GetConnectionPoolGroup(connectionPoolGroup.PoolKey, poolOptions, ref connectionOptions)!;
-                Debug.Assert(null != connectionPoolGroup, "null connectionPoolGroup?");
+                Debug.Assert(connectionPoolGroup != null, "null connectionPoolGroup?");
                 SetConnectionPoolGroup(owningObject, connectionPoolGroup);
             }
             DbConnectionPool? connectionPool = connectionPoolGroup.GetConnectionPool(this);
@@ -189,27 +189,27 @@ namespace System.Data.ProviderBase
 
             DbConnectionPoolGroup? connectionPoolGroup;
             Dictionary<DbConnectionPoolKey, DbConnectionPoolGroup> connectionPoolGroups = _connectionPoolGroups;
-            if (!connectionPoolGroups.TryGetValue(key, out connectionPoolGroup) || (connectionPoolGroup.IsDisabled && (null != connectionPoolGroup.PoolGroupOptions)))
+            if (!connectionPoolGroups.TryGetValue(key, out connectionPoolGroup) || (connectionPoolGroup.IsDisabled && (connectionPoolGroup.PoolGroupOptions != null)))
             {
                 // If we can't find an entry for the connection string in
                 // our collection of pool entries, then we need to create a
                 // new pool entry and add it to our collection.
 
                 DbConnectionOptions? connectionOptions = CreateConnectionOptions(key.ConnectionString, userConnectionOptions);
-                if (null == connectionOptions)
+                if (connectionOptions == null)
                 {
                     throw ADP.InternalConnectionError(ADP.ConnectionError.ConnectionOptionsMissing);
                 }
 
-                if (null == userConnectionOptions)
+                if (userConnectionOptions == null)
                 { // we only allow one expansion on the connection string
                     userConnectionOptions = connectionOptions;
                 }
 
                 // We don't support connection pooling on Win9x
-                if (null == poolOptions)
+                if (poolOptions == null)
                 {
-                    if (null != connectionPoolGroup)
+                    if (connectionPoolGroup != null)
                     {
                         // reusing existing pool option in case user originally used SetConnectionPoolOptions
                         poolOptions = connectionPoolGroup.PoolGroupOptions;
@@ -246,10 +246,10 @@ namespace System.Data.ProviderBase
                         Debug.Assert(!connectionPoolGroup.IsDisabled, "Disabled pool entry discovered");
                     }
                 }
-                Debug.Assert(null != connectionPoolGroup, "how did we not create a pool entry?");
-                Debug.Assert(null != userConnectionOptions, "how did we not have user connection options?");
+                Debug.Assert(connectionPoolGroup != null, "how did we not create a pool entry?");
+                Debug.Assert(userConnectionOptions != null, "how did we not have user connection options?");
             }
-            else if (null == userConnectionOptions)
+            else if (userConnectionOptions == null)
             {
                 userConnectionOptions = connectionPoolGroup.ConnectionOptions;
             }
@@ -265,16 +265,16 @@ namespace System.Data.ProviderBase
             // distributed transactions that need it.
             lock (_poolsToRelease)
             {
-                if (0 != _poolsToRelease.Count)
+                if (_poolsToRelease.Count != 0)
                 {
                     DbConnectionPool[] poolsToRelease = _poolsToRelease.ToArray();
                     foreach (DbConnectionPool pool in poolsToRelease)
                     {
-                        if (null != pool)
+                        if (pool != null)
                         {
                             pool.Clear();
 
-                            if (0 == pool.Count)
+                            if (pool.Count == 0)
                             {
                                 _poolsToRelease.Remove(pool);
                             }
@@ -288,16 +288,16 @@ namespace System.Data.ProviderBase
             // empty, it's because there are active pools that need it.
             lock (_poolGroupsToRelease)
             {
-                if (0 != _poolGroupsToRelease.Count)
+                if (_poolGroupsToRelease.Count != 0)
                 {
                     DbConnectionPoolGroup[] poolGroupsToRelease = _poolGroupsToRelease.ToArray();
                     foreach (DbConnectionPoolGroup poolGroup in poolGroupsToRelease)
                     {
-                        if (null != poolGroup)
+                        if (poolGroup != null)
                         {
                             int poolsLeft = poolGroup.Clear(); // may add entries to _poolsToRelease
 
-                            if (0 == poolsLeft)
+                            if (poolsLeft == 0)
                             {
                                 _poolGroupsToRelease.Remove(poolGroup);
                             }
@@ -316,7 +316,7 @@ namespace System.Data.ProviderBase
 
                 foreach (KeyValuePair<DbConnectionPoolKey, DbConnectionPoolGroup> entry in connectionPoolGroups)
                 {
-                    if (null != entry.Value)
+                    if (entry.Value != null)
                     {
                         Debug.Assert(!entry.Value.IsDisabled, "Disabled pool entry discovered");
 
@@ -342,7 +342,7 @@ namespace System.Data.ProviderBase
             // Queue the pool up for release -- we'll clear it out and dispose
             // of it as the last part of the pruning timer callback so we don't
             // do it with the pool entry or the pool collection locked.
-            Debug.Assert(null != pool, "null pool?");
+            Debug.Assert(pool != null, "null pool?");
 
             // set the pool to the shutdown state to force all active
             // connections to be automatically disposed when they
@@ -361,7 +361,7 @@ namespace System.Data.ProviderBase
 
         internal void QueuePoolGroupForRelease(DbConnectionPoolGroup poolGroup)
         {
-            Debug.Assert(null != poolGroup, "null poolGroup?");
+            Debug.Assert(poolGroup != null, "null poolGroup?");
 
             lock (_poolGroupsToRelease)
             {

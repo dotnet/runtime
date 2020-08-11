@@ -596,7 +596,7 @@ namespace System.Management
         {
             get
             {
-                return (null != wbemServices);
+                return (wbemServices != null);
             }
         }
 
@@ -604,10 +604,10 @@ namespace System.Management
         internal ManagementScope(ManagementPath path, IWbemServices wbemServices,
             ConnectionOptions options)
         {
-            if (null != path)
+            if (path != null)
                 this.Path = path;
 
-            if (null != options)
+            if (options != null)
             {
                 this.Options = options;
             }
@@ -618,7 +618,7 @@ namespace System.Management
         }
 
         internal ManagementScope(ManagementPath path, ManagementScope scope)
-            : this(path, (null != scope) ? scope.options : null) { }
+            : this(path, (scope != null) ? scope.options : null) { }
 
         internal static ManagementScope _Clone(ManagementScope scope)
         {
@@ -767,12 +767,12 @@ namespace System.Management
         /// </example>
         public ManagementScope(ManagementPath path, ConnectionOptions options)
         {
-            if (null != path)
+            if (path != null)
                 this.prvpath = ManagementPath._Clone(path, new IdentifierChangedEventHandler(HandleIdentifierChange));
             else
                 this.prvpath = ManagementPath._Clone(null);
 
-            if (null != options)
+            if (options != null)
             {
                 this.options = ConnectionOptions._Clone(options, new IdentifierChangedEventHandler(HandleIdentifierChange));
             }
@@ -816,9 +816,9 @@ namespace System.Management
             }
             set
             {
-                if (null != value)
+                if (value != null)
                 {
-                    if (null != options)
+                    if (options != null)
                         options.IdentifierChanged -= new IdentifierChangedEventHandler(HandleIdentifierChange);
 
                     options = ConnectionOptions._Clone((ConnectionOptions)value, new IdentifierChangedEventHandler(HandleIdentifierChange));
@@ -857,9 +857,9 @@ namespace System.Management
             }
             set
             {
-                if (null != value)
+                if (value != null)
                 {
-                    if (null != prvpath)
+                    if (prvpath != null)
                         prvpath.IdentifierChanged -= new IdentifierChangedEventHandler(HandleIdentifierChange);
 
                     IsDefaulted = false; //someone is specifically setting the scope path so it's not defaulted any more
@@ -932,7 +932,7 @@ namespace System.Management
         internal void Initialize()
         {
             //If the path is not set yet we can't do it
-            if (null == prvpath)
+            if (prvpath == null)
                 throw new InvalidOperationException();
 
 
@@ -970,7 +970,7 @@ namespace System.Management
         {
             ManagementScope threadParam = (ManagementScope)o;
 
-            if (null == threadParam.options)
+            if (threadParam.options == null)
             {
                 threadParam.Options = new ConnectionOptions();
             }
@@ -978,7 +978,7 @@ namespace System.Management
             string nsPath = threadParam.prvpath.GetNamespacePath((int)tag_WBEM_GET_TEXT_FLAGS.WBEMPATH_GET_SERVER_AND_NAMESPACE_ONLY);
 
             // If no namespace specified, fill in the default one
-            if ((null == nsPath) || (0 == nsPath.Length))
+            if ((nsPath == null) || (nsPath.Length == 0))
             {
                 // NB: we use a special method to set the namespace
                 // path here as we do NOT want to trigger an
@@ -1068,7 +1068,7 @@ namespace System.Management
         internal int Clone_(ref IEnumWbemClassObject ppEnum)
         {
             int status = (int)tag_WBEMSTATUS.WBEM_E_FAILED;
-            if (null != scope)
+            if (scope != null)
             {
                 IntPtr password = scope.Options.GetPassword();
                 status = WmiNetUtilsHelper.CloneEnumWbemClassObject_f(
@@ -1103,7 +1103,7 @@ namespace System.Management
         internal int ConnectNSecureIWbemServices(string path, ref IWbemServices pServices)
         {
             int status = (int)tag_WBEMSTATUS.WBEM_E_FAILED;
-            if (null != scope)
+            if (scope != null)
             {
                 bool needToReset = false;
                 IntPtr handle = IntPtr.Zero;
@@ -1186,7 +1186,7 @@ namespace System.Management
         internal int PutClass_(IWbemClassObjectFreeThreaded pObject, int lFlags, IWbemContext pCtx, IntPtr ppCallResult)
         {
             int status = (int)tag_WBEMSTATUS.WBEM_E_FAILED;
-            if (null != scope)
+            if (scope != null)
             {
                 IntPtr password = scope.Options.GetPassword();
                 status = WmiNetUtilsHelper.PutClassWmi_f(pObject,
@@ -1224,7 +1224,7 @@ namespace System.Management
         internal int CreateClassEnum_(string strSuperClass, int lFlags, IWbemContext pCtx, ref IEnumWbemClassObject ppEnum)
         {
             int status = (int)tag_WBEMSTATUS.WBEM_E_FAILED;
-            if (null != scope)
+            if (scope != null)
             {
                 IntPtr password = scope.Options.GetPassword();
                 status = WmiNetUtilsHelper.CreateClassEnumWmi_f(strSuperClass,
@@ -1250,7 +1250,7 @@ namespace System.Management
         internal int PutInstance_(IWbemClassObjectFreeThreaded pInst, int lFlags, IWbemContext pCtx, IntPtr ppCallResult)
         {
             int status = (int)tag_WBEMSTATUS.WBEM_E_FAILED;
-            if (null != scope)
+            if (scope != null)
             {
                 IntPtr password = scope.Options.GetPassword();
                 status = WmiNetUtilsHelper.PutInstanceWmi_f(pInst,
@@ -1289,7 +1289,7 @@ namespace System.Management
         internal int CreateInstanceEnum_(string strFilter, int lFlags, IWbemContext pCtx, ref IEnumWbemClassObject ppEnum)
         {
             int status = (int)tag_WBEMSTATUS.WBEM_E_FAILED;
-            if (null != scope)
+            if (scope != null)
             {
                 IntPtr password = scope.Options.GetPassword();
                 status = WmiNetUtilsHelper.CreateInstanceEnumWmi_f(strFilter,
@@ -1315,7 +1315,7 @@ namespace System.Management
         internal int ExecQuery_(string strQueryLanguage, string strQuery, int lFlags, IWbemContext pCtx, ref IEnumWbemClassObject ppEnum)
         {
             int status = (int)tag_WBEMSTATUS.WBEM_E_FAILED;
-            if (null != scope)
+            if (scope != null)
             {
                 IntPtr password = scope.Options.GetPassword();
                 status = WmiNetUtilsHelper.ExecQueryWmi_f(strQueryLanguage,
@@ -1342,7 +1342,7 @@ namespace System.Management
         internal int ExecNotificationQuery_(string strQueryLanguage, string strQuery, int lFlags, IWbemContext pCtx, ref IEnumWbemClassObject ppEnum)
         {
             int status = (int)tag_WBEMSTATUS.WBEM_E_FAILED;
-            if (null != scope)
+            if (scope != null)
             {
                 IntPtr password = scope.Options.GetPassword();
                 status = WmiNetUtilsHelper.ExecNotificationQueryWmi_f(strQueryLanguage,
@@ -1390,7 +1390,7 @@ namespace System.Management
         internal SecurityHandler(ManagementScope theScope)
         {
             this.scope = theScope;
-            if (null != scope)
+            if (scope != null)
             {
                 if (scope.Options.EnablePrivileges)
                 {
@@ -1405,7 +1405,7 @@ namespace System.Management
             {
                 needToReset = false;
 
-                if (null != scope)
+                if (scope != null)
                 {
                     WmiNetUtilsHelper.ResetSecurity_f(handle);
                 }
@@ -1416,7 +1416,7 @@ namespace System.Management
 
         internal void Secure(IWbemServices services)
         {
-            if (null != scope)
+            if (scope != null)
             {
                 IntPtr password = scope.Options.GetPassword();
                 int status = WmiNetUtilsHelper.BlessIWbemServices_f
@@ -1442,7 +1442,7 @@ namespace System.Management
             // In VNext, we should really change the implementation of WMINet_Utils.dll so that it has
             // a method which explicitly takes an IUnknown.  We rely on the fact that the implementation
             // of BlessIWbemServices actually casts the first parameter to IUnknown before blessing
-            if (null != scope)
+            if (scope != null)
             {
                 IntPtr password = scope.Options.GetPassword();
                 int status = WmiNetUtilsHelper.BlessIWbemServicesObject_f

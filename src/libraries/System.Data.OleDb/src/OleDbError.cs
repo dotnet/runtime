@@ -18,17 +18,17 @@ namespace System.Data.OleDb
             OleDbHResult hr;
             int lcid = System.Globalization.CultureInfo.CurrentCulture.LCID;
             UnsafeNativeMethods.IErrorInfo errorInfo = errorRecords.GetErrorInfo(index, lcid);
-            if (null != errorInfo)
+            if (errorInfo != null)
             {
                 hr = errorInfo.GetDescription(out this.message);
 
-                if (OleDbHResult.DB_E_NOLOCALE == hr)
+                if (hr == OleDbHResult.DB_E_NOLOCALE)
                 {
                     Marshal.ReleaseComObject(errorInfo);
                     lcid = SafeNativeMethods.GetUserDefaultLCID();
                     errorInfo = errorRecords.GetErrorInfo(index, lcid);
 
-                    if (null != errorInfo)
+                    if (errorInfo != null)
                     {
                         hr = errorInfo.GetDescription(out this.message);
                     }
@@ -37,17 +37,17 @@ namespace System.Data.OleDb
                 {
                     this.message = ODB.FailedGetDescription(hr);
                 }
-                if (null != errorInfo)
+                if (errorInfo != null)
                 {
                     hr = errorInfo.GetSource(out this.source);
 
-                    if (OleDbHResult.DB_E_NOLOCALE == hr)
+                    if (hr == OleDbHResult.DB_E_NOLOCALE)
                     {
                         Marshal.ReleaseComObject(errorInfo);
                         lcid = SafeNativeMethods.GetUserDefaultLCID();
                         errorInfo = errorRecords.GetErrorInfo(index, lcid);
 
-                        if (null != errorInfo)
+                        if (errorInfo != null)
                         {
                             hr = errorInfo.GetSource(out this.source);
                         }
@@ -63,7 +63,7 @@ namespace System.Data.OleDb
             UnsafeNativeMethods.ISQLErrorInfo sqlErrorInfo;
             hr = errorRecords.GetCustomErrorObject(index, ref ODB.IID_ISQLErrorInfo, out sqlErrorInfo);
 
-            if (null != sqlErrorInfo)
+            if (sqlErrorInfo != null)
             {
                 this.nativeError = sqlErrorInfo.GetSQLInfo(out this.sqlState);
                 Marshal.ReleaseComObject(sqlErrorInfo);
@@ -75,7 +75,7 @@ namespace System.Data.OleDb
             get
             {
                 string? message = this.message;
-                return ((null != message) ? message : string.Empty);
+                return ((message != null) ? message : string.Empty);
             }
         }
 
@@ -92,7 +92,7 @@ namespace System.Data.OleDb
             get
             {
                 string? source = this.source;
-                return ((null != source) ? source : string.Empty);
+                return ((source != null) ? source : string.Empty);
             }
         }
 
@@ -101,7 +101,7 @@ namespace System.Data.OleDb
             get
             {
                 string? sqlState = this.sqlState;
-                return ((null != sqlState) ? sqlState : string.Empty);
+                return ((sqlState != null) ? sqlState : string.Empty);
             }
         }
 

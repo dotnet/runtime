@@ -264,7 +264,7 @@ namespace System.Data.ProviderBase
 
             DataColumn? collectionNameColumn = metaDataCollectionsTable.Columns[DbMetaDataColumnNames.CollectionName];
 
-            if ((null == collectionNameColumn) || (typeof(string) != collectionNameColumn.DataType))
+            if ((collectionNameColumn == null) || (typeof(string) != collectionNameColumn.DataType))
             {
                 throw ADP.InvalidXmlMissingColumn(DbMetaDataCollectionNames.MetaDataCollections, DbMetaDataColumnNames.CollectionName);
             }
@@ -538,7 +538,7 @@ namespace System.Data.ProviderBase
                 {
                     if (version != DBNull.Value)
                     {
-                        if (0 > string.Compare(_normalizedServerVersion, (string)version, StringComparison.OrdinalIgnoreCase))
+                        if (string.Compare(_normalizedServerVersion, (string)version, StringComparison.OrdinalIgnoreCase) < 0)
                         {
                             result = false;
                         }
@@ -557,7 +557,7 @@ namespace System.Data.ProviderBase
                     {
                         if (version != DBNull.Value)
                         {
-                            if (0 < string.Compare(_normalizedServerVersion, (string)version, StringComparison.OrdinalIgnoreCase))
+                            if (string.Compare(_normalizedServerVersion, (string)version, StringComparison.OrdinalIgnoreCase) > 0)
                             {
                                 result = false;
                             }

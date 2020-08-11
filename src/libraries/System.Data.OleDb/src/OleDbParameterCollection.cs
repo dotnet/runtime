@@ -96,12 +96,12 @@ namespace System.Data.OleDb
 
         public override bool Contains(string value)
         {
-            return (-1 != IndexOf(value));
+            return (IndexOf(value) != -1);
         }
 
         public bool Contains(OleDbParameter value)
         {
-            return (-1 != IndexOf(value));
+            return (IndexOf(value) != -1);
         }
 
         public void CopyTo(OleDbParameter[] array, int index)

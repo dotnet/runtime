@@ -104,59 +104,59 @@ namespace System.Data.OleDb
         // OleDbProperties
         internal static void PropsetSetFailure(StringBuilder builder, string description, OleDbPropertyStatus status)
         {
-            if (OleDbPropertyStatus.Ok == status)
+            if (status == OleDbPropertyStatus.Ok)
             {
                 return;
             }
             switch (status)
             {
                 case OleDbPropertyStatus.NotSupported:
-                    if (0 < builder.Length)
+                    if (builder.Length > 0)
                     { builder.Append(Environment.NewLine); }
                     builder.Append(SR.Format(SR.OleDb_PropertyNotSupported, description));
                     break;
                 case OleDbPropertyStatus.BadValue:
-                    if (0 < builder.Length)
+                    if (builder.Length > 0)
                     { builder.Append(Environment.NewLine); }
                     builder.Append(SR.Format(SR.OleDb_PropertyBadValue, description));
                     break;
                 case OleDbPropertyStatus.BadOption:
-                    if (0 < builder.Length)
+                    if (builder.Length > 0)
                     { builder.Append(Environment.NewLine); }
                     builder.Append(SR.Format(SR.OleDb_PropertyBadOption, description));
                     break;
                 case OleDbPropertyStatus.BadColumn:
-                    if (0 < builder.Length)
+                    if (builder.Length > 0)
                     { builder.Append(Environment.NewLine); }
                     builder.Append(SR.Format(SR.OleDb_PropertyBadColumn, description));
                     break;
                 case OleDbPropertyStatus.NotAllSettable:
-                    if (0 < builder.Length)
+                    if (builder.Length > 0)
                     { builder.Append(Environment.NewLine); }
                     builder.Append(SR.Format(SR.OleDb_PropertyNotAllSettable, description));
                     break;
                 case OleDbPropertyStatus.NotSettable:
-                    if (0 < builder.Length)
+                    if (builder.Length > 0)
                     { builder.Append(Environment.NewLine); }
                     builder.Append(SR.Format(SR.OleDb_PropertyNotSettable, description));
                     break;
                 case OleDbPropertyStatus.NotSet:
-                    if (0 < builder.Length)
+                    if (builder.Length > 0)
                     { builder.Append(Environment.NewLine); }
                     builder.Append(SR.Format(SR.OleDb_PropertyNotSet, description));
                     break;
                 case OleDbPropertyStatus.Conflicting:
-                    if (0 < builder.Length)
+                    if (builder.Length > 0)
                     { builder.Append(Environment.NewLine); }
                     builder.Append(SR.Format(SR.OleDb_PropertyConflicting, description));
                     break;
                 case OleDbPropertyStatus.NotAvailable:
-                    if (0 < builder.Length)
+                    if (builder.Length > 0)
                     { builder.Append(Environment.NewLine); }
                     builder.Append(SR.Format(SR.OleDb_PropertyNotAvailable, description));
                     break;
                 default:
-                    if (0 < builder.Length)
+                    if (builder.Length > 0)
                     { builder.Append(Environment.NewLine); }
                     builder.Append(SR.Format(SR.OleDb_PropertyStatusUnknown, ((int)status).ToString(CultureInfo.InvariantCulture)));
                     break;
@@ -693,7 +693,7 @@ namespace System.Data.OleDb
         {
             StringBuilder builder = new StringBuilder();
             builder.Append(hr.ToString());
-            if ((0 < builder.Length) && char.IsDigit(builder[0]))
+            if ((builder.Length > 0) && char.IsDigit(builder[0]))
             {
                 builder.Length = 0;
             }
@@ -708,7 +708,7 @@ namespace System.Data.OleDb
         internal static string WLookup(short id)
         {
             string? value = (string?)g_wlookpup[id];
-            if (null == value)
+            if (value == null)
             {
                 value = "0x" + ((short)id).ToString("X2", CultureInfo.InvariantCulture) + " " + ((short)id);
                 value += " " + ((DBTypeEnum)id).ToString();

@@ -19,7 +19,7 @@ namespace System.Reflection.Context.Virtual
             public PropertySetter(VirtualPropertyBase property, Action<object, object> setter, IEnumerable<Attribute> setterAttributes)
                 : base(property)
             {
-                Debug.Assert(null != setter);
+                Debug.Assert(setter != null);
 
                 _setter = setter;
                 _valueParameter = new VirtualParameter(this, property.PropertyType, "value", 0);

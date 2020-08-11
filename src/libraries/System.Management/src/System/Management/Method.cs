@@ -169,7 +169,7 @@ namespace System.Management
             get
             {
                 RefreshMethodInfo();
-                return (null == wmiInParams) ? null : new ManagementBaseObject(wmiInParams);
+                return (wmiInParams == null) ? null : new ManagementBaseObject(wmiInParams);
             }
         }
 
@@ -196,7 +196,7 @@ namespace System.Management
             get
             {
                 RefreshMethodInfo();
-                return (null == wmiOutParams) ? null : new ManagementBaseObject(wmiOutParams);
+                return (wmiOutParams == null) ? null : new ManagementBaseObject(wmiOutParams);
             }
         }
 

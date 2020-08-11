@@ -19,7 +19,7 @@ namespace System.Data.Common
 #if DEBUG
             for (int i = 0; i < items.Length; ++i)
             {
-                Debug.Assert(null != items[i], "null item");
+                Debug.Assert(items[i] != null, "null item");
             }
 #endif
         }
@@ -131,9 +131,9 @@ namespace System.Data.Common
     {
         internal static bool ConvertToBoolean(object value)
         {
-            Debug.Assert(null != value, "ConvertToBoolean(null)");
+            Debug.Assert(value != null, "ConvertToBoolean(null)");
             string? svalue = (value as string);
-            if (null != svalue)
+            if (svalue != null)
             {
                 if (StringComparer.OrdinalIgnoreCase.Equals(svalue, "true") || StringComparer.OrdinalIgnoreCase.Equals(svalue, "yes"))
                     return true;

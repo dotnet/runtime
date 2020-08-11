@@ -188,7 +188,7 @@ namespace System.Data.Odbc
             schemaTable = dataReader.GetSchemaTable();
 
             // vstfdevdiv:479715 Handle cases where reader is empty
-            if (null == schemaTable)
+            if (schemaTable == null)
             {
                 throw ADP.OdbcNoTypesFromProvider();
             }
@@ -1014,7 +1014,7 @@ namespace System.Data.Odbc
 
             string? keywords = connection.GetInfoStringUnhandled(ODBC32.SQL_INFO.KEYWORDS);
 
-            if (null != keywords)
+            if (keywords != null)
             {
                 string[] values = keywords.Split(KeywordSeparatorChar);
                 for (int i = 0; i < values.Length; ++i)

@@ -67,20 +67,20 @@ namespace System.Data.OleDb
             //get { return _index; }
             set
             {
-                Debug.Assert((0 <= value) && (value < _count), "bad binding index");
+                Debug.Assert((value >= 0) && (value < _count), "bad binding index");
                 _index = value;
             }
         }
 
         internal ColumnBinding[] ColumnBindings()
         {
-            Debug.Assert(null != _columnBindings, "null ColumnBindings");
+            Debug.Assert(_columnBindings != null, "null ColumnBindings");
             return _columnBindings;
         }
 
         internal OleDbParameter[] Parameters()
         {
-            Debug.Assert(null != _parameters, "null Parameters");
+            Debug.Assert(_parameters != null, "null Parameters");
             return _parameters;
         }
 
@@ -117,7 +117,7 @@ namespace System.Data.OleDb
         {
             get
             {
-                if (null != _bindInfo)
+                if (_bindInfo != null)
                 {
                     return _bindInfo[_index].ulParamSize;
                 }
@@ -177,7 +177,7 @@ namespace System.Data.OleDb
             //get { return (int) _dbbindings[_index].cbMaxLen; }
             set
             {
-                Debug.Assert(0 <= value, "invalid MaxLen");
+                Debug.Assert(value >= 0, "invalid MaxLen");
 
                 _dbbindings[_index].obStatus = (IntPtr)(_dataBufferSize + 0);
                 _dbbindings[_index].obLength = (IntPtr)(_dataBufferSize + ADP.PtrSize);
@@ -222,7 +222,7 @@ namespace System.Data.OleDb
 #endif
             set
             {
-                if (null != _bindInfo)
+                if (_bindInfo != null)
                 {
                     _bindInfo[_index].bPrecision = value;
                 }
@@ -237,7 +237,7 @@ namespace System.Data.OleDb
 #endif
             set
             {
-                if (null != _bindInfo)
+                if (_bindInfo != null)
                 {
                     _bindInfo[_index].bScale = value;
                 }
@@ -248,14 +248,14 @@ namespace System.Data.OleDb
 
         internal int AllocateForAccessor(OleDbDataReader? dataReader, int indexStart, int indexForAccessor)
         {
-            Debug.Assert(null == _rowBinding, "row binding already allocated");
-            Debug.Assert(null == _columnBindings, "column bindings already allocated");
+            Debug.Assert(_rowBinding == null, "row binding already allocated");
+            Debug.Assert(_columnBindings == null, "column bindings already allocated");
 
             RowBinding rowBinding = System.Data.OleDb.RowBinding.CreateBuffer(_count, _dataBufferSize, _needToReset);
             _rowBinding = rowBinding;
 
             ColumnBinding[] columnBindings = rowBinding.SetBindings(dataReader, this, indexStart, indexForAccessor, _parameters, _dbbindings, _ifIRowsetElseIRow);
-            Debug.Assert(null != columnBindings, "null column bindings");
+            Debug.Assert(columnBindings != null, "null column bindings");
             _columnBindings = columnBindings;
 
             if (!_ifIRowsetElseIRow)
@@ -318,8 +318,8 @@ namespace System.Data.OleDb
 
         internal bool AreParameterBindingsInvalid(OleDbParameterCollection collection)
         {
-            Debug.Assert(null != collection, "null parameter collection");
-            Debug.Assert(null != _parameters, "null parameters");
+            Debug.Assert(collection != null, "null parameter collection");
+            Debug.Assert(_parameters != null, "null parameters");
 
             ColumnBinding[] columnBindings = this.ColumnBindings();
             if (!ForceRebind && ((collection.ChangeID == _collectionChangeID) && (_parameters.Length == collection.Count)))
@@ -328,7 +328,7 @@ namespace System.Data.OleDb
                 {
                     ColumnBinding binding = columnBindings[i];
 
-                    Debug.Assert(null != binding, "null column binding");
+                    Debug.Assert(binding != null, "null column binding");
                     Debug.Assert(binding.Parameter() == _parameters[i], "parameter mismatch");
                     if (binding.IsParameterBindingInvalid(collection[i]))
                     {
@@ -346,7 +346,7 @@ namespace System.Data.OleDb
         internal void CleanupBindings()
         {
             RowBinding? rowBinding = this.RowBinding();
-            if (null != rowBinding)
+            if (rowBinding != null)
             {
                 rowBinding.ResetValues();
 
@@ -354,7 +354,7 @@ namespace System.Data.OleDb
                 for (int i = 0; i < columnBindings.Length; ++i)
                 {
                     ColumnBinding binding = columnBindings[i];
-                    if (null != binding)
+                    if (binding != null)
                     {
                         binding.ResetValue();
                     }
@@ -364,7 +364,7 @@ namespace System.Data.OleDb
 
         internal void CloseFromConnection()
         {
-            if (null != _rowBinding)
+            if (_rowBinding != null)
             {
                 _rowBinding.CloseFromConnection();
             }
@@ -373,8 +373,8 @@ namespace System.Data.OleDb
 
         internal OleDbHResult CreateAccessor(UnsafeNativeMethods.IAccessor iaccessor, int flags)
         {
-            Debug.Assert(null != _rowBinding, "no row binding");
-            Debug.Assert(null != _columnBindings, "no column bindings");
+            Debug.Assert(_rowBinding != null, "no row binding");
+            Debug.Assert(_columnBindings != null, "no column bindings");
             return _rowBinding.CreateAccessor(iaccessor, flags, _columnBindings);
         }
 
@@ -386,7 +386,7 @@ namespace System.Data.OleDb
 
             RowBinding? rowBinding = _rowBinding;
             _rowBinding = null;
-            if (null != rowBinding)
+            if (rowBinding != null)
             {
                 rowBinding.Dispose();
             }

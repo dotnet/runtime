@@ -26,7 +26,7 @@ namespace System.Data.ProviderBase
             _maxPoolSize = maxPoolSize;
             _creationTimeout = creationTimeout;
 
-            if (0 != loadBalanceTimeout)
+            if (loadBalanceTimeout != 0)
             {
                 _loadBalanceTimeout = new TimeSpan(0, 0, loadBalanceTimeout);
                 _useLoadBalancing = true;

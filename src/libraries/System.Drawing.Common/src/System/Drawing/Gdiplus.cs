@@ -22,7 +22,7 @@ namespace System.Drawing
 
             static Gdip()
             {
-                Debug.Assert(s_initToken == IntPtr.Zero, "GdiplusInitialization: Initialize should not be called more than once in the same domain!");
+                Debug.Assert(IntPtr.Zero == s_initToken, "GdiplusInitialization: Initialize should not be called more than once in the same domain!");
 
                 PlatformInitialize();
 
@@ -37,7 +37,7 @@ namespace System.Drawing
             /// <summary>
             /// Returns true if GDI+ has been started, but not shut down
             /// </summary>
-            internal static bool Initialized => s_initToken != IntPtr.Zero;
+            internal static bool Initialized => IntPtr.Zero != s_initToken;
 
             /// <summary>
             /// This property will give us back a hashtable we can use to store all of our static brushes and pens on

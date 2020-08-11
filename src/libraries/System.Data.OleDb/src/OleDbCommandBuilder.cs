@@ -86,23 +86,23 @@ namespace System.Data.OleDb
             p.OleDbType = (OleDbType)valueType;
 
             object bvalue = datarow[SchemaTableColumn.NumericPrecision];
-            if (DBNull.Value != bvalue)
+            if (bvalue != DBNull.Value)
             {
                 byte bval = (byte)(short)bvalue;
-                p.PrecisionInternal = ((0xff != bval) ? bval : (byte)0);
+                p.PrecisionInternal = ((bval != 0xff) ? bval : (byte)0);
             }
 
             bvalue = datarow[SchemaTableColumn.NumericScale];
-            if (DBNull.Value != bvalue)
+            if (bvalue != DBNull.Value)
             {
                 byte bval = (byte)(short)bvalue;
-                p.ScaleInternal = ((0xff != bval) ? bval : (byte)0);
+                p.ScaleInternal = ((bval != 0xff) ? bval : (byte)0);
             }
         }
 
         public static void DeriveParameters(OleDbCommand command)
         {
-            if (null == command)
+            if (command == null)
             {
                 throw ADP.ArgumentNull("command");
             }
@@ -123,12 +123,12 @@ namespace System.Data.OleDb
                 throw ADP.CommandTextRequired(ADP.DeriveParameters);
             }
             OleDbConnection? connection = command.Connection;
-            if (null == connection)
+            if (connection == null)
             {
                 throw ADP.ConnectionRequired(ADP.DeriveParameters);
             }
             ConnectionState state = connection.State;
-            if (ConnectionState.Open != state)
+            if (state != ConnectionState.Open)
             {
                 throw ADP.OpenConnectionRequired(ADP.DeriveParameters, state);
             }
@@ -156,7 +156,7 @@ namespace System.Data.OleDb
                 connection.GetLiteralQuotes(ADP.DeriveParameters, out quotePrefix, out quoteSuffix);
 
                 object?[] parsed = MultipartIdentifier.ParseMultipartIdentifier(command.CommandText, quotePrefix, quoteSuffix, '.', 4, true, SR.OLEDB_OLEDBCommandText, false);
-                if (null == parsed[3])
+                if (parsed[3] == null)
                 {
                     throw ADP.NoStoredProcedureExists(command.CommandText);
                 }
@@ -184,7 +184,7 @@ namespace System.Data.OleDb
                 //}
                 DataTable? table = connection.GetSchemaRowset(OleDbSchemaGuid.Procedure_Parameters, restrictions);
 
-                if (null != table)
+                if (table != null)
                 {
                     DataColumnCollection columns = table.Columns;
 
@@ -197,31 +197,31 @@ namespace System.Data.OleDb
                     DataColumn? backendtype = null;
 
                     int index = columns.IndexOf(ODB.PARAMETER_NAME);
-                    if (-1 != index)
+                    if (index != -1)
                         parameterName = columns[index];
 
                     index = columns.IndexOf(ODB.PARAMETER_TYPE);
-                    if (-1 != index)
+                    if (index != -1)
                         parameterDirection = columns[index];
 
                     index = columns.IndexOf(ODB.DATA_TYPE);
-                    if (-1 != index)
+                    if (index != -1)
                         dataType = columns[index];
 
                     index = columns.IndexOf(ODB.CHARACTER_MAXIMUM_LENGTH);
-                    if (-1 != index)
+                    if (index != -1)
                         maxLen = columns[index];
 
                     index = columns.IndexOf(ODB.NUMERIC_PRECISION);
-                    if (-1 != index)
+                    if (index != -1)
                         numericPrecision = columns[index];
 
                     index = columns.IndexOf(ODB.NUMERIC_SCALE);
-                    if (-1 != index)
+                    if (index != -1)
                         numericScale = columns[index];
 
                     index = columns.IndexOf(ODB.TYPE_NAME);
-                    if (-1 != index)
+                    if (index != -1)
                         backendtype = columns[index];
 
                     DataRow[] dataRows = table.Select(null, ODB.ORDINAL_POSITION_ASC, DataViewRowState.CurrentRows);
@@ -232,23 +232,23 @@ namespace System.Data.OleDb
 
                         OleDbParameter parameter = new OleDbParameter();
 
-                        if ((null != parameterName) && !dataRow.IsNull(parameterName, DataRowVersion.Default))
+                        if ((parameterName != null) && !dataRow.IsNull(parameterName, DataRowVersion.Default))
                         {
                             // $CONSIDER - not trimming the @ from the beginning but to left the designer do that
                             parameter.ParameterName = Convert.ToString(dataRow[parameterName, DataRowVersion.Default], CultureInfo.InvariantCulture)!.TrimStart(new char[] { '@', ' ', ':' });
                         }
-                        if ((null != parameterDirection) && !dataRow.IsNull(parameterDirection, DataRowVersion.Default))
+                        if ((parameterDirection != null) && !dataRow.IsNull(parameterDirection, DataRowVersion.Default))
                         {
                             short direction = Convert.ToInt16(dataRow[parameterDirection, DataRowVersion.Default], CultureInfo.InvariantCulture);
                             parameter.Direction = ConvertToParameterDirection(direction);
                         }
-                        if ((null != dataType) && !dataRow.IsNull(dataType, DataRowVersion.Default))
+                        if ((dataType != null) && !dataRow.IsNull(dataType, DataRowVersion.Default))
                         {
                             // need to ping FromDBType, otherwise WChar->WChar when the user really wants VarWChar
                             short wType = Convert.ToInt16(dataRow[dataType, DataRowVersion.Default], CultureInfo.InvariantCulture);
                             parameter.OleDbType = NativeDBType.FromDBType(wType, false, false).enumOleDbType;
                         }
-                        if ((null != maxLen) && !dataRow.IsNull(maxLen, DataRowVersion.Default))
+                        if ((maxLen != null) && !dataRow.IsNull(maxLen, DataRowVersion.Default))
                         {
                             parameter.Size = Convert.ToInt32(dataRow[maxLen, DataRowVersion.Default], CultureInfo.InvariantCulture);
                         }
@@ -257,12 +257,12 @@ namespace System.Data.OleDb
                             case OleDbType.Decimal:
                             case OleDbType.Numeric:
                             case OleDbType.VarNumeric:
-                                if ((null != numericPrecision) && !dataRow.IsNull(numericPrecision, DataRowVersion.Default))
+                                if ((numericPrecision != null) && !dataRow.IsNull(numericPrecision, DataRowVersion.Default))
                                 {
                                     // @devnote: unguarded cast from Int16 to Byte
                                     parameter.PrecisionInternal = (byte)Convert.ToInt16(dataRow[numericPrecision], CultureInfo.InvariantCulture);
                                 }
-                                if ((null != numericScale) && !dataRow.IsNull(numericScale, DataRowVersion.Default))
+                                if ((numericScale != null) && !dataRow.IsNull(numericScale, DataRowVersion.Default))
                                 {
                                     // @devnote: unguarded cast from Int16 to Byte
                                     parameter.ScaleInternal = (byte)Convert.ToInt16(dataRow[numericScale], CultureInfo.InvariantCulture);
@@ -314,11 +314,11 @@ namespace System.Data.OleDb
                         plist[index] = parameter;
                     }
                 }
-                if ((0 == plist.Length) && connection.SupportSchemaRowset(OleDbSchemaGuid.Procedures))
+                if ((plist.Length == 0) && connection.SupportSchemaRowset(OleDbSchemaGuid.Procedures))
                 {
                     restrictions = new object?[4] { null, null, command.CommandText, null };
                     table = connection.GetSchemaRowset(OleDbSchemaGuid.Procedures, restrictions)!;
-                    if (0 == table.Rows.Count)
+                    if (table.Rows.Count == 0)
                     {
                         throw ADP.NoStoredProcedureExists(command.CommandText);
                     }
@@ -328,7 +328,7 @@ namespace System.Data.OleDb
             {
                 object?[] restrictions = new object?[4] { null, null, command.CommandText, null };
                 DataTable table = connection.GetSchemaRowset(OleDbSchemaGuid.Procedures, restrictions)!;
-                if (0 == table.Rows.Count)
+                if (table.Rows.Count == 0)
                 {
                     throw ADP.NoStoredProcedureExists(command.CommandText);
                 }

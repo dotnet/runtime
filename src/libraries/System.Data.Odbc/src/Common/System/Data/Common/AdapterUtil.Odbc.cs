@@ -78,7 +78,7 @@ namespace System.Data.Common
         internal static void CheckArgumentLength(string value, string parameterName)
         {
             CheckArgumentNull(value, parameterName);
-            if (0 == value.Length)
+            if (value.Length == 0)
             {
                 throw Argument(SR.GetString(SR.ADP_EmptyString, parameterName)); // MDAC 94859
             }
@@ -388,8 +388,8 @@ namespace System.Data.Common
 
         internal static Exception ParameterConversionFailed(object value, Type destType, Exception inner)
         { // WebData 75433
-            Debug.Assert(null != value, "null value on conversion failure");
-            Debug.Assert(null != inner, "null inner on conversion failure");
+            Debug.Assert(value != null, "null value on conversion failure");
+            Debug.Assert(inner != null, "null inner on conversion failure");
 
             Exception e;
             string message = SR.GetString(SR.ADP_ParameterConversionFailed, value.GetType().Name, destType.Name);
@@ -574,7 +574,7 @@ namespace System.Data.Common
 
         internal static Delegate? FindBuilder(MulticastDelegate mcd)
         { // V1.2.3300
-            if (null != mcd)
+            if (mcd != null)
             {
                 Delegate[] d = mcd.GetInvocationList();
                 for (int i = 0; i < d.Length; i++)
@@ -653,7 +653,7 @@ namespace System.Data.Common
 
         internal static int StringLength(string? inputString)
         {
-            return ((null != inputString) ? inputString.Length : 0);
+            return ((inputString != null) ? inputString.Length : 0);
         }
 
         internal static IntPtr IntPtrOffset(IntPtr pbase, int offset)

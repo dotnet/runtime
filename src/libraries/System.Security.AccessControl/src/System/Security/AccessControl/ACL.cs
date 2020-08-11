@@ -1025,7 +1025,7 @@ namespace System.Security.AccessControl
             while (left < right)
             {
                 // while (( _acl[right] >= pivot ) && ( left < right ))
-                while ((ComparisonResult.LessThan != CompareAces(_acl[right], pivot, isDacl)) && (left < right))
+                while ((CompareAces(_acl[right], pivot, isDacl) != ComparisonResult.LessThan) && (left < right))
                 {
                     right--;
                 }
@@ -1037,7 +1037,7 @@ namespace System.Security.AccessControl
                 }
 
                 // while (( _acl[left] <= pivot ) && ( left < right ))
-                while ((ComparisonResult.GreaterThan != CompareAces(_acl[left], pivot, isDacl)) && (left < right))
+                while ((CompareAces(_acl[left], pivot, isDacl) != ComparisonResult.GreaterThan) && (left < right))
                 {
                     left++;
                 }
@@ -1209,7 +1209,7 @@ namespace System.Security.AccessControl
             {
                 GenericAce ace = _acl[i];
 
-                if (false == InspectAce(ref ace, isDacl))
+                if (InspectAce(ref ace, isDacl) == false)
                 {
                     _acl.RemoveAce(i);
                 }
@@ -1254,7 +1254,7 @@ namespace System.Security.AccessControl
                         continue;
                     }
 
-                    if (true == MergeAces(ref thisAce, nextAce))
+                    if (MergeAces(ref thisAce, nextAce) == true)
                     {
                         _acl.RemoveAce(i + 1);
                     }
@@ -1651,7 +1651,7 @@ namespace System.Security.AccessControl
                     if ((ObjectTypesMatch(ace, newAce)) &&
                          (AceFlagsAreMergeable(ace, newAce)))
                     {
-                        if (true == MergeInheritanceBits(ace.AceFlags, newAce.AceFlags, IsDS, out merged))
+                        if (MergeInheritanceBits(ace.AceFlags, newAce.AceFlags, IsDS, out merged) == true)
                         {
                             ace.AceFlags = (merged | (ace.AceFlags & AceFlags.AuditFlags));
                             return true;
@@ -1660,7 +1660,7 @@ namespace System.Security.AccessControl
                 }
                 else
                 {
-                    if (true == MergeInheritanceBits(ace.AceFlags, newAce.AceFlags, IsDS, out merged))
+                    if (MergeInheritanceBits(ace.AceFlags, newAce.AceFlags, IsDS, out merged) == true)
                     {
                         ace.AceFlags = (merged | (ace.AceFlags & AceFlags.AuditFlags));
                         return true;
@@ -1905,7 +1905,7 @@ namespace System.Security.AccessControl
                     // Avoid inserting meaningless ACEs
                     //
 
-                    if (true == InspectAce(ref ace, isDacl))
+                    if (InspectAce(ref ace, isDacl) == true)
                     {
                         _acl.InsertAce(_acl.Count, ace);
                     }
@@ -1916,7 +1916,7 @@ namespace System.Security.AccessControl
             // See whether the ACL is canonical to begin with
             //
 
-            if (true == CanonicalCheck(isDacl))
+            if (CanonicalCheck(isDacl) == true)
             {
                 //
                 // Sort and compact the array
@@ -2033,7 +2033,7 @@ namespace System.Security.AccessControl
             // Make sure the new ACE wouldn't be meaningless before proceeding
             //
 
-            if (false == InspectAce(ref newAce, (this is DiscretionaryAcl)))
+            if (InspectAce(ref newAce, (this is DiscretionaryAcl)) == false)
             {
                 return;
             }
@@ -2051,7 +2051,7 @@ namespace System.Security.AccessControl
                     continue;
                 }
 
-                if (true == MergeAces(ref ace, (QualifiedAce)newAce))
+                if (MergeAces(ref ace, (QualifiedAce)newAce) == true)
                 {
                     aceMerged = true;
                     break;
@@ -2114,7 +2114,7 @@ namespace System.Security.AccessControl
             // Make sure the new ACE wouldn't be meaningless before proceeding
             //
 
-            if (false == InspectAce(ref newAce, (this is DiscretionaryAcl)))
+            if (InspectAce(ref newAce, (this is DiscretionaryAcl)) == false)
             {
                 return;
             }
@@ -2492,7 +2492,7 @@ namespace System.Security.AccessControl
                     if (!saclSemantics ||
                         ((ms_AceFlags & AceFlags.AuditFlags) != 0))
                     {
-                        if (false == RemoveInheritanceBits(ms_AceFlags, flags, IsDS, out mergeResultFlags, out mergeRemoveTotal))
+                        if (RemoveInheritanceBits(ms_AceFlags, flags, IsDS, out mergeResultFlags, out mergeRemoveTotal) == false)
                         {
                             removePossible = false;
                             break;

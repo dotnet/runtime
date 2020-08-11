@@ -23,7 +23,7 @@ namespace System.Data.OleDb
         // IDBInfo.GetLiteralInfo
         internal DualCoTaskMem(UnsafeNativeMethods.IDBInfo dbInfo, int[]? literals, out int literalCount, out IntPtr literalInfo, out OleDbHResult hr) : this()
         {
-            int count = (null != literals) ? literals.Length : 0;
+            int count = (literals != null) ? literals.Length : 0;
             hr = dbInfo.GetLiteralInfo(count, literals, out literalCount, out base.handle, out this.handle2);
             literalInfo = base.handle;
         }
@@ -52,7 +52,7 @@ namespace System.Data.OleDb
         {
             get
             {
-                return (((IntPtr.Zero == base.handle)) && (IntPtr.Zero == this.handle2));
+                return (((base.handle == IntPtr.Zero)) && (this.handle2 == IntPtr.Zero));
             }
         }
 
@@ -62,14 +62,14 @@ namespace System.Data.OleDb
 
             IntPtr ptr = base.handle;
             base.handle = IntPtr.Zero;
-            if (IntPtr.Zero != ptr)
+            if (ptr != IntPtr.Zero)
             {
                 SafeNativeMethods.CoTaskMemFree(ptr);
             }
 
             ptr = this.handle2;
             this.handle2 = IntPtr.Zero;
-            if (IntPtr.Zero != ptr)
+            if (ptr != IntPtr.Zero)
             {
                 SafeNativeMethods.CoTaskMemFree(ptr);
             }
@@ -86,16 +86,16 @@ namespace System.Data.OleDb
         internal IntPtr GetRowHandle(int index)
         {
             IntPtr value = ReadIntPtr(index * ADP.PtrSize);
-            Debug.Assert(ODB.DB_NULL_HROW != value, "bad rowHandle");
+            Debug.Assert(value != ODB.DB_NULL_HROW, "bad rowHandle");
             return value;
         }
     }
 
     internal sealed class StringMemHandle : DbBuffer
     {
-        internal StringMemHandle(string? value) : base((null != value) ? checked(2 + 2 * value.Length) : 0)
+        internal StringMemHandle(string? value) : base((value != null) ? checked(2 + 2 * value.Length) : 0)
         {
-            if (null != value)
+            if (value != null)
             {
                 // null-termination exists because of the extra 2+ which is zero'd during on allocation
                 WriteCharArray(0, value.ToCharArray(), 0, value.Length);
@@ -110,7 +110,7 @@ namespace System.Data.OleDb
 
         internal static ChapterHandle CreateChapterHandle(object chapteredRowset, RowBinding binding, int valueOffset)
         {
-            if ((null == chapteredRowset) || (IntPtr.Zero == binding.ReadIntPtr(valueOffset)))
+            if ((chapteredRowset == null) || (binding.ReadIntPtr(valueOffset) == IntPtr.Zero))
             {
                 return ChapterHandle.DB_NULL_HCHAPTER;
             }
@@ -120,7 +120,7 @@ namespace System.Data.OleDb
         // from ADODBRecordSetConstruction we do not want to release the initial chapter handle
         internal static ChapterHandle CreateChapterHandle(IntPtr chapter)
         {
-            if (IntPtr.Zero == chapter)
+            if (chapter == IntPtr.Zero)
             {
                 return ChapterHandle.DB_NULL_HCHAPTER;
             }
@@ -158,7 +158,7 @@ namespace System.Data.OleDb
             IntPtr chapter = _chapterHandle;
             _chapterHandle = IntPtr.Zero;
 
-            if ((IntPtr.Zero != base.handle) && (IntPtr.Zero != chapter))
+            if ((base.handle != IntPtr.Zero) && (chapter != IntPtr.Zero))
             {
                 NativeOledbWrapper.IChapteredRowsetReleaseChapter(base.handle, chapter);
             }
@@ -733,7 +733,7 @@ namespace System.Data.OleDb
             Debug.Assert(buf1 != buf2, "buf1 and buf2 are the same");
             Debug.Assert(buf1.ToInt64() < buf2.ToInt64() || buf2.ToInt64() + count <= buf1.ToInt64(), "overlapping region buf1");
             Debug.Assert(buf2.ToInt64() < buf1.ToInt64() || buf1.ToInt64() + count <= buf2.ToInt64(), "overlapping region buf2");
-            Debug.Assert(0 <= count, "negative count");
+            Debug.Assert(count >= 0, "negative count");
             unsafe
             {
                 ReadOnlySpan<byte> span1 = new ReadOnlySpan<byte>(buf1.ToPointer(), count);
@@ -749,7 +749,7 @@ namespace System.Data.OleDb
             Debug.Assert(dst != src, "dst and src are the same");
             Debug.Assert(dst.ToInt64() < src.ToInt64() || src.ToInt64() + count <= dst.ToInt64(), "overlapping region dst");
             Debug.Assert(src.ToInt64() < dst.ToInt64() || dst.ToInt64() + count <= src.ToInt64(), "overlapping region src");
-            Debug.Assert(0 <= count, "negative count");
+            Debug.Assert(count >= 0, "negative count");
             unsafe
             {
                 var dstSpan = new System.Span<byte>(dst.ToPointer(), count);

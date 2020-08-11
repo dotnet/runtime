@@ -128,7 +128,7 @@ namespace System.Management
         /// <param name='index'>The index from which to start copying. </param>
         public void CopyTo(Array array, int index)
         {
-            if (null == array)
+            if (array == null)
                 throw new ArgumentNullException(nameof(array));
 
             if ((index < array.GetLowerBound(0)) || (index > array.GetUpperBound(0)))
@@ -347,7 +347,7 @@ namespace System.Management
         {
             get
             {
-                if (null == propertyName)
+                if (propertyName == null)
                     throw new ArgumentNullException(nameof(propertyName));
 
                 return new PropertyData(parent, propertyName);
@@ -410,7 +410,7 @@ namespace System.Management
         /// </remarks>
         public virtual void Add(string propertyName, object propertyValue)
         {
-            if (null == propertyValue)
+            if (propertyValue == null)
                 throw new ArgumentNullException(nameof(propertyValue));
 
             if (parent.GetType() == typeof(ManagementObject)) //can't add properties to instance
@@ -449,7 +449,7 @@ namespace System.Management
         /// </remarks>
         public void Add(string propertyName, object propertyValue, CimType propertyType)
         {
-            if (null == propertyName)
+            if (propertyName == null)
                 throw new ArgumentNullException(nameof(propertyName));
 
             if (parent.GetType() == typeof(ManagementObject)) //can't add properties to instance
@@ -458,7 +458,7 @@ namespace System.Management
             int wmiCimType = (int)propertyType;
             bool isArray = false;
 
-            if ((null != propertyValue) && propertyValue.GetType().IsArray)
+            if ((propertyValue != null) && propertyValue.GetType().IsArray)
             {
                 isArray = true;
                 wmiCimType = (wmiCimType | (int)tag_CIMTYPE_ENUMERATION.CIM_FLAG_ARRAY);
@@ -491,7 +491,7 @@ namespace System.Management
         /// </remarks>
         public void Add(string propertyName, CimType propertyType, bool isArray)
         {
-            if (null == propertyName)
+            if (propertyName == null)
                 throw new ArgumentNullException(propertyName);
 
             if (parent.GetType() == typeof(ManagementObject)) //can't add properties to instance

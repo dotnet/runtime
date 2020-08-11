@@ -422,7 +422,7 @@ namespace System.Management
         {
             try
             {
-                if (null != md)
+                if (md != null)
                 {
                     foreach (Delegate d in md.GetInvocationList())
                     {

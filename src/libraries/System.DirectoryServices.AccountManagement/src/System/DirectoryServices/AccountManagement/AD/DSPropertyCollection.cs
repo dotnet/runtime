@@ -29,7 +29,7 @@ namespace System.DirectoryServices.AccountManagement
                 if (propertyName == null)
                     throw new ArgumentNullException(nameof(propertyName));
 
-                if (null != _pc)
+                if (_pc != null)
                 {
                     return new dSPropertyValueCollection(_pc[propertyName]);
                 }

@@ -38,7 +38,7 @@ namespace System.Data.ProviderBase
             {
                 compareInfo = CompareInfo.GetCompareInfo(_defaultLocaleID);
             }
-            if (null == compareInfo)
+            if (compareInfo == null)
             {
                 compareInfo = base.GetCompareInfo();
             }

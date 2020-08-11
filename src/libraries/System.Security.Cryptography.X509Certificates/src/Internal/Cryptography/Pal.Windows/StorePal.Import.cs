@@ -36,7 +36,7 @@ namespace Internal.Cryptography.Pal
                     fixed (char* pFileName = fileName)
                     {
                         CRYPTOAPI_BLOB blob = new CRYPTOAPI_BLOB(fromFile ? 0 : rawData!.Length, pRawData);
-                        bool persistKeySet = (0 != (keyStorageFlags & X509KeyStorageFlags.PersistKeySet));
+                        bool persistKeySet = ((keyStorageFlags & X509KeyStorageFlags.PersistKeySet) != 0);
                         PfxCertStoreFlags certStoreFlags = MapKeyStorageFlags(keyStorageFlags);
 
                         void* pvObject = fromFile ? (void*)pFileName : (void*)&blob;

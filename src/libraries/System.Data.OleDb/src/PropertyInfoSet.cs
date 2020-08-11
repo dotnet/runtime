@@ -40,7 +40,7 @@ namespace System.Data.OleDb
             {
                 hr = idbProperties.GetPropertyInfo(propIDSetCount, propIDSet, out this.setCount, out base.handle, out this.descBuffer);
             }
-            if ((0 <= hr) && (ADP.PtrZero != handle))
+            if ((hr >= 0) && (handle != ADP.PtrZero))
             {
                 SafeNativeMethods.Wrapper.ClearErrorInfo();
             }
@@ -50,7 +50,7 @@ namespace System.Data.OleDb
         {
             get
             {
-                return ((IntPtr.Zero == base.handle) && (IntPtr.Zero == this.descBuffer));
+                return ((base.handle == IntPtr.Zero) && (this.descBuffer == IntPtr.Zero));
             }
         }
 
@@ -63,7 +63,7 @@ namespace System.Data.OleDb
             try
             {
                 DangerousAddRef(ref mustRelease);
-                if (ADP.PtrZero != this.handle)
+                if (this.handle != ADP.PtrZero)
                 {
                     propertyLookup = new Dictionary<string, OleDbPropertyInfo>(StringComparer.OrdinalIgnoreCase);
 
@@ -111,14 +111,14 @@ namespace System.Data.OleDb
             // NOTE: The SafeHandle class guarantees this will be called exactly once and is non-interrutible.
             IntPtr ptr = base.handle;
             base.handle = IntPtr.Zero;
-            if (IntPtr.Zero != ptr)
+            if (ptr != IntPtr.Zero)
             {
                 int count = this.setCount;
                 for (int i = 0; i < count; ++i)
                 {
                     int offset = (i * ODB.SizeOf_tagDBPROPINFOSET);
                     IntPtr infoPtr = Marshal.ReadIntPtr(ptr, offset);
-                    if (IntPtr.Zero != infoPtr)
+                    if (infoPtr != IntPtr.Zero)
                     {
                         int infoCount = Marshal.ReadInt32(ptr, offset + ADP.PtrSize);
 
@@ -135,7 +135,7 @@ namespace System.Data.OleDb
 
             ptr = this.descBuffer;
             this.descBuffer = IntPtr.Zero;
-            if (IntPtr.Zero != ptr)
+            if (ptr != IntPtr.Zero)
             {
                 SafeNativeMethods.CoTaskMemFree(ptr);
             }

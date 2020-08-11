@@ -56,7 +56,7 @@ namespace System.Formats.Cbor
 
         private void SkipToAncestor(int depth, bool disableConformanceModeChecks)
         {
-            Debug.Assert(0 <= depth && depth <= CurrentDepth);
+            Debug.Assert(depth >= 0 && depth <= CurrentDepth);
             Checkpoint checkpoint = CreateCheckpoint();
             _isConformanceModeCheckEnabled = !disableConformanceModeChecks;
 

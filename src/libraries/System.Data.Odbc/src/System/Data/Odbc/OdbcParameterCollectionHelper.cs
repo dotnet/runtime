@@ -16,7 +16,7 @@ namespace System.Data.Odbc
         {
             get
             {
-                return ((null != _items) ? _items.Count : 0);
+                return ((_items != null) ? _items.Count : 0);
             }
         }
 
@@ -26,7 +26,7 @@ namespace System.Data.Odbc
             {
                 List<OdbcParameter>? items = _items;
 
-                if (null == items)
+                if (items == null)
                 {
                     items = new List<OdbcParameter>();
                     _items = items;
@@ -79,7 +79,7 @@ namespace System.Data.Odbc
         public override void AddRange(System.Array values)
         {
             OnChange();
-            if (null == values)
+            if (values == null)
             {
                 throw ADP.ArgumentNull(nameof(values));
             }
@@ -109,7 +109,7 @@ namespace System.Data.Odbc
             OnChange();
             List<OdbcParameter> items = InnerList;
 
-            if (null != items)
+            if (items != null)
             {
                 foreach (OdbcParameter item in items)
                 {
@@ -152,7 +152,7 @@ namespace System.Data.Odbc
 
         private static int IndexOf(System.Collections.IEnumerable items, string parameterName)
         {
-            if (null != items)
+            if (items != null)
             {
                 int i = 0;
 
@@ -168,7 +168,7 @@ namespace System.Data.Odbc
 
                 foreach (OdbcParameter parameter in items)
                 {
-                    if (0 == ADP.DstCompare(parameterName, parameter.ParameterName))
+                    if (ADP.DstCompare(parameterName, parameter.ParameterName) == 0)
                     {
                         return i;
                     }
@@ -185,13 +185,13 @@ namespace System.Data.Odbc
 
         public override int IndexOf(object value)
         {
-            if (null != value)
+            if (value != null)
             {
                 ValidateType(value);
 
                 List<OdbcParameter> items = InnerList;
 
-                if (null != items)
+                if (items != null)
                 {
                     int count = items.Count;
 
@@ -255,7 +255,7 @@ namespace System.Data.Odbc
         private void RemoveIndex(int index)
         {
             List<OdbcParameter> items = InnerList;
-            Debug.Assert((null != items) && (0 <= index) && (index < Count), "RemoveIndex, invalid");
+            Debug.Assert((items != null) && (index >= 0) && (index < Count), "RemoveIndex, invalid");
             OdbcParameter item = items[index];
             items.RemoveAt(index);
             item.ResetParent();
@@ -264,7 +264,7 @@ namespace System.Data.Odbc
         private void Replace(int index, object newValue)
         {
             List<OdbcParameter> items = InnerList;
-            Debug.Assert((null != items) && (0 <= index) && (index < Count), "Replace Index invalid");
+            Debug.Assert((items != null) && (index >= 0) && (index < Count), "Replace Index invalid");
             ValidateType(newValue);
             Validate(index, newValue);
             OdbcParameter item = items[index];
@@ -292,13 +292,13 @@ namespace System.Data.Odbc
 
         private void Validate(int index, object value)
         {
-            if (null == value)
+            if (value == null)
             {
                 throw ADP.ParameterNull(nameof(value), this, s_itemType);
             }
 
             object? parent = ((OdbcParameter)value).CompareExchangeParent(this, null);
-            if (null != parent)
+            if (parent != null)
             {
                 if (this != parent)
                 {
@@ -311,7 +311,7 @@ namespace System.Data.Odbc
             }
 
             string name = ((OdbcParameter)value).ParameterName;
-            if (0 == name.Length)
+            if (name.Length == 0)
             {
                 index = 1;
                 do
@@ -325,7 +325,7 @@ namespace System.Data.Odbc
 
         private void ValidateType(object value)
         {
-            if (null == value)
+            if (value == null)
             {
                 throw ADP.ParameterNull(nameof(value), this, s_itemType);
             }

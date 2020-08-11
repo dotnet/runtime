@@ -36,28 +36,28 @@ namespace System.Reflection.TypeLoading
                     yield return cad;
 
                 ParameterAttributes attributes = Attributes;
-                if (0 != (attributes & ParameterAttributes.In))
+                if ((attributes & ParameterAttributes.In) != 0)
                 {
                     ConstructorInfo? ci = Loader.TryGetInCtor();
                     if (ci != null)
                         yield return new RoPseudoCustomAttributeData(ci);
                 }
 
-                if (0 != (attributes & ParameterAttributes.Out))
+                if ((attributes & ParameterAttributes.Out) != 0)
                 {
                     ConstructorInfo? ci = Loader.TryGetOutCtor();
                     if (ci != null)
                         yield return new RoPseudoCustomAttributeData(ci);
                 }
 
-                if (0 != (attributes & ParameterAttributes.Optional))
+                if ((attributes & ParameterAttributes.Optional) != 0)
                 {
                     ConstructorInfo? ci = Loader.TryGetOptionalCtor();
                     if (ci != null)
                         yield return new RoPseudoCustomAttributeData(ci);
                 }
 
-                if (0 != (attributes & ParameterAttributes.HasFieldMarshal))
+                if ((attributes & ParameterAttributes.HasFieldMarshal) != 0)
                 {
                     CustomAttributeData? cad = CustomAttributeHelpers.TryComputeMarshalAsCustomAttributeData(ComputeMarshalAsAttribute, Loader);
                     if (cad != null)

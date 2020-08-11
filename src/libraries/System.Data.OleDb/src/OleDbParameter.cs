@@ -113,7 +113,7 @@ namespace System.Data.OleDb
             set
             {
                 NativeDBType? dbtype = _metaType;
-                if ((null == dbtype) || (dbtype.enumDbType != value))
+                if ((dbtype == null) || (dbtype.enumDbType != value))
                 {
                     PropertyTypeChanging();
                     _metaType = NativeDBType.FromDbType(value);
@@ -139,7 +139,7 @@ namespace System.Data.OleDb
             set
             {
                 NativeDBType? dbtype = _metaType;
-                if ((null == dbtype) || (dbtype.enumOleDbType != value))
+                if ((dbtype == null) || (dbtype.enumOleDbType != value))
                 {
                     PropertyTypeChanging();
                     _metaType = NativeDBType.FromDataType(value);
@@ -149,12 +149,12 @@ namespace System.Data.OleDb
 
         private bool ShouldSerializeOleDbType()
         {
-            return (null != _metaType);
+            return (_metaType != null);
         }
 
         public void ResetOleDbType()
         {
-            if (null != _metaType)
+            if (_metaType != null)
             {
                 PropertyTypeChanging();
                 _metaType = null;
@@ -167,7 +167,7 @@ namespace System.Data.OleDb
             get
             {
                 string? parameterName = _parameterName;
-                return ((null != parameterName) ? parameterName : string.Empty);
+                return ((parameterName != null) ? parameterName : string.Empty);
             }
             set
             {
@@ -196,7 +196,7 @@ namespace System.Data.OleDb
             get
             {
                 byte precision = _precision;
-                if (0 == precision)
+                if (precision == 0)
                 {
                     precision = ValuePrecision(Value);
                 }
@@ -213,7 +213,7 @@ namespace System.Data.OleDb
         }
         private bool ShouldSerializePrecision()
         {
-            return (0 != _precision);
+            return (_precision != 0);
         }
 
         [DefaultValue((byte)0)]
@@ -256,7 +256,7 @@ namespace System.Data.OleDb
 
         private bool ShouldSerializeScale(byte scale)
         {
-            return _hasScale && ((0 != scale) || ShouldSerializePrecision());
+            return _hasScale && ((scale != 0) || ShouldSerializePrecision());
         }
 
         object ICloneable.Clone()
@@ -294,7 +294,7 @@ namespace System.Data.OleDb
             object? value = Value;
 
             NativeDBType dbtype = GetBindType(value);
-            if (OleDbType.Empty == dbtype.enumOleDbType)
+            if (dbtype.enumOleDbType == OleDbType.Empty)
             {
                 throw ODB.UninitializedParameters(index, dbtype.enumOleDbType);
             }
@@ -313,7 +313,7 @@ namespace System.Data.OleDb
             {
                 precision = ValuePrecision(value);
             }
-            if (0 == precision)
+            if (precision == 0)
             {
                 precision = dbtype.maxpre;
             }
@@ -340,11 +340,11 @@ namespace System.Data.OleDb
                 }
                 else
                 {
-                    if (NativeDBType.STR == dbtype.dbType)
+                    if (dbtype.dbType == NativeDBType.STR)
                     {
                         size = int.MaxValue;
                     }
-                    else if (NativeDBType.WSTR == dbtype.dbType)
+                    else if (dbtype.dbType == NativeDBType.WSTR)
                     {
                         size = int.MaxValue / 2;
                     }
@@ -373,48 +373,48 @@ namespace System.Data.OleDb
                     size = ValueSize(value);
                     computedSize = true;
                 }
-                if (0 < size)
+                if (size > 0)
                 {
-                    if (NativeDBType.WSTR == dbtype.wType)
+                    if (dbtype.wType == NativeDBType.WSTR)
                     {
                         // maximum 0x3FFFFFFE characters, computed this way to avoid overflow exception
                         bytecount = Math.Min(size, 0x3FFFFFFE) * 2 + 2;
                     }
                     else
                     {
-                        Debug.Assert(NativeDBType.STR != dbtype.wType, "should have ANSI binding, describing is okay");
+                        Debug.Assert(dbtype.wType != NativeDBType.STR, "should have ANSI binding, describing is okay");
                         bytecount = size;
                     }
 
                     if (computedSize)
                     {
-                        if (NativeDBType.STR == dbtype.dbType)
+                        if (dbtype.dbType == NativeDBType.STR)
                         {
                             // maximum 0x7ffffffe characters, computed this way to avoid overflow exception
                             size = Math.Min(size, 0x3FFFFFFE) * 2;
                         }
                     }
 
-                    if (ODB.LargeDataSize < bytecount)
+                    if (bytecount > ODB.LargeDataSize)
                     {
                         bytecount = ADP.PtrSize;
                         wtype |= NativeDBType.BYREF;
                     }
                 }
-                else if (0 == size)
+                else if (size == 0)
                 {
-                    if (NativeDBType.WSTR == wtype)
+                    if (wtype == NativeDBType.WSTR)
                     { // allow space for null termination character
                         bytecount = 2;
                         // 0 == size, okay for (STR == dbType)
                     }
                     else
                     {
-                        Debug.Assert(NativeDBType.STR != dbtype.wType, "should have ANSI binding, describing is okay");
+                        Debug.Assert(dbtype.wType != NativeDBType.STR, "should have ANSI binding, describing is okay");
                         bytecount = 0;
                     }
                 }
-                else if (-1 == size)
+                else if (size == -1)
                 {
                     bytecount = ADP.PtrSize;
                     wtype |= NativeDBType.BYREF;
@@ -464,8 +464,8 @@ namespace System.Data.OleDb
 
         private static object? CoerceValue(object? value, NativeDBType destinationType)
         {
-            Debug.Assert(null != destinationType, "null destinationType");
-            if ((null != value) && (DBNull.Value != value) && (typeof(object) != destinationType.dataType))
+            Debug.Assert(destinationType != null, "null destinationType");
+            if ((value != null) && (value != DBNull.Value) && (typeof(object) != destinationType.dataType))
             {
                 Type currentType = value.GetType();
                 if (currentType != destinationType.dataType)
@@ -475,7 +475,7 @@ namespace System.Data.OleDb
                         if ((typeof(string) == destinationType.dataType) && (typeof(char[]) == currentType))
                         {
                         }
-                        else if ((NativeDBType.CY == destinationType.dbType) && (typeof(string) == currentType))
+                        else if ((destinationType.dbType == NativeDBType.CY) && (typeof(string) == currentType))
                         {
                             value = decimal.Parse((string)value, NumberStyles.Currency, null);
                         }
@@ -502,7 +502,7 @@ namespace System.Data.OleDb
         private NativeDBType GetBindType(object? value)
         {
             NativeDBType? dbtype = _metaType;
-            if (null == dbtype)
+            if (dbtype == null)
             {
                 if (ADP.IsNull(value))
                 {
@@ -519,7 +519,7 @@ namespace System.Data.OleDb
         internal object? GetCoercedValue()
         {
             object? value = CoercedValue; // will also be set during binding, will rebind everytime if _metaType not set
-            if (null == value)
+            if (value == null)
             {
                 value = CoerceValue(Value, _coerceMetaType!);
                 CoercedValue = value;
@@ -530,9 +530,9 @@ namespace System.Data.OleDb
         internal bool IsParameterComputed()
         {
             NativeDBType? metaType = _metaType;
-            return ((null == metaType)
+            return ((metaType == null)
                     || (!ShouldSerializeSize() && metaType.IsVariableLength)
-                    || ((NativeDBType.DECIMAL == metaType.dbType) || (NativeDBType.NUMERIC == metaType.dbType)
+                    || ((metaType.dbType == NativeDBType.DECIMAL) || (metaType.dbType == NativeDBType.NUMERIC)
                         && (!ShouldSerializeScale() || !ShouldSerializePrecision())
                         )
                     );
@@ -544,7 +544,7 @@ namespace System.Data.OleDb
         internal void Prepare(OleDbCommand cmd)
         {
             Debug.Assert(IsParameterComputed(), "Prepare computed parameter");
-            if (null == _metaType)
+            if (_metaType == null)
             {
                 throw ADP.PrepareParameterType(cmd);
             }
@@ -552,7 +552,7 @@ namespace System.Data.OleDb
             {
                 throw ADP.PrepareParameterSize(cmd);
             }
-            else if (!ShouldSerializePrecision() && !ShouldSerializeScale() && ((NativeDBType.DECIMAL == _metaType.wType) || (NativeDBType.NUMERIC == _metaType.wType)))
+            else if (!ShouldSerializePrecision() && !ShouldSerializeScale() && ((_metaType.wType == NativeDBType.DECIMAL) || (_metaType.wType == NativeDBType.NUMERIC)))
             {
                 throw ADP.PrepareParameterScale(cmd, _metaType.wType.ToString("G", CultureInfo.InvariantCulture));
             }
@@ -639,7 +639,7 @@ namespace System.Data.OleDb
 
             public override object ConvertTo(ITypeDescriptorContext context, CultureInfo culture, object value, Type destinationType)
             {
-                if (null == destinationType)
+                if (destinationType == null)
                 {
                     throw ADP.ArgumentNull("destinationType");
                 }
@@ -666,13 +666,13 @@ namespace System.Data.OleDb
                 {
                     flags |= 4;
                 }
-                if (null != p.Value)
+                if (p.Value != null)
                 {
                     flags |= 8;
                 }
-                if ((ParameterDirection.Input != p.Direction) || p.IsNullable
+                if ((p.Direction != ParameterDirection.Input) || p.IsNullable
                     || p.ShouldSerializePrecision() || p.ShouldSerializeScale()
-                    || (DataRowVersion.Current != p.SourceVersion))
+                    || (p.SourceVersion != DataRowVersion.Current))
                 {
                     flags |= 16; // V1.0 everything
                 }
@@ -707,7 +707,7 @@ namespace System.Data.OleDb
                         ctorValues = new object?[] { p.ParameterName, p.Value };
                         break;
                     default: // everything else
-                        if (0 == (32 & flags))
+                        if ((32 & flags) == 0)
                         { // V1.0 everything
                             ctorParams = new Type[] {
                             typeof(string), typeof(OleDbType), typeof(int), typeof(ParameterDirection),

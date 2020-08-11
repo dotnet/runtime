@@ -63,7 +63,7 @@ namespace System.DirectoryServices.AccountManagement
 
         protected static void LoadFilterMappingTable(int mappingIndex, object[,] rawFilterPropertiesTable)
         {
-            if (null == s_filterPropertiesTable)
+            if (s_filterPropertiesTable == null)
                 s_filterPropertiesTable = new Hashtable();
 
             Hashtable mappingTable = new Hashtable();
@@ -95,16 +95,16 @@ namespace System.DirectoryServices.AccountManagement
             //
             // Load the propertyMappingTableByProperty and propertyMappingTableByLDAP tables
             //
-            if (null == s_propertyMappingTableByProperty)
+            if (s_propertyMappingTableByProperty == null)
                 s_propertyMappingTableByProperty = new Hashtable();
 
-            if (null == s_propertyMappingTableByLDAP)
+            if (s_propertyMappingTableByLDAP == null)
                 s_propertyMappingTableByLDAP = new Hashtable();
 
-            if (null == s_propertyMappingTableByPropertyFull)
+            if (s_propertyMappingTableByPropertyFull == null)
                 s_propertyMappingTableByPropertyFull = new Hashtable();
 
-            if (null == TypeToLdapPropListMap)
+            if (TypeToLdapPropListMap == null)
                 TypeToLdapPropListMap = new Dictionary<int, Dictionary<Type, StringCollection>>();
 
             Hashtable mappingTableByProperty = new Hashtable();
@@ -137,7 +137,7 @@ namespace System.DirectoryServices.AccountManagement
 
                 // Build a mapping table from PAPI propertyname to ldapAttribute that we can use below
                 // to build a list of ldap attributes for each object type.
-                if (null != ldapAttribute)
+                if (ldapAttribute != null)
                 {
                     if (propertyNameToLdapAttr.ContainsKey(propertyName))
                     {
@@ -411,7 +411,7 @@ namespace System.DirectoryServices.AccountManagement
                 try
                 {
                     GlobalDebug.WriteLineIf(GlobalDebug.Error, "ADStoreCtx", "Insert,  Save Failed (attempting to delete) Exception {0} ", e.Message);
-                    if (null != p.UnderlyingObject)
+                    if (p.UnderlyingObject != null)
                     {
                         SDSUtils.DeleteDirectoryEntry((DirectoryEntry)p.UnderlyingObject);
                         GlobalDebug.WriteLineIf(GlobalDebug.Info, "ADStoreCtx", "Insert,  object deleted");
@@ -724,7 +724,7 @@ namespace System.DirectoryServices.AccountManagement
             string baseObjectRdnPrefix = null;
             Type principalType = p.GetType();
 
-            if (null == rdnPrefix)
+            if (rdnPrefix == null)
             {
                 throw new InvalidOperationException(SR.ExtensionInvalidClassAttributes);
             }
@@ -753,7 +753,7 @@ namespace System.DirectoryServices.AccountManagement
                     // that matches the principals context or the first rdnPrefix that has a null context type
                     for (int i = 0; i < MyAttribute.Length; i++)
                     {
-                        if ((MyAttribute[i].Context == null && null == defaultRdn) ||
+                        if ((MyAttribute[i].Context == null && defaultRdn == null) ||
                             (p.ContextType == MyAttribute[i].Context))
                         {
                             defaultRdn = MyAttribute[i].RdnPrefix;
@@ -774,7 +774,7 @@ namespace System.DirectoryServices.AccountManagement
 
             p.LoadValueIntoProperty(PropertyNames.PrincipalName, p.GetValueForProperty(PropertyNames.PrincipalName));
 
-            if (null != baseObjectRdnPrefix)
+            if (baseObjectRdnPrefix != null)
             {
                 ((DirectoryEntry)p.GetUnderlyingObject()).Properties[baseObjectRdnPrefix].Value = (string)p.GetValueForProperty(PropertyNames.PrincipalName);
             }
@@ -1262,7 +1262,7 @@ namespace System.DirectoryServices.AccountManagement
                     }
                 }
 
-                if (false == useASQ)
+                if (useASQ == false)
                 {
                     // If this is ADAM then we only need to use the original object.
                     // IF AD then we will use whatever enumerators we discovered above.
@@ -1362,12 +1362,12 @@ namespace System.DirectoryServices.AccountManagement
             }
             finally
             {
-                if (null != gcPrincipalDe)
+                if (gcPrincipalDe != null)
                 {
                     gcPrincipalDe.Dispose();
                 }
 
-                if (null != memberOfSearcher)
+                if (memberOfSearcher != null)
                 {
                     memberOfSearcher.Dispose();
                 }
@@ -1438,7 +1438,7 @@ namespace System.DirectoryServices.AccountManagement
 
                         fspWkDn = ADUtils.RetriveWkDn(dncContainer, this.DefaultNamingContext, this.UserSuppliedServerName, Constants.GUID_FOREIGNSECURITYPRINCIPALS_CONTAINER_BYTE);
 
-                        if (null != fspWkDn)
+                        if (fspWkDn != null)
                         {
                             GlobalDebug.WriteLineIf(GlobalDebug.Info, "ADStoreCtx", "GetGroupsMemberOf(ctx): Read fsp DN {0}", fspWkDn);
                             fspContainer = new DirectoryEntry(fspWkDn, Credentials != null ? this.credentials.UserName : null, Credentials != null ? this.credentials.Password : null, this.authTypes);
@@ -1480,7 +1480,7 @@ namespace System.DirectoryServices.AccountManagement
 
                         // We already did a root level search so just exit.
 
-                        if (null == fspWkDn)
+                        if (fspWkDn == null)
                             return new EmptySet();
 
                         GlobalDebug.WriteLineIf(GlobalDebug.Info, "ADStoreCtx", "GetGroupsMemberOf(ctx): performing DNC level search");
@@ -1540,11 +1540,11 @@ namespace System.DirectoryServices.AccountManagement
             }
             finally
             {
-                if (null != fspContainer)
+                if (fspContainer != null)
                     fspContainer.Dispose();
-                if (null != ds)
+                if (ds != null)
                     ds.Dispose();
-                if (null != dncContainer)
+                if (dncContainer != null)
                     dncContainer.Dispose();
             }
         }
@@ -1619,7 +1619,7 @@ namespace System.DirectoryServices.AccountManagement
 
             try
             {
-                if (true == ADUtils.VerifyOutboundTrust(this.DnsDomainName, (this.credentials == null ? null : this.credentials.UserName), (this.credentials == null ? null : this.credentials.Password)))
+                if (ADUtils.VerifyOutboundTrust(this.DnsDomainName, (this.credentials == null ? null : this.credentials.UserName), (this.credentials == null ? null : this.credentials.Password)) == true)
                 {
                     return new AuthZSet(sid, this.credentials, this.contextOptions, this.FlatDomainName, this, this.ctxBase);
                 }

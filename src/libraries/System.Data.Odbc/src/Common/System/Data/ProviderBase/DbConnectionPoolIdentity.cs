@@ -33,7 +33,7 @@ namespace System.Data.ProviderBase
         public override bool Equals(object? value)
         {
             bool result = ((this == NoIdentity) || (this == value));
-            if (!result && (null != value))
+            if (!result && (value != null))
             {
                 DbConnectionPoolIdentity that = ((DbConnectionPoolIdentity)value);
                 result = ((_sidString == that._sidString) && (_isRestricted == that._isRestricted) && (_isNetwork == that._isNetwork));

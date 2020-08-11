@@ -4781,11 +4781,11 @@ namespace System.Management
             {
                 strToAdd = arrIn[i].ToString();
                 strToAdd = ResolveCollision(strToAdd, true);
-                if (true == IsContainedInArray(strToAdd, arrayOut))
+                if (IsContainedInArray(strToAdd, arrayOut) == true)
                 {
                     nCurIndex = 0;
                     strToAdd = arrIn[i].ToString() + nCurIndex.ToString(formatProv);
-                    while (true == IsContainedInArray(strToAdd, arrayOut))
+                    while (IsContainedInArray(strToAdd, arrayOut) == true)
                     {
                         nCurIndex++;
                         strToAdd = arrIn[i].ToString() + nCurIndex.ToString(formatProv);

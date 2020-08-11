@@ -87,14 +87,14 @@ namespace System.Data.Odbc
             if (DBNull.Value != bvalue)
             {
                 byte bval = (byte)(short)bvalue;
-                p.PrecisionInternal = ((0xff != bval) ? bval : (byte)0);
+                p.PrecisionInternal = ((bval != 0xff) ? bval : (byte)0);
             }
 
             bvalue = datarow[SchemaTableColumn.NumericScale];
             if (DBNull.Value != bvalue)
             {
                 byte bval = (byte)(short)bvalue;
-                p.ScaleInternal = ((0xff != bval) ? bval : (byte)0);
+                p.ScaleInternal = ((bval != 0xff) ? bval : (byte)0);
             }
         }
 
@@ -102,7 +102,7 @@ namespace System.Data.Odbc
         {
             // MDAC 65927
 
-            if (null == command)
+            if (command == null)
             {
                 throw ADP.ArgumentNull(nameof(command));
             }
@@ -125,7 +125,7 @@ namespace System.Data.Odbc
 
             OdbcConnection? connection = command.Connection;
 
-            if (null == connection)
+            if (connection == null)
             {
                 throw ADP.ConnectionRequired(ADP.DeriveParameters);
             }
@@ -143,7 +143,7 @@ namespace System.Data.Odbc
             parameters.Clear();
 
             int count = list.Length;
-            if (0 < count)
+            if (count > 0)
             {
                 for (int i = 0; i < list.Length; ++i)
                 {
@@ -177,7 +177,7 @@ namespace System.Data.Odbc
             //
             string quote = connection.QuoteChar(ADP.DeriveParameters);
             string?[] parts = MultipartIdentifier.ParseMultipartIdentifier(command.CommandText, quote, quote, '.', 4, true, SR.ODBC_ODBCCommandText, false);
-            if (null == parts[3])
+            if (parts[3] == null)
             { // match Everett behavior, if the commandtext is nothing but whitespace set the command text to the whitespace
                 parts[3] = command.CommandText;
             }

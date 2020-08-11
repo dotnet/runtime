@@ -1117,7 +1117,7 @@ namespace System
 
                 int bytesRead;
                 int errCode = ReadFileNative(_handle, buffer, offset, count, _isPipe, out bytesRead, _useFileAPIs);
-                if (Interop.Errors.ERROR_SUCCESS != errCode)
+                if (errCode != Interop.Errors.ERROR_SUCCESS)
                     throw Win32Marshal.GetExceptionForWin32Error(errCode);
                 return bytesRead;
             }
@@ -1127,7 +1127,7 @@ namespace System
                 ValidateWrite(buffer, offset, count);
 
                 int errCode = WriteFileNative(_handle, buffer, offset, count, _useFileAPIs);
-                if (Interop.Errors.ERROR_SUCCESS != errCode)
+                if (errCode != Interop.Errors.ERROR_SUCCESS)
                     throw Win32Marshal.GetExceptionForWin32Error(errCode);
             }
 
@@ -1164,7 +1164,7 @@ namespace System
                 {
                     if (useFileAPIs)
                     {
-                        readSuccess = (0 != Interop.Kernel32.ReadFile(hFile, p + offset, count, out bytesRead, IntPtr.Zero));
+                        readSuccess = (Interop.Kernel32.ReadFile(hFile, p + offset, count, out bytesRead, IntPtr.Zero) != 0);
                     }
                     else
                     {
@@ -1203,7 +1203,7 @@ namespace System
                     if (useFileAPIs)
                     {
                         int numBytesWritten;
-                        writeSuccess = (0 != Interop.Kernel32.WriteFile(hFile, p + offset, count, out numBytesWritten, IntPtr.Zero));
+                        writeSuccess = (Interop.Kernel32.WriteFile(hFile, p + offset, count, out numBytesWritten, IntPtr.Zero) != 0);
                         // In some cases we have seen numBytesWritten returned that is twice count;
                         // so we aren't asserting the value of it. See https://github.com/dotnet/runtime/issues/23776
                     }

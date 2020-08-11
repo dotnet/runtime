@@ -247,7 +247,7 @@ namespace System.Runtime.Caching
             {
                 throw new ArgumentException(SR.Invalid_expiration_combination, nameof(policy));
             }
-            if (policy.SlidingExpiration < ObjectCache.NoSlidingExpiration || s_oneYear < policy.SlidingExpiration)
+            if (policy.SlidingExpiration < ObjectCache.NoSlidingExpiration || policy.SlidingExpiration > s_oneYear)
             {
                 throw new ArgumentOutOfRangeException(nameof(policy), RH.Format(SR.Argument_out_of_range, "SlidingExpiration", ObjectCache.NoSlidingExpiration, s_oneYear));
             }

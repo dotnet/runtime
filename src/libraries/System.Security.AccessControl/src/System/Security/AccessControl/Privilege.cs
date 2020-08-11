@@ -108,7 +108,7 @@ namespace System.Security.AccessControl
                 {
                     privilegeLock.ExitReadLock();
 
-                    if (false == Interop.Advapi32.LookupPrivilegeValue(null, privilege, out luid))
+                    if (Interop.Advapi32.LookupPrivilegeValue(null, privilege, out luid) == false)
                     {
                         int error = Marshal.GetLastWin32Error();
 
@@ -183,10 +183,10 @@ namespace System.Security.AccessControl
                         if (processHandle.IsInvalid)
                         {
                             SafeTokenHandle localProcessHandle;
-                            if (false == Interop.Advapi32.OpenProcessToken(
+                            if (Interop.Advapi32.OpenProcessToken(
                                             Interop.Kernel32.GetCurrentProcess(),
                                             TokenAccessLevels.Duplicate,
-                                            out localProcessHandle))
+                                            out localProcessHandle) == false)
                             {
                                 cachingError = Marshal.GetLastWin32Error();
                                 success = false;
@@ -232,13 +232,13 @@ namespace System.Security.AccessControl
                                 if (success == true)
                                 {
                                     error = 0;
-                                    if (false == Interop.Advapi32.DuplicateTokenEx(
+                                    if (Interop.Advapi32.DuplicateTokenEx(
                                                     processHandle,
                                                     TokenAccessLevels.Impersonate | TokenAccessLevels.Query | TokenAccessLevels.AdjustPrivileges,
                                                     IntPtr.Zero,
                                                     Interop.Advapi32.SECURITY_IMPERSONATION_LEVEL.SecurityImpersonation,
                                                     System.Security.Principal.TokenType.TokenImpersonation,
-                                                    ref this.threadHandle))
+                                                    ref this.threadHandle) == false)
                                     {
                                         error = Marshal.GetLastWin32Error();
                                         success = false;
@@ -494,7 +494,7 @@ namespace System.Security.AccessControl
                     {
                         error = Marshal.GetLastWin32Error();
                     }
-                    else if (Interop.Errors.ERROR_NOT_ALL_ASSIGNED == Marshal.GetLastWin32Error())
+                    else if (Marshal.GetLastWin32Error() == Interop.Errors.ERROR_NOT_ALL_ASSIGNED)
                     {
                         error = Interop.Errors.ERROR_NOT_ALL_ASSIGNED;
                     }
@@ -668,7 +668,7 @@ namespace System.Security.AccessControl
 
             if (this.tlsContents != null)
             {
-                if (0 == this.tlsContents.DecrementReferenceCount())
+                if (this.tlsContents.DecrementReferenceCount() == 0)
                 {
                     this.tlsContents = null;
                     t_tlsSlotData = null;

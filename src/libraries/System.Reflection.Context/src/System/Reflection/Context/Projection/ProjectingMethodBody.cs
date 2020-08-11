@@ -15,7 +15,7 @@ namespace System.Reflection.Context.Projection
         public ProjectingMethodBody(MethodBody body, Projector projector)
             : base(body)
         {
-            Debug.Assert(null != projector);
+            Debug.Assert(projector != null);
 
             _projector = projector;
         }

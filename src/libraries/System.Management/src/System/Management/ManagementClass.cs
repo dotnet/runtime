@@ -67,13 +67,13 @@ namespace System.Management
             ManagementClass newClass = new ManagementClass();
             newClass.wbemObject = wbemObject;
 
-            if (null != mgObj)
+            if (mgObj != null)
             {
                 newClass.scope = ManagementScope._Clone(mgObj.scope);
 
                 ManagementPath objPath = mgObj.Path;
 
-                if (null != objPath)
+                if (objPath != null)
                     newClass.path = ManagementPath._Clone(objPath);
 
                 // Ensure we have our class name in the path
@@ -94,7 +94,7 @@ namespace System.Management
                     newClass.path.internalClassName = (string)className;
 
                 ObjectGetOptions options = mgObj.Options;
-                if (null != options)
+                if (options != null)
                     newClass.options = ObjectGetOptions._Clone(options);
 
                 // Finally we ensure that this object is marked as bound.
@@ -117,7 +117,7 @@ namespace System.Management
             ManagementClass newClass = new ManagementClass();
             newClass.path = new ManagementPath(ManagementPath.GetManagementPath(wbemObject));
 
-            if (null != scope)
+            if (scope != null)
                 newClass.scope = ManagementScope._Clone(scope);
 
             newClass.wbemObject = wbemObject;
@@ -302,7 +302,7 @@ namespace System.Management
             set
             {
                 // This must be a class path or empty (don't allow instance paths)
-                if ((null == value) || value.IsClass || value.IsEmpty)
+                if ((value == null) || value.IsClass || value.IsEmpty)
                     base.Path = value;
                 else
                     throw new ArgumentOutOfRangeException(nameof(value));
@@ -351,7 +351,7 @@ namespace System.Management
                         Marshal.ThrowExceptionForHR(status, WmiNetUtilsHelper.GetErrorInfo_f());
                 }
 
-                if (null != val)
+                if (val != null)
                     result.AddRange((string[])val);
 
                 return result;
@@ -454,13 +454,13 @@ namespace System.Management
         /// </example>
         public ManagementObjectCollection GetInstances(EnumerationOptions options)
         {
-            if ((null == Path) || (null == Path.Path) || (0 == Path.Path.Length))
+            if ((Path == null) || (Path.Path == null) || (Path.Path.Length == 0))
                 throw new InvalidOperationException();
 
             Initialize(false);
             IEnumWbemClassObject enumWbem = null;
 
-            EnumerationOptions o = (null == options) ? new EnumerationOptions() : (EnumerationOptions)options.Clone();
+            EnumerationOptions o = (options == null) ? new EnumerationOptions() : (EnumerationOptions)options.Clone();
             //Need to make sure that we're not passing invalid flags to enumeration APIs.
             //The only flags in EnumerationOptions not valid for enumerations are EnsureLocatable & PrototypeOnly.
             o.EnsureLocatable = false; o.PrototypeOnly = false;
@@ -575,15 +575,15 @@ namespace System.Management
         /// <param name=' options'>The specified additional options for getting the instances.</param>
         public void GetInstances(ManagementOperationObserver watcher, EnumerationOptions options)
         {
-            if (null == watcher)
+            if (watcher == null)
                 throw new ArgumentNullException(nameof(watcher));
 
-            if ((null == Path) || (null == Path.Path) || (0 == Path.Path.Length))
+            if ((Path == null) || (Path.Path == null) || (Path.Path.Length == 0))
                 throw new InvalidOperationException();
 
             Initialize(false);
 
-            EnumerationOptions o = (null == options) ? new EnumerationOptions() : (EnumerationOptions)options.Clone();
+            EnumerationOptions o = (options == null) ? new EnumerationOptions() : (EnumerationOptions)options.Clone();
 
             //Need to make sure that we're not passing invalid flags to enumeration APIs.
             //The only flags in EnumerationOptions not valid for enumerations are EnsureLocatable & PrototypeOnly.
@@ -672,13 +672,13 @@ namespace System.Management
         /// </example>
         public ManagementObjectCollection GetSubclasses(EnumerationOptions options)
         {
-            if (null == Path)
+            if (Path == null)
                 throw new InvalidOperationException();
 
             Initialize(false);
             IEnumWbemClassObject enumWbem = null;
 
-            EnumerationOptions o = (null == options) ? new EnumerationOptions() : (EnumerationOptions)options.Clone();
+            EnumerationOptions o = (options == null) ? new EnumerationOptions() : (EnumerationOptions)options.Clone();
             //Need to make sure that we're not passing invalid flags to enumeration APIs.
             //The only flags in EnumerationOptions not valid for enumerations are EnsureLocatable & PrototypeOnly.
             o.EnsureLocatable = false; o.PrototypeOnly = false;
@@ -728,15 +728,15 @@ namespace System.Management
         public void GetSubclasses(ManagementOperationObserver watcher,
                                         EnumerationOptions options)
         {
-            if (null == watcher)
+            if (watcher == null)
                 throw new ArgumentNullException(nameof(watcher));
 
-            if (null == Path)
+            if (Path == null)
                 throw new InvalidOperationException();
 
             Initialize(false);
 
-            EnumerationOptions o = (null == options) ? new EnumerationOptions() :
+            EnumerationOptions o = (options == null) ? new EnumerationOptions() :
                                       (EnumerationOptions)options.Clone();
 
             //Need to make sure that we're not passing invalid flags to enumeration APIs.
@@ -805,7 +805,7 @@ namespace System.Management
         {
             ManagementClass newClass = null;
 
-            if (null == newClassName)
+            if (newClassName == null)
                 throw new ArgumentNullException(nameof(newClassName));
             else
             {
@@ -1018,14 +1018,14 @@ namespace System.Management
                                             string thisRole,
                                             EnumerationOptions options)
         {
-            if ((null == Path) || (null == Path.Path) || (0 == Path.Path.Length))
+            if ((Path == null) || (Path.Path == null) || (Path.Path.Length == 0))
                 throw new InvalidOperationException();
 
             Initialize(false);
 
             IEnumWbemClassObject enumWbem = null;
 
-            EnumerationOptions o = (null != options) ? (EnumerationOptions)options.Clone() : new EnumerationOptions();
+            EnumerationOptions o = (options != null) ? (EnumerationOptions)options.Clone() : new EnumerationOptions();
             //Ensure EnumerateDeep flag bit is turned off as it's invalid for queries
             o.EnumerateDeep = true;
 
@@ -1116,16 +1116,16 @@ namespace System.Management
             string thisRole,
             EnumerationOptions options)
         {
-            if ((null == Path) || (null == Path.Path) || (0 == Path.Path.Length))
+            if ((Path == null) || (Path.Path == null) || (Path.Path.Length == 0))
                 throw new InvalidOperationException();
 
             Initialize(true);
 
-            if (null == watcher)
+            if (watcher == null)
                 throw new ArgumentNullException(nameof(watcher));
             else
             {
-                EnumerationOptions o = (null != options)
+                EnumerationOptions o = (options != null)
                                 ? (EnumerationOptions)options.Clone() : new EnumerationOptions();
 
                 //Ensure EnumerateDeep flag bit is turned off as it's invalid for queries
@@ -1223,14 +1223,14 @@ namespace System.Management
                                             string thisRole,
                                             EnumerationOptions options)
         {
-            if ((null == Path) || (null == Path.Path) || (0 == Path.Path.Length))
+            if ((Path == null) || (Path.Path == null) || (Path.Path.Length == 0))
                 throw new InvalidOperationException();
 
             Initialize(false);
 
             IEnumWbemClassObject enumWbem = null;
 
-            EnumerationOptions o = (null != options) ? options : new EnumerationOptions();
+            EnumerationOptions o = (options != null) ? options : new EnumerationOptions();
             //Ensure EnumerateDeep flag is turned off as it's invalid for queries
             o.EnumerateDeep = true;
 
@@ -1309,16 +1309,16 @@ namespace System.Management
             string thisRole,
             EnumerationOptions options)
         {
-            if ((null == Path) || (null == Path.Path) || (0 == Path.Path.Length))
+            if ((Path == null) || (Path.Path == null) || (Path.Path.Length == 0))
                 throw new InvalidOperationException();
-            if (null == watcher)
+            if (watcher == null)
                 throw new ArgumentNullException(nameof(watcher));
             else
             {
                 Initialize(true);
 
                 EnumerationOptions o =
-                        (null != options) ? (EnumerationOptions)options.Clone() : new EnumerationOptions();
+                        (options != null) ? (EnumerationOptions)options.Clone() : new EnumerationOptions();
 
                 //Ensure EnumerateDeep flag is turned off as it's invalid for queries
                 o.EnumerateDeep = true;

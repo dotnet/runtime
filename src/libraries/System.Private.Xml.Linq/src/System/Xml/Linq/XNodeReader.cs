@@ -1259,7 +1259,7 @@ namespace System.Xml.Linq
                 return ReadToEnd();
             }
             XNode next = n.next;
-            if (null == next || next == n || n == n.parent.content)
+            if (next == null || next == n || n == n.parent.content)
             {
                 if (n.parent == null || (n.parent.parent == null && n.parent is XDocument))
                 {

@@ -11,7 +11,7 @@ namespace System.Reflection.Context.Delegation
     {
         public DelegatingPropertyInfo(PropertyInfo property)
         {
-            Debug.Assert(null != property);
+            Debug.Assert(property != null);
 
             UnderlyingProperty = property;
         }

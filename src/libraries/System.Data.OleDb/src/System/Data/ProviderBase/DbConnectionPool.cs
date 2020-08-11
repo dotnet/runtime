@@ -38,7 +38,7 @@ namespace System.Data.ProviderBase
 
             internal void Dispose()
             {
-                if (null != _transaction)
+                if (_transaction != null)
                 {
                     _transaction.Dispose();
                 }
@@ -67,7 +67,7 @@ namespace System.Data.ProviderBase
 
             internal TransactedConnectionPool(DbConnectionPool pool)
             {
-                Debug.Assert(null != pool, "null pool?");
+                Debug.Assert(pool != null, "null pool?");
 
                 _pool = pool;
                 _transactedCxns = new Dictionary<SysTx.Transaction, TransactedConnectionList>();
@@ -83,7 +83,7 @@ namespace System.Data.ProviderBase
 
             internal DbConnectionInternal? GetTransactedObject(SysTx.Transaction transaction)
             {
-                Debug.Assert(null != transaction, "null transaction?");
+                Debug.Assert(transaction != null, "null transaction?");
 
                 DbConnectionInternal? transactedObject = null;
 
@@ -111,7 +111,7 @@ namespace System.Data.ProviderBase
                     lock (connections)
                     {
                         int i = connections.Count - 1;
-                        if (0 <= i)
+                        if (i >= 0)
                         {
                             transactedObject = connections[i];
                             connections.RemoveAt(i);
@@ -123,8 +123,8 @@ namespace System.Data.ProviderBase
 
             internal void PutTransactedObject(SysTx.Transaction transaction, DbConnectionInternal transactedObject)
             {
-                Debug.Assert(null != transaction, "null transaction?");
-                Debug.Assert(null != transactedObject, "null transactedObject?");
+                Debug.Assert(transaction != null, "null transaction?");
+                Debug.Assert(transactedObject != null, "null transactedObject?");
 
                 TransactedConnectionList? connections;
                 bool txnFound = false;
@@ -142,7 +142,7 @@ namespace System.Data.ProviderBase
                         // synchronize multi-threaded access with GetTransactedObject
                         lock (connections)
                         {
-                            Debug.Assert(0 > connections.IndexOf(transactedObject), "adding to pool a second time?");
+                            Debug.Assert(connections.IndexOf(transactedObject) < 0, "adding to pool a second time?");
 
                             connections.Add(transactedObject);
                         }
@@ -177,7 +177,7 @@ namespace System.Data.ProviderBase
                                 // synchronize multi-threaded access with GetTransactedObject
                                 lock (connections)
                                 {
-                                    Debug.Assert(0 > connections.IndexOf(transactedObject), "adding to pool a second time?");
+                                    Debug.Assert(connections.IndexOf(transactedObject) < 0, "adding to pool a second time?");
 
                                     connections.Add(transactedObject);
                                 }
@@ -194,7 +194,7 @@ namespace System.Data.ProviderBase
                     }
                     finally
                     {
-                        if (null != transactionClone)
+                        if (transactionClone != null)
                         {
                             if (newConnections != null)
                             {
@@ -302,15 +302,15 @@ namespace System.Data.ProviderBase
             {
                 // NOTE: The SafeHandle class guarantees this will be called exactly once.
                 // we know we can touch these other managed objects because of our original DangerousAddRef
-                if (0 != (1 & _releaseFlags))
+                if ((1 & _releaseFlags) != 0)
                 {
                     _poolHandle.DangerousRelease();
                 }
-                if (0 != (2 & _releaseFlags))
+                if ((2 & _releaseFlags) != 0)
                 {
                     _errorHandle.DangerousRelease();
                 }
-                if (0 != (4 & _releaseFlags))
+                if ((4 & _releaseFlags) != 0)
                 {
                     _creationHandle.DangerousRelease();
                 }
@@ -377,9 +377,9 @@ namespace System.Data.ProviderBase
                             DbConnectionPoolIdentity identity)
         {
             Debug.Assert(ADP.IsWindowsNT, "Attempting to construct a connection pool on Win9x?");
-            Debug.Assert(null != connectionPoolGroup, "null connectionPoolGroup");
+            Debug.Assert(connectionPoolGroup != null, "null connectionPoolGroup");
 
-            if ((null != identity) && identity.IsRestricted)
+            if ((identity != null) && identity.IsRestricted)
             {
                 throw ADP.InternalError(ADP.InternalErrorCode.AttemptingToPoolOnRestrictedToken);
             }
@@ -449,7 +449,7 @@ namespace System.Data.ProviderBase
         {
             get
             {
-                if (State.Running != _state) // don't allow connection create when not running.
+                if (_state != State.Running) // don't allow connection create when not running.
                     return false;
 
                 int totalObjects = Count;
@@ -470,7 +470,7 @@ namespace System.Data.ProviderBase
 
         internal bool IsRunning
         {
-            get { return State.Running == _state; }
+            get { return _state == State.Running; }
         }
 
         private int MaxPoolSize
@@ -505,7 +505,7 @@ namespace System.Data.ProviderBase
 
         private bool UsingIntegrateSecurity
         {
-            get { return (null != _identity && DbConnectionPoolIdentity.NoIdentity != _identity); }
+            get { return (_identity != null && _identity != DbConnectionPoolIdentity.NoIdentity); }
         }
 
         private void CleanupCallback(object? state)
@@ -627,7 +627,7 @@ namespace System.Data.ProviderBase
                 {
                     obj = _objectList[i];
 
-                    if (null != obj)
+                    if (obj != null)
                     {
                         obj.DoNotPoolThisConnection();
                     }
@@ -667,7 +667,7 @@ namespace System.Data.ProviderBase
             try
             {
                 newObj = _connectionFactory.CreatePooledConnection(this, owningObject, _connectionPoolGroup.ConnectionOptions, _connectionPoolGroup.PoolKey, userOptions);
-                if (null == newObj)
+                if (newObj == null)
                 {
                     throw ADP.InternalError(ADP.InternalErrorCode.CreateObjectReturnedNull);    // CreateObject succeeded, but null object
                 }
@@ -747,7 +747,7 @@ namespace System.Data.ProviderBase
 
                 Debug.Assert(timerIsNotDisposed, "ErrorCallback timer has been disposed");
 
-                if (30000 < _errorWait)
+                if (_errorWait > 30000)
                 {
                     _errorWait = 60000;
                 }
@@ -822,7 +822,7 @@ namespace System.Data.ProviderBase
                             // thread.
 
                             SysTx.Transaction? transaction = obj.EnlistedTransaction;
-                            if (null != transaction)
+                            if (transaction != null)
                             {
                                 // NOTE: we're not locking on _state, so it's possible that its
                                 //   value could change between the conditional check and here.
@@ -1117,7 +1117,7 @@ namespace System.Data.ProviderBase
                 obj = GetFromTransactedPool(out transaction);
             }
 
-            if (null == obj)
+            if (obj == null)
             {
                 Interlocked.Increment(ref _waitCount);
                 uint waitHandleCount = allowCreate ? 3u : 2u;
@@ -1139,7 +1139,7 @@ namespace System.Data.ProviderBase
                         RuntimeHelpers.PrepareConstrainedRegions();
                         try
                         {
-                            Debug.Assert(2 == waitHandleCount || 3 == waitHandleCount, "unexpected waithandle count");
+                            Debug.Assert(waitHandleCount == 2 || waitHandleCount == 3, "unexpected waithandle count");
                         }
                         finally
                         {
@@ -1178,7 +1178,7 @@ namespace System.Data.ProviderBase
                                 }
                                 catch
                                 {
-                                    if (null == obj)
+                                    if (obj == null)
                                     {
                                         Interlocked.Decrement(ref _waitCount);
                                     }
@@ -1188,13 +1188,13 @@ namespace System.Data.ProviderBase
                                 {
                                     // ensure that we release this waiter, regardless
                                     // of any exceptions that may be thrown.
-                                    if (null != obj)
+                                    if (obj != null)
                                     {
                                         Interlocked.Decrement(ref _waitCount);
                                     }
                                 }
 
-                                if (null == obj)
+                                if (obj == null)
                                 {
                                     // If we were not able to create an object, check to see if
                                     // we reached MaxPoolSize.  If so, we will no longer wait on
@@ -1203,7 +1203,7 @@ namespace System.Data.ProviderBase
 
                                     // BUG - if we receive the CreationHandle midway into the wait
                                     // period and re-wait, we will be waiting on the full period
-                                    if (Count >= MaxPoolSize && 0 != MaxPoolSize)
+                                    if (Count >= MaxPoolSize && MaxPoolSize != 0)
                                     {
                                         if (!ReclaimEmancipatedObjects())
                                         {
@@ -1272,10 +1272,10 @@ namespace System.Data.ProviderBase
                     }
                     finally
                     {
-                        if (CREATION_HANDLE == waitResult)
+                        if (waitResult == CREATION_HANDLE)
                         {
                             int result = SafeNativeMethods.ReleaseSemaphore(_waitHandles.CreationHandle.DangerousGetHandle(), 1, IntPtr.Zero);
-                            if (0 == result)
+                            if (result == 0)
                             { // failure case
                                 releaseSemaphoreResult = Marshal.GetHRForLastWin32Error();
                             }
@@ -1285,14 +1285,14 @@ namespace System.Data.ProviderBase
                             _waitHandles.DangerousRelease();
                         }
                     }
-                    if (0 != releaseSemaphoreResult)
+                    if (releaseSemaphoreResult != 0)
                     {
                         Marshal.ThrowExceptionForHR(releaseSemaphoreResult); // will only throw if (hresult < 0)
                     }
-                } while (null == obj);
+                } while (obj == null);
             }
 
-            if (null != obj)
+            if (obj != null)
             {
                 PrepareConnection(owningObject, obj, transaction);
             }
@@ -1370,7 +1370,7 @@ namespace System.Data.ProviderBase
             //  checked bits.  The assert is benign, so we're commenting it out.
             //Debug.Assert(obj != null, "GetFromGeneralPool called with nothing in the pool!");
 
-            if (null != obj)
+            if (obj != null)
             {
                 PerformanceCounters.NumberOfFreeConnections.Decrement();
             }
@@ -1382,11 +1382,11 @@ namespace System.Data.ProviderBase
             transaction = ADP.GetCurrentTransaction();
             DbConnectionInternal? obj = null;
 
-            if (null != transaction && null != _transactedConnectionPool)
+            if (transaction != null && _transactedConnectionPool != null)
             {
                 obj = _transactedConnectionPool.GetTransactedObject(transaction);
 
-                if (null != obj)
+                if (obj != null)
                 {
                     PerformanceCounters.NumberOfFreeConnections.Decrement();
 
@@ -1417,7 +1417,7 @@ namespace System.Data.ProviderBase
             // called by pooler to ensure pool requests are currently being satisfied -
             // creation mutex has not been obtained
 
-            if (State.Running == _state)
+            if (_state == State.Running)
             {
                 // in case WaitForPendingOpen ever failed with no subsequent OpenAsync calls,
                 // start it back up again
@@ -1464,7 +1464,7 @@ namespace System.Data.ProviderBase
                             {
                                 waitResult = SafeNativeMethods.WaitForSingleObjectEx(_waitHandles.CreationHandle.DangerousGetHandle(), timeout, false);
                             }
-                            if (WAIT_OBJECT_0 == waitResult)
+                            if (waitResult == WAIT_OBJECT_0)
                             {
                                 DbConnectionInternal newObj;
 
@@ -1478,7 +1478,7 @@ namespace System.Data.ProviderBase
 
                                         // We do not need to check error flag here, since we know if
                                         // CreateObject returned null, we are in error case.
-                                        if (null != newObj)
+                                        if (newObj != null)
                                         {
                                             PutNewObject(newObj);
                                         }
@@ -1489,7 +1489,7 @@ namespace System.Data.ProviderBase
                                     }
                                 }
                             }
-                            else if (WAIT_TIMEOUT == waitResult)
+                            else if (waitResult == WAIT_TIMEOUT)
                             {
                                 // do not wait forever and potential block this worker thread
                                 // instead wait for a period of time and just requeue to try again
@@ -1514,7 +1514,7 @@ namespace System.Data.ProviderBase
                         }
                         finally
                         {
-                            if (WAIT_OBJECT_0 == waitResult)
+                            if (waitResult == WAIT_OBJECT_0)
                             {
                                 // reuse waitResult and ignore its value
                                 waitResult = SafeNativeMethods.ReleaseSemaphore(_waitHandles.CreationHandle.DangerousGetHandle(), 1, IntPtr.Zero);
@@ -1531,7 +1531,7 @@ namespace System.Data.ProviderBase
 
         internal void PutNewObject(DbConnectionInternal obj)
         {
-            Debug.Assert(null != obj, "why are we adding a null object to the pool?");
+            Debug.Assert(obj != null, "why are we adding a null object to the pool?");
 
             // When another thread is clearing this pool, it
             // will set _cannotBePooled for all connections in this pool without prejudice which
@@ -1547,7 +1547,7 @@ namespace System.Data.ProviderBase
 
         internal void PutObject(DbConnectionInternal obj, object owningObject)
         {
-            Debug.Assert(null != obj, "null obj?");
+            Debug.Assert(obj != null, "null obj?");
 
             PerformanceCounters.SoftDisconnectsPerSecond.Increment();
 
@@ -1575,7 +1575,7 @@ namespace System.Data.ProviderBase
 
         internal void PutObjectFromTransactedPool(DbConnectionInternal obj)
         {
-            Debug.Assert(null != obj, "null pooledObject?");
+            Debug.Assert(obj != null, "null pooledObject?");
             Debug.Assert(obj.EnlistedTransaction == null, "pooledObject is still enlisted?");
 
             // called by the transacted connection pool , once it's removed the
@@ -1600,7 +1600,7 @@ namespace System.Data.ProviderBase
 
         private void QueuePoolCreateRequest()
         {
-            if (State.Running == _state)
+            if (_state == State.Running)
             {
                 // Make sure we're at quota by posting a callback to the threadpool.
                 ThreadPool.QueueUserWorkItem(_poolCreateRequest);
@@ -1622,7 +1622,7 @@ namespace System.Data.ProviderBase
                 {
                     DbConnectionInternal obj = _objectList[i];
 
-                    if (null != obj)
+                    if (obj != null)
                     {
                         bool locked = false;
 
@@ -1688,7 +1688,7 @@ namespace System.Data.ProviderBase
             // deactivate timer callbacks
             Timer? t = _cleanupTimer;
             _cleanupTimer = null;
-            if (null != t)
+            if (t != null)
             {
                 t.Dispose();
             }
@@ -1706,7 +1706,7 @@ namespace System.Data.ProviderBase
             }
             else
             {
-                if ((oldConnection != null) || (Count < MaxPoolSize) || (0 == MaxPoolSize))
+                if ((oldConnection != null) || (Count < MaxPoolSize) || (MaxPoolSize == 0))
                 {
                     // If we have an odd number of total objects, reclaim any dead objects.
                     // If we did not find any objects to reclaim, create a new one.

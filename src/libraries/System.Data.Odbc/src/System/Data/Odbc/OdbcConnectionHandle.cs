@@ -22,11 +22,11 @@ namespace System.Data.Odbc
 
         internal OdbcConnectionHandle(OdbcConnection connection, OdbcConnectionString constr, OdbcEnvironmentHandle environmentHandle) : base(ODBC32.SQL_HANDLE.DBC, environmentHandle)
         {
-            if (null == connection)
+            if (connection == null)
             {
                 throw ADP.ArgumentNull(nameof(connection));
             }
-            if (null == constr)
+            if (constr == null)
             {
                 throw ADP.ArgumentNull(nameof(constr));
             }

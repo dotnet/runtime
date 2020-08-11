@@ -864,7 +864,7 @@ namespace System.IO.Ports
 
             // This sidesteps race conditions, avoids memory corruption after freeing the
             // NativeOverlapped class or GCHandle twice.
-            if (1 == Interlocked.CompareExchange(ref afsar._EndXxxCalled, 1, 0))
+            if (Interlocked.CompareExchange(ref afsar._EndXxxCalled, 1, 0) == 1)
                 InternalResources.EndReadCalledTwice();
 
             bool failed = false;
@@ -944,7 +944,7 @@ namespace System.IO.Ports
 
             // This sidesteps race conditions, avoids memory corruption after freeing the
             // NativeOverlapped class or GCHandle twice.
-            if (1 == Interlocked.CompareExchange(ref afsar._EndXxxCalled, 1, 0))
+            if (Interlocked.CompareExchange(ref afsar._EndXxxCalled, 1, 0) == 1)
                 InternalResources.EndWriteCalledTwice();
 
             // Obtain the WaitHandle, but don't use public property in case we

@@ -21,7 +21,7 @@ namespace System.Data.ProviderBase
 
         public BasicFieldNameLookup(string[] fieldNames)
         {
-            if (null == fieldNames)
+            if (fieldNames == null)
             {
                 throw ADP.ArgumentNull(nameof(fieldNames));
             }
@@ -53,7 +53,7 @@ namespace System.Data.ProviderBase
 
         public int GetOrdinal(string fieldName)
         {
-            if (null == fieldName)
+            if (fieldName == null)
             {
                 throw ADP.ArgumentNull(nameof(fieldName));
             }
@@ -67,7 +67,7 @@ namespace System.Data.ProviderBase
 
         public int IndexOfName(string fieldName)
         {
-            if (null == _fieldNameLookup)
+            if (_fieldNameLookup == null)
             {
                 GenerateLookup();
             }
@@ -79,7 +79,7 @@ namespace System.Data.ProviderBase
 
         public int IndexOf(string fieldName)
         {
-            if (null == _fieldNameLookup)
+            if (_fieldNameLookup == null)
             {
                 GenerateLookup();
             }
@@ -106,7 +106,7 @@ namespace System.Data.ProviderBase
 
         private int LinearIndexOf(string fieldName, CompareOptions compareOptions)
         {
-            if (null == _compareInfo)
+            if (_compareInfo == null)
             {
                 _compareInfo = GetCompareInfo();
             }
@@ -114,7 +114,7 @@ namespace System.Data.ProviderBase
             int length = _fieldNames.Length;
             for (int i = 0; i < length; ++i)
             {
-                if (0 == _compareInfo.Compare(fieldName, _fieldNames[i], compareOptions))
+                if (_compareInfo.Compare(fieldName, _fieldNames[i], compareOptions) == 0)
                 {
                     _fieldNameLookup![fieldName] = i; // add an exact match for the future
                     return i;
@@ -130,7 +130,7 @@ namespace System.Data.ProviderBase
             Dictionary<string, int> hash = new Dictionary<string, int>(length);
 
             // via case sensitive search, first match with lowest ordinal matches
-            for (int i = length - 1; 0 <= i; --i)
+            for (int i = length - 1; i >= 0; --i)
             {
                 string fieldName = _fieldNames[i];
                 hash[fieldName] = i;

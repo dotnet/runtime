@@ -64,7 +64,7 @@ namespace System.Reflection.TypeLoading
                     }
                 }
 
-                if (0 != (Attributes & FieldAttributes.HasFieldMarshal))
+                if ((Attributes & FieldAttributes.HasFieldMarshal) != 0)
                 {
                     CustomAttributeData? cad = CustomAttributeHelpers.TryComputeMarshalAsCustomAttributeData(ComputeMarshalAsAttribute, Loader);
                     if (cad != null)

@@ -10,7 +10,7 @@ namespace System.Reflection.Context.Delegation
     {
         public DelegatingModule(Module module)
         {
-            Debug.Assert(null != module);
+            Debug.Assert(module != null);
 
             UnderlyingModule = module;
         }

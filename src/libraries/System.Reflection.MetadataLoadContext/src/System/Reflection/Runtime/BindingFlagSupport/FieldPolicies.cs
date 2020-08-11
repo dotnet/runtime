@@ -27,7 +27,7 @@ namespace System.Reflection.Runtime.BindingFlagSupport
         {
             FieldAttributes fieldAttributes = member.Attributes;
             visibility = (MethodAttributes)(fieldAttributes & FieldAttributes.FieldAccessMask);
-            isStatic = (0 != (fieldAttributes & FieldAttributes.Static));
+            isStatic = ((fieldAttributes & FieldAttributes.Static) != 0);
             isVirtual = false;
             isNewSlot = false;
         }

@@ -40,7 +40,7 @@ namespace System.Data.Odbc
             }
             set
             {
-                Debug.Assert(null == _connectionHandle, "reopening a connection?");
+                Debug.Assert(_connectionHandle == null, "reopening a connection?");
                 _connectionHandle = value;
             }
         }
@@ -145,7 +145,7 @@ namespace System.Data.Odbc
         {
             get
             {
-                Debug.Assert(null != this.PoolGroup, "PoolGroup must never be null when accessing ProviderInfo");
+                Debug.Assert(this.PoolGroup != null, "PoolGroup must never be null when accessing ProviderInfo");
                 return (OdbcConnectionPoolGroupProviderInfo)this.PoolGroup.ProviderInfo!;
             }
         }
@@ -171,7 +171,7 @@ namespace System.Data.Odbc
             get
             {
                 OdbcTransaction? result = null;
-                if (null != _weakTransaction)
+                if (_weakTransaction != null)
                 {
                     result = ((OdbcTransaction?)_weakTransaction.Target);
                 }
@@ -182,7 +182,7 @@ namespace System.Data.Odbc
             {
                 _weakTransaction = null;
 
-                if (null != value)
+                if (value != null)
                 {
                     _weakTransaction = new WeakReference((OdbcTransaction)value);
                 }
@@ -271,7 +271,7 @@ namespace System.Data.Odbc
                 string quoteCharString;
                 quoteCharString = GetInfoStringUnhandled(ODBC32.SQL_INFO.IDENTIFIER_QUOTE_CHAR)!;
                 Debug.Assert((quoteCharString.Length <= 1), "Can't handle multichar quotes");
-                ProviderInfo.QuoteChar = (1 == quoteCharString.Length) ? quoteCharString : "\0";
+                ProviderInfo.QuoteChar = (quoteCharString.Length == 1) ? quoteCharString : "\0";
             }
             return ProviderInfo.QuoteChar;
         }
@@ -289,7 +289,7 @@ namespace System.Data.Odbc
         private void RollbackDeadTransaction()
         {
             WeakReference? weak = _weakTransaction;
-            if ((null != weak) && !weak.IsAlive)
+            if ((weak != null) && !weak.IsAlive)
             {
                 _weakTransaction = null;
                 ConnectionHandle!.CompleteTransaction(ODBC32.SQL_ROLLBACK);
@@ -351,17 +351,17 @@ namespace System.Data.Odbc
 
             OdbcConnectionHandle? connectionHandle = _connectionHandle;
 
-            if (null != connectionHandle)
+            if (connectionHandle != null)
             {
                 _connectionHandle = null;
 
                 // If there is a pending transaction, automatically rollback.
                 WeakReference? weak = _weakTransaction;
-                if (null != weak)
+                if (weak != null)
                 {
                     _weakTransaction = null;
                     IDisposable? transaction = weak.Target as OdbcTransaction;
-                    if ((null != transaction) && weak.IsAlive)
+                    if ((transaction != null) && weak.IsAlive)
                     {
                         transaction.Dispose();
                     }
@@ -381,7 +381,7 @@ namespace System.Data.Odbc
             int cbActual = 0;
             byte[] buffer = new byte[100];
             OdbcConnectionHandle? connectionHandle = ConnectionHandle;
-            if (null != connectionHandle)
+            if (connectionHandle != null)
             {
                 ODBC32.RetCode retcode = connectionHandle.GetConnectionAttribute(attribute, buffer, out cbActual);
                 if (buffer.Length + 2 <= cbActual)
@@ -398,7 +398,7 @@ namespace System.Data.Odbc
                 else if (retcode == ODBC32.RetCode.ERROR)
                 {
                     string sqlstate = GetDiagSqlState();
-                    if (("HYC00" == sqlstate) || ("HY092" == sqlstate) || ("IM001" == sqlstate))
+                    if ((sqlstate == "HYC00") || (sqlstate == "HY092") || (sqlstate == "IM001"))
                     {
                         FlagUnsupportedConnectAttr(attribute);
                     }
@@ -414,7 +414,7 @@ namespace System.Data.Odbc
             int cbActual = 0;
             byte[] buffer = new byte[4];
             OdbcConnectionHandle? connectionHandle = ConnectionHandle;
-            if (null != connectionHandle)
+            if (connectionHandle != null)
             {
                 ODBC32.RetCode retcode = connectionHandle.GetConnectionAttribute(attribute, buffer, out cbActual);
 
@@ -427,7 +427,7 @@ namespace System.Data.Odbc
                     if (retcode == ODBC32.RetCode.ERROR)
                     {
                         string sqlstate = GetDiagSqlState();
-                        if (("HYC00" == sqlstate) || ("HY092" == sqlstate) || ("IM001" == sqlstate))
+                        if ((sqlstate == "HYC00") || (sqlstate == "HY092") || (sqlstate == "IM001"))
                         {
                             FlagUnsupportedConnectAttr(attribute);
                         }
@@ -484,7 +484,7 @@ namespace System.Data.Odbc
             short cbActual = 0;
             byte[] buffer = new byte[100];
             OdbcConnectionHandle? connectionHandle = ConnectionHandle;
-            if (null != connectionHandle)
+            if (connectionHandle != null)
             {
                 ODBC32.RetCode retcode = connectionHandle.GetInfo2(info, buffer, out cbActual);
                 if (buffer.Length < cbActual - 2)
@@ -550,10 +550,10 @@ namespace System.Data.Odbc
             {
                 case ODBC32.RetCode.SUCCESS:
                 case ODBC32.RetCode.SUCCESS_WITH_INFO:
-                    Debug.Assert(null == e, "success exception");
+                    Debug.Assert(e == null, "success exception");
                     break;
                 default:
-                    Debug.Assert(null != e, "failure without exception");
+                    Debug.Assert(e != null, "failure without exception");
                     throw e;
             }
         }
@@ -579,7 +579,7 @@ namespace System.Data.Odbc
 
         private void OnInfoMessage(OdbcInfoMessageEventArgs args)
         {
-            if (null != _infoMessageEventHandler)
+            if (_infoMessageEventHandler != null)
             {
                 try
                 {
@@ -604,12 +604,12 @@ namespace System.Data.Odbc
 
         internal OdbcTransaction? SetStateExecuting(string method, OdbcTransaction? transaction)
         { // MDAC 69003
-            if (null != _weakTransaction)
+            if (_weakTransaction != null)
             { // transaction may exist
                 OdbcTransaction? weak = (_weakTransaction.Target as OdbcTransaction);
                 if (transaction != weak)
                 { // transaction doesn't exist
-                    if (null == transaction)
+                    if (transaction == null)
                     { // transaction exists
                         throw ADP.TransactionRequired(method);
                     }
@@ -622,9 +622,9 @@ namespace System.Data.Odbc
                     transaction = null; // MDAC 69264
                 }
             }
-            else if (null != transaction)
+            else if (transaction != null)
             { // no transaction started
-                if (null != transaction.Connection)
+                if (transaction.Connection != null)
                 {
                     // transaction can't have come from this connection
                     throw ADP.TransactionConnectionMismatch();
@@ -640,7 +640,7 @@ namespace System.Data.Odbc
                 state = InternalState;
                 if (ConnectionState.Open != state)
                 {
-                    if (0 != (ConnectionState.Fetching & state))
+                    if ((ConnectionState.Fetching & state) != 0)
                     {
                         throw ADP.OpenReaderExists();
                     }
@@ -780,7 +780,7 @@ namespace System.Data.Odbc
             short fExists;
             Debug.Assert((short)odbcFunction != 0, "SQL_API_ALL_FUNCTIONS is not supported");
             OdbcConnectionHandle? connectionHandle = ConnectionHandle;
-            if (null != connectionHandle)
+            if (connectionHandle != null)
             {
                 retcode = connectionHandle.GetFunctions(odbcFunction, out fExists);
             }
@@ -842,7 +842,7 @@ namespace System.Data.Odbc
             }
             // now we can check if we have already tested that type
             // if not we need to do so
-            if (0 == (ProviderInfo.TestedSQLTypes & (int)sqlcvt))
+            if ((ProviderInfo.TestedSQLTypes & (int)sqlcvt) == 0)
             {
                 int flags;
 
@@ -855,7 +855,7 @@ namespace System.Data.Odbc
 
             // now check if the type is supported and return the result
             //
-            return (0 != (ProviderInfo.SupportedSQLTypes & (int)sqlcvt));
+            return ((ProviderInfo.SupportedSQLTypes & (int)sqlcvt) != 0);
         }
 
         internal bool TestRestrictedSqlBindType(ODBC32.SQL_TYPE sqltype)
@@ -877,7 +877,7 @@ namespace System.Data.Odbc
                     Debug.Fail("Testing that sqltype is currently not supported");
                     return false;
             }
-            return (0 != (ProviderInfo.RestrictedSQLBindTypes & (int)sqlcvt));
+            return ((ProviderInfo.RestrictedSQLBindTypes & (int)sqlcvt) != 0);
         }
 
         // suppress this message - we cannot use SafeHandle here. Also, see notes in the code (VSTFDEVDIV# 560355)
@@ -900,7 +900,7 @@ namespace System.Data.Odbc
 
             RollbackDeadTransaction();
 
-            if ((null != _weakTransaction) && _weakTransaction.IsAlive)
+            if ((_weakTransaction != null) && _weakTransaction.IsAlive)
             { // regression from Dispose/Finalize work
                 throw ADP.ParallelTransactionsNotSupported(this);
             }
@@ -942,7 +942,7 @@ namespace System.Data.Odbc
             { // MDAC 62679
                 throw ADP.EmptyDatabaseName();
             }
-            if (1024 < value.Length * 2 + 2)
+            if (value.Length * 2 + 2 > 1024)
             {
                 throw ADP.DatabaseNameTooLong();
             }

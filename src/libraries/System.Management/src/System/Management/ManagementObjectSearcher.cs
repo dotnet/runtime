@@ -206,12 +206,12 @@ namespace System.Management
         {
             this.scope = ManagementScope._Clone(scope);
 
-            if (null != query)
+            if (query != null)
                 this.query = (ObjectQuery)query.Clone();
             else
                 this.query = new ObjectQuery();
 
-            if (null != options)
+            if (options != null)
                 this.options = (EnumerationOptions)options.Clone();
             else
                 this.options = new EnumerationOptions();
@@ -250,7 +250,7 @@ namespace System.Management
             }
             set
             {
-                if (null != value)
+                if (value != null)
                     scope = (ManagementScope)value.Clone();
                 else
                     throw new ArgumentNullException(nameof(value));
@@ -276,7 +276,7 @@ namespace System.Management
             }
             set
             {
-                if (null != value)
+                if (value != null)
                     query = (ObjectQuery)value.Clone();
                 else
                     throw new ArgumentNullException(nameof(value));
@@ -297,7 +297,7 @@ namespace System.Management
             }
             set
             {
-                if (null != value)
+                if (value != null)
                     options = (EnumerationOptions)value.Clone();
                 else
                     throw new ArgumentNullException(nameof(value));
@@ -402,7 +402,7 @@ namespace System.Management
         /// <param name='watcher'>The watcher that raises events triggered by the operation. </param>
         public void Get(ManagementOperationObserver watcher)
         {
-            if (null == watcher)
+            if (watcher == null)
                 throw new ArgumentNullException(nameof(watcher));
 
             Initialize();
@@ -486,7 +486,7 @@ namespace System.Management
         private void Initialize()
         {
             //If the query is not set yet we can't do it
-            if (null == query)
+            if (query == null)
                 throw new InvalidOperationException();
 
             //If we're not connected yet, this is the time to do it...
@@ -494,7 +494,7 @@ namespace System.Management
             lock (this)
 #pragma warning restore CA2002
             {
-                if (null == scope)
+                if (scope == null)
                     scope = ManagementScope._Clone(null);
             }
 

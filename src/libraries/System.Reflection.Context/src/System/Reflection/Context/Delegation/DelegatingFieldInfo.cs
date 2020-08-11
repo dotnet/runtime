@@ -11,7 +11,7 @@ namespace System.Reflection.Context.Delegation
     {
         public DelegatingFieldInfo(FieldInfo field)
         {
-            Debug.Assert(null != field);
+            Debug.Assert(field != null);
 
             UnderlyingField = field;
         }

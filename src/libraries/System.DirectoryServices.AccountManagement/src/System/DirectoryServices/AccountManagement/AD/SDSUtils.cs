@@ -43,7 +43,7 @@ namespace System.DirectoryServices.AccountManagement
             {
                 p = GroupPrincipal.MakeGroup(owningContext);
             }
-            else if (null == principalType ||
+            else if (principalType == null ||
                          typeof(AuthenticablePrincipal) == principalType ||
                          typeof(Principal) == principalType)
             {
@@ -101,7 +101,7 @@ namespace System.DirectoryServices.AccountManagement
             {
                 p = GroupPrincipal.MakeGroup(owningContext);
             }
-            else if (null == principalType ||
+            else if (principalType == null ||
                          typeof(AuthenticablePrincipal) == principalType ||
                          typeof(Principal) == principalType)
             {

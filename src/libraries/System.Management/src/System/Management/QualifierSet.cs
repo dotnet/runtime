@@ -177,7 +177,7 @@ namespace System.Management
         /// <param name='index'>The index from which to start copying. </param>
         public void CopyTo(Array array, int index)
         {
-            if (null == array)
+            if (array == null)
                 throw new ArgumentNullException(nameof(array));
 
             if ((index < array.GetLowerBound(0)) || (index > array.GetUpperBound(0)))
@@ -410,7 +410,7 @@ namespace System.Management
         {
             get
             {
-                if (null == qualifierName)
+                if (qualifierName == null)
                     throw new ArgumentNullException(nameof(qualifierName));
 
                 return new QualifierData(parent, propertyOrMethodName, qualifierName, qualifierSetType);

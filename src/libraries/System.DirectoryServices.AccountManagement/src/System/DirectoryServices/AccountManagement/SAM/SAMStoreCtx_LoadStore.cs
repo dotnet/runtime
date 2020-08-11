@@ -109,7 +109,7 @@ namespace System.DirectoryServices.AccountManagement
 
                     foreach (PropertyMappingTableEntry propertyEntry in propertyEntries)
                     {
-                        if (null != propertyEntry.papiToWinNTConverter)
+                        if (propertyEntry.papiToWinNTConverter != null)
                         {
                             if (p.GetChangeStatusForProperty(propertyEntry.propertyName))
                             {
@@ -256,7 +256,7 @@ namespace System.DirectoryServices.AccountManagement
             {
                 foreach (PropertyMappingTableEntry entry in entries)
                 {
-                    if (null != entry.winNTToPapiConverter)
+                    if (entry.winNTToPapiConverter != null)
                     {
                         GlobalDebug.WriteLineIf(GlobalDebug.Info, "SAMStoreCtx", "Load_PropertyName: loading {0}", entry.propertyName);
                         entry.winNTToPapiConverter(de, entry.suggestedWinNTPropertyName, p, entry.propertyName);

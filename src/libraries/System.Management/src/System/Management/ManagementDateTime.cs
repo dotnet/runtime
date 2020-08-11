@@ -142,42 +142,42 @@ namespace System.Management
             try
             {
                 var tempString = dmtf.Substring(0, 4);
-                if (("****" != tempString))
+                if ((tempString != "****"))
                 {
                     year = int.Parse(tempString, frmInt32);
                 }
                 tempString = dmtf.Substring(4, 2);
-                if (("**" != tempString))
+                if ((tempString != "**"))
                 {
                     month = int.Parse(tempString, frmInt32);
                 }
                 tempString = dmtf.Substring(6, 2);
-                if (("**" != tempString))
+                if ((tempString != "**"))
                 {
                     day = int.Parse(tempString, frmInt32);
                 }
                 tempString = dmtf.Substring(8, 2);
-                if (("**" != tempString))
+                if ((tempString != "**"))
                 {
                     hour = int.Parse(tempString, frmInt32);
                 }
                 tempString = dmtf.Substring(10, 2);
-                if (("**" != tempString))
+                if ((tempString != "**"))
                 {
                     minute = int.Parse(tempString, frmInt32);
                 }
                 tempString = dmtf.Substring(12, 2);
-                if (("**" != tempString))
+                if ((tempString != "**"))
                 {
                     second = int.Parse(tempString, frmInt32);
                 }
                 tempString = dmtf.Substring(15, 6);
-                if (("******" != tempString))
+                if ((tempString != "******"))
                 {
                     ticks = (long.Parse(tempString, (IFormatProvider)CultureInfo.InvariantCulture.GetFormat(typeof(long)))) * (TimeSpan.TicksPerMillisecond / 1000);
                 }
                 tempString = dmtf.Substring(22, 3);
-                if (("***" != tempString))
+                if ((tempString != "***"))
                 {
                     tempString = dmtf.Substring(21, 4);
                     utcOffset = int.Parse(tempString, frmInt32);

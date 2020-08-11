@@ -216,7 +216,7 @@ namespace System.Reflection.Context.Virtual
                 {
                     method = GetSetMethod(true);
 
-                    Debug.Assert(null != method);
+                    Debug.Assert(method != null);
                     _indexedParameters = VirtualParameter.CloneParameters(this, method.GetParameters(), skipLastParameter: true);
                 }
             }

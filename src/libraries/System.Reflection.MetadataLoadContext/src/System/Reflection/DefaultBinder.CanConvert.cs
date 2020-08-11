@@ -17,7 +17,7 @@ namespace System
             Primitives widerCodes = s_primitiveConversions[(int)(Type.GetTypeCode(source))];
             Primitives targetCode = (Primitives)(1 << (int)(Type.GetTypeCode(target)));
 
-            return 0 != (widerCodes & targetCode);
+            return (widerCodes & targetCode) != 0;
         }
 
         [Flags]

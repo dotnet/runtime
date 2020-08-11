@@ -64,7 +64,7 @@ namespace System.Reflection.TypeLoading
                     yield return cad;
                 }
 
-                if (0 != (Attributes & TypeAttributes.Import))
+                if ((Attributes & TypeAttributes.Import) != 0)
                 {
                     ConstructorInfo? ci = Loader.TryGetComImportCtor();
                     if (ci != null)

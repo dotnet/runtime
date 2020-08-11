@@ -24,7 +24,7 @@ namespace System.DirectoryServices.AccountManagement
 
         public void LastBadPasswordAttempt(DateTime lastAttempt, MatchType match)
         {
-            if (null == _badPasswordAttemptVal)
+            if (_badPasswordAttemptVal == null)
             {
                 _badPasswordAttemptVal = new QbeMatchType(lastAttempt, match);
             }
@@ -41,7 +41,7 @@ namespace System.DirectoryServices.AccountManagement
 
         public void AccountExpirationDate(DateTime expirationTime, MatchType match)
         {
-            if (null == _expirationTimeVal)
+            if (_expirationTimeVal == null)
             {
                 _expirationTimeVal = new QbeMatchType(expirationTime, match);
             }
@@ -58,7 +58,7 @@ namespace System.DirectoryServices.AccountManagement
 
         public void AccountLockoutTime(DateTime lockoutTime, MatchType match)
         {
-            if (null == _lockoutTimeVal)
+            if (_lockoutTimeVal == null)
             {
                 _lockoutTimeVal = new QbeMatchType(lockoutTime, match);
             }
@@ -75,7 +75,7 @@ namespace System.DirectoryServices.AccountManagement
 
         public void BadLogonCount(int badLogonCount, MatchType match)
         {
-            if (null == _badLogonCountVal)
+            if (_badLogonCountVal == null)
             {
                 _badLogonCountVal = new QbeMatchType(badLogonCount, match);
             }
@@ -92,7 +92,7 @@ namespace System.DirectoryServices.AccountManagement
 
         public void LastLogonTime(DateTime logonTime, MatchType match)
         {
-            if (null == _logonTimeVal)
+            if (_logonTimeVal == null)
             {
                 _logonTimeVal = new QbeMatchType(logonTime, match);
             }
@@ -109,7 +109,7 @@ namespace System.DirectoryServices.AccountManagement
 
         public void LastPasswordSetTime(DateTime passwordSetTime, MatchType match)
         {
-            if (null == _passwordSetTimeVal)
+            if (_passwordSetTimeVal == null)
             {
                 _passwordSetTimeVal = new QbeMatchType(passwordSetTime, match);
             }

@@ -11,7 +11,7 @@ namespace System.Reflection.Context.Delegation
     {
         public DelegatingConstructorInfo(ConstructorInfo constructor)
         {
-            Debug.Assert(null != constructor);
+            Debug.Assert(constructor != null);
 
             UnderlyingConstructor = constructor;
         }

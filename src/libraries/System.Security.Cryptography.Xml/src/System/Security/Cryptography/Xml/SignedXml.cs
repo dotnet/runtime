@@ -970,7 +970,7 @@ namespace System.Security.Cryptography.Xml
                     result = result | (a[i] - b[i]);
             }
 
-            return (0 == result);
+            return (result == 0);
         }
 
         // If we have a signature format validation callback, check to see if this signature's format (not

@@ -223,7 +223,7 @@ namespace Internal.Cryptography.Pal
                 throw ErrorCode.NTE_BAD_PUBLIC_KEY.ToCryptographicException();
 
             bw.Write(q);
-            if (DSS_Q_LEN > cb)
+            if (cb < DSS_Q_LEN)
                 bw.Write(new byte[DSS_Q_LEN - cb]);
 
             // rgbG[cbKey]

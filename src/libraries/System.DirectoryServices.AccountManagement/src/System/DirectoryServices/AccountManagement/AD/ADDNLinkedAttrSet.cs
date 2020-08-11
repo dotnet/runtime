@@ -54,7 +54,7 @@ namespace System.DirectoryServices.AccountManagement
             _storeCtx = storeCtx;
             _originalStoreCtx = storeCtx;
 
-            if (null != members)
+            if (members != null)
             {
                 foreach (IEnumerable enumerator in members)
                 {
@@ -109,7 +109,7 @@ namespace System.DirectoryServices.AccountManagement
             if (primaryGroupDN == null)
                 _returnedPrimaryGroup = true;    // so we don't bother trying to return the primary group
 
-            if (null != membersSearcher)
+            if (membersSearcher != null)
             {
                 foreach (DirectorySearcher ds in membersSearcher)
                 {
@@ -402,7 +402,7 @@ namespace System.DirectoryServices.AccountManagement
 
             do
             {
-                if (null == _members)
+                if (_members == null)
                 {
                     if (_membersQueue.Count == 0)
                     {
@@ -672,7 +672,7 @@ namespace System.DirectoryServices.AccountManagement
 
                     // sidIssuerName is null only if SID was not resolved
                     // return a unknown principal back
-                    if (null == foreignSid.sidIssuerName)
+                    if (foreignSid.sidIssuerName == null)
                     {
                         // create and return the unknown principal if it is not yet present in usersVisited
                         if (!_usersVisited.ContainsKey(foreignSid.name))
@@ -729,7 +729,7 @@ namespace System.DirectoryServices.AccountManagement
                                                      (new SecurityIdentifier(Utils.ConvertNativeSidToByteArray(_foreignMembersToReturn[0].pSid), 0)).ToString(),
                                                      DateTime.UtcNow);
 
-                    if (null == foreignPrincipal)
+                    if (foreignPrincipal == null)
                     {
                         GlobalDebug.WriteLineIf(GlobalDebug.Warn, "ADDNLinkedAttrSet", "MoveNextForeign: no matching principal");
                         throw new PrincipalOperationException(SR.ADStoreCtxFailedFindCrossStoreTarget);
@@ -950,7 +950,7 @@ namespace System.DirectoryServices.AccountManagement
                 _membersEnum = null;
 
                 // replace all items in the queue with the originals and reset them.
-                if (null != _originalMembers)
+                if (_originalMembers != null)
                 {
                     _membersQueue.Clear();
                     foreach (IEnumerable ie in _originalMembers)
@@ -972,7 +972,7 @@ namespace System.DirectoryServices.AccountManagement
                 _foreignMembersCurrentGroup.Clear();
                 _fakePrincipalMembers.Clear();
 
-                if (null != _foreignMembersToReturn)
+                if (_foreignMembersToReturn != null)
                     _foreignMembersToReturn.Clear();
 
                 _currentForeignPrincipal = null;
@@ -987,7 +987,7 @@ namespace System.DirectoryServices.AccountManagement
                     _queryMembersResults = null;
                 }
 
-                if (null != _currentMembersSearcher)
+                if (_currentMembersSearcher != null)
                 {
                     _currentMembersSearcher.Dispose();
                     _currentMembersSearcher = null;
@@ -1000,7 +1000,7 @@ namespace System.DirectoryServices.AccountManagement
                     _memberSearchResults = null;
                 }
 
-                if (null != _memberSearchersQueue)
+                if (_memberSearchersQueue != null)
                 {
                     foreach (DirectorySearcher ds in _memberSearchersQueue)
                     {
@@ -1009,7 +1009,7 @@ namespace System.DirectoryServices.AccountManagement
 
                     _memberSearchersQueue.Clear();
 
-                    if (null != _memberSearchersQueueOriginal)
+                    if (_memberSearchersQueueOriginal != null)
                     {
                         foreach (DirectorySearcher ds in _memberSearchersQueueOriginal)
                         {
@@ -1050,7 +1050,7 @@ namespace System.DirectoryServices.AccountManagement
             _membersEnum = null;
 
             // Copy all enumerators in the queue over to the bookmark queue.
-            if (null != _membersQueue)
+            if (_membersQueue != null)
             {
                 bookmark.membersQueue = new Queue<IEnumerable>(_membersQueue.Count);
                 foreach (IEnumerable ie in _membersQueue)
@@ -1060,7 +1060,7 @@ namespace System.DirectoryServices.AccountManagement
             }
 
             // Refill the original queue with the original enumerators and reset them
-            if (null != _membersQueue)
+            if (_membersQueue != null)
             {
                 _membersQueue.Clear();
 
@@ -1079,7 +1079,7 @@ namespace System.DirectoryServices.AccountManagement
 
             _expansionMode = _originalExpansionMode;
 
-            if (null != _currentMembersSearcher)
+            if (_currentMembersSearcher != null)
             {
                 _currentMembersSearcher.Dispose();
                 _currentMembersSearcher = null;
@@ -1115,7 +1115,7 @@ namespace System.DirectoryServices.AccountManagement
             _memberSearchResults = null;
             _memberSearchResultsEnumerator = null;
 
-            if (null != _memberSearchersQueue)
+            if (_memberSearchersQueue != null)
             {
                 bookmark.memberSearcherQueue = new Queue<DirectorySearcher>(_memberSearchersQueue.Count);
 
@@ -1125,7 +1125,7 @@ namespace System.DirectoryServices.AccountManagement
                 }
             }
 
-            if (null != _memberSearchersQueueOriginal)
+            if (_memberSearchersQueueOriginal != null)
             {
                 _memberSearchersQueue.Clear();
 
@@ -1174,11 +1174,11 @@ namespace System.DirectoryServices.AccountManagement
             _membersEnum = adBookmark.membersEnum;
 
             // Replace the enumerator queue elements
-            if (null != _membersQueue)
+            if (_membersQueue != null)
             {
                 _membersQueue.Clear();
 
-                if (null != adBookmark.membersQueue)
+                if (adBookmark.membersQueue != null)
                 {
                     foreach (IEnumerable ie in adBookmark.membersQueue)
                     {
@@ -1187,7 +1187,7 @@ namespace System.DirectoryServices.AccountManagement
                 }
             }
 
-            if (null != _memberSearchersQueue)
+            if (_memberSearchersQueue != null)
             {
                 foreach (DirectorySearcher ds in _memberSearchersQueue)
                 {
@@ -1196,7 +1196,7 @@ namespace System.DirectoryServices.AccountManagement
 
                 _memberSearchersQueue.Clear();
 
-                if (null != adBookmark.memberSearcherQueue)
+                if (adBookmark.memberSearcherQueue != null)
                 {
                     foreach (DirectorySearcher ds in adBookmark.memberSearcherQueue)
                     {
@@ -1357,11 +1357,11 @@ namespace System.DirectoryServices.AccountManagement
         {
             string userSuppliedServername = _storeCtx.UserSuppliedServerName;
 
-            if (null == _pathCracker)
+            if (_pathCracker == null)
             {
                 lock (_pathLock)
                 {
-                    if (null == _pathCracker)
+                    if (_pathCracker == null)
                     {
                         UnsafeNativeMethods.Pathname pathNameObj = new UnsafeNativeMethods.Pathname();
                         _pathCracker = (UnsafeNativeMethods.IADsPathname)pathNameObj;

@@ -16,7 +16,7 @@ namespace System.Data.Common
             get
             {
                 TraceSwitch? dataSchema = _dataSchema;
-                if (null == dataSchema)
+                if (dataSchema == null)
                 {
                     _dataSchema = dataSchema = new TraceSwitch("Data.Schema", "Enable tracing for schema actions.");
                 }

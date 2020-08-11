@@ -24,7 +24,7 @@ namespace System.Net.Security
         {
             // In certain scenarios (e.g. server querying for a client cert), the
             // input certificate may be invalid and this is OK
-            if ((null != certificate) && !certificate.IsInvalid)
+            if ((certificate != null) && !certificate.IsInvalid)
             {
                 bool gotRef = false;
                 certificate.DangerousAddRef(ref gotRef);

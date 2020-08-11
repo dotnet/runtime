@@ -100,7 +100,7 @@ namespace System.Management
             string path = null;
             int status = (int)ManagementStatus.Failed;
 
-            if (null != wbemObject)
+            if (wbemObject != null)
             {
                 int dummy1 = 0, dummy2 = 0;
                 object val = null;
@@ -190,7 +190,7 @@ namespace System.Management
         /// <param name='path'> The object path. </param>
         public ManagementPath(string path)
         {
-            if ((null != path) && (0 < path.Length))
+            if ((path != null) && (path.Length > 0))
                 wmiPath = CreateWbemPath(path);
         }
 
@@ -264,7 +264,7 @@ namespace System.Management
 
         private static void SetWbemPath(IWbemPath wbemPath, string path)
         {
-            if (null != wbemPath)
+            if (wbemPath != null)
             {
                 uint flags = (uint)tag_WBEM_PATH_CREATE_FLAG.WBEMPATH_CREATE_ACCEPT_ALL;
 
@@ -295,7 +295,7 @@ namespace System.Management
         {
             string pathStr = string.Empty;
 
-            if (null != wbemPath)
+            if (wbemPath != null)
             {
                 // Requesting the path from a parser which has
                 // been only given a relative path results in an incorrect
@@ -311,7 +311,7 @@ namespace System.Management
 
                 if (status >= 0)
                 {
-                    if (0 == nCount)
+                    if (nCount == 0)
                         flags = (int)tag_WBEM_GET_TEXT_FLAGS.WBEMPATH_GET_RELATIVE_ONLY;
 
                     // Get the space we need to reserve
@@ -319,7 +319,7 @@ namespace System.Management
 
                     status = wbemPath.GetText_(flags, ref bufLen, null);
 
-                    if (status >= 0 && 0 < bufLen)
+                    if (status >= 0 && bufLen > 0)
                     {
                         char[] pathChars = new char[(int)bufLen];
                         status = wbemPath.GetText_(flags, ref bufLen, pathChars);
@@ -351,12 +351,12 @@ namespace System.Management
 
             try
             {
-                if (null != wmiPath)
+                if (wmiPath != null)
                 {
                     IWbemPathKeyList keyList = null;
                     status = wmiPath.GetKeyList_(out keyList);
 
-                    if (null != keyList)
+                    if (keyList != null)
                     {
                         status = keyList.RemoveAllKeys_(0);
                         if ((status & 0x80000000) == 0)
@@ -498,7 +498,7 @@ namespace System.Management
             {
                 string pathStr = string.Empty;
 
-                if (null != wmiPath)
+                if (wmiPath != null)
                 {
                     // Get the space we need to reserve
                     uint bufLen = 0;
@@ -507,7 +507,7 @@ namespace System.Management
                         ref bufLen,
                         null);
 
-                    if (status >= 0 && 0 < bufLen)
+                    if (status >= 0 && bufLen > 0)
                     {
                         char[] pathChars = new char[(int)bufLen];
                         status = wmiPath.GetText_(
@@ -601,13 +601,13 @@ namespace System.Management
             {
                 string pathStr = string.Empty;
 
-                if (null != wmiPath)
+                if (wmiPath != null)
                 {
 
                     uint uLen = 0;
                     int status = wmiPath.GetServer_(ref uLen, null);
 
-                    if (status >= 0 && 0 < uLen)
+                    if (status >= 0 && uLen > 0)
                     {
                         char[] pathChars = new char[(int)uLen];
                         status = wmiPath.GetServer_(ref uLen, pathChars);
@@ -634,9 +634,9 @@ namespace System.Management
                 string oldValue = Server;
 
                 // Only set if changed
-                if (0 != string.Compare(oldValue, value, StringComparison.OrdinalIgnoreCase))
+                if (string.Compare(oldValue, value, StringComparison.OrdinalIgnoreCase) != 0)
                 {
-                    if (null == wmiPath)
+                    if (wmiPath == null)
                         wmiPath = (IWbemPath)MTAHelper.CreateInMTA(typeof(WbemDefPath)); //new WbemDefPath ();
                     else if (isWbemPathShared)
                     {
@@ -793,7 +793,7 @@ namespace System.Management
         {
             string pathStr = string.Empty;
 
-            if (null != wbemPath)
+            if (wbemPath != null)
             {
                 // Requesting the namespace path from a parser which has
                 // been only given a relative path results in an incorrect
@@ -888,7 +888,7 @@ namespace System.Management
                 string oldValue = ClassName;
 
                 // Only set if changed
-                if (0 != string.Compare(oldValue, value, StringComparison.OrdinalIgnoreCase))
+                if (string.Compare(oldValue, value, StringComparison.OrdinalIgnoreCase) != 0)
                 {
                     // isWbemPathShared handled in internal className property accessor.
                     internalClassName = value;
@@ -904,12 +904,12 @@ namespace System.Management
                 string pathStr = string.Empty;
                 int status = (int)ManagementStatus.NoError;
 
-                if (null != wmiPath)
+                if (wmiPath != null)
                 {
                     uint bufLen = 0;
                     status = wmiPath.GetClassName_(ref bufLen, null);
 
-                    if (status >= 0 && 0 < bufLen)
+                    if (status >= 0 && bufLen > 0)
                     {
                         char[] pathChars = new char[(int)bufLen];
                         status = wmiPath.GetClassName_(ref bufLen, pathChars);
@@ -966,7 +966,7 @@ namespace System.Management
         {
             get
             {
-                if (null == wmiPath)
+                if (wmiPath == null)
                     return false;
 
                 ulong uInfo = 0;
@@ -980,7 +980,7 @@ namespace System.Management
                         Marshal.ThrowExceptionForHR(status, WmiNetUtilsHelper.GetErrorInfo_f());
                 }
 
-                return (0 != (uInfo & (ulong)tag_WBEM_PATH_STATUS_FLAG.WBEMPATH_INFO_IS_CLASS_REF));
+                return ((uInfo & (ulong)tag_WBEM_PATH_STATUS_FLAG.WBEMPATH_INFO_IS_CLASS_REF) != 0);
             }
         }
 
@@ -995,7 +995,7 @@ namespace System.Management
         {
             get
             {
-                if (null == wmiPath)
+                if (wmiPath == null)
                     return false;
 
                 ulong uInfo = 0;
@@ -1009,7 +1009,7 @@ namespace System.Management
                         Marshal.ThrowExceptionForHR(status, WmiNetUtilsHelper.GetErrorInfo_f());
                 }
 
-                return (0 != (uInfo & (ulong)tag_WBEM_PATH_STATUS_FLAG.WBEMPATH_INFO_IS_INST_REF));
+                return ((uInfo & (ulong)tag_WBEM_PATH_STATUS_FLAG.WBEMPATH_INFO_IS_INST_REF) != 0);
             }
         }
 
@@ -1024,7 +1024,7 @@ namespace System.Management
         {
             get
             {
-                if (null == wmiPath)
+                if (wmiPath == null)
                     return false;
 
                 ulong uInfo = 0;
@@ -1038,7 +1038,7 @@ namespace System.Management
                         Marshal.ThrowExceptionForHR(status, WmiNetUtilsHelper.GetErrorInfo_f());
                 }
 
-                return (0 != (uInfo & (ulong)tag_WBEM_PATH_STATUS_FLAG.WBEMPATH_INFO_IS_SINGLETON));
+                return ((uInfo & (ulong)tag_WBEM_PATH_STATUS_FLAG.WBEMPATH_INFO_IS_SINGLETON) != 0);
             }
         }
     }

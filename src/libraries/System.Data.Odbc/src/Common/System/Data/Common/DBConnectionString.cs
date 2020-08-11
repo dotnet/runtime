@@ -64,7 +64,7 @@ namespace System.Data.Common
 
         private DBConnectionString(DbConnectionOptions connectionOptions, string? restrictions, KeyRestrictionBehavior behavior, Dictionary<string, string>? synonyms, bool mustCloneDictionary)
         { // used by DBDataPermission
-            Debug.Assert(null != connectionOptions, "null connectionOptions");
+            Debug.Assert(connectionOptions != null, "null connectionOptions");
             switch (behavior)
             {
                 case KeyRestrictionBehavior.PreventUsage:
@@ -144,7 +144,7 @@ namespace System.Data.Common
 
         internal bool IsEmpty
         {
-            get { return (null == _keychain); }
+            get { return (_keychain == null); }
         }
 
         internal NameValuePair? KeyChain
@@ -157,10 +157,10 @@ namespace System.Data.Common
             get
             {
                 string? restrictions = _restrictions;
-                if (null == restrictions)
+                if (restrictions == null)
                 {
                     string[]? restrictionValues = _restrictionValues;
-                    if ((null != restrictionValues) && (0 < restrictionValues.Length))
+                    if ((restrictionValues != null) && (restrictionValues.Length > 0))
                     {
                         StringBuilder builder = new StringBuilder();
                         for (int i = 0; i < restrictionValues.Length; ++i)
@@ -180,7 +180,7 @@ namespace System.Data.Common
                         restrictions = builder.ToString();
                     }
                 }
-                return ((null != restrictions) ? restrictions : "");
+                return ((restrictions != null) ? restrictions : "");
             }
         }
 
@@ -199,7 +199,7 @@ namespace System.Data.Common
             KeyRestrictionBehavior behavior = _behavior;
             string[]? restrictionValues = null;
 
-            if (null == entry)
+            if (entry == null)
             {
                 //Debug.WriteLine("0 entry AllowNothing");
                 behavior = KeyRestrictionBehavior.AllowOnly;
@@ -284,7 +284,7 @@ namespace System.Data.Common
 
             // verify _hasPassword & _parsetable are in [....] between Everett/Whidbey
             Debug.Assert(!_hasPassword || ContainsKey(KEY.Password) || ContainsKey(KEY.Pwd), "OnDeserialized password mismatch this");
-            Debug.Assert(null == entry || !entry._hasPassword || entry.ContainsKey(KEY.Password) || entry.ContainsKey(KEY.Pwd), "OnDeserialized password mismatch entry");
+            Debug.Assert(entry == null || !entry._hasPassword || entry.ContainsKey(KEY.Password) || entry.ContainsKey(KEY.Pwd), "OnDeserialized password mismatch entry");
 
             DBConnectionString value = new DBConnectionString(this, restrictionValues, behavior);
             ValidateCombinedSet(this, value);
@@ -349,7 +349,7 @@ namespace System.Data.Common
         private bool IsRestrictedKeyword(string key)
         {
             // restricted if not found
-            return ((null == _restrictionValues) || (0 > Array.BinarySearch(_restrictionValues, key, StringComparer.Ordinal)));
+            return ((_restrictionValues == null) || (Array.BinarySearch(_restrictionValues, key, StringComparer.Ordinal) < 0));
         }
 
         internal bool IsSupersetOf(DBConnectionString entry)
@@ -362,7 +362,7 @@ namespace System.Data.Common
                 case KeyRestrictionBehavior.AllowOnly:
                     // every key must either be in the resticted connection string or in the allowed keywords
                     // keychain may contain duplicates, but it is better than GetEnumerator on _parsetable.Keys
-                    for (NameValuePair? current = entry.KeyChain; null != current; current = current.Next)
+                    for (NameValuePair? current = entry.KeyChain; current != null; current = current.Next)
                     {
                         if (!ContainsKey(current.Name) && IsRestrictedKeyword(current.Name))
                         {
@@ -372,7 +372,7 @@ namespace System.Data.Common
                     break;
                 case KeyRestrictionBehavior.PreventUsage:
                     // every key can not be in the restricted keywords (even if in the restricted connection string)
-                    if (null != _restrictionValues)
+                    if (_restrictionValues != null)
                     {
                         foreach (string restriction in _restrictionValues)
                         {
@@ -395,9 +395,9 @@ namespace System.Data.Common
             List<string>? newlist = null;
             for (int i = 0; i < allowonly.Length; ++i)
             {
-                if (0 > Array.BinarySearch(preventusage, allowonly[i], StringComparer.Ordinal))
+                if (Array.BinarySearch(preventusage, allowonly[i], StringComparer.Ordinal) < 0)
                 {
-                    if (null == newlist)
+                    if (newlist == null)
                     {
                         newlist = new List<string>();
                     }
@@ -405,7 +405,7 @@ namespace System.Data.Common
                 }
             }
             string[]? restrictionValues = null;
-            if (null != newlist)
+            if (newlist != null)
             {
                 restrictionValues = newlist.ToArray();
             }
@@ -418,9 +418,9 @@ namespace System.Data.Common
             List<string>? newlist = null;
             for (int i = 0; i < a.Length; ++i)
             {
-                if (0 <= Array.BinarySearch(b, a[i], StringComparer.Ordinal))
+                if (Array.BinarySearch(b, a[i], StringComparer.Ordinal) >= 0)
                 {
-                    if (null == newlist)
+                    if (newlist == null)
                     {
                         newlist = new List<string>();
                     }
@@ -439,8 +439,8 @@ namespace System.Data.Common
         private static string[] NoDuplicateUnion(string[] a, string[] b)
         {
 #if DEBUG
-            Debug.Assert(null != a && 0 < a.Length, "empty a");
-            Debug.Assert(null != b && 0 < b.Length, "empty b");
+            Debug.Assert(a != null && a.Length > 0, "empty a");
+            Debug.Assert(b != null && b.Length > 0, "empty b");
             Verify(a);
             Verify(b);
 #endif
@@ -451,7 +451,7 @@ namespace System.Data.Common
             }
             for (int i = 0; i < b.Length; ++i)
             { // find duplicates
-                if (0 > Array.BinarySearch(a, b[i], StringComparer.Ordinal))
+                if (Array.BinarySearch(a, b[i], StringComparer.Ordinal) < 0)
                 {
                     newlist.Add(b[i]);
                 }
@@ -477,7 +477,7 @@ namespace System.Data.Common
                 nextStartPosition = DbConnectionOptions.GetKeyValuePair(restrictions, startPosition, buffer, false, out keyname, out keyvalue);
                 if (!string.IsNullOrEmpty(keyname))
                 {
-                    string realkeyname = ((null != synonyms) ? (string)synonyms[keyname] : keyname); // MDAC 85144
+                    string realkeyname = ((synonyms != null) ? (string)synonyms[keyname] : keyname); // MDAC 85144
                     if (string.IsNullOrEmpty(realkeyname))
                     {
                         throw ADP.KeywordNotSupported(keyname);
@@ -491,20 +491,20 @@ namespace System.Data.Common
         internal static string[] RemoveDuplicates(string?[] restrictions)
         {
             int count = restrictions.Length;
-            if (0 < count)
+            if (count > 0)
             {
                 Array.Sort(restrictions, StringComparer.Ordinal);
 
                 for (int i = 1; i < restrictions.Length; ++i)
                 {
                     string prev = restrictions[i - 1]!;
-                    if ((0 == prev.Length) || (prev == restrictions[i]))
+                    if ((prev.Length == 0) || (prev == restrictions[i]))
                     {
                         restrictions[i - 1] = null;
                         count--;
                     }
                 }
-                if (0 == restrictions[restrictions.Length - 1]!.Length)
+                if (restrictions[restrictions.Length - 1]!.Length == 0)
                 {
                     restrictions[restrictions.Length - 1] = null;
                     count--;
@@ -530,13 +530,13 @@ namespace System.Data.Common
         [ConditionalAttribute("DEBUG")]
         private static void Verify(string?[]? restrictionValues)
         {
-            if (null != restrictionValues)
+            if (restrictionValues != null)
             {
                 for (int i = 1; i < restrictionValues.Length; ++i)
                 {
                     Debug.Assert(!string.IsNullOrEmpty(restrictionValues[i - 1]), "empty restriction");
                     Debug.Assert(!string.IsNullOrEmpty(restrictionValues[i]), "empty restriction");
-                    Debug.Assert(0 >= StringComparer.Ordinal.Compare(restrictionValues[i - 1], restrictionValues[i]));
+                    Debug.Assert(StringComparer.Ordinal.Compare(restrictionValues[i - 1], restrictionValues[i]) <= 0);
                 }
             }
         }

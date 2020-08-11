@@ -253,7 +253,7 @@ namespace System.Management
         /// </remarks>
         public static explicit operator IntPtr(ManagementBaseObject managementObject)
         {
-            if (null == managementObject)
+            if (managementObject == null)
                 return IntPtr.Zero;
 
             return (IntPtr)managementObject.wbemObject;
@@ -502,7 +502,7 @@ namespace System.Management
         /// </returns>
         public object GetPropertyValue(string propertyName)
         {
-            if (null == propertyName)
+            if (propertyName == null)
                 throw new ArgumentNullException(nameof(propertyName));
 
             // Check for system properties
@@ -739,12 +739,12 @@ namespace System.Management
         /// </returns>
         public bool CompareTo(ManagementBaseObject otherObject, ComparisonSettings settings)
         {
-            if (null == otherObject)
+            if (otherObject == null)
                 throw new ArgumentNullException(nameof(otherObject));
 
             bool result = false;
 
-            if (null != wbemObject)
+            if (wbemObject != null)
             {
                 int status = (int)ManagementStatus.NoError;
 
@@ -823,7 +823,7 @@ namespace System.Management
             string propertyName,
             object propertyValue)
         {
-            if (null == propertyName)
+            if (propertyName == null)
                 throw new ArgumentNullException(nameof(propertyName));
 
             // Check for system properties

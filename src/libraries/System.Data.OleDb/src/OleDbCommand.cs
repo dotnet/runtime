@@ -95,7 +95,7 @@ namespace System.Data.OleDb
             {
                 Bindings? bindings = _dbBindings;
                 _dbBindings = value;
-                if ((null != bindings) && (value != bindings))
+                if ((bindings != null) && (value != bindings))
                 {
                     bindings.Dispose();
                 }
@@ -110,11 +110,11 @@ namespace System.Data.OleDb
             get
             {
                 string? value = _commandText;
-                return ((null != value) ? value : string.Empty);
+                return ((value != null) ? value : string.Empty);
             }
             set
             {
-                if (0 != ADP.SrcCompare(_commandText, value))
+                if (ADP.SrcCompare(_commandText, value) != 0)
                 {
                     PropertyChanging();
                     _commandText = value;
@@ -144,7 +144,7 @@ namespace System.Data.OleDb
 
         public void ResetCommandTimeout()
         { // V1.2.3300
-            if (ADP.DefaultCommandTimeout != _commandTimeout)
+            if (_commandTimeout != ADP.DefaultCommandTimeout)
             {
                 PropertyChanging();
                 _commandTimeout = ADP.DefaultCommandTimeout;
@@ -158,7 +158,7 @@ namespace System.Data.OleDb
             get
             {
                 CommandType cmdType = _commandType;
-                return ((0 != cmdType) ? cmdType : CommandType.Text);
+                return ((cmdType != 0) ? cmdType : CommandType.Text);
             }
             set
             {
@@ -193,7 +193,7 @@ namespace System.Data.OleDb
 
                     _connection = value;
 
-                    if (null != value)
+                    if (value != null)
                     {
                         _transaction = OleDbTransaction.TransactionUpdate(_transaction);
                     }
@@ -204,7 +204,7 @@ namespace System.Data.OleDb
         private void ResetConnection()
         {
             OleDbConnection? connection = _connection;
-            if (null != connection)
+            if (connection != null)
             {
                 PropertyChanging();
                 CloseInternal();
@@ -280,7 +280,7 @@ namespace System.Data.OleDb
             get
             {
                 OleDbParameterCollection? value = _parameters;
-                if (null == value)
+                if (value == null)
                 {
                     // delay the creation of the OleDbParameterCollection
                     // until user actually uses the Parameters property
@@ -294,7 +294,7 @@ namespace System.Data.OleDb
         private bool HasParameters()
         {
             OleDbParameterCollection? value = _parameters;
-            return (null != value) && (0 < value.Count);
+            return (value != null) && (value.Count > 0);
         }
 
         [
@@ -308,7 +308,7 @@ namespace System.Data.OleDb
                 // find the last non-zombied local transaction object, but not transactions
                 // that may have been started after the current local transaction
                 OleDbTransaction? transaction = _transaction;
-                while ((null != transaction) && (null == transaction.Connection))
+                while ((transaction != null) && (transaction.Connection == null))
                 {
                     transaction = transaction.Parent;
                     _transaction = transaction;
@@ -349,30 +349,30 @@ namespace System.Data.OleDb
         // required interface, safe cast
         private UnsafeNativeMethods.IAccessor IAccessor()
         {
-            Debug.Assert(null != _icommandText, "IAccessor: null ICommandText");
+            Debug.Assert(_icommandText != null, "IAccessor: null ICommandText");
             return (UnsafeNativeMethods.IAccessor)_icommandText;
         }
 
         // required interface, safe cast
         internal UnsafeNativeMethods.ICommandProperties ICommandProperties()
         {
-            Debug.Assert(null != _icommandText, "ICommandProperties: null ICommandText");
+            Debug.Assert(_icommandText != null, "ICommandProperties: null ICommandText");
             return (UnsafeNativeMethods.ICommandProperties)_icommandText;
         }
 
         // optional interface, unsafe cast
         private UnsafeNativeMethods.ICommandPrepare? ICommandPrepare()
         {
-            Debug.Assert(null != _icommandText, "ICommandPrepare: null ICommandText");
+            Debug.Assert(_icommandText != null, "ICommandPrepare: null ICommandText");
             return _icommandText as UnsafeNativeMethods.ICommandPrepare;
         }
 
         // optional interface, unsafe cast
         private UnsafeNativeMethods.ICommandWithParameters ICommandWithParameters()
         {
-            Debug.Assert(null != _icommandText, "ICommandWithParameters: null ICommandText");
+            Debug.Assert(_icommandText != null, "ICommandWithParameters: null ICommandText");
             UnsafeNativeMethods.ICommandWithParameters? value = (_icommandText as UnsafeNativeMethods.ICommandWithParameters);
-            if (null == value)
+            if (value == null)
             {
                 throw ODB.NoProviderSupportForParameters(_connection!.Provider, null);
             }
@@ -381,8 +381,8 @@ namespace System.Data.OleDb
 
         private void CreateAccessor()
         {
-            Debug.Assert(System.Data.CommandType.Text == CommandType || System.Data.CommandType.StoredProcedure == CommandType, "CreateAccessor: incorrect CommandType");
-            Debug.Assert(null == _dbBindings, "CreateAccessor: already has dbBindings");
+            Debug.Assert(CommandType == System.Data.CommandType.Text || CommandType == System.Data.CommandType.StoredProcedure, "CreateAccessor: incorrect CommandType");
+            Debug.Assert(_dbBindings == null, "CreateAccessor: already has dbBindings");
             Debug.Assert(HasParameters(), "CreateAccessor: unexpected, no parameter collection");
 
             // do this first in-case the command doesn't support parameters
@@ -458,7 +458,7 @@ namespace System.Data.OleDb
             { _changeID++; }
 
             UnsafeNativeMethods.ICommandText? icmdtxt = _icommandText;
-            if (null != icmdtxt)
+            if (icmdtxt != null)
             {
                 OleDbHResult hr = OleDbHResult.S_OK;
 
@@ -471,7 +471,7 @@ namespace System.Data.OleDb
                         hr = icmdtxt.Cancel();
                     }
                 }
-                if (OleDbHResult.DB_E_CANTCANCEL != hr)
+                if (hr != OleDbHResult.DB_E_CANTCANCEL)
                 {
                     // if the provider can't cancel the command - don't cancel the DataReader
                     this.canceling = true;
@@ -511,7 +511,7 @@ namespace System.Data.OleDb
 
         internal void CloseInternal()
         {
-            Debug.Assert(null != _connection, "no connection, CloseInternal");
+            Debug.Assert(_connection != null, "no connection, CloseInternal");
             CloseInternalParameters();
             CloseInternalCommand();
         }
@@ -521,7 +521,7 @@ namespace System.Data.OleDb
         //      via OleDbCommand.Dispose or OleDbConnection.Close
         internal void CloseFromDataReader(Bindings? bindings)
         {
-            if (null != bindings)
+            if (bindings != null)
             {
                 if (canceling)
                 {
@@ -545,7 +545,7 @@ namespace System.Data.OleDb
             _isPrepared = false;
 
             UnsafeNativeMethods.ICommandText? ict = Interlocked.Exchange(ref _icommandText, null);
-            if (null != ict)
+            if (ict != null)
             {
                 lock (ict)
                 {
@@ -556,10 +556,10 @@ namespace System.Data.OleDb
         }
         private void CloseInternalParameters()
         {
-            Debug.Assert(null != _connection, "no connection, CloseInternalParameters");
+            Debug.Assert(_connection != null, "no connection, CloseInternalParameters");
             Bindings? bindings = _dbBindings;
             _dbBindings = null;
-            if (null != bindings)
+            if (bindings != null)
             {
                 bindings.Dispose();
             }
@@ -631,7 +631,7 @@ namespace System.Data.OleDb
             {
                 ValidateConnectionAndTransaction(method);
 
-                if (0 != (CommandBehavior.SingleRow & behavior))
+                if ((CommandBehavior.SingleRow & behavior) != 0)
                 {
                     // CommandBehavior.SingleRow implies CommandBehavior.SingleResult
                     behavior |= CommandBehavior.SingleResult;
@@ -698,23 +698,23 @@ namespace System.Data.OleDb
                     }
                     finally
                     {
-                        if (ODB.InternalStateOpen != state)
+                        if (state != ODB.InternalStateOpen)
                         {
                             this.canceling = true;
-                            if (null != dataReader)
+                            if (dataReader != null)
                             {
                                 ((IDisposable)dataReader).Dispose();
                                 dataReader = null;
                             }
                         }
                     }
-                    Debug.Assert(null != dataReader, "ExecuteReader should never return a null DataReader");
+                    Debug.Assert(dataReader != null, "ExecuteReader should never return a null DataReader");
                 }
                 else
                 { // optimized code path for ExecuteNonQuery to not create a OleDbDataReader object
                     try
                     {
-                        if (ODB.ExecutedIMultipleResults == resultType)
+                        if (resultType == ODB.ExecutedIMultipleResults)
                         {
                             UnsafeNativeMethods.IMultipleResults? multipleResults = (UnsafeNativeMethods.IMultipleResults?)executeResult;
 
@@ -726,7 +726,7 @@ namespace System.Data.OleDb
                     {
                         try
                         {
-                            if (null != executeResult)
+                            if (executeResult != null)
                             {
                                 Marshal.ReleaseComObject(executeResult);
                                 executeResult = null;
@@ -740,7 +740,7 @@ namespace System.Data.OleDb
                             {
                                 throw;
                             }
-                            if (null != nextResultsFailure)
+                            if (nextResultsFailure != null)
                             {
                                 nextResultsFailure = new OleDbException(nextResultsFailure, e);
                             }
@@ -756,7 +756,7 @@ namespace System.Data.OleDb
             { // finally clear executing state
                 try
                 {
-                    if ((null == dataReader) && (ODB.InternalStateOpen != state))
+                    if ((dataReader == null) && (state != ODB.InternalStateOpen))
                     {
                         ParameterCleanup();
                     }
@@ -768,7 +768,7 @@ namespace System.Data.OleDb
                     {
                         throw;
                     }
-                    if (null != nextResultsFailure)
+                    if (nextResultsFailure != null)
                     {
                         nextResultsFailure = new OleDbException(nextResultsFailure, e);
                     }
@@ -777,7 +777,7 @@ namespace System.Data.OleDb
                         throw;
                     }
                 }
-                if (null != nextResultsFailure)
+                if (nextResultsFailure != null)
                 {
                     throw nextResultsFailure;
                 }
@@ -789,7 +789,7 @@ namespace System.Data.OleDb
         {
             if (InitializeCommand(behavior, false))
             {
-                if (0 != (CommandBehavior.SchemaOnly & this.commandBehavior))
+                if ((CommandBehavior.SchemaOnly & this.commandBehavior) != 0)
                 {
                     executeResult = null;
                     return ODB.PrepareICommandText;
@@ -814,7 +814,7 @@ namespace System.Data.OleDb
             try
             {
                 // TODO-NULLABLE: Code below seems to assume that bindings will always be non-null
-                if (null != bindings)
+                if (bindings != null)
                 { // parameters may be suppressed
                     rowbinding = bindings.RowBinding();
 
@@ -830,11 +830,11 @@ namespace System.Data.OleDb
                     dbParams.cParamSets = 1;
                     dbParams.hAccessor = rowbinding.DangerousGetAccessorHandle();
                 }
-                if ((0 == (CommandBehavior.SingleResult & this.commandBehavior)) && _connection!.SupportMultipleResults())
+                if (((CommandBehavior.SingleResult & this.commandBehavior) == 0) && _connection!.SupportMultipleResults())
                 {
                     retcode = ExecuteCommandTextForMultpleResults(dbParams!, out executeResult);
                 }
-                else if (0 == (CommandBehavior.SingleRow & this.commandBehavior) || !_executeQuery)
+                else if ((CommandBehavior.SingleRow & this.commandBehavior) == 0 || !_executeQuery)
                 {
                     retcode = ExecuteCommandTextForSingleResult(dbParams!, out executeResult);
                 }
@@ -855,11 +855,11 @@ namespace System.Data.OleDb
 
         private int ExecuteCommandTextForMultpleResults(tagDBPARAMS dbParams, out object executeResult)
         {
-            Debug.Assert(0 == (CommandBehavior.SingleRow & this.commandBehavior), "SingleRow implies SingleResult");
+            Debug.Assert((CommandBehavior.SingleRow & this.commandBehavior) == 0, "SingleRow implies SingleResult");
             OleDbHResult hr;
             hr = _icommandText!.Execute(ADP.PtrZero, ref ODB.IID_IMultipleResults, dbParams, out _recordsAffected, out executeResult);
 
-            if (OleDbHResult.E_NOINTERFACE != hr)
+            if (hr != OleDbHResult.E_NOINTERFACE)
             {
                 ExecuteCommandTextErrorHandling(hr);
                 return ODB.ExecutedIMultipleResults;
@@ -894,12 +894,12 @@ namespace System.Data.OleDb
                 OleDbHResult hr;
                 hr = _icommandText!.Execute(ADP.PtrZero, ref ODB.IID_IRow, dbParams, out _recordsAffected, out executeResult);
 
-                if (OleDbHResult.DB_E_NOTFOUND == hr)
+                if (hr == OleDbHResult.DB_E_NOTFOUND)
                 {
                     SafeNativeMethods.Wrapper.ClearErrorInfo();
                     return ODB.ExecutedIRow;
                 }
-                else if (OleDbHResult.E_NOINTERFACE != hr)
+                else if (hr != OleDbHResult.E_NOINTERFACE)
                 {
                     ExecuteCommandTextErrorHandling(hr);
                     return ODB.ExecutedIRow;
@@ -912,7 +912,7 @@ namespace System.Data.OleDb
         private void ExecuteCommandTextErrorHandling(OleDbHResult hr)
         {
             Exception? e = OleDbConnection.ProcessResults(hr, _connection, this);
-            if (null != e)
+            if (e != null)
             {
                 e = ExecuteCommandTextSpecialErrorHandling(hr, e);
                 throw e;
@@ -921,14 +921,14 @@ namespace System.Data.OleDb
 
         private Exception ExecuteCommandTextSpecialErrorHandling(OleDbHResult hr, Exception e)
         {
-            if (((OleDbHResult.DB_E_ERRORSOCCURRED == hr) || (OleDbHResult.DB_E_BADBINDINFO == hr)) && (null != _dbBindings))
+            if (((hr == OleDbHResult.DB_E_ERRORSOCCURRED) || (hr == OleDbHResult.DB_E_BADBINDINFO)) && (_dbBindings != null))
             {
                 //
                 // this code exist to try for a better user error message by post-morten detection
                 // of invalid parameter types being passed to a provider that doesn't understand
                 // the user specified parameter OleDbType
 
-                Debug.Assert(null != e, "missing inner exception");
+                Debug.Assert(e != null, "missing inner exception");
 
                 StringBuilder builder = new StringBuilder();
                 ParameterBindings!.ParameterStatus(builder);
@@ -950,7 +950,7 @@ namespace System.Data.OleDb
             _executeQuery = true;
             using (OleDbDataReader reader = ExecuteReaderInternal(CommandBehavior.Default, ADP.ExecuteScalar)!)
             {
-                if (reader.Read() && (0 < reader.FieldCount))
+                if (reader.Read() && (reader.FieldCount > 0))
                 {
                     value = reader.GetValue(0);
                 }
@@ -986,7 +986,7 @@ namespace System.Data.OleDb
                     {
                         using (DBPropSet? propSet = CommandPropertySets())
                         {
-                            if (null != propSet)
+                            if (propSet != null)
                             {
                                 bool mustRelease = false;
                                 RuntimeHelpers.PrepareConstrainedRegions();
@@ -1003,7 +1003,7 @@ namespace System.Data.OleDb
                                     }
                                 }
 
-                                if (OleDbHResult.DB_E_ERRORSOCCURRED == hr)
+                                if (hr == OleDbHResult.DB_E_ERRORSOCCURRED)
                                 {
                                     hr = iopenRowset.Value.OpenRowset(ADP.PtrZero, tableID, ADP.PtrZero, ref ODB.IID_IRowset, 0, IntPtr.Zero, out executeResult);
                                 }
@@ -1058,7 +1058,7 @@ namespace System.Data.OleDb
         private string ExpandOdbcMaximumToText(string sproctext, int parameterCount)
         {
             StringBuilder builder = new StringBuilder();
-            if ((0 < parameterCount) && (ParameterDirection.ReturnValue == Parameters[0].Direction))
+            if ((parameterCount > 0) && (Parameters[0].Direction == ParameterDirection.ReturnValue))
             {
                 parameterCount--;
                 builder.Append("{ ? = CALL ");
@@ -1097,7 +1097,7 @@ namespace System.Data.OleDb
             StringBuilder builder = new StringBuilder();
             builder.Append("exec ");
             builder.Append(sproctext);
-            if (0 < parameterCount)
+            if (parameterCount > 0)
             {
                 builder.Append(" ?");
                 for (int i = 1; i < parameterCount; ++i)
@@ -1110,10 +1110,10 @@ namespace System.Data.OleDb
 
         private string ExpandStoredProcedureToText(string sproctext)
         {
-            Debug.Assert(null != _connection, "ExpandStoredProcedureToText: null Connection");
+            Debug.Assert(_connection != null, "ExpandStoredProcedureToText: null Connection");
 
-            int parameterCount = (null != _parameters) ? _parameters.Count : 0;
-            if (0 == (ODB.DBPROPVAL_SQL_ODBC_MINIMUM & _connection.SqlSupport()))
+            int parameterCount = (_parameters != null) ? _parameters.Count : 0;
+            if ((ODB.DBPROPVAL_SQL_ODBC_MINIMUM & _connection.SqlSupport()) == 0)
             {
                 return ExpandOdbcMinimumToText(sproctext, parameterCount);
             }
@@ -1123,7 +1123,7 @@ namespace System.Data.OleDb
         private void ParameterCleanup()
         {
             Bindings? bindings = ParameterBindings;
-            if (null != bindings)
+            if (bindings != null)
             {
                 bindings.CleanupBindings();
             }
@@ -1131,10 +1131,10 @@ namespace System.Data.OleDb
 
         private bool InitializeCommand(CommandBehavior behavior, bool throwifnotsupported)
         {
-            Debug.Assert(null != _connection, "InitializeCommand: null OleDbConnection");
+            Debug.Assert(_connection != null, "InitializeCommand: null OleDbConnection");
 
             int changeid = _changeID;
-            if ((0 != (CommandBehavior.KeyInfo & (this.commandBehavior ^ behavior))) || (_lastChangeID != changeid))
+            if (((CommandBehavior.KeyInfo & (this.commandBehavior ^ behavior)) != 0) || (_lastChangeID != changeid))
             {
                 CloseInternalParameters(); // could optimize out
                 CloseInternalCommand();
@@ -1147,7 +1147,7 @@ namespace System.Data.OleDb
                 return false;
             }
 
-            if ((null != _dbBindings) && _dbBindings.AreParameterBindingsInvalid(_parameters!))
+            if ((_dbBindings != null) && _dbBindings.AreParameterBindingsInvalid(_parameters!))
             {
                 CloseInternalParameters();
             }
@@ -1155,7 +1155,7 @@ namespace System.Data.OleDb
             // if we already having bindings - don't create the accessor
             // if _parameters is null - no parameters exist - don't create the collection
             // do we actually have parameters since the collection exists
-            if ((null == _dbBindings) && HasParameters())
+            if ((_dbBindings == null) && HasParameters())
             {
                 // if we setup the parameters before setting cmdtxt then named parameters can happen
                 CreateAccessor();
@@ -1188,12 +1188,12 @@ namespace System.Data.OleDb
 
         public override void Prepare()
         {
-            if (CommandType.TableDirect != CommandType)
+            if (CommandType != CommandType.TableDirect)
             {
                 ValidateConnectionAndTransaction(ADP.Prepare);
 
                 _isPrepared = false;
-                if (CommandType.TableDirect != CommandType)
+                if (CommandType != CommandType.TableDirect)
                 {
                     InitializeCommand(0, true);
                     PrepareCommandText(1);
@@ -1204,7 +1204,7 @@ namespace System.Data.OleDb
         private void PrepareCommandText(int expectedExecutionCount)
         {
             OleDbParameterCollection? parameters = _parameters;
-            if (null != parameters)
+            if (parameters != null)
             {
                 foreach (OleDbParameter parameter in parameters)
                 {
@@ -1218,7 +1218,7 @@ namespace System.Data.OleDb
                 }
             }
             UnsafeNativeMethods.ICommandPrepare? icommandPrepare = ICommandPrepare();
-            if (null != icommandPrepare)
+            if (icommandPrepare != null)
             {
                 OleDbHResult hr;
                 hr = icommandPrepare.Prepare(expectedExecutionCount);
@@ -1233,20 +1233,20 @@ namespace System.Data.OleDb
         private void ProcessResults(OleDbHResult hr)
         {
             Exception? e = OleDbConnection.ProcessResults(hr, _connection, this);
-            if (null != e)
+            if (e != null)
             { throw e; }
         }
 
         private void ProcessResultsNoReset(OleDbHResult hr)
         {
             Exception? e = OleDbConnection.ProcessResults(hr, null, this);
-            if (null != e)
+            if (e != null)
             { throw e; }
         }
 
         internal object? GetPropertyValue(Guid propertySet, int propertyID)
         {
-            if (null != _icommandText)
+            if (_icommandText != null)
             {
                 OleDbHResult hr;
                 ItagDBPROP[] dbprops;
@@ -1265,7 +1265,7 @@ namespace System.Data.OleDb
                         dbprops = propset.GetPropertySet(0, out propertySet);
                     }
                 }
-                if (OleDbPropertyStatus.Ok == dbprops[0].dwStatus)
+                if (dbprops[0].dwStatus == OleDbPropertyStatus.Ok)
                 {
                     return dbprops[0].vValue;
                 }
@@ -1278,7 +1278,7 @@ namespace System.Data.OleDb
         {
             Debug.Assert(_connection != null);
 
-            if (null != _icommandText)
+            if (_icommandText != null)
             {
                 return true;
             }
@@ -1293,7 +1293,7 @@ namespace System.Data.OleDb
             }
             _icommandText = connection.ICommandText();
 
-            if (null == _icommandText)
+            if (_icommandText == null)
             {
                 if (throwNotSupported || HasParameters())
                 {
@@ -1304,7 +1304,7 @@ namespace System.Data.OleDb
 
             using (DBPropSet? propSet = CommandPropertySets())
             {
-                if (null != propSet)
+                if (propSet != null)
                 {
                     UnsafeNativeMethods.ICommandProperties icommandProperties = ICommandProperties();
                     OleDbHResult hr = icommandProperties.SetProperties(propSet.PropertySetCount, propSet);
@@ -1322,12 +1322,12 @@ namespace System.Data.OleDb
         {
             DBPropSet? propSet = null;
 
-            bool keyInfo = (0 != (CommandBehavior.KeyInfo & this.commandBehavior));
+            bool keyInfo = ((CommandBehavior.KeyInfo & this.commandBehavior) != 0);
 
             // always set the CommandTimeout value?
             int count = (_executeQuery ? (keyInfo ? 4 : 2) : 1);
 
-            if (0 < count)
+            if (count > 0)
             {
                 propSet = new DBPropSet(1);
 
@@ -1363,7 +1363,7 @@ namespace System.Data.OleDb
 
         private void ValidateConnection(string method)
         {
-            if (null == _connection)
+            if (_connection == null)
             {
                 throw ADP.ConnectionRequired(method);
             }

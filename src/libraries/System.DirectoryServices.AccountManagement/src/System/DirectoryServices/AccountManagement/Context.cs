@@ -101,7 +101,7 @@ namespace System.DirectoryServices.AccountManagement
                     Thread.CurrentThread.SetApartmentState(ApartmentState.MTA);
                 // We need the credentials to be in the form <machine>\\<user>
                 // if they just passed user then append the machine name here.
-                if (null != userName)
+                if (userName != null)
                 {
                     int index = userName.IndexOf('\\');
                     if (index == -1)
@@ -227,7 +227,7 @@ namespace System.DirectoryServices.AccountManagement
             current.AuthType = ((ContextOptions.SimpleBind & contextOptions) > 0 ? AuthType.Basic : AuthType.Negotiate);
             current.SessionOptions.Signing = ((ContextOptions.Signing & contextOptions) > 0 ? true : false);
             current.SessionOptions.Sealing = ((ContextOptions.Sealing & contextOptions) > 0 ? true : false);
-            if ((null == creds.UserName) && (null == creds.Password))
+            if ((creds.UserName == null) && (creds.Password == null))
             {
                 current.Bind();
             }

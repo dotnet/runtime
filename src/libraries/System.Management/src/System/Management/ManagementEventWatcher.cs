@@ -214,18 +214,18 @@ namespace System.Management
             EventQuery query,
             EventWatcherOptions options)
         {
-            if (null != scope)
+            if (scope != null)
                 this.scope = ManagementScope._Clone(scope, new IdentifierChangedEventHandler(HandleIdentifierChange));
             else
                 this.scope = ManagementScope._Clone(null, new IdentifierChangedEventHandler(HandleIdentifierChange));
 
-            if (null != query)
+            if (query != null)
                 this.query = (EventQuery)query.Clone();
             else
                 this.query = new EventQuery();
             this.query.IdentifierChanged += new IdentifierChangedEventHandler(HandleIdentifierChange);
 
-            if (null != options)
+            if (options != null)
                 this.options = (EventWatcherOptions)options.Clone();
             else
                 this.options = new EventWatcherOptions();
@@ -246,13 +246,13 @@ namespace System.Management
             // Ensure any outstanding calls are cleared
             Stop();
 
-            if (null != scope)
+            if (scope != null)
                 scope.IdentifierChanged -= new IdentifierChangedEventHandler(HandleIdentifierChange);
 
-            if (null != options)
+            if (options != null)
                 options.IdentifierChanged -= new IdentifierChangedEventHandler(HandleIdentifierChange);
 
-            if (null != query)
+            if (query != null)
                 query.IdentifierChanged -= new IdentifierChangedEventHandler(HandleIdentifierChange);
         }
 
@@ -288,13 +288,13 @@ namespace System.Management
             }
             set
             {
-                if (null != value)
+                if (value != null)
                 {
                     ManagementScope oldScope = scope;
                     scope = (ManagementScope)value.Clone();
 
                     // Unregister ourselves from the previous scope object
-                    if (null != oldScope)
+                    if (oldScope != null)
                         oldScope.IdentifierChanged -= new IdentifierChangedEventHandler(HandleIdentifierChange);
 
                     //register for change events in this object
@@ -321,13 +321,13 @@ namespace System.Management
             }
             set
             {
-                if (null != value)
+                if (value != null)
                 {
                     ManagementQuery oldQuery = query;
                     query = (EventQuery)value.Clone();
 
                     // Unregister ourselves from the previous query object
-                    if (null != oldQuery)
+                    if (oldQuery != null)
                         oldQuery.IdentifierChanged -= new IdentifierChangedEventHandler(HandleIdentifierChange);
 
                     //register for change events in this object
@@ -354,13 +354,13 @@ namespace System.Management
             }
             set
             {
-                if (null != value)
+                if (value != null)
                 {
                     EventWatcherOptions oldOptions = options;
                     options = (EventWatcherOptions)value.Clone();
 
                     // Unregister ourselves from the previous scope object
-                    if (null != oldOptions)
+                    if (oldOptions != null)
                         oldOptions.IdentifierChanged -= new IdentifierChangedEventHandler(HandleIdentifierChange);
 
                     cachedObjects = new IWbemClassObjectFreeThreaded[options.BlockSize];
@@ -401,7 +401,7 @@ namespace System.Management
 
                 try
                 {
-                    if (null == enumWbem)   //don't have an enumerator yet - get it
+                    if (enumWbem == null)   //don't have an enumerator yet - get it
                     {
                         //Execute the query
                         status = scope.GetSecuredIWbemServicesHandler(Scope.GetIWbemServices()).ExecNotificationQuery_(
@@ -421,7 +421,7 @@ namespace System.Management
                             //counterparts afterwards.
                             IWbemClassObject_DoNotMarshal[] tempArray = new IWbemClassObject_DoNotMarshal[options.BlockSize];
 
-                            int timeout = (ManagementOptions.InfiniteTimeout == options.Timeout)
+                            int timeout = (options.Timeout == ManagementOptions.InfiniteTimeout)
                                 ? (int)tag_WBEM_TIMEOUT_TYPE.WBEM_INFINITE :
                                 (int)options.Timeout.TotalMilliseconds;
 
@@ -532,7 +532,7 @@ namespace System.Management
         public void Stop()
         {
             //For semi-synchronous, release the WMI enumerator to cancel the subscription
-            if (null != enumWbem)
+            if (enumWbem != null)
             {
                 Marshal.ReleaseComObject(enumWbem);
                 enumWbem = null;
@@ -541,7 +541,7 @@ namespace System.Management
 
             // In async mode cancel the call to the sink - this will
             // unwind the operation and cause a Stopped message
-            if (null != sink)
+            if (sink != null)
             {
                 sink.Cancel();
                 sink = null;
@@ -551,19 +551,19 @@ namespace System.Management
         private void Initialize()
         {
             //If the query is not set yet we can't do it
-            if (null == query)
+            if (query == null)
                 throw new InvalidOperationException();
 
-            if (null == options)
+            if (options == null)
                 Options = new EventWatcherOptions();
 
             //If we're not connected yet, this is the time to do it...
             lock (this)
             {
-                if (null == scope)
+                if (scope == null)
                     Scope = new ManagementScope();
 
-                if (null == cachedObjects)
+                if (cachedObjects == null)
                     cachedObjects = new IWbemClassObjectFreeThreaded[options.BlockSize];
             }
 
@@ -622,8 +622,8 @@ namespace System.Management
             this.isLocal = false;
 
             // determine if the server is local, and if so don't create a real stub using unsecap
-            if ((0 == string.Compare(eventWatcher.Scope.Path.Server, ".", StringComparison.OrdinalIgnoreCase)) ||
-                (0 == string.Compare(eventWatcher.Scope.Path.Server, System.Environment.MachineName, StringComparison.OrdinalIgnoreCase)))
+            if ((string.Compare(eventWatcher.Scope.Path.Server, ".", StringComparison.OrdinalIgnoreCase) == 0) ||
+                (string.Compare(eventWatcher.Scope.Path.Server, System.Environment.MachineName, StringComparison.OrdinalIgnoreCase) == 0))
             {
                 this.isLocal = true;
             }
@@ -714,11 +714,11 @@ namespace System.Management
 
         internal void Cancel()
         {
-            if (null != stub)
+            if (stub != null)
             {
                 lock (this)
                 {
-                    if (null != stub)
+                    if (stub != null)
                     {
 
                         int status = services.CancelAsyncCall_(stub);
@@ -740,7 +740,7 @@ namespace System.Management
 
         internal void ReleaseStub()
         {
-            if (null != stub)
+            if (stub != null)
             {
                 lock (this)
                 {
@@ -749,7 +749,7 @@ namespace System.Management
                      * unsecapp.exe to die as soon as possible.
                      * however if it is local, unsecap won't be started
                      */
-                    if (null != stub)
+                    if (stub != null)
                     {
                         try
                         {

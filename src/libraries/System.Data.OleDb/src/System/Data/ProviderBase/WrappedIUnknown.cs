@@ -20,7 +20,7 @@ namespace System.Data.ProviderBase
 
         internal WrappedIUnknown(object? unknown) : this()
         {
-            if (null != unknown)
+            if (unknown != null)
             {
                 RuntimeHelpers.PrepareConstrainedRegions();
                 try
@@ -36,7 +36,7 @@ namespace System.Data.ProviderBase
         {
             get
             {
-                return (IntPtr.Zero == base.handle);
+                return (base.handle == IntPtr.Zero);
             }
         }
 
@@ -69,7 +69,7 @@ namespace System.Data.ProviderBase
             // NOTE: The SafeHandle class guarantees this will be called exactly once.
             IntPtr ptr = base.handle;
             base.handle = IntPtr.Zero;
-            if (IntPtr.Zero != ptr)
+            if (ptr != IntPtr.Zero)
             {
                 Marshal.Release(ptr);
             }

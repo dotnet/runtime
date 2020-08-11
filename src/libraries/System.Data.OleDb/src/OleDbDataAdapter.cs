@@ -116,10 +116,10 @@ namespace System.Data.OleDb
 
                 // prevent someone from registering two different command builders on the adapter by
                 // silently removing the old one
-                if ((null != handler) && (value.Target is DbCommandBuilder))
+                if ((handler != null) && (value.Target is DbCommandBuilder))
                 {
                     OleDbRowUpdatingEventHandler? d = (OleDbRowUpdatingEventHandler?)ADP.FindBuilder(handler);
-                    if (null != d)
+                    if (d != null)
                     {
                         Events.RemoveHandler(EventRowUpdating, d);
                     }
@@ -152,11 +152,11 @@ namespace System.Data.OleDb
 
         public int Fill(DataTable dataTable, object ADODBRecordSet)
         {
-            if (null == dataTable)
+            if (dataTable == null)
             {
                 throw ADP.ArgumentNull("dataTable");
             }
-            if (null == ADODBRecordSet)
+            if (ADODBRecordSet == null)
             {
                 throw ADP.ArgumentNull("adodb");
             }
@@ -165,11 +165,11 @@ namespace System.Data.OleDb
 
         public int Fill(DataSet dataSet, object ADODBRecordSet, string srcTable)
         {
-            if (null == dataSet)
+            if (dataSet == null)
             {
                 throw ADP.ArgumentNull("dataSet");
             }
-            if (null == ADODBRecordSet)
+            if (ADODBRecordSet == null)
             {
                 throw ADP.ArgumentNull("adodb");
             }
@@ -182,8 +182,8 @@ namespace System.Data.OleDb
 
         private int FillFromADODB(object data, object adodb, string? srcTable, bool multipleResults)
         {
-            Debug.Assert(null != data, "FillFromADODB: null data object");
-            Debug.Assert(null != adodb, "FillFromADODB: null ADODB");
+            Debug.Assert(data != null, "FillFromADODB: null data object");
+            Debug.Assert(adodb != null, "FillFromADODB: null ADODB");
             Debug.Assert(!(adodb is DataTable), "call Fill( (DataTable) value)");
             Debug.Assert(!(adodb is DataSet), "call Fill( (DataSet) value)");
 
@@ -204,7 +204,7 @@ namespace System.Data.OleDb
             UnsafeNativeMethods.ADORecordsetConstruction? recordset = (adodb as UnsafeNativeMethods.ADORecordsetConstruction);
             UnsafeNativeMethods.ADORecordConstruction? record = null;
 
-            if (null != recordset)
+            if (recordset != null)
             {
                 if (multipleResults)
                 {
@@ -212,7 +212,7 @@ namespace System.Data.OleDb
                     object activeConnection;
                     activeConnection = ((UnsafeNativeMethods.Recordset15)adodb).get_ActiveConnection();
 
-                    if (null == activeConnection)
+                    if (activeConnection == null)
                     {
                         multipleResults = false;
                     }
@@ -222,7 +222,7 @@ namespace System.Data.OleDb
             {
                 record = (adodb as UnsafeNativeMethods.ADORecordConstruction);
 
-                if (null != record)
+                if (record != null)
                 {
                     multipleResults = false; // IRow implies CommandBehavior.SingleRow which implies CommandBehavior.SingleResult
                 }
@@ -230,7 +230,7 @@ namespace System.Data.OleDb
             // else throw ODB.Fill_NotADODB("adodb"); /* throw later, less code here*/
 
             int results = 0;
-            if (null != recordset)
+            if (recordset != null)
             {
                 int resultCount = 0;
                 bool incrementResultCount;
@@ -253,10 +253,10 @@ namespace System.Data.OleDb
                         object nextresult;
                         OleDbHResult hr = ((UnsafeNativeMethods.Recordset15)adodb).NextRecordset(out recordsAffected, out nextresult);
 
-                        if (0 > hr)
+                        if (hr < 0)
                         {
                             // Current provider does not support returning multiple recordsets from a single execution.
-                            if (ODB.ADODB_NextResultError != (int)hr)
+                            if ((int)hr != ODB.ADODB_NextResultError)
                             {
                                 UnsafeNativeMethods.IErrorInfo? errorInfo = null;
                                 UnsafeNativeMethods.GetErrorInfo(0, out errorInfo);
@@ -267,7 +267,7 @@ namespace System.Data.OleDb
                             break;
                         }
                         adodb = nextresult;
-                        if (null != adodb)
+                        if (adodb != null)
                         {
                             recordset = (UnsafeNativeMethods.ADORecordsetConstruction)adodb;
 
@@ -279,14 +279,14 @@ namespace System.Data.OleDb
                         }
                     }
                     break;
-                } while (null != recordset);
+                } while (recordset != null);
 
-                if ((null != recordset) && (closeRecordset || (null == adodb)))
+                if ((recordset != null) && (closeRecordset || (adodb == null)))
                 {
                     FillClose(true, recordset);
                 }
             }
-            else if (null != record)
+            else if (record != null)
             {
                 results = FillFromRecord(data, record, srcTable!);
                 if (closeRecordset)
@@ -327,9 +327,9 @@ namespace System.Data.OleDb
                 throw ODB.Fill_EmptyRecordSet("ADODBRecordSet", e);
             }
 
-            if (null != result)
+            if (result != null)
             {
-                CommandBehavior behavior = (MissingSchemaAction.AddWithKey != MissingSchemaAction) ? 0 : CommandBehavior.KeyInfo;
+                CommandBehavior behavior = (MissingSchemaAction != MissingSchemaAction.AddWithKey) ? 0 : CommandBehavior.KeyInfo;
                 behavior |= CommandBehavior.SequentialAccess;
 
                 OleDbDataReader? dataReader = null;
@@ -342,7 +342,7 @@ namespace System.Data.OleDb
                     dataReader.InitializeIRowset(result, chapterHandle, ADP.RecordsUnaffected);
                     dataReader.BuildMetaInfo();
 
-                    incrementResultCount = (0 < dataReader.FieldCount);
+                    incrementResultCount = (dataReader.FieldCount > 0);
                     if (incrementResultCount)
                     {
                         if (data is DataTable)
@@ -357,7 +357,7 @@ namespace System.Data.OleDb
                 }
                 finally
                 {
-                    if (null != dataReader)
+                    if (dataReader != null)
                     {
                         dataReader.Close();
                     }
@@ -384,9 +384,9 @@ namespace System.Data.OleDb
                 throw ODB.Fill_EmptyRecord("adodb", e);
             }
 
-            if (null != result)
+            if (result != null)
             {
-                CommandBehavior behavior = (MissingSchemaAction.AddWithKey != MissingSchemaAction) ? 0 : CommandBehavior.KeyInfo;
+                CommandBehavior behavior = (MissingSchemaAction != MissingSchemaAction.AddWithKey) ? 0 : CommandBehavior.KeyInfo;
                 behavior |= CommandBehavior.SequentialAccess | CommandBehavior.SingleRow;
 
                 OleDbDataReader? dataReader = null;
@@ -407,7 +407,7 @@ namespace System.Data.OleDb
                 }
                 finally
                 {
-                    if (null != dataReader)
+                    if (dataReader != null)
                     {
                         dataReader.Close();
                     }
@@ -427,7 +427,7 @@ namespace System.Data.OleDb
             {
                 hr = ((UnsafeNativeMethods._ADORecord)value).Close();
             }
-            if ((0 < (int)hr) && (ODB.ADODB_AlreadyClosedError != (int)hr))
+            if (((int)hr > 0) && ((int)hr != ODB.ADODB_AlreadyClosedError))
             {
                 UnsafeNativeMethods.IErrorInfo? errorInfo = null;
                 UnsafeNativeMethods.GetErrorInfo(0, out errorInfo);
@@ -439,7 +439,7 @@ namespace System.Data.OleDb
         protected override void OnRowUpdated(RowUpdatedEventArgs value)
         {
             OleDbRowUpdatedEventHandler? handler = (OleDbRowUpdatedEventHandler?)Events[EventRowUpdated];
-            if ((null != handler) && (value is OleDbRowUpdatedEventArgs))
+            if ((handler != null) && (value is OleDbRowUpdatedEventArgs))
             {
                 handler(this, (OleDbRowUpdatedEventArgs)value);
             }
@@ -449,7 +449,7 @@ namespace System.Data.OleDb
         protected override void OnRowUpdating(RowUpdatingEventArgs value)
         {
             OleDbRowUpdatingEventHandler? handler = (OleDbRowUpdatingEventHandler?)Events[EventRowUpdating];
-            if ((null != handler) && (value is OleDbRowUpdatingEventArgs))
+            if ((handler != null) && (value is OleDbRowUpdatingEventArgs))
             {
                 handler(this, (OleDbRowUpdatingEventArgs)value);
             }
@@ -459,7 +459,7 @@ namespace System.Data.OleDb
         private static string GetSourceTableName(string srcTable, int index)
         {
             //if ((null != srcTable) && (0 <= index) && (index < srcTable.Length)) {
-            if (0 == index)
+            if (index == 0)
             {
                 return srcTable; //[index];
             }

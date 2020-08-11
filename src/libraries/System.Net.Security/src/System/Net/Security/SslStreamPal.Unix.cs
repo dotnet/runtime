@@ -106,7 +106,7 @@ namespace System.Net.Security
 
             try
             {
-                if ((null == context) || context.IsInvalid)
+                if ((context == null) || context.IsInvalid)
                 {
                     context = new SafeDeleteSslContext((credential as SafeFreeSslCredentials)!, sslAuthenticationOptions);
                 }

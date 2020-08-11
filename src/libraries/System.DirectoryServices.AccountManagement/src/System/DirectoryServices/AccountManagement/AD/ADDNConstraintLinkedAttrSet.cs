@@ -85,7 +85,7 @@ namespace System.DirectoryServices.AccountManagement
             {
                 while (!match)
                 {
-                    if (null == this.current)
+                    if (this.current == null)
                         return false;
 
                     switch (_constraint)

@@ -99,7 +99,7 @@ namespace System.Data.ProviderBase
             // we are completing an asynchronous open
             Debug.Assert(retry.Task.Status == TaskStatus.RanToCompletion, "retry task must be completed successfully");
             DbConnectionInternal openConnection = retry.Task.Result;
-            if (null == openConnection)
+            if (openConnection == null)
             {
                 connectionFactory.SetInnerConnectionTo(outerConnection, this);
                 throw ADP.InternalConnectionError(ADP.ConnectionError.GetConnectionReturnsNull);

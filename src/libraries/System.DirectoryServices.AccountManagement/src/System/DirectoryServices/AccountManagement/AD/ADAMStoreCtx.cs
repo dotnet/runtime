@@ -289,7 +289,7 @@ namespace System.DirectoryServices.AccountManagement
                         {
                             foreach (SearchResult res in searchResCollection)
                             {
-                                if (null == res.Properties["ldapDisplayName"])
+                                if (res.Properties["ldapDisplayName"] == null)
                                 {
                                     GlobalDebug.WriteLineIf(GlobalDebug.Error, "ADAMStoreCtx", "PopulatAuxObjectList Unable to read ldapDisplayName from " + SchemaNamingContext);
                                     throw new PrincipalOperationException(SR.ADAMStoreUnableToPopulateSchemaList);
@@ -320,12 +320,12 @@ namespace System.DirectoryServices.AccountManagement
             {
                 lock (_objectListLock)
                 {
-                    if (null == _cachedBindableObjectList)
+                    if (_cachedBindableObjectList == null)
                     {
                         _cachedBindableObjectList = PopulatAuxObjectList("msDS-BindableObject");
                     }
 
-                    if (null == _cachedBindableObjectFilter)
+                    if (_cachedBindableObjectFilter == null)
                     {
                         StringBuilder filter = new StringBuilder();
 

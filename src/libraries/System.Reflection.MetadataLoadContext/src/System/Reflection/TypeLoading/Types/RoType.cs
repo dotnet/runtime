@@ -124,7 +124,7 @@ namespace System.Reflection.TypeLoading
                 // .NET Framework quirk: a generic parameter whose constraint is another generic parameter reports its BaseType as System.Object
                 // unless that other generic parameter has a "class" constraint.
                 GenericParameterAttributes genericParameterAttributes = baseType.GenericParameterAttributes;
-                if (0 == (genericParameterAttributes & GenericParameterAttributes.ReferenceTypeConstraint))
+                if ((genericParameterAttributes & GenericParameterAttributes.ReferenceTypeConstraint) == 0)
                     baseType = Loader.GetCoreType(CoreType.Object);
             }
             return baseType;
