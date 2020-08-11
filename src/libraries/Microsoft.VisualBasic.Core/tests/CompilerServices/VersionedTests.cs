@@ -106,7 +106,7 @@ namespace Microsoft.VisualBasic.Tests
             Assert.Equal(expected, Versioned.TypeName(expression));
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows), nameof(PlatformDetection.IsNotWindowsNanoServer))]
         [MemberData(nameof(TypeName_ComObject_TestData))]
         [SkipOnMono("COM Interop not supported on Mono")]
         public void TypeName_ComObject(string progId, string expected)
