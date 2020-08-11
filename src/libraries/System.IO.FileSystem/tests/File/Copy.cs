@@ -331,4 +331,24 @@ namespace System.IO.Tests
             Assert.Throws<IOException>(() => Copy(testFileAlternateStream, testFile2 + alternateStream, overwrite: true));
         }
     }
+
+    /// <summary>
+    /// Single tests that shouldn't be duplicated by inheritance.
+    /// </summary>
+    public sealed class File_Copy_Single : FileSystemTest
+    {
+        [Fact]
+        public void EnsureThrowWhenCopyToNonSharedFile()
+        {
+            DirectoryInfo testDirectory = Directory.CreateDirectory(GetTestFilePath());
+            string file1 = Path.Combine(testDirectory.FullName, GetTestFileName());
+            string file2 = Path.Combine(testDirectory.FullName, GetTestFileName());
+
+            File.WriteAllText(file1, "foo");
+            File.WriteAllText(file2, "bar");
+
+            using var stream = new FileStream(file1, FileMode.Open, FileAccess.Read, FileShare.None);
+            Assert.Throws<IOException>(() => File.Copy(file2, file1, overwrite: true));
+        }
+    }
 }
