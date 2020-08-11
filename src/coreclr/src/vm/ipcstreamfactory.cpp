@@ -93,12 +93,9 @@ bool IpcStreamFactory::Configure(ErrorCallback callback)
     if (dotnetDiagnosticPortsW != nullptr)
     {
         nCharactersWritten = WideCharToMultiByte(CP_UTF8, 0, dotnetDiagnosticPortsW, -1, NULL, 0, NULL, NULL);
-        if (nCharactersWritten != 0)
-        {
-            dotnetDiagnosticPorts = new char[nCharactersWritten];
-            nCharactersWritten = WideCharToMultiByte(CP_UTF8, 0, dotnetDiagnosticPortsW, -1, dotnetDiagnosticPorts, nCharactersWritten, NULL, NULL);
-            assert(nCharactersWritten != 0);
-        }
+        dotnetDiagnosticPorts = new char[nCharactersWritten];
+        nCharactersWritten = WideCharToMultiByte(CP_UTF8, 0, dotnetDiagnosticPortsW, -1, dotnetDiagnosticPorts, nCharactersWritten, NULL, NULL);
+        ASSERT(nCharactersWritten != 0);
 
         CQuickArrayList<LPSTR> portConfigs = split(dotnetDiagnosticPorts, ";");
         while (portConfigs.Size() > 0)

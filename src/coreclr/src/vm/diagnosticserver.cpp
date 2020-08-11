@@ -145,7 +145,7 @@ bool DiagnosticServer::Initialize()
         // Ports can fail to be configured 
         bool fAnyErrors = IpcStreamFactory::Configure(ErrorCallback);
         if (fAnyErrors)
-            STRESS_LOG0(LF_DIAGNOSTICS_PORT, LL_WARNING, "At least one Diagnostic Port fails to be configured.\n");
+            STRESS_LOG0(LF_DIAGNOSTICS_PORT, LL_ERROR, "At least one Diagnostic Port failed to be configured.\n");
 
         if (IpcStreamFactory::AnySuspendedPorts())
         {
