@@ -159,7 +159,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             Debug.Assert(!(arg is PointerType));
             Debug.Assert(!arg.IsStaticClass);
 
-            bool fReportErrors = 0 == (flags & CheckConstraintsFlags.NoErrors);
+            bool fReportErrors = (flags & CheckConstraintsFlags.NoErrors) == 0;
 
             if (var.HasRefConstraint && !arg.IsReferenceType)
             {

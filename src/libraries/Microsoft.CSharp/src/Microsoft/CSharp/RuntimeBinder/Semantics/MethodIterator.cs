@@ -60,8 +60,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     // Make sure that whether we're seeing a ctor is consistent with the flag.
                     // The only properties we handle are indexers.
                     if (_mask == symbmask_t.MASK_MethodSymbol && (
-                            0 == (_flags & EXPRFLAG.EXF_CTOR) != !((MethodSymbol)CurrentSymbol).IsConstructor() ||
-                            0 == (_flags & EXPRFLAG.EXF_OPERATOR) != !((MethodSymbol)CurrentSymbol).isOperator) ||
+                            (_flags & EXPRFLAG.EXF_CTOR) == 0 != !((MethodSymbol)CurrentSymbol).IsConstructor() ||
+                            (_flags & EXPRFLAG.EXF_OPERATOR) == 0 != !((MethodSymbol)CurrentSymbol).isOperator) ||
                         _mask == symbmask_t.MASK_PropertySymbol && !(CurrentSymbol is IndexerSymbol))
                     {
                         // Get the next symbol.

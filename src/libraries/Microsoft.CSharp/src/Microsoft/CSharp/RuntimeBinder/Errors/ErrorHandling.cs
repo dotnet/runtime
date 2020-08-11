@@ -27,7 +27,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Errors
                 ErrArg arg = args[iarg];
 
                 // If the NoStr bit is set we don't add it to prgpsz.
-                if (0 != (arg.eaf & ErrArgFlags.NoStr))
+                if ((arg.eaf & ErrArgFlags.NoStr) != 0)
                     continue;
 
 
@@ -41,7 +41,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Errors
                 ppsz++;
 
                 int iargRec;
-                if (!fUserStrings || 0 == (arg.eaf & ErrArgFlags.Unique))
+                if (!fUserStrings || (arg.eaf & ErrArgFlags.Unique) == 0)
                 {
                     iargRec = -1;
                 }
@@ -68,7 +68,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Errors
                         continue;
 
                     ErrArg arg = args[prgiarg[i]];
-                    Debug.Assert(0 != (arg.eaf & ErrArgFlags.Unique) && 0 == (arg.eaf & ErrArgFlags.NoStr));
+                    Debug.Assert((arg.eaf & ErrArgFlags.Unique) != 0 && (arg.eaf & ErrArgFlags.NoStr) == 0);
 
                     Symbol sym = null;
                     CType pType = null;
@@ -98,7 +98,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Errors
                     {
                         if (prgiarg[j] < 0)
                             continue;
-                        Debug.Assert(0 != (args[prgiarg[j]].eaf & ErrArgFlags.Unique));
+                        Debug.Assert((args[prgiarg[j]].eaf & ErrArgFlags.Unique) != 0);
                         if (prgpsz[i] != prgpsz[j])
                             continue;
 
@@ -112,7 +112,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Errors
                         }
 
                         ErrArg arg2 = args[prgiarg[j]];
-                        Debug.Assert(0 != (arg2.eaf & ErrArgFlags.Unique) && 0 == (arg2.eaf & ErrArgFlags.NoStr));
+                        Debug.Assert((arg2.eaf & ErrArgFlags.Unique) != 0 && (arg2.eaf & ErrArgFlags.NoStr) == 0);
 
                         Symbol sym2 = null;
                         CType pType2 = null;

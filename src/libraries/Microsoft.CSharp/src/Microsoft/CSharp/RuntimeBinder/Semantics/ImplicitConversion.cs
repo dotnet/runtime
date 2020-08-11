@@ -210,7 +210,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 // optional standard implicit conversion. The exact rules for evaluating user-defined
                 // conversions are described in 13.4.3.
 
-                if (0 == (_flags & CONVERTTYPE.NOUDC))
+                if ((_flags & CONVERTTYPE.NOUDC) == 0)
                 {
                     return _binder.bindUserDefinedConversion(_exprSrc, _typeSrc, _typeDest, _needsExprDest, out _exprDest, true);
                 }
@@ -262,7 +262,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             {
                 // This code assumes that STANDARD and ISEXPLICIT are never both set.
                 // bindUserDefinedConversion should ensure this!
-                Debug.Assert(0 != (~_flags & (CONVERTTYPE.STANDARD | CONVERTTYPE.ISEXPLICIT)));
+                Debug.Assert((~_flags & (CONVERTTYPE.STANDARD | CONVERTTYPE.ISEXPLICIT)) != 0);
                 Debug.Assert(_exprSrc == null || _exprSrc.Type == _typeSrc);
                 Debug.Assert(!_needsExprDest || _exprSrc != null);
                 Debug.Assert(_typeSrc != nubDst); // BindImplicitConversion should have taken care of this already.
@@ -276,7 +276,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
                     // typeSrc is a base type of the destination nullable type so there is an explicit
                     // unboxing conversion.
-                    if (0 == (_flags & CONVERTTYPE.ISEXPLICIT))
+                    if ((_flags & CONVERTTYPE.ISEXPLICIT) == 0)
                     {
                         return false;
                     }
@@ -348,7 +348,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     }
 
                     // No builtin conversion. Maybe there is a user defined conversion....
-                    return 0 == (_flags & CONVERTTYPE.NOUDC) && _binder.bindUserDefinedConversion(_exprSrc, _typeSrc, nubDst, _needsExprDest, out _exprDest, 0 == (_flags & CONVERTTYPE.ISEXPLICIT));
+                    return (_flags & CONVERTTYPE.NOUDC) == 0 && _binder.bindUserDefinedConversion(_exprSrc, _typeSrc, nubDst, _needsExprDest, out _exprDest, (_flags & CONVERTTYPE.ISEXPLICIT) == 0);
                 }
 
                 // Both are Nullable so there is only a conversion if there is a conversion between the base types.
@@ -356,7 +356,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 if (typeSrcBase != typeDstBase && !pfn(null, typeSrcBase, typeDstBase, false, out _exprDest, _flags | CONVERTTYPE.NOUDC))
                 {
                     // No builtin conversion. Maybe there is a user defined conversion....
-                    return 0 == (_flags & CONVERTTYPE.NOUDC) && _binder.bindUserDefinedConversion(_exprSrc, _typeSrc, nubDst, _needsExprDest, out _exprDest, 0 == (_flags & CONVERTTYPE.ISEXPLICIT));
+                    return (_flags & CONVERTTYPE.NOUDC) == 0 && _binder.bindUserDefinedConversion(_exprSrc, _typeSrc, nubDst, _needsExprDest, out _exprDest, (_flags & CONVERTTYPE.ISEXPLICIT) == 0);
                 }
 
                 if (_needsExprDest)
@@ -454,7 +454,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     }
                     return true;
                 }
-                return 0 == (_flags & CONVERTTYPE.NOUDC) && _binder.bindUserDefinedConversion(_exprSrc, nubSrc, _typeDest, _needsExprDest, out _exprDest, true);
+                return (_flags & CONVERTTYPE.NOUDC) == 0 && _binder.bindUserDefinedConversion(_exprSrc, nubSrc, _typeDest, _needsExprDest, out _exprDest, true);
             }
 
             private bool bindImplicitConversionFromArray()
@@ -488,9 +488,9 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                      (_typeDest is AggregateType aggDest && aggDest.IsInterfaceType &&
                       aggDest.TypeArgsAll.Count == 1 &&
                       (aggDest.TypeArgsAll[0] != ((ArrayType)_typeSrc).ElementType ||
-                       0 != (_flags & CONVERTTYPE.FORCECAST))))
+                       (_flags & CONVERTTYPE.FORCECAST) != 0)))
                     &&
-                    (0 != (_flags & CONVERTTYPE.FORCECAST) ||
+                    ((_flags & CONVERTTYPE.FORCECAST) != 0 ||
                      TypeManager.TypeContainsTyVars(_typeSrc, null) ||
                      TypeManager.TypeContainsTyVars(_typeDest, null)))
                 {
@@ -638,7 +638,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     _exprSrc.IsZero() &&
                     _exprSrc.Type.IsNumericType &&
                     /*(exprSrc.flags & EXF_LITERALCONST) &&*/
-                    0 == (_flags & CONVERTTYPE.STANDARD))
+                    (_flags & CONVERTTYPE.STANDARD) == 0)
                 {
                     // NOTE: This allows conversions from uint, long, ulong, float, double, and hexadecimal int
                     // NOTE: This is for backwards compatibility with Everett
@@ -688,7 +688,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 {
                     // Special case: precision limiting casts to float or double
                     Debug.Assert(ptSrc == PredefinedType.PT_FLOAT || ptSrc == PredefinedType.PT_DOUBLE);
-                    Debug.Assert(0 != (_flags & CONVERTTYPE.ISEXPLICIT));
+                    Debug.Assert((_flags & CONVERTTYPE.ISEXPLICIT) != 0);
                     convertKind = ConvKind.Implicit;
                 }
                 else

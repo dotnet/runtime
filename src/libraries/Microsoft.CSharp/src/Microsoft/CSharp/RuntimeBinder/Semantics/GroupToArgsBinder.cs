@@ -88,7 +88,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
             public void Bind()
             {
-                Debug.Assert(_pGroup.SymKind == SYMKIND.SK_MethodSymbol || _pGroup.SymKind == SYMKIND.SK_PropertySymbol && 0 != (_pGroup.Flags & EXPRFLAG.EXF_INDEXER));
+                Debug.Assert(_pGroup.SymKind == SYMKIND.SK_MethodSymbol || _pGroup.SymKind == SYMKIND.SK_PropertySymbol && (_pGroup.Flags & EXPRFLAG.EXF_INDEXER) != 0);
 
                 LookForCandidates();
                 if (!GetResultOfBind())
@@ -321,7 +321,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                         CType pTypeThrough = _pGroup.OptionalObject?.Type;
                         pmethBest = _pExprBinder.FindBestMethod(_methList, pTypeThrough, _pArguments, out CandidateFunctionMember pAmbig1, out CandidateFunctionMember pAmbig2);
 
-                        if (null == pmethBest)
+                        if (pmethBest == null)
                         {
                             if (pAmbig1.@params != pAmbig2.@params ||
                                 pAmbig1.mpwi.MethProp().Params.Count != pAmbig2.mpwi.MethProp().Params.Count ||
@@ -827,7 +827,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 {
                     return false;
                 }
-                if (0 != (_fBindFlags & BindingFlag.BIND_NOPARAMS))
+                if ((_fBindFlags & BindingFlag.BIND_NOPARAMS) != 0)
                 {
                     return false;
                 }
@@ -1073,9 +1073,9 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             private void ReportErrorsOnSuccess()
             {
                 // used for Methods and Indexers
-                Debug.Assert(_pGroup.SymKind == SYMKIND.SK_MethodSymbol || _pGroup.SymKind == SYMKIND.SK_PropertySymbol && 0 != (_pGroup.Flags & EXPRFLAG.EXF_INDEXER));
+                Debug.Assert(_pGroup.SymKind == SYMKIND.SK_MethodSymbol || _pGroup.SymKind == SYMKIND.SK_PropertySymbol && (_pGroup.Flags & EXPRFLAG.EXF_INDEXER) != 0);
                 Debug.Assert(_pGroup.TypeArgs.Count == 0 || _pGroup.SymKind == SYMKIND.SK_MethodSymbol);
-                Debug.Assert(0 == (_pGroup.Flags & EXPRFLAG.EXF_USERCALLABLE) || _results.BestResult.MethProp().isUserCallable());
+                Debug.Assert((_pGroup.Flags & EXPRFLAG.EXF_USERCALLABLE) == 0 || _results.BestResult.MethProp().isUserCallable());
 
                 if (_pGroup.SymKind == SYMKIND.SK_MethodSymbol)
                 {
@@ -1214,11 +1214,11 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
                 if (bUseDelegateErrors)
                 {
-                    Debug.Assert(0 == (_pGroup.Flags & EXPRFLAG.EXF_CTOR));
+                    Debug.Assert((_pGroup.Flags & EXPRFLAG.EXF_CTOR) == 0);
                     return ErrorHandling.Error(ErrorCode.ERR_BadDelArgCount, nameErr, _pArguments.carg);
                 }
 
-                if (0 != (_pGroup.Flags & EXPRFLAG.EXF_CTOR))
+                if ((_pGroup.Flags & EXPRFLAG.EXF_CTOR) != 0)
                 {
                     Debug.Assert(!(_pGroup.ParentType is TypeParameterType));
                     return ErrorHandling.Error(ErrorCode.ERR_BadCtorArgCount, _pGroup.ParentType, _pArguments.carg);

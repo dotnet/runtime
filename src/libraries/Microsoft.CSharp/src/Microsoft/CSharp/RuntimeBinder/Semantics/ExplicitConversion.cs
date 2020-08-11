@@ -173,7 +173,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 }
 
                 // No built-in conversion was found. Maybe a user-defined conversion?
-                if (0 == (_flags & CONVERTTYPE.NOUDC))
+                if ((_flags & CONVERTTYPE.NOUDC) == 0)
                 {
                     return _binder.bindUserDefinedConversion(_exprSrc, _typeSrc, _typeDest, _needsExprDest, out _exprDest, false);
                 }
@@ -455,7 +455,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     {
                         return AggCastResult.Success;  // else, don't fold and use a regular cast, below.
                     }
-                    if (result == ConstCastResult.CheckFailure && 0 == (_flags & CONVERTTYPE.CHECKOVERFLOW))
+                    if (result == ConstCastResult.CheckFailure && (_flags & CONVERTTYPE.CHECKOVERFLOW) == 0)
                     {
                         return AggCastResult.Abort;
                     }
@@ -513,7 +513,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     {
                         return AggCastResult.Success;  // else, don't fold and use a regular cast, below.
                     }
-                    if (result == ConstCastResult.CheckFailure && 0 == (_flags & CONVERTTYPE.CHECKOVERFLOW))
+                    if (result == ConstCastResult.CheckFailure && (_flags & CONVERTTYPE.CHECKOVERFLOW) == 0)
                     {
                         return AggCastResult.Abort;
                     }
@@ -622,7 +622,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     {
                         return AggCastResult.Success;  // else, don't fold and use a regular cast, below.
                     }
-                    if (result == ConstCastResult.CheckFailure && 0 == (_flags & CONVERTTYPE.CHECKOVERFLOW))
+                    if (result == ConstCastResult.CheckFailure && (_flags & CONVERTTYPE.CHECKOVERFLOW) == 0)
                     {
                         return AggCastResult.Abort;
                     }

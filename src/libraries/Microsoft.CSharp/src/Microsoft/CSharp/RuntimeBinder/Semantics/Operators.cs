@@ -2211,7 +2211,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             }
 
             ExprOperator exprRes = ExprFactory.CreateNeg(flags, op);
-            Debug.Assert(0 == (exprRes.Flags & EXPRFLAG.EXF_LVALUE));
+            Debug.Assert((exprRes.Flags & EXPRFLAG.EXF_LVALUE) == 0);
             return exprRes;
         }
 

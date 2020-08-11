@@ -149,7 +149,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         {
             if ((int)ptSrc < NUM_SIMPLE_TYPES && (int)ptDst < NUM_SIMPLE_TYPES)
             {
-                return 0 != (s_simpleTypeConversions[(int)ptSrc][(int)ptDst] & UDC);
+                return (s_simpleTypeConversions[(int)ptSrc][(int)ptDst] & UDC) != 0;
             }
             return false;
         }
@@ -791,7 +791,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                             }
                             else if (typeBestSrc != typeFrom)
                             {
-                                Debug.Assert(0 <= iuciBestSrc && iuciBestSrc < prguci.Count - 1);
+                                Debug.Assert(iuciBestSrc >= 0 && iuciBestSrc < prguci.Count - 1);
                                 int n = CompareSrcTypesBased(typeBestSrc, prguci[iuciBestSrc].SrcImplicit, typeFrom, fFromImplicit);
                                 if (n > 0)
                                 {
@@ -818,7 +818,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                             }
                             else if (typeBestDst != typeTo)
                             {
-                                Debug.Assert(0 <= iuciBestDst && iuciBestDst < prguci.Count - 1);
+                                Debug.Assert(iuciBestDst >= 0 && iuciBestDst < prguci.Count - 1);
                                 int n = CompareDstTypesBased(typeBestDst, prguci[iuciBestDst].DstImplicit, typeTo, fToImplicit);
                                 if (n > 0)
                                 {
@@ -838,8 +838,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 return false;
             }
 
-            Debug.Assert(0 <= iuciBestSrc && iuciBestSrc < prguci.Count);
-            Debug.Assert(0 <= iuciBestDst && iuciBestDst < prguci.Count);
+            Debug.Assert(iuciBestSrc >= 0 && iuciBestSrc < prguci.Count);
+            Debug.Assert(iuciBestDst >= 0 && iuciBestDst < prguci.Count);
 
             int ctypeLiftBest = 3; // Bigger than any legal value on purpose.
             int iuciBest = -1;
@@ -1025,8 +1025,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         private static RuntimeBinderException HandleAmbiguity(CType typeSrc, CType typeDst, List<UdConvInfo> prguci, int iuciBestSrc, int iuciBestDst)
         {
-            Debug.Assert(0 <= iuciBestSrc && iuciBestSrc < prguci.Count);
-            Debug.Assert(0 <= iuciBestDst && iuciBestDst < prguci.Count);
+            Debug.Assert(iuciBestSrc >= 0 && iuciBestSrc < prguci.Count);
+            Debug.Assert(iuciBestDst >= 0 && iuciBestDst < prguci.Count);
             return ErrorHandling.Error(ErrorCode.ERR_AmbigUDConv, prguci[iuciBestSrc].Meth, prguci[iuciBestDst].Meth, typeSrc, typeDst);
         }
 

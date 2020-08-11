@@ -74,7 +74,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Errors
 
         private void ErrAppendParamList(TypeArray @params, bool isParamArray)
         {
-            if (null == @params)
+            if (@params == null)
                 return;
 
             for (int i = 0; i < @params.Count; i++)
@@ -132,7 +132,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Errors
                 return;
             }
 
-            if (pctx != null && !pctx.IsNop && parent is AggregateSymbol agg && 0 != agg.GetTypeVarsAll().Count)
+            if (pctx != null && !pctx.IsNop && parent is AggregateSymbol agg && agg.GetTypeVarsAll().Count != 0)
             {
                 CType pType = TypeManager.SubstType(agg.getThisType(), pctx);
                 ErrAppendType(pType, null);
@@ -366,7 +366,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Errors
                     break;
 
                 case SYMKIND.SK_TypeParameterSymbol:
-                    if (null == sym.name)
+                    if (sym.name == null)
                     {
                         var parSym = (TypeParameterSymbol)sym;
                         // It's a standard type variable.
@@ -434,7 +434,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Errors
 
                 case TypeKind.TK_TypeParameterType:
                     TypeParameterType tpType = (TypeParameterType)pType;
-                    if (null == tpType.Name)
+                    if (tpType.Name == null)
                     {
                         // It's a standard type variable.
                         if (tpType.IsMethodTypeParameter)

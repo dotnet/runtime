@@ -53,7 +53,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 #endif // DEBUG
 
             ACCESSERROR error = CheckAccessCore(symCheck, atsCheck, symWhere, typeThru);
-            if (ACCESSERROR.ACCESSERROR_NOERROR != error)
+            if (error != ACCESSERROR.ACCESSERROR_NOERROR)
             {
                 return error;
             }
@@ -92,7 +92,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
             do
             {
-                if (ACCESSERROR.ACCESSERROR_NOERROR != CheckAccessCore(ats.OwningAggregate, ats.OuterType, symWhere, null))
+                if (CheckAccessCore(ats.OwningAggregate, ats.OuterType, symWhere, null) != ACCESSERROR.ACCESSERROR_NOERROR)
                 {
                     return false;
                 }

@@ -142,7 +142,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         private bool IsUnfixed(int iParam)
         {
-            Debug.Assert(0 <= iParam);
+            Debug.Assert(iParam >= 0);
             Debug.Assert(iParam < _pMethodTypeParameters.Count);
             return _pFixedResults[iParam] == null;
         }
@@ -212,7 +212,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         private bool HasBound(int iParam)
         {
-            Debug.Assert(0 <= iParam);
+            Debug.Assert(iParam >= 0);
             Debug.Assert(iParam < _pMethodTypeParameters.Count);
             return !_pLowerBounds[iParam].IsEmpty() ||
                 !_pExactBounds[iParam].IsEmpty() ||
@@ -588,15 +588,15 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             // SPEC: directly on Xk and Xk depends on Xj. Thus "depends on" is the
             // SPEC: transitive but not reflexive closure of "depends directly on".
 
-            Debug.Assert(0 <= iParam && iParam < _pMethodTypeParameters.Count);
-            Debug.Assert(0 <= jParam && jParam < _pMethodTypeParameters.Count);
+            Debug.Assert(iParam >= 0 && iParam < _pMethodTypeParameters.Count);
+            Debug.Assert(jParam >= 0 && jParam < _pMethodTypeParameters.Count);
 
             if (_dependenciesDirty)
             {
                 SetIndirectsToUnknown();
                 DeduceAllDependencies();
             }
-            return 0 != ((_ppDependencies[iParam][jParam]) & Dependency.DependsMask);
+            return ((_ppDependencies[iParam][jParam]) & Dependency.DependsMask) != 0;
         }
 
         ////////////////////////////////////////////////////////////////////////////////
@@ -604,8 +604,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         private bool DependsTransitivelyOn(int iParam, int jParam)
         {
             Debug.Assert(_ppDependencies != null);
-            Debug.Assert(0 <= iParam && iParam < _pMethodTypeParameters.Count);
-            Debug.Assert(0 <= jParam && jParam < _pMethodTypeParameters.Count);
+            Debug.Assert(iParam >= 0 && iParam < _pMethodTypeParameters.Count);
+            Debug.Assert(jParam >= 0 && jParam < _pMethodTypeParameters.Count);
 
             // Can we find Xk such that Xi depends on Xk and Xk depends on Xj?
             // If so, then Xi depends indirectly on Xj.  (Note that there is
@@ -617,8 +617,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
             for (int kParam = 0; kParam < _pMethodTypeParameters.Count; ++kParam)
             {
-                if (0 != ((_ppDependencies[iParam][kParam]) & Dependency.DependsMask) &&
-                    0 != ((_ppDependencies[kParam][jParam]) & Dependency.DependsMask))
+                if (((_ppDependencies[iParam][kParam]) & Dependency.DependsMask) != 0 &&
+                    ((_ppDependencies[kParam][jParam]) & Dependency.DependsMask) != 0)
                 {
                     return true;
                 }
@@ -717,7 +717,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         private bool DependsOnAny(int iParam)
         {
-            Debug.Assert(0 <= iParam && iParam < _pMethodTypeParameters.Count);
+            Debug.Assert(iParam >= 0 && iParam < _pMethodTypeParameters.Count);
             for (int jParam = 0; jParam < _pMethodTypeParameters.Count; ++jParam)
             {
                 if (DependsOn(iParam, jParam))
@@ -732,7 +732,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         private bool AnyDependsOn(int iParam)
         {
-            Debug.Assert(0 <= iParam && iParam < _pMethodTypeParameters.Count);
+            Debug.Assert(iParam >= 0 && iParam < _pMethodTypeParameters.Count);
             for (int jParam = 0; jParam < _pMethodTypeParameters.Count; ++jParam)
             {
                 if (DependsOn(jParam, iParam))

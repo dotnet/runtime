@@ -33,7 +33,7 @@ namespace System
             for (; pos < text.Length; pos++)
             {
                 char c = text[pos];
-                if ('0' <= c && c <= '9')
+                if (c >= '0' && c <= '9')
                 {
                     break;
                 }
@@ -44,7 +44,7 @@ namespace System
             for (; pos < text.Length; pos++)
             {
                 char c = text[pos];
-                if ('0' > c || c > '9')
+                if (c < '0' || c > '9')
                     break;
 
                 try

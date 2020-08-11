@@ -49,15 +49,15 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         [Conditional("DEBUG")]
         public static void AssertIsBin(this Expr expr)
         {
-            Debug.Assert(expr?.Kind >= ExpressionKind.TypeLimit && 0 != (expr.Flags & EXPRFLAG.EXF_BINOP));
+            Debug.Assert(expr?.Kind >= ExpressionKind.TypeLimit && (expr.Flags & EXPRFLAG.EXF_BINOP) != 0);
         }
         public static bool isLvalue(this Expr expr)
         {
-            return (expr == null) ? false : 0 != (expr.Flags & EXPRFLAG.EXF_LVALUE);
+            return (expr == null) ? false : (expr.Flags & EXPRFLAG.EXF_LVALUE) != 0;
         }
         public static bool isChecked(this Expr expr)
         {
-            return (expr == null) ? false : 0 != (expr.Flags & EXPRFLAG.EXF_CHECKOVERFLOW);
+            return (expr == null) ? false : (expr.Flags & EXPRFLAG.EXF_CHECKOVERFLOW) != 0;
         }
 
         public static bool isNull(this Expr expr)
