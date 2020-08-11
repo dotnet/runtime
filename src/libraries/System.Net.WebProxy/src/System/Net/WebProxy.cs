@@ -68,7 +68,14 @@ namespace System.Net
             get { return _bypassList != null ? (string[])_bypassList.ToArray(typeof(string)) : Array.Empty<string>(); }
             set
             {
-                _bypassList = new ArrayList(value);
+                if (value == null)
+                {
+                    _bypassList = null;
+                }
+                else
+                {
+                    _bypassList = new ArrayList(value);
+                }
                 UpdateRegexList(true);
             }
         }
