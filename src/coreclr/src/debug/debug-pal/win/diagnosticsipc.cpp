@@ -56,8 +56,8 @@ IpcStream::DiagnosticsIpc *IpcStream::DiagnosticsIpc::Create(const char *const p
 
 bool IpcStream::DiagnosticsIpc::Listen(ErrorCallback callback)
 {
-    _ASSERTE(mode == ConnectionMode::SERVER);
-    if (mode != ConnectionMode::SERVER)
+    _ASSERTE(mode == ConnectionMode::LISTEN);
+    if (mode != ConnectionMode::LISTEN)
     {
         if (callback != nullptr)
             callback("Cannot call Listen on a client connection", -1);
@@ -131,7 +131,7 @@ bool IpcStream::DiagnosticsIpc::Listen(ErrorCallback callback)
 IpcStream *IpcStream::DiagnosticsIpc::Accept(ErrorCallback callback)
 {
     _ASSERTE(_isListening);
-    _ASSERTE(mode == ConnectionMode::SERVER);
+    _ASSERTE(mode == ConnectionMode::LISTEN);
 
     DWORD dwDummy = 0;
     bool fSuccess = GetOverlappedResult(
@@ -148,7 +148,7 @@ IpcStream *IpcStream::DiagnosticsIpc::Accept(ErrorCallback callback)
     }
 
     // create new IpcStream using handle and reset the Server object so it can listen again
-    IpcStream *pStream = new IpcStream(_hPipe, ConnectionMode::SERVER);
+    IpcStream *pStream = new IpcStream(_hPipe, ConnectionMode::LISTEN);
 
     // reset the server
     _hPipe = INVALID_HANDLE_VALUE;
@@ -167,8 +167,8 @@ IpcStream *IpcStream::DiagnosticsIpc::Accept(ErrorCallback callback)
 
 IpcStream *IpcStream::DiagnosticsIpc::Connect(ErrorCallback callback)
 {
-    _ASSERTE(mode == ConnectionMode::CLIENT);
-    if (mode != ConnectionMode::CLIENT)
+    _ASSERTE(mode == ConnectionMode::CONNECT);
+    if (mode != ConnectionMode::CONNECT)
     {
         if (callback != nullptr)
             callback("Cannot call connect on a server connection", 0);
@@ -206,7 +206,7 @@ void IpcStream::DiagnosticsIpc::Close(bool isShutdown, ErrorCallback callback)
 
     if (_hPipe != INVALID_HANDLE_VALUE)
     {
-        if (mode == DiagnosticsIpc::ConnectionMode::SERVER)
+        if (mode == DiagnosticsIpc::ConnectionMode::LISTEN)
         {
             const BOOL fSuccessDisconnectNamedPipe = ::DisconnectNamedPipe(_hPipe);
             _ASSERTE(fSuccessDisconnectNamedPipe != 0);
@@ -248,7 +248,7 @@ void IpcStream::Close(ErrorCallback callback)
     {
         Flush();
 
-        if (_mode == DiagnosticsIpc::ConnectionMode::SERVER)
+        if (_mode == DiagnosticsIpc::ConnectionMode::LISTEN)
         {
             const BOOL fSuccessDisconnectNamedPipe = ::DisconnectNamedPipe(_hPipe);
             _ASSERTE(fSuccessDisconnectNamedPipe != 0);
@@ -281,7 +281,7 @@ int32_t IpcStream::DiagnosticsIpc::Poll(IpcPollHandle *rgIpcPollHandles, uint32_
         if (rgIpcPollHandles[i].pIpc != nullptr)
         {
             // SERVER
-            _ASSERTE(rgIpcPollHandles[i].pIpc->mode == DiagnosticsIpc::ConnectionMode::SERVER);
+            _ASSERTE(rgIpcPollHandles[i].pIpc->mode == DiagnosticsIpc::ConnectionMode::LISTEN);
             pHandles[i] = rgIpcPollHandles[i].pIpc->_oOverlap.hEvent;
         }
         else

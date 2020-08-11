@@ -141,7 +141,7 @@ bool IpcStreamFactory::BuildAndAddPort(IpcStreamFactory::DiagnosticPortBuilder b
 {
     if (builder.Type == DiagnosticPortType::LISTEN)
     {
-        IpcStream::DiagnosticsIpc *pIpc = IpcStream::DiagnosticsIpc::Create(builder.Path, IpcStream::DiagnosticsIpc::ConnectionMode::SERVER, callback);
+        IpcStream::DiagnosticsIpc *pIpc = IpcStream::DiagnosticsIpc::Create(builder.Path, IpcStream::DiagnosticsIpc::ConnectionMode::LISTEN, callback);
         if (pIpc != nullptr)
         {
             if (pIpc->Listen(callback))
@@ -162,7 +162,7 @@ bool IpcStreamFactory::BuildAndAddPort(IpcStreamFactory::DiagnosticPortBuilder b
     }
     else if (builder.Type == DiagnosticPortType::CONNECT)
     {
-        IpcStream::DiagnosticsIpc *pIpc = IpcStream::DiagnosticsIpc::Create(builder.Path, IpcStream::DiagnosticsIpc::ConnectionMode::CLIENT, callback);
+        IpcStream::DiagnosticsIpc *pIpc = IpcStream::DiagnosticsIpc::Create(builder.Path, IpcStream::DiagnosticsIpc::ConnectionMode::CONNECT, callback);
         if (pIpc != nullptr)
         {
             s_rgpDiagnosticPorts.Push(new ConnectDiagnosticPort(pIpc, builder));
