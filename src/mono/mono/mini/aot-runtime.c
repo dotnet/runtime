@@ -4519,6 +4519,20 @@ add_module_cb (gpointer key, gpointer value, gpointer user_data)
 	g_ptr_array_add ((GPtrArray*)user_data, value);
 }
 
+static gboolean
+inst_is_private (MonoGenericInst *inst)
+{
+	for (int i = 0; i < inst->type_argc; ++i) {
+		MonoType *t = inst->type_argv [i];
+		if ((t->type == MONO_TYPE_CLASS || t->type == MONO_TYPE_VALUETYPE)) {
+			int access_level = mono_class_get_flags (t->data.klass) & TYPE_ATTRIBUTE_VISIBILITY_MASK;
+			if (access_level == TYPE_ATTRIBUTE_NESTED_PRIVATE || access_level == TYPE_ATTRIBUTE_NOT_PUBLIC)
+				return TRUE;
+		}
+	}
+	return FALSE;
+}
+
 gboolean
 mono_aot_can_dedup (MonoMethod *method)
 {
@@ -4544,9 +4558,14 @@ mono_aot_can_dedup (MonoMethod *method)
 
 	if (method->is_inflated && !mono_method_is_generic_sharable_full (method, TRUE, FALSE, FALSE) &&
 		!mini_is_gsharedvt_signature (mono_method_signature_internal (method)) &&
-		!mini_is_gsharedvt_klass (method->klass))
+		!mini_is_gsharedvt_klass (method->klass)) {
+		/* No point in dedup-ing private instances */
+		MonoGenericContext *context = mono_method_get_context (method);
+		if ((context->class_inst && inst_is_private (context->class_inst)) ||
+			(context->method_inst && inst_is_private (context->method_inst)))
+			return FALSE;
 		return TRUE;
-
+	}
 	return FALSE;
 #else
 	gboolean not_normal_gshared = method->is_inflated && !mono_method_is_generic_sharable_full (method, TRUE, FALSE, FALSE);
