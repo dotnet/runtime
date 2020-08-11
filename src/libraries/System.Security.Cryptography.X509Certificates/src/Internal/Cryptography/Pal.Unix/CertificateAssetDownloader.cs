@@ -102,7 +102,7 @@ namespace Internal.Cryptography.Pal
 
         private static byte[]? DownloadAsset(string uri, TimeSpan downloadTimeout)
         {
-            if (s_downloadBytes != null)
+            if (s_downloadBytes != null && downloadTimeout > TimeSpan.Zero)
             {
                 long totalMillis = (long)downloadTimeout.TotalMilliseconds;
                 CancellationTokenSource? cts = totalMillis > int.MaxValue ? null : new CancellationTokenSource((int)totalMillis);
