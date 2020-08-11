@@ -191,13 +191,10 @@ namespace System.Text.Json
         public static object? Deserialize(string json, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(MembersAccessedOnRead)] System.Type returnType, System.Text.Json.JsonSerializerOptions? options = null) { throw null; }
         public static object? Deserialize(ref System.Text.Json.Utf8JsonReader reader, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(MembersAccessedOnRead)] System.Type returnType, System.Text.Json.JsonSerializerOptions? options = null) { throw null; }
         public static System.Threading.Tasks.ValueTask<object?> DeserializeAsync(System.IO.Stream utf8Json, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(MembersAccessedOnRead)] System.Type returnType, System.Text.Json.JsonSerializerOptions? options = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
-        public static System.Threading.Tasks.ValueTask<TValue> DeserializeAsync<[System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(MembersAccessedOnRead)] TValue>(System.IO.Stream utf8Json, System.Text.Json.JsonSerializerOptions? options = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
-        [return: System.Diagnostics.CodeAnalysis.MaybeNullAttribute]
-        public static TValue Deserialize<[System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(MembersAccessedOnRead)] TValue>(System.ReadOnlySpan<byte> utf8Json, System.Text.Json.JsonSerializerOptions? options = null) { throw null; }
-        [return: System.Diagnostics.CodeAnalysis.MaybeNullAttribute]
-        public static TValue Deserialize<[System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(MembersAccessedOnRead)] TValue>(string json, System.Text.Json.JsonSerializerOptions? options = null) { throw null; }
-        [return: System.Diagnostics.CodeAnalysis.MaybeNullAttribute]
-        public static TValue Deserialize<[System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(MembersAccessedOnRead)] TValue>(ref System.Text.Json.Utf8JsonReader reader, System.Text.Json.JsonSerializerOptions? options = null) { throw null; }
+        public static System.Threading.Tasks.ValueTask<TValue?> DeserializeAsync<[System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(MembersAccessedOnRead)] TValue>(System.IO.Stream utf8Json, System.Text.Json.JsonSerializerOptions? options = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public static TValue? Deserialize<[System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(MembersAccessedOnRead)] TValue>(System.ReadOnlySpan<byte> utf8Json, System.Text.Json.JsonSerializerOptions? options = null) { throw null; }
+        public static TValue? Deserialize<[System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(MembersAccessedOnRead)] TValue>(string json, System.Text.Json.JsonSerializerOptions? options = null) { throw null; }
+        public static TValue? Deserialize<[System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(MembersAccessedOnRead)] TValue>(ref System.Text.Json.Utf8JsonReader reader, System.Text.Json.JsonSerializerOptions? options = null) { throw null; }
         public static string Serialize(object? value, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(MembersAccessedOnWrite)] System.Type inputType, System.Text.Json.JsonSerializerOptions? options = null) { throw null; }
         public static void Serialize(System.Text.Json.Utf8JsonWriter writer, object? value, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(MembersAccessedOnWrite)] System.Type inputType, System.Text.Json.JsonSerializerOptions? options = null) { }
         public static System.Threading.Tasks.Task SerializeAsync(System.IO.Stream utf8Json, object? value, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(MembersAccessedOnWrite)] System.Type inputType, System.Text.Json.JsonSerializerOptions? options = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
@@ -211,13 +208,10 @@ namespace System.Text.Json
         public static object? Deserialize(string json, System.Type returnType, System.Text.Json.JsonSerializerOptions? options = null) { throw null; }
         public static object? Deserialize(ref System.Text.Json.Utf8JsonReader reader, System.Type returnType, System.Text.Json.JsonSerializerOptions? options = null) { throw null; }
         public static System.Threading.Tasks.ValueTask<object?> DeserializeAsync(System.IO.Stream utf8Json, System.Type returnType, System.Text.Json.JsonSerializerOptions? options = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
-        public static System.Threading.Tasks.ValueTask<TValue> DeserializeAsync<TValue>(System.IO.Stream utf8Json, System.Text.Json.JsonSerializerOptions? options = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
-        [return: System.Diagnostics.CodeAnalysis.MaybeNullAttribute]
-        public static TValue Deserialize<TValue>(System.ReadOnlySpan<byte> utf8Json, System.Text.Json.JsonSerializerOptions? options = null) { throw null; }
-        [return: System.Diagnostics.CodeAnalysis.MaybeNullAttribute]
-        public static TValue Deserialize<TValue>(string json, System.Text.Json.JsonSerializerOptions? options = null) { throw null; }
-        [return: System.Diagnostics.CodeAnalysis.MaybeNullAttribute]
-        public static TValue Deserialize<TValue>(ref System.Text.Json.Utf8JsonReader reader, System.Text.Json.JsonSerializerOptions? options = null) { throw null; }
+        public static System.Threading.Tasks.ValueTask<TValue?> DeserializeAsync<TValue>(System.IO.Stream utf8Json, System.Text.Json.JsonSerializerOptions? options = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public static TValue? Deserialize<TValue>(System.ReadOnlySpan<byte> utf8Json, System.Text.Json.JsonSerializerOptions? options = null) { throw null; }
+        public static TValue? Deserialize<TValue>(string json, System.Text.Json.JsonSerializerOptions? options = null) { throw null; }
+        public static TValue? Deserialize<TValue>(ref System.Text.Json.Utf8JsonReader reader, System.Text.Json.JsonSerializerOptions? options = null) { throw null; }
         public static string Serialize(object? value, System.Type inputType, System.Text.Json.JsonSerializerOptions? options = null) { throw null; }
         public static void Serialize(System.Text.Json.Utf8JsonWriter writer, object? value, System.Type inputType, System.Text.Json.JsonSerializerOptions? options = null) { }
         public static System.Threading.Tasks.Task SerializeAsync(System.IO.Stream utf8Json, object? value, System.Type inputType, System.Text.Json.JsonSerializerOptions? options = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
@@ -518,14 +512,9 @@ namespace System.Text.Json.Serialization
     public partial class JsonConverterAttribute : System.Text.Json.Serialization.JsonAttribute
     {
         protected JsonConverterAttribute() { }
-#if NETCOREAPP && !NETCOREAPP3_0
         public JsonConverterAttribute([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] System.Type converterType) { }
         [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
         public System.Type? ConverterType { get { throw null; } }
-#else
-        public JsonConverterAttribute(System.Type converterType) { }
-        public System.Type? ConverterType { get { throw null; } }
-#endif
         public virtual System.Text.Json.Serialization.JsonConverter? CreateConverter(System.Type typeToConvert) { throw null; }
     }
     public abstract partial class JsonConverterFactory : System.Text.Json.Serialization.JsonConverter
@@ -538,8 +527,7 @@ namespace System.Text.Json.Serialization
         protected internal JsonConverter() { }
         public override bool CanConvert(System.Type typeToConvert) { throw null; }
         public virtual bool HandleNull { get { throw null; } }
-        [return: System.Diagnostics.CodeAnalysis.MaybeNullAttribute]
-        public abstract T Read(ref System.Text.Json.Utf8JsonReader reader, System.Type typeToConvert, System.Text.Json.JsonSerializerOptions options);
+        public abstract T? Read(ref System.Text.Json.Utf8JsonReader reader, System.Type typeToConvert, System.Text.Json.JsonSerializerOptions options);
         public abstract void Write(System.Text.Json.Utf8JsonWriter writer, T value, System.Text.Json.JsonSerializerOptions options);
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Struct | System.AttributeTargets.Property | System.AttributeTargets.Field, AllowMultiple = false)]

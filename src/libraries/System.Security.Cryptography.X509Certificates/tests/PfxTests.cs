@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-using System.Runtime.InteropServices;
 using Test.Cryptography;
 using Xunit;
 
@@ -222,7 +221,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         {
             Assert.NotNull(ecdsa);
 
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            if (OperatingSystem.IsWindows())
             {
                 AssertEccAlgorithm(ecdsa, "ECDSA_P256");
             }
@@ -239,7 +238,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                     {
                         Assert.NotNull(ecdsa);
 
-                        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                        if (OperatingSystem.IsWindows())
                         {
                             AssertEccAlgorithm(ecdsa, "ECDH");
                         }
@@ -263,7 +262,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             {
                 Assert.NotNull(ecdsa);
 
-                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                if (OperatingSystem.IsWindows())
                 {
                     // If Windows were to start detecting this case as ECDSA that wouldn't be bad,
                     // but this assert is the only proof that this certificate was made with OpenSSL.

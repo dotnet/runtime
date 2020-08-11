@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#include "coreassembly.h"
+#include "version.h"
 
 .assembly System.Runtime.CompilerServices.Unsafe
 {
@@ -40,7 +40,7 @@
     01 00 00 00 00
   ) // false
   .hash algorithm 0x00008004
-  .ver 5:0:0:0
+  .ver ASSEMBLY_VERSION
 }
 .module System.Runtime.CompilerServices.Unsafe.dll
 // MVID: {1E97D84A-565B-49C5-B60A-F31A1A4ACE13}

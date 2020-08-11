@@ -572,8 +572,7 @@ namespace System.Runtime.InteropServices
             PtrToStructure(ptr, (object)structure!);
         }
 
-        [return: MaybeNull]
-        public static T PtrToStructure<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]T>(IntPtr ptr) => (T)PtrToStructure(ptr, typeof(T))!;
+        public static T? PtrToStructure<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]T>(IntPtr ptr) => (T)PtrToStructure(ptr, typeof(T))!;
 
         public static void DestroyStructure<T>(IntPtr ptr) => DestroyStructure(ptr, typeof(T));
 

@@ -41,6 +41,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/40528", TestPlatforms.Browser)]
         public void SettingUpdatesProperties()
         {
             T item = GetExistingItem();
@@ -77,6 +78,7 @@ namespace System.IO.Tests
         }
 
         [ConditionalFact(nameof(isNotHFS))] // OSX HFS driver format does not support millisec granularity
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/40530", TestPlatforms.Browser)]
         public void TimesIncludeMillisecondPart()
         {
             T item = GetExistingItem();

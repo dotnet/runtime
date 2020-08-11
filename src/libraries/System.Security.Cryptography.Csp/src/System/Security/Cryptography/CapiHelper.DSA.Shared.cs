@@ -178,7 +178,7 @@ namespace Internal.NativeCrypto
                         //  BYTE[lenP]      Y
                         //  BYTE[lenX]      X (if private)
 
-                        int magic = br.ReadInt32(); // Expected to be DSS_PUB_MAGIC_VER3 or DSS_PRIV_MAGIC_VER3
+                        br.ReadInt32(); // Expected to be DSS_PUB_MAGIC_VER3 or DSS_PRIV_MAGIC_VER3
                         int lenP = (br.ReadInt32() + 7) / 8;
                         int lenQ = (br.ReadInt32() + 7) / 8;
                         int lenJ = (br.ReadInt32() + 7) / 8;
@@ -220,7 +220,7 @@ namespace Internal.NativeCrypto
                         //  DWORD           counter (DSSSEED)
                         //  BYTE[20]        seed (DSSSEED)
 
-                        int magic = br.ReadInt32();    // Expected to be DSS_MAGIC or DSS_PRIVATE_MAGIC
+                        br.ReadInt32();    // Expected to be DSS_MAGIC or DSS_PRIVATE_MAGIC
                         int len = (br.ReadInt32() + 7) / 8;
                         dsaParameters.P = br.ReadReversed(len);
                         dsaParameters.Q = br.ReadReversed(DSS_Q_LEN);
@@ -279,7 +279,7 @@ namespace Internal.NativeCrypto
             //  WORD   reserved
             //  ALG_ID aiKeyAlg
 
-            byte bType = br.ReadByte();    // BLOBHEADER.bType: Expected to be 0x6 (PUBLICKEYBLOB) or 0x7 (PRIVATEKEYBLOB), though there's no check for backward compat reasons.
+            br.ReadByte();    // BLOBHEADER.bType: Expected to be 0x6 (PUBLICKEYBLOB) or 0x7 (PRIVATEKEYBLOB), though there's no check for backward compat reasons.
             bVersion = br.ReadByte();      // BLOBHEADER.bVersion: Expected to be 0x2 or 0x3, though there's no check for backward compat reasons.
             br.BaseStream.Position += sizeof(ushort); // BLOBHEADER.wReserved
             int algId = br.ReadInt32();    // BLOBHEADER.aiKeyAlg

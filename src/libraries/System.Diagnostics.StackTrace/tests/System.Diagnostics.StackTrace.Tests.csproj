@@ -13,4 +13,8 @@
     <Compile Include="SymLanguageVendorTests.cs" />
     <Compile Include="SymbolTokenTests.cs" />
   </ItemGroup>
+  <ItemGroup Condition="'$(TargetOS)' == 'Browser'">
+    <WasmFilesToIncludeFromPublishDir Include="$(AssemblyName).dll" />
+    <WasmFilesToIncludeFromPublishDir Include="$(AssemblyName).pdb" />
+  </ItemGroup>
 </Project>

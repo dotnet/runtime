@@ -1050,9 +1050,24 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree)
 
     if (intrin.op1 != nullptr)
     {
-        // If we have an RMW intrinsic, we want to preference op1Reg to the target if
-        // op1 is not contained.
-        if (isRMW)
+        bool simdRegToSimdRegMove = false;
+
+        if ((intrin.id == NI_Vector64_CreateScalarUnsafe) || (intrin.id == NI_Vector128_CreateScalarUnsafe))
+        {
+            simdRegToSimdRegMove = varTypeIsFloating(intrin.op1);
+        }
+        else if (intrin.id == NI_AdvSimd_Arm64_DuplicateToVector64)
+        {
+            simdRegToSimdRegMove = (intrin.op1->TypeGet() == TYP_DOUBLE);
+        }
+        else if ((intrin.id == NI_Vector64_ToScalar) || (intrin.id == NI_Vector128_ToScalar))
+        {
+            simdRegToSimdRegMove = varTypeIsFloating(intrinsicTree);
+        }
+
+        // If we have an RMW intrinsic or an intrinsic with simple move semantic between two SIMD registers,
+        // we want to preference op1Reg to the target if op1 is not contained.
+        if (isRMW || simdRegToSimdRegMove)
         {
             tgtPrefOp1 = !intrin.op1->isContained();
         }
