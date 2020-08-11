@@ -224,6 +224,7 @@
     <Compile Include="$(CommonTestPath)System\Net\Http\SchSendAuxRecordHttpTest.cs"
              Link="Common\System\Net\Http\SchSendAuxRecordHttpTest.cs" />
     <Compile Include="SyncHttpHandlerTest.cs" />
+    <Compile Include="TelemetryTest.cs" />
     <Compile Include="StreamContentTest.cs" />
     <Compile Include="StringContentTest.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Http\SyncBlockingContent.cs"

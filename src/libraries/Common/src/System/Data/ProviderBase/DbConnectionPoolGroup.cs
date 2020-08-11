@@ -105,7 +105,7 @@ namespace System.Data.ProviderBase
             ConcurrentDictionary<DbConnectionPoolIdentity, DbConnectionPool>? oldPoolCollection = null;
             lock (this)
             {
-                if (_poolCollection.Count > 0)
+                if (!_poolCollection.IsEmpty)
                 {
                     oldPoolCollection = _poolCollection;
                     _poolCollection = new ConcurrentDictionary<DbConnectionPoolIdentity, DbConnectionPool>();
@@ -232,7 +232,7 @@ namespace System.Data.ProviderBase
             //     to avoid conflict with DbConnectionFactory.CreateConnectionPoolGroup replacing pool entry
             lock (this)
             {
-                if (_poolCollection.Count > 0)
+                if (!_poolCollection.IsEmpty)
                 {
                     var newPoolCollection = new ConcurrentDictionary<DbConnectionPoolIdentity, DbConnectionPool>();
 
@@ -267,7 +267,7 @@ namespace System.Data.ProviderBase
 
                 // must be pruning thread to change state and no connections
                 // otherwise pruning thread risks making entry disabled soon after user calls ClearPool
-                if (0 == _poolCollection.Count)
+                if (_poolCollection.IsEmpty)
                 {
                     if (PoolGroupStateActive == _state)
                     {
