@@ -13,6 +13,12 @@ namespace System.Net.Http.HPack
 {
     internal class HPackDecoder
     {
+        // The HPACK_SUPPORT_ONSTATICINDEXEDHEADER compiler variable specifies whether
+        // IHttpHeadersHandler.OnStaticIndexedHeader is called for headers with a static
+        // index in the header bytes.
+        // If the compiler variable is false then HPackDecoder resolves the static index
+        // to a name and value and calls OnHeader for all headers.
+
         private enum State : byte
         {
             Ready,
@@ -92,6 +98,9 @@ namespace System.Net.Http.HPack
 
         private State _state = State.Ready;
         private byte[]? _headerName;
+#if HPACK_SUPPORT_ONSTATICINDEXEDHEADER
+        private int _headerStaticIndex;
+#endif
         private int _stringIndex;
         private int _stringLength;
         private int _headerNameLength;
@@ -492,6 +501,7 @@ namespace System.Net.Http.HPack
 
         private void ProcessHeaderValue(ReadOnlySpan<byte> data, IHttpHeadersHandler handler)
         {
+#if !HPACK_SUPPORT_ONSTATICINDEXEDHEADER
             ReadOnlySpan<byte> headerNameSpan = _headerNameRange == null
                 ? new Span<byte>(_headerName, 0, _headerNameLength)
                 : data.Slice(_headerNameRange.GetValueOrDefault().start, _headerNameRange.GetValueOrDefault().length);
@@ -509,6 +519,38 @@ namespace System.Net.Http.HPack
             {
                 _dynamicTable.Insert(headerNameSpan, headerValueSpan);
             }
+#else
+            ReadOnlySpan<byte> headerValueSpan = _headerValueRange == null
+                ? _headerValueOctets.AsSpan(0, _headerValueLength)
+                : data.Slice(_headerValueRange.GetValueOrDefault().start, _headerValueRange.GetValueOrDefault().length);
+
+            if (_headerStaticIndex > 0)
+            {
+                handler.OnStaticIndexedHeader(_headerStaticIndex, headerValueSpan);
+
+                if (_index)
+                {
+                    _dynamicTable.Insert(H2StaticTable.Get(_headerStaticIndex - 1).Name, headerValueSpan);
+                }
+            }
+            else
+            {
+                ReadOnlySpan<byte> headerNameSpan = _headerNameRange == null
+                    ? _headerName.AsSpan(0, _headerNameLength)
+                    : data.Slice(_headerNameRange.GetValueOrDefault().start, _headerNameRange.GetValueOrDefault().length);
+
+                handler.OnHeader(headerNameSpan, headerValueSpan);
+
+                if (_index)
+                {
+                    _dynamicTable.Insert(headerNameSpan, headerValueSpan);
+                }
+            }
+
+            _headerStaticIndex = 0;
+            _headerNameRange = null;
+            _headerValueRange = null;
+#endif
         }
 
         public void CompleteDecode()
@@ -522,16 +564,43 @@ namespace System.Net.Http.HPack
 
         private void OnIndexedHeaderField(int index, IHttpHeadersHandler handler)
         {
+#if !HPACK_SUPPORT_ONSTATICINDEXEDHEADER
             ref readonly HeaderField header = ref GetHeader(index);
             handler.OnHeader(header.Name, header.Value);
             _state = State.Ready;
+#else
+            if (index <= H2StaticTable.Count)
+            {
+                handler.OnStaticIndexedHeader(index);
+            }
+            else
+            {
+                ref readonly HeaderField header = ref GetHeader(index);
+                handler.OnHeader(header.Name, header.Value);
+            }
+
+            _state = State.Ready;
+#endif
         }
 
         private void OnIndexedHeaderName(int index)
         {
+#if !HPACK_SUPPORT_ONSTATICINDEXEDHEADER
             _headerName = GetHeader(index).Name;
             _headerNameLength = _headerName.Length;
             _state = State.HeaderValueLength;
+#else
+            if (index <= H2StaticTable.Count)
+            {
+                _headerStaticIndex = index;
+            }
+            else
+            {
+                _headerName = GetHeader(index).Name;
+                _headerNameLength = _headerName.Length;
+            }
+            _state = State.HeaderValueLength;
+#endif
         }
 
         private void OnStringLength(int length, State nextState)
@@ -619,9 +688,13 @@ namespace System.Net.Http.HPack
         {
             try
             {
+#if !HPACK_SUPPORT_ONSTATICINDEXEDHEADER
                 return ref index <= H2StaticTable.Count
-                    ? ref H2StaticTable.Get(index - 1)
+                    ? ref H2StaticTable.Get(index -1)	
                     : ref _dynamicTable[index - H2StaticTable.Count - 1];
+#else
+                return ref _dynamicTable[index - H2StaticTable.Count - 1];
+#endif
             }
             catch (IndexOutOfRangeException)
             {
