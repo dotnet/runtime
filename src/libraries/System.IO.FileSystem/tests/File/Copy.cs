@@ -108,6 +108,7 @@ namespace System.IO.Tests
 
         [Theory]
         [MemberData(nameof(CopyFileWithData_MemberData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/40543", TestPlatforms.Browser)]
         public void CopyFileWithData(char[] data, bool readOnly)
         {
             string testFileSource = GetTestFilePath();
@@ -140,7 +141,10 @@ namespace System.IO.Tests
             }
 
             // Ensure last write/access time on the new file is appropriate
-            Assert.InRange(File.GetLastWriteTimeUtc(testFileDest), lastWriteTime.AddSeconds(-1), lastWriteTime.AddSeconds(1));
+            if (PlatformDetection.IsNotBrowser) // There is only one write time on browser vfs
+            {
+                Assert.InRange(File.GetLastWriteTimeUtc(testFileDest), lastWriteTime.AddSeconds(-1), lastWriteTime.AddSeconds(1));
+            }
 
             Assert.Equal(readOnly, (File.GetAttributes(testFileDest) & FileAttributes.ReadOnly) != 0);
             if (readOnly)

@@ -133,8 +133,7 @@ namespace System.Linq
                     new SelectListPartitionIterator<TSource, TResult>(_source, _selector, 0, count - 1);
             }
 
-            [return: MaybeNull]
-            public TResult TryGetElementAt(int index, out bool found)
+            public TResult? TryGetElementAt(int index, out bool found)
             {
                 if (unchecked((uint)index < (uint)_source.Length))
                 {
@@ -143,7 +142,7 @@ namespace System.Linq
                 }
 
                 found = false;
-                return default!;
+                return default;
             }
 
             public TResult TryGetFirst(out bool found)
@@ -262,8 +261,7 @@ namespace System.Linq
                 return new SelectRangeIterator<TResult>(_start, _start + count, _selector);
             }
 
-            [return: MaybeNull]
-            public TResult TryGetElementAt(int index, out bool found)
+            public TResult? TryGetElementAt(int index, out bool found)
             {
                 if ((uint)index < (uint)(_end - _start))
                 {
@@ -272,7 +270,7 @@ namespace System.Linq
                 }
 
                 found = false;
-                return default!;
+                return default;
             }
 
             public TResult TryGetFirst(out bool found)
@@ -351,8 +349,7 @@ namespace System.Linq
                 return new SelectListPartitionIterator<TSource, TResult>(_source, _selector, 0, count - 1);
             }
 
-            [return: MaybeNull]
-            public TResult TryGetElementAt(int index, out bool found)
+            public TResult? TryGetElementAt(int index, out bool found)
             {
                 if (unchecked((uint)index < (uint)_source.Count))
                 {
@@ -361,11 +358,10 @@ namespace System.Linq
                 }
 
                 found = false;
-                return default!;
+                return default;
             }
 
-            [return: MaybeNull]
-            public TResult TryGetFirst(out bool found)
+            public TResult? TryGetFirst(out bool found)
             {
                 if (_source.Count != 0)
                 {
@@ -374,11 +370,10 @@ namespace System.Linq
                 }
 
                 found = false;
-                return default!;
+                return default;
             }
 
-            [return: MaybeNull]
-            public TResult TryGetLast(out bool found)
+            public TResult? TryGetLast(out bool found)
             {
                 int len = _source.Count;
                 if (len != 0)
@@ -388,7 +383,7 @@ namespace System.Linq
                 }
 
                 found = false;
-                return default!;
+                return default;
             }
         }
 
@@ -453,8 +448,7 @@ namespace System.Linq
                 return new SelectListPartitionIterator<TSource, TResult>(_source, _selector, 0, count - 1);
             }
 
-            [return: MaybeNull]
-            public TResult TryGetElementAt(int index, out bool found)
+            public TResult? TryGetElementAt(int index, out bool found)
             {
                 if (unchecked((uint)index < (uint)_source.Count))
                 {
@@ -463,11 +457,10 @@ namespace System.Linq
                 }
 
                 found = false;
-                return default!;
+                return default;
             }
 
-            [return: MaybeNull]
-            public TResult TryGetFirst(out bool found)
+            public TResult? TryGetFirst(out bool found)
             {
                 if (_source.Count != 0)
                 {
@@ -476,11 +469,10 @@ namespace System.Linq
                 }
 
                 found = false;
-                return default!;
+                return default;
             }
 
-            [return: MaybeNull]
-            public TResult TryGetLast(out bool found)
+            public TResult? TryGetLast(out bool found)
             {
                 int len = _source.Count;
                 if (len != 0)
@@ -490,7 +482,7 @@ namespace System.Linq
                 }
 
                 found = false;
-                return default!;
+                return default;
             }
         }
 
@@ -565,8 +557,7 @@ namespace System.Linq
                 return new SelectIPartitionIterator<TSource, TResult>(_source.Take(count), _selector);
             }
 
-            [return: MaybeNull]
-            public TResult TryGetElementAt(int index, out bool found)
+            public TResult? TryGetElementAt(int index, out bool found)
             {
                 bool sourceFound;
                 TSource input = _source.TryGetElementAt(index, out sourceFound);
@@ -574,8 +565,7 @@ namespace System.Linq
                 return sourceFound ? _selector(input!) : default!;
             }
 
-            [return: MaybeNull]
-            public TResult TryGetFirst(out bool found)
+            public TResult? TryGetFirst(out bool found)
             {
                 bool sourceFound;
                 TSource input = _source.TryGetFirst(out sourceFound);
@@ -583,8 +573,7 @@ namespace System.Linq
                 return sourceFound ? _selector(input!) : default!;
             }
 
-            [return: MaybeNull]
-            public TResult TryGetLast(out bool found)
+            public TResult? TryGetLast(out bool found)
             {
                 bool sourceFound;
                 TSource input = _source.TryGetLast(out sourceFound);
@@ -739,8 +728,7 @@ namespace System.Linq
                 return (uint)maxIndex >= (uint)_maxIndexInclusive ? this : new SelectListPartitionIterator<TSource, TResult>(_source, _selector, _minIndexInclusive, maxIndex);
             }
 
-            [return: MaybeNull]
-            public TResult TryGetElementAt(int index, out bool found)
+            public TResult? TryGetElementAt(int index, out bool found)
             {
                 if ((uint)index <= (uint)(_maxIndexInclusive - _minIndexInclusive) && index < _source.Count - _minIndexInclusive)
                 {
@@ -749,11 +737,10 @@ namespace System.Linq
                 }
 
                 found = false;
-                return default!;
+                return default;
             }
 
-            [return: MaybeNull]
-            public TResult TryGetFirst(out bool found)
+            public TResult? TryGetFirst(out bool found)
             {
                 if (_source.Count > _minIndexInclusive)
                 {
@@ -762,11 +749,10 @@ namespace System.Linq
                 }
 
                 found = false;
-                return default!;
+                return default;
             }
 
-            [return: MaybeNull]
-            public TResult TryGetLast(out bool found)
+            public TResult? TryGetLast(out bool found)
             {
                 int lastIndex = _source.Count - 1;
                 if (lastIndex >= _minIndexInclusive)
@@ -776,7 +762,7 @@ namespace System.Linq
                 }
 
                 found = false;
-                return default!;
+                return default;
             }
 
             private int Count

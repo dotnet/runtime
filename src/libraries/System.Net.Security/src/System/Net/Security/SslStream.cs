@@ -37,7 +37,6 @@ namespace System.Net.Security
     public delegate ValueTask<SslServerAuthenticationOptions> ServerOptionsSelectionCallback(SslStream stream, SslClientHelloInfo clientHelloInfo, object? state, CancellationToken cancellationToken);
 
     // Internal versions of the above delegates.
-    internal delegate bool RemoteCertValidationCallback(string? host, X509Certificate2? certificate, X509Chain? chain, SslPolicyErrors sslPolicyErrors);
     internal delegate X509Certificate LocalCertSelectionCallback(string targetHost, X509CertificateCollection localCertificates, X509Certificate2? remoteCertificate, string[] acceptableIssuers);
     internal delegate X509Certificate ServerCertSelectionCallback(string? hostName);
 
@@ -46,13 +45,9 @@ namespace System.Net.Security
         /// <summary>Set as the _exception when the instance is disposed.</summary>
         private static readonly ExceptionDispatchInfo s_disposedSentinel = ExceptionDispatchInfo.Capture(new ObjectDisposedException(nameof(SslStream), (string?)null));
 
-        private X509Certificate2? _remoteCertificate;
-        private bool _remoteCertificateExposed;
-
         internal RemoteCertificateValidationCallback? _userCertificateValidationCallback;
         internal LocalCertificateSelectionCallback? _userCertificateSelectionCallback;
         internal ServerCertificateSelectionCallback? _userServerCertificateSelectionCallback;
-        internal RemoteCertValidationCallback _certValidationDelegate;
         internal LocalCertSelectionCallback? _certSelectionDelegate;
         internal EncryptionPolicy _encryptionPolicy;
 
@@ -106,7 +101,6 @@ namespace System.Net.Security
             _userCertificateValidationCallback = userCertificateValidationCallback;
             _userCertificateSelectionCallback = userCertificateSelectionCallback;
             _encryptionPolicy = encryptionPolicy;
-            _certValidationDelegate = new RemoteCertValidationCallback(UserCertValidationCallbackWrapper);
             _certSelectionDelegate = userCertificateSelectionCallback == null ? null : new LocalCertSelectionCallback(UserCertSelectionCallbackWrapper);
 
             _innerStream = innerStream;
@@ -130,7 +124,6 @@ namespace System.Net.Security
             if (_userCertificateValidationCallback == null)
             {
                 _userCertificateValidationCallback = callback;
-                _certValidationDelegate = new RemoteCertValidationCallback(UserCertValidationCallbackWrapper);
             }
             else if (callback != null && _userCertificateValidationCallback != callback)
             {
@@ -148,24 +141,6 @@ namespace System.Net.Security
             else if (callback != null && _userCertificateSelectionCallback != callback)
             {
                 throw new InvalidOperationException(SR.Format(SR.net_conflicting_options, nameof(LocalCertificateSelectionCallback)));
-            }
-        }
-
-        private bool UserCertValidationCallbackWrapper(string? hostName, X509Certificate2? certificate, X509Chain? chain, SslPolicyErrors sslPolicyErrors)
-        {
-            _remoteCertificate = certificate == null ? null : new X509Certificate2(certificate);
-            if (_userCertificateValidationCallback == null)
-            {
-                if (!RemoteCertRequired)
-                {
-                    sslPolicyErrors &= ~SslPolicyErrors.RemoteCertificateNotAvailable;
-                }
-
-                return (sslPolicyErrors == SslPolicyErrors.None);
-            }
-            else
-            {
-                return _userCertificateValidationCallback(this, certificate, chain, sslPolicyErrors);
             }
         }
 
@@ -194,7 +169,7 @@ namespace System.Net.Security
             _userServerCertificateSelectionCallback = sslServerAuthenticationOptions.ServerCertificateSelectionCallback;
             authOptions.ServerCertSelectionDelegate = _userServerCertificateSelectionCallback == null ? null : new ServerCertSelectionCallback(ServerCertSelectionCallbackWrapper);
 
-            authOptions.CertValidationDelegate = _certValidationDelegate;
+            authOptions.CertValidationDelegate = _userCertificateValidationCallback;
             authOptions.CertSelectionDelegate = _certSelectionDelegate;
 
             return authOptions;
@@ -318,7 +293,7 @@ namespace System.Net.Security
             SetAndVerifyValidationCallback(sslClientAuthenticationOptions.RemoteCertificateValidationCallback);
             SetAndVerifySelectionCallback(sslClientAuthenticationOptions.LocalCertificateSelectionCallback);
 
-            ValidateCreateContext(sslClientAuthenticationOptions, _certValidationDelegate, _certSelectionDelegate);
+            ValidateCreateContext(sslClientAuthenticationOptions, _userCertificateValidationCallback, _certSelectionDelegate);
             ProcessAuthentication();
         }
 
@@ -389,7 +364,7 @@ namespace System.Net.Security
             SetAndVerifyValidationCallback(sslClientAuthenticationOptions.RemoteCertificateValidationCallback);
             SetAndVerifySelectionCallback(sslClientAuthenticationOptions.LocalCertificateSelectionCallback);
 
-            ValidateCreateContext(sslClientAuthenticationOptions, _certValidationDelegate, _certSelectionDelegate);
+            ValidateCreateContext(sslClientAuthenticationOptions, _userCertificateValidationCallback, _certSelectionDelegate);
 
             return ProcessAuthentication(true, false, cancellationToken)!;
         }
@@ -399,7 +374,7 @@ namespace System.Net.Security
             SetAndVerifyValidationCallback(sslClientAuthenticationOptions.RemoteCertificateValidationCallback);
             SetAndVerifySelectionCallback(sslClientAuthenticationOptions.LocalCertificateSelectionCallback);
 
-            ValidateCreateContext(sslClientAuthenticationOptions, _certValidationDelegate, _certSelectionDelegate);
+            ValidateCreateContext(sslClientAuthenticationOptions, _userCertificateValidationCallback, _certSelectionDelegate);
 
             return ProcessAuthentication(true, true, cancellationToken)!;
         }
@@ -457,7 +432,7 @@ namespace System.Net.Security
 
         public Task AuthenticateAsServerAsync(ServerOptionsSelectionCallback optionsCallback, object? state, CancellationToken cancellationToken = default)
         {
-            ValidateCreateContext(new SslAuthenticationOptions(optionsCallback, state));
+            ValidateCreateContext(new SslAuthenticationOptions(optionsCallback, state, _userCertificateValidationCallback));
             return ProcessAuthentication(isAsync: true, isApm: false, cancellationToken)!;
         }
 
@@ -560,8 +535,7 @@ namespace System.Net.Security
             get
             {
                 ThrowIfExceptionalOrNotAuthenticated();
-                _remoteCertificateExposed = true;
-                return _remoteCertificate;
+                return _context?.RemoteCertificate;
             }
         }
 
@@ -714,12 +688,6 @@ namespace System.Net.Security
         {
             try
             {
-                if (!_remoteCertificateExposed)
-                {
-                    _remoteCertificate?.Dispose();
-                    _remoteCertificate = null;
-                    _remoteCertificateExposed = false;
-                }
                 CloseInternal();
             }
             finally

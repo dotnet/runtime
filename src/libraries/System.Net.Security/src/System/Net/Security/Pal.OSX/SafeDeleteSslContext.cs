@@ -118,9 +118,9 @@ namespace System.Net
                     SetProtocols(sslContext, credential.Protocols);
                 }
 
-                if (credential.Certificate != null)
+                if (credential.CertificateContext != null)
                 {
-                    SetCertificate(sslContext, credential.Certificate);
+                    SetCertificate(sslContext, credential.CertificateContext);
                 }
 
                 Interop.AppleCrypto.SslBreakOnServerAuth(sslContext, true);
@@ -315,68 +315,34 @@ namespace System.Net
             Interop.AppleCrypto.SslSetMaxProtocolVersion(sslContext, maxProtocolId);
         }
 
-        private static void SetCertificate(SafeSslHandle sslContext, X509Certificate2 certificate)
+        private static void SetCertificate(SafeSslHandle sslContext, SslStreamCertificateContext context)
         {
             Debug.Assert(sslContext != null, "sslContext != null");
-            Debug.Assert(certificate != null, "certificate != null");
-            Debug.Assert(certificate.HasPrivateKey, "certificate.HasPrivateKey");
 
-            X509Chain chain = TLSCertificateExtensions.BuildNewChain(
-                certificate,
-                includeClientApplicationPolicy: false)!;
 
-            using (chain)
+            IntPtr[] ptrs = new IntPtr[context!.IntermediateCertificates!.Length + 1];
+
+            for (int i = 0; i < context.IntermediateCertificates.Length; i++)
             {
-                X509ChainElementCollection elements = chain.ChainElements;
+                X509Certificate2 intermediateCert = context.IntermediateCertificates[i];
 
-                // We need to leave off the EE (first) and root (last) certificate from the intermediates.
-                X509Certificate2[] intermediateCerts = elements.Count < 3
-                    ? Array.Empty<X509Certificate2>()
-                    : new X509Certificate2[elements.Count - 2];
-
-                // Build an array which is [
-                //   SecIdentityRef for EE cert,
-                //   SecCertificateRef for intermed0,
-                //   SecCertificateREf for intermed1,
-                //   ...
-                // ]
-                IntPtr[] ptrs = new IntPtr[intermediateCerts.Length + 1];
-
-                for (int i = 0; i < intermediateCerts.Length; i++)
+                if (intermediateCert.HasPrivateKey)
                 {
-                    X509Certificate2 intermediateCert = elements[i + 1].Certificate!;
-
-                    if (intermediateCert.HasPrivateKey)
-                    {
-                        // In the unlikely event that we get a certificate with a private key from
-                        // a chain, clear it to the certificate.
-                        //
-                        // The current value of intermediateCert is still in elements, which will
-                        // get Disposed at the end of this method.  The new value will be
-                        // in the intermediate certs array, which also gets serially Disposed.
-                        intermediateCert = new X509Certificate2(intermediateCert.RawData);
-                    }
-
-                    intermediateCerts[i] = intermediateCert;
-                    ptrs[i + 1] = intermediateCert.Handle;
+                    // In the unlikely event that we get a certificate with a private key from
+                    // a chain, clear it to the certificate.
+                    //
+                    // The current value of intermediateCert is still in elements, which will
+                    // get Disposed at the end of this method.  The new value will be
+                    // in the intermediate certs array, which also gets serially Disposed.
+                    intermediateCert = new X509Certificate2(intermediateCert.RawData);
                 }
 
-                ptrs[0] = certificate.Handle;
-
-                Interop.AppleCrypto.SslSetCertificate(sslContext, ptrs);
-
-                // The X509Chain created all new certs for us, so Dispose them.
-                // And since the intermediateCerts could have been new instances, Dispose them, too
-                for (int i = 0; i < elements.Count; i++)
-                {
-                    elements[i].Certificate!.Dispose();
-
-                    if (i < intermediateCerts.Length)
-                    {
-                        intermediateCerts[i].Dispose();
-                    }
-                }
+                ptrs[i + 1] = intermediateCert.Handle;
             }
+
+            ptrs[0] = context!.Certificate!.Handle;
+
+            Interop.AppleCrypto.SslSetCertificate(sslContext, ptrs);
         }
     }
 }

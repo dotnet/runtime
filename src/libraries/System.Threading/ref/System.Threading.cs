@@ -35,10 +35,8 @@ namespace System.Threading
         private readonly T _PreviousValue_k__BackingField;
         private readonly T _CurrentValue_k__BackingField;
         private readonly int _dummyPrimitive;
-        [System.Diagnostics.CodeAnalysis.MaybeNullAttribute]
-        public T CurrentValue { get { throw null; } }
-        [System.Diagnostics.CodeAnalysis.MaybeNullAttribute]
-        public T PreviousValue { get { throw null; } }
+        public T? CurrentValue { get { throw null; } }
+        public T? PreviousValue { get { throw null; } }
         public bool ThreadContextChanged { get { throw null; } }
     }
     public sealed partial class AsyncLocal<T>

@@ -1238,9 +1238,7 @@ namespace System.Net.Http
 
         private HttpConnection ConstructHttp11Connection(Connection connection, TransportContext? transportContext)
         {
-            return _maxConnections == int.MaxValue ?
-                new HttpConnection(this, connection, transportContext) :
-                new HttpConnectionWithFinalizer(this, connection, transportContext); // finalizer needed to signal the pool when a connection is dropped
+            return new HttpConnection(this, connection, transportContext);
         }
 
         // Returns the established stream or an HttpResponseMessage from the proxy indicating failure.

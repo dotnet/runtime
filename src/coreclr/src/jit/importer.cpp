@@ -2117,11 +2117,18 @@ GenTree* Compiler::impRuntimeLookupToTree(CORINFO_RESOLVED_TOKEN* pResolvedToken
                                       nullptr DEBUGARG("impRuntimeLookup indirectOffset"));
         }
 
+        // The last indirection could be subject to a size check (dynamic dictionary expansion)
+        bool isLastIndirectionWithSizeCheck =
+            ((i == pRuntimeLookup->indirections - 1) && (pRuntimeLookup->sizeOffset != CORINFO_NO_SIZE_CHECK));
+
         if (i != 0)
         {
             slotPtrTree = gtNewOperNode(GT_IND, TYP_I_IMPL, slotPtrTree);
             slotPtrTree->gtFlags |= GTF_IND_NONFAULTING;
-            slotPtrTree->gtFlags |= GTF_IND_INVARIANT;
+            if (!isLastIndirectionWithSizeCheck)
+            {
+                slotPtrTree->gtFlags |= GTF_IND_INVARIANT;
+            }
         }
 
         if ((i == 1 && pRuntimeLookup->indirectFirstOffset) || (i == 2 && pRuntimeLookup->indirectSecondOffset))
@@ -2131,8 +2138,7 @@ GenTree* Compiler::impRuntimeLookupToTree(CORINFO_RESOLVED_TOKEN* pResolvedToken
 
         if (pRuntimeLookup->offsets[i] != 0)
         {
-            // The last indirection could be subject to a size check (dynamic dictionary expansion)
-            if (i == pRuntimeLookup->indirections - 1 && pRuntimeLookup->sizeOffset != CORINFO_NO_SIZE_CHECK)
+            if (isLastIndirectionWithSizeCheck)
             {
                 lastIndOfTree = impCloneExpr(slotPtrTree, &slotPtrTree, NO_CLASS_HANDLE, (unsigned)CHECK_SPILL_ALL,
                                              nullptr DEBUGARG("impRuntimeLookup indirectOffset"));
@@ -4120,44 +4126,19 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
 
             case NI_System_Type_IsAssignableFrom:
             {
-                // Optimize patterns like:
-                //
-                //   typeof(TTo).IsAssignableFrom(typeof(TTFrom))
-                //   valueTypeVar.GetType().IsAssignableFrom(typeof(TTFrom))
-                //
-                // to true/false
                 GenTree* typeTo   = impStackTop(1).val;
                 GenTree* typeFrom = impStackTop(0).val;
 
-                if (typeTo->IsCall() && typeFrom->IsCall())
-                {
-                    // make sure both arguments are `typeof()`
-                    CORINFO_METHOD_HANDLE hTypeof = eeFindHelper(CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE);
-                    if ((typeTo->AsCall()->gtCallMethHnd == hTypeof) && (typeFrom->AsCall()->gtCallMethHnd == hTypeof))
-                    {
-                        CORINFO_CLASS_HANDLE hClassTo =
-                            gtGetHelperArgClassHandle(typeTo->AsCall()->gtCallArgs->GetNode());
-                        CORINFO_CLASS_HANDLE hClassFrom =
-                            gtGetHelperArgClassHandle(typeFrom->AsCall()->gtCallArgs->GetNode());
+                retNode = impTypeIsAssignable(typeTo, typeFrom);
+                break;
+            }
 
-                        if (hClassTo == NO_CLASS_HANDLE || hClassFrom == NO_CLASS_HANDLE)
-                        {
-                            break;
-                        }
+            case NI_System_Type_IsAssignableTo:
+            {
+                GenTree* typeTo   = impStackTop(0).val;
+                GenTree* typeFrom = impStackTop(1).val;
 
-                        TypeCompareState castResult = info.compCompHnd->compareTypesForCast(hClassFrom, hClassTo);
-                        if (castResult == TypeCompareState::May)
-                        {
-                            // requires runtime check
-                            // e.g. __Canon, COMObjects, Nullable
-                            break;
-                        }
-
-                        retNode = gtNewIconNode((castResult == TypeCompareState::Must) ? 1 : 0);
-                        impPopStack(); // drop both CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE calls
-                        impPopStack();
-                    }
-                }
+                retNode = impTypeIsAssignable(typeTo, typeFrom);
                 break;
             }
 
@@ -4360,6 +4341,50 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
     }
 
     return retNode;
+}
+
+GenTree* Compiler::impTypeIsAssignable(GenTree* typeTo, GenTree* typeFrom)
+{
+    // Optimize patterns like:
+    //
+    //   typeof(TTo).IsAssignableFrom(typeof(TTFrom))
+    //   valueTypeVar.GetType().IsAssignableFrom(typeof(TTFrom))
+    //   typeof(TTFrom).IsAssignableTo(typeof(TTo))
+    //   typeof(TTFrom).IsAssignableTo(valueTypeVar.GetType())
+    //
+    // to true/false
+
+    if (typeTo->IsCall() && typeFrom->IsCall())
+    {
+        // make sure both arguments are `typeof()`
+        CORINFO_METHOD_HANDLE hTypeof = eeFindHelper(CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE);
+        if ((typeTo->AsCall()->gtCallMethHnd == hTypeof) && (typeFrom->AsCall()->gtCallMethHnd == hTypeof))
+        {
+            CORINFO_CLASS_HANDLE hClassTo   = gtGetHelperArgClassHandle(typeTo->AsCall()->gtCallArgs->GetNode());
+            CORINFO_CLASS_HANDLE hClassFrom = gtGetHelperArgClassHandle(typeFrom->AsCall()->gtCallArgs->GetNode());
+
+            if (hClassTo == NO_CLASS_HANDLE || hClassFrom == NO_CLASS_HANDLE)
+            {
+                return nullptr;
+            }
+
+            TypeCompareState castResult = info.compCompHnd->compareTypesForCast(hClassFrom, hClassTo);
+            if (castResult == TypeCompareState::May)
+            {
+                // requires runtime check
+                // e.g. __Canon, COMObjects, Nullable
+                return nullptr;
+            }
+
+            GenTreeIntCon* retNode = gtNewIconNode((castResult == TypeCompareState::Must) ? 1 : 0);
+            impPopStack(); // drop both CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE calls
+            impPopStack();
+
+            return retNode;
+        }
+    }
+
+    return nullptr;
 }
 
 GenTree* Compiler::impMathIntrinsic(CORINFO_METHOD_HANDLE method,
@@ -4607,6 +4632,10 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
             else if (strcmp(methodName, "IsAssignableFrom") == 0)
             {
                 result = NI_System_Type_IsAssignableFrom;
+            }
+            else if (strcmp(methodName, "IsAssignableTo") == 0)
+            {
+                result = NI_System_Type_IsAssignableTo;
             }
         }
     }

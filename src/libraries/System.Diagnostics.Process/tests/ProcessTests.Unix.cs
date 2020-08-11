@@ -108,7 +108,7 @@ namespace System.Diagnostics.Tests
         [OuterLoop]
         public void ProcessStart_UseShellExecute_OnUnix_OpenMissingFile_DoesNotThrow()
         {
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) &&
+            if (OperatingSystem.IsLinux() &&
                 s_allowedProgramsToRun.FirstOrDefault(program => IsProgramInstalled(program)) == null)
             {
                 return;
@@ -139,12 +139,12 @@ namespace System.Diagnostics.Tests
                 File.WriteAllText(fileToOpen, $"{nameof(ProcessStart_UseShellExecute_OnUnix_SuccessWhenProgramInstalled)}");
             }
 
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX) || programToOpen != null)
+            if (OperatingSystem.IsMacOS() || programToOpen != null)
             {
                 using (var px = Process.Start(new ProcessStartInfo { UseShellExecute = true, FileName = fileToOpen }))
                 {
                     Assert.NotNull(px);
-                    if (!RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) // on OSX, process name is dotnet for some reason. Refer to https://github.com/dotnet/runtime/issues/23525
+                    if (!OperatingSystem.IsMacOS()) // on OSX, process name is dotnet for some reason. Refer to https://github.com/dotnet/runtime/issues/23525
                     {
                         Assert.Equal(programToOpen, px.ProcessName);
                     }
@@ -558,7 +558,7 @@ namespace System.Diagnostics.Tests
             // If this test runs as the user, we expect to be able to match the user groups exactly.
             // Except on OSX, where getgrouplist may return a list of groups truncated to NGROUPS_MAX.
             bool checkGroupsExact = userId == geteuid().ToString() &&
-                                    !RuntimeInformation.IsOSPlatform(OSPlatform.OSX);
+                                    !OperatingSystem.IsMacOS();
 
             // Start as username
             var invokeOptions = new RemoteInvokeOptions();
@@ -600,7 +600,7 @@ namespace System.Diagnostics.Tests
 
                 // On systems with a low value of NGROUPS_MAX (e.g 16 on OSX), the groups may be truncated.
                 // On Linux NGROUPS_MAX is 65536, so we expect to see every group.
-                bool checkGroupsExact = RuntimeInformation.IsOSPlatform(OSPlatform.Linux);
+                bool checkGroupsExact = OperatingSystem.IsLinux();
 
                 // Start as username
                 var invokeOptions = new RemoteInvokeOptions();

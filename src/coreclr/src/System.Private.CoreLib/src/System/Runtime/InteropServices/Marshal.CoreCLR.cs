@@ -706,7 +706,7 @@ namespace System.Runtime.InteropServices
         }
 
         [SupportedOSPlatform("windows")]
-        public static TWrapper CreateWrapperOfType<T, TWrapper>([AllowNull] T o)
+        public static TWrapper CreateWrapperOfType<T, TWrapper>(T? o)
         {
             return (TWrapper)CreateWrapperOfType(o, typeof(TWrapper))!;
         }
@@ -756,7 +756,7 @@ namespace System.Runtime.InteropServices
         public static extern void GetNativeVariantForObject(object? obj, /* VARIANT * */ IntPtr pDstNativeVariant);
 
         [SupportedOSPlatform("windows")]
-        public static void GetNativeVariantForObject<T>([AllowNull] T obj, IntPtr pDstNativeVariant)
+        public static void GetNativeVariantForObject<T>(T? obj, IntPtr pDstNativeVariant)
         {
             GetNativeVariantForObject((object?)obj, pDstNativeVariant);
         }
@@ -766,10 +766,9 @@ namespace System.Runtime.InteropServices
         public static extern object? GetObjectForNativeVariant(/* VARIANT * */ IntPtr pSrcNativeVariant);
 
         [SupportedOSPlatform("windows")]
-        [return: MaybeNull]
-        public static T GetObjectForNativeVariant<T>(IntPtr pSrcNativeVariant)
+        public static T? GetObjectForNativeVariant<T>(IntPtr pSrcNativeVariant)
         {
-            return (T)GetObjectForNativeVariant(pSrcNativeVariant)!;
+            return (T?)GetObjectForNativeVariant(pSrcNativeVariant);
         }
 
         [SupportedOSPlatform("windows")]

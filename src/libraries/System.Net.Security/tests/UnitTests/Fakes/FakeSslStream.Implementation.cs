@@ -17,7 +17,7 @@ namespace System.Net.Security
 
         private FakeOptions? _sslAuthenticationOptions;
 
-        private void ValidateCreateContext(SslClientAuthenticationOptions sslClientAuthenticationOptions, RemoteCertValidationCallback remoteCallback, LocalCertSelectionCallback? localCallback)
+        private void ValidateCreateContext(SslClientAuthenticationOptions sslClientAuthenticationOptions, RemoteCertificateValidationCallback? remoteCallback, LocalCertSelectionCallback? localCallback)
         {
             // Without setting (or using) these members you will get a build exception in the unit test project.
             // The code that normally uses these in the main solution is in the implementation of SslStream.
@@ -89,6 +89,7 @@ namespace System.Net.Security
         internal SslConnectionInfo ConnectionInfo => default;
         internal ChannelBinding GetChannelBinding(ChannelBindingKind kind) => default;
         internal X509Certificate LocalServerCertificate => default;
+        internal X509Certificate RemoteCertificate => default;
         internal bool IsRemoteCertificateAvailable => default;
         internal SslApplicationProtocol NegotiatedApplicationProtocol => default;
         internal X509Certificate LocalClientCertificate => default;

@@ -16,6 +16,8 @@
     <DotNetFinalVersionKind Condition="'$(StabilizePackageVersion)' == 'true'">release</DotNetFinalVersionKind>
     <!-- Opt-in/out repo features -->
     <UsingToolMicrosoftNetCompilers>true</UsingToolMicrosoftNetCompilers>
+    <!-- TODO: Upgrade compiler version to enable T?; remove this once the employed SDK uses a new enough version. -->
+    <MicrosoftNetCompilersToolsetVersion>3.8.0-2.20379.3</MicrosoftNetCompilersToolsetVersion>
     <UsingToolIbcOptimization>true</UsingToolIbcOptimization>
     <UsingToolXliff>false</UsingToolXliff>
     <UsingToolNetFrameworkReferenceAssemblies>true</UsingToolNetFrameworkReferenceAssemblies>

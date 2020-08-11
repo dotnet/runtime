@@ -929,7 +929,7 @@ namespace System.Diagnostics
 
         internal static Activity CreateAndStart(ActivitySource source, string name, ActivityKind kind, string? parentId, ActivityContext parentContext,
                                                 IEnumerable<KeyValuePair<string, object?>>? tags, IEnumerable<ActivityLink>? links,
-                                                DateTimeOffset startTime, ActivityDataRequest request)
+                                                DateTimeOffset startTime, ActivityTagsCollection? samplerTags, ActivitySamplingResult request)
         {
             Activity activity = new Activity(name);
 
@@ -994,11 +994,23 @@ namespace System.Diagnostics
                 }
             }
 
+            if (samplerTags != null)
+            {
+                if (activity._tags == null)
+                {
+                    activity._tags = new TagsLinkedList(samplerTags!);
+                }
+                else
+                {
+                    activity._tags.Add(samplerTags!);
+                }
+            }
+
             activity.StartTimeUtc = startTime == default ? DateTime.UtcNow : startTime.UtcDateTime;
 
-            activity.IsAllDataRequested = request == ActivityDataRequest.AllData || request == ActivityDataRequest.AllDataAndRecorded;
+            activity.IsAllDataRequested = request == ActivitySamplingResult.AllData || request == ActivitySamplingResult.AllDataAndRecorded;
 
-            if (request == ActivityDataRequest.AllDataAndRecorded)
+            if (request == ActivitySamplingResult.AllDataAndRecorded)
             {
                 activity.ActivityTraceFlags |= ActivityTraceFlags.Recorded;
             }
@@ -1287,6 +1299,34 @@ namespace System.Diagnostics
             public TagsLinkedList(IEnumerator<KeyValuePair<string, object?>> e)
             {
                 _last = _first = new LinkedListNode<KeyValuePair<string, object?>>(e.Current);
+
+                while (e.MoveNext())
+                {
+                    _last.Next = new LinkedListNode<KeyValuePair<string, object?>>(e.Current);
+                    _last = _last.Next;
+                }
+            }
+
+            public TagsLinkedList(IEnumerable<KeyValuePair<string, object?>> list) => Add(list);
+
+            // Add doesn't take the lock because it is called from the Activity creation before sharing the activity object to the caller.
+            public void Add(IEnumerable<KeyValuePair<string, object?>> list)
+            {
+                IEnumerator<KeyValuePair<string, object?>> e = list.GetEnumerator();
+                if (!e.MoveNext())
+                {
+                    return;
+                }
+
+                if (_first == null)
+                {
+                    _last = _first = new LinkedListNode<KeyValuePair<string, object?>>(e.Current);
+                }
+                else
+                {
+                    _last!.Next = new LinkedListNode<KeyValuePair<string, object?>>(e.Current);
+                    _last = _last.Next;
+                }
 
                 while (e.MoveNext())
                 {
