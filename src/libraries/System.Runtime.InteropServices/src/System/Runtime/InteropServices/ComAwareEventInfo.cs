@@ -20,7 +20,7 @@ namespace System.Runtime.InteropServices
             _innerEventInfo = type.GetEvent(eventName)!;
         }
 
-        [SupportedOSPlatformAttribute("windows")]
+        [SupportedOSPlatform("windows")]
 #pragma warning disable CS8765 // Nullability of parameters 'target' and 'handler' don't match overridden member
         public override void AddEventHandler(object target, Delegate handler)
 #pragma warning restore CS8765
@@ -38,7 +38,7 @@ namespace System.Runtime.InteropServices
             }
         }
 
-        [SupportedOSPlatformAttribute("windows")]
+        [SupportedOSPlatform("windows")]
 #pragma warning disable CS8765 // Nullability of parameters 'target' and 'handler' don't match overridden member
         public override void RemoveEventHandler(object target, Delegate handler)
 #pragma warning restore CS8765
