@@ -218,7 +218,7 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             var options = config.Get<ConfigurationInterfaceOptions>();
 
             var childOptions = options.Section.Get<DerivedOptions>(binderOptions =>
-                binderOptions.BindPropertyUsingAttributeName = true);
+                binderOptions.BindPropertyUsingAttributeNames = true);
 
             Assert.True(childOptions.Boolean);
             Assert.Equal(-2, childOptions.Integer);
