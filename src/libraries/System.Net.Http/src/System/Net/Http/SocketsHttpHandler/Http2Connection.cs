@@ -144,7 +144,7 @@ namespace System.Net.Http
 
             static long TimeSpanToMs(TimeSpan value) {
                 double milliseconds = value.TotalMilliseconds;
-                return (long)(milliseconds > int.MaxValue? int.MaxValue : milliseconds);
+                return (long)(milliseconds > int.MaxValue ? int.MaxValue : milliseconds);
             }
         }
 
@@ -1939,6 +1939,9 @@ namespace System.Net.Http
                 case KeepAliveState.PingSent:
                     if (now > _keepAlivePingTimeoutTimestamp)
                         ThrowProtocolError();
+                    break;
+                default:
+                    Debug.Fail($"Unexpected keep alive state ({_keepAliveState})");
                     break;
             }
         }

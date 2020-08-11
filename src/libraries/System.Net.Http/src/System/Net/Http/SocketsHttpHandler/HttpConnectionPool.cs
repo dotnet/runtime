@@ -1693,7 +1693,9 @@ namespace System.Net.Http
             if (localHttp2Connections != null)
             {
                 foreach (Http2Connection http2Connection in localHttp2Connections)
-                    http2Connection?.HeartBeat();
+                {
+                    http2Connection.HeartBeat();
+                }
             }
         }
 

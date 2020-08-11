@@ -619,7 +619,7 @@ namespace System.Net.Test.Common
 
         public async Task PingPong()
         {
-            byte[] pingData = new byte[8] { 1, 2, 3, 4, 50, 60, 70, 80 };
+            long pingData = BitConverter.ToInt64(new byte[8] { 1, 2, 3, 4, 50, 60, 70, 80 });
             PingFrame ping = new PingFrame(pingData, FrameFlags.None, 0);
             await WriteFrameAsync(ping).ConfigureAwait(false);
             PingFrame pingAck = (PingFrame)await ReadFrameAsync(_timeout).ConfigureAwait(false);
@@ -638,11 +638,12 @@ namespace System.Net.Test.Common
             Assert.Equal(FrameType.Ping, frame.Type);
             Assert.Equal(0, frame.StreamId);
             Assert.False(frame.AckFlag);
+            Assert.Equal(8, frame.Length);
 
             return Assert.IsAssignableFrom<PingFrame>(frame);
         }
 
-        public async Task SendPingAckAsync(byte[] payload)
+        public async Task SendPingAckAsync(long payload)
         {
             PingFrame pingAck = new PingFrame(payload, FrameFlags.Ack, 0);
             await WriteFrameAsync(pingAck).ConfigureAwait(false);
