@@ -6,10 +6,6 @@ cd $EXECUTION_DIR
 
 XHARNESS_OUT="$EXECUTION_DIR/xharness-output"
 
-which chromedriver || true
-find $HELIX_WORKITEM_PAYLOAD -name chromedriver
-find $HELIX_WORKITEM_PAYLOAD -name chrome
-
 if [ ! -z "$XHARNESS_CLI_PATH" ]; then
 	# When running in CI, we only have the .NET runtime available
 	# We need to call the XHarness CLI DLL directly via dotnet exec

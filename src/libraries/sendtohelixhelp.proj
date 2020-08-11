@@ -98,6 +98,8 @@
 
   <ItemGroup Condition="'$(Scenario)' == 'WasmTestOnBrowser'">
     <HelixPreCommand Include="export TESTINBROWSER=-browser" />
+    <HelixPreCommand Include="export PATH=$HELIX_CORRELATION_PAYLOAD/chromedriver_linux64:$PATH" />
+    <HelixPreCommand Include="export PATH=$HELIX_CORRELATION_PAYLOAD/chrome-linux:$PATH" />
   </ItemGroup>
 
   <!-- HelixPreCommands is a set of commands run before the work item command. We use it here to inject
