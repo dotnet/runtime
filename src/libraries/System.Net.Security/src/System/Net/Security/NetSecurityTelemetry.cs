@@ -157,6 +157,8 @@ namespace System.Net.Security
             ref long connectionsOpen = ref dummy;
             EventCounter? handshakeDurationCounter = null;
 
+            Debug.Assert(Enum.GetValues<SslProtocols>()[^1] == SslProtocols.Tls13, "Make sure to add a counter for new SslProtocols");
+
             switch (protocol)
             {
                 case SslProtocols.Tls:
@@ -185,10 +187,7 @@ namespace System.Net.Security
                 Interlocked.Increment(ref connectionsOpen);
             }
 
-            if (handshakeDurationCounter != null)
-            {
-                handshakeDurationCounter.WriteMetric(stopwatch.GetElapsedTime().TotalMilliseconds);
-            }
+            handshakeDurationCounter?.WriteMetric(stopwatch.GetElapsedTime().TotalMilliseconds);
 
             if (IsEnabled(EventLevel.Informational, EventKeywords.None))
             {
