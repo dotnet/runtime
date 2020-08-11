@@ -154,10 +154,13 @@ namespace System.Net.Security
                 GC.SuppressFinalize(this);
             }
 
-            // Set the status to disposed. If it was opened before, log ConnectionClosed
-            if (Interlocked.Exchange(ref _connectionOpenedStatus, 2) == 1)
+            if (NetSecurityTelemetry.Log.IsEnabled())
             {
-                NetSecurityTelemetry.Log.ConnectionClosed(GetSslProtocolInternal());
+                // Set the status to disposed. If it was opened before, log ConnectionClosed
+                if (Interlocked.Exchange(ref _connectionOpenedStatus, 2) == 1)
+                {
+                    NetSecurityTelemetry.Log.ConnectionClosed(GetSslProtocolInternal());
+                }
             }
         }
 
