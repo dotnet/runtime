@@ -562,7 +562,7 @@ namespace System.Data.Common
             Type? dataType = Type.GetType(value); // throwOnError=false, ignoreCase=fase
             if (dataType == null)
             {
-                if (value == "System.Numerics.BigInteger")
+                if (value == typeof(System.Numerics.BigInteger).FullName)
                 {
                     dataType = typeof(System.Numerics.BigInteger);
                 }
