@@ -360,7 +360,7 @@ namespace System.Reflection
         // given name.  (Name should not include path.)
         public override FileStream? GetFile(string name)
         {
-            if (Location == "")
+            if (Location.Length == 0)
             {
                 // Throw if the assembly was loaded from memory, indicated by Location returning an empty string
                 throw new FileNotFoundException(SR.IO_NoFileTableInInMemoryAssemblies);
@@ -377,7 +377,7 @@ namespace System.Reflection
 
         public override FileStream[] GetFiles(bool getResourceModules)
         {
-            if (Location == "")
+            if (Location.Length == 0)
             {
                 // Throw if the assembly was loaded from memory, indicated by Location returning an empty string
                 throw new FileNotFoundException(SR.IO_NoFileTableInInMemoryAssemblies);
