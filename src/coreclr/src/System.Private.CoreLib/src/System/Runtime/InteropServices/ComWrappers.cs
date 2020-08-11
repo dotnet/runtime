@@ -69,6 +69,7 @@ namespace System.Runtime.InteropServices
     /// <summary>
     /// Class for managing wrappers of COM IUnknown types.
     /// </summary>
+    [SupportedOSPlatform("windows")]
     [CLSCompliant(false)]
     public abstract partial class ComWrappers
     {
@@ -101,7 +102,6 @@ namespace System.Runtime.InteropServices
             /// <typeparam name="T">Desired type.</typeparam>
             /// <param name="dispatchPtr">Pointer supplied to Vtable function entry.</param>
             /// <returns>Instance of type associated with dispatched function call.</returns>
-            [SupportedOSPlatform("windows")]
             public static unsafe T GetInstance<T>(ComInterfaceDispatch* dispatchPtr) where T : class
             {
                 // See the dispatch section in the runtime for details on the masking below.
@@ -141,7 +141,6 @@ namespace System.Runtime.InteropServices
         /// this <see cref="ComWrappers" /> instance, the previously created COM interface will be returned.
         /// If not, a new one will be created.
         /// </remarks>
-        [SupportedOSPlatform("windows")]
         public IntPtr GetOrCreateComInterfaceForObject(object instance, CreateComInterfaceFlags flags)
         {
             IntPtr ptr;
@@ -226,7 +225,6 @@ namespace System.Runtime.InteropServices
         /// using this <see cref="ComWrappers" /> instance, the previously created object will be returned.
         /// If not, a new one will be created.
         /// </remarks>
-        [SupportedOSPlatform("windows")]
         public object GetOrCreateObjectForComInstance(IntPtr externalComObject, CreateObjectFlags flags)
         {
             object? obj;
@@ -280,7 +278,6 @@ namespace System.Runtime.InteropServices
         /// <remarks>
         /// If the <paramref name="wrapper"/> instance already has an associated external object a <see cref="System.NotSupportedException"/> will be thrown.
         /// </remarks>
-        [SupportedOSPlatform("windows")]
         public object GetOrRegisterObjectForComInstance(IntPtr externalComObject, CreateObjectFlags flags, object wrapper)
         {
             if (wrapper == null)
@@ -339,7 +336,6 @@ namespace System.Runtime.InteropServices
         /// Scenarios where this global instance may be used are:
         ///  * Object tracking via the <see cref="CreateComInterfaceFlags.TrackerSupport" /> and <see cref="CreateObjectFlags.TrackerObject" /> flags.
         /// </remarks>
-        [SupportedOSPlatform("windows")]
         public static void RegisterForTrackerSupport(ComWrappers instance)
         {
             if (instance == null)
@@ -371,7 +367,6 @@ namespace System.Runtime.InteropServices
         ///  * P/Invokes with COM-related types
         ///  * COM activation
         /// </remarks>
-        [SupportedOSPlatform("windows")]
         public static void RegisterForMarshalling(ComWrappers instance)
         {
             if (instance == null)
@@ -398,7 +393,6 @@ namespace System.Runtime.InteropServices
         /// <param name="fpQueryInterface">Function pointer to QueryInterface.</param>
         /// <param name="fpAddRef">Function pointer to AddRef.</param>
         /// <param name="fpRelease">Function pointer to Release.</param>
-        [SupportedOSPlatform("windows")]
         protected static void GetIUnknownImpl(out IntPtr fpQueryInterface, out IntPtr fpAddRef, out IntPtr fpRelease)
             => GetIUnknownImplInternal(out fpQueryInterface, out fpAddRef, out fpRelease);
 

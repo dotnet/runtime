@@ -1022,6 +1022,7 @@ namespace System.Runtime.InteropServices
         TrackerObject = 1,
         UniqueInstance = 2,
     }
+    [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
     [System.CLSCompliantAttribute(false)]
     public abstract class ComWrappers
     {
@@ -1033,23 +1034,16 @@ namespace System.Runtime.InteropServices
         public struct ComInterfaceDispatch
         {
             public System.IntPtr Vtable;
-            [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
             public unsafe static T GetInstance<T>(ComInterfaceDispatch* dispatchPtr) where T : class { throw null; }
         }
-        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public System.IntPtr GetOrCreateComInterfaceForObject(object instance, CreateComInterfaceFlags flags) { throw null; }
         protected unsafe abstract ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count);
-        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public object GetOrCreateObjectForComInstance(System.IntPtr externalComObject, CreateObjectFlags flags) { throw null; }
         protected abstract object CreateObject(System.IntPtr externalComObject, CreateObjectFlags flags);
-        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public object GetOrRegisterObjectForComInstance(System.IntPtr externalComObject, CreateObjectFlags flags, object wrapper) { throw null; }
         protected abstract void ReleaseObjects(System.Collections.IEnumerable objects);
-        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public static void RegisterForTrackerSupport(ComWrappers instance) { }
-        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public static void RegisterForMarshalling(ComWrappers instance) { }
-        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         protected static void GetIUnknownImpl(out System.IntPtr fpQueryInterface, out System.IntPtr fpAddRef, out System.IntPtr fpRelease) { throw null; }
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Method, Inherited = false)]
