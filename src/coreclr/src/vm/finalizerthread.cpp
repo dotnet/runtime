@@ -9,6 +9,7 @@
 #include "jithost.h"
 #include "eventpipe.h"
 #include "eventpipesession.h"
+#include "genanalysis.h"
 
 #ifdef FEATURE_COMINTEROP
 #include "runtimecallablewrapper.h"
@@ -216,16 +217,7 @@ void FinalizerThread::WaitForFinalizerEvent (CLREvent *event)
     }
 }
 
-
-
 static BOOL s_FinalizerThreadOK = FALSE;
-
-extern int gcGenAnalysisState;
-extern EventPipeSession* gcGenAnalysisEventPipeSession;
-extern uint64_t gcGenAnalysisEventPipeSessionId;
-extern int gcGenAnalysis;
-extern int64_t gcGenAnalysisGen;
-extern int64_t gcGenAnalysisBytes;
 
 VOID FinalizerThread::FinalizerThreadWorker(void *args)
 {
@@ -276,7 +268,7 @@ VOID FinalizerThread::FinalizerThreadWorker(void *args)
 #endif
         if (gcGenAnalysisState == 2)
         {
-            gcGenAnalysisState = 3;
+            gcGenAnalysisState = GcGenAnalysisState::Disabled;
             EventPipe::Disable(gcGenAnalysisEventPipeSessionId);
             // Writing an empty file to indicate completion
             fclose(fopen("trace.nettrace.completed","w+"));
@@ -313,7 +305,7 @@ VOID FinalizerThread::FinalizerThreadWorker(void *args)
                     {
                         gcGenAnalysisEventPipeSession->Pause();
                         EventPipe::StartStreaming(gcGenAnalysisEventPipeSessionId);
-                        gcGenAnalysisState = 1;
+                        gcGenAnalysisState = GcGenAnalysisState::Enabled;
                     }
                 }
             }

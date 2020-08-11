@@ -22,6 +22,7 @@
 #include "win32threadpool.h"
 #include "ceemain.h"
 #include "configuration.h"
+#include "genanalysis.h"
 
 #ifdef TARGET_UNIX
 #include "pal.h"
@@ -143,10 +144,10 @@ void EventPipe::FinishInitialize()
     }
 }
 
-int gcGenAnalysisState = 0;
+GcGenAnalysisState gcGenAnalysisState = GcGenAnalysisState::Uninitialized;
 EventPipeSession* gcGenAnalysisEventPipeSession = nullptr;
 uint64_t gcGenAnalysisEventPipeSessionId = (uint64_t)-1;
-int gcGenAnalysis = 0;
+GcGenAnalysisState gcGenAnalysisConfigured = GcGenAnalysisState::Uninitialized;
 int64_t gcGenAnalysisGen = -1;
 int64_t gcGenAnalysisBytes = 0;
 
@@ -245,7 +246,7 @@ void EventPipe::EnableViaEnvironmentVariables()
         EventPipe::StartStreaming(sessionID);
     }
 #ifndef GEN_ANALYSIS_STRESS
-    if (gcGenAnalysis == 0)
+    if (gcGenAnalysisConfigured == GcGenAnalysisState::Uninitialized)
     {
         if (CLRConfig::IsConfigOptionSpecified(W("GCGenAnalysisGen")))
         {
@@ -253,15 +254,15 @@ void EventPipe::EnableViaEnvironmentVariables()
             if (CLRConfig::IsConfigOptionSpecified(W("GCGenAnalysisBytes")))
             {
                 gcGenAnalysisBytes = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_GCGenAnalysisBytes);
-                gcGenAnalysis = 1;
+                gcGenAnalysisConfigured = GcGenAnalysisState::Enabled;
             }
             else
             {
-                gcGenAnalysis = 2;
+                gcGenAnalysisConfigured = GcGenAnalysisState::Disabled;
             }
         }
     }
-    if (gcGenAnalysis == 1 && gcGenAnalysisState == 0)
+    if (gcGenAnalysisConfigured == 1 && gcGenAnalysisState == 0)
 #endif
     {
         LPCWSTR outputPath = nullptr;
@@ -291,7 +292,7 @@ void EventPipe::EnableViaEnvironmentVariables()
             gcGenAnalysisEventPipeSession= EventPipe::GetSession(gcGenAnalysisEventPipeSessionId);
             gcGenAnalysisEventPipeSession->Pause();
             EventPipe::StartStreaming(gcGenAnalysisEventPipeSessionId);
-            gcGenAnalysisState = 1;
+            gcGenAnalysisState = GcGenAnalysisState::Enabled;
         }
     }
 }

@@ -315,8 +315,8 @@ public:
     size_t GetLastGCGenerationSize(int gen);
 
     virtual void Shutdown();
-};
 
-void reportGenerationBounds();
+    static void ReportGenerationBounds();
+};
 
 #endif  // GCIMPL_H_

@@ -20909,19 +20909,19 @@ void gc_heap::mark_phase (int condemned_gen_number, BOOL mark_only_p)
     if (gc_t_join.joined())
 #endif //MULTIPLE_HEAPS
     {
-        uint64_t total_promoted_bytes = 0;
+        uint64_t promoted_bytes_global = 0;
 #ifdef HEAP_ANALYZE
         heap_analyze_enabled = FALSE;
 #ifdef MULTIPLE_HEAPS
         for (int i = 0; i < n_heaps; i++)
         {
-            promoted_bytes (i);
+            promoted_bytes_global += promoted_bytes (i);
         }
 #else
-        total_promoted_bytes = promoted_bytes (0);
+        promoted_bytes_global = promoted_bytes (0);
 #endif //MULTIPLE_HEAPS
 
-        GCToEEInterface::AnalyzeSurvivorsFinished (condemned_gen_number, total_promoted_bytes, reportGenerationBounds);
+        GCToEEInterface::AnalyzeSurvivorsFinished (condemned_gen_number, promoted_bytes_global, GCHeap::ReportGenerationBounds);
 #endif // HEAP_ANALYZE
         GCToEEInterface::AfterGcScanRoots (condemned_gen_number, max_generation, &sc);
 

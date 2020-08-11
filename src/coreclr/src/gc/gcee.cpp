@@ -53,10 +53,10 @@ void GCHeap::UpdatePreGCCounters()
 #endif // BACKGROUND_GC
 
     FIRE_EVENT(GCStart_V2, count, depth, reason, static_cast<uint32_t>(type));
-    reportGenerationBounds();
+    ReportGenerationBounds();
 }
 
-void reportGenerationBounds()
+void GCHeap::ReportGenerationBounds()
 {
     g_theGCHeap->DiagDescrGenerations([](void*, int generation, uint8_t* rangeStart, uint8_t* rangeEnd, uint8_t* rangeEndReserved)
     {
@@ -153,7 +153,7 @@ void GCHeap::UpdatePostGCCounters()
 #endif //FEATURE_EVENT_TRACE
 
 #ifdef FEATURE_EVENT_TRACE
-    reportGenerationBounds();
+    ReportGenerationBounds();
 
     FIRE_EVENT(GCEnd_V1, static_cast<uint32_t>(pSettings->gc_index), condemned_gen);
 

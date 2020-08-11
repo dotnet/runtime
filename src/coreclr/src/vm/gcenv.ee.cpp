@@ -1597,13 +1597,13 @@ void GCToEEInterface::AnalyzeSurvivorsFinished(int condemnedGeneration, uint64_t
         }
     }
     
-    if (gcGenAnalysisState == 1)
+    if (gcGenAnalysisState == GcGenAnalysisState::Enabled)
     {
 #ifndef GEN_ANALYSIS_STRESS
-        if (condemnedGeneration == gcGenAnalysisGen && (promoted_bytes > (uint64_t)gcGenAnalysisBytes))
+        if ((condemnedGeneration == gcGenAnalysisGen) && (promoted_bytes > (uint64_t)gcGenAnalysisBytes))
 #endif
         {
-            gcGenAnalysisState = 2;
+            gcGenAnalysisState = GcGenAnalysisState::Done;
             gcGenAnalysisEventPipeSession->Resume();
             FireEtwGenAwareBegin();
             s_forcedGCInProgress = true;
