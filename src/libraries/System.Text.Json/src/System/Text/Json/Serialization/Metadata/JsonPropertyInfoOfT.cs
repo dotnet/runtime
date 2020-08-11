@@ -6,21 +6,35 @@ using System.Diagnostics;
 using System.Reflection;
 using System.Text.Json.Serialization;
 
-namespace System.Text.Json
+namespace System.Text.Json.Serialization.Metadata
 {
     /// <summary>
     /// Represents a strongly-typed property to prevent boxing and to create a direct delegate to the getter\setter.
     /// </summary>
     /// <typeparamref name="T"/> is the <see cref="JsonConverter{T}.TypeToConvert"/> for either the property's converter,
     /// or a type's converter, if the current instance is a <see cref="JsonClassInfo.PropertyInfoForClassInfo"/>.
-    internal sealed class JsonPropertyInfo<T> : JsonPropertyInfo
+    public sealed class JsonPropertyInfo<T> : JsonPropertyInfo
     {
-        public Func<object, T>? Get { get; private set; }
-        public Action<object, T>? Set { get; private set; }
+        private static readonly T s_defaultValue = default!;
 
+        internal JsonPropertyInfo() { }
+
+        /// <summary>
+        /// todo
+        /// </summary>
+        public Func<object, T>? Get { get; internal set; }
+
+        /// <summary>
+        /// todo
+        /// </summary>
+        public Action<object, T>? Set { get; internal set; }
+
+        /// <summary>
+        /// todo
+        /// </summary>
         public JsonConverter<T> Converter { get; internal set; } = null!;
 
-        public override void Initialize(
+        internal override void Initialize(
             Type parentClassType,
             Type declaredPropertyType,
             Type? runtimePropertyType,
@@ -94,6 +108,9 @@ namespace System.Text.Json
             GetPolicies(ignoreCondition, parentTypeNumberHandling, defaultValueIsNull: Converter.CanBeNull);
         }
 
+        /// <summary>
+        /// todo
+        /// </summary>
         public override JsonConverter ConverterBase
         {
             get
@@ -107,7 +124,7 @@ namespace System.Text.Json
             }
         }
 
-        public override object? GetValueAsObject(object obj)
+        internal override object? GetValueAsObject(object obj)
         {
             if (IsForClassInfo)
             {
@@ -118,7 +135,7 @@ namespace System.Text.Json
             return Get!(obj);
         }
 
-        public override bool GetMemberAndWriteJson(object obj, ref WriteStack state, Utf8JsonWriter writer)
+        internal override bool GetMemberAndWriteJson(object obj, ref WriteStack state, Utf8JsonWriter writer)
         {
             T value = Get!(obj);
 
@@ -172,7 +189,7 @@ namespace System.Text.Json
             }
         }
 
-        public override bool GetMemberAndWriteJsonExtensionData(object obj, ref WriteStack state, Utf8JsonWriter writer)
+        internal override bool GetMemberAndWriteJsonExtensionData(object obj, ref WriteStack state, Utf8JsonWriter writer)
         {
             bool success;
             T value = Get!(obj);
@@ -189,7 +206,7 @@ namespace System.Text.Json
             return success;
         }
 
-        public override bool ReadJsonAndSetMember(object obj, ref ReadStack state, ref Utf8JsonReader reader)
+        internal override bool ReadJsonAndSetMember(object obj, ref ReadStack state, ref Utf8JsonReader reader)
         {
             bool success;
 
@@ -238,7 +255,84 @@ namespace System.Text.Json
             return success;
         }
 
-        public override bool ReadJsonAsObject(ref ReadStack state, ref Utf8JsonReader reader, out object? value)
+        /// <summary>
+        /// todo: Fast path for value types (not objects or collections)
+        /// todo: for perf, also call this for value converters for non-delegate\codegen case?
+        /// </summary>
+        /// <param name="reader"></param>
+        /// <param name="state"></param>
+        /// <param name="obj"></param>
+        public void ReadValueAndSetMember(ref Utf8JsonReader reader, ref ReadStack state, object obj)
+        {
+            bool isNullToken = reader.TokenType == JsonTokenType.Null;
+            if (isNullToken && !Converter.HandleNull)
+            {
+                if (!Converter.CanBeNull)
+                {
+                    ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(Converter.TypeToConvert);
+                }
+
+                Debug.Assert(s_defaultValue == null);
+
+                if (!IgnoreDefaultValuesOnRead)
+                {
+                    T value = default;
+                    Set!(obj, value!);
+                }
+            }
+            else if (!isNullToken || !IgnoreDefaultValuesOnRead || !Converter.CanBeNull)
+            {
+                // Support JsonPath in exceptions.
+                state.Current.JsonPropertyInfo = this;
+
+                // Optimize for value converters by avoiding the extra call to TryRead.
+                T value = Converter.Read(ref reader, RuntimePropertyType!, Options);
+                Set!(obj, value!);
+
+                state.Current.EndPropertyFast();
+            }
+        }
+
+        /// <summary>
+        /// todo:Supports object and collections; use ReadValueAndSetMember for perf for values.
+        /// </summary>
+        /// <param name="reader"></param>
+        /// <param name="state"></param>
+        /// <param name="obj"></param>
+        public void ReadAndSetMember(ref Utf8JsonReader reader, ref ReadStack state, object obj)
+        {
+            // Code-gen should not call this for properties with no setter.
+            Debug.Assert(ShouldDeserialize);
+
+            Debug.Assert(!Converter.HandleNull);
+            Debug.Assert(Converter.CanBeNull);
+            Debug.Assert(!state.IsContinuation);
+
+            bool isNullToken = reader.TokenType == JsonTokenType.Null;
+
+            if (isNullToken)
+            {
+                Debug.Assert(s_defaultValue == null);
+
+                if (!IgnoreDefaultValuesOnRead)
+                {
+                    T value = default;
+                    Set!(obj, value!);
+                }
+            }
+            else
+            {
+                state.Current.JsonPropertyInfo = this;
+
+                bool success = Converter.TryRead(ref reader, RuntimePropertyType!, Options, ref state, out T value);
+                Debug.Assert(success);
+                Set!(obj, value!);
+
+                state.Current.EndPropertyFast();
+            }
+        }
+
+        internal override bool ReadJsonAsObject(ref ReadStack state, ref Utf8JsonReader reader, out object? value)
         {
             bool success;
             bool isNullToken = reader.TokenType == JsonTokenType.Null;
@@ -270,11 +364,67 @@ namespace System.Text.Json
             return success;
         }
 
-        public override void SetExtensionDictionaryAsObject(object obj, object? extensionDict)
+        internal override void SetExtensionDictionaryAsObject(object obj, object? extensionDict)
         {
             Debug.Assert(HasSetter);
             T typedValue = (T)extensionDict!;
             Set!(obj, typedValue);
+        }
+
+        /// <summary>
+        /// todo:Supports object and collections; use WriteValue for perf for values.
+        /// </summary>
+        /// <param name="value"></param>
+        /// <param name="state"></param>
+        /// <param name="writer"></param>
+        public void Write(in T value, ref WriteStack state, Utf8JsonWriter writer)
+        {
+            if (value == null)
+            {
+                Debug.Assert(s_defaultValue == null && Converter.CanBeNull);
+
+                if (!IgnoreDefaultValuesOnWrite)
+                {
+                    Debug.Assert(!Converter.HandleNull);
+                    writer.WriteNullSection(EscapedNameSection);
+                }
+            }
+            else if (IgnoreDefaultValuesOnWrite && Converter._defaultComparer.Equals(s_defaultValue, value))
+            {
+                Debug.Assert(s_defaultValue != null && !Converter.CanBeNull);
+            }
+            else
+            {
+                writer.WritePropertyNameSection(EscapedNameSection);
+                state.Current.PolymorphicJsonPropertyInfo = this;
+                if (!Converter.TryWrite(writer, value, Options, ref state))
+                {
+                    throw new InvalidOperationException("todo: converter returned false");
+                }
+
+                state.Current.EndPropertyFast();
+            }
+        }
+
+        /// <summary>
+        /// todo: Fast path for value types (not objects or collections)
+        /// </summary>
+        /// <param name="value"></param>
+        /// <param name="state"></param>
+        /// <param name="writer"></param>
+        public void WriteValue(in T value, ref WriteStack state, Utf8JsonWriter writer)
+        {
+            if (IgnoreDefaultValuesOnWrite && Converter._defaultComparer.Equals(s_defaultValue, value))
+            {
+                Debug.Assert(s_defaultValue != null && !Converter.CanBeNull);
+            }
+            else
+            {
+                writer.WritePropertyNameSection(EscapedNameSection);
+                state.Current.PolymorphicJsonPropertyInfo = this;
+                Converter.Write(writer, value, Options);
+                state.Current.EndPropertyFast();
+            }
         }
     }
 }

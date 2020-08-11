@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text.Json.Serialization;
+using System.Text.Json.Serialization.Metadata;
 
 namespace System.Text.Json
 {
@@ -65,6 +66,16 @@ namespace System.Text.Json
             // No need to clear these since they are overwritten each time:
             //  NumberHandling
             //  UseExtensionProperty
+        }
+
+        public void EndPropertyFast()
+        {
+            JsonPropertyInfo = null!;
+            ValidateEndTokenOnArray = false;
+
+            Debug.Assert(JsonPropertyName == null);
+            Debug.Assert(JsonPropertyNameAsString == null);
+            Debug.Assert(PropertyState == StackFramePropertyState.None);
         }
 
         public void EndElement()

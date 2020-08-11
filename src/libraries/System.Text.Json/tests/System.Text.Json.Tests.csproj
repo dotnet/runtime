@@ -37,6 +37,17 @@
     <Compile Include="Serialization\Array.WriteTests.cs" />
     <Compile Include="Serialization\CacheTests.cs" />
     <Compile Include="Serialization\CamelCaseUnitTests.cs" />
+    <Compile Include="Serialization\CodeGenTests\CampaignSummaryViewModelTypeInfoPocoTests.cs" />
+    <Compile Include="Serialization\CodeGenTests\ActiveOrUpcomingEventPocoTests.cs" />
+    <Compile Include="Serialization\CodeGenTests\IndexViewModelPocoTests.cs" />
+    <Compile Include="Serialization\CodeGenTests\LocationPocoTests.cs" />
+    <Compile Include="Serialization\CodeGenTests\ContextClass\MyNamespace.JsonContext.ActiveOrUpcomingEvent.cs" />
+    <Compile Include="Serialization\CodeGenTests\ContextClass\MyNamespace.JsonContext.CampaignSummaryViewModel.cs" />
+    <Compile Include="Serialization\CodeGenTests\ContextClass\MyNamespace.JsonContext.IndexViewModel.cs" />
+    <Compile Include="Serialization\CodeGenTests\ContextClass\MyNamespace.JsonContext.Location.cs" />
+    <Compile Include="Serialization\CodeGenTests\ContextClass\MyNamespace.JsonContext.cs" />
+    <Compile Include="Serialization\CodeGenTests\ContextClass\MyNamespace.Location.cs" />
+    <Compile Include="Serialization\CodeGenTests\SlowPathTests.cs" />
     <Compile Include="Serialization\CollectionTests\CollectionTests.Concurrent.Write.cs" />
     <Compile Include="Serialization\CollectionTests\CollectionTests.Concurrent.cs" />
     <Compile Include="Serialization\CollectionTests\CollectionTests.Dictionary.cs" />

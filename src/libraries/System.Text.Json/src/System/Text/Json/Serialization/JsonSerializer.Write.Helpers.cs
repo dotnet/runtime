@@ -4,6 +4,7 @@
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Serialization;
+using System.Text.Json.Serialization.Metadata;
 
 namespace System.Text.Json
 {
@@ -29,7 +30,7 @@ namespace System.Text.Json
             WriteStack state = default;
             JsonConverter jsonConverter = state.Initialize(inputType, options, supportContinuation: false);
 
-            bool success = WriteCore(jsonConverter, writer, value, options, ref state);
+            bool success = WriteCore(jsonConverter, writer, value, ref state, options);
             Debug.Assert(success);
         }
 
@@ -37,8 +38,8 @@ namespace System.Text.Json
             JsonConverter jsonConverter,
             Utf8JsonWriter writer,
             in TValue value,
-            JsonSerializerOptions options,
-            ref WriteStack state)
+            ref WriteStack state,
+            JsonSerializerOptions options)
         {
             Debug.Assert(writer != null);
 
