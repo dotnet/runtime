@@ -37,7 +37,6 @@ namespace System.IO.Enumeration
             // IMPORTANT: Attribute logic must match the logic in FileStatus
 
             bool isDirectory = false;
-            bool isSymlink = false;
             if (directoryEntry.InodeType == Interop.Sys.NodeType.DT_DIR)
             {
                 // We know it's a directory.
@@ -46,41 +45,37 @@ namespace System.IO.Enumeration
             // Some operating systems don't have the inode type in the dirent structure,
             // so we use DT_UNKNOWN as a sentinel value. As such, check if the dirent is a
             // directory.
-            else if ((directoryEntry.InodeType == Interop.Sys.NodeType.DT_LNK
-                || directoryEntry.InodeType == Interop.Sys.NodeType.DT_UNKNOWN)
-                && Interop.Sys.Stat(entry.FullPath, out Interop.Sys.FileStatus targetStatus) >= 0)
+            else if ((directoryEntry.InodeType == Interop.Sys.NodeType.DT_LNK ||
+                directoryEntry.InodeType == Interop.Sys.NodeType.DT_UNKNOWN) &&
+                Interop.Sys.Stat(entry.FullPath, out Interop.Sys.FileStatus statInfo) >= 0)
             {
                 // Symlink or unknown: Stat to it to see if we can resolve it to a directory.
-                isDirectory = (targetStatus.Mode & Interop.Sys.FileTypes.S_IFMT) == Interop.Sys.FileTypes.S_IFDIR;
+                isDirectory = FileStatus.IsDirectory(statInfo);
             }
-            // Same idea as the directory check, just repeated for (and tweaked due to the
-            // nature of) symlinks.
+
+            // Same idea as the directory check, just repeated for (and tweaked due to the nature of) symlinks.
+            int resultLStat = Interop.Sys.LStat(entry.FullPath, out Interop.Sys.FileStatus lstatInfo);
+
+            bool isReadOnly = resultLStat >= 0 && FileStatus.IsReadOnly(lstatInfo);
+
+            bool isSymlink = false;
             if (directoryEntry.InodeType == Interop.Sys.NodeType.DT_LNK)
             {
                 isSymlink = true;
             }
-            else if ((directoryEntry.InodeType == Interop.Sys.NodeType.DT_UNKNOWN)
-                && (Interop.Sys.LStat(entry.FullPath, out Interop.Sys.FileStatus linkTargetStatus) >= 0))
+            else if (directoryEntry.InodeType == Interop.Sys.NodeType.DT_UNKNOWN && resultLStat >= 0)
             {
-                isSymlink = (linkTargetStatus.Mode & Interop.Sys.FileTypes.S_IFMT) == Interop.Sys.FileTypes.S_IFLNK;
+                isSymlink = FileStatus.IsSymLink(lstatInfo);
             }
+
+            bool isHidden = directoryEntry.Name[0] == '.' || (resultLStat >= 0 && FileStatus.IsHidden(lstatInfo));
 
             entry._status = default;
             FileStatus.Initialize(ref entry._status, isDirectory);
 
-            FileAttributes attributes = default;
-            if (isSymlink)
-                attributes |= FileAttributes.ReparsePoint;
-            if (isDirectory)
-                attributes |= FileAttributes.Directory;
-            if (directoryEntry.Name[0] == '.')
-                attributes |= FileAttributes.Hidden;
-
-            if (attributes == default)
-                attributes = FileAttributes.Normal;
-
-            entry._initialAttributes = attributes;
-            return attributes;
+            FileAttributes attributes = FileStatus.GetAttributes(isReadOnly, isSymlink, isDirectory, isHidden);
+             entry._initialAttributes = attributes;
+             return attributes;
         }
 
         private ReadOnlySpan<char> FullPath
