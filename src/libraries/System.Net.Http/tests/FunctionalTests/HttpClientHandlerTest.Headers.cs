@@ -67,11 +67,6 @@ namespace System.Net.Http.Functional.Tests
             {
                 HttpRequestData requestData = await server.HandleRequestAsync(HttpStatusCode.OK);
 
-                if (requestData.Path == "/setup")
-                {
-                    return;
-                }
-
                 for (int i = 0; i < count; i++)
                 {
                     Assert.Equal(largeHeaderValue, requestData.GetSingleHeaderValue("large-header" + i));

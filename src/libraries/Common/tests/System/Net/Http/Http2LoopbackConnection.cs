@@ -573,24 +573,24 @@ namespace System.Net.Test.Common
             using MemoryStream buffer = new MemoryStream();
             await foreach (Frame frame in ReadRequestHeadersFrames())
             {
-                if (frame.Type == FrameType.Headers)
+                switch (frame.Type)
                 {
-                    var headersFrame = (HeadersFrame)frame;
-                    requestData.RequestId = headersFrame.StreamId;
-                    endOfStream = (headersFrame.Flags & FrameFlags.EndStream) == FrameFlags.EndStream;
-                    await buffer.WriteAsync(headersFrame.Data);
-                    continue;
+                    case FrameType.Headers:
+                        var headersFrame = (HeadersFrame)frame;
+                        requestData.RequestId = headersFrame.StreamId;
+                        endOfStream = (headersFrame.Flags & FrameFlags.EndStream) == FrameFlags.EndStream;
+                        await buffer.WriteAsync(headersFrame.Data);
+                        break;
+                    case FrameType.Continuation:
+                        var continuationFrame = (ContinuationFrame)frame;
+                        await buffer.WriteAsync(continuationFrame.Data);
+                        break;
+                    default:
+                        // Assert.Fail is already merged in xUnit but not released yet. Replace once available.
+                        // https://github.com/xunit/xunit/issues/2105
+                        Assert.True(false, $"Unexpected frame type '{frame.Type}'");
+                        break;
                 }
-                if (frame.Type == FrameType.Continuation)
-                {
-                    var continuationFrame = (ContinuationFrame)frame;
-                    await buffer.WriteAsync(continuationFrame.Data);
-                    continue;
-                }
-
-                // Assert.Fail is already merged in xUnit but not released yet. Replace once available.
-                // https://github.com/xunit/xunit/issues/2105
-                Assert.True(false, $"Unexpected frame type '{frame.Type}'");
             }
 
             Memory<byte> data = buffer.ToArray();
