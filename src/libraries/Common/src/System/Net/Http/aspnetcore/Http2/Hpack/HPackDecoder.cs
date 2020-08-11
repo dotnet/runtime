@@ -690,7 +690,7 @@ namespace System.Net.Http.HPack
             {
 #if !HPACK_SUPPORT_ONSTATICINDEXEDHEADER
                 return ref index <= H2StaticTable.Count
-                    ? ref H2StaticTable.Get(index -1)
+                    ? ref H2StaticTable.Get(index - 1)
                     : ref _dynamicTable[index - H2StaticTable.Count - 1];
 #else
                 return ref _dynamicTable[index - H2StaticTable.Count - 1];
