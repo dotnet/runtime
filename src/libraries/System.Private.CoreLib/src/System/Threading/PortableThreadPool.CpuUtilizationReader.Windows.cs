@@ -34,7 +34,7 @@ namespace System.Threading
                     {
                         long reading = cpuBusyTime * 100 / cpuTotalTime;
                         reading = Math.Min(reading, 100);
-                        Debug.Assert(0 <= reading);
+                        Debug.Assert(reading >= 0);
                         return (int)reading;
                     }
                     return 0;
