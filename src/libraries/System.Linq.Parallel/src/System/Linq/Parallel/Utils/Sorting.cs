@@ -587,8 +587,8 @@ namespace System.Linq.Parallel
             Debug.Assert(keys != null, "need a non-null keyset");
             Debug.Assert(keys.Length >= indices.Length);
             Debug.Assert(left <= right);
-            Debug.Assert(0 <= left && left < keys.Length);
-            Debug.Assert(0 <= right && right < keys.Length);
+            Debug.Assert(left >= 0 && left < keys.Length);
+            Debug.Assert(right >= 0 && right < keys.Length);
 
             // cancellation check.
             // only test for intervals that are wider than so many items, else this test is

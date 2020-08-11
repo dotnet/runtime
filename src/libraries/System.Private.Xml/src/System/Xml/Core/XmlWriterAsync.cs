@@ -243,7 +243,7 @@ namespace System.Xml
         // Writes out all the attributes found at the current position in the specified XmlReader.
         public virtual async Task WriteAttributesAsync(XmlReader reader, bool defattr)
         {
-            if (null == reader)
+            if (reader == null)
             {
                 throw new ArgumentNullException(nameof(reader));
             }
@@ -291,7 +291,7 @@ namespace System.Xml
         // to the corresponding end element.
         public virtual Task WriteNodeAsync(XmlReader reader, bool defattr)
         {
-            if (null == reader)
+            if (reader == null)
             {
                 throw new ArgumentNullException(nameof(reader));
             }
@@ -570,7 +570,7 @@ namespace System.Xml
         public async Task WriteElementStringAsync(string? prefix, string localName, string? ns, string value)
         {
             await WriteStartElementAsync(prefix, localName, ns).ConfigureAwait(false);
-            if (null != value && 0 != value.Length)
+            if (value != null && value.Length != 0)
             {
                 await WriteStringAsync(value).ConfigureAwait(false);
             }

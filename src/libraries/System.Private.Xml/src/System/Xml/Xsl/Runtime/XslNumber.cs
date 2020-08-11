@@ -186,7 +186,7 @@ namespace System.Xml.Xsl.Runtime
             if (val.Count == 1 && val[0].ValueType == typeof(double))
             {
                 double dblVal = val[0].ValueAsDouble;
-                if (!(0.5 <= dblVal && dblVal < double.PositiveInfinity))
+                if (!(dblVal >= 0.5 && dblVal < double.PositiveInfinity))
                 {
                     // Errata E24: It is an error if the number is NaN, infinite or less than 0.5; an XSLT processor may signal
                     // the error; if it does not signal the error, it must recover by converting the number to a string as if
@@ -221,8 +221,8 @@ namespace System.Xml.Xsl.Runtime
                     suffix = _tokens[--cFormats];
                 }
 
-                TokenInfo periodicSeparator = 2 < cFormats ? _tokens[cFormats - 2] : s_defaultSeparator;
-                TokenInfo periodicFormat = 0 < cFormats ? _tokens[cFormats - 1] : s_defaultFormat;
+                TokenInfo periodicSeparator = cFormats > 2 ? _tokens[cFormats - 2] : s_defaultSeparator;
+                TokenInfo periodicFormat = cFormats > 0 ? _tokens[cFormats - 1] : s_defaultFormat;
 
                 if (prefix != null)
                 {
@@ -271,7 +271,7 @@ namespace System.Xml.Xsl.Runtime
                 dblVal = XsltFunctions.Round(item.ValueAsDouble);
             }
 
-            Debug.Assert(1 <= dblVal && dblVal < double.PositiveInfinity);
+            Debug.Assert(dblVal >= 1 && dblVal < double.PositiveInfinity);
             char zero = '0';
 
             switch (startChar)

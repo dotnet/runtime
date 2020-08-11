@@ -162,7 +162,7 @@ namespace System.Linq.Parallel
 
             // Produce the next element.
             Debug.Assert(mutables._currentRightMatches != null);
-            Debug.Assert(0 <= mutables._currentRightMatchesIndex && mutables._currentRightMatchesIndex < mutables._currentRightMatches.Count);
+            Debug.Assert(mutables._currentRightMatchesIndex >= 0 && mutables._currentRightMatchesIndex < mutables._currentRightMatches.Count);
 
             Pair<TRightInput, TRightKey> rightMatch = mutables._currentRightMatches._chunk[mutables._currentRightMatchesIndex];
 

@@ -66,7 +66,7 @@ namespace System.Xml
             get
             {
                 XmlReaderSettings? settings = _coreReader.Settings;
-                if (null != settings)
+                if (settings != null)
                 {
                     settings = settings.Clone();
                 }

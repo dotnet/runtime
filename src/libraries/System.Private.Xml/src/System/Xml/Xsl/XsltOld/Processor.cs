@@ -1057,7 +1057,7 @@ namespace System.Xml.Xsl.XsltOld
 
         internal void SetParameter(XmlQualifiedName name, object value)
         {
-            Debug.Assert(1 < _actionStack.Length);
+            Debug.Assert(_actionStack.Length > 1);
             ActionFrame parentFrame = (ActionFrame)_actionStack[_actionStack.Length - 2];
             parentFrame.SetParameter(name, value);
         }
@@ -1070,7 +1070,7 @@ namespace System.Xml.Xsl.XsltOld
 
         internal object GetParameter(XmlQualifiedName name)
         {
-            Debug.Assert(2 < _actionStack.Length);
+            Debug.Assert(_actionStack.Length > 2);
             ActionFrame parentFrame = (ActionFrame)_actionStack[_actionStack.Length - 3];
             return parentFrame.GetParameter(name);
         }
@@ -1113,7 +1113,7 @@ namespace System.Xml.Xsl.XsltOld
         internal XmlQualifiedName GetPrevioseMode()
         {
             Debug.Assert(this.Debugger != null, "We don't generate calls this function if ! debugger");
-            Debug.Assert(2 <= _debuggerStack.Length);
+            Debug.Assert(_debuggerStack.Length >= 2);
             return ((DebuggerFrame)_debuggerStack[_debuggerStack.Length - 2]).currentMode;
         }
 

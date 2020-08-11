@@ -127,7 +127,7 @@ namespace System.Security.Claims
         /// <exception cref="ArgumentNullException">if 'principal' is null.</exception>
         public ClaimsPrincipal(IPrincipal principal)
         {
-            if (null == principal)
+            if (principal == null)
             {
                 throw new ArgumentNullException(nameof(principal));
             }
@@ -137,13 +137,13 @@ namespace System.Security.Claims
             // If IPrincipal is not a ClaimsPrincipal, create a new identity from IPrincipal.Identity
             //
             ClaimsPrincipal? cp = principal as ClaimsPrincipal;
-            if (null == cp)
+            if (cp == null)
             {
                 _identities.Add(new ClaimsIdentity(principal.Identity));
             }
             else
             {
-                if (null != cp.Identities)
+                if (cp.Identities != null)
                 {
                     _identities.AddRange(cp.Identities);
                 }

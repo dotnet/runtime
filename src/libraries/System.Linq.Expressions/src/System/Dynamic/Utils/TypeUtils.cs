@@ -417,19 +417,19 @@ namespace System.Dynamic.Utils
         private static bool IsCovariant(Type t)
         {
             Debug.Assert(t != null);
-            return 0 != (t.GenericParameterAttributes & GenericParameterAttributes.Covariant);
+            return (t.GenericParameterAttributes & GenericParameterAttributes.Covariant) != 0;
         }
 
         private static bool IsContravariant(Type t)
         {
             Debug.Assert(t != null);
-            return 0 != (t.GenericParameterAttributes & GenericParameterAttributes.Contravariant);
+            return (t.GenericParameterAttributes & GenericParameterAttributes.Contravariant) != 0;
         }
 
         private static bool IsInvariant(Type t)
         {
             Debug.Assert(t != null);
-            return 0 == (t.GenericParameterAttributes & GenericParameterAttributes.VarianceMask);
+            return (t.GenericParameterAttributes & GenericParameterAttributes.VarianceMask) == 0;
         }
 
         private static bool IsDelegate(Type t)

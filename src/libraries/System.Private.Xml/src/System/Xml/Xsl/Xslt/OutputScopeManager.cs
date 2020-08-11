@@ -42,7 +42,7 @@ namespace System.Xml.Xsl.Xslt
 
         public void PopScope()
         {
-            if (0 < _lastScopes)
+            if (_lastScopes > 0)
             {
                 _lastScopes--;
             }
@@ -145,7 +145,7 @@ namespace System.Xml.Xsl.Xslt
                 --record                             // in reverce direction
             )
             {
-                Debug.Assert(0 < record, "first record is lookup barrier, so we don't need to check this condition runtime");
+                Debug.Assert(record > 0, "first record is lookup barrier, so we don't need to check this condition runtime");
                 if (_records[record].prefix == prefix)
                 {
                     return _records[record].nsUri;

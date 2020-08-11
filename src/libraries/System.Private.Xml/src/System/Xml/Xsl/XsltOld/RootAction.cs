@@ -170,7 +170,7 @@ namespace System.Xml.Xsl.XsltOld
                     // so we'll need to invert dstAttList finaly.
                     if (srcAttList != null)
                     {
-                        for (int src = srcAttList.Count - 1; 0 <= src; src--)
+                        for (int src = srcAttList.Count - 1; src >= 0; src--)
                         {
                             // We can ignore duplicate attibutes here.
                             dstAttList.Add(srcAttList[src]);

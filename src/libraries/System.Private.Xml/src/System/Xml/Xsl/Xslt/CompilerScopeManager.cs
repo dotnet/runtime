@@ -74,7 +74,7 @@ namespace System.Xml.Xsl.Xslt
 
         public void ExitScope()
         {
-            if (0 < _lastScopes)
+            if (_lastScopes > 0)
             {
                 _lastScopes--;
             }
@@ -246,7 +246,7 @@ namespace System.Xml.Xsl.Xslt
         {
             Debug.Assert(nsUri != null);
             int exAll = 0;
-            for (int record = _lastRecord; 0 <= record; record--)
+            for (int record = _lastRecord; record >= 0; record--)
             {
                 string recPrefix, recNsUri;
                 ScopeFlags flags = GetName(ref _records[record], out recPrefix, out recNsUri);
@@ -297,7 +297,7 @@ namespace System.Xml.Xsl.Xslt
         private int SearchVariable(string localName, string uri)
         {
             Debug.Assert(localName != null);
-            for (int record = _lastRecord; 0 <= record; --record)
+            for (int record = _lastRecord; record >= 0; --record)
             {
                 string recLocal, recNsUri;
                 ScopeFlags flags = GetName(ref _records[record], out recLocal, out recNsUri);
@@ -322,7 +322,7 @@ namespace System.Xml.Xsl.Xslt
         public bool IsLocalVariable(string localName, string uri)
         {
             int record = SearchVariable(localName, uri);
-            while (0 <= --record)
+            while (--record >= 0)
             {
                 if (_records[record].scopeCount != 0)
                 {

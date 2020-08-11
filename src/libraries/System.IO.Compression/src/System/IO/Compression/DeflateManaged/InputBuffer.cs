@@ -34,7 +34,7 @@ namespace System.IO.Compression
         /// <returns>Returns false if input is not sufficient to make this true.</returns>
         public bool EnsureBitsAvailable(int count)
         {
-            Debug.Assert(0 < count && count <= 16, "count is invalid.");
+            Debug.Assert(count > 0 && count <= 16, "count is invalid.");
 
             // manual inlining to improve perf
             if (_bitsInBuffer < count)
@@ -104,7 +104,7 @@ namespace System.IO.Compression
         /// <summary>Gets count bits from the input buffer. Returns -1 if not enough bits available.</summary>
         public int GetBits(int count)
         {
-            Debug.Assert(0 < count && count <= 16, "count is invalid.");
+            Debug.Assert(count > 0 && count <= 16, "count is invalid.");
 
             if (!EnsureBitsAvailable(count))
             {

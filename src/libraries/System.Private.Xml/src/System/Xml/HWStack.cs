@@ -50,7 +50,7 @@ namespace System.Xml
 
         internal object? Pop()
         {
-            if (0 < _used)
+            if (_used > 0)
             {
                 _used--;
                 object result = _stack[_used];

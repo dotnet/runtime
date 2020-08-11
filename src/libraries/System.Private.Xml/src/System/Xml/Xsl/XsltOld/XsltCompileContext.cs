@@ -963,7 +963,7 @@ namespace System.Xml.Xsl.XsltOld
                 _types = new Type[parameters.Length];
                 XPathResultType[] argTypes = new XPathResultType[parameters.Length];
                 bool optionalParams = true; // we allow only last params be optional. Set false on the first non optional.
-                for (int i = parameters.Length - 1; 0 <= i; i--)
+                for (int i = parameters.Length - 1; i >= 0; i--)
                 {            // Revers order is essential: counting optional parameters
                     _types[i] = parameters[i].ParameterType;
                     argTypes[i] = GetXPathType(parameters[i].ParameterType);
@@ -985,7 +985,7 @@ namespace System.Xml.Xsl.XsltOld
             public override object Invoke(XsltContext xsltContext, object[] args, XPathNavigator docContext)
             {
                 Debug.Assert(args.Length <= this.Minargs, "We cheking this on resolve time");
-                for (int i = args.Length - 1; 0 <= i; i--)
+                for (int i = args.Length - 1; i >= 0; i--)
                 {
                     args[i] = ConvertToXPathType(args[i], this.ArgTypes[i], _types[i]);
                 }

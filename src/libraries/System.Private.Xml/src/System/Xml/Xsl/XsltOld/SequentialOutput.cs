@@ -605,7 +605,7 @@ namespace System.Xml.Xsl.XsltOld
                         Write(s_EnReturn);
                         break;
                     default:
-                        if (127 < ch)
+                        if (ch > 127)
                         {
                             if (_utf8Encoding == null)
                             {
@@ -652,7 +652,7 @@ namespace System.Xml.Xsl.XsltOld
                 // output replacement
                 char badChar = value[pos];
                 int i;
-                for (i = find.Length - 1; 0 <= i; i--)
+                for (i = find.Length - 1; i >= 0; i--)
                 {
                     if (find[i] == badChar)
                     {
@@ -660,7 +660,7 @@ namespace System.Xml.Xsl.XsltOld
                         break;
                     }
                 }
-                Debug.Assert(0 <= i, "find char wasn't realy find");
+                Debug.Assert(i >= 0, "find char wasn't realy find");
                 pos++;
             }
 
@@ -755,7 +755,7 @@ namespace System.Xml.Xsl.XsltOld
                 return;    // preven leading CRLF
             }
             Write(s_EndOfLine);
-            for (int i = 2 * depth; 0 < i; i--)
+            for (int i = 2 * depth; i > 0; i--)
             {
                 Write(" ");
             }

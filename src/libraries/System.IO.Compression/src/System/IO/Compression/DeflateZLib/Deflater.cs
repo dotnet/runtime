@@ -112,12 +112,12 @@ namespace System.IO.Compression
             }
         }
 
-        public bool NeedsInput() => 0 == _zlibStream.AvailIn;
+        public bool NeedsInput() => _zlibStream.AvailIn == 0;
 
         internal unsafe void SetInput(ReadOnlyMemory<byte> inputBuffer)
         {
             Debug.Assert(NeedsInput(), "We have something left in previous input!");
-            if (0 == inputBuffer.Length)
+            if (inputBuffer.Length == 0)
             {
                 return;
             }
@@ -150,7 +150,7 @@ namespace System.IO.Compression
 
         internal int GetDeflateOutput(byte[] outputBuffer)
         {
-            Debug.Assert(null != outputBuffer, "Can't pass in a null output buffer!");
+            Debug.Assert(outputBuffer != null, "Can't pass in a null output buffer!");
             Debug.Assert(!NeedsInput(), "GetDeflateOutput should only be called after providing input");
 
             try
@@ -162,7 +162,7 @@ namespace System.IO.Compression
             finally
             {
                 // Before returning, make sure to release input buffer if necessary:
-                if (0 == _zlibStream.AvailIn)
+                if (_zlibStream.AvailIn == 0)
                 {
                     DeallocateInputBufferHandle();
                 }
@@ -190,7 +190,7 @@ namespace System.IO.Compression
 
         internal bool Finish(byte[] outputBuffer, out int bytesRead)
         {
-            Debug.Assert(null != outputBuffer, "Can't pass in a null output buffer!");
+            Debug.Assert(outputBuffer != null, "Can't pass in a null output buffer!");
             Debug.Assert(outputBuffer.Length > 0, "Can't pass in an empty output buffer!");
 
             ZErrorCode errC = ReadDeflateOutput(outputBuffer, ZFlushCode.Finish, out bytesRead);
@@ -202,7 +202,7 @@ namespace System.IO.Compression
         /// </summary>
         internal bool Flush(byte[] outputBuffer, out int bytesRead)
         {
-            Debug.Assert(null != outputBuffer, "Can't pass in a null output buffer!");
+            Debug.Assert(outputBuffer != null, "Can't pass in a null output buffer!");
             Debug.Assert(outputBuffer.Length > 0, "Can't pass in an empty output buffer!");
             Debug.Assert(NeedsInput(), "We have something left in previous input!");
 

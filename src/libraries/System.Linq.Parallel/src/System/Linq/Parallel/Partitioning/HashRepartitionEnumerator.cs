@@ -73,7 +73,7 @@ namespace System.Linq.Parallel
             Debug.Assert(valueExchangeMatrix != null);
             Debug.Assert(valueExchangeMatrix.GetLength(0) == partitionCount, "expected square matrix of buffers (NxN)");
             Debug.Assert(partitionCount > 0 && valueExchangeMatrix[0].Length == partitionCount, "expected square matrix of buffers (NxN)");
-            Debug.Assert(0 <= partitionIndex && partitionIndex < partitionCount);
+            Debug.Assert(partitionIndex >= 0 && partitionIndex < partitionCount);
 
             _source = source;
             _partitionCount = partitionCount;
@@ -223,7 +223,7 @@ namespace System.Linq.Parallel
                     destinationIndex = _repartitionStream.GetHashCode(element) % _partitionCount;
                 }
 
-                Debug.Assert(0 <= destinationIndex && destinationIndex < _partitionCount,
+                Debug.Assert(destinationIndex >= 0 && destinationIndex < _partitionCount,
                                 "destination partition outside of the legal range of partitions");
 
                 // Get the buffer for the destination partition, lazily allocating if needed.  We maintain

@@ -380,7 +380,7 @@ namespace System.Linq.Parallel
             if (_producerChunk != null && _producerChunkIndex != 0)
             {
                 // Trim the partially-full chunk to an array just big enough to hold it.
-                Debug.Assert(1 <= _producerChunkIndex && _producerChunkIndex <= _chunkSize);
+                Debug.Assert(_producerChunkIndex >= 1 && _producerChunkIndex <= _chunkSize);
                 T[] leftOverChunk = new T[_producerChunkIndex];
                 Array.Copy(_producerChunk, leftOverChunk, _producerChunkIndex);
 
@@ -416,7 +416,7 @@ namespace System.Linq.Parallel
 
             // Retrieve the current item in the chunk.
             Debug.Assert(_consumerChunk != null, "consumer chunk is null");
-            Debug.Assert(0 <= _consumerChunkIndex && _consumerChunkIndex < _consumerChunk.Length, "chunk index out of bounds");
+            Debug.Assert(_consumerChunkIndex >= 0 && _consumerChunkIndex < _consumerChunk.Length, "chunk index out of bounds");
             item = _consumerChunk[_consumerChunkIndex];
 
             // And lastly, if we have consumed the chunk, null it out so we'll get the
@@ -494,7 +494,7 @@ namespace System.Linq.Parallel
 
             // Retrieve the current item in the chunk.
             Debug.Assert(_consumerChunk != null, "consumer chunk is null");
-            Debug.Assert(0 <= _consumerChunkIndex && _consumerChunkIndex < _consumerChunk.Length, "chunk index out of bounds");
+            Debug.Assert(_consumerChunkIndex >= 0 && _consumerChunkIndex < _consumerChunk.Length, "chunk index out of bounds");
             item = _consumerChunk[_consumerChunkIndex];
 
             // And lastly, if we have consumed the chunk, null it out.

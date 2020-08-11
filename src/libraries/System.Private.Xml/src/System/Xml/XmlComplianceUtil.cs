@@ -180,7 +180,7 @@ namespace System.Xml
                     len--;
                     i++;
                 }
-                else if (('I' != ch && 'i' != ch) && ('X' != ch && 'x' != ch))
+                else if ((ch != 'I' && ch != 'i') && (ch != 'X' && ch != 'x'))
                 {  //IANA or custom Code
                     return false;
                 }

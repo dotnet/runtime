@@ -225,7 +225,7 @@ namespace System.Xml.Xsl.XPath
                     // (x < 0 || 0 < x)  ==  (x != 0) && !Double.IsNaN(x)
                     QilIterator i;
                     return (n.NodeType == QilNodeType.LiteralDouble
-                        ? Boolean((double)(QilLiteral)n < 0 || 0 < (double)(QilLiteral)n)
+                        ? Boolean((double)(QilLiteral)n < 0 || (double)(QilLiteral)n > 0)
                         : Loop(i = Let(n), Or(Lt(i, Double(0)), Lt(Double(0), i)))
                     );
                 case XmlTypeCode.String:

@@ -741,14 +741,14 @@ namespace System.Xml
             try
             {
                 AutoComplete(Token.CData);
-                if (null != text && text.Contains("]]>"))
+                if (text != null && text.Contains("]]>"))
                 {
                     throw new ArgumentException(SR.Xml_InvalidCDataChars);
                 }
 
                 _textWriter.Write("<![CDATA[");
 
-                if (null != text)
+                if (text != null)
                 {
                     _xmlEncoder.WriteRawWithSurrogateChecking(text);
                 }
@@ -767,13 +767,13 @@ namespace System.Xml
         {
             try
             {
-                if (null != text && (text.Contains("--") || (text.Length != 0 && text[text.Length - 1] == '-')))
+                if (text != null && (text.Contains("--") || (text.Length != 0 && text[text.Length - 1] == '-')))
                 {
                     throw new ArgumentException(SR.Xml_InvalidCommentChars);
                 }
                 AutoComplete(Token.Comment);
                 _textWriter.Write("<!--");
-                if (null != text)
+                if (text != null)
                 {
                     _xmlEncoder.WriteRawWithSurrogateChecking(text);
                 }
@@ -791,12 +791,12 @@ namespace System.Xml
         {
             try
             {
-                if (null != text && text.Contains("?>"))
+                if (text != null && text.Contains("?>"))
                 {
                     throw new ArgumentException(SR.Xml_InvalidPiChars);
                 }
 
-                if (0 == string.Compare(name, "xml", StringComparison.OrdinalIgnoreCase) && _stateTable == s_stateTableDocument)
+                if (string.Compare(name, "xml", StringComparison.OrdinalIgnoreCase) == 0 && _stateTable == s_stateTableDocument)
                 {
                     throw new ArgumentException(SR.Xml_DupXmlDecl);
                 }
@@ -847,7 +847,7 @@ namespace System.Xml
         {
             try
             {
-                if (null == ws)
+                if (ws == null)
                 {
                     ws = string.Empty;
                 }
@@ -871,7 +871,7 @@ namespace System.Xml
         {
             try
             {
-                if (null != text && text.Length != 0)
+                if (text != null && text.Length != 0)
                 {
                     AutoComplete(Token.Content);
                     _xmlEncoder.Write(text);
@@ -958,7 +958,7 @@ namespace System.Xml
                 _flush = true;
                 // No need for us to explicitly validate the args. The StreamWriter will do
                 // it for us.
-                if (null == _base64Encoder)
+                if (_base64Encoder == null)
                 {
                     _base64Encoder = new XmlTextWriterBase64Encoder(_xmlEncoder);
                 }
@@ -1281,7 +1281,7 @@ namespace System.Xml
                     {
                         WriteEndStartTag(token == Token.EndElement);
                     }
-                    if (s_stateTableDocument == _stateTable && _top == 1)
+                    if (_stateTable == s_stateTableDocument && _top == 1)
                     {
                         newState = State.Epilog;
                     }
@@ -1607,7 +1607,7 @@ namespace System.Xml
             _textWriter.Write(name);
             _textWriter.Write(' ');
 
-            if (null != text)
+            if (text != null)
             {
                 _xmlEncoder.WriteRawWithSurrogateChecking(text);
             }
@@ -1821,7 +1821,7 @@ namespace System.Xml
 
         private void FlushEncoders()
         {
-            if (null != _base64Encoder)
+            if (_base64Encoder != null)
             {
                 // The Flush will call WriteRaw to write out the rest of the encoded characters
                 _base64Encoder.Flush();

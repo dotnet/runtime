@@ -75,7 +75,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
                 // If there is a free slot, reuse it
                 if (_freeIndex != TERMINATOR_INDEX)
                 {
-                    Debug.Assert(0 <= _freeIndex && _freeIndex < _storage.Count, "Index is out of range.");
+                    Debug.Assert(_freeIndex >= 0 && _freeIndex < _storage.Count, "Index is out of range.");
                     newIndex = _freeIndex;
                     _freeIndex = _storage[_freeIndex].Key;
                     _storage[newIndex] = new KeyValuePair<int, T>(TERMINATOR_INDEX, item);
@@ -119,7 +119,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
                 }
 
                 // If there are items in the queue, start with populating the output item
-                Debug.Assert(0 <= _headIndex && _headIndex < _storage.Count, "Head is out of range.");
+                Debug.Assert(_headIndex >= 0 && _headIndex < _storage.Count, "Head is out of range.");
                 item = _storage[_headIndex].Value;
 
                 // Move the popped slot to the head of the free list
@@ -137,7 +137,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
             /// <param name="item">The item to be places.</param>
             internal void Replace(int index, T item)
             {
-                Debug.Assert(0 <= index && index < _storage.Count, "Index is out of range.");
+                Debug.Assert(index >= 0 && index < _storage.Count, "Index is out of range.");
 #if DEBUG
                 // Also assert that index does not belong to the list of free slots
                 for (int idx = _freeIndex; idx != TERMINATOR_INDEX; idx = _storage[idx].Key)

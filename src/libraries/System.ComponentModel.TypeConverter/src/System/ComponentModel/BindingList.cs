@@ -512,7 +512,7 @@ namespace System.ComponentModel
                     else
                     {
                         // Get the property descriptor
-                        if (null == _itemTypeProperties)
+                        if (_itemTypeProperties == null)
                         {
                             // Get Shape
                             _itemTypeProperties = TypeDescriptor.GetProperties(typeof(T));

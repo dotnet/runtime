@@ -40,7 +40,7 @@ namespace MS.Internal.Xml.XPath
 
         private bool NextChar()
         {
-            Debug.Assert(0 <= _xpathExprIndex && _xpathExprIndex <= _xpathExpr.Length);
+            Debug.Assert(_xpathExprIndex >= 0 && _xpathExprIndex <= _xpathExpr.Length);
             if (_xpathExprIndex < _xpathExpr.Length)
             {
                 _currentChar = _xpathExpr[_xpathExprIndex++];
@@ -284,7 +284,7 @@ namespace MS.Internal.Xml.XPath
         {
             Debug.Assert(XmlCharType.IsDigit(this.CurrentChar));
             int start = _xpathExprIndex - 2;
-            Debug.Assert(0 <= start && _xpathExpr[start] == '.');
+            Debug.Assert(start >= 0 && _xpathExpr[start] == '.');
             int len = 1; // '.'
             while (XmlCharType.IsDigit(this.CurrentChar))
             {

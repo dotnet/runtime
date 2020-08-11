@@ -151,7 +151,7 @@ namespace System.Xml.Xsl.XsltOld
         internal bool FindPrefix(string nspace, out string prefix)
         {
             Debug.Assert(nspace != null);
-            for (int i = _elementScopesStack.Length - 1; 0 <= i; i--)
+            for (int i = _elementScopesStack.Length - 1; i >= 0; i--)
             {
                 Debug.Assert(_elementScopesStack[i] is OutputScope);
 

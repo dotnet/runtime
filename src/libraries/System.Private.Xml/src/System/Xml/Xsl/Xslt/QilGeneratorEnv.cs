@@ -154,8 +154,8 @@ namespace System.Xml.Xsl.Xslt
                         return _f.InvokeMsStringCompare(
                             /*x:      */_f.ConvertToString(args[0]),
                             /*y:      */_f.ConvertToString(args[1]),
-                            /*lang:   */2 < args.Count ? _f.ConvertToString(args[2]) : _f.String(string.Empty),
-                            /*options:*/3 < args.Count ? _f.ConvertToString(args[3]) : _f.String(string.Empty)
+                            /*lang:   */args.Count > 2 ? _f.ConvertToString(args[2]) : _f.String(string.Empty),
+                            /*options:*/args.Count > 3 ? _f.ConvertToString(args[3]) : _f.String(string.Empty)
                         );
                     }
                     else if (name == "utc")
@@ -168,8 +168,8 @@ namespace System.Xml.Xsl.Xslt
                         FunctionInfo.CheckArity(/*minArg:*/1, /*maxArg:*/3, name, args.Count);
                         return _f.InvokeMsFormatDateTime(
                             /*datetime:*/_f.ConvertToString(args[0]),
-                            /*format:  */1 < args.Count ? _f.ConvertToString(args[1]) : _f.String(string.Empty),
-                            /*lang:    */2 < args.Count ? _f.ConvertToString(args[2]) : _f.String(string.Empty),
+                            /*format:  */args.Count > 1 ? _f.ConvertToString(args[1]) : _f.String(string.Empty),
+                            /*lang:    */args.Count > 2 ? _f.ConvertToString(args[2]) : _f.String(string.Empty),
                             /*isDate:  */_f.Boolean(name == "format-date")
                         );
                     }

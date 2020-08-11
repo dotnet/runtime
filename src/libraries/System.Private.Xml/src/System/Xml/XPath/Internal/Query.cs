@@ -145,7 +145,7 @@ namespace MS.Internal.Xml.XPath
 
         private static int GetMedian(int l, int r)
         {
-            Debug.Assert(0 <= l && l < r);
+            Debug.Assert(l >= 0 && l < r);
             return (int)(((uint)l + (uint)r) >> 1);
         }
 

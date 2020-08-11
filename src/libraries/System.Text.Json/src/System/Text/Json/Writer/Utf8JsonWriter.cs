@@ -655,7 +655,7 @@ namespace System.Text.Json
 
         private void WriteStartEscapeProperty(ReadOnlySpan<byte> utf8PropertyName, byte token, int firstEscapeIndexProp)
         {
-            Debug.Assert(int.MaxValue / JsonConstants.MaxExpansionFactorWhileEscaping >= utf8PropertyName.Length);
+            Debug.Assert(utf8PropertyName.Length <= int.MaxValue / JsonConstants.MaxExpansionFactorWhileEscaping);
             Debug.Assert(firstEscapeIndexProp >= 0 && firstEscapeIndexProp < utf8PropertyName.Length);
 
             byte[]? propertyArray = null;
@@ -798,7 +798,7 @@ namespace System.Text.Json
 
         private void WriteStartEscapeProperty(ReadOnlySpan<char> propertyName, byte token, int firstEscapeIndexProp)
         {
-            Debug.Assert(int.MaxValue / JsonConstants.MaxExpansionFactorWhileEscaping >= propertyName.Length);
+            Debug.Assert(propertyName.Length <= int.MaxValue / JsonConstants.MaxExpansionFactorWhileEscaping);
             Debug.Assert(firstEscapeIndexProp >= 0 && firstEscapeIndexProp < propertyName.Length);
 
             char[]? propertyArray = null;

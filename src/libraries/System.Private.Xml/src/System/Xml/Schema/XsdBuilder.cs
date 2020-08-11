@@ -2108,7 +2108,7 @@ namespace System.Xml.Schema
                     break;
             }
             builder._xso = builder._facet;
-            if (SchemaNames.Token.XsdSimpleTypeRestriction == builder.ParentElement)
+            if (builder.ParentElement == SchemaNames.Token.XsdSimpleTypeRestriction)
             {
                 builder._simpleTypeRestriction!.Facets.Add(builder._facet!);
             }

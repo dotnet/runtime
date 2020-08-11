@@ -22,7 +22,7 @@ namespace System.Transactions
     {
         internal static DistributedTransaction ConvertToDistributedTransaction(Transaction transaction)
         {
-            if (null == transaction)
+            if (transaction == null)
             {
                 throw new ArgumentNullException(nameof(transaction));
             }
@@ -62,12 +62,12 @@ namespace System.Transactions
 
         public static byte[] GetExportCookie(Transaction transaction, byte[] whereabouts)
         {
-            if (null == transaction)
+            if (transaction == null)
             {
                 throw new ArgumentNullException(nameof(transaction));
             }
 
-            if (null == whereabouts)
+            if (whereabouts == null)
             {
                 throw new ArgumentNullException(nameof(whereabouts));
             }
@@ -95,7 +95,7 @@ namespace System.Transactions
 
         public static Transaction GetTransactionFromExportCookie(byte[] cookie)
         {
-            if (null == cookie)
+            if (cookie == null)
             {
                 throw new ArgumentNullException(nameof(cookie));
             }
@@ -147,7 +147,7 @@ namespace System.Transactions
 
         public static byte[] GetTransmitterPropagationToken(Transaction transaction)
         {
-            if (null == transaction)
+            if (transaction == null)
             {
                 throw new ArgumentNullException(nameof(transaction));
             }
@@ -171,7 +171,7 @@ namespace System.Transactions
 
         public static Transaction GetTransactionFromTransmitterPropagationToken(byte[] propagationToken)
         {
-            if (null == propagationToken)
+            if (propagationToken == null)
             {
                 throw new ArgumentNullException(nameof(propagationToken));
             }
@@ -194,7 +194,7 @@ namespace System.Transactions
 
             // First check to see if there is a promoted LTM transaction with the same ID.  If there is, just return that.
             Transaction? tx = TransactionManager.FindPromotedTransaction(txId);
-            if (null != tx)
+            if (tx != null)
             {
                 if (etwLog.IsEnabled())
                 {
@@ -218,7 +218,7 @@ namespace System.Transactions
 
         public static IDtcTransaction GetDtcTransaction(Transaction transaction)
         {
-            if (null == transaction)
+            if (transaction == null)
             {
                 throw new ArgumentNullException(nameof(transaction));
             }
@@ -242,7 +242,7 @@ namespace System.Transactions
 
         public static Transaction GetTransactionFromDtcTransaction(IDtcTransaction transactionNative)
         {
-            if (null == transactionNative)
+            if (transactionNative == null)
             {
                 throw new ArgumentNullException(nameof(transactionNative));
             }
@@ -282,7 +282,7 @@ namespace System.Transactions
 
         internal static DistributedTransaction GetDistributedTransactionFromTransmitterPropagationToken(byte[] propagationToken)
         {
-            if (null == propagationToken)
+            if (propagationToken == null)
             {
                 throw new ArgumentNullException(nameof(propagationToken));
             }

@@ -214,7 +214,7 @@ namespace System.Transactions
                         if (_traceIdentifier == EnlistmentTraceIdentifier.Empty)
                         {
                             EnlistmentTraceIdentifier temp;
-                            if (null != _atomicTransaction)
+                            if (_atomicTransaction != null)
                             {
                                 temp = new EnlistmentTraceIdentifier(
                                     Guid.Empty,

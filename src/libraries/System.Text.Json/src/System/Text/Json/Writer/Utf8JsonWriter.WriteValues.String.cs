@@ -182,7 +182,7 @@ namespace System.Text.Json
 
         private void WriteStringEscapeValue(ReadOnlySpan<char> value, int firstEscapeIndexVal)
         {
-            Debug.Assert(int.MaxValue / JsonConstants.MaxExpansionFactorWhileEscaping >= value.Length);
+            Debug.Assert(value.Length <= int.MaxValue / JsonConstants.MaxExpansionFactorWhileEscaping);
             Debug.Assert(firstEscapeIndexVal >= 0 && firstEscapeIndexVal < value.Length);
 
             char[]? valueArray = null;
@@ -329,7 +329,7 @@ namespace System.Text.Json
 
         private void WriteStringEscapeValue(ReadOnlySpan<byte> utf8Value, int firstEscapeIndexVal)
         {
-            Debug.Assert(int.MaxValue / JsonConstants.MaxExpansionFactorWhileEscaping >= utf8Value.Length);
+            Debug.Assert(utf8Value.Length <= int.MaxValue / JsonConstants.MaxExpansionFactorWhileEscaping);
             Debug.Assert(firstEscapeIndexVal >= 0 && firstEscapeIndexVal < utf8Value.Length);
 
             byte[]? valueArray = null;

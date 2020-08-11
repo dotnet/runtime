@@ -171,7 +171,7 @@ namespace System.Xml.Xsl.Runtime
                     continue;
                 }
                 // Escape literal digits with EscChar, double literal EscChar
-                if ('0' <= ch && ch <= '9' || ch == EscChar)
+                if (ch >= '0' && ch <= '9' || ch == EscChar)
                 {
                     if (decimalFormat.zeroDigit != '0')
                     {
@@ -265,7 +265,7 @@ namespace System.Xml.Xsl.Runtime
                         // of the fact that no extra EscChar could be inserted by value.ToString().
                         Debug.Assert(i + 1 < result.Length);
                         ch = result[++i];
-                        Debug.Assert('0' <= ch && ch <= '9' || ch == EscChar);
+                        Debug.Assert(ch >= '0' && ch <= '9' || ch == EscChar);
                     }
                     builder.Append(ch);
                 }

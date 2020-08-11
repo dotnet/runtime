@@ -206,7 +206,7 @@ namespace System.Xml.Xsl.Runtime
         public string FormatNumberStatic(double value, double decimalFormatterIndex)
         {
             int idx = (int)decimalFormatterIndex;
-            Debug.Assert(0 <= idx && idx < _decimalFormatters.Count, "Value of decimalFormatterIndex is out of range");
+            Debug.Assert(idx >= 0 && idx < _decimalFormatters.Count, "Value of decimalFormatterIndex is out of range");
             return _decimalFormatters[idx].Format(value);
         }
 
@@ -493,7 +493,7 @@ namespace System.Xml.Xsl.Runtime
         public bool RelationalOperator(double opCode, IList<XPathItem> left, IList<XPathItem> right)
         {
             ComparisonOperator op = (ComparisonOperator)opCode;
-            Debug.Assert(ComparisonOperator.Lt <= op && op <= ComparisonOperator.Ge);
+            Debug.Assert(op >= ComparisonOperator.Lt && op <= ComparisonOperator.Ge);
             CheckXsltValue(left);
             CheckXsltValue(right);
 
@@ -532,16 +532,16 @@ namespace System.Xml.Xsl.Runtime
         // nav1 and nav2 are assumed to belong to the same document
         public bool IsSameNodeSort(XPathNavigator nav1, XPathNavigator nav2)
         {
-            Debug.Assert(XPathNodeType.SignificantWhitespace == XPathNodeType.Text + 1);
-            Debug.Assert(XPathNodeType.Whitespace == XPathNodeType.Text + 2);
+            Debug.Assert(XPathNodeType.Text + 1 == XPathNodeType.SignificantWhitespace);
+            Debug.Assert(XPathNodeType.Text + 2 == XPathNodeType.Whitespace);
 
             XPathNodeType nt1 = nav1.NodeType;
             XPathNodeType nt2 = nav2.NodeType;
 
             // If one of nodes is a text node, the other one must also be a text node
-            if (XPathNodeType.Text <= nt1 && nt1 <= XPathNodeType.Whitespace)
+            if (nt1 >= XPathNodeType.Text && nt1 <= XPathNodeType.Whitespace)
             {
-                return XPathNodeType.Text <= nt2 && nt2 <= XPathNodeType.Whitespace;
+                return nt2 >= XPathNodeType.Text && nt2 <= XPathNodeType.Whitespace;
             }
 
             // Otherwise nodes must have the same node kind, the same local name, and the same namespace URI

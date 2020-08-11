@@ -647,7 +647,7 @@ namespace System.Xml
         private static bool MoveToNextNamespaceLocal(XmlAttributeCollection attributes, ref int index)
         {
             Debug.Assert(attributes != null);
-            Debug.Assert(0 <= index && index < attributes.Count);
+            Debug.Assert(index >= 0 && index < attributes.Count);
             for (int i = index - 1; i >= 0; i--)
             {
                 XmlAttribute attribute = attributes[i];

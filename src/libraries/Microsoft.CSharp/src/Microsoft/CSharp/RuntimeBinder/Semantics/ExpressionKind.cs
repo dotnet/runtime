@@ -103,7 +103,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
     {
         public static bool IsRelational(this ExpressionKind kind)
         {
-            return ExpressionKind.RelationalMin <= kind && kind <= ExpressionKind.RelationalMax;
+            return kind >= ExpressionKind.RelationalMin && kind <= ExpressionKind.RelationalMax;
         }
 
         public static bool IsUnaryOperator(this ExpressionKind kind)

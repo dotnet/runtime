@@ -220,7 +220,7 @@ namespace System.Xml.Xsl
             // If GeneratedCodeAttribute is not there, it is not a compiled stylesheet class
             if (generatedCodeAttr != null && generatedCodeAttr.Tool == typeof(XslCompiledTransform).FullName)
             {
-                if (s_version < Version.Parse(generatedCodeAttr.Version))
+                if (Version.Parse(generatedCodeAttr.Version) > s_version)
                 {
                     throw new ArgumentException(SR.Format(SR.Xslt_IncompatibleCompiledStylesheetVersion, generatedCodeAttr.Version, s_version), nameof(compiledStylesheet));
                 }

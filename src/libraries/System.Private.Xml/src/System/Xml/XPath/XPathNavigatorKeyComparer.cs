@@ -31,11 +31,11 @@ namespace System.Xml.XPath
             {
                 throw new ArgumentNullException(nameof(obj));
             }
-            else if (null != (xpdocNav = obj as XPathDocumentNavigator))
+            else if ((xpdocNav = obj as XPathDocumentNavigator) != null)
             {
                 hashCode = xpdocNav.GetPositionHashCode();
             }
-            else if (null != (nav = obj as XPathNavigator))
+            else if ((nav = obj as XPathNavigator) != null)
             {
                 object? underlyingObject = nav.UnderlyingObject;
                 if (underlyingObject != null)

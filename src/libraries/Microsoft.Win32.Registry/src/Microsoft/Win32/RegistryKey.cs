@@ -773,7 +773,7 @@ namespace Microsoft.Win32
 
         private static void ValidateKeyRights(RegistryRights rights)
         {
-            if (0 != (rights & ~RegistryRights.FullControl))
+            if ((rights & ~RegistryRights.FullControl) != 0)
             {
                 // We need to throw SecurityException here for compatiblity reason,
                 // although UnauthorizedAccessException will make more sense.

@@ -38,7 +38,7 @@ namespace MS.Internal.Xml.XPath
 
         public override XPathNavigator? Advance()
         {
-            Debug.Assert(0 <= count && count <= outputBuffer.Count);
+            Debug.Assert(count >= 0 && count <= outputBuffer.Count);
             if (count < outputBuffer.Count)
             {
                 return outputBuffer[count++];
@@ -50,7 +50,7 @@ namespace MS.Internal.Xml.XPath
         {
             get
             {
-                Debug.Assert(0 <= count && count <= outputBuffer.Count);
+                Debug.Assert(count >= 0 && count <= outputBuffer.Count);
                 if (count == 0)
                 {
                     return null;

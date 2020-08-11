@@ -1471,19 +1471,19 @@ namespace System.Xml
             get
             {
 #if DEBUG
-                Debug.Assert(0 == (AttributeActiveStates & (1 << (int)State.Initial)));
-                Debug.Assert(0 != (AttributeActiveStates & (1 << (int)State.Interactive)));
-                Debug.Assert(0 == (AttributeActiveStates & (1 << (int)State.Error)));
-                Debug.Assert(0 == (AttributeActiveStates & (1 << (int)State.EndOfFile)));
-                Debug.Assert(0 == (AttributeActiveStates & (1 << (int)State.Closed)));
-                Debug.Assert(0 != (AttributeActiveStates & (1 << (int)State.PopNamespaceScope)));
-                Debug.Assert(0 != (AttributeActiveStates & (1 << (int)State.ClearNsAttributes)));
-                Debug.Assert(0 == (AttributeActiveStates & (1 << (int)State.ReadElementContentAsBase64)));
-                Debug.Assert(0 == (AttributeActiveStates & (1 << (int)State.ReadElementContentAsBinHex)));
-                Debug.Assert(0 == (AttributeActiveStates & (1 << (int)State.ReadContentAsBase64)));
-                Debug.Assert(0 == (AttributeActiveStates & (1 << (int)State.ReadContentAsBinHex)));
+                Debug.Assert((AttributeActiveStates & (1 << (int)State.Initial)) == 0);
+                Debug.Assert((AttributeActiveStates & (1 << (int)State.Interactive)) != 0);
+                Debug.Assert((AttributeActiveStates & (1 << (int)State.Error)) == 0);
+                Debug.Assert((AttributeActiveStates & (1 << (int)State.EndOfFile)) == 0);
+                Debug.Assert((AttributeActiveStates & (1 << (int)State.Closed)) == 0);
+                Debug.Assert((AttributeActiveStates & (1 << (int)State.PopNamespaceScope)) != 0);
+                Debug.Assert((AttributeActiveStates & (1 << (int)State.ClearNsAttributes)) != 0);
+                Debug.Assert((AttributeActiveStates & (1 << (int)State.ReadElementContentAsBase64)) == 0);
+                Debug.Assert((AttributeActiveStates & (1 << (int)State.ReadElementContentAsBinHex)) == 0);
+                Debug.Assert((AttributeActiveStates & (1 << (int)State.ReadContentAsBase64)) == 0);
+                Debug.Assert((AttributeActiveStates & (1 << (int)State.ReadContentAsBinHex)) == 0);
 #endif
-                return 0 != (AttributeActiveStates & (1 << (int)_state));
+                return (AttributeActiveStates & (1 << (int)_state)) != 0;
             }
         }
 
@@ -1492,19 +1492,19 @@ namespace System.Xml
             get
             {
 #if DEBUG
-                Debug.Assert(0 == (NamespaceActiveStates & (1 << (int)State.Initial)));
-                Debug.Assert(0 != (NamespaceActiveStates & (1 << (int)State.Interactive)));
-                Debug.Assert(0 == (NamespaceActiveStates & (1 << (int)State.Error)));
-                Debug.Assert(0 == (NamespaceActiveStates & (1 << (int)State.EndOfFile)));
-                Debug.Assert(0 == (NamespaceActiveStates & (1 << (int)State.Closed)));
-                Debug.Assert(0 != (NamespaceActiveStates & (1 << (int)State.PopNamespaceScope)));
-                Debug.Assert(0 != (NamespaceActiveStates & (1 << (int)State.ClearNsAttributes)));
-                Debug.Assert(0 != (NamespaceActiveStates & (1 << (int)State.ReadElementContentAsBase64)));
-                Debug.Assert(0 != (NamespaceActiveStates & (1 << (int)State.ReadElementContentAsBinHex)));
-                Debug.Assert(0 != (NamespaceActiveStates & (1 << (int)State.ReadContentAsBase64)));
-                Debug.Assert(0 != (NamespaceActiveStates & (1 << (int)State.ReadContentAsBinHex)));
+                Debug.Assert((NamespaceActiveStates & (1 << (int)State.Initial)) == 0);
+                Debug.Assert((NamespaceActiveStates & (1 << (int)State.Interactive)) != 0);
+                Debug.Assert((NamespaceActiveStates & (1 << (int)State.Error)) == 0);
+                Debug.Assert((NamespaceActiveStates & (1 << (int)State.EndOfFile)) == 0);
+                Debug.Assert((NamespaceActiveStates & (1 << (int)State.Closed)) == 0);
+                Debug.Assert((NamespaceActiveStates & (1 << (int)State.PopNamespaceScope)) != 0);
+                Debug.Assert((NamespaceActiveStates & (1 << (int)State.ClearNsAttributes)) != 0);
+                Debug.Assert((NamespaceActiveStates & (1 << (int)State.ReadElementContentAsBase64)) != 0);
+                Debug.Assert((NamespaceActiveStates & (1 << (int)State.ReadElementContentAsBinHex)) != 0);
+                Debug.Assert((NamespaceActiveStates & (1 << (int)State.ReadContentAsBase64)) != 0);
+                Debug.Assert((NamespaceActiveStates & (1 << (int)State.ReadContentAsBinHex)) != 0);
 #endif
-                return 0 != (NamespaceActiveStates & (1 << (int)_state));
+                return (NamespaceActiveStates & (1 << (int)_state)) != 0;
             }
         }
 

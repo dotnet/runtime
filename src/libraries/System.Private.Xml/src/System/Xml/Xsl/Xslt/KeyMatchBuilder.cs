@@ -25,7 +25,7 @@ namespace System.Xml.Xsl.Xslt
 
         public override void StartBuild()
         {
-            Debug.Assert(0 <= _depth && _depth <= 1, "this shouldn't happen");
+            Debug.Assert(_depth >= 0 && _depth <= 1, "this shouldn't happen");
             if (_depth == 0)
             {
                 base.StartBuild();
@@ -36,7 +36,7 @@ namespace System.Xml.Xsl.Xslt
         public override QilNode EndBuild(QilNode result)
         {
             _depth--;
-            Debug.Assert(0 <= _depth && _depth <= 1, "this shouldn't happen");
+            Debug.Assert(_depth >= 0 && _depth <= 1, "this shouldn't happen");
             if (result == null)
             { // special door to clean builder state in exception handlers
                 return base.EndBuild(result);

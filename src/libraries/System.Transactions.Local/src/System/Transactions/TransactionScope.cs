@@ -67,7 +67,7 @@ namespace System.Transactions
                 _expectedCurrent = _committableTransaction.Clone();
             }
 
-            if (null == _expectedCurrent)
+            if (_expectedCurrent == null)
             {
                 if (etwLog.IsEnabled())
                 {
@@ -78,7 +78,7 @@ namespace System.Transactions
             {
                 TransactionScopeResult scopeResult;
 
-                if (null == _committableTransaction)
+                if (_committableTransaction == null)
                 {
                     scopeResult = TransactionScopeResult.UsingExistingCurrent;
                 }
@@ -129,7 +129,7 @@ namespace System.Transactions
                 _expectedCurrent = _committableTransaction.Clone();
             }
 
-            if ((null != _expectedCurrent) && (null == _committableTransaction) && (TimeSpan.Zero != scopeTimeout))
+            if ((_expectedCurrent != null) && (_committableTransaction == null) && (TimeSpan.Zero != scopeTimeout))
             {
                 // BUGBUG: Scopes should not use individual timers
                 _scopeTimer = new Timer(
@@ -139,7 +139,7 @@ namespace System.Transactions
                     TimeSpan.Zero);
             }
 
-            if (null == _expectedCurrent)
+            if (_expectedCurrent == null)
             {
                 if (etwLog.IsEnabled())
                 {
@@ -150,7 +150,7 @@ namespace System.Transactions
             {
                 TransactionScopeResult scopeResult;
 
-                if (null == _committableTransaction)
+                if (_committableTransaction == null)
                 {
                     scopeResult = TransactionScopeResult.UsingExistingCurrent;
                 }
@@ -205,7 +205,7 @@ namespace System.Transactions
             }
             else
             {
-                if (null != _expectedCurrent)
+                if (_expectedCurrent != null)
                 {
                     // If the requested IsolationLevel is stronger than that of the specified transaction, throw.
                     if ((IsolationLevel.Unspecified != transactionOptions.IsolationLevel) && (_expectedCurrent.IsolationLevel != transactionOptions.IsolationLevel))
@@ -215,7 +215,7 @@ namespace System.Transactions
                 }
             }
 
-            if ((null != _expectedCurrent) && (null == _committableTransaction) && (TimeSpan.Zero != scopeTimeout))
+            if ((_expectedCurrent != null) && (_committableTransaction == null) && (TimeSpan.Zero != scopeTimeout))
             {
                 // BUGBUG: Scopes should use a shared timer
                 _scopeTimer = new Timer(
@@ -225,7 +225,7 @@ namespace System.Transactions
                     TimeSpan.Zero);
             }
 
-            if (null == _expectedCurrent)
+            if (_expectedCurrent == null)
             {
                 if (etwLog.IsEnabled())
                 {
@@ -236,7 +236,7 @@ namespace System.Transactions
             {
                 TransactionScopeResult scopeResult;
 
-                if (null == _committableTransaction)
+                if (_committableTransaction == null)
                 {
                     scopeResult = TransactionScopeResult.UsingExistingCurrent;
                 }
@@ -287,7 +287,7 @@ namespace System.Transactions
             }
             else
             {
-                if (null != _expectedCurrent)
+                if (_expectedCurrent != null)
                 {
                     // If the requested IsolationLevel is stronger than that of the specified transaction, throw.
                     if ((IsolationLevel.Unspecified != transactionOptions.IsolationLevel) && (_expectedCurrent.IsolationLevel != transactionOptions.IsolationLevel))
@@ -297,7 +297,7 @@ namespace System.Transactions
                 }
             }
 
-            if ((null != _expectedCurrent) && (null == _committableTransaction) && (TimeSpan.Zero != scopeTimeout))
+            if ((_expectedCurrent != null) && (_committableTransaction == null) && (TimeSpan.Zero != scopeTimeout))
             {
                 // BUGBUG: Scopes should use a shared timer
                 _scopeTimer = new Timer(
@@ -307,7 +307,7 @@ namespace System.Transactions
                     TimeSpan.Zero);
             }
 
-            if (null == _expectedCurrent)
+            if (_expectedCurrent == null)
             {
                 if (etwLog.IsEnabled())
                 {
@@ -318,7 +318,7 @@ namespace System.Transactions
             {
                 TransactionScopeResult scopeResult;
 
-                if (null == _committableTransaction)
+                if (_committableTransaction == null)
                 {
                     scopeResult = TransactionScopeResult.UsingExistingCurrent;
                 }
@@ -442,7 +442,7 @@ namespace System.Transactions
                 case TransactionScopeOption.Required:
                     _expectedCurrent = _savedCurrent;
                     // If current is null, we need to create one.
-                    if (null == _expectedCurrent)
+                    if (_expectedCurrent == null)
                     {
                         retVal = true;
                     }
@@ -464,7 +464,7 @@ namespace System.Transactions
             TimeSpan scopeTimeout,
             bool interopModeSpecified)
         {
-            if (null == transactionToUse)
+            if (transactionToUse == null)
             {
                 throw new ArgumentNullException(nameof(transactionToUse));
             }
@@ -571,15 +571,15 @@ namespace System.Transactions
                     // Verify that expectedCurrent is the same as the "current" current if we the interopOption value is None.
                     else if (EnterpriseServicesInteropOption.None == actualCurrentScope._interopOption)
                     {
-                        if (((null != actualCurrentScope._expectedCurrent) && (!actualCurrentScope._expectedCurrent.Equals(current)))
+                        if (((actualCurrentScope._expectedCurrent != null) && (!actualCurrentScope._expectedCurrent.Equals(current)))
                             ||
-                            ((null != current) && (null == actualCurrentScope._expectedCurrent))
+                            ((current != null) && (actualCurrentScope._expectedCurrent == null))
                             )
                         {
                             TransactionTraceIdentifier myId;
                             TransactionTraceIdentifier currentId;
 
-                            if (null == current)
+                            if (current == null)
                             {
                                 currentId = TransactionTraceIdentifier.Empty;
                             }
@@ -588,7 +588,7 @@ namespace System.Transactions
                                 currentId = current.TransactionTraceId;
                             }
 
-                            if (null == _expectedCurrent)
+                            if (_expectedCurrent == null)
                             {
                                 myId = TransactionTraceIdentifier.Empty;
                             }
@@ -606,7 +606,7 @@ namespace System.Transactions
                                 current == null ? Guid.Empty : current.DistributedTxId);
 
                             // If there is a current transaction, abort it.
-                            if (null != current)
+                            if (current != null)
                             {
                                 try
                                 {
@@ -627,13 +627,13 @@ namespace System.Transactions
                     // Now fix up the scopes
                     while (!Equals(actualCurrentScope))
                     {
-                        if (null == exToThrow)
+                        if (exToThrow == null)
                         {
                             exToThrow = TransactionException.CreateInvalidOperationException(TraceSourceType.TraceSourceBase, SR.TransactionScopeInvalidNesting, null,
                                 current == null ? Guid.Empty : current.DistributedTxId);
                         }
 
-                        if (null == actualCurrentScope!._expectedCurrent)
+                        if (actualCurrentScope!._expectedCurrent == null)
                         {
                             if (etwLog.IsEnabled())
                             {
@@ -671,14 +671,14 @@ namespace System.Transactions
                     // If we got here, actualCurrentScope is the same as "this".
                     if (EnterpriseServicesInteropOption.None == _interopOption)
                     {
-                        if (((null != _expectedCurrent) && (!_expectedCurrent.Equals(current)))
-                            || ((null != current) && (null == _expectedCurrent))
+                        if (((_expectedCurrent != null) && (!_expectedCurrent.Equals(current)))
+                            || ((current != null) && (_expectedCurrent == null))
                             )
                         {
                             TransactionTraceIdentifier myId;
                             TransactionTraceIdentifier currentId;
 
-                            if (null == current)
+                            if (current == null)
                             {
                                 currentId = TransactionTraceIdentifier.Empty;
                             }
@@ -687,7 +687,7 @@ namespace System.Transactions
                                 currentId = current.TransactionTraceId;
                             }
 
-                            if (null == _expectedCurrent)
+                            if (_expectedCurrent == null)
                             {
                                 myId = TransactionTraceIdentifier.Empty;
                             }
@@ -701,14 +701,14 @@ namespace System.Transactions
                                 etwLog.TransactionScopeCurrentChanged(currentId, myId);
                             }
 
-                            if (null == exToThrow)
+                            if (exToThrow == null)
                             {
                                 exToThrow = TransactionException.CreateInvalidOperationException(TraceSourceType.TraceSourceBase, SR.TransactionScopeIncorrectCurrent, null,
                                     current == null ? Guid.Empty : current.DistributedTxId);
                             }
 
                             // If there is a current transaction, abort it.
-                            if (null != current)
+                            if (current != null)
                             {
                                 try
                                 {
@@ -742,7 +742,7 @@ namespace System.Transactions
             // No try..catch here.  Just let any exception thrown by InternalDispose go out.
             InternalDispose();
 
-            if (null != exToThrow)
+            if (exToThrow != null)
             {
                 throw exToThrow;
             }
@@ -763,7 +763,7 @@ namespace System.Transactions
                 PopScope();
 
                 TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
-                if (null == _expectedCurrent)
+                if (_expectedCurrent == null)
                 {
                     if (etwLog.IsEnabled())
                     {
@@ -780,7 +780,7 @@ namespace System.Transactions
 
                 // If Transaction.Current is not null, we have work to do.  Otherwise, we don't, except to replace
                 // the previous value.
-                if (null != _expectedCurrent)
+                if (_expectedCurrent != null)
                 {
                     if (!_complete)
                     {
@@ -804,13 +804,13 @@ namespace System.Transactions
                     else
                     {
                         // If we are supposed to commit on dispose, cast to CommittableTransaction and commit it.
-                        if (null != _committableTransaction)
+                        if (_committableTransaction != null)
                         {
                             _committableTransaction.Commit();
                         }
                         else
                         {
-                            Debug.Assert(null != _dependentTransaction, "null != this.dependentTransaction");
+                            Debug.Assert(_dependentTransaction != null, "null != this.dependentTransaction");
                             _dependentTransaction.Complete();
                         }
                     }
@@ -818,12 +818,12 @@ namespace System.Transactions
             }
             finally
             {
-                if (null != _scopeTimer)
+                if (_scopeTimer != null)
                 {
                     _scopeTimer.Dispose();
                 }
 
-                if (null != _committableTransaction)
+                if (_committableTransaction != null)
                 {
                     _committableTransaction.Dispose();
 
@@ -833,7 +833,7 @@ namespace System.Transactions
                     _expectedCurrent.Dispose();
                 }
 
-                if (null != _dependentTransaction)
+                if (_dependentTransaction != null)
                 {
                     _dependentTransaction.Dispose();
                 }
@@ -867,7 +867,7 @@ namespace System.Transactions
         private static void TimerCallback(object? state)
         {
             TransactionScope? scope = state as TransactionScope;
-            if (null == scope)
+            if (scope == null)
             {
                 TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
                 if (etwLog.IsEnabled())
@@ -883,7 +883,7 @@ namespace System.Transactions
 
         private void Timeout()
         {
-            if ((!_complete) && (null != _expectedCurrent))
+            if ((!_complete) && (_expectedCurrent != null))
             {
                 TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
                 if (etwLog.IsEnabled())

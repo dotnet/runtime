@@ -111,7 +111,7 @@ namespace System.Xml.Xsl.XsltOld
 
         private void UnDefineVariables(int count)
         {
-            Debug.Assert(0 <= count, "This scope can't have more variables than we have in total");
+            Debug.Assert(count >= 0, "This scope can't have more variables than we have in total");
             Debug.Assert(count <= _localVars.Count, "This scope can't have more variables than we have in total");
             if (count != 0)
             {

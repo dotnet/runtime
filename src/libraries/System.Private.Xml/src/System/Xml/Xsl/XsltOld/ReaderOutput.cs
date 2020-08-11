@@ -605,8 +605,8 @@ namespace System.Xml.Xsl.XsltOld
 
         private void SetAttribute(int attrib)
         {
-            Debug.Assert(0 <= attrib && attrib < _attributeCount);
-            Debug.Assert(0 <= attrib && attrib < _attributeList.Count);
+            Debug.Assert(attrib >= 0 && attrib < _attributeCount);
+            Debug.Assert(attrib >= 0 && attrib < _attributeList.Count);
             Debug.Assert(_attributeList[attrib] is BuilderInfo);
 
             _currentIndex = attrib;

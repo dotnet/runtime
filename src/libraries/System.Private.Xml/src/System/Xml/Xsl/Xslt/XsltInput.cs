@@ -56,7 +56,7 @@ namespace System.Xml.Xsl.Xslt
         }
 
         // Cached properties
-        public XmlNodeType NodeType { get { return _nodeType == XmlNodeType.Element && 0 < _currentRecord ? XmlNodeType.Attribute : _nodeType; } }
+        public XmlNodeType NodeType { get { return _nodeType == XmlNodeType.Element && _currentRecord > 0 ? XmlNodeType.Attribute : _nodeType; } }
         public string LocalName { get { return _records[_currentRecord].localName; } }
         public string NamespaceUri { get { return _records[_currentRecord].nsUri; } }
         public string Prefix { get { return _records[_currentRecord].prefix; } }
@@ -522,7 +522,7 @@ namespace System.Xml.Xsl.Xslt
         private bool MoveToAttributeBase(int attNum)
         {
             Debug.Assert(_nodeType == XmlNodeType.Element, "For MoveToLiteralAttribute() we should be positioned on Element or Attribute");
-            if (0 < attNum && attNum <= _numAttributes)
+            if (attNum > 0 && attNum <= _numAttributes)
             {
                 _currentRecord = attNum;
                 return true;
@@ -537,7 +537,7 @@ namespace System.Xml.Xsl.Xslt
         public bool MoveToLiteralAttribute(int attNum)
         {
             Debug.Assert(_nodeType == XmlNodeType.Element, "For MoveToLiteralAttribute() we should be positioned on Element or Attribute");
-            if (0 < attNum && attNum <= _numAttributes)
+            if (attNum > 0 && attNum <= _numAttributes)
             {
                 _currentRecord = attNum;
                 return true;
@@ -679,7 +679,7 @@ namespace System.Xml.Xsl.Xslt
             else
             {
                 _scopeManager.BackwardCompatibility = version < 2;
-                _scopeManager.ForwardCompatibility = 2 < version;
+                _scopeManager.ForwardCompatibility = version > 2;
             }
         }
 

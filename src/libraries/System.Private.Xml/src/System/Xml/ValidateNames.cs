@@ -611,7 +611,7 @@ namespace System.Xml
                 prefix = string.Empty;
                 lname = name;
             }
-            else if (0 == colonPos || (name.Length - 1) == colonPos)
+            else if (colonPos == 0 || (name.Length - 1) == colonPos)
             {
                 throw new ArgumentException(SR.Format(SR.Xml_BadNameChar, XmlException.BuildCharExceptionArgs(':', '\0')), nameof(name));
             }

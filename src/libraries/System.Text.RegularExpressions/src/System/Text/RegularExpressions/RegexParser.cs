@@ -331,7 +331,7 @@ namespace System.Text.RegularExpressions
 
                             PushOptions();
 
-                            if (null == (grouper = ScanGroupOpen()))
+                            if ((grouper = ScanGroupOpen()) == null)
                             {
                                 PopKeepOptions();
                             }

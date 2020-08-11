@@ -1947,7 +1947,7 @@ namespace System.Transactions
             // If we have a phase1Volatile.VolatileDemux, we have a phase1 volatile enlistment
             // on the promoted transaction and it will take care of checking for incomplete aborting
             // dependent clones in its Prepare processing.
-            if (null != tx._phase1Volatiles.VolatileDemux)
+            if (tx._phase1Volatiles.VolatileDemux != null)
             {
                 tx._phase1Volatiles._dependentClones--;
                 Debug.Assert(tx._phase1Volatiles._dependentClones >= 0);
@@ -1957,8 +1957,8 @@ namespace System.Transactions
             // clone we have on the promoted transaction.
             {
                 tx._abortingDependentCloneCount--;
-                Debug.Assert(0 <= tx._abortingDependentCloneCount);
-                if (0 == tx._abortingDependentCloneCount)
+                Debug.Assert(tx._abortingDependentCloneCount >= 0);
+                if (tx._abortingDependentCloneCount == 0)
                 {
                     // We need to complete our dependent clone on the promoted transaction and null it out
                     // so if we get a new one, a new one will be created on the promoted transaction.
@@ -2005,7 +2005,7 @@ namespace System.Transactions
         {
             // If we have a VolatileDemux in phase1Volatiles, then we have a phase1 volatile enlistment
             // on the promoted transaction, so we can depend on that to deal with our aborting dependent clones.
-            if (null != tx._phase1Volatiles.VolatileDemux)
+            if (tx._phase1Volatiles.VolatileDemux != null)
             {
                 tx._phase1Volatiles._dependentClones++;
             }
@@ -2013,7 +2013,7 @@ namespace System.Transactions
             // We promoted without creating a phase1 volatile enlistment on the promoted transaction,
             // so we let the promoted transaction deal with the aboring clone.
             {
-                if (null == tx._abortingDependentClone)
+                if (tx._abortingDependentClone == null)
                 {
                     Debug.Assert(tx.PromotedTransaction != null);
                     tx._abortingDependentClone = tx.PromotedTransaction.DependentClone(false);
@@ -3065,7 +3065,7 @@ namespace System.Transactions
 
         protected override void PromotedTransactionOutcome(InternalTransaction tx)
         {
-            if ((null == tx._innerException) && (null != tx.PromotedTransaction))
+            if ((tx._innerException == null) && (tx.PromotedTransaction != null))
             {
                 tx._innerException = tx.PromotedTransaction.InnerException;
             }
@@ -3248,7 +3248,7 @@ namespace System.Transactions
 
         protected override void PromotedTransactionOutcome(InternalTransaction tx)
         {
-            if ((null == tx._innerException) && (null != tx.PromotedTransaction))
+            if ((tx._innerException == null) && (tx.PromotedTransaction != null))
             {
                 tx._innerException = tx.PromotedTransaction.InnerException;
             }
@@ -4153,7 +4153,7 @@ namespace System.Transactions
 
         protected override void PromotedTransactionOutcome(InternalTransaction tx)
         {
-            if ((null == tx._innerException) && (null != tx.PromotedTransaction))
+            if ((tx._innerException == null) && (tx.PromotedTransaction != null))
             {
                 tx._innerException = tx.PromotedTransaction.InnerException;
             }
@@ -4265,7 +4265,7 @@ namespace System.Transactions
 
         protected override void PromotedTransactionOutcome(InternalTransaction tx)
         {
-            if ((null == tx._innerException) && (null != tx.PromotedTransaction))
+            if ((tx._innerException == null) && (tx.PromotedTransaction != null))
             {
                 tx._innerException = tx.PromotedTransaction.InnerException;
             }

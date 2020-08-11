@@ -70,7 +70,7 @@ namespace System.Collections.Generic
                                 int newLength = count << 1;
                                 if ((uint)newLength > MaxArrayLength)
                                 {
-                                    newLength = MaxArrayLength <= count ? count + 1 : MaxArrayLength;
+                                    newLength = count >= MaxArrayLength ? count + 1 : MaxArrayLength;
                                 }
 
                                 Array.Resize(ref arr, newLength);

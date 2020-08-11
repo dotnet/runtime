@@ -1412,7 +1412,7 @@ namespace System.Xml.Xsl.Xslt
             QilNode result = null;
 
             // It's easier to compile xsl:choose from bottom to top
-            for (int i = cases.Count - 1; 0 <= i; i--)
+            for (int i = cases.Count - 1; i >= 0; i--)
             {
                 XslNode when = cases[i];
                 Debug.Assert(when.NodeType == XslNodeType.If || when.NodeType == XslNodeType.Otherwise);
@@ -1811,7 +1811,7 @@ namespace System.Xml.Xsl.Xslt
             else if (pattern.NodeType == QilNodeType.Sequence)
             {
                 list = (QilList)pattern;
-                Debug.Assert(0 < list.Count, "Pattern should have at least one filter");
+                Debug.Assert(list.Count > 0, "Pattern should have at least one filter");
             }
             else
             {
@@ -1820,7 +1820,7 @@ namespace System.Xml.Xsl.Xslt
             }
 
             QilNode result = _f.False();
-            for (int i = list.Count - 1; 0 <= i; i--)
+            for (int i = list.Count - 1; i >= 0; i--)
             {
                 QilLoop filter = (QilLoop)list[i];
                 _ptrnBuilder.AssertFilter(filter);
@@ -2071,7 +2071,7 @@ namespace System.Xml.Xsl.Xslt
                 // NOTE: It is unclear from the spec what we should do with float numbers here.
                 // Let's apply XPath number and round functions as usual, suppressing any conversion errors.
                 double dblGroupingSize = XsltFunctions.Round(XPathConvert.StringToDouble(groupingSize));
-                if (0 <= dblGroupingSize && dblGroupingSize <= int.MaxValue)
+                if (dblGroupingSize >= 0 && dblGroupingSize <= int.MaxValue)
                 {
                     return _f.Double(dblGroupingSize);
                 }
@@ -2800,7 +2800,7 @@ namespace System.Xml.Xsl.Xslt
             if (lineInfo != null)
             {
                 SourceLineInfo.Validate(lineInfo);
-                if (0 < lineInfo.Start.Line && lineInfo.Start.LessOrEqual(lineInfo.End))
+                if (lineInfo.Start.Line > 0 && lineInfo.Start.LessOrEqual(lineInfo.End))
                 {
                     n.SourceLine = lineInfo;
                 }
@@ -2871,7 +2871,7 @@ namespace System.Xml.Xsl.Xslt
 
             public QilNode FinishVariables(QilNode node, int varScope)
             {
-                Debug.Assert(0 <= varScope && varScope <= _vars.Count);
+                Debug.Assert(varScope >= 0 && varScope <= _vars.Count);
                 for (int i = _vars.Count - varScope; i-- != 0;)
                 {
                     node = _f.Loop(_vars.Pop(), node);

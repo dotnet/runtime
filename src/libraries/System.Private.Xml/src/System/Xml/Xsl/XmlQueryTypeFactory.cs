@@ -549,7 +549,7 @@ namespace System.Xml.Xsl
 
                 writer.Write(code);
 
-                if (0 <= code)
+                if (code >= 0)
                 {
                     Debug.Assert((object)this == (object)Create(_code, _isStrict), "Unknown type");
                     writer.Write(_isStrict);
@@ -563,7 +563,7 @@ namespace System.Xml.Xsl
             {
                 sbyte code = reader.ReadSByte();
 
-                if (0 <= code)
+                if (code >= 0)
                     return Create((XmlTypeCode)code, /*isStrict:*/reader.ReadBoolean());
                 else
                     return s_specialBuiltInItemTypes[~code];

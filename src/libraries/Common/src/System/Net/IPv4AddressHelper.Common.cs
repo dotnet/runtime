@@ -222,19 +222,19 @@ namespace System
                     ch = name[current];
                     int digitValue;
 
-                    if ((numberBase == Decimal || numberBase == Hex) && '0' <= ch && ch <= '9')
+                    if ((numberBase == Decimal || numberBase == Hex) && ch >= '0' && ch <= '9')
                     {
                         digitValue = ch - '0';
                     }
-                    else if (numberBase == Octal && '0' <= ch && ch <= '7')
+                    else if (numberBase == Octal && ch >= '0' && ch <= '7')
                     {
                         digitValue = ch - '0';
                     }
-                    else if (numberBase == Hex && 'a' <= ch && ch <= 'f')
+                    else if (numberBase == Hex && ch >= 'a' && ch <= 'f')
                     {
                         digitValue = ch + 10 - 'a';
                     }
-                    else if (numberBase == Hex && 'A' <= ch && ch <= 'F')
+                    else if (numberBase == Hex && ch >= 'A' && ch <= 'F')
                     {
                         digitValue = ch + 10 - 'A';
                     }

@@ -642,7 +642,7 @@ namespace System.Linq.Parallel
                         Debug.Assert(_source != null);
                         Debug.Assert(chunkBuffer != null);
                         Debug.Assert(mutables._currentChunkSize > 0);
-                        Debug.Assert(0 <= currentChunkIndex && currentChunkIndex < chunkBuffer.Length);
+                        Debug.Assert(currentChunkIndex >= 0 && currentChunkIndex < chunkBuffer.Length);
                         currentElement = chunkBuffer[currentChunkIndex];
                         currentKey = mutables._chunkBaseIndex + currentChunkIndex;
 
@@ -656,7 +656,7 @@ namespace System.Linq.Parallel
 
                     lock (_sourceSyncLock)
                     {
-                        Debug.Assert(0 <= mutables._nextChunkMaxSize && mutables._nextChunkMaxSize <= chunkBuffer.Length);
+                        Debug.Assert(mutables._nextChunkMaxSize >= 0 && mutables._nextChunkMaxSize <= chunkBuffer.Length);
 
                         // Accumulate a chunk of elements from the input.
                         int i = 0;

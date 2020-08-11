@@ -394,7 +394,7 @@ namespace System.Xml
             }
 
             _mark = -1;
-            _eof = (0 == _end);
+            _eof = (_end == 0);
             _closeInput = closeInput;
             switch (settings.ConformanceLevel)
             {
@@ -492,7 +492,7 @@ namespace System.Xml
         {
             get
             {
-                if (null != _stringValue)
+                if (_stringValue != null)
                     return _stringValue;
                 switch (_state)
                 {
@@ -623,7 +623,7 @@ namespace System.Xml
                     for (int i = _elemDepth; i >= 0; i--)
                     {
                         string? xl = _elementStack[i].xmlLang;
-                        if (null != xl)
+                        if (xl != null)
                             return xl;
                     }
                     return string.Empty;
@@ -679,9 +679,9 @@ namespace System.Xml
             }
             else
             {
-                if (null == name)
+                if (name == null)
                     throw new ArgumentNullException(nameof(name));
-                if (null == ns)
+                if (ns == null)
                     ns = string.Empty;
                 int index = LocateAttribute(name, ns);
                 if (-1 == index)
@@ -730,9 +730,9 @@ namespace System.Xml
             }
             else
             {
-                if (null == name)
+                if (name == null)
                     throw new ArgumentNullException(nameof(name));
-                if (null == ns)
+                if (ns == null)
                     ns = string.Empty;
                 int index = LocateAttribute(name, ns);
                 if ((-1 != index) && (_state < ScanState.Init))
@@ -829,11 +829,11 @@ namespace System.Xml
                 case ScanState.AttrValPseudoValue:
                     _attrIndex = 0;
                     _qnameOther = _qnameElement;
-                    if (XmlNodeType.Element == _parentNodeType)
+                    if (_parentNodeType == XmlNodeType.Element)
                         _token = BinXmlToken.Element;
-                    else if (XmlNodeType.XmlDeclaration == _parentNodeType)
+                    else if (_parentNodeType == XmlNodeType.XmlDeclaration)
                         _token = BinXmlToken.XmlDecl;
-                    else if (XmlNodeType.DocumentType == _parentNodeType)
+                    else if (_parentNodeType == XmlNodeType.DocumentType)
                         _token = BinXmlToken.DocType;
                     else
                         Debug.Fail("Unexpected parent NodeType");
@@ -866,7 +866,7 @@ namespace System.Xml
             switch (_state)
             {
                 case ScanState.Attr:
-                    if (null == _attributes[_attrIndex - 1].val)
+                    if (_attributes[_attrIndex - 1].val == null)
                     {
                         _pos = _attributes[_attrIndex - 1].contentPos;
                         BinXmlToken tok = RescanNextToken();
@@ -907,13 +907,13 @@ namespace System.Xml
             _nodetype = XmlNodeType.None;
             _token = BinXmlToken.Error;
             _stringValue = null;
-            if (null != _textXmlReader)
+            if (_textXmlReader != null)
             {
                 _textXmlReader.Close();
                 _textXmlReader = null;
             }
 
-            if (null != _inStrm && _closeInput)
+            if (_inStrm != null && _closeInput)
                 _inStrm.Dispose();
             _inStrm = null!;
             _pos = _end = 0;
@@ -1098,7 +1098,7 @@ namespace System.Xml
                         switch (_token)
                         {
                             case BinXmlToken.XSD_BOOLEAN:
-                                value = 0 != _data[_tokDataPos];
+                                value = _data[_tokDataPos] != 0;
                                 break;
 
                             case BinXmlToken.SQL_BIT:
@@ -1844,13 +1844,13 @@ namespace System.Xml
             else
             {
                 Dictionary<string, string> nstable = new Dictionary<string, string>();
-                if (XmlNamespaceScope.Local == scope)
+                if (scope == XmlNamespaceScope.Local)
                 {
                     // are we even inside an element? (depth==0 is where we have xml, and xmlns declared...)
                     if (_elemDepth > 0)
                     {
                         NamespaceDecl? nsdecl = _elementStack[_elemDepth].nsdecls;
-                        while (null != nsdecl)
+                        while (nsdecl != null)
                         {
                             nstable.Add(nsdecl.prefix, nsdecl.uri);
                             nsdecl = nsdecl.scopeLink;
@@ -1862,7 +1862,7 @@ namespace System.Xml
                     foreach (NamespaceDecl nsdecl in _namespaces.Values)
                     {
                         // don't add predefined decls unless scope == all, then only add 'xml'
-                        if (nsdecl.scope != -1 || (XmlNamespaceScope.All == scope && "xml" == nsdecl.prefix))
+                        if (nsdecl.scope != -1 || (scope == XmlNamespaceScope.All && nsdecl.prefix == "xml"))
                         {
                             // xmlns="" only ever reported via scope==local
                             if (nsdecl.prefix.Length > 0 || nsdecl.uri.Length > 0)
@@ -1884,17 +1884,17 @@ namespace System.Xml
             }
             else
             {
-                if (null == namespaceName)
+                if (namespaceName == null)
                     return null;
 
                 string? atomizedNamespaceName = _xnt.Get(namespaceName);
-                if (null == atomizedNamespaceName)
+                if (atomizedNamespaceName == null)
                     return null;
 
                 for (int i = _elemDepth; i >= 0; i--)
                 {
                     NamespaceDecl? nsdecl = _elementStack[i].nsdecls;
-                    while (null != nsdecl)
+                    while (nsdecl != null)
                     {
                         if ((object)nsdecl.uri == (object?)atomizedNamespaceName)
                             return nsdecl.prefix;
@@ -1963,9 +1963,9 @@ namespace System.Xml
                 // it is a real namespace decl, make sure it looks valid
                 if (!prefixStr.StartsWith("xmlns", StringComparison.Ordinal))
                     goto BadDecl;
-                if (5 < prefixStr.Length)
+                if (prefixStr.Length > 5)
                 {
-                    if (6 == prefixStr.Length || ':' != prefixStr[5])
+                    if (prefixStr.Length == 6 || prefixStr[5] != ':')
                         goto BadDecl;
                     lnameStr = _xnt.Add(prefixStr.Substring(6));
                     prefixStr = _xmlns;
@@ -2118,7 +2118,7 @@ namespace System.Xml
         {
             uint u, t;
             u = (uint)b & (uint)0x7F;
-            Debug.Assert(0 != (b & 0x80));
+            Debug.Assert((b & 0x80) != 0);
             b = ReadByte();
             t = (uint)b & (uint)0x7F;
             u = u + (t << 7);
@@ -2380,7 +2380,7 @@ namespace System.Xml
         {
             string? val = _attributes[i].val;
 
-            if (null != val)
+            if (val != null)
                 return val;
             else
             {
@@ -2476,7 +2476,7 @@ namespace System.Xml
             int elemDepth = _elemDepth;
             NamespaceDecl? curDecl;
             _namespaces.TryGetValue(prefix, out curDecl);
-            if (null != curDecl)
+            if (curDecl != null)
             {
                 if (curDecl.uri == ns)
                 {
@@ -2511,9 +2511,9 @@ namespace System.Xml
         private void PopNamespaces(NamespaceDecl? firstInScopeChain)
         {
             NamespaceDecl? decl = firstInScopeChain;
-            while (null != decl)
+            while (decl != null)
             {
-                if (null == decl.prevLink)
+                if (decl.prevLink == null)
                     _namespaces.Remove(decl.prefix);
                 else
                     _namespaces[decl.prefix] = decl.prevLink;
@@ -2529,7 +2529,7 @@ namespace System.Xml
         {
             QName name;
             NamespaceDecl? decl = _elementStack[_elemDepth].nsdecls;
-            while (null != decl)
+            while (decl != null)
             {
                 if (decl.implied)
                 {
@@ -2569,7 +2569,7 @@ namespace System.Xml
             }
 
             // check encoding marker, 1200 == utf16
-            if (1200 != ReadUShort())
+            if (ReadUShort() != 1200)
             {
                 err = SR.XmlBinary_UnsupportedCodePage;
                 goto Error;
@@ -2634,7 +2634,7 @@ namespace System.Xml
                 if (BinXmlToken.Attr == token)
                 {
                     // watch out for nsdecl with no actual content
-                    if (null != curDeclPrefix)
+                    if (curDeclPrefix != null)
                     {
                         PushNamespace(curDeclPrefix, string.Empty, false);
                         curDeclPrefix = null;
@@ -2691,7 +2691,7 @@ namespace System.Xml
                     // might as well store the saved string for quick attr value access
                     string? val = _stringValue;
 
-                    if (null != val)
+                    if (val != null)
                     {
                         _attributes[_attrCount - 1].val = val;
                         _stringValue = null;
@@ -2699,7 +2699,7 @@ namespace System.Xml
 
                     // namespace decls can only have text values, and should only
                     // have a single value, so we just grab it here...
-                    if (null != curDeclPrefix)
+                    if (curDeclPrefix != null)
                     {
                         string nsuri = _xnt.Add(ValueAsString(token));
                         PushNamespace(curDeclPrefix, nsuri, false);
@@ -2923,7 +2923,7 @@ namespace System.Xml
                     return ReadInit(true);
 
                 case BinXmlToken.EndNest:
-                    if (null == _prevNameInfo)
+                    if (_prevNameInfo == null)
                         goto default;
                     ImplReadEndNest();
                     return ReadDoc();
@@ -2976,7 +2976,7 @@ namespace System.Xml
                 case BinXmlToken.XSD_UNSIGNEDLONG:
                 case BinXmlToken.XSD_QNAME:
                     ImplReadData(_token);
-                    if (XmlNodeType.Text == _nodetype)
+                    if (_nodetype == XmlNodeType.Text)
                         CheckAllowContent();
                     else if (_ignoreWhitespace && !_xmlspacePreserve)
                         goto Read; // skip to next token
@@ -3067,7 +3067,7 @@ namespace System.Xml
 
         private void ImplReadElement()
         {
-            if (3 != _docState || 9 != _docState)
+            if (_docState != 3 || _docState != 9)
             {
                 switch (_docState)
                 {
@@ -3112,7 +3112,7 @@ namespace System.Xml
                 // is this a zero-length string?  if yes, skip it.
                 // (It just indicates that this is _not_ an empty element)
                 // Also make sure that the following token is an EndElem
-                if (0 == ReadByte())
+                if (ReadByte() == 0)
                 {
                     if (BinXmlToken.EndElem != (BinXmlToken)ReadByte())
                     {
@@ -3141,7 +3141,7 @@ namespace System.Xml
             if (_elemDepth == 0)
                 throw ThrowXmlException(SR.Xml_UnexpectedEndTag);
             int index = _elemDepth;
-            if (1 == index && 3 == _docState)
+            if (index == 1 && _docState == 3)
                 _docState = -1;
             _qnameOther = _elementStack[index].name;
             _xmlspacePreserve = _elementStack[index].xmlspacePreserve;
@@ -3252,7 +3252,7 @@ namespace System.Xml
             settings.ReadOnly = false;
             settings.NameTable = _xnt;
             settings.DtdProcessing = DtdProcessing.Prohibit;
-            if (0 != _elemDepth)
+            if (_elemDepth != 0)
             {
                 settings.ConformanceLevel = ConformanceLevel.Fragment;
             }
@@ -3530,7 +3530,7 @@ namespace System.Xml
         {
             Debug.Assert(_checkCharacters, "this.checkCharacters");
             // assert that size is an even number
-            Debug.Assert(0 == ((_pos - _tokDataPos) & 1), "Data size should not be odd");
+            Debug.Assert(((_pos - _tokDataPos) & 1) == 0, "Data size should not be odd");
             // grab local copy (perf)
             XmlCharType xmlCharType = _xmlCharType;
 
@@ -3593,10 +3593,10 @@ namespace System.Xml
             Debug.Assert(!_checkCharacters, "!this.checkCharacters");
             byte[] data = _data;
             // assert that size is an even number
-            Debug.Assert(0 == ((_pos - _tokDataPos) & 1), "Data size should not be odd");
+            Debug.Assert(((_pos - _tokDataPos) & 1) == 0, "Data size should not be odd");
             for (int pos = _tokDataPos; pos < _pos; pos += 2)
             {
-                if (0 != data[pos + 1])
+                if (data[pos + 1] != 0)
                     goto NonWSText;
                 switch (data[pos])
                 {
@@ -3970,7 +3970,7 @@ namespace System.Xml
 
                     case BinXmlToken.XSD_BOOLEAN:
                         {
-                            if (0 == _data[_tokDataPos])
+                            if (_data[_tokDataPos] == 0)
                                 return "false";
                             else
                                 return "true";
@@ -4094,7 +4094,7 @@ namespace System.Xml
                     return GetString(_tokDataPos, _tokLen);
 
                 case BinXmlToken.XSD_BOOLEAN:
-                    return (0 != _data[_tokDataPos]);
+                    return (_data[_tokDataPos] != 0);
 
                 case BinXmlToken.SQL_BIT:
                     return (int)_data[_tokDataPos];
@@ -4245,7 +4245,7 @@ namespace System.Xml
 
                 case BinXmlToken.XSD_BOOLEAN:
                     value = GetValueConverter(XmlTypeCode.Boolean).ChangeType(
-                        (0 != _data[_tokDataPos]),
+                        (_data[_tokDataPos] != 0),
                         returnType, namespaceResolver);
                     break;
 

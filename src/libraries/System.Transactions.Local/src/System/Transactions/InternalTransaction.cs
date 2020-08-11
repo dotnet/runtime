@@ -294,7 +294,7 @@ namespace System.Transactions
 
             lock (tx)
             {
-                if (null == tx._innerException)
+                if (tx._innerException == null)
                 {
                     Debug.Assert(tx.PromotedTransaction != null);
                     tx._innerException = tx.PromotedTransaction.InnerException;
@@ -336,7 +336,7 @@ namespace System.Transactions
                 fo = tx._finalizedObject;
             }
 
-            if (null != fo)
+            if (fo != null)
             {
                 fo.Dispose();
             }
@@ -432,7 +432,7 @@ namespace System.Transactions
             lock (promotedTransactionTable)
             {
                 WeakReference? weakRef = (WeakReference?)promotedTransactionTable[_identifier];
-                if (null != weakRef)
+                if (weakRef != null)
                 {
                     if (weakRef.Target != null)
                     {

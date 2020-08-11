@@ -969,7 +969,7 @@ namespace System.Threading.Tasks
             if (currentMillis < timeoutOccursAt)
                 return false;
 
-            if (0 > timeoutOccursAt && 0 < currentMillis)
+            if (timeoutOccursAt < 0 && currentMillis > 0)
                 return false;
 
             return true;

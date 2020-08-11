@@ -88,7 +88,7 @@ namespace System.Xml.Xsl.XsltOld
                     string prefix = Prefix;
                     string localName = LocalName;
 
-                    if (prefix != null && 0 < prefix.Length)
+                    if (prefix != null && prefix.Length > 0)
                     {
                         if (localName.Length > 0)
                         {

@@ -121,7 +121,7 @@ namespace System.Linq.Parallel
                 Shared<int> sharedEmptyCount, CountdownEvent sharedLatch, CancellationToken cancelToken)
             {
                 Debug.Assert(source != null);
-                Debug.Assert(0 <= partitionIndex && partitionIndex < partitionCount);
+                Debug.Assert(partitionIndex >= 0 && partitionIndex < partitionCount);
                 Debug.Assert(partitionCount > 0);
                 Debug.Assert(sharedEmptyCount != null);
                 Debug.Assert(sharedLatch != null);

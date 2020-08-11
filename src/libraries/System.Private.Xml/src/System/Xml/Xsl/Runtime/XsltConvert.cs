@@ -77,7 +77,7 @@ namespace System.Xml.Xsl.Runtime
             {
                 // (x < 0 || 0 < x)  ==  (x != 0) && !Double.IsNaN(x)
                 double dbl = item.ValueAsDouble;
-                return dbl < 0 || 0 < dbl;
+                return dbl < 0 || dbl > 0;
             }
             else
             {

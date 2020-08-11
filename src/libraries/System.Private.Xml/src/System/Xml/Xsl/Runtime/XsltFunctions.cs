@@ -91,7 +91,7 @@ namespace System.Xml.Xsl.Runtime
                 {
                     endIndex = value.Length;
                 }
-                Debug.Assert(0 <= startIndex && startIndex <= endIndex && endIndex <= value.Length);
+                Debug.Assert(startIndex >= 0 && startIndex <= endIndex && endIndex <= value.Length);
                 return value.Substring((int)startIndex, (int)(endIndex - startIndex));
             }
             else

@@ -89,7 +89,7 @@ namespace System.Text.RegularExpressions
         {
             // Handle timeout argument
             _timeout = -1; // (int)Regex.InfiniteMatchTimeout.TotalMilliseconds
-            bool ignoreTimeout = _ignoreTimeout = Regex.InfiniteMatchTimeout == timeout;
+            bool ignoreTimeout = _ignoreTimeout = timeout == Regex.InfiniteMatchTimeout;
             if (!ignoreTimeout)
             {
                 // We are using Environment.TickCount and not Stopwatch for performance reasons.
@@ -221,7 +221,7 @@ namespace System.Text.RegularExpressions
         {
             // Handle timeout argument
             _timeout = -1; // (int)Regex.InfiniteMatchTimeout.TotalMilliseconds
-            bool ignoreTimeout = _ignoreTimeout = Regex.InfiniteMatchTimeout == timeout;
+            bool ignoreTimeout = _ignoreTimeout = timeout == Regex.InfiniteMatchTimeout;
             if (!ignoreTimeout)
             {
                 // We are using Environment.TickCount and not Stopwatch for performance reasons.
@@ -367,7 +367,7 @@ namespace System.Text.RegularExpressions
             if (currentMillis < _timeoutOccursAt)
                 return;
 
-            if (0 > _timeoutOccursAt && 0 < currentMillis)
+            if (_timeoutOccursAt < 0 && currentMillis > 0)
                 return;
 
 #if DEBUG

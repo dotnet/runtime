@@ -83,7 +83,7 @@ namespace System.ComponentModel.DataAnnotations
                 throw new InvalidCastException(SR.Format(SR.LengthAttribute_InvalidValueType, value.GetType()));
             }
 
-            return MaxAllowableLength == Length || length <= Length;
+            return Length == MaxAllowableLength || length <= Length;
         }
 
         /// <summary>

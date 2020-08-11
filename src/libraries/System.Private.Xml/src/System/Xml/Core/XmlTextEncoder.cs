@@ -115,17 +115,17 @@ namespace System.Xml
 
         internal void Write(char[] array, int offset, int count)
         {
-            if (null == array)
+            if (array == null)
             {
                 throw new ArgumentNullException(nameof(array));
             }
 
-            if (0 > offset)
+            if (offset < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(offset));
             }
 
-            if (0 > count)
+            if (count < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(count));
             }
@@ -455,17 +455,17 @@ namespace System.Xml
 
         internal void WriteRaw(char[] array, int offset, int count)
         {
-            if (null == array)
+            if (array == null)
             {
                 throw new ArgumentNullException(nameof(array));
             }
 
-            if (0 > count)
+            if (count < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(count));
             }
 
-            if (0 > offset)
+            if (offset < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(offset));
             }

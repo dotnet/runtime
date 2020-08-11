@@ -50,7 +50,7 @@ namespace System.Xml
             };
             m_bPrec = data[offset + 1];
             m_bScale = data[offset + 2];
-            m_bSign = 0 == data[offset + 3] ? (byte)1 : (byte)0;
+            m_bSign = data[offset + 3] == 0 ? (byte)1 : (byte)0;
             m_data1 = UIntFromByteArray(data, offset + 4);
             m_data2 = (m_bLen > 1) ? UIntFromByteArray(data, offset + 8) : 0;
             m_data3 = (m_bLen > 2) ? UIntFromByteArray(data, offset + 12) : 0;
@@ -493,7 +493,7 @@ Error:
             val /= 60;
             min = (int)(val % 60);
             hr = (int)(val / 60);
-            if (0 > hr || hr > 23)
+            if (hr < 0 || hr > 23)
                 goto Error;
             return;
 Error:

@@ -62,7 +62,7 @@ namespace System.IO.Compression
             if (length == 0)
                 return 0;
 
-            Debug.Assert(null != bytes, "Can't pass in a null output buffer!");
+            Debug.Assert(bytes != null, "Can't pass in a null output buffer!");
             fixed (byte* bufPtr = bytes)
             {
                 return InflateVerified(bufPtr + offset, length);
@@ -110,7 +110,7 @@ namespace System.IO.Compression
             finally
             {
                 // Before returning, make sure to release input buffer if necessary:
-                if (0 == _zlibStream.AvailIn && _inputBufferHandle.IsAllocated)
+                if (_zlibStream.AvailIn == 0 && _inputBufferHandle.IsAllocated)
                 {
                     DeallocateInputBufferHandle();
                 }
@@ -182,7 +182,7 @@ namespace System.IO.Compression
             Debug.Assert(startIndex >= 0 && count >= 0 && count + startIndex <= inputBuffer.Length);
             Debug.Assert(!_inputBufferHandle.IsAllocated);
 
-            if (0 == count)
+            if (count == 0)
                 return;
 
             lock (SyncLock)

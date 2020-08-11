@@ -244,7 +244,7 @@ namespace System.Xml.Xsl.Xslt
                     List<Uri> importHrefs = _curStylesheet.ImportHrefs;
                     _curStylesheet.Imports = new Stylesheet[importHrefs.Count];
                     // Imports should be compiled in the reverse order. Template lookup logic relies on that.
-                    for (int i = importHrefs.Count; 0 <= --i;)
+                    for (int i = importHrefs.Count; --i >= 0;)
                     {
                         _curStylesheet.Imports[i] = LoadStylesheet(importHrefs[i], /*include:*/false);
                     }
@@ -2736,7 +2736,7 @@ namespace System.Xml.Xsl.Xslt
                     modes.Clear();
                     modes.Add(nullMode);
                 }
-                if (1 < modes.Count)
+                if (modes.Count > 1)
                 {
                     ReportNYI("Multipe modes");
                     return nullMode;

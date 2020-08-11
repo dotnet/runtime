@@ -796,7 +796,7 @@ namespace System.Diagnostics
             }
             set
             {
-                if (!(ActivityIdFormat.Hierarchical <= value && value <= ActivityIdFormat.W3C))
+                if (!(value >= ActivityIdFormat.Hierarchical && value <= ActivityIdFormat.W3C))
                     throw new ArgumentException(SR.ActivityIdFormatInvalid);
                 s_defaultIdFormat = value;
             }
@@ -835,8 +835,8 @@ namespace System.Diagnostics
             //  = 55 chars (see https://w3c.github.io/trace-context)
             // The version (00-fe) is used to indicate that this is a WC3 ID.
             return id.Length == 55 &&
-                   ('0' <= id[0] && id[0] <= '9' || 'a' <= id[0] && id[0] <= 'f') &&
-                   ('0' <= id[1] && id[1] <= '9' || 'a' <= id[1] && id[1] <= 'e');
+                   (id[0] >= '0' && id[0] <= '9' || id[0] >= 'a' && id[0] <= 'f') &&
+                   (id[1] >= '0' && id[1] <= '9' || id[1] >= 'a' && id[1] <= 'e');
         }
 
 #if ALLOW_PARTIALLY_TRUSTED_CALLERS

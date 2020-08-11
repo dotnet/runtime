@@ -124,7 +124,7 @@ namespace System.Xml.Xsl.XsltOld
             // last one should win. I.E. We starting from the end. I.E. Lowest priority should go first
             if (_whitespaceList != null)
             {
-                for (int i = _whitespaceList.Count - 1; 0 <= i; i--)
+                for (int i = _whitespaceList.Count - 1; i >= 0; i--)
                 {
                     WhitespaceElement elem = (WhitespaceElement)_whitespaceList[i];
                     if (proc.Matches(node, elem.Key))

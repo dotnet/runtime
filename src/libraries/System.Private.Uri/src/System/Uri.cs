@@ -3808,7 +3808,7 @@ namespace System
             switch (span.Length)
             {
                 case 2:
-                    if (wsMask == (firstLower << 8 | ToLowerCaseAscii(span[1])))
+                    if ((firstLower << 8 | ToLowerCaseAscii(span[1])) == wsMask)
                     {
                         syntax = UriParser.WsUri;
                         return ParsingError.None;
@@ -3837,7 +3837,7 @@ namespace System
                     }
                     break;
                 case 5:
-                    if (httpMask == (firstLower << 24 | ToLowerCaseAscii(span[1]) << 16 | ToLowerCaseAscii(span[2]) << 8 | ToLowerCaseAscii(span[3])) &&
+                    if ((firstLower << 24 | ToLowerCaseAscii(span[1]) << 16 | ToLowerCaseAscii(span[2]) << 8 | ToLowerCaseAscii(span[3])) == httpMask &&
                         ToLowerCaseAscii(span[4]) == 's')
                     {
                         syntax = UriParser.HttpsUri;
@@ -3845,7 +3845,7 @@ namespace System
                     }
                     break;
                 case 6:
-                    if (mailMask == (firstLower << 24 | ToLowerCaseAscii(span[1]) << 16 | ToLowerCaseAscii(span[2]) << 8 | ToLowerCaseAscii(span[3])) &&
+                    if ((firstLower << 24 | ToLowerCaseAscii(span[1]) << 16 | ToLowerCaseAscii(span[2]) << 8 | ToLowerCaseAscii(span[3])) == mailMask &&
                         ToLowerCaseAscii(span[4]) == 't' && ToLowerCaseAscii(span[5]) == 'o')
                     {
                         syntax = UriParser.MailToUri;

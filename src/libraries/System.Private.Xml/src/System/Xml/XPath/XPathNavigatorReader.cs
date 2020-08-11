@@ -97,7 +97,7 @@ namespace System.Xml.XPath
                 }
             }
 #else
-            if (null == xsi)
+            if (xsi == null)
             {
                 return new XPathNavigatorReader(nav, xli, xsi);
             }
@@ -387,7 +387,7 @@ namespace System.Xml.XPath
                     // attribute count works for element, regardless of where you are in start tag
                     XPathNavigator? tempNav = GetElemNav();
                     int count = 0;
-                    if (null != tempNav)
+                    if (tempNav != null)
                     {
                         if (tempNav.MoveToFirstNamespace(XPathNamespaceScope.Local))
                         {
@@ -429,7 +429,7 @@ namespace System.Xml.XPath
             }
             string prefix, localname;
             ValidateNames.SplitQName(name, out prefix, out localname);
-            if (0 == prefix.Length)
+            if (prefix.Length == 0)
             {
                 if (localname == "xmlns")
                     return nav.GetNamespace(string.Empty);
@@ -458,7 +458,7 @@ namespace System.Xml.XPath
 
         public override string? GetAttribute(string localName, string? namespaceURI)
         {
-            if (null == localName)
+            if (localName == null)
                 throw new ArgumentNullException(nameof(localName));
             // reader allows calling GetAttribute, even when positioned inside attributes
             XPathNavigator nav = _nav;
@@ -481,7 +481,7 @@ namespace System.Xml.XPath
                     localName = string.Empty;
                 return nav.GetNamespace(localName);
             }
-            if (null == namespaceURI)
+            if (namespaceURI == null)
                 namespaceURI = string.Empty;
             // We need to clone the navigator and move the clone to the attribute to see whether the attribute exists,
             // because XPathNavigator.GetAttribute return string.Empty for both when the attribute is not there or when
@@ -524,7 +524,7 @@ namespace System.Xml.XPath
             if (index < 0)
                 goto Error;
             XPathNavigator? nav = GetElemNav();
-            if (null == nav)
+            if (nav == null)
                 goto Error;
             if (nav.MoveToFirstNamespace(XPathNamespaceScope.Local))
             {
@@ -533,7 +533,7 @@ namespace System.Xml.XPath
                 // so first count the namespaces
                 int nsCount;
                 string? value = GetNamespaceByIndex(nav, index, out nsCount);
-                if (null != value)
+                if (value != null)
                 {
                     return value;
                 }
@@ -557,11 +557,11 @@ namespace System.Xml.XPath
 
         public override bool MoveToAttribute(string localName, string? namespaceName)
         {
-            if (null == localName)
+            if (localName == null)
                 throw new ArgumentNullException(nameof(localName));
             int depth = _depth;
             XPathNavigator? nav = GetElemNav(out depth);
-            if (null != nav)
+            if (nav != null)
             {
                 if (namespaceName == XmlReservedNs.NsXmlNs)
                 {
@@ -578,7 +578,7 @@ namespace System.Xml.XPath
                 }
                 else
                 {
-                    if (null == namespaceName)
+                    if (namespaceName == null)
                         namespaceName = string.Empty;
                     if (nav.MoveToAttribute(localName, namespaceName))
                         goto FoundMatch;
@@ -600,7 +600,7 @@ namespace System.Xml.XPath
         {
             int depth;
             XPathNavigator? nav = GetElemNav(out depth);
-            if (null != nav)
+            if (nav != null)
             {
                 if (nav.MoveToFirstNamespace(XPathNamespaceScope.Local))
                 {
@@ -634,11 +634,11 @@ namespace System.Xml.XPath
 
                 case State.Attribute:
                     {
-                        if (XPathNodeType.Attribute == _nav.NodeType)
+                        if (_nav.NodeType == XPathNodeType.Attribute)
                             return _nav.MoveToNextAttribute();
 
                         // otherwise it is on a namespace... namespace are in reverse order
-                        Debug.Assert(XPathNodeType.Namespace == _nav.NodeType);
+                        Debug.Assert(_nav.NodeType == XPathNodeType.Namespace);
                         XPathNavigator nav = _nav.Clone();
                         if (!nav.MoveToParent())
                             return false; // shouldn't happen
@@ -705,7 +705,7 @@ namespace System.Xml.XPath
         {
             int depth;
             XPathNavigator? nav = GetElemNav(out depth);
-            if (null == nav)
+            if (nav == null)
                 return false;
 
             string prefix, localname;
@@ -713,7 +713,7 @@ namespace System.Xml.XPath
 
             // watch for a namespace name
             bool IsXmlnsNoPrefix = false;
-            if ((IsXmlnsNoPrefix = (0 == prefix.Length && localname == "xmlns"))
+            if ((IsXmlnsNoPrefix = (prefix.Length == 0 && localname == "xmlns"))
                 || (prefix == "xmlns"))
             {
                 if (IsXmlnsNoPrefix)
@@ -727,7 +727,7 @@ namespace System.Xml.XPath
                     } while (nav.MoveToNextNamespace(XPathNamespaceScope.Local));
                 }
             }
-            else if (0 == prefix.Length)
+            else if (prefix.Length == 0)
             {
                 // the empty prefix always means empty namespaceUri for attributes
                 if (nav.MoveToAttribute(localname, string.Empty))
@@ -979,7 +979,7 @@ namespace System.Xml.XPath
                     // Starting state depends on the navigator's item type
                     _nav = _navToRead;
                     _state = State.Content;
-                    if (XPathNodeType.Root == _nav.NodeType)
+                    if (_nav.NodeType == XPathNodeType.Root)
                     {
                         if (!_nav.MoveToFirstChild())
                         {
@@ -988,7 +988,7 @@ namespace System.Xml.XPath
                         }
                         _readEntireDocument = true;
                     }
-                    else if (XPathNodeType.Attribute == _nav.NodeType)
+                    else if (_nav.NodeType == XPathNodeType.Attribute)
                     {
                         _state = State.Attribute;
                     }
@@ -1013,7 +1013,7 @@ namespace System.Xml.XPath
                     break;
 
                 case State.EndElement:
-                    if (0 == _depth && !_readEntireDocument)
+                    if (_depth == 0 && !_readEntireDocument)
                     {
                         SetEOF();
                         return false;

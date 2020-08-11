@@ -1286,7 +1286,7 @@ namespace System.Xml
         internal static void SplitName(string name, out string prefix, out string localName)
         {
             int colonPos = name.IndexOf(':'); // ordinal compare
-            if (-1 == colonPos || 0 == colonPos || name.Length - 1 == colonPos)
+            if (-1 == colonPos || colonPos == 0 || name.Length - 1 == colonPos)
             {
                 prefix = string.Empty;
                 localName = name;

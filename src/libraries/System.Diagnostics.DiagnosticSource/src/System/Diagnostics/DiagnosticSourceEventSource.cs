@@ -447,12 +447,12 @@ namespace System.Diagnostics
                 while (true)
                 {
                     // Skip trailing whitespace.
-                    while (0 < endIdx && char.IsWhiteSpace(filterAndPayloadSpecs[endIdx - 1]))
+                    while (endIdx > 0 && char.IsWhiteSpace(filterAndPayloadSpecs[endIdx - 1]))
                         --endIdx;
 
                     int newlineIdx = filterAndPayloadSpecs.LastIndexOf('\n', endIdx - 1, endIdx);
                     int startIdx = 0;
-                    if (0 <= newlineIdx)
+                    if (newlineIdx >= 0)
                         startIdx = newlineIdx + 1;  // starts after the newline, or zero if we don't find one.
 
                     // Skip leading whitespace
@@ -499,7 +499,7 @@ namespace System.Diagnostics
                 var startTransformIdx = startIdx;
                 var endEventNameIdx = endIdx;
                 var colonIdx = filterAndPayloadSpec.IndexOf(':', startIdx, endIdx - startIdx);
-                if (0 <= colonIdx)
+                if (colonIdx >= 0)
                 {
                     endEventNameIdx = colonIdx;
                     startTransformIdx = colonIdx + 1;
@@ -507,12 +507,12 @@ namespace System.Diagnostics
 
                 // Parse the Source/Event name into listenerNameFilter and eventNameFilter
                 var slashIdx = filterAndPayloadSpec.IndexOf('/', startIdx, endEventNameIdx - startIdx);
-                if (0 <= slashIdx)
+                if (slashIdx >= 0)
                 {
                     listenerNameFilter = filterAndPayloadSpec.Substring(startIdx, slashIdx - startIdx);
 
                     var atIdx = filterAndPayloadSpec.IndexOf('@', slashIdx + 1, endEventNameIdx - slashIdx - 1);
-                    if (0 <= atIdx)
+                    if (atIdx >= 0)
                     {
                         activityName = filterAndPayloadSpec.Substring(atIdx + 1, endEventNameIdx - atIdx - 1);
                         eventNameFilter = filterAndPayloadSpec.Substring(slashIdx + 1, atIdx - slashIdx - 1);
@@ -544,7 +544,7 @@ namespace System.Diagnostics
                     {
                         int specStartIdx = startTransformIdx;
                         int semiColonIdx = filterAndPayloadSpec.LastIndexOf(';', endIdx - 1, endIdx - startTransformIdx);
-                        if (0 <= semiColonIdx)
+                        if (semiColonIdx >= 0)
                             specStartIdx = semiColonIdx + 1;
 
                         // Ignore empty specifications.
@@ -771,7 +771,7 @@ namespace System.Diagnostics
 
                 // Pick off the Var=
                 int equalsIdx = transformSpec.IndexOf('=', startIdx, endIdx - startIdx);
-                if (0 <= equalsIdx)
+                if (equalsIdx >= 0)
                 {
                     _outputName = transformSpec.Substring(startIdx, equalsIdx - startIdx);
                     startIdx = equalsIdx + 1;
@@ -782,7 +782,7 @@ namespace System.Diagnostics
                 {
                     int dotIdx = transformSpec.LastIndexOf('.', endIdx - 1, endIdx - startIdx);
                     int idIdx = startIdx;
-                    if (0 <= dotIdx)
+                    if (dotIdx >= 0)
                         idIdx = dotIdx + 1;
 
                     string propertName = transformSpec.Substring(idIdx, endIdx - idIdx);

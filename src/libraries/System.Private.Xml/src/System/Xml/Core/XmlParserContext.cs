@@ -69,12 +69,12 @@ namespace System.Xml
             }
 
             _nsMgr = nsMgr;
-            _docTypeName = (null == docTypeName ? string.Empty : docTypeName);
-            _pubId = (null == pubId ? string.Empty : pubId);
-            _sysId = (null == sysId ? string.Empty : sysId);
-            _internalSubset = (null == internalSubset ? string.Empty : internalSubset);
-            _baseURI = (null == baseURI ? string.Empty : baseURI);
-            _xmlLang = (null == xmlLang ? string.Empty : xmlLang);
+            _docTypeName = (docTypeName == null ? string.Empty : docTypeName);
+            _pubId = (pubId == null ? string.Empty : pubId);
+            _sysId = (sysId == null ? string.Empty : sysId);
+            _internalSubset = (internalSubset == null ? string.Empty : internalSubset);
+            _baseURI = (baseURI == null ? string.Empty : baseURI);
+            _xmlLang = (xmlLang == null ? string.Empty : xmlLang);
             _xmlSpace = xmlSpace;
             _encoding = enc;
         }
@@ -112,7 +112,7 @@ namespace System.Xml
             }
             set
             {
-                _docTypeName = (null == value ? string.Empty : value);
+                _docTypeName = (value == null ? string.Empty : value);
             }
         }
 
@@ -125,7 +125,7 @@ namespace System.Xml
             }
             set
             {
-                _pubId = (null == value ? string.Empty : value);
+                _pubId = (value == null ? string.Empty : value);
             }
         }
 
@@ -138,7 +138,7 @@ namespace System.Xml
             }
             set
             {
-                _sysId = (null == value ? string.Empty : value);
+                _sysId = (value == null ? string.Empty : value);
             }
         }
 
@@ -151,7 +151,7 @@ namespace System.Xml
             }
             set
             {
-                _baseURI = (null == value ? string.Empty : value);
+                _baseURI = (value == null ? string.Empty : value);
             }
         }
 
@@ -164,7 +164,7 @@ namespace System.Xml
             }
             set
             {
-                _internalSubset = (null == value ? string.Empty : value);
+                _internalSubset = (value == null ? string.Empty : value);
             }
         }
 
@@ -177,7 +177,7 @@ namespace System.Xml
             }
             set
             {
-                _xmlLang = (null == value ? string.Empty : value);
+                _xmlLang = (value == null ? string.Empty : value);
             }
         }
 

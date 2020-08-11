@@ -30,7 +30,7 @@ namespace System.Text.Json
             int firstEscapeIndexVal,
             JavaScriptEncoder? encoder)
         {
-            Debug.Assert(int.MaxValue / JsonConstants.MaxExpansionFactorWhileEscaping >= utf8Value.Length);
+            Debug.Assert(utf8Value.Length <= int.MaxValue / JsonConstants.MaxExpansionFactorWhileEscaping);
             Debug.Assert(firstEscapeIndexVal >= 0 && firstEscapeIndexVal < utf8Value.Length);
 
             byte[]? valueArray = null;
@@ -58,7 +58,7 @@ namespace System.Text.Json
             int firstEscapeIndexVal,
             JavaScriptEncoder? encoder)
         {
-            Debug.Assert(int.MaxValue / JsonConstants.MaxExpansionFactorWhileEscaping >= utf8Value.Length);
+            Debug.Assert(utf8Value.Length <= int.MaxValue / JsonConstants.MaxExpansionFactorWhileEscaping);
             Debug.Assert(firstEscapeIndexVal >= 0 && firstEscapeIndexVal < utf8Value.Length);
 
             byte[]? valueArray = null;

@@ -62,7 +62,7 @@ namespace System.Xml.Xsl.XsltOld
                     if (Ref.Equal(name, input.Atoms.Version))
                     {
                         version = input.Value;
-                        if (1 <= XmlConvert.ToXPathDouble(version))
+                        if (XmlConvert.ToXPathDouble(version) >= 1)
                         {
                             compiler.ForwardCompatibility = (version != "1.0");
                         }
@@ -223,7 +223,7 @@ namespace System.Xml.Xsl.XsltOld
             ArrayList imports = compiler.CompiledStylesheet.Imports;
             // We can't reverce imports order. Template lookup relyes on it after compilation
             int saveStylesheetId = compiler.Stylesheetid;
-            for (int i = imports.Count - 1; 0 <= i; i--)
+            for (int i = imports.Count - 1; i >= 0; i--)
             {   // Imports should be compiled in reverse order
                 Uri uri = imports[i] as Uri;
                 Debug.Assert(uri != null);
@@ -474,7 +474,7 @@ namespace System.Xml.Xsl.XsltOld
                 return -0.5;
             }
             int idx = name.Length - 2;
-            if (0 <= idx && name[idx] == ':' && name[idx + 1] == '*')
+            if (idx >= 0 && name[idx] == ':' && name[idx + 1] == '*')
             {
                 if (!PrefixQName.ValidatePrefix(name.Substring(0, idx)))
                 {

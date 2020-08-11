@@ -31,7 +31,7 @@ namespace System.Xml
             internal async Task WriteDeclAsync(XmlWriter writer, XmlRawWriter? rawWriter)
             {
                 Debug.Assert(kind == NamespaceKind.NeedToWrite);
-                if (null != rawWriter)
+                if (rawWriter != null)
                 {
                     await rawWriter.WriteNamespaceDeclarationAsync(prefix, namespaceUri).ConfigureAwait(false);
                 }

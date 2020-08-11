@@ -188,7 +188,7 @@ namespace System.Numerics
                 // Compute cu and cbit so that exp == 32 * cu - cbit and 0 <= cbit < 32.
                 int cu = (exp - 1) / kcbitUint + 1;
                 int cbit = cu * kcbitUint - exp;
-                Debug.Assert(0 <= cbit && cbit < kcbitUint);
+                Debug.Assert(cbit >= 0 && cbit < kcbitUint);
                 Debug.Assert(cu >= 1);
 
                 // Populate the uints.

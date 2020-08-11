@@ -343,15 +343,15 @@ namespace System.Reflection.Metadata.Ecma335
                 const int EncDeltaMarkerStreamHeaderSize = 16;
                 const int StandalonePdbStreamHeaderSize = 16;
 
-                Debug.Assert(RegularStreamHeaderSizes ==
-                    GetMetadataStreamHeaderSize("#~") +
+                Debug.Assert(GetMetadataStreamHeaderSize("#~") +
                     GetMetadataStreamHeaderSize("#Strings") +
                     GetMetadataStreamHeaderSize("#US") +
                     GetMetadataStreamHeaderSize("#GUID") +
-                    GetMetadataStreamHeaderSize("#Blob"));
+                    GetMetadataStreamHeaderSize("#Blob") ==
+                    RegularStreamHeaderSizes);
 
-                Debug.Assert(EncDeltaMarkerStreamHeaderSize == GetMetadataStreamHeaderSize("#JTD"));
-                Debug.Assert(StandalonePdbStreamHeaderSize == GetMetadataStreamHeaderSize("#Pdb"));
+                Debug.Assert(GetMetadataStreamHeaderSize("#JTD") == EncDeltaMarkerStreamHeaderSize);
+                Debug.Assert(GetMetadataStreamHeaderSize("#Pdb") == StandalonePdbStreamHeaderSize);
 
                 return
                     sizeof(uint) +                 // signature

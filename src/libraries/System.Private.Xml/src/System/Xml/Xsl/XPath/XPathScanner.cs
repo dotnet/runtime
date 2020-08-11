@@ -93,7 +93,7 @@ namespace System.Xml.Xsl.XPath
 
         private void SetSourceIndex(int index)
         {
-            Debug.Assert(0 <= index && index <= _xpathExpr.Length);
+            Debug.Assert(index >= 0 && index <= _xpathExpr.Length);
             _curIndex = index - 1;
             NextChar();
         }

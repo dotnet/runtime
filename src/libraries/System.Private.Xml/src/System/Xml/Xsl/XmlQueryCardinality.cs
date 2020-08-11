@@ -20,7 +20,7 @@ namespace System.Xml.Xsl
         /// </summary>
         private XmlQueryCardinality(int value)
         {
-            Debug.Assert(0x00 <= value && value <= 0x07);
+            Debug.Assert(value >= 0x00 && value <= 0x07);
             _value = value;
         }
         #endregion

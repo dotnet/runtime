@@ -348,7 +348,7 @@ namespace System.Xml
         // Writes out all the attributes found at the current position in the specified XmlReader.
         public virtual void WriteAttributes(XmlReader reader, bool defattr)
         {
-            if (null == reader)
+            if (reader == null)
             {
                 throw new ArgumentNullException(nameof(reader));
             }
@@ -396,7 +396,7 @@ namespace System.Xml
         // to the corresponding end element.
         public virtual void WriteNode(XmlReader reader, bool defattr)
         {
-            if (null == reader)
+            if (reader == null)
             {
                 throw new ArgumentNullException(nameof(reader));
             }
@@ -600,7 +600,7 @@ namespace System.Xml
         public void WriteElementString(string localName, string? ns, string? value)
         {
             WriteStartElement(localName, ns);
-            if (null != value && 0 != value.Length)
+            if (value != null && value.Length != 0)
             {
                 WriteString(value);
             }
@@ -612,7 +612,7 @@ namespace System.Xml
         public void WriteElementString(string? prefix, string localName, string? ns, string? value)
         {
             WriteStartElement(prefix, localName, ns);
-            if (null != value && 0 != value.Length)
+            if (value != null && value.Length != 0)
             {
                 WriteString(value);
             }

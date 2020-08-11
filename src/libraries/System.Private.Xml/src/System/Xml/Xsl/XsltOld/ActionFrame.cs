@@ -84,7 +84,7 @@ namespace System.Xml.Xsl.XsltOld
 
         internal void AllocateVariables(int count)
         {
-            if (0 < count)
+            if (count > 0)
             {
                 _variables = new object[count];
             }
@@ -145,7 +145,7 @@ namespace System.Xml.Xsl.XsltOld
 
         internal void SortNewNodeSet(Processor proc, ArrayList sortarray)
         {
-            Debug.Assert(0 < sortarray.Count);
+            Debug.Assert(sortarray.Count > 0);
             int numSorts = sortarray.Count;
             XPathSortComparer comparer = new XPathSortComparer(numSorts);
             for (int i = 0; i < numSorts; i++)

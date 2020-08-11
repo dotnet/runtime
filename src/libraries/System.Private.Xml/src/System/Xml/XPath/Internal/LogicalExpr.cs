@@ -18,9 +18,9 @@ namespace MS.Internal.Xml.XPath
         public LogicalExpr(Operator.Op op, Query opnd1, Query opnd2)
         {
             Debug.Assert(
-                Operator.Op.LT == op || Operator.Op.GT == op ||
-                Operator.Op.LE == op || Operator.Op.GE == op ||
-                Operator.Op.EQ == op || Operator.Op.NE == op
+                op == Operator.Op.LT || op == Operator.Op.GT ||
+                op == Operator.Op.LE || op == Operator.Op.GE ||
+                op == Operator.Op.EQ || op == Operator.Op.NE
             );
             _op = op;
             _opnd1 = opnd1;

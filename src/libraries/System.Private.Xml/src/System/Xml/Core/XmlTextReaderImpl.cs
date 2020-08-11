@@ -530,7 +530,7 @@ namespace System.Xml
         // Initializes a new instance of XmlTextRreaderImpl class for parsing fragments with the specified string, fragment type and parser context
         // This constructor is used when creating XmlTextReaderImpl for V1 XmlTextReader
         internal XmlTextReaderImpl(string xmlFragment, XmlNodeType fragType, XmlParserContext? context)
-            : this(null == context || null == context.NameTable ? new NameTable() : context.NameTable)
+            : this(context == null || context.NameTable == null ? new NameTable() : context.NameTable)
         {
             if (xmlFragment == null)
             {
@@ -557,7 +557,7 @@ namespace System.Xml
         // all nodetypes in InnerXml then we should support them as part of fragment constructor as well.
         // Until then, this internal function will have to do.
         internal XmlTextReaderImpl(string xmlFragment, XmlParserContext? context)
-            : this(null == context || null == context.NameTable ? new NameTable() : context.NameTable)
+            : this(context == null || context.NameTable == null ? new NameTable() : context.NameTable)
         {
             InitStringInput((context == null) ? string.Empty : context.BaseURI, Encoding.Unicode, string.Concat("<?xml ", xmlFragment, "?>"));
             InitFragmentReader(XmlNodeType.XmlDeclaration, context, true);

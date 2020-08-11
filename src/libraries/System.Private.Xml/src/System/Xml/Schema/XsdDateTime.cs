@@ -815,13 +815,13 @@ namespace System.Xml.Schema
 
                 if (Test(kinds, XsdDateTimeFlags.GYearMonth | XsdDateTimeFlags.GYear))
                 {
-                    if (Parse4Dig(start, ref year) && 1 <= year)
+                    if (Parse4Dig(start, ref year) && year >= 1)
                     {
                         if (Test(kinds, XsdDateTimeFlags.GYearMonth))
                         {
                             if (
                                 ParseChar(start + s_lzyyyy, '-') &&
-                                Parse2Dig(start + s_lzyyyy_, ref month) && 1 <= month && month <= 12 &&
+                                Parse2Dig(start + s_lzyyyy_, ref month) && month >= 1 && month <= 12 &&
                                 ParseZoneAndWhitespace(start + s_lzyyyy_MM)
                             )
                             {
@@ -847,13 +847,13 @@ namespace System.Xml.Schema
                     if (
                         ParseChar(start, '-') &&
                         ParseChar(start + s_Lz_, '-') &&
-                        Parse2Dig(start + s_Lz__, ref month) && 1 <= month && month <= 12
+                        Parse2Dig(start + s_Lz__, ref month) && month >= 1 && month <= 12
                     )
                     {
                         if (Test(kinds, XsdDateTimeFlags.GMonthDay) && ParseChar(start + s_lz__mm, '-'))
                         {
                             if (
-                                Parse2Dig(start + s_lz__mm_, ref day) && 1 <= day && day <= DateTime.DaysInMonth(leapYear, month) &&
+                                Parse2Dig(start + s_lz__mm_, ref day) && day >= 1 && day <= DateTime.DaysInMonth(leapYear, month) &&
                                 ParseZoneAndWhitespace(start + s_lz__mm_dd)
                             )
                             {
@@ -880,7 +880,7 @@ namespace System.Xml.Schema
                         ParseChar(start, '-') &&
                         ParseChar(start + s_Lz_, '-') &&
                         ParseChar(start + s_Lz__, '-') &&
-                        Parse2Dig(start + s_Lz___, ref day) && 1 <= day && day <= DateTime.DaysInMonth(leapYear, firstMonth) &&
+                        Parse2Dig(start + s_Lz___, ref day) && day >= 1 && day <= DateTime.DaysInMonth(leapYear, firstMonth) &&
                         ParseZoneAndWhitespace(start + s_lz___dd)
 
                     )
@@ -898,11 +898,11 @@ namespace System.Xml.Schema
             private bool ParseDate(int start)
             {
                 return
-                    Parse4Dig(start, ref year) && 1 <= year &&
+                    Parse4Dig(start, ref year) && year >= 1 &&
                     ParseChar(start + s_lzyyyy, '-') &&
-                    Parse2Dig(start + s_lzyyyy_, ref month) && 1 <= month && month <= 12 &&
+                    Parse2Dig(start + s_lzyyyy_, ref month) && month >= 1 && month <= 12 &&
                     ParseChar(start + s_lzyyyy_MM, '-') &&
-                    Parse2Dig(start + s_lzyyyy_MM_, ref day) && 1 <= day && day <= DateTime.DaysInMonth(year, month);
+                    Parse2Dig(start + s_lzyyyy_MM_, ref day) && day >= 1 && day <= DateTime.DaysInMonth(year, month);
             }
 
             private bool ParseTimeAndZoneAndWhitespace(int start)
@@ -952,7 +952,7 @@ namespace System.Xml.Schema
                         while (++start < _length)
                         {
                             int d = _text[start] - '0';
-                            if (9u < unchecked((uint)d))
+                            if (unchecked((uint)d) > 9u)
                             { // d < 0 || 9 < d
                                 break;
                             }
@@ -962,7 +962,7 @@ namespace System.Xml.Schema
                             }
                             else if (fractionDigits == maxFractionDigits)
                             {
-                                if (5 < d)
+                                if (d > 5)
                                 {
                                     round = 1;
                                 }
@@ -1048,10 +1048,10 @@ namespace System.Xml.Schema
                     int d3 = _text[start + 1] - '0';
                     int d2 = _text[start + 2] - '0';
                     int d1 = _text[start + 3] - '0';
-                    if (0 <= d4 && d4 < 10 &&
-                        0 <= d3 && d3 < 10 &&
-                        0 <= d2 && d2 < 10 &&
-                        0 <= d1 && d1 < 10
+                    if (d4 >= 0 && d4 < 10 &&
+                        d3 >= 0 && d3 < 10 &&
+                        d2 >= 0 && d2 < 10 &&
+                        d1 >= 0 && d1 < 10
                     )
                     {
                         num = ((d4 * 10 + d3) * 10 + d2) * 10 + d1;
@@ -1067,8 +1067,8 @@ namespace System.Xml.Schema
                 {
                     int d2 = _text[start] - '0';
                     int d1 = _text[start + 1] - '0';
-                    if (0 <= d2 && d2 < 10 &&
-                        0 <= d1 && d1 < 10
+                    if (d2 >= 0 && d2 < 10 &&
+                        d1 >= 0 && d1 < 10
                         )
                     {
                         num = d2 * 10 + d1;

@@ -33,7 +33,7 @@ namespace System.Xml.Xsl
         // Returns true if value is infinite or NaN (exponent bits are all ones)
         public static bool IsSpecial(double dbl)
         {
-            return 0 == (~DblHi(dbl) & 0x7FF00000);
+            return (~DblHi(dbl) & 0x7FF00000) == 0;
         }
 
 #if DEBUG
@@ -66,7 +66,7 @@ namespace System.Xml.Xsl
             // integer.
 
             bits = BitConverter.DoubleToInt64Bits(x);
-            if (0 < x && x < y || 0 > x && x > y)
+            if (x > 0 && x < y || x < 0 && x > y)
             {
                 bits++;
             }
@@ -99,7 +99,7 @@ namespace System.Xml.Xsl
         // Returns 1 if argument is non-zero, and 0 otherwise
         public static uint NotZero(uint u)
         {
-            return 0 != u ? 1u : 0u;
+            return u != 0 ? 1u : 0u;
         }
 
         /*  ----------------------------------------------------------------------------
@@ -135,32 +135,32 @@ namespace System.Xml.Xsl
         {
             int cbit = 0;
 
-            if (0 == (u & 0xFFFF0000))
+            if ((u & 0xFFFF0000) == 0)
             {
                 cbit += 16;
                 u <<= 16;
             }
-            if (0 == (u & 0xFF000000))
+            if ((u & 0xFF000000) == 0)
             {
                 cbit += 8;
                 u <<= 8;
             }
-            if (0 == (u & 0xF0000000))
+            if ((u & 0xF0000000) == 0)
             {
                 cbit += 4;
                 u <<= 4;
             }
-            if (0 == (u & 0xC0000000))
+            if ((u & 0xC0000000) == 0)
             {
                 cbit += 2;
                 u <<= 2;
             }
-            if (0 == (u & 0x80000000))
+            if ((u & 0x80000000) == 0)
             {
                 cbit += 1;
                 u <<= 1;
             }
-            Debug.Assert(0 != (u & 0x80000000));
+            Debug.Assert((u & 0x80000000) != 0);
 
             return cbit;
         }
@@ -246,7 +246,7 @@ namespace System.Xml.Xsl
                     Debug.Assert(dec[ib] >= 0 && dec[ib] <= 9);
                     uExtra = MulTenAdd(dec[ib]);
                     exponent--;
-                    if (0 != uExtra)
+                    if (uExtra != 0)
                     {
                         // We've filled up our precision.
                         Round(uExtra);
@@ -261,7 +261,7 @@ namespace System.Xml.Xsl
                 }
 
                 // Now multiply by 10^exp
-                if (0 == exponent)
+                if (exponent == 0)
                 {
                     return;
                 }
@@ -294,7 +294,7 @@ namespace System.Xml.Xsl
             private unsafe uint MulTenAdd(uint digit)
             {
                 Debug.Assert(digit <= 9);
-                Debug.Assert(0 != (_u2 & 0x80000000));
+                Debug.Assert((_u2 & 0x80000000) != 0);
 
                 // First "multipy" by eight
                 _exp += 3;
@@ -306,7 +306,7 @@ namespace System.Xml.Xsl
                 {
                     rgu[i] = 0;
                 }
-                if (0 != digit)
+                if (digit != 0)
                 {
                     int idx = 3 - (_exp >> 5);
                     if (idx < 0)
@@ -334,21 +334,21 @@ namespace System.Xml.Xsl
                 // Shift and add to multiply by ten.
                 rgu[1] += AddU(ref rgu[0], _u0 << 30);
                 rgu[2] += AddU(ref _u0, (_u0 >> 2) + (_u1 << 30));
-                if (0 != rgu[1])
+                if (rgu[1] != 0)
                 {
                     rgu[2] += AddU(ref _u0, rgu[1]);
                 }
                 rgu[3] += AddU(ref _u1, (_u1 >> 2) + (_u2 << 30));
-                if (0 != rgu[2])
+                if (rgu[2] != 0)
                 {
                     rgu[3] += AddU(ref _u1, rgu[2]);
                 }
                 rgu[4] = AddU(ref _u2, (_u2 >> 2) + rgu[3]);
 
                 // Handle the final carry.
-                if (0 != rgu[4])
+                if (rgu[4] != 0)
                 {
-                    Debug.Assert(1 == rgu[4]);
+                    Debug.Assert(rgu[4] == 1);
                     rgu[0] = (rgu[0] >> 1) | (rgu[0] & 1) | (_u0 << 31);
                     _u0 = (_u0 >> 1) | (_u1 << 31);
                     _u1 = (_u1 >> 1) | (_u2 << 31);
@@ -362,9 +362,9 @@ namespace System.Xml.Xsl
             // Round based on the given extra data using IEEE round to nearest rule.
             private void Round(uint uExtra)
             {
-                if (0 == (uExtra & 0x80000000) || 0 == (uExtra & 0x7FFFFFFF) && 0 == (_u0 & 1))
+                if ((uExtra & 0x80000000) == 0 || (uExtra & 0x7FFFFFFF) == 0 && (_u0 & 1) == 0)
                 {
-                    if (0 != uExtra)
+                    if (uExtra != 0)
                     {
                         _error++;
                     }
@@ -373,7 +373,7 @@ namespace System.Xml.Xsl
                 _error++;
 
                 // Round up.
-                if (0 != AddU(ref _u0, 1) && 0 != AddU(ref _u1, 1) && 0 != AddU(ref _u2, 1))
+                if (AddU(ref _u0, 1) != 0 && AddU(ref _u1, 1) != 0 && AddU(ref _u2, 1) != 0)
                 {
                     Debug.Assert(this.IsZero);
                     _u2 = 0x80000000;
@@ -387,7 +387,7 @@ namespace System.Xml.Xsl
             {
                 get
                 {
-                    return (0 == _u2) && (0 == _u1) && (0 == _u0);
+                    return (_u2 == 0) && (_u1 == 0) && (_u0 == 0);
                 }
             }
 
@@ -402,11 +402,11 @@ namespace System.Xml.Xsl
                 int w1, w2;
 
                 // Normalize mantissa
-                if (0 == _u2)
+                if (_u2 == 0)
                 {
-                    if (0 == _u1)
+                    if (_u1 == 0)
                     {
-                        if (0 == _u0)
+                        if (_u0 == 0)
                         {
                             _exp = 0;
                             return;
@@ -424,7 +424,7 @@ namespace System.Xml.Xsl
                     }
                 }
 
-                if (0 != (w1 = CbitZeroLeft(_u2)))
+                if ((w1 = CbitZeroLeft(_u2)) != 0)
                 {
                     w2 = 32 - w1;
                     _u2 = (_u2 << w1) | (_u1 >> w2);
@@ -441,15 +441,15 @@ namespace System.Xml.Xsl
             */
             private void Mul(ref BigNumber numOp)
             {
-                Debug.Assert(0 != (_u2 & 0x80000000));
-                Debug.Assert(0 != (numOp._u2 & 0x80000000));
+                Debug.Assert((_u2 & 0x80000000) != 0);
+                Debug.Assert((numOp._u2 & 0x80000000) != 0);
 
                 //uint *rgu = stackalloc uint[6];
                 uint rgu0 = 0, rgu1 = 0, rgu2 = 0, rgu3 = 0, rgu4 = 0, rgu5 = 0;
                 uint uLo, uHi, uT;
                 uint wCarry;
 
-                if (0 != (uT = _u0))
+                if ((uT = _u0) != 0)
                 {
                     uLo = MulU(uT, numOp._u0, out uHi);
                     rgu0 = uLo;
@@ -466,13 +466,13 @@ namespace System.Xml.Xsl
                     AddU(ref rgu3, uHi + wCarry);
                 }
 
-                if (0 != (uT = _u1))
+                if ((uT = _u1) != 0)
                 {
                     uLo = MulU(uT, numOp._u0, out uHi);
                     Debug.Assert(uHi < 0xFFFFFFFF);
                     wCarry = AddU(ref rgu1, uLo);
                     wCarry = AddU(ref rgu2, uHi + wCarry);
-                    if (0 != wCarry && 0 != AddU(ref rgu3, 1))
+                    if (wCarry != 0 && AddU(ref rgu3, 1) != 0)
                     {
                         AddU(ref rgu4, 1);
                     }
@@ -480,7 +480,7 @@ namespace System.Xml.Xsl
                     Debug.Assert(uHi < 0xFFFFFFFF);
                     wCarry = AddU(ref rgu2, uLo);
                     wCarry = AddU(ref rgu3, uHi + wCarry);
-                    if (0 != wCarry)
+                    if (wCarry != 0)
                     {
                         AddU(ref rgu4, 1);
                     }
@@ -491,12 +491,12 @@ namespace System.Xml.Xsl
                 }
 
                 uT = _u2;
-                Debug.Assert(0 != uT);
+                Debug.Assert(uT != 0);
                 uLo = MulU(uT, numOp._u0, out uHi);
                 Debug.Assert(uHi < 0xFFFFFFFF);
                 wCarry = AddU(ref rgu2, uLo);
                 wCarry = AddU(ref rgu3, uHi + wCarry);
-                if (0 != wCarry && 0 != AddU(ref rgu4, 1))
+                if (wCarry != 0 && AddU(ref rgu4, 1) != 0)
                 {
                     AddU(ref rgu5, 1);
                 }
@@ -504,7 +504,7 @@ namespace System.Xml.Xsl
                 Debug.Assert(uHi < 0xFFFFFFFF);
                 wCarry = AddU(ref rgu3, uLo);
                 wCarry = AddU(ref rgu4, uHi + wCarry);
-                if (0 != wCarry)
+                if (wCarry != 0)
                 {
                     AddU(ref rgu5, 1);
                 }
@@ -522,19 +522,19 @@ namespace System.Xml.Xsl
                 _error += numOp._error;
 
                 // Handle rounding and normalize.
-                if (0 == (rgu5 & 0x80000000))
+                if ((rgu5 & 0x80000000) == 0)
                 {
-                    if (0 != (rgu2 & 0x40000000) &&
-                            (0 != (rgu2 & 0xBFFFFFFF) || 0 != rgu1 || 0 != rgu0))
+                    if ((rgu2 & 0x40000000) != 0 &&
+                            ((rgu2 & 0xBFFFFFFF) != 0 || rgu1 != 0 || rgu0 != 0))
                     {
                         // Round up by 1
-                        if (0 != AddU(ref rgu2, 0x40000000)
-                            && 0 != AddU(ref rgu3, 1)
-                            && 0 != AddU(ref rgu4, 1)
+                        if (AddU(ref rgu2, 0x40000000) != 0
+                            && AddU(ref rgu3, 1) != 0
+                            && AddU(ref rgu4, 1) != 0
                         )
                         {
                             AddU(ref rgu5, 1);
-                            if (0 != (rgu5 & 0x80000000))
+                            if ((rgu5 & 0x80000000) != 0)
                             {
                                 goto LNormalized;
                             }
@@ -542,7 +542,7 @@ namespace System.Xml.Xsl
                     }
 
                     // have to shift by one
-                    Debug.Assert(0 != (rgu5 & 0x40000000));
+                    Debug.Assert((rgu5 & 0x40000000) != 0);
                     _u2 = (rgu5 << 1) | (rgu4 >> 31);
                     _u1 = (rgu4 << 1) | (rgu3 >> 31);
                     _u0 = (rgu3 << 1) | (rgu2 >> 31);
@@ -550,7 +550,7 @@ namespace System.Xml.Xsl
                     _error <<= 1;
 
                     // Add one for the error.
-                    if (0 != (rgu2 & 0x7FFFFFFF) || 0 != rgu1 || 0 != rgu0)
+                    if ((rgu2 & 0x7FFFFFFF) != 0 || rgu1 != 0 || rgu0 != 0)
                     {
                         _error++;
                     }
@@ -558,16 +558,16 @@ namespace System.Xml.Xsl
                 }
                 else
                 {
-                    if (0 != (rgu2 & 0x80000000) &&
-                        (0 != (rgu3 & 1) || 0 != (rgu2 & 0x7FFFFFFF) ||
-                            0 != rgu1 || 0 != rgu0))
+                    if ((rgu2 & 0x80000000) != 0 &&
+                        ((rgu3 & 1) != 0 || (rgu2 & 0x7FFFFFFF) != 0 ||
+                            rgu1 != 0 || rgu0 != 0))
                     {
                         // Round up by 1
-                        if (0 != AddU(ref rgu3, 1) && 0 != AddU(ref rgu4, 1) && 0 != AddU(ref rgu5, 1))
+                        if (AddU(ref rgu3, 1) != 0 && AddU(ref rgu4, 1) != 0 && AddU(ref rgu5, 1) != 0)
                         {
-                            Debug.Assert(0 == rgu3);
-                            Debug.Assert(0 == rgu4);
-                            Debug.Assert(0 == rgu5);
+                            Debug.Assert(rgu3 == 0);
+                            Debug.Assert(rgu4 == 0);
+                            Debug.Assert(rgu5 == 0);
                             rgu5 = 0x80000000;
                             _exp++;
                         }
@@ -580,7 +580,7 @@ namespace System.Xml.Xsl
                 _u0 = rgu3;
 
                 // Add one for the error.
-                if (0 != rgu2 || 0 != rgu1 || 0 != rgu0)
+                if (rgu2 != 0 || rgu1 != 0 || rgu0 != 0)
                 {
                     _error++;
                 }
@@ -593,7 +593,7 @@ namespace System.Xml.Xsl
                 int exp;
                 uint dblHi, dblLo;
 
-                Debug.Assert(0 != (bn._u2 & 0x80000000));
+                Debug.Assert((bn._u2 & 0x80000000) != 0);
 
                 exp = bn._exp + 1022;
                 if (exp >= 2047)
@@ -626,7 +626,7 @@ namespace System.Xml.Xsl
                     // Denormal with no high bits.
                     dblHi = 0;
                     dblLo = bn._u2;
-                    uEx = bn._u1 | (uint)(0 != bn._u0 ? 1 : 0);
+                    uEx = bn._u1 | (uint)(bn._u0 != 0 ? 1 : 0);
                 }
                 else if (exp > -52)
                 {
@@ -651,11 +651,11 @@ namespace System.Xml.Xsl
                 }
 
                 // Handle rounding
-                if (0 != (uEx & 0x80000000) && (0 != (uEx & 0x7FFFFFFF) || 0 != (dblLo & 1)))
+                if ((uEx & 0x80000000) != 0 && ((uEx & 0x7FFFFFFF) != 0 || (dblLo & 1) != 0))
                 {
                     // Round up. Note that this works even when we overflow into the
                     // exponent.
-                    if (0 != AddU(ref dblLo, 1))
+                    if (AddU(ref dblLo, 1) != 0)
                     {
                         AddU(ref dblHi, 1);
                     }
@@ -683,9 +683,9 @@ namespace System.Xml.Xsl
                 Debug.Assert(_error < 0xFFFFFFFF);
                 uint uT = (_error + 1) >> 1;
 
-                if (0 != uT && 0 != AddU(ref _u0, uT) && 0 != AddU(ref _u1, 1) && 0 != AddU(ref _u2, 1))
+                if (uT != 0 && AddU(ref _u0, uT) != 0 && AddU(ref _u1, 1) != 0 && AddU(ref _u2, 1) != 0)
                 {
-                    Debug.Assert(0 == _u2 && 0 == _u1);
+                    Debug.Assert(_u2 == 0 && _u1 == 0);
                     _u2 = 0x80000000;
                     _u0 = (_u0 >> 1) + (_u0 & 1);
                     _exp++;
@@ -699,10 +699,10 @@ namespace System.Xml.Xsl
                 Debug.Assert(_error < 0xFFFFFFFF);
                 uint uT = (_error + 1) >> 1;
 
-                if (0 != uT && 0 == AddU(ref _u0, unchecked((uint)-(int)uT)) && 0 == AddU(ref _u1, 0xFFFFFFFF))
+                if (uT != 0 && AddU(ref _u0, unchecked((uint)-(int)uT)) == 0 && AddU(ref _u1, 0xFFFFFFFF) == 0)
                 {
                     AddU(ref _u2, 0xFFFFFFFF);
-                    if (0 == (0x80000000 & _u2))
+                    if ((0x80000000 & _u2) == 0)
                     {
                         Normalize();
                     }
@@ -733,7 +733,7 @@ namespace System.Xml.Xsl
 
                 // Caller should take care of 0, negative and non-finite values.
                 Debug.Assert(!IsSpecial(dbl));
-                Debug.Assert(0 < dbl);
+                Debug.Assert(dbl > 0);
 
                 // Get numHH and numLL such that numLL < dbl < numHH and the
                 // difference between adjacent values is half the distance to the next
@@ -760,7 +760,7 @@ namespace System.Xml.Xsl
 
                     // Get the lower bound. A power of 2 must be special cased.
                     numLL = numBase;
-                    if (0x80000000 == numLL._u2 && 0 == numLL._u1)
+                    if (numLL._u2 == 0x80000000 && numLL._u1 == 0)
                     {
                         // Subtract (0x00000000, 0x00000200, 0x00000000). Same as adding
                         // (0xFFFFFFFF, 0xFFFFFE00, 0x00000000)
@@ -772,10 +772,10 @@ namespace System.Xml.Xsl
                         // (0xFFFFFFFF, 0xFFFFFC00, 0x00000000)
                         uT = 0xFFFFFC00;
                     }
-                    if (0 == AddU(ref numLL._u1, uT))
+                    if (AddU(ref numLL._u1, uT) == 0)
                     {
                         AddU(ref numLL._u2, 0xFFFFFFFF);
-                        if (0 == (0x80000000 & numLL._u2))
+                        if ((0x80000000 & numLL._u2) == 0)
                         {
                             numLL.Normalize();
                         }
@@ -796,7 +796,7 @@ namespace System.Xml.Xsl
 
                     // Get the lower bound
                     numLL = numHH;
-                    if (0 == AddU(ref numLL._u1, 0xFFFFFFFF))
+                    if (AddU(ref numLL._u1, 0xFFFFFFFF) == 0)
                     {
                         AddU(ref numLL._u2, 0xFFFFFFFF);
                     }
@@ -912,10 +912,10 @@ namespace System.Xml.Xsl
                         break;
                     }
 
-                    Debug.Assert(0 != uHH || !numHH.IsZero);
+                    Debug.Assert(uHH != 0 || !numHH.IsZero);
                     mantissa[ib++] = bHH;
 
-                    if (1 == uScale)
+                    if (uScale == 1)
                     {
                         // Multiply by 10^8.
                         uScale = 10000000;
@@ -945,7 +945,7 @@ namespace System.Xml.Xsl
                 }
 
                 // LL and HH diverged. Get the digit values for LH and HL.
-                Debug.Assert(0 <= bLL && bLL < bHH && bHH <= 9);
+                Debug.Assert(bLL >= 0 && bLL < bHH && bHH <= 9);
                 bLH = (byte)((uLH / uScale) % 10);
                 uLH %= uScale;
                 bHL = (byte)((uHL / uScale) % 10);
@@ -962,7 +962,7 @@ namespace System.Xml.Xsl
                 // and the current value of LH is zero and the least significant bit of
                 // the double is zero. In this case, we have exactly the digit sequence
                 // for the original numLL and IEEE and will rounds numLL up to the double.
-                if (0 == bLH && 0 == uLH && numLH.IsZero && 0 == (dblLo & 1))
+                if (bLH == 0 && uLH == 0 && numLH.IsZero && (dblLo & 1) == 0)
                 {
                 }
                 else if (bHL - bLH > 1)
@@ -971,7 +971,7 @@ namespace System.Xml.Xsl
                     // the difference.
                     mantissa[ib++] = (byte)((bHL + bLH + 1) / 2);
                 }
-                else if (0 != uHL || !numHL.IsZero || 0 == (dblLo & 1))
+                else if (uHL != 0 || !numHL.IsZero || (dblLo & 1) == 0)
                 {
                     // We can just use bHL because this guarantees that we're bigger than
                     // LH and less than HL, so must convert to the double.
@@ -989,7 +989,7 @@ namespace System.Xml.Xsl
             LSmallInt:
                 // dbl should be an integer from 1 to (2^53 - 1).
                 dblInt = dbl;
-                Debug.Assert(dblInt == Math.Floor(dblInt) && 1 <= dblInt && dblInt <= 9007199254740991.0d);
+                Debug.Assert(dblInt == Math.Floor(dblInt) && dblInt >= 1 && dblInt <= 9007199254740991.0d);
 
                 iT = 0;
                 if (dblInt >= C10toN[iT + 8])
@@ -1012,12 +1012,12 @@ namespace System.Xml.Xsl
                 Debug.Assert(dblInt >= C10toN[iT] && dblInt < C10toN[iT + 1]);
                 exponent = iT + 1;
 
-                for (ib = 0; 0 != dblInt; iT--)
+                for (ib = 0; dblInt != 0; iT--)
                 {
                     Debug.Assert(iT >= 0);
                     bHH = (byte)(dblInt / C10toN[iT]);
                     dblInt -= bHH * C10toN[iT];
-                    Debug.Assert(dblInt == Math.Floor(dblInt) && 0 <= dblInt && dblInt < C10toN[iT]);
+                    Debug.Assert(dblInt == Math.Floor(dblInt) && dblInt >= 0 && dblInt < C10toN[iT]);
                     mantissa[ib++] = bHH;
                 }
                 mantissaSize = ib;
@@ -1081,7 +1081,7 @@ namespace System.Xml.Xsl
 
                 // Caller should take care of 0, negative and non-finite values.
                 Debug.Assert(!IsSpecial(dbl));
-                Debug.Assert(0 < dbl);
+                Debug.Assert(dbl > 0);
 
                 // Init the Denominator, Hi error and Lo error bigints.
                 biDen.InitFromDigits(1, 0, 1);
@@ -1095,8 +1095,8 @@ namespace System.Xml.Xsl
                 if (wExp2 == -1075)
                 {
                     // dbl is denormalized.
-                    Debug.Assert(0 == (dblHi & 0x7FF00000));
-                    if (0 == rgu1)
+                    Debug.Assert((dblHi & 0x7FF00000) == 0);
+                    if (rgu1 == 0)
                     {
                         cu = 1;
                     }
@@ -1105,7 +1105,7 @@ namespace System.Xml.Xsl
                     // First multiply by a power of 2 to get a normalized value.
                     dblT = BitConverter.Int64BitsToDouble(0x4FF00000L << 32);
                     dblT *= dbl;
-                    Debug.Assert(0 != (DblHi(dblT) & 0x7FF00000));
+                    Debug.Assert((DblHi(dblT) & 0x7FF00000) != 0);
 
                     // This is the power of 2.
                     w1 = (int)((DblHi(dblT) & 0x7FF00000) >> 20) - (256 + 1023);
@@ -1129,7 +1129,7 @@ namespace System.Xml.Xsl
                     // This is the power of 2.
                     w1 = wExp2 + 52;
 
-                    if (0 == rgu0 && 0 == rgu1 && wExp2 > -1074)
+                    if (rgu0 == 0 && rgu1 == 0 && wExp2 > -1074)
                     {
                         // Power of 2 bigger than smallest normal. The next smaller
                         // representable value is closer than the next larger value.
@@ -1147,7 +1147,7 @@ namespace System.Xml.Xsl
 
                 // Compute an approximation to the base 10 log. This is borrowed from
                 // David Gay's paper.
-                Debug.Assert(1 <= dblT && dblT < 2);
+                Debug.Assert(dblT >= 1 && dblT < 2);
                 dblT = (dblT - 1.5) * 0.289529654602168 + 0.1760912590558 +
                     w1 * 0.301029995663981;
                 wExp10 = (int)dblT;
@@ -1193,10 +1193,10 @@ namespace System.Xml.Xsl
                 // Initialize biNum and multiply by powers of 5.
                 if (c5Num > 0)
                 {
-                    Debug.Assert(0 == c5Den);
+                    Debug.Assert(c5Den == 0);
                     biHi.MulPow5(c5Num);
                     biNum.InitFromBigint(biHi);
-                    if (1 == cu)
+                    if (cu == 1)
                     {
                         biNum.MulAdd(rgu0, 0);
                     }
@@ -1204,7 +1204,7 @@ namespace System.Xml.Xsl
                     {
                         biNum.MulAdd(rgu1, 0);
                         biNum.ShiftLeft(32);
-                        if (0 != rgu0)
+                        if (rgu0 != 0)
                         {
                             biT.InitFromBigint(biHi);
                             biT.MulAdd(rgu0, 0);
@@ -1238,8 +1238,8 @@ namespace System.Xml.Xsl
                     biHi.ShiftLeft(c2Num - 1);
                 }
                 biDen.ShiftLeft(c2Den);
-                Debug.Assert(0 == (biDen[biDen.Length - 1] & 0xF0000000));
-                Debug.Assert(0 != (biDen[biDen.Length - 1] & 0x08000000));
+                Debug.Assert((biDen[biDen.Length - 1] & 0xF0000000) == 0);
+                Debug.Assert((biDen[biDen.Length - 1] & 0x08000000) != 0);
 
                 // Get biHiLo and handle the power of 2 case where biHi needs to be doubled.
                 if (fPow2)
@@ -1256,7 +1256,7 @@ namespace System.Xml.Xsl
                 for (ib = 0; ;)
                 {
                     bT = (byte)biNum.DivRem(biDen);
-                    if (0 == ib && 0 == bT)
+                    if (ib == 0 && bT == 0)
                     {
                         // Our estimate of wExp10 was too big. Oh well.
                         wExp10--;
@@ -1280,7 +1280,7 @@ namespace System.Xml.Xsl
                     }
 
                     // if (biNum + biHi == biDen && even)
-                    if (0 == w2 && 0 == (dblLo & 1))
+                    if (w2 == 0 && (dblLo & 1) == 0)
                     {
                         // Rounding up this digit produces exactly (biNum + biHi) which
                         // StrToDbl will round down to dbl.
@@ -1297,7 +1297,7 @@ namespace System.Xml.Xsl
                     }
 
                     // if (biNum < biHiLo || biNum == biHiLo && even)
-                    if (w1 < 0 || 0 == w1 && 0 == (dblLo & 1))
+                    if (w1 < 0 || w1 == 0 && (dblLo & 1) == 0)
                     {
                         // if (biNum + biHi > biDen)
                         if (w2 > 0)
@@ -1305,7 +1305,7 @@ namespace System.Xml.Xsl
                             // Decide whether to round up.
                             biNum.ShiftLeft(1);
                             w2 = biNum.CompareTo(biDen);
-                            if ((w2 > 0 || 0 == w2 && (0 != (bT & 1))) && bT++ == 9)
+                            if ((w2 > 0 || w2 == 0 && ((bT & 1) != 0)) && bT++ == 9)
                             {
                                 goto LRoundUp9;
                             }
@@ -1711,7 +1711,7 @@ namespace System.Xml.Xsl
                 get
                 {
                     AssertValid();
-                    Debug.Assert(0 <= idx && idx < _length);
+                    Debug.Assert(idx >= 0 && idx < _length);
                     return _digits[idx];
                 }
             }
@@ -1727,7 +1727,7 @@ namespace System.Xml.Xsl
             private void AssertValid()
             {
                 AssertValidNoVal();
-                Debug.Assert(0 == _length || 0 != _digits[_length - 1]);
+                Debug.Assert(_length == 0 || _digits[_length - 1] != 0);
             }
 
             private void Ensure(int cu)
@@ -1776,7 +1776,7 @@ namespace System.Xml.Xsl
             public void InitFromDigits(uint u0, uint u1, int cu)
             {
                 AssertValid();
-                Debug.Assert(2 <= _capacity);
+                Debug.Assert(_capacity >= 2);
 
                 _length = cu;
                 _digits[0] = u0;
@@ -1821,7 +1821,7 @@ namespace System.Xml.Xsl
                 for (int ib = 0; ib < mantissaSize; ib++)
                 {
                     Debug.Assert(dec[ib] >= 0 && dec[ib] <= 9);
-                    if (1000000000 == uMul)
+                    if (uMul == 1000000000)
                     {
                         MulAdd(uMul, uAdd);
                         uMul = 1;
@@ -1830,7 +1830,7 @@ namespace System.Xml.Xsl
                     uMul *= 10;
                     uAdd = uAdd * 10 + dec[ib];
                 }
-                Debug.Assert(1 < uMul);
+                Debug.Assert(uMul > 1);
                 MulAdd(uMul, uAdd);
 
                 AssertValid();
@@ -1840,20 +1840,20 @@ namespace System.Xml.Xsl
             public void MulAdd(uint uMul, uint uAdd)
             {
                 AssertValid();
-                Debug.Assert(0 != uMul);
+                Debug.Assert(uMul != 0);
 
                 for (int i = 0; i < _length; i++)
                 {
                     uint d, uT;
                     d = MulU(_digits[i], uMul, out uT);
-                    if (0 != uAdd)
+                    if (uAdd != 0)
                     {
                         uT += AddU(ref d, uAdd);
                     }
                     _digits[i] = d;
                     uAdd = uT;
                 }
-                if (0 != uAdd)
+                if (uAdd != 0)
                 {
                     Ensure(_length + 1);
                     _digits[_length++] = uAdd;
@@ -1869,7 +1869,7 @@ namespace System.Xml.Xsl
                 const uint C5to13 = 1220703125;
                 int cu = (c5 + 12) / 13;
 
-                if (0 == _length || 0 == c5)
+                if (_length == 0 || c5 == 0)
                 {
                     return;
                 }
@@ -1901,7 +1901,7 @@ namespace System.Xml.Xsl
                 int idx, cu;
                 uint uExtra;
 
-                if (0 == cbit || 0 == _length)
+                if (cbit == 0 || _length == 0)
                 {
                     return;
                 }
@@ -1917,7 +1917,7 @@ namespace System.Xml.Xsl
                     for (; ; idx--)
                     {
                         _digits[idx] <<= cbit;
-                        if (0 == idx)
+                        if (idx == 0)
                         {
                             break;
                         }
@@ -1929,17 +1929,17 @@ namespace System.Xml.Xsl
                     uExtra = 0;
                 }
 
-                if (cu > 0 || 0 != uExtra)
+                if (cu > 0 || uExtra != 0)
                 {
                     // Make sure there's enough room.
-                    idx = _length + (0 != uExtra ? 1 : 0) + cu;
+                    idx = _length + (uExtra != 0 ? 1 : 0) + cu;
                     Ensure(idx);
 
                     if (cu > 0)
                     {
                         // Shift the digits.
                         // REVIEW: memmove(digits + cu, digits, length * sizeof(uint));
-                        for (int i = _length; 0 != i--;)
+                        for (int i = _length; i-- != 0;)
                         {
                             _digits[cu + i] = _digits[i];
                         }
@@ -1952,7 +1952,7 @@ namespace System.Xml.Xsl
                     }
 
                     // Throw on the extra one.
-                    if (0 != uExtra)
+                    if (uExtra != 0)
                     {
                         _digits[_length++] = uExtra;
                     }
@@ -1995,7 +1995,7 @@ namespace System.Xml.Xsl
                     ShiftUsRight(cu);
                 }
 
-                if (0 == cbit || 0 == _length)
+                if (cbit == 0 || _length == 0)
                 {
                     AssertValid();
                     return;
@@ -2007,7 +2007,7 @@ namespace System.Xml.Xsl
                     if (++idx >= _length)
                     {
                         // Last one.
-                        if (0 == _digits[idx - 1])
+                        if (_digits[idx - 1] == 0)
                         {
                             _length--;
                         }
@@ -2033,7 +2033,7 @@ namespace System.Xml.Xsl
                 {
                     return -1;
                 }
-                else if (0 == _length)
+                else if (_length == 0)
                 {
                     return 0;
                 }
@@ -2042,7 +2042,7 @@ namespace System.Xml.Xsl
 
                 for (idx = _length - 1; _digits[idx] == bi._digits[idx]; idx--)
                 {
-                    if (0 == idx)
+                    if (idx == 0)
                     {
                         return 0;
                     }
@@ -2072,7 +2072,7 @@ namespace System.Xml.Xsl
                 wCarry = 0;
                 for (idx = 0; idx < cuMin; idx++)
                 {
-                    if (0 != wCarry)
+                    if (wCarry != 0)
                     {
                         wCarry = AddU(ref _digits[idx], wCarry);
                     }
@@ -2084,7 +2084,7 @@ namespace System.Xml.Xsl
                     for (; idx < cuMax; idx++)
                     {
                         _digits[idx] = bi._digits[idx];
-                        if (0 != wCarry)
+                        if (wCarry != 0)
                         {
                             wCarry = AddU(ref _digits[idx], wCarry);
                         }
@@ -2093,13 +2093,13 @@ namespace System.Xml.Xsl
                 }
                 else
                 {
-                    for (; 0 != wCarry && idx < cuMax; idx++)
+                    for (; wCarry != 0 && idx < cuMax; idx++)
                     {
                         wCarry = AddU(ref _digits[idx], wCarry);
                     }
                 }
 
-                if (0 != wCarry)
+                if (wCarry != 0)
                 {
                     Ensure(_length + 1);
                     _digits[_length++] = wCarry;
@@ -2124,7 +2124,7 @@ namespace System.Xml.Xsl
                 wCarry = 1;
                 for (idx = 0; idx < bi._length; idx++)
                 {
-                    Debug.Assert(0 == wCarry || 1 == wCarry);
+                    Debug.Assert(wCarry == 0 || wCarry == 1);
                     uT = bi._digits[idx];
 
                     // NOTE: We should really do:
@@ -2136,22 +2136,22 @@ namespace System.Xml.Xsl
                     // need to add anything and wCarry should still be 1, so we can
                     // just skip the operations.
 
-                    if (0 != uT || 0 == wCarry)
+                    if (uT != 0 || wCarry == 0)
                     {
                         wCarry = AddU(ref _digits[idx], ~uT + wCarry);
                     }
                 }
-                while (0 == wCarry && idx < _length)
+                while (wCarry == 0 && idx < _length)
                 {
                     wCarry = AddU(ref _digits[idx], 0xFFFFFFFF);
                 }
 
-                if (0 != wCarry)
+                if (wCarry != 0)
                 {
                     if (idx == _length)
                     {
                         // Trim off zeros.
-                        while (--idx >= 0 && 0 == _digits[idx])
+                        while (--idx >= 0 && _digits[idx] == 0)
                         {
                         }
                         _length = idx + 1;
@@ -2202,23 +2202,23 @@ namespace System.Xml.Xsl
                         wCarry = 1;
                         for (idx = 0; idx < cu; idx++)
                         {
-                            Debug.Assert(0 == wCarry || 1 == wCarry);
+                            Debug.Assert(wCarry == 0 || wCarry == 1);
 
                             // Compute the product.
                             uLo = MulU(uQuo, bi._digits[idx], out uT);
                             uHi = uT + AddU(ref uLo, uHi);
 
                             // Subtract the product. See note in BigInteger.Subtract.
-                            if (0 != uLo || 0 == wCarry)
+                            if (uLo != 0 || wCarry == 0)
                             {
                                 wCarry = AddU(ref _digits[idx], ~uLo + wCarry);
                             }
                         }
-                        Debug.Assert(1 == wCarry);
+                        Debug.Assert(wCarry == 1);
                         Debug.Assert(idx == cu);
 
                         // Trim off zeros.
-                        while (--idx >= 0 && 0 == _digits[idx])
+                        while (--idx >= 0 && _digits[idx] == 0)
                         {
                         }
                         _length = idx + 1;
@@ -2229,7 +2229,7 @@ namespace System.Xml.Xsl
                 {
                     // Quotient was off too small (by one).
                     uQuo++;
-                    if (0 == wT)
+                    if (wT == 0)
                     {
                         _length = 0;
                     }
@@ -2348,7 +2348,7 @@ namespace System.Xml.Xsl
             {
                 get
                 {
-                    Debug.Assert(0 <= ib && ib < _mantissaSize);
+                    Debug.Assert(ib >= 0 && ib < _mantissaSize);
                     return _mantissa[ib];
                 }
             }
@@ -2365,7 +2365,7 @@ namespace System.Xml.Xsl
                 InitFromDouble(dbl);
 
 #if DEBUG
-                if (0 != _mantissaSize)
+                if (_mantissaSize != 0)
                 {
                     Debug.Assert(dbl == (double)this);
 
@@ -2469,7 +2469,7 @@ namespace System.Xml.Xsl
                 int mantissaSize = dec._mantissaSize;
 
                 // Verify that there are no leading or trailing zeros in the mantissa
-                Debug.Assert(0 != mantissaSize && 0 != dec[0] && 0 != dec[mantissaSize - 1]);
+                Debug.Assert(mantissaSize != 0 && dec[0] != 0 && dec[mantissaSize - 1] != 0);
 
                 // See if we can just use IEEE double arithmetic.
                 scale = dec._exponent - mantissaSize;
@@ -2553,7 +2553,7 @@ namespace System.Xml.Xsl
                 num = new BigNumber(dec);
 
                 // If there is no error in the big number, just convert it to a double.
-                if (0 == num.Error)
+                if (num.Error == 0)
                 {
                     dbl = (double)num;
 #if DEBUG
@@ -2650,10 +2650,10 @@ namespace System.Xml.Xsl
                 wExp2 = (int)(rgu1 >> 20) & 0x07FF;
                 rgu1 &= 0x000FFFFF;
                 wAddHi = 1;
-                if (0 != wExp2)
+                if (wExp2 != 0)
                 {
                     // Normal, so add implicit bit.
-                    if (0 == rgu1 && 0 == rgu0 && 1 != wExp2)
+                    if (rgu1 == 0 && rgu0 == 0 && wExp2 != 1)
                     {
                         // Power of 2 (and not adjacent to the first denormal), so the
                         // adjacent low value is closer than the high value.
@@ -2677,11 +2677,11 @@ namespace System.Xml.Xsl
                 rgu0 <<= 1;
 
                 // We must determine how many words of significant digits this requiSR.
-                if (0 == rgu0 && 0 == rgu1)
+                if (rgu0 == 0 && rgu1 == 0)
                 {
                     cu = 0;
                 }
-                else if (0 == rgu1)
+                else if (rgu1 == 0)
                 {
                     cu = 1;
                 }
@@ -2708,7 +2708,7 @@ namespace System.Xml.Xsl
                     c2Dec = 0;
 
                     // See if biDec has some powers of 2 that we can get rid of.
-                    for (iT = 0; c2Dbl >= 32 && 0 == biDec[iT]; iT++)
+                    for (iT = 0; c2Dbl >= 32 && biDec[iT] == 0; iT++)
                     {
                         c2Dbl -= 32;
                     }
@@ -2716,9 +2716,9 @@ namespace System.Xml.Xsl
                     {
                         biDec.ShiftUsRight(iT);
                     }
-                    Debug.Assert(c2Dbl < 32 || 0 != biDec[0]);
+                    Debug.Assert(c2Dbl < 32 || biDec[0] != 0);
                     uT = biDec[0];
-                    for (iT = 0; iT < c2Dbl && 0 == (uT & (1L << iT)); iT++)
+                    for (iT = 0; iT < c2Dbl && (uT & (1L << iT)) == 0; iT++)
                     {
                     }
                     if (iT > 0)
@@ -2734,8 +2734,8 @@ namespace System.Xml.Xsl
                 }
 
                 // There are no common powers of 2 or common powers of 5.
-                Debug.Assert(0 == c2Dbl || 0 == c2Dec);
-                Debug.Assert(0 == c5Dbl || 0 == c5Dec);
+                Debug.Assert(c2Dbl == 0 || c2Dec == 0);
+                Debug.Assert(c5Dbl == 0 || c5Dec == 0);
 
                 // Fold in the powers of 5.
                 if (c5Dbl > 0)
@@ -2760,7 +2760,7 @@ namespace System.Xml.Xsl
                 // Now determine whether biDbl is above or below biDec.
                 wT = biDbl.CompareTo(biDec);
 
-                if (0 == wT)
+                if (wT == 0)
                 {
                     return dbl;
                 }
@@ -2768,11 +2768,11 @@ namespace System.Xml.Xsl
                 {
                     // biDbl is greater. Recompute with the dbl minus half the distance
                     // to the next smaller double.
-                    if (0 == AddU(ref rgu0, 0xFFFFFFFF))
+                    if (AddU(ref rgu0, 0xFFFFFFFF) == 0)
                     {
                         AddU(ref rgu1, 0xFFFFFFFF);
                     }
-                    biDbl.InitFromDigits(rgu0, rgu1, 1 + (0 != rgu1 ? 1 : 0));
+                    biDbl.InitFromDigits(rgu0, rgu1, 1 + (rgu1 != 0 ? 1 : 0));
                     if (c5Dbl > 0)
                     {
                         biDbl.MulPow5(c5Dbl);
@@ -2783,7 +2783,7 @@ namespace System.Xml.Xsl
                     }
 
                     wT = biDbl.CompareTo(biDec);
-                    if (wT > 0 || 0 == wT && 0 != (DblLo(dbl) & 1))
+                    if (wT > 0 || wT == 0 && (DblLo(dbl) & 1) != 0)
                     {
                         // Return the next lower value.
                         dbl = BitConverter.Int64BitsToDouble(BitConverter.DoubleToInt64Bits(dbl) - 1);
@@ -2793,11 +2793,11 @@ namespace System.Xml.Xsl
                 {
                     // biDbl is smaller. Recompute with the dbl plus half the distance
                     // to the next larger double.
-                    if (0 != AddU(ref rgu0, wAddHi))
+                    if (AddU(ref rgu0, wAddHi) != 0)
                     {
                         AddU(ref rgu1, 1);
                     }
-                    biDbl.InitFromDigits(rgu0, rgu1, 1 + (0 != rgu1 ? 1 : 0));
+                    biDbl.InitFromDigits(rgu0, rgu1, 1 + (rgu1 != 0 ? 1 : 0));
                     if (c5Dbl > 0)
                     {
                         biDbl.MulPow5(c5Dbl);
@@ -2808,7 +2808,7 @@ namespace System.Xml.Xsl
                     }
 
                     wT = biDbl.CompareTo(biDec);
-                    if (wT < 0 || 0 == wT && 0 != (DblLo(dbl) & 1))
+                    if (wT < 0 || wT == 0 && (DblLo(dbl) & 1) != 0)
                     {
                         // Return the next higher value.
                         dbl = BitConverter.Int64BitsToDouble(BitConverter.DoubleToInt64Bits(dbl) + 1);
@@ -2820,7 +2820,7 @@ namespace System.Xml.Xsl
 
             private void InitFromDouble(double dbl)
             {
-                if (0.0 == dbl || IsSpecial(dbl))
+                if (dbl == 0.0 || IsSpecial(dbl))
                 {
                     _exponent = 0;
                     _sign = 1;
@@ -2908,7 +2908,7 @@ namespace System.Xml.Xsl
 
             // Get decimal digits
             FloatingDecimal dec = new FloatingDecimal(dbl);
-            Debug.Assert(0 != dec.MantissaSize);
+            Debug.Assert(dec.MantissaSize != 0);
 
             // If exponent is negative, size of fraction increases
             sizeFract = dec.MantissaSize - dec.Exponent;
@@ -2942,11 +2942,11 @@ namespace System.Xml.Xsl
                 cntDigits = dec.MantissaSize;
                 ib = 0;
 
-                if (0 != sizeInt)
+                if (sizeInt != 0)
                 {
                     do
                     {
-                        if (0 != cntDigits)
+                        if (cntDigits != 0)
                         {
                             // Still mantissa digits left to consume
                             Debug.Assert(dec[ib] >= 0 && dec[ib] <= 9);
@@ -2958,16 +2958,16 @@ namespace System.Xml.Xsl
                             // Add trailing zeros
                             *pch++ = '0';
                         }
-                    } while (0 != --sizeInt);
+                    } while (--sizeInt != 0);
                 }
                 else
                 {
                     *pch++ = '0';
                 }
 
-                if (0 != sizeFract)
+                if (sizeFract != 0)
                 {
-                    Debug.Assert(0 != cntDigits);
+                    Debug.Assert(cntDigits != 0);
                     Debug.Assert(sizeFract == cntDigits || sizeFract > cntDigits && pch[-1] == '0');
                     *pch++ = '.';
 
@@ -2979,7 +2979,7 @@ namespace System.Xml.Xsl
                     }
 
                     Debug.Assert(sizeFract == cntDigits);
-                    while (0 != cntDigits)
+                    while (cntDigits != 0)
                     {
                         // Output remaining mantissa digits
                         Debug.Assert(dec[ib] >= 0 && dec[ib] <= 9);
@@ -2988,7 +2988,7 @@ namespace System.Xml.Xsl
                     }
                 }
 
-                Debug.Assert(0 == sizeInt && 0 == cntDigits);
+                Debug.Assert(sizeInt == 0 && cntDigits == 0);
                 return new string(pBuf, 0, (int)(pch - pBuf));
             }
         }

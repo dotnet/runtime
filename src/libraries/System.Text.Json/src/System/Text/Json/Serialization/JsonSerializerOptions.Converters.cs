@@ -64,7 +64,7 @@ namespace System.Text.Json
             Add(new UInt64Converter());
             Add(new UriConverter());
 
-            Debug.Assert(NumberOfSimpleConverters == converters.Count);
+            Debug.Assert(converters.Count == NumberOfSimpleConverters);
 
             return converters;
 
@@ -129,7 +129,7 @@ namespace System.Text.Json
             Add(s_defaultSimpleConverters[typeof(uint)]);
             Add(s_defaultSimpleConverters[typeof(ulong)]);
 
-            Debug.Assert(NumberOfConverters == converters.Count);
+            Debug.Assert(converters.Count == NumberOfConverters);
 
             return converters;
 

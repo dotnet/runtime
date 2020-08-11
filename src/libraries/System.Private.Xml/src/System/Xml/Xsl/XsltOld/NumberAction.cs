@@ -49,7 +49,7 @@ namespace System.Xml.Xsl.XsltOld
 
             internal void setGroupingSize(int sizeGroup)
             {
-                if (0 <= sizeGroup && sizeGroup <= 9)
+                if (sizeGroup >= 0 && sizeGroup <= 9)
                 {
                     _sizeGroup = sizeGroup;
                 }
@@ -67,7 +67,7 @@ namespace System.Xml.Xsl.XsltOld
                 {
                     dblVal = XmlConvert.ToXPathDouble(value);
 
-                    if (0.5 <= dblVal && !double.IsPositiveInfinity(dblVal))
+                    if (dblVal >= 0.5 && !double.IsPositiveInfinity(dblVal))
                     {
                         dblVal = XmlConvert.XPathRound(dblVal);
                     }
@@ -525,7 +525,7 @@ namespace System.Xml.Xsl.XsltOld
                 }
                 numberingFormat.setGroupingSeparator(groupingSep);
             }
-            if (0 < cFormats)
+            if (cFormats > 0)
             {
                 FormatInfo prefix = tokens[0];
                 Debug.Assert(prefix == null || prefix.isSeparator);
@@ -535,8 +535,8 @@ namespace System.Xml.Xsl.XsltOld
                     sufix = tokens[cFormats - 1];
                     cFormats--;
                 }
-                FormatInfo periodicSeparator = 2 < cFormats ? tokens[cFormats - 2] : s_defaultSeparator;
-                FormatInfo periodicFormat = 0 < cFormats ? tokens[cFormats - 1] : s_defaultFormat;
+                FormatInfo periodicSeparator = cFormats > 2 ? tokens[cFormats - 2] : s_defaultSeparator;
+                FormatInfo periodicFormat = cFormats > 0 ? tokens[cFormats - 1] : s_defaultFormat;
                 if (prefix != null)
                 {
                     result.Append(prefix.formatString);
@@ -546,7 +546,7 @@ namespace System.Xml.Xsl.XsltOld
                 {
                     int formatIndex = i * 2;
                     bool haveFormat = formatIndex < cFormats;
-                    if (0 < i)
+                    if (i > 0)
                     {
                         FormatInfo thisSeparator = haveFormat ? tokens[formatIndex + 0] : periodicSeparator;
                         Debug.Assert(thisSeparator.isSeparator);

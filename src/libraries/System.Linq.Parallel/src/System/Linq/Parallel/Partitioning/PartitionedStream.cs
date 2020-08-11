@@ -55,14 +55,14 @@ namespace System.Linq.Parallel
             get
             {
                 Debug.Assert(_partitions != null);
-                Debug.Assert(0 <= index && index < _partitions.Length, "index out of bounds");
+                Debug.Assert(index >= 0 && index < _partitions.Length, "index out of bounds");
                 return _partitions[index];
             }
             set
             {
                 Debug.Assert(_partitions != null);
                 Debug.Assert(value != null);
-                Debug.Assert(0 <= index && index < _partitions.Length, "index out of bounds");
+                Debug.Assert(index >= 0 && index < _partitions.Length, "index out of bounds");
                 _partitions[index] = value;
             }
         }

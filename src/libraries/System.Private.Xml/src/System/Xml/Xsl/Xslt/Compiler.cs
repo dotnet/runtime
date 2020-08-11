@@ -331,7 +331,7 @@ namespace System.Xml.Xsl.Xslt
         public void ReportWarning(ISourceLineInfo lineInfo, string res, params string[] args)
         {
             int warningLevel = 1;
-            if (0 <= Settings.WarningLevel && Settings.WarningLevel < warningLevel)
+            if (Settings.WarningLevel >= 0 && Settings.WarningLevel < warningLevel)
             {
                 // Ignore warning
                 return;

@@ -143,7 +143,7 @@ namespace System.Web.Util
 
         private static unsafe int IndexOfHtmlAttributeEncodingChars(string s, int startPos)
         {
-            Debug.Assert(0 <= startPos && startPos <= s.Length, "0 <= startPos && startPos <= s.Length");
+            Debug.Assert(startPos >= 0 && startPos <= s.Length, "0 <= startPos && startPos <= s.Length");
             int cch = s.Length - startPos;
             fixed (char* str = s)
             {
@@ -468,7 +468,7 @@ namespace System.Web.Util
             if (cSpaces == 0 && cUnsafe == 0)
             {
                 // DevDiv 912606: respect "offset" and "count"
-                if (0 == offset && bytes.Length == count)
+                if (offset == 0 && bytes.Length == count)
                 {
                     return bytes;
                 }

@@ -78,7 +78,7 @@ namespace System.Text.Unicode
         Finish:
 
             bytesConsumed = index + 1;
-            Debug.Assert(1 <= bytesConsumed && bytesConsumed <= 4); // Valid subsequences are always length [1..4]
+            Debug.Assert(bytesConsumed >= 1 && bytesConsumed <= 4); // Valid subsequences are always length [1..4]
             result = tempValue;
             return OperationStatus.Done;
 
@@ -203,14 +203,14 @@ namespace System.Text.Unicode
 
         Invalid:
 
-            Debug.Assert(1 <= index && index <= 3); // Invalid subsequences are always length 1..3
+            Debug.Assert(index >= 1 && index <= 3); // Invalid subsequences are always length 1..3
             bytesConsumed = index;
             result = ReplacementChar;
             return OperationStatus.InvalidData;
 
         NeedsMoreData:
 
-            Debug.Assert(0 <= index && index <= 3); // Incomplete subsequences are always length 0..3
+            Debug.Assert(index >= 0 && index <= 3); // Incomplete subsequences are always length 0..3
             bytesConsumed = index;
             result = ReplacementChar;
             return OperationStatus.NeedMoreData;
@@ -369,7 +369,7 @@ namespace System.Text.Unicode
 
         internal static void GetUtf16SurrogatePairFromAstralScalarValue(int scalar, out char highSurrogate, out char lowSurrogate)
         {
-            Debug.Assert(0x10000 <= scalar && scalar <= UNICODE_LAST_CODEPOINT);
+            Debug.Assert(scalar >= 0x10000 && scalar <= UNICODE_LAST_CODEPOINT);
 
             // See https://www.unicode.org/versions/Unicode6.2.0/ch03.pdf, Table 3.5 for the
             // details of this conversion. We don't use Char.ConvertFromUtf32 because its exception

@@ -72,8 +72,8 @@ namespace System.Xml.Xsl
             }
             else
             {
-                Debug.Assert(0 < lineInfo.Start.Line && 0 < lineInfo.Start.Pos, "0 < start");
-                Debug.Assert(0 < lineInfo.End.Line && 0 < lineInfo.End.Pos, "0 < end");
+                Debug.Assert(lineInfo.Start.Line > 0 && lineInfo.Start.Pos > 0, "0 < start");
+                Debug.Assert(lineInfo.End.Line > 0 && lineInfo.End.Pos > 0, "0 < end");
                 Debug.Assert(lineInfo.Start.LessOrEqual(lineInfo.End), "start <= end");
             }
         }

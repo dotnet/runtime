@@ -553,7 +553,7 @@ namespace System.Xml.Schema
         internal static bool IsXdrSchema(string uri)
         {
             return uri.Length >= x_schema.Length &&
-                   0 == string.Compare(uri, 0, x_schema, 0, x_schema.Length, StringComparison.Ordinal) &&
+                   string.Compare(uri, 0, x_schema, 0, x_schema.Length, StringComparison.Ordinal) == 0 &&
                    !uri.StartsWith("x-schema:#", StringComparison.Ordinal);
         }
 
@@ -1699,14 +1699,14 @@ namespace System.Xml.Schema
                 }
             }
 
-            SetAttributePresence(pAttdef, 1 == decl._MinOccurs);
+            SetAttributePresence(pAttdef, decl._MinOccurs == 1);
         }
 
         private void SetAttributePresence(SchemaAttDef pAttdef, bool fRequired)
         {
-            if (SchemaDeclBase.Use.Fixed != pAttdef.Presence)
+            if (pAttdef.Presence != SchemaDeclBase.Use.Fixed)
             {
-                if (fRequired || SchemaDeclBase.Use.Required == pAttdef.Presence)
+                if (fRequired || pAttdef.Presence == SchemaDeclBase.Use.Required)
                 {
                     // If it is required and it has a default value then it is a FIXED attribute.
                     if (pAttdef.DefaultValueTyped != null)

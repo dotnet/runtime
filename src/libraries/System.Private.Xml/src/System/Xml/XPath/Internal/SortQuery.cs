@@ -80,7 +80,7 @@ namespace MS.Internal.Xml.XPath
 
         public override XPathNavigator? Advance()
         {
-            Debug.Assert(0 <= count && count <= _results.Count);
+            Debug.Assert(count >= 0 && count <= _results.Count);
             if (count < _results.Count)
             {
                 return _results[count++].Node;
@@ -92,7 +92,7 @@ namespace MS.Internal.Xml.XPath
         {
             get
             {
-                Debug.Assert(0 <= count && count <= _results.Count);
+                Debug.Assert(count >= 0 && count <= _results.Count);
                 if (count == 0)
                 {
                     return null;
@@ -158,8 +158,8 @@ namespace MS.Internal.Xml.XPath
         public void AddSort(Query evalQuery, IComparer comparer)
         {
             Debug.Assert(_expressions.Length == _comparers.Length);
-            Debug.Assert(0 < _expressions.Length);
-            Debug.Assert(0 <= _numSorts && _numSorts <= _expressions.Length);
+            Debug.Assert(_expressions.Length > 0);
+            Debug.Assert(_numSorts >= 0 && _numSorts <= _expressions.Length);
             // Adjust array sizes if needed.
             if (_numSorts == _expressions.Length)
             {

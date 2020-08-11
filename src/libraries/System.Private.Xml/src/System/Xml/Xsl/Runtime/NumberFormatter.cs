@@ -78,7 +78,7 @@ namespace System.Xml.Xsl.Runtime
 
         public static void ConvertToAlphabetic(StringBuilder sb, double val, char firstChar, int totalChars)
         {
-            Debug.Assert(1 <= val && val <= MaxAlphabeticValue);
+            Debug.Assert(val >= 1 && val <= MaxAlphabeticValue);
             Debug.Assert(Math.Pow(totalChars, MaxAlphabeticLength) >= MaxAlphabeticValue);
 
             char[] letters = new char[MaxAlphabeticLength];
@@ -104,7 +104,7 @@ namespace System.Xml.Xsl.Runtime
 
         public static void ConvertToRoman(StringBuilder sb, double val, bool upperCase)
         {
-            Debug.Assert(1 <= val && val <= MaxRomanValue);
+            Debug.Assert(val >= 1 && val <= MaxRomanValue);
 
             int number = (int)val;
             string digits = upperCase ? RomanDigitsUC : RomanDigitsLC;
