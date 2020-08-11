@@ -682,7 +682,6 @@ namespace System.Net
             stoleBlob = false;
 
             // Some things we need right away.  Lift them out now while it's convenient.
-            string verb = Interop.HttpApi.GetVerb(memoryBlob.RequestBlob);
             string authorizationHeader = Interop.HttpApi.GetKnownHeader(memoryBlob.RequestBlob, (int)HttpRequestHeader.Authorization);
             ulong connectionId = memoryBlob.RequestBlob->ConnectionId;
             ulong requestId = memoryBlob.RequestBlob->RequestId;
