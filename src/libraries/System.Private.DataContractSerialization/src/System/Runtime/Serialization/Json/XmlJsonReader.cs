@@ -667,7 +667,7 @@ namespace System.Runtime.Serialization.Json
                 MoveToEndElement();
             }
             else if ((ch == (byte)'-') ||
-                (((byte)'0' <= ch) && (ch <= (byte)'9')) ||
+                ((ch >= (byte)'0') && (ch <= (byte)'9')) ||
                 (ch == (byte)'I') ||
                 (ch == (byte)'N'))
             {

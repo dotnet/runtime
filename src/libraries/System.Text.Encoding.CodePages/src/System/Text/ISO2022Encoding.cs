@@ -1604,7 +1604,7 @@ namespace System.Text
                         (ch < 0xa1 || ch > 0xf7 || ch2 < 0xa1 || ch2 > 0xfe))
                     {
                         // For some reason Everett allowed XX20 to become unicode 3000... (ideo sp)
-                        if (ch2 == 0x20 && 0x21 <= ch && ch <= 0x7d)
+                        if (ch2 == 0x20 && ch >= 0x21 && ch <= 0x7d)
                         {
                             iBytes = 0x2121;
                             goto MULTIBYTE;

@@ -322,7 +322,7 @@ namespace System.Linq.Expressions.Compiler
 
         private static void EmitPrimitive(this ILGenerator il, long value)
         {
-            if (int.MinValue <= value & value <= uint.MaxValue)
+            if (value >= int.MinValue & value <= uint.MaxValue)
             {
                 il.EmitPrimitive(unchecked((int)value));
                 // While often not of consequence depending on what follows, there are cases where this
@@ -999,7 +999,7 @@ namespace System.Linq.Expressions.Compiler
             int scale = (bits[3] & int.MaxValue) >> 16;
             if (scale == 0)
             {
-                if (int.MinValue <= value)
+                if (value >= int.MinValue)
                 {
                     if (value <= int.MaxValue)
                     {
@@ -1030,7 +1030,7 @@ namespace System.Linq.Expressions.Compiler
                     }
                 }
 
-                if (long.MinValue <= value)
+                if (value >= long.MinValue)
                 {
                     if (value <= long.MaxValue)
                     {

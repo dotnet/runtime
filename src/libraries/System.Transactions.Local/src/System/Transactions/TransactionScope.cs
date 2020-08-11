@@ -129,7 +129,7 @@ namespace System.Transactions
                 _expectedCurrent = _committableTransaction.Clone();
             }
 
-            if ((_expectedCurrent != null) && (_committableTransaction == null) && (TimeSpan.Zero != scopeTimeout))
+            if ((_expectedCurrent != null) && (_committableTransaction == null) && (scopeTimeout != TimeSpan.Zero))
             {
                 // BUGBUG: Scopes should not use individual timers
                 _scopeTimer = new Timer(
@@ -208,14 +208,14 @@ namespace System.Transactions
                 if (_expectedCurrent != null)
                 {
                     // If the requested IsolationLevel is stronger than that of the specified transaction, throw.
-                    if ((IsolationLevel.Unspecified != transactionOptions.IsolationLevel) && (_expectedCurrent.IsolationLevel != transactionOptions.IsolationLevel))
+                    if ((transactionOptions.IsolationLevel != IsolationLevel.Unspecified) && (_expectedCurrent.IsolationLevel != transactionOptions.IsolationLevel))
                     {
                         throw new ArgumentException(SR.TransactionScopeIsolationLevelDifferentFromTransaction, nameof(transactionOptions));
                     }
                 }
             }
 
-            if ((_expectedCurrent != null) && (_committableTransaction == null) && (TimeSpan.Zero != scopeTimeout))
+            if ((_expectedCurrent != null) && (_committableTransaction == null) && (scopeTimeout != TimeSpan.Zero))
             {
                 // BUGBUG: Scopes should use a shared timer
                 _scopeTimer = new Timer(
@@ -290,14 +290,14 @@ namespace System.Transactions
                 if (_expectedCurrent != null)
                 {
                     // If the requested IsolationLevel is stronger than that of the specified transaction, throw.
-                    if ((IsolationLevel.Unspecified != transactionOptions.IsolationLevel) && (_expectedCurrent.IsolationLevel != transactionOptions.IsolationLevel))
+                    if ((transactionOptions.IsolationLevel != IsolationLevel.Unspecified) && (_expectedCurrent.IsolationLevel != transactionOptions.IsolationLevel))
                     {
                         throw new ArgumentException(SR.TransactionScopeIsolationLevelDifferentFromTransaction, nameof(transactionOptions));
                     }
                 }
             }
 
-            if ((_expectedCurrent != null) && (_committableTransaction == null) && (TimeSpan.Zero != scopeTimeout))
+            if ((_expectedCurrent != null) && (_committableTransaction == null) && (scopeTimeout != TimeSpan.Zero))
             {
                 // BUGBUG: Scopes should use a shared timer
                 _scopeTimer = new Timer(
@@ -473,7 +473,7 @@ namespace System.Transactions
 
             CommonInitialize();
 
-            if (TimeSpan.Zero != scopeTimeout)
+            if (scopeTimeout != TimeSpan.Zero)
             {
                 _scopeTimer = new Timer(
                     TimerCallback,
@@ -569,7 +569,7 @@ namespace System.Transactions
                             TraceSourceType.TraceSourceBase, SR.TransactionScopeInvalidNesting, null, rollbackTransaction.DistributedTxId);
                     }
                     // Verify that expectedCurrent is the same as the "current" current if we the interopOption value is None.
-                    else if (EnterpriseServicesInteropOption.None == actualCurrentScope._interopOption)
+                    else if (actualCurrentScope._interopOption == EnterpriseServicesInteropOption.None)
                     {
                         if (((actualCurrentScope._expectedCurrent != null) && (!actualCurrentScope._expectedCurrent.Equals(current)))
                             ||
@@ -669,7 +669,7 @@ namespace System.Transactions
                 {
                     // Verify that expectedCurrent is the same as the "current" current if we the interopOption value is None.
                     // If we got here, actualCurrentScope is the same as "this".
-                    if (EnterpriseServicesInteropOption.None == _interopOption)
+                    if (_interopOption == EnterpriseServicesInteropOption.None)
                     {
                         if (((_expectedCurrent != null) && (!_expectedCurrent.Equals(current)))
                             || ((current != null) && (_expectedCurrent == null))

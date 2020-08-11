@@ -61,7 +61,7 @@ namespace System.Numerics
 
         public BigInteger(long value)
         {
-            if (int.MinValue < value && value <= int.MaxValue)
+            if (value > int.MinValue && value <= int.MaxValue)
             {
                 _sign = (int)value;
                 _bits = null;
@@ -539,7 +539,7 @@ namespace System.Numerics
                     _sign = +1;
                 }
                 // Handle the special cases where the BigInteger likely fits into _sign
-                else if (int.MinValue == unchecked((int)value[0]))
+                else if (unchecked((int)value[0]) == int.MinValue)
                 {
                     this = s_bnMinInt;
                 }

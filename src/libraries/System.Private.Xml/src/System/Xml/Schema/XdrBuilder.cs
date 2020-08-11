@@ -1407,7 +1407,7 @@ namespace System.Xml.Schema
                 builder._contentValidator.AddStar();
             }
 
-            if (SchemaOrderMany == builder._GroupDef._Order &&
+            if (builder._GroupDef._Order == SchemaOrderMany &&
                 builder._GroupDef._HasMaxAttr &&
                 builder._GroupDef._MaxVal != uint.MaxValue)
             {
@@ -1651,7 +1651,7 @@ namespace System.Xml.Schema
 
         private static void ParseDtMaxLength(ref uint cVal, object obj, XdrBuilder builder)
         {
-            if (uint.MaxValue != cVal)
+            if (cVal != uint.MaxValue)
             {
                 builder.SendValidationEvent(SR.Sch_DupDtMaxLength);
             }
@@ -1664,7 +1664,7 @@ namespace System.Xml.Schema
 
         private static void ParseDtMinLength(ref uint cVal, object obj, XdrBuilder builder)
         {
-            if (uint.MaxValue != cVal)
+            if (cVal != uint.MaxValue)
             {
                 builder.SendValidationEvent(SR.Sch_DupDtMinLength);
             }

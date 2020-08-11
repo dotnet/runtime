@@ -115,7 +115,7 @@ namespace System.Formats.Asn1
             // And 1000 content octets (by T-REC-X.690-201508 sec 9.2)
             const int FullSegmentEncodedSize = 1004;
             Debug.Assert(
-                FullSegmentEncodedSize == 1 + 1 + MaxCERSegmentSize + GetEncodedLengthSubsequentByteCount(MaxCERSegmentSize));
+                1 + 1 + MaxCERSegmentSize + GetEncodedLengthSubsequentByteCount(MaxCERSegmentSize) == FullSegmentEncodedSize);
 
             int remainingEncodedSize;
 

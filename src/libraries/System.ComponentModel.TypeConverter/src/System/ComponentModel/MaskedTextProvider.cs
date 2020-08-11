@@ -105,7 +105,7 @@ namespace System.ComponentModel
         private const char DEFAULT_PROMPT_CHAR = '_';
         private const char NULL_PASSWORD_CHAR = '\0';
         private const bool DEFAULT_ALLOW_PROMPT = true;
-        private const int  INVALID_INDEX = -1;
+        private const int INVALID_INDEX = -1;
         private const byte EDIT_ANY = 0;
         private const byte EDIT_UNASSIGNED = 1;
         private const byte EDIT_ASSIGNED = 2;
@@ -1665,7 +1665,7 @@ namespace System.ComponentModel
                 }
 
                 // shifting characters is a resultHint == sideEffect, update hint if no characters removed (which would be hint == success).
-                if (MaskedTextResultHint.SideEffect > resultHint)
+                if (resultHint < MaskedTextResultHint.SideEffect)
                 {
                     resultHint = MaskedTextResultHint.SideEffect;
                 }

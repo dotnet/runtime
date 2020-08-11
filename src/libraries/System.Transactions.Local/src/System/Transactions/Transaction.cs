@@ -255,7 +255,7 @@ namespace System.Transactions
             _isoLevel = isoLevel;
 
             // Never create a transaction with an IsolationLevel of Unspecified.
-            if (IsolationLevel.Unspecified == _isoLevel)
+            if (_isoLevel == IsolationLevel.Unspecified)
             {
                 _isoLevel = TransactionManager.DefaultIsolationLevel;
             }
@@ -292,7 +292,7 @@ namespace System.Transactions
             _isoLevel = isoLevel;
 
             // Never create a transaction with an IsolationLevel of Unspecified.
-            if (IsolationLevel.Unspecified == _isoLevel)
+            if (_isoLevel == IsolationLevel.Unspecified)
             {
                 _isoLevel = TransactionManager.DefaultIsolationLevel;
             }

@@ -100,7 +100,7 @@ namespace System.Xml.Xsl.XPath
 
         private void NextChar()
         {
-            Debug.Assert(-1 <= _curIndex && _curIndex < _xpathExpr.Length);
+            Debug.Assert(_curIndex >= -1 && _curIndex < _xpathExpr.Length);
             _curIndex++;
             if (_curIndex < _xpathExpr.Length)
             {
@@ -554,7 +554,7 @@ namespace System.Xml.Xsl.XPath
 
         public void CheckToken(LexKind t)
         {
-            Debug.Assert(LexKind.FirstStringable <= t);
+            Debug.Assert(t >= LexKind.FirstStringable);
             if (_kind != t)
             {
                 if (t == LexKind.Eof)
@@ -571,9 +571,9 @@ namespace System.Xml.Xsl.XPath
         // May be called for the following tokens: Name, String, Eof, Comma, LParens, RParens, LBracket, RBracket, RBrace
         private string LexKindToString(LexKind t)
         {
-            Debug.Assert(LexKind.FirstStringable <= t);
+            Debug.Assert(t >= LexKind.FirstStringable);
 
-            if (LexKind.LastNonChar < t)
+            if (t > LexKind.LastNonChar)
             {
                 Debug.Assert("()[].@,*/$}".Contains((char)t));
                 return char.ToString((char)t);

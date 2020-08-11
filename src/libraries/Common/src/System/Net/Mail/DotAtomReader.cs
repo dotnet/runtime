@@ -36,12 +36,12 @@ namespace System.Net.Mail
         //
         internal static bool TryReadReverse(string data, int index, out int outIndex, bool throwExceptionIfFail)
         {
-            Debug.Assert(0 <= index && index < data.Length, "index was outside the bounds of the string: " + index);
+            Debug.Assert(index >= 0 && index < data.Length, "index was outside the bounds of the string: " + index);
 
             int startIndex = index;
 
             // Scan for the first invalid chars (including whitespace)
-            for (; 0 <= index; index--)
+            for (; index >= 0; index--)
             {
                 if (data[index] <= MailBnfHelper.Ascii7bitMaxValue // Any Unicode allowed
                  && (data[index] != MailBnfHelper.Dot && !MailBnfHelper.Atext[data[index]])) // Invalid char

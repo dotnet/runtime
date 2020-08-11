@@ -354,7 +354,7 @@ namespace System.Xml.Xsl.Xslt
         {
             int currentRecord = _lastRecord + 1;
             // This logic comes from NamespaceEnumerator.MoveNext but also returns variables
-            while (LastPredefRecord < --currentRecord)
+            while (--currentRecord > LastPredefRecord)
             {
                 if (_records[currentRecord].IsNamespace)
                 {
@@ -389,7 +389,7 @@ namespace System.Xml.Xsl.Xslt
 
             public bool MoveNext()
             {
-                while (LastPredefRecord < --_currentRecord)
+                while (--_currentRecord > LastPredefRecord)
                 {
                     if (_scope._records[_currentRecord].IsNamespace)
                     {
@@ -408,7 +408,7 @@ namespace System.Xml.Xsl.Xslt
             {
                 get
                 {
-                    Debug.Assert(LastPredefRecord <= _currentRecord && _currentRecord <= _scope._lastRecord, "MoveNext() either was not called or returned false");
+                    Debug.Assert(_currentRecord >= LastPredefRecord && _currentRecord <= _scope._lastRecord, "MoveNext() either was not called or returned false");
                     Debug.Assert(_scope._records[_currentRecord].IsNamespace);
                     return _scope._records[_currentRecord];
                 }

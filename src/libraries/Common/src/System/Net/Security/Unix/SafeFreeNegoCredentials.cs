@@ -76,7 +76,7 @@ namespace System.Net.Security
 
         public override bool IsInvalid
         {
-            get { return (null == _credential); }
+            get { return (_credential == null); }
         }
 
         protected override bool ReleaseHandle()

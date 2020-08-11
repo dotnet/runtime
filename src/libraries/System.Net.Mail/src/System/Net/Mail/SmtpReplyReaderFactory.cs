@@ -78,7 +78,7 @@ namespace System.Net.Mail
                         _byteBuffer = new byte[SmtpReplyReaderFactory.DefaultBufferSize];
                     }
 
-                    while (0 != Read(caller, _byteBuffer, 0, _byteBuffer.Length)) ;
+                    while (Read(caller, _byteBuffer, 0, _byteBuffer.Length) != 0) ;
                 }
 
                 _currentReader = null;

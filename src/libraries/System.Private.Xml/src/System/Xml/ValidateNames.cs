@@ -606,7 +606,7 @@ namespace System.Xml
         internal static void SplitQName(string name, out string prefix, out string lname)
         {
             int colonPos = name.IndexOf(':');
-            if (-1 == colonPos)
+            if (colonPos == -1)
             {
                 prefix = string.Empty;
                 lname = name;

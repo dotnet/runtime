@@ -610,7 +610,7 @@ namespace System.Xml
                     }
                     else if (prefix == "xmlns")
                     {
-                        if (XmlReservedNs.NsXmlNs != ns && ns != null)
+                        if (ns != XmlReservedNs.NsXmlNs && ns != null)
                         {
                             throw new ArgumentException(SR.Xml_XmlnsBelongsToReservedNs);
                         }
@@ -630,7 +630,7 @@ namespace System.Xml
                     }
                     else if (prefix == null && localName == "xmlns")
                     {
-                        if (XmlReservedNs.NsXmlNs != ns && ns != null)
+                        if (ns != XmlReservedNs.NsXmlNs && ns != null)
                         {
                             // add the below line back in when DOM is fixed
                             throw new ArgumentException(SR.Xml_XmlnsBelongsToReservedNs);
@@ -1472,7 +1472,7 @@ namespace System.Xml
         // was needed to resolve conflicts.
         private void PushNamespace(string? prefix, string ns, bool declared)
         {
-            if (XmlReservedNs.NsXmlNs == ns)
+            if (ns == XmlReservedNs.NsXmlNs)
             {
                 throw new ArgumentException(SR.Xml_CanNotBindToReservedNamespace);
             }
@@ -1798,7 +1798,7 @@ namespace System.Xml
                    (prefix[2] == 'l' || prefix[2] == 'L')
                    )
                 {
-                    if (XmlReservedNs.NsXml != ns)
+                    if (ns != XmlReservedNs.NsXml)
                     {
                         throw new ArgumentException(SR.Xml_InvalidPrefix);
                     }

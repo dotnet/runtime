@@ -66,7 +66,7 @@ namespace System.IO
             int s_notifyFiltersValidMask = 0;
             foreach (int enumValue in Enum.GetValues(typeof(NotifyFilters)))
                 s_notifyFiltersValidMask |= enumValue;
-            Debug.Assert(c_notifyFiltersValidMask == s_notifyFiltersValidMask, "The NotifyFilters enum has changed. The c_notifyFiltersValidMask must be updated to reflect the values of the NotifyFilters enum.");
+            Debug.Assert(s_notifyFiltersValidMask == c_notifyFiltersValidMask, "The NotifyFilters enum has changed. The c_notifyFiltersValidMask must be updated to reflect the values of the NotifyFilters enum.");
         }
 #endif
 

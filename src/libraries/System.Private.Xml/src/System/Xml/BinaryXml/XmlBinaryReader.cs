@@ -478,7 +478,7 @@ namespace System.Xml
         {
             get
             {
-                if (ScanState.XmlText == _state)
+                if (_state == ScanState.XmlText)
                 {
                     Debug.Assert(_textXmlReader != null);
                     return _textXmlReader.HasValue;
@@ -596,7 +596,7 @@ namespace System.Xml
         {
             get
             {
-                if (ScanState.XmlText != _state)
+                if (_state != ScanState.XmlText)
                 {
                     for (int i = _elemDepth; i >= 0; i--)
                     {
@@ -618,7 +618,7 @@ namespace System.Xml
         {
             get
             {
-                if (ScanState.XmlText != _state)
+                if (_state != ScanState.XmlText)
                 {
                     for (int i = _elemDepth; i >= 0; i--)
                     {
@@ -672,7 +672,7 @@ namespace System.Xml
 
         public override string? GetAttribute(string name, string? ns)
         {
-            if (ScanState.XmlText == _state)
+            if (_state == ScanState.XmlText)
             {
                 Debug.Assert(_textXmlReader != null);
                 return _textXmlReader.GetAttribute(name, ns);
@@ -684,7 +684,7 @@ namespace System.Xml
                 if (ns == null)
                     ns = string.Empty;
                 int index = LocateAttribute(name, ns);
-                if (-1 == index)
+                if (index == -1)
                     return null;
                 return GetAttribute(index);
             }
@@ -692,7 +692,7 @@ namespace System.Xml
 
         public override string? GetAttribute(string name)
         {
-            if (ScanState.XmlText == _state)
+            if (_state == ScanState.XmlText)
             {
                 Debug.Assert(_textXmlReader != null);
                 return _textXmlReader.GetAttribute(name);
@@ -700,7 +700,7 @@ namespace System.Xml
             else
             {
                 int index = LocateAttribute(name);
-                if (-1 == index)
+                if (index == -1)
                     return null;
                 return GetAttribute(index);
             }
@@ -708,7 +708,7 @@ namespace System.Xml
 
         public override string GetAttribute(int i)
         {
-            if (ScanState.XmlText == _state)
+            if (_state == ScanState.XmlText)
             {
                 Debug.Assert(_textXmlReader != null);
                 return _textXmlReader.GetAttribute(i);
@@ -723,7 +723,7 @@ namespace System.Xml
 
         public override bool MoveToAttribute(string name, string? ns)
         {
-            if (ScanState.XmlText == _state)
+            if (_state == ScanState.XmlText)
             {
                 Debug.Assert(_textXmlReader != null);
                 return UpdateFromTextReader(_textXmlReader.MoveToAttribute(name, ns));
@@ -735,7 +735,7 @@ namespace System.Xml
                 if (ns == null)
                     ns = string.Empty;
                 int index = LocateAttribute(name, ns);
-                if ((-1 != index) && (_state < ScanState.Init))
+                if ((index != -1) && (_state < ScanState.Init))
                 {
                     PositionOnAttribute(index + 1);
                     return true;
@@ -746,7 +746,7 @@ namespace System.Xml
 
         public override bool MoveToAttribute(string name)
         {
-            if (ScanState.XmlText == _state)
+            if (_state == ScanState.XmlText)
             {
                 Debug.Assert(_textXmlReader != null);
                 return UpdateFromTextReader(_textXmlReader.MoveToAttribute(name));
@@ -754,7 +754,7 @@ namespace System.Xml
             else
             {
                 int index = LocateAttribute(name);
-                if ((-1 != index) && (_state < ScanState.Init))
+                if ((index != -1) && (_state < ScanState.Init))
                 {
                     PositionOnAttribute(index + 1);
                     return true;
@@ -765,7 +765,7 @@ namespace System.Xml
 
         public override void MoveToAttribute(int i)
         {
-            if (ScanState.XmlText == _state)
+            if (_state == ScanState.XmlText)
             {
                 Debug.Assert(_textXmlReader != null);
                 _textXmlReader.MoveToAttribute(i);
@@ -783,7 +783,7 @@ namespace System.Xml
 
         public override bool MoveToFirstAttribute()
         {
-            if (ScanState.XmlText == _state)
+            if (_state == ScanState.XmlText)
             {
                 Debug.Assert(_textXmlReader != null);
                 return UpdateFromTextReader(_textXmlReader.MoveToFirstAttribute());
@@ -870,7 +870,7 @@ namespace System.Xml
                     {
                         _pos = _attributes[_attrIndex - 1].contentPos;
                         BinXmlToken tok = RescanNextToken();
-                        if (BinXmlToken.Attr == tok || BinXmlToken.EndAttrs == tok)
+                        if (tok == BinXmlToken.Attr || tok == BinXmlToken.EndAttrs)
                         {
                             return false;
                         }
@@ -929,7 +929,7 @@ namespace System.Xml
 
         public override string? LookupNamespace(string prefix)
         {
-            if (ScanState.XmlText == _state)
+            if (_state == ScanState.XmlText)
             {
                 Debug.Assert(_textXmlReader != null);
                 return _textXmlReader.LookupNamespace(prefix);
@@ -1041,7 +1041,7 @@ namespace System.Xml
                 case ScanState.Attr:
                     _pos = _attributes[_attrIndex - 1].contentPos;
                     BinXmlToken token = RescanNextToken();
-                    if (BinXmlToken.Attr == token || BinXmlToken.EndAttrs == token)
+                    if (token == BinXmlToken.Attr || token == BinXmlToken.EndAttrs)
                         break;
                     _token = token;
                     ReScanOverValue(token);
@@ -1835,7 +1835,7 @@ namespace System.Xml
 
         System.Collections.Generic.IDictionary<string, string> IXmlNamespaceResolver.GetNamespacesInScope(XmlNamespaceScope scope)
         {
-            if (ScanState.XmlText == _state)
+            if (_state == ScanState.XmlText)
             {
                 Debug.Assert(_textXmlReader != null);
                 IXmlNamespaceResolver resolver = (IXmlNamespaceResolver)_textXmlReader;
@@ -1876,7 +1876,7 @@ namespace System.Xml
 
         string? IXmlNamespaceResolver.LookupPrefix(string namespaceName)
         {
-            if (ScanState.XmlText == _state)
+            if (_state == ScanState.XmlText)
             {
                 Debug.Assert(_textXmlReader != null);
                 IXmlNamespaceResolver resolver = (IXmlNamespaceResolver)_textXmlReader;
@@ -2279,7 +2279,7 @@ namespace System.Xml
         private BinXmlToken PeekNextToken()
         {
             BinXmlToken token = NextToken();
-            if (BinXmlToken.EOF != token)
+            if (token != BinXmlToken.EOF)
                 _pos--;
             return token;
         }
@@ -2389,7 +2389,7 @@ namespace System.Xml
                 {
                     _pos = _attributes[i].contentPos;
                     BinXmlToken token = RescanNextToken();
-                    if (BinXmlToken.Attr == token || BinXmlToken.EndAttrs == token)
+                    if (token == BinXmlToken.Attr || token == BinXmlToken.EndAttrs)
                     {
                         return "";
                     }
@@ -2576,12 +2576,12 @@ namespace System.Xml
             }
 
             _state = ScanState.Doc;
-            if (BinXmlToken.XmlDecl == PeekToken())
+            if (PeekToken() == BinXmlToken.XmlDecl)
             {
                 _pos++;
                 _attributes[0].Set(new QName(string.Empty, _xnt.Add("version"), string.Empty), ParseText());
                 _attrCount = 1;
-                if (BinXmlToken.Encoding == PeekToken())
+                if (PeekToken() == BinXmlToken.Encoding)
                 {
                     _pos++;
                     _attributes[1].Set(new QName(string.Empty, _xnt.Add("encoding"), string.Empty), ParseText());
@@ -2629,9 +2629,9 @@ namespace System.Xml
             string? curDeclPrefix = null;
             bool lastWasValue = false;
 
-            while (BinXmlToken.EndAttrs != (token = NextToken()))
+            while ((token = NextToken()) != BinXmlToken.EndAttrs)
             {
-                if (BinXmlToken.Attr == token)
+                if (token == BinXmlToken.Attr)
                 {
                     // watch out for nsdecl with no actual content
                     if (curDeclPrefix != null)
@@ -2719,7 +2719,7 @@ namespace System.Xml
                 else if (val == "default")
                     xs = XmlSpace.Default;
                 _elementStack[_elemDepth].xmlSpace = xs;
-                _xmlspacePreserve = (XmlSpace.Preserve == xs);
+                _xmlspacePreserve = (xs == XmlSpace.Preserve);
             }
             if (xmllang != -1)
             {
@@ -3092,18 +3092,18 @@ namespace System.Xml
             _elementStack[_elemDepth].Set(qname, _xmlspacePreserve);
             this.PushNamespace(qname.prefix, qname.namespaceUri, true);
             BinXmlToken t = PeekNextToken();
-            if (BinXmlToken.Attr == t)
+            if (t == BinXmlToken.Attr)
             {
                 ScanAttributes();
                 t = PeekNextToken();
             }
             GenerateImpliedXmlnsAttrs();
-            if (BinXmlToken.EndElem == t)
+            if (t == BinXmlToken.EndElem)
             {
                 NextToken(); // move over token...
                 _isEmpty = true;
             }
-            else if (BinXmlToken.SQL_NVARCHAR == t)
+            else if (t == BinXmlToken.SQL_NVARCHAR)
             {
                 if (_mark < 0)
                     _mark = _pos;
@@ -3114,7 +3114,7 @@ namespace System.Xml
                 // Also make sure that the following token is an EndElem
                 if (ReadByte() == 0)
                 {
-                    if (BinXmlToken.EndElem != (BinXmlToken)ReadByte())
+                    if ((BinXmlToken)ReadByte() != BinXmlToken.EndElem)
                     {
                         Debug.Assert(_pos >= 3);
                         _pos -= 3; // jump back to start of NVarChar token
@@ -3165,17 +3165,17 @@ namespace System.Xml
             }
             _docState = 2;
             _qnameOther.localname = ParseText();
-            if (BinXmlToken.System == PeekToken())
+            if (PeekToken() == BinXmlToken.System)
             {
                 _pos++;
                 _attributes[_attrCount++].Set(new QName(string.Empty, _xnt.Add("SYSTEM"), string.Empty), ParseText());
             }
-            if (BinXmlToken.Public == PeekToken())
+            if (PeekToken() == BinXmlToken.Public)
             {
                 _pos++;
                 _attributes[_attrCount++].Set(new QName(string.Empty, _xnt.Add("PUBLIC"), string.Empty), ParseText());
             }
-            if (BinXmlToken.Subset == PeekToken())
+            if (PeekToken() == BinXmlToken.Subset)
             {
                 _pos++;
                 _mark = _pos;
@@ -3720,7 +3720,7 @@ namespace System.Xml
 
         private ulong ValueAsULong()
         {
-            if (BinXmlToken.XSD_UNSIGNEDLONG == _token)
+            if (_token == BinXmlToken.XSD_UNSIGNEDLONG)
             {
                 CheckValueTokenBounds();
                 return GetUInt64(_tokDataPos);

@@ -62,7 +62,7 @@ namespace System.Net.NetworkInformation
         /// <returns>netmask corresponsing to prefix length.</returns>
         internal static IPAddress PrefixLengthToSubnetMask(byte prefixLength, AddressFamily family)
         {
-            Debug.Assert((0 <= prefixLength) && (prefixLength <= 126));
+            Debug.Assert((prefixLength >= 0) && (prefixLength <= 126));
             Debug.Assert((family == AddressFamily.InterNetwork) || (family == AddressFamily.InterNetworkV6));
 
             Span<byte> addressBytes = (family == AddressFamily.InterNetwork) ?

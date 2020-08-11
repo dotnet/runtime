@@ -416,7 +416,7 @@ namespace System.Xml
         internal XmlAttribute InternalAppendAttribute(XmlAttribute node)
         {
             // a duplicate node better not exist
-            Debug.Assert(-1 == FindNodeOffset(node));
+            Debug.Assert(FindNodeOffset(node) == -1);
 
             XmlNode retNode = base.AddNode(node);
             Debug.Assert(retNode is XmlAttribute);

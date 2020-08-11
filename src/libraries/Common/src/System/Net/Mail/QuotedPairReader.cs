@@ -33,7 +33,7 @@ namespace System.Net.Mail
         // Throws a FormatException or false is returned if the an escaped Unicode character is found but was not permitted.
         internal static bool TryCountQuotedChars(string data, int index, bool permitUnicodeEscaping, out int outIndex, bool throwExceptionIfFail)
         {
-            Debug.Assert(0 <= index && index < data.Length, "Index out of range: " + index + ", " + data.Length);
+            Debug.Assert(index >= 0 && index < data.Length, "Index out of range: " + index + ", " + data.Length);
 
             if (index <= 0 || data[index - 1] != MailBnfHelper.Backslash)
             {

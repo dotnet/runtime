@@ -151,20 +151,20 @@ namespace System.Xml.Xsl.XPath
         private Node ParseStep()
         {
             Node opnd;
-            if (LexKind.Dot == _scanner!.Kind)
+            if (_scanner!.Kind == LexKind.Dot)
             {                  // '.'
                 _scanner.NextLex();
                 opnd = _builder!.Axis(XPathAxis.Self, XPathNodeType.All, null, null);
-                if (LexKind.LBracket == _scanner.Kind)
+                if (_scanner.Kind == LexKind.LBracket)
                 {
                     throw _scanner.CreateException(SR.XPath_PredicateAfterDot);
                 }
             }
-            else if (LexKind.DotDot == _scanner.Kind)
+            else if (_scanner.Kind == LexKind.DotDot)
             {        // '..'
                 _scanner.NextLex();
                 opnd = _builder!.Axis(XPathAxis.Parent, XPathNodeType.All, null, null);
-                if (LexKind.LBracket == _scanner.Kind)
+                if (_scanner.Kind == LexKind.LBracket)
                 {
                     throw _scanner.CreateException(SR.XPath_PredicateAfterDotDot);
                 }
@@ -194,7 +194,7 @@ namespace System.Xml.Xsl.XPath
 
                 opnd = ParseNodeTest(axis);
 
-                while (LexKind.LBracket == _scanner.Kind)
+                while (_scanner.Kind == LexKind.LBracket)
                 {
                     opnd = _builder!.Predicate(opnd, ParsePredicate(), IsReverseAxis(axis));
                 }

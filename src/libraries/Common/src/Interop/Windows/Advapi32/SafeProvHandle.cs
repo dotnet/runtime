@@ -104,7 +104,7 @@ namespace System.Security.Cryptography
         protected override bool ReleaseHandle()
         {
             // Make sure not to delete a key that we want to keep in the key container or an ephemeral key
-            if (!_fPersistKeyInCsp && 0 == (_flags & (uint)Interop.Advapi32.CryptAcquireContextFlags.CRYPT_VERIFYCONTEXT))
+            if (!_fPersistKeyInCsp && (_flags & (uint)Interop.Advapi32.CryptAcquireContextFlags.CRYPT_VERIFYCONTEXT) == 0)
             {
                 // Delete the key container.
 

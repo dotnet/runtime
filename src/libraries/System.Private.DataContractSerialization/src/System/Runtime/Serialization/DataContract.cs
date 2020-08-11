@@ -901,7 +901,7 @@ namespace System.Runtime.Serialization
                         dataContract = new GuidDataContract();
                     else if (DictionaryGlobals.CharLocalName.Value == name)
                         dataContract = new CharDataContract();
-                    else if ("ArrayOfanyType" == name)
+                    else if (name == "ArrayOfanyType")
                         dataContract = new CollectionDataContract(typeof(Array));
                 }
                 else if (ns == DictionaryGlobals.AsmxTypesNamespace.Value)

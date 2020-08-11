@@ -58,8 +58,8 @@ namespace Internal.NativeCrypto
                 SafeProvHandle safeProvHandle;
 
                 // attempt to use the AES provider
-                if (S_OK == AcquireCryptContext(out safeProvHandle, null, MS_ENH_RSA_AES_PROV,
-                                                dwProvType, (uint)Interop.Advapi32.CryptAcquireContextFlags.CRYPT_VERIFYCONTEXT))
+                if (AcquireCryptContext(out safeProvHandle, null, MS_ENH_RSA_AES_PROV,
+                                                dwProvType, (uint)Interop.Advapi32.CryptAcquireContextFlags.CRYPT_VERIFYCONTEXT) == S_OK)
                 {
                     wszUpgrade = MS_ENH_RSA_AES_PROV;
                 }
@@ -129,7 +129,7 @@ namespace Internal.NativeCrypto
 
             SafeProvHandle hProv;
             int ret = OpenCSP(parameters, dwFlags, out hProv);
-            if (S_OK != ret)
+            if (ret != S_OK)
             {
                 hProv.Dispose();
                 throw ret.ToCryptographicException();
@@ -184,7 +184,7 @@ namespace Internal.NativeCrypto
             // open it and, if a container is given, map to open the container.
             //
             int ret = OpenCSP(cspParameters, (uint)Interop.Advapi32.CryptAcquireContextFlags.CRYPT_VERIFYCONTEXT, out hProv);
-            if (S_OK != ret)
+            if (ret != S_OK)
             {
                 hProv.Dispose();
                 throw ret.ToCryptographicException();
@@ -200,7 +200,7 @@ namespace Internal.NativeCrypto
         {
             string providerName;
             string? containerName = null;
-            if (null == cspParameters)
+            if (cspParameters == null)
             {
                 throw new ArgumentException(SR.Format(SR.CspParameter_invalid, nameof(cspParameters)));
             }
@@ -210,7 +210,7 @@ namespace Internal.NativeCrypto
 
             //look for provider name in the cspParamters
             //if CSP provider is not null then use the provider name from cspParameters
-            if (null != cspParameters.ProviderName)
+            if (cspParameters.ProviderName != null)
             {
                 providerName = cspParameters.ProviderName;
             }
@@ -229,7 +229,7 @@ namespace Internal.NativeCrypto
             if (!IsFlagBitSet((uint)cspProviderFlags, (uint)CspProviderFlags.UseDefaultKeyContainer))
             {
                 //look for key container name in the cspParameters
-                if (null != cspParameters.KeyContainerName)
+                if (cspParameters.KeyContainerName != null)
                 {
                     containerName = cspParameters.KeyContainerName;
                 }
@@ -349,7 +349,7 @@ namespace Internal.NativeCrypto
             {
                 throw GetErrorCode().ToCryptographicException();
             }
-            if (null != impType && cb == Constants.SIZE_OF_DWORD)
+            if (impType != null && cb == Constants.SIZE_OF_DWORD)
             {
                 impTypeReturn = BitConverter.ToInt32(impType, 0);
             }

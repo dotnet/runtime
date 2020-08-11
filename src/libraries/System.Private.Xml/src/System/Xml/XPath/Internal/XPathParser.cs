@@ -325,12 +325,12 @@ namespace MS.Internal.Xml.XPath
             do
             {
                 opnd = ParseStep(opnd);
-                if (XPathScanner.LexKind.SlashSlash == _scanner.Kind)
+                if (_scanner.Kind == XPathScanner.LexKind.SlashSlash)
                 {
                     NextLex();
                     opnd = new Axis(Axis.AxisType.DescendantOrSelf, opnd);
                 }
-                else if (XPathScanner.LexKind.Slash == _scanner.Kind)
+                else if (_scanner.Kind == XPathScanner.LexKind.Slash)
                 {
                     NextLex();
                 }
@@ -360,12 +360,12 @@ namespace MS.Internal.Xml.XPath
         private AstNode ParseStep(AstNode? qyInput)
         {
             AstNode opnd;
-            if (XPathScanner.LexKind.Dot == _scanner.Kind)
+            if (_scanner.Kind == XPathScanner.LexKind.Dot)
             {         //>> '.'
                 NextLex();
                 opnd = new Axis(Axis.AxisType.Self, qyInput);
             }
-            else if (XPathScanner.LexKind.DotDot == _scanner.Kind)
+            else if (_scanner.Kind == XPathScanner.LexKind.DotDot)
             { //>> '..'
                 NextLex();
                 opnd = new Axis(Axis.AxisType.Parent, qyInput);
@@ -392,7 +392,7 @@ namespace MS.Internal.Xml.XPath
 
                 opnd = ParseNodeTest(qyInput, axisType, nodeType);
 
-                while (XPathScanner.LexKind.LBracket == _scanner.Kind)
+                while (_scanner.Kind == XPathScanner.LexKind.LBracket)
                 {
                     opnd = new Filter(opnd, ParsePredicate(opnd));
                 }
@@ -701,12 +701,12 @@ namespace MS.Internal.Xml.XPath
         private AstNode ParseRelativePathPattern(AstNode? qyInput)
         {
             AstNode opnd = ParseStepPattern(qyInput);
-            if (XPathScanner.LexKind.SlashSlash == _scanner.Kind)
+            if (_scanner.Kind == XPathScanner.LexKind.SlashSlash)
             {
                 NextLex();
                 opnd = ParseRelativePathPattern(new Axis(Axis.AxisType.DescendantOrSelf, opnd));
             }
-            else if (XPathScanner.LexKind.Slash == _scanner.Kind)
+            else if (_scanner.Kind == XPathScanner.LexKind.Slash)
             {
                 NextLex();
                 opnd = ParseRelativePathPattern(opnd);
@@ -742,7 +742,7 @@ namespace MS.Internal.Xml.XPath
 
             opnd = ParseNodeTest(qyInput, axisType, nodeType);
 
-            while (XPathScanner.LexKind.LBracket == _scanner.Kind)
+            while (_scanner.Kind == XPathScanner.LexKind.LBracket)
             {
                 opnd = new Filter(opnd, ParsePredicate(opnd));
             }

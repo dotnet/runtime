@@ -18,7 +18,7 @@ namespace System.Net.Security
         protected SafeDeleteContext(SafeFreeCredentials credential)
             : base(IntPtr.Zero, true)
         {
-            Debug.Assert((null != credential), "Invalid credential passed to SafeDeleteContext");
+            Debug.Assert((credential != null), "Invalid credential passed to SafeDeleteContext");
 
             // When a credential handle is first associated with the context we keep credential
             // ref count bumped up to ensure ordered finalization. The credential properties
@@ -31,12 +31,12 @@ namespace System.Net.Security
 
         public override bool IsInvalid
         {
-            get { return (null == _credential); }
+            get { return (_credential == null); }
         }
 
         protected override bool ReleaseHandle()
         {
-            Debug.Assert((null != _credential), "Null credential in SafeDeleteContext");
+            Debug.Assert((_credential != null), "Null credential in SafeDeleteContext");
             _credential.DangerousRelease();
             _credential = null!;
             return true;

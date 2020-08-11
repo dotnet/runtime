@@ -944,7 +944,7 @@ namespace System.Xml.Xsl.Xslt
 
             char[] DefaultValues = DecimalFormatDecl.Default.Characters;
             char[] characters = new char[NumCharAttrs];
-            Debug.Assert(NumCharAttrs == DefaultValues.Length);
+            Debug.Assert(DefaultValues.Length == NumCharAttrs);
 
             for (int idx = 0; idx < NumCharAttrs; idx++)
             {

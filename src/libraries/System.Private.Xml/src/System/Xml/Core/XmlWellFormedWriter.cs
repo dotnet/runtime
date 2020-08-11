@@ -1611,9 +1611,9 @@ namespace System.Xml
         private void SetSpecialAttribute(SpecialAttribute special)
         {
             _specAttr = special;
-            if (State.Attribute == _currentState)
+            if (_currentState == State.Attribute)
                 _currentState = State.SpecialAttr;
-            else if (State.RootLevelAttr == _currentState)
+            else if (_currentState == State.RootLevelAttr)
                 _currentState = State.RootLevelSpecAttr;
             else
                 Debug.Fail("State.Attribute == currentState || State.RootLevelAttr == currentState");

@@ -31,11 +31,11 @@ namespace Internal.NativeCrypto
             {
                 SafeProvHandle safeProvHandle;
                 // If this is the base DSS/DH provider, see if we can use the enhanced provider instead.
-                if (S_OK == AcquireCryptContext(out safeProvHandle,
+                if (AcquireCryptContext(out safeProvHandle,
                     null,
                     MS_ENH_DSS_DH_PROV,
                     dwProvType,
-                    (uint)Interop.Advapi32.CryptAcquireContextFlags.CRYPT_VERIFYCONTEXT))
+                    (uint)Interop.Advapi32.CryptAcquireContextFlags.CRYPT_VERIFYCONTEXT) == S_OK)
                 {
                     wszUpgrade = MS_ENH_DSS_DH_PROV;
                 }
