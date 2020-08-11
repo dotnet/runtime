@@ -39,7 +39,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
                 responder.ResponseDelay = delay;
                 responder.DelayedActions = RevocationResponder.DelayedActionsFlag.All;
 
-
                 // This needs to be greater than delay, but less than 2x delay to ensure
                 // that the time is a timeout for individual fetches, not a running total.
                 chain.ChainPolicy.UrlRetrievalTimeout = TimeSpan.FromSeconds(5);
