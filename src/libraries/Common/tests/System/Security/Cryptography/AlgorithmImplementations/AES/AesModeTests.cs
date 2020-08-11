@@ -21,10 +21,16 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
             SupportsMode(CipherMode.ECB);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
         public static void SupportsCFB()
         {
             SupportsMode(CipherMode.CFB);
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows7))]
+        public static void Windows7DoesNotSupportCFB()
+        {
+            DoesNotSupportMode(CipherMode.CFB);
         }
 
         [Fact]

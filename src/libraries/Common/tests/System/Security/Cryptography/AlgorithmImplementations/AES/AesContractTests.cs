@@ -93,7 +93,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
             }
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
         [InlineData(0, true)]
         [InlineData(1, true)]
         [InlineData(7, true)]
@@ -133,7 +133,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
             }
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
         [InlineData(8)]
         [InlineData(128)]
         public static void ValidCFBFeedbackSizes(int feedbackSize)

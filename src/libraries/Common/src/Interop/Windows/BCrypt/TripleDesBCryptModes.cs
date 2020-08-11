@@ -10,38 +10,42 @@ namespace Internal.Cryptography
     internal static class TripleDesBCryptModes
     {
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA5350", Justification = "We are providing the implementation for TripleDES, not consuming it")]
-        private static readonly SafeAlgorithmHandle s_hAlgCbc = Open3DesAlgorithm(Cng.BCRYPT_CHAIN_MODE_CBC);
+        private static readonly Lazy<SafeAlgorithmHandle> s_hAlgCbc = Open3DesAlgorithm(Cng.BCRYPT_CHAIN_MODE_CBC);
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA5350", Justification = "We are providing the implementation for TripleDES, not consuming it")]
-        private static readonly SafeAlgorithmHandle s_hAlgEcb = Open3DesAlgorithm(Cng.BCRYPT_CHAIN_MODE_ECB);
+        private static readonly Lazy<SafeAlgorithmHandle> s_hAlgEcb = Open3DesAlgorithm(Cng.BCRYPT_CHAIN_MODE_ECB);
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA5350", Justification = "We are providing the implementation for TripleDES, not consuming it")]
-        private static readonly SafeAlgorithmHandle s_hAlgCfb8 = Open3DesAlgorithm(Cng.BCRYPT_CHAIN_MODE_CFB, 1);
+        private static readonly Lazy<SafeAlgorithmHandle> s_hAlgCfb8 = Open3DesAlgorithm(Cng.BCRYPT_CHAIN_MODE_CFB, 1);
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA5350", Justification = "We are providing the implementation for TripleDES, not consuming it")]
-        private static readonly SafeAlgorithmHandle s_hAlgCfb64 = Open3DesAlgorithm(Cng.BCRYPT_CHAIN_MODE_CFB, 8);
+        private static readonly Lazy<SafeAlgorithmHandle> s_hAlgCfb64 = Open3DesAlgorithm(Cng.BCRYPT_CHAIN_MODE_CFB, 8);
 
         internal static SafeAlgorithmHandle GetSharedHandle(CipherMode cipherMode, int feedback) =>
             // Windows 8 added support to set the CipherMode value on a key,
             // but Windows 7 requires that it be set on the algorithm before key creation.
             (cipherMode, feedback) switch
             {
-                (CipherMode.CBC, _) => s_hAlgCbc,
-                (CipherMode.ECB, _) => s_hAlgEcb,
-                (CipherMode.CFB, 1) => s_hAlgCfb8,
-                (CipherMode.CFB, 8) => s_hAlgCfb64,
+                (CipherMode.CBC, _) => s_hAlgCbc.Value,
+                (CipherMode.ECB, _) => s_hAlgEcb.Value,
+                (CipherMode.CFB, 1) => s_hAlgCfb8.Value,
+                (CipherMode.CFB, 8) => s_hAlgCfb64.Value,
                 _ => throw new NotSupportedException(),
             };
 
-        private static SafeAlgorithmHandle Open3DesAlgorithm(string cipherMode, int feedback = 0)
+        private static Lazy<SafeAlgorithmHandle> Open3DesAlgorithm(string cipherMode, int feedback = 0)
         {
-            SafeAlgorithmHandle hAlg = Cng.BCryptOpenAlgorithmProvider(Cng.BCRYPT_3DES_ALGORITHM, null, Cng.OpenAlgorithmProviderFlags.NONE);
-            hAlg.SetCipherMode(cipherMode);
-
-            if (feedback > 0)
+            return new Lazy<SafeAlgorithmHandle>(() =>
             {
-                // feedback is in bytes!
-                hAlg.SetFeedbackSize(feedback);
-            }
+                SafeAlgorithmHandle hAlg = Cng.BCryptOpenAlgorithmProvider(Cng.BCRYPT_3DES_ALGORITHM, null,
+                    Cng.OpenAlgorithmProviderFlags.NONE);
+                hAlg.SetCipherMode(cipherMode);
 
-            return hAlg;
+                if (feedback > 0)
+                {
+                    // feedback is in bytes!
+                    hAlg.SetFeedbackSize(feedback);
+                }
+
+                return hAlg;
+            });
         }
     }
 }
