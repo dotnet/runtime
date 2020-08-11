@@ -111,7 +111,7 @@ namespace Microsoft.VisualBasic.Tests
         [SkipOnMono("COM Interop not supported on Mono")]
         public void TypeName_ComObject(string progId, string expected)
         {
-            Type type = Type.GetTypeFromProgID(progId);
+            Type type = Type.GetTypeFromProgID(progId, true);
             object expression = Activator.CreateInstance(type);
             Assert.Equal(expected, Versioned.TypeName(expression));
         }
