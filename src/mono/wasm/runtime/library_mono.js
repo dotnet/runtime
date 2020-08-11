@@ -185,9 +185,10 @@ var MonoSupportLib = {
 			}
 
 			var buffer = this.scratch_root_buffer;
-			var index = this.scratch_root_free_indices.pop ();
-			if (!index)
+			if (this.scratch_root_free_indices.length < 1)
 				throw new Error("Out of scratch root space");
+
+			var index = this.scratch_root_free_indices.pop ();
 				
 			var result = Object.create(MONO._mono_wasm_root_prototype);
 			result.__buffer = buffer.__buffer;

@@ -12,8 +12,9 @@
 #include <mono/metadata/tokentype.h>
 #include <mono/metadata/threads.h>
 #include <mono/metadata/image.h>
-#include <mono/metadata/gc-internals.h>
 #include <mono/metadata/mono-gc.h>
+// FIXME: unavailable in emscripten
+// #include <mono/metadata/gc-internals.h>
 #include <mono/utils/mono-logger.h>
 #include <mono/utils/mono-dl-fallback.h>
 #include <mono/jit/jit.h>
@@ -144,10 +145,11 @@ wasm_logger (const char *log_domain, const char *log_level, const char *message,
 	}, log_level, message, fatal, log_domain);
 }
 
-/*
+typedef uint32_t target_mword;
+typedef target_mword SgenDescriptor;
+typedef SgenDescriptor MonoGCDescriptor;
 MONO_API int   mono_gc_register_root (char *start, size_t size, MonoGCDescriptor descr, MonoGCRootSource source, void *key, const char *msg);
 void  mono_gc_deregister_root (char* addr);
-*/
 
 EMSCRIPTEN_KEEPALIVE int
 mono_wasm_register_root (char *start, size_t size, const char *name) {
