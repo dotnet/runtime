@@ -108,6 +108,7 @@ namespace Microsoft.VisualBasic.Tests
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows))]
         [MemberData(nameof(TypeName_ComObject_TestData))]
+        [SkipOnMono("COM Interop not supported on Mono")]
         public void TypeName_ComObject(string progId, string expected)
         {
             Type type = Type.GetTypeFromProgID(progId);
