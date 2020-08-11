@@ -85,7 +85,7 @@ var MonoSupportLib = {
 			},
 			release: function () {
 				if (this.__handle) {
-					MONO.mono_gc_deregister_root (this.__handle);
+					MONO.mono_wasm_deregister_root (this.__offset);
 					this.__buffer.fill (0);
 					Module.free (this.__offset);
 				}
@@ -97,9 +97,9 @@ var MonoSupportLib = {
 		},
 
 		mono_wasm_new_root_buffer: function (capacity, autoRelease, msg) {
-			if (!MONO.mono_gc_register_root || !MONO.mono_gc_deregister_root) {
-				MONO.mono_gc_register_root = Module.cwrap ("mono_gc_register_root", "number", ["number", "number", "number", "number", "number", "string"]);
-				MONO.mono_gc_deregister_root = Module.cwrap ("mono_gc_deregister_root", null, ["number"]);
+			if (!MONO.mono_wasm_register_root || !MONO.mono_wasm_deregister_root) {
+				MONO.mono_wasm_register_root = Module.cwrap ("mono_wasm_register_root", "number", ["number", "number", "string"]);
+				MONO.mono_wasm_deregister_root = Module.cwrap ("mono_wasm_deregister_root", null, ["number"]);
 				Object.defineProperty(
 					MONO._mono_wasm_root_buffer_prototype, "value", {
 						get: MONO._mono_wasm_root_buffer_prototype.get,
@@ -114,14 +114,13 @@ var MonoSupportLib = {
 
 			const MONO_ROOT_SOURCE_EXTERNAL = 0;
 				
-			var offset = Module.malloc (capacity * 4);
+			var offset = Module._malloc (capacity * 4);
 			var buffer = new Int32Array (Module.HEAPU8.buffer, offset, capacity);
-			buffer.fill (UNINITIALIZED_FILL_PATTERN);
+			buffer.fill (0);
 
 			var result = Object.create(MONO._mono_wasm_root_buffer_prototype);
 			result.__offset = offset;			
-			// char *start, size_t size, MonoGCDescriptor descr, MonoGCRootSource source, void *key, const char *msg
-			result.__handle = MONO.mono_gc_register_root (offset, capacity, 0, MONO_ROOT_SOURCE_EXTERNAL, 0, msg || "mono_wasm_new_root_buffer");
+			result.__handle = MONO.mono_wasm_register_root (offset, capacity, msg || 0);
 			result.__buffer = buffer;
 
 			if (autoRelease)
