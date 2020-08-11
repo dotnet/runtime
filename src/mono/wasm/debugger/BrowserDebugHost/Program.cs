@@ -57,7 +57,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         public static Task Start(string chromePath, string appPath, string pagePath)
         {
-            lock(proxyLock)
+            lock (proxyLock)
             {
                 if (host != null)
                     return hostTask;

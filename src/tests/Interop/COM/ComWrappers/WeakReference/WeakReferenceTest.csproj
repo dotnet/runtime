@@ -3,7 +3,7 @@
     <OutputType>Exe</OutputType>
     <!-- Test unsupported outside of windows -->
     <CLRTestTargetUnsupported Condition="'$(TargetsWindows)' != 'true'">true</CLRTestTargetUnsupported>
-    <!-- Native COM interfaces left alive at the test exit -->
+    <!-- Registers global instances of ComWrappers -->
     <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>

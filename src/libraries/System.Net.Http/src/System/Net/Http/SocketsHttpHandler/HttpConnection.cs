@@ -90,6 +90,8 @@ namespace System.Net.Http
             if (NetEventSource.Log.IsEnabled()) TraceConnection(_stream);
         }
 
+        ~HttpConnection() => Dispose(disposing: false);
+
         public void Dispose() => Dispose(disposing: true);
 
         protected void Dispose(bool disposing)
@@ -100,6 +102,9 @@ namespace System.Net.Http
             {
                 if (NetEventSource.Log.IsEnabled()) Trace("Connection closing.");
                 _pool.DecrementConnectionCount();
+
+                if (HttpTelemetry.Log.IsEnabled()) _currentRequest?.OnAborted();
+
                 if (disposing)
                 {
                     GC.SuppressFinalize(this);
@@ -630,7 +635,6 @@ namespace System.Net.Http
                 Stream responseStream;
                 if (ReferenceEquals(normalizedMethod, HttpMethod.Head) || response.StatusCode == HttpStatusCode.NoContent || response.StatusCode == HttpStatusCode.NotModified)
                 {
-                    if (HttpTelemetry.Log.IsEnabled()) HttpTelemetry.Log.RequestStop();
                     responseStream = EmptyReadStream.Instance;
                     CompleteResponse();
                 }
@@ -653,7 +657,6 @@ namespace System.Net.Http
                     long contentLength = response.Content.Headers.ContentLength.GetValueOrDefault();
                     if (contentLength <= 0)
                     {
-                        if (HttpTelemetry.Log.IsEnabled()) HttpTelemetry.Log.RequestStop();
                         responseStream = EmptyReadStream.Instance;
                         CompleteResponse();
                     }
@@ -1850,6 +1853,8 @@ namespace System.Net.Http
             Debug.Assert(_currentRequest != null, "Expected the connection to be associated with a request.");
             Debug.Assert(_writeOffset == 0, "Everything in write buffer should have been flushed.");
 
+            if (HttpTelemetry.Log.IsEnabled()) _currentRequest.OnStopped();
+
             // Disassociate the connection from a request.
             _currentRequest = null;
 
@@ -1962,14 +1967,5 @@ namespace System.Net.Http
                 _currentRequest?.GetHashCode() ?? 0, // request ID
                 memberName,                          // method name
                 message);                            // message
-    }
-
-    internal sealed class HttpConnectionWithFinalizer : HttpConnection
-    {
-        public HttpConnectionWithFinalizer(HttpConnectionPool pool, Connection connection, TransportContext? transportContext) : base(pool, connection, transportContext) { }
-
-        // This class is separated from HttpConnection so we only pay the price of having a finalizer
-        // when it's actually needed, e.g. when MaxConnectionsPerServer is enabled.
-        ~HttpConnectionWithFinalizer() => Dispose(disposing: false);
     }
 }

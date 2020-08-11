@@ -1353,56 +1353,61 @@ void EEJitManager::SetCpuInfo()
 
     int cpuidInfo[4];
 
+    const int EAX = 0;
+    const int EBX = 1;
+    const int ECX = 2;
+    const int EDX = 3;
+
     __cpuid(cpuidInfo, 0x00000000);
-    uint32_t maxCpuId = static_cast<uint32_t>(cpuidInfo[0]);
+    uint32_t maxCpuId = static_cast<uint32_t>(cpuidInfo[EAX]);
 
     if (maxCpuId >= 1)
     {
         __cpuid(cpuidInfo, 0x00000001);
 
-        if (((cpuidInfo[3] & (1 << 25)) != 0) && ((cpuidInfo[3] & (1 << 26)) != 0))                     // SSE & SSE2
+        if (((cpuidInfo[EDX] & (1 << 25)) != 0) && ((cpuidInfo[EDX] & (1 << 26)) != 0))                     // SSE & SSE2
         {
             CPUCompileFlags.Set(InstructionSet_SSE);
             CPUCompileFlags.Set(InstructionSet_SSE2);
 
-            if ((cpuidInfo[2] & (1 << 25)) != 0)                                                      // AESNI
+            if ((cpuidInfo[ECX] & (1 << 25)) != 0)                                                          // AESNI
             {
                 CPUCompileFlags.Set(InstructionSet_AES);
             }
 
-            if ((cpuidInfo[2] & (1 << 1)) != 0)                                                       // PCLMULQDQ
+            if ((cpuidInfo[ECX] & (1 << 1)) != 0)                                                           // PCLMULQDQ
             {
                 CPUCompileFlags.Set(InstructionSet_PCLMULQDQ);
             }
 
-            if ((cpuidInfo[2] & (1 << 0)) != 0)                                                       // SSE3
+            if ((cpuidInfo[ECX] & (1 << 0)) != 0)                                                           // SSE3
             {
                 CPUCompileFlags.Set(InstructionSet_SSE3);
 
-                if ((cpuidInfo[2] & (1 << 9)) != 0)                                                   // SSSE3
+                if ((cpuidInfo[ECX] & (1 << 9)) != 0)                                                       // SSSE3
                 {
                     CPUCompileFlags.Set(InstructionSet_SSSE3);
 
-                    if ((cpuidInfo[2] & (1 << 19)) != 0)                                              // SSE4.1
+                    if ((cpuidInfo[ECX] & (1 << 19)) != 0)                                                  // SSE4.1
                     {
                         CPUCompileFlags.Set(InstructionSet_SSE41);
 
-                        if ((cpuidInfo[2] & (1 << 20)) != 0)                                          // SSE4.2
+                        if ((cpuidInfo[ECX] & (1 << 20)) != 0)                                              // SSE4.2
                         {
                             CPUCompileFlags.Set(InstructionSet_SSE42);
 
-                            if ((cpuidInfo[2] & (1 << 23)) != 0)                                      // POPCNT
+                            if ((cpuidInfo[ECX] & (1 << 23)) != 0)                                          // POPCNT
                             {
                                 CPUCompileFlags.Set(InstructionSet_POPCNT);
                             }
 
-                            if (((cpuidInfo[2] & (1 << 27)) != 0) && ((cpuidInfo[2] & (1 << 28)) != 0)) // OSXSAVE & AVX
+                            if (((cpuidInfo[ECX] & (1 << 27)) != 0) && ((cpuidInfo[ECX] & (1 << 28)) != 0)) // OSXSAVE & AVX
                             {
-                                if(DoesOSSupportAVX() && (xmmYmmStateSupport() == 1))               // XGETBV == 11
+                                if(DoesOSSupportAVX() && (xmmYmmStateSupport() == 1))                       // XGETBV == 11
                                 {
                                     CPUCompileFlags.Set(InstructionSet_AVX);
 
-                                    if ((cpuidInfo[2] & (1 << 12)) != 0)                              // FMA
+                                    if ((cpuidInfo[ECX] & (1 << 12)) != 0)                                  // FMA
                                     {
                                         CPUCompileFlags.Set(InstructionSet_FMA);
                                     }
@@ -1411,7 +1416,7 @@ void EEJitManager::SetCpuInfo()
                                     {
                                         __cpuidex(cpuidInfo, 0x00000007, 0x00000000);
 
-                                        if ((cpuidInfo[1] & (1 << 5)) != 0)                           // AVX2
+                                        if ((cpuidInfo[EBX] & (1 << 5)) != 0)                               // AVX2
                                         {
                                             CPUCompileFlags.Set(InstructionSet_AVX2);
                                         }
@@ -1440,12 +1445,12 @@ void EEJitManager::SetCpuInfo()
         {
             __cpuidex(cpuidInfo, 0x00000007, 0x00000000);
 
-            if ((cpuidInfo[2] & (1 << 3)) != 0)                                                       // BMI1
+            if ((cpuidInfo[EBX] & (1 << 3)) != 0)                                                           // BMI1
             {
                 CPUCompileFlags.Set(InstructionSet_BMI1);
             }
 
-            if ((cpuidInfo[2] & (1 << 8)) != 0)                                                       // BMI2
+            if ((cpuidInfo[EBX] & (1 << 8)) != 0)                                                           // BMI2
             {
                 CPUCompileFlags.Set(InstructionSet_BMI2);
             }
@@ -1453,13 +1458,13 @@ void EEJitManager::SetCpuInfo()
     }
 
     __cpuid(cpuidInfo, 0x80000000);
-    uint32_t maxCpuIdEx = static_cast<uint32_t>(cpuidInfo[0]);
+    uint32_t maxCpuIdEx = static_cast<uint32_t>(cpuidInfo[EAX]);
 
     if (maxCpuIdEx >= 0x80000001)
     {
         __cpuid(cpuidInfo, 0x80000001);
 
-        if ((cpuidInfo[3] & (1 << 5)) != 0)                                                           // LZCNT
+        if ((cpuidInfo[ECX] & (1 << 5)) != 0)                                                               // LZCNT
         {
             CPUCompileFlags.Set(InstructionSet_LZCNT);
         }

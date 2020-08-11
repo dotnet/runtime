@@ -21,7 +21,7 @@ namespace System.Net.Http.Json
             return ReadFromJsonAsyncCore(content, type, sourceEncoding, options, cancellationToken);
         }
 
-        public static Task<T> ReadFromJsonAsync<T>(this HttpContent content, JsonSerializerOptions? options = null, CancellationToken cancellationToken = default)
+        public static Task<T?> ReadFromJsonAsync<T>(this HttpContent content, JsonSerializerOptions? options = null, CancellationToken cancellationToken = default)
         {
             ValidateContent(content);
             Debug.Assert(content.Headers.ContentType != null);
@@ -46,7 +46,7 @@ namespace System.Net.Http.Json
             }
         }
 
-        private static async Task<T> ReadFromJsonAsyncCore<T>(HttpContent content, Encoding? sourceEncoding, JsonSerializerOptions? options, CancellationToken cancellationToken)
+        private static async Task<T?> ReadFromJsonAsyncCore<T>(HttpContent content, Encoding? sourceEncoding, JsonSerializerOptions? options, CancellationToken cancellationToken)
         {
             Stream contentStream = await ReadHttpContentStreamAsync(content, cancellationToken).ConfigureAwait(false);
 
