@@ -44,7 +44,7 @@ namespace System.Tests
                 Environment.CurrentDirectory = TestDirectory;
                 Assert.Equal(Directory.GetCurrentDirectory(), Environment.CurrentDirectory);
 
-                if (!RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+                if (!OperatingSystem.IsMacOS())
                 {
                     // On OSX, the temp directory /tmp/ is a symlink to /private/tmp, so setting the current
                     // directory to a symlinked path will result in GetCurrentDirectory returning the absolute
@@ -127,7 +127,7 @@ namespace System.Tests
         public void OSVersion_MatchesPlatform()
         {
             PlatformID id = Environment.OSVersion.Platform;
-            PlatformID expected = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? PlatformID.Win32NT : RuntimeInformation.IsOSPlatform(OSPlatform.Browser) ? PlatformID.Other : PlatformID.Unix;
+            PlatformID expected = OperatingSystem.IsWindows() ? PlatformID.Win32NT : OperatingSystem.IsBrowser() ? PlatformID.Other : PlatformID.Unix;
             Assert.Equal(expected, id);
         }
 
@@ -142,7 +142,7 @@ namespace System.Tests
 
             Assert.Contains(version.ToString(2), versionString);
 
-            string expectedOS = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "Windows " : RuntimeInformation.IsOSPlatform(OSPlatform.Browser) ? "Other " : "Unix ";
+            string expectedOS = OperatingSystem.IsWindows() ? "Windows " : OperatingSystem.IsBrowser() ? "Other " : "Unix ";
             Assert.Contains(expectedOS, versionString);
         }
 
@@ -317,7 +317,7 @@ namespace System.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.AnyUnix)]  // Tests OS-specific environment
+        [PlatformSpecific(TestPlatforms.AnyUnix | TestPlatforms.Browser)]  // Tests OS-specific environment
         public void GetFolderPath_Unix_PersonalIsHomeAndUserProfile()
         {
             Assert.Equal(Environment.GetEnvironmentVariable("HOME"), Environment.GetFolderPath(Environment.SpecialFolder.Personal));

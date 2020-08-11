@@ -740,8 +740,7 @@ namespace System.Linq
                     ));
         }
 
-        [return: MaybeNull]
-        public static TSource FirstOrDefault<TSource>(this IQueryable<TSource> source)
+        public static TSource? FirstOrDefault<TSource>(this IQueryable<TSource> source)
         {
             if (source == null)
                 throw Error.ArgumentNull(nameof(source));
@@ -751,8 +750,7 @@ namespace System.Linq
                     CachedReflectionInfo.FirstOrDefault_TSource_1(typeof(TSource)), source.Expression));
         }
 
-        [return: MaybeNull]
-        public static TSource FirstOrDefault<TSource>(this IQueryable<TSource> source, Expression<Func<TSource, bool>> predicate)
+        public static TSource? FirstOrDefault<TSource>(this IQueryable<TSource> source, Expression<Func<TSource, bool>> predicate)
         {
             if (source == null)
                 throw Error.ArgumentNull(nameof(source));
@@ -790,8 +788,7 @@ namespace System.Linq
                     ));
         }
 
-        [return: MaybeNull]
-        public static TSource LastOrDefault<TSource>(this IQueryable<TSource> source)
+        public static TSource? LastOrDefault<TSource>(this IQueryable<TSource> source)
         {
             if (source == null)
                 throw Error.ArgumentNull(nameof(source));
@@ -801,8 +798,7 @@ namespace System.Linq
                     CachedReflectionInfo.LastOrDefault_TSource_1(typeof(TSource)), source.Expression));
         }
 
-        [return: MaybeNull]
-        public static TSource LastOrDefault<TSource>(this IQueryable<TSource> source, Expression<Func<TSource, bool>> predicate)
+        public static TSource? LastOrDefault<TSource>(this IQueryable<TSource> source, Expression<Func<TSource, bool>> predicate)
         {
             if (source == null)
                 throw Error.ArgumentNull(nameof(source));
@@ -840,8 +836,7 @@ namespace System.Linq
                     ));
         }
 
-        [return: MaybeNull]
-        public static TSource SingleOrDefault<TSource>(this IQueryable<TSource> source)
+        public static TSource? SingleOrDefault<TSource>(this IQueryable<TSource> source)
         {
             if (source == null)
                 throw Error.ArgumentNull(nameof(source));
@@ -851,8 +846,7 @@ namespace System.Linq
                     CachedReflectionInfo.SingleOrDefault_TSource_1(typeof(TSource)), source.Expression));
         }
 
-        [return: MaybeNull]
-        public static TSource SingleOrDefault<TSource>(this IQueryable<TSource> source, Expression<Func<TSource, bool>> predicate)
+        public static TSource? SingleOrDefault<TSource>(this IQueryable<TSource> source, Expression<Func<TSource, bool>> predicate)
         {
             if (source == null)
                 throw Error.ArgumentNull(nameof(source));
@@ -880,8 +874,7 @@ namespace System.Linq
                     ));
         }
 
-        [return: MaybeNull]
-        public static TSource ElementAtOrDefault<TSource>(this IQueryable<TSource> source, int index)
+        public static TSource? ElementAtOrDefault<TSource>(this IQueryable<TSource> source, int index)
         {
             if (source == null)
                 throw Error.ArgumentNull(nameof(source));
@@ -1065,8 +1058,7 @@ namespace System.Linq
                     ));
         }
 
-        [return: MaybeNull]
-        public static TSource Min<TSource>(this IQueryable<TSource> source)
+        public static TSource? Min<TSource>(this IQueryable<TSource> source)
         {
             if (source == null)
                 throw Error.ArgumentNull(nameof(source));
@@ -1076,8 +1068,7 @@ namespace System.Linq
                     CachedReflectionInfo.Min_TSource_1(typeof(TSource)), source.Expression));
         }
 
-        [return: MaybeNull]
-        public static TResult Min<TSource, TResult>(this IQueryable<TSource> source, Expression<Func<TSource, TResult>> selector)
+        public static TResult? Min<TSource, TResult>(this IQueryable<TSource> source, Expression<Func<TSource, TResult>> selector)
         {
             if (source == null)
                 throw Error.ArgumentNull(nameof(source));
@@ -1091,8 +1082,7 @@ namespace System.Linq
                     ));
         }
 
-        [return: MaybeNull]
-        public static TSource Max<TSource>(this IQueryable<TSource> source)
+        public static TSource? Max<TSource>(this IQueryable<TSource> source)
         {
             if (source == null)
                 throw Error.ArgumentNull(nameof(source));
@@ -1102,8 +1092,7 @@ namespace System.Linq
                     CachedReflectionInfo.Max_TSource_1(typeof(TSource)), source.Expression));
         }
 
-        [return: MaybeNull]
-        public static TResult Max<TSource, TResult>(this IQueryable<TSource> source, Expression<Func<TSource, TResult>> selector)
+        public static TResult? Max<TSource, TResult>(this IQueryable<TSource> source, Expression<Func<TSource, TResult>> selector)
         {
             if (source == null)
                 throw Error.ArgumentNull(nameof(source));

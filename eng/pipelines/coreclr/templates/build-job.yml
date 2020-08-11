@@ -167,6 +167,28 @@ jobs:
       - script: $(coreClrRepoRootDir)build-test$(scriptExt) skipstressdependencies skipmanaged skipgeneratelayout $(buildConfig) $(archType) $(crossArg) $(osArg) $(priorityArg) $(compilerArg)
         displayName: Build native test components
 
+    # Sign and add entitlements to these MacOS binaries
+    - ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest')) }}:
+      - ${{ if eq(parameters.osGroup, 'OSX') }}:
+
+        - template: /eng/pipelines/common/macos-sign-with-entitlements.yml
+          parameters:
+            filesToSign: 
+            - name: createdump
+              path: $(buildProductRootFolderPath)
+              entitlementsFile: $(Build.SourcesDirectory)/eng/pipelines/common/createdump-entitlements.plist
+            - name: corerun
+              path: $(buildProductRootFolderPath)
+              entitlementsFile: $(Build.SourcesDirectory)/eng/pipelines/common/entitlements.plist
+
+        - task: CopyFiles@2
+          displayName: 'Copy signed createdump to sharedFramework'
+          inputs:
+            contents: createdump
+            sourceFolder: $(buildProductRootFolderPath)
+            targetFolder: $(buildProductRootFolderPath)/sharedFramework
+            overWrite: true
+
     # Sign on Windows
     - ${{ if and(eq(parameters.osGroup, 'Windows_NT'), eq(parameters.signBinaries, 'true'), ne(parameters.testGroup, 'clrTools')) }}:
       - powershell: eng\common\build.ps1 -ci -sign -restore -configuration:$(buildConfig) -warnaserror:0 /p:ArcadeBuild=true /p:OfficialBuild=true /p:TargetOS=$(osGroup) /p:TargetArchitecture=$(archType) /p:Configuration=$(_BuildConfig) /p:DotNetSignType=$env:_SignType -projects $(Build.SourcesDirectory)\eng\empty.csproj

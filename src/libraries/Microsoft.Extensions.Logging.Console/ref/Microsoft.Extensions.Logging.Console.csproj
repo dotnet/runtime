@@ -5,6 +5,8 @@
 
   <ItemGroup>
     <Compile Include="Microsoft.Extensions.Logging.Console.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\DynamicallyAccessedMembersAttribute.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\DynamicallyAccessedMemberTypes.cs" />
   </ItemGroup>
 
   <ItemGroup>

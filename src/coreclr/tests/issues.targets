@@ -306,9 +306,6 @@
 
     <!-- Windows all architecture excludes -->
     <ItemGroup Condition="'$(XunitTestBinBase)' != '' and '$(TargetsWindows)' == 'true' and '$(RuntimeFlavor)' == 'coreclr'">
-        <ExcludeList Include="$(XunitTestBinBase)/tracing/eventpipe/pauseonstart/pauseonstart/**">
-            <Issue>https://github.com/dotnet/runtime/issues/38847</Issue>
-        </ExcludeList>
     </ItemGroup>
 
     <!-- Windows x64 specific excludes -->
@@ -675,9 +672,6 @@
         <ExcludeList Include="$(XunitTestBinBase)/GC/Scenarios/Dynamo/dynamo/*">
             <Issue>https://github.com/dotnet/runtime/issues/10001</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/SIMD/MinMax_ro/*">
-            <Issue>https://github.com/dotnet/runtime/issues/38799</Issue>
-        </ExcludeList>
     </ItemGroup>
 
     <!-- Unix arm32 specific -->
@@ -964,6 +958,9 @@
 
     <!-- Known failures for mono runtime on *all* architectures/operating systems -->
     <ItemGroup Condition="'$(RuntimeFlavor)' == 'mono'" >
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/CollectibleAssemblies/ByRefLocals/**">
+            <Issue>https://github.com/dotnet/runtime/issues/40394</Issue>
+        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/Miscellaneous/CopyCtor/**">
             <Issue>Handling for Copy constructors isn't present in mono interop</Issue>
         </ExcludeList>

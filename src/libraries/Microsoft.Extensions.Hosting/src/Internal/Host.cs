@@ -88,11 +88,12 @@ namespace Microsoft.Extensions.Hosting.Internal
                     }
                 }
 
+                // Fire IHostApplicationLifetime.Stopped
+                _applicationLifetime.NotifyStopped();
+
                 token.ThrowIfCancellationRequested();
                 await _hostLifetime.StopAsync(token).ConfigureAwait(false);
 
-                // Fire IHostApplicationLifetime.Stopped
-                _applicationLifetime.NotifyStopped();
 
                 if (exceptions.Count > 0)
                 {

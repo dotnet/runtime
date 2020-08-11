@@ -1999,7 +1999,7 @@ namespace System.Net.Sockets
             return realOptionLength;
         }
 
-        [MinimumOSPlatform("windows7.0")]
+        [SupportedOSPlatform("windows")]
         public void SetIPProtectionLevel(IPProtectionLevel level)
         {
             if (level == IPProtectionLevel.Unspecified)
@@ -3490,7 +3490,7 @@ namespace System.Net.Sockets
         {
             if (!_isDisconnected)
             {
-                return BeginAccept(0, callback, state);
+                return BeginAcceptCommon(acceptSocket: null, receiveSize: 0, callback, state);
             }
 
             Debug.Assert(Disposed);
@@ -3498,13 +3498,7 @@ namespace System.Net.Sockets
             return null; // unreachable
         }
 
-        public IAsyncResult BeginAccept(int receiveSize, AsyncCallback? callback, object? state)
-        {
-            return BeginAccept(null, receiveSize, callback, state);
-        }
-
-        // This is the truly async version that uses AcceptEx.
-        public IAsyncResult BeginAccept(Socket? acceptSocket, int receiveSize, AsyncCallback? callback, object? state)
+        private IAsyncResult BeginAcceptCommon(Socket? acceptSocket, int receiveSize, AsyncCallback? callback, object? state)
         {
             ThrowIfDisposed();
 
@@ -3519,16 +3513,6 @@ namespace System.Net.Sockets
             asyncResult.StartPostingAsyncOp(false);
 
             // Start the accept.
-            DoBeginAccept(acceptSocket, receiveSize, asyncResult);
-
-            // Finish the flow capture, maybe complete here.
-            asyncResult.FinishPostingAsyncOp(ref Caches.AcceptClosureCache);
-
-            return asyncResult;
-        }
-
-        private void DoBeginAccept(Socket? acceptSocket, int receiveSize, AcceptOverlappedAsyncResult asyncResult)
-        {
             if (_rightEndPoint == null)
             {
                 throw new InvalidOperationException(SR.net_sockets_mustbind);
@@ -3560,6 +3544,11 @@ namespace System.Net.Sockets
             }
 
             if (SocketsTelemetry.Log.IsEnabled()) SocketsTelemetry.Log.AcceptStop();
+
+            // Finish the flow capture, maybe complete here.
+            asyncResult.FinishPostingAsyncOp(ref Caches.AcceptClosureCache);
+
+            return asyncResult;
         }
 
         // Routine Description:
@@ -3577,24 +3566,9 @@ namespace System.Net.Sockets
         //    Socket - a valid socket if successful
         public Socket EndAccept(IAsyncResult asyncResult)
         {
-            int bytesTransferred;
-            byte[]? buffer;
-            return EndAccept(out buffer, out bytesTransferred, asyncResult);
+            return EndAcceptCommon(out _, out _, asyncResult);
         }
-
-        public Socket EndAccept(out byte[]? buffer, IAsyncResult asyncResult)
-        {
-            int bytesTransferred;
-            byte[]? innerBuffer;
-
-            Socket socket = EndAccept(out innerBuffer, out bytesTransferred, asyncResult);
-            buffer = new byte[bytesTransferred];
-            // https://github.com/dotnet/runtime/issues/32633 - this throws on Unix
-            Buffer.BlockCopy(innerBuffer!, 0, buffer, 0, bytesTransferred);
-            return socket;
-        }
-
-        public Socket EndAccept(out byte[]? buffer, out int bytesTransferred, IAsyncResult asyncResult)
+        private Socket EndAcceptCommon(out byte[]? buffer, out int bytesTransferred, IAsyncResult asyncResult)
         {
             ThrowIfDisposed();
 
@@ -4184,6 +4158,7 @@ namespace System.Net.Sockets
         #endregion
 
         #region Internal and private methods
+
         internal static void GetIPProtocolInformation(AddressFamily addressFamily, Internals.SocketAddress socketAddress, out bool isIPv4, out bool isIPv6)
         {
             bool isIPv4MappedToIPv6 = socketAddress.Family == AddressFamily.InterNetworkV6 && socketAddress.GetIPAddress().IsIPv4MappedToIPv6;

@@ -11,6 +11,7 @@
     <TestAssemblies Condition="'$(TestAssemblies)' == ''">true</TestAssemblies>
     <TestPackages Condition="'$(TestPackages)' == ''">false</TestPackages>
     <TestTrimming Condition="'$(TestTrimming)' == ''">false</TestTrimming>
+    <ContinueOnError Condition="'$(TestTrimming)' == 'true'">true</ContinueOnError>
   </PropertyGroup>
   
   <!-- Projects that don't support code coverage measurement. -->
@@ -21,13 +22,9 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetOS)' == 'Browser' and '$(RunDisabledWasmTests)' != 'true'">
-    <!-- Builds currently do not pass -->
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Data.Common\tests\System.Data.Common.Tests.csproj" />
-
     <!-- Mono-Browser ignores runtimeconfig.template.json (e.g. for this it has "System.Globalization.EnforceJapaneseEraYearRanges": true) -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Globalization.Calendars\tests\CalendarTestWithConfigSwitch\System.Globalization.CalendarsWithConfigSwitch.Tests.csproj" />
 
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.IO.FileSystem\tests\System.IO.FileSystem.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Linq.Parallel\tests\System.Linq.Parallel.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.Http\tests\FunctionalTests\System.Net.Http.Functional.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.WebSockets.Client\tests\System.Net.WebSockets.Client.Tests.csproj" />
@@ -41,6 +38,7 @@
                       Condition="'$(TestPackages)' == 'true'" />
     <ProjectReference Include="$(MSBuildThisFileDirectory)*\tests\**\*.TrimmingTests.proj"
                       Exclude="@(ProjectExclusions)"
+                      BuildInParallel="false"
                       Condition="'$(TestTrimming)' == 'true'" />
   </ItemGroup>
 

@@ -5,6 +5,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices.ComTypes;
+using System.Runtime.Versioning;
 using System.StubHelpers;
 
 namespace System.Runtime.InteropServices
@@ -306,6 +307,7 @@ namespace System.Runtime.InteropServices
         /// <summary>
         /// Given a managed object that wraps an ITypeInfo, return its name.
         /// </summary>
+        [SupportedOSPlatform("windows")]
         public static string GetTypeInfoName(ITypeInfo typeInfo)
         {
             if (typeInfo is null)
@@ -319,12 +321,14 @@ namespace System.Runtime.InteropServices
 
         // This method is identical to Type.GetTypeFromCLSID. Since it's interop specific, we expose it
         // on Marshal for more consistent API surface.
+        [SupportedOSPlatform("windows")]
         public static Type? GetTypeFromCLSID(Guid clsid) => RuntimeType.GetTypeFromCLSIDImpl(clsid, null, throwOnError: false);
 
         /// <summary>
         /// Return the IUnknown* for an Object if the current context is the one
         /// where the RCW was first seen. Will return null otherwise.
         /// </summary>
+        [SupportedOSPlatform("windows")]
         public static IntPtr /* IUnknown* */ GetIUnknownForObject(object o)
         {
             if (o is null)
@@ -348,6 +352,7 @@ namespace System.Runtime.InteropServices
         /// <summary>
         /// Return the IDispatch* for an Object.
         /// </summary>
+        [SupportedOSPlatform("windows")]
         public static IntPtr /* IDispatch */ GetIDispatchForObject(object o)
         {
             if (o is null)
@@ -365,6 +370,7 @@ namespace System.Runtime.InteropServices
         /// Return the IUnknown* representing the interface for the Object.
         /// Object o should support Type T
         /// </summary>
+        [SupportedOSPlatform("windows")]
         public static IntPtr /* IUnknown* */ GetComInterfaceForObject(object o, Type T)
         {
             if (o is null)
@@ -380,6 +386,7 @@ namespace System.Runtime.InteropServices
             return GetComInterfaceForObjectNative(o, T, false, true);
         }
 
+        [SupportedOSPlatform("windows")]
         public static IntPtr GetComInterfaceForObject<T, TInterface>([DisallowNull] T o) => GetComInterfaceForObject(o!, typeof(TInterface));
 
         /// <summary>
@@ -387,6 +394,7 @@ namespace System.Runtime.InteropServices
         /// Object o should support Type T, it refer the value of mode to
         /// invoke customized QueryInterface or not.
         /// </summary>
+        [SupportedOSPlatform("windows")]
         public static IntPtr /* IUnknown* */ GetComInterfaceForObject(object o, Type T, CustomQueryInterfaceMode mode)
         {
             if (o is null)
@@ -409,6 +417,7 @@ namespace System.Runtime.InteropServices
         /// <summary>
         /// Return the managed object representing the IUnknown*
         /// </summary>
+        [SupportedOSPlatform("windows")]
         public static object GetObjectForIUnknown(IntPtr /* IUnknown* */ pUnk)
         {
             if (pUnk == IntPtr.Zero)
@@ -422,6 +431,7 @@ namespace System.Runtime.InteropServices
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern object GetObjectForIUnknownNative(IntPtr /* IUnknown* */ pUnk);
 
+        [SupportedOSPlatform("windows")]
         public static object GetUniqueObjectForIUnknown(IntPtr unknown)
         {
             if (unknown == IntPtr.Zero)
@@ -445,12 +455,15 @@ namespace System.Runtime.InteropServices
         /// Return an Object for IUnknown, using the Type T.
         /// Type T should be either a COM imported Type or a sub-type of COM imported Type
         /// </summary>
+        [SupportedOSPlatform("windows")]
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern object GetTypedObjectForIUnknown(IntPtr /* IUnknown* */ pUnk, Type t);
 
+        [SupportedOSPlatform("windows")]
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern IntPtr CreateAggregatedObject(IntPtr pOuter, object o);
 
+        [SupportedOSPlatform("windows")]
         public static IntPtr CreateAggregatedObject<T>(IntPtr pOuter, T o) where T : notnull
         {
             return CreateAggregatedObject(pOuter, (object)o);
@@ -549,6 +562,7 @@ namespace System.Runtime.InteropServices
         /// Release the COM component and if the reference hits 0 zombie this object.
         /// Further usage of this Object might throw an exception
         /// </summary>
+        [SupportedOSPlatform("windows")]
         public static int ReleaseComObject(object o)
         {
             if (o is null)
@@ -571,6 +585,7 @@ namespace System.Runtime.InteropServices
         /// Release the COM component and zombie this object.
         /// Further usage of this Object might throw an exception
         /// </summary>
+        [SupportedOSPlatform("windows")]
         public static int FinalReleaseComObject(object o)
         {
             if (o is null)
@@ -589,6 +604,7 @@ namespace System.Runtime.InteropServices
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern void InternalFinalReleaseComObject(object o);
 
+        [SupportedOSPlatform("windows")]
         public static object? GetComObjectData(object obj, object key)
         {
             if (obj is null)
@@ -614,6 +630,7 @@ namespace System.Runtime.InteropServices
         /// false if the data could not be added because there already was data for the
         /// specified key.
         /// </summary>
+        [SupportedOSPlatform("windows")]
         public static bool SetComObjectData(object obj, object key, object? data)
         {
             if (obj is null)
@@ -637,6 +654,7 @@ namespace System.Runtime.InteropServices
         /// This method takes the given COM object and wraps it in an object
         /// of the specified type. The type must be derived from __ComObject.
         /// </summary>
+        [SupportedOSPlatform("windows")]
         [return: NotNullIfNotNull("o")]
         public static object? CreateWrapperOfType(object? o, Type t)
         {
@@ -687,7 +705,8 @@ namespace System.Runtime.InteropServices
             return Wrapper;
         }
 
-        public static TWrapper CreateWrapperOfType<T, TWrapper>([AllowNull] T o)
+        [SupportedOSPlatform("windows")]
+        public static TWrapper CreateWrapperOfType<T, TWrapper>(T? o)
         {
             return (TWrapper)CreateWrapperOfType(o, typeof(TWrapper))!;
         }
@@ -701,6 +720,7 @@ namespace System.Runtime.InteropServices
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern bool IsTypeVisibleFromCom(Type t);
 
+        [SupportedOSPlatform("windows")]
         public static unsafe int QueryInterface(IntPtr pUnk, ref Guid iid, out IntPtr ppv)
         {
             if (pUnk == IntPtr.Zero)
@@ -713,6 +733,7 @@ namespace System.Runtime.InteropServices
             }
         }
 
+        [SupportedOSPlatform("windows")]
         public static unsafe int AddRef(IntPtr pUnk)
         {
             if (pUnk == IntPtr.Zero)
@@ -721,6 +742,7 @@ namespace System.Runtime.InteropServices
             return ((delegate * stdcall <IntPtr, int>)(*(*(void***)pUnk + 1 /* IUnknown.AddRef slot */)))(pUnk);
         }
 
+        [SupportedOSPlatform("windows")]
         public static unsafe int Release(IntPtr pUnk)
         {
             if (pUnk == IntPtr.Zero)
@@ -729,26 +751,31 @@ namespace System.Runtime.InteropServices
             return ((delegate * stdcall <IntPtr, int>)(*(*(void***)pUnk + 2 /* IUnknown.Release slot */)))(pUnk);
         }
 
+        [SupportedOSPlatform("windows")]
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern void GetNativeVariantForObject(object? obj, /* VARIANT * */ IntPtr pDstNativeVariant);
 
-        public static void GetNativeVariantForObject<T>([AllowNull] T obj, IntPtr pDstNativeVariant)
+        [SupportedOSPlatform("windows")]
+        public static void GetNativeVariantForObject<T>(T? obj, IntPtr pDstNativeVariant)
         {
             GetNativeVariantForObject((object?)obj, pDstNativeVariant);
         }
 
+        [SupportedOSPlatform("windows")]
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern object? GetObjectForNativeVariant(/* VARIANT * */ IntPtr pSrcNativeVariant);
 
-        [return: MaybeNull]
-        public static T GetObjectForNativeVariant<T>(IntPtr pSrcNativeVariant)
+        [SupportedOSPlatform("windows")]
+        public static T? GetObjectForNativeVariant<T>(IntPtr pSrcNativeVariant)
         {
-            return (T)GetObjectForNativeVariant(pSrcNativeVariant)!;
+            return (T?)GetObjectForNativeVariant(pSrcNativeVariant);
         }
 
+        [SupportedOSPlatform("windows")]
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern object?[] GetObjectsForNativeVariants(/* VARIANT * */ IntPtr aSrcNativeVariant, int cVars);
 
+        [SupportedOSPlatform("windows")]
         public static T[] GetObjectsForNativeVariants<T>(IntPtr aSrcNativeVariant, int cVars)
         {
             object?[] objects = GetObjectsForNativeVariants(aSrcNativeVariant, cVars);
@@ -763,15 +790,18 @@ namespace System.Runtime.InteropServices
         /// <para>Returns the first valid COM slot that GetMethodInfoForSlot will work on
         /// This will be 3 for IUnknown based interfaces and 7 for IDispatch based interfaces. </para>
         /// </summary>
+        [SupportedOSPlatform("windows")]
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern int GetStartComSlot(Type t);
 
         /// <summary>
         /// <para>Returns the last valid COM slot that GetMethodInfoForSlot will work on. </para>
         /// </summary>
+        [SupportedOSPlatform("windows")]
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern int GetEndComSlot(Type t);
 
+        [SupportedOSPlatform("windows")]
         public static object BindToMoniker(string monikerName)
         {
             CreateBindCtx(0, out IBindCtx bindctx);
@@ -791,6 +821,7 @@ namespace System.Runtime.InteropServices
         [DllImport(Interop.Libraries.Ole32, PreserveSig = false)]
         private static extern void BindMoniker(IMoniker pmk, uint grfOpt, ref Guid iidResult, [MarshalAs(UnmanagedType.Interface)] out object ppvResult);
 
+        [SupportedOSPlatform("windows")]
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern void ChangeWrapperHandleStrength(object otp, bool fIsWeak);
 #endif // FEATURE_COMINTEROP

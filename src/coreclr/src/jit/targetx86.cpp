@@ -15,4 +15,9 @@
 const char*            Target::g_tgtCPUName  = "x86";
 const Target::ArgOrder Target::g_tgtArgOrder = ARG_ORDER_L2R;
 
+// clang-format off
+const regNumber intArgRegs [] = {REG_ECX, REG_EDX};
+const regMaskTP intArgMasks[] = {RBM_ECX, RBM_EDX};
+// clang-format on
+
 #endif // TARGET_X86

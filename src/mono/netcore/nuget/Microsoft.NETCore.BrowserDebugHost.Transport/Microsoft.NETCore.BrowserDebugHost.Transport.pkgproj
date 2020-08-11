@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props))" />
+
+  <PropertyGroup>
+    <IsShipping>false</IsShipping>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="$(MonoProjectRoot)wasm\debugger\BrowserDebugHost\BrowserDebugHost.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageFile Include="$(ArtifactsDir)bin\BrowserDebugHost\$(TargetArchitecture)\$(Configuration)\BrowserDebugProxy.dll">
+      <TargetPath>tools\$(NetCoreAppCurrent)\BrowserDebugProxy.dll</TargetPath>
+    </PackageFile>
+    <PackageFile Include="$(ArtifactsDir)bin\BrowserDebugHost\$(TargetArchitecture)\$(Configuration)\BrowserDebugHost.dll">
+      <TargetPath>tools\$(NetCoreAppCurrent)\BrowserDebugHost.dll</TargetPath>
+    </PackageFile>
+    <PackageFile Include="$(ArtifactsDir)bin\BrowserDebugHost\$(TargetArchitecture)\$(Configuration)\BrowserDebugHost.runtimeconfig.json">
+      <TargetPath>tools\$(NetCoreAppCurrent)\BrowserDebugHost.runtimeconfig.json</TargetPath>
+    </PackageFile>
+  </ItemGroup>
+
+  <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets))" />
+</Project>

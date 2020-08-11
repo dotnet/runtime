@@ -14,7 +14,8 @@ namespace System.Reflection
         INVOCATION_FLAGS_INITIALIZED = 0x00000001,
         // it's used for both method and field to signify that no access is allowed
         INVOCATION_FLAGS_NO_INVOKE = 0x00000002,
-        /* unused 0x00000004 */
+        // Set for static ctors, to ensure that the static ctor is run as a static ctor before it is explicitly executed via reflection
+        INVOCATION_FLAGS_RUN_CLASS_CONSTRUCTOR = 0x00000004,
         // Set for static ctors and ctors on abstract types, which
         // can be invoked only if the "this" object is provided (even if it's null).
         INVOCATION_FLAGS_NO_CTOR_INVOKE = 0x00000008,

@@ -266,14 +266,15 @@ ClassLoader::CreateTypeHandleForNonCanonicalGenericInstantiation(
     // creating this type. In other words: this type will have a smaller dictionary that its layout. This is not a
     // problem however because whenever we need to load a value from the dictionary of this type beyond its size, we
     // will expand the dictionary at that point.
-    DWORD cbInstAndDict = pOldMT->GetInstAndDictSize();
+    DWORD cbInstAndDictSlotSize;
+    DWORD cbInstAndDictAllocSize = pOldMT->GetInstAndDictSize(&cbInstAndDictSlotSize);
 
     // Allocate from the high frequence heap of the correct domain
     S_SIZE_T allocSize = safe_cbMT;
     allocSize += cbOptional;
     allocSize += cbIMap;
     allocSize += cbPerInst;
-    allocSize += cbInstAndDict;
+    allocSize += cbInstAndDictAllocSize;
 
     if (allocSize.IsOverflow())
     {
@@ -474,7 +475,7 @@ ClassLoader::CreateTypeHandleForNonCanonicalGenericInstantiation(
         _ASSERTE(pLayout->GetMaxSlots() > 0);
         PTR_Dictionary pDictionarySlots = pMT->GetPerInstInfo()[pOldMT->GetNumDicts() - 1].GetValue();
         DWORD* pSizeSlot = (DWORD*)(pDictionarySlots + ntypars);
-        *pSizeSlot = cbInstAndDict;
+        *pSizeSlot = cbInstAndDictSlotSize;
     }
 
     // Copy interface map across

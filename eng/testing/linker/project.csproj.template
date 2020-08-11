@@ -6,8 +6,16 @@
     <RuntimeIdentifier>{RuntimeIdentifier}</RuntimeIdentifier>
     <RuntimePackDir>{RuntimePackDir}</RuntimePackDir>
     <TargetingPackDir>{TargetingPackDir}</TargetingPackDir>
-    <_ExtraTrimmerArgs>{ExtraTrimmerArgs} $(_ExtraTrimmerArgs)</_ExtraTrimmerArgs>
+
+    <LinkerNoWarn>IL2006;IL2026</LinkerNoWarn>
+    <!-- https://github.com/dotnet/runtime/issues/40336 - need to suppress IL2008;IL2009;IL2037 on non-Windows -->
+    <LinkerNoWarn Condition="!$(RuntimeIdentifier.StartsWith('win'))">$(LinkerNoWarn);IL2008;IL2009;IL2037</LinkerNoWarn>
+    <_ExtraTrimmerArgs>{ExtraTrimmerArgs} $(_ExtraTrimmerArgs) --nowarn $(LinkerNoWarn)</_ExtraTrimmerArgs>
   </PropertyGroup>
+
+  <ItemGroup>
+    {AdditionalProjectReferences}
+  </ItemGroup>
 
   <!-- Logic to override the default IlLink tasks that come from the SDK and use the one
   we use in dotnet/runtime repo -->

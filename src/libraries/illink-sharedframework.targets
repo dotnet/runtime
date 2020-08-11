@@ -1,0 +1,85 @@
+<Project>
+
+  <Target Name="ILLinkTrimSharedFramework"
+          AfterTargets="Build"
+          DependsOnTargets="SetCommonILLinkArgs">
+
+    <PropertyGroup>
+      <LibrariesTrimmedArtifactsPath>$([MSBuild]::NormalizePath('$(ArtifactsBinDir)', 'ILLinkTrimAssembly', '$(BuildSettings)', 'trimmed-runtimepack'))</LibrariesTrimmedArtifactsPath>
+    </PropertyGroup>
+
+    <PropertyGroup>
+      <!-- default action for core assemblies -->
+      <ILLinkArgs>$(ILLinkArgs) -c link</ILLinkArgs>
+      <!-- update debug symbols -->
+      <ILLinkArgs>$(ILLinkArgs) -b true</ILLinkArgs>
+      <!-- suppress warnings with the following codes:
+           IL2006: The generic parameter 'T' from A with dynamically accessed member kinds B is passed into the generic parameter
+                   'T' from 'System.Lazy<T>' which requires dynamically accessed member kinds 'PublicParameterlessConstructor'
+           IL2009: Could not find method A in type B specified in resource C
+           IL2025: Duplicate preserve of A in B
+           IL2026: Calling A which has B can break functionality when trimming application code. The target method might be removed.
+           IL2035: Unresolved assembly A in DynamicDependencyAttribute on B
+           IL2050: P/invoke method A declares a parameter with COM marshalling. Correctness of COM interop
+                   cannot be guaranteed after trimming. Interfaces and interface members might be removed.
+      -->
+      <LinkerNoWarn>IL2006;IL2009;IL2025;IL2026;IL2035;IL2050</LinkerNoWarn>
+      <!-- https://github.com/dotnet/runtime/issues/40336 - need to also suppress the following on non-Windows:
+           IL2008: Could not find type A specified in resource B
+           IL2037: No members were resolved for 'GetDefaultInstance'
+           
+           and on 32-bit builds:
+           IL2012: Could not find field 'Padding' in type 'System.Runtime.CompilerServices.RawArrayData'
+      -->
+      <LinkerNoWarn Condition="'$(OS)' != 'Windows_NT'">$(LinkerNoWarn);IL2008;IL2037</LinkerNoWarn>
+      <LinkerNoWarn Condition="'$(Platform)' != 'x64' AND '$(Platform)' != 'arm64'">$(LinkerNoWarn);IL2012</LinkerNoWarn>
+      <ILLinkArgs>$(ILLinkArgs) --nowarn $(LinkerNoWarn)</ILLinkArgs>
+    </PropertyGroup>
+
+     <!-- Retrieve CoreLib's targetpath via GetTargetPath as it isn't binplaced yet. -->
+    <MSBuild Projects="$(CoreLibProject)"
+             Targets="GetTargetPath">
+      <Output TaskParameter="TargetOutputs" PropertyName="SystemPrivateCoreLibPath" />
+    </MSBuild>
+
+    <PropertyGroup>
+      <_AssemblyPaths>$(MicrosoftNetCoreAppRuntimePackRidLibTfmDir);$(SystemPrivateCoreLibPath)</_AssemblyPaths>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <!-- add references from the libraries directory -->
+      <_DependencyDirectories Include="$(MicrosoftNetCoreAppRuntimePackRidLibTfmDir.TrimEnd('\'))" />
+    </ItemGroup>
+
+    <PropertyGroup>
+      <ILLinkArgs>$(ILLinkArgs) -d @(_DependencyDirectories->'"%(Identity)"', ' -d ')</ILLinkArgs>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <_AssembliesToLink Include="System.Private.CoreLib" />
+
+      <_LibrariesToLink Include="$(MicrosoftNetCoreAppRuntimePackRidLibTfmDir)*.dll" />
+      <_AssembliesToLink Include="@(_LibrariesToLink->'%(FileName)')" />
+    </ItemGroup>
+
+    <PropertyGroup>
+      <ILLinkArgs>$(ILLinkArgs) -r @(_AssembliesToLink->'%(Identity)', ' -r ')</ILLinkArgs>
+    </PropertyGroup>
+
+    <!-- When running from Desktop MSBuild, DOTNET_HOST_PATH is not set.
+      In this case, explicitly specify the path to the dotnet host. -->
+    <PropertyGroup Condition=" '$(DOTNET_HOST_PATH)' == '' ">
+      <_DotNetHostDirectory>$(DotNetRoot)</_DotNetHostDirectory>
+      <_DotNetHostFileName>$([System.IO.Path]::GetFileName('$(DotNetTool)'))</_DotNetHostFileName>
+    </PropertyGroup>
+
+    <ILLink AssemblyPaths="$(_AssemblyPaths)"
+        RootAssemblyNames=""
+        OutputDirectory="$(LibrariesTrimmedArtifactsPath)"
+        ExtraArgs="$(ILLinkArgs)"
+        ToolExe="$(_DotNetHostFileName)"
+        ToolPath="$(_DotNetHostDirectory)" />
+  </Target>
+
+  <Import Project="$(RepositoryEngineeringDir)illink.targets" />
+</Project>
