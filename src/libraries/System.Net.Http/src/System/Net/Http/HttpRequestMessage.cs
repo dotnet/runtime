@@ -6,6 +6,7 @@ using System.Net.Http.Headers;
 using System.Text;
 using System.Threading;
 using System.Collections.Generic;
+using System.Diagnostics;
 
 namespace System.Net.Http
 {
@@ -13,9 +14,10 @@ namespace System.Net.Http
     {
         private const int MessageNotYetSent = 0;
         private const int MessageAlreadySent = 1;
+        private const int MessageAlreadySent_StopNotYetCalled = 2;
 
         // Track whether the message has been sent.
-        // The message shouldn't be sent again if this field is equal to MessageAlreadySent.
+        // The message should only be sent if this field is equal to MessageNotYetSent.
         private int _sendStatus = MessageNotYetSent;
 
         private HttpMethod _method;
@@ -183,7 +185,31 @@ namespace System.Net.Http
 
         internal bool MarkAsSent()
         {
-            return Interlocked.Exchange(ref _sendStatus, MessageAlreadySent) == MessageNotYetSent;
+            return Interlocked.CompareExchange(ref _sendStatus, MessageAlreadySent, MessageNotYetSent) == MessageNotYetSent;
+        }
+
+        internal void MarkAsTrackedByTelemetry()
+        {
+            Debug.Assert(_sendStatus != MessageAlreadySent_StopNotYetCalled);
+            _sendStatus = MessageAlreadySent_StopNotYetCalled;
+        }
+
+        internal void OnAborted() => OnStopped(aborted: true);
+
+        internal void OnStopped(bool aborted = false)
+        {
+            if (HttpTelemetry.Log.IsEnabled())
+            {
+                if (Interlocked.Exchange(ref _sendStatus, MessageAlreadySent) == MessageAlreadySent_StopNotYetCalled)
+                {
+                    if (aborted)
+                    {
+                        HttpTelemetry.Log.RequestAborted();
+                    }
+
+                    HttpTelemetry.Log.RequestStop();
+                }
+            }
         }
 
         #region IDisposable Members
@@ -200,6 +226,8 @@ namespace System.Net.Http
                     _content.Dispose();
                 }
             }
+
+            OnStopped();
         }
 
         public void Dispose()
