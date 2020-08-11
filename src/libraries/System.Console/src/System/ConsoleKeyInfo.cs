@@ -50,7 +50,7 @@ namespace System
 
         public override bool Equals(object? value)
         {
-            return value is ConsoleKeyInfo && Equals((ConsoleKeyInfo)value);
+            return value is ConsoleKeyInfo info && Equals(info);
         }
 
         public bool Equals(ConsoleKeyInfo obj)
