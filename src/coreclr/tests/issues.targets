@@ -1128,9 +1128,6 @@
         <ExcludeList Include="$(XunitTestBinBase)/Interop/MarshalAPI/FunctionPointer/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/Interop/NativeLibrary/Callback/CallbackTests/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)Interop/NativeLibrary/AssemblyLoadContext/ResolveUnmanagedDllTests/** ">
             <Issue>needs triage</Issue>
         </ExcludeList>
