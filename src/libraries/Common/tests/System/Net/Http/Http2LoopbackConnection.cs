@@ -533,10 +533,8 @@ namespace System.Net.Test.Common
             return body;
         }
 
-        public async Task<(int streamId, HttpRequestData requestData)> ReadAndParseRequestHeaderAsync(bool readBody = true)
+        public async IAsyncEnumerable<Frame> ReadRequestHeadersFrames()
         {
-            HttpRequestData requestData = new HttpRequestData();
-
             // Receive HEADERS frame for request.
             Frame frame = await ReadFrameAsync(_timeout).ConfigureAwait(false);
             if (frame == null)
@@ -544,29 +542,56 @@ namespace System.Net.Test.Common
                 throw new IOException("Failed to read Headers frame.");
             }
             Assert.Equal(FrameType.Headers, frame.Type);
-            HeadersFrame headersFrame = (HeadersFrame) frame;
-            bool endOfStream = (frame.Flags & FrameFlags.EndStream) == FrameFlags.EndStream;
+            Assert.Equal(FrameFlags.None, frame.Flags & ~(FrameFlags.EndStream | FrameFlags.EndHeaders));
 
-            using MemoryStream buffer = new MemoryStream();
-            await buffer.WriteAsync(headersFrame.Data);
+            yield return frame;
 
             // Receive CONTINUATION frames for request.
             while ((FrameFlags.EndHeaders & frame.Flags) != FrameFlags.EndHeaders)
             {
+
                 frame = await ReadFrameAsync(_timeout).ConfigureAwait(false);
                 if (frame == null)
                 {
                     throw new IOException("Failed to read Continuation frame.");
                 }
                 Assert.Equal(FrameType.Continuation, frame.Type);
-                ContinuationFrame continuationFrame = (ContinuationFrame)frame;
-                await buffer.WriteAsync(continuationFrame.Data);
+                Assert.Equal(FrameFlags.None, frame.Flags & ~FrameFlags.EndHeaders);
+
+                yield return frame;
             }
 
             Assert.Equal(FrameFlags.EndHeaders, FrameFlags.EndHeaders & frame.Flags);
+        }
 
-            int streamId = headersFrame.StreamId;
-            requestData.RequestId = streamId;
+        public async Task<(int streamId, HttpRequestData requestData)> ReadAndParseRequestHeaderAsync(bool readBody = true)
+        {
+            HttpRequestData requestData = new HttpRequestData();
+
+            bool endOfStream = false;
+
+            using MemoryStream buffer = new MemoryStream();
+            await foreach (Frame frame in ReadRequestHeadersFrames())
+            {
+                if (frame.Type == FrameType.Headers)
+                {
+                    var headersFrame = (HeadersFrame)frame;
+                    requestData.RequestId = headersFrame.StreamId;
+                    endOfStream = (headersFrame.Flags & FrameFlags.EndStream) == FrameFlags.EndStream;
+                    await buffer.WriteAsync(headersFrame.Data);
+                    continue;
+                }
+                if (frame.Type == FrameType.Continuation)
+                {
+                    var continuationFrame = (ContinuationFrame)frame;
+                    await buffer.WriteAsync(continuationFrame.Data);
+                    continue;
+                }
+
+                // Assert.Fail is already merged in xUnit but not released yet. Replace once available.
+                // https://github.com/xunit/xunit/issues/2105
+                Assert.True(false, $"Unexpected frame type '{frame.Type}'");
+            }
 
             Memory<byte> data = buffer.ToArray();
             int i = 0;
@@ -591,7 +616,7 @@ namespace System.Net.Test.Common
                 requestData.Body = await ReadBodyAsync().ConfigureAwait(false);
             }
 
-            return (streamId, requestData);
+            return (requestData.RequestId, requestData);
         }
 
         public override Task InitializeConnectionAsync()
