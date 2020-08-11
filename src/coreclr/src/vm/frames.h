@@ -1646,8 +1646,6 @@ public:
         return m_pMD;
     }
 
-    virtual void GcScanRoots(promote_func *fn, ScanContext* sc);
-
 #ifndef DACCESS_COMPILE
     void SetFunction(MethodDesc *pMD)
     {

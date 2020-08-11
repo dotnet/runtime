@@ -1444,17 +1444,6 @@ void PInvokeCalliFrame::PromoteCallerStack(promote_func* fn, ScanContext* sc)
     PromoteCallerStackHelper(fn, sc, NULL, &msig);
 }
 
-void FramedMethodFrame::GcScanRoots(promote_func *fn, ScanContext* sc)
-{
-    Frame::GcScanRoots(fn, sc);
-#ifndef DACCESS_COMPILE
-    if (sc->promotion && m_pMD != NULL)
-    {
-        GcReportLoaderAllocator(fn, sc, m_pMD->GetLoaderAllocator());
-    }
-#endif
-}
-
 #ifndef DACCESS_COMPILE
 PInvokeCalliFrame::PInvokeCalliFrame(TransitionBlock * pTransitionBlock, VASigCookie * pVASigCookie, PCODE pUnmanagedTarget)
     : FramedMethodFrame(pTransitionBlock, NULL)
