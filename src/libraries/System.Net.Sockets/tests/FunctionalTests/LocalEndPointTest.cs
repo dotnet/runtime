@@ -124,7 +124,7 @@ namespace System.Net.Sockets.Tests
 
                 Assert.Null(client.LocalEndPoint);
 
-                client.Connect(new IPEndPoint(IPAddress.Loopback, serverPort);
+                client.Connect(new IPEndPoint(IPAddress.Loopback, serverPort));
 
                 Assert.Equal(IPAddress.Loopback, ((IPEndPoint)client.LocalEndPoint).Address);
 
