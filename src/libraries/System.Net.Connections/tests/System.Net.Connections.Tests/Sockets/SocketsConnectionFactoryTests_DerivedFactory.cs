@@ -5,10 +5,12 @@ using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.IO.Pipelines;
 using System.Net.Connections;
+using System.Net.Sockets;
+using System.Net.Sockets.Tests;
 using System.Threading.Tasks;
 using Xunit;
 
-namespace System.Net.Sockets.Tests
+namespace System.Net.Connections.Tests
 {
     public class SocketsConnectionFactoryTests_DerivedFactory
     {
