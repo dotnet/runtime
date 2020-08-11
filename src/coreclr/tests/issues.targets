@@ -961,6 +961,9 @@
         <ExcludeList Include="$(XunitTestBinBase)/Loader/CollectibleAssemblies/ByRefLocals/**">
             <Issue>https://github.com/dotnet/runtime/issues/40394</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/CollectibleAssemblies/Statics/**">
+            <Issue>https://github.com/dotnet/runtime/issues/40394</Issue>
+        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/Miscellaneous/CopyCtor/**">
             <Issue>Handling for Copy constructors isn't present in mono interop</Issue>
         </ExcludeList>
