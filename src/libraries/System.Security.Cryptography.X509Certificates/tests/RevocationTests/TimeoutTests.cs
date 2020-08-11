@@ -36,7 +36,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
                 TimeSpan delay = TimeSpan.FromSeconds(3);
 
                 X509Chain chain = holder.Chain;
-                responder.RespondDelay = delay;
+                responder.ResponseDelay = delay;
                 responder.DelayedActions = RevocationResponder.DelayedActionsFlag.All;
 
 
@@ -88,7 +88,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
                 TimeSpan delay = TimeSpan.FromSeconds(3);
 
                 X509Chain chain = holder.Chain;
-                responder.RespondDelay = delay;
+                responder.ResponseDelay = delay;
                 responder.DelayedActions = RevocationResponder.DelayedActionsFlag.All;
 
                 chain.ChainPolicy.UrlRetrievalTimeout = TimeSpan.FromSeconds(1);
@@ -136,7 +136,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
                 TimeSpan delay = TimeSpan.FromSeconds(3);
 
                 X509Chain chain = holder.Chain;
-                responder.RespondDelay = delay;
+                responder.ResponseDelay = delay;
                 responder.DelayedActions = RevocationResponder.DelayedActionsFlag.All;
 
                 chain.ChainPolicy.UrlRetrievalTimeout = TimeSpan.FromSeconds(5);
@@ -175,7 +175,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
                 TimeSpan delay = TimeSpan.FromSeconds(3);
 
                 X509Chain chain = holder.Chain;
-                responder.RespondDelay = delay;
+                responder.ResponseDelay = delay;
                 responder.DelayedActions = RevocationResponder.DelayedActionsFlag.All;
 
                 chain.ChainPolicy.UrlRetrievalTimeout = TimeSpan.FromSeconds(2);

@@ -30,7 +30,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.Common
 
         public bool RespondEmpty { get; set; }
 
-        public TimeSpan RespondDelay { get; set; }
+        public TimeSpan ResponseDelay { get; set; }
         public DelayedActionsFlag DelayedActions { get; set; }
 
         private RevocationResponder(HttpListener listener, string uriPrefix)
@@ -165,8 +165,8 @@ namespace System.Security.Cryptography.X509Certificates.Tests.Common
             {
                 if (DelayedActions.HasFlag(DelayedActionsFlag.Aia))
                 {
-                    Trace($"Delaying response by {RespondDelay}.");
-                    Thread.Sleep(RespondDelay);
+                    Trace($"Delaying response by {ResponseDelay}.");
+                    Thread.Sleep(ResponseDelay);
                 }
 
                 byte[] certData = RespondEmpty ? Array.Empty<byte>() : authority.GetCertData();
@@ -183,8 +183,8 @@ namespace System.Security.Cryptography.X509Certificates.Tests.Common
             {
                 if (DelayedActions.HasFlag(DelayedActionsFlag.Crl))
                 {
-                    Trace($"Delaying response by {RespondDelay}.");
-                    Thread.Sleep(RespondDelay);
+                    Trace($"Delaying response by {ResponseDelay}.");
+                    Thread.Sleep(ResponseDelay);
                 }
 
                 byte[] crl = RespondEmpty ? Array.Empty<byte>() : authority.GetCrl();
@@ -228,8 +228,8 @@ namespace System.Security.Cryptography.X509Certificates.Tests.Common
 
                         if (DelayedActions.HasFlag(DelayedActionsFlag.Ocsp))
                         {
-                            Trace($"Delaying response by {RespondDelay}.");
-                            Thread.Sleep(RespondDelay);
+                            Trace($"Delaying response by {ResponseDelay}.");
+                            Thread.Sleep(ResponseDelay);
                         }
 
                         responded = true;
