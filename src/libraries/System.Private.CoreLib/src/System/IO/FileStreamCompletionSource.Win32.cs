@@ -155,7 +155,7 @@ namespace System.IO
 
                 // Stow the result so that other threads can observe it
                 // And, if no other thread is registering cancellation, continue
-                if (NoResult == Interlocked.Exchange(ref completionSource._result, (long)packedResult))
+                if (Interlocked.Exchange(ref completionSource._result, (long)packedResult) == NoResult)
                 {
                     // Successfully set the state, attempt to take back the callback
                     if (Interlocked.Exchange(ref completionSource._result, CompletedCallback) != NoResult)

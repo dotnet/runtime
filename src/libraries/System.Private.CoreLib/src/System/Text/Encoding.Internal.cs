@@ -229,7 +229,7 @@ namespace System.Text
             // into our immediate caller. Doing so increases the method prolog in what's supposed to
             // be a very fast path.
 
-            Debug.Assert(0 <= charsConsumedSoFar && charsConsumedSoFar < originalCharCount, "Invalid arguments provided to method.");
+            Debug.Assert(charsConsumedSoFar >= 0 && charsConsumedSoFar < originalCharCount, "Invalid arguments provided to method.");
 
             return GetByteCountWithFallback(
                 chars: new ReadOnlySpan<char>(pCharsOriginal, originalCharCount).Slice(charsConsumedSoFar),
@@ -256,7 +256,7 @@ namespace System.Text
         private unsafe int GetByteCountWithFallback(char* pOriginalChars, int originalCharCount, int charsConsumedSoFar, EncoderNLS encoder)
         {
             Debug.Assert(encoder != null, "This code path should only be called from EncoderNLS.");
-            Debug.Assert(0 <= charsConsumedSoFar && charsConsumedSoFar <= originalCharCount, "Caller should've checked this condition.");
+            Debug.Assert(charsConsumedSoFar >= 0 && charsConsumedSoFar <= originalCharCount, "Caller should've checked this condition.");
 
             // First, try draining any data that already exists on the encoder instance. If we can't complete
             // that operation, there's no point to continuing down to the main workhorse methods.
@@ -492,8 +492,8 @@ namespace System.Text
             // into our immediate caller. Doing so increases the method prolog in what's supposed to
             // be a very fast path.
 
-            Debug.Assert(0 <= charsConsumedSoFar && charsConsumedSoFar < originalCharCount, "Invalid arguments provided to method.");
-            Debug.Assert(0 <= bytesWrittenSoFar && bytesWrittenSoFar <= originalByteCount, "Invalid arguments provided to method.");
+            Debug.Assert(charsConsumedSoFar >= 0 && charsConsumedSoFar < originalCharCount, "Invalid arguments provided to method.");
+            Debug.Assert(bytesWrittenSoFar >= 0 && bytesWrittenSoFar <= originalByteCount, "Invalid arguments provided to method.");
 
             return GetBytesWithFallback(
                 chars: new ReadOnlySpan<char>(pOriginalChars, originalCharCount).Slice(charsConsumedSoFar),
@@ -522,8 +522,8 @@ namespace System.Text
         private unsafe int GetBytesWithFallback(char* pOriginalChars, int originalCharCount, byte* pOriginalBytes, int originalByteCount, int charsConsumedSoFar, int bytesWrittenSoFar, EncoderNLS encoder)
         {
             Debug.Assert(encoder != null, "This code path should only be called from EncoderNLS.");
-            Debug.Assert(0 <= charsConsumedSoFar && charsConsumedSoFar <= originalCharCount, "Caller should've checked this condition.");
-            Debug.Assert(0 <= bytesWrittenSoFar && bytesWrittenSoFar <= originalByteCount, "Caller should've checked this condition.");
+            Debug.Assert(charsConsumedSoFar >= 0 && charsConsumedSoFar <= originalCharCount, "Caller should've checked this condition.");
+            Debug.Assert(bytesWrittenSoFar >= 0 && bytesWrittenSoFar <= originalByteCount, "Caller should've checked this condition.");
 
             // First, try draining any data that already exists on the encoder instance. If we can't complete
             // that operation, there's no point to continuing down to the main workhorse methods.
@@ -815,7 +815,7 @@ namespace System.Text
             // into our immediate caller. Doing so increases the method prolog in what's supposed to
             // be a very fast path.
 
-            Debug.Assert(0 <= bytesConsumedSoFar && bytesConsumedSoFar < originalByteCount, "Invalid arguments provided to method.");
+            Debug.Assert(bytesConsumedSoFar >= 0 && bytesConsumedSoFar < originalByteCount, "Invalid arguments provided to method.");
 
             return GetCharCountWithFallback(
                 bytes: new ReadOnlySpan<byte>(pBytesOriginal, originalByteCount).Slice(bytesConsumedSoFar),
@@ -842,7 +842,7 @@ namespace System.Text
         private unsafe int GetCharCountWithFallback(byte* pOriginalBytes, int originalByteCount, int bytesConsumedSoFar, DecoderNLS decoder)
         {
             Debug.Assert(decoder != null, "This code path should only be called from DecoderNLS.");
-            Debug.Assert(0 <= bytesConsumedSoFar && bytesConsumedSoFar <= originalByteCount, "Caller should've checked this condition.");
+            Debug.Assert(bytesConsumedSoFar >= 0 && bytesConsumedSoFar <= originalByteCount, "Caller should've checked this condition.");
 
             // First, try draining any data that already exists on the decoder instance. If we can't complete
             // that operation, there's no point to continuing down to the main workhorse methods.
@@ -1080,8 +1080,8 @@ namespace System.Text
             // into our immediate caller. Doing so increases the method prolog in what's supposed to
             // be a very fast path.
 
-            Debug.Assert(0 <= bytesConsumedSoFar && bytesConsumedSoFar < originalByteCount, "Invalid arguments provided to method.");
-            Debug.Assert(0 <= charsWrittenSoFar && charsWrittenSoFar <= originalCharCount, "Invalid arguments provided to method.");
+            Debug.Assert(bytesConsumedSoFar >= 0 && bytesConsumedSoFar < originalByteCount, "Invalid arguments provided to method.");
+            Debug.Assert(charsWrittenSoFar >= 0 && charsWrittenSoFar <= originalCharCount, "Invalid arguments provided to method.");
 
             return GetCharsWithFallback(
                 bytes: new ReadOnlySpan<byte>(pOriginalBytes, originalByteCount).Slice(bytesConsumedSoFar),
@@ -1110,8 +1110,8 @@ namespace System.Text
         private protected unsafe int GetCharsWithFallback(byte* pOriginalBytes, int originalByteCount, char* pOriginalChars, int originalCharCount, int bytesConsumedSoFar, int charsWrittenSoFar, DecoderNLS decoder)
         {
             Debug.Assert(decoder != null, "This code path should only be called from DecoderNLS.");
-            Debug.Assert(0 <= bytesConsumedSoFar && bytesConsumedSoFar <= originalByteCount, "Caller should've checked this condition.");
-            Debug.Assert(0 <= charsWrittenSoFar && charsWrittenSoFar <= originalCharCount, "Caller should've checked this condition.");
+            Debug.Assert(bytesConsumedSoFar >= 0 && bytesConsumedSoFar <= originalByteCount, "Caller should've checked this condition.");
+            Debug.Assert(charsWrittenSoFar >= 0 && charsWrittenSoFar <= originalCharCount, "Caller should've checked this condition.");
 
             // First, try draining any data that already exists on the encoder instance. If we can't complete
             // that operation, there's no point to continuing down to the main workhorse methods.

@@ -474,7 +474,7 @@ namespace System.Globalization
                                 {
                                     int t = k <= bias ? c_tmin : k >= bias + c_tmax ? c_tmax : k - bias;
                                     if (q < t) break;
-                                    Debug.Assert(c_punycodeBase != t, "[IdnMapping.punycode_encode]Expected c_punycodeBase (36) to be != t");
+                                    Debug.Assert(t != c_punycodeBase, "[IdnMapping.punycode_encode]Expected c_punycodeBase (36) to be != t");
                                     output.Append(EncodeDigit(t + (q - t) % (c_punycodeBase - t)));
                                     q = (q - t) / (c_punycodeBase - t);
                                 }
@@ -701,7 +701,7 @@ namespace System.Globalization
                             int t = k <= bias ? c_tmin : k >= bias + c_tmax ? c_tmax : k - bias;
                             if (digit < t)
                                 break;
-                            Debug.Assert(c_punycodeBase != t, "[IdnMapping.punycode_decode]Expected t != c_punycodeBase (36)");
+                            Debug.Assert(t != c_punycodeBase, "[IdnMapping.punycode_decode]Expected t != c_punycodeBase (36)");
                             if (w > c_maxint / (c_punycodeBase - t))
                                 throw new ArgumentException(SR.Argument_IdnBadPunycode, nameof(ascii));
                             w *= (c_punycodeBase - t);

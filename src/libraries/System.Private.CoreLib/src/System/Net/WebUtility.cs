@@ -269,7 +269,7 @@ namespace System.Net
                             if (parsedSuccessfully)
                             {
                                 // decoded character must be U+0000 .. U+10FFFF, excluding surrogates
-                                parsedSuccessfully = ((parsedValue < HIGH_SURROGATE_START) || (LOW_SURROGATE_END < parsedValue && parsedValue <= UNICODE_PLANE16_END));
+                                parsedSuccessfully = ((parsedValue < HIGH_SURROGATE_START) || (parsedValue > LOW_SURROGATE_END && parsedValue <= UNICODE_PLANE16_END));
                             }
 
                             if (parsedSuccessfully)
@@ -614,7 +614,7 @@ namespace System.Net
         // input is assumed to be an SMP character
         private static void ConvertSmpToUtf16(uint smpChar, out char leadingSurrogate, out char trailingSurrogate)
         {
-            Debug.Assert(UNICODE_PLANE01_START <= smpChar && smpChar <= UNICODE_PLANE16_END);
+            Debug.Assert(smpChar >= UNICODE_PLANE01_START && smpChar <= UNICODE_PLANE16_END);
 
             int utf32 = (int)(smpChar - UNICODE_PLANE01_START);
             leadingSurrogate = (char)((utf32 / 0x400) + HIGH_SURROGATE_START);

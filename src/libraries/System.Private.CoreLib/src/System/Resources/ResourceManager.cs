@@ -172,9 +172,9 @@ namespace System.Resources
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)]
             Type? userResourceSet)
         {
-            if (null == baseName)
+            if (baseName == null)
                 throw new ArgumentNullException(nameof(baseName));
-            if (null == resourceDir)
+            if (resourceDir == null)
                 throw new ArgumentNullException(nameof(resourceDir));
 
             BaseNameField = baseName;
@@ -190,9 +190,9 @@ namespace System.Resources
 
         public ResourceManager(string baseName, Assembly assembly)
         {
-            if (null == baseName)
+            if (baseName == null)
                 throw new ArgumentNullException(nameof(baseName));
-            if (null == assembly)
+            if (assembly == null)
                 throw new ArgumentNullException(nameof(assembly));
             if (!assembly.IsRuntimeImplemented())
                 throw new ArgumentException(SR.Argument_MustBeRuntimeAssembly);
@@ -207,9 +207,9 @@ namespace System.Resources
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)]
         Type? usingResourceSet)
         {
-            if (null == baseName)
+            if (baseName == null)
                 throw new ArgumentNullException(nameof(baseName));
-            if (null == assembly)
+            if (assembly == null)
                 throw new ArgumentNullException(nameof(assembly));
             if (!assembly.IsRuntimeImplemented())
                 throw new ArgumentException(SR.Argument_MustBeRuntimeAssembly);
@@ -226,7 +226,7 @@ namespace System.Resources
 
         public ResourceManager(Type resourceSource)
         {
-            if (null == resourceSource)
+            if (resourceSource == null)
                 throw new ArgumentNullException(nameof(resourceSource));
             if (!resourceSource.IsRuntimeImplemented())
                 throw new ArgumentException(SR.Argument_MustBeRuntimeType);
@@ -394,7 +394,7 @@ namespace System.Resources
         //
         public virtual ResourceSet? GetResourceSet(CultureInfo culture, bool createIfNotExists, bool tryParents)
         {
-            if (null == culture)
+            if (culture == null)
                 throw new ArgumentNullException(nameof(culture));
 
             Dictionary<string, ResourceSet>? localResourceSets = _resourceSets;
@@ -601,7 +601,7 @@ namespace System.Resources
         //
         public virtual string? GetString(string name, CultureInfo? culture)
         {
-            if (null == name)
+            if (name == null)
                 throw new ArgumentNullException(nameof(name));
 
             culture ??= CultureInfo.CurrentUICulture;
@@ -668,10 +668,10 @@ namespace System.Resources
 
         private object? GetObject(string name, CultureInfo? culture, bool wrapUnmanagedMemStream)
         {
-            if (null == name)
+            if (name == null)
                 throw new ArgumentNullException(nameof(name));
 
-            if (null == culture)
+            if (culture == null)
             {
                 culture = CultureInfo.CurrentUICulture;
             }

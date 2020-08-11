@@ -135,7 +135,7 @@ namespace System.Globalization
 
         private static int DaysInPreviousMonths(int month)
         {
-            Debug.Assert(1 <= month && month <= 12);
+            Debug.Assert(month >= 1 && month <= 12);
             // months are one based but for calculations use 0 based
             --month;
             return s_daysToMonth[month];
@@ -175,7 +175,7 @@ namespace System.Globalization
             }
 
             int d = ordinalDay - DaysInPreviousMonths(m);
-            Debug.Assert(1 <= d);
+            Debug.Assert(d >= 1);
             Debug.Assert(d <= 31);
 
             // Calculate the Persian Day.

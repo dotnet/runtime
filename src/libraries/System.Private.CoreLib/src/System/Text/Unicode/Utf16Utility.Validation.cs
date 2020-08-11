@@ -30,7 +30,7 @@ namespace System.Text.Unicode
 #if DEBUG && SYSTEM_PRIVATE_CORELIB
         static Utf16Utility()
         {
-            Debug.Assert(sizeof(nuint_t) == IntPtr.Size && nuint.MinValue == 0, "nuint_t is defined incorrectly.");
+            Debug.Assert(IntPtr.Size == sizeof(nuint_t) && nuint.MinValue == 0, "nuint_t is defined incorrectly.");
         }
 #endif // DEBUG && SYSTEM_PRIVATE_CORELIB
 
@@ -51,7 +51,7 @@ namespace System.Text.Unicode
             // consume the entire buffer, we'll skip the remainder of this method's logic.
 
             int numAsciiCharsConsumedJustNow = (int)ASCIIUtility.GetIndexOfFirstNonAsciiChar(pInputBuffer, (uint)inputLength);
-            Debug.Assert(0 <= numAsciiCharsConsumedJustNow && numAsciiCharsConsumedJustNow <= inputLength);
+            Debug.Assert(numAsciiCharsConsumedJustNow >= 0 && numAsciiCharsConsumedJustNow <= inputLength);
 
             pInputBuffer += (uint)numAsciiCharsConsumedJustNow;
             inputLength -= numAsciiCharsConsumedJustNow;

@@ -73,7 +73,7 @@ namespace System.Reflection
                 }
             }
 
-            if (0 != (flags & AssemblyNameFlags.Retargetable))
+            if ((flags & AssemblyNameFlags.Retargetable) != 0)
                 sb.Append(", Retargetable=Yes");
 
             if (contentType == AssemblyContentType.WindowsRuntime)

@@ -46,7 +46,7 @@ namespace System.Runtime.InteropServices
             const long HIWORDMASK = unchecked((long)0xffffffffffff0000L);
 
             long lPtr = (long)ptr;
-            return 0 == (lPtr & HIWORDMASK);
+            return (lPtr & HIWORDMASK) == 0;
         }
 
         internal static unsafe int StringToAnsiString(string s, byte* buffer, int bufferLength, bool bestFit = false, bool throwOnUnmappableChar = false)

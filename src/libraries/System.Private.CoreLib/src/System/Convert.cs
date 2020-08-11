@@ -2748,7 +2748,7 @@ namespace System
         {
             // The validity of parameters much be checked by callers, thus we are Critical here.
 
-            Debug.Assert(0 <= inputLength);
+            Debug.Assert(inputLength >= 0);
 
             // We need to get rid of any trailing white spaces.
             // Otherwise we would be rejecting input such as "abc= ":
@@ -2763,7 +2763,7 @@ namespace System
             // Compute the output length:
             int resultLength = FromBase64_ComputeResultLength(inputPtr, inputLength);
 
-            Debug.Assert(0 <= resultLength);
+            Debug.Assert(resultLength >= 0);
 
             // resultLength can be zero. We will still enter FromBase64_Decode and process the input.
             // It may either simply write no bytes (e.g. input = " ") or throw (e.g. input = "ab").
@@ -2793,7 +2793,7 @@ namespace System
             const uint intEq = (uint)'=';
             const uint intSpace = (uint)' ';
 
-            Debug.Assert(0 <= inputLength);
+            Debug.Assert(inputLength >= 0);
 
             char* inputEndPtr = inputPtr + inputLength;
             int usefulInputLength = inputLength;
@@ -2816,11 +2816,11 @@ namespace System
                 }
             }
 
-            Debug.Assert(0 <= usefulInputLength);
+            Debug.Assert(usefulInputLength >= 0);
 
             // For legal input, we can assume that 0 <= padding < 3. But it may be more for illegal input.
             // We will notice it at decode when we see a '=' at the wrong place.
-            Debug.Assert(0 <= padding);
+            Debug.Assert(padding >= 0);
 
             // Perf: reuse the variable that stored the number of '=' to store the number of bytes encoded by the
             // last group that contains the '=':

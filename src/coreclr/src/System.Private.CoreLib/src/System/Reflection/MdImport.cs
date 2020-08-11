@@ -184,7 +184,7 @@ namespace System.Reflection
         {
             get
             {
-                Debug.Assert(0 <= index && index < Length);
+                Debug.Assert(index >= 0 && index < Length);
                 if (largeResult != null)
                     return largeResult[index];
 

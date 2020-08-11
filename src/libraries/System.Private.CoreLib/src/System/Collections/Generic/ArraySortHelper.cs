@@ -631,8 +631,8 @@ namespace System.Collections.Generic
         private static void SwapIfGreaterWithValues(Span<TKey> keys, Span<TValue> values, IComparer<TKey> comparer, int i, int j)
         {
             Debug.Assert(comparer != null);
-            Debug.Assert(0 <= i && i < keys.Length && i < values.Length);
-            Debug.Assert(0 <= j && j < keys.Length && j < values.Length);
+            Debug.Assert(i >= 0 && i < keys.Length && i < values.Length);
+            Debug.Assert(j >= 0 && j < keys.Length && j < values.Length);
             Debug.Assert(i != j);
 
             if (comparer.Compare(keys[i], keys[j]) > 0)

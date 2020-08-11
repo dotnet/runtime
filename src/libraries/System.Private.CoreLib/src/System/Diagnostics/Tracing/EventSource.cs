@@ -1599,7 +1599,7 @@ namespace System.Diagnostics.Tracing
             public void Append(byte input)
             {
                 this.w[this.pos / 4] = (this.w[this.pos / 4] << 8) | input;
-                if (64 == ++this.pos)
+                if (++this.pos == 64)
                 {
                     this.Drain();
                 }
@@ -3226,7 +3226,7 @@ namespace System.Diagnostics.Tracing
                                     int startEventId = eventAttribute.EventId - 1;
                                     if (eventData != null && startEventId < eventData.Length)
                                     {
-                                        Debug.Assert(0 <= startEventId);                // Since we reserve id 0, we know that id-1 is <= 0
+                                        Debug.Assert(startEventId >= 0);                // Since we reserve id 0, we know that id-1 is <= 0
                                         EventMetadata startEventMetadata = eventData[startEventId];
 
                                         // If you remove the Stop and add a Start does that name match the Start Event's Name?
@@ -3446,7 +3446,7 @@ namespace System.Diagnostics.Tracing
         private static void TrimEventDescriptors(ref EventMetadata[] eventData)
         {
             int idx = eventData.Length;
-            while (0 < idx)
+            while (idx > 0)
             {
                 --idx;
                 if (eventData[idx].Descriptor.EventId != 0)
@@ -4128,7 +4128,7 @@ namespace System.Diagnostics.Tracing
                 if (s_EventSources.Count % 64 == 63)   // on every block of 64, fill up the block before continuing
                 {
                     int i = s_EventSources.Count;      // Work from the top down.
-                    while (0 < i)
+                    while (i > 0)
                     {
                         --i;
                         WeakReference<EventSource> weakRef = s_EventSources[i];
@@ -5790,7 +5790,7 @@ namespace System.Diagnostics.Tracing
                 channelTab ??= new Dictionary<int, ChannelInfo>(4);
 
                 string channelName = channel.ToString();        // For well know channels this is a nice name, otherwise a number
-                if (EventChannel.Debug < channel)
+                if (channel > EventChannel.Debug)
                     channelName = "Channel" + channelName;      // Add a 'Channel' prefix for numbers.
 
                 AddChannel(channelName, (int)channel, GetDefaultChannelAttribute(channel));

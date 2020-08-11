@@ -151,7 +151,7 @@ namespace System.Globalization
         // the following formulas defines a polynomial function which gives us the amount that the earth is slowing down for specific year ranges
         private static double DefaultEphemerisCorrection(int gregorianYear)
         {
-            Debug.Assert(gregorianYear < 1620 || 2020 <= gregorianYear);
+            Debug.Assert(gregorianYear < 1620 || gregorianYear >= 2020);
             long january1stOfYear = GetNumberOfDays(new DateTime(gregorianYear, 1, 1));
             double daysSinceStartOf1810 = january1stOfYear - s_startOf1810;
             double x = TwelveHours + daysSinceStartOf1810;
@@ -160,34 +160,34 @@ namespace System.Globalization
 
         private static double EphemerisCorrection1988to2019(int gregorianYear)
         {
-            Debug.Assert(1988 <= gregorianYear && gregorianYear <= 2019);
+            Debug.Assert(gregorianYear >= 1988 && gregorianYear <= 2019);
             return (double)(gregorianYear - 1933) / SecondsPerDay;
         }
 
         private static double EphemerisCorrection1900to1987(int gregorianYear)
         {
-            Debug.Assert(1900 <= gregorianYear && gregorianYear <= 1987);
+            Debug.Assert(gregorianYear >= 1900 && gregorianYear <= 1987);
             double centuriesFrom1900 = CenturiesFrom1900(gregorianYear);
             return PolynomialSum(s_coefficients1900to1987, centuriesFrom1900);
         }
 
         private static double EphemerisCorrection1800to1899(int gregorianYear)
         {
-            Debug.Assert(1800 <= gregorianYear && gregorianYear <= 1899);
+            Debug.Assert(gregorianYear >= 1800 && gregorianYear <= 1899);
             double centuriesFrom1900 = CenturiesFrom1900(gregorianYear);
             return PolynomialSum(s_coefficients1800to1899, centuriesFrom1900);
         }
 
         private static double EphemerisCorrection1700to1799(int gregorianYear)
         {
-            Debug.Assert(1700 <= gregorianYear && gregorianYear <= 1799);
+            Debug.Assert(gregorianYear >= 1700 && gregorianYear <= 1799);
             double yearsSince1700 = gregorianYear - 1700;
             return PolynomialSum(s_coefficients1700to1799, yearsSince1700) / SecondsPerDay;
         }
 
         private static double EphemerisCorrection1620to1699(int gregorianYear)
         {
-            Debug.Assert(1620 <= gregorianYear && gregorianYear <= 1699);
+            Debug.Assert(gregorianYear >= 1620 && gregorianYear <= 1699);
             double yearsSince1600 = gregorianYear - 1600;
             return PolynomialSum(s_coefficients1620to1699, yearsSince1600) / SecondsPerDay;
         }
@@ -398,7 +398,7 @@ namespace System.Globalization
             {
                 double midday = MiddayAtPersianObservationSite((double)day);
                 double l = Compute(midday);
-                if ((LongitudeSpring <= l) && (l <= TwoDegreesAfterSpring))
+                if ((l >= LongitudeSpring) && (l <= TwoDegreesAfterSpring))
                 {
                     break;
                 }

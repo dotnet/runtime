@@ -278,7 +278,7 @@ namespace System.Runtime.InteropServices
         {
             if (!IsNullOrWin32Atom(hglobal))
             {
-                if (IntPtr.Zero != Interop.Kernel32.LocalFree(hglobal))
+                if (Interop.Kernel32.LocalFree(hglobal) != IntPtr.Zero)
                 {
                     ThrowExceptionForHR(GetHRForLastWin32Error());
                 }

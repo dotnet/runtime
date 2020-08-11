@@ -2037,10 +2037,10 @@ namespace System.Globalization
                 temp = new TokenHashValue[TOKEN_HASH_SIZE];
 
                 string sep = TimeSeparator.Trim();
-                if (IgnorableComma != sep) InsertHash(temp, IgnorableComma, TokenType.IgnorableSymbol, 0);
-                if (IgnorablePeriod != sep) InsertHash(temp, IgnorablePeriod, TokenType.IgnorableSymbol, 0);
+                if (sep != IgnorableComma) InsertHash(temp, IgnorableComma, TokenType.IgnorableSymbol, 0);
+                if (sep != IgnorablePeriod) InsertHash(temp, IgnorablePeriod, TokenType.IgnorableSymbol, 0);
 
-                if (KoreanHourSuff != sep && CJKHourSuff != sep && ChineseHourSuff != sep)
+                if (sep != KoreanHourSuff && sep != CJKHourSuff && sep != ChineseHourSuff)
                 {
                     //
                     // On the Macintosh, the default TimeSeparator is identical to the KoreanHourSuff, CJKHourSuff, or ChineseHourSuff for some cultures like

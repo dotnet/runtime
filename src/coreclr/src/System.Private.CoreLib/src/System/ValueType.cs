@@ -24,7 +24,7 @@ namespace System
             Justification = "Trimmed fields don't make a difference for equality")]
         public override bool Equals(object? obj)
         {
-            if (null == obj)
+            if (obj == null)
             {
                 return false;
             }

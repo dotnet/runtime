@@ -68,11 +68,11 @@ namespace System.Threading
                     throw new ArgumentException(SR.Argument_WaitHandleNameTooLong, nameof(name));
                 }
 #endif
-                if (Interop.Errors.ERROR_FILE_NOT_FOUND == errorCode || Interop.Errors.ERROR_INVALID_NAME == errorCode)
+                if (errorCode == Interop.Errors.ERROR_FILE_NOT_FOUND || errorCode == Interop.Errors.ERROR_INVALID_NAME)
                     return OpenExistingResult.NameNotFound;
-                if (Interop.Errors.ERROR_PATH_NOT_FOUND == errorCode)
+                if (errorCode == Interop.Errors.ERROR_PATH_NOT_FOUND)
                     return OpenExistingResult.PathNotFound;
-                if (Interop.Errors.ERROR_INVALID_HANDLE == errorCode)
+                if (errorCode == Interop.Errors.ERROR_INVALID_HANDLE)
                     return OpenExistingResult.NameInvalid;
 
                 throw Win32Marshal.GetExceptionForWin32Error(errorCode, name);

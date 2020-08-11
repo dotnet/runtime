@@ -1667,7 +1667,7 @@ namespace System.Numerics
                     det -= 1.0f;
                     det *= det;
 
-                    if ((DecomposeEpsilon < det))
+                    if ((det > DecomposeEpsilon))
                     {
                         // Non-SRT matrix encountered
                         rotation = Quaternion.Identity;

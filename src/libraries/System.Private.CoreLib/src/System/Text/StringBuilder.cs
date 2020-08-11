@@ -651,7 +651,7 @@ namespace System.Text
                 // However above this size, we allocate an array to hold pointers to all
                 // the chunks and we can be efficient for large N.
                 int chunkCount = ChunkCount(stringBuilder);
-                if (8 < chunkCount)
+                if (chunkCount > 8)
                 {
                     _manyChunks = new ManyChunkInfo(stringBuilder, chunkCount);
                 }
@@ -690,7 +690,7 @@ namespace System.Text
                 public ManyChunkInfo(StringBuilder? stringBuilder, int chunkCount)
                 {
                     _chunks = new StringBuilder[chunkCount];
-                    while (0 <= --chunkCount)
+                    while (--chunkCount >= 0)
                     {
                         Debug.Assert(stringBuilder != null);
                         _chunks[chunkCount] = stringBuilder;
@@ -2350,7 +2350,7 @@ namespace System.Text
         /// </remarks>
         private StringBuilder FindChunkForIndex(int index)
         {
-            Debug.Assert(0 <= index && index <= Length);
+            Debug.Assert(index >= 0 && index <= Length);
 
             StringBuilder result = this;
             while (result.m_ChunkOffset > index)

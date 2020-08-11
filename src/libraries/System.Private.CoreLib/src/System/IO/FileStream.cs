@@ -653,10 +653,10 @@ namespace System.IO
         private void AssertBufferInvariants()
         {
             // Read buffer values must be in range: 0 <= _bufferReadPos <= _bufferReadLength <= _bufferLength
-            Debug.Assert(0 <= _readPos && _readPos <= _readLength && _readLength <= _bufferLength);
+            Debug.Assert(_readPos >= 0 && _readPos <= _readLength && _readLength <= _bufferLength);
 
             // Write buffer values must be in range: 0 <= _bufferWritePos <= _bufferLength
-            Debug.Assert(0 <= _writePos && _writePos <= _bufferLength);
+            Debug.Assert(_writePos >= 0 && _writePos <= _bufferLength);
 
             // Read buffering and write buffering can't both be active
             Debug.Assert((_readPos == 0 && _readLength == 0) || _writePos == 0);

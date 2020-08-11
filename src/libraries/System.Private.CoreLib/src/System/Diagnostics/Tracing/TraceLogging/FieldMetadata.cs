@@ -184,7 +184,7 @@ namespace System.Diagnostics.Tracing
             pos++;
 
             // If InTypeChainFlag set, then write out the outType
-            if (0 != (this.inType & Statics.InTypeChainFlag))
+            if ((this.inType & Statics.InTypeChainFlag) != 0)
             {
                 if (metadata != null)
                 {
@@ -193,14 +193,14 @@ namespace System.Diagnostics.Tracing
                 pos++;
 
                 // If OutTypeChainFlag set, then write out tags
-                if (0 != (this.outType & Statics.OutTypeChainFlag))
+                if ((this.outType & Statics.OutTypeChainFlag) != 0)
                 {
                     Statics.EncodeTags((int)this.tags, ref pos, metadata);
                 }
             }
 
             // If InTypeFixedCountFlag set, write out the fixedCount (2 bytes little endian)
-            if (0 != (this.inType & Statics.InTypeFixedCountFlag))
+            if ((this.inType & Statics.InTypeFixedCountFlag) != 0)
             {
                 if (metadata != null)
                 {
@@ -210,7 +210,7 @@ namespace System.Diagnostics.Tracing
                 pos += 2;
 
                 // If InTypeCustomCountFlag set, write out the blob of custom meta-data.
-                if (Statics.InTypeCustomCountFlag == (this.inType & Statics.InTypeCountMask) &&
+                if ((this.inType & Statics.InTypeCountMask) == Statics.InTypeCustomCountFlag &&
                     this.fixedCount != 0)
                 {
                     if (metadata != null)

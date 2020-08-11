@@ -297,7 +297,7 @@ namespace System
             }
 
             // The absolute value should be greater than or equal to 1.0 and less than 2^23
-            Debug.Assert((0x7F <= exponent) && (exponent <= 0x95));
+            Debug.Assert((exponent >= 0x7F) && (exponent <= 0x95));
 
             // Determine the last bit that represents the integral portion of the value
             // and the bits representing the fractional portion

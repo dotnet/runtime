@@ -159,7 +159,7 @@ namespace System
         public bool IsEmpty
         {
             [NonVersionable]
-            get => 0 >= (uint)_length; // Workaround for https://github.com/dotnet/runtime/issues/10950
+            get => (uint)_length <= 0; // Workaround for https://github.com/dotnet/runtime/issues/10950
         }
 
         /// <summary>

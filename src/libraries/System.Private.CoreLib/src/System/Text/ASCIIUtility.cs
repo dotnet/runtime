@@ -100,7 +100,7 @@ namespace System.Text
 
 #if DEBUG
                     long numBytesRead = pBuffer - pOriginalBuffer;
-                    Debug.Assert(0 < numBytesRead && numBytesRead <= SizeOfVectorInBytes, "We should've made forward progress of at least one byte.");
+                    Debug.Assert(numBytesRead > 0 && numBytesRead <= SizeOfVectorInBytes, "We should've made forward progress of at least one byte.");
                     Debug.Assert((nuint)numBytesRead <= bufferLength, "We shouldn't have read past the end of the input buffer.");
 #endif
 
@@ -261,7 +261,7 @@ namespace System.Text
 
 #if DEBUG
             long numBytesRead = pBuffer - pOriginalBuffer;
-            Debug.Assert(0 < numBytesRead && numBytesRead <= SizeOfVector128, "We should've made forward progress of at least one byte.");
+            Debug.Assert(numBytesRead > 0 && numBytesRead <= SizeOfVector128, "We should've made forward progress of at least one byte.");
             Debug.Assert((nuint)numBytesRead <= bufferLength, "We shouldn't have read past the end of the input buffer.");
 #endif
 
@@ -527,7 +527,7 @@ namespace System.Text
 
 #if DEBUG
                     long numCharsRead = pBuffer - pOriginalBuffer;
-                    Debug.Assert(0 < numCharsRead && numCharsRead <= SizeOfVectorInChars, "We should've made forward progress of at least one char.");
+                    Debug.Assert(numCharsRead > 0 && numCharsRead <= SizeOfVectorInChars, "We should've made forward progress of at least one char.");
                     Debug.Assert((nuint)numCharsRead <= bufferLength, "We shouldn't have read past the end of the input buffer.");
 #endif
 
@@ -705,7 +705,7 @@ namespace System.Text
 
 #if DEBUG
             long numCharsRead = pBuffer - pOriginalBuffer;
-            Debug.Assert(0 < numCharsRead && numCharsRead <= SizeOfVector128InChars, "We should've made forward progress of at least one char.");
+            Debug.Assert(numCharsRead > 0 && numCharsRead <= SizeOfVector128InChars, "We should've made forward progress of at least one char.");
             Debug.Assert((nuint)numCharsRead <= bufferLength, "We shouldn't have read past the end of the input buffer.");
 #endif
 
@@ -1387,7 +1387,7 @@ namespace System.Text
             // point, then use that as the base offset going forward.
 
             currentOffsetInElements = SizeOfVector128 - ((nuint)pAsciiBuffer & MaskOfAllBitsInVector128);
-            Debug.Assert(0 < currentOffsetInElements && currentOffsetInElements <= SizeOfVector128, "We wrote at least 1 byte but no more than a whole vector.");
+            Debug.Assert(currentOffsetInElements > 0 && currentOffsetInElements <= SizeOfVector128, "We wrote at least 1 byte but no more than a whole vector.");
 
             Debug.Assert(currentOffsetInElements <= elementCount, "Shouldn't have overrun the destination buffer.");
             Debug.Assert(elementCount - currentOffsetInElements >= SizeOfVector128, "We should be able to run at least one whole vector.");
@@ -1679,7 +1679,7 @@ namespace System.Text
             // the loop, but this is ok.
 
             nuint currentOffset = (SizeOfVector128 >> 1) - (((nuint)pUtf16Buffer >> 1) & (MaskOfAllBitsInVector128 >> 1));
-            Debug.Assert(0 < currentOffset && currentOffset <= SizeOfVector128 / sizeof(char));
+            Debug.Assert(currentOffset > 0 && currentOffset <= SizeOfVector128 / sizeof(char));
 
             nuint finalOffsetWhereCanRunLoop = elementCount - SizeOfVector128;
 

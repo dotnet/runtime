@@ -63,7 +63,7 @@ namespace System.Text
                 fixed (char* pSource = s)
                 {
                     bytesWritten = GetBytesCommon(pSource, sourceLength, pDestination, MaxSmallInputElementCount * MaxUtf8BytesPerChar);
-                    Debug.Assert(0 <= bytesWritten && bytesWritten <= s.Length * MaxUtf8BytesPerChar);
+                    Debug.Assert(bytesWritten >= 0 && bytesWritten <= s.Length * MaxUtf8BytesPerChar);
                 }
 
                 return new Span<byte>(ref *pDestination, bytesWritten).ToArray(); // this overload of Span ctor doesn't validate length
@@ -97,7 +97,7 @@ namespace System.Text
                 fixed (byte* pSource = bytes)
                 {
                     charsWritten = GetCharsCommon(pSource, sourceLength, pDestination, MaxSmallInputElementCount);
-                    Debug.Assert(0 <= charsWritten && charsWritten <= sourceLength); // should never have more output chars than input bytes
+                    Debug.Assert(charsWritten >= 0 && charsWritten <= sourceLength); // should never have more output chars than input bytes
                 }
 
                 return new string(new ReadOnlySpan<char>(ref *pDestination, charsWritten)); // this overload of ROS ctor doesn't validate length

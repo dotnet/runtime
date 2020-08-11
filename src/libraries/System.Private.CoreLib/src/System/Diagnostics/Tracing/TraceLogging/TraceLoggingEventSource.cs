@@ -815,7 +815,7 @@ namespace System.Diagnostics.Tracing
                     }
                 }
             }
-            else if ('A' <= firstChar || ' ' == firstChar)  // Is it alphabetic or space (excludes digits and most punctuation).
+            else if (firstChar >= 'A' || firstChar == ' ')  // Is it alphabetic or space (excludes digits and most punctuation).
             {
                 metaData.AddRange(Encoding.UTF8.GetBytes(value));
             }
@@ -832,15 +832,15 @@ namespace System.Diagnostics.Tracing
         /// </summary>
         private static int HexDigit(char c)
         {
-            if ('0' <= c && c <= '9')
+            if (c >= '0' && c <= '9')
             {
                 return c - '0';
             }
-            if ('a' <= c)
+            if (c >= 'a')
             {
                 c = unchecked((char)(c - ('a' - 'A')));        // Convert to lower case
             }
-            if ('A' <= c && c <= 'F')
+            if (c >= 'A' && c <= 'F')
             {
                 return c - 'A' + 10;
             }

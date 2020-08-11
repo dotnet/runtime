@@ -2658,7 +2658,7 @@ namespace System.Collections
                 get
                 {
                     object? temp = _currentElement;
-                    if (s_dummyObject == temp)
+                    if (temp == s_dummyObject)
                     { // check if enumeration has not started or has terminated
                         if (_index == -1)
                         {

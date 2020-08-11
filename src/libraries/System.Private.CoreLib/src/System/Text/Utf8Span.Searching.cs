@@ -340,7 +340,7 @@ namespace System.Text
 
                 // Some quick sanity checks on the return value before we return.
 
-                Debug.Assert(0 <= utf8StartIdx);
+                Debug.Assert(utf8StartIdx >= 0);
                 Debug.Assert(utf8StartIdx <= utf8EndIdx);
                 Debug.Assert(utf8EndIdx <= this.Bytes.Length);
 

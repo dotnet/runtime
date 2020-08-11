@@ -105,17 +105,17 @@ namespace System.Runtime.CompilerServices
             // The null tests here ensure that the jit can optimize away the interface
             // tests when TAwaiter is a ref type.
 
-            if ((null != (object?)default(TAwaiter)) && (awaiter is ITaskAwaiter))
+            if (((object?)default(TAwaiter) != null) && (awaiter is ITaskAwaiter))
             {
                 ref TaskAwaiter ta = ref Unsafe.As<TAwaiter, TaskAwaiter>(ref awaiter); // relies on TaskAwaiter/TaskAwaiter<T> having the same layout
                 TaskAwaiter.UnsafeOnCompletedInternal(ta.m_task, box, continueOnCapturedContext: true);
             }
-            else if ((null != (object?)default(TAwaiter)) && (awaiter is IConfiguredTaskAwaiter))
+            else if (((object?)default(TAwaiter) != null) && (awaiter is IConfiguredTaskAwaiter))
             {
                 ref ConfiguredTaskAwaitable.ConfiguredTaskAwaiter ta = ref Unsafe.As<TAwaiter, ConfiguredTaskAwaitable.ConfiguredTaskAwaiter>(ref awaiter);
                 TaskAwaiter.UnsafeOnCompletedInternal(ta.m_task, box, ta.m_continueOnCapturedContext);
             }
-            else if ((null != (object?)default(TAwaiter)) && (awaiter is IStateMachineBoxAwareAwaiter))
+            else if (((object?)default(TAwaiter) != null) && (awaiter is IStateMachineBoxAwareAwaiter))
             {
                 try
                 {
@@ -545,7 +545,7 @@ namespace System.Runtime.CompilerServices
             // find a cached value, since static fields (even if readonly and integral types)
             // require special access helpers in this NGEN'd and domain-neutral.
 
-            if (null != (object?)default(TResult)) // help the JIT avoid the value type branches for ref types
+            if ((object?)default(TResult) != null) // help the JIT avoid the value type branches for ref types
             {
                 // Special case simple value types:
                 // - Boolean
@@ -581,16 +581,16 @@ namespace System.Runtime.CompilerServices
                 }
                 // For other known value types, we only special-case 0 / default(TResult).
                 else if (
-                    (typeof(TResult) == typeof(uint) && default == (uint)(object)result!) ||
-                    (typeof(TResult) == typeof(byte) && default(byte) == (byte)(object)result!) ||
-                    (typeof(TResult) == typeof(sbyte) && default(sbyte) == (sbyte)(object)result!) ||
-                    (typeof(TResult) == typeof(char) && default(char) == (char)(object)result!) ||
-                    (typeof(TResult) == typeof(long) && default == (long)(object)result!) ||
-                    (typeof(TResult) == typeof(ulong) && default == (ulong)(object)result!) ||
-                    (typeof(TResult) == typeof(short) && default(short) == (short)(object)result!) ||
-                    (typeof(TResult) == typeof(ushort) && default(ushort) == (ushort)(object)result!) ||
-                    (typeof(TResult) == typeof(IntPtr) && default == (IntPtr)(object)result!) ||
-                    (typeof(TResult) == typeof(UIntPtr) && default == (UIntPtr)(object)result!))
+                    (typeof(TResult) == typeof(uint) && (uint)(object)result! == default) ||
+                    (typeof(TResult) == typeof(byte) && (byte)(object)result! == default(byte)) ||
+                    (typeof(TResult) == typeof(sbyte) && (sbyte)(object)result! == default(sbyte)) ||
+                    (typeof(TResult) == typeof(char) && (char)(object)result! == default(char)) ||
+                    (typeof(TResult) == typeof(long) && (long)(object)result! == default) ||
+                    (typeof(TResult) == typeof(ulong) && (ulong)(object)result! == default) ||
+                    (typeof(TResult) == typeof(short) && (short)(object)result! == default(short)) ||
+                    (typeof(TResult) == typeof(ushort) && (ushort)(object)result! == default(ushort)) ||
+                    (typeof(TResult) == typeof(IntPtr) && (IntPtr)(object)result! == default) ||
+                    (typeof(TResult) == typeof(UIntPtr) && (UIntPtr)(object)result! == default))
                 {
                     return s_defaultResultTask;
                 }

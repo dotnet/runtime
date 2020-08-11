@@ -303,7 +303,7 @@ namespace System.Globalization
                 culture = null;
                 for (int idx = 0; idx < name.Length; idx++)
                 {
-                    if ('-' == name[idx])
+                    if (name[idx] == '-')
                     {
                         try
                         {

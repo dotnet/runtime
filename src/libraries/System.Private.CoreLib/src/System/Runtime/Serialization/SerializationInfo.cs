@@ -61,7 +61,7 @@ namespace System.Runtime.Serialization
             get => _rootTypeName;
             set
             {
-                if (null == value)
+                if (value == null)
                 {
                     throw new ArgumentNullException(nameof(value));
                 }
@@ -76,7 +76,7 @@ namespace System.Runtime.Serialization
             get => _rootTypeAssemblyName;
             set
             {
-                if (null == value)
+                if (value == null)
                 {
                     throw new ArgumentNullException(nameof(value));
                 }
@@ -122,7 +122,7 @@ namespace System.Runtime.Serialization
             // In the pathological case, we may wrap
             if (newSize < _count)
             {
-                if (int.MaxValue > _count)
+                if (_count < int.MaxValue)
                 {
                     newSize = int.MaxValue;
                 }
@@ -145,7 +145,7 @@ namespace System.Runtime.Serialization
 
         public void AddValue(string name, object? value, Type type)
         {
-            if (null == name)
+            if (name == null)
             {
                 throw new ArgumentNullException(nameof(name));
             }
@@ -160,7 +160,7 @@ namespace System.Runtime.Serialization
 
         public void AddValue(string name, object? value)
         {
-            if (null == value)
+            if (value == null)
             {
                 AddValue(name, value, typeof(object));
             }
@@ -285,9 +285,9 @@ namespace System.Runtime.Serialization
         /// <param name="type"> The type of the data being added.</param>
         public void UpdateValue(string name, object value, Type type)
         {
-            Debug.Assert(null != name, "[SerializationInfo.UpdateValue]name!=null");
-            Debug.Assert(null != value, "[SerializationInfo.UpdateValue]value!=null");
-            Debug.Assert(null != (object)type, "[SerializationInfo.UpdateValue]type!=null");
+            Debug.Assert(name != null, "[SerializationInfo.UpdateValue]name!=null");
+            Debug.Assert(value != null, "[SerializationInfo.UpdateValue]value!=null");
+            Debug.Assert((object)type != null, "[SerializationInfo.UpdateValue]type!=null");
 
             int index = FindElement(name);
             if (index < 0)
@@ -303,7 +303,7 @@ namespace System.Runtime.Serialization
 
         private int FindElement(string name)
         {
-            if (null == name)
+            if (name == null)
             {
                 throw new ArgumentNullException(nameof(name));
             }

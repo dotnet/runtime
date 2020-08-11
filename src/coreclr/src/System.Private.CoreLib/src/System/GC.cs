@@ -133,7 +133,7 @@ namespace System
                         SR.ArgumentOutOfRange_NeedPosNum);
             }
 
-            if ((4 == IntPtr.Size) && (bytesAllocated > int.MaxValue))
+            if ((IntPtr.Size == 4) && (bytesAllocated > int.MaxValue))
             {
                 throw new ArgumentOutOfRangeException(nameof(bytesAllocated),
                     SR.ArgumentOutOfRange_MustBeNonNegInt32);
@@ -150,7 +150,7 @@ namespace System
                     SR.ArgumentOutOfRange_NeedPosNum);
             }
 
-            if ((4 == IntPtr.Size) && (bytesAllocated > int.MaxValue))
+            if ((IntPtr.Size == 4) && (bytesAllocated > int.MaxValue))
             {
                 throw new ArgumentOutOfRangeException(nameof(bytesAllocated),
                     SR.ArgumentOutOfRange_MustBeNonNegInt32);
@@ -348,7 +348,7 @@ namespace System
                 size = newSize;
                 newSize = GetTotalMemory();
                 diff = ((float)(newSize - size)) / size;
-            } while (reps-- > 0 && !(-.05 < diff && diff < .05));
+            } while (reps-- > 0 && !(diff > -.05 && diff < .05));
             return newSize;
         }
 

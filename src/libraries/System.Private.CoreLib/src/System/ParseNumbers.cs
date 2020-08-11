@@ -40,7 +40,7 @@ namespace System
             // Do some radix checking.
             // A radix of -1 says to use whatever base is spec'd on the number.
             // Parse in Base10 until we figure out what the base actually is.
-            int r = (-1 == radix) ? 10 : radix;
+            int r = (radix == -1) ? 10 : radix;
 
             if (r != 2 && r != 10 && r != 8 && r != 16)
                 throw new ArgumentException(SR.Arg_InvalidBase, nameof(radix));
@@ -128,7 +128,7 @@ namespace System
             // Do some radix checking.
             // A radix of -1 says to use whatever base is spec'd on the number.
             // Parse in Base10 until we figure out what the base actually is.
-            int r = (-1 == radix) ? 10 : radix;
+            int r = (radix == -1) ? 10 : radix;
 
             if (r != 2 && r != 10 && r != 8 && r != 16)
                 throw new ArgumentException(SR.Arg_InvalidBase, nameof(radix));
@@ -233,7 +233,7 @@ namespace System
 
                 // For base 10, write out -num, but other bases write out the
                 // 2's complement bit pattern
-                l = (10 == radix) ? (uint)-n : (uint)n;
+                l = (radix == 10) ? (uint)-n : (uint)n;
             }
             else
             {
@@ -253,7 +253,7 @@ namespace System
 
             // Special case the 0.
             int index;
-            if (0 == l)
+            if (l == 0)
             {
                 buffer[0] = '0';
                 index = 1;
@@ -284,18 +284,18 @@ namespace System
             // If they want the base, append that to the string (in reverse order)
             if (radix != 10 && ((flags & PrintBase) != 0))
             {
-                if (16 == radix)
+                if (radix == 16)
                 {
                     buffer[index++] = 'x';
                     buffer[index++] = '0';
                 }
-                else if (8 == radix)
+                else if (radix == 8)
                 {
                     buffer[index++] = '0';
                 }
             }
 
-            if (10 == radix)
+            if (radix == 10)
             {
                 // If it was negative, append the sign, else if they requested, add the '+'.
                 // If they requested a leading space, put it on.
@@ -371,7 +371,7 @@ namespace System
 
                 // For base 10, write out -num, but other bases write out the
                 // 2's complement bit pattern
-                ul = (10 == radix) ? (ulong)(-n) : (ulong)n;
+                ul = (radix == 10) ? (ulong)(-n) : (ulong)n;
             }
             else
             {
@@ -393,7 +393,7 @@ namespace System
 
             // Special case the 0.
             int index;
-            if (0 == ul)
+            if (ul == 0)
             {
                 buffer[0] = '0';
                 index = 1;
@@ -423,12 +423,12 @@ namespace System
             // If they want the base, append that to the string (in reverse order)
             if (radix != 10 && ((flags & PrintBase) != 0))
             {
-                if (16 == radix)
+                if (radix == 16)
                 {
                     buffer[index++] = 'x';
                     buffer[index++] = '0';
                 }
-                else if (8 == radix)
+                else if (radix == 8)
                 {
                     buffer[index++] = '0';
                 }
@@ -440,7 +440,7 @@ namespace System
                 }
             }
 
-            if (10 == radix)
+            if (radix == 10)
             {
                 // If it was negative, append the sign.
                 if (isNegative)

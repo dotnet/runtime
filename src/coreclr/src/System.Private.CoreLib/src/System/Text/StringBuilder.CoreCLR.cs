@@ -145,7 +145,7 @@ namespace System.Text
         /// <param name="byteIndex">The logical byte index in this builder.</param>
         private StringBuilder FindChunkForByte(int byteIndex)
         {
-            Debug.Assert(0 <= byteIndex && byteIndex <= Length * sizeof(char));
+            Debug.Assert(byteIndex >= 0 && byteIndex <= Length * sizeof(char));
 
             StringBuilder result = this;
             while (result.m_ChunkOffset * sizeof(char) > byteIndex)

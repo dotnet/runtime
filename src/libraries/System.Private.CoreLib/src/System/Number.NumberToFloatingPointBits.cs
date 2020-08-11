@@ -307,7 +307,7 @@ namespace System
         // get 32-bit integer from at most 9 digits
         private static uint DigitsToUInt32(byte* p, int count)
         {
-            Debug.Assert((1 <= count) && (count <= 9));
+            Debug.Assert((count >= 1) && (count <= 9));
 
             byte* end = (p + count);
             uint res = (uint)(p[0] - '0');
@@ -323,7 +323,7 @@ namespace System
         // get 64-bit integer from at most 19 digits
         private static ulong DigitsToUInt64(byte* p, int count)
         {
-            Debug.Assert((1 <= count) && (count <= 19));
+            Debug.Assert((count >= 1) && (count <= 19));
 
             byte* end = (p + count);
             ulong res = (ulong)(p[0] - '0');

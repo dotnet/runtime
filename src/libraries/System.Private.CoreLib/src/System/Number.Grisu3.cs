@@ -435,8 +435,8 @@ namespace System
 
                 DiyFp tenMk = GetCachedPowerForBinaryExponentRange(tenMkMinimalBinaryExponent, tenMkMaximalBinaryExponent, out int mk);
 
-                Debug.Assert(MinimalTargetExponent <= (w.e + tenMk.e + DiyFp.SignificandSize));
-                Debug.Assert(MaximalTargetExponent >= (w.e + tenMk.e + DiyFp.SignificandSize));
+                Debug.Assert((w.e + tenMk.e + DiyFp.SignificandSize) >= MinimalTargetExponent);
+                Debug.Assert((w.e + tenMk.e + DiyFp.SignificandSize) <= MaximalTargetExponent);
 
                 // Note that tenMk is only an approximation of 10^-k.
                 // A DiyFp only contains a 64-bit significand and tenMk is thus only precise up to 64-bits.
@@ -487,8 +487,8 @@ namespace System
 
                 DiyFp tenMk = GetCachedPowerForBinaryExponentRange(tenMkMinimalBinaryExponent, tenMkMaximalBinaryExponent, out int mk);
 
-                Debug.Assert(MinimalTargetExponent <= (w.e + tenMk.e + DiyFp.SignificandSize));
-                Debug.Assert(MaximalTargetExponent >= (w.e + tenMk.e + DiyFp.SignificandSize));
+                Debug.Assert((w.e + tenMk.e + DiyFp.SignificandSize) >= MinimalTargetExponent);
+                Debug.Assert((w.e + tenMk.e + DiyFp.SignificandSize) <= MaximalTargetExponent);
 
                 // Note that tenMk is only an approximation of 10^-k.
                 // A DiyFp only contains a 64-bit significan and tenMk is thus only precise up to 64-bits.
@@ -579,7 +579,7 @@ namespace System
             // This usually happens rarely, but the failure-rate increases with higher requestedDigits
             private static bool TryDigitGenCounted(in DiyFp w, int requestedDigits, Span<byte> buffer, out int length, out int kappa)
             {
-                Debug.Assert(MinimalTargetExponent <= w.e);
+                Debug.Assert(w.e >= MinimalTargetExponent);
                 Debug.Assert(w.e <= MaximalTargetExponent);
                 Debug.Assert(MinimalTargetExponent >= -60);
                 Debug.Assert(MaximalTargetExponent <= -32);
@@ -663,7 +663,7 @@ namespace System
 
                 Debug.Assert(one.e >= MinimalTargetExponent);
                 Debug.Assert(fractionals < one.f);
-                Debug.Assert((ulong.MaxValue / 10) >= one.f);
+                Debug.Assert(one.f <= (ulong.MaxValue / 10));
 
                 while ((requestedDigits > 0) && (fractionals > wError))
                 {
@@ -752,7 +752,7 @@ namespace System
 
                 Debug.Assert((low.f + 1) <= (high.f - 1));
 
-                Debug.Assert(MinimalTargetExponent <= w.e);
+                Debug.Assert(w.e >= MinimalTargetExponent);
                 Debug.Assert(w.e <= MaximalTargetExponent);
 
                 // low, w, and high are imprecise, but by less than one ulp (unit in the last place).
@@ -844,7 +844,7 @@ namespace System
 
                 Debug.Assert(one.e >= MinimalTargetExponent);
                 Debug.Assert(fractionals < one.f);
-                Debug.Assert((ulong.MaxValue / 10) >= one.f);
+                Debug.Assert(one.f <= (ulong.MaxValue / 10));
 
                 while (true)
                 {

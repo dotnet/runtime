@@ -94,7 +94,7 @@ namespace System.Threading
         /// <value>true if the event has is set; otherwise, false.</value>
         public bool IsSet
         {
-            get => 0 != ExtractStatePortion(m_combinedState, SignalledState_BitMask);
+            get => ExtractStatePortion(m_combinedState, SignalledState_BitMask) != 0;
             private set => UpdateStateAtomically(((value) ? 1 : 0) << SignalledState_ShiftCount, SignalledState_BitMask);
         }
 

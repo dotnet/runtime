@@ -101,7 +101,7 @@ namespace System.Diagnostics.Tracing
                 CounterPayload payload = new CounterPayload();
                 payload.Count = _count;
                 payload.IntervalSec = intervalSec;
-                if (0 < _count)
+                if (_count > 0)
                 {
                     payload.Mean = _sum / _count;
                     payload.StandardDeviation = Math.Sqrt(_sumSquared / _count - _sum * _sum / _count / _count);

@@ -15,7 +15,7 @@ namespace System.Buffers.Text
         {
             // Writing the check in this fashion elides all bounds checks on 'buffer'
             // for the remainder of the method.
-            if ((uint)28 >= (uint)destination.Length)
+            if ((uint)destination.Length <= (uint)28)
             {
                 bytesWritten = 0;
                 return false;

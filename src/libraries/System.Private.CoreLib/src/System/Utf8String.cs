@@ -239,7 +239,7 @@ namespace System
         public static bool IsNullOrEmpty([NotNullWhen(false)] Utf8String? value)
         {
             // Copied from String.IsNullOrEmpty. See that method for detailed comments on why this pattern is used.
-            return (value is null || 0u >= (uint)value.Length) ? true : false;
+            return (value is null || (uint)value.Length <= 0u) ? true : false;
         }
 
         public static bool IsNullOrWhiteSpace([NotNullWhen(false)] Utf8String? value)

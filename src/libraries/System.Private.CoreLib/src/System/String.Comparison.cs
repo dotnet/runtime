@@ -578,7 +578,7 @@ namespace System
 
         public bool EndsWith(string value, bool ignoreCase, CultureInfo? culture)
         {
-            if (null == value)
+            if (value == null)
             {
                 throw new ArgumentNullException(nameof(value));
             }
@@ -937,7 +937,7 @@ namespace System
 
         public bool StartsWith(string value, bool ignoreCase, CultureInfo? culture)
         {
-            if (null == value)
+            if (value == null)
             {
                 throw new ArgumentNullException(nameof(value));
             }

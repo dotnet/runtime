@@ -47,7 +47,7 @@ namespace System.StubHelpers
     {
         internal static unsafe IntPtr ConvertToNative(int flags, string strManaged, IntPtr pNativeBuffer)
         {
-            if (null == strManaged)
+            if (strManaged == null)
             {
                 return IntPtr.Zero;
             }
@@ -76,7 +76,7 @@ namespace System.StubHelpers
                 try
                 {
                     nb = Marshal.StringToAnsiString(strManaged, pbNativeBuffer, nb,
-                        bestFit: 0 != (flags & 0xFF), throwOnUnmappableChar: 0 != (flags >> 8));
+                        bestFit: (flags & 0xFF) != 0, throwOnUnmappableChar: (flags >> 8) != 0);
                 }
                 catch (Exception) when (didAlloc)
                 {
@@ -99,7 +99,7 @@ namespace System.StubHelpers
                     // smaller than the upper bound for the given managed string.
 
                     byte[] bytes = AnsiCharMarshaler.DoAnsiConversion(strManaged,
-                        fBestFit: 0 != (flags & 0xFF), fThrowOnUnmappableChar: 0 != (flags >> 8), out nb);
+                        fBestFit: (flags & 0xFF) != 0, fThrowOnUnmappableChar: (flags >> 8) != 0, out nb);
 
                     // + 1 for the null character from the user.  + 1 for the null character we put in.
                     pbNativeBuffer = (byte*)Marshal.AllocCoTaskMem(nb + 2);
@@ -119,7 +119,7 @@ namespace System.StubHelpers
 
         internal static unsafe string? ConvertToManaged(IntPtr cstr)
         {
-            if (IntPtr.Zero == cstr)
+            if (cstr == IntPtr.Zero)
                 return null;
             else
                 return new string((sbyte*)cstr);
@@ -148,8 +148,8 @@ namespace System.StubHelpers
             byte* buffer = (byte*)pNativeBuffer;
 
             // Flags defined in ILFixedCSTRMarshaler::EmitConvertContentsCLRToNative(ILCodeStream* pslILEmit).
-            bool throwOnUnmappableChar = 0 != (flags >> 8);
-            bool bestFit = 0 != (flags & 0xFF);
+            bool throwOnUnmappableChar = (flags >> 8) != 0;
+            bool bestFit = (flags & 0xFF) != 0;
             uint defaultCharUsed = 0;
 
             int cbWritten;
@@ -212,7 +212,7 @@ namespace System.StubHelpers
         private const int MAX_UTF8_CHAR_SIZE = 3;
         internal static unsafe IntPtr ConvertToNative(int flags, string strManaged, IntPtr pNativeBuffer)
         {
-            if (null == strManaged)
+            if (strManaged == null)
             {
                 return IntPtr.Zero;
             }
@@ -247,7 +247,7 @@ namespace System.StubHelpers
 
         internal static unsafe string? ConvertToManaged(IntPtr cstr)
         {
-            if (IntPtr.Zero == cstr)
+            if (cstr == IntPtr.Zero)
                 return null;
 
             byte* pBytes = (byte*)cstr;
@@ -268,7 +268,7 @@ namespace System.StubHelpers
     {
         internal static unsafe IntPtr ConvertToNative(StringBuilder sb, IntPtr pNativeBuffer, int flags)
         {
-            if (null == sb)
+            if (sb == null)
             {
                 return IntPtr.Zero;
             }
@@ -302,7 +302,7 @@ namespace System.StubHelpers
     {
         internal static unsafe IntPtr ConvertToNative(string strManaged, IntPtr pNativeBuffer)
         {
-            if (null == strManaged)
+            if (strManaged == null)
             {
                 return IntPtr.Zero;
             }
@@ -368,7 +368,7 @@ namespace System.StubHelpers
 
         internal static unsafe string? ConvertToManaged(IntPtr bstr)
         {
-            if (IntPtr.Zero == bstr)
+            if (bstr == IntPtr.Zero)
             {
                 return null;
             }
@@ -412,7 +412,7 @@ namespace System.StubHelpers
 
         internal static void ClearNative(IntPtr pNative)
         {
-            if (IntPtr.Zero != pNative)
+            if (pNative != IntPtr.Zero)
             {
                 Interop.OleAut32.SysFreeString(pNative);
             }
@@ -423,7 +423,7 @@ namespace System.StubHelpers
     {
         internal static unsafe IntPtr ConvertToNative(string strManaged, bool fBestFit, bool fThrowOnUnmappableChar, ref int cch)
         {
-            if (null == strManaged)
+            if (strManaged == null)
             {
                 return IntPtr.Zero;
             }
@@ -440,7 +440,7 @@ namespace System.StubHelpers
 
             pNative += sizeof(uint);
 
-            if (0 == cch)
+            if (cch == 0)
             {
                 *pNative = 0;
                 *pLength = 0;
@@ -464,7 +464,7 @@ namespace System.StubHelpers
 
         internal static unsafe string? ConvertToManaged(IntPtr pNative, int cch)
         {
-            if (IntPtr.Zero == pNative)
+            if (pNative == IntPtr.Zero)
             {
                 return null;
             }
@@ -474,7 +474,7 @@ namespace System.StubHelpers
 
         internal static void ClearNative(IntPtr pNative)
         {
-            if (IntPtr.Zero != pNative)
+            if (pNative != IntPtr.Zero)
             {
                 Interop.Ole32.CoTaskMemFree((IntPtr)(((long)pNative) - sizeof(uint)));
             }
@@ -485,7 +485,7 @@ namespace System.StubHelpers
     {
         internal static IntPtr ConvertToNative(int flags, string strManaged)
         {
-            if (null == strManaged)
+            if (strManaged == null)
             {
                 return IntPtr.Zero;
             }
@@ -495,7 +495,7 @@ namespace System.StubHelpers
 
             if (strManaged.Length > 0)
             {
-                bytes = AnsiCharMarshaler.DoAnsiConversion(strManaged, 0 != (flags & 0xFF), 0 != (flags >> 8), out nb);
+                bytes = AnsiCharMarshaler.DoAnsiConversion(strManaged, (flags & 0xFF) != 0, (flags >> 8) != 0, out nb);
             }
 
             return Interop.OleAut32.SysAllocStringByteLen(bytes, (uint)nb);
@@ -503,7 +503,7 @@ namespace System.StubHelpers
 
         internal static unsafe string? ConvertToManaged(IntPtr bstr)
         {
-            if (IntPtr.Zero == bstr)
+            if (bstr == IntPtr.Zero)
             {
                 return null;
             }
@@ -518,7 +518,7 @@ namespace System.StubHelpers
 
         internal static void ClearNative(IntPtr pNative)
         {
-            if (IntPtr.Zero != pNative)
+            if (pNative != IntPtr.Zero)
             {
                 Interop.OleAut32.SysFreeString(pNative);
             }

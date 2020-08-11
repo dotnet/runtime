@@ -388,7 +388,7 @@ namespace System.Diagnostics.Tracing
                     activityPathGuidOffset = AddIdToGuid(outPtr, activityPathGuidOffsetStart, (uint)m_uniqueId);
 
                     // If the path does not fit, Make a GUID by incrementing rather than as a path, keeping as much of the path as possible
-                    if (12 < activityPathGuidOffset)
+                    if (activityPathGuidOffset > 12)
                         CreateOverflowGuid(outPtr);
                 }
             }
@@ -455,7 +455,7 @@ namespace System.Diagnostics.Tracing
                 if (endPtr <= ptr)
                     return 13;                // 12 means we might exactly fit, 13 means we definitely did not fit
 
-                if (0 < id && id <= (uint)NumberListCodes.LastImmediateValue && !overflow)
+                if (id > 0 && id <= (uint)NumberListCodes.LastImmediateValue && !overflow)
                     WriteNibble(ref ptr, endPtr, id);
                 else
                 {
@@ -492,7 +492,7 @@ namespace System.Diagnostics.Tracing
                     }
 
                     // Write out the bytes.
-                    while (0 < len)
+                    while (len > 0)
                     {
                         if (endPtr <= ptr)
                         {

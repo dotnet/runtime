@@ -292,7 +292,7 @@
     <Rule Id="SA1127" Action="None" /> <!-- Generic type constraints should be on their own line -->
     <Rule Id="SA1128" Action="None" /> <!-- Put constructor initializers on their own line -->
     <Rule Id="SA1130" Action="None" /> <!-- Use lambda syntax -->
-    <Rule Id="SA1131" Action="None" /> <!-- Constant values should appear on the right-hand side of comparisons -->
+    <Rule Id="SA1131" Action="Warning" /> <!-- Constant values should appear on the right-hand side of comparisons -->
     <Rule Id="SA1132" Action="None" /> <!-- Do not combine fields -->
     <Rule Id="SA1133" Action="None" /> <!-- Do not combine attributes -->
     <Rule Id="SA1134" Action="None" /> <!-- Each attribute should be placed on its own line of code -->

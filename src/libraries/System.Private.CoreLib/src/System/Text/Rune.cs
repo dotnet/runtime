@@ -315,7 +315,7 @@ namespace System.Text
                 // Let's optimistically assume for now it's a high surrogate and hope
                 // that combining it with the next char yields useful results.
 
-                if (1 < (uint)source.Length)
+                if ((uint)source.Length > 1)
                 {
                     char secondChar = source[1];
                     if (TryCreate(firstChar, secondChar, out result))
@@ -407,7 +407,7 @@ namespace System.Text
         Finish:
 
             bytesConsumed = index + 1;
-            Debug.Assert(1 <= bytesConsumed && bytesConsumed <= 4); // Valid subsequences are always length [1..4]
+            Debug.Assert(bytesConsumed >= 1 && bytesConsumed <= 4); // Valid subsequences are always length [1..4]
             result = UnsafeCreate(tempValue);
             return OperationStatus.Done;
 
@@ -532,14 +532,14 @@ namespace System.Text
 
         Invalid:
 
-            Debug.Assert(1 <= index && index <= 3); // Invalid subsequences are always length 1..3
+            Debug.Assert(index >= 1 && index <= 3); // Invalid subsequences are always length 1..3
             bytesConsumed = index;
             result = ReplacementChar;
             return OperationStatus.InvalidData;
 
         NeedsMoreData:
 
-            Debug.Assert(0 <= index && index <= 3); // Incomplete subsequences are always length 0..3
+            Debug.Assert(index >= 0 && index <= 3); // Incomplete subsequences are always length 0..3
             bytesConsumed = index;
             result = ReplacementChar;
             return OperationStatus.NeedMoreData;
@@ -816,7 +816,7 @@ namespace System.Text
 
                 // Treat 'returnValue' as the high surrogate.
 
-                if (1 >= (uint)input.Length)
+                if ((uint)input.Length <= 1)
                 {
                     return -1; // not an argument exception - just a "bad data" failure
                 }
