@@ -128,14 +128,14 @@ namespace System.Net.Security.Tests
             Assert.Equal(0, currentHandshakes[^1]);
 
 
-            double[] openedConnections = eventCounters
-                .Where(pair => pair.Key.EndsWith("-connections-open"))
+            double[] openedSessions = eventCounters
+                .Where(pair => pair.Key.EndsWith("-sessions-open"))
                 .Select(pair => pair.Value[^1])
                 .ToArray();
 
-            // Events should be emitted for all 4 connections-open counters
-            Assert.Equal(4, openedConnections.Length);
-            Assert.All(openedConnections, oc => Assert.Equal(0, oc));
+            // Events should be emitted for all 4 sessions-open counters
+            Assert.Equal(4, openedSessions.Length);
+            Assert.All(openedSessions, oc => Assert.Equal(0, oc));
 
 
             double[][] handshakeDurations = eventCounters
