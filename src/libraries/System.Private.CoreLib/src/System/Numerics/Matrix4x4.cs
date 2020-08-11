@@ -1930,11 +1930,10 @@ namespace System.Numerics
         {
             if (AdvSimd.IsSupported)
             {
-                Vector128<float> zero = Vector128<float>.Zero;
-                AdvSimd.Store(&value.M11, AdvSimd.Subtract(zero, AdvSimd.LoadVector128(&value.M11)));
-                AdvSimd.Store(&value.M21, AdvSimd.Subtract(zero, AdvSimd.LoadVector128(&value.M21)));
-                AdvSimd.Store(&value.M31, AdvSimd.Subtract(zero, AdvSimd.LoadVector128(&value.M31)));
-                AdvSimd.Store(&value.M41, AdvSimd.Subtract(zero, AdvSimd.LoadVector128(&value.M41)));
+                AdvSimd.Store(&value.M11, AdvSimd.Negate(AdvSimd.LoadVector128(&value.M11)));
+                AdvSimd.Store(&value.M21, AdvSimd.Negate(AdvSimd.LoadVector128(&value.M21)));
+                AdvSimd.Store(&value.M31, AdvSimd.Negate(AdvSimd.LoadVector128(&value.M31)));
+                AdvSimd.Store(&value.M41, AdvSimd.Negate(AdvSimd.LoadVector128(&value.M41)));
                 return value;
             }
             else if (Sse.IsSupported)
