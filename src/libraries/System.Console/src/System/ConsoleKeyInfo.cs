@@ -5,7 +5,7 @@ using System.Diagnostics;
 
 namespace System
 {
-    public readonly struct ConsoleKeyInfo
+    public readonly struct ConsoleKeyInfo : IEquatable<ConsoleKeyInfo>
     {
         private readonly char _keyChar;
         private readonly ConsoleKey _key;
