@@ -2231,6 +2231,7 @@ namespace System.Text.Tests
             Assert.True(sb1.Equals(sb2));
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/40625")] // Hangs expanding the SB
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public static unsafe void FailureOnLargeString()
         {

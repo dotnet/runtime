@@ -6125,12 +6125,24 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 			}
 			case CEE_MONO_LDPTR:
 			case CEE_MONO_CLASSCONST:
+			case CEE_MONO_METHODCONST:
 				token = read32 (td->ip + 1);
 				td->ip += 5;
 				interp_add_ins (td, MINT_MONO_LDPTR);
 				td->last_ins->data [0] = get_data_item_index (td, mono_method_get_wrapper_data (method, token));
 				PUSH_SIMPLE_TYPE (td, STACK_TYPE_I);
 				break;
+			case CEE_MONO_PINVOKE_ADDR_CACHE: {
+				token = read32 (td->ip + 1);
+				td->ip += 5;
+				interp_add_ins (td, MINT_MONO_LDPTR);
+				g_assert (method->wrapper_type != MONO_WRAPPER_NONE);
+				/* This is a memory slot used by the wrapper */
+				gpointer addr = mono_domain_alloc0 (td->rtm->domain, sizeof (gpointer));
+				td->last_ins->data [0] = get_data_item_index (td, addr);
+				PUSH_SIMPLE_TYPE (td, STACK_TYPE_I);
+				break;
+			}
 			case CEE_MONO_OBJADDR:
 				CHECK_STACK (td, 1);
 				++td->ip;

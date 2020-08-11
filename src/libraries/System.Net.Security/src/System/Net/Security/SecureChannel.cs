@@ -596,21 +596,27 @@ namespace System.Net.Security
                 {
                     if (NetEventSource.Log.IsEnabled())
                         NetEventSource.Log.UsingCachedCredential(this);
-
                     _credentialsHandle = cachedCredentialHandle;
                     _selectedClientCertificate = clientCertificate;
                     cachedCred = true;
                 }
                 else
                 {
-                    _credentialsHandle = SslStreamPal.AcquireCredentialsHandle(selectedCert!, _sslAuthenticationOptions.EnabledSslProtocols, _sslAuthenticationOptions.EncryptionPolicy, _sslAuthenticationOptions.IsServer);
+                    if (selectedCert != null)
+                    {
+                        _sslAuthenticationOptions.CertificateContext = SslStreamCertificateContext.Create(selectedCert!);
+                    }
+
+                    _credentialsHandle = SslStreamPal.AcquireCredentialsHandle(_sslAuthenticationOptions.CertificateContext,
+                            _sslAuthenticationOptions.EnabledSslProtocols, _sslAuthenticationOptions.EncryptionPolicy, _sslAuthenticationOptions.IsServer);
+
                     thumbPrint = guessedThumbPrint; // Delay until here in case something above threw.
                     _selectedClientCertificate = clientCertificate;
                 }
             }
             finally
             {
-                if (selectedCert != null)
+                if (selectedCert != null && _sslAuthenticationOptions.CertificateContext != null)
                 {
                     _sslAuthenticationOptions.CertificateContext = SslStreamCertificateContext.Create(selectedCert);
                 }
@@ -710,7 +716,8 @@ namespace System.Net.Security
             }
             else
             {
-                _credentialsHandle = SslStreamPal.AcquireCredentialsHandle(selectedCert, _sslAuthenticationOptions.EnabledSslProtocols, _sslAuthenticationOptions.EncryptionPolicy, _sslAuthenticationOptions.IsServer);
+                _credentialsHandle = SslStreamPal.AcquireCredentialsHandle(_sslAuthenticationOptions.CertificateContext, _sslAuthenticationOptions.EnabledSslProtocols,
+                        _sslAuthenticationOptions.EncryptionPolicy, _sslAuthenticationOptions.IsServer);
                 thumbPrint = guessedThumbPrint;
             }
 

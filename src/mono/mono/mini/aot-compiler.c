@@ -6605,6 +6605,7 @@ encode_patch (MonoAotCompile *acfg, MonoJumpInfo *patch_info, guint8 *buf, guint
 	case MONO_PATCH_INFO_ICALL_ADDR_CALL:
 	case MONO_PATCH_INFO_METHOD_RGCTX:
 	case MONO_PATCH_INFO_METHOD_CODE_SLOT:
+	case MONO_PATCH_INFO_METHOD_PINVOKE_ADDR_CACHE:
 		encode_method_ref (acfg, patch_info->data.method, p, &p);
 		break;
 	case MONO_PATCH_INFO_AOT_JIT_INFO:
@@ -8484,7 +8485,8 @@ can_encode_patch (MonoAotCompile *acfg, MonoJumpInfo *patch_info)
 	case MONO_PATCH_INFO_METHOD:
 	case MONO_PATCH_INFO_METHOD_FTNDESC:
 	case MONO_PATCH_INFO_METHODCONST:
-	case MONO_PATCH_INFO_METHOD_CODE_SLOT: {
+	case MONO_PATCH_INFO_METHOD_CODE_SLOT:
+	case MONO_PATCH_INFO_METHOD_PINVOKE_ADDR_CACHE: {
 		MonoMethod *method = patch_info->data.method;
 
 		return can_encode_method (acfg, method);
