@@ -788,7 +788,7 @@ namespace System.Data.Common
             for (int i = columnNameArray.Length - 1; i >= 0; --i)
             {
                 string columnName = columnNameArray[i];
-                if ((columnName != null) && (columnName.Length > 0))
+                if (!string.IsNullOrEmpty(columnName))
                 {
                     columnName = columnName.ToLowerInvariant();
                     int index;

@@ -68,7 +68,7 @@ namespace System.Data.Common
                 throw ADP.InvalidMultipartNameToManyParts(property, name, limit);
             }
 
-            if (leftQuote.IndexOf(separator) != -1 || rightQuote.IndexOf(separator) != -1 || leftQuote.Length != rightQuote.Length)
+            if (leftQuote.Contains(separator) || rightQuote.Contains(separator) || leftQuote.Length != rightQuote.Length)
             {
                 throw ADP.InvalidMultipartNameIncorrectUsageOfQuotes(property, name);
             }
