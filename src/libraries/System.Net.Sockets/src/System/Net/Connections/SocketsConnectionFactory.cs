@@ -22,9 +22,6 @@ namespace System.Net.Connections
         private readonly SocketType _socketType;
         private readonly ProtocolType _protocolType;
 
-        // use same message as the default ctor
-        private static readonly string s_cancellationMessage = new OperationCanceledException().Message;
-
         /// <summary>
         /// Initializes a new instance of the <see cref="SocketsConnectionFactory"/> class.
         /// </summary>
@@ -60,10 +57,7 @@ namespace System.Net.Connections
             CancellationToken cancellationToken = default)
         {
             if (endPoint == null) throw new ArgumentNullException(nameof(endPoint));
-            if (cancellationToken.IsCancellationRequested)
-            {
-                throw new TaskCanceledException(s_cancellationMessage, innerException: null, cancellationToken);
-            }
+            cancellationToken.ThrowIfCancellationRequested();
 
             Socket socket = CreateSocket(_addressFamily, _socketType, _protocolType, endPoint, options);
 
@@ -83,9 +77,9 @@ namespace System.Net.Connections
                 if (args.SocketError != SocketError.Success)
                 {
                     SocketException ex = new SocketException((int)args.SocketError);
-                    if (args.SocketError == SocketError.OperationAborted && cancellationToken.IsCancellationRequested)
+                    if (args.SocketError == SocketError.OperationAborted)
                     {
-                        throw new TaskCanceledException(s_cancellationMessage, ex, cancellationToken);
+                        cancellationToken.ThrowIfCancellationRequested();
                     }
 
                     throw NetworkErrorHelper.MapSocketException(ex);

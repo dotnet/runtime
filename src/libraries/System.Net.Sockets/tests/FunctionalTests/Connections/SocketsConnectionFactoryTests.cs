@@ -143,7 +143,8 @@ namespace System.Net.Sockets.Tests
             CancellationTokenSource cts = new CancellationTokenSource();
             cts.CancelAfter(100);
 
-            await Assert.ThrowsAsync<TaskCanceledException>(() => factory.ConnectAsync(doesNotExist, cancellationToken: cts.Token).AsTask());
+            OperationCanceledException ex = await Assert.ThrowsAsync<OperationCanceledException>(() => factory.ConnectAsync(doesNotExist, cancellationToken: cts.Token).AsTask());
+            Assert.Equal(cts.Token, ex.CancellationToken);
         }
 
         [Fact]
@@ -154,7 +155,8 @@ namespace System.Net.Sockets.Tests
 
             CancellationToken cancellationToken = new CancellationToken(true);
 
-            await Assert.ThrowsAsync<TaskCanceledException>(() => factory.ConnectAsync(doesNotExist, cancellationToken: cancellationToken).AsTask());
+            OperationCanceledException ex = await Assert.ThrowsAsync<OperationCanceledException>(() => factory.ConnectAsync(doesNotExist, cancellationToken: cancellationToken).AsTask());
+            Assert.Equal(cancellationToken, ex.CancellationToken);
         }
 
         [Theory]
