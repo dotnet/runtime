@@ -8,8 +8,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 
-
-
 namespace System.Net.Sockets.Tests
 {
     public class SocketsConnectionFactoryTests
@@ -232,6 +230,24 @@ namespace System.Net.Sockets.Tests
 
             if (disposeAsync) await connection.DisposeAsync();
             else connection.Dispose();
+
+            Assert.False(socket.Connected);
+            Assert.Throws<ObjectDisposedException>(() => stream.Write(new byte[1]));
+        }
+
+        [Theory]
+        [InlineData(ConnectionCloseMethod.GracefulShutdown)]
+        [InlineData(ConnectionCloseMethod.Immediate)]
+        [InlineData(ConnectionCloseMethod.Abort)]
+        public async Task Connection_CloseAsync_ClosesSocket(ConnectionCloseMethod method)
+        {
+            using var server = SocketTestServer.SocketTestServerFactory(SocketImplementationType.Async, IPAddress.Loopback);
+            using SocketsConnectionFactory factory = new SocketsConnectionFactory(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+            Connection connection = await factory.ConnectAsync(server.EndPoint);
+            Stream stream = connection.Stream;
+            connection.ConnectionProperties.TryGet(out Socket socket);
+
+            await connection.CloseAsync(method);
 
             Assert.False(socket.Connected);
             Assert.Throws<ObjectDisposedException>(() => stream.Write(new byte[1]));

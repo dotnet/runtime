@@ -47,7 +47,7 @@ namespace System.Net.Connections
                     _socket.Dispose();
                 }
 
-                return _stream?.DisposeAsync() ?? default;
+                _stream?.Dispose();
             }
             catch (SocketException socketException)
             {
@@ -57,6 +57,8 @@ namespace System.Net.Connections
             {
                 return ValueTask.FromException(ex);
             }
+
+            return default;
         }
 
         bool IConnectionProperties.TryGet(Type propertyKey, [NotNullWhen(true)] out object? property)
