@@ -61,6 +61,11 @@ namespace System.Net.Tests
             p.BypassList = strings;
             Assert.Equal(strings, p.BypassList);
             Assert.Equal(strings, (string[])p.BypassArrayList.ToArray(typeof(string)));
+
+            strings = null;
+            p.BypassList = strings;
+            Assert.Equal(Array.Empty<string>(), p.BypassList);
+            Assert.Equal(Array.Empty<string>(), (string[])p.BypassArrayList.ToArray(typeof(string)));
         }
 
         [Fact]
