@@ -139,7 +139,7 @@ namespace Microsoft.Win32.SystemEventsTests
         public void TimerElapsedIsRoughlyEquivalentToInterval(int interval)
         {
             const double permittedProportionUnder = -0.1;
-            const double permittedProportionOver = 0.5;
+            const double permittedProportionOver = 5.0;
             var elapsed = new AutoResetEvent(false);
             IntPtr timer = IntPtr.Zero;
             var stopwatch = new Stopwatch();
