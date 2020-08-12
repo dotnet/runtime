@@ -280,138 +280,6 @@ namespace System.Net.Http.Functional.Tests
         public SocketsHttpHandler_HttpClientHandler_ServerCertificates_Test(ITestOutputHelper output) : base(output) { }
     }
 
-    public sealed class SocketsHttpHandler_KeepAlivePing : HttpClientHandlerTestBase
-    {
-        public SocketsHttpHandler_KeepAlivePing(ITestOutputHelper output) : base(output) { }
-
-        protected override Version UseVersion => HttpVersion.Version20;
-
-        [Fact]
-        public void DefaultValues()
-        {
-            using var handler = new SocketsHttpHandler();
-
-            Assert.Equal(TimeSpan.FromSeconds(20), handler.KeepAlivePingTimeout);
-            Assert.Equal(Timeout.InfiniteTimeSpan, handler.KeepAlivePingDelay);
-            Assert.Equal(HttpKeepAlivePingPolicy.Always, handler.KeepAlivePingPolicy);
-        }
-
-        [Fact]
-        public void SettersExceptions()
-        {
-            using var handler = new SocketsHttpHandler();
-
-            Assert.Throws<ArgumentOutOfRangeException>(() => handler.KeepAlivePingTimeout = TimeSpan.FromMilliseconds(500));
-            Assert.Throws<ArgumentOutOfRangeException>(() => handler.KeepAlivePingTimeout = TimeSpan.FromMilliseconds(500));
-        }
-
-        public static IEnumerable<object[]> KeepAliveTestDataSource()
-        {
-            yield return new object[] { Timeout.InfiniteTimeSpan, HttpKeepAlivePingPolicy.Always, false };
-            yield return new object[] { TimeSpan.FromSeconds(1), HttpKeepAlivePingPolicy.WithActiveRequests, false };
-            yield return new object[] { TimeSpan.FromSeconds(1), HttpKeepAlivePingPolicy.Always, false };
-            yield return new object[] { TimeSpan.FromSeconds(1), HttpKeepAlivePingPolicy.WithActiveRequests, true };
-        }
-
-        [OuterLoop("Significant delay.")]
-        [Theory]
-        [MemberData(nameof(KeepAliveTestDataSource))]
-        public async Task KeepAlive(TimeSpan keepAlivePingDelay, HttpKeepAlivePingPolicy keepAlivePingPolicy, bool expectRequestFail)
-        {
-            TimeSpan pingTimeout = TimeSpan.FromSeconds(5);
-            // Simulate failure by delaying the pong, otherwise send it immediately.
-            TimeSpan pongDelay = expectRequestFail ? pingTimeout * 2 : TimeSpan.Zero;
-            // Pings are send only if KeepAlivePingDelay is not infinite.
-            bool expectStreamPing = keepAlivePingDelay != Timeout.InfiniteTimeSpan;
-            // Pings (regardless ongoing communication) are send only if sending is on and policy is set to always.
-            bool expectPingWithoutStream = expectStreamPing && keepAlivePingPolicy == HttpKeepAlivePingPolicy.Always;
-
-            await Http2LoopbackServer.CreateClientAndServerAsync(
-                async uri =>
-                {
-                    SocketsHttpHandler handler = new SocketsHttpHandler()
-                    {
-                        KeepAlivePingTimeout = pingTimeout,
-                        KeepAlivePingPolicy = keepAlivePingPolicy,
-                        KeepAlivePingDelay = keepAlivePingDelay
-                    };
-                    handler.SslOptions.RemoteCertificateValidationCallback = delegate { return true; };
-
-                    using HttpClient client = new HttpClient(handler);
-                    client.DefaultRequestVersion = HttpVersion.Version20;
-
-                    // Warmup request to create connection.
-                    await client.GetStringAsync(uri);
-                    // Request under the test scope.
-                    if (expectRequestFail)
-                    {
-                        await Assert.ThrowsAsync<HttpRequestException>(() => client.GetStringAsync(uri));
-                    }
-                    else
-                    {
-                        await client.GetStringAsync(uri);
-                    }
-
-                    // Let connection live for a while.
-                    await Task.Delay(pingTimeout);
-                },
-                async server =>
-                {
-                    using Http2LoopbackConnection connection = await server.EstablishConnectionAsync();
-
-                    Task<PingFrame> receivePingTask = expectStreamPing ? connection.ExpectPingFrameAsync() : null;
-
-                    // Warmup the connection.
-                    int streamId1 = await connection.ReadRequestHeaderAsync();
-                    await connection.SendDefaultResponseAsync(streamId1);
-
-                    // Request under the test scope.
-                    int streamId2 = await connection.ReadRequestHeaderAsync();
-
-                    // Test ping with active stream.
-                    if (!expectStreamPing)
-                    {
-                        await Assert.ThrowsAsync<OperationCanceledException>(() => connection.ReadPingAsync(pingTimeout));
-                    }
-                    else
-                    {
-                        PingFrame ping;
-                        if (receivePingTask != null && receivePingTask.IsCompleted)
-                        {
-                            ping = await receivePingTask;
-                        }
-                        else
-                        {
-                            ping = await connection.ReadPingAsync(pingTimeout);
-                        }
-                        await Task.Delay(pongDelay);
-
-                        await connection.SendPingAckAsync(ping.Data);
-                    }
-
-                    // Send response and close the stream.
-                    if (expectRequestFail)
-                    {
-                        await Assert.ThrowsAsync<NetworkException>(() => connection.SendDefaultResponseAsync(streamId2));
-                        // As stream is closed we don't want to continue with sending data.
-                        return;
-                    }
-                    await connection.SendDefaultResponseAsync(streamId2);
-                    // Test ping with no active stream.
-                    if (expectPingWithoutStream)
-                    {
-                        PingFrame ping = await connection.ReadPingAsync(pingTimeout);
-                        await connection.SendPingAckAsync(ping.Data);
-                    }
-                    else
-                    {
-                        await Assert.ThrowsAsync<OperationCanceledException>(() => connection.ReadPingAsync(pingTimeout));
-                    }
-                    await connection.WaitForClientDisconnectAsync(true);
-                });
-        }
-    }
-
     public sealed class SocketsHttpHandler_HttpClientHandler_ResponseDrain_Test : HttpClientHandler_ResponseDrain_Test
     {
         protected override void SetResponseDrainTimeout(HttpClientHandler handler, TimeSpan time)
@@ -1817,6 +1685,30 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
+        public void KeepAlivePing_GetSet_Roundtrips()
+        {
+            using var handler = new SocketsHttpHandler();
+
+            var testTimeSpanValue = TimeSpan.FromSeconds(5);
+            var invalidTimeSpanValue = TimeSpan.FromTicks(TimeSpan.TicksPerSecond - 1);
+
+            Assert.Equal(TimeSpan.FromSeconds(20), handler.KeepAlivePingTimeout);
+            handler.KeepAlivePingTimeout = testTimeSpanValue;
+            Assert.Equal(testTimeSpanValue, handler.KeepAlivePingTimeout);
+
+            Assert.Equal(Timeout.InfiniteTimeSpan, handler.KeepAlivePingDelay);
+            handler.KeepAlivePingDelay = testTimeSpanValue;
+            Assert.Equal(testTimeSpanValue, handler.KeepAlivePingDelay);
+
+            Assert.Equal(HttpKeepAlivePingPolicy.Always, handler.KeepAlivePingPolicy);
+            handler.KeepAlivePingPolicy = HttpKeepAlivePingPolicy.WithActiveRequests;
+            Assert.Equal(HttpKeepAlivePingPolicy.WithActiveRequests, handler.KeepAlivePingPolicy);
+
+            Assert.Throws<ArgumentOutOfRangeException>(() => handler.KeepAlivePingTimeout = invalidTimeSpanValue);
+            Assert.Throws<ArgumentOutOfRangeException>(() => handler.KeepAlivePingDelay = invalidTimeSpanValue);
+        }
+
+        [Fact]
         public void MaxAutomaticRedirections_GetSet_Roundtrips()
         {
             using (var handler = new SocketsHttpHandler())
@@ -2062,6 +1954,9 @@ namespace System.Net.Http.Functional.Tests
                 Assert.Throws(expectedExceptionType, () => handler.SslOptions = new SslClientAuthenticationOptions());
                 Assert.Throws(expectedExceptionType, () => handler.UseCookies = false);
                 Assert.Throws(expectedExceptionType, () => handler.UseProxy = false);
+                Assert.Throws(expectedExceptionType, () => handler.KeepAlivePingTimeout = TimeSpan.FromSeconds(5));
+                Assert.Throws(expectedExceptionType, () => handler.KeepAlivePingDelay = TimeSpan.FromSeconds(5));
+                Assert.Throws(expectedExceptionType, () => handler.KeepAlivePingPolicy = HttpKeepAlivePingPolicy.WithActiveRequests);
             }
         }
     }
