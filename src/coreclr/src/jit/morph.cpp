@@ -7235,7 +7235,7 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
         // We still must check for any struct parameters and set 'hasStructParam'
         // so that we won't transform the recursive tail call into a loop.
         //
-        if (call->IsImplicitTailCall())
+        if (call->IsImplicitTailCall() || call->IsStressTailCall())
         {
             if (varDsc->lvHasLdAddrOp && !lvaIsImplicitByRefLocal(varNum))
             {
@@ -8793,7 +8793,7 @@ GenTree* Compiler::fgMorphCall(GenTreeCall* call)
         assert(!call->CanTailCall());
 
 #if FEATURE_MULTIREG_RET
-        if (fgGlobalMorph && call->HasMultiRegRetVal())
+        if (fgGlobalMorph && call->HasMultiRegRetVal() && varTypeIsStruct(call->TypeGet()))
         {
             // The tail call has been rejected so we must finish the work deferred
             // by impFixupCallStructReturn for multi-reg-returning calls and transform
@@ -8810,23 +8810,14 @@ GenTree* Compiler::fgMorphCall(GenTreeCall* call)
                 lvaGrabTemp(false DEBUGARG("Return value temp for multi-reg return (rejected tail call)."));
             lvaTable[tmpNum].lvIsMultiRegRet = true;
 
-            GenTree* assg = nullptr;
-            if (varTypeIsStruct(call->TypeGet()))
-            {
-                CORINFO_CLASS_HANDLE structHandle = call->gtRetClsHnd;
-                assert(structHandle != NO_CLASS_HANDLE);
-                const bool unsafeValueClsCheck = false;
-                lvaSetStruct(tmpNum, structHandle, unsafeValueClsCheck);
-                var_types structType = lvaTable[tmpNum].lvType;
-                GenTree*  dst        = gtNewLclvNode(tmpNum, structType);
-                assg                 = gtNewAssignNode(dst, call);
-            }
-            else
-            {
-                assg = gtNewTempAssign(tmpNum, call);
-            }
-
-            assg = fgMorphTree(assg);
+            CORINFO_CLASS_HANDLE structHandle = call->gtRetClsHnd;
+            assert(structHandle != NO_CLASS_HANDLE);
+            const bool unsafeValueClsCheck = false;
+            lvaSetStruct(tmpNum, structHandle, unsafeValueClsCheck);
+            var_types structType = lvaTable[tmpNum].lvType;
+            GenTree*  dst        = gtNewLclvNode(tmpNum, structType);
+            GenTree*  assg       = gtNewAssignNode(dst, call);
+            assg                 = fgMorphTree(assg);
 
             // Create the assignment statement and insert it before the current statement.
             Statement* assgStmt = gtNewStmt(assg, compCurStmt->GetILOffsetX());
