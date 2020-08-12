@@ -35,6 +35,28 @@ static bool TryWriteString(uint8_t * &bufferCursor, uint16_t &bufferLen, const W
     return true;
 }
 
+static bool TryWriteString(IpcStream *pStream, const WCHAR *value)
+{
+    uint32_t stringLen = GetStringLength(value);
+    uint32_t stringLenInBytes = stringLen * sizeof(WCHAR);
+    uint32_t totalStringSizeInBytes = stringLenInBytes + sizeof(uint32_t);
+
+    uint32_t totalBytesWritten = 0;
+    uint32_t nBytesWritten = 0;
+
+    bool fSuccess = pStream->Write(&stringLen, sizeof(stringLen), nBytesWritten);
+    totalBytesWritten += nBytesWritten;
+
+    if (fSuccess)
+    {
+        fSuccess &= pStream->Write(value, stringLenInBytes, nBytesWritten);
+        totalBytesWritten += nBytesWritten;
+    }
+
+    ASSERT(totalBytesWritten == totalStringSizeInBytes);
+    return fSuccess && totalBytesWritten == totalStringSizeInBytes;
+}
+
 uint16_t ProcessInfoPayload::GetSize()
 {
     LIMITED_METHOD_CONTRACT;
@@ -47,7 +69,6 @@ uint16_t ProcessInfoPayload::GetSize()
     // LPCWSTR CommandLine; -> 4 bytes + strlen * sizeof(WCHAR)
     // LPCWSTR OS;          -> 4 bytes + strlen * sizeof(WCHAR)
     // LPCWSTR Arch;        -> 4 bytes + strlen * sizeof(WCHAR)
-    // Array<LPCWSTR> Environment; -> 4 bytes + total bytes of strings
 
     S_UINT16 size = S_UINT16(0);
     size += sizeof(ProcessId);
@@ -67,12 +88,6 @@ uint16_t ProcessInfoPayload::GetSize()
     size += Arch != nullptr ?
         S_UINT16(GetStringLength(Arch) * sizeof(WCHAR)) :
         S_UINT16(0);
-
-    PopulateEnvironment();
-
-    size += sizeof(uint32_t);
-    size += S_UINT16(_nEnvEntries * sizeof(uint32_t));
-    size += S_UINT16(_nWchars * sizeof(WCHAR));
 
     ASSERT(!size.IsOverflow());
     return size.Value();
@@ -115,30 +130,22 @@ bool ProcessInfoPayload::Flatten(BYTE * &lpBuffer, uint16_t &cbSize)
     if (fSuccess)
         fSuccess &= TryWriteString(lpBuffer, cbSize, Arch);
 
-    // Array<LPCWSTR>
-    memcpy(lpBuffer, &_nEnvEntries, sizeof(_nEnvEntries));
-    lpBuffer += sizeof(_nEnvEntries);
-    cbSize -= sizeof(_nEnvEntries);
-
-    LPCWSTR cursor = Environment;
-    for (uint32_t i = 0; i < _nEnvEntries; i++)
-    {
-        if (!fSuccess)
-            break;
-
-        uint32_t len = static_cast<uint32_t>(wcslen(cursor) + 1);
-        fSuccess &= TryWriteString(lpBuffer, cbSize, cursor);
-        cursor += len;
-    }
-
     // Assert we've used the whole buffer we were given
     ASSERT(cbSize == 0);
 
     return fSuccess;
 }
 
-void ProcessInfoPayload::PopulateEnvironment()
+void EnvironmentHelper::PopulateEnvironment()
 {
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    }
+    CONTRACTL_END;
+
     if (Environment != nullptr)
         return;
 
@@ -156,25 +163,117 @@ void ProcessInfoPayload::PopulateEnvironment()
         nWchars += len;
         envCursor += len;
     }
-    LPWSTR tmpEnv = new WCHAR[nWchars + 1];
-    envCursor = envBlock;
-    LPWSTR payloadCursor = tmpEnv;
 
-    // copy out the Environment block
-    while(*envCursor != 0) 
+    // serialized size value can't be larger than uint32_t
+    S_UINT32 size(sizeof(uint32_t) + (nEntries * sizeof(uint32_t)) + (nWchars * sizeof(WCHAR)));
+    // if the envblock size value is larger than a uint32_t then we should bail
+    if (!size.IsOverflow())
     {
-        // len characters
-        uint32_t len = static_cast<uint32_t>(wcslen(envCursor) + 1);
-        wcscpy(payloadCursor, envCursor);
-        envCursor += len;
-        payloadCursor += len;
+        // copy out the Environment block
+        LPWSTR tmpEnv = new (nothrow) WCHAR[nWchars + 1];
+        if (tmpEnv != nullptr)
+        {
+            envCursor = envBlock;
+            LPWSTR payloadCursor = tmpEnv;
+
+            while(*envCursor != 0) 
+            {
+                // len characters
+                uint32_t len = static_cast<uint32_t>(wcslen(envCursor) + 1);
+                wcscpy(payloadCursor, envCursor);
+                envCursor += len;
+                payloadCursor += len;
+            }
+            *payloadCursor = W('\0');
+            Environment = tmpEnv;
+        }
     }
-    *payloadCursor = W('\0');
-    Environment = tmpEnv;
+
     FreeEnvironmentStringsW(envBlock);
 
     _nEnvEntries = nEntries;
     _nWchars = nWchars;
+
+    return;
+}
+
+uint32_t EnvironmentHelper::GetEnvironmentBlockSize()
+{
+    LIMITED_METHOD_CONTRACT;
+
+    S_UINT32 size(sizeof(uint32_t) + (_nEnvEntries * sizeof(uint32_t)) + (_nWchars * sizeof(WCHAR)));
+    return size.IsOverflow() ? sizeof(uint32_t) : size.Value();
+}
+
+bool EnvironmentHelper::WriteToStream(IpcStream *pStream)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+        PRECONDITION(pStream != nullptr);
+        PRECONDITION(Environment != nullptr);
+    }
+    CONTRACTL_END;
+
+    // Array<Array<WCHAR>>
+    uint32_t nBytesWritten = 0;
+    bool fSuccess = pStream->Write(&_nEnvEntries, sizeof(_nEnvEntries), nBytesWritten);
+
+    LPCWSTR cursor = Environment;
+    for (uint32_t i = 0; i < _nEnvEntries; i++)
+    {
+        if (!fSuccess || cursor == nullptr)
+            break;
+
+        uint32_t len = static_cast<uint32_t>(wcslen(cursor) + 1);
+        fSuccess &= TryWriteString(pStream, cursor);
+        cursor += len;
+    }
+
+    return fSuccess;
+}
+
+void ProcessDiagnosticsProtocolHelper::GetProcessEnvironment(DiagnosticsIpc::IpcMessage& message, IpcStream *pStream)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+        PRECONDITION(pStream != nullptr);
+    }
+    CONTRACTL_END;
+
+    // GetProcessEnvironment responds with a Diagnostics IPC message
+    // who's payload is a uint32_t that specifies the number of bytes
+    // that will follow.  The optional continuation will contain
+    // the Environemnt streamed in the standard Diagnostics IPC format (length-prefixed arrays).
+
+    struct EnvironmentHelper helper = {};
+    helper.PopulateEnvironment();
+
+    uint32_t nBytes = helper.GetEnvironmentBlockSize();
+
+    DiagnosticsIpc::IpcMessage ProcessEnvironmentResponse;
+    const bool fSuccess = ProcessEnvironmentResponse.Initialize(DiagnosticsIpc::GenericSuccessHeader, nBytes) ?
+        ProcessEnvironmentResponse.Send(pStream) :
+        DiagnosticsIpc::IpcMessage::SendErrorMessage(pStream, E_FAIL);
+
+    if (!fSuccess)
+    {
+        STRESS_LOG0(LF_DIAGNOSTICS_PORT, LL_ERROR, "Failed to send DiagnosticsIPC response");
+    }
+    else
+    {
+        // send the environment
+        const bool fSuccessWriteEnv = helper.WriteToStream(pStream);
+        if (!fSuccessWriteEnv)
+            STRESS_LOG0(LF_DIAGNOSTICS_PORT, LL_ERROR, "Failed to stream environment");
+    }
+
+    delete pStream;
 }
 
 void ProcessDiagnosticsProtocolHelper::GetProcessInfo(DiagnosticsIpc::IpcMessage& message, IpcStream *pStream)
@@ -209,9 +308,6 @@ void ProcessDiagnosticsProtocolHelper::GetProcessInfo(DiagnosticsIpc::IpcMessage
 
     // Get the cookie
     payload.RuntimeCookie = DiagnosticsIpc::GetAdvertiseCookie_V1();
-
-    // Get the environment block
-    payload.PopulateEnvironment();
 
     DiagnosticsIpc::IpcMessage ProcessInfoResponse;
     const bool fSuccess = ProcessInfoResponse.Initialize(DiagnosticsIpc::GenericSuccessHeader, payload) ?
@@ -267,6 +363,9 @@ void ProcessDiagnosticsProtocolHelper::HandleIpcMessage(DiagnosticsIpc::IpcMessa
         break;
     case ProcessCommandId::ResumeRuntime:
         ProcessDiagnosticsProtocolHelper::ResumeRuntimeStartup(message, pStream);
+        break;
+    case ProcessCommandId::GetProcessEnvironment:
+        ProcessDiagnosticsProtocolHelper::GetProcessEnvironment(message, pStream);
         break;
 
     default:

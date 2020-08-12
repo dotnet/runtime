@@ -75,15 +75,6 @@ namespace Tracing.Tests.ProcessInfoValidation
             Process currentProcess = Process.GetCurrentProcess();
             int pid = currentProcess.Id;
             Logger.logger.Log($"Test PID: {pid}");
-            var testEnvPairs = new Dictionary<string, string>
-            {
-                { "TESTKEY1", "TESTVAL1" },
-                { "TESTKEY2", "TESTVAL2" },
-                { "TESTKEY3", "__TEST__VAL=;--3" }
-            };
-
-            foreach (var (key, val) in testEnvPairs)
-                System.Environment.SetEnvironmentVariable(key, val);
 
             Stream stream = ConnectionHelper.GetStandardTransport(pid);
 
@@ -102,7 +93,6 @@ namespace Tracing.Tests.ProcessInfoValidation
             // LPCWSTR CommandLine;
             // LPCWSTR OS;
             // LPCWSTR Arch;
-            // Array<LPCWSTR> Env;
 
             int totalSize = response.Payload.Length;
             Logger.logger.Log($"Total size of Payload = {totalSize} bytes");
@@ -200,34 +190,6 @@ namespace Tracing.Tests.ProcessInfoValidation
             };
 
             Utils.Assert(expectedArchValue.Equals(arch), $"OS must match current Operating System. Expected: \"{expectedArchValue}\", Received: \"{arch}\"");
-
-            // VALIDATE ENV
-            // env block is sent as Array<LPCWSTR> (length-prefixed array of length-prefixed wchar strings)
-            start = end;
-            end = start + 4 /* sizeof(uint32_t) */;
-            UInt32 envCount = BitConverter.ToUInt32(response.Payload[start..end]);
-            Logger.logger.Log($"envCount: {envCount}");
-
-            var env = new Dictionary<string,string>();
-            for (int i = 0; i < envCount; i++)
-            {
-                start = end;
-                end = start + 4 /* sizeof(uint32_t) */;
-                UInt32 pairLength = BitConverter.ToUInt32(response.Payload[start..end]);
-
-                start = end;
-                end = start + ((int)pairLength * sizeof(char));
-                Utils.Assert(end <= totalSize, $"String end can't exceed payload size. Expected: <{totalSize}, Received: {end} (decoded length: {pairLength})");
-                string envPair = System.Text.Encoding.Unicode.GetString(response.Payload[start..end]).TrimEnd('\0');
-                int equalsIndex = envPair.IndexOf('=');
-                env[envPair[0..equalsIndex]] = envPair[(equalsIndex+1)..];
-            }
-            Logger.logger.Log($"finished parsing env");
-
-
-            foreach (var (key, val) in testEnvPairs)
-                Utils.Assert(env.ContainsKey(key) && env[key].Equals(val), $"Did not find test environment pair in the environment block: '{key}' = '{val}'");
-            Logger.logger.Log($"Saw test values in env");
 
             Utils.Assert(end == totalSize, $"Full payload should have been read. Expected: {totalSize}, Received: {end}");
 
