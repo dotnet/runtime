@@ -1268,6 +1268,8 @@ namespace System.Diagnostics
         /// </summary>
         public static Process Start(string fileName, IEnumerable<string> arguments)
         {
+            if (fileName == null)
+                throw new ArgumentNullException(nameof(fileName));
             if (arguments == null)
                 throw new ArgumentNullException(nameof(arguments));
 
