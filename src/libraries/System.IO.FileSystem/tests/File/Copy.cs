@@ -14,6 +14,13 @@ namespace System.IO.Tests
             File.Copy(source, dest);
         }
 
+        protected virtual void CopyReadOnlyFile(string source, string dest)
+        {
+            byte[] bits = File.ReadAllBytes(source);
+            File.WriteAllBytes(dest, bits);
+            File.SetAttributes(dest, FileAttributes.ReadOnly);
+        }
+
         #region UniversalTests
 
         [Fact]
@@ -108,7 +115,6 @@ namespace System.IO.Tests
 
         [Theory]
         [MemberData(nameof(CopyFileWithData_MemberData))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/40543", TestPlatforms.Browser)]
         public void CopyFileWithData(char[] data, bool readOnly)
         {
             string testFileSource = GetTestFilePath();
@@ -120,8 +126,21 @@ namespace System.IO.Tests
                 stream.Write(data, 0, data.Length);
             }
 
-            // Set the last write time of the source file to something a while ago
-            DateTime lastWriteTime = DateTime.UtcNow.Subtract(TimeSpan.FromHours(1));
+            DateTime lastWriteTime; 
+            if (PlatformDetection.IsBrowser)
+            {
+                // For browser, there is technically only 1 time.  It's the max
+                // of LastWrite and LastAccess.  Setting to a date/time in the future
+                // is a way of making this test work similarly.
+                //
+                // https://emscripten.org/docs/api_reference/Filesystem-API.html#FS.utime
+                //
+                lastWriteTime = DateTime.UtcNow.Add(TimeSpan.FromHours(1));
+            }
+            else
+            {
+                lastWriteTime = DateTime.UtcNow.Subtract(TimeSpan.FromHours(1));
+            }
             File.SetLastWriteTime(testFileSource, lastWriteTime);
 
             if (readOnly)
@@ -130,7 +149,16 @@ namespace System.IO.Tests
             }
 
             // Copy over the data
-            Copy(testFileSource, testFileDest);
+            //
+            // For browser, work around limitation of File.Copy, which
+            // fails when trying to open the dest file
+            if (PlatformDetection.IsBrowser && readOnly)
+            {
+                CopyReadOnlyFile(testFileSource, testFileDest);
+                File.SetLastWriteTime(testFileDest, lastWriteTime);
+            }
+            else
+                Copy(testFileSource, testFileDest);
 
             // Ensure copy transferred written data
             using (StreamReader stream = new StreamReader(File.OpenRead(testFileDest)))
@@ -141,10 +169,7 @@ namespace System.IO.Tests
             }
 
             // Ensure last write/access time on the new file is appropriate
-            if (PlatformDetection.IsNotBrowser) // There is only one write time on browser vfs
-            {
-                Assert.InRange(File.GetLastWriteTimeUtc(testFileDest), lastWriteTime.AddSeconds(-1), lastWriteTime.AddSeconds(1));
-            }
+            Assert.InRange(File.GetLastWriteTimeUtc(testFileDest), lastWriteTime.AddSeconds(-1), lastWriteTime.AddSeconds(1));
 
             Assert.Equal(readOnly, (File.GetAttributes(testFileDest) & FileAttributes.ReadOnly) != 0);
             if (readOnly)

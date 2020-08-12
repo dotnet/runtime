@@ -369,10 +369,7 @@ namespace System.Net.Tests
 
         private unsafe void GetUrlGroupProperty(ulong urlGroupId, HTTP_SERVER_PROPERTY property, IntPtr info, uint infosize)
         {
-            uint statusCode = 0;
-
-            statusCode = HttpQueryUrlGroupProperty(urlGroupId, HTTP_SERVER_PROPERTY.HttpServerTimeoutsProperty, info, infosize, IntPtr.Zero);
-
+            uint statusCode = HttpQueryUrlGroupProperty(urlGroupId, HTTP_SERVER_PROPERTY.HttpServerTimeoutsProperty, info, infosize, IntPtr.Zero);
             if (statusCode != 0)
             {
                 throw new Exception("HttpQueryUrlGroupProperty failed with " + (int)statusCode);

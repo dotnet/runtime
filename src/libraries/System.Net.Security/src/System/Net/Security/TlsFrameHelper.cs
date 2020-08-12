@@ -561,7 +561,6 @@ namespace System.Net.Security
             }
 
             // Following can underflow but it is ok due to equality check below
-            int hostNameStructLength = BinaryPrimitives.ReadUInt16BigEndian(serverName) - sizeof(NameType);
             NameType nameType = (NameType)serverName[NameTypeOffset];
             ReadOnlySpan<byte> hostNameStruct = serverName.Slice(HostNameStructOffset);
             if (nameType != NameType.HostName)

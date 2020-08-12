@@ -218,6 +218,8 @@
              Link="ProductionCode\System\Net\Http\HttpRuleParser.cs" />
     <Compile Include="..\..\src\System\Net\Http\HttpUtilities.cs"
              Link="ProductionCode\System\Net\Http\HttpUtilities.cs" />
+    <Compile Include="..\..\src\System\Net\Http\HttpVersionPolicy.cs"
+             Link="ProductionCode\System\Net\Http\HttpVersionPolicy.cs" />
     <Compile Include="..\..\src\System\Net\Http\MessageProcessingHandler.cs"
              Link="ProductionCode\System\Net\Http\MessageProcessingHandler.cs" />
     <Compile Include="..\..\src\System\Net\Http\MultipartContent.cs"

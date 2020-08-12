@@ -92,17 +92,7 @@ The methods are automatically fed into appropriate XUnit theories based on the n
 You can run the tests either in Visual Studio (in Test Explorer) or with the ```dotnet test ``` command from the command line.
 
 ## How to contribute
-All ILVerify issues are labeled with [area-ILVerification](https://github.com/search?utf8=%E2%9C%93&q=label%3Aarea-ILVerification&type=).
-
-ILVerify basically runs through the IL commands in an assembly and does all the verification steps that are specified in ECMA-335.
-
-Currently every IL command falls into one of these categories:
-
- - Not implemented: the implementation is completely missing. The easiest way is to pick one of them (look for NotImplentedException in the code) and implement it. First you should 100% understand the spec. (see [ECMA-335](https://www.ecma-international.org/publications/standards/Ecma-335.htm)), then try to port an existing implementation (sources below).
- - Partially implemented: These are typically methods with TODOs in it. As the first phase we want to make sure that for every command the stack is correctly maintained, therefore for some commands we either have no verification or we have only a not complete verification. You can also pick one of these and finish it.
- - Implemented: find and fix bugs ;) .
-
-Another option to contribute is to write tests (see Tests section).
+All ILVerify issues are labeled with [area-ILVerification](https://github.com/search?utf8=%E2%9C%93&q=label%3Aarea-ILVerification&type=). You can also look and fix TODOs in the source code.
 
 Useful sources:
  - [PEVerify source code](https://github.com/lewischeng-ms/sscli/blob/master/clr/src/jit64/newverify.cpp)
