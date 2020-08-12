@@ -176,6 +176,40 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
+        [Theory]
+        [InlineData("Client content", null)]
+        [InlineData("Client content", "Server content")]
+        [InlineData(null, null)]
+        [InlineData(null, "Server content")]
+        public async Task Http2ClearText_SendAsync_Success(string clientContent, string serverContent)
+        {
+            await Http2LoopbackServer.CreateClientAndServerAsync(async uri =>
+            {
+                using HttpClient client = CreateHttpClient();
+
+                HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, uri)
+                {
+                    Version = UseVersion,
+                    VersionPolicy = HttpVersionPolicy.RequestVersionExact,
+                    Content = clientContent is null ? (HttpContent)null : new StringContent(clientContent),
+                };
+
+                using HttpResponseMessage response = await client.SendAsync(request);
+                string responseContent = await response.Content.ReadAsStringAsync();
+                Assert.Equal(serverContent ?? String.Empty, responseContent);
+            },
+            async server =>
+            {
+                Http2LoopbackConnection connection = await server.EstablishConnectionAsync();
+                Assert.IsNotType<SslStream>(connection.Stream);
+
+                HttpRequestData requestData = await connection.ReadRequestDataAsync();                
+                string requestContent = requestData.Body is null ? (string)null : Encoding.ASCII.GetString(requestData.Body);
+                Assert.Equal(clientContent, requestContent);
+                await connection.SendResponseAsync(HttpStatusCode.OK, body: serverContent);
+            }, new Http2Options() { UseSsl = false });
+        }
+
         [ConditionalFact(nameof(SupportsAlpn))]
         public async Task Http2_ServerSendsValidSettingsValues_Success()
         {
