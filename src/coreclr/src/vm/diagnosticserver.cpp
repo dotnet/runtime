@@ -142,6 +142,9 @@ bool DiagnosticServer::Initialize()
                 szMessage);                                           // data2
         };
 
+        // Initialize the RuntimeIndentifier before use
+        DiagnosticsIpc::GetAdvertiseCookie_V1();
+
         // Ports can fail to be configured 
         bool fAnyErrors = IpcStreamFactory::Configure(ErrorCallback);
         if (fAnyErrors)

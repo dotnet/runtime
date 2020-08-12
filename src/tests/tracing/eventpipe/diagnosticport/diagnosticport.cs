@@ -258,6 +258,40 @@ namespace Tracing.Tests.DiagnosticPortValidation
             return fSuccess;
         }
 
+        public static async Task<bool> TEST_AdvertiseAndProcessInfoCookiesMatch()
+        {
+            bool fSuccess = true;
+            string serverName = ReverseServer.MakeServerAddress();
+            Logger.logger.Log($"Server name is '{serverName}'");
+            var server = new ReverseServer(serverName);
+            using var memoryStream = new MemoryStream();
+            Task<bool> subprocessTask = Utils.RunSubprocess(
+                currentAssembly: Assembly.GetExecutingAssembly(),
+                environment: new Dictionary<string,string> { { Utils.DiagnosticPortsEnvKey, $"{serverName},connect,nosuspend" } },
+                duringExecution: async (pid) =>
+                {
+                    Stream stream = await server.AcceptAsync();
+                    IpcAdvertise advertise = IpcAdvertise.Parse(stream);
+                    Logger.logger.Log(advertise.ToString());
+
+                    Logger.logger.Log($"Send ProcessInfo Diagnostics IPC Command");
+                    // send ProcessInfo command (0x04=ProcessCommandSet, 0x00=ProcessInfo commandid)
+                    var message = new IpcMessage(0x04,0x00);
+                    Logger.logger.Log($"Sent: {message.ToString()}");
+                    IpcMessage response = IpcClient.SendMessage(stream, message);
+                    Logger.logger.Log($"received: {response.ToString()}");
+                    ProcessInfo info = ProcessInfo.TryParse(response.Payload);
+
+                    Utils.Assert(info.RuntimeCookie.Equals(advertise.RuntimeInstanceCookie), $"The runtime cookie reported by ProcessInfo and Advertise must match.  ProcessInfo: {info.RuntimeCookie.ToString()}, Advertise: {advertise.RuntimeInstanceCookie.ToString()}");
+                    Logger.logger.Log($"ProcessInfo and Advertise Cookies are equal");
+                }
+            );
+
+            fSuccess &= await subprocessTask;
+
+            return fSuccess;
+        }
+
         public static async Task<int> Main(string[] args)
         {
             if (args.Length >= 1)
