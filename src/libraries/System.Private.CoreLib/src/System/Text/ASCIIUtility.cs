@@ -241,10 +241,7 @@ namespace System.Text
         private static bool ContainsNonAsciiByte_Sse2(uint sseMask)
         {
             Debug.Assert(sseMask != uint.MaxValue);
-            if (!Sse2.IsSupported)
-            {
-                throw new PlatformNotSupportedException();
-            }
+            Debug.Assert(Sse2.IsSupported);
             return sseMask != 0;
         }
 
@@ -252,10 +249,7 @@ namespace System.Text
         private static bool ContainsNonAsciiByte_AdvSimd(uint advSimdIndex)
         {
             Debug.Assert(advSimdIndex != uint.MaxValue);
-            if (!AdvSimd.IsSupported)
-            {
-                throw new PlatformNotSupportedException();
-            }
+            Debug.Assert(AdvSimd.IsSupported);
             return advSimdIndex < 16;
         }
 
@@ -294,7 +288,7 @@ namespace System.Text
                 currentSseMask = (uint)Sse2.MoveMask(Sse2.LoadVector128(pBuffer)); // unaligned load
                 if (ContainsNonAsciiByte_Sse2(currentSseMask))
                 {
-                    goto FoundNonAsciiDataInCurrentMask;
+                    goto FoundNonAsciiDataInCurrentChunk;
                 }
             }
             else if (AdvSimd.Arm64.IsSupported)
@@ -302,7 +296,7 @@ namespace System.Text
                 currentAdvSimdIndex = (uint)GetIndexOfFirstNonAsciiByteInLane_AdvSimd(AdvSimd.LoadVector128(pBuffer), bitmask); // unaligned load
                 if (ContainsNonAsciiByte_AdvSimd(currentAdvSimdIndex))
                 {
-                    goto FoundNonAsciiDataInCurrentMask;
+                    goto FoundNonAsciiDataInCurrentChunk;
                 }
             }
             else
@@ -399,7 +393,7 @@ namespace System.Text
                 currentSseMask = (uint)Sse2.MoveMask(Sse2.LoadAlignedVector128(pBuffer));
                 if (ContainsNonAsciiByte_Sse2(currentSseMask))
                 {
-                    goto FoundNonAsciiDataInCurrentMask;
+                    goto FoundNonAsciiDataInCurrentChunk;
                 }
             }
             else if (AdvSimd.Arm64.IsSupported)
@@ -407,7 +401,7 @@ namespace System.Text
                 currentAdvSimdIndex = (uint)GetIndexOfFirstNonAsciiByteInLane_AdvSimd(AdvSimd.LoadVector128(pBuffer), bitmask);
                 if (ContainsNonAsciiByte_AdvSimd(currentAdvSimdIndex))
                 {
-                    goto FoundNonAsciiDataInCurrentMask;
+                    goto FoundNonAsciiDataInCurrentChunk;
                 }
             }
             else
@@ -433,7 +427,7 @@ namespace System.Text
                     currentSseMask = (uint)Sse2.MoveMask(Sse2.LoadVector128(pBuffer)); // unaligned load
                     if (ContainsNonAsciiByte_Sse2(currentSseMask))
                     {
-                        goto FoundNonAsciiDataInCurrentMask;
+                        goto FoundNonAsciiDataInCurrentChunk;
                     }
 
                 }
@@ -442,7 +436,7 @@ namespace System.Text
                     currentAdvSimdIndex = (uint)GetIndexOfFirstNonAsciiByteInLane_AdvSimd(AdvSimd.LoadVector128(pBuffer), bitmask); // unaligned load
                     if (ContainsNonAsciiByte_AdvSimd(currentAdvSimdIndex))
                     {
-                        goto FoundNonAsciiDataInCurrentMask;
+                        goto FoundNonAsciiDataInCurrentChunk;
                     }
 
                 }
@@ -483,14 +477,14 @@ namespace System.Text
             {
                 throw new PlatformNotSupportedException();
             }
-        FoundNonAsciiDataInCurrentMask:
+        FoundNonAsciiDataInCurrentChunk:
 
-            // The mask contains - from the LSB - a 0 for each ASCII byte we saw, and a 1 for each non-ASCII byte.
-            // Tzcnt is the correct operation to count the number of zero bits quickly. If this instruction isn't
-            // available, we'll fall back to a normal loop.
 
             if (Sse2.IsSupported)
             {
+                // The mask contains - from the LSB - a 0 for each ASCII byte we saw, and a 1 for each non-ASCII byte.
+                // Tzcnt is the correct operation to count the number of zero bits quickly. If this instruction isn't
+                // available, we'll fall back to a normal loop.
                 Debug.Assert(ContainsNonAsciiByte_Sse2(currentSseMask), "Shouldn't be here unless we see non-ASCII data.");
                 pBuffer += (uint)BitOperations.TrailingZeroCount(currentSseMask);
             }
