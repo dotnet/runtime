@@ -181,7 +181,7 @@ var BindingSupportLib = {
 		},
 
 		unbox_mono_obj: function (mono_obj) {
-			if (mono_obj == 0)
+			if (mono_obj === 0)
 				return undefined;
 
 			var root = MONO.mono_wasm_new_root (mono_obj);
@@ -195,9 +195,7 @@ var BindingSupportLib = {
 		_unbox_mono_obj_rooted: function (root) {
 			var mono_obj = root.value;
 			if (mono_obj === 0)
-				console.log ("unbox_mono_obj_rooted got a null pointer");
-			else if (typeof (mono_obj) !== "number")
-				throw new Error ("invalid root object");
+				return undefined;
 			
 			var type = this.mono_get_obj_type (mono_obj);
 			//See MARSHAL_TYPE_ defines in driver.c
