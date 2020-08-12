@@ -14,6 +14,7 @@ if(CLR_CMAKE_HOST_WIN32)
 
     set(CREATEDUMP_SOURCES
         main.cpp
+        dumpname.cpp
         createdumpwindows.cpp
         createdump.rc
     )
@@ -28,6 +29,7 @@ if(CLR_CMAKE_HOST_WIN32)
         advapi32.lib
         version.lib
         dbghelp.lib
+        ws2_32.lib
     )
 
 else(CLR_CMAKE_HOST_WIN32)
@@ -49,6 +51,7 @@ else(CLR_CMAKE_HOST_WIN32)
 
     set(CREATEDUMP_SOURCES
         main.cpp
+        dumpname.cpp
         createdumpunix.cpp
         crashinfo.cpp
         threadinfo.cpp
