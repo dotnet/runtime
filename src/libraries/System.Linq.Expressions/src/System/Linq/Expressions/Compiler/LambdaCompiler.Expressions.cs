@@ -1123,6 +1123,8 @@ namespace System.Linq.Expressions.Compiler
                         Label exit = _ilg.DefineLabel();
                         Label exitNull = _ilg.DefineLabel();
                         LocalBuilder anyNull = GetLocal(typeof(bool));
+                        _ilg.Emit(OpCodes.Ldc_I4_0);
+                        _ilg.Emit(OpCodes.Stloc, anyNull);
                         for (int i = 0, n = paramList.Length; i < n; i++)
                         {
                             ParameterExpression v = paramList[i];

@@ -48,7 +48,7 @@ namespace DebuggerTests
             PointersAsArgsTest(ip, ipp, ipa, ippa, &dt, &dtp, dtpa, dtppa);
         }
 
-        static unsafe void  PointersAsArgsTest(int* ip, int** ipp, int*[] ipa, int**[] ippa,
+        static unsafe void PointersAsArgsTest(int* ip, int** ipp, int*[] ipa, int**[] ippa,
                             DateTime* dtp, DateTime** dtpp, DateTime*[] dtpa, DateTime**[] dtppa)
         {
             Console.WriteLine($"break here!");

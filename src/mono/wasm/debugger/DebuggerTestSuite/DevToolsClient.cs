@@ -22,14 +22,14 @@ namespace Microsoft.WebAssembly.Diagnostics
         readonly ILogger logger;
 
         public DevToolsClient(ILogger logger)
-            {
-                this.logger = logger;
-            }
+        {
+            this.logger = logger;
+        }
 
-            ~DevToolsClient()
-            {
-                Dispose(false);
-            }
+        ~DevToolsClient()
+        {
+            Dispose(false);
+        }
 
         public void Dispose()
         {
@@ -79,7 +79,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 if (result.EndOfMessage)
                 {
                     mem.Write(buff, 0, result.Count);
-                    return Encoding.UTF8.GetString(mem.GetBuffer(), 0, (int) mem.Length);
+                    return Encoding.UTF8.GetString(mem.GetBuffer(), 0, (int)mem.Length);
                 }
                 else
                 {
@@ -135,7 +135,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 var task = await Task.WhenAny(pending_ops);
                 if (task == pending_ops[0])
                 { //pending_ops[0] is for message reading
-                    var msg = ((Task<string>) task).Result;
+                    var msg = ((Task<string>)task).Result;
                     pending_ops[0] = ReadOne(token);
                     Task tsk = receive(msg, token);
                     if (tsk != null)
@@ -143,7 +143,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 }
                 else if (task == pending_ops[1])
                 {
-                    var res = ((Task<bool>) task).Result;
+                    var res = ((Task<bool>)task).Result;
                     //it might not throw if exiting successfull
                     return res;
                 }

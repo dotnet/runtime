@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -96,7 +95,7 @@ namespace System
             yield return MkConsoleKeyInfo('\x01', ConsoleKey.A, ConsoleModifiers.Control | ConsoleModifiers.Alt);
             yield return MkConsoleKeyInfo('\r', ConsoleKey.Enter, (ConsoleModifiers)0);
 
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            if (OperatingSystem.IsWindows())
             {
                 // windows will report '\n' as 'Ctrl+Enter', which is typically not picked up by Unix terminals
                 yield return MkConsoleKeyInfo('\n', ConsoleKey.Enter, ConsoleModifiers.Control);

@@ -10,6 +10,7 @@ namespace System.Diagnostics
     ///     a particular process.  Using this component, you can determine
     ///     information about the module.
     /// </devdoc>
+    [Designer("System.Diagnostics.Design.ProcessModuleDesigner, System.Design, Version=4.0.0.0, PublicKeyToken=b03f5f7f11d50a3a")]
     public class ProcessModule : Component
     {
         private FileVersionInfo? _fileVersionInfo;

@@ -130,6 +130,7 @@ namespace System.Net.Test.Common
         public byte[] Body;
         public string Method;
         public string Path;
+        public Version Version;
         public List<HttpHeaderData> Headers { get; }
         public int RequestId;       // Generic request ID. Currently only used for HTTP/2 to hold StreamId.
 
@@ -143,6 +144,7 @@ namespace System.Net.Test.Common
             var result = new HttpRequestData();
             result.Method = request.Method.ToString();
             result.Path = request.RequestUri?.AbsolutePath;
+            result.Version = request.Version;
 
             foreach (var header in request.Headers)
             {

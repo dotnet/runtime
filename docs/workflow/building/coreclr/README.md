@@ -22,6 +22,8 @@ CoreCLR also supports a 'checked' build type which has asserts enabled like 'deb
 ./build.sh -subset clr -configuration checked
 ```
 
+To pass extra compiler/linker flags to the coreclr build, set the environment variables `EXTRA_CFLAGS`, `EXTRA_CXXFLAGS` and `EXTRA_LDFLAGS` as needed. Don't set `CFLAGS`/`CXXFLAGS`/`LDFLAGS` directly as that might lead to configure-time tests failing.
+
 This will produce outputs as follows:
 
 - Product binaries will be dropped in `artifacts\bin\coreclr\<OS>.<arch>.<flavor>` folder.

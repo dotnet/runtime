@@ -25,14 +25,14 @@ public class Fancy
     public static void Types()
     {
         double dPI = System.Math.PI;
-        float fPI = (float) System.Math.PI;
+        float fPI = (float)System.Math.PI;
 
         int iMax = int.MaxValue;
         int iMin = int.MinValue;
         uint uiMax = uint.MaxValue;
         uint uiMin = uint.MinValue;
 
-        long l = uiMax * (long) 2;
+        long l = uiMax * (long)2;
         long lMax = long.MaxValue; // cannot be represented as double
         long lMin = long.MinValue; // cannot be represented as double
 

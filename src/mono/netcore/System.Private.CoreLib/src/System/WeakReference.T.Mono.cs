@@ -11,8 +11,7 @@ namespace System
         private GCHandle handle;
         private bool trackResurrection;
 
-        [MaybeNull]
-        private T Target
+        private T? Target
         {
             get
             {

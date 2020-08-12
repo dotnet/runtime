@@ -6,6 +6,7 @@ using System.ComponentModel;
 using System.Data.SqlTypes;
 using System.Data.Common;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
 using System.Text;
@@ -2250,7 +2251,7 @@ namespace System.Data
         internal XmlWriter _xmlw = default!; // Late-initialized
         private bool _fBefore;
         private bool _fErrors;
-        internal Hashtable _rowsOrder = default!; // Always initialized in DoAssignments
+        internal Hashtable _rowsOrder;
         private readonly ArrayList _tables = new ArrayList();
         private readonly bool _writeHierarchy;
 
@@ -2297,7 +2298,7 @@ namespace System.Data
             }
         }
 
-
+        [MemberNotNull(nameof(_rowsOrder))]
         private void DoAssignments(ArrayList tables)
         {
             int rows = 0;

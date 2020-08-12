@@ -52,6 +52,7 @@
     <Compile Include="System\Net\Http\HttpRuleParser.cs" />
     <Compile Include="System\Net\Http\HttpTelemetry.cs" />
     <Compile Include="System\Net\Http\HttpUtilities.cs" />
+    <Compile Include="System\Net\Http\HttpVersionPolicy.cs" />
     <Compile Include="System\Net\Http\MessageProcessingHandler.cs" />
     <Compile Include="System\Net\Http\MultipartContent.cs" />
     <Compile Include="System\Net\Http\MultipartFormDataContent.cs" />
@@ -109,6 +110,8 @@
              Link="Common\System\IO\StreamHelpers.CopyValidation.cs" />
     <Compile Include="$(CommonPath)System\Net\Security\SslClientAuthenticationOptionsExtensions.cs"
              Link="Common\System\Net\Security\SslClientAuthenticationOptionsExtensions.cs" />
+    <Compile Include="$(CommonPath)System\Net\NetworkErrorHelper.cs"
+             Link="Common\System\Net\NetworkErrorHelper.cs" />
     <Compile Include="$(CommonPath)System\IO\DelegatingStream.cs"
              Link="Common\System\IO\DelegatingStream.cs" />
     <Compile Include="$(CommonPath)System\IO\ReadOnlyMemoryStream.cs"
@@ -693,8 +696,6 @@
     <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.Extensions" />
     <Reference Include="System.Runtime.InteropServices" />
-    <Reference Include="System.Runtime.InteropServices.RuntimeInformation" />
-    <Reference Include="System.Runtime.InteropServices.JavaScript" Condition="'$(TargetsBrowser)' == 'true'" />
     <Reference Include="System.Security.Claims" Condition="'$(TargetsWindows)' == 'true'" />
     <Reference Include="System.Security.Cryptography.Algorithms" />
     <Reference Include="System.Security.Cryptography.Csp" />
@@ -716,7 +717,7 @@
     <Reference Include="System.Security.Cryptography.Primitives" />
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsBrowser)' == 'true'">
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.InteropServices.JavaScript\src\System.Runtime.InteropServices.JavaScript.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Private.Runtime.InteropServices.JavaScript\src\System.Private.Runtime.InteropServices.JavaScript.csproj" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="msquic.dll" Condition="Exists('msquic.dll')">

@@ -6,7 +6,6 @@ using System.IO;
 using System.Linq;
 using System.Net.Sockets;
 using System.Net.Test.Common;
-using System.Runtime.InteropServices;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
@@ -226,7 +225,7 @@ namespace System.Net.Security.Tests
 
         public static IEnumerable<object[]> Alpn_TestData()
         {
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+            if (OperatingSystem.IsMacOS())
             {
                 yield return new object[] { new List<SslApplicationProtocol> { SslApplicationProtocol.Http11, SslApplicationProtocol.Http2 }, new List<SslApplicationProtocol> { SslApplicationProtocol.Http2 }, null };
                 yield return new object[] { new List<SslApplicationProtocol> { SslApplicationProtocol.Http11 }, new List<SslApplicationProtocol> { SslApplicationProtocol.Http11, SslApplicationProtocol.Http2 }, null };

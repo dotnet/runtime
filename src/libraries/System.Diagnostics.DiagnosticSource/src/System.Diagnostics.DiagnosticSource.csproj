@@ -38,7 +38,7 @@
     <Compile Include="System\Diagnostics\ActivityTagsCollection.cs" />
     <Compile Include="System\Diagnostics\ActivityContext.cs" />
     <Compile Include="System\Diagnostics\ActivityCreationOptions.cs" />
-    <Compile Include="System\Diagnostics\ActivityDataRequest.cs" />
+    <Compile Include="System\Diagnostics\ActivitySamplingResult.cs" />
     <Compile Include="System\Diagnostics\ActivityEvent.cs" />
     <Compile Include="System\Diagnostics\ActivityKind.cs" />
     <Compile Include="System\Diagnostics\ActivityLink.cs" />

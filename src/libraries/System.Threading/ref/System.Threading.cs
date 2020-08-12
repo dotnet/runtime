@@ -35,10 +35,8 @@ namespace System.Threading
         private readonly T _PreviousValue_k__BackingField;
         private readonly T _CurrentValue_k__BackingField;
         private readonly int _dummyPrimitive;
-        [System.Diagnostics.CodeAnalysis.MaybeNullAttribute]
-        public T CurrentValue { get { throw null; } }
-        [System.Diagnostics.CodeAnalysis.MaybeNullAttribute]
-        public T PreviousValue { get { throw null; } }
+        public T? CurrentValue { get { throw null; } }
+        public T? PreviousValue { get { throw null; } }
         public bool ThreadContextChanged { get { throw null; } }
     }
     public sealed partial class AsyncLocal<T>
@@ -130,6 +128,7 @@ namespace System.Threading
         public void Dispose() { }
         public void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public static bool IsFlowSuppressed() { throw null; }
+        public static void Restore(System.Threading.ExecutionContext executionContext) { }
         public static void RestoreFlow() { }
         public static void Run(System.Threading.ExecutionContext executionContext, System.Threading.ContextCallback callback, object? state) { }
         public static System.Threading.AsyncFlowControl SuppressFlow() { throw null; }
