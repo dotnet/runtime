@@ -77,7 +77,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
             TestAesDecrypt(CipherMode.CBC, s_aes256Key, s_aes256CbcIv, encryptedBytes, s_multiBlockBytes);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
         public static void DecryptKnownCFB128_256()
         {
             byte[] encryptedBytes = new byte[]

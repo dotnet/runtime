@@ -62,7 +62,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
                 // aes.CreateEncryptor() (with an invalid Mode value)
                 // transform.Transform[Final]Block() (with an invalid Mode value)
 
-                Assert.Throws<CryptographicException>(
+                Assert.ThrowsAny<CryptographicException>(
                     () =>
                     {
                         aes.Mode = mode;

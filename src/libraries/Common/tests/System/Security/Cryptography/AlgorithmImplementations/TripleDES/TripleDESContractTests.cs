@@ -35,7 +35,7 @@ namespace System.Security.Cryptography.Encryption.TripleDes.Tests
                 {
                     // there are some key sizes that are invalid for any of the modes,
                     // so the exception is thrown in the setter
-                    Assert.Throws<CryptographicException>(() =>
+                    Assert.ThrowsAny<CryptographicException>(() =>
                     {
                         tdes.FeedbackSize = feedbackSize;
                     });
@@ -47,8 +47,14 @@ namespace System.Security.Cryptography.Encryption.TripleDes.Tests
                     // however, for CFB only few sizes are valid. Those should throw in the
                     // actual AES instantiation.
 
-                    Assert.Throws<CryptographicException>(() => tdes.CreateDecryptor());
-                    Assert.Throws<CryptographicException>(() => tdes.CreateEncryptor());
+                    Assert.ThrowsAny<CryptographicException>(() =>
+                    {
+                        return tdes.CreateDecryptor();
+                    });
+                    Assert.ThrowsAny<CryptographicException>(() =>
+                    {
+                        return tdes.CreateEncryptor();
+                    });
                 }
             }
         }

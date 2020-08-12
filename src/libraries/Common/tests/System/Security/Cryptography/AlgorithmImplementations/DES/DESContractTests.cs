@@ -26,7 +26,6 @@ namespace System.Security.Cryptography.Encryption.Des.Tests
         [InlineData(256, true)]
         [InlineData(128, true)]
         [InlineData(127, true)]
-
         public static void Windows7DoesNotSupportCFB(int feedbackSize, bool discoverableInSetter)
         {
             using (DES des = DESFactory.Create())
@@ -38,7 +37,7 @@ namespace System.Security.Cryptography.Encryption.Des.Tests
                 {
                     // there are some key sizes that are invalid for any of the modes,
                     // so the exception is thrown in the setter
-                    Assert.Throws<CryptographicException>(() =>
+                    Assert.ThrowsAny<CryptographicException>(() =>
                     {
                         des.FeedbackSize = feedbackSize;
                     });
@@ -50,13 +49,18 @@ namespace System.Security.Cryptography.Encryption.Des.Tests
                     // however, for CFB only few sizes are valid. Those should throw in the
                     // actual DES instantiation.
 
-                    Assert.Throws<CryptographicException>(() => des.CreateDecryptor());
-                    Assert.Throws<CryptographicException>(() => des.CreateEncryptor());
+                    Assert.ThrowsAny<CryptographicException>(() =>
+                    {
+                        return des.CreateDecryptor();
+                    });
+                    Assert.ThrowsAny<CryptographicException>(() =>
+                    {
+                        return des.CreateEncryptor();
+                    });
                 }
             }
         }
 
-        // cfb not available on windows 7
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
         [InlineData(0, true)]
         [InlineData(1, true)]
@@ -69,7 +73,6 @@ namespace System.Security.Cryptography.Encryption.Des.Tests
         [InlineData(256, true)]
         [InlineData(128, true)]
         [InlineData(127, true)]
-
         public static void InvalidCFBFeedbackSizes(int feedbackSize, bool discoverableInSetter)
         {
             using (DES des = DESFactory.Create())
