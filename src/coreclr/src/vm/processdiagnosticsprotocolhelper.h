@@ -42,7 +42,7 @@ struct ProcessInfoPayload
     LPCWSTR Arch;
     GUID RuntimeCookie;
     NewArrayHolder<const WCHAR> Environment = nullptr;
-    void EnsureEnv();
+    void PopulateEnvironment();
     uint16_t GetSize();
     bool Flatten(BYTE * &lpBuffer, uint16_t& cbSize);
 private:

@@ -68,7 +68,7 @@ uint16_t ProcessInfoPayload::GetSize()
         S_UINT16(GetStringLength(Arch) * sizeof(WCHAR)) :
         S_UINT16(0);
 
-    EnsureEnv();
+    PopulateEnvironment();
 
     size += sizeof(uint32_t);
     size += S_UINT16(_nEnvEntries * sizeof(uint32_t));
@@ -137,7 +137,7 @@ bool ProcessInfoPayload::Flatten(BYTE * &lpBuffer, uint16_t &cbSize)
     return fSuccess;
 }
 
-void ProcessInfoPayload::EnsureEnv()
+void ProcessInfoPayload::PopulateEnvironment()
 {
     if (Environment != nullptr)
         return;
@@ -211,7 +211,7 @@ void ProcessDiagnosticsProtocolHelper::GetProcessInfo(DiagnosticsIpc::IpcMessage
     payload.RuntimeCookie = DiagnosticsIpc::GetAdvertiseCookie_V1();
 
     // Get the environment block
-    payload.EnsureEnv();
+    payload.PopulateEnvironment();
 
     DiagnosticsIpc::IpcMessage ProcessInfoResponse;
     const bool fSuccess = ProcessInfoResponse.Initialize(DiagnosticsIpc::GenericSuccessHeader, payload) ?
