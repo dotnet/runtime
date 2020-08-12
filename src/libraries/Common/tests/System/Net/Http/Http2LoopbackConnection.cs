@@ -609,6 +609,7 @@ namespace System.Net.Test.Common
             // Extract method and path
             requestData.Method = requestData.GetSingleHeaderValue(":method");
             requestData.Path = requestData.GetSingleHeaderValue(":path");
+            requestData.Version = HttpVersion20.Value;
 
             if (readBody && !endOfStream)
             {

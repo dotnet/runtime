@@ -83,6 +83,7 @@ namespace System.Net.Http
         /// <summary>Options specialized and cached for this pool and its key.</summary>
         private readonly SslClientAuthenticationOptions? _sslOptionsHttp11;
         private readonly SslClientAuthenticationOptions? _sslOptionsHttp2;
+        private readonly SslClientAuthenticationOptions? _sslOptionsHttp2Only;
         private readonly SslClientAuthenticationOptions? _sslOptionsHttp3;
 
         /// <summary>Queue of waiters waiting for a connection.  Created on demand.</summary>
@@ -116,11 +117,6 @@ namespace System.Net.Http
             if (host != null)
             {
                 _originAuthority = new HttpAuthority(host, port);
-
-                if (_poolManager.Settings._assumePrenegotiatedHttp3ForTesting)
-                {
-                    _http3Authority = _originAuthority;
-                }
             }
 
             _http2Enabled = _poolManager.Settings._maxHttpVersion >= HttpVersion.Version20;
@@ -133,7 +129,7 @@ namespace System.Net.Http
                     Debug.Assert(port != 0);
                     Debug.Assert(sslHostName == null);
                     Debug.Assert(proxyUri == null);
-                    _http2Enabled = _poolManager.Settings._allowUnencryptedHttp2;
+
                     _http3Enabled = false;
                     break;
 
@@ -169,6 +165,7 @@ namespace System.Net.Http
                     Debug.Assert(port != 0);
                     Debug.Assert(sslHostName != null);
                     Debug.Assert(proxyUri != null);
+
                     _http3Enabled = false; // TODO: how do we tunnel HTTP3?
                     break;
 
@@ -222,6 +219,8 @@ namespace System.Net.Http
                 {
                     _sslOptionsHttp2 = ConstructSslOptions(poolManager, sslHostName);
                     _sslOptionsHttp2.ApplicationProtocols = s_http2ApplicationProtocols;
+                    _sslOptionsHttp2Only = ConstructSslOptions(poolManager, sslHostName);
+                    _sslOptionsHttp2Only.ApplicationProtocols = s_http2OnlyApplicationProtocols;
 
                     // Note:
                     // The HTTP/2 specification states:
@@ -240,7 +239,6 @@ namespace System.Net.Http
                     Debug.Assert(hostHeader != null);
                     _http2EncodedAuthorityHostHeader = HPackEncoder.EncodeLiteralHeaderFieldWithoutIndexingToAllocatedArray(H2StaticTable.Authority, hostHeader);
                     _http3EncodedAuthorityHostHeader = QPackEncoder.EncodeLiteralHeaderFieldWithStaticNameReferenceToArray(H3StaticTable.Authority, hostHeader);
-
                 }
 
                 if (_http3Enabled)
@@ -261,6 +259,7 @@ namespace System.Net.Http
 
         private static readonly List<SslApplicationProtocol> s_http3ApplicationProtocols = new List<SslApplicationProtocol>() { Http3Connection.Http3ApplicationProtocol };
         private static readonly List<SslApplicationProtocol> s_http2ApplicationProtocols = new List<SslApplicationProtocol>() { SslApplicationProtocol.Http2, SslApplicationProtocol.Http11 };
+        private static readonly List<SslApplicationProtocol> s_http2OnlyApplicationProtocols = new List<SslApplicationProtocol>() { SslApplicationProtocol.Http2 };
 
         private static SslClientAuthenticationOptions ConstructSslOptions(HttpConnectionPoolManager poolManager, string sslHostName)
         {
@@ -290,8 +289,8 @@ namespace System.Net.Http
 
         public HttpAuthority? OriginAuthority => _originAuthority;
         public HttpConnectionSettings Settings => _poolManager.Settings;
-        public bool IsSecure => _sslOptionsHttp11 != null;
         public HttpConnectionKind Kind => _kind;
+        public bool IsSecure => _kind == HttpConnectionKind.Https || _kind == HttpConnectionKind.SslProxyTunnel;
         public bool AnyProxyKind => (_proxyUri != null);
         public Uri? ProxyUri => _proxyUri;
         public ICredentials? ProxyCredentials => _poolManager.ProxyCredentials;
@@ -339,18 +338,59 @@ namespace System.Net.Http
         private ValueTask<(HttpConnectionBase? connection, bool isNewConnection, HttpResponseMessage? failureResponse)>
             GetConnectionAsync(HttpRequestMessage request, bool async, CancellationToken cancellationToken)
         {
-            if (_http3Enabled && request.Version.Major >= 3)
+            // Do not even attempt at getting/creating a connection if it's already obvious we cannot provided the one requested.
+            if (request.VersionPolicy != HttpVersionPolicy.RequestVersionOrLower)
             {
-                HttpAuthority? authority = _http3Authority;
-                if (authority != null)
+                if (request.Version.Major == 3 && !_http3Enabled)
                 {
-                    return GetHttp3ConnectionAsync(request, authority, cancellationToken);
+                    return ValueTask.FromException<(HttpConnectionBase? connection, bool isNewConnection, HttpResponseMessage? failureResponse)>(
+                        new HttpRequestException(SR.Format(SR.net_http_requested_version_not_enabled, request.Version, request.VersionPolicy, 3)));
+                }
+                if (request.Version.Major == 2 && !_http2Enabled)
+                {
+                    return ValueTask.FromException<(HttpConnectionBase? connection, bool isNewConnection, HttpResponseMessage? failureResponse)>(
+                        new HttpRequestException(SR.Format(SR.net_http_requested_version_not_enabled, request.Version, request.VersionPolicy, 2)));
                 }
             }
 
-            if (_http2Enabled && request.Version.Major >= 2)
+            // Either H3 explicitly requested or secured upgraded allowed.
+            if (_http3Enabled && (request.Version.Major >= 3 || (request.VersionPolicy == HttpVersionPolicy.RequestVersionOrHigher && IsSecure)))
+            {
+                HttpAuthority? authority = _http3Authority;
+                // H3 is explicitly requested, assume prenegotiated H3.
+                if (request.Version.Major >= 3 && request.VersionPolicy != HttpVersionPolicy.RequestVersionOrLower)
+                {
+                    authority = authority ?? _originAuthority;
+                }
+                if (authority != null)
+                {
+                    if (IsAltSvcBlocked(authority))
+                    {
+                        return ValueTask.FromException<(HttpConnectionBase? connection, bool isNewConnection, HttpResponseMessage? failureResponse)>(
+                            new HttpRequestException(SR.Format(SR.net_http_requested_version_cannot_establish, request.Version, request.VersionPolicy, 3)));
+                    }
+
+                    return GetHttp3ConnectionAsync(request, authority, cancellationToken);
+                }
+            }
+            // If we got here, we cannot provide HTTP/3 connection. Do not continue if downgrade is not allowed.
+            if (request.Version.Major >= 3 && request.VersionPolicy != HttpVersionPolicy.RequestVersionOrLower)
+            {
+                return ValueTask.FromException<(HttpConnectionBase? connection, bool isNewConnection, HttpResponseMessage? failureResponse)>(
+                    new HttpRequestException(SR.Format(SR.net_http_requested_version_cannot_establish, request.Version, request.VersionPolicy, 3)));
+            }
+
+            if (_http2Enabled && (request.Version.Major >= 2 || (request.VersionPolicy == HttpVersionPolicy.RequestVersionOrHigher && IsSecure)) &&
+               // If the connection is not secured and downgrade is possible, prefer HTTP/1.1.
+               (request.VersionPolicy != HttpVersionPolicy.RequestVersionOrLower || IsSecure))
             {
                 return GetHttp2ConnectionAsync(request, async, cancellationToken);
+            }
+            // If we got here, we cannot provide HTTP/2 connection. Do not continue if downgrade is not allowed.
+            if (request.Version.Major >= 2 && request.VersionPolicy != HttpVersionPolicy.RequestVersionOrLower)
+            {
+                return ValueTask.FromException<(HttpConnectionBase? connection, bool isNewConnection, HttpResponseMessage? failureResponse)>(
+                    new HttpRequestException(SR.Format(SR.net_http_requested_version_cannot_establish, request.Version, request.VersionPolicy, 2)));
             }
 
             return GetHttpConnectionAsync(request, async, cancellationToken);
@@ -535,7 +575,7 @@ namespace System.Net.Http
                     HttpResponseMessage? failureResponse;
 
                     (connection, transportContext, failureResponse) =
-                        await ConnectAsync(request, async, true, cancellationToken).ConfigureAwait(false);
+                        await ConnectAsync(request, async, cancellationToken).ConfigureAwait(false);
 
                     if (failureResponse != null)
                     {
@@ -609,6 +649,12 @@ namespace System.Net.Http
                 lock (SyncObj)
                 {
                     _http2Enabled = false;
+
+                    if (request.Version.Major >= 2 && request.VersionPolicy != HttpVersionPolicy.RequestVersionOrLower)
+                    {
+                        sslStream.Close();
+                        throw new HttpRequestException(SR.Format(SR.net_http_requested_version_server_refused, request.Version, request.VersionPolicy));
+                    }
 
                     if (_associatedConnectionCount < _maxConnections)
                     {
@@ -750,7 +796,17 @@ namespace System.Net.Http
                     Trace("Attempting new HTTP3 connection.");
                 }
 
-                QuicConnection quicConnection = await ConnectHelper.ConnectQuicAsync(authority.IdnHost, authority.Port, _sslOptionsHttp3, cancellationToken).ConfigureAwait(false);
+                QuicConnection quicConnection;
+                try
+                {
+                    quicConnection = await ConnectHelper.ConnectQuicAsync(authority.IdnHost, authority.Port, _sslOptionsHttp3, cancellationToken).ConfigureAwait(false);
+                }
+                catch
+                {
+                    // Disables HTTP/3 until server announces it can handle it via Alt-Svc.
+                    BlocklistAuthority(authority);
+                    throw;
+                }
 
                 //TODO: NegotiatedApplicationProtocol not yet implemented.
 #if false
@@ -817,13 +873,18 @@ namespace System.Net.Http
                 }
                 catch (HttpRequestException e) when (e.AllowRetry == RequestRetryType.RetryOnLowerHttpVersion)
                 {
+                    // Throw since fallback is not allowed by the version policy.
+                    if (request.VersionPolicy != HttpVersionPolicy.RequestVersionOrLower)
+                    {
+                        throw new HttpRequestException(SR.Format(SR.net_http_requested_version_server_refused, request.Version, request.VersionPolicy), e);
+                    }
+
                     if (NetEventSource.Log.IsEnabled())
                     {
                         Trace($"Retrying request after exception on existing connection: {e}");
                     }
 
                     // Eat exception and try again on a lower protocol version.
-
                     Debug.Assert(connection is HttpConnection == false, $"{nameof(RequestRetryType.RetryOnLowerHttpVersion)} should not be thrown by HTTP/1 connections.");
                     request.Version = HttpVersion.Version11;
                     continue;
@@ -900,16 +961,10 @@ namespace System.Net.Http
                     {
                         var authority = new HttpAuthority(value.Host!, value.Port);
 
-                        if (_altSvcBlocklist != null)
+                        if (IsAltSvcBlocked(authority))
                         {
-                            lock (_altSvcBlocklist)
-                            {
-                                if (_altSvcBlocklist.Contains(authority))
-                                {
-                                    // Skip authorities in our blocklist.
-                                    continue;
-                                }
-                            }
+                            // Skip authorities in our blocklist.
+                            continue;
                         }
 
                         TimeSpan authorityMaxAge = value.MaxAge;
@@ -994,6 +1049,22 @@ namespace System.Net.Http
         }
 
         /// <summary>
+        /// Checks whether the given <paramref name="authority"/> is on the currext Alt-Svc blocklist.
+        /// </summary>
+        /// <seealso cref="BlocklistAuthority" />
+        private bool IsAltSvcBlocked(HttpAuthority authority)
+        {
+            if (_altSvcBlocklist != null)
+            {
+                lock (_altSvcBlocklist)
+                {
+                    return _altSvcBlocklist.Contains(authority);
+                }
+            }
+            return false;
+        }
+
+        /// <summary>
         /// Blocklists an authority and resets the current authority back to origin.
         /// If the number of blocklisted authorities exceeds <see cref="MaxAltSvcIgnoreListSize"/>,
         /// Alt-Svc will be disabled entirely for a period of time.
@@ -1009,7 +1080,6 @@ namespace System.Net.Http
         internal void BlocklistAuthority(HttpAuthority badAuthority)
         {
             Debug.Assert(badAuthority != null);
-            Debug.Assert(badAuthority != _originAuthority);
 
             HashSet<HttpAuthority>? altSvcBlocklist = _altSvcBlocklist;
 
@@ -1136,7 +1206,7 @@ namespace System.Net.Http
             return SendWithProxyAuthAsync(request, async, doRequestAuth, cancellationToken);
         }
 
-        private async ValueTask<(Connection?, TransportContext?, HttpResponseMessage?)> ConnectAsync(HttpRequestMessage request, bool async, bool allowHttp2, CancellationToken cancellationToken)
+        private async ValueTask<(Connection?, TransportContext?, HttpResponseMessage?)> ConnectAsync(HttpRequestMessage request, bool async, CancellationToken cancellationToken)
         {
             // If a non-infinite connect timeout has been set, create and use a new CancellationToken that will be canceled
             // when either the original token is canceled or a connect timeout occurs.
@@ -1180,9 +1250,9 @@ namespace System.Net.Http
                 Debug.Assert(connection != null);
 
                 TransportContext? transportContext = null;
-                if (_kind == HttpConnectionKind.Https || _kind == HttpConnectionKind.SslProxyTunnel)
+                if (IsSecure)
                 {
-                    SslStream sslStream = await ConnectHelper.EstablishSslConnectionAsync(allowHttp2 ? _sslOptionsHttp2! : _sslOptionsHttp11!, request, async, connection.Stream, cancellationToken).ConfigureAwait(false);
+                    SslStream sslStream = await ConnectHelper.EstablishSslConnectionAsync(GetSslOptionsForRequest(request), request, async, connection.Stream, cancellationToken).ConfigureAwait(false);
                     connection = Connection.FromStream(sslStream, leaveOpen: false, connection.ConnectionProperties, connection.LocalEndPoint, connection.RemoteEndPoint);
                     transportContext = sslStream.TransportContext;
                 }
@@ -1226,7 +1296,7 @@ namespace System.Net.Http
         internal async ValueTask<(HttpConnection?, HttpResponseMessage?)> CreateHttp11ConnectionAsync(HttpRequestMessage request, bool async, CancellationToken cancellationToken)
         {
             (Connection? connection, TransportContext? transportContext, HttpResponseMessage? failureResponse) =
-                await ConnectAsync(request, async, false, cancellationToken).ConfigureAwait(false);
+                await ConnectAsync(request, async, cancellationToken).ConfigureAwait(false);
 
             if (failureResponse != null)
             {
@@ -1234,6 +1304,23 @@ namespace System.Net.Http
             }
 
             return (ConstructHttp11Connection(connection!, transportContext), null);
+        }
+
+        private SslClientAuthenticationOptions GetSslOptionsForRequest(HttpRequestMessage request)
+        {
+            if (_http2Enabled)
+            {
+                if (request.Version.Major >= 2 && request.VersionPolicy != HttpVersionPolicy.RequestVersionOrLower)
+                {
+                    return _sslOptionsHttp2Only!;
+                }
+
+                if (request.Version.Major >= 2 || request.VersionPolicy == HttpVersionPolicy.RequestVersionOrHigher)
+                {
+                    return _sslOptionsHttp2!;
+                }
+            }
+            return _sslOptionsHttp11!;
         }
 
         private HttpConnection ConstructHttp11Connection(Connection connection, TransportContext? transportContext)
