@@ -438,8 +438,10 @@ namespace Microsoft.WebAssembly.Diagnostics
         {
             this.logger = logger;
         }
+        
+        public ModuleDefinition Image => image;
 
-        void Populate()
+        public void Populate()
         {
             ProcessSourceLink();
 

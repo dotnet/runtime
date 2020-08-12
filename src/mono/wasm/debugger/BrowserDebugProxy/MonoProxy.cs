@@ -11,6 +11,9 @@ using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Linq;
+using Mono.Cecil.Cil;
+using Mono.Cecil.Pdb;
+using Mono.Cecil;
 
 namespace Microsoft.WebAssembly.Diagnostics
 {
@@ -540,6 +543,11 @@ namespace Microsoft.WebAssembly.Diagnostics
 
                         var method = asm.GetMethodByToken(method_token);
 
+                        if (method  == null && !asm.Image.HasSymbols)
+                        {
+                            method = LoadSymbolsOnDemand(asm, method_token, sessionId, token);
+                        }
+
                         if (method == null)
                         {
                             Log("info", $"Unable to find il offset: {il_pos} in method token: {method_token} assembly name: {assembly_name}");
@@ -617,6 +625,80 @@ namespace Microsoft.WebAssembly.Diagnostics
             return true;
         }
 
+        private MethodInfo LoadSymbolsOnDemand(AssemblyInfo asm, uint method_token, SessionId sessionId, CancellationToken token)
+        {
+            MethodInfo method = null;
+            var context = GetContext(sessionId);
+            ImageDebugHeader header = asm.Image.GetDebugHeader();
+            for (var i = 0; i < header.Entries.Length; i++)
+            {
+                var entry = header.Entries[i];
+                if (entry.Directory.Type == ImageDebugType.CodeView)
+                {
+                    var data = entry.Data;
+
+                    if (data.Length < 24)
+                        return null;
+
+                    var magic = (data[0]
+                        | (data[1] << 8)
+                        | (data[2] << 16)
+                        | (data[3] << 24));
+
+                    if (magic != 0x53445352)
+                        return null;
+
+                    var buffer = new byte[16];
+                    Buffer.BlockCopy(data, 4, buffer, 0, 16);
+
+                    var pdbAge = (data[20]
+                        | (data[21] << 8)
+                        | (data[22] << 16)
+                        | (data[23] << 24));
+
+                    var pdbGuid = new Guid(buffer);
+                    var buffer2 = new byte[(data.Length - 24) - 1];
+                    Buffer.BlockCopy(data, 24, buffer2, 0, (data.Length - 24) - 1);
+                    var pdbName = System.Text.Encoding.UTF8.GetString(buffer2, 0, buffer2.Length);
+                    pdbName = (pdbName.Split(new char[] { '/' }))[pdbName.Split(new char[] { '/' }).Length - 1];
+                    var downloadURL = "http://msdl.microsoft.com/download/symbols" + "/" + pdbName + "/" + pdbGuid.ToString("N").ToUpper() + pdbAge + "/" + pdbName;
+
+                    byte[] result = null;
+
+                    using (WebClient webClient = new WebClient())
+                    {
+                        try
+                        {
+                            result = webClient.DownloadData(downloadURL);
+                        }
+                        catch (Exception)
+                        {
+                            return null;
+                        }
+                    }
+                    PdbReaderProvider portablePdbReaderProvider = new PdbReaderProvider();
+                    Stream stream = new MemoryStream(result);
+                    try
+                    {
+                        var symbolReader = portablePdbReaderProvider.GetSymbolReader(asm.Image, stream);
+                        asm.Image.ReadSymbols(symbolReader);
+                        asm.Populate();
+                        method = asm.GetMethodByToken(method_token);
+                        foreach (var source in asm.Sources)
+                        {
+                            var scriptSource = JObject.FromObject(source.ToScriptSource(context.Id, context.AuxData));
+                            SendEvent(sessionId, "Debugger.scriptParsed", scriptSource, token);
+                        }
+                    }
+                    catch (Exception)
+                    {
+                        return null;
+                    }
+                }
+            }
+            return method;
+        }
+        
         async Task OnDefaultContext(SessionId sessionId, ExecutionContext context, CancellationToken token)
         {
             Log("verbose", "Default context created, clearing state and sending events");
