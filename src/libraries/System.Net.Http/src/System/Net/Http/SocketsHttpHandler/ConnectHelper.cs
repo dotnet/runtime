@@ -8,6 +8,7 @@ using System.Net.Connections;
 using System.Net.Quic;
 using System.Net.Security;
 using System.Net.Sockets;
+using System.Runtime.ExceptionServices;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
@@ -62,13 +63,23 @@ namespace System.Net.Http
                     socket.Connect(new DnsEndPoint(host, port));
                 }
             }
+            catch (SocketException se)
+            {
+                socket.Dispose();
+
+                // SocketConnectionFactory wraps SocketException in NetworkException. Do the same here.
+                NetworkException ne = NetworkErrorHelper.MapSocketException(se);
+
+                throw CreateWrappedException(ne, host, port, cancellationToken);
+            }
             catch (Exception e)
             {
                 socket.Dispose();
                 throw CreateWrappedException(e, host, port, cancellationToken);
             }
 
-            return new SocketConnection(socket, null, null);
+            // Since we only do GracefulShutdown in SocketsHttpHandler code, Connection.FromStream() should match SocketConnection's behavior:
+            return Connection.FromStream(new NetworkStream(socket, ownsSocket: true), localEndPoint: socket.LocalEndPoint, remoteEndPoint: socket.RemoteEndPoint);
         }
 
         public static ValueTask<SslStream> EstablishSslConnectionAsync(SslClientAuthenticationOptions sslOptions, HttpRequestMessage request, bool async, Stream stream, CancellationToken cancellationToken)

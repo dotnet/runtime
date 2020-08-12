@@ -32,10 +32,7 @@ namespace System.Net.Connections
 
         protected override ValueTask CloseAsyncCore(ConnectionCloseMethod method, CancellationToken cancellationToken)
         {
-            if (cancellationToken.IsCancellationRequested)
-            {
-                return ValueTask.FromCanceled(cancellationToken);
-            }
+            cancellationToken.ThrowIfCancellationRequested();
 
             try
             {

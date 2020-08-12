@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <WindowsRID>win</WindowsRID>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -127,8 +127,6 @@
              Link="Common\System\HexConverter.cs" />
     <Compile Include="$(CommonPath)System\Net\ArrayBuffer.cs"
              Link="Common\System\Net\ArrayBuffer.cs"/>
-    <Compile Include="$(CommonPath)System\Net\Sockets\SocketConnection.cs"
-             Link="Common\System\Net\Sockets\SocketConnection.cs" />
   </ItemGroup>
   <!-- SocketsHttpHandler implementation -->
   <ItemGroup Condition="'$(TargetsBrowser)' != 'true'">
