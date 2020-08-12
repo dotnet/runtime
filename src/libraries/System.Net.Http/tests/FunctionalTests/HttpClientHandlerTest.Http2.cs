@@ -1438,6 +1438,8 @@ namespace System.Net.Http.Functional.Tests
             // Pings (regardless ongoing communication) are send only if sending is on and policy is set to always.
             bool expectPingWithoutStream = expectStreamPing && keepAlivePingPolicy == HttpKeepAlivePingPolicy.Always;
 
+            TaskCompletionSource serverFinished = new TaskCompletionSource();
+
             await Http2LoopbackServer.CreateClientAndServerAsync(
                 async uri =>
                 {
@@ -1458,14 +1460,16 @@ namespace System.Net.Http.Functional.Tests
                     if (expectRequestFail)
                     {
                         await Assert.ThrowsAsync<HttpRequestException>(() => client.GetStringAsync(uri));
+                        // As stream is closed we don't want to continue with sending data.
+                        return;
                     }
                     else
                     {
                         await client.GetStringAsync(uri);
                     }
 
-                    // Let connection live for a while.
-                    await Task.Delay(pingTimeout);
+                    // Let connection live until server finishes.
+                    await serverFinished.Task.TimeoutAfter(pingTimeout * 2);
                 },
                 async server =>
                 {
@@ -1519,6 +1523,7 @@ namespace System.Net.Http.Functional.Tests
                     {
                         await Assert.ThrowsAsync<OperationCanceledException>(() => connection.ReadPingAsync(pingTimeout));
                     }
+                    serverFinished.SetResult();
                     await connection.WaitForClientDisconnectAsync(true);
                 });
         }
