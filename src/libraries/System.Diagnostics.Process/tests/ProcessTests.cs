@@ -2236,7 +2236,7 @@ namespace System.Diagnostics.Tests
         [Fact]
         public void Start_ThrowsArgumentNullExceptionForNullFileName()
         {
-            Assert.Throws<ArgumentNullException>("fileName", () => Process.Start(null, Enumerable.Repeat("notNull")));
+            Assert.Throws<ArgumentNullException>("fileName", () => Process.Start(null, Enumerable.Repeat("notNull", 1)));
         }
 
         [Fact]
