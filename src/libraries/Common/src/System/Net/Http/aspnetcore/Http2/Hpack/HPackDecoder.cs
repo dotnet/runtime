@@ -542,7 +542,7 @@ namespace System.Net.Http.HPack
             }
             else
             {
-                ref readonly HeaderField header = ref GetHeader(index);
+                ref readonly HeaderField header = ref GetDynamicHeader(index);
                 handler.OnHeader(header.Name, header.Value);
             }
 
@@ -557,7 +557,7 @@ namespace System.Net.Http.HPack
             }
             else
             {
-                _headerName = GetHeader(index).Name;
+                _headerName = GetDynamicHeader(index).Name;
                 _headerNameLength = _headerName.Length;
             }
             _state = State.HeaderValueLength;
@@ -644,7 +644,7 @@ namespace System.Net.Http.HPack
             return (b & HuffmanMask) != 0;
         }
 
-        private ref readonly HeaderField GetHeader(int index)
+        private ref readonly HeaderField GetDynamicHeader(int index)
         {
             try
             {
