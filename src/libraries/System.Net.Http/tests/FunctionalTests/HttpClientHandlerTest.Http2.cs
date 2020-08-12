@@ -190,12 +190,13 @@ namespace System.Net.Http.Functional.Tests
                 HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, uri)
                 {
                     Version = UseVersion,
+                    VersionPolicy = HttpVersionPolicy.RequestVersionExact,
                     Content = clientContent is null ? (HttpContent)null : new StringContent(clientContent),
                 };
 
                 HttpResponseMessage response = await client.SendAsync(request);
-                string responseContent = response.Content is null ? (string)null : await response.Content.ReadAsStringAsync();
-                Assert.Equal(serverContent, responseContent);
+                string responseContent = await response.Content.ReadAsStringAsync();
+                Assert.Equal(serverContent ?? String.Empty, responseContent);
             },
             async server =>
             {
