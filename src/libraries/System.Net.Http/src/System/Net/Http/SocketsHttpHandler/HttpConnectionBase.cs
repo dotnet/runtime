@@ -73,16 +73,6 @@ namespace System.Net.Http
             return expired;
         }
 
-        internal static HttpRequestException CreateRetryException()
-        {
-            // This is an exception that's thrown during request processing to indicate that the
-            // attempt to send the request failed in such a manner that the server is guaranteed to not have
-            // processed the request in any way, and thus the request can be retried.
-            // This will be caught in HttpConnectionPool.SendWithRetryAsync and the retry logic will kick in.
-            // The user should never see this exception.
-            throw new HttpRequestException(null, null, allowRetry: RequestRetryType.RetryOnSameOrNextProxy);
-        }
-
         internal static bool IsDigit(byte c) => (uint)(c - '0') <= '9' - '0';
 
         internal static int ParseStatusCode(ReadOnlySpan<byte> value)
