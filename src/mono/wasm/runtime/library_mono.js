@@ -901,8 +901,6 @@ var MonoSupportLib = {
 			var bytes = new Uint8Array (blob);
 			if (ctx.tracing)
 				console.log ("MONO_WASM: Loaded:", asset.name, "size", bytes.length, "from", url);
-			else
-				console.debug ("MONO_WASM: Loaded:", asset.name);
 
 			var virtualName = asset.virtual_path || asset.name;
 			var offset = null;
