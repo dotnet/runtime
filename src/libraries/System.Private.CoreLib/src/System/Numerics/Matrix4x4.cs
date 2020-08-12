@@ -2320,13 +2320,29 @@ namespace System.Numerics
         /// <returns>The hash code.</returns>
         public override readonly int GetHashCode()
         {
-            unchecked
-            {
-                return M11.GetHashCode() + M12.GetHashCode() + M13.GetHashCode() + M14.GetHashCode() +
-                       M21.GetHashCode() + M22.GetHashCode() + M23.GetHashCode() + M24.GetHashCode() +
-                       M31.GetHashCode() + M32.GetHashCode() + M33.GetHashCode() + M34.GetHashCode() +
-                       M41.GetHashCode() + M42.GetHashCode() + M43.GetHashCode() + M44.GetHashCode();
-            }
+            HashCode hash = default;
+
+            hash.Add(M11);
+            hash.Add(M12);
+            hash.Add(M13);
+            hash.Add(M14);
+
+            hash.Add(M21);
+            hash.Add(M22);
+            hash.Add(M23);
+            hash.Add(M24);
+
+            hash.Add(M31);
+            hash.Add(M32);
+            hash.Add(M33);
+            hash.Add(M34);
+
+            hash.Add(M41);
+            hash.Add(M42);
+            hash.Add(M43);
+            hash.Add(M44);
+
+            return hash.ToHashCode();
         }
     }
 }
