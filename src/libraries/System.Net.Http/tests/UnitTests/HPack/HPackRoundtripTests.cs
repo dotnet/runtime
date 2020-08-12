@@ -177,12 +177,13 @@ namespace System.Net.Http.Unit.Tests.HPack
 
             public void OnStaticIndexedHeader(int index)
             {
-                throw new NotImplementedException();
+                ref readonly var entry = ref H2StaticTable.Get(index - 1);
+                OnHeader(entry.Name, entry.Value);
             }
 
             public void OnStaticIndexedHeader(int index, ReadOnlySpan<byte> value)
             {
-                throw new NotImplementedException();
+                OnHeader(H2StaticTable.Get(index - 1).Name, value);
             }
         }
     }

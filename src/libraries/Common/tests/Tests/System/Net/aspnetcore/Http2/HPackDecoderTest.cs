@@ -109,10 +109,8 @@ namespace System.Net.Http.Unit.Tests.HPack
             _decoder.Decode(_indexedHeaderStatic, endHeaders: true, handler: _handler);
             Assert.Equal("GET", _handler.DecodedHeaders[":method"]);
 
-#if HPACK_SUPPORT_ONSTATICINDEXEDHEADER
             Assert.Equal(":method", _handler.DecodedStaticHeaders[H2StaticTable.MethodGet].Key);
             Assert.Equal("GET", _handler.DecodedStaticHeaders[H2StaticTable.MethodGet].Value);
-#endif
         }
 
         [Fact]
@@ -125,10 +123,8 @@ namespace System.Net.Http.Unit.Tests.HPack
             _decoder.Decode(encoded, endHeaders: true, handler: _handler);
             Assert.Equal(_headerValueString, _handler.DecodedHeaders[_userAgentString]);
 
-#if HPACK_SUPPORT_ONSTATICINDEXEDHEADER
             Assert.Equal(_userAgentString, _handler.DecodedStaticHeaders[H2StaticTable.UserAgent].Key);
             Assert.Equal(_headerValueString, _handler.DecodedStaticHeaders[H2StaticTable.UserAgent].Value);
-#endif
         }
 
         [Fact]
@@ -728,9 +724,7 @@ namespace System.Net.Http.Unit.Tests.HPack
     public class TestHttpHeadersHandler : IHttpHeadersHandler
     {
         public Dictionary<string, string> DecodedHeaders { get; } = new Dictionary<string, string>();
-#if HPACK_SUPPORT_ONSTATICINDEXEDHEADER
         public Dictionary<int, KeyValuePair<string, string>> DecodedStaticHeaders { get; } = new Dictionary<int, KeyValuePair<string, string>>();
-#endif
 
         void IHttpHeadersHandler.OnHeader(ReadOnlySpan<byte> name, ReadOnlySpan<byte> value)
         {
@@ -742,26 +736,16 @@ namespace System.Net.Http.Unit.Tests.HPack
 
         void IHttpHeadersHandler.OnStaticIndexedHeader(int index)
         {
-#if !HPACK_SUPPORT_ONSTATICINDEXEDHEADER
-            // Not yet implemented for HPACK.
-            throw new NotImplementedException();
-#else
             ref readonly HeaderField entry = ref H2StaticTable.Get(index - 1);
             ((IHttpHeadersHandler)this).OnHeader(entry.Name, entry.Value);
             DecodedStaticHeaders[index] = new KeyValuePair<string, string>(Encoding.ASCII.GetString(entry.Name), Encoding.ASCII.GetString(entry.Value));
-#endif
         }
 
         void IHttpHeadersHandler.OnStaticIndexedHeader(int index, ReadOnlySpan<byte> value)
         {
-#if !HPACK_SUPPORT_ONSTATICINDEXEDHEADER
-            // Not yet implemented for HPACK.
-            throw new NotImplementedException();
-#else
             byte[] name = H2StaticTable.Get(index - 1).Name;
             ((IHttpHeadersHandler)this).OnHeader(name, value);
             DecodedStaticHeaders[index] = new KeyValuePair<string, string>(Encoding.ASCII.GetString(name), Encoding.ASCII.GetString(value));
-#endif
         }
 
         void IHttpHeadersHandler.OnHeadersComplete(bool endStream) { }
