@@ -68,7 +68,7 @@ namespace System.Net.Connections
 
                 if (socket.ConnectAsync(args))
                 {
-                    using (cancellationToken.UnsafeRegister(o => Socket.CancelConnectAsync((SocketAsyncEventArgs)o!), args))
+                    using (cancellationToken.UnsafeRegister(static o => Socket.CancelConnectAsync((SocketAsyncEventArgs)o!), args))
                     {
                         await args.Task.ConfigureAwait(false);
                     }
