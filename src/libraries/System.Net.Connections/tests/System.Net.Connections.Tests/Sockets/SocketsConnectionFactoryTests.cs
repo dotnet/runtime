@@ -12,6 +12,7 @@ using Xunit;
 
 namespace System.Net.Connections.Tests
 {
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoRuntime))]
     public class SocketsConnectionFactoryTests
     {
         public static TheoryData<EndPoint, SocketType, ProtocolType> GetConnectData()
