@@ -556,13 +556,13 @@ namespace System.Diagnostics.Tracing
                                 {
                                     var dataAsString = System.Text.Encoding.UTF8.GetString(data);
                                     int keywordIdx = dataAsString.IndexOf("EtwSessionKeyword", StringComparison.Ordinal);
-                                    if (0 <= keywordIdx)
+                                    if (keywordIdx >= 0)
                                     {
                                         int startIdx = keywordIdx + 18;
                                         int endIdx = dataAsString.IndexOf('\0', startIdx);
                                         string keywordBitString = dataAsString.Substring(startIdx, endIdx - startIdx);
                                         int keywordBit;
-                                        if (0 < endIdx && int.TryParse(keywordBitString, out keywordBit))
+                                        if (endIdx > 0 && int.TryParse(keywordBitString, out keywordBit))
                                             action(etwSessionId, 1L << keywordBit, ref sessionList);
                                     }
                                 }
