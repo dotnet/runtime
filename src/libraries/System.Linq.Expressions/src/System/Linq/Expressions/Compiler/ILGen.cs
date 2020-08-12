@@ -61,11 +61,11 @@ namespace System.Linq.Expressions.Compiler
 
             switch (type.GetTypeCode())
             {
-                case TypeCode.Byte:
+                case TypeCode.SByte:
                     il.Emit(OpCodes.Ldind_I1);
                     break;
                 case TypeCode.Boolean:
-                case TypeCode.SByte:
+                case TypeCode.Byte:
                     il.Emit(OpCodes.Ldind_U1);
                     break;
                 case TypeCode.Int16:
