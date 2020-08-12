@@ -1263,14 +1263,9 @@ namespace System.Diagnostics
             return Start(new ProcessStartInfo(fileName, arguments))!;
         }
 
-        /// <devdoc>
-        ///    <para>
-        ///       Starts a process resource by specifying the name of an
-        ///       application and a set of command line arguments. Associates the process resource
-        ///       with a new <see cref='System.Diagnostics.Process'/>
-        ///       component.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Starts a process resource by specifying the name of an application and a set of command line arguments
+        /// </summary>
         public static Process Start(string fileName, IEnumerable<string> arguments)
         {
             if (arguments == null)
