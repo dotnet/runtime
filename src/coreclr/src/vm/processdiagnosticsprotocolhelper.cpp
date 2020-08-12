@@ -173,26 +173,14 @@ void EnvironmentHelper::PopulateEnvironment()
         LPWSTR tmpEnv = new (nothrow) WCHAR[nWchars + 1];
         if (tmpEnv != nullptr)
         {
-            envCursor = envBlock;
-            LPWSTR payloadCursor = tmpEnv;
-
-            while(*envCursor != 0) 
-            {
-                // len characters
-                uint32_t len = static_cast<uint32_t>(wcslen(envCursor) + 1);
-                wcscpy(payloadCursor, envCursor);
-                envCursor += len;
-                payloadCursor += len;
-            }
-            *payloadCursor = W('\0');
+            memcpy(tmpEnv, envBlock, (nWchars + 1) * sizeof(WCHAR));
             Environment = tmpEnv;
         }
+        _nEnvEntries = nEntries;
+        _nWchars = nWchars;
     }
 
     FreeEnvironmentStringsW(envBlock);
-
-    _nEnvEntries = nEntries;
-    _nWchars = nWchars;
 
     return;
 }
