@@ -54,13 +54,10 @@ var MonoSupportLib = {
 			},
 			set: function (index, value) {
 				var absoluteOffset = this.__offset32 + index;
-				console.log("writing", value, "to", absoluteOffset);
 				Module.HEAP32[absoluteOffset] = value;
 				return value;
 			},
 			release: function () {
-				console.log("releasing buffer at", this.__offset);
-
 				if (this.__offset) {
 					MONO.mono_wasm_deregister_root (this.__offset);
 					MONO._fill_region(this.__offset, this.__count * 4, 0);
@@ -77,7 +74,6 @@ var MonoSupportLib = {
 		_mono_wasm_root_prototype: {
 			get: function () {
 				var result = this.__buffer.get(this.__index);
-				console.log ("value at", this.__index, "is", result);
 				return result;
 			},
 			set: function (value) {
@@ -95,7 +91,6 @@ var MonoSupportLib = {
 			if (index === undefined)
 				return;
 
-			console.log ("release", index, "with previous value", this._scratch_root_buffer.get(index));
 			this._scratch_root_buffer.set(index, 0);
 			this._scratch_root_free_indices.push (index);
 		},
@@ -171,19 +166,9 @@ var MonoSupportLib = {
 			result.__index = index;
 
 			if (value !== undefined) {
-				console.log("initializing", index, "to", value);
 				result.set(value);
-
-				var tmp = result.value;
-				if (tmp != value)
-					throw new Error ("Store failed, result was" + tmp);
 			} else {
-				console.log("zero-initializing", index);
 				result.set(0);
-
-				var tmp = result.value;
-				if (tmp != 0)
-					throw new Error ("Zero init failed, result was" + tmp);
 			}
 
 			return result;
