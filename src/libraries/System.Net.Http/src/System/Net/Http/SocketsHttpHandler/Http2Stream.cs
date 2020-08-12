@@ -440,7 +440,7 @@ namespace System.Net.Http
             void IHttpHeadersHandler.OnStaticIndexedHeader(int index)
             {
                 // TODO: https://github.com/dotnet/runtime/issues/1505
-                ref readonly var entry = ref H2StaticTable.Get(index - 1);
+                ref readonly HeaderField entry = ref H2StaticTable.Get(index - 1);
                 OnHeader(entry.Name, entry.Value);
             }
 

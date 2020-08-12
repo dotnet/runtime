@@ -177,7 +177,7 @@ namespace System.Net.Http.Unit.Tests.HPack
 
             public void OnStaticIndexedHeader(int index)
             {
-                ref readonly var entry = ref H2StaticTable.Get(index - 1);
+                ref readonly HeaderField entry = ref H2StaticTable.Get(index - 1);
                 OnHeader(entry.Name, entry.Value);
             }
 
