@@ -40,11 +40,7 @@ namespace System.Net.Mail.Tests
         [InlineData(Address, "\"\"")]
         public void MailAddress_WithOuterDoubleQuotesDisplayAndMailAddress_ToStringShouldReturnEscapedDisplayNameAndAddressInAngleBrackets(string address, string displayName)
         {
-            if (displayName.Length >= 2 && displayName[0] == '\"' && displayName[^1] == '\"')
-            {
-
-                displayName = displayName.Substring(1, displayName.Length - 2);
-            }
+            displayName = displayName.Substring(1, displayName.Length - 2);
 
             MailAddress mailAddress = new MailAddress(address, displayName);
             Assert.Equal(displayName, mailAddress.DisplayName);
