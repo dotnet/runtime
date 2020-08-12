@@ -680,7 +680,7 @@ namespace System.Net.Test.Common
 
         public async Task PingPong()
         {
-            long pingData = BitConverter.ToInt64(new byte[8] { 1, 2, 3, 4, 50, 60, 70, 80 });
+            long pingData = BitConverter.ToInt64(new byte[8] { 1, 2, 3, 4, 50, 60, 70, 80 }, 0);
             PingFrame ping = new PingFrame(pingData, FrameFlags.None, 0);
             await WriteFrameAsync(ping).ConfigureAwait(false);
             PingFrame pingAck = (PingFrame)await ReadFrameAsync(_timeout).ConfigureAwait(false);
