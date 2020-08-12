@@ -75,9 +75,15 @@ namespace Tracing.Tests.ProcessInfoValidation
             Process currentProcess = Process.GetCurrentProcess();
             int pid = currentProcess.Id;
             Logger.logger.Log($"Test PID: {pid}");
-            string envKey = "TESTKEY";
-            string envVal = "TESTVAL";
-            System.Environment.SetEnvironmentVariable(envKey, envVal);
+            var testEnvPairs = new Dictionary<string, string>
+            {
+                { "TESTKEY1", "TESTVAL1" },
+                { "TESTKEY2", "TESTVAL2" },
+                { "TESTKEY3", "__TEST__VAL=;--3" }
+            };
+
+            foreach (var (key, val) in testEnvPairs)
+                System.Environment.SetEnvironmentVariable(key, val);
 
             Stream stream = ConnectionHelper.GetStandardTransport(pid);
 
@@ -96,10 +102,10 @@ namespace Tracing.Tests.ProcessInfoValidation
             // LPCWSTR CommandLine;
             // LPCWSTR OS;
             // LPCWSTR Arch;
-            // LPCWSTR Env;
+            // Array<LPCWSTR> Env;
 
             int totalSize = response.Payload.Length;
-            Logger.logger.Log($"Total size of Payload == {totalSize} b");
+            Logger.logger.Log($"Total size of Payload = {totalSize} bytes");
 
             // VALIDATE PID
             int start = 0;
@@ -196,8 +202,7 @@ namespace Tracing.Tests.ProcessInfoValidation
             Utils.Assert(expectedArchValue.Equals(arch), $"OS must match current Operating System. Expected: \"{expectedArchValue}\", Received: \"{arch}\"");
 
             // VALIDATE ENV
-            // env block is an array of strings of the form "key=value" delimited by null
-            // e.g., "key=value\0key=value\0";
+            // env block is sent as Array<LPCWSTR> (length-prefixed array of length-prefixed wchar strings)
             start = end;
             end = start + 4 /* sizeof(uint32_t) */;
             UInt32 envCount = BitConverter.ToUInt32(response.Payload[start..end]);
@@ -220,7 +225,8 @@ namespace Tracing.Tests.ProcessInfoValidation
             Logger.logger.Log($"finished parsing env");
 
 
-            Utils.Assert(env.ContainsKey(envKey) && env[envKey].Equals(envVal), $"Did not find test environment key in the environment block.");
+            foreach (var (key, val) in testEnvPairs)
+                Utils.Assert(env.ContainsKey(key) && env[key].Equals(val), $"Did not find test environment pair in the environment block: '{key}' = '{val}'");
             Logger.logger.Log($"Saw test values in env");
 
             Utils.Assert(end == totalSize, $"Full payload should have been read. Expected: {totalSize}, Received: {end}");
