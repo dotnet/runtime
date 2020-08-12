@@ -22,6 +22,7 @@
 
 Volatile<bool> DiagnosticServer::s_shuttingDown(false);
 CLREventStatic *DiagnosticServer::s_ResumeRuntimeStartupEvent = nullptr;
+GUID DiagnosticsIpc::AdvertiseCookie_V1 = GUID_NULL;
 
 DWORD WINAPI DiagnosticServer::DiagnosticsServerThread(LPVOID)
 {
@@ -145,7 +146,7 @@ bool DiagnosticServer::Initialize()
         };
 
         // Initialize the RuntimeIndentifier before use
-        DiagnosticsIpc::GetAdvertiseCookie_V1();
+        CoCreateGuid(&DiagnosticsIpc::AdvertiseCookie_V1);
 
         // Ports can fail to be configured 
         bool fAnyErrors = IpcStreamFactory::Configure(ErrorCallback);

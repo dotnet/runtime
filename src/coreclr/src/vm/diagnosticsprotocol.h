@@ -112,7 +112,7 @@ namespace DiagnosticsIpc
      * 
      * See spec in: dotnet/diagnostics@documentation/design-docs/ipc-spec.md
      * 
-     * The flow for Advertise is a one-way burst of 24 bytes consisting of
+     * The flow for Advertise is a one-way burst of 34 bytes consisting of
      * 8 bytes  - "ADVR_V1\0" (ASCII chars + null byte)
      * 16 bytes - random 128 bit number cookie (little-endian)
      * 8 bytes  - PID (little-endian)
@@ -123,15 +123,11 @@ namespace DiagnosticsIpc
 
     const uint32_t AdvertiseSize = 34;
 
-    static GUID AdvertiseCookie_V1 = GUID_NULL;
+    // initialized in DiagnosticServer::Initialize during EEStartupHelper
+    extern GUID AdvertiseCookie_V1;
 
     inline GUID GetAdvertiseCookie_V1()
     {
-        if (AdvertiseCookie_V1 == GUID_NULL)
-        {
-            CoCreateGuid(&AdvertiseCookie_V1);
-        }
-
         return AdvertiseCookie_V1;
     }
 

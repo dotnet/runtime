@@ -281,6 +281,7 @@ namespace Tracing.Tests.DiagnosticPortValidation
                     IpcMessage response = IpcClient.SendMessage(stream, message);
                     Logger.logger.Log($"received: {response.ToString()}");
                     ProcessInfo info = ProcessInfo.TryParse(response.Payload);
+                    Logger.logger.Log($"ProcessInfo: {{ id={info.ProcessId}, cookie={info.RuntimeCookie}, cmdline={info.Commandline}, OS={info.OS}, arch={info.Arch} }}");
 
                     Utils.Assert(info.RuntimeCookie.Equals(advertise.RuntimeInstanceCookie), $"The runtime cookie reported by ProcessInfo and Advertise must match.  ProcessInfo: {info.RuntimeCookie.ToString()}, Advertise: {advertise.RuntimeInstanceCookie.ToString()}");
                     Logger.logger.Log($"ProcessInfo and Advertise Cookies are equal");
