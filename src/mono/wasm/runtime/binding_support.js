@@ -181,7 +181,7 @@ var BindingSupportLib = {
 		},
 
 		unbox_mono_obj: function (mono_obj) {
-			if (mono_obj === 0)
+			if (mono_obj == 0)
 				return undefined;
 
 			var root = MONO.mono_wasm_new_root (mono_obj);
@@ -194,6 +194,10 @@ var BindingSupportLib = {
 
 		_unbox_mono_obj_rooted: function (root) {
 			var mono_obj = root.value;
+			if (mono_obj === 0)
+				console.log ("unbox_mono_obj_rooted got a null pointer");
+			else if (typeof (mono_obj) !== "number")
+				throw new Error ("invalid root object");
 			
 			var type = this.mono_get_obj_type (mono_obj);
 			//See MARSHAL_TYPE_ defines in driver.c
@@ -288,7 +292,7 @@ var BindingSupportLib = {
 				}
 				return requiredObject;
 			default:
-				throw new Error ("no idea on how to unbox object kind " + type);
+				throw new Error ("no idea on how to unbox object kind " + type + " at offset " + mono_obj);
 			}
 		},
 
@@ -541,11 +545,10 @@ var BindingSupportLib = {
 				// Check enum contract
 				monoEnum = MONO.mono_wasm_new_root (this.call_method (this.object_to_enum, null, "iimm", [ method, parmIdx, monoObj.value ]))
 				// return the unboxed enum value.
-				var result = this.mono_unbox_enum (monoEnum);
+				return this.mono_unbox_enum (monoEnum.value);
 			} finally {
 				MONO.mono_wasm_release_roots (monoObj, monoEnum);
 			}
-			return result;
 		},
 		wasm_binding_obj_new: function (js_obj_id, ownsHandle, type)
 		{

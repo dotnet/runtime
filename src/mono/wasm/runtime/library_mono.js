@@ -50,20 +50,24 @@ var MonoSupportLib = {
 
 		_mono_wasm_root_buffer_prototype: {
 			get: function (index) {
-				return this.__buffer[index];
+				return Module.HEAP32[this.__offset32 + index];
 			},
 			set: function (index, value) {
-				this.__buffer[index] = value;
+				var absoluteOffset = this.__offset32 + index;
+				console.log("writing", value, "to", absoluteOffset);
+				Module.HEAP32[absoluteOffset] = value;
 				return value;
 			},
 			release: function () {
-				if (this.__handle) {
+				console.log("releasing buffer at", this.__offset);
+
+				if (this.__offset) {
 					MONO.mono_wasm_deregister_root (this.__offset);
-					this.__buffer.fill (0);
+					MONO._fill_region(this.__offset, this.__count * 4, 0);
 					Module.free (this.__offset);
 				}
 
-				this.__buffer = this.__handle = this.__offset = undefined;
+				this.__handle = this.__offset = this.__count = this.__offset32 = undefined;
 			},
 		},
 
@@ -72,32 +76,39 @@ var MonoSupportLib = {
 
 		_mono_wasm_root_prototype: {
 			get: function () {
-				return this.__buffer[this.__index];
+				var result = this.__buffer.get(this.__index);
+				console.log ("value at", this.__index, "is", result);
+				return result;
 			},
 			set: function (value) {
-				this.__buffer[this.__index] = value;
+				this.__buffer.set(this.__index, value);
+				return value;
 			},
 			release: function () {
-				this.__index = MONO._mono_wasm_release_scratch_index (this.__index);
+				MONO._mono_wasm_release_scratch_index (this.__index);
+				this.__buffer = undefined;
+				this.__index = undefined;
 			}
 		},
 
 		_mono_wasm_release_scratch_index: function (index) {
-			if (index) {
-				this._scratch_root_buffer.__buffer[index] = 0;
-				this._scratch_root_free_indices.push (index);
-			}
+			if (index === undefined)
+				return;
 
-			return undefined;
+			console.log ("release", index, "with previous value", this._scratch_root_buffer.get(index));
+			this._scratch_root_buffer.set(index, 0);
+			this._scratch_root_free_indices.push (index);
 		},
 
 		_mono_wasm_claim_scratch_index: function () {
 			if (!this._scratch_root_buffer) {
 				const maxScratchRoots = 8192;
 				this._scratch_root_buffer = this.mono_wasm_new_root_buffer (maxScratchRoots, "js roots");
+
 				this._scratch_root_free_indices = new Array (maxScratchRoots);
 				for (var i = 0; i < maxScratchRoots; i++)
-					this._scratch_root_free_indices[i] = maxScratchRoots - i - 1;
+					this._scratch_root_free_indices[i] = i;
+				this._scratch_root_free_indices.reverse();
 
 				Object.defineProperty (MONO._mono_wasm_root_prototype, "value", {
 					get: MONO._mono_wasm_root_prototype.get,
@@ -109,7 +120,12 @@ var MonoSupportLib = {
 			if (this._scratch_root_free_indices.length < 1)
 				throw new Error("Out of scratch root space");
 
-			return this._scratch_root_free_indices.pop ();
+			var result = this._scratch_root_free_indices.pop ();
+			return result;
+		},
+
+		_zero_region: function (byteOffset, sizeBytes, value) {
+			(new Uint8Array (Module.HEAPU8.buffer, byteOffset, sizeBytes)).fill (0);
 		},
 
 		// Allocates a block of memory that can safely contain pointers into the managed heap.
@@ -125,14 +141,18 @@ var MonoSupportLib = {
 			if (capacity <= 0)
 				throw new Error("capacity >= 1");
 				
-			var offset = Module._malloc (capacity * 4);
-			var buffer = new Int32Array (Module.HEAPU8.buffer, offset, capacity);
-			buffer.fill (0);
+			var capacityBytes = capacity * 4;
+			var offset = Module._malloc (capacityBytes);
+			if ((offset % 4) !== 0)
+				throw new Error("Malloc returned an unaligned offset");
+
+			this._zero_region(offset, capacityBytes, 0);
 
 			var result = Object.create (MONO._mono_wasm_root_buffer_prototype);
-			result.__offset = offset;			
-			result.__handle = MONO.mono_wasm_register_root (offset, capacity, msg || 0);
-			result.__buffer = buffer;
+			result.__offset = offset;
+			result.__offset32 = offset / 4;
+			result.__count = capacity;	
+			result.__handle = MONO.mono_wasm_register_root (offset, capacityBytes, msg || 0);
 
 			return result;
 		},
@@ -147,13 +167,24 @@ var MonoSupportLib = {
 			var buffer = this._scratch_root_buffer;
 				
 			var result = Object.create (MONO._mono_wasm_root_prototype);
-			result.__buffer = buffer.__buffer;
+			result.__buffer = buffer;
 			result.__index = index;
 
-			if (value !== undefined)
-				result.value = value;
-			else
-				result.value = 0;
+			if (value !== undefined) {
+				console.log("initializing", index, "to", value);
+				result.set(value);
+
+				var tmp = result.value;
+				if (tmp != value)
+					throw new Error ("Store failed, result was" + tmp);
+			} else {
+				console.log("zero-initializing", index);
+				result.set(0);
+
+				var tmp = result.value;
+				if (tmp != 0)
+					throw new Error ("Zero init failed, result was" + tmp);
+			}
 
 			return result;
 		},
@@ -170,7 +201,7 @@ var MonoSupportLib = {
 				for (var i = 0; i < result.length; i++)
 					result[i] = this.mono_wasm_new_root (count_or_values[i]);
 			} else {
-				result = new Array (count);
+				result = new Array (count_or_values);
 				for (var i = 0; i < result.length; i++)
 					result[i] = this.mono_wasm_new_root ();
 			}
