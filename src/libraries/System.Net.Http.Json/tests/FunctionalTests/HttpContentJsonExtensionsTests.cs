@@ -183,7 +183,8 @@ namespace System.Net.Http.Json.Functional.Tests
         [InlineData("application/foo+Json")]
         [InlineData("appLiCaTiOn/a+JsOn")]
         [InlineData("application/json-custom")]
-        public async Task TestValidMediaTypes(string mediaType)
+        [InlineData("asdf/ghjk")]
+        public async Task TestVariousMediaTypes(string mediaType)
         {
             List<HttpHeaderData> customHeaders = new List<HttpHeaderData>
             {
