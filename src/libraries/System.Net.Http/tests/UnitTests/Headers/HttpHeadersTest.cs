@@ -1678,15 +1678,15 @@ namespace System.Net.Http.Tests
             Assert.Equal("custom0", enumerator.Current.Value.ElementAt(0));
 
             // Starting using the non-validating enumerator will NOT trigger parsing of raw values.
-            Assert.Equal(0, headers.Parser.TryParseValueCallCount);
+            Assert.Equal(1, headers.Parser.TryParseValueCallCount);
 
             Assert.True(enumerator.MoveNext());
             Assert.Equal(headers.Descriptor.Name, enumerator.Current.Key);
             Assert.Equal(2, enumerator.Current.Value.Count());
-            Assert.Equal(parsedPrefix + "1", enumerator.Current.Value.ElementAt(0));
-            Assert.Equal(parsedPrefix + "2", enumerator.Current.Value.ElementAt(1));
+            Assert.Equal(rawPrefix + "1", enumerator.Current.Value.ElementAt(0));
+            Assert.Equal(rawPrefix + "2", enumerator.Current.Value.ElementAt(1));
 
-            Assert.Equal(0, headers.Parser.TryParseValueCallCount);
+            Assert.Equal(1, headers.Parser.TryParseValueCallCount);
 
             Assert.False(enumerator.MoveNext(), "Only 2 values expected, but enumerator returns a third one.");
         }
@@ -1702,13 +1702,10 @@ namespace System.Net.Http.Tests
 
             Assert.True(enumerator.MoveNext());
             Assert.Equal(customHeaderName, enumerator.Current.Key);
-            Assert.True(enumerator.MoveNext());
-            Assert.Equal(headers.Descriptor.Name, enumerator.Current.Key);
-            Assert.Equal(2, enumerator.Current.Value.Count());
+            Assert.Equal(1, enumerator.Current.Value.Count());
             Assert.Equal(string.Empty, enumerator.Current.Value.ElementAt(0));
-            Assert.Equal(string.Empty, enumerator.Current.Value.ElementAt(1));
 
-            Assert.False(enumerator.MoveNext(), "Only 2 values expected, but enumerator returns a third one.");
+            Assert.False(enumerator.MoveNext(), "Only the (empty) custom value should be returned.");
         }
 
         [Fact]
@@ -1720,16 +1717,16 @@ namespace System.Net.Http.Tests
             headers.Add("custom3", "customValue3");
             headers.Add("custom4", "customValue4");
 
-            System.Collections.IEnumerable headersAsIEnumerable = headers.NonValidated;
+            IEnumerable headersAsIEnumerable = headers.NonValidated;
 
             var enumerator = headersAsIEnumerable.GetEnumerator();
 
-            KeyValuePair<string, IEnumerable<HeaderStringValues>> currentValue;
+            KeyValuePair<string, HeaderStringValues> currentValue;
 
             for (int i = 1; i <= 4; i++)
             {
                 Assert.True(enumerator.MoveNext());
-                currentValue = (KeyValuePair<string, IEnumerable<HeaderStringValues>>)enumerator.Current;
+                currentValue = (KeyValuePair<string, HeaderStringValues>)enumerator.Current;
                 Assert.Equal("custom" + i, currentValue.Key);
                 Assert.Equal(1, currentValue.Value.Count());
             }
