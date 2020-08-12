@@ -144,56 +144,56 @@ var BindingSupportLib = {
 			if (mono_array == 0)
 				return null;
 			
-			var array_root = MONO.mono_wasm_new_root (mono_array), 
-				elem_root = MONO.mono_wasm_new_root ();
+			let [arrayRoot, elemRoot] = MONO.mono_wasm_new_roots ([mono_array, 0]); 
 
-			var res = [];
-			var len = this.mono_array_length (mono_array);
-			for (var i = 0; i < len; ++i)
-			{
-				let ele = elem_root.value = this.mono_array_get (mono_array, i);
-				if (this.is_nested_array (ele))
-					res.push (this.mono_array_to_js_array(ele));
-				else
-					res.push (this.unbox_mono_obj (ele));
+			try {
+				var res = [];
+				var len = this.mono_array_length (arrayRoot.value);
+				for (var i = 0; i < len; ++i)
+				{
+					elemRoot.value = this.mono_array_get (arrayRoot.value, i);
+					if (this.is_nested_array (elemRoot.value))
+						res.push (this.mono_array_to_js_array (elemRoot.value));
+					else
+						res.push (this.unbox_mono_obj (elemRoot.value));
+				}
+			} finally {
+				MONO.mono_wasm_release_roots (arrayRoot, elemRoot);
 			}
-
-			array_root.release();
-			elem_root.release();
 
 			return res;
 		},
 
 		js_array_to_mono_array: function (js_array) {
-			var array_root = MONO.mono_wasm_new_root (this.mono_obj_array_new (js_array.length)),
-				elem_root = MONO.mono_wasm_new_root ();
-				
-			for (var i = 0; i < js_array.length; ++i) {
-				elem_root.value = this.js_to_mono_obj (js_array [i]);
-				this.mono_obj_array_set (array_root.value, i, elem_root.value);
+			var mono_array = this.mono_obj_array_new (js_array.length);
+			let [arrayRoot, elemRoot] = MONO.mono_wasm_new_roots ([mono_array, 0]);
+			
+			try {
+				for (var i = 0; i < js_array.length; ++i) {
+					elemRoot.value = this.js_to_mono_obj (js_array [i]);
+					this.mono_obj_array_set (arrayRoot.value, i, elemRoot.value);
+				}
+
+				return mono_array;
+			} finally {
+				MONO.mono_wasm_release_roots (arrayRoot, elemRoot);
 			}
-
-			array_root.release();
-			elem_root.release();
-
-			return mono_array;
 		},
 
-		// Scratch root used for temporary storage in unbox_mono_obj.
-		// As long as this API is not re-entrant, this single slot is sufficient to ensure
-		//  that the object being unboxed is not collected until the unbox operation is done.
-		_unbox_mono_obj_root: null,
-
-		// FIXME: Is there a way to mechanically ensure that this function is not re-entrant,
-		//  other than the overhead of a try/finally block?
 		unbox_mono_obj: function (mono_obj) {
-			if (mono_obj == 0)
+			if (mono_obj === 0)
 				return undefined;
 
-			if (!MONO._unbox_mono_obj_root)
-				MONO._unbox_mono_obj_root = MONO.mono_wasm_new_root ();
+			var root = MONO.mono_wasm_new_root (mono_obj);
+			try {
+				return this._unbox_mono_obj_impl (root);
+			} finally {
+				root.release();
+			}
+		},
 
-			MONO._unbox_mono_obj_root.value = mono_obj;
+		_unbox_mono_obj_impl: function (root) {
+			var mono_obj = root.value;
 			
 			var type = this.mono_get_obj_type (mono_obj);
 			//See MARSHAL_TYPE_ defines in driver.c
@@ -534,14 +534,17 @@ var BindingSupportLib = {
     
 			if (js_obj === null || typeof js_obj === "undefined")
 				return 0;
-
-			var monoObj = MONO.mono_wasm_new_root (this.js_to_mono_obj (js_obj));
-			// Check enum contract
-			var monoEnum = MONO.mono_wasm_new_root (this.call_method (this.object_to_enum, null, "iimm", [ method, parmIdx, monoObj.value ]))
-			// return the unboxed enum value.
-			var result = this.mono_unbox_enum(monoEnum);
-			monoObj.release();
-			monoEnum.release();
+			
+			var monoObj, monoEnum;
+			try {
+				monoObj = MONO.mono_wasm_new_root (this.js_to_mono_obj (js_obj));
+				// Check enum contract
+				monoEnum = MONO.mono_wasm_new_root (this.call_method (this.object_to_enum, null, "iimm", [ method, parmIdx, monoObj.value ]))
+				// return the unboxed enum value.
+				var result = this.mono_unbox_enum (monoEnum);
+			} finally {
+				MONO.mono_wasm_release_roots (monoObj, monoEnum);
+			}
 			return result;
 		},
 		wasm_binding_obj_new: function (js_obj_id, ownsHandle, type)
