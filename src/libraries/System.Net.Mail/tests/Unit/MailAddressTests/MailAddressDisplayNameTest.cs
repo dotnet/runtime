@@ -29,7 +29,7 @@ namespace System.Net.Mail.Tests
         [InlineData(Address, "Hello \"\"world")]
         [InlineData(Address, "\"")]
         [InlineData(Address, "Hello \\\"world hello\\\" world")]
-        public void MailAddress_WithDoubleQuotesDisplayAndMailAddress_ToStringShouldReturnDisplayNameEscapeSequenceAndAddressInAngleBrackets(string address, string displayNameWithDoubleQuotes)
+        public void MailAddress_WithDoubleQuotesDisplayAndMailAddress_ToStringShouldReturnEscapedDisplayNameAndAddressInAngleBrackets(string address, string displayName)
         {
             MailAddress mailAddress = new MailAddress(address, displayNameWithDoubleQuotes);
             Assert.Equal(displayNameWithDoubleQuotes, mailAddress.DisplayName);
