@@ -4,6 +4,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Net.Http.Headers;
 using System.Text;
@@ -1644,6 +1645,96 @@ namespace System.Net.Http.Tests
             }
 
             Assert.False(enumerator.MoveNext(), "Only 2 values expected, but enumerator returns a third one.");
+        }
+
+        [Fact]
+        public void NonValidated_GetEnumeratorFromUninitializedHeaderStore_ReturnsEmptyEnumerator()
+        {
+            MockHeaders headers = new MockHeaders();
+
+            var enumerator = headers.NonValidated.GetEnumerator();
+            Assert.False(enumerator.MoveNext());
+        }
+
+        [Fact]
+        public void NonValidated_FirstHeaderWithOneValueSecondHeaderWithTwoValues_EnumeratorReturnsTwoHeaders()
+        {
+            MockHeaders headers = new MockHeaders();
+            headers.Add(customHeaderName, "custom0");
+            headers.Add(headers.Descriptor, rawPrefix + "1");
+            headers.TryAddWithoutValidation(headers.Descriptor, rawPrefix + "2");
+
+            // The value added with TryAddWithoutValidation() wasn't parsed yet.
+            Assert.Equal(1, headers.Parser.TryParseValueCallCount);
+
+            var enumerator = headers.NonValidated.GetEnumerator();
+
+            // Getting the enumerator doesn't trigger parsing.
+            Assert.Equal(1, headers.Parser.TryParseValueCallCount);
+
+            Assert.True(enumerator.MoveNext());
+            Assert.Equal(customHeaderName, enumerator.Current.Key);
+            Assert.Equal(1, enumerator.Current.Value.Count());
+            Assert.Equal("custom0", enumerator.Current.Value.ElementAt(0));
+
+            // Starting using the non-validating enumerator will NOT trigger parsing of raw values.
+            Assert.Equal(0, headers.Parser.TryParseValueCallCount);
+
+            Assert.True(enumerator.MoveNext());
+            Assert.Equal(headers.Descriptor.Name, enumerator.Current.Key);
+            Assert.Equal(2, enumerator.Current.Value.Count());
+            Assert.Equal(parsedPrefix + "1", enumerator.Current.Value.ElementAt(0));
+            Assert.Equal(parsedPrefix + "2", enumerator.Current.Value.ElementAt(1));
+
+            Assert.Equal(0, headers.Parser.TryParseValueCallCount);
+
+            Assert.False(enumerator.MoveNext(), "Only 2 values expected, but enumerator returns a third one.");
+        }
+
+        [Fact]
+        public void NonValidated_FirstCustomHeaderWithEmptyValueSecondKnownHeaderWithEmptyValue_EnumeratorReturnsTwoHeaders()
+        {
+            MockHeaders headers = new MockHeaders();
+            headers.Add(customHeaderName, string.Empty);
+            headers.Add(headers.Descriptor, string.Empty);
+
+            var enumerator = headers.NonValidated.GetEnumerator();
+
+            Assert.True(enumerator.MoveNext());
+            Assert.Equal(customHeaderName, enumerator.Current.Key);
+            Assert.True(enumerator.MoveNext());
+            Assert.Equal(headers.Descriptor.Name, enumerator.Current.Key);
+            Assert.Equal(2, enumerator.Current.Value.Count());
+            Assert.Equal(string.Empty, enumerator.Current.Value.ElementAt(0));
+            Assert.Equal(string.Empty, enumerator.Current.Value.ElementAt(1));
+
+            Assert.False(enumerator.MoveNext(), "Only 2 values expected, but enumerator returns a third one.");
+        }
+
+        [Fact]
+        public void NonValidated_UseExplicitInterfaceImplementation_EnumeratorReturnsNoOfHeaders()
+        {
+            MockHeaders headers = new MockHeaders();
+            headers.Add("custom1", "customValue1");
+            headers.Add("custom2", "customValue2");
+            headers.Add("custom3", "customValue3");
+            headers.Add("custom4", "customValue4");
+
+            System.Collections.IEnumerable headersAsIEnumerable = headers.NonValidated;
+
+            var enumerator = headersAsIEnumerable.GetEnumerator();
+
+            KeyValuePair<string, IEnumerable<HeaderStringValues>> currentValue;
+
+            for (int i = 1; i <= 4; i++)
+            {
+                Assert.True(enumerator.MoveNext());
+                currentValue = (KeyValuePair<string, IEnumerable<HeaderStringValues>>)enumerator.Current;
+                Assert.Equal("custom" + i, currentValue.Key);
+                Assert.Equal(1, currentValue.Value.Count());
+            }
+
+            Assert.False(enumerator.MoveNext(), "Only 4 values expected, but enumerator returns a fifth one.");
         }
 
         [Fact]

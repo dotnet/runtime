@@ -305,6 +305,8 @@ namespace System.Net.Http.Headers
 
         #region IEnumerable<KeyValuePair<string, IEnumerable<string>>> Members
 
+        public HttpHeadersNonValidated NonValidated => new HttpHeadersNonValidated(_headerStore);
+
         public IEnumerator<KeyValuePair<string, IEnumerable<string>>> GetEnumerator() => _headerStore != null && _headerStore.Count > 0 ?
                 GetEnumeratorCore() :
                 ((IEnumerable<KeyValuePair<string, IEnumerable<string>>>)Array.Empty<KeyValuePair<string, IEnumerable<string>>>()).GetEnumerator();
@@ -580,10 +582,12 @@ namespace System.Net.Http.Headers
         {
             HeaderStoreItemInfo destinationInfo = CreateAndAddHeaderToStore(descriptor);
 
+            destinationInfo.IsParsed = sourceInfo.IsParsed;
+
             // We have custom header values. The parsed values are strings.
             if (descriptor.Parser == null)
             {
-                Debug.Assert((sourceInfo.RawValue == null) && (sourceInfo.InvalidValue == null),
+                Debug.Assert((sourceInfo.IsParsed) && (sourceInfo.InvalidValue == null),
                     "No raw or invalid values expected for custom headers.");
 
                 // Custom header values are always stored as string or list of strings.
@@ -745,7 +749,7 @@ namespace System.Net.Http.Headers
             {
                 // Unlike TryGetHeaderInfo() this method tries to parse all non-validated header values (if any)
                 // before returning to the caller.
-                if (info.RawValue != null)
+                if (!info.IsParsed)
                 {
                     List<string>? rawValues = info.RawValue as List<string>;
 
@@ -758,9 +762,7 @@ namespace System.Net.Http.Headers
                         ParseMultipleRawHeaderValues(descriptor, info, rawValues);
                     }
 
-                    // At this point all values are either in info.ParsedValue, info.InvalidValue, or were removed since they
-                    // contain invalid newline chars. Reset RawValue.
-                    info.RawValue = null;
+                    info.IsParsed = true;
 
                     // During parsing, we removed the value since it contains invalid newline chars. Return false to indicate that
                     // this is an empty header. If the caller specified to remove empty headers, we'll remove the header before
@@ -942,6 +944,7 @@ namespace System.Net.Http.Headers
                     currentStoreValue = info.RawValue;
                     AddValueToStoreValue<string>(value, ref currentStoreValue);
                     info.RawValue = currentStoreValue;
+                    info.IsParsed = false;
                     break;
 
                 case StoreLocation.Invalid:
@@ -957,6 +960,7 @@ namespace System.Net.Http.Headers
                     currentStoreValue = info.ParsedValue;
                     AddValueToStoreValue<object>(value, ref currentStoreValue);
                     info.ParsedValue = currentStoreValue;
+                    info.IsParsed = true;
                     break;
 
                 default:
@@ -1163,6 +1167,11 @@ namespace System.Net.Http.Headers
                 return new string[1] { (string)value };
             }
 
+            return GetValuesAsStrings(descriptor, info, exclude);
+        }
+
+        internal static string[] GetValuesAsStrings(HeaderDescriptor descriptor, HeaderStoreItemInfo info, object? exclude = null)
+        {
             int length = GetValueCount(info);
             string[] values;
 
@@ -1171,7 +1180,11 @@ namespace System.Net.Http.Headers
                 values = new string[length];
                 int currentIndex = 0;
 
-                ReadStoreValues<string?>(values, info.RawValue, null, null, ref currentIndex);
+                if (!info.IsParsed)
+                {
+                    ReadStoreValues<string?>(values, info.RawValue, null, null, ref currentIndex);
+                }
+
                 ReadStoreValues<object?>(values, info.ParsedValue, descriptor.Parser, exclude, ref currentIndex);
 
                 // Set parser parameter to 'null' for invalid values: The invalid values is always a string so we
@@ -1221,7 +1234,12 @@ namespace System.Net.Http.Headers
                 }
 
                 int currentIndex = 0;
-                ReadStoreValues<string?>(values, info.RawValue, null, null, ref currentIndex);
+
+                if (!info.IsParsed)
+                {
+                    ReadStoreValues<string?>(values, info.RawValue, null, null, ref currentIndex);
+                }
+
                 ReadStoreValues<object?>(values, info.ParsedValue, descriptor.Parser, null, ref currentIndex);
                 ReadStoreValues<string?>(values, info.InvalidValue, null, null, ref currentIndex);
                 Debug.Assert(currentIndex == length);
@@ -1316,6 +1334,7 @@ namespace System.Net.Http.Headers
             internal object? RawValue { get; set; }
             internal object? InvalidValue { get; set; }
             internal object? ParsedValue { get; set; }
+            internal bool IsParsed { get; set; }
 
             internal bool CanAddValue(HttpHeaderParser parser)
             {
@@ -1333,8 +1352,153 @@ namespace System.Net.Http.Headers
                 return parser.SupportsMultipleValues || ((InvalidValue == null) && (ParsedValue == null));
             }
 
-            internal bool IsEmpty => (RawValue == null) && (InvalidValue == null) && (ParsedValue == null);
+            internal bool IsEmpty => (RawValue == null || IsParsed) && (InvalidValue == null) && (ParsedValue == null);
         }
         #endregion
+    }
+
+    public readonly struct HttpHeadersNonValidated : IEnumerable<KeyValuePair<string, HeaderStringValues>>
+    {
+        private readonly IEnumerable<KeyValuePair<HeaderDescriptor, object>>? _headerStore;
+
+        internal HttpHeadersNonValidated(IEnumerable<KeyValuePair<HeaderDescriptor, object>>? headerStore)
+        {
+            _headerStore = headerStore;
+        }
+
+        public IEnumerator<KeyValuePair<string, HeaderStringValues>> GetEnumerator() => _headerStore != null
+            ? new Enumerator(_headerStore)
+            : ((IEnumerable<KeyValuePair<string, HeaderStringValues>>)Array.Empty<KeyValuePair<string, HeaderStringValues>>()).GetEnumerator();
+
+        IEnumerator<KeyValuePair<string, HeaderStringValues>> IEnumerable<KeyValuePair<string, HeaderStringValues>>.GetEnumerator() => GetEnumerator();
+
+        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+
+        public struct Enumerator : IEnumerator<KeyValuePair<string, HeaderStringValues>>
+        {
+            private readonly IEnumerator<KeyValuePair<HeaderDescriptor, object>> _headerStore;
+
+            internal Enumerator(IEnumerable<KeyValuePair<HeaderDescriptor, object>> headerStore)
+            {
+                _headerStore = headerStore.GetEnumerator();
+                Current = default;
+            }
+
+            public bool MoveNext()
+            {
+                if (!_headerStore.MoveNext())
+                {
+                    return false;
+                }
+
+                KeyValuePair<HeaderDescriptor, object> nextPair = _headerStore.Current;
+
+                Current = new KeyValuePair<string, HeaderStringValues>(nextPair.Key.Name, ToStringValues(nextPair.Key, nextPair.Value));
+                return true;
+
+                static HeaderStringValues ToStringValues(HeaderDescriptor descriptor, object value)
+                {
+                    if (value is HttpHeaders.HeaderStoreItemInfo info)
+                    {
+                        return info.RawValue is string rawString ? new HeaderStringValues(rawString) : new HeaderStringValues(HttpHeaders.GetValuesAsStrings(descriptor, info));
+                    }
+
+                    Debug.Assert(value is string);
+                    return new HeaderStringValues((string)value);
+                }
+            }
+
+            public KeyValuePair<string, HeaderStringValues> Current { get; private set; }
+
+            public void Dispose()
+            {
+                _headerStore.Dispose();
+            }
+
+            object? IEnumerator.Current => Current;
+
+            void IEnumerator.Reset()
+            {
+                _headerStore.Reset();
+            }
+        }
+    }
+
+    public readonly struct HeaderStringValues : IEnumerable<string>
+    {
+        private readonly IEnumerable<string?>? _values;
+        private readonly string? _value;
+
+        public HeaderStringValues(string value)
+        {
+            _value = value;
+            _values = null;
+        }
+
+        public HeaderStringValues(IEnumerable<string?> value)
+        {
+            _values = value;
+            _value = null;
+        }
+
+        public Enumerator GetEnumerator() => new Enumerator(_values, _value);
+
+        IEnumerator<string> IEnumerable<string>.GetEnumerator() => GetEnumerator();
+
+        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+
+        public struct Enumerator : IEnumerator<string>
+        {
+            private readonly IEnumerator<string?>? _values;
+            private readonly string? _value;
+            private bool _completed;
+
+            public Enumerator(IEnumerable<string?>? values, string? value)
+            {
+                _values = values?.GetEnumerator();
+                _value = value;
+                _completed = false;
+                Current = default!;
+            }
+
+            public bool MoveNext()
+            {
+                if (_completed)
+                {
+                    return false;
+                }
+
+                if (_values == null)
+                {
+                    _completed = true;
+                    Current = _value!;
+                    return true;
+                }
+
+                _completed = _values.MoveNext();
+                if (!_completed)
+                {
+                    Debug.Assert(_values.Current != null);
+                    Current = _values.Current!;
+                }
+
+                return !_completed;
+            }
+
+            public string Current { get; private set; }
+
+            public void Dispose()
+            {
+                _values?.Dispose();
+            }
+
+            object? IEnumerator.Current => Current;
+
+            void IEnumerator.Reset()
+            {
+                _values?.Reset();
+                _completed = false;
+            }
+        }
     }
 }
