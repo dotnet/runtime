@@ -67,11 +67,6 @@ namespace System.Globalization.Tests
             {
                 Assert.Equal(expected, value.Normalize());
             }
-            if (PlatformDetection.IsBrowser && (normalizationForm == NormalizationForm.FormKC || normalizationForm == NormalizationForm.FormKD))
-            {
-                // Browser's ICU doesn't support FormKC and FormKD
-                return;
-            }
             Assert.Equal(expected, value.Normalize(normalizationForm));
         }
 
