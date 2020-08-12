@@ -43,6 +43,9 @@ namespace System
                 100000,     // 10^5
                 1000000,    // 10^6
                 10000000,   // 10^7
+                // These last two are accessed only by MultiplyPow10.
+                100000000,  // 10^8
+                1000000000  // 10^9
             };
 
             private static readonly int[] s_Pow10BigNumTableIndices = new int[]
@@ -686,15 +689,22 @@ namespace System
 
             public static void Multiply(ref BigInteger lhs, uint value, out BigInteger result)
             {
-                if (lhs.IsZero() || (value == 1))
+                if (lhs._length <= 1)
                 {
-                    SetValue(out result, ref lhs);
+                    SetUInt64(out result, (ulong)lhs.ToUInt32() * value);
                     return;
                 }
 
-                if (value == 0)
+                if (value <= 1)
                 {
-                    SetZero(out result);
+                    if (value == 0)
+                    {
+                        SetZero(out result);
+                    }
+                    else
+                    {
+                        SetValue(out result, ref lhs);
+                    }
                     return;
                 }
 
@@ -725,15 +735,15 @@ namespace System
 
             public static void Multiply(ref BigInteger lhs, ref BigInteger rhs, out BigInteger result)
             {
-                if (lhs.IsZero() || rhs.IsOne())
+                if (lhs._length <= 1)
                 {
-                    SetValue(out result, ref lhs);
+                    Multiply(ref rhs, lhs.ToUInt32(), out result);
                     return;
                 }
 
-                if (rhs.IsZero())
+                if (rhs._length <= 1)
                 {
-                    SetZero(out result);
+                    Multiply(ref lhs, rhs.ToUInt32(), out result);
                     return;
                 }
 
@@ -1006,12 +1016,6 @@ namespace System
                 return _length;
             }
 
-            public bool IsOne()
-            {
-                return (_length == 1)
-                    && (_blocks[0] == 1);
-            }
-
             public bool IsZero()
             {
                 return _length == 0;
@@ -1024,8 +1028,15 @@ namespace System
 
             public void Multiply(ref BigInteger value)
             {
-                SetValue(out BigInteger temp, ref this);
-                Multiply(ref temp, ref value, out this);
+                if (value._length <= 1)
+                {
+                    Multiply(ref this, value.ToUInt32(), out this);
+                }
+                else
+                {
+                    SetValue(out BigInteger temp, ref this);
+                    Multiply(ref temp, ref value, out this);
+                }
             }
 
             public void Multiply10()
@@ -1039,7 +1050,7 @@ namespace System
                 int length = _length;
                 ulong carry = 0;
 
-                while (index < length)
+                do
                 {
                     ulong block = (ulong)(_blocks[index]);
                     ulong product = (block << 3) + (block << 1) + carry;
@@ -1047,7 +1058,7 @@ namespace System
                     _blocks[index] = (uint)(product);
 
                     index++;
-                }
+                } while (index < length);
 
                 if (carry != 0)
                 {
@@ -1059,19 +1070,13 @@ namespace System
 
             public void MultiplyPow10(uint exponent)
             {
-                if (IsZero())
+                if (exponent <= 9)
                 {
-                    return;
+                    Multiply(s_Pow10UInt32Table[exponent]);
                 }
-
-                Pow10(exponent, out BigInteger poweredValue);
-
-                if (poweredValue._length == 1)
+                else if (!IsZero())
                 {
-                    Multiply(poweredValue._blocks[0]);
-                }
-                else
-                {
+                    Pow10(exponent, out BigInteger poweredValue);
                     Multiply(ref poweredValue);
                 }
             }
@@ -1188,6 +1193,16 @@ namespace System
                         _length--;
                     }
                 }
+            }
+
+            public uint ToUInt32()
+            {
+                if (_length > 0)
+                {
+                    return _blocks[0];
+                }
+
+                return 0;
             }
 
             public ulong ToUInt64()

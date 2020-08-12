@@ -51,8 +51,8 @@ namespace Microsoft.WebAssembly.Diagnostics
                         if (type == "debug")
                         {
                             var a = args["args"];
-                            if (a?[0] ? ["value"]?.ToString() == MonoConstants.RUNTIME_IS_READY &&
-                                a?[1] ? ["value"]?.ToString() == "fe00e07a-5519-4dfe-b35a-f867dbaf2e28")
+                            if (a?[0]?["value"]?.ToString() == MonoConstants.RUNTIME_IS_READY &&
+                                a?[1]?["value"]?.ToString() == "fe00e07a-5519-4dfe-b35a-f867dbaf2e28")
                             {
                                 if (a.Count() > 2)
                                 {
@@ -61,7 +61,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                                         // The optional 3rd argument is the stringified assembly
                                         // list so that we don't have to make more round trips
                                         var context = GetContext(sessionId);
-                                        var loaded = a?[2] ? ["value"]?.ToString();
+                                        var loaded = a?[2]?["value"]?.ToString();
                                         if (loaded != null)
                                             context.LoadedFiles = JToken.Parse(loaded).ToObject<string[]>();
                                     }
@@ -97,7 +97,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 case "Debugger.paused":
                     {
                         //TODO figure out how to stich out more frames and, in particular what happens when real wasm is on the stack
-                        var top_func = args?["callFrames"] ? [0] ? ["functionName"]?.Value<string>();
+                        var top_func = args?["callFrames"]?[0]?["functionName"]?.Value<string>();
 
                         if (top_func == "mono_wasm_fire_bp" || top_func == "_mono_wasm_fire_bp" || top_func == "_mono_wasm_fire_exception")
                         {
@@ -118,7 +118,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                         switch (url)
                         {
                             case var _ when url == "":
-                                case var _ when url.StartsWith("wasm://", StringComparison.Ordinal):
+                            case var _ when url.StartsWith("wasm://", StringComparison.Ordinal):
                                 {
                                     Log("verbose", $"ignoring wasm: Debugger.scriptParsed {url}");
                                     return true;
@@ -146,7 +146,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 return true;
 
             var res = await SendMonoCommand(sessionId, MonoCommands.IsRuntimeReady(), token);
-            return res.Value?["result"] ? ["value"]?.Value<bool>() ?? false;
+            return res.Value?["result"]?["value"]?.Value<bool>() ?? false;
         }
 
         protected override async Task<bool> AcceptCommand(MessageId id, string method, JObject args, CancellationToken token)
@@ -329,15 +329,15 @@ namespace Microsoft.WebAssembly.Diagnostics
                         return true;
                     }
 
-                case "Debugger.setPauseOnExceptions": 
+                case "Debugger.setPauseOnExceptions":
                     {
-                        string state = args["state"].Value<string> ();
-                        await SendMonoCommand(id, MonoCommands.SetPauseOnExceptions (state), token);
+                        string state = args["state"].Value<string>();
+                        await SendMonoCommand(id, MonoCommands.SetPauseOnExceptions(state), token);
                         // Pass this on to JS too
                         return false;
                     }
 
-                    // Protocol extensions
+                // Protocol extensions
                 case "DotnetDebugger.getMethodLocation":
                     {
                         Console.WriteLine("set-breakpoint-by-method: " + id + " " + args);
@@ -377,7 +377,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                             // Maybe this is an async method, in which case the debug info is attached
                             // to the async method implementation, in class named:
                             //      `{type_name}/<method_name>::MoveNext`
-                            methodInfo = assembly.TypesByName.Values.SingleOrDefault(t => t.FullName.StartsWith($"{typeName}/<{methodName}>")) ?
+                            methodInfo = assembly.TypesByName.Values.SingleOrDefault(t => t.FullName.StartsWith($"{typeName}/<{methodName}>"))?
                                 .Methods.FirstOrDefault(mi => mi.Name == "MoveNext");
                         }
 
@@ -410,7 +410,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                         }
 
                         var res = await SendMonoCommand(id, MonoCommands.CallFunctionOn(args), token);
-                        var res_value_type = res.Value?["result"] ? ["value"]?.Type;
+                        var res_value_type = res.Value?["result"]?["value"]?.Type;
 
                         if (res.IsOk && res_value_type == JTokenType.Object || res_value_type == JTokenType.Object)
                             res = Result.OkFromObject(new { result = res.Value["result"]["value"] });
@@ -435,7 +435,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             if (objectId.Scheme == "cfo_res")
             {
                 // Runtime.callFunctionOn result object
-                var value_json_str = res.Value["result"] ? ["value"] ? ["__value_as_json_string__"]?.Value<string>();
+                var value_json_str = res.Value["result"]?["value"]?["__value_as_json_string__"]?.Value<string>();
                 if (value_json_str != null)
                 {
                     res = Result.OkFromObject(new
@@ -473,7 +473,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             }
 
             //step one, figure out where did we hit
-            var res_value = res.Value?["result"] ? ["value"];
+            var res_value = res.Value?["result"]?["value"];
             if (res_value == null || res_value is JValue)
             {
                 //Give up and send the original call stack
@@ -496,27 +496,29 @@ namespace Microsoft.WebAssembly.Diagnostics
             {
                 var function_name = frame["functionName"]?.Value<string>();
                 var url = frame["url"]?.Value<string>();
-                if ("mono_wasm_fire_bp" == function_name ||"_mono_wasm_fire_bp" == function_name ||
+                if ("mono_wasm_fire_bp" == function_name || "_mono_wasm_fire_bp" == function_name ||
                     "_mono_wasm_fire_exception" == function_name)
                 {
-                    if ("_mono_wasm_fire_exception" == function_name) {
-                        var exception_obj_id = await SendMonoCommand(sessionId, MonoCommands.GetExceptionObject (), token);
-                        var res_val = exception_obj_id.Value? ["result"]? ["value"];
-                        var exception_dotnet_obj_id = new DotnetObjectId("object", res_val?["exception_id"]?.Value<string> ());
-                        data = JObject.FromObject (new {
-                            type        = "object",
-                            subtype     = "error",
-                            className   = res_val? ["class_name"]?.Value<string>(),
-                            uncaught    = res_val? ["uncaught"]?.Value<bool>(),
-                            description = res_val? ["message"]?.Value<string>() + "\n",
-                            objectId    = exception_dotnet_obj_id.ToString()
+                    if ("_mono_wasm_fire_exception" == function_name)
+                    {
+                        var exception_obj_id = await SendMonoCommand(sessionId, MonoCommands.GetExceptionObject(), token);
+                        var res_val = exception_obj_id.Value?["result"]?["value"];
+                        var exception_dotnet_obj_id = new DotnetObjectId("object", res_val?["exception_id"]?.Value<string>());
+                        data = JObject.FromObject(new
+                        {
+                            type = "object",
+                            subtype = "error",
+                            className = res_val?["class_name"]?.Value<string>(),
+                            uncaught = res_val?["uncaught"]?.Value<bool>(),
+                            description = res_val?["message"]?.Value<string>() + "\n",
+                            objectId = exception_dotnet_obj_id.ToString()
                         });
                         reason = "exception";
                     }
 
                     var frames = new List<Frame>();
                     int frame_id = 0;
-                    var the_mono_frames = res.Value?["result"] ? ["value"] ? ["frames"]?.Values<JObject>();
+                    var the_mono_frames = res.Value?["result"]?["value"]?["frames"]?.Values<JObject>();
 
                     foreach (var mono_frame in the_mono_frames)
                     {
@@ -562,14 +564,14 @@ namespace Microsoft.WebAssembly.Diagnostics
                         callFrames.Add(new
                         {
                             functionName = method_name,
-                                callFrameId = $"dotnet:scope:{frame_id-1}",
-                                functionLocation = method.StartLocation.AsLocation(),
+                            callFrameId = $"dotnet:scope:{frame_id - 1}",
+                            functionLocation = method.StartLocation.AsLocation(),
 
-                                location = location.AsLocation(),
+                            location = location.AsLocation(),
 
-                                url = store.ToUrl(location),
+                            url = store.ToUrl(location),
 
-                                scopeChain = new []
+                            scopeChain = new[]
                                 {
                                     new
                                     {
@@ -654,7 +656,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
             var res = await SendMonoCommand(msg_id, MonoCommands.StartSingleStepping(kind), token);
 
-            var ret_code = res.Value?["result"] ? ["value"]?.Value<int>();
+            var ret_code = res.Value?["result"]?["value"]?.Value<int>();
 
             if (ret_code.HasValue && ret_code.Value == 0)
             {
@@ -697,7 +699,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             //get_this
             var res = await SendMonoCommand(msg_id, MonoCommands.GetScopeVariables(scope.Id, live_vars), token);
 
-            var scope_values = res.Value?["result"] ? ["value"]?.Values<JObject>()?.ToArray();
+            var scope_values = res.Value?["result"]?["value"]?.Values<JObject>()?.ToArray();
             thisValue = scope_values?.FirstOrDefault(v => v["name"]?.Value<string>() == "this");
 
             if (!only_search_on_this)
@@ -717,7 +719,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     return null;
 
                 res = await SendMonoCommand(msg_id, MonoCommands.GetDetails(objectId), token);
-                scope_values = res.Value?["result"] ? ["value"]?.Values<JObject>().ToArray();
+                scope_values = res.Value?["result"]?["value"]?.Values<JObject>().ToArray();
                 var foundValue = scope_values.FirstOrDefault(v => v["name"].Value<string>() == expression);
                 if (foundValue != null)
                 {
@@ -781,7 +783,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 if (res.IsErr)
                     return res;
 
-                var values = res.Value?["result"] ? ["value"]?.Values<JObject>().ToArray();
+                var values = res.Value?["result"]?["value"]?.Values<JObject>().ToArray();
 
                 if (values == null || values.Length == 0)
                     return Result.OkFromObject(new { result = Array.Empty<object>() });
@@ -806,7 +808,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             var il_offset = bp.Location.CliLocation.Offset;
 
             var res = await SendMonoCommand(sessionId, MonoCommands.SetBreakpoint(asm_name, method_token, il_offset), token);
-            var ret_code = res.Value?["result"] ? ["value"]?.Value<int>();
+            var ret_code = res.Value?["result"]?["value"]?.Value<int>();
 
             if (ret_code.HasValue)
             {
@@ -832,7 +834,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 if (loaded_files == null)
                 {
                     var loaded = await SendMonoCommand(sessionId, MonoCommands.GetLoadedFiles(), token);
-                    loaded_files = loaded.Value?["result"] ? ["value"]?.ToObject<string[]>();
+                    loaded_files = loaded.Value?["result"]?["value"]?.ToObject<string[]>();
                 }
 
                 await
@@ -892,7 +894,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             foreach (var bp in breakpointRequest.Locations)
             {
                 var res = await SendMonoCommand(msg_id, MonoCommands.RemoveBreakpoint(bp.RemoteId), token);
-                var ret_code = res.Value?["result"] ? ["value"]?.Value<int>();
+                var ret_code = res.Value?["result"]?["value"]?.Value<int>();
 
                 if (ret_code.HasValue)
                 {
@@ -981,13 +983,13 @@ namespace Microsoft.WebAssembly.Diagnostics
                 var uri = new Uri(src_file.Url);
                 string source = $"// Unable to find document {src_file.SourceUri}";
 
-                using(var data = await src_file.GetSourceAsync(checkHash: false, token: token))
+                using (var data = await src_file.GetSourceAsync(checkHash: false, token: token))
                 {
                     if (data.Length == 0)
                         return false;
 
-                    using(var reader = new StreamReader(data))
-                    source = await reader.ReadToEndAsync();
+                    using (var reader = new StreamReader(data))
+                        source = await reader.ReadToEndAsync();
                 }
                 SendResponse(msg_id, Result.OkFromObject(new { scriptSource = source }), token);
             }

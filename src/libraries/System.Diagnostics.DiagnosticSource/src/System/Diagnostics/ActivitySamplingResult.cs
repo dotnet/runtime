@@ -7,7 +7,7 @@ namespace System.Diagnostics
     /// Used by ActivityListener to indicate what amount of data should be collected for this Activity
     /// Requesting more data causes greater performance overhead to collect it.
     /// </summary>
-    public enum ActivityDataRequest
+    public enum ActivitySamplingResult
     {
         /// <summary>
         /// The Activity object doesn't need to be created

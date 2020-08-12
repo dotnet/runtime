@@ -55,7 +55,7 @@ namespace System.Net.Security.Tests
 
             Assert.True(cbt1 != null, "ChannelBindingKind.Endpoint token data should be returned.");
 
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+            if (OperatingSystem.IsMacOS())
             {
                 Assert.True(cbt2 == null, "ChannelBindingKind.Unique token data is not expected on OSX platform.");
             }
