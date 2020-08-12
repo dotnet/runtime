@@ -194,7 +194,7 @@ namespace System.Net.Http.Functional.Tests
                     Content = clientContent is null ? (HttpContent)null : new StringContent(clientContent),
                 };
 
-                HttpResponseMessage response = await client.SendAsync(request);
+                using HttpResponseMessage response = await client.SendAsync(request);
                 string responseContent = await response.Content.ReadAsStringAsync();
                 Assert.Equal(serverContent ?? String.Empty, responseContent);
             },
