@@ -27,7 +27,7 @@ namespace System.Security.Cryptography
         public override void GenerateIV() { }
         public override void GenerateKey() { }
     }
-    [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")]
+    [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
     public sealed partial class CspKeyContainerInfo
     {
         public CspKeyContainerInfo(System.Security.Cryptography.CspParameters parameters) { }
@@ -44,6 +44,7 @@ namespace System.Security.Cryptography
         public bool Removable { get { throw null; } }
         public string UniqueKeyContainerName { get { throw null; } }
     }
+    [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
     public sealed partial class CspParameters
     {
         public string? KeyContainerName;
@@ -87,11 +88,11 @@ namespace System.Security.Cryptography
     {
         public DSACryptoServiceProvider() { }
         public DSACryptoServiceProvider(int dwKeySize) { }
-        [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")]
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public DSACryptoServiceProvider(int dwKeySize, System.Security.Cryptography.CspParameters? parameters) { }
-        [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")]
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public DSACryptoServiceProvider(System.Security.Cryptography.CspParameters? parameters) { }
-        [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")]
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public System.Security.Cryptography.CspKeyContainerInfo CspKeyContainerInfo { get { throw null; } }
         public override string? KeyExchangeAlgorithm { get { throw null; } }
         public override int KeySize { get { throw null; } }
@@ -152,7 +153,7 @@ namespace System.Security.Cryptography
         public string HashName { get { throw null; } set { } }
         public int IterationCount { get { throw null; } set { } }
         public byte[]? Salt { get { throw null; } set { } }
-        [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")]
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public byte[] CryptDeriveKey(string? algname, string? alghashname, int keySize, byte[] rgbIV) { throw null; }
         protected override void Dispose(bool disposing) { }
         [System.ObsoleteAttribute("Rfc2898DeriveBytes replaces PasswordDeriveBytes for deriving key material from a password and is preferred in new applications.")]
@@ -164,7 +165,7 @@ namespace System.Security.Cryptography
     {
         public RC2CryptoServiceProvider() { }
         public override int EffectiveKeySize { get { throw null; } set { } }
-        public bool UseSalt { get { throw null; } [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")] set { } }
+        public bool UseSalt { get { throw null; } [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")] set { } }
         public override System.Security.Cryptography.ICryptoTransform CreateDecryptor(byte[] rgbKey, byte[]? rgbIV) { throw null; }
         public override System.Security.Cryptography.ICryptoTransform CreateEncryptor(byte[] rgbKey, byte[]? rgbIV) { throw null; }
         public override void GenerateIV() { }
@@ -188,11 +189,11 @@ namespace System.Security.Cryptography
     {
         public RSACryptoServiceProvider() { }
         public RSACryptoServiceProvider(int dwKeySize) { }
-        [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")]
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public RSACryptoServiceProvider(int dwKeySize, System.Security.Cryptography.CspParameters? parameters) { }
-        [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")]
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public RSACryptoServiceProvider(System.Security.Cryptography.CspParameters? parameters) { }
-        [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")]
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public System.Security.Cryptography.CspKeyContainerInfo CspKeyContainerInfo { get { throw null; } }
         public override string? KeyExchangeAlgorithm { get { throw null; } }
         public override int KeySize { get { throw null; } }

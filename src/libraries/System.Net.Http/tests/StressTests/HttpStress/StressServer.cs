@@ -198,8 +198,7 @@ namespace HttpStress
             });
             endpoints.MapGet("/variables", async context =>
             {
-                string queryString = context.Request.QueryString.Value;
-                NameValueCollection nameValueCollection = HttpUtility.ParseQueryString(queryString);
+                NameValueCollection nameValueCollection = HttpUtility.ParseQueryString(context.Request.QueryString.Value!);
 
                 StringBuilder sb = new StringBuilder();
                 for (int i = 0; i < nameValueCollection.Count; i++)

@@ -35,6 +35,7 @@
 #include <openssl/x509v3.h>
 
 #include "pal_crypto_config.h"
+#include "pal_compiler.h"
 #define OPENSSL_VERSION_1_1_1_RTM 0x10101000L
 #define OPENSSL_VERSION_1_1_0_RTM 0x10100000L
 #define OPENSSL_VERSION_1_0_2_RTM 0x10002000L
@@ -148,6 +149,7 @@ int32_t RSA_set0_crt_params(RSA* rsa, BIGNUM* dmp1, BIGNUM* dmq1, BIGNUM* iqmp);
 int32_t RSA_set0_factors(RSA* rsa, BIGNUM* p, BIGNUM* q);
 int32_t RSA_set0_key(RSA* rsa, BIGNUM* n, BIGNUM* e, BIGNUM* d);
 int32_t SSL_is_init_finished(SSL* ssl);
+int SSL_CTX_config(SSL_CTX* ctx, const char* name);
 #undef SSL_CTX_set_options
 unsigned long SSL_CTX_set_options(SSL_CTX* ctx, unsigned long options);
 void SSL_CTX_set_security_level(SSL_CTX* ctx, int32_t level);
@@ -456,6 +458,7 @@ void SSL_get0_alpn_selected(const SSL* ssl, const unsigned char** protocol, unsi
     REQUIRED_FUNCTION(SSL_ctrl) \
     REQUIRED_FUNCTION(SSL_set_quiet_shutdown) \
     REQUIRED_FUNCTION(SSL_CTX_check_private_key) \
+    FALLBACK_FUNCTION(SSL_CTX_config) \
     REQUIRED_FUNCTION(SSL_CTX_ctrl) \
     REQUIRED_FUNCTION(SSL_CTX_free) \
     FALLBACK_FUNCTION(SSL_is_init_finished) \
@@ -474,6 +477,7 @@ void SSL_get0_alpn_selected(const SSL* ssl, const unsigned char** protocol, unsi
     REQUIRED_FUNCTION(SSL_CTX_use_PrivateKey) \
     REQUIRED_FUNCTION(SSL_do_handshake) \
     REQUIRED_FUNCTION(SSL_free) \
+    REQUIRED_FUNCTION(SSL_get_ciphers) \
     REQUIRED_FUNCTION(SSL_get_client_CA_list) \
     REQUIRED_FUNCTION(SSL_get_current_cipher) \
     REQUIRED_FUNCTION(SSL_get_error) \
@@ -576,12 +580,12 @@ void SSL_get0_alpn_selected(const SSL* ssl, const unsigned char** protocol, unsi
     LIGHTUP_FUNCTION(EC_POINT_set_affine_coordinates_GF2m) \
 
 // Declare pointers to all the used OpenSSL functions
-#define REQUIRED_FUNCTION(fn) extern __typeof(fn)* fn##_ptr;
-#define NEW_REQUIRED_FUNCTION(fn) extern __typeof(fn)* fn##_ptr;
-#define LIGHTUP_FUNCTION(fn) extern __typeof(fn)* fn##_ptr;
-#define FALLBACK_FUNCTION(fn) extern __typeof(fn)* fn##_ptr;
-#define RENAMED_FUNCTION(fn,oldfn) extern __typeof(fn)* fn##_ptr;
-#define LEGACY_FUNCTION(fn) extern __typeof(fn)* fn##_ptr;
+#define REQUIRED_FUNCTION(fn) extern TYPEOF(fn)* fn##_ptr;
+#define NEW_REQUIRED_FUNCTION(fn) extern TYPEOF(fn)* fn##_ptr;
+#define LIGHTUP_FUNCTION(fn) extern TYPEOF(fn)* fn##_ptr;
+#define FALLBACK_FUNCTION(fn) extern TYPEOF(fn)* fn##_ptr;
+#define RENAMED_FUNCTION(fn,oldfn) extern TYPEOF(fn)* fn##_ptr;
+#define LEGACY_FUNCTION(fn) extern TYPEOF(fn)* fn##_ptr;
 FOR_ALL_OPENSSL_FUNCTIONS
 #undef LEGACY_FUNCTION
 #undef RENAMED_FUNCTION
@@ -855,6 +859,7 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define SSL_ctrl SSL_ctrl_ptr
 #define SSL_set_quiet_shutdown SSL_set_quiet_shutdown_ptr
 #define SSL_CTX_check_private_key SSL_CTX_check_private_key_ptr
+#define SSL_CTX_config SSL_CTX_config_ptr
 #define SSL_CTX_ctrl SSL_CTX_ctrl_ptr
 #define SSL_CTX_free SSL_CTX_free_ptr
 #define SSL_CTX_new SSL_CTX_new_ptr
@@ -872,6 +877,7 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define SSL_CTX_use_PrivateKey SSL_CTX_use_PrivateKey_ptr
 #define SSL_do_handshake SSL_do_handshake_ptr
 #define SSL_free SSL_free_ptr
+#define SSL_get_ciphers SSL_get_ciphers_ptr
 #define SSL_get_client_CA_list SSL_get_client_CA_list_ptr
 #define SSL_get_current_cipher SSL_get_current_cipher_ptr
 #define SSL_get_error SSL_get_error_ptr
@@ -986,6 +992,7 @@ FOR_ALL_OPENSSL_FUNCTIONS
 // type-safe OPENSSL_sk_num
 #define sk_ASN1_OBJECT_num(stack) OPENSSL_sk_num((const OPENSSL_STACK*)(1 ? stack : (const STACK_OF(ASN1_OBJECT)*)0))
 #define sk_GENERAL_NAME_num(stack) OPENSSL_sk_num((const OPENSSL_STACK*)(1 ? stack : (const STACK_OF(GENERAL_NAME)*)0))
+#define sk_SSL_CIPHER_num(stack) OPENSSL_sk_num((const OPENSSL_STACK*)(1 ? stack : (const STACK_OF(SSL_CIPHER)*)0))
 #define sk_X509_NAME_num(stack) OPENSSL_sk_num((const OPENSSL_STACK*)(1 ? stack : (const STACK_OF(X509_NAME)*)0))
 #define sk_X509_num(stack) OPENSSL_sk_num((const OPENSSL_STACK*)(1 ? stack : (const STACK_OF(X509)*)0))
 

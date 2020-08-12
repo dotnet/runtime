@@ -35,6 +35,9 @@ namespace System.Net.Http
             }
         }
 
+        /// <summary>
+        /// Gets a value that indicates whether the handler is supported on the current platform.
+        /// </summary>
         public static bool IsSupported => true;
 
         public bool UseCookies
@@ -277,6 +280,10 @@ namespace System.Net.Http
             }
         }
 
+        /// <summary>
+        /// Gets or sets a value that indicates whether additional HTTP/2 connections can be established to the same server
+        /// when the maximum of concurrent streams is reached on all existing connections.
+        /// </summary>
         public bool EnableMultipleHttp2Connections
         {
             get => _settings._enableMultipleHttp2Connections;

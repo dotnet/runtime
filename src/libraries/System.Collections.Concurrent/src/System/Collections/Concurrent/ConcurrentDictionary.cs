@@ -344,7 +344,7 @@ namespace System.Collections.Concurrent
         /// <param name="value">The variable into which the removed value, if found, is stored.</param>
         /// <param name="matchValue">Whether removal of the key is conditional on its value.</param>
         /// <param name="oldValue">The conditional value to compare against if <paramref name="matchValue"/> is true</param>
-        private bool TryRemoveInternal(TKey key, [MaybeNullWhen(false)] out TValue value, bool matchValue, [AllowNull] TValue oldValue)
+        private bool TryRemoveInternal(TKey key, [MaybeNullWhen(false)] out TValue value, bool matchValue, TValue? oldValue)
         {
             IEqualityComparer<TKey>? comparer = _comparer;
             int hashcode = comparer is null ? key.GetHashCode() : comparer.GetHashCode(key);
@@ -375,7 +375,7 @@ namespace System.Collections.Concurrent
                                 bool valuesMatch = EqualityComparer<TValue>.Default.Equals(oldValue, curr._value);
                                 if (!valuesMatch)
                                 {
-                                    value = default!;
+                                    value = default;
                                     return false;
                                 }
                             }

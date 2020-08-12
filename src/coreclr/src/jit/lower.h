@@ -8,6 +8,7 @@ XX                               Lower                                       XX
 XX                                                                           XX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 */
 
 #ifndef _LOWER_H_
@@ -326,12 +327,12 @@ private:
     void LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cmpOp);
     void LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node);
     void LowerHWIntrinsicDot(GenTreeHWIntrinsic* node);
-    void LowerFusedMultiplyAdd(GenTreeHWIntrinsic* node);
-
 #if defined(TARGET_XARCH)
+    void LowerFusedMultiplyAdd(GenTreeHWIntrinsic* node);
     void LowerHWIntrinsicToScalar(GenTreeHWIntrinsic* node);
 #elif defined(TARGET_ARM64)
     bool IsValidConstForMovImm(GenTreeHWIntrinsic* node);
+    void LowerHWIntrinsicFusedMultiplyAddScalar(GenTreeHWIntrinsic* node);
 #endif // !TARGET_XARCH && !TARGET_ARM64
 
     union VectorConstant {
@@ -531,6 +532,8 @@ public:
     // Return true if 'node' is a containable HWIntrinsic op.
     bool IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* containingNode, GenTree* node, bool* supportsRegOptional);
 #endif // FEATURE_HW_INTRINSICS
+
+    static void TransformUnusedIndirection(GenTreeIndir* ind, Compiler* comp, BasicBlock* block);
 
 private:
     static bool NodesAreEquivalentLeaves(GenTree* candidate, GenTree* storeInd);

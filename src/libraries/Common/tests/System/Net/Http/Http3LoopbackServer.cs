@@ -28,7 +28,7 @@ namespace System.Net.Test.Common
             var sslOpts = new SslServerAuthenticationOptions
             {
                 EnabledSslProtocols = options.SslProtocols,
-                ApplicationProtocols = new List<SslApplicationProtocol> { SslApplicationProtocol.Http3 },
+                ApplicationProtocols = new List<SslApplicationProtocol> { new SslApplicationProtocol("h3") },
                 //ServerCertificate = _cert,
                 ClientCertificateRequired = false
             };
@@ -66,7 +66,7 @@ namespace System.Net.Test.Common
     {
         public static Http3LoopbackServerFactory Singleton { get; } = new Http3LoopbackServerFactory();
 
-        public override Version Version => HttpVersion.Version30;
+        public override Version Version { get; } = new Version(3, 0);
 
         public override GenericLoopbackServer CreateServer(GenericLoopbackOptions options = null)
         {

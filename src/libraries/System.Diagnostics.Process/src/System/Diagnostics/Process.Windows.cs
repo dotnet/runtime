@@ -47,7 +47,7 @@ namespace System.Diagnostics
         }
 
         [CLSCompliant(false)]
-        [MinimumOSPlatform("windows7.0")]
+        [SupportedOSPlatform("windows")]
         public static Process? Start(string fileName, string userName, SecureString password, string domain)
         {
             ProcessStartInfo startInfo = new ProcessStartInfo(fileName);
@@ -59,7 +59,7 @@ namespace System.Diagnostics
         }
 
         [CLSCompliant(false)]
-        [MinimumOSPlatform("windows7.0")]
+        [SupportedOSPlatform("windows")]
         public static Process? Start(string fileName, string arguments, string userName, SecureString password, string domain)
         {
             ProcessStartInfo startInfo = new ProcessStartInfo(fileName, arguments);

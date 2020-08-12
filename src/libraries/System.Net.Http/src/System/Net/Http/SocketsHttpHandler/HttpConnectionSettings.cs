@@ -69,7 +69,7 @@ namespace System.Net.Http
         {
             bool allowHttp2 = AllowHttp2;
             _maxHttpVersion =
-                AllowDraftHttp3 && allowHttp2 ? HttpVersion.Version30 :
+                AllowDraftHttp3 && allowHttp2 ? Http3Connection.HttpVersion30 :
                 allowHttp2 ? HttpVersion.Version20 :
                 HttpVersion.Version11;
             _allowUnencryptedHttp2 = allowHttp2 && AllowUnencryptedHttp2;

@@ -42,7 +42,7 @@ enum ti_types
 namespace
 {
 #endif // _MSC_VER
-constexpr char* g_ti_type_names_map[] = {
+const char* g_ti_type_names_map[] = {
 #define DEF_TI(ti, nm) nm,
 #include "titypes.h"
 #undef DEF_TI
@@ -57,7 +57,7 @@ constexpr char* g_ti_type_names_map[] = {
 namespace
 {
 #endif //  _MSC_VER
-constexpr ti_types g_jit_types_map[] = {
+const ti_types g_jit_types_map[] = {
 #define DEF_TP(tn, nm, jitType, verType, sz, sze, asze, st, al, tf, howUsed) verType,
 #include "typelist.h"
 #undef DEF_TP
@@ -92,7 +92,7 @@ inline ti_types varType2tiType(var_types type)
 namespace
 {
 #endif // _MSC_VER
-constexpr ti_types g_ti_types_map[CORINFO_TYPE_COUNT] = {
+const ti_types g_ti_types_map[CORINFO_TYPE_COUNT] = {
     // see the definition of enum CorInfoType in file inc/corinfo.h
     TI_ERROR,  // CORINFO_TYPE_UNDEF           = 0x0,
     TI_ERROR,  // CORINFO_TYPE_VOID            = 0x1,

@@ -70,7 +70,7 @@ namespace Tracing.Tests.Common
                 foreach ((string key, string value) in environment)
                     process.StartInfo.Environment.Add(key, value);
                 process.StartInfo.FileName = Process.GetCurrentProcess().MainModule.FileName;
-                process.StartInfo.Arguments = new Uri(currentAssembly.CodeBase).LocalPath + " 0";
+                process.StartInfo.Arguments = new Uri(currentAssembly.Location).LocalPath + " 0";
                 process.StartInfo.RedirectStandardOutput = true;
                 process.StartInfo.RedirectStandardInput = true;
                 process.StartInfo.RedirectStandardError = true;

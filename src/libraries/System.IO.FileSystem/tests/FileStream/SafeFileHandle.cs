@@ -4,7 +4,6 @@
 using Microsoft.Win32.SafeHandles;
 using System;
 using System.IO;
-using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -105,7 +104,7 @@ namespace System.IO.Tests
 
                     fs.WriteByte(0);
                     fsr.Position++;
-                    if (useAsync && RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) // Async I/O behaviors differ due to kernel-based implementation on Windows
+                    if (useAsync && OperatingSystem.IsWindows()) // Async I/O behaviors differ due to kernel-based implementation on Windows
                     {
                         Assert.Throws<IOException>(() => FSAssert.CompletesSynchronously(fs.ReadAsync(new byte[1], 0, 1)));
                     }
