@@ -24,6 +24,7 @@ namespace System.Net.Test.Common
         private Stream _connectionStream;
         private TaskCompletionSource<bool> _ignoredSettingsAckPromise;
         private bool _ignoreWindowUpdates;
+        private TaskCompletionSource<PingFrame> _expectPingFrame;
         private readonly TimeSpan _timeout;
         private int _lastStreamId;
 
@@ -186,6 +187,13 @@ namespace System.Net.Test.Common
                 return await ReadFrameAsync(cancellationToken).ConfigureAwait(false);
             }
 
+            if (_expectPingFrame != null && header.Type == FrameType.Ping)
+            {
+                _expectPingFrame.SetResult(PingFrame.ReadFrom(header, data));
+                _expectPingFrame = null;
+                return await ReadFrameAsync(cancellationToken).ConfigureAwait(false);
+            }
+
             // Construct the correct frame type and return it.
             switch (header.Type)
             {
@@ -243,6 +251,15 @@ namespace System.Net.Test.Common
         public void IgnoreWindowUpdates()
         {
             _ignoreWindowUpdates = true;
+        }
+
+        // Set up loopback server to expect PING frames among other frames.
+        // Once PING frame is read in ReadFrameAsync, the returned task is completed.
+        // The returned task is canceled in ReadPingAsync if no PING frame has been read so far.
+        public Task<PingFrame> ExpectPingFrameAsync()
+        {
+            _expectPingFrame ??= new TaskCompletionSource<PingFrame>();
+            return _expectPingFrame.Task;
         }
 
         public async Task ReadRstStreamAsync(int streamId)
@@ -677,6 +694,9 @@ namespace System.Net.Test.Common
 
         public async Task<PingFrame> ReadPingAsync(TimeSpan timeout)
         {
+            _expectPingFrame?.TrySetCanceled();
+            _expectPingFrame = null;
+
             Frame frame = await ReadFrameAsync(timeout).ConfigureAwait(false);
             Assert.NotNull(frame);
             Assert.Equal(FrameType.Ping, frame.Type);

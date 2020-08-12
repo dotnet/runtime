@@ -307,26 +307,31 @@ namespace System.Net.Http.Functional.Tests
 
         public static IEnumerable<object[]> KeepAliveTestDataSource()
         {
-            yield return new object[] { Timeout.InfiniteTimeSpan, TimeSpan.FromSeconds(0), HttpKeepAlivePingPolicy.Always, false, false, false };
-            yield return new object[] { TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(0), HttpKeepAlivePingPolicy.WithActiveRequests, true, false, false };
-            yield return new object[] { TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(0), HttpKeepAlivePingPolicy.Always, true, true, false };
-            yield return new object[] { TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(5), HttpKeepAlivePingPolicy.WithActiveRequests, true, true, true };
+            yield return new object[] { Timeout.InfiniteTimeSpan, HttpKeepAlivePingPolicy.Always, false };
+            yield return new object[] { TimeSpan.FromSeconds(1), HttpKeepAlivePingPolicy.WithActiveRequests, false };
+            yield return new object[] { TimeSpan.FromSeconds(1), HttpKeepAlivePingPolicy.Always, false };
+            yield return new object[] { TimeSpan.FromSeconds(1), HttpKeepAlivePingPolicy.WithActiveRequests, true };
         }
 
         [OuterLoop("Significant delay.")]
         [Theory]
         [MemberData(nameof(KeepAliveTestDataSource))]
-        public async Task KeepAlive(TimeSpan keepAlivePingDelay, TimeSpan pongDelay, HttpKeepAlivePingPolicy keepAlivePingPolicy, bool expectStreamPing,
-            bool expectPingWithoutStream, bool expectRequestFail)
+        public async Task KeepAlive(TimeSpan keepAlivePingDelay, HttpKeepAlivePingPolicy keepAlivePingPolicy, bool expectRequestFail)
         {
-            var pingTimeout = keepAlivePingDelay.Add(TimeSpan.FromSeconds(4));
+            TimeSpan pingTimeout = TimeSpan.FromSeconds(5);
+            // Simulate failure by delaying the pong, otherwise send it immediately.
+            TimeSpan pongDelay = expectRequestFail ? pingTimeout * 2 : TimeSpan.Zero;
+            // Pings are send only if KeepAlivePingDelay is not infinite.
+            bool expectStreamPing = keepAlivePingDelay != Timeout.InfiniteTimeSpan;
+            // Pings (regardless ongoing communication) are send only if sending is on and policy is set to always.
+            bool expectPingWithoutStream = expectStreamPing && keepAlivePingPolicy == HttpKeepAlivePingPolicy.Always;
 
             await Http2LoopbackServer.CreateClientAndServerAsync(
                 async uri =>
                 {
                     SocketsHttpHandler handler = new SocketsHttpHandler()
                     {
-                        KeepAlivePingTimeout = TimeSpan.FromSeconds(1),
+                        KeepAlivePingTimeout = pingTimeout,
                         KeepAlivePingPolicy = keepAlivePingPolicy,
                         KeepAlivePingDelay = keepAlivePingDelay
                     };
@@ -339,9 +344,13 @@ namespace System.Net.Http.Functional.Tests
                     await client.GetStringAsync(uri);
                     // Request under the test scope.
                     if (expectRequestFail)
+                    {
                         await Assert.ThrowsAsync<HttpRequestException>(() => client.GetStringAsync(uri));
+                    }
                     else
+                    {
                         await client.GetStringAsync(uri);
+                    }
 
                     // Let connection live for a while.
                     await Task.Delay(pingTimeout);
@@ -349,6 +358,9 @@ namespace System.Net.Http.Functional.Tests
                 async server =>
                 {
                     using Http2LoopbackConnection connection = await server.EstablishConnectionAsync();
+
+                    Task<PingFrame> receivePingTask = expectStreamPing ? connection.ExpectPingFrameAsync() : null;
+
                     // Warmup the connection.
                     int streamId1 = await connection.ReadRequestHeaderAsync();
                     await connection.SendDefaultResponseAsync(streamId1);
@@ -363,7 +375,15 @@ namespace System.Net.Http.Functional.Tests
                     }
                     else
                     {
-                        PingFrame ping = await connection.ReadPingAsync(pingTimeout);
+                        PingFrame ping;
+                        if (receivePingTask != null && receivePingTask.IsCompleted)
+                        {
+                            ping = await receivePingTask;
+                        }
+                        else
+                        {
+                            ping = await connection.ReadPingAsync(pingTimeout);
+                        }
                         await Task.Delay(pongDelay);
 
                         await connection.SendPingAckAsync(ping.Data);
@@ -372,7 +392,7 @@ namespace System.Net.Http.Functional.Tests
                     // Send response and close the stream.
                     if (expectRequestFail)
                     {
-                        await Assert.ThrowsAsync<IOException>(() => connection.SendDefaultResponseAsync(streamId2));
+                        await Assert.ThrowsAsync<NetworkException>(() => connection.SendDefaultResponseAsync(streamId2));
                         // As stream is closed we don't want to continue with sending data.
                         return;
                     }
