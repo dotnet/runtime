@@ -74,6 +74,10 @@ try {
 	}
 } catch (e) {
 }
+
+if (arguments === undefined)
+	arguments = [];
+
 //end of all the nice shell glue code.
 
 // set up a global variable to be accessed in App.init
@@ -115,7 +119,7 @@ setenv = {};
 runtime_args = [];
 enable_gc = true;
 enable_zoneinfo = false;
-while (args.length > 0) {
+while (args !== undefined && args.length > 0) {
 	if (args [0].startsWith ("--profile=")) {
 		var arg = args [0].substring ("--profile=".length);
 
