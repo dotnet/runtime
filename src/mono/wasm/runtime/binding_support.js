@@ -155,7 +155,7 @@ var BindingSupportLib = {
 					if (this.is_nested_array (elemRoot.value))
 						res.push (this.mono_array_to_js_array (elemRoot.value));
 					else
-						res.push (this.unbox_mono_obj (elemRoot.value));
+						res.push (this._unbox_mono_obj_rooted (elemRoot));
 				}
 			} finally {
 				MONO.mono_wasm_release_roots (arrayRoot, elemRoot);
@@ -186,13 +186,13 @@ var BindingSupportLib = {
 
 			var root = MONO.mono_wasm_new_root (mono_obj);
 			try {
-				return this._unbox_mono_obj_impl (root);
+				return this._unbox_mono_obj_rooted (root);
 			} finally {
 				root.release();
 			}
 		},
 
-		_unbox_mono_obj_impl: function (root) {
+		_unbox_mono_obj_rooted: function (root) {
 			var mono_obj = root.value;
 			
 			var type = this.mono_get_obj_type (mono_obj);
@@ -732,22 +732,26 @@ var BindingSupportLib = {
 
 			Module.setValue (exception_out, 0, "*");
 
-			var res = this.invoke_method (method, this_arg, args_start, exception_out);
-			var eh_res = Module.getValue (exception_out, "*");
+			var res = MONO.mono_wasm_new_root (this.invoke_method (method, this_arg, args_start, exception_out));
+			try {
+				var eh_res = Module.getValue (exception_out, "*");
 
-			Module._free (buffer);
+				Module._free (buffer);
 
-			if (eh_res != 0) {
-				var msg = this.conv_string (res);
-				throw new Error (msg); //the convention is that invoke_method ToString () any outgoing exception
+				if (eh_res != 0) {
+					var msg = this.conv_string (res.value);
+					throw new Error (msg); //the convention is that invoke_method ToString () any outgoing exception
+				}
+
+				if (has_args_marshal && has_args) {
+					if (args_marshal.length >= args.length && args_marshal [args.length] === "m")
+						return res.value;
+				}
+
+				return this._unbox_mono_obj_rooted (res);
+			} finally {
+				res.release ();
 			}
-
-			if (has_args_marshal && has_args) {
-				if (args_marshal.length >= args.length && args_marshal [args.length] === "m")
-					return res;
-			}
-
-			return this.unbox_mono_obj (res);
 		},
 
 		invoke_delegate: function (delegate_obj, js_args) {
