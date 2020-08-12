@@ -115,7 +115,7 @@ setenv = {};
 runtime_args = [];
 enable_gc = true;
 enable_zoneinfo = false;
-while (true) {
+while (args.length > 0) {
 	if (args [0].startsWith ("--profile=")) {
 		var arg = args [0].substring ("--profile=".length);
 
@@ -261,6 +261,11 @@ var App = {
 			init ("");
 		}
 
+		if (args.length == 0) {
+			fail_exec ("Missing required --run argument");
+			return;
+		}
+
 		if (args[0] == "--regression") {
 			var exec_regression = Module.cwrap ('mono_wasm_exec_regression', 'number', ['number', 'string'])
 
@@ -353,7 +358,7 @@ var App = {
 
 			return;
 		} else {
-			fail_exec ("Unhanded argument: " + args [0]);
+			fail_exec ("Unhandled argument: " + args [0]);
 		}
 	},
 	call_test_method: function (method_name, args) {
