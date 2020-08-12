@@ -20,8 +20,8 @@ namespace Microsoft.NET.HostModel.Bundle
 
         public FileSpec(string sourcePath, string bundleRelativePath)
         {
-            SourcePath = NormalizeDirectorySeparator(sourcePath);
-            BundleRelativePath = NormalizeDirectorySeparator(bundleRelativePath);
+            SourcePath = sourcePath;
+            BundleRelativePath = bundleRelativePath;
             Excluded = false;
         }
 
@@ -32,16 +32,6 @@ namespace Microsoft.NET.HostModel.Bundle
         }
 
         public override string ToString() => $"SourcePath: {SourcePath}, RelativePath: {BundleRelativePath} {(Excluded ? "[Excluded]" : "")}";
-
-        private static string NormalizeDirectorySeparator(string path)
-        {
-            if (string.IsNullOrWhiteSpace(path))
-            {
-                return path;
-            }
-
-            return path.Replace('\\', '/');
-        }
     }
 }
 

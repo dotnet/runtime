@@ -28,7 +28,7 @@ namespace Microsoft.NET.HostModel.Bundle
         public FileEntry(FileType fileType, string relativePath, long offset, long size)
         {
             Type = fileType;
-            RelativePath = relativePath.Replace(Path.DirectorySeparatorChar, DirectorySeparatorChar);
+            RelativePath = relativePath.Replace('\\', DirectorySeparatorChar);
             Offset = offset;
             Size = size;
         }
