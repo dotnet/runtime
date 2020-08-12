@@ -113,11 +113,11 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.Linux)]
+        [PlatformSpecific(TestPlatforms.Linux)]
         public static void AiaFetchDelayed()
         {
             CertificateAuthority.BuildPrivatePki(
-                PkiOptions.AllRevocation,
+                PkiOptions.OcspEverywhere,
                 out RevocationResponder responder,
                 out CertificateAuthority rootAuthority,
                 out CertificateAuthority intermediateAuthority,
@@ -132,7 +132,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
             using (X509Certificate2 rootCert = rootAuthority.CloneIssuerCert())
             using (X509Certificate2 intermediateCert = intermediateAuthority.CloneIssuerCert())
             {
-                TimeSpan delay = TimeSpan.FromSeconds(3);
+                TimeSpan delay = TimeSpan.FromSeconds(1);
 
                 X509Chain chain = holder.Chain;
                 responder.ResponseDelay = delay;
@@ -144,7 +144,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
                 chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
 
                 Stopwatch watch = Stopwatch.StartNew();
-                Assert.True(chain.Build(endEntityCert));
+                Assert.True(chain.Build(endEntityCert), GetFlags(chain, endEntityCert.Thumbprint).ToString());
                 watch.Stop();
 
                 Assert.True(watch.Elapsed >= delay);
