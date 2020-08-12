@@ -57,6 +57,7 @@ namespace System
         }
 
         [ConditionalFact(nameof(ManualTestsEnabled))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/40735", TestPlatforms.Windows)]
         public static void InPeek()
         {
             Console.WriteLine("Please type \"peek\" (without the quotes). You should see it as you type:");
@@ -112,19 +113,11 @@ namespace System
 
         public static IEnumerable<object[]> GetKeyChords()
         {
-            yield return MkConsoleKeyInfo('\x01', ConsoleKey.A, ConsoleModifiers.Control);
-            yield return MkConsoleKeyInfo('\x01', ConsoleKey.A, ConsoleModifiers.Control | ConsoleModifiers.Alt);
+            yield return MkConsoleKeyInfo('\x02', ConsoleKey.B, ConsoleModifiers.Control);
+            yield return MkConsoleKeyInfo(OperatingSystem.IsWindows() ? '\x00' : '\x02', ConsoleKey.B, ConsoleModifiers.Control | ConsoleModifiers.Alt);
             yield return MkConsoleKeyInfo('\r', ConsoleKey.Enter, (ConsoleModifiers)0);
-
-            if (OperatingSystem.IsWindows())
-            {
-                // windows will report '\n' as 'Ctrl+Enter', which is typically not picked up by Unix terminals
-                yield return MkConsoleKeyInfo('\n', ConsoleKey.Enter, ConsoleModifiers.Control);
-            }
-            else
-            {
-                yield return MkConsoleKeyInfo('\n', ConsoleKey.J, ConsoleModifiers.Control);
-            }
+            // windows will report '\n' as 'Ctrl+Enter', which is typically not picked up by Unix terminals
+            yield return MkConsoleKeyInfo('\n', OperatingSystem.IsWindows() ? ConsoleKey.Enter : ConsoleKey.J, ConsoleModifiers.Control);
 
             static object[] MkConsoleKeyInfo (char keyChar, ConsoleKey consoleKey, ConsoleModifiers modifiers)
             {
@@ -225,7 +218,7 @@ namespace System
                 }
             }
 
-            AssertUserExpectedResults("the arrow keys move around the screen as expected with no other bad artificts");
+            AssertUserExpectedResults("the arrow keys move around the screen as expected with no other bad artifacts");
         }
 
         [ConditionalFact(nameof(ManualTestsEnabled))]
