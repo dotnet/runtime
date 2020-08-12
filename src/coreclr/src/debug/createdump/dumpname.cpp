@@ -16,20 +16,18 @@
 //  %%  A single % character.
 //  %d  PID of dumped process (for backwards createdump compatibility).
 //  %p  PID of dumped process.
-//  %P  PID of dumped process.
 //  %e  The process executable filename.
-//  %E  The process executable filename.
 //  %h  Hostname return by gethostname().
 //  %t  Time of dump, expressed as seconds since the Epoch, 1970-01-01 00:00:00 +0000 (UTC).
 //
 // Unsupported:
 //
 //  %c  Core file size soft resource limit of crashing process.
+//  %E  Pathname of executable, with slashes ('/') replaced by exclamation marks ('!').
 //  %g  Numeric real GID of dumped process.
-//  %i  TID of thread that triggered core dump, as seen in the PID
-//      namespace in which the thread resides.
-//  %I  TID of thread that triggered core dump, as seen in the
-//      initial PID namespace.
+//  %i  TID of thread that triggered core dump, as seen in the PID namespace in which the thread resides.
+//  %I  TID of thread that triggered core dump, as seen in the initial PID namespace.
+//  %P  PID of dumped process, as seen in the initial PID namespace.
 //  %s  Number of signal causing dump.
 //  %u  Numeric real UID of dumped process.
 //
@@ -68,7 +66,6 @@ FormatDumpName(std::string& name, const char* pattern, const char* exename, int 
                 // process Id
                 case 'd':
                 case 'p':
-                case 'P':
                     name.append(std::to_string(pid));
                     break;
 
@@ -103,9 +100,6 @@ FormatDumpName(std::string& name, const char* pattern, const char* exename, int 
 
                 // executable file path with / replaced with !
                 case 'E':
-                    name.append(exename);
-                    break;
-
                 // signal number that caused the dump
                 case 's':
                 // gid
@@ -117,6 +111,8 @@ FormatDumpName(std::string& name, const char* pattern, const char* exename, int 
                 // thread id that triggered the dump
                 case 'i': 
                 case 'I':
+                // pid of dumped process
+                case 'P':
                 default:
                     fprintf(stderr, "Invalid dump name format char '%c'\n", *p);
                     return false;

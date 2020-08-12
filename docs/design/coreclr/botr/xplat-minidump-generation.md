@@ -94,9 +94,7 @@ As of .NET 5.0, the following subset of the core pattern (see [core](https://man
     %%  A single % character.
     %d  PID of dumped process (for backwards createdump compatibility).
     %p  PID of dumped process.
-    %P  PID of dumped process.
     %e  The process executable filename.
-    %E  The process executable filename.
     %h  Hostname return by gethostname().
     %t  Time of dump, expressed as seconds since the Epoch, 1970-01-01 00:00:00 +0000 (UTC).
 

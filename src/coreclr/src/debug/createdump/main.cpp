@@ -12,7 +12,11 @@
 #endif
 
 const char* g_help = "createdump [options] pid\n"
-"-f, --name - dump path and file name. The %p, %e, %h %t format characters are supported. The default is '" DEFAULT_DUMP_PATH DEFAULT_DUMP_TEMPLATE "'\n"
+"-f, --name - dump path and file name. The default is '" DEFAULT_DUMP_PATH DEFAULT_DUMP_TEMPLATE "'. These specifiers are substituted with following values:\n"
+"   %p  PID of dumped process.\n"
+"   %e  The process executable filename.\n"
+"   %h  Hostname return by gethostname().\n"
+"   %t  Time of dump, expressed as seconds since the Epoch, 1970-01-01 00:00:00 +0000 (UTC).\n"
 "-n, --normal - create minidump.\n"
 "-h, --withheap - create minidump with heap (default).\n"
 "-t, --triage - create triage minidump.\n"
