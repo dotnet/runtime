@@ -1080,9 +1080,15 @@ interp_throw (ThreadContext *context, MonoException *ex, InterpFrame *frame, con
 	g_assert (context->has_resume_state);
 }
 
+// We conservatively pin exception object here to avoid tweaking the
+// numerous call sites of this macro, even though, in a few cases,
+// this is not needed.
 #define THROW_EX_GENERAL(exception,ex_ip, rethrow)		\
 	do {							\
-		interp_throw (context, (exception), (frame), (ex_ip), (rethrow)); \
+		MonoException *__ex = (exception);		\
+		MONO_HANDLE_ASSIGN_RAW (tmp_handle, (MonoObject*)__ex); \
+		interp_throw (context, __ex, (frame), (ex_ip), (rethrow)); \
+		MONO_HANDLE_ASSIGN_RAW (tmp_handle, (MonoObject*)NULL); \
 		goto resume;							  \
 	} while (0)
 
