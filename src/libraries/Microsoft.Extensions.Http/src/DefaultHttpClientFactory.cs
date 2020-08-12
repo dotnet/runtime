@@ -40,6 +40,7 @@ namespace Microsoft.Extensions.Http
         private Timer _cleanupTimer;
         private readonly object _cleanupTimerLock;
         private readonly object _cleanupActiveLock;
+        private readonly HttpMessageHandlerBuilder _builder;
 
         // Collection of 'active' handlers.
         //
@@ -91,6 +92,7 @@ namespace Microsoft.Extensions.Http
             }
 
             _services = services;
+            _builder = _services.GetRequiredService<HttpMessageHandlerBuilder>();
             _scopeFactory = scopeFactory;
             _optionsMonitor = optionsMonitor;
             _filters = filters.ToArray();
@@ -103,7 +105,7 @@ namespace Microsoft.Extensions.Http
             {
                 return new Lazy<ActiveHandlerTrackingEntry>(() =>
                 {
-                    return CreateHandlerEntry(name);
+                    return CreateHandlerEntry(name, _builder);
                 }, LazyThreadSafetyMode.ExecutionAndPublication);
             };
 
@@ -148,7 +150,7 @@ namespace Microsoft.Extensions.Http
         }
 
         // Internal for tests
-        internal ActiveHandlerTrackingEntry CreateHandlerEntry(string name)
+        internal ActiveHandlerTrackingEntry CreateHandlerEntry(string name, HttpMessageHandlerBuilder builder)
         {
             IServiceProvider services = _services;
             var scope = (IServiceScope)null;
@@ -162,7 +164,6 @@ namespace Microsoft.Extensions.Http
 
             try
             {
-                HttpMessageHandlerBuilder builder = services.GetRequiredService<HttpMessageHandlerBuilder>();
                 builder.Name = name;
 
                 // This is similar to the initialization pattern in:
