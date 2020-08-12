@@ -523,13 +523,13 @@ namespace System.Net.Http.Headers
     public readonly struct HeaderStringValues : System.Collections.Generic.IEnumerable<string>
     {
         public HeaderStringValues(string value) { }
-        public HeaderStringValues(System.Collections.Generic.IEnumerable<string?> value) { }
+        public HeaderStringValues(System.Collections.Generic.IEnumerable<string> value) { }
         public Enumerator GetEnumerator() { throw null; }
         System.Collections.Generic.IEnumerator<string> System.Collections.Generic.IEnumerable<string>.GetEnumerator() { throw null; }
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { throw null; }
         public struct Enumerator : System.Collections.Generic.IEnumerator<string>
         {
-            public Enumerator(System.Collections.Generic.IEnumerable<string?>? values, string? value) { }
+            public Enumerator(System.Collections.Generic.IEnumerable<string>? values, string? value) { }
             public bool MoveNext() { throw null; }
             public readonly string Current { get { throw null; } }
             public void Dispose() { throw null; }

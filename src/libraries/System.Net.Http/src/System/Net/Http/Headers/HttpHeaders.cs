@@ -1432,7 +1432,7 @@ namespace System.Net.Http.Headers
 
     public readonly struct HeaderStringValues : IEnumerable<string>
     {
-        private readonly IEnumerable<string?>? _values;
+        private readonly IEnumerable<string>? _values;
         private readonly string? _value;
 
         public HeaderStringValues(string value)
@@ -1441,7 +1441,7 @@ namespace System.Net.Http.Headers
             _values = null;
         }
 
-        public HeaderStringValues(IEnumerable<string?> value)
+        public HeaderStringValues(IEnumerable<string> value)
         {
             _values = value;
             _value = null;
@@ -1455,11 +1455,11 @@ namespace System.Net.Http.Headers
 
         public struct Enumerator : IEnumerator<string>
         {
-            private readonly IEnumerator<string?>? _values;
+            private readonly IEnumerator<string>? _values;
             private readonly string? _value;
             private bool _completed;
 
-            public Enumerator(IEnumerable<string?>? values, string? value)
+            public Enumerator(IEnumerable<string>? values, string? value)
             {
                 _values = values?.GetEnumerator();
                 _value = value;
