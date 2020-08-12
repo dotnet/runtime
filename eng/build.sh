@@ -139,16 +139,17 @@ showSubsetHelp()
 assertInstalledDependency()
 {
   dependency="$(echo "$1" | awk '{print tolower($0)}')"
+  location="$(command -v $dependency)"
 
-  if ! which $dependency > /dev/null; then
+  if [ -z "$location" ]; then
     echo "$dependency is required to build this repo. Make sure to install it and try again."
     echo "For a full list of requirements, see https://github.com/dotnet/runtime/blob/master/docs/workflow/requirements/linux-requirements.md"
     exit 1
   fi
 }
 
-assertInstalledDependency 'git'
-assertInstalledDependency 'cmake'
+assertInstalledDependency 'CMake'
+assertInstalledDependency 'Git'
 
 arguments=''
 cmakeargs=''

@@ -1,6 +1,8 @@
 @echo off
 setlocal
 
+call "%~dp0eng\vs_tools_check.cmd"
+
 set _args=%*
 if "%~1"=="-?" set _args=-help
 

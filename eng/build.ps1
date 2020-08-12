@@ -102,9 +102,10 @@ function Get-Help() {
 
 function Assert-InstalledDependency($dependencyName)
 {
-  $envPath = $Env:Path
-  if (-Not $envPath -Match $dependencyName)
-  {
+  try {
+    Get-Command -Name $dependencyName -ErrorAction Stop >$null 2>&1
+  }
+  catch {
     Write-Host "$dependencyName is required to build this repo. Make sure to install it and try again."
     Write-Host "For a full list of requirements, see https://github.com/dotnet/runtime/blob/master/docs/workflow/requirements/windows-requirements.md"
     exit 1
@@ -138,7 +139,6 @@ if ($subset -eq 'help') {
 Assert-InstalledDependency("CMake")
 Assert-InstalledDependency("Git")
 Assert-GitLongPathsEnabled
-exit 0
 
 if ($vs) {
   . $PSScriptRoot\common\tools.ps1
