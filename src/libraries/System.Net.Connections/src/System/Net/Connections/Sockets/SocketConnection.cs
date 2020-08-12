@@ -14,7 +14,7 @@ namespace System.Net.Connections
     internal sealed class SocketConnection : Connection, IConnectionProperties
     {
         private readonly Socket _socket;
-        private readonly SocketsConnectionFactory? _factory;
+        private readonly SocketsConnectionFactory _factory;
         private readonly IConnectionProperties? _options;
         private Stream? _stream;
         private IDuplexPipe? _pipe;
@@ -23,7 +23,7 @@ namespace System.Net.Connections
         public override EndPoint? LocalEndPoint => _socket.LocalEndPoint;
         public override IConnectionProperties ConnectionProperties => this;
 
-        public SocketConnection(Socket socket, SocketsConnectionFactory? factory, IConnectionProperties? options)
+        public SocketConnection(Socket socket, SocketsConnectionFactory factory, IConnectionProperties? options)
         {
             _socket = socket;
             _factory = factory;
@@ -69,8 +69,8 @@ namespace System.Net.Connections
             return false;
         }
 
-        protected override Stream CreateStream() => _stream ??= _factory!.CreateStreamForConnection(_socket, _options);
+        protected override Stream CreateStream() => _stream ??= _factory.CreateStreamForConnection(_socket, _options);
 
-        protected override IDuplexPipe CreatePipe() => _pipe ??= _factory!.CreatePipeForConnection(_socket, _options);
+        protected override IDuplexPipe CreatePipe() => _pipe ??= _factory.CreatePipeForConnection(_socket, _options);
     }
 }
