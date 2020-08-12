@@ -190,8 +190,10 @@ namespace System.IO
         public System.IO.FileInfo CopyTo(string destFileName, bool overwrite) { throw null; }
         public System.IO.FileStream Create() { throw null; }
         public System.IO.StreamWriter CreateText() { throw null; }
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public void Decrypt() { }
         public override void Delete() { }
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public void Encrypt() { }
         public void MoveTo(string destFileName) { }
         public void MoveTo(string destFileName, bool overwrite) { }

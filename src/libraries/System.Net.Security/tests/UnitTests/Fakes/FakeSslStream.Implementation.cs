@@ -49,21 +49,7 @@ namespace System.Net.Security
 
         private ValueTask<int> ReadAsyncInternal<TReadAdapter>(TReadAdapter adapter, Memory<byte> buffer) => default;
 
-        private Task CheckEnqueueWriteAsync() => default;
-
-        private void CheckEnqueueWrite()
-        {
-        }
-
-        private ValueTask<int> CheckEnqueueReadAsync(Memory<byte> buffer) => default;
-
-        private int CheckEnqueueRead(Memory<byte> buffer) => default;
-
         private bool RemoteCertRequired => default;
-
-        private void CheckThrow(bool authSuccessCheck, bool shutdownCheck = false)
-        {
-        }
 
         private void CloseInternal()
         {

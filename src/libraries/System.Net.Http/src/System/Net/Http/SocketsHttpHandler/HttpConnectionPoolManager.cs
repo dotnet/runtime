@@ -272,7 +272,7 @@ namespace System.Net.Http
                 }
                 else
                 {
-                    // No explicit Host header.  Use host from uri.
+                    // No explicit Host header. Use host from uri.
                     sslHostName = uri.IdnHost;
                 }
             }

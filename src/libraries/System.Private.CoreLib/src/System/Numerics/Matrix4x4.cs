@@ -6,6 +6,7 @@ using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
+using System.Runtime.Intrinsics.Arm;
 using System.Runtime.Intrinsics.X86;
 
 namespace System.Numerics
@@ -1113,9 +1114,15 @@ namespace System.Numerics
             {
                 return Avx.Permute(value, control);
             }
-
-            Debug.Assert(Sse.IsSupported);
-            return Sse.Shuffle(value, value, control);
+            else if (Sse.IsSupported)
+            {
+                return Sse.Shuffle(value, value, control);
+            }
+            else
+            {
+                // Redundant test so we won't prejit remainder of this method on platforms without AdvSimd.
+                throw new PlatformNotSupportedException();
+            }
         }
 
         /// <summary>
@@ -1128,6 +1135,9 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe bool Invert(Matrix4x4 matrix, out Matrix4x4 result)
         {
+            // This implementation is based on the DirectX Math Library XMMatrixInverse method
+            // https://github.com/microsoft/DirectXMath/blob/master/Inc/DirectXMathMatrix.inl
+
             if (Sse.IsSupported)
             {
                 return SseImpl(matrix, out result);
@@ -1137,15 +1147,11 @@ namespace System.Numerics
 
             static unsafe bool SseImpl(Matrix4x4 matrix, out Matrix4x4 result)
             {
-                // Redundant test so we won't prejit remainder of this method
-                // on platforms without SSE.
                 if (!Sse.IsSupported)
                 {
+                    // Redundant test so we won't prejit remainder of this method on platforms without SSE.
                     throw new PlatformNotSupportedException();
                 }
-
-                // This implementation is based on the DirectX Math Library XMMInverse method
-                // https://github.com/microsoft/DirectXMath/blob/master/Inc/DirectXMathMatrix.inl
 
                 // Load the matrix values into rows
                 Vector128<float> row1 = Sse.LoadVector128(&matrix.M11);
@@ -1468,14 +1474,12 @@ namespace System.Numerics
             }
         }
 
-
         private struct CanonicalBasis
         {
             public Vector3 Row0;
             public Vector3 Row1;
             public Vector3 Row2;
         };
-
 
         private struct VectorBasis
         {
@@ -1755,7 +1759,31 @@ namespace System.Numerics
         /// <returns>The transposed matrix.</returns>
         public static unsafe Matrix4x4 Transpose(Matrix4x4 matrix)
         {
-            if (Sse.IsSupported)
+            if (AdvSimd.Arm64.IsSupported)
+            {
+                // This implementation is based on the DirectX Math Library XMMatrixTranspose method
+                // https://github.com/microsoft/DirectXMath/blob/master/Inc/DirectXMathMatrix.inl
+
+                Vector128<float> M11 = AdvSimd.LoadVector128(&matrix.M11);
+                Vector128<float> M31 = AdvSimd.LoadVector128(&matrix.M31);
+
+                Vector128<float> P00 = AdvSimd.Arm64.ZipLow(M11, M31);
+                Vector128<float> P01 = AdvSimd.Arm64.ZipHigh(M11, M31);
+
+                Vector128<float> M21 = AdvSimd.LoadVector128(&matrix.M21);
+                Vector128<float> M41 = AdvSimd.LoadVector128(&matrix.M41);
+
+                Vector128<float> P10 = AdvSimd.Arm64.ZipLow(M21, M41);
+                Vector128<float> P11 = AdvSimd.Arm64.ZipHigh(M21, M41);
+
+                AdvSimd.Store(&matrix.M11, AdvSimd.Arm64.ZipLow(P00, P10));
+                AdvSimd.Store(&matrix.M21, AdvSimd.Arm64.ZipHigh(P00, P10));
+                AdvSimd.Store(&matrix.M31, AdvSimd.Arm64.ZipLow(P01, P11));
+                AdvSimd.Store(&matrix.M41, AdvSimd.Arm64.ZipHigh(P01, P11));
+
+                return matrix;
+            }
+            else if (Sse.IsSupported)
             {
                 Vector128<float> row1 = Sse.LoadVector128(&matrix.M11);
                 Vector128<float> row2 = Sse.LoadVector128(&matrix.M21);
@@ -1806,7 +1834,16 @@ namespace System.Numerics
         /// <returns>The interpolated matrix.</returns>
         public static unsafe Matrix4x4 Lerp(Matrix4x4 matrix1, Matrix4x4 matrix2, float amount)
         {
-            if (Sse.IsSupported)
+            if (AdvSimd.IsSupported)
+            {
+                Vector128<float> amountVec = Vector128.Create(amount);
+                AdvSimd.Store(&matrix1.M11, VectorMath.Lerp(AdvSimd.LoadVector128(&matrix1.M11), AdvSimd.LoadVector128(&matrix2.M11), amountVec));
+                AdvSimd.Store(&matrix1.M21, VectorMath.Lerp(AdvSimd.LoadVector128(&matrix1.M21), AdvSimd.LoadVector128(&matrix2.M21), amountVec));
+                AdvSimd.Store(&matrix1.M31, VectorMath.Lerp(AdvSimd.LoadVector128(&matrix1.M31), AdvSimd.LoadVector128(&matrix2.M31), amountVec));
+                AdvSimd.Store(&matrix1.M41, VectorMath.Lerp(AdvSimd.LoadVector128(&matrix1.M41), AdvSimd.LoadVector128(&matrix2.M41), amountVec));
+                return matrix1;
+            }
+            else if (Sse.IsSupported)
             {
                 Vector128<float> amountVec = Vector128.Create(amount);
                 Sse.Store(&matrix1.M11, VectorMath.Lerp(Sse.LoadVector128(&matrix1.M11), Sse.LoadVector128(&matrix2.M11), amountVec));
@@ -1891,14 +1928,21 @@ namespace System.Numerics
         /// <returns>The negated matrix.</returns>
         public static unsafe Matrix4x4 operator -(Matrix4x4 value)
         {
-            if (Sse.IsSupported)
+            if (AdvSimd.IsSupported)
+            {
+                AdvSimd.Store(&value.M11, AdvSimd.Negate(AdvSimd.LoadVector128(&value.M11)));
+                AdvSimd.Store(&value.M21, AdvSimd.Negate(AdvSimd.LoadVector128(&value.M21)));
+                AdvSimd.Store(&value.M31, AdvSimd.Negate(AdvSimd.LoadVector128(&value.M31)));
+                AdvSimd.Store(&value.M41, AdvSimd.Negate(AdvSimd.LoadVector128(&value.M41)));
+                return value;
+            }
+            else if (Sse.IsSupported)
             {
                 Vector128<float> zero = Vector128<float>.Zero;
                 Sse.Store(&value.M11, Sse.Subtract(zero, Sse.LoadVector128(&value.M11)));
                 Sse.Store(&value.M21, Sse.Subtract(zero, Sse.LoadVector128(&value.M21)));
                 Sse.Store(&value.M31, Sse.Subtract(zero, Sse.LoadVector128(&value.M31)));
                 Sse.Store(&value.M41, Sse.Subtract(zero, Sse.LoadVector128(&value.M41)));
-
                 return value;
             }
 
@@ -1932,7 +1976,15 @@ namespace System.Numerics
         /// <returns>The resulting matrix.</returns>
         public static unsafe Matrix4x4 operator +(Matrix4x4 value1, Matrix4x4 value2)
         {
-            if (Sse.IsSupported)
+            if (AdvSimd.IsSupported)
+            {
+                AdvSimd.Store(&value1.M11, AdvSimd.Add(AdvSimd.LoadVector128(&value1.M11), AdvSimd.LoadVector128(&value2.M11)));
+                AdvSimd.Store(&value1.M21, AdvSimd.Add(AdvSimd.LoadVector128(&value1.M21), AdvSimd.LoadVector128(&value2.M21)));
+                AdvSimd.Store(&value1.M31, AdvSimd.Add(AdvSimd.LoadVector128(&value1.M31), AdvSimd.LoadVector128(&value2.M31)));
+                AdvSimd.Store(&value1.M41, AdvSimd.Add(AdvSimd.LoadVector128(&value1.M41), AdvSimd.LoadVector128(&value2.M41)));
+                return value1;
+            }
+            else if (Sse.IsSupported)
             {
                 Sse.Store(&value1.M11, Sse.Add(Sse.LoadVector128(&value1.M11), Sse.LoadVector128(&value2.M11)));
                 Sse.Store(&value1.M21, Sse.Add(Sse.LoadVector128(&value1.M21), Sse.LoadVector128(&value2.M21)));
@@ -1971,7 +2023,15 @@ namespace System.Numerics
         /// <returns>The result of the subtraction.</returns>
         public static unsafe Matrix4x4 operator -(Matrix4x4 value1, Matrix4x4 value2)
         {
-            if (Sse.IsSupported)
+            if (AdvSimd.IsSupported)
+            {
+                AdvSimd.Store(&value1.M11, AdvSimd.Subtract(AdvSimd.LoadVector128(&value1.M11), AdvSimd.LoadVector128(&value2.M11)));
+                AdvSimd.Store(&value1.M21, AdvSimd.Subtract(AdvSimd.LoadVector128(&value1.M21), AdvSimd.LoadVector128(&value2.M21)));
+                AdvSimd.Store(&value1.M31, AdvSimd.Subtract(AdvSimd.LoadVector128(&value1.M31), AdvSimd.LoadVector128(&value2.M31)));
+                AdvSimd.Store(&value1.M41, AdvSimd.Subtract(AdvSimd.LoadVector128(&value1.M41), AdvSimd.LoadVector128(&value2.M41)));
+                return value1;
+            }
+            else if (Sse.IsSupported)
             {
                 Sse.Store(&value1.M11, Sse.Subtract(Sse.LoadVector128(&value1.M11), Sse.LoadVector128(&value2.M11)));
                 Sse.Store(&value1.M21, Sse.Subtract(Sse.LoadVector128(&value1.M21), Sse.LoadVector128(&value2.M21)));
@@ -2010,7 +2070,53 @@ namespace System.Numerics
         /// <returns>The result of the multiplication.</returns>
         public static unsafe Matrix4x4 operator *(Matrix4x4 value1, Matrix4x4 value2)
         {
-            if (Sse.IsSupported)
+            if (AdvSimd.Arm64.IsSupported)
+            {
+                Unsafe.SkipInit(out Matrix4x4 result);
+
+                // Perform the operation on the first row
+
+                Vector128<float> M11 = AdvSimd.LoadVector128(&value1.M11);
+
+                Vector128<float> vX = AdvSimd.MultiplyBySelectedScalar(AdvSimd.LoadVector128(&value2.M11), M11, 0);
+                Vector128<float> vY = AdvSimd.MultiplyBySelectedScalar(AdvSimd.LoadVector128(&value2.M21), M11, 1);
+                Vector128<float> vZ = AdvSimd.Arm64.FusedMultiplyAddBySelectedScalar(vX, AdvSimd.LoadVector128(&value2.M31), M11, 2);
+                Vector128<float> vW = AdvSimd.Arm64.FusedMultiplyAddBySelectedScalar(vY, AdvSimd.LoadVector128(&value2.M41), M11, 3);
+
+                AdvSimd.Store(&result.M11, AdvSimd.Add(vZ, vW));
+
+                // Repeat for the other 3 rows
+
+                Vector128<float> M21 = AdvSimd.LoadVector128(&value1.M21);
+
+                vX = AdvSimd.MultiplyBySelectedScalar(AdvSimd.LoadVector128(&value2.M11), M21, 0);
+                vY = AdvSimd.MultiplyBySelectedScalar(AdvSimd.LoadVector128(&value2.M21), M21, 1);
+                vZ = AdvSimd.Arm64.FusedMultiplyAddBySelectedScalar(vX, AdvSimd.LoadVector128(&value2.M31), M21, 2);
+                vW = AdvSimd.Arm64.FusedMultiplyAddBySelectedScalar(vY, AdvSimd.LoadVector128(&value2.M41), M21, 3);
+
+                AdvSimd.Store(&result.M21, AdvSimd.Add(vZ, vW));
+
+                Vector128<float> M31 = AdvSimd.LoadVector128(&value1.M31);
+
+                vX = AdvSimd.MultiplyBySelectedScalar(AdvSimd.LoadVector128(&value2.M11), M31, 0);
+                vY = AdvSimd.MultiplyBySelectedScalar(AdvSimd.LoadVector128(&value2.M21), M31, 1);
+                vZ = AdvSimd.Arm64.FusedMultiplyAddBySelectedScalar(vX, AdvSimd.LoadVector128(&value2.M31), M31, 2);
+                vW = AdvSimd.Arm64.FusedMultiplyAddBySelectedScalar(vY, AdvSimd.LoadVector128(&value2.M41), M31, 3);
+
+                AdvSimd.Store(&result.M31, AdvSimd.Add(vZ, vW));
+
+                Vector128<float> M41 = AdvSimd.LoadVector128(&value1.M41);
+
+                vX = AdvSimd.MultiplyBySelectedScalar(AdvSimd.LoadVector128(&value2.M11), M41, 0);
+                vY = AdvSimd.MultiplyBySelectedScalar(AdvSimd.LoadVector128(&value2.M21), M41, 1);
+                vZ = AdvSimd.Arm64.FusedMultiplyAddBySelectedScalar(vX, AdvSimd.LoadVector128(&value2.M31), M41, 2);
+                vW = AdvSimd.Arm64.FusedMultiplyAddBySelectedScalar(vY, AdvSimd.LoadVector128(&value2.M41), M41, 3);
+
+                AdvSimd.Store(&result.M41, AdvSimd.Add(vZ, vW));
+
+                return result;
+            }
+            else if (Sse.IsSupported)
             {
                 Vector128<float> row = Sse.LoadVector128(&value1.M11);
                 Sse.Store(&value1.M11,
@@ -2082,7 +2188,16 @@ namespace System.Numerics
         /// <returns>The scaled matrix.</returns>
         public static unsafe Matrix4x4 operator *(Matrix4x4 value1, float value2)
         {
-            if (Sse.IsSupported)
+            if (AdvSimd.IsSupported)
+            {
+                Vector128<float> value2Vec = Vector128.Create(value2);
+                AdvSimd.Store(&value1.M11, AdvSimd.Multiply(AdvSimd.LoadVector128(&value1.M11), value2Vec));
+                AdvSimd.Store(&value1.M21, AdvSimd.Multiply(AdvSimd.LoadVector128(&value1.M21), value2Vec));
+                AdvSimd.Store(&value1.M31, AdvSimd.Multiply(AdvSimd.LoadVector128(&value1.M31), value2Vec));
+                AdvSimd.Store(&value1.M41, AdvSimd.Multiply(AdvSimd.LoadVector128(&value1.M41), value2Vec));
+                return value1;
+            }
+            else if (Sse.IsSupported)
             {
                 Vector128<float> value2Vec = Vector128.Create(value2);
                 Sse.Store(&value1.M11, Sse.Multiply(Sse.LoadVector128(&value1.M11), value2Vec));
@@ -2121,13 +2236,19 @@ namespace System.Numerics
         /// <returns>True if the given matrices are equal; False otherwise.</returns>
         public static unsafe bool operator ==(Matrix4x4 value1, Matrix4x4 value2)
         {
-            if (Sse.IsSupported)
+            if (AdvSimd.Arm64.IsSupported)
             {
-                return
-                    VectorMath.Equal(Sse.LoadVector128(&value1.M11), Sse.LoadVector128(&value2.M11)) &&
-                    VectorMath.Equal(Sse.LoadVector128(&value1.M21), Sse.LoadVector128(&value2.M21)) &&
-                    VectorMath.Equal(Sse.LoadVector128(&value1.M31), Sse.LoadVector128(&value2.M31)) &&
-                    VectorMath.Equal(Sse.LoadVector128(&value1.M41), Sse.LoadVector128(&value2.M41));
+                return VectorMath.Equal(AdvSimd.LoadVector128(&value1.M11), AdvSimd.LoadVector128(&value2.M11)) &&
+                       VectorMath.Equal(AdvSimd.LoadVector128(&value1.M21), AdvSimd.LoadVector128(&value2.M21)) &&
+                       VectorMath.Equal(AdvSimd.LoadVector128(&value1.M31), AdvSimd.LoadVector128(&value2.M31)) &&
+                       VectorMath.Equal(AdvSimd.LoadVector128(&value1.M41), AdvSimd.LoadVector128(&value2.M41));
+            }
+            else if (Sse.IsSupported)
+            {
+                return VectorMath.Equal(Sse.LoadVector128(&value1.M11), Sse.LoadVector128(&value2.M11)) &&
+                       VectorMath.Equal(Sse.LoadVector128(&value1.M21), Sse.LoadVector128(&value2.M21)) &&
+                       VectorMath.Equal(Sse.LoadVector128(&value1.M31), Sse.LoadVector128(&value2.M31)) &&
+                       VectorMath.Equal(Sse.LoadVector128(&value1.M41), Sse.LoadVector128(&value2.M41));
             }
 
             return (value1.M11 == value2.M11 && value1.M22 == value2.M22 && value1.M33 == value2.M33 && value1.M44 == value2.M44 && // Check diagonal element first for early out.
@@ -2144,7 +2265,14 @@ namespace System.Numerics
         /// <returns>True if the given matrices are not equal; False if they are equal.</returns>
         public static unsafe bool operator !=(Matrix4x4 value1, Matrix4x4 value2)
         {
-            if (Sse.IsSupported)
+            if (AdvSimd.Arm64.IsSupported)
+            {
+                return VectorMath.NotEqual(AdvSimd.LoadVector128(&value1.M11), AdvSimd.LoadVector128(&value2.M11)) ||
+                       VectorMath.NotEqual(AdvSimd.LoadVector128(&value1.M21), AdvSimd.LoadVector128(&value2.M21)) ||
+                       VectorMath.NotEqual(AdvSimd.LoadVector128(&value1.M31), AdvSimd.LoadVector128(&value2.M31)) ||
+                       VectorMath.NotEqual(AdvSimd.LoadVector128(&value1.M41), AdvSimd.LoadVector128(&value2.M41));
+            }
+            else if (Sse.IsSupported)
             {
                 return
                     VectorMath.NotEqual(Sse.LoadVector128(&value1.M11), Sse.LoadVector128(&value2.M11)) ||

@@ -281,7 +281,7 @@ namespace System
         Pa1 = 253,
         OemClear = 254,
     }
-    public readonly partial struct ConsoleKeyInfo
+    public readonly partial struct ConsoleKeyInfo : System.IEquatable<System.ConsoleKeyInfo>
     {
         private readonly int _dummyPrimitive;
         public ConsoleKeyInfo(char keyChar, System.ConsoleKey key, bool shift, bool alt, bool control) { throw null; }

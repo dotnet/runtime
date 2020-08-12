@@ -49,6 +49,7 @@ namespace System.Net.Http
         public static System.Net.IWebProxy DefaultProxy { get { throw null; } set { } }
         public System.Net.Http.Headers.HttpRequestHeaders DefaultRequestHeaders { get { throw null; } }
         public System.Version DefaultRequestVersion { get { throw null; } set { } }
+        public System.Net.Http.HttpVersionPolicy DefaultVersionPolicy { get { throw null; } set { } }
         public long MaxResponseContentBufferSize { get { throw null; } set { } }
         public System.TimeSpan Timeout { get { throw null; } set { } }
         public void CancelPendingRequests() { }
@@ -220,6 +221,7 @@ namespace System.Net.Http
         public HttpRequestOptions Options { get { throw null; } }
         public System.Uri? RequestUri { get { throw null; } set { } }
         public System.Version Version { get { throw null; } set { } }
+        public System.Net.Http.HttpVersionPolicy VersionPolicy { get { throw null; } set { } }
         public void Dispose() { }
         protected virtual void Dispose(bool disposing) { }
         public override string ToString() { throw null; }
@@ -270,6 +272,12 @@ namespace System.Net.Http
         protected virtual void Dispose(bool disposing) { }
         public System.Net.Http.HttpResponseMessage EnsureSuccessStatusCode() { throw null; }
         public override string ToString() { throw null; }
+    }
+    public enum HttpVersionPolicy
+    {
+        RequestVersionOrLower = 0,
+        RequestVersionOrHigher = 1,
+        RequestVersionExact = 2,
     }
     public abstract partial class MessageProcessingHandler : System.Net.Http.DelegatingHandler
     {
