@@ -51,6 +51,12 @@ struct EnvironmentHelper
     // It is encoded in the typical length-prefixed array format as defined in
     // the Diagnostics IPC Spec: https://github.com/dotnet/diagnostics/blob/master/documentation/design-docs/ipc-protocol.md
 
+    struct InitialPayload
+    {
+        uint32_t continuationSizeInBytes;
+        uint16_t future;
+    };
+
     // sent as: Array<Array<WCHAR>>
     NewArrayHolder<const WCHAR> Environment = nullptr;
 

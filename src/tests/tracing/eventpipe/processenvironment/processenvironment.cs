@@ -46,8 +46,10 @@ namespace Tracing.Tests.ProcessEnvironmentValidation
             Utils.Assert(response.Header.CommandSet == 0xFF, $"Response must have Server command set. Expected: 0xFF, Received: 0x{response.Header.CommandSet:X2}"); // server
             Utils.Assert(response.Header.CommandId == 0x00, $"Response must have OK command id. Expected: 0x00, Received: 0x{response.Header.CommandId:X2}"); // OK
 
-            UInt32 continuationSizeInBytes = BitConverter.ToUInt32(response.Payload);
+            UInt32 continuationSizeInBytes = BitConverter.ToUInt32(response.Payload[0..4]);
             Logger.logger.Log($"continuation size: {continuationSizeInBytes} bytes");
+            UInt16 future = BitConverter.ToUInt16(response.Payload[4..]);
+            Logger.logger.Log($"future value: {future}");
 
             using var memoryStream = new MemoryStream();
             Logger.logger.Log($"Starting to copy continuation");

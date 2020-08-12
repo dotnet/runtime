@@ -242,10 +242,10 @@ void ProcessDiagnosticsProtocolHelper::GetProcessEnvironment(DiagnosticsIpc::Ipc
     struct EnvironmentHelper helper = {};
     helper.PopulateEnvironment();
 
-    uint32_t nBytes = helper.GetEnvironmentBlockSize();
+    struct EnvironmentHelper::InitialPayload payload = { helper.GetEnvironmentBlockSize(), 0 };
 
     DiagnosticsIpc::IpcMessage ProcessEnvironmentResponse;
-    const bool fSuccess = ProcessEnvironmentResponse.Initialize(DiagnosticsIpc::GenericSuccessHeader, nBytes) ?
+    const bool fSuccess = ProcessEnvironmentResponse.Initialize(DiagnosticsIpc::GenericSuccessHeader, payload) ?
         ProcessEnvironmentResponse.Send(pStream) :
         DiagnosticsIpc::IpcMessage::SendErrorMessage(pStream, E_FAIL);
 
