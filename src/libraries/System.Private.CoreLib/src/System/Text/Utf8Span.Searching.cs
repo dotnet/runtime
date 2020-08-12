@@ -280,7 +280,9 @@ namespace System.Text
             }
             else
             {
-                idx = compareInfo.IndexOf(thisTranscodedToUtf16, otherTranscodedToUtf16, &matchLength, compareOptions, fromBeginning);
+                idx = (fromBeginning)
+                    ? compareInfo.IndexOf(thisTranscodedToUtf16, otherTranscodedToUtf16, compareOptions, out matchLength)
+                    : compareInfo.LastIndexOf(thisTranscodedToUtf16, otherTranscodedToUtf16, compareOptions, out matchLength);
             }
 #else
             Debug.Assert(comparisonType == StringComparison.OrdinalIgnoreCase);

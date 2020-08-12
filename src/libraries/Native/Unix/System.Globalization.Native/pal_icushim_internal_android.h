@@ -438,6 +438,7 @@ UCalendar * ucal_open(const UChar * zoneID, int32_t len, const char * locale, UC
 void ucal_set(UCalendar * cal, UCalendarDateFields field, int32_t value);
 void ucol_close(UCollator * coll);
 void ucol_closeElements(UCollationElements * elems);
+int32_t ucol_getOffset(const UCollationElements *elems);
 const UChar * ucol_getRules(const UCollator * coll, int32_t * length);
 int32_t ucol_getSortKey(const UCollator * coll, const UChar * source, int32_t sourceLength, uint8_t * result, int32_t resultLength);
 UCollationStrength ucol_getStrength(const UCollator * coll);
