@@ -39,7 +39,7 @@ namespace System.Net.Mail.Tests
         [Theory]
         [InlineData(Address, "\"John Doe\"")]
         [InlineData(Address, "\"\"")]
-        public void MailAddress_WithDoubleQuotesInBeginningAndInEndingDisplayAndMailAddress_ToStringShouldReturnDisplayNameEscapeSequenceAndAddressInAngleBrackets(string address, string displayNameWithDoubleQuotesInBeginningAndInEnding)
+        public void MailAddress_WithOuterDoubleQuotesDisplayAndMailAddress_ToStringShouldReturnEscapedDisplayNameAndAddressInAngleBrackets(string address, string displayName)
         {
             if (displayNameWithDoubleQuotesInBeginningAndInEnding.Length >= 2 && displayNameWithDoubleQuotesInBeginningAndInEnding[0] == '\"' && displayNameWithDoubleQuotesInBeginningAndInEnding[^1] == '\"')
             {
