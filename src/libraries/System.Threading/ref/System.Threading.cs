@@ -128,6 +128,7 @@ namespace System.Threading
         public void Dispose() { }
         public void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public static bool IsFlowSuppressed() { throw null; }
+        public static void Restore(System.Threading.ExecutionContext executionContext) { }
         public static void RestoreFlow() { }
         public static void Run(System.Threading.ExecutionContext executionContext, System.Threading.ContextCallback callback, object? state) { }
         public static System.Threading.AsyncFlowControl SuppressFlow() { throw null; }
