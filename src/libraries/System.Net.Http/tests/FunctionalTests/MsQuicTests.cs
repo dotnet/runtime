@@ -4,13 +4,10 @@
 using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.Tracing;
-using System.IO;
 using System.Linq;
 using System.Net.Security;
 using System.Text;
 using System.Threading.Tasks;
-using Microsoft.VisualStudio.TestPlatform.Common;
 using Xunit;
 
 namespace System.Net.Quic.Tests
@@ -334,45 +331,44 @@ namespace System.Net.Quic.Tests
             await RunClientServer(
                 async clientConnection =>
                 {
-                    await using (QuicStream stream = clientConnection.OpenUnidirectionalStream())
+                    await using QuicStream stream = clientConnection.OpenUnidirectionalStream();
+
+                    foreach (int[] bufferLengths in writes)
                     {
-                        foreach (int[] bufferLengths in writes)
+                        switch (writeType)
                         {
-                            switch (writeType)
-                            {
-                                case WriteType.SingleBuffer:
-                                    foreach (int bufferLength in bufferLengths)
-                                    {
-                                        await stream.WriteAsync(new byte[bufferLength]);
-                                    }
-                                    break;
-                                case WriteType.GatheredBuffers:
-                                    var buffers = bufferLengths
-                                        .Select(bufferLength => new ReadOnlyMemory<byte>(new byte[bufferLength]))
-                                        .ToArray();
-                                    await stream.WriteAsync(buffers);
-                                    break;
-                                case WriteType.GatheredSequence:
-                                    var firstSegment = new BufferSegment(new byte[bufferLengths[0]]);
-                                    BufferSegment lastSegment = firstSegment;
+                            case WriteType.SingleBuffer:
+                                foreach (int bufferLength in bufferLengths)
+                                {
+                                    await stream.WriteAsync(new byte[bufferLength]);
+                                }
+                                break;
+                            case WriteType.GatheredBuffers:
+                                var buffers = bufferLengths
+                                    .Select(bufferLength => new ReadOnlyMemory<byte>(new byte[bufferLength]))
+                                    .ToArray();
+                                await stream.WriteAsync(buffers);
+                                break;
+                            case WriteType.GatheredSequence:
+                                var firstSegment = new BufferSegment(new byte[bufferLengths[0]]);
+                                BufferSegment lastSegment = firstSegment;
 
-                                    foreach (int bufferLength in bufferLengths.Skip(1))
-                                    {
-                                        lastSegment = lastSegment.Append(new byte[bufferLength]);
-                                    }
+                                foreach (int bufferLength in bufferLengths.Skip(1))
+                                {
+                                    lastSegment = lastSegment.Append(new byte[bufferLength]);
+                                }
 
-                                    var buffer = new ReadOnlySequence<byte>(firstSegment, 0, lastSegment, lastSegment.Memory.Length);
-                                    await stream.WriteAsync(buffer);
-                                    break;
-                                default:
-                                    Debug.Fail("Unknown write type.");
-                                    break;
-                            }
+                                var buffer = new ReadOnlySequence<byte>(firstSegment, 0, lastSegment, lastSegment.Memory.Length);
+                                await stream.WriteAsync(buffer);
+                                break;
+                            default:
+                                Debug.Fail("Unknown write type.");
+                                break;
                         }
-
-                        stream.Shutdown();
-                        await stream.ShutdownCompleted;
                     }
+
+                    stream.Shutdown();
+                    await stream.ShutdownWriteCompleted();
                 },
                 async serverConnection =>
                 {
@@ -390,7 +386,7 @@ namespace System.Net.Quic.Tests
                     Assert.Equal(expectedTotalBytes, totalBytes);
 
                     stream.Shutdown();
-                    await stream.ShutdownCompleted;
+                    await stream.ShutdownWriteCompleted();
                 });
         }
 
