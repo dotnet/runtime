@@ -39,6 +39,7 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
+        [SkipOnMono("https://github.com/dotnet/runtime/issues/40738")]
         public static void MethodTakesRefToRefStructAsArg_ThrowsNSE()
         {
             // Use a Binder to trick the reflection stack into treating the returned null
@@ -53,6 +54,7 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
+        [SkipOnMono("https://github.com/dotnet/runtime/issues/40738")]
         public static void MethodTakesOutToRefStructAsArg_ThrowsNSE()
         {
             MethodInfo mi = GetMethod(nameof(TestClass.TakesOutToRefStructAsArg));
