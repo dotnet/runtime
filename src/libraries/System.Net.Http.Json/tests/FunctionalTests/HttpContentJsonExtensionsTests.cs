@@ -2,8 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.IO;
 using System.Net.Test.Common;
 using System.Text;
 using System.Text.Json;
@@ -87,7 +85,7 @@ namespace System.Net.Http.Json.Functional.Tests
                 },
                 server => server.HandleRequestAsync(headers: _headers));
         }
-        
+
         [Fact]
         public async Task TestGetFromJsonQuotedCharSetAsync()
         {
@@ -184,6 +182,7 @@ namespace System.Net.Http.Json.Functional.Tests
         [InlineData("application/foo+json")] // Structured Syntax Json Suffix
         [InlineData("application/foo+Json")]
         [InlineData("appLiCaTiOn/a+JsOn")]
+        [InlineData("application/json-custom")]
         public async Task TestValidMediaTypes(string mediaType)
         {
             List<HttpHeaderData> customHeaders = new List<HttpHeaderData>
@@ -200,73 +199,6 @@ namespace System.Net.Http.Json.Functional.Tests
                         HttpResponseMessage response = await client.SendAsync(request);
 
                         Person person = await response.Content.ReadFromJsonAsync<Person>();
-                        person.Validate();
-                    }
-                },
-                server => server.HandleRequestAsync(headers: customHeaders, content: Person.Create().Serialize()));
-        }
-
-        [Theory]
-        [InlineData("text/plain")]
-        [InlineData("/")]
-        [InlineData("application/")]
-        [InlineData("application/+")]
-        [InlineData("application/+json")] // empty subtype before suffix is invalid.
-        [InlineData("application/problem+")] // no suffix after '+'.
-        [InlineData("application/problem+foo+json")] // more than one '+' not allowed.
-        public async Task TestInvalidMediaTypeWithInvalidJsonAsync(string mediaType)
-        {
-            List<HttpHeaderData> customHeaders = new List<HttpHeaderData>
-            {
-                new HttpHeaderData("Content-Type", $"{mediaType}; charset=\"utf-8\"")
-            };
-
-            await HttpMessageHandlerLoopbackServer.CreateClientAndServerAsync(
-                async (handler, uri) =>
-                {
-                    using (HttpClient client = new HttpClient(handler))
-                    {
-                        var request = new HttpRequestMessage(HttpMethod.Get, uri);
-                        HttpResponseMessage response = await client.SendAsync(request);
-
-                        var aggregateException = await Assert.ThrowsAsync<AggregateException>(() => response.Content.ReadFromJsonAsync<Person>());
-                        Assert.IsType<JsonException>(aggregateException.InnerExceptions[0]);
-                        var nse = Assert.IsType<NotSupportedException>(aggregateException.InnerExceptions[1]);
-                        Assert.Contains("application/json", nse.Message);
-                        Assert.Contains("application/+json", nse.Message);
-                    }
-                },
-                server => server.HandleRequestAsync(headers: customHeaders, content: "{invalid}"));
-        }
-
-        [Theory]
-        [InlineData("text/plain")]
-        [InlineData("/")]
-        [InlineData("application/")]
-        [InlineData("application/+")]
-        [InlineData("application/+json")] // empty subtype before suffix is invalid.
-        [InlineData("application/problem+")] // no suffix after '+'.
-        [InlineData("application/problem+foo+json")] // more than one '+' not allowed.
-        public async Task TestInvalidMediaTypeWithValidJsonAsync(string mediaType)
-        {
-            List<HttpHeaderData> customHeaders = new List<HttpHeaderData>
-            {
-                new HttpHeaderData("Content-Type", $"{mediaType}; charset=\"utf-8\"")
-            };
-
-            await HttpMessageHandlerLoopbackServer.CreateClientAndServerAsync(
-                async (handler, uri) =>
-                {
-                    using (HttpClient client = new HttpClient(handler))
-                    {
-                        var request = new HttpRequestMessage(HttpMethod.Get, uri);
-                        HttpResponseMessage response = await client.SendAsync(request);
-                        var person = await response.Content.ReadFromJsonAsync<Person>();
-                        person.Validate();
-
-                        request = new HttpRequestMessage(HttpMethod.Get, uri);
-                        response = await client.SendAsync(request);
-                        person = Assert.IsType<Person>(await response.Content.ReadFromJsonAsync(typeof(Person)));
                         person.Validate();
                     }
                 },

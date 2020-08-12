@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.IO;
-using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
 using System.Threading;
@@ -48,20 +47,7 @@ namespace System.Net.Http.Json
 
             using (contentStream)
             {
-                try
-                {
-                    return await JsonSerializer.DeserializeAsync(contentStream, type, options ?? JsonContent.s_defaultSerializerOptions, cancellationToken).ConfigureAwait(false);
-                }
-                catch (JsonException je)
-                {
-                    NotSupportedException? nse = ValidateContentType(content.Headers.ContentType);
-                    if (nse != null)
-                    {
-                        throw new AggregateException(je, nse);
-                    }
-
-                    throw;
-                }
+                return await JsonSerializer.DeserializeAsync(contentStream, type, options ?? JsonContent.s_defaultSerializerOptions, cancellationToken).ConfigureAwait(false);
             }
         }
 
@@ -77,66 +63,8 @@ namespace System.Net.Http.Json
 
             using (contentStream)
             {
-                try
-                {
-                    return await JsonSerializer.DeserializeAsync<T>(contentStream, options ?? JsonContent.s_defaultSerializerOptions, cancellationToken).ConfigureAwait(false);
-                }
-                catch (JsonException je)
-                {
-                    NotSupportedException? nse = ValidateContentType(content.Headers.ContentType);
-                    if (nse != null)
-                    {
-                        throw new AggregateException(je, nse);
-                    }
-
-                    throw;
-                }
+                return await JsonSerializer.DeserializeAsync<T>(contentStream, options ?? JsonContent.s_defaultSerializerOptions, cancellationToken).ConfigureAwait(false);
             }
-        }
-
-        private static NotSupportedException? ValidateContentType(MediaTypeHeaderValue? mediaTypeHeader)
-        {
-            string? mediaType = mediaTypeHeader?.MediaType;
-
-            if (mediaType == null ||
-                !mediaType.Equals(JsonContent.JsonMediaType, StringComparison.OrdinalIgnoreCase) &&
-                !IsValidStructuredSyntaxJsonSuffix(mediaType.AsSpan()))
-            {
-                return new NotSupportedException(SR.Format(SR.ContentTypeNotSupported, mediaType));
-            }
-
-            return null;
-        }
-
-        private static bool IsValidStructuredSyntaxJsonSuffix(ReadOnlySpan<char> mediaType)
-        {
-            int index = 0;
-            int typeLength = mediaType.IndexOf('/');
-
-            ReadOnlySpan<char> type = mediaType.Slice(index, typeLength);
-            if (typeLength < 0 ||
-                type.CompareTo(JsonContent.JsonType.AsSpan(), StringComparison.OrdinalIgnoreCase) != 0)
-            {
-                return false;
-            }
-
-            index += typeLength + 1;
-            int suffixStart = mediaType.Slice(index).IndexOf('+');
-
-            // Empty prefix subtype ("application/+json") not allowed.
-            if (suffixStart <= 0)
-            {
-                return false;
-            }
-
-            index += suffixStart + 1;
-            ReadOnlySpan<char> suffix = mediaType.Slice(index);
-            if (suffix.CompareTo(JsonContent.JsonSubtype.AsSpan(), StringComparison.OrdinalIgnoreCase) != 0)
-            {
-                return false;
-            }
-
-            return true;
         }
     }
 }
