@@ -91,13 +91,21 @@ namespace Internal.Cryptography.Pal
                         return false;
                     }
 
+                    IntPtr nextUpdatePtr = Interop.Crypto.GetX509CrlNextUpdate(crl);
+
+                    // If there is no crl.NextUpdate, this indicates that the CA is not providing
+                    // any more updates to the CRL.
+                    if (nextUpdatePtr == IntPtr.Zero)
+                    {
+                        return false;
+                    }
+
                     // If crl.LastUpdate is in the past, downloading a new version isn't really going
                     // to help, since we can't rewind the Internet. So this is just going to fail, but
                     // at least it can fail without using the network.
                     //
                     // If crl.NextUpdate is in the past, try downloading a newer version.
-                    DateTime nextUpdate = OpenSslX509CertificateReader.ExtractValidityDateTime(
-                        Interop.Crypto.GetX509CrlNextUpdate(crl));
+                    DateTime nextUpdate = OpenSslX509CertificateReader.ExtractValidityDateTime(nextUpdatePtr);
 
                     // OpenSSL is going to convert our input time to universal, so we should be in Local or
                     // Unspecified (local-assumed).
