@@ -12,7 +12,6 @@ namespace System.Net.Mail.Tests
         private const string DisplayNameWithUnicode = "DisplayNameWith\u00C9\u00C0\u0106\u0100\u0109\u0105\u00E4Unicode";
         private const string DisplayNameWithNoUnicode = "testDisplayName";
 
-
         [Fact]
         public void MailAddress_WithUnicodeDisplayAndMailAddress_ToStringShouldReturnDisplayNameInQuotesAndAddressInAngleBrackets()
         {
@@ -29,34 +28,34 @@ namespace System.Net.Mail.Tests
         [InlineData(Address, "Hello \"\"world")]
         [InlineData(Address, "\"")]
         [InlineData(Address, "Hello \\\"world hello\\\" world")]
-        public void MailAddress_WithDoubleQuotesDisplayAndMailAddress_ToStringShouldReturnDisplayNameEscapeSequenceAndAddressInAngleBrackets(string address, string displayNameWithDoubleQuotes)
+        public void MailAddress_WithDoubleQuotesDisplayAndMailAddress_ToStringShouldReturnEscapedDisplayNameAndAddressInAngleBrackets(string address, string displayName)
         {
-            MailAddress mailAddress = new MailAddress(address, displayNameWithDoubleQuotes);
-            Assert.Equal(displayNameWithDoubleQuotes, mailAddress.DisplayName);
-            Assert.Equal(string.Format("\"{0}\" <{1}>", displayNameWithDoubleQuotes.Replace("\"", "\\\""), Address), mailAddress.ToString());
+            MailAddress mailAddress = new MailAddress(address, displayName);
+            Assert.Equal(displayName, mailAddress.DisplayName);
+            Assert.Equal(string.Format("\"{0}\" <{1}>", displayName.Replace("\"", "\\\""), Address), mailAddress.ToString());
         }
 
         [Theory]
         [InlineData(Address, "\"John Doe\"")]
         [InlineData(Address, "\"\"")]
-        public void MailAddress_WithDoubleQuotesInBeginningAndInEndingDisplayAndMailAddress_ToStringShouldReturnDisplayNameEscapeSequenceAndAddressInAngleBrackets(string address, string displayNameWithDoubleQuotesInBeginningAndInEnding)
+        public void MailAddress_WithOuterDoubleQuotesDisplayAndMailAddress_ToStringShouldReturnEscapedDisplayNameAndAddressInAngleBrackets(string address, string displayName)
         {
-            if (displayNameWithDoubleQuotesInBeginningAndInEnding.Length >= 2 && displayNameWithDoubleQuotesInBeginningAndInEnding[0] == '\"' && displayNameWithDoubleQuotesInBeginningAndInEnding[^1] == '\"')
+            if (displayName.Length >= 2 && displayName[0] == '\"' && displayName[^1] == '\"')
             {
 
-                displayNameWithDoubleQuotesInBeginningAndInEnding = displayNameWithDoubleQuotesInBeginningAndInEnding.Substring(1, displayNameWithDoubleQuotesInBeginningAndInEnding.Length - 2);
+                displayName = displayName.Substring(1, displayName.Length - 2);
             }
 
-            MailAddress mailAddress = new MailAddress(address, displayNameWithDoubleQuotesInBeginningAndInEnding);
-            Assert.Equal(displayNameWithDoubleQuotesInBeginningAndInEnding, mailAddress.DisplayName);
+            MailAddress mailAddress = new MailAddress(address, displayName);
+            Assert.Equal(displayName, mailAddress.DisplayName);
 
-            if (string.IsNullOrEmpty(displayNameWithDoubleQuotesInBeginningAndInEnding))
+            if (string.IsNullOrEmpty(displayName))
             {
                 Assert.Equal($"{Address}", mailAddress.ToString());
             }
             else
             {
-                Assert.Equal($"\"{displayNameWithDoubleQuotesInBeginningAndInEnding.Replace("\"", "\\\"")}\" <{Address}>", mailAddress.ToString());
+                Assert.Equal($"\"{displayName.Replace("\"", "\\\"")}\" <{Address}>", mailAddress.ToString());
             }
         }
 
