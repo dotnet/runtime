@@ -185,7 +185,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
             using (X509Certificate2 intermediateCert = intermediateAuthority.CloneIssuerCert())
             {
                 // Delay is more than the 15 second default.
-                TimeSpan delay = TimeSpan.FromSeconds(30);
+                TimeSpan delay = TimeSpan.FromSeconds(25);
 
                 X509Chain chain = holder.Chain;
                 responder.ResponseDelay = delay;
