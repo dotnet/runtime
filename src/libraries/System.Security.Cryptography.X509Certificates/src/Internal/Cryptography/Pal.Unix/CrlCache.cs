@@ -91,6 +91,11 @@ namespace Internal.Cryptography.Pal
                         return false;
                     }
 
+                    // If crl.LastUpdate is in the past, downloading a new version isn't really going
+                    // to help, since we can't rewind the Internet. So this is just going to fail, but
+                    // at least it can fail without using the network.
+                    //
+                    // If crl.NextUpdate is in the past, try downloading a newer version.
                     IntPtr nextUpdatePtr = Interop.Crypto.GetX509CrlNextUpdate(crl);
                     DateTime nextUpdate;
 
@@ -113,11 +118,6 @@ namespace Internal.Cryptography.Pal
                     }
                     else
                     {
-                        // If crl.LastUpdate is in the past, downloading a new version isn't really going
-                        // to help, since we can't rewind the Internet. So this is just going to fail, but
-                        // at least it can fail without using the network.
-                        //
-                        // If crl.NextUpdate is in the past, try downloading a newer version.
                         nextUpdate = OpenSslX509CertificateReader.ExtractValidityDateTime(nextUpdatePtr);
                     }
 
