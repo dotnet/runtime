@@ -300,7 +300,7 @@ namespace System.Diagnostics
                 if (_modules == null)
                 {
                     EnsureState(State.HaveNonExitedId | State.IsLocal);
-                    var newModules = ProcessManager.GetModules(_processId);
+                    ProcessModuleCollection newModules = ProcessManager.GetModules(_processId);
                     if (Interlocked.CompareExchange(ref _modules, newModules, null) != null)
                     {
                         newModules.Dispose();
