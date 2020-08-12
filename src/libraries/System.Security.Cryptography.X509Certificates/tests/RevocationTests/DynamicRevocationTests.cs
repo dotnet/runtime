@@ -941,6 +941,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/31249", TestPlatforms.OSX)]
         public static void TestRevocationWithNoNextUpdate_NotRevoked()
         {
             SimpleTest(
@@ -963,6 +964,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/31249", TestPlatforms.OSX)]
         public static void TestRevocationWithNoNextUpdate_Revoked()
         {
             SimpleTest(
