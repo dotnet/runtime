@@ -505,6 +505,18 @@ namespace System.Runtime.CompilerServices
         }
 
         [Fact]
+        public static void RefAddUIntPtr()
+        {
+            int[] a = new int[] { 0x123, 0x234, 0x345, 0x456 };
+
+            ref int r1 = ref Unsafe.Add(ref a[0], (UIntPtr)1);
+            Assert.Equal(0x234, r1);
+
+            ref int r2 = ref Unsafe.Add(ref r1, (UIntPtr)2);
+            Assert.Equal(0x456, r2);
+        }
+
+        [Fact]
         public static void RefAddByteOffset()
         {
             byte[] a = new byte[] { 0x12, 0x34, 0x56, 0x78 };
@@ -517,6 +529,18 @@ namespace System.Runtime.CompilerServices
 
             ref byte r3 = ref Unsafe.AddByteOffset(ref r2, (IntPtr)(-3));
             Assert.Equal(0x12, r3);
+        }
+
+        [Fact]
+        public static void RefAddUIntPtrByteOffset()
+        {
+            byte[] a = new byte[] { 0x12, 0x34, 0x56, 0x78 };
+
+            ref byte r1 = ref Unsafe.AddByteOffset(ref a[0], (UIntPtr)1);
+            Assert.Equal(0x34, r1);
+
+            ref byte r2 = ref Unsafe.AddByteOffset(ref r1, (UIntPtr)2);
+            Assert.Equal(0x78, r2);
         }
 
         [Fact]
@@ -577,6 +601,15 @@ namespace System.Runtime.CompilerServices
         }
 
         [Fact]
+        public static void RefSubtractUIntPtr()
+        {
+            string[] a = new string[] { "abc", "def", "ghi", "jkl" };
+
+            ref string r3 = ref Unsafe.Subtract(ref a[3], (UIntPtr)3);
+            Assert.Equal("abc", r3);
+        }
+
+        [Fact]
         public static void RefSubtractByteOffset()
         {
             byte[] a = new byte[] { 0x12, 0x34, 0x56, 0x78 };
@@ -588,6 +621,15 @@ namespace System.Runtime.CompilerServices
             Assert.Equal(0x78, r2);
 
             ref byte r3 = ref Unsafe.SubtractByteOffset(ref r2, (IntPtr)3);
+            Assert.Equal(0x12, r3);
+        }
+
+        [Fact]
+        public static void RefSubtractUIntPtrByteOffset()
+        {
+            byte[] a = new byte[] { 0x12, 0x34, 0x56, 0x78 };
+
+            ref byte r3 = ref Unsafe.SubtractByteOffset(ref a[3], (UIntPtr)3);
             Assert.Equal(0x12, r3);
         }
 
