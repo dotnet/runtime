@@ -2,7 +2,6 @@
   <PropertyGroup>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <OutputType>Library</OutputType>
-    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
@@ -10,11 +9,6 @@
     <PackageReference Include="Microsoft.Build.Framework" Version="$(RefOnlyMicrosoftBuildFrameworkVersion)" />
     <PackageReference Include="Microsoft.Build.Tasks.Core" Version="$(RefOnlyMicrosoftBuildTasksCoreVersion)" />
     <PackageReference Include="Microsoft.Build.Utilities.Core" Version="$(RefOnlyMicrosoftBuildUtilitiesCoreVersion)" />
-    <PackageReference Include="System.Reflection.MetadataLoadContext" Version="4.7.1" />
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Include="TimeZoneLoader.cs" />
-    <Compile Include="WasmBundleTask.cs" />
   </ItemGroup>
 
   <Target Name="PublishBuilder"

@@ -50,15 +50,13 @@ public class TimeZoneLoader : Task
         File.Copy(Path.Combine(InputDirectory!,"zone1970.tab"), Path.Combine(OutputDirectory!,"zone1970.tab"));
     }
 
-    private void FilterTimeZoneData(string[] areas) 
+    private void FilterTimeZoneData() 
     {
-        var directoryInfo = new DirectoryInfo (OutputDirectory!);
-        foreach (var entry in directoryInfo.EnumerateDirectories()) 
+        //  Remove unnecessary timezone files 
+        foreach (var entry in new DirectoryInfo (OutputDirectory!).EnumerateFiles()) 
         {
-            if (Array.IndexOf(areas, entry.Name) == -1) 
-            {
-                Directory.Delete(entry.FullName, true);
-            }
+            if (entry.Name != "zone1970.tab")
+                File.Delete(entry.FullName);
         }
     }
 
@@ -90,15 +88,13 @@ public class TimeZoneLoader : Task
             Directory.CreateDirectory(OutputDirectory!);
 
         DownloadTimeZoneData();
-
-        string[] areas = new string[] { "Africa", "America", "Antarctica", "Arctic", "Asia", "Atlantic", "Australia", "Europe", "Indian", "Pacific", "zone1970.tab"};
         
         string[] filtered = new string[] { "America/Los_Angeles", "Australia/Sydney", "Europe/London", "Pacific/Tongatapu", 
                                 "America/Sao_Paulo", "Australia/Perth", "Africa/Nairobi", "Europe/Berlin",
                                 "Europe/Moscow", "Africa/Tripoli", "America/Argentina/Catamarca", "Europe/Lisbon",
                                 "America/St_Johns"};
         
-        FilterTimeZoneData(areas);
+        FilterTimeZoneData();
         FilterZoneTab(filtered);
 
         return true;

@@ -37,10 +37,10 @@
 
   <UsingTask TaskName="TimeZoneLoader" AssemblyFile="$([MSBuild]::NormalizePath('$(ArtifactsBinDir)', 'WasmBundleTask', 'Debug', '$(NetCoreAppCurrent)', 'publish', 'WasmBundleTask.dll'))"/>
   <Target Name="LoadTimeZones" DependsOnTargets="CheckEnv">
-  <TimeZoneLoader
-    InputDirectory="$(ArtifactsObjDir)wasm/data/input"
-    OutputDirectory="$(ArtifactsObjDir)wasm/data/output"
-    Version="2020a" />
+    <TimeZoneLoader
+      InputDirectory="$(ArtifactsObjDir)wasm/data/input"
+      OutputDirectory="$(ArtifactsObjDir)wasm/data/output"
+      Version="2020a" />
   </Target>
 
   <UsingTask TaskName="WasmBundleTask" AssemblyFile="$([MSBuild]::NormalizePath('$(ArtifactsBinDir)', 'WasmBundleTask', 'Debug', '$(NetCoreAppCurrent)', 'publish', 'WasmBundleTask.dll'))"/>

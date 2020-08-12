@@ -29,7 +29,6 @@ public class WasmBundleTask : Task
         
         foreach (var entry in directoryInfo.EnumerateFiles("*", SearchOption.AllDirectories)) 
         {
-
             var relativePath = Path.GetRelativePath(InputDirectory!, entry.FullName);
             indices.Add(new object[] { relativePath, entry.Length });
 
@@ -47,24 +46,21 @@ public class WasmBundleTask : Task
     {
         (byte[] json_bytes, MemoryStream stream) data;
 
-        if (InputDirectory == null) 
+        if (!Directory.Exists(InputDirectory)) 
         {
-            throw new ArgumentException("Input directory doesn't exist.");
+            Log.LogError($"Input directory '{InputDirectory}' does not exist");
+            return false;
         }
 
         data = EnumerateData();
         
-        if (FileName == null) 
+        using (var file = File.Open(FileName!, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.ReadWrite))
         {
-            throw new ArgumentException($"Invalid file name");
-        }
-        using (var file = File.Open(FileName, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.ReadWrite))
-        {
-            var bytes = new byte[4];
+            var lengthBytes = new byte[4];
             var magicBytes = Encoding.ASCII.GetBytes("talb");
-            BinaryPrimitives.WriteInt32LittleEndian(bytes, data.json_bytes.Length);
+            BinaryPrimitives.WriteInt32LittleEndian(lengthBytes, data.json_bytes.Length);
             file.Write(magicBytes);
-            file.Write(bytes);
+            file.Write(lengthBytes);
             file.Write(data.json_bytes);
             
             data.stream.CopyTo(file);
