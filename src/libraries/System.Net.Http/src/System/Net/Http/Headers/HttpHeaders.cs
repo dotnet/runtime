@@ -1426,6 +1426,7 @@ namespace System.Net.Http.Headers
             void IEnumerator.Reset()
             {
                 _headerStore.Reset();
+                Current = default;
             }
         }
     }
@@ -1505,6 +1506,7 @@ namespace System.Net.Http.Headers
             void IEnumerator.Reset()
             {
                 _values?.Reset();
+                Current = default!;
                 _completed = false;
             }
         }

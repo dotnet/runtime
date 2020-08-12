@@ -474,6 +474,23 @@ namespace System.Net.Http.Headers
         public override string ToString() { throw null; }
         public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? input, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out System.Net.Http.Headers.EntityTagHeaderValue? parsedValue) { throw null; }
     }
+    public readonly partial struct HeaderStringValues : System.Collections.Generic.IEnumerable<string>, System.Collections.IEnumerable
+    {
+        public HeaderStringValues(System.Collections.Generic.IEnumerable<string> value) { throw null; }
+        public HeaderStringValues(string value) { throw null; }
+        public System.Net.Http.Headers.HeaderStringValues.Enumerator GetEnumerator() { throw null; }
+        System.Collections.Generic.IEnumerator<string> System.Collections.Generic.IEnumerable<string>.GetEnumerator() { throw null; }
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { throw null; }
+        public partial struct Enumerator : System.Collections.Generic.IEnumerator<string>, System.Collections.IEnumerator, System.IDisposable
+        {
+            public Enumerator(System.Collections.Generic.IEnumerable<string>? values, string? value) { throw null; }
+            public readonly string Current { get { throw null; } }
+            object? System.Collections.IEnumerator.Current { get { throw null; } }
+            public void Dispose() { }
+            public bool MoveNext() { throw null; }
+            void System.Collections.IEnumerator.Reset() { }
+        }
+    }
     public sealed partial class HttpContentHeaders : System.Net.Http.Headers.HttpHeaders
     {
         internal HttpContentHeaders() { }
@@ -492,7 +509,7 @@ namespace System.Net.Http.Headers
     public abstract partial class HttpHeaders : System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, System.Collections.Generic.IEnumerable<string>>>, System.Collections.IEnumerable
     {
         protected HttpHeaders() { }
-        public HttpHeadersNonValidated NonValidated { get { throw null; } }
+        public System.Net.Http.Headers.HttpHeadersNonValidated NonValidated { get { throw null; } }
         public void Add(string name, System.Collections.Generic.IEnumerable<string?> values) { }
         public void Add(string name, string? value) { }
         public void Clear() { }
@@ -506,35 +523,18 @@ namespace System.Net.Http.Headers
         public bool TryAddWithoutValidation(string name, string? value) { throw null; }
         public bool TryGetValues(string name, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out System.Collections.Generic.IEnumerable<string>? values) { throw null; }
     }
-    public readonly struct HttpHeadersNonValidated : System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, HeaderStringValues>>
+    public readonly partial struct HttpHeadersNonValidated : System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, System.Net.Http.Headers.HeaderStringValues>>, System.Collections.IEnumerable
     {
-        public System.Collections.Generic.IEnumerator<System.Collections.Generic.KeyValuePair<string, HeaderStringValues>> GetEnumerator() { throw null; }
-        System.Collections.Generic.IEnumerator<System.Collections.Generic.KeyValuePair<string, HeaderStringValues>> System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, HeaderStringValues>>.GetEnumerator() { throw null; }
+        public System.Collections.Generic.IEnumerator<System.Collections.Generic.KeyValuePair<string, System.Net.Http.Headers.HeaderStringValues>> GetEnumerator() { throw null; }
+        System.Collections.Generic.IEnumerator<System.Collections.Generic.KeyValuePair<string, System.Net.Http.Headers.HeaderStringValues>> System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, System.Net.Http.Headers.HeaderStringValues>>.GetEnumerator() { throw null; }
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { throw null; }
-        public struct Enumerator : System.Collections.Generic.IEnumerator<System.Collections.Generic.KeyValuePair<string, HeaderStringValues>>
+        public partial struct Enumerator : System.Collections.Generic.IEnumerator<System.Collections.Generic.KeyValuePair<string, System.Net.Http.Headers.HeaderStringValues>>, System.Collections.IEnumerator, System.IDisposable
         {
-            public bool MoveNext() { throw null; }
-            public readonly System.Collections.Generic.KeyValuePair<string, HeaderStringValues> Current { get { throw null; } }
-            public void Dispose() { throw null; }
+            public readonly System.Collections.Generic.KeyValuePair<string, System.Net.Http.Headers.HeaderStringValues> Current { get { throw null; } }
             object? System.Collections.IEnumerator.Current { get { throw null; } }
-            void System.Collections.IEnumerator.Reset() { throw null; }
-        }
-    }
-    public readonly struct HeaderStringValues : System.Collections.Generic.IEnumerable<string>
-    {
-        public HeaderStringValues(string value) { }
-        public HeaderStringValues(System.Collections.Generic.IEnumerable<string> value) { }
-        public Enumerator GetEnumerator() { throw null; }
-        System.Collections.Generic.IEnumerator<string> System.Collections.Generic.IEnumerable<string>.GetEnumerator() { throw null; }
-        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { throw null; }
-        public struct Enumerator : System.Collections.Generic.IEnumerator<string>
-        {
-            public Enumerator(System.Collections.Generic.IEnumerable<string>? values, string? value) { }
+            public void Dispose() { }
             public bool MoveNext() { throw null; }
-            public readonly string Current { get { throw null; } }
-            public void Dispose() { throw null; }
-            object? System.Collections.IEnumerator.Current { get { throw null; } }
-            void System.Collections.IEnumerator.Reset() { throw null; }
+            void System.Collections.IEnumerator.Reset() { }
         }
     }
     public sealed partial class HttpHeaderValueCollection<T> : System.Collections.Generic.ICollection<T>, System.Collections.Generic.IEnumerable<T>, System.Collections.IEnumerable where T : class
