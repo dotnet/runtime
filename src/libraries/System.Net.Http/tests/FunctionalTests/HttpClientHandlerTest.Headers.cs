@@ -125,7 +125,7 @@ namespace System.Net.Http.Functional.Tests
                     // Client should abort at some point so this is going to throw.
                     HttpRequestData requestData = await server.HandleRequestAsync(HttpStatusCode.OK).ConfigureAwait(false);
                 }
-                catch (IOException) { };
+                catch (Exception) { };
             });
         }
 

@@ -3,7 +3,7 @@
 
 using System.Buffers;
 using System.Collections.Generic;
-using System.Diagnostics.Tracing;
+using System.Diagnostics;
 using System.Linq;
 using System.Net.Security;
 using System.Text;
@@ -324,6 +324,97 @@ namespace System.Net.Quic.Tests
             Assert.Equal(100, serverConnection.GetRemoteAvailableUnidirectionalStreamCount());
         }
 
+        [Theory]
+        [MemberData(nameof(WriteData))]
+        public async Task WriteTests(int[][] writes, WriteType writeType)
+        {
+            await RunClientServer(
+                async clientConnection =>
+                {
+                    await using QuicStream stream = clientConnection.OpenUnidirectionalStream();
+
+                    foreach (int[] bufferLengths in writes)
+                    {
+                        switch (writeType)
+                        {
+                            case WriteType.SingleBuffer:
+                                foreach (int bufferLength in bufferLengths)
+                                {
+                                    await stream.WriteAsync(new byte[bufferLength]);
+                                }
+                                break;
+                            case WriteType.GatheredBuffers:
+                                var buffers = bufferLengths
+                                    .Select(bufferLength => new ReadOnlyMemory<byte>(new byte[bufferLength]))
+                                    .ToArray();
+                                await stream.WriteAsync(buffers);
+                                break;
+                            case WriteType.GatheredSequence:
+                                var firstSegment = new BufferSegment(new byte[bufferLengths[0]]);
+                                BufferSegment lastSegment = firstSegment;
+
+                                foreach (int bufferLength in bufferLengths.Skip(1))
+                                {
+                                    lastSegment = lastSegment.Append(new byte[bufferLength]);
+                                }
+
+                                var buffer = new ReadOnlySequence<byte>(firstSegment, 0, lastSegment, lastSegment.Memory.Length);
+                                await stream.WriteAsync(buffer);
+                                break;
+                            default:
+                                Debug.Fail("Unknown write type.");
+                                break;
+                        }
+                    }
+
+                    stream.Shutdown();
+                    await stream.ShutdownWriteCompleted();
+                },
+                async serverConnection =>
+                {
+                    await using QuicStream stream = await serverConnection.AcceptStreamAsync();
+
+                    var buffer = new byte[4096];
+                    int receivedBytes = 0, totalBytes = 0;
+
+                    while ((receivedBytes = await stream.ReadAsync(buffer)) != 0)
+                    {
+                        totalBytes += receivedBytes;
+                    }
+
+                    int expectedTotalBytes = writes.SelectMany(x => x).Sum();
+                    Assert.Equal(expectedTotalBytes, totalBytes);
+
+                    stream.Shutdown();
+                    await stream.ShutdownWriteCompleted();
+                });
+        }
+
+        public static IEnumerable<object[]> WriteData()
+        {
+            var bufferSizes = new[] { 1, 502, 15_003, 1_000_004 };
+            var r = new Random();
+
+            return
+                from bufferCount in new[] { 1, 2, 3, 10 }
+                from writeType in Enum.GetValues<WriteType>()
+                let writes =
+                    Enumerable.Range(0, 5)
+                    .Select(_ =>
+                        Enumerable.Range(0, bufferCount)
+                        .Select(_ => bufferSizes[r.Next(bufferSizes.Length)])
+                        .ToArray())
+                    .ToArray()
+                select new object[] { writes, writeType };
+        }
+
+        public enum WriteType
+        {
+            SingleBuffer,
+            GatheredBuffers,
+            GatheredSequence
+        }
+
         [Fact]
         public async Task CallDifferentWriteMethodsWorks()
         {
@@ -522,12 +613,12 @@ namespace System.Net.Quic.Tests
 
         internal class BufferSegment : ReadOnlySequenceSegment<byte>
         {
-            public BufferSegment(Memory<byte> memory)
+            public BufferSegment(ReadOnlyMemory<byte> memory)
             {
                 Memory = memory;
             }
 
-            public BufferSegment Append(Memory<byte> memory)
+            public BufferSegment Append(ReadOnlyMemory<byte> memory)
             {
                 var segment = new BufferSegment(memory)
                 {
