@@ -79,7 +79,7 @@ namespace System.Data.ProviderBase
             }
         }
 
-        internal bool IsDisabled => (PoolGroupStateDisabled == _state);
+        internal bool IsDisabled => (_state == PoolGroupStateDisabled);
 
         internal DbConnectionPoolGroupOptions PoolGroupOptions => _poolGroupOptions;
 
@@ -184,7 +184,7 @@ namespace System.Data.ProviderBase
                                 else
                                 {
                                     // else pool entry has been disabled so don't create new pools
-                                    Debug.Assert(PoolGroupStateDisabled == _state, "state should be disabled");
+                                    Debug.Assert(_state == PoolGroupStateDisabled, "state should be disabled");
 
                                     // don't need to call connectionFactory.QueuePoolForRelease(newPool) because
                                     // pool callbacks were delayed and no risk of connections being created
@@ -194,7 +194,7 @@ namespace System.Data.ProviderBase
                             else
                             {
                                 // else found an existing pool to use instead
-                                Debug.Assert(PoolGroupStateActive == _state, "state should be active since a pool exists and lock holds");
+                                Debug.Assert(_state == PoolGroupStateActive, "state should be active since a pool exists and lock holds");
                             }
                         }
                     }
@@ -218,11 +218,11 @@ namespace System.Data.ProviderBase
             // when getting a connection, make the entry active if it was idle (but not disabled)
             // must always lock this before calling
 
-            if (PoolGroupStateIdle == _state)
+            if (_state == PoolGroupStateIdle)
             {
                 _state = PoolGroupStateActive;
             }
-            return (PoolGroupStateActive == _state);
+            return (_state == PoolGroupStateActive);
         }
 
         internal bool Prune()
@@ -269,16 +269,16 @@ namespace System.Data.ProviderBase
                 // otherwise pruning thread risks making entry disabled soon after user calls ClearPool
                 if (_poolCollection.IsEmpty)
                 {
-                    if (PoolGroupStateActive == _state)
+                    if (_state == PoolGroupStateActive)
                     {
                         _state = PoolGroupStateIdle;
                     }
-                    else if (PoolGroupStateIdle == _state)
+                    else if (_state == PoolGroupStateIdle)
                     {
                         _state = PoolGroupStateDisabled;
                     }
                 }
-                return (PoolGroupStateDisabled == _state);
+                return (_state == PoolGroupStateDisabled);
             }
         }
     }

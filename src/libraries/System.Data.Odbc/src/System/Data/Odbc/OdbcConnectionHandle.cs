@@ -78,7 +78,7 @@ namespace System.Data.Odbc
         {
             ODBC32.RetCode retcode = ODBC32.RetCode.SUCCESS;
             ODBC32.SQL_ATTR isolationAttribute;
-            if (IsolationLevel.Unspecified != isolevel)
+            if (isolevel != IsolationLevel.Unspecified)
             {
                 ODBC32.SQL_TRANSACTION sql_iso;
                 switch (isolevel)
@@ -118,7 +118,7 @@ namespace System.Data.Odbc
                 //the value if th euser asks for it...
                 //We also still propagate the info, since it could be other info as well...
 
-                if (ODBC32.RetCode.SUCCESS_WITH_INFO == retcode)
+                if (retcode == ODBC32.RetCode.SUCCESS_WITH_INFO)
                 {
                     isolevel = IsolationLevel.Unspecified;
                 }

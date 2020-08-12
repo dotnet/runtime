@@ -261,7 +261,7 @@ namespace System.Data.Odbc
             {
                 SQLLEN cRowsAffected;
                 ODBC32.RetCode retcode = StatementHandle.RowCount(out cRowsAffected);
-                if (ODBC32.RetCode.SUCCESS == retcode || ODBC32.RetCode.SUCCESS_WITH_INFO == retcode)
+                if (retcode == ODBC32.RetCode.SUCCESS || retcode == ODBC32.RetCode.SUCCESS_WITH_INFO)
                 {
                     return cRowsAffected;
                 }
@@ -273,7 +273,7 @@ namespace System.Data.Odbc
         {
             if (cRowsAffected >= 0)
             {
-                if (-1 == _recordAffected)
+                if (_recordAffected == - 1)
                 {
                     _recordAffected = cRowsAffected;
                 }
@@ -987,7 +987,7 @@ namespace System.Data.Odbc
                         // followed by exception. I did not add it now to avoid breaking change
                         Debug.Assert(lengthOrIndicator >= 0 || lengthOrIndicator == ODBC32.SQL_NO_TOTAL, "unexpected lengthOrIndicator value");
 
-                        if (lengthOrIndicator <= cbMaxData && (ODBC32.SQL_NO_TOTAL != lengthOrIndicator))
+                        if (lengthOrIndicator <= cbMaxData && (lengthOrIndicator != ODBC32.SQL_NO_TOTAL))
                         {
                             // all data read? good! Directly marshal to a string and we're done
                             //
@@ -1011,7 +1011,7 @@ namespace System.Data.Odbc
                         bool gotData;
                         int cchJunk;
                         int cbActual = cbMaxData;
-                        int cbMissing = (ODBC32.SQL_NO_TOTAL == lengthOrIndicator) ? -1 : lengthOrIndicator - cbActual;
+                        int cbMissing = (lengthOrIndicator == ODBC32.SQL_NO_TOTAL) ? -1 : lengthOrIndicator - cbActual;
 
                         do
                         {
@@ -1030,7 +1030,7 @@ namespace System.Data.Odbc
                             // followed by exception. I did not add it now to avoid breaking change
                             Debug.Assert(lengthOrIndicator >= 0 || lengthOrIndicator == ODBC32.SQL_NO_TOTAL, "unexpected lengthOrIndicator value");
 
-                            if (ODBC32.SQL_NO_TOTAL != lengthOrIndicator)
+                            if (lengthOrIndicator != ODBC32.SQL_NO_TOTAL)
                             {
                                 cbActual = Math.Min(lengthOrIndicator, cbMaxData);
                                 if (cbMissing > 0)
@@ -1151,7 +1151,7 @@ namespace System.Data.Odbc
                 // random access (cases 1 or 2) and sequential access with cache (case 3)
                 // preserve the original behavior as before the fix
 
-                if (int.MaxValue < dataIndex)
+                if (dataIndex > int.MaxValue)
                 {
                     // indices greater than allocable size are not supported in random access
                     // (negative value is already tested in the beginning of ths function)
@@ -1421,7 +1421,7 @@ namespace System.Data.Odbc
                     // no bytes read, stop
                     break;
                 }
-                else if (ODBC32.SQL_NO_TOTAL == cbTotal)
+                else if (cbTotal == ODBC32.SQL_NO_TOTAL)
                 {
                     // the driver has filled the internal buffer, but the length of remained data is still unknown
                     // we will continue looping until SQLGetData indicates the end of data or user buffer is fully filled
@@ -1493,7 +1493,7 @@ namespace System.Data.Odbc
                 {
                     CNativeBuffer buffer = Buffer;
 
-                    if (ODBC32.SQL_NO_TOTAL != cbActual)
+                    if (cbActual != ODBC32.SQL_NO_TOTAL)
                     {
                         rgBytes = new byte[cbActual];
                         Buffer.ReadBytes(0, rgBytes, cbOffset, Math.Min(cbActual, cbBufferLen));
@@ -1519,13 +1519,13 @@ namespace System.Data.Odbc
                         int totalSize = 0;
                         do
                         {
-                            junkSize = (ODBC32.SQL_NO_TOTAL != cbActual) ? cbActual : cbBufferLen;
+                            junkSize = (cbActual != ODBC32.SQL_NO_TOTAL) ? cbActual : cbBufferLen;
                             rgBytes = new byte[junkSize];
                             totalSize += junkSize;
                             buffer.ReadBytes(0, rgBytes, 0, junkSize);
                             junkArray.Add(rgBytes);
                         }
-                        while ((ODBC32.SQL_NO_TOTAL == cbActual) && GetData(i, ODBC32.SQL_C.BINARY, cbBufferLen, out cbActual));
+                        while ((cbActual == ODBC32.SQL_NO_TOTAL) && GetData(i, ODBC32.SQL_C.BINARY, cbBufferLen, out cbActual));
 
                         rgBytes = new byte[totalSize];
                         foreach (byte[] junk in junkArray)
@@ -1976,7 +1976,7 @@ namespace System.Data.Odbc
                 {
                     Connection!.HandleErrorNoThrow(StatementHandle, retcode);
                 }
-                else if (!disposing && (retcode != ODBC32.RetCode.NO_DATA) && (ODBC32.RetCode.SUCCESS != retcode))
+                else if (!disposing && (retcode != ODBC32.RetCode.NO_DATA) && (retcode != ODBC32.RetCode.SUCCESS))
                 {
                     // allow for building comulative error messages.
                     if (errors == null)
@@ -2002,7 +2002,7 @@ namespace System.Data.Odbc
                     }
                 }
             } while ((!singleResult && hasMoreResults && !hasColumns)  // repeat for results with no columns
-                     || ((ODBC32.RetCode.NO_DATA != retcode) && allresults && (loop < MaxConsecutiveFailure)) // or process all results until done
+                     || ((retcode != ODBC32.RetCode.NO_DATA) && allresults && (loop < MaxConsecutiveFailure)) // or process all results until done
                      || (singleResult && hasMoreResults));           // or for any result in singelResult mode
 
             if (retcode == ODBC32.RetCode.NO_DATA)
@@ -2378,7 +2378,7 @@ namespace System.Data.Odbc
                                            buffer.PtrOffset(0, 256),
                                            (IntPtr)256,
                                            buffer.PtrOffset(256, IntPtr.Size).Handle);
-                            while (ODBC32.RetCode.SUCCESS == (retcode = KeyInfoStatementHandle.Fetch()))
+                            while ((retcode = KeyInfoStatementHandle.Fetch()) == ODBC32.RetCode.SUCCESS)
                             {
                                 cbActual = buffer.ReadIntPtr(256);
                                 columnname = buffer.PtrToStringUni(0, (int)cbActual / 2/*cch*/);
@@ -2458,7 +2458,7 @@ namespace System.Data.Odbc
                                    (IntPtr)256,
                                    buffer.PtrOffset(256, IntPtr.Size).Handle);
 
-                    while (ODBC32.RetCode.SUCCESS == (retcode = KeyInfoStatementHandle.Fetch()))
+                    while ((retcode = KeyInfoStatementHandle.Fetch()) == ODBC32.RetCode.SUCCESS)
                     {
                         cbActual = buffer.ReadIntPtr(256);
                         columnname = buffer.PtrToStringUni(0, (int)cbActual / 2/*cch*/);
@@ -2580,7 +2580,7 @@ namespace System.Data.Odbc
                             colnameActual);
                 // Find the best unique index on the table, use the ones whose columns are
                 // completely covered by the query.
-                while (ODBC32.RetCode.SUCCESS == (retcode = KeyInfoStatementHandle.Fetch()))
+                while ((retcode = KeyInfoStatementHandle.Fetch()) == ODBC32.RetCode.SUCCESS)
                 {
                     cbColnameLen = buffer.ReadIntPtr(colnameActualOffset);
                     cbIndexLen = buffer.ReadIntPtr(indexActualOffset);

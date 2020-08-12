@@ -132,7 +132,7 @@ namespace System.Data.Odbc
 
             ConnectionState state = connection.State;
 
-            if (ConnectionState.Open != state)
+            if (state != ConnectionState.Open)
             {
                 throw ADP.OpenConnectionRequired(ADP.DeriveParameters, state);
             }

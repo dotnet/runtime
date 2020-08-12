@@ -23,7 +23,7 @@ namespace System.Data.Odbc
             switch (message)
             {
                 case Recover:
-                    if (CommandTag == tag)
+                    if (tag == CommandTag)
                     {
                         ((OdbcCommand)value).RecoverFromConnection();
                     }
@@ -33,7 +33,7 @@ namespace System.Data.Odbc
                     }
                     break;
                 case Closing:
-                    if (CommandTag == tag)
+                    if (tag == CommandTag)
                     {
                         ((OdbcCommand)value).CloseFromConnection();
                     }

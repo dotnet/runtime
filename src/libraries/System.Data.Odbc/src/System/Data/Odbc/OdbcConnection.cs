@@ -391,7 +391,7 @@ namespace System.Data.Odbc
                     buffer = new byte[cbActual + 2];
                     retcode = connectionHandle.GetConnectionAttribute(attribute, buffer, out cbActual);
                 }
-                if ((ODBC32.RetCode.SUCCESS == retcode) || (ODBC32.RetCode.SUCCESS_WITH_INFO == retcode))
+                if ((retcode == ODBC32.RetCode.SUCCESS) || (retcode == ODBC32.RetCode.SUCCESS_WITH_INFO))
                 {
                     value = (BitConverter.IsLittleEndian ? Encoding.Unicode : Encoding.BigEndianUnicode).GetString(buffer, 0, Math.Min(cbActual, buffer.Length));
                 }

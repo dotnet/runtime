@@ -67,7 +67,7 @@ namespace System.Data.Odbc
 
         private void DisposeDeadDataReader()
         {
-            if (ConnectionState.Fetching == _cmdState)
+            if (_cmdState == ConnectionState.Fetching)
             {
                 if (_weakDataReaderReference != null && !_weakDataReaderReference.IsAlive)
                 {
@@ -195,7 +195,7 @@ namespace System.Data.Odbc
 
         public void ResetCommandTimeout()
         { // V1.2.3300
-            if (ADP.DefaultCommandTimeout != _commandTimeout)
+            if (_commandTimeout != ADP.DefaultCommandTimeout)
             {
                 PropertyChanging();
                 _commandTimeout = ADP.DefaultCommandTimeout;
@@ -204,7 +204,7 @@ namespace System.Data.Odbc
 
         private bool ShouldSerializeCommandTimeout()
         { // V1.2.3300
-            return (ADP.DefaultCommandTimeout != _commandTimeout);
+            return (_commandTimeout != ADP.DefaultCommandTimeout);
         }
 
         [
@@ -486,7 +486,7 @@ namespace System.Data.Odbc
         internal bool RecoverFromConnection()
         {
             DisposeDeadDataReader();
-            return (ConnectionState.Closed == _cmdState);
+            return (_cmdState == ConnectionState.Closed);
         }
 
         private void CloseCommandWrapper()
@@ -669,7 +669,7 @@ namespace System.Data.Odbc
                 {
                     retcode = stmt.Prepare(CommandText);
 
-                    if (ODBC32.RetCode.SUCCESS != retcode)
+                    if (retcode != ODBC32.RetCode.SUCCESS)
                     {
                         _connection!.HandleError(stmt, retcode);
                     }
@@ -802,7 +802,7 @@ namespace System.Data.Odbc
                         }
 
                         //Note: Execute will return NO_DATA for Update/Delete non-row returning queries
-                        if ((ODBC32.RetCode.SUCCESS != retcode) && (ODBC32.RetCode.NO_DATA != retcode))
+                        if ((retcode != ODBC32.RetCode.SUCCESS) && (retcode != ODBC32.RetCode.NO_DATA))
                         {
                             _connection!.HandleError(stmt, retcode);
                         }
@@ -907,7 +907,7 @@ namespace System.Data.Odbc
             retcode = stmt.Prepare(CommandText);
 
 
-            if (ODBC32.RetCode.SUCCESS != retcode)
+            if (retcode != ODBC32.RetCode.SUCCESS)
             {
                 _connection.HandleError(stmt, retcode);
             }
@@ -952,7 +952,7 @@ namespace System.Data.Odbc
             // must have an open and available connection
             ConnectionState state = connection.State;
 
-            if (ConnectionState.Open != state)
+            if (state != ConnectionState.Open)
             {
                 throw ADP.OpenConnectionRequired(methodName, state);
             }

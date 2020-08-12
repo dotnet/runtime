@@ -58,7 +58,7 @@ namespace System.Data.ProviderBase
                 throw ADP.ArgumentNull(nameof(fieldName));
             }
             int index = IndexOf(fieldName);
-            if (-1 == index)
+            if (index == -1)
             {
                 throw ADP.IndexOutOfRange(fieldName);
             }
@@ -89,7 +89,7 @@ namespace System.Data.ProviderBase
             {
                 // via case insensitive search, first match with lowest ordinal matches
                 index = LinearIndexOf(fieldName, CompareOptions.IgnoreCase);
-                if (-1 == index)
+                if (index == -1)
                 {
                     // do the slow search now (kana, width insensitive comparison)
                     index = LinearIndexOf(fieldName, ADP.DefaultCompareOptions);
