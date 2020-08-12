@@ -1595,6 +1595,42 @@ namespace System.Diagnostics.Tests
             }
         }
 
+        [Fact]
+        [OuterLoop]
+        [Trait(XunitConstants.Category, XunitConstants.IgnoreForCI)] // Pops UI
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public void MainWindowTitle_GetWithGui_ShouldRefresh_Windows()
+        {
+            const string ExePath = "notepad.exe";
+            Assert.True(IsProgramInstalled(ExePath));
+
+            using (Process process = Process.Start(ExePath))
+            {
+                try
+                {
+                    Assert.Equal(string.Empty, process.MainWindowTitle);
+
+                    for (int attempt = 0; attempt < 50; ++attempt)
+                    {
+                        process.Refresh();
+                        if (process.MainWindowTitle != string.Empty)
+                        {
+                            break;
+                        }
+
+                        Thread.Sleep(100);
+                    }
+
+                    Assert.NotEqual(string.Empty, process.MainWindowTitle);
+                }
+                finally
+                {
+                    process.Kill();
+                    Assert.True(process.WaitForExit(WaitInMS));
+                }
+            }
+        }
+
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void MainWindowTitle_NoWindow_ReturnsEmpty()
         {
