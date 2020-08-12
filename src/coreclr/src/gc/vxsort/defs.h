@@ -49,21 +49,24 @@ namespace std {
 template <class _Ty>
 class numeric_limits {
    public:
-    static constexpr _Ty Max() { return _Ty(); }
-    static constexpr _Ty Min() { return _Ty(); }
+    static constexpr _Ty Max() { static_assert(sizeof(_Ty) != sizeof(_Ty), "func must be specialized!"); return _Ty(); }
+    static constexpr _Ty Min() { static_assert(sizeof(_Ty) != sizeof(_Ty), "func must be specialized!"); return _Ty(); }
 };
+
 template <>
 class numeric_limits<int32_t> {
 public:
     static constexpr int32_t Max() { return 0x7fffffff; }
     static constexpr int32_t Min() { return -0x7fffffff - 1; }
 };
+
 template <>
 class numeric_limits<uint32_t> {
 public:
     static constexpr uint32_t Max() { return 0xffffffff; }
     static constexpr uint32_t Min() { return 0; }
 };
+
 template <>
 class numeric_limits<int64_t> {
    public:

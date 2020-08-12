@@ -18,7 +18,6 @@
 #include <immintrin.h>
 
 #include "defs.h"
-//#include "isa_detection.h"
 #include "alignment.h"
 #include "machine_traits.h"
 #ifdef VXSORT_STATS
@@ -26,11 +25,6 @@
 #endif //VXSORT_STATS
 #include "packer.h"
 #include "smallsort/bitonic_sort.h"
-
-//#include <algorithm>
-//#include <cstring>
-//#include <cstdint>
-//#include <cstdio>
 
 namespace vxsort {
 using vxsort::smallsort::bitonic;

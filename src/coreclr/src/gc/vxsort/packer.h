@@ -4,16 +4,11 @@
 #ifndef VXSORT_PACKER_H
 #define VXSORT_PACKER_H
 
-//#include <cstdint>
-//#include <limits>
-//#include <type_traits>
-//#include <cassert>
 #include "defs.h"
 #include "alignment.h"
 #include "machine_traits.h"
 
 #include <immintrin.h>
-//#include <cstdio>
 
 namespace vxsort {
 

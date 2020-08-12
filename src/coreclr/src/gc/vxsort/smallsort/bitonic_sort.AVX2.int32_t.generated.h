@@ -21,7 +21,6 @@
 #endif
 #endif
 
-//#include <limits>
 #include <immintrin.h>
 #include "bitonic_sort.h"
 

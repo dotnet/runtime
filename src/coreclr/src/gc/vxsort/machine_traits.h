@@ -8,8 +8,6 @@
 #ifndef VXSORT_MACHINE_TRAITS_H
 #define VXSORT_MACHINE_TRAITS_H
 
-//#include <cstdint>
-
 namespace vxsort {
 
 enum vector_machine {
