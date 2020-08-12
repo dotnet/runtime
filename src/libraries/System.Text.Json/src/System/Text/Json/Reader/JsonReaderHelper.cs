@@ -75,6 +75,7 @@ namespace System.Text.Json
                     span.Length);
         }
 
+        // Intrinsified in mono interpreter
         private static unsafe int IndexOfOrLessThan(ref byte searchSpace, byte value0, byte value1, byte lessThan, int length)
         {
             Debug.Assert(length >= 0);

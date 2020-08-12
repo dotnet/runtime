@@ -138,3 +138,15 @@ interp_intrins_widen_ascii_to_utf16 (guint8 *pAsciiBuffer, mono_unichar2 *pUtf16
 	}
 	return currentOffset;
 }
+
+int
+interp_intrins_json_index_of_lt (guint8 *searchSpace, guint8 value0, guint8 value1, guint8 lessThan, gint32 length)
+{
+	for (int i = 0; i < length; i++) {
+		guint8 value = searchSpace [i];
+		if (value0 == value || value1 == value || lessThan > value)
+			return i;
+	}
+
+	return -1;
+}

@@ -1895,6 +1895,11 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 			!strncmp ("System.Runtime.Intrinsics", klass_name_space, 25) &&
 			!strcmp (tm, "get_IsSupported")) {
 		*op = MINT_LDC_I4_0;
+	} else if (!strcmp (m_class_get_image (target_method->klass)->assembly_name, "System.Text.Json") &&
+			!strcmp (klass_name_space, "System.Text.Json") &&
+			!strcmp (klass_name, "JsonReaderHelper")) {
+		if (!strcmp (tm, "IndexOfOrLessThan"))
+			*op = MINT_INTRINS_JSON_INDEX_OF_LT;
 	}
 #endif
 

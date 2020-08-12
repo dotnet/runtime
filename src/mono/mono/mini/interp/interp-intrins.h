@@ -24,4 +24,7 @@ interp_intrins_u32_to_decstr (guint32 value, MonoArray *cache, MonoVTable *vtabl
 mono_u
 interp_intrins_widen_ascii_to_utf16 (guint8 *pAsciiBuffer, mono_unichar2 *pUtf16Buffer, mono_u elementCount);
 
+int
+interp_intrins_json_index_of_lt (guint8 *searchSpace, guint8 value0, guint8 value1, guint8 lessThan, gint32 length);
+
 #endif /* __MONO_MINI_INTERP_INTRINSICS_H__ */

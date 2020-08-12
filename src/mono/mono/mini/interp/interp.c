@@ -5355,6 +5355,12 @@ call_newobj:
 			ip++;
 			MINT_IN_BREAK;
 		}
+		MINT_IN_CASE(MINT_INTRINS_JSON_INDEX_OF_LT) {
+			sp -= 4;
+			sp [-1].data.i = interp_intrins_json_index_of_lt ((guint8*)sp [-1].data.p, (guint8)sp [0].data.i, (guint8)sp [1].data.i, (guint8)sp [2].data.i, sp [3].data.i);
+			ip++;
+			MINT_IN_BREAK;
+		}
 		MINT_IN_CASE(MINT_INTRINS_UNSAFE_BYTE_OFFSET) {
 			sp -= 2;
 			sp [0].data.nati = (guint8*)sp [1].data.p - (guint8*)sp [0].data.p;
