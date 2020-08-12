@@ -206,7 +206,7 @@ namespace System.Net.Http.Functional.Tests
                 string requestContent = requestData.Body is null ? (string)null : Encoding.ASCII.GetString(requestData.Body);
                 Assert.Equal(clientContent, requestContent);
                 await connection.SendResponseAsync(HttpStatusCode.OK, body: serverContent);
-            });
+            }, new Http2Options() { UseSsl = false });
         }
 
         [ConditionalFact(nameof(SupportsAlpn))]
