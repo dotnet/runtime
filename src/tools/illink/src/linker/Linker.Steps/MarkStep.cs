@@ -500,23 +500,34 @@ namespace Mono.Linker.Steps
 			return false;
 		}
 
-		bool IsInterfaceImplementationMarked (TypeDefinition type, TypeDefinition interfaceType)
-		{
-			return type.HasInterface (@interfaceType, out InterfaceImplementation implementation) && Annotations.IsMarked (implementation);
-		}
-
 		bool IsInterfaceImplementationMarkedRecursively (TypeDefinition type, TypeDefinition interfaceType)
 		{
-			if (IsInterfaceImplementationMarked (type, interfaceType))
+			if (type.HasInterfaces) {
+				foreach (var intf in type.Interfaces) {
+					TypeDefinition resolvedInterface = intf.InterfaceType.Resolve ();
+					if (resolvedInterface == null)
+						continue;
+
+					if (Annotations.IsMarked (intf) && RequiresInterfaceRecursively (resolvedInterface, interfaceType))
+						return true;
+				}
+			}
+
+			return false;
+		}
+
+		bool RequiresInterfaceRecursively (TypeDefinition typeToExamine, TypeDefinition interfaceType)
+		{
+			if (typeToExamine == interfaceType)
 				return true;
 
-			if (type.HasInterfaces) {
-				foreach (var iface in type.Interfaces) {
+			if (typeToExamine.HasInterfaces) {
+				foreach (var iface in typeToExamine.Interfaces) {
 					var resolved = iface.InterfaceType.Resolve ();
 					if (resolved == null)
 						continue;
 
-					if (IsInterfaceImplementationMarkedRecursively (resolved, interfaceType))
+					if (RequiresInterfaceRecursively (resolved, interfaceType))
 						return true;
 				}
 			}
