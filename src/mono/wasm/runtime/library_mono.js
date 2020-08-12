@@ -44,8 +44,9 @@ var MonoSupportLib = {
 			module ["mono_wasm_globalization_init"] = MONO.mono_wasm_globalization_init;
 			module ["mono_wasm_get_loaded_files"] = MONO.mono_wasm_get_loaded_files;
 			module ["mono_wasm_new_root_buffer"] = MONO.mono_wasm_new_root_buffer;
-			module ["mono_wasm_new_root_table"] = MONO.mono_wasm_new_root_table;
 			module ["mono_wasm_new_root"] = MONO.mono_wasm_new_root;
+			module ["mono_wasm_new_roots"] = MONO.mono_wasm_new_roots;
+			module ["mono_wasm_release_roots"] = MONO.mono_wasm_release_roots;
 		},
 
 		_mono_wasm_root_buffer_prototype: {
