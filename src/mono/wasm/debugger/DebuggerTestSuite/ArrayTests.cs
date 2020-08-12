@@ -614,14 +614,14 @@ namespace DebuggerTests
                var c_obj_id = c_obj["value"]?["objectId"]?.Value<string>();
                Assert.NotNull(c_obj_id);
 
-                // Invalid format
-                await GetProperties("dotnet:array:4123", expect_ok: false);
+               // Invalid format
+               await GetProperties("dotnet:array:4123", expect_ok: false);
 
-                // Invalid object id
-                await GetProperties("dotnet:array:{ \"arrayId\": 234980 }", expect_ok: false);
+               // Invalid object id
+               await GetProperties("dotnet:array:{ \"arrayId\": 234980 }", expect_ok: false);
 
-                // Trying to access object as an array
-                if (!DotnetObjectId.TryParse(c_obj_id, out var id) || id.Scheme != "object")
+               // Trying to access object as an array
+               if (!DotnetObjectId.TryParse(c_obj_id, out var id) || id.Scheme != "object")
                    Assert.True(false, "Unexpected object id format. Maybe this test is out of sync with the object id format in library_mono.js?");
 
                if (!int.TryParse(id.Value, out var idNum))
@@ -653,8 +653,8 @@ namespace DebuggerTests
                Assert.True(id_args["arrayId"] != null, "ObjectId format for array seems to have changed. Expected to find 'arrayId' in the value. Update this test");
                Assert.True(id_args != null, "Expected to get a json as the value part of {id}");
 
-                // Try one valid query, to confirm that the id format hasn't changed!
-                id_args["arrayIdx"] = 0;
+               // Try one valid query, to confirm that the id format hasn't changed!
+               id_args["arrayIdx"] = 0;
                await GetProperties($"dotnet:valuetype:{id_args.ToString(Newtonsoft.Json.Formatting.None)}", expect_ok: true);
 
                id_args["arrayIdx"] = 12399;
@@ -685,8 +685,8 @@ namespace DebuggerTests
                var invalid_accessors = new object[] { "NonExistant", "10000", "-2", 10000, -2, null, String.Empty };
                foreach (var invalid_accessor in invalid_accessors)
                {
-                    // var res = await InvokeGetter (JObject.FromObject (new { value = new { objectId = obj_id } }), invalid_accessor, expect_ok: true);
-                    var res = await InvokeGetter(pf_arr, invalid_accessor, expect_ok: true);
+                   // var res = await InvokeGetter (JObject.FromObject (new { value = new { objectId = obj_id } }), invalid_accessor, expect_ok: true);
+                   var res = await InvokeGetter(pf_arr, invalid_accessor, expect_ok: true);
                    AssertEqual("undefined", res.Value["result"]?["type"]?.ToString(), "Expected to get undefined result for non-existant accessor");
                }
            });

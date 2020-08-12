@@ -410,16 +410,16 @@ namespace DebuggerTests
                     "DelegatesTest",
                     wait_for_event_fn: async (pause_location) =>
                    {
-                        //make sure we're on the right bp
-                        Assert.Equal(bp.Value["breakpointId"]?.ToString(), pause_location["hitBreakpoints"]?[0]?.Value<string>());
+                       //make sure we're on the right bp
+                       Assert.Equal(bp.Value["breakpointId"]?.ToString(), pause_location["hitBreakpoints"]?[0]?.Value<string>());
 
                        var top_frame = pause_location["callFrames"][0];
 
                        var scope = top_frame["scopeChain"][0];
                        Assert.Equal("dotnet:scope:0", scope["object"]["objectId"]);
 
-                        // Try to get an invalid scope!
-                        var get_prop_req = JObject.FromObject(new
+                       // Try to get an invalid scope!
+                       var get_prop_req = JObject.FromObject(new
                        {
                            objectId = "dotnet:scope:23490871",
                        });

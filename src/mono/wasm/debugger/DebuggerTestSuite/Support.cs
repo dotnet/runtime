@@ -214,9 +214,9 @@ namespace DebuggerTests
                     function_name,
                     wait_for_event_fn: async (pause_location) =>
                    {
-                        //make sure we're on the right bp
+                       //make sure we're on the right bp
 
-                        Assert.Equal(bp.Value["breakpointId"]?.ToString(), pause_location["hitBreakpoints"]?[0]?.Value<string>());
+                       Assert.Equal(bp.Value["breakpointId"]?.ToString(), pause_location["hitBreakpoints"]?[0]?.Value<string>());
 
                        var top_frame = pause_location["callFrames"][0];
 

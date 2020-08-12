@@ -9,11 +9,11 @@ namespace DebuggerTests
     {
         public class TestCaughtException
         {
-            public void run() 
+            public void run()
             {
                 try
                 {
-                    throw new CustomException ("not implemented caught");
+                    throw new CustomException("not implemented caught");
                 }
                 catch
                 {
@@ -26,7 +26,7 @@ namespace DebuggerTests
         {
             public void run()
             {
-                throw new CustomException ("not implemented uncaught");
+                throw new CustomException("not implemented uncaught");
             }
         }
 
@@ -46,8 +46,8 @@ namespace DebuggerTests
         // Using this name to match with what js has.
         // helps with the tests
         public string message;
-        public CustomException (string message)
-            : base (message)
+        public CustomException(string message)
+            : base(message)
         {
             this.message = message;
         }

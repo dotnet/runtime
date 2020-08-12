@@ -104,8 +104,8 @@ namespace DebuggerTests
                {
                    var locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
 
-                    // sc_arg
-                    {
+                   // sc_arg
+                   {
                        var sc_arg = await EvaluateOnCallFrame(pause_location["callFrames"][0]["callFrameId"].Value<string>(), "sc_arg");
                        await CheckValue(sc_arg, TObject("DebuggerTests.SimpleClass"), "sc_arg#1");
 
@@ -120,8 +120,8 @@ namespace DebuggerTests
                        }, "sc_arg_props#1");
                    }
 
-                    // local_gs
-                    {
+                   // local_gs
+                   {
                        var local_gs = await EvaluateOnCallFrame(pause_location["callFrames"][0]["callFrameId"].Value<string>(), "local_gs");
                        await CheckValue(local_gs, TValueType("DebuggerTests.SimpleGenericStruct<int>"), "local_gs#1");
 
@@ -134,8 +134,8 @@ namespace DebuggerTests
                        }, "local_gs_props#1");
                    }
 
-                    // step, check local_gs
-                    pause_location = await StepAndCheck(StepKind.Over, bp_loc, line + 1, col, function_name);
+                   // step, check local_gs
+                   pause_location = await StepAndCheck(StepKind.Over, bp_loc, line + 1, col, function_name);
                    {
                        var local_gs = await EvaluateOnCallFrame(pause_location["callFrames"][0]["callFrameId"].Value<string>(), "local_gs");
                        await CheckValue(local_gs, TValueType("DebuggerTests.SimpleGenericStruct<int>"), "local_gs#2");
@@ -149,8 +149,8 @@ namespace DebuggerTests
                        }, "local_gs_props#2");
                    }
 
-                    // step check sc_arg.Id
-                    pause_location = await StepAndCheck(StepKind.Over, bp_loc, line + 2, col, function_name);
+                   // step check sc_arg.Id
+                   pause_location = await StepAndCheck(StepKind.Over, bp_loc, line + 2, col, function_name);
                    {
                        var sc_arg = await EvaluateOnCallFrame(pause_location["callFrames"][0]["callFrameId"].Value<string>(), "sc_arg");
                        await CheckValue(sc_arg, TObject("DebuggerTests.SimpleClass"), "sc_arg#2");
@@ -161,7 +161,7 @@ namespace DebuggerTests
                            X = TNumber(10),
                            Y = TNumber(45),
                            Id = TString("sc_arg#Id"), // <------- This changed
-                            Color = TEnum("DebuggerTests.RGB", "Blue"),
+                           Color = TEnum("DebuggerTests.RGB", "Blue"),
                            PointWithCustomGetter = TGetter("PointWithCustomGetter")
                        }, "sc_arg_props#2");
                    }
@@ -205,10 +205,10 @@ namespace DebuggerTests
                evaluate = await EvaluateOnCallFrame(pause_location["callFrames"][0]["callFrameId"].Value<string>(), "this.c");
                CheckContentValue(evaluate, "3");
 
-                // FIXME: not supported yet
-                // evaluate = await EvaluateOnCallFrame (pause_location ["callFrames"][0] ["callFrameId"].Value<string> (), "this.dt");
-                // await CheckDateTimeValue (evaluate, new DateTime (2000, 5, 4, 3, 2, 1));
-            });
+               // FIXME: not supported yet
+               // evaluate = await EvaluateOnCallFrame (pause_location ["callFrames"][0] ["callFrameId"].Value<string> (), "this.dt");
+               // await CheckDateTimeValue (evaluate, new DateTime (2000, 5, 4, 3, 2, 1));
+           });
     }
 
 }
