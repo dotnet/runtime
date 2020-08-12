@@ -5123,7 +5123,6 @@ call:
 		MINT_IN_CASE(MINT_NEWOBJ_FAST) {
 			MonoVTable *vtable = (MonoVTable*) frame->imethod->data_items [ip [3]];
 			INIT_VTABLE (vtable);
-			MonoObject *o; // See the comment about GC safety.
 			guint16 param_count;
 			guint16 imethod_index = ip [1];
 
@@ -5137,7 +5136,7 @@ call:
 				memmove (sp + 2, sp, param_count * sizeof (stackval));
 			}
 
-			OBJREF (o) = mono_gc_alloc_obj (vtable, m_class_get_instance_size (vtable->klass));
+			MonoObject *o = mono_gc_alloc_obj (vtable, m_class_get_instance_size (vtable->klass));
 			if (G_UNLIKELY (!o)) {
 				mono_error_set_out_of_memory (error, "Could not allocate %i bytes", m_class_get_instance_size (vtable->klass));
 				THROW_EX (mono_error_convert_to_exception (error), ip);
@@ -5241,13 +5240,13 @@ call_newobj:
 				THROW_EX (exc, ip);
 			}
 			error_init_reuse (error);
-			MonoObject* o = NULL; // See the comment about GC safety.
-			OBJREF (o) = mono_object_new_checked (domain, newobj_class, error);
+			MonoObject* o = mono_object_new_checked (domain, newobj_class, error);
+			sp [0].data.o = o; // return value
+			sp [1].data.o = o; // first parameter
+
 			mono_error_cleanup (error); // FIXME: do not swallow the error
 			error_init_reuse (error);
 			EXCEPTION_CHECKPOINT;
-			sp [0].data.o = o; // return value
-			sp [1].data.o = o; // first parameter
 #ifndef DISABLE_REMOTING
 			if (mono_object_is_transparent_proxy (o)) {
 				MonoMethod *remoting_invoke_method = mono_marshal_get_remoting_invoke_with_check (cmethod->method, error);
