@@ -81,6 +81,9 @@ var MonoSupportLib = {
 				this.__buffer.set(this.__index, value);
 				return value;
 			},
+			valueOf: function () {
+				return this.get();
+			},
 			release: function () {
 				MONO._mono_wasm_release_scratch_index (this.__index);
 				this.__buffer = undefined;
