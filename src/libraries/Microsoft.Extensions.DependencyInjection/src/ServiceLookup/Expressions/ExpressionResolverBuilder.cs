@@ -4,7 +4,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -21,7 +21,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
         internal static readonly MethodInfo MonitorEnterMethodInfo = GetMethodInfo<Action<object, bool>>((lockObj, lockTaken) => Monitor.Enter(lockObj, ref lockTaken));
         internal static readonly MethodInfo MonitorExitMethodInfo = GetMethodInfo<Action<object>>(lockObj => Monitor.Exit(lockObj));
 
-        internal static readonly MethodInfo ArrayEmptyMethodInfo = typeof(Array).GetMethod(nameof(Array.Empty));
+        private static readonly MethodInfo ArrayEmptyMethodInfo = typeof(Array).GetMethod(nameof(Array.Empty));
 
         private static readonly ParameterExpression ScopeParameter = Expression.Parameter(typeof(ServiceProviderEngineScope));
 
@@ -132,8 +132,8 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
         {
             if (callSite.ServiceCallSites.Length == 0)
             {
-                return Expression.Constant(ArrayEmptyMethodInfo
-                    .MakeGenericMethod(callSite.ItemType)
+                return Expression.Constant(
+                    GetArrayEmptyMethodInfo(callSite.ItemType)
                     .Invoke(obj: null, parameters: Array.Empty<object>()));
             }
 
@@ -153,6 +153,11 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                 ScopeParameter,
                 VisitCallSiteMain(callSite, context));
         }
+
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2006:UnrecognizedReflectionPattern",
+            Justification = "Calling Array.Empty<T>() is safe since the T doesn't have linker annotations.")]
+        internal static MethodInfo GetArrayEmptyMethodInfo(Type itemType) =>
+            ArrayEmptyMethodInfo.MakeGenericMethod(itemType);
 
         private Expression TryCaptureDisposable(ServiceCallSite callSite, ParameterExpression scope, Expression service)
         {

@@ -39,6 +39,7 @@ enum NamedIntrinsic : unsigned short
     NI_System_GC_KeepAlive,
     NI_System_Type_get_IsValueType,
     NI_System_Type_IsAssignableFrom,
+    NI_System_Type_IsAssignableTo,
 
     // These are used by HWIntrinsics but are defined more generally
     // to allow dead code optimization and handle the recursion case

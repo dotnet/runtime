@@ -1,0 +1,13 @@
+<Project DefaultTargets="Build">
+  <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props))" />
+
+  <PropertyGroup>
+    <AdditionalProjectReferences>Microsoft.Extensions.Http</AdditionalProjectReferences>
+  </PropertyGroup>
+  
+  <ItemGroup>
+    <TestConsoleAppSourceFiles Include="AddTypedClientTests.cs" />
+  </ItemGroup>
+
+  <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets))" />
+</Project>

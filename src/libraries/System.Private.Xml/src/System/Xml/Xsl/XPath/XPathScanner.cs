@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#nullable enable
 // <spec>http://www.w3.org/TR/xpath#exprlex</spec>
 //------------------------------------------------------------------------------
 
@@ -62,9 +63,9 @@ namespace System.Xml.Xsl.XPath
         private int _curIndex;
         private char _curChar;
         private LexKind _kind;
-        private string _name;
-        private string _prefix;
-        private string _stringValue;
+        private string? _name;
+        private string? _prefix;
+        private string? _stringValue;
         private bool _canBeFunction;
         private int _lexStart;
         private int _prevLexEnd;
@@ -423,6 +424,8 @@ namespace System.Xml.Xsl.XPath
             }
             else
             {
+                Debug.Assert(_prefix != null);
+                Debug.Assert(_name != null);
                 if (_prefix.Length != 0 || _name.Length > 3)
                     return false;
 

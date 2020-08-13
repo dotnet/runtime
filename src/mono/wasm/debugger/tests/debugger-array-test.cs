@@ -158,7 +158,7 @@ namespace DebuggerTests
             return true;
         }
 
-        public async Task < (T, Point[]) > InstanceMethodValueTypeLocalsAsync<T>(T t1)
+        public async Task<(T, Point[])> InstanceMethodValueTypeLocalsAsync<T>(T t1)
         {
             var point_arr = new Point[]
             {

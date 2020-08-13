@@ -59,7 +59,7 @@ namespace System.Threading.Tasks
     public class Task<TResult> : Task
     {
         // The value itself, if set.
-        [MaybeNull, AllowNull] internal TResult m_result = default!;
+        internal TResult? m_result;
 
         private static readonly TaskFactory<TResult> s_Factory = new TaskFactory<TResult>();
 
@@ -93,7 +93,7 @@ namespace System.Threading.Tasks
             m_result = result;
         }
 
-        internal Task(bool canceled, [AllowNull] TResult result, TaskCreationOptions creationOptions, CancellationToken ct)
+        internal Task(bool canceled, TResult? result, TaskCreationOptions creationOptions, CancellationToken ct)
             : base(canceled, creationOptions, ct)
         {
             if (!canceled)
@@ -364,7 +364,7 @@ namespace System.Threading.Tasks
 
 
         // internal helper function breaks out logic used by TaskCompletionSource
-        internal bool TrySetResult([AllowNull] TResult result)
+        internal bool TrySetResult(TResult? result)
         {
             Debug.Assert(m_action == null, "Task<T>.TrySetResult(): non-null m_action");
 
@@ -1357,7 +1357,7 @@ namespace System.Threading.Tasks
             m_task = task;
         }
 
-        [MaybeNull] public TResult Result => m_task.Status == TaskStatus.RanToCompletion ? m_task.Result : default!;
+        public TResult? Result => m_task.Status == TaskStatus.RanToCompletion ? m_task.Result : default;
         public object? AsyncState => m_task.AsyncState;
         public TaskCreationOptions CreationOptions => m_task.CreationOptions;
         public Exception? Exception => m_task.Exception;

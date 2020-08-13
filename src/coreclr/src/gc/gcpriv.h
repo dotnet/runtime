@@ -233,7 +233,7 @@ const int policy_expand  = 2;
 #ifdef SIMPLE_DPRINTF
 
 void GCLog (const char *fmt, ... );
-#define dprintf(l,x) {if ((l <= 1) || (l == GTC_LOG)) {GCLog x;}}
+#define dprintf(l,x) {if ((l == 1) || (l == GTC_LOG)) {GCLog x;}}
 #else //SIMPLE_DPRINTF
 // Nobody used the logging mechanism that used to be here. If we find ourselves
 // wanting to inspect GC logs on unmodified builds, we can use this define here
@@ -1318,7 +1318,7 @@ public:
 
 protected:
     PER_HEAP_ISOLATED
-    BOOL reserve_initial_memory (size_t normal_size, size_t large_size, size_t pinned_size, int num_heaps, bool use_large_pages_p, bool separated_poh_p);
+    BOOL reserve_initial_memory (size_t normal_size, size_t large_size, size_t pinned_size, int num_heaps, bool use_large_pages_p, bool separated_poh_p, uint16_t* heap_no_to_numa_node);
 
     PER_HEAP_ISOLATED
     void destroy_initial_memory();
@@ -4038,6 +4038,20 @@ protected:
 
     PER_HEAP
     int generation_skip_ratio;//in %
+
+#ifdef FEATURE_CARD_MARKING_STEALING
+    PER_HEAP
+    VOLATILE(size_t) n_eph_soh;
+    PER_HEAP
+    VOLATILE(size_t) n_gen_soh;
+    PER_HEAP
+    VOLATILE(size_t) n_eph_loh;
+    PER_HEAP
+    VOLATILE(size_t) n_gen_loh;
+#endif //FEATURE_CARD_MARKING_STEALING
+
+    PER_HEAP_ISOLATED
+    int generation_skip_ratio_threshold; 
 
     PER_HEAP
     BOOL gen0_bricks_cleared;

@@ -9,7 +9,7 @@ namespace System.Security.Cryptography
 {
     public partial class AesGcm
     {
-        private static readonly SafeAlgorithmHandle s_aesGcm = AesBCryptModes.OpenAesAlgorithm(Cng.BCRYPT_CHAIN_MODE_GCM);
+        private static readonly SafeAlgorithmHandle s_aesGcm = AesBCryptModes.OpenAesAlgorithm(Cng.BCRYPT_CHAIN_MODE_GCM).Value;
         private SafeKeyHandle _keyHandle;
 
         [MemberNotNull(nameof(_keyHandle))]

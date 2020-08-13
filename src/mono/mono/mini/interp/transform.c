@@ -4941,6 +4941,20 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 			klass = mini_get_class (method, token, generic_context);
 			CHECK_TYPELOAD (klass);
 
+			// Common in generic code:
+			// box T + unbox.any T -> nop
+            if ((td->last_ins->opcode == MINT_BOX || td->last_ins->opcode == MINT_BOX_VT) &&
+                (td->sp - 1)->klass == klass && !td->is_bb_start[in_offset]) {
+                gboolean is_vt = td->last_ins->opcode == MINT_BOX_VT;
+                interp_clear_ins(td, td->last_ins);
+                if (is_vt)
+                    PUSH_VT(td, mono_class_value_size(klass, NULL));
+                int mt = mint_type(m_class_get_byval_arg(klass));
+                SET_TYPE(td->sp - 1, stack_type[mt], klass);
+                td->ip += 5;
+                break;
+            }
+
 			if (mini_type_is_reference (m_class_get_byval_arg (klass))) {
 				int mt = mint_type (m_class_get_byval_arg (klass));
 				interp_handle_isinst (td, klass, FALSE);
@@ -6111,12 +6125,24 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 			}
 			case CEE_MONO_LDPTR:
 			case CEE_MONO_CLASSCONST:
+			case CEE_MONO_METHODCONST:
 				token = read32 (td->ip + 1);
 				td->ip += 5;
 				interp_add_ins (td, MINT_MONO_LDPTR);
 				td->last_ins->data [0] = get_data_item_index (td, mono_method_get_wrapper_data (method, token));
 				PUSH_SIMPLE_TYPE (td, STACK_TYPE_I);
 				break;
+			case CEE_MONO_PINVOKE_ADDR_CACHE: {
+				token = read32 (td->ip + 1);
+				td->ip += 5;
+				interp_add_ins (td, MINT_MONO_LDPTR);
+				g_assert (method->wrapper_type != MONO_WRAPPER_NONE);
+				/* This is a memory slot used by the wrapper */
+				gpointer addr = mono_domain_alloc0 (td->rtm->domain, sizeof (gpointer));
+				td->last_ins->data [0] = get_data_item_index (td, addr);
+				PUSH_SIMPLE_TYPE (td, STACK_TYPE_I);
+				break;
+			}
 			case CEE_MONO_OBJADDR:
 				CHECK_STACK (td, 1);
 				++td->ip;

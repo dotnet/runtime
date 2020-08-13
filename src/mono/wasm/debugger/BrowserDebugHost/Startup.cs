@@ -54,7 +54,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 {
                     case "devtoolsFrontendUrl":
                         var front = response[key];
-                        filtered[key] = $"{debuggerHost.Scheme}://{debuggerHost.Authority}{front.Replace ($"ws={debuggerHost.Authority}", $"ws={request.Host}")}";
+                        filtered[key] = $"{debuggerHost.Scheme}://{debuggerHost.Authority}{front.Replace($"ws={debuggerHost.Authority}", $"ws={request.Host}")}";
                         break;
                     case "webSocketDebuggerUrl":
                         var page = new Uri(response[key]);
@@ -97,7 +97,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
                 async Task Copy(HttpContext context)
                 {
-                    using(var httpClient = new HttpClient { Timeout = TimeSpan.FromSeconds(5) })
+                    using (var httpClient = new HttpClient { Timeout = TimeSpan.FromSeconds(5) })
                     {
                         var response = await httpClient.GetAsync(GetEndpoint(context));
                         context.Response.ContentType = response.Content.Headers.ContentType.ToString();
@@ -133,7 +133,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                         return;
                     }
 
-                    var endpoint = new Uri($"ws://{devToolsHost.Authority}{context.Request.Path.ToString ()}");
+                    var endpoint = new Uri($"ws://{devToolsHost.Authority}{context.Request.Path.ToString()}");
                     try
                     {
                         using var loggerFactory = LoggerFactory.Create(
@@ -154,7 +154,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         static async Task<T> ProxyGetJsonAsync<T>(string url)
         {
-            using(var httpClient = new HttpClient())
+            using (var httpClient = new HttpClient())
             {
                 var response = await httpClient.GetAsync(url);
                 return await JsonSerializer.DeserializeAsync<T>(await response.Content.ReadAsStreamAsync());

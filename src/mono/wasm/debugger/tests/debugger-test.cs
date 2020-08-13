@@ -161,7 +161,7 @@ public partial class Math
         Func<Math, GenericStruct<GenericStruct<int[]>>, GenericStruct<bool[]>> fn_func = (m, gs) => new GenericStruct<bool[]>();
         Func<Math, GenericStruct<GenericStruct<int[]>>, GenericStruct<bool[]>> fn_func_del = GenericStruct<int>.DelegateTargetForSignatureTest;
         Func<Math, GenericStruct<GenericStruct<int[]>>, GenericStruct<bool[]>> fn_func_null = null;
-        Func<bool> fn_func_only_ret = () => { Console.WriteLine ($"hello"); return true; };
+        Func<bool> fn_func_only_ret = () => { Console.WriteLine($"hello"); return true; };
         var fn_func_arr = new Func<Math, GenericStruct<GenericStruct<int[]>>, GenericStruct<bool[]>>[] {
                 (m, gs) => new GenericStruct<bool[]> () };
 

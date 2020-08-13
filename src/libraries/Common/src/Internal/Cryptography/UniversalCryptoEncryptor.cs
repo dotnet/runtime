@@ -61,7 +61,7 @@ namespace Internal.Cryptography
             Debug.Assert(plaintextLength >= 0);
 
              //divisor and factor are same and won't overflow.
-            int wholeBlocks = Math.DivRem(plaintextLength, InputBlockSize, out int remainder) * InputBlockSize;
+            int wholeBlocks = Math.DivRem(plaintextLength, PaddingSizeBytes, out int remainder) * PaddingSizeBytes;
 
             switch (PaddingMode)
             {
@@ -74,7 +74,7 @@ namespace Internal.Cryptography
                 case PaddingMode.PKCS7:
                 case PaddingMode.ANSIX923:
                 case PaddingMode.ISO10126:
-                    return checked(wholeBlocks + InputBlockSize);
+                    return checked(wholeBlocks + PaddingSizeBytes);
                 default:
                     Debug.Fail($"Unknown padding mode {PaddingMode}.");
                     throw new CryptographicException(SR.Cryptography_UnknownPaddingMode);
@@ -84,8 +84,8 @@ namespace Internal.Cryptography
         private int PadBlock(ReadOnlySpan<byte> block, Span<byte> destination)
         {
             int count = block.Length;
-            int paddingRemainder = count % InputBlockSize;
-            int padBytes = InputBlockSize - paddingRemainder;
+            int paddingRemainder = count % PaddingSizeBytes;
+            int padBytes = PaddingSizeBytes - paddingRemainder;
 
             switch (PaddingMode)
             {

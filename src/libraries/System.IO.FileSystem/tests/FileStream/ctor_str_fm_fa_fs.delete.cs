@@ -3,7 +3,6 @@
 
 using System;
 using System.IO;
-using System.Runtime.InteropServices;
 using Xunit;
 
 namespace System.IO.Tests
@@ -18,7 +17,7 @@ namespace System.IO.Tests
             {
                 Assert.True(File.Exists(fileName));
                 File.Delete(fileName);
-                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                if (OperatingSystem.IsWindows())
                 {
                     // Prior to 1903 Windows would not delete the filename until the last file handle is closed.
                     Assert.Equal(PlatformDetection.IsWindows10Version1903OrGreater, !File.Exists(fileName));
@@ -56,7 +55,7 @@ namespace System.IO.Tests
             using (FileStream fs = CreateFileStream(fileName, FileMode.Open, FileAccess.ReadWrite, FileShare.Delete))
             {
                 File.Delete(fileName);
-                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                if (OperatingSystem.IsWindows())
                 {
                     // Prior to 1903 Windows would not delete the filename until the last file handle is closed.
                     Assert.Equal(PlatformDetection.IsWindows10Version1903OrGreater, !File.Exists(fileName));

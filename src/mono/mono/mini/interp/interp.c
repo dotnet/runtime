@@ -1080,9 +1080,15 @@ interp_throw (ThreadContext *context, MonoException *ex, InterpFrame *frame, con
 	g_assert (context->has_resume_state);
 }
 
+// We conservatively pin exception object here to avoid tweaking the
+// numerous call sites of this macro, even though, in a few cases,
+// this is not needed.
 #define THROW_EX_GENERAL(exception,ex_ip, rethrow)		\
 	do {							\
-		interp_throw (context, (exception), (frame), (ex_ip), (rethrow)); \
+		MonoException *__ex = (exception);		\
+		MONO_HANDLE_ASSIGN_RAW (tmp_handle, (MonoObject*)__ex); \
+		interp_throw (context, __ex, (frame), (ex_ip), (rethrow)); \
+		MONO_HANDLE_ASSIGN_RAW (tmp_handle, (MonoObject*)NULL); \
 		goto resume;							  \
 	} while (0)
 
@@ -3264,11 +3270,10 @@ mono_interp_box_nullable (InterpFrame* frame, const guint16* ip, stackval* sp, M
 }
 
 static int
-mono_interp_box_vt (InterpFrame* frame, const guint16* ip, stackval* sp)
+mono_interp_box_vt (InterpFrame* frame, const guint16* ip, stackval* sp, MonoObjectHandle tmp_handle)
 {
 	InterpMethod* const imethod = frame->imethod;
 
-	MonoObject* o; // See the comment about GC safety.
 	MonoVTable * const vtable = (MonoVTable*)imethod->data_items [ip [1]];
 	MonoClass* const c = vtable->klass;
 
@@ -3277,26 +3282,27 @@ mono_interp_box_vt (InterpFrame* frame, const guint16* ip, stackval* sp)
 	guint16 offset = ip [2];
 	guint16 pop_vt_sp = !ip [3];
 
-	OBJREF (o) = mono_gc_alloc_obj (vtable, m_class_get_instance_size (vtable->klass));
+	MonoObject* o = mono_gc_alloc_obj (vtable, m_class_get_instance_size (vtable->klass));
+	MONO_HANDLE_ASSIGN_RAW (tmp_handle, o);
 	mono_value_copy_internal (mono_object_get_data (o), sp [-1 - offset].data.p, c);
+	MONO_HANDLE_ASSIGN_RAW (tmp_handle, NULL);
 
-	sp [-1 - offset].data.p = o;
+	sp [-1 - offset].data.o = o;
 	return pop_vt_sp ? ALIGN_TO (size, MINT_VT_ALIGNMENT) : 0;
 }
 
 static void
-mono_interp_box (InterpFrame* frame, const guint16* ip, stackval* sp)
+mono_interp_box (InterpFrame* frame, const guint16* ip, stackval* sp, MonoObjectHandle tmp_handle)
 {
-	MonoObject *o; // See the comment about GC safety.
 	MonoVTable * const vtable = (MonoVTable*)frame->imethod->data_items [ip [1]];
-
-	OBJREF (o) = mono_gc_alloc_obj (vtable, m_class_get_instance_size (vtable->klass));
-
 	guint16 const offset = ip [2];
 
+	MonoObject *o = mono_gc_alloc_obj (vtable, m_class_get_instance_size (vtable->klass));
+	MONO_HANDLE_ASSIGN_RAW (tmp_handle, o);
 	stackval_to_data (m_class_get_byval_arg (vtable->klass), &sp [-1 - offset], mono_object_get_data (o), FALSE);
+	MONO_HANDLE_ASSIGN_RAW (tmp_handle, NULL);
 
-	sp [-1 - offset].data.p = o;
+	sp [-1 - offset].data.o = o;
 }
 
 static int
@@ -3435,6 +3441,24 @@ interp_exec_method (InterpFrame *frame, ThreadContext *context, FrameClauseArgs 
 #include "mintops.def"
 	};
 #endif
+
+	HANDLE_FUNCTION_ENTER ();
+	/*
+	 * GC SAFETY:
+	 *
+	 *  The interpreter executes in gc unsafe (non-preempt) mode. On wasm, we cannot rely on
+	 * scanning the stack or any registers. In order to make the code GC safe, every objref
+	 * handled by the code needs to be kept alive and pinned in any of the following ways:
+	 * - the object needs to be stored on the interpreter stack. In order to make sure the
+	 * object actually gets stored on the interp stack and the store is not optimized out,
+	 * the store/variable should be volatile.
+	 * - if the execution of an opcode requires an object not coming from interp stack to be
+	 * kept alive, the tmp_handle below can be used. This handle will keep only one object
+	 * pinned by the GC. Ideally, once this object is no longer needed, the handle should be
+	 * cleared. If we will need to have more objects pinned simultaneously, additional handles
+	 * can be reserved here.
+	 */
+	MonoObjectHandle tmp_handle = MONO_HANDLE_NEW (MonoObject, NULL);
 
 	if (method_entry (context, frame,
 #if DEBUG_INTERP
@@ -5123,7 +5147,6 @@ call:
 		MINT_IN_CASE(MINT_NEWOBJ_FAST) {
 			MonoVTable *vtable = (MonoVTable*) frame->imethod->data_items [ip [3]];
 			INIT_VTABLE (vtable);
-			MonoObject *o; // See the comment about GC safety.
 			guint16 param_count;
 			guint16 imethod_index = ip [1];
 
@@ -5137,7 +5160,7 @@ call:
 				memmove (sp + 2, sp, param_count * sizeof (stackval));
 			}
 
-			OBJREF (o) = mono_gc_alloc_obj (vtable, m_class_get_instance_size (vtable->klass));
+			MonoObject *o = mono_gc_alloc_obj (vtable, m_class_get_instance_size (vtable->klass));
 			if (G_UNLIKELY (!o)) {
 				mono_error_set_out_of_memory (error, "Could not allocate %i bytes", m_class_get_instance_size (vtable->klass));
 				THROW_EX (mono_error_convert_to_exception (error), ip);
@@ -5241,13 +5264,13 @@ call_newobj:
 				THROW_EX (exc, ip);
 			}
 			error_init_reuse (error);
-			MonoObject* o = NULL; // See the comment about GC safety.
-			OBJREF (o) = mono_object_new_checked (domain, newobj_class, error);
+			MonoObject* o = mono_object_new_checked (domain, newobj_class, error);
+			sp [0].data.o = o; // return value
+			sp [1].data.o = o; // first parameter
+
 			mono_error_cleanup (error); // FIXME: do not swallow the error
 			error_init_reuse (error);
 			EXCEPTION_CHECKPOINT;
-			sp [0].data.o = o; // return value
-			sp [1].data.o = o; // first parameter
 #ifndef DISABLE_REMOTING
 			if (mono_object_is_transparent_proxy (o)) {
 				MonoMethod *remoting_invoke_method = mono_marshal_get_remoting_invoke_with_check (cmethod->method, error);
@@ -5946,12 +5969,12 @@ call_newobj:
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_BOX) {
-			mono_interp_box (frame, ip, sp);
+			mono_interp_box (frame, ip, sp, tmp_handle);
 			ip += 3;
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_BOX_VT) {
-			vt_sp -= mono_interp_box_vt (frame, ip, sp);
+			vt_sp -= mono_interp_box_vt (frame, ip, sp, tmp_handle);
 			ip += 4;
 			MINT_IN_BREAK;
 		}
@@ -7381,6 +7404,8 @@ exit_clause:
 		context->stack_pointer = (guchar*)frame->stack;
 
 	DEBUG_LEAVE ();
+
+	HANDLE_FUNCTION_RETURN ();
 }
 
 static void

@@ -73,6 +73,7 @@ Namespace Microsoft.VisualBasic
 
         End Sub
 
+        <SupportedOSPlatform("windows")>
         Public Sub ChDrive(ByVal Drive As Char)
             Drive = System.Char.ToUpperInvariant(Drive)
 
@@ -87,6 +88,7 @@ Namespace Microsoft.VisualBasic
             IO.Directory.SetCurrentDirectory(Drive & Path.VolumeSeparatorChar)
         End Sub
 
+        <SupportedOSPlatform("windows")>
         Public Sub ChDrive(ByVal Drive As String)
             Debug.Assert(Not System.Reflection.Assembly.GetCallingAssembly() Is Utils.VBRuntimeAssembly,
                 "Methods in Microsoft.VisualBasic should not call FileSystem public method.")
@@ -105,6 +107,7 @@ Namespace Microsoft.VisualBasic
             Return Directory.GetCurrentDirectory()
         End Function
 
+        <SupportedOSPlatform("windows")>
         Public Function CurDir(ByVal Drive As Char) As String
             Debug.Assert(Not System.Reflection.Assembly.GetCallingAssembly() Is Utils.VBRuntimeAssembly,
                 "Methods in Microsoft.VisualBasic should not call FileSystem public method.")
@@ -130,6 +133,7 @@ Namespace Microsoft.VisualBasic
             Return FindNextFile(System.Reflection.Assembly.GetCallingAssembly())
         End Function
 
+        <SupportedOSPlatform("windows")>
         <ResourceExposure(ResourceScope.None)>
         <ResourceConsumption(ResourceScope.Machine, ResourceScope.Machine)>
         Public Function Dir(ByVal PathName As String, Optional ByVal Attributes As FileAttribute = FileAttribute.Normal) As String
@@ -1160,6 +1164,7 @@ Namespace Microsoft.VisualBasic
             CloseAllFiles(System.Reflection.Assembly.GetCallingAssembly())
         End Sub
 
+        <SupportedOSPlatform("windows")>
         <ResourceExposure(ResourceScope.Machine)>
         <ResourceConsumption(ResourceScope.Machine)>
         Public Sub Rename(ByVal OldPath As String, ByVal NewPath As String)

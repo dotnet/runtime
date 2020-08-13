@@ -4148,15 +4148,15 @@ GenerateCrashDump(
 void
 InitializeCrashDump()
 {
-    bool enabled = CLRConfig::IsConfigEnabled(CLRConfig::INTERNAL_DbgEnableMiniDump);
-    if (enabled)
+    DWORD enabled = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_DbgEnableMiniDump);
+    if (enabled == 1)
     {
         LPCWSTR dumpName = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_DbgMiniDumpName);
         int dumpType = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_DbgMiniDumpType);
-        bool diag = CLRConfig::IsConfigEnabled(CLRConfig::INTERNAL_CreateDumpDiagnostics);
+        DWORD diag = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_CreateDumpDiagnostics);
 
         SString commandLine;
-        BuildCreateDumpCommandLine(commandLine, dumpName, dumpType, diag);
+        BuildCreateDumpCommandLine(commandLine, dumpName, dumpType, diag == 1);
         g_createDumpCommandLine = commandLine.GetCopyOfUnicodeString();
     }
 }
