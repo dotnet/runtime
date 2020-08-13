@@ -34,16 +34,12 @@ namespace System.IO
             status._fileStatusInitialized = -1;
         }
 
+        internal void Invalidate() => _fileStatusInitialized = -1;
 
-        internal static bool IsDirectory(Interop.Sys.FileStatus fileStatus)
+        internal bool IsReadOnly(ReadOnlySpan<char> path, bool continueOnError = false)
         {
-            return (fileStatus.Mode & Interop.Sys.FileTypes.S_IFMT) == Interop.Sys.FileTypes.S_IFDIR;
-        }
-
-        internal static bool IsHidden(Interop.Sys.FileStatus fileStatus)
-        {
-            // If the filename starts with a period or has UF_HIDDEN flag set, it's hidden.
-            return (fileStatus.UserFlags & (uint)Interop.Sys.UserFlags.UF_HIDDEN) == (uint)Interop.Sys.UserFlags.UF_HIDDEN;
+            EnsureStatInitialized(path, continueOnError);
+            return IsReadOnly(_fileStatus);
         }
 
         internal static bool IsReadOnly(Interop.Sys.FileStatus fileStatus)
@@ -77,6 +73,16 @@ namespace System.IO
                 (fileStatus.Mode & (int)writeBit) == 0;     // but not write permission
         }
 
+        internal static bool IsDirectory(Interop.Sys.FileStatus fileStatus)
+        {
+            return (fileStatus.Mode & Interop.Sys.FileTypes.S_IFMT) == Interop.Sys.FileTypes.S_IFDIR;
+        }
+
+        internal static bool IsHidden(Interop.Sys.FileStatus fileStatus)
+        {
+            return (fileStatus.UserFlags & (uint)Interop.Sys.UserFlags.UF_HIDDEN) == (uint)Interop.Sys.UserFlags.UF_HIDDEN;
+        }
+
         internal static bool IsSymLink(Interop.Sys.FileStatus fileStatus)
         {
             return (fileStatus.Mode & Interop.Sys.FileTypes.S_IFMT) == Interop.Sys.FileTypes.S_IFLNK;
@@ -96,14 +102,6 @@ namespace System.IO
                 attributes |= FileAttributes.Hidden;
 
             return attributes != default ? attributes : FileAttributes.Normal;
-        }
-
-        internal void Invalidate() => _fileStatusInitialized = -1;
-
-        internal bool IsReadOnly(ReadOnlySpan<char> path, bool continueOnError = false)
-        {
-            EnsureStatInitialized(path, continueOnError);
-            return IsReadOnly(_fileStatus);
         }
 
         public FileAttributes GetAttributes(ReadOnlySpan<char> path, ReadOnlySpan<char> fileName)

@@ -37,6 +37,7 @@ namespace System.IO.Enumeration
             // IMPORTANT: Attribute logic must match the logic in FileStatus
 
             bool isDirectory = false;
+            bool isSymlink = false;
             if (directoryEntry.InodeType == Interop.Sys.NodeType.DT_DIR)
             {
                 // We know it's a directory.
@@ -45,9 +46,9 @@ namespace System.IO.Enumeration
             // Some operating systems don't have the inode type in the dirent structure,
             // so we use DT_UNKNOWN as a sentinel value. As such, check if the dirent is a
             // directory.
-            else if ((directoryEntry.InodeType == Interop.Sys.NodeType.DT_LNK ||
-                directoryEntry.InodeType == Interop.Sys.NodeType.DT_UNKNOWN) &&
-                Interop.Sys.Stat(entry.FullPath, out Interop.Sys.FileStatus statInfo) >= 0)
+            else if ((directoryEntry.InodeType == Interop.Sys.NodeType.DT_LNK
+                || directoryEntry.InodeType == Interop.Sys.NodeType.DT_UNKNOWN)
+                && Interop.Sys.Stat(entry.FullPath, out Interop.Sys.FileStatus statInfo) >= 0)
             {
                 // Symlink or unknown: Stat to it to see if we can resolve it to a directory.
                 isDirectory = FileStatus.IsDirectory(statInfo);
@@ -58,24 +59,25 @@ namespace System.IO.Enumeration
 
             bool isReadOnly = resultLStat >= 0 && FileStatus.IsReadOnly(lstatInfo);
 
-            bool isSymlink = false;
             if (directoryEntry.InodeType == Interop.Sys.NodeType.DT_LNK)
             {
                 isSymlink = true;
             }
-            else if (directoryEntry.InodeType == Interop.Sys.NodeType.DT_UNKNOWN && resultLStat >= 0)
+            else if (resultLStat >= 0 && directoryEntry.InodeType == Interop.Sys.NodeType.DT_UNKNOWN)
             {
                 isSymlink = FileStatus.IsSymLink(lstatInfo);
             }
 
+            // If the filename starts with a period or has UF_HIDDEN flag set, it's hidden.
             bool isHidden = directoryEntry.Name[0] == '.' || (resultLStat >= 0 && FileStatus.IsHidden(lstatInfo));
 
             entry._status = default;
             FileStatus.Initialize(ref entry._status, isDirectory);
 
             FileAttributes attributes = FileStatus.GetAttributes(isReadOnly, isSymlink, isDirectory, isHidden);
-             entry._initialAttributes = attributes;
-             return attributes;
+
+            entry._initialAttributes = attributes;
+            return attributes;
         }
 
         private ReadOnlySpan<char> FullPath
@@ -138,7 +140,7 @@ namespace System.IO.Enumeration
         public DateTimeOffset LastAccessTimeUtc => _status.GetLastAccessTime(FullPath, continueOnError: true);
         public DateTimeOffset LastWriteTimeUtc => _status.GetLastWriteTime(FullPath, continueOnError: true);
         public bool IsDirectory => _status.InitiallyDirectory;
-        public bool IsHidden => _directoryEntry.Name[0] == '.';
+        public bool IsHidden => _directoryEntry.Name[0] == '.' || (Attributes & FileAttributes.Hidden) != 0;
 
         public FileSystemInfo ToFileSystemInfo()
         {
