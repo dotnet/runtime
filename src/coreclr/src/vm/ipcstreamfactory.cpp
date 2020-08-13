@@ -124,6 +124,13 @@ bool IpcStreamFactory::Configure(ErrorCallback callback)
                 builder.WithTag(portConfigParts.Pop());
             builder.WithPath(portConfigParts.Pop());
 
+            // Ignore listen type (see conversation in https://github.com/dotnet/runtime/pull/40499 for details)
+            if (builder.Type == DiagnosticPortType::LISTEN)
+            {
+                STRESS_LOG0(LF_DIAGNOSTICS_PORT, LL_INFO10, "IpcStreamFactory::Configure - Ignoring LISTEN port configuration \n");
+                continue;
+            }
+
             const bool fBuildSuccess = BuildAndAddPort(builder, callback);
             STRESS_LOG1(LF_DIAGNOSTICS_PORT, LL_INFO10, "IpcStreamFactory::Configure - Diagnostic Port creation succeeded? %d \n", fBuildSuccess);
             fSuccess &= fBuildSuccess;
