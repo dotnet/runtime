@@ -1508,6 +1508,40 @@ namespace System.Diagnostics.Tests
             Assert.Equal(resultCount, a.TagObjects.Count());
         }
 
+        [Fact]
+        public void StructEnumerator_TagsLinkedList()
+        {
+            // Note: This test verifies the presence of the struct Enumerator on TagsLinkedList used by customers dynamically to avoid allocations.
+
+            Activity a = new Activity("TestActivity");
+            a.AddTag("Tag1", true);
+
+            IEnumerable<KeyValuePair<string, object>> enumerable = a.TagObjects;
+
+            MethodInfo method = enumerable.GetType().GetMethod("GetEnumerator", BindingFlags.Instance | BindingFlags.Public);
+
+            Assert.NotNull(method);
+            Assert.False(method.ReturnType.IsInterface);
+            Assert.True(method.ReturnType.IsValueType);
+        }
+
+        [Fact]
+        public void StructEnumerator_GenericLinkedList()
+        {
+            // Note: This test verifies the presence of the struct Enumerator on LinkedList<T> used by customers dynamically to avoid allocations.
+
+            Activity a = new Activity("TestActivity");
+            a.AddEvent(new ActivityEvent());
+
+            IEnumerable<ActivityEvent> enumerable = a.Events;
+
+            MethodInfo method = enumerable.GetType().GetMethod("GetEnumerator", BindingFlags.Instance | BindingFlags.Public);
+
+            Assert.NotNull(method);
+            Assert.False(method.ReturnType.IsInterface);
+            Assert.True(method.ReturnType.IsValueType);
+        }
+
         public void Dispose()
         {
             Activity.Current = null;
