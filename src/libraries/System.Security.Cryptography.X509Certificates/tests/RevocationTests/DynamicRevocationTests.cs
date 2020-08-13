@@ -940,6 +940,56 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
                 });
         }
 
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/31249", TestPlatforms.OSX)]
+        public static void TestRevocationWithNoNextUpdate_NotRevoked()
+        {
+            SimpleTest(
+                PkiOptions.CrlEverywhere,
+                (root, intermediate, endEntity, holder) =>
+                {
+                    intermediate.OmitNextUpdateInCrl = true;
+
+                    // Build a chain once to get the no NextUpdate in the CRL
+                    // cache. We don't care about the build result.
+                    holder.Chain.Build(endEntity);
+
+                    SimpleRevocationBody(
+                        holder,
+                        endEntity,
+                        rootRevoked: false,
+                        issrRevoked: false,
+                        leafRevoked: false);
+                });
+        }
+
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/31249", TestPlatforms.OSX)]
+        public static void TestRevocationWithNoNextUpdate_Revoked()
+        {
+            SimpleTest(
+                PkiOptions.CrlEverywhere,
+                (root, intermediate, endEntity, holder) =>
+                {
+                    intermediate.OmitNextUpdateInCrl = true;
+
+                    DateTimeOffset now = DateTimeOffset.UtcNow;
+                    intermediate.Revoke(endEntity, now);
+                    holder.Chain.ChainPolicy.VerificationTime = now.AddSeconds(1).UtcDateTime;
+
+                    // Build a chain once to get the no NextUpdate in the CRL
+                    // cache. We don't care about the build result.
+                    holder.Chain.Build(endEntity);
+
+                    SimpleRevocationBody(
+                        holder,
+                        endEntity,
+                        rootRevoked: false,
+                        issrRevoked: false,
+                        leafRevoked: true);
+                });
+        }
+
         private static void RevokeEndEntityWithInvalidRevocation(
             ChainHolder holder,
             CertificateAuthority intermediate,

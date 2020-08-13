@@ -697,7 +697,7 @@ var MonoSupportLib = {
 		},
 
 		mono_wasm_start_single_stepping: function (kind) {
-			console.log (">> mono_wasm_start_single_stepping " + kind);
+			console.debug (">> mono_wasm_start_single_stepping " + kind);
 			if (!this.mono_wasm_setup_single_step)
 				this.mono_wasm_setup_single_step = Module.cwrap ("mono_wasm_setup_single_step", 'number', [ 'number']);
 
@@ -869,7 +869,7 @@ var MonoSupportLib = {
 			if (ENVIRONMENT_IS_NODE) {
 				var fs = require('fs');
 				return function (asset) {
-					console.log ("MONO_WASM: Loading... " + asset);
+					console.debug ("MONO_WASM: Loading... " + asset);
 					var binary = fs.readFileSync (asset);
 					var resolve_func2 = function (resolve, reject) {
 						resolve (new Uint8Array (binary));
@@ -901,8 +901,6 @@ var MonoSupportLib = {
 			var bytes = new Uint8Array (blob);
 			if (ctx.tracing)
 				console.log ("MONO_WASM: Loaded:", asset.name, "size", bytes.length, "from", url);
-			else
-				console.log ("MONO_WASM: Loaded:", asset.name);
 
 			var virtualName = asset.virtual_path || asset.name;
 			var offset = null;
@@ -1079,7 +1077,7 @@ var MonoSupportLib = {
 
 			var load_runtime = Module.cwrap ('mono_wasm_load_runtime', null, ['string', 'number']);
 
-			console.log ("MONO_WASM: Initializing mono runtime");
+			console.debug ("MONO_WASM: Initializing mono runtime");
 
 			this.mono_wasm_globalization_init (args.globalization_mode);
 
@@ -1189,7 +1187,7 @@ var MonoSupportLib = {
 								(asset.name.match (/\.pdb$/) && MONO.mono_wasm_ignore_pdb_load_errors);
 
 							if (isOk)
-								console.log (msg);
+								console.debug (msg);
 							else {
 								console.error (msg);
 								throw new Error (msg);
@@ -1248,9 +1246,9 @@ var MonoSupportLib = {
 
 			if (!invariantMode) {
 				if (this.num_icu_assets_loaded_successfully > 0) {
-					console.log ("MONO_WASM: ICU data archive(s) loaded, disabling invariant mode");
+					console.debug ("MONO_WASM: ICU data archive(s) loaded, disabling invariant mode");
 				} else if (globalization_mode !== "icu") {
-					console.log ("MONO_WASM: ICU data archive(s) not loaded, using invariant globalization mode");
+					console.debug ("MONO_WASM: ICU data archive(s) not loaded, using invariant globalization mode");
 					invariantMode = true;
 				} else {
 					var msg = "invariant globalization mode is inactive and no ICU data archives were loaded";
@@ -1754,7 +1752,6 @@ var MonoSupportLib = {
 	},
 
 	mono_wasm_fire_bp: function () {
-		console.log ("mono_wasm_fire_bp");
 		// eslint-disable-next-line no-debugger
 		debugger;
 	},

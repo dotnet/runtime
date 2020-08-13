@@ -130,6 +130,25 @@ namespace System.Net.Http
             set => throw new PlatformNotSupportedException();
         }
 
+        public TimeSpan KeepAlivePingDelay
+        {
+            get => throw new PlatformNotSupportedException();
+            set => throw new PlatformNotSupportedException();
+        }
+
+        public TimeSpan KeepAlivePingTimeout
+        {
+            get => throw new PlatformNotSupportedException();
+            set => throw new PlatformNotSupportedException();
+        }
+
+
+        public HttpKeepAlivePingPolicy KeepAlivePingPolicy
+        {
+            get => throw new PlatformNotSupportedException();
+            set => throw new PlatformNotSupportedException();
+        }
+
         public ConnectionFactory? ConnectionFactory
         {
             get => throw new PlatformNotSupportedException();

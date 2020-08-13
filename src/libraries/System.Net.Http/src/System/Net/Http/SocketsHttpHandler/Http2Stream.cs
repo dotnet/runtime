@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Net.Http.Headers;
+using System.Net.Http.HPack;
 using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
 using System.Text;
@@ -440,13 +441,14 @@ namespace System.Net.Http
             void IHttpHeadersHandler.OnStaticIndexedHeader(int index)
             {
                 // TODO: https://github.com/dotnet/runtime/issues/1505
-                Debug.Fail("Currently unused by HPACK, this should never be called.");
+                ref readonly HeaderField entry = ref H2StaticTable.Get(index - 1);
+                OnHeader(entry.Name, entry.Value);
             }
 
             void IHttpHeadersHandler.OnStaticIndexedHeader(int index, ReadOnlySpan<byte> value)
             {
                 // TODO: https://github.com/dotnet/runtime/issues/1505
-                Debug.Fail("Currently unused by HPACK, this should never be called.");
+                OnHeader(H2StaticTable.Get(index - 1).Name, value);
             }
 
             public void OnHeader(ReadOnlySpan<byte> name, ReadOnlySpan<byte> value)

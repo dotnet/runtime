@@ -410,16 +410,16 @@ namespace DebuggerTests
                     "DelegatesTest",
                     wait_for_event_fn: async (pause_location) =>
                    {
-                        //make sure we're on the right bp
-                        Assert.Equal(bp.Value["breakpointId"]?.ToString(), pause_location["hitBreakpoints"]?[0]?.Value<string>());
+                       //make sure we're on the right bp
+                       Assert.Equal(bp.Value["breakpointId"]?.ToString(), pause_location["hitBreakpoints"]?[0]?.Value<string>());
 
                        var top_frame = pause_location["callFrames"][0];
 
                        var scope = top_frame["scopeChain"][0];
                        Assert.Equal("dotnet:scope:0", scope["object"]["objectId"]);
 
-                        // Try to get an invalid scope!
-                        var get_prop_req = JObject.FromObject(new
+                       // Try to get an invalid scope!
+                       var get_prop_req = JObject.FromObject(new
                        {
                            objectId = "dotnet:scope:23490871",
                        });
@@ -862,11 +862,11 @@ namespace DebuggerTests
                 ctx.UseCallFunctionOnBeforeGetProperties = use_cfo;
                 var debugger_test_loc = "dotnet://debugger-test.dll/debugger-valuetypes-test.cs";
 
-                await SetBreakpoint(debugger_test_loc, 22, 8);
+                await SetBreakpoint(debugger_test_loc, 24, 8);
 
                 var pause_location = await EvaluateAndCheck(
                     "window.setTimeout(function() { invoke_method_with_structs(); }, 1);",
-                    debugger_test_loc, 22, 8, "MethodWithLocalStructs");
+                    debugger_test_loc, 24, 8, "MethodWithLocalStructs");
 
                 var locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
                 await CheckProps(locals, new
@@ -965,11 +965,11 @@ namespace DebuggerTests
                 ctx.UseCallFunctionOnBeforeGetProperties = use_cfo;
                 var debugger_test_loc = "dotnet://debugger-test.dll/debugger-valuetypes-test.cs";
 
-                await SetBreakpoint(debugger_test_loc, 34, 12);
+                await SetBreakpoint(debugger_test_loc, 36, 12);
 
                 var pause_location = await EvaluateAndCheck(
                     "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.ValueTypesTest:TestStructsAsMethodArgs'); }, 1);",
-                    debugger_test_loc, 34, 12, "MethodWithStructArgs");
+                    debugger_test_loc, 36, 12, "MethodWithStructArgs");
                 var locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
                 {
                     Assert.Equal(3, locals.Count());
@@ -1009,7 +1009,7 @@ namespace DebuggerTests
                     await CompareObjectPropertiesFor(ss_arg_props, "gs", ss_local_gs);
                 }
 
-                pause_location = await StepAndCheck(StepKind.Over, debugger_test_loc, 38, 8, "MethodWithStructArgs", times: 4,
+                pause_location = await StepAndCheck(StepKind.Over, debugger_test_loc, 40, 8, "MethodWithStructArgs", times: 4,
                     locals_fn: (l) => { /* non-null to make sure that locals get fetched */ });
                 locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
                 {
@@ -1063,7 +1063,7 @@ namespace DebuggerTests
 
                 // ----------- Step back to the caller ---------
 
-                pause_location = await StepAndCheck(StepKind.Over, debugger_test_loc, 28, 12, "TestStructsAsMethodArgs",
+                pause_location = await StepAndCheck(StepKind.Over, debugger_test_loc, 30, 12, "TestStructsAsMethodArgs",
                     times: 2, locals_fn: (l) => { /* non-null to make sure that locals get fetched */ });
                 locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
                 await CheckProps(locals, new
@@ -1098,7 +1098,7 @@ namespace DebuggerTests
                 ctx = new DebugTestContext(cli, insp, token, scripts);
                 var debugger_test_loc = "dotnet://debugger-test.dll/debugger-valuetypes-test.cs";
 
-                var lines = new[] { 203, 206 };
+                var lines = new[] { 205, 208 };
                 await SetBreakpoint(debugger_test_loc, lines[0], 12);
                 await SetBreakpoint(debugger_test_loc, lines[1], 12);
 
@@ -1157,7 +1157,7 @@ namespace DebuggerTests
                 ctx = new DebugTestContext(cli, insp, token, scripts);
                 var debugger_test_loc = "dotnet://debugger-test.dll/debugger-valuetypes-test.cs";
 
-                var lines = new[] { 212, 214 };
+                var lines = new[] { 214, 216 };
                 await SetBreakpoint(debugger_test_loc, lines[0], 12);
                 await SetBreakpoint(debugger_test_loc, lines[1], 12);
 
@@ -1190,7 +1190,7 @@ namespace DebuggerTests
                 ctx = new DebugTestContext(cli, insp, token, scripts);
                 var debugger_test_loc = "dotnet://debugger-test.dll/debugger-valuetypes-test.cs";
 
-                var lines = new[] { 223, 225 };
+                var lines = new[] { 225, 227 };
                 await SetBreakpoint(debugger_test_loc, lines[0], 12);
                 await SetBreakpoint(debugger_test_loc, lines[1], 12);
 
@@ -1302,10 +1302,10 @@ namespace DebuggerTests
         }
 
         [Theory]
-        [InlineData(135, 12, "MethodWithLocalsForToStringTest", false, false)]
-        [InlineData(145, 12, "MethodWithArgumentsForToStringTest", true, false)]
-        [InlineData(190, 12, "MethodWithArgumentsForToStringTestAsync", true, true)]
-        [InlineData(180, 12, "MethodWithArgumentsForToStringTestAsync", false, true)]
+        [InlineData(137, 12, "MethodWithLocalsForToStringTest", false, false)]
+        [InlineData(147, 12, "MethodWithArgumentsForToStringTest", true, false)]
+        [InlineData(192, 12, "MethodWithArgumentsForToStringTestAsync", true, true)]
+        [InlineData(182, 12, "MethodWithArgumentsForToStringTestAsync", false, true)]
         public async Task InspectLocalsForToStringDescriptions(int line, int col, string method_name, bool call_other, bool invoke_async)
         {
             var insp = new Inspector();

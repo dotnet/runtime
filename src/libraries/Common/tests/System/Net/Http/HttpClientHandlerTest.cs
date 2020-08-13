@@ -266,6 +266,7 @@ namespace System.Net.Http.Functional.Tests
             using HttpClient client = CreateHttpClient(handler);
 
             var options = new GenericLoopbackOptions { Address = address };
+
             await LoopbackServerFactory.CreateServerAsync(async (server, url) =>
             {
                 _output.WriteLine(url.ToString());

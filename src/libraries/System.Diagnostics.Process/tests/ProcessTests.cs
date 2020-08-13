@@ -1595,6 +1595,42 @@ namespace System.Diagnostics.Tests
             }
         }
 
+        [Fact]
+        [OuterLoop]
+        [Trait(XunitConstants.Category, XunitConstants.IgnoreForCI)] // Pops UI
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public void MainWindowTitle_GetWithGui_ShouldRefresh_Windows()
+        {
+            const string ExePath = "notepad.exe";
+            Assert.True(IsProgramInstalled(ExePath));
+
+            using (Process process = Process.Start(ExePath))
+            {
+                try
+                {
+                    Assert.Equal(string.Empty, process.MainWindowTitle);
+
+                    for (int attempt = 0; attempt < 50; ++attempt)
+                    {
+                        process.Refresh();
+                        if (process.MainWindowTitle != string.Empty)
+                        {
+                            break;
+                        }
+
+                        Thread.Sleep(100);
+                    }
+
+                    Assert.NotEqual(string.Empty, process.MainWindowTitle);
+                }
+                finally
+                {
+                    process.Kill();
+                    Assert.True(process.WaitForExit(WaitInMS));
+                }
+            }
+        }
+
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void MainWindowTitle_NoWindow_ReturnsEmpty()
         {
@@ -2230,6 +2266,43 @@ namespace System.Diagnostics.Tests
                         // Test cleanup code, so ignore any exceptions.
                     }
                 }
+            }
+        }
+
+        [Fact]
+        public void Start_ThrowsArgumentNullExceptionForNullFileName()
+        {
+            Assert.Throws<ArgumentNullException>("fileName", () => Process.Start(null, Enumerable.Repeat("notNull", 1)));
+        }
+
+        [Fact]
+        public void Start_ThrowsArgumentNullExceptionForNullArgumentsList()
+        {
+            IEnumerable<string> @null = null;
+            Assert.Throws<ArgumentNullException>("arguments", () => Process.Start("notNull", @null));
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)] // cmd.exe is available only on Windows
+        public void Start_PassesArgumentsList_WhichGetsEscaped()
+        {
+            string folderNameWithSpaces = "folder name with spaces"; // this needs escaping
+            string fullPath = Path.Combine(TestDirectory, folderNameWithSpaces);
+            string[] arguments = new string[] { "/c", "mkdir", "-p", fullPath };
+
+            if (Directory.Exists(fullPath))
+            {
+                Directory.Delete(fullPath);
+            }
+
+            using (Process mkdir = Process.Start("cmd.exe", arguments))
+            {
+                Assert.Equal(arguments, mkdir.StartInfo.ArgumentList);
+
+                mkdir.WaitForExit(WaitInMS);
+
+                Assert.True(Directory.Exists(fullPath));
+                Directory.Delete(fullPath);
             }
         }
 
