@@ -1372,7 +1372,7 @@ void STDMETHODCALLTYPE EEShutDownHelper(BOOL fIsDllUnloading)
 
         // NOTE: We haven't stopped other threads at this point and nothing is stopping
         // callbacks from coming into the profiler even after Shutdown() has been called.
-        // See https://github.com/dotnet/coreclr/issues/22176 for an example of how that
+        // See https://github.com/dotnet/runtime/issues/11885 for an example of how that
         // happens.
         //
         // To prevent issues when profilers are attached we intentionally skip freeing the

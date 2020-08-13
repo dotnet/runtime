@@ -9,7 +9,7 @@ using Xunit;
 
 [assembly: OptimizeForBenchmarks]
 
-// Test code taken directly from https://github.com/dotnet/coreclr/issues/9692
+// Test code taken directly from https://github.com/dotnet/runtime/issues/7474
 // Laying the loop's early return path in-line can cost 30% on this micro-benchmark.
 
 namespace Layout

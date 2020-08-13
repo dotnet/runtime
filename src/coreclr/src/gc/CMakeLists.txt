@@ -1,11 +1,11 @@
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
-# Local GC meta-issue: https://github.com/dotnet/coreclr/issues/11518
+# Local GC meta-issue: https://github.com/dotnet/runtime/issues/8061
 
-# https://github.com/dotnet/coreclr/issues/11516
+# https://github.com/dotnet/runtime/issues/8059
 remove_definitions(-DSTRESS_HEAP)
 
-# https://github.com/dotnet/coreclr/issues/11519
+# https://github.com/dotnet/runtime/issues/8062
 remove_definitions(-DWRITE_BARRIER_CHECK)
 
 set( GC_SOURCES
@@ -113,7 +113,7 @@ target_link_libraries(clrgc ${GC_LINK_LIBRARIES})
 install_clr(TARGETS clrgc)
 
 if(CLR_CMAKE_HOST_UNIX)
-  # dprintf causes many warnings (https://github.com/dotnet/coreclr/issues/13367)
+  # dprintf causes many warnings (https://github.com/dotnet/runtime/issues/8737)
   add_compile_options(-Wno-format)
 endif(CLR_CMAKE_HOST_UNIX)
 

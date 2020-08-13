@@ -518,7 +518,7 @@ namespace PInvokeTests
             retVal = retVal && PosTest3();
             retVal = retVal && AutoStructNegativeTest();
 
-            // https://github.com/dotnet/coreclr/issues/4193
+            // https://github.com/dotnet/runtime/issues/5552
             // retVal = retVal && PosTest4();
 
             if (!retVal)

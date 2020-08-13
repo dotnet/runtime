@@ -9588,7 +9588,7 @@ void MethodTableBuilder::CheckForSystemTypes()
 #ifdef CROSSGEN_COMPILE
                 // Disable AOT compiling for the SIMD hardware intrinsic types. These types require special
                 // ABI handling as they represent fundamental data types (__m64, __m128, and __m256) and not
-                // aggregate or union types. See https://github.com/dotnet/coreclr/issues/15943
+                // aggregate or union types. See https://github.com/dotnet/runtime/issues/9578
                 //
                 // Once they are properly handled according to the ABI requirements, we can remove this check
                 // and allow them to be used in crossgen/AOT scenarios.

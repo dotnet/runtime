@@ -182,7 +182,7 @@ if %__PgoInstrument% EQU 1 (
         goto ExitWithError
     )
 
-    REM HACK: Workaround for [dotnet/coreclr#13970](https://github.com/dotnet/coreclr/issues/13970)
+    REM HACK: Workaround for [dotnet/runtime#8929](https://github.com/dotnet/runtime/issues/8929)
     set __PgoRtPath=
     for /f "tokens=*" %%f in ('where pgort*.dll') do (
         if not defined __PgoRtPath set "__PgoRtPath=%%~f"

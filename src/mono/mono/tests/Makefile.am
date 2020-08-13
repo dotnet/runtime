@@ -1741,7 +1741,7 @@ LLVM = $(filter --llvm, $(MONO_ENV_OPTIONS) $(AOT_BUILD_FLAGS))
 # abort-try-holes.exe is flaky due to unwinding failure to the finally block when aborting
 # appdomain-marshalbyref-assemblyload.exe: https://bugzilla.xamarin.com/show_bug.cgi?id=49308
 # threads-init.exe: runs out of system threads
-# dim-constrainedcall.exe: fails on dontnet as well (https://github.com/dotnet/coreclr/issues/15353)
+# dim-constrainedcall.exe: fails on dontnet as well (https://github.com/dotnet/runtime/issues/9378)
 #
 # tailcall-rgctxb.exe
 # tailcall-member-function-in-valuetype.exe
