@@ -69,7 +69,7 @@ else
     __CMakeArgs="-DFEATURE_DISTRO_AGNOSTIC_SSL=$__PortableBuild $__CMakeArgs"
     __CMakeArgs="-DCMAKE_STATIC_LIB_LINK=$__StaticLibLink $__CMakeArgs"
 
-    if [[ "$__BuildArch" != x86 && "$__BuildArch" != x64 ]]; then
+    if [[ "$__BuildArch" != x86 && "$__BuildArch" != x64 && "$__BuildArch" != "$__HostArch" ]]; then
         __CrossBuild=1
         echo "Set CrossBuild for $__BuildArch build"
     fi
@@ -78,6 +78,14 @@ fi
 if [[ "$__TargetOS" == OSX ]]; then
     # set default OSX deployment target
     __CMakeArgs="-DCMAKE_OSX_DEPLOYMENT_TARGET=10.13 $__CMakeArgs"
+    if [[ "$__BuildArch" == x64 ]]; then
+        __CMakeArgs="-DCMAKE_OSX_ARCHITECTURES=\"x86_64\" $__CMakeArgs"
+    elif [[ "$__BuildArch" == arm64 ]]; then
+        __CMakeArgs="-DCMAKE_OSX_ARCHITECTURES=\"arm64\" $__CMakeArgs"
+    else
+        echo "Error: Unknown OSX architecture $__BuildArch."
+        exit 1
+    fi
 elif [[ "$__TargetOS" == Android && -z "$ROOTFS_DIR" ]]; then
     if [[ -z "$ANDROID_NDK_ROOT" ]]; then
         echo "Error: You need to set the ANDROID_NDK_ROOT environment variable pointing to the Android NDK root."
