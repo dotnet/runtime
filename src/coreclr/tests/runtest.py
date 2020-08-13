@@ -1638,5 +1638,8 @@ def main(args):
 ################################################################################
 
 if __name__ == "__main__":
+    print(" !!! runtest.py: main")
+    print(sys.argv)
     args = parser.parse_args()
+
     sys.exit(main(args))

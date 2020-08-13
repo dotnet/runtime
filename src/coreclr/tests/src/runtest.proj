@@ -386,9 +386,13 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
 
   <Target Name="GetListOfTestCmds">
     <ItemGroup>
-      <AllRunnableTestPaths Include="$(XunitTestBinBase)\**\*.cmd" Condition="'$(TargetOS)' == 'Windows_NT'" />
-      <AllRunnableTestPaths Include="$(XunitTestBinBase)\**\*.sh" Condition="'$(TargetOS)' != 'Windows_NT'" />
+      <AllRunnableTestPaths Include="$(XunitTestBinBase)\**\*.cmd" Condition="'$(TargetOS)' == 'Windows_NT' And '$(TargetArchitecture)' != 'wasm'" />
+      <AllRunnableTestPaths Include="$(XunitTestBinBase)\**\*.sh" Condition="'$(TargetOS)' != 'Windows_NT' And '$(TargetArchitecture)' != 'wasm'" />
+      <!-- On wasm, run-v8.sh is generated as part of running the tests; it should not be picked up as a test itself -->
+      <AllRunnableTestPaths Include="$(XunitTestBinBase)\**\*.sh" Exclude="$(XunitTestBinBase)\**\run-v8.sh" Condition="'$(TargetArchitecture)' == 'wasm'" />
     </ItemGroup>
+
+    <Message Importance="High" Text="!!! GetListOfTestCmds: @(AllRunnableTestPaths)" />
   </Target>
 
   <Import Project="$(MSBuildThisFileDirectory)../tests.targets" />
