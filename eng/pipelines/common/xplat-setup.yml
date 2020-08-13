@@ -136,6 +136,9 @@ jobs:
 
 
     ${{ if eq(parameters.helixQueuesTemplate, '') }}:
+      # macOS hosted pool machines are slower so we need to give a greater timeout than the 60 mins default.
+      ${{ if and(eq(parameters.jobParameters.timeoutInMinutes, ''), in(parameters.osGroup, 'OSX', 'iOS', 'tvOS')) }}:
+        timeoutInMinutes: 120
       ${{ insert }}: ${{ parameters.jobParameters }}
     ${{ if ne(parameters.helixQueuesTemplate, '') }}:
       jobTemplate: ${{ parameters.jobTemplate }}
