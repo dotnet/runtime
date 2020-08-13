@@ -91,8 +91,15 @@ int CacheLineSize;
 #endif
 #endif
 
+#if defined(__FreeBSD__)
+#include <sys/types.h>
+#include <sys/param.h>
+#endif
 #if HAVE_GETAUXVAL
 #include <sys/auxv.h>
+#endif
+#if defined(HAVE_SYS_SYSCTL_H) || defined(__FreeBSD__)
+#include <sys/sysctl.h>
 #endif
 
 #include <algorithm>
