@@ -1950,6 +1950,7 @@ namespace System.Xml.Linq
             XElement? e = this;
             while (e != outOfScope)
             {
+                Debug.Assert(e != null);
                 XAttribute? a = e.lastAttr;
                 if (a != null)
                 {
@@ -1961,7 +1962,6 @@ namespace System.Xml.Linq
                     while (a != e.lastAttr);
                 }
                 e = e.parent as XElement;
-                Debug.Assert(e != null);
             }
             return null;
         }
