@@ -23387,7 +23387,8 @@ void gc_heap::plan_phase (int condemned_gen_number)
             }
         }
 
-        if (maxgen_size_inc_p && provisional_mode_triggered)
+        if (maxgen_size_inc_p && provisional_mode_triggered &&
+            !(background_running_p() || (current_bgc_state == bgc_initialized)))
         {
             pm_trigger_full_gc = true;
             dprintf (GTC_LOG, ("in PM: maxgen size inc, doing a sweeping gen1 and trigger NGC2"));
@@ -23498,7 +23499,8 @@ void gc_heap::plan_phase (int condemned_gen_number)
         rearrange_uoh_segments ();
     }
 
-    if (maxgen_size_inc_p && provisional_mode_triggered)
+    if (maxgen_size_inc_p && provisional_mode_triggered &&
+        !(background_running_p() || (current_bgc_state == bgc_initialized)))
     {
         pm_trigger_full_gc = true;
         dprintf (GTC_LOG, ("in PM: maxgen size inc, doing a sweeping gen1 and trigger NGC2"));
@@ -23535,7 +23537,8 @@ void gc_heap::plan_phase (int condemned_gen_number)
     if (!pm_trigger_full_gc && pm_stress_on && provisional_mode_triggered)
     {
         if ((settings.condemned_generation == (max_generation - 1)) &&
-            ((settings.gc_index % 5) == 0))
+            ((settings.gc_index % 5) == 0) &&
+            !(background_running_p() || (current_bgc_state == bgc_initialized)))
         {
             pm_trigger_full_gc = true;
         }
