@@ -483,8 +483,6 @@ namespace System.Net.Http.Headers
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { throw null; }
         public partial struct Enumerator : System.Collections.Generic.IEnumerator<string>, System.Collections.IEnumerator, System.IDisposable
         {
-            public Enumerator(System.Collections.Generic.IEnumerable<string> values) { throw null; }
-            public Enumerator(string value) { throw null; }
             public readonly string Current { get { throw null; } }
             object? System.Collections.IEnumerator.Current { get { throw null; } }
             public void Dispose() { }
