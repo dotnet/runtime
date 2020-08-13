@@ -27,7 +27,7 @@
 //
 // Enums are used throughout to provide various descriptions.
 //
-// There are 4 sitations where inline candidacy is evaluated.  In each
+// There are 4 situations where inline candidacy is evaluated.  In each
 // case an InlineResult is allocated on the stack to collect
 // information about the inline candidate.  Each InlineResult refers
 // to an InlinePolicy.
