@@ -99,6 +99,7 @@
     <Compile Include="Serialization\OptionsTests.cs" />
     <Compile Include="Serialization\PolymorphicTests.cs" />
     <Compile Include="Serialization\PropertyNameTests.cs" />
+    <Compile Include="Serialization\PropertyVisiblityTests.InitOnly.cs" />
     <Compile Include="Serialization\PropertyVisibilityTests.NonPublicAccessors.cs" />
     <Compile Include="Serialization\PropertyVisibilityTests.cs" />
     <Compile Include="Serialization\ReadScenarioTests.cs" />

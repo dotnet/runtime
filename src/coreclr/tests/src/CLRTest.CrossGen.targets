@@ -72,6 +72,8 @@ if [ ! -z ${RunCrossGen2+x} ]%3B then
       fi
     fi
 
+    ExtraCrossGen2Args+=" $(CrossGen2TestExtraArguments)"
+
     if [ ! -z ${LargeVersionBubble+x} ]%3B then
         ExtraCrossGen2Args+=" --inputbubble"
     fi
@@ -83,6 +85,14 @@ if [ ! -z ${RunCrossGen2+x} ]%3B then
 
       __ResponseFile="$__OutputFile.rsp"
       rm $__ResponseFile
+
+      # Suppress the GC stress COMPlus for the duration of Crossgen2 execution
+      local gcStressModeToRestore=$COMPlus_GCStress;
+      local heapVerifyModeToRestore=$COMPlus_HeapVerify;
+      local readyToRunModeToRestore=$COMPlus_ReadyToRun;
+      export COMPlus_GCStress=
+      export COMPlus_HeapVerify=
+      export COMPlus_ReadyToRun=
 
       __Command=$_DebuggerFullPath
       # Tests run locally need __TestDotNetCmd (set by runtest.py) or a compatible 5.0 dotnet runtime in the path
@@ -101,6 +111,7 @@ if [ ! -z ${RunCrossGen2+x} ]%3B then
       echo -r:$CORE_ROOT/System.*.dll>>$__ResponseFile
       echo -r:$CORE_ROOT/Microsoft.*.dll>>$__ResponseFile
       echo -r:$CORE_ROOT/mscorlib.dll>>$__ResponseFile
+      echo --verify-type-and-field-layout>>$__ResponseFile
       echo --targetarch:$(TargetArchitecture)>>$__ResponseFile
       echo -O>>$__ResponseFile
 
@@ -109,10 +120,14 @@ if [ ! -z ${RunCrossGen2+x} ]%3B then
       echo "Running CrossGen2: $__Command"
       $__Command
       __cg2ExitCode=$?
+
+      export COMPlus_GCStress=$gcStressModeToRestore
+      export COMPlus_HeapVerify=$heapVerifyModeToRestore
+      export COMPlus_ReadyToRun=$readyToRunModeToRestore
   }
 
     if [ ! -z ${CompositeBuildMode+x} ]%3B then
-        ExtraCrossGen2Args+= --composite
+        ExtraCrossGen2Args+=" --composite"
         OneFileCrossgen2 "$PWD/composite-r2r.dll" "$PWD/IL/*.dll"
     else
         ExtraCrossGen2Args+= -r:$PWD/IL/*.dll
@@ -174,6 +189,8 @@ if defined RunCrossGen (
 )
 REM CrossGen2 Script
 if defined RunCrossGen2 (
+    set ExtraCrossGen2Args=!ExtraCrossGen2Args! $(CrossGen2TestExtraArguments)
+
     if defined LargeVersionBubble ( set ExtraCrossGen2Args=!ExtraCrossGen2Args! --inputbubble)
     call :TakeLock
     set CrossGen2Status=0
@@ -212,6 +229,14 @@ if defined RunCrossGen2 (
     set __ResponseFile=!__OutputFile!.rsp
     del /Q !__ResponseFile!
 
+    REM Suppress GC stress mode for the duration of Crossgen2 execution
+    set __gcStressModeToRestore=!COMPlus_GCStress!
+    set COMPlus_GCStress=
+    set __heapVerifyModeToRestore=!COMPlus_HeapVerify!
+    set COMPlus_HeapVerify=
+    set __readyToRunModeToRestore=!COMPlus_ReadyToRun!
+    set COMPlus_ReadyToRun=
+
     set __Command=!_DebuggerFullPath!
     REM Tests run locally need __TestDotNetCmd (set by runtest.py) or a compatible 5.0 dotnet runtime in the path
     if defined __TestDotNetCmd (
@@ -225,6 +250,7 @@ if defined RunCrossGen2 (
     echo !__InputFile!>>!__ResponseFile!
     echo -o:!__OutputFile!>>!__ResponseFile!
     echo --targetarch:$(TargetArchitecture)>>!__ResponseFile!
+    echo --verify-type-and-field-layout>>!__ResponseFile!
     echo -O>>!__ResponseFile!
     echo -r:!CORE_ROOT!\System.*.dll>>!__ResponseFile!
     echo -r:!CORE_ROOT!\Microsoft.*.dll>>!__ResponseFile!
@@ -237,6 +263,10 @@ if defined RunCrossGen2 (
     echo "!__Command!"
     call !__Command!
     set CrossGen2Status=!ERRORLEVEL!
+    set COMPlus_GCStress=!__gcStressModeToRestore!
+    set COMPlus_HeapVerify=!__heapVerifyModeToRestore!
+    set COMPlus_ReadyToRun=!__readyToRunModeToRestore!
+
     Exit /b 0
 
 :DoneCrossgen2Operations

@@ -22,10 +22,17 @@
     </AssemblyMetadata>
   </ItemGroup>
 
-  <!-- Adds MinimumOSPlatform attribute for Windows Specific libraries -->
+  <!-- Adds SupportedOSPlatform attribute for Windows Specific libraries -->
   <ItemGroup Condition="'$(IsWindowsSpecific)' == 'true' and '$(IsTestProject)' != 'true'">
-    <AssemblyAttribute Include="System.Runtime.Versioning.MinimumOSPlatform">
-        <_Parameter1>$(MinimiumSupportedWindowsPlatform)</_Parameter1>
+    <AssemblyAttribute Include="System.Runtime.Versioning.SupportedOSPlatform">
+        <_Parameter1>windows</_Parameter1>
+    </AssemblyAttribute>
+  </ItemGroup>
+
+  <!-- Adds UnsupportedOSPlatform attribute for requested libraries -->
+  <ItemGroup Condition="'$(UnsupportedOSPlatform)' != '' and '$(IsTestProject)' != 'true'">
+    <AssemblyAttribute Include="System.Runtime.Versioning.UnsupportedOSPlatform">
+        <_Parameter1>$(UnsupportedOSPlatform)</_Parameter1>
     </AssemblyAttribute>
   </ItemGroup>
 

@@ -36,6 +36,7 @@ namespace Internal.TypeSystem
         InvalidProgramNonStaticMethod,
         InvalidProgramGenericMethod,
         InvalidProgramNonBlittableTypes,
+        InvalidProgramMultipleCallConv,
 
         // BadImageFormatException
         BadImageFormatGeneric,

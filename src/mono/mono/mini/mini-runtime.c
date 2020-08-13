@@ -1239,6 +1239,7 @@ mono_patch_info_hash (gconstpointer data)
 	case MONO_PATCH_INFO_SIGNATURE:
 	case MONO_PATCH_INFO_METHOD_CODE_SLOT:
 	case MONO_PATCH_INFO_AOT_JIT_INFO:
+	case MONO_PATCH_INFO_METHOD_PINVOKE_ADDR_CACHE:
 		return hash | (gssize)ji->data.target;
 	case MONO_PATCH_INFO_GSHAREDVT_CALL:
 		return hash | (gssize)ji->data.gsharedvt->method;
@@ -1444,6 +1445,10 @@ mono_resolve_patch_target (MonoMethod *method, MonoDomain *domain, guint8 *code,
 		target = code_slot;
 		break;
 	}
+	case MONO_PATCH_INFO_METHOD_PINVOKE_ADDR_CACHE: {
+		target = mono_domain_alloc0 (domain, sizeof (gpointer));
+		break;
+	}
 	case MONO_PATCH_INFO_GC_SAFE_POINT_FLAG:
 		target = (gpointer)&mono_polling_required;
 		break;
@@ -1460,9 +1465,11 @@ mono_resolve_patch_target (MonoMethod *method, MonoDomain *domain, guint8 *code,
 			}
 		}
 
+		mono_codeman_enable_write ();
 		for (i = 0; i < patch_info->data.table->table_size; i++) {
 			jump_table [i] = code + GPOINTER_TO_INT (patch_info->data.table->table [i]);
 		}
+		mono_codeman_disable_write ();
 
 		target = jump_table;
 		break;
@@ -1754,6 +1761,8 @@ mini_patch_jump_sites (MonoDomain *domain, MonoMethod *method, gpointer addr)
 		patch_info.type = MONO_PATCH_INFO_METHOD_JUMP;
 		patch_info.data.method = method;
 
+		mono_codeman_enable_write ();
+
 #ifdef MONO_ARCH_HAVE_PATCH_CODE_NEW
 		for (tmp = jlist->list; tmp; tmp = tmp->next)
 			mono_arch_patch_code_new (NULL, domain, (guint8 *)tmp->data, &patch_info, addr);
@@ -1766,6 +1775,8 @@ mini_patch_jump_sites (MonoDomain *domain, MonoMethod *method, gpointer addr)
 			mono_error_assert_ok (error);
 		}
 #endif
+
+		mono_codeman_disable_write ();
 	}
 }
 
@@ -1957,6 +1968,8 @@ enum {
 	ELF_MACHINE = EM_PPC64,
 #elif HOST_S390X
 	ELF_MACHINE = EM_S390,
+#elif HOST_RISCV
+	ELF_MACHINE = EM_RISCV,
 #endif
 	JIT_CODE_LOAD = 0
 };
@@ -4588,7 +4601,9 @@ mini_init (const char *filename, const char *runtime_version)
 	mono_simd_intrinsics_init ();
 #endif
 
+#ifndef ENABLE_NETCORE
 	mono_tasklets_init ();
+#endif
 
 	register_trampolines (domain);
 
@@ -4639,6 +4654,11 @@ register_icalls (void)
 				mono_runtime_install_handlers);
 	mono_add_internal_call_internal ("Mono.Runtime::mono_runtime_cleanup_handlers",
 				mono_runtime_cleanup_handlers);
+
+#if defined(HOST_ANDROID) || defined(TARGET_ANDROID)
+	mono_add_internal_call_internal ("System.Diagnostics.Debugger::Mono_UnhandledException_internal",
+							mini_get_dbg_callbacks ()->unhandled_exception);
+#endif
 
 	/*
 	 * It's important that we pass `TRUE` as the last argument here, as

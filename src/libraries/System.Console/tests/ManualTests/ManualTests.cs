@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -67,17 +68,9 @@ namespace System
         }
 
         [ConditionalTheory(nameof(ManualTestsEnabled))]
-        [InlineData('\x01', ConsoleKey.A, ConsoleModifiers.Control)]
-        [InlineData('\x01', ConsoleKey.A, ConsoleModifiers.Control | ConsoleModifiers.Alt)]
-        [InlineData('\r', ConsoleKey.Enter, (ConsoleModifiers)0)]
-        [InlineData('\n', ConsoleKey.Enter, ConsoleModifiers.Control)]
-        public static void ReadKey_KeyChords(char keyChar, ConsoleKey key, ConsoleModifiers modifiers)
+        [MemberData(nameof(GetKeyChords))]
+        public static void ReadKey_KeyChords(ConsoleKeyInfo expected)
         {
-            var expected = new ConsoleKeyInfo(keyChar, key, 
-                control: modifiers.HasFlag(ConsoleModifiers.Control),
-                alt: modifiers.HasFlag(ConsoleModifiers.Alt),
-                shift: modifiers.HasFlag(ConsoleModifiers.Shift));
-
             Console.Write($"Please type key chord {RenderKeyChord(expected)}: ");
             var actual = Console.ReadKey(intercept: true);
             Console.WriteLine();
@@ -93,6 +86,34 @@ namespace System
                 if (key.Modifiers.HasFlag(ConsoleModifiers.Alt)) modifiers += "Alt+";
                 if (key.Modifiers.HasFlag(ConsoleModifiers.Shift)) modifiers += "Shift+";
                 return modifiers + key.Key;
+            }
+        }
+
+        public static IEnumerable<object[]> GetKeyChords()
+        {
+            yield return MkConsoleKeyInfo('\x01', ConsoleKey.A, ConsoleModifiers.Control);
+            yield return MkConsoleKeyInfo('\x01', ConsoleKey.A, ConsoleModifiers.Control | ConsoleModifiers.Alt);
+            yield return MkConsoleKeyInfo('\r', ConsoleKey.Enter, (ConsoleModifiers)0);
+
+            if (OperatingSystem.IsWindows())
+            {
+                // windows will report '\n' as 'Ctrl+Enter', which is typically not picked up by Unix terminals
+                yield return MkConsoleKeyInfo('\n', ConsoleKey.Enter, ConsoleModifiers.Control);
+            }
+            else
+            {
+                yield return MkConsoleKeyInfo('\n', ConsoleKey.J, ConsoleModifiers.Control);
+            }
+
+            static object[] MkConsoleKeyInfo (char keyChar, ConsoleKey consoleKey, ConsoleModifiers modifiers)
+            {
+                return new object[]
+                {
+                    new ConsoleKeyInfo(keyChar, consoleKey, 
+                        control: modifiers.HasFlag(ConsoleModifiers.Control),
+                        alt: modifiers.HasFlag(ConsoleModifiers.Alt),
+                        shift: modifiers.HasFlag(ConsoleModifiers.Shift))
+                };
             }
         }
 

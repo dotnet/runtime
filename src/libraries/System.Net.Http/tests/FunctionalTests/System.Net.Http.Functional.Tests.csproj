@@ -120,6 +120,8 @@
              Link="Common\System\Net\TestWebProxies.cs" />
     <Compile Include="$(CommonTestPath)System\Net\VerboseTestLogging.cs"
              Link="Common\System\Net\VerboseTestLogging.cs" />
+    <Compile Include="$(CommonTestPath)System\Net\Http\HttpAgnosticLoopbackServer.cs"
+             Link="Common\System\Net\Http\HttpAgnosticLoopbackServer.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Http\LoopbackProxyServer.cs"
              Link="Common\System\Net\Http\LoopbackProxyServer.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Http\LoopbackServer.cs"
@@ -130,6 +132,8 @@
              Link="Common\System\Net\Http\GenericLoopbackServer.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Http\HttpClientHandlerTestBase.cs"
              Link="Common\System\Net\Http\HttpClientHandlerTestBase.cs" />
+    <Compile Include="$(CommonTestPath)System\Net\SslProtocolSupport.cs"
+             Link="Common\System\Net\SslProtocolSupport.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Http\TestHelper.cs"
              Link="Common\System\Net\Http\TestHelper.cs" />
     <Compile Include="$(CommonTestPath)System\Threading\TrackingSynchronizationContext.cs"
@@ -179,7 +183,6 @@
     <Compile Include="$(CommonTestPath)System\Net\Http\HttpClientHandlerTest.Proxy.cs"
              Link="Common\System\Net\Http\HttpClientHandlerTest.Proxy.cs" />
     <Compile Include="HttpClientHandlerTest.Http3.cs" />
-
     <Compile Include="HttpClientHandlerTest.ResponseDrain.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Http\HttpClientHandlerTest.ServerCertificates.cs"
              Link="Common\System\Net\Http\HttpClientHandlerTest.ServerCertificates.cs" />
@@ -221,14 +224,20 @@
     <Compile Include="$(CommonTestPath)System\Net\Http\SchSendAuxRecordHttpTest.cs"
              Link="Common\System\Net\Http\SchSendAuxRecordHttpTest.cs" />
     <Compile Include="SyncHttpHandlerTest.cs" />
+    <Compile Include="TelemetryTest.cs" />
     <Compile Include="StreamContentTest.cs" />
     <Compile Include="StringContentTest.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Http\SyncBlockingContent.cs"
              Link="Common\System\Net\Http\SyncBlockingContent.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Http\DefaultCredentialsTest.cs"
              Link="Common\System\Net\Http\DefaultCredentialsTest.cs" />
-    <Compile Include="ThrowingContent.cs" />
+    <Compile Include="$(CommonTestPath)System\Net\Http\ThrowingContent.cs"
+             Link="Common\System\Net\Http\ThrowingContent.cs" />
+    <Compile Include="ThrowingContent.netcore.cs" />
     <Compile Include="Watchdog.cs" />
+    <Compile Include="$(CommonTestPath)System\Net\VirtualNetwork\VirtualNetwork.cs" Link="Common\System\Net\VirtualNetwork\VirtualNetwork.cs" />
+    <Compile Include="$(CommonTestPath)System\Net\VirtualNetwork\VirtualNetworkStream.cs" Link="Common\System\Net\VirtualNetwork\VirtualNetworkStream.cs" />
+    <Compile Include="$(CommonTestPath)System\Net\VirtualNetwork\VirtualNetworkConnectionListenerFactory.cs" Link="Common\System\Net\VirtualNetwork\VirtualNetworkConnectionListenerFactory.cs" />
   </ItemGroup>
   <!-- Windows specific files -->
   <ItemGroup Condition=" '$(TargetsWindows)' == 'true'">

@@ -918,8 +918,8 @@ typedef struct ucontext MonoContext;
 		"std	%%f13,104(%1)\n"		\
 		"std	%%f14,112(%1)\n"		\
 		"std	%%f15,120(%1)\n"		\
-		: : "r" (&(ctx).uc_mcontext.gregs[0]),		\
-		    "r" (&(ctx).uc_mcontext.fpregs.fprs[0])	\
+		: : "a" (&(ctx).uc_mcontext.gregs[0]),		\
+		    "a" (&(ctx).uc_mcontext.fpregs.fprs[0])	\
 		: "memory"			\
 	)
 

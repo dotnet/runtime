@@ -4137,14 +4137,23 @@ ValueNum Compiler::fgValueNumberArrIndexVal(GenTree*             tree,
 
 ValueNum Compiler::fgValueNumberByrefExposedLoad(var_types type, ValueNum pointerVN)
 {
-    ValueNum memoryVN = fgCurMemoryVN[ByrefExposed];
-    // The memoization for VNFunc applications does not factor in the result type, so
-    // VNF_ByrefExposedLoad takes the loaded type as an explicit parameter.
-    ValueNum typeVN = vnStore->VNForIntCon(type);
-    ValueNum loadVN =
-        vnStore->VNForFunc(type, VNF_ByrefExposedLoad, typeVN, vnStore->VNNormalValue(pointerVN), memoryVN);
-
-    return loadVN;
+    if (type == TYP_STRUCT)
+    {
+        // We can't assign a value number for a read of a struct as we can't determine
+        // how many bytes will be read by this load, so return a new unique value number
+        //
+        return vnStore->VNForExpr(compCurBB, TYP_STRUCT);
+    }
+    else
+    {
+        ValueNum memoryVN = fgCurMemoryVN[ByrefExposed];
+        // The memoization for VNFunc applications does not factor in the result type, so
+        // VNF_ByrefExposedLoad takes the loaded type as an explicit parameter.
+        ValueNum typeVN = vnStore->VNForIntCon(type);
+        ValueNum loadVN =
+            vnStore->VNForFunc(type, VNF_ByrefExposedLoad, typeVN, vnStore->VNNormalValue(pointerVN), memoryVN);
+        return loadVN;
+    }
 }
 
 var_types ValueNumStore::TypeOfVN(ValueNum vn)

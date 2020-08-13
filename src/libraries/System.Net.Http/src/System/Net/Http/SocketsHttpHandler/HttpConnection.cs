@@ -10,6 +10,7 @@ using System.IO;
 using System.Net.Http.Headers;
 using System.Net.Security;
 using System.Net.Sockets;
+using System.Net.Connections;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
@@ -45,6 +46,7 @@ namespace System.Net.Http
         private readonly HttpConnectionPool _pool;
         private readonly Socket? _socket; // used for polling; _stream should be used for all reading/writing. _stream owns disposal.
         private readonly Stream _stream;
+        private readonly Connection _connection;
         private readonly TransportContext? _transportContext;
         private readonly WeakReference<HttpConnection> _weakThisRef;
 
@@ -68,16 +70,16 @@ namespace System.Net.Http
 
         public HttpConnection(
             HttpConnectionPool pool,
-            Socket? socket,
-            Stream stream,
+            Connection connection,
             TransportContext? transportContext)
         {
             Debug.Assert(pool != null);
-            Debug.Assert(stream != null);
+            Debug.Assert(connection != null);
 
             _pool = pool;
-            _socket = socket; // may be null in cases where we couldn't easily get the underlying socket
-            _stream = stream;
+            connection.ConnectionProperties.TryGet(out _socket); // may be null in cases where we couldn't easily get the underlying socket
+            _stream = connection.Stream;
+            _connection = connection;
             _transportContext = transportContext;
 
             _writeBuffer = new byte[InitialWriteBufferSize];
@@ -87,6 +89,8 @@ namespace System.Net.Http
 
             if (NetEventSource.Log.IsEnabled()) TraceConnection(_stream);
         }
+
+        ~HttpConnection() => Dispose(disposing: false);
 
         public void Dispose() => Dispose(disposing: true);
 
@@ -98,10 +102,13 @@ namespace System.Net.Http
             {
                 if (NetEventSource.Log.IsEnabled()) Trace("Connection closing.");
                 _pool.DecrementConnectionCount();
+
+                if (HttpTelemetry.Log.IsEnabled()) _currentRequest?.OnAborted();
+
                 if (disposing)
                 {
                     GC.SuppressFinalize(this);
-                    _stream.Dispose();
+                    _connection.Dispose();
 
                     // Eat any exceptions from the read-ahead task.  We don't need to log, as we expect
                     // failures from this task due to closing the connection while a read is in progress.
@@ -195,6 +202,8 @@ namespace System.Net.Http
 
         private async ValueTask WriteHeadersAsync(HttpHeaders headers, string? cookiesFromContainer, bool async)
         {
+            Debug.Assert(_currentRequest != null);
+
             if (headers.HeaderStore != null)
             {
                 foreach (KeyValuePair<HeaderDescriptor, object> header in headers.HeaderStore)
@@ -213,12 +222,14 @@ namespace System.Net.Http
                     Debug.Assert(headerValuesCount > 0, "No values for header??");
                     if (headerValuesCount > 0)
                     {
-                        await WriteStringAsync(_headerValues[0], async).ConfigureAwait(false);
+                        Encoding? valueEncoding = _pool.Settings._requestHeaderEncodingSelector?.Invoke(header.Key.Name, _currentRequest);
+
+                        await WriteStringAsync(_headerValues[0], async, valueEncoding).ConfigureAwait(false);
 
                         if (cookiesFromContainer != null && header.Key.KnownHeader == KnownHeaders.Cookie)
                         {
                             await WriteTwoBytesAsync((byte)';', (byte)' ', async).ConfigureAwait(false);
-                            await WriteStringAsync(cookiesFromContainer, async).ConfigureAwait(false);
+                            await WriteStringAsync(cookiesFromContainer, async, valueEncoding).ConfigureAwait(false);
 
                             cookiesFromContainer = null;
                         }
@@ -236,7 +247,7 @@ namespace System.Net.Http
                             for (int i = 1; i < headerValuesCount; i++)
                             {
                                 await WriteAsciiStringAsync(separator, async).ConfigureAwait(false);
-                                await WriteStringAsync(_headerValues[i], async).ConfigureAwait(false);
+                                await WriteStringAsync(_headerValues[i], async, valueEncoding).ConfigureAwait(false);
                             }
                         }
                     }
@@ -249,7 +260,10 @@ namespace System.Net.Http
             {
                 await WriteAsciiStringAsync(HttpKnownHeaderNames.Cookie, async).ConfigureAwait(false);
                 await WriteTwoBytesAsync((byte)':', (byte)' ', async).ConfigureAwait(false);
-                await WriteStringAsync(cookiesFromContainer, async).ConfigureAwait(false);
+
+                Encoding? valueEncoding = _pool.Settings._requestHeaderEncodingSelector?.Invoke(HttpKnownHeaderNames.Cookie, _currentRequest);
+                await WriteStringAsync(cookiesFromContainer, async, valueEncoding).ConfigureAwait(false);
+
                 await WriteTwoBytesAsync((byte)'\r', (byte)'\n', async).ConfigureAwait(false);
             }
         }
@@ -621,7 +635,6 @@ namespace System.Net.Http
                 Stream responseStream;
                 if (ReferenceEquals(normalizedMethod, HttpMethod.Head) || response.StatusCode == HttpStatusCode.NoContent || response.StatusCode == HttpStatusCode.NotModified)
                 {
-                    if (HttpTelemetry.Log.IsEnabled()) HttpTelemetry.Log.RequestStop();
                     responseStream = EmptyReadStream.Instance;
                     CompleteResponse();
                 }
@@ -644,7 +657,6 @@ namespace System.Net.Http
                     long contentLength = response.Content.Headers.ContentLength.GetValueOrDefault();
                     if (contentLength <= 0)
                     {
-                        if (HttpTelemetry.Log.IsEnabled()) HttpTelemetry.Log.RequestStop();
                         responseStream = EmptyReadStream.Instance;
                         CompleteResponse();
                     }
@@ -692,6 +704,21 @@ namespace System.Net.Http
                 // hook up a continuation that will log it.
                 if (sendRequestContentTask != null && !sendRequestContentTask.IsCompletedSuccessfully)
                 {
+                    // In case the connection is disposed, it's most probable that
+                    // expect100Continue timer expired and request content sending failed.
+                    // We're awaiting the task to propagate the exception in this case.
+                    if (Volatile.Read(ref _disposed) == 1)
+                    {
+                        if (async)
+                        {
+                            await sendRequestContentTask.ConfigureAwait(false);
+                        }
+                        else
+                        {
+                            // No way around it here if we want to get the exception from the task.
+                            sendRequestContentTask.GetAwaiter().GetResult();
+                        }
+                    }
                     LogExceptions(sendRequestContentTask);
                 }
 
@@ -793,7 +820,8 @@ namespace System.Net.Http
         }
 
         private async Task SendRequestContentWithExpect100ContinueAsync(
-            HttpRequestMessage request, Task<bool> allowExpect100ToContinueTask, HttpContentWriteStream stream, Timer expect100Timer, bool async, CancellationToken cancellationToken)
+            HttpRequestMessage request, Task<bool> allowExpect100ToContinueTask,
+            HttpContentWriteStream stream, Timer expect100Timer, bool async, CancellationToken cancellationToken)
         {
             // Wait until we receive a trigger notification that it's ok to continue sending content.
             // This will come either when the timer fires or when we receive a response status line from the server.
@@ -806,7 +834,17 @@ namespace System.Net.Http
             if (sendRequestContent)
             {
                 if (NetEventSource.Log.IsEnabled()) Trace($"Sending request content for Expect: 100-continue.");
-                await SendRequestContentAsync(request, stream, async, cancellationToken).ConfigureAwait(false);
+                try
+                {
+                    await SendRequestContentAsync(request, stream, async, cancellationToken).ConfigureAwait(false);
+                }
+                catch
+                {
+                    // Tear down the connection if called from the timer thread because caller's thread will wait for server status line indefinitely
+                    // or till HttpClient.Timeout tear the connection itself.
+                    Dispose();
+                    throw;
+                }
             }
             else
             {
@@ -956,22 +994,25 @@ namespace System.Net.Http
                 pos++;
             }
 
+            Debug.Assert(response.RequestMessage != null);
+            Encoding? valueEncoding = connection._pool.Settings._responseHeaderEncodingSelector?.Invoke(descriptor.Name, response.RequestMessage);
+
             // Note we ignore the return value from TryAddWithoutValidation. If the header can't be added, we silently drop it.
             ReadOnlySpan<byte> value = line.Slice(pos);
             if (isFromTrailer)
             {
-                string headerValue = descriptor.GetHeaderValue(value);
+                string headerValue = descriptor.GetHeaderValue(value, valueEncoding);
                 response.TrailingHeaders.TryAddWithoutValidation((descriptor.HeaderType & HttpHeaderType.Request) == HttpHeaderType.Request ? descriptor.AsCustomHeader() : descriptor, headerValue);
             }
             else if ((descriptor.HeaderType & HttpHeaderType.Content) == HttpHeaderType.Content)
             {
-                string headerValue = descriptor.GetHeaderValue(value);
+                string headerValue = descriptor.GetHeaderValue(value, valueEncoding);
                 response.Content!.Headers.TryAddWithoutValidation(descriptor, headerValue);
             }
             else
             {
                 // Request headers returned on the response must be treated as custom headers.
-                string headerValue = connection.GetResponseHeaderValueWithCaching(descriptor, value);
+                string headerValue = connection.GetResponseHeaderValueWithCaching(descriptor, value, valueEncoding);
                 response.Headers.TryAddWithoutValidation(
                     (descriptor.HeaderType & HttpHeaderType.Request) == HttpHeaderType.Request ? descriptor.AsCustomHeader() : descriptor,
                     headerValue);
@@ -1154,23 +1195,23 @@ namespace System.Net.Http
                 _writeOffset += bytes.Length;
                 return Task.CompletedTask;
             }
-            return WriteBytesSlowAsync(bytes, async);
+            return WriteBytesSlowAsync(bytes, bytes.Length, async);
         }
 
-        private async Task WriteBytesSlowAsync(byte[] bytes, bool async)
+        private async Task WriteBytesSlowAsync(byte[] bytes, int length, bool async)
         {
             int offset = 0;
             while (true)
             {
-                int remaining = bytes.Length - offset;
+                int remaining = length - offset;
                 int toCopy = Math.Min(remaining, _writeBuffer.Length - _writeOffset);
                 Buffer.BlockCopy(bytes, offset, _writeBuffer, _writeOffset, toCopy);
                 _writeOffset += toCopy;
                 offset += toCopy;
 
-                Debug.Assert(offset <= bytes.Length, $"Expected {nameof(offset)} to be <= {bytes.Length}, got {offset}");
+                Debug.Assert(offset <= length, $"Expected {nameof(offset)} to be <= {length}, got {offset}");
                 Debug.Assert(_writeOffset <= _writeBuffer.Length, $"Expected {nameof(_writeOffset)} to be <= {_writeBuffer.Length}, got {_writeOffset}");
-                if (offset == bytes.Length)
+                if (offset == length)
                 {
                     break;
                 }
@@ -1205,6 +1246,43 @@ namespace System.Net.Http
             // Otherwise, fall back to doing a normal slow string write; we could optimize away
             // the extra checks later, but the case where we cross a buffer boundary should be rare.
             return WriteStringAsyncSlow(s, async);
+        }
+
+        private Task WriteStringAsync(string s, bool async, Encoding? encoding)
+        {
+            if (encoding is null)
+            {
+                return WriteStringAsync(s, async);
+            }
+
+            // If there's enough space in the buffer to just copy all of the string's bytes, do so.
+            if (encoding.GetMaxByteCount(s.Length) <= _writeBuffer.Length - _writeOffset)
+            {
+                _writeOffset += encoding.GetBytes(s, _writeBuffer.AsSpan(_writeOffset));
+                return Task.CompletedTask;
+            }
+
+            // Otherwise, fall back to doing a normal slow string write
+            return WriteStringWithEncodingAsyncSlow(s, async, encoding);
+        }
+
+        private async Task WriteStringWithEncodingAsyncSlow(string s, bool async, Encoding encoding)
+        {
+            // Avoid calculating the length if the rented array would be small anyway
+            int length = s.Length <= 512
+                ? encoding.GetMaxByteCount(s.Length)
+                : encoding.GetByteCount(s);
+
+            byte[] rentedBuffer = ArrayPool<byte>.Shared.Rent(length);
+            try
+            {
+                int written = encoding.GetBytes(s, rentedBuffer);
+                await WriteBytesSlowAsync(rentedBuffer, written, async).ConfigureAwait(false);
+            }
+            finally
+            {
+                ArrayPool<byte>.Shared.Return(rentedBuffer);
+            }
         }
 
         private Task WriteAsciiStringAsync(string s, bool async)
@@ -1775,6 +1853,8 @@ namespace System.Net.Http
             Debug.Assert(_currentRequest != null, "Expected the connection to be associated with a request.");
             Debug.Assert(_writeOffset == 0, "Everything in write buffer should have been flushed.");
 
+            if (HttpTelemetry.Log.IsEnabled()) _currentRequest.OnStopped();
+
             // Disassociate the connection from a request.
             _currentRequest = null;
 
@@ -1887,14 +1967,5 @@ namespace System.Net.Http
                 _currentRequest?.GetHashCode() ?? 0, // request ID
                 memberName,                          // method name
                 message);                            // message
-    }
-
-    internal sealed class HttpConnectionWithFinalizer : HttpConnection
-    {
-        public HttpConnectionWithFinalizer(HttpConnectionPool pool, Socket? socket, Stream stream, TransportContext? transportContext) : base(pool, socket, stream, transportContext) { }
-
-        // This class is separated from HttpConnection so we only pay the price of having a finalizer
-        // when it's actually needed, e.g. when MaxConnectionsPerServer is enabled.
-        ~HttpConnectionWithFinalizer() => Dispose(disposing: false);
     }
 }

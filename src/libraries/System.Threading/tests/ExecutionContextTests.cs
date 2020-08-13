@@ -31,6 +31,29 @@ namespace System.Threading.Tests
         }
 
         [Fact]
+        public static void RestoreTest()
+        {
+            ExecutionContext defaultEC = ExecutionContext.Capture();
+            var asyncLocal = new AsyncLocal<int>();
+            Assert.Equal(0, asyncLocal.Value);
+
+            asyncLocal.Value = 1;
+            ExecutionContext oneEC = ExecutionContext.Capture();
+            Assert.Equal(1, asyncLocal.Value);
+
+            ExecutionContext.Restore(defaultEC);
+            Assert.Equal(0, asyncLocal.Value);
+
+            ExecutionContext.Restore(oneEC);
+            Assert.Equal(1, asyncLocal.Value);
+
+            ExecutionContext.Restore(defaultEC);
+            Assert.Equal(0, asyncLocal.Value);
+
+            Assert.Throws<InvalidOperationException>(() => ExecutionContext.Restore(null!));
+        }
+
+        [Fact]
         public static void DisposeTest()
         {
             ExecutionContext executionContext = ExecutionContext.Capture();

@@ -476,6 +476,8 @@ public:
     unsigned char lvContainsHoles : 1;     // True when we have a promoted struct that contains holes
     unsigned char lvCustomLayout : 1;      // True when this struct has "CustomLayout"
 
+    unsigned char lvForceLoadNormalize : 1; // True when this local had a cast on the LHS of an assignment
+
     unsigned char lvIsMultiRegArg : 1; // true if this is a multireg LclVar struct used in an argument context
     unsigned char lvIsMultiRegRet : 1; // true if this is a multireg LclVar struct assigned from a multireg call
 
@@ -884,14 +886,14 @@ public:
     {
         return varTypeIsSmall(TypeGet()) &&
                // lvIsStructField is treated the same as the aliased local, see fgDoNormalizeOnStore.
-               (lvIsParam || lvAddrExposed || lvIsStructField);
+               (lvIsParam || lvAddrExposed || lvIsStructField || lvForceLoadNormalize);
     }
 
     bool lvNormalizeOnStore() const
     {
         return varTypeIsSmall(TypeGet()) &&
                // lvIsStructField is treated the same as the aliased local, see fgDoNormalizeOnStore.
-               !(lvIsParam || lvAddrExposed || lvIsStructField);
+               !(lvIsParam || lvAddrExposed || lvIsStructField || lvForceLoadNormalize);
     }
 
     void incRefCnts(BasicBlock::weight_t weight,
@@ -2701,6 +2703,8 @@ public:
 
     GenTree* gtNewNullCheck(GenTree* addr, BasicBlock* basicBlock);
 
+    void gtChangeOperToNullCheck(GenTree* tree, BasicBlock* block);
+
     GenTreeArgList* gtNewArgList(GenTree* op);
     GenTreeArgList* gtNewArgList(GenTree* op1, GenTree* op2);
     GenTreeArgList* gtNewArgList(GenTree* op1, GenTree* op2, GenTree* op3);
@@ -3726,6 +3730,7 @@ protected:
 
     void impImportLeave(BasicBlock* block);
     void impResetLeaveBlock(BasicBlock* block, unsigned jmpAddr);
+    GenTree* impTypeIsAssignable(GenTree* typeTo, GenTree* typeFrom);
     GenTree* impIntrinsic(GenTree*                newobjThis,
                           CORINFO_CLASS_HANDLE    clsHnd,
                           CORINFO_METHOD_HANDLE   method,
@@ -4633,6 +4638,9 @@ public:
 
     void fgComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VARSET_VALARG_TP volatileVars);
 
+    bool fgTryRemoveNonLocal(GenTree* node, LIR::Range* blockRange);
+
+    void fgRemoveDeadStoreLIR(GenTree* store, BasicBlock* block);
     bool fgRemoveDeadStore(GenTree**        pTree,
                            LclVarDsc*       varDsc,
                            VARSET_VALARG_TP life,
@@ -4964,7 +4972,7 @@ protected:
 
     // When the flow graph changes, we need to update the block numbers, predecessor lists, reachability sets, and
     // dominators.
-    void fgUpdateChangedFlowGraph();
+    void fgUpdateChangedFlowGraph(bool computeDoms = true);
 
 public:
     // Compute the predecessors of the blocks in the control flow graph.
@@ -6363,7 +6371,12 @@ protected:
                                    // not used for shared const CSE's
     };
 
-    static const size_t s_optCSEhashSize;
+    static const size_t s_optCSEhashSizeInitial;
+    static const size_t s_optCSEhashGrowthFactor;
+    static const size_t s_optCSEhashBucketSize;
+    size_t              optCSEhashSize;                 // The current size of hashtable
+    size_t              optCSEhashCount;                // Number of entries in hashtable
+    size_t              optCSEhashMaxCountBeforeResize; // Number of entries before resize
     CSEdsc**            optCSEhash;
     CSEdsc**            optCSEtab;
 
@@ -8814,8 +8827,7 @@ public:
         bool doLateDisasm; // Run the late disassembler
 #endif                     // LATE_DISASM
 
-#if DUMP_GC_TABLES && !defined(DEBUG) && defined(JIT32_GCENCODER)
-// Only the JIT32_GCENCODER implements GC dumping in non-DEBUG code.
+#if DUMP_GC_TABLES && !defined(DEBUG)
 #pragma message("NOTE: this non-debug build has GC ptr table dumping always enabled!")
         static const bool dspGCtbls = true;
 #endif
@@ -9013,7 +9025,7 @@ public:
     {
 #if 0
         // Switching between size & speed has measurable throughput impact
-        // (3.5% on NGen mscorlib when measured). It used to be enabled for
+        // (3.5% on NGen CoreLib when measured). It used to be enabled for
         // DEBUG, but should generate identical code between CHK & RET builds,
         // so that's not acceptable.
         // TODO-Throughput: Figure out what to do about size vs. speed & throughput.

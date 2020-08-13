@@ -11,11 +11,11 @@ namespace System.Net.Sockets
         UseDefaultWorkerThread = 0x00,
         Disconnect = 0x01,
         ReuseSocket = 0x02,
-        [MinimumOSPlatform("windows7.0")]
+        [SupportedOSPlatform("windows")]
         WriteBehind = 0x04,
-        [MinimumOSPlatform("windows7.0")]
+        [SupportedOSPlatform("windows")]
         UseSystemThread = 0x10,
-        [MinimumOSPlatform("windows7.0")]
+        [SupportedOSPlatform("windows")]
         UseKernelApc = 0x20,
     };
 }

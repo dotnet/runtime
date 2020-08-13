@@ -1,17 +1,17 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <root>
-  <!-- 
-    Microsoft ResX Schema 
-    
+  <!--
+    Microsoft ResX Schema
+
     Version 2.0
-    
-    The primary goals of this format is to allow a simple XML format 
-    that is mostly human readable. The generation and parsing of the 
-    various data types are done through the TypeConverter classes 
+
+    The primary goals of this format is to allow a simple XML format
+    that is mostly human readable. The generation and parsing of the
+    various data types are done through the TypeConverter classes
     associated with the data types.
-    
+
     Example:
-    
+
     ... ado.net/XML headers & schema ...
     <resheader name="resmimetype">text/microsoft-resx</resheader>
     <resheader name="version">2.0</resheader>
@@ -26,36 +26,36 @@
         <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
         <comment>This is a comment</comment>
     </data>
-                
-    There are any number of "resheader" rows that contain simple 
+
+    There are any number of "resheader" rows that contain simple
     name/value pairs.
-    
-    Each data row contains a name, and value. The row also contains a 
-    type or mimetype. Type corresponds to a .NET class that support 
-    text/value conversion through the TypeConverter architecture. 
-    Classes that don't support this are serialized and stored with the 
+
+    Each data row contains a name, and value. The row also contains a
+    type or mimetype. Type corresponds to a .NET class that support
+    text/value conversion through the TypeConverter architecture.
+    Classes that don't support this are serialized and stored with the
     mimetype set.
-    
-    The mimetype is used for serialized objects, and tells the 
-    ResXResourceReader how to depersist the object. This is currently not 
+
+    The mimetype is used for serialized objects, and tells the
+    ResXResourceReader how to depersist the object. This is currently not
     extensible. For a given mimetype the value must be set accordingly:
-    
-    Note - application/x-microsoft.net.object.binary.base64 is the format 
-    that the ResXResourceWriter will generate, however the reader can 
+
+    Note - application/x-microsoft.net.object.binary.base64 is the format
+    that the ResXResourceWriter will generate, however the reader can
     read any of the formats listed below.
-    
+
     mimetype: application/x-microsoft.net.object.binary.base64
-    value   : The object must be serialized with 
+    value   : The object must be serialized with
             : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
             : and then encoded with base64 encoding.
-    
+
     mimetype: application/x-microsoft.net.object.soap.base64
-    value   : The object must be serialized with 
+    value   : The object must be serialized with
             : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
             : and then encoded with base64 encoding.
 
     mimetype: application/x-microsoft.net.object.bytearray.base64
-    value   : The object must be serialized into a byte array 
+    value   : The object must be serialized into a byte array
             : using a System.ComponentModel.TypeConverter
             : and then encoded with base64 encoding.
     -->
@@ -264,6 +264,9 @@
   <data name="net_http_value_must_be_greater_than" xml:space="preserve">
     <value>The specified value must be greater than {0}.</value>
   </data>
+  <data name="net_http_value_must_be_greater_than_or_equal" xml:space="preserve">
+    <value>The specified value '{0}' must be greater than or equal to '{1}'.</value>
+  </data>
   <data name="MailHeaderFieldInvalidCharacter" xml:space="preserve">
     <value>An invalid character was found in the mail header: '{0}'.</value>
   </data>
@@ -435,6 +438,9 @@
   <data name="net_http_http2_stream_error" xml:space="preserve">
     <value>The HTTP/2 server reset the stream. HTTP/2 error code '{0}' (0x{1}).</value>
   </data>
+  <data name="net_http_http2_connection_not_established" xml:space="preserve">
+    <value>An HTTP/2 connection could not be established because the server did not complete the HTTP/2 handshake.</value>
+  </data>
   <data name="net_MethodNotImplementedException" xml:space="preserve">
     <value>This method is not implemented by this class.</value>
   </data>
@@ -563,5 +569,20 @@
   </data>
   <data name="net_http_http2_sync_not_supported" xml:space="preserve">
     <value>The synchronous method is not supported by '{0}' for HTTP/2 or higher. Either use an asynchronous method or downgrade the request version to HTTP/1.1 or lower.</value>
+  </data>
+  <data name="net_http_upgrade_not_enabled_sync" xml:space="preserve">
+    <value>HTTP request version upgrade is not enabled for synchronous '{0}'. Do not use '{1}' version policy for synchronous HTTP methods.</value>
+  </data>
+  <data name="net_http_requested_version_not_enabled" xml:space="preserve">
+    <value>Requesting HTTP version {0} with version policy {1} while HTTP/{2} is not enabled.</value>
+  </data>
+  <data name="net_http_requested_version_cannot_establish" xml:space="preserve">
+    <value>Requesting HTTP version {0} with version policy {1} while unable to establish HTTP/{2} connection.</value>
+  </data>
+  <data name="net_http_requested_version_alpn_refused" xml:space="preserve">
+    <value>Requesting HTTP version {0} with version policy {1} while server returned HTTP/1.1 in ALPN.</value>
+  </data>
+  <data name="net_http_requested_version_server_refused" xml:space="preserve">
+    <value>Requesting HTTP version {0} with version policy {1} while server offers only version fallback.</value>
   </data>
 </root>

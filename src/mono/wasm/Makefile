@@ -88,7 +88,7 @@ $(BUILDS_OBJ_DIR)/pinvoke.o: runtime/pinvoke.c runtime/pinvoke.h $(BUILDS_OBJ_DI
 	$(EMCC) $(EMCC_FLAGS) $(1) -Oz -DGEN_PINVOKE=1 -I$(BUILDS_OBJ_DIR) -I$(MONO_INCLUDE_DIR) runtime/pinvoke.c -c -o $$@
 
 $(BUILDS_OBJ_DIR)/corebindings.o: runtime/corebindings.c | $(BUILDS_OBJ_DIR)
-	$(EMCC) $(1) -Oz -I$(MONO_INCLUDE_DIR) runtime/corebindings.c -c -o $$@
+	$(EMCC) $(EMCC_FLAGS) $(1) -Oz -I$(MONO_INCLUDE_DIR) runtime/corebindings.c -c -o $$@
 
 build-native: $(BUILDS_BIN_DIR)/dotnet.js
 
@@ -139,3 +139,27 @@ run-tests-jsc-%:
 
 run-tests-%:
 	PATH="$(JSVU):$(PATH)" $(DOTNET) build $(TOP)/src/libraries/$*/tests/ /t:Test /p:TargetOS=Browser /p:TargetArchitecture=wasm /p:Configuration=$(CONFIG) $(MSBUILD_ARGS)
+
+build-debugger-test-app: 
+	$(DOTNET) build --configuration debug --nologo /p:TargetArchitecture=wasm /p:TargetOS=Browser /p:Configuration=Debug /p:RuntimeConfiguration=$(CONFIG) $(TOP)/src/mono/wasm/debugger/tests
+	cp $(TOP)/src/mono/wasm/debugger/tests/debugger-driver.html $(TOP)/src/mono/wasm/debugger/tests/bin/Debug/publish
+	cp $(TOP)/src/mono/wasm/debugger/tests/other.js $(TOP)/src/mono/wasm/debugger/tests/bin/Debug/publish
+	cp $(TOP)/src/mono/wasm/debugger/tests/runtime-debugger.js $(TOP)/src/mono/wasm/debugger/tests/bin/Debug/publish
+
+run-debugger-tests: build-debugger-test-app build-dbg-testsuite
+	if [ ! -z "$(TEST_FILTER)" ]; then \
+		export TEST_SUITE_PATH=$(TOP)/src/mono/wasm/debugger/tests/bin/Debug/publish; \
+		export LC_ALL=en_US.UTF-8; \
+		$(DOTNET) test  $(TOP)/src/mono/wasm/debugger/DebuggerTestSuite --filter FullyQualifiedName~$(TEST_FILTER); \
+		unset TEST_SUITE_PATH LC_ALL; \
+	else \
+		export TEST_SUITE_PATH=$(TOP)/src/mono/wasm/debugger/tests/bin/Debug/publish; \
+		export LC_ALL=en_US.UTF-8; \
+		$(DOTNET) test  $(TOP)/src/mono/wasm/debugger/DebuggerTestSuite $(TEST_ARGS); \
+		unset TEST_SUITE_PATH LC_ALL; \
+	fi
+
+build-dbg-proxy:
+	$(DOTNET) build $(TOP)/src/mono/wasm/debugger/BrowserDebugHost
+build-dbg-testsuite:
+	$(DOTNET) build $(TOP)/src/mono/wasm/debugger/DebuggerTestSuite

@@ -490,7 +490,24 @@ namespace System.Net
                 switch (m_cookieVariant)
                 {
                     case CookieVariant.Plain:
-                        m_path = path;
+                        // As per RFC6265 5.1.4. (https://tools.ietf.org/html/rfc6265#section-5.1.4):
+                        // | 2. If the uri-path is empty or if the first character of the uri-
+                        // |    path is not a %x2F ("/") character, output %x2F ("/") and skip
+                        // |    the remaining steps.
+                        // | 3. If the uri-path contains no more than one %x2F ("/") character,
+                        // |    output %x2F ("/") and skip the remaining step.
+                        // Note: Normally Uri.AbsolutePath contains at least one "/" after parsing,
+                        //       but it's possible construct Uri with an empty path using a custom UriParser
+                        int lastSlash;
+                        if (path.Length == 0 || path[0] != '/' || (lastSlash = path.LastIndexOf('/')) == 0)
+                        {
+                            m_path = "/";
+                            break;
+                        }
+
+                        // | 4. Output the characters of the uri-path from the first character up
+                        // |    to, but not including, the right-most %x2F ("/").
+                        m_path = path.Substring(0, lastSlash);
                         break;
                     case CookieVariant.Rfc2109:
                         m_path = path.Substring(0, path.LastIndexOf('/')); // May be empty
@@ -501,18 +518,6 @@ namespace System.Net
                         // NOTE: this code is not resilient against future versions with different 'Path' semantics.
                         m_path = path.Substring(0, path.LastIndexOf('/') + 1);
                         break;
-                }
-            }
-            else
-            {
-                // Check current path (implicit/explicit) against given URI.
-                if (!path.StartsWith(CookieParser.CheckQuoted(m_path), StringComparison.Ordinal))
-                {
-                    if (shouldThrow)
-                    {
-                        throw new CookieException(SR.Format(SR.net_cookie_attribute, CookieFields.PathAttributeName, m_path));
-                    }
-                    return false;
                 }
             }
 

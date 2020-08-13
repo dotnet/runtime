@@ -8,70 +8,70 @@ namespace System.Net.Sockets
 {
     public enum IOControlCode : long
     {
-        [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")]
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         EnableCircularQueuing = (long)671088642,
-        [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")]
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         Flush = (long)671088644,
-        [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")]
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         AddressListChange = (long)671088663,
         DataToRead = (long)1074030207,
         OobDataRead = (long)1074033415,
-        [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")]
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         GetBroadcastAddress = (long)1207959557,
-        [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")]
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         AddressListQuery = (long)1207959574,
-        [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")]
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         QueryTargetPnpHandle = (long)1207959576,
-        [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")]
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         AsyncIO = (long)2147772029,
         NonBlockingIO = (long)2147772030,
-        [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")]
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         AssociateHandle = (long)2281701377,
-        [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")]
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         MultipointLoopback = (long)2281701385,
-        [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")]
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         MulticastScope = (long)2281701386,
-        [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")]
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         SetQos = (long)2281701387,
-        [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")]
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         SetGroupQos = (long)2281701388,
-        [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")]
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         RoutingInterfaceChange = (long)2281701397,
-        [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")]
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         NamespaceChange = (long)2281701401,
-        [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")]
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         ReceiveAll = (long)2550136833,
-        [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")]
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         ReceiveAllMulticast = (long)2550136834,
-        [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")]
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         ReceiveAllIgmpMulticast = (long)2550136835,
-        [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")]
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         KeepAliveValues = (long)2550136836,
-        [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")]
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         AbsorbRouterAlert = (long)2550136837,
-        [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")]
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         UnicastInterface = (long)2550136838,
-        [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")]
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         LimitBroadcasts = (long)2550136839,
-        [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")]
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         BindToInterface = (long)2550136840,
-        [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")]
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         MulticastInterface = (long)2550136841,
-        [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")]
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         AddMulticastGroupOnInterface = (long)2550136842,
-        [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")]
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         DeleteMulticastGroupFromInterface = (long)2550136843,
-        [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")]
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         GetExtensionFunctionPointer = (long)3355443206,
-        [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")]
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         GetQos = (long)3355443207,
-        [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")]
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         GetGroupQos = (long)3355443208,
-        [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")]
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         TranslateHandle = (long)3355443213,
-        [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")]
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         RoutingInterfaceQuery = (long)3355443220,
-        [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")]
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         AddressListSort = (long)3355443225,
     }
     public partial struct IPPacketInformation
@@ -254,6 +254,7 @@ namespace System.Net.Sockets
     {
         public Socket(System.Net.Sockets.SafeSocketHandle handle) { }
         public Socket(System.Net.Sockets.AddressFamily addressFamily, System.Net.Sockets.SocketType socketType, System.Net.Sockets.ProtocolType protocolType) { }
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public Socket(System.Net.Sockets.SocketInformation socketInformation) { }
         public Socket(System.Net.Sockets.SocketType socketType, System.Net.Sockets.ProtocolType protocolType) { }
         public System.Net.Sockets.AddressFamily AddressFamily { get { throw null; } }
@@ -325,10 +326,10 @@ namespace System.Net.Sockets
         public bool DisconnectAsync(System.Net.Sockets.SocketAsyncEventArgs e) { throw null; }
         public void Dispose() { }
         protected virtual void Dispose(bool disposing) { }
-        [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")]
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public System.Net.Sockets.SocketInformation DuplicateAndClose(int targetProcessId) { throw null; }
-        public System.Net.Sockets.Socket EndAccept(out byte[]? buffer, System.IAsyncResult asyncResult) { throw null; }
-        public System.Net.Sockets.Socket EndAccept(out byte[]? buffer, out int bytesTransferred, System.IAsyncResult asyncResult) { throw null; }
+        public System.Net.Sockets.Socket EndAccept(out byte[] buffer, System.IAsyncResult asyncResult) { throw null; }
+        public System.Net.Sockets.Socket EndAccept(out byte[] buffer, out int bytesTransferred, System.IAsyncResult asyncResult) { throw null; }
         public System.Net.Sockets.Socket EndAccept(System.IAsyncResult asyncResult) { throw null; }
         public void EndConnect(System.IAsyncResult asyncResult) { }
         public void EndDisconnect(System.IAsyncResult asyncResult) { }
@@ -390,7 +391,7 @@ namespace System.Net.Sockets
         public int SendTo(byte[] buffer, System.Net.EndPoint remoteEP) { throw null; }
         public int SendTo(byte[] buffer, System.Net.Sockets.SocketFlags socketFlags, System.Net.EndPoint remoteEP) { throw null; }
         public bool SendToAsync(System.Net.Sockets.SocketAsyncEventArgs e) { throw null; }
-        [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")]
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public void SetIPProtectionLevel(System.Net.Sockets.IPProtectionLevel level) { }
         public void SetRawSocketOption(int optionLevel, int optionName, System.ReadOnlySpan<byte> optionValue) { }
         public void SetSocketOption(System.Net.Sockets.SocketOptionLevel optionLevel, System.Net.Sockets.SocketOptionName optionName, bool optionValue) { }
@@ -625,7 +626,7 @@ namespace System.Net.Sockets
         public System.Threading.Tasks.Task<System.Net.Sockets.Socket> AcceptSocketAsync() { throw null; }
         public System.Net.Sockets.TcpClient AcceptTcpClient() { throw null; }
         public System.Threading.Tasks.Task<System.Net.Sockets.TcpClient> AcceptTcpClientAsync() { throw null; }
-        [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")]
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public void AllowNatTraversal(bool allowed) { }
         public System.IAsyncResult BeginAcceptSocket(System.AsyncCallback? callback, object? state) { throw null; }
         public System.IAsyncResult BeginAcceptTcpClient(System.AsyncCallback? callback, object? state) { throw null; }
@@ -643,11 +644,11 @@ namespace System.Net.Sockets
         UseDefaultWorkerThread = 0,
         Disconnect = 1,
         ReuseSocket = 2,
-        [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")]
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         WriteBehind = 4,
-        [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")]
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         UseSystemThread = 16,
-        [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")]
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         UseKernelApc = 32,
     }
     public partial class UdpClient : System.IDisposable
@@ -666,7 +667,7 @@ namespace System.Net.Sockets
         public bool ExclusiveAddressUse { get { throw null; } set { } }
         public bool MulticastLoopback { get { throw null; } set { } }
         public short Ttl { get { throw null; } set { } }
-        [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")]
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public void AllowNatTraversal(bool allowed) { }
         public System.IAsyncResult BeginReceive(System.AsyncCallback? requestCallback, object? state) { throw null; }
         public System.IAsyncResult BeginSend(byte[] datagram, int bytes, System.AsyncCallback? requestCallback, object? state) { throw null; }

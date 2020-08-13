@@ -2299,7 +2299,7 @@ namespace System.Text.Json.Serialization.Tests
                 var startDateString = string.Format("{0:g}", StartDate.Value);
                 var endDateString = string.Format("{0:g}", EndDate.Value);
 
-                return string.Format($"From {startDateString} to {endDateString}");
+                return $"From {startDateString} to {endDateString}";
             }
         }
     }

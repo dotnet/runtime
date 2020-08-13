@@ -255,6 +255,7 @@ mono_marshal_init (void)
 		register_icall (mono_threads_attach_coop, mono_icall_sig_ptr_ptr_ptr, TRUE);
 		register_icall (mono_threads_detach_coop, mono_icall_sig_void_ptr_ptr, TRUE);
 		register_icall (mono_marshal_get_type_object, mono_icall_sig_object_ptr, TRUE);
+		register_icall (mono_marshal_lookup_pinvoke, mono_icall_sig_ptr_ptr, FALSE);
 
 		mono_cominterop_init ();
 		mono_remoting_init ();
@@ -3683,7 +3684,7 @@ mono_marshal_get_native_wrapper (MonoMethod *method, gboolean check_exceptions, 
 	 * In AOT mode and embedding scenarios, it is possible that the icall is not
 	 * registered in the runtime doing the AOT compilation.
 	 */
-	if (!piinfo->addr && !aot) {
+	if (!pinvoke && !piinfo->addr && !aot) {
 		/* if there's no code but the error isn't set, just use a fairly generic exception. */
 		if (is_ok (emitted_error))
 			mono_error_set_generic_error (emitted_error, "System", "MissingMethodException", "");
@@ -3701,8 +3702,6 @@ mono_marshal_get_native_wrapper (MonoMethod *method, gboolean check_exceptions, 
 
 		return res;
 	}
-
-	g_assert (is_ok (emitted_error));
 
 	/* internal calls: we simply push all arguments and call the method (no conversions) */
 	if (method->iflags & (METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL | METHOD_IMPL_ATTRIBUTE_RUNTIME)) {
@@ -3732,8 +3731,6 @@ mono_marshal_get_native_wrapper (MonoMethod *method, gboolean check_exceptions, 
 	}
 
 	g_assert (pinvoke);
-	if (!aot)
-		g_assert (piinfo->addr);
 
 	csig = mono_metadata_signature_dup_full (get_method_image (method), sig);
 	mono_marshal_set_callconv_from_modopt (method, csig, FALSE);
@@ -6753,6 +6750,20 @@ mono_marshal_get_type_object (MonoClass *klass)
 	MonoObject *result = (MonoObject*)mono_type_get_object_checked (mono_domain_get (), type, error);
 	mono_error_set_pending_exception (error);
 	return result;
+}
+
+gpointer
+mono_marshal_lookup_pinvoke (MonoMethod *method)
+{
+	ERROR_DECL (error);
+	gpointer addr;
+
+	g_assert (method);
+	addr = mono_lookup_pinvoke_call_internal (method, error);
+	if (!addr)
+		g_assert (!is_ok (error));
+	mono_error_set_pending_exception (error);
+	return addr;
 }
 
 void

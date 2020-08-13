@@ -4,12 +4,14 @@
     <DefineConstants>$(DefineConstants);NO_EVENTCOMMANDEXECUTED_SUPPORT;ES_BUILD_STANDALONE;FEATURE_MANAGED_ETW;TARGET_WINDOWS</DefineConstants>
     <TargetFrameworks>net461-Windows_NT</TargetFrameworks>
     <Nullable>enable</Nullable>
+    <DocumentationFile>$(OutputPath)$(AssemblyName).xml</DocumentationFile>
   </PropertyGroup>
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <CheckForOverflowUnderflow>true</CheckForOverflowUnderflow>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="Microsoft\Diagnostics\Tracing\StubEnvironment.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Interop.Errors.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.ActivityControl.cs" />
@@ -36,7 +38,6 @@
     <Compile Include="..\..\System.Private.CoreLib\src\System\Diagnostics\Tracing\IncrementingEventCounter.cs" />
     <Compile Include="..\..\System.Private.CoreLib\src\System\Diagnostics\Tracing\IncrementingPollingCounter.cs" />
     <Compile Include="..\..\System.Private.CoreLib\src\System\Diagnostics\Tracing\PollingCounter.cs" />
-    <Compile Include="..\..\System.Private.CoreLib\src\System\Diagnostics\Tracing\StubEnvironment.cs" />
     <Compile Include="..\..\System.Private.CoreLib\src\System\Diagnostics\Tracing\Winmeta.cs" />
     <Compile Include="..\..\System.Private.CoreLib\src\System\Diagnostics\Tracing\TraceLogging\ArrayTypeInfo.cs" />
     <Compile Include="..\..\System.Private.CoreLib\src\System\Diagnostics\Tracing\TraceLogging\ConcurrentSet.cs" />

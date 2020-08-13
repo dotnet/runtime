@@ -772,6 +772,91 @@ BOOL CrstBase::IsSafeToTake()
 
 #endif // _DEBUG
 
+CrstBase::CrstAndForbidSuspendForDebuggerHolder::CrstAndForbidSuspendForDebuggerHolder(CrstBase *pCrst)
+    : m_pCrst(pCrst), m_pThreadForExitingForbidRegion(nullptr)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    }
+    CONTRACTL_END;
+
+    if (pCrst == nullptr)
+    {
+        return;
+    }
+
+    // Reentrant locks are currently not supported
+    _ASSERTE((pCrst->m_dwFlags & CRST_REENTRANCY) == 0);
+
+    Thread *pThread = GetThread();
+    _ASSERTE(pThread != nullptr);
+    if (pThread->IsInForbidSuspendForDebuggerRegion())
+    {
+        AcquireLock(pCrst);
+        return;
+    }
+
+    while (true)
+    {
+        // Enter the forbid region and make that state change visible to other threads (memory barrier) before checking for the
+        // TS_DebugSuspendPending state. The other interacting thread in SysStartSuspendForDebug(), sets TS_DebugSuspendPending
+        // and makes that state change visible to other threads (memory barrier) before checking for whether this thread is in
+        // the forbid region. This ensures that in race conditions where both threads update the respective state and make the
+        // state change visible to other threads, at least one of those threads will see the state change made by the other
+        // thread. If this thread sees the state change (TS_DebugSuspendPending), it will avoid entering the forbid region by
+        // exiting the lock and pulsing the GC mode to try suspending for the debugger. If SysStartSuspendForDebug() sees the
+        // state change (that this thread is in the forbid region), then it will flag this thread appropriately to sync for
+        // suspend, and the debugger will later identify this thread as synced after this thread leaves the forbid region.
+        //
+        // The forbid region could be entered after acquiring the lock, but an additional memory barrier would be necessary. It
+        // is entered before the lock just to make use of the implicit memory barrier from acquiring the lock. It is anyway a
+        // prerequisite for entering a lock along with entering a forbid-suspend-for-debugger region, that the lock is not held
+        // for too long such that the thread can suspend for the debugger in reasonable time.
+        pThread->EnterForbidSuspendForDebuggerRegion();
+        AcquireLock(pCrst); // implicit full memory barrier on all supported platforms
+
+        // This can be an opportunistic check (instead of a volatile load), because if the GC mode change below does not suspend
+        // for the debugger (which is also possible with a volatile load), it will just loop around and try again if necessary
+        if (!pThread->HasThreadStateOpportunistic(Thread::TS_DebugSuspendPending))
+        {
+            m_pThreadForExitingForbidRegion = pThread;
+            return;
+        }
+
+        // Cannot enter the forbid region when a suspend for the debugger is pending because there are likely to be subsequent
+        // changes to the GC mode inside the lock, and this thread needs to suspend for the debugger in reasonable time. Exit
+        // the lock and pulse the GC mode to suspend for the debugger.
+        ReleaseLock(pCrst);
+        pThread->ExitForbidSuspendForDebuggerRegion();
+        GCX_COOP();
+    }
+}
+
+CrstBase::CrstAndForbidSuspendForDebuggerHolder::~CrstAndForbidSuspendForDebuggerHolder()
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_PREEMPTIVE;
+    }
+    CONTRACTL_END;
+
+    if (m_pCrst == nullptr)
+    {
+        return;
+    }
+
+    ReleaseLock(m_pCrst);
+    if (m_pThreadForExitingForbidRegion != nullptr)
+    {
+        m_pThreadForExitingForbidRegion->ExitForbidSuspendForDebuggerRegion();
+    }
+}
+
 #endif // !DACCESS_COMPILE
 
 #ifdef TEST_DATA_CONSISTENCY

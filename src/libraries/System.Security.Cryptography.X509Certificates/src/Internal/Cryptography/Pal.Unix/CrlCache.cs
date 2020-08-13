@@ -96,8 +96,30 @@ namespace Internal.Cryptography.Pal
                     // at least it can fail without using the network.
                     //
                     // If crl.NextUpdate is in the past, try downloading a newer version.
-                    DateTime nextUpdate = OpenSslX509CertificateReader.ExtractValidityDateTime(
-                        Interop.Crypto.GetX509CrlNextUpdate(crl));
+                    IntPtr nextUpdatePtr = Interop.Crypto.GetX509CrlNextUpdate(crl);
+                    DateTime nextUpdate;
+
+                    // If there is no crl.NextUpdate, this indicates that the CA is not providing
+                    // any more updates to the CRL, or they made a mistake not providing a NextUpdate.
+                    // We'll cache it for a few days to cover the case it was a mistake.
+                    if (nextUpdatePtr == IntPtr.Zero)
+                    {
+                        try
+                        {
+                            nextUpdate = File.GetLastWriteTime(crlFile).AddDays(3);
+                        }
+                        catch
+                        {
+                            // We couldn't determine when the CRL was last written to,
+                            // so consider it expired.
+                            Debug.Fail("Failed to get the last write time of the CRL file");
+                            return false;
+                        }
+                    }
+                    else
+                    {
+                        nextUpdate = OpenSslX509CertificateReader.ExtractValidityDateTime(nextUpdatePtr);
+                    }
 
                     // OpenSSL is going to convert our input time to universal, so we should be in Local or
                     // Unspecified (local-assumed).

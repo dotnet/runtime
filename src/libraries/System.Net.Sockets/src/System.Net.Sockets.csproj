@@ -80,6 +80,8 @@
              Link="Common\System\Net\SocketAddress.cs" />
     <Compile Include="$(CommonPath)System\Net\TcpValidationHelpers.cs"
              Link="Common\System\Net\TcpValidationHelpers.cs" />
+    <Compile Include="$(CommonPath)System\Threading\Tasks\TaskToApm.cs"
+             Link="Common\System\Threading\Tasks\TaskToApm.cs" />
     <!-- System.Net.Internals -->
     <Compile Include="$(CommonPath)System\Net\Internals\IPEndPointExtensions.cs"
              Link="Common\System\Net\Internals\IPEndPointExtensions.cs" />
@@ -93,6 +95,8 @@
              Link="Common\System\Net\Sockets\ProtocolType.cs" />
     <Compile Include="$(CommonPath)System\Net\Sockets\SocketType.cs"
              Link="Common\System\Net\Sockets\SocketType.cs" />
+    <Compile Include="$(CommonPath)System\Net\NetworkErrorHelper.cs"
+             Link="Common\System\Net\NetworkErrorHelper.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
     <!-- Windows: CoreCLR -->
@@ -215,8 +219,6 @@
              Link="Common\System\Net\SocketProtocolSupportPal.Unix" />
     <Compile Include="$(CommonPath)System\Net\Sockets\SocketErrorPal.Unix.cs"
              Link="Common\System\Net\Sockets\SocketErrorPal.Unix" />
-    <Compile Include="$(CommonPath)System\Threading\Tasks\TaskToApm.cs"
-             Link="Common\System\Threading\Tasks\TaskToApm.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Errors.cs"
              Link="Common\Interop\Unix\Interop.Errors.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs"

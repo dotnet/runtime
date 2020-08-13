@@ -117,6 +117,8 @@
              Link="Common\System\Net\Http\LoopbackServer.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Http\LoopbackServer.AuthenticationHelpers.cs"
              Link="Common\System\Net\Http\LoopbackServer.AuthenticationHelpers.cs" />
+    <Compile Include="$(CommonTestPath)System\Net\SslProtocolSupport.cs"
+             Link="Common\System\Net\SslProtocolSupport.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Http\TestHelper.cs"
              Link="Common\System\Net\Http\TestHelper.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Http\PostScenarioTest.cs"
@@ -129,6 +131,8 @@
              Link="Common\System\Net\Http\SchSendAuxRecordHttpTest.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Http\SyncBlockingContent.cs"
              Link="Common\System\Net\Http\SyncBlockingContent.cs" />
+    <Compile Include="$(CommonTestPath)System\Net\Http\ThrowingContent.cs"
+             Link="Common\System\Net\Http\ThrowingContent.cs" />
     <Compile Include="$(CommonTestPath)System\Threading\Tasks\TaskTimeoutExtensions.cs"
              Link="Common\System\Threading\Tasks\TaskTimeoutExtensions.cs" />
     <Compile Include="$(CommonTestPath)System\Threading\TrackingSynchronizationContext.cs"

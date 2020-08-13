@@ -26,6 +26,7 @@ namespace System.Diagnostics.Tracing
         private IncrementingPollingCounter? _completedItemsCounter;
         private IncrementingPollingCounter? _allocRateCounter;
         private PollingCounter? _timerCounter;
+        private PollingCounter? _fragmentationCounter;
 
 #if !MONO
         private IncrementingPollingCounter? _exceptionCounter;
@@ -70,6 +71,10 @@ namespace System.Diagnostics.Tracing
                 _completedItemsCounter ??= new IncrementingPollingCounter("threadpool-completed-items-count", this, () => ThreadPool.CompletedWorkItemCount) { DisplayName = "ThreadPool Completed Work Item Count", DisplayRateTimeScale = new TimeSpan(0, 0, 1) };
                 _allocRateCounter ??= new IncrementingPollingCounter("alloc-rate", this, () => GC.GetTotalAllocatedBytes()) { DisplayName = "Allocation Rate", DisplayUnits = "B", DisplayRateTimeScale = new TimeSpan(0, 0, 1) };
                 _timerCounter ??= new PollingCounter("active-timer-count", this, () => Timer.ActiveCount) { DisplayName = "Number of Active Timers" };
+                _fragmentationCounter ??= new PollingCounter("gc-fragmentation", this, () => {
+                    var gcInfo = GC.GetGCMemoryInfo();
+                    return gcInfo.FragmentedBytes * 100d / gcInfo.HeapSizeBytes;
+                 }) { DisplayName = "GC Fragmentation", DisplayUnits = "%" };
 #if !MONO
                 _exceptionCounter ??= new IncrementingPollingCounter("exception-count", this, () => Exception.GetExceptionCount()) { DisplayName = "Exception Count", DisplayRateTimeScale = new TimeSpan(0, 0, 1) };
                 _gcTimeCounter ??= new PollingCounter("time-in-gc", this, () => GC.GetLastGCPercentTimeInGC()) { DisplayName = "% Time in GC since last GC", DisplayUnits = "%" };

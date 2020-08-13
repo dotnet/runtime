@@ -67,6 +67,21 @@ namespace System.Threading
             return executionContext;
         }
 
+        // Allows capturing asynclocals for a FlowSuppressed ExecutionContext rather than returning null.
+        internal static ExecutionContext? CaptureForRestore()
+        {
+            // This is a short cut for:
+            //
+            // ExecutionContext.RestoreFlow()
+            // var ec = ExecutionContext.Capture()
+            // ExecutionContext.SuppressFlow();
+            // ...
+            // ExecutionContext.Restore(ec)
+            // ExecutionContext.SuppressFlow();
+
+            return Thread.CurrentThread._executionContext;
+        }
+
         private ExecutionContext? ShallowClone(bool isFlowSuppressed)
         {
             Debug.Assert(isFlowSuppressed != m_isFlowSuppressed);
@@ -199,7 +214,25 @@ namespace System.Threading
             edi?.Throw();
         }
 
-        internal static void Restore(ExecutionContext? executionContext)
+        /// <summary>
+        /// Restores a captured execution context to on the current thread.
+        /// </summary>
+        /// <remarks>
+        /// To revert to the current execution context; capture it before Restore, and Restore it again.
+        /// It will not automatically be reverted unlike <seealso cref="ExecutionContext.Run"/>.
+        /// </remarks>
+        /// <param name="executionContext">The ExecutionContext to set.</param>
+        public static void Restore(ExecutionContext executionContext)
+        {
+            if (executionContext == null)
+            {
+                ThrowNullContext();
+            }
+
+            RestoreInternal(executionContext);
+        }
+
+        internal static void RestoreInternal(ExecutionContext? executionContext)
         {
             Thread currentThread = Thread.CurrentThread;
 

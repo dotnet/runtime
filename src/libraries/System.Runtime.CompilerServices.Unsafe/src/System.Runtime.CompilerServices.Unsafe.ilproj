@@ -5,13 +5,19 @@
     <DebugOptimization Condition="'$(Configuration)' == 'Release'">OPT</DebugOptimization>
   </PropertyGroup>
   <PropertyGroup>
+    <CoreCompileDependsOn>$(CoreCompileDependsOn);GenerateVersionFile</CoreCompileDependsOn>
     <DocumentationFile>$(MSBuildThisFileDirectory)System.Runtime.CompilerServices.Unsafe.xml</DocumentationFile>
     <ProjectGuid>{04BA3E3C-6979-4792-B19E-C797AD607F42}</ProjectGuid>
-    <IncludePath>include\$(TargetFramework)</IncludePath>
-    <IncludePath Condition="$(TargetFramework.StartsWith('net4'))">include\netfx</IncludePath>
-    <IlasmFlags>$(IlasmFlags) -INCLUDE=$(IncludePath) -DEBUG=$(DebugOptimization)</IlasmFlags>
+    <ExtraMacros Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)' or '$(TargetFramework)' == 'netcoreapp2.0'">#define netcoreapp</ExtraMacros>
+    <IlasmFlags>$(IlasmFlags) -DEBUG=$(DebugOptimization)</IlasmFlags>
     <TargetFrameworks>$(NetCoreAppCurrent);netstandard2.0;netcoreapp2.0;netstandard1.0;net45</TargetFrameworks>
     <ExcludeCurrentNetCoreAppFromPackage>true</ExcludeCurrentNetCoreAppFromPackage>
+    <CoreAssembly>System.Runtime</CoreAssembly>
+    <CoreAssembly Condition="'$(TargetFramework)' == 'netstandard2.0'">netstandard</CoreAssembly>
+  </PropertyGroup>
+  <PropertyGroup Condition="$(TargetFramework.StartsWith('net4'))">
+    <CoreAssembly>mscorlib</CoreAssembly>
+    <ExtraMacros>#define net45</ExtraMacros>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.Runtime.CompilerServices.Unsafe.il" />
@@ -20,6 +26,52 @@
                         '$(TargetFramework)' == 'netcoreapp2.0'">
     <Reference Include="System.Runtime" />
   </ItemGroup>
+
+  <Target Name="GenerateVersionFile"
+          DependsOnTargets="ResolveReferences"
+          Inputs="$(MSBuildAllProjects)"
+          Outputs="'$(VersionFilePath)">
+   <PropertyGroup>
+      <IncludePath>$([MSBuild]::NormalizeDirectory('$(IntermediateOutputPath)', 'version'))</IncludePath>
+      <IlasmFlags>$(IlasmFlags) -INCLUDE=$(IncludePath)</IlasmFlags>
+      <VersionFilePath Condition="'$(VersionFilePath)' == ''">$([MSBuild]::NormalizePath('$(IncludePath)', 'version.h'))</VersionFilePath>
+      <_AssemblyVersion>$(AssemblyVersion.Replace('.', ':'))</_AssemblyVersion>
+      <_coreAssemblyName Condition="'%(ReferencePath.FileName)' == '$(CoreAssembly)'">%(ReferencePath.FusionName)</_coreAssemblyName>
+      <_assemblyNamePattern><![CDATA[[^,]+, Version=(?<v1>[0-9]+)\.(?<v2>[0-9]+)\.(?<v3>[0-9]+)\.(?<v4>[0-9]+), .*PublicKeyToken=(?<p1>[0-9a-f]{2})(?<p2>[0-9a-f]{2})(?<p3>[0-9a-f]{2})(?<p4>[0-9a-f]{2})(?<p5>[0-9a-f]{2})(?<p6>[0-9a-f]{2})(?<p7>[0-9a-f]{2})(?<p8>[0-9a-f]{2})]]></_assemblyNamePattern>
+      <_coreAssemblyVersion>$([System.Text.RegularExpressions.Regex]::Replace(
+        $(_coreAssemblyName),
+        $(_assemblyNamePattern),
+        '${v1}:${v2}:${v3}:${v4}'))</_coreAssemblyVersion>
+      <_coreAssemblyPublicKeyToken>$([System.Text.RegularExpressions.Regex]::Replace(
+        $(_coreAssemblyName),
+        $(_assemblyNamePattern),
+        '${p1} ${p2} ${p3} ${p4} ${p5} ${p6} ${p7} ${p8}').ToUpperInvariant())</_coreAssemblyPublicKeyToken>
+      <_VersionFileContents>
+<![CDATA[
+#define CORE_ASSEMBLY "$(CoreAssembly)"
+#define ASSEMBLY_VERSION "$(_AssemblyVersion)"
+#define CORE_ASSEMBLY_VERSION "$(_CoreAssemblyVersion)"
+$(ExtraMacros)
+// Metadata version: v4.0.30319
+.assembly extern CORE_ASSEMBLY
+{
+  .publickeytoken = ($(_coreAssemblyPublicKeyToken) )
+  .ver CORE_ASSEMBLY_VERSION
+}
+ ]]>      
+      </_VersionFileContents>
+    </PropertyGroup>
+
+    <WriteLinesToFile
+      File="$(VersionFilePath)"
+      Lines="$(_VersionFileContents)"
+      Overwrite="true"
+      WriteOnlyWhenDifferent="true" />
+
+    <ItemGroup>
+      <FileWrites Include="$(VersionFilePath)" />
+    </ItemGroup>
+  </Target>
 
   <!-- Decompile the ILResourceReference to get native resources. -->
   <Target Name="SetILResourceReference"

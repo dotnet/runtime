@@ -60,10 +60,10 @@
           AfterTargets="AfterResolveReferences;FilterNugetPackages"
           Condition="'$(RuntimeFlavor)' != 'Mono'">
     <ItemGroup>
-      <ReferenceCopyLocalPaths Include="@(RuntimeFiles)" />
       <!-- CoreRun is not used for testing anymore, but we still use it for benchmarking and profiling -->
       <RuntimeFiles Include="$(CoreCLRArtifactsPath)/corerun*" />
       <RuntimeFiles Include="$(CoreCLRArtifactsPath)/PDB/corerun*" />
+      <ReferenceCopyLocalPaths Include="@(RuntimeFiles)" />
     </ItemGroup>
   </Target>
 

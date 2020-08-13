@@ -60,8 +60,8 @@ namespace System.Diagnostics.Tests
                 listener.ActivityStarted = activity => Assert.NotNull(activity);
                 listener.ActivityStopped = activity => Assert.NotNull(activity);
                 listener.ShouldListenTo = (activitySource) => object.ReferenceEquals(aSource, activitySource);
-                listener.GetRequestedDataUsingParentId = (ref ActivityCreationOptions<string> activityOptions) => ActivityDataRequest.None;
-                listener.GetRequestedDataUsingContext = (ref ActivityCreationOptions<ActivityContext> activityOptions) => ActivityDataRequest.None;
+                listener.SampleUsingParentId = (ref ActivityCreationOptions<string> activityOptions) => ActivitySamplingResult.None;
+                listener.Sample = (ref ActivityCreationOptions<ActivityContext> activityOptions) => ActivitySamplingResult.None;
 
                 ActivitySource.AddActivityListener(listener);
                 Assert.True(aSource.HasListeners());
@@ -84,8 +84,8 @@ namespace System.Diagnostics.Tests
                     listener.ActivityStarted = activity => counter++;
                     listener.ActivityStopped = activity => counter--;
                     listener.ShouldListenTo = (activitySource) => object.ReferenceEquals(aSource, activitySource);
-                    listener.GetRequestedDataUsingParentId = (ref ActivityCreationOptions<string> activityOptions) => ActivityDataRequest.AllDataAndRecorded;
-                    listener.GetRequestedDataUsingContext = (ref ActivityCreationOptions<ActivityContext> activityOptions) => ActivityDataRequest.AllDataAndRecorded;
+                    listener.SampleUsingParentId = (ref ActivityCreationOptions<string> activityOptions) => ActivitySamplingResult.AllDataAndRecorded;
+                    listener.Sample = (ref ActivityCreationOptions<ActivityContext> activityOptions) => ActivitySamplingResult.AllDataAndRecorded;
 
                     ActivitySource.AddActivityListener(listener);
 
@@ -141,8 +141,8 @@ namespace System.Diagnostics.Tests
                 listener.ActivityStarted = activity => Assert.NotNull(activity);
                 listener.ActivityStopped = activity => Assert.NotNull(activity);
                 listener.ShouldListenTo = (activitySource) => object.ReferenceEquals(aSource, activitySource);
-                listener.GetRequestedDataUsingParentId = (ref ActivityCreationOptions<string> activityOptions) => ActivityDataRequest.AllData;
-                listener.GetRequestedDataUsingContext = (ref ActivityCreationOptions<ActivityContext> activityOptions) => ActivityDataRequest.AllData;
+                listener.SampleUsingParentId = (ref ActivityCreationOptions<string> activityOptions) => ActivitySamplingResult.AllData;
+                listener.Sample = (ref ActivityCreationOptions<ActivityContext> activityOptions) => ActivitySamplingResult.AllData;
 
                 ActivitySource.AddActivityListener(listener);
 
@@ -163,8 +163,8 @@ namespace System.Diagnostics.Tests
                     listener.ActivityStarted = activity => activityStartCount++;
                     listener.ActivityStopped = activity => activityStopCount++;
                     listener.ShouldListenTo = (activitySource) => activitySource.Name == "" && activitySource.Version == "";
-                    listener.GetRequestedDataUsingParentId = (ref ActivityCreationOptions<string> activityOptions) => ActivityDataRequest.AllData;
-                    listener.GetRequestedDataUsingContext = (ref ActivityCreationOptions<ActivityContext> activityOptions) => ActivityDataRequest.AllData;
+                    listener.SampleUsingParentId = (ref ActivityCreationOptions<string> activityOptions) => ActivitySamplingResult.AllData;
+                    listener.Sample = (ref ActivityCreationOptions<ActivityContext> activityOptions) => ActivitySamplingResult.AllData;
 
                     ActivitySource.AddActivityListener(listener);
 
@@ -213,8 +213,8 @@ namespace System.Diagnostics.Tests
                     ActivityStarted = (activity) => { activityStartCount++; Assert.NotNull(activity); },
                     ActivityStopped = (activity) => { activityStopCount++; Assert.NotNull(activity); },
                     ShouldListenTo = (activitySource) => true,
-                    GetRequestedDataUsingParentId = (ref ActivityCreationOptions<string> activityOptions) => ActivityDataRequest.None,
-                    GetRequestedDataUsingContext = (ref ActivityCreationOptions<ActivityContext> activityOptions) => ActivityDataRequest.None
+                    SampleUsingParentId = (ref ActivityCreationOptions<string> activityOptions) => ActivitySamplingResult.None,
+                    Sample = (ref ActivityCreationOptions<ActivityContext> activityOptions) => ActivitySamplingResult.None
                 };
                 ActivitySource.AddActivityListener(listeners[0]);
 
@@ -228,8 +228,8 @@ namespace System.Diagnostics.Tests
                     ActivityStarted = (activity) => { activityStartCount++; Assert.NotNull(activity); },
                     ActivityStopped = (activity) => { activityStopCount++; Assert.NotNull(activity); },
                     ShouldListenTo = (activitySource) => true,
-                    GetRequestedDataUsingParentId = (ref ActivityCreationOptions<string> activityOptions) => ActivityDataRequest.PropagationData,
-                    GetRequestedDataUsingContext = (ref ActivityCreationOptions<ActivityContext> activityOptions) => ActivityDataRequest.PropagationData
+                    SampleUsingParentId = (ref ActivityCreationOptions<string> activityOptions) => ActivitySamplingResult.PropagationData,
+                    Sample = (ref ActivityCreationOptions<ActivityContext> activityOptions) => ActivitySamplingResult.PropagationData
                 };
                 ActivitySource.AddActivityListener(listeners[1]);
 
@@ -250,8 +250,8 @@ namespace System.Diagnostics.Tests
                     ActivityStarted = (activity) => { activityStartCount++; Assert.NotNull(activity); },
                     ActivityStopped = (activity) => { activityStopCount++; Assert.NotNull(activity); },
                     ShouldListenTo = (activitySource) => true,
-                    GetRequestedDataUsingParentId = (ref ActivityCreationOptions<string> activityOptions) => ActivityDataRequest.AllData,
-                    GetRequestedDataUsingContext = (ref ActivityCreationOptions<ActivityContext> activityOptions) => ActivityDataRequest.AllData
+                    SampleUsingParentId = (ref ActivityCreationOptions<string> activityOptions) => ActivitySamplingResult.AllData,
+                    Sample = (ref ActivityCreationOptions<ActivityContext> activityOptions) => ActivitySamplingResult.AllData
                 };
                 ActivitySource.AddActivityListener(listeners[2]);
 
@@ -272,8 +272,8 @@ namespace System.Diagnostics.Tests
                     ActivityStarted = (activity) => { activityStartCount++; Assert.NotNull(activity); },
                     ActivityStopped = (activity) => { activityStopCount++; Assert.NotNull(activity); },
                     ShouldListenTo = (activitySource) => true,
-                    GetRequestedDataUsingParentId = (ref ActivityCreationOptions<string> activityOptions) => ActivityDataRequest.AllDataAndRecorded,
-                    GetRequestedDataUsingContext = (ref ActivityCreationOptions<ActivityContext> activityOptions) => ActivityDataRequest.AllDataAndRecorded
+                    SampleUsingParentId = (ref ActivityCreationOptions<string> activityOptions) => ActivitySamplingResult.AllDataAndRecorded,
+                    Sample = (ref ActivityCreationOptions<ActivityContext> activityOptions) => ActivitySamplingResult.AllDataAndRecorded
                 };
                 ActivitySource.AddActivityListener(listeners[3]);
 
@@ -307,8 +307,8 @@ namespace System.Diagnostics.Tests
                 listener.ActivityStarted = activity => Assert.NotNull(activity);
                 listener.ActivityStopped = activity => Assert.NotNull(activity);
                 listener.ShouldListenTo = (activitySource) => true;
-                listener.GetRequestedDataUsingParentId = (ref ActivityCreationOptions<string> activityOptions) => ActivityDataRequest.AllData;
-                listener.GetRequestedDataUsingContext = (ref ActivityCreationOptions<ActivityContext> activityOptions) => ActivityDataRequest.AllData;
+                listener.SampleUsingParentId = (ref ActivityCreationOptions<string> activityOptions) => ActivitySamplingResult.AllData;
+                listener.Sample = (ref ActivityCreationOptions<ActivityContext> activityOptions) => ActivitySamplingResult.AllData;
 
                 ActivitySource.AddActivityListener(listener);
 
@@ -363,7 +363,7 @@ namespace System.Diagnostics.Tests
                 using ActivityListener listener = new ActivityListener();
 
                 listener.ShouldListenTo = (activitySource) => activitySource.Name == "ParentContext";
-                listener.GetRequestedDataUsingContext = (ref ActivityCreationOptions<ActivityContext> activityOptions) =>
+                listener.Sample = (ref ActivityCreationOptions<ActivityContext> activityOptions) =>
                 {
                     Activity c = Activity.Current;
                     if (c != null)
@@ -371,17 +371,42 @@ namespace System.Diagnostics.Tests
                         Assert.Equal(c.Context, activityOptions.Parent);
                     }
 
-                    return ActivityDataRequest.AllData;
+                    return ActivitySamplingResult.AllData;
                 };
 
                 ActivitySource.AddActivityListener(listener);
-
                 using Activity a = aSource.StartActivity("a", ActivityKind.Server, new ActivityContext(ActivityTraceId.CreateRandom(), ActivitySpanId.CreateRandom(), 0));
                 using Activity b = aSource.StartActivity("b");
                 Assert.Equal(a.Context, b.Parent.Context);
             }).Dispose();
         }
 
+        [Fact]
+        public void TestActivityContextParsing()
+        {
+            const string w3cId = "00-99d43cb30a4cdb4fbeee3a19c29201b0-e82825765f051b47-01";
+            Assert.True(ActivityContext.TryParse(w3cId, "k=v", out ActivityContext context));
+            Assert.Equal("99d43cb30a4cdb4fbeee3a19c29201b0", context.TraceId.ToHexString());
+            Assert.Equal("e82825765f051b47", context.SpanId.ToHexString());
+            Assert.Equal(ActivityTraceFlags.Recorded, context.TraceFlags);
+            Assert.Equal("k=v", context.TraceState);
+
+            context = ActivityContext.Parse(w3cId, "k=v");
+            Assert.Equal("99d43cb30a4cdb4fbeee3a19c29201b0", context.TraceId.ToHexString());
+            Assert.Equal("e82825765f051b47", context.SpanId.ToHexString());
+            Assert.Equal(ActivityTraceFlags.Recorded, context.TraceFlags);
+            Assert.Equal("k=v", context.TraceState);
+
+            context = ActivityContext.Parse(w3cId, null);
+            Assert.Null(context.TraceState);
+
+            Assert.Throws<ArgumentNullException>(() => ActivityContext.TryParse(null, "k=v", out context));
+            Assert.Throws<ArgumentNullException>(() => ActivityContext.Parse(null, null));
+            Assert.Throws<ArgumentException>(() => ActivityContext.Parse("BadW3C", null));
+
+            const string invalidW3CContext = "00-Z9d43cb30a4cdb4fbeee3a19c29201b0-e82825765f051b47-01";
+            Assert.False(ActivityContext.TryParse(invalidW3CContext, null, out context));
+        }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void TestCreatingActivityUsingDifferentParentIds()
@@ -400,19 +425,19 @@ namespace System.Diagnostics.Tests
                 using ActivityListener listener3 = new ActivityListener();  // will have both context and parent Id callbacks
 
                 listener1.ShouldListenTo = listener2.ShouldListenTo = listener3.ShouldListenTo = (activitySource) => activitySource.Name == "ParentIdsTest";
-                listener1.GetRequestedDataUsingContext = listener3.GetRequestedDataUsingContext = (ref ActivityCreationOptions<ActivityContext> activityOptions) =>
+                listener1.Sample = listener3.Sample = (ref ActivityCreationOptions<ActivityContext> activityOptions) =>
                 {
                     callingByContext++;
 
                     Assert.Equal(new ActivityContext(ActivityTraceId.CreateFromString(w3cId.AsSpan(3,  32)), ActivitySpanId.CreateFromString(w3cId.AsSpan(36, 16)), ActivityTraceFlags.Recorded),
                                  activityOptions.Parent);
 
-                    return ActivityDataRequest.AllData;
+                    return ActivitySamplingResult.AllData;
                 };
-                listener2.GetRequestedDataUsingParentId = listener3.GetRequestedDataUsingParentId = (ref ActivityCreationOptions<string> activityOptions) =>
+                listener2.SampleUsingParentId = listener3.SampleUsingParentId = (ref ActivityCreationOptions<string> activityOptions) =>
                 {
                     callingByParentId++;
-                    return ActivityDataRequest.AllData;
+                    return ActivitySamplingResult.AllData;
                 };
 
                 ActivitySource.AddActivityListener(listener1);
@@ -450,10 +475,10 @@ namespace System.Diagnostics.Tests
                 using ActivityListener listener = new ActivityListener();
                 listener.ShouldListenTo = (activitySource) => activitySource.Name == "RemoteContext";
 
-                listener.GetRequestedDataUsingContext = (ref ActivityCreationOptions<ActivityContext> activityOptions) =>
+                listener.Sample = (ref ActivityCreationOptions<ActivityContext> activityOptions) =>
                 {
                     isRemote = activityOptions.Parent.IsRemote;
-                    return ActivityDataRequest.AllData;
+                    return ActivitySamplingResult.AllData;
                 };
 
                 ActivitySource.AddActivityListener(listener);
@@ -480,10 +505,12 @@ namespace System.Diagnostics.Tests
 
                 ActivityContext ctx = default;
 
-                listener.GetRequestedDataUsingContext = (ref ActivityCreationOptions<ActivityContext> activityOptions) =>
+                bool forceGenerateTraceId = false;
+
+                listener.Sample = (ref ActivityCreationOptions<ActivityContext> activityOptions) =>
                 {
-                    ctx = activityOptions.Parent;
-                    return ActivityDataRequest.AllData;
+                    ctx = forceGenerateTraceId ? new ActivityContext(activityOptions.TraceId, default, default) : activityOptions.Parent;
+                    return ActivitySamplingResult.AllData;
                 };
 
                 ActivitySource.AddActivityListener(listener);
@@ -493,7 +520,7 @@ namespace System.Diagnostics.Tests
                     Assert.Equal(default, ctx);
                 }
 
-                listener.AutoGenerateRootContextTraceId = true;
+                forceGenerateTraceId = true;
 
                 Activity activity = aSource.StartActivity("a2", default, ctx);
 
@@ -516,13 +543,12 @@ namespace System.Diagnostics.Tests
 
                 ActivityContext ctx = default;
 
-                listener.GetRequestedDataUsingContext = (ref ActivityCreationOptions<ActivityContext> activityOptions) =>
+                listener.Sample = (ref ActivityCreationOptions<ActivityContext> activityOptions) =>
                 {
-                    ctx = activityOptions.Parent;
-                    return ActivityDataRequest.AllData;
+                    ctx = new ActivityContext(activityOptions.TraceId, default, default);
+                    return ActivitySamplingResult.AllData;
                 };
 
-                listener.AutoGenerateRootContextTraceId = true;
                 ActivitySource.AddActivityListener(listener);
 
                 Activity activity = aSource.StartActivity("a2", default, null);
@@ -547,7 +573,7 @@ namespace System.Diagnostics.Tests
                 using ActivityListener listener = new ActivityListener();
 
                 listener.ShouldListenTo = (activitySource) => activitySource.Name == "EventNotificationOrder";
-                listener.GetRequestedDataUsingContext = (ref ActivityCreationOptions<ActivityContext> activityOptions) => ActivityDataRequest.AllData;
+                listener.Sample = (ref ActivityCreationOptions<ActivityContext> activityOptions) => ActivitySamplingResult.AllData;
                 listener.ActivityStopped = a => Assert.Equal(child, Activity.Current);
 
                 ActivitySource.AddActivityListener(listener);
@@ -561,6 +587,211 @@ namespace System.Diagnostics.Tests
 
                 // Now the Current should be restored back.
                 Assert.Equal(parent, Activity.Current);
+            }).Dispose();
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void TestAddingSamplerTags()
+        {
+            RemoteExecutor.Invoke(() => {
+
+                using ActivitySource aSource = new ActivitySource("SamplerTags1");
+                using ActivityListener listener = new ActivityListener();
+                listener.ShouldListenTo = (activitySource) => activitySource.Name == "SamplerTags1";
+
+                listener.Sample = (ref ActivityCreationOptions<ActivityContext> activityOptions) =>
+                {
+                    activityOptions.SamplingTags.Add("tag1", "value1");
+                    activityOptions.SamplingTags.Add("tag2", "value2");
+                    return ActivitySamplingResult.AllData;
+                };
+
+                ActivitySource.AddActivityListener(listener);
+
+                using Activity activity = aSource.StartActivity("a1");
+
+                Assert.NotNull(activity);
+                Assert.Equal(2, activity.TagObjects.Count());
+                Assert.Equal(new KeyValuePair<string, object>("tag1", "value1"), activity.TagObjects.ElementAt(0));
+                Assert.Equal(new KeyValuePair<string, object>("tag2", "value2"), activity.TagObjects.ElementAt(1));
+            }).Dispose();
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void TestAddingSamplerTagsUsingParentId()
+        {
+            RemoteExecutor.Invoke(() => {
+
+                using ActivitySource aSource = new ActivitySource("SamplerTags2");
+                using ActivityListener listener = new ActivityListener();
+                listener.ShouldListenTo = (activitySource) => activitySource.Name == "SamplerTags2";
+
+                listener.SampleUsingParentId = (ref ActivityCreationOptions<string> activityOptions) =>
+                {
+                    activityOptions.SamplingTags.Add("tag1", "value1");
+                    activityOptions.SamplingTags.Add("tag2", "value2");
+                    return ActivitySamplingResult.AllData;
+                };
+
+                ActivitySource.AddActivityListener(listener);
+
+                Activity activity = aSource.StartActivity("a1", ActivityKind.Client, "SomeParent");
+
+                Assert.NotNull(activity);
+                Assert.Equal(2, activity.TagObjects.Count());
+                Assert.Equal(new KeyValuePair<string, object>("tag1", "value1"), activity.TagObjects.ElementAt(0));
+                Assert.Equal(new KeyValuePair<string, object>("tag2", "value2"), activity.TagObjects.ElementAt(1));
+            }).Dispose();
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void TestNotAddedSamplerTags()
+        {
+            RemoteExecutor.Invoke(() => {
+
+                using ActivitySource aSource = new ActivitySource("SamplerTags3");
+                using ActivityListener listener = new ActivityListener();
+                listener.ShouldListenTo = (activitySource) => activitySource.Name == "SamplerTags3";
+
+                listener.Sample = (ref ActivityCreationOptions<ActivityContext> activityOptions) =>
+                {
+                    activityOptions.SamplingTags.Add("tag1", "value1");
+                    Assert.False(true, "This callback shouldn't be called at all.");
+                    return ActivitySamplingResult.AllData;
+                };
+
+                ActivitySource.AddActivityListener(listener);
+
+                // activity should be null as no listener asked for creation.
+                using Activity activity = aSource.StartActivity("a1", ActivityKind.Client, "NonW3CParentId");
+
+                Assert.Null(activity);
+            }).Dispose();
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void TestDefaultTraceIdWithHierarchicalParentId()
+        {
+            RemoteExecutor.Invoke(() => {
+
+                using ActivitySource aSource = new ActivitySource("SamplerTags4");
+                using ActivityListener listener = new ActivityListener();
+                listener.ShouldListenTo = (activitySource) => activitySource.Name == "SamplerTags4";
+
+                listener.SampleUsingParentId = (ref ActivityCreationOptions<string> activityOptions) =>
+                {
+                    Assert.Equal(default, activityOptions.TraceId);
+                    return ActivitySamplingResult.AllData;
+                };
+
+                ActivitySource.AddActivityListener(listener);
+
+                Activity activity = aSource.StartActivity("a1", ActivityKind.Client, "HierarchicalParentId");
+
+                Assert.NotNull(activity);
+                // activity has no parent. expected default trace Id.
+                Assert.Equal(default, activity.TraceId);
+            }).Dispose();
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void TestAddingSamplerTagsFromMultipleListeners()
+        {
+            RemoteExecutor.Invoke(() => {
+                using ActivitySource aSource = new ActivitySource("SamplerTags5");
+                using ActivityListener listener1 = new ActivityListener();
+                using ActivityListener listener2 = new ActivityListener();
+                listener1.ShouldListenTo = (activitySource) => activitySource.Name == "SamplerTags5";
+                listener2.ShouldListenTo = (activitySource) => activitySource.Name == "SamplerTags5";
+
+                listener1.Sample = listener2.Sample = (ref ActivityCreationOptions<ActivityContext> activityOptions) =>
+                {
+                    if (activityOptions.SamplingTags.Count == 0)
+                        activityOptions.SamplingTags.Add("tag1", "value1");
+                    else
+                        activityOptions.SamplingTags.Add("tag2", "value2");
+
+                    return ActivitySamplingResult.AllData;
+                };
+
+                ActivitySource.AddActivityListener(listener1);
+                ActivitySource.AddActivityListener(listener2);
+
+                using Activity activity = aSource.StartActivity("a1");
+
+                Assert.NotNull(activity);
+                Assert.Equal(2, activity.TagObjects.Count());
+                Assert.Equal(new KeyValuePair<string, object>("tag1", "value1"), activity.TagObjects.ElementAt(0));
+                Assert.Equal(new KeyValuePair<string, object>("tag2", "value2"), activity.TagObjects.ElementAt(1));
+            }).Dispose();
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void TestSamplerTagsWithMixedListenerModels()
+        {
+            RemoteExecutor.Invoke(() => {
+                const string w3cId = "00-99d43cb30a4cdb4fbeee3a19c29201b0-e82825765f051b47-01";
+
+                using ActivitySource aSource = new ActivitySource("SamplerTags6");
+                using ActivityListener listener1 = new ActivityListener();
+                using ActivityListener listener2 = new ActivityListener();
+                listener1.ShouldListenTo = (activitySource) => activitySource.Name == "SamplerTags6";
+                listener2.ShouldListenTo = (activitySource) => activitySource.Name == "SamplerTags6";
+
+                // listener1 provide SampleUsingParentId callback and doesn't provide Sample
+                listener1.SampleUsingParentId = (ref ActivityCreationOptions<string> activityOptions) =>
+                {
+                    activityOptions.SamplingTags.Add("tag1", "value1");
+                    return ActivitySamplingResult.AllData;
+                };
+
+                // listener2 provide Sample callback and doesn't provide SampleUsingParentId
+                // Sample should get called as we convert the w3c id to a context.
+                listener2.Sample = (ref ActivityCreationOptions<ActivityContext> activityOptions) =>
+                {
+                    activityOptions.SamplingTags.Add("tag2", "value2");
+                    return ActivitySamplingResult.AllData;
+                };
+
+                ActivitySource.AddActivityListener(listener1);
+                ActivitySource.AddActivityListener(listener2);
+
+                using Activity activity = aSource.StartActivity("a1", ActivityKind.Client, w3cId);
+
+                Assert.NotNull(activity);
+                Assert.Equal(2, activity.TagObjects.Count());
+                Assert.Equal(new KeyValuePair<string, object>("tag1", "value1"), activity.TagObjects.ElementAt(0));
+                Assert.Equal(new KeyValuePair<string, object>("tag2", "value2"), activity.TagObjects.ElementAt(1));
+            }).Dispose();
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void TestAddSamplerAndActivityCreationTags()
+        {
+            RemoteExecutor.Invoke(() => {
+                using ActivitySource aSource = new ActivitySource("SamplerTags7");
+                using ActivityListener listener = new ActivityListener();
+                listener.ShouldListenTo = (activitySource) => activitySource.Name == "SamplerTags7";
+
+                listener.Sample = (ref ActivityCreationOptions<ActivityContext> activityOptions) =>
+                {
+                    activityOptions.SamplingTags.Add("SamplerTag1", "SamplerValue1");
+                    return ActivitySamplingResult.AllData;
+                };
+
+                ActivitySource.AddActivityListener(listener);
+
+                ActivityTagsCollection tags = new ActivityTagsCollection();
+                tags["tag1"] = "value1";
+                tags["tag2"] = "value2";
+
+                using Activity activity = aSource.StartActivity("a1", ActivityKind.Client, default(ActivityContext), tags);
+
+                Assert.NotNull(activity);
+                Assert.Equal(3, activity.TagObjects.Count());
+                Assert.Equal(new KeyValuePair<string, object>("tag1", "value1"), activity.TagObjects.ElementAt(0));
+                Assert.Equal(new KeyValuePair<string, object>("tag2", "value2"), activity.TagObjects.ElementAt(1));
+                Assert.Equal(new KeyValuePair<string, object>("SamplerTag1", "SamplerValue1"), activity.TagObjects.ElementAt(2));
             }).Dispose();
         }
 

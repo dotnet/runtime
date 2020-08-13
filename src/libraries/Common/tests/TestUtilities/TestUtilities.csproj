@@ -1,6 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <!-- For some reason, xunit.core.props isn't excluded in VS and sets this to true. -->
+    <IsTestProject>false</IsTestProject>
     <!--
       This assembly is referenced from rid agnostic configurations therefore we can't make it RID specific
       and instead use runtime checks.
@@ -20,6 +22,7 @@
     <Compile Include="System\IO\FileCleanupTestBase.cs" />
     <Compile Include="System\TestEnvironment.cs" />
     <Compile Include="System\ThreadCultureChange.cs" />
+    <Compile Include="System\AssemblyPathHelper.cs" />
     <!-- We don't compile per but and instead use runtime platform checks. -->
     <Compile Include="System\PlatformDetection.cs" />
     <Compile Include="System\PlatformDetection.Unix.cs" />

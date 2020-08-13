@@ -29,6 +29,7 @@ namespace System
         public static bool IsSolaris => RuntimeInformation.IsOSPlatform(OSPlatform.Create("SOLARIS"));
         public static bool IsBrowser => RuntimeInformation.IsOSPlatform(OSPlatform.Create("BROWSER"));
         public static bool IsNotBrowser => !IsBrowser;
+        public static bool IsNotNetFramework => !IsNetFramework;
 
         public static bool IsArmProcess => RuntimeInformation.ProcessArchitecture == Architecture.Arm;
         public static bool IsNotArmProcess => !IsArmProcess;
@@ -126,6 +127,8 @@ namespace System
         public static bool SupportsClientAlpn => SupportsAlpn || IsOSX || IsiOS || IstvOS;
 
         // TLS 1.1 and 1.2 can work on Windows7 but it is not enabled by default.
+        //
+        public static bool SupportsTls10 => !IsDebian10;
         public static bool SupportsTls11 => !IsWindows7 && !IsDebian10;
         public static bool SupportsTls12 => !IsWindows7;
         // OpenSSL 1.1.1 and above.

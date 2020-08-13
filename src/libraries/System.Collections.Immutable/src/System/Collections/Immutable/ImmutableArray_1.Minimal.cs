@@ -156,7 +156,7 @@ namespace System.Collections.Immutable
         public bool IsEmpty
         {
             [NonVersionable]
-            get { return this.Length == 0; }
+            get { return this.array!.Length == 0; }
         }
 
         /// <summary>
@@ -334,7 +334,7 @@ namespace System.Collections.Immutable
         /// <see cref="ImmutableArray{T}.As{TOther}"/>  or <see cref="ImmutableArray{T}.CastArray{TOther}"/>method.
         /// </remarks>
         public static ImmutableArray<T> CastUp<TDerived>(ImmutableArray<TDerived> items)
-            where TDerived : class, T
+            where TDerived : class?, T
         {
             return new ImmutableArray<T>(items.array);
         }
@@ -344,7 +344,7 @@ namespace System.Collections.Immutable
         /// array to an array of type <typeparam name="TOther"/>.
         /// </summary>
         /// <exception cref="InvalidCastException">Thrown if the cast is illegal.</exception>
-        public ImmutableArray<TOther> CastArray<TOther>() where TOther : class
+        public ImmutableArray<TOther> CastArray<TOther>() where TOther : class?
         {
             return new ImmutableArray<TOther>((TOther[])(object)array!);
         }
@@ -364,9 +364,9 @@ namespace System.Collections.Immutable
         /// element types to their derived types. However, downcasting is only successful
         /// when it reverses a prior upcasting operation.
         /// </remarks>
-        public ImmutableArray<TOther> As<TOther>() where TOther : class
+        public ImmutableArray<TOther> As<TOther>() where TOther : class?
         {
-            return new ImmutableArray<TOther>((this.array as TOther[])!);
+            return new ImmutableArray<TOther>((this.array as TOther[]));
         }
 
         /// <summary>

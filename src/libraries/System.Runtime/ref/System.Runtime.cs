@@ -343,10 +343,8 @@ namespace System
         public static int FindLastIndex<T>(T[] array, int startIndex, int count, System.Predicate<T> match) { throw null; }
         public static int FindLastIndex<T>(T[] array, int startIndex, System.Predicate<T> match) { throw null; }
         public static int FindLastIndex<T>(T[] array, System.Predicate<T> match) { throw null; }
-        [return: System.Diagnostics.CodeAnalysis.MaybeNullAttribute]
-        public static T FindLast<T>(T[] array, System.Predicate<T> match) { throw null; }
-        [return: System.Diagnostics.CodeAnalysis.MaybeNullAttribute]
-        public static T Find<T>(T[] array, System.Predicate<T> match) { throw null; }
+        public static T? FindLast<T>(T[] array, System.Predicate<T> match) { throw null; }
+        public static T? Find<T>(T[] array, System.Predicate<T> match) { throw null; }
         public static void ForEach<T>(T[] array, System.Action<T> action) { }
         public System.Collections.IEnumerator GetEnumerator() { throw null; }
         public int GetLength(int dimension) { throw null; }
@@ -816,7 +814,7 @@ namespace System
         public CLSCompliantAttribute(bool isCompliant) { }
         public bool IsCompliant { get { throw null; } }
     }
-    public delegate int Comparison<in T>([System.Diagnostics.CodeAnalysis.AllowNullAttribute] T x, [System.Diagnostics.CodeAnalysis.AllowNullAttribute] T y);
+    public delegate int Comparison<in T>(T x, T y);
     public abstract partial class ContextBoundObject : System.MarshalByRefObject
     {
         protected ContextBoundObject() { }
@@ -2298,7 +2296,7 @@ namespace System
     }
     public partial interface IComparable<in T>
     {
-        int CompareTo([System.Diagnostics.CodeAnalysis.AllowNullAttribute] T other);
+        int CompareTo(T? other);
     }
     [System.CLSCompliantAttribute(false)]
     public partial interface IConvertible
@@ -2331,7 +2329,7 @@ namespace System
     }
     public partial interface IEquatable<T>
     {
-        bool Equals([System.Diagnostics.CodeAnalysis.AllowNullAttribute] T other);
+        bool Equals(T? other);
     }
     public partial interface IFormatProvider
     {
@@ -3044,6 +3042,24 @@ namespace System
         public object Clone() { throw null; }
         public void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public override string ToString() { throw null; }
+        public static bool IsOSPlatform(string platform) { throw null; }
+        public static bool IsOSPlatformVersionAtLeast(string platform, int major, int minor = 0, int build = 0, int revision = 0) { throw null; }
+        public static bool IsBrowser() { throw null; }
+        public static bool IsLinux() { throw null; }
+        public static bool IsFreeBSD() { throw null; }
+        public static bool IsFreeBSDVersionAtLeast(int major, int minor = 0, int build = 0, int revision = 0) { throw null; }
+        public static bool IsAndroid() { throw null; }
+        public static bool IsAndroidVersionAtLeast(int major, int minor = 0, int build = 0, int revision = 0) { throw null; }
+        public static bool IsIOS() { throw null; }
+        public static bool IsIOSVersionAtLeast(int major, int minor = 0, int build = 0) { throw null; }
+        public static bool IsMacOS() { throw null; }
+        public static bool IsMacOSVersionAtLeast(int major, int minor = 0, int build = 0) { throw null; }
+        public static bool IsTvOS() { throw null; }
+        public static bool IsTvOSVersionAtLeast(int major, int minor = 0, int build = 0) { throw null; }
+        public static bool IsWatchOS() { throw null; }
+        public static bool IsWatchOSVersionAtLeast(int major, int minor = 0, int build = 0) { throw null; }
+        public static bool IsWindows() { throw null; }
+        public static bool IsWindowsVersionAtLeast(int major, int minor = 0, int build = 0, int revision = 0) { throw null; }
     }
     public partial class OperationCanceledException : System.SystemException
     {
@@ -3638,10 +3654,10 @@ namespace System
     }
     public static partial class StringNormalizationExtensions
     {
-        public static bool IsNormalized(this string value) { throw null; }
-        public static bool IsNormalized(this string value, System.Text.NormalizationForm normalizationForm) { throw null; }
-        public static string Normalize(this string value) { throw null; }
-        public static string Normalize(this string value, System.Text.NormalizationForm normalizationForm) { throw null; }
+        public static bool IsNormalized(this string strInput) { throw null; }
+        public static bool IsNormalized(this string strInput, System.Text.NormalizationForm normalizationForm) { throw null; }
+        public static string Normalize(this string strInput) { throw null; }
+        public static string Normalize(this string strInput, System.Text.NormalizationForm normalizationForm) { throw null; }
     }
     [System.FlagsAttribute]
     public enum StringSplitOptions
@@ -4321,6 +4337,7 @@ namespace System
         public abstract object? InvokeMember(string name, System.Reflection.BindingFlags invokeAttr, System.Reflection.Binder? binder, object? target, object?[]? args, System.Reflection.ParameterModifier[]? modifiers, System.Globalization.CultureInfo? culture, string[]? namedParameters);
         protected abstract bool IsArrayImpl();
         public virtual bool IsAssignableFrom([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] System.Type? c) { throw null; }
+        public bool IsAssignableTo([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] System.Type? targetType) { throw null; }
         protected abstract bool IsByRefImpl();
         protected abstract bool IsCOMObjectImpl();
         protected virtual bool IsContextfulImpl() { throw null; }
@@ -5357,7 +5374,7 @@ namespace System.Collections.Generic
     }
     public partial interface IComparer<in T>
     {
-        int Compare([System.Diagnostics.CodeAnalysis.AllowNullAttribute] T x, [System.Diagnostics.CodeAnalysis.AllowNullAttribute] T y);
+        int Compare(T? x, T? y);
     }
     public partial interface IDictionary<TKey, TValue> : System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<TKey, TValue>>, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<TKey, TValue>>, System.Collections.IEnumerable
     {
@@ -5379,7 +5396,7 @@ namespace System.Collections.Generic
     }
     public partial interface IEqualityComparer<in T>
     {
-        bool Equals([System.Diagnostics.CodeAnalysis.AllowNullAttribute] T x, [System.Diagnostics.CodeAnalysis.AllowNullAttribute] T y);
+        bool Equals(T? x, T? y);
         int GetHashCode([System.Diagnostics.CodeAnalysis.DisallowNullAttribute] T obj);
     }
     public partial interface IList<T> : System.Collections.Generic.ICollection<T>, System.Collections.Generic.IEnumerable<T>, System.Collections.IEnumerable
@@ -8835,6 +8852,7 @@ namespace System.Resources
         public virtual string BaseName { get { throw null; } }
         protected System.Resources.UltimateResourceFallbackLocation FallbackLocation { get { throw null; } set { } }
         public virtual bool IgnoreCase { get { throw null; } set { } }
+        [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicConstructors)]
         public virtual System.Type ResourceSetType { get { throw null; } }
         public static System.Resources.ResourceManager CreateFileBasedResourceManager(string baseName, string resourceDir, System.Type? usingResourceSet) { throw null; }
         protected static System.Globalization.CultureInfo GetNeutralResourcesLanguage(System.Reflection.Assembly a) { throw null; }
@@ -9971,12 +9989,12 @@ namespace System.Runtime.Versioning
         public static bool operator !=(System.Runtime.Versioning.FrameworkName? left, System.Runtime.Versioning.FrameworkName? right) { throw null; }
         public override string ToString() { throw null; }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Class | System.AttributeTargets.Constructor | System.AttributeTargets.Event | System.AttributeTargets.Field | System.AttributeTargets.Method | System.AttributeTargets.Module | System.AttributeTargets.Property | System.AttributeTargets.Struct, AllowMultiple = true, Inherited = false)]
-    public sealed class MinimumOSPlatformAttribute : System.Runtime.Versioning.OSPlatformAttribute
+    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Class | System.AttributeTargets.Constructor | System.AttributeTargets.Enum | System.AttributeTargets.Event | System.AttributeTargets.Field | System.AttributeTargets.Method | System.AttributeTargets.Module | System.AttributeTargets.Property | System.AttributeTargets.Struct, AllowMultiple = true, Inherited = false)]
+    public sealed class SupportedOSPlatformAttribute : System.Runtime.Versioning.OSPlatformAttribute
     {
-        public MinimumOSPlatformAttribute(string platformName) : base(platformName) { }
+        public SupportedOSPlatformAttribute(string platformName) : base(platformName) { }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Class | System.AttributeTargets.Constructor | System.AttributeTargets.Event | System.AttributeTargets.Field | System.AttributeTargets.Method | System.AttributeTargets.Module | System.AttributeTargets.Property | System.AttributeTargets.Struct, AllowMultiple = true, Inherited = false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Class | System.AttributeTargets.Constructor | System.AttributeTargets.Enum | System.AttributeTargets.Event | System.AttributeTargets.Field | System.AttributeTargets.Method | System.AttributeTargets.Module | System.AttributeTargets.Property | System.AttributeTargets.Struct, AllowMultiple = true, Inherited = false)]
     public sealed class ObsoletedInOSPlatformAttribute : System.Runtime.Versioning.OSPlatformAttribute
     {
         public ObsoletedInOSPlatformAttribute(string platformName) : base(platformName) { }
@@ -9989,10 +10007,10 @@ namespace System.Runtime.Versioning
         private protected OSPlatformAttribute(string platformName) { }
         public string PlatformName { get; }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Class | System.AttributeTargets.Constructor | System.AttributeTargets.Event | System.AttributeTargets.Field | System.AttributeTargets.Method | System.AttributeTargets.Module | System.AttributeTargets.Property | System.AttributeTargets.Struct, AllowMultiple = true, Inherited = false)]
-    public sealed class RemovedInOSPlatformAttribute : System.Runtime.Versioning.OSPlatformAttribute
+    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Class | System.AttributeTargets.Constructor | System.AttributeTargets.Enum | System.AttributeTargets.Event | System.AttributeTargets.Field | System.AttributeTargets.Method | System.AttributeTargets.Module | System.AttributeTargets.Property | System.AttributeTargets.Struct, AllowMultiple = true, Inherited = false)]
+    public sealed class UnsupportedOSPlatformAttribute : System.Runtime.Versioning.OSPlatformAttribute
     {
-        public RemovedInOSPlatformAttribute(string platformName) : base(platformName) { }
+        public UnsupportedOSPlatformAttribute(string platformName) : base(platformName) { }
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Constructor | System.AttributeTargets.Method | System.AttributeTargets.Property, Inherited=false)]
     [System.Diagnostics.ConditionalAttribute("RESOURCE_ANNOTATION_WORK")]

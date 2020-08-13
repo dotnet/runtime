@@ -11,6 +11,8 @@ parameters:
   runtimeType: 'coreclr'
   pool: ''
   codeGenType: 'JIT'
+  projetFile: ''
+  runKind: ''
 
 ### Perf job
 
@@ -21,8 +23,8 @@ jobs:
 - template: run-performance-job.yml
   parameters:
     # Compute job name from template parameters
-    jobName: ${{ format('perfbuild_{0}{1}_{2}_{3}_{4}_{5}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig, parameters.runtimeType, parameters.codeGenType) }}
-    displayName: ${{ format('Performance {0}{1} {2} {3} {4} {5}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig, parameters.runtimeType, parameters.codeGenType) }}
+    jobName: ${{ format('perfbuild_{0}{1}_{2}_{3}_{4}_{5}_{6}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig, parameters.runtimeType, parameters.codeGenType, parameters.runKind) }}
+    displayName: ${{ format('Performance {0}{1} {2} {3} {4} {5} {6}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig, parameters.runtimeType, parameters.codeGenType, parameters.runKind) }}
     pool: ${{ parameters.pool }}
     buildConfig: ${{ parameters.buildConfig }}
     archType: ${{ parameters.archType }}
@@ -32,6 +34,8 @@ jobs:
     liveLibrariesBuildConfig: ${{ parameters.liveLibrariesBuildConfig }}
     runtimeType: ${{ parameters.runtimeType }}
     codeGenType: ${{ parameters.codeGenType }}
+    projectFile: ${{ parameters.projectFile }}
+    runKind: ${{ parameters.runKind }}
     # Test job depends on the corresponding build job
     dependsOn:
     - ${{ format('coreclr_{0}_product_build_{1}{2}_{3}_{4}', parameters.runtimeVariant, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
@@ -39,6 +43,8 @@ jobs:
       - ${{ format('libraries_build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.liveLibrariesBuildConfig) }}
     - ${{ if eq(parameters.runtimeType, 'mono') }}:
       - ${{ format('mono_{0}_product_build_{1}{2}_{3}_{4}', parameters.runtimeVariant, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+    - ${{ if eq(parameters.runtimeType, 'wasm') }}:
+      - ${{ format('build_{0}{1}_{2}_{3}_{4}', 'Browser', '', 'wasm', parameters.buildConfig, parameters.runtimeType) }}
 
     ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
       ${{ if eq(parameters.runtimeType, 'mono') }}:
@@ -48,7 +54,9 @@ jobs:
     ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
       ${{ if eq(parameters.runtimeType, 'mono') }}:
         extraSetupParameters: --architecture ${{ parameters.archType }} --monodotnet $(Build.SourcesDirectory)/.dotnet-mono --kind micro_mono
-      ${{ if ne(parameters.runtimeType, 'mono') }}:
+      ${{ if eq(parameters.runtimeType, 'wasm') }}:
+        extraSetupParameters: --architecture ${{ parameters.archType }} --wasm $(librariesDownloadDir)/bin/wasm --kind micro
+      ${{ if eq(parameters.runtimeType, 'coreclr') }}:
         extraSetupParameters: --corerootdirectory $(Build.SourcesDirectory)/artifacts/tests/coreclr/${{ parameters.osGroup }}.${{ parameters.archType }}.Release/Tests/Core_Root --architecture ${{ parameters.archType }}
 
     variables: ${{ parameters.variables }}
@@ -85,6 +93,19 @@ jobs:
           artifactFileName: 'MonoProduct_${{ parameters.runtimeVariant }}_$(osGroup)_$(archType)_$(buildConfig)$(archiveExtension)'
           artifactName: 'MonoProduct_${{ parameters.runtimeVariant }}_$(osGroup)_$(archType)_$(buildConfig)'
           displayName: 'Mono runtime'
+
+    - ${{ if eq(parameters.runtimeType, 'wasm') }}:
+      # Download artifact
+      - task: DownloadBuildArtifacts@0
+        displayName: 'Download WASM Runtime Pack'
+        inputs:
+          buildType: current
+          downloadType: single
+          downloadPath: '$(Build.SourcesDirectory)/__download__'
+          artifactName: 'IntermediateUnsignedArtifacts'
+
+      - script: "mkdir $(librariesDownloadDir)/bin/wasm;unzip -o $(Build.SourcesDirectory)/__download__/IntermediateUnsignedArtifacts/MonoRuntimePacks/Shipping/Microsoft.NETCore.App.Runtime.browser-wasm.5.0.0-ci.nupkg data/* runtimes/* -d $(librariesDownloadDir)/bin/wasm;cp src/mono/wasm/runtime-test.js $(librariesDownloadDir)/bin/wasm/runtime-test.js;find $(librariesDownloadDir)/bin/wasm -type f -exec chmod 664 {} \\;"
+        displayName: "Create wasm directory (Linux)"
 
     # Create Core_Root
     - script: $(coreClrRepoRootDir)build-test$(scriptExt) $(buildConfig) $(archType) generatelayoutonly $(librariesOverrideArg)

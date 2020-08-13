@@ -6,10 +6,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="$(CommonTestPath)Extensions\TestingUtils\Microsoft.AspNetCore.Testing\src\ExceptionAssertions.cs"
-             Link="Common\tests\Extensions\TestingUtils\Microsoft.AspNetCore.Testing\src\ExceptionAssertions.cs" />
-    <Compile Include="$(CommonTestPath)Extensions\TestingUtils\Microsoft.AspNetCore.Testing\src\CultureReplacer.cs"
-             Link="Common\tests\Extensions\TestingUtils\Microsoft.AspNetCore.Testing\src\CultureReplacer.cs" />
     <Compile Include="..\DI.Specification.Tests\**\*.cs" />
   </ItemGroup>
 

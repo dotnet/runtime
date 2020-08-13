@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\BrowserDebugProxy\BrowserDebugProxy.csproj" />
+  </ItemGroup>
+
+  <Target Name="GetFilesToPackage" />
+
+</Project>

@@ -176,7 +176,8 @@
         <SkipGetTargetFrameworkProperties>true</SkipGetTargetFrameworkProperties>
       </ProjectReference>
       <ProjectReference Condition="'%(Filename)' == 'System.Private.CoreLib'">
-        <UndefineProperties>$(UndefineProperties);TargetFramework</UndefineProperties>
+        <!-- Don't flow TargetFramework and Platform to use same inputs and outputs as the CoreLib's build as part of the runtime. -->
+        <UndefineProperties>$(UndefineProperties);TargetFramework;Platform</UndefineProperties>
         <SetConfiguration Condition="'$(RuntimeFlavor)' == 'CoreCLR' and
                                      '$(Configuration)' != '$(CoreCLRConfiguration)'">Configuration=$(CoreCLRConfiguration)</SetConfiguration>
         <SetConfiguration Condition="'$(RuntimeFlavor)' == 'Mono' and
@@ -184,6 +185,10 @@
         <Private>false</Private>
       </ProjectReference>
     </ItemGroup>
+    <!-- Disable TargetArchitectureMismatch warning when we reference CoreLib which is platform specific. -->
+    <PropertyGroup Condition="@(ProjectReference->AnyHaveMetadataValue('Identity', '$(CoreLibProject)'))">
+      <ResolveAssemblyWarnOrErrorOnTargetArchitectureMismatch>None</ResolveAssemblyWarnOrErrorOnTargetArchitectureMismatch>
+    </PropertyGroup>
   </Target>
 
   <!-- Used for packaging -->
