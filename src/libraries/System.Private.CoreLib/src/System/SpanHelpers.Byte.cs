@@ -607,7 +607,7 @@ namespace System
                 if (vectorDiff >= 0)
                 {
                     // >= Sse2 intrinsics are supported, and length is enough to use them so use that path.
-                    // We jump forward to the intrinsics at the end of them method so a naive branch predict
+                    // We jump forward to the intrinsics at the end of the method so a naive branch predict
                     // will choose the non-intrinsic path so short lengths which don't gain anything aren't
                     // overly disadvantaged by having to jump over a lot of code. Whereas the longer lengths
                     // more than make this back from the intrinsics.
