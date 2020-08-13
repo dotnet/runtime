@@ -9,4 +9,10 @@ namespace System.DirectoryServices
     [System.ComponentModel.TypeConverter(typeof(DirectoryEntryConverter))]
     public partial class DirectoryEntry { }
     internal class DirectoryEntryConverter { }
+
+    [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId = "SYSLIB0003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+    public sealed partial class DirectoryServicesPermission : System.Security.Permissions.ResourcePermissionBase { }
+
+    [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId = "SYSLIB0003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+    public partial class DirectoryServicesPermissionAttribute : System.Security.Permissions.CodeAccessSecurityAttribute { }
 }
