@@ -2,6 +2,7 @@
   <PropertyGroup>
     <RootNamespace>System.Xml</RootNamespace>
     <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
+    <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(CommonPath)System\Collections\Generic\EnumerableHelpers.cs"

@@ -7,9 +7,9 @@ namespace System.Xml.XPath
 {
     internal static class XObjectExtensions
     {
-        public static XContainer GetParent(this XObject obj)
+        public static XContainer? GetParent(this XObject obj)
         {
-            XContainer ret = obj.Parent;
+            XContainer? ret = obj.Parent;
             if (ret == null)
             {
                 ret = obj.Document;

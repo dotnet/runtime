@@ -13,17 +13,17 @@ namespace System.Xml.Linq
     internal struct Inserter
     {
         private readonly XContainer _parent;
-        private XNode _previous;
-        private string _text;
+        private XNode? _previous;
+        private string? _text;
 
-        public Inserter(XContainer parent, XNode anchor)
+        public Inserter(XContainer parent, XNode? anchor)
         {
             _parent = parent;
             _previous = anchor;
             _text = null;
         }
 
-        public void Add(object content)
+        public void Add(object? content)
         {
             AddContent(content);
             if (_text != null)
@@ -60,7 +60,7 @@ namespace System.Xml.Linq
                 }
                 else if (_text.Length > 0)
                 {
-                    XText prevXText = _previous as XText;
+                    XText? prevXText = _previous as XText;
                     if (prevXText != null && !(_previous is XCData))
                     {
                         prevXText.Value += _text;
@@ -74,34 +74,34 @@ namespace System.Xml.Linq
             }
         }
 
-        private void AddContent(object content)
+        private void AddContent(object? content)
         {
             if (content == null) return;
-            XNode n = content as XNode;
+            XNode? n = content as XNode;
             if (n != null)
             {
                 AddNode(n);
                 return;
             }
-            string s = content as string;
+            string? s = content as string;
             if (s != null)
             {
                 AddString(s);
                 return;
             }
-            XStreamingElement x = content as XStreamingElement;
+            XStreamingElement? x = content as XStreamingElement;
             if (x != null)
             {
                 AddNode(new XElement(x));
                 return;
             }
-            object[] o = content as object[];
+            object[]? o = content as object[];
             if (o != null)
             {
                 foreach (object obj in o) AddContent(obj);
                 return;
             }
-            IEnumerable e = content as IEnumerable;
+            IEnumerable? e = content as IEnumerable;
             if (e != null)
             {
                 foreach (object obj in e) AddContent(obj);
@@ -129,7 +129,7 @@ namespace System.Xml.Linq
             {
                 if (_text.Length > 0)
                 {
-                    XText prevXText = _previous as XText;
+                    XText? prevXText = _previous as XText;
                     if (prevXText != null && !(_previous is XCData))
                     {
                         prevXText.Value += _text;
@@ -210,17 +210,17 @@ namespace System.Xml.Linq
             XNode n = e;
             while (true)
             {
-                e = n as XElement;
-                if (e != null)
+                XElement? current = n as XElement;
+                if (current != null)
                 {
-                    WriteStartElement(e);
-                    if (e.content == null)
+                    WriteStartElement(current);
+                    if (current.content == null)
                     {
                         WriteEndElement();
                     }
                     else
                     {
-                        string s = e.content as string;
+                        string? s = current.content as string;
                         if (s != null)
                         {
                             _writer.WriteString(s);
@@ -228,7 +228,7 @@ namespace System.Xml.Linq
                         }
                         else
                         {
-                            n = ((XNode)e.content).next;
+                            n = ((XNode)current.content).next!;
                             continue;
                         }
                     }
@@ -237,13 +237,13 @@ namespace System.Xml.Linq
                 {
                     n.WriteTo(_writer);
                 }
-                while (n != root && n == n.parent.content)
+                while (n != root && n == n.parent!.content)
                 {
                     n = n.parent;
                     WriteFullEndElement();
                 }
                 if (n == root) break;
-                n = n.next;
+                n = n.next!;
             }
         }
 
@@ -254,17 +254,17 @@ namespace System.Xml.Linq
             XNode n = e;
             while (true)
             {
-                e = n as XElement;
-                if (e != null)
+                XElement? current = n as XElement;
+                if (current != null)
                 {
-                    await WriteStartElementAsync(e, cancellationToken).ConfigureAwait(false);
-                    if (e.content == null)
+                    await WriteStartElementAsync(current, cancellationToken).ConfigureAwait(false);
+                    if (current.content == null)
                     {
                         await WriteEndElementAsync(cancellationToken).ConfigureAwait(false);
                     }
                     else
                     {
-                        string s = e.content as string;
+                        string? s = current.content as string;
                         if (s != null)
                         {
                             cancellationToken.ThrowIfCancellationRequested();
@@ -273,7 +273,7 @@ namespace System.Xml.Linq
                         }
                         else
                         {
-                            n = ((XNode)e.content).next;
+                            n = ((XNode)current.content).next!;
                             continue;
                         }
                     }
@@ -282,39 +282,39 @@ namespace System.Xml.Linq
                 {
                     await n.WriteToAsync(_writer, cancellationToken).ConfigureAwait(false);
                 }
-                while (n != root && n == n.parent.content)
+                while (n != root && n == n.parent!.content)
                 {
                     n = n.parent;
                     await WriteFullEndElementAsync(cancellationToken).ConfigureAwait(false);
                 }
                 if (n == root) break;
-                n = n.next;
+                n = n.next!;
             }
         }
 
-        private string GetPrefixOfNamespace(XNamespace ns, bool allowDefaultNamespace)
+        private string? GetPrefixOfNamespace(XNamespace ns, bool allowDefaultNamespace)
         {
             string namespaceName = ns.NamespaceName;
             if (namespaceName.Length == 0) return string.Empty;
-            string prefix = _resolver.GetPrefixOfNamespace(ns, allowDefaultNamespace);
+            string? prefix = _resolver.GetPrefixOfNamespace(ns, allowDefaultNamespace);
             if (prefix != null) return prefix;
             if ((object)namespaceName == (object)XNamespace.xmlPrefixNamespace) return "xml";
             if ((object)namespaceName == (object)XNamespace.xmlnsPrefixNamespace) return "xmlns";
             return null;
         }
 
-        private void PushAncestors(XElement e)
+        private void PushAncestors(XElement? e)
         {
             while (true)
             {
-                e = e.parent as XElement;
+                e = e!.parent as XElement;
                 if (e == null) break;
-                XAttribute a = e.lastAttr;
+                XAttribute? a = e.lastAttr;
                 if (a != null)
                 {
                     do
                     {
-                        a = a.next;
+                        a = a.next!;
                         if (a.IsNamespaceDeclaration)
                         {
                             _resolver.AddFirst(a.Name.NamespaceName.Length == 0 ? string.Empty : a.Name.LocalName, XNamespace.Get(a.Value));
@@ -327,12 +327,12 @@ namespace System.Xml.Linq
         private void PushElement(XElement e)
         {
             _resolver.PushScope();
-            XAttribute a = e.lastAttr;
+            XAttribute? a = e.lastAttr;
             if (a != null)
             {
                 do
                 {
-                    a = a.next;
+                    a = a.next!;
                     if (a.IsNamespaceDeclaration)
                     {
                         _resolver.Add(a.Name.NamespaceName.Length == 0 ? string.Empty : a.Name.LocalName, XNamespace.Get(a.Value));
@@ -372,12 +372,12 @@ namespace System.Xml.Linq
             PushElement(e);
             XNamespace ns = e.Name.Namespace;
             _writer.WriteStartElement(GetPrefixOfNamespace(ns, true), e.Name.LocalName, ns.NamespaceName);
-            XAttribute a = e.lastAttr;
+            XAttribute? a = e.lastAttr;
             if (a != null)
             {
                 do
                 {
-                    a = a.next;
+                    a = a.next!;
                     ns = a.Name.Namespace;
                     string localName = a.Name.LocalName;
                     string namespaceName = ns.NamespaceName;
@@ -391,12 +391,12 @@ namespace System.Xml.Linq
             PushElement(e);
             XNamespace ns = e.Name.Namespace;
             await _writer.WriteStartElementAsync(GetPrefixOfNamespace(ns, true), e.Name.LocalName, ns.NamespaceName).ConfigureAwait(false);
-            XAttribute a = e.lastAttr;
+            XAttribute? a = e.lastAttr;
             if (a != null)
             {
                 do
                 {
-                    a = a.next;
+                    a = a.next!;
                     ns = a.Name.Namespace;
                     string localName = a.Name.LocalName;
                     string namespaceName = ns.NamespaceName;
@@ -410,15 +410,15 @@ namespace System.Xml.Linq
     {
         private class NamespaceDeclaration
         {
-            public string prefix;
-            public XNamespace ns;
+            public string prefix = null!;
+            public XNamespace ns = null!;
             public int scope;
-            public NamespaceDeclaration prev;
+            public NamespaceDeclaration prev = null!;
         }
 
         private int _scope;
-        private NamespaceDeclaration _declaration;
-        private NamespaceDeclaration _rover;
+        private NamespaceDeclaration? _declaration;
+        private NamespaceDeclaration? _rover;
 
         public void PushScope()
         {
@@ -427,7 +427,7 @@ namespace System.Xml.Linq
 
         public void PopScope()
         {
-            NamespaceDeclaration d = _declaration;
+            NamespaceDeclaration? d = _declaration;
             if (d != null)
             {
                 do
@@ -440,7 +440,7 @@ namespace System.Xml.Linq
                     }
                     else
                     {
-                        _declaration.prev = d.prev;
+                        _declaration!.prev = d.prev;
                     }
                     _rover = null;
                 } while (d != _declaration && _declaration != null);
@@ -487,10 +487,10 @@ namespace System.Xml.Linq
 
         // Only elements allow default namespace declarations. The rover
         // caches the last namespace declaration used by an element.
-        public string GetPrefixOfNamespace(XNamespace ns, bool allowDefaultNamespace)
+        public string? GetPrefixOfNamespace(XNamespace ns, bool allowDefaultNamespace)
         {
             if (_rover != null && _rover.ns == ns && (allowDefaultNamespace || _rover.prefix.Length > 0)) return _rover.prefix;
-            NamespaceDeclaration d = _declaration;
+            NamespaceDeclaration? d = _declaration;
             if (d != null)
             {
                 do
@@ -498,7 +498,7 @@ namespace System.Xml.Linq
                     d = d.prev;
                     if (d.ns == ns)
                     {
-                        NamespaceDeclaration x = _declaration.prev;
+                        NamespaceDeclaration x = _declaration!.prev;
                         while (x != d && x.prefix != d.prefix)
                         {
                             x = x.prev;
@@ -525,7 +525,7 @@ namespace System.Xml.Linq
     internal struct StreamingElementWriter
     {
         private readonly XmlWriter _writer;
-        private XStreamingElement _element;
+        private XStreamingElement? _element;
         private readonly List<XAttribute> _attributes;
         private NamespaceResolver _resolver;
 
@@ -556,11 +556,11 @@ namespace System.Xml.Linq
             }
         }
 
-        private string GetPrefixOfNamespace(XNamespace ns, bool allowDefaultNamespace)
+        private string? GetPrefixOfNamespace(XNamespace ns, bool allowDefaultNamespace)
         {
             string namespaceName = ns.NamespaceName;
             if (namespaceName.Length == 0) return string.Empty;
-            string prefix = _resolver.GetPrefixOfNamespace(ns, allowDefaultNamespace);
+            string? prefix = _resolver.GetPrefixOfNamespace(ns, allowDefaultNamespace);
             if (prefix != null) return prefix;
             if ((object)namespaceName == (object)XNamespace.xmlPrefixNamespace) return "xml";
             if ((object)namespaceName == (object)XNamespace.xmlnsPrefixNamespace) return "xmlns";
@@ -579,40 +579,40 @@ namespace System.Xml.Linq
             }
         }
 
-        private void Write(object content)
+        private void Write(object? content)
         {
             if (content == null) return;
-            XNode n = content as XNode;
+            XNode? n = content as XNode;
             if (n != null)
             {
                 WriteNode(n);
                 return;
             }
-            string s = content as string;
+            string? s = content as string;
             if (s != null)
             {
                 WriteString(s);
                 return;
             }
-            XAttribute a = content as XAttribute;
+            XAttribute? a = content as XAttribute;
             if (a != null)
             {
                 WriteAttribute(a);
                 return;
             }
-            XStreamingElement x = content as XStreamingElement;
+            XStreamingElement? x = content as XStreamingElement;
             if (x != null)
             {
                 WriteStreamingElement(x);
                 return;
             }
-            object[] o = content as object[];
+            object[]? o = content as object[];
             if (o != null)
             {
                 foreach (object obj in o) Write(obj);
                 return;
             }
-            IEnumerable e = content as IEnumerable;
+            IEnumerable? e = content as IEnumerable;
             if (e != null)
             {
                 foreach (object obj in e) Write(obj);

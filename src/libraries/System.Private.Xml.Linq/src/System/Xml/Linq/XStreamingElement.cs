@@ -15,7 +15,7 @@ namespace System.Xml.Linq
     public class XStreamingElement
     {
         internal XName name;
-        internal object content;
+        internal object? content;
 
         /// <summary>
         ///  Creates a <see cref="XStreamingElement"/> node with a given name
@@ -69,11 +69,11 @@ namespace System.Xml.Linq
         /// Add content to an <see cref="XStreamingElement"/>
         /// </summary>
         /// <param name="content">Object containing content to add</param>
-        public void Add(object content)
+        public void Add(object? content)
         {
             if (content != null)
             {
-                List<object> list = this.content as List<object>;
+                List<object>? list = this.content as List<object>;
                 if (list == null)
                 {
                     list = new List<object>();
