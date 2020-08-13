@@ -140,7 +140,7 @@ namespace System.Net.Sockets
                     await ConnectAsync(address, port, cancellationToken).ConfigureAwait(false);
                     return;
                 }
-                catch (Exception ex)
+                catch (Exception ex) when (ex is not OperationCanceledException)
                 {
                     lastException = ex;
                 }

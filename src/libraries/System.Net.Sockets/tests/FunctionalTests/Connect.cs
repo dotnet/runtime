@@ -260,6 +260,8 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
+        [OuterLoop("Uses Task.Delay")]
+        [PlatformSpecific(TestPlatforms.Windows)]   // Linux will not even attempt to connect to the invalid IP address
         public async Task ConnectEndPoint_CancelDuringConnect_Throws()
         {
             EndPoint ep = new IPEndPoint(IPAddress.Parse("1.2.3.4"), 1);
@@ -270,13 +272,16 @@ namespace System.Net.Sockets.Tests
 
                 ValueTask t = client.ConnectAsync(ep, cts.Token);
 
-                cts.Cancel();
+                // Delay cancellation a bit to try to ensure the OS actually attempts to connect
+                cts.CancelAfter(100);
 
                 await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await t);
             }
         }
 
         [Fact]
+        [OuterLoop("Uses Task.Delay")]
+        [PlatformSpecific(TestPlatforms.Windows)]   // Linux will not even attempt to connect to the invalid IP address
         public async Task ConnectAddressAndPort_CancelDuringConnect_Throws()
         {
             using (var client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
@@ -285,13 +290,16 @@ namespace System.Net.Sockets.Tests
 
                 ValueTask t = client.ConnectAsync(IPAddress.Parse("1.2.3.4"), 1, cts.Token);
 
-                cts.Cancel();
+                // Delay cancellation a bit to try to ensure the OS actually attempts to connect
+                cts.CancelAfter(100);
 
                 await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await t);
             }
         }
 
         [Fact]
+        [OuterLoop("Uses Task.Delay")]
+        [PlatformSpecific(TestPlatforms.Windows)]   // Linux will not even attempt to connect to the invalid IP address
         public async Task ConnectMultiAddressAndPort_CancelDuringConnect_Throws()
         {
             using (var client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
@@ -300,13 +308,16 @@ namespace System.Net.Sockets.Tests
 
                 ValueTask t = client.ConnectAsync(new IPAddress[] { IPAddress.Parse("1.2.3.4"), IPAddress.Parse("1.2.3.5") }, 1, cts.Token);
 
-                cts.Cancel();
+                // Delay cancellation a bit to try to ensure the OS actually attempts to connect
+                cts.CancelAfter(100);
 
                 await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await t);
             }
         }
 
         [Fact]
+        [OuterLoop("Uses Task.Delay")]
+        [PlatformSpecific(TestPlatforms.Windows)]   // Linux will not even attempt to connect to the invalid IP address
         public async Task ConnectHostNameAndPort_CancelDuringConnect_Throws()
         {
             using (var client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
@@ -315,7 +326,8 @@ namespace System.Net.Sockets.Tests
 
                 ValueTask t = client.ConnectAsync("1.2.3.4", 1, cts.Token);
 
-                cts.Cancel();
+                // Delay cancellation a bit to try to ensure the OS actually attempts to connect
+                cts.CancelAfter(100);
 
                 await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await t);
             }
