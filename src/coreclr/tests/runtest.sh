@@ -312,6 +312,8 @@ export COMPlus_gcServer="$serverGC"
 # Runtest.py
 ################################################################################
 
+
+
 runtestPyArguments=("-arch" "${buildArch}" "-build_type" "${buildConfiguration}")
 scriptPath="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
 
@@ -325,6 +327,12 @@ fi
 
 echo "Build Architecture            : ${buildArch}"
 echo "Build Configuration           : ${buildConfiguration}"
+
+
+if [ $buildArch = "wasm" ]; then
+    runtestPyArguments+=("-os" "Browser")
+fi
+
     
 if [ ! -z "$testRootDir" ]; then
     runtestPyArguments+=("-test_location" "$testRootDir")
@@ -401,6 +409,7 @@ if [[ ! "$runincontext" -eq 0 ]]; then
     echo "Running in an unloadable AssemblyLoadContext"
     runtestPyArguments+=("--run_in_context")
 fi
+
 
 # Default to python3 if it is installed
 __Python=python
