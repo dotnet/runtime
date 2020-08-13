@@ -98,7 +98,7 @@ bool parse_arguments(
         init.additional_deps_serialized,
         init.deps_file,
         init.probe_paths,
-        /* init_for_component */ false,
+        /* init_from_file_system */ false,
         args);
 }
 
@@ -158,7 +158,7 @@ bool init_arguments(
     const pal::string_t& additional_deps_serialized,
     const pal::string_t& deps_file,
     const std::vector<pal::string_t>& probe_paths,
-    bool init_for_component,
+    bool init_from_file_system,
     arguments_t& args)
 {
     args.host_mode = host_mode;
@@ -166,7 +166,7 @@ bool init_arguments(
     args.additional_deps_serialized = additional_deps_serialized;
 
     // Components are never loaded from the bundle, the managed_application_path always means a file system path for a component case.
-    if (!set_root_from_app(managed_application_path, /* file_system_lookup_only */ init_for_component, args))
+    if (!set_root_from_app(managed_application_path, /* file_system_lookup_only */ init_from_file_system, args))
     {
         trace::error(_X("Failed to locate managed application [%s]"), args.managed_application.c_str());
         return false;
