@@ -118,6 +118,14 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
         [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.Linux)]
         public static void RevocationCheckingMaximum(PkiOptions pkiOptions)
         {
+            // Windows 10 has a different maximum from previous versions of Windows.
+            // We are primarily testing that Linux behavior matches some behavior of
+            // Windows, so we won't test except on Windows 10.
+            if (PlatformDetection.WindowsVersion < 10)
+            {
+                return;
+            }
+
             CertificateAuthority.BuildPrivatePki(
                 pkiOptions,
                 out RevocationResponder responder,
