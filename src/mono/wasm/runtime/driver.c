@@ -12,6 +12,9 @@
 #include <mono/metadata/tokentype.h>
 #include <mono/metadata/threads.h>
 #include <mono/metadata/image.h>
+#include <mono/metadata/mono-gc.h>
+// FIXME: unavailable in emscripten
+// #include <mono/metadata/gc-internals.h>
 #include <mono/utils/mono-logger.h>
 #include <mono/utils/mono-dl-fallback.h>
 #include <mono/jit/jit.h>
@@ -30,6 +33,9 @@ extern void* mono_wasm_invoke_js_marshalled (MonoString **exceptionMessage, void
 extern void* mono_wasm_invoke_js_unmarshalled (MonoString **exceptionMessage, MonoString *funcName, void* arg0, void* arg1, void* arg2);
 
 void mono_wasm_enable_debugging (int);
+
+int mono_wasm_register_root (char *start, size_t size, const char *name);
+void mono_wasm_deregister_root (char *addr);
 
 void mono_ee_interp_init (const char *opts);
 void mono_marshal_ilgen_init (void);
@@ -137,6 +143,22 @@ wasm_logger (const char *log_domain, const char *log_level, const char *message,
 				break;
 		}
 	}, log_level, message, fatal, log_domain);
+}
+
+typedef uint32_t target_mword;
+typedef target_mword SgenDescriptor;
+typedef SgenDescriptor MonoGCDescriptor;
+MONO_API int   mono_gc_register_root (char *start, size_t size, MonoGCDescriptor descr, MonoGCRootSource source, void *key, const char *msg);
+void  mono_gc_deregister_root (char* addr);
+
+EMSCRIPTEN_KEEPALIVE int
+mono_wasm_register_root (char *start, size_t size, const char *name) {
+	return mono_gc_register_root (start, size, NULL, MONO_ROOT_SOURCE_EXTERNAL, NULL, name ? name : "mono_wasm_register_root");
+}
+
+EMSCRIPTEN_KEEPALIVE void 
+mono_wasm_deregister_root (char *addr) {
+	mono_gc_deregister_root (addr);
 }
 
 #ifdef DRIVER_GEN

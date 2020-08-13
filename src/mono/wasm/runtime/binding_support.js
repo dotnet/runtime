@@ -143,16 +143,22 @@ var BindingSupportLib = {
 		mono_array_to_js_array: function (mono_array) {
 			if (mono_array == 0)
 				return null;
+			
+			let [arrayRoot, elemRoot] = MONO.mono_wasm_new_roots ([mono_array, 0]); 
 
-			var res = [];
-			var len = this.mono_array_length (mono_array);
-			for (var i = 0; i < len; ++i)
-			{
-				var ele = this.mono_array_get (mono_array, i);
-				if (this.is_nested_array(ele))
-					res.push(this.mono_array_to_js_array(ele));
-				else
-					res.push (this.unbox_mono_obj (ele));
+			try {
+				var res = [];
+				var len = this.mono_array_length (arrayRoot.value);
+				for (var i = 0; i < len; ++i)
+				{
+					elemRoot.value = this.mono_array_get (arrayRoot.value, i);
+					if (this.is_nested_array (elemRoot.value))
+						res.push (this.mono_array_to_js_array (elemRoot.value));
+					else
+						res.push (this._unbox_mono_obj_rooted (elemRoot));
+				}
+			} finally {
+				MONO.mono_wasm_release_roots (arrayRoot, elemRoot);
 			}
 
 			return res;
@@ -160,15 +166,37 @@ var BindingSupportLib = {
 
 		js_array_to_mono_array: function (js_array) {
 			var mono_array = this.mono_obj_array_new (js_array.length);
-			for (var i = 0; i < js_array.length; ++i) {
-				this.mono_obj_array_set (mono_array, i, this.js_to_mono_obj (js_array [i]));
+			let [arrayRoot, elemRoot] = MONO.mono_wasm_new_roots ([mono_array, 0]);
+			
+			try {
+				for (var i = 0; i < js_array.length; ++i) {
+					elemRoot.value = this.js_to_mono_obj (js_array [i]);
+					this.mono_obj_array_set (arrayRoot.value, i, elemRoot.value);
+				}
+
+				return mono_array;
+			} finally {
+				MONO.mono_wasm_release_roots (arrayRoot, elemRoot);
 			}
-			return mono_array;
 		},
 
 		unbox_mono_obj: function (mono_obj) {
-			if (mono_obj == 0)
+			if (mono_obj === 0)
 				return undefined;
+
+			var root = MONO.mono_wasm_new_root (mono_obj);
+			try {
+				return this._unbox_mono_obj_rooted (root);
+			} finally {
+				root.release();
+			}
+		},
+
+		_unbox_mono_obj_rooted: function (root) {
+			var mono_obj = root.value;
+			if (mono_obj === 0)
+				return undefined;
+			
 			var type = this.mono_get_obj_type (mono_obj);
 			//See MARSHAL_TYPE_ defines in driver.c
 			switch (type) {
@@ -183,6 +211,7 @@ var BindingSupportLib = {
 			case 5: { // delegate
 				var obj = this.extract_js_obj (mono_obj);
 				obj.__mono_delegate_alive__ = true;
+				// FIXME: Should we root the object as long as this function has not been GCd?
 				return function () {
 					return BINDING.invoke_delegate (obj, arguments);
 				};
@@ -250,6 +279,7 @@ var BindingSupportLib = {
 			case 23: // clr .NET SafeHandle
 				var addRef = true;
 				var js_handle = this.call_method(this.safehandle_get_handle, null, "mii", [ mono_obj, addRef ]);
+				// FIXME: Is this a GC object that needs to be rooted?
 				var requiredObject = BINDING.mono_wasm_require_handle (js_handle);
 				if (addRef)
 				{
@@ -260,7 +290,7 @@ var BindingSupportLib = {
 				}
 				return requiredObject;
 			default:
-				throw new Error ("no idea on how to unbox object kind " + type);
+				throw new Error ("no idea on how to unbox object kind " + type + " at offset " + mono_obj);
 			}
 		},
 
@@ -322,6 +352,7 @@ var BindingSupportLib = {
 					var the_task = this.try_extract_mono_obj (js_obj);
 					if (the_task)
 						return the_task;
+					// FIXME: We need to root tcs for an appropriate timespan
 					var tcs = this.create_task_completion_source ();
 					js_obj.then (function (result) {
 						BINDING.set_task_result (tcs, result);
@@ -349,6 +380,8 @@ var BindingSupportLib = {
 					return this.extract_mono_obj (js_obj);
 			}
 		},
+
+		// FIXME: Audit all callers, this method returns an unrooted object
 		js_typed_array_to_array : function (js_obj) {
 
 			// JavaScript typed arrays are array-like objects and provide a mechanism for accessing 
@@ -503,12 +536,17 @@ var BindingSupportLib = {
     
 			if (js_obj === null || typeof js_obj === "undefined")
 				return 0;
-
-			var monoObj = this.js_to_mono_obj(js_obj);
-			// Check enum contract
-			var monoEnum = this.call_method(this.object_to_enum, null, "iimm", [ method, parmIdx, monoObj ])
-			// return the unboxed enum value.
-			return this.mono_unbox_enum(monoEnum);
+			
+			var monoObj, monoEnum;
+			try {
+				monoObj = MONO.mono_wasm_new_root (this.js_to_mono_obj (js_obj));
+				// Check enum contract
+				monoEnum = MONO.mono_wasm_new_root (this.call_method (this.object_to_enum, null, "iimm", [ method, parmIdx, monoObj.value ]))
+				// return the unboxed enum value.
+				return this.mono_unbox_enum (monoEnum.value);
+			} finally {
+				MONO.mono_wasm_release_roots (monoObj, monoEnum);
+			}
 		},
 		wasm_binding_obj_new: function (js_obj_id, ownsHandle, type)
 		{
@@ -695,22 +733,26 @@ var BindingSupportLib = {
 
 			Module.setValue (exception_out, 0, "*");
 
-			var res = this.invoke_method (method, this_arg, args_start, exception_out);
-			var eh_res = Module.getValue (exception_out, "*");
+			var res = MONO.mono_wasm_new_root (this.invoke_method (method, this_arg, args_start, exception_out));
+			try {
+				var eh_res = Module.getValue (exception_out, "*");
 
-			Module._free (buffer);
+				Module._free (buffer);
 
-			if (eh_res != 0) {
-				var msg = this.conv_string (res);
-				throw new Error (msg); //the convention is that invoke_method ToString () any outgoing exception
+				if (eh_res != 0) {
+					var msg = this.conv_string (res.value);
+					throw new Error (msg); //the convention is that invoke_method ToString () any outgoing exception
+				}
+
+				if (has_args_marshal && has_args) {
+					if (args_marshal.length >= args.length && args_marshal [args.length] === "m")
+						return res.value;
+				}
+
+				return this._unbox_mono_obj_rooted (res);
+			} finally {
+				res.release ();
 			}
-
-			if (has_args_marshal && has_args) {
-				if (args_marshal.length >= args.length && args_marshal [args.length] === "m")
-					return res;
-			}
-
-			return this.unbox_mono_obj (res);
 		},
 
 		invoke_delegate: function (delegate_obj, js_args) {
