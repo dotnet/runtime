@@ -318,6 +318,8 @@ jobs:
         value: $[ dependencies.checkout.outputs['SetPathVars_libraries.containsChange'] ]
       - name: monoContainsChange
         value: $[ dependencies.checkout.outputs['SetPathVars_mono.containsChange'] ]
+      - name: runtimeTestsContainsChange
+        value $[eq(dependencies.checkout.outputs['SetPathVars_runtimetests.containsChange'], true),
     jobParameters:
       testGroup: innerloop
       nameSuffix: AllSubsets_Mono
@@ -328,6 +330,7 @@ jobs:
           eq(dependencies.checkout.outputs['SetPathVars_libraries.containsChange'], true),
           eq(dependencies.checkout.outputs['SetPathVars_mono.containsChange'], true),
           eq(dependencies.checkout.outputs['SetPathVars_installer.containsChange'], true),
+          eq(dependencies.checkout.outputs['SetPathVars_runtimetests.containsChange'], true),
           eq(variables['isFullMatrix'], true))
       # extra steps, run tests
       extraStepsTemplate: /eng/pipelines/libraries/helix.yml
@@ -542,6 +545,7 @@ jobs:
     - OSX_x64
     - Windows_NT_x64
     - FreeBSD_x64
+    - Browser_wasm
     jobParameters:
       testScope: innerloop
       testBuildPlatforms:
