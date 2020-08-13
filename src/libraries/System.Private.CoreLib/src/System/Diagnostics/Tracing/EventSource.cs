@@ -211,7 +211,7 @@ namespace System.Diagnostics.Tracing
     /// <remarks>
     /// This is a minimal definition for a custom event source:
     /// <code>
-    /// [EventSource(Name="Samples-Demos-Minimal")]
+    /// [EventSource(Name="Samples.Demos.Minimal")]
     /// sealed class MinimalEventSource : EventSource
     /// {
     ///     public static MinimalEventSource Log = new MinimalEventSource();
