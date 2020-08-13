@@ -1431,7 +1431,7 @@ namespace System.Globalization
         /// Caller needs to ensure <paramref name="matchLengthPtr"/> is non-null and points
         /// to a valid address. This method will validate <paramref name="options"/>.
         /// </summary>
-        internal unsafe int IndexOf(ReadOnlySpan<char> source, ReadOnlySpan<char> value, int* matchLengthPtr, CompareOptions options, bool fromBeginning)
+        private unsafe int IndexOf(ReadOnlySpan<char> source, ReadOnlySpan<char> value, int* matchLengthPtr, CompareOptions options, bool fromBeginning)
         {
             Debug.Assert(matchLengthPtr != null);
             *matchLengthPtr = 0;
