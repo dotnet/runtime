@@ -498,7 +498,7 @@ namespace System
             Debug.Assert(length >= 0);
 
             nuint offset = 0; // Use nuint for arithmetic to avoid unnecessary 64->32->64 truncations
-            nuint lengthToExamine = (nuint)length;
+            nuint lengthToExamine = (nuint)(uint)length;
 
             if (Sse2.IsSupported)
             {
@@ -679,7 +679,7 @@ namespace System
             IntrinsicsMatch:
                 // Find bitflag offset of first difference and add to current offset,
                 // flags are in bytes so divide by 2 for chars (shift right by 1)
-                offset += (nuint)BitOperations.TrailingZeroCount(matches) >> 1;
+                offset += (nuint)(uint)BitOperations.TrailingZeroCount(matches) >> 1;
                 goto Found;
             }
 
@@ -721,7 +721,7 @@ namespace System
                 }
 
             Difference:
-                offset += (nuint)LocateFirstFoundChar(search);
+                offset += (nuint)(uint)LocateFirstFoundChar(search);
             }
 
             goto Found;
@@ -733,7 +733,7 @@ namespace System
             Debug.Assert(length >= 0);
 
             nuint offset = 0; // Use nuint for arithmetic to avoid unnecessary 64->32->64 truncations
-            nuint lengthToExamine = (nuint)length;
+            nuint lengthToExamine = (nuint)(uint)length;
 
             if (Sse2.IsSupported)
             {
@@ -924,7 +924,7 @@ namespace System
             IntrinsicsMatch:
                 // Find bitflag offset of first difference and add to current offset,
                 // flags are in bytes so divide by 2 for chars (shift right by 1)
-                offset += (nuint)BitOperations.TrailingZeroCount(matches) >> 1;
+                offset += (nuint)(uint)BitOperations.TrailingZeroCount(matches) >> 1;
                 goto Found;
             }
 
@@ -971,7 +971,7 @@ namespace System
                 }
 
             Difference:
-                offset += (nuint)LocateFirstFoundChar(search);
+                offset += (nuint)(uint)LocateFirstFoundChar(search);
             }
 
             goto Found;
@@ -983,7 +983,7 @@ namespace System
             Debug.Assert(length >= 0);
 
             nuint offset = 0; // Use nuint for arithmetic to avoid unnecessary 64->32->64 truncations
-            nuint lengthToExamine = (nuint)length;
+            nuint lengthToExamine = (nuint)(uint)length;
 
             if (Sse2.IsSupported)
             {
@@ -1167,7 +1167,7 @@ namespace System
             IntrinsicsMatch:
                 // Find bitflag offset of first difference and add to current offset,
                 // flags are in bytes so divide by 2 for chars (shift right by 1)
-                offset += (nuint)BitOperations.TrailingZeroCount(matches) >> 1;
+                offset += (nuint)(uint)BitOperations.TrailingZeroCount(matches) >> 1;
                 goto Found;
             }
 
@@ -1219,7 +1219,7 @@ namespace System
                 }
 
             Difference:
-                offset += (nuint)LocateFirstFoundChar(search);
+                offset += (nuint)(uint)LocateFirstFoundChar(search);
             }
 
             goto Found;
@@ -1231,7 +1231,7 @@ namespace System
             Debug.Assert(length >= 0);
 
             nuint offset = 0; // Use nuint for arithmetic to avoid unnecessary 64->32->64 truncations
-            nuint lengthToExamine = (nuint)length;
+            nuint lengthToExamine = (nuint)(uint)length;
 
             if (Sse2.IsSupported)
             {
@@ -1422,7 +1422,7 @@ namespace System
             IntrinsicsMatch:
                 // Find bitflag offset of first difference and add to current offset,
                 // flags are in bytes so divide by 2 for chars (shift right by 1)
-                offset += (nuint)BitOperations.TrailingZeroCount(matches) >> 1;
+                offset += (nuint)(uint)BitOperations.TrailingZeroCount(matches) >> 1;
                 goto Found;
             }
 
@@ -1479,7 +1479,7 @@ namespace System
                 }
 
             Difference:
-                offset += (nuint)LocateFirstFoundChar(search);
+                offset += (nuint)(uint)LocateFirstFoundChar(search);
             }
 
             goto Found;
