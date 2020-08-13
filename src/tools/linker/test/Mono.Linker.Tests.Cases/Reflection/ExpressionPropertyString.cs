@@ -12,7 +12,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 	public class ExpressionPropertyString
 	{
 		[UnrecognizedReflectionAccessPattern (typeof (Expression), nameof (Expression.Property),
-			new Type[] { typeof (Expression), typeof (Type), typeof (string) })]
+			new Type[] { typeof (Expression), typeof (Type), typeof (string) }, messageCode: "IL2072")]
 		public static void Main ()
 		{
 			Expression.Property (Expression.Parameter (typeof (int), ""), typeof (ExpressionPropertyString), "Property");

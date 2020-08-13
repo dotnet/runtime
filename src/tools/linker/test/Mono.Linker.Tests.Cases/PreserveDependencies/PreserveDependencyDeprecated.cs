@@ -8,10 +8,6 @@ namespace Mono.Linker.Tests.Cases.PreserveDependencies
 	[IgnoreTestCase ("This test checks that PreserveDependency correctly issues a warning on .NET Core where it is deprecated.")]
 #endif
 	[SetupCompileBefore ("FakeSystemAssembly.dll", new[] { "Dependencies/PreserveDependencyAttribute.cs" })]
-	[LogContains ("IL2033: Mono.Linker.Tests.Cases.PreserveDependencies.PreserveDependencyDeprecated.B.Method(): PreserveDependencyAttribute is deprecated. Use DynamicDependencyAttribute instead.")]
-	[LogContains ("IL2033: Mono.Linker.Tests.Cases.PreserveDependencies.PreserveDependencyDeprecated.B.SameContext(): PreserveDependencyAttribute is deprecated. Use DynamicDependencyAttribute instead.")]
-	[LogContains ("IL2033: Mono.Linker.Tests.Cases.PreserveDependencies.PreserveDependencyDeprecated.B.Broken(): PreserveDependencyAttribute is deprecated. Use DynamicDependencyAttribute instead.")]
-	[LogContains ("IL2033: Mono.Linker.Tests.Cases.PreserveDependencies.PreserveDependencyDeprecated.B.Conditional(): PreserveDependencyAttribute is deprecated. Use DynamicDependencyAttribute instead.")]
 	class PreserveDependencyDeprecated
 	{
 		public static void Main ()
@@ -45,6 +41,7 @@ namespace Mono.Linker.Tests.Cases.PreserveDependencies
 			[PreserveDependency (".cctor()", "Mono.Linker.Tests.Cases.PreserveDependencies.PreserveDependencyDeprecated+Nested")]
 			// Dependency on a property itself should be expressed as a dependency on one or both accessor methods
 			[PreserveDependency ("get_Property()", "Mono.Linker.Tests.Cases.PreserveDependencies.D")]
+			[ExpectedWarning ("IL2033")]
 			public static void Method ()
 			{
 			}
@@ -52,6 +49,7 @@ namespace Mono.Linker.Tests.Cases.PreserveDependencies
 			[Kept]
 			[PreserveDependency ("field")]
 			[PreserveDependency ("Method2 (System.SByte&)")]
+			[ExpectedWarning ("IL2033")]
 			public static void SameContext ()
 			{
 			}
@@ -63,12 +61,14 @@ namespace Mono.Linker.Tests.Cases.PreserveDependencies
 			[PreserveDependency ("")]
 			[PreserveDependency (".ctor()", "Mono.Linker.Tests.Cases.PreserveDependencies.PreserveDependencyDeprecated+NestedStruct")]
 			[PreserveDependency (".cctor()", "Mono.Linker.Tests.Cases.PreserveDependencies.D")]
+			[ExpectedWarning ("IL2033")]
 			public static void Broken ()
 			{
 			}
 
 			[Kept]
 			[PreserveDependency ("ConditionalTest()", "Mono.Linker.Tests.Cases.PreserveDependencies.D", Condition = "don't have it")]
+			[ExpectedWarning ("IL2033")]
 			public static void Conditional ()
 			{
 			}

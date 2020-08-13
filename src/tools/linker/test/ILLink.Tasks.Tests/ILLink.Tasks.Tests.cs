@@ -305,13 +305,13 @@ namespace ILLink.Tasks.Tests
 #nullable enable
 		[Theory]
 		[InlineData (true, null, null, new uint[] { }, new uint[] { })]
-		[InlineData (false, "IL1001,IL####,IL2000,IL2021,IL2022", null,
-			new uint[] { 2021, 2022 }, new uint[] { })]
+		[InlineData (false, "IL1001,IL####,IL2000,IL2054,IL2022", null,
+			new uint[] { 2054, 2022 }, new uint[] { })]
 		[InlineData (false, "IL2023,IL6000;IL5042 IL2040", "IL4000,IL4001;IL4002 IL4003",
 			new uint[] { 2023, 2040, 5042, 6000 }, new uint[] { 4000, 4001, 4002, 4003 })]
 		[InlineData (false, "IL3000;IL3000;ABCD", "IL2005 il3000 IL2005",
 			new uint[] { 3000 }, new uint[] { 2005 })]
-		[InlineData (true, null, "IL2006", new uint[] { }, new uint[] { 2006 })]
+		[InlineData (true, null, "IL2067", new uint[] { }, new uint[] { 2067 })]
 		[InlineData (true, "IL2001", "IL2001", new uint[] { }, new uint[] { 2001 })]
 		public void TestWarningsAsErrors (bool treatWarningsAsErrors, string? warningsAsErrors, string? warningsNotAsErrors, uint[] warnAsError, uint[] warnNotAsError)
 		{

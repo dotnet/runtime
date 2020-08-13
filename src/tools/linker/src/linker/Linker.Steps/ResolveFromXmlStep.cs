@@ -101,7 +101,7 @@ namespace Mono.Linker.Steps
 				}
 
 				if (!foundMatch) {
-					Context.LogWarning ($"Could not find any type in namespace '{fullname}' specified in '{_xmlDocumentLocation}'", 2044, _xmlDocumentLocation);
+					Context.LogWarning ($"Could not find any type in namespace '{fullname}'", 2044, _xmlDocumentLocation);
 				}
 			}
 		}
@@ -183,7 +183,7 @@ namespace Mono.Linker.Steps
 		protected override void ProcessField (TypeDefinition type, FieldDefinition field, XPathNavigator nav)
 		{
 			if (Annotations.IsMarked (field))
-				Context.LogWarning ($"Duplicate preserve of '{field.FullName}' in '{_xmlDocumentLocation}'", 2025, _xmlDocumentLocation);
+				Context.LogWarning ($"Duplicate preserve of '{field.FullName}'", 2025, _xmlDocumentLocation);
 
 			Context.Annotations.Mark (field, new DependencyInfo (DependencyKind.XmlDescriptor, _xmlDocumentLocation));
 		}
@@ -201,7 +201,7 @@ namespace Mono.Linker.Steps
 		protected override void ProcessMethod (TypeDefinition type, MethodDefinition method, XPathNavigator nav, object customData)
 		{
 			if (Annotations.IsMarked (method))
-				Context.LogWarning ($"Duplicate preserve of '{method.GetDisplayName ()}' in '{_xmlDocumentLocation}'", 2025, _xmlDocumentLocation);
+				Context.LogWarning ($"Duplicate preserve of '{method.GetDisplayName ()}'", 2025, _xmlDocumentLocation);
 
 			Annotations.Mark (method, new DependencyInfo (DependencyKind.XmlDescriptor, _xmlDocumentLocation));
 			Annotations.MarkIndirectlyCalledMethod (method);
@@ -266,7 +266,7 @@ namespace Mono.Linker.Steps
 		protected override void ProcessEvent (TypeDefinition type, EventDefinition @event, XPathNavigator nav, object customData)
 		{
 			if (Annotations.IsMarked (@event))
-				Context.LogWarning ($"Duplicate preserve of '{@event.FullName}' in '{_xmlDocumentLocation}'", 2025, _xmlDocumentLocation);
+				Context.LogWarning ($"Duplicate preserve of '{@event.FullName}'", 2025, _xmlDocumentLocation);
 
 			Annotations.Mark (@event, new DependencyInfo (DependencyKind.XmlDescriptor, _xmlDocumentLocation));
 
@@ -290,7 +290,7 @@ namespace Mono.Linker.Steps
 			string[] accessors = fromSignature ? GetAccessors (nav) : _accessorsAll;
 
 			if (Annotations.IsMarked (property))
-				Context.LogWarning ($"Duplicate preserve of '{property.FullName}' in '{_xmlDocumentLocation}'", 2025, _xmlDocumentLocation);
+				Context.LogWarning ($"Duplicate preserve of '{property.FullName}'", 2025, _xmlDocumentLocation);
 
 			Annotations.Mark (property, new DependencyInfo (DependencyKind.XmlDescriptor, _xmlDocumentLocation));
 
@@ -308,7 +308,7 @@ namespace Mono.Linker.Steps
 			if (property.GetMethod != null && Array.IndexOf (accessors, "get") >= 0)
 				ProcessMethod (type, property.GetMethod, null, customData);
 			else if (property.GetMethod == null)
-				Context.LogWarning ($"Could not find the get accessor of property '{property.Name}' in type '{type.FullName}' specified in {_xmlDocumentLocation}", 2018, _xmlDocumentLocation);
+				Context.LogWarning ($"Could not find the get accessor of property '{property.Name}' on type '{type.FullName}'", 2018, _xmlDocumentLocation);
 
 			if (property.SetMethod != null && Array.IndexOf (accessors, "set") >= 0)
 				ProcessMethod (type, property.SetMethod, null, customData);
@@ -319,7 +319,9 @@ namespace Mono.Linker.Steps
 		protected override AssemblyDefinition GetAssembly (LinkContext context, AssemblyNameReference assemblyName)
 		{
 			var assembly = context.Resolve (assemblyName);
-			ProcessReferences (assembly);
+			if (assembly != null)
+				ProcessReferences (assembly);
+
 			return assembly;
 		}
 

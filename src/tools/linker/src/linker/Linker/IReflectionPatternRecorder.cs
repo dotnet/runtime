@@ -60,8 +60,9 @@ namespace Mono.Linker
 		/// <param name="accessedItem">The item accessed through reflection. This can be one of:
 		///   TypeDefinition, MethodDefinition, PropertyDefinition, FieldDefinition, EventDefinition, InterfaceImplementation.</param>
 		/// <param name="message">Humanly readable message describing what failed during the pattern recognition.</param>
+		/// <param name="messageCode">Message code to use when reporting the unrecognized pattern as a warning.</param>
 		/// <remarks>This effectively means that there's a potential hole in the linker marking - some items which are accessed only through
 		/// reflection may not be marked correctly and thus may fail at runtime.</remarks>
-		void UnrecognizedReflectionAccessPattern (IMemberDefinition source, Instruction sourceInstruction, IMetadataTokenProvider accessedItem, string message);
+		void UnrecognizedReflectionAccessPattern (IMemberDefinition source, Instruction sourceInstruction, IMetadataTokenProvider accessedItem, string message, int messageCode);
 	}
 }

@@ -11,6 +11,7 @@ using System.Text;
 using TypeDefinition = Mono.Cecil.TypeDefinition;
 using FieldDefinition = Mono.Cecil.FieldDefinition;
 using GenericParameter = Mono.Cecil.GenericParameter;
+using Mono.Cecil;
 
 namespace Mono.Linker.Dataflow
 {
@@ -609,7 +610,7 @@ namespace Mono.Linker.Dataflow
 	}
 
 	/// <summary>
-	/// This is a System.Type value which reprensents generic parameter (basically result of typeof(T))
+	/// This is a System.Type value which represents generic parameter (basically result of typeof(T))
 	/// Its actual type is unknown, but it can have annotations.
 	/// </summary>
 	class SystemTypeForGenericParameterValue : LeafValueWithDynamicallyAccessedMemberNode
@@ -619,6 +620,7 @@ namespace Mono.Linker.Dataflow
 			Kind = ValueNodeKind.SystemTypeForGenericParameter;
 			GenericParameter = genericParameter;
 			DynamicallyAccessedMemberTypes = dynamicallyAccessedMemberTypes;
+			SourceContext = genericParameter;
 		}
 
 		public GenericParameter GenericParameter { get; }
@@ -718,7 +720,7 @@ namespace Mono.Linker.Dataflow
 	/// </summary>
 	abstract class LeafValueWithDynamicallyAccessedMemberNode : LeafValueNode
 	{
-		public object SourceContext { get; set; }
+		public IMetadataTokenProvider SourceContext { get; protected set; }
 
 		/// <summary>
 		/// The bitfield of dynamically accessed member types the node guarantees
@@ -731,11 +733,12 @@ namespace Mono.Linker.Dataflow
 	/// </summary>
 	class MethodParameterValue : LeafValueWithDynamicallyAccessedMemberNode
 	{
-		public MethodParameterValue (int parameterIndex, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes)
+		public MethodParameterValue (int parameterIndex, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes, IMetadataTokenProvider sourceContext)
 		{
 			Kind = ValueNodeKind.MethodParameter;
 			ParameterIndex = parameterIndex;
 			DynamicallyAccessedMemberTypes = dynamicallyAccessedMemberTypes;
+			SourceContext = sourceContext;
 		}
 
 		public int ParameterIndex { get; }
@@ -767,10 +770,11 @@ namespace Mono.Linker.Dataflow
 	/// </summary>
 	class AnnotatedStringValue : LeafValueWithDynamicallyAccessedMemberNode
 	{
-		public AnnotatedStringValue (DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes)
+		public AnnotatedStringValue (IMetadataTokenProvider sourceContext, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes)
 		{
 			Kind = ValueNodeKind.AnnotatedString;
 			DynamicallyAccessedMemberTypes = dynamicallyAccessedMemberTypes;
+			SourceContext = sourceContext;
 		}
 
 		public override bool Equals (ValueNode other)
@@ -800,10 +804,11 @@ namespace Mono.Linker.Dataflow
 	/// </summary>
 	class MethodReturnValue : LeafValueWithDynamicallyAccessedMemberNode
 	{
-		public MethodReturnValue (DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes)
+		public MethodReturnValue (MethodReturnType methodReturnType, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes)
 		{
 			Kind = ValueNodeKind.MethodReturn;
 			DynamicallyAccessedMemberTypes = dynamicallyAccessedMemberTypes;
+			SourceContext = methodReturnType;
 		}
 
 		public override bool Equals (ValueNode other)
@@ -1045,6 +1050,7 @@ namespace Mono.Linker.Dataflow
 			Kind = ValueNodeKind.LoadField;
 			Field = fieldToLoad;
 			DynamicallyAccessedMemberTypes = dynamicallyAccessedMemberTypes;
+			SourceContext = fieldToLoad;
 		}
 
 		public FieldDefinition Field { get; private set; }

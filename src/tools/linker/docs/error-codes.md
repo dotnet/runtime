@@ -31,7 +31,7 @@ the error code. For example:
 
 #### `IL1006`: Cannot stub constructor on 'type' when base type does not have default constructor
 
-- There was an error trying to create a new instance of type 'type'. Its construtor was marked for substitution in a substitution XML, but the base type of 'type' doesn't have a default constructor. Constructors of derived types marked for substitution require to have a default constructor in its base type.
+- There was an error trying to create a new instance of type 'type'. Its constructor was marked for substitution in a substitution XML, but the base type of 'type' doesn't have a default constructor. Constructors of derived types marked for substitution require to have a default constructor in its base type.
 
 #### `IL1007`: Missing predefined 'type' type
 
@@ -79,198 +79,674 @@ the error code. For example:
 #### `IL2001`: Type 'type' has no fields to preserve
 
 - The XML descriptor preserves fields on type 'type', but this type has no fields.
+  ```XML
+  <linker>
+    <assembly fullname="test">
+      <type fullname="TestType" preserve="fields" />
+    </assembly>
+  </linker>
+  ```
+  ```C#
+  // IL2001: Type 'TestType' has no fields to preserve
+  class TestType
+  {
+      void OnlyMethod() {}
+  }
+  ```
+
 
 #### `IL2002`: Type 'type' has no methods to preserve
 
 - The XML descriptor preserves methods on type 'type', but this type has no methods.
 
-#### `IL2003`: Could not resolve 'assembly' assembly dependency specified in a 'PreserveDependency' attribute that targets method 'method'
+  ```XML
+  <linker>
+    <assembly fullname="test">
+      <type fullname="TestType" preserve="methods" />
+    </assembly>
+  </linker>
+  ```
+  ```C#
+  // IL2001: Type 'TestType' has no methods to preserve
+  struct TestType
+  {
+      public int Number;
+  }
+  ```
+
+#### `IL2003`: Could not resolve dependency assembly 'assembly name' specified in a 'PreserveDependency' attribute
 
 - The assembly 'assembly' in `PreserveDependency` attribute could not be resolved.
 
-#### `IL2004`: Could not resolve 'type' type dependency specified in a 'PreserveDependency' attribute that targets method 'method'
+  ```C#
+  // IL2003: Could not resolve dependency assembly 'NonExistentAssembly' specified in a 'PreserveDependency' attribute
+  [PreserveDependency("MyMethod", "MyType", "NonExistentAssembly")]
+  void TestMethod()
+  {
+  }
+  ```
+
+#### `IL2004`: Could not resolve dependency type 'type' specified in a 'PreserveDependency' attribute
 
 - The type 'type' in `PreserveDependency` attribute could not be resolved.
 
-#### `IL2005`: Could not resolve dependency member 'member' declared in type 'type' specified in a 'PreserveDependency' attribute that targets method 'method'
+  ```C#
+  // IL2004: Could not resolve dependency type 'NonExistentType' specified in a 'PreserveDependency' attribute
+  [PreserveDependency("MyMethod", "NonExistentType", "MyAssembly")]
+  void TestMethod()
+  {
+  }
+  ```
+
+#### `IL2005`: Could not resolve dependency member 'member' declared in type 'type' specified in a 'PreserveDependency' attribute
 
 - The member 'member' in `PreserveDependency` attribute could not be resolved.
 
-#### `IL2006` (5): Unrecognized reflection pattern
+  ```C#
+  // IL2005: Could not resolve dependency member 'NonExistentMethod' declared on type 'MyType' specified in a 'PreserveDependency' attribute
+  [PreserveDependency("NonExistentMethod", "MyType", "MyAssembly")]
+  void TestMethod()
+  {
+  }
+  ```
 
-- The linker found an unrecognized reflection access pattern. The most likely reason for this is that the linker could not resolve a member that is being accessed dynamicallly. To fix this, use the `DynamicallyAccessedMemberAttribute` and specify the member kinds you're trying to access.
-
-#### `IL2007`: Could not resolve assembly 'assembly' specified in the 'XML document location'
+#### `IL2007`: Could not resolve assembly 'assembly'
 
 - The assembly 'assembly' in the XML could not be resolved.
 
-#### `IL2008`: Could not resolve type 'type' specified in the 'XML document location'
+  ```XML
+  <!-- IL2007: Could not resolve assembly 'NonExistentAssembly' -->
+  <linker>
+    <assembly fullname="NonExistentAssembly" />
+  </linker>
+  ```
+
+#### `IL2008`: Could not resolve type 'type'
 
 - The type 'type' in the XML could not be resolved.
 
-#### `IL2009`: Could not find method 'method' in type 'type' specified in 'XML document location'
+  ```XML
+  <!-- IL2008: Could not resolve type 'NonExistentType' -->
+  <linker>
+    <assembly fullname="MyAssembly">
+      <type fullname="NonExistentType" />
+    </assembly>
+  </linker>
+  ```
+
+#### `IL2009`: Could not find method 'method' on type 'type'
 
 - The 'XML document location' defined a method 'method' on type 'type', but the method was not found.
 
+  ```XML
+  <!-- IL2009: Could not find method 'NonExistentMethod' on type 'MyType' -->
+  <linker>
+    <assembly fullname="MyAssembly">
+      <type fullname="MyType">
+        <method name="NonExistentMethod" />
+      </type>
+    </assembly>
+  </linker>
+  ```
+
 #### `IL2010`: Invalid value for 'signature' stub
 
-- The value 'value' used in the substitution XML for method 'signature' does not represent a value of a built-in type, or does not match the return type of the method.
+- The value used in the substitution XML for method 'signature' does not represent a value of a built-in type, or does not match the return type of the method.
+
+  ```XML
+  <!-- IL2010: Invalid value for 'MyType.MyMethodReturningInt()' stub -->
+  <linker>
+    <assembly fullname="MyAssembly">
+      <type fullname="MyType">
+        <method name="MyMethodReturningInt" body="stub" value="NonNumber" />
+      </type>
+    </assembly>
+  </linker>
+  ```
 
 #### `IL2011`: Unknown body modification 'action' for 'signature'
 
 - The value 'action' of the body attribute used in the substitution XML is invalid (the only supported options are `remove` and `stub`).
 
-#### `IL2012`: Could not find field 'field' in type 'type' specified in 'XML document location'
+  ```XML
+  <!-- IL2010: Unknown body modification 'nonaction' for 'MyType.MyMethod()' -->
+  <linker>
+    <assembly fullname="MyAssembly">
+      <type fullname="MyType">
+        <method name="MyMethod" body="nonaction" value="NonNumber" />
+      </type>
+    </assembly>
+  </linker>
+  ```
+
+#### `IL2012`: Could not find field 'field' on type 'type'
 
 - The 'XML document location' defined a field 'field' on type 'type', but the field was not found.
+
+  ```XML
+  <!-- IL2012: Could not find field 'NonExistentField' on type 'MyType' -->
+  <linker>
+    <assembly fullname="MyAssembly">
+      <type fullname="MyType">
+        <field name="NonExistentField" />
+      </type>
+    </assembly>
+  </linker>
+  ```
 
 #### `IL2013`: Substituted field 'field' needs to be static field
 
 - The substituted field 'field' was non-static or constant. Only static non-constant fields are supported.
 
+  ```XML
+  <!-- IL2013: Substituted field 'MyType.InstanceField' needs to be static field -->
+  <linker>
+    <assembly fullname="MyAssembly">
+      <type fullname="MyType">
+        <field name="InstanceField" value="5" />
+      </type>
+    </assembly>
+  </linker>
+  ```
+
 #### `IL2014`: Missing 'value' attribute for field 'field'
 
 - A field was specified for substitution but no value to be substituted was given.
 
-#### `IL2015`: Invalid value for 'field': 'value'
+  ```XML
+  <!-- IL2014: Missing 'value' attribute for field 'MyType.MyField' -->
+  <linker>
+    <assembly fullname="MyAssembly">
+      <type fullname="MyType">
+        <field name="MyField" />
+      </type>
+    </assembly>
+  </linker>
+  ```
+
+#### `IL2015`: Invalid value 'value' for 'field'
 
 - The value 'value' used in the substitution XML for field 'field' is not a built-in type, or does not match the type of 'field'.
 
-#### `IL2016`: Could not find event 'event' in type 'type' specified in 'XML document location'
+  ```XML
+  <!-- IL2015: Invalid value 'NonNumber' for 'MyType.IntField' -->
+  <linker>
+    <assembly fullname="MyAssembly">
+      <type fullname="MyType">
+        <field name="IntField" value="NonNumber" />
+      </type>
+    </assembly>
+  </linker>
+  ```
+
+#### `IL2016`: Could not find event 'event' on type 'type'
 
 - The 'XML document location' defined a event 'event' on type 'type', but the event was not found.
 
-#### `IL2017`: Could not find property 'property' in type 'type' specified in 'XML document location'
+  ```XML
+  <!-- IL2016: Could not find event 'NonExistentEvent' on type 'MyType' -->
+  <linker>
+    <assembly fullname="MyAssembly">
+      <type fullname="MyType">
+        <event name="NonExistentEvent" />
+      </type>
+    </assembly>
+  </linker>
+  ```
+
+#### `IL2017`: Could not find property 'property' on type 'type'
 
 - The 'XML document location' defined a property 'property' on type 'type', but the property was not found.
 
-#### `IL2018`: Could not find the get accessor of property 'property' in type 'type' specified in 'XML document location'
+  ```XML
+  <!-- IL2017: Could not find property 'NonExistentProperty' on type 'MyType' -->
+  <linker>
+    <assembly fullname="MyAssembly">
+      <type fullname="MyType">
+        <property name="NonExistentProperty" />
+      </type>
+    </assembly>
+  </linker>
+  ```
+
+#### `IL2018`: Could not find the get accessor of property 'property' on type 'type'
 
 - The 'XML document location' defined the get accessor of property 'property' on type 'type', but the accessor was not found.
 
-#### `IL2019`: Could not find the set accessor of property 'property' in type 'type' specified in 'XML document location'
+  ```XML
+  <!-- IL2018: Could not find the get accessor of property 'SetOnlyProperty' on type 'MyType' -->
+  <linker>
+    <assembly fullname="MyAssembly">
+      <type fullname="MyType">
+        <property signature="System.Boolean SetOnlyProperty" accessors="get" />
+      </type>
+    </assembly>
+  </linker>
+  ```
+
+#### `IL2019`: Could not find the set accessor of property 'property' on type 'type'
 
 - The 'XML document location' defined the set accessor of property 'property' on type 'type', but the accessor was not found.
 
-#### `IL2020`: Argument 'argument' specified in 'XML document location' is of unsupported type 'type'
+  ```XML
+  <!-- IL2019: Could not find the set accessor of property 'GetOnlyProperty' on type 'MyType' -->
+  <linker>
+    <assembly fullname="MyAssembly">
+      <type fullname="MyType">
+        <property signature="System.Boolean GetOnlyProperty" accessors="set" />
+      </type>
+    </assembly>
+  </linker>
+  ```
 
-- The constructor parameter type is not supported in the XML reading code.
+#### `IL2022`: Could not find a constructor for type 'attribute type' that has 'number of arguments' arguments
 
-#### `IL2021`: Could not parse argument 'argument' specified in 'XML document location' as a 'type'
+- The XML attribute for attribute type 'attribute type' specifies 'number of arguments' arguments but there's no constructor for 'attribute type' which has that many arguments
 
-- The XML descriptor has a 'type' attribute but the argument 'argument' does not match any of the existing enum 'type' values
+  ```XML
+  <!-- IL2022: Could not find a constructor for type 'AttributeWithNoParametersAttribute' that has '1' arguments -->
+  <linker>
+    <assembly fullname="MyAssembly">
+      <type fullname="MyType">
+        <attribute fullname="AttributeWithNoParametersAttribute">
+          <argument>ExtraArgumentValue</argument>
+        </attribute>
+      </type>
+    </assembly>
+  </linker>
+  ```
 
-#### `IL2022`: Could not find a constructor for type 'attribute type' that receives 'number of arguments' arguments as parameter
+#### `IL2023`: There is more than one 'return' child element specified for method 'method'
 
-- The 'attribute type' 'number of arguments' doesnt match with the number of arguments in any of the constructor function described in 'attribute type'
+- Method 'method' has more than one `return` element specified. There can only be one `return` element to specify attribute on the return parameter of the method.
 
-#### `IL2023`: There is more than one return parameter specified for 'method' in 'XML document location'
+  ```XML
+  <!-- IL2023: There is more than one 'return' child element specified for method 'method' -->
+  <linker>
+    <assembly fullname="MyAssembly">
+      <type fullname="MyType">
+        <method name="MyMethod">
+          <return>
+            <attribute fullname="FirstAttribute"/>
+          </return>
+          <return>
+            <attribute fullname="SecondAttribute"/>
+          </return>
+        </method>
+      </type>
+    </assembly>
+  </linker>
+  ```
 
-- The XML descriptor has more than one return parameter for a single method, there can only be one return parameter
+#### `IL2024`: More than one value specified for parameter 'parameter' of method 'method'
 
-#### `IL2024`: There are duplicate parameter names for 'parameter name' inside 'method' in 'XML document location'
+- Method 'method' has more than one `parameter` element for parameter 'parameter'. There can only be one value specified for each parameter.
 
-- The XML descriptor has more than method parameters with the same name, there can only be one return parameter
+  ```XML
+  <!-- IL2024: More than one value specified for parameter 'parameter' of method 'method' -->
+  <linker>
+    <assembly fullname="MyAssembly">
+      <type fullname="MyType">
+        <method name="MyMethod">
+          <parameter name="methodParameter">
+            <attribute fullname="FirstAttribute"/>
+          </parameter>
+          <parameter name="methodParameter">
+            <attribute fullname="SecondAttribute"/>
+          </parameter>
+        </method>
+      </type>
+    </assembly>
+  </linker>
+  ```
 
-#### `IL2025`: Duplicate preserve of 'member' in 'XML document location'
+#### `IL2025`: Duplicate preserve of 'member'
 
 - The XML descriptor marks for preservation the member or type 'member' more than once.
 
-#### `IL2026`: Calling method annotated with `RequiresUnreferencedCodeAttribute`
+  ```XML
+  <!-- IL2024: More than one value specified for parameter 'parameter' of method 'method' -->
+  <linker>
+    <assembly fullname="MyAssembly">
+      <type fullname="MyType">
+        <method name="MyMethod"/>
+        <method name="MyMethod"/>
+      </type>
+    </assembly>
+  </linker>
+  ```
 
-- The linker found a call to a method which is annotated with 'RequiresUnreferencedCodeAttribute' which can break functionality of a trimmed application.
+#### `IL2026` Trim analysis: Calling 'method' which has 'RequiresUnreferencedCodeAttribute' can break functionality when trimming application code. [message]. [url]
+
+- The linker found a call to a method which is annotated with `RequiresUnreferencedCodeAttribute` which can break functionality of a trimmed application.
+
+  ```C#
+  [RequiresUnreferencedCode("Use 'MethodFriendlyToTrimming' instead", Url="http://help/unreferencedcode")]
+  void MethodWithUnreferencedCodeUsage()
+  {
+  }
+
+  void TestMethod()
+  {
+      // IL2026: Calling 'MethodWithUnreferencedCodeUsage' which has 'RequiresUnreferencedCodeAttribute' 
+      // can break functionality when trimming application code. Use 'MethodFriendlyToTrimming' instead. http://help/unreferencedcode
+      MethodWithUnreferencedCodeUsage();
+  }
+  ```
 
 #### `IL2027`: Attribute 'attribute' should only be used once on 'member'.
 
 - The linker found multiple instances of attribute 'attribute' on 'member'. This attribute is only allowed to have one instance, linker will only use the fist instance and ignore the rest.
 
-#### `IL2028`: Attribute 'attribute' on 'method' doesn't have a required constructor argument.
+  ```C#
+  // Note: C# won't allow this because RequiresUnreferencedCodeAttribute only allows one instantiation,
+  // but it's a good demonstration (it's possible to get to this state using LinkAttributes.xml)
 
-- The linker found an instance of attribute 'attribute' on 'method' but it lacks a required constructor argument. Linker will ignore this attribute.
+  // IL2027: Attribute 'RequiresUnreferencedCodeAttribute' should only be used once on 'MethodWithUnreferencedCodeUsage()'.
+  [RequiresUnreferencedCode("Use A instead")]
+  [RequiresUnreferencedCode("Use B instead")]
+  void MethodWithUnreferencedCodeUsage()
+  {
+  }
+  ```
 
-#### `IL2029`: Attribute element does not contain attribute 'fullname'
+#### `IL2028`: Attribute 'attribute' doesn't have the required number of parameters specified
 
-- An attribute element was declared but does not contain the attribute 'fullname' or 'fullname' attribute is empty
+- The linker found an instance of attribute 'attribute' on 'method' but it lacks a required constructor parameter or it has more parameters than accepted. Linker will ignore this attribute. 
+This is technically possible if a custom assembly defines for example the `RequiresUnreferencedCodeAttribute` type with parameterless constructor and uses it. ILLink will recognize the attribute since it only does a namespace and type name match, but it expects it to have exactly one parameter in its constructor.
 
-#### `IL2030`: Could not resolve assembly 'assembly' in attribute 'attribute' specified in the 'XML document location'
+#### `IL2029`: 'attribute' element does not contain required attribute 'fullname' or it's empty
 
-- The assembly 'assembly' described as a attribute property of 'attribute' could not be resolved in 'XML document location'
+- An 'attribute' element must have an attribute 'fullname' with a non-empty value
+
+  ```XML
+  <!-- IL2029: 'attribute' element does not contain required attribute 'fullname' or it's empty -->
+  <linker>
+    <assembly fullname="MyAssembly">
+      <attribute/>
+    </assembly>
+  </linker>
+  ```
+
+#### `IL2030`: Could not resolve assembly 'assembly' for attribute 'attribute'
+
+- The assembly name 'assembly' specified for attribute with full name 'attribute' could not be resolved
+
+  ```XML
+  <!-- IL2030: Could not resolve assembly 'NonExistentAssembly' for attribute 'MyAttribute' -->
+  <linker>
+    <assembly fullname="MyAssembly">
+      <attribute fullname="MyAttribute" assembly="NonExistentAssembly"/>
+    </assembly>
+  </linker>
+  ```
 
 #### `IL2031`: Attribute type 'attribute type' could not be found
 
 - The described 'attribute type' could not be found in the assemblies
 
-#### `IL2032`: Argument 'argument' specified in 'XML document location' could not be transformed to the constructor parameter type
+  ```XML
+  <!-- IL2031: Attribute type 'NonExistentTypeAttribute' could not be found -->
+  <linker>
+    <assembly fullname="MyAssembly">
+      <attribute fullname="NonExistentTypeAttribute"/>
+    </assembly>
+  </linker>
+  ```
 
-- The number of arguments correspond to a certain type constructor, but the type of arguments specified in the xml does not match the type of arguments in the constructor.
+#### `IL2032`: Trim analysis: Unrecognized value passed to the parameter 'parameter' of method 'CreateInstance'. It's not possible to guarantee the availability of the target type.
 
-#### `IL2033`: PreserveDependencyAttribute is deprecated. Use DynamicDependencyAttribute instead.
+- The value passed as the assembly name or type name to the `CreateInstance` method can't be statically analyzed, ILLink can't make sure that the type is available.  
 
-- PreserveDependencyAttribute was an internal attribute that was never officially supported. Instead, use the similar DynamicDependencyAttribute.
+  ``` C#
+  void TestMethod(string assemblyName, string typeName)
+  {
+      // IL2032 Trim analysis: Unrecognized value passed to the parameter 'typeName' of method 'System.Activator.CreateInstance(string, string)'. It's not possible to guarantee the availability of the target type.
+      Activator.CreateInstance("MyAssembly", typeName);
 
-#### `IL2034`: Invalid DynamicDependencyAttribute on 'member'
+      // IL2032 Trim analysis: Unrecognized value passed to the parameter 'assemblyName' of method 'System.Activator.CreateInstance(string, string)'. It's not possible to guarantee the availability of the target type.
+      Activator.CreateInstance(assemblyName, "MyType");
+  }
+  ```
 
-- The input contains an invalid use of DynamicDependencyAttribute. Ensure that you are using one of the officially supported constructors.
+#### `IL2033`: 'PreserveDependencyAttribute' is deprecated. Use 'DynamicDependencyAttribute' instead.
 
-#### `IL2035`: Unresolved assembly 'assemblyName' in DynamicDependencyAttribute on 'member'
+- `PreserveDependencyAttribute` was an internal attribute that was never officially supported. Instead, use the similar `DynamicDependencyAttribute`.
 
-- The assembly string given in a DynamicDependencyAttribute constructor could not be resolved. Ensure that the argument specifies a valid asembly name, and that the assembly is available to the linker.
+  ```C#
+  // IL2033: 'PreserveDependencyAttribute' is deprecated. Use 'DynamicDependencyAttribute' instead.
+  [PreserveDependency("OtherMethod")]
+  public void TestMethod()
+  {
+  }
+  ```
 
-#### `IL2036`: Unresolved type 'typeName' in DynamicDependencyAttribute on 'member'
+#### `IL2034`: The 'DynamicDependencyAttribute' could not be analyzed
 
-- The type in a DynamicDependencyAttribute constructor could not be resolved. Ensure that the argument specifies a valid type name or type reference, that the type exists in the specified assembly, and that the assembly is available to the linker.
+- The input contains an invalid use of `DynamicDependencyAttribute`. Ensure that you are using one of the officially supported constructors.  
+This is technically possible if a custom assembly defines `DynamicDependencyAttribute` with a different constructor than the one the ILLink recognizes. ILLink will recognize the attribute since it only does a namespace and type name match, but the actual instantiation was not recognized.
+
+#### `IL2035`: Unresolved assembly 'assemblyName' in 'DynamicDependencyAttribute'
+
+- The assembly string 'assemblyName' given in a `DynamicDependencyAttribute` constructor could not be resolved. Ensure that the argument specifies a valid assembly name, and that the assembly is available to the linker.
+
+  ```C#
+  // IL2035: Unresolved assembly 'NonExistentAssembly' in 'DynamicDependencyAttribute'
+  [DynamicDependency("Method", "Type", "NonExistentAssembly")]
+  public void TestMethod()
+  {
+  }
+  ```
+
+#### `IL2036`: Unresolved type 'typeName' in 'DynamicDependencyAttribute'
+
+- The type in a `DynamicDependencyAttribute` constructor could not be resolved. Ensure that the argument specifies a valid type name or type reference, that the type exists in the specified assembly, and that the assembly is available to the linker.
+
+  ```C#
+  // IL2036: Unresolved type 'NonExistentType' in 'DynamicDependencyAttribute'
+  [DynamicDependency("Method", "NonExistentType", "MyAssembly")]
+  public void TestMethod()
+  {
+  }
+  ```
 
 #### `IL2037`: No members were resolved for 'memberSignature/memberTypes'.
 
-- The member signature or DynamicallyAccessedMemberTypes in a DynamicDependencyAttribute constructor did not resolve to any members on the type. If you using a signature, ensure that it refers to an existing member, and that it uses the format defined at https://github.com/dotnet/csharplang/blob/master/spec/documentation-comments.md#id-string-format. If using DynamicallyAccessedMemberTypes, ensure that the type contains members of the specified member types.
+- The member signature or `DynamicallyAccessedMemberTypes` in a `DynamicDependencyAttribute` constructor did not resolve to any members on the type. If you are using a signature, ensure that it refers to an existing member, and that it uses the format defined at https://github.com/dotnet/csharplang/blob/master/spec/documentation-comments.md#id-string-format. If using `DynamicallyAccessedMemberTypes`, ensure that the type contains members of the specified member types.
+
+  ```C#
+  // IL2036: No members were resolved for 'NonExistingMethod'.
+  [DynamicDependency("NonExistingMethod", "MyType", "MyAssembly")]
+  public void TestMethod()
+  {
+  }
+  ```
 
 #### `IL2038`: Missing 'name' attribute for resource.
 
-- The resource element in a substitution file did not have a 'name' attribute. Add a 'name' attribute with the name of the resource to remove.
+- The `resource` element in a substitution file did not have a `name` attribute. Add a `name` attribute with the name of the resource to remove.
 
-#### `IL2039`: Invalid 'action' attribute for resource 'resource'.
+  ```XML
+  <!-- IL2038: Missing 'name' attribute for resource. -->
+  <linker>
+    <assembly fullname="MyAssembly">
+      <resource />
+    </assembly>
+  </linker>
+  ```
+
+#### `IL2039`: Invalid value 'value' for attribute 'action' for resource 'resource'.
 
 - The resource element in a substitution file did not have a valid 'action' attribute. Add an 'action' attribute to this element, with value 'remove' to tell the linker to remove this resource.
+
+  ```XML
+  <!-- IL2039: Invalid value 'NonExistentAction' for attribute 'action' for resource 'MyResource'. -->
+  <linker>
+    <assembly fullname="MyAssembly">
+      <resource name="MyResource" action="NonExistentAction"/>
+    </assembly>
+  </linker>
+  ```
 
 #### `IL2040`: Could not find embedded resource 'resource' to remove in assembly 'assembly'.
 
 - The resource name in a substitution file could not be found in the specified assembly. Ensure that the resource name matches the name of an embedded resource in the assembly.
 
-#### `IL2041`: DynamicallyAccessedMembersAttribute is only allowed on method parameters, return value or generic parameters.
+  ```XML
+  <!-- IL2040: Could not find embedded resource 'NonExistentResource' to remove in assembly 'MyAssembly'. -->
+  <linker>
+    <assembly fullname="MyAssembly">
+      <resource name="NonExistentResource" action="remove"/>
+    </assembly>
+  </linker>
+  ```
 
-- DynamicallyAccessedMembersAttribute was put directly on the member itself. This is only allowed for instance methods on System.Type and similar classes. Usually this means the attribute should be placed on the return value of the method (or one of its parameters).
+#### `IL2041` Trim analysis: The 'DynamicallyAccessedMembersAttribute' is not allowed on methods. It is allowed on method return value or method parameters though.
 
-#### `IL2042`: Could not find a unique backing field for property 'property' to propagate DynamicallyAccessedMembersAttribute
+- `DynamicallyAccessedMembersAttribute` was put directly on the method itself. This is only allowed for instance methods on System.Type and similar classes. Usually this means the attribute should be placed on the return value of the method or one of the method parameters.
 
-- The property 'property' has DynamicallyAccessedMembersAttribute on it, but the linker could not determine the backing fields for the property to propagate the attribute to the field.
+  ```C#
+  // IL2041: The 'DynamicallyAccessedMembersAttribute' is not allowed on methods. It is allowed on method return value or method parameters though.
+  [DynamicallyAccessedMembers(DynamicallyAccessedMemberType.PublicMethods)]
 
-#### `IL2043`: Trying to propagate DynamicallyAccessedMemberAttribute from property 'property' to its getter 'method', but it already has such attribute.
+  // Instead if it is meant for the return value it should be done like this:
+  [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberType.PublicMethods)]
+  public Type GetInterestingType()
+  {
+    // ...
+  }
+  ```
 
-- Propagating DynamicallyAccessedMembersAttribute from property 'property' to its getter 'method' found that the getter already has such an attribute. The existing attribute will be used.
+#### `IL2042` Trim analysis: Could not find a unique backing field for property 'property' to propagate 'DynamicallyAccessedMembersAttribute'
 
-#### `IL2044`: Could not find any type in namespace 'namespace' specified in 'XML document location'
+- The property 'property' has `DynamicallyAccessedMembersAttribute` on it, but the linker could not determine the backing field for the property to propagate the attribute to the field.
 
-- The 'XML document location' specifies a namespace 'namespace' but there are no types found in such namespace.
+  ```C#
+  // IL2042: Could not find a unique backing field for property 'MyProperty' to propagate 'DynamicallyAccessedMembersAttribute'
+  [DynamicallyAccessedMembers(DynamicallyAccessedMemberType.PublicMethods)]
+  public Type MyProperty
+  {
+    get { return GetTheValue(); }
+    set { }
+  }
 
-#### `IL2045`: Custom Attribute 'type' is being referenced in code but the linker was instructed to remove all instances of this attribute. If the attribute instances are necessary make sure to either remove the linker attribute XML portion which removes the attribute instances, or to override this use the linker XML descriptor to keep the attribute type (which in turn keeps all of its instances).
+  // To fix this annotate the accessors manually:
+  public Type MyProperty
+  {
+    [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberType.PublicMethods)] 
+    get { return GetTheValue(); }
 
-- CustomAttribute 'type' is being referenced in the code but the 'type' has been removed using the "remove" attribute tag on a type inside the LinkAttributes xml
+    [param: DynamicallyAccessedMembers(DynamicallyAccessedMemberType.PublicMethods)]
+    set { }
+  }
+  ```
 
-#### `IL2046`: Presence of RequiresUnreferencedCodeAttribute on method 'method' doesn't match overridden method 'base method'. All overridden methods must have RequiresUnreferencedCodeAttribute.
+#### `IL2043` Trim analysis: 'DynamicallyAccessedMembersAttribute' on property 'property' conflicts with the same attribute on its accessor 'method'.
 
-- All overrides of a virtual method including the base method must either have or not have the RequiresUnreferencedCodeAttribute.
+- Propagating `DynamicallyAccessedMembersAttribute` from property 'property' to its accessor 'method' found that the accessor already has such an attribute. The existing attribute will be used.
 
-#### `IL2047`: DynamicallyAccessedMemberTypes in DynamicallyAccessedMembersAttribute on <member> don't match overridden <base member>. All overriden members must have the same DynamicallyAccessedMembersAttribute usage.
+  ```C#
+  // IL2043: 'DynamicallyAccessedMembersAttribute' on property 'MyProperty' conflicts with the same attribute on its accessor 'get_MyProperty'.
+  [DynamicallyAccessedMembers(DynamicallyAccessedMemberType.PublicMethods)]
+  public Type MyProperty
+  {
+    [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberType.PublicFields)]
+    get { return GetTheValue(); }
+  }
+  ```
 
-- All overrides of a virtual method including the base method must have the same DynamicallyAccessedMemberAttribute usage on all it's components (return value, parameters and generic parameters).
+#### `IL2044`: Could not find any type in namespace 'namespace'
+
+- The XML descriptor specifies a namespace 'namespace' but there are no types found in such namespace. This typically means that the namespace is misspelled.
+
+  ```XML
+  <!-- IL2044: Could not find any type in namespace 'NonExistentNamespace' -->
+  <linker>
+    <assembly fullname="MyAssembly">
+      <namespace fullname="NonExistentNamespace" />
+    </assembly>
+  </linker>
+  ```
+
+#### `IL2045` Trim analysis: Attribute 'type' is being referenced in code but the linker was instructed to remove all instances of this attribute. If the attribute instances are necessary make sure to either remove the linker attribute XML portion which removes the attribute instances, or override the removal by using the linker XML descriptor to keep the attribute type (which in turn keeps all of its instances).
+
+- Attribute 'type' is being referenced in the code but the attribute instances have been removed using the 'RemoveAttributeInstances' internal attribute inside the LinkAttributes XML.
+
+  ```XML
+  <linker>
+    <assembly fullname="MyAssembly">
+      <type fullname="MyAttribute">
+        <attribute internal="RemoveAttributeInstances"/>
+      </type>
+    </assembly>
+  </linker>
+  ```
+
+  ```C#
+  // This attribute instance will be removed
+  [MyAttribute]
+  class MyType
+  {
+  }
+
+  public void TestMethod()
+  {
+    // IL2045 for 'MyAttribute' reference
+    typeof(MyType).GetCustomAttributes(typeof(MyAttribute), false);
+  }
+  ```
+
+#### `IL2046` Trim analysis: Presence of 'RequiresUnreferencedCodeAttribute' on method 'method' doesn't match overridden method 'base method'. All overridden methods must have 'RequiresUnreferencedCodeAttribute'.
+
+- All overrides of a virtual method including the base method must either have or not have the `RequiresUnreferencedCodeAttribute`.
+
+  ```C#
+  public class Base
+  {
+    [RequiresUnreferencedCode("Message")]
+    public virtual void TestMethod() {}
+  }
+
+  public class Derived : Base
+  {
+    // IL2046: Presence of 'RequiresUnreferencedCodeAttribute' on method 'Derived.TestMethod()' doesn't match overridden method 'Base.TestMethod'. All overridden methods must have 'RequiresUnreferencedCodeAttribute'.
+    public override void TestMethod() {}
+  }
+  ```
 
 #### `IL2048`: Internal attribute 'RemoveAttributeInstances' can only be used on a type, but is being used on 'member'
 
 - Internal attribute 'RemoveAttributeInstances' is a special attribute that should only be used on custom attribute types and is being used on 'member'.
 
+  ```XML
+  <!-- IL2048: Internal attribute 'RemoveAttributeInstances' can only be used on a type, but is being used on 'MyMethod' -->
+  <linker>
+    <assembly fullname="MyAssembly">
+      <type fullname="MyType">
+        <method name="MyMethod">
+          <attribute internal="RemoveAttributeInstances" />
+        </method>
+      </type>
+    </assembly>
+  </linker>
+  ```
+
 #### `IL2049`: Unrecognized internal attribute 'attribute'
 
 - The internal attribute name 'attribute' being used in the xml is not supported by the linker, check the spelling and the supported internal attributes.
+
+  ```XML
+  <!-- IL2049: Unrecognized internal attribute 'InvalidInternalAttributeName' -->
+  <linker>
+    <assembly fullname="MyAssembly">
+      <type fullname="MyType">
+        <method name="MyMethod">
+          <attribute internal="InvalidInternalAttributeName" />
+        </method>
+      </type>
+    </assembly>
+  </linker>
+  ```
 
 #### `IL2050`: Correctness of COM interop cannot be guaranteed
 
@@ -280,14 +756,674 @@ the error code. For example:
 
 - An attribute element declares a property but this does not specify its name or is empty.
 
+  ```XML
+  <!-- IL2051: Property element does not contain attribute 'name' -->
+  <linker>
+    <assembly fullname="MyAssembly">
+      <type fullname="MyType">
+        <attribute fullname="MyAttribute">
+          <property>UnspecifiedPropertyName</property>
+        </attribute>
+      </type>
+    </assembly>
+  </linker>
+  ```
+
 #### `IL2052`: Property 'propertyName' could not be found
 
 - An attribute element has property 'propertyName' but this could not be found.
+
+  ```XML
+  <!-- IL2052: Property 'NonExistentPropertyName' could not be found -->
+  <linker>
+    <assembly fullname="MyAssembly">
+      <type fullname="MyType">
+        <attribute fullname="MyAttribute">
+          <property name="NonExistentPropertyName">SomeValue</property>
+        </attribute>
+      </type>
+    </assembly>
+  </linker>
+  ```
 
 #### `IL2053`: Invalid value 'propertyValue' for property 'propertyName'
 
 - The value 'propertyValue' used in a custom attribute annotation does not match the type of the attribute's property 'propertyName'.
 
-#### `IL2054`: Invalid argument value 'argumentValue' for attribute 'attribute'
+  ```XML
+  <!-- IL2053: Invalid value 'StringValue' for property 'IntProperty' -->
+  <linker>
+    <assembly fullname="MyAssembly">
+      <type fullname="MyType">
+        <attribute fullname="MyAttribute">
+          <property name="IntProperty">StringValue</property>
+        </attribute>
+      </type>
+    </assembly>
+  </linker>
+  ```
+
+#### `IL2054`: Invalid argument value 'argumentValue' for parameter of type 'parameterType' of attribute 'attribute'
 
 - The value 'argumentValue' used in a custom attribute annotation does not match the type of one of the attribute's constructor arguments. The arguments used for a custom attribute annotation should be declared in the same order the constructor uses.
+
+  ```XML
+  <!-- IL2054: Invalid argument value 'NonExistentEnumValue' for parameter of type 'MyEnumType' of attribute 'AttributeWithEnumParameterAttribute' -->
+  <linker>
+    <assembly fullname="MyAssembly">
+      <type fullname="MyType">
+        <attribute fullname="AttributeWithEnumParameterAttribute">
+          <argument>NonExistentEnumValue</argument>
+        </attribute>
+      </type>
+    </assembly>
+  </linker>
+  ```
+
+#### `IL2055`: Trim analysis: Call to 'System.Reflection.MethodInfo.MakeGenericType' can not be statically analyzed. It's not possible to guarantee the availability of requirements of the generic type.
+
+- This can be either that the type on which the `MakeGenericType` is called can't be statically determined, or that the type parameters to be used for generic arguments can't be statically determined. If the open generic type has `DynamicallyAccessedMembersAttribute` on any of its generic parameters, ILLink currently can't validate that the requirements are fulfilled by the calling method.  
+
+  ``` C#
+  class Lazy<[DynamicallyAccessedMembers(DynamicallyAccessedMemberType.PublicParameterlessConstructor)] T> 
+  {
+      // ...
+  }
+  
+  void TestMethod(Type unknownType)
+  {
+      // IL2055 Trim analysis: Call to `System.Reflection.MethodInfo.MakeGenericType(Type[])` can not be statically analyzed. It's not possible to guarantee the availability of requirements of the generic type.
+      typeof(Lazy<>).MakeGenericType(new Type[] { typeof(TestType) });
+
+      // IL2055 Trim analysis: Call to `System.Reflection.MethodInfo.MakeGenericType(Type[])` can not be statically analyzed. It's not possible to guarantee the availability of requirements of the generic type.
+      unknownType.MakeGenericType(new Type[] { typeof(TestType) });
+  }
+  ```
+
+#### `IL2056`: Trim analysis: 'DynamicallyAccessedMemberAttribute' on property 'property' conflicts with the same attribute on its backing field 'field'.
+
+- Propagating `DynamicallyAccessedMembersAttribute` from property 'property' to its backing field 'field' found that the field already has such an attribute. The existing attribute will be used.
+  Since ILLink will only propagate to a compiler generated backing field this warning should basically never happen. The one known way requires the user code to explicitly specify the `CompilerGeneratedAttribute` on the field to get ILLink to treat it as the compiler generated backing field.
+
+#### `IL2057`: Trim analysis: Unrecognized value passed to the parameter 'typeName' of method 'System.Type.GetType(Type typeName)'. It's not possible to guarantee the availability of the target type.
+
+- If the type name passed to the `System.Type.GetType` is statically known ILLink can make sure it's preserved and the application code will work after trimming. But if the type name is unknown, it could point to a type which ILLink will not see being used anywhere else and would remove it from the application, potentially breaking the application.  
+
+  ``` C#
+  void TestMethod()
+  {
+      string typeName = ReadName();
+
+      // IL2057 Trim analysis: Unrecognized value passed to the parameter 'typeName' of method 'System.Type.GetType(Type typeName)'
+      Type.GetType(typeName);
+  }
+  ```
+
+#### `IL2058`: Trim analysis: Parameters passed to method 'Assembly.CreateInstance' cannot be analyzed. Consider using methods 'System.Type.GetType' and `System.Activator.CreateInstance` instead.
+
+- ILLink currently doesn't analyze assembly instances and thus it doesn't know on which assembly the `Assembly.CreateInstance` was called. ILLink has support for `Type.GetType` instead, for cases where the parameter is a string literal. The result of which can be passed to `Activator.CreateInstance` to create an instance of the type.
+
+  ``` C#
+  void TestMethod()
+  {
+      // IL2058 Trim analysis: Parameters passed to method 'Assembly.CreateInstance(string)' cannot be analyzed. Consider using methods 'System.Type.GetType' and `System.Activator.CreateInstance` instead.
+      AssemblyLoadContext.Default.Assemblies.First(a => a.Name == "MyAssembly").CreateInstance("MyType");
+
+      // This can be replaced by
+      Activator.CreateInstance(Type.GetType("MyType, MyAssembly"));
+  }
+  ```
+
+#### `IL2059`: Trim analysis: Unrecognized value passed to the parameter 'type' of method 'System.Runtime.CompilerServices.RuntimeHelpers.RunClassConstructor'. It's not possible to guarantee the availability of the target static constructor.
+
+- If the type passed to the `RunClassConstructor` is not statically known, ILLink can't make sure that its static constructor is available.  
+
+  ``` C#
+  void TestMethod(Type type)
+  {
+      // IL2059 Trim analysis: Unrecognized value passed to the parameter 'type' of method 'System.Runtime.CompilerServices.RuntimeHelpers.RunClassConstructor(RuntimeTypeHandle type)'. 
+      // It's not possible to guarantee the availability of the target static constructor.
+      RuntimeHelpers.RunClassConstructor(type.TypeHandle);
+  }
+  ```
+
+#### `IL2060`: Trim analysis: Call to `System.Reflection.MethodInfo.MakeGenericMethod` can not be statically analyzed. It's not possible to guarantee the availability of requirements of the generic method.
+
+- ILLink currently doesn't analyze `MethodInfo` values and thus can't statically determine the generic method the `MakeGenericMethod` operates on. If the actual method has generic parameters with `DynamicallyAccessedMembersAttribute` ILLink would be required to fulfill the requirements declared by those attributes, but since the ILLink doesn't know the method, it can't determine if such requirements exist.  
+
+  ``` C#
+  void TestMethod()
+  {
+      // IL2060 Trim analysis: Call to `System.Reflection.MethodInfo.MakeGenericMethod` can not be statically analyzed. It's not possible to guarantee the availability of requirements of the generic method.
+      typeof(MyType).GetMethod("MyMethod").MakeGenericMethod(new Type[] { typeof(MyType) });
+  }
+  ```
+
+#### `IL2061`: Trim analysis: The assembly name 'assembly name' passed to method 'method' references assembly which is not available.
+
+- Calling `CreateInstance` with assembly name 'assembly name' which can't be resolved.  
+
+  ``` C#
+  void TestMethod()
+  {
+      // IL2061 Trim analysis: The assembly name 'NonExistentAssembly' passed to method 'System.Activator.CreateInstance(string, string)' references assembly which is not available.
+      Activator.CreateInstance("NonExistentAssembly", "MyType");
+  }
+  ```
+
+#### `IL2062` Trim analysis: Value passed to parameter 'parameter' of method 'method' can not be statically determined and may not meet 'DynamicallyAccessedMembersAttribute' requirements.
+
+- The parameter 'parameter' of method 'method' has a `DynamicallyAccessedMembersAttribute`, but the value passed to it can not be statically analyzed. ILLink can't make sure that the requirements declared by the `DynamicallyAccessedMembersAttribute` are met by the argument value.
+
+  ``` C#
+  void NeedsPublicConstructors([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type type)
+  {
+      // ...
+  }
+
+  void TestMethod(Type[] types)
+  {
+      // IL2062: Value passed to parameter 'type' of method 'NeedsPublicConstructors' can not be statically determined and may not meet 'DynamicallyAccessedMembersAttribute' requirements.
+      NeedsPublicConstructors(types[1]);
+  }
+  ```
+
+#### `IL2063`: Trim analysis: Value returned from method 'method' can not be statically determined and may not meet 'DynamicallyAccessedMembersAttribute' requirements.
+
+- The return value of method 'method' has a `DynamicallyAccessedMembersAttribute`, but the value returned from the method can not be statically analyzed. ILLink can't make sure that the requirements declared by the `DynamicallyAccessedMembersAttribute` are met by the returned value.
+
+  ``` C#
+  [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
+  Type TestMethod(Type[] types)
+  {
+      // IL2063 Trim analysis: Value returned from method 'TestMethod' can not be statically determined and may not meet 'DynamicallyAccessedMembersAttribute' requirements.
+      NeedsPublicConstructors(types[1]);
+  }
+  ```
+
+#### `IL2064`: Trim analysis: Value assigned to field 'field' can not be statically determined and may not meet 'DynamicallyAccessedMembersAttribute' requirements.
+
+- The field 'field' has a `DynamicallyAccessedMembersAttribute`, but the value assigned to it can not be statically analyzed. ILLink can't make sure that the requirements declared by the `DynamicallyAccessedMembersAttribute` are met by the assigned value.
+
+  ``` C#
+  [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
+  Type _typeField;
+
+  void TestMethod(Type[] types)
+  {
+      // IL2064 Trim analysis: Value assigned to field '_typeField' can not be statically determined and may not meet 'DynamicallyAccessedMembersAttribute' requirements.
+      _typeField = _types[1];
+  }
+  ```
+
+#### `IL2065`: Trim analysis: Value passed to implicit 'this' parameter of method 'method' can not be statically determined and may not meet 'DynamicallyAccessedMembersAttribute' requirements.
+
+- The method 'method' has a `DynamicallyAccessedMembersAttribute` (which applies to the implicit 'this' parameter), but the value used for the 'this' parameter can not be statically analyzed. ILLink can't make sure that the requirements declared by the `DynamicallyAccessedMembersAttribute` are met by the 'this' value.
+
+  ``` C#
+  void TestMethod(Type[] types)
+  {
+      // IL2065 Trim analysis: Value passed to implicit 'this' parameter of method 'Type.GetMethods()' can not be statically determined and may not meet 'DynamicallyAccessedMembersAttribute' requirements.
+      _types[1].GetMethods (); // Type.GetMethods has [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] attribute
+  }
+  ```
+
+#### `IL2066`: Trim analysis: Type passed to generic parameter 'parameter' of 'type or method' can not be statically determined and may not meet 'DynamicallyAccessedMembersAttribute' requirements.
+
+- The generic parameter 'parameter' of 'type or method' has a `DynamicallyAccessedMembersAttribute`, but the value used for it can not be statically analyzed. ILLink can't make sure that the requirements declared by the `DynamicallyAccessedMembersAttribute` are met by the value.
+
+*Note: this warning can't be currently produced as there's no pure IL way to pass unknown value to a generic parameter. Once ILLInk supports full analysis of arguments for `MakeGenericType`/`MakeGenericMethod` this warnings would become active.*
+
+#### `IL2067`: Trim analysis: The requirements declared via the 'DynamicallyAccessedMembersAttribute' on the parameter 'source parameter' of method 'source method' don't match those on the parameter 'target parameter' of method 'target method'. The source value must declare at least the same requirements as those declared on the target location it's assigned to 
+
+- The target location declares some requirements on the type value via its `DynamicallyAccessedMembersAttribute`. Those requirements must be met by those declared on the source value also via the `DynamicallyAccessedMembersAttribute`. The source value can declare more requirements than the source if necessary.  
+
+  ```C#
+  void NeedsPublicConstructors([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type type)
+  {
+      // ...
+  }
+
+  void TestMethod(Type type)
+  {
+      // IL2006 Trim analysis: The requirements declared via the 'DynamicallyAccessedMembersAttribute' on the parameter 'type' of method 'TestMethod' 
+      // don't match those on the parameter 'type' of method 'NeedsPublicConstructors'. 
+      // The source value must declare at least the same requirements as those declared on the target location it's assigned to
+      NeedsPublicConstructors(type);
+  }
+  ```
+
+#### `IL2068`: Trim analysis: The requirements declared via the 'DynamicallyAccessedMembersAttribute' on the parameter 'source parameter' of method 'source method' don't match those on the return value of method 'target method'. The source value must declare at least the same requirements as those declared on the target location it's assigned to 
+
+- The target location declares some requirements on the type value via its `DynamicallyAccessedMembersAttribute`. Those requirements must be met by those declared on the source value also via the `DynamicallyAccessedMembersAttribute`. The source value can declare more requirements than the source if necessary.  
+
+  ```C#
+  [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
+  Type TestMethod(Type type)
+  {
+      // IL2068 Trim analysis: The requirements declared via the 'DynamicallyAccessedMembersAttribute' on parameter 'type' of method 'TestMethod' 
+      // don't match those on return value of method 'TestMethod'.
+      // The source value must declare at least the same requirements as those declared on the target location it's assigned to
+      return type;
+  }
+  ```
+
+#### `IL2069`: Trim analysis: The requirements declared via the 'DynamicallyAccessedMembersAttribute' on the parameter 'source parameter' of method 'source method' don't match those on the field 'field'. The source value must declare at least the same requirements as those declared on the target location it's assigned to 
+
+- The target location declares some requirements on the type value via its `DynamicallyAccessedMembersAttribute`. Those requirements must be met by those declared on the source value also via the `DynamicallyAccessedMembersAttribute`. The source value can declare more requirements than the source if necessary.  
+
+  ```C#
+  [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
+  Type _typeField;
+
+  void TestMethod(Type type)
+  {
+      // IL2069 Trim analysis: The requirements declared via the 'DynamicallyAccessedMembersAttribute' on parameter 'type' of method 'TestMethod' 
+      // don't match those on field '_typeField'.
+      // The source value must declare at least the same requirements as those declared on the target location it's assigned to
+      _typeField = type;
+  }
+  ```
+
+#### `IL2070`: Trim analysis: The requirements declared via the 'DynamicallyAccessedMembersAttribute' on the parameter 'source parameter' of method 'source method' don't match those on the implicit 'this' parameter of method 'target method'. The source value must declare at least the same requirements as those declared on the target location it's assigned to 
+
+- The target location declares some requirements on the type value via its `DynamicallyAccessedMembersAttribute`. Those requirements must be met by those declared on the source value also via the `DynamicallyAccessedMembersAttribute`. The source value can declare more requirements than the source if necessary.  
+
+  ```C#
+  void TestMethod(Type type)
+  {
+      // IL2070 Trim analysis: The requirements declared via the 'DynamicallyAccessedMembersAttribute' on parameter 'type' of method 'TestMethod' 
+      // don't match those on the implicit 'this' parameter of method 'Type.GetMethods()'.
+      // The source value must declare at least the same requirements as those declared on the target location it's assigned to
+      type.GetMethods(); // Type.GetMethods is annotated with DynamicallyAccessedMemberTypes.PublicMethods
+  }
+  ```
+
+#### `IL2071`: Trim analysis: The requirements declared via the 'DynamicallyAccessedMembersAttribute' on the parameter 'source parameter' of method 'source method' don't match those on the generic parameter 'target generic parameter' of 'target method or type'. The source value must declare at least the same requirements as those declared on the target location it's assigned to 
+
+- Currently this is never generated, once ILLink supports full analysis of MakeGenericType/MakeGenericMethod this will be used
+
+#### `IL2072`: Trim analysis: The requirements declared via the 'DynamicallyAccessedMembersAttribute' on the return value of method 'source method' don't match those on the parameter 'target parameter' of method 'target method'. The source value must declare at least the same requirements as those declared on the target location it's assigned to 
+
+- The target location declares some requirements on the type value via its `DynamicallyAccessedMembersAttribute`. Those requirements must be met by those declared on the source value also via the `DynamicallyAccessedMembersAttribute`. The source value can declare more requirements than the source if necessary.  
+
+  ```C#
+  Type GetCustomType() { return typeof(CustomType); }
+
+  void NeedsPublicConstructors([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type type)
+  {
+      // ...
+  }
+
+  void TestMethod()
+  {
+      // IL2072 Trim analysis: The requirements declared via the 'DynamicallyAccessedMembersAttribute' on the return value of method 'GetCustomType` 
+      // don't match those on the parameter 'type' of method 'NeedsPublicConstructors'.
+      // The source value must declare at least the same requirements as those declared on the target location it's assigned to
+      NeedsPublicConstructors(GetCustomType());
+  }
+  ```
+
+#### `IL2073`: Trim analysis: The requirements declared via the 'DynamicallyAccessedMembersAttribute' on the return value of method 'source method' don't match those on the return value of method 'target method'. The source value must declare at least the same requirements as those declared on the target location it's assigned to 
+
+- The target location declares some requirements on the type value via its `DynamicallyAccessedMembersAttribute`. Those requirements must be met by those declared on the source value also via the `DynamicallyAccessedMembersAttribute`. The source value can declare more requirements than the source if necessary.  
+
+  ```C#
+  Type GetCustomType() { return typeof(CustomType); }
+
+  [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
+  Type TestMethod()
+  {
+      // IL2073 Trim analysis: The requirements declared via the 'DynamicallyAccessedMembersAttribute' on the return value of method 'GetCustomType` 
+      // don't match those on the return value of method 'TestMethod'.
+      // The source value must declare at least the same requirements as those declared on the target location it's assigned to
+      return GetCustomType();
+  }
+  ```
+
+#### `IL2074`: Trim analysis: The requirements declared via the 'DynamicallyAccessedMembersAttribute' on the return value of method 'source method' don't match those on the field 'target field'. The source value must declare at least the same requirements as those declared on the target location it's assigned to 
+
+- The target location declares some requirements on the type value via its `DynamicallyAccessedMembersAttribute`. Those requirements must be met by those declared on the source value also via the `DynamicallyAccessedMembersAttribute`. The source value can declare more requirements than the source if necessary.  
+
+  ```C#
+  Type GetCustomType() { return typeof(CustomType); }
+
+  [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
+  Type _typeField;
+
+  void TestMethod()
+  {
+      // IL2074 Trim analysis: The requirements declared via the 'DynamicallyAccessedMembersAttribute' on the return value of method 'GetCustomType` 
+      // don't match those on the field '_typeField'.
+      // The source value must declare at least the same requirements as those declared on the target location it's assigned to
+      _typeField = GetCustomType();
+  }
+  ```
+
+#### `IL2075`: Trim analysis: The requirements declared via the 'DynamicallyAccessedMembersAttribute' on the return value of method 'source method' don't match those on the implicit 'this' parameter of method 'target method'. The source value must declare at least the same requirements as those declared on the target location it's assigned to 
+
+- The target location declares some requirements on the type value via its `DynamicallyAccessedMembersAttribute`. Those requirements must be met by those declared on the source value also via the `DynamicallyAccessedMembersAttribute`. The source value can declare more requirements than the source if necessary.  
+
+  ```C#
+  Type GetCustomType() { return typeof(CustomType); }
+
+  void TestMethod()
+  {
+      // IL2075 Trim analysis: The requirements declared via the 'DynamicallyAccessedMembersAttribute' on the return value of method 'GetCustomType` 
+      // don't match those on the implicit 'this' parameter of method 'Type.GetMethods()'.
+      // The source value must declare at least the same requirements as those declared on the target location it's assigned to
+      GetCustomType().GetMethods(); // Type.GetMethods is annotated with DynamicallyAccessedMemberTypes.PublicMethods
+  }
+  ```
+
+#### `IL2076`: Trim analysis: The requirements declared via the 'DynamicallyAccessedMembersAttribute' on the return value of method 'source method' don't match those on the generic parameter 'target generic parameter' of 'target method or type'. The source value must declare at least the same requirements as those declared on the target location it's assigned to 
+
+- Currently this is never generated, once ILLink supports full analysis of MakeGenericType/MakeGenericMethod this will be used
+
+#### `IL2077`: Trim analysis: The requirements declared via the 'DynamicallyAccessedMembersAttribute' on the field 'source field' don't match those on the parameter 'target parameter' of method 'target method'. The source value must declare at least the same requirements as those declared on the target location it's assigned to 
+
+- The target location declares some requirements on the type value via its `DynamicallyAccessedMembersAttribute`. Those requirements must be met by those declared on the source value also via the `DynamicallyAccessedMembersAttribute`. The source value can declare more requirements than the source if necessary.  
+
+  ```C#
+  void NeedsPublicConstructors([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type type)
+  {
+      // ...
+  }
+
+  Type _typeField;
+
+  void TestMethod()
+  {
+      // IL2075 Trim analysis: The requirements declared via the 'DynamicallyAccessedMembersAttribute' on the field '_typeField' 
+      // don't match those on the parameter 'type' of method 'NeedsPublicConstructors'.
+      // The source value must declare at least the same requirements as those declared on the target location it's assigned to
+      NeedsPublicConstructors(_typeField);
+  }
+  ```
+
+#### `IL2078`: Trim analysis: The requirements declared via the 'DynamicallyAccessedMembersAttribute' on the field 'source field' don't match those on the return value of method 'target method'. The source value must declare at least the same requirements as those declared on the target location it's assigned to 
+
+- The target location declares some requirements on the type value via its `DynamicallyAccessedMembersAttribute`. Those requirements must be met by those declared on the source value also via the `DynamicallyAccessedMembersAttribute`. The source value can declare more requirements than the source if necessary.  
+
+  ```C#
+  Type _typeField;
+
+  [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
+  Type TestMethod()
+  {
+      // IL2076 Trim analysis: The requirements declared via the 'DynamicallyAccessedMembersAttribute' on the field '_typeField' 
+      // don't match those on the return value of method 'TestMethod'.
+      // The source value must declare at least the same requirements as those declared on the target location it's assigned to
+      _typeField;
+  }
+  ```
+
+#### `IL2079`: Trim analysis: The requirements declared via the 'DynamicallyAccessedMembersAttribute' on the field 'source field' don't match those on the field 'target field'. The source value must declare at least the same requirements as those declared on the target location it's assigned to 
+
+- The target location declares some requirements on the type value via its `DynamicallyAccessedMembersAttribute`. Those requirements must be met by those declared on the source value also via the `DynamicallyAccessedMembersAttribute`. The source value can declare more requirements than the source if necessary.  
+
+  ```C#
+  Type _typeField;
+
+  [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
+  Type _typeFieldWithRequirements;
+
+  void TestMethod()
+  {
+      // IL2077 Trim analysis: The requirements declared via the 'DynamicallyAccessedMembersAttribute' on the field '_typeField' 
+      // don't match those on the field '_typeFieldWithRequirements'.
+      // The source value must declare at least the same requirements as those declared on the target location it's assigned to
+      _typeFieldWithRequirements = _typeField;
+  }
+  ```
+
+#### `IL2080`: Trim analysis: The requirements declared via the 'DynamicallyAccessedMembersAttribute' on the field 'source field' don't match those on the implicit 'this' parameter of method 'target method'. The source value must declare at least the same requirements as those declared on the target location it's assigned to 
+
+- The target location declares some requirements on the type value via its `DynamicallyAccessedMembersAttribute`. Those requirements must be met by those declared on the source value also via the `DynamicallyAccessedMembersAttribute`. The source value can declare more requirements than the source if necessary.  
+
+  ```C#
+  Type _typeField;
+
+  void TestMethod()
+  {
+      // IL2078 Trim analysis: The requirements declared via the 'DynamicallyAccessedMembersAttribute' on the field '_typeField' 
+      // don't match those on the implicit 'this' parameter of method 'Type.GetMethods()'.
+      // The source value must declare at least the same requirements as those declared on the target location it's assigned to
+      _typeField.GetMethods(); // Type.GetMethods is annotated with DynamicallyAccessedMemberTypes.PublicMethods
+  }
+  ```
+
+#### `IL2081`: Trim analysis: The requirements declared via the 'DynamicallyAccessedMembersAttribute' on the field 'source field' don't match those on the generic parameter 'target generic parameter' of 'target method or type'. The source value must declare at least the same requirements as those declared on the target location it's assigned to 
+
+- Currently this is never generated, once ILLink supports full analysis of MakeGenericType/MakeGenericMethod this will be used
+
+#### `IL2082`: Trim analysis: The requirements declared via the 'DynamicallyAccessedMembersAttribute' on the implicit 'this' parameter of method 'source method' don't match those on the parameter 'target parameter' of method 'target method'. The source value must declare at least the same requirements as those declared on the target location it's assigned to 
+
+- The target location declares some requirements on the type value via its `DynamicallyAccessedMembersAttribute`. Those requirements must be met by those declared on the source value also via the `DynamicallyAccessedMembersAttribute`. The source value can declare more requirements than the source if necessary.  
+
+  ```C#
+  void NeedsPublicConstructors([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type type)
+  {
+      // ...
+  }
+
+  // This can only happen within methods of System.Type type (or derived types). Assume the below method is declared on System.Type
+  void TestMethod()
+  {
+      // IL2082 Trim analysis: The requirements declared via the 'DynamicallyAccessedMembersAttribute' on the implicit 'this' parameter of method 'System.Type.TestMethod'
+      // don't match those on the parameter 'type' of method 'NeedsPublicConstructors'.
+      // The source value must declare at least the same requirements as those declared on the target location it's assigned to
+      NeedsPublicConstructors(this);
+  }
+  ```
+
+#### `IL2083`: Trim analysis: The requirements declared via the 'DynamicallyAccessedMembersAttribute' on the implicit 'this' parameter of method 'source method' don't match those on the return value of method 'target method'. The source value must declare at least the same requirements as those declared on the target location it's assigned to 
+
+- The target location declares some requirements on the type value via its `DynamicallyAccessedMembersAttribute`. Those requirements must be met by those declared on the source value also via the `DynamicallyAccessedMembersAttribute`. The source value can declare more requirements than the source if necessary.  
+
+  ```C#
+  // This can only happen within methods of System.Type type (or derived types). Assume the below method is declared on System.Type
+  [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
+  Type TestMethod()
+  {
+      // IL2083 Trim analysis: The requirements declared via the 'DynamicallyAccessedMembersAttribute' on the implicit 'this' parameter of method 'System.Type.TestMethod'
+      // don't match those on the return value of method 'TestMethod'.
+      // The source value must declare at least the same requirements as those declared on the target location it's assigned to
+      return this;
+  }
+  ```
+
+#### `IL2084`: Trim analysis: The requirements declared via the 'DynamicallyAccessedMembersAttribute' on the implicit 'this' parameter of method 'source method' don't match those on the field 'target field'. The source value must declare at least the same requirements as those declared on the target location it's assigned to 
+
+- The target location declares some requirements on the type value via its `DynamicallyAccessedMembersAttribute`. Those requirements must be met by those declared on the source value also via the `DynamicallyAccessedMembersAttribute`. The source value can declare more requirements than the source if necessary.  
+
+  ```C#
+  [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
+  Type _typeFieldWithRequirements;
+
+  // This can only happen within methods of System.Type type (or derived types). Assume the below method is declared on System.Type
+  void TestMethod()
+  {
+      // IL2084 Trim analysis: The requirements declared via the 'DynamicallyAccessedMembersAttribute' on the implicit 'this' parameter of method 'System.Type.TestMethod'
+      // don't match those on the field '_typeFieldWithRequirements'.
+      // The source value must declare at least the same requirements as those declared on the target location it's assigned to
+      _typeFieldWithRequirements = this;
+  }
+  ```
+
+#### `IL2085`: Trim analysis: The requirements declared via the 'DynamicallyAccessedMembersAttribute' on the implicit 'this' parameter of method 'source method' don't match those on the implicit 'this' parameter of method 'target method'. The source value must declare at least the same requirements as those declared on the target location it's assigned to 
+
+- The target location declares some requirements on the type value via its `DynamicallyAccessedMembersAttribute`. Those requirements must be met by those declared on the source value also via the `DynamicallyAccessedMembersAttribute`. The source value can declare more requirements than the source if necessary.  
+
+  ```C#
+  // This can only happen within methods of System.Type type (or derived types). Assume the below method is declared on System.Type
+  void TestMethod()
+  {
+      // IL2085 Trim analysis: The requirements declared via the 'DynamicallyAccessedMembersAttribute' on the implicit 'this' parameter of method 'System.Type.TestMethod'
+      // don't match those on the implicit 'this' parameter of method 'Type.GetMethods()'.
+      // The source value must declare at least the same requirements as those declared on the target location it's assigned to
+      this.GetMethods(); // Type.GetMethods is annotated with DynamicallyAccessedMemberTypes.PublicMethods
+  }
+  ```
+
+#### `IL2086`: Trim analysis: The requirements declared via the 'DynamicallyAccessedMembersAttribute' on the implicit 'this' parameter of method 'source method' don't match those on the generic parameter 'target generic parameter' of 'target method or type'. The source value must declare at least the same requirements as those declared on the target location it's assigned to 
+
+- Currently this is never generated, once ILLink supports full analysis of MakeGenericType/MakeGenericMethod this will be used
+
+
+#### `IL2087`: Trim analysis: The requirements declared via the 'DynamicallyAccessedMembersAttribute' on the generic parameter 'source generic parameter' of 'source method or type' don't match those on the parameter 'target parameter' of method 'target method'. The source value must declare at least the same requirements as those declared on the target location it's assigned to 
+
+- The target location declares some requirements on the type value via its `DynamicallyAccessedMembersAttribute`. Those requirements must be met by those declared on the source value also via the `DynamicallyAccessedMembersAttribute`. The source value can declare more requirements than the source if necessary.  
+
+  ```C#
+  void NeedsPublicConstructors([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type type)
+  {
+      // ...
+  }
+
+  void TestMethod<TSource>()
+  {
+      // IL2087 Trim analysis: The requirements declared via the 'DynamicallyAccessedMembersAttribute' on the generic parameter 'TSource' or 'TestMethod<TSource>()'
+      // don't match those on the parameter 'type' of method 'NeedsPublicConstructors'.
+      // The source value must declare at least the same requirements as those declared on the target location it's assigned to
+      NeedsPublicConstructors(typeof(TSource));
+  }
+  ```
+
+#### `IL2088`: Trim analysis: The requirements declared via the 'DynamicallyAccessedMembersAttribute' on the generic parameter 'source generic parameter' of 'source method or type' don't match those on the return value of method 'target method'. The source value must declare at least the same requirements as those declared on the target location it's assigned to 
+
+- The target location declares some requirements on the type value via its `DynamicallyAccessedMembersAttribute`. Those requirements must be met by those declared on the source value also via the `DynamicallyAccessedMembersAttribute`. The source value can declare more requirements than the source if necessary.  
+
+  ```C#
+  [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
+  Type TestMethod<TSource>()
+  {
+      // IL2088 Trim analysis: The requirements declared via the 'DynamicallyAccessedMembersAttribute' on the generic parameter 'TSource' or 'TestMethod<TSource>()'
+      // don't match those on the return value of method 'TestMethod'.
+      // The source value must declare at least the same requirements as those declared on the target location it's assigned to
+      return typeof(TSource);
+  }
+  ```
+
+#### `IL2089`: Trim analysis: The requirements declared via the 'DynamicallyAccessedMembersAttribute' on the generic parameter 'source generic parameter' of 'source method or type' don't match those on the field 'target field'. The source value must declare at least the same requirements as those declared on the target location it's assigned to 
+
+- The target location declares some requirements on the type value via its `DynamicallyAccessedMembersAttribute`. Those requirements must be met by those declared on the source value also via the `DynamicallyAccessedMembersAttribute`. The source value can declare more requirements than the source if necessary.  
+
+  ```C#
+  [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
+  Type _typeFieldWithRequirements;
+
+  void TestMethod<TSource>()
+  {
+      // IL2089 Trim analysis: The requirements declared via the 'DynamicallyAccessedMembersAttribute' on the generic parameter 'TSource' or 'TestMethod<TSource>()'
+      // don't match those on the field '_typeFieldWithRequirements'.
+      // The source value must declare at least the same requirements as those declared on the target location it's assigned to
+      _typeFieldWithRequirements = typeof(TSource);
+  }
+  ```
+
+#### `IL2090`: Trim analysis: The requirements declared via the 'DynamicallyAccessedMembersAttribute' on the generic parameter 'source generic parameter' of 'source method or type' don't match those on the implicit 'this' parameter of method 'target method'. The source value must declare at least the same requirements as those declared on the target location it's assigned to 
+
+- The target location declares some requirements on the type value via its `DynamicallyAccessedMembersAttribute`. Those requirements must be met by those declared on the source value also via the `DynamicallyAccessedMembersAttribute`. The source value can declare more requirements than the source if necessary.  
+
+  ```C#
+  void TestMethod<TSource>()
+  {
+      // IL2090 Trim analysis: The requirements declared via the 'DynamicallyAccessedMembersAttribute' on the generic parameter 'TSource' or 'TestMethod<TSource>()'
+      // don't match those on the implicit 'this' parameter of method 'Type.GetMethods()'.
+      // The source value must declare at least the same requirements as those declared on the target location it's assigned to
+      typeof(TSource).GetMethods(); // Type.GetMethods is annotated with DynamicallyAccessedMemberTypes.PublicMethods
+  }
+  ```
+
+#### `IL2091`: Trim analysis: The requirements declared via the 'DynamicallyAccessedMembersAttribute' on the generic parameter 'source generic parameter' of 'source method or type' don't match those on the generic parameter 'target generic parameter' of 'target method or type'. The source value must declare at least the same requirements as those declared on the target location it's assigned to 
+
+- The target location declares some requirements on the type value via its `DynamicallyAccessedMembersAttribute`. Those requirements must be met by those declared on the source value also via the `DynamicallyAccessedMembersAttribute`. The source value can declare more requirements than the source if necessary.  
+
+  ```C#
+  void NeedsPublicConstructors<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TTarget>()
+  {
+      // ...
+  }
+
+  void TestMethod<TSource>()
+  {
+      // IL2091 Trim analysis: The requirements declared via the 'DynamicallyAccessedMembersAttribute' on the generic parameter 'TSource' or 'TestMethod<TSource>()'
+      // don't match those on the generic parameter 'TTarget' of 'NeedsPublicConstructors<TTarget>()'.
+      // The source value must declare at least the same requirements as those declared on the target location it's assigned to
+      NeedsPublicConstructors<TSource>();
+  }
+  ```
+
+#### `IL2092` Trim analysis: 'DynamicallyAccessedMemberTypes' in 'DynamicallyAccessedMembersAttribute' on the parameter 'parameter' of method 'method' don't match overridden parameter 'parameter' of method 'base method'. All overridden members must have the same 'DynamicallyAccessedMembersAttribute' usage.
+
+- All overrides of a virtual method including the base method must have the same `DynamicallyAccessedMemberAttribute` usage on all it's components (return value, parameters and generic parameters).
+
+  ```C#
+  public class Base
+  {
+    public virtual void TestMethod([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] Type type) {}
+  }
+
+  public class Derived : Base
+  {
+    // IL2092: 'DynamicallyAccessedMemberTypes' in 'DynamicallyAccessedMembersAttribute' on the parameter 'type' of method 'Derived.TestMethod' don't match overridden parameter 'type' of method 'Base.TestMethod'. All overridden members must have the same 'DynamicallyAccessedMembersAttribute' usage.
+    public override void TestMethod([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)] Type type) {}
+  }
+  ```
+
+#### `IL2093` Trim analysis: 'DynamicallyAccessedMemberTypes' in 'DynamicallyAccessedMembersAttribute' on the return value of method 'method' don't match overridden return value of method 'base method'. All overridden members must have the same 'DynamicallyAccessedMembersAttribute' usage.
+
+- All overrides of a virtual method including the base method must have the same `DynamicallyAccessedMemberAttribute` usage on all it's components (return value, parameters and generic parameters).
+
+  ```C#
+  public class Base
+  {
+    [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
+    public virtual Type TestMethod() {}
+  }
+
+  public class Derived : Base
+  {
+    // IL2093: 'DynamicallyAccessedMemberTypes' in 'DynamicallyAccessedMembersAttribute' on the return value of method 'Derived.TestMethod' don't match overridden return value of method 'Base.TestMethod'. All overridden members must have the same 'DynamicallyAccessedMembersAttribute' usage.
+    [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)]
+    public override Type TestMethod() {}
+  }
+  ```
+
+#### `IL2094`: Trim analysis: 'DynamicallyAccessedMemberTypes' in 'DynamicallyAccessedMembersAttribute' on the implicit 'this' parameter of method 'method' don't match overridden implicit 'this' parameter of method 'base method'. All overridden members must have the same 'DynamicallyAccessedMembersAttribute' usage.
+
+- All overrides of a virtual method including the base method must have the same `DynamicallyAccessedMemberAttribute` usage on all it's components (return value, parameters and generic parameters).
+
+  ```C#
+  // This only works on methods in System.Type and derived classes - this is just an example
+  public class Type
+  {
+    [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
+    public virtual void TestMethod() {}
+  }
+
+  public class DerivedType : Type
+  {
+    // IL2094: 'DynamicallyAccessedMemberTypes' in 'DynamicallyAccessedMembersAttribute' on the implicit 'this' parameter of method 'DerivedType.TestMethod' don't match overridden implicit 'this' parameter of method 'Type.TestMethod'. All overridden members must have the same 'DynamicallyAccessedMembersAttribute' usage.
+    [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)]
+    public override void TestMethod() {}
+  }
+  ```
+
+#### `IL2095`: Trim analysis: 'DynamicallyAccessedMemberTypes' in 'DynamicallyAccessedMembersAttribute' on the generic parameter 'generic parameter' of 'method' don't match overridden generic parameter 'generic parameter' of 'base method'. All overridden members must have the same 'DynamicallyAccessedMembersAttribute' usage.
+
+- All overrides of a virtual method including the base method must have the same `DynamicallyAccessedMemberAttribute` usage on all it's components (return value, parameters and generic parameters).
+
+  ```C#
+  public class Base
+  {
+    public virtual void TestMethod<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] T>() {}
+  }
+
+  public class Derived : Base
+  {
+    // IL2095: 'DynamicallyAccessedMemberTypes' in 'DynamicallyAccessedMembersAttribute' on the generic parameter 'T' of method 'Derived.TestMethod<T>' don't match overridden generic parameter 'T' of method 'Base.TestMethod<T>'. All overridden members must have the same 'DynamicallyAccessedMembersAttribute' usage.
+    public override void TestMethod<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)] T>() {}
+  }
+  ```

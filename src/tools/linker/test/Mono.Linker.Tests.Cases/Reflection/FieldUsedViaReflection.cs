@@ -91,11 +91,8 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		}
 
 		[Kept]
-		[UnrecognizedReflectionAccessPattern (
-			typeof (Type), nameof (Type.GetField), new Type[] { typeof (string) },
-			"The return value of method 'Mono.Linker.Tests.Cases.Reflection.FieldUsedViaReflection.FindType()' with dynamically accessed member kinds 'None' " +
-			"is passed into the implicit 'this' parameter of method 'System.Type.GetField(String)' which requires dynamically accessed member kinds 'PublicFields'. " +
-			"To fix this add DynamicallyAccessedMembersAttribute to it and specify at least these member kinds 'PublicFields'.")]
+		[UnrecognizedReflectionAccessPattern (typeof (Type), nameof (Type.GetField), new Type[] { typeof (string) },
+			messageCode: "IL2075", message: new string[] { "FindType", "GetField" })]
 		static void TestDataFlowType ()
 		{
 			Type type = FindType ();

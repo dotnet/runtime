@@ -39,22 +39,18 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 		// Validate the error message when annotated parameter is passed to another annotated parameter
 		[UnrecognizedReflectionAccessPattern (typeof (MethodParametersDataFlow), nameof (RequirePublicConstructors), new Type[] { typeof (Type) },
-			"The parameter 'type' of method 'Mono.Linker.Tests.Cases.DataFlow.MethodParametersDataFlow.PublicParameterlessConstructorParameter(Type)' " +
-			"with dynamically accessed member kinds 'PublicParameterlessConstructor' is passed into the parameter 'type' " +
-			"of method 'Mono.Linker.Tests.Cases.DataFlow.MethodParametersDataFlow.RequirePublicConstructors(Type)' " +
-			"which requires dynamically accessed member kinds 'PublicConstructors'. " +
-			"To fix this add DynamicallyAccessedMembersAttribute to it and specify at least these member kinds 'PublicConstructors'.")]
-		[UnrecognizedReflectionAccessPattern (typeof (MethodParametersDataFlow), nameof (RequireNonPublicConstructors), new Type[] { typeof (Type) })]
+			messageCode: "IL2067", message: new string[] { "sourceType", "PublicParameterlessConstructorParameter(Type)", "type", "RequirePublicConstructors(Type)" })]
+		[UnrecognizedReflectionAccessPattern (typeof (MethodParametersDataFlow), nameof (RequireNonPublicConstructors), new Type[] { typeof (Type) }, messageCode: "IL2067")]
 		private static void PublicParameterlessConstructorParameter (
 			[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
-			Type type)
+			Type sourceType)
 		{
-			RequirePublicParameterlessConstructor (type);
-			RequirePublicConstructors (type);
-			RequireNonPublicConstructors (type);
+			RequirePublicParameterlessConstructor (sourceType);
+			RequirePublicConstructors (sourceType);
+			RequireNonPublicConstructors (sourceType);
 		}
 
-		[UnrecognizedReflectionAccessPattern (typeof (MethodParametersDataFlow), nameof (RequireNonPublicConstructors), new Type[] { typeof (Type) })]
+		[UnrecognizedReflectionAccessPattern (typeof (MethodParametersDataFlow), nameof (RequireNonPublicConstructors), new Type[] { typeof (Type) }, messageCode: "IL2067")]
 		private static void PublicConstructorsParameter (
 			[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
 			Type type)
@@ -64,8 +60,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			RequireNonPublicConstructors (type);
 		}
 
-		[UnrecognizedReflectionAccessPattern (typeof (MethodParametersDataFlow), nameof (RequirePublicParameterlessConstructor), new Type[] { typeof (Type) })]
-		[UnrecognizedReflectionAccessPattern (typeof (MethodParametersDataFlow), nameof (RequirePublicConstructors), new Type[] { typeof (Type) })]
+		[UnrecognizedReflectionAccessPattern (typeof (MethodParametersDataFlow), nameof (RequirePublicParameterlessConstructor), new Type[] { typeof (Type) }, messageCode: "IL2067")]
+		[UnrecognizedReflectionAccessPattern (typeof (MethodParametersDataFlow), nameof (RequirePublicConstructors), new Type[] { typeof (Type) }, messageCode: "IL2067")]
 		private static void NonPublicConstructorsParameter (
 			[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.NonPublicConstructors)]
 			Type type)
@@ -75,7 +71,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			RequireNonPublicConstructors (type);
 		}
 
-		[UnrecognizedReflectionAccessPattern (typeof (MethodParametersDataFlow), nameof (RequirePublicConstructors), new Type[] { typeof (Type) })]
+		[UnrecognizedReflectionAccessPattern (typeof (MethodParametersDataFlow), nameof (RequirePublicConstructors), new Type[] { typeof (Type) }, messageCode: "IL2067")]
 		private void InstanceMethod (
 			[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
 			Type type)
@@ -84,7 +80,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			RequirePublicConstructors (type);
 		}
 
-		[UnrecognizedReflectionAccessPattern (typeof (Type), "type")]
+		[UnrecognizedReflectionAccessPattern (typeof (Type), "type", messageCode: "IL2072")]
 		private void WriteToParameterOnInstanceMethod (
 			[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.NonPublicConstructors)]
 			Type type)
@@ -92,7 +88,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			type = ReturnThingsWithPublicParameterlessConstructor ();
 		}
 
-		[UnrecognizedReflectionAccessPattern (typeof (Type), "type")]
+		[UnrecognizedReflectionAccessPattern (typeof (Type), "type", messageCode: "IL2072")]
 		private static void WriteToParameterOnStaticMethod (
 			[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.NonPublicConstructors)]
 			Type type)
@@ -100,7 +96,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			type = ReturnThingsWithPublicParameterlessConstructor ();
 		}
 
-		[UnrecognizedReflectionAccessPattern (typeof (Type), "type")]
+		[UnrecognizedReflectionAccessPattern (typeof (Type), "type", messageCode: "IL2072")]
 		private void LongWriteToParameterOnInstanceMethod (
 			int a, int b, int c, int d,
 			[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.NonPublicConstructors)]
@@ -109,7 +105,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			type = ReturnThingsWithPublicParameterlessConstructor ();
 		}
 
-		[UnrecognizedReflectionAccessPattern (typeof (Type), "type")]
+		[UnrecognizedReflectionAccessPattern (typeof (Type), "type", messageCode: "IL2072")]
 		private static void LongWriteToParameterOnStaticMethod (
 			int a, int b, int c, int d,
 			[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.NonPublicConstructors)]
@@ -124,7 +120,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			return null;
 		}
 
-		[UnrecognizedReflectionAccessPattern (typeof (MethodParametersDataFlow), nameof (RequirePublicConstructors), new Type[] { typeof (Type) })]
+		[UnrecognizedReflectionAccessPattern (typeof (MethodParametersDataFlow), nameof (RequirePublicConstructors), new Type[] { typeof (Type) }, messageCode: "IL2067")]
 		private void TwoAnnotatedParameters (
 			[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
 			Type type,
@@ -137,7 +133,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			RequirePublicConstructors (type2);
 		}
 
-		[UnrecognizedReflectionAccessPattern (typeof (MethodParametersDataFlow), nameof (RequirePublicConstructors), new Type[] { typeof (Type) })]
+		[UnrecognizedReflectionAccessPattern (typeof (MethodParametersDataFlow), nameof (RequirePublicConstructors), new Type[] { typeof (Type) }, messageCode: "IL2067")]
 		private void TwoAnnotatedParametersIntoOneValue (
 			[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
 			Type type,
@@ -151,11 +147,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 		// Validate the error message for the case of unannotated method return value passed to an annotated parameter.
 		[UnrecognizedReflectionAccessPattern (typeof (MethodParametersDataFlow), nameof (RequirePublicParameterlessConstructor), new Type[] { typeof (Type) },
-			"The parameter 'type' of method 'Mono.Linker.Tests.Cases.DataFlow.MethodParametersDataFlow.NoAnnotation(Type)' " +
-			"with dynamically accessed member kinds 'None' is passed into " +
-			"the parameter 'type' of method 'Mono.Linker.Tests.Cases.DataFlow.MethodParametersDataFlow.RequirePublicParameterlessConstructor(Type)' " +
-			"which requires dynamically accessed member kinds 'PublicParameterlessConstructor'. " +
-			"To fix this add DynamicallyAccessedMembersAttribute to it and specify at least these member kinds 'PublicParameterlessConstructor'.")]
+			messageCode: "IL2067", message: new string[] { "type", "NoAnnotation(Type)", "type", "RequirePublicParameterlessConstructor(Type)" })]
 		private void NoAnnotation (Type type)
 		{
 			RequirePublicParameterlessConstructor (type);
@@ -163,10 +155,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 		// Validate error message when untracable value is passed to an annotated parameter.
 		[UnrecognizedReflectionAccessPattern (typeof (MethodParametersDataFlow), nameof (RequirePublicParameterlessConstructor), new Type[] { typeof (Type) },
-			"A value from unknown source is passed " +
-			"into the parameter 'type' of method 'Mono.Linker.Tests.Cases.DataFlow.MethodParametersDataFlow.RequirePublicParameterlessConstructor(Type)' " +
-			"which requires dynamically accessed member kinds 'PublicParameterlessConstructor'. " +
-			"It's not possible to guarantee that these requirements are met by the application.")]
+			messageCode: "IL2062", message: new string[] { "type", "RequirePublicParameterlessConstructor" })]
 		private void UnknownValue ()
 		{
 			var array = new object[1];

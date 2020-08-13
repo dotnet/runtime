@@ -65,8 +65,7 @@ namespace Mono.Linker.Dataflow
 #endif
 		}
 
-		public void RecordRecognizedPattern<T> (T accessedItem, Action mark)
-			where T : IMemberDefinition
+		public void RecordRecognizedPattern (IMemberDefinition accessedItem, Action mark)
 		{
 #if DEBUG
 			if (!_patternAnalysisAttempted)
@@ -81,7 +80,7 @@ namespace Mono.Linker.Dataflow
 				_context.ReflectionPatternRecorder.RecognizedReflectionAccessPattern (Source, Instruction, accessedItem);
 		}
 
-		public void RecordUnrecognizedPattern (string message)
+		public void RecordUnrecognizedPattern (int messageCode, string message)
 		{
 #if DEBUG
 			if (!_patternAnalysisAttempted)
@@ -91,7 +90,7 @@ namespace Mono.Linker.Dataflow
 #endif
 
 			if (ReportingEnabled)
-				_context.ReflectionPatternRecorder.UnrecognizedReflectionAccessPattern (Source, Instruction, MemberWithRequirements, message);
+				_context.ReflectionPatternRecorder.UnrecognizedReflectionAccessPattern (Source, Instruction, MemberWithRequirements, message, messageCode);
 		}
 
 		public void Dispose ()

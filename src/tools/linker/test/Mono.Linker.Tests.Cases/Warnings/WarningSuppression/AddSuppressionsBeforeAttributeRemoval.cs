@@ -10,7 +10,7 @@ namespace Mono.Linker.Tests.Cases.Warnings.WarningSuppression
 {
 	[SkipKeptItemsValidation]
 	[SetupLinkAttributesFile ("AddSuppressionsBeforeAttributeRemoval.xml")]
-	[LogDoesNotContain ("IL2006: Mono.Linker.Tests.Cases.Warnings.WarningSuppression.AddSuppressionsBeforeAttributeRemoval.Main()")]
+	[LogDoesNotContain ("IL2067: Mono.Linker.Tests.Cases.Warnings.WarningSuppression.AddSuppressionsBeforeAttributeRemoval.Main()")]
 	public class AddSuppressionsBeforeAttributeRemoval
 	{
 		public static Type TriggerUnrecognizedPattern ()
@@ -18,7 +18,7 @@ namespace Mono.Linker.Tests.Cases.Warnings.WarningSuppression
 			return typeof (AddedPseudoAttributeAttribute);
 		}
 
-		[UnconditionalSuppressMessage ("ILLinker", "IL2006")]
+		[UnconditionalSuppressMessage ("ILLinker", "IL2067")]
 		public static void Main ()
 		{
 			Expression.Call (TriggerUnrecognizedPattern (), "", Type.EmptyTypes);

@@ -7,9 +7,11 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Text;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
+using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.RequiresCapability
 {
+	[SetupLinkAttributesFile ("RequiresUnreferencedCodeCapability.attributes.xml")]
 	[SkipKeptItemsValidation]
 	public class RequiresUnreferencedCodeCapability
 	{
@@ -20,10 +22,10 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			TestRequiresOnConstructor ();
 			TestRequiresOnPropertyGetterAndSetter ();
 			TestRequiresSuppressesWarningsFromReflectionAnalysis ();
+			TestDuplicateRequiresAttribute ();
 		}
 
-		[LogContains (
-			"warning IL2026: Mono.Linker.Tests.Cases.RequiresCapability.RequiresUnreferencedCodeCapability.TestRequiresWithMessageOnlyOnMethod(): " +
+		[ExpectedWarning ("IL2026",
 			"Calling 'Mono.Linker.Tests.Cases.RequiresCapability.RequiresUnreferencedCodeCapability.RequiresWithMessageOnly()' " +
 			"which has `RequiresUnreferencedCodeAttribute` can break functionality when trimming application code. " +
 			"Message for --RequiresWithMessageOnly--.")]
@@ -37,8 +39,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 		{
 		}
 
-		[LogContains (
-			"warning IL2026: Mono.Linker.Tests.Cases.RequiresCapability.RequiresUnreferencedCodeCapability.TestRequiresWithMessageAndUrlOnMethod(): " +
+		[ExpectedWarning ("IL2026",
 			"Calling 'Mono.Linker.Tests.Cases.RequiresCapability.RequiresUnreferencedCodeCapability.RequiresWithMessageAndUrl()' " +
 			"which has `RequiresUnreferencedCodeAttribute` can break functionality when trimming application code. " +
 			"Message for --RequiresWithMessageAndUrl--. " +
@@ -71,13 +72,11 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			}
 		}
 
-		[LogContains (
-			"warning IL2026: Mono.Linker.Tests.Cases.RequiresCapability.RequiresUnreferencedCodeCapability.TestRequiresOnPropertyGetterAndSetter(): " +
+		[ExpectedWarning ("IL2026",
 			"Calling 'Mono.Linker.Tests.Cases.RequiresCapability.RequiresUnreferencedCodeCapability.get_PropertyRequires()' " +
 			"which has `RequiresUnreferencedCodeAttribute` can break functionality when trimming application code. " +
 			"Message for --getter PropertyRequires--.")]
-		[LogContains (
-			"warning IL2026: Mono.Linker.Tests.Cases.RequiresCapability.RequiresUnreferencedCodeCapability.TestRequiresOnPropertyGetterAndSetter(): " +
+		[ExpectedWarning ("IL2026",
 			"Calling 'Mono.Linker.Tests.Cases.RequiresCapability.RequiresUnreferencedCodeCapability.set_PropertyRequires(Int32)' " +
 			"which has `RequiresUnreferencedCodeAttribute` can break functionality when trimming application code. " +
 			"Message for --setter PropertyRequires--.")]
@@ -95,8 +94,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			set { }
 		}
 
-		[LogContains (
-			"warning IL2026: Mono.Linker.Tests.Cases.RequiresCapability.RequiresUnreferencedCodeCapability.TestRequiresSuppressesWarningsFromReflectionAnalysis(): " +
+		[ExpectedWarning ("IL2026",
 			"Calling 'Mono.Linker.Tests.Cases.RequiresCapability.RequiresUnreferencedCodeCapability.RequiresAndCallsOtherRequiresMethods<TPublicMethods>()' " +
 			"which has `RequiresUnreferencedCodeAttribute` can break functionality when trimming application code. " +
 			"Message for --RequiresAndCallsOtherRequiresMethods--.")]
@@ -144,5 +142,19 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 		static void MethodRequiresPublicFields<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)] T> () { }
 
 		class TestType { }
+
+		[ExpectedWarning ("IL2026", "--MethodWithDuplicateRequiresAttribute--")]
+		[LogDoesNotContain ("Message for MethodWithDuplicateRequiresAttribute from link attributes XML")]
+		static void TestDuplicateRequiresAttribute ()
+		{
+			MethodWithDuplicateRequiresAttribute ();
+		}
+
+		// The second attribute is added through link attribute XML
+		[RequiresUnreferencedCode ("Message for --MethodWithDuplicateRequiresAttribute--")]
+		[ExpectedWarning ("IL2027", "RequiresUnreferencedCodeAttribute", nameof (MethodWithDuplicateRequiresAttribute))]
+		static void MethodWithDuplicateRequiresAttribute ()
+		{
+		}
 	}
 }

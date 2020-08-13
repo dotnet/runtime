@@ -4,7 +4,7 @@ using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq.Expressions;
 
-[assembly: UnconditionalSuppressMessage ("Test", "IL2006:Suppress unrecognized reflection pattern warnings in this assembly")]
+[assembly: UnconditionalSuppressMessage ("Test", "IL2072:Suppress unrecognized reflection pattern warnings in this assembly")]
 
 namespace Mono.Linker.Tests.Cases.Warnings.WarningSuppression
 {

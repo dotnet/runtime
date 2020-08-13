@@ -150,5 +150,19 @@ namespace Mono.Linker.Tests.Extensions
 
 			return builder.ToString ();
 		}
+
+		public static object GetConstructorArgumentValue (this CustomAttribute attr, int argumentIndex)
+		{
+			return attr.ConstructorArguments[argumentIndex].Value;
+		}
+
+		public static object GetPropertyValue (this CustomAttribute attr, string propertyName)
+		{
+			foreach (var prop in attr.Properties)
+				if (prop.Name == propertyName)
+					return prop.Argument.Value;
+
+			return null;
+		}
 	}
 }

@@ -137,10 +137,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			[LogDoesNotContain ("DerivedClass.ReturnValueBaseWithoutDerivedWithout")]
 			public override Type ReturnValueBaseWithoutDerivedWithout () => null;
 
-			[LogContains (
-				"DynamicallyAccessedMemberTypes in DynamicallyAccessedMembersAttribute on return value of method 'Mono.Linker.Tests.Cases.DataFlow.VirtualMethodHierarchyDataflowAnnotationValidation.DerivedClass.ReturnValueBaseWithoutDerivedWith()' " +
-				"don't match overridden return value of method 'Mono.Linker.Tests.Cases.DataFlow.VirtualMethodHierarchyDataflowAnnotationValidation.BaseClass.ReturnValueBaseWithoutDerivedWith()'. " +
-				"All overridden members must have the same DynamicallyAccessedMembersAttribute usage.")]
+			[ExpectedWarning ("IL2093", "BaseClass.ReturnValueBaseWithoutDerivedWith", "DerivedClass.ReturnValueBaseWithoutDerivedWith")]
 			[return: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
 			public override Type ReturnValueBaseWithoutDerivedWith () => null;
 
@@ -153,10 +150,9 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 
 			// === Method parameters ===
-			[LogContains (
-				"DynamicallyAccessedMemberTypes in DynamicallyAccessedMembersAttribute on parameter 'p' of method 'Mono.Linker.Tests.Cases.DataFlow.VirtualMethodHierarchyDataflowAnnotationValidation.DerivedClass.SingleParameterBaseWithDerivedWithout(Type)' " +
-				"don't match overridden parameter 'p' of method 'Mono.Linker.Tests.Cases.DataFlow.VirtualMethodHierarchyDataflowAnnotationValidation.BaseClass.SingleParameterBaseWithDerivedWithout(Type)'. " +
-				"All overridden members must have the same DynamicallyAccessedMembersAttribute usage.")]
+			[ExpectedWarning ("IL2092",
+				"p", "Mono.Linker.Tests.Cases.DataFlow.VirtualMethodHierarchyDataflowAnnotationValidation.DerivedClass.SingleParameterBaseWithDerivedWithout(Type)",
+				"p", "Mono.Linker.Tests.Cases.DataFlow.VirtualMethodHierarchyDataflowAnnotationValidation.BaseClass.SingleParameterBaseWithDerivedWithout(Type)")]
 			public override void SingleParameterBaseWithDerivedWithout (Type p) { }
 
 			[LogDoesNotContain ("DerivedClass.SingleParameterBaseWithDerivedWith_")]
@@ -166,9 +162,9 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			{ }
 
 			[LogContains (
-				"DynamicallyAccessedMemberTypes in DynamicallyAccessedMembersAttribute on parameter 'p' of method 'Mono.Linker.Tests.Cases.DataFlow.VirtualMethodHierarchyDataflowAnnotationValidation.DerivedClass.SingleParameterBaseWithoutDerivedWith_(Type)' " +
+				"'DynamicallyAccessedMemberTypes' in 'DynamicallyAccessedMembersAttribute' on the parameter 'p' of method 'Mono.Linker.Tests.Cases.DataFlow.VirtualMethodHierarchyDataflowAnnotationValidation.DerivedClass.SingleParameterBaseWithoutDerivedWith_(Type)' " +
 				"don't match overridden parameter 'p' of method 'Mono.Linker.Tests.Cases.DataFlow.VirtualMethodHierarchyDataflowAnnotationValidation.BaseClass.SingleParameterBaseWithoutDerivedWith_(Type)'. " +
-				"All overridden members must have the same DynamicallyAccessedMembersAttribute usage.")]
+				"All overridden members must have the same 'DynamicallyAccessedMembersAttribute' usage.")]
 			public override void SingleParameterBaseWithoutDerivedWith_ (
 				[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
 				Type p)
@@ -178,9 +174,9 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			public override void SingleParameterBaseWithoutDerivedWithout (Type p) { }
 
 			[LogContains (
-				"DynamicallyAccessedMemberTypes in DynamicallyAccessedMembersAttribute on parameter 'p' of method 'Mono.Linker.Tests.Cases.DataFlow.VirtualMethodHierarchyDataflowAnnotationValidation.DerivedClass.SingleParameterBaseWithDerivedWithDifferent(Type)' " +
+				"'DynamicallyAccessedMemberTypes' in 'DynamicallyAccessedMembersAttribute' on the parameter 'p' of method 'Mono.Linker.Tests.Cases.DataFlow.VirtualMethodHierarchyDataflowAnnotationValidation.DerivedClass.SingleParameterBaseWithDerivedWithDifferent(Type)' " +
 				"don't match overridden parameter 'p' of method 'Mono.Linker.Tests.Cases.DataFlow.VirtualMethodHierarchyDataflowAnnotationValidation.BaseClass.SingleParameterBaseWithDerivedWithDifferent(Type)'. " +
-				"All overridden members must have the same DynamicallyAccessedMembersAttribute usage.")]
+				"All overridden members must have the same 'DynamicallyAccessedMembersAttribute' usage.")]
 			public override void SingleParameterBaseWithDerivedWithDifferent (
 				[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)]
 				Type p)
@@ -231,16 +227,15 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			{ }
 
 			// === Generic methods ===
-			[LogContains (
-				"DynamicallyAccessedMemberTypes in DynamicallyAccessedMembersAttribute on generic parameter 'T' from 'Mono.Linker.Tests.Cases.DataFlow.VirtualMethodHierarchyDataflowAnnotationValidation.DerivedClass.GenericBaseWithDerivedWithout<T>()' " +
-				"don't match overridden generic parameter 'T' from 'Mono.Linker.Tests.Cases.DataFlow.VirtualMethodHierarchyDataflowAnnotationValidation.BaseClass.GenericBaseWithDerivedWithout<T>()'. " +
-				"All overridden members must have the same DynamicallyAccessedMembersAttribute usage.")]
+			[ExpectedWarning ("IL2095",
+				"T", "Mono.Linker.Tests.Cases.DataFlow.VirtualMethodHierarchyDataflowAnnotationValidation.DerivedClass.GenericBaseWithDerivedWithout<T>()",
+				"T", "Mono.Linker.Tests.Cases.DataFlow.VirtualMethodHierarchyDataflowAnnotationValidation.BaseClass.GenericBaseWithDerivedWithout<T>()")]
 			public override void GenericBaseWithDerivedWithout<T> () { }
 
 			[LogContains (
-				"DynamicallyAccessedMemberTypes in DynamicallyAccessedMembersAttribute on generic parameter 'T' from 'Mono.Linker.Tests.Cases.DataFlow.VirtualMethodHierarchyDataflowAnnotationValidation.DerivedClass.GenericBaseWithoutDerivedWith<T>()' " +
-				"don't match overridden generic parameter 'T' from 'Mono.Linker.Tests.Cases.DataFlow.VirtualMethodHierarchyDataflowAnnotationValidation.BaseClass.GenericBaseWithoutDerivedWith<T>()'. " +
-				"All overridden members must have the same DynamicallyAccessedMembersAttribute usage.")]
+				"'DynamicallyAccessedMemberTypes' in 'DynamicallyAccessedMembersAttribute' on the generic parameter 'T' of 'Mono.Linker.Tests.Cases.DataFlow.VirtualMethodHierarchyDataflowAnnotationValidation.DerivedClass.GenericBaseWithoutDerivedWith<T>()' " +
+				"don't match overridden generic parameter 'T' of 'Mono.Linker.Tests.Cases.DataFlow.VirtualMethodHierarchyDataflowAnnotationValidation.BaseClass.GenericBaseWithoutDerivedWith<T>()'. " +
+				"All overridden members must have the same 'DynamicallyAccessedMembersAttribute' usage.")]
 			public override void GenericBaseWithoutDerivedWith<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicConstructors)]T> () { }
 
 			[LogDoesNotContain ("DerivedClass.GenericBaseWithDerivedWith_")]
@@ -254,9 +249,9 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			// The warning is reported on the getter (or setter), which is not ideal, but it's probably good enough for now (we don't internally track annotations
 			// on properties themselves, only on methods).
 			[LogContains (
-				"DynamicallyAccessedMemberTypes in DynamicallyAccessedMembersAttribute on return value of method 'Mono.Linker.Tests.Cases.DataFlow.VirtualMethodHierarchyDataflowAnnotationValidation.DerivedClass.get_PropertyBaseWithDerivedWithout()' " +
+				"'DynamicallyAccessedMemberTypes' in 'DynamicallyAccessedMembersAttribute' on the return value of method 'Mono.Linker.Tests.Cases.DataFlow.VirtualMethodHierarchyDataflowAnnotationValidation.DerivedClass.get_PropertyBaseWithDerivedWithout()' " +
 				"don't match overridden return value of method 'Mono.Linker.Tests.Cases.DataFlow.VirtualMethodHierarchyDataflowAnnotationValidation.BaseClass.get_PropertyBaseWithDerivedWithout()'. " +
-				"All overridden members must have the same DynamicallyAccessedMembersAttribute usage.")]
+				"All overridden members must have the same 'DynamicallyAccessedMembersAttribute' usage.")]
 			public override Type PropertyBaseWithDerivedWithout { get; }
 
 			[LogDoesNotContain ("DerivedClass.get_PropertyBaseWithDerivedWith_")]
@@ -271,14 +266,14 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 			// === RequiresUnreferencedCode ===
 			[LogContains (
-				"Presence of RequiresUnreferencedCodeAttribute on method 'Mono.Linker.Tests.Cases.DataFlow.VirtualMethodHierarchyDataflowAnnotationValidation.DerivedClass.RequiresUnreferencedCodeBaseWithDerivedWithout()' " +
+				"Presence of 'RequiresUnreferencedCodeAttribute' on method 'Mono.Linker.Tests.Cases.DataFlow.VirtualMethodHierarchyDataflowAnnotationValidation.DerivedClass.RequiresUnreferencedCodeBaseWithDerivedWithout()' " +
 				"doesn't match overridden method 'Mono.Linker.Tests.Cases.DataFlow.VirtualMethodHierarchyDataflowAnnotationValidation.BaseClass.RequiresUnreferencedCodeBaseWithDerivedWithout()'. " +
-				"All overridden methods must have RequiresUnreferencedCodeAttribute.")]
+				"All overridden methods must have 'RequiresUnreferencedCodeAttribute'.")]
 			public override void RequiresUnreferencedCodeBaseWithDerivedWithout () { }
 			[LogContains (
-				"Presence of RequiresUnreferencedCodeAttribute on method 'Mono.Linker.Tests.Cases.DataFlow.VirtualMethodHierarchyDataflowAnnotationValidation.DerivedClass.RequiresUnreferencedCodeBaseWithoutDerivedWith_()' " +
+				"Presence of 'RequiresUnreferencedCodeAttribute' on method 'Mono.Linker.Tests.Cases.DataFlow.VirtualMethodHierarchyDataflowAnnotationValidation.DerivedClass.RequiresUnreferencedCodeBaseWithoutDerivedWith_()' " +
 				"doesn't match overridden method 'Mono.Linker.Tests.Cases.DataFlow.VirtualMethodHierarchyDataflowAnnotationValidation.BaseClass.RequiresUnreferencedCodeBaseWithoutDerivedWith_()'. " +
-				"All overridden methods must have RequiresUnreferencedCodeAttribute.")]
+				"All overridden methods must have 'RequiresUnreferencedCodeAttribute'.")]
 			[RequiresUnreferencedCode ("")]
 			public override void RequiresUnreferencedCodeBaseWithoutDerivedWith_ () { }
 			[LogDoesNotContain ("DerivedClass.RequiresUnreferencedCodeBaseWithDerivedWith_")]
@@ -297,9 +292,9 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		{
 			// === Return values ===
 			[LogContains (
-				"DynamicallyAccessedMemberTypes in DynamicallyAccessedMembersAttribute on return value of method 'Mono.Linker.Tests.Cases.DataFlow.VirtualMethodHierarchyDataflowAnnotationValidation.SuperDerivedClass.ReturnValueBaseWithSuperDerivedWithout()' " +
+				"'DynamicallyAccessedMemberTypes' in 'DynamicallyAccessedMembersAttribute' on the return value of method 'Mono.Linker.Tests.Cases.DataFlow.VirtualMethodHierarchyDataflowAnnotationValidation.SuperDerivedClass.ReturnValueBaseWithSuperDerivedWithout()' " +
 				"don't match overridden return value of method 'Mono.Linker.Tests.Cases.DataFlow.VirtualMethodHierarchyDataflowAnnotationValidation.BaseClass.ReturnValueBaseWithSuperDerivedWithout()'. " +
-				"All overridden members must have the same DynamicallyAccessedMembersAttribute usage.")]
+				"All overridden members must have the same 'DynamicallyAccessedMembersAttribute' usage.")]
 			public override Type ReturnValueBaseWithSuperDerivedWithout () => null;
 
 			// === RequiresUnreferencedCode ===
@@ -566,9 +561,9 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		class BaseImplementsInterfaceViaDerived
 		{
 			[LogContains (
-				"DynamicallyAccessedMemberTypes in DynamicallyAccessedMembersAttribute on return value of method 'Mono.Linker.Tests.Cases.DataFlow.VirtualMethodHierarchyDataflowAnnotationValidation.BaseImplementsInterfaceViaDerived.ReturnValueBaseWithInterfaceWithout()' " +
+				"'DynamicallyAccessedMemberTypes' in 'DynamicallyAccessedMembersAttribute' on the return value of method 'Mono.Linker.Tests.Cases.DataFlow.VirtualMethodHierarchyDataflowAnnotationValidation.BaseImplementsInterfaceViaDerived.ReturnValueBaseWithInterfaceWithout()' " +
 				"don't match overridden return value of method 'Mono.Linker.Tests.Cases.DataFlow.VirtualMethodHierarchyDataflowAnnotationValidation.IBaseImplementedInterface.ReturnValueBaseWithInterfaceWithout()'. " +
-				"All overridden members must have the same DynamicallyAccessedMembersAttribute usage.")]
+				"All overridden members must have the same 'DynamicallyAccessedMembersAttribute' usage.")]
 			[return: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
 			public virtual Type ReturnValueBaseWithInterfaceWithout () => null;
 
@@ -615,10 +610,9 @@ namespace System
 
 	class VirtualMethodHierarchyDataflowAnnotationValidationTypeTestDerived : VirtualMethodHierarchyDataflowAnnotationValidationTypeTestBase
 	{
-		[LogContains (
-			"DynamicallyAccessedMemberTypes in DynamicallyAccessedMembersAttribute on implicit 'this' parameter of method 'System.VirtualMethodHierarchyDataflowAnnotationValidationTypeTestDerived.ThisBaseWithDerivedWithout()' " +
-			"don't match overridden implicit 'this' parameter of method 'System.VirtualMethodHierarchyDataflowAnnotationValidationTypeTestBase.ThisBaseWithDerivedWithout()'. " +
-			"All overridden members must have the same DynamicallyAccessedMembersAttribute usage.")]
+		[ExpectedWarning ("IL2094",
+			"System.VirtualMethodHierarchyDataflowAnnotationValidationTypeTestDerived.ThisBaseWithDerivedWithout()",
+			"System.VirtualMethodHierarchyDataflowAnnotationValidationTypeTestBase.ThisBaseWithDerivedWithout()")]
 		public override void ThisBaseWithDerivedWithout () { }
 
 		[LogDoesNotContain ("VirtualMethodHierarchyDataflowAnnotationValidationTypeTestDerived.ThisBaseWithDerivedWith_")]

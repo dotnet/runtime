@@ -42,10 +42,10 @@ namespace Mono.Linker
 			// Do nothing - there's no logging for successfully recognized patterns
 		}
 
-		public void UnrecognizedReflectionAccessPattern (IMemberDefinition source, Instruction sourceInstruction, IMetadataTokenProvider accessedItem, string message)
+		public void UnrecognizedReflectionAccessPattern (IMemberDefinition source, Instruction sourceInstruction, IMetadataTokenProvider accessedItem, string message, int messageCode)
 		{
 			var origin = new MessageOrigin (source, sourceInstruction?.Offset);
-			_context.LogWarning (message, 2006, origin, MessageSubCategory.TrimAnalysis);
+			_context.LogWarning (message, messageCode, origin, MessageSubCategory.TrimAnalysis);
 		}
 	}
 }

@@ -10,10 +10,12 @@
     </type>
   </assembly>
   <assembly fullname="test, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null">
+    <!-- IL2049 -->
     <type fullname="Mono.Linker.Tests.Cases.LinkAttributes.TestRemoveAttribute">
       <attribute internal="RemoveAttributeInstances"/>
       <attribute internal="InvalidInternal"/>
     </type>
+    <!-- IL2048 -->
     <type fullname="Mono.Linker.Tests.Cases.LinkAttributes.LinkerAttributeRemoval">
       <method signature="methodWithCustomAttribute (System.String)">
         <attribute internal="RemoveAttributeInstances"/>

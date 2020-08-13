@@ -5,10 +5,6 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.DynamicDependencies
 {
-	[LogContains ("IL2037: Mono.Linker.Tests.Cases.DynamicDependencies.DynamicDependencyMethod.B.Broken(): No members were resolved for 'MissingMethod'.")]
-	[LogContains ("IL2037: Mono.Linker.Tests.Cases.DynamicDependencies.DynamicDependencyMethod.B.Broken(): No members were resolved for 'Dependency2``1(``0,System.Int32,System.Object)'.")]
-	[LogContains ("IL2037: Mono.Linker.Tests.Cases.DynamicDependencies.DynamicDependencyMethod.B.Broken(): No members were resolved for '#ctor()'.")]
-	[LogContains ("IL2037: Mono.Linker.Tests.Cases.DynamicDependencies.DynamicDependencyMethod.B.Broken(): No members were resolved for '#cctor()'.")]
 	class DynamicDependencyMethod
 	{
 		public static void Main ()
@@ -61,11 +57,24 @@ namespace Mono.Linker.Tests.Cases.DynamicDependencies
 			}
 
 			[Kept]
+
+			[ExpectedWarning ("IL2037", "MissingMethod")]
 			[DynamicDependency ("MissingMethod", typeof (C))]
+
+			[ExpectedWarning ("IL2037", "Dependency2``1(``0,System.Int32,System.Object)")]
 			[DynamicDependency ("Dependency2``1(``0,System.Int32,System.Object)", typeof (C))]
+
+			[ExpectedWarning ("IL2037", "''")]
 			[DynamicDependency ("")]
+
+			[ExpectedWarning ("IL2037", "#ctor()")]
 			[DynamicDependency ("#ctor()", typeof (NestedStruct))]
+
+			[ExpectedWarning ("IL2037", "#cctor()")]
 			[DynamicDependency ("#cctor()", typeof (C))]
+
+			[ExpectedWarning ("IL2036", "NonExistentType")]
+			[DynamicDependency ("method", "NonExistentType", "test")]
 			public static void Broken ()
 			{
 			}

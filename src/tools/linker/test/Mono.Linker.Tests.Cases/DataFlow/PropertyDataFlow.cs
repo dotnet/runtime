@@ -43,7 +43,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicConstructors)]
 		static Type StaticPropertyWithPublicConstructor { get; set; }
 
-		[UnrecognizedReflectionAccessPattern (typeof (PropertyDataFlow), nameof (RequireNonPublicConstructors), new Type[] { typeof (Type) })]
+		[UnrecognizedReflectionAccessPattern (typeof (PropertyDataFlow), nameof (RequireNonPublicConstructors), new Type[] { typeof (Type) }, messageCode: "IL2072")]
 		private void ReadFromInstanceProperty ()
 		{
 			RequirePublicParameterlessConstructor (PropertyWithPublicConstructor);
@@ -52,7 +52,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			RequireNothing (PropertyWithPublicConstructor);
 		}
 
-		[UnrecognizedReflectionAccessPattern (typeof (PropertyDataFlow), nameof (RequireNonPublicConstructors), new Type[] { typeof (Type) })]
+		[UnrecognizedReflectionAccessPattern (typeof (PropertyDataFlow), nameof (RequireNonPublicConstructors), new Type[] { typeof (Type) }, messageCode: "IL2072")]
 		private void ReadFromStaticProperty ()
 		{
 			RequirePublicParameterlessConstructor (StaticPropertyWithPublicConstructor);
@@ -61,9 +61,9 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			RequireNothing (StaticPropertyWithPublicConstructor);
 		}
 
-		[UnrecognizedReflectionAccessPattern (typeof (PropertyDataFlow), "set_" + nameof (PropertyWithPublicConstructor), new Type[] { typeof (Type) })]
-		[UnrecognizedReflectionAccessPattern (typeof (PropertyDataFlow), "set_" + nameof (PropertyWithPublicConstructor), new Type[] { typeof (Type) })]
-		[UnrecognizedReflectionAccessPattern (typeof (PropertyDataFlow), "set_" + nameof (PropertyWithPublicConstructor), new Type[] { typeof (Type) })]
+		[UnrecognizedReflectionAccessPattern (typeof (PropertyDataFlow), "set_" + nameof (PropertyWithPublicConstructor), new Type[] { typeof (Type) }, messageCode: "IL2072")]
+		[UnrecognizedReflectionAccessPattern (typeof (PropertyDataFlow), "set_" + nameof (PropertyWithPublicConstructor), new Type[] { typeof (Type) }, messageCode: "IL2072")]
+		[UnrecognizedReflectionAccessPattern (typeof (PropertyDataFlow), "set_" + nameof (PropertyWithPublicConstructor), new Type[] { typeof (Type) }, messageCode: "IL2072")]
 		private void WriteToInstanceProperty ()
 		{
 			PropertyWithPublicConstructor = GetTypeWithPublicParameterlessConstructor ();
@@ -72,9 +72,9 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			PropertyWithPublicConstructor = GetUnkownType ();
 		}
 
-		[UnrecognizedReflectionAccessPattern (typeof (PropertyDataFlow), "set_" + nameof (StaticPropertyWithPublicConstructor), new Type[] { typeof (Type) })]
-		[UnrecognizedReflectionAccessPattern (typeof (PropertyDataFlow), "set_" + nameof (StaticPropertyWithPublicConstructor), new Type[] { typeof (Type) })]
-		[UnrecognizedReflectionAccessPattern (typeof (PropertyDataFlow), "set_" + nameof (StaticPropertyWithPublicConstructor), new Type[] { typeof (Type) })]
+		[UnrecognizedReflectionAccessPattern (typeof (PropertyDataFlow), "set_" + nameof (StaticPropertyWithPublicConstructor), new Type[] { typeof (Type) }, messageCode: "IL2072")]
+		[UnrecognizedReflectionAccessPattern (typeof (PropertyDataFlow), "set_" + nameof (StaticPropertyWithPublicConstructor), new Type[] { typeof (Type) }, messageCode: "IL2072")]
+		[UnrecognizedReflectionAccessPattern (typeof (PropertyDataFlow), "set_" + nameof (StaticPropertyWithPublicConstructor), new Type[] { typeof (Type) }, messageCode: "IL2072")]
 		private void WriteToStaticProperty ()
 		{
 			StaticPropertyWithPublicConstructor = GetTypeWithPublicParameterlessConstructor ();
@@ -107,7 +107,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				return _fieldWithPublicConstructors;
 			}
 
-			[UnrecognizedReflectionAccessPattern (typeof (PropertyDataFlow), nameof (_fieldWithPublicConstructors))]
+			[UnrecognizedReflectionAccessPattern (typeof (PropertyDataFlow), nameof (_fieldWithPublicConstructors),
+				messageCode: "IL2069", message: new string[] { "value", "set_" + nameof (PropertyPublicParameterlessConstructorWithExplicitAccessors), nameof (_fieldWithPublicConstructors) })]
 			[param: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
 			set {
 				_fieldWithPublicConstructors = value;
@@ -116,13 +117,16 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 		Type PropertyNonPublicConstructorsWithExplicitAccessors {
 			[UnrecognizedReflectionAccessPattern (typeof (PropertyDataFlow), "get_" + nameof (PropertyNonPublicConstructorsWithExplicitAccessors),
-				new Type[] { }, returnType: typeof (Type))]
+				new Type[] { }, returnType: typeof (Type), messageCode: "IL2078", message: new string[] {
+					nameof (_fieldWithPublicConstructors),
+					"get_" + nameof (PropertyNonPublicConstructorsWithExplicitAccessors)
+				})]
 			[return: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.NonPublicConstructors)]
 			get {
 				return _fieldWithPublicConstructors;
 			}
 
-			[UnrecognizedReflectionAccessPattern (typeof (PropertyDataFlow), nameof (_fieldWithPublicConstructors))]
+			[UnrecognizedReflectionAccessPattern (typeof (PropertyDataFlow), nameof (_fieldWithPublicConstructors), messageCode: "IL2069")]
 			[param: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.NonPublicConstructors)]
 			set {
 				_fieldWithPublicConstructors = value;
@@ -143,7 +147,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		class TestAutomaticPropagationType
 		{
 			// Fully implicit property should work
-			[UnrecognizedReflectionAccessPattern (typeof (TestAutomaticPropagationType), "set_" + nameof (ImplicitProperty), new Type[] { typeof (Type) })]
+			[UnrecognizedReflectionAccessPattern (typeof (TestAutomaticPropagationType), "set_" + nameof (ImplicitProperty), new Type[] { typeof (Type) }, messageCode: "IL2072")]
 			public void TestImplicitProperty ()
 			{
 				RequirePublicConstructors (ImplicitProperty);
@@ -156,7 +160,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 
 			// Simple getter is not enough - we do detect the field, but we require the field to be compiler generated for this to work
-			[UnrecognizedReflectionAccessPattern (typeof (PropertyDataFlow), nameof (RequirePublicConstructors), new Type[] { typeof (Type) })]
+			[UnrecognizedReflectionAccessPattern (typeof (PropertyDataFlow), nameof (RequirePublicConstructors), new Type[] { typeof (Type) }, messageCode: "IL2077")]
 			// Make sure we don't warn about the field in context of property annotation propagation.
 			[LogDoesNotContain ("Could not find a unique backing field for property 'System.Type Mono.Linker.Tests.Cases.DataFlow.PropertyDataFlow/TestAutomaticPropagationType::PropertyWithSimpleGetter()'")]
 			public void TestPropertyWithSimpleGetter ()
@@ -169,7 +173,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicConstructors)]
 			static Type PropertyWithSimpleGetter {
-				[UnrecognizedReflectionAccessPattern (typeof (TestAutomaticPropagationType), "get_" + nameof (PropertyWithSimpleGetter), new Type[] { }, returnType: typeof (Type))]
+				[UnrecognizedReflectionAccessPattern (typeof (TestAutomaticPropagationType), "get_" + nameof (PropertyWithSimpleGetter), new Type[] { }, returnType: typeof (Type), messageCode: "IL2078")]
 				get {
 					return PropertyWithSimpleGetter_Field;
 				}
@@ -193,7 +197,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				}
 			}
 
-			[UnrecognizedReflectionAccessPattern (typeof (PropertyDataFlow), nameof (RequirePublicConstructors), new Type[] { typeof (Type) })]
+			[UnrecognizedReflectionAccessPattern (typeof (PropertyDataFlow), nameof (RequirePublicConstructors), new Type[] { typeof (Type) }, messageCode: "IL2077")]
 			// Make sure we don't warn about the field in context of property annotation propagation.
 			[LogDoesNotContain ("Could not find a unique backing field for property 'System.Type Mono.Linker.Tests.Cases.DataFlow.PropertyDataFlow/TestAutomaticPropagationType::InstancePropertyWithStaticField()'")]
 			public void TestInstancePropertyWithStaticField ()
@@ -215,10 +219,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				}
 			}
 
-			[LogContains ("Could not find a unique backing field for property 'System.Type Mono.Linker.Tests.Cases.DataFlow.PropertyDataFlow/TestAutomaticPropagationType::PropertyWithDifferentBackingFields()' " +
-				"to propagate DynamicallyAccessedMembersAttribute. " +
-				"The backing fields from getter 'System.Type Mono.Linker.Tests.Cases.DataFlow.PropertyDataFlow/TestAutomaticPropagationType::PropertyWithDifferentBackingFields_GetterField' " +
-				"and setter 'System.Type Mono.Linker.Tests.Cases.DataFlow.PropertyDataFlow/TestAutomaticPropagationType::PropertyWithDifferentBackingFields_SetterField' are not the same.")]
 			public void TestPropertyWithDifferentBackingFields ()
 			{
 				_ = PropertyWithDifferentBackingFields;
@@ -230,6 +230,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			[CompilerGenerated]
 			private Type PropertyWithDifferentBackingFields_SetterField;
 
+			[ExpectedWarning ("IL2042",
+				"System.Type Mono.Linker.Tests.Cases.DataFlow.PropertyDataFlow/TestAutomaticPropagationType::PropertyWithDifferentBackingFields()")]
 			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicConstructors)]
 			Type PropertyWithDifferentBackingFields {
 				get {
@@ -241,23 +243,24 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				}
 			}
 
-			[LogContains ("Trying to propagate DynamicallyAccessedMemberAttribute from property 'System.Type Mono.Linker.Tests.Cases.DataFlow.PropertyDataFlow/TestAutomaticPropagationType::PropertyWithExistingAttributes()' to its field 'System.Type Mono.Linker.Tests.Cases.DataFlow.PropertyDataFlow/TestAutomaticPropagationType::PropertyWithExistingAttributes_Field', but it already has such attribute.")]
-			[LogContains ("Trying to propagate DynamicallyAccessedMemberAttribute from property 'System.Type Mono.Linker.Tests.Cases.DataFlow.PropertyDataFlow/TestAutomaticPropagationType::PropertyWithExistingAttributes()' to its setter 'Mono.Linker.Tests.Cases.DataFlow.PropertyDataFlow.TestAutomaticPropagationType.set_PropertyWithExistingAttributes(Type)', but it already has such attribute on the 'value' parameter.")]
-			[LogContains ("Trying to propagate DynamicallyAccessedMemberAttribute from property 'System.Type Mono.Linker.Tests.Cases.DataFlow.PropertyDataFlow/TestAutomaticPropagationType::PropertyWithExistingAttributes()' to its getter 'Mono.Linker.Tests.Cases.DataFlow.PropertyDataFlow.TestAutomaticPropagationType.get_PropertyWithExistingAttributes()', but it already has such attribute on the return value.")]
 			public void TestPropertyWithExistingAttributes ()
 			{
 				_ = PropertyWithExistingAttributes;
 				PropertyWithExistingAttributes = null;
 			}
 
+			[ExpectedWarning ("IL2056", "PropertyWithExistingAttributes", "PropertyWithExistingAttributes_Field")]
 			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicConstructors)]
 			[CompilerGenerated]
 			Type PropertyWithExistingAttributes_Field;
 
 			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicConstructors)]
 			Type PropertyWithExistingAttributes {
+				[ExpectedWarning ("IL2043", "PropertyWithExistingAttributes", "get_PropertyWithExistingAttributes")]
 				[return: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicConstructors)]
 				get { return PropertyWithExistingAttributes_Field; }
+
+				[ExpectedWarning ("IL2043", "PropertyWithExistingAttributes", "set_PropertyWithExistingAttributes")]
 				[param: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicConstructors)]
 				set { PropertyWithExistingAttributes_Field = value; }
 			}

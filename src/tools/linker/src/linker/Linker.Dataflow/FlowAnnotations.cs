@@ -2,7 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using Mono.Cecil;
 using Mono.Cecil.Cil;
@@ -101,7 +103,7 @@ namespace Mono.Linker.Dataflow
 			return attributeType.Name == "DynamicallyAccessedMembersAttribute" && attributeType.Namespace == "System.Diagnostics.CodeAnalysis";
 		}
 
-		DynamicallyAccessedMemberTypes GetMemberTypesForDynamicallyAccessedMemberAttribute (ICustomAttributeProvider provider, IMemberDefinition locationMember = null)
+		DynamicallyAccessedMemberTypes GetMemberTypesForDynamicallyAccessedMembersAttribute (ICustomAttributeProvider provider, IMemberDefinition locationMember = null)
 		{
 			if (!_context.CustomAttributes.HasCustomAttributes (provider))
 				return DynamicallyAccessedMemberTypes.None;
@@ -110,10 +112,10 @@ namespace Mono.Linker.Dataflow
 					continue;
 				if (attribute.ConstructorArguments.Count == 1)
 					return (DynamicallyAccessedMemberTypes) (int) attribute.ConstructorArguments[0].Value;
-				else if (attribute.ConstructorArguments.Count == 0)
-					_context.LogWarning ($"DynamicallyAccessedMembersAttribute was specified but no argument was proportioned", 2020, locationMember ?? (provider as IMemberDefinition));
 				else
-					_context.LogWarning ($"DynamicallyAccessedMembersAttribute was specified but there is more than one argument", 2022, locationMember ?? (provider as IMemberDefinition));
+					_context.LogWarning (
+						$"Attribute 'System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute' doesn't have the required number of parameters specified",
+						2028, locationMember ?? (provider as IMemberDefinition));
 			}
 			return DynamicallyAccessedMemberTypes.None;
 		}
@@ -128,7 +130,7 @@ namespace Mono.Linker.Dataflow
 					if (!IsTypeInterestingForDataflow (field.FieldType))
 						continue;
 
-					DynamicallyAccessedMemberTypes annotation = GetMemberTypesForDynamicallyAccessedMemberAttribute (field);
+					DynamicallyAccessedMemberTypes annotation = GetMemberTypesForDynamicallyAccessedMembersAttribute (field);
 					if (annotation == DynamicallyAccessedMemberTypes.None) {
 						continue;
 					}
@@ -148,7 +150,7 @@ namespace Mono.Linker.Dataflow
 					// IL space assigns index 0 to the `this` parameter on instance methods.
 
 
-					DynamicallyAccessedMemberTypes methodMemberTypes = GetMemberTypesForDynamicallyAccessedMemberAttribute (method);
+					DynamicallyAccessedMemberTypes methodMemberTypes = GetMemberTypesForDynamicallyAccessedMembersAttribute (method);
 
 					int offset;
 					if (method.HasImplicitThis ()) {
@@ -161,12 +163,16 @@ namespace Mono.Linker.Dataflow
 								paramAnnotations[0] = methodMemberTypes;
 							}
 						} else if (methodMemberTypes != DynamicallyAccessedMemberTypes.None) {
-							_context.LogWarning ($"The DynamicallyAccessedMembersAttribute is only allowed on method parameters, return value or generic parameters.", 2041, method);
+							_context.LogWarning (
+								$"The 'DynamicallyAccessedMembersAttribute' is not allowed on methods. It is allowed on method return value or method parameters though.",
+								2041, method, subcategory: MessageSubCategory.TrimAnalysis);
 						}
 					} else {
 						offset = 0;
 						if (methodMemberTypes != DynamicallyAccessedMemberTypes.None) {
-							_context.LogWarning ($"The DynamicallyAccessedMembersAttribute is only allowed on method parameters, return value or generic parameters.", 2041, method);
+							_context.LogWarning (
+								$"The 'DynamicallyAccessedMembersAttribute' is not allowed on methods. It is allowed on method return value or method parameters though.",
+								2041, method, subcategory: MessageSubCategory.TrimAnalysis);
 						}
 					}
 
@@ -175,7 +181,7 @@ namespace Mono.Linker.Dataflow
 							continue;
 						}
 
-						DynamicallyAccessedMemberTypes pa = GetMemberTypesForDynamicallyAccessedMemberAttribute (method.Parameters[i], method);
+						DynamicallyAccessedMemberTypes pa = GetMemberTypesForDynamicallyAccessedMembersAttribute (method.Parameters[i], method);
 						if (pa == DynamicallyAccessedMemberTypes.None) {
 							continue;
 						}
@@ -187,13 +193,13 @@ namespace Mono.Linker.Dataflow
 					}
 
 					DynamicallyAccessedMemberTypes returnAnnotation = IsTypeInterestingForDataflow (method.ReturnType) ?
-						GetMemberTypesForDynamicallyAccessedMemberAttribute (method.MethodReturnType, method) : DynamicallyAccessedMemberTypes.None;
+						GetMemberTypesForDynamicallyAccessedMembersAttribute (method.MethodReturnType, method) : DynamicallyAccessedMemberTypes.None;
 
 					DynamicallyAccessedMemberTypes[] genericParameterAnnotations = null;
 					if (method.HasGenericParameters) {
 						for (int genericParameterIndex = 0; genericParameterIndex < method.GenericParameters.Count; genericParameterIndex++) {
 							var genericParameter = method.GenericParameters[genericParameterIndex];
-							var annotation = GetMemberTypesForDynamicallyAccessedMemberAttribute (genericParameter, method);
+							var annotation = GetMemberTypesForDynamicallyAccessedMembersAttribute (genericParameter, method);
 							if (annotation != DynamicallyAccessedMemberTypes.None) {
 								if (genericParameterAnnotations == null)
 									genericParameterAnnotations = new DynamicallyAccessedMemberTypes[method.GenericParameters.Count];
@@ -229,7 +235,7 @@ namespace Mono.Linker.Dataflow
 						continue;
 					}
 
-					DynamicallyAccessedMemberTypes annotation = GetMemberTypesForDynamicallyAccessedMemberAttribute (property);
+					DynamicallyAccessedMemberTypes annotation = GetMemberTypesForDynamicallyAccessedMembersAttribute (property);
 					if (annotation == DynamicallyAccessedMemberTypes.None) {
 						continue;
 					}
@@ -250,7 +256,9 @@ namespace Mono.Linker.Dataflow
 						}
 
 						if (annotatedMethods.Any (a => a.Method == setMethod)) {
-							_context.LogWarning ($"Trying to propagate DynamicallyAccessedMemberAttribute from property '{property.FullName}' to its setter '{setMethod.GetDisplayName ()}', but it already has such attribute on the 'value' parameter.", 2043, setMethod);
+							_context.LogWarning (
+								$"'DynamicallyAccessedMembersAttribute' on property '{property.GetDisplayName ()}' conflicts with the same attribute on its accessor '{setMethod.GetDisplayName ()}'.",
+								2043, setMethod, subcategory: MessageSubCategory.TrimAnalysis);
 						} else {
 							int offset = setMethod.HasImplicitThis () ? 1 : 0;
 							if (setMethod.Parameters.Count > 0) {
@@ -277,7 +285,8 @@ namespace Mono.Linker.Dataflow
 						}
 
 						if (annotatedMethods.Any (a => a.Method == getMethod)) {
-							_context.LogWarning ($"Trying to propagate DynamicallyAccessedMemberAttribute from property '{property.FullName}' to its getter '{getMethod.GetDisplayName ()}', but it already has such attribute on the return value.",
+							_context.LogWarning (
+								$"'DynamicallyAccessedMembersAttribute' on property '{property.GetDisplayName ()}' conflicts with the same attribute on its accessor '{getMethod.GetDisplayName ()}'.",
 								2043, getMethod, subcategory: MessageSubCategory.TrimAnalysis);
 						} else {
 							annotatedMethods.Add (new MethodAnnotations (getMethod, null, annotation, null));
@@ -287,7 +296,9 @@ namespace Mono.Linker.Dataflow
 					FieldDefinition backingField;
 					if (backingFieldFromGetter != null && backingFieldFromSetter != null &&
 						backingFieldFromGetter != backingFieldFromSetter) {
-						_context.LogWarning ($"Could not find a unique backing field for property '{property.FullName}' to propagate DynamicallyAccessedMembersAttribute. The backing fields from getter '{backingFieldFromGetter.FullName}' and setter '{backingFieldFromSetter.FullName}' are not the same.", 2042, property);
+						_context.LogWarning (
+							$"Could not find a unique backing field for property '{property.GetDisplayName ()}' to propagate 'DynamicallyAccessedMembersAttribute'.",
+							2042, property, subcategory: MessageSubCategory.TrimAnalysis);
 						backingField = null;
 					} else {
 						backingField = backingFieldFromGetter ?? backingFieldFromSetter;
@@ -295,8 +306,9 @@ namespace Mono.Linker.Dataflow
 
 					if (backingField != null) {
 						if (annotatedFields.Any (a => a.Field == backingField)) {
-							_context.LogWarning ($"Trying to propagate DynamicallyAccessedMemberAttribute from property '{property.FullName}' to its field '{backingField}', but it already has such attribute.",
-								2043, backingField, subcategory: MessageSubCategory.TrimAnalysis);
+							_context.LogWarning (
+								$"'DynamicallyAccessedMemberAttribute' on property '{property.GetDisplayName ()}' conflicts with the same attribute on its backing field '{backingField.GetDisplayName ()}'.",
+								2056, backingField, subcategory: MessageSubCategory.TrimAnalysis);
 						} else {
 							annotatedFields.Add (new FieldAnnotation (backingField, annotation));
 						}
@@ -308,7 +320,7 @@ namespace Mono.Linker.Dataflow
 			if (type.HasGenericParameters) {
 				for (int genericParameterIndex = 0; genericParameterIndex < type.GenericParameters.Count; genericParameterIndex++) {
 					var genericParameter = type.GenericParameters[genericParameterIndex];
-					var annotation = GetMemberTypesForDynamicallyAccessedMemberAttribute (genericParameter, type);
+					var annotation = GetMemberTypesForDynamicallyAccessedMembersAttribute (genericParameter, type);
 					if (annotation != DynamicallyAccessedMemberTypes.None) {
 						if (typeGenericParameterAnnotations == null)
 							typeGenericParameterAnnotations = new DynamicallyAccessedMemberTypes[type.GenericParameters.Count];
@@ -455,12 +467,43 @@ namespace Mono.Linker.Dataflow
 
 		void LogValidationWarning (IMetadataTokenProvider provider, IMetadataTokenProvider baseProvider, IMemberDefinition origin)
 		{
-			_context.LogWarning (
-				$"DynamicallyAccessedMemberTypes in DynamicallyAccessedMembersAttribute on {DiagnosticUtilities.GetMetadataTokenDescriptionForErrorMessage (provider)} " +
-				$"don't match overridden {DiagnosticUtilities.GetMetadataTokenDescriptionForErrorMessage (baseProvider)}. " +
-				$"All overridden members must have the same DynamicallyAccessedMembersAttribute usage.",
-				2047,
-				origin);
+			Debug.Assert (provider.GetType () == baseProvider.GetType ());
+			Debug.Assert (!(provider is GenericParameter genericParameter) || genericParameter.DeclaringMethod != null);
+			switch (provider) {
+			case ParameterDefinition parameterDefinition:
+				var baseParameterDefinition = (ParameterDefinition) baseProvider;
+				_context.LogWarning (
+					$"'DynamicallyAccessedMemberTypes' in 'DynamicallyAccessedMembersAttribute' on the parameter '{DiagnosticUtilities.GetParameterNameForErrorMessage (parameterDefinition)}' of method '{DiagnosticUtilities.GetMethodSignatureDisplayName (parameterDefinition.Method)}' " +
+					$"don't match overridden parameter '{DiagnosticUtilities.GetParameterNameForErrorMessage (baseParameterDefinition)}' of method '{DiagnosticUtilities.GetMethodSignatureDisplayName (baseParameterDefinition.Method)}'. " +
+					$"All overridden members must have the same 'DynamicallyAccessedMembersAttribute' usage.",
+					2092, origin, subcategory: MessageSubCategory.TrimAnalysis);
+				break;
+			case MethodReturnType methodReturnType:
+				_context.LogWarning (
+					$"'DynamicallyAccessedMemberTypes' in 'DynamicallyAccessedMembersAttribute' on the return value of method '{DiagnosticUtilities.GetMethodSignatureDisplayName (methodReturnType.Method)}' " +
+					$"don't match overridden return value of method '{DiagnosticUtilities.GetMethodSignatureDisplayName (((MethodReturnType) baseProvider).Method)}'. " +
+					$"All overridden members must have the same 'DynamicallyAccessedMembersAttribute' usage.",
+					2093, origin, subcategory: MessageSubCategory.TrimAnalysis);
+				break;
+			// No fields - it's not possible to have a virtual field and override it
+			case MethodDefinition methodDefinition:
+				_context.LogWarning (
+					$"'DynamicallyAccessedMemberTypes' in 'DynamicallyAccessedMembersAttribute' on the implicit 'this' parameter of method '{DiagnosticUtilities.GetMethodSignatureDisplayName (methodDefinition)}' " +
+					$"don't match overridden implicit 'this' parameter of method '{DiagnosticUtilities.GetMethodSignatureDisplayName ((MethodDefinition) baseProvider)}'. " +
+					$"All overridden members must have the same 'DynamicallyAccessedMembersAttribute' usage.",
+					2094, origin, subcategory: MessageSubCategory.TrimAnalysis);
+				break;
+			case GenericParameter genericParameterOverride:
+				var genericParameterBase = (GenericParameter) baseProvider;
+				_context.LogWarning (
+					$"'DynamicallyAccessedMemberTypes' in 'DynamicallyAccessedMembersAttribute' on the generic parameter '{genericParameterOverride.Name}' of '{DiagnosticUtilities.GetGenericParameterDeclaringMemberDisplayName (genericParameterOverride)}' " +
+					$"don't match overridden generic parameter '{genericParameterBase.Name}' of '{DiagnosticUtilities.GetGenericParameterDeclaringMemberDisplayName (genericParameterBase)}'. " +
+					$"All overridden members must have the same 'DynamicallyAccessedMembersAttribute' usage.",
+					2095, origin, subcategory: MessageSubCategory.TrimAnalysis);
+				break;
+			default:
+				throw new NotImplementedException ($"Unsupported provider type{provider.GetType ()}");
+			}
 		}
 
 		readonly struct TypeAnnotations

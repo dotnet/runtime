@@ -1,0 +1,12 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<linker>
+  <assembly fullname="test, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null">
+    <type fullname="Mono.Linker.Tests.Cases.RequiresCapability.RequiresUnreferencedCodeCapability">
+      <method name="MethodWithDuplicateRequiresAttribute">
+        <attribute fullname="System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute">
+          <argument>Message for MethodWithDuplicateRequiresAttribute from link attributes XML</argument>
+        </attribute>
+      </method>
+    </type>
+  </assembly>
+</linker>
