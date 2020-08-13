@@ -211,6 +211,9 @@ namespace System.Text.Json
         {
             parseData = default;
 
+            // too short datetime
+            Debug.Assert(source.Length >= 10);
+
             // Parse the calendar date
             // -----------------------
             // ISO 8601-1:2019 5.2.2.1b "Calendar date complete extended format"
