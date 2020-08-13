@@ -305,6 +305,9 @@ namespace System.Net.Http.Headers
 
         #region IEnumerable<KeyValuePair<string, IEnumerable<string>>> Members
 
+        /// <summary>
+        /// Returns a <see cref="HttpHeadersNonValidated"/> type enumerating headers' raw values without validation.
+        /// </summary>
         public HttpHeadersNonValidated NonValidated => new HttpHeadersNonValidated(_headerStore);
 
         public IEnumerator<KeyValuePair<string, IEnumerable<string>>> GetEnumerator() => _headerStore != null && _headerStore.Count > 0 ?
@@ -328,6 +331,7 @@ namespace System.Net.Http.Headers
                     // the only collection that can be enumerated concurrently is HttpClient.DefaultRequestHeaders,
                     // and all values in it will be HeaderStoreItemInfo.
                     Debug.Assert(!_forceHeaderStoreItems);
+                    Debug.Assert(value is string);
                     _headerStore[descriptor] = info = new HeaderStoreItemInfo() { RawValue = value, OriginalRawValue = value };
                 }
 
@@ -472,6 +476,13 @@ namespace System.Net.Http.Headers
                 {
                     bool headerRemoved = Remove(descriptor);
                     Debug.Assert(headerRemoved, "Existing header '" + descriptor.Name + "' couldn't be removed.");
+                }
+
+                if (result)
+                {
+                    // Reset OriginalRawValue to later reconstruct it from ParsedValue
+                    // in non-validating enumeration.
+                    info.OriginalRawValue = null;
                 }
 
                 return result;
@@ -763,9 +774,7 @@ namespace System.Net.Http.Headers
 
                     // At this point all values are either in info.ParsedValue, info.InvalidValue, or were removed since they
                     // contain invalid newline chars. Reset RawValue, but preserve OriginalRawValue to keep data for non-validating enumeration.
-                    object? originalRawValue = info.OriginalRawValue;
                     info.RawValue = null;
-                    info.OriginalRawValue = originalRawValue;
 
                     // During parsing, we removed the value since it contains invalid newline chars. Return false to indicate that
                     // this is an empty header. If the caller specified to remove empty headers, we'll remove the header before
@@ -1448,7 +1457,7 @@ namespace System.Net.Http.Headers
             _value = null;
         }
 
-        public Enumerator GetEnumerator() => new Enumerator(_values, _value);
+        public Enumerator GetEnumerator() => _values != null ? new Enumerator(_values!) : new Enumerator(_value!);
 
         IEnumerator<string> IEnumerable<string>.GetEnumerator() => GetEnumerator();
 
@@ -1460,9 +1469,17 @@ namespace System.Net.Http.Headers
             private readonly string? _value;
             private bool _completed;
 
-            public Enumerator(IEnumerable<string>? values, string? value)
+            internal Enumerator(IEnumerable<string> values)
             {
-                _values = values?.GetEnumerator();
+                _values = values.GetEnumerator();
+                _value = null;
+                _completed = false;
+                Current = default!;
+            }
+
+            internal Enumerator(string value)
+            {
+                _values = null;
                 _value = value;
                 _completed = false;
                 Current = default!;

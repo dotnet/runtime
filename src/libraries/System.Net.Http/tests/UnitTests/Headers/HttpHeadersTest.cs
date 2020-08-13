@@ -1735,6 +1735,90 @@ namespace System.Net.Http.Tests
         }
 
         [Fact]
+        public void NonValidated_AddAndUpdateSingleValueHeader_EnumeratorReturnsLatestValue()
+        {
+            MockHeaders headers = new MockHeaders();
+            headers.Add(headers.Descriptor, rawPrefix + "1");
+
+            var enumerator = headers.NonValidated.GetEnumerator();
+
+            Assert.True(enumerator.MoveNext());
+            Assert.Equal(headers.Descriptor.Name, enumerator.Current.Key);
+            Assert.Equal(1, enumerator.Current.Value.Count());
+            Assert.Equal(rawPrefix + "1", enumerator.Current.Value.Single());
+            Assert.False(enumerator.MoveNext());
+
+            headers.SetParsedValue(headers.Descriptor, rawPrefix + "2");
+
+            enumerator = headers.NonValidated.GetEnumerator();
+
+            Assert.True(enumerator.MoveNext());
+            Assert.Equal(headers.Descriptor.Name, enumerator.Current.Key);
+            Assert.Equal(1, enumerator.Current.Value.Count());
+            Assert.Equal(rawPrefix + "2", enumerator.Current.Value.Single());
+            Assert.False(enumerator.MoveNext());
+        }
+
+        [Fact]
+        public void NonValidated_AddAndRemoveSingleValueHeader_EnumeratorReturnsNoValue()
+        {
+            MockHeaders headers = new MockHeaders();
+            headers.Add(headers.Descriptor, rawPrefix + "1");
+            headers.Add(customHeaderName, "customValue1");
+            headers.RemoveParsedValue(headers.Descriptor, parsedPrefix + "1");
+
+            var enumerator = headers.NonValidated.GetEnumerator();
+
+            Assert.True(enumerator.MoveNext());
+            Assert.Equal(customHeaderName, enumerator.Current.Key);
+            Assert.Equal("customValue1", enumerator.Current.Value.Single());
+            Assert.False(enumerator.MoveNext());
+
+            headers.Add(headers.Descriptor, rawPrefix + "1");
+
+            enumerator = headers.NonValidated.GetEnumerator();
+
+            Assert.True(enumerator.MoveNext());
+            Assert.Equal(headers.Descriptor.Name, enumerator.Current.Key);
+            Assert.Equal(1, enumerator.Current.Value.Count());
+            Assert.Equal(rawPrefix + "1", enumerator.Current.Value.Single());
+
+            Assert.True(enumerator.MoveNext());
+            Assert.Equal(customHeaderName, enumerator.Current.Key);
+            Assert.Equal(1, enumerator.Current.Value.Count());
+            Assert.Equal("customValue1", enumerator.Current.Value.Single());
+
+            Assert.False(enumerator.MoveNext());
+        }
+
+        [Fact]
+        public void NonValidated_AddAndRemoveValueToMultivalueHeader_EnumeratorReturnsLatestParsedValue()
+        {
+            MockHeaders headers = new MockHeaders();
+            headers.Add(headers.Descriptor, rawPrefix + "1");
+            headers.Add(headers.Descriptor, rawPrefix + "2");
+
+            var enumerator = headers.NonValidated.GetEnumerator();
+
+            Assert.True(enumerator.MoveNext());
+            Assert.Equal(headers.Descriptor.Name, enumerator.Current.Key);
+            Assert.Equal(2, enumerator.Current.Value.Count());
+            Assert.Equal(rawPrefix + "1", enumerator.Current.Value.ElementAt(0));
+            Assert.Equal(rawPrefix + "2", enumerator.Current.Value.ElementAt(1));
+            Assert.False(enumerator.MoveNext());
+
+            headers.RemoveParsedValue(headers.Descriptor, parsedPrefix + "1");
+
+            enumerator = headers.NonValidated.GetEnumerator();
+
+            Assert.True(enumerator.MoveNext());
+            Assert.Equal(headers.Descriptor.Name, enumerator.Current.Key);
+            Assert.Equal(1, enumerator.Current.Value.Count());
+            Assert.Equal(parsedPrefix + "2", enumerator.Current.Value.ElementAt(0));
+            Assert.False(enumerator.MoveNext());
+        }
+
+        [Fact]
         public void AddParsedValue_AddSingleValueToNonExistingHeader_HeaderGetsCreatedAndValueAdded()
         {
             Uri headerValue = new Uri("http://example.org/");
