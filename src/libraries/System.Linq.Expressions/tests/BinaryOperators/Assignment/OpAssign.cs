@@ -611,26 +611,26 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public void RightShiftAssign()
         {
-            rightShiftAssign<sbyte>(unchecked((sbyte)0x80), 7, (sbyte)-1);
-            rightShiftAssign<byte>(unchecked((byte)0x80), 7, (byte)1);
-            rightShiftAssign<short>(unchecked((short)0x8000), 15, (short)-1);
-            rightShiftAssign<ushort>(unchecked((ushort)0x8000), 15, (ushort)1);
-            rightShiftAssign<int>(unchecked((int)0x8000_0000), 31, (int)-1);
-            rightShiftAssign<uint>(unchecked((uint)0x8000_0000), 31, (uint)1);
-            rightShiftAssign<long>(unchecked((long)0x8000_0000_0000_0000), 63, (long)-1);
-            rightShiftAssign<ulong>(unchecked((ulong)0x8000_0000_0000_0000), 63, (ulong)1);
+            Evaluate<sbyte>(unchecked((sbyte)0x80), 7, (sbyte)-1);
+            Evaluate<byte>(unchecked((byte)0x80), 7, (byte)1);
+            Evaluate<short>(unchecked((short)0x8000), 15, (short)-1);
+            Evaluate<ushort>(unchecked((ushort)0x8000), 15, (ushort)1);
+            Evaluate<int>(unchecked((int)0x8000_0000), 31, (int)-1);
+            Evaluate<uint>(unchecked((uint)0x8000_0000), 31, (uint)1);
+            Evaluate<long>(unchecked((long)0x8000_0000_0000_0000), 63, (long)-1);
+            Evaluate<ulong>(unchecked((ulong)0x8000_0000_0000_0000), 63, (ulong)1);
 
-            static void rightShiftAssign<T>(T left, int right, T expected)
+            static void Evaluate<T>(T left, int right, T expected)
             {
                 var leftOperand = Expression.Parameter(typeof(T).MakeByRefType());
                 var rightOperand = Expression.Parameter(typeof(int));
                 var expr = Expression.RightShiftAssign(leftOperand, rightOperand);
                 var lambda = Expression.Lambda<RightShiftAssignDelegate<T>>(expr, leftOperand, rightOperand);
-                compileAndInvoke(lambda, left, right, expected, preferInterpretation: false);
-                compileAndInvoke(lambda, left, right, expected, preferInterpretation: true);
+                CompileAndInvoke(lambda, left, right, expected, preferInterpretation: false);
+                CompileAndInvoke(lambda, left, right, expected, preferInterpretation: true);
             }
 
-            static void compileAndInvoke<T>(Expression<RightShiftAssignDelegate<T>> expr, T left, int right, T expected, bool preferInterpretation)
+            static void CompileAndInvoke<T>(Expression<RightShiftAssignDelegate<T>> expr, T left, int right, T expected, bool preferInterpretation)
             {
                 expr.Compile(preferInterpretation).Invoke(ref left, right);
                 Assert.Equal(expected, left);
