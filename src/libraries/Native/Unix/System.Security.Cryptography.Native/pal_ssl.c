@@ -43,7 +43,7 @@ static int32_t g_config_specified_ciphersuites = 0;
 
 static void DetectCiphersuiteConfiguration()
 {
-    // This routine will always produce g_config_specified_ciphersuites = 0 on OpenSSL 1.0.x,
+    // This routine will always produce g_config_specified_ciphersuites = 1 on OpenSSL 1.0.x,
     // so if we're building direct for 1.0.x (the only time NEED_OPENSSL_1_1 is undefined) then
     // just omit all the code here.
     //
@@ -90,6 +90,12 @@ static void DetectCiphersuiteConfiguration()
     {
         // There's no system_default configuration, so no default CipherString.
         ERR_clear_error();
+
+        if (API_EXISTS(SSL_state))
+        {
+            // OpenSSL 1.0 does not support CipherSuites so there is no way for caller to override default
+            g_config_specified_ciphersuites = 1;
+        }
     }
     else
     {
