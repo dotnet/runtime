@@ -61,7 +61,10 @@ namespace System.Runtime.Loader.Tests
 
         private static string GetDefaultAssemblyLoadDirectory()
         {
-            return Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+            if (!PlatformDetection.IsBrowser)
+                return Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+            else
+                return "/";
         }
 
         private Assembly ResolveAssembly(AssemblyLoadContext sender, AssemblyName assembly)
