@@ -249,8 +249,6 @@ namespace System.Text.Json
             }
 
             // We now have YYYY-MM-DD [dateX]
-
-            Debug.Assert(source.Length >= 10);
             if (source.Length == 10)
             {
                 // Just a calendar date
