@@ -29,7 +29,7 @@ public:
     struct DiagnosticPortBuilder
     {
         LPSTR Path = nullptr;
-        DiagnosticPortType Type = DiagnosticPortType::LISTEN;
+        DiagnosticPortType Type = DiagnosticPortType::CONNECT;
         DiagnosticPortSuspendMode SuspendMode = DiagnosticPortSuspendMode::NOSUSPEND;
 
         DiagnosticPortBuilder WithPath(LPSTR path) { Path = path != nullptr ? _strdup(path) : nullptr; return *this; }
