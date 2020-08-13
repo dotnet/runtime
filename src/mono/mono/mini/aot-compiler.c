@@ -3424,12 +3424,14 @@ get_shared_ginst_ref (MonoAotCompile *acfg, MonoGenericInst *ginst)
 	guint32 offset = GPOINTER_TO_UINT (g_hash_table_lookup (acfg->ginst_blob_hash, ginst));
 	if (!offset) {
 		guint8 *buf2, *p2;
+		int len;
 
-		buf2 = (guint8 *)g_malloc (1024);
+		len = 1024 + (ginst->type_argc * 32);
+		buf2 = (guint8 *)g_malloc (len);
 		p2 = buf2;
 
 		encode_ginst (acfg, ginst, p2, &p2);
-		g_assert (p2 - buf2 < 1024);
+		g_assert (p2 - buf2 < len);
 
 		offset = add_to_blob (acfg, buf2, p2 - buf2);
 		g_free (buf2);
