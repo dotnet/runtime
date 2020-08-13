@@ -48,6 +48,39 @@ const ASN1_TIME* local_X509_get0_notAfter(const X509* x509)
     return NULL;
 }
 
+int local_X509_set1_notBefore(X509* x509, const ASN1_TIME* time)
+{
+    if (x509 && x509->cert_info && x509->cert_info->validity)
+    {
+        if (x509->cert_info->validity->notBefore)
+        {
+            ASN1_TIME_free(x509->cert_info->validity->notBefore);
+        }
+
+        x509->cert_info->validity->notBefore = ASN1_STRING_dup(time);
+        return x509->cert_info->validity->notBefore != NULL;
+    }
+
+    return 0;
+}
+
+int local_X509_set1_notAfter(X509* x509, const ASN1_TIME* time)
+{
+
+    if (x509 && x509->cert_info && x509->cert_info->validity)
+    {
+        if (x509->cert_info->validity->notAfter)
+        {
+            ASN1_TIME_free(x509->cert_info->validity->notAfter);
+        }
+
+        x509->cert_info->validity->notAfter = ASN1_STRING_dup(time);
+        return x509->cert_info->validity->notBefore != NULL;
+    }
+
+    return 0;
+}
+
 const ASN1_TIME* local_X509_CRL_get0_nextUpdate(const X509_CRL* crl)
 {
     if (crl && crl->crl)

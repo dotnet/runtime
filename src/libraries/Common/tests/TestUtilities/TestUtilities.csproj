@@ -58,6 +58,8 @@
   <ItemGroup>
     <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.OpenSslVersion.cs"
              Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.OpenSslVersion.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.OpenSslGetProtocolSupport.cs"
+             Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.OpenSslGetProtocolSupport.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetEUid.cs"
              Link="Common\Interop\Unix\Interop.GetEUid.cs" />
   </ItemGroup>
