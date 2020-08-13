@@ -646,7 +646,7 @@ bool GCToOSInterface::VirtualRelease(void* address, size_t size)
 //  size      - size of the virtual memory range
 // Return:
 //  Starting virtual address of the committed range
-void* GCToOSInterface::VirtualReserveAndCommitLargePages(size_t size)
+void* GCToOSInterface::VirtualReserveAndCommitLargePages(size_t size, uint16_t node)
 {
 #if HAVE_MAP_HUGETLB
     uint32_t largePagesFlag = MAP_HUGETLB;
@@ -657,7 +657,7 @@ void* GCToOSInterface::VirtualReserveAndCommitLargePages(size_t size)
 #endif
 
     void* pRetVal = VirtualReserveInner(size, OS_PAGE_SIZE, 0, largePagesFlag);
-    if (VirtualCommit(pRetVal, size, NUMA_NODE_UNDEFINED))
+    if (VirtualCommit(pRetVal, size, node))
     {
         return pRetVal;
     }
