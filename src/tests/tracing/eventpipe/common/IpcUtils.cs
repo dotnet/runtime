@@ -22,7 +22,7 @@ namespace Tracing.Tests.Common
     public static class Utils
     {
         public static readonly string DiagnosticPortsEnvKey = "DOTNET_DiagnosticPorts";
-        public static readonly string DiagnosticPortSuspend = "DOTNET_DiagnosticPortSuspend";
+        public static readonly string DiagnosticPortSuspend = "DOTNET_DefaultDiagnosticPortSuspend";
 
         public static async Task<T> WaitTillTimeout<T>(Task<T> task, TimeSpan timeout)
         {

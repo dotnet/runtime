@@ -113,7 +113,6 @@ bool IpcStreamFactory::Configure(ErrorCallback callback)
             CQuickArrayList<LPSTR> portConfigParts = split(portConfig, ",");
             DiagnosticPortBuilder builder;
 
-            ASSERT(portConfigParts.Size() >= 1);
             if (portConfigParts.Size() == 0)
             {
                 fSuccess &= false;
@@ -138,7 +137,7 @@ bool IpcStreamFactory::Configure(ErrorCallback callback)
     }
 
     // create the default listen port
-    DWORD dotnetDiagnosticPortSuspend = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_DOTNET_DiagnosticPortSuspend);
+    DWORD dotnetDiagnosticPortSuspend = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_DOTNET_DefaultDiagnosticPortSuspend);
     DiagnosticPortBuilder defaultListenPortBuilder = DiagnosticPortBuilder{}
         .WithPath(nullptr)
         .WithSuspendMode(dotnetDiagnosticPortSuspend > 0 ? DiagnosticPortSuspendMode::SUSPEND : DiagnosticPortSuspendMode::NOSUSPEND)

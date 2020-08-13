@@ -28,7 +28,7 @@ namespace Tracing.Tests.ReverseValidation
                 currentAssembly: Assembly.GetExecutingAssembly(),
                 environment: new Dictionary<string,string> 
                 {
-                    { Utils.DiagnosticPortsEnvKey, $"{serverName},connect,nosuspend" }
+                    { Utils.DiagnosticPortsEnvKey, $"{serverName}" }
                 },
                 duringExecution: async (int pid) =>
                 {
