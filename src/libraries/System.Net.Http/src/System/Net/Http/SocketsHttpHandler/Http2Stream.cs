@@ -438,29 +438,126 @@ namespace System.Net.Http
                 }
             }
 
+            private const int FirstHPackRequestPseudoHeaderId = 1;
+            private const int LastHPackRequestPseudoHeaderId = 7;
+            private const int FirstHPackStatusPseudoHeaderId = 8;
+            private const int LastHPackStatusPseudoHeaderId = 14;
+            private const int FirstHPackNormalHeaderId = 15;
+            private const int LastHPackNormalHeaderId = 61;
+
+            private static readonly int[] HPackStaticStatusCodeTable = new int[LastHPackStatusPseudoHeaderId - FirstHPackStatusPseudoHeaderId + 1] { 200, 204, 206, 304, 400, 404, 500 };
+
+            private static readonly (HeaderDescriptor descriptor, ReadOnlyMemory<byte> value)[] HPackStaticHeaderTable = new (HeaderDescriptor, ReadOnlyMemory<byte>)[LastHPackNormalHeaderId - FirstHPackNormalHeaderId + 1]
+            {
+                (KnownHeaders.AcceptCharset.Descriptor, ReadOnlyMemory<byte>.Empty),
+                (KnownHeaders.AcceptEncoding.Descriptor, Encoding.ASCII.GetBytes("gzip, deflate")),
+                (KnownHeaders.AcceptLanguage.Descriptor, ReadOnlyMemory<byte>.Empty),
+                (KnownHeaders.AcceptRanges.Descriptor, ReadOnlyMemory<byte>.Empty),
+                (KnownHeaders.Accept.Descriptor, ReadOnlyMemory<byte>.Empty),
+                (KnownHeaders.AccessControlAllowOrigin.Descriptor, ReadOnlyMemory<byte>.Empty),
+                (KnownHeaders.Age.Descriptor, ReadOnlyMemory<byte>.Empty),
+                (KnownHeaders.Allow.Descriptor, ReadOnlyMemory<byte>.Empty),
+                (KnownHeaders.Authorization.Descriptor, ReadOnlyMemory<byte>.Empty),
+                (KnownHeaders.CacheControl.Descriptor, ReadOnlyMemory<byte>.Empty),
+                (KnownHeaders.ContentDisposition.Descriptor, ReadOnlyMemory<byte>.Empty),
+                (KnownHeaders.ContentEncoding.Descriptor, ReadOnlyMemory<byte>.Empty),
+                (KnownHeaders.ContentLanguage.Descriptor, ReadOnlyMemory<byte>.Empty),
+                (KnownHeaders.ContentLength.Descriptor, ReadOnlyMemory<byte>.Empty),
+                (KnownHeaders.ContentLocation.Descriptor, ReadOnlyMemory<byte>.Empty),
+                (KnownHeaders.ContentRange.Descriptor, ReadOnlyMemory<byte>.Empty),
+                (KnownHeaders.ContentType.Descriptor, ReadOnlyMemory<byte>.Empty),
+                (KnownHeaders.Cookie.Descriptor, ReadOnlyMemory<byte>.Empty),
+                (KnownHeaders.Date.Descriptor, ReadOnlyMemory<byte>.Empty),
+                (KnownHeaders.ETag.Descriptor, ReadOnlyMemory<byte>.Empty),
+                (KnownHeaders.Expect.Descriptor, ReadOnlyMemory<byte>.Empty),
+                (KnownHeaders.Expires.Descriptor, ReadOnlyMemory<byte>.Empty),
+                (KnownHeaders.From.Descriptor, ReadOnlyMemory<byte>.Empty),
+                (KnownHeaders.Host.Descriptor, ReadOnlyMemory<byte>.Empty),
+                (KnownHeaders.IfMatch.Descriptor, ReadOnlyMemory<byte>.Empty),
+                (KnownHeaders.IfModifiedSince.Descriptor, ReadOnlyMemory<byte>.Empty),
+                (KnownHeaders.IfNoneMatch.Descriptor, ReadOnlyMemory<byte>.Empty),
+                (KnownHeaders.IfRange.Descriptor, ReadOnlyMemory<byte>.Empty),
+                (KnownHeaders.IfUnmodifiedSince.Descriptor, ReadOnlyMemory<byte>.Empty),
+                (KnownHeaders.LastModified.Descriptor, ReadOnlyMemory<byte>.Empty),
+                (KnownHeaders.Link.Descriptor, ReadOnlyMemory<byte>.Empty),
+                (KnownHeaders.Location.Descriptor, ReadOnlyMemory<byte>.Empty),
+                (KnownHeaders.MaxForwards.Descriptor, ReadOnlyMemory<byte>.Empty),
+                (KnownHeaders.ProxyAuthenticate.Descriptor, ReadOnlyMemory<byte>.Empty),
+                (KnownHeaders.ProxyAuthorization.Descriptor, ReadOnlyMemory<byte>.Empty),
+                (KnownHeaders.Range.Descriptor, ReadOnlyMemory<byte>.Empty),
+                (KnownHeaders.Referer.Descriptor, ReadOnlyMemory<byte>.Empty),
+                (KnownHeaders.Refresh.Descriptor, ReadOnlyMemory<byte>.Empty),
+                (KnownHeaders.RetryAfter.Descriptor, ReadOnlyMemory<byte>.Empty),
+                (KnownHeaders.Server.Descriptor, ReadOnlyMemory<byte>.Empty),
+                (KnownHeaders.SetCookie.Descriptor, ReadOnlyMemory<byte>.Empty),
+                (KnownHeaders.StrictTransportSecurity.Descriptor, ReadOnlyMemory<byte>.Empty),
+                (KnownHeaders.TransferEncoding.Descriptor, ReadOnlyMemory<byte>.Empty),
+                (KnownHeaders.UserAgent.Descriptor, ReadOnlyMemory<byte>.Empty),
+                (KnownHeaders.Vary.Descriptor, ReadOnlyMemory<byte>.Empty),
+                (KnownHeaders.Via.Descriptor, ReadOnlyMemory<byte>.Empty),
+                (KnownHeaders.WWWAuthenticate.Descriptor, ReadOnlyMemory<byte>.Empty),
+            };
+
             void IHttpHeadersHandler.OnStaticIndexedHeader(int index)
             {
-                // TODO: https://github.com/dotnet/runtime/issues/1505
-                ref readonly HeaderField entry = ref H2StaticTable.Get(index - 1);
-                OnHeader(entry.Name, entry.Value);
+                Debug.Assert(index >= FirstHPackRequestPseudoHeaderId && index <= LastHPackNormalHeaderId);
+
+                if (index <= LastHPackRequestPseudoHeaderId)
+                {
+                    if (NetEventSource.Log.IsEnabled()) Trace($"Invalid request pseudo-header ID {index}.");
+                    throw new HttpRequestException(SR.net_http_invalid_response);
+                }
+                else if (index <= LastHPackStatusPseudoHeaderId)
+                {
+                    int statusCode = HPackStaticStatusCodeTable[index - FirstHPackStatusPseudoHeaderId];
+
+                    OnStatus(statusCode);
+                }
+                else
+                {
+                    (HeaderDescriptor descriptor, ReadOnlyMemory<byte> value) = HPackStaticHeaderTable[index - FirstHPackNormalHeaderId];
+
+                    OnHeader(descriptor, value.Span);
+                }
             }
 
             void IHttpHeadersHandler.OnStaticIndexedHeader(int index, ReadOnlySpan<byte> value)
             {
-                // TODO: https://github.com/dotnet/runtime/issues/1505
-                OnHeader(H2StaticTable.Get(index - 1).Name, value);
+                Debug.Assert(index >= FirstHPackRequestPseudoHeaderId && index <= LastHPackNormalHeaderId);
+
+                if (index <= LastHPackRequestPseudoHeaderId)
+                {
+                    if (NetEventSource.Log.IsEnabled()) Trace($"Invalid request pseudo-header ID {index}.");
+                    throw new HttpRequestException(SR.net_http_invalid_response);
+                }
+                else if (index <= LastHPackStatusPseudoHeaderId)
+                {
+                    int statusCode = ParseStatusCode(value);
+
+                    OnStatus(statusCode);
+                }
+                else
+                {
+                    (HeaderDescriptor descriptor, _) = HPackStaticHeaderTable[index - FirstHPackNormalHeaderId];
+
+                    OnHeader(descriptor, value);
+                }
             }
 
-            public void OnHeader(ReadOnlySpan<byte> name, ReadOnlySpan<byte> value)
+            private void AdjustHeaderBudget(int amount)
             {
-                if (NetEventSource.Log.IsEnabled()) Trace($"{Encoding.ASCII.GetString(name)}: {Encoding.ASCII.GetString(value)}");
-                Debug.Assert(name.Length > 0);
-
-                _headerBudgetRemaining -= name.Length + value.Length;
+                _headerBudgetRemaining -= amount;
                 if (_headerBudgetRemaining < 0)
                 {
                     throw new HttpRequestException(SR.Format(SR.net_http_response_headers_exceeded_length, _connection._pool.Settings._maxResponseHeadersLength * 1024L));
                 }
+            }
+
+            private void OnStatus(int statusCode)
+            {
+                if (NetEventSource.Log.IsEnabled()) Trace($"Status code is {statusCode}");
+
+                AdjustHeaderBudget(10); // for ":status" plus 3-digit status code
 
                 Debug.Assert(!Monitor.IsEntered(SyncObject));
                 lock (SyncObject)
@@ -471,102 +568,131 @@ namespace System.Net.Http
                         return;
                     }
 
-                    if (name[0] == (byte)':')
+                    if (_responseProtocolState == ResponseProtocolState.ExpectingHeaders)
                     {
-                        if (_responseProtocolState != ResponseProtocolState.ExpectingHeaders && _responseProtocolState != ResponseProtocolState.ExpectingStatus)
+                        if (NetEventSource.Log.IsEnabled()) Trace("Received extra status header.");
+                        throw new HttpRequestException(SR.Format(SR.net_http_invalid_response_status_code, "duplicate status"));
+                    }
+
+                    if (_responseProtocolState != ResponseProtocolState.ExpectingStatus)
+                    {
+                        // Pseudo-headers are allowed only in header block
+                        if (NetEventSource.Log.IsEnabled()) Trace($"Status pseudo-header received in {_responseProtocolState} state.");
+                        throw new HttpRequestException(SR.net_http_invalid_response_pseudo_header_in_trailer);
+                    }
+
+                    Debug.Assert(_response != null);
+                    _response.StatusCode = (HttpStatusCode)statusCode;
+
+                    if (statusCode < 200)
+                    {
+                        // We do not process headers from 1xx responses.
+                        _responseProtocolState = ResponseProtocolState.ExpectingIgnoredHeaders;
+
+                        if (_response.StatusCode == HttpStatusCode.Continue && _expect100ContinueWaiter != null)
                         {
-                            // Pseudo-headers are allowed only in header block
-                            if (NetEventSource.Log.IsEnabled()) Trace($"Pseudo-header received in {_responseProtocolState} state.");
-                            throw new HttpRequestException(SR.net_http_invalid_response_pseudo_header_in_trailer);
-                        }
-
-                        if (name.SequenceEqual(StatusHeaderName))
-                        {
-                            if (_responseProtocolState != ResponseProtocolState.ExpectingStatus)
-                            {
-                                if (NetEventSource.Log.IsEnabled()) Trace("Received extra status header.");
-                                throw new HttpRequestException(SR.Format(SR.net_http_invalid_response_status_code, "duplicate status"));
-                            }
-
-                            int statusValue = ParseStatusCode(value);
-                            Debug.Assert(_response != null);
-                            _response.StatusCode = (HttpStatusCode)statusValue;
-
-                            if (statusValue < 200)
-                            {
-                                // We do not process headers from 1xx responses.
-                                _responseProtocolState = ResponseProtocolState.ExpectingIgnoredHeaders;
-
-                                if (_response.StatusCode == HttpStatusCode.Continue && _expect100ContinueWaiter != null)
-                                {
-                                    if (NetEventSource.Log.IsEnabled()) Trace("Received 100-Continue status.");
-                                    _expect100ContinueWaiter.TrySetResult(true);
-                                }
-                            }
-                            else
-                            {
-                                _responseProtocolState = ResponseProtocolState.ExpectingHeaders;
-
-                                // If we are waiting for a 100-continue response, signal the waiter now.
-                                if (_expect100ContinueWaiter != null)
-                                {
-                                    // If the final status code is >= 300, skip sending the body.
-                                    bool shouldSendBody = (statusValue < 300);
-
-                                    if (NetEventSource.Log.IsEnabled()) Trace($"Expecting 100 Continue but received final status {statusValue}.");
-                                    _expect100ContinueWaiter.TrySetResult(shouldSendBody);
-                                }
-                            }
-                        }
-                        else
-                        {
-                            if (NetEventSource.Log.IsEnabled()) Trace($"Invalid response pseudo-header '{Encoding.ASCII.GetString(name)}'.");
-                            throw new HttpRequestException(SR.net_http_invalid_response);
+                            if (NetEventSource.Log.IsEnabled()) Trace("Received 100-Continue status.");
+                            _expect100ContinueWaiter.TrySetResult(true);
                         }
                     }
                     else
                     {
-                        if (_responseProtocolState == ResponseProtocolState.ExpectingIgnoredHeaders)
-                        {
-                            // for 1xx response we ignore all headers.
-                            return;
-                        }
+                        _responseProtocolState = ResponseProtocolState.ExpectingHeaders;
 
-                        if (_responseProtocolState != ResponseProtocolState.ExpectingHeaders && _responseProtocolState != ResponseProtocolState.ExpectingTrailingHeaders)
+                        // If we are waiting for a 100-continue response, signal the waiter now.
+                        if (_expect100ContinueWaiter != null)
                         {
-                            if (NetEventSource.Log.IsEnabled()) Trace("Received header before status.");
-                            throw new HttpRequestException(SR.net_http_invalid_response);
-                        }
+                            // If the final status code is >= 300, skip sending the body.
+                            bool shouldSendBody = (statusCode < 300);
 
-                        if (!HeaderDescriptor.TryGet(name, out HeaderDescriptor descriptor))
-                        {
-                            // Invalid header name
-                            throw new HttpRequestException(SR.Format(SR.net_http_invalid_response_header_name, Encoding.ASCII.GetString(name)));
-                        }
-
-                        Encoding? valueEncoding = _connection._pool.Settings._responseHeaderEncodingSelector?.Invoke(descriptor.Name, _request);
-
-                        // Note we ignore the return value from TryAddWithoutValidation;
-                        // if the header can't be added, we silently drop it.
-                        if (_responseProtocolState == ResponseProtocolState.ExpectingTrailingHeaders)
-                        {
-                            Debug.Assert(_trailers != null);
-                            string headerValue = descriptor.GetHeaderValue(value, valueEncoding);
-                            _trailers.TryAddWithoutValidation((descriptor.HeaderType & HttpHeaderType.Request) == HttpHeaderType.Request ? descriptor.AsCustomHeader() : descriptor, headerValue);
-                        }
-                        else if ((descriptor.HeaderType & HttpHeaderType.Content) == HttpHeaderType.Content)
-                        {
-                            Debug.Assert(_response != null && _response.Content != null);
-                            string headerValue = descriptor.GetHeaderValue(value, valueEncoding);
-                            _response.Content.Headers.TryAddWithoutValidation(descriptor, headerValue);
-                        }
-                        else
-                        {
-                            Debug.Assert(_response != null);
-                            string headerValue = _connection.GetResponseHeaderValueWithCaching(descriptor, value, valueEncoding);
-                            _response.Headers.TryAddWithoutValidation((descriptor.HeaderType & HttpHeaderType.Request) == HttpHeaderType.Request ? descriptor.AsCustomHeader() : descriptor, headerValue);
+                            if (NetEventSource.Log.IsEnabled()) Trace($"Expecting 100 Continue but received final status {statusCode}.");
+                            _expect100ContinueWaiter.TrySetResult(shouldSendBody);
                         }
                     }
+                }
+            }
+
+            private void OnHeader(HeaderDescriptor descriptor, ReadOnlySpan<byte> value)
+            {
+                if (NetEventSource.Log.IsEnabled()) Trace($"{descriptor.Name}: {Encoding.ASCII.GetString(value)}");
+
+                AdjustHeaderBudget(descriptor.Name.Length + value.Length);
+
+                Debug.Assert(!Monitor.IsEntered(SyncObject));
+                lock (SyncObject)
+                {
+                    if (_responseProtocolState == ResponseProtocolState.Aborted)
+                    {
+                        // We could have aborted while processing the header block.
+                        return;
+                    }
+
+                    if (_responseProtocolState == ResponseProtocolState.ExpectingIgnoredHeaders)
+                    {
+                        // for 1xx response we ignore all headers.
+                        return;
+                    }
+
+                    if (_responseProtocolState != ResponseProtocolState.ExpectingHeaders && _responseProtocolState != ResponseProtocolState.ExpectingTrailingHeaders)
+                    {
+                        if (NetEventSource.Log.IsEnabled()) Trace("Received header before status.");
+                        throw new HttpRequestException(SR.net_http_invalid_response);
+                    }
+
+                    Encoding? valueEncoding = _connection._pool.Settings._responseHeaderEncodingSelector?.Invoke(descriptor.Name, _request);
+
+                    // Note we ignore the return value from TryAddWithoutValidation;
+                    // if the header can't be added, we silently drop it.
+                    if (_responseProtocolState == ResponseProtocolState.ExpectingTrailingHeaders)
+                    {
+                        Debug.Assert(_trailers != null);
+                        string headerValue = descriptor.GetHeaderValue(value, valueEncoding);
+                        _trailers.TryAddWithoutValidation((descriptor.HeaderType & HttpHeaderType.Request) == HttpHeaderType.Request ? descriptor.AsCustomHeader() : descriptor, headerValue);
+                    }
+                    else if ((descriptor.HeaderType & HttpHeaderType.Content) == HttpHeaderType.Content)
+                    {
+                        Debug.Assert(_response != null && _response.Content != null);
+                        string headerValue = descriptor.GetHeaderValue(value, valueEncoding);
+                        _response.Content.Headers.TryAddWithoutValidation(descriptor, headerValue);
+                    }
+                    else
+                    {
+                        Debug.Assert(_response != null);
+                        string headerValue = _connection.GetResponseHeaderValueWithCaching(descriptor, value, valueEncoding);
+                        _response.Headers.TryAddWithoutValidation((descriptor.HeaderType & HttpHeaderType.Request) == HttpHeaderType.Request ? descriptor.AsCustomHeader() : descriptor, headerValue);
+                    }
+                }
+            }
+
+            public void OnHeader(ReadOnlySpan<byte> name, ReadOnlySpan<byte> value)
+            {
+                Debug.Assert(name.Length > 0);
+
+                if (name[0] == (byte)':')
+                {
+                    // Pseudo-header
+                    if (name.SequenceEqual(StatusHeaderName))
+                    {
+                        int statusCode = ParseStatusCode(value);
+
+                        OnStatus(statusCode);
+                    }
+                    else
+                    {
+                        if (NetEventSource.Log.IsEnabled()) Trace($"Invalid response pseudo-header '{Encoding.ASCII.GetString(name)}'.");
+                        throw new HttpRequestException(SR.net_http_invalid_response);
+                    }
+                }
+                else
+                {
+                    // Regular header
+                    if (!HeaderDescriptor.TryGet(name, out HeaderDescriptor descriptor))
+                    {
+                        // Invalid header name
+                        throw new HttpRequestException(SR.Format(SR.net_http_invalid_response_header_name, Encoding.ASCII.GetString(name)));
+                    }
+
+                    OnHeader(descriptor, value);
                 }
             }
 
