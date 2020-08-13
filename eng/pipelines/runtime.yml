@@ -484,6 +484,7 @@ jobs:
     platforms:
     - OSX_x64
     - Linux_arm64
+    - Browser_wasm
     jobParameters:
       condition: >-
         or(
