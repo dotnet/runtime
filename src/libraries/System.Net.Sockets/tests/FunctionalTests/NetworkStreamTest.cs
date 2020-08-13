@@ -301,8 +301,10 @@ namespace System.Net.Sockets.Tests
             });
         }
 
-        [Fact]
-        public async Task DisposeSocketDirectly_ReadWriteThrowNetworkException()
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task DisposeSocketDirectly_ReadWriteThrowNetworkException(bool derivedNetworkStream)
         {
             using (Socket listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
             using (Socket client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
@@ -312,20 +314,22 @@ namespace System.Net.Sockets.Tests
 
                 Task<Socket> acceptTask = listener.AcceptAsync();
                 await Task.WhenAll(acceptTask, client.ConnectAsync(new IPEndPoint(IPAddress.Loopback, ((IPEndPoint)listener.LocalEndPoint).Port)));
-                using (Socket serverSocket = await acceptTask)
-                using (DerivedNetworkStream server = new DerivedNetworkStream(serverSocket))
-                {
-                    serverSocket.Dispose();
+                using Socket serverSocket = await acceptTask;
+                using NetworkStream server = derivedNetworkStream ? (NetworkStream)new DerivedNetworkStream(serverSocket) : new NetworkStream(serverSocket);
+                
+                serverSocket.Dispose();
 
-                    Assert.Throws<NetworkException>(() => server.Read(new byte[1], 0, 1));
-                    Assert.Throws<NetworkException>(() => server.Write(new byte[1], 0, 1));
+                Assert.Throws<NetworkException>(() => server.Read(new byte[1], 0, 1));
+                Assert.Throws<NetworkException>(() => server.Write(new byte[1], 0, 1));
 
-                    Assert.Throws<NetworkException>(() => server.BeginRead(new byte[1], 0, 1, null, null));
-                    Assert.Throws<NetworkException>(() => server.BeginWrite(new byte[1], 0, 1, null, null));
+                Assert.Throws<NetworkException>(() => server.Read(new byte[1]));
+                Assert.Throws<NetworkException>(() => server.Write(new byte[1]));
 
-                    Assert.Throws<NetworkException>(() => { server.ReadAsync(new byte[1], 0, 1); });
-                    Assert.Throws<NetworkException>(() => { server.WriteAsync(new byte[1], 0, 1); });
-                }
+                Assert.Throws<NetworkException>(() => server.BeginRead(new byte[1], 0, 1, null, null));
+                Assert.Throws<NetworkException>(() => server.BeginWrite(new byte[1], 0, 1, null, null));
+
+                Assert.Throws<NetworkException>(() => { server.ReadAsync(new byte[1], 0, 1); });
+                Assert.Throws<NetworkException>(() => { server.WriteAsync(new byte[1], 0, 1); });
             }
         }
 
