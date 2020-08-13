@@ -10,6 +10,29 @@
  * @property {object} o - value parsed as JSON
  */
 
+/**
+ * @typedef WasmRoot - a single address in the managed heap, visible to the GC
+ * @type {object}
+ * @property {WasmPointer} value - address in the managed heap
+ * @property {function} get - retrieves address
+ * @property {function} set - updates the address
+ * @property {function} release - releases the root storage for future use
+ */
+
+/**
+ * @typedef WasmRootBuffer - a collection of addresses in the managed heap, visible to the GC
+ * @type {object}
+ * @property {number} length - number of elements the root buffer can hold
+ * @property {function} get - retrieves an element by index
+ * @property {function} set - sets an element's value by index
+ * @property {function} release - releases the root storage for future use
+ */
+
+/**
+ * @typedef WasmPointer
+ * @type {number} - address in the managed heap
+ */
+
 var MonoSupportLib = {
 	$MONO__postset: 'MONO.export_functions (Module);',
 	$MONO: {
@@ -50,6 +73,7 @@ var MonoSupportLib = {
 		},
 
 		_mono_wasm_root_buffer_prototype: {
+			/** @returns {WasmPointer} */
 			get: function (index) {
 				return Module.HEAP32[this.__offset32 + index];
 			},
@@ -73,6 +97,7 @@ var MonoSupportLib = {
 		_scratch_root_free_indices: null,
 
 		_mono_wasm_root_prototype: {
+			/** @returns {WasmPointer} */
 			get: function () {
 				var result = this.__buffer.get (this.__index);
 				return result;
@@ -81,6 +106,7 @@ var MonoSupportLib = {
 				this.__buffer.set (this.__index, value);
 				return value;
 			},
+			/** @returns {WasmPointer} */
 			valueOf: function () {
 				return this.get ();
 			},
@@ -127,10 +153,15 @@ var MonoSupportLib = {
 			(new Uint8Array (Module.HEAPU8.buffer, byteOffset, sizeBytes)).fill (0);
 		},
 
-		// Allocates a block of memory that can safely contain pointers into the managed heap.
-		// The result object has get(index) and set(index, value) methods that can be used to retrieve and store managed pointers.
-		// Once you are done using the root buffer, you must call its release() method.
-		// For small numbers of roots, it is preferable to use the mono_wasm_new_root and mono_wasm_new_roots APIs instead.
+		/**
+		 * Allocates a block of memory that can safely contain pointers into the managed heap.
+		 * The result object has get(index) and set(index, value) methods that can be used to retrieve and store managed pointers.
+		 * Once you are done using the root buffer, you must call its release() method.
+		 * For small numbers of roots, it is preferable to use the mono_wasm_new_root and mono_wasm_new_roots APIs instead.
+		 * @param {number} capacity - the maximum number of elements the buffer can hold.
+		 * @param {string} [msg] - a description of the root buffer (for debugging)
+		 * @returns {WasmRootBuffer}
+		 */
 		mono_wasm_new_root_buffer: function (capacity, msg) {
 			if (!this.mono_wasm_register_root || !this.mono_wasm_deregister_root) {
 				this.mono_wasm_register_root = Module.cwrap ("mono_wasm_register_root", "number", ["number", "number", "string"]);
@@ -151,16 +182,21 @@ var MonoSupportLib = {
 			result.__offset = offset;
 			result.__offset32 = offset / 4;
 			result.__count = capacity;	
+			result.length = capacity;
 			result.__handle = this.mono_wasm_register_root (offset, capacityBytes, msg || 0);
 
 			return result;
 		},
 
-		// Allocates temporary storage for a pointer into the managed heap.
-		// Pointers stored here will be visible to the GC, ensuring that the object they point to aren't moved or collected.
-		// If you already have a managed pointer you can pass it as an argument to initialize the temporary storage.
-		// The result object has get() and set(value) methods, along with a .value property.
-		// When you are done using the root you must call its .release() method.
+		/**
+		 * Allocates temporary storage for a pointer into the managed heap.
+		 * Pointers stored here will be visible to the GC, ensuring that the object they point to aren't moved or collected.
+		 * If you already have a managed pointer you can pass it as an argument to initialize the temporary storage.
+		 * The result object has get() and set(value) methods, along with a .value property.
+		 * When you are done using the root you must call its .release() method.
+		 * @param {WasmPointer} [value] - an address in the managed heap to initialize the root with (or 0)
+		 * @returns {WasmRoot}
+		 */
 		mono_wasm_new_root: function (value) {
 			var index = this._mono_wasm_claim_scratch_index ();
 			var buffer = this._scratch_root_buffer;
@@ -181,10 +217,14 @@ var MonoSupportLib = {
 			return result;
 		},
 
-		// Allocates 1 or more temporary roots, accepting either a number of roots or an array of pointers.
-		// mono_wasm_new_roots(n): returns an array of N zero-initialized roots.
-		// mono_wasm_new_roots([a, b, ...]) returns an array of new roots initialized with each element.
-		// Each root must be released with its release method, or using the mono_wasm_release_roots API.
+		/**
+		 * Allocates 1 or more temporary roots, accepting either a number of roots or an array of pointers.
+		 * mono_wasm_new_roots(n): returns an array of N zero-initialized roots.
+		 * mono_wasm_new_roots([a, b, ...]) returns an array of new roots initialized with each element.
+		 * Each root must be released with its release method, or using the mono_wasm_release_roots API.
+		 * @param {(number | WasmPointer[])} count_or_values - either a number of roots or an array of pointers
+		 * @returns {WasmRoot[]}
+		 */
 		mono_wasm_new_roots: function (count_or_values) {
 			var result;
 
@@ -203,10 +243,13 @@ var MonoSupportLib = {
 			return result;
 		},
 
-		// Releases 1 or more root or root buffer objects.
-		// Multiple objects may be passed on the argument list.
-		// 'undefined' may be passed as an argument so it is safe to call this method from finally blocks
-		//  even if you are not sure all of your roots have been created yet.
+		/**
+		 * Releases 1 or more root or root buffer objects.
+		 * Multiple objects may be passed on the argument list.
+		 * 'undefined' may be passed as an argument so it is safe to call this method from finally blocks
+		 *  even if you are not sure all of your roots have been created yet.
+		 * @param {... WasmRoot} roots 
+		 */
 		mono_wasm_release_roots: function () {
 			for (var i = 0; i < arguments.length; i++) {
 				if (!arguments[i])
