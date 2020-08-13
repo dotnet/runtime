@@ -1482,7 +1482,8 @@ namespace DebuggerTests
 
                 AssertEqual("WriteLine", top_frame["functionName"]?.Value<string>(), "Expected to be in WriteLine method");
                 var script_id = top_frame["functionLocation"]["scriptId"].Value<string>();
-                AssertEqual("dotnet://System.Console.dll/Console.cs", scripts[script_id], "Expected to stopped in System.Console.WriteLine");
+                if (!scripts[script_id].Equals("dotnet://System.Console.dll/Console.cs") && !scripts[script_id].Equals("dotnet://mscorlib.dll/Console.cs"))
+                    Assert.True(false, "Expected to stopped in System.Console.WriteLine");
             });
         }
 
