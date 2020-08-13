@@ -43,7 +43,21 @@ namespace System.Net.Connections
                     _socket.Dispose();
                 }
 
-                _stream?.Dispose();
+                if (_stream != null)
+                {
+                    _stream.Dispose();
+                }
+                else if (_pipe is DuplexStreamPipe dsp)
+                {
+                    // Graceful shutdown for DuplexStreamPipe:
+                    dsp.Stream.Dispose();
+                }
+
+                // There are two cases, where none of the above calls will actually dispose the socket:
+                // 1. If an custom NetworkStream does not take the ownership of the socket
+                // 2. If the pipe is not a DuplexStreamPipe
+                // We need to call _socket.Dispose again to make sure the socket is indeed disposed in these cases:
+                _socket.Dispose();
             }
             catch (SocketException socketException)
             {

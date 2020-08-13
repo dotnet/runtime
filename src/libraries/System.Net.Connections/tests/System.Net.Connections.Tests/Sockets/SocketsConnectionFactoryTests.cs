@@ -256,21 +256,30 @@ namespace System.Net.Connections.Tests
         }
 
         [Theory]
-        [InlineData(false)]
-        [InlineData(true)]
-        public async Task Connection_Dispose_ClosesSocket(bool disposeAsync)
+        [InlineData(false, false)]
+        [InlineData(false, true)]
+        [InlineData(true, false)]
+        [InlineData(true, true)]
+        public async Task Connection_Dispose_ClosesSocket(bool disposeAsync, bool usePipe)
         {
             using var server = SocketTestServer.SocketTestServerFactory(SocketImplementationType.Async, IPAddress.Loopback);
             using SocketsConnectionFactory factory = new SocketsConnectionFactory(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
             Connection connection = await factory.ConnectAsync(server.EndPoint);
-            Stream stream = connection.Stream;
+
+            Stream stream = usePipe ? null : connection.Stream;
+            if (usePipe) _ = connection.Pipe;
             connection.ConnectionProperties.TryGet(out Socket socket);
 
             if (disposeAsync) await connection.DisposeAsync();
             else connection.Dispose();
 
             Assert.False(socket.Connected);
-            Assert.Throws<ObjectDisposedException>(() => stream.Write(new byte[1]));
+
+            if (!usePipe)
+            {
+                // In this case we can also verify if the stream is disposed
+                Assert.Throws<ObjectDisposedException>(() => stream.Write(new byte[1]));
+            }
         }
 
         [Theory]

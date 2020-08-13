@@ -53,12 +53,12 @@ namespace System.Net.Connections.Tests
             }
         }
 
-        class CustomDuplexPipe : IDuplexPipe
+        class CustomPipe : IDuplexPipe
         {
             private static readonly StreamPipeReaderOptions s_readerOpts = new StreamPipeReaderOptions(leaveOpen: true);
             private static readonly StreamPipeWriterOptions s_writerOpts = new StreamPipeWriterOptions(leaveOpen: true);
 
-            public CustomDuplexPipe(Stream stream, CustomConnectionOptionsValues optionValues)
+            public CustomPipe(Stream stream, CustomConnectionOptionsValues optionValues)
             {
                 Input = PipeReader.Create(stream, s_readerOpts);
                 Output = PipeWriter.Create(stream, s_writerOpts);
@@ -72,6 +72,10 @@ namespace System.Net.Connections.Tests
 
         private sealed class CustomFactory : SocketsConnectionFactory
         {
+            public bool UseCustomPipe { get; set; } = true;
+
+            public event Action<NetworkStream> OnCreateNetworkStream;
+
             public CustomFactory() : base(SocketType.Stream, ProtocolType.Tcp)
             {
             }
@@ -92,13 +96,22 @@ namespace System.Net.Connections.Tests
             protected override Stream CreateStream(Socket socket, IConnectionProperties options)
             {
                 options.TryGet(out CustomConnectionOptionsValues vals);
-                return new CustomNetworkStream(socket, vals);
+                var stream = new CustomNetworkStream(socket, vals);
+                OnCreateNetworkStream?.Invoke(stream);
+                return stream;
             }
 
             protected override IDuplexPipe CreatePipe(Socket socket, IConnectionProperties options)
             {
-                options.TryGet(out CustomConnectionOptionsValues vals);
-                return new CustomDuplexPipe(CreateStream(socket, options), vals);
+                if (UseCustomPipe)
+                {
+                    options.TryGet(out CustomConnectionOptionsValues vals);
+                    return new CustomPipe(CreateStream(socket, options), vals);
+                }
+                else
+                {
+                    return base.CreatePipe(socket, options);
+                }
             }
         }
 
@@ -110,7 +123,7 @@ namespace System.Net.Connections.Tests
         public async Task DerivedFactory_CanShimSocket()
         {
             using var server = SocketTestServer.SocketTestServerFactory(SocketImplementationType.Async, _endPoint);
-            Connection connection = await _factory.ConnectAsync(server.EndPoint, _options);
+            using Connection connection = await _factory.ConnectAsync(server.EndPoint, _options);
             connection.ConnectionProperties.TryGet(out Socket socket);
 
             Assert.Equal(_options.Values.NoDelay, socket.NoDelay);
@@ -121,7 +134,7 @@ namespace System.Net.Connections.Tests
         public async Task DerivedFactory_CanShimStream()
         {
             using var server = SocketTestServer.SocketTestServerFactory(SocketImplementationType.Async, _endPoint);
-            Connection connection = await _factory.ConnectAsync(server.EndPoint, _options);
+            using Connection connection = await _factory.ConnectAsync(server.EndPoint, _options);
 
             CustomNetworkStream stream = Assert.IsType<CustomNetworkStream>(connection.Stream);
             Assert.Same(_options.Values, stream.OptionValues);
@@ -131,10 +144,35 @@ namespace System.Net.Connections.Tests
         public async Task DerivedFactory_CanShimPipe()
         {
             using var server = SocketTestServer.SocketTestServerFactory(SocketImplementationType.Async, _endPoint);
-            Connection connection = await _factory.ConnectAsync(server.EndPoint, _options);
+            using Connection connection = await _factory.ConnectAsync(server.EndPoint, _options);
 
-            CustomDuplexPipe pipe = Assert.IsType<CustomDuplexPipe>(connection.Pipe);
+            CustomPipe pipe = Assert.IsType<CustomPipe>(connection.Pipe);
             Assert.Same(_options.Values, pipe.OptionValues);
+        }
+        
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task UsePipe_ConnectionClose_ShouldDisposeSocket(bool useCustomPipe)
+        {
+            _factory.UseCustomPipe = useCustomPipe;
+            using var server = SocketTestServer.SocketTestServerFactory(SocketImplementationType.Async, _endPoint);
+            NetworkStream stream = null;
+            _factory.OnCreateNetworkStream += ns => stream = ns;
+
+            Connection connection = await _factory.ConnectAsync(server.EndPoint, _options);
+            connection.ConnectionProperties.TryGet(out Socket socket);
+
+            _ = connection.Pipe;
+            await connection.CloseAsync();
+
+            Assert.Throws<ObjectDisposedException>(() => socket.Send(new byte[1]));
+
+            // In case of a custom pipe that was created from a stream, we do not guarantee that disposal of the stream, only the socket:
+            if (!useCustomPipe)
+            {
+                Assert.Throws<ObjectDisposedException>(() => stream.Write(new byte[1]));
+            }
         }
     }
 }

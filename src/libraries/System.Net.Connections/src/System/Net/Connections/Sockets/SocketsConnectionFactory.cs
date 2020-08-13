@@ -148,7 +148,7 @@ namespace System.Net.Connections
         /// <param name="socket">The connected <see cref="Socket"/>.</param>
         /// <param name="options">Properties, if any, that might change how the pipe is initialized.</param>
         /// <returns>A new <see cref="IDuplexPipe"/>.</returns>
-        protected virtual IDuplexPipe CreatePipe(Socket socket, IConnectionProperties? options) => new Connection.DuplexStreamPipe(CreateStream(socket, options));
+        protected virtual IDuplexPipe CreatePipe(Socket socket, IConnectionProperties? options) => new DuplexStreamPipe(CreateStream(socket, options));
 
         internal Stream CreateStreamForConnection(Socket socket, IConnectionProperties? options) => CreateStream(socket, options);
 
