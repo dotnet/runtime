@@ -33,7 +33,12 @@ namespace System.Threading
         // Called by mini-wasm.c:mono_set_timeout_exec
         private static void TimeoutCallback()
         {
-            Run();
+            int shortestWaitDurationMs = PumpTimerQueue();
+
+            if (shortestWaitDurationMs != int.MaxValue)
+            {
+                SetTimeout((int)shortestWaitDurationMs, 0);
+            }
         }
 
         private bool SetTimer(uint actualDuration)
@@ -53,14 +58,18 @@ namespace System.Threading
             return true;
         }
 
-        private static void Run()
+        private static int PumpTimerQueue() // NOTE: this method is called via reflection by test code
         {
-            int shortestWaitDurationMs;
+            if (s_scheduledTimersToFire == null)
+            {
+                return int.MaxValue;
+            }
+
             List<TimerQueue> timersToFire = s_scheduledTimersToFire!;
             List<TimerQueue> timers;
             timers = s_scheduledTimers!;
             long currentTimeMs = TickCount64;
-            shortestWaitDurationMs = int.MaxValue;
+            int shortestWaitDurationMs = int.MaxValue;
             for (int i = timers.Count - 1; i >= 0; --i)
             {
                 TimerQueue timer = timers[i];
@@ -94,10 +103,7 @@ namespace System.Threading
                 timersToFire.Clear();
             }
 
-            if (shortestWaitDurationMs != int.MaxValue)
-            {
-                SetTimeout((int)shortestWaitDurationMs, 0);
-            }
+            return shortestWaitDurationMs;
         }
     }
 }

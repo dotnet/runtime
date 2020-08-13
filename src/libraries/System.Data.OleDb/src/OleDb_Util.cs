@@ -92,7 +92,7 @@ namespace System.Data.OleDb
         {
             return ADP.DataAdapter(SR.Format(SR.OleDb_BadStatus_ParamAcc, index.ToString(CultureInfo.InvariantCulture), status.ToString()));
         }
-        internal static Exception NoProviderSupportForParameters(string provider, Exception inner)
+        internal static Exception NoProviderSupportForParameters(string provider, Exception? inner)
         {
             return ADP.DataAdapter(SR.Format(SR.OleDb_NoProviderSupportForParameters, provider), inner);
         }
@@ -174,7 +174,7 @@ namespace System.Data.OleDb
         {
             return ADP.Argument(SR.Format(SR.OleDb_SchemaRowsetsNotSupported, "IDBSchemaRowset", provider));
         }
-        internal static OleDbException NoErrorInformation(string provider, OleDbHResult hr, Exception inner)
+        internal static OleDbException NoErrorInformation(string? provider, OleDbHResult hr, Exception? inner)
         {
             OleDbException e;
             if (!ADP.IsEmpty(provider))
@@ -188,7 +188,7 @@ namespace System.Data.OleDb
             ADP.TraceExceptionAsReturnValue(e);
             return e;
         }
-        internal static InvalidOperationException MDACNotAvailable(Exception inner)
+        internal static InvalidOperationException MDACNotAvailable(Exception? inner)
         {
             return ADP.DataAdapter(SR.Format(SR.OleDb_MDACNotAvailable), inner);
         }
@@ -196,7 +196,7 @@ namespace System.Data.OleDb
         {
             return ADP.Argument(SR.Format(SR.OleDb_MSDASQLNotSupported));
         }
-        internal static InvalidOperationException CommandTextNotSupported(string provider, Exception inner)
+        internal static InvalidOperationException CommandTextNotSupported(string provider, Exception? inner)
         {
             return ADP.DataAdapter(SR.Format(SR.OleDb_CommandTextNotSupported, provider), inner);
         }
@@ -204,12 +204,12 @@ namespace System.Data.OleDb
         {
             return ADP.DataAdapter(SR.Format(SR.OleDb_PossiblePromptNotUserInteractive));
         }
-        internal static InvalidOperationException ProviderUnavailable(string provider, Exception inner)
+        internal static InvalidOperationException ProviderUnavailable(string provider, Exception? inner)
         {
             //return new OleDbException(SR.Format(SR.OleDb_ProviderUnavailable, provider), (int)OleDbHResult.CO_E_CLASSSTRING, inner);
             return ADP.DataAdapter(SR.Format(SR.OleDb_ProviderUnavailable, provider), inner);
         }
-        internal static InvalidOperationException TransactionsNotSupported(string provider, Exception inner)
+        internal static InvalidOperationException TransactionsNotSupported(string provider, Exception? inner)
         {
             return ADP.DataAdapter(SR.Format(SR.OleDb_TransactionsNotSupported, provider), inner);
         }
@@ -707,7 +707,7 @@ namespace System.Data.OleDb
         private static readonly Hashtable g_wlookpup = new Hashtable();
         internal static string WLookup(short id)
         {
-            string value = (string)g_wlookpup[id];
+            string? value = (string?)g_wlookpup[id];
             if (null == value)
             {
                 value = "0x" + ((short)id).ToString("X2", CultureInfo.InvariantCulture) + " " + ((short)id);

@@ -166,6 +166,17 @@ namespace Internal.TypeSystem
                 case TypeFlags.SzArray:
                     return ((ArrayType)thisType).CanCastArrayTo(otherType, protect);
 
+                case TypeFlags.ByRef:
+                case TypeFlags.Pointer:
+                    if (otherType.Category == thisType.Category)
+                    {
+                        return ((ParameterizedType)thisType).CanCastParamTo(((ParameterizedType)otherType).ParameterType, protect);
+                    }
+                    return false;
+
+                case TypeFlags.FunctionPointer:
+                    return false;
+
                 default:
                     Debug.Assert(thisType.IsDefType);
                     return thisType.CanCastToClassOrInterface(otherType, protect);

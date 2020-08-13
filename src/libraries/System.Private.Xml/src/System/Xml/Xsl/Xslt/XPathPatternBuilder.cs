@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#nullable enable
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -9,6 +10,7 @@ using System.Xml.XPath;
 using System.Xml.Schema;
 using System.Xml.Xsl.Qil;
 using System.Xml.Xsl.XPath;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Xml.Xsl.Xslt
 {
@@ -61,7 +63,8 @@ namespace System.Xml.Xsl.Xslt
             filter.Variable.Binding = newBinding;
         }
 
-        public virtual QilNode EndBuild(QilNode result)
+        [return: NotNullIfNotNull("result")]
+        public virtual QilNode? EndBuild(QilNode? result)
         {
             Debug.Assert(_inTheBuild, "StartBuild() wasn't called");
             if (result == null)
@@ -78,7 +81,7 @@ namespace System.Xml.Xsl.Xslt
             return result;
         }
 
-        public QilNode Operator(XPathOperator op, QilNode left, QilNode right)
+        public QilNode Operator(XPathOperator op, QilNode? left, QilNode? right)
         {
             Debug.Assert(op == XPathOperator.Union);
             Debug.Assert(left != null);
@@ -97,7 +100,7 @@ namespace System.Xml.Xsl.Xslt
             }
         }
 
-        private static QilLoop BuildAxisFilter(QilPatternFactory f, QilIterator itr, XPathAxis xpathAxis, XPathNodeType nodeType, string name, string nsUri)
+        private static QilLoop BuildAxisFilter(QilPatternFactory f, QilIterator itr, XPathAxis xpathAxis, XPathNodeType nodeType, string? name, string? nsUri)
         {
             QilNode nameTest = (
                 name != null && nsUri != null ? f.Eq(f.NameOf(itr), f.QName(name, nsUri)) : // ns:bar || bar
@@ -120,7 +123,7 @@ namespace System.Xml.Xsl.Xslt
             return filter;
         }
 
-        public QilNode Axis(XPathAxis xpathAxis, XPathNodeType nodeType, string prefix, string name)
+        public QilNode Axis(XPathAxis xpathAxis, XPathNodeType nodeType, string? prefix, string? name)
         {
             Debug.Assert(
                 xpathAxis == XPathAxis.Child ||
@@ -141,7 +144,7 @@ namespace System.Xml.Xsl.Xslt
                     priority = 0.5;
                     break;
                 default:
-                    string nsUri = prefix == null ? null : _environment.ResolvePrefix(prefix);
+                    string? nsUri = prefix == null ? null : _environment.ResolvePrefix(prefix);
                     result = BuildAxisFilter(_f, _f.For(_fixupNode), xpathAxis, nodeType, name, nsUri);
                     switch (nodeType)
                     {
@@ -214,7 +217,9 @@ namespace System.Xml.Xsl.Xslt
                 }
             }
             Debug.Assert(right.NodeType == QilNodeType.Filter);
-            QilLoop lastParent = GetLastParent(right);
+            QilLoop? lastParent = GetLastParent(right);
+            Debug.Assert(lastParent != null);
+
             FixupFilterBinding(parentFilter, ancestor ? _f.Ancestor(lastParent.Variable) : _f.Parent(lastParent.Variable));
             lastParent.Body = _f.And(lastParent.Body, _f.Not(_f.IsEmpty(parentFilter)));
             SetPriority(right, 0.5);
@@ -336,7 +341,7 @@ namespace System.Xml.Xsl.Xslt
         private class Annotation
         {
             public double Priority;
-            public QilLoop Parent;
+            public QilLoop? Parent;
         }
 
         public static void SetPriority(QilNode node, double priority)
@@ -359,7 +364,7 @@ namespace System.Xml.Xsl.Xslt
             node.Annotation = ann;
         }
 
-        private static QilLoop GetLastParent(QilNode node)
+        private static QilLoop? GetLastParent(QilNode node)
         {
             return ((Annotation)node.Annotation).Parent;
         }

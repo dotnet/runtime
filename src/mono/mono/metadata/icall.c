@@ -7230,7 +7230,7 @@ ves_icall_System_Reflection_RuntimeModule_ResolveSignature (MonoImage *image, gu
 }
 
 static void
-check_for_invalid_type (MonoClass *klass, MonoError *error)
+check_for_invalid_array_type (MonoClass *klass, MonoError *error)
 {
 	char *name;
 
@@ -7243,13 +7243,23 @@ check_for_invalid_type (MonoClass *klass, MonoError *error)
 	mono_error_set_type_load_name (error, name, g_strdup (""), "");
 }
 
+static void
+check_for_invalid_byref_or_pointer_type (MonoClass *klass, MonoError *error)
+{
+#ifdef ENABLE_NETCORE
+	return;
+#else
+	check_for_invalid_array_type (klass, error);
+#endif
+}
+
 MonoReflectionTypeHandle
 ves_icall_RuntimeType_make_array_type (MonoReflectionTypeHandle ref_type, int rank, MonoError *error)
 {
 	MonoType *type = MONO_HANDLE_GETVAL (ref_type, type);
 
 	MonoClass *klass = mono_class_from_mono_type_internal (type);
-	check_for_invalid_type (klass, error);
+	check_for_invalid_array_type (klass, error);
 	return_val_if_nok (error, MONO_HANDLE_CAST (MonoReflectionType, NULL_HANDLE));
 
 	MonoClass *aklass;
@@ -7276,7 +7286,7 @@ ves_icall_RuntimeType_make_byref_type (MonoReflectionTypeHandle ref_type, MonoEr
 	mono_class_init_checked (klass, error);
 	return_val_if_nok (error, MONO_HANDLE_CAST (MonoReflectionType, NULL_HANDLE));
 
-	check_for_invalid_type (klass, error);
+	check_for_invalid_byref_or_pointer_type (klass, error);
 	return_val_if_nok (error, MONO_HANDLE_CAST (MonoReflectionType, NULL_HANDLE));
 
 	MonoDomain *domain = MONO_HANDLE_DOMAIN (ref_type);
@@ -7292,7 +7302,7 @@ ves_icall_RuntimeType_MakePointerType (MonoReflectionTypeHandle ref_type, MonoEr
 	mono_class_init_checked (klass, error);
 	return_val_if_nok (error, MONO_HANDLE_CAST (MonoReflectionType, NULL_HANDLE));
 
-	check_for_invalid_type (klass, error);
+	check_for_invalid_byref_or_pointer_type (klass, error);
 	return_val_if_nok (error, MONO_HANDLE_CAST (MonoReflectionType, NULL_HANDLE));
 
 	MonoClass *pklass = mono_class_create_ptr (type);
@@ -7523,6 +7533,7 @@ ves_icall_Remoting_RealProxy_InternalGetProxyType (MonoTransparentProxyHandle tp
 
 /* System.Environment */
 
+#ifndef ENABLE_NETCORE
 MonoStringHandle
 ves_icall_System_Environment_get_UserName (MonoError *error)
 {
@@ -7606,6 +7617,7 @@ ves_icall_System_Environment_get_Platform (void)
 {
 	return mono_icall_get_platform ();
 }
+#endif /* !ENABLE_NETCORE */
 
 #ifndef HOST_WIN32
 static MonoStringHandle

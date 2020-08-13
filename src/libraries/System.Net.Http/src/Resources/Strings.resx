@@ -435,6 +435,9 @@
   <data name="net_http_http2_stream_error" xml:space="preserve">
     <value>The HTTP/2 server reset the stream. HTTP/2 error code '{0}' (0x{1}).</value>
   </data>
+  <data name="net_http_http2_connection_not_established" xml:space="preserve">
+    <value>An HTTP/2 connection could not be established because the server did not complete the HTTP/2 handshake.</value>
+  </data>
   <data name="net_MethodNotImplementedException" xml:space="preserve">
     <value>This method is not implemented by this class.</value>
   </data>
@@ -563,5 +566,20 @@
   </data>
   <data name="net_http_http2_sync_not_supported" xml:space="preserve">
     <value>The synchronous method is not supported by '{0}' for HTTP/2 or higher. Either use an asynchronous method or downgrade the request version to HTTP/1.1 or lower.</value>
+  </data>
+  <data name="net_http_upgrade_not_enabled_sync" xml:space="preserve">
+    <value>HTTP request version upgrade is not enabled for synchronous '{0}'. Do not use '{1}' version policy for synchronous HTTP methods.</value>
+  </data>
+  <data name="net_http_requested_version_not_enabled" xml:space="preserve">
+    <value>Requesting HTTP version {0} with version policy {1} while HTTP/{2} is not enabled.</value>
+  </data>
+  <data name="net_http_requested_version_cannot_establish" xml:space="preserve">
+    <value>Requesting HTTP version {0} with version policy {1} while unable to establish HTTP/{2} connection.</value>
+  </data>
+  <data name="net_http_requested_version_alpn_refused" xml:space="preserve">
+    <value>Requesting HTTP version {0} with version policy {1} while server returned HTTP/1.1 in ALPN.</value>
+  </data>
+  <data name="net_http_requested_version_server_refused" xml:space="preserve">
+    <value>Requesting HTTP version {0} with version policy {1} while server offers only version fallback.</value>
   </data>
 </root>

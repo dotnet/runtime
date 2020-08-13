@@ -1,14 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-extern alias DIAbstractions;
 
 using System;
-using Microsoft.AspNetCore.Testing;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.DependencyInjection.Specification.Fakes;
 using Xunit;
-
-using AbstractionsSR = DIAbstractions::System.SR;
 
 namespace Microsoft.Extensions.DependencyInjection
 {
@@ -346,11 +342,8 @@ namespace Microsoft.Extensions.DependencyInjection
             // Arrange
             var collection = new ServiceCollection();
 
-            // Act & Assert
-            ExceptionAssert.ThrowsArgument(
-                () => collection.TryAddEnumerable(descriptor),
-                "descriptor",
-                AbstractionsSR.Format(AbstractionsSR.TryAddIndistinguishableTypeToEnumerable, implementationType, serviceType));
+            AssertExtensions.ThrowsContains<ArgumentException>(() => collection.TryAddEnumerable(descriptor), 
+                string.Format(@"Implementation type cannot be '{0}' because it is indistinguishable from other services registered for '{1}'.", implementationType, serviceType));
         }
 
         [Fact]

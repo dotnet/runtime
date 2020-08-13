@@ -24,6 +24,8 @@ void core_initialize_internals ();
 #endif
 
 // Blazor specific custom routines - see dotnet_support.js for backing code
+extern void* mono_wasm_invoke_js_blazor (MonoString **exceptionMessage, void *callInfo, void* arg0, void* arg1, void* arg2);
+// The following two are for back-compat and will eventually be removed
 extern void* mono_wasm_invoke_js_marshalled (MonoString **exceptionMessage, void *asyncHandleLongPtr, MonoString *funcName, MonoString *argsJson);
 extern void* mono_wasm_invoke_js_unmarshalled (MonoString **exceptionMessage, MonoString *funcName, void* arg0, void* arg1, void* arg2);
 
@@ -108,20 +110,33 @@ mono_wasm_invoke_js (MonoString *str, int *is_exception)
 static void
 wasm_logger (const char *log_domain, const char *log_level, const char *message, mono_bool fatal, void *user_data)
 {
-	if (fatal) {
-		EM_ASM(
-			   var err = new Error();
-			   console.log ("Stacktrace: \n");
-			   console.log (err.stack);
-			   );
+	EM_ASM({
+		var message = Module.UTF8ToString ($3) + ": " + Module.UTF8ToString ($1);
+		if ($2)
+			console.trace (message);
 
-		fprintf (stderr, "%s\n", message);
-		fflush (stderr);
-
-		abort ();
-	} else {
-		fprintf (stdout, "L: %s\n", message);
-	}
+		switch (Module.UTF8ToString ($0)) {
+			case "critical":
+			case "error":
+				console.error (message);
+				break;
+			case "warning":
+				console.warn (message);
+				break;
+			case "message":
+				console.log (message);
+				break;
+			case "info":
+				console.info (message);
+				break;
+			case "debug":
+				console.debug (message);
+				break;
+			default:
+				console.log (message);
+				break;
+		}
+	}, log_level, message, fatal, log_domain);
 }
 
 #ifdef DRIVER_GEN
@@ -335,6 +350,8 @@ void mono_initialize_internals ()
 	// TODO: what happens when two types in different assemblies have the same FQN?
 
 	// Blazor specific custom routines - see dotnet_support.js for backing code
+	mono_add_internal_call ("WebAssembly.JSInterop.InternalCalls::InvokeJS", mono_wasm_invoke_js_blazor);
+	// The following two are for back-compat and will eventually be removed
 	mono_add_internal_call ("WebAssembly.JSInterop.InternalCalls::InvokeJSMarshalled", mono_wasm_invoke_js_marshalled);
 	mono_add_internal_call ("WebAssembly.JSInterop.InternalCalls::InvokeJSUnmarshalled", mono_wasm_invoke_js_unmarshalled);
 
@@ -345,7 +362,7 @@ void mono_initialize_internals ()
 }
 
 EMSCRIPTEN_KEEPALIVE void
-mono_wasm_load_runtime (const char *unused, int enable_debugging)
+mono_wasm_load_runtime (const char *unused, int debug_level)
 {
 	const char *interp_opts = "";
 
@@ -357,6 +374,16 @@ mono_wasm_load_runtime (const char *unused, int enable_debugging)
     // corlib assemblies.
 	monoeg_g_setenv ("COMPlus_DebugWriteToStdErr", "1", 0);
 #endif
+
+	const char *appctx_keys[2];
+	appctx_keys [0] = "APP_CONTEXT_BASE_DIRECTORY";
+	appctx_keys [1] = "RUNTIME_IDENTIFIER";
+
+	const char *appctx_values[2];
+	appctx_values [0] = "/";
+	appctx_values [1] = "browser-wasm";
+
+	monovm_initialize (2, appctx_keys, appctx_values);
 
 	mini_parse_debug_option ("top-runtime-invoke-unhandled");
 
@@ -372,11 +399,19 @@ mono_wasm_load_runtime (const char *unused, int enable_debugging)
 	mono_jit_set_aot_mode (MONO_AOT_MODE_LLVMONLY);
 #endif
 #else
-	mono_jit_set_aot_mode (MONO_AOT_MODE_INTERP_LLVMONLY);
-	if (enable_debugging) {
+	mono_jit_set_aot_mode (MONO_AOT_MODE_INTERP_ONLY);
+
+	/*
+	 * debug_level > 0 enables debugging and sets the debug log level to debug_level
+	 * debug_level == 0 disables debugging and enables interpreter optimizations
+	 * debug_level < 0 enabled debugging and disables debug logging.
+	 *
+	 * Note: when debugging is enabled interpreter optimizations are disabled.
+	 */
+	if (debug_level) {
 		// Disable optimizations which interfere with debugging
 		interp_opts = "-all";
-		mono_wasm_enable_debugging (enable_debugging);
+		mono_wasm_enable_debugging (debug_level);
 	}
 #endif
 
@@ -489,6 +524,8 @@ mono_wasm_assembly_get_entry_point (MonoAssembly *assembly)
 	uint32_t entry = mono_image_get_entry_point (image);
 	if (!entry)
 		return NULL;
+	
+	mono_domain_ensure_entry_assembly (root_domain, assembly);
 
 	return mono_get_method (image, entry, NULL);
 }
@@ -558,8 +595,9 @@ MonoClass* mono_get_uri_class(MonoException** exc)
 #define MARSHAL_TYPE_SAFEHANDLE 23
 
 // typed array marshalling
-#define MARSHAL_ARRAY_BYTE 11
-#define MARSHAL_ARRAY_UBYTE 12
+#define MARSHAL_ARRAY_BYTE 10
+#define MARSHAL_ARRAY_UBYTE 11
+#define MARSHAL_ARRAY_UBYTE_C 12
 #define MARSHAL_ARRAY_SHORT 13
 #define MARSHAL_ARRAY_USHORT 14
 #define MARSHAL_ARRAY_INT 15
@@ -573,6 +611,11 @@ mono_wasm_get_obj_type (MonoObject *obj)
 	if (!obj)
 		return 0;
 
+	/* Process obj before calling into the runtime, class_from_name () can invoke managed code */
+	MonoClass *klass = mono_object_get_class (obj);
+	MonoType *type = mono_class_get_type (klass);
+	obj = NULL;
+
 	if (!datetime_class)
 		datetime_class = mono_class_from_name (mono_get_corlib(), "System", "DateTime");
 	if (!datetimeoffset_class)
@@ -583,9 +626,6 @@ mono_wasm_get_obj_type (MonoObject *obj)
 	}
 	if (!safehandle_class)
 		safehandle_class = mono_class_from_name (mono_get_corlib(), "System.Runtime.InteropServices", "SafeHandle");
-
-	MonoClass *klass = mono_object_get_class (obj);
-	MonoType *type = mono_class_get_type (klass);
 
 	switch (mono_type_get_type (type)) {
 	// case MONO_TYPE_CHAR: prob should be done not as a number?

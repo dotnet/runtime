@@ -1,6 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <AssemblyName>System.Diagnostics.StackTrace</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
     <Nullable>enable</Nullable>
@@ -24,14 +23,12 @@
     <Compile Include="System\Diagnostics\SymbolStore\SymLanguageVendor.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Reference Include="System.IO.FileSystem" />
-    <ProjectReference Include="..\..\System.Collections.Concurrent\src\System.Collections.Concurrent.csproj" />
-    <ProjectReference Include="..\..\System.Runtime\src\System.Runtime.csproj" />
-    <ProjectReference Include="..\..\System.Runtime.Extensions\src\System.Runtime.Extensions.csproj" />
-    <ProjectReference Include="..\..\System.Reflection.Metadata\src\System.Reflection.Metadata.csproj" />
-    <ProjectReference Include="..\..\System.Collections.Immutable\src\System.Collections.Immutable.csproj" />
-  </ItemGroup>
-  <ItemGroup>
     <ProjectReference Include="$(CoreLibProject)" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Collections.Concurrent\src\System.Collections.Concurrent.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Collections.Immutable\src\System.Collections.Immutable.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Reflection.Metadata\src\System.Reflection.Metadata.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.Extensions\src\System.Runtime.Extensions.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime\src\System.Runtime.csproj" />
+    <Reference Include="System.IO.FileSystem" />
   </ItemGroup>
 </Project>

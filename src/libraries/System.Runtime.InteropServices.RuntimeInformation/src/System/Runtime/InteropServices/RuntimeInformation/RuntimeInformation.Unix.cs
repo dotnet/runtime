@@ -7,16 +7,7 @@ namespace System.Runtime.InteropServices
 {
     public static partial class RuntimeInformation
     {
-        private static string? s_osPlatformName;
         private static string? s_osDescription;
-
-        internal static bool IsCurrentOSPlatform(string osPlatform)
-        {
-            string name = s_osPlatformName ??= Interop.Sys.GetUnixName();
-
-            return osPlatform.Equals(name, StringComparison.OrdinalIgnoreCase)
-                || (name == "OSX" && osPlatform.Equals("MACOS", StringComparison.OrdinalIgnoreCase)); // GetUnixName returns OSX on macOS
-        }
 
         public static string OSDescription => s_osDescription ??= Interop.Sys.GetUnixVersion();
 
@@ -34,6 +25,8 @@ namespace System.Runtime.InteropServices
                     return Architecture.X64;
                 case Interop.Sys.ProcessorArchitecture.ARM64:
                     return Architecture.Arm64;
+                case Interop.Sys.ProcessorArchitecture.WASM:
+                    return Architecture.Wasm;
                 case Interop.Sys.ProcessorArchitecture.x86:
                 default:
                     Debug.Assert(arch == Interop.Sys.ProcessorArchitecture.x86, "Unidentified Architecture");

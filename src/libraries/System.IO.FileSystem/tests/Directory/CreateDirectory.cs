@@ -210,17 +210,26 @@ namespace System.IO.Tests
             Assert.Equal(path, result.FullName);
             Assert.True(Directory.Exists(result.FullName));
         }
+        #endregion
+
+        #region PlatformSpecific
 
         [Theory,
             MemberData(nameof(PathsWithComponentLongerThanMaxComponent))]
+        [PlatformSpecific(~TestPlatforms.Browser)] // Browser does not have a limit on the maximum component length
         public void DirectoryWithComponentLongerThanMaxComponentAsPath_ThrowsException(string path)
         {
             AssertExtensions.ThrowsAny<IOException, DirectoryNotFoundException, PathTooLongException>(() => Create(path));
         }
 
-        #endregion
-
-        #region PlatformSpecific
+        [Theory,
+            MemberData(nameof(PathsWithComponentLongerThanMaxComponent))]
+        [PlatformSpecific(TestPlatforms.Browser)] // Browser specific test in case the check changes in the future
+        public void DirectoryWithComponentLongerThanMaxComponentAsPath_BrowserDoesNotThrowException(string path)
+        {
+            DirectoryInfo result = Create(path);
+            Assert.True(Directory.Exists(path));
+        }
 
         [Theory, MemberData(nameof(PathsWithInvalidColons))]
         [PlatformSpecific(TestPlatforms.Windows)]

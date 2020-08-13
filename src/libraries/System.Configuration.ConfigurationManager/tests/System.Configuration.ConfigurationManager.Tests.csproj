@@ -4,7 +4,7 @@
     <TestDisableAppDomain>true</TestDisableAppDomain>
     <TestDisableParallelization>true</TestDisableParallelization>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
-    <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkCurrent)</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;net461</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(CommonTestPath)System\IO\TempDirectory.cs"
@@ -104,5 +104,11 @@
     <Compile Include="System\Configuration\UrlPathTests.cs" />
     <Compile Include="System\Configuration\ValidatiorUtilsTests.cs" />
     <Compile Include="System\Drawing\Configuration\SystemDrawingSectionTests.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\src\System.Configuration.ConfigurationManager.csproj" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == 'net461'">
+    <Reference Include="System.Configuration" />
   </ItemGroup>
 </Project>

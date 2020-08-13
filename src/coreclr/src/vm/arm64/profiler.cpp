@@ -10,6 +10,9 @@
 #define PROFILE_LEAVE    2
 #define PROFILE_TAILCALL 4
 
+// Scratch space to store HFA return values (max 16 bytes)
+#define PROFILE_PLATFORM_SPECIFIC_DATA_BUFFER_SIZE 16
+
 typedef struct _PROFILE_PLATFORM_SPECIFIC_DATA
 {
     void*                  Fp;
@@ -23,6 +26,7 @@ typedef struct _PROFILE_PLATFORM_SPECIFIC_DATA
     void*                  hiddenArg;
     UINT32                 flags;
     UINT32                 unused;
+    BYTE                   buffer[PROFILE_PLATFORM_SPECIFIC_DATA_BUFFER_SIZE];
 } PROFILE_PLATFORM_SPECIFIC_DATA, *PPROFILE_PLATFORM_SPECIFIC_DATA;
 
 UINT_PTR ProfileGetIPFromPlatformSpecificHandle(void* pPlatformSpecificHandle)
@@ -45,7 +49,8 @@ void ProfileSetFunctionIDInPlatformSpecificHandle(void* pPlatformSpecificHandle,
 }
 
 ProfileArgIterator::ProfileArgIterator(MetaSig* pSig, void* pPlatformSpecificHandle)
-    : m_argIterator(pSig)
+    : m_argIterator(pSig),
+    m_bufferPos(0)
 {
     WRAPPER_NO_CONTRACT;
 
@@ -235,8 +240,49 @@ LPVOID ProfileArgIterator::GetReturnBufferAddr(void)
         }
     }
 
-    if (m_argIterator.GetFPReturnSize() != 0)
-    {
+    UINT fpReturnSize = m_argIterator.GetFPReturnSize();
+    if (fpReturnSize != 0)
+    {    
+        TypeHandle thReturnValueType;
+        m_argIterator.GetSig()->GetReturnTypeNormalized(&thReturnValueType);
+        if (!thReturnValueType.IsNull() && thReturnValueType.IsHFA())
+        {
+            UINT hfaFieldSize = fpReturnSize / 4;
+            UINT totalSize = m_argIterator.GetSig()->GetReturnTypeSize();
+            _ASSERTE(totalSize % hfaFieldSize == 0);
+            _ASSERTE(totalSize <= 16);
+
+            BYTE *dest = pData->buffer;
+            for (UINT floatRegIdx = 0; floatRegIdx < totalSize / hfaFieldSize; ++floatRegIdx)
+            {
+                if (hfaFieldSize == 4)
+                {
+                    *(UINT32*)dest = *(UINT32*)&pData->floatArgumentRegisters.q[floatRegIdx];
+                    dest += 4;
+                }
+                else if (hfaFieldSize == 8)
+                {
+                    *(UINT64*)dest = *(UINT64*)&pData->floatArgumentRegisters.q[floatRegIdx];
+                    dest += 8;
+                }
+                else
+                {
+                    _ASSERTE(hfaFieldSize == 16);
+                    *(NEON128*)dest = pData->floatArgumentRegisters.q[floatRegIdx];
+                    dest += 16;
+                }
+
+                if (floatRegIdx > 8)
+                {
+                    // There's only space for 8 arguments in buffer
+                    _ASSERTE(FALSE);
+                    break;
+                }
+            }
+
+            return pData->buffer;
+        }
+
         return &pData->floatArgumentRegisters.q[0];
     }
 

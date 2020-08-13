@@ -1,9 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
-    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
-  </PropertyGroup>
-  <PropertyGroup>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <TargetFrameworks>$(NetCoreAppCurrent);net461</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="NativeMemory.cs" />
@@ -34,8 +32,7 @@
   </ItemGroup>
   <ItemGroup>
     <!-- Some internal types are needed, so we reference the implementation assembly, rather than the reference assembly. -->
-    <DefaultReferenceExclusions Include="System.Numerics.Tensors" />
-    <ReferenceFromRuntime Include="System.Numerics.Tensors" />
+    <ProjectReference Include="..\src\System.Numerics.Tensors.csproj" SkipUseReferenceAssembly="true" />
   </ItemGroup>
   <ItemGroup>
     <!-- enable the TextTemplating extension -->

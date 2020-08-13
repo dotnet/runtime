@@ -1203,7 +1203,7 @@ EEJitManager::EEJitManager()
     m_CodeHeapCritSec( CrstSingleUseLock,
                         CrstFlags(CRST_UNSAFE_ANYMODE|CRST_DEBUGGER_THREAD|CRST_TAKEN_DURING_SHUTDOWN)),
     m_CPUCompileFlags(),
-    m_EHClauseCritSec( CrstSingleUseLock )
+    m_JitLoadCritSec( CrstSingleUseLock )
 {
     CONTRACTL {
         THROWS;
@@ -1308,115 +1308,115 @@ void EEJitManager::SetCpuInfo()
 
     // We will set the following flags:
     //   CORJIT_FLAG_USE_SSE2 is required
-    //      SSE       - EDX bit 25    (buffer[15] & 0x02)
-    //      SSE2      - EDX bit 26    (buffer[15] & 0x04)
-    //   CORJIT_FLAG_USE_SSE3 if the following feature bits are set (input EAX of 1)
-    //      CORJIT_FLAG_USE_SSE2
-    //      SSE3      - ECX bit 0     (buffer[8]  & 0x01)
-    //   CORJIT_FLAG_USE_SSSE3 if the following feature bits are set (input EAX of 1)
-    //      CORJIT_FLAG_USE_SSE3
-    //      SSSE3     - ECX bit 9     (buffer[9]  & 0x02)
-    //   CORJIT_FLAG_USE_SSE41 if the following feature bits are set (input EAX of 1)
-    //      CORJIT_FLAG_USE_SSSE3
-    //      SSE4.1    - ECX bit 19    (buffer[10] & 0x08)
-    //   CORJIT_FLAG_USE_SSE42 if the following feature bits are set (input EAX of 1)
-    //      CORJIT_FLAG_USE_SSE41
-    //      SSE4.2    - ECX bit 20    (buffer[10] & 0x10)
-    //   CORJIT_FLAG_USE_POPCNT if the following feature bits are set (input EAX of 1)
-    //      CORJIT_FLAG_USE_SSE42
-    //      POPCNT    - ECX bit 23    (buffer[10] & 0x80)
-    //   CORJIT_FLAG_USE_AVX if the following feature bits are set (input EAX of 1), and xmmYmmStateSupport returns 1:
-    //      CORJIT_FLAG_USE_SSE42
-    //      OSXSAVE   - ECX bit 27   (buffer[11] & 0x08)
-    //      XGETBV    - XCR0[2:1]    11b
-    //      AVX       - ECX bit 28   (buffer[11] & 0x10)
-    //   CORJIT_FLAG_USE_FMA if the following feature bits are set (input EAX of 1), and xmmYmmStateSupport returns 1:
-    //      CORJIT_FLAG_USE_AVX
-    //      FMA       - ECX bit 12   (buffer[9]  & 0x10)
-    //   CORJIT_FLAG_USE_AVX2 if the following feature bit is set (input EAX of 0x07 and input ECX of 0):
-    //      CORJIT_FLAG_USE_AVX
-    //      AVX2      - EBX bit 5    (buffer[4]  & 0x20)
-    //   CORJIT_FLAG_USE_AVX_512 is not currently set, but defined so that it can be used in future without
+    //      SSE       - EDX bit 25
+    //      SSE2      - EDX bit 26
     //   CORJIT_FLAG_USE_AES
     //      CORJIT_FLAG_USE_SSE2
-    //      AES       - ECX bit 25   (buffer[11] & 0x01)
+    //      AES       - ECX bit 25
     //   CORJIT_FLAG_USE_PCLMULQDQ
     //      CORJIT_FLAG_USE_SSE2
-    //      PCLMULQDQ - ECX bit 1    (buffer[8] & 0x01)
+    //      PCLMULQDQ - ECX bit 1
+    //   CORJIT_FLAG_USE_SSE3 if the following feature bits are set (input EAX of 1)
+    //      CORJIT_FLAG_USE_SSE2
+    //      SSE3      - ECX bit 0
+    //   CORJIT_FLAG_USE_SSSE3 if the following feature bits are set (input EAX of 1)
+    //      CORJIT_FLAG_USE_SSE3
+    //      SSSE3     - ECX bit 9
+    //   CORJIT_FLAG_USE_SSE41 if the following feature bits are set (input EAX of 1)
+    //      CORJIT_FLAG_USE_SSSE3
+    //      SSE4.1    - ECX bit 19
+    //   CORJIT_FLAG_USE_SSE42 if the following feature bits are set (input EAX of 1)
+    //      CORJIT_FLAG_USE_SSE41
+    //      SSE4.2    - ECX bit 20
+    //   CORJIT_FLAG_USE_POPCNT if the following feature bits are set (input EAX of 1)
+    //      CORJIT_FLAG_USE_SSE42
+    //      POPCNT    - ECX bit 23
+    //   CORJIT_FLAG_USE_AVX if the following feature bits are set (input EAX of 1), and xmmYmmStateSupport returns 1:
+    //      CORJIT_FLAG_USE_SSE42
+    //      OSXSAVE   - ECX bit 27
+    //      AVX       - ECX bit 28
+    //      XGETBV    - XCR0[2:1]    11b
+    //   CORJIT_FLAG_USE_FMA if the following feature bits are set (input EAX of 1), and xmmYmmStateSupport returns 1:
+    //      CORJIT_FLAG_USE_AVX
+    //      FMA       - ECX bit 12
+    //   CORJIT_FLAG_USE_AVX2 if the following feature bit is set (input EAX of 0x07 and input ECX of 0):
+    //      CORJIT_FLAG_USE_AVX
+    //      AVX2      - EBX bit 5
+    //   CORJIT_FLAG_USE_AVX_512 is not currently set, but defined so that it can be used in future without
     //   CORJIT_FLAG_USE_BMI1 if the following feature bit is set (input EAX of 0x07 and input ECX of 0):
-    //      BMI1 - EBX bit 3         (buffer[4]  & 0x08)
+    //      BMI1 - EBX bit 3
     //   CORJIT_FLAG_USE_BMI2 if the following feature bit is set (input EAX of 0x07 and input ECX of 0):
-    //      BMI2 - EBX bit 8         (buffer[5]  & 0x01)
+    //      BMI2 - EBX bit 8
     //   CORJIT_FLAG_USE_LZCNT if the following feature bits are set (input EAX of 80000001H)
-    //      LZCNT - ECX bit 5        (buffer[8]  & 0x20)
+    //      LZCNT - ECX bit 5
     // synchronously updating VM and JIT.
 
-    unsigned char buffer[16];
-    DWORD maxCpuId = getcpuid(0, buffer);
+    int cpuidInfo[4];
+
+    const int EAX = 0;
+    const int EBX = 1;
+    const int ECX = 2;
+    const int EDX = 3;
+
+    __cpuid(cpuidInfo, 0x00000000);
+    uint32_t maxCpuId = static_cast<uint32_t>(cpuidInfo[EAX]);
 
     if (maxCpuId >= 1)
     {
-        // getcpuid executes cpuid with eax set to its first argument, and ecx cleared.
-        // It returns the resulting eax in buffer[0-3], ebx in buffer[4-7], ecx in buffer[8-11],
-        // and edx in buffer[12-15].
+        __cpuid(cpuidInfo, 0x00000001);
 
-        (void) getcpuid(1, buffer);
-
-        // If SSE/SSE2 is not enabled, there is no point in checking the rest.
-        //   SSE  is bit 25 of EDX   (buffer[15] & 0x02)
-        //   SSE2 is bit 26 of EDX   (buffer[15] & 0x04)
-
-        if ((buffer[15] & 0x06) == 0x06)                                    // SSE & SSE2
+        if (((cpuidInfo[EDX] & (1 << 25)) != 0) && ((cpuidInfo[EDX] & (1 << 26)) != 0))                     // SSE & SSE2
         {
             CPUCompileFlags.Set(InstructionSet_SSE);
             CPUCompileFlags.Set(InstructionSet_SSE2);
-            if ((buffer[11] & 0x02) != 0)                                   // AESNI
+
+            if ((cpuidInfo[ECX] & (1 << 25)) != 0)                                                          // AESNI
             {
                 CPUCompileFlags.Set(InstructionSet_AES);
             }
 
-            if ((buffer[8] & 0x02) != 0)                                    // PCLMULQDQ
+            if ((cpuidInfo[ECX] & (1 << 1)) != 0)                                                           // PCLMULQDQ
             {
                 CPUCompileFlags.Set(InstructionSet_PCLMULQDQ);
             }
 
-            if ((buffer[8] & 0x01) != 0)                                    // SSE3
+            if ((cpuidInfo[ECX] & (1 << 0)) != 0)                                                           // SSE3
             {
                 CPUCompileFlags.Set(InstructionSet_SSE3);
 
-                if ((buffer[9] & 0x02) != 0)                                // SSSE3
+                if ((cpuidInfo[ECX] & (1 << 9)) != 0)                                                       // SSSE3
                 {
                     CPUCompileFlags.Set(InstructionSet_SSSE3);
 
-                    if ((buffer[10] & 0x08) != 0)                           // SSE4.1
+                    if ((cpuidInfo[ECX] & (1 << 19)) != 0)                                                  // SSE4.1
                     {
                         CPUCompileFlags.Set(InstructionSet_SSE41);
 
-                        if ((buffer[10] & 0x10) != 0)                       // SSE4.2
+                        if ((cpuidInfo[ECX] & (1 << 20)) != 0)                                              // SSE4.2
                         {
                             CPUCompileFlags.Set(InstructionSet_SSE42);
 
-                            if ((buffer[10] & 0x80) != 0)                   // POPCNT
+                            if ((cpuidInfo[ECX] & (1 << 23)) != 0)                                          // POPCNT
                             {
                                 CPUCompileFlags.Set(InstructionSet_POPCNT);
                             }
 
-                            if ((buffer[11] & 0x18) == 0x18)                // AVX & OSXSAVE
+                            if (((cpuidInfo[ECX] & (1 << 27)) != 0) && ((cpuidInfo[ECX] & (1 << 28)) != 0)) // OSXSAVE & AVX
                             {
-                                if(DoesOSSupportAVX() && (xmmYmmStateSupport() == 1))
+                                if(DoesOSSupportAVX() && (xmmYmmStateSupport() == 1))                       // XGETBV == 11
                                 {
                                     CPUCompileFlags.Set(InstructionSet_AVX);
 
-                                    if ((buffer[9] & 0x10) != 0)            // FMA
+                                    if ((cpuidInfo[ECX] & (1 << 12)) != 0)                                  // FMA
                                     {
                                         CPUCompileFlags.Set(InstructionSet_FMA);
                                     }
 
                                     if (maxCpuId >= 0x07)
                                     {
-                                        (void) getextcpuid(0, 0x07, buffer);
+                                        __cpuidex(cpuidInfo, 0x00000007, 0x00000000);
 
-                                        if ((buffer[4] & 0x20) != 0)        // AVX2
+                                        if ((cpuidInfo[EBX] & (1 << 5)) != 0)                               // AVX2
                                         {
                                             CPUCompileFlags.Set(InstructionSet_AVX2);
                                         }
@@ -1443,31 +1443,28 @@ void EEJitManager::SetCpuInfo()
 
         if (maxCpuId >= 0x07)
         {
-            (void)getextcpuid(0, 0x07, buffer);
+            __cpuidex(cpuidInfo, 0x00000007, 0x00000000);
 
-            if ((buffer[4] & 0x08) != 0)            // BMI1
+            if ((cpuidInfo[EBX] & (1 << 3)) != 0)                                                           // BMI1
             {
                 CPUCompileFlags.Set(InstructionSet_BMI1);
             }
 
-            if ((buffer[5] & 0x01) != 0)            // BMI2
+            if ((cpuidInfo[EBX] & (1 << 8)) != 0)                                                           // BMI2
             {
                 CPUCompileFlags.Set(InstructionSet_BMI2);
             }
         }
     }
 
-    DWORD maxCpuIdEx = getcpuid(0x80000000, buffer);
+    __cpuid(cpuidInfo, 0x80000000);
+    uint32_t maxCpuIdEx = static_cast<uint32_t>(cpuidInfo[EAX]);
 
     if (maxCpuIdEx >= 0x80000001)
     {
-        // getcpuid executes cpuid with eax set to its first argument, and ecx cleared.
-        // It returns the resulting eax in buffer[0-3], ebx in buffer[4-7], ecx in buffer[8-11],
-        // and edx in buffer[12-15].
+        __cpuid(cpuidInfo, 0x80000001);
 
-        (void) getcpuid(0x80000001, buffer);
-
-        if ((buffer[8] & 0x20) != 0)            // LZCNT
+        if ((cpuidInfo[ECX] & (1 << 5)) != 0)                                                               // LZCNT
         {
             CPUCompileFlags.Set(InstructionSet_LZCNT);
         }
@@ -1710,8 +1707,8 @@ BOOL EEJitManager::LoadJIT()
     if (IsJitLoaded())
         return TRUE;
 
-    // Abuse m_EHClauseCritSec to ensure that the JIT is loaded on one thread only
-    CrstHolder chRead(&m_EHClauseCritSec);
+    // Use m_JitLoadCritSec to ensure that the JIT is loaded on one thread only
+    CrstHolder chRead(&m_JitLoadCritSec);
 
     // Did someone load the JIT before we got the lock?
     if (IsJitLoaded())
@@ -3056,21 +3053,14 @@ TypeHandle EEJitManager::ResolveEHClause(EE_ILEXCEPTION_CLAUSE* pEHClause,
     TypeHandle typeHnd = TypeHandle();
     mdToken typeTok = mdTokenNil;
 
+    // CachedTypeHandle's are filled in at JIT time, and not cached when accessed multiple times
+    if (HasCachedTypeHandle(pEHClause))
     {
-        CrstHolder chRead(&m_EHClauseCritSec);
-        if (HasCachedTypeHandle(pEHClause))
-        {
-            typeHnd = TypeHandle::FromPtr(pEHClause->TypeHandle);
-        }
-        else
-        {
-            typeTok = pEHClause->ClassToken;
-        }
+        return TypeHandle::FromPtr(pEHClause->TypeHandle);
     }
-
-    if (!typeHnd.IsNull())
+    else
     {
-        return typeHnd;
+        typeTok = pEHClause->ClassToken;
     }
 
     MethodDesc* pMD = pCf->GetFunction();
@@ -3108,43 +3098,8 @@ TypeHandle EEJitManager::ResolveEHClause(EE_ILEXCEPTION_CLAUSE* pEHClause,
         }
     }
 
-    typeHnd = ClassLoader::LoadTypeDefOrRefOrSpecThrowing(pModule, typeTok, &typeContext,
-                                                          ClassLoader::ReturnNullIfNotFound);
-
-    // If the type (pModule,typeTok) was not loaded or not
-    // restored then the exception object won't have this type, because an
-    // object of this type has not been allocated.
-    if (typeHnd.IsNull())
-        return typeHnd;
-
-    // We can cache any exception specification except:
-    //   - If the type contains type variables in generic code,
-    //     e.g. catch E<T> where T is a type variable.
-    // We CANNOT cache E<T> in non-shared instantiations of generic code because
-    // there is only one EHClause cache for the IL, shared across all instantiations.
-    //
-    if((k & hasAnyVarsMask) == 0)
-    {
-        CrstHolder chWrite(&m_EHClauseCritSec);
-
-        // Note another thread might have beaten us to it ...
-        if (!HasCachedTypeHandle(pEHClause))
-        {
-            // We should never cache a NULL typeHnd.
-            _ASSERTE(!typeHnd.IsNull());
-            pEHClause->TypeHandle = typeHnd.AsPtr();
-            SetHasCachedTypeHandle(pEHClause);
-        }
-        else
-        {
-            // If we raced in here with another thread and got held up on the lock, then we just need to return the
-            // type handle that the other thread put into the clause.
-            // The typeHnd we found and the typeHnd the racing thread found should always be the same
-            _ASSERTE(typeHnd.AsPtr() == pEHClause->TypeHandle);
-            typeHnd = TypeHandle::FromPtr(pEHClause->TypeHandle);
-        }
-    }
-    return typeHnd;
+    return ClassLoader::LoadTypeDefOrRefOrSpecThrowing(pModule, typeTok, &typeContext,
+                                                       ClassLoader::ReturnNullIfNotFound);
 }
 
 void EEJitManager::RemoveJitData (CodeHeader * pCHdr, size_t GCinfo_len, size_t EHinfo_len)

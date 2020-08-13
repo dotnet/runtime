@@ -13,7 +13,7 @@ namespace System.Collections.Generic
     {
         // public static EqualityComparer<T> Default is runtime-specific
 
-        public abstract bool Equals([AllowNull] T x, [AllowNull] T y);
+        public abstract bool Equals(T? x, T? y);
         public abstract int GetHashCode([DisallowNull] T obj);
 
         int IEqualityComparer.GetHashCode(object? obj)
@@ -42,7 +42,7 @@ namespace System.Collections.Generic
     public sealed partial class GenericEqualityComparer<T> : EqualityComparer<T> where T : IEquatable<T>
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public override bool Equals([AllowNull] T x, [AllowNull] T y)
+        public override bool Equals(T? x, T? y)
         {
             if (x != null)
             {
@@ -100,7 +100,7 @@ namespace System.Collections.Generic
     public sealed partial class ObjectEqualityComparer<T> : EqualityComparer<T>
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public override bool Equals([AllowNull] T x, [AllowNull] T y)
+        public override bool Equals(T? x, T? y)
         {
             if (x != null)
             {

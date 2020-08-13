@@ -1,0 +1,39 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>net461;netstandard2.0;netstandard2.1</TargetFrameworks>
+  </PropertyGroup>
+  <PropertyGroup>
+    <IsPartialFacadeAssembly Condition="'$(TargetFramework)' == 'netstandard2.1'">true</IsPartialFacadeAssembly>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true'">
+    <Compile Include="System\Threading\Tasks\Sources\ManualResetValueTaskSourceCore.cs" />
+    <Compile Include="System\Runtime\CompilerServices\AsyncIteratorMethodBuilder.cs" />
+    <Compile Include="$(CoreLibSharedDir)\System\Collections\Generic\IAsyncEnumerable.cs">
+      <Link>System.Private.CoreLib\System\Collections\Generic\IAsyncEnumerable.cs</Link>
+    </Compile>
+    <Compile Include="$(CoreLibSharedDir)\System\Collections\Generic\IAsyncEnumerator.cs">
+      <Link>System.Private.CoreLib\System\Collections\Generic\IAsyncEnumerator.cs</Link>
+    </Compile>
+    <Compile Include="$(CoreLibSharedDir)\System\IAsyncDisposable.cs">
+      <Link>System.Private.CoreLib\System\IAsyncDisposable.cs</Link>
+    </Compile>
+    <Compile Include="$(CoreLibSharedDir)\System\Runtime\CompilerServices\AsyncIteratorStateMachineAttribute.cs">
+      <Link>System.Private.CoreLib\System\Runtime\CompilerServices\AsyncIteratorStateMachineAttribute.cs</Link>
+    </Compile>
+    <Compile Include="$(CoreLibSharedDir)\System\Runtime\CompilerServices\ConfiguredAsyncDisposable.cs">
+      <Link>System.Private.CoreLib\System\Runtime\CompilerServices\ConfiguredAsyncDisposable.cs</Link>
+    </Compile>
+    <Compile Include="$(CoreLibSharedDir)\System\Runtime\CompilerServices\ConfiguredCancelableAsyncEnumerable.cs">
+      <Link>System.Private.CoreLib\System\Runtime\CompilerServices\ConfiguredCancelableAsyncEnumerable.cs</Link>
+    </Compile>
+    <Compile Include="$(CoreLibSharedDir)\System\Threading\Tasks\TaskAsyncEnumerableExtensions.cs">
+      <Link>System.Private.CoreLib\System\Threading\Tasks\TaskAsyncEnumerableExtensions.cs</Link>
+    </Compile>
+    <Compile Include="$(CoreLibSharedDir)\System\Runtime\CompilerServices\EnumeratorCancellationAttribute.cs">
+      <Link>System.Private.CoreLib\System\Runtime\CompilerServices\EnumeratorCancellationAttribute.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' != 'netstandard2.1'">
+    <PackageReference Include="System.Threading.Tasks.Extensions" Version="$(SystemThreadingTasksExtensionsVersion)" />
+  </ItemGroup>
+</Project>

@@ -30,7 +30,7 @@ namespace System.Data.ProviderBase
             throw new PlatformNotSupportedException();
         }
 
-        public override bool Equals(object value)
+        public override bool Equals(object? value)
         {
             bool result = ((this == NoIdentity) || (this == value));
             if (!result && (null != value))

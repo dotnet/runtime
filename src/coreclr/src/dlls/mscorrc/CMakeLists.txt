@@ -19,7 +19,9 @@ if(CLR_CMAKE_HOST_WIN32)
 else()
     build_resources(${CMAKE_CURRENT_SOURCE_DIR}/include.rc mscorrc TARGET_CPP_FILE)
 
-    add_library_clr(mscorrc OBJECT
+    add_library_clr(mscorrc_obj OBJECT
         ${TARGET_CPP_FILE}
     )
+    add_library(mscorrc INTERFACE)
+    target_sources(mscorrc INTERFACE $<TARGET_OBJECTS:mscorrc_obj>)
 endif(CLR_CMAKE_HOST_WIN32)

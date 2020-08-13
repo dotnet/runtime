@@ -1,7 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>netstandard2.0;net461;$(NetFrameworkCurrent)</TargetFrameworks>
-    <ExcludeCurrentFullFrameworkFromPackage>true</ExcludeCurrentFullFrameworkFromPackage>
+    <TargetFrameworks>netstandard2.0;net461</TargetFrameworks>
     <EnableDefaultItems>true</EnableDefaultItems>
   </PropertyGroup>
   <PropertyGroup>
@@ -19,16 +18,15 @@
   </ItemGroup>
 
   <ItemGroup Condition="$(TargetFramework.StartsWith('net4'))">
-    <Reference Include="mscorlib" />
-    <Reference Include="System" />
-    <Reference Include="System.Core" />
     <Reference Include="System.Runtime" />
     <PackageReference Include="System.Runtime.InteropServices.RuntimeInformation" Version="4.3.0" Condition="'$(TargetFramework)' == 'net461'" />
   </ItemGroup>
+
   <ItemGroup>
-    <Reference Include="System.Buffers" />
-    <Reference Include="System.Memory" />
-    <Reference Include="System.Text.Json" />
-    <Reference Include="System.Text.Encodings.Web" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Text.Json\src\System.Text.Json.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Text.Encodings.Web\src\System.Text.Encodings.Web.csproj" />
+    <PackageReference Include="System.Buffers" Version="$(SystemBuffersVersion)" />
+    <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />
   </ItemGroup>
+
 </Project>

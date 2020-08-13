@@ -37,7 +37,7 @@ namespace System.Data.Odbc
         {
             get
             {
-                return (OdbcError)_items[i];
+                return (OdbcError)_items[i]!;
             }
         }
 

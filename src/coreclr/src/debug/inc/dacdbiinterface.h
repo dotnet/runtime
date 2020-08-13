@@ -2733,6 +2733,9 @@ public:
     virtual
     HRESULT GetLoaderHeapMemoryRanges(OUT DacDbiArrayList<COR_MEMORY_RANGE> *pRanges) = 0;
 
+    virtual
+    HRESULT IsModuleMapped(VMPTR_Module pModule, OUT BOOL *isModuleMapped) = 0;
+
     // The following tag tells the DD-marshalling tool to stop scanning.
     // END_MARSHAL
 

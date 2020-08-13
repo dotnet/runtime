@@ -51,6 +51,14 @@ namespace Internal.TypeSystem
         // Value of <see cref="EmbeddedSignatureData.index" /> for any custom modifiers on the return type
         public const string IndexOfCustomModifiersOnReturnType = "0.1.1.1";
 
+        // Value of <see cref="EmbeddedSignatureData.index" /> for any custom modifiers on
+        // SomeStruct when SomeStruct *, or SomeStruct & is the type of a parameter or return type
+        // Parameter index 0 represents the return type, and indices 1-n represent the parameters to the signature
+        public static string GetIndexOfCustomModifierOnPointedAtTypeByParameterIndex(int parameterIndex)
+        {
+            return $"0.1.1.2.{(parameterIndex + 1).ToStringInvariant()}.1";
+        }
+
         public MethodSignature(MethodSignatureFlags flags, int genericParameterCount, TypeDesc returnType, TypeDesc[] parameters, EmbeddedSignatureData[] embeddedSignatureData = null)
         {
             _flags = flags;

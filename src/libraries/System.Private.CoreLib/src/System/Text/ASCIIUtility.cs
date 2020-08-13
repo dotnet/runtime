@@ -1003,6 +1003,16 @@ namespace System.Text
                 Vector128<uint> vecNarrow = Sse2.PackUnsignedSaturate(vecWide, vecWide).AsUInt32();
                 Unsafe.WriteUnaligned<uint>(ref outputBuffer, Sse2.ConvertToUInt32(vecNarrow));
             }
+            else if (AdvSimd.IsSupported)
+            {
+                // Narrows a vector of words [ w0 w1 w2 w3 ] to a vector of bytes
+                // [ b0 b1 b2 b3 * * * * ], then writes 4 bytes (32 bits) to the destination.
+
+                Vector128<short> vecWide = Vector128.CreateScalarUnsafe(value).AsInt16();
+                Vector64<byte> lower = AdvSimd.ExtractNarrowingSaturateUnsignedLower(vecWide);
+                Unsafe.WriteUnaligned<uint>(ref outputBuffer, lower.AsUInt32().ToScalar());
+            }
+
             else
             {
                 if (BitConverter.IsLittleEndian)
@@ -1468,11 +1478,11 @@ namespace System.Text
             // pmovmskb which we know are optimized, and (b) we can avoid downclocking the processor while
             // this method is running.
 
-            if (Sse2.IsSupported)
+            if (BitConverter.IsLittleEndian && (Sse2.IsSupported || AdvSimd.Arm64.IsSupported))
             {
                 if (elementCount >= 2 * (uint)Unsafe.SizeOf<Vector128<byte>>())
                 {
-                    currentOffset = WidenAsciiToUtf16_Sse2(pAsciiBuffer, pUtf16Buffer, elementCount);
+                    currentOffset = WidenAsciiToUtf16_Intrinsified(pAsciiBuffer, pUtf16Buffer, elementCount);
                 }
             }
             else if (Vector.IsHardwareAccelerated)
@@ -1587,7 +1597,18 @@ namespace System.Text
             goto Finish;
         }
 
-        private static unsafe nuint WidenAsciiToUtf16_Sse2(byte* pAsciiBuffer, char* pUtf16Buffer, nuint elementCount)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool ContainsNonAsciiByte(Vector128<byte> value)
+        {
+            if (!AdvSimd.Arm64.IsSupported)
+            {
+                throw new PlatformNotSupportedException();
+            }
+            value = AdvSimd.Arm64.MaxPairwise(value, value);
+            return (value.AsUInt64().ToScalar() & 0x8080808080808080) != 0;
+        }
+
+        private static unsafe nuint WidenAsciiToUtf16_Intrinsified(byte* pAsciiBuffer, char* pUtf16Buffer, nuint elementCount)
         {
             // JIT turns the below into constants
 
@@ -1598,7 +1619,7 @@ namespace System.Text
             // jumps as much as possible in the optimistic case of "all ASCII". If we see non-ASCII
             // data, we jump out of the hot paths to targets at the end of the method.
 
-            Debug.Assert(Sse2.IsSupported);
+            Debug.Assert(Sse2.IsSupported || AdvSimd.Arm64.IsSupported);
             Debug.Assert(BitConverter.IsLittleEndian);
             Debug.Assert(elementCount >= 2 * SizeOfVector128);
 
@@ -1607,16 +1628,28 @@ namespace System.Text
 
             Vector128<byte> asciiVector;
             Vector128<byte> utf16FirstHalfVector;
-            uint mask;
+            bool containsNonAsciiBytes;
 
             // First, perform an unaligned read of the first part of the input buffer.
 
-            asciiVector = Sse2.LoadVector128(pAsciiBuffer); // unaligned load
-            mask = (uint)Sse2.MoveMask(asciiVector);
+            if (Sse2.IsSupported)
+            {
+                asciiVector = Sse2.LoadVector128(pAsciiBuffer); // unaligned load
+                containsNonAsciiBytes = (uint)Sse2.MoveMask(asciiVector) != 0;
+            }
+            else if (AdvSimd.Arm64.IsSupported)
+            {
+                asciiVector = AdvSimd.LoadVector128(pAsciiBuffer);
+                containsNonAsciiBytes = ContainsNonAsciiByte(asciiVector);
+            }
+            else
+            {
+                throw new PlatformNotSupportedException();
+            }
 
             // If there's non-ASCII data in the first 8 elements of the vector, there's nothing we can do.
 
-            if ((byte)mask != 0)
+            if (containsNonAsciiBytes)
             {
                 return 0;
             }
@@ -1625,8 +1658,20 @@ namespace System.Text
 
             Vector128<byte> zeroVector = Vector128<byte>.Zero;
 
-            utf16FirstHalfVector = Sse2.UnpackLow(asciiVector, zeroVector);
-            Sse2.Store((byte*)pUtf16Buffer, utf16FirstHalfVector); // unaligned
+            if (Sse2.IsSupported)
+            {
+                utf16FirstHalfVector = Sse2.UnpackLow(asciiVector, zeroVector);
+                Sse2.Store((byte*)pUtf16Buffer, utf16FirstHalfVector); // unaligned
+            }
+            else if (AdvSimd.IsSupported)
+            {
+                utf16FirstHalfVector = AdvSimd.ZeroExtendWideningLower(asciiVector.GetLower()).AsByte();
+                AdvSimd.Store((byte*)pUtf16Buffer, utf16FirstHalfVector); // unaligned
+            }
+            else
+            {
+                throw new PlatformNotSupportedException();
+            }
 
             // Calculate how many elements we wrote in order to get pOutputBuffer to its next alignment
             // point, then use that as the base offset going forward. Remember the >> 1 to account for
@@ -1648,20 +1693,45 @@ namespace System.Text
             {
                 // In a loop, perform an unaligned read, widen to two vectors, then aligned write the two vectors.
 
-                asciiVector = Sse2.LoadVector128(pAsciiBuffer + currentOffset); // unaligned load
-                mask = (uint)Sse2.MoveMask(asciiVector);
+                if (Sse2.IsSupported)
+                {
+                    asciiVector = Sse2.LoadVector128(pAsciiBuffer + currentOffset); // unaligned load
+                    containsNonAsciiBytes = (uint)Sse2.MoveMask(asciiVector) != 0;
+                }
+                else if (AdvSimd.Arm64.IsSupported)
+                {
+                    asciiVector = AdvSimd.LoadVector128(pAsciiBuffer + currentOffset);
+                    containsNonAsciiBytes = ContainsNonAsciiByte(asciiVector);
+                }
+                else
+                {
+                    throw new PlatformNotSupportedException();
+                }
 
-                if (mask != 0)
+                if (containsNonAsciiBytes)
                 {
                     // non-ASCII byte somewhere
                     goto NonAsciiDataSeenInInnerLoop;
                 }
 
-                Vector128<byte> low = Sse2.UnpackLow(asciiVector, zeroVector);
-                Sse2.StoreAligned((byte*)pCurrentWriteAddress, low);
+                if (Sse2.IsSupported)
+                {
+                    Vector128<byte> low = Sse2.UnpackLow(asciiVector, zeroVector);
+                    Sse2.StoreAligned((byte*)pCurrentWriteAddress, low);
 
-                Vector128<byte> high = Sse2.UnpackHigh(asciiVector, zeroVector);
-                Sse2.StoreAligned((byte*)pCurrentWriteAddress + SizeOfVector128, high);
+                    Vector128<byte> high = Sse2.UnpackHigh(asciiVector, zeroVector);
+                    Sse2.StoreAligned((byte*)pCurrentWriteAddress + SizeOfVector128, high);
+                }
+                else if (AdvSimd.Arm64.IsSupported)
+                {
+                    Vector128<ushort> low = AdvSimd.ZeroExtendWideningLower(asciiVector.GetLower());
+                    Vector128<ushort> high = AdvSimd.ZeroExtendWideningUpper(asciiVector);
+                    AdvSimd.Arm64.StorePair((ushort*)pCurrentWriteAddress, low, high);
+                }
+                else
+                {
+                    throw new PlatformNotSupportedException();
+                }
 
                 currentOffset += SizeOfVector128;
                 pCurrentWriteAddress += SizeOfVector128;
@@ -1675,11 +1745,23 @@ namespace System.Text
 
             // Can we at least widen the first part of the vector?
 
-            if ((byte)mask == 0)
+            if (!containsNonAsciiBytes)
             {
                 // First part was all ASCII, widen
-                utf16FirstHalfVector = Sse2.UnpackLow(asciiVector, zeroVector);
-                Sse2.StoreAligned((byte*)(pUtf16Buffer + currentOffset), utf16FirstHalfVector);
+                if (Sse2.IsSupported)
+                {
+                    utf16FirstHalfVector = Sse2.UnpackLow(asciiVector, zeroVector);
+                    Sse2.StoreAligned((byte*)(pUtf16Buffer + currentOffset), utf16FirstHalfVector);
+                }
+                else if (AdvSimd.Arm64.IsSupported)
+                {
+                    Vector128<ushort> lower = AdvSimd.ZeroExtendWideningLower(asciiVector.GetLower());
+                    AdvSimd.Store((ushort*)(pUtf16Buffer + currentOffset), lower);
+                }
+                else
+                {
+                    throw new PlatformNotSupportedException();
+                }
                 currentOffset += SizeOfVector128 / 2;
             }
 
