@@ -1,13 +1,11 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net.Sockets;
 using System.Net.Test.Common;
-using System.Runtime.InteropServices;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
@@ -42,7 +40,7 @@ namespace System.Net.Security.Tests
             {
                 clientOptions.RemoteCertificateValidationCallback = AllowAnyServerCertificate;
                 clientOptions.TargetHost = certificate.GetNameInfo(X509NameType.SimpleName, false);
-                serverOptions.ServerCertificate = certificate;
+                serverOptions.ServerCertificateContext = SslStreamCertificateContext.Create(certificate, null);
 
                 Task t1 = clientSslStream.AuthenticateAsClientAsync(TestAuthenticateAsync, clientOptions);
                 Task t2 = serverSslStream.AuthenticateAsServerAsync(TestAuthenticateAsync, serverOptions);
@@ -227,7 +225,7 @@ namespace System.Net.Security.Tests
 
         public static IEnumerable<object[]> Alpn_TestData()
         {
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+            if (OperatingSystem.IsMacOS())
             {
                 yield return new object[] { new List<SslApplicationProtocol> { SslApplicationProtocol.Http11, SslApplicationProtocol.Http2 }, new List<SslApplicationProtocol> { SslApplicationProtocol.Http2 }, null };
                 yield return new object[] { new List<SslApplicationProtocol> { SslApplicationProtocol.Http11 }, new List<SslApplicationProtocol> { SslApplicationProtocol.Http11, SslApplicationProtocol.Http2 }, null };

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Text;
@@ -92,14 +91,12 @@ namespace Internal.Cryptography.Pal.Windows
             }
         }
 
-        [return: MaybeNull]
-        public override T GetPrivateKeyForSigning<T>(X509Certificate2 certificate, bool silent)
+        public override T? GetPrivateKeyForSigning<T>(X509Certificate2 certificate, bool silent) where T : class
         {
             return GetPrivateKey<T>(certificate, silent, preferNCrypt: true);
         }
 
-        [return: MaybeNull]
-        public override T GetPrivateKeyForDecryption<T>(X509Certificate2 certificate, bool silent)
+        public override T? GetPrivateKeyForDecryption<T>(X509Certificate2 certificate, bool silent) where T : class
         {
             return GetPrivateKey<T>(certificate, silent, preferNCrypt: false);
         }

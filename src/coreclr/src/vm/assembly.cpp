@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*============================================================
 **
@@ -190,6 +189,19 @@ void Assembly::Init(AllocMemTracker *pamTracker, LoaderAllocator *pLoaderAllocat
     // We'll load the friend assembly information lazily.  For the ngen case we should avoid
     //  loading it entirely.
     //CacheFriendAssemblyInfo();
+
+#ifndef CROSSGEN_COMPILE
+    if (IsCollectible())
+    {
+        COUNT_T size;
+        BYTE *start = (BYTE*)m_pManifest->GetFile()->GetLoadedImageContents(&size);
+        if (start != NULL)
+        {
+            GCX_COOP();
+            LoaderAllocator::AssociateMemoryWithLoaderAllocator(start, start + size, m_pLoaderAllocator);
+        }
+    }
+#endif
 
     {
         CANNOTTHROWCOMPLUSEXCEPTION();

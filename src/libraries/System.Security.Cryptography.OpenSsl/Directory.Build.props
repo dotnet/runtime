@@ -2,7 +2,7 @@
   <Import Project="..\Directory.Build.props" />
   <PropertyGroup>
     <StrongNameKeyId>Microsoft</StrongNameKeyId>
-    <IsNETCoreApp>true</IsNETCoreApp>
-    <IsNETCoreAppRef>false</IsNETCoreAppRef>
+    <IncludePlatformAttributes>true</IncludePlatformAttributes>
+    <UnsupportedOSPlatform>windows</UnsupportedOSPlatform>
   </PropertyGroup>
 </Project>

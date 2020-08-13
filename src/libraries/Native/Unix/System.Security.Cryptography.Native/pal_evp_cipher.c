@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #include "pal_evp_cipher.h"
 
@@ -196,6 +195,16 @@ const EVP_CIPHER* CryptoNative_EvpAes128Gcm()
     return EVP_aes_128_gcm();
 }
 
+const EVP_CIPHER* CryptoNative_EvpAes128Cfb128()
+{
+    return EVP_aes_128_cfb128();
+}
+
+const EVP_CIPHER* CryptoNative_EvpAes128Cfb8()
+{
+    return EVP_aes_128_cfb8();
+}
+
 const EVP_CIPHER* CryptoNative_EvpAes128Ccm()
 {
     return EVP_aes_128_ccm();
@@ -204,6 +213,16 @@ const EVP_CIPHER* CryptoNative_EvpAes128Ccm()
 const EVP_CIPHER* CryptoNative_EvpAes192Ecb()
 {
     return EVP_aes_192_ecb();
+}
+
+const EVP_CIPHER* CryptoNative_EvpAes192Cfb128()
+{
+    return EVP_aes_192_cfb128();
+}
+
+const EVP_CIPHER* CryptoNative_EvpAes192Cfb8()
+{
+    return EVP_aes_192_cfb8();
 }
 
 const EVP_CIPHER* CryptoNative_EvpAes192Cbc()
@@ -226,6 +245,16 @@ const EVP_CIPHER* CryptoNative_EvpAes256Ecb()
     return EVP_aes_256_ecb();
 }
 
+const EVP_CIPHER* CryptoNative_EvpAes256Cfb128()
+{
+    return EVP_aes_256_cfb128();
+}
+
+const EVP_CIPHER* CryptoNative_EvpAes256Cfb8()
+{
+    return EVP_aes_256_cfb8();
+}
+
 const EVP_CIPHER* CryptoNative_EvpAes256Cbc()
 {
     return EVP_aes_256_cbc();
@@ -246,6 +275,11 @@ const EVP_CIPHER* CryptoNative_EvpDesEcb()
     return EVP_des_ecb();
 }
 
+const EVP_CIPHER* CryptoNative_EvpDesCfb8()
+{
+    return EVP_des_cfb8();
+}
+
 const EVP_CIPHER* CryptoNative_EvpDesCbc()
 {
     return EVP_des_cbc();
@@ -254,6 +288,16 @@ const EVP_CIPHER* CryptoNative_EvpDesCbc()
 const EVP_CIPHER* CryptoNative_EvpDes3Ecb()
 {
     return EVP_des_ede3();
+}
+
+const EVP_CIPHER* CryptoNative_EvpDes3Cfb8()
+{
+    return EVP_des_ede3_cfb8();
+}
+
+const EVP_CIPHER* CryptoNative_EvpDes3Cfb64()
+{
+    return EVP_des_ede3_cfb64();
 }
 
 const EVP_CIPHER* CryptoNative_EvpDes3Cbc()

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #include <cassert>
 
@@ -148,7 +147,8 @@ namespace
         _X("APP_PATHS"),
         _X("APP_NI_PATHS"),
         _X("RUNTIME_IDENTIFIER"),
-        _X("BUNDLE_PROBE")
+        _X("BUNDLE_PROBE"),
+        _X("HOSTPOLICY_EMBEDDED")
     };
 
     static_assert((sizeof(PropertyNameMapping) / sizeof(*PropertyNameMapping)) == static_cast<size_t>(common_property::Last), "Invalid property count");

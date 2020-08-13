@@ -113,6 +113,7 @@ static GENERATE_TRY_GET_CLASS_WITH_CACHE (unmanaged_function_pointer_attribute, 
 
 #ifdef ENABLE_NETCORE
 static GENERATE_TRY_GET_CLASS_WITH_CACHE (suppress_gc_transition_attribute, "System.Runtime.InteropServices", "SuppressGCTransitionAttribute")
+static GENERATE_TRY_GET_CLASS_WITH_CACHE (unmanaged_callers_only_attribute, "System.Runtime.InteropServices", "UnmanagedCallersOnlyAttribute")
 #endif
 
 static MonoImage*
@@ -254,6 +255,7 @@ mono_marshal_init (void)
 		register_icall (mono_threads_attach_coop, mono_icall_sig_ptr_ptr_ptr, TRUE);
 		register_icall (mono_threads_detach_coop, mono_icall_sig_void_ptr_ptr, TRUE);
 		register_icall (mono_marshal_get_type_object, mono_icall_sig_object_ptr, TRUE);
+		register_icall (mono_marshal_lookup_pinvoke, mono_icall_sig_ptr_ptr, FALSE);
 
 		mono_cominterop_init ();
 		mono_remoting_init ();
@@ -3661,11 +3663,28 @@ mono_marshal_get_native_wrapper (MonoMethod *method, gboolean check_exceptions, 
 
 	mb->method->save_lmf = 1;
 
+	if (G_UNLIKELY (pinvoke && mono_method_has_unmanaged_callers_only_attribute (method))) {
+		/* emit a wrapper that throws a NotSupportedException */
+		get_marshal_cb ()->mb_emit_exception (mb, "System", "NotSupportedException", "Method canot be marked with both  DllImportAttribute and UnmanagedCallersOnlyAttribute");
+
+		info = mono_wrapper_info_create (mb, WRAPPER_SUBTYPE_NONE);
+		info->d.managed_to_native.method = method;
+
+		csig = mono_metadata_signature_dup_full (get_method_image (method), sig);
+		csig->pinvoke = 0;
+		res = mono_mb_create_and_cache_full (cache, method, mb, csig,
+											 csig->param_count + 16, info, NULL);
+		mono_mb_free (mb);
+
+		return res;
+	}
+
+
 	/*
 	 * In AOT mode and embedding scenarios, it is possible that the icall is not
 	 * registered in the runtime doing the AOT compilation.
 	 */
-	if (!piinfo->addr && !aot) {
+	if (!pinvoke && !piinfo->addr && !aot) {
 		/* if there's no code but the error isn't set, just use a fairly generic exception. */
 		if (is_ok (emitted_error))
 			mono_error_set_generic_error (emitted_error, "System", "MissingMethodException", "");
@@ -3683,8 +3702,6 @@ mono_marshal_get_native_wrapper (MonoMethod *method, gboolean check_exceptions, 
 
 		return res;
 	}
-
-	g_assert (is_ok (emitted_error));
 
 	/* internal calls: we simply push all arguments and call the method (no conversions) */
 	if (method->iflags & (METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL | METHOD_IMPL_ATTRIBUTE_RUNTIME)) {
@@ -3714,8 +3731,6 @@ mono_marshal_get_native_wrapper (MonoMethod *method, gboolean check_exceptions, 
 	}
 
 	g_assert (pinvoke);
-	if (!aot)
-		g_assert (piinfo->addr);
 
 	csig = mono_metadata_signature_dup_full (get_method_image (method), sig);
 	mono_marshal_set_callconv_from_modopt (method, csig, FALSE);
@@ -3940,10 +3955,58 @@ emit_managed_wrapper_noilgen (MonoMethodBuilder *mb, MonoMethodSignature *invoke
 }
 #endif
 
+static gboolean
+type_is_blittable (MonoType *type)
+{
+	if (type->byref)
+		return FALSE;
+	type = mono_type_get_underlying_type (type);
+	switch (type->type) {
+	case MONO_TYPE_I1:
+	case MONO_TYPE_U1:
+	case MONO_TYPE_I2:
+	case MONO_TYPE_U2:
+	case MONO_TYPE_I4:
+	case MONO_TYPE_U4:
+	case MONO_TYPE_I8:
+	case MONO_TYPE_U8:
+	case MONO_TYPE_R4:
+	case MONO_TYPE_R8:
+	case MONO_TYPE_I:
+	case MONO_TYPE_U:
+	case MONO_TYPE_PTR:
+	case MONO_TYPE_FNPTR:
+	case MONO_TYPE_VOID:
+		return TRUE;
+	default: {
+		MonoClass *klass = mono_class_from_mono_type_internal (type);
+		mono_class_init_sizes (klass);
+		return m_class_is_blittable (klass);
+	}
+	}
+}
+
+static gboolean
+method_signature_is_blittable (MonoMethodSignature *sig)
+{
+	if (!type_is_blittable (sig->ret))
+		return FALSE;
+
+	for (int i = 0; i < sig->param_count; ++i) {
+		MonoType *type = sig->params [i];
+		if (!type_is_blittable (type))
+			return FALSE;
+	}
+	return TRUE;
+}
+
 /**
  * mono_marshal_get_managed_wrapper:
  * Generates IL code to call managed methods from unmanaged code 
  * If \p target_handle is \c 0, the wrapper info will be a \c WrapperInfo structure.
+ *
+ * If \p delegate_klass is \c NULL, we're creating a wrapper for a function pointer to a method marked with
+ * UnamangedCallersOnlyAttribute.
  */
 MonoMethod *
 mono_marshal_get_managed_wrapper (MonoMethod *method, MonoClass *delegate_klass, MonoGCHandle target_handle, MonoError *error)
@@ -3975,11 +4038,33 @@ mono_marshal_get_managed_wrapper (MonoMethod *method, MonoClass *delegate_klass,
 	if (!target_handle && (res = mono_marshal_find_in_cache (cache, method)))
 		return res;
 
-	invoke = mono_get_delegate_invoke_internal (delegate_klass);
-	invoke_sig = mono_method_signature_internal (invoke);
-
-	mspecs = g_new0 (MonoMarshalSpec*, mono_method_signature_internal (invoke)->param_count + 1);
-	mono_method_get_marshal_info (invoke, mspecs);
+	if (G_UNLIKELY (!delegate_klass)) {
+		/* creating a wrapper for a function pointer with UnmanagedCallersOnlyAttribute */
+		if (mono_method_has_marshal_info (method)) {
+			mono_error_set_invalid_program (error, "method %s with UnmanadedCallersOnlyAttribute has marshal specs", mono_method_full_name (method, TRUE));
+			return NULL;
+		}
+		invoke = NULL;
+		invoke_sig = mono_method_signature_internal (method);
+		if (invoke_sig->hasthis) {
+			mono_error_set_invalid_program (error, "method %s with UnamanagedCallersOnlyAttribute is an instance method", mono_method_full_name (method, TRUE));
+			return NULL;
+		}
+		if (method->is_generic || method->is_inflated || mono_class_is_ginst (method->klass)) {
+			mono_error_set_invalid_program (error, "method %s with UnamangedCallersOnlyAttribute is generic", mono_method_full_name (method, TRUE));
+			return NULL;
+		}
+		if (!method_signature_is_blittable (invoke_sig)) {
+			mono_error_set_invalid_program (error, "method %s with UnmanagedCallersOnlyAttribute has non-blittable parameters or return type", mono_method_full_name (method, TRUE));
+			return NULL;
+		}
+		mspecs = g_new0 (MonoMarshalSpec*, invoke_sig->param_count + 1);
+	} else {
+		invoke = mono_get_delegate_invoke_internal (delegate_klass);
+		invoke_sig = mono_method_signature_internal (invoke);
+		mspecs = g_new0 (MonoMarshalSpec*, invoke_sig->param_count + 1);
+		mono_method_get_marshal_info (invoke, mspecs);
+	}
 
 	sig = mono_method_signature_internal (method);
 
@@ -4005,10 +4090,11 @@ mono_marshal_get_managed_wrapper (MonoMethod *method, MonoClass *delegate_klass,
 	m.csig = csig;
 	m.image = get_method_image (method);
 
-	mono_marshal_set_callconv_from_modopt (invoke, csig, TRUE);
+	if (invoke)
+		mono_marshal_set_callconv_from_modopt (invoke, csig, TRUE);
 
 	/* The attribute is only available in Net 2.0 */
-	if (mono_class_try_get_unmanaged_function_pointer_attribute_class ()) {
+	if (delegate_klass && mono_class_try_get_unmanaged_function_pointer_attribute_class ()) {
 		MonoCustomAttrInfo *cinfo;
 		MonoCustomAttrEntry *attr;
 
@@ -4097,7 +4183,7 @@ mono_marshal_get_managed_wrapper (MonoMethod *method, MonoClass *delegate_klass,
 	}
 	mono_mb_free (mb);
 
-	for (i = mono_method_signature_internal (invoke)->param_count; i >= 0; i--)
+	for (i = invoke_sig->param_count; i >= 0; i--)
 		if (mspecs [i])
 			mono_metadata_free_marshal_spec (mspecs [i]);
 	g_free (mspecs);
@@ -6666,6 +6752,20 @@ mono_marshal_get_type_object (MonoClass *klass)
 	return result;
 }
 
+gpointer
+mono_marshal_lookup_pinvoke (MonoMethod *method)
+{
+	ERROR_DECL (error);
+	gpointer addr;
+
+	g_assert (method);
+	addr = mono_lookup_pinvoke_call_internal (method, error);
+	if (!addr)
+		g_assert (!is_ok (error));
+	mono_error_set_pending_exception (error);
+	return addr;
+}
+
 void
 mono_marshal_emit_native_wrapper (MonoImage *image, MonoMethodBuilder *mb, MonoMethodSignature *sig, MonoMethodPInvoke *piinfo, MonoMarshalSpec **mspecs, gpointer func, gboolean aot, gboolean check_exceptions, gboolean func_param, gboolean skip_gc_trans)
 {
@@ -6754,4 +6854,34 @@ get_marshal_cb (void)
 #endif
 	}
 	return &marshal_cb;
+}
+
+/**
+ * mono_method_has_unmanaged_callers_only_attribute:
+ *
+ * Returns \c TRUE if \p method has the \c UnmanagedCallersOnlyAttribute
+ */
+gboolean
+mono_method_has_unmanaged_callers_only_attribute (MonoMethod *method)
+{
+#ifndef ENABLE_NETCORE
+	return FALSE;
+#else
+	ERROR_DECL (attr_error);
+	MonoClass *attr_klass = NULL;
+	attr_klass = mono_class_try_get_unmanaged_callers_only_attribute_class ();
+	if (!attr_klass)
+		return FALSE;
+	MonoCustomAttrInfo *cinfo;
+	cinfo = mono_custom_attrs_from_method_checked (method, attr_error);
+	if (!is_ok (attr_error) || !cinfo) {
+		mono_error_cleanup (attr_error);
+		return FALSE;
+	}
+	gboolean result;
+	result = mono_custom_attrs_has_attr (cinfo, attr_klass);
+	if (!cinfo->cached)
+		mono_custom_attrs_free (cinfo);
+	return result;
+#endif
 }

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Concurrent;
@@ -325,7 +324,7 @@ namespace Microsoft.Extensions.Http
             }
 
             // We didn't totally empty the cleanup queue, try again later.
-            if (_expiredHandlers.Count > 0)
+            if (!_expiredHandlers.IsEmpty)
             {
                 StartCleanupTimer();
             }

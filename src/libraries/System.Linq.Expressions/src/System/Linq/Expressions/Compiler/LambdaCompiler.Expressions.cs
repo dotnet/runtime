@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -1124,6 +1123,8 @@ namespace System.Linq.Expressions.Compiler
                         Label exit = _ilg.DefineLabel();
                         Label exitNull = _ilg.DefineLabel();
                         LocalBuilder anyNull = GetLocal(typeof(bool));
+                        _ilg.Emit(OpCodes.Ldc_I4_0);
+                        _ilg.Emit(OpCodes.Stloc, anyNull);
                         for (int i = 0, n = paramList.Length; i < n; i++)
                         {
                             ParameterExpression v = paramList[i];

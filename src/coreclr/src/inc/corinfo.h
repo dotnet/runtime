@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 //
 
@@ -209,19 +208,11 @@ TODO: Talk about initializing strutures before use
 //
 //////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-#if !defined(SELECTANY)
-#if defined(__GNUC__)
-    #define SELECTANY extern __attribute__((weak))
-#else
-    #define SELECTANY extern __declspec(selectany)
-#endif
-#endif
-
-SELECTANY const GUID JITEEVersionIdentifier = { /* 7af97117-55be-4c76-afb2-e26261cb140e */
-    0x7af97117,
-    0x55be,
-    0x4c76,
-    { 0xaf, 0xb2, 0xe2, 0x62, 0x61, 0xcb, 0x14, 0x0e }
+constexpr GUID JITEEVersionIdentifier = { /* a5eec3a4-4176-43a7-8c2b-a05b551d4f49 */
+    0xa5eec3a4,
+    0x4176,
+    0x43a7,
+    {0x8c, 0x2b, 0xa0, 0x5b, 0x55, 0x1d, 0x4f, 0x49}
 };
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -722,6 +713,7 @@ enum CorInfoCallConv
     CORINFO_CALLCONV_FIELD      = 0x6,
     CORINFO_CALLCONV_LOCAL_SIG  = 0x7,
     CORINFO_CALLCONV_PROPERTY   = 0x8,
+    CORINFO_CALLCONV_UNMANAGED  = 0x9,
     CORINFO_CALLCONV_NATIVEVARARG = 0xb,    // used ONLY for IL stub PInvoke vararg calls
 
     CORINFO_CALLCONV_MASK       = 0x0f,     // Calling convention is bottom 4 bits
@@ -899,28 +891,6 @@ enum CorInfoException
 
 enum CorInfoIntrinsics
 {
-    CORINFO_INTRINSIC_Sin,
-    CORINFO_INTRINSIC_Cos,
-    CORINFO_INTRINSIC_Cbrt,
-    CORINFO_INTRINSIC_Sqrt,
-    CORINFO_INTRINSIC_Abs,
-    CORINFO_INTRINSIC_Round,
-    CORINFO_INTRINSIC_Cosh,
-    CORINFO_INTRINSIC_Sinh,
-    CORINFO_INTRINSIC_Tan,
-    CORINFO_INTRINSIC_Tanh,
-    CORINFO_INTRINSIC_Asin,
-    CORINFO_INTRINSIC_Asinh,
-    CORINFO_INTRINSIC_Acos,
-    CORINFO_INTRINSIC_Acosh,
-    CORINFO_INTRINSIC_Atan,
-    CORINFO_INTRINSIC_Atan2,
-    CORINFO_INTRINSIC_Atanh,
-    CORINFO_INTRINSIC_Log10,
-    CORINFO_INTRINSIC_Pow,
-    CORINFO_INTRINSIC_Exp,
-    CORINFO_INTRINSIC_Ceiling,
-    CORINFO_INTRINSIC_Floor,
     CORINFO_INTRINSIC_GetChar,              // fetch character out of string
     CORINFO_INTRINSIC_Array_GetDimLength,   // Get number of elements in a given dimension of an array
     CORINFO_INTRINSIC_Array_Get,            // Get the value of an element in an array

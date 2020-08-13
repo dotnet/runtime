@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 // =+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+
 //
@@ -25,7 +24,7 @@ namespace System.Linq.Parallel
     {
         private readonly SynchronousChannel<T>[] _channels; // The channel array we will enumerate, from left-to-right.
         private int _channelIndex; // The current channel index. This moves through the array as we enumerate.
-        private T _currentElement = default!; // The last element remembered during enumeration.
+        private T? _currentElement; // The last element remembered during enumeration.
 
         //-----------------------------------------------------------------------------------
         // Instantiates a new enumerator for a set of channels.
@@ -62,7 +61,7 @@ namespace System.Linq.Parallel
                     throw new InvalidOperationException(SR.PLINQ_CommonEnumerator_Current_NotStarted);
                 }
 
-                return _currentElement;
+                return _currentElement!;
             }
         }
 

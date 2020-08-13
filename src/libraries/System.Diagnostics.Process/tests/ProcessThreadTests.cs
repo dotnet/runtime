@@ -1,9 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.ComponentModel;
-using System.Runtime.InteropServices;
 using System.Threading;
 using System.Linq;
 using Microsoft.DotNet.RemoteExecutor;
@@ -29,7 +27,7 @@ namespace System.Diagnostics.Tests
                     // On OSX, thread id is a 64bit unsigned value. We truncate the ulong to int
                     // due to .NET API surface area. Hence, on overflow id can be negative while
                     // casting the ulong to int.
-                    if (!RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+                    if (!OperatingSystem.IsMacOS())
                     {
                         Assert.InRange(thread.Id, 0, int.MaxValue);
                     }

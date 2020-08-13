@@ -16,7 +16,7 @@ function print_usage {
     echo ''
     echo 'Command line:'
     echo ''
-    echo './setup-gcstress.sh --arch=<TargetArch> --outputDir=<coredistools_lib_install_path>'
+    echo './setup-stress-dependencies.sh --arch=<TargetArch> --outputDir=<coredistools_lib_install_path>'
     echo ''
     echo 'Required arguments:'
     echo '  --arch=<TargetArch>        : Target arch for the build'

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Data.Odbc;
@@ -251,9 +250,9 @@ internal static partial class Interop
         [DllImport(Interop.Libraries.Odbc32, CharSet = CharSet.Unicode)]
         internal static extern /*SQLRETURN*/ODBC32.RetCode SQLPrimaryKeysW(
             /*SQLHSTMT*/OdbcStatementHandle StatementHandle,
-            /*SQLCHAR* */string CatalogName,
+            /*SQLCHAR* */string? CatalogName,
             /*SQLSMALLINT*/short NameLen1,
-            /*SQLCHAR* */ string SchemaName,
+            /*SQLCHAR* */ string? SchemaName,
             /*SQLSMALLINT*/short NameLen2,
             /*SQLCHAR* */string TableName,
             /*SQLSMALLINT*/short NameLen3);
@@ -261,13 +260,13 @@ internal static partial class Interop
         [DllImport(Interop.Libraries.Odbc32, CharSet = CharSet.Unicode)]
         internal static extern /*SQLRETURN*/ODBC32.RetCode SQLProcedureColumnsW(
             /*SQLHSTMT*/OdbcStatementHandle StatementHandle,
-            /*SQLCHAR* */ string CatalogName,
+            /*SQLCHAR* */ string? CatalogName,
             /*SQLSMALLINT*/short NameLen1,
-            /*SQLCHAR* */ string SchemaName,
+            /*SQLCHAR* */ string? SchemaName,
             /*SQLSMALLINT*/short NameLen2,
-            /*SQLCHAR* */ string ProcName,
+            /*SQLCHAR* */ string? ProcName,
             /*SQLSMALLINT*/short NameLen3,
-            /*SQLCHAR* */ string ColumnName,
+            /*SQLCHAR* */ string? ColumnName,
             /*SQLSMALLINT*/short NameLen4);
 
         [DllImport(Interop.Libraries.Odbc32, CharSet = CharSet.Unicode)]
@@ -348,9 +347,9 @@ internal static partial class Interop
         internal static extern /*SQLRETURN*/ODBC32.RetCode SQLSpecialColumnsW(
             /*SQLHSTMT*/OdbcStatementHandle StatementHandle,
             /*SQLUSMALLINT*/ODBC32.SQL_SPECIALCOLS IdentifierType,
-            /*SQLCHAR* */string CatalogName,
+            /*SQLCHAR* */string? CatalogName,
             /*SQLSMALLINT*/short NameLen1,
-            /*SQLCHAR* */string SchemaName,
+            /*SQLCHAR* */string? SchemaName,
             /*SQLSMALLINT*/short NameLen2,
             /*SQLCHAR* */string TableName,
             /*SQLSMALLINT*/short NameLen3,
@@ -360,9 +359,9 @@ internal static partial class Interop
         [DllImport(Interop.Libraries.Odbc32, CharSet = CharSet.Unicode)]
         internal static extern /*SQLRETURN*/ODBC32.RetCode SQLStatisticsW(
             /*SQLHSTMT*/OdbcStatementHandle StatementHandle,
-            /*SQLCHAR* */string CatalogName,
+            /*SQLCHAR* */string? CatalogName,
             /*SQLSMALLINT*/short NameLen1,
-            /*SQLCHAR* */string SchemaName,
+            /*SQLCHAR* */string? SchemaName,
             /*SQLSMALLINT*/short NameLen2,
             /*SQLCHAR* */IntPtr TableName, // IntPtr instead of string because callee may mutate contents
             /*SQLSMALLINT*/short NameLen3,

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Diagnostics;
@@ -351,6 +350,7 @@ namespace Internal.JitInterface
         CORINFO_CALLCONV_FIELD = 0x6,
         CORINFO_CALLCONV_LOCAL_SIG = 0x7,
         CORINFO_CALLCONV_PROPERTY = 0x8,
+        CORINFO_CALLCONV_UNMANAGED = 0x9,
         CORINFO_CALLCONV_NATIVEVARARG = 0xb,    // used ONLY for IL stub PInvoke vararg calls
 
         CORINFO_CALLCONV_MASK = 0x0f,     // Calling convention is bottom 4 bits
@@ -416,28 +416,6 @@ namespace Internal.JitInterface
 
     public enum CorInfoIntrinsics
     {
-        CORINFO_INTRINSIC_Sin,
-        CORINFO_INTRINSIC_Cos,
-        CORINFO_INTRINSIC_Cbrt,
-        CORINFO_INTRINSIC_Sqrt,
-        CORINFO_INTRINSIC_Abs,
-        CORINFO_INTRINSIC_Round,
-        CORINFO_INTRINSIC_Cosh,
-        CORINFO_INTRINSIC_Sinh,
-        CORINFO_INTRINSIC_Tan,
-        CORINFO_INTRINSIC_Tanh,
-        CORINFO_INTRINSIC_Asin,
-        CORINFO_INTRINSIC_Asinh,
-        CORINFO_INTRINSIC_Acos,
-        CORINFO_INTRINSIC_Acosh,
-        CORINFO_INTRINSIC_Atan,
-        CORINFO_INTRINSIC_Atan2,
-        CORINFO_INTRINSIC_Atanh,
-        CORINFO_INTRINSIC_Log10,
-        CORINFO_INTRINSIC_Pow,
-        CORINFO_INTRINSIC_Exp,
-        CORINFO_INTRINSIC_Ceiling,
-        CORINFO_INTRINSIC_Floor,
         CORINFO_INTRINSIC_GetChar,              // fetch character out of string
         CORINFO_INTRINSIC_Array_GetDimLength,   // Get number of elements in a given dimension of an array
         CORINFO_INTRINSIC_Array_Get,            // Get the value of an element in an array

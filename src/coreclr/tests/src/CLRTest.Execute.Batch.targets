@@ -118,6 +118,14 @@ IF NOT "%COMPlus_HeapVerify%"=="" (
   Exit /b 0
 )
       ]]></BatchCLRTestEnvironmentCompatibilityCheck>
+      <BatchCLRTestEnvironmentCompatibilityCheck Condition="'$(IlasmRoundTripIncompatible)' == 'true'"><![CDATA[
+$(BatchCLRTestEnvironmentCompatibilityCheck)
+IF NOT "%RunningIlasmRoundTrip%"=="" (
+  ECHO SKIPPING EXECUTION BECAUSE RunningIlasmRoundTrip IS SET
+  popd
+  Exit /b 0
+)
+      ]]></BatchCLRTestEnvironmentCompatibilityCheck>
       
       <BatchCLRTestExitCodePrep Condition="$(_CLRTestNeedsToRun)">
         <![CDATA[
@@ -279,19 +287,18 @@ REM Local CoreShim requested - see MSBuild property 'CLRTestScriptLocalCoreShim'
 ECHO Copying '%CORE_ROOT%\CoreShim.dll'...
 COPY /y %CORE_ROOT%\CoreShim.dll .
       ]]></BatchCopyCoreShimLocalCmds>
-      <BatchCLRTestLaunchCmds><![CDATA[
+      <BatchCLRTestLaunchCmds Condition="'$(CLRTestKind)' == 'BuildAndRun'">
+    <![CDATA[
+$(BatchLinkerTestLaunchCmds)
+$(BatchCopyCoreShimLocalCmds)
+
 IF NOT "%CLRCustomTestLauncher%"=="" (
   set LAUNCHER=call %CLRCustomTestLauncher% %scriptPath%
 ) ELSE (
   set LAUNCHER=%_DebuggerFullPath% $(_CLRTestRunFile)
 )
+
 $(BatchIlrtTestLaunchCmds)
-$(BatchCopyCoreShimLocalCmds)
-      ]]></BatchCLRTestLaunchCmds>
-      <BatchCLRTestLaunchCmds Condition="'$(CLRTestKind)' == 'BuildAndRun'">
-    <![CDATA[
-$(BatchLinkerTestLaunchCmds)
-$(BatchCLRTestLaunchCmds)
 
 if defined RunCrossGen (
   call :TakeLock
@@ -306,11 +313,11 @@ $(BatchLinkerTestCleanupCmds)
       ]]></BatchCLRTestLaunchCmds>
 
       <BatchCLRTestLaunchCmds Condition="'$(CLRTestKind)' == 'RunOnly'"><![CDATA[
-$(BatchCLRTestLaunchCmds)
+$(BatchCopyCoreShimLocalCmds)
 ECHO  cmd /c $(InputAssemblyName)
 cmd /c $(InputAssemblyName)
-set CLRTestExpectedExitCode=0
 set CLRTestExitCode=!ERRORLEVEL!
+set CLRTestExpectedExitCode=0
       ]]></BatchCLRTestLaunchCmds>
     </PropertyGroup>
     <PropertyGroup>

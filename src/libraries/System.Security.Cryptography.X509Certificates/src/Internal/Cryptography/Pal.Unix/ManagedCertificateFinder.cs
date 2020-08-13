@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -267,13 +266,8 @@ namespace Internal.Cryptography.Pal
                         // SubjectPublicKeyInfo block, and returns that.
                         //
                         // https://msdn.microsoft.com/en-us/library/windows/desktop/aa376079%28v=vs.85%29.aspx
-
-                        using (HashAlgorithm hash = SHA1.Create())
-                        {
-                            byte[] publicKeyInfoBytes = GetSubjectPublicKeyInfo(cert);
-
-                            certKeyId = hash.ComputeHash(publicKeyInfoBytes);
-                        }
+                        byte[] publicKeyInfoBytes = GetSubjectPublicKeyInfo(cert);
+                        certKeyId = SHA1.HashData(publicKeyInfoBytes);
                     }
 
                     return keyIdentifier.ContentsEqual(certKeyId);

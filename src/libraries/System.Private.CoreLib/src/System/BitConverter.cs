@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -383,7 +382,7 @@ namespace System
                 throw new ArgumentOutOfRangeException(nameof(length), SR.Format(SR.ArgumentOutOfRange_LengthTooLarge, int.MaxValue / 3));
             }
 
-            return string.Create(length * 3 - 1, (value, startIndex, length), (dst, state) =>
+            return string.Create(length * 3 - 1, (value, startIndex, length), static (dst, state) =>
             {
                 var src = new ReadOnlySpan<byte>(state.value, state.startIndex, state.length);
 

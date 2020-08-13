@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //*****************************************************************************
 // File: daccess.cpp
 //
@@ -3293,6 +3292,10 @@ ClrDataAccess::QueryInterface(THIS_
     else if (IsEqualIID(interfaceId, __uuidof(ISOSDacInterface8)))
     {
         ifaceRet = static_cast<ISOSDacInterface8*>(this);
+    }
+    else if (IsEqualIID(interfaceId, __uuidof(ISOSDacInterface9)))
+    {
+        ifaceRet = static_cast<ISOSDacInterface9*>(this);
     }
     else
     {

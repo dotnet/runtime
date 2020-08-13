@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //*****************************************************************************
 // UtilCode.h
 //
@@ -1273,6 +1272,7 @@ private:
     static WORD m_nProcessors;
     static BOOL m_enableGCCPUGroups;
     static BOOL m_threadUseAllCpuGroups;
+    static BOOL m_threadAssignCpuGroups;
     static WORD m_initialGroup;
     static CPU_Group_Info *m_CPUGroupInfoArray;
     static bool s_hadSingleProcessorAtStartup;
@@ -1286,6 +1286,7 @@ public:
     static void EnsureInitialized();
     static BOOL CanEnableGCCPUGroups();
     static BOOL CanEnableThreadUseAllCpuGroups();
+    static BOOL CanAssignCpuGroupsToThreads();
     static WORD GetNumActiveProcessors();
     static void GetGroupForProcessor(WORD processor_number,
 		    WORD *group_number, WORD *group_processor_number);
@@ -4072,13 +4073,14 @@ HRESULT GetImageRuntimeVersionString(PVOID pMetaData, LPCSTR* pString);
 // The registry keys and values that contain the information regarding
 // the default registered unmanaged debugger.
 //*****************************************************************************
-SELECTANY const WCHAR kDebugApplicationsPoliciesKey[] = W("SOFTWARE\\Policies\\Microsoft\\Windows\\Windows Error Reporting\\DebugApplications");
-SELECTANY const WCHAR kDebugApplicationsKey[] = W("SOFTWARE\\Microsoft\\Windows\\Windows Error Reporting\\DebugApplications");
 
-SELECTANY const WCHAR kUnmanagedDebuggerKey[] = W("SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\AeDebug");
-SELECTANY const WCHAR kUnmanagedDebuggerValue[] = W("Debugger");
-SELECTANY const WCHAR kUnmanagedDebuggerAutoValue[] = W("Auto");
-SELECTANY const WCHAR kUnmanagedDebuggerAutoExclusionListKey[] = W("SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\AeDebug\\AutoExclusionList");
+#define kDebugApplicationsPoliciesKey W("SOFTWARE\\Policies\\Microsoft\\Windows\\Windows Error Reporting\\DebugApplications")
+#define kDebugApplicationsKey  W("SOFTWARE\\Microsoft\\Windows\\Windows Error Reporting\\DebugApplications")
+
+#define kUnmanagedDebuggerKey W("SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\AeDebug")
+#define kUnmanagedDebuggerValue W("Debugger")
+#define kUnmanagedDebuggerAutoValue W("Auto")
+#define kUnmanagedDebuggerAutoExclusionListKey W("SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\AeDebug\\AutoExclusionList")
 
 BOOL GetRegistryLongValue(HKEY    hKeyParent,              // Parent key.
                           LPCWSTR szKey,                   // Key name to look at.

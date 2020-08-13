@@ -19,6 +19,18 @@
     </ItemGroup>
   </Target>
 
+  <Target Name="EnsureAllAssembliesAreLinked"
+          BeforeTargets="PrepareForILLink"> 
+    <ItemGroup>
+      <ManagedAssemblyToLink>
+        <TrimMode>link</TrimMode>
+      </ManagedAssemblyToLink>
+
+      <!-- Pass the app assembly as a root -->
+      <TrimmerRootAssembly Include="@(IntermediateAssembly)" />
+    </ItemGroup>
+  </Target>
+
   <Target Name="PublishTrimmed" DependsOnTargets="RestoreProject;UpdateRuntimePack;Publish" />
 
 </Project>

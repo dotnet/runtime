@@ -1,9 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Globalization;
-using System.Runtime.InteropServices;
 using System.Security.Cryptography.Pkcs;
 using Test.Cryptography;
 using Xunit;
@@ -40,7 +38,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         //
         // Our Unix loader matches the current Windows 10 behavior.
         private static readonly bool s_loaderFailsKeysEarly =
-            RuntimeInformation.IsOSPlatform(OSPlatform.Windows) &&
+            OperatingSystem.IsWindows() &&
             !PlatformDetection.IsWindows10Version1607OrGreater;
 
         protected abstract void ReadPfx(
@@ -221,7 +219,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 byte[] pfxBytes = builder.Encode();
 
                 // On macOS the cert will come back with HasPrivateKey being false.
-                if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+                if (OperatingSystem.IsMacOS())
                 {
                     using (var publicCert = new X509Certificate2(cert.RawData))
                     {
@@ -283,7 +281,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
                 // On macOS the cert will come back with HasPrivateKey being false when the
                 // incorrect key comes first
-                if (!correctKeyFirst && RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+                if (!correctKeyFirst && OperatingSystem.IsMacOS())
                 {
                     using (var publicCert = new X509Certificate2(cert.RawData))
                     {
@@ -907,7 +905,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                     // Obviously this hit some sort of weird corner case in the Win7
                     // loader, but it's not important to the test.
 
-                    if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) &&
+                    if (OperatingSystem.IsWindows() &&
                         !PlatformDetection.IsWindows8xOrLater)
                     {
                         followup = null;

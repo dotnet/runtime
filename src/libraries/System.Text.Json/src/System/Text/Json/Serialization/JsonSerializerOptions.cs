@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Concurrent;
 using System.ComponentModel;
@@ -34,6 +33,7 @@ namespace System.Text.Json
         private ReferenceHandler? _referenceHandler;
         private JavaScriptEncoder? _encoder;
         private JsonIgnoreCondition _defaultIgnoreCondition;
+        private JsonNumberHandling _numberHandling;
 
         private int _defaultBufferSize = BufferSizeDefault;
         private int _maxDepth;
@@ -41,6 +41,8 @@ namespace System.Text.Json
         private bool _haveTypesBeenCreated;
         private bool _ignoreNullValues;
         private bool _ignoreReadOnlyProperties;
+        private bool _ignoreReadonlyFields;
+        private bool _includeFields;
         private bool _propertyNameCaseInsensitive;
         private bool _writeIndented;
 
@@ -73,12 +75,15 @@ namespace System.Text.Json
             _referenceHandler = options._referenceHandler;
             _encoder = options._encoder;
             _defaultIgnoreCondition = options._defaultIgnoreCondition;
+            _numberHandling = options._numberHandling;
 
             _defaultBufferSize = options._defaultBufferSize;
             _maxDepth = options._maxDepth;
             _allowTrailingCommas = options._allowTrailingCommas;
             _ignoreNullValues = options._ignoreNullValues;
             _ignoreReadOnlyProperties = options._ignoreReadOnlyProperties;
+            _ignoreReadonlyFields = options._ignoreReadonlyFields;
+            _includeFields = options._includeFields;
             _propertyNameCaseInsensitive = options._propertyNameCaseInsensitive;
             _writeIndented = options._writeIndented;
 
@@ -217,7 +222,6 @@ namespace System.Text.Json
 
                 if (value && _defaultIgnoreCondition != JsonIgnoreCondition.Never)
                 {
-                    Debug.Assert(_defaultIgnoreCondition == JsonIgnoreCondition.WhenWritingDefault);
                     throw new InvalidOperationException(SR.DefaultIgnoreConditionAlreadySpecified);
                 }
 
@@ -261,6 +265,27 @@ namespace System.Text.Json
         }
 
         /// <summary>
+        /// Specifies how number types should be handled when serializing or deserializing.
+        /// </summary>
+        /// <exception cref="InvalidOperationException">
+        /// Thrown if this property is set after serialization or deserialization has occurred.
+        /// </exception>
+        public JsonNumberHandling NumberHandling
+        {
+            get => _numberHandling;
+            set
+            {
+                VerifyMutable();
+
+                if (!JsonSerializer.IsValidNumberHandlingValue(value))
+                {
+                    throw new ArgumentOutOfRangeException(nameof(value));
+                }
+                _numberHandling = value;
+            }
+        }
+
+        /// <summary>
         /// Determines whether read-only properties are ignored during serialization.
         /// A property is read-only if it contains a public getter but not a public setter.
         /// The default value is false.
@@ -281,6 +306,50 @@ namespace System.Text.Json
             {
                 VerifyMutable();
                 _ignoreReadOnlyProperties = value;
+            }
+        }
+
+        /// <summary>
+        /// Determines whether read-only fields are ignored during serialization.
+        /// A property is read-only if it isn't marked with the <c>readonly</c> keyword.
+        /// The default value is false.
+        /// </summary>
+        /// <remarks>
+        /// Read-only fields are not deserialized regardless of this setting.
+        /// </remarks>
+        /// <exception cref="InvalidOperationException">
+        /// Thrown if this property is set after serialization or deserialization has occurred.
+        /// </exception>
+        public bool IgnoreReadOnlyFields
+        {
+            get
+            {
+                return _ignoreReadonlyFields;
+            }
+            set
+            {
+                VerifyMutable();
+                _ignoreReadonlyFields = value;
+            }
+        }
+
+        /// <summary>
+        /// Determines whether fields are handled serialization and deserialization.
+        /// The default value is false.
+        /// </summary>
+        /// <exception cref="InvalidOperationException">
+        /// Thrown if this property is set after serialization or deserialization has occurred.
+        /// </exception>
+        public bool IncludeFields
+        {
+            get
+            {
+                return _includeFields;
+            }
+            set
+            {
+                VerifyMutable();
+                _includeFields = value;
             }
         }
 

@@ -1,0 +1,115 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <PropertyGroup>
+    <DebugType>Embedded</DebugType>
+    <Optimize>True</Optimize>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Abs.Vector64.Int16.cs" />
+    <Compile Include="Abs.Vector64.Int32.cs" />
+    <Compile Include="Abs.Vector64.SByte.cs" />
+    <Compile Include="Abs.Vector64.Single.cs" />
+    <Compile Include="Abs.Vector128.Int16.cs" />
+    <Compile Include="Abs.Vector128.Int32.cs" />
+    <Compile Include="Abs.Vector128.SByte.cs" />
+    <Compile Include="Abs.Vector128.Single.cs" />
+    <Compile Include="AbsSaturate.Vector64.Int16.cs" />
+    <Compile Include="AbsSaturate.Vector64.Int32.cs" />
+    <Compile Include="AbsSaturate.Vector64.SByte.cs" />
+    <Compile Include="AbsSaturate.Vector128.Int16.cs" />
+    <Compile Include="AbsSaturate.Vector128.Int32.cs" />
+    <Compile Include="AbsSaturate.Vector128.SByte.cs" />
+    <Compile Include="AbsScalar.Vector64.Double.cs" />
+    <Compile Include="AbsScalar.Vector64.Single.cs" />
+    <Compile Include="AbsoluteCompareGreaterThan.Vector64.Single.cs" />
+    <Compile Include="AbsoluteCompareGreaterThan.Vector128.Single.cs" />
+    <Compile Include="AbsoluteCompareGreaterThanOrEqual.Vector64.Single.cs" />
+    <Compile Include="AbsoluteCompareGreaterThanOrEqual.Vector128.Single.cs" />
+    <Compile Include="AbsoluteCompareLessThan.Vector64.Single.cs" />
+    <Compile Include="AbsoluteCompareLessThan.Vector128.Single.cs" />
+    <Compile Include="AbsoluteCompareLessThanOrEqual.Vector64.Single.cs" />
+    <Compile Include="AbsoluteCompareLessThanOrEqual.Vector128.Single.cs" />
+    <Compile Include="AbsoluteDifference.Vector64.Byte.cs" />
+    <Compile Include="AbsoluteDifference.Vector64.Int16.cs" />
+    <Compile Include="AbsoluteDifference.Vector64.Int32.cs" />
+    <Compile Include="AbsoluteDifference.Vector64.SByte.cs" />
+    <Compile Include="AbsoluteDifference.Vector64.Single.cs" />
+    <Compile Include="AbsoluteDifference.Vector64.UInt16.cs" />
+    <Compile Include="AbsoluteDifference.Vector64.UInt32.cs" />
+    <Compile Include="AbsoluteDifference.Vector128.Byte.cs" />
+    <Compile Include="AbsoluteDifference.Vector128.Int16.cs" />
+    <Compile Include="AbsoluteDifference.Vector128.Int32.cs" />
+    <Compile Include="AbsoluteDifference.Vector128.SByte.cs" />
+    <Compile Include="AbsoluteDifference.Vector128.Single.cs" />
+    <Compile Include="AbsoluteDifference.Vector128.UInt16.cs" />
+    <Compile Include="AbsoluteDifference.Vector128.UInt32.cs" />
+    <Compile Include="AbsoluteDifferenceAdd.Vector64.Byte.cs" />
+    <Compile Include="AbsoluteDifferenceAdd.Vector64.Int16.cs" />
+    <Compile Include="AbsoluteDifferenceAdd.Vector64.Int32.cs" />
+    <Compile Include="AbsoluteDifferenceAdd.Vector64.SByte.cs" />
+    <Compile Include="AbsoluteDifferenceAdd.Vector64.UInt16.cs" />
+    <Compile Include="AbsoluteDifferenceAdd.Vector64.UInt32.cs" />
+    <Compile Include="AbsoluteDifferenceAdd.Vector128.Byte.cs" />
+    <Compile Include="AbsoluteDifferenceAdd.Vector128.Int16.cs" />
+    <Compile Include="AbsoluteDifferenceAdd.Vector128.Int32.cs" />
+    <Compile Include="AbsoluteDifferenceAdd.Vector128.SByte.cs" />
+    <Compile Include="AbsoluteDifferenceAdd.Vector128.UInt16.cs" />
+    <Compile Include="AbsoluteDifferenceAdd.Vector128.UInt32.cs" />
+    <Compile Include="AbsoluteDifferenceWideningLower.Vector64.Byte.cs" />
+    <Compile Include="AbsoluteDifferenceWideningLower.Vector64.Int16.cs" />
+    <Compile Include="AbsoluteDifferenceWideningLower.Vector64.Int32.cs" />
+    <Compile Include="AbsoluteDifferenceWideningLower.Vector64.SByte.cs" />
+    <Compile Include="AbsoluteDifferenceWideningLower.Vector64.UInt16.cs" />
+    <Compile Include="AbsoluteDifferenceWideningLower.Vector64.UInt32.cs" />
+    <Compile Include="AbsoluteDifferenceWideningLowerAndAdd.Vector64.Byte.cs" />
+    <Compile Include="AbsoluteDifferenceWideningLowerAndAdd.Vector64.Int16.cs" />
+    <Compile Include="AbsoluteDifferenceWideningLowerAndAdd.Vector64.Int32.cs" />
+    <Compile Include="AbsoluteDifferenceWideningLowerAndAdd.Vector64.SByte.cs" />
+    <Compile Include="AbsoluteDifferenceWideningLowerAndAdd.Vector64.UInt16.cs" />
+    <Compile Include="AbsoluteDifferenceWideningLowerAndAdd.Vector64.UInt32.cs" />
+    <Compile Include="AbsoluteDifferenceWideningUpper.Vector128.Byte.cs" />
+    <Compile Include="AbsoluteDifferenceWideningUpper.Vector128.Int16.cs" />
+    <Compile Include="AbsoluteDifferenceWideningUpper.Vector128.Int32.cs" />
+    <Compile Include="AbsoluteDifferenceWideningUpper.Vector128.SByte.cs" />
+    <Compile Include="AbsoluteDifferenceWideningUpper.Vector128.UInt16.cs" />
+    <Compile Include="AbsoluteDifferenceWideningUpper.Vector128.UInt32.cs" />
+    <Compile Include="AbsoluteDifferenceWideningUpperAndAdd.Vector128.Byte.cs" />
+    <Compile Include="AbsoluteDifferenceWideningUpperAndAdd.Vector128.Int16.cs" />
+    <Compile Include="AbsoluteDifferenceWideningUpperAndAdd.Vector128.Int32.cs" />
+    <Compile Include="AbsoluteDifferenceWideningUpperAndAdd.Vector128.SByte.cs" />
+    <Compile Include="AbsoluteDifferenceWideningUpperAndAdd.Vector128.UInt16.cs" />
+    <Compile Include="AbsoluteDifferenceWideningUpperAndAdd.Vector128.UInt32.cs" />
+    <Compile Include="Add.Vector64.Byte.cs" />
+    <Compile Include="Add.Vector64.Int16.cs" />
+    <Compile Include="Add.Vector64.Int32.cs" />
+    <Compile Include="Add.Vector64.SByte.cs" />
+    <Compile Include="Add.Vector64.Single.cs" />
+    <Compile Include="Add.Vector64.UInt16.cs" />
+    <Compile Include="Add.Vector64.UInt32.cs" />
+    <Compile Include="Add.Vector128.Byte.cs" />
+    <Compile Include="Add.Vector128.Int16.cs" />
+    <Compile Include="Add.Vector128.Int32.cs" />
+    <Compile Include="Add.Vector128.Int64.cs" />
+    <Compile Include="Add.Vector128.SByte.cs" />
+    <Compile Include="Add.Vector128.Single.cs" />
+    <Compile Include="Add.Vector128.UInt16.cs" />
+    <Compile Include="Add.Vector128.UInt32.cs" />
+    <Compile Include="Add.Vector128.UInt64.cs" />
+    <Compile Include="AddHighNarrowingLower.Vector64.Byte.cs" />
+    <Compile Include="AddHighNarrowingLower.Vector64.Int16.cs" />
+    <Compile Include="AddHighNarrowingLower.Vector64.Int32.cs" />
+    <Compile Include="AddHighNarrowingLower.Vector64.SByte.cs" />
+    <Compile Include="AddHighNarrowingLower.Vector64.UInt16.cs" />
+    <Compile Include="AddHighNarrowingLower.Vector64.UInt32.cs" />
+    <Compile Include="AddHighNarrowingUpper.Vector128.Byte.cs" />
+    <Compile Include="AddHighNarrowingUpper.Vector128.Int16.cs" />
+    <Compile Include="AddHighNarrowingUpper.Vector128.Int32.cs" />
+    <Compile Include="AddHighNarrowingUpper.Vector128.SByte.cs" />
+    <Compile Include="Program.AdvSimd_Part0.cs" />
+    <Compile Include="..\Shared\Helpers.cs" />
+    <Compile Include="..\Shared\Program.cs" />
+  </ItemGroup>
+</Project>

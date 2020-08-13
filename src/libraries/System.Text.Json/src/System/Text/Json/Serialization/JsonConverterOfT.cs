@@ -1,10 +1,8 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Runtime.CompilerServices;
 
 namespace System.Text.Json.Serialization
 {
@@ -70,11 +68,6 @@ namespace System.Text.Json.Serialization
         /// </summary>
         internal bool CanBeNull { get; }
 
-        /// <summary>
-        /// Is the converter built-in.
-        /// </summary>
-        internal bool IsInternalConverter { get; set; }
-
         // This non-generic API is sealed as it just forwards to the generic version.
         internal sealed override bool TryWriteAsObject(Utf8JsonWriter writer, object? value, JsonSerializerOptions options, ref WriteStack state)
         {
@@ -90,7 +83,7 @@ namespace System.Text.Json.Serialization
         }
 
         // Provide a default implementation for value converters.
-        internal virtual bool OnTryRead(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options, ref ReadStack state, [MaybeNull] out T value)
+        internal virtual bool OnTryRead(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options, ref ReadStack state, out T? value)
         {
             value = Read(ref reader, typeToConvert, options);
             return true;
@@ -106,10 +99,9 @@ namespace System.Text.Json.Serialization
         /// <param name="typeToConvert">The <see cref="Type"/> being converted.</param>
         /// <param name="options">The <see cref="JsonSerializerOptions"/> being used.</param>
         /// <returns>The value that was converted.</returns>
-        [return: MaybeNull]
-        public abstract T Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options);
+        public abstract T? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options);
 
-        internal bool TryRead(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options, ref ReadStack state, [MaybeNull] out T value)
+        internal bool TryRead(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options, ref ReadStack state, out T? value)
         {
             if (ClassType == ClassType.Value)
             {
@@ -132,7 +124,14 @@ namespace System.Text.Json.Serialization
                 // For performance, only perform validation on internal converters on debug builds.
                 if (IsInternalConverter)
                 {
-                    value = Read(ref reader, typeToConvert, options);
+                    if (IsInternalConverterForNumberType && state.Current.NumberHandling != null)
+                    {
+                        value = ReadNumberWithCustomHandling(ref reader, state.Current.NumberHandling.Value);
+                    }
+                    else
+                    {
+                        value = Read(ref reader, typeToConvert, options);
+                    }
                 }
                 else
 #endif
@@ -141,13 +140,34 @@ namespace System.Text.Json.Serialization
                     int originalPropertyDepth = reader.CurrentDepth;
                     long originalPropertyBytesConsumed = reader.BytesConsumed;
 
-                    value = Read(ref reader, typeToConvert, options);
+                    if (IsInternalConverterForNumberType && state.Current.NumberHandling != null)
+                    {
+                        value = ReadNumberWithCustomHandling(ref reader, state.Current.NumberHandling.Value);
+                    }
+                    else
+                    {
+                        value = Read(ref reader, typeToConvert, options);
+                    }
+
                     VerifyRead(
                         originalPropertyTokenType,
                         originalPropertyDepth,
                         originalPropertyBytesConsumed,
                         isValueConverter: true,
                         ref reader);
+                }
+
+                if (CanBePolymorphic && options.ReferenceHandler != null)
+                {
+                    // Edge case where we want to lookup for a reference when parsing into typeof(object)
+                    // instead of return `value` as a JsonElement.
+                    Debug.Assert(TypeToConvert == typeof(object));
+                    Debug.Assert(value is JsonElement);
+
+                    if (JsonSerializer.TryGetReferenceFromJsonElement(ref state, (JsonElement)(object)value, out object? referenceValue))
+                    {
+                        value = (T)referenceValue;
+                    }
                 }
 
                 return true;
@@ -297,7 +317,15 @@ namespace System.Text.Json.Serialization
 
                 int originalPropertyDepth = writer.CurrentDepth;
 
-                Write(writer, value, options);
+                if (IsInternalConverterForNumberType && state.Current.NumberHandling != null)
+                {
+                    WriteNumberWithCustomHandling(writer, value, state.Current.NumberHandling.Value);
+                }
+                else
+                {
+                    Write(writer, value, options);
+                }
+
                 VerifyWrite(originalPropertyDepth, writer);
                 return true;
             }
@@ -334,8 +362,6 @@ namespace System.Text.Json.Serialization
             }
 
             Debug.Assert(this is JsonDictionaryConverter<T>);
-
-            state.Current.PolymorphicJsonPropertyInfo = state.Current.DeclaredJsonPropertyInfo!.RuntimeClassInfo.ElementClassInfo!.PropertyInfoForClassInfo;
 
             if (writer.CurrentDepth >= options.EffectiveMaxDepth)
             {
@@ -433,5 +459,20 @@ namespace System.Text.Json.Serialization
         /// <param name="value">The value to convert.</param>
         /// <param name="options">The <see cref="JsonSerializerOptions"/> being used.</param>
         public abstract void Write(Utf8JsonWriter writer, T value, JsonSerializerOptions options);
+
+        internal virtual T ReadWithQuotes(ref Utf8JsonReader reader)
+            => throw new InvalidOperationException();
+
+        internal virtual void WriteWithQuotes(Utf8JsonWriter writer, [DisallowNull] T value, JsonSerializerOptions options, ref WriteStack state)
+            => throw new InvalidOperationException();
+
+        internal sealed override void WriteWithQuotesAsObject(Utf8JsonWriter writer, object value, JsonSerializerOptions options, ref WriteStack state)
+            => WriteWithQuotes(writer, (T)value, options, ref state);
+
+        internal virtual T ReadNumberWithCustomHandling(ref Utf8JsonReader reader, JsonNumberHandling handling)
+            => throw new InvalidOperationException();
+
+        internal virtual void WriteNumberWithCustomHandling(Utf8JsonWriter writer, T value, JsonNumberHandling handling)
+            => throw new InvalidOperationException();
     }
 }

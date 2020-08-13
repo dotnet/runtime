@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -756,9 +755,9 @@ namespace System.Collections.Generic
             return -1;
         }
 
-        internal Node? FindRange([AllowNull] T from, [AllowNull]  T to) => FindRange(from, to, lowerBoundActive: true, upperBoundActive: true);
+        internal Node? FindRange(T? from, T? to) => FindRange(from, to, lowerBoundActive: true, upperBoundActive: true);
 
-        internal Node? FindRange([AllowNull] T from, [AllowNull] T to, bool lowerBoundActive, bool upperBoundActive)
+        internal Node? FindRange(T? from, T? to, bool lowerBoundActive, bool upperBoundActive)
         {
             Node? current = root;
             while (current != null)
@@ -1505,17 +1504,15 @@ namespace System.Collections.Generic
 
         #region ISorted members
 
-        [MaybeNull]
-        public T Min => MinInternal;
+        public T? Min => MinInternal;
 
-        [MaybeNull]
-        internal virtual T MinInternal
+        internal virtual T? MinInternal
         {
             get
             {
                 if (root == null)
                 {
-                    return default(T)!;
+                    return default;
                 }
 
                 Node current = root;
@@ -1528,17 +1525,15 @@ namespace System.Collections.Generic
             }
         }
 
-        [MaybeNull]
-        public T Max => MaxInternal;
+        public T? Max => MaxInternal;
 
-        [MaybeNull]
-        internal virtual T MaxInternal
+        internal virtual T? MaxInternal
         {
             get
             {
                 if (root == null)
                 {
-                    return default(T)!;
+                    return default;
                 }
 
                 Node current = root;
@@ -1560,7 +1555,7 @@ namespace System.Collections.Generic
             }
         }
 
-        public virtual SortedSet<T> GetViewBetween([AllowNull] T lowerValue, [AllowNull] T upperValue)
+        public virtual SortedSet<T> GetViewBetween(T? lowerValue, T? upperValue)
         {
             if (Comparer.Compare(lowerValue, upperValue) > 0)
             {
@@ -2075,7 +2070,7 @@ namespace System.Collections.Generic
                 actualValue = node.Item;
                 return true;
             }
-            actualValue = default(T)!;
+            actualValue = default;
             return false;
         }
 

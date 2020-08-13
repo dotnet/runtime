@@ -1,11 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection;
 using Microsoft.Extensions.Internal;
@@ -245,16 +245,16 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             return null;
         }
 
-        private ServiceCallSite CreateConstructorCallSite(ResultCache lifetime, Type serviceType, Type implementationType,
+        private ServiceCallSite CreateConstructorCallSite(
+            ResultCache lifetime,
+            Type serviceType,
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type implementationType,
             CallSiteChain callSiteChain)
         {
             try
             {
                 callSiteChain.Add(serviceType, implementationType);
-                ConstructorInfo[] constructors = implementationType.GetTypeInfo()
-                    .DeclaredConstructors
-                    .Where(constructor => constructor.IsPublic)
-                    .ToArray();
+                ConstructorInfo[] constructors = implementationType.GetConstructors();
 
                 ServiceCallSite[] parameterCallSites = null;
 

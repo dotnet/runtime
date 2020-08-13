@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Microsoft.CSharp;
 using Microsoft.VisualBasic;
@@ -3037,7 +3036,7 @@ namespace System.Management
                                 {
                                     CodeTypeReference dateType = cmm.ReturnType;
                                     // Check if it is Time interval and if so change the type to Time Interval
-                                    bool isRetTypeTimeInterval = GetDateTimeType(prop, ref dateType);
+                                    GetDateTimeType(prop, ref dateType);
                                     cmm.ReturnType = dateType;
                                 }
                                 retRefType = cmm.ReturnType;
@@ -6117,7 +6116,6 @@ namespace System.Management
         private bool GetDateTimeType(PropertyData prop, ref CodeTypeReference codeType)
         {
             bool isTimeInterval = false;
-            codeType = null;
             if (prop.IsArray)
             {
                 codeType = new CodeTypeReference("System.DateTime", 1);
@@ -7339,11 +7337,6 @@ namespace System.Management
             cmie2.Method = new CodeMethodReferenceExpression(cmie, "PadLeft");
             cmie2.Parameters.Add(new CodePrimitiveExpression(2));
             cmie2.Parameters.Add(new CodePrimitiveExpression('0'));
-
-            CodeMethodInvokeExpression cmie3 = GenerateConcatStrings(cmie, cmie2);
-            /*                new CodeMethodInvokeExpression();
-                        cmie3.Method = new CodeMethodReferenceExpression(cmie,"Concat");
-                        cmie3.Parameters.Add(cmie2); */
 
             cmmdt.Statements.Add(new CodeAssignStatement(new CodeVariableReferenceExpression(dmtfDateTime),
                 GenerateConcatStrings(new CodeVariableReferenceExpression(dmtfDateTime),

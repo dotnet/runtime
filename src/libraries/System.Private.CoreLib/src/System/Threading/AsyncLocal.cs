@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -87,8 +86,8 @@ namespace System.Threading
 
     public readonly struct AsyncLocalValueChangedArgs<T>
     {
-        [MaybeNull] public T PreviousValue { get; }
-        [MaybeNull] public T CurrentValue { get; }
+        public T? PreviousValue { get; }
+        public T? CurrentValue { get; }
 
         //
         // If the value changed because we changed to a different ExecutionContext, this is true.  If it changed
@@ -96,7 +95,7 @@ namespace System.Threading
         //
         public bool ThreadContextChanged { get; }
 
-        internal AsyncLocalValueChangedArgs([AllowNull] T previousValue, [AllowNull] T currentValue, bool contextChanged)
+        internal AsyncLocalValueChangedArgs(T? previousValue, T? currentValue, bool contextChanged)
         {
             PreviousValue = previousValue!;
             CurrentValue = currentValue!;

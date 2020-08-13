@@ -1,9 +1,9 @@
 ﻿' Licensed to the .NET Foundation under one or more agreements.
 ' The .NET Foundation licenses this file to you under the MIT license.
-' See the LICENSE file in the project root for more information.
 
 Imports System
 Imports System.Globalization
+Imports System.Runtime.Versioning
 Imports Microsoft.VisualBasic.CompilerServices
 Imports Microsoft.VisualBasic.CompilerServices.ExceptionUtils
 Imports Microsoft.VisualBasic.CompilerServices.Utils
@@ -21,6 +21,7 @@ Namespace Microsoft.VisualBasic
             Get
                 Return DateTime.Today
             End Get
+            <SupportedOSPlatform("windows")>
             Set(ByVal Value As DateTime)
                 SetDate(Value)
             End Set
@@ -39,6 +40,7 @@ Namespace Microsoft.VisualBasic
                 'Truncate to the nearest second
                 Return New DateTime(Ticks - Ticks Mod TimeSpan.TicksPerSecond)
             End Get
+            <SupportedOSPlatform("windows")>
             Set(ByVal Value As DateTime)
                 SetTime(Value)
             End Set
@@ -50,6 +52,7 @@ Namespace Microsoft.VisualBasic
             Get
                 Return (New DateTime(DateTime.Now.TimeOfDay.Ticks)).ToString("HH:mm:ss", GetInvariantCultureInfo())
             End Get
+            <SupportedOSPlatform("windows")>
             Set(ByVal Value As String)
                 Dim dt As Date
 
@@ -58,8 +61,6 @@ Namespace Microsoft.VisualBasic
                 Catch ex As StackOverflowException
                     Throw ex
                 Catch ex As OutOfMemoryException
-                    Throw ex
-                Catch ex As System.Threading.ThreadAbortException
                     Throw ex
                 Catch
                     Throw VbMakeException(New InvalidCastException(SR.Format(SR.InvalidCast_FromStringTo, Left(Value, 32), "Date")), vbErrors.IllegalFuncCall)
@@ -96,6 +97,7 @@ Namespace Microsoft.VisualBasic
                     Return DateTime.Today.ToString("MM\-dd\-yyyy", GetInvariantCultureInfo())
                 End If
             End Get
+            <SupportedOSPlatform("windows")>
             Set(ByVal Value As String)
                 Dim NewDate As Date
 
@@ -109,8 +111,6 @@ Namespace Microsoft.VisualBasic
                 Catch ex As StackOverflowException
                     Throw ex
                 Catch ex As OutOfMemoryException
-                    Throw ex
-                Catch ex As System.Threading.ThreadAbortException
                     Throw ex
                 Catch
                     Throw VbMakeException(New InvalidCastException(SR.Format(SR.InvalidCast_FromStringTo, Left(Value, 32), "Date")), vbErrors.IllegalFuncCall)
@@ -287,8 +287,6 @@ Namespace Microsoft.VisualBasic
                 Throw ex
             Catch ex As OutOfMemoryException
                 Throw ex
-            Catch ex As System.Threading.ThreadAbortException
-                Throw ex
             Catch
                 Throw New InvalidCastException(SR.Format(SR.Argument_InvalidDateValue1, "DateValue"))
             End Try
@@ -310,8 +308,6 @@ Namespace Microsoft.VisualBasic
                 Throw ex
             Catch ex As OutOfMemoryException
                 Throw ex
-            Catch ex As System.Threading.ThreadAbortException
-                Throw ex
             Catch
                 Throw New InvalidCastException(SR.Format(SR.Argument_InvalidDateValue1, "Date1"))
             End Try
@@ -320,8 +316,6 @@ Namespace Microsoft.VisualBasic
             Catch ex As StackOverflowException
                 Throw ex
             Catch ex As OutOfMemoryException
-                Throw ex
-            Catch ex As System.Threading.ThreadAbortException
                 Throw ex
             Catch
                 Throw New InvalidCastException(SR.Format(SR.Argument_InvalidDateValue1, "Date2"))
@@ -341,8 +335,6 @@ Namespace Microsoft.VisualBasic
             Catch ex As StackOverflowException
                 Throw ex
             Catch ex As OutOfMemoryException
-                Throw ex
-            Catch ex As System.Threading.ThreadAbortException
                 Throw ex
             Catch
                 Throw New InvalidCastException(SR.Format(SR.Argument_InvalidDateValue1, "DateValue"))
@@ -417,8 +409,6 @@ Namespace Microsoft.VisualBasic
                 Throw ex
             Catch ex As OutOfMemoryException
                 Throw ex
-            Catch ex As System.Threading.ThreadAbortException
-                Throw ex
             Catch
                 Throw VbMakeException(New ArgumentException(SR.Format(SR.Argument_InvalidValue1, "Year")), vbErrors.IllegalFuncCall)
             End Try
@@ -429,8 +419,6 @@ Namespace Microsoft.VisualBasic
                 Throw ex
             Catch ex As OutOfMemoryException
                 Throw ex
-            Catch ex As System.Threading.ThreadAbortException
-                Throw ex
             Catch
                 Throw VbMakeException(New ArgumentException(SR.Format(SR.Argument_InvalidValue1, "Month")), vbErrors.IllegalFuncCall)
             End Try
@@ -440,8 +428,6 @@ Namespace Microsoft.VisualBasic
             Catch ex As StackOverflowException
                 Throw ex
             Catch ex As OutOfMemoryException
-                Throw ex
-            Catch ex As System.Threading.ThreadAbortException
                 Throw ex
             Catch
                 Throw VbMakeException(New ArgumentException(SR.Format(SR.Argument_InvalidValue1, "Day")), vbErrors.IllegalFuncCall)
@@ -569,8 +555,6 @@ Namespace Microsoft.VisualBasic
             Catch ex As StackOverflowException
                 Throw ex
             Catch ex As OutOfMemoryException
-                Throw ex
-            Catch ex As System.Threading.ThreadAbortException
                 Throw ex
             Catch
                 Throw New ArgumentException(SR.Format(SR.Argument_InvalidValue1, "Weekday"))

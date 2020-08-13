@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 //
 
@@ -42,10 +41,10 @@ void SafeHandle::Init()
     // methods involves calling .GetMethod which can fail, we are doing this
     // eagerly here, Otherwise we will have to do it at the time of the call,
     // and this could be at risk if .GetMethod failed.
-    MethodDesc* pMD = MscorlibBinder::GetMethod(METHOD__SAFE_HANDLE__GET_IS_INVALID);
+    MethodDesc* pMD = CoreLibBinder::GetMethod(METHOD__SAFE_HANDLE__GET_IS_INVALID);
     s_IsInvalidHandleMethodSlot = pMD->GetSlot();
 
-    pMD = MscorlibBinder::GetMethod(METHOD__SAFE_HANDLE__RELEASE_HANDLE);
+    pMD = CoreLibBinder::GetMethod(METHOD__SAFE_HANDLE__RELEASE_HANDLE);
     s_ReleaseHandleMethodSlot = pMD->GetSlot();
 }
 

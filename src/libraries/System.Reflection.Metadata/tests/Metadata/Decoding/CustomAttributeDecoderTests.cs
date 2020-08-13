@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Immutable;
 using System.IO;
@@ -16,7 +15,7 @@ namespace System.Reflection.Metadata.Decoding.Tests
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Type assembly name is different on .NET Framework.")]
         public void TestCustomAttributeDecoder()
         {
-            using (FileStream stream = File.OpenRead(typeof(HasAttributes).GetTypeInfo().Assembly.Location))
+            using (FileStream stream = File.OpenRead(AssemblyPathHelper.GetAssemblyLocation(typeof(HasAttributes).GetTypeInfo().Assembly)))
             using (var peReader = new PEReader(stream))
             {
                 MetadataReader reader = peReader.GetMetadataReader();

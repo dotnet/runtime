@@ -1,10 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #nullable enable
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 
 namespace Microsoft.Extensions.Internal
@@ -42,8 +42,12 @@ namespace Microsoft.Extensions.Internal
                 // Workaround for https://github.com/dotnet/corefx/issues/11797
                 if (defaultValue == null && parameter.ParameterType.IsValueType)
                 {
-                    defaultValue = Activator.CreateInstance(parameter.ParameterType);
+                    defaultValue = CreateValueType(parameter.ParameterType);
                 }
+
+                [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2006:UnrecognizedReflectionPattern",
+                    Justification = "CreateInstance is only called on a ValueType, which will always have a default constructor.")]
+                object? CreateValueType(Type t) => Activator.CreateInstance(t);
 
                 // Handle nullable enums
                 if (defaultValue != null &&

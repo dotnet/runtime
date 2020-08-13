@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -29,7 +28,6 @@ namespace System.Composition.UnitTests
         // This does not test the desired behaviour deterministically,
         // but is close enough to be repeatable at least on my machine :)
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/23972", TargetFrameworkMonikers.NetFramework)]
         public void SharedInstancesAreNotVisibleUntilActivationCompletes()
         {
             var c = CreateContainer(typeof(PausesDuringActivation));

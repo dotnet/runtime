@@ -1170,6 +1170,8 @@ get_wrapper_shared_vtype (MonoType *t)
 	if ((mono_class_get_flags (klass) & TYPE_ATTRIBUTE_LAYOUT_MASK) != TYPE_ATTRIBUTE_SEQUENTIAL_LAYOUT)
 		return NULL;
 	mono_class_setup_fields (klass);
+	if (mono_class_has_failure (klass))
+		return NULL;
 
 	int num_fields = mono_class_get_field_count (klass);
 	MonoClassField *klass_fields = m_class_get_fields (klass);
@@ -1274,6 +1276,10 @@ get_wrapper_shared_type_full (MonoType *t, gboolean is_field)
 #else
 		return m_class_get_byval_arg (mono_defaults.uint32_class);
 #endif
+	case MONO_TYPE_R4:
+		return m_class_get_byval_arg (mono_defaults.single_class);
+	case MONO_TYPE_R8:
+		return m_class_get_byval_arg (mono_defaults.double_class);
 	case MONO_TYPE_OBJECT:
 	case MONO_TYPE_CLASS:
 	case MONO_TYPE_SZARRAY:

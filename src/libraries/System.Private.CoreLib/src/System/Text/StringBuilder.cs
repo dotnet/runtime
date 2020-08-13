@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Runtime.Serialization;
 using System.Runtime.CompilerServices;
@@ -245,7 +244,6 @@ namespace System.Text
             m_ChunkChars = GC.AllocateUninitializedArray<char>(persistedCapacity);
             persistedString.CopyTo(0, m_ChunkChars, 0, persistedString.Length);
             m_ChunkLength = persistedString.Length;
-            m_ChunkPrevious = null;
             AssertInvariants();
         }
 
@@ -797,7 +795,6 @@ namespace System.Text
             }
         }
 
-
         /// <summary>
         /// Appends a string to the end of this builder.
         /// </summary>
@@ -810,9 +807,8 @@ namespace System.Text
                 char[] chunkChars = m_ChunkChars;
                 int chunkLength = m_ChunkLength;
                 int valueLen = value.Length;
-                int newCurrentIndex = chunkLength + valueLen;
 
-                if (newCurrentIndex < chunkChars.Length) // Use strictly < to avoid issues if count == 0, newIndex == length
+                if (((uint)chunkLength + (uint)valueLen) < (uint)chunkChars.Length) // Use strictly < to avoid issues if count == 0, newIndex == length
                 {
                     if (valueLen <= 2)
                     {
@@ -837,7 +833,7 @@ namespace System.Text
                         }
                     }
 
-                    m_ChunkLength = newCurrentIndex;
+                    m_ChunkLength = chunkLength + valueLen;
                 }
                 else
                 {

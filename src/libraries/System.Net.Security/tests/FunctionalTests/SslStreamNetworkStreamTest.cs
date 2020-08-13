@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.IO;
 using System.Net.Sockets;
@@ -8,15 +7,30 @@ using System.Net.Test.Common;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 
 namespace System.Net.Security.Tests
 {
     using Configuration = System.Net.Test.Common.Configuration;
 
-    public class SslStreamNetworkStreamTest
+    public class SslStreamNetworkStreamTest : IDisposable
     {
+        private readonly X509Certificate2 _serverCert;
+        private readonly X509Certificate2Collection _serverChain;
+
+        public SslStreamNetworkStreamTest()
+        {
+            (_serverCert, _serverChain) = TestHelper.GenerateCertificates("localhost", this.GetType().Name);
+        }
+
+        public void Dispose()
+        {
+            TestHelper.CleanupCertificates(this.GetType().Name);
+        }
+
         [Fact]
         public async Task SslStream_SendReceiveOverNetworkStream_Ok()
         {
@@ -76,10 +90,31 @@ namespace System.Net.Security.Tests
             listener.Stop();
         }
 
-        [Fact]
+        [ConditionalFact]
         [PlatformSpecific(TestPlatforms.Linux)] // This only applies where OpenSsl is used.
         public async Task SslStream_SendReceiveOverNetworkStream_AuthenticationException()
         {
+            SslProtocols clientProtocol;
+            SslProtocols serverProtocol;
+
+            // Try to find protocol mismatch.
+            if (PlatformDetection.SupportsTls12 && (PlatformDetection.SupportsTls10 || PlatformDetection.SupportsTls11))
+            {
+                // OpenSSL 1.0 where new is Tls12
+                clientProtocol = SslProtocols.Tls | SslProtocols.Tls11;
+                serverProtocol = SslProtocols.Tls12;
+            }
+            else if (PlatformDetection.SupportsTls12 && PlatformDetection.SupportsTls13)
+            {
+                // OpenSSl 1.1 where new is 1.3 and legacy is 1.2
+                clientProtocol = SslProtocols.Tls13;
+                serverProtocol = SslProtocols.Tls12;
+            }
+            else
+            {
+                throw new SkipTestException("Did not find disjoined sets");
+            }
+
             TcpListener listener = new TcpListener(IPAddress.Loopback, 0);
 
             using (X509Certificate2 serverCertificate = Configuration.Certificates.GetServerCertificate())
@@ -110,13 +145,13 @@ namespace System.Net.Security.Tests
                     Task clientAuthenticationTask = clientStream.AuthenticateAsClientAsync(
                         serverCertificate.GetNameInfo(X509NameType.SimpleName, false),
                         null,
-                        SslProtocols.Tls11,
+                        clientProtocol,
                         false);
 
                     AuthenticationException e = await Assert.ThrowsAsync<AuthenticationException>(() => serverStream.AuthenticateAsServerAsync(
                         serverCertificate,
                         false,
-                        SslProtocols.Tls12,
+                        serverProtocol,
                         false));
 
                     Assert.NotNull(e.InnerException);
@@ -190,6 +225,131 @@ namespace System.Net.Security.Tests
                 Task task = ssl.AuthenticateAsClientAsync("foo.com", null, SslProtocols.Tls12, false);
                 // Do it again without waiting for previous one to finish.
                 await Assert.ThrowsAsync<InvalidOperationException>(() => ssl.AuthenticateAsClientAsync("foo.com", null, SslProtocols.Tls12, false));
+            }
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task SslStream_TargetHostName_Succeeds(bool useEmptyName)
+        {
+            string targetName = useEmptyName ? string.Empty : Guid.NewGuid().ToString("N");
+
+            (Stream clientStream, Stream serverStream) = TestHelper.GetConnectedStreams();
+            using (clientStream)
+            using (serverStream)
+            using (var client = new SslStream(clientStream))
+            using (var server = new SslStream(serverStream))
+            using (X509Certificate2 certificate = Configuration.Certificates.GetServerCertificate())
+            {
+                // It should be empty before handshake.
+                Assert.Equal(string.Empty, client.TargetHostName);
+                Assert.Equal(string.Empty, server.TargetHostName);
+
+                SslClientAuthenticationOptions clientOptions = new SslClientAuthenticationOptions() { TargetHost = targetName };
+                clientOptions.RemoteCertificateValidationCallback =
+                    (sender, certificate, chain, sslPolicyErrors) =>
+                    {
+                        SslStream stream = (SslStream)sender;
+                        Assert.Equal(targetName, stream.TargetHostName);
+
+                        return true;
+                    };
+
+                SslServerAuthenticationOptions serverOptions = new SslServerAuthenticationOptions();
+                serverOptions.ServerCertificateSelectionCallback =
+                    (sender, name) =>
+                    {
+                        SslStream stream = (SslStream)sender;
+                        Assert.Equal(targetName, stream.TargetHostName);
+
+                        return certificate;
+                    };
+
+                await TestConfiguration.WhenAllOrAnyFailedWithTimeout(
+                                client.AuthenticateAsClientAsync(clientOptions),
+                                server.AuthenticateAsServerAsync(serverOptions));
+                Assert.Equal(targetName, client.TargetHostName);
+                Assert.Equal(targetName, server.TargetHostName);
+            }
+        }
+
+        [Fact]
+        public async Task SslStream_UntrustedCaWithCustomCallback_OK()
+        {
+            var clientOptions = new  SslClientAuthenticationOptions() { TargetHost = "localhost" };
+            clientOptions.RemoteCertificateValidationCallback =
+                (sender, certificate, chain, sslPolicyErrors) =>
+                {
+                    chain.ChainPolicy.CustomTrustStore.Add(_serverChain[_serverChain.Count -1]);
+                    chain.ChainPolicy.TrustMode = X509ChainTrustMode.CustomRootTrust;
+
+                    bool result = chain.Build((X509Certificate2)certificate);
+                    Assert.True(result);
+
+                    return result;
+                };
+
+            var serverOptions = new SslServerAuthenticationOptions();
+            serverOptions.ServerCertificateContext = SslStreamCertificateContext.Create(_serverCert, _serverChain);
+
+            (Stream clientStream, Stream serverStream) = TestHelper.GetConnectedStreams();
+            using (clientStream)
+            using (serverStream)
+            using (SslStream client = new SslStream(clientStream))
+            using (SslStream server = new SslStream(serverStream))
+            {
+                Task t1 = client.AuthenticateAsClientAsync(clientOptions, CancellationToken.None);
+                Task t2 = server.AuthenticateAsServerAsync(serverOptions, CancellationToken.None);
+
+                await TestConfiguration.WhenAllOrAnyFailedWithTimeout(t1, t2);
+            }
+        }
+
+        [Theory]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task SslStream_UntrustedCaWithCustomCallback_Throws(bool customCallback)
+        {
+            string errorMessage;
+            var clientOptions = new  SslClientAuthenticationOptions() { TargetHost = "localhost" };
+            if (customCallback)
+            {
+                clientOptions.RemoteCertificateValidationCallback =
+                    (sender, certificate, chain, sslPolicyErrors) =>
+                    {
+                        chain.ChainPolicy.CustomTrustStore.Add(_serverChain[_serverChain.Count -1]);
+                        chain.ChainPolicy.TrustMode = X509ChainTrustMode.CustomRootTrust;
+                        // This should work and we should be able to trust the chain.
+                        Assert.True(chain.Build((X509Certificate2)certificate));
+                        // Reject it in custom callback to simulate for example pinning.
+                        return false;
+                    };
+
+                errorMessage = "RemoteCertificateValidationCallback";
+            }
+            else
+            {
+                errorMessage = "UntrustedRoot";
+            }
+
+            var serverOptions = new SslServerAuthenticationOptions();
+            serverOptions.ServerCertificateContext = SslStreamCertificateContext.Create(_serverCert, _serverChain);
+
+            (Stream clientStream, Stream serverStream) = TestHelper.GetConnectedStreams();
+            using (clientStream)
+            using (serverStream)
+            using (SslStream client = new SslStream(clientStream))
+            using (SslStream server = new SslStream(serverStream))
+            {
+                Task t1 = client.AuthenticateAsClientAsync(clientOptions, CancellationToken.None);
+                Task t2 = server.AuthenticateAsServerAsync(serverOptions, CancellationToken.None);
+
+                var e = await Assert.ThrowsAsync<AuthenticationException>(() => t1);
+                Assert.Contains(errorMessage, e.Message);
+                // Server side should finish since we run custom callback after handshake is done.
+                await t2;
             }
         }
 

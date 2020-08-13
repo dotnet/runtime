@@ -395,6 +395,9 @@ extern void mono_set_timeout (int t, int d);
 extern void mono_wasm_queue_tp_cb (void);
 G_END_DECLS
 
+extern void mono_wasm_pump_threadpool (void);
+void mono_background_exec (void);
+
 #endif // HOST_WASM
 
 gpointer
@@ -601,13 +604,13 @@ tp_cb (void)
 	mono_runtime_try_invoke (method, NULL, NULL, &exc, error);
 
 	if (!is_ok (error)) {
-		printf ("tp callback failed due to %s\n", mono_error_get_message (error));
+		printf ("ThreadPool Callback failed due to error: %s\n", mono_error_get_message (error));
 		mono_error_cleanup (error);
 	}
 
 	if (exc) {
 		char *type_name = mono_type_get_full_name (mono_object_class (exc));
-		printf ("tp callback threw a %s\n", type_name);
+		printf ("ThreadPool Callback threw an unhandled exception of type %s\n", type_name);
 		g_free (type_name);
 	}
 }
@@ -621,11 +624,20 @@ mono_wasm_queue_tp_cb (void)
 }
 
 void
+mono_wasm_pump_threadpool (void)
+{
+#ifdef HOST_WASM
+	mono_background_exec ();
+#endif
+}
+
+void
 mono_arch_register_icall (void)
 {
 #ifdef ENABLE_NETCORE
 	mono_add_internal_call_internal ("System.Threading.TimerQueue::SetTimeout", mono_wasm_set_timeout);
 	mono_add_internal_call_internal ("System.Threading.ThreadPool::QueueCallback", mono_wasm_queue_tp_cb);
+	mono_add_internal_call_internal ("System.Threading.ThreadPool::PumpThreadPool", mono_wasm_pump_threadpool);
 #else
 	mono_add_internal_call_internal ("System.Threading.WasmRuntime::SetTimeout", mono_wasm_set_timeout);
 #endif

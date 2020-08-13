@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Diagnostics;
@@ -17,8 +16,8 @@ namespace Internal.Cryptography
         private SafeProvHandle _hProvider;
         private SafeKeyHandle _hKey;
 
-        public BasicSymmetricCipherCsp(int algId, CipherMode cipherMode, int blockSizeInBytes, byte[] key, int effectiveKeyLength, bool addNoSaltFlag, byte[]? iv, bool encrypting)
-            : base(cipherMode.GetCipherIv(iv), blockSizeInBytes)
+        public BasicSymmetricCipherCsp(int algId, CipherMode cipherMode, int blockSizeInBytes, byte[] key, int effectiveKeyLength, bool addNoSaltFlag, byte[]? iv, bool encrypting, int feedbackSize, int paddingSizeInBytes)
+            : base(cipherMode.GetCipherIv(iv), blockSizeInBytes, paddingSizeInBytes)
         {
             _encrypting = encrypting;
 
@@ -26,6 +25,10 @@ namespace Internal.Cryptography
             _hKey = ImportCspBlob(_hProvider, algId, key, addNoSaltFlag);
 
             SetKeyParameter(_hKey, CryptGetKeyParamQueryType.KP_MODE, (int)cipherMode);
+            if (cipherMode == CipherMode.CFB)
+            {
+                SetKeyParameter(_hKey, CryptGetKeyParamQueryType.KP_MODE_BITS, feedbackSize);
+            }
 
             byte[]? currentIv = cipherMode.GetCipherIv(iv);
             if (currentIv != null)
@@ -61,56 +64,47 @@ namespace Internal.Cryptography
             base.Dispose(disposing);
         }
 
-        public override int Transform(byte[] input, int inputOffset, int count, byte[] output, int outputOffset)
+        public override int Transform(ReadOnlySpan<byte> input, Span<byte> output)
         {
-            return Transform(input, inputOffset, count, output, outputOffset, false);
+            return Transform(input, output, false);
         }
 
-        public override byte[] TransformFinal(byte[] input, int inputOffset, int count)
+        public override int TransformFinal(ReadOnlySpan<byte> input, Span<byte> output)
         {
-            Debug.Assert(input != null);
-            Debug.Assert(inputOffset >= 0);
-            Debug.Assert(count >= 0);
-            Debug.Assert((count % BlockSizeInBytes) == 0);
-            Debug.Assert(input.Length - inputOffset >= count);
+            Debug.Assert((input.Length % PaddingSizeInBytes) == 0);
 
-            byte[] output = new byte[count];
-            if (count != 0)
+            int numBytesWritten = 0;
+
+            if (input.Length != 0)
             {
-                int numBytesWritten = Transform(input, inputOffset, count, output, 0, true);
-                Debug.Assert(numBytesWritten == count);  // Our implementation of Transform() guarantees this.
+                numBytesWritten = Transform(input, output, true);
+                Debug.Assert(numBytesWritten == input.Length);  // Our implementation of Transform() guarantees this.
             }
 
             Reset();
 
-            return output;
+            return numBytesWritten;
         }
 
         private void Reset()
         {
             // Ensure we've called CryptEncrypt with the final=true flag so the handle is reset property
-            EncryptData(_hKey, Array.Empty<byte>(), 0, 0, Array.Empty<byte>(), 0, 0, true);
+            EncryptData(_hKey, default, default, true);
         }
 
-        private int Transform(byte[] input, int inputOffset, int count, byte[] output, int outputOffset, bool isFinal)
+        private int Transform(ReadOnlySpan<byte> input, Span<byte> output, bool isFinal)
         {
-            Debug.Assert(input != null);
-            Debug.Assert(inputOffset >= 0);
-            Debug.Assert(count > 0);
-            Debug.Assert((count % BlockSizeInBytes) == 0);
-            Debug.Assert(input.Length - inputOffset >= count);
-            Debug.Assert(output != null);
-            Debug.Assert(outputOffset >= 0);
-            Debug.Assert(output.Length - outputOffset >= count);
+            Debug.Assert(input.Length > 0);
+            Debug.Assert((input.Length % PaddingSizeInBytes) == 0);
 
             int numBytesWritten;
             if (_encrypting)
             {
-                numBytesWritten = EncryptData(_hKey, input, inputOffset, count, output, outputOffset, output.Length - outputOffset, isFinal);
+                numBytesWritten = EncryptData(_hKey, input, output, isFinal);
             }
             else
             {
-                numBytesWritten = DecryptData(_hKey, input, inputOffset, count, output, outputOffset, output.Length - outputOffset);
+                numBytesWritten = DecryptData(_hKey, input, output);
             }
 
             return numBytesWritten;

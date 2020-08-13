@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -79,7 +78,7 @@ namespace System.Net.Http.Functional.Tests
 
                 string connectionPreface = (await server.AcceptConnectionAsync()).PrefixString;
 
-                Assert.Equal("PRI * HTTP/2.0\r\n\r\nSM\r\n\r\n", connectionPreface);
+                Assert.Equal(Http2LoopbackConnection.Http2Prefix, connectionPreface);
             }
         }
 
@@ -175,6 +174,40 @@ namespace System.Net.Http.Functional.Tests
                 Assert.Equal(HttpStatusCode.OK, response.StatusCode);
                 Assert.Equal(0, (await response.Content.ReadAsByteArrayAsync()).Length);
             }
+        }
+
+        [Theory]
+        [InlineData("Client content", null)]
+        [InlineData("Client content", "Server content")]
+        [InlineData(null, null)]
+        [InlineData(null, "Server content")]
+        public async Task Http2ClearText_SendAsync_Success(string clientContent, string serverContent)
+        {
+            await Http2LoopbackServer.CreateClientAndServerAsync(async uri =>
+            {
+                using HttpClient client = CreateHttpClient();
+
+                HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, uri)
+                {
+                    Version = UseVersion,
+                    VersionPolicy = HttpVersionPolicy.RequestVersionExact,
+                    Content = clientContent is null ? (HttpContent)null : new StringContent(clientContent),
+                };
+
+                using HttpResponseMessage response = await client.SendAsync(request);
+                string responseContent = await response.Content.ReadAsStringAsync();
+                Assert.Equal(serverContent ?? String.Empty, responseContent);
+            },
+            async server =>
+            {
+                Http2LoopbackConnection connection = await server.EstablishConnectionAsync();
+                Assert.IsNotType<SslStream>(connection.Stream);
+
+                HttpRequestData requestData = await connection.ReadRequestDataAsync();                
+                string requestContent = requestData.Body is null ? (string)null : Encoding.ASCII.GetString(requestData.Body);
+                Assert.Equal(clientContent, requestContent);
+                await connection.SendResponseAsync(HttpStatusCode.OK, body: serverContent);
+            }, new Http2Options() { UseSsl = false });
         }
 
         [ConditionalFact(nameof(SupportsAlpn))]
@@ -1418,6 +1451,117 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
+        public static IEnumerable<object[]> KeepAliveTestDataSource()
+        {
+            yield return new object[] { Timeout.InfiniteTimeSpan, HttpKeepAlivePingPolicy.Always, false };
+            yield return new object[] { TimeSpan.FromSeconds(1), HttpKeepAlivePingPolicy.WithActiveRequests, false };
+            yield return new object[] { TimeSpan.FromSeconds(1), HttpKeepAlivePingPolicy.Always, false };
+            yield return new object[] { TimeSpan.FromSeconds(1), HttpKeepAlivePingPolicy.WithActiveRequests, true };
+        }
+
+        [OuterLoop("Significant delay.")]
+        [MemberData(nameof(KeepAliveTestDataSource))]
+        [ConditionalTheory(nameof(SupportsAlpn))]
+        public async Task Http2_PingKeepAlive(TimeSpan keepAlivePingDelay, HttpKeepAlivePingPolicy keepAlivePingPolicy, bool expectRequestFail)
+        {
+            TimeSpan pingTimeout = TimeSpan.FromSeconds(5);
+            // Simulate failure by delaying the pong, otherwise send it immediately.
+            TimeSpan pongDelay = expectRequestFail ? pingTimeout * 2 : TimeSpan.Zero;
+            // Pings are send only if KeepAlivePingDelay is not infinite.
+            bool expectStreamPing = keepAlivePingDelay != Timeout.InfiniteTimeSpan;
+            // Pings (regardless ongoing communication) are send only if sending is on and policy is set to always.
+            bool expectPingWithoutStream = expectStreamPing && keepAlivePingPolicy == HttpKeepAlivePingPolicy.Always;
+
+            TaskCompletionSource serverFinished = new TaskCompletionSource();
+
+            await Http2LoopbackServer.CreateClientAndServerAsync(
+                async uri =>
+                {
+                    SocketsHttpHandler handler = new SocketsHttpHandler()
+                    {
+                        KeepAlivePingTimeout = pingTimeout,
+                        KeepAlivePingPolicy = keepAlivePingPolicy,
+                        KeepAlivePingDelay = keepAlivePingDelay
+                    };
+                    handler.SslOptions.RemoteCertificateValidationCallback = delegate { return true; };
+
+                    using HttpClient client = new HttpClient(handler);
+                    client.DefaultRequestVersion = HttpVersion.Version20;
+
+                    // Warmup request to create connection.
+                    await client.GetStringAsync(uri);
+                    // Request under the test scope.
+                    if (expectRequestFail)
+                    {
+                        await Assert.ThrowsAsync<HttpRequestException>(() => client.GetStringAsync(uri));
+                        // As stream is closed we don't want to continue with sending data.
+                        return;
+                    }
+                    else
+                    {
+                        await client.GetStringAsync(uri);
+                    }
+
+                    // Let connection live until server finishes.
+                    await serverFinished.Task.TimeoutAfter(pingTimeout * 2);
+                },
+                async server =>
+                {
+                    using Http2LoopbackConnection connection = await server.EstablishConnectionAsync();
+
+                    Task<PingFrame> receivePingTask = expectStreamPing ? connection.ExpectPingFrameAsync() : null;
+
+                    // Warmup the connection.
+                    int streamId1 = await connection.ReadRequestHeaderAsync();
+                    await connection.SendDefaultResponseAsync(streamId1);
+
+                    // Request under the test scope.
+                    int streamId2 = await connection.ReadRequestHeaderAsync();
+
+                    // Test ping with active stream.
+                    if (!expectStreamPing)
+                    {
+                        await Assert.ThrowsAsync<OperationCanceledException>(() => connection.ReadPingAsync(pingTimeout));
+                    }
+                    else
+                    {
+                        PingFrame ping;
+                        if (receivePingTask != null && receivePingTask.IsCompleted)
+                        {
+                            ping = await receivePingTask;
+                        }
+                        else
+                        {
+                            ping = await connection.ReadPingAsync(pingTimeout);
+                        }
+                        await Task.Delay(pongDelay);
+
+                        await connection.SendPingAckAsync(ping.Data);
+                    }
+
+                    // Send response and close the stream.
+                    if (expectRequestFail)
+                    {
+                        await Assert.ThrowsAsync<NetworkException>(() => connection.SendDefaultResponseAsync(streamId2));
+                        // As stream is closed we don't want to continue with sending data.
+                        return;
+                    }
+                    await connection.SendDefaultResponseAsync(streamId2);
+                    // Test ping with no active stream.
+                    if (expectPingWithoutStream)
+                    {
+                        PingFrame ping = await connection.ReadPingAsync(pingTimeout);
+                        await connection.SendPingAckAsync(ping.Data);
+                    }
+                    else
+                    {
+                        await Assert.ThrowsAsync<OperationCanceledException>(() => connection.ReadPingAsync(pingTimeout));
+                    }
+                    serverFinished.SetResult();
+                    await connection.WaitForClientDisconnectAsync(true);
+                });
+        }
+
         [OuterLoop("Uses Task.Delay")]
         [ConditionalFact(nameof(SupportsAlpn))]
         public async Task Http2_MaxConcurrentStreams_LimitEnforced()
@@ -1874,13 +2018,13 @@ namespace System.Net.Http.Functional.Tests
                 using (var handler = new SocketsHttpHandler())
                 using (HttpClient client = CreateHttpClient(handler))
                 {
-                    TestHelper.EnableUnencryptedHttp2IfNecessary(handler);
                     handler.SslOptions.RemoteCertificateValidationCallback = delegate { return true; };
                     // Increase default Expect: 100-continue timeout to ensure that we don't accidentally fire the timer and send the request body.
                     handler.Expect100ContinueTimeout = TimeSpan.FromSeconds(300);
 
                     var request = new HttpRequestMessage(HttpMethod.Post, url);
                     request.Version = new Version(2,0);
+                    request.VersionPolicy = HttpVersionPolicy.RequestVersionExact;
                     request.Content = new StringContent(new string('*', 3000));
                     request.Headers.ExpectContinue = true;
                     request.Headers.Add("x-test", "PostAsyncExpect100Continue_NonSuccessResponse_RequestBodyNotSent");
@@ -2953,6 +3097,52 @@ namespace System.Net.Http.Functional.Tests
 
                 await Assert.ThrowsAsync<HttpRequestException>(() => sendTask);
             }
+        }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(2)]
+        public async Task Http2SendAsync_LargeHeaders_CorrectlyWritten(int continuationCount)
+        {
+            // Intentionally larger than 2x16K in total because that's the limit that will trigger a CONTINUATION frame in HTTP2.
+            string largeHeaderValue = new string('a', 1024);
+            int count = continuationCount * 16 + 1;
+
+            await Http2LoopbackServer.CreateClientAndServerAsync(async uri =>
+            {
+                using HttpClient client = CreateHttpClient();
+
+                var message = new HttpRequestMessage(HttpMethod.Get, uri) { Version = UseVersion };
+                for (int i = 0; i < count; i++)
+                {
+                    message.Headers.TryAddWithoutValidation("large-header" + i, largeHeaderValue);
+                }
+                var response = await client.SendAsync(TestAsync, message).ConfigureAwait(false);
+            },
+            async server =>
+            {
+                // Primes the connection, i.e. forces it to exchange SETTINGS whose ACK sometimes flushed the headers as well.
+                // See: https://github.com/dotnet/runtime/issues/860 for repro description.
+                (Http2LoopbackConnection connection, SettingsFrame clientSettings) = await server.EstablishConnectionGetSettingsAsync();
+
+                // Read individual frames and assert number of CONTINUATIONs.
+                int receivedContinuations = 0;
+                int streamId = 0;
+                await foreach (Frame frame in connection.ReadRequestHeadersFrames())
+                {
+                    if (frame.Type == FrameType.Headers)
+                    {
+                        streamId = ((HeadersFrame)frame).StreamId;
+                    }
+                    if (frame.Type == FrameType.Continuation)
+                    {
+                        ++receivedContinuations;
+                    }
+                }
+                Assert.Equal(continuationCount, receivedContinuations);
+                await connection.SendResponseAsync(HttpStatusCode.OK, requestId: streamId);
+            });
         }
 
         [Fact]

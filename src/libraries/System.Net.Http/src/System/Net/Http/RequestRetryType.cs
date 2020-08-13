@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 namespace System.Net.Http
 {
@@ -27,6 +26,10 @@ namespace System.Net.Http
         /// <summary>
         /// The proxy failed, so the request should be retried on the next proxy.
         /// </summary>
-        RetryOnNextProxy
+        RetryOnNextProxy,
+
+        /// The HTTP/2 connection reached the maximum number of streams and
+        /// another HTTP/2 connection must be created or found to serve the request.
+        RetryOnNextConnection
     }
 }

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Data.Common;
 using System.Data.ProviderBase;
@@ -12,11 +11,11 @@ namespace System.Data.OleDb
 {
     public sealed class OleDbTransaction : DbTransaction
     {
-        private readonly OleDbTransaction _parentTransaction; // strong reference to keep parent alive
+        private readonly OleDbTransaction? _parentTransaction; // strong reference to keep parent alive
         private readonly System.Data.IsolationLevel _isolationLevel;
 
-        private WeakReference _nestedTransaction; // child transactions
-        private WrappedTransaction _transaction;
+        private WeakReference? _nestedTransaction; // child transactions
+        private WrappedTransaction? _transaction;
 
         internal OleDbConnection _parentConnection;
 
@@ -115,7 +114,7 @@ namespace System.Data.OleDb
             }
         }
 
-        internal OleDbTransaction(OleDbConnection connection, OleDbTransaction transaction, IsolationLevel isolevel)
+        internal OleDbTransaction(OleDbConnection connection, OleDbTransaction? transaction, IsolationLevel isolevel)
         {
             _parentConnection = connection;
             _parentTransaction = transaction;
@@ -166,7 +165,7 @@ namespace System.Data.OleDb
             }
         }
 
-        internal OleDbTransaction Parent
+        internal OleDbTransaction? Parent
         {
             get
             {
@@ -189,7 +188,7 @@ namespace System.Data.OleDb
             OleDbTransaction transaction = new OleDbTransaction(_parentConnection, this, isolevel);
             _nestedTransaction = new WeakReference(transaction, false);
 
-            UnsafeNativeMethods.ITransactionLocal wrapper = null;
+            UnsafeNativeMethods.ITransactionLocal? wrapper = null;
             try
             {
                 wrapper = (UnsafeNativeMethods.ITransactionLocal)_transaction.ComWrapper();
@@ -239,7 +238,7 @@ namespace System.Data.OleDb
             }
             if (null != _nestedTransaction)
             {
-                OleDbTransaction transaction = (OleDbTransaction)_nestedTransaction.Target;
+                OleDbTransaction? transaction = (OleDbTransaction?)_nestedTransaction.Target;
                 if ((null != transaction) && _nestedTransaction.IsAlive)
                 {
                     transaction.CommitInternal();
@@ -292,12 +291,12 @@ namespace System.Data.OleDb
             {
                 _parentConnection.LocalTransaction = null;
             }
-            _parentConnection = null;
+            _parentConnection = null!;
         }
 
         private void ProcessResults(OleDbHResult hr)
         {
-            Exception e = OleDbConnection.ProcessResults(hr, _parentConnection, this);
+            Exception? e = OleDbConnection.ProcessResults(hr, _parentConnection, this);
             if (null != e)
             { throw e; }
         }
@@ -320,7 +319,7 @@ namespace System.Data.OleDb
             {
                 if (null != _nestedTransaction)
                 {
-                    OleDbTransaction transaction = (OleDbTransaction)_nestedTransaction.Target;
+                    OleDbTransaction? transaction = (OleDbTransaction?)_nestedTransaction.Target;
                     if ((null != transaction) && _nestedTransaction.IsAlive)
                     {
                         hr = transaction.RollbackInternal(exceptionHandling);
@@ -354,7 +353,7 @@ namespace System.Data.OleDb
         {
             if (null != head._nestedTransaction)
             {
-                OleDbTransaction current = (OleDbTransaction)head._nestedTransaction.Target;
+                OleDbTransaction? current = (OleDbTransaction?)head._nestedTransaction.Target;
                 if ((null != current) && head._nestedTransaction.IsAlive)
                 {
                     return TransactionLast(current);
@@ -363,7 +362,7 @@ namespace System.Data.OleDb
             return head;
         }
 
-        internal static OleDbTransaction TransactionUpdate(OleDbTransaction transaction)
+        internal static OleDbTransaction? TransactionUpdate(OleDbTransaction? transaction)
         {
             if ((null != transaction) && (null == transaction._transaction))
             {

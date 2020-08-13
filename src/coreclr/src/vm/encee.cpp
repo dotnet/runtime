@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 // ===========================================================================
 // File: EnC.CPP
 //
@@ -1108,7 +1107,7 @@ EnCAddedField *EnCAddedField::Allocate(OBJECTREF thisPointer, EnCFieldDesc *pFD)
     // the OBJECTREF address so we need to hand out something else that is hooked up to the handle.
 
     GCPROTECT_BEGIN(thisPointer);
-    MethodTable *pHelperMT = MscorlibBinder::GetClass(CLASS__ENC_HELPER);
+    MethodTable *pHelperMT = CoreLibBinder::GetClass(CLASS__ENC_HELPER);
     pEntry->m_FieldData = pDomain->CreateDependentHandle(thisPointer, AllocateObject(pHelperMT));
     GCPROTECT_END();
 
@@ -1140,7 +1139,7 @@ EnCAddedField *EnCAddedField::Allocate(OBJECTREF thisPointer, EnCFieldDesc *pFD)
         GCPROTECT_BEGIN (obj);
 
         // Get a FieldDesc for the object reference field in the EnC helper object (warning: triggers)
-        FieldDesc *pHelperField = MscorlibBinder::GetField(FIELD__ENC_HELPER__OBJECT_REFERENCE);
+        FieldDesc *pHelperField = CoreLibBinder::GetField(FIELD__ENC_HELPER__OBJECT_REFERENCE);
 
         // store the empty boxed object into the helper object
         IGCHandleManager *mgr = GCHandleUtilities::GetGCHandleManager();
@@ -1261,7 +1260,7 @@ PTR_CBYTE EnCSyncBlockInfo::ResolveField(OBJECTREF thisPointer, EnCFieldDesc *pF
 
     // We _HAVE_ to call GetExistingField b/c (a) we can't throw exceptions, and
     // (b) we _DON'T_ want to run class init code, either.
-    pHelperFieldDesc = MscorlibBinder::GetExistingField(FIELD__ENC_HELPER__OBJECT_REFERENCE);
+    pHelperFieldDesc = CoreLibBinder::GetExistingField(FIELD__ENC_HELPER__OBJECT_REFERENCE);
     if (pHelperFieldDesc == NULL)
     {
         return NULL;
@@ -1349,7 +1348,7 @@ PTR_CBYTE EnCSyncBlockInfo::ResolveOrAllocateField(OBJECTREF thisPointer, EnCFie
 
     FieldDesc * pHelperField = NULL;
     GCPROTECT_BEGIN (pHelper);
-    pHelperField = MscorlibBinder::GetField(FIELD__ENC_HELPER__OBJECT_REFERENCE);
+    pHelperField = CoreLibBinder::GetField(FIELD__ENC_HELPER__OBJECT_REFERENCE);
     GCPROTECT_END ();
 
     return GetEnCFieldAddrFromHelperFieldDesc(pHelperField, pHelper, pFD);

@@ -1,11 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using Test.Cryptography;
@@ -250,7 +248,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 Assert.False(chain.Build(microsoftDotCom));
 
                 // Linux and Windows do not search the default system root stores when CustomRootTrust is enabled
-                if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+                if (OperatingSystem.IsMacOS())
                 {
                     Assert.Equal(3, chain.ChainElements.Count);
                     Assert.Equal(X509ChainStatusFlags.UntrustedRoot, chain.AllStatusFlags());
@@ -844,11 +842,11 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         {
             X509ChainStatusFlags expectedFlags;
 
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            if (OperatingSystem.IsWindows())
             {
                 expectedFlags = X509ChainStatusFlags.NotSignatureValid;
             }
-            else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+            else if (OperatingSystem.IsMacOS())
             {
                 // For OSX alone expectedFlags here means OR instead of AND.
                 // Because the error code changed in 10.13.4 from UntrustedRoot to PartialChain
@@ -880,7 +878,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
                 X509ChainStatusFlags allFlags = chain.AllStatusFlags();
 
-                if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+                if (OperatingSystem.IsMacOS())
                 {
                     // If we're on 10.13.3 or older we get UntrustedRoot.
                     // If we're on 10.13.4 or newer we get PartialChain.
@@ -1024,7 +1022,7 @@ tHP28fj0LUop/QFojSZPsaPAW6JvoQ0t4hd6WoyX6z7FsA==
                     bool valid = chain.Build(cert);
                     X509ChainStatusFlags allFlags = chain.AllStatusFlags();
 
-                    if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+                    if (OperatingSystem.IsMacOS())
                     {
                         // OSX considers this to be valid because it doesn't report NotSignatureValid,
                         // just PartialChain ("I couldn't find an issuer that made the signature work"),

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.IO;
 using Microsoft.DotNet.RemoteExecutor;
@@ -122,6 +121,7 @@ namespace System.IO.Tests
         [Theory]
         [InlineData(FileMode.Create)]
         [InlineData(FileMode.Truncate)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/40065", TestPlatforms.Browser)]
         public void NoTruncateOnFileShareViolation(FileMode fileMode)
         {
             string fileName = GetTestFilePath();

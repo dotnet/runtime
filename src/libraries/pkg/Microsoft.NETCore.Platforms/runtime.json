@@ -1571,6 +1571,12 @@
         "unix"
       ]
     },
+    "osx-arm64": {
+      "#import": [
+        "osx",
+        "unix-arm64"
+      ]
+    },
     "osx-x64": {
       "#import": [
         "osx",
@@ -1641,6 +1647,40 @@
       "#import": [
         "osx.10.15",
         "osx.10.14-x64"
+      ]
+    },
+    "osx.11": {
+      "#import": [
+        "osx"
+      ]
+    },
+    "osx.11-arm64": {
+      "#import": [
+        "osx.11",
+        "osx-arm64"
+      ]
+    },
+    "osx.11-x64": {
+      "#import": [
+        "osx.11",
+        "osx-x64"
+      ]
+    },
+    "osx.11.0": {
+      "#import": [
+        "osx.11"
+      ]
+    },
+    "osx.11.0-arm64": {
+      "#import": [
+        "osx.11.0",
+        "osx.11-arm64"
+      ]
+    },
+    "osx.11.0-x64": {
+      "#import": [
+        "osx.11.0",
+        "osx.11-x64"
       ]
     },
     "rhel": {
@@ -1975,6 +2015,12 @@
         "linux"
       ]
     },
+    "tizen-arm64": {
+      "#import": [
+        "tizen",
+        "linux-arm64"
+      ]
+    },
     "tizen-armel": {
       "#import": [
         "tizen",
@@ -1990,6 +2036,12 @@
     "tizen.4.0.0": {
       "#import": [
         "tizen"
+      ]
+    },
+    "tizen.4.0.0-arm64": {
+      "#import": [
+        "tizen.4.0.0",
+        "tizen-arm64"
       ]
     },
     "tizen.4.0.0-armel": {
@@ -2009,6 +2061,12 @@
         "tizen.4.0.0"
       ]
     },
+    "tizen.5.0.0-arm64": {
+      "#import": [
+        "tizen.5.0.0",
+        "tizen.4.0.0-arm64"
+      ]
+    },
     "tizen.5.0.0-armel": {
       "#import": [
         "tizen.5.0.0",
@@ -2026,6 +2084,12 @@
         "tizen.5.0.0"
       ]
     },
+    "tizen.5.5.0-arm64": {
+      "#import": [
+        "tizen.5.5.0",
+        "tizen.5.0.0-arm64"
+      ]
+    },
     "tizen.5.5.0-armel": {
       "#import": [
         "tizen.5.5.0",
@@ -2041,6 +2105,12 @@
     "tizen.6.0.0": {
       "#import": [
         "tizen.5.5.0"
+      ]
+    },
+    "tizen.6.0.0-arm64": {
+      "#import": [
+        "tizen.6.0.0",
+        "tizen.5.5.0-arm64"
       ]
     },
     "tizen.6.0.0-armel": {

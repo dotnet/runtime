@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*============================================================
 **
@@ -164,7 +163,7 @@ namespace System.Resources
     // resource files containing thousands of resources.
     //
 #if CORERT
-    public  // On CoreRT, this must be public because of need to whitelist past the ReflectionBlock.
+    public  // On CoreRT, this must be public to prevent it from getting reflection blocked.
 #else
     internal
 #endif
@@ -176,12 +175,12 @@ namespace System.Resources
         // for arbitrarily long times, since the object is usually a string
         // literal that will live for the lifetime of the appdomain.  The
         // value is a ResourceLocator instance, which might cache the object.
-        private Dictionary<string, ResourceLocator>? _resCache; // TODO-NULLABLE: Avoid nulling out in Dispose
+        private Dictionary<string, ResourceLocator>? _resCache;
 
 
         // For our special load-on-demand reader, cache the cast.  The
         // RuntimeResourceSet's implementation knows how to treat this reader specially.
-        private ResourceReader? _defaultReader; // TODO-NULLABLE: Avoid nulling out in Dispose
+        private ResourceReader? _defaultReader;
 
         // This is a lookup table for case-insensitive lookups, and may be null.
         // Consider always using a case-insensitive resource cache, as we don't
@@ -210,7 +209,11 @@ namespace System.Resources
             Reader = _defaultReader;
         }
 #else
-        private IResourceReader Reader => _defaultReader!;
+        private
+#if NETFRAMEWORK
+        new
+#endif
+        IResourceReader Reader => _defaultReader!;
 
         internal RuntimeResourceSet(IResourceReader reader) :
             // explicitly do not call IResourceReader constructor since it caches all resources

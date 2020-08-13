@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 // ===================================================================================================
 // Portions of the code implemented below are based on the 'Berkeley SoftFloat Release 3e' algorithms.
@@ -227,7 +226,7 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static double CopySign(double x, double y)
         {
-            if (Sse.IsSupported || AdvSimd.IsSupported)
+            if (Sse2.IsSupported || AdvSimd.IsSupported)
             {
                 return VectorMath.ConditionalSelectBitwise(Vector128.CreateScalarUnsafe(-0.0), Vector128.CreateScalarUnsafe(y), Vector128.CreateScalarUnsafe(x)).ToScalar();
             }

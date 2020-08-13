@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #ifndef __DIAGNOSTICS_IPC_H__
 #define __DIAGNOSTICS_IPC_H__
@@ -17,6 +16,7 @@ typedef void (*ErrorCallback)(const char *szMessage, uint32_t code);
 
 class IpcStream final
 {
+    friend class IpcStreamFactory;
 public:
     static constexpr int32_t InfiniteTimeout = -1;
     ~IpcStream();
@@ -27,6 +27,7 @@ public:
 
     class DiagnosticsIpc final
     {
+        friend class IpcStreamFactory;
     public:
         enum ConnectionMode
         {
@@ -36,10 +37,11 @@ public:
 
         enum class PollEvents : uint8_t
         {
-            TIMEOUT  = 0x00, // implies timeout
+            NONE     = 0x00, // no events
             SIGNALED = 0x01, // ready for use
             HANGUP   = 0x02, // connection remotely closed
-            ERR      = 0x04  // other error
+            ERR      = 0x04, // error
+            UNKNOWN   = 0x80  // unknown state
         };
 
         // The bookeeping struct used for polling on server and client structs
@@ -126,7 +128,7 @@ public:
 private:
 #ifdef TARGET_UNIX
     int _clientSocket = -1;
-    IpcStream(int clientSocket, int serverSocket, DiagnosticsIpc::ConnectionMode mode = DiagnosticsIpc::ConnectionMode::SERVER)
+    IpcStream(int clientSocket, DiagnosticsIpc::ConnectionMode mode = DiagnosticsIpc::ConnectionMode::SERVER)
         : _clientSocket(clientSocket), _mode(mode) {}
 #else
     HANDLE _hPipe = INVALID_HANDLE_VALUE;

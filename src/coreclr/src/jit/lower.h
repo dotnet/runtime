@@ -1,12 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XX                                                                           XX
 XX                               Lower                                       XX
 XX                                                                           XX
+XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 */
@@ -134,9 +134,9 @@ private:
     void LowerRet(GenTreeUnOp* ret);
     void LowerStoreLocCommon(GenTreeLclVarCommon* lclVar);
     void LowerRetStruct(GenTreeUnOp* ret);
-    void LowerRetStructLclVar(GenTreeUnOp* ret);
+    void LowerRetSingleRegStructLclVar(GenTreeUnOp* ret);
     void LowerCallStruct(GenTreeCall* call);
-    void LowerStoreCallStruct(GenTreeBlk* store);
+    void LowerStoreSingleRegCallStruct(GenTreeBlk* store);
 #if !defined(WINDOWS_AMD64_ABI)
     GenTreeLclVar* SpillStructCallResult(GenTreeCall* call) const;
 #endif // WINDOWS_AMD64_ABI
@@ -177,9 +177,9 @@ private:
     GenTree* AddrGen(ssize_t addr);
     GenTree* AddrGen(void* addr);
 
-    GenTree* Ind(GenTree* tree)
+    GenTree* Ind(GenTree* tree, var_types type = TYP_I_IMPL)
     {
-        return comp->gtNewOperNode(GT_IND, TYP_I_IMPL, tree);
+        return comp->gtNewOperNode(GT_IND, type, tree);
     }
 
     GenTree* PhysReg(regNumber reg, var_types type = TYP_I_IMPL)
@@ -326,11 +326,14 @@ private:
     void LowerHWIntrinsicCC(GenTreeHWIntrinsic* node, NamedIntrinsic newIntrinsicId, GenCondition condition);
     void LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cmpOp);
     void LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node);
+    void LowerHWIntrinsicDot(GenTreeHWIntrinsic* node);
+#if defined(TARGET_XARCH)
     void LowerFusedMultiplyAdd(GenTreeHWIntrinsic* node);
-
-#ifdef TARGET_ARM64
+    void LowerHWIntrinsicToScalar(GenTreeHWIntrinsic* node);
+#elif defined(TARGET_ARM64)
     bool IsValidConstForMovImm(GenTreeHWIntrinsic* node);
-#endif // TARGET_ARM64
+    void LowerHWIntrinsicFusedMultiplyAddScalar(GenTreeHWIntrinsic* node);
+#endif // !TARGET_XARCH && !TARGET_ARM64
 
     union VectorConstant {
         int8_t   i8[32];
@@ -411,11 +414,26 @@ private:
             case TYP_LONG:
             case TYP_ULONG:
             {
-                if (arg->OperIs(GT_CNS_LNG))
+#if defined(TARGET_64BIT)
+                if (arg->IsCnsIntOrI())
                 {
-                    vecCns.i64[argIdx] = static_cast<int64_t>(arg->AsLngCon()->gtLconVal);
+                    vecCns.i64[argIdx] = static_cast<int64_t>(arg->AsIntCon()->gtIconVal);
                     return true;
                 }
+#else
+                if (arg->OperIsLong() && arg->AsOp()->gtOp1->IsCnsIntOrI() && arg->AsOp()->gtOp2->IsCnsIntOrI())
+                {
+                    // 32-bit targets will decompose GT_CNS_LNG into two GT_CNS_INT
+                    // We need to reconstruct the 64-bit value in order to handle this
+
+                    INT64 gtLconVal = arg->AsOp()->gtOp2->AsIntCon()->gtIconVal;
+                    gtLconVal <<= 32;
+                    gtLconVal |= arg->AsOp()->gtOp1->AsIntCon()->gtIconVal;
+
+                    vecCns.i64[argIdx] = gtLconVal;
+                    return true;
+                }
+#endif // TARGET_64BIT
                 else
                 {
                     // We expect the VectorConstant to have been already zeroed
@@ -514,6 +532,8 @@ public:
     // Return true if 'node' is a containable HWIntrinsic op.
     bool IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* containingNode, GenTree* node, bool* supportsRegOptional);
 #endif // FEATURE_HW_INTRINSICS
+
+    static void TransformUnusedIndirection(GenTreeIndir* ind, Compiler* comp, BasicBlock* block);
 
 private:
     static bool NodesAreEquivalentLeaves(GenTree* candidate, GenTree* storeInd);

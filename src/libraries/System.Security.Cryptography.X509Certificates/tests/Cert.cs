@@ -1,8 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
-
-using System.Runtime.InteropServices;
 
 namespace System.Security.Cryptography.X509Certificates.Tests
 {
@@ -18,7 +15,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         // netcoreapp-other: EphemeralKeySet
         internal static readonly X509KeyStorageFlags EphemeralIfPossible =
 #if !NO_EPHEMERALKEYSET_AVAILABLE
-            !RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? X509KeyStorageFlags.EphemeralKeySet :
+            !OperatingSystem.IsMacOS() ? X509KeyStorageFlags.EphemeralKeySet :
 #endif
             X509KeyStorageFlags.DefaultKeySet;
         //

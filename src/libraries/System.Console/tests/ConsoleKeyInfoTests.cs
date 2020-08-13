@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using Xunit;
@@ -69,6 +68,9 @@ namespace System.Tests
             Assert.False(default(ConsoleKeyInfo).Equals(null));
             Assert.False(default(ConsoleKeyInfo).Equals(new object()));
         }
+
+        [Fact]
+        public void ImplementsIEquatableInterface() => Assert.True(typeof(IEquatable<ConsoleKeyInfo>).IsAssignableFrom(typeof(ConsoleKeyInfo)));
 
         public static readonly object[][] NotEqualConsoleKeyInfos = {
             new object[] { new ConsoleKeyInfo('a', ConsoleKey.A, true, true, true), new ConsoleKeyInfo('b', ConsoleKey.A, true, true, true)  },

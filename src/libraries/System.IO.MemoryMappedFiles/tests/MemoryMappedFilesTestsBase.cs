@@ -1,10 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using Xunit;
 
 namespace System.IO.MemoryMappedFiles.Tests
@@ -13,7 +11,7 @@ namespace System.IO.MemoryMappedFiles.Tests
     public abstract partial class MemoryMappedFilesTestBase : FileCleanupTestBase
     {
         /// <summary>Gets whether named maps are supported by the current platform.</summary>
-        protected static bool MapNamesSupported { get { return RuntimeInformation.IsOSPlatform(OSPlatform.Windows); } }
+        protected static bool MapNamesSupported => OperatingSystem.IsWindows();
 
         /// <summary>Creates a map name guaranteed to be unique.</summary>
         protected static string CreateUniqueMapName() { return Guid.NewGuid().ToString("N"); }

@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
+
+// TODO: Enable after System.Private.Xml is annotated
+#nullable disable
 
 using System.Data.Common;
 using System.Xml;
@@ -690,7 +692,7 @@ namespace System.Data
                 {
                     if (dc.SimpleType != null && dc.SimpleType.Name != null && dc.SimpleType.Name.Length != 0)
                     {
-                        _existingSimpleTypeMap[dc.SimpleType.SimpleTypeQualifiedName] = dc;
+                        _existingSimpleTypeMap[dc.SimpleType.SimpleTypeQualifiedName!] = dc;
                         //                        existingSimpleTypeMap[dc.SimpleType.SimpleTypeQualifiedName] = dc.SimpleType;
                     }
                 }

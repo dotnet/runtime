@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //
 // File: MarshalNative.cpp
 //
@@ -1224,83 +1223,6 @@ FCIMPL1(FC_BOOL_RET, MarshalNative::IsTypeVisibleFromCom, ReflectClassBaseObject
 
     HELPER_METHOD_FRAME_END();
     FC_RETURN_BOOL(retVal);
-}
-FCIMPLEND
-
-
-//====================================================================
-// IUnknown Helpers
-//====================================================================
-// IUnknown::QueryInterface
-FCIMPL3(HRESULT, MarshalNative::QueryInterface, IUnknown* pUnk, REFGUID iid, void** ppv)
-{
-    CONTRACTL
-    {
-        FCALL_CHECK;
-        PRECONDITION(CheckPointer(pUnk, NULL_OK));
-        PRECONDITION(CheckPointer(ppv));
-    }
-    CONTRACTL_END;
-
-    HRESULT hr = S_OK;
-    HELPER_METHOD_FRAME_BEGIN_RET_0();
-
-    if (!pUnk)
-        COMPlusThrowArgumentNull(W("pUnk"));
-
-    hr = SafeQueryInterface(pUnk,iid,(IUnknown**)ppv);
-    LogInteropQI(pUnk, iid, hr, "PInvoke::QI");
-
-    HELPER_METHOD_FRAME_END();
-    return hr;
-}
-FCIMPLEND
-
-// IUnknown::AddRef
-FCIMPL1(ULONG, MarshalNative::AddRef, IUnknown* pUnk)
-{
-    CONTRACTL
-    {
-        FCALL_CHECK;
-        PRECONDITION(CheckPointer(pUnk, NULL_OK));
-    }
-    CONTRACTL_END;
-
-    ULONG cbRef = 0;
-    HELPER_METHOD_FRAME_BEGIN_RET_0();
-
-    if (!pUnk)
-        COMPlusThrowArgumentNull(W("pUnk"));
-
-    cbRef = SafeAddRef(pUnk);
-    LogInteropAddRef(pUnk, cbRef, "PInvoke.AddRef");
-
-    HELPER_METHOD_FRAME_END();
-    return cbRef;
-}
-FCIMPLEND
-
-//IUnknown::Release
-FCIMPL1(ULONG, MarshalNative::Release, IUnknown* pUnk)
-{
-    CONTRACTL
-    {
-        FCALL_CHECK;
-        PRECONDITION(CheckPointer(pUnk, NULL_OK));
-    }
-    CONTRACTL_END;
-
-    ULONG cbRef = 0;
-    HELPER_METHOD_FRAME_BEGIN_RET_0();
-
-    if (!pUnk)
-        COMPlusThrowArgumentNull(W("pUnk"));
-
-    cbRef = SafeRelease(pUnk);
-    LogInteropRelease(pUnk, cbRef, "PInvoke.Release");
-
-    HELPER_METHOD_FRAME_END();
-    return cbRef;
 }
 FCIMPLEND
 

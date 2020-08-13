@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #nullable enable
 using System.Threading.Tasks;
@@ -771,7 +770,7 @@ namespace System.Xml
             }
         }
 
-        public override async Task WriteCDataAsync(string text)
+        public override async Task WriteCDataAsync(string? text)
         {
             try
             {
@@ -779,6 +778,7 @@ namespace System.Xml
                 {
                     text = string.Empty;
                 }
+
                 await AdvanceStateAsync(Token.CData).ConfigureAwait(false);
                 await _writer.WriteCDataAsync(text).ConfigureAwait(false);
             }
@@ -789,7 +789,7 @@ namespace System.Xml
             }
         }
 
-        public override async Task WriteCommentAsync(string text)
+        public override async Task WriteCommentAsync(string? text)
         {
             try
             {
@@ -797,6 +797,7 @@ namespace System.Xml
                 {
                     text = string.Empty;
                 }
+
                 await AdvanceStateAsync(Token.Comment).ConfigureAwait(false);
                 await _writer.WriteCommentAsync(text).ConfigureAwait(false);
             }
@@ -939,7 +940,7 @@ namespace System.Xml
             }
         }
 
-        public override async Task WriteWhitespaceAsync(string ws)
+        public override async Task WriteWhitespaceAsync(string? ws)
         {
             try
             {
@@ -947,6 +948,7 @@ namespace System.Xml
                 {
                     ws = string.Empty;
                 }
+
                 if (!XmlCharType.Instance.IsOnlyWhitespace(ws))
                 {
                     throw new ArgumentException(SR.Xml_NonWhitespace);
@@ -969,7 +971,7 @@ namespace System.Xml
             }
         }
 
-        public override Task WriteStringAsync(string text)
+        public override Task WriteStringAsync(string? text)
         {
             try
             {
@@ -1461,6 +1463,7 @@ namespace System.Xml
                     await _nsStack[i].WriteDeclAsync(_writer, _rawWriter).ConfigureAwait(false);
                 }
             }
+
             if (_rawWriter != null)
             {
                 _rawWriter.StartElementContent();
@@ -1478,6 +1481,7 @@ namespace System.Xml
             {
                 _rawWriter.StartElementContent();
             }
+
             return Task.CompletedTask;
         }
 

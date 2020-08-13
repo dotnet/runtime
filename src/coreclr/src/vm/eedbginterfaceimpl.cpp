@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 
 /*
@@ -931,7 +930,7 @@ TypeHandle EEDbgInterfaceImpl::FindLoadedElementType(CorElementType et)
     // Lookup operations run the class loader in non-load mode.
     ENABLE_FORBID_GC_LOADER_USE_IN_THIS_SCOPE();
 
-    MethodTable *m = MscorlibBinder::GetElementType(et);
+    MethodTable *m = CoreLibBinder::GetElementType(et);
 
     return TypeHandle(m);
 }
@@ -1022,7 +1021,7 @@ TypeHandle EEDbgInterfaceImpl::LoadElementType(CorElementType et)
     }
     CONTRACTL_END;
 
-    MethodTable *m = MscorlibBinder::GetElementType(et);
+    MethodTable *m = CoreLibBinder::GetElementType(et);
 
     if (m == NULL)
     {

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 namespace System.ComponentModel.DataAnnotations
 {
@@ -21,7 +20,7 @@ namespace System.ComponentModel.DataAnnotations
             DefaultErrorMessage = SR.PhoneAttribute_Invalid;
         }
 
-        public override bool IsValid(object value)
+        public override bool IsValid(object? value)
         {
             if (value == null)
             {

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 
@@ -141,6 +140,7 @@ namespace Internal.ReadyToRunConstants
         // Not a real helper - handle to current module passed to delay load helpers.
         Module                      = 0x01,
         GSCookie                    = 0x02,
+        IndirectTrapThreads         = 0x03,
 
         //
         // Delay load helpers
@@ -312,6 +312,17 @@ namespace Internal.ReadyToRunConstants
         TypeHandleToRuntimeType,
         GetRefAny,
         TypeHandleToRuntimeTypeHandle,
+    }
+
+    // Enum used for HFA type recognition.
+    // Supported across architectures, so that it can be used in altjits and cross-compilation.
+    public enum ReadyToRunHFAElemType
+    {
+        None = 0,
+        Float32 = 1,
+        Float64 = 2,
+        Vector64 = 3,
+        Vector128 = 4,
     }
 
     public static class ReadyToRunRuntimeConstants

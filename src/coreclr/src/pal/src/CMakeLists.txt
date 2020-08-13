@@ -18,6 +18,8 @@ if(NOT CLR_CMAKE_USE_SYSTEM_LIBUNWIND)
   add_subdirectory(libunwind)
 elseif(NOT CLR_CMAKE_TARGET_OSX)
   find_unwind_libs(UNWIND_LIBS)
+else()
+  add_subdirectory(libunwind)
 endif(NOT CLR_CMAKE_USE_SYSTEM_LIBUNWIND)
 
 include(configure.cmake)
@@ -38,6 +40,10 @@ cmake_policy(SET CMP0042 NEW)
 include_directories(include)
 
 # Compile options
+
+if(CLR_CMAKE_USE_SYSTEM_LIBUNWIND)
+  add_definitions(-DFEATURE_USE_SYSTEM_LIBUNWIND)
+endif(CLR_CMAKE_USE_SYSTEM_LIBUNWIND)
 
 if(CLR_CMAKE_TARGET_OSX)
   add_definitions(-DTARGET_OSX)
@@ -131,7 +137,6 @@ set(SOURCES
   debug/debug.cpp
   exception/seh.cpp
   exception/signal.cpp
-  exception/remote-unwind.cpp
   file/directory.cpp
   file/file.cpp
   file/filetime.cpp
@@ -214,6 +219,12 @@ set(SOURCES
   thread/threadsusp.cpp
 )
 
+if(NOT CLR_CMAKE_TARGET_OSX)
+  list(APPEND SOURCES
+     exception/remote-unwind.cpp
+  )
+endif(NOT CLR_CMAKE_TARGET_OSX)
+
 if(NOT CLR_CMAKE_USE_SYSTEM_LIBUNWIND)
   set(LIBUNWIND_OBJECTS $<TARGET_OBJECTS:libunwind>)
 endif(NOT CLR_CMAKE_USE_SYSTEM_LIBUNWIND)
@@ -226,6 +237,29 @@ add_library(coreclrpal
   ${LIBUNWIND_OBJECTS}
 )
 
+# Build separate pal library for DAC (addition to regular pal library)
+if(CLR_CMAKE_TARGET_OSX)
+  set(LIBUNWIND_DAC_OBJECTS $<TARGET_OBJECTS:libunwind_dac>)
+
+  add_library(coreclrpal_dac STATIC
+    exception/remote-unwind.cpp
+    ${LIBUNWIND_DAC_OBJECTS}
+  )
+
+  target_compile_definitions(coreclrpal_dac PUBLIC 
+    "-D_XOPEN_SOURCE"
+    "-DUNW_REMOTE_ONLY"
+  )
+
+  target_include_directories(coreclrpal_dac PUBLIC 
+    ${CMAKE_CURRENT_SOURCE_DIR}/libunwind/include
+    ${CMAKE_CURRENT_SOURCE_DIR}/libunwind/include/tdep
+    ${CMAKE_CURRENT_BINARY_DIR}
+    ${CMAKE_CURRENT_BINARY_DIR}/libunwind/include
+    ${CMAKE_CURRENT_BINARY_DIR}/libunwind/include/tdep
+  )
+endif(CLR_CMAKE_TARGET_OSX)
+
 # There is only one function exported in 'tracepointprovider.cpp' namely 'PAL_InitializeTracing',
 # which is guarded with '#if defined(__linux__)'. On macOS, Xcode issues the following warning:
 #
@@ -233,10 +267,12 @@ add_library(coreclrpal
 # > warning for library: libtracepointprovider.a the table of contents is empty (no object file members in the library define global symbols)
 #
 if(CLR_CMAKE_TARGET_LINUX)
-  add_library(tracepointprovider
+  add_library(tracepointprovider_obj
     OBJECT
     misc/tracepointprovider.cpp
   )
+  add_library(tracepointprovider INTERFACE)
+  target_sources(tracepointprovider INTERFACE $<TARGET_OBJECTS:tracepointprovider_obj>)
 endif(CLR_CMAKE_TARGET_LINUX)
 
 if(CLR_CMAKE_TARGET_OSX)
@@ -308,7 +344,6 @@ endif(CLR_CMAKE_TARGET_SUNOS)
 if(FEATURE_EVENT_TRACE)
   add_subdirectory(eventprovider)
 endif(FEATURE_EVENT_TRACE)
-
 
 # Install the static PAL library for VS
 _install (TARGETS coreclrpal DESTINATION lib)

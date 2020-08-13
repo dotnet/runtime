@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.IO;
@@ -198,13 +197,13 @@ namespace System.Net
 
         public void AddHeader(string name, string value)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"name={name}, value={value}");
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"name={name}, value={value}");
             Headers.Set(name, value);
         }
 
         public void AppendHeader(string name, string value)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"name={name}, value={value}");
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"name={name}, value={value}");
             Headers.Add(name, value);
         }
 
@@ -214,13 +213,13 @@ namespace System.Net
             {
                 throw new ArgumentNullException(nameof(cookie));
             }
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"cookie: {cookie}");
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"cookie: {cookie}");
             Cookies.Add(cookie);
         }
 
         private void ComputeCookies()
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"Entering Set-Cookie: {Headers[HttpResponseHeader.SetCookie]}, Set-Cookie2: {Headers[HttpKnownHeaderNames.SetCookie2]}");
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"Entering Set-Cookie: {Headers[HttpResponseHeader.SetCookie]}, Set-Cookie2: {Headers[HttpKnownHeaderNames.SetCookie2]}");
 
             if (_cookies != null)
             {
@@ -234,7 +233,7 @@ namespace System.Net
                     {
                         continue;
                     }
-                    if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"Now looking at index:{index} cookie: {cookie}");
+                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"Now looking at index:{index} cookie: {cookie}");
                     if (cookie.IsRfc2965Variant())
                     {
                         setCookie2 = setCookie2 == null ? cookieString : setCookie2 + ", " + cookieString;
@@ -264,12 +263,12 @@ namespace System.Net
                 }
             }
 
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"Exiting Set-Cookie: {Headers[HttpResponseHeader.SetCookie]} Set-Cookie2: {Headers[HttpKnownHeaderNames.SetCookie2]}");
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"Exiting Set-Cookie: {Headers[HttpResponseHeader.SetCookie]} Set-Cookie2: {Headers[HttpKnownHeaderNames.SetCookie2]}");
         }
 
         public void Redirect(string url)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"url={url}");
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"url={url}");
             Headers[HttpResponseHeader.Location] = url;
             StatusCode = (int)HttpStatusCode.Redirect;
             StatusDescription = HttpStatusDescription.Get(StatusCode);
@@ -285,7 +284,7 @@ namespace System.Net
             Cookie newCookie = cookie.Clone();
             int added = Cookies.InternalAdd(newCookie, true);
 
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"cookie: {cookie}");
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"cookie: {cookie}");
 
             if (added != 1)
             {

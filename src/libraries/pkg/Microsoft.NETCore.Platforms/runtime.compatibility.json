@@ -3661,6 +3661,14 @@
     "any",
     "base"
   ],
+  "osx-arm64": [
+    "osx-arm64",
+    "osx",
+    "unix-arm64",
+    "unix",
+    "any",
+    "base"
+  ],
   "osx-x64": [
     "osx-x64",
     "osx",
@@ -3809,6 +3817,65 @@
     "osx.10.11",
     "osx.10.10-x64",
     "osx.10.10",
+    "osx-x64",
+    "osx",
+    "unix-x64",
+    "unix",
+    "any",
+    "base"
+  ],
+  "osx.11": [
+    "osx.11",
+    "osx",
+    "unix",
+    "any",
+    "base"
+  ],
+  "osx.11-arm64": [
+    "osx.11-arm64",
+    "osx.11",
+    "osx-arm64",
+    "osx",
+    "unix-arm64",
+    "unix",
+    "any",
+    "base"
+  ],
+  "osx.11-x64": [
+    "osx.11-x64",
+    "osx.11",
+    "osx-x64",
+    "osx",
+    "unix-x64",
+    "unix",
+    "any",
+    "base"
+  ],
+  "osx.11.0": [
+    "osx.11.0",
+    "osx.11",
+    "osx",
+    "unix",
+    "any",
+    "base"
+  ],
+  "osx.11.0-arm64": [
+    "osx.11.0-arm64",
+    "osx.11.0",
+    "osx.11-arm64",
+    "osx.11",
+    "osx-arm64",
+    "osx",
+    "unix-arm64",
+    "unix",
+    "any",
+    "base"
+  ],
+  "osx.11.0-x64": [
+    "osx.11.0-x64",
+    "osx.11.0",
+    "osx.11-x64",
+    "osx.11",
     "osx-x64",
     "osx",
     "unix-x64",
@@ -4568,6 +4635,16 @@
     "any",
     "base"
   ],
+  "tizen-arm64": [
+    "tizen-arm64",
+    "tizen",
+    "linux-arm64",
+    "linux",
+    "unix-arm64",
+    "unix",
+    "any",
+    "base"
+  ],
   "tizen-armel": [
     "tizen-armel",
     "tizen",
@@ -4592,6 +4669,18 @@
     "tizen.4.0.0",
     "tizen",
     "linux",
+    "unix",
+    "any",
+    "base"
+  ],
+  "tizen.4.0.0-arm64": [
+    "tizen.4.0.0-arm64",
+    "tizen.4.0.0",
+    "tizen-arm64",
+    "tizen",
+    "linux-arm64",
+    "linux",
+    "unix-arm64",
     "unix",
     "any",
     "base"
@@ -4625,6 +4714,20 @@
     "tizen.4.0.0",
     "tizen",
     "linux",
+    "unix",
+    "any",
+    "base"
+  ],
+  "tizen.5.0.0-arm64": [
+    "tizen.5.0.0-arm64",
+    "tizen.5.0.0",
+    "tizen.4.0.0-arm64",
+    "tizen.4.0.0",
+    "tizen-arm64",
+    "tizen",
+    "linux-arm64",
+    "linux",
+    "unix-arm64",
     "unix",
     "any",
     "base"
@@ -4663,6 +4766,22 @@
     "tizen.4.0.0",
     "tizen",
     "linux",
+    "unix",
+    "any",
+    "base"
+  ],
+  "tizen.5.5.0-arm64": [
+    "tizen.5.5.0-arm64",
+    "tizen.5.5.0",
+    "tizen.5.0.0-arm64",
+    "tizen.5.0.0",
+    "tizen.4.0.0-arm64",
+    "tizen.4.0.0",
+    "tizen-arm64",
+    "tizen",
+    "linux-arm64",
+    "linux",
+    "unix-arm64",
     "unix",
     "any",
     "base"
@@ -4706,6 +4825,24 @@
     "tizen.4.0.0",
     "tizen",
     "linux",
+    "unix",
+    "any",
+    "base"
+  ],
+  "tizen.6.0.0-arm64": [
+    "tizen.6.0.0-arm64",
+    "tizen.6.0.0",
+    "tizen.5.5.0-arm64",
+    "tizen.5.5.0",
+    "tizen.5.0.0-arm64",
+    "tizen.5.0.0",
+    "tizen.4.0.0-arm64",
+    "tizen.4.0.0",
+    "tizen-arm64",
+    "tizen",
+    "linux-arm64",
+    "linux",
+    "unix-arm64",
     "unix",
     "any",
     "base"

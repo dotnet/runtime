@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #include "ildasmpch.h"
 #include <crtdbg.h>
@@ -3301,7 +3300,9 @@ void DumpGenericParsCA(mdToken tok, void* GUICookie/*=NULL*/)
     } //end if(g_fShowCA)
 }
 
-// Sets *pbOverridingTypeSpec to TRUE if we are overriding a method declared by a type spec.
+// Sets *pbOverridingTypeSpec to TRUE if we are overriding a method declared by a type spec or
+// if the method has a signature which does not exactly match between the overrider and overridee.
+// That case is commonly caused by covariant overrides.
 // In that case the syntax is slightly different (there are additional 'method' keywords).
 // Refer to Expert .NET 2.0 IL Assembler page 242.
 void PrettyPrintOverrideDecl(ULONG i, __inout __nullterminated char* szString, void* GUICookie, mdToken tkOverrider,
@@ -3321,6 +3322,11 @@ void PrettyPrintOverrideDecl(ULONG i, __inout __nullterminated char* szString, v
 
     if(g_pImport->IsValidToken(tkDecl))
     {
+        bool needsFullTokenPrint = false;
+        bool hasTkDeclParent = false;
+
+        // Determine if the decl is a typespec method, in which case the "method" syntax + full token print
+        // must be used to generate the disassembly.
         if(SUCCEEDED(g_pImport->GetParentToken(tkDecl,&tkDeclParent)))
         {
             if(g_pImport->IsValidToken(tkDeclParent))
@@ -3335,20 +3341,99 @@ void PrettyPrintOverrideDecl(ULONG i, __inout __nullterminated char* szString, v
                 {
                     if(TypeFromToken(tkDeclParent)==mdtTypeSpec)
                     {
-                        szptr += sprintf_s(szptr,SZSTRING_REMAINING_SIZE(szptr), " %s ",KEYWORD("method"));
-                        PrettyPrintToken(szString,tkDecl,g_pImport,GUICookie,tkOverrider);
-
-                        *pbOverridingTypeSpec = TRUE;
-                        return;
+                        needsFullTokenPrint = true;
                     }
-                    PrettyPrintToken(szString, tkDeclParent, g_pImport,GUICookie,tkOverrider);
-                    strcat_s(szString, SZSTRING_SIZE,"::");
-                    szptr = &szString[strlen(szString)];
+                    hasTkDeclParent = true;
                 }
             }
             else
                 szptr+=sprintf_s(szptr,SZSTRING_REMAINING_SIZE(szptr),"%s",ERRORMSG("INVALID OVERRIDDEN METHOD'S PARENT TOKEN"));
         }
+
+        // Determine if the sig of the decl does not match the sig of the body
+        // In that case the full "method" syntax must be used
+        if ((TypeFromToken(tkOverrider) == mdtMethodDef) && !needsFullTokenPrint)
+        {
+            PCCOR_SIGNATURE pComSigDecl;
+            ULONG cComSigDecl;
+            mdToken tkDeclSigTok = tkDecl;
+            bool successfullyGotDeclSig = false;
+            bool successfullyGotBodySig = false;
+
+            if (TypeFromToken(tkDeclSigTok) == mdtMethodSpec)
+            {
+                mdToken         meth=0;
+                if (SUCCEEDED(g_pImport->GetMethodSpecProps(tkDeclSigTok, &meth, NULL, NULL)))
+                {
+                    tkDeclSigTok = meth;
+                }
+            }
+
+            if (TypeFromToken(tkDeclSigTok) == mdtMethodDef)
+            {
+                if (SUCCEEDED(g_pImport->GetSigOfMethodDef(tkDeclSigTok, &cComSigDecl, &pComSigDecl)))
+                {
+                    successfullyGotDeclSig = true;
+                }
+            }
+            else if (TypeFromToken(tkDeclSigTok) == mdtMemberRef)
+            {
+                const char *pszMemberNameUnused;
+                if (SUCCEEDED(g_pImport->GetNameAndSigOfMemberRef(
+                    tkDeclSigTok,
+                    &pComSigDecl,
+                    &cComSigDecl,
+                    &pszMemberNameUnused)))
+                {
+                    successfullyGotDeclSig = true;
+                }
+            }
+
+            PCCOR_SIGNATURE pComSigBody;
+            ULONG cComSigBody;
+            if (SUCCEEDED(g_pImport->GetSigOfMethodDef(tkOverrider, &cComSigBody, &pComSigBody)))
+            {
+                successfullyGotBodySig = true;
+            }
+
+            if (successfullyGotDeclSig && successfullyGotBodySig)
+            {
+                if (cComSigBody != cComSigDecl)
+                {
+                    needsFullTokenPrint = true;
+                }
+                else if (memcmp(pComSigBody, pComSigDecl, cComSigBody) != 0)
+                {
+                    needsFullTokenPrint = true;
+                }
+
+                // Signature are binary identical, full sig printing not needed
+            }
+            else
+            {
+                szptr+=sprintf_s(szptr,SZSTRING_REMAINING_SIZE(szptr),"%s",ERRORMSG("INVALID BODY OR DECL SIG"));
+            }
+        }
+
+        if (needsFullTokenPrint)
+        {
+            // In this case, the shortcut syntax cannot be used, and a full token must be printed.
+            // Print the full token and return.
+            szptr += sprintf_s(szptr,SZSTRING_REMAINING_SIZE(szptr), " %s ",KEYWORD("method"));
+            PrettyPrintToken(szString,tkDecl,g_pImport,GUICookie,tkOverrider);
+
+            *pbOverridingTypeSpec = TRUE;
+            return;
+        }
+
+        if (hasTkDeclParent)
+        {
+            // If the tkDeclParent was successfully retrieved during parent discovery print it here.
+            PrettyPrintToken(szString, tkDeclParent, g_pImport,GUICookie,tkOverrider);
+            strcat_s(szString, SZSTRING_SIZE,"::");
+            szptr = &szString[strlen(szString)];
+        }
+
         if(TypeFromToken(tkDecl) == mdtMethodSpec)
         {
             mdToken         meth=0;
@@ -3475,19 +3560,10 @@ BOOL DumpMethod(mdToken FuncToken, const char *pszClassName, DWORD dwEntryPointT
     bool bRet = FALSE;
 
     PAL_CPP_TRY {
-        if((*pComSig & IMAGE_CEE_CS_CALLCONV_MASK) > IMAGE_CEE_CS_CALLCONV_VARARG)
-        {
-            sprintf_s(szString,SZSTRING_SIZE,"%sERROR: signature of method '%s' has invalid calling convention 0x%2.2X",g_szAsmCodeIndent,pszMemberName,*pComSig);
-            printError(GUICookie,ERRORMSG(szString));
-            bRet = TRUE;
-            goto lDone;
-        }
-
         g_tkMVarOwner = FuncToken;
         szString[0] = 0;
         DumpGenericPars(szString,FuncToken); //,NULL,FALSE);
         pszMemberSig = PrettyPrintSig(pComSig, cComSig, szString, &qbMemberSig, g_pImport,NULL);
-lDone: ;
     } PAL_CPP_CATCH_ALL {
         printError(GUICookie,"INVALID DATA ADDRESS");
         bRet = TRUE;

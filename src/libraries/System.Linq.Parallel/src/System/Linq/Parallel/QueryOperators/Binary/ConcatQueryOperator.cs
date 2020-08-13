@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 // =+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+
 //
@@ -297,10 +296,8 @@ namespace System.Linq.Parallel
 
     internal struct ConcatKey<TLeftKey, TRightKey>
     {
-        [MaybeNull, AllowNull]
-        private readonly TLeftKey _leftKey;
-        [MaybeNull, AllowNull]
-        private readonly TRightKey _rightKey;
+        private readonly TLeftKey? _leftKey;
+        private readonly TRightKey? _rightKey;
         private readonly bool _isLeft;
 
         private ConcatKey([AllowNull] TLeftKey leftKey, [AllowNull] TRightKey rightKey, bool isLeft)

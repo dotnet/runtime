@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using static System.RuntimeTypeHandle;
@@ -127,7 +126,7 @@ namespace System.Collections.Generic
                 result = new ByteEqualityComparer();
             }
             // If T implements IEquatable<T> return a GenericEqualityComparer<T>
-            else if (typeof(IEquatable<>).MakeGenericType(type).IsAssignableFrom(type))
+            else if (type.IsAssignableTo(typeof(IEquatable<>).MakeGenericType(type)))
             {
                 result = CreateInstanceForAnotherGenericParameter((RuntimeType)typeof(GenericEqualityComparer<int>), runtimeType);
             }

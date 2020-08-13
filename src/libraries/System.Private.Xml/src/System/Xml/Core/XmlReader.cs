@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #nullable enable
 using System.Collections;
@@ -621,7 +620,7 @@ namespace System.Xml
         public abstract string? GetAttribute(string name);
 
         // Gets the value of the attribute with the LocalName and NamespaceURI
-        public abstract string? GetAttribute(string name, string namespaceURI);
+        public abstract string? GetAttribute(string name, string? namespaceURI);
 
         // Gets the value of the attribute with the specified index.
         public abstract string GetAttribute(int i);
@@ -645,7 +644,7 @@ namespace System.Xml
         }
 
         // Gets the value of the attribute with the LocalName and NamespaceURI
-        public virtual string? this[string name, string namespaceURI]
+        public virtual string? this[string name, string? namespaceURI]
         {
             get
             {
@@ -657,7 +656,7 @@ namespace System.Xml
         public abstract bool MoveToAttribute(string name);
 
         // Moves to the attribute with the specified LocalName and NamespaceURI.
-        public abstract bool MoveToAttribute(string name, string ns);
+        public abstract bool MoveToAttribute(string name, string? ns);
 
         // Moves to the attribute with the specified index.
         public virtual void MoveToAttribute(int i)

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Reflection;
 using System.Collections.Generic;
@@ -48,7 +47,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
             _objectManager = new SerializationObjectManager(context);
         }
 
-        internal void Serialize(object graph, BinaryFormatterWriter serWriter, bool fCheck)
+        internal void Serialize(object graph, BinaryFormatterWriter serWriter)
         {
             if (graph == null)
             {
@@ -160,7 +159,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
                     {
                         Type type =
                             memberTypes[i] != null ? memberTypes[i] :
-                            memberData[i] != null ? GetType(memberData[i]!) : // TODO-NULLABLE https://github.com/dotnet/roslyn/issues/34644
+                            memberData[i] != null ? GetType(memberData[i]!) : // TODO-NULLABLE: Indexer nullability tracked (https://github.com/dotnet/roslyn/issues/34644)
                             Converter.s_typeofObject;
 
                         InternalPrimitiveTypeE code = ToCode(type);
@@ -171,7 +170,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
                             if (memberData[i] != null)
                             {
                                 memberObjectInfos[i] = WriteObjectInfo.Serialize(
-                                    memberData[i]!, // TODO-NULLABLE https://github.com/dotnet/roslyn/issues/34644
+                                    memberData[i]!, // TODO-NULLABLE: Indexer nullability tracked (https://github.com/dotnet/roslyn/issues/34644)
                                     _surrogates,
                                     _context,
                                     _serObjectInfoInit,

@@ -1,11 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 var BindingSupportLib = {
 	$BINDING__postset: 'BINDING.export_functions (Module);',
 	$BINDING: {
-		BINDING_ASM: "[System.Runtime.InteropServices.JavaScript]System.Runtime.InteropServices.JavaScript.Runtime",
+		BINDING_ASM: "[System.Private.Runtime.InteropServices.JavaScript]System.Runtime.InteropServices.JavaScript.Runtime",
 		mono_wasm_object_registry: [],
 		mono_wasm_ref_counter: 0,
 		mono_wasm_free_list: [],
@@ -227,7 +226,7 @@ var BindingSupportLib = {
 
 				return enumValue;
 
-
+			case 10: // arrays
 			case 11: 
 			case 12: 
 			case 13: 
@@ -362,26 +361,7 @@ var BindingSupportLib = {
 			// https://developer.mozilla.org/en-US/docs/Web/JavaScript/Typed_arrays
 			if (!!(js_obj.buffer instanceof ArrayBuffer && js_obj.BYTES_PER_ELEMENT)) 
 			{
-				var arrayType = 0;
-				if (js_obj instanceof Int8Array)
-					arrayType = 11;
-				if (js_obj instanceof Uint8Array)
-					arrayType = 12;
-				if (js_obj instanceof Uint8ClampedArray)
-					arrayType = 12;
-				if (js_obj instanceof Int16Array)
-					arrayType = 13;
-				if (js_obj instanceof Uint16Array)
-					arrayType = 14;
-				if (js_obj instanceof Int32Array)
-					arrayType = 15;
-				if (js_obj instanceof Uint32Array)
-					arrayType = 16;
-				if (js_obj instanceof Float32Array)
-					arrayType = 17;
-				if (js_obj instanceof Float64Array)
-					arrayType = 18;
-
+				var arrayType = js_obj[Symbol.for("wasm type")];
 				var heapBytes = this.js_typedarray_to_heap(js_obj);
 				var bufferArray = this.mono_typed_array_new(heapBytes.byteOffset, js_obj.length, js_obj.BYTES_PER_ELEMENT, arrayType);
 				Module._free(heapBytes.byteOffset);
@@ -517,7 +497,7 @@ var BindingSupportLib = {
 
 			this.typedarray_copy_from(newTypedArray, pinned_array, begin, end, bytes_per_element);
 			return newTypedArray;
-		},		
+		},
 		js_to_mono_enum: function (method, parmIdx, js_obj) {
 			this.bindings_lazy_init ();
     
@@ -762,6 +742,8 @@ var BindingSupportLib = {
 		},
 		
 		resolve_method_fqn: function (fqn) {
+			this.bindings_lazy_init ();
+			
 			var assembly = fqn.substring(fqn.indexOf ("[") + 1, fqn.indexOf ("]")).trim();
 			fqn = fqn.substring (fqn.indexOf ("]") + 1).trim();
 

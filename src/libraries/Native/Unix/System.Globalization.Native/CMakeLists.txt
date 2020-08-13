@@ -23,12 +23,7 @@ if(CLR_CMAKE_TARGET_UNIX)
         endif()
 
         if(CLR_CMAKE_TARGET_OSX)
-            find_library(ICUCORE icucore)
-            if(ICUCORE STREQUAL ICUCORE-NOTFOUND)
-                message(FATAL_ERROR "Cannot find libicucore, skipping build for System.Globalization.Native. .NET globalization is not expected to function.")
-                return()
-            endif()
-            add_definitions(-DOSX_ICU_LIBRARY_PATH=\"${ICUCORE}\")
+            add_definitions(-DOSX_ICU_LIBRARY_PATH="/usr/lib/libicucore.dylib")
             add_definitions(-DU_DISABLE_RENAMING)
         else()
             find_library(ICUUC icuuc)
@@ -64,6 +59,10 @@ set(NATIVEGLOBALIZATION_SOURCES
     entrypoints.c
 )
 
+if (MSVC)
+    set_source_files_properties(${NATIVEGLOBALIZATION_SOURCES} PROPERTIES LANGUAGE CXX)
+endif()
+
 include_directories("../Common")
 
 if (GEN_SHARED_LIB)
@@ -80,14 +79,15 @@ if (GEN_SHARED_LIB)
     install_with_stripped_symbols (System.Globalization.Native PROGRAMS .)
 endif()
 
-add_library(System.Globalization.Native-Static
+add_library(System.Globalization.Native_obj
     OBJECT
     ${NATIVEGLOBALIZATION_SOURCES}
 )
 
-set_target_properties(System.Globalization.Native-Static PROPERTIES OUTPUT_NAME System.Globalization.Native  CLEAN_DIRECT_OUTPUT 1)
+set_target_properties(System.Globalization.Native_obj PROPERTIES OUTPUT_NAME System.Globalization.Native  CLEAN_DIRECT_OUTPUT 1)
 
-install (TARGETS System.Globalization.Native-Static DESTINATION .)
+add_library(System.Globalization.Native-static INTERFACE)
+target_sources(System.Globalization.Native-static INTERFACE $<TARGET_OBJECTS:System.Globalization.Native_obj>)
 
 if(NOT CLR_CMAKE_TARGET_OSX AND NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS AND NOT CLR_CMAKE_TARGET_ANDROID)
     if (GEN_SHARED_LIB)

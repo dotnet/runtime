@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Diagnostics;
@@ -165,6 +164,7 @@ namespace Internal.Cryptography
                 algorithmModeHandle,
                 _outer.Mode,
                 blockSizeInBytes,
+                _outer.GetPaddingSize(),
                 key,
                 false,
                 iv,
@@ -178,7 +178,8 @@ namespace Internal.Cryptography
             // note: iv is guaranteed to be cloned before this method, so no need to clone it again
 
             int blockSizeInBytes = _outer.BlockSize.BitSizeToByteSize();
-            BasicSymmetricCipher cipher = new BasicSymmetricCipherNCrypt(cngKeyFactory, _outer.Mode, blockSizeInBytes, iv, encrypting);
+            int feedbackSizeInBytes = _outer.FeedbackSize;
+            BasicSymmetricCipher cipher = new BasicSymmetricCipherNCrypt(cngKeyFactory, _outer.Mode, blockSizeInBytes, iv, encrypting, feedbackSizeInBytes, _outer.GetPaddingSize());
             return UniversalCryptoTransform.Create(_outer.Padding, cipher, encrypting);
         }
 

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -77,7 +76,6 @@ namespace Microsoft.Extensions.Hosting.Internal
                 {
                     foreach (IHostedService hostedService in _hostedServices.Reverse())
                     {
-                        token.ThrowIfCancellationRequested();
                         try
                         {
                             await hostedService.StopAsync(token).ConfigureAwait(false);
@@ -89,11 +87,17 @@ namespace Microsoft.Extensions.Hosting.Internal
                     }
                 }
 
-                token.ThrowIfCancellationRequested();
-                await _hostLifetime.StopAsync(token).ConfigureAwait(false);
-
                 // Fire IHostApplicationLifetime.Stopped
                 _applicationLifetime.NotifyStopped();
+
+                try
+                {
+                    await _hostLifetime.StopAsync(token).ConfigureAwait(false);
+                }
+                catch (Exception ex)
+                {
+                    exceptions.Add(ex);
+                }
 
                 if (exceptions.Count > 0)
                 {

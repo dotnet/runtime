@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 
 #include "common.h"
@@ -5627,11 +5626,14 @@ void * EECodeManager::GetGSCookieAddr(PREGDISPLAY     pContext,
     INT32 spOffsetGSCookie = gcInfoDecoder.GetGSCookieStackSlot();
     if (spOffsetGSCookie != NO_GS_COOKIE)
     {
-        if(relOffset >= gcInfoDecoder.GetGSCookieValidRangeStart()
-            && relOffset < gcInfoDecoder.GetGSCookieValidRangeEnd())
+        if(relOffset >= gcInfoDecoder.GetGSCookieValidRangeStart())
         {
-            SIZE_T baseStackSlot = GetCallerSp(pContext);
-            return (LPVOID)( spOffsetGSCookie + baseStackSlot );
+            TADDR ptr = GetCallerSp(pContext) + spOffsetGSCookie;
+
+            // Detect the end of GS cookie scope by comparing its address with SP
+            // gcInfoDecoder.GetGSCookieValidRangeEnd() is not accurate. It does not
+            // account for GS cookie going out of scope inside epilog or multiple epilogs.
+            return (LPVOID) ((ptr >= pContext->SP) ? ptr : NULL);
         }
     }
     return NULL;

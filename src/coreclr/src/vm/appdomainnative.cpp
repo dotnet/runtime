@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 
 
@@ -61,7 +60,7 @@ FCIMPL0(Object*, AppDomainNative::GetLoadedAssemblies)
 
     HELPER_METHOD_FRAME_BEGIN_RET_PROTECT(gc);
 
-    MethodTable * pAssemblyClass = MscorlibBinder::GetClass(CLASS__ASSEMBLY);
+    MethodTable * pAssemblyClass = CoreLibBinder::GetClass(CLASS__ASSEMBLY);
 
     AppDomain * pApp = GetAppDomain();
 

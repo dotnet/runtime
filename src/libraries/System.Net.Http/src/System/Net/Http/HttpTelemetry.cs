@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Diagnostics.Tracing;
@@ -23,8 +22,6 @@ namespace System.Net.Http
         private long _startedRequests;
         private long _stoppedRequests;
         private long _abortedRequests;
-
-        public static new bool IsEnabled => Log.IsEnabled();
 
         // NOTE
         // - The 'Start' and 'Stop' suffixes on the following event names have special meaning in EventSource. They

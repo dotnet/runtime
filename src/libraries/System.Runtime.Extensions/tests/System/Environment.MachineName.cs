@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Runtime.InteropServices;
 using Xunit;
@@ -21,6 +20,8 @@ namespace System.Tests
 #if !Unix
                 return Environment.GetEnvironmentVariable("COMPUTERNAME");
 #else
+                if (PlatformDetection.IsBrowser)
+                    return "localhost";
                 string temp = Interop.Sys.GetNodeName();
                 int index = temp.IndexOf('.');
                 return index < 0 ? temp : temp.Substring(0, index);

@@ -61,6 +61,7 @@
 #include <mono/metadata/mono-endian.h>
 #include <mono/metadata/environment.h>
 #include <mono/metadata/mono-mlist.h>
+#include <mono/metadata/handle.h>
 #include <mono/utils/mono-merp.h>
 #include <mono/utils/mono-mmap.h>
 #include <mono/utils/mono-logger-internals.h>
@@ -1047,19 +1048,28 @@ ves_icall_get_trace (MonoException *exc, gint32 skip, MonoBoolean need_file_info
 		return res;
 	}
 
+	HANDLE_FUNCTION_ENTER ();
+
+	MONO_HANDLE_PIN (ta);
+
 	len = mono_array_length_internal (ta) / TRACE_IP_ENTRY_SIZE;
 
 	res = mono_array_new_checked (domain, mono_defaults.stack_frame_class, len > skip ? len - skip : 0, error);
-	if (mono_error_set_pending_exception (error))
-		return NULL;
+	if (!is_ok (error))
+		goto fail;
+
+	MONO_HANDLE_PIN (res);
+
+	MonoObjectHandle sf_h;
+	sf_h = MONO_HANDLE_NEW (MonoObject, NULL);
 
 	for (i = skip; i < len; i++) {
 		MonoJitInfo *ji;
 		MonoStackFrame *sf = (MonoStackFrame *)mono_object_new_checked (domain, mono_defaults.stack_frame_class, error);
-		if (!is_ok (error)) {
-			mono_error_set_pending_exception (error);
-			return NULL;
-		}
+		if (!is_ok (error))
+			goto fail;
+		MONO_HANDLE_ASSIGN_RAW (sf_h, sf);
+
 		ExceptionTraceIp trace_ip;
 		memcpy (&trace_ip, mono_array_addr_fast (ta, ExceptionTraceIp, i), sizeof (ExceptionTraceIp));
 		gpointer ip = trace_ip.ip;
@@ -1091,18 +1101,14 @@ ves_icall_get_trace (MonoException *exc, gint32 skip, MonoBoolean need_file_info
 			s = mono_method_get_name_full (method, TRUE, FALSE, MONO_TYPE_NAME_FORMAT_REFLECTION);
 			MonoString *name = mono_string_new_checked (domain, s, error);
 			g_free (s);
-			if (!is_ok (error)) {
-				mono_error_set_pending_exception (error);
-				return NULL;
-			}
+			if (!is_ok (error))
+				goto fail;
 			MONO_OBJECT_SETREF_INTERNAL (sf, internal_method_name, name);
 		}
 		else {
 			MonoReflectionMethod *rm = mono_method_get_object_checked (domain, method, NULL, error);
-			if (!is_ok (error)) {
-				mono_error_set_pending_exception (error);
-				return NULL;
-			}
+			if (!is_ok (error))
+				goto fail;
 			MONO_OBJECT_SETREF_INTERNAL (sf, method, rm);
 		}
 
@@ -1129,10 +1135,8 @@ ves_icall_get_trace (MonoException *exc, gint32 skip, MonoBoolean need_file_info
 		if (need_file_info) {
 			if (location && location->source_file) {
 				MonoString *filename = mono_string_new_checked (domain, location->source_file, error);
-				if (!is_ok (error)) {
-					mono_error_set_pending_exception (error);
-					return NULL;
-				}
+				if (!is_ok (error))
+					goto fail;
 				MONO_OBJECT_SETREF_INTERNAL (sf, filename, filename);
 				sf->line = location->row;
 				sf->column = location->column;
@@ -1145,8 +1149,13 @@ ves_icall_get_trace (MonoException *exc, gint32 skip, MonoBoolean need_file_info
 		mono_debug_free_source_location (location);
 		mono_array_setref_internal (res, i - skip, sf);
 	}
+	goto exit;
 
-	return res;
+ fail:
+	mono_error_set_pending_exception (error);
+	res = NULL;
+ exit:
+	HANDLE_FUNCTION_RETURN_VAL (res);
 }
 
 static void
@@ -1446,9 +1455,9 @@ fill_frame_managed_info (MonoFrameSummary *frame, MonoMethod * method)
 typedef struct {
 	char *suffix;
 	char *exported_name;
-} MonoLibWhitelistEntry;
+} MonoLibAllowlistEntry;
 
-static GList *native_library_whitelist;
+static GList *native_library_allowlist;
 static gboolean allow_all_native_libraries = FALSE;
 
 static void
@@ -1457,10 +1466,10 @@ mono_crash_reporting_register_native_library (const char *module_path, const cha
 	// Examples: libsystem_pthread.dylib -> "pthread"
 	// Examples: libsystem_platform.dylib -> "platform"
 	// Examples: mono-sgen -> "mono" from above line
-	MonoLibWhitelistEntry *entry = g_new0 (MonoLibWhitelistEntry, 1);
+	MonoLibAllowlistEntry*entry = g_new0 (MonoLibAllowlistEntry, 1);
 	entry->suffix = g_strdup (module_path);
 	entry->exported_name = g_strdup (module_name);
-	native_library_whitelist = g_list_append (native_library_whitelist, entry);
+	native_library_allowlist = g_list_append (native_library_allowlist, entry);
 }
 
 static void
@@ -1470,7 +1479,7 @@ mono_crash_reporting_allow_all_native_libraries ()
 }
 
 static gboolean
-check_whitelisted_module (const char *in_name, const char **out_module)
+check_allowlisted_module (const char *in_name, const char **out_module)
 {
 #ifndef MONO_PRIVATE_CRASHES
 		return TRUE;
@@ -1498,8 +1507,8 @@ check_whitelisted_module (const char *in_name, const char **out_module)
 		return TRUE;
 	}
 
-	for (GList *cursor = native_library_whitelist; cursor; cursor = cursor->next) {
-		MonoLibWhitelistEntry *iter = (MonoLibWhitelistEntry *) cursor->data;
+	for (GList *cursor = native_library_allowlist; cursor; cursor = cursor->next) {
+		MonoLibAllowlistEntry*iter = (MonoLibAllowlistEntry*) cursor->data;
 		if (!g_str_has_suffix (in_name, iter->suffix))
 			continue;
 		if (out_module)
@@ -1538,7 +1547,7 @@ mono_get_portable_ip (intptr_t in_ip, intptr_t *out_ip, gint32 *out_offset, cons
 	if (!success)
 		return FALSE;
 
-	if (!check_whitelisted_module (fname, out_module))
+	if (!check_allowlisted_module (fname, out_module))
 		return FALSE;
 
 	*out_ip = mono_make_portable_ip ((intptr_t) saddr, (intptr_t) fbase);

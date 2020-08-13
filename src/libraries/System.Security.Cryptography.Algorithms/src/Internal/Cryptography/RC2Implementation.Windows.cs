@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Security.Cryptography;
 using System.Diagnostics;
@@ -17,12 +16,14 @@ namespace Internal.Cryptography
             int effectiveKeyLength,
             byte[]? iv,
             int blockSize,
+            int feedbackSize,
+            int paddingSize,
             bool encrypting)
         {
             using (SafeAlgorithmHandle algorithm = RC2BCryptModes.GetHandle(cipherMode, effectiveKeyLength))
             {
                 // The BasicSymmetricCipherBCrypt ctor will increase algorithm reference count and take ownership.
-                BasicSymmetricCipher cipher = new BasicSymmetricCipherBCrypt(algorithm, cipherMode, blockSize, key, true, iv, encrypting);
+                BasicSymmetricCipher cipher = new BasicSymmetricCipherBCrypt(algorithm, cipherMode, blockSize, paddingSize, key, true, iv, encrypting);
                 return UniversalCryptoTransform.Create(paddingMode, cipher, encrypting);
             }
         }

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.IO;
@@ -27,6 +26,7 @@ namespace System.Net.Http
         private CancellationTokenSource _pendingRequestsCts;
         private HttpRequestHeaders? _defaultRequestHeaders;
         private Version _defaultRequestVersion = HttpUtilities.DefaultRequestVersion;
+        private HttpVersionPolicy _defaultVersionPolicy = HttpUtilities.DefaultVersionPolicy;
 
         private Uri? _baseAddress;
         private TimeSpan _timeout;
@@ -58,6 +58,24 @@ namespace System.Net.Http
             }
         }
 
+        /// <summary>
+        /// Gets or sets the default value of <see cref="HttpRequestMessage.VersionPolicy" /> for implicitly created requests in convenience methods,
+        /// e.g.: <see cref="GetAsync(string?)" />, <see cref="PostAsync(string?, HttpContent)" />.
+        /// </summary>
+        /// <remarks>
+        /// Note that this property has no effect on any of the <see cref="Send(HttpRequestMessage)" /> and <see cref="SendAsync(HttpRequestMessage)" /> overloads
+        /// since they accept fully initialized <see cref="HttpRequestMessage" />.
+        /// </remarks>
+        public HttpVersionPolicy DefaultVersionPolicy
+        {
+            get => _defaultVersionPolicy;
+            set
+            {
+                CheckDisposedOrStarted();
+                _defaultVersionPolicy = value;
+            }
+        }
+
         public Uri? BaseAddress
         {
             get { return _baseAddress; }
@@ -66,7 +84,7 @@ namespace System.Net.Http
                 CheckBaseAddress(value, nameof(value));
                 CheckDisposedOrStarted();
 
-                if (NetEventSource.IsEnabled) NetEventSource.UriBaseAddress(this, value);
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.UriBaseAddress(this, value);
 
                 _baseAddress = value;
             }
@@ -564,7 +582,7 @@ namespace System.Net.Http
                     }
                 }
 
-                if (NetEventSource.IsEnabled) NetEventSource.ClientSendCompleted(this, response, request);
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.ClientSendCompleted(this, response, request);
                 return response;
             }
             catch (Exception e)
@@ -596,20 +614,20 @@ namespace System.Net.Http
 
         private void HandleFinishSendAsyncError(Exception e, CancellationTokenSource cts)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Error(this, e);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, e);
 
             // If the cancellation token was canceled, we consider the exception to be caused by the
             // cancellation (e.g. WebException when reading from canceled response stream).
             if (cts.IsCancellationRequested && e is HttpRequestException)
             {
-                if (NetEventSource.IsEnabled) NetEventSource.Error(this, "Canceled");
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, "Canceled");
                 throw new OperationCanceledException(cts.Token);
             }
         }
 
         private void HandleSendTimeout(OperationCanceledException e)
         {
-            if (NetEventSource.IsEnabled)
+            if (NetEventSource.Log.IsEnabled())
             {
                 NetEventSource.Error(this, e);
                 NetEventSource.Error(this, "Canceled due to timeout");
@@ -646,16 +664,12 @@ namespace System.Net.Http
         public void CancelPendingRequests()
         {
             CheckDisposed();
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
 
             // With every request we link this cancellation token source.
-            CancellationTokenSource currentCts = Interlocked.Exchange(ref _pendingRequestsCts,
-                new CancellationTokenSource());
+            CancellationTokenSource currentCts = Interlocked.Exchange(ref _pendingRequestsCts, new CancellationTokenSource());
 
             currentCts.Cancel();
             currentCts.Dispose();
-
-            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
         }
 
         #endregion Advanced Send Overloads
@@ -808,7 +822,7 @@ namespace System.Net.Http
             string.IsNullOrEmpty(uri) ? null : new Uri(uri, UriKind.RelativeOrAbsolute);
 
         private HttpRequestMessage CreateRequestMessage(HttpMethod method, Uri? uri) =>
-            new HttpRequestMessage(method, uri) { Version = _defaultRequestVersion };
+            new HttpRequestMessage(method, uri) { Version = _defaultRequestVersion, VersionPolicy = _defaultVersionPolicy };
         #endregion Private Helpers
     }
 }

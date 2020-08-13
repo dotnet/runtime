@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
@@ -10,31 +9,6 @@ namespace System.IO
 {
     public sealed partial class DriveInfo
     {
-        public static DriveInfo[] GetDrives()
-        {
-            string[] mountPoints = Interop.Sys.GetAllMountPoints();
-            DriveInfo[] info = new DriveInfo[mountPoints.Length];
-            for (int i = 0; i < info.Length; i++)
-            {
-                info[i] = new DriveInfo(mountPoints[i]);
-            }
-
-            return info;
-        }
-
-        private static string NormalizeDriveName(string driveName)
-        {
-            if (driveName.Contains("\0")) // string.Contains(char) is .NetCore2.1+ specific
-            {
-                throw new ArgumentException(SR.Format(SR.Arg_InvalidDriveChars, driveName), nameof(driveName));
-            }
-            if (driveName.Length == 0)
-            {
-                throw new ArgumentException(SR.Arg_MustBeNonEmptyDriveName, nameof(driveName));
-            }
-            return driveName;
-        }
-
         public DriveType DriveType
         {
             get
@@ -105,19 +79,6 @@ namespace System.IO
             }
         }
 
-        [AllowNull]
-        public string VolumeLabel
-        {
-            get
-            {
-                return Name;
-            }
-            set
-            {
-                throw new PlatformNotSupportedException();
-            }
-        }
-
         private void CheckStatfsResultAndThrowIfNecessary(int result)
         {
             if (result != 0)
@@ -133,5 +94,7 @@ namespace System.IO
                 }
             }
         }
+
+        private static string[] GetMountPoints() => Interop.Sys.GetAllMountPoints();
     }
 }
