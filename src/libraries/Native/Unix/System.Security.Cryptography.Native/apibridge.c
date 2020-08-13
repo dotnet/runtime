@@ -66,7 +66,6 @@ int local_X509_set1_notBefore(X509* x509, const ASN1_TIME* time)
 
 int local_X509_set1_notAfter(X509* x509, const ASN1_TIME* time)
 {
-
     if (x509 && x509->cert_info && x509->cert_info->validity)
     {
         if (x509->cert_info->validity->notAfter)
@@ -75,7 +74,7 @@ int local_X509_set1_notAfter(X509* x509, const ASN1_TIME* time)
         }
 
         x509->cert_info->validity->notAfter = ASN1_STRING_dup(time);
-        return x509->cert_info->validity->notBefore != NULL;
+        return x509->cert_info->validity->notAfter != NULL;
     }
 
     return 0;
