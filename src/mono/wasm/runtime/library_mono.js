@@ -109,9 +109,9 @@ var MonoSupportLib = {
 					this._scratch_root_free_indices[i] = i;
 				this._scratch_root_free_indices.reverse ();
 
-				Object.defineProperty (MONO._mono_wasm_root_prototype, "value", {
-					get: MONO._mono_wasm_root_prototype.get,
-					set: MONO._mono_wasm_root_prototype.set,
+				Object.defineProperty (this._mono_wasm_root_prototype, "value", {
+					get: this._mono_wasm_root_prototype.get,
+					set: this._mono_wasm_root_prototype.set,
 					configurable: false
 				});
 			}
@@ -132,9 +132,9 @@ var MonoSupportLib = {
 		// Once you are done using the root buffer, you must call its release() method.
 		// For small numbers of roots, it is preferable to use the mono_wasm_new_root and mono_wasm_new_roots APIs instead.
 		mono_wasm_new_root_buffer: function (capacity, msg) {
-			if (!MONO.mono_wasm_register_root || !MONO.mono_wasm_deregister_root) {
-				MONO.mono_wasm_register_root = Module.cwrap ("mono_wasm_register_root", "number", ["number", "number", "string"]);
-				MONO.mono_wasm_deregister_root = Module.cwrap ("mono_wasm_deregister_root", null, ["number"]);
+			if (!this.mono_wasm_register_root || !this.mono_wasm_deregister_root) {
+				this.mono_wasm_register_root = Module.cwrap ("mono_wasm_register_root", "number", ["number", "number", "string"]);
+				this.mono_wasm_deregister_root = Module.cwrap ("mono_wasm_deregister_root", null, ["number"]);
 			}
 
 			if (capacity <= 0)
@@ -147,11 +147,11 @@ var MonoSupportLib = {
 
 			this._zero_region (offset, capacityBytes, 0);
 
-			var result = Object.create (MONO._mono_wasm_root_buffer_prototype);
+			var result = Object.create (this._mono_wasm_root_buffer_prototype);
 			result.__offset = offset;
 			result.__offset32 = offset / 4;
 			result.__count = capacity;	
-			result.__handle = MONO.mono_wasm_register_root (offset, capacityBytes, msg || 0);
+			result.__handle = this.mono_wasm_register_root (offset, capacityBytes, msg || 0);
 
 			return result;
 		},
@@ -165,7 +165,7 @@ var MonoSupportLib = {
 			var index = this._mono_wasm_claim_scratch_index ();
 			var buffer = this._scratch_root_buffer;
 				
-			var result = Object.create (MONO._mono_wasm_root_prototype);
+			var result = Object.create (this._mono_wasm_root_prototype);
 			result.__buffer = buffer;
 			result.__index = index;
 
