@@ -5319,23 +5319,24 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 
 				const gboolean vt = mint_type (m_class_get_byval_arg (klass)) == MINT_TYPE_VT;
 
-                /* box + ldnull + ceq/cgt_un -> true/false */
-                if (*(td->ip + 5) == CEE_LDNULL) {
-                    guint8 ceq = *(td->ip + 7);
-                    if ((ceq == CEE_CEQ || ceq == CEE_CGT_UN) &&
-                        // make sure all opcodes are in the same bb
-                        !td->is_bb_start[in_offset] && !td->is_bb_start[in_offset + 5] && !td->is_bb_start[in_offset + 7]) {
-                        // clear instruction we wanted to box
-                        interp_clear_ins (td, td->last_ins);
-                        // push true or false instead
-                        SET_SIMPLE_TYPE (td->sp - 1, STACK_TYPE_I4);
-                        SIMPLE_OP (td, ceq == CEE_CEQ ? MINT_LDC_I4_0 : MINT_LDC_I4_1);
-                        td->ip += 7;
-                        if (vt)
-                            td->vt_sp -= ALIGN_TO (mono_class_value_size (klass, NULL), MINT_VT_ALIGNMENT);
-                        break;
-                    }
-                }
+				// optimize "box + ldnull + ceq/cgt_un" to true/false
+				// e.g. `t == null` in generic code when t is a vt/primitive (but not nullable)
+				if (*(td->ip + 5) == CEE_LDNULL) {
+					guint8 ceq = *(td->ip + 7);
+					if ((ceq == CEE_CEQ || ceq == CEE_CGT_UN) &&
+						// make sure all opcodes are in the same bb
+						!td->is_bb_start[in_offset] && !td->is_bb_start[in_offset + 5] && !td->is_bb_start[in_offset + 7]) {
+						// clear instruction we wanted to box
+						interp_clear_ins (td, td->last_ins);
+						// push true or false instead
+						SET_SIMPLE_TYPE (td->sp - 1, STACK_TYPE_I4);
+						SIMPLE_OP (td, ceq == CEE_CEQ ? MINT_LDC_I4_0 : MINT_LDC_I4_1);
+						td->ip += 7;
+						if (vt)
+							td->vt_sp -= ALIGN_TO (mono_class_value_size (klass, NULL), MINT_VT_ALIGNMENT);
+						break;
+					}
+				}
 
 				if (vt) {
 					size = mono_class_value_size (klass, NULL);
