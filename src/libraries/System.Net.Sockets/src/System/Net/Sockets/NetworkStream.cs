@@ -264,20 +264,23 @@ namespace System.Net.Sockets
             ThrowIfDisposed();
             if (!CanRead) throw new InvalidOperationException(SR.net_writeonlystream);
 
+            int bytesRead;
+            SocketError errorCode;
             try
             {
-                int bytesRead = _streamSocket.Receive(buffer, SocketFlags.None, out SocketError errorCode);
-                if (errorCode != SocketError.Success)
-                {
-                    var exception = new SocketException((int)errorCode);
-                    throw NetworkErrorHelper.MapSocketException(exception);
-                }
-                return bytesRead;
+                bytesRead = _streamSocket.Receive(buffer, SocketFlags.None, out errorCode);
             }
             catch (Exception exception) when (!(exception is OutOfMemoryException))
             {
                 throw GetCustomNetworkException(SR.Format(SR.net_io_writefailure, exception.Message), exception);
             }
+
+            if (errorCode != SocketError.Success)
+            {
+                var exception = new SocketException((int)errorCode);
+                throw NetworkErrorHelper.MapSocketException(exception);
+            }
+            return bytesRead;
         }
 
         public override unsafe int ReadByte()
@@ -355,18 +358,20 @@ namespace System.Net.Sockets
             ThrowIfDisposed();
             if (!CanWrite) throw new InvalidOperationException(SR.net_readonlystream);
 
+            SocketError errorCode;
             try
             {
-                _streamSocket.Send(buffer, SocketFlags.None, out SocketError errorCode);
-                if (errorCode != SocketError.Success)
-                {
-                    var exception = new SocketException((int)errorCode);
-                    throw NetworkErrorHelper.MapSocketException(exception);
-                }
+                _streamSocket.Send(buffer, SocketFlags.None, out errorCode);
             }
             catch (Exception exception) when (!(exception is OutOfMemoryException))
             {
                 throw GetCustomNetworkException(SR.Format(SR.net_io_writefailure, exception.Message), exception);
+            }
+
+            if (errorCode != SocketError.Success)
+            {
+                var exception = new SocketException((int)errorCode);
+                throw NetworkErrorHelper.MapSocketException(exception);
             }
         }
 
