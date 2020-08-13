@@ -64,6 +64,9 @@ namespace System.Net.Http
 
         private const int MaxStreamId = int.MaxValue;
 
+        // Temporary workaround for request burst handling on connection start.
+        private const int InitialMaxConcurrentStreams = 100;
+
         private static readonly byte[] s_http2ConnectionPreface = Encoding.ASCII.GetBytes("PRI * HTTP/2.0\r\n\r\nSM\r\n\r\n");
 
 #if DEBUG
@@ -109,13 +112,14 @@ namespace System.Net.Http
             _httpStreams = new Dictionary<int, Http2Stream>();
 
             _connectionWindow = new CreditManager(this, nameof(_connectionWindow), DefaultInitialWindowSize);
-            _concurrentStreams = new CreditManager(this, nameof(_concurrentStreams), int.MaxValue);
+            _concurrentStreams = new CreditManager(this, nameof(_concurrentStreams), InitialMaxConcurrentStreams);
 
             _writeChannel = Channel.CreateUnbounded<WriteQueueEntry>(s_channelOptions);
 
             _nextStream = 1;
             _initialWindowSize = DefaultInitialWindowSize;
-            _maxConcurrentStreams = int.MaxValue;
+
+            _maxConcurrentStreams = InitialMaxConcurrentStreams;
             _pendingWindowUpdate = 0;
             _idleSinceTickCount = Environment.TickCount64;
 
@@ -262,7 +266,7 @@ namespace System.Net.Http
                     if (NetEventSource.Log.IsEnabled()) Trace($"Frame 0: {frameHeader}.");
 
                     // Process the initial SETTINGS frame. This will send an ACK.
-                    ProcessSettingsFrame(frameHeader);
+                    ProcessSettingsFrame(frameHeader, true);
                 }
                 catch (IOException e)
                 {
@@ -530,7 +534,7 @@ namespace System.Net.Http
             _incomingBuffer.Discard(frameHeader.PayloadLength);
         }
 
-        private void ProcessSettingsFrame(FrameHeader frameHeader)
+        private void ProcessSettingsFrame(FrameHeader frameHeader, bool initialFrame = false)
         {
             Debug.Assert(frameHeader.Type == FrameType.Settings);
 
@@ -564,6 +568,7 @@ namespace System.Net.Http
 
                 // Parse settings and process the ones we care about.
                 ReadOnlySpan<byte> settings = _incomingBuffer.ActiveSpan.Slice(0, frameHeader.PayloadLength);
+                bool maxConcurrentStreamsReceived = false;
                 while (settings.Length > 0)
                 {
                     Debug.Assert((settings.Length % 6) == 0);
@@ -577,6 +582,7 @@ namespace System.Net.Http
                     {
                         case SettingId.MaxConcurrentStreams:
                             ChangeMaxConcurrentStreams(settingValue);
+                            maxConcurrentStreamsReceived = true;
                             break;
 
                         case SettingId.InitialWindowSize:
@@ -602,6 +608,12 @@ namespace System.Net.Http
                             // Note, per RFC, unknown settings IDs should be ignored.
                             break;
                     }
+                }
+
+                if (initialFrame && !maxConcurrentStreamsReceived)
+                {
+                    // Set to 'infinite' because MaxConcurrentStreams was not set on the initial SETTINGS frame.
+                    _maxConcurrentStreams = int.MaxValue;
                 }
 
                 _incomingBuffer.Discard(frameHeader.PayloadLength);

@@ -297,7 +297,7 @@ namespace System.Net.Http.Functional.Tests
             using (Http2LoopbackServer server = Http2LoopbackServer.CreateServer())
             using (HttpClient client = CreateHttpClient())
             {
-                (_, Http2LoopbackConnection connection) = await EstablishConnectionAndProcessOneRequestAsync(client, server);
+                (_, Http2LoopbackConnection connection) = await EstablishConnectionAndProcessOneRequestAsync(client, server, 1);
 
                 Task<HttpResponseMessage> sendTask = client.GetAsync(server.Address);
                 (int streamId1, HttpRequestData requestData1) = await connection.ReadAndParseRequestHeaderAsync(readBody: true);
@@ -334,7 +334,7 @@ namespace System.Net.Http.Functional.Tests
             {
                 const string Content = "Hello world";
 
-                (_, Http2LoopbackConnection connection) = await EstablishConnectionAndProcessOneRequestAsync(client, server);
+                (_, Http2LoopbackConnection connection) = await EstablishConnectionAndProcessOneRequestAsync(client, server, 1);
 
                 Task<HttpResponseMessage> sendTask = client.PostAsync(server.Address, new StringContent(Content));
                 (int streamId1, HttpRequestData requestData1) = await connection.ReadAndParseRequestHeaderAsync(readBody: true);
@@ -986,7 +986,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        private static async Task<(int, Http2LoopbackConnection)> EstablishConnectionAndProcessOneRequestAsync(HttpClient client, Http2LoopbackServer server)
+        private static async Task<(int, Http2LoopbackConnection)> EstablishConnectionAndProcessOneRequestAsync(HttpClient client, Http2LoopbackServer server, uint? maxConcurrentStreams = null)
         {
             int streamId = -1;
 
@@ -1005,7 +1005,10 @@ namespace System.Net.Http.Functional.Tests
                 }),
                 Task.Run(async () =>
                 {
-                    connection = await server.EstablishConnectionAsync();
+                    SettingsEntry[] initialSettings = maxConcurrentStreams == null
+                        ? new SettingsEntry[0]
+                        : new[] {new SettingsEntry { SettingId = SettingId.MaxConcurrentStreams, Value = maxConcurrentStreams.Value} };
+                    connection = await server.EstablishConnectionAsync(initialSettings);
                     streamId = await connection.ReadRequestHeaderAsync();
                     await connection.SendDefaultResponseAsync(streamId);
                 })
