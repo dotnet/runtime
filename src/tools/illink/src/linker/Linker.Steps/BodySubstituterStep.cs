@@ -74,7 +74,7 @@ namespace Mono.Linker.Steps
 
 			MethodDefinition method = FindMethod (type, signature);
 			if (method == null) {
-				Context.LogWarning ($"Could not find method '{signature}' in type '{type.GetDisplayName ()}' specified in {_xmlDocumentLocation}", 2009, _xmlDocumentLocation);
+				Context.LogWarning ($"Could not find method '{signature}' on type '{type.GetDisplayName ()}'", 2009, _xmlDocumentLocation);
 				return;
 			}
 
@@ -110,22 +110,22 @@ namespace Mono.Linker.Steps
 
 			var field = type.Fields.FirstOrDefault (f => f.Name == name);
 			if (field == null) {
-				Context.LogWarning ($"Could not find field '{name}' in type '{type.GetDisplayName ()}' specified in { _xmlDocumentLocation}", 2012, _xmlDocumentLocation);
+				Context.LogWarning ($"Could not find field '{name}' on type '{type.GetDisplayName ()}'", 2012, _xmlDocumentLocation);
 				return;
 			}
 
 			if (!field.IsStatic || field.IsLiteral) {
-				Context.LogWarning ($"Substituted field '{name}' needs to be static field.", 2013, _xmlDocumentLocation);
+				Context.LogWarning ($"Substituted field '{field.GetDisplayName ()}' needs to be static field.", 2013, _xmlDocumentLocation);
 				return;
 			}
 
 			string value = GetAttribute (iterator.Current, "value");
 			if (string.IsNullOrEmpty (value)) {
-				Context.LogWarning ($"Missing 'value' attribute for field '{field}'.", 2014, _xmlDocumentLocation);
+				Context.LogWarning ($"Missing 'value' attribute for field '{field.GetDisplayName ()}'.", 2014, _xmlDocumentLocation);
 				return;
 			}
 			if (!TryConvertValue (value, field.FieldType, out object res)) {
-				Context.LogWarning ($"Invalid value for '{field}': '{value}'.", 2015, _xmlDocumentLocation);
+				Context.LogWarning ($"Invalid value '{value}' for '{field.GetDisplayName ()}'.", 2015, _xmlDocumentLocation);
 				return;
 			}
 
@@ -153,7 +153,7 @@ namespace Mono.Linker.Steps
 
 				string action = GetAttribute (nav, "action");
 				if (action != "remove") {
-					Context.LogWarning ($"Invalid 'action' attribute for resource '{name}'.", 2039, _xmlDocumentLocation);
+					Context.LogWarning ($"Invalid value '{action}' for attribute 'action' for resource '{name}'.", 2039, _xmlDocumentLocation);
 					continue;
 				}
 

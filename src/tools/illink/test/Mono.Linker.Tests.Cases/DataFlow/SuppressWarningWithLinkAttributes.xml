@@ -3,7 +3,7 @@
   <assembly fullname="Test">
     <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
       <argument>Test</argument>
-      <argument>IL2006</argument>
+      <argument>IL2067</argument>
     </attribute>
     <type fullname="Mono.Linker.Tests.Cases.DataFlow.SuppressWarningWithLinkAttributes">
       <field name="_typeWithPublicParameterlessConstructor">

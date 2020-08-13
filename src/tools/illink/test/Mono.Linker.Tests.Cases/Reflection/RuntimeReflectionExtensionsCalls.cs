@@ -20,7 +20,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		#region GetRuntimeEvent
 		[Kept]
 		[UnrecognizedReflectionAccessPattern (typeof (RuntimeReflectionExtensions), nameof (RuntimeReflectionExtensions.GetRuntimeEvent),
-			new Type[] { typeof (Type), typeof (string) })]
+			new Type[] { typeof (Type), typeof (string) }, messageCode: "IL2072")]
 		public static void TestGetRuntimeEvent ()
 		{
 			typeof (ClassWithKeptMembers).GetRuntimeEvent ("PublicEvent");
@@ -35,7 +35,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		#region GetRuntimeField
 		[Kept]
 		[UnrecognizedReflectionAccessPattern (typeof (RuntimeReflectionExtensions), nameof (RuntimeReflectionExtensions.GetRuntimeField),
-			new Type[] { typeof (Type), typeof (string) })]
+			new Type[] { typeof (Type), typeof (string) }, messageCode: "IL2072")]
 		public static void TestGetRuntimeField ()
 		{
 			typeof (ClassWithKeptMembers).GetRuntimeField ("PublicField");
@@ -50,7 +50,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		#region GetRuntimeMethod
 		[Kept]
 		[UnrecognizedReflectionAccessPattern (typeof (RuntimeReflectionExtensions), nameof (RuntimeReflectionExtensions.GetRuntimeMethod),
-			new Type[] { typeof (Type), typeof (string), typeof (Type[]) })]
+			new Type[] { typeof (Type), typeof (string), typeof (Type[]) }, messageCode: "IL2072")]
 		public static void TestGetRuntimeMethod ()
 		{
 			typeof (ClassWithKeptMembers).GetRuntimeMethod ("PublicMethod", Type.EmptyTypes);
@@ -65,7 +65,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		#region GetRuntimeProperty
 		[Kept]
 		[UnrecognizedReflectionAccessPattern (typeof (RuntimeReflectionExtensions), nameof (RuntimeReflectionExtensions.GetRuntimeProperty),
-			new Type[] { typeof (Type), typeof (string) })]
+			new Type[] { typeof (Type), typeof (string) }, messageCode: "IL2072")]
 		public static void TestGetRuntimeProperty ()
 		{
 			typeof (ClassWithKeptMembers).GetRuntimeProperty ("PublicProperty");

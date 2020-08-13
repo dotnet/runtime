@@ -18,7 +18,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		static Type TypeWithPublicMethods;
 
 		[Kept]
-		[UnrecognizedReflectionAccessPattern (typeof (Type), "GetField", new Type[] { typeof (string) })]
+		[UnrecognizedReflectionAccessPattern (typeof (Type), "GetField", new Type[] { typeof (string) }, messageCode: "IL2080")]
 		[DynamicDependency ("DynamicDependencyTo")]
 		static void DynamicDependencyFrom ()
 		{
@@ -26,7 +26,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		}
 
 		[Kept]
-		[UnrecognizedReflectionAccessPattern (typeof (Type), "GetProperty", new Type[] { typeof (string) })]
+		[UnrecognizedReflectionAccessPattern (typeof (Type), "GetProperty", new Type[] { typeof (string) }, messageCode: "IL2080")]
 		static void DynamicDependencyTo ()
 		{
 			_ = TypeWithPublicMethods.GetProperty ("p");

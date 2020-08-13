@@ -34,8 +34,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			//    Type.GetType over two params
 		}
 
-		[UnrecognizedReflectionAccessPattern (typeof (GetTypeDataFlow), nameof (RequirePublicConstructors), new Type[] { typeof (Type) })]
-		[UnrecognizedReflectionAccessPattern (typeof (GetTypeDataFlow), nameof (RequireNonPublicConstructors), new Type[] { typeof (Type) })]
+		[UnrecognizedReflectionAccessPattern (typeof (GetTypeDataFlow), nameof (RequirePublicConstructors), new Type[] { typeof (Type) }, messageCode: "IL2072")]
+		[UnrecognizedReflectionAccessPattern (typeof (GetTypeDataFlow), nameof (RequireNonPublicConstructors), new Type[] { typeof (Type) }, messageCode: "IL2072")]
 		static void TestPublicParameterlessConstructor ()
 		{
 			Type type = Type.GetType (GetStringTypeWithPublicParameterlessConstructor ());
@@ -45,7 +45,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			RequireNothing (type);
 		}
 
-		[UnrecognizedReflectionAccessPattern (typeof (GetTypeDataFlow), nameof (RequireNonPublicConstructors), new Type[] { typeof (Type) })]
+		[UnrecognizedReflectionAccessPattern (typeof (GetTypeDataFlow), nameof (RequireNonPublicConstructors), new Type[] { typeof (Type) }, messageCode: "IL2072")]
 		static void TestPublicConstructors ()
 		{
 			Type type = Type.GetType (GetStringTypeWithPublicConstructors ());
@@ -55,8 +55,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			RequireNothing (type);
 		}
 
-		[UnrecognizedReflectionAccessPattern (typeof (GetTypeDataFlow), nameof (RequirePublicParameterlessConstructor), new Type[] { typeof (Type) })]
-		[UnrecognizedReflectionAccessPattern (typeof (GetTypeDataFlow), nameof (RequirePublicConstructors), new Type[] { typeof (Type) })]
+		[UnrecognizedReflectionAccessPattern (typeof (GetTypeDataFlow), nameof (RequirePublicParameterlessConstructor), new Type[] { typeof (Type) }, messageCode: "IL2072")]
+		[UnrecognizedReflectionAccessPattern (typeof (GetTypeDataFlow), nameof (RequirePublicConstructors), new Type[] { typeof (Type) }, messageCode: "IL2072")]
 		static void TestConstructors ()
 		{
 			Type type = Type.GetType (GetStringTypeWithNonPublicConstructors ());
@@ -66,13 +66,13 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			RequireNothing (type);
 		}
 
-		[UnrecognizedReflectionAccessPattern (typeof (Type), nameof (GetType), new Type[] { typeof (string) })]
+		[UnrecognizedReflectionAccessPattern (typeof (Type), nameof (GetType), new Type[] { typeof (string) }, messageCode: "IL2057")]
 		static void TestUnknownType ()
 		{
 			Type type = Type.GetType (GetStringUnkownType ());
 		}
 
-		[UnrecognizedReflectionAccessPattern (typeof (GetTypeDataFlow), nameof (RequirePublicConstructors), new Type[] { typeof (Type) })]
+		[UnrecognizedReflectionAccessPattern (typeof (GetTypeDataFlow), nameof (RequirePublicConstructors), new Type[] { typeof (Type) }, messageCode: "IL2072")]
 		static void TestTypeNameFromParameter (
 			[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
 			string typeName)
@@ -83,7 +83,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
 		static string _typeNameWithPublicParameterlessConstructor;
 
-		[UnrecognizedReflectionAccessPattern (typeof (GetTypeDataFlow), nameof (RequirePublicConstructors), new Type[] { typeof (Type) })]
+		[UnrecognizedReflectionAccessPattern (typeof (GetTypeDataFlow), nameof (RequirePublicConstructors), new Type[] { typeof (Type) }, messageCode: "IL2072")]
 		static void TestTypeNameFromField ()
 		{
 			RequirePublicConstructors (Type.GetType (_typeNameWithPublicParameterlessConstructor));
@@ -113,13 +113,9 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		}
 
 		[UnrecognizedReflectionAccessPattern (typeof (GetTypeDataFlow), nameof (RequireNonPublicConstructors), new Type[] { typeof (Type) },
-			"The method return value with dynamically accessed member kinds 'PublicParameterlessConstructor' is passed into " +
-			"the parameter 'type' of method 'Mono.Linker.Tests.Cases.DataFlow.GetTypeDataFlow.RequireNonPublicConstructors(Type)' " +
-			"which requires dynamically accessed member kinds 'NonPublicConstructors'. " +
-			"To fix this add DynamicallyAccessedMembersAttribute to it and specify at least these member kinds 'NonPublicConstructors'.")]
+			messageCode: "IL2072", message: "GetType")]
 		[UnrecognizedReflectionAccessPattern (typeof (Type), nameof (Type.GetType), new Type[] { typeof (string) },
-			"Reflection call 'System.Type.GetType(String)' inside 'Mono.Linker.Tests.Cases.DataFlow.GetTypeDataFlow.TestMultipleMixedValues()' " +
-			"was detected with unknown value for the type name.")]
+			messageCode: "IL2057", message: "System.Type.GetType(String)")]
 		static void TestMultipleMixedValues ()
 		{
 			string typeName = null;

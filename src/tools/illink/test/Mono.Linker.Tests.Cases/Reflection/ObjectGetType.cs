@@ -25,7 +25,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		}
 
 		[Kept]
-		[UnrecognizedReflectionAccessPattern (typeof (Type), nameof (Type.GetMethod), new Type[] { typeof (string) })]
+		[UnrecognizedReflectionAccessPattern (typeof (Type), nameof (Type.GetMethod), new Type[] { typeof (string) }, messageCode: "IL2075")]
 		static void TestUnsealed ()
 		{
 			s_unsealedClassField = new UnsealedClass ();

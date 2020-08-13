@@ -40,7 +40,7 @@ namespace Mono.Linker.Steps
 
 				string attributeFullName = GetFullName (iterator.Current);
 				if (attributeFullName == string.Empty) {
-					Context.LogWarning ($"Attribute element does not contain attribute 'fullname'", 2029, _xmlDocumentLocation);
+					Context.LogWarning ($"'attribute' element does not contain attribute 'fullname' or it's empty", 2029, _xmlDocumentLocation);
 					continue;
 				}
 
@@ -57,10 +57,14 @@ namespace Mono.Linker.Steps
 
 		CustomAttribute CreateCustomAttribute (XPathNodeIterator iterator, TypeDefinition attributeType)
 		{
-			string[] attributeArguments = (GetAttributeChildren (iterator.Current.SelectChildren ("argument", string.Empty))).ToArray ();
-			MethodDefinition constructor = attributeType.Methods.Where (method => method.IsInstanceConstructor ()).FirstOrDefault (c => c.Parameters.Count == attributeArguments.Length);
+			string[] attributeArguments = GetAttributeChildren (iterator.Current.SelectChildren ("argument", string.Empty)).ToArray ();
+			var attributeArgumentCount = attributeArguments == null ? 0 : attributeArguments.Length;
+			MethodDefinition constructor = attributeType.Methods.Where (method => method.IsInstanceConstructor ()).FirstOrDefault (c => c.Parameters.Count == attributeArgumentCount);
 			if (constructor == null) {
-				Context.LogWarning ($"Could not find a constructor for type '{attributeType}' that receives '{attributeArguments.Length}' arguments as parameter", 2022, _xmlDocumentLocation);
+				Context.LogWarning (
+					$"Could not find a constructor for type '{attributeType}' that has '{attributeArgumentCount}' arguments",
+					2022,
+					_xmlDocumentLocation);
 				return null;
 			}
 
@@ -117,7 +121,10 @@ namespace Mono.Linker.Steps
 				object argValue;
 				TypeDefinition parameterType = attributeConstructor.Parameters[i].ParameterType.Resolve ();
 				if (!TryConvertValue (arguments[i], parameterType, out argValue)) {
-					Context.LogWarning ($"Invalid argument value '{arguments[i]}' for attribute '{attributeConstructor.DeclaringType.GetDisplayName ()}'", 2054, _xmlDocumentLocation);
+					Context.LogWarning (
+						$"Invalid argument value '{arguments[i]}' for parameter type '{parameterType.GetDisplayName ()}' of attribute '{attributeConstructor.DeclaringType.GetDisplayName ()}'",
+						2054,
+						_xmlDocumentLocation);
 					return null;
 				}
 
@@ -154,8 +161,13 @@ namespace Mono.Linker.Steps
 				AssemblyDefinition assembly;
 				try {
 					assembly = GetAssembly (Context, AssemblyNameReference.Parse (assemblyName));
+					if (assembly == null) {
+						Context.LogWarning ($"Could not resolve assembly '{assemblyName}' for attribute '{attributeFullName}'", 2030, _xmlDocumentLocation);
+						attributeType = default;
+						return false;
+					}
 				} catch (Exception) {
-					Context.LogWarning ($"Could not resolve assembly '{assemblyName}' in attribute '{attributeFullName}' specified in '{_xmlDocumentLocation}'", 2030, _xmlDocumentLocation);
+					Context.LogWarning ($"Could not resolve assembly '{assemblyName}' for attribute '{attributeFullName}'", 2030, _xmlDocumentLocation);
 					attributeType = default;
 					return false;
 				}
@@ -242,7 +254,9 @@ namespace Mono.Linker.Steps
 					foreach (ParameterDefinition parameter in method.Parameters) {
 						if (paramName == parameter.Name) {
 							if (Context.CustomAttributes.HasCustomAttributes (parameter))
-								Context.LogWarning ($"There are duplicate parameter names for '{paramName}' inside '{method.GetDisplayName ()}' in '{_xmlDocumentLocation}'", 2024, _xmlDocumentLocation);
+								Context.LogWarning (
+									$"More than one value specified for parameter '{paramName}' of method '{method.GetDisplayName ()}'",
+									2024, _xmlDocumentLocation);
 							Context.CustomAttributes.AddCustomAttributes (parameter, attributes);
 							break;
 						}
@@ -262,7 +276,9 @@ namespace Mono.Linker.Steps
 					if (attributes.Count () > 0)
 						Context.CustomAttributes.AddCustomAttributes (method.MethodReturnType, attributes);
 				} else {
-					Context.LogWarning ($"There is more than one return parameter specified for '{method.GetDisplayName ()}' in '{_xmlDocumentLocation}'", 2023, _xmlDocumentLocation);
+					Context.LogWarning (
+						$"There is more than one 'return' child element specified for method '{method.GetDisplayName ()}'",
+						2023, _xmlDocumentLocation);
 				}
 			}
 		}
@@ -324,7 +340,9 @@ namespace Mono.Linker.Steps
 		protected override AssemblyDefinition GetAssembly (LinkContext context, AssemblyNameReference assemblyName)
 		{
 			var assembly = context.Resolve (assemblyName);
-			ProcessReferences (assembly);
+			if (assembly != null)
+				ProcessReferences (assembly);
+
 			return assembly;
 		}
 	}

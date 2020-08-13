@@ -35,7 +35,7 @@ namespace Mono.Linker.Tests.Cases.Warnings.WarningSuppression
 			return typeof (SuppressWarningsInMembersAndTypes);
 		}
 
-		[UnconditionalSuppressMessage ("Test", "IL2006:Suppress UnrecognizedReflectionPattern warnings on a nested type")]
+		[UnconditionalSuppressMessage ("Test", "IL2072:Suppress UnrecognizedReflectionPattern warnings on a nested type")]
 		public class NestedType
 		{
 			public static void Warning ()
@@ -45,7 +45,7 @@ namespace Mono.Linker.Tests.Cases.Warnings.WarningSuppression
 		}
 	}
 
-	[UnconditionalSuppressMessage ("Test", "IL2006:UnrecognizedReflectionPattern")]
+	[UnconditionalSuppressMessage ("Test", "IL2072:UnrecognizedReflectionPattern")]
 	public class SuppressWarningsInType
 	{
 		public void Warning1 ()
@@ -75,13 +75,13 @@ namespace Mono.Linker.Tests.Cases.Warnings.WarningSuppression
 
 	public class SuppressWarningsInMembers
 	{
-		[UnconditionalSuppressMessage ("Test", "IL2006:UnrecognizedReflectionPattern")]
+		[UnconditionalSuppressMessage ("Test", "IL2072:UnrecognizedReflectionPattern")]
 		public void Method ()
 		{
 			Expression.Call (SuppressWarningsInMembersAndTypes.TriggerUnrecognizedPattern (), "", Type.EmptyTypes);
 		}
 
-		[UnconditionalSuppressMessage ("Test", "IL2006:Suppression with scope value equal to null",
+		[UnconditionalSuppressMessage ("Test", "IL2072:Suppression with scope value equal to null",
 			Scope = null,
 			Target = null,
 			MessageId = null)]
@@ -91,7 +91,7 @@ namespace Mono.Linker.Tests.Cases.Warnings.WarningSuppression
 		}
 
 		public int Property {
-			[UnconditionalSuppressMessage ("Test", "IL2006:UnrecognizedReflectionPattern")]
+			[UnconditionalSuppressMessage ("Test", "IL2072:UnrecognizedReflectionPattern")]
 			get {
 				Expression.Call (SuppressWarningsInMembersAndTypes.TriggerUnrecognizedPattern (), "", Type.EmptyTypes);
 				return 0;

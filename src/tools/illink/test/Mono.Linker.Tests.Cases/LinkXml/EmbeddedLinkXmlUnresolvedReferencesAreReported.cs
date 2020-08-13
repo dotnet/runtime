@@ -8,15 +8,15 @@ namespace Mono.Linker.Tests.Cases.LinkXml
 {
 	[SetupLinkerDescriptorFile ("EmbeddedLinkXmlUnresolvedReferencesAreReported.xml")]
 	[LogContains ("warning IL2008: Could not resolve type 'UnknownType'")]
-	[LogContains ("warning IL2012: Could not find field 'System.String FieldWithSignature' in type 'Mono.Linker.Tests.Cases.LinkXml.EmbeddedLinkXmlUnresolvedReferencesAreReported.TestType'")]
-	[LogContains ("warning IL2012: Could not find field 'UnknownField' in type 'Mono.Linker.Tests.Cases.LinkXml.EmbeddedLinkXmlUnresolvedReferencesAreReported.TestType'")]
-	[LogContains ("warning IL2009: Could not find method 'System.Void MethodWithSignature()' in type 'Mono.Linker.Tests.Cases.LinkXml.EmbeddedLinkXmlUnresolvedReferencesAreReported.TestType'")]
-	[LogContains ("warning IL2009: Could not find method 'UnknownMethod' in type 'Mono.Linker.Tests.Cases.LinkXml.EmbeddedLinkXmlUnresolvedReferencesAreReported.TestType'")]
-	[LogContains ("warning IL2016: Could not find event 'System.ResolveEventHandler EventWithSignature' in type 'Mono.Linker.Tests.Cases.LinkXml.EmbeddedLinkXmlUnresolvedReferencesAreReported.TestType'")]
-	[LogContains ("warning IL2016: Could not find event 'UnknownEvent' in type 'Mono.Linker.Tests.Cases.LinkXml.EmbeddedLinkXmlUnresolvedReferencesAreReported.TestType'")]
-	[LogContains ("warning IL2017: Could not find property 'System.String PropertyWithSignature' in type 'Mono.Linker.Tests.Cases.LinkXml.EmbeddedLinkXmlUnresolvedReferencesAreReported.TestType'")]
-	[LogContains ("warning IL2017: Could not find property 'UnknownProperty' in type 'Mono.Linker.Tests.Cases.LinkXml.EmbeddedLinkXmlUnresolvedReferencesAreReported.TestType'")]
-	[LogContains ("warning IL2044: Could not find any type in namespace 'UnknownNamespace'")]
+	[LogContains ("warning IL2012: Could not find field 'System.String FieldWithSignature' on type 'Mono.Linker.Tests.Cases.LinkXml.EmbeddedLinkXmlUnresolvedReferencesAreReported.TestType'")]
+	[LogContains ("warning IL2012: Could not find field 'UnknownField' on type 'Mono.Linker.Tests.Cases.LinkXml.EmbeddedLinkXmlUnresolvedReferencesAreReported.TestType'")]
+	[LogContains ("warning IL2009: Could not find method 'System.Void MethodWithSignature()' on type 'Mono.Linker.Tests.Cases.LinkXml.EmbeddedLinkXmlUnresolvedReferencesAreReported.TestType'")]
+	[LogContains ("warning IL2009: Could not find method 'UnknownMethod' on type 'Mono.Linker.Tests.Cases.LinkXml.EmbeddedLinkXmlUnresolvedReferencesAreReported.TestType'")]
+	[LogContains ("warning IL2016: Could not find event 'System.ResolveEventHandler EventWithSignature' on type 'Mono.Linker.Tests.Cases.LinkXml.EmbeddedLinkXmlUnresolvedReferencesAreReported.TestType'")]
+	[LogContains ("warning IL2016: Could not find event 'UnknownEvent' on type 'Mono.Linker.Tests.Cases.LinkXml.EmbeddedLinkXmlUnresolvedReferencesAreReported.TestType'")]
+	[LogContains ("warning IL2017: Could not find property 'System.String PropertyWithSignature' on type 'Mono.Linker.Tests.Cases.LinkXml.EmbeddedLinkXmlUnresolvedReferencesAreReported.TestType'")]
+	[LogContains ("warning IL2017: Could not find property 'UnknownProperty' on type 'Mono.Linker.Tests.Cases.LinkXml.EmbeddedLinkXmlUnresolvedReferencesAreReported.TestType'")]
+	[ExpectedWarning ("IL2044", "UnknownNamespace", FileName = "EmbeddedLinkXmlUnresolvedReferencesAreReported.xml")]
 	class EmbeddedLinkXmlUnresolvedReferencesAreReported
 	{
 		public static void Main ()

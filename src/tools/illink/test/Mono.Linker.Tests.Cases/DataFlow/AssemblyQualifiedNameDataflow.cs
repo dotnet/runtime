@@ -18,8 +18,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			TestConstructors ();
 		}
 
-		[UnrecognizedReflectionAccessPattern (typeof (AssemblyQualifiedNameDataflow), nameof (RequirePublicConstructors), new Type[] { typeof (string) })]
-		[UnrecognizedReflectionAccessPattern (typeof (AssemblyQualifiedNameDataflow), nameof (RequireNonPublicConstructors), new Type[] { typeof (string) })]
+		[UnrecognizedReflectionAccessPattern (typeof (AssemblyQualifiedNameDataflow), nameof (RequirePublicConstructors), new Type[] { typeof (string) }, messageCode: "IL2072")]
+		[UnrecognizedReflectionAccessPattern (typeof (AssemblyQualifiedNameDataflow), nameof (RequireNonPublicConstructors), new Type[] { typeof (string) }, messageCode: "IL2072")]
 		static void TestPublicParameterlessConstructor ()
 		{
 			string type = GetTypeWithPublicParameterlessConstructor ().AssemblyQualifiedName;
@@ -29,7 +29,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			RequireNothing (type);
 		}
 
-		[UnrecognizedReflectionAccessPattern (typeof (AssemblyQualifiedNameDataflow), nameof (RequireNonPublicConstructors), new Type[] { typeof (string) })]
+		[UnrecognizedReflectionAccessPattern (typeof (AssemblyQualifiedNameDataflow), nameof (RequireNonPublicConstructors), new Type[] { typeof (string) }, messageCode: "IL2072")]
 		static void TestPublicConstructors ()
 		{
 			string type = GetTypeWithPublicConstructors ().AssemblyQualifiedName;
@@ -39,8 +39,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			RequireNothing (type);
 		}
 
-		[UnrecognizedReflectionAccessPattern (typeof (AssemblyQualifiedNameDataflow), nameof (RequirePublicParameterlessConstructor), new Type[] { typeof (string) })]
-		[UnrecognizedReflectionAccessPattern (typeof (AssemblyQualifiedNameDataflow), nameof (RequirePublicConstructors), new Type[] { typeof (string) })]
+		[UnrecognizedReflectionAccessPattern (typeof (AssemblyQualifiedNameDataflow), nameof (RequirePublicParameterlessConstructor), new Type[] { typeof (string) }, messageCode: "IL2072")]
+		[UnrecognizedReflectionAccessPattern (typeof (AssemblyQualifiedNameDataflow), nameof (RequirePublicConstructors), new Type[] { typeof (string) }, messageCode: "IL2072")]
 		static void TestConstructors ()
 		{
 			string type = GetTypeWithNonPublicConstructors ().AssemblyQualifiedName;

@@ -11,7 +11,7 @@ namespace Mono.Linker.Tests.Cases.Warnings
 	[SetupLinkerArgument ("--verbose")]
 	[SetupLinkerArgument ("--warnaserror")]
 	[SetupLinkerArgument ("--warn", "0")]
-	[LogDoesNotContain ("IL2006")]
+	[LogDoesNotContain ("IL2067")]
 	public class CanNotWarnAsErrorForDisabledVersion
 	{
 		public static void Main ()

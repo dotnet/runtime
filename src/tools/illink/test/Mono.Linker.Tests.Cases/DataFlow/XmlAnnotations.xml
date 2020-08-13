@@ -3,7 +3,7 @@
   <assembly fullname="Test">
       <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute" assembly="Mono.Linker.Tests.Cases.Expectations">
         <argument>ILLink</argument>
-        <argument>IL2006</argument>
+        <argument>IL2067</argument>
         <property name="Scope">member</property>
         <property name="Target">M:Mono.Linker.Tests.Cases.DataFlow.XmlAnnotations.ReadFromInstanceField</property>
       </attribute>

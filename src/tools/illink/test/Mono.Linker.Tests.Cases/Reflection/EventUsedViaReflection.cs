@@ -95,11 +95,8 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		}
 
 		[Kept]
-		[UnrecognizedReflectionAccessPattern (
-			typeof (Type), nameof (Type.GetEvent), new Type[] { typeof (string) },
-			"The return value of method 'Mono.Linker.Tests.Cases.Reflection.EventUsedViaReflection.FindType()' with dynamically accessed member kinds 'None' " +
-			"is passed into the implicit 'this' parameter of method 'System.Type.GetEvent(String)' which requires dynamically accessed member kinds 'PublicEvents'. " +
-			"To fix this add DynamicallyAccessedMembersAttribute to it and specify at least these member kinds 'PublicEvents'.")]
+		[UnrecognizedReflectionAccessPattern (typeof (Type), nameof (Type.GetEvent), new Type[] { typeof (string) },
+			messageCode: "IL2075", message: new string[] { "FindType", "GetEvent" })]
 		static void TestDataFlowType ()
 		{
 			Type type = FindType ();

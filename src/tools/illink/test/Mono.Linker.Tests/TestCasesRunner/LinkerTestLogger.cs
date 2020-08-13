@@ -7,14 +7,22 @@ namespace Mono.Linker.Tests.TestCasesRunner
 		public struct MessageRecord
 		{
 			public string Message;
+			public MessageCategory Category;
+			public MessageOrigin? Origin;
+			public int? Code;
+			public string Text;
 		}
 
 		public List<MessageRecord> Messages { get; private set; } = new List<MessageRecord> ();
 
 		public void LogMessage (MessageContainer msBuildMessage)
 		{
-			Messages.Add (new MessageRecord {
-				Message = msBuildMessage.ToString ()
+			Messages.Add (new MessageRecord () {
+				Message = msBuildMessage.ToString (),
+				Category = msBuildMessage.Category,
+				Origin = msBuildMessage.Origin,
+				Code = msBuildMessage.Code,
+				Text = msBuildMessage.Text
 			});
 		}
 	}

@@ -10,7 +10,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 	public class ExpressionFieldString
 	{
 		[UnrecognizedReflectionAccessPattern (typeof (Expression), nameof (Expression.Field),
-			new Type[] { typeof (Expression), typeof (Type), typeof (string) })]
+			new Type[] { typeof (Expression), typeof (Type), typeof (string) }, messageCode: "IL2072")]
 		public static void Main ()
 		{
 			Expression.Field (Expression.Parameter (typeof (int), ""), typeof (ExpressionFieldString), "Field");

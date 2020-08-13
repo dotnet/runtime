@@ -10,7 +10,7 @@ namespace Mono.Linker.Tests.Cases.Warnings
 	[SkipKeptItemsValidation]
 	[SetupLinkerArgument ("--verbose")]
 	[SetupLinkerArgument ("--warn", "5")]
-	[LogContains ("IL2006")]
+	[LogContains ("IL2075")]
 	public class CanSetWarningVersion5
 	{
 		public static void Main ()

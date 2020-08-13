@@ -38,17 +38,15 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		}
 
 		[UnrecognizedReflectionAccessPattern (typeof (LocalDataFlow), nameof (RequirePublicFields), new Type[] { typeof (string) },
-			"The return value of method 'Mono.Linker.Tests.Cases.DataFlow.LocalDataFlow.GetWithPublicMethods()' " +
-			"with dynamically accessed member kinds 'PublicMethods' " +
-			"is passed into the parameter 'type' of method 'Mono.Linker.Tests.Cases.DataFlow.LocalDataFlow.RequirePublicFields(String)' " +
-			"which requires dynamically accessed member kinds 'PublicFields'. " +
-			"To fix this add DynamicallyAccessedMembersAttribute to it and specify at least these member kinds 'PublicFields'.")]
+			messageCode: "IL2072", message: new string[] {
+				"Mono.Linker.Tests.Cases.DataFlow.LocalDataFlow.GetWithPublicMethods()",
+				"type",
+				"Mono.Linker.Tests.Cases.DataFlow.LocalDataFlow.RequirePublicFields(String)"})]
 		[UnrecognizedReflectionAccessPattern (typeof (LocalDataFlow), nameof (RequirePublicMethods), new Type[] { typeof (string) },
-			"The return value of method 'Mono.Linker.Tests.Cases.DataFlow.LocalDataFlow.GetWithPublicFields()' " +
-			"with dynamically accessed member kinds 'PublicFields' " +
-			"is passed into the parameter 'type' of method 'Mono.Linker.Tests.Cases.DataFlow.LocalDataFlow.RequirePublicMethods(String)' " +
-			"which requires dynamically accessed member kinds 'PublicMethods'. " +
-			"To fix this add DynamicallyAccessedMembersAttribute to it and specify at least these member kinds 'PublicMethods'.")]
+			messageCode: "IL2072", message: new string[] {
+				"Mono.Linker.Tests.Cases.DataFlow.LocalDataFlow.GetWithPublicFields()",
+				"type",
+				"Mono.Linker.Tests.Cases.DataFlow.LocalDataFlow.RequirePublicMethods(String)"})]
 		public static void TestBranchMergeGoto ()
 		{
 			string str = GetWithPublicMethods ();
@@ -62,17 +60,15 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		}
 
 		[UnrecognizedReflectionAccessPattern (typeof (LocalDataFlow), nameof (RequirePublicFields), new Type[] { typeof (string) },
-			"The return value of method 'Mono.Linker.Tests.Cases.DataFlow.LocalDataFlow.GetWithPublicMethods()' " +
-			"with dynamically accessed member kinds 'PublicMethods' " +
-			"is passed into the parameter 'type' of method 'Mono.Linker.Tests.Cases.DataFlow.LocalDataFlow.RequirePublicFields(String)' " +
-			"which requires dynamically accessed member kinds 'PublicFields'. " +
-			"To fix this add DynamicallyAccessedMembersAttribute to it and specify at least these member kinds 'PublicFields'.")]
+			messageCode: "IL2072", message: new string[] {
+				"Mono.Linker.Tests.Cases.DataFlow.LocalDataFlow.GetWithPublicMethods()",
+				"type",
+				"Mono.Linker.Tests.Cases.DataFlow.LocalDataFlow.RequirePublicFields(String)" })]
 		[UnrecognizedReflectionAccessPattern (typeof (LocalDataFlow), nameof (RequirePublicMethods), new Type[] { typeof (string) },
-			"The return value of method 'Mono.Linker.Tests.Cases.DataFlow.LocalDataFlow.GetWithPublicFields()' " +
-			"with dynamically accessed member kinds 'PublicFields' " +
-			"is passed into the parameter 'type' of method 'Mono.Linker.Tests.Cases.DataFlow.LocalDataFlow.RequirePublicMethods(String)' " +
-			"which requires dynamically accessed member kinds 'PublicMethods'. " +
-			"To fix this add DynamicallyAccessedMembersAttribute to it and specify at least these member kinds 'PublicMethods'.")]
+			messageCode: "IL2072", message: new string[] {
+				"Mono.Linker.Tests.Cases.DataFlow.LocalDataFlow.GetWithPublicFields()",
+				"type",
+				"Mono.Linker.Tests.Cases.DataFlow.LocalDataFlow.RequirePublicMethods(String)" })]
 		public static void TestBranchMergeIf ()
 		{
 			string str = GetWithPublicMethods ();
@@ -84,17 +80,15 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		}
 
 		[UnrecognizedReflectionAccessPattern (typeof (LocalDataFlow), nameof (RequirePublicFields), new Type[] { typeof (string) },
-			"The return value of method 'Mono.Linker.Tests.Cases.DataFlow.LocalDataFlow.GetWithPublicMethods()' " +
-			"with dynamically accessed member kinds 'PublicMethods' " +
-			"is passed into the parameter 'type' of method 'Mono.Linker.Tests.Cases.DataFlow.LocalDataFlow.RequirePublicFields(String)' " +
-			"which requires dynamically accessed member kinds 'PublicFields'. " +
-			"To fix this add DynamicallyAccessedMembersAttribute to it and specify at least these member kinds 'PublicFields'.")]
+			messageCode: "IL2072", message: new string[] {
+				"Mono.Linker.Tests.Cases.DataFlow.LocalDataFlow.GetWithPublicMethods()",
+				"type",
+				"Mono.Linker.Tests.Cases.DataFlow.LocalDataFlow.RequirePublicFields(String)" })]
 		[UnrecognizedReflectionAccessPattern (typeof (LocalDataFlow), nameof (RequirePublicMethods), new Type[] { typeof (string) },
-			"The return value of method 'Mono.Linker.Tests.Cases.DataFlow.LocalDataFlow.GetWithPublicFields()' " +
-			"with dynamically accessed member kinds 'PublicFields' " +
-			"is passed into the parameter 'type' of method 'Mono.Linker.Tests.Cases.DataFlow.LocalDataFlow.RequirePublicMethods(String)' " +
-			"which requires dynamically accessed member kinds 'PublicMethods'. " +
-			"To fix this add DynamicallyAccessedMembersAttribute to it and specify at least these member kinds 'PublicMethods'.")]
+			messageCode: "IL2072", message: new string[] {
+				"Mono.Linker.Tests.Cases.DataFlow.LocalDataFlow.GetWithPublicFields()",
+				"type",
+				"Mono.Linker.Tests.Cases.DataFlow.LocalDataFlow.RequirePublicMethods(String)" })]
 		public static void TestBranchMergeIfElse ()
 		{
 			string str = null;
@@ -110,23 +104,20 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		static int _switchOnField;
 
 		[UnrecognizedReflectionAccessPattern (typeof (LocalDataFlow), nameof (RequireNonPublicMethods), new Type[] { typeof (string) },
-			"The return value of method 'Mono.Linker.Tests.Cases.DataFlow.LocalDataFlow.GetWithPublicFields()' " +
-			"with dynamically accessed member kinds 'PublicFields' " +
-			"is passed into the parameter 'type' of method 'Mono.Linker.Tests.Cases.DataFlow.LocalDataFlow.RequireNonPublicMethods(String)' " +
-			"which requires dynamically accessed member kinds 'NonPublicMethods'. " +
-			"To fix this add DynamicallyAccessedMembersAttribute to it and specify at least these member kinds 'NonPublicMethods'.")]
+			messageCode: "IL2072", message: new string[] {
+				"Mono.Linker.Tests.Cases.DataFlow.LocalDataFlow.GetWithPublicFields()",
+				"type",
+				"Mono.Linker.Tests.Cases.DataFlow.LocalDataFlow.RequireNonPublicMethods(String)" })]
 		[UnrecognizedReflectionAccessPattern (typeof (LocalDataFlow), nameof (RequireNonPublicMethods), new Type[] { typeof (string) },
-			"The return value of method 'Mono.Linker.Tests.Cases.DataFlow.LocalDataFlow.GetWithPublicMethods()' " +
-			"with dynamically accessed member kinds 'PublicMethods' " +
-			"is passed into the parameter 'type' of method 'Mono.Linker.Tests.Cases.DataFlow.LocalDataFlow.RequireNonPublicMethods(String)' " +
-			"which requires dynamically accessed member kinds 'NonPublicMethods'. " +
-			"To fix this add DynamicallyAccessedMembersAttribute to it and specify at least these member kinds 'NonPublicMethods'.")]
+			messageCode: "IL2072", message: new string[] {
+				"Mono.Linker.Tests.Cases.DataFlow.LocalDataFlow.GetWithPublicMethods()",
+				"type",
+				"Mono.Linker.Tests.Cases.DataFlow.LocalDataFlow.RequireNonPublicMethods(String)" })]
 		[UnrecognizedReflectionAccessPattern (typeof (LocalDataFlow), nameof (RequireNonPublicMethods), new Type[] { typeof (string) },
-			"The return value of method 'Mono.Linker.Tests.Cases.DataFlow.LocalDataFlow.GetWithPublicConstructors()' " +
-			"with dynamically accessed member kinds 'PublicConstructors' " +
-			"is passed into the parameter 'type' of method 'Mono.Linker.Tests.Cases.DataFlow.LocalDataFlow.RequireNonPublicMethods(String)' " +
-			"which requires dynamically accessed member kinds 'NonPublicMethods'. " +
-			"To fix this add DynamicallyAccessedMembersAttribute to it and specify at least these member kinds 'NonPublicMethods'.")]
+			messageCode: "IL2072", message: new string[] {
+				"Mono.Linker.Tests.Cases.DataFlow.LocalDataFlow.GetWithPublicConstructors()",
+				"type",
+				"Mono.Linker.Tests.Cases.DataFlow.LocalDataFlow.RequireNonPublicMethods(String)" })]
 		public static void TestBranchMergeSwitch ()
 		{
 			string str = null;
@@ -148,17 +139,15 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		}
 
 		[UnrecognizedReflectionAccessPattern (typeof (LocalDataFlow), nameof (RequirePublicFields), new Type[] { typeof (string) },
-			"The return value of method 'Mono.Linker.Tests.Cases.DataFlow.LocalDataFlow.GetWithPublicMethods()' " +
-			"with dynamically accessed member kinds 'PublicMethods' " +
-			"is passed into the parameter 'type' of method 'Mono.Linker.Tests.Cases.DataFlow.LocalDataFlow.RequirePublicFields(String)' " +
-			"which requires dynamically accessed member kinds 'PublicFields'. " +
-			"To fix this add DynamicallyAccessedMembersAttribute to it and specify at least these member kinds 'PublicFields'.")]
+			messageCode: "IL2072", message: new string[] {
+				"Mono.Linker.Tests.Cases.DataFlow.LocalDataFlow.GetWithPublicMethods()",
+				"type",
+				"Mono.Linker.Tests.Cases.DataFlow.LocalDataFlow.RequirePublicFields(String)" })]
 		[UnrecognizedReflectionAccessPattern (typeof (LocalDataFlow), nameof (RequirePublicMethods), new Type[] { typeof (string) },
-			"The return value of method 'Mono.Linker.Tests.Cases.DataFlow.LocalDataFlow.GetWithPublicFields()' " +
-			"with dynamically accessed member kinds 'PublicFields' " +
-			"is passed into the parameter 'type' of method 'Mono.Linker.Tests.Cases.DataFlow.LocalDataFlow.RequirePublicMethods(String)' " +
-			"which requires dynamically accessed member kinds 'PublicMethods'. " +
-			"To fix this add DynamicallyAccessedMembersAttribute to it and specify at least these member kinds 'PublicMethods'.")]
+			messageCode: "IL2072", message: new string[] {
+				"Mono.Linker.Tests.Cases.DataFlow.LocalDataFlow.GetWithPublicFields()",
+				"type",
+				"Mono.Linker.Tests.Cases.DataFlow.LocalDataFlow.RequirePublicMethods(String)" })]
 		public static void TestBranchMergeTry ()
 		{
 			string str = GetWithPublicMethods ();
@@ -174,17 +163,15 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		}
 
 		[UnrecognizedReflectionAccessPattern (typeof (LocalDataFlow), nameof (RequirePublicFields), new Type[] { typeof (string) },
-			"The return value of method 'Mono.Linker.Tests.Cases.DataFlow.LocalDataFlow.GetWithPublicMethods()' " +
-			"with dynamically accessed member kinds 'PublicMethods' " +
-			"is passed into the parameter 'type' of method 'Mono.Linker.Tests.Cases.DataFlow.LocalDataFlow.RequirePublicFields(String)' " +
-			"which requires dynamically accessed member kinds 'PublicFields'. " +
-			"To fix this add DynamicallyAccessedMembersAttribute to it and specify at least these member kinds 'PublicFields'.")]
+			messageCode: "IL2072", message: new string[] {
+				"Mono.Linker.Tests.Cases.DataFlow.LocalDataFlow.GetWithPublicMethods()",
+				"type",
+				"Mono.Linker.Tests.Cases.DataFlow.LocalDataFlow.RequirePublicFields(String)" })]
 		[UnrecognizedReflectionAccessPattern (typeof (LocalDataFlow), nameof (RequirePublicMethods), new Type[] { typeof (string) },
-			"The return value of method 'Mono.Linker.Tests.Cases.DataFlow.LocalDataFlow.GetWithPublicFields()' " +
-			"with dynamically accessed member kinds 'PublicFields' " +
-			"is passed into the parameter 'type' of method 'Mono.Linker.Tests.Cases.DataFlow.LocalDataFlow.RequirePublicMethods(String)' " +
-			"which requires dynamically accessed member kinds 'PublicMethods'. " +
-			"To fix this add DynamicallyAccessedMembersAttribute to it and specify at least these member kinds 'PublicMethods'.")]
+			messageCode: "IL2072", message: new string[] {
+				"Mono.Linker.Tests.Cases.DataFlow.LocalDataFlow.GetWithPublicFields()",
+				"type",
+				"Mono.Linker.Tests.Cases.DataFlow.LocalDataFlow.RequirePublicMethods(String)" })]
 		public static void TestBranchMergeCatch ()
 		{
 			string str = GetWithPublicMethods ();
@@ -199,17 +186,15 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		}
 
 		[UnrecognizedReflectionAccessPattern (typeof (LocalDataFlow), nameof (RequirePublicFields), new Type[] { typeof (string) },
-			"The return value of method 'Mono.Linker.Tests.Cases.DataFlow.LocalDataFlow.GetWithPublicMethods()' " +
-			"with dynamically accessed member kinds 'PublicMethods' " +
-			"is passed into the parameter 'type' of method 'Mono.Linker.Tests.Cases.DataFlow.LocalDataFlow.RequirePublicFields(String)' " +
-			"which requires dynamically accessed member kinds 'PublicFields'. " +
-			"To fix this add DynamicallyAccessedMembersAttribute to it and specify at least these member kinds 'PublicFields'.")]
+			messageCode: "IL2072", message: new string[] {
+				"Mono.Linker.Tests.Cases.DataFlow.LocalDataFlow.GetWithPublicMethods()",
+				"type",
+				"Mono.Linker.Tests.Cases.DataFlow.LocalDataFlow.RequirePublicFields(String)" })]
 		[UnrecognizedReflectionAccessPattern (typeof (LocalDataFlow), nameof (RequirePublicMethods), new Type[] { typeof (string) },
-			"The return value of method 'Mono.Linker.Tests.Cases.DataFlow.LocalDataFlow.GetWithPublicFields()' " +
-			"with dynamically accessed member kinds 'PublicFields' " +
-			"is passed into the parameter 'type' of method 'Mono.Linker.Tests.Cases.DataFlow.LocalDataFlow.RequirePublicMethods(String)' " +
-			"which requires dynamically accessed member kinds 'PublicMethods'. " +
-			"To fix this add DynamicallyAccessedMembersAttribute to it and specify at least these member kinds 'PublicMethods'.")]
+			messageCode: "IL2072", message: new string[] {
+				"Mono.Linker.Tests.Cases.DataFlow.LocalDataFlow.GetWithPublicFields()",
+				"type",
+				"Mono.Linker.Tests.Cases.DataFlow.LocalDataFlow.RequirePublicMethods(String)" })]
 		public static void TestBranchMergeFinally ()
 		{
 			string str = GetWithPublicMethods ();
@@ -224,7 +209,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			RequirePublicMethods (str); // warns for GetWithPublicFields
 		}
 
-		[UnrecognizedReflectionAccessPattern (typeof (LocalDataFlow), nameof (RequirePublicFields), new Type[] { typeof (string) })]
+		[UnrecognizedReflectionAccessPattern (typeof (LocalDataFlow), nameof (RequirePublicFields), new Type[] { typeof (string) }, messageCode: "IL2072")]
 		public static void TestBranchGoto ()
 		{
 			string str = GetWithPublicMethods ();
@@ -236,7 +221,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			return;
 		}
 
-		[UnrecognizedReflectionAccessPattern (typeof (LocalDataFlow), nameof (RequirePublicFields), new Type[] { typeof (string) })]
+		[UnrecognizedReflectionAccessPattern (typeof (LocalDataFlow), nameof (RequirePublicFields), new Type[] { typeof (string) }, messageCode: "IL2072")]
 		public static void TestBranchIf ()
 		{
 			string str = GetWithPublicMethods ();
@@ -246,7 +231,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 		}
 
-		[UnrecognizedReflectionAccessPattern (typeof (LocalDataFlow), nameof (RequirePublicFields), new Type[] { typeof (string) })]
+		[UnrecognizedReflectionAccessPattern (typeof (LocalDataFlow), nameof (RequirePublicFields), new Type[] { typeof (string) }, messageCode: "IL2072")]
 		public static void TestBranchIfElse ()
 		{
 			string str;
@@ -261,12 +246,12 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 		}
 
-		[UnrecognizedReflectionAccessPattern (typeof (LocalDataFlow), nameof (RequireNonPublicMethods), new Type[] { typeof (string) })]
-		[UnrecognizedReflectionAccessPattern (typeof (LocalDataFlow), nameof (RequirePublicMethods), new Type[] { typeof (string) })]
-		[UnrecognizedReflectionAccessPattern (typeof (LocalDataFlow), nameof (RequirePublicMethods), new Type[] { typeof (string) })]
-		[UnrecognizedReflectionAccessPattern (typeof (LocalDataFlow), nameof (RequirePublicConstructors), new Type[] { typeof (string) })]
-		[UnrecognizedReflectionAccessPattern (typeof (LocalDataFlow), nameof (RequirePublicConstructors), new Type[] { typeof (string) })]
-		[UnrecognizedReflectionAccessPattern (typeof (LocalDataFlow), nameof (RequirePublicConstructors), new Type[] { typeof (string) })]
+		[UnrecognizedReflectionAccessPattern (typeof (LocalDataFlow), nameof (RequireNonPublicMethods), new Type[] { typeof (string) }, messageCode: "IL2072")]
+		[UnrecognizedReflectionAccessPattern (typeof (LocalDataFlow), nameof (RequirePublicMethods), new Type[] { typeof (string) }, messageCode: "IL2072")]
+		[UnrecognizedReflectionAccessPattern (typeof (LocalDataFlow), nameof (RequirePublicMethods), new Type[] { typeof (string) }, messageCode: "IL2072")]
+		[UnrecognizedReflectionAccessPattern (typeof (LocalDataFlow), nameof (RequirePublicConstructors), new Type[] { typeof (string) }, messageCode: "IL2072")]
+		[UnrecognizedReflectionAccessPattern (typeof (LocalDataFlow), nameof (RequirePublicConstructors), new Type[] { typeof (string) }, messageCode: "IL2072")]
+		[UnrecognizedReflectionAccessPattern (typeof (LocalDataFlow), nameof (RequirePublicConstructors), new Type[] { typeof (string) }, messageCode: "IL2072")]
 		public static void TestBranchSwitch ()
 		{
 			string str = null;
@@ -290,7 +275,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 		}
 
-		[UnrecognizedReflectionAccessPattern (typeof (LocalDataFlow), nameof (RequirePublicFields), new Type[] { typeof (string) })]
+		[UnrecognizedReflectionAccessPattern (typeof (LocalDataFlow), nameof (RequirePublicFields), new Type[] { typeof (string) }, messageCode: "IL2072")]
 		public static void TestBranchTry ()
 		{
 			string str = GetWithPublicMethods ();
@@ -304,7 +289,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 		}
 
-		[UnrecognizedReflectionAccessPattern (typeof (LocalDataFlow), nameof (RequirePublicFields), new Type[] { typeof (string) })]
+		[UnrecognizedReflectionAccessPattern (typeof (LocalDataFlow), nameof (RequirePublicFields), new Type[] { typeof (string) }, messageCode: "IL2072")]
 		public static void TestBranchCatch ()
 		{
 			string str = GetWithPublicMethods ();
@@ -317,7 +302,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 		}
 
-		[UnrecognizedReflectionAccessPattern (typeof (LocalDataFlow), nameof (RequirePublicFields), new Type[] { typeof (string) })]
+		[UnrecognizedReflectionAccessPattern (typeof (LocalDataFlow), nameof (RequirePublicFields), new Type[] { typeof (string) }, messageCode: "IL2072")]
 		public static void TestBranchFinally ()
 		{
 			string str = GetWithPublicMethods ();

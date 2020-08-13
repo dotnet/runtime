@@ -43,10 +43,9 @@ namespace Mono.Linker.Steps
 			if (annotations.HasLinkerAttribute<RequiresUnreferencedCodeAttribute> (method) !=
 				annotations.HasLinkerAttribute<RequiresUnreferencedCodeAttribute> (baseMethod))
 				Context.LogWarning (
-					$"Presence of RequiresUnreferencedCodeAttribute on method '{method.GetDisplayName ()}' doesn't match overridden method '{baseMethod.GetDisplayName ()}'. " +
-					$"All overridden methods must have RequiresUnreferencedCodeAttribute.",
-					2046,
-					method);
+					$"Presence of 'RequiresUnreferencedCodeAttribute' on method '{method.GetDisplayName ()}' doesn't match overridden method '{baseMethod.GetDisplayName ()}'. " +
+					$"All overridden methods must have 'RequiresUnreferencedCodeAttribute'.",
+					2046, method, subcategory: MessageSubCategory.TrimAnalysis);
 		}
 	}
 }
