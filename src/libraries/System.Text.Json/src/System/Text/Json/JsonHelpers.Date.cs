@@ -211,12 +211,6 @@ namespace System.Text.Json
         {
             parseData = default;
 
-            // Source does not have enough characters for YYYY-MM-DD
-            if (source.Length < 10)
-            {
-                return false;
-            }
-
             // Parse the calendar date
             // -----------------------
             // ISO 8601-1:2019 5.2.2.1b "Calendar date complete extended format"
