@@ -221,6 +221,15 @@ namespace System.Diagnostics.Tracing
                 // and lead to a deadlock. (See https://github.com/dotnet/runtime/issues/40190 for details)
                 foreach (DiagnosticCounter counter in counters)
                 {
+                    // NOTE: It is still possible for a race condition to occur here. An example is if the session
+                    // that subscribed to these batch of counters was disabled and it was immediately enabled in
+                    // a different session, some of the counter data that was supposed to be written to the old
+                    // session can now "overflow" into the new session.
+                    // This problem pre-existed to this change (when we used to hold lock in the call to WritePayload):
+                    // the only difference being the old behavior caused the entire batch of counters to be either
+                    // written to the old session or the new session. The behavior change is not being treated as a
+                    // significant problem to address for now, but we can come back and address it if it turns out to
+                    // be an actual issue.
                     counter.WritePayload((float)elapsed.TotalSeconds, pollingIntervalInMilliseconds);
                 }
 
