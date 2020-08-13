@@ -93,6 +93,65 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
             }
         }
 
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
+        [InlineData(0, true)]
+        [InlineData(1, true)]
+        [InlineData(7, true)]
+        [InlineData(9, true)]
+        [InlineData(-1, true)]
+        [InlineData(int.MaxValue, true)]
+        [InlineData(int.MinValue, true)]
+        [InlineData(64, false)]
+        [InlineData(256, true)]
+        [InlineData(127, true)]
+        public static void InvalidCFBFeedbackSizes(int feedbackSize, bool discoverableInSetter)
+        {
+            using (Aes aes = AesFactory.Create())
+            {
+                aes.GenerateKey();
+                aes.Mode = CipherMode.CFB;
+
+                if (discoverableInSetter)
+                {
+                    // there are some key sizes that are invalid for any of the modes,
+                    // so the exception is thrown in the setter
+                    Assert.Throws<CryptographicException>(() =>
+                    {
+                        aes.FeedbackSize = feedbackSize;
+                    });
+                }
+                else
+                {
+                    aes.FeedbackSize = feedbackSize;
+
+                    // however, for CFB only few sizes are valid. Those should throw in the
+                    // actual AES instantiation.
+
+                    Assert.Throws<CryptographicException>(() => aes.CreateDecryptor());
+                    Assert.Throws<CryptographicException>(() => aes.CreateEncryptor());
+                }
+            }
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
+        [InlineData(8)]
+        [InlineData(128)]
+        public static void ValidCFBFeedbackSizes(int feedbackSize)
+        {
+            using (Aes aes = AesFactory.Create())
+            {
+                aes.GenerateKey();
+                aes.Mode = CipherMode.CFB;
+
+                aes.FeedbackSize = feedbackSize;
+
+                using var decryptor = aes.CreateDecryptor();
+                using var encryptor = aes.CreateEncryptor();
+                Assert.NotNull(decryptor);
+                Assert.NotNull(encryptor);
+            }
+        }
+
         [Theory]
         [InlineData(64, false)]        // smaller than default BlockSize
         [InlineData(129, false)]       // larger than default BlockSize

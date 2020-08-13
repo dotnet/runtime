@@ -106,9 +106,14 @@ namespace System.Security.Cryptography
             return TripleDES.IsWeakKey(key);
         }
 
+        int ICngSymmetricAlgorithm.GetPaddingSize()
+        {
+            return this.GetPaddingSize();
+        }
+
         SafeAlgorithmHandle ICngSymmetricAlgorithm.GetEphemeralModeHandle()
         {
-            return TripleDesBCryptModes.GetSharedHandle(Mode);
+            return TripleDesBCryptModes.GetSharedHandle(Mode, FeedbackSize / 8);
         }
 
         string ICngSymmetricAlgorithm.GetNCryptAlgorithmIdentifier()
