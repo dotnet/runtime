@@ -1,0 +1,13 @@
+<Project DefaultTargets="Build">
+  <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props))" />
+
+  <PropertyGroup>
+    <AdditionalProjectReferences>Microsoft.Extensions.Logging.Console</AdditionalProjectReferences>
+  </PropertyGroup>
+  
+  <ItemGroup>
+    <TestConsoleAppSourceFiles Include="AddConsoleFormatterTests.cs" />
+  </ItemGroup>
+
+  <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets))" />
+</Project>

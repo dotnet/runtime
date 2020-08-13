@@ -101,6 +101,9 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <!-- Determine what architecture we are building on. -->
     <BuildArchitecture>$([System.Runtime.InteropServices.RuntimeInformation]::ProcessArchitecture.ToString().ToLowerInvariant())</BuildArchitecture>
+    
+    <!-- Turn off end of life target framework check as we still build for nca2.0 and nca3.0 some OOB libraries -->
+    <CheckEolTargetFramework>false</CheckEolTargetFramework>
   </PropertyGroup>
 
   <Import Project="$(RepositoryEngineeringDir)Analyzers.props" />

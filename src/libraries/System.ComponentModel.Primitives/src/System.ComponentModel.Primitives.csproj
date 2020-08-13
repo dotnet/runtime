@@ -10,6 +10,7 @@
     <Compile Include="System\ComponentModel\Component.cs" />
     <Compile Include="System\ComponentModel\ComponentCollection.cs" />
     <Compile Include="System\ComponentModel\DescriptionAttribute.cs" />
+    <Compile Include="System\ComponentModel\DesignerAttribute.cs" />
     <Compile Include="System\ComponentModel\DesignerCategoryAttribute.cs" />
     <Compile Include="System\ComponentModel\DesignerSerializationVisibility.cs" />
     <Compile Include="System\ComponentModel\DesignerSerializationVisibilityAttribute.cs" />

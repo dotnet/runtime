@@ -472,7 +472,7 @@ namespace System.Xml
                     throw new InvalidOperationException(SR.Xdom_Node_Modify_ReadOnly);
                 }
 
-                DocumentXPathNavigator.DeleteToFollowingSibling(_start.NextSibling, _end);
+                DocumentXPathNavigator.DeleteToFollowingSibling(_start.NextSibling!, _end);
             }
 
             XmlNode fragment0 = _fragment[0];

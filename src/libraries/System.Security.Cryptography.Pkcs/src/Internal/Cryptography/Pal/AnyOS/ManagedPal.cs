@@ -67,14 +67,12 @@ namespace Internal.Cryptography.Pal.AnyOS
             }
         }
 
-        [return: MaybeNull]
-        public override T GetPrivateKeyForSigning<T>(X509Certificate2 certificate, bool silent)
+        public override T? GetPrivateKeyForSigning<T>(X509Certificate2 certificate, bool silent) where T : class
         {
             return GetPrivateKey<T>(certificate);
         }
 
-        [return: MaybeNull]
-        public override T GetPrivateKeyForDecryption<T>(X509Certificate2 certificate, bool silent)
+        public override T? GetPrivateKeyForDecryption<T>(X509Certificate2 certificate, bool silent) where T : class
         {
             return GetPrivateKey<T>(certificate);
         }

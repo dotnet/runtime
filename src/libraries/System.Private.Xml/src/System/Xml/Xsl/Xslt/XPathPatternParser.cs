@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#nullable enable
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Xml;
@@ -19,15 +20,15 @@ namespace System.Xml.Xsl.Xslt
             IXPathBuilder<QilNode> GetPredicateBuilder(QilNode context);
         }
 
-        private XPathScanner _scanner;
-        private IPatternBuilder _ptrnBuilder;
+        private XPathScanner? _scanner;
+        private IPatternBuilder? _ptrnBuilder;
         private readonly XPathParser _predicateParser = new XPathParser();
 
         public QilNode Parse(XPathScanner scanner, IPatternBuilder ptrnBuilder)
         {
             Debug.Assert(_scanner == null && _ptrnBuilder == null);
             Debug.Assert(scanner != null && ptrnBuilder != null);
-            QilNode result = null;
+            QilNode? result = null;
             ptrnBuilder.StartBuild();
             try
             {
@@ -44,7 +45,7 @@ namespace System.Xml.Xsl.Xslt
                 _scanner = null;
 #endif
             }
-            return result;
+            return result!;
         }
 
         /*
@@ -54,10 +55,10 @@ namespace System.Xml.Xsl.Xslt
         {
             QilNode opnd = ParseLocationPathPattern();
 
-            while (_scanner.Kind == LexKind.Union)
+            while (_scanner!.Kind == LexKind.Union)
             {
                 _scanner.NextLex();
-                opnd = _ptrnBuilder.Operator(XPathOperator.Union, opnd, ParseLocationPathPattern());
+                opnd = _ptrnBuilder!.Operator(XPathOperator.Union, opnd, ParseLocationPathPattern());
             }
             return opnd;
         }
@@ -69,11 +70,11 @@ namespace System.Xml.Xsl.Xslt
         {
             QilNode opnd;
 
-            switch (_scanner.Kind)
+            switch (_scanner!.Kind)
             {
                 case LexKind.Slash:
                     _scanner.NextLex();
-                    opnd = _ptrnBuilder.Axis(XPathAxis.Root, XPathNodeType.All, null, null);
+                    opnd = _ptrnBuilder!.Axis(XPathAxis.Root, XPathNodeType.All, null, null);
 
                     if (XPathParser.IsStep(_scanner.Kind))
                     {
@@ -82,7 +83,7 @@ namespace System.Xml.Xsl.Xslt
                     return opnd;
                 case LexKind.SlashSlash:
                     _scanner.NextLex();
-                    return _ptrnBuilder.JoinStep(
+                    return _ptrnBuilder!.JoinStep(
                         _ptrnBuilder.Axis(XPathAxis.Root, XPathNodeType.All, null, null),
                         _ptrnBuilder.JoinStep(
                             _ptrnBuilder.Axis(XPathAxis.DescendantOrSelf, XPathNodeType.All, null, null),
@@ -97,11 +98,11 @@ namespace System.Xml.Xsl.Xslt
                         {
                             case LexKind.Slash:
                                 _scanner.NextLex();
-                                opnd = _ptrnBuilder.JoinStep(opnd, ParseRelativePathPattern());
+                                opnd = _ptrnBuilder!.JoinStep(opnd, ParseRelativePathPattern());
                                 break;
                             case LexKind.SlashSlash:
                                 _scanner.NextLex();
-                                opnd = _ptrnBuilder.JoinStep(opnd,
+                                opnd = _ptrnBuilder!.JoinStep(opnd,
                                     _ptrnBuilder.JoinStep(
                                         _ptrnBuilder.Axis(XPathAxis.DescendantOrSelf, XPathNodeType.All, null, null),
                                         ParseRelativePathPattern()
@@ -122,7 +123,7 @@ namespace System.Xml.Xsl.Xslt
         */
         private QilNode ParseIdKeyPattern()
         {
-            Debug.Assert(_scanner.CanBeFunction);
+            Debug.Assert(_scanner!.CanBeFunction);
             Debug.Assert(_scanner.Prefix.Length == 0);
             Debug.Assert(_scanner.Name == "id" || _scanner.Name == "key");
             List<QilNode> args = new List<QilNode>(2);
@@ -132,7 +133,7 @@ namespace System.Xml.Xsl.Xslt
                 _scanner.NextLex();
                 _scanner.PassToken(LexKind.LParens);
                 _scanner.CheckToken(LexKind.String);
-                args.Add(_ptrnBuilder.String(_scanner.StringValue));
+                args.Add(_ptrnBuilder!.String(_scanner.StringValue));
                 _scanner.NextLex();
                 _scanner.PassToken(LexKind.RParens);
                 return _ptrnBuilder.Function("", "id", args);
@@ -142,7 +143,7 @@ namespace System.Xml.Xsl.Xslt
                 _scanner.NextLex();
                 _scanner.PassToken(LexKind.LParens);
                 _scanner.CheckToken(LexKind.String);
-                args.Add(_ptrnBuilder.String(_scanner.StringValue));
+                args.Add(_ptrnBuilder!.String(_scanner.StringValue));
                 _scanner.NextLex();
                 _scanner.PassToken(LexKind.Comma);
                 _scanner.CheckToken(LexKind.String);
@@ -165,19 +166,19 @@ namespace System.Xml.Xsl.Xslt
             {
                 if (LocalAppContextSwitches.LimitXPathComplexity)
                 {
-                    throw _scanner.CreateException(SR.Xslt_InputTooComplex);
+                    throw _scanner!.CreateException(SR.Xslt_InputTooComplex);
                 }
             }
             QilNode opnd = ParseStepPattern();
-            if (_scanner.Kind == LexKind.Slash)
+            if (_scanner!.Kind == LexKind.Slash)
             {
                 _scanner.NextLex();
-                opnd = _ptrnBuilder.JoinStep(opnd, ParseRelativePathPattern());
+                opnd = _ptrnBuilder!.JoinStep(opnd, ParseRelativePathPattern());
             }
             else if (_scanner.Kind == LexKind.SlashSlash)
             {
                 _scanner.NextLex();
-                opnd = _ptrnBuilder.JoinStep(opnd,
+                opnd = _ptrnBuilder!.JoinStep(opnd,
                     _ptrnBuilder.JoinStep(
                         _ptrnBuilder.Axis(XPathAxis.DescendantOrSelf, XPathNodeType.All, null, null),
                         ParseRelativePathPattern()
@@ -197,7 +198,7 @@ namespace System.Xml.Xsl.Xslt
             QilNode opnd;
             XPathAxis axis;
 
-            switch (_scanner.Kind)
+            switch (_scanner!.Kind)
             {
                 case LexKind.Dot:
                 case LexKind.DotDot:
@@ -225,11 +226,11 @@ namespace System.Xml.Xsl.Xslt
             }
 
             XPathNodeType nodeType;
-            string nodePrefix, nodeName;
+            string? nodePrefix, nodeName;
             XPathParser.InternalParseNodeTest(_scanner, axis, out nodeType, out nodePrefix, out nodeName);
-            opnd = _ptrnBuilder.Axis(axis, nodeType, nodePrefix, nodeName);
+            opnd = _ptrnBuilder!.Axis(axis, nodeType, nodePrefix, nodeName);
 
-            XPathPatternBuilder xpathPatternBuilder = _ptrnBuilder as XPathPatternBuilder;
+            XPathPatternBuilder? xpathPatternBuilder = _ptrnBuilder as XPathPatternBuilder;
             if (xpathPatternBuilder != null)
             {
                 //for XPathPatternBuilder, get all predicates and then build them
@@ -256,9 +257,9 @@ namespace System.Xml.Xsl.Xslt
         */
         private QilNode ParsePredicate(QilNode context)
         {
-            Debug.Assert(_scanner.Kind == LexKind.LBracket);
+            Debug.Assert(_scanner!.Kind == LexKind.LBracket);
             _scanner.NextLex();
-            QilNode result = _predicateParser.Parse(_scanner, _ptrnBuilder.GetPredicateBuilder(context), LexKind.RBracket);
+            QilNode result = _predicateParser.Parse(_scanner, _ptrnBuilder!.GetPredicateBuilder(context), LexKind.RBracket);
             Debug.Assert(_scanner.Kind == LexKind.RBracket);
             _scanner.NextLex();
             return result;

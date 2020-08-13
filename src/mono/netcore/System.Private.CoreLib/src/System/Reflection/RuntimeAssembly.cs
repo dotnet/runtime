@@ -415,38 +415,29 @@ namespace System.Reflection
             if (name.Length == 0)
                 throw new ArgumentException(SR.Argument_EmptyFileName);
 
-            string location = Location;
-            if (location != null && Path.GetFileName(location) == name)
-                return new FileStream(location, FileMode.Open, FileAccess.Read);
-            string filename = (string)GetFilesInternal(name, true);
-            if (filename != null)
-                return new FileStream(filename, FileMode.Open, FileAccess.Read);
+            RuntimeModule? m = (RuntimeModule?)GetModule(name);
+
+            if (m != null)
+                return new FileStream(m.FullyQualifiedName, FileMode.Open, FileAccess.Read);
             else
                 return null;
         }
 
         public override FileStream[] GetFiles(bool getResourceModules)
         {
-            string[] names = (string[])GetFilesInternal(null, getResourceModules);
-            if (names == null)
+            Module[] modules = GetModules(getResourceModules);
+
+            if (modules.Length == 0)
                 return Array.Empty<FileStream>();
 
-            string location = Location;
+            FileStream[] res = new FileStream[modules.Length];
 
-            FileStream[] res;
-            if (location != string.Empty)
+            for (int i = 0; i < modules.Length; i++)
             {
-                res = new FileStream[names.Length + 1];
-                res[0] = new FileStream(location, FileMode.Open, FileAccess.Read);
-                for (int i = 0; i < names.Length; ++i)
-                    res[i + 1] = new FileStream(names[i], FileMode.Open, FileAccess.Read);
+                RuntimeModule m = (RuntimeModule)modules[i];
+                res[i] = new FileStream(m.FullyQualifiedName, FileMode.Open, FileAccess.Read);
             }
-            else
-            {
-                res = new FileStream[names.Length];
-                for (int i = 0; i < names.Length; ++i)
-                    res[i] = new FileStream(names[i], FileMode.Open, FileAccess.Read);
-            }
+
             return res;
         }
 

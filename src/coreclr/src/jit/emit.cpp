@@ -3867,7 +3867,7 @@ AGAIN:
             {
                 if (tgtIG)
                 {
-                    printf("to G_M%03u_IG%02u\n", emitComp->compMethodID, tgtIG->igNum);
+                    printf(" to G_M%03u_IG%02u\n", emitComp->compMethodID, tgtIG->igNum);
                 }
                 else
                 {

@@ -6,6 +6,7 @@
 
 namespace System.Data.OleDb
 {
+    [System.ComponentModel.DesignerAttribute("Microsoft.VSDesigner.Data.VS.OleDbCommandDesigner, Microsoft.VSDesigner, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
     public sealed partial class OleDbCommand : System.Data.Common.DbCommand, System.Data.IDbCommand, System.ICloneable, System.IDisposable
     {
         public OleDbCommand() { }
@@ -108,7 +109,7 @@ namespace System.Data.OleDb
         protected override System.Data.Common.DbCommand CreateDbCommand() { throw null; }
         protected override void Dispose(bool disposing) { }
         public override void EnlistTransaction(System.Transactions.Transaction? transaction) { }
-        public System.Data.DataTable GetOleDbSchemaTable(System.Guid schema, object?[]? restrictions) { throw null; }
+        public System.Data.DataTable? GetOleDbSchemaTable(System.Guid schema, object?[]? restrictions) { throw null; }
         public override System.Data.DataTable GetSchema() { throw null; }
         public override System.Data.DataTable GetSchema(string collectionName) { throw null; }
         public override System.Data.DataTable GetSchema(string collectionName, string?[]? restrictionValues) { throw null; }
@@ -140,6 +141,7 @@ namespace System.Data.OleDb
         public override bool Remove(string keyword) { throw null; }
         public override bool TryGetValue(string keyword, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out object? value) { throw null; }
     }
+    [System.ComponentModel.DesignerAttribute("Microsoft.VSDesigner.Data.VS.OleDbDataAdapterDesigner, Microsoft.VSDesigner, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
     public sealed partial class OleDbDataAdapter : System.Data.Common.DbDataAdapter, System.Data.IDataAdapter, System.Data.IDbDataAdapter, System.ICloneable
     {
         public OleDbDataAdapter() { }
@@ -160,13 +162,13 @@ namespace System.Data.OleDb
         public new System.Data.OleDb.OleDbCommand? UpdateCommand { get { throw null; } set { } }
         public event System.Data.OleDb.OleDbRowUpdatedEventHandler? RowUpdated { add { } remove { } }
         public event System.Data.OleDb.OleDbRowUpdatingEventHandler? RowUpdating { add { } remove { } }
-        protected override System.Data.Common.RowUpdatedEventArgs CreateRowUpdatedEvent(System.Data.DataRow dataRow, System.Data.IDbCommand command, System.Data.StatementType statementType, System.Data.Common.DataTableMapping tableMapping) { throw null; }
-        protected override System.Data.Common.RowUpdatingEventArgs CreateRowUpdatingEvent(System.Data.DataRow dataRow, System.Data.IDbCommand command, System.Data.StatementType statementType, System.Data.Common.DataTableMapping tableMapping) { throw null; }
+        protected override System.Data.Common.RowUpdatedEventArgs CreateRowUpdatedEvent(System.Data.DataRow dataRow, System.Data.IDbCommand? command, System.Data.StatementType statementType, System.Data.Common.DataTableMapping tableMapping) { throw null; }
+        protected override System.Data.Common.RowUpdatingEventArgs CreateRowUpdatingEvent(System.Data.DataRow dataRow, System.Data.IDbCommand? command, System.Data.StatementType statementType, System.Data.Common.DataTableMapping tableMapping) { throw null; }
         public int Fill(System.Data.DataSet dataSet, object ADODBRecordSet, string srcTable) { throw null; }
         public int Fill(System.Data.DataTable dataTable, object ADODBRecordSet) { throw null; }
         protected override void OnRowUpdated(System.Data.Common.RowUpdatedEventArgs value) { }
         protected override void OnRowUpdating(System.Data.Common.RowUpdatingEventArgs value) { }
-        object System.ICloneable.Clone() { throw null; }
+        object? System.ICloneable.Clone() { throw null; }
     }
     public sealed partial class OleDbDataReader : System.Data.Common.DbDataReader
     {
@@ -350,7 +352,7 @@ namespace System.Data.OleDb
         public override object? Value { get { throw null; } set { } }
         public override void ResetDbType() { }
         public void ResetOleDbType() { }
-        object System.ICloneable.Clone() { throw null; }
+        object? System.ICloneable.Clone() { throw null; }
         public override string ToString() { throw null; }
     }
     public sealed partial class OleDbParameterCollection : System.Data.Common.DbParameterCollection
@@ -399,13 +401,13 @@ namespace System.Data.OleDb
     }
     public sealed partial class OleDbRowUpdatedEventArgs : System.Data.Common.RowUpdatedEventArgs
     {
-        public OleDbRowUpdatedEventArgs(System.Data.DataRow dataRow, System.Data.IDbCommand command, System.Data.StatementType statementType, System.Data.Common.DataTableMapping tableMapping) : base (default(System.Data.DataRow), default(System.Data.IDbCommand), default(System.Data.StatementType), default(System.Data.Common.DataTableMapping)) { }
+        public OleDbRowUpdatedEventArgs(System.Data.DataRow dataRow, System.Data.IDbCommand? command, System.Data.StatementType statementType, System.Data.Common.DataTableMapping tableMapping) : base (default(System.Data.DataRow), default(System.Data.IDbCommand), default(System.Data.StatementType), default(System.Data.Common.DataTableMapping)) { }
         public new System.Data.OleDb.OleDbCommand? Command { get { throw null; } }
     }
     public delegate void OleDbRowUpdatedEventHandler(object sender, System.Data.OleDb.OleDbRowUpdatedEventArgs e);
     public sealed partial class OleDbRowUpdatingEventArgs : System.Data.Common.RowUpdatingEventArgs
     {
-        public OleDbRowUpdatingEventArgs(System.Data.DataRow dataRow, System.Data.IDbCommand command, System.Data.StatementType statementType, System.Data.Common.DataTableMapping tableMapping) : base (default(System.Data.DataRow), default(System.Data.IDbCommand), default(System.Data.StatementType), default(System.Data.Common.DataTableMapping)) { }
+        public OleDbRowUpdatingEventArgs(System.Data.DataRow dataRow, System.Data.IDbCommand? command, System.Data.StatementType statementType, System.Data.Common.DataTableMapping tableMapping) : base (default(System.Data.DataRow), default(System.Data.IDbCommand), default(System.Data.StatementType), default(System.Data.Common.DataTableMapping)) { }
         protected override System.Data.IDbCommand? BaseCommand { get { throw null; } set { } }
         public new System.Data.OleDb.OleDbCommand? Command { get { throw null; } set { } }
     }

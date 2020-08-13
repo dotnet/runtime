@@ -5,7 +5,7 @@
 #include "common.h"
 
 // This is a simplified implementation of IsTextUnicode.
-// https://github.com/dotnet/coreclr/issues/2307
+// https://github.com/dotnet/runtime/issues/4778
 BOOL IsTextUnicode(CONST VOID* lpv, int iSize, LPINT lpiResult)
 {
     *lpiResult = 0;

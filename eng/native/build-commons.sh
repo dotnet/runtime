@@ -158,6 +158,17 @@ EOF
         return
     fi
 
+    SAVED_CFLAGS="${CFLAGS}"
+    SAVED_CXXFLAGS="${CXXFLAGS}"
+    SAVED_LDFLAGS="${LDFLAGS}"
+
+    # Let users provide additional compiler/linker flags via EXTRA_CFLAGS/EXTRA_CXXFLAGS/EXTRA_LDFLAGS.
+    # If users directly override CFLAG/CXXFLAGS/LDFLAGS, that may lead to some configure tests working incorrectly.
+    # See https://github.com/dotnet/runtime/issues/35727 for more information.
+    export CFLAGS="${CFLAGS} ${EXTRA_CFLAGS}"
+    export CXXFLAGS="${CXXFLAGS} ${EXTRA_CXXFLAGS}"
+    export LDFLAGS="${LDFLAGS} ${EXTRA_LDFLAGS}"
+
     if [[ "$__StaticAnalyzer" == 1 ]]; then
         pushd "$intermediatesDir"
 
@@ -175,6 +186,10 @@ EOF
         echo "Executing $cmake_command --build \"$intermediatesDir\" --target install -- -j $__NumProc"
         $cmake_command --build "$intermediatesDir" --target install -- -j "$__NumProc"
     fi
+
+    CFLAGS="${SAVED_CFLAGS}"
+    CXXFLAGS="${SAVED_CXXFLAGS}"
+    LDFLAGS="${SAVED_LDFLAGS}"
 
     local exit_code="$?"
     if [[ "$exit_code" != 0 ]]; then

@@ -3,7 +3,6 @@
 
 using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.InteropServices;
 using System.Security.Principal;
 using System.Threading;
 using System.Threading.Tasks;
@@ -578,11 +577,11 @@ namespace System.IO.Pipes.Tests
 
             // Validate the length was expected
             string path = (string)e.ActualValue;
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+            if (OperatingSystem.IsLinux())
             {
                 Assert.Equal(108, path.Length);
             }
-            else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+            else if (OperatingSystem.IsMacOS())
             {
                 Assert.Equal(104, path.Length);
             }

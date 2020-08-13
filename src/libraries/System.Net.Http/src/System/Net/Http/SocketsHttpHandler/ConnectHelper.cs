@@ -61,6 +61,15 @@ namespace System.Net.Http
                     socket.Connect(new DnsEndPoint(host, port));
                 }
             }
+            catch (SocketException se)
+            {
+                socket.Dispose();
+
+                // SocketConnectionFactory wraps SocketException in NetworkException. Do the same here.
+                NetworkException ne = NetworkErrorHelper.MapSocketException(se);
+
+                throw CreateWrappedException(ne, host, port, cancellationToken);
+            }
             catch (Exception e)
             {
                 socket.Dispose();

@@ -653,6 +653,10 @@ int32_t SystemNative_Kill(int32_t pid, int32_t signal)
 {
     switch (signal)
     {
+        case PAL_NONE:
+             signal = 0;
+             break;
+
         case PAL_SIGKILL:
              signal = SIGKILL;
              break;
@@ -662,7 +666,7 @@ int32_t SystemNative_Kill(int32_t pid, int32_t signal)
              break;
 
         default:
-             assert_msg(false, "Unknown signal",signal);
+             assert_msg(false, "Unknown signal", signal);
              errno = EINVAL;
              return -1;
     }

@@ -6,7 +6,6 @@ using System.Collections.ObjectModel;
 using System.Globalization;
 using System.IO;
 using System.Linq;
-using System.Runtime.InteropServices;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.Text.RegularExpressions;
 using Microsoft.DotNet.RemoteExecutor;
@@ -16,8 +15,8 @@ namespace System.Tests
 {
     public static partial class TimeZoneInfoTests
     {
-        private static readonly bool s_isWindows = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
-        private static readonly bool s_isOSX = RuntimeInformation.IsOSPlatform(OSPlatform.OSX);
+        private static readonly bool s_isWindows = OperatingSystem.IsWindows();
+        private static readonly bool s_isOSX = OperatingSystem.IsMacOS();
 
         private static string s_strPacific = s_isWindows ? "Pacific Standard Time" : "America/Los_Angeles";
         private static string s_strSydney = s_isWindows ? "AUS Eastern Standard Time" : "Australia/Sydney";

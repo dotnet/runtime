@@ -1,10 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.ComponentModel;
 using System.Data.Common;
 
 namespace System.Data.Odbc
 {
+    [Designer("Microsoft.VSDesigner.Data.VS.OdbcDataAdapterDesigner, Microsoft.VSDesigner, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
     public sealed class OdbcDataAdapter : DbDataAdapter, IDbDataAdapter, ICloneable
     {
         private static readonly object s_eventRowUpdated = new object();

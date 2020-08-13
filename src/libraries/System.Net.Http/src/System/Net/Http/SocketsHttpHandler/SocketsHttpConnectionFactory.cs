@@ -79,6 +79,11 @@ namespace System.Net.Http
                 socket.NoDelay = true;
                 return new SocketConnection(socket);
             }
+            catch (SocketException socketException)
+            {
+                socket.Dispose();
+                throw NetworkErrorHelper.MapSocketException(socketException);
+            }
             catch
             {
                 socket.Dispose();

@@ -7401,6 +7401,7 @@ GenTreeCall* Compiler::fgGetStaticsCCtorHelper(CORINFO_CLASS_HANDLE cls, CorInfo
         case CORINFO_HELP_GETSHARED_NONGCSTATIC_BASE_DYNAMICCLASS:
         case CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE:
         case CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_DYNAMICCLASS:
+        case CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_DYNAMICCLASS:
             // type = TYP_BYREF;
             break;
 
@@ -7414,7 +7415,6 @@ GenTreeCall* Compiler::fgGetStaticsCCtorHelper(CORINFO_CLASS_HANDLE cls, CorInfo
 
         case CORINFO_HELP_GETSHARED_NONGCSTATIC_BASE:
         case CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE:
-        case CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_DYNAMICCLASS:
         case CORINFO_HELP_CLASSINIT_SHARED_DYNAMICCLASS:
             type = TYP_I_IMPL;
             break;
@@ -14704,9 +14704,9 @@ bool Compiler::fgOptimizeSwitchBranches(BasicBlock* block)
             LIR::ReadOnlyRange range(zeroConstNode, switchTree);
             m_pLowering->LowerRange(block, range);
         }
-        else
+        else if (fgStmtListThreaded)
         {
-            // Re-link the nodes for this statement.
+            gtSetStmtInfo(switchStmt);
             fgSetStmtSeq(switchStmt);
         }
 

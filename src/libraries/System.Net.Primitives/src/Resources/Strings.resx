@@ -114,4 +114,25 @@
   <data name="bad_endpoint_string" xml:space="preserve">
     <value>An invalid IPEndPoint was specified.</value>
   </data>
+  <data name="networkerror_unknown" xml:space="preserve">
+    <value>An unknown network error occurred.</value>
+  </data>
+  <data name="networkerror_addressinuse" xml:space="preserve">
+    <value>The requested EndPoint is already in use.</value>
+  </data>
+  <data name="networkerror_connectionrefused" xml:space="preserve">
+    <value>No connection could be made because the remote host actively refused it.</value>
+  </data>
+  <data name="networkerror_hostnotfound" xml:space="preserve">
+    <value>No such host is known.</value>
+  </data>
+  <data name="networkerror_operationaborted" xml:space="preserve">
+    <value>The operation was aborted by the user.</value>
+  </data>
+  <data name="networkerror_connectionaborted" xml:space="preserve">
+    <value>The connection was aborted by the local host.</value>
+  </data>
+  <data name="networkerror_connectionreset" xml:space="preserve">
+    <value>The connection was forcibly closed by the remote host.</value>
+  </data>
 </root>

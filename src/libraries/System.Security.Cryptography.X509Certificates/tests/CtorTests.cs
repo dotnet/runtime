@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Runtime.InteropServices;
 using Xunit;
 
 namespace System.Security.Cryptography.X509Certificates.Tests
@@ -354,13 +353,13 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             CryptographicException defaultException = new CryptographicException();
             Assert.NotEqual(defaultException.Message, ex.Message);
 
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            if (OperatingSystem.IsWindows())
             {
                 Assert.Equal(unchecked((int)0x80092009), ex.HResult);
                 // TODO (3233): Test that Message is also set correctly
                 //Assert.Equal("Cannot find the requested object.", ex.Message);
             }
-            else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+            else if (OperatingSystem.IsMacOS())
             {
                 Assert.Equal(-25257, ex.HResult);
             }

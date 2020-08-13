@@ -2664,11 +2664,12 @@ void MethodDesc::Save(DataImage *image)
 
     if (GetMethodDictionary())
     {
-        DWORD cBytes = DictionaryLayout::GetDictionarySizeFromLayout(GetNumGenericMethodArgs(), GetDictionaryLayout());
+        DWORD cSlotBytes;
+        DWORD cAllocBytes = DictionaryLayout::GetDictionarySizeFromLayout(GetNumGenericMethodArgs(), GetDictionaryLayout(), &cSlotBytes);
         void* pBytes = GetMethodDictionary()->AsPtr();
 
-        LOG((LF_ZAP, LL_INFO10000, "    MethodDesc::Save dictionary size %d\n", cBytes));
-        image->StoreStructure(pBytes, cBytes,
+        LOG((LF_ZAP, LL_INFO10000, "    MethodDesc::Save dictionary size %d\n", cSlotBytes));
+        image->StoreStructure(pBytes, cSlotBytes,
                             DataImage::ITEM_DICTIONARY_WRITEABLE);
     }
 

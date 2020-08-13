@@ -84,8 +84,8 @@ namespace System.Data
             }
         }
 
-        [MaybeNull]
-        public virtual DataViewSetting this[int index]
+        [DisallowNull]
+        public virtual DataViewSetting? this[int index]
         {
             get
             {

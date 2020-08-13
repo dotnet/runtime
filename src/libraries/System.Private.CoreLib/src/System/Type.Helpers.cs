@@ -304,7 +304,7 @@ namespace System
             {
                 for (i = 0; i < e.Length; i++)
                     if (e[i] != null)
-                        ret[cnt++] = e[i]!;  // TODO-NULLABLE: Indexer nullability tracked (https://github.com/dotnet/roslyn/issues/34644)
+                        ret[cnt++] = e[i]!; // TODO-NULLABLE: Indexer nullability tracked (https://github.com/dotnet/roslyn/issues/34644)
             }
 
             // Copy the Types
@@ -312,7 +312,7 @@ namespace System
             {
                 for (i = 0; i < t.Length; i++)
                     if (t[i] != null)
-                        ret[cnt++] = t[i]!;  // TODO-NULLABLE: Indexer nullability tracked (https://github.com/dotnet/roslyn/issues/34644)
+                        ret[cnt++] = t[i]!; // TODO-NULLABLE: Indexer nullability tracked (https://github.com/dotnet/roslyn/issues/34644)
             }
 
             return ret;

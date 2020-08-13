@@ -249,7 +249,7 @@ namespace System.Text.Json
                     ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(Converter.TypeToConvert);
                 }
 
-                value = default(T)!;
+                value = default(T);
                 success = true;
             }
             else

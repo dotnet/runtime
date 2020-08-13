@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#nullable enable
 using System.Diagnostics;
 using System.Xml.Schema;
 using System.Xml.Xsl.Qil;
@@ -289,7 +290,7 @@ namespace System.Xml.Xsl.XPath
         }
 
         // Returns null if the given expression is never a node-set
-        public QilNode TryEnsureNodeSet(QilNode n)
+        public QilNode? TryEnsureNodeSet(QilNode n)
         {
             if (n.XmlType.IsNode && n.XmlType.IsNotRtf)
             {
@@ -307,7 +308,7 @@ namespace System.Xml.Xsl.XPath
         // Throws an exception if the given expression is never a node-set
         public QilNode EnsureNodeSet(QilNode n)
         {
-            QilNode result = TryEnsureNodeSet(n);
+            QilNode? result = TryEnsureNodeSet(n);
             if (result == null)
             {
                 throw new XPathCompileException(SR.XPath_NodeSetExpected);

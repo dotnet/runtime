@@ -179,7 +179,7 @@ namespace System.Diagnostics
         public System.Diagnostics.Activity StartActivity(System.Diagnostics.Activity activity, object? args) { throw null; }
         public void StopActivity(System.Diagnostics.Activity activity, object? args) { }
     }
-    public enum ActivityDataRequest
+    public enum ActivitySamplingResult
     {
         None,
         PropagationData,
@@ -237,17 +237,18 @@ namespace System.Diagnostics
         public T Parent  { get { throw null; } }
         public System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, object?>> Tags  { get { throw null; } }
         public System.Collections.Generic.IEnumerable<System.Diagnostics.ActivityLink> Links  { get { throw null; } }
+        public System.Diagnostics.ActivityTagsCollection SamplingTags { get { throw null; } }
+        public System.Diagnostics.ActivityTraceId TraceId { get { throw null; } }
     }
-    public delegate System.Diagnostics.ActivityDataRequest GetRequestedData<T>(ref System.Diagnostics.ActivityCreationOptions<T> options);
+    public delegate System.Diagnostics.ActivitySamplingResult SampleActivity<T>(ref System.Diagnostics.ActivityCreationOptions<T> options);
     public sealed class ActivityListener : IDisposable
     {
         public ActivityListener() { throw null; }
         public System.Action<System.Diagnostics.Activity>? ActivityStarted { get { throw null; } set { throw null; } }
         public System.Action<System.Diagnostics.Activity>? ActivityStopped { get { throw null; } set { throw null; } }
         public System.Func<System.Diagnostics.ActivitySource, bool>? ShouldListenTo { get { throw null; } set { throw null; } }
-        public System.Diagnostics.GetRequestedData<string>? GetRequestedDataUsingParentId { get { throw null; } set { throw null; } }
-        public System.Diagnostics.GetRequestedData<ActivityContext>? GetRequestedDataUsingContext { get { throw null; } set { throw null; } }
-        public bool AutoGenerateRootContextTraceId { get { throw null; } set { throw null; } }
+        public System.Diagnostics.SampleActivity<string>? SampleUsingParentId { get { throw null; } set { throw null; } }
+        public System.Diagnostics.SampleActivity<ActivityContext>? Sample { get { throw null; } set { throw null; } }
         public void Dispose() { throw null; }
    }
 }

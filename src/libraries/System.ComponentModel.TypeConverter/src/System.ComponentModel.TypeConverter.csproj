@@ -119,7 +119,6 @@
     <Compile Include="System\ComponentModel\DataObjectMethodAttribute.cs" />
     <Compile Include="System\ComponentModel\DataObjectMethodType.cs" />
     <Compile Include="System\ComponentModel\DefaultBindingPropertyAttribute.cs" />
-    <Compile Include="System\ComponentModel\DesignerAttribute.cs" />
     <Compile Include="System\ComponentModel\DesignTimeVisibleAttribute.cs" />
     <Compile Include="System\ComponentModel\Design\IDesigner.cs" />
     <Compile Include="System\ComponentModel\Design\DesignerVerbCollection.cs" />

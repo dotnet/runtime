@@ -5125,7 +5125,7 @@
         "4.1.1.0": "4.3.0"
       }
     },
-    "System.Runtime.InteropServices.JavaScript": {
+    "System.Private.Runtime.InteropServices.JavaScript": {
       "InboxOn": {
         "net5.0": "5.0.0.0"
       }

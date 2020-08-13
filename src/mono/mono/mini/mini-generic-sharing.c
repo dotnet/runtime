@@ -1276,6 +1276,10 @@ get_wrapper_shared_type_full (MonoType *t, gboolean is_field)
 #else
 		return m_class_get_byval_arg (mono_defaults.uint32_class);
 #endif
+	case MONO_TYPE_R4:
+		return m_class_get_byval_arg (mono_defaults.single_class);
+	case MONO_TYPE_R8:
+		return m_class_get_byval_arg (mono_defaults.double_class);
 	case MONO_TYPE_OBJECT:
 	case MONO_TYPE_CLASS:
 	case MONO_TYPE_SZARRAY:

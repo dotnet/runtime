@@ -227,7 +227,7 @@ namespace System.Windows.Input
     [System.Windows.Markup.ValueSerializerAttribute("System.Windows.Input.CommandValueSerializer, PresentationFramework, Version=4.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, Custom=null")]
     public partial interface ICommand
     {
-        event System.EventHandler CanExecuteChanged;
+        event System.EventHandler? CanExecuteChanged;
         bool CanExecute(object? parameter);
         void Execute(object? parameter);
     }

@@ -2501,6 +2501,16 @@ mono_assembly_open_from_bundle (MonoAssemblyLoadContext *alc, const char *filena
 	for (i = 0; !image && bundles [i]; ++i) {
 		if (strcmp (bundles [i]->name, is_satellite ? filename : name) == 0) {
 			image = mono_image_open_from_data_internal (alc, (char*)bundles [i]->data, bundles [i]->size, FALSE, status, refonly, FALSE, name);
+#if defined(TARGET_WASM) && defined(ENABLE_NETCORE)
+			/* 
+			 * Since bundled images do not exist on disk, don't give them a legit file name.
+			 * This is the expected behavior for single file exe's. 
+			 */
+			if (image->filename)
+				g_free (image->filename);
+
+			image->filename = NULL;
+#endif
 			break;
 		}
 	}

@@ -233,7 +233,7 @@ namespace System.IO
                     case Interop.Error.EROFS:
                         // EROFS means the file system is read-only
                         // Need to manually check file existence
-                        // github.com/dotnet/corefx/issues/21273
+                        // https://github.com/dotnet/runtime/issues/22382
                         Interop.ErrorInfo fileExistsError;
 
                         // Input allows trailing separators in order to match Windows behavior

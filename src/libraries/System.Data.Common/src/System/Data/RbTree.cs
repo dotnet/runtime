@@ -96,8 +96,8 @@ namespace System.Data
         internal const int DefaultPageSize = 32; /* 512 = 2^9 32 million nodes*/
         internal const int NIL = 0;                  // 0th page, 0th slot for each tree till CLR static & generics issue is fixed
 
-        private TreePage?[] _pageTable = default!; // initial size 4, then doubles (grows) - it never shrinks. Late-initialized to non-null in InitTree.
-        private int[] _pageTableMap = default!; // Late-initialized to non-null in InitTree
+        private TreePage?[] _pageTable; // initial size 4, then doubles (grows) - it never shrinks.
+        private int[] _pageTableMap;
         private int _inUsePageCount;    // contains count of allocated pages per tree, its <= the capacity of  pageTable
         private int _nextFreePageLine;   // used for keeping track of position of last used free page in pageTable
         public int root;
@@ -107,8 +107,8 @@ namespace System.Data
         private int _inUseSatelliteTreeCount; // total number of satellite associated with this tree.
         private readonly TreeAccessMethod _accessMethod;
 
-        protected abstract int CompareNode([AllowNull] K record1, [AllowNull] K record2);
-        protected abstract int CompareSateliteTreeNode([AllowNull] K record1, [AllowNull] K record2);
+        protected abstract int CompareNode(K? record1, K? record2);
+        protected abstract int CompareSateliteTreeNode(K? record1, K? record2);
 
         protected RBTree(TreeAccessMethod accessMethod)
         {
@@ -116,6 +116,8 @@ namespace System.Data
             InitTree();
         }
 
+        [MemberNotNull(nameof(_pageTable))]
+        [MemberNotNull(nameof(_pageTableMap))]
         private void InitTree()
         {
             root = NIL;
@@ -337,7 +339,7 @@ namespace System.Data
          * Use bitmap associated with page to allocate a slot.
          * mark the slot as used and return its index.
          */
-        private int GetNewNode([AllowNull] K key)
+        private int GetNewNode(K? key)
         {
             // find page with free slots, if none, allocate a new page
             TreePage? page = null;
@@ -1205,7 +1207,7 @@ namespace System.Data
             return root_id;
         }
 
-        private int SearchSubTree(int root_id, [AllowNull] K key)
+        private int SearchSubTree(int root_id, K? key)
         {
             if (root_id != NIL && _accessMethod != TreeAccessMethod.KEY_SEARCH_AND_INDEX)
             {
@@ -1556,7 +1558,7 @@ namespace System.Data
 
         // Begin: List of methods for making it easy to work with ArrayList
 
-        public int Add([AllowNull] K item) //Insert (int record)
+        public int Add(K? item) //Insert (int record)
         {
             int nodeId = GetNewNode(item);
             RBInsert(NIL, nodeId, NIL, -1, false);
@@ -1875,8 +1877,7 @@ namespace System.Data
             internal int _parentId;
             internal int _nextId;      // multiple records associated with same key
             internal int _subTreeSize;     // number of nodes in subtree rooted at the current node
-            [AllowNull, MaybeNull]
-            internal K _keyOfNode;
+            internal K? _keyOfNode;
             internal NodeColor _nodeColor;
         }
 
@@ -2042,8 +2043,7 @@ namespace System.Data
             private readonly RBTree<K> _tree;
             private readonly int _version;
             private int _index, _mainTreeNodeId;
-            [AllowNull, MaybeNull]
-            private K _current;
+            private K? _current;
 
             internal RBTreeEnumerator(RBTree<K> tree)
             {

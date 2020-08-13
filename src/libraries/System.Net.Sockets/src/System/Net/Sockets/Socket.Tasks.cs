@@ -154,7 +154,7 @@ namespace System.Net.Sockets
             Debug.Assert(saea.BufferList == null);
             saea.SetBuffer(buffer);
             saea.SocketFlags = socketFlags;
-            saea.WrapExceptionsInIOExceptions = fromNetworkStream;
+            saea.WrapExceptionsInNetworkExceptions = fromNetworkStream;
             return saea.ReceiveAsync(this, cancellationToken);
         }
 
@@ -237,7 +237,7 @@ namespace System.Net.Sockets
             Debug.Assert(saea.BufferList == null);
             saea.SetBuffer(MemoryMarshal.AsMemory(buffer));
             saea.SocketFlags = socketFlags;
-            saea.WrapExceptionsInIOExceptions = false;
+            saea.WrapExceptionsInNetworkExceptions = false;
             return saea.SendAsync(this, cancellationToken);
         }
 
@@ -255,7 +255,7 @@ namespace System.Net.Sockets
             Debug.Assert(saea.BufferList == null);
             saea.SetBuffer(MemoryMarshal.AsMemory(buffer));
             saea.SocketFlags = socketFlags;
-            saea.WrapExceptionsInIOExceptions = true;
+            saea.WrapExceptionsInNetworkExceptions = true;
             return saea.SendAsyncForNetworkStream(this, cancellationToken);
         }
 
@@ -577,7 +577,7 @@ namespace System.Net.Sockets
                 _isReadForCaching = isReceiveForCaching;
             }
 
-            public bool WrapExceptionsInIOExceptions { get; set; }
+            public bool WrapExceptionsInNetworkExceptions { get; set; }
 
             private void Release()
             {
@@ -885,8 +885,8 @@ namespace System.Net.Sockets
                     e = ExceptionDispatchInfo.SetCurrentStackTrace(e);
                 }
 
-                return WrapExceptionsInIOExceptions ?
-                    new IOException(SR.Format(SR.net_io_readfailure, e.Message), e) :
+                return WrapExceptionsInNetworkExceptions ?
+                    NetworkErrorHelper.MapSocketException((SocketException)e) :
                     e;
             }
         }

@@ -188,7 +188,6 @@ namespace System.Net.Tests
             string path = Path.GetTempFileName();
             try
             {
-                var data = new byte[1024];
                 WebRequest request = WebRequest.Create("file://" + path);
                 request.Method = WebRequestMethods.File.UploadFile;
                 using (WebResponse response = await GetResponseAsync(request))

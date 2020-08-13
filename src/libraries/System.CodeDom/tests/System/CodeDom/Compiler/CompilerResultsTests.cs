@@ -31,7 +31,7 @@ namespace System.CodeDom.Compiler.Tests
         [Fact]
         public void CompiledAssembly_GetWithPathToAssemblySet_ReturnsExpectedAssembly()
         {
-            var results = new CompilerResults(null) { PathToAssembly = (PlatformDetection.IsBrowser ? "/" : string.Empty) + typeof(CompilerResultsTests).Assembly.Location };
+            var results = new CompilerResults(null) { PathToAssembly = AssemblyPathHelper.GetAssemblyLocation(typeof(CompilerResultsTests).Assembly) };
 
             Assert.NotNull(results.CompiledAssembly);
             Assert.Equal(typeof(CompilerResultsTests).Assembly.FullName, results.CompiledAssembly.FullName);

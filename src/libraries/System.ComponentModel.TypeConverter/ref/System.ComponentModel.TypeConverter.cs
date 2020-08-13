@@ -381,20 +381,6 @@ namespace System.ComponentModel
         public override bool Equals(object obj) { throw null; }
         public override int GetHashCode() { throw null; }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Interface, AllowMultiple=true, Inherited=true)]
-    public sealed partial class DesignerAttribute : System.Attribute
-    {
-        public DesignerAttribute(string designerTypeName) { }
-        public DesignerAttribute(string designerTypeName, string designerBaseTypeName) { }
-        public DesignerAttribute(string designerTypeName, System.Type designerBaseType) { }
-        public DesignerAttribute(System.Type designerType) { }
-        public DesignerAttribute(System.Type designerType, System.Type designerBaseType) { }
-        public string DesignerBaseTypeName { get { throw null; } }
-        public string DesignerTypeName { get { throw null; } }
-        public override object TypeId { get { throw null; } }
-        public override bool Equals(object obj) { throw null; }
-        public override int GetHashCode() { throw null; }
-    }
     [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Interface)]
     public sealed partial class DesignTimeVisibleAttribute : System.Attribute
     {
@@ -833,6 +819,7 @@ namespace System.ComponentModel
         public override bool Equals(object obj) { throw null; }
         public override int GetHashCode() { throw null; }
     }
+    [System.ComponentModel.DesignerAttribute("System.Windows.Forms.Design.ComponentDocumentDesigner, System.Design, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a", typeof(System.ComponentModel.Design.IRootDesigner))]
     [System.ComponentModel.DesignerCategoryAttribute("Component")]
     [System.ComponentModel.TypeConverterAttribute(typeof(System.ComponentModel.ComponentConverter))]
     public partial class MarshalByValueComponent : System.ComponentModel.IComponent, System.IDisposable, System.IServiceProvider
@@ -1349,9 +1336,9 @@ namespace System.ComponentModel
         internal TypeDescriptor() { }
         [System.ObsoleteAttribute("This property has been deprecated. Use a type description provider to supply type information for COM types instead. https://go.microsoft.com/fwlink/?linkid=14202")]
         public static System.ComponentModel.IComNativeDescriptorHandler ComNativeDescriptorHandler { get { throw null; } set { } }
-        public static System.Type ComObjectType { get { throw null; } }
+        public static System.Type ComObjectType { [return: System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] get { throw null; } }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
-        public static System.Type InterfaceType { get { throw null; } }
+        public static System.Type InterfaceType { [return: System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] get { throw null; } }
         public static event System.ComponentModel.RefreshEventHandler Refreshed { add { } remove { } }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
         public static System.ComponentModel.TypeDescriptionProvider AddAttributes(object instance, params System.Attribute[] attributes) { throw null; }

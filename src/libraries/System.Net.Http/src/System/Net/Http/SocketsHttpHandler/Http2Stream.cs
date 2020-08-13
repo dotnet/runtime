@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Net.Http.Headers;
+using System.Net.Http.HPack;
 using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
 using System.Text;
@@ -351,7 +352,11 @@ namespace System.Net.Http
                     _creditWaiter = null;
                 }
 
-                if (HttpTelemetry.Log.IsEnabled()) HttpTelemetry.Log.RequestStop();
+                if (HttpTelemetry.Log.IsEnabled())
+                {
+                    bool aborted = _requestCompletionState == StreamCompletionState.Failed || _responseCompletionState == StreamCompletionState.Failed;
+                    _request.OnStopped(aborted);
+                }
             }
 
             private void Cancel()
@@ -387,7 +392,7 @@ namespace System.Net.Http
                     _waitSource.SetResult(true);
                 }
 
-                if (HttpTelemetry.Log.IsEnabled()) HttpTelemetry.Log.RequestAborted();
+                if (HttpTelemetry.Log.IsEnabled()) _request.OnAborted();
             }
 
             // Returns whether the waiter should be signalled or not.
@@ -440,13 +445,14 @@ namespace System.Net.Http
             void IHttpHeadersHandler.OnStaticIndexedHeader(int index)
             {
                 // TODO: https://github.com/dotnet/runtime/issues/1505
-                Debug.Fail("Currently unused by HPACK, this should never be called.");
+                ref readonly HeaderField entry = ref H2StaticTable.Get(index - 1);
+                OnHeader(entry.Name, entry.Value);
             }
 
             void IHttpHeadersHandler.OnStaticIndexedHeader(int index, ReadOnlySpan<byte> value)
             {
                 // TODO: https://github.com/dotnet/runtime/issues/1505
-                Debug.Fail("Currently unused by HPACK, this should never be called.");
+                OnHeader(H2StaticTable.Get(index - 1).Name, value);
             }
 
             public void OnHeader(ReadOnlySpan<byte> name, ReadOnlySpan<byte> value)
@@ -1146,6 +1152,10 @@ namespace System.Net.Http
                 if (!fullyConsumed)
                 {
                     Cancel();
+                }
+                else
+                {
+                    _request.OnStopped();
                 }
 
                 _responseBuffer.Dispose();

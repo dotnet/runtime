@@ -90,7 +90,7 @@ namespace System.Reflection.Emit
         }
 
         [DynamicDependency(nameof(state))]  // Automatically keeps all previous fields too due to StructLayout
-        [DynamicDependency(nameof(IsAssignableTo))] // Used from reflection.c: mono_reflection_call_is_assignable_to
+        [DynamicDependency(nameof(IsAssignableToInternal))] // Used from reflection.c: mono_reflection_call_is_assignable_to
         internal TypeBuilder(ModuleBuilder mb, TypeAttributes attr, int table_idx)
         {
             this.parent = null;
@@ -107,7 +107,7 @@ namespace System.Reflection.Emit
             Justification = "Linker doesn't analyze ResolveUserType but it's an identity function")]
 
         [DynamicDependency(nameof(state))]  // Automatically keeps all previous fields too due to StructLayout
-        [DynamicDependency(nameof(IsAssignableTo))] // Used from reflection.c: mono_reflection_call_is_assignable_to
+        [DynamicDependency(nameof(IsAssignableToInternal))] // Used from reflection.c: mono_reflection_call_is_assignable_to
         internal TypeBuilder(ModuleBuilder mb, string fullname, TypeAttributes attr, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]Type? parent, Type[]? interfaces, PackingSize packing_size, int type_size, Type? nesting_type)
         {
             int sep_index;
@@ -1718,7 +1718,7 @@ namespace System.Reflection.Emit
         }
 
         // FIXME: "arrays"
-        internal bool IsAssignableTo([NotNullWhen(true)] Type? c)
+        internal bool IsAssignableToInternal([NotNullWhen(true)] Type? c)
         {
             if (c == this)
                 return true;

@@ -52,7 +52,7 @@ namespace System.Runtime.InteropServices
         }
 
         [SupportedOSPlatform("windows")]
-        public static TWrapper CreateWrapperOfType<T, TWrapper>([AllowNull] T o)
+        public static TWrapper CreateWrapperOfType<T, TWrapper>(T? o)
         {
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_ComInterop);
         }
@@ -122,7 +122,7 @@ namespace System.Runtime.InteropServices
         }
 
         [SupportedOSPlatform("windows")]
-        public static void GetNativeVariantForObject<T>([AllowNull] T obj, IntPtr pDstNativeVariant)
+        public static void GetNativeVariantForObject<T>(T? obj, IntPtr pDstNativeVariant)
         {
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_ComInterop);
         }
@@ -146,8 +146,7 @@ namespace System.Runtime.InteropServices
         }
 
         [SupportedOSPlatform("windows")]
-        [return: MaybeNull]
-        public static T GetObjectForNativeVariant<T>(IntPtr pSrcNativeVariant)
+        public static T? GetObjectForNativeVariant<T>(IntPtr pSrcNativeVariant)
         {
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_ComInterop);
         }

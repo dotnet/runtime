@@ -1363,14 +1363,14 @@ namespace System.Diagnostics.Tracing
                 if (m_etwProvider != null)
                 {
                     m_etwProvider.Dispose();
-                    m_etwProvider = null!; // TODO-NULLABLE: Avoid nulling out in Dispose
+                    m_etwProvider = null!;
                 }
 #endif
 #if FEATURE_PERFTRACING
                 if (m_eventPipeProvider != null)
                 {
                     m_eventPipeProvider.Dispose();
-                    m_eventPipeProvider = null!; // TODO-NULLABLE: Avoid nulling out in Dispose
+                    m_eventPipeProvider = null!;
                 }
 #endif
             }
