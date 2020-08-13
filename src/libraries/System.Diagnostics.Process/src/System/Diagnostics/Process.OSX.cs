@@ -101,7 +101,7 @@ namespace System.Diagnostics
             catch (Win32Exception)
             {
                 // It will throw System.ComponentModel.Win32Exception (2): No such file or Directory when
-                // the executable file be deleted.
+                // the executable file is deleted.
                 return null;
             }
         }
