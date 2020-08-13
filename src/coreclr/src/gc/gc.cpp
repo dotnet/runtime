@@ -8293,44 +8293,16 @@ static void do_vxsort (uint8_t** item_array, ptrdiff_t item_count, uint8_t* rang
 
     if (IsSupportedInstructionSet (InstructionSet::AVX2) && (item_count > AVX2_THRESHOLD_SIZE))
     {
-        // is the range small enough for a 32-bit sort?
-        // the 32-bit sort is almost twice as fast
-        ptrdiff_t range = range_high - range_low;
-        assert(sizeof(uint8_t*) == (1 << 3));
-        ptrdiff_t scaled_range = range >> 3;
-        if ((uint32_t)scaled_range == scaled_range)
+        dprintf(3, ("Sorting mark lists"));
+
+        // use AVX512F only if the list is large enough to pay for downclocking impact
+        if (IsSupportedInstructionSet (InstructionSet::AVX512F) && (item_count > AVX512F_THRESHOLD_SIZE))
         {
-            dprintf (3, ("Sorting mark lists as 32-bit offsets"));
-
-            do_pack_avx2 (item_array, item_count, range_low);
-
-            int32_t* item_array_32 = (int32_t*)item_array;
-
-            // use AVX512F only if the list is large enough to pay for downclocking impact
-            if (IsSupportedInstructionSet (InstructionSet::AVX512F) && (item_count > AVX512F_THRESHOLD_SIZE))
-            {
-                do_vxsort_avx512 (item_array_32, &item_array_32[item_count - 1]);
-            }
-            else
-            {
-                do_vxsort_avx2 (item_array_32, &item_array_32[item_count - 1]);
-            }
-
-            do_unpack_avx2 (item_array_32, item_count, range_low);
+            do_vxsort_avx512 (item_array, &item_array[item_count - 1], range_low, range_high);
         }
         else
         {
-            dprintf(3, ("Sorting mark lists"));
-
-            // use AVX512F only if the list is large enough to pay for downclocking impact
-            if (IsSupportedInstructionSet (InstructionSet::AVX512F) && (item_count > AVX512F_THRESHOLD_SIZE))
-            {
-                do_vxsort_avx512 (item_array, &item_array[item_count - 1]);
-            }
-            else
-            {
-                do_vxsort_avx2 (item_array, &item_array[item_count - 1]);
-            }
+            do_vxsort_avx2 (item_array, &item_array[item_count - 1], range_low, range_high);
         }
     }
     else

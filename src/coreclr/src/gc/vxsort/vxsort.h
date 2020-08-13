@@ -17,22 +17,28 @@
 #include <assert.h>
 #include <immintrin.h>
 
-
 #include "defs.h"
-//#include "isa_detection.h"
 #include "alignment.h"
 #include "machine_traits.h"
+#ifdef VXSORT_STATS
+#include "vxsort_stats.h"
+#endif //VXSORT_STATS
+#include "packer.h"
 #include "smallsort/bitonic_sort.h"
-
-//#include <algorithm>
-//#include <cstring>
-//#include <cstdint>
 
 namespace vxsort {
 using vxsort::smallsort::bitonic;
 
-
-template <typename T, vector_machine M, int Unroll=1>
+/**
+ * sort primitives, quickly
+ * @tparam T The primitive type being sorted
+ * @tparam M The vector machine model/ISA (e.g. AVX2, AVX512 etc.)
+ * @tparam Unroll The unroll factor, controls to some extent, the code-bloat/speedup ration at the call site
+ *                Defaults to 1
+ * @tparam Shift Optional; specify how many LSB bits are known to be zero in the original input. Can be used
+ *               to further speed up sorting.
+ */
+template <typename T, vector_machine M, int Unroll=1, int Shift=0>
 class vxsort {
     static_assert(Unroll >= 1, "Unroll can be in the range 1..12");
     static_assert(Unroll <= 12, "Unroll can be in the range 1..12");
@@ -40,6 +46,7 @@ class vxsort {
 private:
     using MT = vxsort_machine_traits<T, M>;
     typedef typename MT::TV TV;
+    typedef typename MT::TPACK TPACK;
     typedef alignment_hint<sizeof(TV)> AH;
 
     static const int ELEMENT_ALIGN = sizeof(T) - 1;
@@ -64,6 +71,18 @@ private:
     static const int PARTITION_TMP_SIZE_IN_ELEMENTS =
             (2 * SLACK_PER_SIDE_IN_ELEMENTS + N + 4*N);
 
+    void reset(T* start, T* end) {
+        _depth = 0;
+        _startPtr = start;
+        _endPtr = end;
+    }
+
+    T* _startPtr = nullptr;
+    T* _endPtr = nullptr;
+
+    T _temp[PARTITION_TMP_SIZE_IN_ELEMENTS];
+    int _depth = 0;
+
     static int floor_log2_plus_one(size_t n) {
         auto result = 0;
         while (n >= 1) {
@@ -81,18 +100,6 @@ private:
         if (*left <= *right)
             return;
         swap(left, right);
-    }
-
-    static void insertion_sort(T* lo, T* hi) {
-        for (auto i = lo + 1; i <= hi; i++) {
-            auto j = i;
-            auto t = *i;
-            while ((j > lo) && (t < *(j - 1))) {
-                *j = *(j - 1);
-                j--;
-            }
-            *j = t;
-        }
     }
 
     static void heap_sort(T* lo, T* hi) {
@@ -121,18 +128,6 @@ private:
         }
         *(lo + i - 1) = d;
     }
-
-    void reset(T* start, T* end) {
-        _depth = 0;
-        _startPtr = start;
-        _endPtr = end;
-    }
-
-    T* _startPtr = nullptr;
-    T* _endPtr = nullptr;
-
-    T _temp[PARTITION_TMP_SIZE_IN_ELEMENTS];
-    int _depth = 0;
 
     NOINLINE
     T* align_left_scalar_uncommon(T* read_left, T pivot,
@@ -172,8 +167,8 @@ private:
         return readRight;
     }
 
-    void sort(T* left, T* right, AH realignHint,
-              int depthLimit) {
+    void sort(T* left, T* right, T left_hint, T right_hint, AH realignHint,
+              int depth_limit) {
         auto length = (size_t)(right - left + 1);
 
         T* mid;
@@ -194,16 +189,11 @@ private:
 
         // Go to insertion sort below this threshold
         if (length <= SMALL_SORT_THRESHOLD_ELEMENTS) {
-
-            auto nextLength = (length & (N-1)) > 0 ? (length + N) & ~(N-1) : length;
-
-            auto extraSpaceNeeded = nextLength - length;
-            auto fakeLeft = left - extraSpaceNeeded;
-            if (fakeLeft >= _startPtr) {
-                bitonic<T, M>::sort(fakeLeft, nextLength);
-            } else {
-                insertion_sort(left, right);
-            }
+#ifdef VXSORT_STATS
+            vxsort_stats<T>::bump_small_sorts();
+            vxsort_stats<T>::record_small_sort_size(length);
+#endif
+            bitonic<T, M>::sort(left, length);
             return;
         }
 
@@ -211,12 +201,24 @@ private:
         // will not do well:
         // 1. Reverse sorted array
         // 2. High degree of repeated values (dutch flag problem, one value)
-        if (depthLimit == 0) {
+        if (depth_limit == 0) {
             heap_sort(left, right);
             _depth--;
             return;
         }
-        depthLimit--;
+
+        depth_limit--;
+
+
+        if (MT::supports_packing()) {
+            if (MT::template can_pack<Shift>(right_hint - left_hint)) {
+                packer<T, TPACK, M, Shift, 2, SMALL_SORT_THRESHOLD_ELEMENTS>::pack(left, length, left_hint);
+                auto packed_sorter = vxsort<TPACK, M, Unroll>();
+                packed_sorter.sort((TPACK *) left, ((TPACK *) left) + length - 1);
+                packer<T, TPACK, M, Shift, 2, SMALL_SORT_THRESHOLD_ELEMENTS>::unpack((TPACK *) left, length, left_hint);
+                return;
+            }
+        }
 
         // This is going to be a bit weird:
         // Pre/Post alignment calculations happen here: we prepare hints to the
@@ -274,11 +276,9 @@ private:
                 vectorized_partition<SafeInnerUnroll>(left, right, realignHint) :
                 vectorized_partition<Unroll>(left, right, realignHint);
 
-
-
         _depth++;
-        sort(left, sep - 2, realignHint.realign_right(), depthLimit);
-        sort(sep, right, realignHint.realign_left(), depthLimit);
+        sort(left, sep - 2, left_hint, *sep, realignHint.realign_right(), depth_limit);
+        sort(sep, right, *(sep - 2), right_hint, realignHint.realign_left(), depth_limit);
         _depth--;
     }
 
@@ -287,6 +287,10 @@ private:
                                        const TV& P,
                                        T*& left,
                                        T*& right) {
+#ifdef VXSORT_STATS
+        vxsort_stats<T>::bump_vec_loads();
+        vxsort_stats<T>::bump_vec_stores(2);
+#endif
       if (MT::supports_compress_writes()) {
         partition_block_with_compress(dataVec, P, left, right);
       } else {
@@ -298,6 +302,9 @@ private:
                                                         const TV& P,
                                                         T*& left,
                                                         T*& right) {
+#ifdef VXSORT_STATS
+        vxsort_stats<T>::bump_perms();
+#endif
         auto mask = MT::get_cmpgt_mask(dataVec, P);
         dataVec = MT::partition_vector(dataVec, mask);
         MT::store_vec(reinterpret_cast<TV*>(left), dataVec);
@@ -324,6 +331,10 @@ private:
         assert(right - left >= SMALL_SORT_THRESHOLD_ELEMENTS);
         assert((reinterpret_cast<size_t>(left) & ELEMENT_ALIGN) == 0);
         assert((reinterpret_cast<size_t>(right) & ELEMENT_ALIGN) == 0);
+
+#ifdef VXSORT_STATS
+        vxsort_stats<T>::bump_partitions((right - left) + 1);
+#endif
 
         // Vectorized double-pumped (dual-sided) partitioning:
         // We start with picking a pivot using the media-of-3 "method"
@@ -505,7 +516,7 @@ private:
         *writeLeft++ = pivot;
 
         assert(writeLeft > left);
-        assert(writeLeft <= right);
+        assert(writeLeft <= right+1);
 
         return writeLeft;
     }
@@ -525,6 +536,11 @@ private:
         const auto lai = leftAlign >> 31;
         const auto preAlignedLeft  = (TV*) (left + leftAlign);
         const auto preAlignedRight = (TV*) (right + rightAlign - N);
+
+#ifdef VXSORT_STATS
+        vxsort_stats<T>::bump_vec_loads(2);
+        vxsort_stats<T>::bump_vec_stores(4);
+#endif
 
         // Alignment with vectorization is tricky, so read carefully before changing code:
         // 1. We load data, which we might need to align, if the alignment hints
@@ -565,6 +581,9 @@ private:
           tmpStartRight -= rightAlign & rai;
         }
         else {
+#ifdef VXSORT_STATS
+            vxsort_stats<T>::bump_perms(2);
+#endif
             RT0 = MT::partition_vector(RT0, rtMask);
             LT0 = MT::partition_vector(LT0, ltMask);
             MT::store_vec((TV*) tmpRight, RT0);
@@ -588,10 +607,27 @@ private:
     }
 
    public:
-    NOINLINE void sort(T* left, T* right) {
+    /**
+     * Sort a given range
+     * @param left The left edge of the range, including
+     * @param right The right edge of the range, including
+     * @param left_hint Optional; A hint, Use to speed up the sorting operation, describing a single value that is known to be
+     *        smaller-than, or equalt to all values contained within the provided array.
+     * @param right_hint Optional; A hint, Use to speed up the sorting operation, describing a single value that is known to be
+     *        larger-than than all values contained within the provided array.
+     */
+    NOINLINE void sort(T* left, T* right,
+                       T left_hint = std::numeric_limits<T>::Min(),
+                       T right_hint = std::numeric_limits<T>::Max())
+    {
+//        init_isa_detection();
+
+#ifdef VXSORT_STATS
+        vxsort_stats<T>::bump_sorts((right - left) + 1);
+#endif
         reset(left, right);
         auto depthLimit = 2 * floor_log2_plus_one(right + 1 - left);
-        sort(left, right, AH(), depthLimit);
+        sort(left, right, left_hint, right_hint, AH(), depthLimit);
     }
 };
 
