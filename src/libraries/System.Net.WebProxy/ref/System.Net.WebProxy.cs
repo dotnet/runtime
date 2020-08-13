@@ -27,6 +27,7 @@ namespace System.Net
         public WebProxy(System.Uri? Address, bool BypassOnLocal, string[]? BypassList, System.Net.ICredentials? Credentials) { }
         public System.Uri? Address { get { throw null; } set { } }
         public System.Collections.ArrayList BypassArrayList { get { throw null; } }
+        [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public string[] BypassList { get { throw null; } set { } }
         public bool BypassProxyOnLocal { get { throw null; } set { } }
         public System.Net.ICredentials? Credentials { get { throw null; } set { } }
