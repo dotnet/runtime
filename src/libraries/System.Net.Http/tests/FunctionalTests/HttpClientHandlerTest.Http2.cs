@@ -1503,7 +1503,7 @@ namespace System.Net.Http.Functional.Tests
                     }
 
                     // Let connection live until server finishes.
-                    await serverFinished.Task.TimeoutAfter(pingTimeout * 2);
+                    await Task.WhenAny(serverFinished.Task, Task.Delay(pingTimeout * 3));
                 },
                 async server =>
                 {
@@ -1534,7 +1534,10 @@ namespace System.Net.Http.Functional.Tests
                         {
                             ping = await connection.ReadPingAsync(pingTimeout);
                         }
-                        await Task.Delay(pongDelay);
+                        if (pongDelay > TimeSpan.Zero)
+                        {
+                            await Task.Delay(pongDelay);
+                        }
 
                         await connection.SendPingAckAsync(ping.Data);
                     }
@@ -1555,6 +1558,16 @@ namespace System.Net.Http.Functional.Tests
                     }
                     else
                     {
+                        // If the pings were recently coming, just give the connection time to clear up streams
+                        // and still accept one stray ping.
+                        if (expectStreamPing)
+                        {
+                            try
+                            {
+                                await connection.ReadPingAsync(pingTimeout);
+                            }
+                            catch (OperationCanceledException) { } // if it failed once, it will fail again
+                        }
                         await Assert.ThrowsAsync<OperationCanceledException>(() => connection.ReadPingAsync(pingTimeout));
                     }
                     serverFinished.SetResult();
