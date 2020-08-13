@@ -1451,6 +1451,117 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
+        public static IEnumerable<object[]> KeepAliveTestDataSource()
+        {
+            yield return new object[] { Timeout.InfiniteTimeSpan, HttpKeepAlivePingPolicy.Always, false };
+            yield return new object[] { TimeSpan.FromSeconds(1), HttpKeepAlivePingPolicy.WithActiveRequests, false };
+            yield return new object[] { TimeSpan.FromSeconds(1), HttpKeepAlivePingPolicy.Always, false };
+            yield return new object[] { TimeSpan.FromSeconds(1), HttpKeepAlivePingPolicy.WithActiveRequests, true };
+        }
+
+        [OuterLoop("Significant delay.")]
+        [MemberData(nameof(KeepAliveTestDataSource))]
+        [ConditionalTheory(nameof(SupportsAlpn))]
+        public async Task Http2_PingKeepAlive(TimeSpan keepAlivePingDelay, HttpKeepAlivePingPolicy keepAlivePingPolicy, bool expectRequestFail)
+        {
+            TimeSpan pingTimeout = TimeSpan.FromSeconds(5);
+            // Simulate failure by delaying the pong, otherwise send it immediately.
+            TimeSpan pongDelay = expectRequestFail ? pingTimeout * 2 : TimeSpan.Zero;
+            // Pings are send only if KeepAlivePingDelay is not infinite.
+            bool expectStreamPing = keepAlivePingDelay != Timeout.InfiniteTimeSpan;
+            // Pings (regardless ongoing communication) are send only if sending is on and policy is set to always.
+            bool expectPingWithoutStream = expectStreamPing && keepAlivePingPolicy == HttpKeepAlivePingPolicy.Always;
+
+            TaskCompletionSource serverFinished = new TaskCompletionSource();
+
+            await Http2LoopbackServer.CreateClientAndServerAsync(
+                async uri =>
+                {
+                    SocketsHttpHandler handler = new SocketsHttpHandler()
+                    {
+                        KeepAlivePingTimeout = pingTimeout,
+                        KeepAlivePingPolicy = keepAlivePingPolicy,
+                        KeepAlivePingDelay = keepAlivePingDelay
+                    };
+                    handler.SslOptions.RemoteCertificateValidationCallback = delegate { return true; };
+
+                    using HttpClient client = new HttpClient(handler);
+                    client.DefaultRequestVersion = HttpVersion.Version20;
+
+                    // Warmup request to create connection.
+                    await client.GetStringAsync(uri);
+                    // Request under the test scope.
+                    if (expectRequestFail)
+                    {
+                        await Assert.ThrowsAsync<HttpRequestException>(() => client.GetStringAsync(uri));
+                        // As stream is closed we don't want to continue with sending data.
+                        return;
+                    }
+                    else
+                    {
+                        await client.GetStringAsync(uri);
+                    }
+
+                    // Let connection live until server finishes.
+                    await serverFinished.Task.TimeoutAfter(pingTimeout * 2);
+                },
+                async server =>
+                {
+                    using Http2LoopbackConnection connection = await server.EstablishConnectionAsync();
+
+                    Task<PingFrame> receivePingTask = expectStreamPing ? connection.ExpectPingFrameAsync() : null;
+
+                    // Warmup the connection.
+                    int streamId1 = await connection.ReadRequestHeaderAsync();
+                    await connection.SendDefaultResponseAsync(streamId1);
+
+                    // Request under the test scope.
+                    int streamId2 = await connection.ReadRequestHeaderAsync();
+
+                    // Test ping with active stream.
+                    if (!expectStreamPing)
+                    {
+                        await Assert.ThrowsAsync<OperationCanceledException>(() => connection.ReadPingAsync(pingTimeout));
+                    }
+                    else
+                    {
+                        PingFrame ping;
+                        if (receivePingTask != null && receivePingTask.IsCompleted)
+                        {
+                            ping = await receivePingTask;
+                        }
+                        else
+                        {
+                            ping = await connection.ReadPingAsync(pingTimeout);
+                        }
+                        await Task.Delay(pongDelay);
+
+                        await connection.SendPingAckAsync(ping.Data);
+                    }
+
+                    // Send response and close the stream.
+                    if (expectRequestFail)
+                    {
+                        await Assert.ThrowsAsync<NetworkException>(() => connection.SendDefaultResponseAsync(streamId2));
+                        // As stream is closed we don't want to continue with sending data.
+                        return;
+                    }
+                    await connection.SendDefaultResponseAsync(streamId2);
+                    // Test ping with no active stream.
+                    if (expectPingWithoutStream)
+                    {
+                        PingFrame ping = await connection.ReadPingAsync(pingTimeout);
+                        await connection.SendPingAckAsync(ping.Data);
+                    }
+                    else
+                    {
+                        await Assert.ThrowsAsync<OperationCanceledException>(() => connection.ReadPingAsync(pingTimeout));
+                    }
+                    serverFinished.SetResult();
+                    await connection.WaitForClientDisconnectAsync(true);
+                });
+        }
+
         [OuterLoop("Uses Task.Delay")]
         [ConditionalFact(nameof(SupportsAlpn))]
         public async Task Http2_MaxConcurrentStreams_LimitEnforced()

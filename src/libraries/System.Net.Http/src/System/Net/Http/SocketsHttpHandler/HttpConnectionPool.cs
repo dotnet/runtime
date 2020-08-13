@@ -1774,6 +1774,19 @@ namespace System.Net.Http
             return false;
         }
 
+        internal void HeartBeat()
+        {
+            Http2Connection[]? localHttp2Connections = _http2Connections;
+            if (localHttp2Connections != null)
+            {
+                foreach (Http2Connection http2Connection in localHttp2Connections)
+                {
+                    http2Connection.HeartBeat();
+                }
+            }
+        }
+
+
         // For diagnostic purposes
         public override string ToString() =>
             $"{nameof(HttpConnectionPool)} " +

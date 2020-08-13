@@ -70,6 +70,8 @@
              Link="ProductionCode\Common\System\Threading\Tasks\TaskToApm.cs" />
     <Compile Include="..\..\src\System\Net\Http\SocketsHttpHandler\AuthenticationHelper.Digest.cs"
              Link="ProductionCode\System\Net\Http\SocketsHttpHandler\AuthenticationHelper.Digest.cs" />
+    <Compile Include="..\..\src\System\Net\Http\SocketsHttpHandler\HttpKeepAlivePingPolicy.cs"
+             Link="ProductionCode\System\Net\Http\SocketsHttpHandler\HttpKeepAlivePingPolicy.cs" />
     <Compile Include="..\..\src\System\Net\Http\HttpBaseStream.cs"
              Link="ProductionCode\System\Net\Http\HttpBaseStream.cs" />
     <Compile Include="..\..\src\System\Net\Http\ByteArrayContent.cs"
@@ -190,6 +192,8 @@
              Link="ProductionCode\System\Net\Http\Headers\WarningHeaderValue.cs" />
     <Compile Include="..\..\src\System\Net\Http\HttpClient.cs"
              Link="ProductionCode\System\Net\Http\HttpClient.cs" />
+    <Compile Include="..\..\src\System\Net\Http\HttpHandlerDefaults.cs"
+             Link="ProductionCode\System\Net\Http\HttpHandlerDefaults.cs" />
     <Compile Include="..\..\src\System\Net\Http\HttpCompletionOption.cs"
              Link="ProductionCode\System\Net\Http\HttpCompletionOption.cs" />
     <Compile Include="..\..\src\System\Net\Http\HttpContent.cs"
