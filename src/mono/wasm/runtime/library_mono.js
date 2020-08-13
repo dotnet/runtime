@@ -61,7 +61,7 @@ var MonoSupportLib = {
 			release: function () {
 				if (this.__offset) {
 					MONO.mono_wasm_deregister_root (this.__offset);
-					MONO._fill_region(this.__offset, this.__count * 4, 0);
+					MONO._fill_region (this.__offset, this.__count * 4, 0);
 					Module.free (this.__offset);
 				}
 
@@ -74,15 +74,15 @@ var MonoSupportLib = {
 
 		_mono_wasm_root_prototype: {
 			get: function () {
-				var result = this.__buffer.get(this.__index);
+				var result = this.__buffer.get (this.__index);
 				return result;
 			},
 			set: function (value) {
-				this.__buffer.set(this.__index, value);
+				this.__buffer.set (this.__index, value);
 				return value;
 			},
 			valueOf: function () {
-				return this.get();
+				return this.get ();
 			},
 			release: function () {
 				MONO._mono_wasm_release_scratch_index (this.__index);
@@ -95,7 +95,7 @@ var MonoSupportLib = {
 			if (index === undefined)
 				return;
 
-			this._scratch_root_buffer.set(index, 0);
+			this._scratch_root_buffer.set (index, 0);
 			this._scratch_root_free_indices.push (index);
 		},
 
@@ -107,7 +107,7 @@ var MonoSupportLib = {
 				this._scratch_root_free_indices = new Array (maxScratchRoots);
 				for (var i = 0; i < maxScratchRoots; i++)
 					this._scratch_root_free_indices[i] = i;
-				this._scratch_root_free_indices.reverse();
+				this._scratch_root_free_indices.reverse ();
 
 				Object.defineProperty (MONO._mono_wasm_root_prototype, "value", {
 					get: MONO._mono_wasm_root_prototype.get,
@@ -117,7 +117,7 @@ var MonoSupportLib = {
 			}
 
 			if (this._scratch_root_free_indices.length < 1)
-				throw new Error("Out of scratch root space");
+				throw new Error ("Out of scratch root space");
 
 			var result = this._scratch_root_free_indices.pop ();
 			return result;
@@ -138,14 +138,14 @@ var MonoSupportLib = {
 			}
 
 			if (capacity <= 0)
-				throw new Error("capacity >= 1");
+				throw new Error ("capacity >= 1");
 				
 			var capacityBytes = capacity * 4;
 			var offset = Module._malloc (capacityBytes);
 			if ((offset % 4) !== 0)
-				throw new Error("Malloc returned an unaligned offset");
+				throw new Error ("Malloc returned an unaligned offset");
 
-			this._zero_region(offset, capacityBytes, 0);
+			this._zero_region (offset, capacityBytes, 0);
 
 			var result = Object.create (MONO._mono_wasm_root_buffer_prototype);
 			result.__offset = offset;
@@ -157,7 +157,7 @@ var MonoSupportLib = {
 		},
 
 		// Allocates temporary storage for a pointer into the managed heap.
-		// Pointers stored here will be visible to the GC, ensuring that the object they point to is not collected.
+		// Pointers stored here will be visible to the GC, ensuring that the object they point to aren't moved or collected.
 		// If you already have a managed pointer you can pass it as an argument to initialize the temporary storage.
 		// The result object has get() and set(value) methods, along with a .value property.
 		// When you are done using the root you must call its .release() method.
@@ -170,9 +170,12 @@ var MonoSupportLib = {
 			result.__index = index;
 
 			if (value !== undefined) {
-				result.set(value);
+				if (typeof (value) !== "number")
+					throw new Error ("value must be an address in the managed heap");
+
+				result.set (value);
 			} else {
-				result.set(0);
+				result.set (0);
 			}
 
 			return result;
@@ -180,7 +183,7 @@ var MonoSupportLib = {
 
 		// Allocates 1 or more temporary roots, accepting either a number of roots or an array of pointers.
 		// mono_wasm_new_roots(n): returns an array of N zero-initialized roots.
-		// mono_wasm_new_roots([a, b, ...]) returns a new root initialized with the value of each of [a, b, ...]
+		// mono_wasm_new_roots([a, b, ...]) returns an array of new roots initialized with each element.
 		// Each root must be released with its release method, or using the mono_wasm_release_roots API.
 		mono_wasm_new_roots: function (count_or_values) {
 			var result;
@@ -189,10 +192,12 @@ var MonoSupportLib = {
 				result = new Array (count_or_values.length);
 				for (var i = 0; i < result.length; i++)
 					result[i] = this.mono_wasm_new_root (count_or_values[i]);
-			} else {
+			} else if ((count_or_values | 0) > 0) {
 				result = new Array (count_or_values);
 				for (var i = 0; i < result.length; i++)
 					result[i] = this.mono_wasm_new_root ();
+			} else {
+				throw new Error ("count_or_values must be either an array or a number greater than 0");
 			}
 
 			return result;
