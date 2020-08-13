@@ -63,9 +63,9 @@ namespace System.Net.Security
                     DisplayName = "Total TLS handshakes failed"
                 };
 
-                _sessionsOpenCounter ??= new PollingCounter("all-sessions-open", this, () => Interlocked.Read(ref _sessionsOpen))
+                _sessionsOpenCounter ??= new PollingCounter("all-tls-sessions-open", this, () => Interlocked.Read(ref _sessionsOpen))
                 {
-                    DisplayName = "All Sessions Active"
+                    DisplayName = "All TLS Sessions Active"
                 };
 
                 _sessionsOpenTls10Counter ??= new PollingCounter("tls10-sessions-open", this, () => Interlocked.Read(ref _sessionsOpenTls10))
@@ -88,9 +88,9 @@ namespace System.Net.Security
                     DisplayName = "TLS 1.3 Sessions Active"
                 };
 
-                _handshakeDurationCounter ??= new EventCounter("all-handshake-duration", this)
+                _handshakeDurationCounter ??= new EventCounter("all-tls-handshake-duration", this)
                 {
-                    DisplayName = "Handshake Duration",
+                    DisplayName = "TLS Handshake Duration",
                     DisplayUnits = "ms"
                 };
 

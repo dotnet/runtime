@@ -137,7 +137,7 @@ namespace System.Net.Security.Tests
             Assert.All(openedSessions, oc => Assert.Equal(0, oc));
 
 
-            double[] allHandshakeDurations = eventCounters["all-handshake-duration"];
+            double[] allHandshakeDurations = eventCounters["all-tls-handshake-duration"];
             double[][] tlsHandshakeDurations = eventCounters
                 .Where(pair => pair.Key.StartsWith("tls") && pair.Key.EndsWith("-handshake-duration"))
                 .Select(pair => pair.Value)
