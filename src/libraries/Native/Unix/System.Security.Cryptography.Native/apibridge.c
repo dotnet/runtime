@@ -19,7 +19,7 @@
 
 #define CRYPTO_LOCK_X509 3
 #define CRYPTO_LOCK_EVP_PKEY 10
-
+#define CRYPTO_LOCK_BIO 21
 #define SSL_CTRL_GET_SESSION_REUSED 8
 #define SSL_CTRL_OPTIONS 32
 
@@ -772,6 +772,11 @@ void local_SSL_CTX_set_security_level(SSL_CTX* ctx, int32_t level)
 
 int local_BIO_up_ref(BIO *bio)
 {
-    return CRYPTO_add(&bio->references, 1, CRYPTO_LOCK_BIO);
+    if (!bio)
+    {
+        return 0;
+    }
+
+    return CRYPTO_add_lock(&bio->references, 1, CRYPTO_LOCK_BIO, __FILE__, __LINE__) > 1;
 }
 #endif
