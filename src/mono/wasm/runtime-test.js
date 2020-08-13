@@ -74,6 +74,10 @@ try {
 	}
 } catch (e) {
 }
+
+if (arguments === undefined)
+	arguments = [];
+
 //end of all the nice shell glue code.
 
 // set up a global variable to be accessed in App.init
@@ -81,9 +85,13 @@ var testArguments = arguments;
 
 function test_exit (exit_code) {
 	if (is_browser) {
-		// Notify the puppeteer script
+		// Notify the selenium script
 		Module.exit_code = exit_code;
 		print ("WASM EXIT " + exit_code);
+		var tests_done_elem = document.createElement ("label");
+		tests_done_elem.id = "tests_done";
+		tests_done_elem.innerHTML = exit_code.toString ();
+		document.body.appendChild (tests_done_elem);
 	} else {
 		Module.wasm_exit (exit_code);
 	}
@@ -111,7 +119,7 @@ setenv = {};
 runtime_args = [];
 enable_gc = true;
 enable_zoneinfo = false;
-while (true) {
+while (args !== undefined && args.length > 0) {
 	if (args [0].startsWith ("--profile=")) {
 		var arg = args [0].substring ("--profile=".length);
 
@@ -145,8 +153,18 @@ function writeContentToFile(content, path)
 	FS.close(stream);
 }
 
-if (typeof window == "undefined")
-  load ("mono-config.js");
+function loadScript (url)
+{
+	if (is_browser) {
+		var script = document.createElement ("script");
+		script.src = url;
+		document.head.appendChild (script);
+	} else {
+		load (url);
+	}
+}
+
+loadScript ("mono-config.js");
 
 var Module = {
 	mainScriptUrlOrBlob: "dotnet.js",
@@ -219,8 +237,7 @@ var Module = {
 	},
 };
 
-if (typeof window == "undefined")
-  load ("dotnet.js");
+loadScript ("dotnet.js");
 
 const IGNORE_PARAM_COUNT = -1;
 
@@ -248,6 +265,11 @@ var App = {
 			init ("");
 		}
 
+		if (args.length == 0) {
+			fail_exec ("Missing required --run argument");
+			return;
+		}
+
 		if (args[0] == "--regression") {
 			var exec_regression = Module.cwrap ('mono_wasm_exec_regression', 'number', ['number', 'string'])
 
@@ -272,14 +294,20 @@ var App = {
 
 		if (args[0] == "--run") {
 			// Run an exe
-			if (args.length == 1)
+			if (args.length == 1) {
 				fail_exec ("Error: Missing main executable argument.");
+				return;
+			}
 			main_assembly = assembly_load (args[1]);
-			if (main_assembly == 0)
+			if (main_assembly == 0) {
 				fail_exec ("Error: Unable to load main executable '" + args[1] + "'");
+				return;
+			}
 			main_method = assembly_get_entry_point (main_assembly);
-			if (main_method == 0)
+			if (main_method == 0) {
 				fail_exec ("Error: Main (string[]) method not found.");
+				return;
+			}
 
 			var app_args = string_array_new (args.length - 2);
 			for (var i = 2; i < args.length; ++i) {
@@ -307,14 +335,15 @@ var App = {
 				if (eh_res != 0) {
 					print ("Exception:" + string_get_utf8 (res));
 					test_exit (1);
+					return;
 				}
 				var exit_code = unbox_int (res);
-				if (exit_code != 0)
-					test_exit (exit_code);
+				test_exit (exit_code);
 			} catch (ex) {
 				print ("JS exception: " + ex);
 				print (ex.stack);
 				test_exit (1);
+				return;
 			}
 
 /*
@@ -331,12 +360,9 @@ var App = {
 			}
 */
 
-			if (is_browser)
-				test_exit (0);
-
 			return;
 		} else {
-			fail_exec ("Unhanded argument: " + args [0]);
+			fail_exec ("Unhandled argument: " + args [0]);
 		}
 	},
 	call_test_method: function (method_name, args) {
