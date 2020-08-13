@@ -7,6 +7,5 @@
     <AssemblyVersion>4.0.0.0</AssemblyVersion>
     <StrongNameKeyId>Microsoft</StrongNameKeyId>
     <IsWindowsSpecific>true</IsWindowsSpecific>
-    <IncludeInternalObsoleteAttribute>true</IncludeInternalObsoleteAttribute>
   </PropertyGroup>
 </Project>
