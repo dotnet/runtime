@@ -118,6 +118,7 @@ typedef struct stack_st OPENSSL_STACK;
 #define OPENSSL_INIT_LOAD_CONFIG 0x00000040L
 #define OPENSSL_INIT_LOAD_SSL_STRINGS 0x00200000L
 
+int BIO_up_ref(BIO *a);
 const BIGNUM* DSA_get0_key(const DSA* dsa, const BIGNUM** pubKey, const BIGNUM** privKey);
 void DSA_get0_pqg(const DSA* dsa, const BIGNUM** p, const BIGNUM** q, const BIGNUM** g);
 const DSA_METHOD* DSA_get_method(const DSA* dsa);
@@ -227,7 +228,7 @@ void SSL_get0_alpn_selected(const SSL* ssl, const unsigned char** protocol, unsi
     REQUIRED_FUNCTION(BIO_new) \
     REQUIRED_FUNCTION(BIO_new_file) \
     REQUIRED_FUNCTION(BIO_read) \
-    REQUIRED_FUNCTION(BIO_up_ref) \
+    FALLBACK_FUNCTION(BIO_up_ref) \
     REQUIRED_FUNCTION(BIO_s_mem) \
     REQUIRED_FUNCTION(BIO_write) \
     REQUIRED_FUNCTION(BN_bin2bn) \
@@ -1049,6 +1050,7 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define NEED_OPENSSL_1_0 true
 
 // Alias "future" API to the local_ version.
+#define BIO_up_ref local_BIO_up_ref
 #define DSA_get0_key local_DSA_get0_key
 #define DSA_get0_pqg local_DSA_get0_pqg
 #define DSA_get_method local_DSA_get_method

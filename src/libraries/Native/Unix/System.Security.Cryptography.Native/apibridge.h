@@ -6,6 +6,7 @@
 #pragma once
 #include "pal_types.h"
 
+int local_BIO_up_ref(BIO *a);
 const BIGNUM* local_DSA_get0_key(const DSA* dsa, const BIGNUM** pubKey, const BIGNUM** privKey);
 void local_DSA_get0_pqg(const DSA* dsa, const BIGNUM** p, const BIGNUM** q, const BIGNUM** g);
 const DSA_METHOD* local_DSA_get_method(const DSA* dsa);

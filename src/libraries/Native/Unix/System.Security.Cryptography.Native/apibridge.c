@@ -770,4 +770,9 @@ void local_SSL_CTX_set_security_level(SSL_CTX* ctx, int32_t level)
     (void)ctx;
     (void)level;
 }
+
+int local_BIO_up_ref(BIO *bio)
+{
+    return CRYPTO_add(&bio->references, 1, CRYPTO_LOCK_BIO);
+}
 #endif
