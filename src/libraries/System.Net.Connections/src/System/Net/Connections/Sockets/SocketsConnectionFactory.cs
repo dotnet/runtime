@@ -133,25 +133,5 @@ namespace System.Net.Connections
 
             return socket;
         }
-
-        /// <summary>
-        /// Creates the <see cref="Stream"/> for the connected socket.
-        /// </summary>
-        /// <param name="socket">The connected <see cref="Socket"/>.</param>
-        /// <param name="options">Properties, if any, that might change how the stream is initialized.</param>
-        /// <returns>A new <see cref="Stream"/>.</returns>
-        protected virtual Stream CreateStream(Socket socket, IConnectionProperties? options) => new NetworkStream(socket, ownsSocket: true);
-
-        /// <summary>
-        /// Creates the <see cref="IDuplexPipe"/> for the connected socket.
-        /// </summary>
-        /// <param name="socket">The connected <see cref="Socket"/>.</param>
-        /// <param name="options">Properties, if any, that might change how the pipe is initialized.</param>
-        /// <returns>A new <see cref="IDuplexPipe"/>.</returns>
-        protected virtual IDuplexPipe CreatePipe(Socket socket, IConnectionProperties? options) => new DuplexStreamPipe(CreateStream(socket, options));
-
-        internal Stream CreateStreamForConnection(Socket socket, IConnectionProperties? options) => CreateStream(socket, options);
-
-        internal IDuplexPipe CreatePipeForConnection(Socket socket, IConnectionProperties? options) => CreatePipe(socket, options);
     }
 }

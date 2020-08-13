@@ -13,7 +13,6 @@ namespace System.Net.Connections
 
         public DuplexStreamPipe(Stream stream)
         {
-            Stream = stream;
             Input = PipeReader.Create(stream, s_readerOpts);
             Output = PipeWriter.Create(stream, s_writerOpts);
         }
@@ -21,8 +20,5 @@ namespace System.Net.Connections
         public PipeReader Input { get; }
 
         public PipeWriter Output { get; }
-
-        // This is used to dispose dispose the underlying stream
-        internal Stream Stream { get; }
     }
 }

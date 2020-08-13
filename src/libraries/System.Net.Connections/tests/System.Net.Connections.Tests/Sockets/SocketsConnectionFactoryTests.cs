@@ -283,21 +283,38 @@ namespace System.Net.Connections.Tests
         }
 
         [Theory]
-        [InlineData(ConnectionCloseMethod.GracefulShutdown)]
-        [InlineData(ConnectionCloseMethod.Immediate)]
-        [InlineData(ConnectionCloseMethod.Abort)]
-        public async Task Connection_CloseAsync_ClosesSocket(ConnectionCloseMethod method)
+        [InlineData(true, ConnectionCloseMethod.GracefulShutdown)]
+        [InlineData(true, ConnectionCloseMethod.Immediate)]
+        [InlineData(true, ConnectionCloseMethod.Abort)]
+        [InlineData(false, ConnectionCloseMethod.GracefulShutdown)]
+        [InlineData(false, ConnectionCloseMethod.Immediate)]
+        [InlineData(false, ConnectionCloseMethod.Abort)]
+        public async Task Connection_CloseAsync_ClosesSocket(bool usePipe, ConnectionCloseMethod method)
         {
             using var server = SocketTestServer.SocketTestServerFactory(SocketImplementationType.Async, IPAddress.Loopback);
             using SocketsConnectionFactory factory = new SocketsConnectionFactory(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
             Connection connection = await factory.ConnectAsync(server.EndPoint);
-            Stream stream = connection.Stream;
+
+            Stream stream = null;
+            if (usePipe)
+            {
+                _ = connection.Pipe;
+            }
+            else
+            {
+                stream = connection.Stream;
+            }
+
             connection.ConnectionProperties.TryGet(out Socket socket);
 
             await connection.CloseAsync(method);
 
-            Assert.False(socket.Connected);
-            Assert.Throws<ObjectDisposedException>(() => stream.Write(new byte[1]));
+            Assert.Throws<ObjectDisposedException>(() => socket.Send(new byte[1]));
+
+            if (!usePipe) // No way to observe the stream if we work with the pipe
+            {
+                Assert.Throws<ObjectDisposedException>(() => stream.Write(new byte[1]));
+            }
         }
 
         // Test scenario based on:

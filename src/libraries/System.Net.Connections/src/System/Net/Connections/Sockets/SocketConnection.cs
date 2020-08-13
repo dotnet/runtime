@@ -43,21 +43,8 @@ namespace System.Net.Connections
                     _socket.Dispose();
                 }
 
-                if (_stream != null)
-                {
-                    _stream.Dispose();
-                }
-                else if (_pipe is DuplexStreamPipe dsp)
-                {
-                    // Graceful shutdown for DuplexStreamPipe:
-                    dsp.Stream.Dispose();
-                }
-
-                // There are two cases, where none of the above calls will actually dispose the socket:
-                // 1. If an custom NetworkStream does not take the ownership of the socket
-                // 2. If the pipe is not a DuplexStreamPipe
-                // We need to call _socket.Dispose again to make sure the socket is indeed disposed in these cases:
-                _socket.Dispose();
+                // Since CreatePipe() calls CreateStream(), so _stream should be present even in the pipe case:
+                _stream?.Dispose();
             }
             catch (SocketException socketException)
             {
@@ -83,8 +70,8 @@ namespace System.Net.Connections
             return false;
         }
 
-        protected override Stream CreateStream() => _stream ??= _factory.CreateStreamForConnection(_socket, _options);
+        protected override Stream CreateStream() => _stream ??= new NetworkStream(_socket, true);
 
-        protected override IDuplexPipe CreatePipe() => _pipe ??= _factory.CreatePipeForConnection(_socket, _options);
+        protected override IDuplexPipe CreatePipe() => _pipe ??= new DuplexStreamPipe(CreateStream());
     }
 }
