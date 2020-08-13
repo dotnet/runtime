@@ -2269,6 +2269,43 @@ namespace System.Diagnostics.Tests
             }
         }
 
+        [Fact]
+        public void Start_ThrowsArgumentNullExceptionForNullFileName()
+        {
+            Assert.Throws<ArgumentNullException>("fileName", () => Process.Start(null, Enumerable.Repeat("notNull", 1)));
+        }
+
+        [Fact]
+        public void Start_ThrowsArgumentNullExceptionForNullArgumentsList()
+        {
+            IEnumerable<string> @null = null;
+            Assert.Throws<ArgumentNullException>("arguments", () => Process.Start("notNull", @null));
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)] // cmd.exe is available only on Windows
+        public void Start_PassesArgumentsList_WhichGetsEscaped()
+        {
+            string folderNameWithSpaces = "folder name with spaces"; // this needs escaping
+            string fullPath = Path.Combine(TestDirectory, folderNameWithSpaces);
+            string[] arguments = new string[] { "/c", "mkdir", "-p", fullPath };
+
+            if (Directory.Exists(fullPath))
+            {
+                Directory.Delete(fullPath);
+            }
+
+            using (Process mkdir = Process.Start("cmd.exe", arguments))
+            {
+                Assert.Equal(arguments, mkdir.StartInfo.ArgumentList);
+
+                mkdir.WaitForExit(WaitInMS);
+
+                Assert.True(Directory.Exists(fullPath));
+                Directory.Delete(fullPath);
+            }
+        }
+
         private IReadOnlyList<Process> CreateProcessTree()
         {
             (Process Value, string Message) rootResult = ListenForAnonymousPipeMessage(rootPipeHandleString =>

@@ -11,6 +11,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Runtime.Versioning;
+using System.Collections.Generic;
 
 namespace System.Diagnostics
 {
@@ -1260,6 +1261,25 @@ namespace System.Diagnostics
             // when the ProcessStartInfo.UseShellExecute property is set to true.
             // We can thus safely assert non-nullability for tihs overload.
             return Start(new ProcessStartInfo(fileName, arguments))!;
+        }
+
+        /// <summary>
+        /// Starts a process resource by specifying the name of an application and a set of command line arguments
+        /// </summary>
+        public static Process Start(string fileName, IEnumerable<string> arguments)
+        {
+            if (fileName == null)
+                throw new ArgumentNullException(nameof(fileName));
+            if (arguments == null)
+                throw new ArgumentNullException(nameof(arguments));
+
+            var startInfo = new ProcessStartInfo(fileName);
+            foreach (string argument in arguments)
+            {
+                startInfo.ArgumentList.Add(argument);
+            }
+
+            return Start(startInfo)!;
         }
 
         /// <devdoc>
