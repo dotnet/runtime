@@ -2176,6 +2176,30 @@ DWORD FilterNamedIntrinsicMethodAttribs(ZapInfo* pZapInfo, DWORD attribs, CORINF
         fTreatAsRegularMethodCall |= !fIsPlatformHWIntrinsic && fIsHWIntrinsic
             && (strncmp(className, "Vector64", _countof("Vector64") - 1) != 0)
             && (strncmp(className, "Vector128", _countof("Vector128") - 1) != 0);
+
+#elif defined(TARGET_X86) || defined(TARGET_AMD64)
+        // The following methods should be safe to expand unconditionally, since JIT either
+        //   1) does not generate code for them (e.g. for Vector128<T>.AsByte() or get_Count) or
+        //   2) uses instructions that belong to Sse or Sse2 (these are required baseline ISAs).
+        static const char* vector128MethodsSafeToExpand[] = { "As", "AsByte", "AsDouble", "AsInt16", "AsInt32", "AsInt64", "AsSByte",
+            "AsSingle", "AsUInt16", "AsUInt32", "AsUInt64", "Create", "CreateScalarUnsafe", "ToScalar", "get_Count", "get_Zero" };
+
+        if (!fIsPlatformHWIntrinsic && fIsHWIntrinsic)
+        {
+            fTreatAsRegularMethodCall = true;
+
+            if (strncmp(className, "Vector128", _countof("Vector128") - 1) == 0)
+            {
+                for (size_t i = 0; i < _countof(vector128MethodsSafeToExpand); i++)
+                {
+                    if (strcmp(methodName, vector128MethodsSafeToExpand[i]) == 0)
+                    {
+                        fTreatAsRegularMethodCall = false;
+                        break;
+                    }
+                }
+            }
+        }
 #else
         fTreatAsRegularMethodCall |= !fIsPlatformHWIntrinsic && fIsHWIntrinsic;
 #endif 
