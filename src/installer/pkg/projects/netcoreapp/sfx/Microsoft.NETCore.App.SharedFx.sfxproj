@@ -62,8 +62,8 @@
         We only build this library on Windows, so other static library formats don't need to be
         handled yet.
       -->
-      <ToDelete Include="$(PublishDir)$(LibPrefix)ijwhost.lib" />
-      <ToDelete Include="$(PublishDir)$(LibPrefix)nethost.lib" />
+      <ToDelete Include="$(PublishDir)ijwhost.lib" />
+      <ToDelete Include="$(PublishDir)libnethost.lib" />
     </ItemGroup>
 
     <Delete Files="@(ToDelete)" />
