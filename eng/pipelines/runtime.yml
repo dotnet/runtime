@@ -334,6 +334,11 @@ jobs:
       extraStepsParameters:
         creator: dotnet-bot
         testRunNamePrefixSuffix: Mono_$(_BuildConfig)
+        scenarios:
+        # Only one scenario per build for jobs which install xharness CLI
+        # until we fix https://github.com/dotnet/arcade/issues/5919
+        # - normal
+        - wasmtestonbrowser
         condition: >-
           or(
           eq(variables['librariesContainsChange'], true),
