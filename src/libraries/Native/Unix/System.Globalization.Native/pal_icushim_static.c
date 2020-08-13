@@ -12,6 +12,7 @@
 #include <unicode/utrace.h>
 
 static int32_t isLoaded = 0;
+static int32_t isDataSet = 0;
 
 static void log_icu_error(const char* name, UErrorCode status)
 {
@@ -29,8 +30,6 @@ static void U_CALLCONV icu_trace_data(const void* context, int32_t fnNumber, int
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>
 
-EMSCRIPTEN_KEEPALIVE gboolean icu_loaded = FALSE;
-
 EMSCRIPTEN_KEEPALIVE int32_t mono_wasm_load_icu_data(void * pData);
 
 EMSCRIPTEN_KEEPALIVE int32_t mono_wasm_load_icu_data(void * pData)
@@ -46,7 +45,7 @@ EMSCRIPTEN_KEEPALIVE int32_t mono_wasm_load_icu_data(void * pData)
         //// see https://github.com/unicode-org/icu/blob/master/docs/userguide/icu_data/tracing.md
         // utrace_setFunctions(0, 0, 0, icu_trace_data);
         // utrace_setLevel(UTRACE_VERBOSE);
-        icu_loaded = TRUE;
+        isDataSet = 1;
         return 1;
     }
 }
@@ -54,7 +53,7 @@ EMSCRIPTEN_KEEPALIVE int32_t mono_wasm_load_icu_data(void * pData)
 
 int32_t GlobalizationNative_LoadICU(void)
 {
-    if (!icu_loaded) {
+    if (!isDataSet) {
         // don't try to locate icudt.dat automatically if mono_wasm_load_icu_data wasn't called
         // and fallback to invariant mode
         return 0;
