@@ -1,11 +1,14 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
+using System.Collections.Concurrent;
 using System.IO;
 using System.IO.Pipelines;
 using System.Net.Connections;
 using System.Net.Sockets;
 using System.Net.Sockets.Tests;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
@@ -286,6 +289,115 @@ namespace System.Net.Connections.Tests
 
             Assert.False(socket.Connected);
             Assert.Throws<ObjectDisposedException>(() => stream.Write(new byte[1]));
+        }
+
+        // Test scenario based on:
+        // https://devblogs.microsoft.com/dotnet/system-io-pipelines-high-performance-io-in-net/
+        [Theory(Timeout = 20000)] // Give 20 seconds to fail, in case of a hang
+        [InlineData(30)]
+        [InlineData(500)]
+        public async Task Connection_Pipe_ReadWrite_Integration(int totalLines)
+        {
+            using SocketsConnectionFactory factory = new SocketsConnectionFactory(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+            using SocketTestServer echoServer = SocketTestServer.SocketTestServerFactory(SocketImplementationType.Async, IPAddress.Loopback);
+            
+            Socket serverSocket = null;
+            echoServer.Accepted += s => serverSocket = s;
+
+            using Connection connection = await factory.ConnectAsync(echoServer.EndPoint);
+
+            IDuplexPipe pipe = connection.Pipe;
+
+            ConcurrentQueue<string> linesSent = new ConcurrentQueue<string>();
+            Task writerTask = Task.Factory.StartNew(async () =>
+            {
+                byte[] endl = Encoding.ASCII.GetBytes("\n");
+                StringBuilder expectedLine = new StringBuilder();
+
+                for (int i = 0; i < totalLines; i++)
+                {
+                    int words = i % 10 + 1;
+                    for (int j = 0; j < words; j++)
+                    {
+                        string word = Guid.NewGuid() + " ";
+                        Encoding.ASCII.GetBytes(word, pipe.Output);
+                        expectedLine.Append(word);
+                    }
+                    await pipe.Output.WriteAsync(endl);
+                    linesSent.Enqueue(expectedLine.ToString());
+                    expectedLine.Clear();
+                }
+
+                await pipe.Output.FlushAsync();
+
+                // This will also trigger completion on the reader. TODO: Fix
+                // await pipe.Output.CompleteAsync();
+            }, TaskCreationOptions.LongRunning);
+
+            // The test server should echo the data sent to it                      
+
+            PipeReader reader = pipe.Input;
+
+            int lineIndex = 0;
+
+            void ProcessLine(ReadOnlySequence<byte> lineBuffer)
+            {
+                string line = Encoding.ASCII.GetString(lineBuffer);
+                Assert.True(linesSent.TryDequeue(out string expectedLine));
+                Assert.Equal(expectedLine, line);
+                lineIndex++;
+
+                // Received everything, shut down the server, so next read will complete:
+                if (lineIndex == totalLines) serverSocket.Shutdown(SocketShutdown.Both);
+            }
+
+            while (true)
+            {
+                try
+                {
+                    ReadResult result = await reader.ReadAsync();
+
+                    ReadOnlySequence<byte> buffer = result.Buffer;
+                    SequencePosition? position = null;
+
+                    // Stop reading if there's no more data coming
+                    if (result.IsCompleted)
+                    {
+                        break;
+                    }
+
+                    do
+                    {
+                        // Look for a EOL in the buffer
+                        position = buffer.PositionOf((byte)'\n');
+
+                        if (position != null)
+                        {
+                            // Process the line
+                            ProcessLine(buffer.Slice(0, position.Value));
+
+                            // Skip the line + the \n character (basically position)
+                            buffer = buffer.Slice(buffer.GetPosition(1, position.Value));
+                        }
+                    }
+                    while (position != null);
+
+                    // Tell the PipeReader how much of the buffer we have consumed
+                    reader.AdvanceTo(buffer.Start, buffer.End);
+                }
+                catch (SocketException)
+                {
+                    // terminate
+                }
+
+            }
+
+            // Mark the PipeReader as complete
+            await reader.CompleteAsync();
+            await writerTask;
+
+            // TODO: If this is done in the end of writerTask the socket stops working
+            Assert.Equal(totalLines, lineIndex);
         }
     }
 }

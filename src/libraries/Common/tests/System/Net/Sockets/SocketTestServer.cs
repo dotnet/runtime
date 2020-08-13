@@ -12,6 +12,7 @@ namespace System.Net.Sockets.Tests
 
         protected abstract int Port { get; }
         public abstract EndPoint EndPoint { get; }
+        public event Action<Socket> Accepted;
 
         public static SocketTestServer SocketTestServerFactory(SocketImplementationType type, EndPoint endpoint, ProtocolType protocolType = ProtocolType.Tcp)
         {
@@ -63,5 +64,7 @@ namespace System.Net.Sockets.Tests
         }
 
         protected abstract void Dispose(bool disposing);
+
+        protected void NotifyAccepted(Socket socket) => Accepted?.Invoke(socket);
     }
 }
