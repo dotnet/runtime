@@ -36,7 +36,7 @@ namespace Internal.Cryptography.Pal
             SafeX509StoreHandle store,
             X509RevocationMode revocationMode,
             DateTime verificationTime,
-            ref TimeSpan remainingDownloadTime)
+            TimeSpan downloadTimeout)
         {
             // In Offline mode, accept any cached CRL we have.
             // "CRL is Expired" is a better match for Offline than "Could not find CRL"
@@ -59,14 +59,13 @@ namespace Internal.Cryptography.Pal
                 return;
             }
 
-            // Don't do any work if we're over limit or prohibited from fetching new CRLs
-            if (remainingDownloadTime <= TimeSpan.Zero ||
-                revocationMode != X509RevocationMode.Online)
+            // Don't do any work if we're prohibited from fetching new CRLs
+            if (revocationMode != X509RevocationMode.Online)
             {
                 return;
             }
 
-            DownloadAndAddCrl(url, crlFileName, store, ref remainingDownloadTime);
+            DownloadAndAddCrl(url, crlFileName, store, downloadTimeout);
         }
 
         private static bool AddCachedCrl(string crlFileName, SafeX509StoreHandle store, DateTime verificationTime)
@@ -156,11 +155,11 @@ namespace Internal.Cryptography.Pal
             string url,
             string crlFileName,
             SafeX509StoreHandle store,
-            ref TimeSpan remainingDownloadTime)
+            TimeSpan downloadTimeout)
         {
             // X509_STORE_add_crl will increase the refcount on the CRL object, so we should still
             // dispose our copy.
-            using (SafeX509CrlHandle? crl = CertificateAssetDownloader.DownloadCrl(url, ref remainingDownloadTime))
+            using (SafeX509CrlHandle? crl = CertificateAssetDownloader.DownloadCrl(url, downloadTimeout))
             {
                 // null is a valid return (e.g. no remainingDownloadTime)
                 if (crl != null && !crl.IsInvalid)
