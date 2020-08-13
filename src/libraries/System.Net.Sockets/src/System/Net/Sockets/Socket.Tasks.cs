@@ -74,40 +74,50 @@ namespace System.Net.Sockets
             return t;
         }
 
-        internal Task ConnectAsync(EndPoint remoteEP)
+        internal Task ConnectAsync(EndPoint remoteEP) => ConnectAsync(remoteEP, default).AsTask();
+
+        internal ValueTask ConnectAsync(EndPoint remoteEP, CancellationToken cancellationToken)
         {
-            // Use _singleBufferReceiveEventArgs so the AwaitableSocketAsyncEventArgs can be re-used later for receives.
-            AwaitableSocketAsyncEventArgs saea =
-                Interlocked.Exchange(ref _singleBufferReceiveEventArgs, null) ??
-                new AwaitableSocketAsyncEventArgs(this, isReceiveForCaching: true);
-
-            saea.RemoteEndPoint = remoteEP;
-            return saea.ConnectAsync(this).AsTask();
-        }
-
-        internal async ValueTask ConnectAsync(EndPoint remoteEP, CancellationToken cancellationToken)
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-
-            // Use _singleBufferReceiveEventArgs so the AwaitableSocketAsyncEventArgs can be re-used later for receives.
-            AwaitableSocketAsyncEventArgs saea =
-                Interlocked.Exchange(ref _singleBufferReceiveEventArgs, null) ??
-                new AwaitableSocketAsyncEventArgs(this, isReceiveForCaching: true);
-
-            saea.RemoteEndPoint = remoteEP;
-
-            try
+            if (cancellationToken.IsCancellationRequested)
             {
-                using (cancellationToken.UnsafeRegister(o => CancelConnectAsync((SocketAsyncEventArgs)o!), saea))
+                return ValueTask.FromCanceled(cancellationToken);
+            }
+
+            // Use _singleBufferReceiveEventArgs so the AwaitableSocketAsyncEventArgs can be re-used later for receives.
+            AwaitableSocketAsyncEventArgs saea =
+                Interlocked.Exchange(ref _singleBufferReceiveEventArgs, null) ??
+                new AwaitableSocketAsyncEventArgs(this, isReceiveForCaching: true);
+
+            saea.RemoteEndPoint = remoteEP;
+
+            ValueTask connectTask = saea.ConnectAsync(this);
+            if (connectTask.IsCompleted || !cancellationToken.CanBeCanceled)
+            {
+                // Avoid async invocation overhead
+                return connectTask;
+            }
+            else
+            {
+                return WaitForConnectWithCancellation(saea, connectTask, cancellationToken);
+            }
+
+            async ValueTask WaitForConnectWithCancellation(AwaitableSocketAsyncEventArgs saea, ValueTask connectTask, CancellationToken cancellationToken)
+            {
+                Debug.Assert(cancellationToken.CanBeCanceled);
+                try
                 {
-                    await saea.ConnectAsync(this).ConfigureAwait(false);
+                    using (cancellationToken.UnsafeRegister(o => CancelConnectAsync((SocketAsyncEventArgs)o!), saea))
+                    {
+                        await connectTask.ConfigureAwait(false);
+                    }
+                }
+                catch (SocketException se) when (se.SocketErrorCode == SocketError.OperationAborted)
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    throw;
                 }
             }
-            catch (SocketException se) when (se.SocketErrorCode == SocketError.OperationAborted)
-            {
-                cancellationToken.ThrowIfCancellationRequested();
-                throw;
-            }
+
         }
 
         internal Task ConnectAsync(IPAddress address, int port) => ConnectAsync(new IPEndPoint(address, port));
@@ -150,18 +160,7 @@ namespace System.Net.Sockets
             ExceptionDispatchInfo.Throw(lastException);
         }
 
-        internal Task ConnectAsync(string host, int port)
-        {
-            if (host == null)
-            {
-                throw new ArgumentNullException(nameof(host));
-            }
-
-            EndPoint ep = IPAddress.TryParse(host, out IPAddress? parsedAddress) ? (EndPoint)
-                new IPEndPoint(parsedAddress, port) :
-                new DnsEndPoint(host, port);
-            return ConnectAsync(ep);
-        }
+        internal Task ConnectAsync(string host, int port) => ConnectAsync(host, port, default).AsTask();
 
         internal ValueTask ConnectAsync(string host, int port, CancellationToken cancellationToken)
         {
