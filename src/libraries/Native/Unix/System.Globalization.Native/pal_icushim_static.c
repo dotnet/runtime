@@ -29,6 +29,8 @@ static void U_CALLCONV icu_trace_data(const void* context, int32_t fnNumber, int
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>
 
+EMSCRIPTEN_KEEPALIVE gboolean icu_loaded = FALSE;
+
 EMSCRIPTEN_KEEPALIVE int32_t mono_wasm_load_icu_data(void * pData);
 
 EMSCRIPTEN_KEEPALIVE int32_t mono_wasm_load_icu_data(void * pData)
@@ -44,6 +46,7 @@ EMSCRIPTEN_KEEPALIVE int32_t mono_wasm_load_icu_data(void * pData)
         //// see https://github.com/unicode-org/icu/blob/master/docs/userguide/icu_data/tracing.md
         // utrace_setFunctions(0, 0, 0, icu_trace_data);
         // utrace_setLevel(UTRACE_VERBOSE);
+        icu_loaded = TRUE;
         return 1;
     }
 }
@@ -51,12 +54,11 @@ EMSCRIPTEN_KEEPALIVE int32_t mono_wasm_load_icu_data(void * pData)
 
 int32_t GlobalizationNative_LoadICU(void)
 {
-    const char* icudir = getenv("DOTNET_ICU_DIR");
-    if (icudir)
-        u_setDataDirectory(icudir);
-    else
-        ; // default ICU search path behavior will be used, see http://userguide.icu-project.org/icudata
-
+    if (!icu_loaded) {
+        // don't try to locate icudt.dat automatically if mono_wasm_load_icu_data wasn't called
+        // and fallback to invariant mode
+        return 0;
+    }
     UErrorCode status = 0;
     UVersionInfo version;
     // Request the CLDR version to perform basic ICU initialization and find out
