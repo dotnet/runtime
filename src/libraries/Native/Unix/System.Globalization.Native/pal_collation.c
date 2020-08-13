@@ -689,7 +689,7 @@ static int32_t GetCollationElementMask(UColAttributeValue strength)
     }
 }
 
-static int32_t inline SimpleAffix_Iterators(UCollationElements* pPatternIterator, UCollationElements* pSourceIterator, UColAttributeValue strength, int32_t forwardSearch, int32_t captureOffset, int32_t* pCapturedOffset)
+static int32_t inline SimpleAffix_Iterators(UCollationElements* pPatternIterator, UCollationElements* pSourceIterator, UColAttributeValue strength, int32_t forwardSearch, int32_t* pCapturedOffset)
 {
     assert(strength >= UCOL_SECONDARY);
 
@@ -708,7 +708,7 @@ static int32_t inline SimpleAffix_Iterators(UCollationElements* pPatternIterator
         }
         if (moveSource)
         {
-            if (captureOffset)
+            if (pCapturedOffset != NULL)
             {
                 capturedOffset = ucol_getOffset(pSourceIterator); // need to capture offset before advancing iterator
             }
@@ -750,9 +750,8 @@ static int32_t inline SimpleAffix_Iterators(UCollationElements* pPatternIterator
     }
 
 ReturnTrue:
-    if (captureOffset)
+    if (pCapturedOffset != NULL)
     {
-        assert(pCapturedOffset != NULL);
         *pCapturedOffset = capturedOffset;
     }
     return TRUE;
@@ -771,7 +770,7 @@ static int32_t SimpleAffix(const UCollator* pCollator, UErrorCode* pErrorCode, c
             UColAttributeValue strength = ucol_getStrength(pCollator);
 
             int32_t capturedOffset = 0;
-            result = SimpleAffix_Iterators(pPatternIterator, pSourceIterator, strength, forwardSearch, (pMatchedLength != NULL) /* captureOffset */, &capturedOffset);
+            result = SimpleAffix_Iterators(pPatternIterator, pSourceIterator, strength, forwardSearch, (pMatchedLength != NULL) ? &capturedOffset : NULL);
 
             if (result && pMatchedLength != NULL)
             {

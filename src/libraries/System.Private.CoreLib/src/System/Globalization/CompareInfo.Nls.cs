@@ -346,7 +346,7 @@ namespace System.Globalization
             Debug.Assert(!suffix.IsEmpty);
             Debug.Assert((options & (CompareOptions.Ordinal | CompareOptions.OrdinalIgnoreCase)) == 0);
 
-            int idx = FindString(FIND_ENDSWITH | (uint)GetNativeCompareFlags(options), source, suffix, null /* matchLengthPtr */);
+            int idx = FindString(FIND_ENDSWITH | (uint)GetNativeCompareFlags(options), source, suffix, pcchFound: null);
             if (idx >= 0)
             {
                 if (matchLengthPtr != null)

@@ -10,6 +10,7 @@ namespace System.Globalization.Tests
     public class CompareInfoIsPrefixTests
     {
         private static CompareInfo s_invariantCompare = CultureInfo.InvariantCulture.CompareInfo;
+        private static CompareInfo s_germanCompare = new CultureInfo("de-DE").CompareInfo;
         private static CompareInfo s_hungarianCompare = new CultureInfo("hu-HU").CompareInfo;
         private static CompareInfo s_turkishCompare = new CultureInfo("tr-TR").CompareInfo;
         private static CompareInfo s_frenchCompare = new CultureInfo("fr-FR").CompareInfo;
@@ -100,8 +101,13 @@ namespace System.Globalization.Tests
                 yield return new object[] { s_frenchCompare, "b", new string('a', UInt16.MaxValue + 1), CompareOptions.None, false, 0 };
             }
 
-            // We don't validate 'options' for empty prefix
-            yield return new object[] { s_invariantCompare, "Hello", "", (CompareOptions)(-1), true, 0 };
+            // Prefixes where matched length does not equal value string length
+            yield return new object[] { s_invariantCompare, "dzxyz", "\u01F3", CompareOptions.IgnoreNonSpace, true, 2 };
+            yield return new object[] { s_invariantCompare, "\u01F3xyz", "dz", CompareOptions.IgnoreNonSpace, true, 1 };
+            yield return new object[] { s_germanCompare, "Strasse xyz", "stra\u00DFe", CompareOptions.IgnoreCase | CompareOptions.IgnoreNonSpace, true, 7 };
+            yield return new object[] { s_germanCompare, "Strasse xyz", "xtra\u00DFe", CompareOptions.IgnoreCase | CompareOptions.IgnoreNonSpace, false, 0 };
+            yield return new object[] { s_germanCompare, "stra\u00DFe xyz", "Strasse", CompareOptions.IgnoreCase | CompareOptions.IgnoreNonSpace, true, 6 };
+            yield return new object[] { s_germanCompare, "stra\u00DFe xyz", "Xtrasse", CompareOptions.IgnoreCase | CompareOptions.IgnoreNonSpace, false, 0 };
         }
 
         [Theory]
@@ -164,6 +170,12 @@ namespace System.Globalization.Tests
             AssertExtensions.Throws<ArgumentException>("options", () => s_invariantCompare.IsPrefix("Test's", "Tests", CompareOptions.OrdinalIgnoreCase | CompareOptions.IgnoreWidth));
             AssertExtensions.Throws<ArgumentException>("options", () => s_invariantCompare.IsPrefix("Test's", "Tests", (CompareOptions)(-1)));
             AssertExtensions.Throws<ArgumentException>("options", () => s_invariantCompare.IsPrefix("Test's", "Tests", (CompareOptions)0x11111111));
+        }
+
+        [Fact]
+        public void IsPrefix_WithEmptyPrefix_DoesNotValidateOptions()
+        {
+            IsPrefix(s_invariantCompare, "Hello", "", (CompareOptions)(-1), true, 0);
         }
     }
 }

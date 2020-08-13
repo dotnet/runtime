@@ -788,7 +788,7 @@ namespace System.Globalization
 
                 if (!GlobalizationMode.Invariant)
                 {
-                    return StartsWithCore(source, prefix, options, null /* matchLengthPtr */);
+                    return StartsWithCore(source, prefix, options, matchLengthPtr: null);
                 }
                 else if ((options & CompareOptions.IgnoreCase) == 0)
                 {
@@ -849,78 +849,27 @@ namespace System.Globalization
         /// </remarks>
         public unsafe bool IsPrefix(ReadOnlySpan<char> source, ReadOnlySpan<char> prefix, CompareOptions options, out int matchLength)
         {
-            // Just like the existing IsPrefix overloads, we'll allow an early
-            // exit here before 'options' is validated.
+            bool matched;
 
-            if (prefix.IsEmpty)
+            if (GlobalizationMode.Invariant || prefix.IsEmpty || (options & ValidIndexMaskOffFlags) != 0)
             {
-                matchLength = 0;
-                return true;
-            }
+                // Non-linguistic (ordinal) comparison requested, or options are invalid.
+                // Delegate to other overload, which validates options and throws on failure.
+                // If success, non-linguistic matches will always preserve prefix length.
 
-            if ((options & ValidIndexMaskOffFlags) == 0)
-            {
-                // Common case: caller is attempting to perform a linguistic search.
-                // Pass the flags down to NLS or ICU unless we're running in invariant
-                // mode, at which point we normalize the flags to Orginal[IgnoreCase].
-
-                if (!GlobalizationMode.Invariant)
-                {
-                    int tempMatchLength;
-                    if (StartsWithCore(source, prefix, options, &tempMatchLength))
-                    {
-                        Debug.Assert(tempMatchLength >= 0 && tempMatchLength <= source.Length);
-                        matchLength = tempMatchLength;
-                        return true;
-                    }
-                    else
-                    {
-                        matchLength = default;
-                        return false;
-                    }
-                }
-                else if ((options & CompareOptions.IgnoreCase) == 0)
-                {
-                    goto ReturnOrdinal;
-                }
-                else
-                {
-                    goto ReturnOrdinalIgnoreCase;
-                }
+                matched = IsPrefix(source, prefix, options);
+                matchLength = (matched) ? prefix.Length : 0;
             }
             else
             {
-                // Less common case: caller is attempting to perform non-linguistic comparison,
-                // or an invalid combination of flags was supplied.
+                // Linguistic comparison requested and we don't need to special-case any args.
 
-                if (options == CompareOptions.Ordinal)
-                {
-                    goto ReturnOrdinal;
-                }
-                else if (options == CompareOptions.OrdinalIgnoreCase)
-                {
-                    goto ReturnOrdinalIgnoreCase;
-                }
-                else
-                {
-                    ThrowCompareOptionsCheckFailed(options);
-                }
+                int tempMatchLength = 0;
+                matched = StartsWithCore(source, prefix, options, &tempMatchLength);
+                matchLength = tempMatchLength;
             }
 
-        ReturnOrdinal:
-            bool retVal = source.StartsWith(prefix);
-            goto OrdinalReturn;
-
-        ReturnOrdinalIgnoreCase:
-            retVal = source.StartsWithOrdinalIgnoreCase(prefix);
-
-        OrdinalReturn:
-            // Both Ordinal and OrdinalIgnoreCase match by individual code points in a non-linguistic manner.
-            // Non-BMP code points will never match BMP code points, so given UTF-16 inputs the match length
-            // will always be equivalent to the target string length.
-
-            matchLength = (retVal) ? prefix.Length : 0;
-            return retVal;
+            return matched;
         }
 
         private unsafe bool StartsWithCore(ReadOnlySpan<char> source, ReadOnlySpan<char> prefix, CompareOptions options, int* matchLengthPtr) =>
@@ -983,7 +932,7 @@ namespace System.Globalization
 
                 if (!GlobalizationMode.Invariant)
                 {
-                    return EndsWithCore(source, suffix, options, null /* matchLengthPtr */);
+                    return EndsWithCore(source, suffix, options, matchLengthPtr: null);
                 }
                 else if ((options & CompareOptions.IgnoreCase) == 0)
                 {
@@ -1044,79 +993,27 @@ namespace System.Globalization
         /// </remarks>
         public unsafe bool IsSuffix(ReadOnlySpan<char> source, ReadOnlySpan<char> suffix, CompareOptions options, out int matchLength)
         {
-            // The empty string is trivially a suffix of every other string. For compat with
-            // earlier versions of the Framework we'll early-exit here before validating the
-            // 'options' argument.
+            bool matched;
 
-            if (suffix.IsEmpty)
+            if (GlobalizationMode.Invariant || suffix.IsEmpty || (options & ValidIndexMaskOffFlags) != 0)
             {
-                matchLength = 0;
-                return true;
-            }
+                // Non-linguistic (ordinal) comparison requested, or options are invalid.
+                // Delegate to other overload, which validates options and throws on failure.
+                // If success, non-linguistic matches will always preserve prefix length.
 
-            if ((options & ValidIndexMaskOffFlags) == 0)
-            {
-                // Common case: caller is attempting to perform a linguistic search.
-                // Pass the flags down to NLS or ICU unless we're running in invariant
-                // mode, at which point we normalize the flags to Orginal[IgnoreCase].
-
-                if (!GlobalizationMode.Invariant)
-                {
-                    int tempMatchLength;
-                    if (EndsWithCore(source, suffix, options, &tempMatchLength))
-                    {
-                        Debug.Assert(tempMatchLength >= 0 && tempMatchLength <= source.Length);
-                        matchLength = tempMatchLength;
-                        return true;
-                    }
-                    else
-                    {
-                        matchLength = default;
-                        return false;
-                    }
-                }
-                else if ((options & CompareOptions.IgnoreCase) == 0)
-                {
-                    goto ReturnOrdinal;
-                }
-                else
-                {
-                    goto ReturnOrdinalIgnoreCase;
-                }
+                matched = IsSuffix(source, suffix, options);
+                matchLength = (matched) ? suffix.Length : 0;
             }
             else
             {
-                // Less common case: caller is attempting to perform non-linguistic comparison,
-                // or an invalid combination of flags was supplied.
+                // Linguistic comparison requested and we don't need to special-case any args.
 
-                if (options == CompareOptions.Ordinal)
-                {
-                    goto ReturnOrdinal;
-                }
-                else if (options == CompareOptions.OrdinalIgnoreCase)
-                {
-                    goto ReturnOrdinalIgnoreCase;
-                }
-                else
-                {
-                    ThrowCompareOptionsCheckFailed(options);
-                }
+                int tempMatchLength = 0;
+                matched = EndsWithCore(source, suffix, options, &tempMatchLength);
+                matchLength = tempMatchLength;
             }
 
-        ReturnOrdinal:
-            bool retVal = source.EndsWith(suffix);
-            goto OrdinalReturn;
-
-        ReturnOrdinalIgnoreCase:
-            retVal = source.EndsWithOrdinalIgnoreCase(suffix);
-
-        OrdinalReturn:
-            // Both Ordinal and OrdinalIgnoreCase match by individual code points in a non-linguistic manner.
-            // Non-BMP code points will never match BMP code points, so given UTF-16 inputs the match length
-            // will always be equivalent to the target string length.
-
-            matchLength = (retVal) ? suffix.Length : 0;
-            return retVal;
+            return matched;
         }
 
         public bool IsSuffix(string source, string suffix)
@@ -1305,7 +1202,7 @@ namespace System.Globalization
                     }
                     else
                     {
-                        return IndexOfCore(source, value, options, null /* matchLengthPtr */, fromBeginning: true);
+                        return IndexOfCore(source, value, options, matchLengthPtr: null, fromBeginning: true);
                     }
                 }
                 else if ((options & CompareOptions.IgnoreCase) == 0)
@@ -1772,7 +1669,7 @@ namespace System.Globalization
                     }
                     else
                     {
-                        return IndexOfCore(source, value, options, null /* matchLengthPtr */, fromBeginning: false);
+                        return IndexOfCore(source, value, options, matchLengthPtr: null, fromBeginning: false);
                     }
                 }
                 else if ((options & CompareOptions.IgnoreCase) == 0)

@@ -411,7 +411,7 @@ namespace System.Globalization
             }
         }
 
-        // this method sets '*matchLengthPtr' (if not nullptr) on exit
+        // this method sets '*matchLengthPtr' (if not nullptr) only on success
         private unsafe bool IcuStartsWith(ReadOnlySpan<char> source, ReadOnlySpan<char> prefix, CompareOptions options, int* matchLengthPtr)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
@@ -419,11 +419,6 @@ namespace System.Globalization
 
             Debug.Assert(!prefix.IsEmpty);
             Debug.Assert((options & (CompareOptions.Ordinal | CompareOptions.OrdinalIgnoreCase)) == 0);
-
-            if (matchLengthPtr != null)
-            {
-                *matchLengthPtr = 0;
-            }
 
             if (_isAsciiEqualityOrdinal && CanUseAsciiOrdinalForOptions(options))
             {
@@ -581,7 +576,7 @@ namespace System.Globalization
             }
         }
 
-        // this method sets '*matchLengthPtr' (if not nullptr) on exit
+        // this method sets '*matchLengthPtr' (if not nullptr) only on success
         private unsafe bool IcuEndsWith(ReadOnlySpan<char> source, ReadOnlySpan<char> suffix, CompareOptions options, int* matchLengthPtr)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
@@ -589,11 +584,6 @@ namespace System.Globalization
 
             Debug.Assert(!suffix.IsEmpty);
             Debug.Assert((options & (CompareOptions.Ordinal | CompareOptions.OrdinalIgnoreCase)) == 0);
-
-            if (matchLengthPtr != null)
-            {
-                *matchLengthPtr = 0;
-            }
 
             if (_isAsciiEqualityOrdinal && CanUseAsciiOrdinalForOptions(options))
             {

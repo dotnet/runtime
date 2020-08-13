@@ -12,6 +12,7 @@ namespace System.Globalization.Tests
     {
         private static CompareInfo s_invariantCompare = CultureInfo.InvariantCulture.CompareInfo;
         private static CompareInfo s_currentCompare = CultureInfo.CurrentCulture.CompareInfo;
+        private static CompareInfo s_germanCompare = new CultureInfo("de-DE").CompareInfo;
         private static CompareInfo s_hungarianCompare = new CultureInfo("hu-HU").CompareInfo;
         private static CompareInfo s_turkishCompare = new CultureInfo("tr-TR").CompareInfo;
         private static CompareInfo s_slovakCompare = new CultureInfo("sk-SK").CompareInfo;
@@ -117,10 +118,19 @@ namespace System.Globalization.Tests
             if (PlatformDetection.IsNlsGlobalization)
             {
                 yield return new object[] { s_hungarianCompare, "foobardzsdzs", "rddzs", 0, 12, CompareOptions.None, 5, 7 };
-            } else
+            }
+            else
             {
                 yield return new object[] { s_hungarianCompare, "foobardzsdzs", "rddzs", 0, 12, CompareOptions.None, -1, 0 };
             }
+
+            // Inputs where matched length does not equal value string length
+            yield return new object[] { s_invariantCompare, "abcdzxyz", "\u01F3", 0, 8, CompareOptions.IgnoreNonSpace, 3, 2 };
+            yield return new object[] { s_invariantCompare, "abc\u01F3xyz", "dz", 0, 7, CompareOptions.IgnoreNonSpace, 3, 1 };
+            yield return new object[] { s_germanCompare, "abc Strasse Strasse xyz", "stra\u00DFe", 0, 23, CompareOptions.IgnoreCase | CompareOptions.IgnoreNonSpace, 4, 7 };
+            yield return new object[] { s_germanCompare, "abc Strasse Strasse xyz", "xtra\u00DFe", 0, 23, CompareOptions.IgnoreCase | CompareOptions.IgnoreNonSpace, -1, 0 };
+            yield return new object[] { s_germanCompare, "abc stra\u00DFe stra\u00DFe xyz", "Strasse", 0, 21, CompareOptions.IgnoreCase | CompareOptions.IgnoreNonSpace, 4, 6 };
+            yield return new object[] { s_germanCompare, "abc stra\u00DFe stra\u00DFe xyz", "Xtrasse", 0, 21, CompareOptions.IgnoreCase | CompareOptions.IgnoreNonSpace, -1, 0 };
         }
 
         public static IEnumerable<object[]> IndexOf_Aesc_Ligature_TestData()
