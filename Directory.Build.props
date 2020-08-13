@@ -6,6 +6,10 @@
       tell Microsoft.Common.props not to import Directory.Build.props again
     -->
     <ImportDirectoryBuildProps>false</ImportDirectoryBuildProps>
+
+    <!-- We reference Microsoft.CodeAnalysis.NetAnalyzers as a package reference instead
+    of using the SDK ones to be able to update the analyzers independently -->
+    <EnableNETAnalyzers>false</EnableNETAnalyzers>
   </PropertyGroup>
 
   <!--
