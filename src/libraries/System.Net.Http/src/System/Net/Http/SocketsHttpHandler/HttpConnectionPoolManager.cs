@@ -359,7 +359,7 @@ namespace System.Net.Http
 
         public ValueTask<HttpResponseMessage> SendAsync(HttpRequestMessage request, bool async, bool doRequestAuth, CancellationToken cancellationToken)
         {
-            return HttpTelemetry.Log.IsEnabled() && request.RequestUri != null ?
+            return HttpTelemetry.Log.IsEnabled() && request.Version.Major < 3 && request.RequestUri != null ?
                 SendAsyncWithLogging(request, async, doRequestAuth, cancellationToken) :
                 SendAsyncHelper(request, async, doRequestAuth, cancellationToken);
         }
