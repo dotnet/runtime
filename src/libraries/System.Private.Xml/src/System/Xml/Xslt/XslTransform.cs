@@ -34,8 +34,8 @@ namespace System.Xml.Xsl
         // Compiled stylesheet state
         //
         private Stylesheet? _CompiledStylesheet;
-        private List<TheQuery> _QueryStore = null!;
-        private RootAction _RootAction = null!;
+        private List<TheQuery>? _QueryStore;
+        private RootAction? _RootAction;
 
         public XslTransform() { }
 
@@ -109,12 +109,17 @@ namespace System.Xml.Xsl
 
         // ------------------------------------ Transform() ------------------------------------ //
         [MemberNotNull(nameof(_CompiledStylesheet))]
+        [MemberNotNull(nameof(_QueryStore))]
+        [MemberNotNull(nameof(_RootAction))]
         private void CheckCommand()
         {
             if (_CompiledStylesheet == null)
             {
                 throw new InvalidOperationException(SR.Xslt_NoStylesheetLoaded);
             }
+
+            Debug.Assert(_QueryStore != null);
+            Debug.Assert(_RootAction != null);
         }
 
         public XmlReader Transform(XPathNavigator input, XsltArgumentList? args, XmlResolver? resolver)

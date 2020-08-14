@@ -604,14 +604,14 @@ namespace System.Xml.Xsl.XsltOld
             private int _minargs;
             private int _maxargs;
             private XPathResultType _returnType;
-            private XPathResultType[]? _argTypes;
+            private XPathResultType[] _argTypes = null!; // TODO-NULLABLE: public constructor doesn't initialize it but also seem to have no references, consider removing
 
             public XsltFunctionImpl() { }
-            public XsltFunctionImpl(int minArgs, int maxArgs, XPathResultType returnType, XPathResultType[]? argTypes)
+            public XsltFunctionImpl(int minArgs, int maxArgs, XPathResultType returnType, XPathResultType[] argTypes)
             {
                 this.Init(minArgs, maxArgs, returnType, argTypes);
             }
-            protected void Init(int minArgs, int maxArgs, XPathResultType returnType, XPathResultType[]? argTypes)
+            protected void Init(int minArgs, int maxArgs, XPathResultType returnType, XPathResultType[] argTypes)
             {
                 _minargs = minArgs;
                 _maxargs = maxArgs;
@@ -622,7 +622,7 @@ namespace System.Xml.Xsl.XsltOld
             public int Minargs { get { return _minargs; } }
             public int Maxargs { get { return _maxargs; } }
             public XPathResultType ReturnType { get { return _returnType; } }
-            public XPathResultType[]? ArgTypes { get { return _argTypes; } }
+            public XPathResultType[] ArgTypes { get { return _argTypes; } }
             public abstract object Invoke(XsltContext xsltContext, object[] args, XPathNavigator docContext);
 
             // static helper methods:
@@ -990,7 +990,7 @@ namespace System.Xml.Xsl.XsltOld
                 Debug.Assert(args.Length <= this.Minargs, "We cheking this on resolve time");
                 for (int i = args.Length - 1; 0 <= i; i--)
                 {
-                    args[i] = ConvertToXPathType(args[i], this.ArgTypes![i], _types[i]);
+                    args[i] = ConvertToXPathType(args[i], this.ArgTypes[i], _types[i]);
                 }
                 return _method.Invoke(_extension, args)!;
             }
