@@ -542,4 +542,7 @@
   <data name="NumberHandlingOnPropertyTypeMustBeNumberOrCollection" xml:space="preserve">
     <value>When 'JsonNumberHandlingAttribute' is placed on a property or field, the property or field must be a number or a collection. See member '{0}' on type '{1}'.</value>
   </data>
+  <data name="ConverterCanConvertNullableRedundant" xml:space="preserve">
+    <value>The converter '{0}' which handles type '{1}' should not indicate that it also handles type '{2}'. The converter will be used automatically if no converter which handles type '{2}' is provided.</value>
+  </data>
 </root>

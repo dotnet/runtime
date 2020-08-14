@@ -179,14 +179,16 @@ namespace System.Text.Json
                 Debug.Assert(converter != null);
             }
 
-            Type converterTypeToConvert = converter.TypeToConvert;
-
-            // Wrap non-nullable-struct returning converter with NullableConverter<T> to avoid passing
-            // an invalid argument to setters for nullable struct properties, where applicable, which would
-            // cause an InvalidProgramException when the generated IL is invoked.
-            if (IsNullableType(runtimePropertyType) && !IsNullableType(converterTypeToConvert))
+            // User indicated that non-nullable-struct-handling converter should handle a nullable struct type.
+            // The serializer would have picked that converter up by default and wrapped it in NullableConverter<T>;
+            // throw so that user can modify or remove their unnecessary CanConvert method override.
+            //
+            // We also throw to avoid passing an invalid argument to setters for nullable struct properties,
+            // which would cause an InvalidProgramException when the generated IL is invoked.
+            // This is not an issue of the converter is wrapped in NullableConverter<T>.
+            if (IsNullableType(runtimePropertyType) && !IsNullableType(converter.TypeToConvert))
             {
-                converter = NullableConverterFactory.CreateValueConverter(converterTypeToConvert, converter);
+                ThrowHelper.ThrowInvalidOperationException_ConverterCanConvertNullableRedundant(runtimePropertyType, converter);
             }
 
             return converter;
