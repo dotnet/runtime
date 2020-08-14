@@ -29,8 +29,8 @@ parameters:
   gatherAssetManifests: false
 
 steps:
-  script: $(coreClrRepoRootDir)build-test$(scriptExt) -skipnative  -skipstressdependencies -excludemonofailures os Browser wasm
-  displayName: Build Tests
+  - script: $(coreClrRepoRootDir)build-test$(scriptExt) -skipnative  -skipstressdependencies -excludemonofailures os Browser wasm
+    displayName: Build Tests
 
   #  Send tests to Helix
   - template: /eng/pipelines/common/templates/runtimes/send-to-helix-step.yml
