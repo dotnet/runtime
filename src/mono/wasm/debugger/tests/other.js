@@ -63,3 +63,16 @@ function negative_cfo_test (str_value = null) {
 	console.log (`break here`);
 	return ptd;
 }
+
+function eval_call_on_frame_test () {
+	let obj = {
+		a: 5,
+		b: "hello",
+		c: {
+			c_x: 1
+		},
+	};
+
+	let obj_undefined = undefined;
+	console.log(`break here`);
+}
