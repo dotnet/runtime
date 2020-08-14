@@ -359,7 +359,7 @@ jobs:
         value: $[ dependencies.checkout.outputs['SetPathVars_mono.containsChange'] ]
     jobParameters:
       testGroup: innerloop
-      nameSuffix: AllSubsets_Mono
+      nameSuffix: AllSubsets_PlusRuntimeTests_Mono
       buildArgs: -s mono+libs+installer -c $(_BuildConfig) /p:ArchiveTests=true
       timeoutInMinutes: 120
       condition: >-
