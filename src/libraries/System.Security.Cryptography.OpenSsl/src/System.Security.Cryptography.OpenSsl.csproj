@@ -12,7 +12,7 @@
     the facades when the package is restored. -->
     <PackageTargetFramework Condition="$(TargetFramework.StartsWith('net4'))">net461</PackageTargetFramework>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(TargetsUnix)' != 'true' or '$(TargetsBrowser)' == 'true'">
+  <PropertyGroup Condition="'$(TargetsUnix)' != 'true'">
     <GeneratePlatformNotSupportedAssemblyMessage>SR.PlatformNotSupported_CryptographyOpenSSL</GeneratePlatformNotSupportedAssemblyMessage>
     <!-- Clear PackageTargetRuntime on Windows to package the PlatformNotSupported assembly
          without a RID so that it applies in desktop packages.config projects as well -->
