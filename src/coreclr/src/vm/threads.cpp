@@ -1158,7 +1158,11 @@ void InitThreadManager()
     _ASSERTE_ALL_BUILDS("clr/src/VM/threads.cpp", (BYTE*)JIT_PatchedCodeLast - (BYTE*)JIT_PatchedCodeStart < (ptrdiff_t)GetOsPageSize());
 
 #ifdef FEATURE_WRITEBARRIER_COPY
+#ifdef TARGET_ARM64
+    s_barrierCopy = ClrVirtualAlloc(NULL, g_SystemInfo.dwAllocationGranularity, MEM_COMMIT, PAGE_READWRITE);
+#else
     s_barrierCopy = ClrVirtualAlloc(NULL, g_SystemInfo.dwAllocationGranularity, MEM_COMMIT, PAGE_EXECUTE_READWRITE);
+#endif // TARGET_ARM64
     if (s_barrierCopy == NULL)
     {
         _ASSERTE(!"ClrVirtualAlloc of GC barrier code page failed");
