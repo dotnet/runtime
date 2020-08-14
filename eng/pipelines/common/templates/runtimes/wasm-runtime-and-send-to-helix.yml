@@ -11,7 +11,6 @@ parameters:
   crossgen2: false
   compositeBuildMode: false
   helixQueues: ''
-  condition: true
   stagedBuild: false
   displayNameArgs: ''
   runInUnloadableContext: false
@@ -25,7 +24,6 @@ parameters:
   #arcade-specific parameters
   condition: ''
   continueOnError: false
-  dependsOn: ''
   displayName: ''
   timeoutInMinutes: ''
   enableMicrobuild: ''
@@ -126,7 +124,7 @@ jobs:
         helixProjectArguments: '$(coreClrRepoRoot)/tests/helixpublishwitharcade.proj'
 
         scenarios: normal
-        
+
     # Publish Logs
     - task: PublishPipelineArtifact@1
       displayName: Publish Logs
