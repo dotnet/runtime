@@ -322,6 +322,7 @@ namespace System.Net.Connections.Tests
         [Theory(Timeout = 60000)] // Give 1 minute to fail, in case of a hang
         [InlineData(30)]
         [InlineData(500)]
+        [OuterLoop("Might run long")]
         public async Task Connection_Pipe_ReadWrite_Integration(int totalLines)
         {
             using SocketsConnectionFactory factory = new SocketsConnectionFactory(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
