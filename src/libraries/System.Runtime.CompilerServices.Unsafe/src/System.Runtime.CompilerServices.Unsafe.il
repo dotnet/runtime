@@ -575,9 +575,9 @@
 #endif
 
 .class private auto ansi sealed beforefieldinit Microsoft.CodeAnalysis.EmbeddedAttribute
-    extends [System.Private.CoreLib]System.Attribute
+    extends [CORE_ASSEMBLY]System.Attribute
 {
-    .custom instance void [System.Private.CoreLib]System.Runtime.CompilerServices.CompilerGeneratedAttribute::.ctor() = (
+    .custom instance void [CORE_ASSEMBLY]System.Runtime.CompilerServices.CompilerGeneratedAttribute::.ctor() = (
         01 00 00 00
     )
     .custom instance void Microsoft.CodeAnalysis.EmbeddedAttribute::.ctor() = (
@@ -592,22 +592,22 @@
         .maxstack 8
 
         IL_0000: ldarg.0
-        IL_0001: call instance void [System.Private.CoreLib]System.Attribute::.ctor()
+        IL_0001: call instance void [CORE_ASSEMBLY]System.Attribute::.ctor()
         IL_0006: ret
     } // end of method EmbeddedAttribute::.ctor
 
 } // end of class Microsoft.CodeAnalysis.EmbeddedAttribute
 
 .class private auto ansi sealed beforefieldinit System.Runtime.CompilerServices.NativeIntegerAttribute
-    extends [System.Private.CoreLib]System.Attribute
+    extends [CORE_ASSEMBLY]System.Attribute
 {
-    .custom instance void [System.Private.CoreLib]System.Runtime.CompilerServices.CompilerGeneratedAttribute::.ctor() = (
+    .custom instance void [CORE_ASSEMBLY]System.Runtime.CompilerServices.CompilerGeneratedAttribute::.ctor() = (
         01 00 00 00
     )
     .custom instance void Microsoft.CodeAnalysis.EmbeddedAttribute::.ctor() = (
         01 00 00 00
     )
-    .custom instance void [System.Private.CoreLib]System.AttributeUsageAttribute::.ctor(valuetype [System.Private.CoreLib]System.AttributeTargets) = (
+    .custom instance void [CORE_ASSEMBLY]System.AttributeUsageAttribute::.ctor(valuetype [CORE_ASSEMBLY]System.AttributeTargets) = (
         01 00 84 6b 00 00 02 00 54 02 0d 41 6c 6c 6f 77
         4d 75 6c 74 69 70 6c 65 00 54 02 09 49 6e 68 65
         72 69 74 65 64 00
@@ -624,10 +624,10 @@
         .maxstack 8
 
         IL_0000: ldarg.0
-        IL_0001: call instance void [System.Private.CoreLib]System.Attribute::.ctor()
+        IL_0001: call instance void [CORE_ASSEMBLY]System.Attribute::.ctor()
         IL_0006: ldarg.0
         IL_0007: ldc.i4.1
-        IL_0008: newarr [System.Private.CoreLib]System.Boolean
+        IL_0008: newarr [CORE_ASSEMBLY]System.Boolean
         IL_000d: dup
         IL_000e: ldc.i4.0
         IL_000f: ldc.i4.1
@@ -646,7 +646,7 @@
         .maxstack 8
 
         IL_0000: ldarg.0
-        IL_0001: call instance void [System.Private.CoreLib]System.Attribute::.ctor()
+        IL_0001: call instance void [CORE_ASSEMBLY]System.Attribute::.ctor()
         IL_0006: ldarg.0
         IL_0007: ldarg.1
         IL_0008: stfld bool[] System.Runtime.CompilerServices.NativeIntegerAttribute::TransformFlags
