@@ -685,7 +685,7 @@ void GCProfileWalkHeapWorker(BOOL fProfilerPinned, BOOL fShouldWalkHeapRootsForE
 }
 #endif // defined(GC_PROFILING) || defined(FEATURE_EVENT_TRACE)
 
-void GCProfileWalkHeap()
+void GCProfileWalkHeap(bool etwOnly)
 {
     BOOL fWalkedHeapForProfiler = FALSE;
 
@@ -702,7 +702,7 @@ void GCProfileWalkHeap()
 
 #if defined (GC_PROFILING)
     {
-        BEGIN_PIN_PROFILER(CORProfilerTrackGC());
+        BEGIN_PIN_PROFILER(!etwOnly && CORProfilerTrackGC());
         GCProfileWalkHeapWorker(TRUE /* fProfilerPinned */, fShouldWalkHeapRootsForEtw, fShouldWalkHeapObjectsForEtw);
         fWalkedHeapForProfiler = TRUE;
         END_PIN_PROFILER();
@@ -764,7 +764,7 @@ void GCToEEInterface::DiagGCEnd(size_t index, int gen, int reason, bool fConcurr
     // we will do these for all GCs.
     if (!fConcurrent)
     {
-        GCProfileWalkHeap();
+        GCProfileWalkHeap(false);
     }
 
     if (CORProfilerTrackBasicGC() || (!fConcurrent && CORProfilerTrackGC()))
@@ -1607,7 +1607,7 @@ void GCToEEInterface::AnalyzeSurvivorsFinished(int condemnedGeneration, uint64_t
             gcGenAnalysisEventPipeSession->Resume();
             FireEtwGenAwareBegin();
             s_forcedGCInProgress = true;
-            GCProfileWalkHeap();
+            GCProfileWalkHeap(true);
             s_forcedGCInProgress = false;
             reportGenerationBounds();
             FireEtwGenAwareEnd();
