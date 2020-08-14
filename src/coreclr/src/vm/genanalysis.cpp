@@ -10,6 +10,7 @@ uint64_t gcGenAnalysisEventPipeSessionId = (uint64_t)-1;
 GcGenAnalysisState gcGenAnalysisConfigured = GcGenAnalysisState::Uninitialized;
 int64_t gcGenAnalysisGen = -1;
 int64_t gcGenAnalysisBytes = 0;
+int64_t gcGenAnalysisIndex = 0;
 
 /* static */ void GenAnalysis::Initialize()
 {
@@ -22,7 +23,15 @@ int64_t gcGenAnalysisBytes = 0;
             if (CLRConfig::IsConfigOptionSpecified(W("GCGenAnalysisBytes")))
             {
                 gcGenAnalysisBytes = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_GCGenAnalysisBytes);
-                gcGenAnalysisConfigured = GcGenAnalysisState::Enabled;
+                if (CLRConfig::IsConfigOptionSpecified(W("GCGenAnalysisIndex")))
+                {
+                    gcGenAnalysisIndex = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_GCGenAnalysisIndex);
+                    gcGenAnalysisConfigured = GcGenAnalysisState::Enabled;
+                }
+                else
+                {
+                    gcGenAnalysisConfigured = GcGenAnalysisState::Disabled;
+                }
             }
             else
             {

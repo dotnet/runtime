@@ -27,6 +27,7 @@ extern uint64_t gcGenAnalysisEventPipeSessionId;
 extern GcGenAnalysisState gcGenAnalysisConfigured;
 extern int64_t gcGenAnalysisGen;
 extern int64_t gcGenAnalysisBytes;
+extern int64_t gcGenAnalysisIndex;
 
 class GenAnalysis
 {

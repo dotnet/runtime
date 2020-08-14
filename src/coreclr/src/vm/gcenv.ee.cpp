@@ -1582,7 +1582,7 @@ bool GCToEEInterface::AnalyzeSurvivorsRequested(int condemnedGeneration)
     return false;
 }
 
-void GCToEEInterface::AnalyzeSurvivorsFinished(int condemnedGeneration, uint64_t promoted_bytes, void (*reportGenerationBounds)())
+void GCToEEInterface::AnalyzeSurvivorsFinished(size_t gcIndex, int condemnedGeneration, uint64_t promoted_bytes, void (*reportGenerationBounds)())
 {
     LIMITED_METHOD_CONTRACT;
 
@@ -1600,7 +1600,7 @@ void GCToEEInterface::AnalyzeSurvivorsFinished(int condemnedGeneration, uint64_t
     if (gcGenAnalysisState == GcGenAnalysisState::Enabled)
     {
 #ifndef GEN_ANALYSIS_STRESS
-        if ((condemnedGeneration == gcGenAnalysisGen) && (promoted_bytes > (uint64_t)gcGenAnalysisBytes))
+        if ((condemnedGeneration == gcGenAnalysisGen) && (promoted_bytes > (uint64_t)gcGenAnalysisBytes) && (gcIndex > (uint64_t)gcGenAnalysisIndex))
 #endif
         {
             gcGenAnalysisEventPipeSession->Resume();

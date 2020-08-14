@@ -712,8 +712,9 @@ RETAIL_CONFIG_DWORD_INFO(INTERNAL_EventPipeProcNumbers, W("EventPipeProcNumbers"
 // 
 // Generational Aware Analysis
 // 
-RETAIL_CONFIG_DWORD_INFO(INTERNAL_GCGenAnalysisGen, W("GCGenAnalysisGen"), 0, "TBD")
-RETAIL_CONFIG_DWORD_INFO(INTERNAL_GCGenAnalysisBytes, W("GCGenAnalysisBytes"), 0, "TBD")
+RETAIL_CONFIG_DWORD_INFO(INTERNAL_GCGenAnalysisGen, W("GCGenAnalysisGen"), 0, "The generation to trigger generational aware analysis")
+RETAIL_CONFIG_DWORD_INFO(INTERNAL_GCGenAnalysisBytes, W("GCGenAnalysisBytes"), 0, "The number of bytes to trigger generational aware analysis")
+RETAIL_CONFIG_DWORD_INFO(INTERNAL_GCGenAnalysisIndex, W("GCGenAnalysisIndex"), 0, "The gc index to trigger generational aware analysis")
 
 //
 // Diagnostics Ports

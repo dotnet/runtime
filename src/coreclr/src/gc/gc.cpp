@@ -20921,7 +20921,7 @@ void gc_heap::mark_phase (int condemned_gen_number, BOOL mark_only_p)
         promoted_bytes_global = promoted_bytes (0);
 #endif //MULTIPLE_HEAPS
 
-        GCToEEInterface::AnalyzeSurvivorsFinished (condemned_gen_number, promoted_bytes_global, GCHeap::ReportGenerationBounds);
+        GCToEEInterface::AnalyzeSurvivorsFinished (settings.gc_index, condemned_gen_number, promoted_bytes_global, GCHeap::ReportGenerationBounds);
 #endif // HEAP_ANALYZE
         GCToEEInterface::AfterGcScanRoots (condemned_gen_number, max_generation, &sc);
 
