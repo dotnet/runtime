@@ -217,24 +217,31 @@ namespace System.Runtime.InteropServices
             if (array.Length - index < count)
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
 
+            ReadSpan(byteOffset, new Span<T>(array, index, count));
+        }
+
+        [CLSCompliant(false)]
+        public void ReadSpan<T>(ulong byteOffset, Span<T> buffer)
+            where T : struct
+        {
             if (_numBytes == Uninitialized)
                 throw NotInitialized();
 
             uint sizeofT = SizeOf<T>();
             uint alignedSizeofT = AlignedSizeOf<T>();
             byte* ptr = (byte*)handle + byteOffset;
-            SpaceCheck(ptr, checked((nuint)(alignedSizeofT * count)));
+            SpaceCheck(ptr, checked((nuint)(alignedSizeofT * buffer.Length)));
 
             bool mustCallRelease = false;
             try
             {
                 DangerousAddRef(ref mustCallRelease);
 
-                if (count > 0)
+                if (!buffer.IsEmpty)
                 {
-                    fixed (byte* pStructure = &Unsafe.As<T, byte>(ref array[index]))
+                    fixed (byte* pStructure = MemoryMarshal.AsBytes(buffer))
                     {
-                        for (int i = 0; i < count; i++)
+                        for (int i = 0; i < buffer.Length; i++)
                             Buffer.Memmove(pStructure + sizeofT * i, ptr + alignedSizeofT * i, sizeofT);
                     }
                 }
@@ -293,25 +300,32 @@ namespace System.Runtime.InteropServices
             if (array.Length - index < count)
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
 
+            WriteSpan(byteOffset, new ReadOnlySpan<T>(array, index, count));
+        }
+
+        [CLSCompliant(false)]
+        public void WriteSpan<T>(ulong byteOffset, ReadOnlySpan<T> data)
+            where T : struct
+        {
             if (_numBytes == Uninitialized)
                 throw NotInitialized();
 
             uint sizeofT = SizeOf<T>();
             uint alignedSizeofT = AlignedSizeOf<T>();
             byte* ptr = (byte*)handle + byteOffset;
-            SpaceCheck(ptr, checked((nuint)(alignedSizeofT * count)));
+            SpaceCheck(ptr, checked((nuint)(alignedSizeofT * data.Length)));
 
             bool mustCallRelease = false;
             try
             {
                 DangerousAddRef(ref mustCallRelease);
 
-                if (count > 0)
+                if (!data.IsEmpty)
                 {
                     {
-                        fixed (byte* pStructure = &Unsafe.As<T, byte>(ref array[index]))
+                        fixed (byte* pStructure = MemoryMarshal.AsBytes(data))
                         {
-                            for (int i = 0; i < count; i++)
+                            for (int i = 0; i < data.Length; i++)
                                 Buffer.Memmove(ptr + alignedSizeofT * i, pStructure + sizeofT * i, sizeofT);
                         }
                     }
