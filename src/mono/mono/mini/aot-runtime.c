@@ -4559,8 +4559,10 @@ mono_aot_can_dedup (MonoMethod *method)
 	if (method->is_inflated && !mono_method_is_generic_sharable_full (method, TRUE, FALSE, FALSE) &&
 		!mini_is_gsharedvt_signature (mono_method_signature_internal (method)) &&
 		!mini_is_gsharedvt_klass (method->klass)) {
-		/* No point in dedup-ing private instances */
 		MonoGenericContext *context = mono_method_get_context (method);
+		if (context->method_inst && mini_is_gsharedvt_inst (context->method_inst))
+			return FALSE;
+		/* No point in dedup-ing private instances */
 		if ((context->class_inst && inst_is_private (context->class_inst)) ||
 			(context->method_inst && inst_is_private (context->method_inst)))
 			return FALSE;
