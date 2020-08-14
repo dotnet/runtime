@@ -1376,7 +1376,7 @@ bool GetEntrypointExecutableAbsolutePath(PathCharString& entrypointExecutable)
         }
         else
         {
-            entrypointExecutable.Set(cwd, strlen(swd));
+            entrypointExecutable.Set(cwd, strlen(cwd));
             entrypointExecutable.Append('/');
             entrypointExecutable.Append(path);
 
