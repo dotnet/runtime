@@ -163,5 +163,20 @@ namespace System.ComponentModel.TypeConverterTests
                 Assert.NotEqual(GraphicsUnit.Display, (GraphicsUnit)item);
             }
         }
+
+        [ConditionalTheory(Helpers.IsDrawingSupported)]
+        [InlineData("Display", GraphicsUnit.Display)]
+        [InlineData("Document", GraphicsUnit.Document)]
+        [InlineData("Inch", GraphicsUnit.Inch)]
+        [InlineData("Millimeter", GraphicsUnit.Millimeter)]
+        [InlineData("Pixel", GraphicsUnit.Pixel)]
+        [InlineData("Point", GraphicsUnit.Point)]
+        [InlineData("World", GraphicsUnit.World)]
+        public void CanConvertFrom(string input, GraphicsUnit expected)
+        {
+            FontUnitConverter converter = new FontUnitConverter();
+            GraphicsUnit value = (GraphicsUnit)converter.ConvertFrom(input);
+            Assert.Equal(expected, value);
+        }
     }
 }

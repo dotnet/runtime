@@ -74,11 +74,13 @@ namespace System.Drawing
         /// Gets the face name of this <see cref='Font'/> .
         /// </summary>
         [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
+        [TypeConverter(typeof(FontConverter.FontNameConverter))]
         public string Name => FontFamily.Name;
 
         /// <summary>
         /// Gets the unit of measure for this <see cref='Font'/>.
         /// </summary>
+        [TypeConverter(typeof(FontConverter.FontUnitConverter))]
         public GraphicsUnit Unit => _fontUnit;
 
         /// <summary>

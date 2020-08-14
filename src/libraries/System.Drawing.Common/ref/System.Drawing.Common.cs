@@ -299,6 +299,7 @@ namespace System.Drawing
         [System.ComponentModel.DesignerSerializationVisibilityAttribute(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
         public bool Italic { get { throw null; } }
         [System.ComponentModel.DesignerSerializationVisibilityAttribute(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
+        [System.ComponentModel.TypeConverterAttribute(typeof(System.Drawing.FontConverter.FontNameConverter))]
         public string Name { get { throw null; } }
         [System.ComponentModel.BrowsableAttribute(false)]
         public string? OriginalFontName { get { throw null; } }
@@ -313,6 +314,7 @@ namespace System.Drawing
         public string SystemFontName { get { throw null; } }
         [System.ComponentModel.DesignerSerializationVisibilityAttribute(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
         public bool Underline { get { throw null; } }
+        [System.ComponentModel.TypeConverterAttribute(typeof(System.Drawing.FontConverter.FontUnitConverter))]
         public System.Drawing.GraphicsUnit Unit { get { throw null; } }
         public object Clone() { throw null; }
         public void Dispose() { }
