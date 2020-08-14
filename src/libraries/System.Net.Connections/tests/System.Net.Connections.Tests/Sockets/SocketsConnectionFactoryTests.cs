@@ -319,7 +319,7 @@ namespace System.Net.Connections.Tests
 
         // Test scenario based on:
         // https://devblogs.microsoft.com/dotnet/system-io-pipelines-high-performance-io-in-net/
-        [Theory(Timeout = 20000)] // Give 20 seconds to fail, in case of a hang
+        [Theory(Timeout = 60000)] // Give 1 minute to fail, in case of a hang
         [InlineData(30)]
         [InlineData(500)]
         public async Task Connection_Pipe_ReadWrite_Integration(int totalLines)
@@ -349,8 +349,8 @@ namespace System.Net.Connections.Tests
                         Encoding.ASCII.GetBytes(word, pipe.Output);
                         expectedLine.Append(word);
                     }
-                    await pipe.Output.WriteAsync(endl);
                     linesSent.Enqueue(expectedLine.ToString());
+                    await pipe.Output.WriteAsync(endl);
                     expectedLine.Clear();
                 }
 
