@@ -1542,7 +1542,7 @@ namespace Internal.JitInterface
         {
             if (MethodSignatureIsUnstable(method.Signature, out string unstableMessage))
             {
-                constLookup.addr = (void*)ObjectToHandle(new RequiresRuntimeJitIfUsedSymbol(unstableMessage));
+                constLookup.addr = (void*)ObjectToHandle(new RequiresRuntimeJitIfUsedSymbol(unstableMessage + " calling " + method));
                 constLookup.accessType = InfoAccessType.IAT_PVALUE;
             }
         }
