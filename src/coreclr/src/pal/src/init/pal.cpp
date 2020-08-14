@@ -1426,7 +1426,6 @@ static LPWSTR INIT_GetCurrentEXEPath()
     PathCharString real_path;
     LPWSTR return_value;
     INT return_size;
-    struct stat theStats;
 
     if (!GetEntrypointExecutableAbsolutePath(real_path))
     {
