@@ -19,7 +19,7 @@ namespace System.Drawing.Printing
         /// Determines if a converter can convert an object of the given source
         /// type to the native type of the converter.
         /// </summary>
-        public override bool CanConvertFrom(ITypeDescriptorContext context, Type sourceType)
+        public override bool CanConvertFrom(ITypeDescriptorContext? context, Type? sourceType)
         {
             if (sourceType == typeof(string))
             {
@@ -32,7 +32,7 @@ namespace System.Drawing.Printing
         /// Gets a value indicating whether this converter can
         /// convert an object to the given destination type using the context.
         /// </summary>
-        public override bool CanConvertTo(ITypeDescriptorContext context, Type destinationType)
+        public override bool CanConvertTo(ITypeDescriptorContext? context, Type? destinationType)
         {
             if (destinationType == typeof(InstanceDescriptor))
             {
@@ -44,7 +44,7 @@ namespace System.Drawing.Printing
         /// <summary>
         /// Converts the given object to the converter's native type.
         /// </summary>
-        public override object ConvertFrom(ITypeDescriptorContext context, CultureInfo culture, object value)
+        public override object? ConvertFrom(ITypeDescriptorContext? context, CultureInfo? culture, object value)
         {
             if (value is string strValue)
             {
@@ -87,7 +87,7 @@ namespace System.Drawing.Printing
         /// type is string. If this cannot convert to the desitnation type, this will
         /// throw a NotSupportedException.
         /// </summary>
-        public override object ConvertTo(ITypeDescriptorContext context, CultureInfo culture, object value, Type destinationType)
+        public override object ConvertTo(ITypeDescriptorContext? context, CultureInfo? culture, object? value, Type destinationType)
         {
             if (destinationType == null)
             {
@@ -116,7 +116,7 @@ namespace System.Drawing.Printing
                 }
                 if (destinationType == typeof(InstanceDescriptor))
                 {
-                    ConstructorInfo ctor = typeof(Margins).GetConstructor(new Type[] {
+                    ConstructorInfo? ctor = typeof(Margins).GetConstructor(new Type[] {
                         typeof(int), typeof(int), typeof(int), typeof(int)});
 
                     if (ctor != null)
@@ -133,24 +133,24 @@ namespace System.Drawing.Printing
         /// Determines if changing a value on this object should require a call to
         /// CreateInstance to create a new value.
         /// </summary>
-        public override bool GetCreateInstanceSupported(ITypeDescriptorContext context) => true;
+        public override bool GetCreateInstanceSupported(ITypeDescriptorContext? context) => true;
 
         /// <summary>
         /// Creates an instance of this type given a set of property values
         /// for the object.  This is useful for objects that are immutable, but still
         /// want to provide changable properties.
         /// </summary>
-        public override object CreateInstance(ITypeDescriptorContext context, IDictionary propertyValues)
+        public override object CreateInstance(ITypeDescriptorContext? context, IDictionary propertyValues)
         {
             if (propertyValues == null)
             {
                 throw new ArgumentNullException(nameof(propertyValues));
             }
 
-            object left = propertyValues["Left"];
-            object right = propertyValues["Right"];
-            object top = propertyValues["Top"];
-            object bottom = propertyValues["Bottom"];
+            object? left = propertyValues["Left"];
+            object? right = propertyValues["Right"];
+            object? top = propertyValues["Top"];
+            object? bottom = propertyValues["Bottom"];
 
             if (left == null || right == null || bottom == null || top == null ||
                 !(left is int) || !(right is int) || !(bottom is int) || !(top is int))

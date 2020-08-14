@@ -44,6 +44,7 @@ namespace System.ComponentModel.TypeConverterTests
 
         [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(TestConvertFormData))]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Full Framework doesn't support inputs without units")]
         public void TestConvertFrom(string input, string expectedName, float expectedSize, GraphicsUnit expectedUnits, FontStyle expectedFontStyle)
         {
             FontConverter converter = new FontConverter();

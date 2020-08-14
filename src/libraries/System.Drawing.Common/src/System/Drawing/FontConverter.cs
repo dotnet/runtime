@@ -4,6 +4,7 @@
 using System.Collections;
 using System.ComponentModel;
 using System.ComponentModel.Design.Serialization;
+using System.Diagnostics;
 using System.Drawing.Text;
 using System.Globalization;
 using System.Reflection;
@@ -15,17 +16,17 @@ namespace System.Drawing
     {
         private const string StylePrefix = "style=";
 
-        public override bool CanConvertFrom(ITypeDescriptorContext context, Type sourceType)
+        public override bool CanConvertFrom(ITypeDescriptorContext? context, Type? sourceType)
         {
-            return sourceType == typeof(string) ? true : base.CanConvertFrom(context, sourceType);
+            return sourceType == typeof(string) || base.CanConvertFrom(context, sourceType);
         }
 
-        public override bool CanConvertTo(ITypeDescriptorContext context, Type destinationType)
+        public override bool CanConvertTo(ITypeDescriptorContext? context, Type? destinationType)
         {
             return (destinationType == typeof(string)) || (destinationType == typeof(InstanceDescriptor));
         }
 
-        public override object ConvertTo(ITypeDescriptorContext context, CultureInfo culture, object value, Type destinationType)
+        public override object ConvertTo(ITypeDescriptorContext? context, CultureInfo? culture, object? value, Type destinationType)
         {
             if (value is Font font)
             {
@@ -86,7 +87,7 @@ namespace System.Drawing
 
                 if (destinationType == typeof(InstanceDescriptor))
                 {
-                    ConstructorInfo met = typeof(Font).GetTypeInfo().GetConstructor(new Type[] { typeof(string), typeof(float), typeof(FontStyle), typeof(GraphicsUnit) });
+                    ConstructorInfo? met = typeof(Font).GetTypeInfo().GetConstructor(new Type[] { typeof(string), typeof(float), typeof(FontStyle), typeof(GraphicsUnit) });
                     object[] args = new object[4];
                     args[0] = font.Name;
                     args[1] = font.Size;
@@ -100,7 +101,7 @@ namespace System.Drawing
             return base.ConvertTo(context, culture, value, destinationType);
         }
 
-        public override object ConvertFrom(ITypeDescriptorContext context, CultureInfo culture, object value)
+        public override object? ConvertFrom(ITypeDescriptorContext? context, CultureInfo? culture, object value)
         {
             if (!(value is string font))
             {
@@ -123,8 +124,8 @@ namespace System.Drawing
 
             char separator = culture.TextInfo.ListSeparator[0]; // For vi-VN: ','
             string fontName = font; // start with the assumption that only the font name was provided.
-            string style = null;
-            string sizeStr = null;
+            string? style = null;
+            string? sizeStr = null;
             float fontSize = 8.25f;
             FontStyle fontStyle = FontStyle.Regular;
             GraphicsUnit units = GraphicsUnit.Point;
@@ -161,7 +162,7 @@ namespace System.Drawing
                 }
 
                 // Parse size.
-                (string size, string unit) unitTokens = ParseSizeTokens(sizeStr, separator);
+                (string? size, string? unit) unitTokens = ParseSizeTokens(sizeStr, separator);
 
                 if (unitTokens.size != null)
                 {
@@ -208,10 +209,10 @@ namespace System.Drawing
             return new Font(fontName, fontSize, fontStyle, units);
         }
 
-        private (string, string) ParseSizeTokens(string text, char separator)
+        private (string?, string?) ParseSizeTokens(string text, char separator)
         {
-            string size = null;
-            string units = null;
+            string? size = null;
+            string? units = null;
 
             text = text.Trim();
 
@@ -259,18 +260,23 @@ namespace System.Drawing
                 "mm" => GraphicsUnit.Millimeter,
                 "px" => GraphicsUnit.Pixel,
                 "world" => GraphicsUnit.World,
-                _ => throw new ArgumentException(SR.Format(SR.InvalidArgumentValue, units), nameof(units)),
+                _ => throw new ArgumentException(SR.Format(SR.InvalidArgumentValueFontConverter, units), nameof(units)),
             };
 
-        public override object CreateInstance(ITypeDescriptorContext context, IDictionary propertyValues)
+        public override object CreateInstance(ITypeDescriptorContext? context, IDictionary propertyValues)
         {
-            object value;
+            if (propertyValues == null)
+            {
+                throw new ArgumentNullException(nameof(propertyValues));
+            }
+
+            object? value;
             byte charSet = 1;
             float size = 8;
-            string name = null;
+            string? name = null;
             bool vertical = false;
             FontStyle style = FontStyle.Regular;
-            FontFamily fontFamily = null;
+            FontFamily? fontFamily = null;
             GraphicsUnit unit = GraphicsUnit.Point;
 
             if ((value = propertyValues["GdiCharSet"]) != null)
@@ -352,12 +358,12 @@ namespace System.Drawing
             return new Font(fontFamily, size, style, unit, charSet, vertical);
         }
 
-        public override bool GetCreateInstanceSupported(ITypeDescriptorContext context) => true;
+        public override bool GetCreateInstanceSupported(ITypeDescriptorContext? context) => true;
 
         public override PropertyDescriptorCollection GetProperties(
-            ITypeDescriptorContext context,
-            object value,
-            Attribute[] attributes)
+            ITypeDescriptorContext? context,
+            object? value,
+            Attribute[]? attributes)
         {
             return value is Font ? TypeDescriptor.GetProperties(value, attributes) : base.GetProperties(context, value, attributes);
         }
@@ -377,17 +383,17 @@ namespace System.Drawing
             {
             }
 
-            public override bool CanConvertFrom(ITypeDescriptorContext context, Type sourceType)
+            public override bool CanConvertFrom(ITypeDescriptorContext? context, Type? sourceType)
             {
                 return sourceType == typeof(string) ? true : base.CanConvertFrom(context, sourceType);
             }
 
-            public override object ConvertFrom(ITypeDescriptorContext context, CultureInfo culture, object value)
+            public override object ConvertFrom(ITypeDescriptorContext? context, CultureInfo? culture, object value)
             {
                 return value is string strValue ? MatchFontName(strValue, context) : base.ConvertFrom(context, culture, value);
             }
 
-            public override StandardValuesCollection GetStandardValues(ITypeDescriptorContext context)
+            public override StandardValuesCollection GetStandardValues(ITypeDescriptorContext? context)
             {
                 string[] values = new string[_fonts.Length];
                 for (int i = 0; i < _fonts.Length; i++)
@@ -400,18 +406,20 @@ namespace System.Drawing
             }
 
             // We allow other values other than those in the font list.
-            public override bool GetStandardValuesExclusive(ITypeDescriptorContext context) => false;
+            public override bool GetStandardValuesExclusive(ITypeDescriptorContext? context) => false;
 
             // Yes, we support picking an element from the list.
-            public override bool GetStandardValuesSupported(ITypeDescriptorContext context) => true;
+            public override bool GetStandardValuesSupported(ITypeDescriptorContext? context) => true;
 
-            private string MatchFontName(string name, ITypeDescriptorContext context)
+            private string MatchFontName(string name, ITypeDescriptorContext? context)
             {
                 // Try a partial match
-                string bestMatch = null;
+                string? bestMatch = null;
 
-                foreach (string fontName in GetStandardValues(context))
+                // setting fontName as nullable since IEnumerable.Current returned nullable in 3.0
+                foreach (string? fontName in GetStandardValues(context))
                 {
+                    Debug.Assert(fontName != null);
                     if (fontName.Equals(name, StringComparison.InvariantCultureIgnoreCase))
                     {
                         // For an exact match, return immediately
@@ -435,12 +443,13 @@ namespace System.Drawing
         {
             public FontUnitConverter() : base(typeof(GraphicsUnit)) { }
 
-            public override StandardValuesCollection GetStandardValues(ITypeDescriptorContext context)
+            public override StandardValuesCollection GetStandardValues(ITypeDescriptorContext? context)
             {
                 // display graphic unit is not supported.
                 if (Values == null)
                 {
                     base.GetStandardValues(context); // sets "values"
+                    Debug.Assert(Values != null);
                     ArrayList filteredValues = new ArrayList(Values);
                     filteredValues.Remove(GraphicsUnit.Display);
                     Values = new StandardValuesCollection(filteredValues);
