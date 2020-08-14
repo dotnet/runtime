@@ -180,7 +180,7 @@ precompile_coreroot_fx()
 
     # In 32-bit builds, use corerun as the Crossgen2 launcher because the 64-bit dotnet host
     # cannot load the 32-bit JIT dll.
-    local crossgenLauncher=$(__DotNetCli}
+    local crossgenLauncher=${__DotNetCli}
     if [[ ( "$__BuildArch" == "x86" ) || ( "$__BuildArch" == "arm" ) ]]; then
         crossgenLauncher=$overlayDir/corerun
     fi
