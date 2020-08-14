@@ -84,6 +84,31 @@ namespace System.Net.Http
 
             private int _headerBudgetRemaining;
 
+            // 0 = Not opened yet, 1 = Marked as opened, 2 = Closed
+            private int _markedByTelemetryStatus;
+
+            public void MarkAsOpened()
+            {
+                if (HttpTelemetry.Log.IsEnabled())
+                {
+                    Debug.Assert(_markedByTelemetryStatus == 0);
+                    _markedByTelemetryStatus = 1;
+
+                    HttpTelemetry.Log.Http20StreamEstablished();
+                }
+            }
+
+            public void MarkAsClosed()
+            {
+                if (HttpTelemetry.Log.IsEnabled())
+                {
+                    if (Interlocked.Exchange(ref _markedByTelemetryStatus, 2) == 1)
+                    {
+                        HttpTelemetry.Log.Http20StreamClosed();
+                    }
+                }
+            }
+
             private const int StreamWindowSize = DefaultInitialWindowSize;
 
             // See comment on ConnectionWindowThreshold.
@@ -857,6 +882,8 @@ namespace System.Net.Http
                         (wait, emptyResponse) = TryEnsureHeaders();
                         Debug.Assert(!wait);
                     }
+
+                    if (HttpTelemetry.Log.IsEnabled()) HttpTelemetry.Log.ResponseHeadersBegin();
                 }
                 catch
                 {
@@ -883,6 +910,11 @@ namespace System.Net.Http
                 if (_connection._pool.Settings._useCookies)
                 {
                     CookieHelper.ProcessReceivedCookies(_response, _connection._pool.Settings._cookieContainer!);
+                }
+
+                if (emptyResponse)
+                {
+                    MarkAsClosed();
                 }
             }
 
@@ -1297,6 +1329,8 @@ namespace System.Net.Http
                     // canceled, and b) clean up the associated state in the Http2Connection.
 
                     http2Stream.CloseResponseBody();
+
+                    http2Stream.MarkAsClosed();
 
                     base.Dispose(disposing);
                 }

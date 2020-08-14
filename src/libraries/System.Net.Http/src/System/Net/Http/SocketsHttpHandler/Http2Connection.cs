@@ -60,6 +60,9 @@ namespace System.Net.Http
         //     (meaning we must assume all streams have been processed by the server)
         private int _lastStreamId = -1;
 
+        // 0 = Not opened yet, 1 = Marked as opened, 2 = Closed
+        private int _markedByTelemetryStatus;
+
         // This will be set when a connection IO error occurs
         private Exception? _abortException;
 
@@ -140,6 +143,12 @@ namespace System.Net.Http
             _nextPingRequestTimestamp = Environment.TickCount64 + _keepAlivePingDelay;
             _keepAlivePingPolicy = _pool.Settings._keepAlivePingPolicy;
 
+            if (HttpTelemetry.Log.IsEnabled())
+            {
+                HttpTelemetry.Log.Http20ConnectionEstablished();
+                _markedByTelemetryStatus = 1;
+            }
+
             if (NetEventSource.Log.IsEnabled()) TraceConnection(_stream);
 
             static long TimeSpanToMs(TimeSpan value) {
@@ -147,6 +156,8 @@ namespace System.Net.Http
                 return (long)(milliseconds > int.MaxValue ? int.MaxValue : milliseconds);
             }
         }
+
+        ~Http2Connection() => Dispose();
 
         private object SyncObject => _httpStreams;
 
@@ -1398,6 +1409,8 @@ namespace System.Net.Http
 
                     return s.mustFlush || s.endStream;
                 }, cancellationToken).ConfigureAwait(false);
+
+                http2Stream.MarkAsOpened();
                 return http2Stream;
             }
             catch
@@ -1659,11 +1672,21 @@ namespace System.Net.Http
                 return;
             }
 
+            GC.SuppressFinalize(this);
+
             // Do shutdown.
             _connection.Dispose();
 
             _connectionWindow.Dispose();
             _concurrentStreams.Dispose();
+
+            if (HttpTelemetry.Log.IsEnabled())
+            {
+                if (Interlocked.Exchange(ref _markedByTelemetryStatus, 2) == 1)
+                {
+                    HttpTelemetry.Log.Http20ConnectionClosed();
+                }
+            }
         }
 
         public void Dispose()
@@ -1792,11 +1815,12 @@ namespace System.Net.Http
         {
             if (NetEventSource.Log.IsEnabled()) Trace($"{request}");
 
+            Http2Stream? http2Stream = null;
             try
             {
                 // Send request headers
                 bool shouldExpectContinue = request.Content != null && request.HasHeaders && request.Headers.ExpectContinue == true;
-                Http2Stream http2Stream = await SendHeadersAsync(request, cancellationToken, mustFlush: shouldExpectContinue).ConfigureAwait(false);
+                http2Stream = await SendHeadersAsync(request, cancellationToken, mustFlush: shouldExpectContinue).ConfigureAwait(false);
 
                 bool duplex = request.Content != null && request.Content.AllowDuplex;
 
@@ -1856,6 +1880,8 @@ namespace System.Net.Http
             }
             catch (Exception e)
             {
+                http2Stream?.MarkAsClosed();
+
                 if (e is IOException ||
                     e is ObjectDisposedException ||
                     e is Http2ProtocolException ||

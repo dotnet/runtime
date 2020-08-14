@@ -66,7 +66,7 @@ namespace System.Net.Http
         private bool _inUse;
         private bool _canRetry;
         private bool _connectionClose; // Connection: close was seen on last response
-        private int _disposed; // 1 yes, 0 no
+        private int _disposed; // 1 == disposed, 0 == not disposed, -1 == not disposed and tracked by Telemetry
 
         public HttpConnection(
             HttpConnectionPool pool,
@@ -87,6 +87,12 @@ namespace System.Net.Http
 
             _weakThisRef = new WeakReference<HttpConnection>(this);
 
+            if (HttpTelemetry.Log.IsEnabled())
+            {
+                HttpTelemetry.Log.Http11ConnectionEstablished();
+                _disposed = -1;
+            }
+
             if (NetEventSource.Log.IsEnabled()) TraceConnection(_stream);
         }
 
@@ -98,9 +104,17 @@ namespace System.Net.Http
         {
             // Ensure we're only disposed once.  Dispose could be called concurrently, for example,
             // if the request and the response were running concurrently and both incurred an exception.
-            if (Interlocked.Exchange(ref _disposed, 1) == 0)
+            int previousValue = Interlocked.Exchange(ref _disposed, 1);
+            if (previousValue != 1)
             {
                 if (NetEventSource.Log.IsEnabled()) Trace("Connection closing.");
+
+                // Only decrement the connection count if we counted this connection
+                if (HttpTelemetry.Log.IsEnabled() && previousValue == -1)
+                {
+                    HttpTelemetry.Log.Http11ConnectionClosed();
+                }
+
                 _pool.DecrementConnectionCount();
 
                 if (HttpTelemetry.Log.IsEnabled()) _currentRequest?.OnAborted();
@@ -519,6 +533,8 @@ namespace System.Net.Http
                 // Parse the response status line.
                 var response = new HttpResponseMessage() { RequestMessage = request, Content = new HttpConnectionResponseContent() };
                 ParseStatusLine(await ReadNextResponseHeaderLineAsync(async).ConfigureAwait(false), response);
+
+                if (HttpTelemetry.Log.IsEnabled()) HttpTelemetry.Log.ResponseHeadersBegin();
 
                 // Multiple 1xx responses handling.
                 // RFC 7231: A client MUST be able to parse one or more 1xx responses received prior to a final response,
