@@ -28,27 +28,6 @@ parameters:
   enableMicrobuild: ''
   gatherAssetManifests: false
 
-variables:
-  - name: timeoutPerTestInMinutes
-    value: 10
-  - name: timeoutPerTestCollectionInMinutes
-    value: 30
-  - ${{ if in(parameters.testGroup, 'outerloop') }}:
-    - name: timeoutPerTestCollectionInMinutes
-      value: 120
-  - ${{ if in(parameters.testGroup, 'gc-longrunning', 'gc-simulator') }}:
-    - name: timeoutPerTestCollectionInMinutes
-      value: 360
-      # gc reliability may take up to 2 hours to shutdown. Some scenarios have very long iteration times.
-    - name: timeoutPerTestInMinutes
-      value: 240
-    - ${{ if in(parameters.testGroup, 'clrinterpreter') }}:
-      - name: timeoutPerTestCollectionInMinutes
-        value: 180
-      - name: timeoutPerTestInMinutes
-        value: 30
-    - ${{ parameters.variables }}
-
 steps:
   script: $(coreClrRepoRootDir)build-test$(scriptExt) -skipnative  -skipstressdependencies -excludemonofailures os Browser wasm
   displayName: Build Tests
