@@ -1704,50 +1704,65 @@ netcore_load_reference (MonoAssemblyName *aname, MonoAssemblyLoadContext *alc, M
 	 */
 
 	reference = mono_assembly_loaded_internal (alc, aname, FALSE);
-	if (reference)
+	if (reference) {
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "Assembly already loaded in the active ALC: '%s'.", aname->name);
 		goto leave;
+	}
 
 	if (bundles != NULL) {
 		reference = search_bundle_for_assembly (alc, aname);
 		if (reference) {
+			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "Assembly found in the bundle: '%s'.", aname->name);
 			goto leave;
 		}
 	}
 
 	if (!is_default) {
 		reference = mono_alc_invoke_resolve_using_load_nofail (alc, aname);
-		if (reference)
+		if (reference) {
+			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "Assembly found using Load method: '%s'.", aname->name);
 			goto leave;
+		}
 	}
 
 	if (!is_default && !is_satellite) {
 		reference = mono_assembly_loaded_internal (mono_domain_default_alc (mono_alc_domain (alc)), aname, FALSE);
-		if (reference)
+		if (reference) {
+			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "Assembly already loaded in the default ALC: '%s'.", aname->name);
 			goto leave;
+		}
 	}
 
 	if (is_default || !is_satellite) {
 		reference = invoke_assembly_preload_hook (mono_domain_default_alc (mono_alc_domain (alc)), aname, assemblies_path);
-		if (reference)
+		if (reference) {
+			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "Assembly found with the filesystem probing logic: '%s'.", aname->name);
 			goto leave;
+		}
 	}
 
 	if (is_satellite) {
 		reference = mono_alc_invoke_resolve_using_resolve_satellite_nofail (alc, aname);
-		if (reference)
+		if (reference) {
+			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "Assembly found with ResolveSatelliteAssembly method: '%s'.", aname->name);
 			goto leave;
+		}
 	}
 
 	reference = mono_alc_invoke_resolve_using_resolving_event_nofail (alc, aname);
-	if (reference)
+	if (reference) {
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "Assembly found with the Resolving event: '%s'.", aname->name);
 		goto leave;
+	}
 
 	// Looking up corlib resources here can cause an infinite loop
 	// See: https://github.com/dotnet/coreclr/blob/0a762eb2f3a299489c459da1ddeb69e042008f07/src/vm/appdomain.cpp#L5178-L5239
 	if (!(strcmp (aname->name, MONO_ASSEMBLY_CORLIB_RESOURCE_NAME) == 0 && is_satellite) && postload) {
 		reference = mono_assembly_invoke_search_hook_internal (alc, requesting, aname, FALSE, TRUE);
-		if (reference)
+		if (reference) {
+			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "Assembly found with AssemblyResolve event: '%s'.", aname->name);
 			goto leave;
+		}
 	}
 
 leave:

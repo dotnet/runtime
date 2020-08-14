@@ -2480,7 +2480,7 @@ mono_domain_assembly_preload (MonoAssemblyLoadContext *alc,
 
 		char *base_dir = get_app_context_base_directory (error);
 		search_path [0] = base_dir;
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "Domain %s (%p) ApplicationBase is %s", domain->friendly_name, domain, base_dir);
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "Domain (%p) ApplicationBase is %s", domain, base_dir);
 
 		result = real_load (search_path, aname->culture, aname->name, &req);
 
