@@ -85,7 +85,7 @@ namespace System.Net.Connections
                     throw NetworkErrorHelper.MapSocketException(new SocketException((int)args.SocketError));
                 }
 
-                return new SocketConnection(socket, this, options);
+                return new SocketConnection(socket);
             }
             catch (SocketException socketException)
             {

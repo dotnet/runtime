@@ -14,25 +14,23 @@ namespace System.Net.Connections
     internal sealed class SocketConnection : Connection, IConnectionProperties
     {
         private readonly Socket _socket;
-        private readonly SocketsConnectionFactory _factory;
-        private readonly IConnectionProperties? _options;
         private Stream? _stream;
-        private IDuplexPipe? _pipe;
 
         public override EndPoint? RemoteEndPoint => _socket.RemoteEndPoint;
         public override EndPoint? LocalEndPoint => _socket.LocalEndPoint;
         public override IConnectionProperties ConnectionProperties => this;
 
-        public SocketConnection(Socket socket, SocketsConnectionFactory factory, IConnectionProperties? options)
+        public SocketConnection(Socket socket)
         {
             _socket = socket;
-            _factory = factory;
-            _options = options;
         }
 
         protected override ValueTask CloseAsyncCore(ConnectionCloseMethod method, CancellationToken cancellationToken)
         {
-            cancellationToken.ThrowIfCancellationRequested();
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return ValueTask.FromCanceled(cancellationToken);
+            }
 
             try
             {
@@ -71,7 +69,5 @@ namespace System.Net.Connections
         }
 
         protected override Stream CreateStream() => _stream ??= new NetworkStream(_socket, true);
-
-        protected override IDuplexPipe CreatePipe() => _pipe ??= new DuplexStreamPipe(CreateStream());
     }
 }
