@@ -359,7 +359,7 @@ jobs:
         value: $[ dependencies.checkout.outputs['SetPathVars_mono.containsChange'] ]
     jobParameters:
       testGroup: innerloop
-      nameSuffix: AllSubsets_PlusRuntimeTests_Mono
+      nameSuffix: AllSubsets__Mono
       buildArgs: -s mono+libs+installer -c $(_BuildConfig) /p:ArchiveTests=true
       timeoutInMinutes: 120
       condition: >-
@@ -524,7 +524,6 @@ jobs:
     platforms:
     - OSX_x64
     - Linux_arm64
-    - Browser_wasm
     jobParameters:
       condition: >-
         or(
@@ -582,7 +581,6 @@ jobs:
     - OSX_x64
     - Windows_NT_x64
     - FreeBSD_x64
-    - Browser_wasm
     jobParameters:
       testScope: innerloop
       testBuildPlatforms:

@@ -284,6 +284,10 @@
     </Payloads>
 
     <HelixWorkItem Include="@(Payloads->Metadata('PayloadGroup'))">
+      <PropertyGroup Condition="'$(TargetArchitecture)' == 'wasm'" >
+        <IncludeDotNetCli>true</IncludeDotNetCli>
+      </PropertyGroup>
+
       <PayloadDirectory>%(PayloadDirectory)</PayloadDirectory>
       <Command>dotnet $(XUnitRunnerDll) %(XUnitWrapperDlls) $(XUnitRunnerArgs)</Command>
       <Command Condition=" '%(TestGroup)' != '' ">dotnet $(XUnitRunnerDll) %(XUnitWrapperDlls) $(XUnitRunnerArgs) -trait TestGroup=%(TestGroup)</Command>
