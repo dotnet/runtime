@@ -766,7 +766,7 @@ namespace System.Diagnostics
 
             if (!socket.Connected)
             {
-                // WSL1 workaround -- due to issues with sockets syscalls 
+                // WSL1 workaround -- due to issues with sockets syscalls
                 // socket pairs fd's are erroneously inferred as not connected.
                 // Fall back to using FileStream instead.
 
