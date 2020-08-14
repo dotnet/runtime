@@ -28,35 +28,20 @@ parameters:
   enableMicrobuild: ''
   gatherAssetManifests: false
 
-jobs:
-- template: /eng/pipelines/${{ parameters.runtimeFlavor }}/templates/xplat-pipeline-job.yml
-  parameters:
-    name: ${{ parameters.name }}
-    displayName: ${{ parameters.displayName }}
-    container: ${{ parameters.container }}
-    condition: ${{ parameters.condition }}
-    dependsOn: checkout
-    timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
-    continueOnError: ${{ parameters.continueOnError }}
-
-
-    name: 'run_test_p0_mono_${{ parameters.displayNameArgs }}_Browser_wasm_${{ parameters.buildConfig }}'
-    displayName: 'Mono  Pri0 Runtime Tests Run Browser wasm ${{ parameters.buildConfig }}'
-
-    variables:
-    - name: timeoutPerTestInMinutes
-      value: 10
+variables:
+  - name: timeoutPerTestInMinutes
+    value: 10
+  - name: timeoutPerTestCollectionInMinutes
+    value: 30
+  - ${{ if in(parameters.testGroup, 'outerloop') }}:
     - name: timeoutPerTestCollectionInMinutes
-      value: 30
-    - ${{ if in(parameters.testGroup, 'outerloop') }}:
-      - name: timeoutPerTestCollectionInMinutes
-        value: 120
-    - ${{ if in(parameters.testGroup, 'gc-longrunning', 'gc-simulator') }}:
-      - name: timeoutPerTestCollectionInMinutes
-        value: 360
+      value: 120
+  - ${{ if in(parameters.testGroup, 'gc-longrunning', 'gc-simulator') }}:
+    - name: timeoutPerTestCollectionInMinutes
+      value: 360
       # gc reliability may take up to 2 hours to shutdown. Some scenarios have very long iteration times.
-      - name: timeoutPerTestInMinutes
-        value: 240
+    - name: timeoutPerTestInMinutes
+      value: 240
     - ${{ if in(parameters.testGroup, 'clrinterpreter') }}:
       - name: timeoutPerTestCollectionInMinutes
         value: 180
@@ -64,24 +49,23 @@ jobs:
         value: 30
     - ${{ parameters.variables }}
 
-    steps:
-      script: $(coreClrRepoRootDir)build-test$(scriptExt) -skipnative  -skipstressdependencies -excludemonofailures os Browser wasm
-      displayName: Build Tests
+steps:
+  script: $(coreClrRepoRootDir)build-test$(scriptExt) -skipnative  -skipstressdependencies -excludemonofailures os Browser wasm
+  displayName: Build Tests
 
-      #  Send tests to Helix
-          # Send tests to Helix
-    - template: /eng/pipelines/common/templates/runtimes/send-to-helix-step.yml
-      parameters:
-        displayName: Send tests to Helix
-        buildConfig: $(buildConfigUpper)
-        archType: ${{ parameters.archType }}
-        osGroup: ${{ parameters.osGroup }}
-        osSubgroup: ${{ parameters.osSubgroup}}
-        coreClrRepoRoot: $(coreClrRepoRoot)
-        runtimeFlavorDisplayName: ${{ parameters.runtimeFlavorDisplayName }}
+  #  Send tests to Helix
+  - template: /eng/pipelines/common/templates/runtimes/send-to-helix-step.yml
+    parameters:
+      displayName: Send tests to Helix
+      buildConfig: $(buildConfigUpper)
+      archType: ${{ parameters.archType }}
+      osGroup: ${{ parameters.osGroup }}
+      osSubgroup: ${{ parameters.osSubgroup}}
+      coreClrRepoRoot: $(coreClrRepoRoot)
+      runtimeFlavorDisplayName: ${{ parameters.runtimeFlavorDisplayName }}
 
-        ${{ if eq(variables['System.TeamProject'], 'public') }}:
-          creator: $(Build.DefinitionName)
+      ${{ if eq(variables['System.TeamProject'], 'public') }}:
+        creator: $(Build.DefinitionName)
 
         helixBuild: $(Build.BuildNumber)
         helixSource: $(_HelixSource)
