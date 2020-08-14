@@ -1,2 +1,2 @@
-System.Security.Cryptography.RandomNumberGenerator
-System.Security.Cryptography.RandomNumberGeneratorImplementation
+T:System.Security.Cryptography.RandomNumberGenerator
+T:System.Security.Cryptography.RandomNumberGeneratorImplementation

@@ -1,1 +1,1 @@
-System.Net.Dns.GetHostName
+M:System.Net.Dns.GetHostName
