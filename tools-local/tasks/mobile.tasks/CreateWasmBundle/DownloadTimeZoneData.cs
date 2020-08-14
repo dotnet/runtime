@@ -12,7 +12,7 @@ using System.Diagnostics;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
 
-public class TimeZoneLoader : Task
+public class DownloadTimeZoneData : Task
 {
     [Required]
     public string? InputDirectory { get; set; }
@@ -23,7 +23,7 @@ public class TimeZoneLoader : Task
     [Required]
     public string? Version { get; set; }
 
-    private void DownloadTimeZoneData() 
+    private void DownloadTimeZoneDataSource() 
     {
         List<string> files = new List<string>() {"africa", "antarctica", "asia", "australasia", "etcetera", "europe", "northamerica", "southamerica", "zone1970.tab"};
         using (var client = new WebClient())
@@ -87,7 +87,7 @@ public class TimeZoneLoader : Task
         if (!Directory.Exists(OutputDirectory))
             Directory.CreateDirectory(OutputDirectory!);
 
-        DownloadTimeZoneData();
+        DownloadTimeZoneDataSource();
         
         string[] filtered = new string[] { "America/Los_Angeles", "Australia/Sydney", "Europe/London", "Pacific/Tongatapu", 
                                 "America/Sao_Paulo", "Australia/Perth", "Africa/Nairobi", "Europe/Berlin",

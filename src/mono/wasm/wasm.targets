@@ -35,22 +35,22 @@
                            OutputPath="$(WasmPInvokeTablePath)" />
   </Target>
 
-  <UsingTask TaskName="TimeZoneLoader" AssemblyFile="$([MSBuild]::NormalizePath('$(ArtifactsBinDir)', 'WasmBundleTask', 'Debug', '$(NetCoreAppCurrent)', 'publish', 'WasmBundleTask.dll'))"/>
+  <UsingTask TaskName="DownloadTimeZoneData" AssemblyFile="$([MSBuild]::NormalizePath('$(ArtifactsBinDir)', 'CreateWasmBundle', 'Debug', '$(NetCoreAppCurrent)', 'publish', 'CreateWasmBundle.dll'))"/>
   <Target Name="LoadTimeZones" DependsOnTargets="CheckEnv">
-    <TimeZoneLoader
+    <DownloadTimeZoneData
       InputDirectory="$(ArtifactsObjDir)wasm/data/input"
       OutputDirectory="$(ArtifactsObjDir)wasm/data/output"
       Version="2020a" />
   </Target>
 
-  <UsingTask TaskName="WasmBundleTask" AssemblyFile="$([MSBuild]::NormalizePath('$(ArtifactsBinDir)', 'WasmBundleTask', 'Debug', '$(NetCoreAppCurrent)', 'publish', 'WasmBundleTask.dll'))"/>
+  <UsingTask TaskName="CreateWasmBundle" AssemblyFile="$([MSBuild]::NormalizePath('$(ArtifactsBinDir)', 'CreateWasmBundle', 'Debug', '$(NetCoreAppCurrent)', 'publish', 'CreateWasmBundle.dll'))"/>
   <Target Name="BundleWasm" DependsOnTargets="CheckEnv;LoadTimeZones">
     <PropertyGroup>
       <TimeZonesDataPath>$(NativeBinDir)dotnet.timezones.blat</TimeZonesDataPath>
     </PropertyGroup>
-    <WasmBundleTask
+    <CreateWasmBundle
       InputDirectory="$(ArtifactsObjDir)wasm/data/output"
-      FileName="$(TimeZonesDataPath)" />
+      OutputFileName="$(TimeZonesDataPath)" />
   </Target>
 
   <!-- This is a documented target that is invoked by developers in their innerloop work. -->

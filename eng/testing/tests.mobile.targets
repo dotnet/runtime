@@ -162,24 +162,24 @@
       AssemblySearchPaths="@(AssemblySearchPaths)" />
   </Target>
 
-  <UsingTask TaskName="TimeZoneLoader"
-             AssemblyFile="$(WasmBundleTaskTasksAssemblyPath)" />
+  <UsingTask TaskName="DownloadTimeZoneData"
+             AssemblyFile="$(CreateCreateWasmBundlesAssemblyPath)" />
   <Target Condition="'$(TargetOS)' == 'Browser'" Name="LoadTimeZone" >
     <PropertyGroup>
       <TimeZoneDataVersion>2020a</TimeZoneDataVersion>
     </PropertyGroup>
-    <TimeZoneLoader
+    <DownloadTimeZoneData
       InputDirectory="$(BundleDir)obj/data/input"
       OutputDirectory="$(BundleDir)obj/data/output"
       Version="$(TimeZoneDataVersion)"/>
   </Target>
 
-  <UsingTask TaskName="WasmBundleTask"
-             AssemblyFile="$(WasmBundleTaskTasksAssemblyPath)" />
+  <UsingTask TaskName="CreateWasmBundle"
+             AssemblyFile="$(CreateCreateWasmBundlesAssemblyPath)" />
   <Target Condition="'$(TargetOS)' == 'Browser'" Name="BundleWasmTestData" DependsOnTargets="LoadTimeZone">
-    <WasmBundleTask
+    <CreateWasmBundle
       InputDirectory="$(BundleDir)obj/data/output"
-      FileName="$(MicrosoftNetCoreAppRuntimePackRidDir)dotnet.timezones.blat" />
+      OutputFileName="$(MicrosoftNetCoreAppRuntimePackRidDir)dotnet.timezones.blat" />
   </Target>
 
   <Target Name="AddTestRunnersToPublishedFiles"

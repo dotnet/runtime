@@ -128,7 +128,7 @@ app-builder:
 	$(DOTNET) build $(TOP)/tools-local/tasks/mobile.tasks/WasmAppBuilder
 
 bundle-task:
-	$(DOTNET) build $(TOP)/tools-local/tasks/mobile.tasks/WasmBundleTask
+	$(DOTNET) build $(TOP)/tools-local/tasks/mobile.tasks/CreateWasmBundle
 
 run-tests-v8-%:
 	PATH="$(JSVU):$(PATH)" $(DOTNET) build $(TOP)/src/libraries/$*/tests/ /t:Test /p:TargetOS=Browser /p:TargetArchitecture=wasm /p:Configuration=$(CONFIG) /p:JSEngine=V8 $(MSBUILD_ARGS)

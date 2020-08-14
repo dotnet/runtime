@@ -12,13 +12,13 @@ using System.Reflection;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
 
-public class WasmBundleTask : Task
+public class CreateWasmBundle : Task
 {
     [Required]
     public string? InputDirectory { get; set; }
 
     [Required]
-    public string? FileName { get; set; } 
+    public string? OutputFileName { get; set; } 
 
     private (byte[] json_bytes, MemoryStream stream) EnumerateData() 
     {
@@ -54,7 +54,7 @@ public class WasmBundleTask : Task
 
         data = EnumerateData();
         
-        using (var file = File.Open(FileName!, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.ReadWrite))
+        using (var file = File.Open(OutputFileName!, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.ReadWrite))
         {
             var lengthBytes = new byte[4];
             var magicBytes = Encoding.ASCII.GetBytes("talb");
