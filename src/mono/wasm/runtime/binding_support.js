@@ -141,10 +141,22 @@ var BindingSupportLib = {
 		},
 
 		mono_array_to_js_array: function (mono_array) {
-			if (mono_array == 0)
+			if (mono_array === 0)
+				return null;
+
+			var arrayRoot = MONO.mono_wasm_new_root (mono_array);
+			try {
+				return this._mono_array_to_js_array_rooted (arrayRoot);
+			} finally {
+				arrayRoot.release();
+			}
+		},
+
+		_mono_array_to_js_array_rooted: function (arrayRoot) {
+			if (arrayRoot.value === 0)
 				return null;
 			
-			let [arrayRoot, elemRoot] = MONO.mono_wasm_new_roots ([mono_array, 0]); 
+			let elemRoot = MONO.mono_wasm_new_root (); 
 
 			try {
 				var res = [];
@@ -152,13 +164,14 @@ var BindingSupportLib = {
 				for (var i = 0; i < len; ++i)
 				{
 					elemRoot.value = this.mono_array_get (arrayRoot.value, i);
+					
 					if (this.is_nested_array (elemRoot.value))
-						res.push (this.mono_array_to_js_array (elemRoot.value));
+						res.push (this._mono_array_to_js_array_rooted (elemRoot));
 					else
 						res.push (this._unbox_mono_obj_rooted (elemRoot));
 				}
 			} finally {
-				MONO.mono_wasm_release_roots (arrayRoot, elemRoot);
+				elemRoot.release();
 			}
 
 			return res;
