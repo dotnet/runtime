@@ -9,16 +9,19 @@ using Xunit;
 namespace System.Net.Http.Enterprise.Tests
 {
     [ConditionalClass(typeof(EnterpriseTestConfiguration), nameof(EnterpriseTestConfiguration.Enabled))]
+
     public class HttpClientAuthenticationTest
     {
-        [Fact]
-        public async Task HttpClient_ValidAuthentication_Success()
+        [Theory]
+        [InlineData(EnterpriseTestConfiguration.NegotiateAuthWebServer)]
+        [InlineData(EnterpriseTestConfiguration.AlternativeService)]
+        public async Task HttpClient_ValidAuthentication_Success(string url)
         {
             using var handler = new HttpClientHandler();
             handler.Credentials = EnterpriseTestConfiguration.ValidNetworkCredentials;
             using var client = new HttpClient(handler);
 
-            using HttpResponseMessage response = await client.GetAsync(EnterpriseTestConfiguration.NegotiateAuthWebServer);
+            using HttpResponseMessage response = await client.GetAsync(url);
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         }
 
