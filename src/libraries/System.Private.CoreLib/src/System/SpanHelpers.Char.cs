@@ -502,11 +502,11 @@ namespace System
 
             if (Sse2.IsSupported)
             {
-                // Calucate lengthToExamine here for test, rather than just testing as it used later, rather than doing it twice.
+                // Calculate lengthToExamine here for test, rather than just testing as it used later, rather than doing it twice.
                 nint vectorDiff = (nint)length - Vector128<ushort>.Count;
                 if (vectorDiff >= 0)
                 {
-                    // >= Sse2 intrinsics are supported, and length is enough to use them so use that path.
+                    // >= Sse2 intrinsics are supported and length is enough to use them, so use that path.
                     // We jump forward to the intrinsics at the end of them method so a naive branch predict
                     // will choose the non-intrinsic path so short lengths which don't gain anything aren't
                     // overly disadvantaged by having to jump over a lot of code. Whereas the longer lengths
@@ -517,7 +517,7 @@ namespace System
             }
             else if (Vector.IsHardwareAccelerated)
             {
-                // Calucate lengthToExamine here for test, rather than just testing as it used later, rather than doing it twice.
+                // Calculate lengthToExamine here for test, rather than just testing as it used later, rather than doing it twice.
                 nint vectorDiff = (nint)length - Vector<ushort>.Count;
                 if (vectorDiff >= 0)
                 {
@@ -705,7 +705,7 @@ namespace System
                         continue;
                     }
 
-                    goto Difference;
+                    goto VectorMatch;
                 }
 
                 // Move to Vector length from end for final compare
@@ -720,11 +720,15 @@ namespace System
                     goto NotFound;
                 }
 
-            Difference:
+            VectorMatch:
                 offset += (nuint)(uint)LocateFirstFoundChar(search);
+                goto Found;
             }
-
-            goto Found;
+            else
+            {
+                Debug.Fail("Unreachable");
+                goto Found;
+            }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveOptimization)]
@@ -737,11 +741,11 @@ namespace System
 
             if (Sse2.IsSupported)
             {
-                // Calucate lengthToExamine here for test, rather than just testing as it used later, rather than doing it twice.
+                // Calculate lengthToExamine here for test, rather than just testing as it used later, rather than doing it twice.
                 nint vectorDiff = (nint)length - Vector128<ushort>.Count;
                 if (vectorDiff >= 0)
                 {
-                    // >= Sse2 intrinsics are supported, and length is enough to use them so use that path.
+                    // >= Sse2 intrinsics are supported and length is enough to use them, so use that path.
                     // We jump forward to the intrinsics at the end of them method so a naive branch predict
                     // will choose the non-intrinsic path so short lengths which don't gain anything aren't
                     // overly disadvantaged by having to jump over a lot of code. Whereas the longer lengths
@@ -752,7 +756,7 @@ namespace System
             }
             else if (Vector.IsHardwareAccelerated)
             {
-                // Calucate lengthToExamine here for test, rather than just testing as it used later, rather than doing it twice.
+                // Calculate lengthToExamine here for test, rather than just testing as it used later, rather than doing it twice.
                 nint vectorDiff = (nint)length - Vector<ushort>.Count;
                 if (vectorDiff >= 0)
                 {
@@ -953,7 +957,7 @@ namespace System
                         continue;
                     }
 
-                    goto Difference;
+                    goto VectorMatch;
                 }
 
                 // Move to Vector length from end for final compare
@@ -970,11 +974,15 @@ namespace System
                     goto NotFound;
                 }
 
-            Difference:
+            VectorMatch:
                 offset += (nuint)(uint)LocateFirstFoundChar(search);
+                goto Found;
             }
-
-            goto Found;
+            else
+            {
+                Debug.Fail("Unreachable");
+                goto Found;
+            }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveOptimization)]
@@ -987,11 +995,11 @@ namespace System
 
             if (Sse2.IsSupported)
             {
-                // Calucate lengthToExamine here for test, rather than just testing as it used later, rather than doing it twice.
+                // Calculate lengthToExamine here for test, rather than just testing as it used later, rather than doing it twice.
                 nint vectorDiff = (nint)length - Vector128<ushort>.Count;
                 if (vectorDiff >= 0)
                 {
-                    // >= Sse2 intrinsics are supported, and length is enough to use them so use that path.
+                    // >= Sse2 intrinsics are supported and length is enough to use them, so use that path.
                     // We jump forward to the intrinsics at the end of them method so a naive branch predict
                     // will choose the non-intrinsic path so short lengths which don't gain anything aren't
                     // overly disadvantaged by having to jump over a lot of code. Whereas the longer lengths
@@ -1002,7 +1010,7 @@ namespace System
             }
             else if (Vector.IsHardwareAccelerated)
             {
-                // Calucate lengthToExamine here for test, rather than just testing as it used later, rather than doing it twice.
+                // Calculate lengthToExamine here for test, rather than just testing as it used later, rather than doing it twice.
                 nint vectorDiff = (nint)length - Vector<ushort>.Count;
                 if (vectorDiff >= 0)
                 {
@@ -1199,7 +1207,7 @@ namespace System
                         continue;
                     }
 
-                    goto Difference;
+                    goto VectorMatch;
                 }
 
                 // Move to Vector length from end for final compare
@@ -1218,11 +1226,15 @@ namespace System
                     goto NotFound;
                 }
 
-            Difference:
+            VectorMatch:
                 offset += (nuint)(uint)LocateFirstFoundChar(search);
+                goto Found;
             }
-
-            goto Found;
+            else
+            {
+                Debug.Fail("Unreachable");
+                goto Found;
+            }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveOptimization)]
@@ -1235,11 +1247,11 @@ namespace System
 
             if (Sse2.IsSupported)
             {
-                // Calucate lengthToExamine here for test, rather than just testing as it used later, rather than doing it twice.
+                // Calculate lengthToExamine here for test, rather than just testing as it used later, rather than doing it twice.
                 nint vectorDiff = (nint)length - Vector128<ushort>.Count;
                 if (vectorDiff >= 0)
                 {
-                    // >= Sse2 intrinsics are supported, and length is enough to use them so use that path.
+                    // >= Sse2 intrinsics are supported and length is enough to use them, so use that path.
                     // We jump forward to the intrinsics at the end of them method so a naive branch predict
                     // will choose the non-intrinsic path so short lengths which don't gain anything aren't
                     // overly disadvantaged by having to jump over a lot of code. Whereas the longer lengths
@@ -1250,7 +1262,7 @@ namespace System
             }
             else if (Vector.IsHardwareAccelerated)
             {
-                // Calucate lengthToExamine here for test, rather than just testing as it used later, rather than doing it twice.
+                // Calculate lengthToExamine here for test, rather than just testing as it used later, rather than doing it twice.
                 nint vectorDiff = (nint)length - Vector<ushort>.Count;
                 if (vectorDiff >= 0)
                 {
@@ -1457,7 +1469,7 @@ namespace System
                         continue;
                     }
 
-                    goto Difference;
+                    goto VectorMatch;
                 }
 
                 // Move to Vector length from end for final compare
@@ -1478,11 +1490,15 @@ namespace System
                     goto NotFound;
                 }
 
-            Difference:
+            VectorMatch:
                 offset += (nuint)(uint)LocateFirstFoundChar(search);
+                goto Found;
             }
-
-            goto Found;
+            else
+            {
+                Debug.Fail("Unreachable");
+                goto Found;
+            }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveOptimization)]
