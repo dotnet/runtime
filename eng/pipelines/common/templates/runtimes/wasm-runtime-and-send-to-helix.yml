@@ -28,6 +28,7 @@ parameters:
   enableMicrobuild: ''
   gatherAssetManifests: false
 
+
 steps:
   - script: $(Build.SourcesDirectory)/src/coreclr/build-test$(scriptExt) -skipnative  -skipstressdependencies -excludemonofailures os Browser wasm
     displayName: Build Tests
@@ -40,7 +41,7 @@ steps:
       archType: ${{ parameters.archType }}
       osGroup: ${{ parameters.osGroup }}
       osSubgroup: ${{ parameters.osSubgroup}}
-      coreClrRepoRoot: $(coreClrRepoRoot)
+      coreClrRepoRoot: $(Build.SourcesDirectory)/src/coreclr
       runtimeFlavorDisplayName: ${{ parameters.runtimeFlavorDisplayName }}
 
       ${{ if eq(variables['System.TeamProject'], 'public') }}:
