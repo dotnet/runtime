@@ -96,6 +96,14 @@ private:
 
     void DisableIpcStreamingThread();
 
+    // Note - access to this field is NOT synchronized
+    //
+    // This field is currently modified in EventPipe::EnableViaEnvironmentVariables() during process startup
+    // and GCToEEInterface::AnalyzeSurvivorsFinished() while the GC has already synchronized all the threads.
+    // 
+    // It is read in EventPipeSession::WriteEvent(). While it is possible for other preemptive threads to read
+    // the field while GC is happening, it should not happen because the only gcGenAwareSession only subscribe
+    // to GC events.
     bool m_paused;
 
 public:

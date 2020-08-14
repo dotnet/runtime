@@ -51,6 +51,9 @@ public:
     // Initialize environment variable based session
     static void EnableViaEnvironmentVariables();
 
+    // Initialize generation aware analysis sesssion
+    static void EnableGenerationalAwareSession();
+
     // Shutdown the event pipe.
     static void Shutdown();
 
