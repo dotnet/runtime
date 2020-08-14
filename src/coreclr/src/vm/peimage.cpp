@@ -369,7 +369,7 @@ BOOL PEImage::CompareImage(UPTR u1, UPTR u2)
         SString path(SString::Literal, pLocator->m_pPath);
         BOOL lookInBundle = pLocator->m_bLookInBundle;
         if (PathEquals(path, pImage->GetPath()) &&
-            (lookInBundle || !(pImage->IsInBundle())))
+            (lookInBundle == pImage->IsInBundle()))
             ret = TRUE;
     }
     EX_CATCH_HRESULT(hr); //<TODO>ignores failure!</TODO>
