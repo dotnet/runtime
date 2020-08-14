@@ -1121,9 +1121,13 @@ PCODE AdjustWriteBarrierIP(PCODE controlPc)
     return (PCODE)JIT_PatchedCodeStart + (controlPc - (PCODE)s_barrierCopy);
 }
 
-#endif // FEATURE_WRITEBARRIER_COPY
-
 extern "C" void *JIT_WriteBarrier_Loc;
+#ifdef TARGET_ARM64
+extern "C" void* JIT_WriteBarrier_Table;
+extern "C" void *JIT_WriteBarrier_Table_Loc;
+#endif // TARGET_ARM64
+
+#endif // FEATURE_WRITEBARRIER_COPY
 
 #ifndef TARGET_UNIX
 // g_TlsIndex is only used by the DAC. Disable optimizations around it to prevent it from getting optimized out.
@@ -1168,6 +1172,12 @@ void InitThreadManager()
     JIT_WriteBarrier_Loc = GetWriteBarrierCodeLocation((void*)JIT_WriteBarrier);
 
     SetJitHelperFunction(CORINFO_HELP_ASSIGN_REF, GetWriteBarrierCodeLocation((void*)JIT_WriteBarrier));
+
+#ifdef TARGET_ARM64
+    // Store the JIT_WriteBarrier_Table copy location to a global variable so that it can be updated.
+    JIT_WriteBarrier_Table_Loc = GetWriteBarrierCodeLocation((void*)JIT_WriteBarrier_Table);
+#endif // TARGET_ARM64
+
 #else // FEATURE_WRITEBARRIER_COPY
 
     // I am using virtual protect to cover the entire range that this code falls in.

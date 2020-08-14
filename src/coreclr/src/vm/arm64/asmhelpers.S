@@ -206,12 +206,6 @@ LEAF_END ThePreStubPatch, _TEXT
     LEAF_END_MARKED \name, _TEXT
 .endm
 
-// ------------------------------------------------------------------
-// Start of the writeable code region
-LEAF_ENTRY JIT_PatchedCodeStart, _TEXT
-    ret  lr
-LEAF_END JIT_PatchedCodeStart, _TEXT
-
 // void JIT_UpdateWriteBarrierState(bool skipEphemeralCheck)
 //
 // Update shadow copies of the various state info required for barrier
@@ -268,7 +262,11 @@ LOCAL_LABEL(EphemeralCheckEnabled):
     ldr  x7, [x12]
 
     // Update wbs state
+#ifdef FEATURE_WRITEBARRIER_COPY
+    PREPARE_EXTERNAL_VAR JIT_WriteBarrier_Table_Loc, x12
+#else // FEATURE_WRITEBARRIER_COPY
     adr  x12, LOCAL_LABEL(wbs_begin)
+#endif // FEATURE_WRITEBARRIER_COPY
 
     stp  x0, x1, [x12], 16
     stp  x2, x3, [x12], 16
@@ -277,34 +275,7 @@ LOCAL_LABEL(EphemeralCheckEnabled):
 
     EPILOG_RESTORE_REG_PAIR_INDEXED fp, lr, 16
     EPILOG_RETURN
-
-    // Begin patchable literal pool
-    .balign 64  // Align to power of two at least as big as patchable literal pool so that it fits optimally in cache line
-LOCAL_LABEL(wbs_begin):
-LOCAL_LABEL(wbs_card_table):
-    .quad 0
-LOCAL_LABEL(wbs_card_bundle_table):
-    .quad 0
-LOCAL_LABEL(wbs_GCShadow):
-    .quad 0
-LOCAL_LABEL(wbs_sw_ww_table):
-    .quad 0
-LOCAL_LABEL(wbs_ephemeral_low):
-    .quad 0
-LOCAL_LABEL(wbs_ephemeral_high):
-    .quad 0
-LOCAL_LABEL(wbs_lowest_address):
-    .quad 0
-LOCAL_LABEL(wbs_highest_address):
-    .quad 0
 WRITE_BARRIER_END JIT_UpdateWriteBarrierState
-
-
-// ------------------------------------------------------------------
-// End of the writeable code region
-LEAF_ENTRY JIT_PatchedCodeLast, _TEXT
-    ret  lr
-LEAF_END JIT_PatchedCodeLast, _TEXT
 
 // void JIT_ByRefWriteBarrier
 // On entry:
@@ -350,12 +321,55 @@ WRITE_BARRIER_ENTRY JIT_CheckedWriteBarrier
     // branch below is not taken.
     ccmp x14, x12, #0x2, hs
 
+#ifdef FEATURE_WRITEBARRIER_COPY
+    blo  LOCAL_LABEL(Branch_JIT_WriteBarrier_Copy)
+#else // FEATURE_WRITEBARRIER_COPY
     blo  C_FUNC(JIT_WriteBarrier)
+#endif // FEATURE_WRITEBARRIER_COPY
 
 LOCAL_LABEL(NotInHeap):
     str  x15, [x14], 8
     ret  lr
 WRITE_BARRIER_END JIT_CheckedWriteBarrier
+
+// ------------------------// ------------------------------------------------------------------
+// __declspec(naked) void F_CALL_CONV JIT_WriteBarrier_Callable(Object **dst, Object* val)
+LEAF_ENTRY  JIT_WriteBarrier_Callable, _TEXT
+
+    // Setup args for JIT_WriteBarrier. x14 = dst ; x15 = val
+    mov     x14, x0                     // x14 = dst
+    mov     x15, x1                     // x15 = val
+
+#ifdef FEATURE_WRITEBARRIER_COPY
+LOCAL_LABEL(Branch_JIT_WriteBarrier_Copy):
+    // Branch to the write barrier
+    PREPARE_EXTERNAL_VAR JIT_WriteBarrier_Loc, x17
+    br      x17
+#else // FEATURE_WRITEBARRIER_COPY
+    // Branch to the write barrier
+    b       C_FUNC(JIT_WriteBarrier)
+#endif // FEATURE_WRITEBARRIER_COPY
+LEAF_END JIT_WriteBarrier_Callable, _TEXT
+
+#ifdef FEATURE_WRITEBARRIER_COPY
+.data
+// When JIT_WriteBarrier is copied into an allocated page,
+// helpers use this global variable to jump to it. This variable is set in InitThreadManager.
+PATCH_LABEL JIT_WriteBarrier_Loc
+    .zero 8
+
+// When JIT_WriteBarrier is copied into an allocated page, this variable is used to update the
+// associated pc relative table.
+PATCH_LABEL JIT_WriteBarrier_Table_Loc
+    .zero 8
+#endif // FEATURE_WRITEBARRIER_COPY
+
+
+//------------------------------------------
+// Start of the writeable code region
+LEAF_ENTRY JIT_PatchedCodeStart, _TEXT
+    ret  lr
+LEAF_END JIT_PatchedCodeStart, _TEXT
 
 // void JIT_WriteBarrier(Object** dst, Object* src)
 // On entry:
@@ -472,6 +486,35 @@ LOCAL_LABEL(Exit):
     add  x14, x14, 8
     ret  lr
 WRITE_BARRIER_END JIT_WriteBarrier
+
+    // Begin patchable literal pool
+    .balign 64  // Align to power of two at least as big as patchable literal pool so that it fits optimally in cache line
+WRITE_BARRIER_ENTRY JIT_WriteBarrier_Table
+LOCAL_LABEL(wbs_begin):
+LOCAL_LABEL(wbs_card_table):
+    .quad 0
+LOCAL_LABEL(wbs_card_bundle_table):
+    .quad 0
+LOCAL_LABEL(wbs_GCShadow):
+    .quad 0
+LOCAL_LABEL(wbs_sw_ww_table):
+    .quad 0
+LOCAL_LABEL(wbs_ephemeral_low):
+    .quad 0
+LOCAL_LABEL(wbs_ephemeral_high):
+    .quad 0
+LOCAL_LABEL(wbs_lowest_address):
+    .quad 0
+LOCAL_LABEL(wbs_highest_address):
+    .quad 0
+WRITE_BARRIER_END JIT_WriteBarrier_Table
+
+
+// ------------------------------------------------------------------
+// End of the writeable code region
+LEAF_ENTRY JIT_PatchedCodeLast, _TEXT
+    ret  lr
+LEAF_END JIT_PatchedCodeLast, _TEXT
 
 #ifdef FEATURE_PREJIT
 //------------------------------------------------
@@ -1175,19 +1218,6 @@ LEAF_ENTRY JIT_GetSharedGCStaticBaseNoCtor_SingleAppDomain, _TEXT
     ret lr
 LEAF_END JIT_GetSharedGCStaticBaseNoCtor_SingleAppDomain, _TEXT
 
-
-// ------------------------------------------------------------------
-// __declspec(naked) void F_CALL_CONV JIT_WriteBarrier_Callable(Object **dst, Object* val)
-LEAF_ENTRY  JIT_WriteBarrier_Callable, _TEXT
-
-    // Setup args for JIT_WriteBarrier. x14 = dst ; x15 = val
-    mov     x14, x0                     // x14 = dst
-    mov     x15, x1                     // x15 = val
-
-    // Branch to the write barrier (which is already correctly overwritten with
-    // single or multi-proc code based on the current CPU
-    b       C_FUNC(JIT_WriteBarrier)
-LEAF_END JIT_WriteBarrier_Callable, _TEXT
 
 #ifdef PROFILING_SUPPORTED
 
