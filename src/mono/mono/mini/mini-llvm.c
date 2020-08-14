@@ -5712,6 +5712,28 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			values [ins->dreg] = LLVMBuildAdd (builder, v2, LLVMConstInt (IntPtrType (), ins->inst_imm, FALSE), dname);
 			break;
 		}
+		case OP_X86_BSF32:
+		case OP_X86_BSF64: {
+			LLVMValueRef args [2] = {
+				lhs,
+				LLVMConstInt (LLVMInt1Type (), 1, TRUE),
+			};
+			int op = ins->opcode == OP_X86_BSF32 ? INTRINS_CTTZ_I32 : INTRINS_CTTZ_I64;
+			values [ins->dreg] = call_intrins (ctx, op, args, dname);
+			break;
+		}
+		case OP_X86_BSR32:
+		case OP_X86_BSR64: {
+			LLVMValueRef args [2] = {
+				lhs,
+				LLVMConstInt (LLVMInt1Type (), 1, TRUE),
+			};
+			int op = ins->opcode == OP_X86_BSR32 ? INTRINS_CTLZ_I32 : INTRINS_CTLZ_I64;
+			int width = ins->opcode == OP_X86_BSR32 ? 32 : 64;
+			LLVMValueRef tz = call_intrins (ctx, op, args, "");
+			values [ins->dreg] = LLVMBuildXor (builder, tz, const_int32 (width - 1), dname);
+			break;
+		}
 #endif
 
 		case OP_ICONV_TO_I1:
