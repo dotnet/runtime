@@ -266,7 +266,7 @@ namespace System.Net.Http
                     if (NetEventSource.Log.IsEnabled()) Trace($"Frame 0: {frameHeader}.");
 
                     // Process the initial SETTINGS frame. This will send an ACK.
-                    ProcessSettingsFrame(frameHeader, true);
+                    ProcessSettingsFrame(frameHeader, initialFrame: true);
                 }
                 catch (IOException e)
                 {
