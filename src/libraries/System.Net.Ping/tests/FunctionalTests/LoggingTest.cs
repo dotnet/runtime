@@ -14,8 +14,8 @@ namespace System.Net.NetworkInformation.Tests
             Type esType = typeof(Ping).Assembly.GetType("System.Net.NetEventSource", throwOnError: false, ignoreCase: false);
             if (esType != null)
             {
-                Assert.Equal("Microsoft-System-Net-Ping", EventSource.GetName(esType));
-                Assert.Equal(Guid.Parse("a771ec4a-7260-59ce-0475-db257437ed8c"), EventSource.GetGuid(esType));
+                Assert.Equal("System.Net.Ping.InternalDiagnostics", EventSource.GetName(esType));
+                Assert.Equal(Guid.Parse("fcf5966e-222a-59ec-8e5a-4bb038152090"), EventSource.GetGuid(esType));
                 Assert.NotEmpty(EventSource.GenerateManifest(esType, esType.Assembly.Location));
             }
         }

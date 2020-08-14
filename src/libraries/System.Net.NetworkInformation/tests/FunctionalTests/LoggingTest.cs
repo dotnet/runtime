@@ -14,8 +14,8 @@ namespace System.Net.NetworkInformation.Tests
             Type esType = typeof(NetworkChange).Assembly.GetType("System.Net.NetEventSource", throwOnError: false, ignoreCase: false);
             if (esType != null)
             {
-                Assert.Equal("Microsoft-System-Net-NetworkInformation", EventSource.GetName(esType));
-                Assert.Equal(Guid.Parse("b8e42167-0eb2-5e39-97b5-acaca593d3a2"), EventSource.GetGuid(esType));
+                Assert.Equal("System.Net.NetworkInformation.InternalDiagnostics", EventSource.GetName(esType));
+                Assert.Equal(Guid.Parse("7582bbd8-72f0-59b1-1b87-3a2a334eb61e"), EventSource.GetGuid(esType));
 
                 Assert.NotEmpty(EventSource.GenerateManifest(esType, esType.Assembly.Location));
             }

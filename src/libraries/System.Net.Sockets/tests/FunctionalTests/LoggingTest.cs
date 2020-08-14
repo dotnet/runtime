@@ -25,8 +25,8 @@ namespace System.Net.Sockets.Tests
             Type esType = typeof(Socket).Assembly.GetType("System.Net.NetEventSource", throwOnError: true, ignoreCase: false);
             Assert.NotNull(esType);
 
-            Assert.Equal("Microsoft-System-Net-Sockets", EventSource.GetName(esType));
-            Assert.Equal(Guid.Parse("e03c0352-f9c9-56ff-0ea7-b94ba8cabc6b"), EventSource.GetGuid(esType));
+            Assert.Equal("System.Net.Sockets.InternalDiagnostics", EventSource.GetName(esType));
+            Assert.Equal(Guid.Parse("08166fc4-c58c-5fd8-576d-069966be45b3"), EventSource.GetGuid(esType));
 
             Assert.NotEmpty(EventSource.GenerateManifest(esType, esType.Assembly.Location));
         }
@@ -37,7 +37,7 @@ namespace System.Net.Sockets.Tests
         {
             RemoteExecutor.Invoke(() =>
             {
-                using (var listener = new TestEventListener("Microsoft-System-Net-Sockets", EventLevel.Verbose))
+                using (var listener = new TestEventListener("System.Net.Sockets.InternalDiagnostics", EventLevel.Verbose))
                 {
                     var events = new ConcurrentQueue<EventWrittenEventArgs>();
                     listener.RunWithCallback(events.Enqueue, () =>

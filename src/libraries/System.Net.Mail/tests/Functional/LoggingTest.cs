@@ -17,8 +17,8 @@ namespace System.Net.Mail.Tests
             Type esType = typeof(SmtpClient).Assembly.GetType("System.Net.NetEventSource", throwOnError: true, ignoreCase: false);
             Assert.NotNull(esType);
 
-            Assert.Equal("Microsoft-System-Net-Mail", EventSource.GetName(esType));
-            Assert.Equal(Guid.Parse("42c8027b-f048-58d2-537d-a4a9d5ee7038"), EventSource.GetGuid(esType));
+            Assert.Equal("System.Net.Mail.InternalDiagnostics", EventSource.GetName(esType));
+            Assert.Equal(Guid.Parse("5a6c4eca-308a-5298-9c54-b07e54c2817e"), EventSource.GetGuid(esType));
 
             Assert.NotEmpty(EventSource.GenerateManifest(esType, esType.Assembly.Location));
         }
@@ -28,7 +28,7 @@ namespace System.Net.Mail.Tests
         {
             RemoteExecutor.Invoke(() =>
             {
-                using (var listener = new TestEventListener("Microsoft-System-Net-Mail", EventLevel.Verbose))
+                using (var listener = new TestEventListener("System.Net.Mail.InternalDiagnostics", EventLevel.Verbose))
                 {
                     var events = new ConcurrentQueue<EventWrittenEventArgs>();
                     listener.RunWithCallback(events.Enqueue, () =>

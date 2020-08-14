@@ -17,8 +17,8 @@ namespace System.Net.Security.Tests
             Type esType = typeof(SslStream).Assembly.GetType("System.Net.NetEventSource", throwOnError: true, ignoreCase: false);
             Assert.NotNull(esType);
 
-            Assert.Equal("Microsoft-System-Net-Security", EventSource.GetName(esType));
-            Assert.Equal(Guid.Parse("066c0e27-a02d-5a98-9a4d-078cc3b1a896"), EventSource.GetGuid(esType));
+            Assert.Equal("System.Net.Security.InternalDiagnostics", EventSource.GetName(esType));
+            Assert.Equal(Guid.Parse("0017888f-1af4-5401-ee54-e3da71eb3a12"), EventSource.GetGuid(esType));
 
             Assert.NotEmpty(EventSource.GenerateManifest(esType, esType.Assembly.Location));
         }
@@ -28,7 +28,7 @@ namespace System.Net.Security.Tests
         {
             RemoteExecutor.Invoke(() =>
             {
-                using (var listener = new TestEventListener("Microsoft-System-Net-Security", EventLevel.Verbose))
+                using (var listener = new TestEventListener("System.Net.Security.InternalDiagnostics", EventLevel.Verbose))
                 {
                     var events = new ConcurrentQueue<EventWrittenEventArgs>();
                     listener.RunWithCallback(events.Enqueue, () =>
