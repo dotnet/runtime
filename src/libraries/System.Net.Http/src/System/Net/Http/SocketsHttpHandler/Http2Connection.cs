@@ -889,28 +889,32 @@ namespace System.Net.Http
                 {
                     while (_writeChannel.Reader.TryRead(out WriteQueueEntry? writeEntry))
                     {
-                        if (writeEntry.TryDisableCancellation())
+                        if (_abortException is not null)
                         {
-                            if (_abortException is not null)
+                            if (writeEntry.TryDisableCancellation())
                             {
                                 writeEntry.SetException(_abortException);
                             }
-                            else
+                        }
+                        else
+                        {
+                            int writeBytes = writeEntry.WriteBytes;
+
+                            // If the buffer has already grown to 32k, does not have room for the next request,
+                            // and is non-empty, flush the current contents to the wire.
+                            int totalBufferLength = _outgoingBuffer.Capacity;
+                            if (totalBufferLength >= UnflushedOutgoingBufferSize)
                             {
-                                int writeBytes = writeEntry.WriteBytes;
-
-                                // If the buffer has already grown to 32k, does not have room for the next request,
-                                // and is non-empty, flush the current contents to the wire.
-                                int totalBufferLength = _outgoingBuffer.Capacity;
-                                if (totalBufferLength >= UnflushedOutgoingBufferSize)
+                                int activeBufferLength = _outgoingBuffer.ActiveLength;
+                                if (writeBytes >= totalBufferLength - activeBufferLength)
                                 {
-                                    int activeBufferLength = _outgoingBuffer.ActiveLength;
-                                    if (writeBytes >= totalBufferLength - activeBufferLength)
-                                    {
-                                        await FlushOutgoingBytesAsync().ConfigureAwait(false);
-                                    }
+                                    await FlushOutgoingBytesAsync().ConfigureAwait(false);
                                 }
+                            }
 
+                            // We are ready to process the write, so disable write cancellation now.
+                            if (writeEntry.TryDisableCancellation())
+                            {
                                 _outgoingBuffer.EnsureAvailableSpace(writeBytes);
 
                                 try
@@ -930,7 +934,6 @@ namespace System.Net.Http
                                     writeEntry.SetException(e);
                                 }
                             }
-
                         }
                     }
 

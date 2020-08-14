@@ -2,7 +2,7 @@
 //  Microsoft (R) .NET Framework IL Disassembler.  Version 4.7.3071.0
 //  Copyright (c) Microsoft Corporation.  All rights reserved.
 
-// This is a repro case for GitHub issue #15412 ( https://github.com/dotnet/coreclr/issues/15412 )
+// This is a repro case for GitHub issue #9401 ( https://github.com/dotnet/runtime/issues/9401 )
 
 // Metadata version: v4.0.30319
 .assembly extern mscorlib

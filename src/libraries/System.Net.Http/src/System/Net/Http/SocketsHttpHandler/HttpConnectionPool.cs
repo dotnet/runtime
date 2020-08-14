@@ -1265,11 +1265,13 @@ namespace System.Net.Http
             }
         }
 
+        private static readonly SocketsConnectionFactory s_defaultConnectionFactory = new SocketsConnectionFactory(SocketType.Stream, ProtocolType.Tcp);
+
         private ValueTask<Connection> ConnectToTcpHostAsync(string host, int port, HttpRequestMessage initialRequest, bool async, CancellationToken cancellationToken)
         {
             if (async)
             {
-                ConnectionFactory connectionFactory = Settings._connectionFactory ?? SocketsHttpConnectionFactory.Default;
+                ConnectionFactory connectionFactory = Settings._connectionFactory ?? s_defaultConnectionFactory;
 
                 var endPoint = new DnsEndPointWithProperties(host, port, initialRequest);
                 return ConnectHelper.ConnectAsync(connectionFactory, endPoint, endPoint, cancellationToken);
