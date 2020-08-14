@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -604,8 +603,7 @@ namespace System.Collections.Immutable
             /// </summary>
             /// <param name="key">The key to search for.</param>
             /// <returns>The value for the key, or the default value for type <typeparamref name="TValue"/> if no matching key was found.</returns>
-            [return: MaybeNull]
-            public TValue GetValueOrDefault(TKey key)
+            public TValue? GetValueOrDefault(TKey key)
             {
                 return this.GetValueOrDefault(key, default(TValue)!);
             }

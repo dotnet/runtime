@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #include "pal_config.h"
 
@@ -194,8 +193,8 @@ int32_t SystemNative_GetIcmpv4GlobalStatistics(Icmpv4GlobalStatistics* retStats)
         return -1;
     }
 
-    __typeof(systemStats.icps_inhist[0])* inHist = systemStats.icps_inhist;
-    __typeof(systemStats.icps_outhist[0])* outHist = systemStats.icps_outhist;
+    TYPEOF(systemStats.icps_inhist[0])* inHist = systemStats.icps_inhist;
+    TYPEOF(systemStats.icps_outhist[0])* outHist = systemStats.icps_outhist;
 
     retStats->AddressMaskRepliesReceived = inHist[ICMP_MASKREPLY];
     retStats->AddressMaskRepliesSent = outHist[ICMP_MASKREPLY];

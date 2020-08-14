@@ -653,12 +653,11 @@ CorInfoInitClassResult interceptor_ICJI::initClass(
     CORINFO_FIELD_HANDLE field,        // Non-nullptr - inquire about cctor trigger before static field access
                                        // nullptr - inquire about cctor trigger in method prolog
     CORINFO_METHOD_HANDLE  method,     // Method referencing the field or prolog
-    CORINFO_CONTEXT_HANDLE context,    // Exact context of method
-    BOOL                   speculative // TRUE means don't actually run it
+    CORINFO_CONTEXT_HANDLE context     // Exact context of method
     )
 {
     mcs->AddCall("initClass");
-    return original_ICorJitInfo->initClass(field, method, context, speculative);
+    return original_ICorJitInfo->initClass(field, method, context);
 }
 
 // This used to be called "loadClass".  This records the fact
@@ -1009,7 +1008,7 @@ CORINFO_CLASS_HANDLE interceptor_ICJI::getArgClass(CORINFO_SIG_INFO*       sig, 
 }
 
 // Returns type of HFA for valuetype
-CorInfoType interceptor_ICJI::getHFAType(CORINFO_CLASS_HANDLE hClass)
+CorInfoHFAElemType interceptor_ICJI::getHFAType(CORINFO_CLASS_HANDLE hClass)
 {
     mcs->AddCall("getHFAType");
     return original_ICorJitInfo->getHFAType(hClass);

@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -241,11 +240,7 @@ namespace System.Numerics
             {
                 // PopCount works on vector so convert input value to vector first.
 
-                // Vector64.CreateScalar(uint) generates suboptimal code by storing and
-                // loading the result to memory.
-                // See https://github.com/dotnet/runtime/issues/35976 for details.
-                // Hence use Vector64.Create(ulong) to create Vector64<ulong> and operate on that.
-                Vector64<ulong> input = Vector64.Create((ulong)value);
+                Vector64<uint> input = Vector64.CreateScalar(value);
                 Vector64<byte> aggregated = AdvSimd.Arm64.AddAcross(AdvSimd.PopCount(input.AsByte()));
                 return aggregated.ToScalar();
             }

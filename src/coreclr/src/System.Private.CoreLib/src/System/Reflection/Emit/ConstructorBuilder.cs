@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 
 namespace System.Reflection.Emit
@@ -14,7 +14,7 @@ namespace System.Reflection.Emit
         #region Constructor
 
         internal ConstructorBuilder(string name, MethodAttributes attributes, CallingConventions callingConvention,
-            Type[]? parameterTypes, Type[][]? requiredCustomModifiers, Type[][]? optionalCustomModifiers, ModuleBuilder mod, TypeBuilder type)
+            Type[]? parameterTypes, Type[][]? requiredCustomModifiers, Type[][]? optionalCustomModifiers, ModuleBuilder mod, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] TypeBuilder type)
         {
             m_methodBuilder = new MethodBuilder(name, attributes, callingConvention, null, null, null,
                 parameterTypes, requiredCustomModifiers, optionalCustomModifiers, mod, type);
@@ -40,6 +40,7 @@ namespace System.Reflection.Emit
             return m_methodBuilder.GetParameterTypes();
         }
 
+        [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
         private TypeBuilder GetTypeBuilder()
         {
             return m_methodBuilder.GetTypeBuilder();

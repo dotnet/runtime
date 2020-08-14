@@ -7,10 +7,17 @@
 #include "ep-rt-config.h"
 #include "ep-types.h"
 
+#undef EP_IMPL_GETTER_SETTER
+#ifdef EP_IMPL_METADATA_GENERATOR_GETTER_SETTER
+#define EP_IMPL_GETTER_SETTER
+#endif
+#include "ep-getter-setter.h"
+
 /*
  * EventPipeMetadataGenerator.
  */
 
+// Generates metadata for an event emitted by the EventPipe.
 uint8_t *
 ep_metadata_generator_generate_event_metadata (
 	uint32_t event_id,
@@ -18,6 +25,7 @@ ep_metadata_generator_generate_event_metadata (
 	uint64_t keywords,
 	uint32_t version,
 	EventPipeEventLevel level,
+	uint8_t opcode,
 	EventPipeParameterDesc *params,
 	uint32_t params_len,
 	size_t *metadata_len);
@@ -26,23 +34,23 @@ ep_metadata_generator_generate_event_metadata (
  * EventPipeParameterDesc.
  */
 
-#if defined(EP_INLINE_GETTER_SETTER) || defined(EP_IMPL_GETTER_SETTER)
+// Contains the metadata associated with an EventPipe event parameter.
+#if defined(EP_INLINE_GETTER_SETTER) || defined(EP_IMPL_METADATA_GENERATOR_GETTER_SETTER)
 struct _EventPipeParameterDesc {
 #else
 struct _EventPipeParameterDesc_Internal {
 #endif
-	EventPipeParameterType type;
 	const ep_char16_t *name;
+	// Only used for array types to indicate what type the array elements are
+	EventPipeParameterType element_type;
+	EventPipeParameterType type;
 };
 
-#if !defined(EP_INLINE_GETTER_SETTER) && !defined(EP_IMPL_GETTER_SETTER)
+#if !defined(EP_INLINE_GETTER_SETTER) && !defined(EP_IMPL_METADATA_GENERATOR_GETTER_SETTER)
 struct _EventPipeParameterDesc {
 	uint8_t _internal [sizeof (struct _EventPipeParameterDesc_Internal)];
 };
 #endif
-
-EP_DEFINE_GETTER(EventPipeParameterDesc *, parameter_desc, EventPipeParameterType, type)
-EP_DEFINE_GETTER(EventPipeParameterDesc *, parameter_desc, const ep_char16_t *, name)
 
 EventPipeParameterDesc *
 ep_parameter_desc_init (

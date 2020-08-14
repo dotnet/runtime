@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -18,8 +17,8 @@ namespace System.Buffers
     public readonly partial struct ReadOnlySequence<T>
     {
         // The data is essentially two SequencePositions, however the Start and End SequencePositions are deconstructed to improve packing.
-        [AllowNull] private readonly object? _startObject;
-        [AllowNull] private readonly object? _endObject;
+        private readonly object? _startObject;
+        private readonly object? _endObject;
         private readonly int _startInteger;
         private readonly int _endInteger;
 
@@ -121,7 +120,7 @@ namespace System.Buffers
             _startObject = array;
             _endObject = array;
             _startInteger = ReadOnlySequence.ArrayToSequenceStart(0);
-            _endInteger = ReadOnlySequence.ArrayToSequenceEnd(array!.Length); // TODO-NULLABLE: Remove ! when [DoesNotReturn] respected
+            _endInteger = ReadOnlySequence.ArrayToSequenceEnd(array.Length);
         }
 
         /// <summary>
@@ -146,9 +145,7 @@ namespace System.Buffers
         /// </summary>
         public ReadOnlySequence(ReadOnlyMemory<T> memory)
         {
-#pragma warning disable CS8631 // TODO-NULLABLE: ILLink rewriter removing some necessary metadata (https://github.com/dotnet/corefx/pull/38983#issuecomment-506757237)
             if (MemoryMarshal.TryGetMemoryManager(memory, out MemoryManager<T>? manager, out int index, out int length))
-#pragma warning restore CS8631
             {
                 _startObject = manager;
                 _endObject = manager;

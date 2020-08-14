@@ -43,19 +43,6 @@ struct _MonoPPDBFile {
 	GHashTable *method_hash;
 };
 
-/* IMAGE_DEBUG_DIRECTORY structure */
-typedef struct
-{
-	gint32 characteristics;
-	gint32 time_date_stamp;
-	gint16 major_version;
-	gint16 minor_version;
-	gint32 type;
-	gint32 size_of_data;
-	gint32 address;
-	gint32 pointer;
-}  ImageDebugDirectory;
-
 typedef struct {
 	gint32 signature;
 	guint8 guid [16];
@@ -67,11 +54,6 @@ typedef struct {
 	guint32 entry_point;
 	guint64 referenced_tables;
 } PdbStreamHeader;
-
-typedef enum {
-	DEBUG_DIR_ENTRY_CODEVIEW = 2,
-	DEBUG_DIR_ENTRY_PPDB = 17
-} DebugDirectoryEntryType;
 
 #define EMBEDDED_PPDB_MAGIC 0x4244504d
 
@@ -212,7 +194,7 @@ mono_ppdb_load_file (MonoImage *image, const guint8 *raw_contents, int size)
 	MonoAssemblyLoadContext *alc = mono_image_get_alc (image);
 	if (raw_contents) {
 		if (size > 4 && strncmp ((char*)raw_contents, "BSJB", 4) == 0)
-			ppdb_image = mono_image_open_from_data_internal (alc, (char*)raw_contents, size, TRUE, &status, FALSE, TRUE, NULL);
+			ppdb_image = mono_image_open_from_data_internal (alc, (char*)raw_contents, size, TRUE, &status, FALSE, TRUE, NULL, NULL);
 	} else {
 		/* ppdb files drop the .exe/.dll extension */
 		filename = mono_image_get_filename (image);

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //
 // File: castcache.cpp
 //
@@ -125,7 +124,7 @@ void CastCache::Initialize()
     }
     CONTRACTL_END;
 
-    FieldDesc* pTableField = MscorlibBinder::GetField(FIELD__CASTHELPERS__TABLE);
+    FieldDesc* pTableField = CoreLibBinder::GetField(FIELD__CASTHELPERS__TABLE);
 
     GCX_COOP();
     s_pTableRef = (BASEARRAYREF*)pTableField->GetCurrentStaticAddress();

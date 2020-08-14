@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.IO;
@@ -20,7 +19,8 @@ namespace System.Text.Json.Serialization.Tests
         [MemberData(nameof(ReadSuccessCases))]
         public static void Read(Type classType, byte[] data)
         {
-            object obj = JsonSerializer.Deserialize(data, classType);
+            var options = new JsonSerializerOptions { IncludeFields = true };
+            object obj = JsonSerializer.Deserialize(data, classType, options);
             Assert.IsAssignableFrom<ITestClass>(obj);
             ((ITestClass)obj).Verify();
         }
@@ -30,9 +30,11 @@ namespace System.Text.Json.Serialization.Tests
         public static void ReadFromStream(Type classType, byte[] data)
         {
             MemoryStream stream = new MemoryStream(data);
+            var options = new JsonSerializerOptions { IncludeFields = true };
             object obj = JsonSerializer.DeserializeAsync(
                 stream,
-                classType).Result;
+                classType,
+                options).Result;
 
             Assert.IsAssignableFrom<ITestClass>(obj);
             ((ITestClass)obj).Verify();
@@ -42,7 +44,7 @@ namespace System.Text.Json.Serialization.Tests
             obj = JsonSerializer.DeserializeAsync(
                 stream,
                 classType,
-                new JsonSerializerOptions { DefaultBufferSize = 5 }).Result;
+                new JsonSerializerOptions { DefaultBufferSize = 5, IncludeFields = true }).Result;
 
             Assert.IsAssignableFrom<ITestClass>(obj);
             ((ITestClass)obj).Verify();

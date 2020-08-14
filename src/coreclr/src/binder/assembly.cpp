@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 // ============================================================
 //
 // Assembly.cpp
@@ -210,87 +209,5 @@ namespace BINDER_SPACE
 
         return S_OK;
     }
-
-    HRESULT Assembly::GetImageResource(
-        DWORD dwImageType,
-        DWORD * pdwImageType,
-        ICLRPrivResource ** ppIResource)
-    {
-        HRESULT hr = S_OK;
-        if(ppIResource == nullptr)
-            return E_INVALIDARG;
-
-        if ((dwImageType & ASSEMBLY_IMAGE_TYPE_ASSEMBLY) == ASSEMBLY_IMAGE_TYPE_ASSEMBLY)
-        {
-            *ppIResource = clr::SafeAddRef(&m_clrPrivRes);
-            if (pdwImageType != nullptr)
-                *pdwImageType = ASSEMBLY_IMAGE_TYPE_ASSEMBLY;
-        }
-        else
-        {
-            hr = CLR_E_BIND_IMAGE_UNAVAILABLE;
-        }
-
-        return hr;
-    }
-
-    // get parent pointer from nested type
-    #define GetPThis() ((BINDER_SPACE::Assembly*)(((PBYTE)this) - offsetof(BINDER_SPACE::Assembly, m_clrPrivRes)))
-
-    HRESULT Assembly::CLRPrivResourceAssembly::QueryInterface(REFIID riid, void ** ppv)
-    {
-        HRESULT hr = S_OK;
-        VALIDATE_ARG_RET(ppv != NULL);
-
-        if (IsEqualIID(riid, IID_IUnknown))
-        {
-            AddRef();
-            *ppv = this;
-        }
-		else if (IsEqualIID(riid, __uuidof(ICLRPrivResource)))
-		{
-			AddRef();
-			// upcasting is safe
-			*ppv = static_cast<ICLRPrivResource *>(this);
-		}
-        else if (IsEqualIID(riid, __uuidof(ICLRPrivResourceAssembly)))
-        {
-            AddRef();
-            *ppv = static_cast<ICLRPrivResourceAssembly *>(this);
-        }
-        else
-        {
-            *ppv = NULL;
-            hr = E_NOINTERFACE;
-        }
-
-        return hr;
-    }
-
-    ULONG Assembly::CLRPrivResourceAssembly::AddRef()
-    {
-        return GetPThis()->AddRef();
-    }
-
-    ULONG Assembly::CLRPrivResourceAssembly::Release()
-    {
-        return GetPThis()->Release();
-    }
-
-    HRESULT Assembly::CLRPrivResourceAssembly::GetResourceType(IID *pIID)
-    {
-        VALIDATE_ARG_RET(pIID != nullptr);
-        *pIID = __uuidof(ICLRPrivResourceAssembly);
-        return S_OK;
-    }
-
-    HRESULT Assembly::CLRPrivResourceAssembly::GetAssembly(LPVOID *ppAssembly)
-    {
-        VALIDATE_ARG_RET(ppAssembly != nullptr);
-        AddRef();
-        *ppAssembly = GetPThis();
-        return S_OK;
-    }
-
 }
 

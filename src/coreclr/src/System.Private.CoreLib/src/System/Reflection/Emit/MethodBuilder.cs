@@ -1,8 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.SymbolStore;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -18,6 +18,8 @@ namespace System.Reflection.Emit
         internal string m_strName; // The name of the method
         private MethodToken m_tkMethod; // The token of this method
         private readonly ModuleBuilder m_module;
+
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
         internal TypeBuilder m_containingType;
 
         // IL
@@ -57,7 +59,7 @@ namespace System.Reflection.Emit
         internal MethodBuilder(string name, MethodAttributes attributes, CallingConventions callingConvention,
             Type? returnType, Type[]? returnTypeRequiredCustomModifiers, Type[]? returnTypeOptionalCustomModifiers,
             Type[]? parameterTypes, Type[][]? parameterTypeRequiredCustomModifiers, Type[][]? parameterTypeOptionalCustomModifiers,
-            ModuleBuilder mod, TypeBuilder type)
+            ModuleBuilder mod, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] TypeBuilder type)
         {
             if (name == null)
                 throw new ArgumentNullException(nameof(name));
@@ -400,6 +402,7 @@ namespace System.Reflection.Emit
             return m_containingType != null && m_containingType.IsCreated();
         }
 
+        [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
         internal TypeBuilder GetTypeBuilder()
         {
             return m_containingType;
@@ -843,8 +846,8 @@ namespace System.Reflection.Emit
             }
         }
 
-        internal bool m_canBeRuntimeImpl = false;
-        internal bool m_isDllImport = false;
+        internal bool m_canBeRuntimeImpl;
+        internal bool m_isDllImport;
 
         #endregion
     }

@@ -1,5 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
-// See the LICENSE file in the project root for more information.
+// The .NET Foundation licenses this file to you under the MIT license.
 //
 // System.Net.ResponseStream
 //
@@ -162,7 +162,7 @@ namespace System.Net
 
         private async Task InternalWriteIgnoreErrorsAsync(byte[] buffer, int offset, int count)
         {
-            try { await _stream.WriteAsync(buffer, offset, count).ConfigureAwait(false); }
+            try { await _stream.WriteAsync(buffer.AsMemory(offset, count)).ConfigureAwait(false); }
             catch { }
         }
 

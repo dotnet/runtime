@@ -1,0 +1,70 @@
+# The purpose of this pipeline is to exercise local developer workflow in the consolidated
+# runtime repo. In particular, it is supposed to run the root "build" script just like any
+# normal developer normally would and monitor regressions w.r.t. this fundamental scenario.
+
+trigger:
+  batch: true
+  branches:
+    include:
+    - master
+    - dev/infrastructure
+    - release/*.*
+  paths:
+    include:
+    - '*'
+    exclude:
+    - eng/Version.Details.xml
+    - .github/*
+    - docs/*
+    - CODE-OF-CONDUCT.md
+    - CONTRIBUTING.md
+    - LICENSE.TXT
+    - PATENTS.TXT
+    - README.md
+    - SECURITY.md
+    - THIRD-PARTY-NOTICES.TXT
+
+pr:
+  branches:
+    include:
+    - master
+    - dev/infrastructure
+    - release/*.*
+  paths:
+    include:
+    - '*'
+    exclude:
+    - eng/Version.Details.xml
+    - .github/*
+    - docs/*
+    - CODE-OF-CONDUCT.md
+    - CONTRIBUTING.md
+    - LICENSE.TXT
+    - PATENTS.TXT
+    - README.md
+    - SECURITY.md
+    - THIRD-PARTY-NOTICES.TXT
+
+jobs:
+#
+# Checkout repository
+#
+- template: /eng/pipelines/common/checkout-job.yml
+
+#
+# Build Release config vertical for Windows, Linux, Linux musl and OSX
+#
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/common/global-build-job.yml
+    buildConfig: release
+    platforms:
+    - Windows_NT_x64
+    - OSX_x64
+    - Linux_x64
+    jobParameters:
+      testGroup: innerloop
+      timeoutInMinutes: 120
+      nameSuffix: Runtime_Release
+      buildArgs: -s clr+libs -c $(_BuildConfig)
+      extraStepsTemplate: /eng/pipelines/libraries/execute-trimming-tests-steps.yml

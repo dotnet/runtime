@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Diagnostics;
@@ -20,12 +19,9 @@ namespace System.IO.Pipes.Tests
         [DllImport("libc", SetLastError = true)]
         internal static extern unsafe uint geteuid();
 
-        public static bool IsSuperUser()
-        {
-            return geteuid() == 0;
-        }
+        public static bool IsSuperUserAndRemoteExecutorSupported => geteuid() == 0 && RemoteExecutor.IsSupported;
 
-        [ConditionalFact(nameof(IsSuperUser))]
+        [ConditionalFact(nameof(IsSuperUserAndRemoteExecutorSupported))]
         [PlatformSpecific(TestPlatforms.AnyUnix)]  // Uses P/Invokes
         [ActiveIssue("https://github.com/dotnet/runtime/issues/0")]
         public void RunAsClient_Unix()

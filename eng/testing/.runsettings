@@ -18,10 +18,6 @@
     <!-- Filter out failing (wrong framwork, platform, runtime or activeissue) tests -->
     <TestCaseFilter>$$TESTCASEFILTER$$</TestCaseFilter>
     <DotNetHostPath>$$DOTNETHOSTPATH$$</DotNetHostPath>
-    <EnvironmentVariables>
-      <!-- Use our self-built framework on .NET Framework -->
-      <DEVPATH>$$DEVPATH$$</DEVPATH>
-    </EnvironmentVariables>
   </RunConfiguration>
   <LoggerRunSettings>
     <Loggers>

@@ -1,12 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Collections;
 using System.ComponentModel;
 using System.Globalization;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Data
 {
@@ -17,13 +17,13 @@ namespace System.Data
     [ListBindable(false)]
     public sealed class DataTableCollection : InternalDataCollectionBase
     {
-        private readonly DataSet _dataSet = null;
+        private readonly DataSet _dataSet;
         private readonly ArrayList _list = new ArrayList();
         private int _defaultNameIndex = 1;
-        private DataTable[] _delayedAddRangeTables = null;
+        private DataTable?[]? _delayedAddRangeTables;
 
-        private CollectionChangeEventHandler _onCollectionChangedDelegate = null;
-        private CollectionChangeEventHandler _onCollectionChangingDelegate = null;
+        private CollectionChangeEventHandler? _onCollectionChangedDelegate;
+        private CollectionChangeEventHandler? _onCollectionChangingDelegate;
 
         private static int s_objectTypeCount; // Bid counter
         private readonly int _objectID = System.Threading.Interlocked.Increment(ref s_objectTypeCount);
@@ -34,7 +34,7 @@ namespace System.Data
         internal DataTableCollection(DataSet dataSet)
         {
             DataCommonEventSource.Log.Trace("<ds.DataTableCollection.DataTableCollection|INFO> {0}, dataSet={1}", ObjectID, (dataSet != null) ? dataSet.ObjectID : 0);
-            _dataSet = dataSet;
+            _dataSet = dataSet!;
         }
 
         /// <summary>
@@ -54,7 +54,7 @@ namespace System.Data
                 try
                 {
                     // Perf: use the readonly _list field directly and let ArrayList check the range
-                    return (DataTable)_list[index];
+                    return (DataTable)_list[index]!;
                 }
                 catch (ArgumentOutOfRangeException)
                 {
@@ -66,7 +66,7 @@ namespace System.Data
         /// <summary>
         /// Gets the table in the collection with the given name (not case-sensitive).
         /// </summary>
-        public DataTable this[string name]
+        public DataTable? this[string name]
         {
             get
             {
@@ -79,11 +79,11 @@ namespace System.Data
                 {
                     throw ExceptionBuilder.NamespaceNameConflict(name);
                 }
-                return (index < 0) ? null : (DataTable)_list[index];
+                return (index < 0) ? null : (DataTable)_list[index]!;
             }
         }
 
-        public DataTable this[string name, string tableNamespace]
+        public DataTable? this[string name, string tableNamespace]
         {
             get
             {
@@ -97,16 +97,16 @@ namespace System.Data
                 {
                     throw ExceptionBuilder.CaseInsensitiveNameConflict(name);
                 }
-                return (index < 0) ? null : (DataTable)_list[index];
+                return (index < 0) ? null : (DataTable)_list[index]!;
             }
         }
 
         // Case-sensitive search in Schema, data and diffgram loading
-        internal DataTable GetTable(string name, string ns)
+        internal DataTable? GetTable(string name, string ns)
         {
             for (int i = 0; i < _list.Count; i++)
             {
-                DataTable table = (DataTable)_list[i];
+                DataTable table = (DataTable)_list[i]!;
                 if (table.TableName == name && table.Namespace == ns)
                 {
                     return table;
@@ -117,13 +117,13 @@ namespace System.Data
 
         // Case-sensitive smart search: it will look for a table using the ns only if required to
         // resolve a conflict
-        internal DataTable GetTableSmart(string name, string ns)
+        internal DataTable? GetTableSmart(string name, string ns)
         {
             int fCount = 0;
-            DataTable fTable = null;
+            DataTable? fTable = null;
             for (int i = 0; i < _list.Count; i++)
             {
-                DataTable table = (DataTable)_list[i];
+                DataTable table = (DataTable)_list[i]!;
                 if (table.TableName == name)
                 {
                     if (table.Namespace == ns)
@@ -148,7 +148,7 @@ namespace System.Data
             try
             {
                 OnCollectionChanging(new CollectionChangeEventArgs(CollectionChangeAction.Add, table));
-                BaseAdd(table);
+                BaseAdd(table!);
                 ArrayAdd(table);
 
                 if (table.SetLocaleValue(_dataSet.Locale, false, false) ||
@@ -164,7 +164,7 @@ namespace System.Data
             }
         }
 
-        public void AddRange(DataTable[] tables)
+        public void AddRange(DataTable?[]? tables)
         {
             long logScopeId = DataCommonEventSource.Log.EnterScope("<ds.DataTableCollection.AddRange|API> {0}", ObjectID);
             try
@@ -177,7 +177,7 @@ namespace System.Data
 
                 if (tables != null)
                 {
-                    foreach (DataTable table in tables)
+                    foreach (DataTable? table in tables)
                     {
                         if (table != null)
                         {
@@ -195,14 +195,14 @@ namespace System.Data
         /// <summary>
         /// Creates a table with the given name and adds it to the collection.
         /// </summary>
-        public DataTable Add(string name)
+        public DataTable? Add(string? name)
         {
             DataTable table = new DataTable(name);
             Add(table);
             return table;
         }
 
-        public DataTable Add(string name, string tableNamespace)
+        public DataTable Add(string? name, string? tableNamespace)
         {
             DataTable table = new DataTable(name, tableNamespace);
             Add(table);
@@ -222,7 +222,7 @@ namespace System.Data
         /// <summary>
         /// Occurs when the collection is changed.
         /// </summary>
-        public event CollectionChangeEventHandler CollectionChanged
+        public event CollectionChangeEventHandler? CollectionChanged
         {
             add
             {
@@ -236,7 +236,7 @@ namespace System.Data
             }
         }
 
-        public event CollectionChangeEventHandler CollectionChanging
+        public event CollectionChangeEventHandler? CollectionChanging
         {
             add
             {
@@ -257,7 +257,7 @@ namespace System.Data
         /// </summary>
         internal string AssignName()
         {
-            string newName = null;
+            string? newName = null;
             while (Contains(newName = MakeName(_defaultNameIndex)))
             {
                 _defaultNameIndex++;
@@ -272,7 +272,7 @@ namespace System.Data
         /// A DuplicateNameException is thrown if this collection already has a table with the same
         /// name (case insensitive).
         /// </summary>
-        private void BaseAdd(DataTable table)
+        private void BaseAdd([NotNull] DataTable table)
         {
             if (table == null)
             {
@@ -359,7 +359,7 @@ namespace System.Data
         /// An ArgumentNullException is thrown if this table is null.  An ArgumentException is thrown
         /// if this table doesn't belong to this collection or if this table is part of a relationship.
         /// </summary>
-        private void BaseRemove(DataTable table)
+        private void BaseRemove(DataTable? table)
         {
             if (CanRemove(table, true))
             {
@@ -367,15 +367,15 @@ namespace System.Data
                 table.SetDataSet(null);
             }
             _list.Remove(table);
-            _dataSet.OnRemovedTable(table);
+            _dataSet.OnRemovedTable(table!);
         }
 
         /// <summary>
         /// Verifies if a given table can be removed from the collection.
         /// </summary>
-        public bool CanRemove(DataTable table) => CanRemove(table, false);
+        public bool CanRemove(DataTable? table) => CanRemove(table, false);
 
-        internal bool CanRemove(DataTable table, bool fThrowException)
+        internal bool CanRemove([NotNullWhen(true)] DataTable? table, bool fThrowException)
         {
             long logScopeId = DataCommonEventSource.Log.EnterScope("<ds.DataTableCollection.CanRemove|INFO> {0}, table={1}, fThrowException={2}", ObjectID, (table != null) ? table.ObjectID : 0, fThrowException);
             try
@@ -471,7 +471,7 @@ namespace System.Data
                     _delayedAddRangeTables = null;
                 }
 
-                BaseGroupSwitch(tables, oldLength, null, 0);
+                BaseGroupSwitch(tables, oldLength, Array.Empty<DataTable>(), 0);
                 _list.Clear();
 
                 OnCollectionChanged(s_refreshEventArgs);
@@ -485,7 +485,7 @@ namespace System.Data
         /// <summary>
         /// Checks if a table, specified by name, exists in the collection.
         /// </summary>
-        public bool Contains(string name) => (InternalIndexOf(name) >= 0);
+        public bool Contains(string? name) => (InternalIndexOf(name) >= 0);
 
         public bool Contains(string name, string tableNamespace)
         {
@@ -502,7 +502,7 @@ namespace System.Data
             return (InternalIndexOf(name, tableNamespace) >= 0);
         }
 
-        internal bool Contains(string name, string tableNamespace, bool checkProperty, bool caseSensitive)
+        internal bool Contains(string name, string? tableNamespace, bool checkProperty, bool caseSensitive)
         {
             if (!caseSensitive)
             {
@@ -513,9 +513,9 @@ namespace System.Data
             int count = _list.Count;
             for (int i = 0; i < count; i++)
             {
-                DataTable table = (DataTable)_list[i];
+                DataTable table = (DataTable)_list[i]!;
                 // this may be needed to check whether the cascading is creating some conflicts
-                string ns = checkProperty ? table.Namespace : table._tableNamespace;
+                string? ns = checkProperty ? table.Namespace : table._tableNamespace;
                 if (NamesEqual(table.TableName, name, true, _dataSet.Locale) == 1 && (ns == tableNamespace))
                 {
                     return true;
@@ -535,7 +535,7 @@ namespace System.Data
             int count = _list.Count;
             for (int i = 0; i < count; i++)
             {
-                DataTable table = (DataTable)_list[i];
+                DataTable table = (DataTable)_list[i]!;
                 if (NamesEqual(table.TableName, name, true, _dataSet.Locale) == 1)
                 {
                     return true;
@@ -560,19 +560,19 @@ namespace System.Data
             }
             for (int i = 0; i < _list.Count; ++i)
             {
-                array[index + i] = (DataTable)_list[i];
+                array[index + i] = (DataTable)_list[i]!;
             }
         }
 
         /// <summary>
         /// Returns the index of a specified <see cref='System.Data.DataTable'/>.
         /// </summary>
-        public int IndexOf(DataTable table)
+        public int IndexOf(DataTable? table)
         {
             int tableCount = _list.Count;
             for (int i = 0; i < tableCount; ++i)
             {
-                if (table == (DataTable)_list[i])
+                if (table == (DataTable)_list[i]!)
                 {
                     return i;
                 }
@@ -585,7 +585,7 @@ namespace System.Data
         /// table with the given name (case insensitive), or -1 if the table
         /// doesn't exist in the collection.
         /// </summary>
-        public int IndexOf(string tableName)
+        public int IndexOf(string? tableName)
         {
             int index = InternalIndexOf(tableName);
             return (index < 0) ? -1 : index;
@@ -623,7 +623,7 @@ namespace System.Data
         //        -1: No match
         //        -2: At least two matches with different cases
         //        -3: At least two matches with different namespaces
-        internal int InternalIndexOf(string tableName)
+        internal int InternalIndexOf(string? tableName)
         {
             int cachedI = -1;
             if ((null != tableName) && (0 < tableName.Length))
@@ -632,7 +632,7 @@ namespace System.Data
                 int result = 0;
                 for (int i = 0; i < count; i++)
                 {
-                    DataTable table = (DataTable)_list[i];
+                    DataTable table = (DataTable)_list[i]!;
                     result = NamesEqual(table.TableName, tableName, false, _dataSet.Locale);
                     if (result == 1)
                     {
@@ -641,7 +641,7 @@ namespace System.Data
                         // if any let's return (-3) otherwise...
                         for (int j = i + 1; j < count; j++)
                         {
-                            DataTable dupTable = (DataTable)_list[j];
+                            DataTable dupTable = (DataTable)_list[j]!;
                             if (NamesEqual(dupTable.TableName, tableName, false, _dataSet.Locale) == 1)
                                 return -3;
                         }
@@ -669,7 +669,7 @@ namespace System.Data
                 int result = 0;
                 for (int i = 0; i < count; i++)
                 {
-                    DataTable table = (DataTable)_list[i];
+                    DataTable table = (DataTable)_list[i]!;
                     result = NamesEqual(table.TableName, tableName, false, _dataSet.Locale);
                     if ((result == 1) && (table.Namespace == tableNamespace))
                         return i;
@@ -685,7 +685,7 @@ namespace System.Data
         {
             if (_delayedAddRangeTables != null)
             {
-                foreach (DataTable table in _delayedAddRangeTables)
+                foreach (DataTable? table in _delayedAddRangeTables)
                 {
                     if (table != null)
                     {
@@ -738,10 +738,10 @@ namespace System.Data
             int tableCount = _list.Count;
             for (int i = 0; i < tableCount; i++)
             {
-                DataTable table = (DataTable)_list[i];
+                DataTable table = (DataTable)_list[i]!;
                 if (NamesEqual(name, table.TableName, true, locale) != 0 && (tbNamespace == table.Namespace))
                 {
-                    throw ExceptionBuilder.DuplicateTableName(((DataTable)_list[i]).TableName);
+                    throw ExceptionBuilder.DuplicateTableName(((DataTable)_list[i]!).TableName);
                 }
             }
             if (NamesEqual(name, MakeName(_defaultNameIndex), true, locale) != 0)
@@ -797,7 +797,7 @@ namespace System.Data
             long logScopeId = DataCommonEventSource.Log.EnterScope("<ds.DataTableCollection.Remove|API> {0}, name='{1}'", ObjectID, name);
             try
             {
-                DataTable dt = this[name];
+                DataTable? dt = this[name];
                 if (dt == null)
                 {
                     throw ExceptionBuilder.TableNotInTheDataSet(name);
@@ -820,7 +820,7 @@ namespace System.Data
             {
                 throw ExceptionBuilder.ArgumentNull(nameof(tableNamespace));
             }
-            DataTable dt = this[name, tableNamespace];
+            DataTable? dt = this[name, tableNamespace];
             if (dt == null)
             {
                 throw ExceptionBuilder.TableNotInTheDataSet(name);

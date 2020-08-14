@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #nullable enable
 using System;
@@ -40,11 +39,11 @@ namespace System.Xml.Schema
     /// </summary>
     internal class SymbolsDictionary
     {
-        private int _last = 0;
+        private int _last;
         private readonly Hashtable _names;
-        private Hashtable? _wildcards = null;
+        private Hashtable? _wildcards;
         private readonly ArrayList _particles;
-        private object? _particleLast = null;
+        private object? _particleLast;
         private bool _isUpaEnforced = true;
 
         public SymbolsDictionary()
@@ -101,16 +100,15 @@ namespace System.Xml.Schema
                     break;
                 case NamespaceList.ListType.Other:
                     // Create a symbol for the excluded namespace, but don't set a particle for it.
-                    AddWildcard(list.Excluded, null);
+                    AddWildcard(list.Excluded!, null);
                     if (!allowLocal)
                     {
                         AddWildcard(string.Empty, null); //##local is not allowed
                     }
                     break;
                 case NamespaceList.ListType.Set:
-                    foreach (string? wildcard in list.Enumerate)
+                    foreach (string wildcard in list.Enumerate)
                     {
-                        Debug.Assert(wildcard != null);
                         AddWildcard(wildcard, particle);
                     }
                     break;
@@ -152,9 +150,8 @@ namespace System.Xml.Schema
 
             if (_wildcards != null)
             {
-                foreach (string? wildcard in _wildcards.Keys)
+                foreach (string wildcard in _wildcards.Keys)
                 {
-                    Debug.Assert(wildcard != null);
                     if (list.Allows(wildcard))
                     {
                         match.Add(_wildcards[wildcard]);
@@ -223,9 +220,7 @@ namespace System.Xml.Schema
         /// </summary>
         public string NameOf(int symbol)
         {
-#pragma warning disable CS8605 // TODO-NULLABLE https://github.com/dotnet/csharplang/issues/3214
             foreach (DictionaryEntry de in _names)
-#pragma warning restore CS8605
             {
                 if ((int)de.Value! == symbol)
                 {
@@ -235,9 +230,7 @@ namespace System.Xml.Schema
 
             if (_wildcards != null)
             {
-#pragma warning disable CS8605 // TODO-NULLABLE https://github.com/dotnet/csharplang/issues/3214
                 foreach (DictionaryEntry de in _wildcards)
-#pragma warning restore CS8605
                 {
                     if ((int)de!.Value! == symbol)
                     {
@@ -389,9 +382,7 @@ namespace System.Xml.Schema
         public override void ExpandTree(InteriorNode parent, SymbolsDictionary symbols, Positions positions)
         {
             SyntaxTreeNode? replacementNode = null;
-#pragma warning disable CS8605 // TODO-NULLABLE https://github.com/dotnet/csharplang/issues/3214
             foreach (int symbol in GetResolvedSymbols(symbols))
-#pragma warning restore CS8605
             {
                 if (symbols.GetParticle(symbol) != particle)
                 {
@@ -1055,7 +1046,7 @@ namespace System.Xml.Schema
             if (elem != null && (global || !elem.RefName.IsEmpty))
             {
                 XmlSchemaObjectTable substitutionGroups = schemaSet.SubstitutionGroups;
-                XmlSchemaSubstitutionGroup grp = (XmlSchemaSubstitutionGroup)substitutionGroups[elem.QualifiedName];
+                XmlSchemaSubstitutionGroup? grp = (XmlSchemaSubstitutionGroup?)substitutionGroups[elem.QualifiedName];
                 if (grp != null)
                 {
                     //Grp members wil contain the head as well, so filter head as we added it already
@@ -2167,7 +2158,7 @@ namespace System.Xml.Schema
         private readonly Hashtable _elements;     // unique terminal names to positions in Bitset mapping
         private readonly object[] _particles;
         private readonly BitSet _isRequired;      // required flags
-        private int _countRequired = 0;
+        private int _countRequired;
 
         public AllElementsContentValidator(XmlSchemaContentType contentType, int size, bool isEmptiable) : base(contentType, false, isEmptiable)
         {
@@ -2249,9 +2240,7 @@ namespace System.Xml.Schema
         public override ArrayList? ExpectedElements(ValidationState context, bool isRequiredOnly)
         {
             ArrayList? names = null;
-#pragma warning disable CS8605 // TODO-NULLABLE https://github.com/dotnet/csharplang/issues/3214
             foreach (DictionaryEntry entry in _elements)
-#pragma warning restore CS8605
             {
                 if (!context.AllElementsSet![(int)entry.Value!] && (!isRequiredOnly || _isRequired[(int)entry.Value]))
                 {
@@ -2270,9 +2259,7 @@ namespace System.Xml.Schema
         public override ArrayList ExpectedParticles(ValidationState context, bool isRequiredOnly, XmlSchemaSet schemaSet)
         {
             ArrayList expectedParticles = new ArrayList();
-#pragma warning disable CS8605 // TODO-NULLABLE https://github.com/dotnet/csharplang/issues/3214
             foreach (DictionaryEntry entry in _elements)
-#pragma warning restore CS8605
             {
                 if (!context.AllElementsSet![(int)entry.Value!] && (!isRequiredOnly || _isRequired[(int)entry.Value]))
                 {

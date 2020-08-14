@@ -1,6 +1,5 @@
 ' Licensed to the .NET Foundation under one or more agreements.
 ' The .NET Foundation licenses this file to you under the MIT license.
-' See the LICENSE file in the project root for more information.
 
 Imports System
 Imports System.Dynamic
@@ -111,7 +110,15 @@ Namespace Microsoft.VisualBasic.CompilerServices
             End If
 
             typ = Expression.GetType()
+#If TARGET_WINDOWS Then
+            If (typ.IsCOMObject AndAlso (System.String.CompareOrdinal(typ.Name, COMObjectName) = 0)) Then
+                Result = TypeNameOfCOMObject(Expression, True)
+            Else
+                Result = VBFriendlyNameOfType(typ)
+            End If
+#Else
             Result = VBFriendlyNameOfType(typ)
+#End If
             Return Result
         End Function
 

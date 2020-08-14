@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #include "common.h"
 #include "eventpipe.h"
@@ -307,6 +306,9 @@ void EventPipeProvider::SetDeleteDeferred()
 {
     LIMITED_METHOD_CONTRACT;
     m_deleteDeferred = true;
+    // EventSources will be collected once they ungregister themselves,
+    // so we can't call back in to them.
+    m_pCallbackFunction = NULL;
 }
 
 void EventPipeProvider::RefreshAllEvents()

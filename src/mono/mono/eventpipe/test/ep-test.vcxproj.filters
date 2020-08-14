@@ -34,6 +34,12 @@
     <ClCompile Include="ep-test-runner.c">
       <Filter>Source Files\testframework</Filter>
     </ClCompile>
+    <ClCompile Include="ep-buffer-tests.c">
+      <Filter>Source Files\tests</Filter>
+    </ClCompile>
+    <ClCompile Include="ep-buffer-manager-tests.c">
+      <Filter>Source Files\tests</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Source Files">

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 namespace System.Diagnostics.CodeAnalysis
 {
@@ -14,7 +13,12 @@ namespace System.Diagnostics.CodeAnalysis
     [AttributeUsage(
         AttributeTargets.Constructor | AttributeTargets.Field | AttributeTargets.Method,
         AllowMultiple = true, Inherited = false)]
-    public sealed class DynamicDependencyAttribute : Attribute
+#if SYSTEM_PRIVATE_CORELIB
+    public
+#else
+    internal
+#endif
+    sealed class DynamicDependencyAttribute : Attribute
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="DynamicDependencyAttribute"/> class

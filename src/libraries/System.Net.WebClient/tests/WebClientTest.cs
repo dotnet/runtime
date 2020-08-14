@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -43,7 +42,7 @@ namespace System.Net.Tests
             var wc = new WebClient();
 
             AssertExtensions.Throws<ArgumentException>("value", () => { wc.BaseAddress = "http::/invalid url"; });
-            AssertExtensions.Throws<ArgumentNullException>("Encoding", () => { wc.Encoding = null; });
+            AssertExtensions.Throws<ArgumentNullException>("value", () => { wc.Encoding = null; });
         }
 
         [Fact]

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //*****************************************************************************
 // File: dacglobals.cpp
 //
@@ -34,10 +33,6 @@ extern TADDR gHighestFCall;
 extern PCODE g_FCDynamicallyAssignedImplementations;
 extern DWORD gThreadTLSIndex;
 extern DWORD gAppDomainTLSIndex;
-
-#ifdef FEATURE_APPX
-extern BOOL g_fAppX;
-#endif // FEATURE_APPX
 
 DLLEXPORT
 DacGlobals g_dacTable;

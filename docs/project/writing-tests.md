@@ -17,7 +17,7 @@ using Microsoft.DotNet.RemoteExecutor;
 
 public class HttpWebRequestTest
 {
-    [Fact]
+    [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
     public void DefaultMaximumResponseHeadersLength_SetAndGetLength_ValuesMatch()
     {
         RemoteExecutor.Invoke(() =>

@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Threading;
@@ -42,6 +41,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/40528", TestPlatforms.Browser)]
         public void SettingUpdatesProperties()
         {
             T item = GetExistingItem();
@@ -78,6 +78,7 @@ namespace System.IO.Tests
         }
 
         [ConditionalFact(nameof(isNotHFS))] // OSX HFS driver format does not support millisec granularity
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/40530", TestPlatforms.Browser)]
         public void TimesIncludeMillisecondPart()
         {
             T item = GetExistingItem();

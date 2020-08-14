@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 var DotNetSupportLib = {
 	$DOTNET: {
@@ -30,7 +29,25 @@ var DotNetSupportLib = {
 			return MONO.string_decoder.copy (mono_obj);
 		}
 	},
-	mono_wasm_invoke_js_marshalled: function(exceptionMessage, asyncHandleLongPtr, functionName, argsJson) {
+
+	mono_wasm_invoke_js_blazor: function(exceptionMessage, callInfo, arg0, arg1, arg2)	{
+		try {
+			var blazorExports = DOTNET._dotnet_get_global().Blazor;
+			if (!blazorExports) {
+				throw new Error('The blazor.webassembly.js library is not loaded.');
+			}
+
+			return blazorExports._internal.invokeJSFromDotNet(callInfo, arg0, arg1, arg2);
+		} catch (ex) {
+			var exceptionJsString = ex.message + '\n' + ex.stack;
+			var exceptionSystemString = mono_string(exceptionJsString);
+			setValue (exceptionMessage, exceptionSystemString, 'i32'); // *exceptionMessage = exceptionSystemString;
+			return 0;
+		}
+	},
+
+	// This is for back-compat only and will eventually be removed
+	mono_wasm_invoke_js_marshalled: function(exceptionMessage, asyncHandleLongPtr, functionName, argsJson, treatResultAsVoid) {
 
 		var mono_string = DOTNET._dotnet_get_global()._mono_string_cached
 			|| (DOTNET._dotnet_get_global()._mono_string_cached = Module.cwrap('mono_wasm_string_from_js', 'number', ['string']));
@@ -55,10 +72,10 @@ var DotNetSupportLib = {
 			}
 
 			if (asyncHandleJsNumber) {
-				dotNetExports.jsCallDispatcher.beginInvokeJSFromDotNet(asyncHandleJsNumber, funcNameJsString, argsJsonJsString);
+				dotNetExports.jsCallDispatcher.beginInvokeJSFromDotNet(asyncHandleJsNumber, funcNameJsString, argsJsonJsString, treatResultAsVoid);
 				return 0;
 			} else {
-				var resultJson = dotNetExports.jsCallDispatcher.invokeJSFromDotNet(funcNameJsString, argsJsonJsString);
+				var resultJson = dotNetExports.jsCallDispatcher.invokeJSFromDotNet(funcNameJsString, argsJsonJsString, treatResultAsVoid);
 				return resultJson === null ? 0 : mono_string(resultJson);
 			}
 		} catch (ex) {
@@ -68,6 +85,8 @@ var DotNetSupportLib = {
 			return 0;
 		}
 	},
+
+	// This is for back-compat only and will eventually be removed
 	mono_wasm_invoke_js_unmarshalled: function(exceptionMessage, funcName, arg0, arg1, arg2)	{
 		try {
 			// Get the function you're trying to invoke

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections;
@@ -453,7 +452,7 @@ namespace HttpStress
 
         private class StructuralEqualityComparer<T> : IEqualityComparer<T> where T : IStructuralEquatable
         {
-            public bool Equals([AllowNull] T left, [AllowNull] T right) => left != null && left.Equals(right, StructuralComparisons.StructuralEqualityComparer);
+            public bool Equals(T? left, T? right) => left != null && left.Equals(right, StructuralComparisons.StructuralEqualityComparer);
             public int GetHashCode(T value) => value.GetHashCode(StructuralComparisons.StructuralEqualityComparer);
         }
     }

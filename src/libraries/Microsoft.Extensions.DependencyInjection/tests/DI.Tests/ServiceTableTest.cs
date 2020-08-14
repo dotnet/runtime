@@ -1,10 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
-using Microsoft.AspNetCore.Testing;
 using Xunit;
 
 namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
@@ -24,10 +22,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             };
 
             // Act and Assert
-            ExceptionAssert.ThrowsArgument(
-                () => new CallSiteFactory(serviceDescriptors),
-                "descriptors",
-                $"Open generic service type '{typeof(IList<>)}' requires registering an open generic implementation type.");
+            AssertExtensions.Throws<ArgumentException>("descriptors", () => new CallSiteFactory(serviceDescriptors));
         }
 
         public static TheoryData Constructor_WithInstance_ThrowsIfServiceTypeIsOpenGenericData =>
@@ -49,10 +44,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             };
 
             // Act and Assert
-            var ex = ExceptionAssert.ThrowsArgument(
-                () => new CallSiteFactory(serviceDescriptors),
-                "descriptors",
-                $"Open generic service type '{typeof(IEnumerable<>)}' requires registering an open generic implementation type.");
+            AssertExtensions.Throws<ArgumentException>("descriptors", () => new CallSiteFactory(serviceDescriptors));
         }
 
         [Fact]
@@ -65,10 +57,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             };
 
             // Act and Assert
-            var ex = ExceptionAssert.ThrowsArgument(
-                () => new CallSiteFactory(serviceDescriptors),
-                "descriptors",
-                $"Open generic service type '{typeof(Tuple<>)}' requires registering an open generic implementation type.");
+            AssertExtensions.Throws<ArgumentException>("descriptors", () => new CallSiteFactory(serviceDescriptors));
         }
     }
 }

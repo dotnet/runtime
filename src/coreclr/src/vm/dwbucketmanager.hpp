@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //
 // FILE: dwbucketmanager.hpp
 //
@@ -87,10 +86,6 @@ DWORD GetCountBucketParamsForEvent(LPCWSTR wzEventName)
 #include <msodwwrap.h>
 #include "dbginterface.h"
 #include <sha1.h>
-
-#ifdef FEATURE_APPX
-#include "appxutil.h"
-#endif
 
 //------------------------------------------------------------------------------
 // Description
@@ -340,7 +335,7 @@ public:
 };
 
 BaseBucketParamsManager::BaseBucketParamsManager(GenericModeBlock* pGenericModeBlock, TypeOfReportedError typeOfError, PCODE initialFaultingPc, Thread* pFaultingThread, OBJECTREF* pThrownException)
-    : m_pFaultingMD(NULL), m_faultingPc(initialFaultingPc), m_pGmb(pGenericModeBlock), m_tore(typeOfError), m_pThread(pFaultingThread), m_pException(pThrownException)
+    : m_pGmb(pGenericModeBlock), m_tore(typeOfError), m_pThread(pFaultingThread), m_pException(pThrownException), m_pFaultingMD(NULL), m_faultingPc(initialFaultingPc)
 {
     CONTRACTL
     {

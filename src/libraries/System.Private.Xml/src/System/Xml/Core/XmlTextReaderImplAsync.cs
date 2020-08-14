@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #nullable enable
 using System;
@@ -794,7 +793,7 @@ namespace System.Xml
             return this.ReadDataAsync();
         }
 
-        internal async Task<int> DtdParserProxy_ParseNumericCharRefAsync(StringBuilder internalSubsetBuilder)
+        internal async Task<int> DtdParserProxy_ParseNumericCharRefAsync(StringBuilder? internalSubsetBuilder)
         {
             CheckAsyncCall();
 
@@ -802,13 +801,13 @@ namespace System.Xml
             return tuple_1.Item2;
         }
 
-        internal Task<int> DtdParserProxy_ParseNamedCharRefAsync(bool expand, StringBuilder internalSubsetBuilder)
+        internal Task<int> DtdParserProxy_ParseNamedCharRefAsync(bool expand, StringBuilder? internalSubsetBuilder)
         {
             CheckAsyncCall();
             return this.ParseNamedCharRefAsync(expand, internalSubsetBuilder);
         }
 
-        internal async Task DtdParserProxy_ParsePIAsync(StringBuilder sb)
+        internal async Task DtdParserProxy_ParsePIAsync(StringBuilder? sb)
         {
             CheckAsyncCall();
             if (sb == null)
@@ -824,7 +823,7 @@ namespace System.Xml
             }
         }
 
-        internal async Task DtdParserProxy_ParseCommentAsync(StringBuilder sb)
+        internal async Task DtdParserProxy_ParseCommentAsync(StringBuilder? sb)
         {
             CheckAsyncCall();
             Debug.Assert(_parsingMode == ParsingMode.Full);
@@ -890,7 +889,7 @@ namespace System.Xml
 
         // SxS: The caller did not provide any SxS sensitive name or resource. No resource is being exposed either.
         // It is OK to suppress SxS warning.
-        internal async Task<bool> DtdParserProxy_PushExternalSubsetAsync(string systemId, string publicId)
+        internal async Task<bool> DtdParserProxy_PushExternalSubsetAsync(string? systemId, string? publicId)
         {
             CheckAsyncCall();
             Debug.Assert(_parsingStatesStackTop == -1);
@@ -1248,11 +1247,7 @@ namespace System.Xml
             }
 
             if (!XmlConvert.StrEqual(_ps.chars, _ps.charPos, 5, XmlDeclarationBeginning) ||
-                 _xmlCharType.IsNameSingleChar(_ps.chars[_ps.charPos + 5])
-#if XML10_FIFTH_EDITION
-                 || xmlCharType.IsNCNameHighSurrogateChar( ps.chars[ps.charPos + 5])
-#endif
-                )
+                 _xmlCharType.IsNameSingleChar(_ps.chars[_ps.charPos + 5]))
             {
                 goto NoXmlDecl;
             }
@@ -1442,17 +1437,9 @@ namespace System.Xml
                     {
                         // version
                         case 0:
-#if XML10_FIFTH_EDITION
-                            //  VersionNum ::= '1.' [0-9]+   (starting with XML Fifth Edition)
-                            if ( pos - ps.charPos >= 3 &&
-                                 ps.chars[ps.charPos] == '1' &&
-                                 ps.chars[ps.charPos + 1] == '.' &&
-                                 XmlCharType.IsOnlyDigits( ps.chars, ps.charPos + 2, pos - ps.charPos - 2 )) {
-#else
                             // VersionNum  ::=  '1.0'        (XML Fourth Edition and earlier)
                             if (XmlConvert.StrEqual(_ps.chars, _ps.charPos, pos - _ps.charPos, "1.0"))
                             {
-#endif
                                 if (!isTextDecl)
                                 {
                                     attr!.SetValue(_ps.chars, _ps.charPos, pos - _ps.charPos);
@@ -1957,12 +1944,6 @@ namespace System.Xml
             {
                 pos++;
             }
-
-#if XML10_FIFTH_EDITION
-            else if ( pos + 1 < ps.charsUsed && xmlCharType.IsNCNameSurrogateChar(chars[pos + 1], chars[pos])) {
-                pos += 2;
-            }
-#endif
             else
             {
                 goto ParseQNameSlow;
@@ -1976,12 +1957,6 @@ namespace System.Xml
                 {
                     pos++;
                 }
-
-#if XML10_FIFTH_EDITION
-                else if ( pos < ps.charsUsed && xmlCharType.IsNCNameSurrogateChar(chars[pos + 1], chars[pos])) {
-                    pos += 2;
-                }
-#endif
                 else
                 {
                     break;
@@ -2295,11 +2270,7 @@ namespace System.Xml
 
                 bool tagMismatch = false;
 
-                if (_xmlCharType.IsNCNameSingleChar(chars[pos]) || (chars[pos] == ':')
-#if XML10_FIFTH_EDITION
-                        || xmlCharType.IsNCNameHighSurrogateChar(chars[pos])
-#endif
-)
+                if (_xmlCharType.IsNCNameSingleChar(chars[pos]) || (chars[pos] == ':'))
                 {
                     tagMismatch = true;
                 }
@@ -2458,11 +2429,6 @@ namespace System.Xml
                 {
                     startNameCharSize = 1;
                 }
-#if XML10_FIFTH_EDITION
-                else if ( pos + 1 < ps.charsUsed && xmlCharType.IsNCNameSurrogateChar(chars[pos + 1], tmpch1 )) {
-                    startNameCharSize = 2;
-                }
-#endif
 
                 if (startNameCharSize == 0)
                 {
@@ -2535,11 +2501,6 @@ namespace System.Xml
                     {
                         pos++;
                     }
-#if XML10_FIFTH_EDITION
-                    else if (pos + 1 < ps.charsUsed && xmlCharType.IsNCNameSurrogateChar(chars[pos + 1], tmpch2)) {
-                        pos += 2;
-                    }
-#endif
                     else
                     {
                         break;
@@ -2571,12 +2532,6 @@ namespace System.Xml
                             pos++;
                             goto ContinueParseName;
                         }
-#if XML10_FIFTH_EDITION
-                        else if ( pos + 1 < ps.charsUsed && xmlCharType.IsNCNameSurrogateChar(chars[pos + 1], chars[pos])) {
-                            pos += 2;
-                            goto ContinueParseName;
-                        }
-#endif
 
                         // else fallback to full name parsing routine
 
@@ -5126,12 +5081,6 @@ namespace System.Xml
             {
                 pos++;
             }
-
-#if XML10_FIFTH_EDITION
-            else if ( pos + 1 < ps.charsUsed && xmlCharType.IsNCNameSurrogateChar(chars[pos + 1], chars[pos])) {
-                pos += 2;
-            }
-#endif
             else
             {
                 if (pos + 1 >= _ps.charsUsed)
@@ -5159,11 +5108,6 @@ namespace System.Xml
                 {
                     pos++;
                 }
-#if XML10_FIFTH_EDITION
-                else if ( pos + 1 < ps.charsUsed && xmlCharType.IsNCNameSurrogateChar(chars[pos + 1], chars[pos])) {
-                    pos += 2;
-                }
-#endif
                 else
                 {
                     break;
@@ -5191,11 +5135,7 @@ namespace System.Xml
                 }
             }
             // end of buffer
-            else if (pos == _ps.charsUsed
-#if XML10_FIFTH_EDITION
-                || ( pos + 1 == ps.charsUsed && xmlCharType.IsNCNameHighSurrogateChar(chars[pos]))
-#endif
-                )
+            else if (pos == _ps.charsUsed)
             {
                 var tuple_28 = await ReadDataInNameAsync(pos).ConfigureAwait(false);
                 pos = tuple_28.Item1;

@@ -1,0 +1,263 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Library</OutputType>
+    <AssemblyName>ILCompiler.ReadyToRun</AssemblyName>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <DefineConstants>READYTORUN;$(DefineConstants)</DefineConstants>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <Platforms>x64;x86</Platforms>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+
+    <!-- We're binplacing these into an existing publish layout so that F5 build in VS updates
+         the same bits tests expect to see in artifacts/crossgen2. That way we never need to wonder which
+         binaries are up to date and which are stale. -->
+    <GenerateDependencyFile>false</GenerateDependencyFile>
+    <Configurations>Debug;Release;Checked</Configurations>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\ILCompiler.DependencyAnalysisFramework\ILCompiler.DependencyAnalysisFramework.csproj" />
+    <ProjectReference Include="..\ILCompiler.TypeSystem.ReadyToRun\ILCompiler.TypeSystem.ReadyToRun.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="..\..\Common\Internal\Runtime\CorConstants.cs" Link="Common\CorConstants.cs" />
+    <Compile Include="..\..\Common\Internal\Runtime\ReadyToRunConstants.cs" Link="Common\ReadyToRunConstants.cs" />
+    <Compile Include="..\..\Common\Internal\Runtime\ReadyToRunInstructionSet.cs" Link="Common\ReadyToRunInstructionSet.cs" />
+    <Compile Include="..\..\Common\Internal\Runtime\ReadyToRunInstructionSetHelper.cs" Link="Common\ReadyToRunInstructionSetHelper.cs" />
+    <Compile Include="..\..\Common\Internal\NativeFormat\NativeFormat.cs" Link="Common\NativeFormat.cs" />
+    <Compile Include="..\..\Common\Internal\NativeFormat\NativeFormatWriter.cs" Link="Common\NativeFormatWriter.cs" />
+    <Compile Include="..\..\Common\Internal\NativeFormat\NativeFormatWriter.Primitives.cs" Link="Common\NativeFormatWriter.Primitives.cs" />
+    <Compile Include="..\..\Common\System\FormattingHelpers.cs" Link="Common\FormattingHelpers.cs" />
+    <Compile Include="..\..\Common\TypeSystem\IL\ILProvider.cs" Link="IL\ILProvider.cs" />
+    <Compile Include="..\..\Common\TypeSystem\IL\Stubs\ComparerIntrinsics.cs" Link="IL\Stubs\ComparerIntrinsics.cs" />
+    <Compile Include="..\..\Common\TypeSystem\IL\Stubs\InterlockedIntrinsics.cs" Link="IL\Stubs\InterlockedIntrinsics.cs" />
+    <Compile Include="..\..\Common\TypeSystem\IL\Stubs\MemoryMarshalIntrinsics.cs" Link="IL\Stubs\MemoryMarshalIntrinsics.cs" />
+    <Compile Include="..\..\Common\TypeSystem\IL\Stubs\RuntimeHelpersIntrinsics.cs" Link="IL\Stubs\RuntimeHelpersIntrinsics.cs" />
+    <Compile Include="..\..\Common\TypeSystem\IL\Stubs\UnsafeIntrinsics.cs" Link="IL\Stubs\UnsafeIntrinsics.cs" />
+    <Compile Include="..\..\Common\TypeSystem\IL\Stubs\VolatileIntrinsics.cs" Link="IL\Stubs\VolatileIntrinsics.cs" />
+    <Compile Include="..\..\Common\TypeSystem\IL\Stubs\PInvokeILCodeStreams.cs" Link="IL\Stubs\PInvokeILCodeStreams.cs" />
+    <Compile Include="..\..\Common\TypeSystem\Interop\IL\Marshaller.cs" Link="Interop\IL\Marshaller.cs" />
+    <Compile Include="..\..\Common\TypeSystem\Interop\IL\MarshalHelpers.cs" Link="Interop\IL\MarshalHelpers.cs" />
+    <Compile Include="..\..\Common\TypeSystem\Interop\IL\MarshalUtils.cs" Link="Interop\IL\MarshalUtils.cs" />
+    <Compile Include="..\..\Common\Compiler\CodeGenerationFailedException.cs" Link="Compiler\CodeGenerationFailedException.cs" />
+    <Compile Include="..\..\Common\Compiler\CompilationBuilder.cs" Link="Compiler\CompilationBuilder.cs" />
+    <Compile Include="..\..\Common\Compiler\CompilationModuleGroup.cs" Link="Compiler\CompilationModuleGroup.cs" />
+    <Compile Include="..\..\Common\Compiler\CompilerTypeSystemContext.cs" Link="Compiler\CompilerTypeSystemContext.cs" />
+    <Compile Include="..\..\Common\Compiler\CompilerTypeSystemContext.Validation.cs" Link="Compiler\CompilerTypeSystemContext.Validation.cs" />
+    <Compile Include="..\..\Common\Compiler\CoreRTNameMangler.cs" Link="Compiler\CoreRTNameMangler.cs" />
+    <Compile Include="..\..\Common\Compiler\DependencyAnalysis\AssemblyStubNode.cs" Link="Compiler\DependencyAnalysis\AssemblyStubNode.cs" />
+    <Compile Include="..\..\Common\Compiler\DependencyAnalysis\CompilerComparer.cs" Link="Compiler\DependencyAnalysis\CompilerComparer.cs" />
+    <Compile Include="..\..\Common\Compiler\DependencyAnalysis\EmbeddedDataContainerNode.cs" Link="Compiler\DependencyAnalysis\EmbeddedDataContainerNode.cs" />
+    <Compile Include="..\..\Common\Compiler\DependencyAnalysis\IMethodBodyNode.cs" Link="Compiler\DependencyAnalysis\IMethodBodyNode.cs" />
+    <Compile Include="..\..\Common\Compiler\DependencyAnalysis\IMethodNode.cs" Link="Compiler\DependencyAnalysis\IMethodNode.cs" />
+    <Compile Include="..\..\Common\Compiler\DependencyAnalysis\INodeWithCodeInfo.cs" Link="Compiler\DependencyAnalysis\INodeWithCodeInfo.cs" />
+    <Compile Include="..\..\Common\Compiler\DependencyAnalysis\INodeWithRuntimeDeterminedDependencies.cs" Link="Compiler\DependencyAnalysis\INodeWithRuntimeDeterminedDependencies.cs" />
+    <Compile Include="..\..\Common\Compiler\DependencyAnalysis\ISortableNode.cs" Link="Compiler\DependencyAnalysis\ISortableNode.cs" />
+    <Compile Include="..\..\Common\Compiler\DependencyAnalysis\ISymbolNode.cs" Link="Compiler\DependencyAnalysis\ISymbolNode.cs" />
+    <Compile Include="..\..\Common\Compiler\DependencyAnalysis\ObjectAndOffsetSymbolNode.cs" Link="Compiler\DependencyAnalysis\ObjectAndOffsetSymbolNode.cs" />
+    <Compile Include="..\..\Common\Compiler\DependencyAnalysis\ObjectDataBuilder.cs" Link="Compiler\DependencyAnalysis\ObjectDataBuilder.cs" />
+    <Compile Include="..\..\Common\Compiler\DependencyAnalysis\ObjectNode.cs" Link="Compiler\DependencyAnalysis\ObjectNode.cs" />
+    <Compile Include="..\..\Common\Compiler\DependencyAnalysis\ObjectNodeSection.cs" Link="Compiler\DependencyAnalysis\ObjectNodeSection.cs" />
+    <Compile Include="..\..\Common\Compiler\DependencyAnalysis\Relocation.cs" Link="Compiler\DependencyAnalysis\Relocation.cs" />
+    <Compile Include="..\..\Common\Compiler\DependencyAnalysis\MethodReadOnlyDataNode.cs" Link="Compiler\DependencyAnalysis\MethodReadOnlyDataNode.cs" />
+    <Compile Include="..\..\Common\Compiler\DependencyAnalysis\ShadowConcreteMethodNode.cs" Link="Compiler\DependencyAnalysis\ShadowConcreteMethodNode.cs" />
+    <Compile Include="..\..\Common\Compiler\DependencyAnalysis\SortableDependencyNode.cs" Link="Compiler\DependencyAnalysis\SortableDependencyNode.cs" />
+    <Compile Include="..\..\Common\Compiler\DependencyAnalysis\Target_ARM64\AddrMode.cs" Link="Compiler\DependencyAnalysis\Target_ARM64\AddrMode.cs" />
+    <Compile Include="..\..\Common\Compiler\DependencyAnalysis\Target_ARM64\ARM64Emitter.cs" Link="Compiler\DependencyAnalysis\Target_ARM64\ARM64Emitter.cs" />
+    <Compile Include="..\..\Common\Compiler\DependencyAnalysis\Target_ARM64\Register.cs" Link="Compiler\DependencyAnalysis\Target_ARM64\Register.cs" />
+    <Compile Include="..\..\Common\Compiler\DependencyAnalysis\Target_ARM64\TargetRegisterMap.cs" Link="Compiler\DependencyAnalysis\Target_ARM64\TargetRegisterMap.cs" />
+    <Compile Include="..\..\Common\Compiler\DependencyAnalysis\Target_ARM\ARMEmitter.cs" Link="Compiler\DependencyAnalysis\Target_ARM\ARMEmitter.cs" />
+    <Compile Include="..\..\Common\Compiler\DependencyAnalysis\Target_ARM\Register.cs" Link="Compiler\DependencyAnalysis\Target_ARM\Register.cs" />
+    <Compile Include="..\..\Common\Compiler\DependencyAnalysis\Target_ARM\TargetRegisterMap.cs" Link="Compiler\DependencyAnalysis\Target_ARM\TargetRegisterMap.cs" />
+    <Compile Include="..\..\Common\Compiler\DependencyAnalysis\Target_X64\AddrMode.cs" Link="Compiler\DependencyAnalysis\Target_X64\AddrMode.cs" />
+    <Compile Include="..\..\Common\Compiler\DependencyAnalysis\Target_X64\Register.cs" Link="Compiler\DependencyAnalysis\Target_X64\Register.cs" />
+    <Compile Include="..\..\Common\Compiler\DependencyAnalysis\Target_X64\TargetRegisterMap.cs" Link="Compiler\DependencyAnalysis\Target_X64\TargetRegisterMap.cs" />
+    <Compile Include="..\..\Common\Compiler\DependencyAnalysis\Target_X64\X64Emitter.cs" Link="Compiler\DependencyAnalysis\Target_X64\X64Emitter.cs" />
+    <Compile Include="..\..\Common\Compiler\DependencyAnalysis\Target_X86\AddrMode.cs" Link="Compiler\DependencyAnalysis\Target_X86\AddrMode.cs" />
+    <Compile Include="..\..\Common\Compiler\DependencyAnalysis\Target_X86\Register.cs" Link="Compiler\DependencyAnalysis\Target_X86\Register.cs" />
+    <Compile Include="..\..\Common\Compiler\DependencyAnalysis\Target_X86\TargetRegisterMap.cs" Link="Compiler\DependencyAnalysis\Target_X86\TargetRegisterMap.cs" />
+    <Compile Include="..\..\Common\Compiler\DependencyAnalysis\Target_X86\X86Emitter.cs" Link="Compiler\DependencyAnalysis\Target_X86\X86Emitter.cs" />
+    <Compile Include="..\..\Common\Compiler\DependencyTrackingLevel.cs" Link="Compiler\DependencyTrackingLevel.cs" />
+    <Compile Include="..\..\Common\Compiler\DevirtualizationManager.cs" Link="Compiler\DevirtualizationManager.cs" />
+    <Compile Include="..\..\Common\Compiler\HardwareIntrinsicHelpers.cs" Link="Compiler\HardwareIntrinsicHelpers.cs" />
+    <Compile Include="..\..\Common\Compiler\ICompilationRootProvider.cs" Link="Compiler\ICompilationRootProvider.cs" />
+    <Compile Include="..\..\Common\Compiler\InstructionSetSupport.cs" Link="Compiler\InstructionSetSupport.cs" />
+    <Compile Include="..\..\Common\Compiler\InternalCompilerErrorException.cs" Link="Compiler\InternalCompilerErrorException.cs" />
+    <Compile Include="..\..\Common\Compiler\NameMangler.cs" Link="Compiler\NameMangler.cs" />
+    <Compile Include="..\..\Common\Compiler\SingleMethodRootProvider.cs" Link="Compiler\SingleMethodRootProvider.cs" />
+    <Compile Include="..\..\Common\Compiler\TypeExtensions.cs" Link="Compiler\TypeExtensions.cs" />
+    <Compile Include="..\..\Common\Compiler\VectorFieldLayoutAlgorithm.cs" Link="Compiler\VectorFieldLayoutAlgorithm.cs" />
+    <Compile Include="..\..\Common\Compiler\Logger.cs" Link="Compiler\Logger.cs" />
+    <Compile Include="..\..\Common\JitInterface\CorInfoTypes.VarInfo.cs" Link="JitInterface\CorInfoTypes.VarInfo.cs" />
+    <Compile Include="..\..\Common\JitInterface\SystemVStructClassificator.cs" Link="JitInterface\SystemVStructClassificator.cs" />
+    <Compile Include="..\..\Common\TypeSystem\Interop\InteropTypes.cs" Link="Interop\InteropTypes.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\DelayLoadMethodCallThunkNodeRange.cs" />
+    <Compile Include="ObjectWriter\MapFileBuilder.cs" />
+    <Compile Include="CodeGen\ReadyToRunObjectWriter.cs" />
+    <Compile Include="Compiler\CompilationModuleGroup.ReadyToRun.cs" />
+    <Compile Include="Compiler\CryptographicHashProvider.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\AllMethodsOnTypeNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ArrayOfEmbeddedDataNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ArrayOfEmbeddedPointersNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\EmbeddedObjectNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\EmbeddedPointerIndirectionNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\ArgIterator.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\AssemblyTableNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\AttributePresenceFilterNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\DebugDirectoryEntryNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\DebugDirectoryNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\CopiedFieldRvaNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\CopiedManagedResourcesNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\CopiedMetadataBlobNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\CopiedMethodILNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\CopiedCorHeaderNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\CopiedStrongNameSignatureNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\DelayLoadHelperMethodImport.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\ExceptionInfoLookupTableNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReadyToRunCodegenNodeFactory.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\ByteArrayComparer.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\CompilerIdentifierNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\DebugInfoTableNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\DelayLoadHelperImport.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\GCRefMapBuilder.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\GCRefMapNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\GenericLookupSignature.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\ImportThunk.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\DelegateCtorSignature.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\DevirtualizationManager.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\FieldFixupSignature.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\HeaderNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\ImportSectionNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\Import.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\ImportSectionsTableNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\InliningInfoNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\InstanceEntryPointTableNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\OwnerCompositeExecutableNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\PrecodeMethodImport.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\DelayLoadMethodImport.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\ManifestMetadataTableNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\MethodEntryPointTableNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\MethodFixupSignature.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\MethodGCInfoNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\MethodWithGCInfo.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\ModuleToken.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\ModuleTokenResolver.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\NewArrayFixupSignature.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\NewObjectFixupSignature.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\NibbleWriter.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\PrecodeHelperImport.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\ProfileDataNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\ProfileDataSectionNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\ReadyToRunHelperSignature.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\ReadyToRunInstructionSetSupportSignature.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\RuntimeFunctionsGCInfoNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\RuntimeFunctionsTableNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\Signature.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\SignatureBuilder.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\SignatureContext.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\SignatureEmbeddedPointerIndirectionNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\StringImport.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\StringImportSignature.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\Target_ARM64\ImportThunk.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\Target_ARM\ImportThunk.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\Target_X64\ImportThunk.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\Target_X86\ImportThunk.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\TransitionBlock.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\TypeFixupSignature.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\TypesTableNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\Win32ResourcesNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReadyToRunSymbolNodeFactory.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\SortableDependencyNodeCompilerSpecific.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\TypeAndMethod.cs" />
+    <Compile Include="Compiler\IRootingServiceProvider.cs" />
+    <Compile Include="Compiler\MethodExtensions.cs" />
+    <Compile Include="Compiler\ReadyToRunCompilationModuleGroupBase.cs" />
+    <Compile Include="IBC\IBCDataModel.cs" />
+    <Compile Include="IBC\IBCDataReader.cs" />
+    <Compile Include="IBC\MIbcProfileParser.cs" />
+    <Compile Include="IBC\ReaderExtensions.cs" />
+    <Compile Include="Compiler\ProfileData.cs" />
+    <Compile Include="Compiler\ReadyToRunHashCode.cs" />
+    <Compile Include="Compiler\ReadyToRunLibraryRootProvider.cs" />
+    <Compile Include="Compiler\ReadyToRunCompilerContext.cs" />
+    <Compile Include="Compiler\ReadyToRunCodegenCompilation.cs" />
+    <Compile Include="Compiler\ReadyToRunCodegenCompilationBuilder.cs" />
+    <Compile Include="Compiler\ReadyToRunFileLayoutOptimizer.cs" />
+    <Compile Include="Compiler\ReadyToRunMetadataFieldLayoutAlgorithm.cs" />
+    <Compile Include="Compiler\ReadyToRunSingleAssemblyCompilationModuleGroup.cs" />
+    <Compile Include="Compiler\ReadyToRunTableManager.cs" />
+    <Compile Include="IBC\IBCProfileData.cs" />
+    <Compile Include="IBC\IBCProfileParser.cs" />
+    <Compile Include="IL\Stubs\PInvokeILEmitter.cs" />
+    <Compile Include="Interop\IL\Marshaller.ReadyToRun.cs" />
+    <Compile Include="Compiler\PerfEventSource.cs" />
+    <Compile Include="Win32Resources\ResourceData.cs" />
+    <Compile Include="Win32Resources\ResourceData.Reader.cs" />
+    <Compile Include="Win32Resources\ResourceData.ResourcesDataModel.cs" />
+    <Compile Include="Win32Resources\ResourceData.UpdateResourceDataModel.cs" />
+    <Compile Include="Win32Resources\ResourceData.Win32Structs.cs" />
+    <Compile Include="Compiler\RuntimeDeterminedTypeHelper.cs" />
+    <Compile Include="Compiler\SingleMethodCompilationModuleGroup.cs" />
+    <Compile Include="Compiler\NoMethodsCompilationModuleGroup.cs" />
+    <Compile Include="Compiler\SystemObjectFieldLayoutAlgorithm.cs" />
+    <Compile Include="IL\ReadyToRunILProvider.cs" />
+    <Compile Include="JitInterface\CorInfoImpl.ReadyToRun.cs" />
+    <Compile Include="JitInterface\UnboxingMethodDescFactory.cs" />
+    <Compile Include="ObjectWriter\SectionBuilder.cs" />
+    <Compile Include="ObjectWriter\R2RPEBuilder.cs" />
+    <Compile Include="ObjectWriter\RelocationHelper.cs" />
+    <Compile Include="ObjectWriter\TargetExtensions.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="..\..\Common\Internal\Runtime\ModuleHeaders.cs">
+      <Link>Common\ModuleHeaders.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\Internal\Text\Utf8String.cs">
+      <Link>Common\Utf8String.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\Internal\Text\Utf8StringBuilder.cs">
+      <Link>Common\Utf8StringBuilder.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\System\Collections\Generic\ArrayBuilder.cs">
+      <Link>Common\ArrayBuilder.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\TypeSystem\IL\HelperExtensions.cs">
+      <Link>IL\HelperExtensions.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\JitInterface\TypeString.cs">
+      <Link>JitInterface\TypeString.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\JitInterface\CorInfoBase.cs">
+      <Link>JitInterface\CorInfoBase.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\JitInterface\CorInfoImpl.cs">
+      <Link>JitInterface\CorInfoImpl.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\JitInterface\CorInfoHelpFunc.cs">
+      <Link>JitInterface\CorInfoHelpFunc.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\JitInterface\CorInfoTypes.cs">
+      <Link>JitInterface\CorInfoTypes.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\JitInterface\CorInfoInstructionSet.cs">
+      <Link>JitInterface\CorInfoInstructionSet.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\JitInterface\JitConfigProvider.cs">
+      <Link>JitInterface\JitConfigProvider.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\JitInterface\CorInfoImpl.Intrinsics.cs">
+      <Link>JitInterface\CorInfoImpl.Intrinsics.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\JitInterface\MemoryHelper.cs">
+      <Link>JitInterface\MemoryHelper.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\JitInterface\UnboxingMethodDesc.cs">
+      <Link>JitInterface\UnboxingMethodDesc.cs</Link>
+    </Compile>
+  </ItemGroup>
+
+</Project>

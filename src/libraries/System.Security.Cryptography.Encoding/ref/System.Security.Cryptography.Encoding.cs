@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 // ------------------------------------------------------------------------------
 // Changes to this file must follow the https://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
@@ -11,9 +10,12 @@ namespace System.Security.Cryptography
     {
         protected AsnEncodedData() { }
         public AsnEncodedData(byte[] rawData) { }
+        public AsnEncodedData(System.ReadOnlySpan<byte> rawData) { }
         public AsnEncodedData(System.Security.Cryptography.AsnEncodedData asnEncodedData) { }
         public AsnEncodedData(System.Security.Cryptography.Oid? oid, byte[] rawData) { }
+        public AsnEncodedData(System.Security.Cryptography.Oid? oid, System.ReadOnlySpan<byte> rawData) { }
         public AsnEncodedData(string oid, byte[] rawData) { }
+        public AsnEncodedData(string oid, System.ReadOnlySpan<byte> rawData) { }
         public System.Security.Cryptography.Oid? Oid { get { throw null; } set { } }
         public byte[] RawData { get { throw null; } set { } }
         public virtual void CopyFrom(System.Security.Cryptography.AsnEncodedData asnEncodedData) { }

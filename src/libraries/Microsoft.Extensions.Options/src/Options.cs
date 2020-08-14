@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
+
+using System.Diagnostics.CodeAnalysis;
 
 namespace Microsoft.Extensions.Options
 {
@@ -9,6 +10,9 @@ namespace Microsoft.Extensions.Options
     /// </summary>
     public static class Options
     {
+        // By default, we're going to keep public, parameterless constructor on any Options class.
+        internal const DynamicallyAccessedMemberTypes DynamicallyAccessedMembers = DynamicallyAccessedMemberTypes.PublicParameterlessConstructor;
+
         /// <summary>
         /// The default name used for options instances: "".
         /// </summary>
@@ -20,7 +24,8 @@ namespace Microsoft.Extensions.Options
         /// <typeparam name="TOptions">Options type.</typeparam>
         /// <param name="options">Options object.</param>
         /// <returns>Wrapped options object.</returns>
-        public static IOptions<TOptions> Create<TOptions>(TOptions options) where TOptions : class
+        public static IOptions<TOptions> Create<[DynamicallyAccessedMembers(DynamicallyAccessedMembers)] TOptions>(TOptions options)
+            where TOptions : class
         {
             return new OptionsWrapper<TOptions>(options);
         }

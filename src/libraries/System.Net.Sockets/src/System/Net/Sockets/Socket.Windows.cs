@@ -1,14 +1,13 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Microsoft.Win32.SafeHandles;
 using System.Collections;
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using System.Threading;
+using System.Runtime.Versioning;
 
 namespace System.Net.Sockets
 {
@@ -18,10 +17,9 @@ namespace System.Net.Sockets
 
         internal void ReplaceHandleIfNecessaryAfterFailedConnect() { /* nop on Windows */ }
 
+        [SupportedOSPlatform("windows")]
         public Socket(SocketInformation socketInformation)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
-
             InitializeSockets();
 
             SocketError errorCode = SocketPal.CreateSocket(socketInformation, out _handle,
@@ -80,8 +78,6 @@ namespace System.Net.Sockets
                 _handle = null!;
                 throw new SocketException((int)errorCode);
             }
-
-            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
         }
 
         private unsafe void LoadSocketTypeFromHandle(
@@ -110,10 +106,9 @@ namespace System.Net.Sockets
             blocking = true;
         }
 
+        [SupportedOSPlatform("windows")]
         public SocketInformation DuplicateAndClose(int targetProcessId)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this, targetProcessId);
-
             ThrowIfDisposed();
 
             SocketError errorCode = SocketPal.DuplicateSocket(_handle, targetProcessId, out SocketInformation info);
@@ -129,8 +124,31 @@ namespace System.Net.Sockets
 
             Close(timeout: -1);
 
-            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
             return info;
+        }
+
+        public IAsyncResult BeginAccept(int receiveSize, AsyncCallback? callback, object? state)
+        {
+            return BeginAccept(acceptSocket: null, receiveSize, callback, state);
+        }
+
+        // This is the truly async version that uses AcceptEx.
+        public IAsyncResult BeginAccept(Socket? acceptSocket, int receiveSize, AsyncCallback? callback, object? state)
+        {
+            return BeginAcceptCommon(acceptSocket, receiveSize, callback, state);
+        }
+
+        public Socket EndAccept(out byte[] buffer, IAsyncResult asyncResult)
+        {
+            Socket socket = EndAccept(out byte[] innerBuffer, out int bytesTransferred, asyncResult);
+            buffer = new byte[bytesTransferred];
+            Buffer.BlockCopy(innerBuffer, 0, buffer, 0, bytesTransferred);
+            return socket;
+        }
+
+        public Socket EndAccept(out byte[] buffer, out int bytesTransferred, IAsyncResult asyncResult)
+        {
+            return EndAcceptCommon(out buffer!, out bytesTransferred, asyncResult);
         }
 
         private void EnsureDynamicWinsockMethods()
@@ -225,7 +243,7 @@ namespace System.Net.Sockets
                     return;
             }
 
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, address);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, address);
 
             var endPoint = new IPEndPoint(address, 0);
             DoBind(endPoint, IPEndPointExtensions.Serialize(endPoint));

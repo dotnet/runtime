@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 // ============================================================
 //
 // BaseAssemblySpec.h
@@ -80,7 +79,7 @@ public:
         return m_pBindingContext;
     }
 
-    BOOL IsAssemblySpecForMscorlib();
+    BOOL IsAssemblySpecForCoreLib();
 
     HRESULT ParseName();
     DWORD Hash();
@@ -107,22 +106,8 @@ public:
     BOOL IsStrongNamed() const;
     BOOL HasPublicKey() const;
     BOOL HasPublicKeyToken() const;
-    BOOL IsMscorlibSatellite() const;
-    BOOL IsMscorlib();
-
-    //****************************************************************************************
-    //
-    // Creates an IAssemblyName object representing this AssemblySpec.
-    //
-    //    fMustBeBindable - if set to TRUE, the resulting IAssemblyName may contain internal
-    //                      encodings needed to make an identity bindable (this is the case
-    //                      for WinRT assemblies: a representative type name is encoded as
-    //                      part of the assembly simple name). Be careful to ensure that
-    //                      encoded identities are not exposed to customers.
-    HRESULT CreateFusionName(
-        IAssemblyName **ppName,
-        BOOL fIncludeCodeBase = TRUE, /* Used by fusion only */
-        BOOL fMustBeBindable = FALSE) const;
+    BOOL IsCoreLibSatellite() const;
+    BOOL IsCoreLib();
 
     // Returns true
     inline BOOL HasUniqueIdentity() const

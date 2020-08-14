@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -32,13 +31,11 @@ namespace System.Threading.Channels
         /// <summary>non-null if the channel has been marked as complete for writing.</summary>
         private volatile Exception? _doneWriting;
 
-#pragma warning disable CA1823 // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/38195
         /// <summary>An <see cref="AsyncOperation{T}"/> if there's a blocked reader.</summary>
         private AsyncOperation<T>? _blockedReader;
 
         /// <summary>A waiting reader (e.g. WaitForReadAsync) if there is one.</summary>
         private AsyncOperation<bool>? _waitingReader;
-#pragma warning restore CA1823
 
         /// <summary>Initialize the channel.</summary>
         /// <param name="runContinuationsAsynchronously">Whether to force continuations to be executed asynchronously.</param>
@@ -117,7 +114,7 @@ namespace System.Threading.Channels
                     parent._blockedReader = newBlockedReader;
                 }
 
-                oldBlockedReader?.TrySetCanceled();
+                oldBlockedReader?.TrySetCanceled(default);
                 return newBlockedReader.ValueTaskOfT;
             }
 
@@ -186,7 +183,7 @@ namespace System.Threading.Channels
                     parent._waitingReader = newWaitingReader;
                 }
 
-                oldWaitingReader?.TrySetCanceled();
+                oldWaitingReader?.TrySetCanceled(default);
                 return newWaitingReader.ValueTaskOfT;
             }
 

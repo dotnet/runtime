@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Xml;
 using System.Xml.Schema;
@@ -13,10 +12,10 @@ namespace System.Data
 {
     internal sealed class SimpleType : ISerializable
     {
-        private string _baseType = null;                 // base type name
-        private SimpleType _baseSimpleType = null;
-        private XmlQualifiedName _xmlBaseType = null;    // Qualified name of Basetype
-        private string _name = string.Empty;
+        private string? _baseType;                 // base type name
+        private SimpleType? _baseSimpleType;
+        private XmlQualifiedName? _xmlBaseType;    // Qualified name of Basetype
+        private string? _name = string.Empty;
         private int _length = -1;
         private int _minLength = -1;
         private int _maxLength = -1;
@@ -58,10 +57,10 @@ namespace System.Data
             {
                 XmlSchemaSimpleTypeRestriction content = (XmlSchemaSimpleTypeRestriction)node.Content;
 
-                XmlSchemaSimpleType ancestor = node.BaseXmlSchemaType as XmlSchemaSimpleType;
+                XmlSchemaSimpleType? ancestor = node.BaseXmlSchemaType as XmlSchemaSimpleType;
                 if ((ancestor != null) && (ancestor.QualifiedName.Namespace != Keywords.XSDNS))
                 {
-                    _baseSimpleType = new SimpleType(node.BaseXmlSchemaType as XmlSchemaSimpleType);
+                    _baseSimpleType = new SimpleType(ancestor);
                 }
 
                 // do we need to put qualified name?
@@ -144,7 +143,7 @@ namespace System.Data
             );
         }
 
-        internal string BaseType
+        internal string? BaseType
         {
             get
             {
@@ -152,7 +151,7 @@ namespace System.Data
             }
         }
 
-        internal XmlQualifiedName XmlBaseType
+        internal XmlQualifiedName? XmlBaseType
         {
             get
             {
@@ -160,7 +159,7 @@ namespace System.Data
             }
         }
 
-        internal string Name
+        internal string? Name
         {
             get
             {
@@ -196,7 +195,7 @@ namespace System.Data
             }
         }
 
-        internal SimpleType BaseSimpleType
+        internal SimpleType? BaseSimpleType
         {
             get
             {
@@ -204,7 +203,7 @@ namespace System.Data
             }
         }
         // return  qualified name of this simple type
-        public string SimpleTypeQualifiedName
+        public string? SimpleTypeQualifiedName
         {
             get
             {
@@ -249,7 +248,7 @@ namespace System.Data
                 {
                     if (_baseSimpleType.Namespace != null && _baseSimpleType.Namespace.Length > 0)
                     {
-                        string prefix = (prefixes != null) ? (string)prefixes[_baseSimpleType.Namespace] : null;
+                        string? prefix = (prefixes != null) ? (string?)prefixes[_baseSimpleType.Namespace] : null;
                         if (prefix != null)
                         {
                             type.SetAttribute(Keywords.BASE, (prefix + ":" + _baseSimpleType.Name));
@@ -266,12 +265,12 @@ namespace System.Data
                 }
                 else
                 {
-                    type.SetAttribute(Keywords.BASE, QualifiedName(_baseType)); // has to be xs:SomePrimitiveType
+                    type.SetAttribute(Keywords.BASE, QualifiedName(_baseType!)); // has to be xs:SomePrimitiveType
                 }
             }
             else
             {
-                type.SetAttribute(Keywords.BASE, (_baseSimpleType != null) ? _baseSimpleType.Name : QualifiedName(_baseType));
+                type.SetAttribute(Keywords.BASE, (_baseSimpleType != null) ? _baseSimpleType.Name : QualifiedName(_baseType!));
             }
 
             XmlElement constraint;
@@ -312,7 +311,7 @@ namespace System.Data
             return limitedString;
         }
 
-        internal static SimpleType CreateSimpleType(StorageType typeCode, Type type)
+        internal static SimpleType? CreateSimpleType(StorageType typeCode, Type type)
         {
             if ((typeCode == StorageType.Char) && (type == typeof(char)))
             {

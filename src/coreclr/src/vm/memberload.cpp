@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //
 // File: memberload.cpp
 //
@@ -1199,9 +1198,9 @@ MemberLoader::FindMethod(MethodTable * pMT, LPCUTF8 pwzName, LPHARDCODEDMETASIG 
         MODE_ANY;
     } CONTRACTL_END;
 
-    Signature sig = MscorlibBinder::GetSignature(pwzSignature);
+    Signature sig = CoreLibBinder::GetSignature(pwzSignature);
 
-    return FindMethod(pMT, pwzName, sig.GetRawSig(), sig.GetRawSigLen(), MscorlibBinder::GetModule(), flags);
+    return FindMethod(pMT, pwzName, sig.GetRawSig(), sig.GetRawSigLen(), CoreLibBinder::GetModule(), flags);
 }
 
 //*******************************************************************************
@@ -1390,9 +1389,9 @@ MemberLoader::FindConstructor(MethodTable * pMT, LPHARDCODEDMETASIG pwzSignature
     }
     CONTRACTL_END
 
-    Signature sig = MscorlibBinder::GetSignature(pwzSignature);
+    Signature sig = CoreLibBinder::GetSignature(pwzSignature);
 
-    return FindConstructor(pMT, sig.GetRawSig(), sig.GetRawSigLen(), MscorlibBinder::GetModule());
+    return FindConstructor(pMT, sig.GetRawSig(), sig.GetRawSigLen(), CoreLibBinder::GetModule());
 }
 
 //*******************************************************************************

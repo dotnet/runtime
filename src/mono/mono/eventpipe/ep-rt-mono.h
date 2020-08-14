@@ -6,6 +6,10 @@
 
 #ifdef ENABLE_PERFTRACING
 #include "ep-rt-config.h"
+#include "ep-thread.h"
+#include "ep-types.h"
+#include "ep-provider.h"
+#include "ep-session-provider.h"
 #include <glib.h>
 #include <mono/utils/checked-build.h>
 #include <mono/utils/mono-threads.h>
@@ -14,7 +18,7 @@
 #include <mono/utils/mono-time.h>
 #include <mono/utils/mono-rand.h>
 #include <mono/metadata/w32file.h>
-#include "ep.h"
+#include <mono/metadata/w32event.h>
 
 #undef EP_ARRAY_SIZE
 #define EP_ARRAY_SIZE(expr) G_N_ELEMENTS(expr)
@@ -22,19 +26,24 @@
 #undef EP_INFINITE_WAIT
 #define EP_INFINITE_WAIT MONO_INFINITE_WAIT
 
-//TODO: Should make sure block is executed in safe mode.
 #undef EP_GCX_PREEMP_ENTER
 #define EP_GCX_PREEMP_ENTER {
 
-//TODO: Should make sure block is returned back to previous mode.
 #undef EP_GCX_PREEMP_EXIT
 #define EP_GCX_PREEMP_EXIT }
 
+#undef EP_ALWAYS_INLINE
+#define EP_ALWAYS_INLINE MONO_ALWAYS_INLINE
+
+#undef EP_ALIGN_UP
+#define EP_ALIGN_UP(val,align) ALIGN_TO(val,align)
+
 #define EP_RT_DEFINE_LIST(list_name, list_type, item_type) \
 	static inline void ep_rt_ ## list_name ## _free (list_type *list, void (*callback)(void *)) { \
-		for (GSList *l = list->list; l; l = l->next) { \
-			if (callback != NULL) \
+		if (callback) { \
+			for (GSList *l = list->list; l; l = l->next) { \
 				callback (l->data); \
+			} \
 		} \
 		g_slist_free (list->list); \
 		list->list = NULL; \
@@ -56,25 +65,24 @@
 	static inline item_type ep_rt_ ## list_name ## _iterator_value (const iterator_type *iterator) { return ((item_type)(gsize)(iterator->iterator->data)); }
 
 #define EP_RT_DEFINE_QUEUE(queue_name, queue_type, item_type) \
-	static inline void ep_rt_ ## queue_name ## _alloc (queue_type *queue) { \
-		queue->queue = g_queue_new ();\
-	} \
-	static inline void ep_rt_ ## queue_name ## _free (queue_type *queue) { \
-		g_queue_free (queue->queue); \
-		queue->queue = NULL; \
-	} \
-	static inline void ep_rt_ ## queue_name ## _pop_head (queue_type *queue, item_type *item) { \
-		*item = ((item_type)(gsize)g_queue_pop_head (queue->queue)); \
-	} \
-	static inline void ep_rt_ ## queue_name ## _push_head (queue_type *queue, item_type item) { \
-		g_queue_push_head (queue->queue, ((gpointer)(gsize)item)); \
-	} \
-	static inline void ep_rt_ ## queue_name ## _push_tail (queue_type *queue, item_type item) { \
-		g_queue_push_tail (queue->queue, ((gpointer)(gsize)item)); \
-	} \
-	static inline bool ep_rt_ ## queue_name ## _is_empty (const queue_type *queue) { \
-		return g_queue_is_empty (queue->queue); \
-	}
+	static inline void ep_rt_ ## queue_name ## _alloc (queue_type *queue) { queue->queue = g_queue_new (); } \
+	static inline void ep_rt_ ## queue_name ## _free (queue_type *queue) { g_queue_free (queue->queue); queue->queue = NULL; } \
+	static inline void ep_rt_ ## queue_name ## _pop_head (queue_type *queue, item_type *item) { *item = ((item_type)(gsize)g_queue_pop_head (queue->queue)); } \
+	static inline void ep_rt_ ## queue_name ## _push_head (queue_type *queue, item_type item) { g_queue_push_head (queue->queue, ((gpointer)(gsize)item)); } \
+	static inline void ep_rt_ ## queue_name ## _push_tail (queue_type *queue, item_type item) { g_queue_push_tail (queue->queue, ((gpointer)(gsize)item)); } \
+	static inline bool ep_rt_ ## queue_name ## _is_empty (const queue_type *queue) { return g_queue_is_empty (queue->queue); }
+
+#define EP_RT_DEFINE_ARRAY(array_name, array_type, item_type) \
+	static inline void ep_rt_ ## array_name ## _alloc (array_type *ep_array) { ep_array->array = g_array_new (FALSE, FALSE, sizeof (item_type)); } \
+	static inline void ep_rt_ ## array_name ## _free (array_type *ep_array) { g_array_free (ep_array->array, TRUE); } \
+	static inline void ep_rt_ ## array_name ## _append (array_type *ep_array, item_type item) { g_array_append_val (ep_array->array, item); } \
+	static inline size_t ep_rt_ ## array_name ## _size (const array_type *ep_array) { return ep_array->array->len; }
+
+#define EP_RT_DEFINE_ARRAY_ITERATOR(array_name, array_type, iterator_type, item_type) \
+	static inline void ep_rt_ ## array_name ## _iterator_begin (const array_type *ep_array, iterator_type *iterator) { iterator->array = ep_array->array; iterator->index = 0; } \
+	static inline bool ep_rt_ ## array_name ## _iterator_end (const array_type *ep_array, const iterator_type *iterator) { return iterator->index >= iterator->array->len; } \
+	static void ep_rt_ ## array_name ## _iterator_next (const array_type *ep_array, iterator_type *iterator) { iterator->index++; } \
+	static item_type ep_rt_ ## array_name ## _iterator_value (const iterator_type *iterator) { return g_array_index(iterator->array, item_type, iterator->index); }
 
 #define EP_RT_DEFINE_HASH_MAP(hash_map_name, hash_map_type, key_type, value_type) \
 	static inline void ep_rt_ ## hash_map_name ## _alloc (hash_map_type *hash_map, uint32_t (*hash_callback)(const void *), bool (*eq_callback)(const void *, const void *), void (*key_free_callback)(void *), void (*value_free_callback)(void *)) { \
@@ -111,8 +119,8 @@
 #define EP_RT_DEFINE_HASH_MAP_ITERATOR(hash_map_name, hash_map_type, iterator_type, key_type, value_type) \
 	static inline void ep_rt_ ## hash_map_name ## _iterator_begin (const hash_map_type *hash_map, iterator_type *iterator) { \
 		g_hash_table_iter_init (&iterator->iterator, hash_map->table); \
-		if (hash_map->table) \
-			iterator->end = g_hash_table_iter_next (&iterator->iterator, &iterator->key, &iterator->value); \
+		if (hash_map->table && hash_map->count > 0) \
+			iterator->end = !g_hash_table_iter_next (&iterator->iterator, &iterator->key, &iterator->value); \
 		else \
 			iterator->end = true; \
 	} \
@@ -120,7 +128,7 @@
 		return iterator->end; \
 	} \
 	static inline void ep_rt_ ## hash_map_name ## _iterator_next (const hash_map_type *hash_map, iterator_type *iterator) { \
-		iterator->end = g_hash_table_iter_next (&iterator->iterator, &iterator->key, &iterator->value); \
+		iterator->end = !g_hash_table_iter_next (&iterator->iterator, &iterator->key, &iterator->value); \
 	} \
 	static inline key_type ep_rt_ ## hash_map_name ## _iterator_key (const iterator_type *iterator) { \
 			return ((key_type)(gsize)iterator->key); \
@@ -140,9 +148,18 @@ typedef gboolean (*ep_rt_mono_rand_try_get_bytes_func)(guchar *buffer, gssize bu
 typedef EventPipeThread * (*ep_rt_mono_thread_get_func)(void);
 typedef EventPipeThread * (*ep_rt_mono_thread_get_or_create_func)(void);
 typedef void (*ep_rt_mono_thread_exited_func)(void);
+typedef gint (*ep_rt_mono_thread_info_sleep_func)(guint32 ms, gboolean *alerted);
+typedef gboolean (*ep_rt_mono_thread_info_yield_func)(void);
 typedef gpointer (*ep_rt_mono_w32file_create_func)(const gunichar2 *name, guint32 fileaccess, guint32 sharemode, guint32 createmode, guint32 attrs);
 typedef gboolean (*ep_rt_mono_w32file_write_func)(gpointer handle, gconstpointer buffer, guint32 numbytes, guint32 *byteswritten, gint32 *win32error);
 typedef gboolean (*ep_rt_mono_w32file_close_func)(gpointer handle);
+typedef gpointer (*ep_rt_mono_w32event_create_func)(gboolean manual, gboolean initial);
+typedef gboolean (*ep_rt_mono_w32event_close_func)(gpointer handle);
+typedef void (*ep_rt_mono_w32event_set_func)(gpointer handle);
+typedef MonoW32HandleWaitRet (*ep_rt_mono_w32handle_wait_one_func)(gpointer handle, guint32 timeout, gboolean alertable);
+typedef void* (*ep_rt_mono_valloc_func)(void *addr, size_t length, int flags, MonoMemAccountType type);
+typedef int (*ep_rt_mono_vfree_func)(void *addr, size_t length, MonoMemAccountType type);
+typedef int (*ep_rt_mono_valloc_granule_func)(void);
 
 typedef struct _EventPipeMonoFuncTable {
 	ep_rt_mono_100ns_ticks_func ep_rt_mono_100ns_ticks;
@@ -156,9 +173,18 @@ typedef struct _EventPipeMonoFuncTable {
 	ep_rt_mono_thread_get_func ep_rt_mono_thread_get;
 	ep_rt_mono_thread_get_or_create_func ep_rt_mono_thread_get_or_create;
 	ep_rt_mono_thread_exited_func ep_rt_mono_thread_exited;
+	ep_rt_mono_thread_info_sleep_func ep_rt_mono_thread_info_sleep;
+	ep_rt_mono_thread_info_yield_func ep_rt_mono_thread_info_yield;
 	ep_rt_mono_w32file_create_func ep_rt_mono_w32file_create;
 	ep_rt_mono_w32file_write_func ep_rt_mono_w32file_write;
 	ep_rt_mono_w32file_close_func ep_rt_mono_w32file_close;
+	ep_rt_mono_w32event_create_func ep_rt_mono_w32event_create;
+	ep_rt_mono_w32event_close_func ep_rt_mono_w32event_close;
+	ep_rt_mono_w32event_set_func ep_rt_mono_w32event_set;
+	ep_rt_mono_w32handle_wait_one_func ep_rt_mono_w32hadle_wait_one;
+	ep_rt_mono_valloc_func ep_rt_mono_valloc;
+	ep_rt_mono_vfree_func ep_rt_mono_vfree;
+	ep_rt_mono_valloc_granule_func ep_rt_mono_valloc_granule;
 } EventPipeMonoFuncTable;
 
 typedef EventPipeThreadHolder * (*ep_rt_thread_holder_alloc_func)(void);
@@ -173,6 +199,7 @@ ep_rt_mono_config_lock_get (void)
 	return &_ep_rt_mono_config_lock;
 }
 
+#ifndef EP_RT_MONO_USE_STATIC_RUNTIME
 static
 inline
 EventPipeMonoFuncTable *
@@ -181,6 +208,7 @@ ep_rt_mono_func_table_get (void)
 	extern EventPipeMonoFuncTable _ep_rt_mono_func_table;
 	return &_ep_rt_mono_func_table;
 }
+#endif
 
 MONO_PROFILER_API
 void
@@ -326,11 +354,28 @@ ep_rt_atomic_dec_int32_t (volatile int32_t *value)
 	return (int32_t)mono_atomic_dec_i32 ((volatile gint32 *)value);
 }
 
+static
+inline
+int64_t
+ep_rt_atomic_inc_int64_t (volatile int64_t *value)
+{
+	return (int64_t)mono_atomic_inc_i64 ((volatile gint64 *)value);
+}
+
+static
+inline
+int64_t
+ep_rt_atomic_dec_int64_t (volatile int64_t *value)
+{
+	return (int64_t)mono_atomic_dec_i64 ((volatile gint64 *)value);
+}
+
 /*
  * EventPipe.
  */
 
 static
+inline
 EventPipeThreadHolder *
 thread_holder_alloc_func (void)
 {
@@ -338,6 +383,7 @@ thread_holder_alloc_func (void)
 }
 
 static
+inline
 void
 thread_holder_free_func (EventPipeThreadHolder * thread_holder)
 {
@@ -349,7 +395,11 @@ inline
 void
 ep_rt_init (void)
 {
+#ifndef EP_RT_MONO_USE_STATIC_RUNTIME
 	mono_eventpipe_init (ep_rt_mono_func_table_get (), thread_holder_alloc_func, thread_holder_free_func);
+#else
+	mono_eventpipe_init (NULL, thread_holder_alloc_func, thread_holder_free_func);
+#endif
 	ep_rt_spin_lock_alloc (ep_rt_mono_config_lock_get ());
 }
 
@@ -397,6 +447,45 @@ ep_rt_config_requires_lock_not_held (void)
 }
 #endif
 
+static
+inline
+bool
+ep_rt_walk_managed_stack_for_current_thread (EventPipeStackContents *stack_contents)
+{
+	//TODO: Implement.
+	return true;
+}
+
+static
+inline
+void
+ep_rt_provider_config_init (EventPipeProviderConfiguration *provider_config)
+{
+	;
+}
+
+static
+inline
+void
+ep_rt_init_providers_and_events (void)
+{
+	;
+}
+
+/*
+ * EventPipeBuffer.
+ */
+
+EP_RT_DEFINE_ARRAY (buffer_array, ep_rt_buffer_array_t, EventPipeBuffer *)
+EP_RT_DEFINE_ARRAY_ITERATOR (buffer_array, ep_rt_buffer_array_t, ep_rt_buffer_array_iterator_t, EventPipeBuffer *)
+
+/*
+ * EventPipeBufferList.
+ */
+
+EP_RT_DEFINE_ARRAY (buffer_list_array, ep_rt_buffer_list_array_t, EventPipeBufferList *)
+EP_RT_DEFINE_ARRAY_ITERATOR (buffer_list_array, ep_rt_buffer_list_array_t, ep_rt_buffer_array_iterator_t, EventPipeBufferList *)
+
 /*
  * EventPipeEvent.
  */
@@ -443,6 +532,52 @@ ep_rt_provider_list_find_by_name (
 }
 
 /*
+ * EventPipeProviderConfiguration.
+ */
+
+static
+inline
+bool
+ep_rt_config_value_get_enable (void)
+{
+	bool enable = false;
+	gchar *value = g_getenv ("COMPlus_EnableEventPipe");
+	if (value && atoi (value) == 1)
+		enable = true;
+	g_free (value);
+	return enable;
+}
+
+static
+inline
+ep_char8_t *
+ep_rt_config_value_get_config (void)
+{
+	return g_getenv ("COMPlus_EventPipeConfig");
+}
+
+static
+inline
+ep_char8_t *
+ep_rt_config_value_get_output_path (void)
+{
+	return g_getenv ("COMPlus_EventPipeOutputPath");
+}
+
+static
+inline
+uint32_t
+ep_rt_config_value_get_circular_mb (void)
+{
+	uint32_t circular_mb = 0;
+	gchar *value = g_getenv ("COMPlus_EventPipeCircularMB");
+	if (value)
+		circular_mb = strtoul (value, NULL, 9);
+	g_free (value);
+	return circular_mb;
+}
+
+/*
  * EventPipeSampleProfiler.
  */
 
@@ -471,6 +606,7 @@ ep_rt_sample_profiler_disable (void)
 }
 
 static
+inline
 uint32_t
 ep_rt_sample_profiler_get_sampling_rate (void)
 {
@@ -478,12 +614,44 @@ ep_rt_sample_profiler_get_sampling_rate (void)
 	return 0;
 }
 
+static
+inline
+void
+ep_rt_sample_set_sampling_rate (uint32_t nanoseconds)
+{
+	//TODO: Not supported.
+}
+
 /*
- * EvetPipeSessionProvider.
+ * EventPipeSessionProvider.
  */
 
 EP_RT_DEFINE_LIST (session_provider_list, ep_rt_session_provider_list_t, EventPipeSessionProvider *)
 EP_RT_DEFINE_LIST_ITERATOR (session_provider_list, ep_rt_session_provider_list_t, ep_rt_session_provider_list_iterator_t, EventPipeSessionProvider *)
+
+/*
+ * EventPipeSequencePoint.
+ */
+
+EP_RT_DEFINE_LIST (sequence_point_list, ep_rt_sequence_point_list_t, EventPipeSequencePoint *)
+EP_RT_DEFINE_LIST_ITERATOR (sequence_point_list, ep_rt_sequence_point_list_t, ep_rt_sequence_point_list_iterator_t, EventPipeSequencePoint *)
+
+/*
+ * EventPipeThread.
+ */
+
+EP_RT_DEFINE_ARRAY (thread_array, ep_rt_thread_array_t, EventPipeThread *)
+EP_RT_DEFINE_ARRAY_ITERATOR (thread_array, ep_rt_thread_array_t, ep_rt_thread_array_iterator_t, EventPipeThread *)
+
+/*
+ * EventPipeThreadSessionState.
+ */
+
+EP_RT_DEFINE_LIST (thread_session_state_list, ep_rt_thread_session_state_list_t, EventPipeThreadSessionState *)
+EP_RT_DEFINE_LIST_ITERATOR (thread_session_state_list, ep_rt_thread_session_state_list_t, ep_rt_thread_session_state_list_iterator_t, EventPipeThreadSessionState *)
+
+EP_RT_DEFINE_ARRAY (thread_session_state_array, ep_rt_thread_session_state_array_t, EventPipeThreadSessionState *)
+EP_RT_DEFINE_ARRAY_ITERATOR (thread_session_state_array, ep_rt_thread_session_state_array_t, ep_rt_thread_session_state_array_iterator_t, EventPipeThreadSessionState *)
 
 static
 inline
@@ -502,7 +670,7 @@ ep_rt_session_provider_list_find_by_name (
 	const ep_rt_session_provider_list_t *list,
 	const ep_char8_t *name)
 {
-	GSList *item = g_slist_find_custom (list->list, name, compare_provider_name);
+	GSList *item = g_slist_find_custom (list->list, name, compare_session_provider_name);
 	return (item != NULL) ? (EventPipeSessionProvider *)item->data : NULL;
 }
 
@@ -533,12 +701,17 @@ ep_rt_byte_array_free (uint8_t *ptr)
 static
 inline
 void
-ep_rt_wait_event_alloc (ep_rt_wait_event_handle_t *wait_event)
+ep_rt_wait_event_alloc (
+	ep_rt_wait_event_handle_t *wait_event,
+	bool manual,
+	bool initial)
 {
 	EP_ASSERT (wait_event != NULL);
-	wait_event->event = g_new0 (MonoOSEvent, 1);
-	if (wait_event->event)
-		mono_os_event_init (wait_event->event, false);
+#ifdef EP_RT_MONO_USE_STATIC_RUNTIME
+	wait_event->event = mono_w32event_create (manual, initial);
+#else
+	wait_event->event = ep_rt_mono_func_table_get ()->ep_rt_mono_w32event_create (manual, initial);
+#endif
 }
 
 static
@@ -547,8 +720,11 @@ void
 ep_rt_wait_event_free (ep_rt_wait_event_handle_t *wait_event)
 {
 	if (wait_event != NULL && wait_event->event != NULL) {
-		mono_os_event_destroy (wait_event->event);
-		g_free (wait_event->event);
+#ifdef EP_RT_MONO_USE_STATIC_RUNTIME
+		mono_w32event_close (wait_event->event);
+#else
+		ep_rt_mono_func_table_get ()->ep_rt_mono_w32event_close (wait_event->event);
+#endif
 		wait_event->event = NULL;
 	}
 }
@@ -559,7 +735,11 @@ bool
 ep_rt_wait_event_set (ep_rt_wait_event_handle_t *wait_event)
 {
 	EP_ASSERT (wait_event != NULL && wait_event->event != NULL);
-	mono_os_event_set (wait_event->event);
+#ifdef EP_RT_MONO_USE_STATIC_RUNTIME
+	mono_w32event_set (wait_event->event);
+#else
+	ep_rt_mono_func_table_get ()->ep_rt_mono_w32event_set (wait_event->event);
+#endif
 	return true;
 }
 
@@ -572,7 +752,11 @@ ep_rt_wait_event_wait (
 	bool alertable)
 {
 	EP_ASSERT (wait_event != NULL && wait_event->event != NULL);
-	return mono_os_event_wait_one (wait_event->event, timeout, alertable);
+#ifdef EP_RT_MONO_USE_STATIC_RUNTIME
+	return (int32_t)mono_w32handle_wait_one (wait_event->event, timeout, alertable);
+#else
+	return (int32_t)ep_rt_mono_func_table_get ()->ep_rt_mono_w32hadle_wait_one (wait_event->event, timeout, alertable);
+#endif
 }
 
 static
@@ -607,6 +791,7 @@ ep_rt_create_activity_id (
 	uint8_t *activity_id,
 	uint32_t activity_id_len)
 {
+	EP_ASSERT (activity_id != NULL);
 	EP_ASSERT (activity_id_len == EP_ACTIVITY_ID_SIZE);
 
 	ERROR_DECL (error);
@@ -642,6 +827,17 @@ ep_rt_create_activity_id (
 
 #undef ep_rt_object_alloc
 #define ep_rt_object_alloc(obj_type) (g_new0 (obj_type, 1))
+
+#undef ep_rt_object_array_alloc
+#define ep_rt_object_array_alloc(obj_type,size) (g_new0 (obj_type, size))
+
+static
+inline
+void
+ep_rt_object_array_free (void *ptr)
+{
+	g_free (ptr);
+}
 
 static
 inline
@@ -701,34 +897,46 @@ ep_rt_current_thread_get_id (void)
 
 static
 inline
-uint64_t
+int64_t
 ep_rt_perf_counter_query (void)
 {
 #ifdef EP_RT_MONO_USE_STATIC_RUNTIME
-	return (uint64_t)mono_100ns_ticks ();
+	return (int64_t)mono_100ns_ticks ();
 #else
-	return (uint64_t)ep_rt_mono_func_table_get ()->ep_rt_mono_100ns_ticks ();
+	return (int64_t)ep_rt_mono_func_table_get ()->ep_rt_mono_100ns_ticks ();
 #endif
 }
 
 static
 inline
-uint64_t
+int64_t
 ep_rt_perf_frequency_query (void)
 {
 	//Counter uses resolution of 100ns ticks.
-	return 100 * 1000 * 1000;
+	return 10 * 1000 * 1000;
 }
 
 static
 inline
-uint64_t
+ep_systemtime_t
 ep_rt_system_time_get (void)
 {
 #ifdef EP_RT_MONO_USE_STATIC_RUNTIME
-	return (uint64_t)mono_100ns_datetime ();
+	return (ep_systemtime_t)mono_100ns_datetime ();
 #else
-	return (uint64_t)ep_rt_mono_func_table_get ()->ep_rt_mono_100ns_datetime ();
+	return (ep_systemtime_t)ep_rt_mono_func_table_get ()->ep_rt_mono_100ns_datetime ();
+#endif
+}
+
+static
+inline
+int32_t
+ep_rt_system_get_alloc_granularity (void)
+{
+#ifdef EP_RT_MONO_USE_STATIC_RUNTIME
+	return (int32_t)mono_valloc_granule ();
+#else
+	return (int32_t)ep_rt_mono_func_table_get ()->ep_rt_mono_valloc_granule ();
 #endif
 }
 
@@ -756,6 +964,7 @@ ep_rt_file_open_write (const ep_char8_t *path)
 }
 
 static
+inline
 bool
 ep_rt_file_close (ep_rt_file_handle_t file_handle)
 {
@@ -764,6 +973,7 @@ ep_rt_file_close (ep_rt_file_handle_t file_handle)
 }
 
 static
+inline
 bool
 ep_rt_file_write (
 	ep_rt_file_handle_t file_handle,
@@ -780,6 +990,34 @@ ep_rt_file_write (
 		*bytes_written = bytes_to_write;
 
 	return result;
+}
+
+static
+inline
+uint8_t *
+ep_rt_valloc0 (size_t buffer_size)
+{
+#ifdef EP_RT_MONO_USE_STATIC_RUNTIME
+	uint8_t *buffer = (uint8_t *)mono_valloc (NULL, buffer_size, MONO_MMAP_READ | MONO_MMAP_WRITE, MONO_MEM_ACCOUNT_PROFILER);
+#else
+	uint8_t *buffer = (uint8_t *)ep_rt_mono_func_table_get ()->ep_rt_mono_valloc (NULL, buffer_size, MONO_MMAP_READ | MONO_MMAP_WRITE, MONO_MEM_ACCOUNT_PROFILER);
+#endif
+	if (buffer)
+		memset (buffer, 0, buffer_size);
+	return buffer;
+}
+
+static
+inline
+void
+ep_rt_vfree (uint8_t *buffer, size_t buffer_size)
+{
+	if (buffer)
+#ifdef EP_RT_MONO_USE_STATIC_RUNTIME
+		mono_vfree (buffer, buffer_size, MONO_MEM_ACCOUNT_PROFILER);
+#else
+		ep_rt_mono_func_table_get ()->ep_rt_mono_vfree (buffer, buffer_size, MONO_MEM_ACCOUNT_PROFILER);
+#endif
 }
 
 /*
@@ -947,7 +1185,9 @@ inline
 void
 ep_rt_thread_setup (void)
 {
-	//TODO: Is this needed on Mono runtime? Looks like a thread attach, making sure thread is attached to runtime.
+	// NOTE, under netcore, only root domain exists.
+	if (!mono_thread_current ())
+		mono_thread_attach (mono_get_root_domain ());
 }
 
 static
@@ -982,6 +1222,57 @@ ep_rt_thread_get_or_create (void)
 #endif
 }
 
+static
+inline
+int32_t
+ep_rt_mono_thread_sleep (uint32_t ms, bool alertable)
+{
+	gboolean alerted = false;
+#ifdef EP_RT_MONO_USE_STATIC_RUNTIME
+	if (alertable)
+		return (int32_t)mono_thread_info_sleep (ms, &alerted);
+	else
+		return (int32_t)mono_thread_info_sleep (ms, NULL);
+#else
+	if (alertable)
+		return (int32_t)ep_rt_mono_func_table_get ()->ep_rt_mono_thread_info_sleep (ms, &alerted);
+	else
+		return (int32_t)ep_rt_mono_func_table_get ()->ep_rt_mono_thread_info_sleep (ms, NULL);
+#endif
+}
+
+static
+inline
+bool
+ep_rt_mono_thread_yield (void)
+{
+#ifdef EP_RT_MONO_USE_STATIC_RUNTIME
+	return (bool)mono_thread_info_yield ();
+#else
+	return (bool)ep_rt_mono_func_table_get ()->ep_rt_mono_thread_info_yield ();
+#endif
+}
+
+// See src/coreclr/src/vm/spinlock.h for details.
+#if defined(TARGET_ARM) || defined(TARGET_ARM64)
+	#define EP_SLEEP_START_THRESHOLD (5 * 1024)
+#else
+	#define EP_SLEEP_START_THRESHOLD (32 * 1024)
+#endif
+
+#undef EP_YIELD_WHILE
+#define EP_YIELD_WHILE(condition) { \
+	int32_t __switch_count = 0; \
+	while (condition) { \
+		if (++__switch_count >= EP_SLEEP_START_THRESHOLD) { \
+			ep_rt_mono_thread_sleep (1, false); \
+		} \
+	} \
+	{ \
+		ep_rt_mono_thread_yield (); \
+	} \
+}
+
 /*
  * ThreadSequenceNumberMap.
  */
@@ -998,7 +1289,7 @@ inline
 uint32_t
 ep_rt_volatile_load_uint32_t (const volatile uint32_t *ptr)
 {
-	return mono_atomic_load_i32 ((volatile gint32 *)ptr);
+	return (uint32_t)mono_atomic_load_i32 ((volatile gint32 *)ptr);
 }
 
 static
@@ -1035,7 +1326,7 @@ inline
 uint64_t
 ep_rt_volatile_load_uint64_t (const volatile uint64_t *ptr)
 {
-	return mono_atomic_load_i64 ((volatile gint64 *)ptr);
+	return (uint64_t)mono_atomic_load_i64 ((volatile gint64 *)ptr);
 }
 
 static
@@ -1063,6 +1354,42 @@ void
 ep_rt_volatile_store_uint64_t_without_barrier (
 	volatile uint64_t *ptr,
 	uint64_t value)
+{
+	*ptr = value;
+}
+
+static
+inline
+int64_t
+ep_rt_volatile_load_int64_t (const volatile int64_t *ptr)
+{
+	return mono_atomic_load_i64 ((volatile gint64 *)ptr);
+}
+
+static
+inline
+int64_t
+ep_rt_volatile_load_int64_t_without_barrier (const volatile int64_t *ptr)
+{
+	return *ptr;
+}
+
+static
+inline
+void
+ep_rt_volatile_store_int64_t (
+	volatile int64_t *ptr,
+	int64_t value)
+{
+	mono_atomic_store_i64 ((volatile gint64 *)ptr, (gint64)value);
+}
+
+static
+inline
+void
+ep_rt_volatile_store_int64_t_without_barrier (
+	volatile int64_t *ptr,
+	int64_t value)
 {
 	*ptr = value;
 }

@@ -1,14 +1,14 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Xml.XPath;
 
 namespace MS.Internal.Xml.XPath
 {
     internal class ContextQuery : Query
     {
-        protected XPathNavigator contextNode;
+        protected XPathNavigator? contextNode;
 
         public ContextQuery()
         {
@@ -23,7 +23,7 @@ namespace MS.Internal.Xml.XPath
             count = 0;
         }
 
-        public override XPathNavigator Current { get { return contextNode; } }
+        public override XPathNavigator? Current { get { return contextNode; } }
 
         public override object Evaluate(XPathNodeIterator context)
         {
@@ -32,7 +32,7 @@ namespace MS.Internal.Xml.XPath
             return this;
         }
 
-        public override XPathNavigator Advance()
+        public override XPathNavigator? Advance()
         {
             if (count == 0)
             {
@@ -42,7 +42,7 @@ namespace MS.Internal.Xml.XPath
             return null;
         }
 
-        public override XPathNavigator MatchNode(XPathNavigator current)
+        public override XPathNavigator? MatchNode(XPathNavigator? current)
         {
             return current;
         }

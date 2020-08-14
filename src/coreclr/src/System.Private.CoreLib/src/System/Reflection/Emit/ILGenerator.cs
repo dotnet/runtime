@@ -1,9 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Buffers.Binary;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.SymbolStore;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -62,10 +62,10 @@ namespace System.Reflection.Emit
         internal int m_localCount;
         internal SignatureHelper m_localSignature;
 
-        private int m_maxStackSize = 0;     // Maximum stack size not counting the exceptions.
+        private int m_maxStackSize;     // Maximum stack size not counting the exceptions.
 
-        private int m_maxMidStack = 0;      // Maximum stack size for a given basic block.
-        private int m_maxMidStackCur = 0;   // Running count of the maximum stack size for the current basic block.
+        private int m_maxMidStack;      // Maximum stack size for a given basic block.
+        private int m_maxMidStackCur;   // Running count of the maximum stack size for the current basic block.
 
         internal int CurrExcStackCount => m_currExcStackCount;
 
@@ -1114,7 +1114,7 @@ namespace System.Reflection.Emit
         #endregion
 
         #region IL Macros
-        public virtual void ThrowException(Type excType)
+        public virtual void ThrowException([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type excType)
         {
             // Emits the il to throw an exception
 
@@ -1136,10 +1136,7 @@ namespace System.Reflection.Emit
             Emit(OpCodes.Throw);
         }
 
-        private static Type GetConsoleType()
-        {
-            return Type.GetType("System.Console, System.Console", throwOnError: true)!;
-        }
+        private const string ConsoleTypeFullName = "System.Console, System.Console";
 
         public virtual void EmitWriteLine(string value)
         {
@@ -1148,7 +1145,8 @@ namespace System.Reflection.Emit
             Emit(OpCodes.Ldstr, value);
             Type[] parameterTypes = new Type[1];
             parameterTypes[0] = typeof(string);
-            MethodInfo mi = GetConsoleType().GetMethod("WriteLine", parameterTypes)!;
+            Type consoleType = Type.GetType(ConsoleTypeFullName, throwOnError: true)!;
+            MethodInfo mi = consoleType.GetMethod("WriteLine", parameterTypes)!;
             Emit(OpCodes.Call, mi);
         }
 
@@ -1164,7 +1162,8 @@ namespace System.Reflection.Emit
                 throw new ArgumentException(SR.InvalidOperation_BadILGeneratorUsage);
             }
 
-            MethodInfo prop = GetConsoleType().GetMethod("get_Out")!;
+            Type consoleType = Type.GetType(ConsoleTypeFullName, throwOnError: true)!;
+            MethodInfo prop = consoleType.GetMethod("get_Out")!;
             Emit(OpCodes.Call, prop);
             Emit(OpCodes.Ldloc, localBuilder);
             Type[] parameterTypes = new Type[1];
@@ -1174,7 +1173,7 @@ namespace System.Reflection.Emit
                 throw new ArgumentException(SR.NotSupported_OutputStreamUsingTypeBuilder);
             }
             parameterTypes[0] = cls;
-            MethodInfo? mi = prop.ReturnType.GetMethod("WriteLine", parameterTypes);
+            MethodInfo? mi = typeof(System.IO.TextWriter).GetMethod("WriteLine", parameterTypes);
             if (mi == null)
             {
                 throw new ArgumentException(SR.Argument_EmitWriteLineType, nameof(localBuilder));
@@ -1195,7 +1194,8 @@ namespace System.Reflection.Emit
                 throw new ArgumentNullException(nameof(fld));
             }
 
-            MethodInfo prop = GetConsoleType().GetMethod("get_Out")!;
+            Type consoleType = Type.GetType(ConsoleTypeFullName, throwOnError: true)!;
+            MethodInfo prop = consoleType.GetMethod("get_Out")!;
             Emit(OpCodes.Call, prop);
 
             if ((fld.Attributes & FieldAttributes.Static) != 0)
@@ -1214,7 +1214,7 @@ namespace System.Reflection.Emit
                 throw new NotSupportedException(SR.NotSupported_OutputStreamUsingTypeBuilder);
             }
             parameterTypes[0] = cls;
-            MethodInfo? mi = prop.ReturnType.GetMethod("WriteLine", parameterTypes);
+            MethodInfo? mi = typeof(System.IO.TextWriter).GetMethod("WriteLine", parameterTypes);
             if (mi == null)
             {
                 throw new ArgumentException(SR.Argument_EmitWriteLineType, nameof(fld));

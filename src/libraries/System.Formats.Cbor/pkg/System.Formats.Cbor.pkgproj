@@ -1,0 +1,9 @@
+﻿<Project DefaultTargets="Build">
+  <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props))" />
+  <ItemGroup>
+    <ProjectReference Include="..\src\System.Formats.Cbor.csproj">
+      <SupportedFramework>$(NetCoreAppCurrent)</SupportedFramework>
+    </ProjectReference>
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets))" />
+</Project>

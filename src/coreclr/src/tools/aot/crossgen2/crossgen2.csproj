@@ -1,0 +1,117 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>crossgen2</AssemblyName>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <NoWarn>8002,NU1701</NoWarn>
+    <Platforms>x64;x86</Platforms>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <AppendTargetFrameworkToOutputPath Condition="'$(BuildingInsideVisualStudio)' == 'true'">true</AppendTargetFrameworkToOutputPath>
+    <OutputPath>$(BinDir)/crossgen2</OutputPath>
+    <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
+    <EnableDefaultEmbeddedResourceItems>false</EnableDefaultEmbeddedResourceItems>
+    <RuntimeIdentifiers>linux-x64;linux-musl-x64;win-x64</RuntimeIdentifiers>
+    <Configurations>Debug;Release;Checked</Configurations>
+  </PropertyGroup>
+
+  <ItemGroup Label="Embedded Resources">
+    <EmbeddedResource Include="Properties\Resources.resx">
+      <GenerateSource>true</GenerateSource>
+      <ClassName>System.SR</ClassName>
+    </EmbeddedResource>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\ILCompiler.DependencyAnalysisFramework\ILCompiler.DependencyAnalysisFramework.csproj" />
+    <ProjectReference Include="..\ILCompiler.TypeSystem.ReadyToRun\ILCompiler.TypeSystem.ReadyToRun.csproj" />
+    <ProjectReference Include="..\ILCompiler.ReadyToRun\ILCompiler.ReadyToRun.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="..\..\Common\CommandLine\CommandLineException.cs" />
+    <Compile Include="..\..\Common\CommandLine\CommandLineHelpers.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="System.CommandLine">
+      <Version>$(SystemCommandLineVersion)</Version>
+    </PackageReference>
+  </ItemGroup>
+
+  <PropertyGroup>
+    <CrossHostArch></CrossHostArch>
+    <CrossHostArch Condition="'$(TargetArchitecture)' == 'arm64' and '$(BuildArchitecture)' == 'x64'">x64</CrossHostArch>
+
+    <TargetOSComponent>unix</TargetOSComponent>
+    <TargetOSComponent Condition="'$(TargetOS)' == 'Windows_NT'">win</TargetOSComponent>
+    <TargetSpec>$(TargetOSComponent)-$(TargetArchitecture)</TargetSpec>
+
+    <LibraryNamePrefix>lib</LibraryNamePrefix>
+    <LibraryNamePrefix Condition="$([MSBuild]::IsOsPlatform('WINDOWS'))"></LibraryNamePrefix>
+    <LibraryNameExtension Condition="$([MSBuild]::IsOsPlatform('WINDOWS'))">.dll</LibraryNameExtension>
+    <LibraryNameExtension Condition="$([MSBuild]::IsOsPlatform('LINUX'))">.so</LibraryNameExtension>
+    <LibraryNameExtension Condition="$([MSBuild]::IsOsPlatform('OSX'))">.dylib</LibraryNameExtension>
+
+    <JitInterfaceLibraryName>$(LibraryNamePrefix)jitinterface$(LibraryNameExtension)</JitInterfaceLibraryName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Content Include="$(BinDir)\$(JitInterfaceLibraryName)"
+      CopyToOutputDirectory="PreserveNewest"
+      CopyToPublishDirectory="PreserveNewest"
+      Link="%(FileName)%(Extension)"
+     />
+
+    <Content Include="$(BinDir)\$(NativeArchFolder)$(LibraryNamePrefix)clrjit$(LibraryNameExtension)"
+      CopyToOutputDirectory="PreserveNewest"
+      CopyToPublishDirectory="PreserveNewest"
+      Link="$(LibraryNamePrefix)clrjit-$(TargetSpec)$(LibraryNameExtension)"
+     />
+  </ItemGroup>
+
+  <Target Name="CreateCrossTargetingPackage" AfterTargets="Build" Condition="'$(CrossHostArch)' != ''">
+
+    <PropertyGroup>
+      <CrossPackageFolder>$(BinDir)\$(CrossHostArch)\crossgen2</CrossPackageFolder>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <PackageFile Include="$(BinDir)\crossgen2\*"
+        Exclude="$(BinDir)\crossgen2\$(JitInterfaceLibraryName);$(BinDir)\crossgen2\$(LibraryNamePrefix)clrjit-*$(LibraryNameExtension)" />
+      <PackageFile Include="$(BinDir)\$(CrossHostArch)\$(JitInterfaceLibraryName)" />
+    </ItemGroup>
+
+    <MakeDir Directories="$(CrossPackageFolder)" />
+    <Copy
+      SourceFiles="@(PackageFile)"
+      DestinationFiles="@(PackageFile->'$(CrossPackageFolder)\%(FileName)%(Extension)')"
+      UseHardLinksIfPossible="true"
+      />
+
+    <Copy
+      SourceFiles="$(BinDir)\$(CrossHostArch)\$(LibraryNamePrefix)clrjit$(LibraryNameExtension)"
+      DestinationFiles="$(CrossPackageFolder)\$(LibraryNamePrefix)clrjit-$(TargetSpec)$(LibraryNameExtension)"
+      UseHardLinksIfPossible="true"
+      />
+
+  </Target>
+
+  <Target Name="GenerateDepsJsonFile" Returns="$(ProjectDepsFilePath)" DependsOnTargets="GenerateBuildDependencyFile" />
+
+  <Target Name="RemoveUnusedFilesFromDepsJson" AfterTargets="ResolveRuntimePackAssets" BeforeTargets="GenerateBuildDependencyFile">
+    <PropertyGroup>
+      <StaticLibraryFileExtension>.a</StaticLibraryFileExtension>
+      <StaticLibraryFileExtension Condition="'$(TargetOS)' == 'Windows_NT'">.lib</StaticLibraryFileExtension>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <RuntimePackAsset Remove="@(RuntimePackAsset)" Condition="'%(Extension)' == '$(StaticLibraryFileExtension)'" />
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(RemoveLongNameDac)' == 'true'">
+      <RuntimePackAsset Remove="@(RuntimePackAsset)" Condition="$([System.String]::new('%(FileName)').StartsWith('mscordaccore_'))" />
+    </ItemGroup>
+  </Target>
+</Project>

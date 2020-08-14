@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 
 #include "common.h"
@@ -121,34 +120,6 @@ CrstStatic          SystemDomain::m_DelayedUnloadCrst;
 ULONG               SystemDomain::s_dNumAppDomains = 0;
 
 DWORD               SystemDomain::m_dwLowestFreeIndex        = 0;
-
-
-
-// comparison function to be used for matching clsids in our clsid hash table
-BOOL CompareCLSID(UPTR u1, UPTR u2)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM(););
-    }
-    CONTRACTL_END;
-
-    GUID *pguid = (GUID *)(u1 << 1);
-    _ASSERTE(pguid != NULL);
-
-    MethodTable *pMT= (MethodTable *)u2;
-    _ASSERTE(pMT!= NULL);
-
-    GUID guid;
-    pMT->GetGuid(&guid, TRUE);
-    if (!IsEqualIID(guid, *pguid))
-        return FALSE;
-
-    return TRUE;
-}
 
 #ifndef CROSSGEN_COMPILE
 // Constructor for the LargeHeapHandleBucket class.
@@ -940,47 +911,6 @@ OBJECTREF* BaseDomain::AllocateObjRefPtrsInLargeTable(int nRequested, OBJECTREF*
 
 #endif // !DACCESS_COMPILE
 
-#ifndef DACCESS_COMPILE
-
-// Insert class in the hash table
-void AppDomain::InsertClassForCLSID(MethodTable* pMT, BOOL fForceInsert /*=FALSE*/)
-{
-    CONTRACTL
-    {
-        GC_TRIGGERS;
-        MODE_ANY;
-        THROWS;
-        INJECT_FAULT(COMPlusThrowOM(););
-    }
-    CONTRACTL_END;
-
-    CVID cvid;
-
-    // Ensure that registered classes are activated for allocation
-    pMT->EnsureInstanceActive();
-
-    // Note that it is possible for multiple classes to claim the same CLSID, and in such a
-    // case it is arbitrary which one we will return for a future query for a given app domain.
-
-    pMT->GetGuid(&cvid, fForceInsert);
-
-    if (!IsEqualIID(cvid, GUID_NULL))
-    {
-        //<TODO>@todo get a better key</TODO>
-        LPVOID val = (LPVOID)pMT;
-        {
-            LockHolder lh(this);
-
-            if (LookupClass(cvid) != pMT)
-            {
-                m_clsidHash.InsertValue(GetKeyFromGUID(&cvid), val);
-            }
-        }
-    }
-}
-
-#endif // DACCESS_COMPILE
-
 #ifdef FEATURE_COMINTEROP
 #ifndef CROSSGEN_COMPILE
 #ifndef DACCESS_COMPILE
@@ -998,7 +928,7 @@ OBJECTREF AppDomain::GetMissingObject()
     if (!m_hndMissing)
     {
         // Get the field
-        FieldDesc *pValueFD = MscorlibBinder::GetField(FIELD__MISSING__VALUE);
+        FieldDesc *pValueFD = CoreLibBinder::GetField(FIELD__MISSING__VALUE);
 
         pValueFD->CheckRunClassInitThrowing();
 
@@ -1338,7 +1268,7 @@ void SystemDomain::Init()
 
     DWORD size = 0;
 
-    // Get the install directory so we can find mscorlib
+    // Get the install directory so we can find CoreLib
     hr = GetInternalSystemDirectory(NULL, &size);
     if (hr != HRESULT_FROM_WIN32(ERROR_INSUFFICIENT_BUFFER))
         ThrowHR(hr);
@@ -1377,7 +1307,7 @@ void SystemDomain::Init()
         }
 #endif
 
-        // Finish loading mscorlib now.
+        // Finish loading CoreLib now.
         m_pSystemAssembly->GetDomainAssembly()->EnsureActive();
     }
 
@@ -1494,36 +1424,36 @@ void SystemDomain::LoadBaseSystemClasses()
     // the globals in this function before finishing the load.
     m_pSystemAssembly = DefaultDomain()->LoadDomainAssembly(NULL, m_pSystemFile, FILE_LOAD_POST_LOADLIBRARY)->GetCurrentAssembly();
 
-    // Set up binder for mscorlib
-    MscorlibBinder::AttachModule(m_pSystemAssembly->GetManifestModule());
+    // Set up binder for CoreLib
+    CoreLibBinder::AttachModule(m_pSystemAssembly->GetManifestModule());
 
     // Load Object
-    g_pObjectClass = MscorlibBinder::GetClass(CLASS__OBJECT);
+    g_pObjectClass = CoreLibBinder::GetClass(CLASS__OBJECT);
 
     // Now that ObjectClass is loaded, we can set up
     // the system for finalizers.  There is no point in deferring this, since we need
     // to know this before we allocate our first object.
-    g_pObjectFinalizerMD = MscorlibBinder::GetMethod(METHOD__OBJECT__FINALIZE);
+    g_pObjectFinalizerMD = CoreLibBinder::GetMethod(METHOD__OBJECT__FINALIZE);
 
 
-    g_pCanonMethodTableClass = MscorlibBinder::GetClass(CLASS____CANON);
+    g_pCanonMethodTableClass = CoreLibBinder::GetClass(CLASS____CANON);
 
     // NOTE: !!!IMPORTANT!!! ValueType and Enum MUST be loaded one immediately after
     //                       the other, because we have coded MethodTable::IsChildValueType
     //                       in such a way that it depends on this behaviour.
     // Load the ValueType class
-    g_pValueTypeClass = MscorlibBinder::GetClass(CLASS__VALUE_TYPE);
+    g_pValueTypeClass = CoreLibBinder::GetClass(CLASS__VALUE_TYPE);
 
     // Load the enum class
-    g_pEnumClass = MscorlibBinder::GetClass(CLASS__ENUM);
+    g_pEnumClass = CoreLibBinder::GetClass(CLASS__ENUM);
     _ASSERTE(!g_pEnumClass->IsValueType());
 
     // Load System.RuntimeType
-    g_pRuntimeTypeClass = MscorlibBinder::GetClass(CLASS__CLASS);
+    g_pRuntimeTypeClass = CoreLibBinder::GetClass(CLASS__CLASS);
     _ASSERTE(g_pRuntimeTypeClass->IsFullyLoaded());
 
     // Load Array class
-    g_pArrayClass = MscorlibBinder::GetClass(CLASS__ARRAY);
+    g_pArrayClass = CoreLibBinder::GetClass(CLASS__ARRAY);
 
     // Calling a method on IList<T> for an array requires redirection to a method on
     // the SZArrayHelper class. Retrieving such methods means calling
@@ -1531,31 +1461,31 @@ void SystemDomain::LoadBaseSystemClasses()
     // the corresponding method on SZArrayHelper. This basically results in a class
     // load due to a method call, which the debugger cannot handle, so we pre-load
     // the SZArrayHelper class here.
-    g_pSZArrayHelperClass = MscorlibBinder::GetClass(CLASS__SZARRAYHELPER);
+    g_pSZArrayHelperClass = CoreLibBinder::GetClass(CLASS__SZARRAYHELPER);
 
     // Load ByReference class
     //
     // NOTE: ByReference<T> must be the first by-ref-like system type to be loaded,
     //       because MethodTable::ClassifyEightBytesWithManagedLayout depends on it.
-    g_pByReferenceClass = MscorlibBinder::GetClass(CLASS__BYREFERENCE);
+    g_pByReferenceClass = CoreLibBinder::GetClass(CLASS__BYREFERENCE);
 
     // Load Nullable class
-    g_pNullableClass = MscorlibBinder::GetClass(CLASS__NULLABLE);
+    g_pNullableClass = CoreLibBinder::GetClass(CLASS__NULLABLE);
 
     // Load the Object array class.
     g_pPredefinedArrayTypes[ELEMENT_TYPE_OBJECT] = ClassLoader::LoadArrayTypeThrowing(TypeHandle(g_pObjectClass));
 
-    // We have delayed allocation of mscorlib's static handles until we load the object class
-    MscorlibBinder::GetModule()->AllocateRegularStaticHandles(DefaultDomain());
+    // We have delayed allocation of CoreLib's static handles until we load the object class
+    CoreLibBinder::GetModule()->AllocateRegularStaticHandles(DefaultDomain());
 
     // Make sure all primitive types are loaded
     for (int et = ELEMENT_TYPE_VOID; et <= ELEMENT_TYPE_R8; et++)
-        MscorlibBinder::LoadPrimitiveType((CorElementType)et);
+        CoreLibBinder::LoadPrimitiveType((CorElementType)et);
 
-    MscorlibBinder::LoadPrimitiveType(ELEMENT_TYPE_I);
-    MscorlibBinder::LoadPrimitiveType(ELEMENT_TYPE_U);
+    CoreLibBinder::LoadPrimitiveType(ELEMENT_TYPE_I);
+    CoreLibBinder::LoadPrimitiveType(ELEMENT_TYPE_U);
 
-    g_TypedReferenceMT = MscorlibBinder::GetClass(CLASS__TYPED_REFERENCE);
+    g_TypedReferenceMT = CoreLibBinder::GetClass(CLASS__TYPED_REFERENCE);
 
     // unfortunately, the following cannot be delay loaded since the jit
     // uses it to compute method attributes within a function that cannot
@@ -1563,8 +1493,8 @@ void SystemDomain::LoadBaseSystemClasses()
     // where a complus exception can be thrown. It is unfortunate, because
     // we know that the delegate class and multidelegate class are always
     // guaranteed to be found.
-    g_pDelegateClass = MscorlibBinder::GetClass(CLASS__DELEGATE);
-    g_pMulticastDelegateClass = MscorlibBinder::GetClass(CLASS__MULTICAST_DELEGATE);
+    g_pDelegateClass = CoreLibBinder::GetClass(CLASS__DELEGATE);
+    g_pMulticastDelegateClass = CoreLibBinder::GetClass(CLASS__MULTICAST_DELEGATE);
 
 #ifndef CROSSGEN_COMPILE
     CrossLoaderAllocatorHashSetup::EnsureTypesLoaded();
@@ -1578,43 +1508,45 @@ void SystemDomain::LoadBaseSystemClasses()
 #endif // CROSSGEN_COMPILE
 
     // used by IsImplicitInterfaceOfSZArray
-    MscorlibBinder::GetClass(CLASS__IENUMERABLEGENERIC);
-    MscorlibBinder::GetClass(CLASS__ICOLLECTIONGENERIC);
-    MscorlibBinder::GetClass(CLASS__ILISTGENERIC);
-    MscorlibBinder::GetClass(CLASS__IREADONLYCOLLECTIONGENERIC);
-    MscorlibBinder::GetClass(CLASS__IREADONLYLISTGENERIC);
+    CoreLibBinder::GetClass(CLASS__IENUMERABLEGENERIC);
+    CoreLibBinder::GetClass(CLASS__ICOLLECTIONGENERIC);
+    CoreLibBinder::GetClass(CLASS__ILISTGENERIC);
+    CoreLibBinder::GetClass(CLASS__IREADONLYCOLLECTIONGENERIC);
+    CoreLibBinder::GetClass(CLASS__IREADONLYLISTGENERIC);
 
     // Load String
-    g_pStringClass = MscorlibBinder::LoadPrimitiveType(ELEMENT_TYPE_STRING);
+    g_pStringClass = CoreLibBinder::LoadPrimitiveType(ELEMENT_TYPE_STRING);
 
 #ifdef FEATURE_UTF8STRING
     // Load Utf8String
-    g_pUtf8StringClass = MscorlibBinder::GetClass(CLASS__UTF8_STRING);
+    g_pUtf8StringClass = CoreLibBinder::GetClass(CLASS__UTF8_STRING);
 #endif // FEATURE_UTF8STRING
 
 #ifndef CROSSGEN_COMPILE
     ECall::PopulateManagedStringConstructors();
 #endif // CROSSGEN_COMPILE
 
-    g_pExceptionClass = MscorlibBinder::GetClass(CLASS__EXCEPTION);
-    g_pOutOfMemoryExceptionClass = MscorlibBinder::GetException(kOutOfMemoryException);
-    g_pStackOverflowExceptionClass = MscorlibBinder::GetException(kStackOverflowException);
-    g_pExecutionEngineExceptionClass = MscorlibBinder::GetException(kExecutionEngineException);
-    g_pThreadAbortExceptionClass = MscorlibBinder::GetException(kThreadAbortException);
+    g_pExceptionClass = CoreLibBinder::GetClass(CLASS__EXCEPTION);
+    g_pOutOfMemoryExceptionClass = CoreLibBinder::GetException(kOutOfMemoryException);
+    g_pStackOverflowExceptionClass = CoreLibBinder::GetException(kStackOverflowException);
+    g_pExecutionEngineExceptionClass = CoreLibBinder::GetException(kExecutionEngineException);
+    g_pThreadAbortExceptionClass = CoreLibBinder::GetException(kThreadAbortException);
 
-    g_pThreadClass = MscorlibBinder::GetClass(CLASS__THREAD);
+    g_pThreadClass = CoreLibBinder::GetClass(CLASS__THREAD);
 
 #ifdef FEATURE_COMINTEROP
-    g_pBaseCOMObject = MscorlibBinder::GetClass(CLASS__COM_OBJECT);
+    g_pBaseCOMObject = CoreLibBinder::GetClass(CLASS__COM_OBJECT);
 #endif
 
+    g_pIDynamicInterfaceCastableInterface = CoreLibBinder::GetClass(CLASS__IDYNAMICINTERFACECASTABLE);
+
 #ifdef FEATURE_ICASTABLE
-    g_pICastableInterface = MscorlibBinder::GetClass(CLASS__ICASTABLE);
+    g_pICastableInterface = CoreLibBinder::GetClass(CLASS__ICASTABLE);
 #endif // FEATURE_ICASTABLE
 
     // Make sure that FCall mapping for Monitor.Enter is initialized. We need it in case Monitor.Enter is used only as JIT helper.
     // For more details, see comment in code:JITutil_MonEnterWorker around "__me = GetEEFuncEntryPointMacro(JIT_MonEnter)".
-    ECall::GetFCallImpl(MscorlibBinder::GetMethod(METHOD__MONITOR__ENTER));
+    ECall::GetFCallImpl(CoreLibBinder::GetMethod(METHOD__MONITOR__ENTER));
 
 #ifdef PROFILING_SUPPORTED
     // Note that g_profControlBlock.fBaseSystemClassesLoaded must be set to TRUE only after
@@ -1627,7 +1559,7 @@ void SystemDomain::LoadBaseSystemClasses()
 #if defined(_DEBUG) && !defined(CROSSGEN_COMPILE)
     if (!NingenEnabled())
     {
-        g_Mscorlib.Check();
+        g_CoreLib.Check();
     }
 #endif
 
@@ -1635,8 +1567,8 @@ void SystemDomain::LoadBaseSystemClasses()
     if (GCStress<cfg_instr_ngen>::IsEnabled())
     {
         // Setting up gc coverage requires the base system classes
-        //  to be initialized. So we have deferred it until now for mscorlib.
-        Module *pModule = MscorlibBinder::GetModule();
+        //  to be initialized. So we have deferred it until now for CoreLib.
+        Module *pModule = CoreLibBinder::GetModule();
         _ASSERTE(pModule->IsSystem());
         if(pModule->HasNativeImage())
         {
@@ -1709,31 +1641,17 @@ void SystemDomain::SetThreadAptState (Thread::ApartmentState state)
 
     if(state == Thread::AS_InSTA)
     {
-        Thread::ApartmentState pState = pThread->SetApartment(Thread::AS_InSTA, TRUE);
+        Thread::ApartmentState pState = pThread->SetApartment(Thread::AS_InSTA);
         _ASSERTE(pState == Thread::AS_InSTA);
     }
     else
     {
         // If an apartment state was not explicitly requested, default to MTA
-        Thread::ApartmentState pState = pThread->SetApartment(Thread::AS_InMTA, TRUE);
+        Thread::ApartmentState pState = pThread->SetApartment(Thread::AS_InMTA);
         _ASSERTE(pState == Thread::AS_InMTA);
     }
 }
 #endif // defined(FEATURE_COMINTEROP_APARTMENT_SUPPORT) && !defined(CROSSGEN_COMPILE)
-
-#if defined(FEATURE_CLASSIC_COMINTEROP) && !defined(CROSSGEN_COMPILE)
-
-MethodTable *AppDomain::LoadCOMClass(GUID clsid,
-                                     BOOL bLoadRecord/*=FALSE*/,
-                                     BOOL* pfAssemblyInReg/*=NULL*/)
-{
-    // @CORESYSTODO: what to do here?
-    // If implemented, this should handle checking that the type actually has the requested CLSID
-    return NULL;
-}
-
-#endif // FEATURE_CLASSIC_COMINTEROP && !CROSSGEN_COMPILE
-
 
 /*static*/
 bool SystemDomain::IsReflectionInvocationMethod(MethodDesc* pMeth)
@@ -1748,7 +1666,7 @@ bool SystemDomain::IsReflectionInvocationMethod(MethodDesc* pMeth)
 
     MethodTable* pCaller = pMeth->GetMethodTable();
 
-    // All Reflection Invocation methods are defined in mscorlib.dll
+    // All Reflection Invocation methods are defined in CoreLib
     if (!pCaller->GetModule()->IsSystem())
         return false;
 
@@ -1789,7 +1707,7 @@ bool SystemDomain::IsReflectionInvocationMethod(MethodDesc* pMeth)
         // Make sure all types are loaded so that we can use faster GetExistingClass()
         for (unsigned i = 0; i < NumItems(reflectionInvocationTypes); i++)
         {
-            MscorlibBinder::GetClass(reflectionInvocationTypes[i]);
+            CoreLibBinder::GetClass(reflectionInvocationTypes[i]);
         }
 
         VolatileStore(&fInited, true);
@@ -1799,7 +1717,7 @@ bool SystemDomain::IsReflectionInvocationMethod(MethodDesc* pMeth)
     {
         for (unsigned i = 0; i < NumItems(reflectionInvocationTypes); i++)
         {
-            if (MscorlibBinder::GetExistingClass(reflectionInvocationTypes[i]) == pCaller)
+            if (CoreLibBinder::GetExistingClass(reflectionInvocationTypes[i]) == pCaller)
                 return true;
         }
     }
@@ -1971,7 +1889,7 @@ StackWalkAction SystemDomain::CallersMethodCallbackWithStackMark(CrawlFrame* pCf
 
     // Skipping reflection frames. We don't need to be quite as exhaustive here
     // as the security or reflection stack walking code since we know this logic
-    // is only invoked for selected methods in mscorlib itself. So we're
+    // is only invoked for selected methods in CoreLib itself. So we're
     // reasonably sure we won't have any sensitive methods late bound invoked on
     // constructors, properties or events. This leaves being invoked via
     // MethodInfo, Type or Delegate (and depending on which invoke overload is
@@ -2260,7 +2178,6 @@ AppDomain::AppDomain()
 #ifdef FEATURE_PREJIT
     m_pDomainFileWithNativeImageList = NULL;
 #endif
-
 } // AppDomain::AppDomain
 
 AppDomain::~AppDomain()
@@ -2345,11 +2262,6 @@ void AppDomain::Init()
     m_ReflectionCrst.Init(CrstReflection, CRST_UNSAFE_ANYMODE);
     m_RefClassFactCrst.Init(CrstClassFactInfoHash);
 
-    {
-        LockOwner lock = {&m_DomainCrst, IsOwnerOfCrst};
-        m_clsidHash.Init(0,&CompareCLSID,true, &lock); // init hash table
-    }
-
     SetStage(STAGE_READYFORMANAGEDCODE);
 
 #ifndef CROSSGEN_COMPILE
@@ -2358,6 +2270,8 @@ void AppDomain::Init()
     m_tieredCompilationManager.Init();
 #endif
 #endif // CROSSGEN_COMPILE
+
+    m_nativeImageLoadCrst.Init(CrstNativeImageLoad);
 } // AppDomain::Init
 
 
@@ -3248,8 +3162,8 @@ DomainFile *AppDomain::LoadDomainFile(FileLoadLock *pLock, FileLoadLevel targetL
     // Make sure we release the lock on exit
     FileLoadLockRefHolder lockRef(pLock);
 
-    // We need to perform the early steps of loading mscorlib without a domain transition.  This is
-    // important for bootstrapping purposes - we need to get mscorlib at least partially loaded
+    // We need to perform the early steps of loading CoreLib without a domain transition.  This is
+    // important for bootstrapping purposes - we need to get CoreLib at least partially loaded
     // into a domain before we can run serialization code to do the transition.
     //
     // Note that we cannot do this in general for all assemblies, because some of the security computations
@@ -3585,7 +3499,7 @@ void AppDomain::SetupSharedStatics()
     // Because we are allocating/referencing objects, need to be in cooperative mode
     GCX_COOP();
 
-    DomainLocalModule *pLocalModule = MscorlibBinder::GetModule()->GetDomainLocalModule();
+    DomainLocalModule *pLocalModule = CoreLibBinder::GetModule()->GetDomainLocalModule();
 
     // This is a convenient place to initialize String.Empty.
     // It is treated as intrinsic by the JIT as so the static constructor would never run.
@@ -3594,7 +3508,7 @@ void AppDomain::SetupSharedStatics()
     // String should not have any static constructors.
     _ASSERTE(g_pStringClass->IsClassPreInited());
 
-    FieldDesc * pEmptyStringFD = MscorlibBinder::GetField(FIELD__STRING__EMPTY);
+    FieldDesc * pEmptyStringFD = CoreLibBinder::GetField(FIELD__STRING__EMPTY);
     OBJECTREF* pEmptyStringHandle = (OBJECTREF*)
         ((TADDR)pLocalModule->GetPrecomputedGCStaticsBasePointer()+pEmptyStringFD->GetOffset());
     SetObjectReference( pEmptyStringHandle, StringObject::GetEmptyString());
@@ -3962,9 +3876,9 @@ BOOL AppDomain::IsCached(AssemblySpec *pSpec)
 {
     WRAPPER_NO_CONTRACT;
 
-    // Check to see if this fits our rather loose idea of a reference to mscorlib.
+    // Check to see if this fits our rather loose idea of a reference to CoreLib.
     // If so, don't use fusion to bind it - do it ourselves.
-    if (pSpec->IsMscorlib())
+    if (pSpec->IsCoreLib())
         return TRUE;
 
     return m_AssemblyCache.Contains(pSpec);
@@ -3992,9 +3906,9 @@ PEAssembly* AppDomain::FindCachedFile(AssemblySpec* pSpec, BOOL fThrow /*=TRUE*/
     }
     CONTRACTL_END;
 
-    // Check to see if this fits our rather loose idea of a reference to mscorlib.
+    // Check to see if this fits our rather loose idea of a reference to CoreLib.
     // If so, don't use fusion to bind it - do it ourselves.
-    if (fThrow && pSpec->IsMscorlib())
+    if (fThrow && pSpec->IsCoreLib())
     {
         CONSISTENCY_CHECK(SystemDomain::System()->SystemAssembly() != NULL);
         PEAssembly *pFile = SystemDomain::System()->SystemFile();
@@ -4050,113 +3964,6 @@ BOOL AppDomain::PostBindResolveAssembly(AssemblySpec  *pPrePolicySpec,
     return fFailure;
 }
 
-//-----------------------------------------------------------------------------------------------------------------
-HRESULT AppDomain::BindAssemblySpecForHostedBinder(
-    AssemblySpec *   pSpec,
-    IAssemblyName *  pAssemblyName,
-    ICLRPrivBinder * pBinder,
-    PEAssembly **    ppAssembly)
-{
-    STANDARD_VM_CONTRACT;
-
-    PRECONDITION(CheckPointer(pSpec));
-    PRECONDITION(pSpec->GetAppDomain() == this);
-    PRECONDITION(CheckPointer(ppAssembly));
-    PRECONDITION(pSpec->GetCodeBase() == nullptr);
-
-    HRESULT hr = S_OK;
-
-
-    // The Fusion binder can throw (to preserve compat, since it will actually perform an assembly
-    // load as part of it's bind), so we need to be careful here to catch any FileNotFoundException
-    // objects if fThrowIfNotFound is false.
-    ReleaseHolder<ICLRPrivAssembly> pPrivAssembly;
-
-    // We return HRESULTs here on failure instead of throwing as failures here are not necessarily indicative
-    // of an actual application problem. Returning an error code is substantially faster than throwing, and
-    // should be used when possible.
-    IfFailRet(pBinder->BindAssemblyByName(pAssemblyName, &pPrivAssembly));
-
-    IfFailRet(BindHostedPrivAssembly(nullptr, pPrivAssembly, pAssemblyName, ppAssembly));
-
-
-    return S_OK;
-}
-
-//-----------------------------------------------------------------------------------------------------------------
-HRESULT
-AppDomain::BindHostedPrivAssembly(
-    PEAssembly *       pParentAssembly,
-    ICLRPrivAssembly * pPrivAssembly,
-    IAssemblyName *    pAssemblyName,
-    PEAssembly **      ppAssembly)
-{
-    STANDARD_VM_CONTRACT;
-
-    PRECONDITION(CheckPointer(pPrivAssembly));
-    PRECONDITION(CheckPointer(ppAssembly));
-
-    HRESULT hr = S_OK;
-
-    *ppAssembly = nullptr;
-
-    // See if result has been previously loaded.
-    {
-        DomainAssembly* pDomainAssembly = FindAssembly(pPrivAssembly);
-        if (pDomainAssembly != nullptr)
-        {
-            *ppAssembly = clr::SafeAddRef(pDomainAssembly->GetFile());
-        }
-    }
-
-    if (*ppAssembly != nullptr)
-    {   // Already exists: return the assembly.
-        return S_OK;
-    }
-
-    // Get the IL PEFile.
-    PEImageHolder pPEImageIL;
-    {
-        // Does not already exist, so get the resource for the assembly and load it.
-        DWORD dwImageType;
-        ReleaseHolder<ICLRPrivResource> pIResourceIL;
-
-        IfFailRet(pPrivAssembly->GetImageResource(ASSEMBLY_IMAGE_TYPE_IL, &dwImageType, &pIResourceIL));
-        _ASSERTE(dwImageType == ASSEMBLY_IMAGE_TYPE_IL);
-
-        pPEImageIL = PEImage::OpenImage(pIResourceIL, MDInternalImport_Default);
-    }
-
-    // See if an NI is available.
-    DWORD dwAvailableImages;
-    IfFailRet(pPrivAssembly->GetAvailableImageTypes(&dwAvailableImages));
-    _ASSERTE(dwAvailableImages & ASSEMBLY_IMAGE_TYPE_IL); // Just double checking that IL bit is always set.
-
-    // Get the NI PEFile if available.
-    PEImageHolder pPEImageNI;
-#ifdef FEATURE_PREJIT
-    if (dwAvailableImages & ASSEMBLY_IMAGE_TYPE_NATIVE)
-    {
-        DWORD dwImageType;
-        ReleaseHolder<ICLRPrivResource> pIResourceNI;
-
-        IfFailRet(pPrivAssembly->GetImageResource(ASSEMBLY_IMAGE_TYPE_NATIVE, &dwImageType, &pIResourceNI));
-        _ASSERTE(dwImageType == ASSEMBLY_IMAGE_TYPE_NATIVE || FAILED(hr));
-
-        pPEImageNI = PEImage::OpenImage(pIResourceNI, MDInternalImport_TrustedNativeImage);
-    }
-#endif // FEATURE_PREJIT
-    _ASSERTE(pPEImageIL != nullptr);
-
-    // Create a PEAssembly using the IL and NI images.
-    PEAssemblyHolder pPEAssembly = PEAssembly::Open(pParentAssembly, pPEImageIL, pPEImageNI, pPrivAssembly);
-
-    // The result.
-    *ppAssembly = pPEAssembly.Extract();
-
-    return S_OK;
-} // AppDomain::BindHostedPrivAssembly
-
 //---------------------------------------------------------------------------------------------------------------------
 PEAssembly * AppDomain::BindAssemblySpec(
     AssemblySpec *         pSpec,
@@ -4195,15 +4002,15 @@ PEAssembly * AppDomain::BindAssemblySpec(
 
                     if (bindResult.Found())
                     {
-                        if (SystemDomain::SystemFile() && bindResult.IsMscorlib())
+                        if (SystemDomain::SystemFile() && bindResult.IsCoreLib())
                         {
-                            // Avoid rebinding to another copy of mscorlib
+                            // Avoid rebinding to another copy of CoreLib
                             result = SystemDomain::SystemFile();
                             result.SuppressRelease(); // Didn't get a refcount
                         }
                         else
                         {
-                            // IsSystem on the PEFile should be false, even for mscorlib satellites
+                            // IsSystem on the PEFile should be false, even for CoreLib satellites
                             result = PEAssembly::Open(&bindResult,
                                                       FALSE);
                         }
@@ -4227,7 +4034,7 @@ PEAssembly * AppDomain::BindAssemblySpec(
                         // return an assembly that does not match, and this can cause recursive resource lookups during error
                         // reporting. The CoreLib satellite assembly is loaded from relative locations based on the culture, see
                         // AssemblySpec::Bind().
-                        if (!pSpec->IsMscorlibSatellite())
+                        if (!pSpec->IsCoreLibSatellite())
                         {
                             // Trigger the resolve event also for non-throw situation.
                             AssemblySpec NewSpec(this);
@@ -4451,7 +4258,7 @@ void AppDomain::RaiseLoadingAssemblyEvent(DomainAssembly *pAssembly)
 
     EX_TRY
     {
-        if (MscorlibBinder::GetField(FIELD__ASSEMBLYLOADCONTEXT__ASSEMBLY_LOAD)->GetStaticOBJECTREF() != NULL)
+        if (CoreLibBinder::GetField(FIELD__ASSEMBLYLOADCONTEXT__ASSEMBLY_LOAD)->GetStaticOBJECTREF() != NULL)
         {
             struct _gc {
                 OBJECTREF    orThis;
@@ -4535,7 +4342,7 @@ AppDomain::RaiseUnhandledExceptionEvent(OBJECTREF *pThrowable, BOOL isTerminatin
 
     _ASSERTE(this == GetThread()->GetDomain());
 
-    OBJECTREF orDelegate = MscorlibBinder::GetField(FIELD__APPCONTEXT__UNHANDLED_EXCEPTION)->GetStaticOBJECTREF();
+    OBJECTREF orDelegate = CoreLibBinder::GetField(FIELD__APPCONTEXT__UNHANDLED_EXCEPTION)->GetStaticOBJECTREF();
     if (orDelegate == NULL)
         return FALSE;
 
@@ -4557,9 +4364,9 @@ AppDomain::RaiseUnhandledExceptionEvent(OBJECTREF *pThrowable, BOOL isTerminatin
 
 #endif // CROSSGEN_COMPILE
 
-IUnknown *AppDomain::CreateBinderContext()
+CLRPrivBinderCoreCLR *AppDomain::CreateBinderContext()
 {
-    CONTRACT(IUnknown *)
+    CONTRACT(CLRPrivBinderCoreCLR *)
     {
         GC_TRIGGERS;
         THROWS;
@@ -5539,7 +5346,7 @@ HRESULT RuntimeInvokeHostAssemblyResolver(INT_PTR pManagedAssemblyLoadContextToB
         BinderTracing::ResolutionAttemptedOperation tracer{pAssemblyName, 0 /*binderID*/, pManagedAssemblyLoadContextToBindWithin, hr};
 
         // Allocate an AssemblyName managed object
-        _gcRefs.oRefAssemblyName = (ASSEMBLYNAMEREF) AllocateObject(MscorlibBinder::GetClass(CLASS__ASSEMBLY_NAME));
+        _gcRefs.oRefAssemblyName = (ASSEMBLYNAMEREF) AllocateObject(CoreLibBinder::GetClass(CLASS__ASSEMBLY_NAME));
 
         // Initialize the AssemblyName object from the AssemblySpec
         spec.AssemblyNameInit(&_gcRefs.oRefAssemblyName, NULL);
@@ -6029,11 +5836,6 @@ void AppDomain::UnPublishHostedAssembly(
             }
         }
     }
-    else
-    {
-        // In AppX processes, all PEAssemblies that are reach this stage should have host binders.
-        _ASSERTE(!AppX::IsAppXProcess());
-    }
 }
 
 #endif //!DACCESS_COMPILE
@@ -6072,6 +5874,32 @@ PTR_DomainAssembly AppDomain::FindAssembly(PTR_ICLRPrivAssembly pHostAssembly)
         }
     }
 }
+
+#ifndef DACCESS_COMPILE
+// Return native image for a given composite image file name, NULL when not found.
+PTR_NativeImage AppDomain::GetNativeImage(LPCUTF8 simpleFileName)
+{
+    CrstHolder ch(&m_nativeImageLoadCrst);
+    PTR_NativeImage pExistingImage;
+    if (m_nativeImageMap.Lookup(simpleFileName, &pExistingImage))
+    {
+        return pExistingImage;
+    }
+    return nullptr;
+}
+
+PTR_NativeImage AppDomain::SetNativeImage(LPCUTF8 simpleFileName, PTR_NativeImage pNativeImage)
+{
+    CrstHolder ch(&m_nativeImageLoadCrst);
+    PTR_NativeImage pExistingImage;
+    if (m_nativeImageMap.Lookup(simpleFileName, &pExistingImage))
+    {
+        return pExistingImage;
+    }
+    m_nativeImageMap.Add(simpleFileName, pNativeImage);
+    return nullptr;
+}
+#endif//DACCESS_COMPILE
 
 #if !defined(DACCESS_COMPILE) && defined(FEATURE_NATIVE_IMAGE_GENERATION)
 

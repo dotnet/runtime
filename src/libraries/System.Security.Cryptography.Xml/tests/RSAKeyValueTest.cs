@@ -1,15 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
-// See the LICENSE file in the project root for more information
-//
+// The .NET Foundation licenses this file to you under the MIT license.
+
 // RSAKeyValueTest.cs - Test Cases for RSAKeyValue
 //
 // Author:
 //  Sebastien Pouliot (spouliot@motus.com)
 //
 // (C) 2002, 2003 Motus Technologies Inc. (http://www.motus.com)
-//
-// Licensed to the .NET Foundation under one or more agreements.
-// See the LICENSE file in the project root for more information.
 
 using System.Linq;
 using System.Xml;

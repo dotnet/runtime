@@ -16,7 +16,7 @@ function print_usage {
     echo ''
     echo 'Command line:'
     echo ''
-    echo './setup-gcstress.sh --arch=<TargetArch> --outputDir=<coredistools_lib_install_path>'
+    echo './setup-stress-dependencies.sh --arch=<TargetArch> --outputDir=<coredistools_lib_install_path>'
     echo ''
     echo 'Required arguments:'
     echo '  --arch=<TargetArch>        : Target arch for the build'
@@ -131,8 +131,13 @@ case "$OSName" in
         ;;
 
     SunOS)
-        __TargetOS=SunOS
-        __HostOS=SunOS
+        if uname -o 2>&1 | grep -q illumos; then
+            __TargetOS=illumos
+            __HostOS=illumos
+        else
+            __TargetOS=Solaris
+            __HostOS=Solaris
+        fi
         ;;
 
     *)

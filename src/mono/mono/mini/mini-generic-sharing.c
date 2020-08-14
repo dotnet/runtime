@@ -1170,6 +1170,8 @@ get_wrapper_shared_vtype (MonoType *t)
 	if ((mono_class_get_flags (klass) & TYPE_ATTRIBUTE_LAYOUT_MASK) != TYPE_ATTRIBUTE_SEQUENTIAL_LAYOUT)
 		return NULL;
 	mono_class_setup_fields (klass);
+	if (mono_class_has_failure (klass))
+		return NULL;
 
 	int num_fields = mono_class_get_field_count (klass);
 	MonoClassField *klass_fields = m_class_get_fields (klass);
@@ -1274,6 +1276,10 @@ get_wrapper_shared_type_full (MonoType *t, gboolean is_field)
 #else
 		return m_class_get_byval_arg (mono_defaults.uint32_class);
 #endif
+	case MONO_TYPE_R4:
+		return m_class_get_byval_arg (mono_defaults.single_class);
+	case MONO_TYPE_R8:
+		return m_class_get_byval_arg (mono_defaults.double_class);
 	case MONO_TYPE_OBJECT:
 	case MONO_TYPE_CLASS:
 	case MONO_TYPE_SZARRAY:
@@ -2850,6 +2856,18 @@ lookup_or_register_info (MonoClass *klass, MonoMethod *method, gboolean in_mrgct
 		return MONO_RGCTX_SLOT_MAKE_RGCTX (index);
 }
 
+static inline int
+class_rgctx_array_size (int n)
+{
+	return 4 << n;
+}
+
+static inline int
+method_rgctx_array_size (int n)
+{
+	return 6 << n;
+}
+
 /*
  * mono_class_rgctx_get_array_size:
  * @n: The number of the array
@@ -2865,9 +2883,9 @@ mono_class_rgctx_get_array_size (int n, gboolean mrgctx)
 	g_assert (n >= 0 && n < 30);
 
 	if (mrgctx)
-		return 6 << n;
+		return method_rgctx_array_size (n);
 	else
-		return 4 << n;
+		return class_rgctx_array_size (n);
 }
 
 /*
@@ -2899,15 +2917,63 @@ fill_runtime_generic_context (MonoVTable *class_vtable, MonoRuntimeGenericContex
 	int i, first_slot, size;
 	MonoDomain *domain = class_vtable->domain;
 	MonoClass *klass = class_vtable->klass;
-	MonoGenericContext *class_context = mono_class_is_ginst (klass) ? &mono_class_get_generic_class (klass)->context : NULL;
+	MonoGenericContext *class_context;
 	MonoRuntimeGenericContextInfoTemplate oti;
-	MonoGenericContext context = { class_context ? class_context->class_inst : NULL, method_inst };
+	MonoRuntimeGenericContext *orig_rgctx;
 	int rgctx_index;
 	gboolean do_free;
 
-	error_init (error);
+	/*
+	 * Need a fastpath since this is called without trampolines in llvmonly mode.
+	 */
+	orig_rgctx = rgctx;
+	if (!is_mrgctx) {
+		first_slot = 0;
+		size = class_rgctx_array_size (0);
+		for (i = 0; ; ++i) {
+			int offset = 0;
 
-	g_assert (rgctx);
+			if (slot < first_slot + size - 1) {
+				rgctx_index = slot - first_slot + 1 + offset;
+				info = (MonoRuntimeGenericContext*)rgctx [rgctx_index];
+				if (info)
+					return info;
+				break;
+			}
+			if (!rgctx [offset + 0])
+				break;
+			rgctx = (void **)rgctx [offset + 0];
+			first_slot += size - 1;
+			size = class_rgctx_array_size (i + 1);
+		}
+	} else {
+		first_slot = 0;
+		size = method_rgctx_array_size (0);
+		size -= MONO_SIZEOF_METHOD_RUNTIME_GENERIC_CONTEXT / sizeof (gpointer);
+		for (i = 0; ; ++i) {
+			int offset = 0;
+
+			if (i == 0)
+				offset = MONO_SIZEOF_METHOD_RUNTIME_GENERIC_CONTEXT / sizeof (gpointer);
+
+			if (slot < first_slot + size - 1) {
+				rgctx_index = slot - first_slot + 1 + offset;
+				info = (MonoRuntimeGenericContext*)rgctx [rgctx_index];
+				if (info)
+					return info;
+				break;
+			}
+			if (!rgctx [offset + 0])
+				break;
+			rgctx = (void **)rgctx [offset + 0];
+			first_slot += size - 1;
+			size = method_rgctx_array_size (i + 1);
+		}
+	}
+	rgctx = orig_rgctx;
+
+	class_context = mono_class_is_ginst (klass) ? &mono_class_get_generic_class (klass)->context : NULL;
+	MonoGenericContext context = { class_context ? class_context->class_inst : NULL, method_inst };
 
 	mono_domain_lock (domain);
 
@@ -2999,18 +3065,21 @@ mono_class_fill_runtime_generic_context (MonoVTable *class_vtable, guint32 slot,
 
 	error_init (error);
 
-	mono_domain_lock (domain);
-
 	rgctx = class_vtable->runtime_generic_context;
-	if (!rgctx) {
-		rgctx = alloc_rgctx_array (domain, 0, FALSE);
-		/* Make sure that this array is zeroed if other threads access it */
-		mono_memory_write_barrier ();
-		class_vtable->runtime_generic_context = rgctx;
-		UnlockedIncrement (&rgctx_num_allocated); /* interlocked by domain lock */
-	}
+	if (G_UNLIKELY (!rgctx)) {
+		mono_domain_lock (domain);
 
-	mono_domain_unlock (domain);
+		rgctx = class_vtable->runtime_generic_context;
+		if (!rgctx) {
+			rgctx = alloc_rgctx_array (domain, 0, FALSE);
+			/* Make sure that this array is zeroed if other threads access it */
+			mono_memory_write_barrier ();
+			class_vtable->runtime_generic_context = rgctx;
+			UnlockedIncrement (&rgctx_num_allocated); /* interlocked by domain lock */
+		}
+
+		mono_domain_unlock (domain);
+	}
 
 	info = fill_runtime_generic_context (class_vtable, rgctx, slot, NULL, FALSE, error);
 

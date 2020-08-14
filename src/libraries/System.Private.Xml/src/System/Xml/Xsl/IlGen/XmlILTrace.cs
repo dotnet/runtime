@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.IO;
@@ -25,8 +24,8 @@ namespace System.Xml.Xsl.IlGen
         /// Check environment variable in order to determine whether to write out trace files.  This really should be a
         /// check of the configuration file, but System.Xml does not yet have a good tracing story.
         /// </summary>
-        private static volatile string s_dirName = null;
-        private static volatile bool s_alreadyCheckedEnabled = false;
+        private static volatile string s_dirName;
+        private static volatile bool s_alreadyCheckedEnabled;
 
         /// <summary>
         /// True if tracing has been enabled (environment variable set).

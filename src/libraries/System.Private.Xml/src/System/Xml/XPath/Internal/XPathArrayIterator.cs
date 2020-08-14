@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -33,6 +33,7 @@ namespace MS.Internal.Xml.XPath
             this.list = new ArrayList();
             while (nodeIterator.MoveNext())
             {
+                Debug.Assert(nodeIterator.Current != null);
                 this.list.Add(nodeIterator.Current.Clone());
             }
         }
@@ -47,7 +48,7 @@ namespace MS.Internal.Xml.XPath
             return new XPathArrayIterator(this);
         }
 
-        public override XPathNavigator Current
+        public override XPathNavigator? Current
         {
             get
             {
@@ -57,7 +58,7 @@ namespace MS.Internal.Xml.XPath
                 {
                     throw new InvalidOperationException(SR.Format(SR.Sch_EnumNotStarted, string.Empty));
                 }
-                return (XPathNavigator)list[index - 1];
+                return (XPathNavigator?)list[index - 1];
             }
         }
 
@@ -85,6 +86,6 @@ namespace MS.Internal.Xml.XPath
             return list.GetEnumerator();
         }
 
-        private object debuggerDisplayProxy { get { return index < 1 ? null : (object)new XPathNavigator.DebuggerDisplayProxy(Current); } }
+        private object? debuggerDisplayProxy { get { return index < 1 ? null : (object)new XPathNavigator.DebuggerDisplayProxy(Current!); } }
     }
 }

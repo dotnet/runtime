@@ -7,22 +7,37 @@
   </PropertyGroup>
 
   <Import Condition="Exists('$(MSBuildProjectName).props')" Project="$(MSBuildProjectName).props" />
-
   <Import Project="..\Directory.Build.props" />
+
+  <PropertyGroup>
+    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
+  </PropertyGroup>
+
+  <!-- Download the .NET Framework RefPack to build against the contract. -->
+  <ItemGroup>
+    <PackageDownload Include="NETStandard.Library"
+                     Condition="'$(MSBuildProjectName)' == 'netstandard'"
+                     Version="[$(NETStandardLibraryVersion)]" />
+    <PackageDownload Include="Microsoft.NETFramework.ReferenceAssemblies.$(NETFrameworkReferenceAssemblyTFM)"
+                     Condition="'$(MSBuildProjectName)' != 'netstandard'"
+                     Version="[$(MicrosoftNetFrameworkReferenceAssembliesVersion)]" />
+    <!-- System.Data.SqlClient is not live built anymore, reference it manually. -->
+    <PackageReference Include="System.Data.SqlClient"
+                      Version="$(SystemDataSqlClientVersion)" />
+  </ItemGroup>
 
   <ItemGroup>
     <!-- reference everything but self -->
     <!-- Type duplicated in Microsoft.Extensions.DependencyModel. Exclude it for now: https://github.com/dotnet/runtime/issues/34420 -->
     <ReferencePath
-      Include="$(RefPath)*.dll"
-      Exclude="$(RefPath)$(MSBuildProjectName).dll;$(RefPath)netstandard.dll;$(RefPath)Microsoft.Extensions.DependencyModel.dll" />
+      Include="$(NetCoreAppCurrentRefPath)*.dll"
+      Exclude="$(NetCoreAppCurrentRefPath)$(MSBuildProjectName).dll;
+               $(NetCoreAppCurrentRefPath)netstandard.dll;
+               $(NetCoreAppCurrentRefPath)Microsoft.Extensions.DependencyModel.dll" />
 
     <!-- required by compiler to resolve core types -->
-    <ProjectReference Condition="'$(MSBuildProjectName)' != 'netstandard'"
-                      Include="netstandard.csproj" />
+    <ProjectReference Include="netstandard.csproj"
+                      Condition="'$(MSBuildProjectName)' != 'netstandard'"
+                      SkipUseReferenceAssembly="true" />
   </ItemGroup>
-
-  <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
-  </PropertyGroup>
 </Project>

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using Xunit;
@@ -22,9 +21,8 @@ namespace System.Text.Tests
         {
             Encoding encoding = Encoding.GetEncoding("latin1");
             Assert.Equal(1, encoding.EncoderFallback.MaxCharCount);
-            Assert.Equal(28591, encoding.EncoderFallback.GetHashCode());
-            Assert.Equal(1, encoding.DecoderFallback.MaxCharCount);
-            Assert.Equal(28591, encoding.DecoderFallback.GetHashCode());
+            Assert.True(encoding.EncoderFallback.IsLatin1BestFitFallback());
+            Assert.Equal(DecoderFallback.ReplacementFallback, encoding.DecoderFallback);
         }
 
         public static IEnumerable<object[]> Encodings_TestData()

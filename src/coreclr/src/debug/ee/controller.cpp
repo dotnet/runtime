@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 // ==++==
 //
@@ -8670,8 +8669,8 @@ DebuggerEnCBreakpoint::DebuggerEnCBreakpoint(SIZE_T offset,
                                              DebuggerEnCBreakpoint::TriggerType fTriggerType,
                                              AppDomain *pAppDomain)
   : DebuggerController(NULL, pAppDomain),
-    m_fTriggerType(fTriggerType),
-    m_jitInfo(jitInfo)
+    m_jitInfo(jitInfo),
+    m_fTriggerType(fTriggerType)
 {
     _ASSERTE( jitInfo != NULL );
     // Add and activate the specified patch

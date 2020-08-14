@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Globalization;
@@ -14,7 +13,7 @@ namespace System.IO.Pipes.Tests
 {
     public sealed class NamedPipeTest_CrossProcess
     {
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void InheritHandles_AvailableInChildProcess()
         {
             string pipeName = GetUniquePipeName();
@@ -45,7 +44,7 @@ namespace System.IO.Pipes.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void PingPong_Sync()
         {
             // Create names for two pipes
@@ -71,7 +70,7 @@ namespace System.IO.Pipes.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public async Task PingPong_Async()
         {
             // Create names for two pipes

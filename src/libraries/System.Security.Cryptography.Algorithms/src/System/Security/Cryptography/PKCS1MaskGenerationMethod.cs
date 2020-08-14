@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
+using System.Buffers.Binary;
 using System.Diagnostics;
 using Internal.Cryptography;
 
@@ -39,7 +39,7 @@ namespace System.Security.Cryptography
                 for (int ib = 0; ib < rgbT.Length;)
                 {
                     //  Increment counter -- up to 2^32 * sizeof(Hash)
-                    Helpers.ConvertIntToByteArray(counter++, rgbCounter);
+                    BinaryPrimitives.WriteUInt32BigEndian(rgbCounter, counter++);
                     hasher.TransformBlock(rgbSeed, 0, rgbSeed.Length, rgbSeed, 0);
                     hasher.TransformFinalBlock(rgbCounter, 0, 4);
                     Debug.Assert(hasher.Hash != null);

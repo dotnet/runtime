@@ -1,5 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
-// See the LICENSE file in the project root for more information.
+// The .NET Foundation licenses this file to you under the MIT license.
 //
 // System.Drawing.Icon.cs
 //
@@ -205,7 +205,7 @@ namespace System.Drawing
                 }
 
                 if (id == ushort.MaxValue)
-                    throw new ArgumentException(SR.NoValidIconImageFound, "Icon");
+                    throw new ArgumentException(SR.NoValidIconImageFound, nameof(original));
 
                 iconSize.Height = iconDir.idEntries[id].height;
                 iconSize.Width = iconDir.idEntries[id].width;
@@ -240,7 +240,7 @@ namespace System.Drawing
         public Icon(Type type, string resource)
         {
             if (resource == null)
-                throw new ArgumentException(nameof(resource));
+                throw new ArgumentNullException(nameof(resource));
 
             // For compatibility with the .NET Framework
             if (type == null)
@@ -313,7 +313,7 @@ namespace System.Drawing
             if (filePath == null)
                 throw new ArgumentNullException(nameof(filePath));
             if (string.IsNullOrEmpty(filePath))
-                throw new ArgumentException(SR.NullOrEmptyPath, "path");
+                throw new ArgumentException(SR.NullOrEmptyPath, nameof(filePath));
             if (!File.Exists(filePath))
                 throw new FileNotFoundException(SR.CouldntFindSpecifiedFile, filePath);
 
@@ -346,7 +346,7 @@ namespace System.Drawing
         public static Icon FromHandle(IntPtr handle)
         {
             if (handle == IntPtr.Zero)
-                throw new ArgumentException(nameof(handle));
+                throw new ArgumentException(null, nameof(handle));
 
             return new Icon(handle);
         }

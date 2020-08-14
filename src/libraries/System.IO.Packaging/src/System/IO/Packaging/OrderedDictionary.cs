@@ -1,9 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.IO.Packaging
 {
@@ -12,7 +12,7 @@ namespace System.IO.Packaging
     /// This is similar to <see cref="OrderedDictionary{TKey, TValue}"/>, but the items will not be sorted by a comparer but rather retain the
     /// order in which they were added while still retaining good lookup, insertion, and removal.
     /// </summary>
-    internal class OrderedDictionary<TKey, TValue> : IEnumerable<TValue>
+    internal class OrderedDictionary<TKey, TValue> : IEnumerable<TValue> where TKey : notnull
     {
         private readonly Dictionary<TKey, LinkedListNode<TValue>> _dictionary;
         private readonly LinkedList<TValue> _order;
@@ -44,7 +44,7 @@ namespace System.IO.Packaging
 
         public bool Remove(TKey key)
         {
-            if (_dictionary.TryGetValue(key, out LinkedListNode<TValue> value))
+            if (_dictionary.TryGetValue(key, out LinkedListNode<TValue>? value))
             {
                 _order.Remove(value);
                 _dictionary.Remove(key);
@@ -54,7 +54,7 @@ namespace System.IO.Packaging
             return false;
         }
 
-        public bool TryGetValue(TKey key, out TValue value)
+        public bool TryGetValue(TKey key, [MaybeNullWhen(false)] out TValue value)
         {
             if (_dictionary.TryGetValue(key, out var node))
             {

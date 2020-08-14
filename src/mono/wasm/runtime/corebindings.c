@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 #include <emscripten.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -19,7 +18,6 @@ extern MonoObject* mono_wasm_set_by_index (int js_handle, int property_index, Mo
 extern MonoObject* mono_wasm_get_global_object (MonoString *global_name, int *is_exception);
 extern void* mono_wasm_release_handle (int js_handle, int *is_exception);
 extern void* mono_wasm_release_object (int js_handle, int *is_exception);
-extern MonoObject* mono_wasm_new_object (int js_handle, MonoArray *args, int *is_exception);
 extern MonoObject* mono_wasm_new (MonoString *core_name, MonoArray *args, int *is_exception);
 extern int mono_wasm_bind_core_object (int js_handle, int gc_handle, int *is_exception);
 extern int mono_wasm_bind_host_object (int js_handle, int gc_handle, int *is_exception);
@@ -79,7 +77,6 @@ void core_initialize_internals ()
 	mono_add_internal_call ("Interop/Runtime::GetGlobalObject", mono_wasm_get_global_object);
 	mono_add_internal_call ("Interop/Runtime::ReleaseHandle", mono_wasm_release_handle);
 	mono_add_internal_call ("Interop/Runtime::ReleaseObject", mono_wasm_release_object);
-	mono_add_internal_call ("Interop/Runtime::NewObjectJS", mono_wasm_new_object);
 	mono_add_internal_call ("Interop/Runtime::BindCoreObject", mono_wasm_bind_core_object);
 	mono_add_internal_call ("Interop/Runtime::BindHostObject", mono_wasm_bind_host_object);
 	mono_add_internal_call ("Interop/Runtime::New", mono_wasm_new);
@@ -101,8 +98,9 @@ void core_initialize_internals ()
 // Float32Array		| float		| float
 // Float64Array		| double	| double
 // typed array marshalling
-#define MARSHAL_ARRAY_BYTE 11
-#define MARSHAL_ARRAY_UBYTE 12
+#define MARSHAL_ARRAY_BYTE 10
+#define MARSHAL_ARRAY_UBYTE 11
+#define MARSHAL_ARRAY_UBYTE_C 12 // alias of MARSHAL_ARRAY_UBYTE
 #define MARSHAL_ARRAY_SHORT 13
 #define MARSHAL_ARRAY_USHORT 14
 #define MARSHAL_ARRAY_INT 15

@@ -1,3 +1,5 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
 //
 // System.Reflection.Emit/MethodBuilder.cs
 //
@@ -40,11 +42,11 @@ namespace System.Reflection.Emit
     [StructLayout(LayoutKind.Sequential)]
     public sealed partial class MethodBuilder : MethodInfo
     {
-#pragma warning disable 169, 414
+#region Sync with MonoReflectionMethodBuilder in object-internals.h
         private RuntimeMethodHandle mhandle;
         private Type? rtype;
         internal Type[]? parameters;
-        private MethodAttributes attrs; /* It's used directly by MCS */
+        private MethodAttributes attrs;
         private MethodImplAttributes iattrs;
         private string name;
         private int table_idx;
@@ -68,9 +70,11 @@ namespace System.Reflection.Emit
         private Type[][]? paramModReq;
         private Type[][]? paramModOpt;
         private object? permissions;
-#pragma warning restore 169, 414
+#endregion
+
         private RuntimeMethodInfo? created;
 
+        [DynamicDependency(nameof(permissions))]  // Automatically keeps all previous fields too due to StructLayout
         internal MethodBuilder(TypeBuilder tb, string name, MethodAttributes attributes, CallingConventions callingConvention, Type? returnType, Type[]? returnModReq, Type[]? returnModOpt, Type[]? parameterTypes, Type[][]? paramModReq, Type[][]? paramModOpt)
         {
             this.name = name;

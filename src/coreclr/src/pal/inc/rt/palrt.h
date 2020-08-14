@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //
 
 //
@@ -224,7 +223,6 @@ inline void *__cdecl operator new(size_t, void *_P)
 #define THIS                void
 
 #define DECLSPEC_NOVTABLE
-#define DECLSPEC_SELECTANY  __attribute__((weak))
 
 #define DECLARE_INTERFACE(iface)    interface DECLSPEC_NOVTABLE iface
 #define DECLARE_INTERFACE_(iface, baseiface)    interface DECLSPEC_NOVTABLE iface : public baseiface

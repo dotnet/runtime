@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //
 // File: METHODTABLEBUILDER.INL
 //
@@ -16,7 +15,10 @@
 
 //***************************************************************************************
 inline MethodTableBuilder::DeclaredMethodIterator::DeclaredMethodIterator(
-            MethodTableBuilder &mtb) : m_mtb(mtb), m_idx(-1)
+            MethodTableBuilder &mtb) : 
+                m_numDeclaredMethods((int)mtb.NumDeclaredMethods()),
+                m_declaredMethods(mtb.bmtMethod->m_rgDeclaredMethods),
+                m_idx(-1)
 {
     LIMITED_METHOD_CONTRACT;
 }
@@ -25,7 +27,7 @@ inline MethodTableBuilder::DeclaredMethodIterator::DeclaredMethodIterator(
 inline int MethodTableBuilder::DeclaredMethodIterator::CurrentIndex()
 {
     LIMITED_METHOD_CONTRACT;
-    CONSISTENCY_CHECK_MSG(0 <= m_idx && m_idx < (int)m_mtb.NumDeclaredMethods(),
+    CONSISTENCY_CHECK_MSG(0 <= m_idx && m_idx < m_numDeclaredMethods,
                           "Invalid iterator state.");
     return m_idx;
 }
@@ -34,7 +36,7 @@ inline int MethodTableBuilder::DeclaredMethodIterator::CurrentIndex()
 inline BOOL MethodTableBuilder::DeclaredMethodIterator::Next()
 {
     LIMITED_METHOD_CONTRACT;
-    if (m_idx + 1 >= (int)m_mtb.NumDeclaredMethods())
+    if (m_idx + 1 >= m_numDeclaredMethods)
         return FALSE;
     m_idx++;
     INDEBUG(m_debug_pMethod = GetMDMethod();)
@@ -56,11 +58,11 @@ inline BOOL MethodTableBuilder::DeclaredMethodIterator::Prev()
 inline void MethodTableBuilder::DeclaredMethodIterator::ResetToEnd()
 {
     LIMITED_METHOD_CONTRACT;
-    m_idx = (int)m_mtb.NumDeclaredMethods();
+    m_idx = m_numDeclaredMethods;
 }
 
 //***************************************************************************************
-inline mdMethodDef MethodTableBuilder::DeclaredMethodIterator::Token()
+inline mdMethodDef MethodTableBuilder::DeclaredMethodIterator::Token() const
 {
     STANDARD_VM_CONTRACT;
     CONSISTENCY_CHECK(TypeFromToken(GetMDMethod()->GetMethodSignature().GetToken()) == mdtMethodDef);
@@ -127,11 +129,11 @@ inline MethodTableBuilder::METHOD_TYPE MethodTableBuilder::DeclaredMethodIterato
 
 //***************************************************************************************
 inline MethodTableBuilder::bmtMDMethod *
-MethodTableBuilder::DeclaredMethodIterator::GetMDMethod()
+MethodTableBuilder::DeclaredMethodIterator::GetMDMethod() const
 {
     LIMITED_METHOD_CONTRACT;
     _ASSERTE(FitsIn<SLOT_INDEX>(m_idx)); // Review: m_idx should probably _be_ a SLOT_INDEX, but that asserts.
-    return (*m_mtb.bmtMethod)[static_cast<SLOT_INDEX>(m_idx)];
+    return m_declaredMethods[m_idx];
 }
 
 //*******************************************************************************

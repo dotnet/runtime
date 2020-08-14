@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Runtime.InteropServices;
 
@@ -40,7 +39,12 @@ namespace System.IO
         internal bool IsReadOnly(ReadOnlySpan<char> path, bool continueOnError = false)
         {
             EnsureStatInitialized(path, continueOnError);
+#if TARGET_BROWSER
+            const Interop.Sys.Permissions readBit = Interop.Sys.Permissions.S_IRUSR;
+            const Interop.Sys.Permissions writeBit = Interop.Sys.Permissions.S_IWUSR;
+#else
             Interop.Sys.Permissions readBit, writeBit;
+
             if (_fileStatus.Uid == Interop.Sys.GetEUid())
             {
                 // User effectively owns the file
@@ -59,6 +63,7 @@ namespace System.IO
                 readBit = Interop.Sys.Permissions.S_IROTH;
                 writeBit = Interop.Sys.Permissions.S_IWOTH;
             }
+#endif
 
             return ((_fileStatus.Mode & (int)readBit) != 0 && // has read permission
                 (_fileStatus.Mode & (int)writeBit) == 0);     // but not write permission

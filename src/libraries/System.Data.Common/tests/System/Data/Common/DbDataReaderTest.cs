@@ -1,5 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
-// See the LICENSE file in the project root for more information.
+// The .NET Foundation licenses this file to you under the MIT license.
 
 //
 // Permission is hereby granted, free of charge, to any person obtaining
@@ -21,12 +21,15 @@
 // OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
+#nullable enable
+
+using System.Linq;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 
-namespace System.Data.Tests.Common
+namespace System.Data.Common.Tests
 {
     public class DbDataReaderTest
     {
@@ -497,6 +500,46 @@ namespace System.Data.Tests.Common
         public Task IsDbNullAsyncByColumnNameCanceledTest()
         {
             return Assert.ThrowsAsync<TaskCanceledException>(() => _dataReader.IsDBNullAsync("dbnull_col", new CancellationToken(true)));
+        }
+
+        [Fact]
+        public void GetSchemaTableAsync_with_cancelled_token()
+            => Assert.ThrowsAsync<TaskCanceledException>(async () => await new DbDataReaderMock().GetSchemaTableAsync(new CancellationToken(true)));
+
+        [Fact]
+        public void GetSchemaTableAsync_with_exception()
+            => Assert.ThrowsAsync<NotSupportedException>(async () => await new DbDataReaderMock().GetSchemaTableAsync());
+
+        [Fact]
+        public async Task GetSchemaTableAsync_calls_GetSchemaTable()
+        {
+            var readerTable = new DataTable();
+            readerTable.Columns.Add("text_col", typeof(string));
+
+            var table = await new SchemaDbDataReaderMock(readerTable).GetSchemaTableAsync();
+
+            var textColRow = table.Rows.Cast<DataRow>().Single();
+            Assert.Equal("text_col", textColRow["ColumnName"]);
+            Assert.Same(typeof(string), textColRow["DataType"]);
+        }
+
+        [Fact]
+        public void GetColumnSchemaAsync_with_cancelled_token()
+            => Assert.ThrowsAsync<TaskCanceledException>(async () => await new DbDataReaderMock().GetColumnSchemaAsync(new CancellationToken(true)));
+
+        [Fact]
+        public void GetColumnSchemaAsync_with_exception()
+            => Assert.ThrowsAsync<NotSupportedException>(async () => await new DbDataReaderMock().GetColumnSchemaAsync());
+
+        [Fact]
+        public async Task GetColumnSchemaAsync_calls_GetSchemaTable()
+        {
+            var readerTable = new DataTable();
+            readerTable.Columns.Add("text_col", typeof(string));
+
+            var column = (await new SchemaDbDataReaderMock(readerTable).GetColumnSchemaAsync()).Single();
+            Assert.Equal("text_col", column.ColumnName);
+            Assert.Same(typeof(string), column.DataType);
         }
 
         private void SkipRows(int rowsToSkip)

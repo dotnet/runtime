@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #ifndef __WELLKNOWNATTRIBUTES_H_
 #define __WELLKNOWNATTRIBUTES_H_
@@ -31,6 +30,7 @@ enum class WellKnownAttribute : DWORD
     PrimaryInteropAssembly,
     ManagedToNativeComInteropStub,
     UnmanagedCallersOnly,
+    NativeCallableInternal, // This is needed to support MCG scenarios
     TypeIdentifier,
     UnmanagedFunctionPointer,
     ThreadStatic,
@@ -92,6 +92,8 @@ inline const char *GetWellKnownAttributeName(WellKnownAttribute attribute)
             return "System.Runtime.InteropServices.ManagedToNativeComInteropStubAttribute";
         case WellKnownAttribute::UnmanagedCallersOnly:
             return "System.Runtime.InteropServices.UnmanagedCallersOnlyAttribute";
+        case WellKnownAttribute::NativeCallableInternal:
+            return "System.Runtime.InteropServices.NativeCallableInternalAttribute";
         case WellKnownAttribute::TypeIdentifier:
             return "System.Runtime.InteropServices.TypeIdentifierAttribute";
         case WellKnownAttribute::UnmanagedFunctionPointer:

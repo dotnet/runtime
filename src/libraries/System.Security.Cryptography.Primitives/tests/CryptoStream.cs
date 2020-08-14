@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.IO;
 using System.Text;
@@ -185,6 +184,34 @@ namespace System.Security.Cryptography.Encryption.Tests.Asymmetric
                 encryptStream.WriteAsync(new byte[] { 1, 2, 3, 4, 5 }, 0, 5);
                 waitable = encryptStream.FlushAsync(new Threading.CancellationToken(true));
                 Assert.True(waitable.IsCanceled);
+            }
+        }
+
+        [Fact]
+        public static async Task FlushFinalBlockAsync()
+        {
+            ICryptoTransform encryptor = new IdentityTransform(1, 1, true);
+            using (MemoryStream output = new MemoryStream())
+            using (CryptoStream encryptStream = new CryptoStream(output, encryptor, CryptoStreamMode.Write))
+            {
+                await encryptStream.WriteAsync(new byte[] { 1, 2, 3, 4, 5 }, 0, 5);
+                await encryptStream.FlushFinalBlockAsync();
+                Assert.True(encryptStream.HasFlushedFinalBlock);
+                Assert.Equal(5, output.ToArray().Length);
+            }
+        }
+
+        [Fact]
+        public static async Task FlushFinalBlockAsync_Cancelled()
+        {
+            ICryptoTransform encryptor = new IdentityTransform(1, 1, true);
+            using (MemoryStream output = new MemoryStream())
+            using (CryptoStream encryptStream = new CryptoStream(output, encryptor, CryptoStreamMode.Write))
+            {
+                await encryptStream.WriteAsync(new byte[] { 1, 2, 3, 4, 5 }, 0, 5);
+                ValueTask waitable = encryptStream.FlushFinalBlockAsync(new Threading.CancellationToken(canceled: true));
+                Assert.True(waitable.IsCanceled);
+                Assert.False(encryptStream.HasFlushedFinalBlock);
             }
         }
 

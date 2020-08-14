@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Globalization;
 using System.IO;
@@ -280,8 +279,8 @@ namespace System.Runtime.Serialization.Json
         private bool _expectingFirstElementInNonPrimitiveChild;
         private int _maxBytesPerRead;
         private OnXmlDictionaryReaderClose _onReaderClose;
-        private bool _readServerTypeElement = false;
-        private int _scopeDepth = 0;
+        private bool _readServerTypeElement;
+        private int _scopeDepth;
         private JsonNodeType[] _scopes;
 
         private enum JsonComplexTextMode

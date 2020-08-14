@@ -1,0 +1,74 @@
+parameters:
+  archType: ''
+  buildConfig: ''
+  container: ''
+  crossDacPlatforms: {}
+  isOfficialBuild: false
+  osGroup: ''
+  osSubgroup: ''
+  platform: ''
+  pool: ''
+  runtimeVariant: ''
+  stagedBuild: false
+  testGroup: ''
+  timeoutInMinutes: ''
+  variables: {}
+
+jobs:
+- template: xplat-pipeline-job.yml
+  parameters:
+    archType: ${{ parameters.archType }}
+    buildConfig: ${{ parameters.buildConfig }}
+    container: ${{ parameters.container }}
+    condition: ${{ parameters.isOfficialBuild }}
+    helixType: 'build/product/'
+    osGroup: ${{ parameters.osGroup }}
+    osSubgroup: ${{ parameters.osSubgroup }}
+    pool: ${{ parameters.pool }}
+    runtimeVariant: ${{ parameters.runtimeVariant }}
+    stagedBuild: ${{ parameters.stagedBuild }}
+    timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
+
+    name: crossdacpack
+    displayName: CrossDac Packaging
+
+    variables:
+    - name: officialBuildIdArg
+      value: ''
+    - name: crossDacArgs
+      value: ''
+    - ${{ if and(eq(variables['System.TeamProject'], 'internal'), ne(variables['Build.Reason'], 'PullRequest')) }}:
+      - name: officialBuildIdArg
+        value: '/p:OfficialBuildId=$(Build.BuildNumber)'
+      - name: crossDacArgs
+        value: '/p:CrossDacArtifactsDir=$(crossDacArtifactPath)/$(buildCrossDacArtifactName)'
+    - ${{ parameters.variables }}
+
+    dependsOn:
+    - ${{ if ne(parameters.crossDacPlatforms, '') }}:
+      - ${{ each platform in parameters.crossDacPlatforms }}:
+        - ${{ parameters.runtimeFlavor }}_${{ parameters.runtimeVariant }}_product_build_${{ platform }}_${{ parameters.buildConfig }}
+
+    steps:
+    - task: DownloadBuildArtifacts@0
+      displayName: Download CrossDac artifacts
+      inputs:
+        artifactName: $(buildCrossDacArtifactName)
+        downloadPath: $(crossDacArtifactPath)
+
+    - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -subset crossdacpack -arch $(archType) $(osArg) -c $(buildConfig) $(officialBuildIdArg) $(crossDacArgs) -ci
+      displayName: Build crossdac packaging
+
+    # Save packages using the prepare-signed-artifacts format.
+    - template: /eng/pipelines/common/upload-unsigned-artifacts-step.yml
+      parameters:
+        name: ${{ parameters.platform }}
+
+    # Upload to artifacts to be signed
+    - task: PublishPipelineArtifact@1
+      displayName: Publish Logs
+      inputs:
+        targetPath: $(Build.SourcesDirectory)/artifacts/log
+        artifactName: 'CrossDacPackagingLogs'
+      continueOnError: true
+      condition: always()

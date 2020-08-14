@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Data.Common;
 using System.Diagnostics;
@@ -36,8 +35,8 @@ namespace System.Data.SqlTypes
     [System.Runtime.CompilerServices.TypeForwardedFrom("System.Data, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public struct SqlString : INullable, IComparable, IXmlSerializable
     {
-        private string m_value; // Do not rename (binary serialization)
-        private CompareInfo m_cmpInfo; // Do not rename (binary serialization)
+        private string? m_value; // Do not rename (binary serialization)
+        private CompareInfo? m_cmpInfo; // Do not rename (binary serialization)
         private readonly int m_lcid; // Locale Id. Do not rename (binary serialization)
         private readonly SqlCompareOptions m_flag; // Compare flags. Do not rename (binary serialization)
         private bool m_fNotNull; // false if null. Do not rename (binary serialization)
@@ -100,7 +99,7 @@ namespace System.Data.SqlTypes
         /// <summary>
         /// Initializes a new instance of the <see cref='System.Data.SqlTypes.SqlString'/> class.
         /// </summary>
-        public SqlString(int lcid, SqlCompareOptions compareOptions, byte[] data, int index, int count, bool fUnicode)
+        public SqlString(int lcid, SqlCompareOptions compareOptions, byte[]? data, int index, int count, bool fUnicode)
         {
             m_lcid = lcid;
             ValidateSqlCompareOptions(compareOptions);
@@ -144,7 +143,7 @@ namespace System.Data.SqlTypes
         /// <summary>
         /// Initializes a new instance of the <see cref='System.Data.SqlTypes.SqlString'/> class.
         /// </summary>
-        public SqlString(int lcid, SqlCompareOptions compareOptions, byte[] data, int index, int count)
+        public SqlString(int lcid, SqlCompareOptions compareOptions, byte[]? data, int index, int count)
             : this(lcid, compareOptions, data, index, count, true)
         {
         }
@@ -160,7 +159,7 @@ namespace System.Data.SqlTypes
         /// <summary>
         /// Initializes a new instance of the <see cref='System.Data.SqlTypes.SqlString'/> class.
         /// </summary>
-        public SqlString(string data, int lcid, SqlCompareOptions compareOptions)
+        public SqlString(string? data, int lcid, SqlCompareOptions compareOptions)
         {
             m_lcid = lcid;
             ValidateSqlCompareOptions(compareOptions);
@@ -181,18 +180,18 @@ namespace System.Data.SqlTypes
         /// <summary>
         /// Initializes a new instance of the <see cref='System.Data.SqlTypes.SqlString'/> class.
         /// </summary>
-        public SqlString(string data, int lcid) : this(data, lcid, s_iDefaultFlag)
+        public SqlString(string? data, int lcid) : this(data, lcid, s_iDefaultFlag)
         {
         }
 
         /// <summary>
         /// Initializes a new instance of the <see cref='System.Data.SqlTypes.SqlString'/> class.
         /// </summary>
-        public SqlString(string data) : this(data, System.Globalization.CultureInfo.CurrentCulture.LCID, s_iDefaultFlag)
+        public SqlString(string? data) : this(data, System.Globalization.CultureInfo.CurrentCulture.LCID, s_iDefaultFlag)
         {
         }
 
-        private SqlString(int lcid, SqlCompareOptions compareOptions, string data, CompareInfo cmpInfo)
+        private SqlString(int lcid, SqlCompareOptions compareOptions, string? data, CompareInfo? cmpInfo)
         {
             m_lcid = lcid;
             ValidateSqlCompareOptions(compareOptions);
@@ -230,7 +229,7 @@ namespace System.Data.SqlTypes
             get
             {
                 if (!IsNull)
-                    return m_value;
+                    return m_value!;
                 else
                     throw new SqlNullValueException();
             }
@@ -272,7 +271,7 @@ namespace System.Data.SqlTypes
                 if (!IsNull)
                 {
                     SetCompareInfo();
-                    return m_cmpInfo;
+                    return m_cmpInfo!;
                 }
                 else
                     throw new SqlNullValueException();
@@ -307,18 +306,18 @@ namespace System.Data.SqlTypes
         /// </summary>
         public override string ToString()
         {
-            return IsNull ? SQLResource.NullString : m_value;
+            return IsNull ? SQLResource.NullString : m_value!;
         }
 
-        public byte[] GetUnicodeBytes()
+        public byte[]? GetUnicodeBytes()
         {
             if (IsNull)
                 return null;
 
-            return s_unicodeEncoding.GetBytes(m_value);
+            return s_unicodeEncoding.GetBytes(m_value!);
         }
 
-        public byte[] GetNonUnicodeBytes()
+        public byte[]? GetNonUnicodeBytes()
         {
             if (IsNull)
                 return null;
@@ -327,7 +326,7 @@ namespace System.Data.SqlTypes
             CultureInfo culInfo = new CultureInfo(m_lcid);
 
             Encoding cpe = System.Text.Encoding.GetEncoding(culInfo.TextInfo.ANSICodePage);
-            return cpe.GetBytes(m_value);
+            return cpe.GetBytes(m_value!);
         }
 
         /*
@@ -383,8 +382,8 @@ namespace System.Data.SqlTypes
                 // Trim the trailing space for comparison
                 //  Avoid using String.TrimEnd function to avoid extra string allocations
 
-                string rgchX = x.m_value;
-                string rgchY = y.m_value;
+                string rgchX = x.m_value!;
+                string rgchY = y.m_value!;
                 int cwchX = rgchX.Length;
                 int cwchY = rgchY.Length;
 
@@ -395,7 +394,7 @@ namespace System.Data.SqlTypes
 
                 CompareOptions options = CompareOptionsFromSqlCompareOptions(x.m_flag);
 
-                iCmpResult = x.m_cmpInfo.Compare(x.m_value, 0, cwchX, y.m_value, 0, cwchY, options);
+                iCmpResult = x.m_cmpInfo!.Compare(x.m_value, 0, cwchX, y.m_value, 0, cwchY, options);
             }
 
             return iCmpResult;
@@ -458,37 +457,37 @@ namespace System.Data.SqlTypes
         // Explicit conversion from SqlByte to SqlString
         public static explicit operator SqlString(SqlByte x)
         {
-            return x.IsNull ? Null : new SqlString((x.Value).ToString((IFormatProvider)null));
+            return x.IsNull ? Null : new SqlString((x.Value).ToString((IFormatProvider)null!));
         }
 
         // Explicit conversion from SqlInt16 to SqlString
         public static explicit operator SqlString(SqlInt16 x)
         {
-            return x.IsNull ? Null : new SqlString((x.Value).ToString((IFormatProvider)null));
+            return x.IsNull ? Null : new SqlString((x.Value).ToString((IFormatProvider)null!));
         }
 
         // Explicit conversion from SqlInt32 to SqlString
         public static explicit operator SqlString(SqlInt32 x)
         {
-            return x.IsNull ? Null : new SqlString((x.Value).ToString((IFormatProvider)null));
+            return x.IsNull ? Null : new SqlString((x.Value).ToString((IFormatProvider)null!));
         }
 
         // Explicit conversion from SqlInt64 to SqlString
         public static explicit operator SqlString(SqlInt64 x)
         {
-            return x.IsNull ? Null : new SqlString((x.Value).ToString((IFormatProvider)null));
+            return x.IsNull ? Null : new SqlString((x.Value).ToString((IFormatProvider)null!));
         }
 
         // Explicit conversion from SqlSingle to SqlString
         public static explicit operator SqlString(SqlSingle x)
         {
-            return x.IsNull ? Null : new SqlString((x.Value).ToString((IFormatProvider)null));
+            return x.IsNull ? Null : new SqlString((x.Value).ToString((IFormatProvider)null!));
         }
 
         // Explicit conversion from SqlDouble to SqlString
         public static explicit operator SqlString(SqlDouble x)
         {
-            return x.IsNull ? Null : new SqlString((x.Value).ToString((IFormatProvider)null));
+            return x.IsNull ? Null : new SqlString((x.Value).ToString((IFormatProvider)null!));
         }
 
         // Explicit conversion from SqlDecimal to SqlString
@@ -521,7 +520,7 @@ namespace System.Data.SqlTypes
                 return new SqlString(true);
             else
             {
-                SqlString ret = new SqlString(m_value, m_lcid, m_flag);
+                SqlString ret = new SqlString(m_value!, m_lcid, m_flag);
                 return ret;
             }
         }
@@ -713,8 +712,8 @@ namespace System.Data.SqlTypes
         //    Does a memory comparison.
         private static int CompareBinary(SqlString x, SqlString y)
         {
-            byte[] rgDataX = s_unicodeEncoding.GetBytes(x.m_value);
-            byte[] rgDataY = s_unicodeEncoding.GetBytes(y.m_value);
+            byte[] rgDataX = s_unicodeEncoding.GetBytes(x.m_value!);
+            byte[] rgDataY = s_unicodeEncoding.GetBytes(y.m_value!);
             int cbX = rgDataX.Length;
             int cbY = rgDataY.Length;
             int cbMin = cbX < cbY ? cbX : cbY;
@@ -769,8 +768,8 @@ namespace System.Data.SqlTypes
         {
             Debug.Assert(!x.IsNull && !y.IsNull);
 
-            string rgDataX = x.m_value;
-            string rgDataY = y.m_value;
+            string rgDataX = x.m_value!;
+            string rgDataY = y.m_value!;
             int cwchX = rgDataX.Length;
             int cwchY = rgDataY.Length;
             int cwchMin = cwchX < cwchY ? cwchX : cwchY;
@@ -834,7 +833,7 @@ namespace System.Data.SqlTypes
         // or a value greater than zero if this > object.
         // null is considered to be less than any instance.
         // If object is not of same type, this method throws an ArgumentException.
-        public int CompareTo(object value)
+        public int CompareTo(object? value)
         {
             if (value is SqlString)
             {
@@ -842,7 +841,7 @@ namespace System.Data.SqlTypes
 
                 return CompareTo(i);
             }
-            throw ADP.WrongType(value.GetType(), typeof(SqlString));
+            throw ADP.WrongType(value!.GetType(), typeof(SqlString));
         }
 
         public int CompareTo(SqlString value)
@@ -871,7 +870,7 @@ namespace System.Data.SqlTypes
         }
 
         // Compares this instance with a specified object
-        public override bool Equals(object value)
+        public override bool Equals(object? value)
         {
             if (!(value is SqlString))
             {
@@ -894,7 +893,7 @@ namespace System.Data.SqlTypes
 
             byte[] rgbSortKey;
             if (FBinarySort())
-                rgbSortKey = s_unicodeEncoding.GetBytes(m_value.TrimEnd());
+                rgbSortKey = s_unicodeEncoding.GetBytes(m_value!.TrimEnd());
             else
             {
                 //  GetHashCode should not throw just because this instance has an invalid LCID or compare options.
@@ -903,7 +902,7 @@ namespace System.Data.SqlTypes
                 try
                 {
                     SetCompareInfo();
-                    cmpInfo = m_cmpInfo;
+                    cmpInfo = m_cmpInfo!;
                     options = CompareOptionsFromSqlCompareOptions(m_flag);
                 }
                 catch (ArgumentException)
@@ -913,13 +912,13 @@ namespace System.Data.SqlTypes
                     cmpInfo = CultureInfo.InvariantCulture.CompareInfo;
                     options = CompareOptions.None;
                 }
-                rgbSortKey = cmpInfo.GetSortKey(m_value.TrimEnd(), options).KeyData;
+                rgbSortKey = cmpInfo.GetSortKey(m_value!.TrimEnd(), options).KeyData;
             }
 
             return SqlBinary.HashByteArray(rgbSortKey, rgbSortKey.Length);
         }
 
-        XmlSchema IXmlSerializable.GetSchema() { return null; }
+        XmlSchema? IXmlSerializable.GetSchema() { return null; }
 
         void IXmlSerializable.ReadXml(XmlReader reader)
         {

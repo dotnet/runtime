@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #nullable enable
 using System.Collections.Generic;
@@ -430,7 +429,7 @@ namespace System.Xml
         /// All other WriteValue methods are implemented by XmlWriter to delegate to WriteValue(object) or WriteValue(string), so
         /// only these two methods need to be implemented.
         /// </summary>
-        public override void WriteValue(object? value)
+        public override void WriteValue(object value)
         {
             WriteString(XmlUntypedConverter.Untyped.ToString(value, this._resolver));
         }

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 /*****************************************************************************/
 
 #ifndef _LSRA_H_
@@ -45,13 +44,7 @@ typedef var_types RegisterType;
 template <class T>
 RegisterType regType(T type)
 {
-#ifdef FEATURE_SIMD
-    if (varTypeIsSIMD(type))
-    {
-        return FloatRegisterType;
-    }
-#endif // FEATURE_SIMD
-    return varTypeIsFloating(TypeGet(type)) ? FloatRegisterType : IntRegisterType;
+    return varTypeUsesFloatReg(TypeGet(type)) ? FloatRegisterType : IntRegisterType;
 }
 
 //------------------------------------------------------------------------
@@ -1537,6 +1530,9 @@ private:
         pendingDelayFree         = false;
     }
 
+    bool isCandidateMultiRegLclVar(GenTreeLclVar* lclNode);
+    bool checkContainedOrCandidateLclVar(GenTreeLclVar* lclNode);
+
     RefPosition* BuildUse(GenTree* operand, regMaskTP candidates = RBM_NONE, int multiRegIdx = 0);
 
     void setDelayFree(RefPosition* use);
@@ -1577,6 +1573,7 @@ private:
     int BuildModDiv(GenTree* tree);
     int BuildIntrinsic(GenTree* tree);
     void BuildStoreLocDef(GenTreeLclVarCommon* storeLoc, LclVarDsc* varDsc, RefPosition* singleUseRef, int index);
+    int BuildMultiRegStoreLoc(GenTreeLclVar* storeLoc);
     int BuildStoreLoc(GenTreeLclVarCommon* tree);
     int BuildIndir(GenTreeIndir* indirTree);
     int BuildGCWriteBarrier(GenTree* tree);

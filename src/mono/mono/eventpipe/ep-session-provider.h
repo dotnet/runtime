@@ -1,16 +1,23 @@
 #ifndef __EVENTPIPE_SESSION_PROVIDER_H__
 #define __EVENTPIPE_SESSION_PROVIDER_H__
 
-#include "ep-rt-config.h"
+#include <config.h>
 
 #ifdef ENABLE_PERFTRACING
+#include "ep-rt-config.h"
 #include "ep-types.h"
+
+#undef EP_IMPL_GETTER_SETTER
+#ifdef EP_IMPL_SESSION_PROVIDER_GETTER_SETTER
+#define EP_IMPL_GETTER_SETTER
+#endif
+#include "ep-getter-setter.h"
 
 /*
  * EventPipeSessionProvider.
  */
 
-#if defined(EP_INLINE_GETTER_SETTER) || defined(EP_IMPL_GETTER_SETTER)
+#if defined(EP_INLINE_GETTER_SETTER) || defined(EP_IMPL_SESSION_PROVIDER_GETTER_SETTER)
 struct _EventPipeSessionProvider {
 #else
 struct _EventPipeSessionProvider_Internal {
@@ -21,7 +28,7 @@ struct _EventPipeSessionProvider_Internal {
 	ep_char8_t *filter_data;
 };
 
-#if !defined(EP_INLINE_GETTER_SETTER) && !defined(EP_IMPL_GETTER_SETTER)
+#if !defined(EP_INLINE_GETTER_SETTER) && !defined(EP_IMPL_SESSION_PROVIDER_GETTER_SETTER)
 struct _EventPipeSessionProvider {
 	uint8_t _internal [sizeof (struct _EventPipeSessionProvider_Internal)];
 };
@@ -45,7 +52,7 @@ ep_session_provider_free (EventPipeSessionProvider * session_provider);
 /*
 * EventPipeSessionProviderList.
  */
-#if defined(EP_INLINE_GETTER_SETTER) || defined(EP_IMPL_GETTER_SETTER)
+#if defined(EP_INLINE_GETTER_SETTER) || defined(EP_IMPL_SESSION_PROVIDER_GETTER_SETTER)
 struct _EventPipeSessionProviderList {
 #else
 struct _EventPipeSessionProviderList_Internal {
@@ -54,7 +61,7 @@ struct _EventPipeSessionProviderList_Internal {
 	EventPipeSessionProvider *catch_all_provider;
 };
 
-#if !defined(EP_INLINE_GETTER_SETTER) && !defined(EP_IMPL_GETTER_SETTER)
+#if !defined(EP_INLINE_GETTER_SETTER) && !defined(EP_IMPL_SESSION_PROVIDER_GETTER_SETTER)
 struct _EventPipeSessionProviderList {
 	uint8_t _internal [sizeof (struct _EventPipeSessionProviderList_Internal)];
 };

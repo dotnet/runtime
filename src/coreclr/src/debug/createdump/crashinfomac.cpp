@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #include "createdump.h"
 
@@ -29,6 +28,45 @@ CrashInfo::CleanupAndResumeProcess()
     {
         ::thread_resume(thread->Port());
     }
+}
+
+static
+kern_return_t
+SuspendMachThread(thread_act_t thread, int tid)
+{
+    kern_return_t result;
+
+    while (true)
+    {
+        result = thread_suspend(thread);
+        if (result != KERN_SUCCESS)
+        {
+            fprintf(stderr, "thread_suspend(%d) FAILED %x %s\n", tid, result, mach_error_string(result));
+            break;
+        }
+
+        // Ensure that if the thread was running in the kernel, the kernel operation
+        // is safely aborted so that it can be restarted later.
+        result = thread_abort_safely(thread);
+        if (result == KERN_SUCCESS)
+        {
+            break;
+        }
+        else
+        {
+            TRACE("thread_abort_safely(%d) FAILED %x %s\n", tid, result, mach_error_string(result));
+        }
+        // The thread was running in the kernel executing a non-atomic operation
+        // that cannot be restarted, so we need to resume the thread and retry
+        result = thread_resume(thread);
+        if (result != KERN_SUCCESS)
+        {
+            fprintf(stderr, "thread_resume(%d) FAILED %x %s\n", tid, result, mach_error_string(result));
+            break;
+        }
+    }
+
+    return result;
 }
 
 //
@@ -64,10 +102,9 @@ CrashInfo::EnumerateAndSuspendThreads()
             tid = tident.thread_id;
         }
 
-        result = ::thread_suspend(threadList[i]);
+        result = SuspendMachThread(threadList[i], tid);
         if (result != KERN_SUCCESS)
         {
-            fprintf(stderr, "thread_suspend(%d) FAILED %x %s\n", tid, result, mach_error_string(result));
             return false;
         }
         // Add to the list of threads
@@ -78,7 +115,8 @@ CrashInfo::EnumerateAndSuspendThreads()
     return true;
 }
 
-uint32_t ConvertProtectionFlags(vm_prot_t prot)
+uint32_t
+ConvertProtectionFlags(vm_prot_t prot)
 {
     uint32_t regionFlags = 0;
     if (prot & VM_PROT_READ) {

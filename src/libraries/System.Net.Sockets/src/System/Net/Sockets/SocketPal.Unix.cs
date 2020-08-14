@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Microsoft.Win32.SafeHandles;
 using System.Collections;
@@ -19,10 +18,12 @@ namespace System.Net.Sockets
         public static readonly int MaximumAddressSize = Interop.Sys.GetMaximumAddressSize();
         private static readonly bool SupportsDualModeIPv4PacketInfo = GetPlatformSupportsDualModeIPv4PacketInfo();
 
-        private static bool GetPlatformSupportsDualModeIPv4PacketInfo()
-        {
-            return Interop.Sys.PlatformSupportsDualModeIPv4PacketInfo();
-        }
+        // IovStackThreshold matches Linux's UIO_FASTIOV, which is the number of 'struct iovec'
+        // that get stackalloced in the Linux kernel.
+        private const int IovStackThreshold = 8;
+
+        private static bool GetPlatformSupportsDualModeIPv4PacketInfo() =>
+            Interop.Sys.PlatformSupportsDualModeIPv4PacketInfo() != 0;
 
         public static void Initialize()
         {
@@ -91,7 +92,7 @@ namespace System.Net.Sockets
             }
 
             socket = new SafeSocketHandle(fd, ownsHandle: true);
-            if (NetEventSource.IsEnabled) NetEventSource.Info(null, socket);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, socket);
 
             return errorCode;
         }
@@ -234,11 +235,12 @@ namespace System.Net.Sockets
             }
 
             int maxBuffers = buffers.Count - startIndex;
-            var handles = new GCHandle[maxBuffers];
-            var iovecs = new Interop.Sys.IOVector[maxBuffers];
+            bool allocOnStack = maxBuffers <= IovStackThreshold;
+            Span<GCHandle> handles = allocOnStack ? stackalloc GCHandle[IovStackThreshold] : new GCHandle[maxBuffers];
+            Span<Interop.Sys.IOVector> iovecs = allocOnStack ? stackalloc Interop.Sys.IOVector[IovStackThreshold] : new Interop.Sys.IOVector[maxBuffers];
 
             int sent;
-            int toSend = 0, iovCount = maxBuffers;
+            int iovCount = 0;
             try
             {
                 for (int i = 0; i < maxBuffers; i++, startOffset = 0)
@@ -247,9 +249,8 @@ namespace System.Net.Sockets
                     RangeValidationHelpers.ValidateSegment(buffer);
 
                     handles[i] = GCHandle.Alloc(buffer.Array, GCHandleType.Pinned);
+                    iovCount++;
                     iovecs[i].Base = &((byte*)handles[i].AddrOfPinnedObject())[buffer.Offset + startOffset];
-
-                    toSend += (buffer.Count - startOffset);
                     iovecs[i].Count = (UIntPtr)(buffer.Count - startOffset);
                 }
 
@@ -279,10 +280,7 @@ namespace System.Net.Sockets
                 // Free GC handles.
                 for (int i = 0; i < iovCount; i++)
                 {
-                    if (handles[i].IsAllocated)
-                    {
-                        handles[i].Free();
-                    }
+                    handles[i].Free();
                 }
             }
 
@@ -321,23 +319,29 @@ namespace System.Net.Sockets
 
         private static unsafe int SysReceive(SafeSocketHandle socket, SocketFlags flags, IList<ArraySegment<byte>> buffers, byte[]? socketAddress, ref int socketAddressLen, out SocketFlags receivedFlags, out Interop.Error errno)
         {
-            int available = 0;
-            errno = Interop.Sys.GetBytesAvailable(socket, &available);
-            if (errno != Interop.Error.SUCCESS)
+            int maxBuffers = buffers.Count;
+            bool allocOnStack = maxBuffers <= IovStackThreshold;
+
+            // When there are many buffers, reduce the number of pinned buffers based on available bytes.
+            int available = int.MaxValue;
+            if (!allocOnStack)
             {
-                receivedFlags = 0;
-                return -1;
-            }
-            if (available == 0)
-            {
-                // Don't truncate iovecs.
-                available = int.MaxValue;
+                errno = Interop.Sys.GetBytesAvailable(socket, &available);
+                if (errno != Interop.Error.SUCCESS)
+                {
+                    receivedFlags = 0;
+                    return -1;
+                }
+                if (available == 0)
+                {
+                    // Don't truncate iovecs.
+                    available = int.MaxValue;
+                }
             }
 
             // Pin buffers and set up iovecs.
-            int maxBuffers = buffers.Count;
-            var handles = new GCHandle[maxBuffers];
-            var iovecs = new Interop.Sys.IOVector[maxBuffers];
+            Span<GCHandle> handles = allocOnStack ? stackalloc GCHandle[IovStackThreshold] : new GCHandle[maxBuffers];
+            Span<Interop.Sys.IOVector> iovecs = allocOnStack ? stackalloc Interop.Sys.IOVector[IovStackThreshold] : new Interop.Sys.IOVector[maxBuffers];
 
             int sockAddrLen = 0;
             if (socketAddress != null)
@@ -346,24 +350,23 @@ namespace System.Net.Sockets
             }
 
             long received = 0;
-            int toReceive = 0, iovCount = maxBuffers;
+            int toReceive = 0, iovCount = 0;
             try
             {
                 for (int i = 0; i < maxBuffers; i++)
                 {
                     ArraySegment<byte> buffer = buffers[i];
                     RangeValidationHelpers.ValidateSegment(buffer);
+                    int bufferCount = buffer.Count;
 
                     handles[i] = GCHandle.Alloc(buffer.Array, GCHandleType.Pinned);
+                    iovCount++;
                     iovecs[i].Base = &((byte*)handles[i].AddrOfPinnedObject())[buffer.Offset];
+                    iovecs[i].Count = (UIntPtr)bufferCount;
 
-                    int space = buffer.Count;
-                    toReceive += space;
+                    toReceive += bufferCount;
                     if (toReceive >= available)
                     {
-                        iovecs[i].Count = (UIntPtr)(space - (toReceive - available));
-                        toReceive = available;
-                        iovCount = i + 1;
                         for (int j = i + 1; j < maxBuffers; j++)
                         {
                             // We're not going to use these extra buffers, but validate their args
@@ -372,8 +375,6 @@ namespace System.Net.Sockets
                         }
                         break;
                     }
-
-                    iovecs[i].Count = (UIntPtr)space;
                 }
 
                 // Make the call.
@@ -402,10 +403,7 @@ namespace System.Net.Sockets
                 // Free GC handles.
                 for (int i = 0; i < iovCount; i++)
                 {
-                    if (handles[i].IsAllocated)
-                    {
-                        handles[i].Free();
-                    }
+                    handles[i].Free();
                 }
             }
 
@@ -422,8 +420,8 @@ namespace System.Net.Sockets
         {
             Debug.Assert(socketAddress != null, "Expected non-null socketAddress");
 
-            int cmsgBufferLen = Interop.Sys.GetControlMessageBufferSize(isIPv4, isIPv6);
-            var cmsgBuffer = stackalloc byte[cmsgBufferLen];
+            int cmsgBufferLen = Interop.Sys.GetControlMessageBufferSize(Convert.ToInt32(isIPv4), Convert.ToInt32(isIPv6));
+            byte* cmsgBuffer = stackalloc byte[cmsgBufferLen];
 
             int sockAddrLen = socketAddressLen;
 
@@ -476,8 +474,10 @@ namespace System.Net.Sockets
             Debug.Assert(socketAddress != null, "Expected non-null socketAddress");
 
             int buffersCount = buffers.Count;
-            var handles = new GCHandle[buffersCount];
-            var iovecs = new Interop.Sys.IOVector[buffersCount];
+            bool allocOnStack = buffersCount <= IovStackThreshold;
+            Span<GCHandle> handles = allocOnStack ? stackalloc GCHandle[IovStackThreshold] : new GCHandle[buffersCount];
+            Span<Interop.Sys.IOVector> iovecs = allocOnStack ? stackalloc Interop.Sys.IOVector[IovStackThreshold] : new Interop.Sys.IOVector[buffersCount];
+            int iovCount = 0;
             try
             {
                 // Pin buffers and set up iovecs.
@@ -487,6 +487,7 @@ namespace System.Net.Sockets
                     RangeValidationHelpers.ValidateSegment(buffer);
 
                     handles[i] = GCHandle.Alloc(buffer.Array, GCHandleType.Pinned);
+                    iovCount++;
                     iovecs[i].Base = &((byte*)handles[i].AddrOfPinnedObject())[buffer.Offset];
                     iovecs[i].Count = (UIntPtr)buffer.Count;
                 }
@@ -495,15 +496,15 @@ namespace System.Net.Sockets
                 fixed (byte* sockAddr = socketAddress)
                 fixed (Interop.Sys.IOVector* iov = iovecs)
                 {
-                    int cmsgBufferLen = Interop.Sys.GetControlMessageBufferSize(isIPv4, isIPv6);
-                    var cmsgBuffer = stackalloc byte[cmsgBufferLen];
+                    int cmsgBufferLen = Interop.Sys.GetControlMessageBufferSize(Convert.ToInt32(isIPv4), Convert.ToInt32(isIPv6));
+                    byte* cmsgBuffer = stackalloc byte[cmsgBufferLen];
 
                     var messageHeader = new Interop.Sys.MessageHeader
                     {
                         SocketAddress = sockAddr,
                         SocketAddressLen = socketAddressLen,
                         IOVectors = iov,
-                        IOVectorCount = buffersCount,
+                        IOVectorCount = iovCount,
                         ControlBuffer = cmsgBuffer,
                         ControlBufferLen = cmsgBufferLen
                     };
@@ -534,12 +535,9 @@ namespace System.Net.Sockets
             finally
             {
                 // Free GC handles.
-                for (int i = 0; i < buffersCount; i++)
+                for (int i = 0; i < iovCount; i++)
                 {
-                    if (handles[i].IsAllocated)
-                    {
-                        handles[i].Free();
-                    }
+                    handles[i].Free();
                 }
             }
         }
@@ -625,7 +623,24 @@ namespace System.Net.Sockets
             Interop.Error err;
             try
             {
-                err = Interop.Sys.GetSocketErrorOption(socket, &socketError);
+                // Due to fd recyling, TryCompleteConnect may be called when there was a write event
+                // for the previous socket that used the fd.
+                // The SocketErrorOption in that case is the same as for a succesful connect.
+                // To filter out these false events, we check whether the socket is writable, before
+                // reading the socket option.
+                Interop.PollEvents outEvents;
+                err = Interop.Sys.Poll(socket, Interop.PollEvents.POLLOUT, timeout: 0, out outEvents);
+                if (err == Interop.Error.SUCCESS)
+                {
+                    if (outEvents == Interop.PollEvents.POLLNONE)
+                    {
+                        socketError = Interop.Error.EINPROGRESS;
+                    }
+                    else
+                    {
+                        err = Interop.Sys.GetSocketErrorOption(socket, &socketError);
+                    }
+                }
             }
             catch (ObjectDisposedException)
             {
@@ -1010,7 +1025,7 @@ namespace System.Net.Sockets
             }
 
             socket = new SafeSocketHandle(acceptedFd, ownsHandle: true);
-            if (NetEventSource.IsEnabled) NetEventSource.Info(null, socket);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, socket);
 
             return errorCode;
         }
@@ -1990,7 +2005,7 @@ namespace System.Net.Sockets
         {
             var res = new SafeSocketHandle(fileDescriptor, ownsHandle: true);
 
-            if (NetEventSource.IsEnabled) NetEventSource.Info(null, res);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, res);
             return res;
         }
     }

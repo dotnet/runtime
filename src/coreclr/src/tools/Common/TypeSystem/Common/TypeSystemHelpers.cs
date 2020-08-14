@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -62,7 +61,7 @@ namespace Internal.TypeSystem
 
         public static TypeDesc GetParameterType(this TypeDesc type)
         {
-            ParameterizedType paramType = (ParameterizedType) type;
+            ParameterizedType paramType = (ParameterizedType)type;
             return paramType.ParameterType;
         }
 
@@ -381,17 +380,13 @@ namespace Internal.TypeSystem
                     return ((ParameterizedType)thisType).ParameterType.ContainsSignatureVariables();
 
                 case TypeFlags.FunctionPointer:
+                    MethodSignature pointerSignature = ((FunctionPointerType)thisType).Signature;
 
-                    var fptr = (FunctionPointerType)thisType;
-                    if (fptr.Signature.ReturnType.ContainsSignatureVariables())
-                        return true;
-
-                    for (int i = 0; i < fptr.Signature.Length; i++)
-                    {
-                        if (fptr.Signature[i].ContainsSignatureVariables())
+                    for (int i = 0; i < pointerSignature.Length; i++)
+                        if (pointerSignature[i].ContainsSignatureVariables())
                             return true;
-                    }
-                    return false;
+
+                    return pointerSignature.ReturnType.ContainsSignatureVariables();
 
                 case TypeFlags.SignatureMethodVariable:
                 case TypeFlags.SignatureTypeVariable:

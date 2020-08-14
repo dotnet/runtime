@@ -68,20 +68,45 @@ endfunction(get_include_directories)
 function(get_include_directories_asm IncludeDirectories)
     get_directory_property(dirs INCLUDE_DIRECTORIES)
 
-    if (CLR_CMAKE_HOST_ARCH_ARM AND WIN32)
-        list(APPEND INC_DIRECTORIES "-I ")
-    endif()
-
     foreach(dir IN LISTS dirs)
-      if (CLR_CMAKE_HOST_ARCH_ARM AND WIN32)
-        list(APPEND INC_DIRECTORIES ${dir};)
-      else()
-        list(APPEND INC_DIRECTORIES -I${dir})
-      endif()
+      list(APPEND INC_DIRECTORIES -I${dir};)
     endforeach()
 
     set(${IncludeDirectories} ${INC_DIRECTORIES} PARENT_SCOPE)
 endfunction(get_include_directories_asm)
+
+# Finds and returns unwind libs
+function(find_unwind_libs UnwindLibs)
+    if(CLR_CMAKE_HOST_ARCH_ARM)
+      find_library(UNWIND_ARCH NAMES unwind-arm)
+    endif()
+
+    if(CLR_CMAKE_HOST_ARCH_ARM64)
+      find_library(UNWIND_ARCH NAMES unwind-aarch64)
+    endif()
+
+    if(CLR_CMAKE_HOST_ARCH_AMD64)
+      find_library(UNWIND_ARCH NAMES unwind-x86_64)
+    endif()
+
+    if(NOT UNWIND_ARCH STREQUAL UNWIND_ARCH-NOTFOUND)
+       set(UNWIND_LIBS ${UNWIND_ARCH})
+    endif()
+
+    find_library(UNWIND_GENERIC NAMES unwind-generic)
+
+    if(NOT UNWIND_GENERIC STREQUAL UNWIND_GENERIC-NOTFOUND)
+      set(UNWIND_LIBS ${UNWIND_LIBS} ${UNWIND_GENERIC})
+    endif()
+
+    find_library(UNWIND NAMES unwind)
+
+    if(UNWIND STREQUAL UNWIND-NOTFOUND)
+      message(FATAL_ERROR "Cannot find libunwind. Try installing libunwind8-dev or libunwind-devel.")
+    endif()
+
+    set(${UnwindLibs} ${UNWIND_LIBS} ${UNWIND} PARENT_SCOPE)
+endfunction(find_unwind_libs)
 
 # Set the passed in RetSources variable to the list of sources with added current source directory
 # to form absolute paths.
@@ -118,12 +143,12 @@ function(preprocess_file inputFilename outputFilename)
                               PROPERTIES GENERATED TRUE)
 endfunction()
 
-# preprocess_compile_asm(ASM_FILES file1 [file2 ...] OUTPUT_OBJECTS [variableName])
+# preprocess_compile_asm(TARGET target ASM_FILES file1 [file2 ...] OUTPUT_OBJECTS [variableName])
 function(preprocess_compile_asm)
   set(options "")
-  set(oneValueArgs OUTPUT_OBJECTS)
+  set(oneValueArgs TARGET OUTPUT_OBJECTS)
   set(multiValueArgs ASM_FILES)
-  cmake_parse_arguments(PARSE_ARGV 0 COMPILE_ASM "${options}" "${oneValueArgs}" "${multiValueArgs}")
+  cmake_parse_arguments(COMPILE_ASM "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGV})
 
   get_include_directories_asm(ASM_INCLUDE_DIRECTORIES)
 
@@ -135,31 +160,38 @@ function(preprocess_compile_asm)
     file(TO_CMAKE_PATH "${CMAKE_CURRENT_BINARY_DIR}/${name}.asm" ASM_PREPROCESSED_FILE)
     preprocess_file(${ASM_FILE} ${ASM_PREPROCESSED_FILE})
 
-    # We do not pass any defines since we have already done pre-processing above
-    set (ASM_CMDLINE "-o ${CMAKE_CURRENT_BINARY_DIR}/${name}.obj ${ASM_PREPROCESSED_FILE}")
-
-    # Generate the batch file that will invoke the assembler
-    file(TO_CMAKE_PATH "${CMAKE_CURRENT_BINARY_DIR}/runasm_${name}.cmd" ASM_SCRIPT_FILE)
-
-    file(GENERATE OUTPUT "${ASM_SCRIPT_FILE}"
-        CONTENT "\"${CMAKE_ASM_MASM_COMPILER}\" -g ${ASM_INCLUDE_DIRECTORIES} ${ASM_CMDLINE}")
-
-    message("Generated  - ${ASM_SCRIPT_FILE}")
+    # Produce object file where CMake would store .obj files for an OBJECT library.
+    # ex: artifacts\obj\coreclr\Windows_NT.arm64.Debug\src\vm\wks\cee_wks.dir\Debug\AsmHelpers.obj
+    set (OBJ_FILE "${CMAKE_CURRENT_BINARY_DIR}/${COMPILE_ASM_TARGET}.dir/${CMAKE_CFG_INTDIR}/${name}.obj")
 
     # Need to compile asm file using custom command as include directories are not provided to asm compiler
-    add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${name}.obj
-                        COMMAND ${ASM_SCRIPT_FILE}
+    add_custom_command(OUTPUT ${OBJ_FILE}
+                        COMMAND "${CMAKE_ASM_MASM_COMPILER}" -g ${ASM_INCLUDE_DIRECTORIES} -o ${OBJ_FILE} ${ASM_PREPROCESSED_FILE}
                         DEPENDS ${ASM_PREPROCESSED_FILE}
-                        COMMENT "Assembling ${ASM_PREPROCESSED_FILE} - ${ASM_SCRIPT_FILE}")
+                        COMMENT "Assembling ${ASM_PREPROCESSED_FILE} ---> \"${CMAKE_ASM_MASM_COMPILER}\" -g ${ASM_INCLUDE_DIRECTORIES} -o ${OBJ_FILE} ${ASM_PREPROCESSED_FILE}")
 
     # mark obj as source that does not require compile
-    set_source_files_properties(${CMAKE_CURRENT_BINARY_DIR}/${name}.obj PROPERTIES EXTERNAL_OBJECT TRUE)
+    set_source_files_properties(${OBJ_FILE} PROPERTIES EXTERNAL_OBJECT TRUE)
 
     # Add the generated OBJ in the dependency list so that it gets consumed during linkage
-    list(APPEND ASSEMBLED_OBJECTS ${CMAKE_CURRENT_BINARY_DIR}/${name}.obj)
+    list(APPEND ASSEMBLED_OBJECTS ${OBJ_FILE})
   endforeach()
 
   set(${COMPILE_ASM_OUTPUT_OBJECTS} ${ASSEMBLED_OBJECTS} PARENT_SCOPE)
+endfunction()
+
+function(set_exports_linker_option exports_filename)
+    if(LD_GNU OR LD_SOLARIS)
+        # Add linker exports file option
+        if(LD_SOLARIS)
+            set(EXPORTS_LINKER_OPTION -Wl,-M,${exports_filename} PARENT_SCOPE)
+        else()
+            set(EXPORTS_LINKER_OPTION -Wl,--version-script=${exports_filename} PARENT_SCOPE)
+        endif()
+    elseif(LD_OSX)
+        # Add linker exports file option
+        set(EXPORTS_LINKER_OPTION -Wl,-exported_symbols_list,${exports_filename} PARENT_SCOPE)
+    endif()
 endfunction()
 
 function(generate_exports_file)
@@ -209,7 +241,7 @@ function(target_precompile_header)
   set(options "")
   set(oneValueArgs TARGET HEADER)
   set(multiValueArgs ADDITIONAL_INCLUDE_DIRECTORIES)
-  cmake_parse_arguments(PARSE_ARGV 0 PRECOMPILE_HEADERS "${options}" "${oneValueArgs}" "${multiValueArgs}")
+  cmake_parse_arguments(PRECOMPILE_HEADERS "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGV})
 
   if ("${PRECOMPILE_HEADERS_TARGET}" STREQUAL "")
   message(SEND_ERROR "No target supplied to target_precompile_header.")
@@ -328,7 +360,7 @@ endfunction()
 function(install_clr)
   set(oneValueArgs ADDITIONAL_DESTINATION)
   set(multiValueArgs TARGETS)
-  cmake_parse_arguments(PARSE_ARGV 0 INSTALL_CLR "${options}" "${oneValueArgs}" "${multiValueArgs}")
+  cmake_parse_arguments(INSTALL_CLR "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGV})
 
   if ("${INSTALL_CLR_TARGETS}" STREQUAL "")
     message(FATAL_ERROR "At least one target must be passed to install_clr(TARGETS )")
@@ -383,6 +415,15 @@ function(disable_pax_mprotect targetName)
     )
   endif()
 endfunction()
+
+if (CMAKE_VERSION VERSION_LESS "3.12")
+  # Polyfill add_compile_definitions when it is unavailable
+  function(add_compile_definitions)
+    get_directory_property(DIR_COMPILE_DEFINITIONS COMPILE_DEFINITIONS)
+    list(APPEND DIR_COMPILE_DEFINITIONS ${ARGV})
+    set_directory_properties(PROPERTIES COMPILE_DEFINITIONS "${DIR_COMPILE_DEFINITIONS}")
+  endfunction()
+endif()
 
 function(_add_executable)
     if(NOT WIN32)
@@ -447,3 +488,16 @@ function(generate_module_index Target ModuleIndexFile)
         DEPENDS ${ModuleIndexFile}
     )
 endfunction(generate_module_index)
+
+# add_linker_flag(Flag [Config1 Config2 ...])
+function(add_linker_flag Flag)
+  if (ARGN STREQUAL "")
+    set("CMAKE_EXE_LINKER_FLAGS" "${CMAKE_EXE_LINKER_FLAGS} ${Flag}" PARENT_SCOPE)
+    set("CMAKE_SHARED_LINKER_FLAGS" "${CMAKE_SHARED_LINKER_FLAGS} ${Flag}" PARENT_SCOPE)
+  else()
+    foreach(Config ${ARGN})
+      set("CMAKE_EXE_LINKER_FLAGS_${Config}" "${CMAKE_EXE_LINKER_FLAGS_${Config}} ${Flag}" PARENT_SCOPE)
+      set("CMAKE_SHARED_LINKER_FLAGS_${Config}" "${CMAKE_SHARED_LINKER_FLAGS_${Config}} ${Flag}" PARENT_SCOPE)
+    endforeach()
+  endif()
+endfunction()

@@ -4,7 +4,9 @@
     <NoWarn>$(NoWarn);NU1603;NU1605</NoWarn>
     <SwapNativeForIL Condition="'$(SwapNativeForIL)' == '' and ('$(Configuration)' == 'Debug' or '$(Coverage)' == 'true') and '$(RuntimeFlavor)' != 'Mono'">true</SwapNativeForIL>
     <BinPlaceForTargetVertical>false</BinPlaceForTargetVertical>
-    <TargetFrameworks>netcoreapp3.0-Windows_NT;netcoreapp3.0-Unix;$(netcoreappCurrent)-Windows_NT;$(netcoreappCurrent)-Unix</TargetFrameworks>
+    <BinPlaceNative>true</BinPlaceNative>
+    <BinPlaceRuntime>false</BinPlaceRuntime>
+    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Browser</TargetFrameworks>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(DotNetBuildFromSource)' != 'true'">
@@ -18,23 +20,11 @@
          Exclude here so that when building with the 2.x SDK we don't place it in the test shared framework.
          This can be removed once we have a new SDK -->
     <FileToExclude Include="apphost" />
-
-    <!-- System.Data.SqlClient is not live-built anymore -->
-    <PackageReference Include="System.Data.SqlClient" Version="$(SystemDataSqlClientVersion)" />
-    <!-- Exclude live-built dependencies -->
-    <FileToExclude Include="Microsoft.Win32.Registry" />
-    <FileToExclude Include="System.Security.AccessControl" />
-    <FileToExclude Include="System.Security.Principal.Windows" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <PackageReference Condition="'$(TargetFramework)' == 'netcoreapp3.0'" Include="Microsoft.Private.Corefx.NETCoreApp" Version="4.6.0-rc2.19462.14" />
   </ItemGroup>
 
   <!-- Setup the testing shared framework host -->
   <Target Name="SetupTestingHost"
           Condition="'$(BinPlaceTestSharedFramework)' == 'true'"
-          DependsOnTargets="OverrideRuntimeMono"
           AfterTargets="AfterResolveReferences">
     <PropertyGroup>
       <HostFxrFileName Condition="'$(TargetsWindows)' == 'true'">hostfxr</HostFxrFileName>
@@ -47,13 +37,7 @@
       <UseHardlink Condition="'$(_runtimeOSFamily)' == 'FreeBSD'">false</UseHardlink>
     </PropertyGroup>
 
-    <ItemGroup Condition="'$(RuntimeFlavor)' == 'Mono'">
-      <HostFxFile Include="@(StoreTestHostFiles)" Condition="'%(StoreTestHostFiles.Filename)' == '$(HostFxrFileName)'" />
-      <HostPolicyFile Include="@(StoreTestHostFiles)" Condition="'%(StoreTestHostFiles.Filename)' == '$(HostPolicyFileName)'" />
-      <DotnetExe Include="@(StoreTestHostFiles)" Condition="'%(StoreTestHostFiles.Filename)' == 'dotnet'" />
-    </ItemGroup>
-
-    <ItemGroup Condition="'$(RuntimeFlavor)' != 'Mono'">
+    <ItemGroup>
       <HostFxFile Include="@(ReferenceCopyLocalPaths)" Condition="'%(ReferenceCopyLocalPaths.Filename)' == '$(HostFxrFileName)'" />
       <DotnetExe Include="@(ReferenceCopyLocalPaths)" Condition="'%(ReferenceCopyLocalPaths.Filename)' == 'dotnet'" />
     </ItemGroup>
@@ -68,30 +52,7 @@
           SkipUnchangedFiles="true"
           UseHardlinksIfPossible="$(UseHardlink)" />
 
-    <Copy Condition="'$(RuntimeFlavor)' == 'Mono'"
-          SourceFiles="@(HostPolicyFile)"
-          DestinationFolder="$(TestHostRootPath)shared\Microsoft.NETCore.App\$(ProductVersion)"
-          SkipUnchangedFiles="true"
-          UseHardlinksIfPossible="$(UseHardlink)" />
-
     <Exec Command="chmod +x $(TestHostRootPath)%(DotnetExe.Filename)%(DotnetExe.Extension)" Condition="'$(TargetOS)' != 'Windows_NT' and '$(OS)' != 'Windows_NT'"/>
-  </Target>
-
-  <Target Name="SetupRuntimePackNative"
-          Condition="'$(RuntimeFlavor)' == 'Mono'"
-          AfterTargets="AfterResolveReferences">
-    <ItemGroup>
-      <NativeBinPlaceItem Include="@(RuntimeFiles)" />
-      <NativeBinPlaceItem Include="@(MonoCrossFiles)">
-        <DestinationSubDirectory>cross/</DestinationSubDirectory>
-      </NativeBinPlaceItem>
-      <NativeBinPlaceItem Include="@(MonoIncludeFiles)">
-        <DestinationSubDirectory>include/%(RecursiveDir)</DestinationSubDirectory>
-      </NativeBinPlaceItem>
-    </ItemGroup>
-    <ItemGroup Condition="'$(TargetsMobile)' != 'true'">
-      <TestHostBinPlaceItem Include="@(RuntimeFiles)" />
-    </ItemGroup>
   </Target>
 
   <Target Name="OverrideRuntimeCoreCLR"
@@ -111,8 +72,12 @@
           AfterTargets="AfterResolveReferences;FilterNugetPackages"
           Condition="'$(RuntimeFlavor)' == 'Mono'">
     <ItemGroup>
-      <StoreTestHostFiles Include="@(ReferenceCopyLocalPaths)" />
-      <ReferenceCopyLocalPaths Remove="@(ReferenceCopyLocalPaths)" />
+      <ReferenceCopyLocalPaths Include="@(RuntimeFiles)" />
+      <!-- Setup runtime pack native. -->
+      <ReferenceCopyLocalPaths Include="@(MonoCrossFiles)"
+                               DestinationSubDirectory="cross/" />
+      <ReferenceCopyLocalPaths Include="@(MonoIncludeFiles)"
+                               DestinationSubDirectory="include/%(RecursiveDir)" />
     </ItemGroup>
   </Target>
 
@@ -136,10 +101,8 @@
 
   <!-- Strip away placeholder tfms and TargetFrameworkSuffix. -->
   <Target Name="StripTargetFrameworkSuffixFromTargetFrameworks"
-          Condition="'$(TargetFrameworks)' != ''"
           BeforeTargets="_GetRestoreTargetFrameworksOutput;_GetRestoreTargetFrameworksAsItems">
     <PropertyGroup>
-      <TargetFrameworks Condition="'$(TargetFrameworks)' != ''">$([System.Text.RegularExpressions.Regex]::Replace('$(TargetFrameworks)', '_[^;]+;?', ''))</TargetFrameworks>
       <TargetFrameworks Condition="'$(TargetFrameworks)' != ''">$([System.Text.RegularExpressions.Regex]::Replace('$(TargetFrameworks)', '-[^;]+', ''))</TargetFrameworks>
     </PropertyGroup>
   </Target>

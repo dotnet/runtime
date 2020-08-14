@@ -18,6 +18,14 @@ while true; do
     fi
 done
 
-dotnet xharness android test -i="net.dot.MonoRunner" \
+XHARNESS_OUT="$EXECUTION_DIR/xharness-output"
+
+dotnet xharness android test --instrumentation="net.dot.MonoRunner" \
     --package-name="net.dot.$TEST_NAME" \
-    --app=$APK -o=$EXECUTION_DIR/TestResults -v
+    --app=$APK --output-directory=$XHARNESS_OUT -v
+
+_exitCode=$?
+
+echo "Xharness artifacts: $XHARNESS_OUT"
+
+exit $_exitCode

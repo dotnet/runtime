@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //*****************************************************************************
 //
 // Internal data access functionality.
@@ -1029,6 +1028,8 @@ struct MSLAYOUT DacpJitCodeHeapInfo
             CLRDATA_ADDRESS currentAddr = 0;
         } HostData;
     };
+
+    DacpJitCodeHeapInfo() : codeHeapType(0), LoaderHeap(0) {}
 };
 
 #include "static_assert.h"

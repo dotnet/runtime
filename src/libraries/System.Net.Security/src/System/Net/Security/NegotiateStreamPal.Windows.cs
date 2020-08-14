@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.ComponentModel;
 using System.Diagnostics;
@@ -145,7 +144,7 @@ namespace System.Net.Security
             if (errorCode != 0)
             {
                 Exception e = new Win32Exception(errorCode);
-                if (NetEventSource.IsEnabled) NetEventSource.Error(null, e);
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(null, e);
                 throw e;
             }
 
@@ -224,7 +223,7 @@ namespace System.Net.Security
             if (errorCode != 0)
             {
                 Exception e = new Win32Exception(errorCode);
-                if (NetEventSource.IsEnabled) NetEventSource.Error(null, e);
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(null, e);
                 throw e;
             }
 
@@ -276,7 +275,7 @@ namespace System.Net.Security
             if (errorCode != 0)
             {
                 Exception e = new Win32Exception(errorCode);
-                if (NetEventSource.IsEnabled) NetEventSource.Error(null, e);
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(null, e);
                 throw new Win32Exception(errorCode);
             }
 

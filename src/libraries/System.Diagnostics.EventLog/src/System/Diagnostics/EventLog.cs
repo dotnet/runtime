@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -266,7 +265,6 @@ namespace System.Diagnostics
                 throw new ArgumentException(SR.Format(SR.ParameterTooLong, nameof(source), 254 - EventLogKey.Length));
 
             Mutex mutex = null;
-            RuntimeHelpers.PrepareConstrainedRegions();
             try
             {
                 NetFrameworkUtils.EnterMutex(eventLogMutexName, ref mutex);
@@ -372,7 +370,6 @@ namespace System.Diagnostics
             RegistryKey eventlogkey = null;
 
             Mutex mutex = null;
-            RuntimeHelpers.PrepareConstrainedRegions();
             try
             {
                 NetFrameworkUtils.EnterMutex(eventLogMutexName, ref mutex);
@@ -443,7 +440,6 @@ namespace System.Diagnostics
             }
 
             Mutex mutex = null;
-            RuntimeHelpers.PrepareConstrainedRegions();
             try
             {
                 NetFrameworkUtils.EnterMutex(eventLogMutexName, ref mutex);

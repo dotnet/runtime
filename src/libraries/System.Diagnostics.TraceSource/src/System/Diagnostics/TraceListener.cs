@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Diagnostics.CodeAnalysis;
@@ -25,7 +24,7 @@ namespace System.Diagnostics
         private StringDictionary? _attributes;
 
         private string? _listenerName;
-        private TraceFilter? _filter = null;
+        private TraceFilter? _filter;
 
         /// <devdoc>
         /// <para>Initializes a new instance of the <see cref='System.Diagnostics.TraceListener'/> class.</para>
@@ -429,7 +428,7 @@ namespace System.Diagnostics
                 Write("LogicalOperationStack=");
                 Stack operationStack = eventCache.LogicalOperationStack;
                 bool first = true;
-                foreach (object? obj in operationStack)
+                foreach (object obj in operationStack)
                 {
                     if (!first)
                     {
@@ -440,7 +439,7 @@ namespace System.Diagnostics
                         first = false;
                     }
 
-                    Write(obj!.ToString());
+                    Write(obj.ToString());
                 }
 
                 WriteLine(string.Empty);

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #nullable enable
 
@@ -10,7 +9,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 
-#pragma warning disable CA1823 // analyzer incorrectly flags fixed buffer length const (https://github.com/dotnet/roslyn-analyzers/issues/2724)
+#pragma warning disable CA1823 // analyzer incorrectly flags fixed buffer length const (https://github.com/dotnet/roslyn/issues/37593)
 
 internal static partial class Interop
 {
@@ -328,6 +327,7 @@ internal static partial class Interop
         /// <summary>
         /// Gets the thread information for the given thread
         /// </summary>
+        /// <param name="pid">The process id.</param>
         /// <param name="thread">The ID of the thread to query for information</param>
         /// <returns>
         /// Returns a valid proc_threadinfo struct for valid threads that the caller

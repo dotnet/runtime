@@ -1,0 +1,192 @@
+<Project InitialTargets="PrintHelixQueues;PrintBuildTargetFramework;BuildHelixWorkItems" Sdk="Microsoft.DotNet.Helix.Sdk">
+
+  <!-- This project uses the Helix SDK, documented at
+       https://github.com/dotnet/arcade/tree/master/src/Microsoft.DotNet.Helix/Sdk,
+       to send test jobs to Helix.
+  -->
+
+  <PropertyGroup>
+    <TargetsWindows Condition="'$(TargetOS)' == 'Windows_NT'">true</TargetsWindows>
+
+    <!-- Set Helix build to build number if available -->
+    <HelixBuild Condition="'$(HelixBuild)' == ''">$(BUILD_BUILDNUMBER)</HelixBuild>
+    <HelixBuild Condition="'$(HelixBuild)' == ''">default</HelixBuild>
+
+    <!-- Normal jobs have a 30 minute (1800 sec.) timeout for arm/arm64, and 15 minute (900 sec.) timeout otherwise.
+         Stress modes can take considerably longer, so double those numbers. And GCStress is even slower.
+    -->
+    <TimeoutInSeconds Condition="
+        '$(Scenario)' == 'gcstress0x3' or
+        '$(Scenario)' == 'gcstress0xc' or
+        '$(Scenario)' == 'heapverify1' or
+        '$(Scenario)' == 'gcstress0xc_zapdisable' or
+        '$(Scenario)' == 'gcstress0xc_zapdisable_jitstress2' or
+        '$(Scenario)' == 'gcstress0xc_zapdisable_heapverify1' or
+        '$(Scenario)' == 'gcstress0xc_jitstress1' or
+        '$(Scenario)' == 'gcstress0xc_jitstress2' or
+        '$(Scenario)' == 'gcstress0xc_jitminopts_heapverify1'">5400</TimeoutInSeconds>
+    <TimeoutInSeconds Condition="'$(Scenario)' == '' and '$(TimeoutInSeconds)' == '' and ('$(TargetArchitecture)' == 'arm64' or '$(TargetArchitecture)' == 'arm')">1800</TimeoutInSeconds>
+    <TimeoutInSeconds Condition="'$(Scenario)' != '' and '$(TimeoutInSeconds)' == '' and ('$(TargetArchitecture)' == 'arm64' or '$(TargetArchitecture)' == 'arm')">3600</TimeoutInSeconds>
+    <TimeoutInSeconds Condition="'$(Scenario)' == '' and '$(TimeoutInSeconds)' == ''">900</TimeoutInSeconds>
+    <TimeoutInSeconds Condition="'$(Scenario)' != '' and '$(TimeoutInSeconds)' == ''">1800</TimeoutInSeconds>
+
+    <_timeoutSpan>$([System.TimeSpan]::FromSeconds($(TimeoutInSeconds)))</_timeoutSpan>
+
+    <!-- We need to enable xunit reporter so that it parses test results
+         Package testing doesn't run on xunit. -->
+    <EnableXunitReporter Condition="'$(TestPackages)' != 'true'">true</EnableXunitReporter>
+
+    <!-- The Helix runtime payload and the tests to run -->
+    <!-- TestArchiveRuntimeFile will be passed as a property by the calling project -->
+    <HelixCorrelationPayload Condition="'$(HelixCorrelationPayload)' == ''">$(TestArchiveRuntimeFile)</HelixCorrelationPayload>
+    <WorkItemArchiveWildCard Condition="'$(WorkItemArchiveWildCard)' == ''">$(TestArchiveTestsRoot)**/*.zip</WorkItemArchiveWildCard>
+
+    <HelixConfiguration>$(Configuration)</HelixConfiguration>
+    <HelixArchitecture>$(TargetArchitecture)</HelixArchitecture>
+
+    <!-- This property is used to show the tests results in Azure Dev Ops. By setting this property the
+         test run name will be displayed as $(BuildSettings)-$(HelixTargetQueue)
+
+         In the multi-scenario case, we append the scenario name to this test name prefix to distinguish the different scenario results.
+    -->
+    <TestRunNamePrefix>$(BuildSettings)-</TestRunNamePrefix>
+    <TestRunNamePrefix Condition="'$(TestRunNamePrefixSuffix)' != ''">$(TestRunNamePrefix)$(TestRunNamePrefixSuffix)-</TestRunNamePrefix>
+    <TestRunNamePrefix Condition="'$(Scenario)' != ''">$(TestRunNamePrefix)$(Scenario)-</TestRunNamePrefix>
+
+    <FailOnTestFailure Condition="'$(WaitForWorkItemCompletion)' != ''">$(WaitForWorkItemCompletion)</FailOnTestFailure>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(TestPackages)' == 'true'">
+    <!-- Use Helix feature to include dotnet CLI for every workitem and add it to the path -->
+    <IncludeDotNetCli>true</IncludeDotNetCli>
+    <DotNetCliPackageType>sdk</DotNetCliPackageType>
+
+    <TestRunNamePrefix>packaging-</TestRunNamePrefix>
+    <GlobalJsonContent>$([System.IO.File]::ReadAllText('$(RepoRoot)global.json'))</GlobalJsonContent>
+    <DotNetCliVersion>$([System.Text.RegularExpressions.Regex]::Match($(GlobalJsonContent), '(%3F&lt;="dotnet": ").*(%3F=")'))</DotNetCliVersion>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(HelixType)' == ''">
+    <!-- For PRs we want HelixType to be the same for all frameworks except package testing-->
+    <TestScope Condition="'$(TestScope)' == ''">innerloop</TestScope>
+    <HelixType>test/functional/cli/$(TestScope)/</HelixType>
+    <HelixType Condition="'$(TestPackages)' == 'true'">test/functional/packaging/</HelixType>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(TargetOS)' == 'Browser'">
+    <IncludeXHarnessCli>true</IncludeXHarnessCli>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(TestPackages)' == 'true'">
+    <HelixPreCommand Include="set DOTNET_CLI_TELEMETRY_OPTOUT=1" />
+    <HelixPreCommand Include="set DOTNET_SKIP_FIRST_TIME_EXPERIENCE=1" />
+    <HelixPreCommand Include="set DOTNET_MULTILEVEL_LOOKUP=0" />
+  </ItemGroup>
+
+  <PropertyGroup Condition="'$(TestPackages)' == 'true'">
+    <HelixCommand>dotnet msbuild %HELIX_CORRELATION_PAYLOAD%\test.msbuild</HelixCommand>
+    <HelixCommand>$(HelixCommand) /warnaserror</HelixCommand>
+    <HelixCommand>$(HelixCommand) /p:PackageTestProjectsDir=%HELIX_WORKITEM_PAYLOAD%</HelixCommand>
+    <HelixCommand>$(HelixCommand) /p:RestorePackagesPath=%HELIX_WORKITEM_PAYLOAD%\packages</HelixCommand>
+    <HelixCommand>$(HelixCommand) /p:LocalPackagesPath="%HELIX_CORRELATION_PAYLOAD%\packages\"</HelixCommand>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(MonoEnvOptions)' != ''">
+    <HelixPreCommand Condition="'$(TargetsWindows)' == 'true'" Include="set MONO_ENV_OPTIONS='$(MonoEnvOptions)'" />
+    <HelixPreCommand Condition="'$(TargetsWindows)' != 'true'" Include="export MONO_ENV_OPTIONS='$(MonoEnvOptions)'" />
+  </ItemGroup>
+
+  <!-- HelixPreCommands is a set of commands run before the work item command. We use it here to inject
+       setting up the per-scenario environment.
+  -->
+
+  <PropertyGroup>
+    <!-- Set the name of the scenario file. Note that this is only used in invocations where $(Scenario) is set
+         (which is when this project is invoked to call the "CreateTestEnvFile" target).
+    -->
+    <TestEnvFileName></TestEnvFileName>
+    <TestEnvFileName Condition=" '$(Scenario)' != '' and '$(TargetsWindows)' == 'true' ">SetStressModes_$(Scenario).cmd</TestEnvFileName>
+    <TestEnvFileName Condition=" '$(Scenario)' != '' and '$(TargetsWindows)' != 'true' ">SetStressModes_$(Scenario).sh</TestEnvFileName>
+  </PropertyGroup>
+
+  <ItemGroup Condition=" '$(TestEnvFileName)' != '' and '$(TargetsWindows)' == 'true' ">
+    <HelixPreCommand Include="set __TestEnv=%HELIX_CORRELATION_PAYLOAD%\$(TestEnvFileName)" />
+    <HelixPreCommand Include="type %__TestEnv%" />
+    <HelixPreCommand Include="call %__TestEnv%" />
+    <!-- Display the interesting COMPlus variables that are set in the environment -->
+    <HelixPreCommand Include="set COMPlus" />
+  </ItemGroup>
+
+  <ItemGroup Condition=" '$(TestEnvFileName)' != '' and '$(TargetsWindows)' != 'true' ">
+    <HelixPreCommand Include="export __TestEnv=$HELIX_CORRELATION_PAYLOAD/$(TestEnvFileName)" />
+    <HelixPreCommand Include="cat $__TestEnv" />
+    <HelixPreCommand Include=". $__TestEnv" /> <!-- Use "." not "source"; some clients appear to run scripts with "sh" not "bash" -->
+    <!-- Display the interesting COMPlus variables that are set in the environment -->
+    <HelixPreCommand Include="printenv | grep COMPlus" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <HelixPreCommands>@(HelixPreCommand)</HelixPreCommands>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(HelixCommand)' == ''">
+    <!--
+      For Windows we need to use "call", since the command is going to be called from a batch script created by Helix.
+      We "exit /b" at the end of RunTests.cmd. Helix runs some other commands after ours within the batch script,
+      so if we don't use "call", then we cause the parent script to exit, and anything after will not be executed.
+    -->
+    <HelixCommand Condition="'$(TargetsWindows)' == 'true'">call RunTests.cmd --runtime-path %HELIX_CORRELATION_PAYLOAD%</HelixCommand>
+    <HelixCommand Condition="'$(TargetsWindows)' == 'true' and '$(HelixCorrelationPayload)' != ''">$(HelixCommand) --runtime-path %HELIX_CORRELATION_PAYLOAD%</HelixCommand>
+    <HelixCommand Condition="'$(TargetsWindows)' != 'true'">./RunTests.sh --runtime-path "$HELIX_CORRELATION_PAYLOAD"</HelixCommand>
+    <HelixCommand Condition="'$(TargetsWindows)' != 'true' and '$(HelixCorrelationPayload)' != ''">$(HelixCommand) --runtime-path "$HELIX_CORRELATION_PAYLOAD"</HelixCommand>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <HelixProperties Condition="'$(RuntimeFlavor)' != ''" Include="runtimeFlavor" Value="$(RuntimeFlavor)" />
+  </ItemGroup>
+
+  <!--
+    Create all the Helix data to start a set of jobs. Create a set of work items, one for each libraries
+    test assembly. All will have the same command line. Note that this target is listed in the
+    InitialTargets for this Project. This causes it to be invoked (and the Helix data created,
+    such as the HelixWorkItem item group) before Helix "Test" target is invoked (as a normal target).
+  -->
+
+  <Target Name="BuildHelixWorkItems">
+
+    <Message Condition="'$(Scenario)' == ''" Importance="High" Text="Building Helix work items" />
+    <Message Condition="'$(Scenario)' != ''" Importance="High" Text="Building Helix work items for scenario $(Scenario)" />
+    <Message Importance="High" Text="Using TestRunNamePrefix: $(TestRunNamePrefix)" />
+    <Message Condition="'$(HelixCorrelationPayload)' != ''" Importance="High" Text="Using HelixCorrelationPayload: $(HelixCorrelationPayload)" />
+    <Message Importance="High" Text="Using HelixCommand: $(HelixCommand)" />
+    <Message Importance="High" Text="Using HelixType: $(HelixType)" />
+    <Message Importance="High" Text="Using WorkItemArchiveWildCard: $(WorkItemArchiveWildCard)" />
+    <Message Importance="High" Text="Using Timeout: $(_timeoutSpan)" />
+
+    <ItemGroup>
+      <HelixCorrelationPayload Include="$(HelixCorrelationPayload)"
+                               Condition="'$(TargetOS)' != 'Browser' or '$(HelixCorrelationPayload)' != ''" />
+
+      <_WorkItem Include="$(WorkItemArchiveWildCard)" Exclude="$(HelixCorrelationPayload)" />
+
+      <HelixWorkItem Include="@(_WorkItem -> '%(FileName)')">
+        <PayloadArchive>%(Identity)</PayloadArchive>
+        <Command>$(HelixCommand)</Command>
+        <Timeout>$(_timeoutSpan)</Timeout>
+      </HelixWorkItem>
+    </ItemGroup>
+
+    <Message Condition="'$(Scenario)' != ''" Importance="High" Text="Done building Helix work items for scenario $(Scenario). Work item count: @(_WorkItem->Count())" />
+    <Message Condition="'$(Scenario)' == ''" Importance="High" Text="Done building Helix work items. Work item count: @(_WorkItem->Count())" />
+
+  </Target>
+
+  <Target Name="PrintHelixQueues">
+    <Message Importance="High" Text="Using Queues: $(HelixTargetQueues)" />
+  </Target>
+
+  <Target Name="PrintBuildTargetFramework">
+    <Message Condition="'$(TestPackages)' != 'true'" Importance="High" Text="Build TargetFramework: $(BuildTargetFramework)" />
+    <Message Condition="'$(TestPackages)' == 'true'" Importance="High" Text="Doing Package Testing" />
+  </Target>
+</Project>

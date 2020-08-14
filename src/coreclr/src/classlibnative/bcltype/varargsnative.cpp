@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //
 // File: VarArgsNative.cpp
 //
@@ -503,7 +502,7 @@ TryAgain:
             value->data = (BYTE*)origArgPtr + (sizeof(void*)-1);
         }
 #endif
-        value->type = MscorlibBinder::GetElementType(elemType);
+        value->type = CoreLibBinder::GetElementType(elemType);
         break;
 
         case ELEMENT_TYPE_I2:
@@ -514,7 +513,7 @@ TryAgain:
             value->data = (BYTE*)origArgPtr + (sizeof(void*)-2);
         }
 #endif
-        value->type = MscorlibBinder::GetElementType(elemType);
+        value->type = CoreLibBinder::GetElementType(elemType);
         break;
 
         case ELEMENT_TYPE_I4:
@@ -523,13 +522,13 @@ TryAgain:
         case ELEMENT_TYPE_STRING:
         case ELEMENT_TYPE_I:
         case ELEMENT_TYPE_U:
-        value->type = MscorlibBinder::GetElementType(elemType);
+        value->type = CoreLibBinder::GetElementType(elemType);
         break;
 
         case ELEMENT_TYPE_I8:
         case ELEMENT_TYPE_U8:
         case ELEMENT_TYPE_R8:
-        value->type = MscorlibBinder::GetElementType(elemType);
+        value->type = CoreLibBinder::GetElementType(elemType);
 #if !defined(HOST_64BIT) && (DATA_ALIGNMENT > 4)
         if ( fData && origArgPtr == value->data ) {
             // allocate an aligned copy of the value

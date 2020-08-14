@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 // ------------------------------------------------------------------------------
 // Changes to this file must follow the https://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
@@ -80,16 +79,16 @@ namespace System.Net
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         [System.ObsoleteAttribute("This API supports the .NET Framework infrastructure and is not intended to be used directly from your code.", true)]
         public bool AllowWriteStreamBuffering { get { throw null; } set { } }
-        [System.Diagnostics.CodeAnalysis.AllowNull]
+        [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public string BaseAddress { get { throw null; } set { } }
         public System.Net.Cache.RequestCachePolicy? CachePolicy { get { throw null; } set { } }
         public System.Net.ICredentials? Credentials { get { throw null; } set { } }
         public System.Text.Encoding Encoding { get { throw null; } set { } }
-        [System.Diagnostics.CodeAnalysis.AllowNull]
+        [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public System.Net.WebHeaderCollection Headers { get { throw null; } set { } }
         public bool IsBusy { get { throw null; } }
         public System.Net.IWebProxy? Proxy { get { throw null; } set { } }
-        [System.Diagnostics.CodeAnalysis.AllowNull]
+        [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public System.Collections.Specialized.NameValueCollection QueryString { get { throw null; } set { } }
         public System.Net.WebHeaderCollection? ResponseHeaders { get { throw null; } }
         public bool UseDefaultCredentials { get { throw null; } set { } }

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 // --------------------------------------------------------------------------------
 // PEDecoder.cpp
 //
@@ -289,9 +288,9 @@ CHECK PEDecoder::CheckNTHeaders() const
     if (IsMapped())
     {
         // Ideally we would require the layout address to honor the section alignment constraints.
-        // However, we do have 8K aligned IL only images which we load on 32 bit platforms. In this
-        // case, we can only guarantee OS page alignment (which after all, is good enough.)
-        CHECK(CheckAligned(m_base, GetOsPageSize()));
+        // However, we do have 8K aligned IL only images which we load on 32 bit platforms.
+        // Also in the case of files embedded within a single-file app, the default alignment for assemblies is 16 bytes.
+        CHECK(CheckAligned(m_base, 16));
     }
 
     // @todo: check NumberOfSections for overflow of SizeOfHeaders
@@ -1771,20 +1770,29 @@ void PEDecoder::LayoutILOnly(void *base, BOOL allowFullPE) const
                            PAGE_READONLY, &oldProtection))
         ThrowLastError();
 
-    // Finally, apply proper protection to copied sections
-    section = sectionStart;
-    while (section < sectionEnd)
+    // Finally, apply proper protection to copied sections    
+    for (section = sectionStart; section < sectionEnd; section++)
     {
         // Add appropriate page protection.
-        if ((section->Characteristics & VAL32(IMAGE_SCN_MEM_WRITE)) == 0)
-        {
-            if (!ClrVirtualProtect((void *) ((BYTE *)base + VAL32(section->VirtualAddress)),
-                                   VAL32(section->Misc.VirtualSize),
-                                   PAGE_READONLY, &oldProtection))
-                ThrowLastError();
-        }
+#if defined(CROSSGEN_COMPILE) || defined(TARGET_UNIX)
+        if (section->Characteristics & IMAGE_SCN_MEM_WRITE)
+            continue;
 
-        section++;
+        DWORD newProtection = PAGE_READONLY;
+#else
+        DWORD newProtection = section->Characteristics & IMAGE_SCN_MEM_EXECUTE ?
+            PAGE_EXECUTE_READ :
+            section->Characteristics & IMAGE_SCN_MEM_WRITE ?
+                PAGE_READWRITE :
+                PAGE_READONLY;
+#endif
+
+        if (!ClrVirtualProtect((void*)((BYTE*)base + VAL32(section->VirtualAddress)),
+            VAL32(section->Misc.VirtualSize),
+            newProtection, &oldProtection))
+        {
+            ThrowLastError();
+        }
     }
 
     RETURN;

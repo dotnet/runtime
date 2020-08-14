@@ -32,7 +32,7 @@ build_test_wrappers()
         __MsbuildErr="/fileloggerparameters2:\"ErrorsOnly;LogFile=${__BuildErr}\""
         __Logging="$__MsbuildLog $__MsbuildWrn $__MsbuildErr /consoleloggerparameters:$buildVerbosity"
 
-        nextCommand="\"${__DotNetCli}\" msbuild \"${__ProjectDir}/tests/src/runtest.proj\" /nodereuse:false /p:BuildWrappers=true /p:TestBuildMode=$__TestBuildMode /p:TargetsWindows=false $__Logging /p:TargetOS=$__TargetOS /p:Configuration=$__BuildType /p:TargetArchitecture=$__BuildArch /p:RuntimeFlavor=$__RuntimeFlavor \"/bl:${__RepoRootDir}/artifacts/log/${__BuildType}/build_test_wrappers_${__RuntimeFlavor}.binlog\""
+        nextCommand="\"${__DotNetCli}\" msbuild \"${__ProjectDir}/tests/src/runtest.proj\" /nodereuse:false /p:BuildWrappers=true /p:TestBuildMode=$__TestBuildMode /p:TargetsWindows=false $__Logging /p:TargetOS=$__TargetOS /p:Configuration=$__BuildType /p:TargetArchitecture=$__BuildArch /p:RuntimeFlavor=$__RuntimeFlavor \"/bl:${__RepoRootDir}/artifacts/log/${__BuildType}/build_test_wrappers_${__RuntimeFlavor}.binlog\" ${__UnprocessedBuildArgs[@]}"
         eval $nextCommand
 
         local exitCode="$?"
@@ -47,11 +47,22 @@ build_test_wrappers()
     fi
 }
 
+build_mono_aot()
+{
+    __RuntimeFlavor="mono"
+    __MonoBinDir="$__RootBinDir/bin/mono/$__TargetOS.$__BuildArch.$__BuildType"
+    __Exclude="${__ProjectDir}/tests/issues.targets"
+    __TestBinDir="$__TestWorkingDir"
+    CORE_ROOT="$__TestBinDir"/Tests/Core_Root
+    export __Exclude
+    export CORE_ROOT
+    build_MSBuild_projects "Tests_MonoAot" "$__ProjectDir/tests/src/runtest.proj" "Mono AOT compile tests" "/t:MonoAotCompileTests" "/p:RuntimeFlavor=$__RuntimeFlavor" "/p:MonoLlvmPath=$__MonoBinDir"
+}
+
 generate_layout()
 {
     echo "${__MsgPrefix}Creating test overlay..."
 
-    __TestDir="$__ProjectDir"/tests
     __ProjectFilesDir="$__TestDir"
     __TestBinDir="$__TestWorkingDir"
 
@@ -120,12 +131,11 @@ generate_layout()
     mkdir -p "$CORE_ROOT"
 
     chmod +x "$__BinDir"/corerun
-    chmod +x "$__CrossgenExe"
 
     build_MSBuild_projects "Tests_Overlay_Managed" "${__ProjectDir}/tests/src/runtest.proj" "Creating test overlay" "/t:CreateTestOverlay"
 
     if [[ "$__TargetOS" != "OSX" && "$__SkipStressDependencies" == 0 ]]; then
-        nextCommand="\"$__TestDir/setup-stress-dependencies.sh\" --arch=$__BuildArch --outputDir=$CORE_ROOT"
+        nextCommand="\"${__RepoRootDir}/src/coreclr/tests/setup-stress-dependencies.sh\" --arch=$__BuildArch --outputDir=$CORE_ROOT"
         echo "Resolve runtime dependences via $nextCommand"
         eval $nextCommand
 
@@ -138,6 +148,7 @@ generate_layout()
 
     # Precompile framework assemblies with crossgen if required
     if [[ "$__DoCrossgen" != 0 || "$__DoCrossgen2" != 0 ]]; then
+        chmod +x "$__CrossgenExe"
         if [[ "$__SkipCrossgenFramework" == 0 ]]; then
             precompile_coreroot_fx
         fi
@@ -157,34 +168,30 @@ precompile_coreroot_fx()
     local outputDir="$overlayDir"/out
 
     # Delete previously crossgened assemblies
-    rm "$overlayDir"/*.ni.dll
-
-    # Collect reference assemblies for Crossgen2
-    local crossgen2References=""
+    rm "$overlayDir"/*.ni.dll 2>/dev/null
 
     if [[ "$__DoCrossgen2" != 0 ]]; then
         compilerName=Crossgen2
 
         mkdir "$outputDir"
-
-        skipCrossGenFiles+=('Microsoft.CodeAnalysis.CSharp.dll')
-        skipCrossGenFiles+=('Microsoft.CodeAnalysis.dll')
-        skipCrossGenFiles+=('Microsoft.CodeAnalysis.VisualBasic.dll')
-
-        for reference in "$overlayDir"/*.dll; do
-            crossgen2References+=" -r:${reference}"
-        done
     fi
 
     echo "${__MsgPrefix}Running ${compilerName} on framework assemblies in CORE_ROOT: '${CORE_ROOT}'"
 
     local totalPrecompiled=0
     local failedToPrecompile=0
-    local compositeCommandLine="${__DotNetCli}"
-    compositeCommandLine+=" $__BinDir/crossgen2/crossgen2.dll"
-    compositeCommandLine+=" --composite"
-    compositeCommandLine+=" -O"
-    compositeCommandLine+=" --out:$outputDir/framework-r2r.dll"
+    local compositeOutputFile=$outputDir/framework-r2r.dll
+    local compositeResponseFile=$compositeOutputFile.rsp
+    local compositeCommandLine="${__DotNetCli} $__Crossgen2Dll @$compositeResponseFile"
+
+    if [[ "$__CompositeBuildMode" != 0 ]]; then
+        rm $compositeResponseFile 2>/dev/null
+        echo --composite>>$compositeResponseFile
+        echo -O>>$compositeResponseFile
+        echo --out:$compositeOutputFile>>$compositeResponseFile
+        echo --targetarch:${__BuildArch}>>$compositeResponseFile
+    fi
+
     declare -a failedAssemblies
 
     filesToPrecompile=$(find -L "$overlayDir" -maxdepth 1 -iname Microsoft.\*.dll -o -iname System.\*.dll -o -iname netstandard.dll -o -iname mscorlib.dll -type f)
@@ -195,18 +202,32 @@ precompile_coreroot_fx()
         fi
 
         if [[ "$__CompositeBuildMode" != 0 ]]; then
-            compositeCommandLine+=" $filename"
+            echo $filename>>$compositeResponseFile
             continue
         fi
 
         local commandLine=""
+        local responseFile="$overlayDir/$(basename $filename).rsp"
+
+        rm $responseFile 2>/dev/null
 
         if [[ "$__DoCrossgen" != 0 ]]; then
-            commandLine="$__CrossgenExe /Platform_Assemblies_Paths $overlayDir $filename"
+            commandLine="$__CrossgenExe @$responseFile"
+            echo /Platform_Assemblies_Paths>>$responseFile
+            echo $overlayDir>>$responseFile
+            echo $filename>>$responseFile
         fi
 
         if [[ "$__DoCrossgen2" != 0 ]]; then
-            commandLine="${__DotNetCli} $overlayDir/crossgen2/crossgen2.dll $crossgen2References -O --inputbubble --out $outputDir/$(basename $filename) $filename"
+            commandLine="${__DotNetCli} $__Crossgen2Dll @$responseFile"
+            echo -O>>$responseFile
+            echo --inputbubble>>$responseFile
+            echo --out:$outputDir/$(basename $filename)>>$responseFile
+            echo --targetarch:${__BuildArch}>>$responseFile
+            echo $filename>>$responseFile
+            for reference in $overlayDir/*.dll; do
+                echo -r:$reference>>$responseFile
+            done
         fi
 
         echo Precompiling "$filename"
@@ -233,6 +254,8 @@ precompile_coreroot_fx()
 
     if [[ "$__CompositeBuildMode" != 0 ]]; then
         # Compile the entire framework in composite build mode
+        echo "Response file: $compositeResponseFile"
+        cat $compositeResponseFile
         echo "Compiling composite R2R framework: $compositeCommandLine"
         $compositeCommandLine
         local exitCode="$?"
@@ -273,7 +296,6 @@ build_Tests()
 {
     echo "${__MsgPrefix}Building Tests..."
 
-    __TestDir="$__ProjectDir"/tests
     __ProjectFilesDir="$__TestDir"
     __TestBinDir="$__TestWorkingDir"
 
@@ -513,7 +535,6 @@ usage_list+=("-skiptestwrappers: Don't generate test wrappers.")
 
 usage_list+=("-buildtestwrappersonly: only build the test wrappers.")
 usage_list+=("-copynativeonly: Only copy the native test binaries to the managed output. Do not build the native or managed tests.")
-usage_list+=("-generatetesthostonly: only generate the test host.")
 usage_list+=("-generatelayoutonly: only pull down dependencies and build coreroot.")
 usage_list+=("-crossgenframeworkonly: only compile the framework in CORE_ROOT with Crossgen / Crossgen2.")
 
@@ -574,10 +595,6 @@ handle_arguments_local() {
             __TestBuildMode=crossgen2
             ;;
 
-        generatetesthostonly|-generatetesthostonly)
-            __GenerateTestHostOnly=1
-            ;;
-
         generatelayoutonly|-generatelayoutonly)
             __GenerateLayoutOnly=1
             ;;
@@ -614,6 +631,12 @@ handle_arguments_local() {
         excludemonofailures|-excludemonofailures)
             __Mono=1
             ;;
+
+        mono_aot|-mono_aot)
+            __Mono=1
+            __MonoAot=1
+            ;;
+
         *)
             __UnprocessedBuildArgs+=("$1")
             ;;
@@ -644,7 +667,6 @@ __DoCrossgen2=0
 __CompositeBuildMode=0
 __DotNetCli="$__RepoRootDir/dotnet.sh"
 __GenerateLayoutOnly=
-__GenerateTestHostOnly=
 __IsMSBuildOnNETCoreSupported=0
 __MSBCleanBuildArgs=
 __NativeTestIntermediatesDir=
@@ -668,6 +690,8 @@ __UseNinja=0
 __VerboseBuild=0
 __CMakeArgs=""
 __priority1=
+__Mono=0
+__MonoAot=0
 CORE_ROOT=
 
 source "$__ProjectRoot"/_build-commons.sh
@@ -683,7 +707,7 @@ __MsbuildDebugLogsDir="$__LogsDir/MsbuildDebugLogs"
 # Set the remaining variables based upon the determined build configuration
 __BinDir="$__RootBinDir/bin/coreclr/$__TargetOS.$__BuildArch.$__BuildType"
 __PackagesBinDir="$__BinDir/.nuget"
-__TestDir="$__ProjectDir/tests"
+__TestDir="${__RepoRootDir}/src/tests"
 __TestWorkingDir="$__RootBinDir/tests/coreclr/$__TargetOS.$__BuildArch.$__BuildType"
 __IntermediatesDir="$__RootBinDir/obj/coreclr/$__TargetOS.$__BuildArch.$__BuildType"
 __TestIntermediatesDir="$__RootBinDir/tests/coreclr/obj/$__TargetOS.$__BuildArch.$__BuildType"
@@ -696,6 +720,7 @@ if [[ "$__CrossBuild" == 1 ]]; then
 fi
 __CrossgenCoreLibLog="$__LogsDir/CrossgenCoreLib_$__TargetOS.$BuildArch.$__BuildType.log"
 __CrossgenExe="$__CrossComponentBinDir/crossgen"
+__Crossgen2Dll="$__CrossComponentBinDir/crossgen2/crossgen2.dll"
 
 # CI_SPECIFIC - On CI machines, $HOME may not be set. In such a case, create a subfolder and set the variable to it.
 # This is needed by CLI to function.
@@ -709,10 +734,12 @@ if [[ -z "$HOME" ]]; then
     echo "HOME not defined; setting it to $HOME"
 fi
 
-if [[ (-z "$__GenerateLayoutOnly") && (-z "$__GenerateTestHostOnly") && (-z "$__BuildTestWrappersOnly") ]]; then
+if [[ (-z "$__GenerateLayoutOnly") && (-z "$__BuildTestWrappersOnly") && ("$__MonoAot" -eq 0) ]]; then
     build_Tests
 elif [[ ! -z "$__BuildTestWrappersOnly" ]]; then
     build_test_wrappers
+elif [[ "$__MonoAot" -eq 1 ]]; then
+    build_mono_aot
 else
     generate_layout
 fi

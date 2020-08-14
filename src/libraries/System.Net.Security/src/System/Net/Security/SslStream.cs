@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #nullable enable
 using System.Diagnostics;
@@ -35,8 +34,9 @@ namespace System.Net.Security
 
     public delegate X509Certificate ServerCertificateSelectionCallback(object sender, string? hostName);
 
+    public delegate ValueTask<SslServerAuthenticationOptions> ServerOptionsSelectionCallback(SslStream stream, SslClientHelloInfo clientHelloInfo, object? state, CancellationToken cancellationToken);
+
     // Internal versions of the above delegates.
-    internal delegate bool RemoteCertValidationCallback(string? host, X509Certificate2? certificate, X509Chain? chain, SslPolicyErrors sslPolicyErrors);
     internal delegate X509Certificate LocalCertSelectionCallback(string targetHost, X509CertificateCollection localCertificates, X509Certificate2? remoteCertificate, string[] acceptableIssuers);
     internal delegate X509Certificate ServerCertSelectionCallback(string? hostName);
 
@@ -45,13 +45,9 @@ namespace System.Net.Security
         /// <summary>Set as the _exception when the instance is disposed.</summary>
         private static readonly ExceptionDispatchInfo s_disposedSentinel = ExceptionDispatchInfo.Capture(new ObjectDisposedException(nameof(SslStream), (string?)null));
 
-        private X509Certificate2? _remoteCertificate;
-        private bool _remoteCertificateExposed;
-
         internal RemoteCertificateValidationCallback? _userCertificateValidationCallback;
         internal LocalCertificateSelectionCallback? _userCertificateSelectionCallback;
         internal ServerCertificateSelectionCallback? _userServerCertificateSelectionCallback;
-        internal RemoteCertValidationCallback _certValidationDelegate;
         internal LocalCertSelectionCallback? _certSelectionDelegate;
         internal EncryptionPolicy _encryptionPolicy;
 
@@ -105,10 +101,11 @@ namespace System.Net.Security
             _userCertificateValidationCallback = userCertificateValidationCallback;
             _userCertificateSelectionCallback = userCertificateSelectionCallback;
             _encryptionPolicy = encryptionPolicy;
-            _certValidationDelegate = new RemoteCertValidationCallback(UserCertValidationCallbackWrapper);
             _certSelectionDelegate = userCertificateSelectionCallback == null ? null : new LocalCertSelectionCallback(UserCertSelectionCallbackWrapper);
 
             _innerStream = innerStream;
+
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Log.SslStreamCtor(this, innerStream);
         }
 
         public SslApplicationProtocol NegotiatedApplicationProtocol
@@ -127,7 +124,6 @@ namespace System.Net.Security
             if (_userCertificateValidationCallback == null)
             {
                 _userCertificateValidationCallback = callback;
-                _certValidationDelegate = new RemoteCertValidationCallback(UserCertValidationCallbackWrapper);
             }
             else if (callback != null && _userCertificateValidationCallback != callback)
             {
@@ -148,24 +144,6 @@ namespace System.Net.Security
             }
         }
 
-        private bool UserCertValidationCallbackWrapper(string? hostName, X509Certificate2? certificate, X509Chain? chain, SslPolicyErrors sslPolicyErrors)
-        {
-            _remoteCertificate = certificate == null ? null : new X509Certificate2(certificate);
-            if (_userCertificateValidationCallback == null)
-            {
-                if (!RemoteCertRequired)
-                {
-                    sslPolicyErrors &= ~SslPolicyErrors.RemoteCertificateNotAvailable;
-                }
-
-                return (sslPolicyErrors == SslPolicyErrors.None);
-            }
-            else
-            {
-                return _userCertificateValidationCallback(this, certificate, chain, sslPolicyErrors);
-            }
-        }
-
         private X509Certificate UserCertSelectionCallbackWrapper(string targetHost, X509CertificateCollection localCertificates, X509Certificate? remoteCertificate, string[] acceptableIssuers)
         {
             return _userCertificateSelectionCallback!(this, targetHost, localCertificates, remoteCertificate, acceptableIssuers);
@@ -175,12 +153,13 @@ namespace System.Net.Security
 
         private SslAuthenticationOptions CreateAuthenticationOptions(SslServerAuthenticationOptions sslServerAuthenticationOptions)
         {
-            if (sslServerAuthenticationOptions.ServerCertificate == null && sslServerAuthenticationOptions.ServerCertificateSelectionCallback == null && _certSelectionDelegate == null)
+            if (sslServerAuthenticationOptions.ServerCertificate == null && sslServerAuthenticationOptions.ServerCertificateContext == null &&
+                    sslServerAuthenticationOptions.ServerCertificateSelectionCallback == null && _certSelectionDelegate == null)
             {
                 throw new ArgumentNullException(nameof(sslServerAuthenticationOptions.ServerCertificate));
             }
 
-            if ((sslServerAuthenticationOptions.ServerCertificate != null || _certSelectionDelegate != null) && sslServerAuthenticationOptions.ServerCertificateSelectionCallback != null)
+            if ((sslServerAuthenticationOptions.ServerCertificate != null || sslServerAuthenticationOptions.ServerCertificateContext != null || _certSelectionDelegate != null) && sslServerAuthenticationOptions.ServerCertificateSelectionCallback != null)
             {
                 throw new InvalidOperationException(SR.Format(SR.net_conflicting_options, nameof(ServerCertificateSelectionCallback)));
             }
@@ -190,7 +169,7 @@ namespace System.Net.Security
             _userServerCertificateSelectionCallback = sslServerAuthenticationOptions.ServerCertificateSelectionCallback;
             authOptions.ServerCertSelectionDelegate = _userServerCertificateSelectionCallback == null ? null : new ServerCertSelectionCallback(ServerCertSelectionCallbackWrapper);
 
-            authOptions.CertValidationDelegate = _certValidationDelegate;
+            authOptions.CertValidationDelegate = _userCertificateValidationCallback;
             authOptions.CertSelectionDelegate = _certSelectionDelegate;
 
             return authOptions;
@@ -314,7 +293,7 @@ namespace System.Net.Security
             SetAndVerifyValidationCallback(sslClientAuthenticationOptions.RemoteCertificateValidationCallback);
             SetAndVerifySelectionCallback(sslClientAuthenticationOptions.LocalCertificateSelectionCallback);
 
-            ValidateCreateContext(sslClientAuthenticationOptions, _certValidationDelegate, _certSelectionDelegate);
+            ValidateCreateContext(sslClientAuthenticationOptions, _userCertificateValidationCallback, _certSelectionDelegate);
             ProcessAuthentication();
         }
 
@@ -385,7 +364,7 @@ namespace System.Net.Security
             SetAndVerifyValidationCallback(sslClientAuthenticationOptions.RemoteCertificateValidationCallback);
             SetAndVerifySelectionCallback(sslClientAuthenticationOptions.LocalCertificateSelectionCallback);
 
-            ValidateCreateContext(sslClientAuthenticationOptions, _certValidationDelegate, _certSelectionDelegate);
+            ValidateCreateContext(sslClientAuthenticationOptions, _userCertificateValidationCallback, _certSelectionDelegate);
 
             return ProcessAuthentication(true, false, cancellationToken)!;
         }
@@ -395,7 +374,7 @@ namespace System.Net.Security
             SetAndVerifyValidationCallback(sslClientAuthenticationOptions.RemoteCertificateValidationCallback);
             SetAndVerifySelectionCallback(sslClientAuthenticationOptions.LocalCertificateSelectionCallback);
 
-            ValidateCreateContext(sslClientAuthenticationOptions, _certValidationDelegate, _certSelectionDelegate);
+            ValidateCreateContext(sslClientAuthenticationOptions, _userCertificateValidationCallback, _certSelectionDelegate);
 
             return ProcessAuthentication(true, true, cancellationToken)!;
         }
@@ -451,6 +430,12 @@ namespace System.Net.Security
             return ProcessAuthentication(true, true, cancellationToken)!;
         }
 
+        public Task AuthenticateAsServerAsync(ServerOptionsSelectionCallback optionsCallback, object? state, CancellationToken cancellationToken = default)
+        {
+            ValidateCreateContext(new SslAuthenticationOptions(optionsCallback, state, _userCertificateValidationCallback));
+            return ProcessAuthentication(isAsync: true, isApm: false, cancellationToken)!;
+        }
+
         public virtual Task ShutdownAsync()
         {
             ThrowIfExceptionalOrNotAuthenticatedOrShutdown();
@@ -484,51 +469,57 @@ namespace System.Net.Security
         {
             get
             {
-                ThrowIfExceptionalOrNotAuthenticated();
-                SslConnectionInfo? info = _context!.ConnectionInfo;
-                if (info == null)
-                {
-                    return SslProtocols.None;
-                }
+                ThrowIfExceptionalOrNotHandshake();
+                return GetSslProtocolInternal();
+            }
+        }
 
-                SslProtocols proto = (SslProtocols)info.Protocol;
-                SslProtocols ret = SslProtocols.None;
+        // Skips the ThrowIfExceptionalOrNotHandshake() check
+        private SslProtocols GetSslProtocolInternal()
+        {
+            SslConnectionInfo? info = _context!.ConnectionInfo;
+            if (info == null)
+            {
+                return SslProtocols.None;
+            }
+
+            SslProtocols proto = (SslProtocols)info.Protocol;
+            SslProtocols ret = SslProtocols.None;
 
 #pragma warning disable 0618 // Ssl2, Ssl3 are deprecated.
-                // Restore client/server bits so the result maps exactly on published constants.
-                if ((proto & SslProtocols.Ssl2) != 0)
-                {
-                    ret |= SslProtocols.Ssl2;
-                }
+            // Restore client/server bits so the result maps exactly on published constants.
+            if ((proto & SslProtocols.Ssl2) != 0)
+            {
+                ret |= SslProtocols.Ssl2;
+            }
 
-                if ((proto & SslProtocols.Ssl3) != 0)
-                {
-                    ret |= SslProtocols.Ssl3;
-                }
+            if ((proto & SslProtocols.Ssl3) != 0)
+            {
+                ret |= SslProtocols.Ssl3;
+            }
 #pragma warning restore
 
-                if ((proto & SslProtocols.Tls) != 0)
-                {
-                    ret |= SslProtocols.Tls;
-                }
-
-                if ((proto & SslProtocols.Tls11) != 0)
-                {
-                    ret |= SslProtocols.Tls11;
-                }
-
-                if ((proto & SslProtocols.Tls12) != 0)
-                {
-                    ret |= SslProtocols.Tls12;
-                }
-
-                if ((proto & SslProtocols.Tls13) != 0)
-                {
-                    ret |= SslProtocols.Tls13;
-                }
-
-                return ret;
+            if ((proto & SslProtocols.Tls) != 0)
+            {
+                ret |= SslProtocols.Tls;
             }
+
+            if ((proto & SslProtocols.Tls11) != 0)
+            {
+                ret |= SslProtocols.Tls11;
+            }
+
+            if ((proto & SslProtocols.Tls12) != 0)
+            {
+                ret |= SslProtocols.Tls12;
+            }
+
+            if ((proto & SslProtocols.Tls13) != 0)
+            {
+                ret |= SslProtocols.Tls13;
+            }
+
+            return ret;
         }
 
         public virtual bool CheckCertRevocationStatus => _context != null && _context.CheckCertRevocationStatus != X509RevocationMode.NoCheck;
@@ -550,8 +541,7 @@ namespace System.Net.Security
             get
             {
                 ThrowIfExceptionalOrNotAuthenticated();
-                _remoteCertificateExposed = true;
-                return _remoteCertificate;
+                return _context?.RemoteCertificate;
             }
         }
 
@@ -560,7 +550,7 @@ namespace System.Net.Security
         {
             get
             {
-                ThrowIfExceptionalOrNotAuthenticated();
+                ThrowIfExceptionalOrNotHandshake();
                 return _context!.ConnectionInfo?.TlsCipherSuite ?? default(TlsCipherSuite);
             }
         }
@@ -569,7 +559,7 @@ namespace System.Net.Security
         {
             get
             {
-                ThrowIfExceptionalOrNotAuthenticated();
+                ThrowIfExceptionalOrNotHandshake();
                 SslConnectionInfo? info = _context!.ConnectionInfo;
                 if (info == null)
                 {
@@ -583,7 +573,7 @@ namespace System.Net.Security
         {
             get
             {
-                ThrowIfExceptionalOrNotAuthenticated();
+                ThrowIfExceptionalOrNotHandshake();
                 SslConnectionInfo? info = _context!.ConnectionInfo;
                 if (info == null)
                 {
@@ -598,7 +588,7 @@ namespace System.Net.Security
         {
             get
             {
-                ThrowIfExceptionalOrNotAuthenticated();
+                ThrowIfExceptionalOrNotHandshake();
                 SslConnectionInfo? info = _context!.ConnectionInfo;
                 if (info == null)
                 {
@@ -612,7 +602,7 @@ namespace System.Net.Security
         {
             get
             {
-                ThrowIfExceptionalOrNotAuthenticated();
+                ThrowIfExceptionalOrNotHandshake();
                 SslConnectionInfo? info = _context!.ConnectionInfo;
                 if (info == null)
                 {
@@ -627,7 +617,7 @@ namespace System.Net.Security
         {
             get
             {
-                ThrowIfExceptionalOrNotAuthenticated();
+                ThrowIfExceptionalOrNotHandshake();
                 SslConnectionInfo? info = _context!.ConnectionInfo;
                 if (info == null)
                 {
@@ -642,7 +632,7 @@ namespace System.Net.Security
         {
             get
             {
-                ThrowIfExceptionalOrNotAuthenticated();
+                ThrowIfExceptionalOrNotHandshake();
                 SslConnectionInfo? info = _context!.ConnectionInfo;
                 if (info == null)
                 {
@@ -650,6 +640,14 @@ namespace System.Net.Security
                 }
 
                 return info.KeyExchKeySize;
+            }
+        }
+
+        public string TargetHostName
+        {
+            get
+            {
+                return _sslAuthenticationOptions != null ? _sslAuthenticationOptions.TargetHost : string.Empty;
             }
         }
 
@@ -696,12 +694,6 @@ namespace System.Net.Security
         {
             try
             {
-                if (!_remoteCertificateExposed)
-                {
-                    _remoteCertificate?.Dispose();
-                    _remoteCertificate = null;
-                    _remoteCertificateExposed = false;
-                }
                 CloseInternal();
             }
             finally
@@ -858,6 +850,17 @@ namespace System.Net.Security
             ThrowIfExceptional();
 
             if (!IsAuthenticated)
+            {
+                ThrowNotAuthenticated();
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private void ThrowIfExceptionalOrNotHandshake()
+        {
+            ThrowIfExceptional();
+
+            if (!IsAuthenticated && _context?.ConnectionInfo == null)
             {
                 ThrowNotAuthenticated();
             }

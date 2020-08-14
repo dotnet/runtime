@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //
 // File: CompPhases.h
 //
@@ -87,6 +86,7 @@ CompPhaseNameMacro(PHASE_ASSERTION_PROP_MAIN,    "Assertion prop",              
 #endif
 CompPhaseNameMacro(PHASE_OPT_UPDATE_FLOW_GRAPH,  "Update flow graph opt pass",     "UPD-FG-O", false, -1, false)
 CompPhaseNameMacro(PHASE_COMPUTE_EDGE_WEIGHTS2,  "Compute edge weights (2, false)",       "EDG-WGT2", false, -1, false)
+CompPhaseNameMacro(PHASE_INSERT_GC_POLLS,        "Insert GC Polls",                "GC-POLLS", false, -1, true)
 CompPhaseNameMacro(PHASE_DETERMINE_FIRST_COLD_BLOCK, "Determine first cold block", "COLD-BLK", false, -1, true)
 CompPhaseNameMacro(PHASE_RATIONALIZE,            "Rationalize IR",                 "RAT",      false, -1, false)
 CompPhaseNameMacro(PHASE_SIMPLE_LOWERING,        "Do 'simple' lowering",           "SMP-LWR",  false, -1, false)

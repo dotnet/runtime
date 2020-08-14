@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Xunit;
 
@@ -15,7 +14,6 @@ namespace System.Composition.Hosting.Core.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/23972", TargetFrameworkMonikers.NetFramework)]
         public void AddBoundInstance_NonNullInstance_DisposesInstanceOnDisposal()
         {
             using (CompositionHost host = CompositionHost.CreateCompositionHost(new ExportDescriptorProvider[0]))
@@ -36,7 +34,6 @@ namespace System.Composition.Hosting.Core.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/23972", TargetFrameworkMonikers.NetFramework)]
         public void AddBoundInstance_NullInstance_ThrowsNullReferenceExceptionOnDisposal()
         {
             CompositionHost host = CompositionHost.CreateCompositionHost(new ExportDescriptorProvider[0]);
@@ -48,7 +45,6 @@ namespace System.Composition.Hosting.Core.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/23972", TargetFrameworkMonikers.NetFramework)]
         public void AddBoundInstance_Disposed_ThrowsObjectDisposedException()
         {
             using (CompositionHost host = CompositionHost.CreateCompositionHost(new ExportDescriptorProvider[0]))
@@ -62,7 +58,6 @@ namespace System.Composition.Hosting.Core.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/23972", TargetFrameworkMonikers.NetFramework)]
         public void GetOrCreate_ValidActivatorDuringInitialization_Success()
         {
             using (CompositionHost host = CompositionHost.CreateCompositionHost(new ExportDescriptorProvider[0]))
@@ -91,7 +86,6 @@ namespace System.Composition.Hosting.Core.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/23972", TargetFrameworkMonikers.NetFramework)]
         public void GetOrCreate_ValidActivatorAfterInitialization_Success()
         {
             using (CompositionHost host = CompositionHost.CreateCompositionHost(new ExportDescriptorProvider[0]))
@@ -121,7 +115,6 @@ namespace System.Composition.Hosting.Core.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/23972", TargetFrameworkMonikers.NetFramework)]
         public void GetOrCreate_NullActivator_ThrowsNullReferenceException()
         {
             using (CompositionHost host = CompositionHost.CreateCompositionHost(new ExportDescriptorProvider[0]))
@@ -140,7 +133,6 @@ namespace System.Composition.Hosting.Core.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/23972", TargetFrameworkMonikers.NetFramework)]
         public void GetOrCreate_NullOperation_ThrowsNullReferenceException()
         {
             using (CompositionHost host = CompositionHost.CreateCompositionHost(new ExportDescriptorProvider[0]))
@@ -153,7 +145,6 @@ namespace System.Composition.Hosting.Core.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/23972", TargetFrameworkMonikers.NetFramework)]
         public void FindContextWithin_NullSharingBoundary_ReturnsRoot()
         {
             using (CompositionHost host = CompositionHost.CreateCompositionHost(new ExportDescriptorProvider[0]))
@@ -166,7 +157,6 @@ namespace System.Composition.Hosting.Core.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/23972", TargetFrameworkMonikers.NetFramework)]
         public void FindContextWithin_UnknownSharingBoundary_ThrowsCompositionFailedException()
         {
             using (CompositionHost host = CompositionHost.CreateCompositionHost(new ExportDescriptorProvider[0]))
@@ -179,7 +169,6 @@ namespace System.Composition.Hosting.Core.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/23972", TargetFrameworkMonikers.NetFramework)]
         public void ToString_NoParent_ReturnsExpected()
         {
             using (CompositionHost host = CompositionHost.CreateCompositionHost(new ExportDescriptorProvider[0]))

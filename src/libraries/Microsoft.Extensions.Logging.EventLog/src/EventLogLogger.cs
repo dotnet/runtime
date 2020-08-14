@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -79,14 +78,14 @@ namespace Microsoft.Extensions.Logging.EventLog
                 throw new ArgumentNullException(nameof(formatter));
             }
 
-            var message = formatter(state, exception);
+            string message = formatter(state, exception);
 
             if (string.IsNullOrEmpty(message))
             {
                 return;
             }
 
-            var builder = new StringBuilder()
+            StringBuilder builder = new StringBuilder()
                             .Append("Category: ")
                             .AppendLine(_name)
                             .Append("EventId: ")
@@ -97,7 +96,7 @@ namespace Microsoft.Extensions.Logging.EventLog
             {
                 if (scope is IEnumerable<KeyValuePair<string, object>> properties)
                 {
-                    foreach (var pair in properties)
+                    foreach (KeyValuePair<string, object> pair in properties)
                     {
                         sb.Append(pair.Key).Append(": ").AppendLine(pair.Value?.ToString());
                     }
@@ -129,7 +128,7 @@ namespace Microsoft.Extensions.Logging.EventLog
                 return;
             }
 
-            var startIndex = 0;
+            int startIndex = 0;
             string messageSegment = null;
             while (true)
             {

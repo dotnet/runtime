@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -138,6 +137,20 @@ enum gtCallTypes : BYTE
     CT_COUNT // fake entry (must be last)
 };
 
+#ifdef DEBUG
+/*****************************************************************************
+*
+*  TargetHandleTypes are used to determine the type of handle present inside GenTreeIntCon node.
+*  The values are such that they don't overlap with helper's or user function's handle.
+*/
+enum TargetHandleType : BYTE
+{
+    THT_Unknown                  = 2,
+    THT_GSCookieCheck            = 4,
+    THT_SetGSCookie              = 6,
+    THT_IntializeArrayIntrinsics = 8
+};
+#endif
 /*****************************************************************************/
 
 struct BasicBlock;
@@ -550,6 +563,9 @@ public:
 
     bool isIndirAddrMode();
 
+    // This returns true only for GT_IND and GT_STOREIND, and is used in contexts where a "true"
+    // indirection is expected (i.e. either a load to or a store from a single register).
+    // OperIsIndir() returns true also for indirection nodes such as GT_BLK, etc. as well as GT_NULLCHECK.
     bool isIndir() const;
 
     bool isContainedIntOrIImmed() const
@@ -617,11 +633,17 @@ public:
         assert(_gtRegNum == reg);
     }
 
+    void ClearRegNum()
+    {
+        _gtRegNum = REG_NA;
+        INDEBUG(gtRegTag = GT_REGTAG_NONE;)
+    }
+
     // Copy the _gtRegNum/gtRegTag fields
     void CopyReg(GenTree* from);
     bool gtHasReg() const;
 
-    int GetRegisterDstCount() const;
+    int GetRegisterDstCount(Compiler* compiler) const;
 
     regMaskTP gtGetRegMask() const;
 
@@ -766,7 +788,7 @@ public:
 //---------------------------------------------------------------------
 
 // NB: GTF_VAR_* and GTF_REG_* share the same namespace of flags.
-// These flags are also used by GT_LCL_FLD.
+// These flags are also used by GT_LCL_FLD, and the last-use (DEATH) flags are also used by GenTreeCopyOrReload.
 #define GTF_VAR_DEF             0x80000000 // GT_LCL_VAR -- this is a definition
 #define GTF_VAR_USEASG          0x40000000 // GT_LCL_VAR -- this is a partial definition, a use of the previous definition is implied
                                            // A partial definition usually occurs when a struct field is assigned to (s.f = ...) or
@@ -798,7 +820,6 @@ public:
 
 #define GTF_VAR_ARR_INDEX   0x00000020 // The variable is part of (the index portion of) an array index expression.
                                        // Shares a value with GTF_REVERSE_OPS, which is meaningless for local var.
-
 
                                                // For additional flags for GT_CALL node see GTF_CALL_M_*
 
@@ -906,6 +927,8 @@ public:
 
 #define GTF_OVERFLOW                0x10000000 // Supported for: GT_ADD, GT_SUB, GT_MUL and GT_CAST.
                                                // Requires an overflow check. Use gtOverflow(Ex)() to check this flag.
+
+#define GTF_DIV_BY_CNS_OPT          0x80000000 // GT_DIV -- Uses the division by constant optimization to compute this division
 
 #define GTF_ARR_BOUND_INBND         0x80000000 // GT_ARR_BOUNDS_CHECK -- have proved this check is always in-bounds
 
@@ -1466,6 +1489,9 @@ public:
         return OperMayOverflow(gtOper);
     }
 
+    // This returns true only for GT_IND and GT_STOREIND, and is used in contexts where a "true"
+    // indirection is expected (i.e. either a load to or a store from a single register).
+    // OperIsIndir() returns true also for indirection nodes such as GT_BLK, etc. as well as GT_NULLCHECK.
     static bool OperIsIndir(genTreeOps gtOper)
     {
         return gtOper == GT_IND || gtOper == GT_STOREIND || gtOper == GT_NULLCHECK || OperIsBlk(gtOper);
@@ -1708,7 +1734,7 @@ public:
     inline GenTree* gtEffectiveVal(bool commaOnly = false);
 
     // Tunnel through any GT_RET_EXPRs
-    inline GenTree* gtRetExprVal(unsigned __int64* pbbFlags = nullptr);
+    inline GenTree* gtRetExprVal(unsigned __int64* pbbFlags);
 
     // Return the child of this node if it is a GT_RELOAD or GT_COPY; otherwise simply return the node itself
     inline GenTree* gtSkipReloadOrCopy();
@@ -1733,6 +1759,16 @@ public:
 
     // Returns the GTF flag equivalent for the regIndex'th register of a multi-reg node.
     unsigned int GetRegSpillFlagByIdx(int regIndex) const;
+
+    // Last-use information for either GenTreeLclVar or GenTreeCopyOrReload nodes.
+private:
+    unsigned int GetLastUseBit(int regIndex);
+
+public:
+    bool IsLastUse(int regIndex);
+    bool HasLastUse();
+    void SetLastUse(int regIndex);
+    void ClearLastUse(int regIndex);
 
     // Returns true if it is a GT_COPY or GT_RELOAD node
     inline bool IsCopyOrReload() const;
@@ -2825,6 +2861,19 @@ struct GenTreeOp : public GenTreeUnOp
         assert(oper == GT_NOP || oper == GT_RETURN || oper == GT_RETFILT || OperIsBlk(oper));
     }
 
+    // returns true if we will use the division by constant optimization for this node.
+    bool UsesDivideByConstOptimized(Compiler* comp);
+
+    // checks if we will use the division by constant optimization this node
+    // then sets the flag GTF_DIV_BY_CNS_OPT and GTF_DONT_CSE on the constant
+    void CheckDivideByConstOptimized(Compiler* comp);
+
+    // True if this node is marked as using the division by constant optimization
+    bool MarkedDivideByConstOptimized() const
+    {
+        return (gtFlags & GTF_DIV_BY_CNS_OPT) != 0;
+    }
+
 #if DEBUGGABLE_GENTREE
     GenTreeOp() : GenTreeUnOp(), gtOp2(nullptr)
     {
@@ -2943,6 +2992,12 @@ struct GenTreeIntCon : public GenTreeIntConCommon
     // If this constant represents the offset of one or more fields, "gtFieldSeq" represents that
     // sequence of fields.
     FieldSeqNode* gtFieldSeq;
+
+#ifdef DEBUG
+    // If the value represents target address, holds the method handle to that target which is used
+    // to fetch target method name and display in the disassembled code.
+    size_t gtTargetHandle = 0;
+#endif
 
     GenTreeIntCon(var_types type, ssize_t value DEBUGARG(bool largeNode = false))
         : GenTreeIntConCommon(GT_CNS_INT, type DEBUGARG(largeNode))
@@ -3125,6 +3180,8 @@ public:
         _gtSsaNum = SsaConfig::RESERVED_SSA_NUM;
     }
 
+    uint16_t GetLclOffs() const;
+
     unsigned GetSsaNum() const
     {
         return _gtSsaNum;
@@ -3231,12 +3288,6 @@ struct GenTreeLclVar : public GenTreeLclVarCommon
 private:
     regNumberSmall     gtOtherReg[MAX_MULTIREG_COUNT - 1];
     MultiRegSpillFlags gtSpillFlags;
-    unsigned int GetLastUseBit(int regIndex)
-    {
-        assert(regIndex < 4);
-        static_assert_no_msg((1 << MULTIREG_LAST_USE_SHIFT) == GTF_VAR_MULTIREG_DEATH0);
-        return (1 << (MULTIREG_LAST_USE_SHIFT + regIndex));
-    }
 
 public:
     INDEBUG(IL_OFFSET gtLclILoffs;) // instr offset of ref (only for JIT dumps)
@@ -3275,26 +3326,6 @@ public:
         }
     }
 
-    bool IsLastUse(int regIndex)
-    {
-        return (gtFlags & GetLastUseBit(regIndex)) != 0;
-    }
-
-    bool HasLastUse()
-    {
-        return (gtFlags & (GTF_VAR_DEATH_MASK)) != 0;
-    }
-
-    void SetLastUse(int regIndex)
-    {
-        unsigned int bitToSet = gtFlags |= GetLastUseBit(regIndex);
-    }
-
-    void ClearLastUse(int regIndex)
-    {
-        gtFlags &= ~GetLastUseBit(regIndex);
-    }
-
     unsigned GetRegSpillFlagByIdx(unsigned idx) const
     {
         return GetMultiRegSpillFlagsByIdx(gtSpillFlags, idx);
@@ -3305,7 +3336,7 @@ public:
         gtSpillFlags = SetMultiRegSpillFlagsByIdx(gtSpillFlags, flags, idx);
     }
 
-    unsigned int GetFieldCount(Compiler* compiler);
+    unsigned int GetFieldCount(Compiler* compiler) const;
     var_types GetFieldTypeByIndex(Compiler* compiler, unsigned idx);
 
     //-------------------------------------------------------------------
@@ -4257,13 +4288,7 @@ struct GenTreeCall final : public GenTree
         {
             return true;
         }
-#elif defined(FEATURE_HFA) && defined(TARGET_ARM64)
-        // SIMD types are returned in vector regs on ARM64.
-        if (varTypeIsSIMD(gtType))
-        {
-            return false;
-        }
-#endif // FEATURE_HFA && TARGET_ARM64
+#endif
 
         if (!varTypeIsStruct(gtType) || HasRetBufArg())
         {
@@ -4704,6 +4729,7 @@ struct GenTreeQmark : public GenTreeOp
 struct GenTreeIntrinsic : public GenTreeOp
 {
     CorInfoIntrinsics     gtIntrinsicId;
+    NamedIntrinsic        gtIntrinsicName;
     CORINFO_METHOD_HANDLE gtMethodHandle; // Method handle of the method which is treated as an intrinsic.
 
 #ifdef FEATURE_READYTORUN_COMPILER
@@ -4711,15 +4737,31 @@ struct GenTreeIntrinsic : public GenTreeOp
     CORINFO_CONST_LOOKUP gtEntryPoint;
 #endif
 
-    GenTreeIntrinsic(var_types type, GenTree* op1, CorInfoIntrinsics intrinsicId, CORINFO_METHOD_HANDLE methodHandle)
-        : GenTreeOp(GT_INTRINSIC, type, op1, nullptr), gtIntrinsicId(intrinsicId), gtMethodHandle(methodHandle)
+    GenTreeIntrinsic(var_types             type,
+                     GenTree*              op1,
+                     CorInfoIntrinsics     intrinsicId,
+                     NamedIntrinsic        intrinsicName,
+                     CORINFO_METHOD_HANDLE methodHandle)
+        : GenTreeOp(GT_INTRINSIC, type, op1, nullptr)
+        , gtIntrinsicId(intrinsicId)
+        , gtIntrinsicName(intrinsicName)
+        , gtMethodHandle(methodHandle)
     {
+        assert(intrinsicId != CORINFO_INTRINSIC_Illegal || intrinsicName != NI_Illegal);
     }
 
-    GenTreeIntrinsic(
-        var_types type, GenTree* op1, GenTree* op2, CorInfoIntrinsics intrinsicId, CORINFO_METHOD_HANDLE methodHandle)
-        : GenTreeOp(GT_INTRINSIC, type, op1, op2), gtIntrinsicId(intrinsicId), gtMethodHandle(methodHandle)
+    GenTreeIntrinsic(var_types             type,
+                     GenTree*              op1,
+                     GenTree*              op2,
+                     CorInfoIntrinsics     intrinsicId,
+                     NamedIntrinsic        intrinsicName,
+                     CORINFO_METHOD_HANDLE methodHandle)
+        : GenTreeOp(GT_INTRINSIC, type, op1, op2)
+        , gtIntrinsicId(intrinsicId)
+        , gtIntrinsicName(intrinsicName)
+        , gtMethodHandle(methodHandle)
     {
+        assert(intrinsicId != CORINFO_INTRINSIC_Illegal || intrinsicName != NI_Illegal);
     }
 
 #if DEBUGGABLE_GENTREE
@@ -4735,8 +4777,8 @@ private:
     ClassLayout* m_layout;
 
     union {
-        var_types      gtOtherBaseType; // For AVX2 Gather* intrinsics
-        regNumberSmall gtOtherReg;      // For intrinsics that return 2 registers
+        var_types gtAuxiliaryType; // For intrinsics than need another type (e.g. Avx2.Gather* or SIMD (by element))
+        regNumberSmall gtOtherReg; // For intrinsics that return 2 registers
     };
 
 public:
@@ -4773,14 +4815,14 @@ public:
         assert(gtOtherReg == reg);
     }
 
-    var_types GetOtherBaseType() const
+    var_types GetAuxiliaryType() const
     {
-        return gtOtherBaseType;
+        return gtAuxiliaryType;
     }
 
-    void SetOtherBaseType(var_types type)
+    void SetAuxiliaryType(var_types type)
     {
-        gtOtherBaseType = type;
+        gtAuxiliaryType = type;
     }
 
     GenTreeJitIntrinsic(genTreeOps oper, var_types type, GenTree* op1, GenTree* op2, var_types baseType, unsigned size)
@@ -4823,7 +4865,7 @@ struct GenTreeSIMD : public GenTreeJitIntrinsic
         gtSIMDIntrinsicID = simdIntrinsicID;
     }
 
-    bool OperIsMemoryLoad() const; // Returns true for the SIMD Instrinsic instructions that have MemoryLoad semantics,
+    bool OperIsMemoryLoad() const; // Returns true for the SIMD Intrinsic instructions that have MemoryLoad semantics,
                                    // false otherwise
 
 #if DEBUGGABLE_GENTREE
@@ -4864,15 +4906,15 @@ struct GenTreeHWIntrinsic : public GenTreeJitIntrinsic
         }
     }
 
-    // Note that HW Instrinsic instructions are a sub class of GenTreeOp which only supports two operands
-    // However there are HW Instrinsic instructions that have 3 or even 4 operands and this is
+    // Note that HW Intrinsic instructions are a sub class of GenTreeOp which only supports two operands
+    // However there are HW Intrinsic instructions that have 3 or even 4 operands and this is
     // supported using a single op1 and using an ArgList for it:  gtNewArgList(op1, op2, op3)
 
-    bool OperIsMemoryLoad() const;  // Returns true for the HW Instrinsic instructions that have MemoryLoad semantics,
+    bool OperIsMemoryLoad() const;  // Returns true for the HW Intrinsic instructions that have MemoryLoad semantics,
                                     // false otherwise
-    bool OperIsMemoryStore() const; // Returns true for the HW Instrinsic instructions that have MemoryStore semantics,
+    bool OperIsMemoryStore() const; // Returns true for the HW Intrinsic instructions that have MemoryStore semantics,
                                     // false otherwise
-    bool OperIsMemoryLoadOrStore() const; // Returns true for the HW Instrinsic instructions that have MemoryLoad or
+    bool OperIsMemoryLoadOrStore() const; // Returns true for the HW Intrinsic instructions that have MemoryLoad or
                                           // MemoryStore semantics, false otherwise
 
 #if DEBUGGABLE_GENTREE
@@ -7060,23 +7102,16 @@ inline GenTree* GenTree::gtRetExprVal(unsigned __int64* pbbFlags)
     GenTree*         retExprVal = this;
     unsigned __int64 bbFlags    = 0;
 
-    for (;;)
+    assert(pbbFlags != nullptr);
+
+    for (; retExprVal->gtOper == GT_RET_EXPR; retExprVal = retExprVal->AsRetExpr()->gtInlineCandidate)
     {
-        if (retExprVal->gtOper == GT_RET_EXPR)
-        {
-            GenTreeRetExpr* retExp = retExprVal->AsRetExpr();
-            retExprVal             = retExp->gtInlineCandidate;
-            bbFlags                = retExp->bbFlags;
-        }
-        else
-        {
-            if (pbbFlags != nullptr)
-            {
-                *pbbFlags = bbFlags;
-            }
-            return retExprVal;
-        }
+        bbFlags = retExprVal->AsRetExpr()->bbFlags;
     }
+
+    *pbbFlags = bbFlags;
+
+    return retExprVal;
 }
 
 inline GenTree* GenTree::gtSkipReloadOrCopy()
@@ -7102,9 +7137,7 @@ inline bool GenTree::IsMultiRegCall() const
 {
     if (this->IsCall())
     {
-        // We cannot use AsCall() as it is not declared const
-        const GenTreeCall* call = reinterpret_cast<const GenTreeCall*>(this);
-        return call->HasMultiRegRetVal();
+        return AsCall()->HasMultiRegRetVal();
     }
 
     return false;
@@ -7414,6 +7447,86 @@ inline unsigned int GenTree::GetRegSpillFlagByIdx(int regIndex) const
 
     assert(!"Invalid node type for GetRegSpillFlagByIdx");
     return TYP_UNDEF;
+}
+
+//-----------------------------------------------------------------------------------
+// GetLastUseBit: Get the last use bit for regIndex
+//
+// Arguments:
+//     regIndex - the register index
+//
+// Return Value:
+//     The bit to set, clear or query for the last-use of the regIndex'th value.
+//
+// Notes:
+//     This must be a GenTreeLclVar or GenTreeCopyOrReload node.
+//
+inline unsigned int GenTree::GetLastUseBit(int regIndex)
+{
+    assert(regIndex < 4);
+    assert(OperIs(GT_LCL_VAR, GT_STORE_LCL_VAR, GT_COPY, GT_RELOAD));
+    static_assert_no_msg((1 << MULTIREG_LAST_USE_SHIFT) == GTF_VAR_MULTIREG_DEATH0);
+    return (1 << (MULTIREG_LAST_USE_SHIFT + regIndex));
+}
+
+//-----------------------------------------------------------------------------------
+// IsLastUse: Determine whether this node is a last use of the regIndex'th value
+//
+// Arguments:
+//     regIndex - the register index
+//
+// Return Value:
+//     true iff this is a last use.
+//
+// Notes:
+//     This must be a GenTreeLclVar or GenTreeCopyOrReload node.
+//
+inline bool GenTree::IsLastUse(int regIndex)
+{
+    assert(OperIs(GT_LCL_VAR, GT_STORE_LCL_VAR, GT_COPY, GT_RELOAD));
+    return (gtFlags & GetLastUseBit(regIndex)) != 0;
+}
+
+//-----------------------------------------------------------------------------------
+// IsLastUse: Determine whether this node is a last use of any value
+//
+// Return Value:
+//     true iff this has any last uses (i.e. at any index).
+//
+// Notes:
+//     This must be a GenTreeLclVar or GenTreeCopyOrReload node.
+//
+inline bool GenTree::HasLastUse()
+{
+    return (gtFlags & (GTF_VAR_DEATH_MASK)) != 0;
+}
+
+//-----------------------------------------------------------------------------------
+// SetLastUse: Set the last use bit for the given index
+//
+// Arguments:
+//     regIndex - the register index
+//
+// Notes:
+//     This must be a GenTreeLclVar or GenTreeCopyOrReload node.
+//
+inline void GenTree::SetLastUse(int regIndex)
+{
+    gtFlags |= GetLastUseBit(regIndex);
+}
+
+//-----------------------------------------------------------------------------------
+// ClearLastUse: Clear the last use bit for the given index
+//
+// Arguments:
+//     regIndex - the register index
+//
+// Notes:
+//     This must be a GenTreeLclVar or GenTreeCopyOrReload node.
+//
+inline void GenTree::ClearLastUse(int regIndex)
+{
+    gtFlags &= ~GetLastUseBit(regIndex);
 }
 
 //-------------------------------------------------------------------------

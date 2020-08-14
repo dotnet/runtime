@@ -23,7 +23,6 @@ pr:
     - eng/pipelines/*.*
     - CODE-OF-CONDUCT.md
     - CONTRIBUTING.md
-    - LICENSE.TXT
     - PATENTS.TXT
     - README.md
     - SECURITY.md

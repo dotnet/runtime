@@ -1,12 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data.Common;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Data
 {
@@ -20,15 +20,15 @@ namespace System.Data
         private readonly DataTable _table;
         private readonly ArrayList _list = new ArrayList();
         private int _defaultNameIndex = 1;
-        private DataColumn[] _delayedAddRangeColumns;
+        private DataColumn?[]? _delayedAddRangeColumns;
 
-        private readonly Dictionary<string, DataColumn> _columnFromName;     // Links names to columns
+        private readonly Dictionary<string, DataColumn?> _columnFromName;     // Links names to columns
 
         private bool _fInClear;
 
         private DataColumn[] _columnsImplementingIChangeTracking = Array.Empty<DataColumn>();
-        private int _nColumnsImplementingIChangeTracking = 0;
-        private int _nColumnsImplementingIRevertibleChangeTracking = 0;
+        private int _nColumnsImplementingIChangeTracking;
+        private int _nColumnsImplementingIRevertibleChangeTracking;
 
         /// <summary>
         /// DataColumnCollection constructor.  Used only by DataTable.
@@ -36,7 +36,7 @@ namespace System.Data
         internal DataColumnCollection(DataTable table)
         {
             _table = table;
-            _columnFromName = new Dictionary<string, DataColumn>();
+            _columnFromName = new Dictionary<string, DataColumn?>();
         }
 
         /// <summary>
@@ -61,7 +61,7 @@ namespace System.Data
                 try
                 {
                     // Perf: use the readonly _list field directly and let ArrayList check the range
-                    return (DataColumn)_list[index];
+                    return (DataColumn)_list[index]!;
                 }
                 catch (ArgumentOutOfRangeException)
                 {
@@ -73,7 +73,7 @@ namespace System.Data
         /// <summary>
         /// Gets the <see cref='System.Data.DataColumn'/> from the collection with the specified name.
         /// </summary>
-        public DataColumn this[string name]
+        public DataColumn? this[string name]
         {
             get
             {
@@ -82,14 +82,14 @@ namespace System.Data
                     throw ExceptionBuilder.ArgumentNull(nameof(name));
                 }
 
-                DataColumn column;
+                DataColumn? column;
                 if ((!_columnFromName.TryGetValue(name, out column)) || (column == null))
                 {
                     // Case-Insensitive compares
                     int index = IndexOfCaseInsensitive(name);
                     if (0 <= index)
                     {
-                        column = (DataColumn)_list[index];
+                        column = (DataColumn)_list[index]!;
                     }
                     else if (-2 == index)
                     {
@@ -101,11 +101,11 @@ namespace System.Data
             }
         }
 
-        internal DataColumn this[string name, string ns]
+        internal DataColumn? this[string name, string ns]
         {
             get
             {
-                DataColumn column;
+                DataColumn? column;
                 if ((_columnFromName.TryGetValue(name, out column)) && (column != null) && (column.Namespace == ns))
                 {
                     return column;
@@ -209,7 +209,7 @@ namespace System.Data
         /// Creates and adds a <see cref='System.Data.DataColumn'/>
         /// with the specified name, type, and compute expression to the columns collection.
         /// </summary>
-        public DataColumn Add(string columnName, Type type, string expression)
+        public DataColumn Add(string? columnName, Type type, string expression)
         {
             var column = new DataColumn(columnName, type, expression);
             Add(column);
@@ -221,7 +221,7 @@ namespace System.Data
         /// with the
         /// specified name and type to the columns collection.
         /// </summary>
-        public DataColumn Add(string columnName, Type type)
+        public DataColumn Add(string? columnName, Type type)
         {
             var column = new DataColumn(columnName, type);
             Add(column);
@@ -232,7 +232,7 @@ namespace System.Data
         /// Creates and adds a <see cref='System.Data.DataColumn'/>
         /// with the specified name to the columns collection.
         /// </summary>
-        public DataColumn Add(string columnName)
+        public DataColumn Add(string? columnName)
         {
             var column = new DataColumn(columnName);
             Add(column);
@@ -253,10 +253,10 @@ namespace System.Data
         /// <summary>
         /// Occurs when the columns collection changes, either by adding or removing a column.
         /// </summary>
-        public event CollectionChangeEventHandler CollectionChanged;
+        public event CollectionChangeEventHandler? CollectionChanged;
 
-        internal event CollectionChangeEventHandler CollectionChanging;
-        internal event CollectionChangeEventHandler ColumnPropertyChanged;
+        internal event CollectionChangeEventHandler? CollectionChanging;
+        internal event CollectionChangeEventHandler? ColumnPropertyChanged;
 
         /// <summary>
         ///  Adds the column to the columns array.
@@ -282,7 +282,7 @@ namespace System.Data
             int count = _list.Count;
             for (int i = 0; i < count; i++)
             {
-                ((DataColumn)_list[i]).SetOrdinalInternal(i);
+                ((DataColumn)_list[i]!).SetOrdinalInternal(i);
             }
 
             if (column.ImplementsIChangeTracking)
@@ -313,7 +313,7 @@ namespace System.Data
         /// A DuplicateNameException is thrown if this collection already has a column with the same
         /// name (case insensitive).
         /// </summary>
-        private void BaseAdd(DataColumn column)
+        private void BaseAdd([NotNull] DataColumn? column)
         {
             if (column == null)
             {
@@ -339,7 +339,7 @@ namespace System.Data
                 column.SetTable(_table);
                 if (!_table.fInitInProgress && column.Computed)
                 {
-                    if (column.DataExpression.DependsOn(column))
+                    if (column.DataExpression!.DependsOn(column))
                     {
                         throw ExceptionBuilder.ExpressionCircular();
                     }
@@ -444,9 +444,9 @@ namespace System.Data
         /// <summary>
         /// Checks if a given column can be removed from the collection.
         /// </summary>
-        public bool CanRemove(DataColumn column) => CanRemove(column, false);
+        public bool CanRemove(DataColumn? column) => CanRemove(column, false);
 
-        internal bool CanRemove(DataColumn column, bool fThrowException)
+        internal bool CanRemove(DataColumn? column, bool fThrowException)
         {
             if (column == null)
             {
@@ -516,7 +516,7 @@ namespace System.Data
                     if (!fThrowException)
                         return false;
                     else
-                        throw ExceptionBuilder.CannotRemoveConstraint(_table.Constraints[i].ConstraintName, _table.Constraints[i].Table.TableName);
+                        throw ExceptionBuilder.CannotRemoveConstraint(_table.Constraints[i].ConstraintName, _table.Constraints[i].Table!.TableName);
             }
 
             if (_table.DataSet != null)
@@ -528,7 +528,7 @@ namespace System.Data
                         if (!fThrowException)
                             return false;
                         else
-                            throw ExceptionBuilder.CannotRemoveConstraint(constraint.ConstraintName, constraint.Table.TableName);
+                            throw ExceptionBuilder.CannotRemoveConstraint(constraint.ConstraintName, constraint.Table!.TableName);
                 }
             }
 
@@ -548,7 +548,7 @@ namespace System.Data
                     }
 
                     Debug.Assert(col.Computed, "invalid (non an expression) column in the expression dependent columns");
-                    DataExpression expr = col.DataExpression;
+                    DataExpression? expr = col.DataExpression;
                     if ((expr != null) && (expr.DependsOn(column)))
                     {
                         if (!fThrowException)
@@ -604,14 +604,14 @@ namespace System.Data
             {
                 // this will smartly add and remove the appropriate tables.
                 _fInClear = true;
-                BaseGroupSwitch(columns, oldLength, null, 0);
+                BaseGroupSwitch(columns, oldLength, Array.Empty<DataColumn>(), 0);
                 _fInClear = false;
             }
             catch (Exception e) when (ADP.IsCatchableOrSecurityExceptionType(e))
             {
                 // something messed up: restore to old values and throw
                 _fInClear = false;
-                BaseGroupSwitch(null, 0, columns, oldLength);
+                BaseGroupSwitch(Array.Empty<DataColumn>(), 0, columns, oldLength);
                 _list.Clear();
                 for (int i = 0; i < oldLength; i++)
                 {
@@ -630,7 +630,7 @@ namespace System.Data
         /// </summary>
         public bool Contains(string name)
         {
-            DataColumn column;
+            DataColumn? column;
             if ((_columnFromName.TryGetValue(name, out column)) && (column != null))
             {
                 return true;
@@ -641,7 +641,7 @@ namespace System.Data
 
         internal bool Contains(string name, bool caseSensitive)
         {
-            DataColumn column;
+            DataColumn? column;
             if ((_columnFromName.TryGetValue(name, out column)) && (column != null))
             {
                 return true;
@@ -668,19 +668,19 @@ namespace System.Data
 
             for (int i = 0; i < _list.Count; ++i)
             {
-                array[index + i] = (DataColumn)_list[i];
+                array[index + i] = (DataColumn)_list[i]!;
             }
         }
 
         /// <summary>
         /// Returns the index of a specified <see cref='System.Data.DataColumn'/>.
         /// </summary>
-        public int IndexOf(DataColumn column)
+        public int IndexOf(DataColumn? column)
         {
             int columnCount = _list.Count;
             for (int i = 0; i < columnCount; ++i)
             {
-                if (column == (DataColumn)_list[i])
+                if (column == (DataColumn)_list[i]!)
                 {
                     return i;
                 }
@@ -691,12 +691,12 @@ namespace System.Data
         /// <summary>
         /// Returns the index of a column specified by name.
         /// </summary>
-        public int IndexOf(string columnName)
+        public int IndexOf(string? columnName)
         {
             if ((null != columnName) && (0 < columnName.Length))
             {
                 int count = Count;
-                DataColumn column;
+                DataColumn? column;
                 if ((_columnFromName.TryGetValue(columnName, out column)) && (column != null))
                 {
                     for (int j = 0; j < count; j++)
@@ -720,10 +720,10 @@ namespace System.Data
         {
             int hashcode = _table.GetSpecialHashCode(name);
             int cachedI = -1;
-            DataColumn column = null;
+            DataColumn? column = null;
             for (int i = 0; i < Count; i++)
             {
-                column = (DataColumn)_list[i];
+                column = (DataColumn)_list[i]!;
                 if ((hashcode == 0 || column._hashCode == 0 || column._hashCode == hashcode) &&
                    NamesEqual(column.ColumnName, name, false, _table.Locale) != 0)
                 {
@@ -744,7 +744,7 @@ namespace System.Data
         {
             if (_delayedAddRangeColumns != null)
             {
-                foreach (DataColumn column in _delayedAddRangeColumns)
+                foreach (DataColumn? column in _delayedAddRangeColumns)
                 {
                     if (column != null)
                     {
@@ -752,7 +752,7 @@ namespace System.Data
                     }
                 }
 
-                foreach (DataColumn column in _delayedAddRangeColumns)
+                foreach (DataColumn? column in _delayedAddRangeColumns)
                 {
                     if (column != null)
                     {
@@ -788,7 +788,7 @@ namespace System.Data
             int count = _list.Count;
             for (int i = 0; i < count; i++)
             {
-                ((DataColumn)_list[i]).SetOrdinalInternal(i);
+                ((DataColumn)_list[i]!).SetOrdinalInternal(i);
             }
 
             CheckIChangeTracking(column);
@@ -822,7 +822,7 @@ namespace System.Data
         /// if the name is equivalent to the next default name to hand out, we increment our defaultNameIndex.
         /// NOTE: To add a child table, pass column as null
         /// </summary>
-        internal void RegisterColumnName(string name, DataColumn column)
+        internal void RegisterColumnName(string name, DataColumn? column)
         {
             Debug.Assert(name != null);
 
@@ -903,7 +903,7 @@ namespace System.Data
         /// </summary>
         public void Remove(string name)
         {
-            DataColumn dc = this[name];
+            DataColumn? dc = this[name];
             if (dc == null)
             {
                 throw ExceptionBuilder.ColumnNotInTheTable(name, _table.TableName);

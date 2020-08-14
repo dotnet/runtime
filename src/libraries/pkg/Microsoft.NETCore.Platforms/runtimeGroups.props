@@ -15,7 +15,7 @@
 
     <RuntimeGroup Include="alpine">
       <Parent>linux-musl</Parent>
-      <Architectures>x64</Architectures>
+      <Architectures>x64;arm64</Architectures>
       <Versions>3.6;3.7;3.8;3.9;3.10;3.11;3.12</Versions>
     </RuntimeGroup>
 
@@ -124,10 +124,44 @@
       <Versions>10.10;10.11;10.12;10.13;10.14;10.15</Versions>
     </RuntimeGroup>
 
+    <RuntimeGroup Include="osx">
+      <Parent>unix</Parent>
+      <Architectures>x64;arm64</Architectures>
+      <Versions>11;11.0</Versions>
+    </RuntimeGroup>
+
     <RuntimeGroup Include="freebsd">
       <Parent>unix</Parent>
       <Architectures>x64</Architectures>
       <Versions>11;12;13</Versions>
+    </RuntimeGroup>
+
+    <RuntimeGroup Include="solaris">
+      <Parent>unix</Parent>
+      <Architectures>x64</Architectures>
+      <Versions>11</Versions>
+    </RuntimeGroup>
+
+    <RuntimeGroup Include="illumos">
+      <Parent>unix</Parent>
+      <Architectures>x64</Architectures>
+    </RuntimeGroup>
+
+    <RuntimeGroup Include="omnios">
+      <Parent>illumos</Parent>
+      <Architectures>x64</Architectures>
+      <Versions>15</Versions>
+    </RuntimeGroup>
+
+    <RuntimeGroup Include="openindiana">
+      <Parent>illumos</Parent>
+      <Architectures>x64</Architectures>
+    </RuntimeGroup>
+
+    <RuntimeGroup Include="smartos">
+      <Parent>illumos</Parent>
+      <Architectures>x64</Architectures>
+      <Versions>2020;2021</Versions>
     </RuntimeGroup>
 
     <!-- rhel 6 is independent -->
@@ -161,7 +195,7 @@
 
     <RuntimeGroup Include="tizen">
       <Parent>linux</Parent>
-      <Architectures>x86;armel</Architectures>
+      <Architectures>x86;armel;arm64</Architectures>
       <Versions>4.0.0;5.0.0;5.5.0;6.0.0</Versions>
     </RuntimeGroup>
 

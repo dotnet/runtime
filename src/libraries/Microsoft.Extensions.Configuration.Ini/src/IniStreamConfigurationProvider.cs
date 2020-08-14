@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -29,12 +28,12 @@ namespace Microsoft.Extensions.Configuration.Ini
             var data = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
             using (var reader = new StreamReader(stream))
             {
-                var sectionPrefix = string.Empty;
+                string sectionPrefix = string.Empty;
 
                 while (reader.Peek() != -1)
                 {
-                    var rawLine = reader.ReadLine();
-                    var line = rawLine.Trim();
+                    string rawLine = reader.ReadLine();
+                    string line = rawLine.Trim();
 
                     // Ignore blank lines
                     if (string.IsNullOrWhiteSpace(line))

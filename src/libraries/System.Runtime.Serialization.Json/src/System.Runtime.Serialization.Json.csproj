@@ -1,13 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <AssemblyName>System.Runtime.Serialization.Json</AssemblyName>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
     <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="$(LibrariesProjectRoot)System.Private.DataContractSerialization\src\System.Private.DataContractSerialization.csproj" />
-  </ItemGroup>
-  <ItemGroup>
     <Reference Include="System.Runtime" />
   </ItemGroup>
 </Project>

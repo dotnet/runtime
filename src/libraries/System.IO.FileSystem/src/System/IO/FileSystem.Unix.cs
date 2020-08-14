@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -234,7 +233,7 @@ namespace System.IO
                     case Interop.Error.EROFS:
                         // EROFS means the file system is read-only
                         // Need to manually check file existence
-                        // github.com/dotnet/corefx/issues/21273
+                        // https://github.com/dotnet/runtime/issues/22382
                         Interop.ErrorInfo fileExistsError;
 
                         // Input allows trailing separators in order to match Windows behavior
@@ -381,6 +380,19 @@ namespace System.IO
                 // Throwing IOException to match Windows behavior.
                 throw new IOException(SR.Format(SR.IO_AlreadyExists_Name, destFullPath));
             }
+
+#if TARGET_BROWSER
+            // renaming a file doesn't return correct error code on emscripten if one of the parent paths does not exist,
+            // manually workaround it for now (https://github.com/dotnet/runtime/issues/40305)
+            if (!Directory.Exists(Path.GetDirectoryName(sourceFullPath)))
+            {
+                throw new DirectoryNotFoundException(SR.Format(SR.IO_PathNotFound_Path, sourceFullPath));
+            }
+            if (!Directory.Exists(Path.GetDirectoryName(destFullPath)))
+            {
+                throw new DirectoryNotFoundException(SR.Format(SR.IO_PathNotFound_Path, destFullPath));
+            }
+#endif
 
             if (Interop.Sys.Rename(sourceFullPath, destFullPath) < 0)
             {

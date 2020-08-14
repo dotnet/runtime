@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.IO;
@@ -52,7 +51,7 @@ namespace System.Net.Http.Json
             => new JsonContent(inputValue, inputType, mediaType, options);
 
         protected override Task SerializeToStreamAsync(Stream stream, TransportContext? context)
-            => SerializeToStreamAsyncCore(stream, CancellationToken.None);
+            => SerializeToStreamAsyncCore(stream, async: true, CancellationToken.None);
 
         protected override bool TryComputeLength(out long length)
         {
@@ -60,7 +59,7 @@ namespace System.Net.Http.Json
             return false;
         }
 
-        private async Task SerializeToStreamAsyncCore(Stream targetStream, CancellationToken cancellationToken)
+        private async Task SerializeToStreamAsyncCore(Stream targetStream, bool async, CancellationToken cancellationToken)
         {
             Encoding? targetEncoding = GetEncoding(Headers.ContentType?.CharSet);
 
@@ -71,15 +70,34 @@ namespace System.Net.Http.Json
                 Stream transcodingStream = Encoding.CreateTranscodingStream(targetStream, targetEncoding, Encoding.UTF8, leaveOpen: true);
                 try
                 {
-                    await JsonSerializer.SerializeAsync(transcodingStream, Value, ObjectType, _jsonSerializerOptions, cancellationToken).ConfigureAwait(false);
+                    if (async)
+                    {
+                        await JsonSerializer.SerializeAsync(transcodingStream, Value, ObjectType, _jsonSerializerOptions, cancellationToken).ConfigureAwait(false);
+                    }
+                    else
+                    {
+                        // Have to use Utf8JsonWriter because JsonSerializer doesn't support sync serialization into stream directly.
+                        // ToDo: Remove Utf8JsonWriter usage after https://github.com/dotnet/runtime/issues/1574
+                        using var writer = new Utf8JsonWriter(transcodingStream);
+                        JsonSerializer.Serialize(writer, Value, ObjectType, _jsonSerializerOptions);
+                    }
                 }
                 finally
                 {
-                    // DisposeAsync will flush any partial write buffers. In practice our partial write
+                    // Dispose/DisposeAsync will flush any partial write buffers. In practice our partial write
                     // buffers should be empty as we expect JsonSerializer to emit only well-formed UTF-8 data.
-                    await transcodingStream.DisposeAsync().ConfigureAwait(false);
+                    if (async)
+                    {
+                        await transcodingStream.DisposeAsync().ConfigureAwait(false);
+                    }
+                    else
+                    {
+                        transcodingStream.Dispose();
+                    }
                 }
 #else
+                Debug.Assert(async);
+
                 using (TranscodingWriteStream transcodingStream = new TranscodingWriteStream(targetStream, targetEncoding))
                 {
                     await JsonSerializer.SerializeAsync(transcodingStream, Value, ObjectType, _jsonSerializerOptions, cancellationToken).ConfigureAwait(false);
@@ -92,7 +110,21 @@ namespace System.Net.Http.Json
             }
             else
             {
-                await JsonSerializer.SerializeAsync(targetStream, Value, ObjectType, _jsonSerializerOptions, cancellationToken).ConfigureAwait(false);
+                if (async)
+                {
+                    await JsonSerializer.SerializeAsync(targetStream, Value, ObjectType, _jsonSerializerOptions, cancellationToken).ConfigureAwait(false);
+                }
+                else
+                {
+#if NETCOREAPP
+                    // Have to use Utf8JsonWriter because JsonSerializer doesn't support sync serialization into stream directly.
+                    // ToDo: Remove Utf8JsonWriter usage after https://github.com/dotnet/runtime/issues/1574
+                    using var writer = new Utf8JsonWriter(targetStream);
+                    JsonSerializer.Serialize(writer, Value, ObjectType, _jsonSerializerOptions);
+#else
+                    Debug.Fail("Synchronous serialization is only supported since .NET 5.0");
+#endif
+                }
             }
         }
 

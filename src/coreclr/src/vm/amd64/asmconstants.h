@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //
 // See makefile.inc.  During the build, this file is converted into a .inc
 // file for inclusion by .asm files.  The #defines are converted into EQU's.
@@ -204,7 +203,7 @@ ASMCONSTANTS_C_ASSERT(METHODTABLE_EQUIVALENCE_FLAGS
 #define               METHODTABLE_EQUIVALENCE_FLAGS 0x0
 #endif
 
-#define               METHODTABLE_NONTRIVIALINTERFACECAST_FLAGS (0x00080000 + 0x40000000 + 0x00400000)
+#define               METHODTABLE_NONTRIVIALINTERFACECAST_FLAGS (0x00080000 + 0x40000000 + 0x00400000 + 0x00200000)
 ASMCONSTANTS_C_ASSERT(METHODTABLE_NONTRIVIALINTERFACECAST_FLAGS
                     == MethodTable::enum_flag_NonTrivialInterfaceCast);
 
@@ -487,7 +486,7 @@ ASMCONSTANTS_C_ASSERT(OFFSET__TEB__ThreadLocalStoragePointer == offsetof(TEB, Th
 
 #define                     DELEGATE_FIELD_OFFSET__METHOD_AUX           0x20
 ASMCONSTANTS_RUNTIME_ASSERT(DELEGATE_FIELD_OFFSET__METHOD_AUX == Object::GetOffsetOfFirstField() +
-        MscorlibBinder::GetFieldOffset(FIELD__DELEGATE__METHOD_PTR_AUX));
+        CoreLibBinder::GetFieldOffset(FIELD__DELEGATE__METHOD_PTR_AUX));
 
 
 #define ASM_LARGE_OBJECT_SIZE 85000

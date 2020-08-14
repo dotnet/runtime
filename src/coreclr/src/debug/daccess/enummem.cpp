@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //*****************************************************************************
 // File: enummem.cpp
 //
@@ -20,10 +19,6 @@
 #include "daccess.h"
 #include "binder.h"
 #include "win32threadpool.h"
-
-#ifdef FEATURE_APPX
-#include "appxutil.h"
-#endif // FEATURE_APPX
 
 extern HRESULT GetDacTableAddress(ICorDebugDataTarget* dataTarget, ULONG64 baseAddress, PULONG64 dacTableAddress);
 
@@ -281,7 +276,7 @@ HRESULT ClrDataAccess::EnumMemCLRStatic(IN CLRDataEnumMemoryFlags flags)
     }
     CATCH_ALL_EXCEPT_RETHROW_COR_E_OPERATIONCANCELLED( g_pEEDbgInterfaceImpl.EnumMem(); )
     CATCH_ALL_EXCEPT_RETHROW_COR_E_OPERATIONCANCELLED( g_CORDebuggerControlFlags.EnumMem(); )
-    CATCH_ALL_EXCEPT_RETHROW_COR_E_OPERATIONCANCELLED( g_Mscorlib.EnumMem(); )
+    CATCH_ALL_EXCEPT_RETHROW_COR_E_OPERATIONCANCELLED( g_CoreLib.EnumMem(); )
     CATCH_ALL_EXCEPT_RETHROW_COR_E_OPERATIONCANCELLED( g_pPredefinedArrayTypes[ELEMENT_TYPE_OBJECT].EnumMemoryRegions(flags); )
     CATCH_ALL_EXCEPT_RETHROW_COR_E_OPERATIONCANCELLED( StubManager::EnumMemoryRegions(flags); )
     CATCH_ALL_EXCEPT_RETHROW_COR_E_OPERATIONCANCELLED( g_pFinalizerThread.EnumMem(); )
@@ -487,13 +482,9 @@ HRESULT ClrDataAccess::DumpManagedExcepObject(CLRDataEnumMemoryFlags flags, OBJE
     // dump the exception's stack trace field
     DumpManagedStackTraceStringObject(flags, exceptRef->GetStackTraceString());
 
-    // dump the exception's remote stack trace field only if we are not generating a triage dump, or
-    // if we are generating a triage dump of an AppX process, or the exception type does not override
+    // dump the exception's remote stack trace field only if we are not generating a triage dump, or the exception type does not override
     // the StackTrace getter (see Exception.InternalPreserveStackTrace to understand why)
     if (flags != CLRDATA_ENUM_MEM_TRIAGE ||
-#ifdef FEATURE_APPX
-        AppX::DacIsAppXProcess() ||
-#endif // FEATURE_APPX
         !ExceptionTypeOverridesStackTraceGetter(exceptRef->GetGCSafeMethodTable()))
     {
         DumpManagedStackTraceStringObject(flags, exceptRef->GetRemoteStackTraceString());

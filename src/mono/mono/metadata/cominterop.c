@@ -150,6 +150,7 @@ static GENERATE_GET_CLASS_WITH_CACHE (interface_type_attribute, "System.Runtime.
 static GENERATE_GET_CLASS_WITH_CACHE (guid_attribute, "System.Runtime.InteropServices", "GuidAttribute")
 static GENERATE_GET_CLASS_WITH_CACHE (com_visible_attribute, "System.Runtime.InteropServices", "ComVisibleAttribute")
 static GENERATE_GET_CLASS_WITH_CACHE (com_default_interface_attribute, "System.Runtime.InteropServices", "ComDefaultInterfaceAttribute")
+static GENERATE_GET_CLASS_WITH_CACHE (class_interface_attribute, "System.Runtime.InteropServices", "ClassInterfaceAttribute")
 
 /* Upon creation of a CCW, only allocate a weak handle and set the
  * reference count to 0. If the unmanaged client code decides to addref and
@@ -546,6 +547,27 @@ cominterop_com_visible (MonoClass* klass)
 	}
 	return visible;
 
+}
+
+static gboolean
+cominterop_method_com_visible (MonoMethod *method)
+{
+	ERROR_DECL (error);
+	MonoCustomAttrInfo *cinfo;
+	MonoBoolean visible = 1;
+
+	cinfo = mono_custom_attrs_from_method_checked (method, error);
+	mono_error_assert_ok (error);
+	if (cinfo) {
+		MonoReflectionComVisibleAttribute *attr = (MonoReflectionComVisibleAttribute*)mono_custom_attrs_get_attr_checked (cinfo, mono_class_get_com_visible_attribute_class (), error);
+		mono_error_assert_ok (error); /*FIXME proper error handling*/
+
+		if (attr)
+			visible = attr->visible;
+		if (!cinfo->cached)
+			mono_custom_attrs_free (cinfo);
+	}
+	return visible;
 }
 
 static void
@@ -2078,6 +2100,140 @@ cominterop_get_ccw_default_mspec (const MonoType *param_type)
 	return result;
 }
 
+static MonoClass*
+cominterop_get_default_iface (MonoClass *klass)
+{
+	if (mono_class_is_interface (klass))
+		return klass;
+
+	ERROR_DECL (error);
+	MonoCustomAttrInfo *cinfo = mono_custom_attrs_from_class_checked (klass, error);
+	mono_error_assert_ok (error);
+
+	if (!cinfo)
+		return mono_class_get_idispatch_class ();
+
+	MonoClassInterfaceAttribute *class_attr = (MonoClassInterfaceAttribute *)mono_custom_attrs_get_attr_checked (cinfo, mono_class_get_class_interface_attribute_class (), error);
+	MonoClass *ret;
+
+	if (class_attr)
+	{
+		if (class_attr->intType == 0) {
+			ret = mono_defaults.object_class;
+			for (guint16 i = 0; i < m_class_get_interface_count (klass); i++) {
+				MonoClass *iface = m_class_get_interfaces (klass) [i];
+				if (cominterop_com_visible (iface)) {
+					ret = iface;
+					break;
+				}
+			}
+		}
+		else if (class_attr->intType == 1)
+			ret = mono_class_get_idispatch_class ();
+		else
+			ret = klass;
+	} else
+		ret = mono_class_get_idispatch_class ();
+
+	if (!cinfo->cached)
+		mono_custom_attrs_free (cinfo);
+	return ret;
+}
+
+static gboolean
+cominterop_class_method_is_visible (MonoMethod *method)
+{
+	guint16 flags = method->flags;
+
+	if ((flags & METHOD_ATTRIBUTE_MEMBER_ACCESS_MASK) != METHOD_ATTRIBUTE_PUBLIC)
+		return FALSE;
+
+	if (flags & METHOD_ATTRIBUTE_STATIC)
+		return FALSE;
+
+	if (flags & METHOD_ATTRIBUTE_RT_SPECIAL_NAME)
+		return FALSE;
+
+	if (!cominterop_method_com_visible (method))
+		return FALSE;
+
+	/* if the method is an override, ignore it and use the original definition */
+	if ((flags & METHOD_ATTRIBUTE_VIRTUAL) && !(flags & METHOD_ATTRIBUTE_NEW_SLOT))
+		return FALSE;
+
+	return TRUE;
+}
+
+static gpointer
+cominterop_get_ccw_method (MonoClass *iface, MonoMethod *method, MonoError *error)
+{
+	int param_index = 0;
+	MonoMethodBuilder *mb;
+	MonoMarshalSpec ** mspecs;
+	MonoMethod *wrapper_method, *adjust_method;
+	MonoMethodSignature* sig_adjusted;
+	MonoMethodSignature* sig = mono_method_signature_internal (method);
+	gboolean const preserve_sig = (method->iflags & METHOD_IMPL_ATTRIBUTE_PRESERVE_SIG) != 0;
+	EmitMarshalContext m;
+
+	mb = mono_mb_new (iface, method->name, MONO_WRAPPER_NATIVE_TO_MANAGED);
+	adjust_method = cominterop_get_managed_wrapper_adjusted (method);
+	sig_adjusted = mono_method_signature_internal (adjust_method);
+
+	mspecs = g_new (MonoMarshalSpec*, sig_adjusted->param_count + 1);
+	mono_method_get_marshal_info (method, mspecs);
+
+	/* move managed args up one */
+	for (param_index = sig->param_count; param_index >= 1; param_index--) {
+		int mspec_index = param_index+1;
+		mspecs [mspec_index] = mspecs [param_index];
+
+		if (mspecs[mspec_index] == NULL) {
+			mspecs[mspec_index] = cominterop_get_ccw_default_mspec (sig_adjusted->params[param_index]);
+		} else {
+			/* increase SizeParamIndex since we've added a param */
+			if (sig_adjusted->params[param_index]->type == MONO_TYPE_ARRAY ||
+			    sig_adjusted->params[param_index]->type == MONO_TYPE_SZARRAY)
+				if (mspecs[mspec_index]->data.array_data.param_num != -1)
+					mspecs[mspec_index]->data.array_data.param_num++;
+		}
+	}
+
+	/* first arg is IntPtr for interface */
+	mspecs [1] = NULL;
+
+	/* move return spec to last param */
+	if (!preserve_sig && !MONO_TYPE_IS_VOID (sig->ret)) {
+		if (mspecs [0] == NULL)
+			mspecs[0] = cominterop_get_ccw_default_mspec (sig_adjusted->params[sig_adjusted->param_count-1]);
+
+		mspecs [sig_adjusted->param_count] = mspecs [0];
+		mspecs [0] = NULL;
+	}
+
+#ifndef DISABLE_JIT
+	/* skip visiblity since we call internal methods */
+	mb->skip_visibility = TRUE;
+#endif
+
+	cominterop_setup_marshal_context (&m, adjust_method);
+	m.mb = mb;
+	mono_marshal_emit_managed_wrapper (mb, sig_adjusted, mspecs, &m, adjust_method, 0);
+	mono_cominterop_lock ();
+	wrapper_method = mono_mb_create_method (mb, m.csig, m.csig->param_count + 16);
+	mono_cominterop_unlock ();
+
+	gpointer ret = mono_compile_method_checked (wrapper_method, error);
+
+	mono_mb_free (mb);
+	for (param_index = sig_adjusted->param_count; param_index >= 0; param_index--)
+		if (mspecs [param_index])
+			mono_metadata_free_marshal_spec (mspecs [param_index]);
+	g_free (mspecs);
+
+	return ret;
+}
+
 /**
  * cominterop_get_ccw_checked:
  * @object: a pointer to the object
@@ -2091,12 +2247,11 @@ cominterop_get_ccw_default_mspec (const MonoType *param_type)
 static gpointer
 cominterop_get_ccw_checked (MonoObjectHandle object, MonoClass* itf, MonoError *error)
 {
-	int i;
+	int i, j;
 	MonoCCW *ccw = NULL;
 	MonoCCWInterface* ccw_entry = NULL;
 	gpointer *vtable = NULL;
 	MonoClass* iface = NULL;
-	EmitMarshalContext m;
 	int start_slot = 3;
 	int method_count = 0;
 	GList *ccw_list, *ccw_list_item;
@@ -2166,17 +2321,35 @@ cominterop_get_ccw_checked (MonoObjectHandle object, MonoClass* itf, MonoError *
 			mono_custom_attrs_free (cinfo);
 	}
 
-	iface = itf;
+	iface = cominterop_get_default_iface(itf);
 	if (iface == mono_class_get_iunknown_class ()) {
 		start_slot = 3;
 	}
 	else if (iface == mono_class_get_idispatch_class ()) {
 		start_slot = 7;
 	}
-	else {
+	else if (mono_class_is_interface (iface)) {
 		method_count += mono_class_get_method_count (iface);
 		start_slot = cominterop_get_com_slot_begin (iface);
-		iface = NULL;
+	}
+	else {
+		/* auto-dual object */
+		start_slot = 7;
+
+		MonoClass *klass_iter;
+		for (klass_iter = iface; klass_iter; klass_iter = m_class_get_parent (klass_iter)) {
+			int mcount = mono_class_get_method_count (klass_iter);
+			if (mcount && !m_class_get_methods (klass_iter))
+				mono_class_setup_methods (klass_iter);
+
+			for (i = 0; i < mcount; ++i) {
+				MonoMethod *method = m_class_get_methods (klass_iter) [i];
+				if (cominterop_class_method_is_visible (method))
+					++method_count;
+			}
+
+			/* FIXME: accessors for public fields */
+		}
 	}
 
 	ccw_entry = (MonoCCWInterface *)g_hash_table_lookup (ccw->vtable_hash, itf);
@@ -2194,77 +2367,78 @@ cominterop_get_ccw_checked (MonoObjectHandle object, MonoClass* itf, MonoError *
 			vtable [6] = (gpointer)cominterop_ccw_invoke;
 		}
 
-		iface = itf;
-		method_count = mono_class_get_method_count (iface);
-		if (method_count && !m_class_get_methods (iface))
-			mono_class_setup_methods (iface);
+		if (mono_class_is_interface (iface)) {
+			if (method_count && !m_class_get_methods (iface))
+				mono_class_setup_methods (iface);
 
-		for (i = method_count - 1; i >= 0; i--) {
-			int param_index = 0;
-			MonoMethodBuilder *mb;
-			MonoMarshalSpec ** mspecs;
-			MonoMethod *wrapper_method, *adjust_method;
-			MonoMethod *method = m_class_get_methods (iface) [i];
-			MonoMethodSignature* sig_adjusted;
-			MonoMethodSignature* sig = mono_method_signature_internal (method);
-			gboolean const preserve_sig = (method->iflags & METHOD_IMPL_ATTRIBUTE_PRESERVE_SIG) != 0;
+			for (i = method_count - 1; i >= 0; i--) {
+				vtable [vtable_index--] = cominterop_get_ccw_method (iface, m_class_get_methods (iface) [i], error);
+				return_val_if_nok (error, NULL);
+			}
+		}
+		else {
+			/* Auto-dual object. The methods on an auto-dual interface are
+			 * exposed starting from the innermost parent (i.e. Object) and
+			 * proceeding outwards. The methods within each interfaces are
+			 * exposed in the following order:
+			 *
+			 * 1. Virtual methods
+			 * 2. Interface methods
+			 * 3. Nonvirtual methods
+			 * 4. Fields (get, then put)
+			 *
+			 * Interface methods are exposed in the order that the interface
+			 * was declared. Child interface methods are exposed before parents.
+			 *
+			 * Because we need to expose superclass methods starting from the
+			 * innermost parent, we expose methods in reverse order, so that
+			 * we can just iterate using m_class_get_parent (). */
 
-			mb = mono_mb_new (iface, method->name, MONO_WRAPPER_NATIVE_TO_MANAGED);
-			adjust_method = cominterop_get_managed_wrapper_adjusted (method);
-			sig_adjusted = mono_method_signature_internal (adjust_method);
-			
-			mspecs = g_new (MonoMarshalSpec*, sig_adjusted->param_count + 1);
-			mono_method_get_marshal_info (method, mspecs);
+			mono_class_setup_vtable (iface);
 
-			
-			/* move managed args up one */
-			for (param_index = sig->param_count; param_index >= 1; param_index--) {
-				int mspec_index = param_index+1;
-				mspecs [mspec_index] = mspecs [param_index];
+			MonoClass *klass_iter;
+			for (klass_iter = iface; klass_iter; klass_iter = m_class_get_parent (klass_iter)) {
+				mono_class_setup_vtable (klass_iter);
 
-				if (mspecs[mspec_index] == NULL) {
-					mspecs[mspec_index] = cominterop_get_ccw_default_mspec (sig_adjusted->params[param_index]);
-				} else {
-					/* increase SizeParamIndex since we've added a param */
-					if (sig_adjusted->params[param_index]->type == MONO_TYPE_ARRAY ||
-					    sig_adjusted->params[param_index]->type == MONO_TYPE_SZARRAY)
-						if (mspecs[mspec_index]->data.array_data.param_num != -1)
-							mspecs[mspec_index]->data.array_data.param_num++;
+				/* 3. Nonvirtual methods */
+				for (i = mono_class_get_method_count (klass_iter) - 1; i >= 0; i--) {
+					MonoMethod *method = m_class_get_methods (klass_iter) [i];
+					if (cominterop_class_method_is_visible (method) && !(method->flags & METHOD_ATTRIBUTE_VIRTUAL)) {
+						vtable [vtable_index--] = cominterop_get_ccw_method (iface, method, error);
+						return_val_if_nok (error, NULL);
+					}
+				}
+
+				/* 2. Interface methods */
+				GPtrArray *ifaces = mono_class_get_implemented_interfaces (klass_iter, error);
+				mono_error_assert_ok (error);
+				if (ifaces) {
+					for (i = ifaces->len - 1; i >= 0; i--) {
+						MonoClass *ic = (MonoClass *)g_ptr_array_index (ifaces, i);
+						int offset = mono_class_interface_offset (iface, ic);
+						g_assert (offset >= 0);
+						for (j = mono_class_get_method_count (ic) - 1; j >= 0; j--) {
+							MonoMethod *method = m_class_get_methods (ic) [j];
+							vtable [vtable_index--] = cominterop_get_ccw_method (iface, m_class_get_vtable (iface) [offset + method->slot], error);
+							if (!is_ok (error)) {
+								g_ptr_array_free (ifaces, TRUE);
+								return NULL;
+							}
+						}
+					}
+					g_ptr_array_free (ifaces, TRUE);
+				}
+
+				/* 1. Virtual methods */
+				for (i = mono_class_get_method_count (klass_iter) - 1; i >= 0; i--) {
+					MonoMethod *method = m_class_get_methods (klass_iter) [i];
+					if (cominterop_class_method_is_visible (method) && (method->flags & METHOD_ATTRIBUTE_VIRTUAL)
+						&& !cominterop_get_method_interface (method)) {
+						vtable [vtable_index--] = cominterop_get_ccw_method (iface, m_class_get_vtable (iface) [method->slot], error);
+						return_val_if_nok (error, NULL);
+					}
 				}
 			}
-
-			/* first arg is IntPtr for interface */
-			mspecs [1] = NULL;
-
-			/* move return spec to last param */
-			if (!preserve_sig && !MONO_TYPE_IS_VOID (sig->ret)) {
-				if (mspecs [0] == NULL)
-					mspecs[0] = cominterop_get_ccw_default_mspec (sig_adjusted->params[sig_adjusted->param_count-1]);
-
-				mspecs [sig_adjusted->param_count] = mspecs [0];
-				mspecs [0] = NULL;
-			}
-
-#ifndef DISABLE_JIT
-			/* skip visiblity since we call internal methods */
-			mb->skip_visibility = TRUE;
-#endif
-
-			cominterop_setup_marshal_context (&m, adjust_method);
-			m.mb = mb;
-			mono_marshal_emit_managed_wrapper (mb, sig_adjusted, mspecs, &m, adjust_method, 0);
-			mono_cominterop_lock ();
-			wrapper_method = mono_mb_create_method (mb, m.csig, m.csig->param_count + 16);
-			mono_cominterop_unlock ();
-
-			vtable [vtable_index--] = mono_compile_method_checked (wrapper_method, error);
-
-			// cleanup, then error out if compile_method failed
-			for (param_index = sig_adjusted->param_count; param_index >= 0; param_index--)
-				if (mspecs [param_index])
-					mono_metadata_free_marshal_spec (mspecs [param_index]);
-			g_free (mspecs);
-			return_val_if_nok (error, NULL);
 		}
 
 		ccw_entry = g_new0 (MonoCCWInterface, 1);

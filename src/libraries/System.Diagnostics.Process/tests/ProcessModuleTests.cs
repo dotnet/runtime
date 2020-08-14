@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Linq;
 using Microsoft.DotNet.RemoteExecutor;
@@ -68,6 +67,25 @@ namespace System.Diagnostics.Tests
         public class ModuleCollectionSubClass : ProcessModuleCollection
         {
             public ModuleCollectionSubClass() : base() { }
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void ModulesAreDisposedWhenProcessIsDisposed()
+        {
+            Process process = CreateDefaultProcess();
+
+            ProcessModuleCollection modulesCollection = process.Modules;
+            int expectedCount = 0;
+            int disposedCount = 0;
+            foreach (ProcessModule processModule in modulesCollection)
+            {
+                expectedCount += 1;
+                processModule.Disposed += (_, __) => disposedCount += 1;
+            }
+
+            process.Dispose();
+
+            Assert.Equal(expectedCount, disposedCount);
         }
     }
 }

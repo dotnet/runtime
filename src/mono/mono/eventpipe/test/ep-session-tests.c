@@ -1,4 +1,7 @@
 #include "mono/eventpipe/ep.h"
+#include "mono/eventpipe/ep-config.h"
+#include "mono/eventpipe/ep-event.h"
+#include "mono/eventpipe/ep-session.h"
 #include "eglib/test/test.h"
 
 #define TEST_PROVIDER_NAME "MyTestProvider"
@@ -27,11 +30,12 @@ test_create_delete_session (void)
 	EventPipeSession *test_session = NULL;
 
 	EventPipeProviderConfiguration provider_config;
-	ep_raise_error_if_nok (ep_provider_config_init (&provider_config, TEST_PROVIDER_NAME, 1, EP_EVENT_LEVEL_LOG_ALWAYS, "") != NULL);
+	EventPipeProviderConfiguration *current_provider_config = ep_provider_config_init (&provider_config, TEST_PROVIDER_NAME, 1, EP_EVENT_LEVEL_LOG_ALWAYS, "");
+	ep_raise_error_if_nok (current_provider_config != NULL);
 
 	test_location = 1;
 
-	EP_CONFIG_LOCK_ENTER
+	EP_LOCK_ENTER (section1)
 		test_session = ep_session_alloc (
 			1,
 			TEST_FILE,
@@ -40,17 +44,16 @@ test_create_delete_session (void)
 			EP_SERIALIZATION_FORMAT_NETTRACE_V4,
 			false,
 			1,
-			&provider_config,
+			current_provider_config,
 			1,
 			false);
-	EP_CONFIG_LOCK_EXIT
+	EP_LOCK_EXIT (section1)
 
 	ep_raise_error_if_nok (test_session != NULL);
 
 ep_on_exit:
 	ep_session_free (test_session);
-	if (test_location != 0)
-		ep_provider_config_fini (&provider_config);
+	ep_provider_config_fini (current_provider_config);
 	return result;
 
 ep_on_error:
@@ -68,11 +71,12 @@ test_add_session_providers (void)
 	EventPipeSessionProvider *test_session_provider = NULL;
 
 	EventPipeProviderConfiguration provider_config;
-	ep_raise_error_if_nok (ep_provider_config_init (&provider_config, TEST_PROVIDER_NAME, 1, EP_EVENT_LEVEL_LOG_ALWAYS, "") != NULL);
+	EventPipeProviderConfiguration *current_provider_config = ep_provider_config_init (&provider_config, TEST_PROVIDER_NAME, 1, EP_EVENT_LEVEL_LOG_ALWAYS, "");
+	ep_raise_error_if_nok (current_provider_config != NULL);
 
 	test_location = 1;
 
-	EP_CONFIG_LOCK_ENTER
+	EP_LOCK_ENTER (section1)
 		test_session = ep_session_alloc (
 			1,
 			TEST_FILE,
@@ -81,12 +85,14 @@ test_add_session_providers (void)
 			EP_SERIALIZATION_FORMAT_NETTRACE_V4,
 			false,
 			1,
-			&provider_config,
+			current_provider_config,
 			1,
 			false);
-	EP_CONFIG_LOCK_EXIT
 
-	ep_raise_error_if_nok (test_session != NULL);
+		ep_raise_error_if_nok_holding_lock (test_session != NULL, section1);
+
+		ep_session_start_streaming (test_session);
+	EP_LOCK_EXIT (section1)
 
 	test_location = 2;
 
@@ -121,8 +127,7 @@ test_add_session_providers (void)
 
 ep_on_exit:
 	ep_session_free (test_session);
-	if (test_location != 0)
-		ep_provider_config_fini (&provider_config);
+	ep_provider_config_fini (current_provider_config);
 	return result;
 
 ep_on_error:
@@ -144,7 +149,7 @@ test_session_special_get_set (void)
 
 	test_location = 1;
 
-	EP_CONFIG_LOCK_ENTER
+	EP_LOCK_ENTER (section1)
 		test_session = ep_session_alloc (
 			1,
 			TEST_FILE,
@@ -156,7 +161,7 @@ test_session_special_get_set (void)
 			current_provider_config,
 			1,
 			false);
-	EP_CONFIG_LOCK_EXIT
+	EP_LOCK_EXIT (section1)
 
 	ep_raise_error_if_nok (test_session != NULL);
 

@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -12,7 +11,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 {
     internal class CallSiteChain
     {
-        private readonly Dictionary<Type,ChainItemInfo> _callSiteChain;
+        private readonly Dictionary<Type, ChainItemInfo> _callSiteChain;
 
         public CallSiteChain()
         {
@@ -50,10 +49,10 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
         private void AppendResolutionPath(StringBuilder builder, Type currentlyResolving = null)
         {
-            foreach (var pair in _callSiteChain.OrderBy(p => p.Value.Order))
+            foreach (KeyValuePair<Type, ChainItemInfo> pair in _callSiteChain.OrderBy(p => p.Value.Order))
             {
-                var serviceType = pair.Key;
-                var implementationType = pair.Value.ImplementationType;
+                Type serviceType = pair.Key;
+                Type implementationType = pair.Value.ImplementationType;
                 if (implementationType == null || serviceType == implementationType)
                 {
                     builder.Append(TypeNameHelper.GetTypeDisplayName(serviceType));

@@ -311,3 +311,6 @@
 #define g_set_printerr_handler monoeg_set_printerr_handler
 
 #define g_size_to_int monoeg_size_to_int
+#define g_ascii_charcmp monoeg_ascii_charcmp
+#define g_ascii_charcasecmp monoeg_ascii_charcasecmp
+#define g_warning_d monoeg_warning_d

@@ -1,11 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 
 namespace System.IO.Tests
@@ -17,7 +17,7 @@ namespace System.IO.Tests
             return new BufferedStream(new MemoryStream());
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task ConcurrentOperationsAreSerialized()
         {
             byte[] data = Enumerable.Range(0, 1000).Select(i => unchecked((byte)i)).ToArray();
@@ -54,11 +54,16 @@ namespace System.IO.Tests
             Assert.Equal(TaskStatus.Faulted, stream.FlushAsync().Status);
         }
 
-        [Theory]
+        [ConditionalTheory]
         [InlineData(false)]
         [InlineData(true)]
         public async Task CopyToTest_RequiresFlushingOfWrites(bool copyAsynchronously)
         {
+            if (copyAsynchronously && !PlatformDetection.IsThreadingSupported)
+            {
+                throw new SkipTestException(nameof(PlatformDetection.IsThreadingSupported));
+            }
+
             byte[] data = Enumerable.Range(0, 1000).Select(i => (byte)(i % 256)).ToArray();
 
             var manualReleaseStream = new ManuallyReleaseAsyncOperationsStream();

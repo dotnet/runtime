@@ -10,6 +10,11 @@
         "CommonTypes": [ ]
     },
     {
+        "Name": "Microsoft.CrossOsDiag.Private.CoreCLR",
+        "Description": "Private transport package for .NET Core cross OS diagnostic tooling.",
+        "CommonTypes": [ ]
+    },
+    {
         "Name": "Microsoft.NETCore.ILAsm",
         "Description": "The .NET IL Assembler.",
         "CommonTypes": [ ]

@@ -81,6 +81,7 @@ check_include_files(gnu/lib-names.h HAVE_GNU_LIBNAMES_H)
 check_function_exists(kqueue HAVE_KQUEUE)
 
 check_library_exists(c sched_getaffinity "" HAVE_SCHED_GETAFFINITY)
+check_library_exists(c sched_setaffinity "" HAVE_SCHED_SETAFFINITY)
 check_library_exists(pthread pthread_create "" HAVE_LIBPTHREAD)
 check_library_exists(c pthread_create "" HAVE_PTHREAD_IN_LIBC)
 
@@ -100,7 +101,6 @@ check_library_exists(${PTHREAD_LIBRARY} pthread_getattr_np "" HAVE_PTHREAD_GETAT
 check_library_exists(${PTHREAD_LIBRARY} pthread_getcpuclockid "" HAVE_PTHREAD_GETCPUCLOCKID)
 check_library_exists(${PTHREAD_LIBRARY} pthread_sigqueue "" HAVE_PTHREAD_SIGQUEUE)
 check_library_exists(${PTHREAD_LIBRARY} pthread_getaffinity_np "" HAVE_PTHREAD_GETAFFINITY_NP)
-check_library_exists(${PTHREAD_LIBRARY} pthread_attr_setaffinity_np "" HAVE_PTHREAD_ATTR_SETAFFINITY_NP)
 
 check_function_exists(sigreturn HAVE_SIGRETURN)
 check_function_exists(_thread_sys_sigreturn HAVE__THREAD_SYS_SIGRETURN)

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections;
 using System.Collections.Generic;
@@ -34,7 +33,6 @@ namespace System.Net
 
         public void Start()
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
             lock (_internalLock)
             {
                 try
@@ -50,12 +48,8 @@ namespace System.Net
                 catch (Exception exception)
                 {
                     _state = State.Closed;
-                    if (NetEventSource.IsEnabled) NetEventSource.Error(this, $"Start {exception}");
+                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, $"Start {exception}");
                     throw;
-                }
-                finally
-                {
-                    if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
                 }
             }
         }
@@ -73,7 +67,6 @@ namespace System.Net
 
         public void Stop()
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
 
             lock (_internalLock)
             {
@@ -89,20 +82,18 @@ namespace System.Net
                 }
                 catch (Exception exception)
                 {
-                    if (NetEventSource.IsEnabled) NetEventSource.Error(this, $"Stop {exception}");
+                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, $"Stop {exception}");
                     throw;
                 }
                 finally
                 {
                     _state = State.Stopped;
-                    if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
                 }
             }
         }
 
         public void Abort()
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
 
             lock (_internalLock)
             {
@@ -121,20 +112,18 @@ namespace System.Net
                 }
                 catch (Exception exception)
                 {
-                    if (NetEventSource.IsEnabled) NetEventSource.Error(this, $"Abort {exception}");
+                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, $"Abort {exception}");
                     throw;
                 }
                 finally
                 {
                     _state = State.Closed;
-                    if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
                 }
             }
         }
 
         private void Dispose()
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
 
             lock (_internalLock)
             {
@@ -149,13 +138,12 @@ namespace System.Net
                 }
                 catch (Exception exception)
                 {
-                    if (NetEventSource.IsEnabled) NetEventSource.Error(this, $"Dispose {exception}");
+                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, $"Dispose {exception}");
                     throw;
                 }
                 finally
                 {
                     _state = State.Closed;
-                    if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
                 }
             }
         }

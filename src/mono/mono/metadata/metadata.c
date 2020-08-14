@@ -5899,6 +5899,14 @@ mono_metadata_type_equal_full (MonoType *t1, MonoType *t2, gboolean signature_on
 	return do_mono_metadata_type_equal (t1, t2, signature_only);
 }
 
+enum {
+	SIG_EQUIV_FLAG_NO_RET = 1,
+};
+
+gboolean
+signature_equiv (MonoMethodSignature *sig1, MonoMethodSignature *sig2, int flags);
+
+
 /**
  * mono_metadata_signature_equal:
  * \param sig1 a signature
@@ -5910,6 +5918,19 @@ mono_metadata_type_equal_full (MonoType *t1, MonoType *t2, gboolean signature_on
  */
 gboolean
 mono_metadata_signature_equal (MonoMethodSignature *sig1, MonoMethodSignature *sig2)
+{
+	return signature_equiv (sig1, sig2, 0);
+}
+
+gboolean
+mono_metadata_signature_equal_no_ret (MonoMethodSignature *sig1, MonoMethodSignature *sig2)
+{
+	return signature_equiv (sig1, sig2, SIG_EQUIV_FLAG_NO_RET);
+}
+
+
+gboolean
+signature_equiv (MonoMethodSignature *sig1, MonoMethodSignature *sig2, int equiv_flags)
 {
 	int i;
 
@@ -5939,6 +5960,8 @@ mono_metadata_signature_equal (MonoMethodSignature *sig1, MonoMethodSignature *s
 			return FALSE;
 	}
 
+	if ((equiv_flags & SIG_EQUIV_FLAG_NO_RET) != 0)
+		return TRUE;
 	if (!do_mono_metadata_type_equal (sig1->ret, sig2->ret, TRUE))
 		return FALSE;
 	return TRUE;

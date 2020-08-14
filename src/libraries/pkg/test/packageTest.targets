@@ -69,7 +69,7 @@
 
   <Target Name="VerifyRuntimeClosure" 
           DependsOnTargets="ResolveReferences"
-          Condition="'$(ShouldVerifyClosure)' == 'true' and '$(RuntimeIdentifier)' != ''">
+          Condition="'$(ShouldVerifyClosure)' == 'true' and '$(RuntimeIdentifier)' != '' and '$(SkipVerifyClosureForRuntime)' != 'true'">
     <ItemGroup>
       <_runClosureFileNames Include="@(ReferenceCopyLocalPaths->'%(FileName)')">
         <Original>%(Identity)</Original>
@@ -99,9 +99,16 @@
                  IgnoredTypes="@(IgnoredTypes)" />
   </Target>
 
+  <Target Name="VerifyNotDependsOnNetStandard"
+          DependsOnTargets="ResolveReferences"
+          Condition="'$(_ShortFrameworkIdentifier)' == 'net' AND '$(_TargetFrameworkVersionWithoutV)' &gt;= '4.6.1' AND '$(RuntimeIdentifier)' == '' AND '$(DisableVerifyNotDependsOnNetStandardTest)' != 'true'">
+    <Error Condition="'$(DependsOnNetStandard)' == 'true'" Text="Package $(TestPackageId) requires netstandard shims when targeting $(TargetFramework)" />
+  </Target>
+
   <PropertyGroup>
     <_testDependsOn>
       LogBeginTest;
+      VerifyNotDependsOnNetStandard;
       VerifyReferenceClosure;
       VerifyReferenceTypes;
       VerifyRuntimeClosure;

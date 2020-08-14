@@ -1,13 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
-
-using System;
-using System.IO;
-using System.Text;
-using System.Diagnostics;
-using System.Globalization;
-using System.Runtime.InteropServices;
 
 using Internal.Cryptography;
 using Internal.Cryptography.Pal;
@@ -17,19 +9,24 @@ namespace System.Security.Cryptography.X509Certificates
     public sealed class X509SubjectKeyIdentifierExtension : X509Extension
     {
         public X509SubjectKeyIdentifierExtension()
-            : base(Oids.SubjectKeyIdentifier)
+            : base(Oids.SubjectKeyIdentifierOid)
         {
             _subjectKeyIdentifier = null;
             _decoded = true;
         }
 
         public X509SubjectKeyIdentifierExtension(AsnEncodedData encodedSubjectKeyIdentifier, bool critical)
-            : base(Oids.SubjectKeyIdentifier, encodedSubjectKeyIdentifier.RawData, critical)
+            : base(Oids.SubjectKeyIdentifierOid, encodedSubjectKeyIdentifier.RawData, critical)
         {
         }
 
         public X509SubjectKeyIdentifierExtension(byte[] subjectKeyIdentifier, bool critical)
-            : base(Oids.SubjectKeyIdentifier, EncodeExtension(subjectKeyIdentifier), critical)
+            : this(subjectKeyIdentifier.AsSpanParameter(nameof(subjectKeyIdentifier)), critical)
+        {
+        }
+
+        public X509SubjectKeyIdentifierExtension(ReadOnlySpan<byte> subjectKeyIdentifier, bool critical)
+            : base(Oids.SubjectKeyIdentifierOid, EncodeExtension(subjectKeyIdentifier), critical)
         {
         }
 
@@ -39,12 +36,12 @@ namespace System.Security.Cryptography.X509Certificates
         }
 
         public X509SubjectKeyIdentifierExtension(PublicKey key, X509SubjectKeyIdentifierHashAlgorithm algorithm, bool critical)
-            : base(Oids.SubjectKeyIdentifier, EncodeExtension(key, algorithm), critical)
+            : base(Oids.SubjectKeyIdentifierOid, EncodeExtension(key, algorithm), critical)
         {
         }
 
         public X509SubjectKeyIdentifierExtension(string subjectKeyIdentifier, bool critical)
-            : base(Oids.SubjectKeyIdentifier, EncodeExtension(subjectKeyIdentifier), critical)
+            : base(Oids.SubjectKeyIdentifierOid, EncodeExtension(subjectKeyIdentifier), critical)
         {
         }
 
@@ -69,12 +66,11 @@ namespace System.Security.Cryptography.X509Certificates
             _decoded = false;
         }
 
-        private static byte[] EncodeExtension(byte[] subjectKeyIdentifier)
+        private static byte[] EncodeExtension(ReadOnlySpan<byte> subjectKeyIdentifier)
         {
-            if (subjectKeyIdentifier == null)
-                throw new ArgumentNullException(nameof(subjectKeyIdentifier));
             if (subjectKeyIdentifier.Length == 0)
                 throw new ArgumentException(SR.Arg_EmptyOrNullArray, nameof(subjectKeyIdentifier));
+
             return X509Pal.Instance.EncodeX509SubjectKeyIdentifierExtension(subjectKeyIdentifier);
         }
 
@@ -96,16 +92,17 @@ namespace System.Security.Cryptography.X509Certificates
             return EncodeExtension(subjectKeyIdentifier);
         }
 
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA5350", Justification = "SHA1 is required by RFC3280")]
         private static byte[] GenerateSubjectKeyIdentifierFromPublicKey(PublicKey key, X509SubjectKeyIdentifierHashAlgorithm algorithm)
         {
             switch (algorithm)
             {
                 case X509SubjectKeyIdentifierHashAlgorithm.Sha1:
-                    return ComputeSha1(key.EncodedKeyValue.RawData);
+                    return SHA1.HashData(key.EncodedKeyValue.RawData);
 
                 case X509SubjectKeyIdentifierHashAlgorithm.ShortSha1:
                     {
-                        byte[] sha1 = ComputeSha1(key.EncodedKeyValue.RawData);
+                        byte[] sha1 = SHA1.HashData(key.EncodedKeyValue.RawData);
 
                         //  ShortSha1: The keyIdentifier is composed of a four bit type field with
                         //  the value 0100 followed by the least significant 60 bits of the
@@ -123,15 +120,6 @@ namespace System.Security.Cryptography.X509Certificates
 
                 default:
                     throw new ArgumentException(SR.Format(SR.Arg_EnumIllegalVal, algorithm), nameof(algorithm));
-            }
-        }
-
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA5350", Justification = "SHA1 is required by RFC3280")]
-        private static byte[] ComputeSha1(byte[] data)
-        {
-            using (SHA1 sha1 = SHA1.Create())
-            {
-                return sha1.ComputeHash(data);
             }
         }
 

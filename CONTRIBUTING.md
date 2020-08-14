@@ -109,7 +109,6 @@ The following file header is the used for .NET Core. Please use it for new files
 ```
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 ```
 
 - See [class.cpp](./src/coreclr/src/vm/class.cpp) for an example of the header in a C++ file.

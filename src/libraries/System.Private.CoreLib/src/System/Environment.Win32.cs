@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections;
 using System.Diagnostics;
@@ -20,11 +19,6 @@ namespace System
         {
             Debug.Assert(variable != null);
 
-#if FEATURE_APPX
-            if (ApplicationModel.IsUap)
-                return null; // Systems without the Windows registry pretend that it's always empty.
-#endif
-
             using (RegistryKey? environmentKey = OpenEnvironmentKeyIfExists(fromMachine, writable: false))
             {
                 return environmentKey?.GetValue(variable) as string;
@@ -34,11 +28,6 @@ namespace System
         private static void SetEnvironmentVariableFromRegistry(string variable, string? value, bool fromMachine)
         {
             Debug.Assert(variable != null);
-
-#if FEATURE_APPX
-            if (ApplicationModel.IsUap)
-                return; // Systems without the Windows registry pretend that it's always empty.
-#endif
 
             const int MaxUserEnvVariableLength = 255; // User-wide env vars stored in the registry have names limited to 255 chars
             if (!fromMachine && variable.Length >= MaxUserEnvVariableLength)
@@ -75,10 +64,6 @@ namespace System
         private static IDictionary GetEnvironmentVariablesFromRegistry(bool fromMachine)
         {
             var results = new Hashtable();
-#if FEATURE_APPX
-            if (ApplicationModel.IsUap) // Systems without the Windows registry pretend that it's always empty.
-                return results;
-#endif
 
             using (RegistryKey? environmentKey = OpenEnvironmentKeyIfExists(fromMachine, writable: false))
             {
@@ -125,11 +110,6 @@ namespace System
         {
             get
             {
-#if FEATURE_APPX
-                if (ApplicationModel.IsUap)
-                    return "Windows User";
-#endif
-
                 // 40 should be enough as we're asking for the SAM compatible name (DOMAIN\User).
                 // The max length should be 15 (domain) + 1 (separator) + 20 (name) + null. If for
                 // some reason it isn't, we'll grow the buffer.
@@ -177,11 +157,6 @@ namespace System
         {
             get
             {
-#if FEATURE_APPX
-                if (ApplicationModel.IsUap)
-                    return "Windows Domain";
-#endif
-
                 // See the comment in UserName
                 var builder = new ValueStringBuilder(stackalloc char[40]);
                 GetUserName(ref builder);
@@ -230,11 +205,6 @@ namespace System
 
         private static string GetFolderPathCore(SpecialFolder folder, SpecialFolderOption option)
         {
-#if FEATURE_APPX
-            if (ApplicationModel.IsUap)
-                return WinRTFolderPaths.GetFolderPath(folder, option);
-#endif
-
             // We're using SHGetKnownFolderPath instead of SHGetFolderPath as SHGetFolderPath is
             // capped at MAX_PATH.
             //
@@ -407,26 +377,6 @@ namespace System
 
             return path;
         }
-
-#if FEATURE_APPX
-        private static class WinRTFolderPaths
-        {
-            private static Func<SpecialFolder, SpecialFolderOption, string>? s_winRTFolderPathsGetFolderPath;
-
-            public static string GetFolderPath(SpecialFolder folder, SpecialFolderOption option)
-            {
-                if (s_winRTFolderPathsGetFolderPath == null)
-                {
-                    Type? winRtFolderPathsType = Type.GetType("System.WinRTFolderPaths, System.Runtime.WindowsRuntime, Version=4.0.14.0, Culture=neutral, PublicKeyToken=b77a5c561934e089", throwOnError: false);
-                    MethodInfo? getFolderPathsMethod = winRtFolderPathsType?.GetMethod("GetFolderPath", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static, null, new Type[] { typeof(SpecialFolder), typeof(SpecialFolderOption) }, null);
-                    var d = (Func<SpecialFolder, SpecialFolderOption, string>?)getFolderPathsMethod?.CreateDelegate(typeof(Func<SpecialFolder, SpecialFolderOption, string>));
-                    s_winRTFolderPathsGetFolderPath = d ?? delegate { return string.Empty; };
-                }
-
-                return s_winRTFolderPathsGetFolderPath(folder, option);
-            }
-        }
-#endif
 
         // Seperate type so a .cctor is not created for Enviroment which then would be triggered during startup
         private static class WindowsVersion

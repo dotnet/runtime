@@ -34,17 +34,18 @@ if(NOT WIN32 AND NOT CLR_CMAKE_TARGET_BROWSER)
       "${TOOLSET_PREFIX}${exec}")
 
     if (EXEC_LOCATION_${exec} STREQUAL "EXEC_LOCATION_${exec}-NOTFOUND")
-      message(FATAL_ERROR "Unable to find toolchain executable for: ${exec}.")
+      message(FATAL_ERROR "Unable to find toolchain executable. Name: ${exec}, Prefix: ${TOOLSET_PREFIX}.")
     endif()
     set(${var} ${EXEC_LOCATION_${exec}} PARENT_SCOPE)
   endfunction()
 
   locate_toolchain_exec(ar CMAKE_AR)
-  locate_toolchain_exec(link CMAKE_LINKER)
   locate_toolchain_exec(nm CMAKE_NM)
 
-  if(CMAKE_CXX_COMPILER_ID MATCHES "GNU")
+  if(CMAKE_C_COMPILER_ID MATCHES "GNU")
     locate_toolchain_exec(ranlib CMAKE_RANLIB)
+  else()
+    locate_toolchain_exec(link CMAKE_LINKER)
   endif()
 
   if(NOT CLR_CMAKE_TARGET_OSX AND NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS AND (NOT CLR_CMAKE_TARGET_ANDROID OR CROSS_ROOTFS))

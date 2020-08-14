@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 //
 // This class contains all the data & functionality for code generation
@@ -93,7 +92,7 @@ private:
 
     inline RegState* regStateForType(var_types t)
     {
-        return varTypeIsFloating(t) ? &floatRegState : &intRegState;
+        return varTypeUsesFloatReg(t) ? &floatRegState : &intRegState;
     }
     inline RegState* regStateForReg(regNumber reg)
     {
@@ -342,12 +341,12 @@ protected:
     void genSaveCalleeSavedRegistersHelp(regMaskTP regsToSaveMask, int lowestCalleeSavedOffset, int spDelta);
     void genRestoreCalleeSavedRegistersHelp(regMaskTP regsToRestoreMask, int lowestCalleeSavedOffset, int spDelta);
 
-    void genPushCalleeSavedRegisters(regNumber initReg, bool* pInitRegModified);
+    void genPushCalleeSavedRegisters(regNumber initReg, bool* pInitRegZeroed);
 #else
     void genPushCalleeSavedRegisters();
 #endif
 
-    void genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pInitRegModified, regMaskTP maskArgRegsLiveIn);
+    void genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pInitRegZeroed, regMaskTP maskArgRegsLiveIn);
 
 #if defined(TARGET_ARM)
 
@@ -435,18 +434,18 @@ protected:
 
     void genZeroInitFltRegs(const regMaskTP& initFltRegs, const regMaskTP& initDblRegs, const regNumber& initReg);
 
-    regNumber genGetZeroReg(regNumber initReg, bool* pInitRegModified);
+    regNumber genGetZeroReg(regNumber initReg, bool* pInitRegZeroed);
 
-    void genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, bool* pInitRegModified);
+    void genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, bool* pInitRegZeroed);
 
-    void genReportGenericContextArg(regNumber initReg, bool* pInitRegModified);
+    void genReportGenericContextArg(regNumber initReg, bool* pInitRegZeroed);
 
-    void genSetGSSecurityCookie(regNumber initReg, bool* pInitRegModified);
+    void genSetGSSecurityCookie(regNumber initReg, bool* pInitRegZeroed);
 
     void genFinalizeFrame();
 
 #ifdef PROFILING_SUPPORTED
-    void genProfilingEnterCallback(regNumber initReg, bool* pInitRegModified);
+    void genProfilingEnterCallback(regNumber initReg, bool* pInitRegZeroed);
     void genProfilingLeaveCallback(unsigned helper);
 #endif // PROFILING_SUPPORTED
 
@@ -512,7 +511,7 @@ protected:
     void genFuncletEpilog();
     void genCaptureFuncletPrologEpilogInfo();
 
-    void genSetPSPSym(regNumber initReg, bool* pInitRegModified);
+    void genSetPSPSym(regNumber initReg, bool* pInitRegZeroed);
 
     void genUpdateCurrentFunclet(BasicBlock* block);
 #if defined(TARGET_ARM)
@@ -980,7 +979,6 @@ protected:
     void genSIMDIntrinsicUnOp(GenTreeSIMD* simdNode);
     void genSIMDIntrinsicBinOp(GenTreeSIMD* simdNode);
     void genSIMDIntrinsicRelOp(GenTreeSIMD* simdNode);
-    void genSIMDIntrinsicDotProduct(GenTreeSIMD* simdNode);
     void genSIMDIntrinsicSetItem(GenTreeSIMD* simdNode);
     void genSIMDIntrinsicGetItem(GenTreeSIMD* simdNode);
     void genSIMDIntrinsicShuffleSSE2(GenTreeSIMD* simdNode);
@@ -1117,7 +1115,9 @@ protected:
     void genUnspillLocal(
         unsigned varNum, var_types type, GenTreeLclVar* lclNode, regNumber regNum, bool reSpill, bool isLastUse);
     void genUnspillRegIfNeeded(GenTree* tree);
+    void genUnspillRegIfNeeded(GenTree* tree, unsigned multiRegIndex);
     regNumber genConsumeReg(GenTree* tree);
+    regNumber genConsumeReg(GenTree* tree, unsigned multiRegIndex);
     void genCopyRegIfNeeded(GenTree* tree, regNumber needReg);
     void genConsumeRegAndCopy(GenTree* tree, regNumber needReg);
 
@@ -1130,6 +1130,7 @@ protected:
     }
 
     void genRegCopy(GenTree* tree);
+    regNumber genRegCopy(GenTree* tree, unsigned multiRegIndex);
     void genTransferRegGCState(regNumber dst, regNumber src);
     void genConsumeAddress(GenTree* addr);
     void genConsumeAddrMode(GenTreeAddrMode* mode);
@@ -1188,7 +1189,7 @@ protected:
     void genCodeForCpBlkHelper(GenTreeBlk* cpBlkNode);
 #endif
     void genCodeForPhysReg(GenTreePhysReg* tree);
-    void genCodeForNullCheck(GenTreeOp* tree);
+    void genCodeForNullCheck(GenTreeIndir* tree);
     void genCodeForCmpXchg(GenTreeCmpXchg* tree);
 
     void genAlignStackBeforeCall(GenTreePutArgStk* putArgStk);
@@ -1278,7 +1279,8 @@ protected:
     void genEHFinallyOrFilterRet(BasicBlock* block);
 #endif // !FEATURE_EH_FUNCLETS
 
-    void genMultiRegStoreToLocal(GenTree* treeNode);
+    void genMultiRegStoreToSIMDLocal(GenTreeLclVar* lclNode);
+    void genMultiRegStoreToLocal(GenTreeLclVar* lclNode);
 
     // Codegen for multi-register struct returns.
     bool isStructReturn(GenTree* treeNode);
@@ -1403,8 +1405,6 @@ public:
     void inst_SA_RV(instruction ins, unsigned ofs, regNumber reg, var_types type);
     void inst_SA_IV(instruction ins, unsigned ofs, int val, var_types type);
 
-    void inst_RV_ST(
-        instruction ins, regNumber reg, TempDsc* tmp, unsigned ofs, var_types type, emitAttr size = EA_UNKNOWN);
     void inst_FS_ST(instruction ins, emitAttr size, TempDsc* tmp, unsigned ofs);
 
     void inst_TT(instruction ins, GenTree* tree, unsigned offs = 0, int shfv = 0, emitAttr size = EA_UNKNOWN);
@@ -1481,7 +1481,11 @@ public:
 
     void instGen_Set_Reg_To_Zero(emitAttr size, regNumber reg, insFlags flags = INS_FLAGS_DONT_CARE);
 
-    void instGen_Set_Reg_To_Imm(emitAttr size, regNumber reg, ssize_t imm, insFlags flags = INS_FLAGS_DONT_CARE);
+    void instGen_Set_Reg_To_Imm(emitAttr  size,
+                                regNumber reg,
+                                ssize_t   imm,
+                                insFlags flags = INS_FLAGS_DONT_CARE DEBUGARG(size_t targetHandle = 0)
+                                    DEBUGARG(unsigned gtFlags = 0));
 
     void instGen_Compare_Reg_To_Zero(emitAttr size, regNumber reg);
 

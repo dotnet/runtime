@@ -1,0 +1,53 @@
+parameters:
+  archType: ''
+  osGroup: ''
+  osSubgroup: ''
+
+steps:
+    # Always build the crossdac, that way we know in CI/PR if things break to build.
+    - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
+      - ${{ if notin(parameters.archType, 'x86') }}:
+        - script: set __TestIntermediateDir=int&&$(coreClrRepoRootDir)build-runtime$(scriptExt) $(buildConfig) $(archType) -ci -linuxdac $(officialBuildIdArg)
+          displayName: Build Cross OS Linux DAC for Windows
+
+
+    # Make the assets available in a single container for the packaging job.
+    - ${{ if and(ne(variables['System.TeamProject'], 'public'), ne(variables['Build.Reason'], 'PullRequest')) }}:
+      - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
+        - ${{ if notin(parameters.archType, 'x86', 'arm') }}:
+          - script: set __TestIntermediateDir=int&&$(coreClrRepoRootDir)build-runtime$(scriptExt) $(buildConfig) $(archType) -ci -alpinedac $(officialBuildIdArg)
+            displayName: Build Cross OS Linux-musl DAC for Windows
+
+        - task: CopyFiles@2
+          displayName: Gather CrossDac Artifacts (Linux)
+          inputs:
+            SourceFolder: $(buildLinuxDacRootFolderPath)
+            Contents: |
+              **/*
+              !**/sharedFramework/**/*
+            TargetFolder: $(buildLinuxDacStagingPath)
+
+        - ${{ if ne(parameters.archType, 'arm') }}:
+          - task: CopyFiles@2
+            displayName: Gather CrossDac Artifacts (Linux_musl)
+            inputs:
+              SourceFolder: $(buildMuslDacRootFolderPath)
+              Contents: |
+                **/*
+                !**/sharedFramework/**/*
+              TargetFolder: '$(buildMuslDacStagingPath)'
+
+      - ${{ if eq(parameters.osGroup, 'Linux') }}:
+        - task: CopyFiles@2
+          displayName: Gather runtime for CrossDac
+          inputs:
+            SourceFolder: $(coreClrProductRootFolderPath)
+            Contents: libcoreclr.so
+            TargetFolder: '$(crossDacArtifactPath)/${{ parameters.osGroup }}${{ parameters.osSubgroup }}.$(archType).$(buildConfigUpper)/$(crossDacHostArch)'
+
+      - task: PublishBuildArtifacts@1
+        displayName: Publish runtime for CrossDac
+        inputs:
+          pathtoPublish:  $(crossDacArtifactPath)
+          PublishLocation: Container
+          artifactName:  $(buildCrossDacArtifactName)

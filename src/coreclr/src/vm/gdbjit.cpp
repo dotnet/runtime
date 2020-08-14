@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //*****************************************************************************
 // File: gdbjit.cpp
 //
@@ -172,7 +171,7 @@ GetTypeInfoFromTypeHandle(TypeHandle typeHandle,
             refTypeInfo.SuppressRelease();
 
             TypeInfoBase* lengthTypeInfo = GetTypeInfoFromTypeHandle(
-                TypeHandle(MscorlibBinder::GetElementType(ELEMENT_TYPE_I4)), pTypeMap, method);
+                TypeHandle(CoreLibBinder::GetElementType(ELEMENT_TYPE_I4)), pTypeMap, method);
 
             TypeInfoBase* valTypeInfo = GetTypeInfoFromTypeHandle(typeHandle.GetArrayElementTypeHandle(), pTypeMap, method);
             info->m_array_type = new ArrayTypeInfo(typeHandle, 1, valTypeInfo);
@@ -189,7 +188,7 @@ GetTypeInfoFromTypeHandle(TypeHandle typeHandle,
 
             if (pMT->GetRank() != 1)
             {
-                TypeHandle dwordArray(MscorlibBinder::GetElementType(ELEMENT_TYPE_I4));
+                TypeHandle dwordArray(CoreLibBinder::GetElementType(ELEMENT_TYPE_I4));
                 info->m_array_bounds_type = new ArrayTypeInfo(dwordArray.MakeSZArray(), pMT->GetRank(), lengthTypeInfo);
                 info->members[2].m_member_name = new char[9];
                 strcpy(info->members[2].m_member_name, "m_Bounds");

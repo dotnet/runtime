@@ -692,9 +692,6 @@ mono_runtime_install_appctx_properties (void);
 gboolean 
 mono_domain_set_fast (MonoDomain *domain, gboolean force);
 
-void
-mono_domain_ensure_entry_assembly (MonoDomain *domain, MonoAssembly *assembly);
-
 MonoAssemblyLoadContext *
 mono_domain_default_alc (MonoDomain *domain);
 

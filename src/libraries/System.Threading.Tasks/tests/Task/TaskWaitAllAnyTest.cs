@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 // Summary: Test suite for the below scenario:
 // An array of tasks that can have different workloads
@@ -484,7 +483,7 @@ namespace System.Threading.Tasks.Tests.WaitAllAny
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TaskWaitAllAny3()
         {
             TaskInfo node1 = new TaskInfo(WorkloadType.Medium);
@@ -494,7 +493,7 @@ namespace System.Threading.Tasks.Tests.WaitAllAny
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TaskWaitAllAny4()
         {
             TaskInfo node1 = new TaskInfo(WorkloadType.Medium);
@@ -522,7 +521,7 @@ namespace System.Threading.Tasks.Tests.WaitAllAny
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TaskWaitAllAny6()
         {
             TaskInfo node1 = new TaskInfo(WorkloadType.Light);
@@ -558,7 +557,7 @@ namespace System.Threading.Tasks.Tests.WaitAllAny
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TaskWaitAllAny9()
         {
             TaskInfo node1 = new TaskInfo(WorkloadType.Heavy);
@@ -569,7 +568,7 @@ namespace System.Threading.Tasks.Tests.WaitAllAny
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TaskWaitAllAny10()
         {
             TaskInfo node1 = new TaskInfo(WorkloadType.Medium);
@@ -579,7 +578,7 @@ namespace System.Threading.Tasks.Tests.WaitAllAny
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TaskWaitAllAny11()
         {
             TaskInfo node1 = new TaskInfo(WorkloadType.Medium);
@@ -595,7 +594,7 @@ namespace System.Threading.Tasks.Tests.WaitAllAny
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TaskWaitAllAny12()
         {
             TaskInfo node1 = new TaskInfo(WorkloadType.VeryHeavy);
@@ -606,7 +605,7 @@ namespace System.Threading.Tasks.Tests.WaitAllAny
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TaskWaitAllAny13()
         {
             TaskInfo node1 = new TaskInfo(WorkloadType.Medium);
@@ -631,7 +630,7 @@ namespace System.Threading.Tasks.Tests.WaitAllAny
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TaskWaitAllAny15()
         {
             TaskInfo node1 = new TaskInfo(WorkloadType.Heavy);
@@ -641,7 +640,7 @@ namespace System.Threading.Tasks.Tests.WaitAllAny
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TaskWaitAllAny16()
         {
             TaskInfo node1 = new TaskInfo(WorkloadType.Heavy);
@@ -652,7 +651,7 @@ namespace System.Threading.Tasks.Tests.WaitAllAny
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TaskWaitAllAny17()
         {
             TaskInfo node1 = new TaskInfo(WorkloadType.VeryHeavy);
@@ -671,7 +670,7 @@ namespace System.Threading.Tasks.Tests.WaitAllAny
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TaskWaitAllAny19()
         {
             TaskInfo node1 = new TaskInfo(WorkloadType.Medium);
@@ -682,7 +681,7 @@ namespace System.Threading.Tasks.Tests.WaitAllAny
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TaskWaitAllAny20()
         {
             TaskInfo node1 = new TaskInfo(WorkloadType.Medium);
@@ -716,7 +715,7 @@ namespace System.Threading.Tasks.Tests.WaitAllAny
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TaskWaitAllAny23()
         {
             TaskInfo node1 = new TaskInfo(WorkloadType.Heavy);
@@ -726,7 +725,7 @@ namespace System.Threading.Tasks.Tests.WaitAllAny
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TaskWaitAllAny24()
         {
             TaskInfo node1 = new TaskInfo(WorkloadType.VeryLight);
@@ -737,7 +736,7 @@ namespace System.Threading.Tasks.Tests.WaitAllAny
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TaskWaitAllAny25()
         {
             TaskInfo node1 = new TaskInfo(WorkloadType.Medium);
@@ -762,7 +761,7 @@ namespace System.Threading.Tasks.Tests.WaitAllAny
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TaskWaitAllAny27()
         {
             TaskInfo node1 = new TaskInfo(WorkloadType.Light);
@@ -772,7 +771,7 @@ namespace System.Threading.Tasks.Tests.WaitAllAny
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TaskWaitAllAny28()
         {
             TaskInfo node1 = new TaskInfo(WorkloadType.Medium);
@@ -783,7 +782,7 @@ namespace System.Threading.Tasks.Tests.WaitAllAny
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TaskWaitAllAny29()
         {
             TaskInfo node1 = new TaskInfo(WorkloadType.Medium);
@@ -925,7 +924,7 @@ namespace System.Threading.Tasks.Tests.WaitAllAny
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TaskWaitAllAny36()
         {
             TaskInfo node1 = new TaskInfo(WorkloadType.Medium);
@@ -953,7 +952,7 @@ namespace System.Threading.Tasks.Tests.WaitAllAny
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TaskWaitAllAny38()
         {
             TaskInfo node1 = new TaskInfo(WorkloadType.Medium);
@@ -963,7 +962,7 @@ namespace System.Threading.Tasks.Tests.WaitAllAny
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TaskWaitAllAny39()
         {
             TaskInfo node1 = new TaskInfo(WorkloadType.Medium);
@@ -988,7 +987,7 @@ namespace System.Threading.Tasks.Tests.WaitAllAny
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TaskWaitAllAny41()
         {
             TaskInfo node1 = new TaskInfo(WorkloadType.VeryLight);
@@ -1008,7 +1007,7 @@ namespace System.Threading.Tasks.Tests.WaitAllAny
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TaskWaitAllAny43()
         {
             TaskInfo node1 = new TaskInfo(WorkloadType.Medium);
@@ -1018,7 +1017,7 @@ namespace System.Threading.Tasks.Tests.WaitAllAny
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TaskWaitAllAny44()
         {
             TaskInfo node1 = new TaskInfo(WorkloadType.Heavy);
@@ -1117,7 +1116,7 @@ namespace System.Threading.Tasks.Tests.WaitAllAny
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TaskWaitAllAny47()
         {
             TaskInfo node1 = new TaskInfo(WorkloadType.VeryHeavy);
@@ -1128,7 +1127,7 @@ namespace System.Threading.Tasks.Tests.WaitAllAny
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TaskWaitAllAny48()
         {
             TaskInfo node1 = new TaskInfo(WorkloadType.Heavy);
@@ -1144,7 +1143,7 @@ namespace System.Threading.Tasks.Tests.WaitAllAny
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TaskWaitAllAny49()
         {
             TaskInfo node1 = new TaskInfo(WorkloadType.Heavy);
@@ -1154,7 +1153,7 @@ namespace System.Threading.Tasks.Tests.WaitAllAny
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TaskWaitAllAny50()
         {
             TaskInfo node1 = new TaskInfo(WorkloadType.Light);
@@ -1164,7 +1163,7 @@ namespace System.Threading.Tasks.Tests.WaitAllAny
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TaskWaitAllAny51()
         {
             TaskInfo node1 = new TaskInfo(WorkloadType.Light);
@@ -1175,7 +1174,7 @@ namespace System.Threading.Tasks.Tests.WaitAllAny
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TaskWaitAllAny52()
         {
             TaskInfo node1 = new TaskInfo(WorkloadType.Medium);
@@ -1200,7 +1199,7 @@ namespace System.Threading.Tasks.Tests.WaitAllAny
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TaskWaitAllAny54()
         {
             TaskInfo node1 = new TaskInfo(WorkloadType.Heavy);
@@ -1211,7 +1210,7 @@ namespace System.Threading.Tasks.Tests.WaitAllAny
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TaskWaitAllAny55()
         {
             TaskInfo node1 = new TaskInfo(WorkloadType.Light);
@@ -1221,7 +1220,7 @@ namespace System.Threading.Tasks.Tests.WaitAllAny
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TaskWaitAllAny56()
         {
             TaskInfo node1 = new TaskInfo(WorkloadType.Heavy);
@@ -1232,7 +1231,7 @@ namespace System.Threading.Tasks.Tests.WaitAllAny
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TaskWaitAllAny57()
         {
             TaskInfo node1 = new TaskInfo(WorkloadType.Medium);

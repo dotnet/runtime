@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -26,7 +25,7 @@ namespace System.Xml.Xsl.Xslt
         // List of all variables and parameters
         private readonly List<VarPar> _allVarPars = new List<VarPar>();
 #endif
-        private int _forEachDepth = 0;
+        private int _forEachDepth;
         private XPathAnalyzer _xpathAnalyzer;
         private ProtoTemplate _currentTemplate;
 

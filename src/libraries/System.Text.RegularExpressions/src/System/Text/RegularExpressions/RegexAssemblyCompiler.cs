@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections;
 using System.Threading;
@@ -14,7 +13,7 @@ namespace System.Text.RegularExpressions
     internal sealed class RegexAssemblyCompiler : RegexCompiler
     {
         /// <summary>Type count used to augment generated type names to create unique names.</summary>
-        private static int s_typeCount = 0;
+        private static int s_typeCount;
 
         private AssemblyBuilder _assembly;
         private ModuleBuilder _module;

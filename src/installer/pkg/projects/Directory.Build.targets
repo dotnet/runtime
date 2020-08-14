@@ -158,6 +158,15 @@
       <File Include="@(SiblingSymbolFile)" />
     </ItemGroup>
 
+    <!-- On Windows, native symbols are installed to a PDB subdirectory -->
+    <ItemGroup>
+      <WindowsSymbolFileInSubdirectory Include="@(WindowsSymbolFile -> '%(RootDir)%(Directory)PDB\%(Filename)%(Extension)')" />
+      <ExistingWindowsSymbolFileInSubdirectory Include="@(WindowsSymbolFileInSubdirectory)" Condition="Exists('%(Identity)')" />
+      <File Include="@(ExistingWindowsSymbolFileInSubdirectory)">
+        <IsSymbolFile>true</IsSymbolFile>
+      </File>
+    </ItemGroup>
+
     <PropertyGroup>
       <NeedsPlaceholderPdb Condition="'@(ExistingNonWindowsSymbolFile)' != '' and '@(ExistingWindowsSymbolFile)' == ''">true</NeedsPlaceholderPdb>
     </PropertyGroup>

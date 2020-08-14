@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.IO;
@@ -780,14 +779,8 @@ namespace System.Xml
             for (int i = 3; i < length - 1; i++)
             {
                 byte ch = buffer[offset + i];
-                int digit = 0;
-                if (ch >= '0' && ch <= '9')
-                    digit = (ch - '0');
-                else if (ch >= 'a' && ch <= 'f')
-                    digit = 10 + (ch - 'a');
-                else if (ch >= 'A' && ch <= 'F')
-                    digit = 10 + (ch - 'A');
-                else
+                int digit = HexConverter.FromChar(ch);
+                if (digit == 0xFF)
                     XmlExceptionHelper.ThrowInvalidCharRef(_reader);
                 DiagnosticUtility.DebugAssert(digit >= 0 && digit < 16, "");
                 value = value * 16 + digit;

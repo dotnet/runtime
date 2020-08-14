@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -23,7 +22,7 @@ namespace System.IO.Packaging
         /// <param name="streamFileMode">Mode in which the stream should be opened</param>
         /// <param name="streamFileAccess">Access with which the stream should be opened</param>
         /// <returns>Stream Corresponding to this part</returns>
-        protected override Stream GetStreamCore(FileMode streamFileMode, FileAccess streamFileAccess)
+        protected override Stream? GetStreamCore(FileMode streamFileMode, FileAccess streamFileAccess)
         {
             if (_zipArchiveEntry != null)
             {

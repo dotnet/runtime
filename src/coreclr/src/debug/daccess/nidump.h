@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 
 #ifndef _NIDUMP_H_
@@ -306,7 +305,7 @@ public:
         TADDR pMetadataStartTarget;
         TADDR pMetadataStartHost;
         SIZE_T MetadataSize;
-        bool fIsMscorlib;
+        bool fIsCoreLib;
         bool fIsHardbound;
         WCHAR name[128];
     };
@@ -549,9 +548,9 @@ private:
     COUNT_T m_ILSectionSize;
 #endif
 
-    //This is true if we are hard bound to mscorlib.  This enables various forms of generics dumping and MT
+    //This is true if we are hard bound to corelib.  This enables various forms of generics dumping and MT
     //dumping that require g_pObjectClass to be set.
-    bool m_isMscorlibHardBound;
+    bool m_isCoreLibHardBound;
 
 #if 0
     PTR_CCOR_SIGNATURE metadataToHostDAC( PCCOR_SIGNATURE pSig,

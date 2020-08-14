@@ -5,4 +5,7 @@
   <ItemGroup>
     <Compile Include="TestClass.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(LibrariesProjectRoot)System.ComponentModel.Composition\src\System.ComponentModel.Composition.csproj" />
+  </ItemGroup>
 </Project>

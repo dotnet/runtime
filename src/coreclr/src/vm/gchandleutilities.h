@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #ifndef _GCHANDLEUTILITIES_H_
 #define _GCHANDLEUTILITIES_H_
@@ -201,9 +200,16 @@ inline OBJECTHANDLE CreateGlobalRefcountedHandle(OBJECTREF object)
 // Special handle creation convenience functions
 
 #ifdef FEATURE_COMINTEROP
-inline OBJECTHANDLE CreateNativeComWeakHandle(IGCHandleStore* store, OBJECTREF object, IWeakReference* pComWeakReference)
+
+struct NativeComWeakHandleInfo
 {
-    OBJECTHANDLE hnd = store->CreateHandleWithExtraInfo(OBJECTREFToObject(object), HNDTYPE_WEAK_NATIVE_COM, (void*)pComWeakReference);
+    IWeakReference *WeakReference;
+    INT64 WrapperId;
+};
+
+inline OBJECTHANDLE CreateNativeComWeakHandle(IGCHandleStore* store, OBJECTREF object, NativeComWeakHandleInfo* pComWeakHandleInfo)
+{
+    OBJECTHANDLE hnd = store->CreateHandleWithExtraInfo(OBJECTREFToObject(object), HNDTYPE_WEAK_NATIVE_COM, (void*)pComWeakHandleInfo);
     if (!hnd)
     {
         COMPlusThrowOM();
@@ -374,14 +380,16 @@ inline void DestroyNativeComWeakHandle(OBJECTHANDLE handle)
     }
     CONTRACTL_END;
 
-    // Release the WinRT weak reference if we have one. We're assuming that this will not reenter the
-    // runtime, since if we are pointing at a managed object, we should not be using HNDTYPE_WEAK_NATIVE_COM
-    // but rather HNDTYPE_WEAK_SHORT or HNDTYPE_WEAK_LONG.
+    // Delete the COM info and release the weak reference if we have one. We're assuming that
+    // this will not reenter the runtime, since if we are pointing at a managed object, we should
+    // not be using HNDTYPE_WEAK_NATIVE_COM but rather HNDTYPE_WEAK_SHORT or HNDTYPE_WEAK_LONG.
     void* pExtraInfo = GCHandleUtilities::GetGCHandleManager()->GetExtraInfoFromHandle(handle);
-    IWeakReference* pWinRTWeakReference = reinterpret_cast<IWeakReference*>(pExtraInfo);
-    if (pWinRTWeakReference != nullptr)
+    NativeComWeakHandleInfo* comWeakHandleInfo = reinterpret_cast<NativeComWeakHandleInfo*>(pExtraInfo);
+    if (comWeakHandleInfo != nullptr)
     {
-        pWinRTWeakReference->Release();
+        _ASSERTE(comWeakHandleInfo->WeakReference != nullptr);
+        comWeakHandleInfo->WeakReference->Release();
+        delete comWeakHandleInfo;
     }
 
     DiagHandleDestroyed(handle);

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -60,7 +59,7 @@ namespace System.Diagnostics
         private void GetWorkingSetLimits(out IntPtr minWorkingSet, out IntPtr maxWorkingSet)
         {
             // We can only do this for the current process on OS X
-            if (_processId != Interop.Sys.GetPid())
+            if (_processId != Environment.ProcessId)
                 throw new PlatformNotSupportedException(SR.OsxExternalProcessWorkingSetNotSupported);
 
             // Minimum working set (or resident set, as it is called on *nix) doesn't exist so set to 0
@@ -89,7 +88,7 @@ namespace System.Diagnostics
         private void SetWorkingSetLimitsCore(IntPtr? newMin, IntPtr? newMax, out IntPtr resultingMin, out IntPtr resultingMax)
         {
             // We can only do this for the current process on OS X
-            if (_processId != Interop.Sys.GetPid())
+            if (_processId != Environment.ProcessId)
                 throw new PlatformNotSupportedException(SR.OsxExternalProcessWorkingSetNotSupported);
 
             // There isn't a way to set the minimum working set, so throw an exception here

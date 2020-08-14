@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -37,8 +36,6 @@ internal static partial class Interop
         internal static extern object ReleaseHandle(int jsObjHandle, out int exceptionalResult);
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern object ReleaseObject(int jsObjHandle, out int exceptionalResult);
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern object NewObjectJS(int jsObjHandle, object[] parms, out int exceptionalResult);
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern object BindCoreObject(int jsObjHandle, int gcHandle, out int exceptionalResult);
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
@@ -91,13 +88,6 @@ internal static partial class Interop
             return (int)res;
         }
 
-        public static JSObject? NewJSObject(JSObject? jsFuncPtr = null, params object[] parms)
-        {
-            object res = NewObjectJS(jsFuncPtr?.JSHandle ?? 0, parms, out int exception);
-            if (exception != 0)
-                throw new JSException((string)res);
-            return res as JSObject;
-        }
         public static object GetGlobalObject(string? str = null)
         {
             int exception;

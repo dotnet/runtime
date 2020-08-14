@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #include "pal_config.h"
 #include "pal_interfaceaddresses.h"
@@ -236,6 +235,7 @@ int32_t SystemNative_GetNetworkInterfaces(int32_t * interfaceCount, NetworkInter
 
     if (getifaddrs(&head) == -1)
     {
+        assert(errno != 0);
         return -1;
     }
 
@@ -262,6 +262,7 @@ int32_t SystemNative_GetNetworkInterfaces(int32_t * interfaceCount, NetworkInter
     void * memoryBlock = calloc((size_t)count, sizeof(NetworkInterfaceInfo));
     if (memoryBlock == NULL)
     {
+        errno = ENOMEM;
         return -1;
     }
 

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Test.Cryptography;
 using Xunit;
@@ -611,7 +610,7 @@ namespace System.Security.Cryptography.Rsa.Tests
                 byte[] crypt = Encrypt(rsa, TestData.HelloBytes, RSAEncryptionPadding.OaepSHA1);
 
                 // Export the key, this should not clear/destroy the key.
-                RSAParameters ignored = rsa.ExportParameters(true);
+                rsa.ExportParameters(true);
                 output = Decrypt(rsa, crypt, RSAEncryptionPadding.OaepSHA1);
             }
 

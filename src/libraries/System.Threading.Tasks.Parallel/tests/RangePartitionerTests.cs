@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Concurrent;
 using System.Diagnostics;
@@ -10,7 +9,7 @@ namespace System.Threading.Tasks.Tests
 {
     public static class RangePartitionerTests
     {
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void RunPartitionerStaticTest_SingleChunking()
         {
             CountdownEvent cde = new CountdownEvent(2);
@@ -41,7 +40,7 @@ namespace System.Threading.Tasks.Tests
         }
 
         // Test proper range coverage
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void RangePartitionerCoverageTest()
         {
             RangePartitionerCoverageTest_HelperInt(0, 1, -1);
@@ -83,7 +82,7 @@ namespace System.Threading.Tasks.Tests
         }
 
         // Test that chunk sizes are being honored
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void RangePartitionerChunkTest()
         {
             RangePartitionerChunkTest_HelperInt(0, 10, 1);

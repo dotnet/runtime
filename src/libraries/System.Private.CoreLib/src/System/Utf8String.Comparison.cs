@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Buffers;
 using System.Diagnostics;
@@ -190,7 +189,7 @@ namespace System
         {
             // TODO_UTF8STRING: Optimize me to avoid allocations.
 
-#if !NETSTANDARD2_0
+#if (!NETSTANDARD2_0 && !NETFRAMEWORK)
             return ToString().Contains(value.ToString(), comparison);
 #else
             return ToString().IndexOf(value.ToString(), comparison) >= 0;
@@ -224,7 +223,7 @@ namespace System
 
             // TODO_UTF8STRING: Optimize me to avoid allocations.
 
-#if !NETSTANDARD2_0
+#if (!NETSTANDARD2_0 && !NETFRAMEWORK)
             return ToString().Contains(value.ToString(), comparison);
 #else
             return ToString().IndexOf(value.ToString(), comparison) >= 0;

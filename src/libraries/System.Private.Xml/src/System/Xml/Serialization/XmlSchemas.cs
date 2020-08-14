@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 namespace System.Xml.Serialization
 {
@@ -26,7 +25,7 @@ namespace System.Xml.Serialization
         private bool _shareTypes;
         private Hashtable _mergedSchemas;
         internal Hashtable delayedSchemas = new Hashtable();
-        private bool _isCompiled = false;
+        private bool _isCompiled;
         private static volatile XmlSchema s_xsd;
         private static volatile XmlSchema s_xml;
 

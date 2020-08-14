@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System;
 using System.Diagnostics;
 using System.Xml.Schema;
@@ -27,7 +27,7 @@ namespace System.Xml
             Debug.Assert((_entries.Length & _mask) == 0);  // entries.Length must be a power of two
         }
 
-        public XmlName GetName(string prefix, string localName, string ns, IXmlSchemaInfo schemaInfo)
+        public XmlName? GetName(string? prefix, string localName, string? ns, IXmlSchemaInfo? schemaInfo)
         {
             if (prefix == null)
             {
@@ -57,7 +57,7 @@ namespace System.Xml
             return null;
         }
 
-        public XmlName AddName(string prefix, string localName, string ns, IXmlSchemaInfo schemaInfo)
+        public XmlName AddName(string? prefix, string localName, string? ns, IXmlSchemaInfo? schemaInfo)
         {
             if (prefix == null)
             {
@@ -119,6 +119,7 @@ namespace System.Xml
                     name = tmp;
                 }
             }
+
             _entries = newEntries;
             _mask = newMask;
         }

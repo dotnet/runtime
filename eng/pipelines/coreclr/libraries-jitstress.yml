@@ -1,0 +1,62 @@
+trigger: none
+
+pr: none
+
+schedules:
+- cron: "0 7 * * *"
+  displayName: Mon through Sun at 11:00 PM (UTC-8:00)
+  branches:
+    include:
+    - master
+  always: true
+
+jobs:
+#
+# Checkout repository
+#
+- template: /eng/pipelines/common/checkout-job.yml
+
+#
+# Build CoreCLR checked and libraries Release
+#
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/common/build-coreclr-and-libraries-job.yml
+    buildConfig: checked
+    platforms:
+    - Linux_x64
+    - Linux_arm
+    - Linux_arm64
+    - Windows_NT_x86
+    - Windows_NT_x64
+    - Windows_NT_arm64
+    jobParameters:
+      # libraries test build platforms
+      testBuildPlatforms:
+      - Linux_x64
+      - Windows_NT_x64
+
+#
+# Libraries Test Run using Release libraries, Checked CoreCLR, and stress modes
+#
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/libraries/run-test-job.yml
+    buildConfig: Release
+    platforms:
+    - Linux_arm
+    - Linux_arm64
+    - Linux_x64
+    - Windows_NT_arm64
+    - Windows_NT_x64
+    - Windows_NT_x86
+    helixQueueGroup: libraries
+    helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+    jobParameters:
+      # Default timeout is 150 minutes (2.5 hours), which is not enough for stress.
+      timeoutInMinutes: 300
+      testScope: innerloop
+      liveRuntimeBuildConfig: checked
+      dependsOnTestBuildConfiguration: Release
+      dependsOnTestArchitecture: x64
+      coreclrTestGroup: jitstress

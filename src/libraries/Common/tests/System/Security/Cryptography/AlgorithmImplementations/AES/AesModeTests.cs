@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Xunit;
 
@@ -20,6 +19,18 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         public static void SupportsECB()
         {
             SupportsMode(CipherMode.ECB);
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
+        public static void SupportsCFB()
+        {
+            SupportsMode(CipherMode.CFB);
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows7))]
+        public static void Windows7DoesNotSupportCFB()
+        {
+            DoesNotSupportMode(CipherMode.CFB);
         }
 
         [Fact]
@@ -51,7 +62,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
                 // aes.CreateEncryptor() (with an invalid Mode value)
                 // transform.Transform[Final]Block() (with an invalid Mode value)
 
-                Assert.Throws<CryptographicException>(
+                Assert.ThrowsAny<CryptographicException>(
                     () =>
                     {
                         aes.Mode = mode;

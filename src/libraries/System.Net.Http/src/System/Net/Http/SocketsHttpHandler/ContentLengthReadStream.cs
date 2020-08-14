@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.IO;
@@ -132,7 +131,7 @@ namespace System.Net.Http
                     return Task.CompletedTask;
                 }
 
-                Task copyTask = _connection.CopyToContentLengthAsync(destination, _contentBytesRemaining, bufferSize, cancellationToken);
+                Task copyTask = _connection.CopyToContentLengthAsync(destination, async: true, _contentBytesRemaining, bufferSize, cancellationToken);
                 if (copyTask.IsCompletedSuccessfully)
                 {
                     Finish();
@@ -216,13 +215,13 @@ namespace System.Net.Http
                 if (drainTime != Timeout.InfiniteTimeSpan)
                 {
                     cts = new CancellationTokenSource((int)drainTime.TotalMilliseconds);
-                    ctr = cts.Token.Register(s => ((HttpConnection)s!).Dispose(), _connection);
+                    ctr = cts.Token.Register(static s => ((HttpConnection)s!).Dispose(), _connection);
                 }
                 try
                 {
                     while (true)
                     {
-                        await _connection.FillAsync().ConfigureAwait(false);
+                        await _connection.FillAsync(async: true).ConfigureAwait(false);
                         ReadFromConnectionBuffer(int.MaxValue);
                         if (_contentBytesRemaining == 0)
                         {

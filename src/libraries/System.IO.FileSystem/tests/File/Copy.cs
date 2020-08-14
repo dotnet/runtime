@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Linq;
@@ -13,6 +12,13 @@ namespace System.IO.Tests
         protected virtual void Copy(string source, string dest)
         {
             File.Copy(source, dest);
+        }
+
+        protected virtual void CopyReadOnlyFile(string source, string dest)
+        {
+            byte[] bits = File.ReadAllBytes(source);
+            File.WriteAllBytes(dest, bits);
+            File.SetAttributes(dest, FileAttributes.ReadOnly);
         }
 
         #region UniversalTests
@@ -120,8 +126,21 @@ namespace System.IO.Tests
                 stream.Write(data, 0, data.Length);
             }
 
-            // Set the last write time of the source file to something a while ago
-            DateTime lastWriteTime = DateTime.UtcNow.Subtract(TimeSpan.FromHours(1));
+            DateTime lastWriteTime; 
+            if (PlatformDetection.IsBrowser)
+            {
+                // For browser, there is technically only 1 time.  It's the max
+                // of LastWrite and LastAccess.  Setting to a date/time in the future
+                // is a way of making this test work similarly.
+                //
+                // https://emscripten.org/docs/api_reference/Filesystem-API.html#FS.utime
+                //
+                lastWriteTime = DateTime.UtcNow.Add(TimeSpan.FromHours(1));
+            }
+            else
+            {
+                lastWriteTime = DateTime.UtcNow.Subtract(TimeSpan.FromHours(1));
+            }
             File.SetLastWriteTime(testFileSource, lastWriteTime);
 
             if (readOnly)
@@ -130,7 +149,16 @@ namespace System.IO.Tests
             }
 
             // Copy over the data
-            Copy(testFileSource, testFileDest);
+            //
+            // For browser, work around limitation of File.Copy, which
+            // fails when trying to open the dest file
+            if (PlatformDetection.IsBrowser && readOnly)
+            {
+                CopyReadOnlyFile(testFileSource, testFileDest);
+                File.SetLastWriteTime(testFileDest, lastWriteTime);
+            }
+            else
+                Copy(testFileSource, testFileDest);
 
             // Ensure copy transferred written data
             using (StreamReader stream = new StreamReader(File.OpenRead(testFileDest)))

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Text;
@@ -1649,8 +1648,8 @@ namespace System.Diagnostics
         private class FileMapping
         {
             internal int _fileMappingSize;
-            private SafeMemoryMappedViewHandle _fileViewAddress = null;
-            private SafeMemoryMappedFileHandle _fileMappingHandle = null;
+            private SafeMemoryMappedViewHandle _fileViewAddress;
+            private SafeMemoryMappedFileHandle _fileMappingHandle;
             //The version of the file mapping name is independent from the
             //assembly version.
 

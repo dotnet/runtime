@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.ComponentModel;
 using System.Diagnostics;
@@ -27,11 +26,11 @@ namespace System.Data
         private DataKey _parentKey;
 
         // Design time serialization
-        internal string _constraintName = null;
-        internal string[] _parentColumnNames = null;
-        internal string[] _childColumnNames = null;
-        internal string _parentTableName = null;
-        internal string _parentTableNamespace = null;
+        internal string? _constraintName;
+        internal string[]? _parentColumnNames;
+        internal string[]? _childColumnNames;
+        internal string? _parentTableName;
+        internal string? _parentTableNamespace;
 
         /// <summary>
         /// Initializes a new instance of the <see cref='System.Data.ForeignKeyConstraint'/> class with the specified parent and
@@ -45,7 +44,7 @@ namespace System.Data
         /// Initializes a new instance of the <see cref='System.Data.ForeignKeyConstraint'/> class with the specified name,
         /// parent and child <see cref='System.Data.DataColumn'/> objects.
         /// </summary>
-        public ForeignKeyConstraint(string constraintName, DataColumn parentColumn, DataColumn childColumn)
+        public ForeignKeyConstraint(string? constraintName, DataColumn parentColumn, DataColumn childColumn)
         {
             DataColumn[] parentColumns = new DataColumn[] { parentColumn };
             DataColumn[] childColumns = new DataColumn[] { childColumn };
@@ -64,14 +63,14 @@ namespace System.Data
         /// Initializes a new instance of the <see cref='System.Data.ForeignKeyConstraint'/> class with the specified name,
         /// and arrays of parent and child <see cref='System.Data.DataColumn'/> objects.
         /// </summary>
-        public ForeignKeyConstraint(string constraintName, DataColumn[] parentColumns, DataColumn[] childColumns)
+        public ForeignKeyConstraint(string? constraintName, DataColumn[] parentColumns, DataColumn[] childColumns)
         {
             Create(constraintName, parentColumns, childColumns);
         }
 
         // construct design time object
         [Browsable(false)]
-        public ForeignKeyConstraint(string constraintName, string parentTableName, string[] parentColumnNames, string[] childColumnNames,
+        public ForeignKeyConstraint(string? constraintName, string? parentTableName, string[] parentColumnNames, string[] childColumnNames,
                                     AcceptRejectRule acceptRejectRule, Rule deleteRule, Rule updateRule)
         {
             _constraintName = constraintName;
@@ -85,7 +84,7 @@ namespace System.Data
 
         // construct design time object
         [Browsable(false)]
-        public ForeignKeyConstraint(string constraintName, string parentTableName, string parentTableNamespace, string[] parentColumnNames,
+        public ForeignKeyConstraint(string? constraintName, string? parentTableName, string? parentTableNamespace, string[] parentColumnNames,
                                     string[] childColumnNames, AcceptRejectRule acceptRejectRule, Rule deleteRule, Rule updateRule)
         {
             _constraintName = constraintName;
@@ -127,7 +126,7 @@ namespace System.Data
         /// Gets the child table of this constraint.
         /// </summary>
         [ReadOnly(true)]
-        public override DataTable Table
+        public override DataTable? Table
         {
             get
             {
@@ -197,7 +196,7 @@ namespace System.Data
 
         internal override bool CanEnableConstraint()
         {
-            if (Table.DataSet == null || !Table.DataSet.EnforceConstraints)
+            if (Table!.DataSet == null || !Table.DataSet.EnforceConstraints)
             {
                 return true;
             }
@@ -255,6 +254,8 @@ namespace System.Data
 
         internal void CascadeDelete(DataRow row)
         {
+            Debug.Assert(row.Table.DataSet != null);
+
             if (-1 == row._newRecord)
             {
                 return;
@@ -353,6 +354,8 @@ namespace System.Data
 
         internal void CascadeRollback(DataRow row)
         {
+            Debug.Assert(row.Table.DataSet != null);
+
             Index childIndex = _childKey.GetSortIndex(row.RowState == DataRowState.Deleted ? DataViewRowState.OriginalRows : DataViewRowState.CurrentRows);
             object[] key = row.GetKeyValues(_parentKey, row.RowState == DataRowState.Modified ? DataRowVersion.Current : DataRowVersion.Default);
 
@@ -396,6 +399,8 @@ namespace System.Data
 
         internal void CascadeUpdate(DataRow row)
         {
+            Debug.Assert(Table?.DataSet != null && row.Table.DataSet != null);
+
             if (-1 == row._newRecord)
             {
                 return;
@@ -487,6 +492,7 @@ namespace System.Data
 
         internal void CheckCanClearParentTable(DataTable table)
         {
+            Debug.Assert(Table?.DataSet != null);
             if (Table.DataSet.EnforceConstraints && Table.Rows.Count > 0)
             {
                 throw ExceptionBuilder.FailedClearParentTable(table.TableName, ConstraintName, Table.TableName);
@@ -495,7 +501,7 @@ namespace System.Data
 
         internal void CheckCanRemoveParentRow(DataRow row)
         {
-            Debug.Assert(Table.DataSet != null, "Relation " + ConstraintName + " isn't part of a DataSet, so this check shouldn't be happening.");
+            Debug.Assert(Table?.DataSet != null, "Relation " + ConstraintName + " isn't part of a DataSet, so this check shouldn't be happening.");
             if (!Table.DataSet.EnforceConstraints)
             {
                 return;
@@ -508,7 +514,7 @@ namespace System.Data
 
         internal void CheckCascade(DataRow row, DataRowAction action)
         {
-            Debug.Assert(Table.DataSet != null, "ForeignKeyConstraint " + ConstraintName + " isn't part of a DataSet, so this check shouldn't be happening.");
+            Debug.Assert(Table?.DataSet != null, "ForeignKeyConstraint " + ConstraintName + " isn't part of a DataSet, so this check shouldn't be happening.");
 
             if (row._inCascade)
             {
@@ -556,7 +562,7 @@ namespace System.Data
             if ((action == DataRowAction.Change ||
                  action == DataRowAction.Add ||
                  action == DataRowAction.Rollback) &&
-                Table.DataSet != null && Table.DataSet.EnforceConstraints &&
+                Table!.DataSet != null && Table.DataSet.EnforceConstraints &&
                 childRow.HasKeyChanged(_childKey))
             {
                 // This branch is for cascading case verification.
@@ -566,7 +572,7 @@ namespace System.Data
                 if (childRow.HasVersion(version))
                 {
                     // this is the new proposed value for the parent.
-                    DataRow parentRow = DataRelation.GetParentRow(ParentKey, ChildKey, childRow, version);
+                    DataRow? parentRow = DataRelation.GetParentRow(ParentKey, ChildKey, childRow, version);
                     if (parentRow != null && parentRow._inCascade)
                     {
                         object[] parentKeyValues = parentRow.GetKeyValues(_parentKey, action == DataRowAction.Rollback ? version : DataRowVersion.Default);
@@ -594,7 +600,7 @@ namespace System.Data
                             for (lo = 0; lo < childValues.Length; lo++)
                             {
                                 DataColumn column = _parentKey.ColumnsReference[lo];
-                                object value = column.ConvertValue(childValues[lo]);
+                                object? value = column.ConvertValue(childValues[lo]);
                                 if (0 != column.CompareValueTo(childRow._tempRecord, value))
                                 {
                                     break;
@@ -672,18 +678,18 @@ namespace System.Data
         internal override bool ContainsColumn(DataColumn column) =>
             _parentKey.ContainsColumn(column) || _childKey.ContainsColumn(column);
 
-        internal override Constraint Clone(DataSet destination) => Clone(destination, false);
+        internal override Constraint? Clone(DataSet destination) => Clone(destination, false);
 
-        internal override Constraint Clone(DataSet destination, bool ignorNSforTableLookup)
+        internal override Constraint? Clone(DataSet destination, bool ignorNSforTableLookup)
         {
             int iDest;
             if (ignorNSforTableLookup)
             {
-                iDest = destination.Tables.IndexOf(Table.TableName);
+                iDest = destination.Tables.IndexOf(Table!.TableName);
             }
             else
             {
-                iDest = destination.Tables.IndexOf(Table.TableName, Table.Namespace, false); // pass false for last param
+                iDest = destination.Tables.IndexOf(Table!.TableName, Table.Namespace, false); // pass false for last param
                 // to be backward compatable, otherwise meay cause new exception
             }
 
@@ -745,7 +751,7 @@ namespace System.Data
         }
 
 
-        internal ForeignKeyConstraint Clone(DataTable destination)
+        internal ForeignKeyConstraint? Clone(DataTable destination)
         {
             Debug.Assert(Table == RelatedTable, "We call this clone just if we have the same datatable as parent and child ");
             int keys = Columns.Length;
@@ -786,7 +792,7 @@ namespace System.Data
             return clone;
         }
 
-        private void Create(string relationName, DataColumn[] parentColumns, DataColumn[] childColumns)
+        private void Create(string? relationName, DataColumn[] parentColumns, DataColumn[] childColumns)
         {
             if (parentColumns.Length == 0 || childColumns.Length == 0)
             {
@@ -847,7 +853,7 @@ namespace System.Data
         /// <summary>
         /// Gets a value indicating whether the current <see cref='System.Data.ForeignKeyConstraint'/> is identical to the specified object.
         /// </summary>
-        public override bool Equals(object key)
+        public override bool Equals(object? key)
         {
             if (!(key is ForeignKeyConstraint))
             {
@@ -895,9 +901,9 @@ namespace System.Data
             }
         }
 
-        internal DataRelation FindParentRelation()
+        internal DataRelation? FindParentRelation()
         {
-            DataRelationCollection rels = Table.ParentRelations;
+            DataRelationCollection rels = Table!.ParentRelations;
 
             for (int i = 0; i < rels.Count; i++)
             {

@@ -214,7 +214,6 @@ namespace System.Runtime.InteropServices
 [IL Stubs description][il_stub_link]
 
 <!-- Common links -->
-[dotnet_link]: https://docs.microsoft.com/dotnet/core/tools/dotnet
 [typemarshal_link]: https://docs.microsoft.com/dotnet/standard/native-interop/type-marshaling
 [pinvoke_link]: https://docs.microsoft.com/dotnet/standard/native-interop/pinvoke
 [comwrappers_link]: https://github.com/dotnet/runtime/issues/1845

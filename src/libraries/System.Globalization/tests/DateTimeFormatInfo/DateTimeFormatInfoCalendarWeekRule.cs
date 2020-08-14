@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using Xunit;
@@ -13,7 +12,16 @@ namespace System.Globalization.Tests
         {
             yield return new object[] { DateTimeFormatInfo.InvariantInfo, CalendarWeekRule.FirstDay };
             yield return new object[] { new CultureInfo("en-US").DateTimeFormat, CalendarWeekRule.FirstDay };
-            yield return new object[] { new CultureInfo("br-FR").DateTimeFormat, DateTimeFormatInfoData.BrFRCalendarWeekRule() };
+
+            if (PlatformDetection.IsNotBrowser)
+            {
+                yield return new object[] { new CultureInfo("br-FR").DateTimeFormat, DateTimeFormatInfoData.BrFRCalendarWeekRule() };
+            }
+            else
+            {
+                // "br-FR" is not presented in Browser's ICU. Let's test ru-RU instead.
+                yield return new object[] { new CultureInfo("ru-RU").DateTimeFormat, CalendarWeekRule.FirstFourDayWeek };
+            }
         }
 
         [Theory]

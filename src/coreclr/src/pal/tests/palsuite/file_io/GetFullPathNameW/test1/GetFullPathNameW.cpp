@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*=====================================================================
 **
@@ -42,7 +41,7 @@ int __cdecl main(int argc, char *argv[])
     }
 
 
-    memset(szwReturnedPath, 0, _MAX_DIR+1);
+    memset(szwReturnedPath, 0, sizeof(szwReturnedPath));
     dwRc = GetFullPathNameW(szwFileName,
         _MAX_DIR,
         szwReturnedPath,

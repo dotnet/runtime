@@ -25,4 +25,7 @@
       <SubType>Designer</SubType>
     </EmbeddedResource>
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\src\System.Reflection.Context.csproj" />
+  </ItemGroup>
 </Project>

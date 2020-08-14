@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -71,7 +70,7 @@ int LinearScan::BuildNode(GenTree* tree)
     }
 
     // floating type generates AVX instruction (vmovss etc.), set the flag
-    if (varTypeIsFloating(tree->TypeGet()))
+    if (varTypeUsesFloatReg(tree->TypeGet()))
     {
         SetContainsAVXFlags();
     }
@@ -83,33 +82,14 @@ int LinearScan::BuildNode(GenTree* tree)
             break;
 
         case GT_LCL_VAR:
-        {
-            // We handle tracked variables differently from non-tracked ones.  If it is tracked,
-            // we will simply add a use of the tracked variable at its parent/consumer.
-            // Otherwise, for a use we need to actually add the appropriate references for loading
-            // or storing the variable.
-            //
-            // A tracked variable won't actually get used until the appropriate ancestor tree node
-            // is processed, unless this is marked "isLocalDefUse" because it is a stack-based argument
-            // to a call or an orphaned dead node.
-            //
-            // Because we do containment analysis before we redo dataflow and identify register
-            // candidates, the containment analysis only uses !lvDoNotEnregister to estimate register
-            // candidates.
-            // If there is a lclVar that is estimated to be register candidate but
-            // is not, if they were marked regOptional they should now be marked contained instead.
-            bool isCandidate = compiler->lvaGetDesc(tree->AsLclVar())->lvLRACandidate;
-            if (tree->IsRegOptional() && !isCandidate)
-            {
-                tree->ClearRegOptional();
-                tree->SetContained();
-                return 0;
-            }
-            if (isCandidate)
+            // We make a final determination about whether a GT_LCL_VAR is a candidate or contained
+            // after liveness. In either case we don't build any uses or defs. Otherwise, this is a
+            // load of a stack-based local into a register and we'll fall through to the general
+            // local case below.
+            if (checkContainedOrCandidateLclVar(tree->AsLclVar()))
             {
                 return 0;
             }
-        }
             __fallthrough;
 
         case GT_LCL_FLD:
@@ -132,6 +112,10 @@ int LinearScan::BuildNode(GenTree* tree)
 
         case GT_STORE_LCL_FLD:
         case GT_STORE_LCL_VAR:
+            if (tree->IsMultiRegLclVar() && isCandidateMultiRegLclVar(tree->AsLclVar()))
+            {
+                dstCount = compiler->lvaGetDesc(tree->AsLclVar()->GetLclNum())->lvFieldCnt;
+            }
             srcCount = BuildStoreLoc(tree->AsLclVarCommon());
             break;
 
@@ -635,8 +619,9 @@ int LinearScan::BuildNode(GenTree* tree)
         case GT_NULLCHECK:
         {
             assert(dstCount == 0);
-            regMaskTP indirCandidates = RBM_NONE;
-            BuildUse(tree->gtGetOp1(), indirCandidates);
+            // If we have a contained address on a nullcheck, we transform it to
+            // an unused GT_IND, since we require a target register.
+            BuildUse(tree->gtGetOp1());
             srcCount = 1;
             break;
         }
@@ -707,7 +692,7 @@ int LinearScan::BuildNode(GenTree* tree)
     assert((dstCount < 2) || ((dstCount == 2) && tree->IsMultiRegNode()));
     assert(isLocalDefUse == (tree->IsValue() && tree->IsUnusedValue()));
     assert(!tree->IsUnusedValue() || (dstCount != 0));
-    assert(dstCount == tree->GetRegisterDstCount());
+    assert(dstCount == tree->GetRegisterDstCount(compiler));
     return srcCount;
 }
 
@@ -1057,7 +1042,7 @@ int LinearScan::BuildCall(GenTreeCall* call)
         ctrlExpr = call->gtCallAddr;
     }
 
-    RegisterType registerType = call->TypeGet();
+    RegisterType registerType = regType(call);
 
     // Set destination candidates for return value of the call.
     CLANG_FORMAT_COMMENT_ANCHOR;
@@ -1078,7 +1063,7 @@ int LinearScan::BuildCall(GenTreeCall* call)
         dstCandidates = retTypeDesc->GetABIReturnRegs();
         assert((int)genCountBits(dstCandidates) == dstCount);
     }
-    else if (varTypeIsFloating(registerType))
+    else if (varTypeUsesFloatReg(registerType))
     {
 #ifdef TARGET_X86
         // The return value will be on the X87 stack, and we will need to move it.
@@ -1794,9 +1779,9 @@ int LinearScan::BuildIntrinsic(GenTree* tree)
     assert(op1->TypeGet() == tree->TypeGet());
     RefPosition* internalFloatDef = nullptr;
 
-    switch (tree->AsIntrinsic()->gtIntrinsicId)
+    switch (tree->AsIntrinsic()->gtIntrinsicName)
     {
-        case CORINFO_INTRINSIC_Abs:
+        case NI_System_Math_Abs:
             // Abs(float x) = x & 0x7fffffff
             // Abs(double x) = x & 0x7ffffff ffffffff
 
@@ -1813,16 +1798,16 @@ int LinearScan::BuildIntrinsic(GenTree* tree)
             break;
 
 #ifdef TARGET_X86
-        case CORINFO_INTRINSIC_Cos:
-        case CORINFO_INTRINSIC_Sin:
+        case NI_System_Math_Cos:
+        case NI_System_Math_Sin:
             NYI_X86("Math intrinsics Cos and Sin");
             break;
 #endif // TARGET_X86
 
-        case CORINFO_INTRINSIC_Sqrt:
-        case CORINFO_INTRINSIC_Round:
-        case CORINFO_INTRINSIC_Ceiling:
-        case CORINFO_INTRINSIC_Floor:
+        case NI_System_Math_Sqrt:
+        case NI_System_Math_Round:
+        case NI_System_Math_Ceiling:
+        case NI_System_Math_Floor:
             break;
 
         default:
@@ -1947,65 +1932,12 @@ int LinearScan::BuildSIMD(GenTreeSIMD* simdTree)
             // We have an array and an index, which may be contained.
             break;
 
-        case SIMDIntrinsicDiv:
-            // SSE2 has no instruction support for division on integer vectors
-            noway_assert(varTypeIsFloating(simdTree->gtSIMDBaseType));
-            break;
-
-        case SIMDIntrinsicAdd:
         case SIMDIntrinsicSub:
-        case SIMDIntrinsicMul:
         case SIMDIntrinsicBitwiseAnd:
         case SIMDIntrinsicBitwiseOr:
-            // SSE2 32-bit integer multiplication requires two temp regs
-            if (simdTree->gtSIMDIntrinsicID == SIMDIntrinsicMul && simdTree->gtSIMDBaseType == TYP_INT &&
-                compiler->getSIMDSupportLevel() == SIMD_SSE2_Supported)
-            {
-                buildInternalFloatRegisterDefForNode(simdTree);
-                buildInternalFloatRegisterDefForNode(simdTree);
-            }
             break;
 
         case SIMDIntrinsicEqual:
-            break;
-
-        case SIMDIntrinsicDotProduct:
-            // Float/Double vectors:
-            // For SSE, or AVX with 32-byte vectors, we also need an internal register
-            // as scratch. Further we need the targetReg and internal reg to be distinct
-            // registers. Note that if this is a TYP_SIMD16 or smaller on AVX, then we
-            // don't need a tmpReg.
-            //
-            // 32-byte integer vector on SSE4/AVX:
-            // will take advantage of phaddd, which operates only on 128-bit xmm reg.
-            // This will need 1 (in case of SSE4) or 2 (in case of AVX) internal
-            // registers since targetReg is an int type register.
-            //
-            // See genSIMDIntrinsicDotProduct() for details on code sequence generated
-            // and the need for scratch registers.
-            if (varTypeIsFloating(simdTree->gtSIMDBaseType))
-            {
-                if ((compiler->getSIMDSupportLevel() == SIMD_SSE2_Supported) ||
-                    (simdTree->gtGetOp1()->TypeGet() == TYP_SIMD32))
-                {
-                    buildInternalFloatRegisterDefForNode(simdTree);
-                    setInternalRegsDelayFree = true;
-                }
-                // else don't need scratch reg(s).
-            }
-            else
-            {
-                assert(simdTree->gtSIMDBaseType == TYP_INT && compiler->getSIMDSupportLevel() >= SIMD_SSE4_Supported);
-
-                // No need to setInternalRegsDelayFree since targetReg is a
-                // an int type reg and guaranteed to be different from xmm/ymm
-                // regs.
-                buildInternalFloatRegisterDefForNode(simdTree);
-                if (compiler->getSIMDSupportLevel() == SIMD_AVX2_Supported)
-                {
-                    buildInternalFloatRegisterDefForNode(simdTree);
-                }
-            }
             break;
 
         case SIMDIntrinsicGetItem:
@@ -2177,10 +2109,6 @@ int LinearScan::BuildSIMD(GenTreeSIMD* simdTree)
         case SIMDIntrinsicGetY:
         case SIMDIntrinsicGetZ:
         case SIMDIntrinsicGetW:
-        case SIMDIntrinsicGetOne:
-        case SIMDIntrinsicGetZero:
-        case SIMDIntrinsicGetCount:
-        case SIMDIntrinsicGetAllOnes:
             assert(!"Get intrinsics should not be seen during Lowering.");
             unreached();
 

@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Buffers;
 using System.Diagnostics;
@@ -29,15 +28,6 @@ namespace System.Text.Json
             Debug.Assert(utf8Value != null);
 
             _value = JsonReaderHelper.GetTextFromUtf8(utf8Value);
-            _utf8Value = utf8Value;
-        }
-
-        private JsonEncodedText(string stringValue, byte[] utf8Value)
-        {
-            Debug.Assert(stringValue != null);
-            Debug.Assert(utf8Value != null);
-
-            _value = stringValue;
             _utf8Value = utf8Value;
         }
 
@@ -126,68 +116,12 @@ namespace System.Text.Json
 
             if (idx != -1)
             {
-                return new JsonEncodedText(GetEscapedString(utf8Value, idx, encoder));
+                return new JsonEncodedText(JsonHelpers.EscapeValue(utf8Value, idx, encoder));
             }
             else
             {
                 return new JsonEncodedText(utf8Value.ToArray());
             }
-        }
-
-        /// <summary>
-        /// Internal version that keeps the existing string and byte[] references if there is no escaping required.
-        /// </summary>
-        internal static JsonEncodedText Encode(string stringValue, byte[] utf8Value, JavaScriptEncoder? encoder = null)
-        {
-            Debug.Assert(stringValue.Equals(JsonHelpers.Utf8GetString(utf8Value)));
-
-            if (utf8Value.Length == 0)
-            {
-                return new JsonEncodedText(stringValue, utf8Value);
-            }
-
-            JsonWriterHelper.ValidateValue(utf8Value);
-            return EncodeHelper(stringValue, utf8Value, encoder);
-        }
-
-        private static JsonEncodedText EncodeHelper(string stringValue, byte[] utf8Value, JavaScriptEncoder? encoder)
-        {
-            int idx = JsonWriterHelper.NeedsEscaping(utf8Value, encoder);
-
-            if (idx != -1)
-            {
-                return new JsonEncodedText(GetEscapedString(utf8Value, idx, encoder));
-            }
-            else
-            {
-                // Encoding is not necessary; use the same stringValue and utf8Value references.
-                return new JsonEncodedText(stringValue, utf8Value);
-            }
-        }
-
-        private static byte[] GetEscapedString(ReadOnlySpan<byte> utf8Value, int firstEscapeIndexVal, JavaScriptEncoder? encoder)
-        {
-            Debug.Assert(int.MaxValue / JsonConstants.MaxExpansionFactorWhileEscaping >= utf8Value.Length);
-            Debug.Assert(firstEscapeIndexVal >= 0 && firstEscapeIndexVal < utf8Value.Length);
-
-            byte[]? valueArray = null;
-
-            int length = JsonWriterHelper.GetMaxEscapedLength(utf8Value.Length, firstEscapeIndexVal);
-
-            Span<byte> escapedValue = length <= JsonConstants.StackallocThreshold ?
-                stackalloc byte[length] :
-                (valueArray = ArrayPool<byte>.Shared.Rent(length));
-
-            JsonWriterHelper.EscapeString(utf8Value, escapedValue, firstEscapeIndexVal, encoder, out int written);
-
-            byte[] escapedString = escapedValue.Slice(0, written).ToArray();
-
-            if (valueArray != null)
-            {
-                ArrayPool<byte>.Shared.Return(valueArray);
-            }
-
-            return escapedString;
         }
 
         /// <summary>

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 namespace System.Xml.Xsl.XsltOld
 {
@@ -34,7 +33,7 @@ namespace System.Xml.Xsl.XsltOld
         internal ArrayList containedActions;
         internal CopyCodeAction lastCopyCodeAction; // non null if last action is CopyCodeAction;
 
-        private int _maxid = 0;
+        private int _maxid;
 
         // Local execution states
         protected const int ProcessingChildren = 1;

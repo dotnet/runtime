@@ -1,9 +1,4 @@
-<Project>
-  <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props))" />
-
-  <!-- Target that builds all the native binaries in the Native folder -->
-  <Target Name="Build" DependsOnTargets="BuildNativeUnix;BuildNativeWindows" />
-
+<Project Sdk="Microsoft.Build.Traversal">
   <PropertyGroup>
     <!-- Hardcode version paths in a global location. -->
     <NativeVersionFile Condition="'$(TargetOS)' == 'Windows_NT'">$(ArtifactsObjDir)_version.h</NativeVersionFile>
@@ -11,9 +6,14 @@
     <_BuildNativeArgs>$(TargetArchitecture) $(Configuration) outconfig $(BuildTargetFramework)-$(TargetOS)-$(Configuration)-$(TargetArchitecture) -os $(TargetOS)</_BuildNativeArgs>
   </PropertyGroup>
 
-  <Target Name="BuildNativeUnix"
-          Condition="'$(TargetOS)' != 'Windows_NT'">
+  <ItemGroup>
+    <ProjectReference Include="native-binplace.proj"
+                      Condition="'$(BuildingNETCoreAppVertical)' == 'true'" />
+  </ItemGroup>
 
+  <Target Name="BuildNativeUnix"
+          BeforeTargets="Build"
+          Condition="'$(TargetOS)' != 'Windows_NT'">
     <PropertyGroup>
       <!--
         MSBuildNodeCount should a good approximation for how many procs to use for native build, if we find that doesn't work
@@ -32,20 +32,16 @@
       <_BuildNativeUnixArgs>$(_BuildNativeArgs)$(_ProcessCountArg)$(_PortableBuildArg)$(_CrossBuildArg)$(_BuildNativeCompilerArg)$(_CMakeArgs) $(Compiler)</_BuildNativeUnixArgs>
     </PropertyGroup>
 
-    <Message Text="$(MSBuildProjectDirectory)/build-native.sh $(_BuildNativeUnixArgs)" Importance="High"/>
-    <Exec Command="&quot;$(MSBuildProjectDirectory)/build-native.sh&quot; $(_BuildNativeUnixArgs)" />
-
+    <Message Text="$(MSBuildThisFileDirectory)build-native.sh $(_BuildNativeUnixArgs)" Importance="High"/>
+    <Exec Command="&quot;$(MSBuildThisFileDirectory)build-native.sh&quot; $(_BuildNativeUnixArgs)" />
   </Target>
 
-  <!-- We don't have any native components when building for netfx. -->
   <Target Name="BuildNativeWindows"
-          Condition="'$(TargetOS)' == 'Windows_NT' and !$(TargetFramework.StartsWith('net4'))">
-
+          BeforeTargets="Build"
+          Condition="'$(TargetOS)' == 'Windows_NT' and
+                     '$(BuildTargetFramework)' == '$(NetCoreAppCurrent)'">
     <!-- Run script that invokes Cmake to create VS files, and then calls msbuild to compile them -->
-    <Message Text="&quot;$(MSBuildProjectDirectory)\build-native.cmd&quot; $(_BuildNativeArgs)" Importance="High"/>
-    <Exec Command="&quot;$(MSBuildProjectDirectory)\build-native.cmd&quot; $(_BuildNativeArgs)" />
-
+    <Message Text="&quot;$(MSBuildThisFileDirectory)build-native.cmd&quot; $(_BuildNativeArgs)" Importance="High"/>
+    <Exec Command="&quot;$(MSBuildThisFileDirectory)build-native.cmd&quot; $(_BuildNativeArgs)" />
   </Target>
-
-  <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets))" />
 </Project>

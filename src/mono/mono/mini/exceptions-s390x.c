@@ -564,7 +564,7 @@ mono_arch_unwind_frame (MonoDomain *domain, MonoJitTlsData *jit_tls,
 /*========================= End of Function ========================*/
 
 static void
-altstack_handle_and_restore (MonoContext *ctx, gpointer obj, guint32 flags)
+altstack_handle_and_restore (MonoContext *ctx, MONO_SIG_HANDLER_INFO_TYPE *siginfo, gpointer obj, guint32 flags)
 {
 	MonoContext mctx;
 	MonoJitInfo *ji = mini_jit_info_table_find (mono_domain_get (), MONO_CONTEXT_GET_IP (ctx), NULL);
@@ -573,7 +573,7 @@ altstack_handle_and_restore (MonoContext *ctx, gpointer obj, guint32 flags)
 
 	if (!ji || (!stack_ovf && !nullref)) {
 		if (mono_dump_start ())
-			mono_handle_native_crash (mono_get_signame (SIGSEGV), ctx, NULL);
+			mono_handle_native_crash (mono_get_signame (SIGSEGV), ctx, siginfo, ctx);
 		/* if couldn't dump or if mono_handle_native_crash returns, abort */
 		abort ();
 	}
@@ -635,8 +635,9 @@ mono_arch_handle_altstack_exception (void *sigctx, MONO_SIG_HANDLER_INFO_TYPE *s
 	UCONTEXT_IP(uc)         = (uintptr_t) altstack_handle_and_restore;
 	UCONTEXT_REG_Rn(uc, 1)  = (uintptr_t) sp;
 	UCONTEXT_REG_Rn(uc, S390_FIRST_ARG_REG) = (uintptr_t) uc_copy;
-	UCONTEXT_REG_Rn(uc, S390_FIRST_ARG_REG + 1) = (uintptr_t) exc;
-	UCONTEXT_REG_Rn(uc, S390_FIRST_ARG_REG + 2) = (stack_ovf ? 1 : 0) | (nullref ? 2 : 0);
+	UCONTEXT_REG_Rn(uc, S390_FIRST_ARG_REG + 1) = (uintptr_t) siginfo;
+	UCONTEXT_REG_Rn(uc, S390_FIRST_ARG_REG + 2) = (uintptr_t) exc;
+	UCONTEXT_REG_Rn(uc, S390_FIRST_ARG_REG + 3) = (stack_ovf ? 1 : 0) | (nullref ? 2 : 0);
 #endif
 }
 

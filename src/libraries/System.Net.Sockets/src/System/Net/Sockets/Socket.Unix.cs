@@ -1,16 +1,16 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
-using Microsoft.Win32.SafeHandles;
 using System.Diagnostics;
 using System.IO;
 using System.Threading.Tasks;
+using System.Runtime.Versioning;
 
 namespace System.Net.Sockets
 {
     public partial class Socket
     {
+        [SupportedOSPlatform("windows")]
         public Socket(SocketInformation socketInformation)
         {
             // This constructor works in conjunction with DuplicateAndClose, which is not supported on Unix.
@@ -18,12 +18,39 @@ namespace System.Net.Sockets
             throw new PlatformNotSupportedException(SR.net_sockets_duplicateandclose_notsupported);
         }
 
+        [SupportedOSPlatform("windows")]
         public SocketInformation DuplicateAndClose(int targetProcessId)
         {
             // DuplicateAndClose is not supported on Unix, since passing file descriptors between processes
             // requires Unix Domain Sockets. The programming model is fundamentally different,
             // and incompatible with the design of SocketInformation-related methods.
             throw new PlatformNotSupportedException(SR.net_sockets_duplicateandclose_notsupported);
+        }
+
+        public IAsyncResult BeginAccept(int receiveSize, AsyncCallback? callback, object? state)
+        {
+            throw new PlatformNotSupportedException(SR.net_sockets_accept_receive_apm_notsupported);
+        }
+
+        public IAsyncResult BeginAccept(Socket? acceptSocket, int receiveSize, AsyncCallback? callback, object? state)
+        {
+            throw new PlatformNotSupportedException(SR.net_sockets_accept_receive_apm_notsupported);
+        }
+
+        public Socket EndAccept(out byte[] buffer, IAsyncResult asyncResult)
+        {
+            throw new PlatformNotSupportedException(SR.net_sockets_accept_receive_apm_notsupported);
+        }
+
+        public Socket EndAccept(out byte[] buffer, out int bytesTransferred, IAsyncResult asyncResult)
+        {
+            throw new PlatformNotSupportedException(SR.net_sockets_accept_receive_apm_notsupported);
+        }
+
+        internal bool PreferInlineCompletions
+        {
+            get => _handle.PreferInlineCompletions;
+            set => _handle.PreferInlineCompletions = value;
         }
 
         partial void ValidateForMultiConnect(bool isMultiEndpoint)

@@ -1,19 +1,21 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Net.Connections;
 using System.Net.Security;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Diagnostics.CodeAnalysis;
+using System.Text;
 
 namespace System.Net.Http
 {
     public sealed class SocketsHttpHandler : HttpMessageHandler
     {
         private readonly HttpConnectionSettings _settings = new HttpConnectionSettings();
-        private HttpMessageHandler? _handler;
+        private HttpMessageHandlerStage? _handler;
         private bool _disposed;
 
         private void CheckDisposed()
@@ -32,6 +34,11 @@ namespace System.Net.Http
                 throw new InvalidOperationException(SR.net_http_operation_started);
             }
         }
+
+        /// <summary>
+        /// Gets a value that indicates whether the handler is supported on the current platform.
+        /// </summary>
+        public static bool IsSupported => true;
 
         public bool UseCookies
         {
@@ -273,8 +280,146 @@ namespace System.Net.Http
             }
         }
 
+        /// <summary>
+        /// Gets or sets the keep alive ping delay. The client will send a keep alive ping to the server if it
+        /// doesn't receive any frames on a connection for this period of time. This property is used together with
+        /// <see cref="SocketsHttpHandler.KeepAlivePingTimeout"/> to close broken connections.
+        /// <para>
+        /// Delay value must be greater than or equal to 1 second. Set to <see cref="Timeout.InfiniteTimeSpan"/> to
+        /// disable the keep alive ping.
+        /// Defaults to <see cref="Timeout.InfiniteTimeSpan"/>.
+        /// </para>
+        /// </summary>
+        public TimeSpan KeepAlivePingDelay
+        {
+            get => _settings._keepAlivePingDelay;
+            set
+            {
+                if (value.Ticks < TimeSpan.TicksPerSecond && value != Timeout.InfiniteTimeSpan)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(value), value, SR.Format(SR.net_http_value_must_be_greater_than_or_equal, value, TimeSpan.FromSeconds(1)));
+                }
+
+                CheckDisposedOrStarted();
+                _settings._keepAlivePingDelay = value;
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets the keep alive ping timeout. Keep alive pings are sent when a period of inactivity exceeds
+        /// the configured <see cref="KeepAlivePingDelay"/> value. The client will close the connection if it
+        /// doesn't receive any frames within the timeout.
+        /// <para>
+        /// Timeout must be greater than or equal to 1 second. Set to <see cref="Timeout.InfiniteTimeSpan"/> to
+        /// disable the keep alive ping timeout.
+        /// Defaults to 20 seconds.
+        /// </para>
+        /// </summary>
+        public TimeSpan KeepAlivePingTimeout
+        {
+            get => _settings._keepAlivePingTimeout;
+            set
+            {
+                if (value.Ticks < TimeSpan.TicksPerSecond && value != Timeout.InfiniteTimeSpan)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(value), value, SR.Format(SR.net_http_value_must_be_greater_than_or_equal, value, TimeSpan.FromSeconds(1)));
+                }
+
+                CheckDisposedOrStarted();
+                _settings._keepAlivePingTimeout = value;
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets the keep alive ping behaviour. Keep alive pings are sent when a period of inactivity exceeds
+        /// the configured <see cref="KeepAlivePingDelay"/> value.
+        /// </summary>
+        public HttpKeepAlivePingPolicy KeepAlivePingPolicy
+        {
+            get => _settings._keepAlivePingPolicy;
+            set
+            {
+                CheckDisposedOrStarted();
+                _settings._keepAlivePingPolicy = value;
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets a value that indicates whether additional HTTP/2 connections can be established to the same server
+        /// when the maximum of concurrent streams is reached on all existing connections.
+        /// </summary>
+        public bool EnableMultipleHttp2Connections
+        {
+            get => _settings._enableMultipleHttp2Connections;
+            set
+            {
+                CheckDisposedOrStarted();
+
+                _settings._enableMultipleHttp2Connections = value;
+            }
+        }
+
+        internal bool SupportsAutomaticDecompression => true;
+        internal bool SupportsProxy => true;
+        internal bool SupportsRedirectConfiguration => true;
+
+        /// <summary>
+        /// When non-null, a custom factory used to open new TCP connections.
+        /// When null, a <see cref="SocketsConnectionFactory"/> will be used.
+        /// </summary>
+        public ConnectionFactory? ConnectionFactory
+        {
+            get => _settings._connectionFactory;
+            set
+            {
+                CheckDisposedOrStarted();
+                _settings._connectionFactory = value;
+            }
+        }
+
+        /// <summary>
+        /// When non-null, a connection filter that is applied prior to any TLS encryption.
+        /// </summary>
+        public Func<HttpRequestMessage, Connection, CancellationToken, ValueTask<Connection>>? PlaintextFilter
+        {
+            get => _settings._plaintextFilter;
+            set
+            {
+                CheckDisposedOrStarted();
+                _settings._plaintextFilter = value;
+            }
+        }
+
         public IDictionary<string, object?> Properties =>
             _settings._properties ?? (_settings._properties = new Dictionary<string, object?>());
+
+        /// <summary>
+        /// Gets or sets a callback that returns the <see cref="Encoding"/> to encode the value for the specified request header name,
+        /// or <see langword="null"/> to use the default behavior.
+        /// </summary>
+        public HeaderEncodingSelector<HttpRequestMessage>? RequestHeaderEncodingSelector
+        {
+            get => _settings._requestHeaderEncodingSelector;
+            set
+            {
+                CheckDisposedOrStarted();
+                _settings._requestHeaderEncodingSelector = value;
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets a callback that returns the <see cref="Encoding"/> to decode the value for the specified response header name,
+        /// or <see langword="null"/> to use the default behavior.
+        /// </summary>
+        public HeaderEncodingSelector<HttpRequestMessage>? ResponseHeaderEncodingSelector
+        {
+            get => _settings._responseHeaderEncodingSelector;
+            set
+            {
+                CheckDisposedOrStarted();
+                _settings._responseHeaderEncodingSelector = value;
+            }
+        }
 
         protected override void Dispose(bool disposing)
         {
@@ -287,7 +432,7 @@ namespace System.Net.Http
             base.Dispose(disposing);
         }
 
-        private HttpMessageHandler SetupHandlerChain()
+        private HttpMessageHandlerStage SetupHandlerChain()
         {
             // Clone the settings to get a relatively consistent view that won't change after this point.
             // (This isn't entirely complete, as some of the collections it contains aren't currently deeply cloned.)
@@ -295,7 +440,7 @@ namespace System.Net.Http
 
             HttpConnectionPoolManager poolManager = new HttpConnectionPoolManager(settings);
 
-            HttpMessageHandler handler;
+            HttpMessageHandlerStage handler;
 
             if (settings._credentials == null)
             {
@@ -311,7 +456,7 @@ namespace System.Net.Http
                 // Just as with WinHttpHandler, for security reasons, we do not support authentication on redirects
                 // if the credential is anything other than a CredentialCache.
                 // We allow credentials in a CredentialCache since they are specifically tied to URIs.
-                HttpMessageHandler redirectHandler =
+                HttpMessageHandlerStage redirectHandler =
                     (settings._credentials == null || settings._credentials is CredentialCache) ?
                     handler :
                     new HttpConnectionHandler(poolManager);        // will not authenticate
@@ -333,8 +478,33 @@ namespace System.Net.Http
             return _handler;
         }
 
-        protected internal override Task<HttpResponseMessage> SendAsync(
-            HttpRequestMessage request, CancellationToken cancellationToken)
+        protected internal override HttpResponseMessage Send(HttpRequestMessage request,
+            CancellationToken cancellationToken)
+        {
+            if (request.Version.Major >= 2)
+            {
+                throw new NotSupportedException(SR.Format(SR.net_http_http2_sync_not_supported, GetType()));
+            }
+
+            // Do not allow upgrades for synchronous requests, that might lead to asynchronous code-paths.
+            if (request.VersionPolicy == HttpVersionPolicy.RequestVersionOrHigher)
+            {
+                throw new NotSupportedException(SR.Format(SR.net_http_upgrade_not_enabled_sync, nameof(Send), request.VersionPolicy));
+            }
+
+            CheckDisposed();
+            HttpMessageHandlerStage handler = _handler ?? SetupHandlerChain();
+
+            Exception? error = ValidateAndNormalizeRequest(request);
+            if (error != null)
+            {
+                throw error;
+            }
+
+            return handler.Send(request, cancellationToken);
+        }
+
+        protected internal override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
             CheckDisposed();
             HttpMessageHandler handler = _handler ?? SetupHandlerChain();

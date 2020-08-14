@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -1367,7 +1366,7 @@ namespace System
             Field = 0x06,
             LocalSig = 0x07,
             Property = 0x08,
-            Unmgd = 0x09,
+            Unmanaged = 0x09,
             GenericInst = 0x0A,
             Max = 0x0B,
         }

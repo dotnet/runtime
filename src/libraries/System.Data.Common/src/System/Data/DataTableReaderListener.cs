@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.ComponentModel;
 
@@ -8,8 +7,8 @@ namespace System.Data
 {
     internal sealed class DataTableReaderListener
     {
-        private DataTable _currentDataTable = null;
-        private bool _isSubscribed = false;
+        private DataTable _currentDataTable;
+        private bool _isSubscribed;
         private readonly WeakReference _readerWeak;
 
         internal DataTableReaderListener(DataTableReader reader)
@@ -87,7 +86,7 @@ namespace System.Data
 
         private void DataTableCleared(object sender, DataTableClearEventArgs e)
         {
-            DataTableReader reader = (DataTableReader)_readerWeak.Target;
+            DataTableReader? reader = (DataTableReader?)_readerWeak.Target;
             if (reader != null)
             {
                 reader.DataTableCleared();
@@ -100,7 +99,7 @@ namespace System.Data
 
         private void SchemaChanged(object sender, CollectionChangeEventArgs e)
         {
-            DataTableReader reader = (DataTableReader)_readerWeak.Target;
+            DataTableReader? reader = (DataTableReader?)_readerWeak.Target;
             if (reader != null)
             {
                 reader.SchemaChanged();
@@ -113,7 +112,7 @@ namespace System.Data
 
         private void DataChanged(object sender, DataRowChangeEventArgs args)
         {
-            DataTableReader reader = (DataTableReader)_readerWeak.Target;
+            DataTableReader? reader = (DataTableReader?)_readerWeak.Target;
             if (reader != null)
             {
                 reader.DataChanged(args);

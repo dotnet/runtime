@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -257,7 +256,7 @@ namespace Internal.TypeSystem
                         case ArrayMethodKind.AddressWithHiddenArg:
                             {
                                 var parameters = new TypeDesc[_owningType.Rank + 1];
-                                parameters[0] = Context.SystemModule.GetType("System", "EETypePtr");
+                                parameters[0] = Context.GetWellKnownType(WellKnownType.IntPtr);
                                 for (int i = 0; i < _owningType.Rank; i++)
                                     parameters[i + 1] = _owningType.Context.GetWellKnownType(WellKnownType.Int32);
                                 _signature = new MethodSignature(0, 0, _owningType.ElementType.MakeByRefType(), parameters);

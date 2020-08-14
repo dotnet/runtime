@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //
 // File: stubhelpers.cpp
 //
@@ -251,14 +250,6 @@ FORCEINLINE static IUnknown *GetCOMIPFromRCW_GetIUnknownFromRCWCache(RCW *pRCW, 
         }
     }
 
-    // also search the auxiliary cache if it's available
-    RCWAuxiliaryData *pAuxData = pRCW->m_pAuxiliaryData;
-    if (pAuxData != NULL)
-    {
-        LPVOID pCtxCookie = (pRCW->IsFreeThreaded() ? NULL : pOleTlsData->pCurrentCtx);
-        return pAuxData->FindInterfacePointer(pItfMT, pCtxCookie);
-    }
-
     return NULL;
 }
 
@@ -285,20 +276,6 @@ FORCEINLINE static IUnknown *GetCOMIPFromRCW_GetIUnknownFromRCWCache_NoIntercept
                 *ppTarget = GetCOMIPFromRCW_GetTargetNoInterception(pUnk, pComInfo);
                 return pUnk;
             }
-        }
-    }
-
-    // also search the auxiliary cache if it's available
-    RCWAuxiliaryData *pAuxData = pRCW->m_pAuxiliaryData;
-    if (pAuxData != NULL)
-    {
-        LPVOID pCtxCookie = (pRCW->IsFreeThreaded() ? NULL : pOleTlsData->pCurrentCtx);
-
-        IUnknown *pUnk = pAuxData->FindInterfacePointer(pItfMT, pCtxCookie);
-        if (pUnk != NULL)
-        {
-            *ppTarget = GetCOMIPFromRCW_GetTargetNoInterception(pUnk, pComInfo);
-            return pUnk;
         }
     }
 
@@ -515,13 +492,6 @@ FCIMPL0(void, StubHelpers::ClearLastError)
     FCALL_CONTRACT;
 
     ::SetLastError(0);
-}
-FCIMPLEND
-
-FCIMPL1(FC_BOOL_RET, StubHelpers::IsQCall, NDirectMethodDesc* pNMD)
-{
-    FCALL_CONTRACT;
-    FC_RETURN_BOOL(pNMD->IsQCall());
 }
 FCIMPLEND
 

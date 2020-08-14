@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 // ===========================================================================
 
 #ifndef _FINALIZER_THREAD_H_
@@ -33,9 +32,7 @@ class FinalizerThread
 
     static void WaitForFinalizerEvent (CLREvent *event);
 
-    static void DoOneFinalization(Object* fobj, Thread* pThread);
-
-    static void FinalizeAllObjects(int bitToCheck);
+    static void FinalizeAllObjects();
 
 public:
     static Thread* GetFinalizerThread()

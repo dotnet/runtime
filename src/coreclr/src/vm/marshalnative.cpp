@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //
 // File: MarshalNative.cpp
 //
@@ -695,80 +694,6 @@ FCIMPL1(int, MarshalNative::GetHRForException, Object* eUNSAFE)
 FCIMPLEND
 
 #ifdef FEATURE_COMINTEROP
-
-//====================================================================
-// map GUID to Type
-//====================================================================
-
-/*OBJECTREF */
-FCIMPL1(Object*, MarshalNative::GetLoadedTypeForGUID, GUID* pGuid)
-{
-    CONTRACTL
-    {
-        FCALL_CHECK;
-        PRECONDITION(CheckPointer(pGuid, NULL_OK));
-    }
-    CONTRACTL_END;
-
-    OBJECTREF refRetVal = NULL;
-    HELPER_METHOD_FRAME_BEGIN_RET_1(refRetVal);
-
-    if (!pGuid)
-        COMPlusThrowArgumentNull(W("pGuid"));
-
-    AppDomain* pDomain = SystemDomain::GetCurrentDomain();
-    _ASSERTE(pDomain);
-
-    MethodTable* pMT = pDomain->LookupClass(*(pGuid));
-    if (pMT)
-        refRetVal = pMT->GetManagedClassObject();
-
-    HELPER_METHOD_FRAME_END();
-    return OBJECTREFToObject(refRetVal);
-}
-FCIMPLEND
-
-//====================================================================
-// map Type to ITypeInfo*
-//====================================================================
-FCIMPL1(ITypeInfo*, MarshalNative::GetITypeInfoForType, ReflectClassBaseObject* refClassUNSAFE)
-{
-    FCALL_CONTRACT;
-
-    ITypeInfo* pTI = NULL;
-    REFLECTCLASSBASEREF refClass = (REFLECTCLASSBASEREF) refClassUNSAFE;
-    HELPER_METHOD_FRAME_BEGIN_RET_1(refClass);
-
-    // Check for null arguments.
-    if(!refClass)
-        COMPlusThrowArgumentNull(W("t"));
-
-    MethodTable *pRefMT = refClass->GetMethodTable();
-    if (pRefMT != g_pRuntimeTypeClass)
-        COMPlusThrowArgumentException(W("t"), W("Argument_MustBeRuntimeType"));
-
-    TypeHandle th = refClass->GetType();
-
-    if (th.HasInstantiation())
-        COMPlusThrowArgumentException(W("t"), W("Argument_NeedNonGenericType"));
-
-    // Make sure the type is visible from COM.
-    if (!::IsTypeVisibleFromCom(th))
-        COMPlusThrowArgumentException(W("t"), W("Argument_TypeMustBeVisibleFromCom"));
-
-    // Retrieve the EE class from the reflection type.
-    MethodTable* pMT = th.GetMethodTable();
-    _ASSERTE(pMT);
-
-    // Retrieve the ITypeInfo for the class.
-    IfFailThrow(GetITypeInfoForEEClass(pMT, &pTI, true /* bClassInfo */));
-    _ASSERTE(pTI != NULL);
-
-    HELPER_METHOD_FRAME_END();
-    return pTI;
-}
-FCIMPLEND
-
 //====================================================================
 // return the IUnknown* for an Object.
 //====================================================================
@@ -1298,83 +1223,6 @@ FCIMPL1(FC_BOOL_RET, MarshalNative::IsTypeVisibleFromCom, ReflectClassBaseObject
 
     HELPER_METHOD_FRAME_END();
     FC_RETURN_BOOL(retVal);
-}
-FCIMPLEND
-
-
-//====================================================================
-// IUnknown Helpers
-//====================================================================
-// IUnknown::QueryInterface
-FCIMPL3(HRESULT, MarshalNative::QueryInterface, IUnknown* pUnk, REFGUID iid, void** ppv)
-{
-    CONTRACTL
-    {
-        FCALL_CHECK;
-        PRECONDITION(CheckPointer(pUnk, NULL_OK));
-        PRECONDITION(CheckPointer(ppv));
-    }
-    CONTRACTL_END;
-
-    HRESULT hr = S_OK;
-    HELPER_METHOD_FRAME_BEGIN_RET_0();
-
-    if (!pUnk)
-        COMPlusThrowArgumentNull(W("pUnk"));
-
-    hr = SafeQueryInterface(pUnk,iid,(IUnknown**)ppv);
-    LogInteropQI(pUnk, iid, hr, "PInvoke::QI");
-
-    HELPER_METHOD_FRAME_END();
-    return hr;
-}
-FCIMPLEND
-
-// IUnknown::AddRef
-FCIMPL1(ULONG, MarshalNative::AddRef, IUnknown* pUnk)
-{
-    CONTRACTL
-    {
-        FCALL_CHECK;
-        PRECONDITION(CheckPointer(pUnk, NULL_OK));
-    }
-    CONTRACTL_END;
-
-    ULONG cbRef = 0;
-    HELPER_METHOD_FRAME_BEGIN_RET_0();
-
-    if (!pUnk)
-        COMPlusThrowArgumentNull(W("pUnk"));
-
-    cbRef = SafeAddRef(pUnk);
-    LogInteropAddRef(pUnk, cbRef, "PInvoke.AddRef");
-
-    HELPER_METHOD_FRAME_END();
-    return cbRef;
-}
-FCIMPLEND
-
-//IUnknown::Release
-FCIMPL1(ULONG, MarshalNative::Release, IUnknown* pUnk)
-{
-    CONTRACTL
-    {
-        FCALL_CHECK;
-        PRECONDITION(CheckPointer(pUnk, NULL_OK));
-    }
-    CONTRACTL_END;
-
-    ULONG cbRef = 0;
-    HELPER_METHOD_FRAME_BEGIN_RET_0();
-
-    if (!pUnk)
-        COMPlusThrowArgumentNull(W("pUnk"));
-
-    cbRef = SafeRelease(pUnk);
-    LogInteropRelease(pUnk, cbRef, "PInvoke.Release");
-
-    HELPER_METHOD_FRAME_END();
-    return cbRef;
 }
 FCIMPLEND
 

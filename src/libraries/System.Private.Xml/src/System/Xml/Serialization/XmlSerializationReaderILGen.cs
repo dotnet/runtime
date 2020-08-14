@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 
 namespace System.Xml.Serialization
@@ -24,7 +23,7 @@ namespace System.Xml.Serialization
         // Mapping name->id_XXXNN field
         private readonly Dictionary<string, FieldBuilder> _idNameFields = new Dictionary<string, FieldBuilder>();
         private Dictionary<string, EnumMapping> _enums;
-        private int _nextIdNumber = 0;
+        private int _nextIdNumber;
 
         internal Dictionary<string, EnumMapping> Enums
         {

@@ -30,6 +30,7 @@
     <PrereleaseLibraryPackage Include="System.DirectoryServices.Protocols" />
     <PrereleaseLibraryPackage Include="System.IO.FileSystem.AccessControl" />
     <PrereleaseLibraryPackage Include="System.IO.Packaging" />
+    <PrereleaseLibraryPackage Include="System.IO.Pipes.AccessControl" />
     <PrereleaseLibraryPackage Include="System.IO.Ports" />
     <PrereleaseLibraryPackage Include="System.Management" />
     <PrereleaseLibraryPackage Include="System.Runtime.Caching" />
@@ -49,9 +50,6 @@
     <NS21PrereleaseLibraryPackage Include="System.Reflection.Context" />
 
     <!-- Packages we don't build in master anymore -->
-    <LibraryPackage Include="System.IO.Pipes.AccessControl">
-      <Version>4.5.1</Version>
-    </LibraryPackage>
     <LibraryPackage Include="System.Data.DataSetExtensions">
       <Version>4.5.0</Version>
     </LibraryPackage>

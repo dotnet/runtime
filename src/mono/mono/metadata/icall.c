@@ -171,7 +171,7 @@ static void
 array_set_value_impl (MonoArrayHandle arr, MonoObjectHandle value, guint32 pos, gboolean strict_enums, gboolean strict_signs, MonoError *error);
 
 static MonoArrayHandle
-type_array_from_modifiers (MonoImage *image, MonoType *type, int optional, MonoError *error);
+type_array_from_modifiers (MonoType *type, int optional, MonoError *error);
 
 static inline MonoBoolean
 is_generic_parameter (MonoType *type)
@@ -1156,9 +1156,12 @@ ves_icall_System_Runtime_RuntimeImports_Memmove (guint8 *destination, guint8 *so
 
 #if ENABLE_NETCORE
 void
-ves_icall_System_Runtime_RuntimeImports_RhBulkMoveWithWriteBarrier (guint8 *destination, guint8 *source, size_t byte_count)
+ves_icall_System_Buffer_BulkMoveWithWriteBarrier (guint8 *destination, guint8 *source, size_t len, MonoType *type)
 {
-	mono_gc_wbarrier_range_copy (destination, source, byte_count);
+	if (MONO_TYPE_IS_REFERENCE (type))
+		mono_gc_wbarrier_arrayref_copy_internal (destination, source, (guint)len);
+	else
+		mono_gc_wbarrier_value_copy_internal (destination, source, (guint)len, mono_class_from_mono_type_internal (type));
 }
 #else
 void
@@ -2083,16 +2086,6 @@ handle_enum:
 }
 #endif
 
-static MonoType*
-mono_type_get_underlying_type_ignore_byref (MonoType *type)
-{
-	if (type->type == MONO_TYPE_VALUETYPE && m_class_is_enumtype (type->data.klass))
-		return mono_class_enum_basetype_internal (type->data.klass);
-	if (type->type == MONO_TYPE_GENERICINST && m_class_is_enumtype (type->data.generic_class->container_class))
-		return mono_class_enum_basetype_internal (type->data.generic_class->container_class);
-	return type;
-}
-
 guint32
 ves_icall_RuntimeTypeHandle_type_is_assignable_from (MonoReflectionTypeHandle ref_type, MonoReflectionTypeHandle ref_c, MonoError *error)
 {
@@ -2107,26 +2100,7 @@ ves_icall_RuntimeTypeHandle_type_is_assignable_from (MonoReflectionTypeHandle re
 		return FALSE;
 
 	if (type->byref) {
-		MonoType *t = mono_type_get_underlying_type_ignore_byref (type);
-		MonoType *ot = mono_type_get_underlying_type_ignore_byref (ctype);
-
-		klass = mono_class_from_mono_type_internal (t);
-		klassc = mono_class_from_mono_type_internal (ot);
-
-		if (mono_type_is_primitive (t)) {
-			return mono_type_is_primitive (ot) && m_class_get_instance_size (klass) == m_class_get_instance_size (klassc);
-		} else if (t->type == MONO_TYPE_VAR || t->type == MONO_TYPE_MVAR) {
-			return t->type == ot->type && t->data.generic_param->num == ot->data.generic_param->num;
-		} else if (t->type == MONO_TYPE_PTR || t->type == MONO_TYPE_FNPTR) {
-			return t->type == ot->type;
-		} else {
-			 if (ot->type == MONO_TYPE_VAR || ot->type == MONO_TYPE_MVAR)
-				 return FALSE;
-
-			 if (m_class_is_valuetype (klass))
-				return klass == klassc;
-			 return m_class_is_valuetype (klass) == m_class_is_valuetype (klassc);
-		}
+		return mono_byref_type_is_assignable_from (type, ctype, FALSE);
 	}
 
 	gboolean result;
@@ -2317,7 +2291,7 @@ ves_icall_System_Reflection_FieldInfo_GetTypeModifiers (MonoReflectionFieldHandl
 	MonoType *type = mono_field_get_type_checked (field, error);
 	return_val_if_nok (error, NULL_HANDLE_ARRAY);
 
-	return type_array_from_modifiers (m_class_get_image (field->parent), type, optional, error);
+	return type_array_from_modifiers (type, optional, error);
 }
 
 int
@@ -5540,8 +5514,47 @@ g_concat_dir_and_file (const char *dir, const char *file)
 		return g_strconcat (dir, file, (const char*)NULL);
 }
 
-void *
-ves_icall_System_Reflection_RuntimeAssembly_GetManifestResourceInternal (MonoReflectionAssemblyHandle assembly_h, MonoStringHandle name, gint32 *size, MonoReflectionModuleHandleOut ref_module, MonoError *error) 
+#ifdef ENABLE_NETCORE
+static MonoReflectionAssemblyHandle
+try_resource_resolve_name (MonoReflectionAssemblyHandle assembly_handle, MonoStringHandle name_handle)
+{
+	MonoObjectHandle ret;
+
+	ERROR_DECL (error);
+
+	HANDLE_FUNCTION_ENTER ();
+
+	if (mono_runtime_get_no_exec ())
+		goto return_null;
+
+	MONO_STATIC_POINTER_INIT (MonoMethod, resolve_method)
+
+		MonoClass *alc_class = mono_class_get_assembly_load_context_class ();
+		g_assert (alc_class);
+		resolve_method = mono_class_get_method_from_name_checked (alc_class, "OnResourceResolve", -1, 0, error);
+
+	MONO_STATIC_POINTER_INIT_END (MonoMethod, resolve_method)
+
+	goto_if_nok (error, return_null);
+
+	gpointer args [2];
+	args [0] = MONO_HANDLE_RAW (assembly_handle);
+	args [1] = MONO_HANDLE_RAW (name_handle);
+	ret = mono_runtime_try_invoke_handle (resolve_method, NULL_HANDLE, args, error);
+	goto_if_nok (error, return_null);
+
+	goto exit;
+
+return_null:
+	ret = NULL_HANDLE;
+
+exit:
+	HANDLE_FUNCTION_RETURN_REF (MonoReflectionAssembly, MONO_HANDLE_CAST (MonoReflectionAssembly, ret));
+}
+#endif
+
+static void *
+get_manifest_resource_internal (MonoReflectionAssemblyHandle assembly_h, MonoStringHandle name, gint32 *size, MonoReflectionModuleHandleOut ref_module, MonoError *error)
 {
 	MonoDomain *domain = MONO_HANDLE_DOMAIN (assembly_h);
 	MonoAssembly *assembly = MONO_HANDLE_GETVAL (assembly_h, assembly);
@@ -5587,6 +5600,22 @@ ves_icall_System_Reflection_RuntimeAssembly_GetManifestResourceInternal (MonoRef
 	MONO_HANDLE_ASSIGN (ref_module, rm);
 
 	return (void*)mono_image_get_resource (module, cols [MONO_MANIFEST_OFFSET], (guint32*)size);
+}
+
+void *
+ves_icall_System_Reflection_RuntimeAssembly_GetManifestResourceInternal (MonoReflectionAssemblyHandle assembly_h, MonoStringHandle name, gint32 *size, MonoReflectionModuleHandleOut ref_module, MonoError *error) 
+{
+	gpointer ret = get_manifest_resource_internal (assembly_h, name, size, ref_module, error);
+
+#ifdef ENABLE_NETCORE
+	if (!ret) {
+		MonoReflectionAssemblyHandle event_assembly_h = try_resource_resolve_name (assembly_h, name);
+		if (MONO_HANDLE_BOOL (event_assembly_h))
+			ret = get_manifest_resource_internal (event_assembly_h, name, size, ref_module, error);
+	}
+#endif
+
+	return ret;
 }
 
 static gboolean
@@ -7201,7 +7230,7 @@ ves_icall_System_Reflection_RuntimeModule_ResolveSignature (MonoImage *image, gu
 }
 
 static void
-check_for_invalid_type (MonoClass *klass, MonoError *error)
+check_for_invalid_array_type (MonoClass *klass, MonoError *error)
 {
 	char *name;
 
@@ -7214,13 +7243,23 @@ check_for_invalid_type (MonoClass *klass, MonoError *error)
 	mono_error_set_type_load_name (error, name, g_strdup (""), "");
 }
 
+static void
+check_for_invalid_byref_or_pointer_type (MonoClass *klass, MonoError *error)
+{
+#ifdef ENABLE_NETCORE
+	return;
+#else
+	check_for_invalid_array_type (klass, error);
+#endif
+}
+
 MonoReflectionTypeHandle
 ves_icall_RuntimeType_make_array_type (MonoReflectionTypeHandle ref_type, int rank, MonoError *error)
 {
 	MonoType *type = MONO_HANDLE_GETVAL (ref_type, type);
 
 	MonoClass *klass = mono_class_from_mono_type_internal (type);
-	check_for_invalid_type (klass, error);
+	check_for_invalid_array_type (klass, error);
 	return_val_if_nok (error, MONO_HANDLE_CAST (MonoReflectionType, NULL_HANDLE));
 
 	MonoClass *aklass;
@@ -7247,7 +7286,7 @@ ves_icall_RuntimeType_make_byref_type (MonoReflectionTypeHandle ref_type, MonoEr
 	mono_class_init_checked (klass, error);
 	return_val_if_nok (error, MONO_HANDLE_CAST (MonoReflectionType, NULL_HANDLE));
 
-	check_for_invalid_type (klass, error);
+	check_for_invalid_byref_or_pointer_type (klass, error);
 	return_val_if_nok (error, MONO_HANDLE_CAST (MonoReflectionType, NULL_HANDLE));
 
 	MonoDomain *domain = MONO_HANDLE_DOMAIN (ref_type);
@@ -7263,7 +7302,7 @@ ves_icall_RuntimeType_MakePointerType (MonoReflectionTypeHandle ref_type, MonoEr
 	mono_class_init_checked (klass, error);
 	return_val_if_nok (error, MONO_HANDLE_CAST (MonoReflectionType, NULL_HANDLE));
 
-	check_for_invalid_type (klass, error);
+	check_for_invalid_byref_or_pointer_type (klass, error);
 	return_val_if_nok (error, MONO_HANDLE_CAST (MonoReflectionType, NULL_HANDLE));
 
 	MonoClass *pklass = mono_class_create_ptr (type);
@@ -7494,6 +7533,7 @@ ves_icall_Remoting_RealProxy_InternalGetProxyType (MonoTransparentProxyHandle tp
 
 /* System.Environment */
 
+#ifndef ENABLE_NETCORE
 MonoStringHandle
 ves_icall_System_Environment_get_UserName (MonoError *error)
 {
@@ -7577,6 +7617,7 @@ ves_icall_System_Environment_get_Platform (void)
 {
 	return mono_icall_get_platform ();
 }
+#endif /* !ENABLE_NETCORE */
 
 #ifndef HOST_WIN32
 static MonoStringHandle
@@ -8760,7 +8801,7 @@ leave:
  * and avoid useless allocations.
  */
 static MonoArrayHandle
-type_array_from_modifiers (MonoImage *image, MonoType *type, int optional, MonoError *error)
+type_array_from_modifiers (MonoType *type, int optional, MonoError *error)
 {
 	int i, count = 0;
 	MonoDomain *domain = mono_domain_get ();
@@ -8816,6 +8857,12 @@ ves_icall_RuntimeParameterInfo_GetTypeModifiers (MonoReflectionTypeHandle rt, Mo
 		if (!(method = prop->get))
 			method = prop->set;
 		g_assert (method);	
+	} else if (strcmp (m_class_get_name (member_class), "DynamicMethod") == 0 && strcmp (m_class_get_name_space (member_class), "System.Reflection.Emit") == 0) {
+		MonoArrayHandle params = MONO_HANDLE_NEW_GET (MonoArray, MONO_HANDLE_CAST (MonoReflectionDynamicMethod, member), parameters);
+		MonoReflectionTypeHandle t = MONO_HANDLE_NEW (MonoReflectionType, NULL);
+		MONO_HANDLE_ARRAY_GETREF (t, params, pos);
+		type = mono_reflection_type_handle_mono_type (t, error);
+		return type_array_from_modifiers (type, optional, error);
 	} else {
 		char *type_name = mono_type_get_full_name (member_class);
 		mono_error_set_not_supported (error, "Custom modifiers on a ParamInfo with member %s are not supported", type_name);
@@ -8830,7 +8877,7 @@ ves_icall_RuntimeParameterInfo_GetTypeModifiers (MonoReflectionTypeHandle rt, Mo
 	else
 		type = sig->params [pos];
 
-	return type_array_from_modifiers (image, type, optional, error);
+	return type_array_from_modifiers (type, optional, error);
 }
 
 static MonoType*
@@ -8852,13 +8899,11 @@ ves_icall_RuntimePropertyInfo_GetTypeModifiers (MonoReflectionPropertyHandle pro
 {
 	error_init (error);
 	MonoProperty *prop = MONO_HANDLE_GETVAL (property, property);
-	MonoClass *klass = MONO_HANDLE_GETVAL (property, klass);
 	MonoType *type = get_property_type (prop);
-	MonoImage *image = m_class_get_image (klass);
 
 	if (!type)
 		return NULL_HANDLE_ARRAY;
-	return type_array_from_modifiers (image, type, optional, error);
+	return type_array_from_modifiers (type, optional, error);
 }
 
 /*

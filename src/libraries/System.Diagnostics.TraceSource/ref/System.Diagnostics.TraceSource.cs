@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 // ------------------------------------------------------------------------------
 // Changes to this file must follow the https://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
@@ -213,7 +212,7 @@ namespace System.Diagnostics
         public int IndentLevel { get { throw null; } set { } }
         public int IndentSize { get { throw null; } set { } }
         public virtual bool IsThreadSafe { get { throw null; } }
-        [System.Diagnostics.CodeAnalysis.AllowNull]
+        [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public virtual string Name { get { throw null; } set { } }
         protected bool NeedIndent { get { throw null; } set { } }
         public System.Diagnostics.TraceOptions TraceOutputOptions { get { throw null; } set { } }

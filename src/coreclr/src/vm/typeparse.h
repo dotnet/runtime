@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 // ---------------------------------------------------------------------------
 // typeparse.h
 // ---------------------------------------------------------------------------
@@ -305,7 +304,7 @@ public:
     //    if szTypeName is not ASM-qualified, we will search for the types in the following order:
     //       - in pRequestingAssembly (if not NULL). pRequestingAssembly is the assembly that contained
     //         the custom attribute from which the typename was derived.
-    //       - in mscorlib.dll
+    //       - in CoreLib
     //       - raise an AssemblyResolveEvent() in the current appdomain
     //
     // pRequestingAssembly may be NULL. In that case, the "visibility" check will simply check that

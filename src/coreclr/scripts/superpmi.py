@@ -2,7 +2,6 @@
 #
 ## Licensed to the .NET Foundation under one or more agreements.
 ## The .NET Foundation licenses this file to you under the MIT license.
-## See the LICENSE file in the project root for more information.
 #
 ##
 # Title               : superpmi.py
@@ -861,7 +860,8 @@ class SuperPMIReplay:
             altjit_string = "*" if self.coreclr_args.altjit else ""
             altjit_flags = [
                 "-jitoption", "force", "AltJit=" + altjit_string,
-                "-jitoption", "force", "AltJitNgen=" + altjit_string
+                "-jitoption", "force", "AltJitNgen=" + altjit_string,
+                "-jitoption", "force", "EnableExtraSuperPmiQueries=0"
             ]
             flags += altjit_flags
 
@@ -1033,8 +1033,10 @@ class SuperPMIReplayAsmDiffs:
                 altjit_flags = [
                     "-jitoption", "force", "AltJit=" + altjit_string,
                     "-jitoption", "force", "AltJitNgen=" + altjit_string,
+                    "-jitoption", "force", "EnableExtraSuperPmiQueries=0",
                     "-jit2option", "force", "AltJit=" + altjit_string,
-                    "-jit2option", "force", "AltJitNgen=" + altjit_string
+                    "-jit2option", "force", "AltJitNgen=" + altjit_string,
+                    "-jit2option", "force", "EnableExtraSuperPmiQueries=0"
                 ]
                 flags += altjit_flags
 
@@ -1209,7 +1211,8 @@ class SuperPMIReplayAsmDiffs:
                 altjit_string = "*" if self.coreclr_args.altjit else ""
                 altjit_flags = [
                     "-jitoption", "force", "AltJit=" + altjit_string,
-                    "-jitoption", "force", "AltJitNgen=" + altjit_string
+                    "-jitoption", "force", "AltJitNgen=" + altjit_string,
+                    "-jitoption", "force", "EnableExtraSuperPmiQueries=0"
                 ]
 
                 async def create_asm(print_prefix, item, self, text_differences, base_asm_location, diff_asm_location):
@@ -2129,7 +2132,7 @@ def setup_args(args):
             # yielding
             # [0]: ""
             # [1]: "\Windows_NT.x64.Checked"
-            standard_location_split = os.path.dirname(coreclr_args.jit_path).split(os.path.dirname(coreclr_args.product_location))
+            standard_location_split = os.path.dirname(coreclr_args.base_jit_path).split(os.path.dirname(coreclr_args.product_location))
             assert(coreclr_args.host_os in standard_location_split[1])
 
             # Get arch/flavor. Remove leading slash.

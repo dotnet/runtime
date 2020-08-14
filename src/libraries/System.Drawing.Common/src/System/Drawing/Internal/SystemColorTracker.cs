@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.ComponentModel;
 using System.Diagnostics;
@@ -22,7 +21,7 @@ namespace System.Drawing.Internal
         private const int EXPAND_FACTOR = 2;
 
         private static WeakReference[] list = new WeakReference[INITIAL_SIZE];
-        private static int count = 0;
+        private static int count;
         private static bool addedTracker;
         private static readonly object lockObject = new object();
 

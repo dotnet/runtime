@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 // ------------------------------------------------------------------------------
 // Changes to this file must follow the https://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
@@ -947,9 +946,7 @@ namespace System.Linq.Expressions
     }
     public sealed partial class MemberAssignment : System.Linq.Expressions.MemberBinding
     {
-#pragma warning disable CS0618
         internal MemberAssignment() : base (default(System.Linq.Expressions.MemberBindingType), default(System.Reflection.MemberInfo)) { }
-#pragma warning restore CS0618
         public System.Linq.Expressions.Expression Expression { get { throw null; } }
         public System.Linq.Expressions.MemberAssignment Update(System.Linq.Expressions.Expression expression) { throw null; }
     }
@@ -990,17 +987,13 @@ namespace System.Linq.Expressions
     }
     public sealed partial class MemberListBinding : System.Linq.Expressions.MemberBinding
     {
-#pragma warning disable CS0618
         internal MemberListBinding() : base (default(System.Linq.Expressions.MemberBindingType), default(System.Reflection.MemberInfo)) { }
-#pragma warning restore CS0618
         public System.Collections.ObjectModel.ReadOnlyCollection<System.Linq.Expressions.ElementInit> Initializers { get { throw null; } }
         public System.Linq.Expressions.MemberListBinding Update(System.Collections.Generic.IEnumerable<System.Linq.Expressions.ElementInit> initializers) { throw null; }
     }
     public sealed partial class MemberMemberBinding : System.Linq.Expressions.MemberBinding
     {
-#pragma warning disable CS0618
         internal MemberMemberBinding() : base (default(System.Linq.Expressions.MemberBindingType), default(System.Reflection.MemberInfo)) { }
-#pragma warning restore CS0618
         public System.Collections.ObjectModel.ReadOnlyCollection<System.Linq.Expressions.MemberBinding> Bindings { get { throw null; } }
         public System.Linq.Expressions.MemberMemberBinding Update(System.Collections.Generic.IEnumerable<System.Linq.Expressions.MemberBinding> bindings) { throw null; }
     }
@@ -1151,6 +1144,7 @@ namespace System.Runtime.CompilerServices
     public abstract partial class DebugInfoGenerator
     {
         protected DebugInfoGenerator() { }
+        [System.ObsoleteAttribute("The CreatePdbGenerator API is not supported and throws PlatformNotSupportedException.", DiagnosticId = "SYSLIB0008", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public static System.Runtime.CompilerServices.DebugInfoGenerator CreatePdbGenerator() { throw null; }
         public abstract void MarkSequencePoint(System.Linq.Expressions.LambdaExpression method, int ilOffset, System.Linq.Expressions.DebugInfoExpression sequencePoint);
     }

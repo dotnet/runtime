@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.IO.PortsTests;
@@ -261,7 +260,6 @@ namespace System.IO.Ports.Tests
             using (SerialPort com2 = new SerialPort(TCSupport.LocalMachineSerialInfo.SecondAvailablePortName))
             {
                 double expectedTime, actualTime, percentageDifference;
-                int numBytes = 0;
 
                 //Generate some random byte to read/write at this baudrate
                 for (int i = 0; i < xmitBytes.Length; i++)
@@ -317,7 +315,7 @@ namespace System.IO.Ports.Tests
                 if (MAX_ACCEPTABLE_PERCENTAGE_DIFFERENCE < percentageDifference)
                 {
                     Assert.True(false, string.Format("ERROR!!! BuadRate not used Expected time:{0}, actual time:{1} percentageDifference:{2}",
-                        expectedTime, actualTime, percentageDifference, numBytes));
+                        expectedTime, actualTime, percentageDifference));
                 }
 
                 com2.Read(rcvBytes, 0, rcvBytes.Length);

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 
@@ -192,7 +191,10 @@ namespace Internal.IL
                             int delta = (sbyte)ReadILByte();
                             int target = _currentOffset + delta;
                             if ((uint)target < (uint)_basicBlocks.Length)
+                            {
                                 CreateBasicBlock(target);
+                                OnLeaveTargetCreated(target);
+                            }
                             else
                                 ReportInvalidBranchTarget(target);
                         }
@@ -225,7 +227,10 @@ namespace Internal.IL
                             int delta = (int)ReadILUInt32();
                             int target = _currentOffset + delta;
                             if ((uint)target < (uint)_basicBlocks.Length)
+                            {
                                 CreateBasicBlock(target);
+                                OnLeaveTargetCreated(target);
+                            }
                             else
                                 ReportInvalidBranchTarget(target);
                         }
@@ -273,6 +278,8 @@ namespace Internal.IL
                 }
             }
         }
+
+        partial void OnLeaveTargetCreated(int target);
 
         private void FindEHTargets()
         {

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #include "opensslshim.h"
 #include "pal_crypto_types.h"
@@ -477,6 +476,16 @@ int32_t local_RSA_set0_crt_params(RSA* rsa, BIGNUM* dmp1, BIGNUM* dmq1, BIGNUM* 
     }
 
     return 1;
+}
+
+int32_t local_SSL_CTX_config(SSL_CTX* ctx, const char* name)
+{
+    (void)ctx;
+    (void)name;
+
+    // 1.0.x didn't load config in the same manner as 1.1.x,
+    // so the appropriate answer is "section not found".
+    return 0;
 }
 
 int32_t local_SSL_is_init_finished(const SSL* ssl)

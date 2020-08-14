@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #ifndef __IPC_STREAM_FACTORY_H__
 #define __IPC_STREAM_FACTORY_H__
@@ -12,13 +11,66 @@
 class IpcStreamFactory
 {
 public:
-    struct ConnectionState
+    // forward declare
+    struct DiagnosticPort;
+
+    enum class DiagnosticPortType : uint8_t
+    {
+        LISTEN  = 0,
+        CONNECT = 1
+    };
+
+    enum class DiagnosticPortSuspendMode : uint8_t
+    {
+        NOSUSPEND = 0,
+        SUSPEND   = 1
+    };
+
+    struct DiagnosticPortBuilder
+    {
+        LPSTR Path = nullptr;
+        DiagnosticPortType Type = DiagnosticPortType::CONNECT;
+        DiagnosticPortSuspendMode SuspendMode = DiagnosticPortSuspendMode::NOSUSPEND;
+
+        DiagnosticPortBuilder WithPath(LPSTR path) { Path = path; return *this; }
+        DiagnosticPortBuilder WithType(DiagnosticPortType type) { Type = type; return *this; }
+        DiagnosticPortBuilder WithSuspendMode(DiagnosticPortSuspendMode mode) { SuspendMode = mode; return *this; }
+        DiagnosticPortBuilder WithTag(LPSTR tag)
+        {
+            // check if port type
+            if (_stricmp(tag, "listen") == 0)
+                return WithType(DiagnosticPortType::LISTEN);
+
+            if (_stricmp(tag, "connect") == 0)
+                return WithType(DiagnosticPortType::CONNECT);
+
+            // check if suspendmode tag
+            if (_stricmp(tag, "nosuspend") == 0)
+                return WithSuspendMode(DiagnosticPortSuspendMode::NOSUSPEND);
+
+            if (_stricmp(tag, "suspend") == 0)
+                return WithSuspendMode(DiagnosticPortSuspendMode::SUSPEND);
+
+            // don't mutate if it's not a valid option
+            STRESS_LOG1(LF_DIAGNOSTICS_PORT, LL_INFO10, "IpcStreamFactory::DiagnosticPortBuilder::WithTag - Unknown tag '%s'.\n", tag);
+            return *this;
+        }
+    };
+
+    struct DiagnosticPort
     {
     public:
-        ConnectionState(IpcStream::DiagnosticsIpc *pIpc) :
+        DiagnosticPort(IpcStream::DiagnosticsIpc *pIpc, DiagnosticPortBuilder builder) :
+            SuspendMode(builder.SuspendMode),
             _pIpc(pIpc),
-            _pStream(nullptr)
+            _pStream(nullptr),
+            _type(builder.Type)
         { }
+
+        const DiagnosticPortSuspendMode SuspendMode;
+
+        // Will be false until ResumeRuntime command is sent on this connection
+        bool HasResumedRuntime = false;
 
         // returns a pollable handle and performs any preparation required
         // e.g., as a side-effect, will connect and advertise on reverse connections
@@ -43,11 +95,12 @@ public:
     protected:
         IpcStream::DiagnosticsIpc *_pIpc;
         IpcStream *_pStream;
+        DiagnosticPortType _type;
     };
 
-    struct ClientConnectionState : public ConnectionState
+    struct ConnectDiagnosticPort : public DiagnosticPort
     {
-        ClientConnectionState(IpcStream::DiagnosticsIpc *pIpc) : ConnectionState(pIpc) { }
+        ConnectDiagnosticPort(IpcStream::DiagnosticsIpc *pIpc, DiagnosticPortBuilder builder) : DiagnosticPort(pIpc, builder) { }
 
         // returns a pollable handle and performs any preparation required
         bool GetIpcPollHandle(IpcStream::DiagnosticsIpc::IpcPollHandle *pIpcPollHandle, ErrorCallback callback = nullptr) override;
@@ -59,9 +112,9 @@ public:
         void Reset(ErrorCallback callback = nullptr) override;
     };
 
-    struct ServerConnectionState : public ConnectionState
+    struct ListenDiagnosticPort : public DiagnosticPort
     {
-        ServerConnectionState(IpcStream::DiagnosticsIpc *pIpc) : ConnectionState(pIpc) { }
+        ListenDiagnosticPort(IpcStream::DiagnosticsIpc *pIpc, DiagnosticPortBuilder builder) : DiagnosticPort(pIpc, builder) { }
 
         // returns a pollable handle and performs any preparation required
         bool GetIpcPollHandle(IpcStream::DiagnosticsIpc::IpcPollHandle *pIpcPollHandle, ErrorCallback callback = nullptr) override;
@@ -73,15 +126,20 @@ public:
         void Reset(ErrorCallback callback = nullptr) override;
     };
 
-    static bool CreateServer(const char *const pIpcName, ErrorCallback = nullptr);
-    static bool CreateClient(const char *const pIpcName, ErrorCallback = nullptr);
+    static bool Configure(ErrorCallback callback = nullptr);
     static IpcStream *GetNextAvailableStream(ErrorCallback = nullptr);
-    static bool HasActiveConnections();
-    static void CloseConnections(ErrorCallback callback = nullptr);
+    static void ResumeCurrentPort();
+    static bool AnySuspendedPorts();
+    static bool HasActivePorts();
+    static void ClosePorts(ErrorCallback callback = nullptr);
     static void Shutdown(ErrorCallback callback = nullptr);
 private:
-    static CQuickArrayList<ConnectionState*> s_rgpConnectionStates;
+    static bool BuildAndAddPort(DiagnosticPortBuilder builder, ErrorCallback callback = nullptr);
+    static CQuickArrayList<DiagnosticPort*> s_rgpDiagnosticPorts;
     static Volatile<bool> s_isShutdown;
+    // set this in GetNextAvailableStream, and then expose a callback that 
+    // allows us to track which connections have sent their ResumeRuntime commands
+    static DiagnosticPort *s_currentPort;
 
     // Polling timeout semantics
     // If client connection is opted in

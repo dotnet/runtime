@@ -1,11 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Runtime.CompilerServices;
+using System.Runtime.Versioning;
 using System.Text;
 using System.Threading;
 
@@ -278,14 +277,17 @@ namespace System
         public static int CursorSize
         {
             get { return ConsolePal.CursorSize; }
+            [SupportedOSPlatform("windows")]
             set { ConsolePal.CursorSize = value; }
         }
 
+        [SupportedOSPlatform("windows")]
         public static bool NumberLock
         {
             get { return ConsolePal.NumberLock; }
         }
 
+        [SupportedOSPlatform("windows")]
         public static bool CapsLock
         {
             get { return ConsolePal.CapsLock; }
@@ -313,15 +315,18 @@ namespace System
         public static int BufferWidth
         {
             get { return ConsolePal.BufferWidth; }
+            [SupportedOSPlatform("windows")]
             set { ConsolePal.BufferWidth = value; }
         }
 
         public static int BufferHeight
         {
             get { return ConsolePal.BufferHeight; }
+            [SupportedOSPlatform("windows")]
             set { ConsolePal.BufferHeight = value; }
         }
 
+        [SupportedOSPlatform("windows")]
         public static void SetBufferSize(int width, int height)
         {
             ConsolePal.SetBufferSize(width, height);
@@ -330,32 +335,38 @@ namespace System
         public static int WindowLeft
         {
             get { return ConsolePal.WindowLeft; }
+            [SupportedOSPlatform("windows")]
             set { ConsolePal.WindowLeft = value; }
         }
 
         public static int WindowTop
         {
             get { return ConsolePal.WindowTop; }
+            [SupportedOSPlatform("windows")]
             set { ConsolePal.WindowTop = value; }
         }
 
         public static int WindowWidth
         {
             get { return ConsolePal.WindowWidth; }
+            [SupportedOSPlatform("windows")]
             set { ConsolePal.WindowWidth = value; }
         }
 
         public static int WindowHeight
         {
             get { return ConsolePal.WindowHeight; }
+            [SupportedOSPlatform("windows")]
             set { ConsolePal.WindowHeight = value; }
         }
 
+        [SupportedOSPlatform("windows")]
         public static void SetWindowPosition(int left, int top)
         {
             ConsolePal.SetWindowPosition(left, top);
         }
 
+        [SupportedOSPlatform("windows")]
         public static void SetWindowSize(int width, int height)
         {
             ConsolePal.SetWindowSize(width, height);
@@ -373,24 +384,36 @@ namespace System
 
         public static bool CursorVisible
         {
+            [SupportedOSPlatform("windows")]
             get { return ConsolePal.CursorVisible; }
             set { ConsolePal.CursorVisible = value; }
         }
 
         public static int CursorLeft
         {
-            get { return ConsolePal.CursorLeft; }
+            get { return ConsolePal.GetCursorPosition().Left; }
             set { SetCursorPosition(value, CursorTop); }
         }
 
         public static int CursorTop
         {
-            get { return ConsolePal.CursorTop; }
+            get { return ConsolePal.GetCursorPosition().Top; }
             set { SetCursorPosition(CursorLeft, value); }
+        }
+
+        /// <summary>Gets the position of the cursor.</summary>
+        /// <returns>The column and row position of the cursor.</returns>
+        /// <remarks>
+        /// Columns are numbered from left to right starting at 0. Rows are numbered from top to bottom starting at 0.
+        /// </remarks>
+        public static (int Left, int Top) GetCursorPosition()
+        {
+            return ConsolePal.GetCursorPosition();
         }
 
         public static string Title
         {
+            [SupportedOSPlatform("windows")]
             get { return ConsolePal.Title; }
             set
             {
@@ -403,16 +426,19 @@ namespace System
             ConsolePal.Beep();
         }
 
+        [SupportedOSPlatform("windows")]
         public static void Beep(int frequency, int duration)
         {
             ConsolePal.Beep(frequency, duration);
         }
 
+        [SupportedOSPlatform("windows")]
         public static void MoveBufferArea(int sourceLeft, int sourceTop, int sourceWidth, int sourceHeight, int targetLeft, int targetTop)
         {
             ConsolePal.MoveBufferArea(sourceLeft, sourceTop, sourceWidth, sourceHeight, targetLeft, targetTop, ' ', ConsoleColor.Black, BackgroundColor);
         }
 
+        [SupportedOSPlatform("windows")]
         public static void MoveBufferArea(int sourceLeft, int sourceTop, int sourceWidth, int sourceHeight, int targetLeft, int targetTop, char sourceChar, ConsoleColor sourceForeColor, ConsoleColor sourceBackColor)
         {
             ConsolePal.MoveBufferArea(sourceLeft, sourceTop, sourceWidth, sourceHeight, targetLeft, targetTop, sourceChar, sourceForeColor, sourceBackColor);

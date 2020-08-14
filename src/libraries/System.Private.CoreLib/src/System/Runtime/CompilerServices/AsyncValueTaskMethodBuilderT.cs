@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -365,8 +364,7 @@ namespace System.Runtime.CompilerServices
             /// <summary>If this box is stored in the cache, the next box in the cache.</summary>
             private StateMachineBox<TStateMachine>? _next;
             /// <summary>The state machine itself.</summary>
-            [AllowNull, MaybeNull]
-            public TStateMachine StateMachine = default;
+            public TStateMachine? StateMachine;
 
             /// <summary>Gets a box object to use for an operation.  This may be a reused, pooled object, or it may be new.</summary>
             [MethodImpl(MethodImplOptions.AggressiveInlining)] // only one caller

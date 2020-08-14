@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Globalization;
 using System.Linq;
@@ -18,7 +17,7 @@ namespace System.ComponentModel.DataAnnotations
 
         public string OtherProperty { get; }
 
-        public string OtherPropertyDisplayName { get; internal set; }
+        public string? OtherPropertyDisplayName { get; internal set; }
 
         public override bool RequiresValidationContext => true;
 
@@ -26,7 +25,7 @@ namespace System.ComponentModel.DataAnnotations
             string.Format(
                 CultureInfo.CurrentCulture, ErrorMessageString, name, OtherPropertyDisplayName ?? OtherProperty);
 
-        protected override ValidationResult IsValid(object value, ValidationContext validationContext)
+        protected override ValidationResult? IsValid(object? value, ValidationContext validationContext)
         {
             var otherPropertyInfo = validationContext.ObjectType.GetRuntimeProperty(OtherProperty);
             if (otherPropertyInfo == null)
@@ -38,7 +37,7 @@ namespace System.ComponentModel.DataAnnotations
                 throw new ArgumentException(SR.Format(SR.Common_PropertyNotFound, validationContext.ObjectType.FullName, OtherProperty));
             }
 
-            object otherPropertyValue = otherPropertyInfo.GetValue(validationContext.ObjectInstance, null);
+            object? otherPropertyValue = otherPropertyInfo.GetValue(validationContext.ObjectInstance, null);
             if (!Equals(value, otherPropertyValue))
             {
                 if (OtherPropertyDisplayName == null)
@@ -46,18 +45,23 @@ namespace System.ComponentModel.DataAnnotations
                     OtherPropertyDisplayName = GetDisplayNameForProperty(otherPropertyInfo);
                 }
 
-                return new ValidationResult(FormatErrorMessage(validationContext.DisplayName));
+                string[]? memberNames = validationContext.MemberName != null
+                   ? new[] { validationContext.MemberName }
+                   : null;
+                return new ValidationResult(FormatErrorMessage(validationContext.DisplayName), memberNames);
             }
 
             return null;
         }
 
-        private string GetDisplayNameForProperty(PropertyInfo property)
+        private string? GetDisplayNameForProperty(PropertyInfo property)
         {
             var attributes = CustomAttributeExtensions.GetCustomAttributes(property, true);
             var display = attributes.OfType<DisplayAttribute>().FirstOrDefault();
             if (display != null)
             {
+                // TODO-NULLABLE: This will return null if [DisplayName] is specified but no Name has been defined - probably a bug.
+                // Should fall back to OtherProperty in this case instead.
                 return display.GetName();
             }
 

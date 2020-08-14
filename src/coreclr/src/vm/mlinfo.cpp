@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //
 // File: mlinfo.cpp
 //
@@ -1930,7 +1929,7 @@ MarshalInfo::MarshalInfo(Module* pModule,
                     }
                 }
 #endif // FEATURE_COMINTEROP
-                else if (sigTH.CanCastTo(TypeHandle(MscorlibBinder::GetClass(CLASS__SAFE_HANDLE))))
+                else if (sigTH.CanCastTo(TypeHandle(CoreLibBinder::GetClass(CLASS__SAFE_HANDLE))))
                 {
                     if (nativeType != NATIVE_TYPE_DEFAULT)
                     {
@@ -1940,7 +1939,7 @@ MarshalInfo::MarshalInfo(Module* pModule,
                     m_args.m_pMT = m_pMT;
                     m_type = MARSHAL_TYPE_SAFEHANDLE;
                 }
-                else if (sigTH.CanCastTo(TypeHandle(MscorlibBinder::GetClass(CLASS__CRITICAL_HANDLE))))
+                else if (sigTH.CanCastTo(TypeHandle(CoreLibBinder::GetClass(CLASS__CRITICAL_HANDLE))))
                 {
                     if (nativeType != NATIVE_TYPE_DEFAULT)
                     {
@@ -2305,14 +2304,14 @@ MarshalInfo::MarshalInfo(Module* pModule,
                     && (!m_pMT->IsBlittable()
                         || (m_pMT->HasSameTypeDefAs(g_pNullableClass)
                         || m_pMT->HasSameTypeDefAs(g_pByReferenceClass)
-                        || m_pMT->HasSameTypeDefAs(MscorlibBinder::GetClass(CLASS__SPAN))
-                        || m_pMT->HasSameTypeDefAs(MscorlibBinder::GetClass(CLASS__READONLY_SPAN))
-                        || m_pMT->HasSameTypeDefAs(MscorlibBinder::GetClass(CLASS__VECTOR64T))
-                        || m_pMT->HasSameTypeDefAs(MscorlibBinder::GetClass(CLASS__VECTOR128T))
-                        || m_pMT->HasSameTypeDefAs(MscorlibBinder::GetClass(CLASS__VECTOR256T))
+                        || m_pMT->HasSameTypeDefAs(CoreLibBinder::GetClass(CLASS__SPAN))
+                        || m_pMT->HasSameTypeDefAs(CoreLibBinder::GetClass(CLASS__READONLY_SPAN))
+                        || m_pMT->HasSameTypeDefAs(CoreLibBinder::GetClass(CLASS__VECTOR64T))
+                        || m_pMT->HasSameTypeDefAs(CoreLibBinder::GetClass(CLASS__VECTOR128T))
+                        || m_pMT->HasSameTypeDefAs(CoreLibBinder::GetClass(CLASS__VECTOR256T))
 #ifndef CROSSGEN_COMPILE
                             // Crossgen scenarios block Vector<T> from even being loaded
-                            || m_pMT->HasSameTypeDefAs(MscorlibBinder::GetClass(CLASS__VECTORT))
+                            || m_pMT->HasSameTypeDefAs(CoreLibBinder::GetClass(CLASS__VECTORT))
 #endif // !CROSSGEN_COMPILE
                     )))
                 {
@@ -2348,7 +2347,7 @@ MarshalInfo::MarshalInfo(Module* pModule,
                     {
                         // Override the prohibition on byref returns so that IJW works
                         m_byref = FALSE;
-                        m_type = ((sizeof(void*) == 4) ? MARSHAL_TYPE_GENERIC_4 : MARSHAL_TYPE_GENERIC_8);
+                        m_type = ((TARGET_POINTER_SIZE == 4) ? MARSHAL_TYPE_GENERIC_4 : MARSHAL_TYPE_GENERIC_8);
                     }
                     else
                     {
@@ -2373,8 +2372,8 @@ MarshalInfo::MarshalInfo(Module* pModule,
                                  && !onInstanceMethod
                                  && CorIsPrimitiveType(m_pMT->GetInternalCorElementType())
                                  && !IsUnmanagedValueTypeReturnedByRef(nativeSize)
-                                 && managedSize <= sizeof(void*)
-                                 && nativeSize <= sizeof(void*)
+                                 && managedSize <= TARGET_POINTER_SIZE
+                                 && nativeSize <= TARGET_POINTER_SIZE
                                  && !IsFieldScenario())
                         {
                             m_type = MARSHAL_TYPE_GENERIC_4;
@@ -2435,48 +2434,6 @@ MarshalInfo::MarshalInfo(Module* pModule,
     }
 
 lExit:
-#ifdef FEATURE_COMINTEROP
-//Field scenario is not blocked here because we don't want to block loading structs that
-//have the types which we are blocking, but never pass it to Interop.
-
-    if (AppX::IsAppXProcess() && ms != MarshalInfo::MARSHAL_SCENARIO_FIELD)
-    {
-        bool set_error = false;
-        switch (m_type)
-        {
-            case MARSHAL_TYPE_ANSIBSTR:
-                m_resID = IDS_EE_BADMARSHAL_TYPE_ANSIBSTR;
-                set_error = true;
-                break;
-            case MARSHAL_TYPE_VBBYVALSTR:
-            case MARSHAL_TYPE_VBBYVALSTRW:
-                m_resID = IDS_EE_BADMARSHAL_TYPE_VBBYVALSTR;
-                set_error = true;
-                break;
-            case MARSHAL_TYPE_REFERENCECUSTOMMARSHALER:
-                m_resID = IDS_EE_BADMARSHAL_TYPE_REFERENCECUSTOMMARSHALER;
-                set_error = true;
-                break;
-            case MARSHAL_TYPE_ASANYA:
-            case MARSHAL_TYPE_ASANYW:
-                m_resID = IDS_EE_BADMARSHAL_TYPE_ASANYA;
-                set_error = true;
-                break;
-            case MARSHAL_TYPE_INTERFACE:
-                if (m_fDispItf)
-                {
-                    m_resID = IDS_EE_BADMARSHAL_TYPE_IDISPATCH;
-                    set_error = true;
-                }
-                break;
-        }
-
-        if (set_error)
-            COMPlusThrow(kPlatformNotSupportedException, m_resID);
-
-    }
-#endif // FEATURE_COMINTEROP
-
     if (m_byref && !isParam)
     {
         // byref returns don't work: the thing pointed to lives on
@@ -2674,7 +2631,7 @@ HRESULT MarshalInfo::HandleArrayElemType(NativeTypeParamInfo *pParamInfo, TypeHa
     {
         if (m_ms == MARSHAL_SCENARIO_FIELD)
         {
-#ifdef FEATURE_CLASSIC_COMINTEROP
+#ifdef FEATURE_COMINTEROP
             m_type = MARSHAL_TYPE_SAFEARRAY;
 #else
             m_resID = IDS_EE_BADMARSHALFIELD_ARRAY;
@@ -3068,7 +3025,7 @@ void MarshalInfo::SetupArgumentSizes()
 
     if (m_byref)
     {
-        m_nativeArgSize = StackElemSize(sizeof(void*));
+        m_nativeArgSize = StackElemSize(TARGET_POINTER_SIZE);
     }
     else
     {
@@ -3077,7 +3034,7 @@ void MarshalInfo::SetupArgumentSizes()
 
 #ifdef ENREGISTERED_PARAMTYPE_MAXSIZE
     if (m_nativeArgSize > ENREGISTERED_PARAMTYPE_MAXSIZE)
-        m_nativeArgSize = StackElemSize(sizeof(void*));
+        m_nativeArgSize = StackElemSize(TARGET_POINTER_SIZE);
 #endif // ENREGISTERED_PARAMTYPE_MAXSIZE
 }
 
@@ -3652,7 +3609,7 @@ DispParamMarshaler *MarshalInfo::GenerateDispParamMarshaler()
             pDispParamMarshaler = new DispParamRecordMarshaler(m_pMT);
             break;
 
-#ifdef FEATURE_CLASSIC_COMINTEROP
+#ifdef FEATURE_COMINTEROP
         case MARSHAL_TYPE_SAFEARRAY:
             pDispParamMarshaler = new DispParamArrayMarshaler(m_arrayElementType, m_hndArrayElemType.GetMethodTable());
             break;
@@ -4402,26 +4359,26 @@ void ArrayMarshalInfo::InitElementInfo(CorNativeType arrayNativeType, MarshalInf
             }
 #endif // FEATURE_COMINTEROP
         }
-        else if (m_thElement.CanCastTo(TypeHandle(MscorlibBinder::GetClass(CLASS__SAFE_HANDLE))))
+        else if (m_thElement.CanCastTo(TypeHandle(CoreLibBinder::GetClass(CLASS__SAFE_HANDLE))))
         {
             // Array's of SAFEHANDLEs are not supported.
             ReportInvalidArrayMarshalInfo(IDS_EE_BADMARSHAL_SAFEHANDLEARRAY);
         }
-        else if (m_thElement.CanCastTo(TypeHandle(MscorlibBinder::GetClass(CLASS__CRITICAL_HANDLE))))
+        else if (m_thElement.CanCastTo(TypeHandle(CoreLibBinder::GetClass(CLASS__CRITICAL_HANDLE))))
         {
             // Array's of CRITICALHANDLEs are not supported.
             ReportInvalidArrayMarshalInfo(IDS_EE_BADMARSHAL_CRITICALHANDLEARRAY);
         }
         else if (etElement == ELEMENT_TYPE_VALUETYPE)
         {
-            if (m_thElement == TypeHandle(MscorlibBinder::GetClass(CLASS__DATE_TIME)))
+            if (m_thElement == TypeHandle(CoreLibBinder::GetClass(CLASS__DATE_TIME)))
             {
                 if (ntElement == NATIVE_TYPE_STRUCT || ntElement == NATIVE_TYPE_DEFAULT)
                     m_vtElement = VT_DATE;
                 else
                     ReportInvalidArrayMarshalInfo(IDS_EE_BADMARSHAL_DATETIMEARRAY);
             }
-            else if (m_thElement == TypeHandle(MscorlibBinder::GetClass(CLASS__DECIMAL)))
+            else if (m_thElement == TypeHandle(CoreLibBinder::GetClass(CLASS__DECIMAL)))
             {
                 if (ntElement == NATIVE_TYPE_STRUCT || ntElement == NATIVE_TYPE_DEFAULT)
                     m_vtElement = VT_DECIMAL;
@@ -4438,7 +4395,7 @@ void ArrayMarshalInfo::InitElementInfo(CorNativeType arrayNativeType, MarshalInf
             }
         }
 #ifdef FEATURE_COMINTEROP
-        else if (m_thElement == TypeHandle(MscorlibBinder::GetClass(CLASS__ERROR_WRAPPER)))
+        else if (m_thElement == TypeHandle(CoreLibBinder::GetClass(CLASS__ERROR_WRAPPER)))
         {
             m_vtElement = VT_ERROR;
         }
@@ -4465,23 +4422,6 @@ void ArrayMarshalInfo::InitElementInfo(CorNativeType arrayNativeType, MarshalInf
             ReportInvalidArrayMarshalInfo(IDS_EE_BADMARSHAL_UNSUPPORTED_SIG);
 #endif // FEATURE_COMINTEROP
         }
-    }
-
-   // Avoid throwing exceptions for any managed structs that have layouts and have types of fields that gets default to those banned types by default
-   // We don't know if they will be passed to native code anyway, and the right place to make the check is in the marshallers
-   if (AppX::IsAppXProcess() && ms != MarshalInfo::MARSHAL_SCENARIO_FIELD)
-    {
-       bool set_error = false;
-       UINT m_resID = 0;
-       switch (m_vtElement)
-       {
-           case VT_DISPATCH:
-                 m_resID = IDS_EE_BADMARSHAL_TYPE_IDISPATCH ;
-                 set_error = true;
-                break;
-       }
-        if (set_error)
-            COMPlusThrow(kPlatformNotSupportedException, m_resID);
     }
 
 LExit:;

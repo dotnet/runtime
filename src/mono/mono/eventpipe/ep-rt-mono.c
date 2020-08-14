@@ -2,8 +2,8 @@
 
 #ifdef ENABLE_PERFTRACING
 #include "ep-rt-config.h"
-
-#include "ep.h"
+#include "ep-types.h"
+#include "ep-rt.h"
 
 ep_rt_spin_lock_handle_t _ep_rt_mono_config_lock = {0};
 EventPipeMonoFuncTable _ep_rt_mono_func_table = {0};

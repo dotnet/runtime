@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -470,9 +469,11 @@ void CodeGen::genHWIntrinsic_R_RM(
             switch (addr->OperGet())
             {
                 case GT_LCL_VAR_ADDR:
+                case GT_LCL_FLD_ADDR:
                 {
+                    assert(addr->isContained());
                     varNum = addr->AsLclVarCommon()->GetLclNum();
-                    offset = 0;
+                    offset = addr->AsLclVarCommon()->GetLclOffs();
                     break;
                 }
 
@@ -699,9 +700,11 @@ void CodeGen::genHWIntrinsic_R_R_RM_I(GenTreeHWIntrinsic* node, instruction ins,
             switch (addr->OperGet())
             {
                 case GT_LCL_VAR_ADDR:
+                case GT_LCL_FLD_ADDR:
                 {
+                    assert(addr->isContained());
                     varNum = addr->AsLclVarCommon()->GetLclNum();
-                    offset = 0;
+                    offset = addr->AsLclVarCommon()->GetLclOffs();
                     break;
                 }
 
@@ -862,9 +865,11 @@ void CodeGen::genHWIntrinsic_R_R_RM_R(GenTreeHWIntrinsic* node, instruction ins)
             switch (addr->OperGet())
             {
                 case GT_LCL_VAR_ADDR:
+                case GT_LCL_FLD_ADDR:
                 {
+                    assert(addr->isContained());
                     varNum = addr->AsLclVarCommon()->GetLclNum();
-                    offset = 0;
+                    offset = addr->AsLclVarCommon()->GetLclOffs();
                     break;
                 }
 
@@ -987,9 +992,11 @@ void CodeGen::genHWIntrinsic_R_R_R_RM(
             switch (addr->OperGet())
             {
                 case GT_LCL_VAR_ADDR:
+                case GT_LCL_FLD_ADDR:
                 {
+                    assert(addr->isContained());
                     varNum = addr->AsLclVarCommon()->GetLclNum();
-                    offset = 0;
+                    offset = addr->AsLclVarCommon()->GetLclOffs();
                     break;
                 }
 
@@ -1769,7 +1776,7 @@ void CodeGen::genAvxOrAvx2Intrinsic(GenTreeHWIntrinsic* node)
             bool isVector128GatherWithVector256Index = (targetType == TYP_SIMD16) && (indexOp->TypeGet() == TYP_SIMD32);
 
             // hwintrinsiclistxarch.h uses Dword index instructions in default
-            if (varTypeIsLong(node->GetOtherBaseType()))
+            if (varTypeIsLong(node->GetAuxiliaryType()))
             {
                 switch (ins)
                 {

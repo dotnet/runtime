@@ -15,7 +15,7 @@
     <Compile Include="..\Common\CommandLine\CommandLineHelpers.cs">
       <Link>CommandLine\CommandLineHelpers.cs</Link>
     </Compile>
-  </ItemGroup>  
+  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="System.CommandLine" Version="$(SystemCommandLineVersion)" />

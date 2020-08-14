@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -283,7 +282,6 @@ namespace System.Net.Mail
         {
             string encodedAddress = string.Empty;
             IEncodableStream encoder;
-            byte[] buffer;
 
             Debug.Assert(Address != null, "address was null");
 
@@ -302,8 +300,7 @@ namespace System.Net.Mail
                 {
                     //encode the displayname since it's non-ascii
                     encoder = s_encoderFactory.GetEncoderForHeader(_displayNameEncoding, false, charsConsumed);
-                    buffer = _displayNameEncoding.GetBytes(_displayName);
-                    encoder.EncodeBytes(buffer, 0, buffer.Length);
+                    encoder.EncodeString(_displayName, _displayNameEncoding);
                     encodedAddress = encoder.GetEncodedString();
                 }
 

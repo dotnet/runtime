@@ -410,3 +410,64 @@ ClassLayout* ClassLayout::GetPPPQuirkLayout(CompAllocator alloc)
     return m_pppQuirkLayout;
 }
 #endif // TARGET_AMD64
+
+//------------------------------------------------------------------------
+// AreCompatible: check if 2 layouts are the same for copying.
+//
+// Arguments:
+//    layout1 - the first layout;
+//    layout2 - the second layout.
+//
+// Return value:
+//    true if compatible, false otherwise.
+//
+// Notes:
+//    Layouts are called compatible if they are equal or if
+//    they have the same size and the same GC slots.
+//
+// static
+bool ClassLayout::AreCompatible(const ClassLayout* layout1, const ClassLayout* layout2)
+{
+    CORINFO_CLASS_HANDLE clsHnd1 = layout1->GetClassHandle();
+    CORINFO_CLASS_HANDLE clsHnd2 = layout2->GetClassHandle();
+    assert(clsHnd1 != NO_CLASS_HANDLE);
+    assert(clsHnd2 != NO_CLASS_HANDLE);
+
+    if (clsHnd1 == clsHnd2)
+    {
+        return true;
+    }
+
+    if (layout1->GetSize() != layout2->GetSize())
+    {
+        return false;
+    }
+
+    if (layout1->HasGCPtr() != layout2->HasGCPtr())
+    {
+        return false;
+    }
+
+    if (!layout1->HasGCPtr() && !layout2->HasGCPtr())
+    {
+        return true;
+    }
+
+    assert(layout1->HasGCPtr() && layout2->HasGCPtr());
+    if (layout1->GetGCPtrCount() != layout2->GetGCPtrCount())
+    {
+        return false;
+    }
+
+    assert(layout1->GetSlotCount() == layout2->GetSlotCount());
+    unsigned slotsCount = layout1->GetSlotCount();
+
+    for (unsigned i = 0; i < slotsCount; ++i)
+    {
+        if (layout1->GetGCPtrType(i) != layout2->GetGCPtrType(i))
+        {
+            return false;
+        }
+    }
+    return true;
+}

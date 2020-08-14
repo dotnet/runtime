@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Globalization;
@@ -1448,8 +1447,8 @@ namespace System.Xml.Xsl.IlGen
             MarkSequencePoint(sourceInfo);
         }
 
-        private string _lastUriString = null;
-        private string _lastFileName = null;
+        private string _lastUriString;
+        private string _lastFileName;
 
         // SQLBUDT 278010: debugger does not work with network paths in uri format, like file://server/share/dir/file
         private string GetFileName(ISourceLineInfo sourceInfo)

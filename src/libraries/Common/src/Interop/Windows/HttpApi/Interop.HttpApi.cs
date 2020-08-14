@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Microsoft.Win32.SafeHandles;
 using System;
@@ -664,13 +663,11 @@ internal static partial class Interop
 
         private static unsafe string GetKnownHeader(HTTP_REQUEST* request, long fixup, int headerIndex)
         {
-            if (NetEventSource.IsEnabled) { NetEventSource.Enter(null); }
-
             string header = null;
 
             HTTP_KNOWN_HEADER* pKnownHeader = (&request->Headers.KnownHeaders) + headerIndex;
 
-            if (NetEventSource.IsEnabled)
+            if (NetEventSource.Log.IsEnabled())
             {
                 NetEventSource.Info(null, $"HttpApi::GetKnownHeader() pKnownHeader:0x{(IntPtr)pKnownHeader}");
                 NetEventSource.Info(null, $"HttpApi::GetKnownHeader() pRawValue:0x{(IntPtr)pKnownHeader->pRawValue} RawValueLength:{pKnownHeader->RawValueLength}");
@@ -683,7 +680,6 @@ internal static partial class Interop
                 header = new string(pKnownHeader->pRawValue + fixup, 0, pKnownHeader->RawValueLength);
             }
 
-            if (NetEventSource.IsEnabled) { NetEventSource.Exit(null, $"HttpApi::GetKnownHeader() return:{header}"); }
             return header;
         }
 
@@ -722,8 +718,6 @@ internal static partial class Interop
 
         internal static unsafe WebHeaderCollection GetHeaders(IntPtr memoryBlob, IntPtr originalAddress)
         {
-            NetEventSource.Enter(null);
-
             // Return value.
             WebHeaderCollection headerCollection = new WebHeaderCollection();
             byte* pMemoryBlob = (byte*)memoryBlob;
@@ -771,17 +765,11 @@ internal static partial class Interop
                 pKnownHeader++;
             }
 
-            NetEventSource.Exit(null);
             return headerCollection;
         }
 
         internal static unsafe uint GetChunks(IntPtr memoryBlob, IntPtr originalAddress, ref int dataChunkIndex, ref uint dataChunkOffset, byte[] buffer, int offset, int size)
         {
-            if (NetEventSource.IsEnabled)
-            {
-                NetEventSource.Enter(null, $"HttpApi::GetChunks() memoryBlob:{memoryBlob}");
-            }
-
             // Return value.
             uint dataRead = 0;
             byte* pMemoryBlob = (byte*)memoryBlob;
@@ -829,17 +817,11 @@ internal static partial class Interop
                 dataChunkIndex = -1;
             }
 
-            if (NetEventSource.IsEnabled)
-            {
-                NetEventSource.Exit(null);
-            }
             return dataRead;
         }
 
         internal static unsafe HTTP_VERB GetKnownVerb(IntPtr memoryBlob, IntPtr originalAddress)
         {
-            NetEventSource.Enter(null);
-
             // Return value.
             HTTP_VERB verb = HTTP_VERB.HttpVerbUnknown;
 
@@ -849,14 +831,11 @@ internal static partial class Interop
                 verb = request->Verb;
             }
 
-            NetEventSource.Exit(null);
             return verb;
         }
 
         internal static unsafe IPEndPoint GetRemoteEndPoint(IntPtr memoryBlob, IntPtr originalAddress)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(null);
-
             SocketAddress v4address = new SocketAddress(AddressFamily.InterNetwork, IPv4AddressSize);
             SocketAddress v6address = new SocketAddress(AddressFamily.InterNetworkV6, IPv6AddressSize);
 
@@ -875,14 +854,11 @@ internal static partial class Interop
                 endpoint = new IPEndPoint(IPAddress.IPv6Any, IPEndPoint.MinPort).Create(v6address) as IPEndPoint;
             }
 
-            if (NetEventSource.IsEnabled) NetEventSource.Exit(null);
             return endpoint;
         }
 
         internal static unsafe IPEndPoint GetLocalEndPoint(IntPtr memoryBlob, IntPtr originalAddress)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(null);
-
             SocketAddress v4address = new SocketAddress(AddressFamily.InterNetwork, IPv4AddressSize);
             SocketAddress v6address = new SocketAddress(AddressFamily.InterNetworkV6, IPv6AddressSize);
 
@@ -901,7 +877,6 @@ internal static partial class Interop
                 endpoint = s_ipv6Any.Create(v6address) as IPEndPoint;
             }
 
-            if (NetEventSource.IsEnabled) NetEventSource.Exit(null);
             return endpoint;
         }
 

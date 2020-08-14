@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
+#nullable enable
 namespace System.Xml.Schema
 {
     using System.Collections;
@@ -10,20 +10,20 @@ namespace System.Xml.Schema
 
     public class XmlSchemaObjectCollection : CollectionBase
     {
-        private readonly XmlSchemaObject _parent;
+        private readonly XmlSchemaObject? _parent;
 
         public XmlSchemaObjectCollection()
         {
         }
 
-        public XmlSchemaObjectCollection(XmlSchemaObject parent)
+        public XmlSchemaObjectCollection(XmlSchemaObject? parent)
         {
             _parent = parent;
         }
 
         public virtual XmlSchemaObject this[int index]
         {
-            get { return (XmlSchemaObject)List[index]; }
+            get { return (XmlSchemaObject)List[index]!; }
             set { List[index] = value; }
         }
 
@@ -62,7 +62,7 @@ namespace System.Xml.Schema
             List.CopyTo(array, index);
         }
 
-        protected override void OnInsert(int index, object item)
+        protected override void OnInsert(int index, object? item)
         {
             if (_parent != null)
             {
@@ -70,7 +70,7 @@ namespace System.Xml.Schema
             }
         }
 
-        protected override void OnSet(int index, object oldValue, object newValue)
+        protected override void OnSet(int index, object? oldValue, object? newValue)
         {
             if (_parent != null)
             {
@@ -87,7 +87,7 @@ namespace System.Xml.Schema
             }
         }
 
-        protected override void OnRemove(int index, object item)
+        protected override void OnRemove(int index, object? item)
         {
             if (_parent != null)
             {
@@ -129,7 +129,7 @@ namespace System.Xml.Schema
 
         public XmlSchemaObject Current
         {
-            get { return (XmlSchemaObject)_enumerator.Current; }
+            get { return (XmlSchemaObject)_enumerator.Current!; }
         }
 
         void IEnumerator.Reset()
@@ -144,7 +144,7 @@ namespace System.Xml.Schema
 
         object IEnumerator.Current
         {
-            get { return _enumerator.Current; }
+            get { return _enumerator.Current!; }
         }
     }
 }

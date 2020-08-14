@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #include "common.h"
 #include "eventpipe.h"
@@ -9,6 +8,7 @@
 #include "eventpipeprovider.h"
 #include "eventpipesession.h"
 #include "eventpipesessionprovider.h"
+#include "eventpipeeventpayload.h"
 
 #ifdef FEATURE_PERFTRACING
 
@@ -22,12 +22,14 @@ EventPipeSession::EventPipeSession(
     uint32_t circularBufferSizeInMB,
     const EventPipeProviderConfiguration *pProviders,
     uint32_t numProviders,
-    bool rundownEnabled) : m_index(index),
-                           m_pProviderList(new EventPipeSessionProviderList(pProviders, numProviders)),
-                           m_rundownEnabled(rundownEnabled),
-                           m_SessionType(sessionType),
-                           m_format(format),
-                           m_rundownRequested(rundownSwitch)
+    EventPipeSessionSynchronousCallback callback) : m_index(index),
+                                                    m_pProviderList(new EventPipeSessionProviderList(pProviders, numProviders)),
+                                                    m_pBufferManager(nullptr),
+                                                    m_rundownEnabled(false),
+                                                    m_SessionType(sessionType),
+                                                    m_format(format),
+                                                    m_rundownRequested(rundownSwitch),
+                                                    m_synchronousCallback(callback)
 {
     CONTRACTL
     {
@@ -36,9 +38,10 @@ EventPipeSession::EventPipeSession(
         MODE_PREEMPTIVE;
         PRECONDITION(index < EventPipe::MaxNumberOfSessions);
         PRECONDITION(format < EventPipeSerializationFormat::Count);
-        PRECONDITION(circularBufferSizeInMB > 0);
+        PRECONDITION(m_SessionType == EventPipeSessionType::Synchronous || circularBufferSizeInMB > 0);
         PRECONDITION(numProviders > 0 && pProviders != nullptr);
         PRECONDITION(EventPipe::IsLockOwnedByCurrentThread());
+        PRECONDITION((m_synchronousCallback != nullptr) == (m_SessionType == EventPipeSessionType::Synchronous));
     }
     CONTRACTL_END;
 
@@ -51,7 +54,10 @@ EventPipeSession::EventPipeSession(
         sequencePointAllocationBudget = 10 * 1024 * 1024;
     }
 
-    m_pBufferManager = new EventPipeBufferManager(this, static_cast<size_t>(circularBufferSizeInMB) << 20, sequencePointAllocationBudget);
+    if (m_SessionType != EventPipeSessionType::Synchronous)
+    {
+        m_pBufferManager = new EventPipeBufferManager(this, static_cast<size_t>(circularBufferSizeInMB) << 20, sequencePointAllocationBudget);
+    }
 
     // Create the event pipe file.
     // A NULL output path means that we should not write the results to a file.
@@ -89,7 +95,10 @@ EventPipeSession::~EventPipeSession()
     CONTRACTL_END;
 
     delete m_pProviderList;
-    delete m_pBufferManager;
+    if (m_pBufferManager != nullptr)
+    {
+        delete m_pBufferManager;
+    }
     delete m_pFile;
 }
 
@@ -264,6 +273,7 @@ void EventPipeSession::AddSessionProvider(EventPipeSessionProvider *pProvider)
         THROWS;
         GC_TRIGGERS;
         MODE_PREEMPTIVE;
+        PRECONDITION(EventPipe::IsLockOwnedByCurrentThread());
     }
     CONTRACTL_END;
 
@@ -293,7 +303,7 @@ bool EventPipeSession::WriteAllBuffersToFile(bool *pEventsWritten)
     }
     CONTRACTL_END;
 
-    if (m_pFile == nullptr)
+    if (m_pFile == nullptr || m_pBufferManager == nullptr)
         return true;
 
     // Get the current time stamp.
@@ -305,7 +315,7 @@ bool EventPipeSession::WriteAllBuffersToFile(bool *pEventsWritten)
     return !m_pFile->HasErrors();
 }
 
-bool EventPipeSession::WriteEventBuffered(
+bool EventPipeSession::WriteEvent(
     Thread *pThread,
     EventPipeEvent &event,
     EventPipeEventPayload &payload,
@@ -323,9 +333,32 @@ bool EventPipeSession::WriteEventBuffered(
     CONTRACTL_END;
 
     // Filter events specific to "this" session based on precomputed flag on provider/events.
-    return event.IsEnabled(GetMask()) ?
-        m_pBufferManager->WriteEvent(pThread, *this, event, payload, pActivityId, pRelatedActivityId, pEventThread, pStack) :
-        false;
+    if (event.IsEnabled(GetMask()))
+    {
+        if (m_synchronousCallback != nullptr)
+        {
+            m_synchronousCallback(event.GetProvider(),
+                                  event.GetEventID(),
+                                  event.GetEventVersion(),
+                                  event.GetMetadataLength(),
+                                  event.GetMetadata(),
+                                  payload.GetSize(),
+                                  payload.GetFlatData(),
+                                  pActivityId,
+                                  pRelatedActivityId,
+                                  pEventThread,
+                                  pStack == nullptr ? 0 : pStack->GetSize(),
+                                  pStack == nullptr ? nullptr : reinterpret_cast<UINT_PTR *>(pStack->GetPointer()));
+            return true;
+        }
+        else
+        {
+            _ASSERTE(m_pBufferManager != nullptr);
+            return m_pBufferManager->WriteEvent(pThread, *this, event, payload, pActivityId, pRelatedActivityId, pEventThread, pStack);
+        }
+    }
+
+    return false;
 }
 
 void EventPipeSession::WriteSequencePointUnbuffered()
@@ -338,7 +371,7 @@ void EventPipeSession::WriteSequencePointUnbuffered()
     }
     CONTRACTL_END;
 
-    if (m_pFile == nullptr)
+    if (m_pFile == nullptr || m_pBufferManager == nullptr)
         return;
     EventPipeSequencePoint sequencePoint;
     m_pBufferManager->InitSequencePointThreadList(&sequencePoint);
@@ -356,12 +389,26 @@ EventPipeEventInstance *EventPipeSession::GetNextEvent()
     }
     CONTRACTL_END;
 
+    if (m_pBufferManager == nullptr)
+    {
+        // Shouldn't call GetNextEvent on a synchronous session
+        _ASSERTE(false);
+        return nullptr;
+    }
+
     return m_pBufferManager->GetNextEvent();
 }
 
 CLREvent *EventPipeSession::GetWaitEvent()
 {
     LIMITED_METHOD_CONTRACT;
+
+    if (m_pBufferManager == nullptr)
+    {
+        // Shouldn't call GetWaitEvent on a synchronous session
+        _ASSERTE(false);
+        return nullptr;
+    }
 
     return m_pBufferManager->GetWaitEvent();
 }
@@ -383,6 +430,12 @@ void EventPipeSession::StartStreaming()
 
     if (m_SessionType == EventPipeSessionType::IpcStream)
         CreateIpcStreamingThread();
+
+    if (m_SessionType == EventPipeSessionType::Synchronous)
+    {
+        _ASSERTE(m_pFile == nullptr);
+        _ASSERTE(!IsIpcStreamingEnabled());
+    }
 }
 
 void EventPipeSession::EnableRundown()
@@ -444,6 +497,7 @@ void EventPipeSession::DisableIpcStreamingThread()
     CONTRACTL_END;
 
     _ASSERTE(!g_fProcessDetach);
+    _ASSERTE(m_pBufferManager != nullptr);
 
     // The IPC streaming thread will watch this value and exit
     // when profiling is disabled.
@@ -482,12 +536,44 @@ void EventPipeSession::SuspendWriteEvent()
         THROWS;
         GC_TRIGGERS;
         MODE_PREEMPTIVE;
+        // Need to disable the session before calling this method
+        PRECONDITION(!EventPipe::IsSessionEnabled(reinterpret_cast<EventPipeSessionID>(this)));
     }
     CONTRACTL_END;
 
-    // Force all in-progress writes to either finish or cancel
-    // This is required to ensure we can safely flush and delete the buffers
-    m_pBufferManager->SuspendWriteEvent(GetIndex());
+    // Collect all threads that are currently active so we don't have to 
+    // wait for events to finish writing under the lock.
+    CQuickArrayList<EventPipeThread *> threadList;
+    {
+        SpinLockHolder holder(EventPipeThread::GetGlobalThreadLock());
+
+        EventPipeThreadIterator eventPipeThreads = EventPipeThread::GetThreads();
+        EventPipeThread *pThread = nullptr;
+        while (eventPipeThreads.Next(&pThread))
+        {
+            // Add ref so the thread doesn't disappear when we release the lock
+            pThread->AddRef();
+            threadList.Push(pThread);
+        }
+    }
+
+    for (size_t i = 0; i < threadList.Size(); i++)
+    {
+        EventPipeThread *pThread = threadList[i];
+        // Wait for the thread to finish any writes to this session
+        YIELD_WHILE(pThread->GetSessionWriteInProgress() == GetIndex());
+
+        // Since we've already disabled the session, the thread won't call back in to this
+        // session once its done with the current write
+
+        pThread->Release();
+    }
+
+    if (m_pBufferManager != nullptr)
+    {
+        // Convert all buffers to read only to ensure they get flushed
+        m_pBufferManager->SuspendWriteEvent(GetIndex());
+    }
 }
 
 void EventPipeSession::ExecuteRundown()

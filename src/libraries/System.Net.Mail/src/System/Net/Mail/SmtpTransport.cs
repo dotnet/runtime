@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.IO;
@@ -23,7 +22,7 @@ namespace System.Net.Mail
         private bool _identityRequired;
         private bool _shouldAbort;
 
-        private bool _enableSsl = false;
+        private bool _enableSsl;
         private X509CertificateCollection? _clientCertificates;
 
         internal SmtpTransport(SmtpClient client) : this(client, SmtpAuthenticationManager.GetModules())
@@ -108,7 +107,7 @@ namespace System.Net.Mail
                     _shouldAbort = false;
                 }
 
-                if (NetEventSource.IsEnabled) NetEventSource.Associate(this, _connection);
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Associate(this, _connection);
 
                 if (EnableSsl)
                 {
@@ -123,12 +122,11 @@ namespace System.Net.Mail
 
         internal IAsyncResult BeginGetConnection(ContextAwareResult outerResult, AsyncCallback? callback, object? state, string host, int port)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
             IAsyncResult? result = null;
             try
             {
                 _connection = new SmtpConnection(this, _client, _credentials, _authenticationModules);
-                if (NetEventSource.IsEnabled) NetEventSource.Associate(this, _connection);
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Associate(this, _connection);
                 if (EnableSsl)
                 {
                     _connection.EnableSsl = true;
@@ -142,25 +140,14 @@ namespace System.Net.Mail
                 throw new SmtpException(SR.MailHostNotFound, innerException);
             }
 
-            if (NetEventSource.IsEnabled)
-            {
-                NetEventSource.Info(this, "Sync completion");
-                NetEventSource.Exit(this);
-            }
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "Sync completion");
+
             return result;
         }
 
         internal void EndGetConnection(IAsyncResult result)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
-            try
-            {
-                _connection!.EndGetConnection(result);
-            }
-            finally
-            {
-                if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
-            }
+            _connection!.EndGetConnection(result);
         }
 
         internal IAsyncResult BeginSendMail(MailAddress sender, MailAddressCollection recipients,

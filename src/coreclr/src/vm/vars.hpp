@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //
 // vars.hpp
 //
@@ -394,6 +393,8 @@ GPTR_DECL(MethodTable,      g_TypedReferenceMT);
 GPTR_DECL(MethodTable,      g_pBaseCOMObject);
 #endif
 
+GPTR_DECL(MethodTable,      g_pIDynamicInterfaceCastableInterface);
+
 #ifdef FEATURE_ICASTABLE
 GPTR_DECL(MethodTable,      g_pICastableInterface);
 #endif // FEATURE_ICASTABLE
@@ -693,7 +694,7 @@ typedef DPTR(GSCookie) PTR_GSCookie;
 #define READONLY_ATTR
 #else
 #ifdef __APPLE__
-#define READONLY_ATTR_ARGS section("__TEXT,__const")
+#define READONLY_ATTR_ARGS section("__DATA,__const")
 #else
 #define READONLY_ATTR_ARGS section(".rodata")
 #endif

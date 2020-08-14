@@ -13,7 +13,7 @@
     <ClInclude Include="$(MonoSourceLocation)\mono\eventpipe\ep-block.h">
       <Filter>Header Files$(MonoRuntimeFilterSubFolder)\eventpipe</Filter>
     </ClInclude>
-    <ClCompile Include="$(MonoSourceLocation)\mono\eventpipe\ep-block-internals.c">
+    <ClCompile Include="$(MonoSourceLocation)\mono\eventpipe\ep-buffer.c">
       <Filter>Source Files$(MonoRuntimeFilterSubFolder)\eventpipe</Filter>
     </ClCompile>
     <ClInclude Include="$(MonoSourceLocation)\mono\eventpipe\ep-buffer.h">
@@ -25,16 +25,16 @@
     <ClInclude Include="$(MonoSourceLocation)\mono\eventpipe\ep-buffer-manager.h">
       <Filter>Header Files$(MonoRuntimeFilterSubFolder)\eventpipe</Filter>
     </ClInclude>
-        <ClCompile Include="$(MonoSourceLocation)\mono\eventpipe\ep-buffer-manager-internals.c">
-      <Filter>Source Files$(MonoRuntimeFilterSubFolder)\eventpipe</Filter>
-    </ClCompile>
     <ClCompile Include="$(MonoSourceLocation)\mono\eventpipe\ep-config.c">
       <Filter>Source Files$(MonoRuntimeFilterSubFolder)\eventpipe</Filter>
     </ClCompile>
     <ClInclude Include="$(MonoSourceLocation)\mono\eventpipe\ep-config.h">
       <Filter>Header Files$(MonoRuntimeFilterSubFolder)\eventpipe</Filter>
     </ClInclude>
-    <ClCompile Include="$(MonoSourceLocation)\mono\eventpipe\ep-config-internals.c">
+    <ClInclude Include="$(MonoSourceLocation)\mono\eventpipe\ep-config-internals.h">
+      <Filter>Header Files$(MonoRuntimeFilterSubFolder)\eventpipe</Filter>
+    </ClInclude>
+    <ClCompile Include="$(MonoSourceLocation)\mono\eventpipe\ep-event.c">
       <Filter>Source Files$(MonoRuntimeFilterSubFolder)\eventpipe</Filter>
     </ClCompile>
     <ClInclude Include="$(MonoSourceLocation)\mono\eventpipe\ep-event.h">
@@ -46,57 +46,42 @@
     <ClCompile Include="$(MonoSourceLocation)\mono\eventpipe\ep-event-instance.c">
       <Filter>Source Files$(MonoRuntimeFilterSubFolder)\eventpipe</Filter>
     </ClCompile>
-    <ClCompile Include="$(MonoSourceLocation)\mono\eventpipe\ep-event-instance-internals.c">
-      <Filter>Source Files$(MonoRuntimeFilterSubFolder)\eventpipe</Filter>
-    </ClCompile>
-    <ClCompile Include="$(MonoSourceLocation)\mono\eventpipe\ep-event-internals.c">
+    <ClCompile Include="$(MonoSourceLocation)\mono\eventpipe\ep-event-payload.c">
       <Filter>Source Files$(MonoRuntimeFilterSubFolder)\eventpipe</Filter>
     </ClCompile>
     <ClInclude Include="$(MonoSourceLocation)\mono\eventpipe\ep-event-payload.h">
       <Filter>Header Files$(MonoRuntimeFilterSubFolder)\eventpipe</Filter>
     </ClInclude>
-    <ClCompile Include="$(MonoSourceLocation)\mono\eventpipe\ep-event-payload-internals.c">
-      <Filter>Source Files$(MonoRuntimeFilterSubFolder)\eventpipe</Filter>
-    </ClCompile>
     <ClCompile Include="$(MonoSourceLocation)\mono\eventpipe\ep-event-source.c">
       <Filter>Source Files$(MonoRuntimeFilterSubFolder)\eventpipe</Filter>
     </ClCompile>
     <ClInclude Include="$(MonoSourceLocation)\mono\eventpipe\ep-event-source.h">
       <Filter>Header Files$(MonoRuntimeFilterSubFolder)\eventpipe</Filter>
     </ClInclude>
-    <ClCompile Include="$(MonoSourceLocation)\mono\eventpipe\ep-event-source-internals.c">
-      <Filter>Source Files$(MonoRuntimeFilterSubFolder)\eventpipe</Filter>
-    </ClCompile>
     <ClCompile Include="$(MonoSourceLocation)\mono\eventpipe\ep-file.c">
       <Filter>Source Files$(MonoRuntimeFilterSubFolder)\eventpipe</Filter>
     </ClCompile>
     <ClInclude Include="$(MonoSourceLocation)\mono\eventpipe\ep-file.h">
       <Filter>Header Files$(MonoRuntimeFilterSubFolder)\eventpipe</Filter>
     </ClInclude>
-    <ClCompile Include="$(MonoSourceLocation)\mono\eventpipe\ep-file-internals.c">
-      <Filter>Source Files$(MonoRuntimeFilterSubFolder)\eventpipe</Filter>
-    </ClCompile>
-    <ClCompile Include="$(MonoSourceLocation)\mono\eventpipe\ep-internals.c">
-      <Filter>Source Files$(MonoRuntimeFilterSubFolder)\eventpipe</Filter>
-    </ClCompile>
+    <ClInclude Include="$(MonoSourceLocation)\mono\eventpipe\ep-getter-setter.h">
+      <Filter>Header Files$(MonoRuntimeFilterSubFolder)\eventpipe</Filter>
+    </ClInclude>
     <ClCompile Include="$(MonoSourceLocation)\mono\eventpipe\ep-metadata-generator.c">
       <Filter>Source Files$(MonoRuntimeFilterSubFolder)\eventpipe</Filter>
     </ClCompile>
     <ClInclude Include="$(MonoSourceLocation)\mono\eventpipe\ep-metadata-generator.h">
       <Filter>Header Files$(MonoRuntimeFilterSubFolder)\eventpipe</Filter>
     </ClInclude>
-    <ClCompile Include="$(MonoSourceLocation)\mono\eventpipe\ep-metadata-generator-internals.c">
-      <Filter>Source Files$(MonoRuntimeFilterSubFolder)\eventpipe</Filter>
-    </ClCompile>
     <ClCompile Include="$(MonoSourceLocation)\mono\eventpipe\ep-provider.c">
       <Filter>Source Files$(MonoRuntimeFilterSubFolder)\eventpipe</Filter>
     </ClCompile>
     <ClInclude Include="$(MonoSourceLocation)\mono\eventpipe\ep-provider.h">
       <Filter>Header Files$(MonoRuntimeFilterSubFolder)\eventpipe</Filter>
     </ClInclude>
-    <ClCompile Include="$(MonoSourceLocation)\mono\eventpipe\ep-provider-internals.c">
-      <Filter>Source Files$(MonoRuntimeFilterSubFolder)\eventpipe</Filter>
-    </ClCompile>
+    <ClInclude Include="$(MonoSourceLocation)\mono\eventpipe\ep-provider-internals.h">
+      <Filter>Header Files$(MonoRuntimeFilterSubFolder)\eventpipe</Filter>
+    </ClInclude>
     <ClInclude Include="$(MonoSourceLocation)\mono\eventpipe\ep-rt.h">
       <Filter>Header Files$(MonoRuntimeFilterSubFolder)\eventpipe</Filter>
     </ClInclude>
@@ -124,9 +109,6 @@
     <ClInclude Include="$(MonoSourceLocation)\mono\eventpipe\ep-thread.h">
       <Filter>Header Files$(MonoRuntimeFilterSubFolder)\eventpipe</Filter>
     </ClInclude>
-    <ClCompile Include="$(MonoSourceLocation)\mono\eventpipe\ep-thread-internals.c">
-      <Filter>Source Files$(MonoRuntimeFilterSubFolder)\eventpipe</Filter>
-    </ClCompile>
     <ClInclude Include="$(MonoSourceLocation)\mono\eventpipe\ep-types.h">
       <Filter>Header Files$(MonoRuntimeFilterSubFolder)\eventpipe</Filter>
     </ClInclude>
@@ -136,28 +118,19 @@
     <ClInclude Include="$(MonoSourceLocation)\mono\eventpipe\ep-session.h">
       <Filter>Header Files$(MonoRuntimeFilterSubFolder)\eventpipe</Filter>
     </ClInclude>
-    <ClCompile Include="$(MonoSourceLocation)\mono\eventpipe\ep-session-internals.c">
-      <Filter>Source Files$(MonoRuntimeFilterSubFolder)\eventpipe</Filter>
-    </ClCompile>
     <ClCompile Include="$(MonoSourceLocation)\mono\eventpipe\ep-session-provider.c">
       <Filter>Source Files$(MonoRuntimeFilterSubFolder)\eventpipe</Filter>
     </ClCompile>
-    <ClInclude Include="$(MonoSourceLocation)\mono\eventpipe\ep-session-provider-internals.h">
-      <Filter>Header Files$(MonoRuntimeFilterSubFolder)\eventpipe</Filter>
-    </ClInclude>
-    <ClCompile Include="$(MonoSourceLocation)\mono\eventpipe\ep-session-provider-internals.c">
+    <ClCompile Include="$(MonoSourceLocation)\mono\eventpipe\ep-stack-contents.c">
       <Filter>Source Files$(MonoRuntimeFilterSubFolder)\eventpipe</Filter>
     </ClCompile>
+    <ClInclude Include="$(MonoSourceLocation)\mono\eventpipe\ep-stack-contents.h">
+      <Filter>Header Files$(MonoRuntimeFilterSubFolder)\eventpipe</Filter>
+    </ClInclude>
     <ClCompile Include="$(MonoSourceLocation)\mono\eventpipe\ep-stream.c">
       <Filter>Source Files$(MonoRuntimeFilterSubFolder)\eventpipe</Filter>
     </ClCompile>
     <ClInclude Include="$(MonoSourceLocation)\mono\eventpipe\ep-stream.h">
-      <Filter>Header Files$(MonoRuntimeFilterSubFolder)\eventpipe</Filter>
-    </ClInclude>
-    <ClCompile Include="$(MonoSourceLocation)\mono\eventpipe\ep-stream-internals.c">
-      <Filter>Source Files$(MonoRuntimeFilterSubFolder)\eventpipe</Filter>
-    </ClCompile>
-    <ClInclude Include="$(MonoSourceLocation)\mono\eventpipe\ep-stack-contents.h">
       <Filter>Header Files$(MonoRuntimeFilterSubFolder)\eventpipe</Filter>
     </ClInclude>
   </ItemGroup>

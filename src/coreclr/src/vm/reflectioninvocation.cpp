@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //
 //
 
@@ -201,7 +200,7 @@ FCIMPL2(FC_BOOL_RET, ReflectionInvocation::CanValueSpecialCast, ReflectClassBase
     // the field type is a pointer
     if (targetCorElement == ELEMENT_TYPE_PTR || targetCorElement == ELEMENT_TYPE_FNPTR) {
         // the object must be an IntPtr or a System.Reflection.Pointer
-        if (valueType == TypeHandle(MscorlibBinder::GetClass(CLASS__INTPTR))) {
+        if (valueType == TypeHandle(CoreLibBinder::GetClass(CLASS__INTPTR))) {
             //
             // it's an IntPtr, it's good.
         }
@@ -254,6 +253,11 @@ FCIMPL3(Object*, ReflectionInvocation::AllocateValueType, ReflectClassBaseObject
     if (InvokeUtil::IsPrimitiveType(targetElementType) || targetElementType == ELEMENT_TYPE_VALUETYPE)
     {
         MethodTable* allocMT = targetType.AsMethodTable();
+
+        if (allocMT->IsByRefLike()) {
+            COMPlusThrow(kNotSupportedException, W("NotSupported_ByRefLike"));
+        }
+
         if (gc.value != NULL)
         {
             // ignore the type of the incoming box if fForceTypeChange is set
@@ -328,23 +332,6 @@ FCIMPL7(void, RuntimeFieldHandle::SetValue, ReflectFieldObject *pFieldUNSAFE, Ob
 
     HELPER_METHOD_FRAME_BEGIN_PROTECT(gc);
 
-    // Verify we're not trying to set the value of a static initonly field
-    // once the class has been initialized.
-    if (pFieldDesc->IsStatic())
-    {
-        MethodTable* pEnclosingMT = pFieldDesc->GetEnclosingMethodTable();
-        if (pEnclosingMT->IsClassInited() && IsFdInitOnly(pFieldDesc->GetAttributes()))
-        {
-            DefineFullyQualifiedNameForClassW();
-            SString ssFieldName(SString::Utf8, pFieldDesc->GetName());
-            COMPlusThrow(kFieldAccessException,
-                IDS_EE_CANNOT_SET_INITONLY_STATIC_FIELD,
-                ssFieldName.GetUnicode(),
-                GetFullyQualifiedNameForClassW(pEnclosingMT));
-        }
-    }
-
-    //TODO: cleanup this function
     InvokeUtil::SetValidField(fieldType.GetSignatureCorElementType(), fieldType, pFieldDesc, &gc.target, &gc.value, declaringType, pDomainInitialized);
 
     HELPER_METHOD_FRAME_END();
@@ -1582,7 +1569,6 @@ static void DirectObjectFieldSet(FieldDesc *pField, TypeHandle fieldType, TypeHa
     // Validate the target/fld type relationship
     InvokeUtil::ValidateObjectTarget(pField, enclosingType, &objref);
 
-    InvokeUtil::ValidField(fieldType, pValue);
     InvokeUtil::SetValidField(pField->GetFieldType(), fieldType, pField, &objref, pValue, enclosingType, pDomainInitialized);
     GCPROTECT_END();
 }
@@ -1626,22 +1612,8 @@ FCIMPL5(void, RuntimeFieldHandle::SetValueDirect, ReflectFieldObject *pFieldUNSA
     TypeHandle targetType = pTarget->type;
     MethodTable *pEnclosingMT = contextType.GetMethodTable();
 
-    {
-        // Verify that the value passed can be widened into the target
-        InvokeUtil::ValidField(fieldType, &gc.oValue);
-
-        // Verify we're not trying to set the value of a static initonly field
-        // once the class has been initialized.
-        if (pField->IsStatic() && pEnclosingMT->IsClassInited() && IsFdInitOnly(pField->GetAttributes()))
-        {
-            DefineFullyQualifiedNameForClassW();
-            SString ssFieldName(SString::Utf8, pField->GetName());
-            COMPlusThrow(kFieldAccessException,
-                IDS_EE_CANNOT_SET_INITONLY_STATIC_FIELD,
-                ssFieldName.GetUnicode(),
-                GetFullyQualifiedNameForClassW(pEnclosingMT));
-        }
-    }
+    // Verify that the value passed can be widened into the target
+    InvokeUtil::ValidField(fieldType, &gc.oValue);
 
     CLR_BOOL domainInitialized = FALSE;
     if (pField->IsStatic() || !targetType.IsValueType()) {
@@ -1712,7 +1684,7 @@ FCIMPL5(void, RuntimeFieldHandle::SetValueDirect, ReflectFieldObject *pFieldUNSA
     case ELEMENT_TYPE_PTR:      // pointers
         if (gc.oValue != 0) {
             value = 0;
-            if (MscorlibBinder::IsClass(gc.oValue->GetMethodTable(), CLASS__POINTER)) {
+            if (CoreLibBinder::IsClass(gc.oValue->GetMethodTable(), CLASS__POINTER)) {
                 value = (size_t) InvokeUtil::GetPointerValue(gc.oValue);
 #ifdef _MSC_VER
 #pragma warning(disable: 4267) //work-around for compiler
@@ -2401,7 +2373,7 @@ FCIMPL1(Object *, ReflectionEnum::InternalGetEnumUnderlyingType, ReflectClassBas
     OBJECTREF result = NULL;
 
     HELPER_METHOD_FRAME_BEGIN_RET_0();
-    MethodTable *pMT = MscorlibBinder::GetElementType(th.AsMethodTable()->GetInternalCorElementType());
+    MethodTable *pMT = CoreLibBinder::GetElementType(th.AsMethodTable()->GetInternalCorElementType());
     result = pMT->GetManagedClassObject();
     HELPER_METHOD_FRAME_END();
 
@@ -2416,7 +2388,12 @@ FCIMPL1(INT32, ReflectionEnum::InternalGetCorElementType, Object *pRefThis) {
     if (pRefThis == NULL)
         FCThrowArgumentNull(NULL);
 
-    return pRefThis->GetMethodTable()->GetInternalCorElementType();
+    MethodTable* pMT = pRefThis->GetMethodTable();
+    _ASSERTE(pMT->IsEnum());
+
+    // MethodTable::GetInternalCorElementType has unnecessary overhead for enums
+    // Call EEClass::GetInternalCorElementType directly to avoid it
+    return pMT->GetClass_NoLogging()->GetInternalCorElementType();
 }
 FCIMPLEND
 
@@ -2674,7 +2651,7 @@ FCIMPL2(FC_BOOL_RET, ReflectionEnum::InternalEquals, Object *pRefThis, Object* p
 }
 FCIMPLEND
 
-// preform (this & flags) != flags
+// perform (this & flags) == flags
 FCIMPL2(FC_BOOL_RET, ReflectionEnum::InternalHasFlag, Object *pRefThis, Object* pRefFlags)
 {
     FCALL_CONTRACT;

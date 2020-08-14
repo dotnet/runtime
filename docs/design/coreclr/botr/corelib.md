@@ -175,7 +175,7 @@ FCalls require a lot of boilerplate code, too much to describe here. Refer to [f
 
 [fcall]: https://github.com/dotnet/runtime/blob/master/src/coreclr/src/vm/fcall.h
 
-### <a name="gcholes" /> GC holes, FCall, and QCall
+### <a name="gcholes"></a> GC holes, FCall, and QCall
 
 A more complete discussion on GC holes can be found in the [CLR Code Guide](../../../coding-guidelines/clr-code-guide.md). Look for ["Is your code GC-safe?"](../../../coding-guidelines/clr-code-guide.md#2.1). This tailored discussion motivates some of the reasons why FCall and QCall have some of their strange conventions.
 
@@ -248,7 +248,7 @@ FCIMPL1(Object*, AppDomainNative::IsStringInterned, StringObject* pStringUNSAFE)
 FCIMPLEND
 ```
 
-## <a name="register" /> Registering your QCall or FCall method
+## <a name="register"></a> Registering your QCall or FCall method
 
 The CLR must know the name of your QCall and FCall methods, both in terms of the managed class and method names, as well as which native methods to call. That is done in [ecalllist.h][ecalllist], with two arrays. The first array maps namespace and class names to an array of function elements. That array of function elements then maps individual method names and signatures to function pointers.
 

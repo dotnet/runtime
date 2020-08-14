@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #nullable enable
 using System.Diagnostics;
@@ -18,7 +17,7 @@ namespace System.Net.Sockets
         private SafeNativeOverlapped()
             : this(IntPtr.Zero)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this);
         }
 
         private SafeNativeOverlapped(IntPtr handle)
@@ -32,7 +31,7 @@ namespace System.Net.Sockets
         {
             _socketHandle = socketHandle;
 
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"socketHandle:{socketHandle}");
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"socketHandle:{socketHandle}");
         }
 
         public override bool IsInvalid
@@ -42,7 +41,7 @@ namespace System.Net.Sockets
 
         protected override bool ReleaseHandle()
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this);
 
             FreeNativeOverlapped();
 

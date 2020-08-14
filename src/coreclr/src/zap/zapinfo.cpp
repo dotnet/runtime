@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //
 // ZapInfo.cpp
 //
@@ -451,7 +450,7 @@ void ZapInfo::CompileMethod()
     }
 #endif
 
-#if defined(TARGET_X86) || defined(TARGET_AMD64)
+#if defined(TARGET_X86) || defined(TARGET_AMD64) || defined(TARGET_ARM64)
     if (methodAttribs & CORINFO_FLG_JIT_INTRINSIC)
     {
         // Skip generating hardware intrinsic method bodies.
@@ -497,12 +496,22 @@ void ZapInfo::CompileMethod()
         m_pImage->m_stats->m_ilCodeSize += m_currentMethodInfo.ILCodeSize;
     }
 
-    CorJitResult res = CORJIT_SKIPPED;
+    CorJitResult res = CORJIT_SKIPPED;   // FAILED() returns true for this value
 
     BYTE *pCode;
     ULONG cCode;
+    bool  doNormalCompile = true;
 
 #ifdef ALLOW_SXS_JIT_NGEN
+
+    // Only retry the JIT compilation when we have a different JIT to run
+    // Often we see both COMPlus_AltJIT and COMPlus_AltJitNgen set
+    // which results in both JIT compilers set to the same altjit
+    //
+    doNormalCompile = (m_zapper->m_alternateJit != m_zapper->m_pJitCompiler);
+
+    // Compile this method using the AltJitNgen compiler
+    //
     if (m_zapper->m_alternateJit)
     {
         res = m_zapper->m_alternateJit->compileMethod( this,
@@ -510,23 +519,27 @@ void ZapInfo::CompileMethod()
                                                      CORJIT_FLAGS::CORJIT_FLAG_CALL_GETJITFLAGS,
                                                      &pCode,
                                                      &cCode);
-        if (FAILED(res))
+
+        // The above compileMethod call will typically return CORJIT_SKIPPED
+        if (doNormalCompile && FAILED(res))
         {
             // We will fall back to the "main" JIT on failure.
             ResetForJitRetry();
         }
     }
+
 #endif // ALLOW_SXS_JIT_NGEN
 
-    if (FAILED(res))
+    // Compile this method using the normal JIT compiler
+    //
+    if (doNormalCompile && FAILED(res))
     {
         ICorJitCompiler * pCompiler = m_zapper->m_pJitCompiler;
         res = pCompiler->compileMethod(this,
-                                    &m_currentMethodInfo,
-                                    CORJIT_FLAGS::CORJIT_FLAG_CALL_GETJITFLAGS,
-                                    &pCode,
-                                    &cCode);
-
+                                       &m_currentMethodInfo,
+                                       CORJIT_FLAGS::CORJIT_FLAG_CALL_GETJITFLAGS,
+                                       &pCode,
+                                       &cCode);
         if (FAILED(res))
         {
             ThrowExceptionForJitResult(res);
@@ -1431,9 +1444,13 @@ LONG * ZapInfo::getAddrOfCaptureThreadGlobal(void **ppIndirection)
     _ASSERTE(ppIndirection != NULL);
 
     *ppIndirection = NULL;
-    if (!IsReadyToRunCompilation())
+    if (IsReadyToRunCompilation())
     {
-        *ppIndirection = (LONG*)m_pImage->GetInnerPtr(m_pImage->m_pEEInfoTable,
+        *ppIndirection = m_pImage->GetImportTable()->GetHelperImport(READYTORUN_HELPER_IndirectTrapThreads);
+    }
+    else
+    {
+        *ppIndirection = m_pImage->GetInnerPtr(m_pImage->m_pEEInfoTable,
             offsetof(CORCOMPILE_EE_INFO_TABLE, addrOfCaptureThreadGlobal));
     }
 
@@ -2150,7 +2167,42 @@ DWORD FilterNamedIntrinsicMethodAttribs(ZapInfo* pZapInfo, DWORD attribs, CORINF
         // Additionally, we make sure none of the hardware intrinsic method bodies get pregenerated in crossgen
         // (see ZapInfo::CompileMethod) but get JITted instead. The JITted method will have the correct
         // answer for the CPU the code is running on.
-        fTreatAsRegularMethodCall = (fIsGetIsSupportedMethod && fIsPlatformHWIntrinsic) || (!fIsPlatformHWIntrinsic && fIsHWIntrinsic);
+
+        fTreatAsRegularMethodCall = fIsGetIsSupportedMethod && fIsPlatformHWIntrinsic;
+
+#if defined(TARGET_ARM64)
+        // On Arm64 AdvSimd ISA is required by CoreCLR, so we can expand Vector64<T> and Vector128<T> generic methods (e.g. Vector64<byte>.get_Zero)
+        // as well as Vector64 and Vector128 methods (e.g. Vector128.CreateScalarUnsafe).
+        fTreatAsRegularMethodCall |= !fIsPlatformHWIntrinsic && fIsHWIntrinsic
+            && (strncmp(className, "Vector64", _countof("Vector64") - 1) != 0)
+            && (strncmp(className, "Vector128", _countof("Vector128") - 1) != 0);
+
+#elif defined(TARGET_X86) || defined(TARGET_AMD64)
+        // The following methods should be safe to expand unconditionally, since JIT either
+        //   1) does not generate code for them (e.g. for Vector128<T>.AsByte() or get_Count) or
+        //   2) uses instructions that belong to Sse or Sse2 (these are required baseline ISAs).
+        static const char* vector128MethodsSafeToExpand[] = { "As", "AsByte", "AsDouble", "AsInt16", "AsInt32", "AsInt64", "AsSByte",
+            "AsSingle", "AsUInt16", "AsUInt32", "AsUInt64", "Create", "CreateScalarUnsafe", "ToScalar", "get_Count", "get_Zero" };
+
+        if (!fIsPlatformHWIntrinsic && fIsHWIntrinsic)
+        {
+            fTreatAsRegularMethodCall = true;
+
+            if (strncmp(className, "Vector128", _countof("Vector128") - 1) == 0)
+            {
+                for (size_t i = 0; i < _countof(vector128MethodsSafeToExpand); i++)
+                {
+                    if (strcmp(methodName, vector128MethodsSafeToExpand[i]) == 0)
+                    {
+                        fTreatAsRegularMethodCall = false;
+                        break;
+                    }
+                }
+            }
+        }
+#else
+        fTreatAsRegularMethodCall |= !fIsPlatformHWIntrinsic && fIsHWIntrinsic;
+#endif 
 
         if (fIsPlatformHWIntrinsic)
         {
@@ -2210,12 +2262,13 @@ DWORD FilterNamedIntrinsicMethodAttribs(ZapInfo* pZapInfo, DWORD attribs, CORINF
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
         else if (strcmp(namespaceName, "System") == 0)
         {
-            if ((strcmp(className, "Math") == 0) || (strcmp(className, "MathF") == 0))
+            if (strcmp(className, "Math") == 0 || strcmp(className, "MathF") == 0)
             {
                 // These are normally handled via the SSE4.1 instructions ROUNDSS/ROUNDSD.
                 // However, we don't know the ISAs the target machine supports so we should
                 // fallback to the method call implementation instead.
-                fTreatAsRegularMethodCall = strcmp(methodName, "Round") == 0;
+                fTreatAsRegularMethodCall = strcmp(methodName, "Round") == 0 || strcmp(methodName, "Ceiling") == 0 ||
+                    strcmp(methodName, "Floor") == 0;
             }
         }
         else if (strcmp(namespaceName, "System.Numerics") == 0)
@@ -2966,7 +3019,7 @@ CORINFO_CLASS_HANDLE ZapInfo::getArgClass(CORINFO_SIG_INFO* sig,
     return m_pEEJitInfo->getArgClass(sig, args);
 }
 
-CorInfoType ZapInfo::getHFAType(CORINFO_CLASS_HANDLE hClass)
+CorInfoHFAElemType ZapInfo::getHFAType(CORINFO_CLASS_HANDLE hClass)
 {
     return m_pEEJitInfo->getHFAType(hClass);
 }
@@ -3330,10 +3383,9 @@ BOOL ZapInfo::isStructRequiringStackAllocRetBuf(CORINFO_CLASS_HANDLE cls)
 CorInfoInitClassResult ZapInfo::initClass(
             CORINFO_FIELD_HANDLE    field,
             CORINFO_METHOD_HANDLE   method,
-            CORINFO_CONTEXT_HANDLE  context,
-            BOOL                    speculative)
+            CORINFO_CONTEXT_HANDLE  context)
 {
-    return m_pEEJitInfo->initClass(field, method, context, speculative);
+    return m_pEEJitInfo->initClass(field, method, context);
 }
 
 void ZapInfo::classMustBeLoadedBeforeCodeIsRun(CORINFO_CLASS_HANDLE cls)
@@ -3725,18 +3777,18 @@ bool ZapInfo::getReadyToRunHelper(CORINFO_RESOLVED_TOKEN * pResolvedToken,
         if (pGenericLookupKind->runtimeLookupKind == CORINFO_LOOKUP_METHODPARAM)
         {
             pImport = m_pImage->GetImportTable()->GetDictionaryLookupCell(
-                (CORCOMPILE_FIXUP_BLOB_KIND)(ENCODE_DICTIONARY_LOOKUP_METHOD | fAtypicalCallsite), pResolvedToken, pGenericLookupKind);
+                (CORCOMPILE_FIXUP_BLOB_KIND)(ENCODE_DICTIONARY_LOOKUP_METHOD | fAtypicalCallsite), m_currentMethodHandle, pResolvedToken, pGenericLookupKind);
         }
         else if (pGenericLookupKind->runtimeLookupKind == CORINFO_LOOKUP_THISOBJ)
         {
             pImport = m_pImage->GetImportTable()->GetDictionaryLookupCell(
-                (CORCOMPILE_FIXUP_BLOB_KIND)(ENCODE_DICTIONARY_LOOKUP_THISOBJ | fAtypicalCallsite), pResolvedToken, pGenericLookupKind);
+                (CORCOMPILE_FIXUP_BLOB_KIND)(ENCODE_DICTIONARY_LOOKUP_THISOBJ | fAtypicalCallsite), m_currentMethodHandle, pResolvedToken, pGenericLookupKind);
         }
         else
         {
             _ASSERTE(pGenericLookupKind->runtimeLookupKind == CORINFO_LOOKUP_CLASSPARAM);
             pImport = m_pImage->GetImportTable()->GetDictionaryLookupCell(
-                (CORCOMPILE_FIXUP_BLOB_KIND)(ENCODE_DICTIONARY_LOOKUP_TYPE | fAtypicalCallsite), pResolvedToken, pGenericLookupKind);
+                (CORCOMPILE_FIXUP_BLOB_KIND)(ENCODE_DICTIONARY_LOOKUP_TYPE | fAtypicalCallsite), m_currentMethodHandle, pResolvedToken, pGenericLookupKind);
         }
         break;
 
@@ -3983,19 +4035,7 @@ void ZapInfo::expandRawHandleIntrinsic(
 CorInfoIntrinsics ZapInfo::getIntrinsicID(CORINFO_METHOD_HANDLE method,
                                           bool * pMustExpand)
 {
-    CorInfoIntrinsics intrinsicID = m_pEEJitInfo->getIntrinsicID(method, pMustExpand);
-
-#if defined(TARGET_X86) || defined(TARGET_AMD64)
-    if ((intrinsicID == CORINFO_INTRINSIC_Ceiling) || (intrinsicID == CORINFO_INTRINSIC_Floor))
-    {
-        // These are normally handled via the SSE4.1 instructions ROUNDSS/ROUNDSD.
-        // However, we don't know the ISAs the target machine supports so we should
-        // fallback to the method call implementation instead.
-        intrinsicID = CORINFO_INTRINSIC_Illegal;
-    }
-#endif // defined(TARGET_X86) || defined(TARGET_AMD64)
-
-    return intrinsicID;
+    return m_pEEJitInfo->getIntrinsicID(method, pMustExpand);
 }
 
 bool ZapInfo::isIntrinsicType(CORINFO_CLASS_HANDLE classHnd)

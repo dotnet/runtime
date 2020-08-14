@@ -1,10 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <NoWarn>0436</NoWarn>
-    <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkCurrent)</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent);net461</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="$(CommonTestPath)System\Collections\DictionaryExtensions.cs" Condition="'$(TargetFramework)' == '$(NetFrameworkCurrent)'"
+    <Compile Include="$(CommonTestPath)System\Collections\DictionaryExtensions.cs" Condition="'$(TargetFramework)' == 'net461'"
              Link="Common\System\Collections\DictionaryExtensions.cs" />
     <Compile Include="BadHasher.cs" />
     <Compile Include="EverythingEqual.cs" />
@@ -77,8 +77,7 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
     <!-- Some internal types are needed, so we reference the implementation assembly, rather than the reference assembly. -->
-    <DefaultReferenceExclusions Include="System.Collections.Immutable" />
-    <ReferenceFromRuntime Include="System.Collections.Immutable" />
+    <ProjectReference Include="..\src\System.Collections.Immutable.csproj" SkipUseReferenceAssembly="true" />
     <Compile Include="ImmutableListTestBase.cs" />
     <Compile Include="ImmutableListTest.cs" />
     <Compile Include="ImmutableListBuilderTest.cs" />
@@ -95,5 +94,8 @@
     <Compile Include="ImmutableSortedSetBuilderDebuggerProxyTest.cs" />
     <Compile Include="ImmutableSortedSetBuilderTest.nonnetstandard.cs" />
     <Compile Include="ImmutableSortedDictionaryTest.nonnetstandard.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == 'net461'">
+    <ProjectReference Include="..\src\System.Collections.Immutable.csproj" />
   </ItemGroup>
 </Project>

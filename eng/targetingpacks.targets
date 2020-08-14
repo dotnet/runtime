@@ -1,0 +1,106 @@
+<Project>
+  <PropertyGroup Condition="'$(DisableImplicitFrameworkReferences)' != 'true' and
+                            '$(TargetFrameworkIdentifier)' == '.NETCoreApp' and
+                            $([MSBuild]::VersionGreaterThanOrEquals($(TargetFrameworkVersion), '$(NETCoreAppCurrentVersion)'))">
+    <_UseLocalTargetingRuntimePack>true</_UseLocalTargetingRuntimePack>
+    <EnableTargetingPackDownload>false</EnableTargetingPackDownload>
+  </PropertyGroup>
+
+  <!-- .NETCoreApp 2.x DisableImplicitAssemblyReferences support. -->
+  <Choose>
+    <When Condition="'$(DisableImplicitAssemblyReferences)' == 'true' and
+                     '$(TargetFrameworkIdentifier)' == '.NETCoreApp' and
+                     $([MSBuild]::VersionLessThan($(TargetFrameworkVersion), '3.0'))">
+    <PropertyGroup>
+      <MicrosoftNetCoreAppRefPackRefDir>$(PkgMicrosoft_NETCore_App)\ref\$(_ShortFrameworkIdentifier)$(_ShortFrameworkVersion)\</MicrosoftNetCoreAppRefPackRefDir>
+    </PropertyGroup>
+    <ItemGroup>
+      <PackageReference Update="Microsoft.NETCore.App"
+                        ExcludeAssets="all"
+                        GeneratePathProperty="true" />
+    </ItemGroup>
+    </When>
+  </Choose>
+
+  <!-- Simple name references will be resolved from the targeting pack folders and should never be copied to the output. -->
+  <ItemGroup>
+    <Reference Update="@(Reference)">
+      <Private Condition="'%(Reference.Extension)' != '.dll'">false</Private>
+    </Reference>
+  </ItemGroup>
+
+  <!-- .NETCoreApp > 2.x DisableImplicitAssemblyReferences support. -->
+  <Target Name="RemoveFrameworkReferences"
+          BeforeTargets="_HandlePackageFileConflicts"
+          AfterTargets="ResolveTargetingPackAssets"
+          Condition="'$(DisableImplicitAssemblyReferences)' == 'true' and
+                     '$(TargetFrameworkIdentifier)' == '.NETCoreApp' and
+                     $([MSBuild]::VersionGreaterThanOrEquals($(TargetFrameworkVersion), '3.0'))">
+    <PropertyGroup>
+      <MicrosoftNetCoreAppRefPackRefDir>%(ResolvedFrameworkReference.TargetingPackPath)\ref\$(_ShortFrameworkIdentifier)$(_ShortFrameworkVersion)\</MicrosoftNetCoreAppRefPackRefDir>
+    </PropertyGroup>
+    <ItemGroup>
+      <Reference Remove="@(Reference)"
+                 Condition="'%(Reference.FrameworkReferenceName)' == '$(SharedFrameworkName)'" />
+    </ItemGroup>
+  </Target>
+
+  <!-- Add the resolved targeting pack to the assembly search path. -->
+  <Target Name="UseTargetingPackForAssemblySearchPaths"
+          BeforeTargets="ResolveAssemblyReferences;
+                         DesignTimeResolveAssemblyReferences"
+          Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
+    <PropertyGroup>
+      <AssemblySearchPaths>$(AssemblySearchPaths);$(MicrosoftNetCoreAppRefPackRefDir.TrimEnd('/\'))</AssemblySearchPaths>
+      <DesignTimeAssemblySearchPaths>$(DesignTimeAssemblySearchPaths);$(MicrosoftNetCoreAppRefPackRefDir.TrimEnd('/\'))</DesignTimeAssemblySearchPaths>
+    </PropertyGroup>
+  </Target>
+
+  <!-- Use local targeting pack for NetCoreAppCurrent. -->
+  <Target Name="UpdateTargetingAndRuntimePack"
+          Condition="'$(_UseLocalTargetingRuntimePack)' == 'true'"
+          AfterTargets="ResolveFrameworkReferences">
+    <ItemGroup>
+      <ResolvedTargetingPack Path="$(MicrosoftNetCoreAppRefPackDir.TrimEnd('/\'))"
+                             NuGetPackageVersion="$(ProductVersion)"
+                             PackageDirectory="$(MicrosoftNetCoreAppRefPackDir.TrimEnd('/\'))"
+                             Condition="'%(ResolvedTargetingPack.RuntimeFrameworkName)' == '$(SharedFrameworkName)' and
+                                        Exists('$(MicrosoftNetCoreAppRefPackDataDir)FrameworkList.xml')" />
+      <ResolvedRuntimePack PackageDirectory="$(MicrosoftNetCoreAppRuntimePackDir)"
+                           Condition="'%(ResolvedRuntimePack.FrameworkName)' == '$(SharedFrameworkName)'" />
+      <ResolvedFrameworkReference TargetingPackPath="$(MicrosoftNetCoreAppRefPackDir.TrimEnd('/\'))"
+                                  TargetingPackVersion="$(ProductVersion)"
+                                  Condition="'%(Identity)' == '$(SharedFrameworkName)'" />
+    </ItemGroup>
+  </Target>
+
+  <!-- Update the local targeting pack's version as it's written into the runtimeconfig.json file to select the shared framework. -->
+  <Target Name="UpdateRuntimeFrameworkVersion"
+          Condition="'$(_UseLocalTargetingRuntimePack)' == 'true'"
+          AfterTargets="ResolveTargetingPackAssets">
+    <ItemGroup>
+      <RuntimeFramework Version="$(ProductVersion)"
+                        Condition="'%(RuntimeFramework.FrameworkName)' == '$(SharedFrameworkName)'" />
+    </ItemGroup>
+  </Target>
+  
+  <!-- Filter out conflicting implicit assembly references. -->
+  <Target Name="FilterImplicitAssemblyReferences"
+          Condition="'$(DisableImplicitAssemblyReferences)' != 'true'"
+          DependsOnTargets="ResolveProjectReferences"
+          AfterTargets="ResolveTargetingPackAssets">
+    <ItemGroup>
+      <_targetingPackReferenceExclusion Include="$(TargetName)" />
+      <_targetingPackReferenceExclusion Include="@(_ResolvedProjectReferencePaths->'%(Filename)')" />
+      <_targetingPackReferenceExclusion Include="@(DefaultReferenceExclusion)" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <_targetingPackReferenceWithExclusion Include="@(Reference)">
+        <Exclusion>%(_targetingPackReferenceExclusion.Identity)</Exclusion>
+      </_targetingPackReferenceWithExclusion>
+      <Reference Remove="@(_targetingPackReferenceWithExclusion)"
+                 Condition="'%(_targetingPackReferenceWithExclusion.ExternallyResolved)' == 'true' and '%(_targetingPackReferenceWithExclusion.Filename)' == '%(_targetingPackReferenceWithExclusion.Exclusion)'" />
+    </ItemGroup>
+  </Target>
+</Project>

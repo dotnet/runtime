@@ -813,6 +813,11 @@ mono_init_internal (const char *filename, const char *exe_filename, const char *
 	mono_defaults.generic_ienumerator_class = mono_class_load_from_name (
 	        mono_defaults.corlib, "System.Collections.Generic", "IEnumerator`1");
 
+#ifdef ENABLE_NETCORE
+	mono_defaults.alc_class = mono_class_get_assembly_load_context_class ();
+	mono_defaults.appcontext_class = mono_class_try_load_from_name (mono_defaults.corlib, "System", "AppContext");
+#endif
+
 #ifndef ENABLE_NETCORE
 	MonoClass *threadpool_wait_callback_class = mono_class_load_from_name (
 		mono_defaults.corlib, "System.Threading", "_ThreadPoolWaitCallback");

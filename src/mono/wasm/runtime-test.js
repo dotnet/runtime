@@ -36,6 +36,8 @@ if (typeof console !== "undefined") {
 		console.trace = console.log;
 	if (!console.warn)
 		console.warn = console.log;
+	if (!console.error)
+		console.error = console.log;
 }
 
 if (typeof crypto == 'undefined') {
@@ -72,6 +74,10 @@ try {
 	}
 } catch (e) {
 }
+
+if (arguments === undefined)
+	arguments = [];
+
 //end of all the nice shell glue code.
 
 // set up a global variable to be accessed in App.init
@@ -79,9 +85,13 @@ var testArguments = arguments;
 
 function test_exit (exit_code) {
 	if (is_browser) {
-		// Notify the puppeteer script
+		// Notify the selenium script
 		Module.exit_code = exit_code;
 		print ("WASM EXIT " + exit_code);
+		var tests_done_elem = document.createElement ("label");
+		tests_done_elem.id = "tests_done";
+		tests_done_elem.innerHTML = exit_code.toString ();
+		document.body.appendChild (tests_done_elem);
 	} else {
 		Module.wasm_exit (exit_code);
 	}
@@ -93,12 +103,12 @@ function fail_exec (reason) {
 }
 
 function inspect_object (o) {
-    var r = "";
-    for(var p in o) {
-        var t = typeof o[p];
-        r += "'" + p + "' => '" + t + "', ";
-    }
-    return r;
+	var r = "";
+	for(var p in o) {
+		var t = typeof o[p];
+		r += "'" + p + "' => '" + t + "', ";
+	}
+	return r;
 }
 
 // Preprocess arguments
@@ -107,9 +117,9 @@ print("Arguments: " + testArguments);
 profilers = [];
 setenv = {};
 runtime_args = [];
-enable_gc = false;
+enable_gc = true;
 enable_zoneinfo = false;
-while (true) {
+while (args !== undefined && args.length > 0) {
 	if (args [0].startsWith ("--profile=")) {
 		var arg = args [0].substring ("--profile=".length);
 
@@ -127,25 +137,39 @@ while (true) {
 		var arg = args [0].substring ("--runtime-arg=".length);
 		runtime_args.push (arg);
 		args = args.slice (1);
-	} else if (args [0] == "--enable-gc") {
-		enable_gc = true;
+	} else if (args [0] == "--disable-on-demand-gc") {
+		enable_gc = false;
 		args = args.slice (1);
-	} else if (args [0] == "--enable-zoneinfo") {
-		enable_zoneinfo = true;
-		args = args.slice (1);			
 	} else {
 		break;
 	}
 }
 testArguments = args;
 
-if (typeof window == "undefined")
-  load ("mono-config.js");
+function writeContentToFile(content, path)
+{
+	var stream = FS.open(path, 'w+');
+	FS.write(stream, content, 0, content.length, 0);
+	FS.close(stream);
+}
 
-var Module = { 
+function loadScript (url)
+{
+	if (is_browser) {
+		var script = document.createElement ("script");
+		script.src = url;
+		document.head.appendChild (script);
+	} else {
+		load (url);
+	}
+}
+
+loadScript ("mono-config.js");
+
+var Module = {
 	mainScriptUrlOrBlob: "dotnet.js",
 
-	print: function(x) { print ("WASM: " + x) },
+	print: print,
 	printErr: function(x) { print ("WASM-ERR: " + x) },
 
 	onAbort: function(x) {
@@ -158,102 +182,75 @@ var Module = {
 
 	onRuntimeInitialized: function () {
 		// Have to set env vars here to enable setting MONO_LOG_LEVEL etc.
-		var wasm_setenv = Module.cwrap ('mono_wasm_setenv', 'void', ['string', 'string']);
 		for (var variable in setenv) {
 			MONO.mono_wasm_setenv (variable, setenv [variable]);
 		}
 
-		if (enable_gc) {
-			var f = Module.cwrap ('mono_wasm_enable_on_demand_gc', 'void', []);
-			f ();
+		if (!enable_gc) {
+			Module.ccall ('mono_wasm_enable_on_demand_gc', 'void', ['number'], [0]);
 		}
-		if (enable_zoneinfo) {
-			// Load the zoneinfo data into the VFS rooted at /zoneinfo
-			FS.mkdir("zoneinfo");
-			Module['FS_createPath']('/', 'zoneinfo', true, true);
-			Module['FS_createPath']('/zoneinfo', 'Indian', true, true);
-			Module['FS_createPath']('/zoneinfo', 'Atlantic', true, true);
-			Module['FS_createPath']('/zoneinfo', 'US', true, true);
-			Module['FS_createPath']('/zoneinfo', 'Brazil', true, true);
-			Module['FS_createPath']('/zoneinfo', 'Pacific', true, true);
-			Module['FS_createPath']('/zoneinfo', 'Arctic', true, true);
-			Module['FS_createPath']('/zoneinfo', 'America', true, true);
-			Module['FS_createPath']('/zoneinfo/America', 'Indiana', true, true);
-			Module['FS_createPath']('/zoneinfo/America', 'Argentina', true, true);
-			Module['FS_createPath']('/zoneinfo/America', 'Kentucky', true, true);
-			Module['FS_createPath']('/zoneinfo/America', 'North_Dakota', true, true);
-			Module['FS_createPath']('/zoneinfo', 'Australia', true, true);
-			Module['FS_createPath']('/zoneinfo', 'Etc', true, true);
-			Module['FS_createPath']('/zoneinfo', 'Asia', true, true);
-			Module['FS_createPath']('/zoneinfo', 'Antarctica', true, true);
-			Module['FS_createPath']('/zoneinfo', 'Europe', true, true);
-			Module['FS_createPath']('/zoneinfo', 'Mexico', true, true);
-			Module['FS_createPath']('/zoneinfo', 'Africa', true, true);
-			Module['FS_createPath']('/zoneinfo', 'Chile', true, true);
-			Module['FS_createPath']('/zoneinfo', 'Canada', true, true);			
-			var zoneInfoData = read ('zoneinfo.data', 'binary');
-			var metadata = JSON.parse(read ("mono-webassembly-zoneinfo-fs-smd.js.metadata", 'utf-8'));
-			var files = metadata.files;
-			for (var i = 0; i < files.length; ++i) {
-				var byteArray = zoneInfoData.subarray(files[i].start, files[i].end);
-				var stream = FS.open(files[i].filename, 'w+');
-				FS.write(stream, byteArray, 0, byteArray.length, 0);
-				FS.close(stream);
-			}
-		}
-		MONO.mono_load_runtime_and_bcl (
-			config.vfs_prefix,
-			config.deploy_prefix,
-			config.enable_debugging,
-			config.file_list,
-			function () {
-				App.init ();
-			},
-			function (asset)
-			{
-			  if (typeof window != 'undefined') {
+
+		config.loaded_cb = function () {
+			App.init ();
+		};
+		config.fetch_file_cb = function (asset) {
+			// console.log("fetch_file_cb('" + asset + "')");
+			// for testing purposes add BCL assets to VFS until we special case File.Open
+			// to identify when an assembly from the BCL is being open and resolve it correctly.
+			/*
+			var content = new Uint8Array (read (asset, 'binary'));
+			var path = asset.substr(config.deploy_prefix.length);
+			writeContentToFile(content, path);
+			*/
+
+			if (typeof window != 'undefined') {
 				return fetch (asset, { credentials: 'same-origin' });
-			  } else {
+			} else {
 				// The default mono_load_runtime_and_bcl defaults to using
-				// fetch to load the assets.  It also provides a way to set a 
+				// fetch to load the assets.  It also provides a way to set a
 				// fetch promise callback.
 				// Here we wrap the file read in a promise and fake a fetch response
 				// structure.
-				return new Promise((resolve, reject) => {
-					 var response = { ok: true, url: asset, 
-							arrayBuffer: function() {
-								return new Promise((resolve2, reject2) => {
-									resolve2(new Uint8Array (read (asset, 'binary')));
-							}
-						)}
+				return new Promise ((resolve, reject) => {
+					var bytes = null, error = null;
+					try {
+						bytes = read (asset, 'binary');
+					} catch (exc) {
+						error = exc;
 					}
-				   resolve(response)
-				 })
-			  }
+					var response = { ok: (bytes && !error), url: asset,
+						arrayBuffer: function () {
+							return new Promise ((resolve2, reject2) => {
+								if (error)
+									reject2 (error);
+								else
+									resolve2 (new Uint8Array (bytes));
+						}
+					)}
+					}
+					resolve (response);
+				})
 			}
-		);
+		};
+
+		MONO.mono_load_runtime_and_bcl_args (config);
 	},
 };
 
-if (typeof window == "undefined")
-  load ("dotnet.js");
+loadScript ("dotnet.js");
 
 const IGNORE_PARAM_COUNT = -1;
 
 var App = {
-    init: function () {
+	init: function () {
 
 		var assembly_load = Module.cwrap ('mono_wasm_assembly_load', 'number', ['string'])
-		var find_class = Module.cwrap ('mono_wasm_assembly_find_class', 'number', ['number', 'string', 'string'])
-		var find_method = Module.cwrap ('mono_wasm_assembly_find_method', 'number', ['number', 'string', 'number'])
 		var runtime_invoke = Module.cwrap ('mono_wasm_invoke_method', 'number', ['number', 'number', 'number', 'number']);
 		var string_from_js = Module.cwrap ('mono_wasm_string_from_js', 'number', ['string']);
 		var assembly_get_entry_point = Module.cwrap ('mono_wasm_assembly_get_entry_point', 'number', ['number']);
 		var string_get_utf8 = Module.cwrap ('mono_wasm_string_get_utf8', 'string', ['number']);
 		var string_array_new = Module.cwrap ('mono_wasm_string_array_new', 'number', ['number']);
 		var obj_array_set = Module.cwrap ('mono_wasm_obj_array_set', 'void', ['number', 'number', 'number']);
-		var exit = Module.cwrap ('mono_wasm_exit', 'void', ['number']);
-		var wasm_setenv = Module.cwrap ('mono_wasm_setenv', 'void', ['string', 'string']);
 		var wasm_set_main_args = Module.cwrap ('mono_wasm_set_main_args', 'void', ['number', 'number']);
 		var wasm_strdup = Module.cwrap ('mono_wasm_strdup', 'number', ['string']);
 		var unbox_int = Module.cwrap ('mono_unbox_int', 'number', ['number']);
@@ -266,6 +263,11 @@ var App = {
 			var init = Module.cwrap ('mono_wasm_load_profiler_' + profilers [i], 'void', ['string'])
 
 			init ("");
+		}
+
+		if (args.length == 0) {
+			fail_exec ("Missing required --run argument");
+			return;
 		}
 
 		if (args[0] == "--regression") {
@@ -292,14 +294,20 @@ var App = {
 
 		if (args[0] == "--run") {
 			// Run an exe
-			if (args.length == 1)
+			if (args.length == 1) {
 				fail_exec ("Error: Missing main executable argument.");
+				return;
+			}
 			main_assembly = assembly_load (args[1]);
-			if (main_assembly == 0)
+			if (main_assembly == 0) {
 				fail_exec ("Error: Unable to load main executable '" + args[1] + "'");
+				return;
+			}
 			main_method = assembly_get_entry_point (main_assembly);
-			if (main_method == 0)
+			if (main_method == 0) {
 				fail_exec ("Error: Main (string[]) method not found.");
+				return;
+			}
 
 			var app_args = string_array_new (args.length - 2);
 			for (var i = 2; i < args.length; ++i) {
@@ -327,22 +335,37 @@ var App = {
 				if (eh_res != 0) {
 					print ("Exception:" + string_get_utf8 (res));
 					test_exit (1);
+					return;
 				}
 				var exit_code = unbox_int (res);
-				if (exit_code != 0)
-					test_exit (exit_code);
+				test_exit (exit_code);
 			} catch (ex) {
 				print ("JS exception: " + ex);
 				print (ex.stack);
 				test_exit (1);
+				return;
 			}
 
-			if (is_browser)
-				test_exit (0);
+/*
+			// For testing tp/timers etc.
+			while (true) {
+				// Sleep by busy waiting
+				var start = performance.now ();
+				useconds = 1e6 / 10;
+				while (performance.now() - start < useconds / 1000) {
+					// Do nothing.
+				}
+
+				Module.pump_message ();
+			}
+*/
 
 			return;
 		} else {
-			fail_exec ("Unhanded argument: " + args [0]);
+			fail_exec ("Unhandled argument: " + args [0]);
 		}
-    },
+	},
+	call_test_method: function (method_name, args) {
+		return BINDING.call_static_method("[System.Private.Runtime.InteropServices.JavaScript.Tests]System.Runtime.InteropServices.JavaScript.Tests.HelperMarshal:" + method_name, args);
+	}
 };

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -400,7 +399,10 @@ namespace System.Reflection.Emit
         private readonly string? m_strName;
         private readonly string? m_strNameSpace;
         private string? m_strFullQualName;
+
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
         private Type? m_typeParent;
+
         private List<Type>? m_typeInterfaces;
         private readonly TypeAttributes m_iAttr;
         private GenericParameterAttributes m_genParamAttributes;
@@ -415,6 +417,8 @@ namespace System.Reflection.Emit
         private Type? m_enumUnderlyingType;
         internal bool m_isHiddenGlobalType;
         private bool m_hasBeenCreated;
+
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
         private RuntimeType m_bakedRuntimeType = null!;
 
         private readonly int m_genParamPos;
@@ -465,7 +469,7 @@ namespace System.Reflection.Emit
         }
 
         internal TypeBuilder(
-            string fullname, TypeAttributes attr, Type? parent, Type[]? interfaces, ModuleBuilder module,
+            string fullname, TypeAttributes attr, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? parent, Type[]? interfaces, ModuleBuilder module,
             PackingSize iPackingSize, int iTypeSize, TypeBuilder? enclosingType)
         {
             if (fullname == null)
@@ -740,6 +744,7 @@ namespace System.Reflection.Emit
             }
         }
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
         public override object? InvokeMember(string name, BindingFlags invokeAttr, Binder? binder, object? target,
             object?[]? args, ParameterModifier[]? modifiers, CultureInfo? culture, string[]? namedParameters)
         {
@@ -761,6 +766,7 @@ namespace System.Reflection.Emit
 
         public override Type? BaseType => m_typeParent;
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)]
         protected override ConstructorInfo? GetConstructorImpl(BindingFlags bindingAttr, Binder? binder,
                 CallingConventions callConvention, Type[] types, ParameterModifier[]? modifiers)
         {
@@ -770,6 +776,7 @@ namespace System.Reflection.Emit
             return m_bakedRuntimeType.GetConstructor(bindingAttr, binder, callConvention, types, modifiers);
         }
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)]
         public override ConstructorInfo[] GetConstructors(BindingFlags bindingAttr)
         {
             if (!IsCreated())
@@ -778,6 +785,7 @@ namespace System.Reflection.Emit
             return m_bakedRuntimeType.GetConstructors(bindingAttr);
         }
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)]
         protected override MethodInfo? GetMethodImpl(string name, BindingFlags bindingAttr, Binder? binder,
                 CallingConventions callConvention, Type[]? types, ParameterModifier[]? modifiers)
         {
@@ -794,6 +802,7 @@ namespace System.Reflection.Emit
             }
         }
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)]
         public override MethodInfo[] GetMethods(BindingFlags bindingAttr)
         {
             if (!IsCreated())
@@ -802,6 +811,7 @@ namespace System.Reflection.Emit
             return m_bakedRuntimeType.GetMethods(bindingAttr);
         }
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields | DynamicallyAccessedMemberTypes.NonPublicFields)]
         public override FieldInfo? GetField(string name, BindingFlags bindingAttr)
         {
             if (!IsCreated())
@@ -810,6 +820,7 @@ namespace System.Reflection.Emit
             return m_bakedRuntimeType.GetField(name, bindingAttr);
         }
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields | DynamicallyAccessedMemberTypes.NonPublicFields)]
         public override FieldInfo[] GetFields(BindingFlags bindingAttr)
         {
             if (!IsCreated())
@@ -841,6 +852,7 @@ namespace System.Reflection.Emit
             return m_typeInterfaces.ToArray();
         }
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicEvents | DynamicallyAccessedMemberTypes.NonPublicEvents)]
         public override EventInfo? GetEvent(string name, BindingFlags bindingAttr)
         {
             if (!IsCreated())
@@ -849,6 +861,7 @@ namespace System.Reflection.Emit
             return m_bakedRuntimeType.GetEvent(name, bindingAttr);
         }
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicEvents)]
         public override EventInfo[] GetEvents()
         {
             if (!IsCreated())
@@ -857,12 +870,14 @@ namespace System.Reflection.Emit
             return m_bakedRuntimeType.GetEvents();
         }
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties)]
         protected override PropertyInfo GetPropertyImpl(string name, BindingFlags bindingAttr, Binder? binder,
                 Type? returnType, Type[]? types, ParameterModifier[]? modifiers)
         {
             throw new NotSupportedException(SR.NotSupported_DynamicModule);
         }
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties)]
         public override PropertyInfo[] GetProperties(BindingFlags bindingAttr)
         {
             if (!IsCreated())
@@ -871,6 +886,7 @@ namespace System.Reflection.Emit
             return m_bakedRuntimeType.GetProperties(bindingAttr);
         }
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicNestedTypes | DynamicallyAccessedMemberTypes.NonPublicNestedTypes)]
         public override Type[] GetNestedTypes(BindingFlags bindingAttr)
         {
             if (!IsCreated())
@@ -879,6 +895,7 @@ namespace System.Reflection.Emit
             return m_bakedRuntimeType.GetNestedTypes(bindingAttr);
         }
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicNestedTypes | DynamicallyAccessedMemberTypes.NonPublicNestedTypes)]
         public override Type? GetNestedType(string name, BindingFlags bindingAttr)
         {
             if (!IsCreated())
@@ -887,6 +904,7 @@ namespace System.Reflection.Emit
             return m_bakedRuntimeType.GetNestedType(name, bindingAttr);
         }
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
         public override MemberInfo[] GetMember(string name, MemberTypes type, BindingFlags bindingAttr)
         {
             if (!IsCreated())
@@ -903,6 +921,7 @@ namespace System.Reflection.Emit
             return m_bakedRuntimeType.GetInterfaceMap(interfaceType);
         }
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicEvents | DynamicallyAccessedMemberTypes.NonPublicEvents)]
         public override EventInfo[] GetEvents(BindingFlags bindingAttr)
         {
             if (!IsCreated())
@@ -911,6 +930,7 @@ namespace System.Reflection.Emit
             return m_bakedRuntimeType.GetEvents(bindingAttr);
         }
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
         public override MemberInfo[] GetMembers(BindingFlags bindingAttr)
         {
             if (!IsCreated())
@@ -1588,7 +1608,7 @@ namespace System.Reflection.Emit
             }
         }
 
-        public TypeBuilder DefineNestedType(string name, TypeAttributes attr, Type? parent, Type[]? interfaces)
+        public TypeBuilder DefineNestedType(string name, TypeAttributes attr, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? parent, Type[]? interfaces)
         {
             lock (SyncRoot)
             {
@@ -1600,7 +1620,7 @@ namespace System.Reflection.Emit
             }
         }
 
-        public TypeBuilder DefineNestedType(string name, TypeAttributes attr, Type? parent)
+        public TypeBuilder DefineNestedType(string name, TypeAttributes attr, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? parent)
         {
             lock (SyncRoot)
             {
@@ -1616,7 +1636,7 @@ namespace System.Reflection.Emit
             }
         }
 
-        public TypeBuilder DefineNestedType(string name, TypeAttributes attr, Type? parent, int typeSize)
+        public TypeBuilder DefineNestedType(string name, TypeAttributes attr, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? parent, int typeSize)
         {
             lock (SyncRoot)
             {
@@ -1624,7 +1644,7 @@ namespace System.Reflection.Emit
             }
         }
 
-        public TypeBuilder DefineNestedType(string name, TypeAttributes attr, Type? parent, PackingSize packSize)
+        public TypeBuilder DefineNestedType(string name, TypeAttributes attr, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? parent, PackingSize packSize)
         {
             lock (SyncRoot)
             {
@@ -1632,7 +1652,7 @@ namespace System.Reflection.Emit
             }
         }
 
-        public TypeBuilder DefineNestedType(string name, TypeAttributes attr, Type? parent, PackingSize packSize, int typeSize)
+        public TypeBuilder DefineNestedType(string name, TypeAttributes attr, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? parent, PackingSize packSize, int typeSize)
         {
             lock (SyncRoot)
             {
@@ -1640,7 +1660,7 @@ namespace System.Reflection.Emit
             }
         }
 
-        private TypeBuilder DefineNestedTypeNoLock(string name, TypeAttributes attr, Type? parent, Type[]? interfaces, PackingSize packSize, int typeSize)
+        private TypeBuilder DefineNestedTypeNoLock(string name, TypeAttributes attr, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? parent, Type[]? interfaces, PackingSize packSize, int typeSize)
         {
             return new TypeBuilder(name, attr, parent, interfaces, m_module, packSize, typeSize, this);
         }
@@ -2061,7 +2081,7 @@ namespace System.Reflection.Emit
 
         public PackingSize PackingSize => m_iPackingSize;
 
-        public void SetParent(Type? parent)
+        public void SetParent([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? parent)
         {
             ThrowIfCreated();
 
@@ -2091,7 +2111,7 @@ namespace System.Reflection.Emit
             }
         }
 
-        public void AddInterfaceImplementation(Type interfaceType)
+        public void AddInterfaceImplementation([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type interfaceType)
         {
             if (interfaceType == null)
             {

@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 
@@ -32,10 +31,7 @@ namespace Microsoft.NET.HostModel.Bundle
                    !string.IsNullOrWhiteSpace(BundleRelativePath);
         }
 
-        public override string ToString()
-        {
-            return string.Format($"SourcePath: {SourcePath}, RelativePath: {BundleRelativePath} {(Excluded ? "[Excluded]" : "")}");
-        }
+        public override string ToString() => $"SourcePath: {SourcePath}, RelativePath: {BundleRelativePath} {(Excluded ? "[Excluded]" : "")}";
     }
 }
 

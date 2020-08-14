@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*++
 
@@ -81,6 +80,15 @@ int CacheLineSize;
 #include <sys/param.h>
 #include <sys/sysctl.h>
 #include <kvm.h>
+#elif defined(__sun)
+#ifndef _KERNEL
+#define _KERNEL
+#define UNDEF_KERNEL
+#endif
+#include <sys/procfs.h>
+#ifdef UNDEF_KERNEL
+#undef _KERNEL
+#endif
 #endif
 
 #include <algorithm>
@@ -93,6 +101,8 @@ using namespace CorUnix;
 //
 
 extern "C" BOOL CRTInitStdStreams( void );
+
+extern bool g_running_in_exe;
 
 Volatile<INT> init_count = 0;
 Volatile<BOOL> shutdown_intent = 0;
@@ -777,8 +787,10 @@ Return:
 --*/
 PAL_ERROR
 PALAPI
-PAL_InitializeCoreCLR(const char *szExePath)
+PAL_InitializeCoreCLR(const char *szExePath, bool runningInExe)
 {
+    g_running_in_exe = runningInExe;
+
     // Fake up a command line to call PAL initialization with.
     int result = Initialize(1, &szExePath, PAL_INITIALIZE_CORECLR);
     if (result != 0)
@@ -888,6 +900,25 @@ PAL_IsDebuggerPresent()
         return TRUE;
     else
         return FALSE;
+#elif defined(__sun)
+    int readResult;
+    char statusFilename[64];
+    snprintf(statusFilename, sizeof(statusFilename), "/proc/%d/status", getpid());
+    int fd = open(statusFilename, O_RDONLY);
+    if (fd == -1)
+    {
+        return FALSE;
+    }
+
+    pstatus_t status;
+    do
+    {
+        readResult = read(fd, &status, sizeof(status));
+    }
+    while ((readResult == -1) && (errno == EINTR));
+
+    close(fd);
+    return status.pr_flttrace.word[0] != 0;
 #else
     return FALSE;
 #endif

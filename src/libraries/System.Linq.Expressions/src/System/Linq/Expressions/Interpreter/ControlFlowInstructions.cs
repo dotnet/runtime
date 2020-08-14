@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -293,7 +292,7 @@ namespace System.Linq.Expressions.Interpreter
 
     internal sealed class EnterTryCatchFinallyInstruction : IndexedBranchInstruction
     {
-        private readonly bool _hasFinally = false;
+        private readonly bool _hasFinally;
         private TryCatchFinallyHandler? _tryHandler;
 
         internal void SetTryHandler(TryCatchFinallyHandler tryHandler)
@@ -640,7 +639,7 @@ namespace System.Linq.Expressions.Interpreter
         // The exception is pushed onto the stack in the filter runner.
         public override int ProducedStack => 1;
 
-        [ExcludeFromCodeCoverage] // Known to be a no-op, this instruction is skipped on execution.
+        [ExcludeFromCodeCoverage(Justification = "Known to be a no-op, this instruction is skipped on execution")]
         public override int Run(InterpretedFrame frame) => 1;
     }
 
@@ -656,7 +655,7 @@ namespace System.Linq.Expressions.Interpreter
         // The exception and the boolean result are popped from the stack in the filter runner.
         public override int ConsumedStack => 2;
 
-        [ExcludeFromCodeCoverage] // Known to be a no-op, this instruction is skipped on execution.
+        [ExcludeFromCodeCoverage(Justification = "Known to be a no-op, this instruction is skipped on execution")]
         public override int Run(InterpretedFrame frame) => 1;
     }
 
@@ -687,7 +686,7 @@ namespace System.Linq.Expressions.Interpreter
         // Catch handlers: The value is immediately popped and stored into a local.
         public override int ProducedStack => 1;
 
-        [ExcludeFromCodeCoverage] // Known to be a no-op, this instruction is skipped on execution.
+        [ExcludeFromCodeCoverage(Justification = "Known to be a no-op, this instruction is skipped on execution")]
         public override int Run(InterpretedFrame frame)
         {
             // nop (the exception value is pushed by the interpreter in HandleCatch)

@@ -3,8 +3,8 @@ trigger: none
 pr: none
 
 schedules:
-- cron: "0 6 * * *"
-  displayName: Mon through Sun at 10:00 PM (UTC-8:00)
+- cron: "0 7 * * 0,2,4"
+  displayName: Sun, Tue, Thu at 11:00 PM (UTC-8:00)
   branches:
     include:
     - master
@@ -22,8 +22,10 @@ jobs:
     buildConfig: checked
     platforms:
     - Linux_x64
+    - Linux_arm64
     - OSX_x64
     - Windows_NT_x64
+    - Windows_NT_arm64
     - CoreClrTestBuildHost # Either OSX_x64 or Linux_x64
     jobParameters:
       testGroup: outerloop
@@ -38,6 +40,7 @@ jobs:
       testGroup: outerloop
       liveLibrariesBuildConfig: Release
 
+# Test most platforms in composite mode as the expected mainline shipping mode
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
     jobTemplate: /eng/pipelines/common/templates/runtimes/run-test-job.yml
@@ -45,8 +48,26 @@ jobs:
     buildConfig: checked
     platforms:
     - Linux_x64
+    - Linux_arm64
     - OSX_x64
     - Windows_NT_x64
+    - Windows_NT_arm64
+    jobParameters:
+      testGroup: outerloop
+      readyToRun: true
+      crossgen2: true
+      compositeBuildMode: true
+      displayNameArgs: Composite
+      liveLibrariesBuildConfig: Release
+
+# Limited outerloop testing in non-composite mode
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/common/templates/runtimes/run-test-job.yml
+    helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+    buildConfig: checked
+    platforms:
+    - OSX_x64
     jobParameters:
       testGroup: outerloop
       readyToRun: true

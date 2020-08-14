@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*++
 
@@ -11,7 +10,7 @@ Module Name:
     unicode/utf8.c
 
 Abstract:
-    Functions to encode and decode UTF-8 strings. This is a port of the C# version from mscorlib.
+    Functions to encode and decode UTF-8 strings. This is a port of the C# version from Utf8Encoding.cs.
 
 Revision History:
 

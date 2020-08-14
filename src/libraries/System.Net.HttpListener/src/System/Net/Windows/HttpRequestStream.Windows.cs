@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.IO;
 using System.Runtime.ExceptionServices;
@@ -20,7 +19,7 @@ namespace System.Net
 
         internal HttpRequestStream(HttpListenerContext httpContext)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"httpContextt:{httpContext}");
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"httpContextt:{httpContext}");
             _httpContext = httpContext;
         }
 
@@ -55,7 +54,7 @@ namespace System.Net
 
             if (_dataChunkIndex == -1 && dataRead < size)
             {
-                if (NetEventSource.IsEnabled) NetEventSource.Info(this, "size:" + size + " offset:" + offset);
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "size:" + size + " offset:" + offset);
                 uint statusCode = 0;
                 uint extraDataRead = 0;
                 offset += (int)dataRead;
@@ -70,7 +69,7 @@ namespace System.Net
                 fixed (byte* pBuffer = buffer)
                 {
                     // issue unmanaged blocking call
-                    if (NetEventSource.IsEnabled) NetEventSource.Info(this, "Calling Interop.HttpApi.HttpReceiveRequestEntityBody");
+                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "Calling Interop.HttpApi.HttpReceiveRequestEntityBody");
 
                     uint flags = 0;
 
@@ -90,40 +89,38 @@ namespace System.Net
                             null);
 
                     dataRead += extraDataRead;
-                    if (NetEventSource.IsEnabled) NetEventSource.Info(this, "Call to Interop.HttpApi.HttpReceiveRequestEntityBody returned:" + statusCode + " dataRead:" + dataRead);
+                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "Call to Interop.HttpApi.HttpReceiveRequestEntityBody returned:" + statusCode + " dataRead:" + dataRead);
                 }
                 if (statusCode != Interop.HttpApi.ERROR_SUCCESS && statusCode != Interop.HttpApi.ERROR_HANDLE_EOF)
                 {
                     Exception exception = new HttpListenerException((int)statusCode);
-                    if (NetEventSource.IsEnabled) NetEventSource.Error(this, exception.ToString());
+                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, exception.ToString());
                     throw exception;
                 }
                 UpdateAfterRead(statusCode, dataRead);
             }
-            if (NetEventSource.IsEnabled)
+            if (NetEventSource.Log.IsEnabled())
             {
                 NetEventSource.DumpBuffer(this, buffer, offset, (int)dataRead);
                 NetEventSource.Info(this, "returning dataRead:" + dataRead);
-                NetEventSource.Exit(this, "dataRead:" + dataRead);
             }
             return (int)dataRead;
         }
 
         private void UpdateAfterRead(uint statusCode, uint dataRead)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, "statusCode:" + statusCode + " _closed:" + _closed);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "statusCode:" + statusCode + " _closed:" + _closed);
             if (statusCode == Interop.HttpApi.ERROR_HANDLE_EOF || dataRead == 0)
             {
                 Close();
             }
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, "statusCode:" + statusCode + " _closed:" + _closed);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "statusCode:" + statusCode + " _closed:" + _closed);
         }
 
         public IAsyncResult BeginReadCore(byte[] buffer, int offset, int size, AsyncCallback callback, object state)
         {
             if (size == 0 || _closed)
             {
-                if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
                 HttpRequestStreamAsyncResult result = new HttpRequestStreamAsyncResult(this, state, callback);
                 result.InvokeCallback((uint)0);
                 return result;
@@ -144,7 +141,7 @@ namespace System.Net
 
             if (_dataChunkIndex == -1 && dataRead < size)
             {
-                if (NetEventSource.IsEnabled) NetEventSource.Info(this, "size:" + size + " offset:" + offset);
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "size:" + size + " offset:" + offset);
                 uint statusCode = 0;
                 offset += (int)dataRead;
                 size -= (int)dataRead;
@@ -163,7 +160,7 @@ namespace System.Net
                     fixed (byte* pBuffer = buffer)
                     {
                         // issue unmanaged blocking call
-                        if (NetEventSource.IsEnabled) NetEventSource.Info(this, "Calling Interop.HttpApi.HttpReceiveRequestEntityBody");
+                        if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "Calling Interop.HttpApi.HttpReceiveRequestEntityBody");
 
                         uint flags = 0;
 
@@ -182,12 +179,12 @@ namespace System.Net
                                 out bytesReturned,
                                 asyncResult._pOverlapped);
 
-                        if (NetEventSource.IsEnabled) NetEventSource.Info(this, "Call to Interop.HttpApi.HttpReceiveRequestEntityBody returned:" + statusCode + " dataRead:" + dataRead);
+                        if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "Call to Interop.HttpApi.HttpReceiveRequestEntityBody returned:" + statusCode + " dataRead:" + dataRead);
                     }
                 }
                 catch (Exception e)
                 {
-                    if (NetEventSource.IsEnabled) NetEventSource.Error(this, e.ToString());
+                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, e.ToString());
                     asyncResult.InternalCleanup();
                     throw;
                 }
@@ -203,7 +200,7 @@ namespace System.Net
                     else
                     {
                         Exception exception = new HttpListenerException((int)statusCode);
-                        if (NetEventSource.IsEnabled) NetEventSource.Error(this, exception.ToString());
+                        if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, exception.ToString());
                         asyncResult.InternalCleanup();
                         throw exception;
                     }
@@ -215,17 +212,13 @@ namespace System.Net
                     asyncResult.IOCompleted(statusCode, bytesReturned);
                 }
             }
-            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
             return asyncResult;
         }
 
         public override int EndRead(IAsyncResult asyncResult)
         {
-            if (NetEventSource.IsEnabled)
-            {
-                NetEventSource.Enter(this);
-                NetEventSource.Info(this, $"asyncResult: {asyncResult}");
-            }
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"asyncResult: {asyncResult}");
+
             if (asyncResult == null)
             {
                 throw new ArgumentNullException(nameof(asyncResult));
@@ -245,7 +238,7 @@ namespace System.Net
             Exception exception = returnValue as Exception;
             if (exception != null)
             {
-                if (NetEventSource.IsEnabled)
+                if (NetEventSource.Log.IsEnabled())
                 {
                     NetEventSource.Info(this, "Rethrowing exception:" + exception);
                     NetEventSource.Error(this, exception.ToString());
@@ -255,18 +248,14 @@ namespace System.Net
 
             uint dataRead = (uint)returnValue;
             UpdateAfterRead((uint)castedAsyncResult.ErrorCode, dataRead);
-            if (NetEventSource.IsEnabled)
-            {
-                NetEventSource.Info(this, $"returnValue:{returnValue}");
-                NetEventSource.Exit(this);
-            }
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"returnValue:{returnValue}");
 
             return (int)dataRead + (int)castedAsyncResult._dataAlreadyRead;
         }
 
         internal void SwitchToOpaqueMode()
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this);
             _inOpaqueMode = true;
         }
 
@@ -289,7 +278,7 @@ namespace System.Net
             private readonly ThreadPoolBoundHandle _boundHandle;
             internal NativeOverlapped* _pOverlapped;
             internal void* _pPinnedBuffer;
-            internal uint _dataAlreadyRead = 0;
+            internal uint _dataAlreadyRead;
 
             private static readonly IOCompletionCallback s_IOCallback = new IOCompletionCallback(Callback);
 
@@ -317,7 +306,7 @@ namespace System.Net
 
             private static void IOCompleted(HttpRequestStreamAsyncResult asyncResult, uint errorCode, uint numBytes)
             {
-                if (NetEventSource.IsEnabled) NetEventSource.Info(null, $"asyncResult: {asyncResult} errorCode:0x {errorCode.ToString("x8")} numBytes: {numBytes}");
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, $"asyncResult: {asyncResult} errorCode:0x {errorCode.ToString("x8")} numBytes: {numBytes}");
                 object result = null;
                 try
                 {
@@ -329,9 +318,9 @@ namespace System.Net
                     else
                     {
                         result = numBytes;
-                        if (NetEventSource.IsEnabled) NetEventSource.DumpBuffer(asyncResult, (IntPtr)asyncResult._pPinnedBuffer, (int)numBytes);
+                        if (NetEventSource.Log.IsEnabled()) NetEventSource.DumpBuffer(asyncResult, (IntPtr)asyncResult._pPinnedBuffer, (int)numBytes);
                     }
-                    if (NetEventSource.IsEnabled) NetEventSource.Info(null, $"asyncResult: {asyncResult} calling Complete()");
+                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, $"asyncResult: {asyncResult} calling Complete()");
                 }
                 catch (Exception e)
                 {
@@ -344,7 +333,7 @@ namespace System.Net
             {
                 HttpRequestStreamAsyncResult asyncResult = (HttpRequestStreamAsyncResult)ThreadPoolBoundHandle.GetNativeOverlappedState(nativeOverlapped);
 
-                if (NetEventSource.IsEnabled) NetEventSource.Info(null, $"asyncResult: {asyncResult} errorCode:0x {errorCode.ToString("x8")} numBytes: {numBytes} nativeOverlapped:0x {((IntPtr)nativeOverlapped).ToString("x8")}");
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, $"asyncResult: {asyncResult} errorCode:0x {errorCode.ToString("x8")} numBytes: {numBytes} nativeOverlapped:0x {((IntPtr)nativeOverlapped).ToString("x8")}");
 
                 IOCompleted(asyncResult, errorCode, numBytes);
             }

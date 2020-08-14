@@ -1,0 +1,7 @@
+<Project>
+  <PropertyGroup>
+    <!-- Disabling DependsOnNetStandardTest for this package as it is a tool and not a library -->
+    <DisableVerifyNotDependsOnNetStandardTest>true</DisableVerifyNotDependsOnNetStandardTest>
+    <ShouldVerifyClosure>false</ShouldVerifyClosure>
+  </PropertyGroup>
+</Project>

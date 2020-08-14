@@ -140,5 +140,8 @@
   </data>
   <data name="PlatformNotSupported_CAS" xml:space="preserve">
     <value>Code Access Security is not supported on this platform.</value>
-  </data>  
+  </data>
+  <data name="IsolatedStorage_PlatformNotSupported" xml:space="preserve">
+    <value>System.IO.IsolatedStorage is not supported on this platform.</value>
+  </data>
 </root>

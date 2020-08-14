@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 // METASIG.H
 //
 
@@ -588,6 +587,9 @@ DEFINE_METASIG_T(SM(RefCleanupWorkListElement_Obj_RetVoid, r(C(CLEANUP_WORK_LIST
 DEFINE_METASIG_T(SM(ICastable_RtType_RefException_RetBool, C(ICASTABLE) C(CLASS) r(C(EXCEPTION)), F))
 DEFINE_METASIG_T(SM(ICastable_RtType_RetRtType, C(ICASTABLE) C(CLASS), C(CLASS)))
 #endif // FEATURE_ICASTABLE
+
+DEFINE_METASIG_T(SM(IDynamicInterfaceCastable_RuntimeType_Bool_RetBool, C(IDYNAMICINTERFACECASTABLE) C(CLASS) F, F))
+DEFINE_METASIG_T(SM(IDynamicInterfaceCastable_RuntimeType_RetRtType, C(IDYNAMICINTERFACECASTABLE) C(CLASS), C(CLASS)))
 
 DEFINE_METASIG_T(IM(ArrByte_Int_Int_AsyncCallback_Object_RetIAsyncResult, a(b) i i C(ASYNCCALLBACK) j, C(IASYNCRESULT)))
 DEFINE_METASIG_T(IM(IAsyncResult_RetInt, C(IASYNCRESULT), i))

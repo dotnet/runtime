@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Runtime.InteropServices;
 using Xunit;
@@ -26,7 +25,7 @@ namespace System.DirectoryServices.Protocols.Tests
 #if NETCOREAPP
                 if (!_isLibLdapInstalled.HasValue)
                 {
-                    if (PlatformDetection.IsOSX)
+                    if (PlatformDetection.IsOSXLike)
                     {
                         _isLibLdapInstalled = NativeLibrary.TryLoad("libldap.dylib", out _);
                     }

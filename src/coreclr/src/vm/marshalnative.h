@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //
 // File: MarshalNative.h
 //
@@ -69,16 +68,6 @@ public:
     static FCDECL1(LPVOID, GetFunctionPointerForDelegateInternal, Object* refDelegateUNSAFE);
 
 #ifdef FEATURE_COMINTEROP
-    //====================================================================
-    // map GUID to Type
-    //====================================================================
-    static FCDECL1(Object*, GetLoadedTypeForGUID, GUID* pGuid);
-
-    //====================================================================
-    // map Type to ITypeInfo*
-    //====================================================================
-    static FCDECL1(ITypeInfo*, GetITypeInfoForType, ReflectClassBaseObject* refClassUNSAFE);
-
     //====================================================================
     // return the IUnknown* for an Object
     //====================================================================
@@ -161,13 +150,6 @@ public:
     // check if the type is visible from COM.
     //====================================================================
     static FCDECL1(FC_BOOL_RET, IsTypeVisibleFromCom, ReflectClassBaseObject* refClassUNSAFE);
-
-    //====================================================================
-    // IUnknown Helpers
-    //====================================================================
-    static FCDECL3(HRESULT, QueryInterface, IUnknown* pUnk, REFGUID iid, void** ppv);
-    static FCDECL1(ULONG, AddRef, IUnknown* pUnk);
-    static FCDECL1(ULONG, Release, IUnknown* pUnk);
 
     //====================================================================
     // These methods convert OLE variants to and from objects.

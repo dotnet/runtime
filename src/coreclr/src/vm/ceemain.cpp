@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 // ===========================================================================
 // File: CEEMAIN.CPP
 // ===========================================================================
@@ -240,8 +239,16 @@ extern "C" HRESULT __cdecl CorDBGetInterface(DebugInterface** rcInterface);
 #endif // DEBUGGING_SUPPORTED
 #endif // !CROSSGEN_COMPILE
 
-
-
+// g_coreclr_embedded indicates that coreclr is linked directly into the program
+// g_hostpolicy_embedded indicates that the hostpolicy library is linked directly into the executable
+// Note: that it can happen that the hostpolicy is embedded but coreclr isn't (on Windows singlefilehost is built that way)
+#ifdef CORECLR_EMBEDDED
+bool g_coreclr_embedded = true;
+bool g_hostpolicy_embedded = true; // We always embed hostpolicy if coreclr is also embedded
+#else
+bool g_coreclr_embedded = false;
+bool g_hostpolicy_embedded = false; // In this case the value may come from a runtime property and may change
+#endif
 
 // Remember how the last startup of EE went.
 HRESULT g_EEStartupStatus = S_OK;
@@ -280,8 +287,8 @@ HRESULT EnsureEEStarted()
 
     HRESULT hr = E_FAIL;
 
-    // On non x86 platforms, when we load mscorlib.dll during EEStartup, we will
-    // re-enter _CorDllMain with a DLL_PROCESS_ATTACH for mscorlib.dll. We are
+    // On non x86 platforms, when we load CoreLib during EEStartup, we will
+    // re-enter _CorDllMain with a DLL_PROCESS_ATTACH for CoreLib. We are
     // far enough in startup that this is allowed, however we don't want to
     // re-start the startup code so we need to check to see if startup has
     // been initiated or completed before we call EEStartup.
@@ -291,12 +298,6 @@ HRESULT EnsureEEStarted()
     if (!g_fEEStarted)
     {
         BEGIN_ENTRYPOINT_NOTHROW;
-
-#if defined(FEATURE_APPX) && !defined(CROSSGEN_COMPILE)
-        STARTUP_FLAGS startupFlags = CorHost2::GetStartupFlags();
-        // On CoreCLR, the host is in charge of determining whether the process is AppX or not.
-        AppX::SetIsAppXProcess(!!(startupFlags & STARTUP_APPX_APP_MODEL));
-#endif
 
 #ifndef TARGET_UNIX
         // The sooner we do this, the sooner we avoid probing registry entries.
@@ -674,12 +675,27 @@ void EEStartupHelper()
 #ifdef FEATURE_PERFTRACING
         // Initialize the event pipe.
         EventPipe::Initialize();
-
 #endif // FEATURE_PERFTRACING
 
 #ifdef TARGET_UNIX
         PAL_SetShutdownCallback(EESocketCleanupHelper);
 #endif // TARGET_UNIX
+
+#ifdef STRESS_LOG
+        if (REGUTIL::GetConfigDWORD_DontUse_(CLRConfig::UNSUPPORTED_StressLog, g_pConfig->StressLog ()) != 0) {
+            unsigned facilities = REGUTIL::GetConfigDWORD_DontUse_(CLRConfig::INTERNAL_LogFacility, LF_ALL);
+            unsigned level = REGUTIL::GetConfigDWORD_DontUse_(CLRConfig::EXTERNAL_LogLevel, LL_INFO1000);
+            unsigned bytesPerThread = REGUTIL::GetConfigDWORD_DontUse_(CLRConfig::UNSUPPORTED_StressLogSize, STRESSLOG_CHUNK_SIZE * 4);
+            unsigned totalBytes = REGUTIL::GetConfigDWORD_DontUse_(CLRConfig::UNSUPPORTED_TotalStressLogSize, STRESSLOG_CHUNK_SIZE * 1024);
+            StressLog::Initialize(facilities, level, bytesPerThread, totalBytes, GetModuleInst());
+            g_pStressLog = &StressLog::theLog;
+        }
+#endif
+
+#ifdef FEATURE_PERFTRACING
+        DiagnosticServer::Initialize();
+        DiagnosticServer::PauseForDiagnosticsMonitor();
+#endif // FEATURE_PERFTRACING
 
 #ifdef FEATURE_GDBJIT
         // Initialize gdbjit
@@ -701,16 +717,6 @@ void EEStartupHelper()
 #endif // CROSSGEN_COMPILE
 
 
-#ifdef STRESS_LOG
-        if (REGUTIL::GetConfigDWORD_DontUse_(CLRConfig::UNSUPPORTED_StressLog, g_pConfig->StressLog ()) != 0) {
-            unsigned facilities = REGUTIL::GetConfigDWORD_DontUse_(CLRConfig::INTERNAL_LogFacility, LF_ALL);
-            unsigned level = REGUTIL::GetConfigDWORD_DontUse_(CLRConfig::EXTERNAL_LogLevel, LL_INFO1000);
-            unsigned bytesPerThread = REGUTIL::GetConfigDWORD_DontUse_(CLRConfig::UNSUPPORTED_StressLogSize, STRESSLOG_CHUNK_SIZE * 4);
-            unsigned totalBytes = REGUTIL::GetConfigDWORD_DontUse_(CLRConfig::UNSUPPORTED_TotalStressLogSize, STRESSLOG_CHUNK_SIZE * 1024);
-            StressLog::Initialize(facilities, level, bytesPerThread, totalBytes, GetModuleInst());
-            g_pStressLog = &StressLog::theLog;
-        }
-#endif
 
 #ifdef LOGGING
         InitializeLogging();
@@ -822,7 +828,7 @@ void EEStartupHelper()
 
         AccessCheckOptions::Startup();
 
-        MscorlibBinder::Startup();
+        CoreLibBinder::Startup();
 
         Stub::Init();
         StubLinkerCPU::Init();
@@ -933,12 +939,12 @@ void EEStartupHelper()
         hr = g_pGCHeap->Initialize();
         IfFailGo(hr);
 
-#ifdef FEATURE_EVENT_TRACE
+#ifdef FEATURE_PERFTRACING
         // Finish setting up rest of EventPipe - specifically enable SampleProfiler if it was requested at startup.
         // SampleProfiler needs to cooperate with the GC which hasn't fully finished setting up in the first part of the
         // EventPipe initialization, so this is done after the GC has been fully initialized.
         EventPipe::FinishInitialize();
-#endif
+#endif // FEATURE_PERFTRACING
 
         // This isn't done as part of InitializeGarbageCollector() above because thread
         // creation requires AppDomains to have been set up.
@@ -1007,11 +1013,6 @@ void EEStartupHelper()
 #endif // CROSSGEN_COMPILE
 
         g_fEEStarted = TRUE;
-#ifndef CROSSGEN_COMPILE
-#ifdef FEATURE_PERFTRACING
-        DiagnosticServer::Initialize();
-#endif
-#endif
         g_EEStartupStatus = S_OK;
         hr = S_OK;
         STRESS_LOG0(LF_STARTUP, LL_ALWAYS, "===================EEStartup Completed===================");
@@ -1033,8 +1034,8 @@ void EEStartupHelper()
             SystemDomain::SystemModule()->ExpandAll();
         }
 
-        // Perform mscorlib consistency check if requested
-        g_Mscorlib.CheckExtended();
+        // Perform CoreLib consistency check if requested
+        g_CoreLib.CheckExtended();
 
 #endif // _DEBUG
 
@@ -1110,7 +1111,7 @@ LONG FilterStartupException(PEXCEPTION_POINTERS p, PVOID pv)
 // EEStartup is responsible for all the one time intialization of the runtime.  Some of the highlights of
 // what it does include
 //     * Creates the default and shared, appdomains.
-//     * Loads mscorlib.dll and loads up the fundamental types (System.Object ...)
+//     * Loads System.Private.CoreLib and loads up the fundamental types (System.Object ...)
 //
 // see code:EEStartup#TableOfContents for more on the runtime in general.
 // see code:#EEShutdown for a analagous routine run during shutdown.
@@ -1371,7 +1372,7 @@ void STDMETHODCALLTYPE EEShutDownHelper(BOOL fIsDllUnloading)
 
         // NOTE: We haven't stopped other threads at this point and nothing is stopping
         // callbacks from coming into the profiler even after Shutdown() has been called.
-        // See https://github.com/dotnet/coreclr/issues/22176 for an example of how that
+        // See https://github.com/dotnet/runtime/issues/11885 for an example of how that
         // happens.
         //
         // To prevent issues when profilers are attached we intentionally skip freeing the
@@ -1676,10 +1677,7 @@ void STDMETHODCALLTYPE EEShutDown(BOOL fIsDllUnloading)
         }
 
 #ifdef FEATURE_MULTICOREJIT
-        if (!AppX::IsAppXProcess()) // When running as Appx, make the delayed timer driven writing be the only option
-        {
-            MulticoreJitManager::StopProfileAll();
-        }
+        MulticoreJitManager::StopProfileAll();
 #endif
     }
 

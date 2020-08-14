@@ -50,7 +50,7 @@ target_link_libraries(crossgen
     ${CLRJIT_CROSSGEN}
     gcinfo_crossgen
     corzap_crossgen
-    mscorlib_crossgen
+    corelib_crossgen
     utilcode_crossgen
 )
 

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Buffers;
 using System.Diagnostics;
@@ -97,13 +96,16 @@ namespace System.Globalization
             }
         }
 
-        // -----------------------------
-        // ---- PAL layer ends here ----
-        // -----------------------------
-
         private static void ValidateArguments(string strInput, NormalizationForm normalizationForm)
         {
             Debug.Assert(strInput != null);
+
+
+            if (OperatingSystem.IsBrowser() && (normalizationForm == NormalizationForm.FormKC || normalizationForm == NormalizationForm.FormKD))
+            {
+                // Browser's ICU doesn't contain data needed for FormKC and FormKD
+                throw new PlatformNotSupportedException();
+            }
 
             if (normalizationForm != NormalizationForm.FormC && normalizationForm != NormalizationForm.FormD &&
                 normalizationForm != NormalizationForm.FormKC && normalizationForm != NormalizationForm.FormKD)

@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Diagnostics;
 using System.Xml.XPath;
 
@@ -11,7 +11,7 @@ namespace System.Xml
     // interpreted as markup language.
     public class XmlCDataSection : XmlCharacterData
     {
-        protected internal XmlCDataSection(string data, XmlDocument doc) : base(data, doc)
+        protected internal XmlCDataSection(string? data, XmlDocument doc) : base(data, doc)
         {
         }
 
@@ -20,7 +20,7 @@ namespace System.Xml
         {
             get
             {
-                return OwnerDocument.strCDataSectionName;
+                return OwnerDocument!.strCDataSectionName;
             }
         }
 
@@ -29,7 +29,7 @@ namespace System.Xml
         {
             get
             {
-                return OwnerDocument.strCDataSectionName;
+                return OwnerDocument!.strCDataSectionName;
             }
         }
 
@@ -42,11 +42,11 @@ namespace System.Xml
             }
         }
 
-        public override XmlNode ParentNode
+        public override XmlNode? ParentNode
         {
             get
             {
-                switch (parentNode.NodeType)
+                switch (parentNode!.NodeType)
                 {
                     case XmlNodeType.Document:
                         return null;
@@ -54,11 +54,12 @@ namespace System.Xml
                     case XmlNodeType.CDATA:
                     case XmlNodeType.Whitespace:
                     case XmlNodeType.SignificantWhitespace:
-                        XmlNode parent = parentNode.parentNode;
+                        XmlNode parent = parentNode.parentNode!;
                         while (parent.IsText)
                         {
-                            parent = parent.parentNode;
+                            parent = parent.parentNode!;
                         }
+
                         return parent;
                     default:
                         return parentNode;
@@ -101,14 +102,15 @@ namespace System.Xml
             }
         }
 
-        public override XmlNode PreviousText
+        public override XmlNode? PreviousText
         {
             get
             {
-                if (parentNode.IsText)
+                if (parentNode != null && parentNode.IsText)
                 {
                     return parentNode;
                 }
+
                 return null;
             }
         }

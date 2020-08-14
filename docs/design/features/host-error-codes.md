@@ -109,3 +109,5 @@ For example if `hostfxr_get_runtime_property_value` is called with the `host_con
 * `HostPropertyNotFound` (`0x800080a4`) - property requested by `hostfxr_get_runtime_property_value` doesn't exist.
 
 * `CoreHostIncompatibleConfig` (`0x800080a5`) - Error returned by `hostfxr_initialize_for_runtime_config` if the component being initialized requires framework which is not available or incompatible with the frameworks loaded by the runtime already in the process. For example trying to load a component which requires 3.0 into a process which is already running a 2.0 runtime.
+
+* `HostApiUnsupportedScenario` (`0x800080a6`) - Error returned by `hostfxr_get_runtime_delegate` when `hostfxr` doesn't currently support requesting the given delegate type using the given context.

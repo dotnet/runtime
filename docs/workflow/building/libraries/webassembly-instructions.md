@@ -34,12 +34,12 @@ The libraries build contains some native code. This includes shims over libc, op
 
 - Building in debug mode for platform wasm and Browser operating system
 ```bash
-./build.sh --arch wasm --os Browser --subset Libs.Native --configuration Debug
+./build.sh libs.native --arch wasm --os Browser
 ```
 
 - Building in release mode for platform wasm and Browser operating system
 ```bash
-./build.sh --arch wasm --os Browser --subset Libs.Native --configuration Release
+./build.sh libs.native --arch wasm --os Browser -c Release
 ```
 
 ## How to build mono System.Private.CoreLib
@@ -48,20 +48,19 @@ If you are working on core parts of mono libraries you will probably need to bui
 
 
 ```bash
-./build.sh --arch wasm --os Browser --configuration release --subset Mono
+./build.sh mono --arch wasm --os Browser -c Release
 ```
 
 To build just SPC without mono you can use the Mono.CoreLib subset.
 
 ```bash
-./build.sh --arch wasm --os Browser --configuration release --subset Mono.CoreLib
+./build.sh mono.corelib --arch wasm --os Browser -c Release
 ```
-
 
 Building the managed libraries as well:
 
 ```bash
-./build.sh --arch wasm --os Browser --configuration release --subset Mono+Libs
+./build.sh mono+libs --arch wasm --os Browser -c Release
 ```
 
 ## Building individual libraries
@@ -71,16 +70,16 @@ Individual projects and libraries can be build by specifying the build configura
 Building individual libraries
 **Examples**
 
-- Build all projects for a given library (e.g.: System.Net.Http) including running the tests
+- Build all projects for a given library (e.g.: System.Net.Http) including the tests
 
 ```bash
- ./build.sh --arch wasm --os Browser --configuration release --projects src/libraries/System.Net.Http/System.Net.Http.sln
+ ./build.sh --arch wasm --os Browser -c Release --projects src/libraries/System.Net.Http/System.Net.Http.sln
 ```
 
 - Build only the source project of a given library (e.g.: System.Net.Http)
 
 ```bash
- ./build.sh --arch wasm --os Browser --configuration release --projects src/libraries/System.Net.Http/src/System.Net.Http.csproj
+ ./build.sh --arch wasm --os Browser -c Release --projects src/libraries/System.Net.Http/src/System.Net.Http.csproj
 ```
 
 More information and examples can be found in the [libraries](./README.md#building-individual-libraries) document.
@@ -91,7 +90,31 @@ The WebAssembly implementation files are built and made available in the artifac
 
 For Linux and MacOSX:
 ```bash
-./dotnet.sh build --configuration release /p:TargetArchitecture=wasm /p:TargetOS=Browser src/libraries/src.proj /t:NativeBinPlace 
+./dotnet.sh build /p:Configuration=Debug|Release /p:TargetArchitecture=wasm /p:TargetOS=Browser src/libraries/src.proj /t:BuildWasmRuntimes 
+```
+
+__Note__: A `Debug` build sets the following environment variables by default.  When built from the command line this way the `Configuration` value is case sensitive.
+
+- debugging and logging which will log garbage collection information to the console.
+
+```
+   monoeg_g_setenv ("MONO_LOG_LEVEL", "debug", 0);
+   monoeg_g_setenv ("MONO_LOG_MASK", "gc", 0);
+```
+
+  #### Example:
+```
+L: GC_MAJOR_SWEEP: major size: 752K in use: 39K 
+L: GC_MAJOR: (user request) time 3.00ms, stw 3.00ms los size: 0K in use: 0K
+```
+
+- Redirects the `System.Diagnostics.Debug` output to `stderr` which will show up on the console.
+
+```
+    // Setting this env var allows Diagnostic.Debug to write to stderr.  In a browser environment this
+    // output will be sent to the console.  Right now this is the only way to emit debug logging from
+    // corlib assemblies.
+    monoeg_g_setenv ("COMPlus_DebugWriteToStdErr", "1", 0);
 ```
 
 ## Updating Emscripten version in Docker image

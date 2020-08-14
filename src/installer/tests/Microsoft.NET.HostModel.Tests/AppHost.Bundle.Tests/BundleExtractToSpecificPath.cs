@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using BundleTests.Helpers;
 using Microsoft.DotNet.Cli.Build.Framework;
@@ -56,6 +55,28 @@ namespace AppHost.Bundle.Tests
             var extractDir = BundleHelper.GetExtractionDir(fixture, bundler);
             extractDir.Should().HaveFiles(BundleHelper.GetExtractedFiles(fixture));
             extractDir.Should().NotHaveFiles(BundleHelper.GetFilesNeverExtracted(fixture));
+        }
+
+        [InlineData("./foo")]
+        [InlineData("../foo")]
+        [InlineData("foo")]
+        [InlineData("foo/bar")]
+        [Theory]
+        private void Bundle_Extraction_To_Relative_Path_Succeeds (string relativePath)
+        {
+            var fixture = sharedTestState.TestFixture.Copy();
+            var singleFile = BundleHelper.BundleApp(fixture, BundleOptions.None);
+
+            // Run the bundled app (extract files to <path>)
+            Command.Create(singleFile)
+                .CaptureStdErr()
+                .CaptureStdOut()
+                .EnvironmentVariable(BundleHelper.DotnetBundleExtractBaseEnvVariable, relativePath)
+                .Execute()
+                .Should()
+                .Pass()
+                .And
+                .HaveStdOutContaining("Hello World");
         }
 
         [Fact]

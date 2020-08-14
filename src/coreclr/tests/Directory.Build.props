@@ -10,7 +10,7 @@
   <!-- Common repo directories -->
   <PropertyGroup>
     <TestProjectDir>$(MSBuildThisFileDirectory)</TestProjectDir>
-    <TestSourceDir>$(MSBuildThisFileDirectory)src\</TestSourceDir>
+    <TestSourceDir>$([MSBuild]::NormalizePath('$(RepoRoot)/src/tests/'))</TestSourceDir>
   </PropertyGroup>
 
   <!-- Common properties -->
@@ -63,14 +63,6 @@
    -->
   <PropertyGroup>
     <CLRTestBuildAllTargets></CLRTestBuildAllTargets>
-  </PropertyGroup>
-
-  <!-- Where to put a "testhost" for running corefx tests -->
-  <PropertyGroup>
-    <TestHostVersion>$(ProductVersion)</TestHostVersion>
-    <TestHostRootPath>$([MSBuild]::NormalizeDirectory('$(TestWorkingDir)', 'testhost'))</TestHostRootPath>
-    <NETCoreAppTestHostFxrPath>$([MSBuild]::NormalizeDirectory('$(TestHostRootPath)', 'host', 'fxr', '$(TestHostVersion)'))</NETCoreAppTestHostFxrPath>
-    <NETCoreAppTestSharedFrameworkPath>$([MSBuild]::NormalizeDirectory('$(TestHostRootPath)', 'shared', 'Microsoft.NETCore.App', '$(TestHostVersion)'))</NETCoreAppTestSharedFrameworkPath>
   </PropertyGroup>
 
 </Project>
