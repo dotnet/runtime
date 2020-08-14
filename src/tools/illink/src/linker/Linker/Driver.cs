@@ -145,9 +145,9 @@ namespace Mono.Linker
 			}
 		}
 
-		static void ErrorMissingArgument (string optionName)
+		void ErrorMissingArgument (string optionName)
 		{
-			Console.WriteLine ($"Missing argument for '{optionName}' option");
+			context.LogError ($"Missing argument for '{optionName}' option", 1018);
 		}
 
 		// Perform setup of the LinkContext and parse the arguments.
@@ -301,7 +301,7 @@ namespace Mono.Linker
 						var arg = arguments.Dequeue ();
 						string[] values = arg.Split ('=');
 						if (values?.Length != 2) {
-							Console.WriteLine ($"Value used with '--custom-data' has to be in the KEY=VALUE format");
+							context.LogError ($"Value used with '--custom-data' has to be in the KEY=VALUE format", 1019);
 							return -1;
 						}
 
@@ -613,12 +613,12 @@ namespace Mono.Linker
 			}
 
 			if (!resolver) {
-				Console.WriteLine ($"No files to link were specified. Use one of '{resolvers}' options");
+				context.LogError ($"No files to link were specified. Use one of '{resolvers}' options", 1020);
 				return -1;
 			}
 
 			if (new_mvid_used && deterministic_used) {
-				Console.WriteLine ($"Options '--new-mvid' and '--deterministic' cannot be used at the same time");
+				context.LogError ($"Options '--new-mvid' and '--deterministic' cannot be used at the same time", 1021);
 				return -1;
 			}
 
@@ -801,15 +801,15 @@ namespace Mono.Linker
 			return warningCodes;
 		}
 
-		private static Assembly GetCustomAssembly (string arg)
+		Assembly GetCustomAssembly (string arg)
 		{
 			if (Path.IsPathRooted (arg)) {
 				var assemblyPath = Path.GetFullPath (arg);
 				if (File.Exists (assemblyPath))
 					return Assembly.Load (File.ReadAllBytes (assemblyPath));
-				Console.WriteLine ($"The assembly '{arg}' specified for '--custom-step' option could not be found");
+				context.LogError ($"The assembly '{arg}' specified for '--custom-step' option could not be found", 1022);
 			} else
-				Console.WriteLine ($"The path to the assembly '{arg}' specified for '--custom-step' must be fully qualified");
+				context.LogError ($"The path to the assembly '{arg}' specified for '--custom-step' must be fully qualified", 1023);
 
 			return null;
 		}
@@ -834,7 +834,7 @@ namespace Mono.Linker
 			context.Tracer.AddRecorder (new XmlDependencyRecorder (context, fileName));
 		}
 
-		protected static bool AddCustomStep (Pipeline pipeline, string arg)
+		protected bool AddCustomStep (Pipeline pipeline, string arg)
 		{
 			Assembly custom_assembly = null;
 			int pos = arg.IndexOf (",");
@@ -857,12 +857,12 @@ namespace Mono.Linker
 
 			string[] parts = arg.Split (':');
 			if (parts.Length != 2) {
-				Console.WriteLine ($"Invalid value '{arg}' specified for '--custom-step' option");
+				context.LogError ($"Invalid value '{arg}' specified for '--custom-step' option", 1024);
 				return false;
 			}
 
 			if (!parts[0].StartsWith ("-") && !parts[0].StartsWith ("+")) {
-				Console.WriteLine ($"Expected '+' or '-' to control new step insertion");
+				context.LogError ($"Expected '+' or '-' to control new step insertion", 1025);
 				return false;
 			}
 
@@ -871,7 +871,7 @@ namespace Mono.Linker
 
 			IStep target = FindStep (pipeline, name);
 			if (target == null) {
-				Console.WriteLine ($"Pipeline step '{name}' could not be found");
+				context.LogError ($"Pipeline step '{name}' could not be found", 1026);
 				return false;
 			}
 
@@ -898,17 +898,17 @@ namespace Mono.Linker
 			return null;
 		}
 
-		static IStep ResolveStep (string type, Assembly assembly)
+		IStep ResolveStep (string type, Assembly assembly)
 		{
 			Type step = assembly != null ? assembly.GetType (type) : Type.GetType (type, false);
 
 			if (step == null) {
-				Console.WriteLine ($"Custom step '{type}' could not be found");
+				context.LogError ($"Custom step '{type}' could not be found", 1027);
 				return null;
 			}
 
 			if (!typeof (IStep).IsAssignableFrom (step)) {
-				Console.WriteLine ($"Custom step '{type}' is incompatible with this linker version");
+				context.LogError ($"Custom step '{type}' is incompatible with this linker version", 1028);
 				return null;
 			}
 
@@ -972,7 +972,7 @@ namespace Mono.Linker
 			return false;
 		}
 
-		static bool GetOptimizationName (string text, out CodeOptimizations optimization)
+		protected bool GetOptimizationName (string text, out CodeOptimizations optimization)
 		{
 			switch (text.ToLowerInvariant ()) {
 			case "beforefieldinit":
@@ -995,7 +995,7 @@ namespace Mono.Linker
 				return true;
 			}
 
-			Console.WriteLine ($"Invalid optimization value '{text}'");
+			context.LogError ($"Invalid optimization value '{text}'", 1029);
 			optimization = 0;
 			return false;
 		}
@@ -1036,7 +1036,7 @@ namespace Mono.Linker
 				return true;
 			}
 
-			Console.WriteLine ($"Invalid argument for '{token}' option");
+			context.LogError ($"Invalid argument for '{token}' option", 1030);
 			return false;
 		}
 

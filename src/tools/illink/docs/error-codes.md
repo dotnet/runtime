@@ -73,6 +73,46 @@ the error code. For example:
 
 - Invalid value 'value' was used for command-line option '--generate-warning-suppressions'; must be 'cs' or 'xml'.
 
+#### `IL1018`: Missing argument for '{optionName}' option
+
+- The command-line option 'optionName' was specified but no argument was given.
+
+#### `IL1019`: Value used with '--custom-data' has to be in the KEY=VALUE format
+
+- The command-line option --custom-data receives a key-value pair using the format KEY=VALUE.
+
+#### `IL1020`: No files to link were specified. Use one of '{resolvers}' options
+
+#### `IL1021`: Options '--new-mvid' and '--deterministic' cannot be used at the same time
+
+#### `IL1022`: The assembly '{arg}' specified for '--custom-step' option could not be found
+
+#### `IL1023`: The path to the assembly '{arg}' specified for '--custom-step' must be fully qualified
+
+#### `IL1024`: Invalid value '{arg}' specified for '--custom-step' option
+
+- There was an error in the format of the custom step 'arg' given.
+
+#### `IL1025`: Expected '+' or '-' to control new step insertion
+
+- A custom step that is inserted relative to an existing step in the pipeline must specify whether to be added before (-) or after (+) the step it's relative to.
+
+#### `IL1026`: Pipeline step '{name}' could not be found
+
+- A custom step was specified for insertion relative to a non existent step 'name'.
+
+#### `IL1027`: Custom step '{type}' could not be found
+
+- The custom step 'type' could not be found in the given assembly.
+
+#### `IL1028`: Custom step '{type}' is incompatible with this linker version
+
+#### `IL1029`: Invalid optimization value '{text}'
+
+- The optimization 'text' is invalid. Optimization values can either be 'beforefieldinit', 'overrideremoval', 'unreachablebodies', 'unusedinterfaces', 'ipconstprop', or 'sealer'.
+
+#### `IL1030`: Invalid argument for '{token}' option
+
 ----
 ## Warning Codes
 

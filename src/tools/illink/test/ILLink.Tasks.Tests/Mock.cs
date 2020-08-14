@@ -137,13 +137,9 @@ namespace ILLink.Tasks.Tests
 			return (IEnumerable<IDependencyRecorder>) (typeof (Tracer).GetField ("recorders", BindingFlags.NonPublic | BindingFlags.Instance).GetValue (context.Tracer));
 		}
 
-		public static bool GetOptimizationName (string optimization, out CodeOptimizations codeOptimizations)
+		public new bool GetOptimizationName (string optimization, out CodeOptimizations codeOptimizations)
 		{
-			var method = typeof (Driver).GetMethod ("GetOptimizationName", BindingFlags.NonPublic | BindingFlags.Static);
-			var parameters = new object[] { optimization, null };
-			var ret = (bool) (method.Invoke (null, parameters));
-			codeOptimizations = (CodeOptimizations) (parameters[1]);
-			return ret;
+			return base.GetOptimizationName (optimization, out codeOptimizations);
 		}
 
 		public CodeOptimizations GetDefaultOptimizations ()

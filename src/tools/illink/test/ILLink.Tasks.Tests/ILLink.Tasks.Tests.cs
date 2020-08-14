@@ -172,8 +172,8 @@ namespace ILLink.Tasks.Tests
 			var task = new MockTask ();
 			task.SetOptimization (optimization, enabled);
 			// get the corresponding CodeOptimizations value
-			Assert.True (MockDriver.GetOptimizationName (optimization, out CodeOptimizations codeOptimizations));
 			using (var driver = task.CreateDriver ()) {
+				Assert.True (driver.GetOptimizationName (optimization, out CodeOptimizations codeOptimizations));
 				var actualValue = driver.Context.Optimizations.IsEnabled (codeOptimizations, assemblyName: null);
 				Assert.Equal (enabled, actualValue);
 			}
@@ -224,7 +224,7 @@ namespace ILLink.Tasks.Tests
 				foreach (var item in assemblyPaths) {
 					var assemblyName = Path.GetFileNameWithoutExtension (item.ItemSpec);
 					foreach (var optimization in MockTask.OptimizationNames) {
-						Assert.True (MockDriver.GetOptimizationName (optimization, out CodeOptimizations codeOptimizations));
+						Assert.True (driver.GetOptimizationName (optimization, out CodeOptimizations codeOptimizations));
 						var optimizationValue = item.GetMetadata (optimization);
 						if (String.IsNullOrEmpty (optimizationValue))
 							continue;
