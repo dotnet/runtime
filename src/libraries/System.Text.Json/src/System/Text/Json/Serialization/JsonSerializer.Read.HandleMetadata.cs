@@ -26,8 +26,10 @@ namespace System.Text.Json
         internal static bool ResolveMetadataForJsonObject(
             ref Utf8JsonReader reader,
             ref ReadStack state,
-            JsonSerializerOptions options)
+            JsonSerializerOptions options,
+            out string? referenceId)
         {
+            referenceId = null;
             JsonConverter converter = state.Current.JsonClassInfo.PropertyInfoForClassInfo.ConverterBase;
 
             if (state.Current.ObjectState < StackFrameObjectState.ReadAheadNameOrEndObject)
@@ -111,9 +113,7 @@ namespace System.Text.Json
                     ThrowHelper.ThrowJsonException_MetadataValueWasNotString(reader.TokenType);
                 }
 
-                string referenceId = reader.GetString()!;
-
-                // todo: https://github.com/dotnet/runtime/issues/32354
+                referenceId = reader.GetString()!;
                 state.Current.ReturnValue = state.ReferenceResolver.ResolveReference(referenceId);
 
                 state.Current.ObjectState = StackFrameObjectState.ReadAheadRefEndObject;
@@ -127,7 +127,7 @@ namespace System.Text.Json
 
                 converter.CreateInstanceForReferenceResolver(ref reader, ref state, options);
 
-                string referenceId = reader.GetString()!;
+                referenceId = reader.GetString()!;
                 state.ReferenceResolver.AddReference(referenceId, state.Current.ReturnValue!);
 
                 // We are done reading metadata plus we instantiated the object.
@@ -167,8 +167,10 @@ namespace System.Text.Json
         internal static bool ResolveMetadataForJsonArray(
             ref Utf8JsonReader reader,
             ref ReadStack state,
-            JsonSerializerOptions options)
+            JsonSerializerOptions options,
+            out string? referenceId)
         {
+            referenceId = null;
             JsonConverter converter = state.Current.JsonClassInfo.PropertyInfoForClassInfo.ConverterBase;
 
             if (state.Current.ObjectState < StackFrameObjectState.ReadAheadNameOrEndObject)
@@ -251,14 +253,8 @@ namespace System.Text.Json
                     ThrowHelper.ThrowJsonException_MetadataValueWasNotString(reader.TokenType);
                 }
 
-                string referenceId = reader.GetString()!;
+                referenceId = reader.GetString()!;
                 object value = state.ReferenceResolver.ResolveReference(referenceId);
-                Type typeOfValue = value.GetType();
-
-                if (!converter.TypeToConvert.IsAssignableFrom(value.GetType()))
-                {
-                    ThrowHelper.ThrowInvalidOperationException_MetadataReferenceOfTypeCannotBeAssignedToType(referenceId, typeOfValue, converter.TypeToConvert);
-                }
 
                 state.Current.ReturnValue = value;
                 state.Current.ObjectState = StackFrameObjectState.ReadAheadRefEndObject;
@@ -272,7 +268,7 @@ namespace System.Text.Json
 
                 converter.CreateInstanceForReferenceResolver(ref reader, ref state, options);
 
-                string referenceId = reader.GetString()!;
+                referenceId = reader.GetString()!;
                 state.ReferenceResolver.AddReference(referenceId, state.Current.ReturnValue!);
 
                 // Need to Read $values property name.
@@ -440,6 +436,20 @@ namespace System.Text.Json
             }
 
             return refMetadataFound;
+        }
+
+        internal static T TryCastPreservedValue<T>(object value, string referenceId)
+        {
+            try
+            {
+                return (T)value;
+            }
+            catch (InvalidCastException)
+            {
+                ThrowHelper.ThrowInvalidOperationException_MetadataReferenceOfTypeCannotBeAssignedToType(
+                    referenceId, value.GetType(), typeof(T));
+                throw;
+            }
         }
     }
 }

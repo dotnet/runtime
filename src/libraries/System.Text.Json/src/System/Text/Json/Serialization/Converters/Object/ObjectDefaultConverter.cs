@@ -77,11 +77,12 @@ namespace System.Text.Json.Serialization.Converters
                 {
                     if (options.ReferenceHandler != null)
                     {
-                        if (JsonSerializer.ResolveMetadataForJsonObject(ref reader, ref state, options))
+                        if (JsonSerializer.ResolveMetadataForJsonObject(ref reader, ref state, options, out string? referenceId))
                         {
                             if (state.Current.ObjectState == StackFrameObjectState.ReadRefEndObject)
                             {
-                                value = (T)state.Current.ReturnValue!;
+                                value = JsonSerializer.TryCastPreservedValue<T>(
+                                    state.Current.ReturnValue!, referenceId!);
                                 return true;
                             }
                         }

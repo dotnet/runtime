@@ -141,11 +141,12 @@ namespace System.Text.Json.Serialization.Converters
                 bool preserveReferences = options.ReferenceHandler != null;
                 if (preserveReferences && state.Current.ObjectState < StackFrameObjectState.PropertyValue)
                 {
-                    if (JsonSerializer.ResolveMetadataForJsonObject(ref reader, ref state, options))
+                    if (JsonSerializer.ResolveMetadataForJsonObject(ref reader, ref state, options, out string? referenceId))
                     {
                         if (state.Current.ObjectState == StackFrameObjectState.ReadRefEndObject)
                         {
-                            value = (TCollection)state.Current.ReturnValue!;
+                            value = JsonSerializer.TryCastPreservedValue<TCollection>(
+                                state.Current.ReturnValue!, referenceId!);
                             return true;
                         }
                     }

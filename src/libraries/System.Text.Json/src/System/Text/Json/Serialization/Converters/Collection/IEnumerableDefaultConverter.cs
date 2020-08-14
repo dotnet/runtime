@@ -115,11 +115,12 @@ namespace System.Text.Json.Serialization.Converters
                 // Handle the metadata properties.
                 if (preserveReferences && state.Current.ObjectState < StackFrameObjectState.PropertyValue)
                 {
-                    if (JsonSerializer.ResolveMetadataForJsonArray(ref reader, ref state, options))
+                    if (JsonSerializer.ResolveMetadataForJsonArray(ref reader, ref state, options, out string? referenceId))
                     {
                         if (state.Current.ObjectState == StackFrameObjectState.ReadRefEndObject)
                         {
-                            value = (TCollection)state.Current.ReturnValue!;
+                            value = JsonSerializer.TryCastPreservedValue<TCollection>(
+                                state.Current.ReturnValue!, referenceId!);
                             return true;
                         }
                     }
