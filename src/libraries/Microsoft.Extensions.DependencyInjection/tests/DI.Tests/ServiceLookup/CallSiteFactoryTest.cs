@@ -122,8 +122,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             // Act
             var nonMatchingType = typeof(IFakeOpenGenericService<object>);
             // Assert
-            var ex = Assert.Throws<InvalidOperationException>(() => callSiteFactory(nonMatchingType));
-            Assert.Equal($"Generic constraints violated for type '{nonMatchingType}' while attempting to activate '{implementationType}'.", ex.Message);
+            Assert.Throws<ArgumentException>(() => callSiteFactory(nonMatchingType));
         }
 
         [Fact]
@@ -152,8 +151,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             // Act
             var nonMatchingType = typeof(IFakeOpenGenericService<int>);
             // Assert
-            var ex = Assert.Throws<InvalidOperationException>(() => callSiteFactory(nonMatchingType));
-            Assert.Equal($"Generic constraints violated for type '{nonMatchingType}' while attempting to activate '{implementationType}'.", ex.Message);
+            Assert.Throws<ArgumentException>(() => callSiteFactory(nonMatchingType));
         }
 
         [Fact]
@@ -182,8 +180,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             // Act
             var nonMatchingType = typeof(IFakeOpenGenericService<TypeWithNoPublicConstructors>);
             // Assert
-            var ex = Assert.Throws<InvalidOperationException>(() => callSiteFactory(nonMatchingType));
-            Assert.Equal($"Generic constraints violated for type '{nonMatchingType}' while attempting to activate '{implementationType}'.", ex.Message);
+            Assert.Throws<ArgumentException>(() => callSiteFactory(nonMatchingType));
         }
 
         [Fact]
@@ -212,8 +209,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             // Act
             var nonMatchingType = typeof(IFakeOpenGenericService<int>);
             // Assert
-            var ex = Assert.Throws<InvalidOperationException>(() => callSiteFactory(nonMatchingType));
-            Assert.Equal($"Generic constraints violated for type '{nonMatchingType}' while attempting to activate '{implementationType}'.", ex.Message);
+            Assert.Throws<ArgumentException>(() => callSiteFactory(nonMatchingType));
         }
 
         [Fact]
@@ -242,8 +238,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             // Act
             var nonMatchingType = typeof(IFakeOpenGenericService<object>);
             // Assert
-            var ex = Assert.Throws<InvalidOperationException>(() => callSiteFactory(nonMatchingType));
-            Assert.Equal($"Generic constraints violated for type '{nonMatchingType}' while attempting to activate '{implementationType}'.", ex.Message);
+            Assert.Throws<ArgumentException>(() => callSiteFactory(nonMatchingType));
         }
 
         [Fact]
@@ -272,8 +267,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             // Act
             var nonMatchingType = typeof(IFakeOpenGenericService<object>);
             // Assert
-            var ex = Assert.Throws<InvalidOperationException>(() => callSiteFactory(nonMatchingType));
-            Assert.Equal($"Generic constraints violated for type '{nonMatchingType}' while attempting to activate '{implementationType}'.", ex.Message);
+            Assert.Throws<ArgumentException>(() => callSiteFactory(nonMatchingType));
         }
 
         [Fact]
@@ -287,8 +281,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             // Act
             var nonMatchingType = typeof(IFakeOpenGenericService<int[]>);
             // Assert
-            var ex = Assert.Throws<InvalidOperationException>(() => callSiteFactory(nonMatchingType));
-            Assert.Equal($"Generic constraints violated for type '{nonMatchingType}' while attempting to activate '{implementationType}'.", ex.Message);
+            Assert.Throws<ArgumentException>(() => callSiteFactory(nonMatchingType));
         }
 
         [Fact]

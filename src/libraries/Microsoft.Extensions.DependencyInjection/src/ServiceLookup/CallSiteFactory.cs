@@ -243,11 +243,11 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                 {
                     closedType = descriptor.ImplementationType.MakeGenericType(serviceType.GenericTypeArguments);
                 }
-                catch (ArgumentException ex)
+                catch (ArgumentException)
                 {
                     if (throwOnConstraintViolation)
                     {
-                        throw new InvalidOperationException(SR.Format(SR.GenericConstraintViolation, serviceType, descriptor.ImplementationType), ex);
+                        throw;
                     }
 
                     return null;

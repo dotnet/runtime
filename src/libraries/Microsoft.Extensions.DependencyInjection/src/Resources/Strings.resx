@@ -159,7 +159,4 @@
   <data name="AsyncDisposableServiceDispose" xml:space="preserve">
     <value>'{0}' type only implements IAsyncDisposable. Use DisposeAsync to dispose the container.</value>
   </data>
-  <data name="GenericConstraintViolation" xml:space="preserve">
-    <value>Generic constraints violated for type '{0}' while attempting to activate '{1}'.</value>
-  </data>
 </root>
