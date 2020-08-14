@@ -29,7 +29,7 @@ parameters:
   gatherAssetManifests: false
 
 steps:
-  - script: /src/coreclr/build-test$(scriptExt) -skipnative  -skipstressdependencies -excludemonofailures os Browser wasm
+  - script: $(Build.SourcesDirectory)/src/coreclr/build-test$(scriptExt) -skipnative  -skipstressdependencies -excludemonofailures os Browser wasm
     displayName: Build Tests
 
   #  Send tests to Helix
