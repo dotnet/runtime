@@ -47,7 +47,7 @@ namespace System.Net
             NetworkError.ConnectionAborted => SR.networkerror_connectionaborted,
             NetworkError.ConnectionReset => SR.networkerror_connectionreset,
             NetworkError.OperationAborted => SR.networkerror_operationaborted,
-            _ => SR.networkerror_unknown
+            _ => SR.networkerror_other
         };
     }
 }

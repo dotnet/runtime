@@ -114,7 +114,7 @@
   <data name="bad_endpoint_string" xml:space="preserve">
     <value>An invalid IPEndPoint was specified.</value>
   </data>
-  <data name="networkerror_unknown" xml:space="preserve">
+  <data name="networkerror_other" xml:space="preserve">
     <value>A network error has occured, see InnerException for more details.</value>
   </data>
   <data name="networkerror_addressinuse" xml:space="preserve">
