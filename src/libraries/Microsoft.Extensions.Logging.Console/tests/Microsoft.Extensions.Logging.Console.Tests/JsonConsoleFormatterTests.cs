@@ -4,8 +4,12 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.IO;
+using System.Linq;
+using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Logging.Test.Console;
 using Xunit;
 
@@ -430,6 +434,62 @@ namespace Microsoft.Extensions.Logging.Console.Test
             {
                 return ((IEnumerable<KeyValuePair<string, object>>)this).GetEnumerator();
             }
+        }
+
+        private static void EnsureStackTrace(params Exception[] exceptions)
+        {
+            if (exceptions == null) return;
+
+            foreach (Exception exception in exceptions)
+            {
+                if (string.IsNullOrEmpty(exception.StackTrace))
+                {
+                    try
+                    {
+                        throw exception;
+                    }
+                    catch
+                    { }
+                }
+                Assert.False(string.IsNullOrEmpty(exception.StackTrace));
+            }
+        }
+
+        private string GetJson(Exception exception)
+        {
+            if (exception == null) throw new ArgumentNullException(nameof(exception));
+            JsonConsoleFormatterOptions jsonOptions = new JsonConsoleFormatterOptions();
+            var jsonMonitor = new TestFormatterOptionsMonitor<JsonConsoleFormatterOptions>(jsonOptions);
+            var jsonFormatter = new JsonConsoleFormatter(jsonMonitor);
+            Func<string, Exception, string> exceptionFormatter = (state, exception) => state.ToString();
+            LogEntry<string> entry = new LogEntry<string>(LogLevel.Error, string.Empty, new EventId(), string.Empty, exception, exceptionFormatter);
+            StringBuilder output = new StringBuilder();
+            using (TextWriter writer = new StringWriter(output))
+            {
+                jsonFormatter.Write<string>(entry, null, writer);
+            }
+            return output.ToString();
+        }
+
+        [Fact]
+        public void ShouldContainInnerException()
+        {
+            Exception rootException = new Exception("root", new Exception("inner"));
+            EnsureStackTrace(rootException, rootException.InnerException);
+            string json = GetJson(rootException);
+            Assert.Contains(rootException.Message, json);
+            Assert.Contains(rootException.InnerException.Message, json);
+        }
+
+        [Fact]
+        public void ShouldContainAggregateExceptions()
+        {
+            AggregateException rootException = new AggregateException("aggregate", new Exception("leaf1"), new Exception("leaf2"), new Exception("leaf3"));
+            EnsureStackTrace(rootException);
+            EnsureStackTrace(rootException.InnerExceptions.ToArray());
+            string json = GetJson(rootException);
+            Assert.Contains(rootException.Message, json);
+            rootException.InnerExceptions.ToList().ForEach((inner) => Assert.Contains(inner.Message, json));
         }
     }
 }

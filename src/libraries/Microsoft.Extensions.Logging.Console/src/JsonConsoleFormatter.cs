@@ -28,6 +28,75 @@ namespace Microsoft.Extensions.Logging.Console
             _optionsReloadToken = options.OnChange(ReloadLoggerOptions);
         }
 
+        private static List<Exception> GetInnerExceptions(Exception exception)
+        {
+            List<Exception> result = new List<Exception>();
+            if (exception.InnerException != null)
+            {
+                result.Add(exception.InnerException);
+            }
+            AggregateException aggregated = exception as AggregateException;
+            if (aggregated != null)
+            {
+                foreach (var inner in aggregated.InnerExceptions)
+                {
+                    if (inner != exception.InnerException)
+                    {
+                        result.Add(inner);
+                    }
+                }
+            }
+            return result;
+        }
+
+        private static void WriteException(Utf8JsonWriter writer, Exception exception, int maxDepth, bool includePropertyName)
+        {
+            if (includePropertyName)
+            {
+                writer.WriteStartObject(nameof(Exception));
+            }
+            else
+            {
+                writer.WriteStartObject();
+            }
+            writer.WriteString(nameof(exception.Message), exception.Message);
+            writer.WriteString("Type", exception.GetType().ToString());
+
+            writer.WriteStartArray(nameof(exception.StackTrace));
+            {
+                string stackTrace = exception?.StackTrace;
+                if (stackTrace != null)
+                {
+#if NETCOREAPP
+                    foreach (var stackTraceLines in stackTrace?.Split(Environment.NewLine))
+#else
+                            foreach (var stackTraceLines in stackTrace?.Split(new string[] { Environment.NewLine }, StringSplitOptions.None))
+#endif
+                    {
+                        writer.WriteStringValue(stackTraceLines);
+                    }
+                }
+            }
+            writer.WriteEndArray();
+            writer.WriteNumber(nameof(exception.HResult), exception.HResult);
+            if (maxDepth > 0)
+            {
+                var innerExceptionList = GetInnerExceptions(exception);
+                if (innerExceptionList.Count > 0)
+                {
+                    writer.WriteStartArray(nameof(AggregateException.InnerExceptions));
+                    {
+                        foreach (var innerException in innerExceptionList)
+                        {
+                            WriteException(writer, innerException, maxDepth - 2, false);
+                        }
+                    }
+                    writer.WriteEndArray();
+                }
+            }
+            writer.WriteEndObject();
+        }
+
         public override void Write<TState>(in LogEntry<TState> logEntry, IExternalScopeProvider scopeProvider, TextWriter textWriter)
         {
             string message = logEntry.Formatter(logEntry.State, logEntry.Exception);
@@ -40,6 +109,7 @@ namespace Microsoft.Extensions.Logging.Console
             int eventId = logEntry.EventId.Id;
             Exception exception = logEntry.Exception;
             const int DefaultBufferSize = 1024;
+            const int MaxWriterDepth = 1_000;
             using (var output = new PooledByteBufferWriter(DefaultBufferSize))
             {
                 using (var writer = new Utf8JsonWriter(output, FormatterOptions.JsonWriterOptions))
@@ -58,25 +128,7 @@ namespace Microsoft.Extensions.Logging.Console
 
                     if (exception != null)
                     {
-                        writer.WriteStartObject(nameof(Exception));
-                        writer.WriteString(nameof(exception.Message), exception.Message.ToString());
-                        writer.WriteString("Type", exception.GetType().ToString());
-                        writer.WriteStartArray(nameof(exception.StackTrace));
-                        string stackTrace = exception?.StackTrace;
-                        if (stackTrace != null)
-                        {
-#if NETCOREAPP
-                            foreach (var stackTraceLines in stackTrace?.Split(Environment.NewLine))
-#else
-                            foreach (var stackTraceLines in stackTrace?.Split(new string[] { Environment.NewLine }, StringSplitOptions.None))
-#endif
-                            {
-                                writer.WriteStringValue(stackTraceLines);
-                            }
-                        }
-                        writer.WriteEndArray();
-                        writer.WriteNumber(nameof(exception.HResult), exception.HResult);
-                        writer.WriteEndObject();
+                        WriteException(writer, exception, MaxWriterDepth - writer.CurrentDepth, true);
                     }
 
                     if (logEntry.State != null)
