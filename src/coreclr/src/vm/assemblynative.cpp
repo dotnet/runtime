@@ -238,9 +238,10 @@ void QCALLTYPE AssemblyNative::LoadFromPath(INT_PTR ptrNativeAssemblyLoadContext
 
     if (pwzILPath != NULL)
     {
+
         pILImage = PEImage::OpenImage(pwzILPath,
-                                      MDInternalImport_Default,
-                                      Bundle::ProbeAppBundle(pwzILPath));
+                                      MDInternalImport_NoCache,
+                                      BundleFileLocation::Invalid());
 
         // Need to verify that this is a valid CLR assembly.
         if (!pILImage->CheckILFormat())
@@ -260,7 +261,7 @@ void QCALLTYPE AssemblyNative::LoadFromPath(INT_PTR ptrNativeAssemblyLoadContext
     {
         pNIImage = PEImage::OpenImage(pwzNIPath,
                                       MDInternalImport_TrustedNativeImage,
-                                      Bundle::ProbeAppBundle(pwzNIPath));
+                                      BundleFileLocation::Invalid());
 
         if (pNIImage->HasReadyToRunHeader())
         {
