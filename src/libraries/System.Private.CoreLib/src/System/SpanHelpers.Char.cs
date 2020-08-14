@@ -724,11 +724,9 @@ namespace System
                 offset += (nuint)(uint)LocateFirstFoundChar(search);
                 goto Found;
             }
-            else
-            {
-                Debug.Fail("Unreachable");
-                goto Found;
-            }
+
+            Debug.Fail("Unreachable");
+            goto NotFound;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveOptimization)]
@@ -978,11 +976,9 @@ namespace System
                 offset += (nuint)(uint)LocateFirstFoundChar(search);
                 goto Found;
             }
-            else
-            {
-                Debug.Fail("Unreachable");
-                goto Found;
-            }
+
+            Debug.Fail("Unreachable");
+            goto NotFound;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveOptimization)]
@@ -1230,11 +1226,9 @@ namespace System
                 offset += (nuint)(uint)LocateFirstFoundChar(search);
                 goto Found;
             }
-            else
-            {
-                Debug.Fail("Unreachable");
-                goto Found;
-            }
+
+            Debug.Fail("Unreachable");
+            goto NotFound;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveOptimization)]
@@ -1494,11 +1488,9 @@ namespace System
                 offset += (nuint)(uint)LocateFirstFoundChar(search);
                 goto Found;
             }
-            else
-            {
-                Debug.Fail("Unreachable");
-                goto Found;
-            }
+
+            Debug.Fail("Unreachable");
+            goto NotFound;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveOptimization)]
