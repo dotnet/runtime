@@ -503,7 +503,7 @@ namespace System.Reflection.Tests
             static int TypeSortComparer(Type a, Type b)
             {
                 // produces a stable (within this process) ordering of two Type objects
-                return a.GetHashCode().CompareTo(b.GetHashCode());
+                return a.TypeHandle.Value.CompareTo(b.TypeHandle.Value);
             }
         }
 
