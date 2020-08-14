@@ -3,12 +3,10 @@
 
 using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
 using System.IO;
+using System.Linq;
 using System.Runtime.InteropServices;
 using Xunit;
-using Xunit.Sdk;
-using System.Text;
 
 namespace System.Reflection.Tests
 {
@@ -495,33 +493,17 @@ namespace System.Reflection.Tests
             TypeInfo typeInfo = type.GetTypeInfo();
             Type[] implementedInterfaces = type.GetTypeInfo().ImplementedInterfaces.ToArray();
 
-            try
+            Array.Sort(implementedInterfaces, TypeSortComparer);
+            Array.Sort(expected, TypeSortComparer);
+
+            Assert.Equal(expected, implementedInterfaces);
+            Assert.All(expected, ti => Assert.True(ti.GetTypeInfo().IsAssignableFrom(type.GetTypeInfo())));
+            Assert.All(expected, ti => Assert.True(type.GetTypeInfo().IsAssignableTo(ti.GetTypeInfo())));
+
+            static int TypeSortComparer(Type a, Type b)
             {
-                Array.Sort(implementedInterfaces, delegate (Type a, Type b) { return a.GetHashCode() - b.GetHashCode(); });
-                Array.Sort(expected, delegate (Type a, Type b) { return a.GetHashCode() - b.GetHashCode(); });
-
-                Assert.Equal(expected, implementedInterfaces);
-                Assert.All(expected, ti => Assert.True(ti.GetTypeInfo().IsAssignableFrom(type.GetTypeInfo())));
-                Assert.All(expected, ti => Assert.True(type.GetTypeInfo().IsAssignableTo(ti.GetTypeInfo())));
-            }
-            catch (Exception ex)
-            {
-                StringBuilder sb = new StringBuilder();
-                foreach (var t in implementedInterfaces)
-                {
-                    sb.AppendLine($"Implemented: {t.GetType().FullName}, hashcode = {t.GetHashCode()}");
-                }
-                foreach (var t in expected)
-                {
-                    sb.AppendLine($"Expected: {t.GetType().FullName}, hashcode = {t.GetHashCode()}");
-                }
-
-                HashSet<Type> set = new HashSet<Type>();
-                set.UnionWith(implementedInterfaces);
-                set.UnionWith(expected);
-                sb.Append($"-- set contains {set.Count} members --");
-
-                throw new Exception(sb.ToString(), ex);
+                // produces a stable (within this process) ordering of two Type objects
+                return a.GetHashCode().CompareTo(b.GetHashCode());
             }
         }
 
