@@ -98,7 +98,7 @@ int CacheLineSize;
 #if HAVE_GETAUXVAL
 #include <sys/auxv.h>
 #endif
-#if defined(HAVE_SYS_SYSCTL_H) || defined(__FreeBSD__)
+#if HAVE_SYS_SYSCTL_H || defined(__FreeBSD__)
 #include <sys/sysctl.h>
 #endif
 
@@ -136,7 +136,7 @@ static DWORD g_initializeDLLFlags = PAL_INITIALIZE_DLL;
 static int Initialize(int argc, const char *const argv[], DWORD flags);
 static BOOL INIT_IncreaseDescriptorLimit(void);
 static LPWSTR INIT_FormatCommandLine (int argc, const char * const *argv);
-static LPWSTR INIT_ConvertEXEPath(LPCSTR exe_name);
+static LPWSTR INIT_GetCurrentEXEPath();
 static BOOL INIT_SharedFilesPath(void);
 
 #ifdef _DEBUG
@@ -571,7 +571,7 @@ Initialize(
         }
 
         /* find out the application's full path */
-        exe_path = INIT_ConvertEXEPath(argv[0]);
+        exe_path = INIT_GetCurrentEXEPath();
         if (NULL == exe_path)
         {
             ERROR("Unable to find exe path\n");
@@ -1411,49 +1411,27 @@ bool GetEntrypointExecutableAbsolutePath(PathCharString& entrypointExecutable)
 
 /*++
 Function:
-  INIT_ConvertEXEPath
+  INIT_GetCurrentEXEPath
 
 Abstract:
-    Check whether the executable path is valid, and convert its type (LPCSTR -> LPWSTR)
-
-Parameters:
-    LPCSTR exe_name : full path of the current executable
+    Get the current exe path
 
 Return:
     pointer to buffer containing the full path. This buffer must be released
     by the caller using free()
 
-Notes :
-    this function assumes that "exe_name" is in Unix style (no \)
 --*/
-static LPWSTR INIT_ConvertEXEPath(LPCSTR exe_path)
+static LPWSTR INIT_GetCurrentEXEPath()
 {
     PathCharString real_path;
     LPWSTR return_value;
     INT return_size;
     struct stat theStats;
 
-    if (strchr(exe_path, '/'))
+    if (!GetEntrypointExecutableAbsolutePath(real_path))
     {
-        if (-1 == stat(exe_path, &theStats))
-        {
-            ERROR( "The file does not exist\n" );
-            return NULL;
-        }
-
-        if (!CorUnix::RealPathHelper(exe_path, real_path))
-        {
-            ERROR("realpath() failed!\n");
-            return NULL;
-        }
-    }
-    else
-    {
-        if (!GetEntrypointExecutableAbsolutePath(real_path))
-        {
-            ERROR( "Cannot get current exe path\n" );
-            return NULL;
-        }
+        ERROR( "Cannot get current exe path\n" );
+        return NULL;
     }
 
     return_size = MultiByteToWideChar(CP_ACP, 0, real_path, -1, NULL, 0);
