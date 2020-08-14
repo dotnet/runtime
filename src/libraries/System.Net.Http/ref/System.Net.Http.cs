@@ -524,7 +524,7 @@ namespace System.Net.Http.Headers
     }
     public readonly partial struct HttpHeadersNonValidated : System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, System.Net.Http.Headers.HeaderStringValues>>, System.Collections.IEnumerable
     {
-        public System.Collections.Generic.IEnumerator<System.Collections.Generic.KeyValuePair<string, System.Net.Http.Headers.HeaderStringValues>> GetEnumerator() { throw null; }
+        public System.Net.Http.Headers.HttpHeadersNonValidated.Enumerator GetEnumerator() { throw null; }
         System.Collections.Generic.IEnumerator<System.Collections.Generic.KeyValuePair<string, System.Net.Http.Headers.HeaderStringValues>> System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, System.Net.Http.Headers.HeaderStringValues>>.GetEnumerator() { throw null; }
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { throw null; }
         public partial struct Enumerator : System.Collections.Generic.IEnumerator<System.Collections.Generic.KeyValuePair<string, System.Net.Http.Headers.HeaderStringValues>>, System.Collections.IEnumerator, System.IDisposable

@@ -1369,16 +1369,14 @@ namespace System.Net.Http.Headers
 
     public readonly struct HttpHeadersNonValidated : IEnumerable<KeyValuePair<string, HeaderStringValues>>
     {
-        private readonly IEnumerable<KeyValuePair<HeaderDescriptor, object>>? _headerStore;
+        private readonly Dictionary<HeaderDescriptor, object>? _headerStore;
 
-        internal HttpHeadersNonValidated(IEnumerable<KeyValuePair<HeaderDescriptor, object>>? headerStore)
+        internal HttpHeadersNonValidated(Dictionary<HeaderDescriptor, object>? headerStore)
         {
             _headerStore = headerStore;
         }
 
-        public IEnumerator<KeyValuePair<string, HeaderStringValues>> GetEnumerator() => _headerStore != null
-            ? new Enumerator(_headerStore)
-            : ((IEnumerable<KeyValuePair<string, HeaderStringValues>>)Array.Empty<KeyValuePair<string, HeaderStringValues>>()).GetEnumerator();
+        public Enumerator GetEnumerator() => new Enumerator(_headerStore);
 
         IEnumerator<KeyValuePair<string, HeaderStringValues>> IEnumerable<KeyValuePair<string, HeaderStringValues>>.GetEnumerator() => GetEnumerator();
 
@@ -1386,22 +1384,33 @@ namespace System.Net.Http.Headers
 
         public struct Enumerator : IEnumerator<KeyValuePair<string, HeaderStringValues>>
         {
-            private readonly IEnumerator<KeyValuePair<HeaderDescriptor, object>> _headerStore;
+            private Dictionary<HeaderDescriptor, object>.Enumerator _headerStoreEnumerator;
+            private bool _completed;
 
-            internal Enumerator(IEnumerable<KeyValuePair<HeaderDescriptor, object>> headerStore)
+            internal Enumerator(Dictionary<HeaderDescriptor, object>? headerStore)
             {
-                _headerStore = headerStore.GetEnumerator();
+                if (headerStore != null)
+                {
+                    _headerStoreEnumerator = headerStore.GetEnumerator();
+                    _completed = false;
+                }
+                else
+                {
+                    _headerStoreEnumerator = default;
+                    _completed = true;
+                }
                 Current = default;
             }
 
             public bool MoveNext()
             {
-                if (!_headerStore.MoveNext())
+                if (_completed || !_headerStoreEnumerator.MoveNext())
                 {
+                    _completed = true;
                     return false;
                 }
 
-                KeyValuePair<HeaderDescriptor, object> nextPair = _headerStore.Current;
+                KeyValuePair<HeaderDescriptor, object> nextPair = _headerStoreEnumerator.Current;
 
                 Current = new KeyValuePair<string, HeaderStringValues>(nextPair.Key.Name, ToStringValues(nextPair.Key, nextPair.Value));
                 return true;
@@ -1427,15 +1436,14 @@ namespace System.Net.Http.Headers
 
             public void Dispose()
             {
-                _headerStore.Dispose();
+                _headerStoreEnumerator.Dispose();
             }
 
             object? IEnumerator.Current => Current;
 
             void IEnumerator.Reset()
             {
-                _headerStore.Reset();
-                Current = default;
+                throw new NotImplementedException();
             }
         }
     }
@@ -1522,9 +1530,7 @@ namespace System.Net.Http.Headers
 
             void IEnumerator.Reset()
             {
-                _values?.Reset();
-                Current = default!;
-                _completed = false;
+                throw new NotImplementedException();
             }
         }
     }
