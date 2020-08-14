@@ -613,7 +613,7 @@ namespace System.Net.Http
                 if (initialFrame && !maxConcurrentStreamsReceived)
                 {
                     // Set to 'infinite' because MaxConcurrentStreams was not set on the initial SETTINGS frame.
-                    _maxConcurrentStreams = int.MaxValue;
+                    ChangeMaxConcurrentStreams(int.MaxValue);
                 }
 
                 _incomingBuffer.Discard(frameHeader.PayloadLength);

@@ -297,7 +297,7 @@ namespace System.Net.Http.Functional.Tests
             using (Http2LoopbackServer server = Http2LoopbackServer.CreateServer())
             using (HttpClient client = CreateHttpClient())
             {
-                (_, Http2LoopbackConnection connection) = await EstablishConnectionAndProcessOneRequestAsync(client, server, 1);
+                (_, Http2LoopbackConnection connection) = await EstablishConnectionAndProcessOneRequestAsync(client, server);
 
                 Task<HttpResponseMessage> sendTask = client.GetAsync(server.Address);
                 (int streamId1, HttpRequestData requestData1) = await connection.ReadAndParseRequestHeaderAsync(readBody: true);
@@ -334,7 +334,7 @@ namespace System.Net.Http.Functional.Tests
             {
                 const string Content = "Hello world";
 
-                (_, Http2LoopbackConnection connection) = await EstablishConnectionAndProcessOneRequestAsync(client, server, 1);
+                (_, Http2LoopbackConnection connection) = await EstablishConnectionAndProcessOneRequestAsync(client, server);
 
                 Task<HttpResponseMessage> sendTask = client.PostAsync(server.Address, new StringContent(Content));
                 (int streamId1, HttpRequestData requestData1) = await connection.ReadAndParseRequestHeaderAsync(readBody: true);
@@ -362,6 +362,55 @@ namespace System.Net.Http.Functional.Tests
                 await connection.SendDefaultResponseAsync(streamId2);
                 HttpResponseMessage response = await sendTask;
                 Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+            }
+        }
+
+        [ConditionalFact(nameof(SupportsAlpn))]
+        public async Task GetAsync_SettingsFrameNotSentOnNewConnection_ClientApplies100StreamLimit()
+        {
+            const int defaultMaxConcurrentStreams = 100;
+            TimeSpan timeout = TimeSpan.FromSeconds(5);
+            using (Http2LoopbackServer server = Http2LoopbackServer.CreateServer())
+            using (HttpClient client = CreateHttpClient())
+            {
+                Task<Http2LoopbackConnection> connectionTask = AcceptConnectionAndReadSettings(server, timeout);
+
+                List<Task<HttpResponseMessage>> sendTasks = new List<Task<HttpResponseMessage>>();
+                for (int i = 0; i < defaultMaxConcurrentStreams; i++)
+                {
+                    sendTasks.Add(client.GetAsync(server.Address));
+                }
+
+                Http2LoopbackConnection connection = await connectionTask.TimeoutAfter(TestHelper.PassingTestTimeoutMilliseconds).ConfigureAwait(false);
+
+                // Client sets the default MaxConcurrentStreams to 100, so accept 100 requests.
+                List<int> acceptedRequests = await AcceptRequests(connection, defaultMaxConcurrentStreams).TimeoutAfter(TestHelper.PassingTestTimeoutMilliseconds).ConfigureAwait(false);
+
+                Assert.Equal(defaultMaxConcurrentStreams, acceptedRequests.Count);
+
+                Task<HttpResponseMessage> extraSendTask = client.GetAsync(server.Address);
+                await Assert.ThrowsAnyAsync<OperationCanceledException>(() => connection.ReadRequestHeaderAsync()).TimeoutAfter(TestHelper.PassingTestTimeoutMilliseconds).ConfigureAwait(false);
+
+                // Send SETTINGS frame to increase the default stream limit by 1, unblocking the extra request.
+                await connection.SendSettingsAsync(timeout, new[] { new SettingsEntry() { SettingId = SettingId.MaxConcurrentStreams, Value = defaultMaxConcurrentStreams + 1 } }).ConfigureAwait(false);
+
+                (int extraStreamId, _) = await connection.ReadAndParseRequestHeaderAsync().TimeoutAfter(TestHelper.PassingTestTimeoutMilliseconds).ConfigureAwait(false);
+
+                // Respond to all the requests.
+                acceptedRequests.Add(extraStreamId);
+                foreach (int streamId in acceptedRequests)
+                {
+                    await connection.SendDefaultResponseAsync(streamId).TimeoutAfter(TestHelper.PassingTestTimeoutMilliseconds).ConfigureAwait(false);
+                }
+
+                sendTasks.Add(extraSendTask);
+                await Task.WhenAll(sendTasks).TimeoutAfter(TestHelper.PassingTestTimeoutMilliseconds).ConfigureAwait(false);
+
+                foreach (Task<HttpResponseMessage> sendTask in sendTasks)
+                {
+                    using HttpResponseMessage response = sendTask.Result;
+                    Assert.True(response.IsSuccessStatusCode);
+                }
             }
         }
 
@@ -440,6 +489,31 @@ namespace System.Net.Http.Functional.Tests
                 // The client should close the connection as this is a fatal connection level error.
                 Assert.Null(await connection.ReadFrameAsync(TimeSpan.FromSeconds(30)));
             }
+        }
+
+        private async Task<Http2LoopbackConnection> AcceptConnectionAndReadSettings(Http2LoopbackServer server, TimeSpan timeout)
+        {
+            Http2LoopbackConnection connection = await server.AcceptConnectionAsync(timeout).ConfigureAwait(false);
+            await connection.ReadSettingsAsync().ConfigureAwait(false);
+            return connection;
+        }
+
+        private async Task<List<int>> AcceptRequests(Http2LoopbackConnection connection, int maxRequests = int.MaxValue)
+        {
+            List<int> streamIds = new List<int>();
+            for (int i = 0; i < maxRequests; i++)
+            {
+                try
+                {
+                    streamIds.Add((await connection.ReadAndParseRequestHeaderAsync().ConfigureAwait(false)).streamId);
+                }
+                catch (OperationCanceledException)
+                {
+                    return streamIds;
+                }
+            }
+
+            return streamIds;
         }
 
         private static Frame MakeSimpleHeadersFrame(int streamId, bool endHeaders = false, bool endStream = false) =>
@@ -986,7 +1060,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        private static async Task<(int, Http2LoopbackConnection)> EstablishConnectionAndProcessOneRequestAsync(HttpClient client, Http2LoopbackServer server, uint? maxConcurrentStreams = null)
+        private static async Task<(int, Http2LoopbackConnection)> EstablishConnectionAndProcessOneRequestAsync(HttpClient client, Http2LoopbackServer server)
         {
             int streamId = -1;
 
@@ -1005,10 +1079,7 @@ namespace System.Net.Http.Functional.Tests
                 }),
                 Task.Run(async () =>
                 {
-                    SettingsEntry[] initialSettings = maxConcurrentStreams == null
-                        ? new SettingsEntry[0]
-                        : new[] {new SettingsEntry { SettingId = SettingId.MaxConcurrentStreams, Value = maxConcurrentStreams.Value} };
-                    connection = await server.EstablishConnectionAsync(initialSettings);
+                    connection = await server.EstablishConnectionAsync();
                     streamId = await connection.ReadRequestHeaderAsync();
                     await connection.SendDefaultResponseAsync(streamId);
                 })
