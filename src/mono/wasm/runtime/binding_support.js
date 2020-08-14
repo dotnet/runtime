@@ -666,7 +666,7 @@ var BindingSupportLib = {
 
 			var args_start = null;
 			var buffer = null;
-			var exception_out = null;
+			var [resultRoot, exceptionRoot] = MONO.mono_wasm_new_roots (2);
 
 			// check if the method signature needs argument mashalling
 			if (has_args_marshal && has_args) {
@@ -705,11 +705,13 @@ var BindingSupportLib = {
 					converters.set (args_marshal, converter);
 				}
 
+				// FIXME: Allocate a root buffer to contain all the managed objects like strings so that they aren't
+				//  collected until the method call completes.
+
 				// assume at least 8 byte alignment from malloc
-				buffer = Module._malloc (converter.size + (args.length * 4) + 4);
+				buffer = Module._malloc (converter.size + (args.length * 4));
 				var indirect_start = buffer; // buffer + buffer % 8
-				exception_out = indirect_start + converter.size;
-				args_start = exception_out + 4;
+				args_start = indirect_start + converter.size;
 
 				var slot = args_start;
 				var indirect_value = indirect_start;
@@ -726,32 +728,25 @@ var BindingSupportLib = {
 					Module.setValue (slot, obj, "*");
 					slot += 4;
 				}
-			} else {
-				// only marshal the exception
-				exception_out = buffer = Module._malloc (4);
 			}
 
-			Module.setValue (exception_out, 0, "*");
-
-			var res = MONO.mono_wasm_new_root (this.invoke_method (method, this_arg, args_start, exception_out));
 			try {
-				var eh_res = Module.getValue (exception_out, "*");
-
+				resultRoot.value = this.invoke_method (method, this_arg, args_start, exceptionRoot.get_address ());
 				Module._free (buffer);
 
-				if (eh_res != 0) {
-					var msg = this.conv_string (res.value);
+				if (exceptionRoot.value != 0) {
+					var msg = this.conv_string (resultRoot.value);
 					throw new Error (msg); //the convention is that invoke_method ToString () any outgoing exception
 				}
 
 				if (has_args_marshal && has_args) {
 					if (args_marshal.length >= args.length && args_marshal [args.length] === "m")
-						return res.value;
+						return resultRoot.value;
 				}
 
-				return this._unbox_mono_obj_rooted (res);
+				return this._unbox_mono_obj_rooted (resultRoot);
 			} finally {
-				res.release ();
+				MONO.mono_wasm_release_roots (resultRoot, exceptionRoot);
 			}
 		},
 

@@ -13,9 +13,10 @@
 /**
  * @typedef WasmRoot - a single address in the managed heap, visible to the GC
  * @type {object}
- * @property {WasmPointer} value - address in the managed heap
- * @property {function} get - retrieves address
- * @property {function} set - updates the address
+ * @property {ManagedPointer} value - pointer into the managed heap, stored in the root
+ * @property {function} get_address - retrieves address of the root in wasm memory
+ * @property {function} get - retrieves pointer value
+ * @property {function} set - updates the pointer
  * @property {function} release - releases the root storage for future use
  */
 
@@ -23,14 +24,20 @@
  * @typedef WasmRootBuffer - a collection of addresses in the managed heap, visible to the GC
  * @type {object}
  * @property {number} length - number of elements the root buffer can hold
+ * @property {function} get_address - retrieves address of an element in wasm memory, by index
  * @property {function} get - retrieves an element by index
  * @property {function} set - sets an element's value by index
  * @property {function} release - releases the root storage for future use
  */
 
 /**
- * @typedef WasmPointer
+ * @typedef ManagedPointer
  * @type {number} - address in the managed heap
+ */
+
+/**
+ * @typedef NativePointer
+ * @type {number} - address in wasm memory
  */
 
 var MonoSupportLib = {
@@ -73,13 +80,16 @@ var MonoSupportLib = {
 		},
 
 		_mono_wasm_root_buffer_prototype: {
-			/** @returns {WasmPointer} */
+			/** @returns {NativePointer} */
+			get_address: function (index) {
+				return this.__offset32 + index;
+			},
+			/** @returns {ManagedPointer} */
 			get: function (index) {
-				return Module.HEAP32[this.__offset32 + index];
+				return Module.HEAP32[this.get_address(index)];
 			},
 			set: function (index, value) {
-				var absoluteOffset = this.__offset32 + index;
-				Module.HEAP32[absoluteOffset] = value;
+				Module.HEAP32[this.get_address(index)] = value;
 				return value;
 			},
 			release: function () {
@@ -97,7 +107,11 @@ var MonoSupportLib = {
 		_scratch_root_free_indices: null,
 
 		_mono_wasm_root_prototype: {
-			/** @returns {WasmPointer} */
+			/** @returns {NativePointer} */
+			get_address: function () {
+				return this.__buffer.get_address (this.__index);
+			},
+			/** @returns {ManagedPointer} */
 			get: function () {
 				var result = this.__buffer.get (this.__index);
 				return result;
@@ -106,7 +120,7 @@ var MonoSupportLib = {
 				this.__buffer.set (this.__index, value);
 				return value;
 			},
-			/** @returns {WasmPointer} */
+			/** @returns {ManagedPointer} */
 			valueOf: function () {
 				return this.get ();
 			},
@@ -194,7 +208,7 @@ var MonoSupportLib = {
 		 * If you already have a managed pointer you can pass it as an argument to initialize the temporary storage.
 		 * The result object has get() and set(value) methods, along with a .value property.
 		 * When you are done using the root you must call its .release() method.
-		 * @param {WasmPointer} [value] - an address in the managed heap to initialize the root with (or 0)
+		 * @param {ManagedPointer} [value] - an address in the managed heap to initialize the root with (or 0)
 		 * @returns {WasmRoot}
 		 */
 		mono_wasm_new_root: function (value) {
@@ -222,7 +236,7 @@ var MonoSupportLib = {
 		 * mono_wasm_new_roots(n): returns an array of N zero-initialized roots.
 		 * mono_wasm_new_roots([a, b, ...]) returns an array of new roots initialized with each element.
 		 * Each root must be released with its release method, or using the mono_wasm_release_roots API.
-		 * @param {(number | WasmPointer[])} count_or_values - either a number of roots or an array of pointers
+		 * @param {(number | ManagedPointer[])} count_or_values - either a number of roots or an array of pointers
 		 * @returns {WasmRoot[]}
 		 */
 		mono_wasm_new_roots: function (count_or_values) {
