@@ -178,11 +178,18 @@ precompile_coreroot_fx()
 
     echo "${__MsgPrefix}Running ${compilerName} on framework assemblies in CORE_ROOT: '${CORE_ROOT}'"
 
+    # In 32-bit builds, use corerun as the Crossgen2 launcher because the 64-bit dotnet host
+    # cannot load the 32-bit JIT dll.
+    local crossgenLauncher=$(__DotNetCli}
+    if [[ ( "$__BuildArch" == "x86" ) || ( "$__BuildArch" == "arm" ) ]]; then
+        crossgenLauncher=$overlayDir/corerun
+    fi
+
     local totalPrecompiled=0
     local failedToPrecompile=0
     local compositeOutputFile=$outputDir/framework-r2r.dll
     local compositeResponseFile=$compositeOutputFile.rsp
-    local compositeCommandLine="${__DotNetCli} $__Crossgen2Dll @$compositeResponseFile"
+    local compositeCommandLine="$crossgenLauncher $__Crossgen2Dll @$compositeResponseFile"
 
     if [[ "$__CompositeBuildMode" != 0 ]]; then
         rm $compositeResponseFile 2>/dev/null
@@ -219,7 +226,7 @@ precompile_coreroot_fx()
         fi
 
         if [[ "$__DoCrossgen2" != 0 ]]; then
-            commandLine="${__DotNetCli} $__Crossgen2Dll @$responseFile"
+            commandLine="$crossgenLauncher $__Crossgen2Dll @$responseFile"
             echo -O>>$responseFile
             echo --inputbubble>>$responseFile
             echo --out:$outputDir/$(basename $filename)>>$responseFile

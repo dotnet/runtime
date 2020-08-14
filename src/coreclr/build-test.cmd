@@ -640,8 +640,15 @@ set __CrossgenDir=%__BinDir%
 if /i "%__BuildArch%" == "arm" (set __CrossgenDir=!__CrossgenDir!\x86)
 if /i "%__BuildArch%" == "arm64" (set __CrossgenDir=!__CrossgenDir!\x64)
 
+set __LauncherExe=%__RepoRootDir%\dotnet.cmd
+
+rem Use corerun as Crossgen2 launcher on 32-bit platforms because we normally
+rem install 64-bit dotnet host and that wouldn't load the 32-bit JIT dll
+if /i "%__BuildArch%" == "arm" (set __LauncherExe=%CORE_ROOT%\corerun.exe)
+if /i "%__BuildArch%" == "x86" (set __LauncherExe=%CORE_ROOT%\corerun.exe)
+
 set __CrossgenExe="%__CrossgenDir%\crossgen.exe"
-set __Crossgen2Dll="%__RepoRootDir%\dotnet.cmd" "%__CrossgenDir%\crossgen2\crossgen2.dll"
+set __Crossgen2Dll="%__LauncherExe%" "%__CrossgenDir%\crossgen2\crossgen2.dll"
 
 if defined __CompositeBuildMode (
     mkdir !__CompositeOutputDir!

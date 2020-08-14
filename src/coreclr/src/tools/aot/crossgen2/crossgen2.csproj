@@ -6,14 +6,26 @@
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <NoWarn>8002,NU1701</NoWarn>
     <Platforms>x64;x86</Platforms>
-    <PlatformTarget>AnyCPU</PlatformTarget>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
     <AppendTargetFrameworkToOutputPath Condition="'$(BuildingInsideVisualStudio)' == 'true'">true</AppendTargetFrameworkToOutputPath>
     <OutputPath>$(BinDir)/crossgen2</OutputPath>
     <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
     <EnableDefaultEmbeddedResourceItems>false</EnableDefaultEmbeddedResourceItems>
-    <RuntimeIdentifiers>linux-x64;linux-musl-x64;win-x64</RuntimeIdentifiers>
+    <RuntimeIdentifiers>linux-x64;linux-musl-x64;win-x64;win-x86</RuntimeIdentifiers>
     <Configurations>Debug;Release;Checked</Configurations>
+  </PropertyGroup>
+
+  <!-- Platform specific properties -->
+  <PropertyGroup Condition="'$(Platform)' == 'x64'">
+    <PlatformTarget>x64</PlatformTarget>
+    <TargetArchitecture>x64</TargetArchitecture>
+    <Prefer32Bit>false</Prefer32Bit>
+    <DefineConstants>TARGET_64BIT;TARGET_AMD64;$(DefineConstants)</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Platform)' == 'x86'">
+    <PlatformTarget>x86</PlatformTarget>
+    <TargetArchitecture>x86</TargetArchitecture>
+    <DefineConstants>TARGET_32BIT;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
 
   <ItemGroup Label="Embedded Resources">
@@ -43,6 +55,7 @@
   <PropertyGroup>
     <CrossHostArch></CrossHostArch>
     <CrossHostArch Condition="'$(TargetArchitecture)' == 'arm64' and '$(BuildArchitecture)' == 'x64'">x64</CrossHostArch>
+    <CrossHostArch Condition="'$(TargetArchitecture)' == 'arm' and '$(BuildArchitecture)' == 'x86'">x86</CrossHostArch>
 
     <TargetOSComponent>unix</TargetOSComponent>
     <TargetOSComponent Condition="'$(TargetOS)' == 'Windows_NT'">win</TargetOSComponent>
@@ -55,16 +68,18 @@
     <LibraryNameExtension Condition="$([MSBuild]::IsOsPlatform('OSX'))">.dylib</LibraryNameExtension>
 
     <JitInterfaceLibraryName>$(LibraryNamePrefix)jitinterface$(LibraryNameExtension)</JitInterfaceLibraryName>
+ 
+    <TargetArchBinDir>$(BinDir)/../$(TargetOS).$(TargetArchitecture).$(Configuration)</TargetArchBinDir>
   </PropertyGroup>
 
   <ItemGroup>
-    <Content Include="$(BinDir)\$(JitInterfaceLibraryName)"
+    <Content Include="$(TargetArchBinDir)\$(JitInterfaceLibraryName)"
       CopyToOutputDirectory="PreserveNewest"
       CopyToPublishDirectory="PreserveNewest"
       Link="%(FileName)%(Extension)"
      />
 
-    <Content Include="$(BinDir)\$(NativeArchFolder)$(LibraryNamePrefix)clrjit$(LibraryNameExtension)"
+    <Content Include="$(TargetArchBinDir)\$(NativeArchFolder)$(LibraryNamePrefix)clrjit$(LibraryNameExtension)"
       CopyToOutputDirectory="PreserveNewest"
       CopyToPublishDirectory="PreserveNewest"
       Link="$(LibraryNamePrefix)clrjit-$(TargetSpec)$(LibraryNameExtension)"
@@ -74,13 +89,13 @@
   <Target Name="CreateCrossTargetingPackage" AfterTargets="Build" Condition="'$(CrossHostArch)' != ''">
 
     <PropertyGroup>
-      <CrossPackageFolder>$(BinDir)\$(CrossHostArch)\crossgen2</CrossPackageFolder>
+      <CrossPackageFolder>$(TargetArchBinDir)\$(CrossHostArch)\crossgen2</CrossPackageFolder>
     </PropertyGroup>
 
     <ItemGroup>
-      <PackageFile Include="$(BinDir)\crossgen2\*"
-        Exclude="$(BinDir)\crossgen2\$(JitInterfaceLibraryName);$(BinDir)\crossgen2\$(LibraryNamePrefix)clrjit-*$(LibraryNameExtension)" />
-      <PackageFile Include="$(BinDir)\$(CrossHostArch)\$(JitInterfaceLibraryName)" />
+      <PackageFile Include="$(TargetArchBinDir)\crossgen2\*"
+        Exclude="$(TargetArchBinDir)\crossgen2\$(JitInterfaceLibraryName);$(TargetArchBinDir)\crossgen2\$(LibraryNamePrefix)clrjit-*$(LibraryNameExtension)" />
+      <PackageFile Include="$(TargetArchBinDir)\$(CrossHostArch)\$(JitInterfaceLibraryName)" />
     </ItemGroup>
 
     <MakeDir Directories="$(CrossPackageFolder)" />
@@ -91,7 +106,7 @@
       />
 
     <Copy
-      SourceFiles="$(BinDir)\$(CrossHostArch)\$(LibraryNamePrefix)clrjit$(LibraryNameExtension)"
+      SourceFiles="$(TargetArchBinDir)\$(CrossHostArch)\$(LibraryNamePrefix)clrjit$(LibraryNameExtension)"
       DestinationFiles="$(CrossPackageFolder)\$(LibraryNamePrefix)clrjit-$(TargetSpec)$(LibraryNameExtension)"
       UseHardLinksIfPossible="true"
       />

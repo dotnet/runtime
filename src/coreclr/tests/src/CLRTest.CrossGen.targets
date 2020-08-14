@@ -96,7 +96,11 @@ if [ ! -z ${RunCrossGen2+x} ]%3B then
 
       __Command=$_DebuggerFullPath
       # Tests run locally need __TestDotNetCmd (set by runtest.py) or a compatible 5.0 dotnet runtime in the path
-      if [ ! -z ${__TestDotNetCmd+x} ] %3B then
+      # On 32-bit platforms we currently use corerun as the Crossgen2 launcher because the 64-bit
+      # dotnet host cannot load the 32-bit JIT dll.
+      if [[ ( "$__BuildArch" == "x86" ) || ( "$__BuildArch" == "arm" ) ]]; then
+          __Command+=" $CORE_ROOT/corerun"
+      elif [ ! -z ${__TestDotNetCmd+x} ] %3B then
           __Command+=" $__TestDotNetCmd"
       else
           __Command+=" dotnet"
@@ -239,7 +243,13 @@ if defined RunCrossGen2 (
 
     set __Command=!_DebuggerFullPath!
     REM Tests run locally need __TestDotNetCmd (set by runtest.py) or a compatible 5.0 dotnet runtime in the path
-    if defined __TestDotNetCmd (
+    REM Use corerun as the Crossgen2 launcher for 32-bit targets because otherwise the 64-bit
+    REM dotnet host cannot load the 32-bit JIT dll.
+    if "$(TargetArchitecture)" == "x86" (
+        set __Command=!__Command! "!CORE_ROOT!\corerun.exe"
+    ) else if "$(TargetArchitecture)" == "arm" (
+        set __Command=!__Command! "!CORE_ROOT!\corerun.exe"
+    ) else if defined __TestDotNetCmd (
         set __Command=!__Command! "!__TestDotNetCmd!"
     ) else (
         set __Command=!__Command! "dotnet"
