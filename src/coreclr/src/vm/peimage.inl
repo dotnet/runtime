@@ -478,7 +478,7 @@ inline void  PEImage::Init(LPCWSTR pPath, BundleFileLocation bundleFileLocation)
 
 
 /*static*/
-inline PTR_PEImage PEImage::FindByPath(LPCWSTR pPath)
+inline PTR_PEImage PEImage::FindByPath(LPCWSTR pPath, BOOL lookInBundle /* = true */)
 {
     CONTRACTL
     {
@@ -498,7 +498,8 @@ inline PTR_PEImage PEImage::FindByPath(LPCWSTR pPath)
 #else
     DWORD dwHash = CaseHashHelper(pPath, (COUNT_T) wcslen(pPath));
 #endif
-   return (PEImage *) s_Images->LookupValue(dwHash, &locator);
+    dwHash = (dwHash << 1) | lookInBundle;
+    return (PEImage *) s_Images->LookupValue(dwHash, &locator);
 
 }
 
@@ -516,7 +517,7 @@ inline PTR_PEImage PEImage::OpenImage(LPCWSTR pPath, MDInternalImportFlags flags
 
     CrstHolder holder(&s_hashLock);
 
-    PEImage* found = FindByPath(pPath);
+    PEImage* found = FindByPath(pPath, bundleFileLocation.IsValid());
 
 
     if (found == (PEImage*) INVALIDENTRY)
@@ -604,11 +605,12 @@ inline ULONG PEImage::GetIDHash()
     }
     CONTRACT_END;
 
-
+    // Start the hash with the image path and set its latest bit
+    // depending on whether the image is bundled.
 #ifdef FEATURE_CASE_SENSITIVE_FILESYSTEM
-    RETURN m_path.Hash();
+    RETURN ((m_path.Hash() << 1) | IsInBundle());
 #else
-    RETURN m_path.HashCaseInsensitive();
+    RETURN ((m_path.HashCaseInsensitive() << 1) | IsInBundle());
 #endif
 }
 
