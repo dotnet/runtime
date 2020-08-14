@@ -20,6 +20,18 @@ namespace Microsoft.Extensions.Hosting
     public partial class HostTests
     {
         [Fact]
+        public async Task StopAsyncWithCancellation()
+        {
+            var builder = new HostBuilder();
+            var host = builder.Build();
+            await host.StartAsync();
+            CancellationTokenSource cts = new CancellationTokenSource();
+            cts.Cancel();
+            Assert.True(cts.Token.IsCancellationRequested);
+            await host.StopAsync(cts.Token);
+        }
+
+        [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34580", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public void CreateDefaultBuilder_IncludesContentRootByDefault()
         {
