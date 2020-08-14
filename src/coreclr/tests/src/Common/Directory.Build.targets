@@ -84,6 +84,28 @@
           Include="$(CoreCLRArtifactsPath)%(RunTimeArtifactsIncludeFolders.Identity)**/*"
           Exclude="@(RunTimeArtifactsExcludeFiles -> '$(CoreCLRArtifactsPath)%(Identity)')"
           TargetDir="%(RunTimeArtifactsIncludeFolders.Identity)" />
+
+      <RunTimeDependencyCopyLocal
+          Condition="'$(TargetArchitecture)' == 'wasm'"
+          Include="$(ArtifactsBinDir)microsoft.netcore.app.runtime.$(TargetOS)-$(TargetArchitecture)\$(Configuration)\runtimes\$(TargetOS)-$(TargetArchitecture)\**"
+          TargetDir="%(RunTimeArtifactsIncludeFolders.Identity)/runtimepack/"/>
+
+       <RunTimeDependencyCopyLocal
+          Condition="'$(TargetArchitecture)' == 'wasm'"
+          Include="$(ArtifactsDir)\TargetingPack\**"
+          TargetDir="%(RunTimeArtifactsIncludeFolders.Identity)/TargetingPack/"/>
+
+        <RunTimeDependencyCopyLocal
+          Condition="'$(TargetArchitecture)' == 'wasm'"
+          Include="$(ArtifactsBinDir)\WasmAppBuilder\$(Configuration)\$(NetCoreAppCurrent)\publish\**"
+          TargetDir="%(RunTimeArtifactsIncludeFolders.Identity)/WasmAppBuilder/"/>
+
+        <RunTimeDependencyCopyLocal
+          Condition="'$(TargetArchitecture)' == 'wasm'"
+          Include="$(MonoProjectRoot)\wasm\runtime-test.js"
+          TargetDir="%(RunTimeArtifactsIncludeFolders.Identity)/runtime-test/"/>
+
+          
     </ItemGroup>
 
     <Copy
