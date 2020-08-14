@@ -7,6 +7,8 @@ using System.Linq;
 using System.IO;
 using System.Runtime.InteropServices;
 using Xunit;
+using Xunit.Sdk;
+using System.Text;
 
 namespace System.Reflection.Tests
 {
@@ -493,12 +495,34 @@ namespace System.Reflection.Tests
             TypeInfo typeInfo = type.GetTypeInfo();
             Type[] implementedInterfaces = type.GetTypeInfo().ImplementedInterfaces.ToArray();
 
-            Array.Sort(implementedInterfaces, delegate (Type a, Type b) { return a.GetHashCode() - b.GetHashCode(); });
-            Array.Sort(expected, delegate (Type a, Type b) { return a.GetHashCode() - b.GetHashCode(); });
+            try
+            {
+                Array.Sort(implementedInterfaces, delegate (Type a, Type b) { return a.GetHashCode() - b.GetHashCode(); });
+                Array.Sort(expected, delegate (Type a, Type b) { return a.GetHashCode() - b.GetHashCode(); });
 
-            Assert.Equal(expected, implementedInterfaces);
-            Assert.All(expected, ti => Assert.True(ti.GetTypeInfo().IsAssignableFrom(type.GetTypeInfo())));
-            Assert.All(expected, ti => Assert.True(type.GetTypeInfo().IsAssignableTo(ti.GetTypeInfo())));
+                Assert.Equal(expected, implementedInterfaces);
+                Assert.All(expected, ti => Assert.True(ti.GetTypeInfo().IsAssignableFrom(type.GetTypeInfo())));
+                Assert.All(expected, ti => Assert.True(type.GetTypeInfo().IsAssignableTo(ti.GetTypeInfo())));
+            }
+            catch (Exception ex)
+            {
+                StringBuilder sb = new StringBuilder();
+                foreach (var t in implementedInterfaces)
+                {
+                    sb.AppendLine($"Implemented: {t.GetType().FullName}, hashcode = {t.GetHashCode()}");
+                }
+                foreach (var t in expected)
+                {
+                    sb.AppendLine($"Expected: {t.GetType().FullName}, hashcode = {t.GetHashCode()}");
+                }
+
+                HashSet<Type> set = new HashSet<Type>();
+                set.UnionWith(implementedInterfaces);
+                set.UnionWith(expected);
+                sb.Append($"-- set contains {set.Count} members --");
+
+                throw new Exception(sb.ToString(), ex);
+            }
         }
 
         public static IEnumerable<object[]> IsInstanceOfType_TestData()
