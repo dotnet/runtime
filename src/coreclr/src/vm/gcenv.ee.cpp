@@ -1603,7 +1603,6 @@ void GCToEEInterface::AnalyzeSurvivorsFinished(int condemnedGeneration, uint64_t
         if ((condemnedGeneration == gcGenAnalysisGen) && (promoted_bytes > (uint64_t)gcGenAnalysisBytes))
 #endif
         {
-            gcGenAnalysisState = GcGenAnalysisState::Done;
             gcGenAnalysisEventPipeSession->Resume();
             FireEtwGenAwareBegin();
             s_forcedGCInProgress = true;
@@ -1612,6 +1611,7 @@ void GCToEEInterface::AnalyzeSurvivorsFinished(int condemnedGeneration, uint64_t
             reportGenerationBounds();
             FireEtwGenAwareEnd();
             gcGenAnalysisEventPipeSession->Pause();
+            gcGenAnalysisState = GcGenAnalysisState::Done;
             EnableFinalization(true);
         }
     }

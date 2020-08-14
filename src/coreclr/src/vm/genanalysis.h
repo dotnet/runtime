@@ -3,6 +3,12 @@
 
 // #define GEN_ANALYSIS_STRESS
 
+#ifndef __GENANALYSIS_H__
+#define __GENANALYSIS_H__
+
+#include "eventpipe.h"
+#include "eventpipesession.h"
+
 enum GcGenAnalysisState
 {
     Uninitialized = 0,
@@ -21,3 +27,12 @@ extern uint64_t gcGenAnalysisEventPipeSessionId;
 extern GcGenAnalysisState gcGenAnalysisConfigured;
 extern int64_t gcGenAnalysisGen;
 extern int64_t gcGenAnalysisBytes;
+
+class GenAnalysis
+{
+public:
+    static void Initialize();
+    static void EnableGenerationalAwareSession();
+};
+
+#endif 

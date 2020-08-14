@@ -274,7 +274,7 @@ VOID FinalizerThread::FinalizerThreadWorker(void *args)
             fclose(fopen(GENAWARE_COMPLETION_FILE_NAME,"w+"));
 #ifdef GEN_ANALYSIS_STRESS
             {
-                EventPipe::EnableGenerationalAwareSession();
+                GenAnalysis::EnableGenerationalAwareSession();
             }
 #endif
         }
