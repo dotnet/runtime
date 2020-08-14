@@ -11,7 +11,9 @@
   <ItemGroup>
     <Compile Include="$(CommonPath)Extensions\HashCodeCombiner\HashCodeCombiner.cs"
              Link="Common\src\Extensions\HashCodeCombiner\HashCodeCombiner.cs" />
-    <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.cs"
+    <Compile Condition="'$(TargetFramework)' == 'netstandard2.0' or
+                        $(TargetFramework.StartsWith('net4'))"
+             Include="$(CommonPath)System\Text\ValueStringBuilder.cs"
              Link="Common\System\Text\ValueStringBuilder.cs" />
   </ItemGroup>
 
