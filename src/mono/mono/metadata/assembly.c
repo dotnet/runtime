@@ -2500,8 +2500,12 @@ mono_assembly_open_from_bundle (MonoAssemblyLoadContext *alc, const char *filena
 	name = g_path_get_basename (filename);
 	for (i = 0; !image && bundles [i]; ++i) {
 		if (strcmp (bundles [i]->name, is_satellite ? filename : name) == 0) {
+#ifdef ENABLE_NETCORE
 			// Since bundled images don't exist on disk, don't give them a legit filename
 			image = mono_image_open_from_data_internal (alc, (char*)bundles [i]->data, bundles [i]->size, FALSE, status, refonly, FALSE, name, NULL);
+#else
+			image = mono_image_open_from_data_internal (alc, (char*)bundles [i]->data, bundles [i]->size, FALSE, status, refonly, FALSE, name, name);
+#endif
 			break;
 		}
 	}
