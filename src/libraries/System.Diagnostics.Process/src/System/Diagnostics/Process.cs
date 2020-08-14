@@ -300,11 +300,7 @@ namespace System.Diagnostics
                 if (_modules == null)
                 {
                     EnsureState(State.HaveNonExitedId | State.IsLocal);
-                    ProcessModuleCollection newModules = ProcessManager.GetModules(_processId);
-                    if (Interlocked.CompareExchange(ref _modules, newModules, null) != null)
-                    {
-                        newModules.Dispose();
-                    }
+                    _modules = ProcessManager.GetModules(_processId);
                 }
                 return _modules;
             }
@@ -608,10 +604,7 @@ namespace System.Diagnostics
                     }
 
                     ProcessThreadCollection newThreads = new ProcessThreadCollection(newThreadsArray);
-                    if (Interlocked.CompareExchange(ref _threads, newThreads, null) != null)
-                    {
-                        newThreads.Dispose();
-                    }
+                    _threads = newThreads;
                 }
                 return _threads;
             }
