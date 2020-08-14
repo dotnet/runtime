@@ -395,7 +395,7 @@ namespace System.Reflection.Emit
                 sigHelp = GetMemberRefSignature(method, cGenericParameters);
             }
 
-            if (optionalParameterTypes is {} && optionalParameterTypes.Length > 0)
+            if (optionalParameterTypes?.Length > 0)
             {
                 sigHelp.AddSentinel();
                 sigHelp.AddArguments(optionalParameterTypes, null, null);
@@ -505,40 +505,41 @@ namespace System.Reflection.Emit
 
         internal SignatureHelper GetMemberRefSignature(MethodBase? method, int cGenericParameters)
         {
-            while (true)
+            switch (method)
             {
-                switch (method)
-                {
-                    case MethodBuilder methodBuilder:
-                        return methodBuilder.GetMethodSignature();
-                    case ConstructorBuilder constructorBuilder:
-                        return constructorBuilder.GetMethodSignature();
-                    case MethodOnTypeBuilderInstantiation motbi:
-                        method = motbi.m_method;
-                        continue;
-                    case ConstructorOnTypeBuilderInstantiation cotbi:
-                        method = cotbi.m_ctor;
-                        continue;
-                }
-
-                Debug.Assert(method is RuntimeMethodInfo || method is RuntimeConstructorInfo);
-                ParameterInfo[] parameters = method.GetParametersNoCopy();
-
-                Type[] parameterTypes = new Type[parameters.Length];
-                Type[][] requiredCustomModifiers = new Type[parameterTypes.Length][];
-                Type[][] optionalCustomModifiers = new Type[parameterTypes.Length][];
-
-                for (int i = 0; i < parameters.Length; i++)
-                {
-                    parameterTypes[i] = parameters[i].ParameterType;
-                    requiredCustomModifiers[i] = parameters[i].GetRequiredCustomModifiers();
-                    optionalCustomModifiers[i] = parameters[i].GetOptionalCustomModifiers();
-                }
-
-                ParameterInfo? returnParameter = method is MethodInfo mi ? mi.ReturnParameter : null;
-                SignatureHelper sigHelp = SignatureHelper.GetMethodSigHelper(this, method.CallingConvention, cGenericParameters, returnParameter?.ParameterType, returnParameter?.GetRequiredCustomModifiers(), returnParameter?.GetOptionalCustomModifiers(), parameterTypes, requiredCustomModifiers, optionalCustomModifiers);
-                return sigHelp;
+                case MethodBuilder methodBuilder:
+                    return methodBuilder.GetMethodSignature();
+                case ConstructorBuilder constructorBuilder:
+                    return constructorBuilder.GetMethodSignature();
+                case MethodOnTypeBuilderInstantiation motbi when motbi.m_method is MethodBuilder methodBuilder:
+                    return methodBuilder.GetMethodSignature();
+                case MethodOnTypeBuilderInstantiation motbi:
+                    method = motbi.m_method;
+                    break;
+                case ConstructorOnTypeBuilderInstantiation cotbi when cotbi.m_ctor is ConstructorBuilder constructorBuilder:
+                    return constructorBuilder.GetMethodSignature();
+                case ConstructorOnTypeBuilderInstantiation cotbi:
+                    method = cotbi.m_ctor;
+                    break;
             }
+
+            Debug.Assert(method is RuntimeMethodInfo || method is RuntimeConstructorInfo);
+            ParameterInfo[] parameters = method.GetParametersNoCopy();
+
+            Type[] parameterTypes = new Type[parameters.Length];
+            Type[][] requiredCustomModifiers = new Type[parameterTypes.Length][];
+            Type[][] optionalCustomModifiers = new Type[parameterTypes.Length][];
+
+            for (int i = 0; i < parameters.Length; i++)
+            {
+                parameterTypes[i] = parameters[i].ParameterType;
+                requiredCustomModifiers[i] = parameters[i].GetRequiredCustomModifiers();
+                optionalCustomModifiers[i] = parameters[i].GetOptionalCustomModifiers();
+            }
+
+            ParameterInfo? returnParameter = method is MethodInfo mi ? mi.ReturnParameter : null;
+            SignatureHelper sigHelp = SignatureHelper.GetMethodSigHelper(this, method.CallingConvention, cGenericParameters, returnParameter?.ParameterType, returnParameter?.GetRequiredCustomModifiers(), returnParameter?.GetOptionalCustomModifiers(), parameterTypes, requiredCustomModifiers, optionalCustomModifiers);
+            return sigHelp;
         }
 
         #endregion
