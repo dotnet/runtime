@@ -617,7 +617,7 @@ namespace System
             }
             else if (Vector.IsHardwareAccelerated)
             {
-                // Calucate lengthToExamine here for test, rather than just testing as it used later, rather than doing it twice.
+                // Calculate lengthToExamine here for test, as it is used later
                 nint vectorDiff = (nint)length - Vector<byte>.Count;
                 if (vectorDiff >= 0)
                 {
