@@ -1907,7 +1907,7 @@ namespace System.Net.Http.Tests
         public void NonValidated_AddRawHeaderValueThenRetrieveItAsParsed_EnumeratorReturnsOriginalRawValue()
         {
             MockHeaders headers = new MockHeaders();
-            headers.Add(headers.Descriptor, rawPrefix + "1");
+            headers.TryAddWithoutValidation(headers.Descriptor, rawPrefix + "1");
 
             object? parsedValue = headers.GetParsedValues(headers.Descriptor);
 
