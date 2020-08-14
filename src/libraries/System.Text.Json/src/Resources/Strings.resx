@@ -543,6 +543,6 @@
     <value>When 'JsonNumberHandlingAttribute' is placed on a property or field, the property or field must be a number or a collection. See member '{0}' on type '{1}'.</value>
   </data>
   <data name="ConverterCanConvertNullableRedundant" xml:space="preserve">
-    <value>The converter '{0}' which handles type '{1}' should not indicate that it also handles type '{2}'. The converter will be used automatically if no converter which handles type '{2}' is provided.</value>
+    <value>The converter '{0}' handles type '{1}' but is being asked to convert type '{2}'. Either create a separate converter for type '{2}' or change the converter's 'CanConvert' method to only return 'true' for a single type.</value>
   </data>
 </root>
