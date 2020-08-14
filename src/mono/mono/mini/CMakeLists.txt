@@ -788,12 +788,18 @@ add_library (monosgen SHARED $<TARGET_OBJECTS:monosgen-objects>)
 set_target_properties(monosgen PROPERTIES OUTPUT_NAME monosgen-2.0)
 set_target_properties(monosgen PROPERTIES LIBRARY_OUTPUT_DIRECTORY .libs)
 
+# FIXME: Always rebuilds, creates non-deterministic builds
 # FIXME: Use the previous format
-string(TIMESTAMP BUILD_DATE)
+#string(TIMESTAMP BUILD_DATE)
 
+#add_custom_command (
+#  OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/buildver-sgen.h
+#  COMMAND echo "const char *build_date = \"${BUILD_DATE}\";" > ${CMAKE_CURRENT_BINARY_DIR}/buildver-sgen.h
+#  VERBATIM
+#)
 add_custom_command (
   OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/buildver-sgen.h
-  COMMAND echo "const char *build_date = \"${BUILD_DATE}\";" > ${CMAKE_CURRENT_BINARY_DIR}/buildver-sgen.h
+  COMMAND echo "const char *build_date = \"\";" > ${CMAKE_CURRENT_BINARY_DIR}/buildver-sgen.h
   VERBATIM
 )
 
