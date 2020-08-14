@@ -10,7 +10,7 @@
     <NoWarn Condition="'$(TargetFramework)' == 'netcoreapp2.0'">$(NoWarn);nullable</NoWarn>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="TypeForwards.cs" />
+    <Compile Condition="'$(TargetFramework)' != 'netstandard2.0'" Include="TypeForwards.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' != 'netstandard2.0'">
     <Compile Include="Microsoft\Internal\AttributeServices.cs" />
