@@ -87,7 +87,7 @@ namespace System.Xml.Linq
         /// See <see cref="XContainer.Add(object)"/> for details about the content that can be added
         /// using this method.
         /// </remarks>
-        public XDocument(XDeclaration declaration, params object[] content)
+        public XDocument(XDeclaration? declaration, params object[] content)
             : this(content)
         {
             _declaration = declaration;

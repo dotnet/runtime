@@ -332,7 +332,7 @@ namespace System.Xml.Linq
             {
                 if (e != null)
                 {
-                    XAttribute a = e.lastAttr!;
+                    XAttribute? a = e.lastAttr;
                     if (a != null)
                     {
                         do
