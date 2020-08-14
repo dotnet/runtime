@@ -787,6 +787,13 @@ namespace Mono.Linker.Dataflow
 				case IntrinsicId.Type_GetType: {
 						reflectionContext.AnalyzingPattern ();
 
+						var parameters = calledMethod.Parameters;
+						if ((parameters.Count == 3 && (methodParams[2].Kind == ValueNodeKind.MethodReturn || methodParams[2].Kind == ValueNodeKind.ConstInt || methodParams[2].Kind == ValueNodeKind.LoadField)
+							&& (methodParams[2].AsConstInt () == null || methodParams[2].AsConstInt () != 0)) ||
+							(parameters.Count == 5 && (methodParams[4].AsConstInt () == null || methodParams[4].AsConstInt () != 0))) {
+							reflectionContext.RecordUnrecognizedPattern (2096, $"Call to '{calledMethod.GetDisplayName ()}' can perform case insensitive lookup of the type, currently ILLink can not guarantee presence of all the matching types");
+							break;
+						}
 						foreach (var typeNameValue in methodParams[0].UniqueValues ()) {
 							if (typeNameValue is KnownStringValue knownStringValue) {
 								TypeDefinition foundType = AssemblyUtilities.ResolveFullyQualifiedTypeName (_context, knownStringValue.Contents);
