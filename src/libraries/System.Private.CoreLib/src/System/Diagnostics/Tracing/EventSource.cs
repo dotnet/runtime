@@ -3693,10 +3693,6 @@ namespace System.Diagnostics.Tracing
         {
             try
             {
-                // send message to debugger without delay
-                System.Diagnostics.Debugger.Log(0, null, string.Format("EventSource Error: {0}{1}", msg, System.Environment.NewLine));
-
-                // Send it to all listeners.
                 if (m_outOfBandMessageCount < 16 - 1)     // Note this is only if size byte
                     m_outOfBandMessageCount++;
                 else
@@ -3706,7 +3702,11 @@ namespace System.Diagnostics.Tracing
                     m_outOfBandMessageCount = 16;    // Mark that we hit the limit.  Notify them that this is the case.
                     msg = "Reached message limit.   End of EventSource error messages.";
                 }
+                
+                // send message to debugger
+                System.Diagnostics.Debugger.Log(0, null, string.Format("EventSource Error: {0}{1}", msg, System.Environment.NewLine));
 
+                // Send it to all listeners.
                 WriteEventString(msg);
                 WriteStringToAllListeners("EventSourceMessage", msg);
             }
