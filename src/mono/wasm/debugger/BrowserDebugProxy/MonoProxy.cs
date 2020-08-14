@@ -14,6 +14,7 @@ using Newtonsoft.Json.Linq;
 using Mono.Cecil.Cil;
 using Mono.Cecil.Pdb;
 using Mono.Cecil;
+using System.Net.Http;
 
 namespace Microsoft.WebAssembly.Diagnostics
 {
@@ -545,7 +546,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
                         if (method  == null && !asm.Image.HasSymbols)
                         {
-                            method = LoadSymbolsOnDemand(asm, method_token, sessionId, token);
+                            method = await LoadSymbolsOnDemand(asm, method_token, sessionId, token);
                         }
 
                         if (method == null)
@@ -625,7 +626,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             return true;
         }
 
-        private MethodInfo LoadSymbolsOnDemand(AssemblyInfo asm, uint method_token, SessionId sessionId, CancellationToken token)
+        async Task<MethodInfo> LoadSymbolsOnDemand(AssemblyInfo asm, uint method_token, SessionId sessionId, CancellationToken token)
         {
             MethodInfo method = null;
             var context = GetContext(sessionId);
@@ -640,12 +641,12 @@ namespace Microsoft.WebAssembly.Diagnostics
                     if (data.Length < 24)
                         return null;
 
-                    var magic = (data[0]
+                    var pdbSignature = (data[0]
                         | (data[1] << 8)
                         | (data[2] << 16)
                         | (data[3] << 24));
 
-                    if (magic != 0x53445352)
+                    if (pdbSignature != 0x53445352) // "SDSR"
                         return null;
 
                     var buffer = new byte[16];
@@ -663,31 +664,24 @@ namespace Microsoft.WebAssembly.Diagnostics
                     pdbName = (pdbName.Split(new char[] { '/' }))[pdbName.Split(new char[] { '/' }).Length - 1];
                     var downloadURL = "http://msdl.microsoft.com/download/symbols" + "/" + pdbName + "/" + pdbGuid.ToString("N").ToUpper() + pdbAge + "/" + pdbName;
 
-                    byte[] result = null;
-
-                    using (WebClient webClient = new WebClient())
-                    {
-                        try
-                        {
-                            result = webClient.DownloadData(downloadURL);
-                        }
-                        catch (Exception)
-                        {
-                            return null;
-                        }
-                    }
-                    PdbReaderProvider portablePdbReaderProvider = new PdbReaderProvider();
-                    Stream stream = new MemoryStream(result);
                     try
                     {
-                        var symbolReader = portablePdbReaderProvider.GetSymbolReader(asm.Image, stream);
-                        asm.Image.ReadSymbols(symbolReader);
-                        asm.Populate();
-                        method = asm.GetMethodByToken(method_token);
-                        foreach (var source in asm.Sources)
-                        {
-                            var scriptSource = JObject.FromObject(source.ToScriptSource(context.Id, context.AuxData));
-                            SendEvent(sessionId, "Debugger.scriptParsed", scriptSource, token);
+                        using (HttpClient client = new HttpClient())
+                        {        
+                            using (HttpResponseMessage response = await client.GetAsync(downloadURL))
+                            using (Stream streamToReadFrom = await response.Content.ReadAsStreamAsync())
+                            {
+                                PdbReaderProvider portablePdbReaderProvider = new PdbReaderProvider();
+                                var symbolReader = portablePdbReaderProvider.GetSymbolReader(asm.Image, streamToReadFrom);
+                                asm.Image.ReadSymbols(symbolReader);
+                                asm.Populate();
+                                method = asm.GetMethodByToken(method_token);
+                                foreach (var source in asm.Sources)
+                                {
+                                    var scriptSource = JObject.FromObject(source.ToScriptSource(context.Id, context.AuxData));
+                                    SendEvent(sessionId, "Debugger.scriptParsed", scriptSource, token);
+                                }
+                            }
                         }
                     }
                     catch (Exception)
