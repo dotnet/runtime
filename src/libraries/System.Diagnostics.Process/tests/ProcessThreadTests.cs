@@ -68,6 +68,25 @@ namespace System.Diagnostics.Tests
             }
         }
 
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void ThreadsAreDisposedWhenProcessIsDisposed()
+        {
+            Process process = CreateDefaultProcess();
+
+            ProcessThreadCollection threadCollection = process.Threads;
+            int expectedCount = 0;
+            int disposedCount = 0;
+            foreach (ProcessThread processThread in threadCollection)
+            {
+                expectedCount += 1;
+                processThread.Disposed += (_, __) => disposedCount += 1;
+            }
+
+            process.Dispose();
+
+            Assert.Equal(expectedCount, disposedCount);
+        }
+
         [Fact]
         [PlatformSpecific(TestPlatforms.OSX|TestPlatforms.FreeBSD)] // OSX and FreeBSD throw PNSE from StartTime
         public void TestStartTimeProperty_OSX()
