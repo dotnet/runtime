@@ -4,7 +4,7 @@
     <NativeVersionFile Condition="'$(TargetOS)' == 'Windows_NT'">$(ArtifactsObjDir)_version.h</NativeVersionFile>
     <NativeVersionFile Condition="'$(TargetOS)' != 'Windows_NT'">$(ArtifactsObjDir)_version.c</NativeVersionFile>
     <TargetFramework>$(BuildTargetFramework)</TargetFramework>
-    <TargetFramework Condition="'$(BuildTargetFramework)' == ''">$(NetCoreAppCurrent)</TargetFramework>
+    <TargetFramework Condition="'$(TargetFramework)' == ''">$(NetCoreAppCurrent)</TargetFramework>
     <_BuildNativeArgs>$(TargetArchitecture) $(Configuration) outconfig $(TargetFramework)-$(TargetOS)-$(Configuration)-$(TargetArchitecture) -os $(TargetOS)</_BuildNativeArgs>
   </PropertyGroup>
 
