@@ -9,7 +9,6 @@ using Xunit;
 namespace System.Net.Http.Enterprise.Tests
 {
     [ConditionalClass(typeof(EnterpriseTestConfiguration), nameof(EnterpriseTestConfiguration.Enabled))]
-
     public class HttpClientAuthenticationTest
     {
         [Theory]
