@@ -390,7 +390,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.AnyUnix)]  // Makes call to native code (libc)
+        [PlatformSpecific(TestPlatforms.AnyUnix & ~TestPlatforms.Browser)]  // Makes call to native code (libc)
         public void FalseForNonRegularFile()
         {
             string fileName = GetTestFilePath();

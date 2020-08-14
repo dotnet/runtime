@@ -22,5 +22,4 @@ And then copy and execute the commands logged under the `To repro directly:` sec
 ## Instructions for MacOS testers
 
 By default, Alt-Key does not work on the MacOS terminal.
-Before running the tests, navigate to `Terminal > Preferences > Settings > Keyboard`
-and check "Use option as meta key" at the bottom.
+Before running the tests, navigate to `Terminal > Preferences > Settings > Keyboard` or `Terminal > Preferences > Profiles > Basic > Keyboard` (depending on your macOS version) and check "Use option as meta key" at the bottom.

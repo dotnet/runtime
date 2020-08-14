@@ -24,6 +24,7 @@ namespace System.Net.Test.Common
         private Stream _connectionStream;
         private TaskCompletionSource<bool> _ignoredSettingsAckPromise;
         private bool _ignoreWindowUpdates;
+        private TaskCompletionSource<PingFrame> _expectPingFrame;
         private readonly TimeSpan _timeout;
         private int _lastStreamId;
 
@@ -186,6 +187,13 @@ namespace System.Net.Test.Common
                 return await ReadFrameAsync(cancellationToken).ConfigureAwait(false);
             }
 
+            if (_expectPingFrame != null && header.Type == FrameType.Ping)
+            {
+                _expectPingFrame.SetResult(PingFrame.ReadFrom(header, data));
+                _expectPingFrame = null;
+                return await ReadFrameAsync(cancellationToken).ConfigureAwait(false);
+            }
+
             // Construct the correct frame type and return it.
             switch (header.Type)
             {
@@ -203,6 +211,8 @@ namespace System.Net.Test.Common
                     return PingFrame.ReadFrom(header, data);
                 case FrameType.GoAway:
                     return GoAwayFrame.ReadFrom(header, data);
+                case FrameType.Continuation:
+                    return ContinuationFrame.ReadFrom(header, data);
                 default:
                     return header;
             }
@@ -241,6 +251,15 @@ namespace System.Net.Test.Common
         public void IgnoreWindowUpdates()
         {
             _ignoreWindowUpdates = true;
+        }
+
+        // Set up loopback server to expect PING frames among other frames.
+        // Once PING frame is read in ReadFrameAsync, the returned task is completed.
+        // The returned task is canceled in ReadPingAsync if no PING frame has been read so far.
+        public Task<PingFrame> ExpectPingFrameAsync()
+        {
+            _expectPingFrame ??= new TaskCompletionSource<PingFrame>();
+            return _expectPingFrame.Task;
         }
 
         public async Task ReadRstStreamAsync(int streamId)
@@ -531,10 +550,8 @@ namespace System.Net.Test.Common
             return body;
         }
 
-        public async Task<(int streamId, HttpRequestData requestData)> ReadAndParseRequestHeaderAsync(bool readBody = true)
+        public async IAsyncEnumerable<Frame> ReadRequestHeadersFrames()
         {
-            HttpRequestData requestData = new HttpRequestData();
-
             // Receive HEADERS frame for request.
             Frame frame = await ReadFrameAsync(_timeout).ConfigureAwait(false);
             if (frame == null)
@@ -542,15 +559,58 @@ namespace System.Net.Test.Common
                 throw new IOException("Failed to read Headers frame.");
             }
             Assert.Equal(FrameType.Headers, frame.Type);
-            HeadersFrame headersFrame = (HeadersFrame) frame;
+            Assert.Equal(FrameFlags.None, frame.Flags & ~(FrameFlags.EndStream | FrameFlags.EndHeaders));
 
-            // TODO CONTINUATION support
-            Assert.Equal(FrameFlags.EndHeaders, FrameFlags.EndHeaders & headersFrame.Flags);
+            yield return frame;
 
-            int streamId = headersFrame.StreamId;
-            requestData.RequestId = streamId;
+            // Receive CONTINUATION frames for request.
+            while ((FrameFlags.EndHeaders & frame.Flags) != FrameFlags.EndHeaders)
+            {
 
-            Memory<byte> data = headersFrame.Data;
+                frame = await ReadFrameAsync(_timeout).ConfigureAwait(false);
+                if (frame == null)
+                {
+                    throw new IOException("Failed to read Continuation frame.");
+                }
+                Assert.Equal(FrameType.Continuation, frame.Type);
+                Assert.Equal(FrameFlags.None, frame.Flags & ~FrameFlags.EndHeaders);
+
+                yield return frame;
+            }
+
+            Assert.Equal(FrameFlags.EndHeaders, FrameFlags.EndHeaders & frame.Flags);
+        }
+
+        public async Task<(int streamId, HttpRequestData requestData)> ReadAndParseRequestHeaderAsync(bool readBody = true)
+        {
+            HttpRequestData requestData = new HttpRequestData();
+
+            bool endOfStream = false;
+
+            using MemoryStream buffer = new MemoryStream();
+            await foreach (Frame frame in ReadRequestHeadersFrames())
+            {
+                switch (frame.Type)
+                {
+                    case FrameType.Headers:
+                        var headersFrame = (HeadersFrame)frame;
+                        requestData.RequestId = headersFrame.StreamId;
+                        endOfStream = (headersFrame.Flags & FrameFlags.EndStream) == FrameFlags.EndStream;
+                        await buffer.WriteAsync(headersFrame.Data);
+                        break;
+                    case FrameType.Continuation:
+                        var continuationFrame = (ContinuationFrame)frame;
+                        await buffer.WriteAsync(continuationFrame.Data);
+                        break;
+                    default:
+                        // Assert.Fail is already merged in xUnit but not released yet. Replace once available.
+                        // https://github.com/xunit/xunit/issues/2105
+                        Assert.True(false, $"Unexpected frame type '{frame.Type}'");
+                        break;
+                }
+            }
+
+            Memory<byte> data = buffer.ToArray();
             int i = 0;
             while (i < data.Length)
             {
@@ -566,14 +626,15 @@ namespace System.Net.Test.Common
             // Extract method and path
             requestData.Method = requestData.GetSingleHeaderValue(":method");
             requestData.Path = requestData.GetSingleHeaderValue(":path");
+            requestData.Version = HttpVersion20.Value;
 
-            if (readBody && (frame.Flags & FrameFlags.EndStream) == 0)
+            if (readBody && !endOfStream)
             {
                 // Read body until end of stream if needed.
                 requestData.Body = await ReadBodyAsync().ConfigureAwait(false);
             }
 
-            return (streamId, requestData);
+            return (requestData.RequestId, requestData);
         }
 
         public override Task InitializeConnectionAsync()
@@ -619,7 +680,7 @@ namespace System.Net.Test.Common
 
         public async Task PingPong()
         {
-            byte[] pingData = new byte[8] { 1, 2, 3, 4, 50, 60, 70, 80 };
+            long pingData = BitConverter.ToInt64(new byte[8] { 1, 2, 3, 4, 50, 60, 70, 80 }, 0);
             PingFrame ping = new PingFrame(pingData, FrameFlags.None, 0);
             await WriteFrameAsync(ping).ConfigureAwait(false);
             PingFrame pingAck = (PingFrame)await ReadFrameAsync(_timeout).ConfigureAwait(false);
@@ -629,6 +690,27 @@ namespace System.Net.Test.Common
             }
 
             Assert.Equal(pingData, pingAck.Data);
+        }
+
+        public async Task<PingFrame> ReadPingAsync(TimeSpan timeout)
+        {
+            _expectPingFrame?.TrySetCanceled();
+            _expectPingFrame = null;
+
+            Frame frame = await ReadFrameAsync(timeout).ConfigureAwait(false);
+            Assert.NotNull(frame);
+            Assert.Equal(FrameType.Ping, frame.Type);
+            Assert.Equal(0, frame.StreamId);
+            Assert.False(frame.AckFlag);
+            Assert.Equal(8, frame.Length);
+
+            return Assert.IsAssignableFrom<PingFrame>(frame);
+        }
+
+        public async Task SendPingAckAsync(long payload)
+        {
+            PingFrame pingAck = new PingFrame(payload, FrameFlags.Ack, 0);
+            await WriteFrameAsync(pingAck).ConfigureAwait(false);
         }
 
         public async Task SendDefaultResponseHeadersAsync(int streamId)

@@ -17,6 +17,7 @@
 #include "eventpipesession.h"
 #include "eventpipejsonfile.h"
 #include "eventtracebase.h"
+#include "ipcstreamfactory.h"
 #include "sampleprofiler.h"
 #include "win32threadpool.h"
 #include "ceemain.h"
@@ -38,7 +39,8 @@ Volatile<uint64_t> EventPipe::s_allowWrite = 0;
 unsigned int * EventPipe::s_pProcGroupOffsets = nullptr;
 #endif
 Volatile<uint32_t> EventPipe::s_numberOfSessions(0);
-CQuickArrayList<EventPipeSessionID> EventPipe::s_rgDeferredEventPipeSessionIds = CQuickArrayList<EventPipeSessionID>();
+CQuickArrayList<EventPipeSessionID> EventPipe::s_rgDeferredEnableEventPipeSessionIds = CQuickArrayList<EventPipeSessionID>();
+CQuickArrayList<EventPipeSessionID> EventPipe::s_rgDeferredDisableEventPipeSessionIds = CQuickArrayList<EventPipeSessionID>();
 bool EventPipe::s_CanStartThreads = false;
 
 // This function is auto-generated from /src/scripts/genEventPipe.py
@@ -111,21 +113,34 @@ void EventPipe::FinishInitialize()
 {
     STANDARD_VM_CONTRACT;
 
-    CrstHolder _crst(GetLock());
-
-    s_CanStartThreads = true;
-
-    while (s_rgDeferredEventPipeSessionIds.Size() > 0)
+    // Enable streaming for any deferred sessions
     {
-        EventPipeSessionID id = s_rgDeferredEventPipeSessionIds.Pop();
-        if (IsSessionIdInCollection(id))
+        CrstHolder _crst(GetLock());
+
+        s_CanStartThreads = true;
+
+        while (s_rgDeferredEnableEventPipeSessionIds.Size() > 0)
         {
-            EventPipeSession *pSession = reinterpret_cast<EventPipeSession*>(id);
-            pSession->StartStreaming();
+            EventPipeSessionID id = s_rgDeferredEnableEventPipeSessionIds.Pop();
+            if (IsSessionIdInCollection(id))
+            {
+                EventPipeSession *pSession = reinterpret_cast<EventPipeSession*>(id);
+                pSession->StartStreaming();
+            }
         }
+
+        SampleProfiler::CanStartSampling();
     }
 
-    SampleProfiler::CanStartSampling();
+    // release lock in case someone tried to disable while we held it
+    // s_rgDeferredDisableEventPipeSessionIds is now safe to access without the
+    // lock since we've set s_canStartThreads to true inside the lock.  Anyone
+    // who was waiting on that lock will see that state and not mutate the defer list
+    while (s_rgDeferredDisableEventPipeSessionIds.Size() > 0)
+    {
+        EventPipeSessionID id = s_rgDeferredDisableEventPipeSessionIds.Pop();
+        DisableHelper(id);
+    }
 }
 
 //
@@ -420,7 +435,7 @@ void EventPipe::StartStreaming(EventPipeSessionID id)
     }
     else
     {
-        s_rgDeferredEventPipeSessionIds.Push(id);
+        s_rgDeferredEnableEventPipeSessionIds.Push(id);
     }
     
 }
@@ -435,6 +450,27 @@ void EventPipe::Disable(EventPipeSessionID id)
     }
     CONTRACTL_END;
 
+    // EventPipe::Disable is called synchronously since the diagnostics server is
+    // single threaded.  HOWEVER, if the runtime was suspended in EEStartupHelper,
+    // then EventPipe::FinishInitialize might not have executed yet.  Disabling a session
+    // needs to either happen before we resume or after initialization.  We briefly take the
+    // lock to check s_CanStartThreads to check whether we've finished initialization.  We 
+    // also check whether we are still suspended in which case we can safely disable the session
+    // without deferral.
+    {
+        CrstHolder _crst(GetLock());
+        if (!s_CanStartThreads && !IpcStreamFactory::AnySuspendedPorts())
+        {
+            s_rgDeferredDisableEventPipeSessionIds.Push(id);
+            return;
+        }
+    }
+
+    DisableHelper(id);
+}
+
+void EventPipe::DisableHelper(EventPipeSessionID id)
+{
     if (s_CanStartThreads)
         SetupThread();
 

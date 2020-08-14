@@ -20,16 +20,7 @@ namespace System.Net.Http.Functional.Tests
         /// </summary>
         protected override HttpClient CreateHttpClient()
         {
-            bool http3Enabled = (bool)typeof(SocketsHttpHandler)
-                .Assembly
-                .GetType("System.Net.Http.HttpConnectionSettings", throwOnError: true)
-                .GetProperty("AllowDraftHttp3", Reflection.BindingFlags.Static | Reflection.BindingFlags.NonPublic)
-                .GetValue(null);
-
-            Assert.True(http3Enabled, "HTTP/3 draft support must be enabled for this test.");
-
             HttpClientHandler handler = CreateHttpClientHandler(HttpVersion30);
-            SetUsePrenegotiatedHttp3(handler, usePrenegotiatedHttp3: false);
 
             return CreateHttpClient(handler);
         }

@@ -103,7 +103,8 @@ namespace Microsoft.Extensions.Caching.Memory
             return new CacheEntry(
                 key,
                 _setEntry,
-                _entryExpirationNotification
+                _entryExpirationNotification,
+                _logger
             );
         }
 

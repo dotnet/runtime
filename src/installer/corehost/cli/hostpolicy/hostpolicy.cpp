@@ -840,6 +840,7 @@ SHARED_API int HOSTPOLICY_CALLTYPE corehost_resolve_component_dependencies(
             /* additional_deps_serialized */ pal::string_t(), // Additional deps - don't use those from the app, they're already in the app
             /* deps_file */ pal::string_t(), // Avoid using any other deps file than the one next to the component
             g_init.probe_paths,
+            /* init_from_file_system */ true,
             args))
     {
         return StatusCode::LibHostInvalidArgs;

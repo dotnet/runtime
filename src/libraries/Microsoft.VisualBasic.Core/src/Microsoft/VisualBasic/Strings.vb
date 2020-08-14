@@ -1996,6 +1996,7 @@ RedimAndExit:
             End Try
         End Function
 
+        <SupportedOSPlatform("windows")>
         Public Function StrConv(ByVal [str] As String, ByVal Conversion As VbStrConv, Optional ByVal LocaleID As Integer = 0) As String
 #If TARGET_WINDOWS Then
             Try

@@ -72,5 +72,8 @@
           Include="$(PkgDir)useSharedDesignerContext.txt">
         <SkipPackageFileCheck>true</SkipPackageFileCheck>
     </File>
+
+    <!-- Make sure that NETStandard.Library package never gets added as a dependency for .NET 4.6.1 -->
+    <SuppressMetaPackage Include="NETStandard.Library" TargetFramework="net461" />
   </ItemGroup>
 </Project>

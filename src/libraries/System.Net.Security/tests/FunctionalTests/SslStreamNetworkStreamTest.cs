@@ -7,6 +7,7 @@ using System.Net.Test.Common;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
@@ -15,14 +16,19 @@ namespace System.Net.Security.Tests
 {
     using Configuration = System.Net.Test.Common.Configuration;
 
-    public class SslStreamNetworkStreamTest
+    public class SslStreamNetworkStreamTest : IDisposable
     {
         private readonly X509Certificate2 _serverCert;
-        private readonly X509CertificateCollection _serverChain;
+        private readonly X509Certificate2Collection _serverChain;
 
         public SslStreamNetworkStreamTest()
         {
-            (_serverCert, _serverChain) = TestHelper.GenerateCertificates("localhost");
+            (_serverCert, _serverChain) = TestHelper.GenerateCertificates("localhost", this.GetType().Name);
+        }
+
+        public void Dispose()
+        {
+            TestHelper.CleanupCertificates(this.GetType().Name);
         }
 
         [Fact]
@@ -269,14 +275,12 @@ namespace System.Net.Security.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.AnyUnix)]
         public async Task SslStream_UntrustedCaWithCustomCallback_OK()
         {
-            var options = new  SslClientAuthenticationOptions() { TargetHost = "localhost" };
-            options.RemoteCertificateValidationCallback =
+            var clientOptions = new  SslClientAuthenticationOptions() { TargetHost = "localhost" };
+            clientOptions.RemoteCertificateValidationCallback =
                 (sender, certificate, chain, sslPolicyErrors) =>
                 {
-                    chain.ChainPolicy.ExtraStore.AddRange(_serverChain);
                     chain.ChainPolicy.CustomTrustStore.Add(_serverChain[_serverChain.Count -1]);
                     chain.ChainPolicy.TrustMode = X509ChainTrustMode.CustomRootTrust;
 
@@ -286,14 +290,17 @@ namespace System.Net.Security.Tests
                     return result;
                 };
 
+            var serverOptions = new SslServerAuthenticationOptions();
+            serverOptions.ServerCertificateContext = SslStreamCertificateContext.Create(_serverCert, _serverChain);
+
             (Stream clientStream, Stream serverStream) = TestHelper.GetConnectedStreams();
             using (clientStream)
             using (serverStream)
             using (SslStream client = new SslStream(clientStream))
             using (SslStream server = new SslStream(serverStream))
             {
-                Task t1 = client.AuthenticateAsClientAsync(options, default);
-                Task t2 = server.AuthenticateAsServerAsync(_serverCert);
+                Task t1 = client.AuthenticateAsClientAsync(clientOptions, CancellationToken.None);
+                Task t2 = server.AuthenticateAsServerAsync(serverOptions, CancellationToken.None);
 
                 await TestConfiguration.WhenAllOrAnyFailedWithTimeout(t1, t2);
             }
@@ -306,13 +313,12 @@ namespace System.Net.Security.Tests
         public async Task SslStream_UntrustedCaWithCustomCallback_Throws(bool customCallback)
         {
             string errorMessage;
-            var options = new  SslClientAuthenticationOptions() { TargetHost = "localhost" };
+            var clientOptions = new  SslClientAuthenticationOptions() { TargetHost = "localhost" };
             if (customCallback)
             {
-                options.RemoteCertificateValidationCallback =
+                clientOptions.RemoteCertificateValidationCallback =
                     (sender, certificate, chain, sslPolicyErrors) =>
                     {
-                        chain.ChainPolicy.ExtraStore.AddRange(_serverChain);
                         chain.ChainPolicy.CustomTrustStore.Add(_serverChain[_serverChain.Count -1]);
                         chain.ChainPolicy.TrustMode = X509ChainTrustMode.CustomRootTrust;
                         // This should work and we should be able to trust the chain.
@@ -325,8 +331,11 @@ namespace System.Net.Security.Tests
             }
             else
             {
-                errorMessage = "PartialChain";
+                errorMessage = "UntrustedRoot";
             }
+
+            var serverOptions = new SslServerAuthenticationOptions();
+            serverOptions.ServerCertificateContext = SslStreamCertificateContext.Create(_serverCert, _serverChain);
 
             (Stream clientStream, Stream serverStream) = TestHelper.GetConnectedStreams();
             using (clientStream)
@@ -334,8 +343,8 @@ namespace System.Net.Security.Tests
             using (SslStream client = new SslStream(clientStream))
             using (SslStream server = new SslStream(serverStream))
             {
-                Task t1 = client.AuthenticateAsClientAsync(options, default);
-                Task t2 = server.AuthenticateAsServerAsync(_serverCert);
+                Task t1 = client.AuthenticateAsClientAsync(clientOptions, CancellationToken.None);
+                Task t2 = server.AuthenticateAsServerAsync(serverOptions, CancellationToken.None);
 
                 var e = await Assert.ThrowsAsync<AuthenticationException>(() => t1);
                 Assert.Contains(errorMessage, e.Message);

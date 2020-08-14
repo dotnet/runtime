@@ -752,5 +752,25 @@ namespace System.Net.Tests
             Assert.Equal(new[] { "firstName" }, w.AllKeys);
             Assert.Equal("first", w["firstName"]);
         }
+
+        [Fact]
+        public void AddLongString_DoesNotThrow()
+        {
+            string longString = new string('a', 65536);
+            WebHeaderCollection headerCollection = new WebHeaderCollection();
+
+            headerCollection.Add("Long-Header", longString);
+            headerCollection["Long-Header-2"] = longString;
+
+            headerCollection.Add(HttpResponseHeader.SetCookie, "someValueToChangeType"); // this will implicitly change _type
+
+            headerCollection.Add("Long-Header-3", longString);
+            headerCollection["Long-Header-4"] = longString;
+
+            Assert.Equal(longString, headerCollection["Long-Header"]);
+            Assert.Equal(longString, headerCollection["Long-Header-2"]);
+            Assert.Equal(longString, headerCollection["Long-Header-3"]);
+            Assert.Equal(longString, headerCollection["Long-Header-4"]);
+        }
     }
 }

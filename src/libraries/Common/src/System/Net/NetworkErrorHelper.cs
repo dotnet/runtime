@@ -13,6 +13,7 @@ namespace System.Net
             {
                 SocketError.AddressAlreadyInUse => NetworkError.EndPointInUse,
                 SocketError.HostNotFound => NetworkError.HostNotFound,
+                SocketError.NoData => NetworkError.HostNotFound,
                 SocketError.ConnectionRefused => NetworkError.ConnectionRefused,
                 SocketError.OperationAborted => NetworkError.OperationAborted,
                 SocketError.ConnectionAborted => NetworkError.ConnectionAborted,
