@@ -3702,7 +3702,7 @@ namespace System.Diagnostics.Tracing
                     m_outOfBandMessageCount = 16;    // Mark that we hit the limit.  Notify them that this is the case.
                     msg = "Reached message limit.   End of EventSource error messages.";
                 }
-                
+
                 // send message to debugger
                 System.Diagnostics.Debugger.Log(0, null, string.Format("EventSource Error: {0}{1}", msg, System.Environment.NewLine));
 
