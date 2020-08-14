@@ -421,7 +421,7 @@ namespace System.Net.Http.Functional.Tests
         public async Task GetAsync_ServerDelaysSendingSettingsThenSetsLowerMaxConcurrentStreamsLimitThenIncreaseIt_ClientAppliesEachLimitChangeProperly()
         {
             const int DefaultMaxConcurrentStreams = 100;
-            const int extraStreams = 20;
+            const int ExtraStreams = 20;
             TimeSpan timeout = TimeSpan.FromSeconds(3);
             using (Http2LoopbackServer server = Http2LoopbackServer.CreateServer())
             using (HttpClient client = CreateHttpClient())
@@ -429,7 +429,7 @@ namespace System.Net.Http.Functional.Tests
                 Task<Http2LoopbackConnection> connectionTask = AcceptConnectionAndReadSettings(server, timeout);
 
                 List<Task<HttpResponseMessage>> sendTasks = new List<Task<HttpResponseMessage>>();
-                for (int i = 0; i < DefaultMaxConcurrentStreams + extraStreams; i++)
+                for (int i = 0; i < DefaultMaxConcurrentStreams + ExtraStreams; i++)
                 {
                     sendTasks.Add(client.GetAsync(server.Address));
                 }
@@ -437,26 +437,26 @@ namespace System.Net.Http.Functional.Tests
                 Http2LoopbackConnection connection = await connectionTask.TimeoutAfter(TestHelper.PassingTestTimeoutMilliseconds).ConfigureAwait(false);
 
                 // Client sets the default MaxConcurrentStreams to 100, so accept 100 requests.
-                List<int> acceptedRequests = await AcceptRequests(connection, DefaultMaxConcurrentStreams + extraStreams).TimeoutAfter(TestHelper.PassingTestTimeoutMilliseconds).ConfigureAwait(false);
+                List<int> acceptedRequests = await AcceptRequests(connection, DefaultMaxConcurrentStreams + ExtraStreams).TimeoutAfter(TestHelper.PassingTestTimeoutMilliseconds).ConfigureAwait(false);
                 Assert.Equal(DefaultMaxConcurrentStreams, acceptedRequests.Count);
 
                 // Send SETTINGS frame with MaxConcurrentStreams = 102
                 await connection.SendSettingsAsync(timeout, new[] { new SettingsEntry() { SettingId = SettingId.MaxConcurrentStreams, Value = DefaultMaxConcurrentStreams + 2 } }).ConfigureAwait(false);
 
                 // Increased MaxConcurrentStreams ublocks only 2 requests.
-                List<int> acceptedExtraRequests = await AcceptRequests(connection, extraStreams).TimeoutAfter(TestHelper.PassingTestTimeoutMilliseconds).ConfigureAwait(false);
+                List<int> acceptedExtraRequests = await AcceptRequests(connection, ExtraStreams).TimeoutAfter(TestHelper.PassingTestTimeoutMilliseconds).ConfigureAwait(false);
                 Assert.Equal(2, acceptedExtraRequests.Count);
 
                 acceptedRequests.AddRange(acceptedExtraRequests);
 
-                // Send SETTINGS frame with MaxConcurrentStreams = DefaultMaxConcurrentStreams + extraStreams
+                // Send SETTINGS frame with MaxConcurrentStreams = DefaultMaxConcurrentStreams + ExtraStreams
                 await connection.ExpectSettingsAckAsync().ConfigureAwait(false);
-                Frame frame = new SettingsFrame(new SettingsEntry() { SettingId = SettingId.MaxConcurrentStreams, Value = DefaultMaxConcurrentStreams + extraStreams });
+                Frame frame = new SettingsFrame(new SettingsEntry() { SettingId = SettingId.MaxConcurrentStreams, Value = DefaultMaxConcurrentStreams + ExtraStreams });
                 await connection.WriteFrameAsync(frame).ConfigureAwait(false);
 
                 // Increased MaxConcurrentStreams ublocks all remaining requests.
-                acceptedExtraRequests = await AcceptRequests(connection, extraStreams - 2).TimeoutAfter(TestHelper.PassingTestTimeoutMilliseconds).ConfigureAwait(false);
-                Assert.Equal(extraStreams - 2, acceptedExtraRequests.Count);
+                acceptedExtraRequests = await AcceptRequests(connection, ExtraStreams - 2).TimeoutAfter(TestHelper.PassingTestTimeoutMilliseconds).ConfigureAwait(false);
+                Assert.Equal(ExtraStreams - 2, acceptedExtraRequests.Count);
 
                 acceptedRequests.AddRange(acceptedExtraRequests);
 
