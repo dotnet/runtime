@@ -207,6 +207,7 @@ namespace System.Diagnostics.Tests
             Assert.Equal(TaskStatus.RanToCompletion, task.Status);
         }
 
+        [SkipOnMono("Hangs on Mono, https://github.com/dotnet/runtime/issues/38943")]
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [InlineData(false)]
         [InlineData(true)]
