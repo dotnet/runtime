@@ -1,0 +1,137 @@
+parameters:
+  buildConfig: ''
+  archType: 'wasm'
+  osGroup: 'Browser'
+  osSubgroup: ''
+  container: ''
+  testGroup: ''
+  crossrootfsDir: ''
+  readyToRun: false
+  liveLibrariesBuildConfig: ''
+  crossgen2: false
+  compositeBuildMode: false
+  helixQueues: ''
+  condition: true
+  stagedBuild: false
+  displayNameArgs: ''
+  runInUnloadableContext: false
+  runtimeVariant: ''
+  variables: {}
+  pool: ''
+  runtimeFlavor: 'mono'
+  runtimeFlavorDisplayName: 'Mono'
+  dependsOn: []
+
+  #arcade-specific parameters
+  condition: ''
+  continueOnError: false
+  dependsOn: ''
+  displayName: ''
+  timeoutInMinutes: ''
+  enableMicrobuild: ''
+  gatherAssetManifests: false
+
+jobs:
+- template: /eng/pipelines/${{ parameters.runtimeFlavor }}/templates/xplat-pipeline-job.yml
+  parameters:
+      name: ${{ parameters.name }}
+      displayName: ${{ parameters.displayName }}
+      container: ${{ parameters.container }}
+      condition: ${{ parameters.condition }}
+      dependsOn:
+        - checkout
+        - ${{ if ne(parameters.dependsOn, '') }}:
+          - ${{ parameters.dependsOn }}
+
+      timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
+      continueOnError: ${{ parameters.continueOnError }}
+
+    ${{ if ne(parameters.dependsOn[0], '') }}:
+      dependsOn: ${{ parameters.dependsOn }}
+
+    name: 'run_test_p0_mono_${{ parameters.displayNameArgs }}_Browser_wasm_${{ parameters.buildConfig }}'
+    displayName: 'Mono  Pri0 Runtime Tests Run Browser wasm ${{ parameters.buildConfig }}'
+
+    variables:
+    - name: timeoutPerTestInMinutes
+      value: 10
+    - name: timeoutPerTestCollectionInMinutes
+      value: 30
+    - ${{ if in(parameters.testGroup, 'outerloop') }}:
+      - name: timeoutPerTestCollectionInMinutes
+        value: 120
+    - ${{ if in(parameters.testGroup, 'gc-longrunning', 'gc-simulator') }}:
+      - name: timeoutPerTestCollectionInMinutes
+        value: 360
+      # gc reliability may take up to 2 hours to shutdown. Some scenarios have very long iteration times.
+      - name: timeoutPerTestInMinutes
+        value: 240
+    - ${{ if in(parameters.testGroup, 'clrinterpreter') }}:
+      - name: timeoutPerTestCollectionInMinutes
+        value: 180
+      - name: timeoutPerTestInMinutes
+        value: 30
+    - ${{ parameters.variables }}
+
+    steps:
+      script: $(coreClrRepoRootDir)build-test$(scriptExt) -skipnative  -skipstressdependencies -excludemonofailures os Browser wasm
+      displayName: Build Tests
+
+      #  Send tests to Helix
+          # Send tests to Helix
+    - template: /eng/pipelines/common/templates/runtimes/send-to-helix-step.yml
+      parameters:
+        displayName: Send tests to Helix
+        buildConfig: $(buildConfigUpper)
+        archType: ${{ parameters.archType }}
+        osGroup: ${{ parameters.osGroup }}
+        osSubgroup: ${{ parameters.osSubgroup}}
+        coreClrRepoRoot: $(coreClrRepoRoot)
+        runtimeFlavorDisplayName: ${{ parameters.runtimeFlavorDisplayName }}
+
+        ${{ if eq(variables['System.TeamProject'], 'public') }}:
+          creator: $(Build.DefinitionName)
+
+        helixBuild: $(Build.BuildNumber)
+        helixSource: $(_HelixSource)
+
+        # REVIEW: not sure why "cli" is part of the names here. Leave it for the ones that already had it,
+        # but don't add it to new ones.
+        ${{ if eq(parameters.readyToRun, true) }}:
+          helixType: 'test/functional/r2r/cli/'
+        ${{ if ne(parameters.readyToRun, true) }}:
+          helixType: 'test/functional/cli/'
+
+        helixQueues: ${{ parameters.helixQueues }}
+
+        # This tests whether an array is empty
+        ${{ if eq(join('', parameters.helixQueues), '') }}:
+          condition: false
+
+        publishTestResults: true
+
+        timeoutPerTestInMinutes: $(timeoutPerTestInMinutes)
+        timeoutPerTestCollectionInMinutes: $(timeoutPerTestCollectionInMinutes)
+
+        runCrossGen: ${{ and(eq(parameters.readyToRun, true), ne(parameters.crossgen2, true)) }}
+        runCrossGen2: ${{ and(eq(parameters.readyToRun, true), eq(parameters.crossgen2, true)) }}
+        compositeBuildMode: ${{ parameters.compositeBuildMode }}
+        runInUnloadableContext: ${{ parameters.runInUnloadableContext }}
+
+        ${{ if eq(variables['System.TeamProject'], 'internal') }}:
+          # Access token variable for internal project from the
+          # DotNet-HelixApi-Access variable group
+          helixAccessToken: $(HelixApiAccessToken)
+
+        helixProjectArguments: '$(coreClrRepoRoot)/tests/helixpublishwitharcade.proj'
+
+        scenarios: normal
+        
+    # Publish Logs
+    - task: PublishPipelineArtifact@1
+      displayName: Publish Logs
+      inputs:
+        targetPath: $(Build.SourcesDirectory)/artifacts/log
+        artifactName: '${{ parameters.runtimeFlavor }}_${{ parameters.runtimeVariant }}_$(LogNamePrefix)_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)_${{ parameters.testGroup }}'
+      continueOnError: true
+      condition: always()
