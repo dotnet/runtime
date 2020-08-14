@@ -41,6 +41,7 @@ namespace System.Net
         private static string GetExceptionMessage(NetworkError error) => error switch
         {
             NetworkError.EndPointInUse => SR.networkerror_addressinuse,
+            NetworkError.TimedOut => SR.networkerror_timedout,
             NetworkError.HostNotFound => SR.networkerror_hostnotfound,
             NetworkError.ConnectionRefused => SR.networkerror_connectionrefused,
             NetworkError.ConnectionAborted => SR.networkerror_connectionaborted,

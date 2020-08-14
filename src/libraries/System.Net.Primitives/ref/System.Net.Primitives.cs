@@ -327,6 +327,7 @@ namespace System.Net
         Unknown = 0,
         EndPointInUse,
         HostNotFound,
+        TimedOut,
         ConnectionRefused,
         OperationAborted,
         ConnectionAborted,

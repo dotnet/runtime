@@ -15,6 +15,9 @@ namespace System.Net
         /// <summary>No such host is known.</summary>
         HostNotFound,
 
+        /// <summary>The connection attempt has timed out.</summary>
+        TimedOut,
+
         /// <summary>No connection could be made because the remote host actively refused it.</summary>
         ConnectionRefused,
 
