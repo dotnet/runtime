@@ -2303,23 +2303,24 @@ namespace System.Net.Http.Functional.Tests
 
         private async Task<(int Count, int LastStreamId)> HandleAllPendingRequests(Http2LoopbackConnection connection, int totalRequestCount)
         {
-            int streamId = -1;
+            int lastStreamId = -1;
             for (int i = 0; i < totalRequestCount; i++)
             {
                 try
                 {
                     // Exact number of requests sent over the given connection is unknown,
                     // so we keep reading headers and sending response while there are available requests.
-                    streamId = await connection.ReadRequestHeaderAsync().ConfigureAwait(false);
+                    (int streamId, _) = await connection.ReadAndParseRequestHeaderAsync().ConfigureAwait(false);
                     await connection.SendDefaultResponseAsync(streamId).ConfigureAwait(false);
+                    lastStreamId = streamId;
                 }
                 catch (OperationCanceledException)
                 {
-                    return (i, streamId);
+                    return (i, lastStreamId);
                 }
             }
 
-            return (totalRequestCount, streamId);
+            return (totalRequestCount, lastStreamId);
         }
 
         private async Task<List<int>> AcceptRequests(Http2LoopbackConnection connection, int maxRequests = int.MaxValue)
@@ -2329,7 +2330,8 @@ namespace System.Net.Http.Functional.Tests
             {
                 try
                 {
-                    streamIds.Add(await connection.ReadRequestHeaderAsync().ConfigureAwait(false));
+                    (int streamId, _) = await connection.ReadAndParseRequestHeaderAsync().ConfigureAwait(false);
+                    streamIds.Add(streamId);
                 }
                 catch (OperationCanceledException)
                 {
