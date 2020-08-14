@@ -246,14 +246,17 @@ private:
     {
 
         LPCWSTR m_pPath;
+        BOOL m_bLookInBundle;
 
-        PEImageLocator(LPCWSTR pPath)
-            : m_pPath(pPath)
+        PEImageLocator(LPCWSTR pPath, BOOL bLookInBundle)
+            : m_pPath(pPath),
+              m_bLookInBundle(bLookInBundle)
         {
         }
 
-        PEImageLocator(PEImage * pImage)
-            : m_pPath(pImage->m_path.GetUnicode())
+        PEImageLocator(PEImage * pImage, BOOL bLookInBundle)
+            : m_pPath(pImage->m_path.GetUnicode()),
+              m_bLookInBundle(bLookInBundle)
         {
         }
     };

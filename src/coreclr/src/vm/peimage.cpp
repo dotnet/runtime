@@ -229,7 +229,7 @@ ULONG PEImage::Release()
             LOG((LF_LOADER, LL_INFO100, "PEImage: Closing Image %S\n", (LPCWSTR) m_path));
             if(m_bInHashMap)
             {
-                PEImageLocator locator(this);
+                PEImageLocator locator(this, m_bundleFileLocation.IsValid());
                 PEImage* deleted = (PEImage *)s_Images->DeleteValue(GetIDHash(), &locator);
                 _ASSERTE(deleted == this);
             }
@@ -367,7 +367,9 @@ BOOL PEImage::CompareImage(UPTR u1, UPTR u2)
     EX_TRY
     {
         SString path(SString::Literal, pLocator->m_pPath);
-        if (PathEquals(path, pImage->GetPath()))
+        BOOL lookInBundle = pLocator->m_bLookInBundle;
+        if (PathEquals(path, pImage->GetPath()) &&
+            (lookInBundle || !(pImage->IsInBundle())))
             ret = TRUE;
     }
     EX_CATCH_HRESULT(hr); //<TODO>ignores failure!</TODO>

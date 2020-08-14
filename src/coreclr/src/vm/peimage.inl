@@ -492,13 +492,12 @@ inline PTR_PEImage PEImage::FindByPath(LPCWSTR pPath, BOOL lookInBundle /* = tru
 
     int CaseHashHelper(const WCHAR *buffer, COUNT_T count);
 
-    PEImageLocator locator(pPath);
+    PEImageLocator locator(pPath, lookInBundle);
 #ifdef FEATURE_CASE_SENSITIVE_FILESYSTEM
     DWORD dwHash=path.Hash();
 #else
     DWORD dwHash = CaseHashHelper(pPath, (COUNT_T) wcslen(pPath));
 #endif
-    dwHash = (dwHash << 1) | lookInBundle;
     return (PEImage *) s_Images->LookupValue(dwHash, &locator);
 
 }
@@ -605,12 +604,10 @@ inline ULONG PEImage::GetIDHash()
     }
     CONTRACT_END;
 
-    // Start the hash with the image path and set its latest bit
-    // depending on whether the image is bundled.
 #ifdef FEATURE_CASE_SENSITIVE_FILESYSTEM
-    RETURN ((m_path.Hash() << 1) | IsInBundle());
+    RETURN m_path.Hash();
 #else
-    RETURN ((m_path.HashCaseInsensitive() << 1) | IsInBundle());
+    RETURN m_path.HashCaseInsensitive();
 #endif
 }
 
