@@ -266,12 +266,12 @@ VOID FinalizerThread::FinalizerThreadWorker(void *args)
             g_TriggerHeapDump = FALSE;
         }
 #endif
-        if (gcGenAnalysisState == 2)
+        if (gcGenAnalysisState == GcGenAnalysisState::Done)
         {
             gcGenAnalysisState = GcGenAnalysisState::Disabled;
             EventPipe::Disable(gcGenAnalysisEventPipeSessionId);
             // Writing an empty file to indicate completion
-            fclose(fopen("trace.nettrace.completed","w+"));
+            fclose(fopen(GENAWARE_COMPLETION_FILE_NAME,"w+"));
 #ifdef GEN_ANALYSIS_STRESS
             {
                 EventPipe::EnableGenerationalAwareSession();

@@ -262,7 +262,7 @@ void EventPipe::EnableViaEnvironmentVariables()
             }
         }
     }
-    if (gcGenAnalysisConfigured == 1 && gcGenAnalysisState == 0)
+    if ((gcGenAnalysisConfigured == GcGenAnalysisState::Enabled) && (gcGenAnalysisState == GcGenAnalysisState::Uninitialized))
 #endif
     {
         EnableGenerationalAwareSession();
@@ -272,16 +272,15 @@ void EventPipe::EnableViaEnvironmentVariables()
 void EventPipe::EnableGenerationalAwareSession()
 {
     LPCWSTR outputPath = nullptr;
-    outputPath = W("gcgenaware.nettrace");
+    outputPath = GENAWARE_FILE_NAME;
     NewHolder<EventPipeProviderConfiguration> pProviders = nullptr;
     int providerCnt = 1;
     pProviders = new EventPipeProviderConfiguration[providerCnt];
-    const uint64_t GenAwareKeyword                  = 0x10000000000; // This keyword is necessary for the start and stop events
     const uint64_t GCHeapAndTypeNamesKeyword        = 0x00001000000; // This keyword is necessary for the type names
     const uint64_t GCHeapSurvivalAndMovementKeyword = 0x00000400000; // This keyword is necessary for the generation range data.
     const uint64_t GCHeapDumpKeyword                = 0x00000100000; // This keyword is necessary for enabling walking the heap
     const uint64_t TypeKeyword                      = 0x00000080000; // This keyword is necessary for enabling BulkType events
-    const uint64_t keyword                          = GenAwareKeyword|GCHeapAndTypeNamesKeyword|GCHeapSurvivalAndMovementKeyword|GCHeapDumpKeyword|TypeKeyword;
+    const uint64_t keyword                          = GCHeapAndTypeNamesKeyword|GCHeapSurvivalAndMovementKeyword|GCHeapDumpKeyword|TypeKeyword;
     pProviders[0] = EventPipeProviderConfiguration(W("Microsoft-Windows-DotNETRuntime"), keyword, 5, nullptr);
     gcGenAnalysisEventPipeSessionId = EventPipe::Enable(
         outputPath,

@@ -85,8 +85,6 @@
                              message="$(string.RuntimePublisher.MethodDiagnosticKeywordMessage)" symbol="CLR_METHODDIAGNOSTIC_KEYWORD" />
                     <keyword name="TypeDiagnosticKeyword" mask="0x8000000000"
                              message="$(string.RuntimePublisher.TypeDiagnosticKeywordMessage)" symbol="CLR_TYPEDIAGNOSTIC_KEYWORD" />
-                    <keyword name="GenAwareKeyword" mask="0x10000000000"
-                             message="$(string.RuntimePublisher.GenAwareKeywordMessage)" symbol="CLR_GEN_AWARE_KEYWORD" />
                 </keywords>
                 <!--Tasks-->
                 <tasks>
@@ -3798,11 +3796,11 @@
                            symbol="KnownPathProbed" message="$(string.RuntimePublisher.KnownPathProbedEventMessage)"/>
 
                     <event value="297" version="0" level="win:Informational"
-                           keywords ="GenAwareKeyword"
+                           keywords ="GCHeapDumpKeyword"
                            symbol="GenAwareBegin" message="$(string.RuntimePublisher.GenAwareBeginEventMessage)"/>
 
                     <event value="298" version="0" level="win:Informational"
-                           keywords ="GenAwareKeyword"
+                           keywords ="GCHeapDumpKeyword"
                            symbol="GenAwareEnd" message="$(string.RuntimePublisher.GenAwareEndEventMessage)"/>
                 </events>
             </provider>
@@ -7557,7 +7555,6 @@
                 <string id="RuntimePublisher.CompilationDiagnosticKeywordMessage" value="CompilationDiagnostic" />
                 <string id="RuntimePublisher.MethodDiagnosticKeywordMessage" value="MethodDiagnostic" />
                 <string id="RuntimePublisher.TypeDiagnosticKeywordMessage" value="TypeDiagnostic" />
-                <string id="RuntimePublisher.GenAwareKeywordMessage" value="GenAwareKeyword" />
                 <string id="RuntimePublisher.GenAwareBeginEventMessage" value="NONE" />
                 <string id="RuntimePublisher.GenAwareEndEventMessage" value="NONE" />
                 <string id="RundownPublisher.LoaderKeywordMessage" value="Loader" />

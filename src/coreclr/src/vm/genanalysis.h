@@ -11,6 +11,9 @@ enum GcGenAnalysisState
     Done = 3,
 };
 
+#define GENAWARE_FILE_NAME W("gcgenaware.nettrace")
+#define GENAWARE_COMPLETION_FILE_NAME "gcgenaware.nettrace.completed"
+
 extern bool s_forcedGCInProgress;
 extern GcGenAnalysisState gcGenAnalysisState;
 extern EventPipeSession* gcGenAnalysisEventPipeSession;

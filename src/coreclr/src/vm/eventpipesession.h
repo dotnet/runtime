@@ -104,6 +104,10 @@ private:
     // It is read in EventPipeSession::WriteEvent(). While it is possible for other preemptive threads to read
     // the field while GC is happening, it should not happen because the only gcGenAwareSession only subscribe
     // to GC events.
+    // 
+    // This functionality is a workaround because we couldn't safely Enable()/Disable() the session where we wanted to due to lock-leveling.
+    // we expect to remove it in the future once that limitation is resolved
+    // other scenarios are discouraged from using this given that we plan to make it go away
     bool m_paused;
 
 public:
@@ -121,10 +125,19 @@ public:
 
     ~EventPipeSession();
 
+    /**
+     * Please do not use this function, see EventPipeSession::m_paused for more information
+     */
     void Pause();
 
+    /**
+     * Please do not use this function, see EventPipeSession::m_paused for more information
+     */
     void Resume();
 
+    /**
+     * Please do not use this function, see EventPipeSession::m_paused for more information
+     */
     bool Paused()
     {
         return this->m_paused;
