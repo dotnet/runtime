@@ -365,7 +365,7 @@ namespace System.Net.Http
 
         /// <summary>
         /// When non-null, a custom factory used to open new TCP connections.
-        /// When null, a <see cref="SocketsHttpConnectionFactory"/> will be used.
+        /// When null, a <see cref="SocketsConnectionFactory"/> will be used.
         /// </summary>
         public ConnectionFactory? ConnectionFactory
         {

@@ -17,7 +17,6 @@ namespace System.Net.Connections
         public void GetResult(short token) => _valueTaskSource.GetResult(token);
         public ValueTaskSourceStatus GetStatus(short token) => _valueTaskSource.GetStatus(token);
         public void OnCompleted(Action<object?> continuation, object? state, short token, ValueTaskSourceOnCompletedFlags flags) => _valueTaskSource.OnCompleted(continuation, state, token, flags);
-        public void Complete() => _valueTaskSource.SetResult(0);
 
         public TaskSocketAsyncEventArgs()
             : base(unsafeSuppressExecutionContextFlow: true)

@@ -9,18 +9,18 @@ namespace System.Net.Http
     // Passed to a connection factory, merges allocations for the DnsEndPoint and connection properties.
     internal sealed class DnsEndPointWithProperties : DnsEndPoint, IConnectionProperties
     {
-        public HttpRequestMessage InitialRequest { get; }
+        private readonly HttpRequestMessage _initialRequest;
 
         public DnsEndPointWithProperties(string host, int port, HttpRequestMessage initialRequest) : base(host, port)
         {
-            InitialRequest = initialRequest;
+            _initialRequest = initialRequest;
         }
 
         bool IConnectionProperties.TryGet(Type propertyKey, [NotNullWhen(true)] out object? property)
         {
-            if (propertyKey == typeof(DnsEndPointWithProperties))
+            if (propertyKey == typeof(HttpRequestMessage))
             {
-                property = this;
+                property = _initialRequest;
                 return true;
             }
 
