@@ -140,7 +140,12 @@ namespace System.IO.Enumeration
         public DateTimeOffset LastAccessTimeUtc => _status.GetLastAccessTime(FullPath, continueOnError: true);
         public DateTimeOffset LastWriteTimeUtc => _status.GetLastWriteTime(FullPath, continueOnError: true);
         public bool IsDirectory => _status.InitiallyDirectory;
-        public bool IsHidden => _directoryEntry.Name[0] == '.' || (Attributes & FileAttributes.Hidden) != 0;
+        /// <summary>
+        /// Returns <see langword="true"/> if the file is hidden; <see langword="false" /> otherwise.
+        /// In Linux and OSX, a file can be marked hidden if the filename is prepended with a dot.
+        /// In Windows and OSX, a file can be hidden if the special hidden attribute is set. For example, via the <see cref="FileSystemInfo.Attributes" /> enum flag.
+        /// </summary>
+        public bool IsHidden => _directoryEntry.Name[0] == '.' || (_initialAttributes & FileAttributes.Hidden) != 0;
 
         public FileSystemInfo ToFileSystemInfo()
         {
