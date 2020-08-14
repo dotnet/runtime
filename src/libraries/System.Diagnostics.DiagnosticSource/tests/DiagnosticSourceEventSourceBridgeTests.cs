@@ -859,6 +859,39 @@ namespace System.Diagnostics.Tests
             }
             Assert.Equal(string.Join(',', a.Tags), e.Arguments["ActivityTags"]);
         }
+
+        [Fact]
+        public void NoExceptionThrownWhenProcessingStaticActivityProperties()
+        {
+            // Ensures that no exception is thrown when static properties on the Activity type are passed to EventListener.
+
+            using (var eventListener = new TestDiagnosticSourceEventListener())
+            using (var diagnosticListener = new DiagnosticListener("MySource"))
+            {
+                string activityProps =
+                "-DummyProp" +
+                ";ActivityEvents=*Activity.DefaultIdFormat" +
+                ";ActivityBaggage=*Activity.Current" +
+                ";ActivityContext=*Activity.ForceDefaultIdFormat";
+                eventListener.Enable(
+                    "MySource/TestActivity1.Start@Activity1Start:" + activityProps + "\r\n" +
+                    "MySource/TestActivity1.Stop@Activity1Stop:" + activityProps + "\r\n" +
+                    "MySource/TestActivity2.Start@Activity2Start:" + activityProps + "\r\n" +
+                    "MySource/TestActivity2.Stop@Activity2Stop:" + activityProps + "\r\n"
+                    );
+
+                Activity activity1 = new Activity("TestActivity1");
+                activity1.SetIdFormat(ActivityIdFormat.W3C);
+                activity1.TraceStateString = "hi_there";
+                activity1.AddTag("one", "1");
+                activity1.AddTag("two", "2");
+
+                var obj = new { DummyProp = "val" };
+
+                diagnosticListener.StartActivity(activity1, obj);
+                Assert.Equal(1, eventListener.EventCount);
+            }
+        }
     }
 
     /****************************************************************************/

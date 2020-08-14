@@ -20,6 +20,8 @@ namespace System.Net.Http.Functional.Tests
 
     public sealed class TelemetryTest_Http20 : TelemetryTest
     {
+        protected override Version UseVersion => HttpVersion.Version20;
+
         public TelemetryTest_Http20(ITestOutputHelper output) : base(output) { }
     }
 
@@ -135,7 +137,7 @@ namespace System.Net.Http.Functional.Tests
             Assert.Equal("RequestStart", startEvent.EventName);
             Assert.Equal(6, startEvent.Payload.Count);
 
-            Assert.Equal("http", (string)startEvent.Payload[0]);
+            Assert.StartsWith("http", (string)startEvent.Payload[0]);
             Assert.NotEmpty((string)startEvent.Payload[1]); // host
             Assert.True(startEvent.Payload[2] is int port && port >= 0 && port <= 65535);
             Assert.NotEmpty((string)startEvent.Payload[3]); // pathAndQuery

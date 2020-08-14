@@ -3227,6 +3227,46 @@ namespace System.Net.Http.Functional.Tests
                 });
         }
 
+        [Fact]
+        [OuterLoop("Uses Task.Delay")]
+        public async Task SocketSendQueueFull_RequestCanceled_ThrowsOperationCanceled()
+        {
+            TaskCompletionSource clientComplete = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+
+            await Http2LoopbackServer.CreateClientAndServerAsync(
+                async uri =>
+                {
+                    CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
+
+                    using HttpClient client = CreateHttpClient();
+
+                    // Post a large request, large enough to fill the socket send buffer
+                    Task postTask = client.PostAsync(uri, new StringContent(new string('a', 16 * 1024 * 1024)), cancellationTokenSource.Token);
+
+                    // Wait a while to hopefully ensure that the send buffer has been completely filled
+                    await Task.Delay(3000);
+
+                    Assert.False(postTask.IsCompleted);
+
+                    // Ensure that the request can be cancelled
+                    cancellationTokenSource.Cancel();
+                    await Assert.ThrowsAnyAsync<OperationCanceledException>(() => postTask);
+
+                    // Allow server to exit
+                    clientComplete.SetResult();
+                },
+                async server =>
+                {
+                    // Establish the connection and ensure client is not blocked on windows
+                    Http2LoopbackConnection connection = await server.EstablishConnectionAsync(new SettingsEntry { SettingId = SettingId.InitialWindowSize, Value = 128 * 1024 * 1024 });
+                    await connection.WriteFrameAsync(new WindowUpdateFrame(128 * 1024 * 1024, 0));
+
+                    // Now, don't process any frames. Let the client's send buffer fill up.
+                    // When the client is done, it will signal us.
+                    await clientComplete.Task;
+                });
+        }
+
         [Theory]
         [InlineData(true)]
         [InlineData(false)]

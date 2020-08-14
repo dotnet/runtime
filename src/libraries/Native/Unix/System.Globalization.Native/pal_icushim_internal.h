@@ -73,6 +73,7 @@
     PER_FUNCTION_BLOCK(ucal_set, libicui18n) \
     PER_FUNCTION_BLOCK(ucol_close, libicui18n) \
     PER_FUNCTION_BLOCK(ucol_closeElements, libicui18n) \
+    PER_FUNCTION_BLOCK(ucol_getOffset, libicui18n) \
     PER_FUNCTION_BLOCK(ucol_getRules, libicui18n) \
     PER_FUNCTION_BLOCK(ucol_getSortKey, libicui18n) \
     PER_FUNCTION_BLOCK(ucol_getStrength, libicui18n) \
@@ -199,6 +200,7 @@ FOR_ALL_ICU_FUNCTIONS
 #define ucal_set(...) ucal_set_ptr(__VA_ARGS__)
 #define ucol_close(...) ucol_close_ptr(__VA_ARGS__)
 #define ucol_closeElements(...) ucol_closeElements_ptr(__VA_ARGS__)
+#define ucol_getOffset(...) ucol_getOffset_ptr(__VA_ARGS__)
 #define ucol_getRules(...) ucol_getRules_ptr(__VA_ARGS__)
 #define ucol_getSortKey(...) ucol_getSortKey_ptr(__VA_ARGS__)
 #define ucol_getStrength(...) ucol_getStrength_ptr(__VA_ARGS__)
