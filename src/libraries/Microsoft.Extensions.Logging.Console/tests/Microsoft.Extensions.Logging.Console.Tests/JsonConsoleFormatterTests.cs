@@ -112,10 +112,46 @@ namespace Microsoft.Extensions.Logging.Console.Test
             Assert.Equal(
                 "{\"EventId\":0,\"LogLevel\":\"Critical\",\"Category\":\"test\""
                 + ",\"Message\":\"[null]\""
-                + ",\"Exception\":{\"Message\":\"Invalid value\",\"Type\":\"System.InvalidOperationException\",\"StackTrace\":[],\"HResult\":-2146233079}"
+                + ",\"Exception\":\"System.InvalidOperationException: Invalid value\""
                 + ",\"State\":{\"Message\":\"[null]\",\"{OriginalFormat}\":\"[null]\"}}"
                 + Environment.NewLine,
                 GetMessage(sink.Writes.GetRange(2 * t.WritesPerMsg, t.WritesPerMsg)));
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void Log_ExceptionWithInnerException_NotIndented_ReplacesNewLines(bool indented)
+        {
+            // Arrange
+            var t = SetUp(
+                new ConsoleLoggerOptions { FormatterName = ConsoleFormatterNames.Json },
+                simpleOptions: null,
+                systemdOptions: null,
+                jsonOptions: new JsonConsoleFormatterOptions
+                {
+                    JsonWriterOptions = new JsonWriterOptions() { Indented = indented }
+                }
+            );
+            var logger = (ILogger)t.Logger;
+            var sink = t.Sink;
+            var innerException = new InvalidOperationException("custom inner message");
+            var exception = new ArgumentNullException("custom exception message", innerException);
+
+            // Act
+            logger.LogCritical(eventId: 0, message: null, exception: exception);
+
+            string indentation = indented ? "\\r\\n" : " ";
+            string spacing = indented ? " " : "";
+
+            // Assert
+            Assert.Equal(1, sink.Writes.Count);
+            Assert.Contains(
+                "\"Exception\":" + spacing + "\"System.ArgumentNullException: custom exception message"
+                + " ---\\u003E System.InvalidOperationException: custom inner message"
+                + indentation
+                + "   --- End of inner exception stack trace ---\"",
+                GetMessage(sink.Writes.GetRange(0 * t.WritesPerMsg, t.WritesPerMsg)));
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
@@ -149,7 +185,7 @@ namespace Microsoft.Extensions.Logging.Console.Test
             Assert.Equal(
                 "{\"EventId\":0,\"LogLevel\":\"Information\",\"Category\":\"test\""
                 + ",\"Message\":\"exception message with stacktrace\""
-                + ",\"Exception\":{\"Message\":\"Invalid value\",\"Type\":\"System.InvalidOperationException\",\"StackTrace\":[],\"HResult\":-2146233079}"
+                + ",\"Exception\":\"System.InvalidOperationException: Invalid value\""
                 + ",\"State\":{\"Message\":\"exception message with stacktrace\",\"0\":\"stacktrace\",\"{OriginalFormat}\":\"exception message with {0}\"}"
                 + ",\"Scopes\":[]"
                 + "}" + Environment.NewLine,
@@ -157,7 +193,7 @@ namespace Microsoft.Extensions.Logging.Console.Test
             Assert.Equal(
                 "{\"EventId\":0,\"LogLevel\":\"Information\",\"Category\":\"test\""
                 + ",\"Message\":\"exception message\""
-                + ",\"Exception\":{\"Message\":\"Invalid value\",\"Type\":\"System.InvalidOperationException\",\"StackTrace\":[],\"HResult\":-2146233079}"
+                + ",\"Exception\":\"System.InvalidOperationException: Invalid value\""
                 + ",\"State\":{\"Message\":\"exception message\"}"
                 + ",\"Scopes\":[]"
                 + "}" + Environment.NewLine,
@@ -165,7 +201,7 @@ namespace Microsoft.Extensions.Logging.Console.Test
             Assert.Equal(
                 "{\"EventId\":0,\"LogLevel\":\"Information\",\"Category\":\"test\""
                 + ",\"Message\":\"exception message\""
-                + ",\"Exception\":{\"Message\":\"Invalid value\",\"Type\":\"System.InvalidOperationException\",\"StackTrace\":[],\"HResult\":-2146233079}"
+                + ",\"Exception\":\"System.InvalidOperationException: Invalid value\""
                 + ",\"State\":{\"Message\":\"exception message\"}"
                 + ",\"Scopes\":[{\"Message\":\"scope1 123\",\"name1\":123,\"{OriginalFormat}\":\"scope1 {name1}\"},{\"Message\":\"scope2 456 789\",\"name1\":456,\"name2\":789,\"{OriginalFormat}\":\"scope2 {name1} {name2}\"}]"
                 + "}" + Environment.NewLine,
