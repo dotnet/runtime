@@ -156,13 +156,21 @@ namespace System.Reflection.Tests
         [Fact]
         public void GetFile()
         {
-            Assert.Throws<ArgumentNullException>(() => typeof(AssemblyTests).Assembly.GetFile(null));
-            AssertExtensions.Throws<ArgumentException>(null, () => typeof(AssemblyTests).Assembly.GetFile(""));
-            Assert.Null(typeof(AssemblyTests).Assembly.GetFile("NonExistentfile.dll"));
-            Assert.NotNull(typeof(AssemblyTests).Assembly.GetFile("System.Reflection.Tests.dll"));
+            var asm = typeof(AssemblyTests).Assembly;
+            if (asm.Location.Length > 0)
+            {
+                Assert.Throws<ArgumentNullException>(() => asm.GetFile(null));
+                AssertExtensions.Throws<ArgumentException>(null, () => asm.GetFile(""));
+                Assert.Null(asm.GetFile("NonExistentfile.dll"));
+                Assert.NotNull(asm.GetFile("System.Reflection.Tests.dll"));
 
-            string name = AssemblyPathHelper.GetAssemblyLocation(typeof(AssemblyTests).Assembly);
-            Assert.Equal(typeof(AssemblyTests).Assembly.GetFile("System.Reflection.Tests.dll").Name, name);
+                string name = AssemblyPathHelper.GetAssemblyLocation(asm);
+                Assert.Equal(asm.GetFile("System.Reflection.Tests.dll").Name, name);
+            }
+            else
+            {
+                Assert.Throws<FileNotFoundException>(() => asm.GetFile("System.Reflection.Tests.dll"));
+            }
         }
 
         [Fact]
@@ -180,11 +188,19 @@ namespace System.Reflection.Tests
         [Fact]
         public void GetFiles()
         {
-            Assert.NotNull(typeof(AssemblyTests).Assembly.GetFiles());
-            Assert.Equal(1, typeof(AssemblyTests).Assembly.GetFiles().Length);
+            var asm = typeof(AssemblyTests).Assembly;
+            if (asm.Location.Length > 0)
+            {
+                Assert.NotNull(asm.GetFiles());
+                Assert.Equal(1, asm.GetFiles().Length);
 
-            string name = AssemblyPathHelper.GetAssemblyLocation(typeof(AssemblyTests).Assembly);
-            Assert.Equal(typeof(AssemblyTests).Assembly.GetFiles()[0].Name, name);
+                string name = AssemblyPathHelper.GetAssemblyLocation(asm);
+                Assert.Equal(asm.GetFiles()[0].Name, name);
+            }
+            else
+            {
+                Assert.Throws<FileNotFoundException>(() => asm.GetFiles());
+            }
         }
 
         public static IEnumerable<object[]> GetHashCode_TestData()
