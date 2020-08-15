@@ -583,14 +583,10 @@
     .custom instance void Microsoft.CodeAnalysis.EmbeddedAttribute::.ctor() = (
         01 00 00 00
     )
-    // Methods
     .method public hidebysig specialname rtspecialname 
         instance void .ctor () cil managed 
     {
-        // Method begins at RVA 0x2050
-        // Code size 7 (0x7)
         .maxstack 8
-
         IL_0000: ldarg.0
         IL_0001: call instance void [CORE_ASSEMBLY]System.Attribute::.ctor()
         IL_0006: ret
@@ -612,17 +608,12 @@
         4d 75 6c 74 69 70 6c 65 00 54 02 09 49 6e 68 65
         72 69 74 65 64 00
     )
-    // Fields
     .field public initonly bool[] TransformFlags
 
-    // Methods
     .method public hidebysig specialname rtspecialname 
         instance void .ctor () cil managed 
     {
-        // Method begins at RVA 0x2058
-        // Code size 23 (0x17)
         .maxstack 8
-
         IL_0000: ldarg.0
         IL_0001: call instance void [CORE_ASSEMBLY]System.Attribute::.ctor()
         IL_0006: ldarg.0
@@ -641,10 +632,7 @@
             bool[] ''
         ) cil managed 
     {
-        // Method begins at RVA 0x2070
-        // Code size 14 (0xe)
         .maxstack 8
-
         IL_0000: ldarg.0
         IL_0001: call instance void [CORE_ASSEMBLY]System.Attribute::.ctor()
         IL_0006: ldarg.0
