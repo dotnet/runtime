@@ -40,11 +40,12 @@
         HelixRuntimeRid=$(HelixRuntimeRid)
       </_PropertiesToPass>
 
+      
       <_PropertiesToPass Condition="'$(TargetArchitecture)' == 'wasm' ">
         $(_PropertiesToPass);IncludeDotNetCli=true
       </_PropertiesToPass>
     </PropertyGroup>
-
+    <Message Importance="High" Text="_PropertiesToPass: $(_PropertiesToPass)"/>
     <Message Text="DotNetCliVersion: $(DotNetCliVersion)" Importance="High" />
     <Message Text="DotNetCliPackageType: $(DotNetCliPackageType)" Importance="High" />
     <Message Text="HelixRuntimeRid: $(HelixRuntimeRid)" Importance="High" />
