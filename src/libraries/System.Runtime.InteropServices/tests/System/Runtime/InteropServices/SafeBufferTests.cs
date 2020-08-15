@@ -77,6 +77,16 @@ namespace System.Runtime.InteropServices.Tests
         }
 
         [Fact]
+        public void ReadWriteSpan_EmptySpan_Passes()
+        {
+            var buffer = new SubBuffer(true);
+            buffer.Initialize(0);
+
+            buffer.ReadSpan<int>(0, Span<int>.Empty);
+            buffer.WriteSpan<int>(0, ReadOnlySpan<int>.Empty);
+        }
+
+        [Fact]
         public void ReadArray_NegativeIndex_ThrowsArgumentOutOfRangeException()
         {
             var wrapper = new SubBuffer(true);
