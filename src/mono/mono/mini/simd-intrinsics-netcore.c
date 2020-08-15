@@ -4,6 +4,7 @@
 
 #include <config.h>
 #include <mono/utils/mono-compiler.h>
+#include <mono/metadata/icall-decl.h>
 #include "mini.h"
 
 #if defined(DISABLE_JIT)
@@ -14,8 +15,6 @@ mono_simd_intrinsics_init (void)
 }
 
 #else
-
-#include <mono/metadata/icall-decl.h>
 
 /*
  * Only LLVM is supported as a backend.
@@ -2103,16 +2102,6 @@ emit_vector256_t (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fs
 	return NULL;
 }
 
-gboolean
-mono_cpuidex (int id, int sub_id, int *p_eax, int *p_ebx, int *p_ecx, int *p_edx);
-
-void
-ves_icall_System_Runtime_Intrinsics_X86_X86Base___cpuidex (int abcd[4], int function_id, int subfunction_id)
-{
-	mono_cpuidex (function_id, subfunction_id,
-		&abcd [0], &abcd [1], &abcd [2], &abcd [3]);
-}
-
 #endif // !TARGET_ARM64
 
 MonoInst*
@@ -2184,3 +2173,16 @@ MONO_EMPTY_SOURCE_FILE (simd_intrinsics_netcore);
 #endif
 
 #endif /* DISABLE_JIT */
+
+
+#if defined(ENABLE_NETCORE) && defined(TARGET_AMD64)
+gboolean
+mono_cpuidex (int id, int sub_id, int *p_eax, int *p_ebx, int *p_ecx, int *p_edx);
+
+void
+ves_icall_System_Runtime_Intrinsics_X86_X86Base___cpuidex (int abcd[4], int function_id, int subfunction_id)
+{
+	mono_cpuidex (function_id, subfunction_id,
+		&abcd [0], &abcd [1], &abcd [2], &abcd [3]);
+}
+#endif
