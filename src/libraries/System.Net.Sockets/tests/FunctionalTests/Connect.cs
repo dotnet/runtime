@@ -212,107 +212,128 @@ namespace System.Net.Sockets.Tests
         [Fact]
         public async Task ConnectEndPoint_Precanceled_Throws()
         {
-            EndPoint ep = new IPEndPoint(IPAddress.Parse("1.2.3.4"), 1);
+            using Socket listen = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+            listen.Bind(new IPEndPoint(IPAddress.Loopback, 0));
+            IPEndPoint remoteEndPoint = (IPEndPoint)listen.LocalEndPoint;
 
-            using (var client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
-            {
-                var cts = new CancellationTokenSource();
-                cts.Cancel();
+            using Socket client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
 
-                await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await client.ConnectAsync(ep, cts.Token));
-            }
+            using CancellationTokenSource cts = new CancellationTokenSource();
+            cts.Cancel();
+
+            OperationCanceledException e = await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await client.ConnectAsync(remoteEndPoint, cts.Token));
+            Assert.Equal(cts.Token, e.CancellationToken);
         }
 
         [Fact]
         public async Task ConnectAddressAndPort_Precanceled_Throws()
         {
-            using (var client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
-            {
-                var cts = new CancellationTokenSource();
-                cts.Cancel();
+            using Socket listen = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+            listen.Bind(new IPEndPoint(IPAddress.Loopback, 0));
+            IPEndPoint remoteEndPoint = (IPEndPoint)listen.LocalEndPoint;
 
-                await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await client.ConnectAsync(IPAddress.Parse("1.2.3.4"), 1, cts.Token));
-            }
+            using Socket client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+
+            using CancellationTokenSource cts = new CancellationTokenSource();
+            cts.Cancel();
+
+            OperationCanceledException e = await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await client.ConnectAsync(remoteEndPoint.Address, remoteEndPoint.Port, cts.Token));
+            Assert.Equal(cts.Token, e.CancellationToken);
         }
 
         [Fact]
         public async Task ConnectMultiAddressAndPort_Precanceled_Throws()
         {
-            using (var client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
-            {
-                var cts = new CancellationTokenSource();
-                cts.Cancel();
+            using Socket listen = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+            listen.Bind(new IPEndPoint(IPAddress.Loopback, 0));
+            IPEndPoint remoteEndPoint = (IPEndPoint)listen.LocalEndPoint;
 
-                await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await client.ConnectAsync(new IPAddress[] { IPAddress.Parse("1.2.3.4"), IPAddress.Parse("1.2.3.5") }, 1, cts.Token));
-            }
+            using Socket client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+
+            using CancellationTokenSource cts = new CancellationTokenSource();
+            cts.Cancel();
+
+            OperationCanceledException e = await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await client.ConnectAsync(new IPAddress[] { remoteEndPoint.Address, remoteEndPoint.Address }, remoteEndPoint.Port, cts.Token));
+            Assert.Equal(cts.Token, e.CancellationToken);
         }
 
         [Fact]
         public async Task ConnectHostNameAndPort_Precanceled_Throws()
         {
-            using (var client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
-            {
-                var cts = new CancellationTokenSource();
-                cts.Cancel();
+            using Socket listen = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+            listen.Bind(new IPEndPoint(IPAddress.Loopback, 0));
+            IPEndPoint remoteEndPoint = (IPEndPoint)listen.LocalEndPoint;
 
-                await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await client.ConnectAsync("1.2.3.4", 1, cts.Token));
-            }
+            using Socket client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+
+            using CancellationTokenSource cts = new CancellationTokenSource();
+            cts.Cancel();
+
+            OperationCanceledException e = await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await client.ConnectAsync("127.0.0.1", remoteEndPoint.Port, cts.Token));
+            Assert.Equal(cts.Token, e.CancellationToken);
         }
 
         [Fact]
         [OuterLoop("Uses Task.Delay")]
-        [PlatformSpecific(TestPlatforms.Windows)]   // Linux will not even attempt to connect to the invalid IP address
         public async Task ConnectEndPoint_CancelDuringConnect_Throws()
         {
-            EndPoint ep = new IPEndPoint(IPAddress.Parse("1.2.3.4"), 1);
+            using Socket listen = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+            listen.Bind(new IPEndPoint(IPAddress.Loopback, 0));
+            IPEndPoint remoteEndPoint = (IPEndPoint)listen.LocalEndPoint;
 
-            using (var client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
-            {
-                var cts = new CancellationTokenSource();
+            using Socket client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
 
-                ValueTask t = client.ConnectAsync(ep, cts.Token);
+            using CancellationTokenSource cts = new CancellationTokenSource();
 
-                // Delay cancellation a bit to try to ensure the OS actually attempts to connect
-                cts.CancelAfter(100);
+            ValueTask t = client.ConnectAsync(remoteEndPoint, cts.Token);
 
-                await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await t);
-            }
+            // Delay cancellation a bit to try to ensure the OS actually attempts to connect
+            cts.CancelAfter(100);
+
+            OperationCanceledException e = await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await t);
+            Assert.Equal(cts.Token, e.CancellationToken);
         }
 
         [Fact]
         [OuterLoop("Uses Task.Delay")]
-        [PlatformSpecific(TestPlatforms.Windows)]   // Linux will not even attempt to connect to the invalid IP address
         public async Task ConnectAddressAndPort_CancelDuringConnect_Throws()
         {
-            using (var client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
-            {
-                var cts = new CancellationTokenSource();
+            using Socket listen = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+            listen.Bind(new IPEndPoint(IPAddress.Loopback, 0));
+            IPEndPoint remoteEndPoint = (IPEndPoint)listen.LocalEndPoint;
 
-                ValueTask t = client.ConnectAsync(IPAddress.Parse("1.2.3.4"), 1, cts.Token);
+            using Socket client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
 
-                // Delay cancellation a bit to try to ensure the OS actually attempts to connect
-                cts.CancelAfter(100);
+            using CancellationTokenSource cts = new CancellationTokenSource();
 
-                await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await t);
-            }
+            ValueTask t = client.ConnectAsync(remoteEndPoint.Address, remoteEndPoint.Port, cts.Token);
+
+            // Delay cancellation a bit to try to ensure the OS actually attempts to connect
+            cts.CancelAfter(100);
+
+            OperationCanceledException e = await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await t);
+            Assert.Equal(cts.Token, e.CancellationToken);
         }
 
         [Fact]
         [OuterLoop("Uses Task.Delay")]
-        [PlatformSpecific(TestPlatforms.Windows)]   // Linux will not even attempt to connect to the invalid IP address
         public async Task ConnectMultiAddressAndPort_CancelDuringConnect_Throws()
         {
-            using (var client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
-            {
-                var cts = new CancellationTokenSource();
+            using Socket listen = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+            listen.Bind(new IPEndPoint(IPAddress.Loopback, 0));
+            IPEndPoint remoteEndPoint = (IPEndPoint)listen.LocalEndPoint;
 
-                ValueTask t = client.ConnectAsync(new IPAddress[] { IPAddress.Parse("1.2.3.4"), IPAddress.Parse("1.2.3.5") }, 1, cts.Token);
+            using Socket client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
 
-                // Delay cancellation a bit to try to ensure the OS actually attempts to connect
-                cts.CancelAfter(100);
+            using CancellationTokenSource cts = new CancellationTokenSource();
 
-                await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await t);
-            }
+            ValueTask t = client.ConnectAsync(new IPAddress[] { remoteEndPoint.Address, remoteEndPoint.Address}, remoteEndPoint.Port, cts.Token);
+
+            // Delay cancellation a bit to try to ensure the OS actually attempts to connect
+            cts.CancelAfter(100);
+
+            OperationCanceledException e = await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await t);
+            Assert.Equal(cts.Token, e.CancellationToken);
         }
 
         [Fact]
@@ -320,17 +341,21 @@ namespace System.Net.Sockets.Tests
         [PlatformSpecific(TestPlatforms.Windows)]   // Linux will not even attempt to connect to the invalid IP address
         public async Task ConnectHostNameAndPort_CancelDuringConnect_Throws()
         {
-            using (var client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
-            {
-                var cts = new CancellationTokenSource();
+            using Socket listen = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+            listen.Bind(new IPEndPoint(IPAddress.Loopback, 0));
+            IPEndPoint remoteEndPoint = (IPEndPoint)listen.LocalEndPoint;
 
-                ValueTask t = client.ConnectAsync("1.2.3.4", 1, cts.Token);
+            using Socket client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
 
-                // Delay cancellation a bit to try to ensure the OS actually attempts to connect
-                cts.CancelAfter(100);
+            using CancellationTokenSource cts = new CancellationTokenSource();
 
-                await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await t);
-            }
+            ValueTask t = client.ConnectAsync("127.0.0.1", remoteEndPoint.Port, cts.Token);
+
+            // Delay cancellation a bit to try to ensure the OS actually attempts to connect
+            cts.CancelAfter(100);
+
+            OperationCanceledException e = await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await t);
+            Assert.Equal(cts.Token, e.CancellationToken);
         }
     }
 }

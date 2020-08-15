@@ -183,6 +183,9 @@ namespace System.Net.Sockets.Tests
     // Same as above, but call the CancellationToken overloads where possible
     public class SocketHelperCancellableTask : SocketHelperBase
     {
+        // Use a cancellable CancellationToken that we never cancel so that implementations can't just elide handling the CancellationToken.
+        private readonly CancellationTokenSource _cts = new CancellationTokenSource();
+
         public override Task<Socket> AcceptAsync(Socket s) =>
             s.AcceptAsync();
         public override Task<(Socket socket, byte[] buffer)> AcceptAsync(Socket s, int receiveSize)
@@ -190,17 +193,17 @@ namespace System.Net.Sockets.Tests
         public override Task<Socket> AcceptAsync(Socket s, Socket acceptSocket) =>
             s.AcceptAsync(acceptSocket);
         public override Task ConnectAsync(Socket s, EndPoint endPoint) =>
-            s.ConnectAsync(endPoint, CancellationToken.None).AsTask();
+            s.ConnectAsync(endPoint, _cts.Token).AsTask();
         public override Task MultiConnectAsync(Socket s, IPAddress[] addresses, int port) =>
-            s.ConnectAsync(addresses, port, CancellationToken.None).AsTask();
+            s.ConnectAsync(addresses, port, _cts.Token).AsTask();
         public override Task<int> ReceiveAsync(Socket s, ArraySegment<byte> buffer) =>
-            s.ReceiveAsync(buffer, SocketFlags.None, CancellationToken.None).AsTask();
+            s.ReceiveAsync(buffer, SocketFlags.None, _cts.Token).AsTask();
         public override Task<int> ReceiveAsync(Socket s, IList<ArraySegment<byte>> bufferList) =>
             s.ReceiveAsync(bufferList, SocketFlags.None);
         public override Task<SocketReceiveFromResult> ReceiveFromAsync(Socket s, ArraySegment<byte> buffer, EndPoint endPoint) =>
             s.ReceiveFromAsync(buffer, SocketFlags.None, endPoint);
         public override Task<int> SendAsync(Socket s, ArraySegment<byte> buffer) =>
-            s.SendAsync(buffer, SocketFlags.None, CancellationToken.None).AsTask();
+            s.SendAsync(buffer, SocketFlags.None, _cts.Token).AsTask();
         public override Task<int> SendAsync(Socket s, IList<ArraySegment<byte>> bufferList) =>
             s.SendAsync(bufferList, SocketFlags.None);
         public override Task<int> SendToAsync(Socket s, ArraySegment<byte> buffer, EndPoint endPoint) =>
