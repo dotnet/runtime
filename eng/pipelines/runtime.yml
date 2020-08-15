@@ -156,13 +156,14 @@ jobs:
       - ${{ if and(eq(variables['System.TeamProject'], 'public'), ne(variables['Build.Reason'], 'PullRequest')) }}:
         - name: _HelixSource
           value: ci/dotnet/runtime/$(Build.SourceBranch)
+      - name: timeoutPerTestInMinutes
+        value: 10
+      - name: timeoutPerTestCollectionInMinutes
+        value: 200
     jobParameters:
       testGroup: innerloop
       nameSuffix: AllSubsets_Mono_RuntimeTests
       buildArgs: -s mono+libs+installer -c $(_BuildConfig) /p:ArchiveTests=true
-      timeoutInMinutes: 120
-      condition: >-
-        or(
           eq(dependencies.checkout.outputs['SetPathVars_runtimetests.containsChange'], true),
           eq(dependencies.checkout.outputs['SetPathVars_mono.containsChange'], true),
           eq(dependencies.checkout.outputs['SetPathVars_installer.containsChange'], true),
