@@ -394,7 +394,6 @@ var BindingSupportLib = {
 			}
 		},
 
-		// FIXME: Audit all callers, this method returns an unrooted object
 		js_typed_array_to_array : function (js_obj) {
 
 			// JavaScript typed arrays are array-like objects and provide a mechanism for accessing 
@@ -772,23 +771,28 @@ var BindingSupportLib = {
 					throw new Error("The delegate target that is being invoked is no longer available.  Please check if it has been prematurely GC'd.");
 			}
 
-			if (!this.delegate_dynamic_invoke) {
-				if (!this.corlib)
-					this.corlib = this.assembly_load ("System.Private.CoreLib");
-				if (!this.delegate_class)
-					this.delegate_class = this.find_class (this.corlib, "System", "Delegate");
-				if (!this.delegate_class)
-				{
-					throw new Error("System.Delegate class can not be resolved.");
+			var [delegateRoot, argsRoot] = MONO.mono_wasm_new_roots ([this.extract_mono_obj (delegate_obj), undefined]);
+			try {
+				if (!this.delegate_dynamic_invoke) {
+					if (!this.corlib)
+						this.corlib = this.assembly_load ("System.Private.CoreLib");
+					if (!this.delegate_class)
+						this.delegate_class = this.find_class (this.corlib, "System", "Delegate");
+					if (!this.delegate_class)
+					{
+						throw new Error("System.Delegate class can not be resolved.");
+					}
+					this.delegate_dynamic_invoke = this.find_method (this.delegate_class, "DynamicInvoke", -1);
 				}
-				this.delegate_dynamic_invoke = this.find_method (this.delegate_class, "DynamicInvoke", -1);
+				argsRoot.value = this.js_array_to_mono_array (js_args);
+				if (!this.delegate_dynamic_invoke)
+					throw new Error("System.Delegate.DynamicInvoke method can not be resolved.");
+				// Note: the single 'm' passed here is causing problems with AOT.  Changed to "mo" again.  
+				// This may need more analysis if causes problems again.
+				return this.call_method (this.delegate_dynamic_invoke, delegateRoot.value, "mo", [ argsRoot.value ]);
+			} finally {
+				MONO.mono_wasm_release_roots (delegateRoot, argsRoot);
 			}
-			var mono_args = this.js_array_to_mono_array (js_args);
-			if (!this.delegate_dynamic_invoke)
-				throw new Error("System.Delegate.DynamicInvoke method can not be resolved.");
-			// Note: the single 'm' passed here is causing problems with AOT.  Changed to "mo" again.  
-			// This may need more analysis if causes problems again.
-			return this.call_method (this.delegate_dynamic_invoke, this.extract_mono_obj (delegate_obj), "mo", [ mono_args ]);
 		},
 		
 		resolve_method_fqn: function (fqn) {
