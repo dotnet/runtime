@@ -161,32 +161,35 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public static void NullableConverterIsPassedNull()
+        public static void NullableConverterIsNotPassedNull()
         {
+            // For compat, deserialize does not call converter for null token unless the type doesn't support
+            // null or HandleNull is overridden and returns 'true'.
+            // For compat, serialize does not call converter for null unless null is a valid value and HandleNull is true.
+
             var options = new JsonSerializerOptions();
             options.Converters.Add(new NullIntTo42Converter());
 
             {
                 int? myInt = JsonSerializer.Deserialize<int?>("null", options);
-                Assert.True(myInt.HasValue);
-                Assert.Equal(42, myInt.Value);
+                Assert.Null(myInt);
             }
 
             {
                 string json = JsonSerializer.Serialize<int?>(null, options);
-                Assert.Equal("42", json);
+                Assert.Equal("null", json);
             }
 
             {
                 int?[] ints = JsonSerializer.Deserialize<int?[]>("[null, null]", options);
                 Assert.Equal(2, ints.Length);
-                Assert.Equal(42, ints[0]);
-                Assert.Equal(42, ints[1]);
+                Assert.Null(ints[0]);
+                Assert.Null(ints[1]);
             }
 
             {
                 string json = JsonSerializer.Serialize<int?[]>(new int?[] { null, null }, options);
-                Assert.Equal("[42,42]", json);
+                Assert.Equal("[null,null]", json);
             }
         }
 
