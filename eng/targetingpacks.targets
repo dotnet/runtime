@@ -6,6 +6,11 @@
     <EnableTargetingPackDownload>false</EnableTargetingPackDownload>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' and ('$(_ShortFrameworkIdentifier)' == '' or '$(_ShortFrameworkVersion)' == '')">
+    <_ShortFrameworkIdentifier>$(TargetFramework.TrimEnd('.0123456789'))</_ShortFrameworkIdentifier>
+    <_ShortFrameworkVersion>$(TargetFramework.Substring($(_ShortFrameworkIdentifier.Length)))</_ShortFrameworkVersion>
+  </PropertyGroup>
+
   <!-- .NETCoreApp 2.x DisableImplicitAssemblyReferences support. -->
   <Choose>
     <When Condition="'$(DisableImplicitAssemblyReferences)' == 'true' and
