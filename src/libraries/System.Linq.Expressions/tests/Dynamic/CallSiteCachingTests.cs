@@ -223,7 +223,7 @@ namespace System.Runtime.CompilerServices.Tests
 
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void ConcurrentAdds()
         {
             for (int i = 0; i < 10; i++)
