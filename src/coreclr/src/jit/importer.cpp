@@ -7526,11 +7526,13 @@ enum
     PREFIX_TAILCALL_EXPLICIT = 0x00000001, // call has "tail" IL prefix
     PREFIX_TAILCALL_IMPLICIT =
         0x00000010, // call is treated as having "tail" prefix even though there is no "tail" IL prefix
-    PREFIX_TAILCALL    = (PREFIX_TAILCALL_EXPLICIT | PREFIX_TAILCALL_IMPLICIT),
-    PREFIX_VOLATILE    = 0x00000100,
-    PREFIX_UNALIGNED   = 0x00001000,
-    PREFIX_CONSTRAINED = 0x00010000,
-    PREFIX_READONLY    = 0x00100000
+    PREFIX_TAILCALL_STRESS =
+        0x00000100, // call doesn't "tail" IL prefix but is treated as explicit because of tail call stress
+    PREFIX_TAILCALL    = (PREFIX_TAILCALL_EXPLICIT | PREFIX_TAILCALL_IMPLICIT | PREFIX_TAILCALL_STRESS),
+    PREFIX_VOLATILE    = 0x00001000,
+    PREFIX_UNALIGNED   = 0x00010000,
+    PREFIX_CONSTRAINED = 0x00100000,
+    PREFIX_READONLY    = 0x01000000
 };
 
 /********************************************************************************
@@ -8674,6 +8676,7 @@ DONE:
     {
         const bool isExplicitTailCall = (tailCallFlags & PREFIX_TAILCALL_EXPLICIT) != 0;
         const bool isImplicitTailCall = (tailCallFlags & PREFIX_TAILCALL_IMPLICIT) != 0;
+        const bool isStressTailCall   = (tailCallFlags & PREFIX_TAILCALL_STRESS) != 0;
 
         // Exactly one of these should be true.
         assert(isExplicitTailCall != isImplicitTailCall);
@@ -8740,6 +8743,12 @@ DONE:
                     // for in-lining.
                     call->AsCall()->gtCallMoreFlags |= GTF_CALL_M_EXPLICIT_TAILCALL;
                     JITDUMP("\nGTF_CALL_M_EXPLICIT_TAILCALL set for call [%06u]\n", dspTreeID(call));
+
+                    if (isStressTailCall)
+                    {
+                        call->AsCall()->gtCallMoreFlags |= GTF_CALL_M_STRESS_TAILCALL;
+                        JITDUMP("\nGTF_CALL_M_STRESS_TAILCALL set for call [%06u]\n", dspTreeID(call));
+                    }
                 }
                 else
                 {
@@ -14209,6 +14218,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                                     // Stress the tailcall.
                                     JITDUMP(" (Tailcall stress: prefixFlags |= PREFIX_TAILCALL_EXPLICIT)");
                                     prefixFlags |= PREFIX_TAILCALL_EXPLICIT;
+                                    prefixFlags |= PREFIX_TAILCALL_STRESS;
                                 }
                                 else
                                 {
