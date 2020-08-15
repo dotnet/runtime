@@ -632,29 +632,37 @@ namespace System
             {
                 lengthToExamine -= 8;
 
+                // The test
+                //    ((uValue0 ^ lookUp) * (uValue1 ^ lookUp) == 0)
+                // is equivalent to
+                //    (uValue0 == lookUp || uValue1 == lookUp)
+                // however it reduces the number of branches per loop (at the cost of short circuting)
+                // which is helpful for the instruction decode cache as the loop is very heavily branched
+                // (see: Intel 64 and IA-32 Architectures Optimization Reference Manual -> Optimization for Decoded ICache | Two Branches in a Decoded ICache Way)
+
                 lookUp = Unsafe.AddByteOffset(ref searchSpace, offset);
-                if (uValue0 == lookUp || uValue1 == lookUp)
+                if ((uValue0 ^ lookUp) * (uValue1 ^ lookUp) == 0)
                     goto Found;
                 lookUp = Unsafe.AddByteOffset(ref searchSpace, offset + 1);
-                if (uValue0 == lookUp || uValue1 == lookUp)
+                if ((uValue0 ^ lookUp) * (uValue1 ^ lookUp) == 0)
                     goto Found1;
                 lookUp = Unsafe.AddByteOffset(ref searchSpace, offset + 2);
-                if (uValue0 == lookUp || uValue1 == lookUp)
+                if ((uValue0 ^ lookUp) * (uValue1 ^ lookUp) == 0)
                     goto Found2;
                 lookUp = Unsafe.AddByteOffset(ref searchSpace, offset + 3);
-                if (uValue0 == lookUp || uValue1 == lookUp)
+                if ((uValue0 ^ lookUp) * (uValue1 ^ lookUp) == 0)
                     goto Found3;
                 lookUp = Unsafe.AddByteOffset(ref searchSpace, offset + 4);
-                if (uValue0 == lookUp || uValue1 == lookUp)
+                if ((uValue0 ^ lookUp) * (uValue1 ^ lookUp) == 0)
                     goto Found4;
                 lookUp = Unsafe.AddByteOffset(ref searchSpace, offset + 5);
-                if (uValue0 == lookUp || uValue1 == lookUp)
+                if ((uValue0 ^ lookUp) * (uValue1 ^ lookUp) == 0)
                     goto Found5;
                 lookUp = Unsafe.AddByteOffset(ref searchSpace, offset + 6);
-                if (uValue0 == lookUp || uValue1 == lookUp)
+                if ((uValue0 ^ lookUp) * (uValue1 ^ lookUp) == 0)
                     goto Found6;
                 lookUp = Unsafe.AddByteOffset(ref searchSpace, offset + 7);
-                if (uValue0 == lookUp || uValue1 == lookUp)
+                if ((uValue0 ^ lookUp) * (uValue1 ^ lookUp) == 0)
                     goto Found7;
 
                 offset += 8;
@@ -665,16 +673,16 @@ namespace System
                 lengthToExamine -= 4;
 
                 lookUp = Unsafe.AddByteOffset(ref searchSpace, offset);
-                if (uValue0 == lookUp || uValue1 == lookUp)
+                if ((uValue0 ^ lookUp) * (uValue1 ^ lookUp) == 0)
                     goto Found;
                 lookUp = Unsafe.AddByteOffset(ref searchSpace, offset + 1);
-                if (uValue0 == lookUp || uValue1 == lookUp)
+                if ((uValue0 ^ lookUp) * (uValue1 ^ lookUp) == 0)
                     goto Found1;
                 lookUp = Unsafe.AddByteOffset(ref searchSpace, offset + 2);
-                if (uValue0 == lookUp || uValue1 == lookUp)
+                if ((uValue0 ^ lookUp) * (uValue1 ^ lookUp) == 0)
                     goto Found2;
                 lookUp = Unsafe.AddByteOffset(ref searchSpace, offset + 3);
-                if (uValue0 == lookUp || uValue1 == lookUp)
+                if ((uValue0 ^ lookUp) * (uValue1 ^ lookUp) == 0)
                     goto Found3;
 
                 offset += 4;
@@ -684,7 +692,7 @@ namespace System
             {
 
                 lookUp = Unsafe.AddByteOffset(ref searchSpace, offset);
-                if (uValue0 == lookUp || uValue1 == lookUp)
+                if ((uValue0 ^ lookUp) * (uValue1 ^ lookUp) == 0)
                     goto Found;
 
                 offset += 1;
@@ -944,29 +952,37 @@ namespace System
             {
                 lengthToExamine -= 8;
 
+                // The test
+                //    ((uValue0 ^ lookUp) * (uValue1 ^ lookUp) * (uValue2 ^ lookUp) == 0)
+                // is equivalent to
+                //    (uValue0 == lookUp || uValue1 == lookUp || uValue2 == lookUp)
+                // however it reduces the number of branches per loop (at the cost of short circuting)
+                // which is helpful for the instruction decode cache as the loop is very heavily branched
+                // (see: Intel 64 and IA-32 Architectures Optimization Reference Manual -> Optimization for Decoded ICache | Two Branches in a Decoded ICache Way)
+
                 lookUp = Unsafe.AddByteOffset(ref searchSpace, offset);
-                if (uValue0 == lookUp || uValue1 == lookUp || uValue2 == lookUp)
+                if ((uValue0 ^ lookUp) * (uValue1 ^ lookUp) * (uValue2 ^ lookUp) == 0)
                     goto Found;
                 lookUp = Unsafe.AddByteOffset(ref searchSpace, offset + 1);
-                if (uValue0 == lookUp || uValue1 == lookUp || uValue2 == lookUp)
+                if ((uValue0 ^ lookUp) * (uValue1 ^ lookUp) * (uValue2 ^ lookUp) == 0)
                     goto Found1;
                 lookUp = Unsafe.AddByteOffset(ref searchSpace, offset + 2);
-                if (uValue0 == lookUp || uValue1 == lookUp || uValue2 == lookUp)
+                if ((uValue0 ^ lookUp) * (uValue1 ^ lookUp) * (uValue2 ^ lookUp) == 0)
                     goto Found2;
                 lookUp = Unsafe.AddByteOffset(ref searchSpace, offset + 3);
-                if (uValue0 == lookUp || uValue1 == lookUp || uValue2 == lookUp)
+                if ((uValue0 ^ lookUp) * (uValue1 ^ lookUp) * (uValue2 ^ lookUp) == 0)
                     goto Found3;
                 lookUp = Unsafe.AddByteOffset(ref searchSpace, offset + 4);
-                if (uValue0 == lookUp || uValue1 == lookUp || uValue2 == lookUp)
+                if ((uValue0 ^ lookUp) * (uValue1 ^ lookUp) * (uValue2 ^ lookUp) == 0)
                     goto Found4;
                 lookUp = Unsafe.AddByteOffset(ref searchSpace, offset + 5);
-                if (uValue0 == lookUp || uValue1 == lookUp || uValue2 == lookUp)
+                if ((uValue0 ^ lookUp) * (uValue1 ^ lookUp) * (uValue2 ^ lookUp) == 0)
                     goto Found5;
                 lookUp = Unsafe.AddByteOffset(ref searchSpace, offset + 6);
-                if (uValue0 == lookUp || uValue1 == lookUp || uValue2 == lookUp)
+                if ((uValue0 ^ lookUp) * (uValue1 ^ lookUp) * (uValue2 ^ lookUp) == 0)
                     goto Found6;
                 lookUp = Unsafe.AddByteOffset(ref searchSpace, offset + 7);
-                if (uValue0 == lookUp || uValue1 == lookUp || uValue2 == lookUp)
+                if ((uValue0 ^ lookUp) * (uValue1 ^ lookUp) * (uValue2 ^ lookUp) == 0)
                     goto Found7;
 
                 offset += 8;
@@ -977,16 +993,16 @@ namespace System
                 lengthToExamine -= 4;
 
                 lookUp = Unsafe.AddByteOffset(ref searchSpace, offset);
-                if (uValue0 == lookUp || uValue1 == lookUp || uValue2 == lookUp)
+                if ((uValue0 ^ lookUp) * (uValue1 ^ lookUp) * (uValue2 ^ lookUp) == 0)
                     goto Found;
                 lookUp = Unsafe.AddByteOffset(ref searchSpace, offset + 1);
-                if (uValue0 == lookUp || uValue1 == lookUp || uValue2 == lookUp)
+                if ((uValue0 ^ lookUp) * (uValue1 ^ lookUp) * (uValue2 ^ lookUp) == 0)
                     goto Found1;
                 lookUp = Unsafe.AddByteOffset(ref searchSpace, offset + 2);
-                if (uValue0 == lookUp || uValue1 == lookUp || uValue2 == lookUp)
+                if ((uValue0 ^ lookUp) * (uValue1 ^ lookUp) * (uValue2 ^ lookUp) == 0)
                     goto Found2;
                 lookUp = Unsafe.AddByteOffset(ref searchSpace, offset + 3);
-                if (uValue0 == lookUp || uValue1 == lookUp || uValue2 == lookUp)
+                if ((uValue0 ^ lookUp) * (uValue1 ^ lookUp) * (uValue2 ^ lookUp) == 0)
                     goto Found3;
 
                 offset += 4;
@@ -997,7 +1013,7 @@ namespace System
                 lengthToExamine -= 1;
 
                 lookUp = Unsafe.AddByteOffset(ref searchSpace, offset);
-                if (uValue0 == lookUp || uValue1 == lookUp || uValue2 == lookUp)
+                if ((uValue0 ^ lookUp) * (uValue1 ^ lookUp) * (uValue2 ^ lookUp) == 0)
                     goto Found;
 
                 offset += 1;
@@ -1226,29 +1242,37 @@ namespace System
                 lengthToExamine -= 8;
                 offset -= 8;
 
+                // The test
+                //    ((uValue0 ^ lookUp) * (uValue1 ^ lookUp) == 0)
+                // is equivalent to
+                //    (uValue0 == lookUp || uValue1 == lookUp)
+                // however it reduces the number of branches per loop (at the cost of short circuting)
+                // which is helpful for the instruction decode cache as the loop is very heavily branched
+                // (see: Intel 64 and IA-32 Architectures Optimization Reference Manual -> Optimization for Decoded ICache | Two Branches in a Decoded ICache Way)
+
                 lookUp = Unsafe.AddByteOffset(ref searchSpace, offset + 7);
-                if (uValue0 == lookUp || uValue1 == lookUp)
+                if ((uValue0 ^ lookUp) * (uValue1 ^ lookUp) == 0)
                     goto Found7;
                 lookUp = Unsafe.AddByteOffset(ref searchSpace, offset + 6);
-                if (uValue0 == lookUp || uValue1 == lookUp)
+                if ((uValue0 ^ lookUp) * (uValue1 ^ lookUp) == 0)
                     goto Found6;
                 lookUp = Unsafe.AddByteOffset(ref searchSpace, offset + 5);
-                if (uValue0 == lookUp || uValue1 == lookUp)
+                if ((uValue0 ^ lookUp) * (uValue1 ^ lookUp) == 0)
                     goto Found5;
                 lookUp = Unsafe.AddByteOffset(ref searchSpace, offset + 4);
-                if (uValue0 == lookUp || uValue1 == lookUp)
+                if ((uValue0 ^ lookUp) * (uValue1 ^ lookUp) == 0)
                     goto Found4;
                 lookUp = Unsafe.AddByteOffset(ref searchSpace, offset + 3);
-                if (uValue0 == lookUp || uValue1 == lookUp)
+                if ((uValue0 ^ lookUp) * (uValue1 ^ lookUp) == 0)
                     goto Found3;
                 lookUp = Unsafe.AddByteOffset(ref searchSpace, offset + 2);
-                if (uValue0 == lookUp || uValue1 == lookUp)
+                if ((uValue0 ^ lookUp) * (uValue1 ^ lookUp) == 0)
                     goto Found2;
                 lookUp = Unsafe.AddByteOffset(ref searchSpace, offset + 1);
-                if (uValue0 == lookUp || uValue1 == lookUp)
+                if ((uValue0 ^ lookUp) * (uValue1 ^ lookUp) == 0)
                     goto Found1;
                 lookUp = Unsafe.AddByteOffset(ref searchSpace, offset);
-                if (uValue0 == lookUp || uValue1 == lookUp)
+                if ((uValue0 ^ lookUp) * (uValue1 ^ lookUp) == 0)
                     goto Found;
             }
 
@@ -1258,16 +1282,16 @@ namespace System
                 offset -= 4;
 
                 lookUp = Unsafe.AddByteOffset(ref searchSpace, offset + 3);
-                if (uValue0 == lookUp || uValue1 == lookUp)
+                if ((uValue0 ^ lookUp) * (uValue1 ^ lookUp) == 0)
                     goto Found3;
                 lookUp = Unsafe.AddByteOffset(ref searchSpace, offset + 2);
-                if (uValue0 == lookUp || uValue1 == lookUp)
+                if ((uValue0 ^ lookUp) * (uValue1 ^ lookUp) == 0)
                     goto Found2;
                 lookUp = Unsafe.AddByteOffset(ref searchSpace, offset + 1);
-                if (uValue0 == lookUp || uValue1 == lookUp)
+                if ((uValue0 ^ lookUp) * (uValue1 ^ lookUp) == 0)
                     goto Found1;
                 lookUp = Unsafe.AddByteOffset(ref searchSpace, offset);
-                if (uValue0 == lookUp || uValue1 == lookUp)
+                if ((uValue0 ^ lookUp) * (uValue1 ^ lookUp) == 0)
                     goto Found;
             }
 
@@ -1351,29 +1375,37 @@ namespace System
                 lengthToExamine -= 8;
                 offset -= 8;
 
+                // The test
+                //    ((uValue0 ^ lookUp) * (uValue1 ^ lookUp) * (uValue2 ^ lookUp) == 0)
+                // is equivalent to
+                //    (uValue0 == lookUp || uValue1 == lookUp || uValue2 == lookUp)
+                // however it reduces the number of branches per loop (at the cost of short circuting)
+                // which is helpful for the instruction decode cache as the loop is very heavily branched
+                // (see: Intel 64 and IA-32 Architectures Optimization Reference Manual -> Optimization for Decoded ICache | Two Branches in a Decoded ICache Way)
+
                 lookUp = Unsafe.AddByteOffset(ref searchSpace, offset + 7);
-                if (uValue0 == lookUp || uValue1 == lookUp || uValue2 == lookUp)
+                if ((uValue0 ^ lookUp) * (uValue1 ^ lookUp) * (uValue2 ^ lookUp) == 0)
                     goto Found7;
                 lookUp = Unsafe.AddByteOffset(ref searchSpace, offset + 6);
-                if (uValue0 == lookUp || uValue1 == lookUp || uValue2 == lookUp)
+                if ((uValue0 ^ lookUp) * (uValue1 ^ lookUp) * (uValue2 ^ lookUp) == 0)
                     goto Found6;
                 lookUp = Unsafe.AddByteOffset(ref searchSpace, offset + 5);
-                if (uValue0 == lookUp || uValue1 == lookUp || uValue2 == lookUp)
+                if ((uValue0 ^ lookUp) * (uValue1 ^ lookUp) * (uValue2 ^ lookUp) == 0)
                     goto Found5;
                 lookUp = Unsafe.AddByteOffset(ref searchSpace, offset + 4);
-                if (uValue0 == lookUp || uValue1 == lookUp || uValue2 == lookUp)
+                if ((uValue0 ^ lookUp) * (uValue1 ^ lookUp) * (uValue2 ^ lookUp) == 0)
                     goto Found4;
                 lookUp = Unsafe.AddByteOffset(ref searchSpace, offset + 3);
-                if (uValue0 == lookUp || uValue1 == lookUp || uValue2 == lookUp)
+                if ((uValue0 ^ lookUp) * (uValue1 ^ lookUp) * (uValue2 ^ lookUp) == 0)
                     goto Found3;
                 lookUp = Unsafe.AddByteOffset(ref searchSpace, offset + 2);
-                if (uValue0 == lookUp || uValue1 == lookUp || uValue2 == lookUp)
+                if ((uValue0 ^ lookUp) * (uValue1 ^ lookUp) * (uValue2 ^ lookUp) == 0)
                     goto Found2;
                 lookUp = Unsafe.AddByteOffset(ref searchSpace, offset + 1);
-                if (uValue0 == lookUp || uValue1 == lookUp || uValue2 == lookUp)
+                if ((uValue0 ^ lookUp) * (uValue1 ^ lookUp) * (uValue2 ^ lookUp) == 0)
                     goto Found1;
                 lookUp = Unsafe.AddByteOffset(ref searchSpace, offset);
-                if (uValue0 == lookUp || uValue1 == lookUp || uValue2 == lookUp)
+                if ((uValue0 ^ lookUp) * (uValue1 ^ lookUp) * (uValue2 ^ lookUp) == 0)
                     goto Found;
             }
 
@@ -1383,16 +1415,16 @@ namespace System
                 offset -= 4;
 
                 lookUp = Unsafe.AddByteOffset(ref searchSpace, offset + 3);
-                if (uValue0 == lookUp || uValue1 == lookUp || uValue2 == lookUp)
+                if ((uValue0 ^ lookUp) * (uValue1 ^ lookUp) * (uValue2 ^ lookUp) == 0)
                     goto Found3;
                 lookUp = Unsafe.AddByteOffset(ref searchSpace, offset + 2);
-                if (uValue0 == lookUp || uValue1 == lookUp || uValue2 == lookUp)
+                if ((uValue0 ^ lookUp) * (uValue1 ^ lookUp) * (uValue2 ^ lookUp) == 0)
                     goto Found2;
                 lookUp = Unsafe.AddByteOffset(ref searchSpace, offset + 1);
-                if (uValue0 == lookUp || uValue1 == lookUp || uValue2 == lookUp)
+                if ((uValue0 ^ lookUp) * (uValue1 ^ lookUp) * (uValue2 ^ lookUp) == 0)
                     goto Found1;
                 lookUp = Unsafe.AddByteOffset(ref searchSpace, offset);
-                if (uValue0 == lookUp || uValue1 == lookUp || uValue2 == lookUp)
+                if ((uValue0 ^ lookUp) * (uValue1 ^ lookUp) * (uValue2 ^ lookUp) == 0)
                     goto Found;
             }
 
@@ -1402,7 +1434,7 @@ namespace System
                 offset -= 1;
 
                 lookUp = Unsafe.AddByteOffset(ref searchSpace, offset);
-                if (uValue0 == lookUp || uValue1 == lookUp || uValue2 == lookUp)
+                if ((uValue0 ^ lookUp) * (uValue1 ^ lookUp) * (uValue2 ^ lookUp) == 0)
                     goto Found;
             }
 
