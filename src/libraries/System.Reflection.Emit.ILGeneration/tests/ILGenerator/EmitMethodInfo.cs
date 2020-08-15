@@ -19,27 +19,27 @@ namespace System.Reflection.Emit.Tests
         [Fact]
         public void EmitMethodInfo()
         {
-            var methodType = typeof(IWithIn<int>);
-            var method = methodType.GetMethod("Method");
-            var getMethodFromHandle = typeof(MethodBase).GetMethod("GetMethodFromHandle", new[] { typeof(RuntimeMethodHandle), typeof(RuntimeTypeHandle) });
+            Type methodType = typeof(IWithIn<int>);
+            MethodInfo method = methodType.GetMethod("Method");
+            MethodInfo getMethodFromHandle = typeof(MethodBase).GetMethod("GetMethodFromHandle", new[] { typeof(RuntimeMethodHandle), typeof(RuntimeTypeHandle) });
 
             ModuleBuilder moduleBuilder = Helpers.DynamicModule();
-            var typeBuilder = moduleBuilder.DefineType("DynamicType", TypeAttributes.Public | TypeAttributes.Abstract | TypeAttributes.Class);
+            TypeBuilder typeBuilder = moduleBuilder.DefineType("DynamicType", TypeAttributes.Public | TypeAttributes.Abstract | TypeAttributes.Class);
 
-            var methodBuilder = typeBuilder.DefineMethod("Get", MethodAttributes.Public | MethodAttributes.Static, typeof(MethodBase), new Type[0]);
-            var ilBuilder = methodBuilder.GetILGenerator();
+            MethodBuilder methodBuilder = typeBuilder.DefineMethod("Get", MethodAttributes.Public | MethodAttributes.Static, typeof(MethodBase), new Type[0]);
+            ILGenerator ilBuilder = methodBuilder.GetILGenerator();
             ilBuilder.Emit(OpCodes.Ldtoken, method);
             ilBuilder.Emit(OpCodes.Ldtoken, methodType);
             ilBuilder.Emit(OpCodes.Call, getMethodFromHandle);
             ilBuilder.Emit(OpCodes.Ret);
 
-            var type = typeBuilder.CreateType();
+            Type type = typeBuilder.CreateType();
 
-            var genMethod = type.GetMethod("Get");
-            var il = genMethod.GetMethodBody().GetILAsByteArray();
+            MethodInfo genMethod = type.GetMethod("Get");
+            byte[] il = genMethod.GetMethodBody().GetILAsByteArray();
 
-            var ilMethodMetadataToken = BitConverter.ToInt32(il, 1);
-            var resolvedMethod = type.Module.ResolveMethod(ilMethodMetadataToken);
+            int ilMethodMetadataToken = BitConverter.ToInt32(il, 1);
+            MethodBase resolvedMethod = type.Module.ResolveMethod(ilMethodMetadataToken);
             Assert.Equal(method, resolvedMethod);
             var methodBase = (MethodBase)genMethod.Invoke(null, null);
             Assert.Equal(method, methodBase);
