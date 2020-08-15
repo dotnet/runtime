@@ -22,7 +22,6 @@ parameters:
   runInUnloadableContext: ''
   longRunningGcTests: ''
   gcSimulatorTests: ''
-  coreClrRepoRoot: ''
   runtimeFlavorDisplayName: 'CoreCLR'
   runtimeVariant: ''
 
