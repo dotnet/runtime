@@ -92,11 +92,6 @@ namespace Microsoft.Extensions.Logging.Console
             textWriter.Write(Environment.NewLine);
         }
 
-        private static string WriteReplacing(string oldValue, string newValue, string message)
-        {
-            return message.Replace(oldValue, newValue);
-        }
-
         private static string GetLogLevelString(LogLevel logLevel)
         {
             return logLevel switch
