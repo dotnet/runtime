@@ -14,6 +14,7 @@
     <!-- For the inbox library (that is shipping with the product), this should always be true. -->
     <!-- BUILDING_INBOX_LIBRARY is only false when building the netstandard compatible NuGet package. -->
     <DefineConstants Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)' or '$(TargetFramework)' == 'netcoreapp3.0'">$(DefineConstants);BUILDING_INBOX_LIBRARY</DefineConstants>
+    <DefineConstants Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">$(DefineConstants);PLATFORM_INTRINSICS</DefineConstants>
     <NoWarn Condition="'$(TargetFramework)' == 'netstandard2.0' or $(TargetFramework.StartsWith('net4'))">$(NoWarn);nullable</NoWarn>
     <!-- Use the contract reference path for ApiCompat. -->
     <ContractTargetFramework Condition="'$(TargetFramework)' == 'netcoreapp3.0'">netstandard2.0</ContractTargetFramework>
@@ -248,6 +249,9 @@
     <Reference Include="System.Threading" />
     <Reference Include="System.Threading.Tasks" />
     <Reference Include="System.Threading.Tasks.Extensions" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
+    <Reference Include="System.Runtime.Intrinsics" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0' or $(TargetFramework.StartsWith('net4'))">
     <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Bcl.AsyncInterfaces\src\Microsoft.Bcl.AsyncInterfaces.csproj" />
