@@ -2618,7 +2618,9 @@ namespace Mono.Linker.Steps
 				// marshalling. We can't detect that once we have an RCW.
 				if (method.IsPInvokeImpl) {
 					if (IsComInterop (method.MethodReturnType, method.ReturnType) && !didWarnAboutCom) {
-						_context.LogWarning ($"P/invoke method '{method.GetDisplayName ()}' declares a parameter with COM marshalling. Correctness of COM interop cannot be guaranteed after trimming. Interfaces and interface members might be removed.", 2050, method);
+						_context.LogWarning (
+							$"P/invoke method '{method.GetDisplayName ()}' declares a parameter with COM marshalling. Correctness of COM interop cannot be guaranteed after trimming. Interfaces and interface members might be removed.",
+							2050, method, subcategory: MessageSubCategory.TrimAnalysis);
 						didWarnAboutCom = true;
 					}
 				}

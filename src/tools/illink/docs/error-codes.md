@@ -788,7 +788,7 @@ This is technically possible if a custom assembly defines `DynamicDependencyAttr
   </linker>
   ```
 
-#### `IL2050`: Correctness of COM interop cannot be guaranteed
+#### `IL2050`: Trim analysis: Correctness of COM interop cannot be guaranteed
 
 - P/invoke method 'method' declares a parameter with COM marshalling. Correctness of COM interop cannot be guaranteed after trimming. Interfaces and interface members might be removed.
 
