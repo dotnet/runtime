@@ -121,7 +121,7 @@ public:
 
     static PTR_PEImage FindById(UINT64 uStreamAsmId, DWORD dwModuleId);
     static PTR_PEImage FindByPath(LPCWSTR pPath,
-                                  BOOL lookInBundle = true);
+                                  BOOL lookInBundle = TRUE);
     static PTR_PEImage FindByShortPath(LPCWSTR pPath);
     static PTR_PEImage FindByLongPath(LPCWSTR pPath);
     void AddToHashMap();
@@ -246,17 +246,17 @@ private:
     {
 
         LPCWSTR m_pPath;
-        BOOL m_bLookInBundle;
+        BOOL m_bIsInBundle;
 
         PEImageLocator(LPCWSTR pPath, BOOL bLookInBundle)
             : m_pPath(pPath),
-              m_bLookInBundle(bLookInBundle)
+              m_bIsInBundle(bLookInBundle)
         {
         }
 
         PEImageLocator(PEImage * pImage, BOOL bLookInBundle)
             : m_pPath(pImage->m_path.GetUnicode()),
-              m_bLookInBundle(bLookInBundle)
+              m_bIsInBundle(bLookInBundle)
         {
         }
     };
