@@ -83,6 +83,6 @@ steps:
           # DotNet-HelixApi-Access variable group
           helixAccessToken: $(HelixApiAccessToken)
 
-        helixProjectArguments: '$(coreClrRepoRoot)/tests/helixpublishwitharcade.proj'
+        helixProjectArguments: '$(Build.SourcesDirectory)/src/coreclr/tests/helixpublishwitharcade.proj'
 
-        scenarios: normal
+        scenarios: normal 
