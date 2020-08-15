@@ -4119,10 +4119,11 @@ LaunchCreateDump(LPCWSTR lpCommandLine)
 void
 CreateCrashDumpIfEnabled()
 {
-    // If enabled, launch the create minidump utility and wait until it completes
-    if (g_createDumpCommandLine != nullptr)
+    // If enabled, launch the create minidump utility and wait until it completes. Only launch createdump once for this process.
+    LPCWSTR createDumpCommandLine = InterlockedExchangeT<LPCWSTR>(&g_createDumpCommandLine, nullptr);
+    if (createDumpCommandLine != nullptr)
     {
-        LaunchCreateDump(g_createDumpCommandLine);
+        LaunchCreateDump(createDumpCommandLine);
     }
 }
 
