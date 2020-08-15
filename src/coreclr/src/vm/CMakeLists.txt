@@ -357,6 +357,7 @@ set(VM_SOURCES_WKS
     gcenv.ee.common.cpp
     gcenv.os.cpp
     gchelpers.cpp
+    genanalysis.cpp
     genmeth.cpp
     hosting.cpp
     ibclogger.cpp

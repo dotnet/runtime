@@ -22,6 +22,7 @@
 #include "win32threadpool.h"
 #include "ceemain.h"
 #include "configuration.h"
+#include "genanalysis.h"
 
 #ifdef TARGET_UNIX
 #include "pal.h"
@@ -164,7 +165,7 @@ void EventPipe::EnableViaEnvironmentVariables()
         {
             outputPath = configOutputPath;
         }
-        auto configuration = XplatEventLoggerConfiguration();
+        
         LPWSTR configToParse = eventpipeConfig;
         int providerCnt = 0;
 
@@ -183,6 +184,7 @@ void EventPipe::EnableViaEnvironmentVariables()
         }
         else
         {
+            auto configuration = XplatEventLoggerConfiguration();
             // Count how many providers there are to parse
             static WCHAR comma = W(',');
             while (*configToParse != '\0')
