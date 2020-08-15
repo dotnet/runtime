@@ -42,7 +42,7 @@
 
       
       <_PropertiesToPass Condition="'$(TargetArchitecture)' == 'wasm' ">
-        $(_PropertiesToPass);IncludeDotNetCli=true
+        $(_PropertiesToPass);IncludeDotNetCli=true;DotNetCliRuntime=linux-x64
       </_PropertiesToPass>
     </PropertyGroup>
     <Message Importance="High" Text="_PropertiesToPass: $(_PropertiesToPass)"/>
