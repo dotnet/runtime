@@ -36,7 +36,7 @@
     <WasmAppBuilder
       AppDir="$(AppDir)"
       MicrosoftNetCoreAppRuntimePackDir="$(MicrosoftNetCoreAppRuntimePackDir)"
-      MainAssembly="./bin/browser-wasm/publish/WasmTestRunner.dll"
+      MainAssembly="$(CORE_ROOT)/wasm-test-runner/bin/net5.0/browser-wasm/WasmTestRunner.dll"
       MainJS="$(CORE_ROOT)\runtime-test\runtime-test.js"
       AssemblySearchPaths="@(AssemblySearchPaths)"
       ExtraAssemblies="@(TestAssemblies)"
