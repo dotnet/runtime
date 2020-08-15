@@ -44,15 +44,13 @@ public class CreateWasmBundle : Task
 
     public override bool Execute()
     {
-        (byte[] json_bytes, MemoryStream stream) data;
-
         if (!Directory.Exists(InputDirectory)) 
         {
             Log.LogError($"Input directory '{InputDirectory}' does not exist");
             return false;
         }
 
-        data = EnumerateData();
+        (byte[] json_bytes, MemoryStream stream) data = EnumerateData();
         
         using (var file = File.Open(OutputFileName!, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.ReadWrite))
         {

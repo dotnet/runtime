@@ -28,6 +28,7 @@ public class DownloadTimeZoneData : Task
         List<string> files = new List<string>() {"africa", "antarctica", "asia", "australasia", "etcetera", "europe", "northamerica", "southamerica", "zone1970.tab"};
         using (var client = new WebClient())
         {
+            Console.WriteLine("Downloading TimeZone data files");
             foreach (var file in files) 
             {
                 client.DownloadFile($"https://data.iana.org/time-zones/tzdb-{Version}/{file}", $"{Path.Combine(InputDirectory!, file)}");
