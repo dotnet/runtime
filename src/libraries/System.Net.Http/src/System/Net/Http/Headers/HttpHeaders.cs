@@ -594,6 +594,8 @@ namespace System.Net.Http.Headers
         {
             HeaderStoreItemInfo destinationInfo = CreateAndAddHeaderToStore(descriptor);
 
+            destinationInfo.OriginalRawValue = sourceInfo.OriginalRawValue;
+
             // We have custom header values. The parsed values are strings.
             if (descriptor.Parser == null)
             {
@@ -853,6 +855,11 @@ namespace System.Net.Http.Headers
 
             bool result = TryParseAndAddRawHeaderValue(descriptor, info, value, false);
 
+            if (result)
+            {
+                AddValueToOriginalRawValue(info, value);
+            }
+
             if (result && addToStore && (info.ParsedValue != null))
             {
                 // If we get here, then the value could be parsed correctly. If we created a new HeaderStoreItemInfo, add
@@ -1037,15 +1044,20 @@ namespace System.Net.Http.Headers
             }
         }
 
+        private void AddValueToOriginalRawValue(HeaderStoreItemInfo info, string? value)
+        {
+            object? originalRawValue = info.OriginalRawValue;
+            AddValueToStoreValue<string>(value ?? string.Empty, ref originalRawValue);
+            info.OriginalRawValue = originalRawValue;
+        }
+
         private void ParseAndAddValue(HeaderDescriptor descriptor, HeaderStoreItemInfo info, string? value)
         {
             Debug.Assert(info != null);
 
             // We can get here only through Add methods which treat `value` as already parsed and do not add it into RawValue,
             // so we have to manually add it into OriginalRawValue to return from non-validating enumeration.
-            object? originalRawValue = info.OriginalRawValue;
-            AddValueToStoreValue<string>(value ?? string.Empty, ref originalRawValue);
-            info.OriginalRawValue = originalRawValue;
+            AddValueToOriginalRawValue(info, value);
 
             if (descriptor.Parser == null)
             {
