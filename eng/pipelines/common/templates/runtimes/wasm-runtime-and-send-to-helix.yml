@@ -21,7 +21,7 @@ parameters:
   runtimeFlavorDisplayName: 'Mono'
   dependsOn: []
   #arcade-specific parameters
-  condition: ''
+  condition: always()
   continueOnError: false
   displayName: ''
   timeoutInMinutes: ''

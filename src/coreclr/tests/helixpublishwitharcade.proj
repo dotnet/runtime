@@ -11,6 +11,8 @@
        that will run in parallel. -->
 
   <Target Name="RunInParallelForEachScenario">
+    <Message Importance="High" Text="helixpublishwitharcade: TargetOS: $(TargetOS)"/>
+
     <PropertyGroup>
       <!-- This specifies what properties are needed to be passed down as global properties to a child project. -->
 
@@ -74,6 +76,7 @@
     <HelixRuntimeRid Condition="'$(__TargetOS)' == 'OSX'">osx-$(TargetArchitecture)</HelixRuntimeRid>
     <HelixRuntimeRid Condition="'$(__TargetOS)' == 'Linux'">linux-$(TargetArchitecture)</HelixRuntimeRid>
     <HelixRuntimeRid Condition="'$(__TargetOS)' == 'Linux_musl'">linux-musl-$(TargetArchitecture)</HelixRuntimeRid>
+    <HelixRuntimeRid Condition="$'(__TargetOS)' == 'wasm'">browser-wasm</HelixRuntimeRid>
   </PropertyGroup>
 
   <PropertyGroup>
