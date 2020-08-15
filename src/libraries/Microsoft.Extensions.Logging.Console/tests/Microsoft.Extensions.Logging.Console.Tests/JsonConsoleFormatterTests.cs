@@ -497,10 +497,12 @@ namespace Microsoft.Extensions.Logging.Console.Test
 
         static string GetContent(Exception exception, bool indented)
         {
-            string indentation = indented ? "\\r\\n" : " ";
+            // Depending on OS, Environment.NewLine is either '\r\n' OR '\n'
+            string newLineReplacement = indented ? (Environment.NewLine.Length == 2 ? "\\r\\n" : "\\n") : " ";
+
             return exception.ToString()
-                .Replace("\\", "\\\\")
-                .Replace(Environment.NewLine, indentation);
+                .Replace(@"\", @"\\") // for paths in json content
+                .Replace(Environment.NewLine, newLineReplacement);
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
