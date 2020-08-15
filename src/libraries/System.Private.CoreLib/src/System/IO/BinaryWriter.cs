@@ -226,8 +226,7 @@ namespace System.IO
         //
         public virtual unsafe void Write(double value)
         {
-            BinaryPrimitives.WriteDoubleLittleEndian(_buffer, value);
-            OutStream.Write(_buffer, 0, 8);
+            Write(BitConverter.DoubleToInt64Bits(value));
         }
 
         public virtual void Write(decimal value)
@@ -306,12 +305,15 @@ namespace System.IO
         //
         public virtual unsafe void Write(float value)
         {
-            uint TmpValue = *(uint*)&value;
-            _buffer[0] = (byte)TmpValue;
-            _buffer[1] = (byte)(TmpValue >> 8);
-            _buffer[2] = (byte)(TmpValue >> 16);
-            _buffer[3] = (byte)(TmpValue >> 24);
-            OutStream.Write(_buffer, 0, 4);
+            Write(BitConverter.SingleToInt32Bits(value));
+        }
+
+        // Writes a half to this stream. The current position of the stream is
+        // advanced by two.
+        //
+        public virtual unsafe void Write(Half value)
+        {
+            Write(BitConverter.HalfToInt16Bits(value));
         }
 
         // Writes a length-prefixed string to this stream in the BinaryWriter's
