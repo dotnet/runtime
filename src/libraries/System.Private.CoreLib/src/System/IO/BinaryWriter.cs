@@ -226,7 +226,8 @@ namespace System.IO
         //
         public virtual unsafe void Write(double value)
         {
-            Write(BitConverter.DoubleToInt64Bits(value));
+            BinaryPrimitives.WriteDoubleLittleEndian(_buffer, value);
+            OutStream.Write(_buffer, 0, 8);
         }
 
         public virtual void Write(decimal value)
@@ -305,7 +306,8 @@ namespace System.IO
         //
         public virtual unsafe void Write(float value)
         {
-            Write(BitConverter.SingleToInt32Bits(value));
+            BinaryPrimitives.WriteSingleLittleEndian(_buffer, value);
+            OutStream.Write(_buffer, 0, 4);
         }
 
         // Writes a half to this stream. The current position of the stream is
@@ -313,7 +315,8 @@ namespace System.IO
         //
         public virtual unsafe void Write(Half value)
         {
-            Write(BitConverter.HalfToInt16Bits(value));
+            BinaryPrimitives.WriteHalfLittleEndian(_buffer, value);
+            OutStream.Write(_buffer, 0, 2);
         }
 
         // Writes a length-prefixed string to this stream in the BinaryWriter's
