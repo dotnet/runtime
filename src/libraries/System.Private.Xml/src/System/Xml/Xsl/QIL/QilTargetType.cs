@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#nullable enable
 using System;
 using System.Collections.Generic;
 using System.Xml.Schema;
@@ -40,7 +41,7 @@ namespace System.Xml.Xsl.Qil
 
         public XmlQueryType TargetType
         {
-            get { return (XmlQueryType)((QilLiteral)Right).Value; }
+            get { return (XmlQueryType)((QilLiteral)Right).Value!; }
             set { ((QilLiteral)Right).Value = value; }
         }
     }
