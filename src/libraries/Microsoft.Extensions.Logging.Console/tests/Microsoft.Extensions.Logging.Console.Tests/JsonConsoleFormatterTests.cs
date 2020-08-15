@@ -122,42 +122,6 @@ namespace Microsoft.Extensions.Logging.Console.Test
                 GetMessage(sink.Writes.GetRange(2 * t.WritesPerMsg, t.WritesPerMsg)));
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        [InlineData(false)]
-        [InlineData(true)]
-        public void Log_ExceptionWithInnerException_NotIndented_ReplacesNewLines(bool indented)
-        {
-            // Arrange
-            var t = SetUp(
-                new ConsoleLoggerOptions { FormatterName = ConsoleFormatterNames.Json },
-                simpleOptions: null,
-                systemdOptions: null,
-                jsonOptions: new JsonConsoleFormatterOptions
-                {
-                    JsonWriterOptions = new JsonWriterOptions() { Indented = indented }
-                }
-            );
-            var logger = (ILogger)t.Logger;
-            var sink = t.Sink;
-            var innerException = new InvalidOperationException("custom inner message");
-            var exception = new ArgumentNullException("custom exception message", innerException);
-
-            // Act
-            logger.LogCritical(eventId: 0, message: null, exception: exception);
-
-            string indentation = indented ? "\\r\\n" : " ";
-            string spacing = indented ? " " : "";
-
-            // Assert
-            Assert.Equal(1, sink.Writes.Count);
-            Assert.Contains(
-                "\"Exception\":" + spacing + "\"System.ArgumentNullException: custom exception message"
-                + " ---\\u003E System.InvalidOperationException: custom inner message"
-                + indentation
-                + "   --- End of inner exception stack trace ---\"",
-                GetMessage(sink.Writes.GetRange(0 * t.WritesPerMsg, t.WritesPerMsg)));
-        }
-
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void Log_ExceptionWithMessage_ExtractsInfo()
         {
@@ -491,10 +455,17 @@ namespace Microsoft.Extensions.Logging.Console.Test
             }
         }
 
-        private string GetJson(Exception exception)
+        private string GetJson(Exception exception, bool indented)
         {
             if (exception == null) throw new ArgumentNullException(nameof(exception));
-            JsonConsoleFormatterOptions jsonOptions = new JsonConsoleFormatterOptions();
+            JsonConsoleFormatterOptions jsonOptions = new JsonConsoleFormatterOptions()
+            {
+                JsonWriterOptions = new JsonWriterOptions()
+                { 
+                    Indented = indented,
+                    Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping
+                }
+            };
             var jsonMonitor = new TestFormatterOptionsMonitor<JsonConsoleFormatterOptions>(jsonOptions);
             var jsonFormatter = new JsonConsoleFormatter(jsonMonitor);
             Func<string, Exception, string> exceptionFormatter = (state, exception) => state.ToString();
@@ -507,25 +478,46 @@ namespace Microsoft.Extensions.Logging.Console.Test
             return output.ToString();
         }
 
-        [Fact]
-        public void ShouldContainInnerException()
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void ShouldContainInnerException(bool indented)
         {
             Exception rootException = new Exception("root", new Exception("inner"));
             EnsureStackTrace(rootException, rootException.InnerException);
-            string json = GetJson(rootException);
+            string json = GetJson(rootException, indented);
+
             Assert.Contains(rootException.Message, json);
             Assert.Contains(rootException.InnerException.Message, json);
+            
+            Assert.Contains(GetContent(rootException, indented), json);
+            Assert.Contains(GetContent(rootException.InnerException, indented), json);
         }
 
-        [Fact]
-        public void ShouldContainAggregateExceptions()
+        static string GetContent(Exception exception, bool indented)
+        {
+            string indentation = indented ? "\\r\\n" : " ";
+            return exception.ToString()
+                .Replace("\\", "\\\\")
+                .Replace(Environment.NewLine, indentation);
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void ShouldContainAggregateExceptions(bool indented)
         {
             AggregateException rootException = new AggregateException("aggregate", new Exception("leaf1"), new Exception("leaf2"), new Exception("leaf3"));
             EnsureStackTrace(rootException);
             EnsureStackTrace(rootException.InnerExceptions.ToArray());
-            string json = GetJson(rootException);
+            string json = GetJson(rootException, indented);
+
             Assert.Contains(rootException.Message, json);
             rootException.InnerExceptions.ToList().ForEach((inner) => Assert.Contains(inner.Message, json));
+            
+            Assert.Contains(GetContent(rootException, indented), json);
+            rootException.InnerExceptions.ToList().ForEach((inner) => Assert.Contains(GetContent(inner, indented), json));
         }
     }
 }
