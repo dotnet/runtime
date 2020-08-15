@@ -17,17 +17,17 @@ namespace System.Drawing
 
         private static ReadOnlySpan<byte> BMBytes => new byte[] { (byte)'B', (byte)'M' };
 
-        public override bool CanConvertFrom(ITypeDescriptorContext context, Type sourceType)
+        public override bool CanConvertFrom(ITypeDescriptorContext? context, Type? sourceType)
         {
             return sourceType == typeof(byte[]) || sourceType == typeof(Icon);
         }
 
-        public override bool CanConvertTo(ITypeDescriptorContext context, Type destinationType)
+        public override bool CanConvertTo(ITypeDescriptorContext? context, Type? destinationType)
         {
             return destinationType == typeof(byte[]) || destinationType == typeof(string);
         }
 
-        public override object ConvertFrom(ITypeDescriptorContext context, CultureInfo culture, object value)
+        public override object ConvertFrom(ITypeDescriptorContext? context, CultureInfo? culture, object value)
         {
             if (value is Icon icon)
             {
@@ -47,7 +47,7 @@ namespace System.Drawing
             }
         }
 
-        public override object ConvertTo(ITypeDescriptorContext context, CultureInfo culture, object value, Type destinationType)
+        public override object ConvertTo(ITypeDescriptorContext? context, CultureInfo? culture, object? value, Type destinationType)
         {
             if (destinationType == typeof(string))
             {
@@ -57,7 +57,7 @@ namespace System.Drawing
                 }
                 else if (value is Image)
                 {
-                    return value.ToString();
+                    return value.ToString()!;
                 }
             }
             else if (destinationType == typeof(byte[]))
@@ -79,7 +79,7 @@ namespace System.Drawing
 
                         // If we don't find an Encoder (for things like Icon), we
                         // just switch back to PNG.
-                        ImageCodecInfo codec = FindEncoder(dest) ?? FindEncoder(ImageFormat.Png);
+                        ImageCodecInfo codec = FindEncoder(dest) ?? FindEncoder(ImageFormat.Png)!;
                         image.Save(ms, codec, null);
                         return ms.ToArray();
                     }
@@ -90,7 +90,7 @@ namespace System.Drawing
         }
 
         // Find any random encoder which supports this format.
-        private static ImageCodecInfo FindEncoder(ImageFormat imageformat)
+        private static ImageCodecInfo? FindEncoder(ImageFormat imageformat)
         {
             ImageCodecInfo[] codecs = ImageCodecInfo.GetImageEncoders();
             foreach (ImageCodecInfo codec in codecs)
@@ -101,14 +101,14 @@ namespace System.Drawing
             return null;
         }
 
-        public override PropertyDescriptorCollection GetProperties(ITypeDescriptorContext context, object value, Attribute[] attributes)
+        public override PropertyDescriptorCollection GetProperties(ITypeDescriptorContext? context, object? value, Attribute[]? attributes)
         {
             return TypeDescriptor.GetProperties(typeof(Image), attributes);
         }
 
-        public override bool GetPropertiesSupported(ITypeDescriptorContext context) => true;
+        public override bool GetPropertiesSupported(ITypeDescriptorContext? context) => true;
 
-        private unsafe Stream GetBitmapStream(ReadOnlySpan<byte> rawData)
+        private unsafe Stream? GetBitmapStream(ReadOnlySpan<byte> rawData)
         {
             try
             {
