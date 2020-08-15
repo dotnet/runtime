@@ -62,6 +62,9 @@ namespace System.Net.Http
                 {
                     socket.Connect(new DnsEndPoint(host, port));
                 }
+
+                // Since we only do GracefulShutdown in SocketsHttpHandler code, Connection.FromStream() should match SocketConnection's behavior:
+                return Connection.FromStream(new NetworkStream(socket, ownsSocket: true), localEndPoint: socket.LocalEndPoint, remoteEndPoint: socket.RemoteEndPoint);
             }
             catch (SocketException se)
             {
@@ -77,9 +80,6 @@ namespace System.Net.Http
                 socket.Dispose();
                 throw CreateWrappedException(e, host, port, cancellationToken);
             }
-
-            // Since we only do GracefulShutdown in SocketsHttpHandler code, Connection.FromStream() should match SocketConnection's behavior:
-            return Connection.FromStream(new NetworkStream(socket, ownsSocket: true), localEndPoint: socket.LocalEndPoint, remoteEndPoint: socket.RemoteEndPoint);
         }
 
         public static ValueTask<SslStream> EstablishSslConnectionAsync(SslClientAuthenticationOptions sslOptions, HttpRequestMessage request, bool async, Stream stream, CancellationToken cancellationToken)
