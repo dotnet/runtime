@@ -17,7 +17,7 @@ NATIVE_DIR?=$(OBJDIR)/native/net5.0-Browser-$(CONFIG)-wasm
 BUILDS_BIN_DIR?=$(BINDIR)/native/net5.0-Browser-$(CONFIG)-wasm
 ICU_LIBDIR?=
 
-all: build-native timezone-data icu-data
+all: build-native icu-data
 
 #
 # EMSCRIPTEN SETUP
@@ -112,9 +112,6 @@ clean:
 # Helper targets
 .PHONY: runtime
 
-timezone-data:
-	cp runtime/dotnet.timezones.blat $(BUILDS_BIN_DIR)
-
 icu-data:
 	cp $(ICU_LIBDIR)/icudt.dat $(BUILDS_BIN_DIR)
 
@@ -135,6 +132,9 @@ test-runner:
 
 app-builder:
 	$(DOTNET) build $(TOP)/tools-local/tasks/mobile.tasks/WasmAppBuilder
+
+bundle-task:
+	$(DOTNET) build $(TOP)/tools-local/tasks/mobile.tasks/CreateWasmBundle
 
 run-tests-v8-%:
 	PATH="$(JSVU):$(PATH)" $(DOTNET) build $(TOP)/src/libraries/$*/tests/ /t:Test /p:TargetOS=Browser /p:TargetArchitecture=wasm /p:Configuration=$(CONFIG) /p:JSEngine=V8 $(MSBUILD_ARGS)
