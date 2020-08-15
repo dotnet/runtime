@@ -66,25 +66,25 @@
       <Uri>https://github.com/dotnet/arcade</Uri>
       <Sha>ea8f37e8982dc22022b33c5e151081ad04d923a6</Sha>
     </Dependency>
-    <Dependency Name="optimization.windows_nt-x64.IBC.CoreFx" Version="99.99.99-master-20190716.1">
+    <Dependency Name="optimization.windows_nt-x64.IBC.CoreFx" Version="99.99.99-master-20200806.6">
       <Uri>https://dev.azure.com/dnceng/internal/_git/dotnet-optimization</Uri>
-      <Sha>d0bb63d2ec7060714e63ee4082fac48f2e57f3e2</Sha>
+      <Sha>f69d7fc09c4fdb9e9427741b9a176e867dab577f</Sha>
     </Dependency>
-    <Dependency Name="optimization.linux-x64.IBC.CoreFx" Version="99.99.99-master-20190716.1">
+    <Dependency Name="optimization.linux-x64.IBC.CoreFx" Version="99.99.99-master-20200806.6">
       <Uri>https://dev.azure.com/dnceng/internal/_git/dotnet-optimization</Uri>
-      <Sha>d0bb63d2ec7060714e63ee4082fac48f2e57f3e2</Sha>
+      <Sha>f69d7fc09c4fdb9e9427741b9a176e867dab577f</Sha>
     </Dependency>
-    <Dependency Name="optimization.windows_nt-x64.IBC.CoreCLR" Version="99.99.99-master-20190716.1">
+    <Dependency Name="optimization.windows_nt-x64.IBC.CoreCLR" Version="99.99.99-master-20200806.6">
       <Uri>https://dev.azure.com/dnceng/internal/_git/dotnet-optimization</Uri>
-      <Sha>d0bb63d2ec7060714e63ee4082fac48f2e57f3e2</Sha>
+      <Sha>f69d7fc09c4fdb9e9427741b9a176e867dab577f</Sha>
     </Dependency>
-    <Dependency Name="optimization.linux-x64.IBC.CoreCLR" Version="99.99.99-master-20190716.1">
+    <Dependency Name="optimization.linux-x64.IBC.CoreCLR" Version="99.99.99-master-20200806.6">
       <Uri>https://dev.azure.com/dnceng/internal/_git/dotnet-optimization</Uri>
-      <Sha>d0bb63d2ec7060714e63ee4082fac48f2e57f3e2</Sha>
+      <Sha>f69d7fc09c4fdb9e9427741b9a176e867dab577f</Sha>
     </Dependency>
-    <Dependency Name="optimization.PGO.CoreCLR" Version="99.99.99-master-20190716.1">
+    <Dependency Name="optimization.PGO.CoreCLR" Version="99.99.99-master-20200806.6">
       <Uri>https://dev.azure.com/dnceng/internal/_git/dotnet-optimization</Uri>
-      <Sha>d0bb63d2ec7060714e63ee4082fac48f2e57f3e2</Sha>
+      <Sha>f69d7fc09c4fdb9e9427741b9a176e867dab577f</Sha>
     </Dependency>
     <Dependency Name="Microsoft.NET.Test.Sdk" Version="16.8.0-preview-20200730-03">
       <Uri>https://github.com/microsoft/vstest</Uri>
