@@ -32,7 +32,7 @@ namespace Tracing.Tests.DiagnosticPortValidation
                 var server = new ReverseServer(serverName);
                 Logger.logger.Log($"Server {i} address is '{serverName}'");
                 serverAndNames.Add((server, serverName));
-                dotnetDiagnosticPorts += $"{serverName};";
+                dotnetDiagnosticPorts += $"{serverName},nosuspend;";
             }
             Logger.logger.Log($"export DOTNET_DiagnosticPorts={dotnetDiagnosticPorts}");
             var advertisements = new List<IpcAdvertise>();
@@ -92,7 +92,7 @@ namespace Tracing.Tests.DiagnosticPortValidation
                 var server = new ReverseServer(serverName);
                 Logger.logger.Log($"Server {i} address is '{serverName}'");
                 serverAndNames.Add((server, serverName));
-                dotnetDiagnosticPorts += $"{serverName},suspend;";
+                dotnetDiagnosticPorts += $"{serverName};";
             }
             Logger.logger.Log($"export DOTNET_DiagnosticPorts={dotnetDiagnosticPorts}");
 
@@ -277,7 +277,7 @@ namespace Tracing.Tests.DiagnosticPortValidation
             using var memoryStream = new MemoryStream();
             Task<bool> subprocessTask = Utils.RunSubprocess(
                 currentAssembly: Assembly.GetExecutingAssembly(),
-                environment: new Dictionary<string,string> { { Utils.DiagnosticPortsEnvKey, $"{serverName}" } },
+                environment: new Dictionary<string,string> { { Utils.DiagnosticPortsEnvKey, $"{serverName},nosuspend" } },
                 duringExecution: async (pid) =>
                 {
                     Stream stream = await server.AcceptAsync();
@@ -313,20 +313,21 @@ namespace Tracing.Tests.DiagnosticPortValidation
             bool fSuccess = true;
             var serverAndNames = new List<(ReverseServer, string)>();
             string dotnetDiagnosticPorts = "";
+            // TODO: Make sure these don't hang the test when the default is suspend
             dotnetDiagnosticPorts += ";;;;;;"; // empty configs shouldn't cause a crash
             dotnetDiagnosticPorts += "  ; ; ; ; ; ; ; ; ;"; // whitespace only configs shouldn't cause a crash
-            dotnetDiagnosticPorts += " , , , , , ;,,,,,;;"; // whitespace configs and empty tags with no path shouldn't cause a crash
+            dotnetDiagnosticPorts += " , , , , , ,;,,,,,;;"; // whitespace configs and empty tags with no path shouldn't cause a crash
             dotnetDiagnosticPorts += "connect,connect,connect,nosuspend,nosuspend,nosuspend,,,;"; // path that is the same as a tag name and duplicate tags shouldn't cause a crash
             dotnetDiagnosticPorts += "SomeRandomPath,nosuspend,suspend,suspend,suspend,suspend;"; // only the first tag from a pair is respected (this should result in a nosuspend port)
-            dotnetDiagnosticPorts += "%%bad_Path^* fasdf----##2~~,bad tag$$@#@%_)*)@!#(&%.>,   , , , :::;"; // invalid path chars and tag chars won't cause a crash
+            dotnetDiagnosticPorts += "%%bad_Path^* fasdf----##2~~,bad tag$$@#@%_)*)@!#(&%.>,   , , , ,nosuspend,:::;"; // invalid path chars and tag chars won't cause a crash
             for (int i = 0; i < s_NumberOfPorts; i++)
             {
                 string serverName = ReverseServer.MakeServerAddress();
                 var server = new ReverseServer(serverName);
                 Logger.logger.Log($"Server {i} address is '{serverName}'");
                 serverAndNames.Add((server, serverName));
-                dotnetDiagnosticPorts += $"{serverName};";
-                dotnetDiagnosticPorts += $"{serverName};"; // duplicating port configs shouldn't cause issues
+                dotnetDiagnosticPorts += $"{serverName},nosuspend;";
+                dotnetDiagnosticPorts += $"{serverName},nosuspend;"; // duplicating port configs shouldn't cause issues
             }
             Logger.logger.Log($"export DOTNET_DiagnosticPorts={dotnetDiagnosticPorts}");
             var advertisements = new List<IpcAdvertise>();
