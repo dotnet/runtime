@@ -1,8 +1,8 @@
 #! /bin/bash
 
-# This is a simple and currently crude script to gernetate an osx-arm64 Core_Root
+# This is a simple and currently crude script to generate an osx-arm64 Core_Root
 # It takes a reference osx-x64 Core_Root and replaces the native bits and 
-# System.Private.CoreLib.dll from thode built lovally.
+# System.Private.CoreLib.dll from those built locally.
 # It then removes any remaining x64 native binaries
 
 # ToDo
