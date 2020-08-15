@@ -491,12 +491,6 @@ namespace System.Reflection.Tests
         [InlineData(typeof(CompoundClass4<string>), new Type[] { typeof(GenericInterface1<string>), typeof(TI_NonGenericInterface1) })]
         public void ImplementedInterfaces(Type type, Type[] expected)
         {
-            if (PlatformDetection.IsMonoRuntime)
-            {
-                // Mono re-orders interfaces due to #40593 and it's not clear why
-                return;
-            }
-
             TypeInfo typeInfo = type.GetTypeInfo();
             Type[] implementedInterfaces = type.GetTypeInfo().ImplementedInterfaces.ToArray();
 
