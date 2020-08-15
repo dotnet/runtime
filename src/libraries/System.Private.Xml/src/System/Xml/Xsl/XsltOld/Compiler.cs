@@ -9,6 +9,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Runtime.Versioning;
 using System.Security;
 using System.Text;
@@ -905,6 +906,7 @@ namespace System.Xml.Xsl.XsltOld
             throw XsltException.Create(state == InExp ? SR.Xslt_OpenBracesAvt : SR.Xslt_OpenLiteralAvt, avt);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static bool GetNextAvtLex(string avt, ref int start, StringBuilder lex, out bool isAvt)
         {
             Debug.Assert(start <= avt.Length);
