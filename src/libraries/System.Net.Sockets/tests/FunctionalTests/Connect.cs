@@ -287,8 +287,7 @@ namespace System.Net.Sockets.Tests
 
             ValueTask t = client.ConnectAsync(remoteEndPoint, cts.Token);
 
-            // Delay cancellation a bit to try to ensure the OS actually attempts to connect
-            cts.CancelAfter(100);
+            cts.Cancel();
 
             OperationCanceledException e = await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await t);
             Assert.Equal(cts.Token, e.CancellationToken);
@@ -308,8 +307,7 @@ namespace System.Net.Sockets.Tests
 
             ValueTask t = client.ConnectAsync(remoteEndPoint.Address, remoteEndPoint.Port, cts.Token);
 
-            // Delay cancellation a bit to try to ensure the OS actually attempts to connect
-            cts.CancelAfter(100);
+            cts.Cancel();
 
             OperationCanceledException e = await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await t);
             Assert.Equal(cts.Token, e.CancellationToken);
@@ -329,8 +327,7 @@ namespace System.Net.Sockets.Tests
 
             ValueTask t = client.ConnectAsync(new IPAddress[] { remoteEndPoint.Address, remoteEndPoint.Address}, remoteEndPoint.Port, cts.Token);
 
-            // Delay cancellation a bit to try to ensure the OS actually attempts to connect
-            cts.CancelAfter(100);
+            cts.Cancel();
 
             OperationCanceledException e = await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await t);
             Assert.Equal(cts.Token, e.CancellationToken);
@@ -338,7 +335,6 @@ namespace System.Net.Sockets.Tests
 
         [Fact]
         [OuterLoop("Uses Task.Delay")]
-        [PlatformSpecific(TestPlatforms.Windows)]   // Linux will not even attempt to connect to the invalid IP address
         public async Task ConnectHostNameAndPort_CancelDuringConnect_Throws()
         {
             using Socket listen = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
@@ -351,8 +347,7 @@ namespace System.Net.Sockets.Tests
 
             ValueTask t = client.ConnectAsync("127.0.0.1", remoteEndPoint.Port, cts.Token);
 
-            // Delay cancellation a bit to try to ensure the OS actually attempts to connect
-            cts.CancelAfter(100);
+            cts.Cancel();
 
             OperationCanceledException e = await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await t);
             Assert.Equal(cts.Token, e.CancellationToken);
