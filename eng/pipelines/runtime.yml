@@ -137,7 +137,7 @@ jobs:
   parameters:
     jobTemplate: /eng/pipelines/common/global-build-job.yml
     helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
-    buildConfig: Release
+    buildConfig: Debug
     runtimeFlavor: mono
     platforms:
     - Browser_wasm
