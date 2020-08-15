@@ -13,7 +13,7 @@ The CLR Profiling API allows you to hook managed functions so that your profiler
                         [in] FunctionLeave    \*pFuncLeave,
                         [in] FunctionTailcall \*pFuncTailcall);
         ```
-         
+
         _(Profiler implements these…)_
         ```
         typedef void FunctionEnter(FunctionID funcID);
@@ -30,7 +30,7 @@ The CLR Profiling API allows you to hook managed functions so that your profiler
                         [in] FunctionLeave2    *pFuncLeave,
                         [in] FunctionTailcall2 *pFuncTailcall);
         ```
-         
+
 
         _(Profiler implements these…)_
         ```
@@ -66,7 +66,7 @@ _(Profiler calls this…)_
 ```
   HRESULT SetFunctionIDMapper([in] FunctionIDMapper \*pFunc);
 ```
- 
+
 
      _(Profiler implements this…)_
 ```
@@ -74,7 +74,7 @@ typedef UINT_PTR __stdcall FunctionIDMapper(
                 FunctionID funcId,
                 BOOL *pbHookFunction);
 ```
- 
+
 
 2. When FunctionIDMapper is called:
     a. Your profiler sets the pbHookFunction [out] parameter appropriately to determine whether the function identified by funcId should have ELT hooks compiled into it.
@@ -92,7 +92,7 @@ The solution is “NGEN /Profile”. For example, if you run this command agains
 
 `ngen install MyAssembly.dll /Profile`
 
- 
+
 
 it will NGEN MyAssembly.dll with the “Profile” flavor (also called “profiler-enhanced”). This flavor causes extra hooks to be baked in to enable features like ELT hooks, loader callbacks, managed/unmanaged code transition callbacks, and the JITCachedFunctionSearchStarted/Finished callbacks.
 

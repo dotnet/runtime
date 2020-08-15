@@ -9,11 +9,11 @@ Type forwarding is nothing new.  However, in CLR V4, we are enabling type forwar
 
 The example I’ll use where the .NET Framework uses type forwarding is the TimeZoneInfo class.  In CLR V4, TimeZoneInfo is now forwarded from System.Core.dll to mscorlib.dll.  If you open the CLR V4 copy of System.Core.dll in ildasm and choose Dump, you'll see the following:
 
-| 
+|
 ```
 .class extern /*27000004*/ forwarder System.TimeZoneInfo
  {
- .assembly extern mscorlib /*23000001*/ 
+ .assembly extern mscorlib /*23000001*/
  }
 ```
  |
@@ -28,15 +28,15 @@ This walkthrough assumes you have .NET 4.0 or later installed **and** an older r
 
 Code up a simple C# app that uses System.TimeZoneInfo:
 ```
-namespace test 
-{ 
-    class Class1 
-    { 
-        static void Main(string[] args) 
-        { 
-            System.TimeZoneInfo ti = null; 
-        } 
-    } 
+namespace test
+{
+    class Class1
+    {
+        static void Main(string[] args)
+        {
+            System.TimeZoneInfo ti = null;
+        }
+    }
 }
 ```
 
@@ -49,7 +49,7 @@ csc /debug+ /o- /r:"C:\Program Files (x86)\Reference Assemblies\Microsoft\Framew
 Again, be sure you’re using an old csc.exe from, say, a NET 3.5 installation.  To verify, open up Class1.exe in ildasm, and take a look at Main().  It should look something like this:
 
 ```
-.method /*06000001*/ private hidebysig static 
+.method /*06000001*/ private hidebysig static
  void Main(string[] args) cil managed
  {
  .entrypoint
@@ -83,14 +83,14 @@ The above will force Class1.exe to bind against .NET 4.0 Beta 1.  And when it co
 
 To experiment with forwarding your own types, the process is:
 
-- Create Version 1 of your library 
- 
-  - Create version 1 of your library assembly that defines your type (MyLibAssemblyA.dll) 
-  - Create an app that references your type in MyLibAssemblyA.dll (MyClient.exe) 
-- Create version 2 of your library 
- 
-  - Recompile MyLibAssemblyA.dll to forward your type elsewhere (MyLibAssemblyB.dll) 
-  - Don’t recompile MyClient.exe.  Let it still think the type is defined in MyLibAssemblyA.dll. 
+- Create Version 1 of your library
+
+  - Create version 1 of your library assembly that defines your type (MyLibAssemblyA.dll)
+  - Create an app that references your type in MyLibAssemblyA.dll (MyClient.exe)
+- Create version 2 of your library
+
+  - Recompile MyLibAssemblyA.dll to forward your type elsewhere (MyLibAssemblyB.dll)
+  - Don’t recompile MyClient.exe.  Let it still think the type is defined in MyLibAssemblyA.dll.
 
 ### Version 1
 
@@ -140,9 +140,9 @@ Ok, time to upgrade!
 ### Version 2
 Time goes by, your library is growing, and its time to split it into two DLLs.  Gotta move Foo into the new DLL.  Save this into MyLibAssemblyB.cs
 ```
-using System; 
-public class Foo 
-{ 
+using System;
+public class Foo
+{
 }
 ```
 
@@ -170,7 +170,7 @@ Foo, MyLibAssemblyB, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
 
 And this all despite the fact that MyClient.exe still believes that Foo lives in MyLibAssemblyA:
 ```
-.method /*06000001*/ public hidebysig static 
+.method /*06000001*/ public hidebysig static
  void Main() cil managed
  {
  .entrypoint
@@ -200,4 +200,4 @@ However, type forwarding is important to understand if your profiler needs to fo
 
 In any case, whether you think your profiler will be affected by type forwarding, be sure to test, test, test!
 
-  
+

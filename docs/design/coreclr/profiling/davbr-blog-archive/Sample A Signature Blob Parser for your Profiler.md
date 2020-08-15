@@ -3,42 +3,42 @@
 
 If your profiler plays with metadata, you've undoubtedly come across signature blobs. They’re used to encode type information for method definitions & references, local variables, and a whole lot more. They’re wonderfully compact, recursively versatile, and sometimes, well, challenging to parse. Fortunately, [Rico Mariani](https://docs.microsoft.com/en-us/archive/blogs/ricom/) was feeling generous one day, and churned out a simple parser that can read these types of signatures:
 
-MethodDefSig  
-MethodRefSig  
-StandAloneMethodSig  
-FieldSig  
-PropertySig  
+MethodDefSig
+MethodRefSig
+StandAloneMethodSig
+FieldSig
+PropertySig
 LocalVarSig
 
-Here are the files:  
-[sigparse.cpp](samples/sigparse.cpp) (Rico's signature parser)  
-[sigformat.cpp](samples/sigformat.cpp) (An example extension to the parser)  
+Here are the files:
+[sigparse.cpp](samples/sigparse.cpp) (Rico's signature parser)
+[sigformat.cpp](samples/sigformat.cpp) (An example extension to the parser)
 [PlugInToYourProfiler.cpp](samples/PlugInToYourProfiler.cpp) (Example code to plug the extension into your profiler)
 
 Open up **sigparse.cpp** in your favorite editor and take a look at the grammar at the top. The grammar comes from the ECMA CLI spec. Jonathan Keljo has a [link](http://blogs.msdn.com/jkeljo/archive/2005/08/04/447726.aspx) to it from his blog. This tells you the types of signature blobs the parser can handle.
 
 Sigparse.cpp is structured without any dependencies on any headers, so you can easily absorb it into your profiler project. There are two things you will need to do to make use of the code. I provided examples of each of these in the download above to help you out:
 
-1. You will **extend the code** to make use of the parsed components of the signature however you like. Perhaps you’ll build up your own internal structures based on what you find. Or maybe you’ll build a pretty-printer that displays method prototypes in the managed language of your choice. 
-2. You will then **call the code** to perform the parse on signature blobs you encounter while profiling. 
+1. You will **extend the code** to make use of the parsed components of the signature however you like. Perhaps you’ll build up your own internal structures based on what you find. Or maybe you’ll build a pretty-printer that displays method prototypes in the managed language of your choice.
+2. You will then **call the code** to perform the parse on signature blobs you encounter while profiling.
 
 ## Extending the code
 
 Simply derive a new class from SigParser, and override the virtual functions. The functions you override are events to be handled as the parser traverses the signature in top-down fashion. For example, when the parser encounters a MethodDef, you might see calls to your overrides of:
 
-NotifyBeginMethod()  
-    NotifyParamCount()  
-    NotifyBeginRetType()  
-        NotifyBeginType()  
-            NotifyTypeSimple()  
-        NotifyEndType()  
-    NotifyEndRetType()  
-    NotifyBeginParam()  
-        NotifyBeginType()  
-            NotifyTypeSimple()  
-        NotifyEndType()  
-    NotifyEndParam()  
-    _… (more parameter notifications occur here if more parameters exist)_  
+NotifyBeginMethod()
+    NotifyParamCount()
+    NotifyBeginRetType()
+        NotifyBeginType()
+            NotifyTypeSimple()
+        NotifyEndType()
+    NotifyEndRetType()
+    NotifyBeginParam()
+        NotifyBeginType()
+            NotifyTypeSimple()
+        NotifyEndType()
+    NotifyEndParam()
+    _… (more parameter notifications occur here if more parameters exist)_
 NotifyEndMethod()
 
 And yes, generics are handled as well.

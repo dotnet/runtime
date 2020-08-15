@@ -15,7 +15,7 @@ Environment variables --\> Registry --\> Profiler DLL on File system.
 
 The first link in this chain is to check the environment variables inside the process that should be profiled.  If you're running the process from a command-prompt, you can just try a "set co" from the command prompt:
 
-| 
+|
 ```
 **C:\>** set co
  (blah blah, other vars beginning with "co")
