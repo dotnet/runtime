@@ -478,7 +478,7 @@ inline void  PEImage::Init(LPCWSTR pPath, BundleFileLocation bundleFileLocation)
 
 
 /*static*/
-inline PTR_PEImage PEImage::FindByPath(LPCWSTR pPath, BOOL lookInBundle /* = true */)
+inline PTR_PEImage PEImage::FindByPath(LPCWSTR pPath, BOOL isInBundle /* = TRUE */)
 {
     CONTRACTL
     {
@@ -492,7 +492,7 @@ inline PTR_PEImage PEImage::FindByPath(LPCWSTR pPath, BOOL lookInBundle /* = tru
 
     int CaseHashHelper(const WCHAR *buffer, COUNT_T count);
 
-    PEImageLocator locator(pPath, lookInBundle);
+    PEImageLocator locator(pPath, isInBundle);
 #ifdef FEATURE_CASE_SENSITIVE_FILESYSTEM
     DWORD dwHash=path.Hash();
 #else
