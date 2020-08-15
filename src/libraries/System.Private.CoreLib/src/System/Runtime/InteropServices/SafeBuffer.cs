@@ -237,13 +237,10 @@ namespace System.Runtime.InteropServices
             {
                 DangerousAddRef(ref mustCallRelease);
 
-                if (!buffer.IsEmpty)
+                fixed (byte* pStructure = &Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(buffer)))
                 {
-                    fixed (byte* pStructure = MemoryMarshal.AsBytes(buffer))
-                    {
-                        for (int i = 0; i < buffer.Length; i++)
-                            Buffer.Memmove(pStructure + sizeofT * i, ptr + alignedSizeofT * i, sizeofT);
-                    }
+                    for (int i = 0; i < buffer.Length; i++)
+                        Buffer.Memmove(pStructure + sizeofT * i, ptr + alignedSizeofT * i, sizeofT);
                 }
             }
             finally
@@ -320,15 +317,10 @@ namespace System.Runtime.InteropServices
             {
                 DangerousAddRef(ref mustCallRelease);
 
-                if (!data.IsEmpty)
+                fixed (byte* pStructure = &Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(data)))
                 {
-                    {
-                        fixed (byte* pStructure = MemoryMarshal.AsBytes(data))
-                        {
-                            for (int i = 0; i < data.Length; i++)
-                                Buffer.Memmove(ptr + alignedSizeofT * i, pStructure + sizeofT * i, sizeofT);
-                        }
-                    }
+                    for (int i = 0; i < data.Length; i++)
+                        Buffer.Memmove(ptr + alignedSizeofT * i, pStructure + sizeofT * i, sizeofT);
                 }
             }
             finally
