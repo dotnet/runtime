@@ -1055,8 +1055,8 @@ namespace System.Net.Http.Headers
         {
             Debug.Assert(info != null);
 
-            // We can get here only through Add methods which treat `value` as already parsed and do not add it into RawValue,
-            // so we have to manually add it into OriginalRawValue to return from non-validating enumeration.
+            // We can get here only through Add methods which treat 'value' as already parsed and do not add it into RawValue,
+            // so we have to manually add it into OriginalRawValue for it to be returned from non-validating enumeration.
             AddValueToOriginalRawValue(info, value);
 
             if (descriptor.Parser == null)
