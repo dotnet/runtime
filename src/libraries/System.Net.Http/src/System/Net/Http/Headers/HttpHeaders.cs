@@ -1385,28 +1385,28 @@ namespace System.Net.Http.Headers
         public struct Enumerator : IEnumerator<KeyValuePair<string, HeaderStringValues>>
         {
             private Dictionary<HeaderDescriptor, object>.Enumerator _headerStoreEnumerator;
-            private bool _completed;
+            private bool _inProgress;
 
             internal Enumerator(Dictionary<HeaderDescriptor, object>? headerStore)
             {
                 if (headerStore != null)
                 {
                     _headerStoreEnumerator = headerStore.GetEnumerator();
-                    _completed = false;
+                    _inProgress = true;
                 }
                 else
                 {
                     _headerStoreEnumerator = default;
-                    _completed = true;
+                    _inProgress = false;
                 }
                 Current = default;
             }
 
             public bool MoveNext()
             {
-                if (_completed || !_headerStoreEnumerator.MoveNext())
+                if (!_inProgress || !_headerStoreEnumerator.MoveNext())
                 {
-                    _completed = true;
+                    _inProgress = false;
                     return false;
                 }
 
@@ -1432,7 +1432,7 @@ namespace System.Net.Http.Headers
                 }
             }
 
-            public KeyValuePair<string, HeaderStringValues> Current { get; private set; }
+            public KeyValuePair<string, HeaderStringValues> Current { readonly get; private set; }
 
             public void Dispose()
             {
@@ -1459,9 +1459,10 @@ namespace System.Net.Http.Headers
             _values = null;
         }
 
-        public HeaderStringValues(IEnumerable<string> value)
+        public HeaderStringValues(IEnumerable<string> values)
         {
-            _values = value;
+            if (values is null) throw new ArgumentNullException(nameof(values));
+            _values = values;
             _value = null;
         }
 
@@ -1475,13 +1476,13 @@ namespace System.Net.Http.Headers
         {
             private readonly IEnumerator<string>? _values;
             private readonly string? _value;
-            private bool _completed;
+            private bool _inProgress;
 
             internal Enumerator(IEnumerable<string> values)
             {
                 _values = values.GetEnumerator();
                 _value = null;
-                _completed = false;
+                _inProgress = true;
                 Current = default!;
             }
 
@@ -1489,26 +1490,26 @@ namespace System.Net.Http.Headers
             {
                 _values = null;
                 _value = value;
-                _completed = false;
+                _inProgress = value != null;
                 Current = default!;
             }
 
             public bool MoveNext()
             {
-                if (_completed)
+                if (!_inProgress)
                 {
                     return false;
                 }
 
                 if (_values == null)
                 {
-                    _completed = true;
+                    _inProgress = false;
                     Current = _value!;
                     return true;
                 }
 
-                _completed = !_values.MoveNext();
-                if (_completed)
+                _inProgress = _values.MoveNext();
+                if (!_inProgress)
                 {
                     return false;
                 }
@@ -1519,19 +1520,13 @@ namespace System.Net.Http.Headers
                 return true;
             }
 
-            public string Current { get; private set; }
+            public string Current { readonly get; private set; }
 
-            public void Dispose()
-            {
-                _values?.Dispose();
-            }
+            public void Dispose() => _values?.Dispose();
 
             object? IEnumerator.Current => Current;
 
-            void IEnumerator.Reset()
-            {
-                throw new NotImplementedException();
-            }
+            void IEnumerator.Reset() => throw new NotImplementedException();
         }
     }
 }

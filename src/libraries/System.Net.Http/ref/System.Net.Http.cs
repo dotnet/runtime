@@ -476,7 +476,7 @@ namespace System.Net.Http.Headers
     }
     public readonly partial struct HeaderStringValues : System.Collections.Generic.IEnumerable<string>, System.Collections.IEnumerable
     {
-        public HeaderStringValues(System.Collections.Generic.IEnumerable<string> value) { throw null; }
+        public HeaderStringValues(System.Collections.Generic.IEnumerable<string> values) { throw null; }
         public HeaderStringValues(string value) { throw null; }
         public System.Net.Http.Headers.HeaderStringValues.Enumerator GetEnumerator() { throw null; }
         System.Collections.Generic.IEnumerator<string> System.Collections.Generic.IEnumerable<string>.GetEnumerator() { throw null; }

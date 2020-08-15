@@ -1658,6 +1658,33 @@ namespace System.Net.Http.Tests
         }
 
         [Fact]
+        public void NonValidated_GetDefaultHttpHeadersNonValidatedEnumerator_ReturnsEmptyEnumerator()
+        {
+            var enumerator = default(HttpHeadersNonValidated.Enumerator);
+            Assert.False(enumerator.MoveNext());
+            Assert.Equal(default(KeyValuePair<string, HeaderStringValues>), enumerator.Current);
+            enumerator.Dispose();
+        }
+
+        [Fact]
+        public void NonValidated_GetEnumeratorFromUninitializedHeaderStringValues_ReturnsEmptyEnumerator()
+        {
+            var enumerator = default(HeaderStringValues).GetEnumerator();
+            Assert.False(enumerator.MoveNext());
+            Assert.Null(enumerator.Current);
+            enumerator.Dispose();
+        }
+
+        [Fact]
+        public void NonValidated_GetDefaultHeaderStringValuesEnumerator_ReturnsEmptyEnumerator()
+        {
+            var enumerator = default(HeaderStringValues.Enumerator);
+            Assert.False(enumerator.MoveNext());
+            Assert.Null(enumerator.Current);
+            enumerator.Dispose();
+        }
+
+        [Fact]
         public void NonValidated_FirstHeaderWithOneValueSecondHeaderWithTwoValues_EnumeratorReturnsTwoHeaders()
         {
             MockHeaders headers = new MockHeaders();
