@@ -433,7 +433,7 @@ namespace System.Reflection.Emit
 
             if (parameterTypes != null)
             {
-                for (var i = 0; i < parameterTypes.Length; i++)
+                for (int i = 0; i < parameterTypes.Length; i++)
                 {
                     sig.AddArgument(parameterTypes[i], requiredCustomModifiers![i], optionalCustomModifiers![i]);
                 }
