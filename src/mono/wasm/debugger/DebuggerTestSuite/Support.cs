@@ -250,10 +250,8 @@ namespace DebuggerTests
             {
                 ctx = new DebugTestContext(cli, insp, token, scripts);
                 ctx.UseCallFunctionOnBeforeGetProperties = use_cfo;
-                Console.WriteLine ($"expr: {eval_expression}");
 
                 var bp = await SetBreakpointInMethod(assembly, type, method, line_offset, col);
-                Console.WriteLine ($"bp set to {bp}");
 
                 var args = JObject.FromObject(new { expression = eval_expression });
                 var res = await ctx.cli.SendCommand("Runtime.evaluate", args, ctx.token);
