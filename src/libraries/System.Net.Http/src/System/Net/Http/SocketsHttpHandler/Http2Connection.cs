@@ -60,7 +60,8 @@ namespace System.Net.Http
         //     (meaning we must assume all streams have been processed by the server)
         private int _lastStreamId = -1;
 
-        // 0 = Not opened yet, 1 = Marked as opened, 2 = Closed
+        private const int TelemetryStatus_Opened = 1;
+        private const int TelemetryStatus_Closed = 2;
         private int _markedByTelemetryStatus;
 
         // This will be set when a connection IO error occurs
@@ -146,7 +147,7 @@ namespace System.Net.Http
             if (HttpTelemetry.Log.IsEnabled())
             {
                 HttpTelemetry.Log.Http20ConnectionEstablished();
-                _markedByTelemetryStatus = 1;
+                _markedByTelemetryStatus = TelemetryStatus_Opened;
             }
 
             if (NetEventSource.Log.IsEnabled()) TraceConnection(_stream);
@@ -1680,7 +1681,7 @@ namespace System.Net.Http
 
             if (HttpTelemetry.Log.IsEnabled())
             {
-                if (Interlocked.Exchange(ref _markedByTelemetryStatus, 2) == 1)
+                if (Interlocked.Exchange(ref _markedByTelemetryStatus, TelemetryStatus_Closed) == TelemetryStatus_Opened)
                 {
                     HttpTelemetry.Log.Http20ConnectionClosed();
                 }

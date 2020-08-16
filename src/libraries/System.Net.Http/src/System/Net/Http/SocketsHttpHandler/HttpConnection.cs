@@ -66,7 +66,10 @@ namespace System.Net.Http
         private bool _inUse;
         private bool _canRetry;
         private bool _connectionClose; // Connection: close was seen on last response
-        private int _disposed; // 1 == disposed, 0 == not disposed, -1 == not disposed and tracked by Telemetry
+
+        private const int Status_Disposed = 1;
+        private const int Status_NotDisposedAndTrackedByTelemetry = 2;
+        private int _disposed;
 
         public HttpConnection(
             HttpConnectionPool pool,
@@ -90,7 +93,7 @@ namespace System.Net.Http
             if (HttpTelemetry.Log.IsEnabled())
             {
                 HttpTelemetry.Log.Http11ConnectionEstablished();
-                _disposed = -1;
+                _disposed = Status_NotDisposedAndTrackedByTelemetry;
             }
 
             if (NetEventSource.Log.IsEnabled()) TraceConnection(_stream);
@@ -104,13 +107,13 @@ namespace System.Net.Http
         {
             // Ensure we're only disposed once.  Dispose could be called concurrently, for example,
             // if the request and the response were running concurrently and both incurred an exception.
-            int previousValue = Interlocked.Exchange(ref _disposed, 1);
-            if (previousValue != 1)
+            int previousValue = Interlocked.Exchange(ref _disposed, Status_Disposed);
+            if (previousValue != Status_Disposed)
             {
                 if (NetEventSource.Log.IsEnabled()) Trace("Connection closing.");
 
                 // Only decrement the connection count if we counted this connection
-                if (HttpTelemetry.Log.IsEnabled() && previousValue == -1)
+                if (HttpTelemetry.Log.IsEnabled() && previousValue == Status_NotDisposedAndTrackedByTelemetry)
                 {
                     HttpTelemetry.Log.Http11ConnectionClosed();
                 }
@@ -723,7 +726,7 @@ namespace System.Net.Http
                     // In case the connection is disposed, it's most probable that
                     // expect100Continue timer expired and request content sending failed.
                     // We're awaiting the task to propagate the exception in this case.
-                    if (Volatile.Read(ref _disposed) == 1)
+                    if (Volatile.Read(ref _disposed) == Status_Disposed)
                     {
                         if (async)
                         {
