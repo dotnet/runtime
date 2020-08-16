@@ -135,7 +135,7 @@ jobs:
 #
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
-    jobTemplate: /eng/pipelines/common/global-build-job.yml
+      jobTemplate: /eng/pipelines/common/global-build-job.yml
     helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
     buildConfig: Debug
     runtimeFlavor: mono
@@ -160,6 +160,7 @@ jobs:
       testGroup: innerloop
       nameSuffix: AllSubsets_Mono_RuntimeTests
       buildArgs: -s mono+libs+installer -c $(_BuildConfig) /p:ArchiveTests=true
+      TimeoutInMinutes: 120
       condition: >-
         or(
           eq(dependencies.checkout.outputs['SetPathVars_runtimetests.containsChange'], true),
