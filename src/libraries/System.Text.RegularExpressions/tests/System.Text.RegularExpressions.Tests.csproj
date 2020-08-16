@@ -28,10 +28,10 @@
     <Compile Include="RegexCompilationHelper.cs" />
     <Compile Include="RegexCultureTests.cs" />
     <Compile Include="RegexMatchTimeoutExceptionTests.cs" />
-    <Compile Include="RegexParserTests.cs" />
     <Compile Include="RegexReductionTests.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
+    <Compile Include="RegexParserTests.cs" />
     <Compile Include="GroupCollectionReadOnlyDictionaryTests.cs" />
     <Compile Include="CaptureCollectionTests2.cs" />
     <Compile Include="GroupCollectionTests2.cs" />
