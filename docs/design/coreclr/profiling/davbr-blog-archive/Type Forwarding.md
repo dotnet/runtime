@@ -9,14 +9,12 @@ Type forwarding is nothing new.  However, in CLR V4, we are enabling type forwar
 
 The example I’ll use where the .NET Framework uses type forwarding is the TimeZoneInfo class.  In CLR V4, TimeZoneInfo is now forwarded from System.Core.dll to mscorlib.dll.  If you open the CLR V4 copy of System.Core.dll in ildasm and choose Dump, you'll see the following:
 
-|
 ```
 .class extern /*27000004*/ forwarder System.TimeZoneInfo
  {
  .assembly extern mscorlib /*23000001*/
  }
 ```
- |
 
 In each assembly’s metadata is an exported types table.  The above means that System.Core.dll's exported types table includes an entry for System.TimeZoneInfo (indexed by token 27000004).  What's significant is that System.Core.dll no longer has a typeDef for System.TimeZoneInfo, only an exported type.  The fact that the token begins at the left with 0x27 tells you that it's an mdtExportedType (not a mdtTypeDef, which begins at the left with 0x02).
 
@@ -70,11 +68,11 @@ Note that, if you were to build the above C# code using the .NET 4.0 C# compiler
 Ok, so how do we run this pre-.NET 4.0 executable against .NET 4.0?  A config file, of course.  Paste the following into a file named Class1.exe.config that sits next to Class1.exe:
 
 ```
-<configuration\>
- <startup\>
- <supportedRuntime version="v4.0.20506"/>
- </startup\>
- </configuration\>
+<configuration>
+ <startup>
+  <supportedRuntime version="v4.0.20506"/>
+ </startup>
+ </configuration>
 ```
 
 The above will force Class1.exe to bind against .NET 4.0 Beta 1.  And when it comes time to look for TimeZoneInfo, the CLR will first look in System.Core.dll, find the exported types table entry, and then hop over to mscorlib.dll to load the type.  What does that look like to your profiler?  Make your guess and hold that thought.  First, another walkthrough…
@@ -188,7 +186,6 @@ And this all despite the fact that MyClient.exe still believes that Foo lives in
  IL\_001c: ret
  } // end of method Test::Main
 ```
- |
 
 ## Profilers
 
@@ -199,5 +196,3 @@ This should make life easy for profilers, since they generally expect to be able
 However, type forwarding is important to understand if your profiler needs to follow metadata references directly.  More generally, if your profiler is reading through metadata and expects to come across a typeDef (e.g., perhaps a metadata reference points to a type in that module, or perhaps your profiler expects certain known types to be in certain modules), then your profiler should be prepared to find an mdtExportedType instead, and to deal gracefully with it rather than doing something silly like crashing.
 
 In any case, whether you think your profiler will be affected by type forwarding, be sure to test, test, test!
-
-
