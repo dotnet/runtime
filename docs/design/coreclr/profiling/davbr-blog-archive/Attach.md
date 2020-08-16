@@ -7,8 +7,6 @@ Profiler attach is a feature that allows you to attach a profiler to an already 
 
 Please note!  You can't just take any profiler you bought and suddenly be able to attach it to a running application.  The profiler must be built with "attachability" in mind.  So if you're a profiler developer looking to pump some attachability into your product, read on--this article is for you.  Everyone else, this article will probably be less useful--but just as riveting.
 
-#
-
 # The Players
 
 So how do you get your profiler attached to a running process?  The process has already started, and the CLR code which interrogates the environment to determine whether to load a profiler has already run.  So how do you kick the process into loading your profiler?  The answer: Another process!
@@ -57,8 +55,6 @@ From your InitializeForAttach implementation, your profiler will call SetEventMa
 
 It was impossible to enable all profiling scenarios for attach in the time we had for the V4 release.  So only profilers that do **sampling** and **memory** analysis will function properly after attaching to a live process.  Attempts to use other profiling APIs after attach will be met with CORPROF\_E\_UNSUPPORTED\_FOR\_ATTACHING\_PROFILER.
 
-###
-
 ## Specific Callback Limitations
 
 When your attaching profiler calls SetEventMask, you will be limited to only those event mask flags present in the COR\_PRF\_ALLOWABLE\_AFTER\_ATTACH bitmask (you'll find it in corprof.idl).  Any other flags, and SetEventMask will return CORPROF\_E\_UNSUPPORTED\_FOR\_ATTACHING\_PROFILER.
@@ -96,15 +92,13 @@ So here's the catch.  What if a V4 app starts up in background GC mode _without_
 
 Of course, you could forcibly turn off concurrent / background mode every time the app starts up via a config file:
 
-|
-
-\<configuration\>
-    \<runtime\>
-        \<gcConcurrent enabled="false"/\>
-    \</runtime\>
-\</configuration\>
-
- |
+```xml
+<configuration>
+    <runtime>
+        <gcConcurrent enabled="false"/>
+    </runtime>
+</configuration>
+```
 
 But you don't really want to be running your apps with a sub-optimal GC mode all the time, just on the off-chance you might need to attach a memory profiler to it.  If you suspect you might need to do some memory profiling of a client app, you should just start up your app with the memory profiler to begin with.
 

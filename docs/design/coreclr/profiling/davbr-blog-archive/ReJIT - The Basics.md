@@ -22,12 +22,6 @@ Typically, your profiler will also create a new thread at this point, call it yo
 
 ## ModuleLoadFinished Time
 
-###
-
-###
-
-###
-
 ### Metadata Changes
 
 As each module loads, you will likely need to add metadata so that your future ReJITs will have the tokens they need.  What you do here heavily depends on the kind of instrumentation you want to do.  I’m assuming you’re doing instrumentation that adds some calls from the user code into brand new profiler helper methods you will add somewhere.  If you plan to instrument mscorlib, you will likely want to add those profiler helper methods into mscorlib (remember, mscorlib is not allowed to contain an AssemblyRef that points to any other assembly!).  Otherwise, perhaps you plan to ship a managed helper assembly that will sit on your user’s disk, and all your profiler helper methods will reside in this on-disk managed helper assembly.
@@ -55,10 +49,6 @@ Now imagine your user has turned some dial on your out-of-process GUI, to reques
     - And… any _future_ unshared loads of this module will result in new ModuleIDs.  So as those loads happen, you’ll need to make further calls to RequestReJIT with the new ModuleIDs to ensure those copies get ReJITted as well.
     - This is optional, and only need be done if you truly want this ReJIT request to apply to all unshared copies of the function.  You’re perfectly welcome to ReJIT only those unshared copies you want (and / or the shared copy).
     - Now you can re-read the “Re-Request Prior ReJITs” section above.  :-)
-
-##
-
-###
 
 ### More on AppDomains
 

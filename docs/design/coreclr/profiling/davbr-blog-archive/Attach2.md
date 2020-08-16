@@ -151,7 +151,5 @@ It may be beneficial to program your profiler such that, upon attaching to the p
 
 It’s worth reiterating a limitation I stated in the first attach post (linked above): the ObjectAllocated() callback is unavailable to profilers that attach to running processes.  Therefore, any logic your profiler has that assumes it gets all the ObjectAllocated() callbacks will need to be addressed.  Any objects newly allocated since the last GC may still be unknown to your profiler until it comes across their references via GC callbacks during the next GC (unless your profiler comes across those objects in other ways—example: as parameters to methods you hook with the Enter/Leave/Tailcall probes).
 
-
-
 OK, that about covers the first steps your profiler should take once it attaches to a running process.  It will either need to use lazy catch-up or the catch-up enumerations (or, quite likely, a combination of both).  When using the enumerations, be careful to avoid holes (by calling the enumeration methods from inside ProfilerAttachComplete()), and be resilient to receiving information duplicated across the enumeration and the load / unload events.  For memory profilers, be wary of GCs already in progress at the time your profiler attaches, and consider inducing your own GC at attach-time to build your initial cache of GC objects.
 

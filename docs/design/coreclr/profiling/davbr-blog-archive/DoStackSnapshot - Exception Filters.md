@@ -35,9 +35,9 @@ The filters are the things that come after "When". We all know that, when an exc
 
 The thing you need to realize about DoStackSnapshot's behavior (indeed, CLR in general) is that the execution of a When clause is really a separate function call. In the above example, imagine we take a stack snapshot while inside Positive(). Our managed-only stack trace, as reported by DoStackSnapshot, would then look like this (stack grows up):
 
-Positive
-Main
-Thrower
+Positive\
+Main\
+Thrower\
 Main
 
 It's that highlighted Main that seems odd at first. While the exception is thrown inside Thrower(), the CLR needs to execute the filter clauses to figure out which Catch wins.  These filter executions are actually _function calls_.  Since filter clauses don't have their own names, we just use the name of the function containing the filter clause for stack reporting purposes.  Thus, the highlighted Main above is the execution of a filter clause located inside Main (in this case, "When Positive()").  When each filter clause completes, we "return" back to Thrower() to continue our search for the filter that returns True.  Since this is how the call stack is built up, that's what DoStackSnapshot will report.

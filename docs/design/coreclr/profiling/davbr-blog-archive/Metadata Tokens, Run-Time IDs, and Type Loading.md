@@ -31,10 +31,6 @@ Yes, that is a good example.  You are an astute reader.  Memory profilers that w
 
 # Going from metadata token to run-time ID
 
-#
-
-#
-
 As I mentioned above, the safest way to do this is to build up your own map and do reverse-lookups as necessary.  If that scheme meets your needs, then by all means do that, and stop reading!  But in the cases where this is insufficient, you may need to resort to using GetFunctionFromToken(AndTypeArgs) and GetClassFromToken(AndTypeArgs).  There is no simple, foolproof way to use these APIs safely, but here is your guideline:
 
 **Never call GetFunctionFromToken(AndTypeArgs) and GetClassFromToken(AndTypeArgs) unless you’re certain the relevant types have been loaded.**  (“Relevant types” include the ClassID containing the FunctionID whose mdMethodDef you pass to GetFunctionFromToken(AndTypeArgs), and the ClassID whose mdTypeDef you pass to GetClassFromToken(AndTypeArgs).)  If these types have not been loaded, _you may cause them to be loaded now_!  This is bad because:

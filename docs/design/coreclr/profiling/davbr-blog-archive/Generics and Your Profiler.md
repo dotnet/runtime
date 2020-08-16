@@ -57,8 +57,6 @@ HRESULT GetFunctionInfo2([in] FunctionID funcId,
 
 typeArgs[]: This is the array of **type arguments** to MyClass\<int\>.Foo\<float\>.  So this will be an array of only one element: the ClassID for float.  (The int in MyClass\<int\> is a type argument to MyClass, not to Foo, and you would only see that when you call GetClassIDInfo2 with MyClass\<int\>.)
 
-##
-
 ## GetClassIDInfo2
 
 OK, someone in parentheses said something about calling GetClassIDInfo2, so let’s do that.  Since we got the ClassID for MyClass\<int\> above, let’s pass it to GetClassIDInfo2 to see what we get:
@@ -101,8 +99,6 @@ With a valid COR\_PRF\_FRAME\_INFO, GetFunctionInfo2 will give you helpful, spec
 - the typeArgs [out] array will contain the ClassID for **System.\_\_Canon** , rather than the actual instantiating type(s), if the function itself is generic and is instantiated with reference type argument(s).
 
 It’s worth noting here that there is a bug in GetFunctionInfo2, in that the [out] pClassId you get for the class containing the function can be wrong with generic virtual functions.  Take a look at [this forum post](http://social.msdn.microsoft.com/Forums/en-US/netfxtoolsdev/thread/ed6f972f-712a-48df-8cce-74f8951503fa/) for more information and a workaround.
-
-##
 
 ## ClassIDs & FunctionIDs vs. Metadata Tokens
 
