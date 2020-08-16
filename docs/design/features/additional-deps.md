@@ -52,9 +52,7 @@ The proposal for this is to "roll-backwards" starting with the "found" version.
 
 #### Roll-forward uses app's TFM
 
-A secondary issue with with the store's naming convention for framework. It contains a path such as:
-   `\dotnet\store\x64\netcoreapp2.0\microsoft.applicationinsights\2.4.0`
-where 'netcoreapp2.0' is a "tfm" (target framework moniker). During roll-forward cases, the tfm is still the value specified in the app's runtimeconfig. The host only includes store folders that match that tfm, so it may not find packages from other deps files that were generated off a different tfm. In addition, with the advent of multiple frameworks, it makes it cumbersome to be forced to install to every tfm because multiple frameworks may use the same package, and because each package is still identified by an exact version.
+A secondary issue with with the store's naming convention for framework. It contains a path such as: `\dotnet\store\x64\netcoreapp2.0\microsoft.applicationinsights\2.4.0` where 'netcoreapp2.0' is a "tfm" (target framework moniker). During roll-forward cases, the tfm is still the value specified in the app's runtimeconfig. The host only includes store folders that match that tfm, so it may not find packages from other deps files that were generated off a different tfm. In addition, with the advent of multiple frameworks, it makes it cumbersome to be forced to install to every tfm because multiple frameworks may use the same package, and because each package is still identified by an exact version.
 
 The proposal for this is to add an "any" tfm.
 
