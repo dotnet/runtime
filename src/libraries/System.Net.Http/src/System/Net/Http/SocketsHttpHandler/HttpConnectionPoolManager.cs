@@ -359,9 +359,16 @@ namespace System.Net.Http
 
         public ValueTask<HttpResponseMessage> SendAsync(HttpRequestMessage request, bool async, bool doRequestAuth, CancellationToken cancellationToken)
         {
-            return HttpTelemetry.Log.IsEnabled() && request.RequestUri != null ?
-                SendAsyncWithLogging(request, async, doRequestAuth, cancellationToken) :
-                SendAsyncHelper(request, async, doRequestAuth, cancellationToken);
+            if (HttpTelemetry.Log.IsEnabled())
+            {
+                // [ActiveIssue("https://github.com/dotnet/runtime/issues/40896")]
+                if (request.Version.Major < 3 && request.RequestUri != null)
+                {
+                    return SendAsyncWithLogging(request, async, doRequestAuth, cancellationToken);
+                }
+            }
+
+            return SendAsyncHelper(request, async, doRequestAuth, cancellationToken);
         }
 
         private async ValueTask<HttpResponseMessage> SendAsyncWithLogging(HttpRequestMessage request, bool async, bool doRequestAuth, CancellationToken cancellationToken)
