@@ -79,8 +79,7 @@ Where "found" means the version that is being used at run time including roll-fo
 For example,
     `\dotnet\store\x64\any\microsoft.applicationinsights\2.4.0`
 
-The `any` tfm would be used if the specified tfm (e.g. netcoreapp2.0) is not found:
-    `\dotnet\store\x64\netcoreapp2.0\microsoft.applicationinsights\2.4.0`
+The `any` tfm would be used if the specified tfm (e.g. netcoreapp2.0) is not found: `\dotnet\store\x64\netcoreapp2.0\microsoft.applicationinsights\2.4.0`
 
 _Possible risk: doesn't this make "uninstall" more difficult? Because multiple installs may write the same packages and try to remove packages that another installer created?_
 
