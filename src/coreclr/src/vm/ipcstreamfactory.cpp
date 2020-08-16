@@ -34,7 +34,7 @@ bool IsWhitespace(char c)
 
 bool IsEmpty(LPCSTR string)
 {
-    uint32_t len = strlen(string);
+    uint32_t len = static_cast<uint32_t>(strlen(string));
     for (uint32_t i = 0; i < len; i++)
         if (!IsWhitespace(string[i]))
             return false;
