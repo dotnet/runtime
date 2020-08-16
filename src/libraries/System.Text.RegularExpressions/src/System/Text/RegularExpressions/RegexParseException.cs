@@ -5,6 +5,10 @@ using System.Runtime.Serialization;
 
 namespace System.Text.RegularExpressions
 {
+    /// <summary>
+    /// An exception as a result of a parse error in a regular expression <see cref="RegularExpressions"/>, with
+    /// detailed information in the <see cref="Error"/> and <see cref="Offset"/> properties.
+    /// </summary>
     [Serializable]
     public sealed class RegexParseException : ArgumentException
     {
@@ -20,6 +24,12 @@ namespace System.Text.RegularExpressions
             Offset = offset;
         }
 
+        /// <summary>
+        /// Construct a custom RegexParseException that creates a default message based on the given <see cref="RegexParseError"/> value.
+        /// </summary>
+        /// <param name="pattern">The pattern of the regular expression.</param>
+        /// <param name="error">The <see cref="RegexParseError"/> value detailing the type of parse error.</param>
+        /// <param name="offset">The offset in the regular expression where the parse error occurs.</param>
         public RegexParseException(string pattern, RegexParseError error, int offset) : base(MakeMessage(pattern, error, offset))
         {
             Error = error;
