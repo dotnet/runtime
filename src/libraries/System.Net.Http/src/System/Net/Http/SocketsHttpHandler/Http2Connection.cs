@@ -1409,8 +1409,6 @@ namespace System.Net.Http
 
                     return s.mustFlush || s.endStream;
                 }, cancellationToken).ConfigureAwait(false);
-
-                http2Stream.MarkAsOpened();
                 return http2Stream;
             }
             catch
@@ -1815,12 +1813,11 @@ namespace System.Net.Http
         {
             if (NetEventSource.Log.IsEnabled()) Trace($"{request}");
 
-            Http2Stream? http2Stream = null;
             try
             {
                 // Send request headers
                 bool shouldExpectContinue = request.Content != null && request.HasHeaders && request.Headers.ExpectContinue == true;
-                http2Stream = await SendHeadersAsync(request, cancellationToken, mustFlush: shouldExpectContinue).ConfigureAwait(false);
+                Http2Stream http2Stream = await SendHeadersAsync(request, cancellationToken, mustFlush: shouldExpectContinue).ConfigureAwait(false);
 
                 bool duplex = request.Content != null && request.Content.AllowDuplex;
 
@@ -1880,8 +1877,6 @@ namespace System.Net.Http
             }
             catch (Exception e)
             {
-                http2Stream?.MarkAsClosed();
-
                 if (e is IOException ||
                     e is ObjectDisposedException ||
                     e is Http2ProtocolException ||

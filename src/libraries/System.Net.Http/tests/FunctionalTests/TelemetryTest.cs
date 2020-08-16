@@ -187,10 +187,6 @@ namespace System.Net.Http.Functional.Tests
             Assert.All(http20ConnectionsTotal, c => Assert.True(c >= 0));
             Assert.Equal(0, http20ConnectionsTotal[^1]);
 
-            Assert.True(eventCounters.TryGetValue("http20-streams-current-total", out double[] http20StreamsTotal));
-            Assert.All(http20StreamsTotal, s => Assert.True(s >= 0));
-            Assert.Equal(0, http20StreamsTotal[^1]);
-
             Assert.True(eventCounters.TryGetValue("http11-requests-queue-duration", out double[] requestQueueDurations));
             Assert.Equal(0, requestQueueDurations[^1]);
             if (shouldHaveQueuedRequests)

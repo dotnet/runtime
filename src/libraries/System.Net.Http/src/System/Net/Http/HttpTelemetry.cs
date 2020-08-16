@@ -19,7 +19,6 @@ namespace System.Net.Http
         private PollingCounter? _abortedRequestsCounter;
         private PollingCounter? _totalHttp11ConnectionsCounter;
         private PollingCounter? _totalHttp20ConnectionsCounter;
-        private PollingCounter? _totalHttp20StreamsCounter;
         private EventCounter? _requestsQueueDurationCounter;
 
         private long _startedRequests;
@@ -28,7 +27,6 @@ namespace System.Net.Http
 
         private long _openedHttp11Connections;
         private long _openedHttp20Connections;
-        private long _openedHttp20Streams;
 
         // NOTE
         // - The 'Start' and 'Stop' suffixes on the following event names have special meaning in EventSource. They
@@ -101,19 +99,6 @@ namespace System.Net.Http
             WriteEvent(eventId: 9);
         }
 
-        [NonEvent]
-        public void Http20StreamEstablished()
-        {
-            Interlocked.Increment(ref _openedHttp20Streams);
-        }
-
-        [NonEvent]
-        public void Http20StreamClosed()
-        {
-            long count = Interlocked.Decrement(ref _openedHttp20Streams);
-            Debug.Assert(count >= 0);
-        }
-
         protected override void OnEventCommand(EventCommandEventArgs command)
         {
             if (command.Command == EventCommand.Enable)
@@ -165,11 +150,6 @@ namespace System.Net.Http
                 _totalHttp20ConnectionsCounter ??= new PollingCounter("http20-connections-current-total", this, () => Interlocked.Read(ref _openedHttp20Connections))
                 {
                     DisplayName = "Current Http 2.0 Connections"
-                };
-
-                _totalHttp20StreamsCounter ??= new PollingCounter("http20-streams-current-total", this, () => Interlocked.Read(ref _openedHttp20Streams))
-                {
-                    DisplayName = "Current Http 2.0 Streams"
                 };
 
                 _requestsQueueDurationCounter ??= new EventCounter("http11-requests-queue-duration", this)
