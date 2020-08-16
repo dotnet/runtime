@@ -30,4 +30,4 @@ steps:
   - script: $(Build.SourcesDirectory)/eng/common/msbuild.sh --ci ${{ parameters.sendParams }}
     displayName: ${{ parameters.displayName }}
     condition: ${{ parameters.condition }}
-    env: {{ parameters.environment }}
+    env: ${{ parameters.environment }}
