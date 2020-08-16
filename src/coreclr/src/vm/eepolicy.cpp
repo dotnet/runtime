@@ -583,9 +583,7 @@ void DisplayStackOverflowException()
 DWORD LogStackOverflowStackTraceThread(void* arg)
 {
     LogCallstackForLogWorker((Thread*)arg);
-#ifdef HOST_WINDOWS
-    CreateCrashDumpIfEnabled();
-#endif
+
     return 0;
 }
 
