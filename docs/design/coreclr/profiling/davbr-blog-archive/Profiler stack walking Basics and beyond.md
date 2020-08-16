@@ -27,7 +27,7 @@ HRESULT DoStackSnapshot(
 ```
 And here’s what the CLR calls on your profiler (you can also find this in corprof.idl).  You’ll pass a pointer to your implementation of this function in the callback parameter above.
 ```
-typedef HRESULT \_\_stdcall StackSnapshotCallback(
+typedef HRESULT __stdcall StackSnapshotCallback(
   FunctionID funcId,
   UINT_PTR ip,
   COR_PRF_FRAME_INFO frameInfo,
@@ -77,46 +77,16 @@ Before I continue from this exciting cliffhanger, a brief interlude.  Everyone k
 
 Now that we’re speaking the same language.  Let’s look at a mixed-mode stack:
 
-|
-
+```
 Unmanaged
-
- |
-|
-
 D (Managed)
-
- |
-|
-
 Unmanaged
-
- |
-|
-
 C (Managed)
-
- |
-|
-
 B (Managed)
-
- |
-|
-
 Unmanaged
-
- |
-|
-
 A (Managed)
-
- |
-|
-
 Main (Managed)
-
- |
+```
 
 Stepping back a bit, it’s worthwhile to understand why DoStackSnapshot exists in the first place.  It’s there to help you walk _managed_ frames on the stack.  If you tried to walk managed frames yourself, you would get unreliable results, particularly on 32 bits, because of some wacky calling conventions used in managed code.  The CLR understands these calling conventions, and DoStackSnapshot is therefore in a uniquely suitable position to help you decode them.  However, DoStackSnapshot is not a complete solution if you want to be able to walk the entire stack, including unmanaged frames.  Here’s where you have a choice:
 
@@ -145,81 +115,71 @@ But before you get too deep, note that the issue of whether and how to seed a st
 
 For the truly adventurous profiler that is doing an asynchronous, cross-thread, seeded stack walk while filling in the unmanaged holes, here’s what it would look like.
 
-|
-
+```
 Block of
 Unmanaged
 Frames
+```
 
- |
 1. You suspend the target thread (target thread’s suspend count is now 1)
 2. You get the target thread’s current register context
 3. You determine if the register context points to unmanaged code (e.g., call ICorProfilerInfo2::GetFunctionFromIP(), and see if you get back a 0 FunctionID)
 4. In this case the register context does point to unmanaged code, so you perform an unmanaged stack walk until you find the top-most managed frame (D)
- |
-|
 
-Function D
-(Managed)
+   ```
+   Function D
+   (Managed)
+   ```
 
- |
 1. You call DoStackSnapshot with your seed context. CLR suspends target thread again: its suspend count is now 2.  Our sandwich begins.
 
 1. CLR calls your StackSnapshotCallback with FunctionID for D.
- |
-|
 
-Block of
-Unmanaged
-Frames
+   ```
+   Block of
+   Unmanaged
+   Frames
+   ```
 
- |
 1. CLR calls your StackSnapshotCallback with FunctionID=0.  You’ll need to walk this block yourself.  You can stop when you hit the first managed frame, or you can cheat: delay your unmanaged walk until sometime after your next callback, as the next callback will tell you exactly where the next managed frame begins (and thus where your unmanaged walk should end).
- |
-|
 
-Function C
-(Managed)
-
- |
+   ```
+   Function C
+   (Managed)
+   ```
 1. CLR calls your StackSnapshotCallback with FunctionID for C.
- |
-|
 
-Function B
-(Managed)
+   ```
+   Function B
+   (Managed)
+   ```
 
- |
 1. CLR calls your StackSnapshotCallback with FunctionID for B.
- |
-|
 
-Block of
-Unmanaged
-Frames
+   ```
+   Block of
+   Unmanaged
+   Frames
+   ```
 
- |
 1. CLR calls your StackSnapshotCallback with FunctionID=0.  Again, you’ll need to walk this block yourself.
- |
-|
 
-Function A
-(Managed)
+   ```
+   Function A
+   (Managed)
+   ```
 
- |
 1. CLR calls your StackSnapshotCallback with FunctionID for A.
- |
-|
 
-Main
-(Managed)
+   ```
+   Main
+   (Managed)
+   ```
 
- |
 1. CLR calls your StackSnapshotCallback with FunctionID for Main.
 2. DoStackSnapshot “resumes” target thread (its suspend count is now 1) and returns.  Our sandwich is complete.
 
 1. You resume target thread (its suspend count is now 0, so it’s resumed for real).
- |
 
 **Triumph over evil**
 
