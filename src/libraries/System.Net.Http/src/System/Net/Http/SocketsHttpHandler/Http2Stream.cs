@@ -576,6 +576,8 @@ namespace System.Net.Http
 
             public void OnHeadersStart()
             {
+                if (HttpTelemetry.Log.IsEnabled()) HttpTelemetry.Log.ResponseHeadersBegin();
+
                 Debug.Assert(!Monitor.IsEntered(SyncObject));
                 lock (SyncObject)
                 {
@@ -857,8 +859,6 @@ namespace System.Net.Http
                         (wait, emptyResponse) = TryEnsureHeaders();
                         Debug.Assert(!wait);
                     }
-
-                    if (HttpTelemetry.Log.IsEnabled()) HttpTelemetry.Log.ResponseHeadersBegin();
                 }
                 catch
                 {
