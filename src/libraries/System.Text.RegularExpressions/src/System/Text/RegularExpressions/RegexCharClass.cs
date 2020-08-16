@@ -1515,7 +1515,7 @@ namespace System.Text.RegularExpressions
                 }
             }
 
-            throw new RegexParseException(RegexParseError.UnknownUnicodeProperty, currentPos,
+            throw new RegexParseException(RegexParseError.UnrecognizedUnicodeProperty, currentPos,
                 SR.Format(SR.MakeException, pattern, currentPos, SR.Format(SR.UnknownProperty, capname)));
         }
 
