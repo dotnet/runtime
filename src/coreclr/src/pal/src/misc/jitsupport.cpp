@@ -14,10 +14,11 @@ SET_DEFAULT_DEBUG_CHANNEL(MISC);
 #endif
 
 #if defined(HOST_ARM64) && defined(__linux__)
-typedef struct {
+struct CpuCapability
+{
     const char* name;
     unsigned long hwCapFlag;
-} CpuCapability;
+};
 
 static const CpuCapability CpuCapabilities[] = {
     //{ "fp", HWCAP_FP },
