@@ -14,13 +14,13 @@ namespace System.Text.RegularExpressions
         /// <summary>Gets the offset in the supplied pattern.</summary>
         public int Offset { get; }
 
-        public RegexParseException(RegexParseError error, int offset)
+        internal RegexParseException(RegexParseError error, int offset, string message) : base(message)
         {
             Error = error;
             Offset = offset;
         }
 
-        internal RegexParseException(RegexParseError error, int offset, string message) : base(message)
+        public RegexParseException(RegexParseError error, int offset)
         {
             Error = error;
             Offset = offset;
