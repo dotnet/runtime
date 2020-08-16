@@ -16,16 +16,11 @@
   <UsingTask TaskName="WasmAppBuilder" 
       AssemblyFile="$(CORE_ROOT)/WasmAppBuilder/WasmAppBuilder.dll"/>
 
-  <Target Name="BuildApp" DependsOnTargets="Build;Publish">
+  <Target Name="BuildApp">
     <ItemGroup>
-      <AssemblySearchPaths Include="bin"/>
       <AssemblySearchPaths Include="$(MicrosoftNetCoreAppRuntimePackDir)\native"/>
       <AssemblySearchPaths Include="$(MicrosoftNetCoreAppRuntimePackDir)\lib\$(NetCoreAppCurrent)"/>
       <AssemblySearchPaths Include="$(CORE_ROOT)/TargetingPack" />
-    </ItemGroup>
-
-    <ItemGroup>
-	    <TestAssemblies Include="$(TestAssembly)" />
     </ItemGroup>
   
     <Message Importance="High" Text="TestAssemblies: @(TestAssemblies)"/> 
@@ -36,17 +31,12 @@
     <WasmAppBuilder
       AppDir="$(AppDir)"
       MicrosoftNetCoreAppRuntimePackDir="$(MicrosoftNetCoreAppRuntimePackDir)"
-      MainAssembly="$(CORE_ROOT)/wasm-test-runner/bin/net5.0/browser-wasm/WasmTestRunner.dll"
+      MainAssembly="$(TestAssembly)"
       MainJS="$(CORE_ROOT)\runtime-test\runtime-test.js"
       AssemblySearchPaths="@(AssemblySearchPaths)"
-      ExtraAssemblies="@(TestAssemblies)"
       />
 
 
     <Exec Command="chmod a+x $(AppDir)/run-v8.sh" />
   </Target>
-
-  <ItemGroup>
-    <Compile Include="Program.cs" />
-  </ItemGroup>
 </Project>
