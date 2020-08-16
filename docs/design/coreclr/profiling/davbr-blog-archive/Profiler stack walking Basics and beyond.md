@@ -115,11 +115,7 @@ But before you get too deep, note that the issue of whether and how to seed a st
 
 For the truly adventurous profiler that is doing an asynchronous, cross-thread, seeded stack walk while filling in the unmanaged holes, here’s what it would look like.
 
-```
-Block of
-Unmanaged
-Frames
-```
+Block of Unmanaged Frames
 
 1. You suspend the target thread (target thread’s suspend count is now 1)
 2. You get the target thread’s current register context
