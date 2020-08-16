@@ -4,6 +4,8 @@
 // Changes to this file must follow the https://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
 
+using System.Runtime.Serialization;
+
 namespace System.Text.RegularExpressions
 {
     public partial class Capture
@@ -286,5 +288,47 @@ namespace System.Text.RegularExpressions
     {
         protected RegexRunnerFactory() { }
         protected internal abstract System.Text.RegularExpressions.RegexRunner CreateInstance();
+    }
+    public enum RegexParseError
+    {
+        Unknown,
+        AlternationHasTooManyConditions,
+        AlternationHasMalformedCondition,
+        InvalidUnicodePropertyEscape,
+        MalformedUnicodePropertyEscape,
+        UnrecognizedEscape,
+        UnrecognizedControlCharacter,
+        MissingControlCharacter,
+        InsufficientOrInvalidHexDigits,
+        QuantifierOrCaptureGroupOutOfRange,
+        UndefinedNamedReference,
+        UndefinedNumberedReference,
+        MalformedNamedReference,
+        UnescapedEndingBackslash,
+        UnterminatedComment,
+        InvalidGroupingConstruct,
+        AlternationHasNamedCapture,
+        AlternationHasComment,
+        AlternationHasMalformedReference,
+        AlternationHasUndefinedReference,
+        CaptureGroupNameInvalid,
+        CaptureGroupOfZero,
+        UnterminatedBracket,
+        ExclusionGroupNotLast,
+        ReversedCharacterRange,
+        ShorthandClassInCharacterRange,
+        InsufficientClosingParentheses,
+        ReversedQuantifierRange,
+        NestedQuantifiersNotParenthesized,
+        QuantifierAfterNothing,
+        InsufficientOpeningParentheses,
+        UnrecognizedUnicodeProperty
+    }
+    public sealed class RegexParseException : ArgumentException
+    {
+        public RegexParseException(RegexParseError error, int offset) { }
+        public override void GetObjectData(SerializationInfo info, StreamingContext context) { }
+        public RegexParseError Error { get { throw null; } }
+        public int Offset { get { throw null; } }
     }
 }
