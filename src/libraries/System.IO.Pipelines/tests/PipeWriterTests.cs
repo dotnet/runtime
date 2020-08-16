@@ -256,5 +256,21 @@ namespace System.IO.Pipelines.Tests
 
             await task;
         }
+
+        [Fact]
+        public async Task WritingWithACompletedReaderNoops()
+        {
+            var pool = new DisposeTrackingBufferPool();
+            var pipe = new Pipe(new PipeOptions(pool));
+            pipe.Reader.Complete();
+
+            byte[] writeBuffer = new byte[100];
+            for (var i = 0; i < 10000; i++)
+            {
+                await pipe.Writer.WriteAsync(writeBuffer);
+            }
+
+            Assert.Equal(0, pool.CurrentlyRentedBlocks);
+        }
     }
 }

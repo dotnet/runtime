@@ -954,6 +954,11 @@ namespace System.IO.Pipelines
                 ThrowHelper.ThrowInvalidOperationException_NoWritingAllowed();
             }
 
+            if (_readerCompletion.IsCompleted)
+            {
+                return new ValueTask<FlushResult>(new FlushResult(isCanceled: false, isCompleted: true));
+            }
+
             CompletionData completionData;
             ValueTask<FlushResult> result;
 
