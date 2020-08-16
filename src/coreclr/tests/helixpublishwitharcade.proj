@@ -91,6 +91,9 @@
     <DotNetCliPackageType>runtime</DotNetCliPackageType>
     <DotNetCliVersion>$(BundledNETCoreAppPackageVersion)</DotNetCliVersion>
     <DotNetCliRuntime>$(HelixRuntimeRid)</DotNetCliRuntime>
+
+    <!-- This is dirty, we should query the "physical targeting OS" -->
+    <DotNetCliRuntime Condition="'$(__TargetOS)' == 'Browser'">osx-x64</DotNetCliRuntime>
   </PropertyGroup>
 
   <Import Project="testgrouping.proj" />
