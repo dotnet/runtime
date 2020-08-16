@@ -392,6 +392,7 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
       <AllRunnableTestPaths Include="$(XunitTestBinBase)\**\*.sh" Exclude="$(XunitTestBinBase)\**\run-v8.sh" Condition="'$(TargetArchitecture)' == 'wasm'" />
     </ItemGroup>
 
+    <Message Importance="High" Text="!!! XunitTestBinBase: $(XunitTestBinBase)" />
     <Message Importance="High" Text="!!! GetListOfTestCmds: @(AllRunnableTestPaths)" />
   </Target>
 
