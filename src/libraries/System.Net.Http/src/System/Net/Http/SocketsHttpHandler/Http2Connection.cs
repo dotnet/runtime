@@ -60,6 +60,10 @@ namespace System.Net.Http
         //     (meaning we must assume all streams have been processed by the server)
         private int _lastStreamId = -1;
 
+        private const int TelemetryStatus_Opened = 1;
+        private const int TelemetryStatus_Closed = 2;
+        private int _markedByTelemetryStatus;
+
         // This will be set when a connection IO error occurs
         private Exception? _abortException;
 
@@ -144,6 +148,12 @@ namespace System.Net.Http
             _nextPingRequestTimestamp = Environment.TickCount64 + _keepAlivePingDelay;
             _keepAlivePingPolicy = _pool.Settings._keepAlivePingPolicy;
 
+            if (HttpTelemetry.Log.IsEnabled())
+            {
+                HttpTelemetry.Log.Http20ConnectionEstablished();
+                _markedByTelemetryStatus = TelemetryStatus_Opened;
+            }
+
             if (NetEventSource.Log.IsEnabled()) TraceConnection(_stream);
 
             static long TimeSpanToMs(TimeSpan value) {
@@ -151,6 +161,8 @@ namespace System.Net.Http
                 return (long)(milliseconds > int.MaxValue ? int.MaxValue : milliseconds);
             }
         }
+
+        ~Http2Connection() => Dispose();
 
         private object SyncObject => _httpStreams;
 
@@ -1674,11 +1686,21 @@ namespace System.Net.Http
                 return;
             }
 
+            GC.SuppressFinalize(this);
+
             // Do shutdown.
             _connection.Dispose();
 
             _connectionWindow.Dispose();
             _concurrentStreams.Dispose();
+
+            if (HttpTelemetry.Log.IsEnabled())
+            {
+                if (Interlocked.Exchange(ref _markedByTelemetryStatus, TelemetryStatus_Closed) == TelemetryStatus_Opened)
+                {
+                    HttpTelemetry.Log.Http20ConnectionClosed();
+                }
+            }
         }
 
         public void Dispose()
