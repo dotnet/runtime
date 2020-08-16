@@ -32,12 +32,12 @@ If all paths are tried and the asset is still not found this is reported as an e
 
 ## Probing paths
 The list of probing paths ordered according to their priority. First path in the list below is tried first and so on.
-* Servicing paths  
-  Servicing paths are only used for serviceable assets, that is the corresponding library record must specify `serviceable: true`.  
+* Servicing paths
+  Servicing paths are only used for serviceable assets, that is the corresponding library record must specify `serviceable: true`.
   The base servicing path is
     * On Windows x64 `%ProgramFiles(x86)%\coreservicing`
     * On Windows x86 `%ProgramFiles%\coreservicing`
-    * Otherwise (Linux/Mac) `$CORE_SERVICING`  
+    * Otherwise (Linux/Mac) `$CORE_SERVICING`
 
   Given the base servicing path, the probing paths are
     * Servicing NI probe path `<servicing base>/|arch|` - this is used only for `runtime` assets
