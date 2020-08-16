@@ -1,5 +1,4 @@
 parameters:
-  condition: true
   restoreParams: ""
   sendParams: ""
   helixParameters: {}
@@ -9,19 +8,17 @@ steps:
   # TODO: Remove and consolidate this when we move to arcade via init-tools.cmd.
   - powershell: $(Build.SourcesDirectory)\eng\common\build.ps1 ${{ parameters.restoreParams }}
     displayName: Restore blob feed tasks
-    condition: ${{ parameters.condition }}
+    condition: ${{ parameters.helixParameters.condition }}
 
   - powershell: eng\common\msbuild.ps1 -ci ${{ parameters.sendParams }}
     displayName: ${{ parameters.displayName }}
-    condition: ${{ parameters.condition }}
-    env:
-      ${{ insert }}: ${{ parameters.helixParameters }}
+    ${{ insert }}: ${{ parameters.helixParameters }}
 
 - ${{ if ne(parameters.helixParameters.osGroup, 'Windows_NT') }}:
   # TODO: Remove and consolidate this when we move to arcade via init-tools.sh.
   - script: $(Build.SourcesDirectory)/eng/common/build.sh ${{ parameters.restoreParams }}
     displayName: Restore blob feed tasks
-    condition: ${{ parameters.condition }}
+    condition: ${{ parameters.helixParameters.condition }}
     ${{ if eq(parameters.helixParameters.osGroup, 'FreeBSD') }}:
       env:
         # Arcade uses this SDK instead of trying to restore one.
@@ -29,6 +26,4 @@ steps:
 
   - script: $(Build.SourcesDirectory)/eng/common/msbuild.sh --ci ${{ parameters.sendParams }}
     displayName: ${{ parameters.displayName }}
-    condition: ${{ parameters.condition }}
-    env:
-      ${{ insert }}: ${{ parameters.helixParameters }}
+    ${{ insert }}: ${{ parameters.helixParameters }}

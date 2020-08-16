@@ -30,13 +30,12 @@ steps:
   parameters:
     restoreParams: /p:DotNetPublishToBlobFeed=true -ci -restore -projects $(Build.SourcesDirectory)\eng\empty.csproj
     sendParams: ${{ parameters.helixProjectArguments }} /maxcpucount /bl:$(Build.SourcesDirectory)/artifacts/log/SendToHelix.binlog
-    ${{ if ne(parameters.condition, '') }}:
-      condition: ${{ parameters.condition }}
-    ${{ if eq(parameters.condition, '') }}:
-      condition: true
     helixParameters:
       displayName: ${{ parameters.displayName }}
-      condition: ${{ parameters.condition }}
+      ${{ if ne(parameters.condition, '') }}:
+        condition: ${{ parameters.condition }}
+      ${{ if eq(parameters.condition, '') }}:
+        condition: true
       archType: ${{ parameters.archType }}
       osGroup: ${{ parameters.osGroup }}
       osSubgroup: ${{ parameters.osSubgroup }}
@@ -59,7 +58,7 @@ steps:
       gcSimulatorTests: ${{ parameters.gcSimulatorTests }}
       runtimeFlavorDisplayName: ${{ parameters.runtimeFlavorDisplayName }}
       runtimeVariant: ${{ parameters.runtimeVariant }}
-      helixEnvironment:
+      env:
         __BuildArch: ${{ parameters.archType }}
         __TargetOS: ${{ parameters.osGroup }}${{ parameters.osSubgroup }}
         __BuildType: ${{ parameters.buildConfig }}
