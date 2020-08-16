@@ -1625,7 +1625,6 @@ void Compiler::optDebugCheckAssertion(AssertionDsc* assertion)
                     assert(assertion->op2.u1.iconFlags != 0);
                     break;
                 case O1K_LCLVAR:
-                case O1K_ARR_BND:
                     assert((lvaTable[assertion->op1.lcl.lclNum].lvType != TYP_REF) || (assertion->op2.u1.iconVal == 0));
                     break;
                 case O1K_VALUE_NUMBER:
@@ -1959,11 +1958,33 @@ AssertionInfo Compiler::optAssertionGenJtrue(GenTree* tree)
     {
         std::swap(op1, op2);
     }
+
+    ValueNum op1VN = vnStore->VNConservativeNormalValue(op1->gtVNPair);
     // If op1 is lcl and op2 is const or lcl, create assertion.
     if ((op1->gtOper == GT_LCL_VAR) &&
         ((op2->OperKind() & GTK_CONST) || (op2->gtOper == GT_LCL_VAR))) // Fix for Dev10 851483
     {
         return optCreateJtrueAssertions(op1, op2, assertionKind);
+    }
+    else if (vnStore->IsVNCheckedBound(op1VN) && op2->OperIs(GT_CNS_INT))
+    {
+        AssertionDsc dsc;
+        dsc.assertionKind    = OAK_EQUAL;
+        dsc.op1.vn           = vnStore->VNConservativeNormalValue(relop->gtVNPair);
+        dsc.op1.kind         = O1K_ARR_BND;
+        dsc.op1.bnd.vnIdx    = vnStore->VNForIntCon(op2->AsIntCon()->IntegralValue() - 1);
+        dsc.op1.bnd.vnLen    = op1VN;
+        dsc.op2.vn           = vnStore->VNConservativeNormalValue(op2->gtVNPair);
+        dsc.op2.kind         = O2K_CONST_INT;
+        dsc.op2.u1.iconFlags = 0;
+        dsc.op2.u1.iconVal   = 0;
+
+        AssertionIndex index = optAddAssertion(&dsc);
+        if (relop->OperIs(GT_NE))
+        {
+            return AssertionInfo::ForNextEdge(index);
+        }
+        return index;
     }
 
     // Check op1 and op2 for an indirection of a GT_LCL_VAR and keep it in op1.

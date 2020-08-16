@@ -165,6 +165,7 @@ struct Limit
         }
         return false;
     }
+
 #ifdef DEBUG
     const char* ToString(CompAllocator alloc)
     {
@@ -376,6 +377,21 @@ struct RangeOps
                 result.uLimit = r2hi;
             }
         }
+        if (r1lo.IsBinOpArray() && r2lo.IsBinOpArray() && r1lo.vn == r2lo.vn)
+        {
+            result.lLimit = r2lo.GetConstant() < r1lo.GetConstant() ? r2lo : r1lo;
+        }
+
+        if (r1lo.IsConstant() && r1lo.GetConstant() >= 0 && r2lo.IsBinOpArray() &&
+            r2lo.GetConstant() >= r1lo.GetConstant())
+        {
+            result.lLimit = r1lo;
+        }
+        else if (r2lo.IsConstant() && r2lo.GetConstant() >= 0 && r1lo.IsBinOpArray() &&
+            r1lo.GetConstant() >= r2lo.GetConstant())
+        {
+            result.lLimit = r2lo;
+        }
         return result;
     }
 };
@@ -438,7 +454,7 @@ public:
     // assumes that the lower range is resolved and upper range is symbolic as in an
     // increasing loop.
     // TODO-CQ: This is not general enough.
-    bool BetweenBounds(Range& range, int lower, GenTree* upper);
+    bool BetweenBounds(Range& range, int lower, ValueNum uLimitVN, int arrSize DEBUGARG(GenTree* upper));
 
     // Entry point to optimize range checks in the block. Assumes value numbering
     // and assertion prop phases are completed.
@@ -473,6 +489,8 @@ public:
     // Inspect the "assertions" and extract assertions about the given "phiArg" and
     // refine the "pRange" value.
     void MergeEdgeAssertions(GenTreeLclVarCommon* lcl, ASSERT_VALARG_TP assertions, Range* pRange);
+
+    void MergeEdgeAssertions(ValueNum num, ASSERT_VALARG_TP, Range* pRange);
 
     // The maximum possible value of the given "limit." If such a value could not be determined
     // return "false." For example: ARRLEN_MAX for array length.
@@ -518,6 +536,13 @@ private:
     LclSsaVarDsc* GetSsaDefAsg(GenTreeLclVarCommon* lclUse);
 
     GenTreeBoundsChk* m_pCurBndsChk;
+
+    // Is the given assertion a constant assertion with the given vn
+    bool IsConstantAssertion(Compiler::AssertionDsc* dsc, ValueNum vn)
+    {
+        return (dsc->assertionKind == Compiler::OAK_EQUAL) && (dsc->op1.vn == vn)
+            && (m_pCompiler->vnStore->IsVNInt32Constant(dsc->op2.vn));
+    }
 
     // Get the cached overflow values.
     OverflowMap* GetOverflowMap();
