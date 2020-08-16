@@ -27,6 +27,7 @@ Sigparse.cpp is structured without any dependencies on any headers, so you can e
 
 Simply derive a new class from SigParser, and override the virtual functions. The functions you override are events to be handled as the parser traverses the signature in top-down fashion. For example, when the parser encounters a MethodDef, you might see calls to your overrides of:
 
+```
 NotifyBeginMethod()
     NotifyParamCount()
     NotifyBeginRetType()
@@ -41,6 +42,7 @@ NotifyBeginMethod()
     NotifyEndParam()
     _… (more parameter notifications occur here if more parameters exist)_
 NotifyEndMethod()
+```
 
 And yes, generics are handled as well.
 
