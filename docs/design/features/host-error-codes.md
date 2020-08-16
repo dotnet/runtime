@@ -7,11 +7,9 @@ Note that the exit code returned by running an application via `dotnet.exe` or `
 
 * `Success` (`0`) - Operation was successful.
 
-* `Success_HostAlreadyInitialized` (`0x00000001`) - Initialization was successful, but another host context is already initialized, so the returned context is "secondary". The requested context was otherwise fully compatible with the already initialized context.
-This is returned by `hostfxr_initialize_for_runtime_config` if it's called when the host is already initialized in the process. Comes from `corehost_initialize` in `hostpolicy`.
+* `Success_HostAlreadyInitialized` (`0x00000001`) - Initialization was successful, but another host context is already initialized, so the returned context is "secondary". The requested context was otherwise fully compatible with the already initialized context. This is returned by `hostfxr_initialize_for_runtime_config` if it's called when the host is already initialized in the process. Comes from `corehost_initialize` in `hostpolicy`.
 
-* `Success_DifferentRuntimeProperties` (`0x00000002`) - Initialization was successful, but another host context is already initialized and the requested context specified some runtime properties which are not the same (either in value or in presence) to the already initialized context.
-This is returned by `hostfxr_initialize_for_runtime_config` if it's called when the host is already initialized in the process. Comes from `corehost_initialize` in `hostpolicy`.
+* `Success_DifferentRuntimeProperties` (`0x00000002`) - Initialization was successful, but another host context is already initialized and the requested context specified some runtime properties which are not the same (either in value or in presence) to the already initialized context. This is returned by `hostfxr_initialize_for_runtime_config` if it's called when the host is already initialized in the process. Comes from `corehost_initialize` in `hostpolicy`.
 
 
 ### Failure error/exit codes
