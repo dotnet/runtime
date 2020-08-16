@@ -326,7 +326,7 @@ namespace System.Text.RegularExpressions
     }
     public sealed class RegexParseException : ArgumentException
     {
-        public RegexParseException(RegexParseError error, int offset) { }
+        public RegexParseException(string pattern, RegexParseError error, int offset) { }
         public override void GetObjectData(SerializationInfo info, StreamingContext context) { }
         public RegexParseError Error { get { throw null; } }
         public int Offset { get { throw null; } }
