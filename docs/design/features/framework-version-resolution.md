@@ -145,11 +145,13 @@ Pros
 
 Cons
 * Testing behavior of new releases with pre-release versions is not fully possible (see below).
-* Some special cases don't work:
-One special case which would not work:
-*Component A which asks for `2.0.0 LatestMajor` is loaded first on a machine which has `3.0.0` and also `3.1.0-preview` installed. Because it's the first in the process it will resolve the runtime according to the above rules - that is prefer release version - and thus will select `3.0.0`.
-Later on component B is loaded which asks for `3.1.0-preview LatestMajor` (for example the one in active development). This load will fail since `3.0.0` is not enough to run this component.
-Loading the components in reverse order (B first and then A) will work since the `3.1.0-preview` runtime will be selected.*
+* Some special cases don't work.
+
+  One special case which would not work:
+  *Component A which asks for `2.0.0 LatestMajor` is loaded first on a machine which has `3.0.0` and also `3.1.0-preview` installed. Because it's the first in the process it will resolve the runtime according to the above rules - that is prefer release version - and thus will select `3.0.0`.*
+
+  *Later on component B is loaded which asks for `3.1.0-preview LatestMajor` (for example the one in active development). This load will fail since `3.0.0` is not enough to run this component.*
+  *Loading the components in reverse order (B first and then A) will work since the `3.1.0-preview` runtime will be selected.*
 
 Modification to automatic roll forward to latest patch:
 Existing behavior is to find a matching framework based on the above rules and then apply roll forward to latest patch (except if `Disable` is specified). The new behavior should be:
