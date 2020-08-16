@@ -260,7 +260,7 @@ fi
       <BashCLRTestPreCommands Condition="'$(TargetArchitecture)' == 'wasm'">
    <![CDATA[
 # Build wasm app containing the test dll
-if [ -f $(DotnetRoot)/dotnet]; then
+if [ -f $(DotnetRoot)/dotnet ]; then
   DOTNET_COMMAND=$(DotnetRoot)/dotnet
 else
   # Just try the dotnet in the path
