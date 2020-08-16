@@ -25,65 +25,63 @@ parameters:
   runtimeFlavorDisplayName: 'CoreCLR'
   runtimeVariant: ''
 
-variables:
-- name: helixEnvironment
-  value:
-    __BuildArch: ${{ parameters.archType }}
-    __TargetOS: ${{ parameters.osGroup }}${{ parameters.osSubgroup }}
-    __BuildType: ${{ parameters.buildConfig }}
-    _Creator: ${{ parameters.creator }}
-    _PublishTestResults: ${{ parameters.publishTestResults }}
-    _HelixAccessToken: ${{ parameters.helixAccessToken }}
-    _HelixBuild: ${{ parameters.helixBuild }}
-    _HelixSource: ${{ parameters.helixSource }}
-    _HelixTargetQueues: ${{ join(',', parameters.helixQueues) }}
-    _HelixType: ${{ parameters.helixType }}
-    _RunCrossGen: ${{ parameters.runCrossGen }}
-    _RunCrossGen2: ${{ parameters.runCrossGen2 }}
-    _CompositeBuildMode: ${{ parameters.compositeBuildMode }}
-    _RunInUnloadableContext: ${{ parameters.runInUnloadableContext }}
-    _LongRunningGcTests: ${{ parameters.longRunningGcTests }}
-    _GcSimulatorTests: ${{ parameters.gcSimulatorTests }}
-    _Scenarios: ${{ join(',', parameters.scenarios) }}
-    _TimeoutPerTestCollectionInMinutes: ${{ parameters.timeoutPerTestCollectionInMinutes }}
-    _TimeoutPerTestInMinutes: ${{ parameters.timeoutPerTestInMinutes }}
-    runtimeFlavorDisplayName: ${{ parameters.runtimeFlavorDisplayName }}
-    _RuntimeVariant: ${{ parameters.runtimeVariant }}
-    ${{ if eq(parameters.publishTestResults, 'true') }}:
-      SYSTEM_ACCESSTOKEN: $(System.AccessToken)
-    # TODO: remove NUGET_PACKAGES once https://github.com/dotnet/arcade/issues/1578 is fixed
-    NUGET_PACKAGES: $(Build.SourcesDirectory)$(dir).packages
-
-- name: condition
-  value: true
-- ${{ if ne(parameters.condition, '') }}:
-  - name: condition
-    value: ${{ parameters.condition }}
-
-
 steps:
-- ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
-  # TODO: Remove and consolidate this when we move to arcade via init-tools.cmd.
-  - powershell: $(Build.SourcesDirectory)\eng\common\build.ps1 /p:DotNetPublishToBlobFeed=true -ci -restore -projects $(Build.SourcesDirectory)\eng\empty.csproj
-    displayName: Restore blob feed tasks
-    condition: $(condition)
-
-  - powershell: eng\common\msbuild.ps1 -ci ${{ parameters.helixProjectArguments }} /maxcpucount /bl:$(Build.SourcesDirectory)/artifacts/log/SendToHelix.binlog
-    displayName: ${{ parameters.displayName }}
-    condition: $(condition)
-    env: $(helixEnvironment)
-
-- ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
-  # TODO: Remove and consolidate this when we move to arcade via init-tools.sh.
-  - script: $(Build.SourcesDirectory)/eng/common/build.sh /p:DotNetPublishToBlobFeed=true --ci --restore --projects $(Build.SourcesDirectory)/eng/empty.csproj
-    displayName: Restore blob feed tasks
-    condition: $(condition)
-    ${{ if eq(parameters.osGroup, 'FreeBSD') }}:
-      env:
-        # Arcade uses this SDK instead of trying to restore one.
-        DotNetCoreSdkDir: /usr/local/dotnet
-
-  - script: $(Build.SourcesDirectory)/eng/common/msbuild.sh --ci ${{ parameters.helixProjectArguments }} /maxcpucount /bl:$(Build.SourcesDirectory)/artifacts/log/SendToHelix.binlog
-    displayName: ${{ parameters.displayName }}
-    condition: $(condition)
-    env: $(helixEnvironment)
+  template: send-to-helix-inner-step.yml
+  parameters:
+    restoreParams: /p:DotNetPublishToBlobFeed=true -ci -restore -projects $(Build.SourcesDirectory)\eng\empty.csproj
+    sendParams: ${{ parameters.helixProjectArguments }} /maxcpucount /bl:$(Build.SourcesDirectory)/artifacts/log/SendToHelix.binlog
+    ${{ if ne(parameters.condition, '') }}:
+      condition: ${{ parameters.condition }}
+    ${{ if eq(parameters.condition, '') }}:
+      condition: true
+    helixParameters:
+      displayName: ${{ parameters.displayName }}
+      condition: ${{ parameters.condition }}
+      archType: ${{ parameters.archType }}
+      osGroup: ${{ parameters.osGroup }}
+      osSubgroup: ${{ parameters.osSubgroup }}
+      buildConfig: ${{ parameters.buildConfig }}
+      creator: ${{ parameters.creator }}
+      publishTestResults: ${{ parameters.publishTestResults }}
+      helixAccessToken: ${{ parameters.helixAccessToken }}
+      helixBuild: ${{ parameters.helixBuild }}
+      helixSource: ${{ parameters.helixSource }}
+      helixQueues: ${{ parameters.helixQueues }}
+      helixType: ${{ parameters.helixType }}
+      scenarios: ${{ parameters.scenarios }}
+      timeoutPerTestCollectionInMinutes: ${{ parameters.timeoutPerTestCollectionInMinutes }}
+      timeoutPerTestInMinutes: ${{ parameters.timeoutPerTestInMinutes }}
+      runCrossGen: ${{ parameters.runCrossGen }}
+      runCrossGen2: ${{ parameters.runCrossGen2 }}
+      compositeBuildMode: ${{ parameters.compositeBuildMode }}
+      runInUnloadableContext: ${{ parameters.runInUnloadableContext }}
+      longRunningGcTests: ${{ parameters.longRunningGcTests }}
+      gcSimulatorTests: ${{ parameters.gcSimulatorTests }}
+      runtimeFlavorDisplayName: ${{ parameters.runtimeFlavorDisplayName }}
+      runtimeVariant: ${{ parameters.runtimeVariant }}
+      helixEnvironment:
+        __BuildArch: ${{ parameters.archType }}
+        __TargetOS: ${{ parameters.osGroup }}${{ parameters.osSubgroup }}
+        __BuildType: ${{ parameters.buildConfig }}
+        _Creator: ${{ parameters.creator }}
+        _PublishTestResults: ${{ parameters.publishTestResults }}
+        _HelixAccessToken: ${{ parameters.helixAccessToken }}
+        _HelixBuild: ${{ parameters.helixBuild }}
+        _HelixSource: ${{ parameters.helixSource }}
+        _HelixTargetQueues: ${{ join(',', parameters.helixQueues) }}
+        _HelixType: ${{ parameters.helixType }}
+        _RunCrossGen: ${{ parameters.runCrossGen }}
+        _RunCrossGen2: ${{ parameters.runCrossGen2 }}
+        _CompositeBuildMode: ${{ parameters.compositeBuildMode }}
+        _RunInUnloadableContext: ${{ parameters.runInUnloadableContext }}
+        _LongRunningGcTests: ${{ parameters.longRunningGcTests }}
+        _GcSimulatorTests: ${{ parameters.gcSimulatorTests }}
+        _Scenarios: ${{ join(',', parameters.scenarios) }}
+        _TimeoutPerTestCollectionInMinutes: ${{ parameters.timeoutPerTestCollectionInMinutes }}
+        _TimeoutPerTestInMinutes: ${{ parameters.timeoutPerTestInMinutes }}
+        runtimeFlavorDisplayName: ${{ parameters.runtimeFlavorDisplayName }}
+        _RuntimeVariant: ${{ parameters.runtimeVariant }}
+        ${{ if eq(parameters.publishTestResults, 'true') }}:
+          SYSTEM_ACCESSTOKEN: $(System.AccessToken)
+        # TODO: remove NUGET_PACKAGES once https://github.com/dotnet/arcade/issues/1578 is fixed
+        NUGET_PACKAGES: $(Build.SourcesDirectory)$(dir).packages
