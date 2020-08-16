@@ -5,6 +5,7 @@ namespace System.Text.RegularExpressions
 {
     public enum RegexParseError
     {
+        Unknown,
         AlternationHasTooManyConditions,
         AlternationHasMalformedCondition,
         InvalidUnicodePropertyEscape,
