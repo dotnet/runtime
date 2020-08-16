@@ -870,14 +870,6 @@ namespace System.Text.RegularExpressions.Tests
         /// <param name="action">The action to invoke.</param>
         private static void Throws(RegexParseError error, Action action)
         {
-            // If no specific error is supplied, or we are running on .NET Framework where RegexParseException doesn't exist
-            // we expect an ArgumentException.
-            if (PlatformDetection.IsNetFramework)
-            {
-                Assert.ThrowsAny<ArgumentException>(action);
-                return;
-            }
-
             try
             {
                 action();
