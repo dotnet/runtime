@@ -11,9 +11,10 @@ PropertySig
 LocalVarSig
 
 Here are the files:
-[sigparse.cpp](samples/sigparse.cpp) (Rico's signature parser)
-[sigformat.cpp](samples/sigformat.cpp) (An example extension to the parser)
-[PlugInToYourProfiler.cpp](samples/PlugInToYourProfiler.cpp) (Example code to plug the extension into your profiler)
+
+- [sigparse.cpp](samples/sigparse.cpp) (Rico's signature parser)
+- [sigformat.cpp](samples/sigformat.cpp) (An example extension to the parser)
+- [PlugInToYourProfiler.cpp](samples/PlugInToYourProfiler.cpp) (Example code to plug the extension into your profiler)
 
 Open up **sigparse.cpp** in your favorite editor and take a look at the grammar at the top. The grammar comes from the ECMA CLI spec. Jonathan Keljo has a [link](http://blogs.msdn.com/jkeljo/archive/2005/08/04/447726.aspx) to it from his blog. This tells you the types of signature blobs the parser can handle.
 
@@ -60,4 +61,3 @@ Don't worry, it's optional. I mentioned above that only signatures whose grammar
 The only gotcha is that TypeSpecs & MethodSpecs don’t have a unique byte that introduces them. For example, GENERICINST could indicate the beginning of a TypeSpec or a MethodSpec. You’ll see that SigParser::Parse() switches on the intro byte to determine what it’s looking at. So to keep things simple, you’ll want to add a couple more top-level functions to SigParser to parse TypeSpecs & MethodSpecs (say, ParseTypeSpec() & ParseMethodSpec()). You’d then call those functions instead of Parse() when you have a TypeSpec or MethodSpec on your hands. Of course, if you don’t care about TypeSpecs and MethodSpecs, you can use the code as is and not worry. But this stuff is so much fun, you’ll probably want to add the capability anyway.
 
 Hope you find this useful. And thanks again to Rico Mariani for sigparse.cpp!
-
