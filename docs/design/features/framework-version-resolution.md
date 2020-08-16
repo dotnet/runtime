@@ -30,8 +30,7 @@ In the `.runtimeconfig.json` these values are defined like this:
 ```
 
 #### Framework name
-Each framework reference identifies the framework by its name.
-Framework names are case sensitive (since they're used as folder names even on Linux systems).
+Each framework reference identifies the framework by its name. Framework names are case sensitive (since they're used as folder names even on Linux systems).
 
 #### Version
 Framework version must be a [SemVer V2](https://semver.org) valid version.
