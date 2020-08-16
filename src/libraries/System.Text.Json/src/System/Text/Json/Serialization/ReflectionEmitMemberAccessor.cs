@@ -230,6 +230,9 @@ namespace System.Text.Json.Serialization
             Type? declaringType = propertyInfo.DeclaringType;
             Debug.Assert(declaringType != null);
 
+            Type realPropertyType = propertyInfo.PropertyType;
+            Debug.Assert(propertyType.IsAssignableFrom(realPropertyType));
+
             DynamicMethod dynamicMethod = CreateGetterMethod(propertyInfo.Name, propertyType);
             ILGenerator generator = dynamicMethod.GetILGenerator();
 
@@ -244,6 +247,11 @@ namespace System.Text.Json.Serialization
             {
                 generator.Emit(OpCodes.Castclass, declaringType);
                 generator.Emit(OpCodes.Callvirt, realMethod);
+            }
+
+            if (realPropertyType.IsValueType && !realPropertyType.Equals(propertyType))
+            {
+                generator.Emit(OpCodes.Box, realPropertyType);
             }
 
             generator.Emit(OpCodes.Ret);
@@ -262,6 +270,9 @@ namespace System.Text.Json.Serialization
             Type? declaringType = propertyInfo.DeclaringType;
             Debug.Assert(declaringType != null);
 
+            Type realPropertyType = propertyInfo.PropertyType;
+            Debug.Assert(propertyType.IsAssignableFrom(realPropertyType));
+
             DynamicMethod dynamicMethod = CreateSetterMethod(propertyInfo.Name, propertyType);
             ILGenerator generator = dynamicMethod.GetILGenerator();
 
@@ -270,19 +281,28 @@ namespace System.Text.Json.Serialization
             if (declaringType.IsValueType)
             {
                 generator.Emit(OpCodes.Unbox, declaringType);
-                generator.Emit(OpCodes.Ldarg_1);
+                EmitLoadValue(generator, propertyType, realPropertyType);
                 generator.Emit(OpCodes.Call, realMethod);
             }
             else
             {
                 generator.Emit(OpCodes.Castclass, declaringType);
-                generator.Emit(OpCodes.Ldarg_1);
+                EmitLoadValue(generator, propertyType, realPropertyType);
                 generator.Emit(OpCodes.Callvirt, realMethod);
             };
 
             generator.Emit(OpCodes.Ret);
 
             return dynamicMethod;
+
+            static void EmitLoadValue(ILGenerator generator, Type propertyType, Type realPropertyType)
+            {
+                generator.Emit(OpCodes.Ldarg_1);
+                if (realPropertyType.IsValueType && !realPropertyType.Equals(propertyType))
+                {
+                    generator.Emit(OpCodes.Unbox_Any, realPropertyType);
+                }
+            }
         }
 
         public override Func<object, TProperty> CreateFieldGetter<TProperty>(FieldInfo fieldInfo) =>
@@ -292,6 +312,9 @@ namespace System.Text.Json.Serialization
         {
             Type? declaringType = fieldInfo.DeclaringType;
             Debug.Assert(declaringType != null);
+
+            Type realFieldType = fieldInfo.FieldType;
+            Debug.Assert(fieldType.IsAssignableFrom(realFieldType));
 
             DynamicMethod dynamicMethod = CreateGetterMethod(fieldInfo.Name, fieldType);
             ILGenerator generator = dynamicMethod.GetILGenerator();
@@ -303,6 +326,10 @@ namespace System.Text.Json.Serialization
                     : OpCodes.Castclass,
                 declaringType);
             generator.Emit(OpCodes.Ldfld, fieldInfo);
+            if (realFieldType.IsValueType && !realFieldType.Equals(fieldType))
+            {
+                generator.Emit(OpCodes.Box, realFieldType);
+            }
             generator.Emit(OpCodes.Ret);
 
             return dynamicMethod;
@@ -316,6 +343,9 @@ namespace System.Text.Json.Serialization
             Type? declaringType = fieldInfo.DeclaringType;
             Debug.Assert(declaringType != null);
 
+            Type realFieldType = fieldInfo.FieldType;
+            Debug.Assert(fieldType.IsAssignableFrom(realFieldType));
+
             DynamicMethod dynamicMethod = CreateSetterMethod(fieldInfo.Name, fieldType);
             ILGenerator generator = dynamicMethod.GetILGenerator();
 
@@ -326,6 +356,10 @@ namespace System.Text.Json.Serialization
                     : OpCodes.Castclass,
                 declaringType);
             generator.Emit(OpCodes.Ldarg_1);
+            if (realFieldType.IsValueType && !realFieldType.Equals(fieldType))
+            {
+                generator.Emit(OpCodes.Unbox_Any, realFieldType);
+            }
             generator.Emit(OpCodes.Stfld, fieldInfo);
             generator.Emit(OpCodes.Ret);
 
