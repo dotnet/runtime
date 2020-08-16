@@ -26,7 +26,7 @@ parameters:
   runtimeVariant: ''
 
 steps:
-  template: send-to-helix-inner-step.yml
+- template: send-to-helix-inner-step.yml
   parameters:
     restoreParams: /p:DotNetPublishToBlobFeed=true -ci -restore -projects $(Build.SourcesDirectory)\eng\empty.csproj
     sendParams: ${{ parameters.helixProjectArguments }} /maxcpucount /bl:$(Build.SourcesDirectory)/artifacts/log/SendToHelix.binlog
