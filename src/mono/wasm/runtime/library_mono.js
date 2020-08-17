@@ -95,7 +95,7 @@ var MonoSupportLib = {
 			release: function () {
 				if (this.__offset) {
 					MONO.mono_wasm_deregister_root (this.__offset);
-					MONO._fill_region (this.__offset, this.__count * 4, 0);
+					MONO._zero_region (this.__offset, this.__count * 4);
 					Module.free (this.__offset);
 				}
 
@@ -163,7 +163,7 @@ var MonoSupportLib = {
 			return result;
 		},
 
-		_zero_region: function (byteOffset, sizeBytes, value) {
+		_zero_region: function (byteOffset, sizeBytes) {
 			(new Uint8Array (Module.HEAPU8.buffer, byteOffset, sizeBytes)).fill (0);
 		},
 
@@ -190,7 +190,7 @@ var MonoSupportLib = {
 			if ((offset % 4) !== 0)
 				throw new Error ("Malloc returned an unaligned offset");
 
-			this._zero_region (offset, capacityBytes, 0);
+			this._zero_region (offset, capacityBytes);
 
 			var result = Object.create (this._mono_wasm_root_buffer_prototype);
 			result.__offset = offset;
