@@ -199,9 +199,7 @@
   <Target Name="CreateExecuteScript"
           BeforeTargets="Build;CopyAllNativeProjectReferenceBinaries"
           Condition="'$(GenerateRunScript)' != 'false' And ('$(_WillCLRTestProjectBuild)' == 'true')" 
-          DependsOnTargets="GenerateExecutionScriptsInternal" >
-      <Message Importance="High" text="CLRTestKind: $(CLRTestKind)" />
-  </Target>
+          DependsOnTargets="GenerateExecutionScriptsInternal" />
 
   <Target Name="UpdateReferenceItems"
           BeforeTargets="BeforeResolveReferences"
