@@ -27,9 +27,9 @@ namespace System.Text.RegularExpressions.Tests
                 // On NetFramework, all we care whether the exception is thrown.
                 return;
             }
-            catch(Exception e)
+            catch (Exception e)
             { 
-                throw new XunitException($"Expected ArgumentException -> Actual: ({e.GetType()})");
+                throw new XunitException($"Expected ArgumentException -> Actual: {e}");
             }
 
             throw new XunitException($"Expected ArgumentException with error: ({error}) -> Actual: No exception thrown");
