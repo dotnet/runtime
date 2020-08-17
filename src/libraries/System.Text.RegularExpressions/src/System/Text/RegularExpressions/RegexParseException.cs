@@ -29,7 +29,7 @@ namespace System.Text.RegularExpressions
         /// Construct a custom RegexParseException that creates a default message based on the given <see cref="RegexParseError"/> value.
         /// </summary>
         /// <param name="error">The <see cref="RegexParseError"/> value detailing the type of parse error.</param>
-        /// <param name="offset">The offset in the regular expression where the parse error occurs.</param>
+        /// <param name="offset">The zero-based offset in the regular expression where the parse error occurs.</param>
         public RegexParseException(RegexParseError error, int offset) : base(MakeMessage(error, offset))
         {
             Error = error;
