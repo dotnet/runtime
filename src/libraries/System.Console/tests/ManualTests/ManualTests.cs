@@ -116,7 +116,6 @@ namespace System
         {
             yield return MkConsoleKeyInfo('b', ConsoleKey.B, default);
             yield return MkConsoleKeyInfo('\x02', ConsoleKey.B, ConsoleModifiers.Control);
-            yield return MkConsoleKeyInfo('\x02', ConsoleKey.B, ConsoleModifiers.Control | ConsoleModifiers.Alt);
             yield return MkConsoleKeyInfo(OperatingSystem.IsWindows() ? '\x00' : '\x02', ConsoleKey.B, ConsoleModifiers.Control | ConsoleModifiers.Alt);
 
             yield return MkConsoleKeyInfo(',', OperatingSystem.IsWindows() ? ConsoleKey.OemComma : default, default);
