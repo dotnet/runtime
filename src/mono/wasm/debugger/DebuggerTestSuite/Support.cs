@@ -339,7 +339,7 @@ namespace DebuggerTests
             return l;
         }
 
-        internal async Task CheckDateTime(JToken value, DateTime expected, string label="")
+        internal async Task CheckDateTime(JToken value, DateTime expected, string label = "")
         {
             await CheckValue(value, TValueType("System.DateTime", expected.ToString()), label);
             await CheckDateTimeValue(value, expected);
@@ -625,8 +625,8 @@ namespace DebuggerTests
 
                 case "datetime":
                     {
-                        var dateTime = DateTime.FromBinary(exp_val["binary"].Value<long> ());
-                        await CheckDateTime (actual_val, dateTime, label);
+                        var dateTime = DateTime.FromBinary(exp_val["binary"].Value<long>());
+                        await CheckDateTime(actual_val, dateTime, label);
                         break;
                     }
 
@@ -894,12 +894,12 @@ namespace DebuggerTests
             return res;
         }
 
-        internal void AssertEqual (object expected, object actual, string label)
+        internal void AssertEqual(object expected, object actual, string label)
         {
             if (expected?.Equals(actual) == true)
                 return;
 
-            throw new AssertActualExpectedException (
+            throw new AssertActualExpectedException(
                 expected, actual,
                 $"[{label}]\n");
         }

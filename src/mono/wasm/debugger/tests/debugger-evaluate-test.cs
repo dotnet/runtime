@@ -75,21 +75,21 @@ namespace DebuggerTests
         public int c { get; set; }
 
         public DateTime dateTime;
-        public DateTime DTProp => dateTime.AddMinutes (10);
+        public DateTime DTProp => dateTime.AddMinutes(10);
         public int IntProp => a + 5;
         public string SetOnlyProp { set { a = value.Length; } }
         public EvaluateTestsClassWithProperties NullIfAIsNotZero => a != 1908712 ? null : new EvaluateTestsClassWithProperties(0);
-        public EvaluateTestsClassWithProperties NewInstance => new EvaluateTestsClassWithProperties (3);
+        public EvaluateTestsClassWithProperties NewInstance => new EvaluateTestsClassWithProperties(3);
 
-        public EvaluateTestsClassWithProperties (int bias)
+        public EvaluateTestsClassWithProperties(int bias)
         {
             a = 4;
             b = 0;
             c = 0;
-            dateTime = new DateTime (2010, 9, 8, 7, 6, 5 + bias);
+            dateTime = new DateTime(2010, 9, 8, 7, 6, 5 + bias);
         }
 
-        public static async Task run ()
+        public static async Task run()
         {
             var obj = new EvaluateTestsClassWithProperties(0);
             var obj2 = new EvaluateTestsClassWithProperties(0);
@@ -105,23 +105,23 @@ namespace DebuggerTests
         public void EvaluateShadow(DateTime dateTime, EvaluateTestsClassWithProperties me)
         {
             string a = "hello";
-            Console.WriteLine ($"Evaluate - break here");
+            Console.WriteLine($"Evaluate - break here");
             SomeMethod(dateTime, me);
         }
 
         public async Task EvaluateShadowAsync(DateTime dateTime, EvaluateTestsClassWithProperties me)
         {
             string a = "hello";
-            Console.WriteLine ($"EvaluateShadowAsync - break here");
+            Console.WriteLine($"EvaluateShadowAsync - break here");
             await Task.CompletedTask;
         }
 
         public void SomeMethod(DateTime me, EvaluateTestsClassWithProperties dateTime)
         {
-            Console.WriteLine ($"break here");
+            Console.WriteLine($"break here");
 
             var DTProp = "hello";
-            Console.WriteLine ($"dtProp: {DTProp}");
+            Console.WriteLine($"dtProp: {DTProp}");
         }
 
         public async Task InstanceMethodAsync(int g, int h, string valString, EvaluateTestsClassWithProperties me)
@@ -196,21 +196,21 @@ namespace DebuggerTests
         public int c { get; set; }
 
         public DateTime dateTime;
-        public DateTime DTProp => dateTime.AddMinutes (10);
+        public DateTime DTProp => dateTime.AddMinutes(10);
         public int IntProp => a + 5;
         public string SetOnlyProp { set { a = value.Length; } }
         public EvaluateTestsClassWithProperties NullIfAIsNotZero => a != 1908712 ? null : new EvaluateTestsClassWithProperties(0);
-        public EvaluateTestsStructWithProperties NewInstance => new EvaluateTestsStructWithProperties (3);
+        public EvaluateTestsStructWithProperties NewInstance => new EvaluateTestsStructWithProperties(3);
 
-        public EvaluateTestsStructWithProperties (int bias)
+        public EvaluateTestsStructWithProperties(int bias)
         {
             a = 4;
             b = 0;
             c = 0;
-            dateTime = new DateTime (2010, 9, 8, 7, 6, 5 + bias);
+            dateTime = new DateTime(2010, 9, 8, 7, 6, 5 + bias);
         }
 
-        public static async Task run ()
+        public static async Task run()
         {
             var obj = new EvaluateTestsStructWithProperties(0);
             var obj2 = new EvaluateTestsStructWithProperties(0);
@@ -226,23 +226,23 @@ namespace DebuggerTests
         public void EvaluateShadow(DateTime dateTime, EvaluateTestsStructWithProperties me)
         {
             string a = "hello";
-            Console.WriteLine ($"Evaluate - break here");
+            Console.WriteLine($"Evaluate - break here");
             SomeMethod(dateTime, me);
         }
 
         public async Task EvaluateShadowAsync(DateTime dateTime, EvaluateTestsStructWithProperties me)
         {
             string a = "hello";
-            Console.WriteLine ($"EvaluateShadowAsync - break here");
+            Console.WriteLine($"EvaluateShadowAsync - break here");
             await Task.CompletedTask;
         }
 
         public void SomeMethod(DateTime me, EvaluateTestsStructWithProperties dateTime)
         {
-            Console.WriteLine ($"break here");
+            Console.WriteLine($"break here");
 
             var DTProp = "hello";
-            Console.WriteLine ($"dtProp: {DTProp}");
+            Console.WriteLine($"dtProp: {DTProp}");
         }
 
         public async Task InstanceMethodAsync(int g, int h, string valString, EvaluateTestsStructWithProperties me)

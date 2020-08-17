@@ -57,7 +57,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 varIds = scope.Method.GetLiveVarsAt(scope.Location.CliLocation.Offset);
             }
 
-            var res = await proxy.SendMonoCommand(messageId, MonoCommands.EvaluateMemberAccess (scopeId, var_name, varIds), token);
+            var res = await proxy.SendMonoCommand(messageId, MonoCommands.EvaluateMemberAccess(scopeId, var_name, varIds), token);
             if (res.IsOk)
             {
                 ret = res.Value?["result"]?["value"]?["value"]?.Value<JObject>();

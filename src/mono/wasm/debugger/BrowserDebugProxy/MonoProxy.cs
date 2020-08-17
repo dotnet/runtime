@@ -695,7 +695,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 {
                     SendResponse(msg_id, Result.OkFromObject(new
                     {
-                        result= retValue
+                        result = retValue
                     }), token);
                 }
                 else
