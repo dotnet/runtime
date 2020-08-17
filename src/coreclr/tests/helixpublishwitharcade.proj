@@ -11,8 +11,6 @@
        that will run in parallel. -->
 
   <Target Name="RunInParallelForEachScenario">
-    <Message Importance="High" Text="helixpublishwitharcade: TargetOS: $(TargetOS)"/>
-
     <PropertyGroup>
       <!-- This specifies what properties are needed to be passed down as global properties to a child project. -->
 
@@ -295,8 +293,6 @@
     </Payloads>
 
     <HelixWorkItem Include="@(Payloads->Metadata('PayloadGroup'))">
-
-
       <PayloadDirectory>%(PayloadDirectory)</PayloadDirectory>
       <Command>dotnet $(XUnitRunnerDll) %(XUnitWrapperDlls) $(XUnitRunnerArgs)</Command>
       <Command Condition=" '%(TestGroup)' != '' ">dotnet $(XUnitRunnerDll) %(XUnitWrapperDlls) $(XUnitRunnerArgs) -trait TestGroup=%(TestGroup)</Command>
