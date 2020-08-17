@@ -37,7 +37,7 @@ namespace System.Text.RegularExpressions
 
         private static string MakeMessage(RegexParseError error, int offset)
         {
-            return SR.Format(SR.Unknown, error.ToString(), offset);
+            return SR.Format(SR.Generic, error.ToString(), offset);
         }
 
         private RegexParseException(SerializationInfo info, StreamingContext context)
