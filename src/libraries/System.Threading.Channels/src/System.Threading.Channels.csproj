@@ -24,6 +24,7 @@
     <Compile Include="System\Threading\Channels\Channel_2.cs" />
     <Compile Include="System\Threading\Channels\IDebugEnumerator.cs" />
     <Compile Include="System\Threading\Channels\SingleConsumerUnboundedChannel.cs" />
+    <Compile Include="System\Threading\Channels\TaskCompletionSource.cs" Condition="$(TargetFramework.StartsWith('netstandard')) OR $(TargetFramework.StartsWith('net4')) OR $(TargetFramework.StartsWith('netcoreapp3.0'))"/>
     <Compile Include="System\Threading\Channels\UnboundedChannel.cs" />
     <Compile Include="$(CommonPath)Internal\Padding.cs"
              Link="Common\Internal\Padding.cs" />
