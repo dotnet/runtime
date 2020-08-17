@@ -9,6 +9,8 @@ namespace Mono.Linker
 		Error = 0,
 		Warning,
 		Info,
-		Diagnostic
+		Diagnostic,
+
+		WarningAsError = 0xFF
 	}
 }

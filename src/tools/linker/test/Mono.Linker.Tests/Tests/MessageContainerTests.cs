@@ -13,7 +13,7 @@ namespace Mono.Linker.Tests
 			var msg = MessageContainer.CreateErrorMessage ("text", 1000);
 			Assert.AreEqual ("ILLink: error IL1000: text", msg.ToMSBuildString ());
 
-			msg = MessageContainer.CreateWarningMessage (context, "message", 2001, new MessageOrigin ("logtest", 1, 1));
+			msg = MessageContainer.CreateWarningMessage (context, "message", 2001, new MessageOrigin ("logtest", 1, 1), WarnVersion.Latest);
 			Assert.AreEqual ("logtest(1,1): warning IL2001: message", msg.ToMSBuildString ());
 
 			msg = MessageContainer.CreateInfoMessage ("log test");

@@ -14,6 +14,9 @@ namespace Mono.Linker.Tests.Cases.Warnings.WarningSuppression
 	[SetupLinkerAction ("link", "library.dll")]
 	[SetupLinkerArgument ("--verbose")]
 	[SetupLinkerArgument ("--generate-warning-suppressions", "xml")]
+
+	// Test that --warnaserror has no effect on --generate-warning-suppressions
+	[SetupLinkerArgument ("--warnaserror")]
 	public class CanGenerateWarningSuppressionFileXml
 	{
 		public static void Main ()

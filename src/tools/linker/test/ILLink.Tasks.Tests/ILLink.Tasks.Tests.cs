@@ -273,9 +273,9 @@ namespace ILLink.Tasks.Tests
 		[InlineData ("IL2001;IL2002;IL2003;IL2004", 4)]
 		[InlineData ("IL2001 IL2002 IL2003 IL2004", 4)]
 		[InlineData ("IL2001,IL2002,IL2003,IL2004", 4)]
-		[InlineData ("IL2001,IL2002; IL2003 IL2004", 4)]
-		[InlineData ("IL2001,CS4550,CA2123,IL2002,2000,IL8000,IL1003", 2)]
-		[InlineData ("SomeText,IL20000,IL02000", 0)]
+		[InlineData ("IL2001,IL2002;IL2003 IL2004", 4)]
+		[InlineData ("IL2001,IL2002,IL8000,IL1003", 4)]
+		[InlineData ("IL20000,IL02000", 2)]
 		public void TestValidNoWarn (string noWarn, int validNoWarns)
 		{
 			var task = new MockTask () {
@@ -304,16 +304,16 @@ namespace ILLink.Tasks.Tests
 
 #nullable enable
 		[Theory]
-		[InlineData (true, null, null, new uint[] { }, new uint[] { })]
-		[InlineData (false, "IL1001,IL####,IL2000,IL2054,IL2022", null,
-			new uint[] { 2054, 2022 }, new uint[] { })]
+		[InlineData (true, null, null, new int[] { }, new int[] { })]
+		[InlineData (false, "IL1001,IL2000,IL2054,IL2022", null,
+			new int[] { 1001, 2000, 2054, 2022 }, new int[] { })]
 		[InlineData (false, "IL2023,IL6000;IL5042 IL2040", "IL4000,IL4001;IL4002 IL4003",
-			new uint[] { 2023, 2040, 5042, 6000 }, new uint[] { 4000, 4001, 4002, 4003 })]
-		[InlineData (false, "IL3000;IL3000;ABCD", "IL2005 il3000 IL2005",
-			new uint[] { 3000 }, new uint[] { 2005 })]
-		[InlineData (true, null, "IL2067", new uint[] { }, new uint[] { 2067 })]
-		[InlineData (true, "IL2001", "IL2001", new uint[] { }, new uint[] { 2001 })]
-		public void TestWarningsAsErrors (bool treatWarningsAsErrors, string? warningsAsErrors, string? warningsNotAsErrors, uint[] warnAsError, uint[] warnNotAsError)
+			new int[] { 2023, 2040, 5042, 6000 }, new int[] { 4000, 4001, 4002, 4003 })]
+		[InlineData (false, "IL3000;IL3000;ABCD", "IL2005 IL3005 IL2005",
+			new int[] { 3000 }, new int[] { 2005, 3005 })]
+		[InlineData (true, null, "IL2067", new int[] { }, new int[] { 2067 })]
+		[InlineData (true, "IL2001", "IL2001", new int[] { }, new int[] { 2001 })]
+		public void TestWarningsAsErrors (bool treatWarningsAsErrors, string? warningsAsErrors, string? warningsNotAsErrors, int[] warnAsError, int[] warnNotAsError)
 		{
 			var task = new MockTask () {
 				TreatWarningsAsErrors = treatWarningsAsErrors,
@@ -324,8 +324,8 @@ namespace ILLink.Tasks.Tests
 			using (var driver = task.CreateDriver ()) {
 				var actualWarnAsError = driver.Context.WarnAsError;
 				var actualGeneralWarnAsError = driver.Context.GeneralWarnAsError;
-				Assert.Equal (actualWarnAsError.Count, warnAsError.Distinct ().Count () + warnNotAsError.Distinct ().Count ());
-				Assert.Equal (actualGeneralWarnAsError, treatWarningsAsErrors);
+				Assert.Equal (warnAsError.Count () + warnNotAsError.Count (), actualWarnAsError.Count);
+				Assert.Equal (treatWarningsAsErrors, actualGeneralWarnAsError);
 				if (warnAsError.Length > 0) {
 					foreach (var warningCode in warnAsError)
 						Assert.True (actualWarnAsError.ContainsKey (warningCode) && actualWarnAsError[warningCode] == true);
