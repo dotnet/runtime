@@ -229,7 +229,7 @@ ULONG PEImage::Release()
             LOG((LF_LOADER, LL_INFO100, "PEImage: Closing Image %S\n", (LPCWSTR) m_path));
             if(m_bInHashMap)
             {
-                PEImageLocator locator(this, m_bundleFileLocation.IsValid());
+                PEImageLocator locator(this);
                 PEImage* deleted = (PEImage *)s_Images->DeleteValue(GetIDHash(), &locator);
                 _ASSERTE(deleted == this);
             }

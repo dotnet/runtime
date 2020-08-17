@@ -254,10 +254,10 @@ private:
         {
         }
 
-        PEImageLocator(PEImage * pImage, BOOL bIsInBundle)
-            : m_pPath(pImage->m_path.GetUnicode()),
-              m_bIsInBundle(bIsInBundle)
+        PEImageLocator(PEImage * pImage)
+            : m_pPath(pImage->m_path.GetUnicode())
         {
+            m_bIsInBundle = pImage->IsInBundle();
         }
     };
 
