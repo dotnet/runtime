@@ -641,7 +641,7 @@ def call_msbuild(args):
                 "/p:Configuration=%s" % args.build_type,
                 "/p:__LogsDir=%s" % args.logs_dir]
 
-    command += ["/bl:runtest.binlog"]
+    command += ["/bl:%s.binlog" % (log_path)]
 
     print(" ".join(command))
 
@@ -1638,7 +1638,6 @@ def main(args):
 ################################################################################
 
 if __name__ == "__main__":
-    print(" !!! runtest.py: main")
     print(sys.argv)
     args = parser.parse_args()
 

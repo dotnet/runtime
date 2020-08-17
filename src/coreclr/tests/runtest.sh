@@ -312,8 +312,6 @@ export COMPlus_gcServer="$serverGC"
 # Runtest.py
 ################################################################################
 
-
-
 runtestPyArguments=("-arch" "${buildArch}" "-build_type" "${buildConfiguration}")
 scriptPath="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
 
