@@ -278,7 +278,7 @@ namespace System.Text.RegularExpressions
     }
     public sealed partial class RegexParseException : System.ArgumentException
     {
-        public RegexParseException(System.Text.RegularExpressions.RegexParseError error, int offset) { }
+        private RegexParseException() { }
         public System.Text.RegularExpressions.RegexParseError Error { get { throw null; } }
         public int Offset { get { throw null; } }
         public override void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }

@@ -75,6 +75,9 @@
   <data name="ShorthandClassInCharacterRange" xml:space="preserve">
     <value>Cannot include class \\{0} in character range.</value>
   </data>
+  <data name="ShorthandClassInCharacterRangeNoPlaceholder" xml:space="preserve">
+    <value>Cannot include class in character range.</value>
+  </data>
   <data name="BeginIndexNotNegative" xml:space="preserve">
     <value>Start index cannot be less than 0 or greater than input length.</value>
   </data>
@@ -123,6 +126,9 @@
   <data name="AlternationHasMalformedReference" xml:space="preserve">
     <value>(?({0}) ) malformed.</value>
   </data>
+  <data name="AlternationHasMalformedReferenceNoPlaceholder" xml:space="preserve">
+    <value>Alternation has malformed reference.</value>
+  </data>
   <data name="MalformedUnicodePropertyEscape" xml:space="preserve">
     <value>Malformed \\p{X} character escape.</value>
   </data>
@@ -134,6 +140,9 @@
   </data>
   <data name="NestedQuantifiersNotParenthesized" xml:space="preserve">
     <value>Nested quantifier '{0}'.</value>
+  </data>
+  <data name="NestedQuantifiersNotParenthesizedNoPlaceholder" xml:space="preserve">
+    <value>Nested quantifier no parenthesized.</value>
   </data>
   <data name="NoResultOnFailed" xml:space="preserve">
     <value>Result cannot be called on a failed Match.</value>
@@ -177,17 +186,29 @@
   <data name="UndefinedNumberedReference" xml:space="preserve">
     <value>Reference to undefined group number {0}.</value>
   </data>
+  <data name="UndefinedNumberedReferenceNoPlaceholder" xml:space="preserve">
+    <value>Reference to undefined group number.</value>
+  </data>
   <data name="UndefinedNamedReference" xml:space="preserve">
     <value>Reference to undefined group name '{0}'.</value>
   </data>
+  <data name="UndefinedNamedReferenceNoPlaceholder" xml:space="preserve">
+    <value>Reference to undefined group name.</value>
+  </data>
   <data name="AlternationHasUndefinedReference" xml:space="preserve">
     <value>(?({0}) ) reference to undefined group.</value>
+  </data>
+  <data name="AlternationHasUndefinedReferenceNoPlaceholder" xml:space="preserve">
+    <value>Alternation has a reference to undefined group.</value>
   </data>
   <data name="UnexpectedOpcode" xml:space="preserve">
     <value>Unexpected opcode in regular expression generation: {0}.</value>
   </data>
   <data name="UnrecognizedUnicodeProperty" xml:space="preserve">
     <value>Unknown property '{0}'.</value>
+  </data>
+  <data name="UnrecognizedUnicodePropertyNoPlaceholder" xml:space="preserve">
+    <value>Unknown property Unicode property.</value>
   </data>
   <data name="UnrecognizedControlCharacter" xml:space="preserve">
     <value>Unrecognized control character.</value>
