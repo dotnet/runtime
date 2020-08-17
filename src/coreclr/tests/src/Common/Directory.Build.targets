@@ -89,21 +89,21 @@
     </ItemGroup>
 
     <ItemGroup Condition="'$(TargetArchitecture)' == 'wasm'">
-        <RunTimeDependencyCopyLocal
-            Include="$(ArtifactsBinDir)microsoft.netcore.app.runtime.$(TargetOS.ToLower())-$(TargetArchitecture)\$(Configuration)\runtimes\$(TargetOS.ToLower())-$(TargetArchitecture)\**"
-            TargetDir="runtimepack/"/>
+          <RunTimeDependencyCopyLocal
+          Include="$(ArtifactsBinDir)microsoft.netcore.app.runtime.$(TargetOS.ToLower())-$(TargetArchitecture)\$(Configuration)\runtimes\$(TargetOS.ToLower())-$(TargetArchitecture)\**"
+          TargetDir="runtimepack/"/>
 
        <RunTimeDependencyCopyLocal
-            Condition="'$(TargetArchitecture)' == 'wasm'"
-            TargetDir="TargetingPack/"/>
+          Include="$(ArtifactsDir)\TargetingPack\**"
+          TargetDir="TargetingPack/"/>
 
         <RunTimeDependencyCopyLocal
-            Condition="'$(TargetArchitecture)' == 'wasm'"
-            TargetDir="WasmAppBuilderConsole/"/>
+          Include="$(ArtifactsBinDir)\WasmAppBuilderConsole\$(Configuration)\$(NetCoreAppCurrent)\publish\**"
+          TargetDir="WasmAppBuilderConsole/"/>
   
         <RunTimeDependencyCopyLocal
-            Condition="'$(TargetArchitecture)' == 'wasm'"
-            TargetDir="runtime-test/"/>
+          Include="$(MonoProjectRoot)\wasm\runtime-test.js"
+          TargetDir="runtime-test/"/>
     </ItemGroup>
 
     <Copy

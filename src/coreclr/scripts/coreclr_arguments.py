@@ -227,6 +227,7 @@ class CoreclrArguments:
 
         def check_and_return_default_core_root(core_root):
 
+
             if core_root is not None:
                 # core_root was specified on the command-line, so use that one. But verify it.
                 return os.path.isdir(core_root) or not self.require_built_core_root
@@ -234,7 +235,7 @@ class CoreclrArguments:
             # No core_root specified; use a default location if possible.
           
             default_core_root = os.path.join(self.test_location, "Tests", "Core_Root")
-l
+
             if os.path.isdir(default_core_root) or not self.require_built_core_root:
                 return default_core_root
 
