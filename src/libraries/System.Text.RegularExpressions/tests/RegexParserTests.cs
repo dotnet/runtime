@@ -565,112 +565,125 @@ namespace System.Text.RegularExpressions.Tests
         [InlineData(@"\bgr[ae]y\b", RegexOptions.None, null)]
         [InlineData(@"\b((?# case sensitive comparison)D\w+)\s(?ixn)((?#case insensitive comparison)d\w+)\b", RegexOptions.None, null)]
         [InlineData(@"\{\d+(,-*\d+)*(\:\w{1,4}?)*\}(?x) # Looks for a composite format item.", RegexOptions.None, null)]
+
+        public void Parse(string pattern, RegexOptions options, object errorObj)
+        {
+            RegexParseError? error = (RegexParseError?)errorObj;
+
+            // Parse the main tree and if parsing fails check if the supplied error matches.
+            ParseTree(pattern, options, error, 0);
+
+            // Assert that only ArgumentException might be thrown during parsing.
+            ParseSubTrees(pattern, options);
+        }
+
+        [Theory]
         // Negative tests
-        [InlineData(@"cat([a-\d]*)dog", RegexOptions.None, RegexParseError.ShorthandClassInCharacterRange)]
-        [InlineData(@"\k<1", RegexOptions.None, RegexParseError.UnrecognizedEscape)]
-        [InlineData(@"(?')", RegexOptions.None, RegexParseError.CaptureGroupNameInvalid)]
-        [InlineData(@"(?<)", RegexOptions.None, RegexParseError.CaptureGroupNameInvalid)]
-        [InlineData(@"(?imn )", RegexOptions.None, RegexParseError.InvalidGroupingConstruct)]
-        [InlineData(@"(?imn", RegexOptions.None, RegexParseError.InvalidGroupingConstruct)]
-        [InlineData(@"(?'cat'", RegexOptions.None, RegexParseError.InsufficientClosingParentheses)]
-        [InlineData(@"(?'", RegexOptions.None, RegexParseError.InvalidGroupingConstruct)]
-        [InlineData(@"(?'=)", RegexOptions.None, RegexParseError.InvalidGroupingConstruct)]
-        [InlineData(@"(?'!)", RegexOptions.None, RegexParseError.InvalidGroupingConstruct)]
-        [InlineData(@"[^", RegexOptions.None, RegexParseError.UnterminatedBracket)]
-        [InlineData(@"[cat", RegexOptions.None, RegexParseError.UnterminatedBracket)]
-        [InlineData(@"[^cat", RegexOptions.None, RegexParseError.UnterminatedBracket)]
-        [InlineData(@"\p{cat", RegexOptions.None, RegexParseError.InvalidUnicodePropertyEscape)]
-        [InlineData(@"\k<cat", RegexOptions.None, RegexParseError.UnrecognizedEscape)]
-        [InlineData(@"\p{cat}", RegexOptions.None, RegexParseError.UnrecognizedUnicodeProperty)]
-        [InlineData(@"\P{cat", RegexOptions.None, RegexParseError.InvalidUnicodePropertyEscape)]
-        [InlineData(@"\P{cat}", RegexOptions.None, RegexParseError.UnrecognizedUnicodeProperty)]
-        [InlineData(@"(?<cat>", RegexOptions.None, RegexParseError.InsufficientClosingParentheses)]
-        [InlineData(@"\P{", RegexOptions.None, RegexParseError.InvalidUnicodePropertyEscape)]
-        [InlineData(@"\k<>", RegexOptions.None, RegexParseError.UnrecognizedEscape)]
-        [InlineData(@"(?(", RegexOptions.None, RegexParseError.InsufficientClosingParentheses)]
-        [InlineData(@"(?()|", RegexOptions.None, RegexParseError.InsufficientClosingParentheses)]
-        [InlineData(@"?(a|b)", RegexOptions.None, RegexParseError.QuantifierAfterNothing)]
-        [InlineData(@"?((a)", RegexOptions.None, RegexParseError.QuantifierAfterNothing)]
-        [InlineData(@"?((a)a", RegexOptions.None, RegexParseError.QuantifierAfterNothing)]
-        [InlineData(@"?((a)a|", RegexOptions.None, RegexParseError.QuantifierAfterNothing)]
-        [InlineData(@"?((a)a|b", RegexOptions.None, RegexParseError.QuantifierAfterNothing)]
-        [InlineData(@"?(a)", RegexOptions.None, RegexParseError.QuantifierAfterNothing)]
-        [InlineData(@"[a", RegexOptions.None, RegexParseError.UnterminatedBracket)]
-        [InlineData(@"?(a:b)", RegexOptions.None, RegexParseError.QuantifierAfterNothing)]
-        [InlineData(@"(?(?", RegexOptions.None, RegexParseError.InvalidGroupingConstruct)]
-        [InlineData(@"(?(cat", RegexOptions.None, RegexParseError.InsufficientClosingParentheses)]
-        [InlineData(@"(?(cat)|", RegexOptions.None, RegexParseError.InsufficientClosingParentheses)]
-        [InlineData(@"foo(?<0>bar)", RegexOptions.None, RegexParseError.CaptureGroupOfZero)]
-        [InlineData(@"foo(?'0'bar)", RegexOptions.None, RegexParseError.CaptureGroupOfZero)]
-        [InlineData(@"foo(?<1bar)", RegexOptions.None, RegexParseError.CaptureGroupNameInvalid)]
-        [InlineData(@"foo(?'1bar)", RegexOptions.None, RegexParseError.CaptureGroupNameInvalid)]
-        [InlineData(@"\p{klsak", RegexOptions.None, RegexParseError.InvalidUnicodePropertyEscape)]
-        [InlineData(@"(?c:cat)", RegexOptions.None, RegexParseError.InvalidGroupingConstruct)]
-        [InlineData(@"(??e:cat)", RegexOptions.None, RegexParseError.InvalidGroupingConstruct)]
-        [InlineData(@"[a-f-[]]+", RegexOptions.None, RegexParseError.UnterminatedBracket)]
-        [InlineData(@"[A-[]+", RegexOptions.None, RegexParseError.UnterminatedBracket)]
-        [InlineData(@"(?(?e))", RegexOptions.None, RegexParseError.InvalidGroupingConstruct)]
-        [InlineData(@"(?(?a)", RegexOptions.None, RegexParseError.InvalidGroupingConstruct)]
-        [InlineData(@"(?r:cat)", RegexOptions.None, RegexParseError.InvalidGroupingConstruct)]
-        [InlineData(@"\x2", RegexOptions.None, RegexParseError.InsufficientOrInvalidHexDigits)]
-        [InlineData(@"(cat) (?#cat)    \s+ (?#followed by 1 or more whitespace", RegexOptions.IgnorePatternWhitespace, RegexParseError.UnterminatedComment)]
-        [InlineData(@"cat(?(?afdcat)dog)", RegexOptions.None, RegexParseError.InvalidGroupingConstruct)]
-        [InlineData(@"cat(?(?<cat>cat)dog)", RegexOptions.None, RegexParseError.AlternationHasNamedCapture)]
-        [InlineData(@"cat(?(?'cat'cat)dog)", RegexOptions.None, RegexParseError.AlternationHasNamedCapture)]
-        [InlineData(@"cat(?(?#COMMENT)cat)", RegexOptions.None, RegexParseError.AlternationHasComment)]
-        [InlineData(@"cat(?<>dog)", RegexOptions.None, RegexParseError.CaptureGroupNameInvalid)]
-        [InlineData(@"cat(?<dog<>)_*>dog)", RegexOptions.None, RegexParseError.CaptureGroupNameInvalid)]
-        [InlineData(@"cat(?<dog >)_*>dog)", RegexOptions.None, RegexParseError.CaptureGroupNameInvalid)]
-        [InlineData(@"cat(?<dog!>)_*>dog)", RegexOptions.None, RegexParseError.CaptureGroupNameInvalid)]
-        [InlineData(@"cat(?<dog)_*>dog)", RegexOptions.None, RegexParseError.CaptureGroupNameInvalid)]
-        [InlineData(@"cat(?<1dog>dog)", RegexOptions.None, RegexParseError.CaptureGroupNameInvalid)]
-        [InlineData(@"cat(?<0>dog)", RegexOptions.None, RegexParseError.CaptureGroupOfZero)]
-        [InlineData(@"([5-\D]*)dog", RegexOptions.None, RegexParseError.ShorthandClassInCharacterRange)]
-        [InlineData(@"cat([6-\s]*)dog", RegexOptions.None, RegexParseError.ShorthandClassInCharacterRange)]
-        [InlineData(@"cat([c-\S]*)", RegexOptions.None, RegexParseError.ShorthandClassInCharacterRange)]
-        [InlineData(@"cat([7-\w]*)", RegexOptions.None, RegexParseError.ShorthandClassInCharacterRange)]
-        [InlineData(@"cat([a-\W]*)dog", RegexOptions.None, RegexParseError.ShorthandClassInCharacterRange)]
-        [InlineData(@"([f-\p{Lu}]\w*)\s([\p{Lu}]\w*)", RegexOptions.None, RegexParseError.ShorthandClassInCharacterRange)]
-        [InlineData(@"(cat) (?#cat)    \s+ (?#followed by 1 or more whitespace", RegexOptions.None, RegexParseError.UnterminatedComment)]
-        [InlineData(@"([1-\P{Ll}][\p{Ll}]*)\s([\P{Ll}][\p{Ll}]*)", RegexOptions.None, RegexParseError.ShorthandClassInCharacterRange)]
-        [InlineData(@"[\P]", RegexOptions.None, RegexParseError.InvalidUnicodePropertyEscape)]
-        [InlineData(@"([\pcat])", RegexOptions.None, RegexParseError.MalformedUnicodePropertyEscape)]
-        [InlineData(@"([\Pcat])", RegexOptions.None, RegexParseError.MalformedUnicodePropertyEscape)]
-        [InlineData(@"(\p{", RegexOptions.None, RegexParseError.InvalidUnicodePropertyEscape)]
-        [InlineData(@"(\p{Ll", RegexOptions.None, RegexParseError.InvalidUnicodePropertyEscape)]
-        [InlineData(@"(cat)([\o]*)(dog)", RegexOptions.None, RegexParseError.UnrecognizedEscape)]
-        [InlineData(@"[\p]", RegexOptions.None, RegexParseError.InvalidUnicodePropertyEscape)]
-        [InlineData(@"(?<cat>cat)\s+(?<dog>dog)\kcat", RegexOptions.None, RegexParseError.MalformedNamedReference)]
-        [InlineData(@"(?<cat>cat)\s+(?<dog>dog)\k<cat2>", RegexOptions.None, RegexParseError.UndefinedNamedReference)]
-        [InlineData(@"(?<cat>cat)\s+(?<dog>dog)\k<8>cat", RegexOptions.None, RegexParseError.UndefinedNumberedReference)]
-        [InlineData(@"^[abcd]{1}?*$", RegexOptions.None, RegexParseError.NestedQuantifiersNotParenthesized)]
-        [InlineData(@"^[abcd]*+$", RegexOptions.None, RegexParseError.NestedQuantifiersNotParenthesized)]
-        [InlineData(@"^[abcd]+*$", RegexOptions.None, RegexParseError.NestedQuantifiersNotParenthesized)]
-        [InlineData(@"^[abcd]?*$", RegexOptions.None, RegexParseError.NestedQuantifiersNotParenthesized)]
-        [InlineData(@"^[abcd]*?+$", RegexOptions.None, RegexParseError.NestedQuantifiersNotParenthesized)]
-        [InlineData(@"^[abcd]+?*$", RegexOptions.None, RegexParseError.NestedQuantifiersNotParenthesized)]
-        [InlineData(@"^[abcd]{1,}?*$", RegexOptions.None, RegexParseError.NestedQuantifiersNotParenthesized)]
-        [InlineData(@"^[abcd]??*$", RegexOptions.None, RegexParseError.NestedQuantifiersNotParenthesized)]
-        [InlineData(@"^[abcd]+{0,5}$", RegexOptions.None, RegexParseError.NestedQuantifiersNotParenthesized)]
-        [InlineData(@"^[abcd]?{0,5}$", RegexOptions.None, RegexParseError.NestedQuantifiersNotParenthesized)]
-        [InlineData(@"\ua", RegexOptions.None, RegexParseError.InsufficientOrInvalidHexDigits)]
-        [InlineData(@"^[abcd]*{0,5}$", RegexOptions.None, RegexParseError.NestedQuantifiersNotParenthesized)]
-        [InlineData(@"^[abcd]{0,16}?*$", RegexOptions.None, RegexParseError.NestedQuantifiersNotParenthesized)]
-        [InlineData(@"^[abcd]{1,}*$", RegexOptions.None, RegexParseError.NestedQuantifiersNotParenthesized)]
-        [InlineData(@"(?<cat>cat)\s+(?<dog>dog)\k<8>cat", RegexOptions.ECMAScript, RegexParseError.UndefinedNumberedReference)]
-        [InlineData(@"(?<cat>cat)\s+(?<dog>dog)\k8", RegexOptions.None, RegexParseError.MalformedNamedReference)]
-        [InlineData(@"(?<cat>cat)\s+(?<dog>dog)\k8", RegexOptions.ECMAScript, RegexParseError.MalformedNamedReference)]
-        [InlineData(@"(cat)(\7)", RegexOptions.None, RegexParseError.UndefinedNumberedReference)]
-        [InlineData(@"(cat)\s+(?<2147483648>dog)", RegexOptions.None, RegexParseError.QuantifierOrCaptureGroupOutOfRange)]
-        [InlineData(@"(cat)\s+(?<21474836481097>dog)", RegexOptions.None, RegexParseError.QuantifierOrCaptureGroupOutOfRange)]
-        [InlineData(@"^[abcd]{1}*$", RegexOptions.None, RegexParseError.NestedQuantifiersNotParenthesized)]
-        [InlineData(@"(cat)(\c*)(dog)", RegexOptions.None, RegexParseError.UnrecognizedControlCharacter)]
-        [InlineData(@"(cat)(\c *)(dog)", RegexOptions.None, RegexParseError.UnrecognizedControlCharacter)]
-        [InlineData(@"(cat)(\c?*)(dog)", RegexOptions.None, RegexParseError.UnrecognizedControlCharacter)]
-        [InlineData(@"(cat)(\c`*)(dog)", RegexOptions.None, RegexParseError.UnrecognizedControlCharacter)]
-        [InlineData(@"(cat)(\c\|*)(dog)", RegexOptions.None, RegexParseError.QuantifierAfterNothing)]
-        [InlineData(@"^[abcd]{0,16}*$", RegexOptions.None, RegexParseError.NestedQuantifiersNotParenthesized)]
-        [InlineData(@"(cat)\c", RegexOptions.None, RegexParseError.MissingControlCharacter)]
+        [InlineData(@"cat([a-\d]*)dog", RegexOptions.None, RegexParseError.ShorthandClassInCharacterRange, 9)]
+        [InlineData(@"\k<1", RegexOptions.None, RegexParseError.UnrecognizedEscape, 2)]
+        [InlineData(@"(?')", RegexOptions.None, RegexParseError.CaptureGroupNameInvalid, 3)]
+        [InlineData(@"(?<)", RegexOptions.None, RegexParseError.CaptureGroupNameInvalid, 3)]
+        [InlineData(@"(?imn )", RegexOptions.None, RegexParseError.InvalidGroupingConstruct, 6)]
+        [InlineData(@"(?imn", RegexOptions.None, RegexParseError.InvalidGroupingConstruct, 5)]
+        [InlineData(@"(?'cat'", RegexOptions.None, RegexParseError.InsufficientClosingParentheses, 7)]
+        [InlineData(@"(?'", RegexOptions.None, RegexParseError.InvalidGroupingConstruct, 3)]
+        [InlineData(@"(?'=)", RegexOptions.None, RegexParseError.InvalidGroupingConstruct, 4)]
+        [InlineData(@"(?'!)", RegexOptions.None, RegexParseError.InvalidGroupingConstruct, 4)]
+        [InlineData(@"[^", RegexOptions.None, RegexParseError.UnterminatedBracket, 2)]
+        [InlineData(@"[cat", RegexOptions.None, RegexParseError.UnterminatedBracket, 4)]
+        [InlineData(@"[^cat", RegexOptions.None, RegexParseError.UnterminatedBracket, 5)]
+        [InlineData(@"\p{cat", RegexOptions.None, RegexParseError.InvalidUnicodePropertyEscape, 6)]
+        [InlineData(@"\k<cat", RegexOptions.None, RegexParseError.UnrecognizedEscape, 2)]
+        [InlineData(@"\p{cat}", RegexOptions.None, RegexParseError.UnrecognizedUnicodeProperty, 7)]
+        [InlineData(@"\P{cat", RegexOptions.None, RegexParseError.InvalidUnicodePropertyEscape, 6)]
+        [InlineData(@"\P{cat}", RegexOptions.None, RegexParseError.UnrecognizedUnicodeProperty, 7)]
+        [InlineData(@"(?<cat>", RegexOptions.None, RegexParseError.InsufficientClosingParentheses, 7)]
+        [InlineData(@"\P{", RegexOptions.None, RegexParseError.InvalidUnicodePropertyEscape, 2)]
+        [InlineData(@"\k<>", RegexOptions.None, RegexParseError.UnrecognizedEscape, 2)]
+        [InlineData(@"(?(", RegexOptions.None, RegexParseError.InsufficientClosingParentheses, 3)]
+        [InlineData(@"(?()|", RegexOptions.None, RegexParseError.InsufficientClosingParentheses, 5)]
+        [InlineData(@"?(a|b)", RegexOptions.None, RegexParseError.QuantifierAfterNothing, 1)]
+        [InlineData(@"?((a)", RegexOptions.None, RegexParseError.QuantifierAfterNothing, 1)]
+        [InlineData(@"?((a)a", RegexOptions.None, RegexParseError.QuantifierAfterNothing, 1)]
+        [InlineData(@"?((a)a|", RegexOptions.None, RegexParseError.QuantifierAfterNothing, 1)]
+        [InlineData(@"?((a)a|b", RegexOptions.None, RegexParseError.QuantifierAfterNothing, 1)]
+        [InlineData(@"?(a)", RegexOptions.None, RegexParseError.QuantifierAfterNothing, 1)]
+        [InlineData(@"[a", RegexOptions.None, RegexParseError.UnterminatedBracket, 2)]
+        [InlineData(@"?(a:b)", RegexOptions.None, RegexParseError.QuantifierAfterNothing, 1)]
+        [InlineData(@"(?(?", RegexOptions.None, RegexParseError.InvalidGroupingConstruct, 4)]
+        [InlineData(@"(?(cat", RegexOptions.None, RegexParseError.InsufficientClosingParentheses, 6)]
+        [InlineData(@"(?(cat)|", RegexOptions.None, RegexParseError.InsufficientClosingParentheses, 8)]
+        [InlineData(@"foo(?<0>bar)", RegexOptions.None, RegexParseError.CaptureGroupOfZero, 7)]
+        [InlineData(@"foo(?'0'bar)", RegexOptions.None, RegexParseError.CaptureGroupOfZero, 7)]
+        [InlineData(@"foo(?<1bar)", RegexOptions.None, RegexParseError.CaptureGroupNameInvalid, 7)]
+        [InlineData(@"foo(?'1bar)", RegexOptions.None, RegexParseError.CaptureGroupNameInvalid, 7)]
+        [InlineData(@"\p{klsak", RegexOptions.None, RegexParseError.InvalidUnicodePropertyEscape, 8)]
+        [InlineData(@"(?c:cat)", RegexOptions.None, RegexParseError.InvalidGroupingConstruct, 3)]
+        [InlineData(@"(??e:cat)", RegexOptions.None, RegexParseError.InvalidGroupingConstruct, 3)]
+        [InlineData(@"[a-f-[]]+", RegexOptions.None, RegexParseError.UnterminatedBracket, 9)]
+        [InlineData(@"[A-[]+", RegexOptions.None, RegexParseError.UnterminatedBracket, 6)]
+        [InlineData(@"(?(?e))", RegexOptions.None, RegexParseError.InvalidGroupingConstruct, 5)]
+        [InlineData(@"(?(?a)", RegexOptions.None, RegexParseError.InvalidGroupingConstruct, 5)]
+        [InlineData(@"(?r:cat)", RegexOptions.None, RegexParseError.InvalidGroupingConstruct, 3)]
+        [InlineData(@"\x2", RegexOptions.None, RegexParseError.InsufficientOrInvalidHexDigits, 2)]
+        [InlineData(@"(cat) (?#cat)    \s+ (?#followed by 1 or more whitespace", RegexOptions.IgnorePatternWhitespace, RegexParseError.UnterminatedComment, 56)]
+        [InlineData(@"cat(?(?afdcat)dog)", RegexOptions.None, RegexParseError.InvalidGroupingConstruct, 8)]
+        [InlineData(@"cat(?(?<cat>cat)dog)", RegexOptions.None, RegexParseError.AlternationHasNamedCapture, 5)]
+        [InlineData(@"cat(?(?'cat'cat)dog)", RegexOptions.None, RegexParseError.AlternationHasNamedCapture, 5)]
+        [InlineData(@"cat(?(?#COMMENT)cat)", RegexOptions.None, RegexParseError.AlternationHasComment, 5)]
+        [InlineData(@"cat(?<>dog)", RegexOptions.None, RegexParseError.CaptureGroupNameInvalid, 6)]
+        [InlineData(@"cat(?<dog<>)_*>dog)", RegexOptions.None, RegexParseError.CaptureGroupNameInvalid, 9)]
+        [InlineData(@"cat(?<dog >)_*>dog)", RegexOptions.None, RegexParseError.CaptureGroupNameInvalid, 9)]
+        [InlineData(@"cat(?<dog!>)_*>dog)", RegexOptions.None, RegexParseError.CaptureGroupNameInvalid, 9)]
+        [InlineData(@"cat(?<dog)_*>dog)", RegexOptions.None, RegexParseError.CaptureGroupNameInvalid, 9)]
+        [InlineData(@"cat(?<1dog>dog)", RegexOptions.None, RegexParseError.CaptureGroupNameInvalid, 7)]
+        [InlineData(@"cat(?<0>dog)", RegexOptions.None, RegexParseError.CaptureGroupOfZero, 7)]
+        [InlineData(@"([5-\D]*)dog", RegexOptions.None, RegexParseError.ShorthandClassInCharacterRange, 6)]
+        [InlineData(@"cat([6-\s]*)dog", RegexOptions.None, RegexParseError.ShorthandClassInCharacterRange, 9)]
+        [InlineData(@"cat([c-\S]*)", RegexOptions.None, RegexParseError.ShorthandClassInCharacterRange, 9)]
+        [InlineData(@"cat([7-\w]*)", RegexOptions.None, RegexParseError.ShorthandClassInCharacterRange, 9)]
+        [InlineData(@"cat([a-\W]*)dog", RegexOptions.None, RegexParseError.ShorthandClassInCharacterRange, 9)]
+        [InlineData(@"([f-\p{Lu}]\w*)\s([\p{Lu}]\w*)", RegexOptions.None, RegexParseError.ShorthandClassInCharacterRange, 6)]
+        [InlineData(@"(cat) (?#cat)    \s+ (?#followed by 1 or more whitespace", RegexOptions.None, RegexParseError.UnterminatedComment, 56)]
+        [InlineData(@"([1-\P{Ll}][\p{Ll}]*)\s([\P{Ll}][\p{Ll}]*)", RegexOptions.None, RegexParseError.ShorthandClassInCharacterRange, 6)]
+        [InlineData(@"[\P]", RegexOptions.None, RegexParseError.InvalidUnicodePropertyEscape, 3)]
+        [InlineData(@"([\pcat])", RegexOptions.None, RegexParseError.MalformedUnicodePropertyEscape, 5)]
+        [InlineData(@"([\Pcat])", RegexOptions.None, RegexParseError.MalformedUnicodePropertyEscape, 5)]
+        [InlineData(@"(\p{", RegexOptions.None, RegexParseError.InvalidUnicodePropertyEscape, 3)]
+        [InlineData(@"(\p{Ll", RegexOptions.None, RegexParseError.InvalidUnicodePropertyEscape, 6)]
+        [InlineData(@"(cat)([\o]*)(dog)", RegexOptions.None, RegexParseError.UnrecognizedEscape, 9)]
+        [InlineData(@"[\p]", RegexOptions.None, RegexParseError.InvalidUnicodePropertyEscape, 3)]
+        [InlineData(@"(?<cat>cat)\s+(?<dog>dog)\kcat", RegexOptions.None, RegexParseError.MalformedNamedReference, 28)]
+        [InlineData(@"(?<cat>cat)\s+(?<dog>dog)\k<cat2>", RegexOptions.None, RegexParseError.UndefinedNamedReference, 33)]
+        [InlineData(@"(?<cat>cat)\s+(?<dog>dog)\k<8>cat", RegexOptions.None, RegexParseError.UndefinedNumberedReference, 30)]
+        [InlineData(@"^[abcd]{1}?*$", RegexOptions.None, RegexParseError.NestedQuantifiersNotParenthesized, 12)]
+        [InlineData(@"^[abcd]*+$", RegexOptions.None, RegexParseError.NestedQuantifiersNotParenthesized, 9)]
+        [InlineData(@"^[abcd]+*$", RegexOptions.None, RegexParseError.NestedQuantifiersNotParenthesized, 9)]
+        [InlineData(@"^[abcd]?*$", RegexOptions.None, RegexParseError.NestedQuantifiersNotParenthesized, 9)]
+        [InlineData(@"^[abcd]*?+$", RegexOptions.None, RegexParseError.NestedQuantifiersNotParenthesized, 10)]
+        [InlineData(@"^[abcd]+?*$", RegexOptions.None, RegexParseError.NestedQuantifiersNotParenthesized, 10)]
+        [InlineData(@"^[abcd]{1,}?*$", RegexOptions.None, RegexParseError.NestedQuantifiersNotParenthesized, 13)]
+        [InlineData(@"^[abcd]??*$", RegexOptions.None, RegexParseError.NestedQuantifiersNotParenthesized, 10)]
+        [InlineData(@"^[abcd]+{0,5}$", RegexOptions.None, RegexParseError.NestedQuantifiersNotParenthesized, 9)]
+        [InlineData(@"^[abcd]?{0,5}$", RegexOptions.None, RegexParseError.NestedQuantifiersNotParenthesized, 9)]
+        [InlineData(@"\ua", RegexOptions.None, RegexParseError.InsufficientOrInvalidHexDigits, 2)]
+        [InlineData(@"^[abcd]*{0,5}$", RegexOptions.None, RegexParseError.NestedQuantifiersNotParenthesized, 9)]
+        [InlineData(@"^[abcd]{0,16}?*$", RegexOptions.None, RegexParseError.NestedQuantifiersNotParenthesized, 15)]
+        [InlineData(@"^[abcd]{1,}*$", RegexOptions.None, RegexParseError.NestedQuantifiersNotParenthesized, 12)]
+        [InlineData(@"(?<cat>cat)\s+(?<dog>dog)\k<8>cat", RegexOptions.ECMAScript, RegexParseError.UndefinedNumberedReference, 30)]
+        [InlineData(@"(?<cat>cat)\s+(?<dog>dog)\k8", RegexOptions.None, RegexParseError.MalformedNamedReference, 28)]
+        [InlineData(@"(?<cat>cat)\s+(?<dog>dog)\k8", RegexOptions.ECMAScript, RegexParseError.MalformedNamedReference, 28)]
+        [InlineData(@"(cat)(\7)", RegexOptions.None, RegexParseError.UndefinedNumberedReference, 8)]
+        [InlineData(@"(cat)\s+(?<2147483648>dog)", RegexOptions.None, RegexParseError.QuantifierOrCaptureGroupOutOfRange, 21)]
+        [InlineData(@"(cat)\s+(?<21474836481097>dog)", RegexOptions.None, RegexParseError.QuantifierOrCaptureGroupOutOfRange, 21)]
+        [InlineData(@"^[abcd]{1}*$", RegexOptions.None, RegexParseError.NestedQuantifiersNotParenthesized, 11)]
+        [InlineData(@"(cat)(\c*)(dog)", RegexOptions.None, RegexParseError.UnrecognizedControlCharacter, 9)]
+        [InlineData(@"(cat)(\c *)(dog)", RegexOptions.None, RegexParseError.UnrecognizedControlCharacter, 9)]
+        [InlineData(@"(cat)(\c?*)(dog)", RegexOptions.None, RegexParseError.UnrecognizedControlCharacter, 9)]
+        [InlineData(@"(cat)(\c`*)(dog)", RegexOptions.None, RegexParseError.UnrecognizedControlCharacter, 9)]
+        [InlineData(@"(cat)(\c\|*)(dog)", RegexOptions.None, RegexParseError.QuantifierAfterNothing, 11)]
+        [InlineData(@"^[abcd]{0,16}*$", RegexOptions.None, RegexParseError.NestedQuantifiersNotParenthesized, 14)]
+        [InlineData(@"(cat)\c", RegexOptions.None, RegexParseError.MissingControlCharacter, 7)]
         // Deep recursion
         [InlineData(@"@""((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((
 (((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((
@@ -683,35 +696,36 @@ namespace System.Text.RegularExpressions.Tests
 (((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((
 (((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((
 (((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((
-(((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((""", RegexOptions.None, RegexParseError.InsufficientClosingParentheses)]
+(((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((""", RegexOptions.None, RegexParseError.InsufficientClosingParentheses, 1208)]
         // Scan control
-        [InlineData("(cat)(\\c\0*)(dog)", RegexOptions.None, RegexParseError.UnrecognizedControlCharacter)]
-        [InlineData(@"(cat)(\c\[*)(dog)", RegexOptions.None, RegexParseError.UnterminatedBracket)]
+        [InlineData("(cat)(\\c\0*)(dog)", RegexOptions.None, RegexParseError.UnrecognizedControlCharacter, 9)]
+        [InlineData(@"(cat)(\c\[*)(dog)", RegexOptions.None, RegexParseError.UnterminatedBracket, 17)]
         // Invalid grouping constructs
-        [InlineData("(?<", RegexOptions.None, RegexParseError.InvalidGroupingConstruct)]
-        [InlineData("(?>-", RegexOptions.None, RegexParseError.InsufficientClosingParentheses)]
+        [InlineData("(?<", RegexOptions.None, RegexParseError.InvalidGroupingConstruct, 3)]
+        [InlineData("(?>-", RegexOptions.None, RegexParseError.InsufficientClosingParentheses, 4)]
         // Testgroup with options
-        [InlineData("())", RegexOptions.None, RegexParseError.InsufficientOpeningParentheses)]
-        [InlineData("[a-z-[aeiuo]", RegexOptions.None, RegexParseError.UnterminatedBracket)]
-        [InlineData("[a-z-[aeiuo", RegexOptions.None, RegexParseError.UnterminatedBracket)]
-        [InlineData("[a-z-[b]", RegexOptions.None, RegexParseError.UnterminatedBracket)]
-        [InlineData("[a-z-[b", RegexOptions.None, RegexParseError.UnterminatedBracket)]
-        [InlineData("[b-a]", RegexOptions.None, RegexParseError.ReversedCharacterRange)]
-        [InlineData(@"[a-c]{2,1}", RegexOptions.None, RegexParseError.ReversedQuantifierRange)]
-        [InlineData(@"\d{2147483648}", RegexOptions.None, RegexParseError.QuantifierOrCaptureGroupOutOfRange)]
-        [InlineData("[a-z-[b][", RegexOptions.None, RegexParseError.UnterminatedBracket)]
-        [InlineData("(?()|||||)", RegexOptions.None, RegexParseError.AlternationHasTooManyConditions)]
-        [InlineData("[^]", RegexOptions.None, RegexParseError.UnterminatedBracket)]
-        public void Parse(string pattern, RegexOptions options, object errorObj)
+        [InlineData("())", RegexOptions.None, RegexParseError.InsufficientOpeningParentheses, 3)]
+        [InlineData("[a-z-[aeiuo]", RegexOptions.None, RegexParseError.UnterminatedBracket, 12)]
+        [InlineData("[a-z-[aeiuo", RegexOptions.None, RegexParseError.UnterminatedBracket, 11)]
+        [InlineData("[a-z-[b]", RegexOptions.None, RegexParseError.UnterminatedBracket, 8)]
+        [InlineData("[a-z-[b", RegexOptions.None, RegexParseError.UnterminatedBracket, 7)]
+        [InlineData("[b-a]", RegexOptions.None, RegexParseError.ReversedCharacterRange, 4)]
+        [InlineData(@"[a-c]{2,1}", RegexOptions.None, RegexParseError.ReversedQuantifierRange, 10)]
+        [InlineData(@"\d{2147483648}", RegexOptions.None, RegexParseError.QuantifierOrCaptureGroupOutOfRange, 13)]
+        [InlineData("[a-z-[b][", RegexOptions.None, RegexParseError.UnterminatedBracket, 9)]
+        [InlineData("(?()|||||)", RegexOptions.None, RegexParseError.AlternationHasTooManyConditions, 10)]
+        [InlineData("[^]", RegexOptions.None, RegexParseError.UnterminatedBracket, 3)]
+        public void ParseCheckOffset(string pattern, RegexOptions options, object errorObj, int offset)
         {
             RegexParseError? error = (RegexParseError?)errorObj;
 
             // Parse the main tree and if parsing fails check if the supplied error matches.
-            ParseTree(pattern, options, error);
+            ParseTree(pattern, options, error, offset);
 
             // Assert that only ArgumentException might be thrown during parsing.
             ParseSubTrees(pattern, options);
         }
+
 
         private static void ParseSubTrees(string pattern, RegexOptions options)
         {
@@ -734,11 +748,11 @@ namespace System.Text.RegularExpressions.Tests
             }
         }
 
-        private static void ParseTree(string pattern, RegexOptions options, RegexParseError? error)
+        static void ParseTree(string pattern, RegexOptions options, RegexParseError? error, int offset)
         {
             if (error != null)
             {
-                Throws(error.Value, () => new Regex(pattern, options));
+                Throws(error.Value, offset, () => new Regex(pattern, options));
                 return;
             }
 
@@ -758,6 +772,6 @@ namespace System.Text.RegularExpressions.Tests
             }
         }
 
-        static partial void Throws(RegexParseError error, Action action);
+        static partial void Throws(RegexParseError error, int offset, Action action);
     }
 }

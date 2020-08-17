@@ -119,7 +119,7 @@ namespace System.Text.RegularExpressions.Tests
         /// </summary>
         /// <param name="error">The expected parse error</param>
         /// <param name="action">The action to invoke.</param>
-        static partial void Throws(RegexParseError error, Action action)
+        static partial void Throws(RegexParseError error, int offset, Action action)
         {
             try
             {
@@ -131,7 +131,14 @@ namespace System.Text.RegularExpressions.Tests
 
                 // Success if provided error matches.
                 if (error == regexParseError)
+                {
+                    // only test offset if provided and greater than zero
+                    if (offset > 0)
+                    {
+                        Assert.Equal(offset, e.Offset);
+                    }
                     return;
+                }
 
                 throw new XunitException($"Expected RegexParseException with error: ({error}) -> Actual error: {regexParseError})");
             }
