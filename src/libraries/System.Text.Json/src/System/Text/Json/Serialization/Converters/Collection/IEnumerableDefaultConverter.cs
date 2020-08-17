@@ -119,6 +119,7 @@ namespace System.Text.Json.Serialization.Converters
                     {
                         if (state.Current.ObjectState == StackFrameObjectState.ReadRefEndObject)
                         {
+                            // This will never throw since it was previously validated in ResolveMetadataForJsonArray.
                             value = (TCollection)state.Current.ReturnValue!;
                             return true;
                         }
