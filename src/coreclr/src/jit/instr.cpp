@@ -631,9 +631,9 @@ AGAIN:
             assert(offs == 0);
             assert(!shfv);
             if (tree->IsIconHandle())
-                inst_IV_handle(ins, tree->AsIntCon()->gtIconVal);
+                inst_IV_handle(ins, (target_ssize_t)tree->AsIntCon()->gtIconVal);
             else
-                inst_IV(ins, tree->AsIntCon()->gtIconVal);
+                inst_IV(ins, (target_ssize_t)tree->AsIntCon()->gtIconVal);
             break;
 #endif
 

@@ -1645,6 +1645,7 @@ public:
     unsigned char emitOutputLong(BYTE* dst, ssize_t val);
     unsigned char emitOutputSizeT(BYTE* dst, ssize_t val);
 
+#if !defined(HOST_64BIT)
 #if defined(TARGET_X86)
     unsigned char emitOutputByte(BYTE* dst, size_t val);
     unsigned char emitOutputWord(BYTE* dst, size_t val);
@@ -1656,6 +1657,7 @@ public:
     unsigned char emitOutputLong(BYTE* dst, unsigned __int64 val);
     unsigned char emitOutputSizeT(BYTE* dst, unsigned __int64 val);
 #endif // defined(TARGET_X86)
+#endif // !defined(HOST_64BIT)
 
     size_t emitIssue1Instr(insGroup* ig, instrDesc* id, BYTE** dp);
     size_t emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp);

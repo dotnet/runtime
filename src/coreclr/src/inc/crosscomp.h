@@ -152,13 +152,14 @@ typedef struct _T_KNONVOLATILE_CONTEXT_POINTERS {
 //
 // Define dynamic function table entry.
 //
-
+#if defined(HOST_X86)
 typedef
 PT_RUNTIME_FUNCTION
 (*PGET_RUNTIME_FUNCTION_CALLBACK) (
     IN DWORD64 ControlPc,
     IN PVOID Context
     );
+#endif // defined(HOST_X86)
 
 typedef struct _T_DISPATCHER_CONTEXT {
     ULONG ControlPc;
