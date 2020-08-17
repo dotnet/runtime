@@ -565,7 +565,6 @@ namespace System.Text.RegularExpressions.Tests
         [InlineData(@"\bgr[ae]y\b", RegexOptions.None, null)]
         [InlineData(@"\b((?# case sensitive comparison)D\w+)\s(?ixn)((?#case insensitive comparison)d\w+)\b", RegexOptions.None, null)]
         [InlineData(@"\{\d+(,-*\d+)*(\:\w{1,4}?)*\}(?x) # Looks for a composite format item.", RegexOptions.None, null)]
-
         public void Parse(string pattern, RegexOptions options, object errorObj, int offset = -1)
         {
             RegexParseError? error = (RegexParseError?)errorObj;
@@ -717,6 +716,10 @@ namespace System.Text.RegularExpressions.Tests
         [InlineData("[a-z-[b][", RegexOptions.None, RegexParseError.UnterminatedBracket, 9)]
         [InlineData("(?()|||||)", RegexOptions.None, RegexParseError.AlternationHasTooManyConditions, 10)]
         [InlineData("[^]", RegexOptions.None, RegexParseError.UnterminatedBracket, 3)]
+        [InlineData("\\", RegexOptions.None, RegexParseError.UnescapedEndingBackslash, 1)]
+        [InlineData("??", RegexOptions.None, RegexParseError.QuantifierAfterNothing, 1)]
+        [InlineData("(?=*)", RegexOptions.None, RegexParseError.QuantifierAfterNothing, 4)]
+        [InlineData("((((((*))))))", RegexOptions.None, RegexParseError.QuantifierAfterNothing, 7)]
         public void ParseCheckOffset(string pattern, RegexOptions options, object errorObj, int offset)
         {
             RegexParseError? error = (RegexParseError?)errorObj;
