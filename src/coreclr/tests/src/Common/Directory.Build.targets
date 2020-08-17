@@ -97,8 +97,9 @@
 
         <RunTimeDependencyCopyLocal
           Condition="'$(TargetArchitecture)' == 'wasm'"
-          Include="$(ArtifactsBinDir)\WasmAppBuilder\$(Configuration)\$(NetCoreAppCurrent)\publish\**"
-          TargetDir="WasmAppBuilder/"/>
+          Include="$(ArtifactsBinDir)\WasmAppBuilderConsole\$(Configuration)\$(NetCoreAppCurrent)\publish\**"
+          TargetDir="WasmAppBuilderConsole/"/>
+  
 
         <RunTimeDependencyCopyLocal
           Condition="'$(TargetArchitecture)' == 'wasm'"
