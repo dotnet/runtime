@@ -258,7 +258,7 @@ namespace System.IO.Pipelines.Tests
         }
 
         [Fact]
-        public async Task WritingWithACompletedReaderNoops()
+        public async Task WriteAsyncWithACompletedReaderNoops()
         {
             var pool = new DisposeTrackingBufferPool();
             var pipe = new Pipe(new PipeOptions(pool));
@@ -270,6 +270,25 @@ namespace System.IO.Pipelines.Tests
                 await pipe.Writer.WriteAsync(writeBuffer);
             }
 
+            Assert.Equal(0, pool.CurrentlyRentedBlocks);
+        }
+
+        [Fact]
+        public async Task GetMemoryFlushWithACompletedReaderNoops()
+        {
+            var pool = new DisposeTrackingBufferPool();
+            var pipe = new Pipe(new PipeOptions(pool));
+            pipe.Reader.Complete();
+
+            for (var i = 0; i < 10000; i++)
+            {
+                var mem = pipe.Writer.GetMemory();
+                pipe.Writer.Advance(mem.Length);
+                await pipe.Writer.FlushAsync(default);
+            }
+
+            Assert.Equal(1, pool.CurrentlyRentedBlocks);
+            pipe.Writer.Complete();
             Assert.Equal(0, pool.CurrentlyRentedBlocks);
         }
     }

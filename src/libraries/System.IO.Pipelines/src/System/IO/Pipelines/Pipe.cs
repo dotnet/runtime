@@ -319,6 +319,12 @@ namespace System.IO.Pipelines
                     ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.bytes);
                 }
 
+                // If the reader is completed we no-op Advance but leave GetMemory and FlushAsync alone
+                if (_readerCompletion.IsCompleted)
+                {
+                    return;
+                }
+
                 AdvanceCore(bytes);
             }
         }
