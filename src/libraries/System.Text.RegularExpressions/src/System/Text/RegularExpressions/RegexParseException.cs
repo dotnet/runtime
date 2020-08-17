@@ -15,7 +15,7 @@ namespace System.Text.RegularExpressions
         /// <summary>Gets the error that happened during parsing.</summary>
         public RegexParseError Error { get; }
 
-        /// <summary>Gets the offset in the supplied pattern.</summary>
+        /// <summary>Gets the zero-based character offset in the regular expression pattern where the parse error occurs.</summary>
         public int Offset { get; }
 
         internal RegexParseException(RegexParseError error, int offset, string message) : base(message)
@@ -25,7 +25,7 @@ namespace System.Text.RegularExpressions
         }
 
         /// <summary>
-        /// Construct a custom RegexParseException that creates a default message based on the given <see cref="RegexParseError"/> value.
+        /// Construct a <see cref="RegexParseException"/> that creates a default message based on the given <see cref="RegexParseError"/> value.
         /// </summary>
         /// <param name="error">The <see cref="RegexParseError"/> value detailing the type of parse error.</param>
         /// <param name="offset">The zero-based offset in the regular expression where the parse error occurs.</param>
