@@ -1123,6 +1123,7 @@ static SimdIntrinsic bmi2_methods [] = {
 static SimdIntrinsic x86base_methods [] = {
 	{SN_BitScanForward},
 	{SN_BitScanReverse},
+	{SN_get_IsSupported}
 };
 
 static MonoInst*

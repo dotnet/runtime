@@ -316,6 +316,12 @@ const_int32 (int v)
 	return LLVMConstInt (LLVMInt32Type (), v, FALSE);
 }
 
+static LLVMValueRef
+const_int64 (int64_t v)
+{
+	return LLVMConstInt (LLVMInt64Type (), v, FALSE);
+}
+
 /*
  * IntPtrType:
  *
@@ -5714,7 +5720,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 		}
 		case OP_X86_BSF32:
 		case OP_X86_BSF64: {
-			LLVMValueRef args [2] = {
+			LLVMValueRef args [] = {
 				lhs,
 				LLVMConstInt (LLVMInt1Type (), 1, TRUE),
 			};
@@ -5724,14 +5730,14 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 		}
 		case OP_X86_BSR32:
 		case OP_X86_BSR64: {
-			LLVMValueRef args [2] = {
+			LLVMValueRef args [] = {
 				lhs,
 				LLVMConstInt (LLVMInt1Type (), 1, TRUE),
 			};
 			int op = ins->opcode == OP_X86_BSR32 ? INTRINS_CTLZ_I32 : INTRINS_CTLZ_I64;
-			int width = ins->opcode == OP_X86_BSR32 ? 32 : 64;
+			LLVMValueRef width = ins->opcode == OP_X86_BSR32 ? const_int32 (31) : const_int64 (63);
 			LLVMValueRef tz = call_intrins (ctx, op, args, "");
-			values [ins->dreg] = LLVMBuildXor (builder, tz, const_int32 (width - 1), dname);
+			values [ins->dreg] = LLVMBuildXor (builder, tz, width, dname);
 			break;
 		}
 #endif

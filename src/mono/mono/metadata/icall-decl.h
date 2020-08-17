@@ -304,7 +304,7 @@ ICALL_EXPORT gint32   ves_icall_System_Threading_LowLevelLifoSemaphore_TimedWait
 ICALL_EXPORT void     ves_icall_System_Threading_LowLevelLifoSemaphore_ReleaseInternal (gpointer sem_ptr, gint32 count);
 #endif
 
-#if defined(ENABLE_NETCORE)
+#if defined(ENABLE_NETCORE) && defined(TARGET_AMD64)
 ICALL_EXPORT void ves_icall_System_Runtime_Intrinsics_X86_X86Base___cpuidex (int abcd[4], int function_id, int subfunction_id);
 #endif
 
