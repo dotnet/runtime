@@ -2725,9 +2725,12 @@
 
 
     <ItemGroup Condition=" '$(TargetArchitecture)' == 'wasm' " >
-   	    <ExcludeList Include = "$(XunitTestBinBase)/Interop/ICastable/**">
+   	    <ExcludeList Include = "$(XunitTestBinBase)/Interop/ICastable/**" >
 		    <Issue> Depends on coreclr System.Private.CoreLib; can't be built for wasm.</Issue>
    	    </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/Boxing/xlang/_relsin_cs_cs/**" >
+            <Issue>Requires files to be included in wasm file system; don't have a per-test mechanisim for that yet. </Eclude>
+        </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/tracing/tracevalidation/rundown/rundown/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
