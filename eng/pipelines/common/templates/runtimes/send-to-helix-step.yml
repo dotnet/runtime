@@ -29,7 +29,7 @@ steps:
 - template: send-to-helix-inner-step.yml
   parameters:
     osGroup: ${{ parameters.osGroup }}
-    restoreParams: /p:DotNetPublishToBlobFeed=true -ci -restore -projects $(Build.SourcesDirectory)\eng\empty.csproj
+    restoreParams: /p:DotNetPublishToBlobFeed=true -ci -restore -projects $(Build.SourcesDirectory)$(dir)eng$(dir)empty.csproj
     sendParams: ${{ parameters.helixProjectArguments }} /maxcpucount /bl:$(Build.SourcesDirectory)/artifacts/log/SendToHelix.binlog
     ${{ if ne(parameters.condition, '') }}:
       condition: ${{ parameters.condition }}
