@@ -291,7 +291,7 @@ namespace System.Buffers
         }
 
         [SuppressUnmanagedCodeSecurity]
-        private static class UnsafeNativeMethods
+        private static partial class UnsafeNativeMethods
         {
             private const string KERNEL32_LIB = "kernel32.dll";
 
