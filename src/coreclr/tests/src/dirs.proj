@@ -3,7 +3,7 @@
 
   <Target Name="ResolveDisabledProjects" BeforeTargets="BuildAllProjects;CopyAllNativeTestProjectBinaries" >
     <PropertyGroup>
-      <TestRoot>$(RepoRoot)src\tests</TestRoot>
+      <TestRoot>$(RepoRoot)src\tests\</TestRoot>
     </PropertyGroup>
 
     <ItemGroup>
@@ -23,9 +23,9 @@
     </ItemGroup>
 
     <ItemGroup>
-      <AllProjects Include="$(TestRoot)\**\*.csproj" Exclude="@(DisabledProjects)" />
-      <AllProjects Include="$(TestRoot)\**\*.fsproj" Exclude="@(DisabledProjects)" />
-      <AllProjects Include="$(TestRoot)\**\*.ilproj" Exclude="@(DisabledProjects)" />
+      <AllProjects Include="$(TestRoot)**\*.csproj" Exclude="@(DisabledProjects)" />
+      <AllProjects Include="$(TestRoot)**\*.fsproj" Exclude="@(DisabledProjects)" />
+      <AllProjects Include="$(TestRoot)**\*.ilproj" Exclude="@(DisabledProjects)" />
     </ItemGroup>
 
     <!-- All the test projects are partitioned into the test groups as defined below.
