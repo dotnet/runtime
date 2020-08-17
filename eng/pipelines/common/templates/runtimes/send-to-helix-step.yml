@@ -32,6 +32,7 @@ steps:
     restoreParams: /p:DotNetPublishToBlobFeed=true -restore -projects $(Build.SourcesDirectory)$(dir)eng$(dir)empty.csproj
     sendParams: ${{ parameters.helixProjectArguments }} /maxcpucount /bl:$(Build.SourcesDirectory)/artifacts/log/SendToHelix.binlog
     condition: and(succeeded(), ${{ parameters.condition }})
+    displayName: ${{ parameters.displayName }}
     environment:
       __BuildArch: ${{ parameters.archType }}
       __TargetOS: ${{ parameters.osGroup }}${{ parameters.osSubgroup }}
