@@ -1027,13 +1027,14 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo)
 #else  // !UNIX_AMD64_ABI
         compArgSize += argSize;
 #endif // !UNIX_AMD64_ABI
-        if (info.compIsVarArgs || isHfaArg || isSoftFPPreSpill)
+        if (info.compIsVarArgs || (isHfaArg && varDsc->lvHfaSlots() != 1) || isSoftFPPreSpill)
         {
 #if defined(TARGET_X86)
             varDsc->lvStkOffs = compArgSize;
 #else  // !TARGET_X86
             // TODO-CQ: We shouldn't have to go as far as to declare these
             // address-exposed -- DoNotEnregister should suffice.
+
             lvaSetVarAddrExposed(varDscInfo->varNum);
 #endif // !TARGET_X86
         }
