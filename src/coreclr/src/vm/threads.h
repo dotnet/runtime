@@ -1958,7 +1958,14 @@ public:
         //   ** WARNING ** WARNING ** WARNING ** WARNING ** WARNING ** WARNING **  |
         // ------------------------------------------------------------------------
 
+
+#if defined(TARGET_AMD64) || defined(TARGET_X86)
+        // on the Intel architecture we have strong memory ordering guarantees
         m_fPreemptiveGCDisabled.StoreWithoutBarrier(1);
+#else
+        // weaker memory models need an interlocked operation to ensure consistency
+        FastInterlockOr(&m_fPreemptiveGCDisabled, 1);
+#endif
 
         if (g_TrapReturningThreads.LoadWithoutBarrier())
         {
