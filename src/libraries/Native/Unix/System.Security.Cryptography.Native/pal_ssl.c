@@ -51,6 +51,14 @@ static void DetectCiphersuiteConfiguration()
     // make the portable version easier.
 #ifdef NEED_OPENSSL_1_1
 
+    if (API_EXISTS(SSL_state))
+    {
+        // For portable builds NEED_OPENSSL_1_1 is always set.
+        // OpenSSL 1.0 does not support CipherSuites so there is no way for caller to override default
+        g_config_specified_ciphersuites = 1;
+        return;
+    }
+
     // Check to see if there's a registered default CipherString. If not, we will use our own.
     SSL_CTX* ctx = SSL_CTX_new(TLS_method());
     assert(ctx != NULL);
@@ -90,12 +98,6 @@ static void DetectCiphersuiteConfiguration()
     {
         // There's no system_default configuration, so no default CipherString.
         ERR_clear_error();
-
-        if (API_EXISTS(SSL_state))
-        {
-            // OpenSSL 1.0 does not support CipherSuites so there is no way for caller to override default
-            g_config_specified_ciphersuites = 1;
-        }
     }
     else
     {
@@ -109,7 +111,7 @@ static void DetectCiphersuiteConfiguration()
 
     SSL_CTX_free(ctx);
 
-#elif !defined(FEATURE_DISTRO_AGNOSTIC_SSL) && defined(SSL_SYSTEM_DEFAULT_CIPHER_LIST)
+#else
 
     // The Fedora, RHEL, and CentOS builds replace the normal defaults (with a configuration model).
     // Consider their non-portable builds to always have specified ciphersuites in config.

@@ -963,12 +963,12 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define X509_NAME_free X509_NAME_free_ptr
 #define X509_NAME_get0_der X509_NAME_get0_der_ptr
 #define X509_NAME_get_entry X509_NAME_get_entry_ptr
-#define X509_new X509_new_ptr
 #define X509_NAME_get_index_by_NID X509_NAME_get_index_by_NID_ptr
+#define X509_new X509_new_ptr
 #define X509_PUBKEY_get0_param X509_PUBKEY_get0_param_ptr
 #define X509_PUBKEY_get X509_PUBKEY_get_ptr
-#define X509_subject_name_hash X509_subject_name_hash_ptr
 #define X509_set_pubkey X509_set_pubkey_ptr
+#define X509_subject_name_hash X509_subject_name_hash_ptr
 #define X509_sign X509_sign_ptr
 #define X509_STORE_add_cert X509_STORE_add_cert_ptr
 #define X509_STORE_add_crl X509_STORE_add_crl_ptr

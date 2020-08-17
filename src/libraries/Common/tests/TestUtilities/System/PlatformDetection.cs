@@ -275,11 +275,7 @@ namespace System
 
         private static bool OpenSslGetTlsSupport(SslProtocols protocol)
         {
-            if (!IsOpenSslSupported)
-            {
-                // on Windows and macOS TLS1.0/1.1 are supported.
-                return false;
-            }
+            Debug.Assert(IsOpenSslSupported);
 
             int ret = Interop.OpenSsl.OpenSslGetProtocolSupport((int)protocol);
             return ret == 1;

@@ -20,6 +20,7 @@
 #define CRYPTO_LOCK_X509 3
 #define CRYPTO_LOCK_EVP_PKEY 10
 #define CRYPTO_LOCK_BIO 21
+
 #define SSL_CTRL_GET_SESSION_REUSED 8
 #define SSL_CTRL_OPTIONS 32
 
@@ -52,12 +53,16 @@ int local_X509_set1_notBefore(X509* x509, const ASN1_TIME* time)
 {
     if (x509 && x509->cert_info && x509->cert_info->validity)
     {
-        if (x509->cert_info->validity->notBefore)
+        if (time != x509->cert_info->validity->notBefore)
         {
-            ASN1_TIME_free(x509->cert_info->validity->notBefore);
+            if (x509->cert_info->validity->notBefore)
+            {
+                ASN1_TIME_free(x509->cert_info->validity->notBefore);
+            }
+
+            x509->cert_info->validity->notBefore = ASN1_STRING_dup(time);
         }
 
-        x509->cert_info->validity->notBefore = ASN1_STRING_dup(time);
         return x509->cert_info->validity->notBefore != NULL;
     }
 
@@ -68,12 +73,16 @@ int local_X509_set1_notAfter(X509* x509, const ASN1_TIME* time)
 {
     if (x509 && x509->cert_info && x509->cert_info->validity)
     {
-        if (x509->cert_info->validity->notAfter)
+        if (time != x509->cert_info->validity->notAfter)
         {
-            ASN1_TIME_free(x509->cert_info->validity->notAfter);
+            if (x509->cert_info->validity->notAfter)
+            {
+                ASN1_TIME_free(x509->cert_info->validity->notAfter);
+            }
+
+            x509->cert_info->validity->notAfter = ASN1_STRING_dup(time);
         }
 
-        x509->cert_info->validity->notAfter = ASN1_STRING_dup(time);
         return x509->cert_info->validity->notAfter != NULL;
     }
 
