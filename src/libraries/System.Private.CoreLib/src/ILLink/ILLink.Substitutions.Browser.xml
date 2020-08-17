@@ -1,0 +1,22 @@
+<linker>
+  <assembly fullname="System.Private.CoreLib">
+    <type fullname="System.OperatingSystem">
+      <method signature="System.Boolean IsBrowser()" body="stub" value="true" />
+      <method signature="System.Boolean IsLinux()" body="stub" value="false" />
+      <method signature="System.Boolean IsFreeBSD()" body="stub" value="false" />
+      <method signature="System.Boolean IsFreeBSDVersionAtLeast(System.Int32,System.Int32,System.Int32,System.Int32)" body="stub" value="false" />
+      <method signature="System.Boolean IsAndroid()" body="stub" value="false" />
+      <method signature="System.Boolean IsAndroidVersionAtLeast(System.Int32,System.Int32,System.Int32,System.Int32)" body="stub" value="false" />
+      <method signature="System.Boolean IsIOS()" body="stub" value="false" />
+      <method signature="System.Boolean IsIOSVersionAtLeast(System.Int32,System.Int32,System.Int32)" body="stub" value="false" />
+      <method signature="System.Boolean IsMacOS()" body="stub" value="false" />
+      <method signature="System.Boolean IsMacOSVersionAtLeast(System.Int32,System.Int32,System.Int32)" body="stub" value="false" />
+      <method signature="System.Boolean IsTvOS()" body="stub" value="false" />
+      <method signature="System.Boolean IsTvOSVersionAtLeast(System.Int32,System.Int32,System.Int32)" body="stub" value="false" />
+      <method signature="System.Boolean IsWatchOS()" body="stub" value="false" />
+      <method signature="System.Boolean IsWatchOSVersionAtLeast(System.Int32,System.Int32,System.Int32)" body="stub" value="false" />
+      <method signature="System.Boolean IsWindows()" body="stub" value="false" />
+      <method signature="System.Boolean IsWindowsVersionAtLeast(System.Int32,System.Int32,System.Int32,System.Int32)" body="stub" value="false" />
+    </type>
+  </assembly>
+</linker>
