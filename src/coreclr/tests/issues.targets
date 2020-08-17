@@ -2731,6 +2731,12 @@
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/Boxing/xlang/_relsin_cs_cs/**" >
             <Issue>Requires files to be included in wasm file system; don't have a per-test mechanisim for that yet. </Issue>
         </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/tailcall/_il_reltest_implicit/_il_reltest_implicit.sh/**" >
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+       <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/tailcall/_il_dbgtest_implicit/_il_dbgtest_implicit.sh" >
+            <Issue>needs triage</Issue>
+        </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/tracing/tracevalidation/rundown/rundown/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
