@@ -70,7 +70,7 @@ namespace System.Buffers
             private readonly int _byteOffsetIntoHandle;
             private readonly int _elementCount;
             private readonly BoundedMemoryManager _memoryManager;
-            private readonly MemoryMappedProtections _protection;
+            private MemoryMappedProtections _protection;
 
             internal UnixImplementation(MemoryMappedHandle handle, int byteOffsetIntoHandle, int elementCount)
             {
@@ -103,6 +103,7 @@ namespace System.Buffers
                             {
                                 throw new Win32Exception();
                             }
+                            _protection = value;
                         }
                         finally
                         {
