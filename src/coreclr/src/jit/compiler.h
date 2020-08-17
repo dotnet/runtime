@@ -476,6 +476,8 @@ public:
     unsigned char lvContainsHoles : 1;     // True when we have a promoted struct that contains holes
     unsigned char lvCustomLayout : 1;      // True when this struct has "CustomLayout"
 
+    unsigned char lvForceLoadNormalize : 1; // True when this local had a cast on the LHS of an assignment
+
     unsigned char lvIsMultiRegArg : 1; // true if this is a multireg LclVar struct used in an argument context
     unsigned char lvIsMultiRegRet : 1; // true if this is a multireg LclVar struct assigned from a multireg call
 
@@ -764,7 +766,7 @@ public:
     regMaskTP lvRegMask() const
     {
         regMaskTP regMask = RBM_NONE;
-        if (varTypeIsFloating(TypeGet()))
+        if (varTypeUsesFloatReg(TypeGet()))
         {
             if (GetRegNum() != REG_STK)
             {
@@ -884,14 +886,14 @@ public:
     {
         return varTypeIsSmall(TypeGet()) &&
                // lvIsStructField is treated the same as the aliased local, see fgDoNormalizeOnStore.
-               (lvIsParam || lvAddrExposed || lvIsStructField);
+               (lvIsParam || lvAddrExposed || lvIsStructField || lvForceLoadNormalize);
     }
 
     bool lvNormalizeOnStore() const
     {
         return varTypeIsSmall(TypeGet()) &&
                // lvIsStructField is treated the same as the aliased local, see fgDoNormalizeOnStore.
-               !(lvIsParam || lvAddrExposed || lvIsStructField);
+               !(lvIsParam || lvAddrExposed || lvIsStructField || lvForceLoadNormalize);
     }
 
     void incRefCnts(BasicBlock::weight_t weight,
@@ -900,7 +902,7 @@ public:
                     bool                 propagate = true);
     bool IsFloatRegType() const
     {
-        return isFloatRegType(lvType) || lvIsHfaRegArg();
+        return varTypeUsesFloatReg(lvType) || lvIsHfaRegArg();
     }
 
     var_types GetHfaType() const
@@ -2701,6 +2703,8 @@ public:
 
     GenTree* gtNewNullCheck(GenTree* addr, BasicBlock* basicBlock);
 
+    void gtChangeOperToNullCheck(GenTree* tree, BasicBlock* block);
+
     GenTreeArgList* gtNewArgList(GenTree* op);
     GenTreeArgList* gtNewArgList(GenTree* op1, GenTree* op2);
     GenTreeArgList* gtNewArgList(GenTree* op1, GenTree* op2, GenTree* op3);
@@ -3239,6 +3243,7 @@ public:
 #endif // TARGET_ARM
     void lvaAssignFrameOffsets(FrameLayoutState curState);
     void lvaFixVirtualFrameOffsets();
+    void lvaUpdateArgWithInitialReg(LclVarDsc* varDsc);
     void lvaUpdateArgsWithInitialReg();
     void lvaAssignVirtualFrameOffsetsToArgs();
 #ifdef UNIX_AMD64_ABI
@@ -3468,6 +3473,10 @@ public:
 
         bool CanPromoteStructType(CORINFO_CLASS_HANDLE typeHnd);
         bool TryPromoteStructVar(unsigned lclNum);
+        void Clear()
+        {
+            structPromotionInfo.typeHnd = NO_CLASS_HANDLE;
+        }
 
 #ifdef DEBUG
         void CheckRetypedAsScalar(CORINFO_FIELD_HANDLE fieldHnd, var_types requestedType);
@@ -3721,6 +3730,7 @@ protected:
 
     void impImportLeave(BasicBlock* block);
     void impResetLeaveBlock(BasicBlock* block, unsigned jmpAddr);
+    GenTree* impTypeIsAssignable(GenTree* typeTo, GenTree* typeFrom);
     GenTree* impIntrinsic(GenTree*                newobjThis,
                           CORINFO_CLASS_HANDLE    clsHnd,
                           CORINFO_METHOD_HANDLE   method,
@@ -3736,7 +3746,7 @@ protected:
     GenTree* impMathIntrinsic(CORINFO_METHOD_HANDLE method,
                               CORINFO_SIG_INFO*     sig,
                               var_types             callType,
-                              CorInfoIntrinsics     intrinsicID,
+                              NamedIntrinsic        intrinsicName,
                               bool                  tailCall);
     NamedIntrinsic lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method);
     GenTree* impUnsupportedNamedIntrinsic(unsigned              helper,
@@ -3932,9 +3942,9 @@ public:
     bool VarTypeIsMultiByteAndCanEnreg(
         var_types type, CORINFO_CLASS_HANDLE typeClass, unsigned* typeSize, bool forReturn, bool isVarArg);
 
-    bool IsIntrinsicImplementedByUserCall(CorInfoIntrinsics intrinsicId);
-    bool IsTargetIntrinsic(CorInfoIntrinsics intrinsicId);
-    bool IsMathIntrinsic(CorInfoIntrinsics intrinsicId);
+    bool IsIntrinsicImplementedByUserCall(NamedIntrinsic intrinsicName);
+    bool IsTargetIntrinsic(NamedIntrinsic intrinsicName);
+    bool IsMathIntrinsic(NamedIntrinsic intrinsicName);
     bool IsMathIntrinsic(GenTree* tree);
 
 private:
@@ -4628,6 +4638,9 @@ public:
 
     void fgComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VARSET_VALARG_TP volatileVars);
 
+    bool fgTryRemoveNonLocal(GenTree* node, LIR::Range* blockRange);
+
+    void fgRemoveDeadStoreLIR(GenTree* store, BasicBlock* block);
     bool fgRemoveDeadStore(GenTree**        pTree,
                            LclVarDsc*       varDsc,
                            VARSET_VALARG_TP life,
@@ -4959,7 +4972,7 @@ protected:
 
     // When the flow graph changes, we need to update the block numbers, predecessor lists, reachability sets, and
     // dominators.
-    void fgUpdateChangedFlowGraph();
+    void fgUpdateChangedFlowGraph(bool computeDoms = true);
 
 public:
     // Compute the predecessors of the blocks in the control flow graph.
@@ -4989,10 +5002,11 @@ public:
     void fgInitBlockVarSets();
 
     // true if we've gone through and created GC Poll calls.
-    bool fgGCPollsCreated;
-    void fgMarkGCPollBlocks();
-    void fgCreateGCPolls();
-    bool fgCreateGCPoll(GCPollType pollType, BasicBlock* block, Statement* stmt = nullptr);
+    bool        fgGCPollsCreated;
+    void        fgMarkGCPollBlocks();
+    void        fgCreateGCPolls();
+    PhaseStatus fgInsertGCPolls();
+    BasicBlock* fgCreateGCPoll(GCPollType pollType, BasicBlock* block);
 
     // Requires that "block" is a block that returns from
     // a finally.  Returns the number of successors (jump targets of
@@ -5615,6 +5629,8 @@ private:
 
     GenTree* fgMorphToEmulatedFP(GenTree* tree);
     GenTree* fgMorphConst(GenTree* tree);
+
+    GenTreeLclVar* fgMorphTryFoldObjAsLclVar(GenTreeObj* obj);
 
 public:
     GenTree* fgMorphTree(GenTree* tree, MorphAddrContext* mac = nullptr);
@@ -6318,11 +6334,12 @@ protected:
 
     struct CSEdsc
     {
-        CSEdsc* csdNextInBucket; // used by the hash table
-
-        unsigned csdHashKey; // the orginal hashkey
-
-        unsigned csdIndex; // 1..optCSECandidateCount
+        CSEdsc*  csdNextInBucket;  // used by the hash table
+        size_t   csdHashKey;       // the orginal hashkey
+        ssize_t  csdConstDefValue; // When we CSE similar constants, this is the value that we use as the def
+        ValueNum csdConstDefVN;    // When we CSE similar constants, this is the ValueNumber that we use for the LclVar
+                                   // assignment
+        unsigned csdIndex;         // 1..optCSECandidateCount
         bool     csdLiveAcrossCall;
 
         unsigned short csdDefCount; // definition   count
@@ -6351,9 +6368,15 @@ protected:
 
         ValueNum defConservNormVN; // if all def occurrences share the same conservative normal value
                                    // number, this will reflect it; otherwise, NoVN.
+                                   // not used for shared const CSE's
     };
 
-    static const size_t s_optCSEhashSize;
+    static const size_t s_optCSEhashSizeInitial;
+    static const size_t s_optCSEhashGrowthFactor;
+    static const size_t s_optCSEhashBucketSize;
+    size_t              optCSEhashSize;                 // The current size of hashtable
+    size_t              optCSEhashCount;                // Number of entries in hashtable
+    size_t              optCSEhashMaxCountBeforeResize; // Number of entries before resize
     CSEdsc**            optCSEhash;
     CSEdsc**            optCSEtab;
 
@@ -6397,6 +6420,16 @@ protected:
 #ifdef DEBUG
     void optEnsureClearCSEInfo();
 #endif // DEBUG
+
+    static bool Is_Shared_Const_CSE(size_t key)
+    {
+        return ((key & TARGET_SIGN_BIT) != 0);
+    }
+
+    static size_t Decode_Shared_Const_CSE_Value(size_t key)
+    {
+        return (key & ~TARGET_SIGN_BIT) << CSE_CONST_SHARED_LOW_BITS;
+    }
 
 #endif // FEATURE_ANYCSE
 
@@ -6517,6 +6550,7 @@ public:
 #define OMF_HAS_GUARDEDDEVIRT 0x00000080    // Method contains guarded devirtualization candidate
 #define OMF_HAS_EXPRUNTIMELOOKUP 0x00000100 // Method contains a runtime lookup to an expandable dictionary.
 #define OMF_HAS_PATCHPOINT 0x00000200       // Method contains patchpoints
+#define OMF_NEEDS_GCPOLLS 0x00000400        // Method needs GC polls
 
     bool doesMethodHaveFatPointer()
     {
@@ -7609,7 +7643,7 @@ public:
 
     // If "tree" is a indirection (GT_IND, or GT_OBJ) whose arg is an ADDR, whose arg is a LCL_VAR, return that LCL_VAR
     // node, else NULL.
-    static GenTree* fgIsIndirOfAddrOfLocal(GenTree* tree);
+    static GenTreeLclVar* fgIsIndirOfAddrOfLocal(GenTree* tree);
 
     // This map is indexed by GT_OBJ nodes that are address of promoted struct variables, which
     // have been annotated with the GTF_VAR_DEATH flag.  If such a node is *not* mapped in this
@@ -8181,7 +8215,7 @@ private:
 #if defined(TARGET_XARCH)
         if (getSIMDSupportLevel() == SIMD_AVX2_Supported)
         {
-            return TYP_SIMD32;
+            return JitConfig.EnableHWIntrinsic() ? TYP_SIMD32 : TYP_SIMD16;
         }
         else
         {
@@ -8222,7 +8256,7 @@ private:
 #if defined(TARGET_XARCH)
         if (getSIMDSupportLevel() == SIMD_AVX2_Supported)
         {
-            return YMM_REGSIZE_BYTES;
+            return JitConfig.EnableHWIntrinsic() ? YMM_REGSIZE_BYTES : XMM_REGSIZE_BYTES;
         }
         else
         {
@@ -8252,7 +8286,7 @@ private:
 #if defined(FEATURE_HW_INTRINSICS) && defined(TARGET_XARCH)
         if (compOpportunisticallyDependsOn(InstructionSet_AVX))
         {
-            return YMM_REGSIZE_BYTES;
+            return JitConfig.EnableHWIntrinsic() ? YMM_REGSIZE_BYTES : XMM_REGSIZE_BYTES;
         }
         else
         {
@@ -8793,8 +8827,7 @@ public:
         bool doLateDisasm; // Run the late disassembler
 #endif                     // LATE_DISASM
 
-#if DUMP_GC_TABLES && !defined(DEBUG) && defined(JIT32_GCENCODER)
-// Only the JIT32_GCENCODER implements GC dumping in non-DEBUG code.
+#if DUMP_GC_TABLES && !defined(DEBUG)
 #pragma message("NOTE: this non-debug build has GC ptr table dumping always enabled!")
         static const bool dspGCtbls = true;
 #endif
@@ -8992,7 +9025,7 @@ public:
     {
 #if 0
         // Switching between size & speed has measurable throughput impact
-        // (3.5% on NGen mscorlib when measured). It used to be enabled for
+        // (3.5% on NGen CoreLib when measured). It used to be enabled for
         // DEBUG, but should generate identical code between CHK & RET builds,
         // so that's not acceptable.
         // TODO-Throughput: Figure out what to do about size vs. speed & throughput.
@@ -9058,7 +9091,7 @@ public:
         bool compIsVarArgs : 1;          // Does the method have varargs parameters?
         bool compInitMem : 1;            // Is the CORINFO_OPT_INIT_LOCALS bit set in the method info options?
         bool compProfilerCallback : 1;   // JIT inserted a profiler Enter callback
-        bool compPublishStubParam : 1;   // EAX captured in prolog will be available through an instrinsic
+        bool compPublishStubParam : 1;   // EAX captured in prolog will be available through an intrinsic
         bool compRetBuffDefStack : 1;    // The ret buff argument definitely points into the stack.
         bool compHasNextCallRetAddr : 1; // The NextCallReturnAddress intrinsic is used.
 

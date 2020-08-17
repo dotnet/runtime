@@ -10,7 +10,7 @@ namespace System.Data.Odbc
 {
     public sealed partial class OdbcParameterCollection : DbParameterCollection
     {
-        private List<OdbcParameter> _items;
+        private List<OdbcParameter>? _items;
 
         public override int Count
         {
@@ -24,7 +24,7 @@ namespace System.Data.Odbc
         {
             get
             {
-                List<OdbcParameter> items = _items;
+                List<OdbcParameter>? items = _items;
 
                 if (null == items)
                 {
@@ -297,7 +297,7 @@ namespace System.Data.Odbc
                 throw ADP.ParameterNull(nameof(value), this, s_itemType);
             }
 
-            object parent = ((OdbcParameter)value).CompareExchangeParent(this, null);
+            object? parent = ((OdbcParameter)value).CompareExchangeParent(this, null);
             if (null != parent)
             {
                 if (this != parent)

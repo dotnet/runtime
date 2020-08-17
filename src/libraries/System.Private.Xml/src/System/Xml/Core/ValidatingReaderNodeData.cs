@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#nullable enable
 using System;
 using System.IO;
 using System.Text;
@@ -8,6 +9,7 @@ using System.Collections;
 using System.Xml.Schema;
 using System.Diagnostics;
 using System.Globalization;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Xml
 {
@@ -16,12 +18,12 @@ namespace System.Xml
         private string _localName;
         private string _namespaceUri;
         private string _prefix;
-        private string _nameWPrefix;
+        private string? _nameWPrefix;
 
         private string _rawValue;
-        private string _originalStringValue;  // Original value
+        private string? _originalStringValue;  // Original value
         private int _depth;
-        private AttributePSVIInfo _attributePSVIInfo;  //Used only for default attributes
+        private AttributePSVIInfo? _attributePSVIInfo;  //Used only for default attributes
         private XmlNodeType _nodeType;
 
         private int _lineNo;
@@ -86,6 +88,7 @@ namespace System.Xml
                     _nameWPrefix = nameTable.Add(string.Concat(_prefix, ":", _localName));
                 }
             }
+
             return _nameWPrefix;
         }
 
@@ -113,7 +116,7 @@ namespace System.Xml
             }
         }
 
-        public string OriginalStringValue
+        public string? OriginalStringValue
         {
             get
             {
@@ -137,7 +140,7 @@ namespace System.Xml
             }
         }
 
-        public AttributePSVIInfo AttInfo
+        public AttributePSVIInfo? AttInfo
         {
             get
             {
@@ -165,6 +168,10 @@ namespace System.Xml
             }
         }
 
+        [MemberNotNull(nameof(_localName))]
+        [MemberNotNull(nameof(_prefix))]
+        [MemberNotNull(nameof(_namespaceUri))]
+        [MemberNotNull(nameof(_rawValue))]
         internal void Clear(XmlNodeType nodeType)
         {
             _nodeType = nodeType;
@@ -172,10 +179,12 @@ namespace System.Xml
             _prefix = string.Empty;
             _namespaceUri = string.Empty;
             _rawValue = string.Empty;
+
             if (_attributePSVIInfo != null)
             {
                 _attributePSVIInfo.Reset();
             }
+
             _nameWPrefix = null;
             _lineNo = 0;
             _linePos = 0;
@@ -187,7 +196,7 @@ namespace System.Xml
             _linePos = linePos;
         }
 
-        internal void SetLineInfo(IXmlLineInfo lineInfo)
+        internal void SetLineInfo(IXmlLineInfo? lineInfo)
         {
             if (lineInfo != null)
             {
@@ -210,7 +219,7 @@ namespace System.Xml
             SetItemData(value, value);
         }
 
-        internal void SetItemData(string value, string originalStringValue)
+        internal void SetItemData(string value, string? originalStringValue)
         {
             _rawValue = value;
             _originalStringValue = originalStringValue;

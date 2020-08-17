@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Linq;
-using System.Runtime.InteropServices;
 using Xunit;
 
 namespace System.IO.Tests
@@ -44,7 +43,7 @@ namespace System.IO.Tests
         public void ValidPathExists_ReturnsTrue(string component)
         {
             string path = Path.Combine(TestDirectory, component);
-            DirectoryInfo testDir = Directory.CreateDirectory(path);
+            Directory.CreateDirectory(path);
             Assert.True(Exists(path));
         }
 
@@ -73,7 +72,7 @@ namespace System.IO.Tests
         public void PathAlreadyExistsAsDirectory()
         {
             string path = GetTestFilePath();
-            DirectoryInfo testDir = Directory.CreateDirectory(path);
+            Directory.CreateDirectory(path);
 
             Assert.True(Exists(IOServices.RemoveTrailingSlash(path)));
             Assert.True(Exists(IOServices.RemoveTrailingSlash(IOServices.RemoveTrailingSlash(path))));
@@ -125,7 +124,7 @@ namespace System.IO.Tests
             // considered a file (since it's broken and we don't know what it'll eventually point to).
             Directory.Delete(path);
             Assert.False(Directory.Exists(path), "path should now not exist");
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            if (OperatingSystem.IsWindows())
             {
                 Assert.True(Directory.Exists(linkPath), "linkPath should still exist as a directory");
                 Assert.False(File.Exists(linkPath), "linkPath should not be a file");
@@ -142,11 +141,11 @@ namespace System.IO.Tests
             try
             {
                 Directory.Delete(linkPath);
-                Assert.True(RuntimeInformation.IsOSPlatform(OSPlatform.Windows), "Should only succeed on Windows");
+                Assert.True(OperatingSystem.IsWindows(), "Should only succeed on Windows");
             }
             catch (IOException)
             {
-                Assert.False(RuntimeInformation.IsOSPlatform(OSPlatform.Windows), "Should only fail on Unix");
+                Assert.False(OperatingSystem.IsWindows(), "Should only fail on Unix");
                 File.Delete(linkPath);
             }
 
@@ -177,7 +176,7 @@ namespace System.IO.Tests
         public void ValidExtendedPathExists_ReturnsTrue(string component)
         {
             string path = IOInputs.ExtendedPrefix + Path.Combine(TestDirectory, "extended", component);
-            DirectoryInfo testDir = Directory.CreateDirectory(path);
+            Directory.CreateDirectory(path);
             Assert.True(Exists(path));
         }
 
@@ -198,7 +197,7 @@ namespace System.IO.Tests
         public void ExtendedPathAlreadyExistsAsDirectory()
         {
             string path = IOInputs.ExtendedPrefix + GetTestFilePath();
-            DirectoryInfo testDir = Directory.CreateDirectory(path);
+            Directory.CreateDirectory(path);
 
             Assert.True(Exists(IOServices.RemoveTrailingSlash(path)));
             Assert.True(Exists(IOServices.RemoveTrailingSlash(IOServices.RemoveTrailingSlash(path))));
@@ -278,7 +277,7 @@ namespace System.IO.Tests
         {
             // Windows trims spaces
             string path = GetTestFilePath();
-            DirectoryInfo testDir = Directory.CreateDirectory(path + component);
+            Directory.CreateDirectory(path + component);
             Assert.True(Exists(path), "can find without space");
             Assert.True(Exists(path + component), "can find with space");
         }
@@ -391,7 +390,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.AnyUnix)]  // Makes call to native code (libc)
+        [PlatformSpecific(TestPlatforms.AnyUnix & ~TestPlatforms.Browser)]  // Makes call to native code (libc)
         public void FalseForNonRegularFile()
         {
             string fileName = GetTestFilePath();

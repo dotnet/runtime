@@ -12,6 +12,7 @@ using Xunit;
 
 namespace System.Runtime.Serialization.Formatters.Tests
 {
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsBinaryFormatterSupported))]
     public static class SerializationGuardTests
     {
         [Fact]

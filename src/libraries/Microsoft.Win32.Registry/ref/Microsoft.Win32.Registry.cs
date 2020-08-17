@@ -115,7 +115,6 @@ namespace Microsoft.Win32.SafeHandles
     public sealed partial class SafeRegistryHandle : Microsoft.Win32.SafeHandles.SafeHandleZeroOrMinusOneIsInvalid
     {
         public SafeRegistryHandle(System.IntPtr preexistingHandle, bool ownsHandle) : base (default(bool)) { }
-        public override bool IsInvalid { get { throw null; } }
         protected override bool ReleaseHandle() { throw null; }
     }
 }

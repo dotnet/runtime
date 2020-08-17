@@ -26,9 +26,10 @@ namespace Microsoft.Extensions.Hosting
         /// <param name="timeout">The timeout for stopping gracefully. Once expired the
         /// server may terminate any remaining active connections.</param>
         /// <returns>The <see cref="Task"/> that represents the asynchronous operation.</returns>
-        public static Task StopAsync(this IHost host, TimeSpan timeout)
+        public static async Task StopAsync(this IHost host, TimeSpan timeout)
         {
-            return host.StopAsync(new CancellationTokenSource(timeout).Token);
+            using CancellationTokenSource cts = new CancellationTokenSource(timeout);
+            await host.StopAsync(cts.Token).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -103,7 +104,8 @@ namespace Microsoft.Extensions.Hosting
             await waitForStop.Task.ConfigureAwait(false);
 
             // Host will use its default ShutdownTimeout if none is specified.
-            await host.StopAsync().ConfigureAwait(false);
+            // The cancellation token may have been triggered to unblock waitForStop. Don't pass it here because that would trigger an abortive shutdown.
+            await host.StopAsync(CancellationToken.None).ConfigureAwait(false);
         }
     }
 }

@@ -5,6 +5,9 @@ using System.Security.Permissions;
 
 namespace System.Data.Common
 {
+#if NET50_OBSOLETIONS
+    [Obsolete(Obsoletions.CodeAccessSecurityMessage, DiagnosticId = Obsoletions.CodeAccessSecurityDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+#endif
     [AttributeUsage(AttributeTargets.Assembly | AttributeTargets.Class | AttributeTargets.Struct | AttributeTargets.Constructor| AttributeTargets.Method,
         AllowMultiple =true, Inherited =false)]
     public abstract class DBDataPermissionAttribute : CodeAccessSecurityAttribute

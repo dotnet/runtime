@@ -40,5 +40,37 @@ namespace Microsoft.Extensions.DependencyInjection
             optionsBuilder.Services.Configure<TOptions>(optionsBuilder.Name, config, configureBinder);
             return optionsBuilder;
         }
+
+        /// <summary>
+        /// Registers the dependency injection container to bind <typeparamref name="TOptions"/> against
+        /// the <see cref="IConfiguration"/> obtained from the DI service provider.
+        /// </summary>
+        /// <typeparam name="TOptions">The options type to be configured.</typeparam>
+        /// <param name="optionsBuilder">The options builder to add the services to.</param>
+        /// <param name="configSectionPath">The name of the configuration section to bind from.</param>
+        /// <param name="configureBinder">Optional. Used to configure the <see cref="BinderOptions"/>.</param>
+        /// <returns>The <see cref="OptionsBuilder{TOptions}"/> so that additional calls can be chained.</returns>
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="optionsBuilder"/> or <paramref name="configSectionPath" /> is <see langword="null"/>.
+        /// </exception>
+        /// <seealso cref="Bind{TOptions}(OptionsBuilder{TOptions}, IConfiguration, Action{BinderOptions})"/>
+        public static OptionsBuilder<TOptions> BindConfiguration<TOptions>(
+            this OptionsBuilder<TOptions> optionsBuilder,
+            string configSectionPath,
+            Action<BinderOptions> configureBinder = null)
+            where TOptions : class
+        {
+            _ = optionsBuilder ?? throw new ArgumentNullException(nameof(optionsBuilder));
+            _ = configSectionPath ?? throw new ArgumentNullException(nameof(configSectionPath));
+
+            optionsBuilder.Configure<IConfiguration>((opts, config) =>
+            {
+                IConfiguration section = string.Equals("", configSectionPath, StringComparison.OrdinalIgnoreCase)
+                    ? config
+                    : config.GetSection(configSectionPath);
+                section.Bind(opts, configureBinder);
+            });
+            return optionsBuilder;
+        }
     }
 }

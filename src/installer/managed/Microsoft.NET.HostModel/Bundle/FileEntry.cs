@@ -28,7 +28,7 @@ namespace Microsoft.NET.HostModel.Bundle
         public FileEntry(FileType fileType, string relativePath, long offset, long size)
         {
             Type = fileType;
-            RelativePath = relativePath.Replace(Path.DirectorySeparatorChar, DirectorySeparatorChar);
+            RelativePath = relativePath.Replace('\\', DirectorySeparatorChar);
             Offset = offset;
             Size = size;
         }
@@ -41,10 +41,7 @@ namespace Microsoft.NET.HostModel.Bundle
             writer.Write(RelativePath);
         }
 
-        public override string ToString()
-        {
-            return string.Format($"{RelativePath} [{Type}] @{Offset} Sz={Size}");
-        }
+        public override string ToString() => $"{RelativePath} [{Type}] @{Offset} Sz={Size}";
     }
 }
 

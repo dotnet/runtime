@@ -19,16 +19,17 @@ namespace System.Text.Json.Serialization.Tests
         [MemberData(nameof(WriteSuccessCases))]
         public static void Write(ITestClass testObj)
         {
+            var options = new JsonSerializerOptions { IncludeFields = true };
             string json;
 
             {
                 testObj.Initialize();
                 testObj.Verify();
-                json = JsonSerializer.Serialize(testObj, testObj.GetType());
+                json = JsonSerializer.Serialize(testObj, testObj.GetType(), options);
             }
 
             {
-                ITestClass obj = (ITestClass)JsonSerializer.Deserialize(json, testObj.GetType());
+                ITestClass obj = (ITestClass)JsonSerializer.Deserialize(json, testObj.GetType(), options);
                 obj.Verify();
             }
         }
@@ -126,7 +127,7 @@ namespace System.Text.Json.Serialization.Tests
             public object P3 => "";
         }
 
-        // https://github.com/dotnet/corefx/issues/40979
+        // https://github.com/dotnet/runtime/issues/30814
         [Fact]
         public static void EscapingShouldntStackOverflow()
         {

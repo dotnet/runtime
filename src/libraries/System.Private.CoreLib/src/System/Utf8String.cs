@@ -259,7 +259,7 @@ namespace System
         {
             // TODO_UTF8STRING: Optimize the call below, potentially by avoiding the two-pass.
 
-#if !NETSTANDARD2_0
+#if (!NETSTANDARD2_0 && !NETFRAMEWORK)
             return Encoding.UTF8.GetString(this.AsBytesSkipNullCheck());
 #else
             if (Length == 0)

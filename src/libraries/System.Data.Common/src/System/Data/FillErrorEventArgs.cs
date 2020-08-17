@@ -6,18 +6,14 @@ namespace System.Data
     public class FillErrorEventArgs : EventArgs
     {
         private bool _continueFlag;
-        private readonly DataTable _dataTable;
-        private Exception _errors;
-        private readonly object[] _values;
+        private readonly DataTable? _dataTable;
+        private Exception? _errors;
+        private readonly object?[] _values;
 
-        public FillErrorEventArgs(DataTable dataTable, object[] values)
+        public FillErrorEventArgs(DataTable? dataTable, object?[]? values)
         {
             _dataTable = dataTable;
-            _values = values;
-            if (null == _values)
-            {
-                _values = Array.Empty<object>();
-            }
+            _values = values ?? Array.Empty<object?>();
         }
 
         public bool Continue
@@ -26,19 +22,19 @@ namespace System.Data
             set { _continueFlag = value; }
         }
 
-        public DataTable DataTable => _dataTable;
+        public DataTable? DataTable => _dataTable;
 
-        public Exception Errors
+        public Exception? Errors
         {
             get { return _errors; }
             set { _errors = value; }
         }
 
-        public object[] Values
+        public object?[] Values
         {
             get
             {
-                object[] copy = new object[_values.Length];
+                object?[] copy = new object?[_values.Length];
                 for (int i = 0; i < _values.Length; ++i)
                 {
                     copy[i] = _values[i];

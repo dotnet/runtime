@@ -217,16 +217,13 @@ namespace R2RDump
 
                 if (_r2r.Machine == Machine.Amd64 && ((ILCompiler.Reflection.ReadyToRun.Amd64.UnwindInfo)rtf.UnwindInfo).UnwindCodes.ContainsKey(codeOffset))
                 {
-                    List<ILCompiler.Reflection.ReadyToRun.Amd64.UnwindCode> codes = ((ILCompiler.Reflection.ReadyToRun.Amd64.UnwindInfo)rtf.UnwindInfo).UnwindCodes[codeOffset];
-                    foreach (ILCompiler.Reflection.ReadyToRun.Amd64.UnwindCode code in codes)
+                    ILCompiler.Reflection.ReadyToRun.Amd64.UnwindCode code = ((ILCompiler.Reflection.ReadyToRun.Amd64.UnwindInfo)rtf.UnwindInfo).UnwindCodes[codeOffset];                    
+                    _writer.Write($"{indentString}{code.UnwindOp} {code.OpInfoStr}");
+                    if (code.NextFrameOffset != -1)
                     {
-                        _writer.Write($"{indentString}{code.UnwindOp} {code.OpInfoStr}");
-                        if (code.NextFrameOffset != -1)
-                        {
-                            _writer.WriteLine($"{indentString}{code.NextFrameOffset}");
-                        }
-                        _writer.WriteLine();
+                        _writer.WriteLine($"{indentString}{code.NextFrameOffset}");
                     }
+                    _writer.WriteLine();
                 }
 
                 if (!_options.HideTransitions && rtf.Method.GcInfo?.Transitions != null && rtf.Method.GcInfo.Transitions.TryGetValue(codeOffset, out List<BaseGcTransition> transitionsForOffset))

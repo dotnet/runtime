@@ -29,7 +29,9 @@ namespace System.Text.Json.Serialization.Converters
         /// </summary>
         protected virtual void CreateCollection(ref Utf8JsonReader reader, ref ReadStack state) { }
 
-        internal override Type ElementType => typeof(TValue);
+        private static Type s_valueType = typeof(TValue);
+
+        internal override Type ElementType => s_valueType;
 
         protected Type KeyType = typeof(TKey);
         // For string keys we don't use a key converter
@@ -39,9 +41,9 @@ namespace System.Text.Json.Serialization.Converters
         protected JsonConverter<TKey>? _keyConverter;
         protected JsonConverter<TValue>? _valueConverter;
 
-        protected static JsonConverter<TValue> GetValueConverter(JsonClassInfo classInfo)
+        protected static JsonConverter<TValue> GetValueConverter(JsonClassInfo elementClassInfo)
         {
-            JsonConverter<TValue> converter = (JsonConverter<TValue>)classInfo.ElementClassInfo!.PropertyInfoForClassInfo.ConverterBase;
+            JsonConverter<TValue> converter = (JsonConverter<TValue>)elementClassInfo.PropertyInfoForClassInfo.ConverterBase;
             Debug.Assert(converter != null); // It should not be possible to have a null converter at this point.
 
             return converter;
@@ -57,6 +59,8 @@ namespace System.Text.Json.Serialization.Converters
             ref ReadStack state,
             [MaybeNullWhen(false)] out TCollection value)
         {
+            JsonClassInfo elementClassInfo = state.Current.JsonClassInfo.ElementClassInfo!;
+
             if (state.UseFastPath)
             {
                 // Fast path that avoids maintaining state variables and dealing with preserved references.
@@ -68,8 +72,8 @@ namespace System.Text.Json.Serialization.Converters
 
                 CreateCollection(ref reader, ref state);
 
-                JsonConverter<TValue> valueConverter = _valueConverter ??= GetValueConverter(state.Current.JsonClassInfo);
-                if (valueConverter.CanUseDirectReadOrWrite)
+                JsonConverter<TValue> valueConverter = _valueConverter ??= GetValueConverter(elementClassInfo);
+                if (valueConverter.CanUseDirectReadOrWrite && state.Current.NumberHandling == null)
                 {
                     // Process all elements.
                     while (true)
@@ -89,7 +93,7 @@ namespace System.Text.Json.Serialization.Converters
 
                         // Read the value and add.
                         reader.ReadWithVerify();
-                        TValue element = valueConverter.Read(ref reader, typeof(TValue), options);
+                        TValue element = valueConverter.Read(ref reader, s_valueType, options);
                         Add(key, element!, options, ref state);
                     }
                 }
@@ -114,7 +118,7 @@ namespace System.Text.Json.Serialization.Converters
                         reader.ReadWithVerify();
 
                         // Get the value from the converter and add it.
-                        valueConverter.TryRead(ref reader, typeof(TValue), options, ref state, out TValue element);
+                        valueConverter.TryRead(ref reader, s_valueType, options, ref state, out TValue element);
                         Add(key, element!, options, ref state);
                     }
                 }
@@ -137,7 +141,7 @@ namespace System.Text.Json.Serialization.Converters
                 bool preserveReferences = options.ReferenceHandler != null;
                 if (preserveReferences && state.Current.ObjectState < StackFrameObjectState.PropertyValue)
                 {
-                    if (JsonSerializer.ResolveMetadata(this, ref reader, ref state))
+                    if (JsonSerializer.ResolveMetadataForJsonObject(ref reader, ref state, options))
                     {
                         if (state.Current.ObjectState == StackFrameObjectState.ReadRefEndObject)
                         {
@@ -156,23 +160,11 @@ namespace System.Text.Json.Serialization.Converters
                 if (state.Current.ObjectState < StackFrameObjectState.CreatedObject)
                 {
                     CreateCollection(ref reader, ref state);
-
-                    if (state.Current.MetadataId != null)
-                    {
-                        Debug.Assert(CanHaveIdMetadata);
-
-                        value = (TCollection)state.Current.ReturnValue!;
-                        state.ReferenceResolver.AddReference(state.Current.MetadataId, value);
-                        // Clear metadata name, if the next read fails
-                        // we want to point the JSON path to the property's object.
-                        state.Current.JsonPropertyName = null;
-                    }
-
                     state.Current.ObjectState = StackFrameObjectState.CreatedObject;
                 }
 
                 // Process all elements.
-                JsonConverter<TValue> elementConverter = _valueConverter ??= GetValueConverter(state.Current.JsonClassInfo);
+                JsonConverter<TValue> elementConverter = _valueConverter ??= GetValueConverter(elementClassInfo);
                 while (true)
                 {
                     if (state.Current.PropertyState == StackFramePropertyState.None)
@@ -308,5 +300,8 @@ namespace System.Text.Json.Serialization.Converters
 
             return success;
         }
+
+        internal sealed override void CreateInstanceForReferenceResolver(ref Utf8JsonReader reader, ref ReadStack state, JsonSerializerOptions options)
+            => CreateCollection(ref reader, ref state);
     }
 }

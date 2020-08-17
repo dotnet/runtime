@@ -7920,10 +7920,11 @@ bool Compiler::optComputeLoopSideEffectsOfBlock(BasicBlock* blk)
                         }
                         break;
 
-                    case GT_LOCKADD: // Binop
-                    case GT_XADD:    // Binop
-                    case GT_XCHG:    // Binop
-                    case GT_CMPXCHG: // Specialop
+                    case GT_LOCKADD:
+                    case GT_XADD:
+                    case GT_XCHG:
+                    case GT_CMPXCHG:
+                    case GT_MEMORYBARRIER:
                     {
                         assert(!tree->OperIs(GT_LOCKADD) && "LOCKADD should not appear before lowering");
                         memoryHavoc |= memoryKindSet(GcHeap, ByrefExposed);
@@ -9257,7 +9258,7 @@ void Compiler::optRemoveRedundantZeroInits()
             Statement* next = stmt->GetNextStmt();
             for (GenTree* tree = stmt->GetTreeList(); tree != nullptr; tree = tree->gtNext)
             {
-                if (((tree->gtFlags & GTF_CALL) != 0) && (!tree->IsCall() || !tree->AsCall()->IsSuppressGCTransition()))
+                if (((tree->gtFlags & GTF_CALL) != 0))
                 {
                     hasGCSafePoint = true;
                 }

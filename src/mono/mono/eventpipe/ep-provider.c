@@ -168,6 +168,7 @@ ep_provider_alloc (
 	EventPipeConfiguration *config,
 	const ep_char8_t *provider_name,
 	EventPipeCallback callback_func,
+	EventPipeCallbackDataFree callback_data_free_func,
 	void *callback_data)
 {
 	EP_ASSERT (config != NULL);
@@ -185,6 +186,7 @@ ep_provider_alloc (
 	instance->keywords = 0;
 	instance->provider_level = EP_EVENT_LEVEL_CRITICAL;
 	instance->callback_func = callback_func;
+	instance->callback_data_free_func = callback_data_free_func;
 	instance->callback_data = callback_data;
 	instance->config = config;
 	instance->delete_deferred = false;
@@ -203,6 +205,9 @@ void
 ep_provider_free (EventPipeProvider * provider)
 {
 	ep_return_void_if_nok (provider != NULL);
+
+	if (provider->callback_data_free_func)
+		provider->callback_data_free_func (provider->callback_func, provider->callback_data);
 
 	ep_rt_event_list_free (&provider->event_list, event_free_func);
 	ep_rt_utf16_string_free (provider->provider_name_utf16);

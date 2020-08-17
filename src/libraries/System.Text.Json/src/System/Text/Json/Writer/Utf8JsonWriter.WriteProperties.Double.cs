@@ -21,10 +21,8 @@ namespace System.Text.Json
         /// Writes the <see cref="double"/> using the default <see cref="StandardFormat"/> (that is, 'G').
         /// </remarks>
         public void WriteNumber(JsonEncodedText propertyName, double value)
-            => WriteNumberHelper(propertyName.EncodedUtf8Bytes, value);
-
-        private void WriteNumberHelper(ReadOnlySpan<byte> utf8PropertyName, double value)
         {
+            ReadOnlySpan<byte> utf8PropertyName = propertyName.EncodedUtf8Bytes;
             Debug.Assert(utf8PropertyName.Length <= JsonConstants.MaxUnescapedTokenSize);
 
             JsonWriterHelper.ValidateDouble(value);

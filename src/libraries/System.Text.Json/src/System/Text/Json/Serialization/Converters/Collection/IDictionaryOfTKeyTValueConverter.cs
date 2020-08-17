@@ -71,7 +71,7 @@ namespace System.Text.Json.Serialization.Converters
             }
 
             JsonConverter<TKey> keyConverter = _keyConverter ??= GetKeyConverter(KeyType, options);
-            JsonConverter<TValue> valueConverter = _valueConverter ??= GetValueConverter(state.Current.JsonClassInfo);
+            JsonConverter<TValue> valueConverter = _valueConverter ??= GetValueConverter(state.Current.JsonClassInfo.ElementClassInfo!);
             do
             {
                 if (ShouldFlush(writer, ref state))

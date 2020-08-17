@@ -26,11 +26,9 @@
 #include <termios.h>
 #include <unistd.h>
 #include <limits.h>
-#if HAVE_CLONEFILE
-#include <sys/attr.h>
-#include <sys/clonefile.h>
-#endif
-#if HAVE_SENDFILE_4
+#if HAVE_FCOPYFILE
+#include <copyfile.h>
+#elif HAVE_SENDFILE_4
 #include <sys/sendfile.h>
 #endif
 #if HAVE_INOTIFY
@@ -91,7 +89,10 @@ c_static_assert(PAL_S_IFSOCK == S_IFSOCK);
 // Validate that our enum for inode types is the same as what is
 // declared by the dirent.h header on the local system.
 // (AIX doesn't have dirent d_type, so none of this there)
-#if defined(DT_UNKNOWN)
+// WebAssembly (BROWSER) has dirent d_type but is not correct
+// by returning UNKNOWN the managed code properly stats the file
+// to detect if entry is directory or not.
+#if defined(DT_UNKNOWN) || defined(TARGET_WASM)
 c_static_assert((int)PAL_DT_UNKNOWN == (int)DT_UNKNOWN);
 c_static_assert((int)PAL_DT_FIFO == (int)DT_FIFO);
 c_static_assert((int)PAL_DT_CHR == (int)DT_CHR);
@@ -345,10 +346,13 @@ static void ConvertDirent(const struct dirent* entry, DirectoryEntry* outputEntr
     // the start of the unmanaged string. Give the caller back a pointer to the
     // location of the start of the string that exists in their own byte buffer.
     outputEntry->Name = entry->d_name;
-#if !defined(DT_UNKNOWN)
+#if !defined(DT_UNKNOWN) || defined(TARGET_WASM)
     // AIX has no d_type, and since we can't get the directory that goes with
     // the filename from ReadDir, we can't stat the file. Return unknown and
     // hope that managed code can properly stat the file.
+    // WebAssembly (BROWSER) has dirent d_type but is not correct
+    // by returning UNKNOWN the managed code properly stats the file
+    // to detect if entry is directory or not.
     outputEntry->InodeType = PAL_DT_UNKNOWN;
 #else
     outputEntry->InodeType = (int32_t)entry->d_type;
@@ -1014,6 +1018,7 @@ int32_t SystemNative_Write(intptr_t fd, const void* buffer, int32_t bufferSize)
     return Common_Write(fd, buffer, bufferSize);
 }
 
+#if !HAVE_FCOPYFILE
 // Read all data from inFd and write it to outFd
 static int32_t CopyFile_ReadWrite(int inFd, int outFd)
 {
@@ -1066,90 +1071,32 @@ static int32_t CopyFile_ReadWrite(int inFd, int outFd)
     free(buffer);
     return 0;
 }
+#endif // !HAVE_FCOPYFILE
 
-int32_t SystemNative_CopyFile(intptr_t sourceFd, const char* srcPath, const char* destPath, int32_t overwrite)
+int32_t SystemNative_CopyFile(intptr_t sourceFd, intptr_t destinationFd)
 {
     int inFd = ToFileDescriptor(sourceFd);
-    int outFd;
-    int ret;
-    int tmpErrno;
-    int openFlags;
-    struct stat_ sourceStat;
+    int outFd = ToFileDescriptor(destinationFd);
 
+#if HAVE_FCOPYFILE
+    // If fcopyfile is available (OS X), try to use it, as the whole copy
+    // can be performed in the kernel, without lots of unnecessary copying.
+    // Copy data and metadata.
+    return fcopyfile(inFd, outFd, NULL, COPYFILE_ALL) == 0 ? 0 : -1;
+#else
+    // Get the stats on the source file.
+    int ret;
+    struct stat_ sourceStat;
+    bool copied = false;
+#if HAVE_SENDFILE_4
+    // If sendfile is available (Linux), try to use it, as the whole copy
+    // can be performed in the kernel, without lots of unnecessary copying.
     while ((ret = fstat_(inFd, &sourceStat)) < 0 && errno == EINTR);
     if (ret != 0)
     {
         return -1;
     }
 
-    struct stat_ destStat;
-    while ((ret = stat_(destPath, &destStat)) < 0 && errno == EINTR);
-    if (ret == 0)
-    {
-        if (!overwrite)
-        {
-            errno = EEXIST;
-            return -1;
-        }
-
-        if (sourceStat.st_dev == destStat.st_dev && sourceStat.st_ino == destStat.st_ino)
-        {
-            // Attempt to copy file over itself. Fail with the same error code as
-            // open would.
-            errno = EBUSY;
-            return -1;
-        }
-
-#if HAVE_CLONEFILE
-        // For clonefile we need to unlink the destination file first but we need to
-        // check permission first to ensure we don't try to unlink read-only file.
-        if (access(destPath, W_OK) != 0)
-        {
-            return -1;
-        }
-
-        ret = unlink(destPath);
-        if (ret != 0)
-        {
-            return ret;
-        }
-#endif
-    }
-
-#if HAVE_CLONEFILE
-    while ((ret = clonefile(srcPath, destPath, 0)) < 0 && errno == EINTR);
-    // EEXIST can happen due to race condition between the stat/unlink above
-    // and the clonefile here. The file could be (re-)created from another
-    // thread or process before we have a chance to call clonefile. Handle
-    // it by falling back to the slow path.
-    if (ret == 0 || (errno != ENOTSUP && errno != EXDEV && errno != EEXIST))
-    {
-        return ret;
-    }
-#else
-    // Unused variable
-    (void)srcPath;
-#endif
-
-    openFlags = O_WRONLY | O_TRUNC | O_CREAT | (overwrite ? 0 : O_EXCL);
-#if HAVE_O_CLOEXEC
-    openFlags |= O_CLOEXEC;
-#endif
-    while ((outFd = open(destPath, openFlags, sourceStat.st_mode & (S_IRWXU | S_IRWXG | S_IRWXO))) < 0 && errno == EINTR);
-    if (outFd < 0)
-    {
-        return -1;
-    }
-#if !HAVE_O_CLOEXEC
-    fcntl(outFd, F_SETFD, FD_CLOEXEC);
-#endif
-
-    // Get the stats on the source file.
-    bool copied = false;
-
-    // If sendfile is available (Linux), try to use it, as the whole copy
-    // can be performed in the kernel, without lots of unnecessary copying.
-#if HAVE_SENDFILE_4
 
     // On 32-bit, if you use 64-bit offsets, the last argument of `sendfile' will be a
     // `size_t' a 32-bit integer while the `st_size' field of the stat structure will be off64_t.
@@ -1165,9 +1112,6 @@ int32_t SystemNative_CopyFile(intptr_t sourceFd, const char* srcPath, const char
         {
             if (errno != EINVAL && errno != ENOSYS)
             {
-                tmpErrno = errno;
-                close(outFd);
-                errno = tmpErrno;
                 return -1;
             }
             else
@@ -1193,9 +1137,6 @@ int32_t SystemNative_CopyFile(intptr_t sourceFd, const char* srcPath, const char
     // Manually read all data from the source and write it to the destination.
     if (!copied && CopyFile_ReadWrite(inFd, outFd) != 0)
     {
-        tmpErrno = errno;
-        close(outFd);
-        errno = tmpErrno;
         return -1;
     }
 
@@ -1203,27 +1144,40 @@ int32_t SystemNative_CopyFile(intptr_t sourceFd, const char* srcPath, const char
     // from the source file.  First copy the file times.
     // If futimes nor futimes are available on this platform, file times will
     // not be copied over.
+    while ((ret = fstat_(inFd, &sourceStat)) < 0 && errno == EINTR);
+    if (ret == 0)
+    {
 #if HAVE_FUTIMENS
-    // futimens is prefered because it has a higher resolution.
-    struct timespec origTimes[2];
-    origTimes[0].tv_sec = (time_t)sourceStat.st_atime;
-    origTimes[0].tv_nsec = ST_ATIME_NSEC(&sourceStat);
-    origTimes[1].tv_sec = (time_t)sourceStat.st_mtime;
-    origTimes[1].tv_nsec = ST_MTIME_NSEC(&sourceStat);
-    while ((ret = futimens(outFd, origTimes)) < 0 && errno == EINTR);
+        // futimens is prefered because it has a higher resolution.
+        struct timespec origTimes[2];
+        origTimes[0].tv_sec = (time_t)sourceStat.st_atime;
+        origTimes[0].tv_nsec = ST_ATIME_NSEC(&sourceStat);
+        origTimes[1].tv_sec = (time_t)sourceStat.st_mtime;
+        origTimes[1].tv_nsec = ST_MTIME_NSEC(&sourceStat);
+        while ((ret = futimens(outFd, origTimes)) < 0 && errno == EINTR);
 #elif HAVE_FUTIMES
-    struct timeval origTimes[2];
-    origTimes[0].tv_sec = sourceStat.st_atime;
-    origTimes[0].tv_usec = (int32_t)(ST_ATIME_NSEC(&sourceStat) / 1000);
-    origTimes[1].tv_sec = sourceStat.st_mtime;
-    origTimes[1].tv_usec = (int32_t)(ST_MTIME_NSEC(&sourceStat) / 1000);
-    while ((ret = futimes(outFd, origTimes)) < 0 && errno == EINTR);
+        struct timeval origTimes[2];
+        origTimes[0].tv_sec = sourceStat.st_atime;
+        origTimes[0].tv_usec = (int32_t)(ST_ATIME_NSEC(&sourceStat) / 1000);
+        origTimes[1].tv_sec = sourceStat.st_mtime;
+        origTimes[1].tv_usec = (int32_t)(ST_MTIME_NSEC(&sourceStat) / 1000);
+        while ((ret = futimes(outFd, origTimes)) < 0 && errno == EINTR);
 #endif
+    }
+    if (ret != 0)
+    {
+        return -1;
+    }
 
-    tmpErrno = errno;
-    close(outFd);
-    errno = tmpErrno;
+    // Then copy permissions.
+    while ((ret = fchmod(outFd, sourceStat.st_mode & (S_IRWXU | S_IRWXG | S_IRWXO))) < 0 && errno == EINTR);
+    if (ret != 0)
+    {
+        return -1;
+    }
+
     return 0;
+#endif // HAVE_FCOPYFILE
 }
 
 intptr_t SystemNative_INotifyInit(void)

@@ -1,10 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Microsoft.DotNet.Cli.Build.Framework;
-using Newtonsoft.Json.Linq;
 using System.IO;
+using System.Reflection.Metadata;
 using System.Runtime.InteropServices;
+
+using Microsoft.DotNet.Cli.Build.Framework;
+using Microsoft.NET.HostModel.ComHost;
 using Xunit;
 
 namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
@@ -136,26 +138,26 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                     .EnsureRestored(RepoDirectories.CorehostPackages)
                     .BuildProject();
 
-                // [TODO] BEGIN - Remove once using .NET Core 3.0 to build tests
+                // Create a .clsidmap from the assembly
+                string clsidMapPath = Path.Combine(BaseDirectory, $"{ ComLibraryFixture.TestProject.AssemblyName }.clsidmap");
+                using (var assemblyStream = new FileStream(ComLibraryFixture.TestProject.AppDll, FileMode.Open, FileAccess.Read, FileShare.Delete | FileShare.Read))
+                using (var peReader = new System.Reflection.PortableExecutable.PEReader(assemblyStream))
+                {
+                    if (peReader.HasMetadata)
+                    {
+                        MetadataReader reader = peReader.GetMetadataReader();
+                        ClsidMap.Create(reader, clsidMapPath);
+                    }
+                }
+
+                // Use the locally built comhost to create a comhost with the embedded .clsidmap 
                 ComHostPath = Path.Combine(
                     ComLibraryFixture.TestProject.BuiltApp.Location,
                     $"{ ComLibraryFixture.TestProject.AssemblyName }.comhost.dll");
-
-                File.Copy(Path.Combine(RepoDirectories.CorehostPackages, "comhost.dll"), ComHostPath);
-
-                RuntimeConfig.FromFile(ComLibraryFixture.TestProject.RuntimeConfigJson)
-                    .WithFramework(new RuntimeConfig.Framework("Microsoft.NETCore.App", RepoDirectories.MicrosoftNETCoreAppVersion))
-                    .Save();
-
-                JObject clsidMap = new JObject()
-                {
-                    {
-                        ClsidString,
-                        new JObject() { {"assembly", "ComLibrary" }, {"type", "ComLibrary.Server" } }
-                    }
-                };
-                File.WriteAllText($"{ ComHostPath }.clsidmap", clsidMap.ToString());
-                // [TODO] END - Remove once using .NET Core 3.0 to build tests
+                ComHost.Create(
+                    Path.Combine(RepoDirectories.CorehostPackages, "comhost.dll"),
+                    ComHostPath,
+                    clsidMapPath);
             }
 
             protected override void Dispose(bool disposing)

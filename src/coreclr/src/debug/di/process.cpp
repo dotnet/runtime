@@ -2173,6 +2173,10 @@ HRESULT CordbProcess::QueryInterface(REFIID id, void **pInterface)
     {
         *pInterface = static_cast<ICorDebugProcess10*>(this);
     }
+    else if (id == IID_ICorDebugProcess11)
+    {
+        *pInterface = static_cast<ICorDebugProcess11*>(this);
+    }
     else if (id == IID_IUnknown)
     {
         *pInterface = static_cast<IUnknown*>(static_cast<ICorDebugProcess*>(this));
@@ -2526,6 +2530,35 @@ COM_METHOD CordbProcess::EnableGCNotificationEvents(BOOL fEnable)
     PUBLIC_API_BEGIN(this)
     {
         hr = this->m_pDacPrimitives->EnableGCNotificationEvents(fEnable);
+    }
+    PUBLIC_API_END(hr);
+    return hr;
+}
+
+//-----------------------------------------------------------
+// ICorDebugProcess11
+//-----------------------------------------------------------
+COM_METHOD CordbProcess::EnumerateLoaderHeapMemoryRegions(ICorDebugMemoryRangeEnum **ppRanges)
+{
+    VALIDATE_POINTER_TO_OBJECT(ppRanges, ICorDebugMemoryRangeEnum **);
+    FAIL_IF_NEUTERED(this);
+
+    HRESULT hr = S_OK;
+
+    PUBLIC_API_BEGIN(this);
+    {
+        DacDbiArrayList<COR_MEMORY_RANGE> heapRanges;
+
+        hr = GetDAC()->GetLoaderHeapMemoryRanges(&heapRanges);
+
+        if (SUCCEEDED(hr))
+        {
+            RSInitHolder<CordbMemoryRangeEnumerator> heapSegmentEnumerator(
+                new CordbMemoryRangeEnumerator(this, &heapRanges[0], (DWORD)heapRanges.Count()));
+
+            GetContinueNeuterList()->Add(this, heapSegmentEnumerator);
+            heapSegmentEnumerator.TransferOwnershipExternal(ppRanges);
+        }
     }
     PUBLIC_API_END(hr);
     return hr;

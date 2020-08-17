@@ -100,7 +100,7 @@ namespace Microsoft.DotNet.Build.CloudTestTasks
                 }
                 while (!string.IsNullOrEmpty(nextMarker))
                 {
-                    urlListBlobs = string.Format($"https://{AccountName}.blob.core.windows.net/{ContainerName}?restype=container&comp=list&marker={nextMarker}");
+                    urlListBlobs = $"https://{AccountName}.blob.core.windows.net/{ContainerName}?restype=container&comp=list&marker={nextMarker}";
                     if (!string.IsNullOrWhiteSpace(FilterBlobNames))
                     {
                         urlListBlobs += $"&prefix={FilterBlobNames}";

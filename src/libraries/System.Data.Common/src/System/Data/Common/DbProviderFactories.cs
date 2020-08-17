@@ -11,8 +11,6 @@ using System.Linq;
 using System.Reflection;
 using System.Threading;
 
-#nullable enable
-
 namespace System.Data.Common
 {
     public static partial class DbProviderFactories
@@ -57,7 +55,7 @@ namespace System.Data.Common
         {
             ADP.CheckArgumentNull(providerRow, nameof(providerRow));
 
-            DataColumn assemblyQualifiedNameColumn = providerRow.Table.Columns[AssemblyQualifiedNameColumnName];
+            DataColumn? assemblyQualifiedNameColumn = providerRow.Table.Columns[AssemblyQualifiedNameColumnName];
             if (null == assemblyQualifiedNameColumn)
             {
                 throw ADP.Argument(SR.ADP_DbProviderFactories_NoAssemblyQualifiedName);

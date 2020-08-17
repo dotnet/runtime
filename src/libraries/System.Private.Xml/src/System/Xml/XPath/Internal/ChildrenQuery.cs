@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#nullable enable
 using System.Xml.XPath;
 
 namespace MS.Internal.Xml.XPath
@@ -21,11 +22,11 @@ namespace MS.Internal.Xml.XPath
             base.Reset();
         }
 
-        public override XPathNavigator Advance()
+        public override XPathNavigator? Advance()
         {
             while (!_iterator.MoveNext())
             {
-                XPathNavigator input = qyInput.Advance();
+                XPathNavigator? input = qyInput.Advance();
                 if (input == null)
                 {
                     return null;
@@ -38,7 +39,7 @@ namespace MS.Internal.Xml.XPath
                     }
                     else
                     {
-                        _iterator = input.SelectChildren(Name, Namespace);
+                        _iterator = input.SelectChildren(Name, Namespace!);
                     }
                 }
                 else
@@ -52,7 +53,7 @@ namespace MS.Internal.Xml.XPath
             return currentNode;
         } // Advance
 
-        public sealed override XPathNavigator MatchNode(XPathNavigator context)
+        public sealed override XPathNavigator? MatchNode(XPathNavigator? context)
         {
             if (context != null)
             {

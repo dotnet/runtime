@@ -541,7 +541,7 @@ namespace System.IO
         public virtual Task WriteAsync(char value)
         {
             var tuple = new Tuple<TextWriter, char>(this, value);
-            return Task.Factory.StartNew(state =>
+            return Task.Factory.StartNew(static state =>
             {
                 var t = (Tuple<TextWriter, char>)state!;
                 t.Item1.Write(t.Item2);
@@ -552,7 +552,7 @@ namespace System.IO
         public virtual Task WriteAsync(string? value)
         {
             var tuple = new Tuple<TextWriter, string?>(this, value);
-            return Task.Factory.StartNew(state =>
+            return Task.Factory.StartNew(static state =>
             {
                 var t = (Tuple<TextWriter, string?>)state!;
                 t.Item1.Write(t.Item2);
@@ -595,7 +595,7 @@ namespace System.IO
         public virtual Task WriteAsync(char[] buffer, int index, int count)
         {
             var tuple = new Tuple<TextWriter, char[], int, int>(this, buffer, index, count);
-            return Task.Factory.StartNew(state =>
+            return Task.Factory.StartNew(static state =>
             {
                 var t = (Tuple<TextWriter, char[], int, int>)state!;
                 t.Item1.Write(t.Item2, t.Item3, t.Item4);
@@ -607,7 +607,7 @@ namespace System.IO
             cancellationToken.IsCancellationRequested ? Task.FromCanceled(cancellationToken) :
             MemoryMarshal.TryGetArray(buffer, out ArraySegment<char> array) ?
                 WriteAsync(array.Array!, array.Offset, array.Count) :
-                Task.Factory.StartNew(state =>
+                Task.Factory.StartNew(static state =>
                 {
                     var t = (Tuple<TextWriter, ReadOnlyMemory<char>>)state!;
                     t.Item1.Write(t.Item2.Span);
@@ -616,7 +616,7 @@ namespace System.IO
         public virtual Task WriteLineAsync(char value)
         {
             var tuple = new Tuple<TextWriter, char>(this, value);
-            return Task.Factory.StartNew(state =>
+            return Task.Factory.StartNew(static state =>
             {
                 var t = (Tuple<TextWriter, char>)state!;
                 t.Item1.WriteLine(t.Item2);
@@ -627,7 +627,7 @@ namespace System.IO
         public virtual Task WriteLineAsync(string? value)
         {
             var tuple = new Tuple<TextWriter, string?>(this, value);
-            return Task.Factory.StartNew(state =>
+            return Task.Factory.StartNew(static state =>
             {
                 var t = (Tuple<TextWriter, string?>)state!;
                 t.Item1.WriteLine(t.Item2);
@@ -671,7 +671,7 @@ namespace System.IO
         public virtual Task WriteLineAsync(char[] buffer, int index, int count)
         {
             var tuple = new Tuple<TextWriter, char[], int, int>(this, buffer, index, count);
-            return Task.Factory.StartNew(state =>
+            return Task.Factory.StartNew(static state =>
             {
                 var t = (Tuple<TextWriter, char[], int, int>)state!;
                 t.Item1.WriteLine(t.Item2, t.Item3, t.Item4);
@@ -683,7 +683,7 @@ namespace System.IO
             cancellationToken.IsCancellationRequested ? Task.FromCanceled(cancellationToken) :
             MemoryMarshal.TryGetArray(buffer, out ArraySegment<char> array) ?
                 WriteLineAsync(array.Array!, array.Offset, array.Count) :
-                Task.Factory.StartNew(state =>
+                Task.Factory.StartNew(static state =>
                 {
                     var t = (Tuple<TextWriter, ReadOnlyMemory<char>>)state!;
                     t.Item1.WriteLine(t.Item2.Span);
@@ -696,7 +696,7 @@ namespace System.IO
 
         public virtual Task FlushAsync()
         {
-            return Task.Factory.StartNew(state => ((TextWriter)state!).Flush(), this,
+            return Task.Factory.StartNew(static state => ((TextWriter)state!).Flush(), this,
                 CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
         }
         #endregion

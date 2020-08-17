@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#nullable enable
 using System;
 using System.Xml;
 using System.Xml.XPath;
@@ -12,8 +13,8 @@ namespace MS.Internal.Xml.XPath
     {
         internal Query qy1, qy2;
         private bool _advance1, _advance2;
-        private XPathNavigator _currentNode;
-        private XPathNavigator _nextNode;
+        private XPathNavigator? _currentNode;
+        private XPathNavigator? _nextNode;
 
         public UnionExpr(Query query1, Query query2)
         {
@@ -83,9 +84,9 @@ namespace MS.Internal.Xml.XPath
             return res2;
         }
 
-        public override XPathNavigator Advance()
+        public override XPathNavigator? Advance()
         {
-            XPathNavigator res1, res2;
+            XPathNavigator? res1, res2;
             XmlNodeOrder order = 0;
             if (_advance1)
             {
@@ -139,11 +140,11 @@ namespace MS.Internal.Xml.XPath
             }
         }
 
-        public override XPathNavigator MatchNode(XPathNavigator xsltContext)
+        public override XPathNavigator? MatchNode(XPathNavigator? xsltContext)
         {
             if (xsltContext != null)
             {
-                XPathNavigator result = qy1.MatchNode(xsltContext);
+                XPathNavigator? result = qy1.MatchNode(xsltContext);
                 if (result != null)
                 {
                     return result;
@@ -157,7 +158,7 @@ namespace MS.Internal.Xml.XPath
 
         public override XPathNodeIterator Clone() { return new UnionExpr(this); }
 
-        public override XPathNavigator Current { get { return _currentNode; } }
+        public override XPathNavigator? Current { get { return _currentNode; } }
         public override int CurrentPosition { get { throw new InvalidOperationException(); } }
     }
 }

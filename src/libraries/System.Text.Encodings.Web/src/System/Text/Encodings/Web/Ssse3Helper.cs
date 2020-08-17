@@ -45,7 +45,7 @@ namespace System.Text.Encodings.Web
             //         E   1   1   0   1   0   0   0   0   1   1   1   1   1   1   1   1
             //         F   1   1   0   0   0   0   0   1   1   1   1   1   1   1   1   1
             //
-            // where 1 denotes the neeed for escaping, while 0 means no escaping needed.
+            // where 1 denotes the need for escaping, while 0 means no escaping needed.
             // For high-nibbles in the range 8..F every input needs to be escaped, so we
             // can omit them in the bit-mask, thus only high-nibbles in the range 0..7 need
             // to be considered, hence the entries in the bit-mask can be of type byte.

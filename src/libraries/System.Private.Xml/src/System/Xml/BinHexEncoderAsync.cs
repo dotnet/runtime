@@ -32,8 +32,8 @@ namespace System.Xml
             while (index < endIndex)
             {
                 int cnt = (count < CharsChunkSize / 2) ? count : CharsChunkSize / 2;
-                int charCount = Encode(buffer, index, cnt, chars);
-                await writer.WriteRawAsync(chars, 0, charCount).ConfigureAwait(false);
+                HexConverter.EncodeToUtf16(buffer.AsSpan(index, cnt), chars);
+                await writer.WriteRawAsync(chars, 0, cnt * 2).ConfigureAwait(false);
                 index += cnt;
                 count -= cnt;
             }

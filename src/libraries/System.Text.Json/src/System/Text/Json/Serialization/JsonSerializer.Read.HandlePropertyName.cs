@@ -55,6 +55,7 @@ namespace System.Text.Json
             }
 
             state.Current.JsonPropertyInfo = jsonPropertyInfo;
+            state.Current.NumberHandling = jsonPropertyInfo.NumberHandling;
             return jsonPropertyInfo;
         }
 

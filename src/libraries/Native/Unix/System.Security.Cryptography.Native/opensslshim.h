@@ -35,6 +35,7 @@
 #include <openssl/x509v3.h>
 
 #include "pal_crypto_config.h"
+#include "pal_compiler.h"
 #define OPENSSL_VERSION_1_1_1_RTM 0x10101000L
 #define OPENSSL_VERSION_1_1_0_RTM 0x10100000L
 #define OPENSSL_VERSION_1_0_2_RTM 0x10002000L
@@ -148,6 +149,7 @@ int32_t RSA_set0_crt_params(RSA* rsa, BIGNUM* dmp1, BIGNUM* dmq1, BIGNUM* iqmp);
 int32_t RSA_set0_factors(RSA* rsa, BIGNUM* p, BIGNUM* q);
 int32_t RSA_set0_key(RSA* rsa, BIGNUM* n, BIGNUM* e, BIGNUM* d);
 int32_t SSL_is_init_finished(SSL* ssl);
+int SSL_CTX_config(SSL_CTX* ctx, const char* name);
 #undef SSL_CTX_set_options
 unsigned long SSL_CTX_set_options(SSL_CTX* ctx, unsigned long options);
 void SSL_CTX_set_security_level(SSL_CTX* ctx, int32_t level);
@@ -309,14 +311,20 @@ void SSL_get0_alpn_selected(const SSL* ssl, const unsigned char** protocol, unsi
     REQUIRED_FUNCTION(ERR_reason_error_string) \
     REQUIRED_FUNCTION(EVP_aes_128_cbc) \
     REQUIRED_FUNCTION(EVP_aes_128_ccm) \
+    REQUIRED_FUNCTION(EVP_aes_128_cfb128) \
+    REQUIRED_FUNCTION(EVP_aes_128_cfb8) \
     REQUIRED_FUNCTION(EVP_aes_128_ecb) \
     REQUIRED_FUNCTION(EVP_aes_128_gcm) \
     REQUIRED_FUNCTION(EVP_aes_192_cbc) \
     REQUIRED_FUNCTION(EVP_aes_192_ccm) \
+    REQUIRED_FUNCTION(EVP_aes_192_cfb128) \
+    REQUIRED_FUNCTION(EVP_aes_192_cfb8) \
     REQUIRED_FUNCTION(EVP_aes_192_ecb) \
     REQUIRED_FUNCTION(EVP_aes_192_gcm) \
     REQUIRED_FUNCTION(EVP_aes_256_cbc) \
     REQUIRED_FUNCTION(EVP_aes_256_ccm) \
+    REQUIRED_FUNCTION(EVP_aes_256_cfb128) \
+    REQUIRED_FUNCTION(EVP_aes_256_cfb8) \
     REQUIRED_FUNCTION(EVP_aes_256_ecb) \
     REQUIRED_FUNCTION(EVP_aes_256_gcm) \
     LEGACY_FUNCTION(EVP_CIPHER_CTX_cleanup) \
@@ -331,9 +339,12 @@ void SSL_get0_alpn_selected(const SSL* ssl, const unsigned char** protocol, unsi
     REQUIRED_FUNCTION(EVP_CipherInit_ex) \
     REQUIRED_FUNCTION(EVP_CipherUpdate) \
     REQUIRED_FUNCTION(EVP_des_cbc) \
+    REQUIRED_FUNCTION(EVP_des_cfb8) \
     REQUIRED_FUNCTION(EVP_des_ecb) \
     REQUIRED_FUNCTION(EVP_des_ede3) \
     REQUIRED_FUNCTION(EVP_des_ede3_cbc) \
+    REQUIRED_FUNCTION(EVP_des_ede3_cfb8) \
+    REQUIRED_FUNCTION(EVP_des_ede3_cfb64) \
     REQUIRED_FUNCTION(EVP_DigestFinal_ex) \
     REQUIRED_FUNCTION(EVP_DigestInit_ex) \
     REQUIRED_FUNCTION(EVP_DigestUpdate) \
@@ -456,6 +467,7 @@ void SSL_get0_alpn_selected(const SSL* ssl, const unsigned char** protocol, unsi
     REQUIRED_FUNCTION(SSL_ctrl) \
     REQUIRED_FUNCTION(SSL_set_quiet_shutdown) \
     REQUIRED_FUNCTION(SSL_CTX_check_private_key) \
+    FALLBACK_FUNCTION(SSL_CTX_config) \
     REQUIRED_FUNCTION(SSL_CTX_ctrl) \
     REQUIRED_FUNCTION(SSL_CTX_free) \
     FALLBACK_FUNCTION(SSL_is_init_finished) \
@@ -474,6 +486,7 @@ void SSL_get0_alpn_selected(const SSL* ssl, const unsigned char** protocol, unsi
     REQUIRED_FUNCTION(SSL_CTX_use_PrivateKey) \
     REQUIRED_FUNCTION(SSL_do_handshake) \
     REQUIRED_FUNCTION(SSL_free) \
+    REQUIRED_FUNCTION(SSL_get_ciphers) \
     REQUIRED_FUNCTION(SSL_get_client_CA_list) \
     REQUIRED_FUNCTION(SSL_get_current_cipher) \
     REQUIRED_FUNCTION(SSL_get_error) \
@@ -576,12 +589,12 @@ void SSL_get0_alpn_selected(const SSL* ssl, const unsigned char** protocol, unsi
     LIGHTUP_FUNCTION(EC_POINT_set_affine_coordinates_GF2m) \
 
 // Declare pointers to all the used OpenSSL functions
-#define REQUIRED_FUNCTION(fn) extern __typeof(fn)* fn##_ptr;
-#define NEW_REQUIRED_FUNCTION(fn) extern __typeof(fn)* fn##_ptr;
-#define LIGHTUP_FUNCTION(fn) extern __typeof(fn)* fn##_ptr;
-#define FALLBACK_FUNCTION(fn) extern __typeof(fn)* fn##_ptr;
-#define RENAMED_FUNCTION(fn,oldfn) extern __typeof(fn)* fn##_ptr;
-#define LEGACY_FUNCTION(fn) extern __typeof(fn)* fn##_ptr;
+#define REQUIRED_FUNCTION(fn) extern TYPEOF(fn)* fn##_ptr;
+#define NEW_REQUIRED_FUNCTION(fn) extern TYPEOF(fn)* fn##_ptr;
+#define LIGHTUP_FUNCTION(fn) extern TYPEOF(fn)* fn##_ptr;
+#define FALLBACK_FUNCTION(fn) extern TYPEOF(fn)* fn##_ptr;
+#define RENAMED_FUNCTION(fn,oldfn) extern TYPEOF(fn)* fn##_ptr;
+#define LEGACY_FUNCTION(fn) extern TYPEOF(fn)* fn##_ptr;
 FOR_ALL_OPENSSL_FUNCTIONS
 #undef LEGACY_FUNCTION
 #undef RENAMED_FUNCTION
@@ -700,14 +713,20 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define ERR_put_error ERR_put_error_ptr
 #define ERR_reason_error_string ERR_reason_error_string_ptr
 #define EVP_aes_128_cbc EVP_aes_128_cbc_ptr
+#define EVP_aes_128_cfb8 EVP_aes_128_cfb8_ptr
+#define EVP_aes_128_cfb128 EVP_aes_128_cfb128_ptr
 #define EVP_aes_128_ecb EVP_aes_128_ecb_ptr
 #define EVP_aes_128_gcm EVP_aes_128_gcm_ptr
 #define EVP_aes_128_ccm EVP_aes_128_ccm_ptr
 #define EVP_aes_192_cbc EVP_aes_192_cbc_ptr
+#define EVP_aes_192_cfb8 EVP_aes_192_cfb8_ptr
+#define EVP_aes_192_cfb128 EVP_aes_192_cfb128_ptr
 #define EVP_aes_192_ecb EVP_aes_192_ecb_ptr
 #define EVP_aes_192_gcm EVP_aes_192_gcm_ptr
 #define EVP_aes_192_ccm EVP_aes_192_ccm_ptr
 #define EVP_aes_256_cbc EVP_aes_256_cbc_ptr
+#define EVP_aes_256_cfb8 EVP_aes_256_cfb8_ptr
+#define EVP_aes_256_cfb128 EVP_aes_256_cfb128_ptr
 #define EVP_aes_256_ecb EVP_aes_256_ecb_ptr
 #define EVP_aes_256_gcm EVP_aes_256_gcm_ptr
 #define EVP_aes_256_ccm EVP_aes_256_ccm_ptr
@@ -723,8 +742,11 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define EVP_CipherInit_ex EVP_CipherInit_ex_ptr
 #define EVP_CipherUpdate EVP_CipherUpdate_ptr
 #define EVP_des_cbc EVP_des_cbc_ptr
+#define EVP_des_cfb8 EVP_des_cfb8_ptr
 #define EVP_des_ecb EVP_des_ecb_ptr
 #define EVP_des_ede3 EVP_des_ede3_ptr
+#define EVP_des_ede3_cfb8 EVP_des_ede3_cfb8_ptr
+#define EVP_des_ede3_cfb64 EVP_des_ede3_cfb64_ptr
 #define EVP_des_ede3_cbc EVP_des_ede3_cbc_ptr
 #define EVP_DigestFinal_ex EVP_DigestFinal_ex_ptr
 #define EVP_DigestInit_ex EVP_DigestInit_ex_ptr
@@ -855,6 +877,7 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define SSL_ctrl SSL_ctrl_ptr
 #define SSL_set_quiet_shutdown SSL_set_quiet_shutdown_ptr
 #define SSL_CTX_check_private_key SSL_CTX_check_private_key_ptr
+#define SSL_CTX_config SSL_CTX_config_ptr
 #define SSL_CTX_ctrl SSL_CTX_ctrl_ptr
 #define SSL_CTX_free SSL_CTX_free_ptr
 #define SSL_CTX_new SSL_CTX_new_ptr
@@ -872,6 +895,7 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define SSL_CTX_use_PrivateKey SSL_CTX_use_PrivateKey_ptr
 #define SSL_do_handshake SSL_do_handshake_ptr
 #define SSL_free SSL_free_ptr
+#define SSL_get_ciphers SSL_get_ciphers_ptr
 #define SSL_get_client_CA_list SSL_get_client_CA_list_ptr
 #define SSL_get_current_cipher SSL_get_current_cipher_ptr
 #define SSL_get_error SSL_get_error_ptr
@@ -986,6 +1010,7 @@ FOR_ALL_OPENSSL_FUNCTIONS
 // type-safe OPENSSL_sk_num
 #define sk_ASN1_OBJECT_num(stack) OPENSSL_sk_num((const OPENSSL_STACK*)(1 ? stack : (const STACK_OF(ASN1_OBJECT)*)0))
 #define sk_GENERAL_NAME_num(stack) OPENSSL_sk_num((const OPENSSL_STACK*)(1 ? stack : (const STACK_OF(GENERAL_NAME)*)0))
+#define sk_SSL_CIPHER_num(stack) OPENSSL_sk_num((const OPENSSL_STACK*)(1 ? stack : (const STACK_OF(SSL_CIPHER)*)0))
 #define sk_X509_NAME_num(stack) OPENSSL_sk_num((const OPENSSL_STACK*)(1 ? stack : (const STACK_OF(X509_NAME)*)0))
 #define sk_X509_num(stack) OPENSSL_sk_num((const OPENSSL_STACK*)(1 ? stack : (const STACK_OF(X509)*)0))
 

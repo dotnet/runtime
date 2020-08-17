@@ -36,14 +36,6 @@ private:
     static CLREventStatic *s_ResumeRuntimeStartupEvent;
 };
 
-class DiagnosticServerProtocolHelper
-{
-public:
-    // IPC event handlers.
-    static void HandleIpcMessage(DiagnosticsIpc::IpcMessage& message, IpcStream *pStream);
-    static void ResumeRuntimeStartup(DiagnosticsIpc::IpcMessage& message, IpcStream *pStream);
-};
-
 #endif // FEATURE_PERFTRACING
 
 #endif // __DIAGNOSTIC_SERVER_H__

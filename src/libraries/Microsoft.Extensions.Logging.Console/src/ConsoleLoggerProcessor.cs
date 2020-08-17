@@ -49,22 +49,10 @@ namespace Microsoft.Extensions.Logging.Console
         }
 
         // for testing
-        internal virtual void WriteMessage(LogMessageEntry message)
+        internal virtual void WriteMessage(LogMessageEntry entry)
         {
-            IConsole console = message.LogAsError ? ErrorConsole : Console;
-
-            if (message.TimeStamp != null)
-            {
-                console.Write(message.TimeStamp, message.MessageColor, message.MessageColor);
-            }
-
-            if (message.LevelString != null)
-            {
-                console.Write(message.LevelString, message.LevelBackground, message.LevelForeground);
-            }
-
-            console.Write(message.Message, message.MessageColor, message.MessageColor);
-            console.Flush();
+            IConsole console = entry.LogAsError ? ErrorConsole : Console;
+            console.Write(entry.Message);
         }
 
         private void ProcessLogQueue()

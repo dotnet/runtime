@@ -103,7 +103,7 @@ abort_apc (ULONG_PTR param)
 // thread is going away meaning that no more IO calls will be issued against the
 // same resource that was part of the cancelation. Current implementation of
 // .NET Framework and .NET Core currently don't support the ability to abort a thread
-// blocked on sync IO calls, see https://github.com/dotnet/corefx/issues/5749.
+// blocked on sync IO calls, see https://github.com/dotnet/runtime/issues/16236.
 // Since there is no solution covering all scenarios aborting blocking syscall this
 // will be on best effort and there might still be a slight risk that the blocking call
 // won't abort (depending on overlapped IO support for current file, socket).

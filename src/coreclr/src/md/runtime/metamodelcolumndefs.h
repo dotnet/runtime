@@ -397,4 +397,58 @@
     SCHEMA_ITEM_CDTKN(GenericParamConstraint, Constraint, TypeDefOrRef)
     SCHEMA_TABLE_END(GenericParamConstraint)
 
+#ifdef FEATURE_METADATA_EMIT_PORTABLE_PDB
+    //-------------------------------------------------------------------------
+    //Document
+    SCHEMA_TABLE_START(Document)
+    SCHEMA_ITEM_BLOB(Document, Name)
+    SCHEMA_ITEM_GUID(Document, HashAlgorithm)
+    SCHEMA_ITEM_BLOB(Document, Hash)
+    SCHEMA_ITEM_GUID(Document, Language)
+    SCHEMA_TABLE_END(Document)
+
+    //-------------------------------------------------------------------------
+    //MethodDebugInformation
+    SCHEMA_TABLE_START(MethodDebugInformation)
+    SCHEMA_ITEM_RID(MethodDebugInformation, Document, Document)
+    SCHEMA_ITEM_BLOB(MethodDebugInformation, SequencePoints)
+    SCHEMA_TABLE_END(MethodDebugInformation)
+
+    //-------------------------------------------------------------------------
+    //LocalScope
+    SCHEMA_TABLE_START(LocalScope)
+    SCHEMA_ITEM_RID(LocalScope, Method, Method)
+    SCHEMA_ITEM_RID(LocalScope, ImportScope, ImportScope)
+    SCHEMA_ITEM_RID(LocalScope, VariableList, LocalVariable)
+    SCHEMA_ITEM_RID(LocalScope, ConstantList, LocalConstant)
+    SCHEMA_ITEM(LocalScope, ULONG, StartOffset)
+    SCHEMA_ITEM(LocalScope, ULONG, Length)
+    SCHEMA_TABLE_END(LocalScope)
+
+    //-------------------------------------------------------------------------
+    //LocalVariable
+    SCHEMA_TABLE_START(LocalVariable)
+    SCHEMA_ITEM(LocalVariable, USHORT, Attributes)
+    SCHEMA_ITEM(LocalVariable, USHORT, Index)
+    SCHEMA_ITEM_STRING(LocalVariable, Name)
+    SCHEMA_TABLE_END(LocalVariable)
+
+    //-------------------------------------------------------------------------
+    //LocalConstant
+    SCHEMA_TABLE_START(LocalConstant)
+    SCHEMA_ITEM_STRING(LocalConstant, Name)
+    SCHEMA_ITEM_BLOB(LocalConstant, Signature)
+    SCHEMA_TABLE_END(LocalConstant)
+
+    //-------------------------------------------------------------------------
+    //ImportScope
+    SCHEMA_TABLE_START(ImportScope)
+    SCHEMA_ITEM_RID(ImportScope, Parent, ImportScope)
+    SCHEMA_ITEM_BLOB(ImportScope, Imports)
+    SCHEMA_TABLE_END(ImportScope)
+
+    // TODO:
+    // StateMachineMethod
+    // CustomDebugInformation
+#endif // FEATURE_METADATA_EMIT_PORTABLE_PDB
 // eof ------------------------------------------------------------------------

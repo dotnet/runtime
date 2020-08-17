@@ -478,6 +478,81 @@ HRESULT Disp::OpenScopeOnITypeInfo(     // Return code.
     return E_NOTIMPL;
 } // Disp::OpenScopeOnITypeInfo
 
+#ifdef FEATURE_METADATA_EMIT_PORTABLE_PDB
+//*****************************************************************************
+// Create a brand new scope which will be used for portable PDB metadata.
+// This is based on the CLSID that was used to get the dispenser.
+// 
+// The existing DefineScope method cannot be used for the purpose of PDB
+// metadata generation, since it internally creates module and type def table
+// entries.
+//*****************************************************************************
+__checkReturn
+HRESULT
+Disp::DefinePortablePdbScope(
+    REFCLSID   rclsid,          // [in] What version to create.
+    DWORD      dwCreateFlags,   // [in] Flags on the create.
+    REFIID     riid,            // [in] The interface desired.
+    IUnknown** ppIUnk)          // [out] Return interface on success.
+{
+#ifdef FEATURE_METADATA_EMIT
+    HRESULT     hr = S_OK;
+    
+    BEGIN_ENTRYPOINT_NOTHROW;
+
+    RegMeta* pMeta = 0;
+    OptionValue optionForNewScope = m_OptionValue;
+
+    LOG((LF_METADATA, LL_INFO10, "Disp::DefinePortablePdbScope(0x%08x, 0x%08x, 0x%08x, 0x%08x)\n", rclsid, dwCreateFlags, riid, ppIUnk));
+
+    if (dwCreateFlags)
+        IfFailGo(E_INVALIDARG);
+
+    // Currently the portable PDB tables are treated as an extension to the MDVersion2
+    // TODO: this extension might deserve its own version number e.g. 'MDVersion3'  
+    if (rclsid == CLSID_CLR_v2_MetaData)
+    {
+        optionForNewScope.m_MetadataVersion = MDVersion2;
+    }
+    else
+    {
+        // If it is a version we don't understand, then we cannot continue.
+        IfFailGo(CLDB_E_FILE_OLDVER);
+    }
+
+    // Create a new coclass for this.
+    pMeta = new (nothrow) RegMeta();
+    IfNullGo(pMeta);
+
+    IfFailGo(pMeta->SetOption(&optionForNewScope));
+
+    // Create the MiniMd-style scope for portable pdb
+    IfFailGo(pMeta->CreateNewPortablePdbMD());
+
+    // Get the requested interface.
+    IfFailGo(pMeta->QueryInterface(riid, (void**)ppIUnk));
+
+    // Add the new RegMeta to the cache.
+    IfFailGo(pMeta->AddToCache());
+
+    LOG((LOGMD, "{%08x} Created new emit scope\n", pMeta));
+
+ErrExit:
+    if (FAILED(hr))
+    {
+        if (pMeta != NULL)
+            delete pMeta;
+        *ppIUnk = NULL;
+    }
+    END_ENTRYPOINT_NOTHROW;
+
+    return hr;
+#else //!FEATURE_METADATA_EMIT
+    return E_NOTIMPL;
+#endif //!FEATURE_METADATA_EMIT
+} // Disp::DefineScope
+#endif // FEATURE_METADATA_EMIT_PORTABLE_PDB
+
 #ifdef FEATURE_METADATA_CUSTOM_DATA_SOURCE
 
 //*****************************************************************************
@@ -595,6 +670,10 @@ HRESULT Disp::QueryInterface(REFIID riid, void **ppUnk)
         *ppUnk = (IMetaDataDispenser *) this;
     else if (riid == IID_IMetaDataDispenserEx)
         *ppUnk = (IMetaDataDispenserEx *) this;
+#ifdef FEATURE_METADATA_EMIT_PORTABLE_PDB
+    else if (riid == IID_IMetaDataDispenserEx2)
+        *ppUnk = (IMetaDataDispenserEx2 *) this;
+#endif
 #ifdef FEATURE_METADATA_CUSTOM_DATA_SOURCE
     else if (riid == IID_IMetaDataDispenserCustom)
         *ppUnk = static_cast<IMetaDataDispenserCustom*>(this);

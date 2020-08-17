@@ -6,6 +6,9 @@ using System.Collections;
 
 namespace System.Security
 {
+#if NET50_OBSOLETIONS
+    [Obsolete(Obsoletions.CodeAccessSecurityMessage, DiagnosticId = Obsoletions.CodeAccessSecurityDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+#endif
     public static partial class SecurityManager
     {
         [Obsolete]

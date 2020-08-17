@@ -47,6 +47,14 @@ namespace Internal.Cryptography
             throw new CryptographicException(SR.Format(SR.Cryptography_UnknownHashAlgorithm, hashAlgorithmId));
         }
 
+        public static class OneShotHashProvider
+        {
+            public static int HashData(string hashAlgorithmId, ReadOnlySpan<byte> source, Span<byte> destination)
+            {
+                throw new NotImplementedException();
+            }
+        }
+
         private sealed class NotImplementedHashProvider : HashProvider
         {
             public NotImplementedHashProvider()

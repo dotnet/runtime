@@ -92,16 +92,17 @@ namespace System.Security.Cryptography.X509Certificates
             return EncodeExtension(subjectKeyIdentifier);
         }
 
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA5350", Justification = "SHA1 is required by RFC3280")]
         private static byte[] GenerateSubjectKeyIdentifierFromPublicKey(PublicKey key, X509SubjectKeyIdentifierHashAlgorithm algorithm)
         {
             switch (algorithm)
             {
                 case X509SubjectKeyIdentifierHashAlgorithm.Sha1:
-                    return ComputeSha1(key.EncodedKeyValue.RawData);
+                    return SHA1.HashData(key.EncodedKeyValue.RawData);
 
                 case X509SubjectKeyIdentifierHashAlgorithm.ShortSha1:
                     {
-                        byte[] sha1 = ComputeSha1(key.EncodedKeyValue.RawData);
+                        byte[] sha1 = SHA1.HashData(key.EncodedKeyValue.RawData);
 
                         //  ShortSha1: The keyIdentifier is composed of a four bit type field with
                         //  the value 0100 followed by the least significant 60 bits of the
@@ -119,15 +120,6 @@ namespace System.Security.Cryptography.X509Certificates
 
                 default:
                     throw new ArgumentException(SR.Format(SR.Arg_EnumIllegalVal, algorithm), nameof(algorithm));
-            }
-        }
-
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA5350", Justification = "SHA1 is required by RFC3280")]
-        private static byte[] ComputeSha1(byte[] data)
-        {
-            using (SHA1 sha1 = SHA1.Create())
-            {
-                return sha1.ComputeHash(data);
             }
         }
 

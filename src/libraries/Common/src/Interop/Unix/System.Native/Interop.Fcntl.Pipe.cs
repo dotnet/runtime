@@ -20,6 +20,7 @@ internal static partial class Interop
             internal static extern int SetPipeSz(SafePipeHandle fd, int size);
 
             [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_FcntlCanGetSetPipeSz")]
+            [SuppressGCTransition]
             private static extern int FcntlCanGetSetPipeSz();
         }
     }

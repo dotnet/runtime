@@ -22,10 +22,8 @@ namespace System.Text.Json
         /// </remarks>
         [CLSCompliant(false)]
         public void WriteNumber(JsonEncodedText propertyName, ulong value)
-            => WriteNumberHelper(propertyName.EncodedUtf8Bytes, value);
-
-        private void WriteNumberHelper(ReadOnlySpan<byte> utf8PropertyName, ulong value)
         {
+            ReadOnlySpan<byte> utf8PropertyName = propertyName.EncodedUtf8Bytes;
             Debug.Assert(utf8PropertyName.Length <= JsonConstants.MaxUnescapedTokenSize);
 
             WriteNumberByOptions(utf8PropertyName, value);

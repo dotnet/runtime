@@ -5,6 +5,11 @@
     <CLRTestKind>BuildAndRun</CLRTestKind>
     <CLRTestPriority>1</CLRTestPriority>
     <CLRTestExecutionArguments>"hello"</CLRTestExecutionArguments>
+    <!-- This test isn't technically incompatible with GCStress, but it ends up running very slowly
+         in some configurations, e.g., GCStress=3 on Linux/arm32 measured at over 30 minutes (on
+         Windows x64, just over one minute).
+    -->
+    <GCStressIncompatible>true</GCStressIncompatible>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="compareexchangetstring.cs" />

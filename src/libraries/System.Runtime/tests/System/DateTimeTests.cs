@@ -1711,13 +1711,16 @@ namespace System.Tests
             yield return new object[] { "2 2 2Z", CultureInfo.InvariantCulture, TimeZoneInfo.ConvertTimeFromUtc(new DateTime(2002, 2, 2, 0, 0, 0, DateTimeKind.Utc), TimeZoneInfo.Local) };
             yield return new object[] { "#10/10/2095#\0", CultureInfo.InvariantCulture, new DateTime(2095, 10, 10, 0, 0, 0) };
 
-            DateTime today = DateTime.Today;
-            var hebrewCulture = new CultureInfo("he-IL");
-            hebrewCulture.DateTimeFormat.Calendar = new HebrewCalendar();
-            yield return new object[] { today.ToString(hebrewCulture), hebrewCulture, today };
+            if (PlatformDetection.IsNotInvariantGlobalization)
+            {
+                DateTime today = DateTime.Today;
+                var hebrewCulture = new CultureInfo("he-IL");
+                hebrewCulture.DateTimeFormat.Calendar = new HebrewCalendar();
+                yield return new object[] { today.ToString(hebrewCulture), hebrewCulture, today };
 
-            var mongolianCulture = new CultureInfo("mn-MN");
-            yield return new object[] { today.ToString(mongolianCulture), mongolianCulture, today };
+                var mongolianCulture = new CultureInfo("mn-MN");
+                yield return new object[] { today.ToString(mongolianCulture), mongolianCulture, today };
+            }
         }
 
         [Theory]
@@ -1832,12 +1835,15 @@ namespace System.Tests
             yield return new object[] { " 9 / 8 / 2017    10 : 11 : 12 AM", "M/d/yyyy HH':'mm':'ss tt\'  \'", CultureInfo.InvariantCulture, DateTimeStyles.AllowWhiteSpaces, new DateTime(2017, 9, 8, 10, 11, 12) };
             yield return new object[] { "   9   /   8   /   2017    10  :   11  :   12  AM", "M/d/yyyy HH':'mm':'ss tt\'  \'", CultureInfo.InvariantCulture, DateTimeStyles.AllowWhiteSpaces, new DateTime(2017, 9, 8, 10, 11, 12) };
 
-            var hebrewCulture = new CultureInfo("he-IL");
-            hebrewCulture.DateTimeFormat.Calendar = new HebrewCalendar();
-            DateTime today = DateTime.Today;
-            foreach (string pattern in hebrewCulture.DateTimeFormat.GetAllDateTimePatterns())
+            if (PlatformDetection.IsNotInvariantGlobalization)
             {
-                yield return new object[] { today.ToString(pattern, hebrewCulture), pattern, hebrewCulture, DateTimeStyles.None, null };
+                var hebrewCulture = new CultureInfo("he-IL");
+                hebrewCulture.DateTimeFormat.Calendar = new HebrewCalendar();
+                DateTime today = DateTime.Today;
+                foreach (string pattern in hebrewCulture.DateTimeFormat.GetAllDateTimePatterns())
+                {
+                    yield return new object[] { today.ToString(pattern, hebrewCulture), pattern, hebrewCulture, DateTimeStyles.None, null };
+                }
             }
         }
 
@@ -2004,15 +2010,27 @@ namespace System.Tests
             yield return new object[] { new DateTime(221550163152616218, DateTimeKind.Utc), "r", null, "Sun, 25 Jan 0703 19:11:55 GMT" };
 
             // Year patterns
-
-            var enUS = new CultureInfo("en-US");
-            var thTH = new CultureInfo("th-TH");
-            yield return new object[] { new DateTime(1234, 5, 6), "yy", enUS, "34" };
-            yield return new object[] { DateTime.MaxValue, "yy", thTH, "42" };
-            for (int i = 3; i < 20; i++)
+            if (PlatformDetection.IsNotInvariantGlobalization)
             {
-                yield return new object[] { new DateTime(1234, 5, 6), new string('y', i), enUS, 1234.ToString("D" + i) };
-                yield return new object[] { DateTime.MaxValue, new string('y', i), thTH, 10542.ToString("D" + i) };
+                var enUS = new CultureInfo("en-US");
+                var thTH = new CultureInfo("th-TH");
+                yield return new object[] { new DateTime(1234, 5, 6), "yy", enUS, "34" };
+                yield return new object[] { DateTime.MaxValue, "yy", thTH, "42" };
+                for (int i = 3; i < 20; i++)
+                {
+                    yield return new object[] { new DateTime(1234, 5, 6), new string('y', i), enUS, 1234.ToString("D" + i) };
+                    yield return new object[] { DateTime.MaxValue, new string('y', i), thTH, 10542.ToString("D" + i) };
+                }
+            }
+            else
+            {
+                var invariant = new CultureInfo("");
+                yield return new object[] { new DateTime(1234, 5, 6), "yy", invariant, "34" };
+
+                for (int i = 3; i < 20; i++)
+                {
+                    yield return new object[] { new DateTime(1234, 5, 6), new string('y', i), invariant, 1234.ToString("D" + i) };
+                }
             }
         }
 
@@ -2299,7 +2317,7 @@ namespace System.Tests
             Assert.Equal(0, dest[dest.Length - 1]);
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
         [MemberData(nameof(ToString_MatchesExpected_MemberData))]
         public static void TryFormat_MatchesExpected(DateTime dateTime, string format, IFormatProvider provider, string expected)
         {

@@ -485,26 +485,6 @@
 #define PAL_CPP_CATCH_EXCEPTION_NOARG catch (Exception *)
 
 
-//  SELECTANY macro is intended to prevent duplication of static const
-//  arrays declared in .h files in binary modules.
-//  The problem is that const variables have static internal linkage
-//  in C++.  That means that if a const variable is declared in a .h file
-//  the compiler will emit it into every translation unit that uses that .h file.
-//  That will cause duplication of the data when those translation units
-//  are linked into a binary module.
-//  SELECTANY declares a variable as extern to give it external linkage
-//  and it provides __declspec(selectany) to instruct the linker to merge
-//  duplicate external const static data copies into one.
-//
-#if defined(SOURCE_FORMATTING)
-#define SELECTANY extern
-#else
-#if defined(__GNUC__)
-#define SELECTANY extern __attribute__((weak))
-#else
-#define SELECTANY extern __declspec(selectany)
-#endif
-#endif
 #if defined(SOURCE_FORMATTING)
 #define __annotation(x)
 #endif

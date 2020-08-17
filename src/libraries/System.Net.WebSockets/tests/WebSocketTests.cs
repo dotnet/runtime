@@ -6,7 +6,6 @@ using Xunit;
 
 namespace System.Net.WebSockets.Tests
 {
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/38807", TestPlatforms.Browser)]
     public sealed class WebSocketTests : WebSocketCreateTest
     {
         protected override WebSocket CreateFromStream(Stream stream, bool isServer, string subProtocol, TimeSpan keepAliveInterval) =>

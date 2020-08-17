@@ -1250,7 +1250,7 @@ namespace System.Diagnostics
             if (!EventLog.SourceExists(sourceName, currentMachineName, true))
             {
                 Mutex mutex = null;
-                RuntimeHelpers.PrepareConstrainedRegions();
+
                 try
                 {
                     NetFrameworkUtils.EnterMutex(eventLogMutexName, ref mutex);

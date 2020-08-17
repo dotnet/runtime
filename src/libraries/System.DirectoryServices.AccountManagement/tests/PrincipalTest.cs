@@ -15,8 +15,8 @@ namespace System.DirectoryServices.AccountManagement.Tests
 
         private void RefreshContext()
         {
-            string username = "Administrator";
-            string password = "Adrumble@6";
+            // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Unit test dummy credentials.")]
+            string username = "Administrator", password = "Adrumble@6";
 
             string OU = "Tests";
             string baseDomain = WindowsIdentity.GetCurrent().Name.Split(new char[] { '\\' })[1] + "-TEST";

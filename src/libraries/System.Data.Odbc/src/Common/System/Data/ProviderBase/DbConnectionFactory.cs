@@ -10,12 +10,12 @@ namespace System.Data.ProviderBase
 {
     internal abstract partial class DbConnectionFactory
     {
-        internal bool TryGetConnection(DbConnection owningConnection, TaskCompletionSource<DbConnectionInternal> retry, DbConnectionOptions userOptions, DbConnectionInternal oldConnection, out DbConnectionInternal connection)
+        internal bool TryGetConnection(DbConnection owningConnection, TaskCompletionSource<DbConnectionInternal>? retry, DbConnectionOptions? userOptions, DbConnectionInternal? oldConnection, out DbConnectionInternal? connection)
         {
             Debug.Assert(null != owningConnection, "null owningConnection?");
 
             DbConnectionPoolGroup poolGroup;
-            DbConnectionPool connectionPool;
+            DbConnectionPool? connectionPool;
             connection = null;
 
             //  Work around race condition with clearing the pool between GetConnectionPool obtaining pool
@@ -32,7 +32,7 @@ namespace System.Data.ProviderBase
 
             do
             {
-                poolGroup = GetConnectionPoolGroup(owningConnection);
+                poolGroup = GetConnectionPoolGroup(owningConnection)!;
                 // Doing this on the callers thread is important because it looks up the WindowsIdentity from the thread.
                 connectionPool = GetConnectionPool(owningConnection, poolGroup);
                 if (null == connectionPool)
@@ -40,7 +40,7 @@ namespace System.Data.ProviderBase
                     // If GetConnectionPool returns null, we can be certain that
                     // this connection should not be pooled via DbConnectionPool
                     // or have a disabled pool entry.
-                    poolGroup = GetConnectionPoolGroup(owningConnection); // previous entry have been disabled
+                    poolGroup = GetConnectionPoolGroup(owningConnection)!; // previous entry have been disabled
 
                     if (retry != null)
                     {
@@ -76,6 +76,7 @@ namespace System.Data.ProviderBase
 
                             // now that we have an antecedent task, schedule our work when it is completed.
                             // If it is a new slot or a completed task, this continuation will start right away.
+                            // TODO: newTask needs to be over non-nullable DbConnection (see below), there may be a bug here
                             newTask = s_pendingOpenNonPooled[idx].ContinueWith((_) =>
                             {
                                 var newConnection = CreateNonPooledConnection(owningConnection, poolGroup, userOptions);
@@ -85,10 +86,10 @@ namespace System.Data.ProviderBase
                                     oldConnection.Dispose();
                                 }
                                 return newConnection;
-                            }, cancellationTokenSource.Token, TaskContinuationOptions.LongRunning, TaskScheduler.Default);
+                            }, cancellationTokenSource.Token, TaskContinuationOptions.LongRunning, TaskScheduler.Default)!;
 
                             // Place this new task in the slot so any future work will be queued behind it
-                            s_pendingOpenNonPooled[idx] = newTask;
+                            s_pendingOpenNonPooled[idx] = newTask!;
                         }
 
                         // Set up the timeout (if needed)
@@ -108,7 +109,7 @@ namespace System.Data.ProviderBase
                             }
                             else if (task.IsFaulted)
                             {
-                                retry.TrySetException(task.Exception.InnerException);
+                                retry.TrySetException(task.Exception!.InnerException!);
                             }
                             else
                             {

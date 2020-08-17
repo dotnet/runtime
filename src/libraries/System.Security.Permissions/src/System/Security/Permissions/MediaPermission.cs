@@ -2,6 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 namespace System.Security.Permissions
 {
+#if NET50_OBSOLETIONS
+    [Obsolete(Obsoletions.CodeAccessSecurityMessage, DiagnosticId = Obsoletions.CodeAccessSecurityDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+#endif
     public enum MediaPermissionAudio
     {
         NoAudio,
@@ -9,6 +12,10 @@ namespace System.Security.Permissions
         SafeAudio,
         AllAudio
     }
+
+#if NET50_OBSOLETIONS
+    [Obsolete(Obsoletions.CodeAccessSecurityMessage, DiagnosticId = Obsoletions.CodeAccessSecurityDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+#endif
     public enum MediaPermissionVideo
     {
         NoVideo,
@@ -16,6 +23,10 @@ namespace System.Security.Permissions
         SafeVideo,
         AllVideo,
     }
+
+#if NET50_OBSOLETIONS
+    [Obsolete(Obsoletions.CodeAccessSecurityMessage, DiagnosticId = Obsoletions.CodeAccessSecurityDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+#endif
     public enum MediaPermissionImage
     {
         NoImage,
@@ -23,6 +34,10 @@ namespace System.Security.Permissions
         SafeImage,
         AllImage,
     }
+
+#if NET50_OBSOLETIONS
+    [Obsolete(Obsoletions.CodeAccessSecurityMessage, DiagnosticId = Obsoletions.CodeAccessSecurityDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+#endif
     public sealed class MediaPermission : CodeAccessPermission, IUnrestrictedPermission
     {
         public MediaPermission() { }
@@ -45,6 +60,10 @@ namespace System.Security.Permissions
         public MediaPermissionVideo Video { get { return MediaPermissionVideo.AllVideo; } }
         public MediaPermissionImage Image { get { return MediaPermissionImage.AllImage; } }
     }
+
+#if NET50_OBSOLETIONS
+    [Obsolete(Obsoletions.CodeAccessSecurityMessage, DiagnosticId = Obsoletions.CodeAccessSecurityDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+#endif
     [AttributeUsage(AttributeTargets.Method | AttributeTargets.Constructor | AttributeTargets.Class | AttributeTargets.Struct | AttributeTargets.Assembly, AllowMultiple = true, Inherited = false)]
     public sealed class MediaPermissionAttribute : CodeAccessSecurityAttribute
     {

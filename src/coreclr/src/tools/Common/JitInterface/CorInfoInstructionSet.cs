@@ -21,17 +21,21 @@ namespace Internal.JitInterface
         ARM64_AdvSimd=2,
         ARM64_Aes=3,
         ARM64_Crc32=4,
-        ARM64_Sha1=5,
-        ARM64_Sha256=6,
-        ARM64_Atomics=7,
-        ARM64_Vector64=8,
-        ARM64_Vector128=9,
-        ARM64_ArmBase_Arm64=10,
-        ARM64_AdvSimd_Arm64=11,
-        ARM64_Aes_Arm64=12,
-        ARM64_Crc32_Arm64=13,
-        ARM64_Sha1_Arm64=14,
-        ARM64_Sha256_Arm64=15,
+        ARM64_Dp=5,
+        ARM64_Rdm=6,
+        ARM64_Sha1=7,
+        ARM64_Sha256=8,
+        ARM64_Atomics=9,
+        ARM64_Vector64=10,
+        ARM64_Vector128=11,
+        ARM64_ArmBase_Arm64=12,
+        ARM64_AdvSimd_Arm64=13,
+        ARM64_Aes_Arm64=14,
+        ARM64_Crc32_Arm64=15,
+        ARM64_Dp_Arm64=16,
+        ARM64_Rdm_Arm64=17,
+        ARM64_Sha1_Arm64=18,
+        ARM64_Sha256_Arm64=19,
         X64_X86Base=1,
         X64_SSE=2,
         X64_SSE2=3,
@@ -196,6 +200,14 @@ namespace Internal.JitInterface
                         resultflags.AddInstructionSet(InstructionSet.ARM64_Crc32_Arm64);
                     if (resultflags.HasInstructionSet(InstructionSet.ARM64_Crc32_Arm64))
                         resultflags.AddInstructionSet(InstructionSet.ARM64_Crc32);
+                    if (resultflags.HasInstructionSet(InstructionSet.ARM64_Dp))
+                        resultflags.AddInstructionSet(InstructionSet.ARM64_Dp_Arm64);
+                    if (resultflags.HasInstructionSet(InstructionSet.ARM64_Dp_Arm64))
+                        resultflags.AddInstructionSet(InstructionSet.ARM64_Dp);
+                    if (resultflags.HasInstructionSet(InstructionSet.ARM64_Rdm))
+                        resultflags.AddInstructionSet(InstructionSet.ARM64_Rdm_Arm64);
+                    if (resultflags.HasInstructionSet(InstructionSet.ARM64_Rdm_Arm64))
+                        resultflags.AddInstructionSet(InstructionSet.ARM64_Rdm);
                     if (resultflags.HasInstructionSet(InstructionSet.ARM64_Sha1))
                         resultflags.AddInstructionSet(InstructionSet.ARM64_Sha1_Arm64);
                     if (resultflags.HasInstructionSet(InstructionSet.ARM64_Sha1_Arm64))
@@ -210,6 +222,10 @@ namespace Internal.JitInterface
                         resultflags.AddInstructionSet(InstructionSet.ARM64_ArmBase);
                     if (resultflags.HasInstructionSet(InstructionSet.ARM64_Crc32))
                         resultflags.AddInstructionSet(InstructionSet.ARM64_ArmBase);
+                    if (resultflags.HasInstructionSet(InstructionSet.ARM64_Dp))
+                        resultflags.AddInstructionSet(InstructionSet.ARM64_AdvSimd);
+                    if (resultflags.HasInstructionSet(InstructionSet.ARM64_Rdm))
+                        resultflags.AddInstructionSet(InstructionSet.ARM64_AdvSimd);
                     if (resultflags.HasInstructionSet(InstructionSet.ARM64_Sha1))
                         resultflags.AddInstructionSet(InstructionSet.ARM64_ArmBase);
                     if (resultflags.HasInstructionSet(InstructionSet.ARM64_Sha256))
@@ -375,6 +391,10 @@ namespace Internal.JitInterface
                         resultflags.AddInstructionSet(InstructionSet.ARM64_Aes);
                     if (resultflags.HasInstructionSet(InstructionSet.ARM64_Crc32_Arm64))
                         resultflags.AddInstructionSet(InstructionSet.ARM64_Crc32);
+                    if (resultflags.HasInstructionSet(InstructionSet.ARM64_Dp_Arm64))
+                        resultflags.AddInstructionSet(InstructionSet.ARM64_Dp);
+                    if (resultflags.HasInstructionSet(InstructionSet.ARM64_Rdm_Arm64))
+                        resultflags.AddInstructionSet(InstructionSet.ARM64_Rdm);
                     if (resultflags.HasInstructionSet(InstructionSet.ARM64_Sha1_Arm64))
                         resultflags.AddInstructionSet(InstructionSet.ARM64_Sha1);
                     if (resultflags.HasInstructionSet(InstructionSet.ARM64_Sha256_Arm64))
@@ -385,6 +405,10 @@ namespace Internal.JitInterface
                         resultflags.AddInstructionSet(InstructionSet.ARM64_Aes);
                     if (resultflags.HasInstructionSet(InstructionSet.ARM64_ArmBase))
                         resultflags.AddInstructionSet(InstructionSet.ARM64_Crc32);
+                    if (resultflags.HasInstructionSet(InstructionSet.ARM64_AdvSimd))
+                        resultflags.AddInstructionSet(InstructionSet.ARM64_Dp);
+                    if (resultflags.HasInstructionSet(InstructionSet.ARM64_AdvSimd))
+                        resultflags.AddInstructionSet(InstructionSet.ARM64_Rdm);
                     if (resultflags.HasInstructionSet(InstructionSet.ARM64_ArmBase))
                         resultflags.AddInstructionSet(InstructionSet.ARM64_Sha1);
                     if (resultflags.HasInstructionSet(InstructionSet.ARM64_ArmBase))
@@ -520,6 +544,8 @@ namespace Internal.JitInterface
                     yield return new InstructionSetInfo("neon", "AdvSimd", InstructionSet.ARM64_AdvSimd, true);
                     yield return new InstructionSetInfo("aes", "Aes", InstructionSet.ARM64_Aes, true);
                     yield return new InstructionSetInfo("crc", "Crc32", InstructionSet.ARM64_Crc32, true);
+                    yield return new InstructionSetInfo("dotprod", "Dp", InstructionSet.ARM64_Dp, true);
+                    yield return new InstructionSetInfo("rdma", "Rdm", InstructionSet.ARM64_Rdm, true);
                     yield return new InstructionSetInfo("sha1", "Sha1", InstructionSet.ARM64_Sha1, true);
                     yield return new InstructionSetInfo("sha2", "Sha256", InstructionSet.ARM64_Sha256, true);
                     yield return new InstructionSetInfo("lse", "", InstructionSet.ARM64_Atomics, true);
@@ -586,6 +612,10 @@ namespace Internal.JitInterface
                         AddInstructionSet(InstructionSet.ARM64_Aes_Arm64);
                     if (HasInstructionSet(InstructionSet.ARM64_Crc32))
                         AddInstructionSet(InstructionSet.ARM64_Crc32_Arm64);
+                    if (HasInstructionSet(InstructionSet.ARM64_Dp))
+                        AddInstructionSet(InstructionSet.ARM64_Dp_Arm64);
+                    if (HasInstructionSet(InstructionSet.ARM64_Rdm))
+                        AddInstructionSet(InstructionSet.ARM64_Rdm_Arm64);
                     if (HasInstructionSet(InstructionSet.ARM64_Sha1))
                         AddInstructionSet(InstructionSet.ARM64_Sha1_Arm64);
                     if (HasInstructionSet(InstructionSet.ARM64_Sha256))

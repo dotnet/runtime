@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<!--  Licensed to the .NET Foundation under one or more agreements. -->
+<!-- The .NET Foundation licenses this file to you under the MIT license. -->
+<html>
+  <head>
+    <title>TESTS</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  </head>
+  <body>
+    <h3 id="header">Wasm Browser Sample</h3>
+    Result from Sample.Test.TestMeaaning: <span id="out"></span>
+    <script type='text/javascript'>
+      var App = {
+        init: function () {
+          var ret = BINDING.call_static_method("[WasmSample] Sample.Test:TestMeaning", []);
+          document.getElementById("out").innerHTML = ret;
+          console.log ("ready");
+        },
+      };
+    </script>
+    <script type="text/javascript" src="mono-config.js"></script>
+    <script type="text/javascript" src="runtime.js"></script>
+
+    <script defer src="dotnet.js"></script>
+
+  </body>
+</html>

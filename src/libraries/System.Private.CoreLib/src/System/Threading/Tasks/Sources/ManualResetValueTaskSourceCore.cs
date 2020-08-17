@@ -31,7 +31,7 @@ namespace System.Threading.Tasks.Sources
         /// <summary>Whether the current operation has completed.</summary>
         private bool _completed;
         /// <summary>The result with which the operation succeeded, or the default value if it hasn't yet completed or failed.</summary>
-        [AllowNull, MaybeNull] private TResult _result;
+        private TResult? _result;
         /// <summary>The exception with which the operation failed, or null if it hasn't yet completed or completed successfully.</summary>
         private ExceptionDispatchInfo? _error;
         /// <summary>The current version of this value, used to help prevent misuse.</summary>
@@ -98,7 +98,7 @@ namespace System.Threading.Tasks.Sources
             }
 
             _error?.Throw();
-            return _result;
+            return _result!;
         }
 
         /// <summary>Schedules the continuation action for this operation.</summary>
@@ -173,7 +173,7 @@ namespace System.Threading.Tasks.Sources
                         break;
 
                     case SynchronizationContext sc:
-                        sc.Post(s =>
+                        sc.Post(static s =>
                         {
                             var tuple = (Tuple<Action<object?>, object?>)s!;
                             tuple.Item1(tuple.Item2);
@@ -244,7 +244,7 @@ namespace System.Threading.Tasks.Sources
             Debug.Assert(_continuation != null);
             Debug.Assert(_executionContext != null);
 
-            ExecutionContext? currentContext = ExecutionContext.Capture();
+            ExecutionContext? currentContext = ExecutionContext.CaptureForRestore();
             // Restore the captured ExecutionContext before executing anything.
             ExecutionContext.Restore(_executionContext);
 
@@ -259,7 +259,7 @@ namespace System.Threading.Tasks.Sources
                     finally
                     {
                         // Restore the current ExecutionContext.
-                        ExecutionContext.Restore(currentContext);
+                        ExecutionContext.RestoreInternal(currentContext);
                     }
                 }
                 else
@@ -284,7 +284,7 @@ namespace System.Threading.Tasks.Sources
                         // Set sync context back to what it was prior to coming in
                         SynchronizationContext.SetSynchronizationContext(syncContext);
                         // Restore the current ExecutionContext.
-                        ExecutionContext.Restore(currentContext);
+                        ExecutionContext.RestoreInternal(currentContext);
                     }
 
                     // Now rethrow the exception; if there is one.
@@ -301,7 +301,7 @@ namespace System.Threading.Tasks.Sources
             finally
             {
                 // Restore the current ExecutionContext.
-                ExecutionContext.Restore(currentContext);
+                ExecutionContext.RestoreInternal(currentContext);
             }
         }
 
@@ -318,7 +318,7 @@ namespace System.Threading.Tasks.Sources
             switch (_capturedContext)
             {
                 case SynchronizationContext sc:
-                    sc.Post(s =>
+                    sc.Post(static s =>
                     {
                         var state = (Tuple<Action<object?>, object?>)s!;
                         state.Item1(state.Item2);

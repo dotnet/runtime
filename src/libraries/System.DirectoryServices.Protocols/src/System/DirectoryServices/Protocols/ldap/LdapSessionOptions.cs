@@ -1093,7 +1093,6 @@ namespace System.DirectoryServices.Protocols
             bool success = false;
             if (ldapConnection != null && ldapConnection._ldapHandle != null && !ldapConnection._ldapHandle.IsInvalid)
             {
-                RuntimeHelpers.PrepareConstrainedRegions();
                 try { }
                 finally
                 {
@@ -1108,7 +1107,6 @@ namespace System.DirectoryServices.Protocols
         {
             if (ldapConnection != null && ldapConnection._ldapHandle != null && !ldapConnection._ldapHandle.IsInvalid)
             {
-                RuntimeHelpers.PrepareConstrainedRegions();
                 try { }
                 finally
                 {

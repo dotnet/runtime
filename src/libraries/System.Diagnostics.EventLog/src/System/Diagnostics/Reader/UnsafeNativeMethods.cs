@@ -459,7 +459,6 @@ namespace Microsoft.Win32
         internal static extern bool EvtCancel(EventLogHandle handle);
 
         [DllImport(WEVTAPI)]
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         internal static extern bool EvtClose(IntPtr handle);
 
         /*

@@ -31,7 +31,7 @@ namespace System.Xml.Schema
             Init();
         }
 
-        internal XdrValidator(XmlValidatingReaderImpl reader, XmlSchemaCollection schemaCollection, IValidationEventHandling eventHandling) : base(reader, schemaCollection, eventHandling)
+        internal XdrValidator(XmlValidatingReaderImpl reader, XmlSchemaCollection schemaCollection, IValidationEventHandling? eventHandling) : base(reader, schemaCollection, eventHandling)
         {
             Init();
         }
@@ -42,7 +42,7 @@ namespace System.Xml.Schema
         [MemberNotNull(nameof(_attPresence))]
         private void Init()
         {
-            _nsManager = reader.NamespaceManager;
+            _nsManager = reader.NamespaceManager!;
             if (_nsManager == null)
             {
                 _nsManager = new XmlNamespaceManager(NameTable);

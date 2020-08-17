@@ -11,8 +11,6 @@ namespace System.Diagnostics.TraceSourceTests
 
     public class TraceClassTests : IDisposable
     {
-        private readonly string TestRunnerAssemblyName = Assembly.GetEntryAssembly().GetName().Name;
-
         void IDisposable.Dispose()
         {
             TraceTestHelper.ResetState();
@@ -339,11 +337,12 @@ namespace System.Diagnostics.TraceSourceTests
             Trace.IndentLevel = 0;
             Trace.WriteLine("Message end.");
             textTL.Flush();
+            string testRunnerAssemblyName = Assembly.GetEntryAssembly()?.GetName().Name ?? string.Empty;
             string newLine = Environment.NewLine;
             var expected =
                 string.Format(
                     "Message start." + newLine + "    This message should be indented.{0} Error: 0 : This error not be indented." + newLine + "    {0} Error: 0 : This error is indented" + newLine + "    {0} Warning: 0 : This warning is indented" + newLine + "    {0} Warning: 0 : This warning is also indented" + newLine + "    {0} Information: 0 : This information in indented" + newLine + "    {0} Information: 0 : This information is also indented" + newLine + "Message end." + newLine + "",
-                    TestRunnerAssemblyName
+                    testRunnerAssemblyName
                 );
 
             Assert.Equal(expected, textTL.Output);

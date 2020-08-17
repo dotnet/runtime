@@ -11,40 +11,55 @@ namespace Internal.Cryptography
 {
     internal static partial class HashProviderDispenser
     {
+        private static volatile IntPtr s_evpMd5;
+        private static volatile IntPtr s_evpSha1;
+        private static volatile IntPtr s_evpSha256;
+        private static volatile IntPtr s_evpSha384;
+        private static volatile IntPtr s_evpSha512;
+
         public static HashProvider CreateHashProvider(string hashAlgorithmId)
         {
-            switch (hashAlgorithmId)
-            {
-                case HashAlgorithmNames.SHA1:
-                    return new EvpHashProvider(Interop.Crypto.EvpSha1());
-                case HashAlgorithmNames.SHA256:
-                    return new EvpHashProvider(Interop.Crypto.EvpSha256());
-                case HashAlgorithmNames.SHA384:
-                    return new EvpHashProvider(Interop.Crypto.EvpSha384());
-                case HashAlgorithmNames.SHA512:
-                    return new EvpHashProvider(Interop.Crypto.EvpSha512());
-                case HashAlgorithmNames.MD5:
-                    return new EvpHashProvider(Interop.Crypto.EvpMd5());
-            }
-            throw new CryptographicException(SR.Format(SR.Cryptography_UnknownHashAlgorithm, hashAlgorithmId));
+            IntPtr evpType = HashAlgorithmToEvp(hashAlgorithmId);
+            return new EvpHashProvider(evpType);
         }
 
-        public static unsafe HashProvider CreateMacProvider(string hashAlgorithmId, ReadOnlySpan<byte> key)
+        public static HashProvider CreateMacProvider(string hashAlgorithmId, ReadOnlySpan<byte> key)
         {
-            switch (hashAlgorithmId)
+            IntPtr evpType = HashAlgorithmToEvp(hashAlgorithmId);
+            return new HmacHashProvider(evpType, key);
+        }
+
+        private static IntPtr HashAlgorithmToEvp(string hashAlgorithmId) => hashAlgorithmId switch {
+            HashAlgorithmNames.SHA1 => s_evpSha1 == IntPtr.Zero ? (s_evpSha1 = Interop.Crypto.EvpSha1()) : s_evpSha1,
+            HashAlgorithmNames.SHA256 => s_evpSha256 == IntPtr.Zero ? (s_evpSha256 = Interop.Crypto.EvpSha256()) : s_evpSha256,
+            HashAlgorithmNames.SHA384 => s_evpSha384 == IntPtr.Zero ? (s_evpSha384 = Interop.Crypto.EvpSha384()) : s_evpSha384,
+            HashAlgorithmNames.SHA512 => s_evpSha512 == IntPtr.Zero ? (s_evpSha512 = Interop.Crypto.EvpSha512()) : s_evpSha512,
+            HashAlgorithmNames.MD5 => s_evpMd5 == IntPtr.Zero ? (s_evpMd5 = Interop.Crypto.EvpMd5()) : s_evpMd5,
+            _ => throw new CryptographicException(SR.Format(SR.Cryptography_UnknownHashAlgorithm, hashAlgorithmId))
+        };
+
+        internal static class OneShotHashProvider
+        {
+            public static unsafe int HashData(string hashAlgorithmId, ReadOnlySpan<byte> source, Span<byte> destination)
             {
-                case HashAlgorithmNames.SHA1:
-                    return new HmacHashProvider(Interop.Crypto.EvpSha1(), key);
-                case HashAlgorithmNames.SHA256:
-                    return new HmacHashProvider(Interop.Crypto.EvpSha256(), key);
-                case HashAlgorithmNames.SHA384:
-                    return new HmacHashProvider(Interop.Crypto.EvpSha384(), key);
-                case HashAlgorithmNames.SHA512:
-                    return new HmacHashProvider(Interop.Crypto.EvpSha512(), key);
-                case HashAlgorithmNames.MD5:
-                    return new HmacHashProvider(Interop.Crypto.EvpMd5(), key);
+                IntPtr evpType = HashAlgorithmToEvp(hashAlgorithmId);
+                Debug.Assert(evpType != IntPtr.Zero);
+
+                int hashSize = Interop.Crypto.EvpMdSize(evpType);
+
+                if (hashSize <= 0 || destination.Length < hashSize)
+                    throw new CryptographicException();
+
+                fixed (byte* pSource = source)
+                fixed (byte* pDestination = destination)
+                {
+                    uint length = (uint)destination.Length;
+                    Check(Interop.Crypto.EvpDigestOneShot(evpType, pSource, source.Length, pDestination, ref length));
+                    Debug.Assert(length == hashSize);
+                }
+
+                return hashSize;
             }
-            throw new CryptographicException(SR.Format(SR.Cryptography_UnknownHashAlgorithm, hashAlgorithmId));
         }
 
         private sealed class EvpHashProvider : HashProvider

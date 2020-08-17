@@ -10,6 +10,7 @@
     <Compile Include="$(MSBuildProjectName).cs" />
   </ItemGroup>
   <PropertyGroup>
+    <CrossGen2TestExtraArguments>--codegenopt JitObjectStackAllocation=1</CrossGen2TestExtraArguments>
     <CLRTestBatchPreCommands><![CDATA[
 $(CLRTestBatchPreCommands)
 set COMPlus_TieredCompilation=0

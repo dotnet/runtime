@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
 using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -159,7 +158,7 @@ namespace System.Data.Common
                 Clear();
                 try
                 {
-                    for (NameValuePair pair = constr._keyChain; null != pair; pair = pair.Next)
+                    for (NameValuePair? pair = constr._keyChain; null != pair; pair = pair.Next)
                     {
                         if (null != pair.Value)
                         {
@@ -503,7 +502,7 @@ namespace System.Data.Common
                             }
 
                             PropertyDescriptor descriptor = new DbConnectionStringBuilderDescriptor(keyword,
-                                                                    GetType(), vtype, false, useAttributes);
+                                                                    GetType(), vtype, false, useAttributes!);
                             propertyDescriptors[keyword] = descriptor;
                         }
                     }
@@ -562,6 +561,7 @@ namespace System.Data.Common
             return new PropertyDescriptorCollection(filteredPropertiesArray);
         }
 
+// TODO: Enable after System.ComponentModel.TypeConverter is annotated
 #nullable disable
         string ICustomTypeDescriptor.GetClassName()
         {

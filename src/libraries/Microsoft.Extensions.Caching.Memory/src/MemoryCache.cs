@@ -103,7 +103,8 @@ namespace Microsoft.Extensions.Caching.Memory
             return new CacheEntry(
                 key,
                 _setEntry,
-                _entryExpirationNotification
+                _entryExpirationNotification,
+                _logger
             );
         }
 
@@ -212,6 +213,14 @@ namespace Microsoft.Extensions.Caching.Memory
                     entry.SetExpired(EvictionReason.Capacity);
 
                     TriggerOvercapacityCompaction();
+                }
+                else
+                {
+                    if (_options.SizeLimit.HasValue)
+                    {
+                        // Entry could not be added due to being expired, reset cache size
+                        Interlocked.Add(ref _cacheSize, -entry.Size.Value);
+                    }
                 }
 
                 entry.InvokeEvictionCallbacks();

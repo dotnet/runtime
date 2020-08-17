@@ -1238,15 +1238,18 @@ namespace System.Tests
             yield return new object[] { new DateTimeOffset(1617181518122280616, TimeSpan.FromSeconds(26280)), "O", null, "5125-08-24T20:50:12.2280616+07:18" };
 
             // Year patterns
-
             var enUS = new CultureInfo("en-US");
             var thTH = new CultureInfo("th-TH");
             yield return new object[] { new DateTimeOffset(new DateTime(1234, 5, 6)), "yy", enUS, "34" };
-            yield return new object[] { DateTimeOffset.MaxValue, "yy", thTH, "42" };
+            if (PlatformDetection.IsNotInvariantGlobalization)
+                yield return new object[] { DateTimeOffset.MaxValue, "yy", thTH, "42" };
+
             for (int i = 3; i < 20; i++)
             {
                 yield return new object[] { new DateTimeOffset(new DateTime(1234, 5, 6)), new string('y', i), enUS, 1234.ToString("D" + i) };
-                yield return new object[] { DateTimeOffset.MaxValue, new string('y', i), thTH, 10542.ToString("D" + i) };
+
+                if (PlatformDetection.IsNotInvariantGlobalization)
+                    yield return new object[] { DateTimeOffset.MaxValue, new string('y', i), thTH, 10542.ToString("D" + i) };
             }
         }
 
@@ -1268,7 +1271,7 @@ namespace System.Tests
             yield return new object[] { new DateTimeOffset(636572516255571994, TimeSpan.FromHours(-5)), "Y", new CultureInfo("da-DK"), "marts 2018" };
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
         [MemberData(nameof(ToString_WithCulture_MatchesExpected_MemberData))]
         public static void ToString_WithCulture_MatchesExpected(DateTimeOffset dateTimeOffset, string format, CultureInfo culture, string expected)
         {
@@ -1349,7 +1352,7 @@ namespace System.Tests
             Assert.Equal(0, actual[actual.Length - 1]);
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
         [MemberData(nameof(ToString_MatchesExpected_MemberData))]
         public static void TryFormat_MatchesExpected(DateTimeOffset dateTimeOffset, string format, IFormatProvider provider, string expected)
         {

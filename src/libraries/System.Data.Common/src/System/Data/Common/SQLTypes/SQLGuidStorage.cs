@@ -12,7 +12,7 @@ namespace System.Data.Common
 {
     internal sealed class SqlGuidStorage : DataStorage
     {
-        private SqlGuid[] _values;
+        private SqlGuid[] _values = default!; // Late-initialized
 
         public SqlGuidStorage(DataColumn column)
         : base(column, typeof(SqlGuid), SqlGuid.Null, SqlGuid.Null, StorageType.SqlGuid)
@@ -25,12 +25,12 @@ namespace System.Data.Common
             {
                 switch (kind)
                 {
-                    case AggregateType.First:
+                    case AggregateType.First: // Does not seem to be implemented
                         if (records.Length > 0)
                         {
                             return _values[records[0]];
                         }
-                        return null;
+                        return null!;
 
                     case AggregateType.Count:
                         int count = 0;
@@ -54,12 +54,13 @@ namespace System.Data.Common
             return _values[recordNo1].CompareTo(_values[recordNo2]);
         }
 
-        public override int CompareValueTo(int recordNo, object value)
+        public override int CompareValueTo(int recordNo, object? value)
         {
+            Debug.Assert(null != value, "null value");
             return _values[recordNo].CompareTo((SqlGuid)value);
         }
 
-        public override object ConvertValue(object value)
+        public override object ConvertValue(object? value)
         {
             if (null != value)
             {

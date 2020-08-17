@@ -413,7 +413,7 @@ namespace System.Runtime.CompilerServices
         public static unsafe void AsRef()
         {
             byte[] b = new byte[4] { 0x42, 0x42, 0x42, 0x42 };
-            fixed (byte * p = b)
+            fixed (byte* p = b)
             {
                 ref int r = ref Unsafe.AsRef<int>(p);
                 Assert.Equal(0x42424242, r);
@@ -839,7 +839,7 @@ namespace System.Runtime.CompilerServices
             Unsafe.SkipInit(out double doubleValue);
 
             // Validate that calling on user-defined unmanaged structs works.
-            
+
             Unsafe.SkipInit(out Byte4 byte4Value);
             Unsafe.SkipInit(out Byte4Short2 byte4Short2Value);
             Unsafe.SkipInit(out Byte512 byte512Value);
@@ -931,6 +931,84 @@ namespace System.Runtime.CompilerServices
             Unsafe.SkipInit(out stringValue);
             Assert.Equal("25", stringValue);
         }
+
+        [Fact]
+        public static unsafe void IsNullRef_NotNull()
+        {
+            // Validate that calling with a primitive type works.
+
+            int intValue = 5;
+            Assert.False(Unsafe.IsNullRef<int>(ref intValue));
+
+            // Validate that calling on user-defined unmanaged structs works.
+
+            Int32Double int32DoubleValue = default;
+            Assert.False(Unsafe.IsNullRef<Int32Double>(ref int32DoubleValue));
+
+            // Validate that calling on reference types works.
+
+            object objectValue = new object();
+            Assert.False(Unsafe.IsNullRef<object>(ref objectValue));
+
+            string stringValue = nameof(IsNullRef_NotNull);
+            Assert.False(Unsafe.IsNullRef<string>(ref stringValue));
+
+            // Validate on ref created from a pointer
+
+            int* p = (int*)1;
+            Assert.False(Unsafe.IsNullRef<int>(ref Unsafe.AsRef<int>(p)));
+        }
+
+        [Fact]
+        public static unsafe void IsNullRef_Null()
+        {
+            // Validate that calling with a primitive type works.
+
+            Assert.True(Unsafe.IsNullRef<int>(ref Unsafe.AsRef<int>(null)));
+
+            // Validate that calling on user-defined unmanaged structs works.
+
+            Assert.True(Unsafe.IsNullRef<Int32Double>(ref Unsafe.AsRef<Int32Double>(null)));
+
+            // Validate that calling on reference types works.
+
+            Assert.True(Unsafe.IsNullRef<object>(ref Unsafe.AsRef<object>(null)));
+            Assert.True(Unsafe.IsNullRef<string>(ref Unsafe.AsRef<string>(null)));
+
+            // Validate on ref created from a pointer
+
+            int* p = (int*)0;
+            Assert.True(Unsafe.IsNullRef<int>(ref Unsafe.AsRef<int>(p)));
+        }
+
+        [Fact]
+        public static unsafe void NullRef()
+        {
+            // Validate that calling with a primitive type works.
+
+            Assert.True(Unsafe.IsNullRef<int>(ref Unsafe.NullRef<int>()));
+
+            // Validate that calling on user-defined unmanaged structs works.
+
+            Assert.True(Unsafe.IsNullRef<Int32Double>(ref Unsafe.NullRef<Int32Double>()));
+
+            // Validate that calling on reference types works.
+
+            Assert.True(Unsafe.IsNullRef<object>(ref Unsafe.NullRef<object>()));
+            Assert.True(Unsafe.IsNullRef<string>(ref Unsafe.NullRef<string>()));
+
+            // Validate that pinning results in a null pointer
+
+            fixed (void* p = &Unsafe.NullRef<int>())
+            {
+                Assert.True(p == (void*)0);
+            }
+
+            // Validate that dereferencing a null ref throws a NullReferenceException
+
+            Assert.Throws<NullReferenceException>(() => Unsafe.NullRef<int>() = 42);
+            Assert.Throws<NullReferenceException>(() => Unsafe.NullRef<int>());
+        }
     }
 
     [StructLayout(LayoutKind.Explicit)]
@@ -968,7 +1046,7 @@ namespace System.Runtime.CompilerServices
         public fixed byte Bytes[512];
     }
 
-    [StructLayout(LayoutKind.Explicit, Size=16)]
+    [StructLayout(LayoutKind.Explicit, Size = 16)]
     public unsafe struct Int32Double
     {
         [FieldOffset(0)]

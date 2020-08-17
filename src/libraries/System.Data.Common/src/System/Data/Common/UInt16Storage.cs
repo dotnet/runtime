@@ -10,7 +10,7 @@ namespace System.Data.Common
     {
         private const ushort DefaultValue = ushort.MinValue;
 
-        private ushort[] _values;
+        private ushort[] _values = default!; // Late-initialized
 
         public UInt16Storage(DataColumn column)
         : base(column, typeof(ushort), DefaultValue, StorageType.UInt16)
@@ -134,12 +134,12 @@ namespace System.Data.Common
                         }
                         return _nullValue;
 
-                    case AggregateType.First:
+                    case AggregateType.First: // Does not seem to be implemented
                         if (records.Length > 0)
                         {
                             return _values[records[0]];
                         }
-                        return null;
+                        return null!;
 
                     case AggregateType.Count:
                         count = 0;
@@ -177,7 +177,7 @@ namespace System.Data.Common
             return valueNo1 - valueNo2; // copied from UInt16.CompareTo(UInt16)
         }
 
-        public override int CompareValueTo(int recordNo, object value)
+        public override int CompareValueTo(int recordNo, object? value)
         {
             System.Diagnostics.Debug.Assert(0 <= recordNo, "Invalid record");
             System.Diagnostics.Debug.Assert(null != value, "null value");
@@ -196,7 +196,7 @@ namespace System.Data.Common
             //return ((int)valueNo1 - (int)valueNo2); // copied from UInt16.CompareTo(UInt16)
         }
 
-        public override object ConvertValue(object value)
+        public override object ConvertValue(object? value)
         {
             if (_nullValue != value)
             {

@@ -21,10 +21,8 @@ namespace System.Text.Json
         /// Writes the <see cref="DateTimeOffset"/> using the round-trippable ('O') <see cref="StandardFormat"/> , for example: 2017-06-12T05:30:45.7680000-07:00.
         /// </remarks>
         public void WriteString(JsonEncodedText propertyName, DateTimeOffset value)
-            => WriteStringHelper(propertyName.EncodedUtf8Bytes, value);
-
-        private void WriteStringHelper(ReadOnlySpan<byte> utf8PropertyName, DateTimeOffset value)
         {
+            ReadOnlySpan<byte> utf8PropertyName = propertyName.EncodedUtf8Bytes;
             Debug.Assert(utf8PropertyName.Length <= JsonConstants.MaxUnescapedTokenSize);
 
             WriteStringByOptions(utf8PropertyName, value);

@@ -5,12 +5,11 @@
 #ifndef _ARRAY_H_
 #define _ARRAY_H_
 
-#define MAX_RANK 32        // If you make this bigger, you need to make MAX_CLASSNAME_LENGTH bigger too.
-                           // if you have an 32 dim array with at least 2 elements in each dim that
-                           // takes up 4Gig!!!  Thus this is a reasonable maximum.
-// (Note: at the time of the above comment, the rank was 32, and
-// MAX_CLASSNAME_LENGTH was 256.  I'm now changing MAX_CLASSNAME_LENGTH
-// to 1024, but not changing MAX_RANK.)
+// A 32 dimension array with at least 2 elements in each dimension requires
+// 4gb of memory. Limit the maximum number of dimensions to a value that 
+// requires 4gb of memory.
+// If you make this bigger, you need to make MAX_CLASSNAME_LENGTH bigger too.
+#define MAX_RANK 32
 
 class MethodTable;
 

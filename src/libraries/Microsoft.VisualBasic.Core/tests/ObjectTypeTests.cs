@@ -342,8 +342,8 @@ namespace Microsoft.VisualBasic.CompilerServices.Tests
             yield return new object[] { "a", "a", 0, 0 };
             yield return new object[] { "a", "b", -1, -1 };
             yield return new object[] { "b", "a", 1, 1 };
-            yield return new object[] { "a", "ABC", 32, -1 };
-            yield return new object[] { "ABC", "a", -32, 1 };
+            yield return new object[] { "a", "ABC", 32, PlatformDetection.IsInvariantGlobalization ? -2 : -1 };
+            yield return new object[] { "ABC", "a", -32, PlatformDetection.IsInvariantGlobalization ? 2 : 1 };
             yield return new object[] { "abc", "ABC", 32, 0 };
         }
     }

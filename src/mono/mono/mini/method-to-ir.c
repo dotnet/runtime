@@ -5497,9 +5497,9 @@ is_supported_tailcall (MonoCompile *cfg, const guint8 *ip, MonoMethod *method, M
 		// http://www.mono-project.com/docs/advanced/runtime/docs/generic-sharing/
 		//
 		// 1. Non-generic non-static methods of reference types have access to the
-		//    RGCTX via the “this” argument (this->vtable->rgctx).
+		//    RGCTX via the "this" argument (this->vtable->rgctx).
 		// 2. a Non-generic static methods of reference types and b. non-generic methods
-		//    of value types need to be passed a pointer to the caller’s class’s VTable in the MONO_ARCH_RGCTX_REG register.
+		//    of value types need to be passed a pointer to the caller's class's VTable in the MONO_ARCH_RGCTX_REG register.
 		// 3. Generic methods need to be passed a pointer to the MRGCTX in the MONO_ARCH_RGCTX_REG register
 		//
 		// That is what vtable_arg is here (always?).
@@ -7233,8 +7233,17 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			} else if ((cmethod->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) && direct_icalls_enabled (cfg, cmethod)) {
 				direct_icall = TRUE;
 			} else if (fsig->pinvoke) {
-				MonoMethod *wrapper = mono_marshal_get_native_wrapper (cmethod, TRUE, cfg->compile_aot);
-				fsig = mono_method_signature_internal (wrapper);
+				if (cmethod->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) {
+					/*
+					 * Avoid calling mono_marshal_get_native_wrapper () too early, it might call managed
+					 * callbacks on netcore.
+					 */
+					fsig = mono_metadata_signature_dup_mempool (cfg->mempool, fsig);
+					fsig->pinvoke = FALSE;
+				} else {
+					MonoMethod *wrapper = mono_marshal_get_native_wrapper (cmethod, TRUE, cfg->compile_aot);
+					fsig = mono_method_signature_internal (wrapper);
+				}
 			} else if (constrained_class) {
 			} else {
 				fsig = mono_method_get_signature_checked (cmethod, image, token, generic_context, cfg->error);
@@ -7397,8 +7406,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				int costs;
 				gboolean always = FALSE;
 
-				if ((cmethod->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) ||
-					(cmethod->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL)) {
+				if (cmethod->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) {
 					/* Prevent inlining of methods that call wrappers */
 					INLINE_FAILURE ("wrapper call");
 					// FIXME? Does this write to cmethod impact tailcall_supported? Probably not.
@@ -10744,6 +10752,24 @@ mono_ldptr:
 			*sp++ = ins;
 			inline_costs += CALL_COST * MIN(10, num_calls++);
 			break;
+		case MONO_CEE_MONO_METHODCONST:
+			g_assert (method->wrapper_type != MONO_WRAPPER_NONE);
+			EMIT_NEW_METHODCONST (cfg, ins, mono_method_get_wrapper_data (method, token));
+			*sp++ = ins;
+			break;
+		case MONO_CEE_MONO_PINVOKE_ADDR_CACHE: {
+			g_assert (method->wrapper_type != MONO_WRAPPER_NONE);
+			MonoMethod *pinvoke_method = (MonoMethod*)mono_method_get_wrapper_data (method, token);
+			/* This is a memory slot used by the wrapper */
+			if (cfg->compile_aot) {
+				EMIT_NEW_AOTCONST (cfg, ins, MONO_PATCH_INFO_METHOD_PINVOKE_ADDR_CACHE, pinvoke_method);
+			} else {
+				gpointer addr = mono_domain_alloc0 (cfg->domain, sizeof (gpointer));
+				EMIT_NEW_PCONST (cfg, ins, addr);
+			}
+			*sp++ = ins;
+			break;
+		}
 		case MONO_CEE_MONO_NOT_TAKEN:
 			g_assert (method->wrapper_type != MONO_WRAPPER_NONE);
 			cfg->cbb->out_of_line = TRUE;

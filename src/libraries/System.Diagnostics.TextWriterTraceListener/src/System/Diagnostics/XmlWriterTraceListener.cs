@@ -258,8 +258,15 @@ namespace System.Diagnostics
             string? processName = s_processName;
             if (processName is null)
             {
-                using Process process = Process.GetCurrentProcess();
-                s_processName = processName = process.ProcessName;
+                try
+                {
+                    using Process process = Process.GetCurrentProcess();
+                    s_processName = processName = process.ProcessName;
+                }
+                catch (PlatformNotSupportedException) // Process isn't supported on Browser
+                {
+                    s_processName = processName = string.Empty;
+                }
             }
 
             InternalWrite("\" />");

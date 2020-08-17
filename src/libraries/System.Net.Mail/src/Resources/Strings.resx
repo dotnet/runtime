@@ -334,7 +334,7 @@
   <data name="SmtpGetIisPickupDirectoryNotSupported" xml:space="preserve">
     <value>IIS delivery is not supported.</value>
   </data>
-  <data name="SystemNetMailNotSupported" xml:space="preserve">
+  <data name="SystemNetMail_PlatformNotSupported" xml:space="preserve">
     <value>System.Net.Mail is not supported on this platform.</value>
   </data>
 </root>

@@ -714,7 +714,7 @@ namespace System.Drawing.Tests
             using (var image = new Bitmap(10, 10))
             using (Graphics graphics = Graphics.FromImage(image))
             {
-                IntPtr hdc = graphics.GetHdc();
+                graphics.GetHdc();
                 try
                 {
                     var logFont = new UnblittableLOGFONT
@@ -784,7 +784,6 @@ namespace System.Drawing.Tests
         [InlineData(FontStyle.Strikeout | FontStyle.Bold | FontStyle.Italic, 255, true, "@", 700)]
         [InlineData(FontStyle.Regular, 0, false, "", 400)]
         [InlineData(FontStyle.Regular, 10, false, "", 400)]
-        [SkipOnCoreClr("https://github.com/dotnet/runtime/issues/38889", RuntimeTestModes.TailcallStress)]
         public void ToLogFont_Invoke_ReturnsExpected(FontStyle fontStyle, byte gdiCharSet, bool gdiVerticalFont, string expectedNamePrefix, int expectedWeight)
         {
             using (FontFamily family = FontFamily.GenericMonospace)
@@ -818,7 +817,6 @@ namespace System.Drawing.Tests
         [InlineData(TextRenderingHint.SingleBitPerPixel)]
         [InlineData(TextRenderingHint.SingleBitPerPixelGridFit)]
         [InlineData(TextRenderingHint.ClearTypeGridFit)]
-        [SkipOnCoreClr("https://github.com/dotnet/runtime/issues/38889", RuntimeTestModes.TailcallStress)]
         public void ToLogFont_InvokeGraphics_ReturnsExpected(TextRenderingHint textRenderingHint)
         {
             using (FontFamily family = FontFamily.GenericMonospace)

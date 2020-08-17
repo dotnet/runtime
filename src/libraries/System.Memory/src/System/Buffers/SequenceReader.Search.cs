@@ -406,6 +406,42 @@ namespace System.Buffers
         }
 
         /// <summary>
+        /// Try to read everything up to the given <paramref name="delimiter"/>.
+        /// </summary>
+        /// <param name="span">The read data, if any.</param>
+        /// <param name="delimiter">The delimiter to look for.</param>
+        /// <param name="advancePastDelimiter">True to move past the <paramref name="delimiter"/> if found.</param>
+        /// <returns>True if the <paramref name="delimiter"/> was found.</returns>
+        public bool TryReadTo(out ReadOnlySpan<T> span, ReadOnlySpan<T> delimiter, bool advancePastDelimiter = true)
+        {
+            ReadOnlySpan<T> remaining = UnreadSpan;
+            int index = remaining.IndexOf(delimiter);
+
+            if (index >= 0)
+            {
+                span = remaining.Slice(0, index);
+                AdvanceCurrentSpan(index + (advancePastDelimiter ? delimiter.Length : 0));
+                return true;
+            }
+
+            // This delimiter might be skipped, go down the slow path
+            return TryReadToSlow(out span, delimiter, advancePastDelimiter);
+        }
+
+        private bool TryReadToSlow(out ReadOnlySpan<T> span, ReadOnlySpan<T> delimiter, bool advancePastDelimiter)
+        {
+            if (!TryReadTo(out ReadOnlySequence<T> sequence, delimiter, advancePastDelimiter))
+            {
+                span = default;
+                return false;
+            }
+
+            Debug.Assert(sequence.Length > 0);
+            span = sequence.IsSingleSegment ? sequence.First.Span : sequence.ToArray();
+            return true;
+        }
+
+        /// <summary>
         /// Try to read data until the entire given <paramref name="delimiter"/> matches.
         /// </summary>
         /// <param name="sequence">The read data, if any.</param>

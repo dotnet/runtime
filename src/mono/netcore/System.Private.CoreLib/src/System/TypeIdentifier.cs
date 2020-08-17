@@ -74,7 +74,7 @@ namespace System
 
             public abstract ITypeName NestedName(ITypeIdentifier innerName);
 
-            public bool Equals([AllowNull] ITypeName other)
+            public bool Equals(ITypeName? other)
             {
                 return other != null && DisplayName == other.DisplayName;
             }

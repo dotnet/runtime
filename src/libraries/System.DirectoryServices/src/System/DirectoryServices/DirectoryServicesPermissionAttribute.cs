@@ -6,6 +6,7 @@ using System.Security.Permissions;
 
 namespace System.DirectoryServices
 {
+    [Obsolete(Obsoletions.CodeAccessSecurityMessage, DiagnosticId = Obsoletions.CodeAccessSecurityDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
     [AttributeUsage(AttributeTargets.Assembly | AttributeTargets.Class | AttributeTargets.Struct |
         AttributeTargets.Constructor | AttributeTargets.Method | AttributeTargets.Event,
         AllowMultiple = true, Inherited = false)]

@@ -918,7 +918,6 @@ namespace System.Drawing
         }
 
         // This is called from AppDomain.ProcessExit and AppDomain.DomainUnload.
-        [PrePrepareMethod]
         private static void OnDomainUnload(object? sender, EventArgs e)
         {
             if (s_halftonePalette != IntPtr.Zero)

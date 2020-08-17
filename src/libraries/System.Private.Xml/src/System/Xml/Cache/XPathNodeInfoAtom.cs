@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#nullable enable
 using System;
 using System.Diagnostics;
 using System.Text;
@@ -17,13 +18,13 @@ namespace MS.Internal.Xml.Cache
     {
         private readonly int _pageNum;
         private int _nodeCount;
-        private readonly XPathNode[] _pagePrev;
-        private XPathNode[] _pageNext;
+        private readonly XPathNode[]? _pagePrev;
+        private XPathNode[]? _pageNext;
 
         /// <summary>
         /// Constructor.
         /// </summary>
-        public XPathNodePageInfo(XPathNode[] pagePrev, int pageNum)
+        public XPathNodePageInfo(XPathNode[]? pagePrev, int pageNum)
         {
             _pagePrev = pagePrev;
             _pageNum = pageNum;
@@ -50,7 +51,7 @@ namespace MS.Internal.Xml.Cache
         /// <summary>
         /// Return the previous node page in the document.
         /// </summary>
-        public XPathNode[] PreviousPage
+        public XPathNode[]? PreviousPage
         {
             get { return _pagePrev; }
         }
@@ -58,7 +59,7 @@ namespace MS.Internal.Xml.Cache
         /// <summary>
         /// Return the next node page in the document.
         /// </summary>
-        public XPathNode[] NextPage
+        public XPathNode[]? NextPage
         {
             get { return _pageNext; }
             set { _pageNext = value; }
@@ -77,20 +78,20 @@ namespace MS.Internal.Xml.Cache
     /// </summary>
     internal sealed class XPathNodeInfoAtom : IEquatable<XPathNodeInfoAtom>
     {
-        private string _localName;
-        private string _namespaceUri;
-        private string _prefix;
-        private string _baseUri;
-        private XPathNode[] _pageParent;
-        private XPathNode[] _pageSibling;
-        private XPathNode[] _pageSimilar;
-        private XPathDocument _doc;
+        private string _localName = null!;
+        private string _namespaceUri = null!;
+        private string _prefix = null!;
+        private string? _baseUri;
+        private XPathNode[]? _pageParent;
+        private XPathNode[]? _pageSibling;
+        private XPathNode[]? _pageSimilar;
+        private XPathDocument _doc = null!;
         private int _lineNumBase;
         private int _linePosBase;
         private int _hashCode;
         private int _localNameHash;
-        private XPathNodeInfoAtom _next;
-        private XPathNodePageInfo _pageInfo;
+        private XPathNodeInfoAtom? _next;
+        private XPathNodePageInfo? _pageInfo;
 
 
         /// <summary>
@@ -105,8 +106,8 @@ namespace MS.Internal.Xml.Cache
         /// <summary>
         /// Construct a new shared information atom.  This method should only be used by the XNodeInfoTable.
         /// </summary>
-        public XPathNodeInfoAtom(string localName, string namespaceUri, string prefix, string baseUri,
-                                         XPathNode[] pageParent, XPathNode[] pageSibling, XPathNode[] pageSimilar,
+        public XPathNodeInfoAtom(string localName, string namespaceUri, string prefix, string? baseUri,
+                                         XPathNode[]? pageParent, XPathNode[]? pageSibling, XPathNode[]? pageSimilar,
                                          XPathDocument doc, int lineNumBase, int linePosBase)
         {
             Init(localName, namespaceUri, prefix, baseUri, pageParent, pageSibling, pageSimilar, doc, lineNumBase, linePosBase);
@@ -115,8 +116,8 @@ namespace MS.Internal.Xml.Cache
         /// <summary>
         /// Initialize an existing shared information atom.  This method should only be used by the XNodeInfoTable.
         /// </summary>
-        public void Init(string localName, string namespaceUri, string prefix, string baseUri,
-                         XPathNode[] pageParent, XPathNode[] pageSibling, XPathNode[] pageSimilar,
+        public void Init(string localName, string namespaceUri, string prefix, string? baseUri,
+                         XPathNode[]? pageParent, XPathNode[]? pageSibling, XPathNode[]? pageSimilar,
                          XPathDocument doc, int lineNumBase, int linePosBase)
         {
             Debug.Assert(localName != null && namespaceUri != null && prefix != null && doc != null);
@@ -143,7 +144,7 @@ namespace MS.Internal.Xml.Cache
         /// <summary>
         /// Returns information about the node page.  Only the 0th node on each page has this property defined.
         /// </summary>
-        public XPathNodePageInfo PageInfo
+        public XPathNodePageInfo? PageInfo
         {
             get { return _pageInfo; }
         }
@@ -175,7 +176,7 @@ namespace MS.Internal.Xml.Cache
         /// <summary>
         /// Return the base Uri of nodes that share this information atom.
         /// </summary>
-        public string BaseUri
+        public string? BaseUri
         {
             get { return _baseUri; }
         }
@@ -183,7 +184,7 @@ namespace MS.Internal.Xml.Cache
         /// <summary>
         /// Return the page containing the next sibling of nodes that share this information atom.
         /// </summary>
-        public XPathNode[] SiblingPage
+        public XPathNode[]? SiblingPage
         {
             get { return _pageSibling; }
         }
@@ -191,7 +192,7 @@ namespace MS.Internal.Xml.Cache
         /// <summary>
         /// Return the page containing the next element having a name which has same hashcode as this element.
         /// </summary>
-        public XPathNode[] SimilarElementPage
+        public XPathNode[]? SimilarElementPage
         {
             get { return _pageSimilar; }
         }
@@ -199,7 +200,7 @@ namespace MS.Internal.Xml.Cache
         /// <summary>
         /// Return the page containing the parent of nodes that share this information atom.
         /// </summary>
-        public XPathNode[] ParentPage
+        public XPathNode[]? ParentPage
         {
             get { return _pageParent; }
         }
@@ -239,7 +240,7 @@ namespace MS.Internal.Xml.Cache
         /// <summary>
         /// Link together InfoAtoms that hash to the same hashtable bucket (should only be used by XPathNodeInfoTable)
         /// </summary>
-        public XPathNodeInfoAtom Next
+        public XPathNodeInfoAtom? Next
         {
             get { return _next; }
             set { _next = value; }
@@ -261,13 +262,13 @@ namespace MS.Internal.Xml.Cache
                 unchecked
                 {
                     if (_pageSibling != null)
-                        hashCode += (hashCode << 7) ^ _pageSibling[0].PageInfo.PageNumber;
+                        hashCode += (hashCode << 7) ^ _pageSibling[0].PageInfo!.PageNumber;
 
                     if (_pageParent != null)
-                        hashCode += (hashCode << 7) ^ _pageParent[0].PageInfo.PageNumber;
+                        hashCode += (hashCode << 7) ^ _pageParent[0].PageInfo!.PageNumber;
 
                     if (_pageSimilar != null)
-                        hashCode += (hashCode << 7) ^ _pageSimilar[0].PageInfo.PageNumber;
+                        hashCode += (hashCode << 7) ^ _pageSimilar[0].PageInfo!.PageNumber;
                 }
 
                 // Save hashcode.  Don't save 0, so that it won't ever be recomputed.
@@ -280,27 +281,27 @@ namespace MS.Internal.Xml.Cache
         /// <summary>
         /// Return true if this InfoAtom has the same values as another InfoAtom.
         /// </summary>
-        public override bool Equals(object other)
+        public override bool Equals(object? other)
         {
             return Equals(other as XPathNodeInfoAtom);
         }
 
-        public bool Equals(XPathNodeInfoAtom other)
+        public bool Equals(XPathNodeInfoAtom? other)
         {
             Debug.Assert(other != null);
-            Debug.Assert((object)_doc == (object)other._doc);
+            Debug.Assert((object?)_doc == (object?)other._doc);
             Debug.Assert(_pageInfo == null);
 
             // Assume that name parts are atomized
             if (this.GetHashCode() == other.GetHashCode())
             {
-                if ((object)_localName == (object)other._localName &&
-                    (object)_pageSibling == (object)other._pageSibling &&
-                    (object)_namespaceUri == (object)other._namespaceUri &&
-                    (object)_pageParent == (object)other._pageParent &&
-                    (object)_pageSimilar == (object)other._pageSimilar &&
-                    (object)_prefix == (object)other._prefix &&
-                    (object)_baseUri == (object)other._baseUri &&
+                if ((object?)_localName == (object?)other._localName &&
+                    (object?)_pageSibling == (object?)other._pageSibling &&
+                    (object?)_namespaceUri == (object?)other._namespaceUri &&
+                    (object?)_pageParent == (object?)other._pageParent &&
+                    (object?)_pageSimilar == (object?)other._pageSimilar &&
+                    (object?)_prefix == (object?)other._prefix &&
+                    (object?)_baseUri == (object?)other._baseUri &&
                     _lineNumBase == other._lineNumBase &&
                     _linePosBase == other._linePosBase)
                 {
@@ -322,12 +323,14 @@ namespace MS.Internal.Xml.Cache
             bldr.Append(GetHashCode());
             bldr.Append(", ");
 
+            Debug.Assert(_localName != null);
             if (_localName.Length != 0)
             {
                 bldr.Append('{');
                 bldr.Append(_namespaceUri);
                 bldr.Append('}');
 
+                Debug.Assert(_prefix != null);
                 if (_prefix.Length != 0)
                 {
                     bldr.Append(_prefix);
@@ -341,21 +344,21 @@ namespace MS.Internal.Xml.Cache
             if (_pageParent != null)
             {
                 bldr.Append("parent=");
-                bldr.Append(_pageParent[0].PageInfo.PageNumber);
+                bldr.Append(_pageParent[0].PageInfo!.PageNumber);
                 bldr.Append(", ");
             }
 
             if (_pageSibling != null)
             {
                 bldr.Append("sibling=");
-                bldr.Append(_pageSibling[0].PageInfo.PageNumber);
+                bldr.Append(_pageSibling[0].PageInfo!.PageNumber);
                 bldr.Append(", ");
             }
 
             if (_pageSimilar != null)
             {
                 bldr.Append("similar=");
-                bldr.Append(_pageSimilar[0].PageInfo.PageNumber);
+                bldr.Append(_pageSimilar[0].PageInfo!.PageNumber);
                 bldr.Append(", ");
             }
 
@@ -378,7 +381,7 @@ namespace MS.Internal.Xml.Cache
     {
         private XPathNodeInfoAtom[] _hashTable;
         private int _sizeTable;
-        private XPathNodeInfoAtom _infoCached;
+        private XPathNodeInfoAtom? _infoCached;
 
 #if DEBUG
         private const int DefaultTableSize = 2;
@@ -398,8 +401,8 @@ namespace MS.Internal.Xml.Cache
         /// <summary>
         /// Create a new XNodeInfoAtom and ensure it is atomized in the table.
         /// </summary>
-        public XPathNodeInfoAtom Create(string localName, string namespaceUri, string prefix, string baseUri,
-                                          XPathNode[] pageParent, XPathNode[] pageSibling, XPathNode[] pageSimilar,
+        public XPathNodeInfoAtom Create(string localName, string namespaceUri, string prefix, string? baseUri,
+                                          XPathNode[]? pageParent, XPathNode[]? pageSibling, XPathNode[]? pageSimilar,
                                           XPathDocument doc, int lineNumBase, int linePosBase)
         {
             XPathNodeInfoAtom info;
@@ -434,7 +437,7 @@ namespace MS.Internal.Xml.Cache
         /// </summary>
         private XPathNodeInfoAtom Atomize(XPathNodeInfoAtom info)
         {
-            XPathNodeInfoAtom infoNew, infoNext;
+            XPathNodeInfoAtom? infoNew, infoNext;
 
             // Search for existing XNodeInfoAtom in the table
             infoNew = _hashTable[info.GetHashCode() & (_hashTable.Length - 1)];
@@ -492,7 +495,7 @@ namespace MS.Internal.Xml.Cache
         public override string ToString()
         {
             StringBuilder bldr = new StringBuilder();
-            XPathNodeInfoAtom infoAtom;
+            XPathNodeInfoAtom? infoAtom;
 
             for (int i = 0; i < _hashTable.Length; i++)
             {

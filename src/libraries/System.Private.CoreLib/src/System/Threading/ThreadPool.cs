@@ -938,7 +938,7 @@ namespace System.Threading
         internal static readonly ThreadPoolWorkQueue s_workQueue = new ThreadPoolWorkQueue();
 
         /// <summary>Shim used to invoke <see cref="IAsyncStateMachineBox.MoveNext"/> of the supplied <see cref="IAsyncStateMachineBox"/>.</summary>
-        internal static readonly Action<object?> s_invokeAsyncStateMachineBox = state =>
+        internal static readonly Action<object?> s_invokeAsyncStateMachineBox = static state =>
         {
             if (!(state is IAsyncStateMachineBox box))
             {

@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#nullable enable
 using System.IO;
 using System.Xml;
 using System.Net;
@@ -34,15 +35,16 @@ namespace System.Xml.Resolvers
             }
 
             // Returns true for types that are supported for this preloaded data; Stream must always be supported
-            internal virtual bool SupportsType(Type type)
+            internal virtual bool SupportsType(Type? type)
             {
                 if (type == null || type == typeof(Stream))
                 {
                     return true;
                 }
+
                 return false;
             }
-        };
+        }
 
         //
         // XmlKnownDtdData class
@@ -63,7 +65,7 @@ namespace System.Xml.Resolvers
             internal override Stream AsStream()
             {
                 Assembly asm = GetType().Assembly;
-                return asm.GetManifestResourceStream(_resourceName);
+                return asm.GetManifestResourceStream(_resourceName)!;
             }
         }
 
@@ -110,12 +112,13 @@ namespace System.Xml.Resolvers
                 return new StringReader(_str);
             }
 
-            internal override bool SupportsType(Type type)
+            internal override bool SupportsType(Type? type)
             {
                 if (type == typeof(TextReader))
                 {
                     return true;
                 }
+
                 return base.SupportsType(type);
             }
         }
@@ -123,7 +126,7 @@ namespace System.Xml.Resolvers
         //
         // Fields
         //
-        private readonly XmlResolver _fallbackResolver;
+        private readonly XmlResolver? _fallbackResolver;
         private readonly Dictionary<Uri, PreloadedData> _mappings;
         private readonly XmlKnownDtds _preloadedDtds;
 
@@ -156,17 +159,17 @@ namespace System.Xml.Resolvers
         {
         }
 
-        public XmlPreloadedResolver(XmlResolver fallbackResolver)
+        public XmlPreloadedResolver(XmlResolver? fallbackResolver)
             : this(fallbackResolver, XmlKnownDtds.All, null)
         {
         }
 
-        public XmlPreloadedResolver(XmlResolver fallbackResolver, XmlKnownDtds preloadedDtds)
+        public XmlPreloadedResolver(XmlResolver? fallbackResolver, XmlKnownDtds preloadedDtds)
             : this(fallbackResolver, preloadedDtds, null)
         {
         }
 
-        public XmlPreloadedResolver(XmlResolver fallbackResolver, XmlKnownDtds preloadedDtds, IEqualityComparer<Uri> uriComparer)
+        public XmlPreloadedResolver(XmlResolver? fallbackResolver, XmlKnownDtds preloadedDtds, IEqualityComparer<Uri>? uriComparer)
         {
             _fallbackResolver = fallbackResolver;
             _mappings = new Dictionary<Uri, PreloadedData>(16, uriComparer);
@@ -186,7 +189,7 @@ namespace System.Xml.Resolvers
             }
         }
 
-        public override Uri ResolveUri(Uri baseUri, string relativeUri)
+        public override Uri ResolveUri(Uri? baseUri, string? relativeUri)
         {
             // 1) special-case well-known public IDs
             // 2) To make FxCop happy we need to use StartsWith() overload that takes StringComparison ->
@@ -216,23 +219,25 @@ namespace System.Xml.Resolvers
                     }
                 }
             }
+
             return base.ResolveUri(baseUri, relativeUri);
         }
 
-        public override object GetEntity(Uri absoluteUri, string role, Type ofObjectToReturn)
+        public override object? GetEntity(Uri absoluteUri, string? role, Type? ofObjectToReturn)
         {
             if (absoluteUri == null)
             {
                 throw new ArgumentNullException(nameof(absoluteUri));
             }
 
-            PreloadedData data;
+            PreloadedData? data;
             if (!_mappings.TryGetValue(absoluteUri, out data))
             {
                 if (_fallbackResolver != null)
                 {
                     return _fallbackResolver.GetEntity(absoluteUri, role, ofObjectToReturn);
                 }
+
                 throw new XmlException(SR.Format(SR.Xml_CannotResolveUrl, absoluteUri));
             }
 
@@ -261,14 +266,14 @@ namespace System.Xml.Resolvers
             }
         }
 
-        public override bool SupportsType(Uri absoluteUri, Type type)
+        public override bool SupportsType(Uri absoluteUri, Type? type)
         {
             if (absoluteUri == null)
             {
                 throw new ArgumentNullException(nameof(absoluteUri));
             }
 
-            PreloadedData data;
+            PreloadedData? data;
             if (!_mappings.TryGetValue(absoluteUri, out data))
             {
                 if (_fallbackResolver != null)
@@ -291,6 +296,7 @@ namespace System.Xml.Resolvers
             {
                 throw new ArgumentNullException(nameof(value));
             }
+
             Add(uri, new ByteArrayChunk(value, 0, value.Length));
         }
 

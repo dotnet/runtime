@@ -1,11 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <AssemblyName>System.Private.Xml.Linq</AssemblyName>
     <RootNamespace>System.Xml</RootNamespace>
     <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\System.Private.Xml\src\System.Private.Xml.csproj" />
     <Compile Include="$(CommonPath)System\Collections\Generic\EnumerableHelpers.cs"
              Link="Common\System\Collections\Generic\EnumerableHelpers.cs" />
     <Compile Include="$(CommonPath)System\Text\StringBuilderCache.cs"
@@ -43,6 +41,7 @@
     <Compile Include="System\Xml\XPath\XObjectExtensions.cs" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Private.Xml\src\System.Private.Xml.csproj" />
     <Reference Include="System.Collections" />
     <Reference Include="System.Linq" />
     <Reference Include="System.ObjectModel" />

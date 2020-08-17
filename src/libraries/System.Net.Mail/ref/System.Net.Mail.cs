@@ -53,7 +53,7 @@ namespace System.Net.Mail
         protected AttachmentBase(string fileName) { }
         protected AttachmentBase(string fileName, System.Net.Mime.ContentType? contentType) { }
         protected AttachmentBase(string fileName, string? mediaType) { }
-        [System.Diagnostics.CodeAnalysis.AllowNull]
+        [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public string ContentId { get { throw null; } set { } }
         public System.IO.Stream ContentStream { get { throw null; } }
         public System.Net.Mime.ContentType ContentType { get { throw null; } set { } }
@@ -112,9 +112,9 @@ namespace System.Net.Mail
         public string User { get { throw null; } }
         public override bool Equals(object? value) { throw null; }
         public override int GetHashCode() { throw null; }
-        public static bool TryCreate(string address, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out MailAddress? result) { throw null; }
-        public static bool TryCreate(string address, string? displayName, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out MailAddress? result) { throw null; }
-        public static bool TryCreate(string address, string? displayName, System.Text.Encoding displayNameEncoding, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out MailAddress? result) { throw null; }
+        public static bool TryCreate(string address, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out MailAddress? result) { throw null; }
+        public static bool TryCreate(string address, string? displayName, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out MailAddress? result) { throw null; }
+        public static bool TryCreate(string address, string? displayName, System.Text.Encoding displayNameEncoding, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out MailAddress? result) { throw null; }
         public override string ToString() { throw null; }
     }
     public partial class MailAddressCollection : System.Collections.ObjectModel.Collection<System.Net.Mail.MailAddress>
@@ -134,13 +134,13 @@ namespace System.Net.Mail
         public System.Net.Mail.AlternateViewCollection AlternateViews { get { throw null; } }
         public System.Net.Mail.AttachmentCollection Attachments { get { throw null; } }
         public System.Net.Mail.MailAddressCollection Bcc { get { throw null; } }
-        [System.Diagnostics.CodeAnalysis.AllowNull]
+        [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public string Body { get { throw null; } set { } }
         public System.Text.Encoding? BodyEncoding { get { throw null; } set { } }
         public System.Net.Mime.TransferEncoding BodyTransferEncoding { get { throw null; } set { } }
         public System.Net.Mail.MailAddressCollection CC { get { throw null; } }
         public System.Net.Mail.DeliveryNotificationOptions DeliveryNotificationOptions { get { throw null; } set { } }
-        [System.Diagnostics.CodeAnalysis.DisallowNull]
+        [System.Diagnostics.CodeAnalysis.DisallowNullAttribute]
         public System.Net.Mail.MailAddress? From { get { throw null; } set { } }
         public System.Collections.Specialized.NameValueCollection Headers { get { throw null; } }
         public System.Text.Encoding? HeadersEncoding { get { throw null; } set { } }
@@ -149,9 +149,9 @@ namespace System.Net.Mail
         [System.ObsoleteAttribute("ReplyTo is obsoleted for this type.  Please use ReplyToList instead which can accept multiple addresses. https://go.microsoft.com/fwlink/?linkid=14202")]
         public System.Net.Mail.MailAddress? ReplyTo { get { throw null; } set { } }
         public System.Net.Mail.MailAddressCollection ReplyToList { get { throw null; } }
-        [System.Diagnostics.CodeAnalysis.DisallowNull]
+        [System.Diagnostics.CodeAnalysis.DisallowNullAttribute]
         public System.Net.Mail.MailAddress? Sender { get { throw null; } set { } }
-        [System.Diagnostics.CodeAnalysis.AllowNull]
+        [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public string Subject { get { throw null; } set { } }
         public System.Text.Encoding? SubjectEncoding { get { throw null; } set { } }
         public System.Net.Mail.MailAddressCollection To { get { throw null; } }
@@ -175,7 +175,7 @@ namespace System.Net.Mail
         public System.Net.Mail.SmtpDeliveryFormat DeliveryFormat { get { throw null; } set { } }
         public System.Net.Mail.SmtpDeliveryMethod DeliveryMethod { get { throw null; } set { } }
         public bool EnableSsl { get { throw null; } set { } }
-        [System.Diagnostics.CodeAnalysis.DisallowNull]
+        [System.Diagnostics.CodeAnalysis.DisallowNullAttribute]
         public string? Host { get { throw null; } set { } }
         public string? PickupDirectoryLocation { get { throw null; } set { } }
         public int Port { get { throw null; } set { } }
@@ -298,7 +298,7 @@ namespace System.Net.Mime
         public string? Boundary { get { throw null; } set { } }
         public string? CharSet { get { throw null; } set { } }
         public string MediaType { get { throw null; } set { } }
-        [System.Diagnostics.CodeAnalysis.AllowNull]
+        [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public string Name { get { throw null; } set { } }
         public System.Collections.Specialized.StringDictionary Parameters { get { throw null; } }
         public override bool Equals(object? rparam) { throw null; }

@@ -21,10 +21,8 @@ namespace System.Text.Json
         /// Writes the <see cref="Guid"/> using the default <see cref="StandardFormat"/> (that is, 'D'), as the form: nnnnnnnn-nnnn-nnnn-nnnn-nnnnnnnnnnnn.
         /// </remarks>
         public void WriteString(JsonEncodedText propertyName, Guid value)
-            => WriteStringHelper(propertyName.EncodedUtf8Bytes, value);
-
-        private void WriteStringHelper(ReadOnlySpan<byte> utf8PropertyName, Guid value)
         {
+            ReadOnlySpan<byte> utf8PropertyName = propertyName.EncodedUtf8Bytes;
             Debug.Assert(utf8PropertyName.Length <= JsonConstants.MaxUnescapedTokenSize);
 
             WriteStringByOptions(utf8PropertyName, value);

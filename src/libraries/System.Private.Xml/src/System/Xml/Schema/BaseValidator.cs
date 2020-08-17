@@ -16,7 +16,7 @@ namespace System.Xml.Schema
     internal class BaseValidator
     {
         private readonly XmlSchemaCollection? _schemaCollection;
-        private readonly IValidationEventHandling _eventHandling;
+        private readonly IValidationEventHandling? _eventHandling;
         private readonly XmlNameTable _nameTable;
         private SchemaNames? _schemaNames;
         private readonly PositionInfo _positionInfo;
@@ -45,7 +45,7 @@ namespace System.Xml.Schema
             elementName = other.elementName;
         }
 
-        public BaseValidator(XmlValidatingReaderImpl reader, XmlSchemaCollection? schemaCollection, IValidationEventHandling eventHandling)
+        public BaseValidator(XmlValidatingReaderImpl reader, XmlSchemaCollection? schemaCollection, IValidationEventHandling? eventHandling)
         {
             Debug.Assert(schemaCollection == null || schemaCollection.NameTable == reader.NameTable);
             this.reader = reader;
@@ -110,9 +110,9 @@ namespace System.Xml.Schema
             set { _baseUri = value; }
         }
 
-        public ValidationEventHandler EventHandler
+        public ValidationEventHandler? EventHandler
         {
-            get { return (ValidationEventHandler)_eventHandling.EventHandler; }
+            get { return (ValidationEventHandler?)_eventHandling!.EventHandler; }
         }
 
         public SchemaInfo? SchemaInfo

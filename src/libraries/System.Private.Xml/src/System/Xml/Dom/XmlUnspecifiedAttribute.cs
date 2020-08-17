@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#nullable enable
 namespace System.Xml
 {
     internal class XmlUnspecifiedAttribute : XmlAttribute
@@ -8,7 +9,7 @@ namespace System.Xml
         private bool _fSpecified;
 
 
-        protected internal XmlUnspecifiedAttribute(string prefix, string localName, string namespaceURI, XmlDocument doc)
+        protected internal XmlUnspecifiedAttribute(string? prefix, string localName, string? namespaceURI, XmlDocument doc)
         : base(prefix, localName, namespaceURI, doc)
         {
         }
@@ -38,16 +39,16 @@ namespace System.Xml
             }
         }
 
-        public override XmlNode InsertBefore(XmlNode newChild, XmlNode refChild)
+        public override XmlNode? InsertBefore(XmlNode newChild, XmlNode? refChild)
         {
-            XmlNode node = base.InsertBefore(newChild, refChild);
+            XmlNode? node = base.InsertBefore(newChild, refChild);
             _fSpecified = true;
             return node;
         }
 
-        public override XmlNode InsertAfter(XmlNode newChild, XmlNode refChild)
+        public override XmlNode? InsertAfter(XmlNode newChild, XmlNode? refChild)
         {
-            XmlNode node = base.InsertAfter(newChild, refChild);
+            XmlNode? node = base.InsertAfter(newChild, refChild);
             _fSpecified = true;
             return node;
         }
@@ -66,9 +67,9 @@ namespace System.Xml
             return node;
         }
 
-        public override XmlNode AppendChild(XmlNode newChild)
+        public override XmlNode? AppendChild(XmlNode newChild)
         {
-            XmlNode node = base.AppendChild(newChild);
+            XmlNode? node = base.AppendChild(newChild);
             _fSpecified = true;
             return node;
         }

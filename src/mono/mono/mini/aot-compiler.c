@@ -3424,12 +3424,14 @@ get_shared_ginst_ref (MonoAotCompile *acfg, MonoGenericInst *ginst)
 	guint32 offset = GPOINTER_TO_UINT (g_hash_table_lookup (acfg->ginst_blob_hash, ginst));
 	if (!offset) {
 		guint8 *buf2, *p2;
+		int len;
 
-		buf2 = (guint8 *)g_malloc (1024);
+		len = 1024 + (ginst->type_argc * 32);
+		buf2 = (guint8 *)g_malloc (len);
 		p2 = buf2;
 
 		encode_ginst (acfg, ginst, p2, &p2);
-		g_assert (p2 - buf2 < 1024);
+		g_assert (p2 - buf2 < len);
 
 		offset = add_to_blob (acfg, buf2, p2 - buf2);
 		g_free (buf2);
@@ -6605,6 +6607,7 @@ encode_patch (MonoAotCompile *acfg, MonoJumpInfo *patch_info, guint8 *buf, guint
 	case MONO_PATCH_INFO_ICALL_ADDR_CALL:
 	case MONO_PATCH_INFO_METHOD_RGCTX:
 	case MONO_PATCH_INFO_METHOD_CODE_SLOT:
+	case MONO_PATCH_INFO_METHOD_PINVOKE_ADDR_CACHE:
 		encode_method_ref (acfg, patch_info->data.method, p, &p);
 		break;
 	case MONO_PATCH_INFO_AOT_JIT_INFO:
@@ -8484,7 +8487,8 @@ can_encode_patch (MonoAotCompile *acfg, MonoJumpInfo *patch_info)
 	case MONO_PATCH_INFO_METHOD:
 	case MONO_PATCH_INFO_METHOD_FTNDESC:
 	case MONO_PATCH_INFO_METHODCONST:
-	case MONO_PATCH_INFO_METHOD_CODE_SLOT: {
+	case MONO_PATCH_INFO_METHOD_CODE_SLOT:
+	case MONO_PATCH_INFO_METHOD_PINVOKE_ADDR_CACHE: {
 		MonoMethod *method = patch_info->data.method;
 
 		return can_encode_method (acfg, method);
@@ -12294,6 +12298,9 @@ compile_asm (MonoAotCompile *acfg)
 #define LD_NAME "gcc"
 #define LD_OPTIONS "-dynamiclib -Wl,-Bsymbolic"
 #elif defined(TARGET_AMD64) && defined(TARGET_MACH)
+#define LD_NAME "clang"
+#define LD_OPTIONS "--shared"
+#elif defined(TARGET_ARM64) && defined(TARGET_OSX)
 #define LD_NAME "clang"
 #define LD_OPTIONS "--shared"
 #elif defined(TARGET_WIN32_MSVC)

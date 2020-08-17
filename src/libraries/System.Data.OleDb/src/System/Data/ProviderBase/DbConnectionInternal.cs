@@ -11,7 +11,7 @@ namespace System.Data.ProviderBase
 {
     internal abstract partial class DbConnectionInternal
     {
-        internal void ActivateConnection(SysTx.Transaction transaction)
+        internal void ActivateConnection(SysTx.Transaction? transaction)
         {
             // Internal method called from the connection pooler so we don't expose
             // the Activate method publicly.
@@ -22,7 +22,7 @@ namespace System.Data.ProviderBase
 
             Activate(transaction);
 
-            PerformanceCounters.NumberOfActiveConnections.Increment();
+            PerformanceCounters!.NumberOfActiveConnections.Increment();
         }
 
         internal virtual void CloseConnection(DbConnection owningObject, DbConnectionFactory connectionFactory)
@@ -76,12 +76,12 @@ namespace System.Data.ProviderBase
                 // Lock to prevent race condition with cancellation
                 lock (this)
                 {
-                    object lockToken = ObtainAdditionalLocksForClose();
+                    object? lockToken = ObtainAdditionalLocksForClose();
                     try
                     {
                         PrepareForCloseConnection();
 
-                        DbConnectionPool connectionPool = Pool;
+                        DbConnectionPool? connectionPool = Pool;
 
                         // Detach from enlisted transactions that are no longer active on close
                         DetachCurrentTransactionIfEnded();
@@ -100,7 +100,7 @@ namespace System.Data.ProviderBase
                         {
                             Deactivate();   // ensure we de-activate non-pooled connections, or the data readers and transactions may not get cleaned up...
 
-                            PerformanceCounters.HardDisconnectsPerSecond.Increment();
+                            PerformanceCounters!.HardDisconnectsPerSecond.Increment();
 
                             // To prevent an endless recursion, we need to clear
                             // the owning object before we call dispose so that
@@ -143,7 +143,7 @@ namespace System.Data.ProviderBase
             // Dispose of the _enlistedTransaction since it is a clone
             // of the original reference.
             // _enlistedTransaction can be changed by another thread (TX end event)
-            SysTx.Transaction enlistedTransaction = Interlocked.Exchange(ref _enlistedTransaction, null);
+            SysTx.Transaction? enlistedTransaction = Interlocked.Exchange(ref _enlistedTransaction, null);
             if (enlistedTransaction != null)
             {
                 enlistedTransaction.Dispose();

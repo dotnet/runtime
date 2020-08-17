@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Net.Http.Headers;
+using System.Net.Http.HPack;
 using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
 using System.Text;
@@ -36,7 +37,7 @@ namespace System.Net.Http
 
             private ArrayBuffer _responseBuffer; // mutable struct, do not make this readonly
             private int _pendingWindowUpdate;
-            private CancelableCreditWaiter? _creditWaiter;
+            private CreditWaiter? _creditWaiter;
             private int _availableCredit;
 
             private StreamCompletionState _requestCompletionState;
@@ -144,6 +145,8 @@ namespace System.Net.Http
             }
 
             public int StreamId { get; private set; }
+
+            public bool SendRequestFinished => _requestCompletionState != StreamCompletionState.InProgress;
 
             public HttpResponseMessage GetAndClearResponse()
             {
@@ -300,8 +303,8 @@ namespace System.Net.Http
                 // We await the created Timer's disposal so that we ensure any work associated with it has quiesced prior to this method
                 // returning, just in case this object is pooled and potentially reused for another operation in the future.
                 TaskCompletionSource<bool> waiter = _expect100ContinueWaiter!;
-                using (cancellationToken.UnsafeRegister(s => ((TaskCompletionSource<bool>)s!).TrySetResult(false), waiter))
-                await using (new Timer(s =>
+                using (cancellationToken.UnsafeRegister(static s => ((TaskCompletionSource<bool>)s!).TrySetResult(false), waiter))
+                await using (new Timer(static s =>
                 {
                     var thisRef = (Http2Stream)s!;
                     if (NetEventSource.Log.IsEnabled()) thisRef.Trace($"100-Continue timer expired.");
@@ -349,7 +352,11 @@ namespace System.Net.Http
                     _creditWaiter = null;
                 }
 
-                if (HttpTelemetry.Log.IsEnabled()) HttpTelemetry.Log.RequestStop();
+                if (HttpTelemetry.Log.IsEnabled())
+                {
+                    bool aborted = _requestCompletionState == StreamCompletionState.Failed || _responseCompletionState == StreamCompletionState.Failed;
+                    _request.OnStopped(aborted);
+                }
             }
 
             private void Cancel()
@@ -385,7 +392,7 @@ namespace System.Net.Http
                     _waitSource.SetResult(true);
                 }
 
-                if (HttpTelemetry.Log.IsEnabled()) HttpTelemetry.Log.RequestAborted();
+                if (HttpTelemetry.Log.IsEnabled()) _request.OnAborted();
             }
 
             // Returns whether the waiter should be signalled or not.
@@ -424,7 +431,7 @@ namespace System.Net.Http
                 lock (SyncObject)
                 {
                     _availableCredit = checked(_availableCredit + amount);
-                    if (_availableCredit > 0 && _creditWaiter != null && _creditWaiter.IsPending)
+                    if (_availableCredit > 0 && _creditWaiter != null)
                     {
                         int granted = Math.Min(_availableCredit, _creditWaiter.Amount);
                         if (_creditWaiter.TrySetResult(granted))
@@ -438,13 +445,14 @@ namespace System.Net.Http
             void IHttpHeadersHandler.OnStaticIndexedHeader(int index)
             {
                 // TODO: https://github.com/dotnet/runtime/issues/1505
-                Debug.Fail("Currently unused by HPACK, this should never be called.");
+                ref readonly HeaderField entry = ref H2StaticTable.Get(index - 1);
+                OnHeader(entry.Name, entry.Value);
             }
 
             void IHttpHeadersHandler.OnStaticIndexedHeader(int index, ReadOnlySpan<byte> value)
             {
                 // TODO: https://github.com/dotnet/runtime/issues/1505
-                Debug.Fail("Currently unused by HPACK, this should never be called.");
+                OnHeader(H2StaticTable.Get(index - 1).Name, value);
             }
 
             public void OnHeader(ReadOnlySpan<byte> name, ReadOnlySpan<byte> value)
@@ -540,24 +548,26 @@ namespace System.Net.Http
                             throw new HttpRequestException(SR.Format(SR.net_http_invalid_response_header_name, Encoding.ASCII.GetString(name)));
                         }
 
+                        Encoding? valueEncoding = _connection._pool.Settings._responseHeaderEncodingSelector?.Invoke(descriptor.Name, _request);
+
                         // Note we ignore the return value from TryAddWithoutValidation;
                         // if the header can't be added, we silently drop it.
                         if (_responseProtocolState == ResponseProtocolState.ExpectingTrailingHeaders)
                         {
                             Debug.Assert(_trailers != null);
-                            string headerValue = descriptor.GetHeaderValue(value);
+                            string headerValue = descriptor.GetHeaderValue(value, valueEncoding);
                             _trailers.TryAddWithoutValidation((descriptor.HeaderType & HttpHeaderType.Request) == HttpHeaderType.Request ? descriptor.AsCustomHeader() : descriptor, headerValue);
                         }
                         else if ((descriptor.HeaderType & HttpHeaderType.Content) == HttpHeaderType.Content)
                         {
                             Debug.Assert(_response != null && _response.Content != null);
-                            string headerValue = descriptor.GetHeaderValue(value);
+                            string headerValue = descriptor.GetHeaderValue(value, valueEncoding);
                             _response.Content.Headers.TryAddWithoutValidation(descriptor, headerValue);
                         }
                         else
                         {
                             Debug.Assert(_response != null);
-                            string headerValue = _connection.GetResponseHeaderValueWithCaching(descriptor, value);
+                            string headerValue = _connection.GetResponseHeaderValueWithCaching(descriptor, value, valueEncoding);
                             _response.Headers.TryAddWithoutValidation((descriptor.HeaderType & HttpHeaderType.Request) == HttpHeaderType.Request ? descriptor.AsCustomHeader() : descriptor, headerValue);
                         }
                     }
@@ -566,6 +576,8 @@ namespace System.Net.Http
 
             public void OnHeadersStart()
             {
+                if (HttpTelemetry.Log.IsEnabled()) HttpTelemetry.Log.ResponseHeadersBegin();
+
                 Debug.Assert(!Monitor.IsEntered(SyncObject));
                 lock (SyncObject)
                 {
@@ -1096,11 +1108,10 @@ namespace System.Net.Http
                             {
                                 if (_creditWaiter is null)
                                 {
-                                    _creditWaiter = new CancelableCreditWaiter(SyncObject, _requestBodyCancellationSource.Token);
+                                    _creditWaiter = new CreditWaiter(_requestBodyCancellationSource.Token);
                                 }
                                 else
                                 {
-                                    Debug.Assert(!_creditWaiter.IsPending);
                                     _creditWaiter.ResetForAwait(_requestBodyCancellationSource.Token);
                                 }
                                 _creditWaiter.Amount = buffer.Length;
@@ -1109,9 +1120,9 @@ namespace System.Net.Http
 
                         if (sendSize == -1)
                         {
+                            // Logically this is part of the else block above, but we can't await while holding the lock.
                             Debug.Assert(_creditWaiter != null);
                             sendSize = await _creditWaiter.AsValueTask().ConfigureAwait(false);
-                            _creditWaiter.CleanUp();
                         }
 
                         ReadOnlyMemory<byte> current;
@@ -1144,12 +1155,16 @@ namespace System.Net.Http
                 {
                     Cancel();
                 }
+                else
+                {
+                    _request.OnStopped();
+                }
 
                 _responseBuffer.Dispose();
             }
 
             private CancellationTokenRegistration RegisterRequestBodyCancellation(CancellationToken cancellationToken) =>
-                cancellationToken.UnsafeRegister(s => ((CancellationTokenSource)s!).Cancel(), _requestBodyCancellationSource);
+                cancellationToken.UnsafeRegister(static s => ((CancellationTokenSource)s!).Cancel(), _requestBodyCancellationSource);
 
             // This object is itself usable as a backing source for ValueTask.  Since there's only ever one awaiter
             // for this object's state transitions at a time, we allow the object to be awaited directly. All functionality
@@ -1191,7 +1206,7 @@ namespace System.Net.Http
                 // However, this could still be non-cancelable if HttpMessageInvoker was used, at which point this will only be
                 // cancelable if the caller's token was cancelable.
 
-                _waitSourceCancellation = cancellationToken.UnsafeRegister(s =>
+                _waitSourceCancellation = cancellationToken.UnsafeRegister(static s =>
                 {
                     var thisRef = (Http2Stream)s!;
 

@@ -44,6 +44,7 @@ namespace System.Tests
         }
 
         [Fact]
+        [PlatformSpecific(~TestPlatforms.Browser)] // throws pNSE
         public void TargetFrameworkTest()
         {
             const int ExpectedExitCode = 0;
@@ -129,7 +130,7 @@ namespace System.Tests
 
             // GetEntryAssembly may be null (i.e. desktop)
             if (expected == null)
-                expected = Assembly.GetExecutingAssembly().GetName().Name;
+                expected = "DefaultDomain";
 
             Assert.Equal(expected, s);
         }
@@ -357,6 +358,7 @@ namespace System.Tests
         }
 
         [Fact]
+        [PlatformSpecific(~TestPlatforms.Browser)]
         public void LoadBytes()
         {
             Assembly assembly = typeof(AppDomainTests).Assembly;
@@ -371,6 +373,7 @@ namespace System.Tests
         }
 
         [Fact]
+        [PlatformSpecific(~TestPlatforms.Browser)] // Throws PNSE
         public void MonitoringIsEnabled()
         {
             Assert.True(AppDomain.MonitoringIsEnabled);
@@ -737,9 +740,11 @@ namespace System.Tests
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public static void GetPermissionSet()
         {
+#pragma warning disable SYSLIB0003 // Obsolete: CAS
             RemoteExecutor.Invoke(() => {
                 Assert.Equal(new PermissionSet(PermissionState.Unrestricted), AppDomain.CurrentDomain.PermissionSet);
             }).Dispose();
+#pragma warning restore SYSLIB0003 // Obsolete: CAS
         }
 
         [Theory]

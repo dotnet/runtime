@@ -1670,7 +1670,7 @@ namespace System.Threading.Tasks
             if (continuationFunction != null)
             {
                 return starter.ContinueWith(
-                    (completedTasks, state) =>
+                    static (completedTasks, state) =>
                     {
                         completedTasks.NotifyDebuggerOfWaitCompletionIfNecessary();
                         Debug.Assert(state is Func<Task[], TResult>);
@@ -1682,7 +1682,7 @@ namespace System.Threading.Tasks
             {
                 Debug.Assert(continuationAction != null);
                 return starter.ContinueWith<TResult>(
-                   (completedTasks, state) =>
+                   static (completedTasks, state) =>
                    {
                        completedTasks.NotifyDebuggerOfWaitCompletionIfNecessary();
                        Debug.Assert(state is Action<Task[]>);
@@ -1992,7 +1992,7 @@ namespace System.Threading.Tasks
             if (continuationFunction != null)
             {
                 return starter.ContinueWith(
-                     (completedTask, state) =>
+                     static (completedTask, state) =>
                      {
                          Debug.Assert(state is Func<Task, TResult>);
                          return ((Func<Task, TResult>)state)(completedTask.Result);
@@ -2003,7 +2003,7 @@ namespace System.Threading.Tasks
             {
                 Debug.Assert(continuationAction != null);
                 return starter.ContinueWith<TResult>(
-                    (completedTask, state) =>
+                    static (completedTask, state) =>
                     {
                         Debug.Assert(state is Action<Task>);
                         ((Action<Task>)state)(completedTask.Result);
@@ -2063,7 +2063,7 @@ namespace System.Threading.Tasks
     {
         // ContinueWith delegate for TaskFactory<TResult>.ContinueWhenAnyImpl<TAntecedentResult>(non-null continuationFunction)
         internal static Func<Task<Task>, object?, TResult> CWAnyFuncDelegate =
-            (Task<Task> wrappedWinner, object? state) =>
+            static (Task<Task> wrappedWinner, object? state) =>
             {
                 Debug.Assert(state is Func<Task<TAntecedentResult>, TResult>);
                 var func = (Func<Task<TAntecedentResult>, TResult>)state;
@@ -2073,7 +2073,7 @@ namespace System.Threading.Tasks
 
         // ContinueWith delegate for TaskFactory<TResult>.ContinueWhenAnyImpl<TAntecedentResult>(non-null continuationAction)
         internal static Func<Task<Task>, object?, TResult> CWAnyActionDelegate =
-            (Task<Task> wrappedWinner, object? state) =>
+            static (Task<Task> wrappedWinner, object? state) =>
             {
                 Debug.Assert(state is Action<Task<TAntecedentResult>>);
                 var action = (Action<Task<TAntecedentResult>>)state;
@@ -2084,7 +2084,7 @@ namespace System.Threading.Tasks
 
         // ContinueWith delegate for TaskFactory<TResult>.ContinueWhenAllImpl<TAntecedentResult>(non-null continuationFunction)
         internal static Func<Task<Task<TAntecedentResult>[]>, object?, TResult> CWAllFuncDelegate =
-            (Task<Task<TAntecedentResult>[]> wrappedAntecedents, object? state) =>
+            static (Task<Task<TAntecedentResult>[]> wrappedAntecedents, object? state) =>
             {
                 wrappedAntecedents.NotifyDebuggerOfWaitCompletionIfNecessary();
                 Debug.Assert(state is Func<Task<TAntecedentResult>[], TResult>);
@@ -2094,7 +2094,7 @@ namespace System.Threading.Tasks
 
         // ContinueWith delegate for TaskFactory<TResult>.ContinueWhenAllImpl<TAntecedentResult>(non-null continuationAction)
         internal static Func<Task<Task<TAntecedentResult>[]>, object?, TResult> CWAllActionDelegate =
-            (Task<Task<TAntecedentResult>[]> wrappedAntecedents, object? state) =>
+            static (Task<Task<TAntecedentResult>[]> wrappedAntecedents, object? state) =>
             {
                 wrappedAntecedents.NotifyDebuggerOfWaitCompletionIfNecessary();
                 Debug.Assert(state is Action<Task<TAntecedentResult>[]>);

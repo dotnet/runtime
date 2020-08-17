@@ -41,21 +41,6 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
             IntPtr puArgErr);
     }
 
-    /// <summary>
-    /// Layout of the IDispatch vtable
-    /// </summary>
-    internal enum IDispatchMethodIndices
-    {
-        IUnknown_QueryInterface,
-        IUnknown_AddRef,
-        IUnknown_Release,
-
-        IDispatch_GetTypeInfoCount,
-        IDispatch_GetTypeInfo,
-        IDispatch_GetIDsOfNames,
-        IDispatch_Invoke
-    }
-
     [ComImport]
     [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
     [Guid("B196B283-BAB4-101A-B69C-00AA00341D07")]

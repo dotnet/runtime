@@ -518,6 +518,20 @@ namespace ILCompiler.PEWriter
             }
         }
 
+        public void AddSymbolForRange(ISymbolNode symbol, ISymbolNode firstNode, ISymbolNode secondNode)
+        {
+            SymbolTarget firstSymbolTarget = _symbolMap[firstNode];
+            SymbolTarget secondSymbolTarget = _symbolMap[secondNode];
+            Debug.Assert(firstSymbolTarget.SectionIndex == secondSymbolTarget.SectionIndex);
+            Debug.Assert(firstSymbolTarget.Offset <= secondSymbolTarget.Offset);
+
+            _symbolMap.Add(symbol, new SymbolTarget(
+                sectionIndex: firstSymbolTarget.SectionIndex,
+                offset: firstSymbolTarget.Offset,
+                size: secondSymbolTarget.Offset - firstSymbolTarget.Offset + secondSymbolTarget.Size
+                ));
+        }
+
         /// <summary>
         /// Get the list of sections that need to be emitted to the output PE file.
         /// We filter out name duplicates as we'll end up merging builder sections with the same name

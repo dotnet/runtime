@@ -49,9 +49,9 @@ namespace MonoTests.System.Configuration
         }
 
         [Fact]
-        public void Ctor_TypeError()
+        public void Ctor_Object()
         {
-            GenericEnumConverter cv = new GenericEnumConverter(typeof(object));
+            Assert.NotNull(new GenericEnumConverter(typeof(object)));
         }
 
         [Fact]

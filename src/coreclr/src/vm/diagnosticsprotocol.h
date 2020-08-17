@@ -70,24 +70,15 @@ namespace DiagnosticsIpc
         Dump          = 0x01,
         EventPipe     = 0x02,
         Profiler      = 0x03,
+        Process       = 0x04,
 
         Server        = 0xFF,
     };
 
-    // Overlaps with DiagnosticServerResponseId
-    // DON'T create overlapping values
-    enum class DiagnosticServerCommandId : uint8_t
-    {
-        // 0x00 used in DiagnosticServerResponseId
-        ResumeRuntime = 0x01,
-        // 0xFF used DiagnosticServerResponseId
-    };
-
-    // Overlaps with DiagnosticServerCommandId
-    // DON'T create overlapping values
     enum class DiagnosticServerResponseId : uint8_t
     {
         OK            = 0x00,
+        // future
         Error         = 0xFF,
     };
 
@@ -121,7 +112,7 @@ namespace DiagnosticsIpc
      * 
      * See spec in: dotnet/diagnostics@documentation/design-docs/ipc-spec.md
      * 
-     * The flow for Advertise is a one-way burst of 24 bytes consisting of
+     * The flow for Advertise is a one-way burst of 34 bytes consisting of
      * 8 bytes  - "ADVR_V1\0" (ASCII chars + null byte)
      * 16 bytes - random 128 bit number cookie (little-endian)
      * 8 bytes  - PID (little-endian)
@@ -132,15 +123,11 @@ namespace DiagnosticsIpc
 
     const uint32_t AdvertiseSize = 34;
 
-    static GUID AdvertiseCookie_V1 = GUID_NULL;
+    // initialized in DiagnosticServer::Initialize during EEStartupHelper
+    extern GUID AdvertiseCookie_V1;
 
     inline GUID GetAdvertiseCookie_V1()
     {
-        if (AdvertiseCookie_V1 == GUID_NULL)
-        {
-            CoCreateGuid(&AdvertiseCookie_V1);
-        }
-
         return AdvertiseCookie_V1;
     }
 
@@ -152,8 +139,8 @@ namespace DiagnosticsIpc
 
         uint64_t *buffer = (uint64_t*)advertiseBuffer;
         buffer[0] = *(uint64_t*)AdvertiseMagic_V1;
-        buffer[1] = (((uint64_t)VAL32(cookie.Data1) << 32) | ((uint64_t)VAL16(cookie.Data2) << 16) | VAL16((uint64_t)cookie.Data3));
-        buffer[2] = *(uint64_t*)cookie.Data4;
+        // fills buffer[1] and buffer[2]
+        memcpy(&buffer[1], &cookie, sizeof(cookie));
         buffer[3] = VAL64(pid);
 
         // zero out unused field
@@ -206,12 +193,12 @@ namespace DiagnosticsIpc
     //
     // For more details on this pattern, look up "Substitution Failure Is Not An Error" or SFINAE
 
-    // template meta-programming to check for bool(Flatten)(void*) member function
+    // template meta-programming to check for bool(Flatten)(BYTE*&, uint16_t&) member function
     template <typename T>
     struct HasFlatten
     {
         template <typename U, U u> struct Has;
-        template <typename U> static std::true_type test(Has<bool (U::*)(void*), &U::Flatten>*);
+        template <typename U> static std::true_type test(Has<bool (U::*)(BYTE*&, uint16_t&), &U::Flatten>*);
         template <typename U> static std::false_type test(...);
         static constexpr bool value = decltype(test<T>(nullptr))::value;
     };
@@ -464,7 +451,7 @@ namespace DiagnosticsIpc
         // Handles the case where the payload structure exposes Flatten
         // and GetSize methods
         template <typename U,
-                  typename std::enable_if<HasFlatten<U>::value&& HasGetSize<U>::value, int>::type = 0>
+                  typename std::enable_if<HasFlatten<U>::value && HasGetSize<U>::value, int>::type = 0>
         bool FlattenImpl(U& payload)
         {
             CONTRACTL
@@ -483,6 +470,7 @@ namespace DiagnosticsIpc
             ASSERT(!temp_size.IsOverflow());
 
             m_Size = temp_size.Value();
+            uint16_t remainingBytes = temp_size.Value();
 
             BYTE* temp_buffer = new (nothrow) BYTE[m_Size];
             if (temp_buffer == nullptr)
@@ -497,13 +485,14 @@ namespace DiagnosticsIpc
 
             memcpy(temp_buffer_cursor, &m_Header, sizeof(struct IpcHeader));
             temp_buffer_cursor += sizeof(struct IpcHeader);
+            remainingBytes -= sizeof(struct IpcHeader);
 
-            payload.Flatten(temp_buffer_cursor);
+            const bool fSuccess = payload.Flatten(temp_buffer_cursor, remainingBytes);
 
             ASSERT(m_pData == nullptr);
             m_pData = temp_buffer;
 
-            return true;
+            return fSuccess;
         };
 
         // handles the case where we were handed a struct with no Flatten or GetSize method

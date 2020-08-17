@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#nullable enable
 using System;
 using System.Text;
 using System.Diagnostics;
@@ -27,7 +28,7 @@ namespace System.Xml
 
         private partial struct Namespace
         {
-            internal async Task WriteDeclAsync(XmlWriter writer, XmlRawWriter rawWriter)
+            internal async Task WriteDeclAsync(XmlWriter writer, XmlRawWriter? rawWriter)
             {
                 Debug.Assert(kind == NamespaceKind.NeedToWrite);
                 if (null != rawWriter)
@@ -63,7 +64,7 @@ namespace System.Xml
                 BufferChunk bufChunk;
                 for (int i = _firstItem; i <= _lastItem; i++)
                 {
-                    Item item = _items[i];
+                    Item item = _items![i];
                     switch (item.type)
                     {
                         case ItemType.EntityRef:

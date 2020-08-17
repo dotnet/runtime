@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#nullable enable
 using System.Collections;
 using System.Diagnostics;
 
@@ -8,12 +9,12 @@ namespace System.Xml
 {
     internal class XmlElementList : XmlNodeList
     {
-        private readonly string _asterisk;
+        private readonly string _asterisk = null!;
         private int _changeCount; //recording the total number that the dom tree has been changed ( insertion and deletion )
         //the member vars below are saved for further reconstruction
-        private readonly string _name;         //only one of 2 string groups will be initialized depends on which constructor is called.
-        private string _localName;
-        private string _namespaceURI;
+        private readonly string? _name;         //only one of 2 string groups will be initialized depends on which constructor is called.
+        private string? _localName;
+        private string? _namespaceURI;
         private readonly XmlNode _rootNode;
         // the member vars below serves the optimization of accessing of the elements in the list
         private int _curInd;       // -1 means the starting point for a new search round
@@ -22,7 +23,7 @@ namespace System.Xml
         private bool _atomized;     //whether the localname and namespaceuri are atomized
         private int _matchCount;   // cached list count. -1 means it needs reconstruction
 
-        private WeakReference _listener;   // XmlElementListListener
+        private WeakReference? _listener;   // XmlElementListListener
 
         private XmlElementList(XmlNode parent)
         {
@@ -50,11 +51,12 @@ namespace System.Xml
             if (_atomized == false)
             {
                 XmlNameTable nameTable = _rootNode.Document.NameTable;
-                _localName = nameTable.Add(_localName);
-                _namespaceURI = nameTable.Add(_namespaceURI);
+                _localName = nameTable.Add(_localName!);
+                _namespaceURI = nameTable.Add(_namespaceURI!);
                 _atomized = true;
             }
-            if (IsMatch(args.Node))
+
+            if (IsMatch(args.Node!))
             {
                 _changeCount++;
                 _curInd = -1;
@@ -62,6 +64,7 @@ namespace System.Xml
                 if (args.Action == XmlNodeChangedAction.Insert)
                     _empty = false;
             }
+
             _matchCount = -1;
         }
 
@@ -91,6 +94,7 @@ namespace System.Xml
                 _localName = localName;
                 _namespaceURI = namespaceURI;
             }
+
             _name = null;
         }
 
@@ -100,11 +104,11 @@ namespace System.Xml
         }
 
         // return the next element node that is in PreOrder
-        private XmlNode NextElemInPreOrder(XmlNode curNode)
+        private XmlNode? NextElemInPreOrder(XmlNode curNode)
         {
             Debug.Assert(curNode != null);
             //For preorder walking, first try its child
-            XmlNode retNode = curNode.FirstChild;
+            XmlNode? retNode = curNode.FirstChild;
             if (retNode == null)
             {
                 //if no child, the next node forward will the be the NextSibling of the first ancestor which has NextSibling
@@ -127,11 +131,11 @@ namespace System.Xml
         }
 
         // return the previous element node that is in PreOrder
-        private XmlNode PrevElemInPreOrder(XmlNode curNode)
+        private XmlNode? PrevElemInPreOrder(XmlNode curNode)
         {
             Debug.Assert(curNode != null);
             //For preorder walking, the previous node will be the right-most node in the tree of PreviousSibling of the curNode
-            XmlNode retNode = curNode.PreviousSibling;
+            XmlNode? retNode = curNode.PreviousSibling;
             // so if the PreviousSibling is not null, going through the tree down to find the right-most node
             while (retNode != null)
             {
@@ -172,10 +176,10 @@ namespace System.Xml
             return false;
         }
 
-        private XmlNode GetMatchingNode(XmlNode n, bool bNext)
+        private XmlNode? GetMatchingNode(XmlNode n, bool bNext)
         {
             Debug.Assert(n != null);
-            XmlNode node = n;
+            XmlNode? node = n;
             do
             {
                 if (bNext)
@@ -186,21 +190,22 @@ namespace System.Xml
             return node;
         }
 
-        private XmlNode GetNthMatchingNode(XmlNode n, bool bNext, int nCount)
+        private XmlNode? GetNthMatchingNode(XmlNode n, bool bNext, int nCount)
         {
             Debug.Assert(n != null);
-            XmlNode node = n;
+            XmlNode? node = n;
             for (int ind = 0; ind < nCount; ind++)
             {
                 node = GetMatchingNode(node, bNext);
                 if (node == null)
                     return null;
             }
+
             return node;
         }
 
         //the function is for the enumerator to find out the next available matching element node
-        public XmlNode GetNextNode(XmlNode n)
+        public XmlNode? GetNextNode(XmlNode? n)
         {
             if (_empty == true)
                 return null;
@@ -208,7 +213,7 @@ namespace System.Xml
             return GetMatchingNode(node, true);
         }
 
-        public override XmlNode Item(int index)
+        public override XmlNode? Item(int index)
         {
             if (_rootNode == null || index < 0)
                 return null;
@@ -221,13 +226,15 @@ namespace System.Xml
             bool bForward = (nDiff > 0);
             if (nDiff < 0)
                 nDiff = -nDiff;
-            XmlNode node;
+
+            XmlNode? node;
             if ((node = GetNthMatchingNode(_curElem, bForward, nDiff)) != null)
             {
                 _curInd = index;
                 _curElem = node;
                 return _curElem;
             }
+
             return null;
         }
 
@@ -237,21 +244,25 @@ namespace System.Xml
             {
                 if (_empty == true)
                     return 0;
+
                 if (_matchCount < 0)
                 {
                     int currMatchCount = 0;
                     int currChangeCount = _changeCount;
-                    XmlNode node = _rootNode;
+                    XmlNode? node = _rootNode;
                     while ((node = GetMatchingNode(node, true)) != null)
                     {
                         currMatchCount++;
                     }
+
                     if (currChangeCount != _changeCount)
                     {
                         return currMatchCount;
                     }
+
                     _matchCount = currMatchCount;
                 }
+
                 return _matchCount;
             }
         }
@@ -259,7 +270,8 @@ namespace System.Xml
         public override IEnumerator GetEnumerator()
         {
             if (_empty == true)
-                return new XmlEmptyElementListEnumerator(this); ;
+                return new XmlEmptyElementListEnumerator(this);
+
             return new XmlElementListEnumerator(this);
         }
 
@@ -273,11 +285,12 @@ namespace System.Xml
         {
             if (_listener != null)
             {
-                XmlElementListListener listener = (XmlElementListListener)_listener.Target;
+                XmlElementListListener? listener = (XmlElementListListener?)_listener.Target;
                 if (listener != null)
                 {
                     listener.Unregister();
                 }
+
                 _listener = null;
             }
         }
@@ -286,7 +299,7 @@ namespace System.Xml
     internal class XmlElementListEnumerator : IEnumerator
     {
         private readonly XmlElementList _list;
-        private XmlNode _curElem;
+        private XmlNode? _curElem;
         private int _changeCount; //save the total number that the dom tree has been changed ( insertion and deletion ) when this enumerator is created
 
         public XmlElementListEnumerator(XmlElementList list)
@@ -317,7 +330,7 @@ namespace System.Xml
             _changeCount = _list.ChangeCount;
         }
 
-        public object Current
+        public object? Current
         {
             get { return _curElem; }
         }
@@ -338,7 +351,7 @@ namespace System.Xml
         {
         }
 
-        public object Current
+        public object? Current
         {
             get { return null; }
         }
@@ -346,7 +359,7 @@ namespace System.Xml
 
     internal class XmlElementListListener
     {
-        private WeakReference _elemList;
+        private WeakReference? _elemList;
         private readonly XmlDocument _doc;
         private readonly XmlNodeChangedEventHandler _nodeChangeHandler;
 
@@ -365,7 +378,7 @@ namespace System.Xml
             {
                 if (_elemList != null)
                 {
-                    XmlElementList el = (XmlElementList)_elemList.Target;
+                    XmlElementList? el = (XmlElementList?)_elemList.Target;
                     if (null != el)
                     {
                         el.ConcurrencyCheck(args);

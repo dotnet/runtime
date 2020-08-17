@@ -339,7 +339,7 @@ namespace System.Data.SqlTypes
             if (IsNull)
                 return SQLResource.NullString;
             DateTime dateTime = ToDateTime(this);
-            return dateTime.ToString((IFormatProvider)null);
+            return dateTime.ToString((IFormatProvider)null!);
         }
 
         public static SqlDateTime Parse(string s)
@@ -355,7 +355,7 @@ namespace System.Data.SqlTypes
             }
             catch (FormatException)
             {
-                DateTimeFormatInfo dtfi = (DateTimeFormatInfo)(CultureInfo.CurrentCulture.GetFormat(typeof(DateTimeFormatInfo)));
+                DateTimeFormatInfo dtfi = (DateTimeFormatInfo)(CultureInfo.CurrentCulture.GetFormat(typeof(DateTimeFormatInfo)))!;
                 dt = DateTime.ParseExact(s, s_dateTimeFormats, dtfi, x_DateTimeStyle);
             }
 
@@ -594,7 +594,7 @@ namespace System.Data.SqlTypes
         // or a value greater than zero if this > object.
         // null is considered to be less than any instance.
         // If object is not of same type, this method throws an ArgumentException.
-        public int CompareTo(object value)
+        public int CompareTo(object? value)
         {
             if (value is SqlDateTime)
             {
@@ -602,7 +602,7 @@ namespace System.Data.SqlTypes
 
                 return CompareTo(i);
             }
-            throw ADP.WrongType(value.GetType(), typeof(SqlDateTime));
+            throw ADP.WrongType(value!.GetType(), typeof(SqlDateTime));
         }
 
         public int CompareTo(SqlDateTime value)
@@ -620,7 +620,7 @@ namespace System.Data.SqlTypes
         }
 
         // Compares this instance with a specified object
-        public override bool Equals(object value)
+        public override bool Equals(object? value)
         {
             if (!(value is SqlDateTime))
             {
@@ -641,7 +641,7 @@ namespace System.Data.SqlTypes
             return IsNull ? 0 : Value.GetHashCode();
         }
 
-        XmlSchema IXmlSerializable.GetSchema() { return null; }
+        XmlSchema? IXmlSerializable.GetSchema() { return null; }
 
         void IXmlSerializable.ReadXml(XmlReader reader)
         {

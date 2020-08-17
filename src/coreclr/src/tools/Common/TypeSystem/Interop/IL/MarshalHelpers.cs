@@ -166,13 +166,44 @@ namespace Internal.TypeSystem.Interop
             }
         }
 
+        private static bool HasCopyConstructorCustomModifier(int? parameterIndex,
+            EmbeddedSignatureData[] customModifierData)
+        {
+            if (!parameterIndex.HasValue || customModifierData == null)
+                return false;
+
+            string customModifierIndex = MethodSignature.GetIndexOfCustomModifierOnPointedAtTypeByParameterIndex(parameterIndex.Value);
+            foreach (var customModifier in customModifierData)
+            {
+                if (customModifier.kind != EmbeddedSignatureDataKind.RequiredCustomModifier)
+                    continue;
+
+                if (customModifier.index != customModifierIndex)
+                    continue;
+
+                var customModifierType = customModifier.type as DefType;
+                if (customModifierType == null)
+                    continue;
+
+                if ((customModifierType.Namespace == "System.Runtime.CompilerServices" && customModifierType.Name == "IsCopyConstructed") ||
+                    (customModifierType.Namespace == "Microsoft.VisualC" && customModifierType.Name == "NeedsCopyConstructorModifier"))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
         internal static MarshallerKind GetMarshallerKind(
-             TypeDesc type,
-             MarshalAsDescriptor marshalAs,
-             bool isReturn,
-             bool isAnsi,
-             MarshallerType marshallerType,
-             out MarshallerKind elementMarshallerKind)
+            TypeDesc type,
+            int? parameterIndex,
+            EmbeddedSignatureData[] customModifierData,
+            MarshalAsDescriptor marshalAs,
+            bool isReturn,
+            bool isAnsi,
+            MarshallerType marshallerType,
+            out MarshallerKind elementMarshallerKind)
         {
             elementMarshallerKind = MarshallerKind.Invalid;
 
@@ -182,6 +213,12 @@ namespace Internal.TypeSystem.Interop
                 isByRef = true;
 
                 type = type.GetParameterType();
+
+                if (!type.IsPrimitive && type.IsValueType && marshallerType != MarshallerType.Field
+                    && HasCopyConstructorCustomModifier(parameterIndex, customModifierData))
+                {
+                    return MarshallerKind.BlittableValueClassWithCopyCtor;
+                }
 
                 // Compat note: CLR allows ref returning blittable structs for IJW
                 if (isReturn)
@@ -444,7 +481,15 @@ namespace Internal.TypeSystem.Interop
             else if (type.IsPointer)
             {
                 if (nativeType == NativeTypeKind.Default)
+                {
+                    var pointedAtType = type.GetParameterType();
+                    if (!pointedAtType.IsPrimitive && !type.IsEnum && marshallerType != MarshallerType.Field
+                        && HasCopyConstructorCustomModifier(parameterIndex, customModifierData))
+                    {
+                        return MarshallerKind.BlittableValueClassWithCopyCtor;
+                    }
                     return MarshallerKind.BlittableValue;
+                }
                 else
                     return MarshallerKind.Invalid;
             }

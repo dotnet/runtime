@@ -189,7 +189,7 @@ namespace System
         {
             // TODO_UTF8STRING: Optimize me to avoid allocations.
 
-#if !NETSTANDARD2_0
+#if (!NETSTANDARD2_0 && !NETFRAMEWORK)
             return ToString().Contains(value.ToString(), comparison);
 #else
             return ToString().IndexOf(value.ToString(), comparison) >= 0;
@@ -223,7 +223,7 @@ namespace System
 
             // TODO_UTF8STRING: Optimize me to avoid allocations.
 
-#if !NETSTANDARD2_0
+#if (!NETSTANDARD2_0 && !NETFRAMEWORK)
             return ToString().Contains(value.ToString(), comparison);
 #else
             return ToString().IndexOf(value.ToString(), comparison) >= 0;

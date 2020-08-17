@@ -401,6 +401,7 @@ MachOReader::ReadString(const char* address, std::string& str)
         char c = 0;
         if (!ReadMemory((void*)(address + i), &c, sizeof(char)))
         {
+            Trace("ERROR: Failed to read string at %p\n", (void*)(address + i));
             return false;
         }
         if (c == '\0')

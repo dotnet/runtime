@@ -15,7 +15,11 @@
 
 
 class Disp :
+#ifndef FEATURE_METADATA_EMIT_PORTABLE_PDB
     public IMetaDataDispenserEx
+#else
+    public IMetaDataDispenserEx2
+#endif
 #ifdef FEATURE_METADATA_CUSTOM_DATA_SOURCE
     , IMetaDataDispenserCustom
 #endif
@@ -87,6 +91,14 @@ public:
         __out_ecount (cchName)LPWSTR szName,// [OUT] buffer - to hold name
         ULONG    cchName,                   // [IN]  the name buffer's size
         ULONG    *pcName);                  // [OUT] the number of characters returend in the buffer
+
+#ifdef FEATURE_METADATA_EMIT_PORTABLE_PDB
+    STDMETHODIMP DefinePortablePdbScope(    // Return code.
+        REFCLSID    rclsid,                 // [in] What version to create.
+        DWORD       dwCreateFlags,          // [in] Flags on the create.
+        REFIID      riid,                   // [in] The interface desired.
+        IUnknown** ppIUnk);                 // [out] Return interface on success.
+#endif
 
 #ifdef FEATURE_METADATA_CUSTOM_DATA_SOURCE
     // *** IMetaDataDispenserCustom methods ***

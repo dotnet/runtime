@@ -265,7 +265,7 @@ namespace System.Xml
             return null;
         }
 
-        public override string? GetAttribute(string name, string namespaceURI)
+        public override string? GetAttribute(string name, string? namespaceURI)
         {
             if (!InAttributeActiveState)
             {
@@ -334,7 +334,7 @@ namespace System.Xml
             return false;
         }
 
-        public override bool MoveToAttribute(string name, string ns)
+        public override bool MoveToAttribute(string name, string? ns)
         {
             if (!InAttributeActiveState)
             {

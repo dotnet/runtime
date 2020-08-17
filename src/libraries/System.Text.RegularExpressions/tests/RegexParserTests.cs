@@ -813,7 +813,7 @@ namespace System.Text.RegularExpressions.Tests
             Parse(pattern, options, error);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBinaryFormatterSupported))]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public void RegexParseException_Serializes()
         {

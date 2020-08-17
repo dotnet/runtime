@@ -309,7 +309,7 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
         }
 
         [Theory]
-#if !NET472
+#if !NETFRAMEWORK
         [InlineData(true)]
 #endif
         [InlineData(false)]
@@ -319,7 +319,7 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
 
             if (useSpan)
             {
-#if !NET472
+#if !NETFRAMEWORK
                 Assert.ThrowsAny<CryptographicException>(() => cms.Decode(ReadOnlySpan<byte>.Empty));
 #else
                 throw new Xunit.Sdk.XunitException(
@@ -502,7 +502,7 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
 
         [Theory]
         [InlineData(false)]
-#if !NET472
+#if !NETFRAMEWORK
         [InlineData(true)]
 #endif
         public static void ContentInfoGetContentTypeUnknown(bool fromSpan)
@@ -512,7 +512,7 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
 
             if (fromSpan)
             {
-#if NET472
+#if NETFRAMEWORK
                 throw new Xunit.Sdk.XunitException(
                     "This test should not evaluate for .NET Framework, the API is missing.");
 #else

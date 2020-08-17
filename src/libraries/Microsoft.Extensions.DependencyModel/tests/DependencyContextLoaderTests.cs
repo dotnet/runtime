@@ -81,7 +81,7 @@ namespace Microsoft.Extensions.DependencyModel.Tests
             var loader = new DependencyContextLoader();
             var context = loader.Load(typeof(DependencyContextLoaderTests).Assembly);
 
-            context.RuntimeLibraries.Should().Contain(l => l.Name == "Microsoft.Extensions.DependencyModel");
+            context.RuntimeLibraries.Should().Contain(l => l.Name == "nonentrypointassembly");
         }
 
         [Fact]

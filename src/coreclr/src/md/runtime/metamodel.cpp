@@ -75,6 +75,16 @@
 #undef SCHEMA_ITEM_CDTKN
 #undef SCHEMA_TABLE_END
 
+#ifdef FEATURE_METADATA_EMIT_PORTABLE_PDB
+//Dummy tables to fill the gap to 0x30
+static CMiniColDef rDummy1Cols[] = { { 0 } };
+static CMiniColDef rDummy2Cols[] = { { 0 } };
+static CMiniColDef rDummy3Cols[] = { { 0 } };
+static const char* rDummy1ColNames[] = { "" };
+static const char* rDummy2ColNames[] = { "" };
+static const char* rDummy3ColNames[] = { "" };
+#endif // FEATURE_METADATA_EMIT_PORTABLE_PDB
+
 //-----------------------------------------------------------------------------
 // End of column definitions.
 //-----------------------------------------------------------------------------
@@ -91,6 +101,9 @@ const CCodedTokenDef g_CodedTokens [] = {
 #define MiniMdTable(x) { { r##x##Cols, lengthof(r##x##Cols), x##Rec::COL_KEY, 0 }, r##x##ColNames, #x},
 const CMiniTableDefEx g_Tables[TBL_COUNT] = {
     MiniMdTables()
+#ifdef FEATURE_METADATA_EMIT_PORTABLE_PDB
+    PortablePdbMiniMdTables()
+#endif
 };
 
 // Define a table descriptor for the obsolete v1.0 GenericParam table definition.
@@ -104,6 +117,9 @@ const CMiniTableDefEx g_Table_GenericParamV1_1 = { { rGenericParamV1_1Cols, leng
 #define MiniMdTable(x) { TBL_COUNT, 0 },
 TblCol g_PtrTableIxs[TBL_COUNT] = {
     MiniMdTables()
+#ifdef FEATURE_METADATA_EMIT_PORTABLE_PDB
+    PortablePdbMiniMdTables()
+#endif
 };
 
 //*****************************************************************************
@@ -440,6 +456,9 @@ CMiniMdBase::CMiniMdBase()
         m_TableDefs[TBL_##tbl] = g_Tables[TBL_##tbl].m_Def; \
         m_TableDefs[TBL_##tbl].m_pColDefs = BYTEARRAY_TO_COLDES(s_##tbl##Col);
     MiniMdTables()
+#ifdef FEATURE_METADATA_EMIT_PORTABLE_PDB
+    PortablePdbMiniMdTables()
+#endif
 
     m_TblCount = TBL_COUNT;
     _ASSERTE(TBL_COUNT == TBL_COUNT_V2); // v2 counts.
@@ -471,6 +490,17 @@ CMiniMdBase::CMiniMdBase()
     _ASSERTE((TypeFromToken(mdtGenericParam) >> 24)     == TBL_GenericParam);
     _ASSERTE((TypeFromToken(mdtMethodSpec) >> 24)       == TBL_MethodSpec);
     _ASSERTE((TypeFromToken(mdtGenericParamConstraint) >> 24) == TBL_GenericParamConstraint);
+#ifdef FEATURE_METADATA_EMIT_PORTABLE_PDB
+    _ASSERTE((TypeFromToken(mdtDocument) >> 24)         == TBL_Document);
+    _ASSERTE((TypeFromToken(mdtMethodDebugInformation) >> 24) == TBL_MethodDebugInformation);
+    _ASSERTE((TypeFromToken(mdtLocalScope) >> 24)       == TBL_LocalScope);
+    _ASSERTE((TypeFromToken(mdtLocalVariable) >> 24)    == TBL_LocalVariable);
+    _ASSERTE((TypeFromToken(mdtLocalConstant) >> 24)    == TBL_LocalConstant);
+    _ASSERTE((TypeFromToken(mdtImportScope) >> 24)      == TBL_ImportScope);
+    // TODO:
+    // _ASSERTE((TypeFromToken(mdtStateMachineMethod) >> 24) == TBL_StateMachineMethod);
+    // _ASSERTE((TypeFromToken(mdtCustomDebugInformation) >> 24) == TBL_CustomDebugInformation);
+#endif // FEATURE_METADATA_EMIT_PORTABLE_PDB
 } // CMiniMdBase::CMiniMdBase
 
 
@@ -699,7 +729,7 @@ CMiniMdBase::InitColsForTable(
 
     iOffset = 0;
 
-    pTemplate = GetTableDefTemplate(ixTbl);
+        pTemplate = GetTableDefTemplate(ixTbl);
 
     PREFIX_ASSUME(pTemplate->m_pColDefs != NULL);
 
@@ -745,22 +775,39 @@ CMiniMdBase::InitColsForTable(
         {   // Fixed type.
             switch (pCols[ixCol].m_Type)
             {
+#ifdef FEATURE_METADATA_EMIT_PORTABLE_PDB
+            /* Portable PDB tables */
+            // Commenting out column offset asserts.
+            // It makes sense to assert calculated offsets against values from the table
+            // definition templates, only if the fixed field columns appear at the beginning
+            // of a table record.
+            // Initializing StartOffset and Length (4th and 5th columns of the portable PDB
+            // LocalScope table) can cause assertion to fail at this point, since preceeding
+            // column sizes are determined dynamically (2 or 4 bytes for RIDs depending on the
+            // number of records) and cannot be compared against the static template.
+#endif
             case iBYTE:
                 iSize = 1;
                 _ASSERTE(pCols[ixCol].m_cbColumn == iSize);
-                _ASSERTE(pCols[ixCol].m_oColumn == iOffset);
+#ifndef FEATURE_METADATA_EMIT_PORTABLE_PDB
+                 _ASSERTE(pCols[ixCol].m_oColumn == iOffset);
+#endif
                 break;
             case iSHORT:
             case iUSHORT:
                 iSize = 2;
                 _ASSERTE(pCols[ixCol].m_cbColumn == iSize);
+#ifndef FEATURE_METADATA_EMIT_PORTABLE_PDB
                 _ASSERTE(pCols[ixCol].m_oColumn == iOffset);
+#endif
                 break;
             case iLONG:
             case iULONG:
                 iSize = 4;
                 _ASSERTE(pCols[ixCol].m_cbColumn == iSize);
+#ifndef FEATURE_METADATA_EMIT_PORTABLE_PDB
                 _ASSERTE(pCols[ixCol].m_oColumn == iOffset);
+#endif
                 break;
             case iSTRING:
                 iSize = (Schema.m_heaps & CMiniMdSchema::HEAP_STRING_4) ? 4 : 2;

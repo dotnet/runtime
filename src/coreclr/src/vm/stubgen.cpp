@@ -133,7 +133,7 @@ void ILStubLinker::DumpIL_FormatToken(mdToken token, SString &strTokenFormatting
                 sig.GetSignature(&pSig, &cbSig);
             }
 
-            IMDInternalImport * pIMDI = MscorlibBinder::GetModule()->GetMDImport();
+            IMDInternalImport * pIMDI = CoreLibBinder::GetModule()->GetMDImport();
             CQuickBytes sigStr;
             PrettyPrintSig(pSig, cbSig, "", &sigStr, pIMDI, NULL);
 
@@ -1822,28 +1822,28 @@ void ILCodeStream::EmitUNALIGNED(BYTE alignment)
 void ILCodeStream::EmitNEWOBJ(BinderMethodID id, int numInArgs)
 {
     STANDARD_VM_CONTRACT;
-    EmitNEWOBJ(GetToken(MscorlibBinder::GetMethod(id)), numInArgs);
+    EmitNEWOBJ(GetToken(CoreLibBinder::GetMethod(id)), numInArgs);
 }
 
 void ILCodeStream::EmitCALL(BinderMethodID id, int numInArgs, int numRetArgs)
 {
     STANDARD_VM_CONTRACT;
-    EmitCALL(GetToken(MscorlibBinder::GetMethod(id)), numInArgs, numRetArgs);
+    EmitCALL(GetToken(CoreLibBinder::GetMethod(id)), numInArgs, numRetArgs);
 }
 void ILCodeStream::EmitLDFLD(BinderFieldID id)
 {
     STANDARD_VM_CONTRACT;
-    EmitLDFLD(GetToken(MscorlibBinder::GetField(id)));
+    EmitLDFLD(GetToken(CoreLibBinder::GetField(id)));
 }
 void ILCodeStream::EmitSTFLD(BinderFieldID id)
 {
     STANDARD_VM_CONTRACT;
-    EmitSTFLD(GetToken(MscorlibBinder::GetField(id)));
+    EmitSTFLD(GetToken(CoreLibBinder::GetField(id)));
 }
 void ILCodeStream::EmitLDFLDA(BinderFieldID id)
 {
     STANDARD_VM_CONTRACT;
-    EmitLDFLDA(GetToken(MscorlibBinder::GetField(id)));
+    EmitLDFLDA(GetToken(CoreLibBinder::GetField(id)));
 }
 
 void ILStubLinker::SetHasThis (bool fHasThis)
@@ -1881,7 +1881,7 @@ void ILCodeStream::EmitArgIteratorCreateAndLoad()
     //
     // we insert the ArgIterator in the same spot that the VASigCookie will go for sanity
     //
-    LocalDesc   aiLoc(MscorlibBinder::GetClass(CLASS__ARG_ITERATOR));
+    LocalDesc   aiLoc(CoreLibBinder::GetClass(CLASS__ARG_ITERATOR));
     int         aiLocNum;
 
     aiLocNum = NewLocal(aiLoc);
@@ -1895,7 +1895,7 @@ void ILCodeStream::EmitArgIteratorCreateAndLoad()
     aiLoc.ElementType[0]    = ELEMENT_TYPE_BYREF;
     aiLoc.ElementType[1]    = ELEMENT_TYPE_INTERNAL;
     aiLoc.cbType            = 2;
-    aiLoc.InternalToken     = MscorlibBinder::GetClass(CLASS__ARG_ITERATOR);
+    aiLoc.InternalToken     = CoreLibBinder::GetClass(CLASS__ARG_ITERATOR);
 
     SetStubTargetArgType(&aiLoc, false);
 }

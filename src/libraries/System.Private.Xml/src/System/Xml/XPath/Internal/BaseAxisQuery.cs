@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#nullable enable
 using System.Diagnostics;
 using System.Xml;
 using System.Xml.XPath;
@@ -14,12 +15,12 @@ namespace MS.Internal.Xml.XPath
         private readonly bool _nameTest;
         private readonly string _name;
         private readonly string _prefix;
-        private string _nsUri;
+        private string? _nsUri;
         private readonly XPathNodeType _typeTest;
 
         // these two things are the state of this class
         // that need to be reset whenever the context changes.
-        protected XPathNavigator currentNode;
+        protected XPathNavigator? currentNode;
         protected int position;
 
         protected BaseAxisQuery(Query qyInput)
@@ -67,12 +68,12 @@ namespace MS.Internal.Xml.XPath
         }
 
         protected string Name { get { return _name; } }
-        protected string Namespace { get { return _nsUri; } }
+        protected string? Namespace { get { return _nsUri; } }
         protected bool NameTest { get { return _nameTest; } }
         protected XPathNodeType TypeTest { get { return _typeTest; } }
 
         public override int CurrentPosition { get { return position; } }
-        public override XPathNavigator Current { get { return currentNode; } }
+        public override XPathNavigator? Current { get { return currentNode; } }
 
         public virtual bool matches(XPathNavigator e)
         {
@@ -86,6 +87,7 @@ namespace MS.Internal.Xml.XPath
                 {
                     if (_name.Equals(e.LocalName) || _name.Length == 0)
                     {
+                        Debug.Assert(_nsUri != null);
                         if (_nsUri.Equals(e.NamespaceURI))
                         {
                             return true;

@@ -28,14 +28,14 @@ namespace Tracing.Tests.PauseOnStartValidation
             var server = new ReverseServer(serverName);
             Task<bool> subprocessTask = Utils.RunSubprocess(
                 currentAssembly: Assembly.GetExecutingAssembly(),
-                environment: new Dictionary<string,string> { { Utils.DiagnosticsMonitorAddressEnvKey, serverName } },
+                environment: new Dictionary<string,string> { { Utils.DiagnosticPortsEnvKey, $"{serverName}" } },
                 duringExecution: async (_) =>
                 {
                     Stream stream = await server.AcceptAsync();
                     IpcAdvertise advertise = IpcAdvertise.Parse(stream);
                     Logger.logger.Log(advertise.ToString());
-                    // send ResumeRuntime command (0xFF=ServerCommandSet, 0x01=ResumeRuntime commandid)
-                    var message = new IpcMessage(0xFF,0x01);
+                    // send ResumeRuntime command (0x04=ProcessCommandSet, 0x01=ResumeRuntime commandid)
+                    var message = new IpcMessage(0x04,0x01);
                     Logger.logger.Log($"Sent: {message.ToString()}");
                     IpcMessage response = IpcClient.SendMessage(stream, message);
                     Logger.logger.Log($"received: {response.ToString()}");
@@ -56,7 +56,7 @@ namespace Tracing.Tests.PauseOnStartValidation
             using var memoryStream = new MemoryStream();
             Task<bool> subprocessTask = Utils.RunSubprocess(
                 currentAssembly: Assembly.GetExecutingAssembly(),
-                environment: new Dictionary<string,string> { { Utils.DiagnosticsMonitorAddressEnvKey, serverName } },
+                environment: new Dictionary<string,string> { { Utils.DiagnosticPortsEnvKey, $"{serverName}" } },
                 duringExecution: async (pid) =>
                 {
                     Stream stream = await server.AcceptAsync();
@@ -75,8 +75,8 @@ namespace Tracing.Tests.PauseOnStartValidation
                     Task readerTask = eventStream.CopyToAsync(memoryStream);
                     
                     Logger.logger.Log($"Send ResumeRuntime Diagnostics IPC Command");
-                    // send ResumeRuntime command (0xFF=ServerCommandSet, 0x01=ResumeRuntime commandid)
-                    var message = new IpcMessage(0xFF,0x01);
+                    // send ResumeRuntime command (0x04=ProcessCommandSet, 0x01=ResumeRuntime commandid)
+                    var message = new IpcMessage(0x04,0x01);
                     Logger.logger.Log($"Sent: {message.ToString()}");
                     IpcMessage response = IpcClient.SendMessage(stream, message);
                     Logger.logger.Log($"received: {response.ToString()}");
@@ -114,7 +114,7 @@ namespace Tracing.Tests.PauseOnStartValidation
             using var memoryStream3 = new MemoryStream();
             Task<bool> subprocessTask = Utils.RunSubprocess(
                 currentAssembly: Assembly.GetExecutingAssembly(),
-                environment: new Dictionary<string,string> { { Utils.DiagnosticsMonitorAddressEnvKey, serverName } },
+                environment: new Dictionary<string,string> { { Utils.DiagnosticPortsEnvKey, $"{serverName}" } },
                 duringExecution: async (pid) =>
                 {
                     Stream stream = await server.AcceptAsync();
@@ -145,8 +145,8 @@ namespace Tracing.Tests.PauseOnStartValidation
 
                     
                     Logger.logger.Log($"Send ResumeRuntime Diagnostics IPC Command");
-                    // send ResumeRuntime command (0xFF=ServerCommandSet, 0x01=ResumeRuntime commandid)
-                    var message = new IpcMessage(0xFF,0x01);
+                    // send ResumeRuntime command (0x04=ProcessCommandSet, 0x01=ResumeRuntime commandid)
+                    var message = new IpcMessage(0x04,0x01);
                     Logger.logger.Log($"Sent: {message.ToString()}");
                     IpcMessage response = IpcClient.SendMessage(stream, message);
                     Logger.logger.Log($"received: {response.ToString()}");
@@ -207,7 +207,7 @@ namespace Tracing.Tests.PauseOnStartValidation
             using var memoryStream3 = new MemoryStream();
             Task<bool> subprocessTask = Utils.RunSubprocess(
                 currentAssembly: Assembly.GetExecutingAssembly(),
-                environment: new Dictionary<string,string> { { Utils.DiagnosticsMonitorAddressEnvKey, serverName } },
+                environment: new Dictionary<string,string> { { Utils.DiagnosticPortsEnvKey, $"{serverName}" } },
                 duringExecution: async (pid) =>
                 {
                     Stream stream = await server.AcceptAsync();
@@ -247,8 +247,8 @@ namespace Tracing.Tests.PauseOnStartValidation
                     Logger.logger.Log("Stopped EventPipeSession over standard connection");
                     
                     Logger.logger.Log($"Send ResumeRuntime Diagnostics IPC Command");
-                    // send ResumeRuntime command (0xFF=ServerCommandSet, 0x01=ResumeRuntime commandid)
-                    var message = new IpcMessage(0xFF,0x01);
+                    // send ResumeRuntime command (0x04=ProcessCommandSet, 0x01=ResumeRuntime commandid)
+                    var message = new IpcMessage(0x04,0x01);
                     Logger.logger.Log($"Sent: {message.ToString()}");
                     IpcMessage response = IpcClient.SendMessage(stream, message);
                     Logger.logger.Log($"received: {response.ToString()}");
@@ -271,7 +271,7 @@ namespace Tracing.Tests.PauseOnStartValidation
             using var memoryStream3 = new MemoryStream();
             Task<bool> subprocessTask = Utils.RunSubprocess(
                 currentAssembly: Assembly.GetExecutingAssembly(),
-                environment: new Dictionary<string,string> { { Utils.DiagnosticsMonitorAddressEnvKey, serverName } },
+                environment: new Dictionary<string,string> { { Utils.DiagnosticPortsEnvKey, $"{serverName}" } },
                 duringExecution: async (pid) =>
                 {
                     Stream stream = await server.AcceptAsync();
@@ -292,8 +292,8 @@ namespace Tracing.Tests.PauseOnStartValidation
                     Logger.logger.Log(advertise.ToString());
 
                     Logger.logger.Log($"Send ResumeRuntime Diagnostics IPC Command");
-                    // send ResumeRuntime command (0xFF=ServerCommandSet, 0x01=ResumeRuntime commandid)
-                    message = new IpcMessage(0xFF,0x01);
+                    // send ResumeRuntime command (0x04=ProcessCommandSet, 0x01=ResumeRuntime commandid)
+                    message = new IpcMessage(0x04,0x01);
                     Logger.logger.Log($"Sent: {message.ToString()}");
                     response = IpcClient.SendMessage(stream, message);
                     Logger.logger.Log($"received: {response.ToString()}");

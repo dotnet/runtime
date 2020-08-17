@@ -3,8 +3,10 @@
 
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.IO;
 using System.Text.Encodings.Web;
 using System.Text.Json.Tests;
+using System.Threading.Tasks;
 using Newtonsoft.Json;
 using Xunit;
 
@@ -12,7 +14,6 @@ namespace System.Text.Json.Serialization.Tests
 {
     public static partial class ReferenceHandlerTests
     {
-
         [Fact]
         public static void ThrowByDefaultOnLoop()
         {
@@ -697,5 +698,98 @@ namespace System.Text.Json.Serialization.Tests
             }
         }
         #endregion
+
+        [Fact]
+        public static void PreserveReferenceOfTypeObject()
+        {
+            var root = new ClassWithObjectProperty();
+            root.Child = new ClassWithObjectProperty();
+            root.Sibling = root.Child;
+
+            Assert.Same(root.Child, root.Sibling);
+
+            string json = JsonSerializer.Serialize(root, s_serializerOptionsPreserve);
+
+            ClassWithObjectProperty rootCopy = JsonSerializer.Deserialize<ClassWithObjectProperty>(json, s_serializerOptionsPreserve);
+            Assert.Same(rootCopy.Child, rootCopy.Sibling);
+        }
+
+        [Fact]
+        public static async Task PreserveReferenceOfTypeObjectAsync()
+        {
+            var root = new ClassWithObjectProperty();
+            root.Child = new ClassWithObjectProperty();
+            root.Sibling = root.Child;
+
+            Assert.Same(root.Child, root.Sibling);
+
+            var stream = new MemoryStream();
+            await JsonSerializer.SerializeAsync(stream, root, s_serializerOptionsPreserve);
+            stream.Position = 0;
+
+            ClassWithObjectProperty rootCopy = await JsonSerializer.DeserializeAsync<ClassWithObjectProperty>(stream, s_serializerOptionsPreserve);
+            Assert.Same(rootCopy.Child, rootCopy.Sibling);
+        }
+
+        [Fact]
+        public static void PreserveReferenceOfTypeOfObjectOnCollection()
+        {
+            var root = new ClassWithListOfObjectProperty();
+            root.Child = new ClassWithListOfObjectProperty();
+
+            root.ListOfObjects = new List<object>();
+            root.ListOfObjects.Add(root.Child);
+
+            Assert.Same(root.Child, root.ListOfObjects[0]);
+
+            string json = JsonSerializer.Serialize(root, s_serializerOptionsPreserve);
+            ClassWithListOfObjectProperty rootCopy = JsonSerializer.Deserialize<ClassWithListOfObjectProperty>(json, s_serializerOptionsPreserve);
+            Assert.Same(rootCopy.Child, rootCopy.ListOfObjects[0]);
+        }
+
+        [Fact]
+        public static void DoNotPreserveReferenceWhenRefPropertyIsAbsent()
+        {
+            string json = @"{""Child"":{""$id"":""1""},""Sibling"":{""foo"":""1""}}";
+            ClassWithObjectProperty root = JsonSerializer.Deserialize<ClassWithObjectProperty>(json);
+            Assert.IsType<JsonElement>(root.Sibling);
+
+            // $ref with any escaped character shall not be treated as metadata, hence Sibling must be JsonElement.
+            json = @"{""Child"":{""$id"":""1""},""Sibling"":{""\\u0024ref"":""1""}}";
+            root = JsonSerializer.Deserialize<ClassWithObjectProperty>(json);
+            Assert.IsType<JsonElement>(root.Sibling);
+        }
+
+        [Fact]
+        public static void VerifyValidationsOnPreservedReferenceOfTypeObject()
+        {
+            const string baseJson = @"{""Child"":{""$id"":""1""},""Sibling"":";
+
+            // A JSON object that contains a '$ref' metadata property must not contain any other properties.
+            string testJson = baseJson + @"{""foo"":""value"",""$ref"":""1""}}";
+            JsonException ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<ClassWithObjectProperty>(testJson, s_serializerOptionsPreserve));
+            Assert.Equal("$.Sibling", ex.Path);
+
+            testJson = baseJson + @"{""$ref"":""1"",""bar"":""value""}}";
+            ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<ClassWithObjectProperty>(testJson, s_serializerOptionsPreserve));
+            Assert.Equal("$.Sibling", ex.Path);
+
+            // The '$id' and '$ref' metadata properties must be JSON strings.
+            testJson = baseJson + @"{""$ref"":1}}";
+            ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<ClassWithObjectProperty>(testJson, s_serializerOptionsPreserve));
+            Assert.Equal("$.Sibling", ex.Path);
+        }
+
+        private class ClassWithObjectProperty
+        {
+            public ClassWithObjectProperty Child { get; set; }
+            public object Sibling { get; set; }
+        }
+
+        private class ClassWithListOfObjectProperty
+        {
+            public ClassWithListOfObjectProperty Child { get; set; }
+            public List<object> ListOfObjects { get; set; }
+        }
     }
 }

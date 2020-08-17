@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#nullable enable
 using System;
 using System.Xml.Schema;
 using System.Collections;
@@ -27,10 +28,10 @@ namespace System.Xml
         //
         // XmlWriter implementation
         //
-        public override XmlWriterSettings Settings { get { return writer.Settings; } }
+        public override XmlWriterSettings? Settings { get { return writer.Settings; } }
         public override WriteState WriteState { get { return writer.WriteState; } }
         public override XmlSpace XmlSpace { get { return writer.XmlSpace; } }
-        public override string XmlLang { get { return writer.XmlLang; } }
+        public override string? XmlLang { get { return writer.XmlLang; } }
 
 
         public override void WriteStartDocument()
@@ -48,12 +49,12 @@ namespace System.Xml
             writer.WriteEndDocument();
         }
 
-        public override void WriteDocType(string name, string pubid, string sysid, string subset)
+        public override void WriteDocType(string name, string? pubid, string? sysid, string? subset)
         {
             writer.WriteDocType(name, pubid, sysid, subset);
         }
 
-        public override void WriteStartElement(string prefix, string localName, string ns)
+        public override void WriteStartElement(string? prefix, string localName, string? ns)
         {
             writer.WriteStartElement(prefix, localName, ns);
         }
@@ -68,7 +69,7 @@ namespace System.Xml
             writer.WriteFullEndElement();
         }
 
-        public override void WriteStartAttribute(string prefix, string localName, string ns)
+        public override void WriteStartAttribute(string? prefix, string localName, string? ns)
         {
             writer.WriteStartAttribute(prefix, localName, ns);
         }
@@ -78,17 +79,17 @@ namespace System.Xml
             writer.WriteEndAttribute();
         }
 
-        public override void WriteCData(string text)
+        public override void WriteCData(string? text)
         {
             writer.WriteCData(text);
         }
 
-        public override void WriteComment(string text)
+        public override void WriteComment(string? text)
         {
             writer.WriteComment(text);
         }
 
-        public override void WriteProcessingInstruction(string name, string text)
+        public override void WriteProcessingInstruction(string name, string? text)
         {
             writer.WriteProcessingInstruction(name, text);
         }
@@ -103,12 +104,12 @@ namespace System.Xml
             writer.WriteCharEntity(ch);
         }
 
-        public override void WriteWhitespace(string ws)
+        public override void WriteWhitespace(string? ws)
         {
             writer.WriteWhitespace(ws);
         }
 
-        public override void WriteString(string text)
+        public override void WriteString(string? text)
         {
             writer.WriteString(text);
         }
@@ -148,7 +149,7 @@ namespace System.Xml
             writer.Flush();
         }
 
-        public override string LookupPrefix(string ns)
+        public override string? LookupPrefix(string ns)
         {
             return writer.LookupPrefix(ns);
         }
@@ -158,7 +159,7 @@ namespace System.Xml
             writer.WriteValue(value);
         }
 
-        public override void WriteValue(string value)
+        public override void WriteValue(string? value)
         {
             writer.WriteValue(value);
         }

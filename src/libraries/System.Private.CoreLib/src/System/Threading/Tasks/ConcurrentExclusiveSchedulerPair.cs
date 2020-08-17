@@ -197,7 +197,7 @@ namespace System.Threading.Tasks
             if (!cs.m_completionQueued)
             {
                 cs.m_completionQueued = true;
-                ThreadPool.QueueUserWorkItem(state =>
+                ThreadPool.QueueUserWorkItem(static state =>
                 {
                     Debug.Assert(state is ConcurrentExclusiveSchedulerPair);
                     var localThis = (ConcurrentExclusiveSchedulerPair)state;

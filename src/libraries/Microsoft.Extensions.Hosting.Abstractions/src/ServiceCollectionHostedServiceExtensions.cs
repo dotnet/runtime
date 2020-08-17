@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
 
@@ -15,7 +16,7 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <typeparam name="THostedService">An <see cref="IHostedService"/> to register.</typeparam>
         /// <param name="services">The <see cref="IServiceCollection"/> to register with.</param>
         /// <returns>The original <see cref="IServiceCollection"/>.</returns>
-        public static IServiceCollection AddHostedService<THostedService>(this IServiceCollection services)
+        public static IServiceCollection AddHostedService<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] THostedService>(this IServiceCollection services)
             where THostedService : class, IHostedService
         {
             services.TryAddEnumerable(ServiceDescriptor.Singleton<IHostedService, THostedService>());

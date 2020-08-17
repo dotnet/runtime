@@ -7,17 +7,17 @@ using System.Collections.Generic;
 namespace System.Diagnostics
 {
     /// <summary>
-    /// A text annotation associated with a collection of attributes.
+    /// A text annotation associated with a collection of tags.
     /// </summary>
     public readonly struct ActivityEvent
     {
-        private static readonly IEnumerable<KeyValuePair<string, object>> s_emptyAttributes = new Dictionary<string, object>();
+        private static readonly ActivityTagsCollection s_emptyTags = new ActivityTagsCollection();
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ActivityEvent"/> class.
         /// </summary>
         /// <param name="name">Event name.</param>
-        public ActivityEvent(string name) : this(name, DateTimeOffset.UtcNow, s_emptyAttributes)
+        public ActivityEvent(string name) : this(name, DateTimeOffset.UtcNow, s_emptyTags)
         {
         }
 
@@ -26,29 +26,11 @@ namespace System.Diagnostics
         /// </summary>
         /// <param name="name">Event name.</param>
         /// <param name="timestamp">Event timestamp. Timestamp MUST only be used for the events that happened in the past, not at the moment of this call.</param>
-        public ActivityEvent(string name, DateTimeOffset timestamp) : this(name, timestamp, s_emptyAttributes)
-        {
-        }
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="ActivityEvent"/> class.
-        /// </summary>
-        /// <param name="name">Event name.</param>
-        /// <param name="attributes">Event attributes.</param>
-        public ActivityEvent(string name, IEnumerable<KeyValuePair<string, object>>? attributes) : this(name, default, attributes)
-        {
-        }
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="ActivityEvent"/> class.
-        /// </summary>
-        /// <param name="name">Event name.</param>
-        /// <param name="timestamp">Event timestamp. Timestamp MUST only be used for the events that happened in the past, not at the moment of this call.</param>
-        /// <param name="attributes">Event attributes.</param>
-        public ActivityEvent(string name, DateTimeOffset timestamp, IEnumerable<KeyValuePair<string, object>>? attributes)
+        /// <param name="tags">Event Tags.</param>
+        public ActivityEvent(string name, DateTimeOffset timestamp = default, ActivityTagsCollection? tags = null)
         {
             Name = name ?? string.Empty;
-            Attributes = attributes ?? s_emptyAttributes;
+            Tags = tags ?? s_emptyTags;
             Timestamp = timestamp != default ? timestamp : DateTimeOffset.UtcNow;
         }
 
@@ -63,8 +45,8 @@ namespace System.Diagnostics
         public DateTimeOffset Timestamp { get; }
 
         /// <summary>
-        /// Gets the collection of attributes associated with the event.
+        /// Gets the collection of tags associated with the event.
         /// </summary>
-        public IEnumerable<KeyValuePair<string, object>> Attributes { get; }
+        public IEnumerable<KeyValuePair<string, object>> Tags { get; }
     }
 }

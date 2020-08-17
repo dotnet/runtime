@@ -62,7 +62,7 @@ namespace System.Data.Tests.SqlTypes
             ValidateProperties(value, CultureInfo.CurrentCulture, new SqlString(value));
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
         [InlineData(1033, "en-US")]
         [InlineData(1036, "fr-FR")]
         public void Constructor_ValueLcid_Success(int lcid, string name)
@@ -97,35 +97,38 @@ namespace System.Data.Tests.SqlTypes
             SqlString testString = new SqlString("Test");
             Assert.Equal("Test", testString.Value);
 
-            // SqlString (String, int)
-            testString = new SqlString("Test", 2057);
-            Assert.Equal(2057, testString.LCID);
+            if (PlatformDetection.IsNotInvariantGlobalization)
+            {
+                // SqlString (String, int)
+                testString = new SqlString("Test", 2057);
+                Assert.Equal(2057, testString.LCID);
 
-            // SqlString (int, SqlCompareOptions, byte[])
-            testString = new SqlString(2057,
-                SqlCompareOptions.BinarySort | SqlCompareOptions.IgnoreCase,
-                new byte[2] { 123, 221 });
-            Assert.Equal(2057, testString.CompareInfo.LCID);
+                // SqlString (int, SqlCompareOptions, byte[])
+                testString = new SqlString(2057,
+                    SqlCompareOptions.BinarySort | SqlCompareOptions.IgnoreCase,
+                    new byte[2] { 123, 221 });
+                Assert.Equal(2057, testString.CompareInfo.LCID);
 
-            // SqlString(string, int, SqlCompareOptions)
-            testString = new SqlString("Test", 2057, SqlCompareOptions.IgnoreNonSpace);
-            Assert.False(testString.IsNull);
+                // SqlString(string, int, SqlCompareOptions)
+                testString = new SqlString("Test", 2057, SqlCompareOptions.IgnoreNonSpace);
+                Assert.False(testString.IsNull);
 
-            // SqlString (int, SqlCompareOptions, byte[], bool)
-            testString = new SqlString(2057, SqlCompareOptions.BinarySort, new byte[4] { 100, 100, 200, 45 }, true);
-            Assert.Equal((byte)63, testString.GetNonUnicodeBytes()[0]);
-            testString = new SqlString(2057, SqlCompareOptions.BinarySort, new byte[2] { 113, 100 }, false);
-            Assert.Equal("qd", testString.Value);
+                // SqlString (int, SqlCompareOptions, byte[], bool)
+                testString = new SqlString(2057, SqlCompareOptions.BinarySort, new byte[4] { 100, 100, 200, 45 }, true);
+                Assert.Equal((byte)63, testString.GetNonUnicodeBytes()[0]);
+                testString = new SqlString(2057, SqlCompareOptions.BinarySort, new byte[2] { 113, 100 }, false);
+                Assert.Equal("qd", testString.Value);
 
-            // SqlString (int, SqlCompareOptions, byte[], int, int)
-            testString = new SqlString(2057, SqlCompareOptions.BinarySort, new byte[2] { 113, 100 }, 0, 2);
-            Assert.False(testString.IsNull);
+                // SqlString (int, SqlCompareOptions, byte[], int, int)
+                testString = new SqlString(2057, SqlCompareOptions.BinarySort, new byte[2] { 113, 100 }, 0, 2);
+                Assert.False(testString.IsNull);
 
-            // SqlString (int, SqlCompareOptions, byte[], int, int, bool)
-            testString = new SqlString(2057, SqlCompareOptions.IgnoreCase, new byte[3] { 100, 111, 50 }, 1, 2, false);
-            Assert.Equal("o2", testString.Value);
-            testString = new SqlString(2057, SqlCompareOptions.IgnoreCase, new byte[3] { 123, 111, 222 }, 1, 2, true);
-            Assert.False(testString.IsNull);
+                // SqlString (int, SqlCompareOptions, byte[], int, int, bool)
+                testString = new SqlString(2057, SqlCompareOptions.IgnoreCase, new byte[3] { 100, 111, 50 }, 1, 2, false);
+                Assert.Equal("o2", testString.Value);
+                testString = new SqlString(2057, SqlCompareOptions.IgnoreCase, new byte[3] { 123, 111, 222 }, 1, 2, true);
+                Assert.False(testString.IsNull);
+            }
         }
 
         [Fact]
@@ -170,7 +173,7 @@ namespace System.Data.Tests.SqlTypes
         }
 
         // Test properties
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
         public void Properties()
         {
             using (new ThreadCultureChange("en-AU"))
@@ -207,7 +210,7 @@ namespace System.Data.Tests.SqlTypes
             AssertExtensions.Throws<ArgumentException>(null, () => _test1.CompareTo(test));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
         public void CompareToSqlTypeException()
         {
             SqlString t1 = new SqlString("test", 2057, SqlCompareOptions.IgnoreCase);
@@ -215,7 +218,7 @@ namespace System.Data.Tests.SqlTypes
             Assert.Throws<SqlTypeException>(() => t1.CompareTo(t2));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
         public void CompareTo()
         {
             Assert.True(_test1.CompareTo(_test3) < 0);

@@ -157,7 +157,7 @@ typedef DPTR(struct LookupMapBase) PTR_LookupMapBase;
 //
 // This still leaves the problem of runtime lookup performance. Touches to the cold section of a LookupMap
 // aren't all that critical (after all the data is meant to be cold), but looking up the last entry of a map
-// with 22 thousand entries (roughly what the MethodDefToDesc map in mscorlib is sized at at the time of
+// with 22 thousand entries (roughly what the MethodDefToDesc map in CoreLib is sized at at the time of
 // writing) is still likely to so inefficient as to be noticeable. Remember that the issue is that we have to
 // decode all predecessor entries in order to compute the value of a given entry in the table.
 //
@@ -170,7 +170,7 @@ typedef DPTR(struct LookupMapBase) PTR_LookupMapBase;
 //
 // The main areas in which this algorithm can be tuned are the number of bits used as an index into the
 // encoding lengths table (kLookupMapLengthBits) and the frequency with which entries are bookmarked in the
-// index (kLookupMapIndexStride). The current values have been set based on looking at models of mscorlib,
+// index (kLookupMapIndexStride). The current values have been set based on looking at models of CoreLib,
 // PresentationCore and PresentationFramework built from the actual ridmap data in their ngen images and
 // methodically trying different values in order to maximize compression or balance size versus likely runtime
 // performance. An alternative strategy was considered using direct (non-length prefix) encoding of the
@@ -1597,8 +1597,8 @@ private:
     PTR_EEClassHashTable    m_pAvailableClassesCaseIns;
 
     // Pointer to binder, if we have one
-    friend class MscorlibBinder;
-    PTR_MscorlibBinder      m_pBinder;
+    friend class CoreLibBinder;
+    PTR_CoreLibBinder      m_pBinder;
 
 public:
     BOOL IsCollectible()

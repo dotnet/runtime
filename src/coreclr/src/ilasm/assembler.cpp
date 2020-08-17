@@ -1418,6 +1418,20 @@ void Assembler::EmitOpcode(Instr* instr)
                 pLPC->ColumnEnd = instr->column_end;
                 pLPC->PC = m_CurPC;
                 pLPC->pWriter = instr->pWriter;
+
+                pLPC->pOwnerDocument = instr->pOwnerDocument;
+                if (0xfeefee == instr->linenum &&
+                    0xfeefee == instr->linenum_end &&
+                    0 == instr->column &&
+                    0 == instr->column_end)
+                {
+                    pLPC->IsHidden = TRUE;
+                }
+                else
+                {
+                    pLPC->IsHidden = FALSE;
+                }
+
                 m_pCurMethod->m_LinePCList.PUSH(pLPC);
             }
             else report->error("\nOut of memory!\n");
@@ -2375,40 +2389,51 @@ void Assembler::SetSourceFileName(__in __nullterminated char* szName)
             }
             if(m_fGeneratePDB)
             {
-                DocWriter* pDW;
-                unsigned i=0;
-                while((pDW = m_DocWriterList.PEEK(i++)) != NULL)
+                if (IsPortablePdb())
                 {
-                    if(!strcmp(szName,pDW->Name)) break;
+                    if (FAILED(m_pPortablePdbWriter->DefineDocument(szName, &m_guidLang)))
+                    {
+                        report->error("Failed to define a document: '%s'", szName);
+                    }
+                    delete[] szName;
                 }
-                if(pDW)
+                else
                 {
-                     m_pSymDocument = pDW->pWriter;
-                     delete [] szName;
+                    DocWriter* pDW;
+                    unsigned i = 0;
+                    while ((pDW = m_DocWriterList.PEEK(i++)) != NULL)
+                    {
+                        if (!strcmp(szName, pDW->Name)) break;
+                    }
+                    if (pDW)
+                    {
+                        m_pSymDocument = pDW->pWriter;
+                        delete[] szName;
+                    }
+                    else if (m_pSymWriter)
+                    {
+                        HRESULT hr;
+                        WszMultiByteToWideChar(g_uCodePage, 0, szName, -1, wzUniBuf, dwUniBuf);
+                        if (FAILED(hr = m_pSymWriter->DefineDocument(wzUniBuf, &m_guidLang,
+                            &m_guidLangVendor, &m_guidDoc, &m_pSymDocument)))
+                        {
+                            m_pSymDocument = NULL;
+                            report->error("Failed to define a document writer");
+                        }
+                        if ((pDW = new DocWriter()) != NULL)
+                        {
+                            pDW->Name = szName;
+                            pDW->pWriter = m_pSymDocument;
+                            m_DocWriterList.PUSH(pDW);
+                        }
+                        else
+                        {
+                            report->error("Out of memory");
+                            delete[] szName;
+                        }
+                    }
+                    else delete[] szName;
                 }
-                else if(m_pSymWriter)
-                {
-                    HRESULT hr;
-                    WszMultiByteToWideChar(g_uCodePage,0,szName,-1,wzUniBuf,dwUniBuf);
-                    if(FAILED(hr=m_pSymWriter->DefineDocument(wzUniBuf,&m_guidLang,
-                        &m_guidLangVendor,&m_guidDoc,&m_pSymDocument)))
-                    {
-                        m_pSymDocument = NULL;
-                        report->error("Failed to define a document writer");
-                    }
-                    if((pDW = new DocWriter()) != NULL)
-                    {
-                        pDW->Name = szName;
-                        pDW->pWriter = m_pSymDocument;
-                        m_DocWriterList.PUSH(pDW);
-                    }
-                    else
-                    {
-                        report->error("Out of memory");
-                        delete [] szName;
-                    }
-                }
-                else delete [] szName;
             }
             else delete [] szName;
         }
@@ -2426,6 +2451,39 @@ void Assembler::SetSourceFileName(BinStr* pbsName)
         SetSourceFileName(sz);
         delete pbsName;
     }
+}
+
+// Portable PDB paraphernalia
+void Assembler::SetPdbFileName(__in __nullterminated char* szName)
+{
+    if (szName)
+    {
+        if (*szName)
+        {
+            strcpy_s(m_szPdbFileName, MAX_FILENAME_LENGTH * 3 + 1, szName);
+            WszMultiByteToWideChar(g_uCodePage, 0, szName, -1, m_wzPdbFileName, MAX_FILENAME_LENGTH);
+        }
+    }
+}
+HRESULT Assembler::SavePdbFile()
+{
+    HRESULT hr = S_OK;
+    mdMethodDef entryPoint;
+
+    if (m_pdbFormat == PORTABLE)
+    {
+        if (FAILED(hr = (m_pPortablePdbWriter == NULL ? E_FAIL : S_OK))) goto exit;
+        if (FAILED(hr = (m_pPortablePdbWriter->GetEmitter() == NULL ? E_FAIL : S_OK))) goto exit;
+        if (FAILED(hr = m_pCeeFileGen->GetEntryPoint(m_pCeeFile, &entryPoint))) goto exit;
+        if (FAILED(hr = m_pPortablePdbWriter->BuildPdbStream(m_pEmitter, entryPoint))) goto exit;
+        if (FAILED(hr = m_pPortablePdbWriter->GetEmitter()->Save(m_wzPdbFileName, NULL))) goto exit;
+    }
+exit:
+    return hr;
+}
+BOOL Assembler::IsPortablePdb()
+{
+    return (m_pdbFormat == PORTABLE) && (m_pPortablePdbWriter != NULL);
 }
 
 void Assembler::RecordTypeConstraints(GenericParamConstraintList* pGPCList, int numTyPars, TyParDescr* tyPars)

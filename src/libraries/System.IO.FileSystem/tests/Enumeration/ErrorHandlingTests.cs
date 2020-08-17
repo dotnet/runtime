@@ -73,8 +73,11 @@ namespace System.IO.Tests
             // Make sure we're returning the native error as expected (and not the PAL error on Unix)
             using (LastError le = new LastError(Path.GetRandomFileName()))
             {
-                // Conveniently ERROR_FILE_NOT_FOUND and ENOENT are both 0x2
-                Assert.Equal(2, le.Error);
+                // while ERROR_FILE_NOT_FOUND/ENOENT have predictable values on Windows, Linux and Mac,
+                //  we can't rely on ENOENT having the same value on other platforms. Instead, assert
+                //  that we didn't get the PAL error because we know its value.
+                const int PAL_Error_ENOENT = 0x1002D;
+                Assert.NotEqual(PAL_Error_ENOENT, le.Error);
             }
         }
 
@@ -99,6 +102,7 @@ namespace System.IO.Tests
         }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/40531", TestPlatforms.Browser)]
     public void VariableLengthFileNames_AllCreatableFilesAreEnumerable()
     {
         DirectoryInfo testDirectory = Directory.CreateDirectory(GetTestFilePath());
@@ -116,6 +120,7 @@ namespace System.IO.Tests
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/40531", TestPlatforms.Browser)]
     public void VariableLengthDirectoryNames_AllCreatableDirectoriesAreEnumerable()
     {
         DirectoryInfo testDirectory = Directory.CreateDirectory(GetTestFilePath());

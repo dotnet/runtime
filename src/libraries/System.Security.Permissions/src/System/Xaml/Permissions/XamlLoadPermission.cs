@@ -9,6 +9,9 @@ using System.Security.Permissions;
 
 namespace System.Xaml.Permissions
 {
+#if NET50_OBSOLETIONS
+    [Obsolete(Obsoletions.CodeAccessSecurityMessage, DiagnosticId = Obsoletions.CodeAccessSecurityDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+#endif
     public sealed class XamlLoadPermission : CodeAccessPermission, IUnrestrictedPermission
     {
         public XamlLoadPermission(PermissionState state) { }

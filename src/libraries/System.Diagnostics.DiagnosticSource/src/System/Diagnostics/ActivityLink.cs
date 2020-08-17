@@ -17,17 +17,11 @@ namespace System.Diagnostics
         /// Construct a new <see cref="ActivityLink"/> object which can be linked to an Activity object.
         /// </summary>
         /// <param name="context">The trace Activity context<see cref="ActivityContext"/></param>
-        public ActivityLink(ActivityContext context) : this(context, null) {}
-
-        /// <summary>
-        /// Construct a new <see cref="ActivityLink"/> object which can be linked to an Activity object.
-        /// </summary>
-        /// <param name="context">The trace Activity context<see cref="ActivityContext"/></param>
-        /// <param name="attributes">The key-value pair list of attributes which associated to the <see cref="ActivityContext"/></param>
-        public ActivityLink(ActivityContext context, IEnumerable<KeyValuePair<string, object>>? attributes)
+        /// <param name="tags">The key-value pair list of tags which associated to the <see cref="ActivityContext"/></param>
+        public ActivityLink(ActivityContext context, ActivityTagsCollection? tags = null)
         {
             Context = context;
-            Attributes = attributes;
+            Tags = tags;
         }
 
         /// <summary>
@@ -36,13 +30,13 @@ namespace System.Diagnostics
         public ActivityContext Context { get; }
 
         /// <summary>
-        /// Retrieve the key-value pair list of attributes attached with the <see cref="ActivityContext"/>.
+        /// Retrieve the key-value pair list of tags attached with the <see cref="ActivityContext"/>.
         /// </summary>
-        public IEnumerable<KeyValuePair<string, object>>? Attributes { get; }
+        public IEnumerable<KeyValuePair<string, object>>? Tags { get; }
 
         public override bool Equals(object? obj) => (obj is ActivityLink link) && this.Equals(link);
 
-        public bool Equals(ActivityLink value) => Context == value.Context && value.Attributes == Attributes;
+        public bool Equals(ActivityLink value) => Context == value.Context && value.Tags == Tags;
         public static bool operator ==(ActivityLink left, ActivityLink right) => left.Equals(right);
         public static bool operator !=(ActivityLink left, ActivityLink right) => !left.Equals(right);
     }

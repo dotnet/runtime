@@ -58,7 +58,7 @@ namespace System.Data.ProviderBase
             return resultSid;
         }
 
-        public override bool Equals(object value)
+        public override bool Equals(object? value)
         {
             bool result = ((this == NoIdentity) || (this == value));
             if (!result && (null != value))

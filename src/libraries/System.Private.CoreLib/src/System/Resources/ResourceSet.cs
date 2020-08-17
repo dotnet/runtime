@@ -14,6 +14,7 @@
 
 using System.Collections;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Reflection;
 
@@ -28,7 +29,7 @@ namespace System.Resources
     public class ResourceSet : IDisposable, IEnumerable
     {
         protected IResourceReader Reader = null!;
-        internal Hashtable? Table; // TODO-NULLABLE: Avoid nulling out in Dispose
+        internal Hashtable? Table;
 
         private Hashtable? _caseInsensitiveTable;  // For case-insensitive lookups.
 
@@ -89,11 +90,11 @@ namespace System.Resources
             {
                 // Close the Reader in a thread-safe way.
                 IResourceReader? copyOfReader = Reader;
-                Reader = null!; // TODO-NULLABLE: Avoid nulling out in Dispose
+                Reader = null!;
                 if (copyOfReader != null)
                     copyOfReader.Close();
             }
-            Reader = null!; // TODO-NULLABLE: Avoid nulling out in Dispose
+            Reader = null!;
             _caseInsensitiveTable = null;
             Table = null;
         }
@@ -114,10 +115,11 @@ namespace System.Resources
         // Returns the preferred IResourceWriter class for this kind of ResourceSet.
         // Subclasses of ResourceSet using their own Readers &; should override
         // GetDefaultReader and GetDefaultWriter.
+        // TODO: https://github.com/mono/linker/issues/943
+        [DynamicDependency(DynamicallyAccessedMemberTypes.PublicConstructors, "System.Resources.ResourceWriter", "System.Resources.Writer")]
         public virtual Type GetDefaultWriter()
         {
-            Assembly resourceWriterAssembly = Assembly.Load("System.Resources.Writer, Version=4.0.1.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a");
-            return resourceWriterAssembly.GetType("System.Resources.ResourceWriter", throwOnError: true)!;
+            return Type.GetType("System.Resources.ResourceWriter, System.Resources.Writer", throwOnError: true)!;
         }
 
         public virtual IDictionaryEnumerator GetEnumerator()

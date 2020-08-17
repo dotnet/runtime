@@ -27,21 +27,6 @@ namespace System
         [MethodImpl(MethodImplOptions.InternalCall)]
         private extern bool InternalHasFlag(Enum flags);
 
-        private class EnumInfo
-        {
-            public readonly bool HasFlagsAttribute;
-            public readonly ulong[] Values;
-            public readonly string[] Names;
-
-            // Each entry contains a list of sorted pair of enum field names and values, sorted by values
-            public EnumInfo(bool hasFlagsAttribute, ulong[] values, string[] names)
-            {
-                HasFlagsAttribute = hasFlagsAttribute;
-                Values = values;
-                Names = names;
-            }
-        }
-
         private static EnumInfo GetEnumInfo(RuntimeType enumType, bool getNames = true)
         {
             EnumInfo? entry = enumType.GenericCache as EnumInfo;
@@ -63,83 +48,6 @@ namespace System
             }
 
             return entry;
-        }
-
-        internal static ulong[] InternalGetValues(RuntimeType enumType)
-        {
-            // Get all of the values
-            return GetEnumInfo(enumType, false).Values;
-        }
-
-        internal static string[] InternalGetNames(RuntimeType enumType)
-        {
-            // Get all of the names
-            return GetEnumInfo(enumType, true).Names;
-        }
-
-        [Intrinsic]
-        public bool HasFlag(Enum flag)
-        {
-            if (flag == null)
-                throw new ArgumentNullException(nameof(flag));
-
-            if (!this.GetType().IsEquivalentTo(flag.GetType()))
-            {
-                throw new ArgumentException(SR.Format(SR.Argument_EnumTypeDoesNotMatch, flag.GetType(), this.GetType()));
-            }
-
-            return InternalHasFlag(flag);
-        }
-
-        public static string? GetName(Type enumType, object value)
-        {
-            if (enumType == null)
-                throw new ArgumentNullException(nameof(enumType));
-
-            return enumType.GetEnumName(value);
-        }
-
-        public static string[] GetNames(Type enumType)
-        {
-            if (enumType == null)
-                throw new ArgumentNullException(nameof(enumType));
-
-            return enumType.GetEnumNames();
-        }
-
-        public static Type GetUnderlyingType(Type enumType)
-        {
-            if (enumType == null)
-                throw new ArgumentNullException(nameof(enumType));
-
-            return enumType.GetEnumUnderlyingType();
-        }
-
-        public static Array GetValues(Type enumType)
-        {
-            if (enumType == null)
-                throw new ArgumentNullException(nameof(enumType));
-
-            return enumType.GetEnumValues();
-        }
-
-        public static bool IsDefined(Type enumType, object value)
-        {
-            if (enumType == null)
-                throw new ArgumentNullException(nameof(enumType));
-
-            return enumType.IsEnumDefined(value);
-        }
-
-        private static RuntimeType ValidateRuntimeType(Type enumType)
-        {
-            if (enumType == null)
-                throw new ArgumentNullException(nameof(enumType));
-            if (!enumType.IsEnum)
-                throw new ArgumentException(SR.Arg_MustBeEnum, nameof(enumType));
-            if (!(enumType is RuntimeType rtType))
-                throw new ArgumentException(SR.Arg_MustBeType, nameof(enumType));
-            return rtType;
         }
     }
 }

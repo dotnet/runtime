@@ -39,7 +39,7 @@ namespace System.Runtime.Loader.Tests
             checker.GcAndCheck();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPreciseGcSupported))]
         public static void Finalizer_CollectibleWithNoAssemblyLoaded()
         {
             // Use a collectible ALC, let the finalizer call Unload

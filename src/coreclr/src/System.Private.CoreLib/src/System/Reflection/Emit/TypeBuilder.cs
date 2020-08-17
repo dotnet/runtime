@@ -744,6 +744,7 @@ namespace System.Reflection.Emit
             }
         }
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
         public override object? InvokeMember(string name, BindingFlags invokeAttr, Binder? binder, object? target,
             object?[]? args, ParameterModifier[]? modifiers, CultureInfo? culture, string[]? namedParameters)
         {
@@ -765,6 +766,7 @@ namespace System.Reflection.Emit
 
         public override Type? BaseType => m_typeParent;
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)]
         protected override ConstructorInfo? GetConstructorImpl(BindingFlags bindingAttr, Binder? binder,
                 CallingConventions callConvention, Type[] types, ParameterModifier[]? modifiers)
         {
@@ -774,6 +776,7 @@ namespace System.Reflection.Emit
             return m_bakedRuntimeType.GetConstructor(bindingAttr, binder, callConvention, types, modifiers);
         }
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)]
         public override ConstructorInfo[] GetConstructors(BindingFlags bindingAttr)
         {
             if (!IsCreated())
@@ -782,6 +785,7 @@ namespace System.Reflection.Emit
             return m_bakedRuntimeType.GetConstructors(bindingAttr);
         }
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)]
         protected override MethodInfo? GetMethodImpl(string name, BindingFlags bindingAttr, Binder? binder,
                 CallingConventions callConvention, Type[]? types, ParameterModifier[]? modifiers)
         {
@@ -798,6 +802,7 @@ namespace System.Reflection.Emit
             }
         }
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)]
         public override MethodInfo[] GetMethods(BindingFlags bindingAttr)
         {
             if (!IsCreated())
@@ -806,6 +811,7 @@ namespace System.Reflection.Emit
             return m_bakedRuntimeType.GetMethods(bindingAttr);
         }
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields | DynamicallyAccessedMemberTypes.NonPublicFields)]
         public override FieldInfo? GetField(string name, BindingFlags bindingAttr)
         {
             if (!IsCreated())
@@ -814,6 +820,7 @@ namespace System.Reflection.Emit
             return m_bakedRuntimeType.GetField(name, bindingAttr);
         }
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields | DynamicallyAccessedMemberTypes.NonPublicFields)]
         public override FieldInfo[] GetFields(BindingFlags bindingAttr)
         {
             if (!IsCreated())
@@ -845,6 +852,7 @@ namespace System.Reflection.Emit
             return m_typeInterfaces.ToArray();
         }
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicEvents | DynamicallyAccessedMemberTypes.NonPublicEvents)]
         public override EventInfo? GetEvent(string name, BindingFlags bindingAttr)
         {
             if (!IsCreated())
@@ -853,6 +861,7 @@ namespace System.Reflection.Emit
             return m_bakedRuntimeType.GetEvent(name, bindingAttr);
         }
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicEvents)]
         public override EventInfo[] GetEvents()
         {
             if (!IsCreated())
@@ -861,12 +870,14 @@ namespace System.Reflection.Emit
             return m_bakedRuntimeType.GetEvents();
         }
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties)]
         protected override PropertyInfo GetPropertyImpl(string name, BindingFlags bindingAttr, Binder? binder,
                 Type? returnType, Type[]? types, ParameterModifier[]? modifiers)
         {
             throw new NotSupportedException(SR.NotSupported_DynamicModule);
         }
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties)]
         public override PropertyInfo[] GetProperties(BindingFlags bindingAttr)
         {
             if (!IsCreated())
@@ -875,6 +886,7 @@ namespace System.Reflection.Emit
             return m_bakedRuntimeType.GetProperties(bindingAttr);
         }
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicNestedTypes | DynamicallyAccessedMemberTypes.NonPublicNestedTypes)]
         public override Type[] GetNestedTypes(BindingFlags bindingAttr)
         {
             if (!IsCreated())
@@ -883,6 +895,7 @@ namespace System.Reflection.Emit
             return m_bakedRuntimeType.GetNestedTypes(bindingAttr);
         }
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicNestedTypes | DynamicallyAccessedMemberTypes.NonPublicNestedTypes)]
         public override Type? GetNestedType(string name, BindingFlags bindingAttr)
         {
             if (!IsCreated())
@@ -891,6 +904,7 @@ namespace System.Reflection.Emit
             return m_bakedRuntimeType.GetNestedType(name, bindingAttr);
         }
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
         public override MemberInfo[] GetMember(string name, MemberTypes type, BindingFlags bindingAttr)
         {
             if (!IsCreated())
@@ -907,6 +921,7 @@ namespace System.Reflection.Emit
             return m_bakedRuntimeType.GetInterfaceMap(interfaceType);
         }
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicEvents | DynamicallyAccessedMemberTypes.NonPublicEvents)]
         public override EventInfo[] GetEvents(BindingFlags bindingAttr)
         {
             if (!IsCreated())
@@ -915,6 +930,7 @@ namespace System.Reflection.Emit
             return m_bakedRuntimeType.GetEvents(bindingAttr);
         }
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
         public override MemberInfo[] GetMembers(BindingFlags bindingAttr)
         {
             if (!IsCreated())

@@ -38,7 +38,7 @@
           DependsOnTargets="ConvertItems"
           BeforeTargets="GetPackageFiles">
     <ItemGroup>
-      <RuntimeFile Include="@(File->HasMetadata('TargetPath'))" />
+      <RuntimeFile Include="@(File->HasMetadata('TargetPath'))" Exclude="$(PackageIconFullPath)" />
       <File Remove="@(RuntimeFile)" />
     </ItemGroup>
 
@@ -90,6 +90,12 @@
       <File Include="@(Crossgen2File)">
         <TargetPath>tools</TargetPath>
       </File>
+      <!-- 
+        System.Private.CoreLib's R2R pdb ends up in two locations (CoreCLR and the depproj output).
+        Remove them here and let the symbol file location infra find exactly one.
+      -->
+      <CoreLibSymbolFile Include="@(Crossgen2File)" Condition="'%(FileName)%(Extension)' == 'System.Private.CoreLib.ni.pdb'" />
+      <File Remove="@(CoreLibSymbolFile)" />
     </ItemGroup>
 
   </Target>

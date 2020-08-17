@@ -173,8 +173,9 @@ namespace ILCompiler.PEWriter
             ISymbolNode r2rHeaderExportSymbol,
             string outputFileSimpleName,
             Func<RuntimeFunctionsTableNode> getRuntimeFunctionsTable,
-            int? customPESectionAlignment)
-            : base(peHeaderBuilder, deterministicIdProvider: null)
+            int? customPESectionAlignment,
+            Func<IEnumerable<Blob>, BlobContentId> deterministicIdProvider)
+            : base(peHeaderBuilder, deterministicIdProvider: deterministicIdProvider)
         {
             _target = target;
             _getRuntimeFunctionsTable = getRuntimeFunctionsTable;
@@ -268,6 +269,16 @@ namespace ILCompiler.PEWriter
             _sectionBuilder.AddObjectData(objectData, targetSectionIndex, name, mapFileBuilder);
         }
 
+        /// <summary>
+        /// Add a symbol to the symbol map which defines the area of the binary between the two emitted symbols.
+        /// This allows relocations (both position and size) to regions of the image. Both nodes must be in the
+        /// same section and firstNode must be emitted before secondNode.
+        /// </summary>
+        public void AddSymbolForRange(ISymbolNode symbol, ISymbolNode firstNode, ISymbolNode secondNode)
+        {
+            _sectionBuilder.AddSymbolForRange(symbol, firstNode, secondNode);
+        }
+
         public int GetSymbolFilePosition(ISymbolNode symbol)
         {
             return _sectionBuilder.GetSymbolFilePosition(symbol);
@@ -278,7 +289,7 @@ namespace ILCompiler.PEWriter
         /// </summary>
         /// <param name="outputStream">Output stream for the final R2R PE file</param>
         /// <param name="timeDateStamp">Timestamp to set in the PE header of the output R2R executable</param>
-        public void Write(Stream outputStream, int timeDateStamp)
+        public void Write(Stream outputStream, int? timeDateStamp)
         {
             BlobBuilder outputPeFile = new BlobBuilder();
             Serialize(outputPeFile);
@@ -292,7 +303,8 @@ namespace ILCompiler.PEWriter
 
             ApplyMachineOSOverride(outputStream);
 
-            SetPEHeaderTimeStamp(outputStream, timeDateStamp);
+            if (timeDateStamp.HasValue)
+                SetPEHeaderTimeStamp(outputStream, timeDateStamp.Value);
 
             _written = true;
         }
@@ -497,7 +509,7 @@ namespace ILCompiler.PEWriter
                 RuntimeFunctionsTableNode runtimeFunctionsTable = _getRuntimeFunctionsTable();
                 builder.ExceptionTable = new DirectoryEntry(
                     relativeVirtualAddress: _sectionBuilder.GetSymbolRVA(runtimeFunctionsTable),
-                    size: runtimeFunctionsTable.TableSize);
+                    size: runtimeFunctionsTable.TableSizeExcludingSentinel);
             }
     
             return builder;

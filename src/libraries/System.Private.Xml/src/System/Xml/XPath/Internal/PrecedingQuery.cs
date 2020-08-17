@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#nullable enable
 using System.Diagnostics;
 using System.Xml.XPath;
 using StackNav = MS.Internal.Xml.XPath.ClonableStack<System.Xml.XPath.XPathNavigator>;
@@ -20,7 +21,7 @@ namespace MS.Internal.Xml.XPath
 
     internal sealed class PrecedingQuery : BaseAxisQuery
     {
-        private XPathNodeIterator _workIterator;
+        private XPathNodeIterator? _workIterator;
         private readonly StackNav _ancestorStk;
 
         public PrecedingQuery(Query qyInput, string name, string prefix, XPathNodeType typeTest) : base(qyInput, name, prefix, typeTest)
@@ -40,13 +41,13 @@ namespace MS.Internal.Xml.XPath
             base.Reset();
         }
 
-        public override XPathNavigator Advance()
+        public override XPathNavigator? Advance()
         {
             if (_workIterator == null)
             {
                 XPathNavigator last;
                 {
-                    XPathNavigator input = qyInput.Advance();
+                    XPathNavigator? input = qyInput.Advance();
                     if (input == null)
                     {
                         return null;
@@ -74,7 +75,7 @@ namespace MS.Internal.Xml.XPath
 
             while (_workIterator.MoveNext())
             {
-                currentNode = _workIterator.Current;
+                currentNode = _workIterator.Current!;
                 if (currentNode.IsSamePosition(_ancestorStk.Peek()))
                 {
                     _ancestorStk.Pop();

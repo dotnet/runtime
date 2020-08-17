@@ -3,6 +3,7 @@
 
 namespace System.Runtime.ConstrainedExecution
 {
+    [Obsolete(Obsoletions.ConstrainedExecutionRegionMessage, DiagnosticId = Obsoletions.ConstrainedExecutionRegionDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
     [AttributeUsage(AttributeTargets.Constructor | AttributeTargets.Method, Inherited = false)]
     public sealed class PrePrepareMethodAttribute : Attribute
     {

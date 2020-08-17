@@ -289,7 +289,7 @@ namespace System.Reflection.Emit
             num_types++;
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2006:UnrecognizedReflectionPattern",
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2067:UnrecognizedReflectionPattern",
             Justification = "Reflection.Emit is not subject to trimming")]
         private TypeBuilder DefineType(string name, TypeAttributes attr, Type? parent, Type[]? interfaces, PackingSize packingSize, int typesize)
         {
@@ -410,6 +410,7 @@ namespace System.Reflection.Emit
             return result;
         }
 
+        [RequiresUnreferencedCode("Types might be removed")]
         [ComVisible(true)]
         public override Type? GetType(string className, bool throwOnError, bool ignoreCase)
         {
@@ -525,6 +526,7 @@ namespace System.Reflection.Emit
                         return null;
                 }
         */
+        [RequiresUnreferencedCode("Types might be removed")]
         public override Type[] GetTypes()
         {
             if (types == null)
@@ -862,11 +864,13 @@ namespace System.Reflection.Emit
             return global_type_created.GetMethod(name, bindingAttr, binder, callConvention, types, modifiers);
         }
 
+        [RequiresUnreferencedCode("Trimming changes metadata tokens")]
         public override FieldInfo? ResolveField(int metadataToken, Type[]? genericTypeArguments, Type[]? genericMethodArguments)
         {
             return RuntimeModule.ResolveField(this, _impl, metadataToken, genericTypeArguments, genericMethodArguments);
         }
 
+        [RequiresUnreferencedCode("Trimming changes metadata tokens")]
         public override MemberInfo? ResolveMember(int metadataToken, Type[]? genericTypeArguments, Type[]? genericMethodArguments)
         {
             return RuntimeModule.ResolveMember(this, _impl, metadataToken, genericTypeArguments, genericMethodArguments);
@@ -886,21 +890,25 @@ namespace System.Reflection.Emit
                 return m;
         }
 
+        [RequiresUnreferencedCode("Trimming changes metadata tokens")]
         public override MethodBase? ResolveMethod(int metadataToken, Type[]? genericTypeArguments, Type[]? genericMethodArguments)
         {
             return RuntimeModule.ResolveMethod(this, _impl, metadataToken, genericTypeArguments, genericMethodArguments);
         }
 
+        [RequiresUnreferencedCode("Trimming changes metadata tokens")]
         public override string ResolveString(int metadataToken)
         {
             return RuntimeModule.ResolveString(this, _impl, metadataToken);
         }
 
+        [RequiresUnreferencedCode("Trimming changes metadata tokens")]
         public override byte[] ResolveSignature(int metadataToken)
         {
             return RuntimeModule.ResolveSignature(this, _impl, metadataToken);
         }
 
+        [RequiresUnreferencedCode("Trimming changes metadata tokens")]
         public override Type ResolveType(int metadataToken, Type[]? genericTypeArguments, Type[]? genericMethodArguments)
         {
             return RuntimeModule.ResolveType(this, _impl, metadataToken, genericTypeArguments, genericMethodArguments);

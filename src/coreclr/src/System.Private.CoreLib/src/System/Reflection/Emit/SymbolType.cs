@@ -300,6 +300,7 @@ namespace System.Reflection.Emit
 
         public override Guid GUID => throw new NotSupportedException(SR.NotSupported_NonReflectedType);
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
         public override object InvokeMember(string name, BindingFlags invokeAttr, Binder? binder, object? target,
             object?[]? args, ParameterModifier[]? modifiers, CultureInfo? culture, string[]? namedParameters)
         {
@@ -358,33 +359,39 @@ namespace System.Reflection.Emit
 
         public override Type BaseType => typeof(System.Array);
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)]
         protected override ConstructorInfo GetConstructorImpl(BindingFlags bindingAttr, Binder? binder,
                 CallingConventions callConvention, Type[] types, ParameterModifier[]? modifiers)
         {
             throw new NotSupportedException(SR.NotSupported_NonReflectedType);
         }
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)]
         public override ConstructorInfo[] GetConstructors(BindingFlags bindingAttr)
         {
             throw new NotSupportedException(SR.NotSupported_NonReflectedType);
         }
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)]
         protected override MethodInfo GetMethodImpl(string name, BindingFlags bindingAttr, Binder? binder,
                 CallingConventions callConvention, Type[]? types, ParameterModifier[]? modifiers)
         {
             throw new NotSupportedException(SR.NotSupported_NonReflectedType);
         }
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)]
         public override MethodInfo[] GetMethods(BindingFlags bindingAttr)
         {
             throw new NotSupportedException(SR.NotSupported_NonReflectedType);
         }
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields | DynamicallyAccessedMemberTypes.NonPublicFields)]
         public override FieldInfo GetField(string name, BindingFlags bindingAttr)
         {
             throw new NotSupportedException(SR.NotSupported_NonReflectedType);
         }
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields | DynamicallyAccessedMemberTypes.NonPublicFields)]
         public override FieldInfo[] GetFields(BindingFlags bindingAttr)
         {
             throw new NotSupportedException(SR.NotSupported_NonReflectedType);
@@ -400,42 +407,50 @@ namespace System.Reflection.Emit
             throw new NotSupportedException(SR.NotSupported_NonReflectedType);
         }
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicEvents | DynamicallyAccessedMemberTypes.NonPublicEvents)]
         public override EventInfo GetEvent(string name, BindingFlags bindingAttr)
         {
             throw new NotSupportedException(SR.NotSupported_NonReflectedType);
         }
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicEvents)]
         public override EventInfo[] GetEvents()
         {
             throw new NotSupportedException(SR.NotSupported_NonReflectedType);
         }
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties)]
         protected override PropertyInfo GetPropertyImpl(string name, BindingFlags bindingAttr, Binder? binder,
                 Type? returnType, Type[]? types, ParameterModifier[]? modifiers)
         {
             throw new NotSupportedException(SR.NotSupported_NonReflectedType);
         }
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties)]
         public override PropertyInfo[] GetProperties(BindingFlags bindingAttr)
         {
             throw new NotSupportedException(SR.NotSupported_NonReflectedType);
         }
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicNestedTypes | DynamicallyAccessedMemberTypes.NonPublicNestedTypes)]
         public override Type[] GetNestedTypes(BindingFlags bindingAttr)
         {
             throw new NotSupportedException(SR.NotSupported_NonReflectedType);
         }
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicNestedTypes | DynamicallyAccessedMemberTypes.NonPublicNestedTypes)]
         public override Type GetNestedType(string name, BindingFlags bindingAttr)
         {
             throw new NotSupportedException(SR.NotSupported_NonReflectedType);
         }
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
         public override MemberInfo[] GetMember(string name, MemberTypes type, BindingFlags bindingAttr)
         {
             throw new NotSupportedException(SR.NotSupported_NonReflectedType);
         }
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
         public override MemberInfo[] GetMembers(BindingFlags bindingAttr)
         {
             throw new NotSupportedException(SR.NotSupported_NonReflectedType);
@@ -446,6 +461,7 @@ namespace System.Reflection.Emit
             throw new NotSupportedException(SR.NotSupported_NonReflectedType);
         }
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicEvents | DynamicallyAccessedMemberTypes.NonPublicEvents)]
         public override EventInfo[] GetEvents(BindingFlags bindingAttr)
         {
             throw new NotSupportedException(SR.NotSupported_NonReflectedType);

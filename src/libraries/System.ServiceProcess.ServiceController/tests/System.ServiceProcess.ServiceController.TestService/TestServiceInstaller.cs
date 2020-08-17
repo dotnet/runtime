@@ -102,6 +102,7 @@ namespace System.ServiceProcess.Tests
                     {
                         if (svc.Status != ServiceControllerStatus.Running)
                         {
+                            TestService.DebugTrace("TestServiceInstaller: instructing ServiceController to Start service " + ServiceName);
                             svc.Start();
                             if (!ServiceName.StartsWith("PropagateExceptionFromOnStart"))
                                 svc.WaitForStatus(ServiceControllerStatus.Running, TimeSpan.FromSeconds(120));
@@ -124,7 +125,6 @@ namespace System.ServiceProcess.Tests
                 // Meantime we still want this service to get deleted, so we'll go ahead and call
                 // DeleteService, which will schedule it to get deleted on reboot.
                 // We won't catch the exception: we do want the test to fail.
-
                 DeleteService();
 
                 ServiceName = null;
@@ -141,6 +141,7 @@ namespace System.ServiceProcess.Tests
                 {
                     try
                     {
+                        TestService.DebugTrace("TestServiceInstaller: instructing ServiceController to Stop service " + ServiceName);
                         svc.Stop();
                     }
                     catch (InvalidOperationException)
@@ -172,6 +173,7 @@ namespace System.ServiceProcess.Tests
                     if (serviceHandle.IsInvalid)
                         throw new Win32Exception($"Could not find service '{ServiceName}'");
 
+                    TestService.DebugTrace("TestServiceInstaller: instructing ServiceController to Delete service " + ServiceName);
                     if (!Interop.Advapi32.DeleteService(serviceHandle))
                     {
                         throw new Win32Exception($"Could not delete service '{ServiceName}'");

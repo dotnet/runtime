@@ -22,6 +22,7 @@
 #include "switches.h"
 #include "generics.h"
 #include "stackwalk.h"
+#include "virtualcallstub.h"
 
 #include "dacdbiimpl.h"
 
@@ -2398,7 +2399,7 @@ TypeHandle DacDbiInterfaceImpl::FindLoadedElementType(CorElementType elementType
     // Lookup operations run the class loader in non-load mode.
     ENABLE_FORBID_GC_LOADER_USE_IN_THIS_SCOPE();
 
-    MethodTable * pMethodTable = (&g_Mscorlib)->GetElementType(elementType);
+    MethodTable * pMethodTable = (&g_CoreLib)->GetElementType(elementType);
 
     return TypeHandle(pMethodTable);
 } // DacDbiInterfaceImpl::FindLoadedElementType
@@ -3570,6 +3571,139 @@ HRESULT DacDbiInterfaceImpl::GetDelegateTargetObject(
     return hr;
 }
 
+static bool TrackMemoryRangeHelper(PTR_VOID pvArgs, PTR_VOID pvAllocationBase, SIZE_T cbReserved)
+{
+    // The pvArgs is really pointing to a debugger-side container. Sadly the callback only takes a PTR_VOID.
+    CQuickArrayList<COR_MEMORY_RANGE> *rangeCollection =
+                                        (CQuickArrayList<COR_MEMORY_RANGE>*)(dac_cast<TADDR>(pvArgs));
+    TADDR rangeStart = dac_cast<TADDR>(pvAllocationBase);
+    TADDR rangeEnd = rangeStart + cbReserved;
+    rangeCollection->Push({rangeStart, rangeEnd});
+
+    // This is a tracking function, not a search callback. Pretend we never found what we were looking for
+    // to get all possible ranges.
+    return false;
+}
+
+void DacDbiInterfaceImpl::EnumerateMemRangesForLoaderAllocator(PTR_LoaderAllocator pLoaderAllocator, CQuickArrayList<COR_MEMORY_RANGE> *rangeAcummulator)
+{
+    CQuickArrayList<PTR_LoaderHeap> heapsToEnumerate;
+
+    // We always expect to see these three heaps
+    _ASSERTE(pLoaderAllocator->GetLowFrequencyHeap() != NULL);
+    heapsToEnumerate.Push(pLoaderAllocator->GetLowFrequencyHeap());
+
+    _ASSERTE(pLoaderAllocator->GetHighFrequencyHeap() != NULL);
+    heapsToEnumerate.Push(pLoaderAllocator->GetHighFrequencyHeap());
+
+    _ASSERTE(pLoaderAllocator->GetStubHeap() != NULL);
+    heapsToEnumerate.Push(pLoaderAllocator->GetStubHeap());
+
+    // GetVirtualCallStubManager returns VirtualCallStubManager*, but it's really an address to target as
+    // pLoaderAllocator is DACized. Cast it so we don't try to to a Host to Target translation.
+    VirtualCallStubManager *pVcsMgr = PTR_VirtualCallStubManager(TO_TADDR(pLoaderAllocator->GetVirtualCallStubManager()));
+    LOG((LF_CORDB, LL_INFO10000, "DDBII::EMRFLA: VirtualCallStubManager 0x%x\n", PTR_HOST_TO_TADDR(pVcsMgr)));
+    if (pVcsMgr)
+    {
+        if (pVcsMgr->indcell_heap != NULL) heapsToEnumerate.Push(pVcsMgr->indcell_heap);
+        if (pVcsMgr->lookup_heap != NULL) heapsToEnumerate.Push(pVcsMgr->lookup_heap);
+        if (pVcsMgr->resolve_heap != NULL) heapsToEnumerate.Push(pVcsMgr->resolve_heap);
+        if (pVcsMgr->dispatch_heap != NULL) heapsToEnumerate.Push(pVcsMgr->dispatch_heap);
+        if (pVcsMgr->cache_entry_heap != NULL) heapsToEnumerate.Push(pVcsMgr->cache_entry_heap);
+    }
+
+    TADDR rangeAccumAsTaddr = TO_TADDR(rangeAcummulator);
+    for (uint32_t i = 0; i < (uint32_t)heapsToEnumerate.Size(); i++)
+    {
+        LOG((LF_CORDB, LL_INFO10000, "DDBII::EMRFLA: LoaderHeap 0x%x\n", heapsToEnumerate[i].GetAddr()));
+        heapsToEnumerate[i]->EnumPageRegions(TrackMemoryRangeHelper, rangeAccumAsTaddr);
+    }
+}
+
+void DacDbiInterfaceImpl::EnumerateMemRangesForJitCodeHeaps(CQuickArrayList<COR_MEMORY_RANGE> *rangeAcummulator)
+{
+    // We should always have a valid EEJitManager with at least one code heap.
+    EEJitManager *pEM = ExecutionManager::GetEEJitManager();
+    _ASSERTE(pEM != NULL && pEM->m_pCodeHeap.IsValid());
+
+    PTR_HeapList pHeapList = pEM->m_pCodeHeap;
+    while (pHeapList != NULL)
+    {
+        CodeHeap *pHeap = pHeapList->pHeap;
+        DacpJitCodeHeapInfo jitCodeHeapInfo = DACGetHeapInfoForCodeHeap(pHeap);
+
+        switch (jitCodeHeapInfo.codeHeapType)
+        {
+            case CODEHEAP_LOADER:
+            {
+                TADDR targetLoaderHeap = CLRDATA_ADDRESS_TO_TADDR(jitCodeHeapInfo.LoaderHeap);
+                LOG((LF_CORDB, LL_INFO10000,
+                    "DDBII::EMRFJCH: LoaderCodeHeap 0x%x with LoaderHeap at 0x%x\n",
+                    PTR_HOST_TO_TADDR(pHeap), targetLoaderHeap));
+                PTR_ExplicitControlLoaderHeap pLoaderHeap = PTR_ExplicitControlLoaderHeap(targetLoaderHeap);
+                pLoaderHeap->EnumPageRegions(TrackMemoryRangeHelper, TO_TADDR(rangeAcummulator));
+                break;
+            }
+
+            case CODEHEAP_HOST:
+            {
+                LOG((LF_CORDB, LL_INFO10000,
+                    "DDBII::EMRFJCH: HostCodeHeap 0x%x\n",
+                    PTR_HOST_TO_TADDR(pHeap)));
+                rangeAcummulator->Push({
+                    CLRDATA_ADDRESS_TO_TADDR(jitCodeHeapInfo.HostData.baseAddr),
+                    CLRDATA_ADDRESS_TO_TADDR(jitCodeHeapInfo.HostData.currentAddr)
+                });
+                break;
+            }
+
+            default:
+            {
+                LOG((LF_CORDB, LL_INFO10000, "DDBII::EMRFJCH: unknown heap type at 0x%x\n\n", pHeap));
+                _ASSERTE("Unknown heap type enumerating code ranges.");
+                break;
+            }
+        }
+
+        pHeapList = pHeapList->GetNext();
+    }
+}
+
+HRESULT DacDbiInterfaceImpl::GetLoaderHeapMemoryRanges(DacDbiArrayList<COR_MEMORY_RANGE> *pRanges)
+{
+    LOG((LF_CORDB, LL_INFO10000, "DDBII::GLHMR\n"));
+    DD_ENTER_MAY_THROW;
+
+    HRESULT hr = S_OK;
+
+    EX_TRY
+    {
+        CQuickArrayList<COR_MEMORY_RANGE> memoryRanges;
+
+        // Anything that's loaded in the SystemDomain or into the main AppDomain's default context in .NET Core
+        // and after uses only one global allocator. Enumerating that one is enough for most purposes.
+        // This doesn't consider any uses of AssemblyLoadingContexts (Unloadable or not). Each context has
+        // it's own LoaderAllocator, but there's no easy way of getting a hand at them other than going through
+        // the heap, getting a managed LoaderAllocators, from there getting a Scout, and from there getting a native
+        // pointer to the LoaderAllocator tos enumerate.
+        PTR_LoaderAllocator pGlobalAllocator = SystemDomain::System()->GetLoaderAllocator();
+        _ASSERTE(pGlobalAllocator);
+        EnumerateMemRangesForLoaderAllocator(pGlobalAllocator, &memoryRanges);
+
+        EnumerateMemRangesForJitCodeHeaps(&memoryRanges);
+
+        // This code doesn't enumerate module thunk heaps to support IJW.
+        // It's a fairly rare scenario and requires to enumerate all modules.
+        // The return for such added time is minimal.
+
+        _ASSERTE(memoryRanges.Size() < INT_MAX);
+        pRanges->Init(memoryRanges.Ptr(), (UINT) memoryRanges.Size());
+    }
+    EX_CATCH_HRESULT(hr);
+
+    return hr;
+}
+
 void DacDbiInterfaceImpl::GetStackFramesFromException(VMPTR_Object vmObject, DacDbiArrayList<DacExceptionCallStackData>& dacStackFrames)
 {
     DD_ENTER_MAY_THROW;
@@ -4136,6 +4270,30 @@ void DacDbiInterfaceImpl::GetModuleSimpleName(VMPTR_Module vmModule, IStringHold
 
     SString convert(SString::Utf8, szNameUtf8);
     IfFailThrow(pStrFilename->AssignCopy(convert.GetUnicode()));
+}
+
+HRESULT DacDbiInterfaceImpl::IsModuleMapped(VMPTR_Module pModule, OUT BOOL *isModuleMapped)
+{
+    LOG((LF_CORDB, LL_INFO10000, "DDBII::IMM - TADDR 0x%x\n", pModule));
+    DD_ENTER_MAY_THROW;
+
+    HRESULT hr = S_FALSE;
+    PTR_Module pTargetModule = pModule.GetDacPtr();
+
+    EX_TRY
+    {
+        PTR_PEFile pPEFile = pTargetModule->GetFile();
+        _ASSERTE(pPEFile != NULL);
+
+        if (pPEFile->HasLoadedIL())
+        {
+            *isModuleMapped = pPEFile->GetLoadedIL()->IsMapped();
+            hr = S_OK;
+        }
+    }
+    EX_CATCH_HRESULT(hr);
+
+    return hr;
 }
 
 // Helper to intialize a TargetBuffer from a MemoryRange
@@ -7106,7 +7264,7 @@ HRESULT DacDbiInterfaceImpl::GetArrayLayout(COR_TYPEID id, COR_ARRAY_LAYOUT *pLa
     if (mt->IsString())
     {
         COR_TYPEID token;
-        token.token1 = MscorlibBinder::GetElementType(ELEMENT_TYPE_CHAR).GetAddr();
+        token.token1 = CoreLibBinder::GetElementType(ELEMENT_TYPE_CHAR).GetAddr();
         token.token2 = 0;
 
         pLayout->componentID = token;

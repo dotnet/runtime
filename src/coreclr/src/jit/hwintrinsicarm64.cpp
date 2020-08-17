@@ -26,10 +26,14 @@ static CORINFO_InstructionSet Arm64VersionOfIsa(CORINFO_InstructionSet isa)
             return InstructionSet_ArmBase_Arm64;
         case InstructionSet_Crc32:
             return InstructionSet_Crc32_Arm64;
+        case InstructionSet_Dp:
+            return InstructionSet_Dp_Arm64;
         case InstructionSet_Sha1:
             return InstructionSet_Sha1_Arm64;
         case InstructionSet_Sha256:
             return InstructionSet_Sha256_Arm64;
+        case InstructionSet_Rdm:
+            return InstructionSet_Rdm_Arm64;
         default:
             return InstructionSet_NONE;
     }
@@ -67,6 +71,20 @@ static CORINFO_InstructionSet lookupInstructionSet(const char* className)
         if (strcmp(className, "Crc32") == 0)
         {
             return InstructionSet_Crc32;
+        }
+    }
+    else if (className[0] == 'D')
+    {
+        if (strcmp(className, "Dp") == 0)
+        {
+            return InstructionSet_Dp;
+        }
+    }
+    else if (className[0] == 'R')
+    {
+        if (strcmp(className, "Rdm") == 0)
+        {
+            return InstructionSet_Rdm;
         }
     }
     else if (className[0] == 'S')
@@ -140,20 +158,20 @@ bool HWIntrinsicInfo::isFullyImplementedIsa(CORINFO_InstructionSet isa)
         case InstructionSet_ArmBase_Arm64:
         case InstructionSet_Crc32:
         case InstructionSet_Crc32_Arm64:
+        case InstructionSet_Dp:
+        case InstructionSet_Dp_Arm64:
+        case InstructionSet_Rdm:
+        case InstructionSet_Rdm_Arm64:
         case InstructionSet_Sha1:
         case InstructionSet_Sha1_Arm64:
         case InstructionSet_Sha256:
         case InstructionSet_Sha256_Arm64:
         case InstructionSet_Vector64:
         case InstructionSet_Vector128:
-        {
             return true;
-        }
 
         default:
-        {
             return false;
-        }
     }
 }
 

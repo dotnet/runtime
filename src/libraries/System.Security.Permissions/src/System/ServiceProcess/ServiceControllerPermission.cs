@@ -5,6 +5,9 @@ using System.Security.Permissions;
 
 namespace System.ServiceProcess
 {
+#if NET50_OBSOLETIONS
+    [Obsolete(Obsoletions.CodeAccessSecurityMessage, DiagnosticId = Obsoletions.CodeAccessSecurityDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+#endif
     public sealed class ServiceControllerPermission : ResourcePermissionBase
     {
         public ServiceControllerPermission() { }

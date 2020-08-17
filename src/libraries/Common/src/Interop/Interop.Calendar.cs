@@ -9,10 +9,6 @@ internal static partial class Interop
 {
     internal static partial class Globalization
     {
-        internal delegate void EnumCalendarInfoCallback(
-           [MarshalAs(UnmanagedType.LPWStr)] string calendarString,
-           IntPtr context);
-
         [DllImport(Libraries.GlobalizationNative, CharSet = CharSet.Unicode, EntryPoint = "GlobalizationNative_GetCalendars")]
         internal static extern int GetCalendars(string localeName, CalendarId[] calendars, int calendarsCapacity);
 
@@ -20,7 +16,7 @@ internal static partial class Interop
         internal static extern unsafe ResultCode GetCalendarInfo(string localeName, CalendarId calendarId, CalendarDataType calendarDataType, char* result, int resultCapacity);
 
         [DllImport(Libraries.GlobalizationNative, CharSet = CharSet.Unicode, EntryPoint = "GlobalizationNative_EnumCalendarInfo")]
-        internal static extern bool EnumCalendarInfo(EnumCalendarInfoCallback callback, string localeName, CalendarId calendarId, CalendarDataType calendarDataType, IntPtr context);
+        internal static extern unsafe bool EnumCalendarInfo(delegate* <char*, IntPtr, void> callback, string localeName, CalendarId calendarId, CalendarDataType calendarDataType, IntPtr context);
 
         [DllImport(Libraries.GlobalizationNative, EntryPoint = "GlobalizationNative_GetLatestJapaneseEra")]
         internal static extern int GetLatestJapaneseEra();

@@ -12,7 +12,7 @@
 int ist=0;
 #define REPT_STEP   //printf("Step %d\n",++ist);
 
-HRESULT Assembler::InitMetaDataForENC(__in __nullterminated WCHAR* wzOrigFileName)
+HRESULT Assembler::InitMetaDataForENC(__in __nullterminated WCHAR* wzOrigFileName, BOOL generatePdb, PdbFormat pdbFormat)
 {
     HRESULT             hr = E_FAIL;
 
@@ -32,6 +32,11 @@ HRESULT Assembler::InitMetaDataForENC(__in __nullterminated WCHAR* wzOrigFileNam
     {
         m_pEmitter->Release();
         m_pEmitter = NULL;
+    }
+    if (m_pPortablePdbWriter != NULL)
+    {
+        delete m_pPortablePdbWriter;
+        m_pPortablePdbWriter = NULL;
     }
     //WszSetEnvironmentVariable(L"COMP_ENC_OPENSCOPE", wzOrigFileName);
     //hr = m_pDisp->DefineScope(CLSID_CorMetaDataRuntime, 0, IID_IMetaDataEmit2,
@@ -63,7 +68,7 @@ HRESULT Assembler::InitMetaDataForENC(__in __nullterminated WCHAR* wzOrigFileNam
         goto exit;
 
     //WszSetEnvironmentVariable(L"COMP_ENC_EMIT", wzOrigFileName);
-    if(!Init()) goto exit; // close and re-open CeeFileGen and CeeFile
+    if(!Init(generatePdb, pdbFormat)) goto exit; // close and re-open CeeFileGen and CeeFile
     hr = S_OK;
 
 
@@ -444,6 +449,11 @@ REPT_STEP
     {
         m_pEmitter->Release();
         m_pEmitter = NULL;
+    }
+    if (m_pPortablePdbWriter != NULL)
+    {
+        delete m_pPortablePdbWriter;
+        m_pPortablePdbWriter = NULL;
     }
 
     return S_OK;

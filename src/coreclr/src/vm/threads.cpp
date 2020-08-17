@@ -510,10 +510,14 @@ void Thread::ChooseThreadCPUGroupAffinity()
         GC_TRIGGERS;
     }
     CONTRACTL_END;
-#ifndef TARGET_UNIX
-    if (!CPUGroupInfo::CanEnableGCCPUGroups() || !CPUGroupInfo::CanEnableThreadUseAllCpuGroups())
-         return;
 
+#ifndef TARGET_UNIX
+    if (!CPUGroupInfo::CanEnableGCCPUGroups() ||
+        !CPUGroupInfo::CanEnableThreadUseAllCpuGroups() ||
+        !CPUGroupInfo::CanAssignCpuGroupsToThreads())
+    {
+        return;
+    }
 
     //Borrow the ThreadStore Lock here: Lock ThreadStore before distributing threads
     ThreadStoreLockHolder TSLockHolder(TRUE);
@@ -541,10 +545,14 @@ void Thread::ClearThreadCPUGroupAffinity()
         GC_NOTRIGGER;
     }
     CONTRACTL_END;
-#ifndef TARGET_UNIX
-    if (!CPUGroupInfo::CanEnableGCCPUGroups() || !CPUGroupInfo::CanEnableThreadUseAllCpuGroups())
-         return;
 
+#ifndef TARGET_UNIX
+    if (!CPUGroupInfo::CanEnableGCCPUGroups() ||
+        !CPUGroupInfo::CanEnableThreadUseAllCpuGroups() ||
+        !CPUGroupInfo::CanAssignCpuGroupsToThreads())
+    {
+        return;
+    }
 
     ThreadStoreLockHolder TSLockHolder(TRUE);
 
@@ -1598,6 +1606,7 @@ Thread::Thread()
     m_DeserializationTracker = NULL;
 
     m_currentPrepareCodeConfig = nullptr;
+    m_isInForbidSuspendForDebuggerRegion = false;
 
 #ifdef _DEBUG
     memset(dangerousObjRefs, 0, sizeof(dangerousObjRefs));
@@ -1992,7 +2001,7 @@ void Thread::HandleThreadStartupFailure()
 
     GCPROTECT_BEGIN(args);
 
-    MethodTable *pMT = MscorlibBinder::GetException(kThreadStartException);
+    MethodTable *pMT = CoreLibBinder::GetException(kThreadStartException);
     args.pThrowable = AllocateObject(pMT);
 
     MethodDescCallSite exceptionCtor(METHOD__THREAD_START_EXCEPTION__EX_CTOR);
@@ -7844,7 +7853,7 @@ OBJECTREF Thread::GetCulture(BOOL bUICulture)
     }
     CONTRACTL_END;
 
-    // This is the case when we're building mscorlib and haven't yet created
+    // This is the case when we're building CoreLib and haven't yet created
     // the system assembly.
     if (SystemDomain::System()->SystemAssembly()==NULL || g_fForbidEnterEE) {
         return NULL;
@@ -8591,7 +8600,7 @@ OBJECTHANDLE Thread::GetOrCreateDeserializationTracker()
 
     _ASSERTE(this == GetThread());
 
-    MethodTable* pMT = MscorlibBinder::GetClass(CLASS__DESERIALIZATION_TRACKER);
+    MethodTable* pMT = CoreLibBinder::GetClass(CLASS__DESERIALIZATION_TRACKER);
     m_DeserializationTracker = CreateGlobalStrongHandle(AllocateObject(pMT));
 
     _ASSERTE(m_DeserializationTracker != NULL);

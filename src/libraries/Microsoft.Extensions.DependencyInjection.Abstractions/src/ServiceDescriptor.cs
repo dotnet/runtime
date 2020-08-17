@@ -3,6 +3,7 @@
 
 using System;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Microsoft.Extensions.DependencyInjection
 {
@@ -20,7 +21,7 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <param name="lifetime">The <see cref="ServiceLifetime"/> of the service.</param>
         public ServiceDescriptor(
             Type serviceType,
-            Type implementationType,
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type implementationType,
             ServiceLifetime lifetime)
             : this(serviceType, lifetime)
         {
@@ -96,6 +97,7 @@ namespace Microsoft.Extensions.DependencyInjection
 
         public Type ServiceType { get; }
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
         public Type? ImplementationType { get; }
 
         public object? ImplementationInstance { get; }
@@ -151,7 +153,7 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <typeparam name="TService">The type of the service.</typeparam>
         /// <typeparam name="TImplementation">The type of the implementation.</typeparam>
         /// <returns>A new instance of <see cref="ServiceDescriptor"/>.</returns>
-        public static ServiceDescriptor Transient<TService, TImplementation>()
+        public static ServiceDescriptor Transient<TService, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TImplementation>()
             where TService : class
             where TImplementation : class, TService
         {
@@ -166,7 +168,9 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <param name="service">The type of the service.</param>
         /// <param name="implementationType">The type of the implementation.</param>
         /// <returns>A new instance of <see cref="ServiceDescriptor"/>.</returns>
-        public static ServiceDescriptor Transient(Type service, Type implementationType)
+        public static ServiceDescriptor Transient(
+            Type service,
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type implementationType)
         {
             if (service == null)
             {
@@ -254,7 +258,7 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <typeparam name="TService">The type of the service.</typeparam>
         /// <typeparam name="TImplementation">The type of the implementation.</typeparam>
         /// <returns>A new instance of <see cref="ServiceDescriptor"/>.</returns>
-        public static ServiceDescriptor Scoped<TService, TImplementation>()
+        public static ServiceDescriptor Scoped<TService, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TImplementation>()
             where TService : class
             where TImplementation : class, TService
         {
@@ -269,7 +273,9 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <param name="service">The type of the service.</param>
         /// <param name="implementationType">The type of the implementation.</param>
         /// <returns>A new instance of <see cref="ServiceDescriptor"/>.</returns>
-        public static ServiceDescriptor Scoped(Type service, Type implementationType)
+        public static ServiceDescriptor Scoped(
+            Type service,
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type implementationType)
         {
             return Describe(service, implementationType, ServiceLifetime.Scoped);
         }
@@ -347,7 +353,7 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <typeparam name="TService">The type of the service.</typeparam>
         /// <typeparam name="TImplementation">The type of the implementation.</typeparam>
         /// <returns>A new instance of <see cref="ServiceDescriptor"/>.</returns>
-        public static ServiceDescriptor Singleton<TService, TImplementation>()
+        public static ServiceDescriptor Singleton<TService, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TImplementation>()
             where TService : class
             where TImplementation : class, TService
         {
@@ -362,7 +368,9 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <param name="service">The type of the service.</param>
         /// <param name="implementationType">The type of the implementation.</param>
         /// <returns>A new instance of <see cref="ServiceDescriptor"/>.</returns>
-        public static ServiceDescriptor Singleton(Type service, Type implementationType)
+        public static ServiceDescriptor Singleton(
+            Type service,
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type implementationType)
         {
             if (service == null)
             {
@@ -488,7 +496,7 @@ namespace Microsoft.Extensions.DependencyInjection
             return new ServiceDescriptor(serviceType, implementationInstance);
         }
 
-        private static ServiceDescriptor Describe<TService, TImplementation>(ServiceLifetime lifetime)
+        private static ServiceDescriptor Describe<TService, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TImplementation>(ServiceLifetime lifetime)
             where TService : class
             where TImplementation : class, TService
         {
@@ -507,7 +515,10 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <param name="implementationType">The type of the implementation.</param>
         /// <param name="lifetime">The lifetime of the service.</param>
         /// <returns>A new instance of <see cref="ServiceDescriptor"/>.</returns>
-        public static ServiceDescriptor Describe(Type serviceType, Type implementationType, ServiceLifetime lifetime)
+        public static ServiceDescriptor Describe(
+            Type serviceType,
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type implementationType,
+            ServiceLifetime lifetime)
         {
             return new ServiceDescriptor(serviceType, implementationType, lifetime);
         }

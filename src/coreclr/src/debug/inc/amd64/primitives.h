@@ -53,7 +53,7 @@ inline CORDB_ADDRESS GetPatchEndAddr(CORDB_ADDRESS patchAddr)
     CORDbgInsertBreakpoint((CORDB_ADDRESS_TYPE *)((_buffer) + ((_patchAddr) - (_requestedAddr))));
 
 
-SELECTANY const CorDebugRegister g_JITToCorDbgReg[] =
+constexpr CorDebugRegister g_JITToCorDbgReg[] =
 {
     REGISTER_AMD64_RAX,
     REGISTER_AMD64_RCX,

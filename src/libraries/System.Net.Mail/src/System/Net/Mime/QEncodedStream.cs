@@ -15,8 +15,6 @@ namespace System.Net.Mime
     /// </summary>
     internal class QEncodedStream : DelegatedStream, IEncodableStream
     {
-        //folding takes up 3 characters "\r\n "
-        private const int SizeOfFoldingCRLF = 3;
 
         private static ReadOnlySpan<byte> HexDecodeMap => new byte[] // rely on C# compiler optimization to eliminate allocation
         {
@@ -41,10 +39,12 @@ namespace System.Net.Mime
 
         private ReadStateInfo? _readState;
         private readonly WriteStateInfoBase _writeState;
+        private readonly IByteEncoder _encoder;
 
         internal QEncodedStream(WriteStateInfoBase wsi) : base(new MemoryStream())
         {
             _writeState = wsi;
+            _encoder = new QEncoder(_writeState);
         }
 
         private ReadStateInfo ReadState => _readState ?? (_readState = new ReadStateInfo());
@@ -195,71 +195,11 @@ namespace System.Net.Mime
             }
         }
 
-        public int EncodeBytes(byte[] buffer, int offset, int count)
-        {
-            // Add Encoding header, if any. e.g. =?encoding?b?
-            _writeState.AppendHeader();
+        public int EncodeBytes(byte[] buffer, int offset, int count) =>_encoder.EncodeBytes(buffer, offset, count, true, true);
 
-            // Scan one character at a time looking for chars that need to be encoded.
-            int cur = offset;
-            for (; cur < count + offset; cur++)
-            {
-                if ( // Fold if we're before a whitespace and encoding another character would be too long
-                    ((WriteState.CurrentLineLength + SizeOfFoldingCRLF + WriteState.FooterLength >= WriteState.MaxLineLength)
-                        && (buffer[cur] == ' ' || buffer[cur] == '\t' || buffer[cur] == '\r' || buffer[cur] == '\n'))
-                    // Or just adding the footer would be too long.
-                    || (WriteState.CurrentLineLength + _writeState.FooterLength >= WriteState.MaxLineLength)
-                   )
-                {
-                    WriteState.AppendCRLF(true);
-                }
+        public int EncodeString(string value, Encoding encoding) => _encoder.EncodeString(value, encoding);
 
-                // We don't need to worry about RFC 2821 4.5.2 (encoding first dot on a line),
-                // it is done by the underlying 7BitStream
-
-                //always encode CRLF
-                if (buffer[cur] == '\r' && cur + 1 < count + offset && buffer[cur + 1] == '\n')
-                {
-                    cur++;
-
-                    //the encoding for CRLF is =0D=0A
-                    WriteState.Append((byte)'=', (byte)'0', (byte)'D', (byte)'=', (byte)'0', (byte)'A');
-                }
-                else if (buffer[cur] == ' ')
-                {
-                    //spaces should be escaped as either '_' or '=20' and
-                    //we have chosen '_' for parity with other email client
-                    //behavior
-                    WriteState.Append((byte)'_');
-                }
-                // RFC 2047 Section 5 part 3 also allows for !*+-/ but these arn't required in headers.
-                // Conservatively encode anything but letters or digits.
-                else if (IsAsciiLetterOrDigit((char)buffer[cur]))
-                {
-                    // Just a regular printable ascii char.
-                    WriteState.Append(buffer[cur]);
-                }
-                else
-                {
-                    //append an = to indicate an encoded character
-                    WriteState.Append((byte)'=');
-                    //shift 4 to get the first four bytes only and look up the hex digit
-                    WriteState.Append((byte)HexConverter.ToCharUpper(buffer[cur] >> 4));
-                    //clear the first four bytes to get the last four and look up the hex digit
-                    WriteState.Append((byte)HexConverter.ToCharUpper(buffer[cur]));
-                }
-            }
-            WriteState.AppendFooter();
-            return cur - offset;
-        }
-
-        private static bool IsAsciiLetterOrDigit(char character) =>
-            IsAsciiLetter(character) || (character >= '0' && character <= '9');
-
-        private static bool IsAsciiLetter(char character) =>
-            (character >= 'a' && character <= 'z') || (character >= 'A' && character <= 'Z');
-
-        public string GetEncodedString() => Encoding.ASCII.GetString(WriteState.Buffer, 0, WriteState.Length);
+        public string GetEncodedString() => _encoder.GetEncodedString();
 
         public override void EndWrite(IAsyncResult asyncResult) => WriteAsyncResult.End(asyncResult);
 

@@ -528,8 +528,6 @@ namespace MonoTests.System.Drawing
         [PlatformSpecific(TestPlatforms.AnyUnix)]
         public void Rotate1bit4bit(string file, RotateFlipType type, string md5)
         {
-            StringBuilder md5s = new StringBuilder();
-
             using (Bitmap bmp = new Bitmap(Helpers.GetTestBitmapPath(file)))
             {
                 Assert.Equal(md5, RotateIndexedBmp(bmp, type));
@@ -885,20 +883,6 @@ namespace MonoTests.System.Drawing
                 bmp.UnlockBits(data);
                 bmp.Dispose();
             }
-        }
-
-        private Stream Serialize(object o)
-        {
-            MemoryStream ms = new MemoryStream();
-            IFormatter formatter = new BinaryFormatter();
-            formatter.Serialize(ms, o);
-            ms.Position = 0;
-            return ms;
-        }
-
-        private object Deserialize(Stream s)
-        {
-            return new BinaryFormatter().Deserialize(s);
         }
 
         static int[] palette1 = {

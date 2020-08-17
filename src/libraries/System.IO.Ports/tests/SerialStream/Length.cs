@@ -64,7 +64,7 @@ namespace System.IO.Ports.Tests
         {
             Assert.Throws(expectedException, () =>
             {
-                long lengthTest = serialStream.Length;
+                _ = serialStream.Length;
             });
         }
         #endregion

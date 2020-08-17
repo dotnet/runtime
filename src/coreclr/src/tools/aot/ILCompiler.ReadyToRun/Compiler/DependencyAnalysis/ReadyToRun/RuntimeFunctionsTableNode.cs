@@ -103,15 +103,22 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             return runtimeFunctionsBuilder.ToObjectData();
         }
 
-        public int TableSize
+        /// <summary>
+        /// Returns the runtime functions table size and excludes the 4 byte sentinel entry at the end (used by
+        /// the runtime in NativeUnwindInfoLookupTable::LookupUnwindInfoForMethod) so that it's not treated as
+        /// part of the table itself.
+        /// </summary>
+        public int TableSizeExcludingSentinel
         {
             get
             {
                 Debug.Assert(_tableSize >= 0);
-                return _tableSize;
+                return _tableSize + SentinelSizeAdjustment;
             }
         }
 
         public override int ClassCode => -855231428;
+
+        internal const int SentinelSizeAdjustment = -4;
     }
 }

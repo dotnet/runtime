@@ -1,11 +1,15 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkCurrent)</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent);net48-Windows_NT</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Tests.cs" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="System.IO.Packaging.TestData" Version="$(SystemIOPackagingTestDataVersion)" />
+    <ProjectReference Include="..\src\System.IO.Packaging.csproj" />
+  </ItemGroup>
+  <ItemGroup Condition="$(TargetFramework.StartsWith('net48'))">
+    <Reference Include="WindowsBase" />
   </ItemGroup>
 </Project>

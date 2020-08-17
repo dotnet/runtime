@@ -216,8 +216,6 @@ namespace System.IO.Tests
                     { currentDirectory, currentDirectory },
                     // "." => current directory
                     { ".", currentDirectory },
-                    // ".." => up a directory
-                    { "..", Path.GetDirectoryName(currentDirectory) },
                     // "dir/./././." => "dir"
                     { Path.Combine(currentDirectory, ".", ".", ".", ".", "."), currentDirectory },
                     // "dir///." => "dir"
@@ -233,6 +231,12 @@ namespace System.IO.Tests
                     // "C:\\\" => "C:\"
                     { root + new string(Path.DirectorySeparatorChar, 3), root },
                 };
+
+                if (currentDirectory != Path.GetPathRoot(currentDirectory))
+                {
+                    // ".." => up a directory
+                    data.Add("..", Path.GetDirectoryName(currentDirectory));
+                }
 
                 // Path longer than MaxPath that normalizes down to less than MaxPath
                 const int Iters = 10000;

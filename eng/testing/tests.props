@@ -29,8 +29,6 @@
 
     <RuntimeIdentifier>$(PackageRID)</RuntimeIdentifier>
     <SelfContained>true</SelfContained>
-    <EnableTargetingPackDownload>false</EnableTargetingPackDownload>
-    <PlatformManifestFile />
   </PropertyGroup>
 
   <!-- Provide runtime options to Mono (interpreter, aot, debugging, etc) -->

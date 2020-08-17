@@ -39,8 +39,7 @@ namespace System.Net.Mime
             EncodedStreamFactory factory = new EncodedStreamFactory();
             IEncodableStream stream = factory.GetEncoderForHeader(encoding, base64Encoding, headerLength);
 
-            byte[] buffer = encoding.GetBytes(value);
-            stream.EncodeBytes(buffer, 0, buffer.Length);
+            stream.EncodeString(value, encoding);
             return stream.GetEncodedString();
         }
 

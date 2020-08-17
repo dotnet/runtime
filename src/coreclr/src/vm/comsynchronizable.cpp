@@ -227,7 +227,7 @@ void ThreadNative::KickOffThread_Worker(LPVOID ptr)
     _ASSERTE(pMeth);
     MethodDescCallSite invokeMethod(pMeth, &gc.orDelegate);
 
-    if (MscorlibBinder::IsClass(gc.orDelegate->GetMethodTable(), CLASS__PARAMETERIZEDTHREADSTART))
+    if (CoreLibBinder::IsClass(gc.orDelegate->GetMethodTable(), CLASS__PARAMETERIZEDTHREADSTART))
     {
         //Parameterized ThreadStart
         ARG_SLOT arg[2];
@@ -1392,7 +1392,7 @@ FCIMPL1(Object*, ThreadNative::GetThreadDeserializationTracker, StackCrawlMark* 
     // To avoid reflection trying to bypass deserialization tracking, check the caller
     // and only allow SerializationInfo to call into this method.
     MethodTable* pCallerMT = SystemDomain::GetCallersType(stackMark);
-    if (pCallerMT != MscorlibBinder::GetClass(CLASS__SERIALIZATION_INFO))
+    if (pCallerMT != CoreLibBinder::GetClass(CLASS__SERIALIZATION_INFO))
     {
         COMPlusThrowArgumentException(W("stackMark"), NULL);
     }

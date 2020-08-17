@@ -1,6 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <AssemblyName>System.IO.Pipes</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <OmitTransitiveCompileReferences>true</OmitTransitiveCompileReferences>
     <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)</TargetFrameworks>
@@ -183,10 +182,11 @@
     <Reference Include="System.Threading" />
     <Reference Include="System.Threading.Overlapped" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
+  <!-- Include src projects during restore as TargetsWindows isn't set. -->
+  <ItemGroup Condition="'$(TargetsWindows)' == 'true' or '$(MSBuildRestoreSessionId)' != ''">
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Security.AccessControl\src\System.Security.AccessControl.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Principal.Windows\src\System.Security.Principal.Windows.csproj" />
     <Reference Include="System.Collections.NonGeneric" />
-    <Reference Include="System.Security.AccessControl" />
-    <Reference Include="System.Security.Principal.Windows" />
     <Reference Include="System.Security.Claims" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)' == 'true' or '$(TargetsBrowser)' == 'true'">

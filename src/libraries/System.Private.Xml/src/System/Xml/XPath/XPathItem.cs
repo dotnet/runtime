@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#nullable enable
 using System.Xml.Schema;
 
 namespace System.Xml.XPath
@@ -18,7 +19,7 @@ namespace System.Xml.XPath
         /// <summary>
         /// Returns Xsd type of atomic value, or of node's content.
         /// </summary>
-        public abstract XmlSchemaType XmlType { get; }
+        public abstract XmlSchemaType? XmlType { get; }
 
         /// <summary>
         /// Typed and untyped value accessors.
@@ -32,6 +33,6 @@ namespace System.Xml.XPath
         public abstract int ValueAsInt { get; }
         public abstract long ValueAsLong { get; }
         public virtual object ValueAs(Type returnType) { return ValueAs(returnType, null); }
-        public abstract object ValueAs(Type returnType, IXmlNamespaceResolver nsResolver);
+        public abstract object ValueAs(Type returnType, IXmlNamespaceResolver? nsResolver);
     }
 }

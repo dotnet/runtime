@@ -24,6 +24,8 @@ struct LinePC
     ULONG   ColumnEnd;
     ULONG   PC;
     ISymUnmanagedDocumentWriter* pWriter;
+    Document* pOwnerDocument;
+    BOOL    IsHidden;
 };
 typedef FIFO<LinePC> LinePCList;
 

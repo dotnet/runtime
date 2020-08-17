@@ -76,7 +76,7 @@ namespace System.Data.SqlTypes
 
         public override string ToString()
         {
-            return IsNull ? SQLResource.NullString : m_value.ToString((IFormatProvider)null);
+            return IsNull ? SQLResource.NullString : m_value.ToString((IFormatProvider)null!);
         }
 
         public static SqlDouble Parse(string s)
@@ -363,7 +363,7 @@ namespace System.Data.SqlTypes
         // or a value greater than zero if this > object.
         // null is considered to be less than any instance.
         // If object is not of same type, this method throws an ArgumentException.
-        public int CompareTo(object value)
+        public int CompareTo(object? value)
         {
             if (value is SqlDouble)
             {
@@ -371,7 +371,7 @@ namespace System.Data.SqlTypes
 
                 return CompareTo(i);
             }
-            throw ADP.WrongType(value.GetType(), typeof(SqlDouble));
+            throw ADP.WrongType(value!.GetType(), typeof(SqlDouble));
         }
 
         public int CompareTo(SqlDouble value)
@@ -389,7 +389,7 @@ namespace System.Data.SqlTypes
         }
 
         // Compares this instance with a specified object
-        public override bool Equals(object value)
+        public override bool Equals(object? value)
         {
             if (!(value is SqlDouble))
             {
@@ -410,7 +410,7 @@ namespace System.Data.SqlTypes
             return IsNull ? 0 : Value.GetHashCode();
         }
 
-        XmlSchema IXmlSerializable.GetSchema() { return null; }
+        XmlSchema? IXmlSerializable.GetSchema() { return null; }
 
         void IXmlSerializable.ReadXml(XmlReader reader)
         {

@@ -21,11 +21,11 @@ namespace System.Xml
         {
             if (_returnOriginalStringValues)
             {
-                return Task.FromResult(_cachedNode.OriginalStringValue);
+                return Task.FromResult(_cachedNode!.OriginalStringValue!);
             }
             else
             {
-                return Task.FromResult(_cachedNode.RawValue);
+                return Task.FromResult(_cachedNode!.RawValue);
             }
         }
 
@@ -107,7 +107,7 @@ namespace System.Xml
         public override async Task SkipAsync()
         {
             //Skip on caching reader should move to the end of the subtree, past all cached events
-            switch (_cachedNode.NodeType)
+            switch (_cachedNode!.NodeType)
             {
                 case XmlNodeType.Element:
                     if (_coreReader.NodeType != XmlNodeType.EndElement && !_readAhead)

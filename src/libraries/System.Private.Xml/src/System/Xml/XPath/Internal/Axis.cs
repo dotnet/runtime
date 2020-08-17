@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#nullable enable
 using System.Diagnostics;
 using System.Xml.XPath;
 
@@ -9,7 +10,7 @@ namespace MS.Internal.Xml.XPath
     internal class Axis : AstNode
     {
         private readonly AxisType _axisType;
-        private AstNode _input;
+        private AstNode? _input;
         private readonly string _prefix;
         private readonly string _name;
         private readonly XPathNodeType _nodeType;
@@ -34,7 +35,7 @@ namespace MS.Internal.Xml.XPath
         };
 
         // constructor
-        public Axis(AxisType axisType, AstNode input, string prefix, string name, XPathNodeType nodetype)
+        public Axis(AxisType axisType, AstNode? input, string prefix, string name, XPathNodeType nodetype)
         {
             Debug.Assert(prefix != null);
             Debug.Assert(name != null);
@@ -46,7 +47,7 @@ namespace MS.Internal.Xml.XPath
         }
 
         // constructor
-        public Axis(AxisType axisType, AstNode input)
+        public Axis(AxisType axisType, AstNode? input)
             : this(axisType, input, string.Empty, string.Empty, XPathNodeType.All)
         {
             this.abbrAxis = true;
@@ -56,7 +57,7 @@ namespace MS.Internal.Xml.XPath
 
         public override XPathResultType ReturnType { get { return XPathResultType.NodeSet; } }
 
-        public AstNode Input
+        public AstNode? Input
         {
             get { return _input; }
             set { _input = value; }
@@ -69,8 +70,8 @@ namespace MS.Internal.Xml.XPath
         public bool AbbrAxis { get { return abbrAxis; } }
 
         // Used by AstTree in Schema
-        private string _urn = string.Empty;
-        public string Urn
+        private string? _urn = string.Empty;
+        public string? Urn
         {
             get { return _urn; }
             set { _urn = value; }

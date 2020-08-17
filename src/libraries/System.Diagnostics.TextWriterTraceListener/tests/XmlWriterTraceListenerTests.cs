@@ -18,9 +18,16 @@ namespace System.Diagnostics.TextWriterTraceListenerTests
 
         public XmlWriterTraceListenerTests()
         {
-            using (var process = Process.GetCurrentProcess())
+            try
             {
-                _processName = process.ProcessName;
+                using (var process = Process.GetCurrentProcess())
+                {
+                    _processName = process.ProcessName;
+                }
+            }
+            catch (PlatformNotSupportedException) // Process isn't supported on Browser
+            {
+                _processName = string.Empty;
             }
         }
 

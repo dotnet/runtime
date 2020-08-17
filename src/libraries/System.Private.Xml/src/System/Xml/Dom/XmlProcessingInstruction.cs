@@ -1,7 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#nullable enable
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Xml.XPath;
 
 namespace System.Xml
@@ -37,14 +39,15 @@ namespace System.Xml
         }
 
         // Gets or sets the value of the node.
+        [AllowNull]
         public override string Value
         {
             get { return _data; }
-            set { Data = value; } //use Data instead of data so that event will be fired
+            set { Data = value!; } //use Data instead of data so that event will be fired
         }
 
         // Gets the target of the processing instruction.
-        public string Target
+        public string? Target
         {
             get { return _target; }
         }
@@ -56,8 +59,8 @@ namespace System.Xml
             get { return _data; }
             set
             {
-                XmlNode parent = ParentNode;
-                XmlNodeChangedEventArgs args = GetEventArgs(this, parent, parent, _data, value, XmlNodeChangedAction.Change);
+                XmlNode? parent = ParentNode;
+                XmlNodeChangedEventArgs? args = GetEventArgs(this, parent, parent, _data, value, XmlNodeChangedAction.Change);
                 if (args != null)
                     BeforeEvent(args);
                 _data = value;

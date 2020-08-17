@@ -293,7 +293,7 @@ namespace System.Xml
         }
 
         // Creates an instance of the XmlTextWriter class using the specified file.
-        public XmlTextWriter(string filename, Encoding encoding)
+        public XmlTextWriter(string filename, Encoding? encoding)
         : this(new FileStream(filename, FileMode.Create,
                               FileAccess.Write, FileShare.Read), encoding)
         {

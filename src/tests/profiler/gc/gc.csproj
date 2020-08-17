@@ -6,6 +6,8 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <CLRTestPriority>0</CLRTestPriority>
     <Optimize>true</Optimize>
+    <!-- This test provides no interesting scenarios for GCStress -->
+    <GCStressIncompatible>true</GCStressIncompatible>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(MSBuildProjectName).cs" />

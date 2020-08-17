@@ -12,8 +12,8 @@ namespace System.Data.Odbc
     {
         private static readonly DbConnectionFactory s_connectionFactory = OdbcConnectionFactory.SingletonInstance;
 
-        private DbConnectionOptions _userConnectionOptions;
-        private DbConnectionPoolGroup _poolGroup;
+        private DbConnectionOptions? _userConnectionOptions;
+        private DbConnectionPoolGroup? _poolGroup;
         private DbConnectionInternal _innerConnection;
         private int _closeCount;
 
@@ -60,11 +60,11 @@ namespace System.Data.Odbc
             }
         }
 
-        internal DbConnectionOptions ConnectionOptions
+        internal DbConnectionOptions? ConnectionOptions
         {
             get
             {
-                System.Data.ProviderBase.DbConnectionPoolGroup poolGroup = PoolGroup;
+                System.Data.ProviderBase.DbConnectionPoolGroup? poolGroup = PoolGroup;
                 return ((null != poolGroup) ? poolGroup.ConnectionOptions : null);
             }
         }
@@ -72,11 +72,11 @@ namespace System.Data.Odbc
         private string ConnectionString_Get()
         {
             bool hidePassword = InnerConnection.ShouldHidePassword;
-            DbConnectionOptions connectionOptions = UserConnectionOptions;
+            DbConnectionOptions? connectionOptions = UserConnectionOptions;
             return ((null != connectionOptions) ? connectionOptions.UsersConnectionString(hidePassword) : "");
         }
 
-        private void ConnectionString_Set(string value)
+        private void ConnectionString_Set(string? value)
         {
             DbConnectionPoolKey key = new DbConnectionPoolKey(value);
 
@@ -85,8 +85,8 @@ namespace System.Data.Odbc
 
         private void ConnectionString_Set(DbConnectionPoolKey key)
         {
-            DbConnectionOptions connectionOptions = null;
-            System.Data.ProviderBase.DbConnectionPoolGroup poolGroup = ConnectionFactory.GetConnectionPoolGroup(key, null, ref connectionOptions);
+            DbConnectionOptions? connectionOptions = null;
+            System.Data.ProviderBase.DbConnectionPoolGroup? poolGroup = ConnectionFactory.GetConnectionPoolGroup(key, null, ref connectionOptions);
             DbConnectionInternal connectionInternal = InnerConnection;
             bool flag = connectionInternal.AllowSetConnectionString;
             if (flag)
@@ -113,7 +113,7 @@ namespace System.Data.Odbc
             }
         }
 
-        internal System.Data.ProviderBase.DbConnectionPoolGroup PoolGroup
+        internal System.Data.ProviderBase.DbConnectionPoolGroup? PoolGroup
         {
             get
             {
@@ -127,7 +127,7 @@ namespace System.Data.Odbc
         }
 
 
-        internal DbConnectionOptions UserConnectionOptions
+        internal DbConnectionOptions? UserConnectionOptions
         {
             get
             {
@@ -152,9 +152,8 @@ namespace System.Data.Odbc
 
         protected override DbCommand CreateDbCommand()
         {
-            DbCommand command = null;
             DbProviderFactory providerFactory = ConnectionFactory.ProviderFactory;
-            command = providerFactory.CreateCommand();
+            DbCommand command = providerFactory.CreateCommand()!;
             command.Connection = this;
             return command;
         }
@@ -184,11 +183,11 @@ namespace System.Data.Odbc
             return this.GetSchema(collectionName, null);
         }
 
-        public override DataTable GetSchema(string collectionName, string[] restrictionValues)
+        public override DataTable GetSchema(string collectionName, string?[]? restrictionValues)
         {
             // NOTE: This is virtual because not all providers may choose to support
             //       returning schema data
-            return InnerConnection.GetSchema(ConnectionFactory, PoolGroup, this, collectionName, restrictionValues);
+            return InnerConnection.GetSchema(ConnectionFactory, PoolGroup!, this, collectionName, restrictionValues);
         }
 
         internal void NotifyWeakReference(int message)
@@ -199,13 +198,13 @@ namespace System.Data.Odbc
         internal void PermissionDemand()
         {
             Debug.Assert(DbConnectionClosedConnecting.SingletonInstance == _innerConnection, "not connecting");
-            System.Data.ProviderBase.DbConnectionPoolGroup poolGroup = PoolGroup;
-            DbConnectionOptions connectionOptions = ((null != poolGroup) ? poolGroup.ConnectionOptions : null);
+            System.Data.ProviderBase.DbConnectionPoolGroup? poolGroup = PoolGroup;
+            DbConnectionOptions? connectionOptions = ((null != poolGroup) ? poolGroup.ConnectionOptions : null);
             if ((null == connectionOptions) || connectionOptions.IsEmpty)
             {
                 throw ADP.NoConnectionString();
             }
-            DbConnectionOptions userConnectionOptions = UserConnectionOptions;
+            DbConnectionOptions? userConnectionOptions = UserConnectionOptions;
             Debug.Assert(null != userConnectionOptions, "null UserConnectionOptions");
         }
 

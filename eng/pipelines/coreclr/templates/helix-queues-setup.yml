@@ -124,7 +124,7 @@ jobs:
     # Windows_NT arm64
     - ${{ if eq(parameters.platform, 'Windows_NT_arm64') }}:
       - ${{ if and(eq(variables['System.TeamProject'], 'public'), in(parameters.jobParameters.helixQueueGroup, 'pr', 'ci', 'libraries')) }}:
-        - Windows.10.Arm64.Open
+        - Windows.10.Arm64v8.Open
       - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
         - Windows.10.Arm64
 

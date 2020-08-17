@@ -261,8 +261,8 @@ namespace System.Net.Http.Functional.Tests
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
         public async Task ProxyAuth_Digest_Succeeds()
         {
-            const string expectedUsername = "testusername";
-            const string expectedPassword = "testpassword";
+            const string expectedUsername = "user";
+            const string expectedPassword = "password";
             const string authHeader = "Proxy-Authenticate: Digest realm=\"NetCore\", nonce=\"PwOnWgAAAAAAjnbW438AAJSQi1kAAAAA\", qop=\"auth\", stale=false\r\n";
             LoopbackServer.Options options = new LoopbackServer.Options { IsProxy = true, Username = expectedUsername, Password = expectedPassword };
             var proxyCreds = new NetworkCredential(expectedUsername, expectedPassword);

@@ -54,7 +54,6 @@ namespace System.Composition.UnitTests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/23972", TargetFrameworkMonikers.NetFramework)]
         public void MissingOptionalConstructorParametersAreSuppliedTheirDefaultValue()
         {
             var cc = CreateContainer(typeof(Supplied), typeof(HasOptionalConstructorParameter));
@@ -64,7 +63,6 @@ namespace System.Composition.UnitTests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/23972", TargetFrameworkMonikers.NetFramework)]
         public void MissingOptionalPropertyImportsAreIgnored()
         {
             var cc = CreateContainer(typeof(Supplied), typeof(HasOptionalProperty));

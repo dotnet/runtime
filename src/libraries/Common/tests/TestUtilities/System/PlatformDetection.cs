@@ -20,6 +20,7 @@ namespace System
 
         public static bool IsNetCore => Environment.Version.Major >= 5 || RuntimeInformation.FrameworkDescription.StartsWith(".NET Core", StringComparison.OrdinalIgnoreCase);
         public static bool IsMonoRuntime => Type.GetType("Mono.RuntimeStructs") != null;
+        public static bool IsNotMonoRuntime => !IsMonoRuntime;
         public static bool IsMonoInterpreter => GetIsRunningOnMonoInterpreter();
         public static bool IsFreeBSD => RuntimeInformation.IsOSPlatform(OSPlatform.Create("FREEBSD"));
         public static bool IsNetBSD => RuntimeInformation.IsOSPlatform(OSPlatform.Create("NETBSD"));
@@ -29,6 +30,7 @@ namespace System
         public static bool IsSolaris => RuntimeInformation.IsOSPlatform(OSPlatform.Create("SOLARIS"));
         public static bool IsBrowser => RuntimeInformation.IsOSPlatform(OSPlatform.Create("BROWSER"));
         public static bool IsNotBrowser => !IsBrowser;
+        public static bool IsNotNetFramework => !IsNetFramework;
 
         public static bool IsArmProcess => RuntimeInformation.ProcessArchitecture == Architecture.Arm;
         public static bool IsNotArmProcess => !IsArmProcess;
@@ -74,9 +76,9 @@ namespace System
         public static bool SupportsSsl2 => IsWindows && !PlatformDetection.IsWindows10Version1607OrGreater;
 
 #if NETCOREAPP
-        public static bool IsReflectionEmitSupported = RuntimeFeature.IsDynamicCodeSupported;
+        public static bool IsReflectionEmitSupported => RuntimeFeature.IsDynamicCodeSupported;
 #else
-        public static bool IsReflectionEmitSupported = true;
+        public static bool IsReflectionEmitSupported => true;
 #endif
 
         public static bool IsInvokingStaticConstructorsSupported => true;
@@ -125,6 +127,11 @@ namespace System
 
         public static bool SupportsClientAlpn => SupportsAlpn || IsOSX || IsiOS || IstvOS;
 
+        // TLS 1.1 and 1.2 can work on Windows7 but it is not enabled by default.
+        //
+        public static bool SupportsTls10 => !IsDebian10;
+        public static bool SupportsTls11 => !IsWindows7 && !IsDebian10;
+        public static bool SupportsTls12 => !IsWindows7;
         // OpenSSL 1.1.1 and above.
         public static bool SupportsTls13 => GetTls13Support();
 

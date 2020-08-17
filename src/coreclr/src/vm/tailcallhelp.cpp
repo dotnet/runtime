@@ -119,7 +119,7 @@ MethodDesc* TailCallHelp::GetOrLoadTailCallDispatcherMD()
     CONTRACTL_END;
 
     if (s_tailCallDispatcherMD == NULL)
-        s_tailCallDispatcherMD = MscorlibBinder::GetMethod(METHOD__RUNTIME_HELPERS__DISPATCH_TAILCALLS);
+        s_tailCallDispatcherMD = CoreLibBinder::GetMethod(METHOD__RUNTIME_HELPERS__DISPATCH_TAILCALLS);
 
     return s_tailCallDispatcherMD;
 }
@@ -183,7 +183,7 @@ void TailCallHelp::LayOutArgBuffer(
         bool thisParamByRef = (calleeMD != NULL) ? calleeMD->GetMethodTable()->IsValueType() : thisArgByRef;
         if (thisParamByRef)
         {
-            thisHnd = TypeHandle(MscorlibBinder::GetElementType(ELEMENT_TYPE_U1))
+            thisHnd = TypeHandle(CoreLibBinder::GetElementType(ELEMENT_TYPE_U1))
                       .MakeByRef();
         }
         else
@@ -226,16 +226,16 @@ TypeHandle TailCallHelp::NormalizeSigType(TypeHandle tyHnd)
     }
     if (CorTypeInfo::IsObjRef(ety))
     {
-        return TypeHandle(MscorlibBinder::GetElementType(ELEMENT_TYPE_OBJECT));
+        return TypeHandle(CoreLibBinder::GetElementType(ELEMENT_TYPE_OBJECT));
     }
     if (tyHnd.IsPointer() || tyHnd.IsFnPtrType())
     {
-        return TypeHandle(MscorlibBinder::GetElementType(ELEMENT_TYPE_I));
+        return TypeHandle(CoreLibBinder::GetElementType(ELEMENT_TYPE_I));
     }
 
     if (tyHnd.IsByRef())
     {
-        return TypeHandle(MscorlibBinder::GetElementType(ELEMENT_TYPE_U1))
+        return TypeHandle(CoreLibBinder::GetElementType(ELEMENT_TYPE_U1))
                .MakeByRef();
     }
 

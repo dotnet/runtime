@@ -1764,6 +1764,10 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
     info.compPerfScore = 0.0;
 #endif // defined(DEBUG) || defined(LATE_DISASM)
 
+#if defined(DEBUG) || defined(INLINE_DATA)
+    info.compMethodHashPrivate = 0;
+#endif // defined(DEBUG) || defined(INLINE_DATA)
+
 #ifdef DEBUG
     // Opt-in to jit stress based on method hash ranges.
     //
@@ -4220,7 +4224,7 @@ void Compiler::EndPhase(Phases phase)
 //  code:CILJit::compileMethod function.
 //
 //  For an overview of the structure of the JIT, see:
-//   https://github.com/dotnet/runtime/blob/master/docs/design/coreclr/botr/ryujit-overview.md
+//   https://github.com/dotnet/runtime/blob/master/docs/design/coreclr/jit/ryujit-overview.md
 //
 //  Also called for inlinees, though they will only be run through the first few phases.
 //
@@ -4841,6 +4845,9 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags
     compQuirkForPPPflag = compQuirkForPPP();
 #endif
 
+    // Insert GC Polls
+    DoPhase(this, PHASE_INSERT_GC_POLLS, &Compiler::fgInsertGCPolls);
+
     // Determine start of cold region if we are hot/cold splitting
     //
     DoPhase(this, PHASE_DETERMINE_FIRST_COLD_BLOCK, &Compiler::fgDetermineFirstColdBlock);
@@ -5283,10 +5290,6 @@ int Compiler::compCompile(CORINFO_MODULE_HANDLE classPtr,
     // set this early so we can use it without relying on random memory values
     verbose = compIsForInlining() ? impInlineInfo->InlinerCompiler->verbose : false;
 #endif
-
-#if defined(DEBUG) || defined(INLINE_DATA)
-    info.compMethodHashPrivate = 0;
-#endif // defined(DEBUG) || defined(INLINE_DATA)
 
 #if FUNC_INFO_LOGGING
     LPCWSTR tmpJitFuncInfoFilename = JitConfig.JitFuncInfoFile();
@@ -9281,4 +9284,25 @@ bool Compiler::lvaIsOSRLocal(unsigned varNum)
     }
 
     return false;
+}
+
+//------------------------------------------------------------------------------
+// gtChangeOperToNullCheck: helper to change tree oper to a NULLCHECK.
+//
+// Arguments:
+//    tree       - the node to change;
+//    basicBlock - basic block of the node.
+//
+// Notes:
+//    the function should not be called after lowering for platforms that do not support
+//    emitting NULLCHECK nodes, like arm32. Use `Lowering::TransformUnusedIndirection`
+//    that handles it and calls this function when appropriate.
+//
+void Compiler::gtChangeOperToNullCheck(GenTree* tree, BasicBlock* block)
+{
+    assert(tree->OperIs(GT_FIELD, GT_IND, GT_OBJ, GT_BLK, GT_DYN_BLK));
+    tree->ChangeOper(GT_NULLCHECK);
+    tree->ChangeType(TYP_INT);
+    block->bbFlags |= BBF_HAS_NULLCHECK;
+    optMethodFlags |= OMF_HAS_NULLCHECK;
 }

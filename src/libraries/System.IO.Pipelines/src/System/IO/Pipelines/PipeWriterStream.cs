@@ -68,7 +68,7 @@ namespace System.IO.Pipelines
             return GetFlushResultAsTask(valueTask);
         }
 
-#if !NETSTANDARD2_0
+#if (!NETSTANDARD2_0 && !NETFRAMEWORK)
         public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
         {
             ValueTask<FlushResult> valueTask = _pipeWriter.WriteAsync(buffer, cancellationToken);

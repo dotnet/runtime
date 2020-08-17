@@ -88,21 +88,34 @@ public class PInvokeTableGenerator : Task
         w.WriteLine("// GENERATED FILE, DO NOT MODIFY");
         w.WriteLine();
 
-        foreach (var pinvoke in pinvokes)
+        var decls = new HashSet<string>();
+        foreach (var pinvoke in pinvokes.OrderBy(l => l.EntryPoint))
         {
-            if (modules.ContainsKey(pinvoke.Module))
-                w.WriteLine(GenPInvokeDecl(pinvoke));
+            if (modules.ContainsKey(pinvoke.Module)) {
+                var decl = GenPInvokeDecl(pinvoke);
+                if (decls.Contains(decl))
+                    continue;
+
+                w.WriteLine(decl);
+                decls.Add(decl);
+            }
         }
 
         foreach (var module in modules.Keys)
         {
             string symbol = module.Replace(".", "_") + "_imports";
             w.WriteLine("static PinvokeImport " + symbol + " [] = {");
-            foreach (var pinvoke in pinvokes)
-            {
-                if (pinvoke.Module == module)
-                    w.WriteLine("{\"" + pinvoke.EntryPoint + "\", " + pinvoke.EntryPoint + "},");
+
+            var assemblies_pinvokes = pinvokes.
+                Where(l => l.Module == module).
+                OrderBy(l => l.EntryPoint).
+                GroupBy(d => d.EntryPoint).
+                Select (l => "{\"" + l.Key + "\", " + l.Key + "}, // " + string.Join (", ", l.Select(c => c.Method.DeclaringType!.Module!.Assembly!.GetName ()!.Name!).Distinct()));
+
+            foreach (var pinvoke in assemblies_pinvokes) {
+                w.WriteLine (pinvoke);
             }
+
             w.WriteLine("{NULL, NULL}");
             w.WriteLine("};");
         }
@@ -172,10 +185,11 @@ public class PInvokeTableGenerator : Task
         w.WriteLine("InterpFtnDesc wasm_native_to_interp_ftndescs[" + callbacks.Count + "];");
 
         foreach (var cb in callbacks) {
-            var method = cb.Method;
+            MethodInfo method = cb.Method;
+            bool isVoid = method.ReturnType.FullName == "System.Void";
 
-            if (method.ReturnType != typeof(void) && !IsBlittable(method.ReturnType))
-                Error("The return type of pinvoke callback method '" + method + "' needs to be blittable.");
+            if (!isVoid && !IsBlittable(method.ReturnType))
+                Error($"The return type '{method.ReturnType.FullName}' of pinvoke callback method '{method}' needs to be blittable.");
             foreach (var p in method.GetParameters()) {
                 if (!IsBlittable(p.ParameterType))
                     Error("Parameter types of pinvoke callback method '" + method + "' needs to be blittable.");

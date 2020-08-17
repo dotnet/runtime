@@ -34,7 +34,7 @@ namespace System.Data
         // > 0 (1)  : CaseSensitve equal
         // < 0 (-1) : Case-Insensitive Equal
         // = 0      : Not Equal
-        internal int NamesEqual(string s1, string s2, bool fCaseSensitive, CultureInfo locale)
+        internal int NamesEqual(string? s1, string? s2, bool fCaseSensitive, CultureInfo locale)
         {
             if (fCaseSensitive)
             {
@@ -54,6 +54,6 @@ namespace System.Data
         [Browsable(false)]
         public object SyncRoot => this;
 
-        protected virtual ArrayList List => null;
+        protected virtual ArrayList List => null!; // Always overridden by implementations and non-null
     }
 }

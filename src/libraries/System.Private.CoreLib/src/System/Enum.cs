@@ -261,6 +261,87 @@ namespace System
         #endregion
 
         #region Public Static Methods
+        public static string? GetName<TEnum>(TEnum value) where TEnum : struct, Enum
+            => GetName(typeof(TEnum), value);
+
+        public static string? GetName(Type enumType, object value)
+        {
+            if (enumType is null)
+                throw new ArgumentNullException(nameof(enumType));
+
+            return enumType.GetEnumName(value);
+        }
+
+        public static string[] GetNames<TEnum>() where TEnum : struct, Enum
+            => GetNames(typeof(TEnum));
+
+        public static string[] GetNames(Type enumType)
+        {
+            if (enumType is null)
+                throw new ArgumentNullException(nameof(enumType));
+
+            return enumType.GetEnumNames();
+        }
+
+        internal static string[] InternalGetNames(RuntimeType enumType)
+        {
+            // Get all of the names
+            return GetEnumInfo(enumType, true).Names;
+        }
+
+        public static Type GetUnderlyingType(Type enumType)
+        {
+            if (enumType == null)
+                throw new ArgumentNullException(nameof(enumType));
+
+            return enumType.GetEnumUnderlyingType();
+        }
+
+        public static TEnum[] GetValues<TEnum>() where TEnum : struct, Enum
+            => (TEnum[])GetValues(typeof(TEnum));
+
+        public static Array GetValues(Type enumType)
+        {
+            if (enumType is null)
+                throw new ArgumentNullException(nameof(enumType));
+
+            return enumType.GetEnumValues();
+        }
+
+        [Intrinsic]
+        public bool HasFlag(Enum flag)
+        {
+            if (flag is null)
+                throw new ArgumentNullException(nameof(flag));
+            if (!GetType().IsEquivalentTo(flag.GetType()))
+                throw new ArgumentException(SR.Format(SR.Argument_EnumTypeDoesNotMatch, flag.GetType(), GetType()));
+
+            return InternalHasFlag(flag);
+        }
+
+        internal static ulong[] InternalGetValues(RuntimeType enumType)
+        {
+            // Get all of the values
+            return GetEnumInfo(enumType, false).Values;
+        }
+
+        public static bool IsDefined<TEnum>(TEnum value) where TEnum : struct, Enum
+        {
+            RuntimeType enumType = (RuntimeType)typeof(TEnum);
+            ulong[] ulValues = Enum.InternalGetValues(enumType);
+            ulong ulValue = Enum.ToUInt64(value);
+
+            return Array.BinarySearch(ulValues, ulValue) >= 0;
+        }
+
+        public static bool IsDefined(Type enumType, object value)
+        {
+            if (enumType is null)
+                throw new ArgumentNullException(nameof(enumType));
+
+            return enumType.IsEnumDefined(value);
+        }
+
         public static object Parse(Type enumType, string value) =>
             Parse(enumType, value, ignoreCase: false);
 
@@ -1141,5 +1222,16 @@ namespace System
             InternalBoxEnum(ValidateRuntimeType(enumType), value ? 1 : 0);
 
         #endregion
+
+        private static RuntimeType ValidateRuntimeType(Type enumType)
+        {
+            if (enumType == null)
+                throw new ArgumentNullException(nameof(enumType));
+            if (!enumType.IsEnum)
+                throw new ArgumentException(SR.Arg_MustBeEnum, nameof(enumType));
+            if (!(enumType is RuntimeType rtType))
+                throw new ArgumentException(SR.Arg_MustBeType, nameof(enumType));
+            return rtType;
+        }
     }
 }

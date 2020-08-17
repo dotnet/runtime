@@ -3458,14 +3458,14 @@ void Debugger::getBoundaries(MethodDesc * md,
 
     if (pModule == SystemDomain::SystemModule())
     {
-        // We don't look up PDBs for mscorlib.  This is not quite right, but avoids
+        // We don't look up PDBs for CoreLib.  This is not quite right, but avoids
         // a bootstrapping problem.  When an EXE loads, it has the option of setting
         // the COM apartment model to STA if we need to.  It is important that no
         // other Coinitialize happens before this.  Since loading the PDB reader uses
         // com we can not come first.  However managed code IS run before the COM
         // apartment model is set, and thus we have a problem since this code is
         // called for when JITTing managed code.    We avoid the problem by just
-        // bailing for mscorlib.
+        // bailing for CoreLib.
         return;
     }
 
@@ -15239,15 +15239,6 @@ HRESULT Debugger::FuncEvalSetup(DebuggerIPCE_FuncEvalInfo *pEvalInfo,
     {
         // SP is not aligned, we cannot do a FuncEval here
         LOG((LF_CORDB, LL_INFO1000, "D::FES SP is unaligned"));
-        return CORDBG_E_FUNC_EVAL_BAD_START_POINT;
-    }
-
-    if (MethodDescBackpatchInfoTracker::IsLockOwnedByAnyThread())
-    {
-        // A thread may have suspended for the debugger while holding the slot backpatching lock while trying to enter
-        // cooperative GC mode. If the FuncEval calls a method that is eligible for slot backpatching (virtual or interface
-        // methods that are eligible for tiering), the FuncEval may deadlock on trying to acquire the same lock. Fail the
-        // FuncEval to avoid the issue.
         return CORDBG_E_FUNC_EVAL_BAD_START_POINT;
     }
 

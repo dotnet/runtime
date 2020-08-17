@@ -36,7 +36,6 @@
                                                       .Replace('$$DISABLEPARALLELIZATION$$', '$([MSBuild]::ValueOrDefault('$(TestDisableParallelization)', 'false'))')
                                                       .Replace('$$DISABLEAPPDOMAIN$$', '$([MSBuild]::ValueOrDefault('$(TestDisableAppDomain)', 'false'))')
                                                       .Replace('$$TESTCASEFILTER$$', '$(_testFilter)')
-                                                      .Replace('$$DEVPATH$$', '$(TestHostRootPath)')
                                                       .Replace('$$DOTNETHOSTPATH$$', '$(TestHostRootPath)$([System.IO.Path]::GetFileName('$(DotNetTool)'))'))</RunSettingsFileContent>
     </PropertyGroup>
 

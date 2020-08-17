@@ -78,7 +78,7 @@ namespace System.Net.Test.Common
 
             foreach (HttpHeaderData header in headers)
             {
-                bytesWritten += QPackTestEncoder.EncodeHeader(buffer.AsSpan(bytesWritten), header.Name, header.Value, header.HuffmanEncoded ? QPackFlags.HuffmanEncode : QPackFlags.None);
+                bytesWritten += QPackTestEncoder.EncodeHeader(buffer.AsSpan(bytesWritten), header.Name, header.Value, header.ValueEncoding, header.HuffmanEncoded ? QPackFlags.HuffmanEncode : QPackFlags.None);
             }
 
             await SendFrameAsync(HeadersFrame, buffer.AsMemory(0, bytesWritten)).ConfigureAwait(false);
@@ -201,6 +201,7 @@ namespace System.Net.Test.Common
                         break;
                 }
             }
+            request.Version = HttpVersion30.Value;
 
             return request;
         }

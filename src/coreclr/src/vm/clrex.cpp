@@ -189,7 +189,7 @@ OBJECTREF CLRException::GetThrowable()
             //  CreateThrowable() and is being caught in this EX_TRY/EX_CATCH.)
             //  If that exception is the same as the one for which this GetThrowable()
             //  was called, we're in a recursive situation.
-            // Since the CreateThrowable() call should return a type from mscorlib,
+            // Since the CreateThrowable() call should return a type from CoreLib,
             //  there really shouldn't be much opportunity for error.  We could be
             //  out of memory, we could overflow the stack, or the runtime could
             //  be in a weird state(the thread could be aborted as well).
@@ -1071,7 +1071,7 @@ void EEException::GetMessage(SString &result)
         return;
 
     // Otherwise, report the class's generic message
-    LPCUTF8 pszExceptionName = MscorlibBinder::GetExceptionName(m_kind);
+    LPCUTF8 pszExceptionName = CoreLibBinder::GetExceptionName(m_kind);
     result.SetUTF8(pszExceptionName);
 }
 
@@ -1092,7 +1092,7 @@ OBJECTREF EEException::CreateThrowable()
     _ASSERTE(g_pPreallocatedOutOfMemoryException != NULL);
     static int allocCount = 0;
 
-    MethodTable *pMT = MscorlibBinder::GetException(m_kind);
+    MethodTable *pMT = CoreLibBinder::GetException(m_kind);
 
     ThreadPreventAsyncHolder preventAsyncHolder(m_kind == kThreadAbortException);
 
@@ -1218,7 +1218,7 @@ void EEResourceException::GetMessage(SString &result)
     //
 
     result.Printf("%s (message resource %s)",
-                  MscorlibBinder::GetExceptionName(m_kind), m_resourceName.GetUnicode());
+                  CoreLibBinder::GetExceptionName(m_kind), m_resourceName.GetUnicode());
 }
 
 BOOL EEResourceException::GetThrowableMessage(SString &result)
@@ -1420,7 +1420,7 @@ OBJECTREF EEArgumentException::CreateThrowable()
     ResMgrGetString(m_resourceName, &prot.s1);
     GCPROTECT_BEGIN(prot);
 
-    MethodTable *pMT = MscorlibBinder::GetException(m_kind);
+    MethodTable *pMT = CoreLibBinder::GetException(m_kind);
     prot.pThrowable = AllocateObject(pMT);
 
     MethodDesc* pMD = MemberLoader::FindMethod(prot.pThrowable->GetMethodTable(),
@@ -1547,7 +1547,7 @@ OBJECTREF EETypeLoadException::CreateThrowable()
     }
     CONTRACTL_END;
 
-    MethodTable *pMT = MscorlibBinder::GetException(kTypeLoadException);
+    MethodTable *pMT = CoreLibBinder::GetException(kTypeLoadException);
 
     struct _gc {
         OBJECTREF pNewException;
@@ -1752,7 +1752,7 @@ OBJECTREF EEFileLoadException::CreateThrowable()
     GCPROTECT_BEGIN(gc);
 
     gc.pNewFileString = StringObject::NewString(m_name);
-    gc.pNewException = AllocateObject(MscorlibBinder::GetException(m_kind));
+    gc.pNewException = AllocateObject(CoreLibBinder::GetException(m_kind));
 
     MethodDesc* pMD = MemberLoader::FindMethod(gc.pNewException->GetMethodTable(),
                             COR_CTOR_METHOD_NAME, &gsig_IM_Str_Int_RetVoid);

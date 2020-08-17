@@ -1,14 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <AssemblyName>System.Xml.XmlSerializer</AssemblyName>
-    <RootNamespace>System.Xml.XmlSerializer</RootNamespace>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
     <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\System.Private.Xml\src\System.Private.Xml.csproj" />
-  </ItemGroup>
-  <ItemGroup>
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Private.Xml\src\System.Private.Xml.csproj" />
     <Reference Include="System.Runtime" />
   </ItemGroup>
 </Project>

@@ -670,7 +670,7 @@ namespace System.Xml
             }
         }
 
-        public override string? GetAttribute(string name, string ns)
+        public override string? GetAttribute(string name, string? ns)
         {
             if (ScanState.XmlText == _state)
             {
@@ -721,7 +721,7 @@ namespace System.Xml
             }
         }
 
-        public override bool MoveToAttribute(string name, string ns)
+        public override bool MoveToAttribute(string name, string? ns)
         {
             if (ScanState.XmlText == _state)
             {

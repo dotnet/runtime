@@ -93,6 +93,30 @@ int32_t CryptoNative_EvpDigestCurrent(const EVP_MD_CTX* ctx, uint8_t* md, uint32
     return 0;
 }
 
+int32_t CryptoNative_EvpDigestOneShot(const EVP_MD* type, const void* source, int32_t sourceSize, uint8_t* md, uint32_t* mdSize)
+{
+    if (type == NULL || sourceSize < 0 || md == NULL || mdSize == NULL)
+        return 0;
+
+    EVP_MD_CTX* ctx = CryptoNative_EvpMdCtxCreate(type);
+
+    if (ctx == NULL)
+        return 0;
+
+    int32_t ret = EVP_DigestUpdate(ctx, source, (size_t)sourceSize);
+
+    if (ret != SUCCESS)
+    {
+        CryptoNative_EvpMdCtxDestroy(ctx);
+        return 0;
+    }
+
+    ret = CryptoNative_EvpDigestFinalEx(ctx, md, mdSize);
+
+    CryptoNative_EvpMdCtxDestroy(ctx);
+    return ret;
+}
+
 int32_t CryptoNative_EvpMdSize(const EVP_MD* md)
 {
     return EVP_MD_size(md);

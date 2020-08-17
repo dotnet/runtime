@@ -193,7 +193,7 @@ namespace System.IO.Tests
 
             Action act = () => // separate method to avoid JIT lifetime-extension issues
             {
-                var fs2 = new MyFileStream(GetTestFilePath(), FileMode.Create)
+                new MyFileStream(GetTestFilePath(), FileMode.Create)
                 {
                     DisposeMethod = (disposing) =>
                     {

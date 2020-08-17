@@ -399,7 +399,7 @@ namespace System.Collections.Tests
             return dict;
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBinaryFormatterSupported))]
         public void ComparerSerialization()
         {
             // Strings switch between randomized and non-randomized comparers,

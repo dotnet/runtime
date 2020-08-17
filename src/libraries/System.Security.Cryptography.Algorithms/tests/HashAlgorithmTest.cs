@@ -11,6 +11,10 @@ namespace System.Security.Cryptography.Hashing.Algorithms.Tests
     public abstract class HashAlgorithmTest
     {
         protected abstract HashAlgorithm Create();
+        protected abstract bool TryHashData(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten);
+        protected abstract byte[] HashData(byte[] source);
+        protected abstract byte[] HashData(ReadOnlySpan<byte> source);
+        protected abstract int HashData(ReadOnlySpan<byte> source, Span<byte> destination);
 
         protected void Verify(string input, string output)
         {
@@ -134,6 +138,18 @@ namespace System.Security.Cryptography.Hashing.Algorithms.Tests
         }
 
         [Fact]
+        public void HashData_ByteArray_Null()
+        {
+            AssertExtensions.Throws<ArgumentNullException>("source", () => HashData(null));
+        }
+
+        [Fact]
+        public void HashData_BufferTooSmall()
+        {
+            AssertExtensions.Throws<ArgumentException>("destination", () => HashData(default, default));
+        }
+
+        [Fact]
         public void VerifyObjectDisposedException()
         {
             HashAlgorithm hash = Create();
@@ -195,6 +211,56 @@ namespace System.Security.Cryptography.Hashing.Algorithms.Tests
         {
             Verify_Array(input, output);
             Verify_Span(input, output);
+            Verify_OneShot(input, output);
+        }
+
+        private void Verify_OneShot(byte[] input, string output)
+        {
+            Span<byte> destination = stackalloc byte[1024 / 8];
+            byte[] expectedArray = ByteUtils.HexToByteArray(output);
+            ReadOnlySpan<byte> expected = expectedArray;
+
+            // big enough
+            bool result = TryHashData(input, destination, out int bytesWritten);
+            Assert.True(result, "TryHashData true");
+            Assert.True(expected.SequenceEqual(destination.Slice(0, bytesWritten)), "expected equals destination");
+
+            //too small
+            result = TryHashData(input, default, out bytesWritten);
+            Assert.False(result, "TryHashData false");
+            Assert.Equal(0, bytesWritten);
+
+            Span<byte> inputOutput = new byte[Math.Max(input.Length, expected.Length) + 1];
+            input.AsSpan().CopyTo(inputOutput);
+
+            // overlapping
+            result = TryHashData(inputOutput.Slice(0, input.Length), inputOutput, out bytesWritten);
+            Assert.True(result, "TryHashData true");
+            Assert.True(expected.SequenceEqual(inputOutput.Slice(0, bytesWritten)), "expected equals destination");
+
+            // partial overlapping forward
+            input.AsSpan().CopyTo(inputOutput);
+            result = TryHashData(inputOutput.Slice(0, input.Length), inputOutput.Slice(1), out bytesWritten);
+            Assert.True(result, "TryHashData true");
+            Assert.True(expected.SequenceEqual(inputOutput.Slice(1, bytesWritten)), "expected equals destination");
+
+            // partial overlapping backward
+            input.AsSpan().CopyTo(inputOutput.Slice(1));
+            result = TryHashData(inputOutput.Slice(1, input.Length), inputOutput, out bytesWritten);
+            Assert.True(result, "TryHashData true");
+            Assert.True(expected.SequenceEqual(inputOutput.Slice(0, bytesWritten)), "expected equals destination");
+
+            // throwing span one-shot
+            bytesWritten = HashData(input, destination);
+            Assert.True(expected.SequenceEqual(destination.Slice(0, bytesWritten)), "expected equals destination");
+
+            // byte array allocating one-shot
+            byte[] allocatingArrayResult = HashData(input);
+            Assert.Equal(expectedArray, allocatingArrayResult);
+
+            // byte span allocating one-shot
+            byte[] allocatingSpanResult = HashData(new ReadOnlySpan<byte>(input));
+            Assert.Equal(expectedArray, allocatingSpanResult);
         }
 
         private void Verify_Array(byte[] input, string output)

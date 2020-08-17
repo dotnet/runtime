@@ -316,12 +316,7 @@ namespace System.Xml
         private static volatile Regex? s_decodeCharPattern;
         private static int FromHex(char digit)
         {
-            return (digit <= '9')
-            ? ((int)digit - (int)'0')
-            : (((digit <= 'F')
-                ? ((int)digit - (int)'A')
-                : ((int)digit - (int)'a'))
-               + 10);
+            return HexConverter.FromChar(digit);
         }
 
         internal static byte[] FromBinHexString(string s)
@@ -1098,7 +1093,7 @@ namespace System.Xml
             return null;
         }
 
-        internal static double ToXPathDouble(object o)
+        internal static double ToXPathDouble(object? o)
         {
             if (o is string str)
             {
@@ -1479,12 +1474,12 @@ namespace System.Xml
             return *((long*)&value);
         }
 
-        internal static void VerifyCharData(string data, ExceptionType exceptionType)
+        internal static void VerifyCharData(string? data, ExceptionType exceptionType)
         {
             VerifyCharData(data, exceptionType, exceptionType);
         }
 
-        internal static void VerifyCharData(string data, ExceptionType invCharExceptionType, ExceptionType invSurrogateExceptionType)
+        internal static void VerifyCharData(string? data, ExceptionType invCharExceptionType, ExceptionType invSurrogateExceptionType)
         {
             if (data == null || data.Length == 0)
             {

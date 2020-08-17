@@ -8,7 +8,6 @@ using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Testing;
 using Microsoft.Extensions.Logging;
 
 namespace Microsoft.Extensions.Hosting.IntegrationTesting

@@ -1229,7 +1229,7 @@ namespace System.Text.Json
                 return utf8Text == default;
             }
 
-            return TextEqualsHelper(utf8Text, isPropertyName: false);
+            return TextEqualsHelper(utf8Text, isPropertyName: false, shouldUnescape: true);
         }
 
         /// <summary>
@@ -1260,11 +1260,11 @@ namespace System.Text.Json
             return TextEqualsHelper(text, isPropertyName: false);
         }
 
-        internal bool TextEqualsHelper(ReadOnlySpan<byte> utf8Text, bool isPropertyName)
+        internal bool TextEqualsHelper(ReadOnlySpan<byte> utf8Text, bool isPropertyName, bool shouldUnescape)
         {
             CheckValidInstance();
 
-            return _parent.TextEquals(_idx, utf8Text, isPropertyName);
+            return _parent.TextEquals(_idx, utf8Text, isPropertyName, shouldUnescape);
         }
 
         internal bool TextEqualsHelper(ReadOnlySpan<char> text, bool isPropertyName)

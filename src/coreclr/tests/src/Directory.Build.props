@@ -139,6 +139,7 @@
   <PropertyGroup>
     <TargetsUnknownUnix Condition="'$(TargetsUnix)' == 'true' AND '$(TargetOS)' != 'FreeBSD' AND '$(TargetOS)' != 'Linux' AND '$(TargetOS)' != 'NetBSD' AND '$(TargetOS)' != 'OSX' AND '$(TargetOS)' != 'illumos' AND '$(TargetOS)' != 'Solaris'">true</TargetsUnknownUnix>
     <Language Condition="'$(Language)' == '' and  '$(MSBuildProjectExtension)' == '.csproj'">C#</Language>
+    <Language Condition="'$(Language)' == '' and  '$(MSBuildProjectExtension)' == '.fsproj'">F#</Language>
     <Language Condition="'$(Language)' == '' and  '$(MSBuildProjectExtension)' == '.ilproj'">IL</Language>
   </PropertyGroup>
 

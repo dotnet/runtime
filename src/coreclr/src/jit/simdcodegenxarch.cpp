@@ -585,9 +585,9 @@ void CodeGen::genSIMDIntrinsicInit(GenTreeSIMD* simdNode)
             }
             else if (op1->OperIsLocalAddr())
             {
-                unsigned offset = op1->OperIs(GT_LCL_FLD_ADDR) ? op1->AsLclFld()->GetLclOffs() : 0;
-                GetEmitter()->emitIns_R_S(ins, emitTypeSize(targetType), targetReg, op1->AsLclVarCommon()->GetLclNum(),
-                                          offset);
+                const GenTreeLclVarCommon* lclVar = op1->AsLclVarCommon();
+                unsigned                   offset = lclVar->GetLclOffs();
+                GetEmitter()->emitIns_R_S(ins, emitTypeSize(targetType), targetReg, lclVar->GetLclNum(), offset);
             }
             else
             {
@@ -2143,17 +2143,14 @@ void CodeGen::genStoreLclTypeSIMD12(GenTree* treeNode)
 {
     assert((treeNode->OperGet() == GT_STORE_LCL_FLD) || (treeNode->OperGet() == GT_STORE_LCL_VAR));
 
-    unsigned offs   = 0;
-    unsigned varNum = treeNode->AsLclVarCommon()->GetLclNum();
+    const GenTreeLclVarCommon* lclVar = treeNode->AsLclVarCommon();
+
+    unsigned offs   = lclVar->GetLclOffs();
+    unsigned varNum = lclVar->GetLclNum();
     assert(varNum < compiler->lvaCount);
 
-    if (treeNode->OperGet() == GT_STORE_LCL_FLD)
-    {
-        offs = treeNode->AsLclFld()->GetLclOffs();
-    }
-
     regNumber tmpReg = treeNode->GetSingleTempReg();
-    GenTree*  op1    = treeNode->AsOp()->gtOp1;
+    GenTree*  op1    = lclVar->gtOp1;
     if (op1->isContained())
     {
         // This is only possible for a zero-init.
@@ -2197,15 +2194,11 @@ void CodeGen::genLoadLclTypeSIMD12(GenTree* treeNode)
 {
     assert((treeNode->OperGet() == GT_LCL_FLD) || (treeNode->OperGet() == GT_LCL_VAR));
 
-    regNumber targetReg = treeNode->GetRegNum();
-    unsigned  offs      = 0;
-    unsigned  varNum    = treeNode->AsLclVarCommon()->GetLclNum();
+    const GenTreeLclVarCommon* lclVar    = treeNode->AsLclVarCommon();
+    regNumber                  targetReg = lclVar->GetRegNum();
+    unsigned                   offs      = lclVar->GetLclOffs();
+    unsigned                   varNum    = lclVar->GetLclNum();
     assert(varNum < compiler->lvaCount);
-
-    if (treeNode->OperGet() == GT_LCL_FLD)
-    {
-        offs = treeNode->AsLclFld()->GetLclOffs();
-    }
 
     // Need an additional Xmm register that is different from targetReg to read upper 4 bytes.
     regNumber tmpReg = treeNode->GetSingleTempReg();

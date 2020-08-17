@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#nullable enable
 using System;
 using System.Globalization;
 using System.IO;
@@ -11,6 +12,7 @@ using System.Xml.Schema;
 using System.Diagnostics;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 
 namespace MS.Internal.Xml.Cache
 {
@@ -40,21 +42,21 @@ namespace MS.Internal.Xml.Cache
         private readonly Stack<XPathNodeRef> _stkNmsp;    // In-scope namespaces
         private XPathNodeInfoTable _infoTable;   // Atomization table for shared node information
         private XPathDocument _doc;              // Currently building document
-        private IXmlLineInfo _lineInfo;          // Line information provider
+        private IXmlLineInfo? _lineInfo;          // Line information provider
         private XmlNameTable _nameTable;         // Atomization table for all names in the document
         private bool _atomizeNames;              // True if all names should be atomized (false if they are pre-atomized)
 
         private XPathNode[] _pageNmsp;           // Page of last in-scope namespace node
         private int _idxNmsp;                    // Page index of last in-scope namespace node
-        private XPathNode[] _pageParent;         // Page of last parent-type node (Element or Root)
+        private XPathNode[]? _pageParent;         // Page of last parent-type node (Element or Root)
         private int _idxParent;                  // Page index of last parent-type node (Element or Root)
-        private XPathNode[] _pageSibling;        // Page of previous sibling node (may be null if no previous sibling)
+        private XPathNode[]? _pageSibling;        // Page of previous sibling node (may be null if no previous sibling)
         private int _idxSibling;                 // Page index of previous sibling node
         private int _lineNumBase;                // Line number from which offsets are computed
         private int _linePosBase;                // Line position from which offsets are computed
 
-        private XmlQualifiedName _idAttrName;    // Cached name of an ID attribute
-        private Hashtable _elemIdMap;            // Map from element name to ID attribute name
+        private XmlQualifiedName? _idAttrName;    // Cached name of an ID attribute
+        private Hashtable? _elemIdMap;            // Map from element name to ID attribute name
         private XPathNodeRef[] _elemNameIndex;   // Elements with the same name are linked together so that they can be searched quickly
 
         private const int ElementIndexSize = 64;
@@ -62,7 +64,7 @@ namespace MS.Internal.Xml.Cache
         /// <summary>
         /// Create a new XPathDocumentBuilder which creates nodes in "doc".
         /// </summary>
-        public XPathDocumentBuilder(XPathDocument doc, IXmlLineInfo lineInfo, string baseUri, XPathDocument.LoadFlags flags)
+        public XPathDocumentBuilder(XPathDocument doc, IXmlLineInfo? lineInfo, string? baseUri, XPathDocument.LoadFlags flags)
         {
             // Allocate the initial node (for non-namespaces) page, and the initial namespace page
             _nodePageFact.Init(256);
@@ -77,7 +79,12 @@ namespace MS.Internal.Xml.Cache
         /// Start construction of a new document.  This must be called before any other methods are called.
         /// It may also be called after Close(), in order to build further documents.
         /// </summary>
-        public void Initialize(XPathDocument doc, IXmlLineInfo lineInfo, string baseUri, XPathDocument.LoadFlags flags)
+        [MemberNotNull(nameof(_doc))]
+        [MemberNotNull(nameof(_elemNameIndex))]
+        [MemberNotNull(nameof(_infoTable))]
+        [MemberNotNull(nameof(_nameTable))]
+        [MemberNotNull(nameof(_pageNmsp))]
+        public void Initialize(XPathDocument doc, IXmlLineInfo? lineInfo, string? baseUri, XPathDocument.LoadFlags flags)
         {
             XPathNode[] page;
             int idx;
@@ -126,14 +133,14 @@ namespace MS.Internal.Xml.Cache
         /// <summary>
         /// XPathDocument ignores the DocType information.
         /// </summary>
-        public override void WriteDocType(string name, string pubid, string sysid, string subset)
+        public override void WriteDocType(string name, string? pubid, string? sysid, string? subset)
         {
         }
 
         /// <summary>
         /// Shortcut for calling WriteStartElement with elemType == null.
         /// </summary>
-        public override void WriteStartElement(string prefix, string localName, string ns)
+        public override void WriteStartElement(string? prefix, string localName, string? ns)
         {
             this.WriteStartElement(prefix, localName, ns, string.Empty);
         }
@@ -141,7 +148,7 @@ namespace MS.Internal.Xml.Cache
         /// <summary>
         /// Build an element node and attach it to its parent, if one exists.  Make the element the new parent node.
         /// </summary>
-        public void WriteStartElement(string prefix, string localName, string ns, string baseUri)
+        public void WriteStartElement(string? prefix, string localName, string? ns, string? baseUri)
         {
             int hash;
             Debug.Assert(prefix != null && localName != null && ns != null && localName.Length != 0 && baseUri != null);
@@ -164,7 +171,7 @@ namespace MS.Internal.Xml.Cache
 
             // If elements within this document might have IDs, then cache the name of the ID attribute, if one exists
             if (_elemIdMap != null)
-                _idAttrName = (XmlQualifiedName)_elemIdMap[new XmlQualifiedName(localName, prefix)];
+                _idAttrName = (XmlQualifiedName?)_elemIdMap[new XmlQualifiedName(localName, prefix)];
         }
 
         /// <summary>
@@ -205,7 +212,7 @@ namespace MS.Internal.Xml.Cache
         public void WriteEndElement(bool allowShortcutTag)
         {
             XPathNodeRef nodeRef;
-            Debug.Assert(_pageParent[_idxParent].NodeType == XPathNodeType.Element);
+            Debug.Assert(_pageParent != null && _pageParent[_idxParent].NodeType == XPathNodeType.Element);
 
             // If element has no content-typed children except for the one about to be added, then
             // its value is the same as its only text child's.
@@ -277,11 +284,12 @@ namespace MS.Internal.Xml.Cache
         /// <summary>
         /// Shortcut for calling WriteStartAttribute with attrfType == null.
         /// </summary>
-        public override void WriteStartAttribute(string prefix, string localName, string namespaceName)
+        public override void WriteStartAttribute(string? prefix, string localName, string? namespaceName)
         {
-            Debug.Assert(!prefix.Equals("xmlns"));
-            Debug.Assert(_idxParent == 0 || _pageParent[_idxParent].NodeType == XPathNodeType.Element);
-            Debug.Assert(_idxSibling == 0 || _pageSibling[_idxSibling].NodeType == XPathNodeType.Attribute);
+            Debug.Assert(namespaceName != null);
+            Debug.Assert(prefix != null && !prefix.Equals("xmlns"));
+            Debug.Assert(_idxParent == 0 || (_pageParent != null && _pageParent[_idxParent].NodeType == XPathNodeType.Element));
+            Debug.Assert(_idxSibling == 0 || (_pageSibling != null && _pageSibling[_idxSibling].NodeType == XPathNodeType.Attribute));
 
             if (_atomizeNames)
             {
@@ -298,6 +306,7 @@ namespace MS.Internal.Xml.Cache
         /// </summary>
         public override void WriteEndAttribute()
         {
+            Debug.Assert(_pageSibling != null);
             Debug.Assert(_pageSibling[_idxSibling].NodeType == XPathNodeType.Attribute);
 
             _pageSibling[_idxSibling].SetValue(_textBldr.ReadText());
@@ -309,8 +318,10 @@ namespace MS.Internal.Xml.Cache
                     _pageSibling[_idxSibling].Prefix == _idAttrName.Namespace)
                 {
                     // Then add its value to the idValueMap map
-                    Debug.Assert(_idxParent != 0, "ID attribute must have an element parent");
-                    _doc.AddIdElement(_pageSibling[_idxSibling].Value, _pageParent, _idxParent);
+                    Debug.Assert(_idxParent != 0 && _pageParent != null, "ID attribute must have an element parent");
+                    string? id = _pageSibling[_idxSibling].Value;
+                    Debug.Assert(id != null);
+                    _doc.AddIdElement(id, _pageParent, _idxParent);
                 }
             }
         }
@@ -318,7 +329,7 @@ namespace MS.Internal.Xml.Cache
         /// <summary>
         /// Map CData text into regular text.
         /// </summary>
-        public override void WriteCData(string text)
+        public override void WriteCData(string? text)
         {
             WriteString(text, TextBlockType.Text);
         }
@@ -326,7 +337,7 @@ namespace MS.Internal.Xml.Cache
         /// <summary>
         /// Construct comment node.
         /// </summary>
-        public override void WriteComment(string text)
+        public override void WriteComment(string? text)
         {
             AddSibling(XPathNodeType.Comment, string.Empty, string.Empty, string.Empty, string.Empty);
             _pageSibling[_idxSibling].SetValue(text);
@@ -335,7 +346,7 @@ namespace MS.Internal.Xml.Cache
         /// <summary>
         /// Shortcut for calling WriteProcessingInstruction with baseUri = string.Empty.
         /// </summary>
-        public override void WriteProcessingInstruction(string name, string text)
+        public override void WriteProcessingInstruction(string name, string? text)
         {
             this.WriteProcessingInstruction(name, text, string.Empty);
         }
@@ -343,7 +354,7 @@ namespace MS.Internal.Xml.Cache
         /// <summary>
         /// Construct pi node.
         /// </summary>
-        public void WriteProcessingInstruction(string name, string text, string baseUri)
+        public void WriteProcessingInstruction(string name, string? text, string? baseUri)
         {
             if (_atomizeNames)
                 name = _nameTable.Add(name);
@@ -355,7 +366,7 @@ namespace MS.Internal.Xml.Cache
         /// <summary>
         /// Write a whitespace text block.
         /// </summary>
-        public override void WriteWhitespace(string ws)
+        public override void WriteWhitespace(string? ws)
         {
             WriteString(ws, TextBlockType.Whitespace);
         }
@@ -363,7 +374,7 @@ namespace MS.Internal.Xml.Cache
         /// <summary>
         /// Write an attribute or element text block.
         /// </summary>
-        public override void WriteString(string text)
+        public override void WriteString(string? text)
         {
             WriteString(text, TextBlockType.Text);
         }
@@ -389,7 +400,7 @@ namespace MS.Internal.Xml.Cache
         /// <summary>
         /// Write an element text block with the specified text type (whitespace, significant whitespace, or text).
         /// </summary>
-        public void WriteString(string text, TextBlockType textType)
+        public void WriteString(string? text, TextBlockType textType)
         {
             _textBldr.WriteTextBlock(text, textType);
         }
@@ -424,7 +435,7 @@ namespace MS.Internal.Xml.Cache
         /// </summary>
         public override void Close()
         {
-            XPathNode[] page;
+            XPathNode[]? page;
             int idx;
 
             // If cached text exists, then create a text node at the top-level
@@ -470,7 +481,7 @@ namespace MS.Internal.Xml.Cache
         /// </summary>
         internal override void StartElementContent()
         {
-            Debug.Assert(_pageParent[_idxParent].NodeType == XPathNodeType.Element);
+            Debug.Assert(_pageParent != null && _pageParent[_idxParent].NodeType == XPathNodeType.Element);
         }
 
         /// <summary>
@@ -479,12 +490,13 @@ namespace MS.Internal.Xml.Cache
         /// </summary>
         internal override void WriteNamespaceDeclaration(string prefix, string namespaceName)
         {
-            XPathNode[] pageTemp, pageOverride, pageNew, pageOrig, pageCopy;
+            XPathNode[] pageTemp, pageNew, pageCopy;
+            XPathNode[]? pageOverride, pageOrig;
             int idxTemp, idxOverride, idxNew, idxOrig, idxCopy;
-            Debug.Assert(_idxSibling == 0 || _pageSibling[_idxSibling].NodeType == XPathNodeType.Attribute);
+            Debug.Assert(_idxSibling == 0 || (_pageSibling != null && _pageSibling[_idxSibling].NodeType == XPathNodeType.Attribute));
             Debug.Assert(!prefix.Equals("xmlns") && !namespaceName.Equals(XmlReservedNs.NsXmlNs));
             Debug.Assert(_idxParent == 0 || _idxNmsp != 0);
-            Debug.Assert(_idxParent == 0 || _pageParent[_idxParent].NodeType == XPathNodeType.Element);
+            Debug.Assert(_idxParent == 0 || (_pageParent != null && _pageParent[_idxParent].NodeType == XPathNodeType.Element));
 
             if (_atomizeNames)
                 prefix = _nameTable.Add(prefix);
@@ -496,7 +508,7 @@ namespace MS.Internal.Xml.Cache
             idxOverride = _idxNmsp;
             while (idxOverride != 0)
             {
-                if ((object)pageOverride[idxOverride].LocalName == (object)prefix)
+                if ((object)pageOverride![idxOverride].LocalName == (object)prefix)
                 {
                     // Need to clone all namespaces up until the overridden node in order to bypass it
                     break;
@@ -517,8 +529,9 @@ namespace MS.Internal.Xml.Cache
 
                 while (idxOrig != idxOverride || pageOrig != pageOverride)
                 {
+                    Debug.Assert(pageOrig != null);
                     // Make a copy of the original namespace node
-                    idxTemp = pageOrig[idxOrig].GetParent(out pageTemp);
+                    idxTemp = pageOrig[idxOrig].GetParent(out pageTemp!);
                     idxTemp = NewNamespaceNode(out pageTemp, pageOrig[idxOrig].LocalName, pageOrig[idxOrig].Value, pageTemp, idxTemp);
 
                     // Attach copy to chain of copied nodes
@@ -533,10 +546,10 @@ namespace MS.Internal.Xml.Cache
                 }
 
                 // Link farther up in the original chain, just past the last overridden node
-                idxOverride = pageOverride[idxOverride].GetSibling(out pageOverride);
+                idxOverride = pageOverride![idxOverride].GetSibling(out pageOverride);
 
                 if (idxOverride != 0)
-                    pageCopy[idxCopy].SetSibling(_infoTable, pageOverride, idxOverride);
+                    pageCopy[idxCopy].SetSibling(_infoTable, pageOverride!, idxOverride);
                 else
                     Debug.Assert(prefix.Equals("xml"), "xmlns:xml namespace declaration should always be present in the list.");
             }
@@ -553,6 +566,7 @@ namespace MS.Internal.Xml.Cache
 
             if (_idxParent != 0)
             {
+                Debug.Assert(_pageParent != null);
                 // If this is the first namespace on the current element,
                 if (!_pageParent[_idxParent].HasNamespaceDecls)
                 {
@@ -582,7 +596,7 @@ namespace MS.Internal.Xml.Cache
             // Extract the elements which has attribute defined as ID from the element declarations
             foreach (IDtdAttributeListInfo attrList in dtdInfo.GetAttributeLists())
             {
-                IDtdAttributeInfo idAttribute = attrList.LookupIdAttribute();
+                IDtdAttributeInfo? idAttribute = attrList.LookupIdAttribute();
                 if (idAttribute != null)
                 {
                     if (_elemIdMap == null)
@@ -612,7 +626,7 @@ namespace MS.Internal.Xml.Cache
         /// <summary>
         /// Helper method that constructs a new Namespace XPathNode.
         /// </summary>
-        private int NewNamespaceNode(out XPathNode[] page, string prefix, string namespaceUri, XPathNode[] pageElem, int idxElem)
+        private int NewNamespaceNode(out XPathNode[] page, string prefix, string? namespaceUri, XPathNode[]? pageElem, int idxElem)
         {
             XPathNode[] pageNode;
             int idxNode, lineNumOffset, linePosOffset;
@@ -642,7 +656,7 @@ namespace MS.Internal.Xml.Cache
         /// <summary>
         /// Helper method that constructs a new XPathNode.
         /// </summary>
-        private int NewNode(out XPathNode[] page, XPathNodeType xptyp, string localName, string namespaceUri, string prefix, string baseUri)
+        private int NewNode(out XPathNode[] page, XPathNodeType xptyp, string localName, string namespaceUri, string prefix, string? baseUri)
         {
             XPathNode[] pageNode;
             int idxNode, lineNumOffset, linePosOffset;
@@ -714,7 +728,8 @@ namespace MS.Internal.Xml.Cache
         /// Add a sibling node.  If no previous sibling exists, add the node as the first child of the parent.
         /// If no parent exists, make this node the root of the document.
         /// </summary>
-        private void AddSibling(XPathNodeType xptyp, string localName, string namespaceUri, string prefix, string baseUri)
+        [MemberNotNull(nameof(_pageSibling))]
+        private void AddSibling(XPathNodeType xptyp, string localName, string namespaceUri, string prefix, string? baseUri)
         {
             XPathNode[] pageNew;
             int idxNew;
@@ -728,6 +743,7 @@ namespace MS.Internal.Xml.Cache
             // this.idxParent is only 0 for the top-most node
             if (_idxParent != 0)
             {
+                Debug.Assert(_pageParent != null);
                 // Set properties on parent
                 _pageParent[_idxParent].SetParentProperties(xptyp);
 
@@ -738,6 +754,7 @@ namespace MS.Internal.Xml.Cache
                 }
                 else
                 {
+                    Debug.Assert(_pageSibling != null);
                     // There is already a previous sibling
                     _pageSibling[_idxSibling].SetSibling(_infoTable, pageNew, idxNew);
                 }
@@ -750,12 +767,13 @@ namespace MS.Internal.Xml.Cache
         /// <summary>
         /// Creates a text node from cached text parts.
         /// </summary>
+        [MemberNotNull(nameof(_pageSibling))]
         private void CachedTextNode()
         {
             TextBlockType textType;
             string text;
             Debug.Assert(_textBldr.HasText || (_idxSibling == 0 && _idxParent == 0), "Cannot create empty text node unless it's a top-level text node.");
-            Debug.Assert(_idxSibling == 0 || !_pageSibling[_idxSibling].IsText, "Cannot create adjacent text nodes.");
+            Debug.Assert(_idxSibling == 0 || (_pageSibling != null && !_pageSibling[_idxSibling].IsText), "Cannot create adjacent text nodes.");
 
             // Create a text node
             textType = _textBldr.TextType;
@@ -833,7 +851,7 @@ namespace MS.Internal.Xml.Cache
         /// </summary>
         private struct TextBlockBuilder
         {
-            private IXmlLineInfo _lineInfo;
+            private IXmlLineInfo? _lineInfo;
             private TextBlockType _textType;
             private string _text;
             private int _lineNum, _linePos;
@@ -841,7 +859,7 @@ namespace MS.Internal.Xml.Cache
             /// <summary>
             /// Constructor.
             /// </summary>
-            public void Initialize(IXmlLineInfo lineInfo)
+            public void Initialize(IXmlLineInfo? lineInfo)
             {
                 _lineInfo = lineInfo;
                 _textType = TextBlockType.None;
@@ -882,12 +900,12 @@ namespace MS.Internal.Xml.Cache
             /// <summary>
             /// Append a text block with the specified type.
             /// </summary>
-            public void WriteTextBlock(string text, TextBlockType textType)
+            public void WriteTextBlock(string? text, TextBlockType textType)
             {
                 Debug.Assert((int)XPathNodeType.Text < (int)XPathNodeType.SignificantWhitespace);
                 Debug.Assert((int)XPathNodeType.SignificantWhitespace < (int)XPathNodeType.Whitespace);
 
-                if (text.Length != 0)
+                if (!string.IsNullOrEmpty(text))
                 {
                     if (_textType == TextBlockType.None)
                     {

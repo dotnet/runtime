@@ -159,7 +159,9 @@ ICALL_EXPORT gint64 ves_icall_System_GC_GetTotalMemory (MonoBoolean forceCollect
 ICALL_EXPORT gint64 ves_icall_System_Threading_Timer_GetTimeMonotonic (void);
 ICALL_EXPORT gpointer ves_icall_System_GCHandle_GetAddrOfPinnedObject (MonoGCHandle handle);
 ICALL_EXPORT int ves_icall_Interop_Sys_DoubleToString (double, char*, char*, int);
+#if !ENABLE_NETCORE
 ICALL_EXPORT int ves_icall_System_Environment_get_Platform (void);
+#endif
 ICALL_EXPORT int ves_icall_System_GC_GetCollectionCount (int);
 ICALL_EXPORT int ves_icall_System_GC_GetMaxGeneration (void);
 ICALL_EXPORT gint64 ves_icall_System_GC_GetAllocatedBytesForCurrentThread (void);

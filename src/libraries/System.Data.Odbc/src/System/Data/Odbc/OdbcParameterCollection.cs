@@ -63,29 +63,29 @@ namespace System.Data.Odbc
 
         [EditorBrowsableAttribute(EditorBrowsableState.Never)]
         [ObsoleteAttribute("Add(String parameterName, Object value) has been deprecated.  Use AddWithValue(String parameterName, Object value).  https://go.microsoft.com/fwlink/?linkid=14202", false)] // 79027
-        public OdbcParameter Add(string parameterName, object value)
+        public OdbcParameter Add(string? parameterName, object? value)
         {
             // MDAC 59206
             return Add(new OdbcParameter(parameterName, value));
         }
 
-        public OdbcParameter AddWithValue(string parameterName, object value)
+        public OdbcParameter AddWithValue(string? parameterName, object? value)
         {
             // MDAC 79027
             return Add(new OdbcParameter(parameterName, value));
         }
 
-        public OdbcParameter Add(string parameterName, OdbcType odbcType)
+        public OdbcParameter Add(string? parameterName, OdbcType odbcType)
         {
             return Add(new OdbcParameter(parameterName, odbcType));
         }
 
-        public OdbcParameter Add(string parameterName, OdbcType odbcType, int size)
+        public OdbcParameter Add(string? parameterName, OdbcType odbcType, int size)
         {
             return Add(new OdbcParameter(parameterName, odbcType, size));
         }
 
-        public OdbcParameter Add(string parameterName, OdbcType odbcType, int size, string sourceColumn)
+        public OdbcParameter Add(string? parameterName, OdbcType odbcType, int size, string? sourceColumn)
         {
             return Add(new OdbcParameter(parameterName, odbcType, size, sourceColumn));
         }
@@ -102,7 +102,7 @@ namespace System.Data.Odbc
         {
             for (int i = 0; i < Count; ++i)
             {
-                this[i].Bind(cmdWrapper.StatementHandle, command, checked((short)(i + 1)), parameterBuffer, true);
+                this[i].Bind(cmdWrapper.StatementHandle!, command, checked((short)(i + 1)), parameterBuffer, true);
             }
             _rebindCollection = false;
         }
@@ -160,7 +160,7 @@ namespace System.Data.Odbc
             // mdac 88542 - we will not read out the parameters if the collection has changed
             if (!_rebindCollection)
             {
-                CNativeBuffer parameterBuffer = cmdWrapper._nativeParameterBuffer;
+                CNativeBuffer parameterBuffer = cmdWrapper._nativeParameterBuffer!;
                 for (int i = 0; i < Count; ++i)
                 {
                     this[i].GetOutputValue(parameterBuffer);

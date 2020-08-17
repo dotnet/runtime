@@ -16,6 +16,7 @@ typedef void (*ErrorCallback)(const char *szMessage, uint32_t code);
 
 class IpcStream final
 {
+    friend class IpcStreamFactory;
 public:
     static constexpr int32_t InfiniteTimeout = -1;
     ~IpcStream();
@@ -26,19 +27,21 @@ public:
 
     class DiagnosticsIpc final
     {
+        friend class IpcStreamFactory;
     public:
         enum ConnectionMode
         {
-            CLIENT,
-            SERVER
+            CONNECT,
+            LISTEN
         };
 
         enum class PollEvents : uint8_t
         {
-            TIMEOUT  = 0x00, // implies timeout
+            NONE     = 0x00, // no events
             SIGNALED = 0x01, // ready for use
             HANGUP   = 0x02, // connection remotely closed
-            ERR      = 0x04  // other error
+            ERR      = 0x04, // error
+            UNKNOWN   = 0x80  // unknown state
         };
 
         // The bookeeping struct used for polling on server and client structs
@@ -99,7 +102,7 @@ public:
         sockaddr_un *const _pServerAddress;
         bool _isClosed;
 
-        DiagnosticsIpc(const int serverSocket, sockaddr_un *const pServerAddress, ConnectionMode mode = ConnectionMode::SERVER);
+        DiagnosticsIpc(const int serverSocket, sockaddr_un *const pServerAddress, ConnectionMode mode = ConnectionMode::LISTEN);
 
         // Used to unlink the socket so it can be removed from the filesystem
         // when the last reference to it is closed.
@@ -110,7 +113,7 @@ public:
         HANDLE _hPipe = INVALID_HANDLE_VALUE;
         OVERLAPPED _oOverlap = {};
 
-        DiagnosticsIpc(const char(&namedPipeName)[MaxNamedPipeNameLength], ConnectionMode mode = ConnectionMode::SERVER);
+        DiagnosticsIpc(const char(&namedPipeName)[MaxNamedPipeNameLength], ConnectionMode mode = ConnectionMode::LISTEN);
 #endif /* TARGET_UNIX */
 
         bool _isListening;
@@ -125,13 +128,13 @@ public:
 private:
 #ifdef TARGET_UNIX
     int _clientSocket = -1;
-    IpcStream(int clientSocket, int serverSocket, DiagnosticsIpc::ConnectionMode mode = DiagnosticsIpc::ConnectionMode::SERVER)
+    IpcStream(int clientSocket, DiagnosticsIpc::ConnectionMode mode = DiagnosticsIpc::ConnectionMode::LISTEN)
         : _clientSocket(clientSocket), _mode(mode) {}
 #else
     HANDLE _hPipe = INVALID_HANDLE_VALUE;
     OVERLAPPED _oOverlap = {};
     BOOL _isTestReading = false; // used to check whether we are already doing a 0-byte read to test for data
-    IpcStream(HANDLE hPipe, DiagnosticsIpc::ConnectionMode mode = DiagnosticsIpc::ConnectionMode::SERVER);
+    IpcStream(HANDLE hPipe, DiagnosticsIpc::ConnectionMode mode = DiagnosticsIpc::ConnectionMode::LISTEN);
 #endif /* TARGET_UNIX */
 
     DiagnosticsIpc::ConnectionMode _mode;

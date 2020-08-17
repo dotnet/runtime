@@ -83,6 +83,7 @@ namespace System.Runtime.Loader.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/39202", TestPlatforms.Browser)]
         public void LoadInDefaultContext()
         {
             // This will attempt to load an assembly, by path, in the Default Load context via the Resolving event

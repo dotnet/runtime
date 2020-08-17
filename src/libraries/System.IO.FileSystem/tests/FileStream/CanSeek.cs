@@ -43,6 +43,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
+        [PlatformSpecific(~TestPlatforms.Browser)] // IO.Pipes not supported
         public void CanSeekReturnsFalseForPipe()
         {
             using (var pipeStream = new AnonymousPipeServerStream())

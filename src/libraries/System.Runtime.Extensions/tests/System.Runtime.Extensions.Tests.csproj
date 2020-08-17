@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DefineConstants Condition="'$(TargetsUnix)' == 'true' or '$(TargetsBrowser)' == 'true'">$(DefineConstants);Unix</DefineConstants>
@@ -39,6 +39,7 @@
     <Compile Include="System\BitConverter.cs" />
     <Compile Include="System\Convert.BoxedObjectCheck.cs" />
     <Compile Include="System\Convert.FromBase64.cs" />
+    <Compile Include="System\Convert.FromHexString.cs" />
     <Compile Include="System\Convert.TestBase.cs" />
     <Compile Include="System\Convert.ToBase64CharArray.cs" />
     <Compile Include="System\Convert.ToBase64String.cs" />
@@ -48,6 +49,7 @@
     <Compile Include="System\Convert.ToDateTime.cs" />
     <Compile Include="System\Convert.ToDecimal.cs" />
     <Compile Include="System\Convert.ToDouble.cs" />
+    <Compile Include="System\Convert.ToHexString.cs" />
     <Compile Include="System\Convert.ToInt16.cs" />
     <Compile Include="System\Convert.ToInt32.cs" />
     <Compile Include="System\Convert.ToInt64.cs" />

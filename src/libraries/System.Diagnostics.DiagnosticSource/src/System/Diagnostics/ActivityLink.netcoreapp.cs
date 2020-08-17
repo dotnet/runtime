@@ -17,9 +17,9 @@ namespace System.Diagnostics
         {
             HashCode hashCode = default;
             hashCode.Add(Context);
-            if (Attributes != null)
+            if (Tags != null)
             {
-                foreach (KeyValuePair<string, object> kvp in Attributes)
+                foreach (KeyValuePair<string, object> kvp in Tags)
                 {
                     hashCode.Add(kvp.Key);
                     hashCode.Add(kvp.Value);

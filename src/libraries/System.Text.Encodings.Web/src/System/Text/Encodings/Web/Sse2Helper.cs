@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
@@ -79,6 +80,24 @@ namespace System.Text.Encodings.Web
             mask = Sse2.Or(mask, Sse2.CompareGreaterThan(sourceValue, s_maxAsciiCharacterMaskInt16));
 
             return mask;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool ContainsNonAsciiByte(Vector128<sbyte> value)
+        {
+            Debug.Assert(Sse2.IsSupported);
+            int mask = Sse2.MoveMask(value);
+            return mask != 0;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static int GetIndexOfFirstNonAsciiByte(Vector128<byte> value)
+        {
+            Debug.Assert(Sse2.IsSupported);
+            int mask = Sse2.MoveMask(value);
+            int index = BitOperations.TrailingZeroCount(mask);
+            Debug.Assert((mask != 0) ? index < 16 : index >= 16);
+            return index;
         }
 
         private static readonly Vector128<short> s_nullMaskInt16 = Vector128<short>.Zero;

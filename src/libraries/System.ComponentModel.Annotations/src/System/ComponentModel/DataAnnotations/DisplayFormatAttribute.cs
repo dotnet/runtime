@@ -25,7 +25,7 @@ namespace System.ComponentModel.DataAnnotations
         /// <summary>
         ///     Gets or sets the format string
         /// </summary>
-        public string DataFormatString { get; set; }
+        public string? DataFormatString { get; set; }
 
         /// <summary>
         ///     Gets or sets the string to display when the value is null, which may be a resource key string.
@@ -46,7 +46,7 @@ namespace System.ComponentModel.DataAnnotations
         ///     The null display text is generally used as placeholder when the value is not specified.
         ///     A <c>null</c> or empty string is legal, and consumers must allow for that.
         /// </value>
-        public string NullDisplayText
+        public string? NullDisplayText
         {
             get => _nullDisplayText.Value;
             set => _nullDisplayText.Value = value;
@@ -72,7 +72,7 @@ namespace System.ComponentModel.DataAnnotations
         ///     Using <see cref="NullDisplayTextResourceType" /> along with <see cref="NullDisplayText" />, allows the <see cref="GetNullDisplayText" />
         ///     method to return localized values.
         /// </summary>
-        public Type NullDisplayTextResourceType
+        public Type? NullDisplayTextResourceType
         {
             get => _nullDisplayText.ResourceType;
             set => _nullDisplayText.ResourceType = value;
@@ -102,6 +102,6 @@ namespace System.ComponentModel.DataAnnotations
         ///     but a public static property with a name matching the <see cref="NullDisplayText" /> value couldn't be found
         ///     on the <see cref="NullDisplayTextResourceType" />.
         /// </exception>
-        public string GetNullDisplayText() => _nullDisplayText.GetLocalizableValue();
+        public string? GetNullDisplayText() => _nullDisplayText.GetLocalizableValue();
     }
 }

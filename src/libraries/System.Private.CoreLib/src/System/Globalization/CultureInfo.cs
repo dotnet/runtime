@@ -1130,7 +1130,7 @@ namespace System.Globalization
                 throw new ArgumentNullException(nameof(name));
             }
 
-            if (predefinedOnly)
+            if (predefinedOnly && !GlobalizationMode.Invariant)
             {
                 return GlobalizationMode.UseNls ?
                     NlsGetPredefinedCultureInfo(name) :

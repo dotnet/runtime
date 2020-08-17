@@ -17,6 +17,6 @@ namespace System.Xml
     /// </summary>
     internal interface IRemovableWriter
     {
-        OnRemoveWriter OnRemoveWriterEvent { get; set; }
+        OnRemoveWriter? OnRemoveWriterEvent { get; set; }
     }
 }

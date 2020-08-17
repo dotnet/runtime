@@ -67,6 +67,9 @@
 #ifndef DISABLE_DLLMAP
 #define DISABLE_DLLMAP 1
 #endif
+#ifndef DISABLE_CFGDIR_CONFIG
+#define DISABLE_CFGDIR_CONFIG 1
+#endif
 #endif
 
 /* Disable runtime state dumping */

@@ -24,7 +24,7 @@ namespace System.Text.Unicode
         /// <summary>
         /// The UTF-8 representation of <see cref="UnicodeUtility.ReplacementChar"/>.
         /// </summary>
-#if !NETSTANDARD2_0
+#if (!NETSTANDARD2_0 && !NETFRAMEWORK)
         private static ReadOnlySpan<byte> ReplacementCharSequence => new byte[] { 0xEF, 0xBF, 0xBD };
 #else
         private static readonly byte[] ReplacementCharSequence = new byte[] { 0xEF, 0xBF, 0xBD };
@@ -89,7 +89,7 @@ namespace System.Text.Unicode
             // (The faster implementation is in the dev/utf8string_bak branch currently.)
 
             MemoryStream memStream = new MemoryStream();
-#if !NETSTANDARD2_0
+#if (!NETSTANDARD2_0 && !NETFRAMEWORK)
             memStream.Write(valueAsBytes.Slice(0, idxOfFirstInvalidData));
 
             valueAsBytes = valueAsBytes.Slice(idxOfFirstInvalidData);

@@ -377,7 +377,7 @@
   <data name="Log_UnsafeTransformMethod" xml:space="preserve">
     <value>Transform method "{0}" is not on the safe list. Safe transform methods are: {1}.</value>
   </data>
-  <data name="Cryptography_PlatformNotSupported_Browser" xml:space="preserve">
-    <value>System.Security.Cryptography is not supported on Browser.</value>
+  <data name="SystemSecurityCryptographyXml_PlatformNotSupported" xml:space="preserve">
+    <value>System.Security.Cryptography.Xml is not supported on this platform.</value>
   </data>
 </root>

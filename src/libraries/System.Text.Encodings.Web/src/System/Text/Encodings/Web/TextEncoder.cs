@@ -12,6 +12,7 @@ using System.Text.Unicode;
 #if NETCOREAPP
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
+using System.Runtime.Intrinsics.Arm;
 #endif
 
 namespace System.Text.Encodings.Web
@@ -713,7 +714,7 @@ namespace System.Text.Encodings.Web
                 int idx = 0;
 
 #if NETCOREAPP
-                if (Sse2.IsSupported && utf8Text.Length - 16 >= idx)
+                if ((Sse2.IsSupported || AdvSimd.Arm64.IsSupported) && utf8Text.Length - 16 >= idx)
                 {
                     // Hoist these outside the loop, as the JIT won't do it.
                     Vector128<sbyte> bitMaskLookupAsciiNeedsEscaping = _bitMaskLookupAsciiNeedsEscaping;
@@ -727,24 +728,39 @@ namespace System.Text.Encodings.Web
                         Debug.Assert(startingAddress >= ptr && startingAddress <= (ptr + utf8Text.Length - 16));
 
                         // Load the next 16 bytes.
-                        Vector128<sbyte> sourceValue = Sse2.LoadVector128(startingAddress);
+                        Vector128<sbyte> sourceValue;
+                        bool containsNonAsciiBytes;
 
                         // Check for ASCII text. Any byte that's not in the ASCII range will already be negative when
                         // casted to signed byte.
-                        int index = Sse2.MoveMask(sourceValue);
+                        if (Sse2.IsSupported)
+                        {
+                            sourceValue = Sse2.LoadVector128(startingAddress);
+                            containsNonAsciiBytes = Sse2Helper.ContainsNonAsciiByte(sourceValue);
+                        }
+                        else if (AdvSimd.Arm64.IsSupported)
+                        {
+                            sourceValue = AdvSimd.LoadVector128(startingAddress);
+                            containsNonAsciiBytes = AdvSimdHelper.ContainsNonAsciiByte(sourceValue);
+                        }
+                        else
+                        {
+                            throw new PlatformNotSupportedException();
+                        }
 
-                        if (index == 0)
+                        if (!containsNonAsciiBytes)
                         {
                             // All of the following 16 bytes is ASCII.
+                            // TODO AdvSimd: optimization maybe achievable using VectorTableLookup and/or VectorTableLookupExtension
 
                             if (Ssse3.IsSupported)
                             {
                                 Vector128<sbyte> mask = Ssse3Helper.CreateEscapingMask(sourceValue, bitMaskLookupAsciiNeedsEscaping, bitPosLookup, nibbleMaskSByte, nullMaskSByte);
-                                index = Sse2.MoveMask(mask);
+                                int index = Sse2Helper.GetIndexOfFirstNonAsciiByte(mask.AsByte());
 
-                                if (index != 0)
+                                if (index < 16)
                                 {
-                                    idx += BitHelper.GetIndexOfFirstNeedToEscape(index);
+                                    idx += index;
                                     goto Return;
                                 }
                             }

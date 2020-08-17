@@ -87,7 +87,7 @@ namespace System.ComponentModel.Tests
             AssertExtensions.Throws<ArgumentNullException, NullReferenceException>("enumClass", () => new InvalidEnumArgumentException("argumentName", 1, null));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBinaryFormatterSupported))]
         public void Ctor_SerializationInfo_StreamingContext()
         {
             using (var stream = new MemoryStream())

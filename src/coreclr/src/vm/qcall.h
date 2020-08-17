@@ -13,8 +13,8 @@
 // QCALLS
 //
 
-// QCalls are internal calls from managed code in mscorlib.dll to unmanaged code in mscorwks.dll. QCalls are very much like
-// a normal P/Invoke from mscorlib.dll to mscorwks.dll.
+// QCalls are internal calls from managed code in CoreLib to unmanaged code in VM. QCalls are very much like
+// a normal P/Invoke from CoreLib to VM.
 //
 // Unlike FCalls, QCalls will marshal all arguments as unmanaged types like a normal P/Invoke. QCall also switch to preemptive
 // GC mode like a normal P/Invoke. These two features should make QCalls easier to write reliably compared to FCalls.

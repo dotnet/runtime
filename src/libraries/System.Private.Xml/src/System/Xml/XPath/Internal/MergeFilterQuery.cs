@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#nullable enable
+using System.Diagnostics;
 using System.Xml;
 using System.Xml.XPath;
 using System.Xml.Xsl;
@@ -33,7 +35,7 @@ namespace MS.Internal.Xml.XPath
             while (input.Advance() != null)
             {
                 _child.Evaluate(input);
-                XPathNavigator node;
+                XPathNavigator? node;
                 while ((node = _child.Advance()) != null)
                 {
                     Insert(outputBuffer, node);
@@ -42,9 +44,9 @@ namespace MS.Internal.Xml.XPath
             return this;
         }
 
-        public override XPathNavigator MatchNode(XPathNavigator current)
+        public override XPathNavigator? MatchNode(XPathNavigator? current)
         {
-            XPathNavigator context = _child.MatchNode(current);
+            XPathNavigator? context = _child.MatchNode(current);
             if (context == null)
             {
                 return null;
@@ -55,9 +57,10 @@ namespace MS.Internal.Xml.XPath
                 return null;
             }
             Evaluate(new XPathSingletonIterator(context.Clone(), /*moved:*/true));
-            XPathNavigator result = Advance();
+            XPathNavigator? result = Advance();
             while (result != null)
             {
+                Debug.Assert(current != null);
                 if (result.IsSamePosition(current))
                 {
                     return context;

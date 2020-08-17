@@ -119,7 +119,7 @@ namespace System.Xml
             return base.reader.MoveToAttribute(name);
         }
 
-        public override bool MoveToAttribute(string name, string ns)
+        public override bool MoveToAttribute(string name, string? ns)
         {
             if (_state == State.InReadBinary)
             {

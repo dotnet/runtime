@@ -1135,7 +1135,7 @@ namespace System.Xml
         }
 
         // Gets the value of the attribute with the specified LocalName and NamespaceURI.
-        public override string? GetAttribute(string name, string namespaceURI)
+        public override string? GetAttribute(string name, string? namespaceURI)
         {
             string? attValue = _coreReader.GetAttribute(name, namespaceURI);
 

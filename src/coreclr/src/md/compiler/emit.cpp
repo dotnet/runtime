@@ -2044,6 +2044,329 @@ ErrExit:
 #endif //!FEATURE_METADATA_EMIT_IN_DEBUGGER
 } // RegMeta::_SetGenericParamProps
 
+#ifdef FEATURE_METADATA_EMIT_PORTABLE_PDB
+//*****************************************************************************
+// Get referenced type system metadata tables.
+//*****************************************************************************
+STDMETHODIMP RegMeta::GetReferencedTypeSysTables(   // S_OK or error.
+    ULONG64       *refTables,                       // [OUT] Bit vector of referenced type system metadata tables.
+    ULONG         refTableRows[],                   // [OUT] Array of number of rows for each referenced type system table.
+    const ULONG   maxTableRowsSize,                 // [IN]  Max size of the rows array.
+    ULONG         *tableRowsSize)                   // [OUT] Size of the rows array.
+{
+#ifdef FEATURE_METADATA_EMIT_IN_DEBUGGER
+    return E_NOTIMPL;
+#else //!FEATURE_METADATA_EMIT_IN_DEBUGGER
+    HRESULT hr = S_OK;
+
+    BEGIN_ENTRYPOINT_NOTHROW;
+
+    LOG((LOGMD, "RegMeta::GetReferencedTypeSysTables()\n"));
+    START_MD_PERF();
+
+    ULONG64 refTablesBitVector = 0;
+    ULONG count = 0;
+    ULONG* ptr = NULL;
+    ULONG rowsSize = 0;
+
+    for (ULONG i = 0; i < TBL_COUNT; i++)
+    {
+        if (m_pStgdb->m_MiniMd.m_Tables[i].GetRecordCount() > 0)
+        {
+            refTablesBitVector |= (ULONG64)1UL << i;
+            count++;
+        }
+    }
+
+    _ASSERTE(count <= maxTableRowsSize);
+    if (count > maxTableRowsSize)
+    {
+        hr = META_E_BADMETADATA;
+        goto ErrExit;
+    }
+
+    *refTables = refTablesBitVector;
+    *tableRowsSize = count;
+
+    ptr = refTableRows;
+    for (ULONG i = 0; i < TBL_COUNT; i++)
+    {
+        rowsSize = m_pStgdb->m_MiniMd.m_Tables[i].GetRecordCount();
+        if (rowsSize > 0)
+            *ptr++ = rowsSize;
+    }
+
+ErrExit:
+    STOP_MD_PERF(GetReferencedTypeSysTables);
+
+    END_ENTRYPOINT_NOTHROW;
+    return hr;
+#endif //!FEATURE_METADATA_EMIT_IN_DEBUGGER
+} // RegMeta::GetReferencedTypeSysTables
+
+
+//*****************************************************************************
+// Defines PDB stream data for portable PDB metadata
+//*****************************************************************************
+STDMETHODIMP RegMeta::DefinePdbStream(      // S_OK or error.
+    PORT_PDB_STREAM* pdbStream)             // [IN] Portable pdb stream data.
+{
+#ifdef FEATURE_METADATA_EMIT_IN_DEBUGGER
+    return E_NOTIMPL;
+#else //!FEATURE_METADATA_EMIT_IN_DEBUGGER
+    HRESULT hr = S_OK;
+
+    BEGIN_ENTRYPOINT_NOTHROW;
+
+    LOG((LOGMD, "RegMeta::DefinePdbStream()\n"));
+    START_MD_PERF();
+
+    IfFailGo(m_pStgdb->m_pPdbHeap->SetData(pdbStream));
+
+ErrExit:
+    STOP_MD_PERF(DefinePdbStream);
+
+    END_ENTRYPOINT_NOTHROW;
+    return hr;
+#endif //!FEATURE_METADATA_EMIT_IN_DEBUGGER
+} // RegMeta::DefinePdbStream
+
+//*****************************************************************************
+// Defines a document for portable PDB metadata
+//*****************************************************************************
+STDMETHODIMP RegMeta::DefineDocument(       // S_OK or error.
+    char    *docName,                       // [IN] Document name (string will be tokenized).
+    GUID    *hashAlg,                       // [IN] Hash algorithm GUID.
+    BYTE    *hashVal,                       // [IN] Hash value.
+    ULONG   hashValSize,                    // [IN] Hash value size.
+    GUID    *lang,                          // [IN] Language GUID.
+    mdDocument  *docMdToken)                // [OUT] Token of the defined document.
+{
+#ifdef FEATURE_METADATA_EMIT_IN_DEBUGGER
+    return E_NOTIMPL;
+#else //!FEATURE_METADATA_EMIT_IN_DEBUGGER
+    HRESULT hr = S_OK;
+    char delim[2] = "";
+    ULONG docNameBlobSize = 0;
+    ULONG docNameBlobMaxSize = 0;
+    BYTE* docNameBlob = NULL;
+    BYTE* docNameBlobPtr = NULL;
+    ULONG partsCount = 0;
+    ULONG partsIndexesCount = 0;
+    UINT32* partsIndexes = NULL;
+    UINT32* partsIndexesPtr = NULL;
+    char* stringToken = NULL;
+
+    BEGIN_ENTRYPOINT_NOTHROW;
+
+    LOG((LOGMD, "RegMeta::DefineDocument(%s)\n", docName));
+    START_MD_PERF();
+    LOCKWRITE();
+
+    IfFailGo(m_pStgdb->m_MiniMd.PreUpdate());
+
+    // determine separator and number of separated parts
+    GetPathSeparator(docName, delim, &partsCount);
+    delim[1] = '\0';
+
+    // allocate the maximum size of a document blob
+    // treating each compressed index to take maximum of 4 bytes.
+    // the actual size will be calculated once we compress each index.
+    docNameBlobMaxSize = sizeof(char) + sizeof(ULONG) * partsCount; // (delim + 4 * partsCount)
+    docNameBlob = new BYTE[docNameBlobMaxSize];
+    partsIndexes = new UINT32[partsCount];
+
+    // add path parts to blob heap and store their indexes
+    partsIndexesPtr = partsIndexes;
+    if (*delim == *docName)
+    {
+        // if the path starts with the delimiter (e.g. /home/user/...) store an empty string
+        *partsIndexesPtr++ = 0;
+        partsIndexesCount++;
+    }
+    stringToken = strtok(docName, (const char*)delim);
+    while (stringToken != NULL)
+    {
+        IfFailGo(m_pStgdb->m_MiniMd.m_BlobHeap.AddBlob(MetaData::DataBlob((BYTE*)stringToken, (ULONG)strlen(stringToken)), partsIndexesPtr++));
+        stringToken = strtok(NULL, (const char*)delim);
+        partsIndexesCount++;
+    }
+
+    _ASSERTE(partsIndexesCount == partsCount);
+
+    // build up the documentBlob ::= separator part+
+    docNameBlobPtr = docNameBlob;
+    // put separator
+    *docNameBlobPtr = delim[0];
+    docNameBlobPtr++;
+    docNameBlobSize++;
+    // put part+: compress and put each part index
+    for (ULONG i = 0; i < partsCount; i++)
+    {
+        ULONG cnt = CorSigCompressData(partsIndexes[i], docNameBlobPtr);
+        docNameBlobPtr += cnt;
+        docNameBlobSize += cnt;
+    }
+
+    _ASSERTE(docNameBlobSize <= docNameBlobMaxSize);
+
+    // Add record
+    ULONG docRecord;
+    DocumentRec* pDocument;
+    IfFailGo(m_pStgdb->m_MiniMd.AddDocumentRecord(&pDocument, &docRecord));
+    // Name column
+    IfFailGo(m_pStgdb->m_MiniMd.PutBlob(TBL_Document, DocumentRec::COL_Name, pDocument, docNameBlob, docNameBlobSize));
+    // HashAlgorithm column
+    IfFailGo(m_pStgdb->m_MiniMd.PutGuid(TBL_Document, DocumentRec::COL_HashAlgorithm, pDocument, *hashAlg));
+    // HashValue column
+    IfFailGo(m_pStgdb->m_MiniMd.PutBlob(TBL_Document, DocumentRec::COL_Hash, pDocument, hashVal, hashValSize));
+    // Language column
+    IfFailGo(m_pStgdb->m_MiniMd.PutGuid(TBL_Document, DocumentRec::COL_Language, pDocument, *lang));
+
+    *docMdToken = TokenFromRid(docRecord, mdtDocument);
+
+ErrExit:
+    if (docNameBlob != NULL)
+        delete[] docNameBlob;
+
+    if (partsIndexes != NULL)
+        delete[] partsIndexes;
+
+    STOP_MD_PERF(DefineDocument);
+
+    END_ENTRYPOINT_NOTHROW;
+    return hr;
+#endif //!FEATURE_METADATA_EMIT_IN_DEBUGGER
+} // RegMeta::DefineDocument
+
+//*****************************************************************************
+// Defines sequence points for portable PDB metadata
+//*****************************************************************************
+STDMETHODIMP RegMeta::DefineSequencePoints(     // S_OK or error.
+    ULONG       docRid,                         // [IN] Document RID.
+    BYTE        *sequencePtsBlob,               // [IN] Sequence point blob.
+    ULONG       sequencePtsBlobSize)            // [IN] Sequence point blob size.
+{
+#ifdef FEATURE_METADATA_EMIT_IN_DEBUGGER
+    return E_NOTIMPL;
+#else //!FEATURE_METADATA_EMIT_IN_DEBUGGER
+    HRESULT hr = S_OK;
+
+    BEGIN_ENTRYPOINT_NOTHROW;
+
+    LOG((LOGMD, "RegMeta::DefineSequencePoints()\n"));
+    START_MD_PERF();
+
+    LOCKWRITE();
+
+    IfFailGo(m_pStgdb->m_MiniMd.PreUpdate());
+
+    ULONG methodDbgInfoRec;
+    MethodDebugInformationRec* pMethodDbgInfo;
+    IfFailGo(m_pStgdb->m_MiniMd.AddMethodDebugInformationRecord(&pMethodDbgInfo, &methodDbgInfoRec));
+    // Document column
+    IfFailGo(m_pStgdb->m_MiniMd.PutCol(TBL_MethodDebugInformation,
+        MethodDebugInformationRec::COL_Document, pMethodDbgInfo, docRid));
+    // Sequence points column
+    IfFailGo(m_pStgdb->m_MiniMd.PutBlob(TBL_MethodDebugInformation,
+        MethodDebugInformationRec::COL_SequencePoints, pMethodDbgInfo, sequencePtsBlob, sequencePtsBlobSize));
+
+ErrExit:
+    STOP_MD_PERF(DefineSequencePoints);
+
+    END_ENTRYPOINT_NOTHROW;
+    return hr;
+#endif //!FEATURE_METADATA_EMIT_IN_DEBUGGER
+} // RegMeta::DefineSequencePoints
+
+//*****************************************************************************
+// Defines a local scope for portable PDB metadata
+//*****************************************************************************
+STDMETHODIMP RegMeta::DefineLocalScope(     // S_OK or error.
+    ULONG       methodDefRid,               // [IN] Method RID.
+    ULONG       importScopeRid,             // [IN] Import scope RID.
+    ULONG       firstLocalVarRid,           // [IN] First local variable RID (of the continous run).
+    ULONG       firstLocalConstRid,         // [IN] First local constant RID (of the continous run).
+    ULONG       startOffset,                // [IN] Start offset of the scope.
+    ULONG       length)                     // [IN] Scope length.
+{
+#ifdef FEATURE_METADATA_EMIT_IN_DEBUGGER
+    return E_NOTIMPL;
+#else //!FEATURE_METADATA_EMIT_IN_DEBUGGER
+    HRESULT hr = S_OK;
+
+    BEGIN_ENTRYPOINT_NOTHROW;
+
+    LOG((LOGMD, "RegMeta::DefineLocalScope()\n"));
+    START_MD_PERF();
+
+    LOCKWRITE();
+
+    IfFailGo(m_pStgdb->m_MiniMd.PreUpdate());
+
+    ULONG localScopeRecord;
+    LocalScopeRec* pLocalScope;
+    IfFailGo(m_pStgdb->m_MiniMd.AddLocalScopeRecord(&pLocalScope, &localScopeRecord));
+    IfFailGo(m_pStgdb->m_MiniMd.PutCol(TBL_LocalScope, LocalScopeRec::COL_Method, pLocalScope, methodDefRid));
+    IfFailGo(m_pStgdb->m_MiniMd.PutCol(TBL_LocalScope, LocalScopeRec::COL_ImportScope, pLocalScope, importScopeRid));
+    IfFailGo(m_pStgdb->m_MiniMd.PutCol(TBL_LocalScope, LocalScopeRec::COL_VariableList, pLocalScope, firstLocalVarRid));
+    IfFailGo(m_pStgdb->m_MiniMd.PutCol(TBL_LocalScope, LocalScopeRec::COL_ConstantList, pLocalScope, firstLocalConstRid));
+    IfFailGo(m_pStgdb->m_MiniMd.PutCol(TBL_LocalScope, LocalScopeRec::COL_StartOffset, pLocalScope, startOffset));
+    IfFailGo(m_pStgdb->m_MiniMd.PutCol(TBL_LocalScope, LocalScopeRec::COL_Length, pLocalScope, length));
+
+    // TODO: Force set sorted tables flag, do this properly
+    m_pStgdb->m_MiniMd.SetSorted(TBL_LocalScope, true);
+
+ErrExit:
+    STOP_MD_PERF(DefineLocalScope);
+
+    END_ENTRYPOINT_NOTHROW;
+    return hr;
+#endif //!FEATURE_METADATA_EMIT_IN_DEBUGGER
+} // RegMeta::DefineLocalScope
+
+//*****************************************************************************
+// Defines a local variable for portable PDB metadata
+//*****************************************************************************
+STDMETHODIMP RegMeta::DefineLocalVariable(      // S_OK or error.
+    USHORT      attribute,                      // [IN] Variable attribute.
+    USHORT      index,                          // [IN] Variable index (slot).
+    char        *name,                          // [IN] Variable name.
+    mdLocalVariable* locVarToken)               // [OUT] Token of the defined variable.
+{
+#ifdef FEATURE_METADATA_EMIT_IN_DEBUGGER
+    return E_NOTIMPL;
+#else //!FEATURE_METADATA_EMIT_IN_DEBUGGER
+    HRESULT hr = S_OK;
+
+    BEGIN_ENTRYPOINT_NOTHROW;
+
+    LOG((LOGMD, "RegMeta::DefineLocalVariable(%s)\n", name));
+    START_MD_PERF();
+
+    LOCKWRITE();
+
+    IfFailGo(m_pStgdb->m_MiniMd.PreUpdate());
+
+    ULONG localVariableRecord;
+    LocalVariableRec* pLocalVariable;
+    IfFailGo(m_pStgdb->m_MiniMd.AddLocalVariableRecord(&pLocalVariable, &localVariableRecord));
+    IfFailGo(m_pStgdb->m_MiniMd.PutString(TBL_LocalVariable, LocalVariableRec::COL_Name, pLocalVariable, name));
+
+    pLocalVariable->SetAttributes(attribute);
+    pLocalVariable->SetIndex(index);
+
+    *locVarToken = TokenFromRid(localVariableRecord, mdtLocalVariable);
+
+ErrExit:
+    STOP_MD_PERF(DefineLocalVariable);
+
+    END_ENTRYPOINT_NOTHROW;
+    return hr;
+#endif //!FEATURE_METADATA_EMIT_IN_DEBUGGER
+} // RegMeta::DefineLocalVariable
+#endif // FEATURE_METADATA_EMIT_PORTABLE_PDB
+
 //*****************************************************************************
 // Create and set a MethodSpec record.
 //*****************************************************************************

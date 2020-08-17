@@ -8,10 +8,8 @@
     <Compile Include="System\Xml\XPath\XDocumentExtensions.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\System.Private.Xml\src\System.Private.Xml.csproj" />
-    <ProjectReference Include="..\..\System.Private.Xml.Linq\src\System.Private.Xml.Linq.csproj" />
-  </ItemGroup>
-  <ItemGroup>
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Private.Xml\src\System.Private.Xml.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Private.Xml.Linq\src\System.Private.Xml.Linq.csproj" />
     <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.Extensions" />
   </ItemGroup>

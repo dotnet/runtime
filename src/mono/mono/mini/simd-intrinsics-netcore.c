@@ -373,9 +373,10 @@ static guint16 vector_t_methods [] = {
 	SN_LessThanOrEqual,
 	SN_Max,
 	SN_Min,
-	SN_get_AllOnes,
+	SN_get_AllBitsSet,
 	SN_get_Count,
 	SN_get_Item,
+	SN_get_One,
 	SN_get_Zero,
 	SN_op_Addition,
 	SN_op_BitwiseAnd,
@@ -397,6 +398,9 @@ emit_sys_numerics_vector_t (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSig
 	MonoClass *klass;
 	int size, len, id;
 	gboolean is_unsigned;
+
+	static const float r4_one = 1.0f;
+	static const double r8_one = 1.0;
 
 	id = lookup_intrins (vector_t_methods, sizeof (vector_t_methods), cmethod);
 	if (id == -1)
@@ -427,7 +431,33 @@ emit_sys_numerics_vector_t (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSig
 	case SN_get_Zero:
 		g_assert (fsig->param_count == 0 && mono_metadata_type_equal (fsig->ret, type));
 		return emit_simd_ins (cfg, klass, OP_XZERO, -1, -1);
-	case SN_get_AllOnes: {
+	case SN_get_One: {
+		g_assert (fsig->param_count == 0 && mono_metadata_type_equal (fsig->ret, type));
+		MonoInst *one = NULL;
+		int expand_opcode = type_to_expand_op (etype);
+		MONO_INST_NEW (cfg, one, -1);
+		switch (expand_opcode) {
+		case OP_EXPAND_R4:
+			one->opcode = OP_R4CONST;
+			one->type = STACK_R4;
+			one->inst_p0 = (void *) &r4_one;
+			break;
+		case OP_EXPAND_R8:
+			one->opcode = OP_R8CONST;
+			one->type = STACK_R8;
+			one->inst_p0 = (void *) &r8_one;
+			break;
+		default:
+			one->opcode = OP_ICONST;
+			one->type = STACK_I4;
+			one->inst_c0 = 1;
+			break;
+		}
+		one->dreg = alloc_dreg (cfg, one->type);
+		MONO_ADD_INS (cfg->cbb, one);
+		return emit_simd_ins (cfg, klass, expand_opcode, one->dreg, -1);
+	}
+	case SN_get_AllBitsSet: {
 		/* Compare a zero vector with itself */
 		ins = emit_simd_ins (cfg, klass, OP_XZERO, -1, -1);
 		return emit_xcompare (cfg, klass, etype->type, ins, ins);

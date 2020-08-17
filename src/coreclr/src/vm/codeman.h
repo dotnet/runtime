@@ -876,6 +876,7 @@ class EEJitManager : public IJitManager
 {
 #ifdef DACCESS_COMPILE
     friend class ClrDataAccess;
+    friend class DacDbiInterfaceImpl;
 #endif
     friend class CheckDuplicatedStructLayouts;
     friend class CodeHeapIterator;
@@ -1115,7 +1116,7 @@ public:
 private :
     PTR_HostCodeHeap    m_cleanupList;
     //When EH Clauses are resolved we need to atomically update the TypeHandle
-    Crst                m_EHClauseCritSec;
+    Crst                m_JitLoadCritSec;
 
 #if !defined CROSSGEN_COMPILE
     // must hold critical section to access this structure.
@@ -1619,7 +1620,7 @@ private:
 
 #ifdef FEATURE_READYTORUN
 
-class ReadyToRunJitManager : public IJitManager
+class ReadyToRunJitManager final: public IJitManager
 {
     VPTR_VTABLE_CLASS(ReadyToRunJitManager, IJitManager)
 

@@ -59,12 +59,12 @@ namespace System.Xml
             return writer.WriteEndAttributeAsync();
         }
 
-        public override Task WriteCDataAsync(string text)
+        public override Task WriteCDataAsync(string? text)
         {
             return writer.WriteCDataAsync(text);
         }
 
-        public override Task WriteCommentAsync(string text)
+        public override Task WriteCommentAsync(string? text)
         {
             return writer.WriteCommentAsync(text);
         }
@@ -84,12 +84,12 @@ namespace System.Xml
             return writer.WriteCharEntityAsync(ch);
         }
 
-        public override Task WriteWhitespaceAsync(string ws)
+        public override Task WriteWhitespaceAsync(string? ws)
         {
             return writer.WriteWhitespaceAsync(ws);
         }
 
-        public override Task WriteStringAsync(string text)
+        public override Task WriteStringAsync(string? text)
         {
             return writer.WriteStringAsync(text);
         }

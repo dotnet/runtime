@@ -99,6 +99,6 @@ jobs:
         jobParameters:
           isOfficialBuild: ${{ variables['isOfficialBuild'] }}
           isFullMatrix: ${{ variables['isFullMatrix'] }}
-          framework: net472
+          framework: net48
           runTests: true
           testScope: outerloop

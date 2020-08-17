@@ -97,7 +97,10 @@ namespace System.Reflection.Emit
             return SymbolType.FormCompoundType(s, this, 0)!;
         }
         public override Guid GUID => throw new NotSupportedException();
+
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
         public override object InvokeMember(string name, BindingFlags invokeAttr, Binder? binder, object? target, object?[]? args, ParameterModifier[]? modifiers, CultureInfo? culture, string[]? namedParameters) { throw new NotSupportedException(); }
+
         public override Assembly Assembly => m_type.Assembly;
         public override RuntimeTypeHandle TypeHandle => throw new NotSupportedException();
         public override string? FullName => m_strFullQualName ??= TypeNameBuilder.ToString(this, TypeNameBuilder.Format.FullName);
@@ -152,26 +155,56 @@ namespace System.Reflection.Emit
                 return typeBldrBaseAs.Substitute(GetGenericArguments());
             }
         }
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)]
         protected override ConstructorInfo GetConstructorImpl(BindingFlags bindingAttr, Binder? binder, CallingConventions callConvention, Type[] types, ParameterModifier[]? modifiers) { throw new NotSupportedException(); }
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)]
         public override ConstructorInfo[] GetConstructors(BindingFlags bindingAttr) { throw new NotSupportedException(); }
+
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)]
         protected override MethodInfo GetMethodImpl(string name, BindingFlags bindingAttr, Binder? binder, CallingConventions callConvention, Type[]? types, ParameterModifier[]? modifiers) { throw new NotSupportedException(); }
+
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)]
         public override MethodInfo[] GetMethods(BindingFlags bindingAttr) { throw new NotSupportedException(); }
+
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields | DynamicallyAccessedMemberTypes.NonPublicFields)]
         public override FieldInfo GetField(string name, BindingFlags bindingAttr) { throw new NotSupportedException(); }
+
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields | DynamicallyAccessedMemberTypes.NonPublicFields)]
         public override FieldInfo[] GetFields(BindingFlags bindingAttr) { throw new NotSupportedException(); }
+
         public override Type GetInterface(string name, bool ignoreCase) { throw new NotSupportedException(); }
         public override Type[] GetInterfaces() { throw new NotSupportedException(); }
+
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicEvents | DynamicallyAccessedMemberTypes.NonPublicEvents)]
         public override EventInfo GetEvent(string name, BindingFlags bindingAttr) { throw new NotSupportedException(); }
+
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicEvents)]
         public override EventInfo[] GetEvents() { throw new NotSupportedException(); }
+
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties)]
         protected override PropertyInfo GetPropertyImpl(string name, BindingFlags bindingAttr, Binder? binder, Type? returnType, Type[]? types, ParameterModifier[]? modifiers) { throw new NotSupportedException(); }
+
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties)]
         public override PropertyInfo[] GetProperties(BindingFlags bindingAttr) { throw new NotSupportedException(); }
+
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicNestedTypes | DynamicallyAccessedMemberTypes.NonPublicNestedTypes)]
         public override Type[] GetNestedTypes(BindingFlags bindingAttr) { throw new NotSupportedException(); }
+
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicNestedTypes | DynamicallyAccessedMemberTypes.NonPublicNestedTypes)]
         public override Type GetNestedType(string name, BindingFlags bindingAttr) { throw new NotSupportedException(); }
+
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
         public override MemberInfo[] GetMember(string name, MemberTypes type, BindingFlags bindingAttr) { throw new NotSupportedException(); }
 
         public override InterfaceMapping GetInterfaceMap(Type interfaceType) { throw new NotSupportedException(); }
+
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicEvents | DynamicallyAccessedMemberTypes.NonPublicEvents)]
         public override EventInfo[] GetEvents(BindingFlags bindingAttr) { throw new NotSupportedException(); }
+
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
         public override MemberInfo[] GetMembers(BindingFlags bindingAttr) { throw new NotSupportedException(); }
+
         protected override TypeAttributes GetAttributeFlagsImpl() { return m_type.Attributes; }
 
         public override bool IsTypeDefinition => false;

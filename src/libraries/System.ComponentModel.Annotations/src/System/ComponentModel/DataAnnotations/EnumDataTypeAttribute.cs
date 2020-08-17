@@ -20,7 +20,7 @@ namespace System.ComponentModel.DataAnnotations
 
         public Type EnumType { get; }
 
-        public override bool IsValid(object value)
+        public override bool IsValid(object? value)
         {
             if (EnumType == null)
             {
@@ -91,8 +91,8 @@ namespace System.ComponentModel.DataAnnotations
                 // If it is, the string representation of the enum value will be something like "A, B", while
                 // the string representation of the underlying value will be "3". If the enum value does not
                 // match a valid flag combination, then it would also be something like "3".
-                string underlying = GetUnderlyingTypeValueString(EnumType, convertedValue);
-                string converted = convertedValue.ToString();
+                string underlying = GetUnderlyingTypeValueString(EnumType, convertedValue)!;
+                string? converted = convertedValue.ToString();
                 return !underlying.Equals(converted);
             }
 
@@ -102,7 +102,7 @@ namespace System.ComponentModel.DataAnnotations
         private static bool IsEnumTypeInFlagsMode(Type enumType) =>
             enumType.GetCustomAttributes(typeof(FlagsAttribute), false).Any();
 
-        private static string GetUnderlyingTypeValueString(Type enumType, object enumValue) =>
+        private static string? GetUnderlyingTypeValueString(Type enumType, object enumValue) =>
             Convert.ChangeType(enumValue, Enum.GetUnderlyingType(enumType), CultureInfo.InvariantCulture).ToString();
     }
 }

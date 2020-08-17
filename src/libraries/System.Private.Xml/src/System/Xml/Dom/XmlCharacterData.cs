@@ -1,7 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#nullable enable
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Text;
 using System.Xml.XPath;
 
@@ -10,16 +12,16 @@ namespace System.Xml
     // Provides text-manipulation methods that are used by several classes.
     public abstract class XmlCharacterData : XmlLinkedNode
     {
-        private string _data;
+        private string? _data;
 
         //base(doc) will throw exception if doc is null.
-        protected internal XmlCharacterData(string data, XmlDocument doc) : base(doc)
+        protected internal XmlCharacterData(string? data, XmlDocument doc) : base(doc)
         {
             _data = data;
         }
 
         // Gets or sets the value of the node.
-        public override string Value
+        public override string? Value
         {
             get { return Data; }
             set { Data = value; }
@@ -29,11 +31,12 @@ namespace System.Xml
         // all its children.
         public override string InnerText
         {
-            get { return Value; }
+            get { return Value!; }
             set { Value = value; }
         }
 
         // Contains this node's data.
+        [AllowNull]
         public virtual string Data
         {
             get
@@ -50,8 +53,8 @@ namespace System.Xml
 
             set
             {
-                XmlNode parent = ParentNode;
-                XmlNodeChangedEventArgs args = GetEventArgs(this, parent, parent, _data, value, XmlNodeChangedAction.Change);
+                XmlNode? parent = ParentNode;
+                XmlNodeChangedEventArgs? args = GetEventArgs(this, parent, parent, _data, value, XmlNodeChangedAction.Change);
 
                 if (args != null)
                     BeforeEvent(args);
@@ -86,20 +89,21 @@ namespace System.Xml
                 {
                     count = len - offset;
                 }
-                return _data.Substring(offset, count);
+
+                return _data!.Substring(offset, count);
             }
             return string.Empty;
         }
 
         // Appends the specified string to the end of the character
         // data of the node.
-        public virtual void AppendData(string strData)
+        public virtual void AppendData(string? strData)
         {
-            XmlNode parent = ParentNode;
+            XmlNode? parent = ParentNode;
             int capacity = _data != null ? _data.Length : 0;
             if (strData != null) capacity += strData.Length;
             string newValue = new StringBuilder(capacity).Append(_data).Append(strData).ToString();
-            XmlNodeChangedEventArgs args = GetEventArgs(this, parent, parent, _data, newValue, XmlNodeChangedAction.Change);
+            XmlNodeChangedEventArgs? args = GetEventArgs(this, parent, parent, _data, newValue, XmlNodeChangedAction.Change);
 
             if (args != null)
                 BeforeEvent(args);
@@ -111,13 +115,13 @@ namespace System.Xml
         }
 
         // Insert the specified string at the specified character offset.
-        public virtual void InsertData(int offset, string strData)
+        public virtual void InsertData(int offset, string? strData)
         {
-            XmlNode parent = ParentNode;
+            XmlNode? parent = ParentNode;
             int capacity = _data != null ? _data.Length : 0;
             if (strData != null) capacity += strData.Length;
             string newValue = new StringBuilder(capacity).Append(_data).Insert(offset, strData).ToString();
-            XmlNodeChangedEventArgs args = GetEventArgs(this, parent, parent, _data, newValue, XmlNodeChangedAction.Change);
+            XmlNodeChangedEventArgs? args = GetEventArgs(this, parent, parent, _data, newValue, XmlNodeChangedAction.Change);
             if (args != null)
                 BeforeEvent(args);
 
@@ -142,8 +146,8 @@ namespace System.Xml
             }
 
             string newValue = new StringBuilder(_data).Remove(offset, count).ToString();
-            XmlNode parent = ParentNode;
-            XmlNodeChangedEventArgs args = GetEventArgs(this, parent, parent, _data, newValue, XmlNodeChangedAction.Change);
+            XmlNode? parent = ParentNode;
+            XmlNodeChangedEventArgs? args = GetEventArgs(this, parent, parent, _data, newValue, XmlNodeChangedAction.Change);
 
             if (args != null)
                 BeforeEvent(args);
@@ -156,7 +160,7 @@ namespace System.Xml
 
         // Replace the specified number of characters starting at the specified offset with the
         // specified string.
-        public virtual void ReplaceData(int offset, int count, string strData)
+        public virtual void ReplaceData(int offset, int count, string? strData)
         {
             int len = _data != null ? _data.Length : 0;
             if (len > 0)
@@ -170,8 +174,8 @@ namespace System.Xml
             StringBuilder temp = new StringBuilder(_data).Remove(offset, count);
             string newValue = temp.Insert(offset, strData).ToString();
 
-            XmlNode parent = ParentNode;
-            XmlNodeChangedEventArgs args = GetEventArgs(this, parent, parent, _data, newValue, XmlNodeChangedAction.Change);
+            XmlNode? parent = ParentNode;
+            XmlNodeChangedEventArgs? args = GetEventArgs(this, parent, parent, _data, newValue, XmlNodeChangedAction.Change);
 
             if (args != null)
                 BeforeEvent(args);
@@ -182,7 +186,7 @@ namespace System.Xml
                 AfterEvent(args);
         }
 
-        internal bool CheckOnData(string data)
+        internal bool CheckOnData(string? data)
         {
             return XmlCharType.Instance.IsOnlyWhitespace(data);
         }
@@ -194,10 +198,11 @@ namespace System.Xml
             //changes according to the siblings nodetype and will contain the correct
             //nodetype when it returns.
 
-            Debug.Assert(XmlDocument.IsTextNode(node.NodeType) || (node.ParentNode != null && node.ParentNode.NodeType == XmlNodeType.EntityReference));
-            while (node != null)
+            XmlNode? n = node;
+            Debug.Assert(XmlDocument.IsTextNode(n.NodeType) || (n.ParentNode != null && n.ParentNode.NodeType == XmlNodeType.EntityReference));
+            while (n != null)
             {
-                switch (node.NodeType)
+                switch (n.NodeType)
                 {
                     case XmlNodeType.Whitespace:
                         break;
@@ -209,7 +214,7 @@ namespace System.Xml
                         xnt = XPathNodeType.Text;
                         return false;
                     case XmlNodeType.EntityReference:
-                        if (!DecideXPNodeTypeForTextNodes(node.FirstChild, ref xnt))
+                        if (!DecideXPNodeTypeForTextNodes(n.FirstChild!, ref xnt))
                         {
                             return false;
                         }
@@ -217,7 +222,7 @@ namespace System.Xml
                     default:
                         return false;
                 }
-                node = node.NextSibling;
+                n = n.NextSibling;
             }
             return true;
         }

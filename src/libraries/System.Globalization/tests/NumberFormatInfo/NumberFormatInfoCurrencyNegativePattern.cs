@@ -22,14 +22,24 @@ namespace System.Globalization.Tests
             Assert.Contains(format.CurrencyNegativePattern, acceptablePatterns);
         }
 
+        public static IEnumerable<object[]> CurrencyNegativePatternTestLocales()
+        {
+            yield return new object[] { "en-US" };
+            yield return new object[] { "en-CA" };
+            yield return new object[] { "fa-IR" };
+            yield return new object[] { "fr-CD" };
+            yield return new object[] { "fr-CA" };
+
+            if (PlatformDetection.IsNotBrowser)
+            {
+                // Browser's ICU doesn't contain these locales
+                yield return new object[] { "as" };
+                yield return new object[] { "es-BO" };
+            }
+        }
+
         [Theory]
-        [InlineData("en-US")]
-        [InlineData("en-CA")]
-        [InlineData("fa-IR")]
-        [InlineData("fr-CD")]
-        [InlineData("as")]
-        [InlineData("es-BO")]
-        [InlineData("fr-CA")]
+        [MemberData(nameof(CurrencyNegativePatternTestLocales))]
         public void CurrencyNegativePattern_Get_ReturnsExpected_ByLocale(string locale)
         {
             CultureInfo culture;

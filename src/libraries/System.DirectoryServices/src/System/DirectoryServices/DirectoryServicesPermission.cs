@@ -5,6 +5,7 @@ using System.Security.Permissions;
 
 namespace System.DirectoryServices
 {
+    [Obsolete(Obsoletions.CodeAccessSecurityMessage, DiagnosticId = Obsoletions.CodeAccessSecurityDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
     public sealed class DirectoryServicesPermission : ResourcePermissionBase
     {
         public DirectoryServicesPermission() { }

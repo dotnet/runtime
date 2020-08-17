@@ -1335,9 +1335,8 @@ namespace System.Text.RegularExpressions
                 }
 
                 // ch = runtext[runtextpos];
-                // if (ch == lastChar) goto partialMatch;
                 Rightchar();
-                if (_boyerMoorePrefix.CaseInsensitive && ParticipatesInCaseConversion(chLast))
+                if (_boyerMoorePrefix.CaseInsensitive)
                 {
                     CallToLower();
                 }
@@ -1349,6 +1348,7 @@ namespace System.Text.RegularExpressions
                     Ldloc(chLocal);
                     Ldc(chLast);
 
+                    // if (ch == lastChar) goto partialMatch;
                     BeqFar(lPartialMatch);
 
                     // ch -= lowAscii;

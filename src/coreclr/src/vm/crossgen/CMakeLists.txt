@@ -22,6 +22,7 @@ set(VM_CROSSGEN_SOURCES
   ../contractimpl.cpp
   ../coreassemblyspec.cpp
   ../corebindresult.cpp
+  ../corelib.cpp
   ../crossgencompile.cpp
   ../custommarshalerinfo.cpp
   ../dataimage.cpp
@@ -60,7 +61,6 @@ set(VM_CROSSGEN_SOURCES
   ../methodtable.cpp
   ../methodtablebuilder.cpp
   ../mlinfo.cpp
-  ../mscorlib.cpp
   ../nativeimage.cpp
   ../olevariant.cpp
   ../pefile.cpp
@@ -115,6 +115,7 @@ set(VM_CROSSGEN_HEADERS
   ../comdelegate.h
   ../compile.h
   ../contractimpl.h
+  ../corelib.h
   ../custommarshalerinfo.h
   ../dataimage.h
   ../debuginfostore.h
@@ -154,7 +155,6 @@ set(VM_CROSSGEN_HEADERS
   ../methodtablebuilder.h
   ../methodtablebuilder.inl
   ../mlinfo.h
-  ../mscorlib.h
   ../olevariant.h
   ../pefile.h
   ../pefile.inl
@@ -259,18 +259,18 @@ add_dependencies(cee_crossgen eventing_headers)
 set_target_properties(cee_crossgen PROPERTIES CROSSGEN_COMPONENT TRUE)
 target_precompile_header(TARGET cee_crossgen HEADER common.h)
 if (MSVC)
-  # mscorlib.cpp does not compile with precompiled header file
-  set_source_files_properties(../mscorlib.cpp PROPERTIES COMPILE_FLAGS "/Y-")
+  # corelib.cpp does not compile with precompiled header file
+  set_source_files_properties(../corelib.cpp PROPERTIES COMPILE_FLAGS "/Y-")
 endif()
 
-add_library_clr(mscorlib_crossgen ../mscorlib.cpp)
-add_dependencies(mscorlib_crossgen eventing_headers)
-target_compile_definitions(mscorlib_crossgen
+add_library_clr(corelib_crossgen ../corelib.cpp)
+add_dependencies(corelib_crossgen eventing_headers)
+target_compile_definitions(corelib_crossgen
     PRIVATE
         EnC_SUPPORTED
         FEATURE_EVENT_TRACE
         FEATURE_MULTICOREJIT
-        CROSSGEN_MSCORLIB)
+        CROSSGEN_CORELIB)
 
-set_target_properties(mscorlib_crossgen PROPERTIES CROSSGEN_COMPONENT TRUE)
+set_target_properties(corelib_crossgen PROPERTIES CROSSGEN_COMPONENT TRUE)
 

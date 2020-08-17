@@ -31,7 +31,7 @@ namespace System.Collections.Immutable
                 return true;
             }
 
-            item = default(T)!;
+            item = default;
             return false;
         }
 

@@ -317,7 +317,7 @@ void GetCultureInfoForLCID(LCID lcid, OBJECTREF *pCultureObj)
     GCPROTECT_BEGIN(CultureObj)
     {
         // Allocate a CultureInfo with the specified LCID.
-        CultureObj = AllocateObject(MscorlibBinder::GetClass(CLASS__CULTURE_INFO));
+        CultureObj = AllocateObject(CoreLibBinder::GetClass(CLASS__CULTURE_INFO));
 
         MethodDescCallSite cultureInfoCtor(METHOD__CULTURE_INFO__INT_CTOR, &CultureObj);
 
@@ -3145,7 +3145,7 @@ void DispInvokeConvertObjectToVariant(OBJECTREF *pSrcObj, VARIANT *pDestVar, Byr
             V_VT(pDestVar) = VT_VARIANT | VT_BYREF;
             pDestVar->pvarVal = &pByrefArgInfo->m_Val;
         }
-        else if (MscorlibBinder::IsClass((*pSrcObj)->GetMethodTable(), CLASS__VARIANT_WRAPPER))
+        else if (CoreLibBinder::IsClass((*pSrcObj)->GetMethodTable(), CLASS__VARIANT_WRAPPER))
         {
             OBJECTREF WrappedObj = (*((VARIANTWRAPPEROBJECTREF*)pSrcObj))->GetWrappedObject();
             GCPROTECT_BEGIN(WrappedObj)

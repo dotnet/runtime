@@ -58,6 +58,31 @@ namespace Microsoft.Extensions.DependencyModel
          {
          }
 
+
+        /// <summary>
+        /// Initializes a new <see cref="RuntimeLibrary"/>.
+        /// </summary>
+        /// <param name="type">The library's type.</param>
+        /// <param name="name">The library's name.</param>
+        /// <param name="version">The library's version.</param>
+        /// <param name="hash">The library package's hash.</param>
+        /// <param name="runtimeAssemblyGroups">The library's runtime assemblies.</param>
+        /// <param name="nativeLibraryGroups">The library's native libraries.</param>
+        /// <param name="resourceAssemblies">The library's resource assemblies.</param>
+        /// <param name="dependencies">The library's dependencies.</param>
+        /// <param name="serviceable">Whether the library is serviceable.</param>
+        /// <param name="path">The library package's path.</param>
+        /// <param name="hashPath">The library package's hash path.</param>
+        /// <param name="runtimeStoreManifestName">The library's runtime store manifest name.</param>
+        /// <exception cref="System.ArgumentNullException">
+        /// The <paramref name="type"/> argument is null.
+        /// The <paramref name="name"/> argument is null.
+        /// The <paramref name="version"/> argument is null.
+        /// The <paramref name="runtimeAssemblyGroups"/> argument is null.
+        /// The <paramref name="nativeLibraryGroups"/> argument is null.
+        /// The <paramref name="resourceAssemblies"/> argument is null.
+        /// The <paramref name="dependencies"/> argument is null.
+        /// </exception>
         public RuntimeLibrary(string type,
             string name,
             string version,

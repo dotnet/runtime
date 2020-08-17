@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#nullable enable
 using System;
 using System.Resources;
 using System.Runtime.Serialization;
@@ -16,24 +17,24 @@ namespace System.Xml.XPath
     {
         // we need to keep this members for V1 serialization compatibility
         private readonly string _res;
-        private readonly string[] _args;
+        private readonly string[]? _args;
 
         // message != null for V1 & V2 exceptions deserialized in Whidbey
         // message == null for created V2 exceptions; the exception message is stored in Exception._message
-        private readonly string _message;
+        private readonly string? _message;
 
         protected XPathException(SerializationInfo info, StreamingContext context) : base(info, context)
         {
-            _res = (string)info.GetValue("res", typeof(string));
-            _args = (string[])info.GetValue("args", typeof(string[]));
+            _res = (string)info.GetValue("res", typeof(string))!;
+            _args = (string[]?)info.GetValue("args", typeof(string[]));
 
             // deserialize optional members
-            string version = null;
+            string? version = null;
             foreach (SerializationEntry e in info)
             {
                 if (e.Name == "version")
                 {
-                    version = (string)e.Value;
+                    version = (string?)e.Value;
                 }
             }
 
@@ -57,18 +58,18 @@ namespace System.Xml.XPath
             info.AddValue("version", "2.0");
         }
 
-        public XPathException() : this(string.Empty, (Exception)null) { }
+        public XPathException() : this(string.Empty, (Exception?)null) { }
 
-        public XPathException(string message) : this(message, (Exception)null) { }
+        public XPathException(string message) : this(message, (Exception?)null) { }
 
-        public XPathException(string message, Exception innerException) :
+        public XPathException(string message, Exception? innerException) :
             this(SR.Xml_UserException, new string[] { message }, innerException)
         {
         }
 
         internal static XPathException Create(string res)
         {
-            return new XPathException(res, (string[])null);
+            return new XPathException(res, (string[]?)null);
         }
 
         internal static XPathException Create(string res, string arg)
@@ -86,12 +87,12 @@ namespace System.Xml.XPath
             return new XPathException(res, new string[] { arg }, innerException);
         }
 
-        private XPathException(string res, string[] args) :
+        private XPathException(string res, string[]? args) :
             this(res, args, null)
         {
         }
 
-        private XPathException(string res, string[] args, Exception inner) :
+        private XPathException(string res, string[]? args, Exception? inner) :
             base(CreateMessage(res, args), inner)
         {
             HResult = HResults.XmlXPath;
@@ -99,7 +100,7 @@ namespace System.Xml.XPath
             _args = args;
         }
 
-        private static string CreateMessage(string res, string[] args)
+        private static string CreateMessage(string res, string[]? args)
         {
             try
             {

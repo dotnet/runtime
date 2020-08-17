@@ -3,7 +3,6 @@
 
 using System;
 using System.Runtime.InteropServices;
-using System.Runtime.InteropServices.ComTypes;
 
 internal static partial class Interop
 {
@@ -16,8 +15,8 @@ internal static partial class Interop
             internal DATA_BLOB SerialNumber;
             internal CRYPT_ALGORITHM_IDENTIFIER SignatureAlgorithm;
             internal DATA_BLOB Issuer;
-            internal FILETIME NotBefore;
-            internal FILETIME NotAfter;
+            internal System.Runtime.InteropServices.ComTypes.FILETIME NotBefore;
+            internal System.Runtime.InteropServices.ComTypes.FILETIME NotAfter;
             internal DATA_BLOB Subject;
             internal CERT_PUBLIC_KEY_INFO SubjectPublicKeyInfo;
             internal CRYPT_BIT_BLOB IssuerUniqueId;

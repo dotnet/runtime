@@ -266,13 +266,8 @@ namespace Internal.Cryptography.Pal
                         // SubjectPublicKeyInfo block, and returns that.
                         //
                         // https://msdn.microsoft.com/en-us/library/windows/desktop/aa376079%28v=vs.85%29.aspx
-
-                        using (HashAlgorithm hash = SHA1.Create())
-                        {
-                            byte[] publicKeyInfoBytes = GetSubjectPublicKeyInfo(cert);
-
-                            certKeyId = hash.ComputeHash(publicKeyInfoBytes);
-                        }
+                        byte[] publicKeyInfoBytes = GetSubjectPublicKeyInfo(cert);
+                        certKeyId = SHA1.HashData(publicKeyInfoBytes);
                     }
 
                     return keyIdentifier.ContentsEqual(certKeyId);

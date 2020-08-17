@@ -61,8 +61,8 @@ IpcStream::DiagnosticsIpc *IpcStream::DiagnosticsIpc::Create(const char *const p
             "socket");
     }
 
-    if (mode == ConnectionMode::CLIENT)
-        return new IpcStream::DiagnosticsIpc(-1, &serverAddress, ConnectionMode::CLIENT);
+    if (mode == ConnectionMode::CONNECT)
+        return new IpcStream::DiagnosticsIpc(-1, &serverAddress, ConnectionMode::CONNECT);
 
 #ifdef __APPLE__
     mode_t prev_mask = umask(~(S_IRUSR | S_IWUSR)); // This will set the default permission bit to 600
@@ -116,8 +116,8 @@ IpcStream::DiagnosticsIpc *IpcStream::DiagnosticsIpc::Create(const char *const p
 
 bool IpcStream::DiagnosticsIpc::Listen(ErrorCallback callback)
 {
-    _ASSERTE(mode == ConnectionMode::SERVER);
-    if (mode != ConnectionMode::SERVER)
+    _ASSERTE(mode == ConnectionMode::LISTEN);
+    if (mode != ConnectionMode::LISTEN)
     {
         if (callback != nullptr)
             callback("Cannot call Listen on a client connection", -1);
@@ -150,7 +150,7 @@ bool IpcStream::DiagnosticsIpc::Listen(ErrorCallback callback)
 
 IpcStream *IpcStream::DiagnosticsIpc::Accept(ErrorCallback callback)
 {
-    _ASSERTE(mode == ConnectionMode::SERVER);
+    _ASSERTE(mode == ConnectionMode::LISTEN);
     _ASSERTE(_isListening);
 
     sockaddr_un from;
@@ -168,7 +168,7 @@ IpcStream *IpcStream::DiagnosticsIpc::Accept(ErrorCallback callback)
 
 IpcStream *IpcStream::DiagnosticsIpc::Connect(ErrorCallback callback)
 {
-    _ASSERTE(mode == ConnectionMode::CLIENT);
+    _ASSERTE(mode == ConnectionMode::CONNECT);
 
     sockaddr_un clientAddress{};
     clientAddress.sun_family = AF_UNIX;
@@ -187,10 +187,14 @@ IpcStream *IpcStream::DiagnosticsIpc::Connect(ErrorCallback callback)
     {
         if (callback != nullptr)
             callback(strerror(errno), errno);
+
+        const bool fCloseSuccess = ::close(clientSocket) == 0;
+        if (!fCloseSuccess && callback != nullptr)
+            callback(strerror(errno), errno);
         return nullptr;
     }
 
-    return new IpcStream(clientSocket, ConnectionMode::CLIENT);
+    return new IpcStream(clientSocket, ConnectionMode::CONNECT);
 }
 
 int32_t IpcStream::DiagnosticsIpc::Poll(IpcPollHandle *rgIpcPollHandles, uint32_t nHandles, int32_t timeoutMs, ErrorCallback callback)
@@ -204,7 +208,7 @@ int32_t IpcStream::DiagnosticsIpc::Poll(IpcPollHandle *rgIpcPollHandles, uint32_
         if (rgIpcPollHandles[i].pIpc != nullptr)
         {
             // SERVER
-            _ASSERTE(rgIpcPollHandles[i].pIpc->mode == ConnectionMode::SERVER);
+            _ASSERTE(rgIpcPollHandles[i].pIpc->mode == ConnectionMode::LISTEN);
             fd = rgIpcPollHandles[i].pIpc->_serverSocket;
         }
         else
@@ -223,12 +227,11 @@ int32_t IpcStream::DiagnosticsIpc::Poll(IpcPollHandle *rgIpcPollHandles, uint32_
     // Check results
     if (retval < 0)
     {
-        for (uint32_t i = 0; i < nHandles; i++)
-        {
-            if ((pollfds[i].revents & POLLERR) && callback != nullptr)
-                callback(strerror(errno), errno);
-            rgIpcPollHandles[i].revents = (uint8_t)PollEvents::ERR;
-        }
+        //     If poll() returns with an error, including one due to an interrupted call, the fds
+        //  array will be unmodified and the global variable errno will be set to indicate the error.
+        // - POLL(2)
+        if (callback != nullptr)
+            callback(strerror(errno), errno);
         delete[] pollfds;
         return -1;
     }
@@ -243,6 +246,8 @@ int32_t IpcStream::DiagnosticsIpc::Poll(IpcPollHandle *rgIpcPollHandles, uint32_
     {
         if (pollfds[i].revents != 0)
         {
+            if (callback != nullptr)
+                callback("IpcStream::DiagnosticsIpc::Poll - poll revents", (uint32_t)pollfds[i].revents);
             // error check FIRST
             if (pollfds[i].revents & POLLHUP)
             {
@@ -250,21 +255,22 @@ int32_t IpcStream::DiagnosticsIpc::Poll(IpcPollHandle *rgIpcPollHandles, uint32_
                 // will technically meet the requirements for POLLIN
                 // i.e., a call to recv/read won't block
                 rgIpcPollHandles[i].revents = (uint8_t)PollEvents::HANGUP;
-                delete[] pollfds;
-                return -1;
             }
             else if ((pollfds[i].revents & (POLLERR|POLLNVAL)))
             {
                 if (callback != nullptr)
                     callback("Poll error", (uint32_t)pollfds[i].revents);
                 rgIpcPollHandles[i].revents = (uint8_t)PollEvents::ERR;
-                delete[] pollfds;
-                return -1;
             }
-            else if (pollfds[i].revents & POLLIN)
+            else if (pollfds[i].revents & (POLLIN|POLLPRI))
             {
                 rgIpcPollHandles[i].revents = (uint8_t)PollEvents::SIGNALED;
-                break;
+            }
+            else
+            {
+                rgIpcPollHandles[i].revents = (uint8_t)PollEvents::UNKNOWN;
+                if (callback != nullptr)
+                    callback("unkown poll response", (uint32_t)pollfds[i].revents);
             }
         }
     }
@@ -338,7 +344,7 @@ bool IpcStream::Read(void *lpBuffer, const uint32_t nBytesToRead, uint32_t &nByt
         pfd.fd = _clientSocket;
         pfd.events = POLLIN;
         int retval = poll(&pfd, 1, timeoutMs);
-        if (retval <= 0 || pfd.revents != POLLIN)
+        if (retval <= 0 || !(pfd.revents & POLLIN))
         {
             // timeout or error
             return false;
@@ -379,7 +385,7 @@ bool IpcStream::Write(const void *lpBuffer, const uint32_t nBytesToWrite, uint32
         pfd.fd = _clientSocket;
         pfd.events = POLLOUT;
         int retval = poll(&pfd, 1, timeoutMs);
-        if (retval <= 0 || pfd.revents != POLLOUT)
+        if (retval <= 0 || !(pfd.revents & POLLOUT))
         {
             // timeout or error
             return false;

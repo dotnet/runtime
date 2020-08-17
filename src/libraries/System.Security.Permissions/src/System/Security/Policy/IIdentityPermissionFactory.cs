@@ -3,6 +3,9 @@
 
 namespace System.Security.Policy
 {
+#if NET50_OBSOLETIONS
+    [Obsolete(Obsoletions.CodeAccessSecurityMessage, DiagnosticId = Obsoletions.CodeAccessSecurityDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+#endif
     public partial interface IIdentityPermissionFactory
     {
         IPermission CreateIdentityPermission(Evidence evidence);

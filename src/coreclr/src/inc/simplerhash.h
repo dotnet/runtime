@@ -68,8 +68,8 @@ public:
 class PrimeInfo
 {
 public:
-    PrimeInfo() : prime(0), magic(0), shift(0) {}
-    PrimeInfo(unsigned p, unsigned m, unsigned s) : prime(p), magic(m), shift(s) {}
+    constexpr PrimeInfo() : prime(0), magic(0), shift(0) {}
+    constexpr PrimeInfo(unsigned p, unsigned m, unsigned s) : prime(p), magic(m), shift(s) {}
     unsigned prime;
     unsigned magic;
     unsigned shift;

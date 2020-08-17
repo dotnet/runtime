@@ -31,8 +31,8 @@ namespace System.DirectoryServices.AccountManagement.Tests
 
         public void ComputedUACCheck()
         {
-            string username = "Administrator";
-            string password = "Adrumble@6";
+            // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Unit test dummy credentials.")]
+            string username = "Administrator", password = "Adrumble@6";
             //TODO: don't assume it exists, create it if its not
             string OU = "TestNull";
             string baseDomain =WindowsIdentity.GetCurrent().Name.Split(new char[] { '\\' })[1] + "-TEST";

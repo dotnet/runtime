@@ -11,7 +11,7 @@ namespace System.ComponentModel.Composition
     internal struct CompositionResult<T>
     {
         private readonly IEnumerable<CompositionError>? _errors;
-        [AllowNull] private readonly T _value;
+        private readonly T? _value;
 
         public CompositionResult(T value)
             : this(value, null)
@@ -28,7 +28,7 @@ namespace System.ComponentModel.Composition
         {
         }
 
-        internal CompositionResult([AllowNull] T value, IEnumerable<CompositionError>? errors)
+        internal CompositionResult(T? value, IEnumerable<CompositionError>? errors)
         {
             _errors = errors;
             _value = value;
@@ -53,7 +53,7 @@ namespace System.ComponentModel.Composition
             {
                 ThrowOnErrors();
 
-                return _value;
+                return _value!;
             }
         }
 

@@ -129,7 +129,7 @@ namespace Microsoft.VisualBasic.Tests
         }
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/30419", TargetFrameworkMonikers.NetFramework)]
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
         [InlineData(0, 0)]
         [InlineData(33, 33)]
         [InlineData(172, 0)]

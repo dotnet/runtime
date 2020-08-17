@@ -2,9 +2,8 @@
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <GenFacadesIgnoreMissingTypes Condition="'$(TargetFramework)' == 'net461'">true</GenFacadesIgnoreMissingTypes>
-    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent);netstandard2.0;netstandard2.1;net461-Windows_NT;netcoreapp3.0-Windows_NT;netcoreapp3.0;net462-Windows_NT;net47-Windows_NT;$(NetFrameworkCurrent)-Windows_NT</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent);netstandard2.0;netstandard2.1;net461-Windows_NT;netcoreapp3.0-Windows_NT;netcoreapp3.0;net462-Windows_NT;net47-Windows_NT</TargetFrameworks>
     <ExcludeCurrentNetCoreAppFromPackage>true</ExcludeCurrentNetCoreAppFromPackage>
-    <ExcludeCurrentFullFrameworkFromPackage>true</ExcludeCurrentFullFrameworkFromPackage>
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
@@ -355,18 +354,17 @@
   <ItemGroup>
     <None Include="@(AsnXml)" />
   </ItemGroup>
-  <ItemGroup Condition="'$(IsPartialFacadeAssembly)' == 'true'">
-    <Reference Include="mscorlib" />
-    <Reference Include="System.Core" />
-  </ItemGroup>
   <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true'">
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Formats.Asn1\src\System.Formats.Asn1.csproj" />
+  </ItemGroup>
+  <ItemGroup Condition="$(TargetFramework.StartsWith('$(NetCoreAppCurrent)')) or
+                        $(TargetFramework.StartsWith('netcoreapp3.0'))">
     <Reference Include="System.Buffers" />
     <Reference Include="System.Collections" />
     <Reference Include="System.Collections.Concurrent" />
     <Reference Include="System.Diagnostics.Debug" />
     <Reference Include="System.Diagnostics.Tools" />
     <Reference Include="System.Linq" />
-    <Reference Include="System.Formats.Asn1" />
     <Reference Include="System.Memory" />
     <Reference Include="System.Resources.ResourceManager" />
     <Reference Include="System.Runtime" />
@@ -379,5 +377,12 @@
     <Reference Include="System.Security.Cryptography.Primitives" />
     <Reference Include="System.Text.Encoding.Extensions" />
     <Reference Include="System.Threading" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
+    <PackageReference Include="System.Buffers" Version="$(SystemBuffersVersion)" />
+    <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />
+    <!-- Ref assembly for netstandard2.0 isn't live built anymore. -->
+    <PackageDownload Include="$(MSBuildProjectName)" Version="[$(SystemSecurityCryptographyCngVersion)]" />
+    <ResolvedMatchingContract Include="$(NuGetPackageRoot)$(MSBuildProjectName.ToLowerInvariant())\$(SystemSecurityCryptographyCngVersion)\ref\$(TargetFramework)\$(MSBuildProjectName).dll" />
   </ItemGroup>
 </Project>

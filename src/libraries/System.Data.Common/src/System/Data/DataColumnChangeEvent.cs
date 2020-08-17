@@ -5,7 +5,7 @@ namespace System.Data
 {
     public class DataColumnChangeEventArgs : EventArgs
     {
-        private DataColumn _column;
+        private DataColumn? _column;
 
         internal DataColumnChangeEventArgs(DataRow row)
         {
@@ -15,7 +15,7 @@ namespace System.Data
         /// <summary>
         /// Initializes a new instance of the <see cref='System.Data.DataColumnChangeEventArgs'/> class.
         /// </summary>
-        public DataColumnChangeEventArgs(DataRow row, DataColumn column, object value)
+        public DataColumnChangeEventArgs(DataRow row, DataColumn? column, object? value)
         {
             Row = row;
             _column = column;
@@ -25,7 +25,7 @@ namespace System.Data
         /// <summary>
         /// Gets the column whose value is changing.
         /// </summary>
-        public DataColumn Column => _column;
+        public DataColumn? Column => _column;
 
         /// <summary>
         /// Gets the row whose value is changing.
@@ -35,7 +35,7 @@ namespace System.Data
         /// <summary>
         /// Gets or sets the proposed value.
         /// </summary>
-        public object ProposedValue { get; set; }
+        public object? ProposedValue { get; set; }
 
         internal void InitializeColumnChangeEvent(DataColumn column, object value)
         {

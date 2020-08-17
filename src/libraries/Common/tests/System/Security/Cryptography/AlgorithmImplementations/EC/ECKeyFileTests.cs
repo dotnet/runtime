@@ -176,6 +176,7 @@ qtlbnispri1a/EghiaPQ0po=";
         public void ReadNistP521EncryptedPkcs8_Pbes2_Aes128_Sha384_PasswordBytes()
         {
             // PBES2, PBKDF2 (SHA384), AES128
+            // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Unit test key.")]
             const string base64 = @"
 MIIBXTBXBgkqhkiG9w0BBQ0wSjApBgkqhkiG9w0BBQwwHAQI/JyXWyp/t3kCAggA
 MAwGCCqGSIb3DQIKBQAwHQYJYIZIAWUDBAECBBA3H8mbFK5afB5GzIemCCQkBIIB
@@ -949,6 +950,41 @@ HMdNrq/BAgECAywABAIRJy8cVYJCaIjpG9aSV3SUIyJIqgQnCDD3oQCa1nCojekr
                 Assert.ThrowsAny<CryptographicException>(
                     () => key.ImportEncryptedPkcs8PrivateKey(byteBased, encrypted, out _));
             }
+        }
+
+        [Fact]
+        public void DecryptPkcs12PbeTooManyIterations()
+        {
+            // pbeWithSHAAnd3-KeyTripleDES-CBC with 600,001 iterations
+            byte[] high3DesIterationKey = Convert.FromBase64String(@"
+MIG6MCUGCiqGSIb3DQEMAQMwFwQQWOZyFrGwhyGTEd2nbKuLSQIDCSfBBIGQCgPLkx0OwmK3lJ9o
+VAdJAg/2nvOhboOHciu5I6oh5dRkxeDjUJixsadd3uhiZb5v7UgiohBQsFv+PWU12rmz6sgWR9rK
+V2UqV6Y5vrHJDlNJGI+CQKzOTF7LXyOT+EqaXHD+25TM2/kcZjZrOdigkgQBAFhbfn2/hV/t0TPe
+Tj/54rcY3i0gXT6da/r/o+qV");
+
+            using (T key = CreateKey())
+            {
+                Assert.ThrowsAny<CryptographicException>(
+                    () => key.ImportEncryptedPkcs8PrivateKey("test", high3DesIterationKey, out _));
+            }
+        }
+
+        [Fact]
+        public void ReadWriteEc256EncryptedPkcs8_Pbes2HighIterations()
+        {
+            // pkcs5PBES2 hmacWithSHA256 aes128-CBC with 600,001 iterations
+            ReadWriteBase64EncryptedPkcs8(@"
+MIH1MGAGCSqGSIb3DQEFDTBTMDIGCSqGSIb3DQEFDDAlBBA+rne0bUkwr614vLfQkwO4AgMJJ8Ew
+DAYIKoZIhvcNAgkFADAdBglghkgBZQMEAQIEEIm3c9r5igQ9Vlv1mKTZYp0EgZC8KZfmJtfYmsl4
+Z0Dc85ugFvtFHVeRbcvfYmFns23WL3gpGQ0mj4BKxttX+WuDk9duAsCslNLvXFY7m3MQRkWA6QHT
+A8DiR3j0l5TGBkErbTUrjmB3ftvEmmF9mleRLj6qEYmmKdCV2Tfk1YBOZ2mpB9bpCPipUansyqWs
+xoMaz20Yx+2TSN5dSm2FcD+0YFI=",
+                "test",
+                new PbeParameters(
+                    PbeEncryptionAlgorithm.Aes128Cbc,
+                    HashAlgorithmName.SHA256,
+                    600_001),
+                EccTestData.GetNistP256ReferenceKey());
         }
 
         private void ReadWriteBase64EncryptedPkcs8(

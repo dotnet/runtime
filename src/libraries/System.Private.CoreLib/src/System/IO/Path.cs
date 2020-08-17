@@ -655,7 +655,7 @@ namespace System.IO
 #endif
                     first.Length + second.Length + (hasSeparator ? 0 : 1),
                     (First: (IntPtr)f, FirstLength: first.Length, Second: (IntPtr)s, SecondLength: second.Length, HasSeparator: hasSeparator),
-                    (destination, state) =>
+                    static (destination, state) =>
                     {
                         new Span<char>((char*)state.First, state.FirstLength).CopyTo(destination);
                         if (!state.HasSeparator)
@@ -684,7 +684,7 @@ namespace System.IO
                     first.Length + second.Length + third.Length + (firstHasSeparator ? 0 : 1) + (thirdHasSeparator ? 0 : 1),
                     (First: (IntPtr)f, FirstLength: first.Length, Second: (IntPtr)s, SecondLength: second.Length,
                         Third: (IntPtr)t, ThirdLength: third.Length, FirstHasSeparator: firstHasSeparator, ThirdHasSeparator: thirdHasSeparator),
-                    (destination, state) =>
+                    static (destination, state) =>
                     {
                         new Span<char>((char*)state.First, state.FirstLength).CopyTo(destination);
                         if (!state.FirstHasSeparator)
@@ -719,7 +719,7 @@ namespace System.IO
                     (First: (IntPtr)f, FirstLength: first.Length, Second: (IntPtr)s, SecondLength: second.Length,
                         Third: (IntPtr)t, ThirdLength: third.Length, Fourth: (IntPtr)u, FourthLength: fourth.Length,
                         FirstHasSeparator: firstHasSeparator, ThirdHasSeparator: thirdHasSeparator, FourthHasSeparator: fourthHasSeparator),
-                    (destination, state) =>
+                    static (destination, state) =>
                     {
                         new Span<char>((char*)state.First, state.FirstLength).CopyTo(destination);
                         if (!state.FirstHasSeparator)

@@ -7,6 +7,7 @@ using Internal.Runtime;
 using Internal.Text;
 using Internal.TypeSystem;
 using Internal.ReadyToRunConstants;
+using ILCompiler.DependencyAnalysisFramework;
 
 namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
@@ -45,7 +46,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
     {
         struct HeaderItem
         {
-            public HeaderItem(ReadyToRunSectionType id, ObjectNode node, ISymbolNode startSymbol)
+            public HeaderItem(ReadyToRunSectionType id, DependencyNodeCore<NodeFactory> node, ISymbolNode startSymbol)
             {
                 Id = id;
                 Node = node;
@@ -53,7 +54,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             }
 
             public readonly ReadyToRunSectionType Id;
-            public readonly ObjectNode Node;
+            public readonly DependencyNodeCore<NodeFactory> Node;
             public readonly ISymbolNode StartSymbol;
         }
 
@@ -67,7 +68,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             _flags = flags;
         }
 
-        public void Add(ReadyToRunSectionType id, ObjectNode node, ISymbolNode startSymbol)
+        public void Add(ReadyToRunSectionType id, DependencyNodeCore<NodeFactory> node, ISymbolNode startSymbol)
         {
             _items.Add(new HeaderItem(id, node, startSymbol));
         }
@@ -116,13 +117,17 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             foreach (var item in _items)
             {
                 // Skip empty entries
-                if (!relocsOnly && item.Node.ShouldSkipEmittingObjectNode(factory))
+                if (!relocsOnly && item.Node is ObjectNode on && on.ShouldSkipEmittingObjectNode(factory))
                     continue;
 
                 builder.EmitInt((int)item.Id);
 
                 builder.EmitReloc(item.StartSymbol, RelocType.IMAGE_REL_BASED_ADDR32NB);
-                builder.EmitReloc(item.StartSymbol, RelocType.IMAGE_REL_SYMBOL_SIZE);
+
+                // The header entry for the runtime functions table should not include the 4 byte 0xffffffff sentinel
+                // value in the covered range.
+                int delta = item.Id == ReadyToRunSectionType.RuntimeFunctions ? RuntimeFunctionsTableNode.SentinelSizeAdjustment : 0;
+                builder.EmitReloc(item.StartSymbol, RelocType.IMAGE_REL_SYMBOL_SIZE, delta);
 
                 count++;
             }

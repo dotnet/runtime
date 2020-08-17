@@ -1,7 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>netstandard2.0;netstandard1.3;net46;$(NetFrameworkCurrent)</TargetFrameworks>
-    <ExcludeCurrentFullFrameworkFromPackage>true</ExcludeCurrentFullFrameworkFromPackage>
+    <TargetFrameworks>netstandard2.0;netstandard1.3;net46</TargetFrameworks>
   </PropertyGroup>
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
   <PropertyGroup>
@@ -15,15 +14,7 @@
     <Compile Include="System.IO.Packaging.Serialization.cs" />
     <Compile Include="System.IO.Packaging.PackUriScheme.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetFramework)' == '$(NetFrameworkCurrent)' or '$(TargetFramework)' == 'net46'">
-    <Reference Include="mscorlib" />
-    <Reference Include="System" />
+  <ItemGroup Condition="$(TargetFramework.StartsWith('net4'))">
     <Reference Include="WindowsBase" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard1.3'">
-    <Reference Include="System.Collections" />
-    <Reference Include="System.IO" />
-    <Reference Include="System.IO.FileSystem.Primitives" />
-    <Reference Include="System.Runtime" />
   </ItemGroup>
 </Project>

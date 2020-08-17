@@ -25,7 +25,11 @@ namespace System.Text.Json
         {
             JsonWriterHelper.ValidateDouble(value);
 
-            ValidateWritingValue();
+            if (!_options.SkipValidation)
+            {
+                ValidateWritingValue();
+            }
+
             if (_options.Indented)
             {
                 WriteNumberValueIndented(value);
@@ -138,6 +142,34 @@ namespace System.Text.Json
                 return false;
             }
 #endif
+        }
+
+        internal void WriteNumberValueAsString(double value)
+        {
+            Span<byte> utf8Number = stackalloc byte[JsonConstants.MaximumFormatDoubleLength];
+            bool result = TryFormatDouble(value, utf8Number, out int bytesWritten);
+            Debug.Assert(result);
+            WriteNumberValueAsStringUnescaped(utf8Number.Slice(0, bytesWritten));
+        }
+
+        internal void WriteFloatingPointConstant(double value)
+        {
+            if (double.IsNaN(value))
+            {
+                WriteNumberValueAsStringUnescaped(JsonConstants.NaNValue);
+            }
+            else if (double.IsPositiveInfinity(value))
+            {
+                WriteNumberValueAsStringUnescaped(JsonConstants.PositiveInfinityValue);
+            }
+            else if (double.IsNegativeInfinity(value))
+            {
+                WriteNumberValueAsStringUnescaped(JsonConstants.NegativeInfinityValue);
+            }
+            else
+            {
+                WriteNumberValue(value);
+            }
         }
     }
 }
