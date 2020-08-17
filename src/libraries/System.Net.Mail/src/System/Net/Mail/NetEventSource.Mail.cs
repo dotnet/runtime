@@ -7,6 +7,6 @@ using System.Runtime.CompilerServices;
 
 namespace System.Net
 {
-    [EventSource(Name = "System.Net.Mail.InternalDiagnostics", LocalizationResources = "FxResources.System.Net.Mail.SR")]
+    [EventSource(Name = "Private.InternalDiagnostics.System.Net.Mail", LocalizationResources = "FxResources.System.Net.Mail.SR")]
     internal sealed partial class NetEventSource { }
 }

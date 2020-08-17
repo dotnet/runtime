@@ -15,8 +15,8 @@ namespace System.Net.Tests
             Type esType = typeof(WebRequest).Assembly.GetType("System.Net.NetEventSource", throwOnError: true, ignoreCase: false);
             Assert.NotNull(esType);
 
-            Assert.Equal("System.Net.Requests.InternalDiagnostics", EventSource.GetName(esType));
-            Assert.Equal(Guid.Parse("51eafc09-2b9b-5c9b-16dd-98cbab55a00d"), EventSource.GetGuid(esType));
+            Assert.Equal("Private.InternalDiagnostics.System.Net.Requests", EventSource.GetName(esType));
+            Assert.Equal(Guid.Parse("de972c9f-4457-5dc5-e37b-aaf8033eb3a9"), EventSource.GetGuid(esType));
 
             Assert.NotEmpty(EventSource.GenerateManifest(esType, esType.Assembly.Location));
         }

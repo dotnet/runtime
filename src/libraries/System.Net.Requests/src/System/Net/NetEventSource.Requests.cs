@@ -5,6 +5,6 @@ using System.Diagnostics.Tracing;
 
 namespace System.Net
 {
-    [EventSource(Name = "System.Net.Requests.InternalDiagnostics")]
+    [EventSource(Name = "Private.InternalDiagnostics.System.Net.Requests")]
     internal sealed partial class NetEventSource { }
 }

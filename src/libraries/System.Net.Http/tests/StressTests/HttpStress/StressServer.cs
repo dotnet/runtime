@@ -351,7 +351,7 @@ namespace HttpStress
 
             protected override void OnEventSourceCreated(EventSource eventSource)
             {
-                if (eventSource.Name == "System.Net.Http.InternalDiagnostics")
+                if (eventSource.Name == "Private.InternalDiagnostics.System.Net.Http")
                     EnableEvents(eventSource, EventLevel.LogAlways);
             }
 

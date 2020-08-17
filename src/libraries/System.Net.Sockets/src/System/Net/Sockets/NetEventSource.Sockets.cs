@@ -8,7 +8,7 @@ using System.Runtime.InteropServices;
 
 namespace System.Net
 {
-    [EventSource(Name = "System.Net.Sockets.InternalDiagnostics", LocalizationResources = "FxResources.System.Net.Sockets.SR")]
+    [EventSource(Name = "Private.InternalDiagnostics.System.Net.Sockets", LocalizationResources = "FxResources.System.Net.Sockets.SR")]
     internal sealed partial class NetEventSource
     {
         private const int AcceptedId = NextAvailableEventId;
