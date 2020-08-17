@@ -174,9 +174,9 @@ namespace Mono.Linker
 
 		public WarningSuppressionWriter WarningSuppressionWriter { get; private set; }
 
-		public HashSet<uint> NoWarn { get; set; }
+		public HashSet<int> NoWarn { get; set; }
 
-		public Dictionary<uint, bool> WarnAsError { get; set; }
+		public Dictionary<int, bool> WarnAsError { get; set; }
 
 		public bool GeneralWarnAsError { get; set; }
 
@@ -236,9 +236,9 @@ namespace Mono.Linker
 			StripLinkAttributes = true;
 			PInvokes = new List<PInvokeInfo> ();
 			Suppressions = new UnconditionalSuppressMessageAttributeState (this);
-			NoWarn = new HashSet<uint> ();
+			NoWarn = new HashSet<int> ();
 			GeneralWarnAsError = false;
-			WarnAsError = new Dictionary<uint, bool> ();
+			WarnAsError = new Dictionary<int, bool> ();
 			WarnVersion = WarnVersion.Latest;
 
 			// See https://github.com/mono/linker/issues/612
@@ -502,22 +502,9 @@ namespace Mono.Linker
 				message.Category == MessageCategory.Info) && !LogMessages)
 				return;
 
-			if (message.Category == MessageCategory.Warning &&
-				NoWarn.Contains ((uint) message.Code)) {
-				// This warning was turned off by --nowarn.
-				return;
-			}
-
-			// Note: message.Version is nullable. The comparison is false if it is null.
-			// Unversioned warnings are not controlled by WarnVersion.
-			// Error messages are guaranteed to only have a version if they were created for a warning due to warnaserror.
-			if ((message.Category == MessageCategory.Warning || message.Category == MessageCategory.Error) &&
-				message.Version > WarnVersion) {
-				// This warning was turned off by --warn.
-				return;
-			}
-
-			if (OutputWarningSuppressions && message.Category == MessageCategory.Warning && message.Origin?.MemberDefinition != null)
+			if (OutputWarningSuppressions &&
+				(message.Category == MessageCategory.Warning || message.Category == MessageCategory.WarningAsError) &&
+				message.Origin?.MemberDefinition != null)
 				WarningSuppressionWriter.AddWarning (message.Code.Value, message.Origin?.MemberDefinition);
 
 			Logger?.LogMessage (message);
@@ -552,15 +539,8 @@ namespace Mono.Linker
 		/// <returns>New MessageContainer of 'Warning' category</returns>
 		public void LogWarning (string text, int code, MessageOrigin origin, string subcategory = MessageSubCategory.None)
 		{
-			var version = GetWarningVersion (code);
-
-			if ((GeneralWarnAsError && (!WarnAsError.TryGetValue ((uint) code, out var warnAsError) || warnAsError)) ||
-				(!GeneralWarnAsError && (WarnAsError.TryGetValue ((uint) code, out warnAsError) && warnAsError))) {
-				LogError (text, code, subcategory, origin, isWarnAsError: true, version: version);
-				return;
-			}
-
-			var warning = MessageContainer.CreateWarningMessage (this, text, code, origin, subcategory, version);
+			WarnVersion version = GetWarningVersion (code);
+			MessageContainer warning = MessageContainer.CreateWarningMessage (this, text, code, origin, version, subcategory);
 			LogMessage (warning);
 		}
 
@@ -604,21 +584,34 @@ namespace Mono.Linker
 		/// <param name="subcategory">Optionally, further categorize this error</param>
 		/// <param name="origin">Filename, line, and column where the error was found</param>
 		/// <returns>New MessageContainer of 'Error' category</returns>
-		public void LogError (string text, int code, string subcategory = MessageSubCategory.None, MessageOrigin? origin = null, bool isWarnAsError = false, WarnVersion? version = null)
+		public void LogError (string text, int code, string subcategory = MessageSubCategory.None, MessageOrigin? origin = null)
 		{
-			var error = MessageContainer.CreateErrorMessage (text, code, subcategory, origin, isWarnAsError, version);
+			var error = MessageContainer.CreateErrorMessage (text, code, subcategory, origin);
 			LogMessage (error);
 		}
 
 		public bool IsWarningSuppressed (int warningCode, MessageOrigin origin)
 		{
+			// This warning was turned off by --nowarn.
+			if (NoWarn.Contains (warningCode))
+				return true;
+
 			if (Suppressions == null)
 				return false;
 
 			return Suppressions.IsSuppressed (warningCode, origin, out _);
 		}
 
-		public static WarnVersion GetWarningVersion (int code)
+		public bool IsWarningAsError (int warningCode)
+		{
+			bool value;
+			if (GeneralWarnAsError)
+				return !WarnAsError.TryGetValue (warningCode, out value) || value;
+
+			return WarnAsError.TryGetValue (warningCode, out value) && value;
+		}
+
+		static WarnVersion GetWarningVersion (int code)
 		{
 			// This should return an increasing WarnVersion for new warning waves.
 			return WarnVersion.ILLink5;

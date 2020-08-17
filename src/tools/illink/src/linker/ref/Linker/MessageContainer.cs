@@ -6,8 +6,8 @@ namespace Mono.Linker
 {
 	public readonly struct MessageContainer
 	{
-		public static MessageContainer CreateErrorMessage (string text, int code, string subcategory = "", MessageOrigin? origin = null, bool isWarnAsError = false, WarnVersion? version = null) { throw null; }
-		public static MessageContainer CreateWarningMessage (LinkContext context, string text, int code, MessageOrigin origin, string subcategory = "", WarnVersion? version = null) { throw null; }
+		public static MessageContainer CreateErrorMessage (string text, int code, string subcategory = "", MessageOrigin? origin = null) { throw null; }
+		public static MessageContainer CreateWarningMessage (LinkContext context, string text, int code, MessageOrigin origin, WarnVersion version, string subcategory = "") { throw null; }
 		public static MessageContainer CreateInfoMessage (string text) { throw null; }
 		public static MessageContainer CreateDiagnosticMessage (string text) { throw null; }
 	}
