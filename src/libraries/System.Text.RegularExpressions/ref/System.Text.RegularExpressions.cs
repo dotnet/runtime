@@ -4,8 +4,6 @@
 // Changes to this file must follow the https://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
 
-using System.Runtime.Serialization;
-
 namespace System.Text.RegularExpressions
 {
     public partial class Capture
