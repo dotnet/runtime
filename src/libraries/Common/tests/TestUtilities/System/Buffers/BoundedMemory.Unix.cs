@@ -2,9 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Security;
+
+using Xunit;
 
 namespace System.Buffers
 {
@@ -42,7 +45,7 @@ namespace System.Buffers
                 fd: -1,
                 offset: 0);
 
-            if (ptr == null)
+            if (ptr == null || ptr == (void*)UIntPtr.MaxValue)
             {
                 throw new Win32Exception();
             }
@@ -96,6 +99,9 @@ namespace System.Buffers
                         try
                         {
                             _handle.DangerousAddRef(ref refAdded);
+                            // mprotect requires the pointer to be page size aligned.
+                            // mmap guarantees that the addresses are page-size aligned - but we'll just make sure.
+                            Debug.Assert((nuint)(nint)(_handle.DangerousGetHandle() + _byteOffsetIntoHandle) % (nuint)SystemPageSize == 0);
                             if (UnsafeNativeMethods.mprotect(
                                 addr: (void*)(_handle.DangerousGetHandle() + _byteOffsetIntoHandle),
                                 len: (nuint)(&((T*)null)[_elementCount]),
