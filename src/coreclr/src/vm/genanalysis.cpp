@@ -11,6 +11,7 @@ GcGenAnalysisState gcGenAnalysisConfigured = GcGenAnalysisState::Uninitialized;
 int64_t gcGenAnalysisGen = -1;
 int64_t gcGenAnalysisBytes = 0;
 int64_t gcGenAnalysisIndex = 0;
+uint32_t gcGenAnalysisBufferMB = 0;
 
 /* static */ void GenAnalysis::Initialize()
 {
@@ -27,6 +28,7 @@ int64_t gcGenAnalysisIndex = 0;
                 {
                     gcGenAnalysisIndex = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_GCGenAnalysisIndex);
                     gcGenAnalysisConfigured = GcGenAnalysisState::Enabled;
+                    gcGenAnalysisBufferMB = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_EventPipeCircularMB);
                 }
                 else
                 {
@@ -61,7 +63,7 @@ int64_t gcGenAnalysisIndex = 0;
     pProviders[0] = EventPipeProviderConfiguration(W("Microsoft-Windows-DotNETRuntime"), keyword, 5, nullptr);
     gcGenAnalysisEventPipeSessionId = EventPipe::Enable(
         outputPath,
-        1024,
+        gcGenAnalysisBufferMB,
         pProviders,
         providerCnt,
         EventPipeSessionType::File,
