@@ -211,7 +211,7 @@ namespace System.Diagnostics.Tracing
     /// <remarks>
     /// This is a minimal definition for a custom event source:
     /// <code>
-    /// [EventSource(Name="Samples-Demos-Minimal")]
+    /// [EventSource(Name="Samples.Demos.Minimal")]
     /// sealed class MinimalEventSource : EventSource
     /// {
     ///     public static MinimalEventSource Log = new MinimalEventSource();
@@ -1363,14 +1363,14 @@ namespace System.Diagnostics.Tracing
                 if (m_etwProvider != null)
                 {
                     m_etwProvider.Dispose();
-                    m_etwProvider = null!; // TODO-NULLABLE: Avoid nulling out in Dispose
+                    m_etwProvider = null!;
                 }
 #endif
 #if FEATURE_PERFTRACING
                 if (m_eventPipeProvider != null)
                 {
                     m_eventPipeProvider.Dispose();
-                    m_eventPipeProvider = null!; // TODO-NULLABLE: Avoid nulling out in Dispose
+                    m_eventPipeProvider = null!;
                 }
 #endif
             }
@@ -3693,10 +3693,6 @@ namespace System.Diagnostics.Tracing
         {
             try
             {
-                // send message to debugger without delay
-                System.Diagnostics.Debugger.Log(0, null, string.Format("EventSource Error: {0}{1}", msg, System.Environment.NewLine));
-
-                // Send it to all listeners.
                 if (m_outOfBandMessageCount < 16 - 1)     // Note this is only if size byte
                     m_outOfBandMessageCount++;
                 else
@@ -3707,6 +3703,10 @@ namespace System.Diagnostics.Tracing
                     msg = "Reached message limit.   End of EventSource error messages.";
                 }
 
+                // send message to debugger
+                System.Diagnostics.Debugger.Log(0, null, string.Format("EventSource Error: {0}{1}", msg, System.Environment.NewLine));
+
+                // Send it to all listeners.
                 WriteEventString(msg);
                 WriteStringToAllListeners("EventSourceMessage", msg);
             }

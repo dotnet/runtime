@@ -21,6 +21,18 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
             SupportsMode(CipherMode.ECB);
         }
 
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
+        public static void SupportsCFB()
+        {
+            SupportsMode(CipherMode.CFB);
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows7))]
+        public static void Windows7DoesNotSupportCFB()
+        {
+            DoesNotSupportMode(CipherMode.CFB);
+        }
+
         [Fact]
         public static void DoesNotSupportCTS()
         {
@@ -50,7 +62,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
                 // aes.CreateEncryptor() (with an invalid Mode value)
                 // transform.Transform[Final]Block() (with an invalid Mode value)
 
-                Assert.Throws<CryptographicException>(
+                Assert.ThrowsAny<CryptographicException>(
                     () =>
                     {
                         aes.Mode = mode;

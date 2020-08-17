@@ -685,7 +685,7 @@ void GCProfileWalkHeapWorker(BOOL fProfilerPinned, BOOL fShouldWalkHeapRootsForE
 }
 #endif // defined(GC_PROFILING) || defined(FEATURE_EVENT_TRACE)
 
-void GCProfileWalkHeap()
+void GCProfileWalkHeap(bool etwOnly)
 {
     BOOL fWalkedHeapForProfiler = FALSE;
 
@@ -702,7 +702,7 @@ void GCProfileWalkHeap()
 
 #if defined (GC_PROFILING)
     {
-        BEGIN_PIN_PROFILER(CORProfilerTrackGC());
+        BEGIN_PIN_PROFILER(!etwOnly && CORProfilerTrackGC());
         GCProfileWalkHeapWorker(TRUE /* fProfilerPinned */, fShouldWalkHeapRootsForEtw, fShouldWalkHeapObjectsForEtw);
         fWalkedHeapForProfiler = TRUE;
         END_PIN_PROFILER();
@@ -764,7 +764,7 @@ void GCToEEInterface::DiagGCEnd(size_t index, int gen, int reason, bool fConcurr
     // we will do these for all GCs.
     if (!fConcurrent)
     {
-        GCProfileWalkHeap();
+        GCProfileWalkHeap(false);
     }
 
     if (CORProfilerTrackBasicGC() || (!fConcurrent && CORProfilerTrackGC()))
@@ -1582,7 +1582,7 @@ bool GCToEEInterface::AnalyzeSurvivorsRequested(int condemnedGeneration)
     return false;
 }
 
-void GCToEEInterface::AnalyzeSurvivorsFinished(int condemnedGeneration)
+void GCToEEInterface::AnalyzeSurvivorsFinished(size_t gcIndex, int condemnedGeneration, uint64_t promoted_bytes, void (*reportGenerationBounds)())
 {
     LIMITED_METHOD_CONTRACT;
 
@@ -1594,6 +1594,25 @@ void GCToEEInterface::AnalyzeSurvivorsFinished(int condemnedGeneration)
         if (gn.GetNotification(gea) != 0)
         {
             DACNotify::DoGCNotification(gea);
+        }
+    }
+    
+    if (gcGenAnalysisState == GcGenAnalysisState::Enabled)
+    {
+#ifndef GEN_ANALYSIS_STRESS
+        if ((condemnedGeneration == gcGenAnalysisGen) && (promoted_bytes > (uint64_t)gcGenAnalysisBytes) && (gcIndex > (uint64_t)gcGenAnalysisIndex))
+#endif
+        {
+            gcGenAnalysisEventPipeSession->Resume();
+            FireEtwGenAwareBegin();
+            s_forcedGCInProgress = true;
+            GCProfileWalkHeap(true);
+            s_forcedGCInProgress = false;
+            reportGenerationBounds();
+            FireEtwGenAwareEnd();
+            gcGenAnalysisEventPipeSession->Pause();
+            gcGenAnalysisState = GcGenAnalysisState::Done;
+            EnableFinalization(true);
         }
     }
 }

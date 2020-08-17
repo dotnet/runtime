@@ -34,8 +34,7 @@ namespace System.Collections.Immutable
         /// <summary>
         /// The value associated with this node.
         /// </summary>
-        [MaybeNull]
-        private readonly TValue _value = default!;
+        private readonly TValue? _value;
 
         /// <summary>
         /// A value indicating whether this node has been frozen (made immutable).
@@ -197,15 +196,14 @@ namespace System.Collections.Immutable
         /// </summary>
         /// <param name="key">The key.</param>
         /// <returns>The value.</returns>
-        [return: MaybeNull]
-        internal TValue GetValueOrDefault(int key)
+        internal TValue? GetValueOrDefault(int key)
         {
             SortedInt32KeyNode<TValue> node = this;
             while (true)
             {
                 if (node.IsEmpty)
                 {
-                    return default(TValue)!;
+                    return default;
                 }
 
                 if (key == node._key)
@@ -237,7 +235,7 @@ namespace System.Collections.Immutable
             {
                 if (node.IsEmpty)
                 {
-                    value = default(TValue)!;
+                    value = default;
                     return false;
                 }
 

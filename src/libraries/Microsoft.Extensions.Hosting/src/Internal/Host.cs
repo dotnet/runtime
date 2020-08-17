@@ -76,7 +76,6 @@ namespace Microsoft.Extensions.Hosting.Internal
                 {
                     foreach (IHostedService hostedService in _hostedServices.Reverse())
                     {
-                        token.ThrowIfCancellationRequested();
                         try
                         {
                             await hostedService.StopAsync(token).ConfigureAwait(false);
@@ -91,9 +90,14 @@ namespace Microsoft.Extensions.Hosting.Internal
                 // Fire IHostApplicationLifetime.Stopped
                 _applicationLifetime.NotifyStopped();
 
-                token.ThrowIfCancellationRequested();
-                await _hostLifetime.StopAsync(token).ConfigureAwait(false);
-
+                try
+                {
+                    await _hostLifetime.StopAsync(token).ConfigureAwait(false);
+                }
+                catch (Exception ex)
+                {
+                    exceptions.Add(ex);
+                }
 
                 if (exceptions.Count > 0)
                 {

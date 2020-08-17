@@ -106,7 +106,6 @@ namespace System.ServiceProcess.Tests
                 testServiceInstaller.ServicesDependedOn = new string[] { _dependentServices.TestServiceName };
             }
 
-            var comparer = PlatformDetection.IsNetFramework ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal; // .NET Framework upper cases the name
             string processName = Process.GetCurrentProcess().MainModule.FileName;
             string entryPointName = typeof(TestService).Assembly.Location;
             string arguments = TestServiceName;

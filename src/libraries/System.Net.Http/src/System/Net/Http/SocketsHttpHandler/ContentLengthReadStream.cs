@@ -47,7 +47,6 @@ namespace System.Net.Http
                 if (_contentBytesRemaining == 0)
                 {
                     // End of response body
-                    if (HttpTelemetry.Log.IsEnabled()) LogRequestStop();
                     _connection.CompleteResponse();
                     _connection = null;
                 }
@@ -110,7 +109,6 @@ namespace System.Net.Http
                 if (_contentBytesRemaining == 0)
                 {
                     // End of response body
-                    if (HttpTelemetry.Log.IsEnabled()) LogRequestStop();
                     _connection.CompleteResponse();
                     _connection = null;
                 }
@@ -165,7 +163,6 @@ namespace System.Net.Http
 
             private void Finish()
             {
-                if (HttpTelemetry.Log.IsEnabled()) LogRequestStop();
                 _contentBytesRemaining = 0;
                 _connection!.CompleteResponse();
                 _connection = null;

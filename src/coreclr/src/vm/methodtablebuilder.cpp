@@ -9588,7 +9588,7 @@ void MethodTableBuilder::CheckForSystemTypes()
 #ifdef CROSSGEN_COMPILE
                 // Disable AOT compiling for the SIMD hardware intrinsic types. These types require special
                 // ABI handling as they represent fundamental data types (__m64, __m128, and __m256) and not
-                // aggregate or union types. See https://github.com/dotnet/coreclr/issues/15943
+                // aggregate or union types. See https://github.com/dotnet/runtime/issues/9578
                 //
                 // Once they are properly handled according to the ABI requirements, we can remove this check
                 // and allow them to be used in crossgen/AOT scenarios.
@@ -10114,10 +10114,12 @@ MethodTableBuilder::SetupMethodTable2(
 
     EEClass *pClass = GetHalfBakedClass();
 
-    DWORD cbDict = bmtGenerics->HasInstantiation()
-                   ?  DictionaryLayout::GetDictionarySizeFromLayout(
-                          bmtGenerics->GetNumGenericArgs(), pClass->GetDictionaryLayout())
-                   : 0;
+    DWORD cbDictSlotSize = 0;
+    DWORD cbDictAllocSize = 0;
+    if (bmtGenerics->HasInstantiation())
+    {
+        cbDictAllocSize = DictionaryLayout::GetDictionarySizeFromLayout(bmtGenerics->GetNumGenericArgs(), pClass->GetDictionaryLayout(), &cbDictSlotSize);
+    }
 
 #ifdef FEATURE_COLLECTIBLE_TYPES
     BOOL fCollectible = pLoaderModule->IsCollectible();
@@ -10150,7 +10152,7 @@ MethodTableBuilder::SetupMethodTable2(
                                    dwGCSize,
                                    bmtInterface->dwInterfaceMapSize,
                                    bmtGenerics->numDicts,
-                                   cbDict,
+                                   cbDictAllocSize,
                                    GetParentMethodTable(),
                                    GetClassLoader(),
                                    bmtAllocator,
@@ -10370,7 +10372,7 @@ MethodTableBuilder::SetupMethodTable2(
 
             PTR_Dictionary pDictionarySlots = pMT->GetPerInstInfo()[bmtGenerics->numDicts - 1].GetValue();
             DWORD* pSizeSlot = (DWORD*)(pDictionarySlots + bmtGenerics->GetNumGenericArgs());
-            *pSizeSlot = cbDict;
+            *pSizeSlot = cbDictSlotSize;
         }
     }
 

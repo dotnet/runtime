@@ -7,7 +7,7 @@ steps:
     # Always build the crossdac, that way we know in CI/PR if things break to build.
     - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
       - ${{ if notin(parameters.archType, 'x86') }}:
-        - script: set __TestIntermediateDir=int&&$(coreClrRepoRootDir)build-runtime$(scriptExt) $(buildConfig) $(archType) -ci -linuxdac $(officialBuildIdArg)
+        - script: set __TestIntermediateDir=int&&$(Build.SourcesDirectory)/src/coreclr/build-runtime$(scriptExt) $(buildConfig) $(archType) -ci -linuxdac $(officialBuildIdArg)
           displayName: Build Cross OS Linux DAC for Windows
 
 
@@ -15,7 +15,7 @@ steps:
     - ${{ if and(ne(variables['System.TeamProject'], 'public'), ne(variables['Build.Reason'], 'PullRequest')) }}:
       - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
         - ${{ if notin(parameters.archType, 'x86', 'arm') }}:
-          - script: set __TestIntermediateDir=int&&$(coreClrRepoRootDir)build-runtime$(scriptExt) $(buildConfig) $(archType) -ci -alpinedac $(officialBuildIdArg)
+          - script: set __TestIntermediateDir=int&&$(Build.SourcesDirectory)/src/coreclr/build-runtime$(scriptExt) $(buildConfig) $(archType) -ci -alpinedac $(officialBuildIdArg)
             displayName: Build Cross OS Linux-musl DAC for Windows
 
         - task: CopyFiles@2

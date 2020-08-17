@@ -26,7 +26,7 @@ namespace System.Runtime.InteropServices
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern int SizeOfHelper(Type t, bool throwIfNotMarshalable);
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2006:UnrecognizedReflectionPattern",
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
             Justification = "Trimming doesn't affect types eligible for marshalling. Different exception for invalid inputs doesn't matter.")]
         public static IntPtr OffsetOf(Type t, string fieldName)
         {
@@ -706,7 +706,7 @@ namespace System.Runtime.InteropServices
         }
 
         [SupportedOSPlatform("windows")]
-        public static TWrapper CreateWrapperOfType<T, TWrapper>([AllowNull] T o)
+        public static TWrapper CreateWrapperOfType<T, TWrapper>(T? o)
         {
             return (TWrapper)CreateWrapperOfType(o, typeof(TWrapper))!;
         }
@@ -756,7 +756,7 @@ namespace System.Runtime.InteropServices
         public static extern void GetNativeVariantForObject(object? obj, /* VARIANT * */ IntPtr pDstNativeVariant);
 
         [SupportedOSPlatform("windows")]
-        public static void GetNativeVariantForObject<T>([AllowNull] T obj, IntPtr pDstNativeVariant)
+        public static void GetNativeVariantForObject<T>(T? obj, IntPtr pDstNativeVariant)
         {
             GetNativeVariantForObject((object?)obj, pDstNativeVariant);
         }
@@ -766,10 +766,9 @@ namespace System.Runtime.InteropServices
         public static extern object? GetObjectForNativeVariant(/* VARIANT * */ IntPtr pSrcNativeVariant);
 
         [SupportedOSPlatform("windows")]
-        [return: MaybeNull]
-        public static T GetObjectForNativeVariant<T>(IntPtr pSrcNativeVariant)
+        public static T? GetObjectForNativeVariant<T>(IntPtr pSrcNativeVariant)
         {
-            return (T)GetObjectForNativeVariant(pSrcNativeVariant)!;
+            return (T?)GetObjectForNativeVariant(pSrcNativeVariant);
         }
 
         [SupportedOSPlatform("windows")]

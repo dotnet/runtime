@@ -51,8 +51,7 @@ namespace System.Threading.Channels
         /// <summary>Only relevant to cancelable operations; 0 if the operation hasn't had completion reserved, 1 if it has.</summary>
         private volatile int _completionReserved;
         /// <summary>The result of the operation.</summary>
-        [MaybeNull, AllowNull]
-        private TResult _result = default;
+        private TResult? _result;
         /// <summary>Any error that occurred during the operation.</summary>
         private ExceptionDispatchInfo? _error;
         /// <summary>The continuation callback.</summary>
@@ -454,7 +453,6 @@ namespace System.Threading.Channels
         }
 
         /// <summary>The item being written.</summary>
-        [MaybeNull, AllowNull]
-        public TData Item { get; set; } = default!;
+        public TData? Item { get; set; }
     }
 }

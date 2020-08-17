@@ -411,7 +411,8 @@ namespace System.Globalization
             }
         }
 
-        private unsafe bool IcuStartsWith(ReadOnlySpan<char> source, ReadOnlySpan<char> prefix, CompareOptions options)
+        // this method sets '*matchLengthPtr' (if not nullptr) only on success
+        private unsafe bool IcuStartsWith(ReadOnlySpan<char> source, ReadOnlySpan<char> prefix, CompareOptions options, int* matchLengthPtr)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
             Debug.Assert(!GlobalizationMode.UseNls);
@@ -422,21 +423,21 @@ namespace System.Globalization
             if (_isAsciiEqualityOrdinal && CanUseAsciiOrdinalForOptions(options))
             {
                 if ((options & CompareOptions.IgnoreCase) != 0)
-                    return StartsWithOrdinalIgnoreCaseHelper(source, prefix, options);
+                    return StartsWithOrdinalIgnoreCaseHelper(source, prefix, options, matchLengthPtr);
                 else
-                    return StartsWithOrdinalHelper(source, prefix, options);
+                    return StartsWithOrdinalHelper(source, prefix, options, matchLengthPtr);
             }
             else
             {
                 fixed (char* pSource = &MemoryMarshal.GetReference(source)) // could be null (or otherwise unable to be dereferenced)
                 fixed (char* pPrefix = &MemoryMarshal.GetReference(prefix))
                 {
-                    return Interop.Globalization.StartsWith(_sortHandle, pPrefix, prefix.Length, pSource, source.Length, options);
+                    return Interop.Globalization.StartsWith(_sortHandle, pPrefix, prefix.Length, pSource, source.Length, options, matchLengthPtr);
                 }
             }
         }
 
-        private unsafe bool StartsWithOrdinalIgnoreCaseHelper(ReadOnlySpan<char> source, ReadOnlySpan<char> prefix, CompareOptions options)
+        private unsafe bool StartsWithOrdinalIgnoreCaseHelper(ReadOnlySpan<char> source, ReadOnlySpan<char> prefix, CompareOptions options, int* matchLengthPtr)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
 
@@ -499,14 +500,19 @@ namespace System.Globalization
                     if (*a >= 0x80)
                         goto InteropCall;
                 }
+
+                if (matchLengthPtr != null)
+                {
+                    *matchLengthPtr = prefix.Length; // non-linguistic match doesn't change UTF-16 length
+                }
                 return true;
 
             InteropCall:
-                return Interop.Globalization.StartsWith(_sortHandle, bp, prefix.Length, ap, source.Length, options);
+                return Interop.Globalization.StartsWith(_sortHandle, bp, prefix.Length, ap, source.Length, options, matchLengthPtr);
             }
         }
 
-        private unsafe bool StartsWithOrdinalHelper(ReadOnlySpan<char> source, ReadOnlySpan<char> prefix, CompareOptions options)
+        private unsafe bool StartsWithOrdinalHelper(ReadOnlySpan<char> source, ReadOnlySpan<char> prefix, CompareOptions options, int* matchLengthPtr)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
 
@@ -558,14 +564,20 @@ namespace System.Globalization
                     if (*a >= 0x80)
                         goto InteropCall;
                 }
+
+                if (matchLengthPtr != null)
+                {
+                    *matchLengthPtr = prefix.Length; // non-linguistic match doesn't change UTF-16 length
+                }
                 return true;
 
             InteropCall:
-                return Interop.Globalization.StartsWith(_sortHandle, bp, prefix.Length, ap, source.Length, options);
+                return Interop.Globalization.StartsWith(_sortHandle, bp, prefix.Length, ap, source.Length, options, matchLengthPtr);
             }
         }
 
-        private unsafe bool IcuEndsWith(ReadOnlySpan<char> source, ReadOnlySpan<char> suffix, CompareOptions options)
+        // this method sets '*matchLengthPtr' (if not nullptr) only on success
+        private unsafe bool IcuEndsWith(ReadOnlySpan<char> source, ReadOnlySpan<char> suffix, CompareOptions options, int* matchLengthPtr)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
             Debug.Assert(!GlobalizationMode.UseNls);
@@ -576,21 +588,21 @@ namespace System.Globalization
             if (_isAsciiEqualityOrdinal && CanUseAsciiOrdinalForOptions(options))
             {
                 if ((options & CompareOptions.IgnoreCase) != 0)
-                    return EndsWithOrdinalIgnoreCaseHelper(source, suffix, options);
+                    return EndsWithOrdinalIgnoreCaseHelper(source, suffix, options, matchLengthPtr);
                 else
-                    return EndsWithOrdinalHelper(source, suffix, options);
+                    return EndsWithOrdinalHelper(source, suffix, options, matchLengthPtr);
             }
             else
             {
                 fixed (char* pSource = &MemoryMarshal.GetReference(source)) // could be null (or otherwise unable to be dereferenced)
                 fixed (char* pSuffix = &MemoryMarshal.GetReference(suffix))
                 {
-                    return Interop.Globalization.EndsWith(_sortHandle, pSuffix, suffix.Length, pSource, source.Length, options);
+                    return Interop.Globalization.EndsWith(_sortHandle, pSuffix, suffix.Length, pSource, source.Length, options, matchLengthPtr);
                 }
             }
         }
 
-        private unsafe bool EndsWithOrdinalIgnoreCaseHelper(ReadOnlySpan<char> source, ReadOnlySpan<char> suffix, CompareOptions options)
+        private unsafe bool EndsWithOrdinalIgnoreCaseHelper(ReadOnlySpan<char> source, ReadOnlySpan<char> suffix, CompareOptions options, int* matchLengthPtr)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
 
@@ -653,14 +665,19 @@ namespace System.Globalization
                     if (*a >= 0x80)
                         goto InteropCall;
                 }
+
+                if (matchLengthPtr != null)
+                {
+                    *matchLengthPtr = suffix.Length; // non-linguistic match doesn't change UTF-16 length
+                }
                 return true;
 
             InteropCall:
-                return Interop.Globalization.EndsWith(_sortHandle, bp, suffix.Length, ap, source.Length, options);
+                return Interop.Globalization.EndsWith(_sortHandle, bp, suffix.Length, ap, source.Length, options, matchLengthPtr);
             }
         }
 
-        private unsafe bool EndsWithOrdinalHelper(ReadOnlySpan<char> source, ReadOnlySpan<char> suffix, CompareOptions options)
+        private unsafe bool EndsWithOrdinalHelper(ReadOnlySpan<char> source, ReadOnlySpan<char> suffix, CompareOptions options, int* matchLengthPtr)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
 
@@ -712,10 +729,15 @@ namespace System.Globalization
                     if (*a >= 0x80)
                         goto InteropCall;
                 }
+
+                if (matchLengthPtr != null)
+                {
+                    *matchLengthPtr = suffix.Length; // non-linguistic match doesn't change UTF-16 length
+                }
                 return true;
 
             InteropCall:
-                return Interop.Globalization.EndsWith(_sortHandle, bp, suffix.Length, ap, source.Length, options);
+                return Interop.Globalization.EndsWith(_sortHandle, bp, suffix.Length, ap, source.Length, options, matchLengthPtr);
             }
         }
 

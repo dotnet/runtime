@@ -1,7 +1,7 @@
 
 # Using your .NET Runtime Build
 
-We assume that you have successfully built CoreCLR repository and thus have files of the form
+We assume that you have successfully built the repository and thus have files of the form
 ```
     ~/runtime/artifacts/bin/coreclr/<OS>.<arch>.<flavor>/
 ```
@@ -11,7 +11,7 @@ a 'host' program that will load the Runtime as well as all the other .NET librar
 code that your application needs. The easiest way to get all this other stuff is to simply use the
 standard 'dotnet' host that installs with .NET SDK.
 
-The released version of 'dotnet' tool may not be compatible with the live CoreCLR repository. The following steps
+The released version of 'dotnet' tool may not be compatible with the live repository. The following steps
 assume use of a dogfood build of the .NET SDK.
 
 ## Acquire the latest nightly .NET SDK
@@ -157,7 +157,7 @@ Assert failure(PID 13452 [0x0000348c], Thread: 10784 [0x2a20]): Consistency chec
 ## Using .NET SDK to run your .NET Application
 
 If you don't like the idea of copying files manually you can follow [these instructions](../using-dotnet-cli.md) to use dotnet cli to do this for you.
-However the steps described here are the simplest and most commonly used by CoreCLR developers for ad-hoc testing.
+However the steps described here are the simplest and most commonly used by runtime developers for ad-hoc testing.
 
 ## Using CoreRun to run your .NET Application
 

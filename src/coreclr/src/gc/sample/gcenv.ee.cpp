@@ -339,7 +339,7 @@ inline bool GCToEEInterface::AnalyzeSurvivorsRequested(int condemnedGeneration)
     return false;
 }
 
-inline void GCToEEInterface::AnalyzeSurvivorsFinished(int condemnedGeneration)
+inline void GCToEEInterface::AnalyzeSurvivorsFinished(size_t gcIndex, int condemnedGeneration, uint64_t promoted_bytes, void (*reportGenerationBounds)())
 {
 
 }

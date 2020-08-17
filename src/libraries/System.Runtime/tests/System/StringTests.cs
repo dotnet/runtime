@@ -684,6 +684,11 @@ namespace System.Tests
                 yield return new object[] { turkishSource, "\u0130", "a", StringComparison.InvariantCulture, "\u0069a" };
                 yield return new object[] { turkishSource, "\u0130", "a", StringComparison.InvariantCultureIgnoreCase, "\u0069a" };
             }
+
+            // To catch regressions when dealing with zero-length "this" inputs
+            yield return new object[] { "", "x", "y", StringComparison.InvariantCulture, "" };
+            yield return new object[] { "", "\u200d", "y", StringComparison.InvariantCulture, "" };
+            yield return new object[] { "", "\0", "y", StringComparison.InvariantCulture, "" };
         }
 
         [Theory]

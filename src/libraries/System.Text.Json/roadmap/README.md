@@ -83,7 +83,7 @@
   coming from a `Pipe` (from within an async context) as a sequence of segments
   and pass that along. Like streams, providing a higher-level type can help with
   making the end-to-end usage easier for the user when dealing with pipes.
-* A [stream <-> pipe adapter](https://github.com/dotnet/corefx/issues/27246) will help with the interoperability of these types
+* A [stream <-> pipe adapter](https://github.com/dotnet/runtime/issues/25087) will help with the interoperability of these types
   in general.
 
 ## Out of Current Scope & Future Considerations

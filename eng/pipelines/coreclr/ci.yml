@@ -164,4 +164,5 @@ jobs:
     jobTemplate: /eng/pipelines/coreclr/templates/format-job.yml
     platforms:
     - Linux_x64
-    - Windows_NT_x64
+    # Isssue: https://github.com/dotnet/runtime/issues/40034
+    #- Windows_NT_x64
