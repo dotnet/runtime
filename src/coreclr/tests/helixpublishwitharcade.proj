@@ -16,7 +16,7 @@
 
       <_PropertiesToPass>
         TargetArchitecture=$(TargetArchitecture);
-        TargetOS=$(TargetOS);
+        TargetOS=$(__TargetOS);
         Configuration=$(Configuration);
         Creator=$(_Creator);
         HelixAccessToken=$(_HelixAccessToken);
