@@ -400,6 +400,10 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
   <Import Project="$(MSBuildThisFileDirectory)../publishdependency.targets" />
 
   <Target Name="CreateTestOverlay">
+    <MSBuild Projects="$(RepoRoot)/tools-local/WasmAppBuilderConsole/WasmAppBuilderConsole.csproj"
+             Targets="Publish" 
+              Condition="'$(TargetArchitecture)' == 'wasm'"/>
+
     <MSBuild Projects="$(MSBuildProjectFile)"
              Targets="CopyDependencyToCoreRoot"
              Properties="Language=C#;TargetRid=$(TargetRid);RuntimeIdentifier=$(TargetRid)" />
