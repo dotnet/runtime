@@ -82,14 +82,18 @@ var MonoSupportLib = {
 		_mono_wasm_root_buffer_prototype: {
 			/** @returns {NativePointer} */
 			get_address: function (index) {
+				return this.__offset + (index * 4);
+			},
+			/** @returns {number} */
+			get_address_32: function (index) {
 				return this.__offset32 + index;
 			},
 			/** @returns {ManagedPointer} */
 			get: function (index) {
-				return Module.HEAP32[this.get_address(index)];
+				return Module.HEAP32[this.get_address_32(index)];
 			},
 			set: function (index, value) {
-				Module.HEAP32[this.get_address(index)] = value;
+				Module.HEAP32[this.get_address_32(index)] = value;
 				return value;
 			},
 			release: function () {
@@ -110,6 +114,10 @@ var MonoSupportLib = {
 			/** @returns {NativePointer} */
 			get_address: function () {
 				return this.__buffer.get_address (this.__index);
+			},
+			/** @returns {number} */
+			get_address_32: function () {
+				return this.__buffer.get_address_32 (this.__index);
 			},
 			/** @returns {ManagedPointer} */
 			get: function () {
@@ -184,6 +192,8 @@ var MonoSupportLib = {
 
 			if (capacity <= 0)
 				throw new Error ("capacity >= 1");
+
+			capacity = capacity | 0;
 				
 			var capacityBytes = capacity * 4;
 			var offset = Module._malloc (capacityBytes);

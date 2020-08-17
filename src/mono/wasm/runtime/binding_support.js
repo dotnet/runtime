@@ -679,6 +679,7 @@ var BindingSupportLib = {
 			var args_start = null;
 			var buffer = null;
 			var [resultRoot, exceptionRoot] = MONO.mono_wasm_new_roots (2);
+			var argsRootBuffer = null;
 
 			// check if the method signature needs argument mashalling
 			if (has_args_marshal && has_args) {
@@ -721,9 +722,15 @@ var BindingSupportLib = {
 				//  collected until the method call completes.
 
 				// assume at least 8 byte alignment from malloc
-				buffer = Module._malloc (converter.size + (args.length * 4));
+				var converterElements = ((converter.size + 3) / 4) | 0;
+				var bufferElements = (converterElements + args.length) | 0;
+
+				argsRootBuffer = MONO.mono_wasm_new_root_buffer (bufferElements);
+				var buffer = argsRootBuffer.get_address (0);
 				var indirect_start = buffer; // buffer + buffer % 8
-				args_start = indirect_start + converter.size;
+				args_start = argsRootBuffer.get_address (converterElements);
+
+				console.log (bufferElements, converterElements, indirect_start, args_start);
 
 				var slot = args_start;
 				var indirect_value = indirect_start;
@@ -739,6 +746,8 @@ var BindingSupportLib = {
 
 					Module.setValue (slot, obj, "*");
 					slot += 4;
+
+					console.log ("arg", i, argsRootBuffer.get (i), argsRootBuffer.get (converterElements + i));
 				}
 			}
 
@@ -758,7 +767,7 @@ var BindingSupportLib = {
 
 				return this._unbox_mono_obj_rooted (resultRoot);
 			} finally {
-				MONO.mono_wasm_release_roots (resultRoot, exceptionRoot);
+				MONO.mono_wasm_release_roots (resultRoot, exceptionRoot, argsRootBuffer);
 			}
 		},
 
