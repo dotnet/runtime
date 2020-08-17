@@ -3,6 +3,7 @@
 
 using System.Runtime.InteropServices;
 using System.ComponentModel;
+using static Interop.Advapi32;
 
 namespace System.DirectoryServices.ActiveDirectory
 {

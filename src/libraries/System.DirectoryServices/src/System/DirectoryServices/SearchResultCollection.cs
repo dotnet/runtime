@@ -1,12 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections;
 using System.Net;
 using System.Runtime.InteropServices;
-using System.Collections;
-using System.DirectoryServices.Interop;
 using System.Text;
-
+using static Interop.Activeds;
 using INTPTR_INTPTRCAST = System.IntPtr;
 
 namespace System.DirectoryServices
@@ -18,7 +17,7 @@ namespace System.DirectoryServices
     public class SearchResultCollection : MarshalByRefObject, ICollection, IEnumerable, IDisposable
     {
         private IntPtr _handle;
-        private UnsafeNativeMethods.IDirectorySearch _searchObject;
+        private IDirectorySearch _searchObject;
         private ArrayList _innerList;
         private bool _disposed;
         private readonly DirectoryEntry _rootEntry;       // clone of parent entry object
@@ -62,13 +61,13 @@ namespace System.DirectoryServices
             }
         }
 
-        internal UnsafeNativeMethods.IDirectorySearch SearchObject
+        internal IDirectorySearch SearchObject
         {
             get
             {
                 if (_searchObject == null)
                 {
-                    _searchObject = (UnsafeNativeMethods.IDirectorySearch)_rootEntry.AdsObject;   // get it only once
+                    _searchObject = (IDirectorySearch)_rootEntry.AdsObject;   // get it only once
                 }
                 return _searchObject;
             }
@@ -300,7 +299,7 @@ namespace System.DirectoryServices
                     }
                     finally
                     {
-                        SafeNativeMethods.FreeADsMem(pszColumnName);
+                        FreeADsMem(pszColumnName);
                     }
                     hr = _results.SearchObject.GetNextColumnName(_results.Handle, (INTPTR_INTPTRCAST)(&pszColumnName));
                 }
@@ -326,10 +325,10 @@ namespace System.DirectoryServices
                 {
                     int hr = _results.SearchObject.GetFirstRow(_results.Handle);
 
-                    if (hr != UnsafeNativeMethods.S_ADS_NOMORE_ROWS)
+                    if (hr != S_ADS_NOMORE_ROWS)
                     {
                         //throw a clearer exception if the filter was invalid
-                        if (hr == UnsafeNativeMethods.INVALID_FILTER)
+                        if (hr == INVALID_FILTER)
                             throw new ArgumentException(SR.Format(SR.DSInvalidSearchFilter, _results.Filter));
                         if (hr != 0)
                             throw COMExceptionHelper.CreateFormattedComException(hr);
@@ -350,10 +349,10 @@ namespace System.DirectoryServices
 
                     int hr = _results.SearchObject.GetNextRow(_results.Handle);
                     //  SIZE_LIMIT_EXCEEDED occurs when we supply too generic filter or small SizeLimit value.
-                    if (hr == UnsafeNativeMethods.S_ADS_NOMORE_ROWS || hr == UnsafeNativeMethods.SIZE_LIMIT_EXCEEDED)
+                    if (hr == S_ADS_NOMORE_ROWS || hr == SIZE_LIMIT_EXCEEDED)
                     {
                         // need to make sure this is not the case that server actually still has record not returned yet
-                        if (hr == UnsafeNativeMethods.S_ADS_NOMORE_ROWS)
+                        if (hr == S_ADS_NOMORE_ROWS)
                         {
                             hr = GetLastError(ref errorCode);
                             // get last error call failed, we need to bail out
@@ -362,7 +361,7 @@ namespace System.DirectoryServices
                         }
 
                         // not the case that server still has result, we are done here
-                        if (errorCode != SafeNativeMethods.ERROR_MORE_DATA)
+                        if (errorCode != (int)AdsLastError.ERROR_MORE_DATA)
                         {
                             // get the dirsync cookie as we finished all the rows
                             if (_results.srch.directorySynchronizationSpecified)
@@ -386,7 +385,7 @@ namespace System.DirectoryServices
                         }
                     }
                     //throw a clearer exception if the filter was invalid
-                    if (hr == UnsafeNativeMethods.INVALID_FILTER)
+                    if (hr == INVALID_FILTER)
                         throw new ArgumentException(SR.Format(SR.DSInvalidSearchFilter, _results.Filter));
                     if (hr != 0)
                         throw COMExceptionHelper.CreateFormattedComException(hr);
@@ -409,14 +408,14 @@ namespace System.DirectoryServices
 
             private void CleanLastError()
             {
-                SafeNativeMethods.ADsSetLastError(SafeNativeMethods.ERROR_SUCCESS, null, null);
+                ADsSetLastError((int)AdsLastError.ERROR_SUCCESS, null, null);
             }
 
             private unsafe int GetLastError(ref int errorCode)
             {
                 char c1 = '\0', c2 = '\0';
-                errorCode = SafeNativeMethods.ERROR_SUCCESS;
-                return SafeNativeMethods.ADsGetLastError(out errorCode, &c1, 0, &c2, 0);
+                errorCode = (int)AdsLastError.ERROR_SUCCESS;
+                return ADsGetLastError(out errorCode, &c1, 0, &c2, 0);
             }
         }
     }

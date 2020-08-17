@@ -3,6 +3,7 @@
 
 using System;
 using System.Runtime.InteropServices;
+using static Interop.Advapi32;
 
 internal partial class Interop
 {

@@ -4,11 +4,19 @@
 using System;
 using System.Runtime.InteropServices;
 using Microsoft.Win32.SafeHandles;
+using static Interop;
 
 internal static partial class Interop
 {
     internal static partial class Advapi32
     {
+        [DllImport(Interop.Libraries.Advapi32, CallingConvention = CallingConvention.StdCall, EntryPoint = "LsaOpenPolicy", CharSet = CharSet.Unicode)]
+        public static extern int LsaOpenPolicy(
+                                IntPtr lsaUnicodeString,
+                                IntPtr lsaObjectAttributes,
+                                int desiredAccess,
+                                ref IntPtr policyHandle);
+
         [DllImport(Interop.Libraries.Advapi32, EntryPoint = "LsaOpenPolicy", SetLastError = true, CharSet = CharSet.Unicode)]
         private static extern uint LsaOpenPolicy(
             ref UNICODE_STRING SystemName,
@@ -17,6 +25,10 @@ internal static partial class Interop
             out SafeLsaPolicyHandle PolicyHandle
         );
 
+        [DllImport(Interop.Libraries.Advapi32, EntryPoint = "LsaOpenPolicy")]
+        public static extern int LsaOpenPolicy(LSA_UNICODE_STRING target, LSA_OBJECT_ATTRIBUTES objectAttributes, int access, out IntPtr handle);
+
+#nullable enable
         internal static unsafe uint LsaOpenPolicy(
             string? SystemName,
             ref OBJECT_ATTRIBUTES Attributes,
@@ -39,5 +51,6 @@ internal static partial class Interop
                 return LsaOpenPolicy(ref systemNameUnicode, ref Attributes, AccessMask, out PolicyHandle);
             }
         }
+#nullable disable
     }
 }

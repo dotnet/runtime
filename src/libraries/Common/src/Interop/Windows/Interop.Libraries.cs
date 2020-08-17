@@ -5,6 +5,7 @@ internal static partial class Interop
 {
     internal static partial class Libraries
     {
+        internal const string Activeds = "Activeds.dll";
         internal const string Advapi32 = "advapi32.dll";
         internal const string BCrypt = "BCrypt.dll";
         internal const string CoreComm_L1_1_1 = "api-ms-win-core-comm-l1-1-1.dll";
@@ -19,6 +20,7 @@ internal static partial class Interop
         internal const string Memory_L1_3 = "api-ms-win-core-memory-l1-1-3.dll";
         internal const string Mswsock = "mswsock.dll";
         internal const string NCrypt = "ncrypt.dll";
+        internal const string Netapi32 = "Netapi32.dll";
         internal const string NtDll = "ntdll.dll";
         internal const string Odbc32 = "odbc32.dll";
         internal const string Ole32 = "ole32.dll";

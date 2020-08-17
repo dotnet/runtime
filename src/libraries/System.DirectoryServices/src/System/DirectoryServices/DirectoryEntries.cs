@@ -1,9 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Runtime.InteropServices;
 using System.Collections;
-using System.DirectoryServices.Interop;
+using System.Runtime.InteropServices;
+using static Interop.Activeds;
 
 namespace System.DirectoryServices
 {
@@ -104,7 +104,7 @@ namespace System.DirectoryServices
         private class ChildEnumerator : IEnumerator
         {
             private readonly DirectoryEntry _container;
-            private SafeNativeMethods.EnumVariant _enumVariant;
+            private EnumVariant _enumVariant;
             private DirectoryEntry _currentEntry;
 
             internal ChildEnumerator(DirectoryEntry container)
@@ -112,7 +112,7 @@ namespace System.DirectoryServices
                 _container = container;
                 if (container.IsContainer)
                 {
-                    _enumVariant = new SafeNativeMethods.EnumVariant((SafeNativeMethods.IEnumVariant)container.ContainerObject._NewEnum);
+                    _enumVariant = new EnumVariant((IEnumVariant)container.ContainerObject._NewEnum);
                 }
             }
 
@@ -160,7 +160,7 @@ namespace System.DirectoryServices
                     catch (NotImplementedException)
                     {
                         //Some providers might not implement Reset, workaround the problem.
-                        _enumVariant = new SafeNativeMethods.EnumVariant((SafeNativeMethods.IEnumVariant)_container.ContainerObject._NewEnum);
+                        _enumVariant = new EnumVariant((IEnumVariant)_container.ContainerObject._NewEnum);
                     }
                     _currentEntry = null;
                 }

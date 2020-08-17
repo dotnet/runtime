@@ -1,9 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-namespace System.DirectoryServices.Interop
+internal static partial class Interop
 {
-    internal class NativeMethods
+    internal static partial class Activeds
     {
         public enum AuthenticationModes
         {

@@ -4,6 +4,7 @@
 using System.Runtime.InteropServices;
 using System.Collections;
 using System.Collections.Specialized;
+using static Interop.Advapi32;
 
 namespace System.DirectoryServices.ActiveDirectory
 {
@@ -325,7 +326,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     }
 
                     if (collisionInfo != (IntPtr)0)
-                        UnsafeNativeMethods.LsaFreeMemory(collisionInfo);
+                        LsaFreeMemory(collisionInfo);
 
                     if (target != (IntPtr)0)
                         Marshal.FreeHGlobal(target);
@@ -440,7 +441,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     }
                     finally
                     {
-                        UnsafeNativeMethods.LsaFreeMemory(forestTrustInfo);
+                        LsaFreeMemory(forestTrustInfo);
                     }
 
                     _topLevelNames = tmpTLNs;

@@ -6,10 +6,8 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Text;
-using System.Collections.Generic;
-using System.Net;
 using System.Security.Principal;
-using System.Security;
+using static Interop.Advapi32;
 
 namespace System.DirectoryServices.AccountManagement
 {
@@ -477,7 +475,7 @@ namespace System.DirectoryServices.AccountManagement
 
                 pOA = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(UnsafeNativeMethods.LSA_OBJECT_ATTRIBUTES)));
                 Marshal.StructureToPtr(oa, pOA, false);
-                int err = UnsafeNativeMethods.LsaOpenPolicy(
+                int err = LsaOpenPolicy(
                                 IntPtr.Zero,
                                 pOA,
                                 1,          // POLICY_VIEW_LOCAL_INFORMATION

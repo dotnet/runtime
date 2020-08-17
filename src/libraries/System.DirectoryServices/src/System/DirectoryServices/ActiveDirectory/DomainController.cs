@@ -1,12 +1,13 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Net;
 using System.ComponentModel;
 using System.Collections;
-using System.Globalization;
-using System.Runtime.InteropServices;
 using System.Diagnostics;
+using System.Globalization;
+using System.Net;
+using System.Runtime.InteropServices;
+using static Interop.Activeds;
 
 namespace System.DirectoryServices.ActiveDirectory
 {
@@ -410,7 +411,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 // Increment the RIDAvailablePool by 30k.
                 if (role == ActiveDirectoryRole.RidRole)
                 {
-                    System.DirectoryServices.Interop.UnsafeNativeMethods.IADsLargeInteger ridPool = (System.DirectoryServices.Interop.UnsafeNativeMethods.IADsLargeInteger)roleObjectEntry.Properties[PropertyManager.RIDAvailablePool].Value;
+                    IADsLargeInteger ridPool = (IADsLargeInteger)roleObjectEntry.Properties[PropertyManager.RIDAvailablePool].Value;
 
                     // check the overflow of the low part
                     if (ridPool.LowPart + UpdateRidPoolSeizureValue < ridPool.LowPart)

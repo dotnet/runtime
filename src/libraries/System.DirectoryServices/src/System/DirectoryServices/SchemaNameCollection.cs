@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections;
-using System.DirectoryServices.Interop;
+using static Interop.Activeds;
 
 namespace System.DirectoryServices
 {
@@ -220,8 +220,8 @@ namespace System.DirectoryServices
         // classes wrap an object and supply properties as methods.
         internal class FilterDelegateWrapper
         {
-            private readonly UnsafeNativeMethods.IAdsContainer _obj;
-            internal FilterDelegateWrapper(UnsafeNativeMethods.IAdsContainer wrapped)
+            private readonly IAdsContainer _obj;
+            internal FilterDelegateWrapper(IAdsContainer wrapped)
             {
                 _obj = wrapped;
             }

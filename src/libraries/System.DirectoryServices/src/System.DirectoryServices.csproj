@@ -8,10 +8,11 @@
   <PropertyGroup>
     <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetFramework)' == 'netstandard2.0'">SR.DirectoryServices_PlatformNotSupported</GeneratePlatformNotSupportedAssemblyMessage>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|net5.0-Windows_NT|AnyCPU'">
+    <PlatformTarget>AnyCPU</PlatformTarget>
+  </PropertyGroup>
   <ItemGroup Condition="'$(TargetFramework)' != 'netstandard2.0'">
-    <Compile Include="System\DirectoryServices\ExternDll.cs" />
     <Compile Include="System\DirectoryServices\ActiveDirectorySecurity.cs" />
-    <Compile Include="System\DirectoryServices\AdsVLV.cs" />
     <Compile Include="System\DirectoryServices\AuthenticationTypes.cs" />
     <Compile Include="System\DirectoryServices\DerefAlias.cs" />
     <Compile Include="System\DirectoryServices\DirectoryEntries.cs" />
@@ -123,18 +124,45 @@
     <Compile Include="System\DirectoryServices\DirectoryServicesPermissionAttribute.cs" />
     <Compile Include="System\DirectoryServices\DirectoryServicesPermissionEntry.cs" />
     <Compile Include="System\DirectoryServices\DirectoryServicesPermissionEntryCollection.cs" />
-    <Compile Include="Interop\AdsOptions.cs" />
-    <Compile Include="Interop\AdsPropertyOperation.cs" />
-    <Compile Include="Interop\AdsSearchColumn.cs" />
-    <Compile Include="Interop\AdsSearchPreferenceInfo.cs" />
-    <Compile Include="Interop\AdsSearchPreferences.cs" />
-    <Compile Include="Interop\AdsSortKey.cs" />
-    <Compile Include="Interop\AdsType.cs" />
-    <Compile Include="Interop\AdsValue2.cs" />
-    <Compile Include="Interop\AdsValueHelper2.cs" />
-    <Compile Include="Interop\NativeMethods.cs" />
-    <Compile Include="Interop\SafeNativeMethods.cs" />
-    <Compile Include="Interop\UnsafeNativeMethods.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs"
+             Link="Interop\Windows\Interop.Libraries.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Interop.OBJECT_ATTRIBUTES.cs" Link="Interop\Windows\Interop.OBJECT_ATTRIBUTES.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Interop.UNICODE_STRING.cs" Link="Interop\Windows\Interop.UNICODE_STRING.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Activeds\Interop.AdsObject.cs"
+             Link="Interop\Windows\Activeds\Interop.AdsObject.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Activeds\Interop.AdsOptions.cs"
+             Link="Interop\Windows\Activeds\Interop.AdsOptions.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Activeds\Interop.AdsPropertyOperation.cs" 
+             Link="Interop\Windows\Activeds\Interop.AdsPropertyOperation.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Activeds\Interop.AdsSearchColumn.cs" 
+             Link="Interop\Windows\Activeds\Interop.AdsSearchColumn.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Activeds\Interop.AdsSearchPreferenceInfo.cs" 
+             Link="Interop\Windows\Activeds\Interop.AdsSearchPreferenceInfo.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Activeds\Interop.AdsSearchPreferences.cs"
+             Link="Interop\Windows\Activeds\Interop.AdsSearchPreferences" />
+    <Compile Include="$(CommonPath)Interop\Windows\Activeds\Interop.AdsSortKey.cs"
+             Link="Interop\Windows\Activeds\Interop.AdsSortKey.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Activeds\Interop.AdsType.cs" Link="Interop\Windows\Activeds\Interop.AdsType.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Activeds\Interop.AdsValue2.cs" Link="Interop\Windows\Activeds\Interop.AdsValue2.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Activeds\Interop.AdsValueHelper2.cs" Link="Interop\Windows\Activeds\Interop.AdsValueHelper2.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Activeds\Interop.AdsVLV.cs" Link="Interop\Windows\Activeds\Interop.AdsVLV.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Activeds\Interop.AuthenticationModes.cs" Link="Interop\Windows\Activeds\Interop.AuthenticationModes.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Activeds\Interop.DirectorySearch.cs" Link="Interop\Windows\Activeds\Interop.DirectorySearch.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Activeds\Interop.EnumVariant.cs" Link="Interop\Windows\Activeds\Interop.EnumVariant.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Activeds\Interop.FreeAdsMem.cs" Link="Interop\Windows\Activeds\Interop.FreeAdsMem.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Activeds\Interop.GetSetLastError.cs" Link="Interop\Windows\Activeds\Interop.GetSetLastError.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.LsaClose.cs" Link="Interop\Windows\Advapi32\Interop.LsaClose.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.LsaFreeMemory.cs" Link="Interop\Windows\Advapi32\Interop.LsaFreeMemory.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.LsaLookupSids.cs" Link="Interop\Windows\Advapi32\Interop.LsaLookupSids.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.LsaOpenPolicy.cs" Link="Interop\Windows\Advapi32\Interop.LsaOpenPolicy.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.LSA_OBJECT_ATTRIBUTES.cs" Link="Interop\Windows\Advapi32\Interop.LSA_OBJECT_ATTRIBUTES.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.LSA_UNICODE_STRING.cs" Link="Interop\Windows\Advapi32\Interop.LSA_UNICODE_STRING.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.LsaQueryInformationPolicy.cs" Link="Interop\Windows\Advapi32\Interop.LsaQueryInformationPolicy.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\OleAut32\Interop.Variant.cs" Link="Interop\Windows\OleAut32\Interop.Variant.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\OleAut32\Interop.VariantClear.cs" Link="Interop\Windows\OleAut32\Interop.VariantClear.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\OleAut32\Interop.VariantInit.cs" Link="Interop\Windows\OleAut32\Interop.VariantInit.cs" />
+    <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeLsaPolicyHandle.cs" Link="Microsoft\Win32\SafeHandles\SafeLsaPolicyHandle.cs" />
+    <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeLsaMemoryHandle.cs" Link="Microsoft\Win32\SafeHandles\SafeLsaMemoryHandle.cs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System.Collections" />

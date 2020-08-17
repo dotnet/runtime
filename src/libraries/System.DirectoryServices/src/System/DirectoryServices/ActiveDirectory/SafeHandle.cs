@@ -3,6 +3,7 @@
 
 using System.Security;
 using Microsoft.Win32.SafeHandles;
+using static Interop.Advapi32;
 
 namespace System.DirectoryServices.ActiveDirectory
 {
@@ -13,7 +14,7 @@ namespace System.DirectoryServices.ActiveDirectory
             SetHandle(value);
         }
 
-        protected override bool ReleaseHandle() => UnsafeNativeMethods.LsaClose(handle) == 0;
+        protected override bool ReleaseHandle() => LsaClose(handle) == 0;
     }
 
     internal sealed class LsaLogonProcessSafeHandle : SafeHandleZeroOrMinusOneIsInvalid

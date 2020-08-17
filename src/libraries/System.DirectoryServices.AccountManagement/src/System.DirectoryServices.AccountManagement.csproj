@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DefineConstants>$(DefineConstants);FLAVOR_WHIDBEY;PAPI_AD;PAPI_REGSAM;USE_CTX_CACHE</DefineConstants>
@@ -87,8 +87,23 @@
     <Compile Include="System\DirectoryServices\AccountManagement\UnknownPrincipal.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs"
              Link="Common\Interop\Windows\Interop.Libraries.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Interop.OBJECT_ATTRIBUTES.cs" Link="Interop\Windows\Interop.OBJECT_ATTRIBUTES.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Interop.UNICODE_STRING.cs" Link="Interop\Windows\Interop.UNICODE_STRING.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.LookupAccountSid.cs"
              Link="Common\Interop\Windows\Advapi32\Interop.LookupAccountSid.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.LsaClose.cs"
+             Link="Interop\Windows\Advapi32\Interop.LsaClose.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.LsaFreeMemory.cs"
+             Link="Interop\Windows\Advapi32\Interop.LsaFreeMemory.cs" />
+        <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.LsaOpenPolicy.cs"
+             Link="Interop\Windows\Advapi32\Interop.LsaOpenPlicy.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.LsaQueryInformationPolicy.cs" Link="Interop\Windows\Advapi32\Interop.LsaQueryInformationPolicy.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.LSA_OBJECT_ATTRIBUTES.cs" Link="Interop\Windows\Advapi32\Interop.LSA_OBJECT_ATTRIBUTES.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.LSA_UNICODE_STRING.cs" Link="Interop\Windows\Advapi32\Interop.LSA_UNICODE_STRING.cs" />
+    <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeLsaPolicyHandle.cs" 
+             Link="Microsoft\Win32\SafeHandles\SafeLsaPolicyHandle.cs" />
+    <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeLsaMemoryHandle.cs"
+             Link="Microsoft\Win32\SafeHandles\SafeLsaMemoryHandle.cs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System.DirectoryServices" />

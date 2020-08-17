@@ -1,12 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Runtime.InteropServices;
 using System.Collections;
 using System.Collections.Specialized;
-using System.DirectoryServices.Interop;
 using System.ComponentModel;
-
+using System.Runtime.InteropServices;
+using static Interop.Activeds;
 using INTPTR_INTPTRCAST = System.IntPtr;
 
 namespace System.DirectoryServices
@@ -616,8 +615,8 @@ namespace System.DirectoryServices
         {
             DirectoryEntry clonedRoot = SearchRoot.CloneBrowsable();
 
-            UnsafeNativeMethods.IAds adsObject = clonedRoot.AdsObject;
-            if (!(adsObject is UnsafeNativeMethods.IDirectorySearch))
+            IAds adsObject = clonedRoot.AdsObject;
+            if (!(adsObject is IDirectorySearch))
                 throw new NotSupportedException(SR.Format(SR.DSSearchUnsupported, SearchRoot.Path));
 
             // this is a little bit hacky, but we need to perform a bind here, so we make sure the LDAP connection that we hold has more than
@@ -631,7 +630,7 @@ namespace System.DirectoryServices
                 SearchRoot.Bind(true);
             }
 
-            UnsafeNativeMethods.IDirectorySearch adsSearch = (UnsafeNativeMethods.IDirectorySearch)adsObject;
+            IDirectorySearch adsSearch = (IDirectorySearch)adsObject;
             SetSearchPreferences(adsSearch, findMoreThanOne);
 
             string[] properties = null;
@@ -660,7 +659,7 @@ namespace System.DirectoryServices
             return new SearchResultCollection(clonedRoot, resultsHandle, properties, this);
         }
 
-        private unsafe void SetSearchPreferences(UnsafeNativeMethods.IDirectorySearch adsSearch, bool findMoreThanOne)
+        private unsafe void SetSearchPreferences(IDirectorySearch adsSearch, bool findMoreThanOne)
         {
             ArrayList prefList = new ArrayList();
             AdsSearchPreferenceInfo info;
@@ -896,7 +895,7 @@ namespace System.DirectoryServices
             }
         }
 
-        private static void DoSetSearchPrefs(UnsafeNativeMethods.IDirectorySearch adsSearch, AdsSearchPreferenceInfo[] prefs)
+        private static void DoSetSearchPrefs(IDirectorySearch adsSearch, AdsSearchPreferenceInfo[] prefs)
         {
             int structSize = Marshal.SizeOf(typeof(AdsSearchPreferenceInfo));
             IntPtr ptr = Marshal.AllocHGlobal((IntPtr)(structSize * prefs.Length));

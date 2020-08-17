@@ -1,10 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Runtime.InteropServices;
 using System.Collections;
-using System.DirectoryServices.Interop;
 using System.Globalization;
+using System.Runtime.InteropServices;
+using static Interop.Activeds;
 
 namespace System.DirectoryServices
 {
@@ -52,12 +52,12 @@ namespace System.DirectoryServices
         {
             get
             {
-                if (!(_entry.AdsObject is UnsafeNativeMethods.IAdsPropertyList))
+                if (!(_entry.AdsObject is IAdsPropertyList))
                     throw new NotSupportedException(SR.DSCannotCount);
 
                 _entry.FillCache("");
 
-                UnsafeNativeMethods.IAdsPropertyList propList = (UnsafeNativeMethods.IAdsPropertyList)_entry.AdsObject;
+                IAdsPropertyList propList = (IAdsPropertyList)_entry.AdsObject;
 
                 return propList.PropertyCount;
             }
@@ -100,7 +100,7 @@ namespace System.DirectoryServices
         /// </devdoc>
         public IDictionaryEnumerator GetEnumerator()
         {
-            if (!(_entry.AdsObject is UnsafeNativeMethods.IAdsPropertyList))
+            if (!(_entry.AdsObject is IAdsPropertyList))
                 throw new NotSupportedException(SR.DSCannotEmunerate);
 
             // Once an object has been used for an enumerator once, it can't be used again, because it only
@@ -109,7 +109,7 @@ namespace System.DirectoryServices
             DirectoryEntry entryToUse = _entry.CloneBrowsable();
             entryToUse.FillCache("");
 
-            _ = (UnsafeNativeMethods.IAdsPropertyList)entryToUse.AdsObject;
+            _ = (IAdsPropertyList)entryToUse.AdsObject;
 
             entryToUse.propertiesAlreadyEnumerated = true;
             return new PropertyEnumerator(_entry, entryToUse);
@@ -222,7 +222,7 @@ namespace System.DirectoryServices
                 int hr = 0;
                 try
                 {
-                    hr = ((UnsafeNativeMethods.IAdsPropertyList)_entry.AdsObject).Next(out prop);
+                    hr = ((IAdsPropertyList)_entry.AdsObject).Next(out prop);
                 }
                 catch (COMException e)
                 {
@@ -232,7 +232,7 @@ namespace System.DirectoryServices
                 if (hr == 0)
                 {
                     if (prop != null)
-                        _currentPropName = ((UnsafeNativeMethods.IAdsPropertyEntry)prop).Name;
+                        _currentPropName = ((IAdsPropertyEntry)prop).Name;
                     else
                         _currentPropName = null;
 
@@ -247,7 +247,7 @@ namespace System.DirectoryServices
 
             public void Reset()
             {
-                ((UnsafeNativeMethods.IAdsPropertyList)_entry.AdsObject).Reset();
+                ((IAdsPropertyList)_entry.AdsObject).Reset();
                 _currentPropName = null;
             }
         }
@@ -315,8 +315,8 @@ namespace System.DirectoryServices
             {
                 get
                 {
-                    UnsafeNativeMethods.IAdsPropertyList propList = (UnsafeNativeMethods.IAdsPropertyList)propCollection._entry.AdsObject;
-                    return propCollection[((UnsafeNativeMethods.IAdsPropertyEntry)propList.Item(CurrentIndex)).Name];
+                    IAdsPropertyList propList = (IAdsPropertyList)propCollection._entry.AdsObject;
+                    return propCollection[((IAdsPropertyEntry)propList.Item(CurrentIndex)).Name];
                 }
             }
 
@@ -345,9 +345,9 @@ namespace System.DirectoryServices
             {
                 get
                 {
-                    UnsafeNativeMethods.IAdsPropertyList propList = (UnsafeNativeMethods.IAdsPropertyList)propCollection._entry.AdsObject;
+                    IAdsPropertyList propList = (IAdsPropertyList)propCollection._entry.AdsObject;
 
-                    return ((UnsafeNativeMethods.IAdsPropertyEntry)propList.Item(CurrentIndex)).Name;
+                    return ((IAdsPropertyEntry)propList.Item(CurrentIndex)).Name;
                 }
             }
         }

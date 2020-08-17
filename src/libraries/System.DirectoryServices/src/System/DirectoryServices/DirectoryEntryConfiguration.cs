@@ -1,8 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.DirectoryServices.Interop;
 using System.ComponentModel;
+using static Interop.Activeds;
 
 namespace System.DirectoryServices
 {
@@ -20,7 +20,7 @@ namespace System.DirectoryServices
         {
             get
             {
-                return (ReferralChasingOption)((UnsafeNativeMethods.IAdsObjectOptions)_entry.AdsObject).GetOption((int)AdsOptions.ADS_OPTION_REFERRALS);
+                return (ReferralChasingOption)((IAdsObjectOptions)_entry.AdsObject).GetOption((int)AdsOptions.ADS_OPTION_REFERRALS);
             }
             set
             {
@@ -30,7 +30,7 @@ namespace System.DirectoryServices
                     value != ReferralChasingOption.All)
                     throw new InvalidEnumArgumentException(nameof(value), (int)value, typeof(ReferralChasingOption));
 
-                ((UnsafeNativeMethods.IAdsObjectOptions)_entry.AdsObject).SetOption((int)AdsOptions.ADS_OPTION_REFERRALS, value);
+                ((IAdsObjectOptions)_entry.AdsObject).SetOption((int)AdsOptions.ADS_OPTION_REFERRALS, value);
             }
         }
 
@@ -38,14 +38,14 @@ namespace System.DirectoryServices
         {
             get
             {
-                return (SecurityMasks)((UnsafeNativeMethods.IAdsObjectOptions)_entry.AdsObject).GetOption((int)AdsOptions.ADS_OPTION_SECURITY_MASK);
+                return (SecurityMasks)((IAdsObjectOptions)_entry.AdsObject).GetOption((int)AdsOptions.ADS_OPTION_SECURITY_MASK);
             }
             set
             {
                 if (value > (SecurityMasks.None | SecurityMasks.Owner | SecurityMasks.Group | SecurityMasks.Dacl | SecurityMasks.Sacl))
                     throw new InvalidEnumArgumentException(nameof(value), (int)value, typeof(SecurityMasks));
 
-                ((UnsafeNativeMethods.IAdsObjectOptions)_entry.AdsObject).SetOption((int)AdsOptions.ADS_OPTION_SECURITY_MASK, value);
+                ((IAdsObjectOptions)_entry.AdsObject).SetOption((int)AdsOptions.ADS_OPTION_SECURITY_MASK, value);
             }
         }
 
@@ -53,14 +53,14 @@ namespace System.DirectoryServices
         {
             get
             {
-                return (int)((UnsafeNativeMethods.IAdsObjectOptions)_entry.AdsObject).GetOption((int)AdsOptions.ADS_OPTION_PAGE_SIZE);
+                return (int)((IAdsObjectOptions)_entry.AdsObject).GetOption((int)AdsOptions.ADS_OPTION_PAGE_SIZE);
             }
             set
             {
                 if (value < 0)
                     throw new ArgumentException(SR.DSBadPageSize);
 
-                ((UnsafeNativeMethods.IAdsObjectOptions)_entry.AdsObject).SetOption((int)AdsOptions.ADS_OPTION_PAGE_SIZE, value);
+                ((IAdsObjectOptions)_entry.AdsObject).SetOption((int)AdsOptions.ADS_OPTION_PAGE_SIZE, value);
             }
         }
 
@@ -68,11 +68,11 @@ namespace System.DirectoryServices
         {
             get
             {
-                return (int)((UnsafeNativeMethods.IAdsObjectOptions)_entry.AdsObject).GetOption((int)AdsOptions.ADS_OPTION_PASSWORD_PORTNUMBER);
+                return (int)((IAdsObjectOptions)_entry.AdsObject).GetOption((int)AdsOptions.ADS_OPTION_PASSWORD_PORTNUMBER);
             }
             set
             {
-                ((UnsafeNativeMethods.IAdsObjectOptions)_entry.AdsObject).SetOption((int)AdsOptions.ADS_OPTION_PASSWORD_PORTNUMBER, value);
+                ((IAdsObjectOptions)_entry.AdsObject).SetOption((int)AdsOptions.ADS_OPTION_PASSWORD_PORTNUMBER, value);
             }
         }
 
@@ -80,28 +80,28 @@ namespace System.DirectoryServices
         {
             get
             {
-                return (PasswordEncodingMethod)((UnsafeNativeMethods.IAdsObjectOptions)_entry.AdsObject).GetOption((int)AdsOptions.ADS_OPTION_PASSWORD_METHOD);
+                return (PasswordEncodingMethod)((IAdsObjectOptions)_entry.AdsObject).GetOption((int)AdsOptions.ADS_OPTION_PASSWORD_METHOD);
             }
             set
             {
                 if (value < PasswordEncodingMethod.PasswordEncodingSsl || value > PasswordEncodingMethod.PasswordEncodingClear)
                     throw new InvalidEnumArgumentException(nameof(value), (int)value, typeof(PasswordEncodingMethod));
 
-                ((UnsafeNativeMethods.IAdsObjectOptions)_entry.AdsObject).SetOption((int)AdsOptions.ADS_OPTION_PASSWORD_METHOD, value);
+                ((IAdsObjectOptions)_entry.AdsObject).SetOption((int)AdsOptions.ADS_OPTION_PASSWORD_METHOD, value);
             }
         }
 
         public string GetCurrentServerName()
         {
             // underneath it uses the same handle and binds to the same object, so no permission is required as it has been done in Bind call
-            return (string)((UnsafeNativeMethods.IAdsObjectOptions)_entry.AdsObject).GetOption((int)AdsOptions.ADS_OPTION_SERVERNAME);
+            return (string)((IAdsObjectOptions)_entry.AdsObject).GetOption((int)AdsOptions.ADS_OPTION_SERVERNAME);
         }
 
         public bool IsMutuallyAuthenticated()
         {
             try
             {
-                int val = (int)((UnsafeNativeMethods.IAdsObjectOptions)_entry.AdsObject).GetOption((int)AdsOptions.ADS_OPTION_MUTUAL_AUTH_STATUS);
+                int val = (int)((IAdsObjectOptions)_entry.AdsObject).GetOption((int)AdsOptions.ADS_OPTION_MUTUAL_AUTH_STATUS);
                 if ((val & ISC_RET_MUTUAL_AUTH) != 0)
                     return true;
                 else
@@ -118,7 +118,7 @@ namespace System.DirectoryServices
 
         public void SetUserNameQueryQuota(string accountName)
         {
-            ((UnsafeNativeMethods.IAdsObjectOptions)_entry.AdsObject).SetOption((int)AdsOptions.ADS_OPTION_QUOTA, accountName);
+            ((IAdsObjectOptions)_entry.AdsObject).SetOption((int)AdsOptions.ADS_OPTION_QUOTA, accountName);
         }
     }
 }

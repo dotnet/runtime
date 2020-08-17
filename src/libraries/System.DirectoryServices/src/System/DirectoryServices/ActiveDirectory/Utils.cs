@@ -8,6 +8,8 @@ using System.Security.Principal;
 using System.Runtime.InteropServices;
 using System.Diagnostics;
 using System.Globalization;
+using static Interop.Activeds;
+using static Interop.Advapi32;
 
 namespace System.DirectoryServices.ActiveDirectory
 {
@@ -849,7 +851,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     finally
                     {
                         if (ptr != (IntPtr)0)
-                            UnsafeNativeMethods.FreeADsMem(ptr);
+                            FreeADsMem(ptr);
                     }
                 }
                 else
@@ -1053,7 +1055,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
             try
             {
-                int result = UnsafeNativeMethods.LsaOpenPolicy(systemName, objectAttribute, mask, out handle);
+                int result = LsaOpenPolicy(systemName, objectAttribute, mask, out handle);
                 if (result != 0)
                 {
                     throw ExceptionHelper.GetExceptionFromErrorCode(UnsafeNativeMethods.LsaNtStatusToWinError(result), serverName);
@@ -2175,7 +2177,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
                 pOA = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(LSA_OBJECT_ATTRIBUTES)));
                 Marshal.StructureToPtr(oa, pOA, false);
-                int err = UnsafeNativeMethods.LsaOpenPolicy(
+                int err = LsaOpenPolicy(
                                 IntPtr.Zero,
                                 pOA,
                                 1,          // POLICY_VIEW_LOCAL_INFORMATION
@@ -2187,7 +2189,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 }
 
                 Debug.Assert(pPolicyHandle != IntPtr.Zero);
-                err = UnsafeNativeMethods.LsaQueryInformationPolicy(
+                err = LsaQueryInformationPolicy(
                                 pPolicyHandle,
                                 5,              // PolicyAccountDomainInformation
                                 ref pBuffer);
@@ -2219,10 +2221,10 @@ namespace System.DirectoryServices.ActiveDirectory
             finally
             {
                 if (pPolicyHandle != IntPtr.Zero)
-                    UnsafeNativeMethods.LsaClose(pPolicyHandle);
+                    LsaClose(pPolicyHandle);
 
                 if (pBuffer != IntPtr.Zero)
-                    UnsafeNativeMethods.LsaFreeMemory(pBuffer);
+                    LsaFreeMemory(pBuffer);
 
                 if (pOA != IntPtr.Zero)
                     Marshal.FreeHGlobal(pOA);

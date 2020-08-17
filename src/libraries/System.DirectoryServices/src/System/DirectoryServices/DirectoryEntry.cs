@@ -1,15 +1,16 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Runtime.InteropServices;
-using System.Diagnostics;
-using System.DirectoryServices.Interop;
 using System.ComponentModel;
-using System.Threading;
-using System.Reflection;
+using System.Diagnostics;
 using System.DirectoryServices.Design;
 using System.Globalization;
 using System.Net;
+using System.Reflection;
+using System.Runtime.InteropServices;
+using System.Threading;
+using static Interop.Activeds;
+using static Interop.OleAut32;
 
 namespace System.DirectoryServices
 {
@@ -22,7 +23,7 @@ namespace System.DirectoryServices
     public class DirectoryEntry : Component
     {
         private string _path = "";
-        private UnsafeNativeMethods.IAds _adsObject;
+        private IAds _adsObject;
         private bool _useCache = true;
         private bool _cacheFilled;
         // disable csharp compiler warning #0414: field assigned unused value
@@ -114,7 +115,7 @@ namespace System.DirectoryServices
 
         internal DirectoryEntry(object adsObject, bool useCache, string username, string password, AuthenticationTypes authenticationType, bool AdsObjIsExternal)
         {
-            _adsObject = adsObject as UnsafeNativeMethods.IAds;
+            _adsObject = adsObject as IAds;
             if (_adsObject == null)
                 throw new ArgumentException(SR.DSDoesNotImplementIADs);
 
@@ -147,7 +148,7 @@ namespace System.DirectoryServices
             }
         }
 
-        internal UnsafeNativeMethods.IAds AdsObject
+        internal IAds AdsObject
         {
             get
             {
@@ -179,12 +180,12 @@ namespace System.DirectoryServices
         /// </devdoc>
         public DirectoryEntries Children => new DirectoryEntries(this);
 
-        internal UnsafeNativeMethods.IAdsContainer ContainerObject
+        internal IAdsContainer ContainerObject
         {
             get
             {
                 Bind();
-                return (UnsafeNativeMethods.IAdsContainer)_adsObject;
+                return (IAdsContainer)_adsObject;
             }
         }
 
@@ -244,7 +245,7 @@ namespace System.DirectoryServices
             get
             {
                 Bind();
-                return _adsObject is UnsafeNativeMethods.IAdsContainer;
+                return _adsObject is IAdsContainer;
             }
         }
 
@@ -459,7 +460,7 @@ namespace System.DirectoryServices
             get
             {
                 // only LDAP provider supports IADsObjectOptions, so make the check here
-                if (!(AdsObject is UnsafeNativeMethods.IAdsObjectOptions))
+                if (!(AdsObject is IAdsObjectOptions))
                     return null;
 
                 return _options;
@@ -468,7 +469,7 @@ namespace System.DirectoryServices
 
         internal void InitADsObjectOptions()
         {
-            if (_adsObject is UnsafeNativeMethods.IAdsObjectOptions2)
+            if (_adsObject is IAdsObjectOptions2)
             {
                 //--------------------------------------------
                 // Check if ACCUMULATE_MODIFICATION is available
@@ -478,7 +479,7 @@ namespace System.DirectoryServices
                 // check whether the new option is available
 
                 // 8 is ADS_OPTION_ACCUMULATIVE_MODIFICATION
-                unmanagedResult = ((UnsafeNativeMethods.IAdsObjectOptions2)_adsObject).GetOption(8, out o);
+                unmanagedResult = ((IAdsObjectOptions2)_adsObject).GetOption(8, out o);
                 if (unmanagedResult != 0)
                 {
                     // rootdse does not support this option and invalid parameter due to without accumulative change fix in ADSI
@@ -496,7 +497,7 @@ namespace System.DirectoryServices
                 Variant value = default;
                 value.varType = 11; //VT_BOOL
                 value.boolvalue = -1;
-                ((UnsafeNativeMethods.IAdsObjectOptions2)_adsObject).SetOption(8, value);
+                ((IAdsObjectOptions2)_adsObject).SetOption(8, value);
 
                 allowMultipleChange = true;
             }
@@ -539,7 +540,7 @@ namespace System.DirectoryServices
 
                 Guid g = new Guid("00000000-0000-0000-c000-000000000046"); // IID_IUnknown
                 object value = null;
-                int hr = UnsafeNativeMethods.ADsOpenObject(pathToUse, GetUsername(), GetPassword(), (int)_authenticationType, ref g, out value);
+                int hr = ADsOpenObject(pathToUse, GetUsername(), GetPassword(), (int)_authenticationType, ref g, out value);
 
                 if (hr != 0)
                 {
@@ -548,7 +549,7 @@ namespace System.DirectoryServices
                 }
                 else
                 {
-                    _adsObject = (UnsafeNativeMethods.IAds)value;
+                    _adsObject = (IAds)value;
                 }
 
                 InitADsObjectOptions();
@@ -692,10 +693,10 @@ namespace System.DirectoryServices
         /// </devdoc>
         public void DeleteTree()
         {
-            if (!(AdsObject is UnsafeNativeMethods.IAdsDeleteOps))
+            if (!(AdsObject is IAdsDeleteOps))
                 throw new InvalidOperationException(SR.DSCannotDelete);
 
-            UnsafeNativeMethods.IAdsDeleteOps entry = (UnsafeNativeMethods.IAdsDeleteOps)AdsObject;
+            IAdsDeleteOps entry = (IAdsDeleteOps)AdsObject;
             try
             {
                 entry.DeleteObject(0);
@@ -809,7 +810,7 @@ namespace System.DirectoryServices
                 throw;
             }
 
-            if (result is UnsafeNativeMethods.IAds)
+            if (result is IAds)
 
                 return new DirectoryEntry(result, UsePropertyCache, GetUsername(), GetPassword(), AuthenticationType);
             else
@@ -892,7 +893,7 @@ namespace System.DirectoryServices
         public void MoveTo(DirectoryEntry newParent, string newName)
         {
             object newEntry = null;
-            if (!(newParent.AdsObject is UnsafeNativeMethods.IAdsContainer))
+            if (!(newParent.AdsObject is IAdsContainer))
                 throw new InvalidOperationException(SR.Format(SR.DSNotAContainer, newParent.Path));
             try
             {
@@ -932,7 +933,7 @@ namespace System.DirectoryServices
             if (Bound)
                 System.Runtime.InteropServices.Marshal.ReleaseComObject(_adsObject);     // release old handle
 
-            _adsObject = (UnsafeNativeMethods.IAds)newEntry;
+            _adsObject = (IAds)newEntry;
             _path = _adsObject.ADsPath;
 
             // Reset the options on the ADSI object since there were lost when the new object was created.
@@ -1101,12 +1102,12 @@ namespace System.DirectoryServices
                     // Get the IAdsPropertyList interface
                     // (Check that the IAdsPropertyList interface is supported)
                     //
-                    if (!(NativeObject is UnsafeNativeMethods.IAdsPropertyList))
+                    if (!(NativeObject is IAdsPropertyList))
                         throw new NotSupportedException(SR.DSPropertyListUnsupported);
 
-                    UnsafeNativeMethods.IAdsPropertyList list = (UnsafeNativeMethods.IAdsPropertyList)NativeObject;
+                    IAdsPropertyList list = (IAdsPropertyList)NativeObject;
 
-                    UnsafeNativeMethods.IAdsPropertyEntry propertyEntry = (UnsafeNativeMethods.IAdsPropertyEntry)list.GetPropertyItem(SecurityDescriptorProperty, (int)AdsType.ADSTYPE_OCTET_STRING);
+                    IAdsPropertyEntry propertyEntry = (IAdsPropertyEntry)list.GetPropertyItem(SecurityDescriptorProperty, (int)AdsType.ADSTYPE_OCTET_STRING);
                     GC.KeepAlive(this);
 
                     //
@@ -1132,7 +1133,7 @@ namespace System.DirectoryServices
                         throw new NotSupportedException(SR.DSMultipleSDNotSupported);
                     }
 
-                    UnsafeNativeMethods.IAdsPropertyValue propertyValue = (UnsafeNativeMethods.IAdsPropertyValue)values[0];
+                    IAdsPropertyValue propertyValue = (IAdsPropertyValue)values[0];
                     return new ActiveDirectorySecurity((byte[])propertyValue.OctetString, securityMasksUsedInRetrieval);
                 }
                 else
@@ -1157,19 +1158,19 @@ namespace System.DirectoryServices
         {
             if ((_objectSecurity != null) && (_objectSecurityModified || _objectSecurity.IsModified()))
             {
-                UnsafeNativeMethods.IAdsPropertyValue sDValue = (UnsafeNativeMethods.IAdsPropertyValue)new UnsafeNativeMethods.PropertyValue();
+                IAdsPropertyValue sDValue = (IAdsPropertyValue)new PropertyValue();
 
                 sDValue.ADsType = (int)AdsType.ADSTYPE_OCTET_STRING;
                 sDValue.OctetString = _objectSecurity.GetSecurityDescriptorBinaryForm();
 
-                UnsafeNativeMethods.IAdsPropertyEntry newSDEntry = (UnsafeNativeMethods.IAdsPropertyEntry)new UnsafeNativeMethods.PropertyEntry();
+                IAdsPropertyEntry newSDEntry = (IAdsPropertyEntry)new PropertyEntry();
 
                 newSDEntry.Name = SecurityDescriptorProperty;
                 newSDEntry.ADsType = (int)AdsType.ADSTYPE_OCTET_STRING;
                 newSDEntry.ControlCode = (int)AdsPropertyOperation.Update;
                 newSDEntry.Values = new object[] { sDValue };
 
-                ((UnsafeNativeMethods.IAdsPropertyList)NativeObject).PutPropertyItem(newSDEntry);
+                ((IAdsPropertyList)NativeObject).PutPropertyItem(newSDEntry);
             }
         }
     }

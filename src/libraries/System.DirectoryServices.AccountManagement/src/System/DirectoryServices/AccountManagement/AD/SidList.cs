@@ -9,6 +9,7 @@ using System.Runtime.InteropServices;
 using System.DirectoryServices;
 using System.Text;
 using System.Net;
+using static Interop.Advapi32;
 
 namespace System.DirectoryServices.AccountManagement
 {
@@ -102,7 +103,7 @@ namespace System.DirectoryServices.AccountManagement
                 int err = 0;
                 if (target == null)
                 {
-                    err = UnsafeNativeMethods.LsaOpenPolicy(
+                    err = LsaOpenPolicy(
                                     IntPtr.Zero,
                                     pOA,
                                     0x800,        // POLICY_LOOKUP_NAMES
@@ -123,11 +124,11 @@ namespace System.DirectoryServices.AccountManagement
                     {
                         Marshal.StructureToPtr(lsaTargetString, lsaTargetPr, false);
 
-                        err = UnsafeNativeMethods.LsaOpenPolicy(
-                                        lsaTargetPr,
-                                        pOA,
-                                        0x800,        // POLICY_LOOKUP_NAMES
-                                        ref pPolicyHandle);
+                        err = LsaOpenPolicy(
+                                    lsaTargetPr,
+                                    pOA,
+                                    0x800,        // POLICY_LOOKUP_NAMES
+                                    ref pPolicyHandle);
                     }
                     finally
                     {

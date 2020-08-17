@@ -4,6 +4,7 @@
 using System.Runtime.InteropServices;
 using System.Diagnostics;
 using System.Security.Cryptography;
+using static Interop.Advapi32;
 
 namespace System.DirectoryServices.ActiveDirectory
 {
@@ -148,7 +149,7 @@ namespace System.DirectoryServices.ActiveDirectory
                         Marshal.FreeHGlobal(target);
 
                     if (buffer != (IntPtr)0)
-                        UnsafeNativeMethods.LsaFreeMemory(buffer);
+                        LsaFreeMemory(buffer);
                 }
             }
             catch { throw; }
@@ -275,7 +276,7 @@ namespace System.DirectoryServices.ActiveDirectory
                         Marshal.FreeHGlobal(target);
 
                     if (buffer != (IntPtr)0)
-                        UnsafeNativeMethods.LsaFreeMemory(buffer);
+                        LsaFreeMemory(buffer);
 
                     if (newInfo != (IntPtr)0)
                         Marshal.FreeHGlobal(newInfo);
@@ -348,7 +349,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     finally
                     {
                         if (buffer != (IntPtr)0)
-                            UnsafeNativeMethods.LsaFreeMemory(buffer);
+                            LsaFreeMemory(buffer);
                     }
                 }
                 finally
@@ -582,10 +583,10 @@ namespace System.DirectoryServices.ActiveDirectory
                         Marshal.FreeHGlobal(fileTime);
 
                     if (domainHandle != (IntPtr)0)
-                        UnsafeNativeMethods.LsaClose(domainHandle);
+                        LsaClose(domainHandle);
 
                     if (info != (IntPtr)0)
-                        UnsafeNativeMethods.LsaFreeMemory(info);
+                        LsaFreeMemory(info);
 
                     if (unmanagedPassword != (IntPtr)0)
                         Marshal.FreeHGlobal(unmanagedPassword);
@@ -713,7 +714,7 @@ namespace System.DirectoryServices.ActiveDirectory
                         Marshal.FreeHGlobal(target);
 
                     if (buffer != (IntPtr)0)
-                        UnsafeNativeMethods.LsaFreeMemory(buffer);
+                        LsaFreeMemory(buffer);
 
                     if (newBuffer != (IntPtr)0)
                         Marshal.FreeHGlobal(newBuffer);
@@ -858,7 +859,7 @@ namespace System.DirectoryServices.ActiveDirectory
                         Marshal.FreeHGlobal(target);
 
                     if (buffer != (IntPtr)0)
-                        UnsafeNativeMethods.LsaFreeMemory(buffer);
+                        LsaFreeMemory(buffer);
 
                     if (newBuffer != (IntPtr)0)
                         Marshal.FreeHGlobal(newBuffer);
@@ -922,7 +923,7 @@ namespace System.DirectoryServices.ActiveDirectory
             finally
             {
                 if (buffer != (IntPtr)0)
-                    UnsafeNativeMethods.LsaFreeMemory(buffer);
+                    LsaFreeMemory(buffer);
             }
         }
 

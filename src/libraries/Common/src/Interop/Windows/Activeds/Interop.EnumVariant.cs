@@ -1,36 +1,14 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Text;
-using System.Security;
+using System;
 using System.Runtime.InteropServices;
+using static Interop.OleAut32;
 
-namespace System.DirectoryServices.Interop
+internal static partial class Interop
 {
-    internal class SafeNativeMethods
+    internal static partial class Activeds
     {
-        [DllImport(ExternDll.Oleaut32, PreserveSig = false)]
-        public static extern void VariantClear(IntPtr pObject);
-
-        [DllImport(ExternDll.Oleaut32)]
-        public static extern void VariantInit(IntPtr pObject);
-
-        [DllImport(ExternDll.Activeds)]
-        public static extern bool FreeADsMem(IntPtr pVoid);
-
-        public const int
-            FORMAT_MESSAGE_IGNORE_INSERTS = 0x00000200,
-            FORMAT_MESSAGE_FROM_SYSTEM = 0x00001000,
-            FORMAT_MESSAGE_ARGUMENT_ARRAY = 0x00002000,
-            ERROR_MORE_DATA = 234,
-            ERROR_SUCCESS = 0;
-
-        [DllImport(ExternDll.Activeds, CharSet = CharSet.Unicode)]
-        public static extern unsafe int ADsGetLastError(out int error, char* errorBuffer, int errorBufferLength, char* nameBuffer, int nameBufferLength);
-
-        [DllImport(ExternDll.Activeds, CharSet = CharSet.Unicode)]
-        public static extern int ADsSetLastError(int error, string errorString, string provider);
-
         public class EnumVariant
         {
             private static readonly object s_noMoreValues = new object();

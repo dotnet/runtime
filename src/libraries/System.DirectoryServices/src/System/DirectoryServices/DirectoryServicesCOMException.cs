@@ -4,7 +4,7 @@
 using System.ComponentModel;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
-using System.DirectoryServices.Interop;
+using static Interop.Activeds;
 
 namespace System.DirectoryServices
 {
@@ -53,7 +53,7 @@ namespace System.DirectoryServices
             char* errorBuffer = stackalloc char[ErrorBufferLength];
             char nameBuffer = '\0';
             int error = 0;
-            SafeNativeMethods.ADsGetLastError(out error, errorBuffer, ErrorBufferLength, &nameBuffer, 0);
+            ADsGetLastError(out error, errorBuffer, ErrorBufferLength, &nameBuffer, 0);
 
             if (error != 0)
                 return new DirectoryServicesCOMException(new string(errorBuffer), error, e);

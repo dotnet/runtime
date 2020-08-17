@@ -774,13 +774,6 @@ namespace System.DirectoryServices.AccountManagement
                                         ref int returnLength
                                         );
 
-        [DllImport("advapi32.dll", CallingConvention = CallingConvention.StdCall, EntryPoint = "LsaOpenPolicy", CharSet = CharSet.Unicode)]
-        public static extern int LsaOpenPolicy(
-                                        IntPtr lsaUnicodeString,
-                                        IntPtr lsaObjectAttributes,
-                                        int desiredAccess,
-                                        ref IntPtr policyHandle);
-
         [DllImport("advapi32.dll", CallingConvention = CallingConvention.StdCall, EntryPoint = "LsaQueryInformationPolicy", CharSet = CharSet.Unicode)]
         public static extern int LsaQueryInformationPolicy(
                                         IntPtr policyHandle,
