@@ -29,7 +29,7 @@ namespace System.Text.RegularExpressions.Tests
             }
             catch (Exception e)
             { 
-                throw new XunitException($"Expected ArgumentException -> Actual: ({e.GetType()})");
+                throw new XunitException($"Expected ArgumentException -> Actual: {e}");
             }
 
             throw new XunitException($"Expected ArgumentException with error: ({error}) -> Actual: No exception thrown");
