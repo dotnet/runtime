@@ -109,7 +109,9 @@ namespace System.Text.RegularExpressions.Tests
             bf.Serialize(s, e);
             s.Position = 0;
 
-            ArgumentException e2 = (ArgumentException)bf.Deserialize(s);
+            object deserialized = bf.Deserialize(s);
+            Assert.IsType<ArgumentException>(deserialized);
+            ArgumentException e2 = (ArgumentException)deserialized;
             Assert.Equal(e.Message, e2.Message);
         }
 
