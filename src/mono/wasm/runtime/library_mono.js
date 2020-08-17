@@ -96,7 +96,7 @@ var MonoSupportLib = {
 				if (this.__offset) {
 					MONO.mono_wasm_deregister_root (this.__offset);
 					MONO._zero_region (this.__offset, this.__count * 4);
-					Module.free (this.__offset);
+					Module._free (this.__offset);
 				}
 
 				this.__handle = this.__offset = this.__count = this.__offset32 = undefined;
