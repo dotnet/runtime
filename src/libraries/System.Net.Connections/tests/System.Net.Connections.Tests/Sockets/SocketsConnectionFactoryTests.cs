@@ -134,8 +134,8 @@ namespace System.Net.Connections.Tests
 
             IPEndPoint doesNotExist = new IPEndPoint(IPAddress.Parse("1.2.3.4"), 23);
 
-            // SocketError.TimedOut currently maps to SocketError.Unknown, so no asserion
-            await Assert.ThrowsAsync<NetworkException>(() => factory.ConnectAsync(doesNotExist).AsTask());
+            NetworkException ex = await Assert.ThrowsAsync<NetworkException>(() => factory.ConnectAsync(doesNotExist).AsTask());
+            Assert.Equal(NetworkError.TimedOut, ex.NetworkError);
         }
 
         // On Windows, connection timeout takes 21 seconds. Abusing this behavior to test the cancellation logic
