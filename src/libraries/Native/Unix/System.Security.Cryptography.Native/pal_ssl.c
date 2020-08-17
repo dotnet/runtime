@@ -792,5 +792,7 @@ int32_t CryptoNative_OpenSslGetProtocolSupport(SslProtocols protocol)
         SSL_free(server);
     }
 
+    ERR_clear_error();
+
     return ret == 1;
 }
