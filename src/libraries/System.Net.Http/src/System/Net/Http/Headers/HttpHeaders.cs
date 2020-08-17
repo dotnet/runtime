@@ -373,6 +373,9 @@ namespace System.Net.Http.Headers
             // must not call AddParsedValue(), but SetParsedValue(). E.g. for headers like 'Date', 'Host'.
             Debug.Assert(descriptor.Parser.SupportsMultipleValues, $"Header '{descriptor.Name}' doesn't support multiple values");
 
+            // OriginalRawValue should be reset because it's now out of sync with ParsedValue.
+            info.OriginalRawValue = null;
+
             AddValue(info, value, StoreLocation.Parsed);
         }
 
@@ -981,6 +984,18 @@ namespace System.Net.Http.Headers
                     currentStoreValue = info.ParsedValue;
                     AddValueToStoreValue<object>(value, ref currentStoreValue);
                     info.ParsedValue = currentStoreValue;
+                    object? lastKnownParsedValue = value;
+                    if (value is string stringValue)
+                    {
+                        lastKnownParsedValue = stringValue;
+                    }
+                    else if (value is ICloneable clonableValue)
+                    {
+                        lastKnownParsedValue = clonableValue.Clone();
+                    }
+                    currentStoreValue = info.LastKnownParsedValue;
+                    AddValueToStoreValue<object>(lastKnownParsedValue, ref currentStoreValue);
+                    info.LastKnownParsedValue = currentStoreValue;
                     break;
 
                 default:
@@ -1357,6 +1372,7 @@ namespace System.Net.Http.Headers
             internal object? InvalidValue { get; set; }
             internal object? ParsedValue { get; set; }
             internal object? OriginalRawValue { get; set; }
+            internal object? LastKnownParsedValue { get; set; }
 
             internal bool CanAddValue(HttpHeaderParser parser)
             {
@@ -1433,7 +1449,37 @@ namespace System.Net.Http.Headers
                     {
                         if (info.OriginalRawValue != null)
                         {
-                            return info.OriginalRawValue is string rawString ? new HeaderStringValues(rawString) : new HeaderStringValues((List<string>)info.OriginalRawValue);
+                            bool currentParsedEqualsToLastKnown = false;
+                            if (info.ParsedValue is List<object> parsedValues && info.LastKnownParsedValue is List<object> lastKnownParsedValues)
+                            {
+                                if (parsedValues.Count == lastKnownParsedValues.Count)
+                                {
+                                    currentParsedEqualsToLastKnown = true;
+                                    for (int i = 0; i < parsedValues.Count; i++)
+                                    {
+                                        if (!Equals(parsedValues[i], lastKnownParsedValues[i]))
+                                        {
+                                            currentParsedEqualsToLastKnown = false;
+                                            break;
+                                        }
+                                    }
+                                }
+                            }
+                            else
+                            {
+                                currentParsedEqualsToLastKnown = Equals(info.ParsedValue, info.LastKnownParsedValue);
+                            }
+
+                            if (currentParsedEqualsToLastKnown)
+                            {
+                                return info.OriginalRawValue is string rawString ? new HeaderStringValues(rawString) : new HeaderStringValues((List<string>)info.OriginalRawValue);
+                            }
+                            else
+                            {
+                                //ParsedValue was changed outside of this collection, so OriginalRawValue is now out of sync
+                                //and must be reset.
+                                info.OriginalRawValue = null;
+                            }
                         }
 
                         return new HeaderStringValues(HttpHeaders.GetValuesAsStrings(descriptor, info));

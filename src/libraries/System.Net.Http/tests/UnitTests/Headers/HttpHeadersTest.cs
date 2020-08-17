@@ -1976,6 +1976,32 @@ namespace System.Net.Http.Tests
         }
 
         [Fact]
+        public void NonValidated_TryAddWithoutValidationThenAddParsedValue_EnumeratorReturnsValuesReconstructedFromParsed()
+        {
+            MockHeaders headers = new MockHeaders();
+            headers.TryAddWithoutValidation(headers.Descriptor, rawPrefix + "1");
+
+            var enumerator = headers.NonValidated.GetEnumerator();
+
+            Assert.True(enumerator.MoveNext());
+            Assert.Equal(headers.Descriptor.Name, enumerator.Current.Key);
+            Assert.Equal(1, enumerator.Current.Value.Count());
+            Assert.Equal(rawPrefix + "1", enumerator.Current.Value.ElementAt(0));
+            Assert.False(enumerator.MoveNext());
+
+            headers.AddParsedValue(headers.Descriptor, rawPrefix + "2");
+
+            enumerator = headers.NonValidated.GetEnumerator();
+
+            Assert.True(enumerator.MoveNext());
+            Assert.Equal(headers.Descriptor.Name, enumerator.Current.Key);
+            Assert.Equal(2, enumerator.Current.Value.Count());
+            Assert.Equal(parsedPrefix + "1", enumerator.Current.Value.ElementAt(0));
+            Assert.Equal(rawPrefix + "2", enumerator.Current.Value.ElementAt(1));
+            Assert.False(enumerator.MoveNext());
+        }
+
+        [Fact]
         public void NonValidated_AddAnotherHeadersCollection_EnumeratorReturnsAllClonedRawValues()
         {
             MockHeaders anotherHeaders = new MockHeaders();
@@ -2035,6 +2061,32 @@ namespace System.Net.Http.Tests
             Assert.Equal(2, enumerator.Current.Value.Count());
             Assert.Equal(rawPrefix + "1", enumerator.Current.Value.ElementAt(0));
             Assert.Equal(rawPrefix + "2", enumerator.Current.Value.ElementAt(1));
+            Assert.False(enumerator.MoveNext());
+        }
+
+        [Fact]
+        public void NonValidated_MutableHeaderValueChangedExternally_EnumeratorReturnsValueReconstructedFromParsed()
+        {
+            HttpContentHeaders headers = new HttpContentHeaders(new StringContent("test1"));
+            const string RawContentTypeValue = "text/plain; charset=ASCII";
+            headers.TryAddWithoutValidation(KnownHeaders.ContentType.Descriptor, RawContentTypeValue);
+
+            var enumerator = headers.NonValidated.GetEnumerator();
+
+            Assert.True(enumerator.MoveNext());
+            Assert.Equal(KnownHeaders.ContentType.Descriptor.Name, enumerator.Current.Key);
+            Assert.Equal(1, enumerator.Current.Value.Count());
+            Assert.Equal(RawContentTypeValue, enumerator.Current.Value.ElementAt(0));
+            Assert.False(enumerator.MoveNext());
+
+            headers.ContentType.CharSet = "UTF-8";
+
+            enumerator = headers.NonValidated.GetEnumerator();
+
+            Assert.True(enumerator.MoveNext());
+            Assert.Equal(KnownHeaders.ContentType.Descriptor.Name, enumerator.Current.Key);
+            Assert.Equal(1, enumerator.Current.Value.Count());
+            Assert.Equal("text/plain; charset=UTF-8", enumerator.Current.Value.ElementAt(0));
             Assert.False(enumerator.MoveNext());
         }
 
