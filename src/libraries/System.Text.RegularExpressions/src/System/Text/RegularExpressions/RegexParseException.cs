@@ -25,7 +25,7 @@ namespace System.Text.RegularExpressions
         }
 
         /// <summary>
-        /// Construct a custom RegexParseException that creates a default message based on the given <see cref="RegexParseError"/> value.
+        /// Construct a <see cref="RegexParseException"/> that creates a default message based on the given <see cref="RegexParseError"/> value.
         /// </summary>
         /// <param name="error">The <see cref="RegexParseError"/> value detailing the type of parse error.</param>
         /// <param name="offset">The zero-based offset in the regular expression where the parse error occurs.</param>
