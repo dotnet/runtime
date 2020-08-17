@@ -269,14 +269,15 @@ fi
 
 # $__Command msbuild $CORE_ROOT/wasm-test-runner/WasmTestRunner.proj /p:TestAssembly=$(OutputPath)/$(MsBuildProjectName).dll /p:TestBinDir=`pwd`
 
-$TestAssembly=$(OutputPath)/$(MsBuildProjectName).dll
-$AppDir = $(TestBinDir)/WasmApp
-$MicrosoftNetCoreAppRuntimePackDir=$(CORE_ROOT)\runtimepack
-$MainJS="$(CORE_ROOT)\runtime-test\runtime-test.js"
-$AssemblySearchPaths=${MicrosoftNetCoreAppRuntimePackDir}\native;${MicrosoftNetCoreAppRuntimePackDir}\lib\$(NetCoreAppCurrent);$(CORE_ROOT)/TargetingPack"
+TestAssembly=$(OutputPath)/$(MsBuildProjectName).dll
+AppDir=`pwd`/WasmApp
+MicrosoftNetCoreAppRuntimePackDir=$CORE_ROOT\runtimepack
+MainJS="$CORE_ROOT\runtime-test\runtime-test.js"
+AssemblySearchPaths="${MicrosoftNetCoreAppRuntimePackDir}\native%3B${MicrosoftNetCoreAppRuntimePackDir}\lib\$(NetCoreAppCurrent)%3B$CORE_ROOT/TargetingPack"
 
 
-$__Command run $CORE_ROOT/WasmAppBuilderConsole/WasmAppBuilderConsole.dll mainassembly=$TestAssembly appdir=$AppDir microsoftnetcoreapprntimepackdir=$MicrosoftNetCoreAppRuntimePackDir mainjs=$MainJS assemblysearchpaths=$AssemblySearchPaths
+$__Command $CORE_ROOT/WasmAppBuilderConsole/WasmAppBuilderConsole.dll mainassembly=$TestAssembly appdir=$AppDir microsoftnetcoreappruntimepackdir=$MicrosoftNetCoreAppRuntimePackDir mainjs=$MainJS assemblysearchpaths=$AssemblySearchPaths
+chmod u+x $AppDir/run-v8.sh
    ]]>
       </BashCLRTestPreCommands>
 
