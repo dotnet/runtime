@@ -24,6 +24,16 @@ using ILCompiler.DependencyAnalysis.ReadyToRun;
 
 namespace Internal.JitInterface
 {
+    internal class RequiresRuntimeJitIfUsedSymbol
+    {
+        public RequiresRuntimeJitIfUsedSymbol(string message)
+        {
+            Message = message;
+        }
+
+        public string Message { get; }
+    }
+
     public class MethodWithToken
     {
         public readonly MethodDesc Method;
@@ -224,7 +234,7 @@ namespace Internal.JitInterface
 
             try
             {
-                if (!ShouldSkipCompilation(MethodBeingCompiled))
+                if (!ShouldSkipCompilation(MethodBeingCompiled) && !MethodSignatureIsUnstable(MethodBeingCompiled.Signature, out var _))
                 {
                     MethodIL methodIL = _compilation.GetMethodIL(MethodBeingCompiled);
                     if (methodIL != null)
@@ -1509,6 +1519,42 @@ namespace Internal.JitInterface
             _methodCodeNode.Fixups.Add(node);
         }
 
+        private static bool MethodSignatureIsUnstable(MethodSignature methodSig, out string unstableMessage)
+        {
+            foreach (TypeDesc t in methodSig)
+            {
+                DefType defType = t as DefType;
+
+                if (defType != null)
+                {
+                    if (!defType.LayoutAbiStable)
+                    {
+                        unstableMessage = $"Abi unstable type {defType}";
+                        return true;
+                    }
+                }
+            }
+            unstableMessage = null;
+            return false;
+        }
+
+        private void UpdateConstLookupWithRequiresRuntimeJitSymbolIfNeeded(ref CORINFO_CONST_LOOKUP constLookup, MethodDesc method)
+        {
+            if (MethodSignatureIsUnstable(method.Signature, out string unstableMessage))
+            {
+                constLookup.addr = (void*)ObjectToHandle(new RequiresRuntimeJitIfUsedSymbol(unstableMessage + " calling " + method));
+                constLookup.accessType = InfoAccessType.IAT_PVALUE;
+            }
+        }
+
+        private void VerifyMethodSignatureIsStable(MethodSignature methodSig)
+        {
+            if (MethodSignatureIsUnstable(methodSig, out var unstableMessage))
+            {
+                throw new RequiresRuntimeJitException(unstableMessage);
+            }
+        }
+
         private void getCallInfo(ref CORINFO_RESOLVED_TOKEN pResolvedToken, CORINFO_RESOLVED_TOKEN* pConstrainedResolvedToken, CORINFO_METHOD_STRUCT_* callerHandle, CORINFO_CALLINFO_FLAGS flags, CORINFO_CALL_INFO* pResult)
         {
             MethodDesc methodToCall;
@@ -1569,12 +1615,17 @@ namespace Internal.JitInterface
                             _compilation.SymbolNodeFactory.InterfaceDispatchCell(
                                 new MethodWithToken(targetMethod, HandleToModuleToken(ref pResolvedToken, targetMethod), constrainedType: null, unboxing: false),
                                 MethodBeingCompiled));
+
+                        // If the abi of the method isn't stable, this will cause a usage of the RequiresRuntimeJitSymbol, which will trigger a RequiresRuntimeJitException
+                        UpdateConstLookupWithRequiresRuntimeJitSymbolIfNeeded(ref pResult->codePointerOrStubLookup.constLookup, targetMethod);
                         }
                     break;
 
 
                 case CORINFO_CALL_KIND.CORINFO_CALL_CODE_POINTER:
                     Debug.Assert(pResult->codePointerOrStubLookup.lookupKind.needsRuntimeLookup);
+                    // Eagerly check abi stability here as no symbol usage can be used to delay the check
+                    VerifyMethodSignatureIsStable(targetMethod.Signature);
 
                     // There is no easy way to detect method referenced via generic lookups in generated code.
                     // Report this method reference unconditionally.
@@ -1604,12 +1655,18 @@ namespace Internal.JitInterface
                                 new MethodWithToken(nonUnboxingMethod, HandleToModuleToken(ref pResolvedToken, nonUnboxingMethod), constrainedType, unboxing: isUnboxingStub),
                                 isInstantiatingStub: useInstantiatingStub,
                                 isPrecodeImportRequired: (flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_LDFTN) != 0));
+
+                        // If the abi of the method isn't stable, this will cause a usage of the RequiresRuntimeJitSymbol, which will trigger a RequiresRuntimeJitException
+                        UpdateConstLookupWithRequiresRuntimeJitSymbolIfNeeded(ref pResult->codePointerOrStubLookup.constLookup, targetMethod);
                     }
                     break;
 
                 case CORINFO_CALL_KIND.CORINFO_VIRTUALCALL_VTABLE:
                     // Only calls within the CoreLib version bubble support fragile NI codegen with vtable based calls, for better performance (because 
                     // CoreLib and the runtime will always be updated together anyways - this is a special case)
+
+                    // Eagerly check abi stability here as no symbol usage can be used to delay the check
+                    VerifyMethodSignatureIsStable(targetMethod.Signature);
                     break;
 
                 case CORINFO_CALL_KIND.CORINFO_VIRTUALCALL_LDVIRTFTN:

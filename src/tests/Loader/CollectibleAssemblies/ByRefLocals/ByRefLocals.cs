@@ -40,15 +40,6 @@ class Program
     [MethodImpl(MethodImplOptions.NoInlining)]
     static int HoldAssembliesAliveThroughByRefFields(out GCHandle gch1, out GCHandle gch2)
     {
-        // ThreadStatic lifetime check. Here we don't require the actual assembly to remain loaded, but we do require the field to remain accessible
-        var spanThreadStatic = LoadAssemblyThreadStatic(out GCHandle gchThreadStatic);
-        GC.Collect(2);
-        GC.WaitForPendingFinalizers();
-        GC.Collect(2);
-        GC.WaitForPendingFinalizers();
-        GC.Collect(2);
-        GC.WaitForPendingFinalizers();
-
         var span1 = LoadAssembly(out gch1);
         GC.Collect(2);
         GC.WaitForPendingFinalizers();
@@ -61,21 +52,19 @@ class Program
         {
             Console.WriteLine(span1[0]);
             Console.WriteLine(span2[0]);
-            Console.WriteLine(spanThreadStatic[0]);
             GC.Collect(2);
             GC.WaitForPendingFinalizers();
-            if (gch1.Target == null)
+            // The loop may be unrolled, in which case things won't be live on the final iteration.
+            if (i < 9)
             {
-                return 1;
-            }
-            if (gch2.Target == null)
-            {
-                return 2;
-            }
-            if (spanThreadStatic[0] != 7)
-            {
-                Console.WriteLine($"spanThreadStatic[0] = {spanThreadStatic[0]}");
-                return 5;
+                if (gch1.Target == null)
+                {
+                    return 1;
+                }
+                if (gch2.Target == null)
+                {
+                    return 2;
+                }
             }
         }
 
@@ -90,20 +79,6 @@ class Program
         gchToAssembly = GCHandle.Alloc(a, GCHandleType.WeakTrackResurrection);
 
         var spanAccessor = (IReturnSpan)Activator.CreateInstance(a.GetType("SpanAccessor"));
-
-        alc.Unload();
-
-        return spanAccessor.GetSpan();
-    }
-
-    [MethodImpl(MethodImplOptions.NoInlining)]
-    private static ReadOnlySpan<byte> LoadAssemblyThreadStatic(out GCHandle gchToAssembly)
-    {
-        var alc = new AssemblyLoadContext("test", isCollectible: true);
-        var a = alc.LoadFromAssemblyPath(Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "Unloaded.dll"));
-        gchToAssembly = GCHandle.Alloc(a, GCHandleType.WeakTrackResurrection);
-
-        var spanAccessor = (IReturnSpan)Activator.CreateInstance(a.GetType("ThreadStaticSpanAccessor"));
 
         alc.Unload();
 

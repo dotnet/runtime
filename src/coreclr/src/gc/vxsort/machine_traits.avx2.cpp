@@ -2,8 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include "common.h"
-//#include <cstdint>
-
 #include "machine_traits.avx2.h"
 
 namespace vxsort {

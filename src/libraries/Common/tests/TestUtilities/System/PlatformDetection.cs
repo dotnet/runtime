@@ -20,6 +20,7 @@ namespace System
 
         public static bool IsNetCore => Environment.Version.Major >= 5 || RuntimeInformation.FrameworkDescription.StartsWith(".NET Core", StringComparison.OrdinalIgnoreCase);
         public static bool IsMonoRuntime => Type.GetType("Mono.RuntimeStructs") != null;
+        public static bool IsNotMonoRuntime => !IsMonoRuntime;
         public static bool IsMonoInterpreter => GetIsRunningOnMonoInterpreter();
         public static bool IsFreeBSD => RuntimeInformation.IsOSPlatform(OSPlatform.Create("FREEBSD"));
         public static bool IsNetBSD => RuntimeInformation.IsOSPlatform(OSPlatform.Create("NETBSD"));
@@ -127,6 +128,8 @@ namespace System
         public static bool SupportsClientAlpn => SupportsAlpn || IsOSX || IsiOS || IstvOS;
 
         // TLS 1.1 and 1.2 can work on Windows7 but it is not enabled by default.
+        //
+        public static bool SupportsTls10 => !IsDebian10;
         public static bool SupportsTls11 => !IsWindows7 && !IsDebian10;
         public static bool SupportsTls12 => !IsWindows7;
         // OpenSSL 1.1.1 and above.

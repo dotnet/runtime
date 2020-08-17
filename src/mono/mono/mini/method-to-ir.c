@@ -10752,6 +10752,24 @@ mono_ldptr:
 			*sp++ = ins;
 			inline_costs += CALL_COST * MIN(10, num_calls++);
 			break;
+		case MONO_CEE_MONO_METHODCONST:
+			g_assert (method->wrapper_type != MONO_WRAPPER_NONE);
+			EMIT_NEW_METHODCONST (cfg, ins, mono_method_get_wrapper_data (method, token));
+			*sp++ = ins;
+			break;
+		case MONO_CEE_MONO_PINVOKE_ADDR_CACHE: {
+			g_assert (method->wrapper_type != MONO_WRAPPER_NONE);
+			MonoMethod *pinvoke_method = (MonoMethod*)mono_method_get_wrapper_data (method, token);
+			/* This is a memory slot used by the wrapper */
+			if (cfg->compile_aot) {
+				EMIT_NEW_AOTCONST (cfg, ins, MONO_PATCH_INFO_METHOD_PINVOKE_ADDR_CACHE, pinvoke_method);
+			} else {
+				gpointer addr = mono_domain_alloc0 (cfg->domain, sizeof (gpointer));
+				EMIT_NEW_PCONST (cfg, ins, addr);
+			}
+			*sp++ = ins;
+			break;
+		}
 		case MONO_CEE_MONO_NOT_TAKEN:
 			g_assert (method->wrapper_type != MONO_WRAPPER_NONE);
 			cfg->cbb->out_of_line = TRUE;

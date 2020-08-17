@@ -132,7 +132,7 @@ jobs:
 
     - name: BaseJobBuildCommand
       value: >-
-        $(Build.SourcesDirectory)/build.sh -subset installer -ci
+        $(Build.SourcesDirectory)/build.sh -ci
         $(BuildAction)
         -configuration $(_BuildConfig)
         $(LiveOverridePathArgs)
@@ -456,8 +456,29 @@ jobs:
         df -h
       displayName: Disk Usage before Build
 
-  - script: $(BaseJobBuildCommand)
-    displayName: Build
+  # Build the default subset non-MacOS platforms
+  - ${{ if ne(parameters.osGroup, 'OSX') }}:
+    - script: $(BaseJobBuildCommand)
+      displayName: Build
+
+  # Build corehost, sign and add entitlements to MacOS binaries
+  - ${{ if eq(parameters.osGroup, 'OSX') }}:
+    - script: $(BaseJobBuildCommand) -subset corehost
+      displayName: Build CoreHost
+
+    - ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest')) }}:
+      - template: /eng/pipelines/common/macos-sign-with-entitlements.yml
+        parameters:
+          filesToSign: 
+          - name: dotnet
+            path: $(Build.SourcesDirectory)/artifacts/bin/osx-${{ parameters.archType }}.$(_BuildConfig)/corehost
+            entitlementsFile: $(Build.SourcesDirectory)/eng/pipelines/common/entitlements.plist
+          - name: apphost
+            path: $(Build.SourcesDirectory)/artifacts/bin/osx-${{ parameters.archType }}.$(_BuildConfig)/corehost
+            entitlementsFile: $(Build.SourcesDirectory)/eng/pipelines/common/entitlements.plist
+
+    - script: $(BaseJobBuildCommand) -subset installer.nocorehost
+      displayName: Build and Package
 
   - ${{ if in(parameters.osGroup, 'OSX', 'iOS','tvOS') }}: 
     - script: |

@@ -42,11 +42,11 @@ There will be some differences gathering the crash information but these platfor
 
 ### OS X ###
 
-As of .NET Core 5.0, createdump is supported on MacOS but instead of the MachO dump format, it generates the ELF coredumps. This is because of time constraints developing a MachO dump writer on the generation side and a MachO reader for the diagnostics tooling side (dotnet-dump and CLRMD). This means the native debuggers like gdb and lldb will not work with these dumps but the dotnet-dump tool will allow the managed state to be analyzed. Because of this behavior an additional environment variable will need to be set (COMPlus_DbgEnableElfDumpOnMacOS=1) along with the ones below in the Configuration/Policy section.
+As of .NET 5.0, createdump is supported on MacOS but instead of the MachO dump format, it generates the ELF coredumps. This is because of time constraints developing a MachO dump writer on the generation side and a MachO reader for the diagnostics tooling side (dotnet-dump and CLRMD). This means the native debuggers like gdb and lldb will not work with these dumps but the dotnet-dump tool will allow the managed state to be analyzed. Because of this behavior an additional environment variable will need to be set (COMPlus_DbgEnableElfDumpOnMacOS=1) along with the ones below in the Configuration/Policy section.
 
 ### Windows ###
 
-As of .NET Core 5.0, createdump and the below configuration environment variables are supported on Windows. It is implemented using the Windows MiniDumpWriteDump API. This allows consistent crash/unhandled exception dumps across all of our platforms. 
+As of .NET 5.0, createdump and the below configuration environment variables are supported on Windows. It is implemented using the Windows MiniDumpWriteDump API. This allows consistent crash/unhandled exception dumps across all of our platforms. 
 
 # Configuration/Policy #
 
@@ -79,13 +79,24 @@ The createdump utility can also be run from the command line on arbitrary .NET C
 
 `sudo createdump <pid>`
 
-    createdump [options] pid
-    -f, --name - dump path and file name. The pid can be placed in the name with %d. The default is "/tmp/coredump.%d"
-    -n, --normal - create minidump (default).
-    -h, --withheap - create minidump with heap.
+    -f, --name - dump path and file name. The %p, %e, %h %t format characters are supported. The default is '/tmp/coredump.%p'
+    -n, --normal - create minidump.
+    -h, --withheap - create minidump with heap (default).
     -t, --triage - create triage minidump.
     -u, --full - create full core dump.
     -d, --diag - enable diagnostic messages.
+
+
+**Dump name formatting**
+
+As of .NET 5.0, the following subset of the core pattern (see [core](https://man7.org/linux/man-pages/man5/core.5.html)) dump name formatting is supported:
+
+    %%  A single % character.
+    %d  PID of dumped process (for backwards createdump compatibility).
+    %p  PID of dumped process.
+    %e  The process executable filename.
+    %h  Hostname return by gethostname().
+    %t  Time of dump, expressed as seconds since the Epoch, 1970-01-01 00:00:00 +0000 (UTC).
 
 # Testing #
 

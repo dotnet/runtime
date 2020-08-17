@@ -2719,6 +2719,9 @@ mono_is_partially_sharable_inst (MonoGenericInst *inst);
 gboolean
 mini_is_gsharedvt_gparam (MonoType *t);
 
+gboolean
+mini_is_gsharedvt_inst (MonoGenericInst *inst);
+
 MonoGenericContext* mini_method_get_context (MonoMethod *method);
 
 int mono_method_check_context_used (MonoMethod *method);

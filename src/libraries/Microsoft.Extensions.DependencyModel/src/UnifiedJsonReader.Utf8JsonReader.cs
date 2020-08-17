@@ -146,7 +146,7 @@ namespace Microsoft.Extensions.DependencyModel
 
         private static Exception CreateUnexpectedException(ref Utf8JsonReader reader, string expected)
         {
-            // Replace with public API once https://github.com/dotnet/corefx/issues/34768 is fixed
+            // Replace with public API once https://github.com/dotnet/runtime/issues/28482 is fixed
             object boxedState = reader.CurrentState;
             long lineNumber = (long)(typeof(JsonReaderState).GetField("_lineNumber", BindingFlags.Instance | BindingFlags.NonPublic)?.GetValue(boxedState) ?? -1);
             long bytePositionInLine = (long)(typeof(JsonReaderState).GetField("_bytePositionInLine", BindingFlags.Instance | BindingFlags.NonPublic)?.GetValue(boxedState) ?? -1);

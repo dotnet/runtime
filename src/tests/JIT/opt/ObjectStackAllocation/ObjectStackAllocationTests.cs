@@ -145,7 +145,7 @@ namespace ObjectStackAllocation
 
             // The object is currently allocated on the stack when this method is jitted and on the heap when it's R2R-compiled.
             // The reason is that we always do the type check via helper in R2R mode, which blocks stack allocation.
-            // We don't have to use a helper in this case (even for R2R), https://github.com/dotnet/coreclr/issues/22086 tracks fixing that.
+            // We don't have to use a helper in this case (even for R2R), https://github.com/dotnet/runtime/issues/11850 tracks fixing that.
             CallTestAndVerifyAllocation(AllocateSimpleClassAndCheckTypeNoHelper, 1, AllocationKind.Undefined);
 
             CallTestAndVerifyAllocation(AllocateClassWithGcFieldAndInt, 5, expectedAllocationKind);

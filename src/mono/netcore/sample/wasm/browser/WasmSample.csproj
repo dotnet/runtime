@@ -1,0 +1,57 @@
+<Project Sdk="Microsoft.NET.Sdk" DefaultTargets="BuildApp">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <OutputPath>bin</OutputPath>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <TargetArchitecture>wasm</TargetArchitecture>
+    <TargetOS>Browser</TargetOS>
+    <MicrosoftNetCoreAppRuntimePackDir>$(ArtifactsBinDir)microsoft.netcore.app.runtime.browser-wasm\$(Configuration)\runtimes\browser-wasm\</MicrosoftNetCoreAppRuntimePackDir>
+    <BuildDir>$(MSBuildThisFileDirectory)obj\$(Configuration)\wasm</BuildDir>
+    <AppDir>$(MSBuildThisFileDirectory)bin\$(Configuration)\publish</AppDir>
+  </PropertyGroup>
+
+  <Target Name="RebuildWasmAppBuilder">
+    <ItemGroup>
+      <WasmAppBuildProject Include="$(RepoTasksDir)mobile.tasks\WasmAppBuilder\WasmAppBuilder.csproj" />
+    </ItemGroup>
+
+    <MSBuild Projects="@(WasmAppBuildProject)"
+             Properties="Configuration=$(Configuration);MSBuildRestoreSessionId=$([System.Guid]::NewGuid())"
+             Targets="Restore"/>
+
+    <MSBuild Projects="@(WasmAppBuildProject)"
+             Properties="Configuration=$(Configuration)"
+             Targets="Build;Publish"/>
+  </Target>
+
+  <UsingTask TaskName="WasmAppBuilder" 
+             AssemblyFile="$(ArtifactsBinDir)WasmAppBuilder\$(Configuration)\$(NetCoreAppCurrent)\publish\WasmAppBuilder.dll"/>
+
+  <Target Name="BuildApp" DependsOnTargets="RebuildWasmAppBuilder;Build">
+    <ItemGroup>
+      <AssemblySearchPaths Include="bin"/>
+      <AssemblySearchPaths Include="$(MicrosoftNetCoreAppRuntimePackDir)native"/>
+      <AssemblySearchPaths Include="$(MicrosoftNetCoreAppRuntimePackDir)lib\$(NetCoreAppCurrent)"/>
+    </ItemGroup>
+    <WasmAppBuilder
+      AppDir="$(AppDir)"
+      ExtraAssemblies="$(MicrosoftNetCoreAppRuntimePackDir)lib\$(NetCoreAppCurrent)\System.Runtime.InteropServices.JavaScript.dll"
+      MicrosoftNetCoreAppRuntimePackDir="$(MicrosoftNetCoreAppRuntimePackDir)"
+      MainAssembly="bin\WasmSample.dll"
+      MainJS="runtime.js"
+      AssemblySearchPaths="@(AssemblySearchPaths)"/>
+    <Exec Command="chmod a+x $(AppDir)/run-v8.sh" />
+    <Copy SourceFiles="bin\index.html;bin\server.py" DestinationFolder="$(AppDir)" />
+  </Target>
+
+  <ItemGroup>
+    <Compile Include="Program.cs" />
+    <Content Include="index.html">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="server.py">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+</Project>

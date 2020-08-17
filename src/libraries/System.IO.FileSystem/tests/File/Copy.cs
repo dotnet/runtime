@@ -14,6 +14,13 @@ namespace System.IO.Tests
             File.Copy(source, dest);
         }
 
+        protected virtual void CopyReadOnlyFile(string source, string dest)
+        {
+            byte[] bits = File.ReadAllBytes(source);
+            File.WriteAllBytes(dest, bits);
+            File.SetAttributes(dest, FileAttributes.ReadOnly);
+        }
+
         #region UniversalTests
 
         [Fact]
@@ -108,6 +115,7 @@ namespace System.IO.Tests
 
         [Theory]
         [MemberData(nameof(CopyFileWithData_MemberData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/40867", TestPlatforms.Browser)]
         public void CopyFileWithData(char[] data, bool readOnly)
         {
             string testFileSource = GetTestFilePath();
@@ -119,8 +127,21 @@ namespace System.IO.Tests
                 stream.Write(data, 0, data.Length);
             }
 
-            // Set the last write time of the source file to something a while ago
-            DateTime lastWriteTime = DateTime.UtcNow.Subtract(TimeSpan.FromHours(1));
+            DateTime lastWriteTime; 
+            if (PlatformDetection.IsBrowser)
+            {
+                // For browser, there is technically only 1 time.  It's the max
+                // of LastWrite and LastAccess.  Setting to a date/time in the future
+                // is a way of making this test work similarly.
+                //
+                // https://emscripten.org/docs/api_reference/Filesystem-API.html#FS.utime
+                //
+                lastWriteTime = DateTime.UtcNow.Add(TimeSpan.FromHours(1));
+            }
+            else
+            {
+                lastWriteTime = DateTime.UtcNow.Subtract(TimeSpan.FromHours(1));
+            }
             File.SetLastWriteTime(testFileSource, lastWriteTime);
 
             if (readOnly)
@@ -129,7 +150,16 @@ namespace System.IO.Tests
             }
 
             // Copy over the data
-            Copy(testFileSource, testFileDest);
+            //
+            // For browser, work around limitation of File.Copy, which
+            // fails when trying to open the dest file
+            if (PlatformDetection.IsBrowser && readOnly)
+            {
+                CopyReadOnlyFile(testFileSource, testFileDest);
+                File.SetLastWriteTime(testFileDest, lastWriteTime);
+            }
+            else
+                Copy(testFileSource, testFileDest);
 
             // Ensure copy transferred written data
             using (StreamReader stream = new StreamReader(File.OpenRead(testFileDest)))
@@ -329,6 +359,27 @@ namespace System.IO.Tests
             // This always throws as you can't copy an alternate stream out (oddly)
             Assert.Throws<IOException>(() => Copy(testFileAlternateStream, testFile2, overwrite: true));
             Assert.Throws<IOException>(() => Copy(testFileAlternateStream, testFile2 + alternateStream, overwrite: true));
+        }
+    }
+
+    /// <summary>
+    /// Single tests that shouldn't be duplicated by inheritance.
+    /// </summary>
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/40867", TestPlatforms.Browser)]
+    public sealed class File_Copy_Single : FileSystemTest
+    {
+        [Fact]
+        public void EnsureThrowWhenCopyToNonSharedFile()
+        {
+            DirectoryInfo testDirectory = Directory.CreateDirectory(GetTestFilePath());
+            string file1 = Path.Combine(testDirectory.FullName, GetTestFileName());
+            string file2 = Path.Combine(testDirectory.FullName, GetTestFileName());
+
+            File.WriteAllText(file1, "foo");
+            File.WriteAllText(file2, "bar");
+
+            using var stream = new FileStream(file1, FileMode.Open, FileAccess.Read, FileShare.None);
+            Assert.Throws<IOException>(() => File.Copy(file2, file1, overwrite: true));
         }
     }
 }

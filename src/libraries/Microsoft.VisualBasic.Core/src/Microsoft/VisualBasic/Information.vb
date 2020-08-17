@@ -156,6 +156,64 @@ Namespace Microsoft.VisualBasic
 
         End Function
 
+        Friend Function TypeNameOfCOMObject(ByVal VarName As Object, ByVal bThrowException As Boolean) As String
+
+            Dim Result As String = COMObjectName
+
+#If TARGET_WINDOWS Then
+            Dim pTypeInfo As UnsafeNativeMethods.ITypeInfo = Nothing
+            Dim hr As Integer
+            Dim ClassName As String = Nothing
+            Dim DocString As String = Nothing
+            Dim HelpContext As Integer
+            Dim HelpFile As String = Nothing
+
+
+            Do
+                Dim pProvideClassInfo As UnsafeNativeMethods.IProvideClassInfo = TryCast(VarName, UnsafeNativeMethods.IProvideClassInfo)
+
+                If pProvideClassInfo IsNot Nothing Then
+                    Try
+                        pTypeInfo = pProvideClassInfo.GetClassInfo()
+                        hr = pTypeInfo.GetDocumentation(-1, ClassName, DocString, HelpContext, HelpFile)
+                        If hr >= 0 Then
+                            Result = ClassName
+                            Exit Do
+                        End If
+                        pTypeInfo = Nothing
+                    Catch ex As StackOverflowException
+                        Throw ex
+                    Catch ex As OutOfMemoryException
+                        Throw ex
+                    Catch
+                        'Ignore the error
+                    End Try
+                End If
+
+                Dim pDispatch As UnsafeNativeMethods.IDispatch = TryCast(VarName, UnsafeNativeMethods.IDispatch)
+
+                If pDispatch IsNot Nothing Then
+                    ' Try using IDispatch 
+                    hr = pDispatch.GetTypeInfo(0, UnsafeNativeMethods.LCID_US_ENGLISH, pTypeInfo)
+                    If hr >= 0 Then
+                        hr = pTypeInfo.GetDocumentation(-1, ClassName, DocString, HelpContext, HelpFile)
+                        If hr >= 0 Then
+                            Result = ClassName
+                            Exit Do
+                        End If
+                    End If
+                End If
+
+            Loop While (False)
+#End If
+
+
+            If Result.Chars(0) = "_"c Then
+                Result = Result.Substring(1)
+            End If
+
+            Return Result
+        End Function
 
         Public Function QBColor(ByVal Color As Integer) As Integer
             If (Color And &HFFF0I) <> 0 Then
@@ -497,6 +555,27 @@ UnmangleName:
         Friend Function LegacyTypeNameOfCOMObject(ByVal VarName As Object, ByVal bThrowException As Boolean) As String
 
             Dim Result As String = COMObjectName
+
+#If TARGET_WINDOWS Then
+            Dim pTypeInfo As UnsafeNativeMethods.ITypeInfo = Nothing
+            Dim hr As Integer
+            Dim ClassName As String = Nothing
+            Dim DocString As String = Nothing
+            Dim HelpContext As Integer
+            Dim HelpFile As String = Nothing
+
+            Dim pDispatch As UnsafeNativeMethods.IDispatch = TryCast(VarName, UnsafeNativeMethods.IDispatch)
+
+            If pDispatch IsNot Nothing Then
+                hr = pDispatch.GetTypeInfo(0, UnsafeNativeMethods.LCID_US_ENGLISH, pTypeInfo)
+                If hr >= 0 Then
+                    hr = pTypeInfo.GetDocumentation(-1, ClassName, DocString, HelpContext, HelpFile)
+                    If hr >= 0 Then
+                        Result = ClassName
+                    End If
+                End If
+            End If
+#End If
 
             If Result.Chars(0) = "_"c Then
                 Result = Result.Substring(1)

@@ -119,7 +119,7 @@ namespace System.Threading.Channels
                     return true;
                 }
 
-                item = default!;
+                item = default;
                 return false;
             }
 

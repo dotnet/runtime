@@ -3929,8 +3929,10 @@ private:
     inline DWORD GetInterfaceMapSize();
 
     // The instantiation/dictionary comes at the end of the MethodTable after
-    //  the interface map.
-    inline DWORD GetInstAndDictSize();
+    // the interface map. This is the total number of bytes used by the dictionary.
+    // The pSlotSize argument is used to return the size occupied by slots (not including
+    // the optional back pointer used when expanding dictionaries).
+    inline DWORD GetInstAndDictSize(DWORD *pSlotSize);
 
 private:
     // Helper template to compute the offsets at compile time

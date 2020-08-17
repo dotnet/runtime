@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#nullable enable
 namespace System.Xml.Xsl.XsltOld
 {
     using System;
@@ -11,9 +12,9 @@ namespace System.Xml.Xsl.XsltOld
 
     internal class AttributeSetAction : ContainerAction
     {
-        internal XmlQualifiedName name;
+        internal XmlQualifiedName? name;
 
-        internal XmlQualifiedName Name
+        internal XmlQualifiedName? Name
         {
             get { return this.name; }
         }
@@ -96,7 +97,7 @@ namespace System.Xml.Xsl.XsltOld
         {
             // add the contents of "attributeAction" to this action
             // place them at the end
-            Action action;
+            Action? action;
             int i = 0;
 
             while ((action = attributeAction.GetAction(i)) != null)

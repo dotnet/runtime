@@ -34,7 +34,7 @@ public static class MountHelper
     public static bool CreateSymbolicLink(string linkPath, string targetPath, bool isDirectory)
     {
         Process symLinkProcess = new Process();
-        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        if (OperatingSystem.IsWindows())
         {
             symLinkProcess.StartInfo.FileName = "cmd";
             symLinkProcess.StartInfo.Arguments = string.Format("/c mklink{0} \"{1}\" \"{2}\"", isDirectory ? " /D" : "", linkPath, targetPath);

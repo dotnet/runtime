@@ -31,7 +31,7 @@ namespace System.IO.Enumeration
         private readonly object _lock = new object();
 
         private Interop.NtDll.FILE_FULL_DIR_INFORMATION* _entry;
-        private TResult _current = default!;
+        private TResult? _current;
 
         private IntPtr _buffer;
         private int _bufferLength;

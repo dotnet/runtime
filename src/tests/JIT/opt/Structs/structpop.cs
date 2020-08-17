@@ -4,7 +4,7 @@
 // Optimization of pop with struct types
 // Codegen for TestByRef and TestByPtr should be similar
 //
-// See https://github.com/dotnet/coreclr/issues/18710
+// See https://github.com/dotnet/runtime/issues/10607
 
 using System;
 using System.Runtime.CompilerServices;

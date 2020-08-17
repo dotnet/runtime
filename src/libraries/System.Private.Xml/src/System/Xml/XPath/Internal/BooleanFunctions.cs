@@ -42,7 +42,7 @@ namespace MS.Internal.Xml.XPath
                 FT.FuncNot => Not(nodeIterator),
                 FT.FuncTrue => true,
                 FT.FuncFalse => false,
-                FT.FuncLang => Lang(nodeIterator),
+                FT.FuncLang => Lang(nodeIterator!),
                 _ => false,
             };
 

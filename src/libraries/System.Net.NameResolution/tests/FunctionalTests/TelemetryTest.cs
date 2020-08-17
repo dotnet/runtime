@@ -49,8 +49,6 @@ namespace System.Net.NameResolution.Tests
 
                 Assert.DoesNotContain(events, e => e.EventId == 0); // errors from the EventSource itself
 
-                Assert.True(events.Count >= 2 * 6);
-
                 EventWrittenEventArgs[] starts = events.Where(e => e.EventName == "ResolutionStart").ToArray();
                 Assert.Equal(6, starts.Length);
                 Assert.All(starts, s => Assert.Equal(ValidHostName, Assert.Single(s.Payload).ToString()));
@@ -86,8 +84,6 @@ namespace System.Net.NameResolution.Tests
                 });
 
                 Assert.DoesNotContain(events, e => e.EventId == 0); // errors from the EventSource itself
-
-                Assert.True(events.Count >= 3 * 6);
 
                 EventWrittenEventArgs[] starts = events.Where(e => e.EventName == "ResolutionStart").ToArray();
                 Assert.Equal(6, starts.Length);
@@ -129,8 +125,6 @@ namespace System.Net.NameResolution.Tests
                 Assert.DoesNotContain(events, e => e.EventId == 0); // errors from the EventSource itself
 
                 // Each GetHostEntry over an IP will yield 2 resolutions
-                Assert.True(events.Count >= 2 * 2 * 6);
-
                 EventWrittenEventArgs[] starts = events.Where(e => e.EventName == "ResolutionStart").ToArray();
                 Assert.Equal(12, starts.Length);
                 Assert.Equal(6, starts.Count(s => Assert.Single(s.Payload).ToString() == ValidIPAddress));

@@ -769,7 +769,7 @@ namespace System.Globalization
         /// <exception cref="ArgumentException">
         /// <paramref name="options"/> contains an unsupported combination of flags.
         /// </exception>
-        public bool IsPrefix(ReadOnlySpan<char> source, ReadOnlySpan<char> prefix, CompareOptions options = CompareOptions.None)
+        public unsafe bool IsPrefix(ReadOnlySpan<char> source, ReadOnlySpan<char> prefix, CompareOptions options = CompareOptions.None)
         {
             // The empty string is trivially a prefix of every other string. For compat with
             // earlier versions of the Framework we'll early-exit here before validating the
@@ -788,7 +788,7 @@ namespace System.Globalization
 
                 if (!GlobalizationMode.Invariant)
                 {
-                    return StartsWithCore(source, prefix, options);
+                    return StartsWithCore(source, prefix, options, matchLengthPtr: null);
                 }
                 else if ((options & CompareOptions.IgnoreCase) == 0)
                 {
@@ -825,10 +825,57 @@ namespace System.Globalization
             return source.StartsWithOrdinalIgnoreCase(prefix);
         }
 
-        private unsafe bool StartsWithCore(ReadOnlySpan<char> source, ReadOnlySpan<char> prefix, CompareOptions options) =>
+        /// <summary>
+        /// Determines whether a string starts with a specific prefix.
+        /// </summary>
+        /// <param name="source">The string to search within.</param>
+        /// <param name="prefix">The prefix to attempt to match at the start of <paramref name="source"/>.</param>
+        /// <param name="options">The <see cref="CompareOptions"/> to use during the match.</param>
+        /// <param name="matchLength">When this method returns, contains the number of characters of
+        /// <paramref name="source"/> that matched the desired prefix. This may be different than the
+        /// length of <paramref name="prefix"/> if a linguistic comparison is performed. Set to 0
+        /// if the prefix did not match.</param>
+        /// <returns>
+        /// <see langword="true"/> if <paramref name="prefix"/> occurs at the start of <paramref name="source"/>;
+        /// otherwise, <see langword="false"/>.
+        /// </returns>
+        /// <exception cref="ArgumentException">
+        /// <paramref name="options"/> contains an unsupported combination of flags.
+        /// </exception>
+        /// <remarks>
+        /// This method has greater overhead than other <see cref="IsPrefix"/> overloads which don't
+        /// take a <paramref name="matchLength"/> argument. Call this overload only if you require
+        /// the match length information.
+        /// </remarks>
+        public unsafe bool IsPrefix(ReadOnlySpan<char> source, ReadOnlySpan<char> prefix, CompareOptions options, out int matchLength)
+        {
+            bool matched;
+
+            if (GlobalizationMode.Invariant || prefix.IsEmpty || (options & ValidIndexMaskOffFlags) != 0)
+            {
+                // Non-linguistic (ordinal) comparison requested, or options are invalid.
+                // Delegate to other overload, which validates options and throws on failure.
+                // If success, non-linguistic matches will always preserve prefix length.
+
+                matched = IsPrefix(source, prefix, options);
+                matchLength = (matched) ? prefix.Length : 0;
+            }
+            else
+            {
+                // Linguistic comparison requested and we don't need to special-case any args.
+
+                int tempMatchLength = 0;
+                matched = StartsWithCore(source, prefix, options, &tempMatchLength);
+                matchLength = tempMatchLength;
+            }
+
+            return matched;
+        }
+
+        private unsafe bool StartsWithCore(ReadOnlySpan<char> source, ReadOnlySpan<char> prefix, CompareOptions options, int* matchLengthPtr) =>
             GlobalizationMode.UseNls ?
-                NlsStartsWith(source, prefix, options) :
-                IcuStartsWith(source, prefix, options);
+                NlsStartsWith(source, prefix, options, matchLengthPtr) :
+                IcuStartsWith(source, prefix, options, matchLengthPtr);
 
         public bool IsPrefix(string source, string prefix)
         {
@@ -866,7 +913,7 @@ namespace System.Globalization
         /// <exception cref="ArgumentException">
         /// <paramref name="options"/> contains an unsupported combination of flags.
         /// </exception>
-        public bool IsSuffix(ReadOnlySpan<char> source, ReadOnlySpan<char> suffix, CompareOptions options = CompareOptions.None)
+        public unsafe bool IsSuffix(ReadOnlySpan<char> source, ReadOnlySpan<char> suffix, CompareOptions options = CompareOptions.None)
         {
             // The empty string is trivially a suffix of every other string. For compat with
             // earlier versions of the Framework we'll early-exit here before validating the
@@ -885,7 +932,7 @@ namespace System.Globalization
 
                 if (!GlobalizationMode.Invariant)
                 {
-                    return EndsWithCore(source, suffix, options);
+                    return EndsWithCore(source, suffix, options, matchLengthPtr: null);
                 }
                 else if ((options & CompareOptions.IgnoreCase) == 0)
                 {
@@ -922,15 +969,62 @@ namespace System.Globalization
             return source.EndsWithOrdinalIgnoreCase(suffix);
         }
 
+        /// <summary>
+        /// Determines whether a string ends with a specific suffix.
+        /// </summary>
+        /// <param name="source">The string to search within.</param>
+        /// <param name="suffix">The suffix to attempt to match at the end of <paramref name="source"/>.</param>
+        /// <param name="options">The <see cref="CompareOptions"/> to use during the match.</param>
+        /// <param name="matchLength">When this method returns, contains the number of characters of
+        /// <paramref name="source"/> that matched the desired suffix. This may be different than the
+        /// length of <paramref name="suffix"/> if a linguistic comparison is performed. Set to 0
+        /// if the suffix did not match.</param>
+        /// <returns>
+        /// <see langword="true"/> if <paramref name="suffix"/> occurs at the end of <paramref name="source"/>;
+        /// otherwise, <see langword="false"/>.
+        /// </returns>
+        /// <exception cref="ArgumentException">
+        /// <paramref name="options"/> contains an unsupported combination of flags.
+        /// </exception>
+        /// <remarks>
+        /// This method has greater overhead than other <see cref="IsSuffix"/> overloads which don't
+        /// take a <paramref name="matchLength"/> argument. Call this overload only if you require
+        /// the match length information.
+        /// </remarks>
+        public unsafe bool IsSuffix(ReadOnlySpan<char> source, ReadOnlySpan<char> suffix, CompareOptions options, out int matchLength)
+        {
+            bool matched;
+
+            if (GlobalizationMode.Invariant || suffix.IsEmpty || (options & ValidIndexMaskOffFlags) != 0)
+            {
+                // Non-linguistic (ordinal) comparison requested, or options are invalid.
+                // Delegate to other overload, which validates options and throws on failure.
+                // If success, non-linguistic matches will always preserve prefix length.
+
+                matched = IsSuffix(source, suffix, options);
+                matchLength = (matched) ? suffix.Length : 0;
+            }
+            else
+            {
+                // Linguistic comparison requested and we don't need to special-case any args.
+
+                int tempMatchLength = 0;
+                matched = EndsWithCore(source, suffix, options, &tempMatchLength);
+                matchLength = tempMatchLength;
+            }
+
+            return matched;
+        }
+
         public bool IsSuffix(string source, string suffix)
         {
             return IsSuffix(source, suffix, CompareOptions.None);
         }
 
-        private unsafe bool EndsWithCore(ReadOnlySpan<char> source, ReadOnlySpan<char> suffix, CompareOptions options) =>
+        private unsafe bool EndsWithCore(ReadOnlySpan<char> source, ReadOnlySpan<char> suffix, CompareOptions options, int* matchLengthPtr) =>
             GlobalizationMode.UseNls ?
-                NlsEndsWith(source, suffix, options) :
-                IcuEndsWith(source, suffix, options);
+                NlsEndsWith(source, suffix, options, matchLengthPtr) :
+                IcuEndsWith(source, suffix, options, matchLengthPtr);
 
         /// <summary>
         /// Returns the first index where value is found in string.  The
@@ -1108,7 +1202,7 @@ namespace System.Globalization
                     }
                     else
                     {
-                        return IndexOfCore(source, value, options, null /* matchLengthPtr */, fromBeginning: true);
+                        return IndexOfCore(source, value, options, matchLengthPtr: null, fromBeginning: true);
                     }
                 }
                 else if ((options & CompareOptions.IgnoreCase) == 0)
@@ -1144,6 +1238,36 @@ namespace System.Globalization
 
         ReturnOrdinalIgnoreCase:
             return IndexOfOrdinalIgnoreCase(source, value, fromBeginning: true);
+        }
+
+        /// <summary>
+        /// Searches for the first occurrence of a substring within a source string.
+        /// </summary>
+        /// <param name="source">The string to search within.</param>
+        /// <param name="value">The substring to locate within <paramref name="source"/>.</param>
+        /// <param name="options">The <see cref="CompareOptions"/> to use during the search.</param>
+        /// <param name="matchLength">When this method returns, contains the number of characters of
+        /// <paramref name="source"/> that matched the desired value. This may be different than the
+        /// length of <paramref name="value"/> if a linguistic comparison is performed. Set to 0
+        /// if <paramref name="value"/> is not found within <paramref name="source"/>.</param>
+        /// <returns>
+        /// The zero-based index into <paramref name="source"/> where the substring <paramref name="value"/>
+        /// first appears; or -1 if <paramref name="value"/> cannot be found within <paramref name="source"/>.
+        /// </returns>
+        /// <exception cref="ArgumentException">
+        /// <paramref name="options"/> contains an unsupported combination of flags.
+        /// </exception>
+        /// <remarks>
+        /// This method has greater overhead than other <see cref="IndexOf"/> overloads which don't
+        /// take a <paramref name="matchLength"/> argument. Call this overload only if you require
+        /// the match length information.
+        /// </remarks>
+        public unsafe int IndexOf(ReadOnlySpan<char> source, ReadOnlySpan<char> value, CompareOptions options, out int matchLength)
+        {
+            int tempMatchLength;
+            int retVal = IndexOf(source, value, &tempMatchLength, options, fromBeginning: true);
+            matchLength = tempMatchLength;
+            return retVal;
         }
 
         /// <summary>
@@ -1200,10 +1324,11 @@ namespace System.Globalization
         }
 
         /// <summary>
-        /// The following IndexOf overload is mainly used by String.Replace. This overload assumes the parameters are already validated
-        /// and the caller is passing a valid matchLengthPtr pointer.
+        /// IndexOf overload used when the caller needs the length of the matching substring.
+        /// Caller needs to ensure <paramref name="matchLengthPtr"/> is non-null and points
+        /// to a valid address. This method will validate <paramref name="options"/>.
         /// </summary>
-        internal unsafe int IndexOf(ReadOnlySpan<char> source, ReadOnlySpan<char> value, int* matchLengthPtr, CompareOptions options, bool fromBeginning)
+        private unsafe int IndexOf(ReadOnlySpan<char> source, ReadOnlySpan<char> value, int* matchLengthPtr, CompareOptions options, bool fromBeginning)
         {
             Debug.Assert(matchLengthPtr != null);
             *matchLengthPtr = 0;
@@ -1544,7 +1669,7 @@ namespace System.Globalization
                     }
                     else
                     {
-                        return IndexOfCore(source, value, options, null /* matchLengthPtr */, fromBeginning: false);
+                        return IndexOfCore(source, value, options, matchLengthPtr: null, fromBeginning: false);
                     }
                 }
                 else if ((options & CompareOptions.IgnoreCase) == 0)
@@ -1582,6 +1707,36 @@ namespace System.Globalization
 
         ReturnOrdinalIgnoreCase:
             return IndexOfOrdinalIgnoreCase(source, value, fromBeginning: false);
+        }
+
+        /// <summary>
+        /// Searches for the last occurrence of a substring within a source string.
+        /// </summary>
+        /// <param name="source">The string to search within.</param>
+        /// <param name="value">The substring to locate within <paramref name="source"/>.</param>
+        /// <param name="options">The <see cref="CompareOptions"/> to use during the search.</param>
+        /// <param name="matchLength">When this method returns, contains the number of characters of
+        /// <paramref name="source"/> that matched the desired value. This may be different than the
+        /// length of <paramref name="value"/> if a linguistic comparison is performed. Set to 0
+        /// if <paramref name="value"/> is not found within <paramref name="source"/>.</param>
+        /// <returns>
+        /// The zero-based index into <paramref name="source"/> where the substring <paramref name="value"/>
+        /// last appears; or -1 if <paramref name="value"/> cannot be found within <paramref name="source"/>.
+        /// </returns>
+        /// <exception cref="ArgumentException">
+        /// <paramref name="options"/> contains an unsupported combination of flags.
+        /// </exception>
+        /// <remarks>
+        /// This method has greater overhead than other <see cref="IndexOf"/> overloads which don't
+        /// take a <paramref name="matchLength"/> argument. Call this overload only if you require
+        /// the match length information.
+        /// </remarks>
+        public unsafe int LastIndexOf(ReadOnlySpan<char> source, ReadOnlySpan<char> value, CompareOptions options, out int matchLength)
+        {
+            int tempMatchLength;
+            int retVal = IndexOf(source, value, &tempMatchLength, options, fromBeginning: false);
+            matchLength = tempMatchLength;
+            return retVal;
         }
 
         /// <summary>
