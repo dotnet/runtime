@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#nullable enable
 namespace System.Xml.Xsl.XsltOld
 {
     using System;
@@ -10,8 +11,8 @@ namespace System.Xml.Xsl.XsltOld
 
     internal class NewInstructionAction : ContainerAction
     {
-        private string _name;
-        private string _parent;
+        private string? _name;
+        private string? _parent;
         private bool _fallback;
 
         internal override void Compile(Compiler compiler)

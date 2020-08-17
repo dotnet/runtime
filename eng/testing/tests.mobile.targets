@@ -151,6 +151,26 @@
       AssemblySearchPaths="@(AssemblySearchPaths)" />
   </Target>
 
+  <UsingTask TaskName="DownloadTimeZoneData"
+             AssemblyFile="$(CreateCreateWasmBundlesAssemblyPath)" />
+  <Target Condition="'$(TargetOS)' == 'Browser'" Name="LoadTimeZone" >
+    <PropertyGroup>
+      <TimeZoneDataVersion>2020a</TimeZoneDataVersion>
+    </PropertyGroup>
+    <DownloadTimeZoneData
+      InputDirectory="$(BundleDir)obj/data/input"
+      OutputDirectory="$(BundleDir)obj/data/output"
+      Version="$(TimeZoneDataVersion)"/>
+  </Target>
+
+  <UsingTask TaskName="CreateWasmBundle"
+             AssemblyFile="$(CreateCreateWasmBundlesAssemblyPath)" />
+  <Target Condition="'$(TargetOS)' == 'Browser'" Name="BundleWasmTestData" DependsOnTargets="LoadTimeZone">
+    <CreateWasmBundle
+      InputDirectory="$(BundleDir)obj/data/output"
+      OutputFileName="$(MicrosoftNetCoreAppRuntimePackRidDir)dotnet.timezones.blat" />
+  </Target>
+
   <Target Name="AddTestRunnersToPublishedFiles"
           AfterTargets="ComputeResolvedFilesToPublishList">
     <ItemGroup>
@@ -166,5 +186,5 @@
   <Target Name="PublishTestAsSelfContained"
           Condition="'$(IsCrossTargetingBuild)' != 'true'"
           AfterTargets="Build"
-          DependsOnTargets="Publish;BundleTestAppleApp;BundleTestAndroidApp;BundleTestWasmApp;ArchiveTests" />
+          DependsOnTargets="Publish;BundleTestAppleApp;BundleTestAndroidApp;BundleTestWasmApp;BundleWasmTestData;ArchiveTests" />
 </Project>

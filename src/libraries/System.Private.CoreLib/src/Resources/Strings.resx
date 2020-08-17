@@ -2674,6 +2674,9 @@
   <data name="InvariantFailed_Cnd" xml:space="preserve">
     <value>Invariant failed: {0}</value>
   </data>
+  <data name="IO_NoFileTableInInMemoryAssemblies" xml:space="preserve">
+    <value>This assembly does not have a file table because it was loaded from memory.</value>
+  </data>
   <data name="IO_EOF_ReadBeyondEOF" xml:space="preserve">
     <value>Unable to read beyond the end of the stream.</value>
   </data>

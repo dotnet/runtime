@@ -11,7 +11,7 @@
     <GCStressIncompatible>true</GCStressIncompatible>
     <!-- This test takes a long time to complete -->
     <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
-    <!-- https://github.com/dotnet/coreclr/issues/24633 -->
+    <!-- https://github.com/dotnet/runtime/issues/12709 -->
     <JitOptimizationSensitive Condition="'$(TargetArchitecture)' == 'arm'">true</JitOptimizationSensitive>
   </PropertyGroup>
   <PropertyGroup>

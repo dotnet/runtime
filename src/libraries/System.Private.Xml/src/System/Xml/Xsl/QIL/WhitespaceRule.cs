@@ -1,7 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#nullable enable
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Xml.Xsl.Runtime;
 
@@ -12,8 +14,8 @@ namespace System.Xml.Xsl.Qil
     /// </summary>
     internal class WhitespaceRule
     {
-        private string _localName;
-        private string _namespaceName;
+        private string? _localName;
+        private string? _namespaceName;
         private bool _preserveSpace;
 
         /// <summary>
@@ -26,7 +28,7 @@ namespace System.Xml.Xsl.Qil
         /// <summary>
         /// Construct new whitespace rule.
         /// </summary>
-        public WhitespaceRule(string localName, string namespaceName, bool preserveSpace)
+        public WhitespaceRule(string? localName, string? namespaceName, bool preserveSpace)
         {
             Init(localName, namespaceName, preserveSpace);
         }
@@ -34,7 +36,7 @@ namespace System.Xml.Xsl.Qil
         /// <summary>
         /// Initialize whitespace rule after it's been constructed.
         /// </summary>
-        protected void Init(string localName, string namespaceName, bool preserveSpace)
+        protected void Init(string? localName, string? namespaceName, bool preserveSpace)
         {
             _localName = localName;
             _namespaceName = namespaceName;
@@ -44,7 +46,7 @@ namespace System.Xml.Xsl.Qil
         /// <summary>
         /// Local name of the element.
         /// </summary>
-        public string LocalName
+        public string? LocalName
         {
             get { return _localName; }
             set { _localName = value; }
@@ -53,7 +55,7 @@ namespace System.Xml.Xsl.Qil
         /// <summary>
         /// Namespace name (uri) of the element.
         /// </summary>
-        public string NamespaceName
+        public string? NamespaceName
         {
             get { return _namespaceName; }
             set { _namespaceName = value; }

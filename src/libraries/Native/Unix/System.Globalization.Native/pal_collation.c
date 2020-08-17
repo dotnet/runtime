@@ -492,7 +492,7 @@ int32_t GlobalizationNative_IndexOf(
         result = GlobalizationNative_CompareString(pSortHandle, lpTarget, cwTargetLength, lpSource, cwSourceLength, options);
         if (result == UCOL_EQUAL && pMatchedLength != NULL)
         {
-            *pMatchedLength = cwTargetLength;
+            *pMatchedLength = cwSourceLength;
         }
 
         return (result == UCOL_EQUAL) ? 0 : -1;
@@ -551,7 +551,7 @@ int32_t GlobalizationNative_LastIndexOf(
         result = GlobalizationNative_CompareString(pSortHandle, lpTarget, cwTargetLength, lpSource, cwSourceLength, options);
         if (result == UCOL_EQUAL && pMatchedLength != NULL)
         {
-            *pMatchedLength = cwTargetLength;
+            *pMatchedLength = cwSourceLength;
         }
 
         return (result == UCOL_EQUAL) ? 0 : -1;
@@ -689,13 +689,14 @@ static int32_t GetCollationElementMask(UColAttributeValue strength)
     }
 }
 
-static int32_t inline SimpleAffix_Iterators(UCollationElements* pPatternIterator, UCollationElements* pSourceIterator, UColAttributeValue strength, int32_t forwardSearch)
+static int32_t inline SimpleAffix_Iterators(UCollationElements* pPatternIterator, UCollationElements* pSourceIterator, UColAttributeValue strength, int32_t forwardSearch, int32_t* pCapturedOffset)
 {
     assert(strength >= UCOL_SECONDARY);
 
     UErrorCode errorCode = U_ZERO_ERROR;
     int32_t movePattern = TRUE, moveSource = TRUE;
     int32_t patternElement = UCOL_IGNORABLE, sourceElement = UCOL_IGNORABLE;
+    int32_t capturedOffset = 0;
 
     int32_t collationElementMask = GetCollationElementMask(strength);
 
@@ -707,6 +708,10 @@ static int32_t inline SimpleAffix_Iterators(UCollationElements* pPatternIterator
         }
         if (moveSource)
         {
+            if (pCapturedOffset != NULL)
+            {
+                capturedOffset = ucol_getOffset(pSourceIterator); // need to capture offset before advancing iterator
+            }
             sourceElement = forwardSearch ? ucol_next(pSourceIterator, &errorCode) : ucol_previous(pSourceIterator, &errorCode);
         }
         movePattern = TRUE; moveSource = TRUE;
@@ -715,11 +720,11 @@ static int32_t inline SimpleAffix_Iterators(UCollationElements* pPatternIterator
         {
             if (sourceElement == UCOL_NULLORDER)
             {
-                return TRUE; // source is equal to pattern, we have reached both ends|beginnings at the same time
+                goto ReturnTrue; // source is equal to pattern, we have reached both ends|beginnings at the same time
             }
             else if (sourceElement == UCOL_IGNORABLE)
             {
-                return TRUE; // the next|previous character in source is an ignorable character, an example: "o\u0000".StartsWith("o")
+                goto ReturnTrue; // the next|previous character in source is an ignorable character, an example: "o\u0000".StartsWith("o")
             }
             else if (forwardSearch && ((sourceElement & UCOL_PRIMARYORDERMASK) == 0) && (sourceElement & UCOL_SECONDARYORDERMASK) != 0)
             {
@@ -727,7 +732,7 @@ static int32_t inline SimpleAffix_Iterators(UCollationElements* pPatternIterator
             }
             else
             {
-                return TRUE;
+                goto ReturnTrue;
             }
         }
         else if (patternElement == UCOL_IGNORABLE)
@@ -743,9 +748,16 @@ static int32_t inline SimpleAffix_Iterators(UCollationElements* pPatternIterator
             return FALSE;
         }
     }
+
+ReturnTrue:
+    if (pCapturedOffset != NULL)
+    {
+        *pCapturedOffset = capturedOffset;
+    }
+    return TRUE;
 }
 
-static int32_t SimpleAffix(const UCollator* pCollator, UErrorCode* pErrorCode, const UChar* pPattern, int32_t patternLength, const UChar* pText, int32_t textLength, int32_t forwardSearch)
+static int32_t SimpleAffix(const UCollator* pCollator, UErrorCode* pErrorCode, const UChar* pPattern, int32_t patternLength, const UChar* pText, int32_t textLength, int32_t forwardSearch, int32_t* pMatchedLength)
 {
     int32_t result = FALSE;
 
@@ -757,7 +769,15 @@ static int32_t SimpleAffix(const UCollator* pCollator, UErrorCode* pErrorCode, c
         {
             UColAttributeValue strength = ucol_getStrength(pCollator);
 
-            result = SimpleAffix_Iterators(pPatternIterator, pSourceIterator, strength, forwardSearch);
+            int32_t capturedOffset = 0;
+            result = SimpleAffix_Iterators(pPatternIterator, pSourceIterator, strength, forwardSearch, (pMatchedLength != NULL) ? &capturedOffset : NULL);
+
+            if (result && pMatchedLength != NULL)
+            {
+                // depending on whether we're searching forward or backward, the matching substring
+                // is [start of source string .. curIdx] or [curIdx .. end of source string]
+                *pMatchedLength = (forwardSearch) ? capturedOffset : (textLength - capturedOffset);
+            }
 
             ucol_closeElements(pSourceIterator);
         }
@@ -768,7 +788,7 @@ static int32_t SimpleAffix(const UCollator* pCollator, UErrorCode* pErrorCode, c
     return result;
 }
 
-static int32_t ComplexStartsWith(const UCollator* pCollator, UErrorCode* pErrorCode, const UChar* pPattern, int32_t patternLength, const UChar* pText, int32_t textLength)
+static int32_t ComplexStartsWith(const UCollator* pCollator, UErrorCode* pErrorCode, const UChar* pPattern, int32_t patternLength, const UChar* pText, int32_t textLength, int32_t* pMatchedLength)
 {
     int32_t result = FALSE;
 
@@ -785,6 +805,12 @@ static int32_t ComplexStartsWith(const UCollator* pCollator, UErrorCode* pErrorC
             else
             {
                 result = CanIgnoreAllCollationElements(pCollator, pText, idx);
+            }
+
+            if (result && pMatchedLength != NULL)
+            {
+                // adjust matched length to account for all the elements we implicitly consumed at beginning of string
+                *pMatchedLength = idx + usearch_getMatchedLength(pSearch);
             }
         }
 
@@ -803,9 +829,9 @@ int32_t GlobalizationNative_StartsWith(
                         int32_t cwTargetLength,
                         const UChar* lpSource,
                         int32_t cwSourceLength,
-                        int32_t options)
+                        int32_t options,
+                        int32_t* pMatchedLength)
 {
-
     UErrorCode err = U_ZERO_ERROR;
     const UCollator* pCollator = GetCollatorFromSortHandle(pSortHandle, options, &err);
 
@@ -815,15 +841,15 @@ int32_t GlobalizationNative_StartsWith(
     }
     else if (options > CompareOptionsIgnoreCase)
     {
-        return ComplexStartsWith(pCollator, &err, lpTarget, cwTargetLength, lpSource, cwSourceLength);
+        return ComplexStartsWith(pCollator, &err, lpTarget, cwTargetLength, lpSource, cwSourceLength, pMatchedLength);
     }
     else
     {
-        return SimpleAffix(pCollator, &err, lpTarget, cwTargetLength, lpSource, cwSourceLength, TRUE);
+        return SimpleAffix(pCollator, &err, lpTarget, cwTargetLength, lpSource, cwSourceLength, TRUE, pMatchedLength);
     }
 }
 
-static int32_t ComplexEndsWith(const UCollator* pCollator, UErrorCode* pErrorCode, const UChar* pPattern, int32_t patternLength, const UChar* pText, int32_t textLength)
+static int32_t ComplexEndsWith(const UCollator* pCollator, UErrorCode* pErrorCode, const UChar* pPattern, int32_t patternLength, const UChar* pText, int32_t textLength, int32_t* pMatchedLength)
 {
     int32_t result = FALSE;
 
@@ -846,6 +872,12 @@ static int32_t ComplexEndsWith(const UCollator* pCollator, UErrorCode* pErrorCod
 
                 result = CanIgnoreAllCollationElements(pCollator, pText + matchEnd, remainingStringLength);
             }
+
+            if (result && pMatchedLength != NULL)
+            {
+                // adjust matched length to account for all the elements we implicitly consumed at end of string
+                *pMatchedLength = textLength - idx;
+            }
         }
 
         usearch_close(pSearch);
@@ -863,7 +895,8 @@ int32_t GlobalizationNative_EndsWith(
                         int32_t cwTargetLength,
                         const UChar* lpSource,
                         int32_t cwSourceLength,
-                        int32_t options)
+                        int32_t options,
+                        int32_t* pMatchedLength)
 {
     UErrorCode err = U_ZERO_ERROR;
     const UCollator* pCollator = GetCollatorFromSortHandle(pSortHandle, options, &err);
@@ -874,11 +907,11 @@ int32_t GlobalizationNative_EndsWith(
     }
     else if (options > CompareOptionsIgnoreCase)
     {
-        return ComplexEndsWith(pCollator, &err, lpTarget, cwTargetLength, lpSource, cwSourceLength);
+        return ComplexEndsWith(pCollator, &err, lpTarget, cwTargetLength, lpSource, cwSourceLength, pMatchedLength);
     }
     else
     {
-        return SimpleAffix(pCollator, &err, lpTarget, cwTargetLength, lpSource, cwSourceLength, FALSE);
+        return SimpleAffix(pCollator, &err, lpTarget, cwTargetLength, lpSource, cwSourceLength, FALSE, pMatchedLength);
     }
 }
 

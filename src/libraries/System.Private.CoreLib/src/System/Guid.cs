@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers.Binary;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
@@ -54,9 +55,9 @@ namespace System
 
             // slower path for BigEndian:
             _k = b[15];  // hoist bounds checks
-            _a = b[3] << 24 | b[2] << 16 | b[1] << 8 | b[0];
-            _b = (short)(b[5] << 8 | b[4]);
-            _c = (short)(b[7] << 8 | b[6]);
+            _a = BinaryPrimitives.ReadInt32LittleEndian(b);
+            _b = BinaryPrimitives.ReadInt16LittleEndian(b.Slice(4));
+            _c = BinaryPrimitives.ReadInt16LittleEndian(b.Slice(8));
             _d = b[8];
             _e = b[9];
             _f = b[10];
@@ -749,14 +750,9 @@ namespace System
                 return false;
 
             destination[15] = _k; // hoist bounds checks
-            destination[0] = (byte)(_a);
-            destination[1] = (byte)(_a >> 8);
-            destination[2] = (byte)(_a >> 16);
-            destination[3] = (byte)(_a >> 24);
-            destination[4] = (byte)(_b);
-            destination[5] = (byte)(_b >> 8);
-            destination[6] = (byte)(_c);
-            destination[7] = (byte)(_c >> 8);
+            BinaryPrimitives.WriteInt32LittleEndian(destination, _a);
+            BinaryPrimitives.WriteInt16LittleEndian(destination.Slice(4), _b);
+            BinaryPrimitives.WriteInt16LittleEndian(destination.Slice(8), _c);
             destination[8] = _d;
             destination[9] = _e;
             destination[10] = _f;

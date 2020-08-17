@@ -1128,7 +1128,9 @@ namespace System.Diagnostics
         public void Refresh()
         {
             _processInfo = null;
+            _threads?.Dispose();
             _threads = null;
+            _modules?.Dispose();
             _modules = null;
             _exited = false;
             _haveWorkingSetLimits = false;

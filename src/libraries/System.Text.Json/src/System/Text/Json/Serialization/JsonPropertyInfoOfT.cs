@@ -135,7 +135,7 @@ namespace System.Text.Json
             {
                 Debug.Assert(Converter.CanBeNull);
 
-                if (Converter.HandleNull)
+                if (Converter.HandleNullOnWrite)
                 {
                     // No object, collection, or re-entrancy converter handles null.
                     Debug.Assert(Converter.ClassType == ClassType.Value);
@@ -194,7 +194,7 @@ namespace System.Text.Json
             bool success;
 
             bool isNullToken = reader.TokenType == JsonTokenType.Null;
-            if (isNullToken && !Converter.HandleNull && !state.IsContinuation)
+            if (isNullToken && !Converter.HandleNullOnRead && !state.IsContinuation)
             {
                 if (!Converter.CanBeNull)
                 {
@@ -242,7 +242,7 @@ namespace System.Text.Json
         {
             bool success;
             bool isNullToken = reader.TokenType == JsonTokenType.Null;
-            if (isNullToken && !Converter.HandleNull && !state.IsContinuation)
+            if (isNullToken && !Converter.HandleNullOnRead && !state.IsContinuation)
             {
                 if (!Converter.CanBeNull)
                 {

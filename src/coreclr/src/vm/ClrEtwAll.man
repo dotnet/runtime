@@ -3795,6 +3795,13 @@
                            task="AssemblyLoader"
                            symbol="KnownPathProbed" message="$(string.RuntimePublisher.KnownPathProbedEventMessage)"/>
 
+                    <event value="297" version="0" level="win:Informational"
+                           keywords ="GCHeapDumpKeyword"
+                           symbol="GenAwareBegin" message="$(string.RuntimePublisher.GenAwareBeginEventMessage)"/>
+
+                    <event value="298" version="0" level="win:Informational"
+                           keywords ="GCHeapDumpKeyword"
+                           symbol="GenAwareEnd" message="$(string.RuntimePublisher.GenAwareEndEventMessage)"/>
                 </events>
             </provider>
 
@@ -7548,6 +7555,8 @@
                 <string id="RuntimePublisher.CompilationDiagnosticKeywordMessage" value="CompilationDiagnostic" />
                 <string id="RuntimePublisher.MethodDiagnosticKeywordMessage" value="MethodDiagnostic" />
                 <string id="RuntimePublisher.TypeDiagnosticKeywordMessage" value="TypeDiagnostic" />
+                <string id="RuntimePublisher.GenAwareBeginEventMessage" value="NONE" />
+                <string id="RuntimePublisher.GenAwareEndEventMessage" value="NONE" />
                 <string id="RundownPublisher.LoaderKeywordMessage" value="Loader" />
                 <string id="RundownPublisher.JitKeywordMessage" value="Jit" />
                 <string id="RundownPublisher.JittedMethodILToNativeMapRundownKeywordMessage" value="JittedMethodILToNativeMapRundown" />
