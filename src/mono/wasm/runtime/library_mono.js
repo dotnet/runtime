@@ -80,20 +80,28 @@ var MonoSupportLib = {
 		},
 
 		_mono_wasm_root_buffer_prototype: {
+			_check_in_range: function (index) {
+				if ((index >= this.__count) || (index < 0))
+					throw new Error ("index out of range");
+			},
 			/** @returns {NativePointer} */
 			get_address: function (index) {
+				this._check_in_range (index);
 				return this.__offset + (index * 4);
 			},
 			/** @returns {number} */
 			get_address_32: function (index) {
+				this._check_in_range (index);
 				return this.__offset32 + index;
 			},
 			/** @returns {ManagedPointer} */
 			get: function (index) {
-				return Module.HEAP32[this.get_address_32(index)];
+				this._check_in_range (index);				
+				return Module.HEAP32[this.get_address_32 (index)];
 			},
 			set: function (index, value) {
-				Module.HEAP32[this.get_address_32(index)] = value;
+				this._check_in_range (index);
+				Module.HEAP32[this.get_address_32 (index)] = value;
 				return value;
 			},
 			release: function () {
@@ -204,7 +212,7 @@ var MonoSupportLib = {
 
 			var result = Object.create (this._mono_wasm_root_buffer_prototype);
 			result.__offset = offset;
-			result.__offset32 = offset / 4;
+			result.__offset32 = (offset / 4) | 0;
 			result.__count = capacity;	
 			result.length = capacity;
 			result.__handle = this.mono_wasm_register_root (offset, capacityBytes, msg || 0);
