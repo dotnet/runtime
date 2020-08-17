@@ -4192,6 +4192,7 @@ reflection_create_dynamic_method (MonoReflectionDynamicMethodHandle ref_mb, Mono
 		MonoClass *handle_class;
 		gpointer ref;
 		MonoObject *obj = mono_array_get_internal (mb->refs, MonoObject*, i);
+		MONO_HANDLE_PIN (obj);
 
 		if (strcmp (obj->vtable->klass->name, "DynamicMethod") == 0) {
 			MonoReflectionDynamicMethod *method = (MonoReflectionDynamicMethod*)obj;
@@ -4204,16 +4205,15 @@ reflection_create_dynamic_method (MonoReflectionDynamicMethodHandle ref_mb, Mono
 			if (method->mhandle) {
 				ref = method->mhandle;
 			} else {
-				/* FIXME: GC object stored in unmanaged memory */
 				ref = method;
 
-				/* FIXME: GC object stored in unmanaged memory */
 				method->referenced_by = g_slist_append (method->referenced_by, mb);
 			}
 			handle_class = mono_defaults.methodhandle_class;
 		} else {
 			MonoException *ex = NULL;
 			ref = mono_reflection_resolve_object (mb->module->image, obj, &handle_class, NULL, error);
+			/* ref should not be a reference. Otherwise we would need a handle for it */
 			if (!is_ok  (error)) {
 				g_free (rmb.refs);
 				goto exit_false;
@@ -4230,7 +4230,7 @@ reflection_create_dynamic_method (MonoReflectionDynamicMethodHandle ref_mb, Mono
 			}
 		}
 
-		rmb.refs [i] = ref; /* FIXME: GC object stored in unmanaged memory (change also resolve_object() signature) */
+		rmb.refs [i] = ref;
 		rmb.refs [i + 1] = handle_class;
 	}		
 
