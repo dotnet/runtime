@@ -4,9 +4,12 @@
 namespace System.Text.RegularExpressions
 {
     /// <summary>
-    /// Contains detailed information on a regular expression parse error, used in <see cref="RegexParseException.Error"/>.
-    /// This information can be used to give a more meaningful error to the user.
+    /// Specifies the detailed underlying reason why a <see cref="RegexParseException"/> is thrown when a
+    /// regular expression contains a parsing error.
     /// </summary>
+    /// <remarks>
+    /// This information is made available through <see cref="RegexParseException.Error"/>.
+    /// </remarks>
     public enum RegexParseError
     {
         /// <summary>
@@ -46,7 +49,7 @@ namespace System.Text.RegularExpressions
         /// </summary>
         InsufficientOrInvalidHexDigits,
         /// <summary>
-        /// A captured group or a quantifier in a regular expression is not within range, that is, it is larger than <see cref="int.MaxValue"/> / 10.
+        /// A captured group or a quantifier in a regular expression is not within range, that is, it is larger than <see cref="int.MaxValue"/>.
         /// </summary>
         QuantifierOrCaptureGroupOutOfRange,
         /// <summary>
@@ -94,7 +97,7 @@ namespace System.Text.RegularExpressions
         /// </summary>
         CaptureGroupNameInvalid,
         /// <summary>
-        /// A regular expression uses a captured group of zero.
+        /// A regular expression defines a numbered subexpression named zero.
         /// </summary>
         CaptureGroupOfZero,
         /// <summary>
