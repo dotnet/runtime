@@ -5321,7 +5321,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 
 				// optimize "box + ldnull + ceq/cgt_un" to true/false
 				// e.g. `t == null` in generic code when t is a vt/primitive (but not nullable)
-				if (td->sp + 7 >= td->stack && *(td->ip + 5) == CEE_LDNULL) {
+				if ((td->ip - td->il_code + 7) < td->code_size && *(td->ip + 5) == CEE_LDNULL) {
 					guint8 ceq = *(td->ip + 7);
 					if ((ceq == CEE_CEQ || ceq == CEE_CGT_UN) &&
 						// make sure all opcodes are in the same bb
