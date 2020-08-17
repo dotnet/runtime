@@ -5,7 +5,9 @@ COPY ./apacheweb/httpd.conf /usr/local/apache2/conf/httpd.conf
 
 WORKDIR /setup
 COPY ./apacheweb/*.sh ./
-RUN chmod +x *.sh
+RUN chmod +x *.sh ; \
+    mkdir -p /usr/local/apache2/altdocs ; \
+    cp /usr/local/apache2/htdocs/index.html /usr/local/apache2/altdocs
 
 # Prevents dialog prompting when installing packages
 ARG DEBIAN_FRONTEND=noninteractive
