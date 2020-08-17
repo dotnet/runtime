@@ -243,6 +243,48 @@ namespace System.Text.RegularExpressions
         ECMAScript = 256,
         CultureInvariant = 512,
     }
+    public enum RegexParseError
+    {
+        Unknown = 0,
+        AlternationHasTooManyConditions = 1,
+        AlternationHasMalformedCondition = 2,
+        InvalidUnicodePropertyEscape = 3,
+        MalformedUnicodePropertyEscape = 4,
+        UnrecognizedEscape = 5,
+        UnrecognizedControlCharacter = 6,
+        MissingControlCharacter = 7,
+        InsufficientOrInvalidHexDigits = 8,
+        QuantifierOrCaptureGroupOutOfRange = 9,
+        UndefinedNamedReference = 10,
+        UndefinedNumberedReference = 11,
+        MalformedNamedReference = 12,
+        UnescapedEndingBackslash = 13,
+        UnterminatedComment = 14,
+        InvalidGroupingConstruct = 15,
+        AlternationHasNamedCapture = 16,
+        AlternationHasComment = 17,
+        AlternationHasMalformedReference = 18,
+        AlternationHasUndefinedReference = 19,
+        CaptureGroupNameInvalid = 20,
+        CaptureGroupOfZero = 21,
+        UnterminatedBracket = 22,
+        ExclusionGroupNotLast = 23,
+        ReversedCharacterRange = 24,
+        ShorthandClassInCharacterRange = 25,
+        InsufficientClosingParentheses = 26,
+        ReversedQuantifierRange = 27,
+        NestedQuantifiersNotParenthesized = 28,
+        QuantifierAfterNothing = 29,
+        InsufficientOpeningParentheses = 30,
+        UnrecognizedUnicodeProperty = 31,
+    }
+    public sealed partial class RegexParseException : System.ArgumentException
+    {
+        public RegexParseException(System.Text.RegularExpressions.RegexParseError error, int offset) { }
+        public System.Text.RegularExpressions.RegexParseError Error { get { throw null; } }
+        public int Offset { get { throw null; } }
+        public override void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
+    }
     public abstract partial class RegexRunner
     {
         protected internal int[]? runcrawl;
@@ -288,47 +330,5 @@ namespace System.Text.RegularExpressions
     {
         protected RegexRunnerFactory() { }
         protected internal abstract System.Text.RegularExpressions.RegexRunner CreateInstance();
-    }
-    public enum RegexParseError
-    {
-        Unknown,
-        AlternationHasTooManyConditions,
-        AlternationHasMalformedCondition,
-        InvalidUnicodePropertyEscape,
-        MalformedUnicodePropertyEscape,
-        UnrecognizedEscape,
-        UnrecognizedControlCharacter,
-        MissingControlCharacter,
-        InsufficientOrInvalidHexDigits,
-        QuantifierOrCaptureGroupOutOfRange,
-        UndefinedNamedReference,
-        UndefinedNumberedReference,
-        MalformedNamedReference,
-        UnescapedEndingBackslash,
-        UnterminatedComment,
-        InvalidGroupingConstruct,
-        AlternationHasNamedCapture,
-        AlternationHasComment,
-        AlternationHasMalformedReference,
-        AlternationHasUndefinedReference,
-        CaptureGroupNameInvalid,
-        CaptureGroupOfZero,
-        UnterminatedBracket,
-        ExclusionGroupNotLast,
-        ReversedCharacterRange,
-        ShorthandClassInCharacterRange,
-        InsufficientClosingParentheses,
-        ReversedQuantifierRange,
-        NestedQuantifiersNotParenthesized,
-        QuantifierAfterNothing,
-        InsufficientOpeningParentheses,
-        UnrecognizedUnicodeProperty
-    }
-    public sealed class RegexParseException : ArgumentException
-    {
-        public RegexParseException(RegexParseError error, int offset) { }
-        public override void GetObjectData(SerializationInfo info, StreamingContext context) { }
-        public RegexParseError Error { get { throw null; } }
-        public int Offset { get { throw null; } }
     }
 }
