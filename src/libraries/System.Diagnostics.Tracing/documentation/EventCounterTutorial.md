@@ -12,7 +12,7 @@ Without further ado, here is an example on how to use the `EventCounter`
 
 ```c#
 // Give your event sources a descriptive name using the EventSourceAttribute, otherwise the name of the class is used. 
-[EventSource(Name = "Samples-EventCounterDemos-Minimal")]
+[EventSource(Name = "Samples.EventCounterDemos.Minimal")]
 public sealed class MinimalEventCounterSource : EventSource
 {
     // define the singleton instance of the event source
@@ -49,7 +49,7 @@ So, with that, we logged the metric to the `EventCounter`, but unless we can act
 There is an extra keyword that you will need to specify the turn on the EventCounters.
 
 ```
-PerfView /onlyProviders=*Samples-EventCounterDemos-Minimal:EventCounterIntervalSec=1 collect
+PerfView /onlyProviders=*Samples.EventCounterDemos.Minimal:EventCounterIntervalSec=1 collect
 ```
 
 Note the part about `EventCounterIntervalSec`, that indicate the frequency of the sampling.
@@ -73,7 +73,7 @@ Notice that this command also logs the events, so we will get both the events an
 As we mentioned, to avoid overhead, sometimes we will want just the counters. This command can be used to log *only* the counters:
 
 ```
-PerfView /onlyProviders=*Samples-EventCounterDemos-Minimal:*:Critical:EventCounterIntervalSec=1 collect
+PerfView /onlyProviders=*Samples.EventCounterDemos.Minimal:*:Critical:EventCounterIntervalSec=1 collect
 ```
 
 Notice the `Critical` keyword in the command line, that is used to filter out the other events with lower priorities.
