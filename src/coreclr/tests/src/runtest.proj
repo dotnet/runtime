@@ -67,9 +67,9 @@
     <Message Text="Found $(TestCount) built tests"/>
 
     <ItemGroup>
-      <!-- <Error Condition="'$(CLRTestPriorityToBuild)' == '0' and '$(TestCount)' &lt;= 2000" Text="Unexpected test count. Expected &gt; 2000, found $(TestCount).'" />
+      <Error Condition="'$(CLRTestPriorityToBuild)' == '0' and '$(TestCount)' &lt;= 2000" Text="Unexpected test count. Expected &gt; 2000, found $(TestCount).'" />
       <Error Condition="'$(CLRTestPriorityToBuild)' == '0' and '$(TestCount)' &gt;= 3000" Text="Unexpected test count. Expected &lt; 3000, found $(TestCount).'" />
-      <Error Condition="'$(CLRTestPriorityToBuild)' == '1' and '$(TestCount)' &lt;= 9000" Text="Unexpected test count. Expected &gt; 9000, found $(TestCount).'" /> -->
+      <Error Condition="'$(CLRTestPriorityToBuild)' == '1' and '$(TestCount)' &lt;= 9000" Text="Unexpected test count. Expected &gt; 9000, found $(TestCount).'" /> 
       <Error Condition="'$(CLRTestPriorityToBuild)' != '0' and '$(CLRTestPriorityToBuild)' != '1'" Text="Unknown priority $(CLRTestPriorityToBuild)" />
     </ItemGroup>
   </Target>
@@ -391,9 +391,6 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
       <!-- On wasm, run-v8.sh is generated as part of running the tests; it should not be picked up as a test itself -->
       <AllRunnableTestPaths Include="$(XunitTestBinBase)\**\*.sh" Exclude="$(XunitTestBinBase)\**\run-v8.sh" Condition="'$(TargetArchitecture)' == 'wasm'" />
     </ItemGroup>
-
-    <Message Importance="High" Text="!!! XunitTestBinBase: $(XunitTestBinBase)" />
-    <Message Importance="High" Text="!!! GetListOfTestCmds: @(AllRunnableTestPaths)" />
   </Target>
 
   <Import Project="$(MSBuildThisFileDirectory)../tests.targets" />

@@ -73,7 +73,6 @@
       <XunitCommandLine>$(CorerunExecutable) $(XunitConsoleRunner) @(TestAssemblies->'%(Identity)', ' ') $(XunitArgs)</XunitCommandLine>
     </PropertyGroup>
 
-    <Message  Importance="High" Text="test.targets: core_root: $(CORE_ROOT)" />
     <Exec Command="$(XunitCommandLine)"
           WorkingDirectory="$(BaseOutputPathWithConfig)"/>
 
