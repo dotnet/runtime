@@ -83,7 +83,12 @@ set __BuildCrossArchNative=0
 set __SkipCrossArchNative=0
 set __SkipGenerateVersion=0
 set __RestoreOptData=1
+set __BuildJit=1
+set __BuildAllJits=1
+set __BuildRuntime=1
 set __CrossArch=
+set __CrossArch2=
+set __CrossOS=0
 set __PgoOptDataPath=
 set __CMakeArgs=
 
@@ -149,8 +154,8 @@ if [!__PassThroughArgs!]==[] (
     set __PassThroughArgs=%__PassThroughArgs% %1
 )
 
-if /i "%1" == "-alpinedac"           (set __BuildNative=0&set __BuildCrossArchNative=1&set __CrossArch=x64&set __TargetOS=alpine&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
-if /i "%1" == "-linuxdac"            (set __BuildNative=0&set __BuildCrossArchNative=1&set __CrossArch=x64&set __TargetOS=Linux&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "-alpinedac"           (set __BuildNative=0&set __BuildCrossArchNative=1&set __CrossArch=x64&set __CrossOS=1&set __TargetOS=alpine&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "-linuxdac"            (set __BuildNative=0&set __BuildCrossArchNative=1&set __CrossArch=x64&set __CrossOS=1&set __TargetOS=Linux&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 
 if /i "%1" == "-cmakeargs"           (set __CMakeArgs=%2 %__CMakeArgs%&set processedArgs=!processedArgs! %1 %2&shift&shift&goto Arg_Loop)
 if /i "%1" == "-configureonly"       (set __ConfigureOnly=1&set __BuildNative=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
@@ -163,6 +168,9 @@ if /i "%1" == "-usenmakemakefiles"   (set __NMakeMakefiles=1&set __ConfigureOnly
 if /i "%1" == "-pgoinstrument"       (set __PgoInstrument=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "-enforcepgo"          (set __EnforcePgo=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "-nopgooptimize"       (set __PgoOptimize=0&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "-skipjit"             (set __BuildJit=0&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "-skipalljits"         (set __BuildAllJits=0&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "-skipruntime"         (set __BuildRuntime=0&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 
 REM TODO these are deprecated remove them eventually
 REM don't add more, use the - syntax instead
@@ -208,10 +216,14 @@ if %__TotalSpecifiedBuildArch% GTR 1 (
 )
 
 if %__BuildArchX64%==1      set __BuildArch=x64
-if %__BuildArchX86%==1      set __BuildArch=x86
+if %__BuildArchX86%==1 (
+    set __BuildArch=x86
+    if /i "%__CrossOS%" NEQ "1" set __CrossArch=x64
+)
 if %__BuildArchArm%==1 (
     set __BuildArch=arm
     set __CrossArch=x86
+    if /i "%__CrossOS%" NEQ "1" set __CrossArch2=x64
 )
 if %__BuildArchArm64%==1 (
     set __BuildArch=arm64
@@ -251,6 +263,9 @@ if %__SkipCrossArchNative% EQU 0 (
         if /i "%__BuildArch%"=="arm" (
             set __BuildCrossArchNative=1
         )
+        if /i "%__BuildArch%"=="x86" (
+            set __BuildCrossArchNative=1
+        )
     )
 )
 
@@ -269,9 +284,11 @@ if "%__NMakeMakefiles%"=="1" (set "__IntermediatesDir=%__RootBinDir%\nmakeobj\%_
 set "__PackagesBinDir=%__BinDir%\.nuget"
 set "__CrossComponentBinDir=%__BinDir%"
 set "__CrossCompIntermediatesDir=%__IntermediatesDir%\crossgen"
+set "__CrossComp2IntermediatesDir=%__IntermediatesDir%\crossgen_2"
 
 
 if NOT "%__CrossArch%" == "" set __CrossComponentBinDir=%__CrossComponentBinDir%\%__CrossArch%
+if NOT "%__CrossArch2%" == "" set __CrossComponent2BinDir=%__BinDir%\%__CrossArch2%
 
 REM Generate path to be set for CMAKE_INSTALL_PREFIX to contain forward slash
 set "__CMakeBinDir=%__BinDir%"
@@ -400,6 +417,8 @@ if NOT DEFINED PYTHON (
     goto ExitWithError
 )
 
+set __CMakeClrBuildSubsetArgs="-DCLR_CMAKE_BUILD_SUBSET_JIT=%__BuildJit%" "-DCLR_CMAKE_BUILD_SUBSET_ALLJITS=%__BuildAllJits%" "-DCLR_CMAKE_BUILD_SUBSET_RUNTIME=%__BuildRuntime%"
+
 REM =========================================================================================
 REM ===
 REM === Build Cross-Architecture Native Components (if applicable)
@@ -425,19 +444,46 @@ if %__BuildCrossArchNative% EQU 1 (
 
     set __CMakeBinDir=%__CrossComponentBinDir%
     set "__CMakeBinDir=!__CMakeBinDir:\=/!"
-    set __ExtraCmakeArgs="-DCLR_CROSS_COMPONENTS_BUILD=1" "-DCLR_CMAKE_TARGET_ARCH=%__BuildArch%" "-DCLR_CMAKE_TARGET_OS=%__TargetOS%" "-DCLR_CMAKE_PGO_INSTRUMENT=%__PgoInstrument%" "-DCLR_CMAKE_OPTDATA_PATH=%__PgoOptDataPath%" "-DCLR_CMAKE_PGO_OPTIMIZE=%__PgoOptimize%" "-DCMAKE_SYSTEM_VERSION=10.0" "-DCLR_ENG_NATIVE_DIR=%__RepoRootDir%/eng/native" "-DCLR_REPO_ROOT_DIR=%__RepoRootDir%" %__CMakeArgs%
+    set __ExtraCmakeArgs=%__CMakeClrBuildSubsetArgs% "-DCLR_CROSS_COMPONENTS_BUILD=1" "-DCLR_CMAKE_TARGET_ARCH=%__BuildArch%" "-DCLR_CMAKE_TARGET_OS=%__TargetOS%" "-DCLR_CMAKE_PGO_INSTRUMENT=0" "-DCLR_CMAKE_OPTDATA_PATH=%__PgoOptDataPath%" "-DCLR_CMAKE_PGO_OPTIMIZE=0" "-DCMAKE_SYSTEM_VERSION=10.0" "-DCLR_ENG_NATIVE_DIR=%__RepoRootDir%/eng/native" "-DCLR_REPO_ROOT_DIR=%__RepoRootDir%" %__CMakeArgs%
     call "%__SourceDir%\pal\tools\gen-buildsys.cmd" "%__ProjectDir%" "%__CrossCompIntermediatesDir%" %__VSVersion% %__CrossArch% !__ExtraCmakeArgs!
 
     if not !errorlevel! == 0 (
-        echo %__ErrMsgPrefix%%__MsgPrefix%Error: failed to generate cross architecture native component build project!
+        echo %__ErrMsgPrefix%%__MsgPrefix%Error: failed to generate cross architecture native component build project %__CrossArch%!
         goto ExitWithError
     )
     @if defined _echo @echo on
 
+    if NOT "%__CrossArch2%" == "" (
+        if not exist "%__CrossComp2IntermediatesDir%" md "%__CrossComp2IntermediatesDir%"
+        if /i "%__CrossArch2%" == "x86" ( set __VCBuildArch=x86 )
+        if /i "%__CrossArch2%" == "x64" ( set __VCBuildArch=x86_amd64 )
+
+        set __CMakeBinDir=%__CrossComponent2BinDir%
+        set "__CMakeBinDir=!__CMakeBinDir:\=/!"
+        set __ExtraCmakeArgs=%__CMakeClrBuildSubsetArgs% "-DCLR_CROSS_COMPONENTS_BUILD=1" "-DCLR_CMAKE_TARGET_ARCH=%__BuildArch%" "-DCLR_CMAKE_TARGET_OS=%__TargetOS%" "-DCLR_CMAKE_PGO_INSTRUMENT=0" "-DCLR_CMAKE_OPTDATA_PATH=%__PgoOptDataPath%" "-DCLR_CMAKE_PGO_OPTIMIZE=0" "-DCMAKE_SYSTEM_VERSION=10.0" "-DCLR_ENG_NATIVE_DIR=%__RepoRootDir%/eng/native" "-DCLR_REPO_ROOT_DIR=%__RepoRootDir%" %__CMakeArgs%
+        call "%__SourceDir%\pal\tools\gen-buildsys.cmd" "%__ProjectDir%" "%__CrossComp2IntermediatesDir%" %__VSVersion% %__CrossArch2% !__ExtraCmakeArgs!
+
+        if not !errorlevel! == 0 (
+            echo %__ErrMsgPrefix%%__MsgPrefix%Error: failed to generate cross architecture native component build project %__CrossArch2%!
+            goto ExitWithError
+        )
+
+        set __VCBuildArch=x86_amd64
+        if /i "%__CrossArch%" == "x86" ( set __VCBuildArch=x86 )
+        @if defined _echo @echo on
+    )
+
 :SkipConfigureCrossBuild
     if not exist "%__CrossCompIntermediatesDir%\CMakeCache.txt" (
-        echo %__ErrMsgPrefix%%__MsgPrefix%Error: unable to find generated cross architecture native component build project!
+        echo %__ErrMsgPrefix%%__MsgPrefix%Error: unable to find generated cross architecture native component build project %__CrossArch%!
         goto ExitWithError
+    )
+
+    if NOT "%__CrossArch2%" == "" (
+        if not exist "%__CrossComp2IntermediatesDir%\CMakeCache.txt" (
+        echo %__ErrMsgPrefix%%__MsgPrefix%Error: unable to find generated cross architecture native component build project %__CrossArch2%!
+            goto ExitWithError
+        )
     )
 
     if defined __ConfigureOnly goto SkipCrossCompBuild
@@ -465,6 +511,30 @@ if %__BuildCrossArchNative% EQU 1 (
         goto ExitWithCode
     )
 
+    if NOT "%__CrossArch2%" == "" (
+        set __BuildLogRootName=Cross2
+        set "__BuildLog=%__LogsDir%\!__BuildLogRootName!_%__TargetOS%__%__BuildArch%__%__BuildType%.log"
+        set "__BuildWrn=%__LogsDir%\!__BuildLogRootName!_%__TargetOS%__%__BuildArch%__%__BuildType%.wrn"
+        set "__BuildErr=%__LogsDir%\!__BuildLogRootName!_%__TargetOS%__%__BuildArch%__%__BuildType%.err"
+        set "__BinLog=%__LogsDir%\!__BuildLogRootName!_%__TargetOS%__%__BuildArch%__%__BuildType%.binlog"
+        set "__MsbuildLog=/flp:Verbosity=normal;LogFile=!__BuildLog!"
+        set "__MsbuildWrn=/flp1:WarningsOnly;LogFile=!__BuildWrn!"
+        set "__MsbuildErr=/flp2:ErrorsOnly;LogFile=!__BuildErr!"
+        set "__MsbuildBinLog=/bl:!__BinLog!"
+        set "__Logging=!__MsbuildLog! !__MsbuildWrn! !__MsbuildErr! !__MsbuildBinLog!"
+
+        REM We pass the /m flag directly to MSBuild so that we can get both MSBuild and CL parallelism, which is fastest for our builds.
+        "%CMakePath%" --build %__CrossComp2IntermediatesDir% --target install --config %__BuildType% -- /nologo /m !__Logging!
+
+        if not !errorlevel! == 0 (
+            set __exitCode=!errorlevel!
+            echo %__ErrMsgPrefix%%__MsgPrefix%Error: cross-arch components build failed. Refer to the build log files for details.
+            echo     !__BuildLog!
+            echo     !__BuildWrn!
+            echo     !__BuildErr!
+            goto ExitWithCode
+        )
+    )
 :SkipCrossCompBuild
     REM } Scope environment changes end
     endlocal
@@ -508,7 +578,8 @@ if %__BuildNative% EQU 1 (
 
     echo %__MsgPrefix%Regenerating the Visual Studio solution
 
-    set __ExtraCmakeArgs="-DCMAKE_SYSTEM_VERSION=10.0" !___CrossBuildDefine! "-DCLR_CMAKE_PGO_INSTRUMENT=%__PgoInstrument%" "-DCLR_CMAKE_OPTDATA_PATH=%__PgoOptDataPath%" "-DCLR_CMAKE_PGO_OPTIMIZE=%__PgoOptimize%" "-DCLR_ENG_NATIVE_DIR=%__RepoRootDir%/eng/native" "-DCLR_REPO_ROOT_DIR=%__RepoRootDir%" %__CMakeArgs%
+    set __ExtraCmakeArgs=%__CMakeClrBuildSubsetArgs% "-DCMAKE_SYSTEM_VERSION=10.0" !___CrossBuildDefine! "-DCLR_CMAKE_PGO_INSTRUMENT=%__PgoInstrument%" "-DCLR_CMAKE_OPTDATA_PATH=%__PgoOptDataPath%" "-DCLR_CMAKE_PGO_OPTIMIZE=%__PgoOptimize%" "-DCLR_ENG_NATIVE_DIR=%__RepoRootDir%/eng/native" "-DCLR_REPO_ROOT_DIR=%__RepoRootDir%" %__CMakeArgs%
+
     call "%__SourceDir%\pal\tools\gen-buildsys.cmd" "%__ProjectDir%" "%__IntermediatesDir%" %__VSVersion% %__BuildArch% !__ExtraCmakeArgs!
     if not !errorlevel! == 0 (
         echo %__ErrMsgPrefix%%__MsgPrefix%Error: failed to generate native component build project!
