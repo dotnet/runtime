@@ -15,9 +15,9 @@
       <!-- This specifies what properties are needed to be passed down as global properties to a child project. -->
 
       <_PropertiesToPass>
-        TargetArchitecture=$(TargetArchitecture);
-        TargetOS=$(TargetOS);
-        Configuration=$(Configuration);
+        TargetArchitecture=$(__BuildArch);
+        TargetOS=$(__TargetOS);
+        Configuration=$(__BuildType);
         Creator=$(_Creator);
         HelixAccessToken=$(_HelixAccessToken);
         HelixBuild=$(_HelixBuild);
