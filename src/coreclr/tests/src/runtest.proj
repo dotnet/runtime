@@ -401,7 +401,7 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
 
   <Target Name="CreateTestOverlay">
     <MSBuild Projects="$(RepoRoot)/tools-local/WasmAppBuilderConsole/WasmAppBuilderConsole.csproj"
-             Targets="Publish" 
+             Targets="Restore;Build;Publish" 
               Condition="'$(TargetArchitecture)' == 'wasm'"/>
 
     <MSBuild Projects="$(MSBuildProjectFile)"
