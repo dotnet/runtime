@@ -130,7 +130,7 @@ namespace System.Text.RegularExpressions.Tests
             {
                 RegexParseError regexParseError = e.Error;
 
-                // Success if provided error matches.
+                // Success if provided error matches and offset is correct.
                 if (error == regexParseError)
                 {
                     Assert.Equal(offset, e.Offset);

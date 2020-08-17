@@ -570,7 +570,7 @@ namespace System.Text.RegularExpressions.Tests
         {
             RegexParseError? error = (RegexParseError?)errorObj;
 
-            Assert.True(error == null || offset >= 0, "All errors must have offsets");
+            Assert.True(error == null || offset > 0, "All tests must be given positive offsets, or null if no offset should be tested.");
 
             // Parse the main tree and if parsing fails check if the supplied error matches.
             ParseTree(pattern, options, error, offset);
