@@ -30,7 +30,7 @@
   <!--
     We should not build some pkgproj in source-build (i.e. targeting-pack).
   -->
-  <Target Name="GetSourcBuildSkipBuildProps"
+  <Target Name="GetSourceBuildSkipBuildProps"
           Condition="'$(DotNetBuildFromSource)' == 'true' and '$(AlwaysBuildEvenInSourceBuild)' != 'true'"
           BeforeTargets="GetSkipBuildProps">
     <PropertyGroup Condition="'$(FrameworkPackType)' == 'targeting'">
