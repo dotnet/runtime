@@ -10,8 +10,6 @@ namespace System.Buffers
 {
     public static partial class BoundedMemory
     {
-        private static readonly int SystemPageSize = Environment.SystemPageSize;
-
         private unsafe static UnixImplementation<T> AllocateWithoutDataPopulationUnix<T>(int elementCount, PoisonPagePlacement placement) where T : unmanaged
         {
             long cb, totalBytesToAllocate;
@@ -243,8 +241,7 @@ namespace System.Buffers
             MAP_ANONYMOUS = 0x10,
         }
 
-        [SuppressUnmanagedCodeSecurity]
-        private unsafe static class UnsafeNativeMethods
+        private unsafe static partial class UnsafeNativeMethods
         {
             private const string Libc = "libc";
 
