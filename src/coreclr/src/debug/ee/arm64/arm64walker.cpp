@@ -195,7 +195,7 @@ BYTE*  NativeWalker::SetupOrSimulateInstructionForPatchSkip(T_CONTEXT * context,
             switch (opc)
             {
             case 0: //load 4 bytes
-                SimdRegContents.Low = GetMem(ip, 4, false);
+                SimdRegContents.Low = GetMem(ip, 4, /* signExtend */ false);
                 SimdRegContents.High = 0;
                 if (isSimd) //LDR St [imm]
                     SetSimdReg(context, RegNum, SimdRegContents);
@@ -204,7 +204,7 @@ BYTE*  NativeWalker::SetupOrSimulateInstructionForPatchSkip(T_CONTEXT * context,
 
                 break;
             case 1: //load 8 bytes
-                SimdRegContents.Low = GetMem(ip, 8, false);
+                SimdRegContents.Low = GetMem(ip, 8, /* signExtend */ false);
                 SimdRegContents.High = 0;
                 if (isSimd) //LDR Dt [imm]
                     SetSimdReg(context, RegNum, SimdRegContents);
@@ -217,9 +217,9 @@ BYTE*  NativeWalker::SetupOrSimulateInstructionForPatchSkip(T_CONTEXT * context,
                     SimdRegContents = GetSimdMem(ip);
                     SetSimdReg(context, RegNum, SimdRegContents);
                 }
-                else //LDR St [imm] (signed)
+                else //LDR St [imm] (sign extendeded)
                 {
-                    SimdRegContents.Low = GetMem(ip, 4, true);
+                    SimdRegContents.Low = GetMem(ip, 4, /* signExtend */ true);
                     SetReg(context, RegNum, SimdRegContents.Low);
                 }
                 break;
