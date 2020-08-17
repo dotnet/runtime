@@ -546,7 +546,15 @@ namespace Microsoft.WebAssembly.Diagnostics
 
                         if (method  == null && !asm.Image.HasSymbols)
                         {
-                            method = await LoadSymbolsOnDemand(asm, method_token, sessionId, token);
+                            try
+                            {
+                                method = await LoadSymbolsOnDemand(asm, method_token, sessionId, token);
+                            }
+                            catch (Exception e)
+                            {
+                                Log("info", $"Unable to find il offset: {il_pos} in method token: {method_token} assembly name: {assembly_name} exception: {e.ToString()}");
+                                continue;
+                            }
                         }
 
                         if (method == null)
@@ -634,60 +642,52 @@ namespace Microsoft.WebAssembly.Diagnostics
             for (var i = 0; i < header.Entries.Length; i++)
             {
                 var entry = header.Entries[i];
-                if (entry.Directory.Type == ImageDebugType.CodeView)
+                if (entry.Directory.Type != ImageDebugType.CodeView)
                 {
-                    var data = entry.Data;
+                    continue;
+                }
 
-                    if (data.Length < 24)
-                        return null;
+                var data = entry.Data;
 
-                    var pdbSignature = (data[0]
-                        | (data[1] << 8)
-                        | (data[2] << 16)
-                        | (data[3] << 24));
+                if (data.Length < 24)
+                    return null;
 
-                    if (pdbSignature != 0x53445352) // "SDSR"
-                        return null;
+                var pdbSignature = (data[0]
+                    | (data[1] << 8)
+                    | (data[2] << 16)
+                    | (data[3] << 24));
 
-                    var buffer = new byte[16];
-                    Buffer.BlockCopy(data, 4, buffer, 0, 16);
+                if (pdbSignature != 0x53445352) // "SDSR"
+                    return null;
 
-                    var pdbAge = (data[20]
-                        | (data[21] << 8)
-                        | (data[22] << 16)
-                        | (data[23] << 24));
+                var buffer = new byte[16];
+                Buffer.BlockCopy(data, 4, buffer, 0, 16);
 
-                    var pdbGuid = new Guid(buffer);
-                    var buffer2 = new byte[(data.Length - 24) - 1];
-                    Buffer.BlockCopy(data, 24, buffer2, 0, (data.Length - 24) - 1);
-                    var pdbName = System.Text.Encoding.UTF8.GetString(buffer2, 0, buffer2.Length);
-                    pdbName = (pdbName.Split(new char[] { '/' }))[pdbName.Split(new char[] { '/' }).Length - 1];
-                    var downloadURL = "http://msdl.microsoft.com/download/symbols" + "/" + pdbName + "/" + pdbGuid.ToString("N").ToUpper() + pdbAge + "/" + pdbName;
+                var pdbAge = (data[20]
+                    | (data[21] << 8)
+                    | (data[22] << 16)
+                    | (data[23] << 24));
 
-                    try
-                    {
-                        using (HttpClient client = new HttpClient())
-                        {        
-                            using (HttpResponseMessage response = await client.GetAsync(downloadURL))
-                            using (Stream streamToReadFrom = await response.Content.ReadAsStreamAsync())
-                            {
-                                PdbReaderProvider portablePdbReaderProvider = new PdbReaderProvider();
-                                var symbolReader = portablePdbReaderProvider.GetSymbolReader(asm.Image, streamToReadFrom);
-                                asm.Image.ReadSymbols(symbolReader);
-                                asm.Populate();
-                                method = asm.GetMethodByToken(method_token);
-                                foreach (var source in asm.Sources)
-                                {
-                                    var scriptSource = JObject.FromObject(source.ToScriptSource(context.Id, context.AuxData));
-                                    SendEvent(sessionId, "Debugger.scriptParsed", scriptSource, token);
-                                }
-                            }
-                        }
-                    }
-                    catch (Exception)
-                    {
-                        return null;
-                    }
+                var pdbGuid = new Guid(buffer);
+                var buffer2 = new byte[(data.Length - 24) - 1];
+                Buffer.BlockCopy(data, 24, buffer2, 0, (data.Length - 24) - 1);
+                var pdbName = System.Text.Encoding.UTF8.GetString(buffer2, 0, buffer2.Length);
+                pdbName = Path.GetFileName(pdbName);
+                var downloadURL = "http://msdl.microsoft.com/download/symbols" + "/" + pdbName + "/" + pdbGuid.ToString("N").ToUpper() + pdbAge + "/" + pdbName;
+
+                
+                using var client = new HttpClient();
+                using HttpResponseMessage response = await client.GetAsync(downloadURL);
+                using Stream streamToReadFrom = await response.Content.ReadAsStreamAsync();
+                var portablePdbReaderProvider = new PdbReaderProvider();
+                var symbolReader = portablePdbReaderProvider.GetSymbolReader(asm.Image, streamToReadFrom);
+                asm.Image.ReadSymbols(symbolReader);
+                asm.Populate();
+                method = asm.GetMethodByToken(method_token);
+                foreach (var source in asm.Sources)
+                {
+                    var scriptSource = JObject.FromObject(source.ToScriptSource(context.Id, context.AuxData));
+                    SendEvent(sessionId, "Debugger.scriptParsed", scriptSource, token);
                 }
             }
             return method;
