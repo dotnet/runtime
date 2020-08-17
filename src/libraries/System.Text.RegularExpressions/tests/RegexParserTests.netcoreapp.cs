@@ -139,9 +139,9 @@ namespace System.Text.RegularExpressions.Tests
 
                 throw new XunitException($"Expected RegexParseException with error: ({error}) -> Actual error: {regexParseError})");
             }
-            catch(Exception e)
+            catch (Exception e)
             { 
-                throw new XunitException($"Expected RegexParseException -> Actual: ({e.GetType()})");
+                throw new XunitException($"Expected RegexParseException -> Actual: ({e})");
             }
 
             throw new XunitException($"Expected RegexParseException with error: ({error}) -> Actual: No exception thrown");

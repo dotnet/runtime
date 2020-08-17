@@ -24,7 +24,7 @@ namespace System.Text.RegularExpressions.Tests
             }
             catch (ArgumentException)
             {
-                // On NetFramework, all we care whether the exception is thrown.
+                // On NetFramework, all we care about is whether the exception is thrown.
                 return;
             }
             catch (Exception e)
