@@ -37,7 +37,7 @@ namespace System.Globalization
             /* 00f0-00ff */  0x00d0, 0x00d1, 0x00d2, 0x00d3, 0x00d4, 0x00d5, 0x00d6, 0x00f7, 0x00d8, 0x00d9, 0x00da, 0x00db, 0x00dc, 0x00dd, 0x00de, 0x0178,
         };
 
-        // s_casingTable is covering the Unicode BMP plane only. Surrogate casing is handled seprately.
+        // s_casingTable is covering the Unicode BMP plane only. Surrogate casing is handled separately.
         // Every cell in the table is covering the casing of 256 characters in the BMP.
         // Every cell is array of 512 character for uppercasing mapping.
         private static ushort []?[] s_casingTable =
@@ -221,8 +221,8 @@ namespace System.Globalization
 
         internal static int CompareStringIgnoreCase(ref char strA, int lengthA, ref char strB, int lengthB)
         {
-            Debug.Assert(GlobalizationMode.Invariant);
-            Debug.Assert(GlobalizationMode.UseNls);
+            Debug.Assert(!GlobalizationMode.Invariant);
+            Debug.Assert(!GlobalizationMode.UseNls);
 
             int length = Math.Min(lengthA, lengthB);
 

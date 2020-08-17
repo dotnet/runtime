@@ -60,10 +60,10 @@ namespace System.Globalization
 
             range -= length;
 
-            return CompareStringIgnoreCaseNoneAscii(ref charA, lengthA - range, ref charB, lengthB - range);
+            return CompareStringIgnoreCaseNonAscii(ref charA, lengthA - range, ref charB, lengthB - range);
         }
 
-        internal static int CompareStringIgnoreCaseNoneAscii(ref char strA, int lengthA, ref char strB, int lengthB)
+        internal static int CompareStringIgnoreCaseNonAscii(ref char strA, int lengthA, ref char strB, int lengthB)
         {
             if (GlobalizationMode.Invariant)
             {
@@ -185,7 +185,6 @@ namespace System.Globalization
         {
             Debug.Assert(GlobalizationMode.Invariant);
             int length = Math.Min(lengthA, lengthB);
-            int range = length;
 
             ref char charA = ref strA;
             ref char charB = ref strB;
@@ -246,11 +245,7 @@ namespace System.Globalization
 
             int result = ignoreCase ? IndexOfOrdinalIgnoreCase(sourceSpan, value) : sourceSpan.IndexOf(value);
 
-            if (result >= 0)
-            {
-                result += startIndex;
-            }
-            return result;
+            return result >= 0 ? result + startIndex : result;
         }
 
         internal static int IndexOfOrdinalIgnoreCase(ReadOnlySpan<char> source, ReadOnlySpan<char> value)

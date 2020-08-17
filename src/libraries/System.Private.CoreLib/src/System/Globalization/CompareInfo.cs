@@ -474,7 +474,7 @@ namespace System.Globalization
 
                 ThrowCompareOptionsCheckFailed(options);
 
-                return -1; // Make the compiler happy
+                return -1; // make the compiler happy;
             }
         }
 
@@ -587,7 +587,7 @@ namespace System.Globalization
 
                 ThrowCompareOptionsCheckFailed(options);
 
-                return false; // make the compiler happy.
+                return false; // make the compiler happy;
             }
         }
 
@@ -990,7 +990,7 @@ namespace System.Globalization
 
                 ThrowHelper.ThrowArgumentException(ExceptionResource.Argument_InvalidFlag, ExceptionArgument.options);
 
-                return -1; // to make the compiler happy.
+                return -1; // make the compiler happy;
             }
         }
 
@@ -1354,7 +1354,7 @@ namespace System.Globalization
 
                 if (options == CompareOptions.Ordinal)
                 {
-                    return  source.LastIndexOf(value);
+                    return source.LastIndexOf(value);
                 }
 
                 if (options == CompareOptions.OrdinalIgnoreCase)
@@ -1580,7 +1580,7 @@ namespace System.Globalization
 
                 ThrowCompareOptionsCheckFailed(options);
 
-                return 0; // make the compiler happy
+                return -1; // make the compiler happy;
             }
         }
 

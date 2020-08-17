@@ -1166,7 +1166,7 @@ namespace System.Tests
         }
 
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsIcuGlobalization))]
         [MemberData(nameof(IndexOf_String_StringComparison_TestData))]
         public static void IndexOf_Ordinal_Misc(string source, string target, StringComparison stringComparison, int expected)
         {
@@ -1190,7 +1190,7 @@ namespace System.Tests
             yield return new object[] { "\uD801\uDC00Hello", "\uD801\uDC00", 6, StringComparison.Ordinal, 0};
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsIcuGlobalization))]
         [MemberData(nameof(LastIndexOf_String_StringComparison_TestData))]
         public static void LastIndexOf_Ordinal_Misc(string source, string target, int startIndex, StringComparison stringComparison, int expected)
         {
@@ -1211,7 +1211,7 @@ namespace System.Tests
             yield return new object[] { "\u0200\u0202", "\u0200\u0202A", StringComparison.OrdinalIgnoreCase, false};
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsIcuGlobalization))]
         [MemberData(nameof(Ordinal_String_StringComparison_TestData))]
         public static void Compare_Ordinal_Misc(string source, string target, StringComparison stringComparison, bool expected)
         {
@@ -1233,7 +1233,7 @@ namespace System.Tests
             yield return new object[] { "\u0200\u0202AAA", "\u0200\u0202A", StringComparison.OrdinalIgnoreCase, true};
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsIcuGlobalization))]
         [MemberData(nameof(StartsWith_String_StringComparison_TestData))]
         public static void StartsWith_Ordinal_Misc(string source, string target, StringComparison stringComparison, bool expected)
         {
@@ -1254,7 +1254,7 @@ namespace System.Tests
             yield return new object[] { "AAA\u0200\u0202A", "\u0200\u0202A", StringComparison.OrdinalIgnoreCase, true};
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsIcuGlobalization))]
         [MemberData(nameof(EndsWith_String_StringComparison_TestData))]
         public static void EndsWith_Ordinal_Misc(string source, string target, StringComparison stringComparison, bool expected)
         {
