@@ -91,7 +91,7 @@ namespace System.Text.RegularExpressions.Tests
         // Surrogate pair which is parsed as [char,char-char,char] as we operate on UTF-16 code units.
         [InlineData("[\uD82F\uDCA0-\uD82F\uDCA3]", RegexOptions.IgnoreCase, RegexParseError.ReversedCharacterRange, 5)]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
-        public void Parse_NotNetFramework(string pattern, RegexOptions options, object error, int offset = -1)
+        public void Parse_Netcoreapp(string pattern, RegexOptions options, object error, int offset = -1)
         {
             Parse(pattern, options, error, offset);
         }
