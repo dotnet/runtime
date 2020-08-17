@@ -225,7 +225,6 @@
   <!-- Language configuration -->
   <PropertyGroup>
     <Features>strict;nullablePublicOnly</Features>
-    <WarningLevel>4</WarningLevel>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <!-- We decided to keep this disabled by default: https://github.com/dotnet/runtime/issues/15152 -->
     <CheckForOverflowUnderflow>false</CheckForOverflowUnderflow>
