@@ -89,7 +89,7 @@ namespace Microsoft.Extensions.Configuration
         /// <param name="key">The key of the configuration section.</param>
         /// <returns>The <see cref="IConfigurationSection"/>.</returns>
         /// <remarks>
-        ///     If no matching sub-section is found with the specified key, an exception raised
+        ///     If no matching sub-section is found with the specified key, an exception is raised.
         /// </remarks>
         /// <exception cref="System.InvalidOperationException">There is no section with key <paramref name="key"/>.</exception>
         public static IConfigurationSection GetRequiredSection(this IConfiguration configuration, string key)
