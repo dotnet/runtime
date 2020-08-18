@@ -3115,6 +3115,9 @@
   <data name="Overflow_UInt64" xml:space="preserve">
     <value>Value was either too large or too small for a UInt64.</value>
   </data>
+  <data name="PlatformNotSupported_CodeBase" xml:space="preserve">
+    <value>CodeBase is not supported on assemblies loaded from memory.</value>
+  </data>
   <data name="PlatformNotSupported_ArgIterator" xml:space="preserve">
     <value>ArgIterator is not supported on this platform.</value>
   </data>

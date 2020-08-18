@@ -73,6 +73,9 @@ namespace System.Reflection
                                                bool copiedName,
                                                StringHandleOnStack retString);
 
+        [DllImport(RuntimeHelpers.QCall)]
+        private static extern bool IsInBundle(QCallAssembly assembly);
+
         internal string? GetCodeBase(bool copiedName)
         {
             string? codeBase = null;
@@ -81,7 +84,19 @@ namespace System.Reflection
             return codeBase;
         }
 
-        public override string? CodeBase => GetCodeBase(false);
+        public override string? CodeBase
+        {
+            get
+            {
+                var runtimeAssembly = this;
+                if (IsInBundle(new QCallAssembly(ref runtimeAssembly)))
+                {
+                    // Not supported if the assembly was loaded from memory
+                    throw new PlatformNotSupportedException(SR.PlatformNotSupported_CodeBase);
+                }
+                return GetCodeBase(false);
+            }
+        }
 
         internal RuntimeAssembly GetNativeHandle() => this;
 

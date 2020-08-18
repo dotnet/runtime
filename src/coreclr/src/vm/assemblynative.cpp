@@ -579,6 +579,17 @@ void QCALLTYPE AssemblyNative::GetCodeBase(QCall::AssemblyHandle pAssembly, BOOL
     END_QCALL;
 }
 
+BOOL QCALLTYPE AssemblyNative::IsInBundle(QCall::AssemblyHandle pAssembly)
+{
+    QCALL_CONTRACT;
+
+    BOOL retVal=FALSE;
+    BEGIN_QCALL;
+    retVal = pAssembly->GetFile()->GetILimage()->IsInBundle();
+    END_QCALL;
+    return retVal;
+}
+
 INT32 QCALLTYPE AssemblyNative::GetHashAlgorithm(QCall::AssemblyHandle pAssembly)
 {
     QCALL_CONTRACT;

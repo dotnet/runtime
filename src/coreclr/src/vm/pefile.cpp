@@ -2142,8 +2142,15 @@ void PEAssembly::GetCodeBase(SString &result, BOOL fCopiedName/*=FALSE*/)
     }
     CONTRACTL_END;
 
-    // All other cases use the file path.
-    result.Set(GetEffectivePath());
+    if (GetILimage()->IsInBundle())
+    {
+        result.Set(SString::Empty());
+    }
+    else
+    {
+        // All other cases use the file path.
+        result.Set(GetEffectivePath());
+    }
     if (!result.IsEmpty())
         PathToUrl(result);
 }

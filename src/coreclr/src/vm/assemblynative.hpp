@@ -63,6 +63,9 @@ public:
     void QCALLTYPE GetCodeBase(QCall::AssemblyHandle pAssembly, BOOL fCopiedName, QCall::StringHandleOnStack retString);
 
     static
+    BOOL QCALLTYPE IsInBundle(QCall::AssemblyHandle pAssembly);
+
+    static
     BYTE * QCALLTYPE GetResource(QCall::AssemblyHandle pAssembly, LPCWSTR wszName, DWORD * length);
 
     static

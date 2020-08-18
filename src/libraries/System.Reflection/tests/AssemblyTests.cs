@@ -186,6 +186,16 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
+        public void CodeBase_InMemory()
+        {
+            var inMemBlob = File.ReadAllBytes(SourceTestAssemblyPath);
+            var asm = Assembly.Load(inMemBlob);
+#pragma warning disable SYSLIB0012
+            Assert.Throws<PlatformNotSupportedException>(() => asm.CodeBase);
+#pragma warning restore SYSLIB0012
+        }
+
+        [Fact]
         public void GetFiles()
         {
             var asm = typeof(AssemblyTests).Assembly;
