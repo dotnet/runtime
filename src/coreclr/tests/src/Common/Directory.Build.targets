@@ -98,8 +98,12 @@
           TargetDir="TargetingPack/"/>
 
         <RunTimeDependencyCopyLocal
-          Include="$(ArtifactsBinDir)\WasmAppBuilderConsole\$(Configuration)\$(NetCoreAppCurrent)\publish\**"
-          TargetDir="WasmAppBuilderConsole/"/>
+          Include="$(ArtifactsBinDir)\WasmAppBuilder\$(Configuration)\$(NetCoreAppCurrent)\publish\**"
+          TargetDir="WasmAppBuilder/"/>
+
+        <RunTimeDependencyCopyLocal
+          Include="$(MonoProjectRoot)\wasm\wasm-test-runner\WasmTestRunner.proj"
+          TargetDir="wasm-test-runner/"/>
   
         <RunTimeDependencyCopyLocal
           Include="$(MonoProjectRoot)\wasm\runtime-test.js"

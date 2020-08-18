@@ -15,9 +15,9 @@
       <!-- This specifies what properties are needed to be passed down as global properties to a child project. -->
 
       <_PropertiesToPass>
-        TargetArchitecture=$(__BuildArch);
-        TargetOS=$(__TargetOS);
-        Configuration=$(__BuildType);
+        TargetArchitecture=$(TargetArchitecture);
+        TargetOS=$(TargetOS);
+        Configuration=$(Configuration);
         Creator=$(_Creator);
         HelixAccessToken=$(_HelixAccessToken);
         HelixBuild=$(_HelixBuild);
@@ -40,7 +40,10 @@
 
       
       <_PropertiesToPass Condition="'$(TargetArchitecture)' == 'wasm' ">
-        $(_PropertiesToPass);IncludeDotNetCli=true;DotNetCliRuntime=linux-x64
+        $(_PropertiesToPass);
+        IncludeDotNetCli=true;
+        DotNetCliRuntime=linux-x64;
+        DotNetCliPackageType=sdk
       </_PropertiesToPass>
     </PropertyGroup>
     <Message Importance="High" Text="_PropertiesToPass: $(_PropertiesToPass)"/>
