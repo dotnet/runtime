@@ -1287,8 +1287,6 @@ namespace Microsoft.Extensions.Hosting.Internal
             }
         }
 
-
-
         private class DelegateHostedService : IHostedService, IDisposable
         {
             private readonly Action _started;

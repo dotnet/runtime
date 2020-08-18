@@ -325,15 +325,6 @@ namespace System.Net.Http
         protected override System.Threading.Tasks.Task SerializeToStreamAsync(System.IO.Stream stream, System.Net.TransportContext? context, System.Threading.CancellationToken cancellationToken) { throw null; }
         protected internal override bool TryComputeLength(out long length) { throw null; }
     }
-    public partial class SocketsHttpConnectionFactory : System.Net.Connections.ConnectionFactory
-    {
-        public SocketsHttpConnectionFactory() { }
-        public sealed override System.Threading.Tasks.ValueTask<System.Net.Connections.Connection> ConnectAsync(System.Net.EndPoint? endPoint, System.Net.Connections.IConnectionProperties? options = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
-        public virtual System.Net.Sockets.Socket CreateSocket(System.Net.Http.HttpRequestMessage message, System.Net.EndPoint? endPoint, System.Net.Connections.IConnectionProperties options) { throw null; }
-        protected override void Dispose(bool disposing) { }
-        protected override System.Threading.Tasks.ValueTask DisposeAsyncCore() { throw null; }
-        public virtual System.Threading.Tasks.ValueTask<System.Net.Connections.Connection> EstablishConnectionAsync(System.Net.Http.HttpRequestMessage message, System.Net.EndPoint? endPoint, System.Net.Connections.IConnectionProperties options, System.Threading.CancellationToken cancellationToken) { throw null; }
-    }
     public sealed partial class SocketsHttpHandler : System.Net.Http.HttpMessageHandler
     {
         public SocketsHttpHandler() { }
@@ -347,6 +338,9 @@ namespace System.Net.Http
         public System.Net.ICredentials? Credentials { get { throw null; } set { } }
         public System.Net.ICredentials? DefaultProxyCredentials { get { throw null; } set { } }
         public System.TimeSpan Expect100ContinueTimeout { get { throw null; } set { } }
+        public System.TimeSpan KeepAlivePingDelay { get { throw null; } set { } }
+        public System.TimeSpan KeepAlivePingTimeout { get { throw null; } set { } }
+        public HttpKeepAlivePingPolicy KeepAlivePingPolicy { get { throw null; } set { } }
         public int MaxAutomaticRedirections { get { throw null; } set { } }
         public int MaxConnectionsPerServer { get { throw null; } set { } }
         public int MaxResponseDrainSize { get { throw null; } set { } }
@@ -368,6 +362,11 @@ namespace System.Net.Http
         protected internal override System.Net.Http.HttpResponseMessage Send(System.Net.Http.HttpRequestMessage request, System.Threading.CancellationToken cancellationToken) { throw null; }
         protected internal override System.Threading.Tasks.Task<System.Net.Http.HttpResponseMessage> SendAsync(System.Net.Http.HttpRequestMessage request, System.Threading.CancellationToken cancellationToken) { throw null; }
         public bool EnableMultipleHttp2Connections { get { throw null; } set { } }
+    }
+    public enum HttpKeepAlivePingPolicy
+    {
+        WithActiveRequests,
+        Always
     }
     public partial class StreamContent : System.Net.Http.HttpContent
     {

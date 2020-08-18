@@ -177,13 +177,18 @@ namespace System.Globalization.Tests
             Assert.Equal(expected, new RegionInfo(name).ISOCurrencySymbol);
         }
 
-        [Theory]
-        [InlineData("en-US", new string[] { "$" })]
-        [InlineData("zh-CN", new string[] { "\u00A5", "\uffe5" })] // \u00A5 is Latin-1 Supplement(Windows), \uffe5 is Halfwidth and Fullwidth Forms(ICU)
-        public void CurrencySymbol(string name, string[] expected)
+        [Fact]
+        public void CurrencySymbol()
         {
-            string result = new RegionInfo(name).CurrencySymbol;
-            Assert.Contains(result, expected);
+            Assert.Equal("$", new RegionInfo("en-US").CurrencySymbol);
+            if (PlatformDetection.IsNotBrowser)
+            {
+                Assert.Contains(new RegionInfo("zh-CN").CurrencySymbol, new string[] { "\u00A5", "\uffe5" });
+            }
+            else
+            {
+                Assert.Equal("CN¥", new RegionInfo("zh-CN").CurrencySymbol);
+            }
         }
 
         [Theory]
@@ -218,7 +223,16 @@ namespace System.Globalization.Tests
             Assert.Equal(geoId, ri.GeoId);
             Assert.True(currencyEnglishName.Equals(ri.CurrencyEnglishName) ||
                         alternativeCurrencyEnglishName.Equals(ri.CurrencyEnglishName), "Wrong currency English Name");
-            Assert.Equal(currencyNativeName, ri.CurrencyNativeName);
+
+            if (PlatformDetection.IsBrowser)
+            {
+                // Browser's ICU doesn't support CurrencyNativeName
+                Assert.Equal(currencyEnglishName, ri.CurrencyNativeName);
+            }
+            else
+            {
+                Assert.Equal(currencyNativeName, ri.CurrencyNativeName);
+            }
             Assert.Equal(threeLetterISORegionName, ri.ThreeLetterISORegionName);
             Assert.Equal(threeLetterWindowsRegionName, ri.ThreeLetterWindowsRegionName);
         }

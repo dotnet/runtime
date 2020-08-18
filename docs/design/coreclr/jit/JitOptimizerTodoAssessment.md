@@ -72,8 +72,8 @@ high priority.
 We haven't been targeting benchmarks that spend a lot of time doing computations
 in an inner loop.  Pursuing loop optimizations for the peanut butter effect
 would seem odd.  So this simply hasn't bubbled up in priority yet, though it's
-bound to eventually.  Obvious candidates include [IV widening](https://github.com/dotnet/coreclr/issues/9179),
-[unrolling](https://github.com/dotnet/coreclr/issues/11606), load/store motion,
+bound to eventually.  Obvious candidates include [IV widening](https://github.com/dotnet/runtime/issues/7312),
+[unrolling](https://github.com/dotnet/runtime/issues/8107), load/store motion,
 and strength reduction.
 
 
@@ -112,7 +112,7 @@ handle SSA renames.
 
 We've made note of the prevalence of async/await in modern code (and particularly
 in web server code such as TechEmpower), and have some opportunities listed in
-[#7914](https://github.com/dotnet/coreclr/issues/7914).  Some sort of study of
+[#6916](https://github.com/dotnet/runtime/issues/6916).  Some sort of study of
 async peanut butter to find more opportunities is probably in order, but what
 would that look like?
 
@@ -120,7 +120,7 @@ would that look like?
 ### If-Conversion (cmov formation)
 
 This hits big in microbenchmarks where it hits.  There's some work in flight
-on this (see [#7447](https://github.com/dotnet/coreclr/issues/7447) and
+on this (see [#6749](https://github.com/dotnet/runtime/issues/6749) and
 [#10861](https://github.com/dotnet/coreclr/pull/10861)).
 
 
@@ -149,7 +149,7 @@ helpers that are known not to trash them, but the information about which
 helpers trash which registers is spread across a few places in the codebase,
 and has some puzzling quirks like separate "GC" and "NoGC" kill sets for the
 same helper.  Unifying the information sources and then refining the recorded
-kill sets would help avoid more stack traffic.  See [#12940](https://github.com/dotnet/coreclr/issues/12940).
+kill sets would help avoid more stack traffic.  See [#8605](https://github.com/dotnet/runtime/issues/8605).
 
 Low-Hanging Fruit
 -----------------
@@ -160,8 +160,8 @@ The MSIL `switch` instruction is actually encoded as a jump table, so (for
 better or worse) intelligent optimization of source-level switch statements
 largely falls to the MSIL generator (e.g. Roslyn), since encoding sparse
 switches as jump tables in MSIL would be impractical.  That said, when the MSIL
-has a switch of just a few cases (as in [#12868](https://github.com/dotnet/coreclr/issues/12868)),
-or just a few distinct cases that can be efficiently checked (as in [#12477](https://github.com/dotnet/coreclr/issues/12477)),
+has a switch of just a few cases (as in [#8573](https://github.com/dotnet/runtime/issues/8573)),
+or just a few distinct cases that can be efficiently checked (as in [#8418](https://github.com/dotnet/runtime/issues/8418)),
 the JIT needn't blindly emit these as jump tables in the native code.  Work is
 underway to address the latter case in [#12552](https://github.com/dotnet/coreclr/pull/12552).
 
@@ -170,7 +170,7 @@ underway to address the latter case in [#12552](https://github.com/dotnet/corecl
 
 A number of suggestions have been made for having the JIT recognize certain
 patterns and emit specialized write barriers that avoid various overheads --
-see [#13006](https://github.com/dotnet/coreclr/issues/13006) and [#12812](https://github.com/dotnet/coreclr/issues/12812).
+see [#8627](https://github.com/dotnet/runtime/issues/8627) and [#8547](https://github.com/dotnet/runtime/issues/8547).
 
 
 ### Byref-Exposed Store/Load Value Propagation
@@ -178,8 +178,8 @@ see [#13006](https://github.com/dotnet/coreclr/issues/13006) and [#12812](https:
 There are a few tweaks to our value-numbering for byref-exposed loads and stores
 to share some of the machinery we use for heap loads and stores that would
 allow better propagation through byref-exposed locals and out parameters --
-see [#13457](https://github.com/dotnet/coreclr/issues/13457) and
-[#13458](https://github.com/dotnet/coreclr/issues/13458).
+see [#8767](https://github.com/dotnet/runtime/issues/8767) and
+[#8768](https://github.com/dotnet/runtime/issues/8768).
 
 Miscellaneous
 -------------
@@ -199,4 +199,4 @@ Maybe it's worth reconsidering the priority based on throughput?
 RyuJIT has an implementation that handles the valuable cases (see [analysis](https://gist.github.com/JosephTremoulet/c1246b17ea2803e93e203b9969ee5a25#file-mulshift-md)
 and [follow-up](https://github.com/dotnet/coreclr/pull/13128) for details).
 The current implementation is split across Morph and CodeGen; ideally it would
-be moved to Lower, which is tracked by [#13150](https://github.com/dotnet/coreclr/issues/13150).
+be moved to Lower, which is tracked by [#8668](https://github.com/dotnet/runtime/issues/8668).

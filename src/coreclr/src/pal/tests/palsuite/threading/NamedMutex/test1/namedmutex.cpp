@@ -841,7 +841,7 @@ DWORD AbandonTests_Child_AbruptExit(void *arg = nullptr)
 
 // This child process acquires the mutex lock, creates another child process (to ensure that file locks are not inherited), and
 // abandons the mutex abruptly. The second child process detects the abandonment and abandons the mutex again for the parent to
-// detect. Issue: https://github.com/dotnet/coreclr/issues/21455
+// detect. Issue: https://github.com/dotnet/runtime/issues/11636
 DWORD AbandonTests_Child_FileLocksNotInherited_Parent_AbruptExit(void *arg = nullptr)
 {
     const char *testName = "AbandonTests";

@@ -253,6 +253,11 @@ FCIMPL3(Object*, ReflectionInvocation::AllocateValueType, ReflectClassBaseObject
     if (InvokeUtil::IsPrimitiveType(targetElementType) || targetElementType == ELEMENT_TYPE_VALUETYPE)
     {
         MethodTable* allocMT = targetType.AsMethodTable();
+
+        if (allocMT->IsByRefLike()) {
+            COMPlusThrow(kNotSupportedException, W("NotSupported_ByRefLike"));
+        }
+
         if (gc.value != NULL)
         {
             // ignore the type of the incoming box if fForceTypeChange is set

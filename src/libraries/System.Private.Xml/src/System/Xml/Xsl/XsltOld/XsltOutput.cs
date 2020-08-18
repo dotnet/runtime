@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#nullable enable
 namespace System.Xml.Xsl.XsltOld
 {
     using System;
@@ -25,21 +26,21 @@ namespace System.Xml.Xsl.XsltOld
         private int _methodSId = int.MaxValue;
         private Encoding _encoding = System.Text.Encoding.UTF8;
         private int _encodingSId = int.MaxValue;
-        private string _version;
+        private string? _version;
         private int _versionSId = int.MaxValue;
         private bool _omitXmlDecl;
         private int _omitXmlDeclSId = int.MaxValue;
         private bool _standalone;
         private int _standaloneSId = int.MaxValue;
-        private string _doctypePublic;
+        private string? _doctypePublic;
         private int _doctypePublicSId = int.MaxValue;
-        private string _doctypeSystem;
+        private string? _doctypeSystem;
         private int _doctypeSystemSId = int.MaxValue;
         private bool _indent;
         private int _indentSId = int.MaxValue;
         private string _mediaType = "text/html";
         private int _mediaTypeSId = int.MaxValue;
-        private Hashtable _cdataElements;
+        private Hashtable? _cdataElements;
 
         internal OutputMethod Method
         {
@@ -61,17 +62,17 @@ namespace System.Xml.Xsl.XsltOld
             get { return _standalone; }
         }
 
-        internal string DoctypePublic
+        internal string? DoctypePublic
         {
             get { return _doctypePublic; }
         }
 
-        internal string DoctypeSystem
+        internal string? DoctypeSystem
         {
             get { return _doctypeSystem; }
         }
 
-        internal Hashtable CDataElements
+        internal Hashtable? CDataElements
         {
             get { return _cdataElements; }
         }

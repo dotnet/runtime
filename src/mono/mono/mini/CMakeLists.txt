@@ -10,6 +10,8 @@ endfunction()
 include_directories(
   ${PROJECT_BINARY_DIR}/
   ${PROJECT_BINARY_DIR}/../..
+  ${PROJECT_BINARY_DIR}/../../mono/eglib
+  ${CMAKE_SOURCE_DIR}/
   ${PROJECT_SOURCE_DIR}/../
   ${PROJECT_SOURCE_DIR}/../eglib
   ${PROJECT_SOURCE_DIR}/../sgen)
@@ -188,6 +190,8 @@ set (utils_common_sources
 	lock-free-alloc.h
 	lock-free-array-queue.c
 	lock-free-array-queue.h
+	lifo-semaphore.c
+	lifo-semaphore.h
 	mono-linked-list-set.c
 	mono-linked-list-set.h
 	mono-threads.c
@@ -205,6 +209,7 @@ set (utils_common_sources
 	mono-threads-haiku.c
 	mono-threads-aix.c
 	mono-threads-wasm.c
+	mono-threads-sunos.c
 	mono-threads.h
 	mono-threads-debug.h
 	mono-threads-api.h
@@ -226,6 +231,7 @@ set (utils_common_sources
 	bsearch.h
 	bsearch.c
 	mono-signal-handler.h
+	mono-signal-handler.c
 	mono-conc-hashtable.h
 	mono-conc-hashtable.c
 	json.h
@@ -328,19 +334,19 @@ set(metadata_common_sources
 	class.c
 	class-getters.h
 	class-init.h
+	class-init-internals.h
 	class-init.c
 	class-internals.h
 	class-inlines.h
 	class-private-definition.h
 	class-accessors.c
+	class-setup-vtable.c
 	cominterop.c
 	cominterop.h
 	console-io.h
 	coree.c
 	coree.h
 	coree-internals.h
-	culture-info.h
-	culture-info-tables.h
 	debug-helpers.c
 	debug-mono-symfile.h
 	debug-mono-symfile.c
@@ -362,12 +368,11 @@ set(metadata_common_sources
 	icall-internals.h
 	icall-def.h
 	icall-table.h
+	icall-eventpipe.c
 	image.c
 	image-internals.h
 	jit-info.c
 	loader.c
-	locales.c
-	locales.h
 	lock-tracer.c
 	lock-tracer.h
 	marshal.c
@@ -485,7 +490,7 @@ set(metadata_common_sources
 	native-library.h
 	native-library.c
 	native-library-qcall.c
-	qcalllist.h
+	qcall-def.h
 	loaded-images-internals.h
 	loaded-images.c
 	loaded-images-netcore.c
@@ -598,6 +603,27 @@ set(sgen_sources_base
 addprefix (sgen_sources ../sgen/ "${sgen_sources_base}")
 set_source_files_properties (${sgen_sources} PROPERTIES COMPILE_DEFINITIONS "HAVE_SGEN_GC")
 
+# ICU
+if(HAVE_SYS_ICU)
+set (icu_shim_sources_base
+	pal_calendarData.c
+	pal_casing.c
+	pal_collation.c
+	pal_idna.c
+	pal_locale.c
+	pal_localeNumberData.c
+	pal_localeStringData.c
+	pal_normalization.c
+	pal_timeZoneInfo.c
+	entrypoints.c
+	pal_icushim.c)
+addprefix (icu_shim_sources "${ICU_SHIM_PATH}" "${icu_shim_sources_base}")
+set_source_files_properties (${icu_shim_sources} PROPERTIES COMPILE_DEFINITIONS OSX_ICU_LIBRARY_PATH="${OSX_ICU_LIBRARY_PATH}")
+set_source_files_properties (${icu_shim_sources} PROPERTIES COMPILE_FLAGS "-I${ICU_INCLUDEDIR} -I${CMAKE_SOURCE_DIR}/../libraries/Native/Unix/System.Globalization.Native/ -I${CMAKE_SOURCE_DIR}/../libraries/Native/Unix/Common/ ${ICU_FLAGS}")
+set(ICU_LIBS "icucore")
+set(ICU_LDFLAGS "-L${ICU_LIBDIR}")
+endif()
+
 #
 # MINI
 #
@@ -667,6 +693,7 @@ set (mini_common_sources
 	mini-cross-helpers.c
 	arch-stubs.c
 	llvm-runtime.h
+	llvm-intrinsics.h
 	type-checking.c
 	lldb.h
 	lldb.c
@@ -727,6 +754,8 @@ set (interp_sources
 	interp/interp.h
 	interp/interp-internals.h
 	interp/interp.c
+	interp/interp-intrins.h
+	interp/interp-intrins.c
 	interp/mintops.h
 	interp/mintops.c
 	interp/transform.c)
@@ -752,19 +781,25 @@ endif()
 
 set (mini_sources "${CMAKE_CURRENT_BINARY_DIR}/buildver-sgen.h;main-core.c;${mini_common_sources};${arch_sources};${os_sources};${interp_sources};${llvm_sources};${debugger_sources};${llvm_runtime_sources}")
 
-add_library(monosgen-objects OBJECT "${eglib_sources};${metadata_sources};${utils_sources};${sgen_sources};${mini_sources}")
+add_library(monosgen-objects OBJECT "${eglib_sources};${metadata_sources};${utils_sources};${sgen_sources};${icu_shim_sources};${mini_sources}")
 add_library (monosgen-static STATIC $<TARGET_OBJECTS:monosgen-objects>)
 add_library (monosgen SHARED $<TARGET_OBJECTS:monosgen-objects>)
 
 set_target_properties(monosgen PROPERTIES OUTPUT_NAME monosgen-2.0)
 set_target_properties(monosgen PROPERTIES LIBRARY_OUTPUT_DIRECTORY .libs)
 
+# FIXME: Always rebuilds, creates non-deterministic builds
 # FIXME: Use the previous format
-string(TIMESTAMP BUILD_DATE)
+#string(TIMESTAMP BUILD_DATE)
 
+#add_custom_command (
+#  OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/buildver-sgen.h
+#  COMMAND echo "const char *build_date = \"${BUILD_DATE}\";" > ${CMAKE_CURRENT_BINARY_DIR}/buildver-sgen.h
+#  VERBATIM
+#)
 add_custom_command (
   OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/buildver-sgen.h
-  COMMAND echo "const char *build_date = \"${BUILD_DATE}\";" > ${CMAKE_CURRENT_BINARY_DIR}/buildver-sgen.h
+  COMMAND echo "const char *build_date = \"\";" > ${CMAKE_CURRENT_BINARY_DIR}/buildver-sgen.h
   VERBATIM
 )
 
@@ -781,5 +816,6 @@ add_custom_command (
 )
 
 add_executable (mono-sgen "main-sgen.c")
-target_link_libraries (mono-sgen monosgen-static "-framework CoreFoundation" "-framework Foundation" "iconv" ${LLVM_LIBS})
-target_link_libraries (monosgen "-framework CoreFoundation" "-framework Foundation" "iconv" ${LLVM_LIBS})
+target_link_libraries (mono-sgen monosgen-static "-framework CoreFoundation" "-framework Foundation" "iconv" ${LLVM_LIBS} ${ICU_LIBS})
+target_link_libraries (monosgen "-framework CoreFoundation" "-framework Foundation" "iconv" ${LLVM_LIBS} ${ICU_LIBS})
+set_target_properties (mono-sgen monosgen PROPERTIES LINK_FLAGS ${ICU_LDFLAGS})
