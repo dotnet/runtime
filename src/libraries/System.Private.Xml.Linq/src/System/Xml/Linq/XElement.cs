@@ -1374,6 +1374,7 @@ namespace System.Xml.Linq
         /// Thrown if the element does not contain a valid boolean value.
         /// </exception>
         [CLSCompliant(false)]
+        [return: NotNullIfNotNull("element")]
         public static explicit operator bool?(XElement? element)
         {
             if (element == null) return null;
@@ -1415,6 +1416,7 @@ namespace System.Xml.Linq
         /// Thrown if the specified element does not contain a valid integer value.
         /// </exception>
         [CLSCompliant(false)]
+        [return: NotNullIfNotNull("element")]
         public static explicit operator int?(XElement? element)
         {
             if (element == null) return null;
@@ -1456,6 +1458,7 @@ namespace System.Xml.Linq
         /// Thrown if the specified element does not contain a valid unsigned integer value.
         /// </exception>
         [CLSCompliant(false)]
+        [return: NotNullIfNotNull("element")]
         public static explicit operator uint?(XElement? element)
         {
             if (element == null) return null;
@@ -1497,6 +1500,7 @@ namespace System.Xml.Linq
         /// Thrown if the specified element does not contain a valid long integer value.
         /// </exception>
         [CLSCompliant(false)]
+        [return: NotNullIfNotNull("element")]
         public static explicit operator long?(XElement? element)
         {
             if (element == null) return null;
@@ -1538,6 +1542,7 @@ namespace System.Xml.Linq
         /// Thrown if the specified element does not contain a valid unsigned long integer value.
         /// </exception>
         [CLSCompliant(false)]
+        [return: NotNullIfNotNull("element")]
         public static explicit operator ulong?(XElement? element)
         {
             if (element == null) return null;
@@ -1579,6 +1584,7 @@ namespace System.Xml.Linq
         /// Thrown if the specified element does not contain a valid float value.
         /// </exception>
         [CLSCompliant(false)]
+        [return: NotNullIfNotNull("element")]
         public static explicit operator float?(XElement? element)
         {
             if (element == null) return null;
@@ -1620,6 +1626,7 @@ namespace System.Xml.Linq
         /// Thrown if the specified element does not contain a valid double value.
         /// </exception>
         [CLSCompliant(false)]
+        [return: NotNullIfNotNull("element")]
         public static explicit operator double?(XElement? element)
         {
             if (element == null) return null;
@@ -1661,6 +1668,7 @@ namespace System.Xml.Linq
         /// Thrown if the specified element does not contain a valid decimal value.
         /// </exception>
         [CLSCompliant(false)]
+        [return: NotNullIfNotNull("element")]
         public static explicit operator decimal?(XElement? element)
         {
             if (element == null) return null;
@@ -1702,6 +1710,7 @@ namespace System.Xml.Linq
         /// Thrown if the specified element does not contain a valid <see cref="DateTime"/> value.
         /// </exception>
         [CLSCompliant(false)]
+        [return: NotNullIfNotNull("element")]
         public static explicit operator DateTime?(XElement? element)
         {
             if (element == null) return null;
@@ -1743,6 +1752,7 @@ namespace System.Xml.Linq
         /// Thrown if the specified element does not contain a valid <see cref="DateTimeOffset"/> value.
         /// </exception>
         [CLSCompliant(false)]
+        [return: NotNullIfNotNull("element")]
         public static explicit operator DateTimeOffset?(XElement? element)
         {
             if (element == null) return null;
@@ -1784,6 +1794,7 @@ namespace System.Xml.Linq
         /// Thrown if the specified element does not contain a valid <see cref="TimeSpan"/> value.
         /// </exception>
         [CLSCompliant(false)]
+        [return: NotNullIfNotNull("element")]
         public static explicit operator TimeSpan?(XElement? element)
         {
             if (element == null) return null;
@@ -1825,6 +1836,7 @@ namespace System.Xml.Linq
         /// Thrown if the specified element does not contain a valid guid.
         /// </exception>
         [CLSCompliant(false)]
+        [return: NotNullIfNotNull("element")]
         public static explicit operator Guid?(XElement? element)
         {
             if (element == null) return null;

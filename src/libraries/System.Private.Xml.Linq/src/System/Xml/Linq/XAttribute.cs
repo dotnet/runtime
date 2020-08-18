@@ -264,6 +264,7 @@ namespace System.Xml.Linq
         /// The content of this <see cref="XAttribute"/> as a <see cref="bool"/>?.
         /// </returns>
         [CLSCompliant(false)]
+        [return: NotNullIfNotNull("attribute")]
         public static explicit operator bool?(XAttribute? attribute)
         {
             if (attribute == null) return null;
@@ -299,6 +300,7 @@ namespace System.Xml.Linq
         /// The content of this <see cref="XAttribute"/> as an <see cref="int"/>?.
         /// </returns>
         [CLSCompliant(false)]
+        [return: NotNullIfNotNull("attribute")]
         public static explicit operator int?(XAttribute attribute)
         {
             if (attribute == null) return null;
@@ -334,6 +336,7 @@ namespace System.Xml.Linq
         /// The content of this <see cref="XAttribute"/> as an <see cref="uint"/>?.
         /// </returns>
         [CLSCompliant(false)]
+        [return: NotNullIfNotNull("attribute")]
         public static explicit operator uint?(XAttribute? attribute)
         {
             if (attribute == null) return null;
@@ -369,6 +372,7 @@ namespace System.Xml.Linq
         /// The content of this <see cref="XAttribute"/> as a <see cref="long"/>?.
         /// </returns>
         [CLSCompliant(false)]
+        [return: NotNullIfNotNull("attribute")]
         public static explicit operator long?(XAttribute? attribute)
         {
             if (attribute == null) return null;
@@ -404,6 +408,7 @@ namespace System.Xml.Linq
         /// The content of this <see cref="XAttribute"/> as an <see cref="ulong"/>?.
         /// </returns>
         [CLSCompliant(false)]
+        [return: NotNullIfNotNull("attribute")]
         public static explicit operator ulong?(XAttribute? attribute)
         {
             if (attribute == null) return null;
@@ -439,6 +444,7 @@ namespace System.Xml.Linq
         /// The content of this <see cref="XAttribute"/> as a <see cref="float"/>?.
         /// </returns>
         [CLSCompliant(false)]
+        [return: NotNullIfNotNull("attribute")]
         public static explicit operator float?(XAttribute? attribute)
         {
             if (attribute == null) return null;
@@ -474,6 +480,7 @@ namespace System.Xml.Linq
         /// The content of this <see cref="XAttribute"/> as a <see cref="double"/>?.
         /// </returns>
         [CLSCompliant(false)]
+        [return: NotNullIfNotNull("attribute")]
         public static explicit operator double?(XAttribute? attribute)
         {
             if (attribute == null) return null;
@@ -509,6 +516,7 @@ namespace System.Xml.Linq
         /// The content of this <see cref="XAttribute"/> as a <see cref="decimal"/>?.
         /// </returns>
         [CLSCompliant(false)]
+        [return: NotNullIfNotNull("attribute")]
         public static explicit operator decimal?(XAttribute? attribute)
         {
             if (attribute == null) return null;
@@ -544,6 +552,7 @@ namespace System.Xml.Linq
         /// The content of this <see cref="XAttribute"/> as a <see cref="DateTime"/>?.
         /// </returns>
         [CLSCompliant(false)]
+        [return: NotNullIfNotNull("attribute")]
         public static explicit operator DateTime?(XAttribute? attribute)
         {
             if (attribute == null) return null;
@@ -579,6 +588,7 @@ namespace System.Xml.Linq
         /// The content of this <see cref="XAttribute"/> as a <see cref="DateTimeOffset"/>?.
         /// </returns>
         [CLSCompliant(false)]
+        [return: NotNullIfNotNull("attribute")]
         public static explicit operator DateTimeOffset?(XAttribute? attribute)
         {
             if (attribute == null) return null;
@@ -614,6 +624,7 @@ namespace System.Xml.Linq
         /// The content of this <see cref="XAttribute"/> as a <see cref="TimeSpan"/>?.
         /// </returns>
         [CLSCompliant(false)]
+        [return: NotNullIfNotNull("attribute")]
         public static explicit operator TimeSpan?(XAttribute? attribute)
         {
             if (attribute == null) return null;
@@ -649,6 +660,7 @@ namespace System.Xml.Linq
         /// The content of this <see cref="XAttribute"/> as a <see cref="Guid"/>?.
         /// </returns>
         [CLSCompliant(false)]
+        [return: NotNullIfNotNull("attribute")]
         public static explicit operator Guid?(XAttribute? attribute)
         {
             if (attribute == null) return null;
