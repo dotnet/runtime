@@ -887,7 +887,7 @@ namespace System.Net.Security
         --*/
         internal SecurityStatusPal Encrypt(ReadOnlyMemory<byte> buffer, ref byte[] output, out int resultSize)
         {
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.DumpBuffer(this, buffer);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.DumpBuffer(this, buffer, "Encrypt");
 
             byte[] writeBuffer = output;
 
@@ -925,7 +925,14 @@ namespace System.Net.Security
                 throw new ArgumentOutOfRangeException(nameof(count));
             }
 
-            return SslStreamPal.DecryptMessage(_securityContext!, payload!, ref offset, ref count);
+            SecurityStatusPal status = SslStreamPal.DecryptMessage(_securityContext!, payload!, ref offset, ref count);
+            if (NetEventSource.Log.IsEnabled() && status.ErrorCode == SecurityStatusPalErrorCode.OK)
+            {
+                ReadOnlyMemory<byte> buffer = new ReadOnlyMemory<byte>(payload, offset, count);
+                NetEventSource.DumpBuffer(this, buffer, "Decrypt");
+            }
+
+            return status;
         }
 
         /*++
