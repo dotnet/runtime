@@ -11,7 +11,7 @@ namespace System.ComponentModel.Design.Serialization
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Interface, AllowMultiple = true, Inherited = true)]
     public sealed class DesignerSerializerAttribute : Attribute
     {
-        private string _typeId;
+        private string? _typeId;
 
         /// <summary>
         /// Creates a new designer serialization attribute.
@@ -27,8 +27,8 @@ namespace System.ComponentModel.Design.Serialization
                 throw new ArgumentNullException(nameof(baseSerializerType));
             }
 
-            SerializerTypeName = serializerType.AssemblyQualifiedName;
-            SerializerBaseTypeName = baseSerializerType.AssemblyQualifiedName;
+            SerializerTypeName = serializerType.AssemblyQualifiedName!;
+            SerializerBaseTypeName = baseSerializerType.AssemblyQualifiedName!;
         }
 
         /// <summary>
@@ -42,7 +42,7 @@ namespace System.ComponentModel.Design.Serialization
             }
 
             SerializerTypeName = serializerTypeName;
-            SerializerBaseTypeName = baseSerializerType.AssemblyQualifiedName;
+            SerializerBaseTypeName = baseSerializerType.AssemblyQualifiedName!;
         }
 
         /// <summary>
