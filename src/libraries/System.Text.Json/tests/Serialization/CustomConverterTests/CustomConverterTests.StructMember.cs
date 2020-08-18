@@ -28,13 +28,57 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public static void StructMemberConverter()
+        public static void StructMemberToInterfaceConverter()
         {
             var options = new JsonSerializerOptions()
             {
                 IncludeFields = true,
             };
             options.Converters.Add(new StructToInterfaceConverter());
+
+            string json;
+
+            {
+                TestClassWithStructMember obj = new TestClassWithStructMember();
+                obj.Initialize();
+                obj.Verify();
+                json = JsonSerializer.Serialize(obj, options);
+            }
+
+            {
+                TestClassWithStructMember obj = JsonSerializer.Deserialize<TestClassWithStructMember>(json, options);
+                obj.Verify();
+            }
+        }
+
+        private class StructToObjectConverter : JsonConverter<object>
+        {
+            public override bool CanConvert(Type typeToConvert)
+            {
+                return typeof(IMemberInterface).IsAssignableFrom(typeToConvert);
+            }
+
+            public override object Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+            {
+                string value = reader.GetString();
+
+                return new StructMember(value);
+            }
+
+            public override void Write(Utf8JsonWriter writer, object value, JsonSerializerOptions options)
+            {
+                JsonSerializer.Serialize(writer, ((IMemberInterface)value).Value, typeof(string), options);
+            }
+        }
+
+        [Fact]
+        public static void StructMemberToObjectConverter()
+        {
+            var options = new JsonSerializerOptions()
+            {
+                IncludeFields = true,
+            };
+            options.Converters.Add(new StructToObjectConverter());
 
             string json;
 
