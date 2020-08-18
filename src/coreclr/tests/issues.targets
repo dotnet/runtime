@@ -6571,9 +6571,5 @@
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/HardwareIntrinsics/Arm/AdvSimd/AdvSimd_Part9_ro/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-
    </ItemGroup>
 </Project>
