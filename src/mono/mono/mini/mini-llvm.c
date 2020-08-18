@@ -9614,7 +9614,7 @@ emit_method_inner (EmitContext *ctx)
 		mono_llvm_add_func_attr (method, LLVM_ATTR_NO_INLINE);
 
 	if (cfg->method->iflags & METHOD_IMPL_ATTRIBUTE_NOOPTIMIZATION)
-        // noopt requires noinline
+		// noopt requires noinline
 		mono_llvm_add_func_attr (method, LLVM_ATTR_OPTIMIZE_NONE);
 
 	if (linfo->rgctx_arg) {
