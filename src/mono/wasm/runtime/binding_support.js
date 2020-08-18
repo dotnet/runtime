@@ -722,7 +722,10 @@ var BindingSupportLib = {
 				//  collected until the method call completes.
 
 				// assume at least 8 byte alignment from malloc
-				buffer = Module._malloc (converter.size + (args.length * 4));
+				var bufferSizeBytes = converter.size + (args.length * 4);
+				var bufferSizeElements = (bufferSizeBytes / 4) | 0;
+				argsRootBuffer = MONO.mono_wasm_new_root_buffer (bufferSizeElements);
+				buffer = Module._malloc (bufferSizeBytes);
 				var indirect_start = buffer; // buffer + buffer % 8
 				args_start = indirect_start + converter.size;
 
@@ -736,6 +739,8 @@ var BindingSupportLib = {
 						Module.setValue (indirect_value, obj, handler.indirect);
 						obj = indirect_value;
 						indirect_value += 8;
+					} else {
+						argsRootBuffer.set (i, obj);
 					}
 
 					Module.setValue (slot, obj, "*");
