@@ -113,10 +113,6 @@ the error code. For example:
 
 #### `IL1030`: Invalid argument for '{token}' option
 
-#### `IL1031`: "Invalid value 'value' was used as warning code
-
-- All warning codes must start with `IL` prefix followed by numeric code.
-
 ----
 ## Warning Codes
 

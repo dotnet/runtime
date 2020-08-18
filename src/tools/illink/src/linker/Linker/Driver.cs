@@ -788,10 +788,8 @@ namespace Mono.Linker
 			value = Unquote (value);
 			string[] values = value.Split (new char[] { ',', ';', ' ' }, StringSplitOptions.RemoveEmptyEntries);
 			foreach (string id in values) {
-				if (!id.StartsWith ("IL", StringComparison.Ordinal) || !ushort.TryParse (id.Substring (2), out ushort code)) {
-					context.LogError ($"Invalid value '{id}' was used as warning code", 1031);
+				if (!id.StartsWith ("IL", StringComparison.Ordinal) || !ushort.TryParse (id.Substring (2), out ushort code))
 					continue;
-				}
 
 				yield return code;
 			}

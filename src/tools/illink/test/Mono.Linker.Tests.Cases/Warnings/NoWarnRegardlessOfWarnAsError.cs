@@ -8,6 +8,7 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 namespace Mono.Linker.Tests.Cases.Warnings
 {
 	[SkipKeptItemsValidation]
+	[SkipRemainingErrorsValidation]
 	[SetupLinkerArgument ("--warnaserror")]
 	[SetupLinkerArgument ("--nowarn", "IL2006")]
 	[LogDoesNotContain ("IL2006")]

@@ -8,6 +8,7 @@ using System.Text;
 
 namespace Mono.Linker.Tests.Cases.Warnings.WarningSuppression
 {
+	[SkipRemainingErrorsValidation]
 	[SetupLinkerCoreAction ("skip")]
 	[SetupCompileBefore ("library.dll", new[] { "Dependencies/TriggerWarnings_Lib.cs" })]
 	[KeptAssembly ("library.dll")]
