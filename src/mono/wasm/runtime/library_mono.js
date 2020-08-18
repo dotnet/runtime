@@ -361,6 +361,73 @@ var MonoSupportLib = {
 			return res;
 		},
 
+        _resolve_member_by_name: function (base_object, base_name, expr_parts) {
+            if (base_object === undefined || base_object.value === undefined)
+                throw new Error(`Bug: base_object is undefined`);
+
+            if (base_object.value.type === 'object' && base_object.value.subtype === 'null')
+                throw new ReferenceError(`Null reference: ${base_name} is null`);
+
+            if (base_object.value.type !== 'object')
+                throw new ReferenceError(`'.' is only supported on non-primitive types. Failed on '${base_name}'`);
+
+            if (expr_parts.length == 0)
+                throw new Error(`Invalid member access expression`);//FIXME: need the full expression here
+
+            const root = expr_parts[0];
+            const props = this.mono_wasm_get_details(base_object.value.objectId, {});
+            let resObject = props.find(l => l.name == root);
+            if (resObject !== undefined) {
+                if (resObject.value === undefined && resObject.get !== undefined)
+                    resObject = this._invoke_getter(base_object.value.objectId, root);
+            }
+
+            if (resObject === undefined || expr_parts.length == 1)
+                return resObject;
+            else {
+                expr_parts.shift();
+                return this._resolve_member_by_name(resObject, root, expr_parts);
+            }
+        },
+
+        mono_wasm_eval_member_access: function (scope, var_list, rootObjectId, expr) {
+            if (expr === undefined || expr.length == 0)
+                throw new Error(`expression argument required`);
+
+            let parts = expr.split('.');
+            if (parts.length == 0)
+                throw new Error(`Invalid member access expression: ${expr}`);
+
+            const root = parts[0];
+
+            const locals = this.mono_wasm_get_variables(scope, var_list);
+            let rootObject = locals.find(l => l.name === root);
+            if (rootObject === undefined) {
+                // check `this`
+                const thisObject = locals.find(l => l.name == "this");
+                if (thisObject === undefined)
+                    throw new ReferenceError(`Could not find ${root} in locals, and no 'this' found.`);
+
+                const thisProps = this.mono_wasm_get_details(thisObject.value.objectId, {});
+                rootObject = thisProps.find(tp => tp.name == root);
+                if (rootObject === undefined)
+                    throw new ReferenceError(`Could not find ${root} in locals, or in 'this'`);
+
+                if (rootObject.value === undefined && rootObject.get !== undefined)
+                    rootObject = this._invoke_getter(thisObject.value.objectId, root);
+            }
+
+            parts.shift();
+
+            if (parts.length == 0)
+                return rootObject;
+
+            if (rootObject === undefined || rootObject.value === undefined)
+                throw new Error(`Could not get a value for ${root}`);
+
+            return this._resolve_member_by_name(rootObject, root, parts);
+        },
+
 		/**
 		 * @param  {WasmId} id
 		 * @returns {object[]}
