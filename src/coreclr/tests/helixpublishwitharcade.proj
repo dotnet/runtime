@@ -39,9 +39,9 @@
       </_PropertiesToPass>
     </PropertyGroup>
 
-    <Message Text="Arch: $(TargetArchitecture) / $(__BuildArch)" />
-    <Message Text="OS:   $(TargetOS) / $(__TargetOS)" />
-    <Message Text="Conf: $(Configuration) / $(__BuildType)" />
+    <Message Text="Arch: $(TargetArchitecture) / $(__BuildArch)" Importance="High" />
+    <Message Text="OS:   $(TargetOS) / $(__TargetOS)" Importance="High" />
+    <Message Text="Conf: $(Configuration) / $(__BuildType)" Importance="High" />
 
     <Message Text="DotNetCliVersion: $(DotNetCliVersion)" Importance="High" />
     <Message Text="DotNetCliPackageType: $(DotNetCliPackageType)" Importance="High" />
