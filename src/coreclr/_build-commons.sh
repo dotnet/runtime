@@ -19,7 +19,6 @@ handle_arguments() {
         skipnative|-skipnative)
             __SkipNative=1
             __SkipCoreCLR=1
-            __CopyNativeProjectsAfterCombinedTestBuild=false
             ;;
 
         *)
