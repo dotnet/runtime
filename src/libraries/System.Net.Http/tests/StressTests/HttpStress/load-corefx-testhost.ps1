@@ -118,7 +118,7 @@ function Copy-Aspnetcore-Bits([string] $testhost_path)
 
 function Set-Sdk-Environment()
 {
-    $candidate_path=$([IO.Path]::Combine($DOTNET_TEST_ROOT_DIR, 'artifacts', 'bin', 'testhost', $FRAMEWORK + "5.0-$OS-$CONFIGURATION-$ARCH"))
+    $candidate_path=$([IO.Path]::Combine($DOTNET_TEST_ROOT_DIR, 'artifacts', 'bin', 'testhost', "net5.0-$OS-$CONFIGURATION-$ARCH"))
 
     if (!$(test-path -PathType container $candidate_path))
     {
