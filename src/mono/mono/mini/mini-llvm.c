@@ -9613,6 +9613,9 @@ emit_method_inner (EmitContext *ctx)
 		/* We can't handle inlined methods with clauses */
 		mono_llvm_add_func_attr (method, LLVM_ATTR_NO_INLINE);
 
+	if (cfg->method->iflags & METHOD_IMPL_ATTRIBUTE_NOOPTIMIZATION)
+		mono_llvm_add_func_attr (method, LLVM_ATTR_OPTIMIZE_NONE);
+
 	if (linfo->rgctx_arg) {
 		ctx->rgctx_arg = LLVMGetParam (method, linfo->rgctx_arg_pindex);
 		ctx->rgctx_arg_pindex = linfo->rgctx_arg_pindex;
