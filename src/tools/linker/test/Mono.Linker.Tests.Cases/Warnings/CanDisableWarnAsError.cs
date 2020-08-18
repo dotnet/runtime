@@ -5,6 +5,7 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 namespace Mono.Linker.Tests.Cases.Warnings
 {
 	[SkipKeptItemsValidation]
+	[SkipRemainingErrorsValidation]
 	[SetupLinkerSubstitutionFile ("CanDisableWarnAsErrorSubstitutions.xml")]
 	[SetupLinkerArgument ("--verbose")]
 	[SetupLinkerArgument ("--warnaserror")]
