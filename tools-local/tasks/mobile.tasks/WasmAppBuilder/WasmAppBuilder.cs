@@ -137,7 +137,7 @@ public class WasmAppBuilder : Task
         List<string> nativeAssets = new List<string>() { "dotnet.wasm", "dotnet.js", "dotnet.timezones.blat" };
 
         if (!InvariantGlobalization)
-            nativeAssets.Add(IcuDataFileName);
+            nativeAssets.Add(IcuDataFileName!);
 
         foreach (var f in nativeAssets)
             File.Copy(Path.Join (MicrosoftNetCoreAppRuntimePackDir, "native", f), Path.Join(AppDir, f), true);
@@ -187,7 +187,7 @@ public class WasmAppBuilder : Task
         }
 
         if (!InvariantGlobalization)
-            config.Assets.Add(new IcuData(IcuDataFileName) { LoadRemote = RemoteSources?.Length > 0 });
+            config.Assets.Add(new IcuData(IcuDataFileName!) { LoadRemote = RemoteSources?.Length > 0 });
             
         config.Assets.Add(new VfsEntry ("dotnet.timezones.blat") { VirtualPath = "/usr/share/zoneinfo/"});
 
