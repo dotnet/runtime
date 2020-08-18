@@ -482,6 +482,9 @@ namespace System.Net.Http
         public HttpResponseMessage Send(HttpRequestMessage request, HttpCompletionOption completionOption,
             CancellationToken cancellationToken)
         {
+            // Called outside of async state machine to propagate certain exception even without awaiting the returned task.
+            CheckRequestBeforeSend(request);
+
             ValueTask<HttpResponseMessage> sendTask = SendAsyncCore(request, completionOption, async: false, cancellationToken);
             Debug.Assert(sendTask.IsCompleted);
             return sendTask.GetAwaiter().GetResult();
@@ -506,11 +509,13 @@ namespace System.Net.Http
         public Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, HttpCompletionOption completionOption,
             CancellationToken cancellationToken)
         {
+            // Called outside of async state machine to propagate certain exception even without awaiting the returned task.
+            CheckRequestBeforeSend(request);
+
             return SendAsyncCore(request, completionOption, async: true, cancellationToken).AsTask();
         }
 
-        private ValueTask<HttpResponseMessage> SendAsyncCore(HttpRequestMessage request, HttpCompletionOption completionOption,
-            bool async, CancellationToken cancellationToken)
+        private void CheckRequestBeforeSend(HttpRequestMessage request)
         {
             if (request == null)
             {
@@ -520,49 +525,45 @@ namespace System.Net.Http
             CheckRequestMessage(request);
 
             SetOperationStarted();
-            PrepareRequestMessage(request);
-            // PrepareRequestMessage will resolve the request address against the base address.
 
+            // PrepareRequestMessage will resolve the request address against the base address.
+            PrepareRequestMessage(request);
+        }
+
+        private async ValueTask<HttpResponseMessage> SendAsyncCore(HttpRequestMessage request, HttpCompletionOption completionOption,
+            bool async, CancellationToken cancellationToken)
+        {
             // Combines given cancellationToken with the global one and the timeout.
             CancellationTokenSource cts = PrepareCancellationTokenSource(cancellationToken, out bool disposeCts, out long timeoutTime);
-
-            // Initiate the send.
-            ValueTask<HttpResponseMessage> responseTask;
-            try
-            {
-                responseTask = async ?
-                    new ValueTask<HttpResponseMessage>(base.SendAsync(request, cts.Token)) :
-                    new ValueTask<HttpResponseMessage>(base.Send(request, cts.Token));
-            }
-            catch (Exception e)
-            {
-                HandleFinishSendCleanup(cts, disposeCts);
-
-                if (e is OperationCanceledException operationException && TimeoutFired(cancellationToken, timeoutTime))
-                {
-                    throw CreateTimeoutException(operationException);
-                }
-
-                throw;
-            }
 
             bool buffered = completionOption == HttpCompletionOption.ResponseContentRead &&
                             !string.Equals(request.Method.Method, "HEAD", StringComparison.OrdinalIgnoreCase);
 
-            return FinishSendAsync(responseTask, request, cts, disposeCts, buffered, async, cancellationToken, timeoutTime);
-        }
+            bool telemetryStarted = false;
+            if (HttpTelemetry.Log.IsEnabled())
+            {
+                // TODO https://github.com/dotnet/runtime/issues/40896: Enable tracing for HTTP/3.
+                if (request.Version.Major < 3 && request.RequestUri != null)
+                {
+                    HttpTelemetry.Log.RequestStart(
+                        request.RequestUri.Scheme,
+                        request.RequestUri.IdnHost,
+                        request.RequestUri.Port,
+                        request.RequestUri.PathAndQuery,
+                        request.Version.Major,
+                        request.Version.Minor);
+                    telemetryStarted = true;
+                }
+            }
 
-        private async ValueTask<HttpResponseMessage> FinishSendAsync(ValueTask<HttpResponseMessage> sendTask, HttpRequestMessage request, CancellationTokenSource cts,
-            bool disposeCts, bool buffered, bool async, CancellationToken callerToken, long timeoutTime)
-        {
+            // Initiate the send.
             HttpResponseMessage? response = null;
             try
             {
-                // In sync scenario the ValueTask must already contains the result.
-                Debug.Assert(async || sendTask.IsCompleted, "In synchronous scenario, the sendTask must be already completed.");
-
                 // Wait for the send request to complete, getting back the response.
-                response = await sendTask.ConfigureAwait(false);
+                response = async ?
+                    await base.SendAsync(request, cts.Token).ConfigureAwait(false) :
+                    base.Send(request, cts.Token);
                 if (response == null)
                 {
                     throw new InvalidOperationException(SR.net_http_handler_noresponse);
@@ -587,9 +588,14 @@ namespace System.Net.Http
             }
             catch (Exception e)
             {
+                if (HttpTelemetry.Log.IsEnabled() && telemetryStarted)
+                {
+                    HttpTelemetry.Log.RequestAborted();
+                }
+
                 response?.Dispose();
 
-                if (e is OperationCanceledException operationException && TimeoutFired(callerToken, timeoutTime))
+                if (e is OperationCanceledException operationException && TimeoutFired(cancellationToken, timeoutTime))
                 {
                     HandleSendTimeout(operationException);
                     throw CreateTimeoutException(operationException);
@@ -600,6 +606,11 @@ namespace System.Net.Http
             }
             finally
             {
+                if (HttpTelemetry.Log.IsEnabled() && telemetryStarted)
+                {
+                    HttpTelemetry.Log.RequestStop();
+                }
+
                 HandleFinishSendCleanup(cts, disposeCts);
             }
         }
