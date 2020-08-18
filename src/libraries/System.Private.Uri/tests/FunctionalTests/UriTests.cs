@@ -821,20 +821,20 @@ namespace System.PrivateUri.Tests
 
         public static IEnumerable<object[]> ZeroPortIsParsedForBothKnownAndUnknownSchemes_TestData()
         {
-            yield return new object[] { "http://example.com:0", 0, false, "http://example.com:0/" };
-            yield return new object[] { "http://example.com", 80, true, "http://example.com/" };
-            yield return new object[] { "rtsp://example.com:0", 0, false, "rtsp://example.com:0/" };
-            yield return new object[] { "rtsp://example.com", -1, true, "rtsp://example.com/" };
+            yield return new object[] { "http://example.com:0", 0, false };
+            yield return new object[] { "http://example.com", 80, true };
+            yield return new object[] { "rtsp://example.com:0", 0, false };
+            yield return new object[] { "rtsp://example.com", -1, true };
         }
 
         [Theory]
         [MemberData(nameof(ZeroPortIsParsedForBothKnownAndUnknownSchemes_TestData))]
-        public static void ZeroPortIsParsedForBothKnownAndUnknownSchemes(string uriString, int port, bool isDefaultPort, string toString)
+        public static void ZeroPortIsParsedForBothKnownAndUnknownSchemes(string uriString, int port, bool isDefaultPort)
         {
             Uri.TryCreate(uriString, UriKind.Absolute, out var uri);
             Assert.Equal(port, uri.Port);
             Assert.Equal(isDefaultPort, uri.IsDefaultPort);
-            Assert.Equal(toString, uri.ToString());
+            Assert.Equal(uriString + "/", uri.ToString());
         }
     }
 }
