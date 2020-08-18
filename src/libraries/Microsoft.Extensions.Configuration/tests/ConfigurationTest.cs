@@ -785,6 +785,13 @@ namespace Microsoft.Extensions.Configuration.Test
         }
 
         [Fact]
+        public void SectionGetRequiredSectionNullThrowException()
+        {                      
+            IConfigurationRoot config = null;
+            Assert.Throws<ArgumentNullException>(() => config.GetRequiredSection("Mem1"));           
+        }
+
+        [Fact]
         public void SectionWithChildrenExists()
         {
             // Arrange
