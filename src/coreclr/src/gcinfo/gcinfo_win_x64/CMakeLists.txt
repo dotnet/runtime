@@ -1,0 +1,1 @@
+set_gcinfo_targetdetails(GCINFONAME gcinfo_win_x64 WIN32 AMD64)

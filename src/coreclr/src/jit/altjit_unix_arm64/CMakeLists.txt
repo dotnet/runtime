@@ -1,0 +1,2 @@
+project(altjit_unix_arm64)
+set_altjit_targetdetails(JITNAME altjit_unix_arm64 ARM64 UNIX)

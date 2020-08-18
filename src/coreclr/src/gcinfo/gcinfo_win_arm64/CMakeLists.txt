@@ -1,0 +1,1 @@
+set_gcinfo_targetdetails(GCINFONAME gcinfo_win_arm64 WIN32 ARM64)

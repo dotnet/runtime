@@ -1,0 +1,2 @@
+project(altjit_win_arm64)
+set_altjit_targetdetails(JITNAME altjit_win_arm64 ARM64 WIN32)
