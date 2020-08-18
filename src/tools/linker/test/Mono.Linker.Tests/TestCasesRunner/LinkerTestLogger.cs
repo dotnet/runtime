@@ -11,6 +11,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			public MessageOrigin? Origin;
 			public int? Code;
 			public string Text;
+			public string OriginMemberDefinitionFullName;
 		}
 
 		public List<MessageRecord> Messages { get; private set; } = new List<MessageRecord> ();
@@ -22,7 +23,8 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				Category = msBuildMessage.Category,
 				Origin = msBuildMessage.Origin,
 				Code = msBuildMessage.Code,
-				Text = msBuildMessage.Text
+				Text = msBuildMessage.Text,
+				OriginMemberDefinitionFullName = msBuildMessage.Origin?.MemberDefinition?.FullName
 			});
 		}
 	}

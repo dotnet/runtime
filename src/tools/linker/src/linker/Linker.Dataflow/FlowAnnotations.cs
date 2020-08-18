@@ -127,11 +127,16 @@ namespace Mono.Linker.Dataflow
 			// First go over all fields with an explicit annotation
 			if (type.HasFields) {
 				foreach (FieldDefinition field in type.Fields) {
-					if (!IsTypeInterestingForDataflow (field.FieldType))
-						continue;
-
 					DynamicallyAccessedMemberTypes annotation = GetMemberTypesForDynamicallyAccessedMembersAttribute (field);
 					if (annotation == DynamicallyAccessedMemberTypes.None) {
+						continue;
+					}
+
+					if (!IsTypeInterestingForDataflow (field.FieldType)) {
+						// Already know that there's a non-empty annotation on a field which is not System.Type/String and we're about to ignore it
+						_context.LogWarning (
+							$"Field '{field.GetDisplayName ()}' has 'DynamicallyAccessedMembersAttribute', but that attribute can only be applied to fields of type 'System.Type' or 'System.String'",
+							2097, field, subcategory: MessageSubCategory.TrimAnalysis);
 						continue;
 					}
 
@@ -177,12 +182,15 @@ namespace Mono.Linker.Dataflow
 					}
 
 					for (int i = 0; i < method.Parameters.Count; i++) {
-						if (!IsTypeInterestingForDataflow (method.Parameters[i].ParameterType)) {
+						var methodParameter = method.Parameters[i];
+						DynamicallyAccessedMemberTypes pa = GetMemberTypesForDynamicallyAccessedMembersAttribute (methodParameter, method);
+						if (pa == DynamicallyAccessedMemberTypes.None)
 							continue;
-						}
 
-						DynamicallyAccessedMemberTypes pa = GetMemberTypesForDynamicallyAccessedMembersAttribute (method.Parameters[i], method);
-						if (pa == DynamicallyAccessedMemberTypes.None) {
+						if (!IsTypeInterestingForDataflow (methodParameter.ParameterType)) {
+							_context.LogWarning (
+								$"Parameter '{DiagnosticUtilities.GetParameterNameForErrorMessage (methodParameter)}' of method '{DiagnosticUtilities.GetMethodSignatureDisplayName (methodParameter.Method)}' has 'DynamicallyAccessedMembersAttribute', but that attribute can only be applied to parameters of type 'System.Type' or 'System.String'",
+								2098, method, subcategory: MessageSubCategory.TrimAnalysis);
 							continue;
 						}
 
@@ -230,13 +238,14 @@ namespace Mono.Linker.Dataflow
 
 			if (type.HasProperties) {
 				foreach (PropertyDefinition property in type.Properties) {
+					DynamicallyAccessedMemberTypes annotation = GetMemberTypesForDynamicallyAccessedMembersAttribute (property);
+					if (annotation == DynamicallyAccessedMemberTypes.None)
+						continue;
 
 					if (!IsTypeInterestingForDataflow (property.PropertyType)) {
-						continue;
-					}
-
-					DynamicallyAccessedMemberTypes annotation = GetMemberTypesForDynamicallyAccessedMembersAttribute (property);
-					if (annotation == DynamicallyAccessedMemberTypes.None) {
+						_context.LogWarning (
+							$"Property '{property.GetDisplayName ()}' has 'DynamicallyAccessedMembersAttribute', but that attribute can only be applied to properties of type 'System.Type' or 'System.String'",
+							2099, property, subcategory: MessageSubCategory.TrimAnalysis);
 						continue;
 					}
 

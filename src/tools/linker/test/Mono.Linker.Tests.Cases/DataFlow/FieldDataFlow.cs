@@ -32,6 +32,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			instance.WriteToStaticFieldOnADifferentClass ();
 
 			instance.WriteUnknownValue ();
+
+			_ = _annotationOnWrongType;
 		}
 
 		[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
@@ -41,6 +43,10 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		static Type _staticTypeWithPublicParameterlessConstructor;
 
 		static Type _staticTypeWithoutRequirements;
+
+		[ExpectedWarning ("IL2097", nameof (_annotationOnWrongType))]
+		[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)]
+		static object _annotationOnWrongType;
 
 		[UnrecognizedReflectionAccessPattern (typeof (FieldDataFlow), nameof (RequirePublicConstructors), new Type[] { typeof (Type) },
 			messageCode: "IL2077", message: new string[] { "_typeWithPublicParameterlessConstructor", "type", "RequirePublicConstructors(Type)" })]

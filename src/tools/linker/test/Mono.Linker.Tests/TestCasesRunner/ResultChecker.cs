@@ -645,7 +645,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 								Assert.IsTrue (
 									logger.Messages.Any (mc => {
-										if (mc.Category == MessageCategory.Warning && mc.Code != expectedWarningCodeNumber)
+										if (mc.Category != MessageCategory.Warning || mc.Code != expectedWarningCodeNumber)
 											return false;
 
 										foreach (var expectedMessage in expectedMessageContains)
@@ -662,7 +662,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 											if (sourceColumn != null && mc.Origin?.SourceColumn != sourceColumn.Value)
 												return false;
-										} else if (mc.Origin?.MemberDefinition?.FullName != attrProvider.FullName)
+										} else if (mc.OriginMemberDefinitionFullName != attrProvider.FullName)
 											return false;
 
 										return true;

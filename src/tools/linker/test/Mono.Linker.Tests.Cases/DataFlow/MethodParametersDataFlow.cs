@@ -35,6 +35,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			instance.UnknownValueToUnAnnotatedParameterOnInterestingMethod ();
 			instance.WriteToParameterOnInstanceMethod (null);
 			instance.LongWriteToParameterOnInstanceMethod (0, 0, 0, 0, null);
+			instance.UnsupportedParameterType (null);
 		}
 
 		// Validate the error message when annotated parameter is passed to another annotated parameter
@@ -181,6 +182,11 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		private void UnknownValueToUnAnnotatedParameterOnInterestingMethod ()
 		{
 			RequirePublicParameterlessConstructorAndNothing (typeof (TestType), this.GetType ());
+		}
+
+		[ExpectedWarning ("IL2098", "p1", nameof (UnsupportedParameterType))]
+		private void UnsupportedParameterType ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)] object p1)
+		{
 		}
 
 		private static void RequirePublicParameterlessConstructor (
