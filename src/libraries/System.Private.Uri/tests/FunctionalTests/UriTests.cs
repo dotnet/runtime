@@ -818,5 +818,24 @@ namespace System.PrivateUri.Tests
             Assert.Equal(absoluteUri, uri2.AbsoluteUri);
             Assert.Equal(localPath, uri2.LocalPath);
         }
+
+        [Fact]
+        public static void ZeroPortIsParsedForBothKnownAndUnknownSchemes()
+        {
+            Uri.TryCreate("http://example.com:0", UriKind.Absolute, out var uri);
+            Assert.Equal(0, uri.Port);
+            Assert.False(uri.IsDefaultPort);
+            Assert.Equal("http://example.com:0/", uri.ToString());
+
+            Uri.TryCreate("rtsp://example.com", UriKind.Absolute, out uri);
+            Assert.Equal(-1, uri.Port);
+            Assert.True(uri.IsDefaultPort);
+            Assert.Equal("rtsp://example.com/", uri.ToString());
+
+            Uri.TryCreate("rtsp://example.com:0", UriKind.Absolute, out uri);
+            Assert.Equal(0, uri.Port);
+            Assert.False(uri.IsDefaultPort);
+            Assert.Equal("rtsp://example.com:0/", uri.ToString());
+        }
     }
 }
