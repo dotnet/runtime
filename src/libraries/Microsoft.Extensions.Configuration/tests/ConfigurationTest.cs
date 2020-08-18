@@ -774,12 +774,14 @@ namespace Microsoft.Extensions.Configuration.Test
             var dict = new Dictionary<string, string>()
             {
                 {"Mem1", "Value1"},
+                {"Mem1:Deep1", "Value1"},
             };
             var configurationBuilder = new ConfigurationBuilder();
             configurationBuilder.AddInMemoryCollection(dict);
             IConfigurationRoot config = configurationBuilder.Build();
 
             Assert.Throws<InvalidOperationException>(() => config.GetRequiredSection("Mem2"));
+            Assert.Throws<InvalidOperationException>(() => config.GetRequiredSection("Mem1:Deep2"));
         }
 
         [Fact]
