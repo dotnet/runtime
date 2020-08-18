@@ -27,14 +27,14 @@ namespace System.ComponentModel.Design.Serialization
                 throw new ArgumentNullException(nameof(baseSerializerType));
             }
 
-            SerializerTypeName = serializerType.AssemblyQualifiedName!;
-            SerializerBaseTypeName = baseSerializerType.AssemblyQualifiedName!;
+            SerializerTypeName = serializerType.AssemblyQualifiedName;
+            SerializerBaseTypeName = baseSerializerType.AssemblyQualifiedName;
         }
 
         /// <summary>
         /// Creates a new designer serialization attribute.
         /// </summary>
-        public DesignerSerializerAttribute(string serializerTypeName, Type baseSerializerType)
+        public DesignerSerializerAttribute(string? serializerTypeName, Type baseSerializerType)
         {
             if (baseSerializerType == null)
             {
@@ -42,13 +42,13 @@ namespace System.ComponentModel.Design.Serialization
             }
 
             SerializerTypeName = serializerTypeName;
-            SerializerBaseTypeName = baseSerializerType.AssemblyQualifiedName!;
+            SerializerBaseTypeName = baseSerializerType.AssemblyQualifiedName;
         }
 
         /// <summary>
         /// Creates a new designer serialization attribute.
         /// </summary>
-        public DesignerSerializerAttribute(string serializerTypeName, string baseSerializerTypeName)
+        public DesignerSerializerAttribute(string? serializerTypeName, string? baseSerializerTypeName)
         {
             SerializerTypeName = serializerTypeName;
             SerializerBaseTypeName = baseSerializerTypeName;
@@ -57,12 +57,12 @@ namespace System.ComponentModel.Design.Serialization
         /// <summary>
         /// Retrieves the fully qualified type name of the serializer.
         /// </summary>
-        public string SerializerTypeName { get; }
+        public string? SerializerTypeName { get; }
 
         /// <summary>
         /// Retrieves the fully qualified type name of the serializer base type.
         /// </summary>
-        public string SerializerBaseTypeName { get; }
+        public string? SerializerBaseTypeName { get; }
 
         /// <summary>
         /// This defines a unique ID for this attribute type. It is used

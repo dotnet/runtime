@@ -429,7 +429,6 @@ MembersMustExist : Member 'protected void System.Linq.EnumerableQuery..ctor()' d
 Compat issues with assembly System.Data:
 CannotSealType : Type 'System.Data.Constraint' is effectively (has a private constructor) sealed in the implementation but not sealed in the contract.
 MembersMustExist : Member 'protected void System.Data.Constraint..ctor()' does not exist in the implementation but it does exist in the contract.
-CannotRemoveAttribute : Attribute 'System.ComponentModel.ToolboxItemAttribute' exists on 'System.Data.DataSet' in the contract but not the implementation.
 CannotMakeMemberNonVirtual : Member 'System.Data.Constraint.ConstraintName' is non-virtual in the implementation but is virtual in the contract.
 CannotMakeMemberNonVirtual : Member 'System.Data.Constraint.Table' is non-virtual in the implementation but is virtual in the contract.
 CannotMakeMemberNonVirtual : Member 'System.Data.Constraint._DataSet' is non-virtual in the implementation but is virtual in the contract.

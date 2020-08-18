@@ -320,8 +320,8 @@ namespace System.ComponentModel.Design.Serialization
         public DesignerSerializerAttribute(string serializerTypeName, string baseSerializerTypeName) { }
         public DesignerSerializerAttribute(string serializerTypeName, System.Type baseSerializerType) { }
         public DesignerSerializerAttribute(System.Type serializerType, System.Type baseSerializerType) { }
-        public string SerializerBaseTypeName { get { throw null; } }
-        public string SerializerTypeName { get { throw null; } }
+        public string? SerializerBaseTypeName { get { throw null; } }
+        public string? SerializerTypeName { get { throw null; } }
         public override object TypeId { get { throw null; } }
     }
 }
