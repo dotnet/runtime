@@ -179,6 +179,8 @@ private:
         Thread *pEventThread = nullptr,
         StackContents *pStack = nullptr);
 
+    static void DisableHelper(EventPipeSessionID id);
+
     static void DisableInternal(EventPipeSessionID id, EventPipeProviderCallbackDataQueue* pEventPipeProviderCallbackDataQueue);
 
     // Enable the specified EventPipe session.
@@ -239,7 +241,8 @@ private:
 
     static bool s_CanStartThreads;
 
-    static CQuickArrayList<EventPipeSessionID> s_rgDeferredEventPipeSessionIds;
+    static CQuickArrayList<EventPipeSessionID> s_rgDeferredEnableEventPipeSessionIds;
+    static CQuickArrayList<EventPipeSessionID> s_rgDeferredDisableEventPipeSessionIds;
 
     //! Bitmask tracking EventPipe active sessions.
     // in all groups preceding it. For example if there are three groups with sizes:

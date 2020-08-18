@@ -1482,7 +1482,7 @@ namespace DebuggerTests
 
                 AssertEqual("WriteLine", top_frame["functionName"]?.Value<string>(), "Expected to be in WriteLine method");
                 var script_id = top_frame["functionLocation"]["scriptId"].Value<string>();
-                AssertEqual("dotnet://System.Console.dll/Console.cs", scripts[script_id], "Expected to stopped in System.Console.WriteLine");
+                Assert.Matches ("^dotnet://(mscorlib|System\\.Console)\\.dll/Console.cs", scripts[script_id]);
             });
         }
 

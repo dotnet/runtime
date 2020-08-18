@@ -4,8 +4,6 @@
 #ifndef VXSORT_ALIGNNMENT_H
 #define VXSORT_ALIGNNMENT_H
 
-//#include <cstdint>
-
 namespace vxsort {
 
 using namespace std;

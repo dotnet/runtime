@@ -12,7 +12,7 @@ class Duplicates
 
         // Console.WriteLine(Thread.CurrentThread.GetApartmentState());
 
-        // Not supported (https://github.com/dotnet/coreclr/issues/2999)
+        // Not supported (https://github.com/dotnet/runtime/issues/5059)
         // AppDomain.CurrentDomain.UnhandledException += Unhandled;
 
         WaitHandle[] waitHandles = null;

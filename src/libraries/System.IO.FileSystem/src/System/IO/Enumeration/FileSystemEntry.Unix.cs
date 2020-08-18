@@ -48,36 +48,33 @@ namespace System.IO.Enumeration
             // directory.
             else if ((directoryEntry.InodeType == Interop.Sys.NodeType.DT_LNK
                 || directoryEntry.InodeType == Interop.Sys.NodeType.DT_UNKNOWN)
-                && Interop.Sys.Stat(entry.FullPath, out Interop.Sys.FileStatus targetStatus) >= 0)
+                && Interop.Sys.Stat(entry.FullPath, out Interop.Sys.FileStatus statInfo) >= 0)
             {
                 // Symlink or unknown: Stat to it to see if we can resolve it to a directory.
-                isDirectory = (targetStatus.Mode & Interop.Sys.FileTypes.S_IFMT) == Interop.Sys.FileTypes.S_IFDIR;
+                isDirectory = FileStatus.IsDirectory(statInfo);
             }
-            // Same idea as the directory check, just repeated for (and tweaked due to the
-            // nature of) symlinks.
+
+            // Same idea as the directory check, just repeated for (and tweaked due to the nature of) symlinks.
+            int resultLStat = Interop.Sys.LStat(entry.FullPath, out Interop.Sys.FileStatus lstatInfo);
+
+            bool isReadOnly = resultLStat >= 0 && FileStatus.IsReadOnly(lstatInfo);
+
             if (directoryEntry.InodeType == Interop.Sys.NodeType.DT_LNK)
             {
                 isSymlink = true;
             }
-            else if ((directoryEntry.InodeType == Interop.Sys.NodeType.DT_UNKNOWN)
-                && (Interop.Sys.LStat(entry.FullPath, out Interop.Sys.FileStatus linkTargetStatus) >= 0))
+            else if (resultLStat >= 0 && directoryEntry.InodeType == Interop.Sys.NodeType.DT_UNKNOWN)
             {
-                isSymlink = (linkTargetStatus.Mode & Interop.Sys.FileTypes.S_IFMT) == Interop.Sys.FileTypes.S_IFLNK;
+                isSymlink = FileStatus.IsSymLink(lstatInfo);
             }
+
+            // If the filename starts with a period or has UF_HIDDEN flag set, it's hidden.
+            bool isHidden = directoryEntry.Name[0] == '.' || (resultLStat >= 0 && FileStatus.IsHidden(lstatInfo));
 
             entry._status = default;
             FileStatus.Initialize(ref entry._status, isDirectory);
 
-            FileAttributes attributes = default;
-            if (isSymlink)
-                attributes |= FileAttributes.ReparsePoint;
-            if (isDirectory)
-                attributes |= FileAttributes.Directory;
-            if (directoryEntry.Name[0] == '.')
-                attributes |= FileAttributes.Hidden;
-
-            if (attributes == default)
-                attributes = FileAttributes.Normal;
+            FileAttributes attributes = FileStatus.GetAttributes(isReadOnly, isSymlink, isDirectory, isHidden);
 
             entry._initialAttributes = attributes;
             return attributes;
@@ -143,7 +140,12 @@ namespace System.IO.Enumeration
         public DateTimeOffset LastAccessTimeUtc => _status.GetLastAccessTime(FullPath, continueOnError: true);
         public DateTimeOffset LastWriteTimeUtc => _status.GetLastWriteTime(FullPath, continueOnError: true);
         public bool IsDirectory => _status.InitiallyDirectory;
-        public bool IsHidden => _directoryEntry.Name[0] == '.';
+        /// <summary>
+        /// Returns <see langword="true"/> if the file is hidden; <see langword="false" /> otherwise.
+        /// In Linux and OSX, a file can be marked hidden if the filename is prepended with a dot.
+        /// In Windows and OSX, a file can be hidden if the special hidden attribute is set. For example, via the <see cref="FileSystemInfo.Attributes" /> enum flag.
+        /// </summary>
+        public bool IsHidden => _directoryEntry.Name[0] == '.' || (_initialAttributes & FileAttributes.Hidden) != 0;
 
         public FileSystemInfo ToFileSystemInfo()
         {

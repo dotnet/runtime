@@ -24,6 +24,7 @@ namespace System.Net.Test.Common
         private Stream _connectionStream;
         private TaskCompletionSource<bool> _ignoredSettingsAckPromise;
         private bool _ignoreWindowUpdates;
+        private TaskCompletionSource<PingFrame> _expectPingFrame;
         private readonly TimeSpan _timeout;
         private int _lastStreamId;
 
@@ -186,6 +187,13 @@ namespace System.Net.Test.Common
                 return await ReadFrameAsync(cancellationToken).ConfigureAwait(false);
             }
 
+            if (_expectPingFrame != null && header.Type == FrameType.Ping)
+            {
+                _expectPingFrame.SetResult(PingFrame.ReadFrom(header, data));
+                _expectPingFrame = null;
+                return await ReadFrameAsync(cancellationToken).ConfigureAwait(false);
+            }
+
             // Construct the correct frame type and return it.
             switch (header.Type)
             {
@@ -243,6 +251,15 @@ namespace System.Net.Test.Common
         public void IgnoreWindowUpdates()
         {
             _ignoreWindowUpdates = true;
+        }
+
+        // Set up loopback server to expect PING frames among other frames.
+        // Once PING frame is read in ReadFrameAsync, the returned task is completed.
+        // The returned task is canceled in ReadPingAsync if no PING frame has been read so far.
+        public Task<PingFrame> ExpectPingFrameAsync()
+        {
+            _expectPingFrame ??= new TaskCompletionSource<PingFrame>();
+            return _expectPingFrame.Task;
         }
 
         public async Task ReadRstStreamAsync(int streamId)
@@ -627,6 +644,27 @@ namespace System.Net.Test.Common
 
         public async Task<SettingsFrame> ReadAndSendSettingsAsync(TimeSpan? ackTimeout, params SettingsEntry[] settingsEntries)
         {
+            SettingsFrame clientSettingsFrame = await ReadSettingsAsync().ConfigureAwait(false);
+            await SendSettingsAsync(ackTimeout, settingsEntries).ConfigureAwait(false);
+            return clientSettingsFrame;
+        }
+
+        public async Task SendSettingsAsync(TimeSpan? ackTimeout, SettingsEntry[] settingsEntries)
+        {
+            // Send the initial server settings frame.
+            SettingsFrame settingsFrame = new SettingsFrame(settingsEntries);
+            await WriteFrameAsync(settingsFrame).ConfigureAwait(false);
+
+            // Send the client settings frame ACK.
+            Frame settingsAck = new Frame(0, FrameType.Settings, FrameFlags.Ack, 0);
+            await WriteFrameAsync(settingsAck).ConfigureAwait(false);
+
+            // The client will send us a SETTINGS ACK eventually, but not necessarily right away.
+            await ExpectSettingsAckAsync((int?)ackTimeout?.TotalMilliseconds ?? 5000);
+        }
+
+        public async Task<SettingsFrame> ReadSettingsAsync()
+        {
             // Receive the initial client settings frame.
             Frame receivedFrame = await ReadFrameAsync(_timeout).ConfigureAwait(false);
             Assert.Equal(FrameType.Settings, receivedFrame.Type);
@@ -640,18 +678,6 @@ namespace System.Net.Test.Common
             Assert.Equal(FrameType.WindowUpdate, receivedFrame.Type);
             Assert.Equal(FrameFlags.None, receivedFrame.Flags);
             Assert.Equal(0, receivedFrame.StreamId);
-
-            // Send the initial server settings frame.
-            SettingsFrame settingsFrame = new SettingsFrame(settingsEntries);
-            await WriteFrameAsync(settingsFrame).ConfigureAwait(false);
-
-            // Send the client settings frame ACK.
-            Frame settingsAck = new Frame(0, FrameType.Settings, FrameFlags.Ack, 0);
-            await WriteFrameAsync(settingsAck).ConfigureAwait(false);
-
-            // The client will send us a SETTINGS ACK eventually, but not necessarily right away.
-            await ExpectSettingsAckAsync((int?)ackTimeout?.TotalMilliseconds ?? 5000);
-
             return clientSettingsFrame;
         }
 
@@ -663,7 +689,7 @@ namespace System.Net.Test.Common
 
         public async Task PingPong()
         {
-            byte[] pingData = new byte[8] { 1, 2, 3, 4, 50, 60, 70, 80 };
+            long pingData = BitConverter.ToInt64(new byte[8] { 1, 2, 3, 4, 50, 60, 70, 80 }, 0);
             PingFrame ping = new PingFrame(pingData, FrameFlags.None, 0);
             await WriteFrameAsync(ping).ConfigureAwait(false);
             PingFrame pingAck = (PingFrame)await ReadFrameAsync(_timeout).ConfigureAwait(false);
@@ -673,6 +699,27 @@ namespace System.Net.Test.Common
             }
 
             Assert.Equal(pingData, pingAck.Data);
+        }
+
+        public async Task<PingFrame> ReadPingAsync(TimeSpan timeout)
+        {
+            _expectPingFrame?.TrySetCanceled();
+            _expectPingFrame = null;
+
+            Frame frame = await ReadFrameAsync(timeout).ConfigureAwait(false);
+            Assert.NotNull(frame);
+            Assert.Equal(FrameType.Ping, frame.Type);
+            Assert.Equal(0, frame.StreamId);
+            Assert.False(frame.AckFlag);
+            Assert.Equal(8, frame.Length);
+
+            return Assert.IsAssignableFrom<PingFrame>(frame);
+        }
+
+        public async Task SendPingAckAsync(long payload)
+        {
+            PingFrame pingAck = new PingFrame(payload, FrameFlags.Ack, 0);
+            await WriteFrameAsync(pingAck).ConfigureAwait(false);
         }
 
         public async Task SendDefaultResponseHeadersAsync(int streamId)

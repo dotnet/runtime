@@ -16,6 +16,8 @@ c_static_assert(PAL_AlgorithmRC2 == kCCAlgorithmRC2);
 
 c_static_assert(PAL_ChainingModeECB == kCCModeECB);
 c_static_assert(PAL_ChainingModeCBC == kCCModeCBC);
+c_static_assert(PAL_ChainingModeCFB == kCCModeCFB);
+c_static_assert(PAL_ChainingModeCFB8 == kCCModeCFB8);
 
 c_static_assert(PAL_PaddingModeNone == ccNoPadding);
 c_static_assert(PAL_PaddingModePkcs7 == ccPKCS7Padding);
@@ -55,7 +57,7 @@ int32_t AppleCryptoNative_CryptorCreate(PAL_SymmetricOperation operation,
     assert(operation == PAL_OperationEncrypt || operation == PAL_OperationDecrypt);
     assert(algorithm == PAL_AlgorithmAES || algorithm == PAL_AlgorithmDES || algorithm == PAL_Algorithm3DES ||
            algorithm == PAL_AlgorithmRC2);
-    assert(chainingMode == PAL_ChainingModeECB || chainingMode == PAL_ChainingModeCBC);
+    assert(chainingMode == PAL_ChainingModeECB || chainingMode == PAL_ChainingModeCBC || chainingMode == PAL_ChainingModeCFB || chainingMode == PAL_ChainingModeCFB8);
     assert(paddingMode == PAL_PaddingModeNone || paddingMode == PAL_PaddingModePkcs7);
     assert(options == 0);
 

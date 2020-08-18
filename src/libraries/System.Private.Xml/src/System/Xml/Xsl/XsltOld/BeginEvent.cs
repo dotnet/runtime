@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#nullable enable
 namespace System.Xml.Xsl.XsltOld
 {
     using System;
@@ -15,7 +16,7 @@ namespace System.Xml.Xsl.XsltOld
         private readonly string _name;
         private string _prefix;
         private readonly bool _empty;
-        private readonly object _htmlProps;
+        private readonly object? _htmlProps;
 #if DEBUG
         private bool _replaceNSAliasesDone;
 #endif
@@ -50,10 +51,10 @@ namespace System.Xml.Xsl.XsltOld
             {
                 return; // '#default' aren't apply to attributes.
             }
-            NamespaceInfo ResultURIInfo = compiler.FindNamespaceAlias(_namespaceUri);
+            NamespaceInfo? ResultURIInfo = compiler.FindNamespaceAlias(_namespaceUri);
             if (ResultURIInfo != null)
             {
-                _namespaceUri = ResultURIInfo.nameSpace;
+                _namespaceUri = ResultURIInfo.nameSpace!;
                 if (ResultURIInfo.prefix != null)
                 {
                     _prefix = ResultURIInfo.prefix;
