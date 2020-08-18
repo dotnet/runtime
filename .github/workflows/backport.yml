@@ -8,111 +8,19 @@ jobs:
     if: github.event.issue.pull_request != '' && contains(github.event.comment.body, '/backport to')
     runs-on: ubuntu-20.04
     steps:
-    - name: Get target branch
-      id: targetbranch
-      env:
-        BACKPORT_TRIGGER_BODY: ${{ github.event.comment.body }}
-      run: |
-        # extract the target branch name from the trigger phrase containing these characters: a-z, A-Z, digits, forward slash, dot, hyphen, underscore
-        BRANCHNAME=$(python -c "import os,re; print(re.search('\/backport to ([a-zA-Z\d\/\.\-\_]+)', os.environ['BACKPORT_TRIGGER_BODY']).group(1))")
-        echo "Backport target branch: $BRANCHNAME"
-        echo "::set-output name=branchname::$BRANCHNAME"
-
-    - name: Post backport started comment to pull request
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      run: |
-        hub api repos/$GITHUB_REPOSITORY/issues/${{ github.event.issue.number }}/comments -f body="Started backporting to ${{ steps.targetbranch.outputs.branchname }}: https://github.com/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
-
-    - name: Checkout repo in target branch
+    - name: Checkout repo
       uses: actions/checkout@v2
+    - name: Run backport
+      uses: ./eng/actions/backport
       with:
-         ref: ${{ steps.targetbranch.outputs.branchname }}
+        auth_token: ${{ secrets.GITHUB_TOKEN }}
+        pr_description_template: |
+          Backport of #%source_pr_number% to %target_branch%
 
-    - name: Apply backport patch and push
-      id: pushbackport
-      run: |
-        # Download backport patch
-        curl -sSL "${{ github.event.issue.pull_request.patch_url }}" --output changes.patch
+          /cc %cc_users%
 
-        # configure git
-        git config user.name "github-actions"
-        git config user.email "github-actions@github.com"
+          ## Customer Impact
 
-        # create temporary backport branch
-        temp_branch="backport/pr-${{ github.event.issue.number }}-to-${{ steps.targetbranch.outputs.branchname }}"
-        git checkout -b $temp_branch
+          ## Testing
 
-        # skip opening PR if the branch already exists on the origin remote since that means it was opened
-        # by an earlier backport and force pushing to the branch updates the existing PR
-        echo "::set-output name=should_open_pull_request::$(git ls-remote --exit-code --heads origin $temp_branch > /dev/null)$?"
-
-        # apply the patch and check whether it worked
-        git_am_failed=0
-        echo '$ git am --3way --ignore-whitespace --keep-non-patch changes.patch' > git_am_output.txt
-        echo '' >> git_am_output.txt
-        git am --3way --ignore-whitespace --keep-non-patch changes.patch >> git_am_output.txt 2>&1 || git_am_failed=1
-        cat git_am_output.txt
-        echo "::set-output name=git_am_failed::$git_am_failed"
-
-        if [ $git_am_failed != 0 ]; then
-          echo "::error::git am failed, most likely due to a merge conflict." && exit 1
-        else
-          # push changes to origin
-          git push --force --set-upstream origin HEAD:$temp_branch
-        fi
-
-    - name: Prepare pull request
-      if: success() && steps.pushbackport.outputs.should_open_pull_request != 0
-      run: |
-        # create PR title and description
-        cat << 'EOF' > pr_body.txt
-        [${{ steps.targetbranch.outputs.branchname }}] ${{ github.event.issue.title }}
-
-        Backport of #${{ github.event.issue.number }} to ${{ steps.targetbranch.outputs.branchname }}
-
-        EOF
-        
-        # figure out who to tag on the PR
-        cc_users="@${{ github.event.comment.user.login }}"
-        
-        # append PR author if different from user who issued the backport command
-        if [[ "${{ github.event.comment.user.login }}" != "${{ github.event.issue.user.login }}" ]]; then
-          cc_users="$cc_users @${{ github.event.issue.user.login }}"
-        fi
-
-        echo "/cc $cc_users" >> pr_body.txt
-
-    - name: Open pull request
-      if: success() && steps.pushbackport.outputs.should_open_pull_request != 0
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      run: hub pull-request --base ${{ steps.targetbranch.outputs.branchname }} --file pr_body.txt
-
-    - name: Prepare error comment for git am failure
-      if: failure() && steps.pushbackport.outputs.git_am_failed == 1
-      run: |
-        cat << 'EOF' > comment_body.txt
-        @${{ github.event.comment.user.login }} backporting to ${{ steps.targetbranch.outputs.branchname }} failed, the patch most likely resulted in conflicts:
-
-        ```shell
-        EOF
-        cat git_am_output.txt >> comment_body.txt
-        cat << 'EOF' >> comment_body.txt
-        ```
-
-        Please backport manually!
-        EOF
-
-    - name: Prepare error comment for unknown failure
-      if: failure() && steps.pushbackport.outputs.git_am_failed != 1
-      run: |
-        cat << 'EOF' > comment_body.txt
-        @${{ github.event.comment.user.login }} an error occurred while backporting to ${{ steps.targetbranch.outputs.branchname }}, please check the run log for details and backport manually!
-        EOF
-
-    - name: Post error comment to pull request
-      if: failure()
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      run: hub api repos/$GITHUB_REPOSITORY/issues/${{ github.event.issue.number }}/comments -F body=@comment_body.txt
+          ## Risk
