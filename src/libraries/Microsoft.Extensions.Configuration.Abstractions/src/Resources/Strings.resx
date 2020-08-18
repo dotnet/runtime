@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <root>
   <!-- 
     Microsoft ResX Schema 
@@ -117,10 +117,7 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="Error_NoSources" xml:space="preserve">
-    <value>A configuration source is not registered. Please register one before setting a value.</value>
-  </data>
-  <data name="InvalidNullArgument" xml:space="preserve">
-    <value>Null is not a valid value for '{0}'.</value>
+  <data name="InvalidSectionName" xml:space="preserve">
+    <value>Section '{0}' not found in configuration.</value>
   </data>
 </root>
