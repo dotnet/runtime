@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
@@ -57,9 +58,12 @@ namespace Microsoft.Extensions.Hosting
         {
             var builder = new HostBuilder();
 
-            builder.UseContentRoot(Directory.GetCurrentDirectory());
             builder.ConfigureHostConfiguration(config =>
             {
+                config.AddInMemoryCollection(new[]
+                {
+                    new KeyValuePair<string, string> (HostDefaults.ContentRootKey, Directory.GetCurrentDirectory())
+                });
                 config.AddEnvironmentVariables(prefix: "DOTNET_");
                 if (args != null)
                 {

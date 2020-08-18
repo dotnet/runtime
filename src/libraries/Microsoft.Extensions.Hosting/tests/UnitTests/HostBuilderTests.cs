@@ -202,22 +202,38 @@ namespace Microsoft.Extensions.Hosting
         }
 
         [Fact]
-        public void UseEnvironmentIsNotOverriden()
+        public void UseEnvironmentOverridesConfig()
         {
             var vals = new Dictionary<string, string>
             {
-                { "ENV", "Dev" },
+                { HostDefaults.EnvironmentKey, "Dev" },
             };
-            var builder = new ConfigurationBuilder()
-                .AddInMemoryCollection(vals);
-            var config = builder.Build();
+
+            var expected = "MY_TEST_ENVIRONMENT";
+
+            using (var host = new HostBuilder()
+                .ConfigureHostConfiguration(configBuilder => configBuilder.AddInMemoryCollection(vals))
+                .UseEnvironment(expected)
+                .Build())
+            {
+                Assert.Equal(expected, host.Services.GetService<IHostEnvironment>().EnvironmentName);
+            }
+        }
+
+        [Fact]
+        public void UseEnvironmentIsNotOverridenByConfig()
+        {
+            var vals = new Dictionary<string, string>
+            {
+                { HostDefaults.EnvironmentKey, "Dev" },
+            };
 
             var expected = "MY_TEST_ENVIRONMENT";
 
 
             using (var host = new HostBuilder()
-                .ConfigureHostConfiguration(configBuilder => configBuilder.AddConfiguration(config))
                 .UseEnvironment(expected)
+                .ConfigureHostConfiguration(configBuilder => configBuilder.AddInMemoryCollection(vals))
                 .Build())
             {
                 Assert.Equal(expected, host.Services.GetService<IHostEnvironment>().EnvironmentName);
@@ -232,19 +248,44 @@ namespace Microsoft.Extensions.Hosting
         }
 
         [Fact]
-        public void UseBasePathConfiguresBasePath()
+        public void UseContentRootConfiguresContentRoot()
+        {
+            using (var host = new HostBuilder()
+                .UseContentRoot("/")
+                .Build())
+            {
+                Assert.Equal("/", host.Services.GetService<IHostEnvironment>().ContentRootPath);
+            }
+        }
+
+        [Fact]
+        public void UseContentRootOverridesConfig()
         {
             var vals = new Dictionary<string, string>
             {
-                { "ENV", "Dev" },
+                { HostDefaults.ContentRootKey, "Foo" },
             };
-            var builder = new ConfigurationBuilder()
-                .AddInMemoryCollection(vals);
-            var config = builder.Build();
 
             using (var host = new HostBuilder()
-                .ConfigureHostConfiguration(configBuilder => configBuilder.AddConfiguration(config))
+                .ConfigureHostConfiguration(configBuilder => configBuilder.AddInMemoryCollection(vals))
                 .UseContentRoot("/")
+                .Build())
+            {
+                Assert.Equal("/", host.Services.GetService<IHostEnvironment>().ContentRootPath);
+            }
+        }
+
+        [Fact]
+        public void UseContentRootNotOverridenByConfig()
+        {
+            var vals = new Dictionary<string, string>
+            {
+                { HostDefaults.ContentRootKey, "Foo" },
+            };
+
+            using (var host = new HostBuilder()
+                .UseContentRoot("/")
+                .ConfigureHostConfiguration(configBuilder => configBuilder.AddInMemoryCollection(vals))
                 .Build())
             {
                 Assert.Equal("/", host.Services.GetService<IHostEnvironment>().ContentRootPath);

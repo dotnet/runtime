@@ -147,11 +147,26 @@ namespace Microsoft.Extensions.Hosting
 
         private void CreateHostingEnvironment()
         {
+            // Explicit settings override config.
+            string environmentName = _hostConfiguration[HostDefaults.EnvironmentKey] ?? Environments.Production;
+            if (Properties.TryGetValue(HostDefaults.EnvironmentKey, out object envObj)
+                && (envObj is string env))
+            {
+                environmentName = env;
+            }
+
+            string contentRoot = _hostConfiguration[HostDefaults.ContentRootKey];
+            if (Properties.TryGetValue(HostDefaults.ContentRootKey, out object contentObj)
+                && (contentObj is string content))
+            {
+                contentRoot = content;
+            }
+
             _hostingEnvironment = new HostingEnvironment()
             {
                 ApplicationName = _hostConfiguration[HostDefaults.ApplicationKey],
-                EnvironmentName = _hostConfiguration[HostDefaults.EnvironmentKey] ?? Environments.Production,
-                ContentRootPath = ResolveContentRootPath(_hostConfiguration[HostDefaults.ContentRootKey], AppContext.BaseDirectory),
+                EnvironmentName = environmentName,
+                ContentRootPath = ResolveContentRootPath(contentRoot, AppContext.BaseDirectory),
             };
 
             if (string.IsNullOrEmpty(_hostingEnvironment.ApplicationName))

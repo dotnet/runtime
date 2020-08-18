@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
@@ -22,14 +21,8 @@ namespace Microsoft.Extensions.Hosting
         /// <returns>The <see cref="IHostBuilder"/>.</returns>
         public static IHostBuilder UseEnvironment(this IHostBuilder hostBuilder, string environment)
         {
-            return hostBuilder.ConfigureHostConfiguration(configBuilder =>
-            {
-                configBuilder.AddInMemoryCollection(new[]
-                {
-                    new KeyValuePair<string, string>(HostDefaults.EnvironmentKey,
-                        environment  ?? throw new ArgumentNullException(nameof(environment)))
-                });
-            });
+            hostBuilder.Properties[HostDefaults.EnvironmentKey] = environment;
+            return hostBuilder;
         }
 
         /// <summary>
@@ -40,14 +33,8 @@ namespace Microsoft.Extensions.Hosting
         /// <returns>The <see cref="IHostBuilder"/>.</returns>
         public static IHostBuilder UseContentRoot(this IHostBuilder hostBuilder, string contentRoot)
         {
-            return hostBuilder.ConfigureHostConfiguration(configBuilder =>
-            {
-                configBuilder.AddInMemoryCollection(new[]
-                {
-                    new KeyValuePair<string, string>(HostDefaults.ContentRootKey,
-                        contentRoot  ?? throw new ArgumentNullException(nameof(contentRoot)))
-                });
-            });
+            hostBuilder.Properties[HostDefaults.ContentRootKey] = contentRoot;
+            return hostBuilder;
         }
 
         /// <summary>
