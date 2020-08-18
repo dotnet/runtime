@@ -1,6 +1,9 @@
 @echo off
 setlocal EnableDelayedExpansion
 
+rem *.cmd and *.sh files may be considered test entry points. If launched directly, consider it a pass.
+if "%~1" neq "--runCustomTest" exit /b 0
+
 set CLRTestExpectedExitCode=100
 
 echo Collect profile without R2R, use profile without R2R

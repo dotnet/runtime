@@ -1,5 +1,10 @@
 #!/usr/bin/env bash
 
+# *.cmd and *.sh files may be considered test entry points. If launched directly, consider it a pass.
+if [ "$1" != "--runCustomTest" ]; then
+  exit 0
+fi
+
 CLRTestExpectedExitCode=100
 
 echo Collect profile without R2R, use profile without R2R
