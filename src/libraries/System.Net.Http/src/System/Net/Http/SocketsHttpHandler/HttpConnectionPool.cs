@@ -879,18 +879,18 @@ namespace System.Net.Http
 
                 try
                 {
-                    if (connection is HttpConnection)
+                    if (connection is HttpConnection httpConnection)
                     {
-                        ((HttpConnection)connection).Acquire();
+                        httpConnection.Acquire();
                         try
                         {
                             response = await (doRequestAuth && Settings._credentials != null ?
-                                AuthenticationHelper.SendWithNtConnectionAuthAsync(request, async, Settings._credentials, (HttpConnection)connection, this, cancellationToken) :
-                                SendWithNtProxyAuthAsync((HttpConnection)connection, request, async, cancellationToken)).ConfigureAwait(false);
+                                AuthenticationHelper.SendWithNtConnectionAuthAsync(request, async, Settings._credentials, httpConnection, this, cancellationToken) :
+                                SendWithNtProxyAuthAsync(httpConnection, request, async, cancellationToken)).ConfigureAwait(false);
                         }
                         finally
                         {
-                            ((HttpConnection)connection).Release();
+                            httpConnection.Release();
                         }
                     }
                     else
