@@ -39,6 +39,10 @@
       </_PropertiesToPass>
     </PropertyGroup>
 
+    <Message Text="Arch: $(TargetArchitecture) / $(__BuildArch)" />
+    <Message Text="OS:   $(TargetOS) / $(__TargetOS)" />
+    <Message Text="Conf: $(Configuration) / $(__BuildType)" />
+
     <Message Text="DotNetCliVersion: $(DotNetCliVersion)" Importance="High" />
     <Message Text="DotNetCliPackageType: $(DotNetCliPackageType)" Importance="High" />
     <Message Text="HelixRuntimeRid: $(HelixRuntimeRid)" Importance="High" />
