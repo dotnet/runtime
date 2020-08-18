@@ -76,7 +76,7 @@ steps:
         # Arcade uses this SDK instead of trying to restore one.
         DotNetCoreSdkDir: /usr/local/dotnet
 
-  - script: $(Build.SourcesDirectory)/eng/common/msbuild.sh --ci ${{ parameters.helixProjectArguments }} /maxcpucount /bl:$(Build.SourcesDirectory)/artifacts/log/SendToHelix.binlog
+  - script: $(Build.SourcesDirectory)/eng/common/msbuild.sh --ci ${{ parameters.helixProjectArguments }} /maxcpucount /p:TargetOS=${{ parameters.osGroup }}  /bl:$(Build.SourcesDirectory)/artifacts/log/SendToHelix.binlog
     displayName: ${{ parameters.displayName }}
     ${{ if ne(parameters.condition, '') }}:
       condition: ${{ parameters.condition }}
