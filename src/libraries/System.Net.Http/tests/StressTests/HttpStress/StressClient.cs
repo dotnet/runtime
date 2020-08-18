@@ -450,7 +450,7 @@ namespace HttpStress
         }
 
 
-        private class StructuralEqualityComparer<T> : IEqualityComparer<T> where T : IStructuralEquatable
+        private class StructuralEqualityComparer<T> : IEqualityComparer<T> where T : class, IStructuralEquatable
         {
             public bool Equals(T? left, T? right) => left != null && left.Equals(right, StructuralComparisons.StructuralEqualityComparer);
             public int GetHashCode(T value) => value.GetHashCode(StructuralComparisons.StructuralEqualityComparer);
