@@ -311,6 +311,72 @@ namespace System.Text.Json.Serialization.Tests
             }
         }
 
+        private class PrimitiveConverter : JsonConverter<object>
+        {
+            public override bool CanConvert(Type typeToConvert)
+                => true;
+
+            public override object Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+            {
+                if (reader.TokenType == JsonTokenType.True)
+                {
+                    return true;
+                }
+
+                if (reader.TokenType == JsonTokenType.False)
+                {
+                    return false;
+                }
+
+                if (reader.TokenType == JsonTokenType.Number)
+                {
+                    if (reader.TryGetInt32(out int i))
+                    {
+                        return i;
+                    }
+
+                    return reader.GetDouble();
+                }
+
+                if (reader.TokenType == JsonTokenType.String)
+                {
+                    if (reader.TryGetDateTime(out DateTime datetime))
+                    {
+                        return datetime;
+                    }
+
+                    return reader.GetString();
+                }
+
+                throw new JsonException();
+            }
+
+            public override void Write(Utf8JsonWriter writer, object value, JsonSerializerOptions options)
+            {
+                throw new InvalidOperationException("Should not get here.");
+            }
+        }
+        private class ClassWithPrimitives
+        {
+            [JsonConverter(typeof(PrimitiveConverter))]
+            public int MyInt { get; set; }
+            [JsonConverter(typeof(PrimitiveConverter))]
+            public bool MyBool { get; set; }
+            [JsonConverter(typeof(PrimitiveConverter))]
+            public string MyString { get; set; }
+        }
+
+        [Fact]
+        public static void ClassWithPrimitivesObjectConverterDeserialize()
+        {
+            const string json = @"{""MyInt"":123,""MyBool"":true,""MyString"":""Hello""}";
+
+            var obj = JsonSerializer.Deserialize<ClassWithPrimitives>(json);
+            Assert.Equal(123, obj.MyInt);
+            Assert.True(obj.MyBool);
+            Assert.Equal("Hello", obj.MyString);
+        }
+
         [Fact]
         public static void SystemObjectNewtonsoftCompatibleConverterDeserialize()
         {
