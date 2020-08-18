@@ -30,8 +30,8 @@ steps:
   parameters:
     osGroup: ${{ parameters.osGroup }}
     restoreParams: /p:DotNetPublishToBlobFeed=true -restore -projects $(Build.SourcesDirectory)$(dir)eng$(dir)empty.csproj
-    sendParams: ${{ parameters.helixProjectArguments }} /p:TargetOS=${{ parameters.osGroup }} /maxcpucount /bl:$(Build.SourcesDirectory)/artifacts/log/SendToHelix.binlog
-    condition: and(succeeded(), ${{ parameters.condition }})
+    sendParams: ${{ parameters.helixProjectArguments }} /p:TargetOS=${{ parameters.osGroup }} /p:TargetArcitecture=${{ parameters.archType  }} /p:Configuration={{ parameters.buildConfig }}  /maxcpucount /bl:$(Build.SourcesDirectory)/artifacts/log/SendToHelix.binlog
+    condition: and(succeeded(), ${{ parameters.condition }}
     displayName: ${{ parameters.displayName }}
     environment:
       __BuildArch: ${{ parameters.archType }}
