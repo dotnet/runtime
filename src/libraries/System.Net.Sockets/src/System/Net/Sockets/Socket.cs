@@ -4871,7 +4871,7 @@ namespace System.Net.Sockets
             socket._protocolType = _protocolType;
             socket._rightEndPoint = _rightEndPoint;
             socket._remoteEndPoint = remoteEP;
-            socket._localEndPoint = null;
+            socket._localEndPoint = _localEndPoint;
 
             // The socket is connected.
             socket.SetToConnected();
