@@ -82,7 +82,6 @@ namespace Microsoft.Extensions.Configuration
             return section.Value != null || section.GetChildren().Any();
         }
 
-
         /// <summary>
         /// Gets a configuration sub-section with the specified key.
         /// </summary>
