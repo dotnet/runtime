@@ -819,23 +819,22 @@ namespace System.PrivateUri.Tests
             Assert.Equal(localPath, uri2.LocalPath);
         }
 
-        [Fact]
-        public static void ZeroPortIsParsedForBothKnownAndUnknownSchemes()
+        public static IEnumerable<object[]> ZeroPortIsParsedForBothKnownAndUnknownSchemes_TestData()
         {
-            Uri.TryCreate("http://example.com:0", UriKind.Absolute, out var uri);
-            Assert.Equal(0, uri.Port);
-            Assert.False(uri.IsDefaultPort);
-            Assert.Equal("http://example.com:0/", uri.ToString());
+            yield return new object[] { "http://example.com:0", 0, false, "http://example.com:0/" };
+            yield return new object[] { "http://example.com", 80, true, "http://example.com/" };
+            yield return new object[] { "rtsp://example.com:0", 0, false, "rtsp://example.com:0/" };
+            yield return new object[] { "rtsp://example.com", -1, true, "rtsp://example.com/" };
+        }
 
-            Uri.TryCreate("rtsp://example.com", UriKind.Absolute, out uri);
-            Assert.Equal(-1, uri.Port);
-            Assert.True(uri.IsDefaultPort);
-            Assert.Equal("rtsp://example.com/", uri.ToString());
-
-            Uri.TryCreate("rtsp://example.com:0", UriKind.Absolute, out uri);
-            Assert.Equal(0, uri.Port);
-            Assert.False(uri.IsDefaultPort);
-            Assert.Equal("rtsp://example.com:0/", uri.ToString());
+        [Theory]
+        [MemberData(nameof(ZeroPortIsParsedForBothKnownAndUnknownSchemes_TestData))]
+        public static void ZeroPortIsParsedForBothKnownAndUnknownSchemes(string uriString, int port, bool isDefaultPort, string toString)
+        {
+            Uri.TryCreate(uriString, UriKind.Absolute, out var uri);
+            Assert.Equal(port, uri.Port);
+            Assert.Equal(isDefaultPort, uri.IsDefaultPort);
+            Assert.Equal(toString, uri.ToString());
         }
     }
 }
