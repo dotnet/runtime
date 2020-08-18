@@ -267,17 +267,8 @@ else
   __Command+=" dotnet"
 fi
 
-# $__Command msbuild $CORE_ROOT/wasm-test-runner/WasmTestRunner.proj /p:TestAssembly=$(OutputPath)/$(MsBuildProjectName).dll /p:TestBinDir=`pwd`
+$__Command msbuild $CORE_ROOT/wasm-test-runner/WasmTestRunner.proj /p:TestAssembly=$(OutputPath)/$(MsBuildProjectName).dll /p:TestBinDir=`pwd`
 
-TestDir=`pwd`
-TestAssembly=$TestDir/$(MSBuildProjectName).dll
-AppDir=$TestDir/WasmApp
-MicrosoftNetCoreAppRuntimePackDir=$CORE_ROOT/runtimepack
-MainJS="$CORE_ROOT/runtime-test/runtime-test.js"
-AssemblySearchPaths="${MicrosoftNetCoreAppRuntimePackDir}/native%3B${MicrosoftNetCoreAppRuntimePackDir}/lib/$(NetCoreAppCurrent)%3B$CORE_ROOT/TargetingPack"
-
-$__Command $CORE_ROOT/WasmAppBuilderConsole/WasmAppBuilderConsole.dll mainassembly=$TestAssembly appdir=$AppDir microsoftnetcoreappruntimepackdir=$MicrosoftNetCoreAppRuntimePackDir mainjs=$MainJS assemblysearchpaths=$AssemblySearchPaths
-chmod u+x $AppDir/run-v8.sh
    ]]>
       </BashCLRTestPreCommands>
 
