@@ -63,7 +63,7 @@
     <Copy SourceFiles="$(NativeBinDir)dotnet.js;
                        $(NativeBinDir)dotnet.wasm;
                        $(NativeBinDir)dotnet.timezones.blat;
-                       $(NativeBinDir)icudt.dat"
+                       $(NativeBinDir)icudt_optimal.dat"
           DestinationFolder="$(MicrosoftNetCoreAppRuntimePackNativeDir)"
           SkipUnchangedFiles="true" />
   </Target>
