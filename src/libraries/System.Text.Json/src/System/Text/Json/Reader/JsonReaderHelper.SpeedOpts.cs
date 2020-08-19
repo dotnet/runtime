@@ -5,7 +5,7 @@ using System.Diagnostics;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-#if NETCOREAPP
+#if PLATFORM_INTRINSICS
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.Arm;
 using System.Runtime.Intrinsics.X86;
@@ -31,7 +31,7 @@ namespace System.Text.Json
                     span.Length);
         }
 
-#if NETCOREAPP
+#if PLATFORM_INTRINSICS
         [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         public static int IndexOfOrLessThan(ref byte searchSpace, byte value0, byte value1, byte lessThan, int length)
         {
