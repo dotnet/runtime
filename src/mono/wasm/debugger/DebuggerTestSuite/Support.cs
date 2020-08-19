@@ -14,6 +14,7 @@ using Microsoft.WebAssembly.Diagnostics;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Xunit;
+using Xunit.Sdk;
 
 namespace DebuggerTests
 {
@@ -338,6 +339,12 @@ namespace DebuggerTests
             return l;
         }
 
+        internal async Task CheckDateTime(JToken value, DateTime expected, string label = "")
+        {
+            await CheckValue(value, TValueType("System.DateTime", expected.ToString()), label);
+            await CheckDateTimeValue(value, expected);
+        }
+
         internal async Task CheckDateTime(JToken locals, string name, DateTime expected)
         {
             var obj = GetAndAssertObjectWithName(locals, name);
@@ -616,6 +623,13 @@ namespace DebuggerTests
                         break;
                     }
 
+                case "datetime":
+                    {
+                        var dateTime = DateTime.FromBinary(exp_val["binary"].Value<long>());
+                        await CheckDateTime(actual_val, dateTime, label);
+                        break;
+                    }
+
                 case "ignore_me":
                     // nothing to check ;)
                     break;
@@ -822,7 +836,7 @@ namespace DebuggerTests
             return locals;
         }
 
-        internal async Task<JToken> EvaluateOnCallFrame(string id, string expression)
+        internal async Task<(JToken, Result)> EvaluateOnCallFrame(string id, string expression, bool expect_ok = true)
         {
             var evaluate_req = JObject.FromObject(new
             {
@@ -830,12 +844,12 @@ namespace DebuggerTests
                 expression = expression
             });
 
-            var frame_evaluate = await ctx.cli.SendCommand("Debugger.evaluateOnCallFrame", evaluate_req, ctx.token);
-            if (!frame_evaluate.IsOk)
-                Assert.True(false, $"Debugger.evaluateOnCallFrame failed for {evaluate_req.ToString()}, with Result: {frame_evaluate}");
+            var res = await ctx.cli.SendCommand("Debugger.evaluateOnCallFrame", evaluate_req, ctx.token);
+            AssertEqual(expect_ok, res.IsOk, $"Debugger.evaluateOnCallFrame ('{expression}', scope: {id}) returned {res.IsOk} instead of {expect_ok}, with Result: {res}");
+            if (res.IsOk)
+                return (res.Value["result"], res);
 
-            var evaluate_result = frame_evaluate.Value["result"];
-            return evaluate_result;
+            return (null, res);
         }
 
         internal async Task<Result> SetBreakpoint(string url_key, int line, int column, bool expect_ok = true, bool use_regex = false)
@@ -880,10 +894,15 @@ namespace DebuggerTests
             return res;
         }
 
-        internal void AssertEqual(object expected, object actual, string label) => Assert.True(expected?.Equals(actual),
-            $"[{label}]\n" +
-            $"Expected: {expected?.ToString()}\n" +
-            $"Actual:   {actual?.ToString()}\n");
+        internal void AssertEqual(object expected, object actual, string label)
+        {
+            if (expected?.Equals(actual) == true)
+                return;
+
+            throw new AssertActualExpectedException(
+                expected, actual,
+                $"[{label}]\n");
+        }
 
         internal void AssertStartsWith(string expected, string actual, string label) => Assert.True(actual?.StartsWith(expected), $"[{label}] Does not start with the expected string\nExpected: {expected}\nActual:   {actual}");
 
@@ -907,7 +926,7 @@ namespace DebuggerTests
         //FIXME: um maybe we don't need to convert jobject right here!
         internal static JObject TString(string value) =>
             value == null ?
-            TObject("string", is_null: true) :
+            JObject.FromObject(new { type = "object", className = "string", subtype = "null" }) :
             JObject.FromObject(new { type = "string", value = @value });
 
         internal static JObject TNumber(int value) =>
@@ -951,6 +970,12 @@ namespace DebuggerTests
         internal static JObject TIgnore() => JObject.FromObject(new { __custom_type = "ignore_me" });
 
         internal static JObject TGetter(string type) => JObject.FromObject(new { __custom_type = "getter", type_name = type });
+
+        internal static JObject TDateTime(DateTime dt) => JObject.FromObject(new
+        {
+            __custom_type = "datetime",
+            binary = dt.ToBinary()
+        });
     }
 
     class DebugTestContext

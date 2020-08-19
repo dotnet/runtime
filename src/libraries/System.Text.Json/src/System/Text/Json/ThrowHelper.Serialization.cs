@@ -605,6 +605,13 @@ namespace System.Text.Json
         }
 
         [DoesNotReturn]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static void ThrowInvalidOperationException_MetadataReferenceOfTypeCannotBeAssignedToType(string referenceId, Type currentType, Type typeToConvert)
+        {
+            throw new InvalidOperationException(SR.Format(SR.MetadataReferenceOfTypeCannotBeAssignedToType, referenceId, currentType, typeToConvert));
+        }
+
+        [DoesNotReturn]
         internal static void ThrowUnexpectedMetadataException(
             ReadOnlySpan<byte> propertyName,
             ref Utf8JsonReader reader,

@@ -4078,11 +4078,11 @@ mini_emit_sext_index_reg (MonoCompile *cfg, MonoInst *index)
 }
 
 MonoInst*
-mini_emit_ldelema_1_ins (MonoCompile *cfg, MonoClass *klass, MonoInst *arr, MonoInst *index, gboolean bcheck)
+mini_emit_ldelema_1_ins (MonoCompile *cfg, MonoClass *klass, MonoInst *arr, MonoInst *index, gboolean bcheck, gboolean bounded)
 {
 	MonoInst *ins;
 	guint32 size;
-	int mult_reg, add_reg, array_reg, index2_reg;
+	int mult_reg, add_reg, array_reg, index2_reg, bounds_reg, lower_bound_reg, realidx2_reg;
 	int context_used;
 
 	if (mini_is_gsharedvt_variable_klass (klass)) {
@@ -4095,16 +4095,37 @@ mini_emit_ldelema_1_ins (MonoCompile *cfg, MonoClass *klass, MonoInst *arr, Mono
 	mult_reg = alloc_preg (cfg);
 	array_reg = arr->dreg;
 
-	index2_reg = mini_emit_sext_index_reg (cfg, index);
+	realidx2_reg = index2_reg = mini_emit_sext_index_reg (cfg, index);
+
+	if (bounded) {
+		bounds_reg = alloc_preg (cfg);
+		lower_bound_reg = alloc_preg (cfg);
+		realidx2_reg = alloc_preg (cfg);
+
+		MonoBasicBlock *is_null_bb = NULL;
+		NEW_BBLOCK (cfg, is_null_bb);
+
+		// gint32 lower_bound = 0;
+		// if (arr->bounds)
+		//		lower_bound = arr->bounds.lower_bound;
+		// realidx2 = index2 - lower_bound;
+		MONO_EMIT_NEW_PCONST (cfg, lower_bound_reg, NULL);
+		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, bounds_reg, arr->dreg, MONO_STRUCT_OFFSET (MonoArray, bounds));
+		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, bounds_reg, 0);
+		MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_PBEQ, is_null_bb);
+		MONO_EMIT_NEW_LOAD_MEMBASE_OP (cfg, OP_LOADI4_MEMBASE, lower_bound_reg, bounds_reg, MONO_STRUCT_OFFSET (MonoArrayBounds, lower_bound));
+		MONO_START_BB (cfg, is_null_bb);
+		MONO_EMIT_NEW_BIALU (cfg, OP_PSUB, realidx2_reg, index2_reg, lower_bound_reg);
+	}
 
 	if (bcheck)
-		MONO_EMIT_BOUNDS_CHECK (cfg, array_reg, MonoArray, max_length, index2_reg);
+		MONO_EMIT_BOUNDS_CHECK (cfg, array_reg, MonoArray, max_length, realidx2_reg);
 
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
 	if (size == 1 || size == 2 || size == 4 || size == 8) {
 		static const int fast_log2 [] = { 1, 0, 1, -1, 2, -1, -1, -1, 3 };
 
-		EMIT_NEW_X86_LEA (cfg, ins, array_reg, index2_reg, fast_log2 [size], MONO_STRUCT_OFFSET (MonoArray, vector));
+		EMIT_NEW_X86_LEA (cfg, ins, array_reg, realidx2_reg, fast_log2 [size], MONO_STRUCT_OFFSET (MonoArray, vector));
 		ins->klass = klass;
 		ins->type = STACK_MP;
 
@@ -4122,9 +4143,9 @@ mini_emit_ldelema_1_ins (MonoCompile *cfg, MonoClass *klass, MonoInst *arr, Mono
 		context_used = mini_class_check_context_used (cfg, klass);
 		g_assert (context_used);
 		rgctx_ins = mini_emit_get_gsharedvt_info_klass (cfg, klass, MONO_RGCTX_INFO_ARRAY_ELEMENT_SIZE);
-		MONO_EMIT_NEW_BIALU (cfg, OP_IMUL, mult_reg, index2_reg, rgctx_ins->dreg);
+		MONO_EMIT_NEW_BIALU (cfg, OP_IMUL, mult_reg, realidx2_reg, rgctx_ins->dreg);
 	} else {
-		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_MUL_IMM, mult_reg, index2_reg, size);
+		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_MUL_IMM, mult_reg, realidx2_reg, size);
 	}
 	MONO_EMIT_NEW_BIALU (cfg, OP_PADD, add_reg, array_reg, mult_reg);
 	NEW_BIALU_IMM (cfg, ins, OP_PADD_IMM, add_reg, add_reg, MONO_STRUCT_OFFSET (MonoArray, vector));
@@ -4217,10 +4238,12 @@ mini_emit_ldelema_ins (MonoCompile *cfg, MonoMethod *cmethod, MonoInst **sp, guc
 	int element_size;
 	MonoClass *eclass = m_class_get_element_class (cmethod->klass);
 
+	gboolean bounded = m_class_get_byval_arg (cmethod->klass) ? m_class_get_byval_arg (cmethod->klass)->type == MONO_TYPE_ARRAY : FALSE;
+
 	rank = mono_method_signature_internal (cmethod)->param_count - (is_set? 1: 0);
 
 	if (rank == 1)
-		return mini_emit_ldelema_1_ins (cfg, eclass, sp [0], sp [1], TRUE);
+		return mini_emit_ldelema_1_ins (cfg, eclass, sp [0], sp [1], TRUE, bounded);
 
 	/* emit_ldelema_2 depends on OP_LMUL */
 	if (!cfg->backend->emulate_mul_div && rank == 2 && (cfg->opt & MONO_OPT_INTRINS) && !mini_is_gsharedvt_variable_klass (eclass)) {
@@ -4273,7 +4296,7 @@ mini_emit_array_store (MonoCompile *cfg, MonoClass *klass, MonoInst **sp, gboole
 			MonoInst *addr;
 
 			// FIXME-VT: OP_ICONST optimization
-			addr = mini_emit_ldelema_1_ins (cfg, klass, sp [0], sp [1], TRUE);
+			addr = mini_emit_ldelema_1_ins (cfg, klass, sp [0], sp [1], TRUE, FALSE);
 			EMIT_NEW_STORE_MEMBASE_TYPE (cfg, ins, m_class_get_byval_arg (klass), addr->dreg, 0, sp [2]->dreg);
 			ins->opcode = OP_STOREV_MEMBASE;
 		} else if (sp [1]->opcode == OP_ICONST) {
@@ -4288,7 +4311,7 @@ mini_emit_array_store (MonoCompile *cfg, MonoClass *klass, MonoInst **sp, gboole
 				MONO_EMIT_BOUNDS_CHECK (cfg, array_reg, MonoArray, max_length, index_reg);
 			EMIT_NEW_STORE_MEMBASE_TYPE (cfg, ins, m_class_get_byval_arg (klass), array_reg, offset, sp [2]->dreg);
 		} else {
-			MonoInst *addr = mini_emit_ldelema_1_ins (cfg, klass, sp [0], sp [1], safety_checks);
+			MonoInst *addr = mini_emit_ldelema_1_ins (cfg, klass, sp [0], sp [1], safety_checks, FALSE);
 			if (!mini_debug_options.weak_memory_model && mini_class_is_reference (klass))
 				mini_emit_memory_barrier (cfg, MONO_MEMORY_BARRIER_REL);
 			EMIT_NEW_STORE_MEMBASE_TYPE (cfg, ins, m_class_get_byval_arg (klass), addr->dreg, 0, sp [2]->dreg);
@@ -10047,7 +10070,7 @@ field_access_end:
 			}
 
 			readonly = FALSE;
-			ins = mini_emit_ldelema_1_ins (cfg, klass, sp [0], sp [1], TRUE);
+			ins = mini_emit_ldelema_1_ins (cfg, klass, sp [0], sp [1], TRUE, FALSE);
 			*sp++ = ins;
 			break;
 		case MONO_CEE_LDELEM:
@@ -10081,7 +10104,7 @@ field_access_end:
 
 			if (mini_is_gsharedvt_variable_klass (klass)) {
 				// FIXME-VT: OP_ICONST optimization
-				addr = mini_emit_ldelema_1_ins (cfg, klass, sp [0], sp [1], TRUE);
+				addr = mini_emit_ldelema_1_ins (cfg, klass, sp [0], sp [1], TRUE, FALSE);
 				EMIT_NEW_LOAD_MEMBASE_TYPE (cfg, ins, m_class_get_byval_arg (klass), addr->dreg, 0);
 				ins->opcode = OP_LOADV_MEMBASE;
 			} else if (sp [1]->opcode == OP_ICONST) {
@@ -10095,7 +10118,7 @@ field_access_end:
 				MONO_EMIT_BOUNDS_CHECK (cfg, array_reg, MonoArray, max_length, index_reg);
 				EMIT_NEW_LOAD_MEMBASE_TYPE (cfg, ins, m_class_get_byval_arg (klass), array_reg, offset);
 			} else {
-				addr = mini_emit_ldelema_1_ins (cfg, klass, sp [0], sp [1], TRUE);
+				addr = mini_emit_ldelema_1_ins (cfg, klass, sp [0], sp [1], TRUE, FALSE);
 				EMIT_NEW_LOAD_MEMBASE_TYPE (cfg, ins, m_class_get_byval_arg (klass), addr->dreg, 0);
 			}
 			*sp++ = ins;

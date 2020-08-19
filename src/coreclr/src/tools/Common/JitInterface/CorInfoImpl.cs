@@ -1247,6 +1247,7 @@ namespace Internal.JitInterface
         {
             var methodIL = (MethodIL)HandleToObject((IntPtr)module);
             var methodSig = (MethodSignature)methodIL.GetObject((int)sigTOK);
+
             Get_CORINFO_SIG_INFO(methodSig, sig);
 
             if (sig->callConv == CorInfoCallConv.CORINFO_CALLCONV_UNMANAGED)
@@ -1260,6 +1261,8 @@ namespace Internal.JitInterface
             {
                 sig->flags |= CorInfoSigInfoFlags.CORINFO_SIGFLAG_FAT_CALL;
             }
+#else
+            VerifyMethodSignatureIsStable(methodSig);
 #endif
         }
 
@@ -2916,6 +2919,14 @@ namespace Internal.JitInterface
                 default:
                     // Reloc points to something outside of the generated blocks
                     var targetObject = HandleToObject((IntPtr)target);
+
+#if READYTORUN
+                    if (targetObject is RequiresRuntimeJitIfUsedSymbol requiresRuntimeSymbol)
+                    {
+                        throw new RequiresRuntimeJitException(requiresRuntimeSymbol.Message);
+                    }
+#endif
+
                     relocTarget = (ISymbolNode)targetObject;
                     break;
             }

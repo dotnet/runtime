@@ -122,9 +122,9 @@ namespace System.Collections.Immutable
         public System.ReadOnlyMemory<T> AsMemory() { throw null; }
         public System.ReadOnlySpan<T> AsSpan() { throw null; }
 #endif
-        public System.Collections.Immutable.ImmutableArray<TOther> As<TOther>() where TOther : class? { throw null; }
-        public System.Collections.Immutable.ImmutableArray<TOther> CastArray<TOther>() where TOther : class? { throw null; }
-        public static System.Collections.Immutable.ImmutableArray<T> CastUp<TDerived>(System.Collections.Immutable.ImmutableArray<TDerived> items) where TDerived : class?, T { throw null; }
+        public System.Collections.Immutable.ImmutableArray<TOther?> As<TOther>() where TOther : class? { throw null; }
+        public System.Collections.Immutable.ImmutableArray<TOther?> CastArray<TOther>() where TOther : class? { throw null; }
+        public static System.Collections.Immutable.ImmutableArray<T?> CastUp<TDerived>(System.Collections.Immutable.ImmutableArray<TDerived> items) where TDerived : class?, T { throw null; }
         public System.Collections.Immutable.ImmutableArray<T> Clear() { throw null; }
         public bool Contains(T item) { throw null; }
         public void CopyTo(int sourceIndex, T[] destination, int destinationIndex, int length) { }
