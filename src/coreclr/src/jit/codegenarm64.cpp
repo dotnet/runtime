@@ -242,6 +242,13 @@ void CodeGen::genPrologSaveRegPair(regNumber reg1,
         assert(spOffset <= 504);
         GetEmitter()->emitIns_R_R_R_I(INS_stp, EA_PTRSIZE, reg1, reg2, REG_SPBASE, spOffset);
 
+#if defined(TARGET_UNIX)
+        if (compiler->generateCFIUnwindCodes())
+        {
+            useSaveNextPair = false;
+        }
+#endif // TARGET_UNIX
+
         if (useSaveNextPair)
         {
             // This works as long as we've only been saving pairs, in order, and we've saved the previous one just
@@ -369,6 +376,13 @@ void CodeGen::genEpilogRestoreRegPair(regNumber reg1,
     else
     {
         GetEmitter()->emitIns_R_R_R_I(INS_ldp, EA_PTRSIZE, reg1, reg2, REG_SPBASE, spOffset);
+
+#if defined(TARGET_UNIX)
+        if (compiler->generateCFIUnwindCodes())
+        {
+            useSaveNextPair = false;
+        }
+#endif // TARGET_UNIX
 
         if (useSaveNextPair)
         {
