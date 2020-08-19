@@ -41,10 +41,10 @@
       
       <_PropertiesToPass Condition="'$(TargetArchitecture)' == 'wasm' ">
         $(_PropertiesToPass);
-        IncludeDotNetCli=true;
-        DotNetCliRuntime=linux-x64;
-        DotNetCliPackageType=sdk;
-        DotNetCliVersion=5.0.100-preview.8.20362.3 
+        IncludeDotNetCli=$(IncludeDotNetCli);
+        DotNetCliRuntime=$(DotNetCliRuntime);
+        DotNetCliPackageType=$(DotNetCliPackageType);
+        DotNetCliVersion=$(DotNetCliVersion)
       </_PropertiesToPass>
     </PropertyGroup>
     <Message Importance="High" Text="_PropertiesToPass: $(_PropertiesToPass)"/>
@@ -91,8 +91,10 @@
 
     <IncludeDotNetCli>true</IncludeDotNetCli>
     <DotNetCliPackageType>sdk</DotNetCliPackageType>
-    <DotNetCliVersion>5.0.100-preview.8.20362.3 </DotNetCliVersion>
+    <GlobalJsonContent>$([System.IO.File]::ReadAllText('$(RepoRoot)global.json'))</GlobalJsonContent>
+    <DotNetCliVersion>$([System.Text.RegularExpressions.Regex]::Match($(GlobalJsonContent), '(%3F&lt;="dotnet": ").*(%3F=")'))</DotNetCliVersion>
     <DotNetCliRuntime>$(HelixRuntimeRid)</DotNetCliRuntime>
+    <!-- wasm needs to use the host OS DotnetCliRuntime, which on its queue is linux-x64 -->
     <DotNetCliRuntime Condition="'$(TargetArchitecture)' == 'wasm'" >linux-x64</DotNetCliRuntime>
   </PropertyGroup>
 
