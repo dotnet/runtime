@@ -3146,8 +3146,10 @@ HRESULT ProfToEEInterfaceImpl::GetAppDomainStaticAddress(ClassID classId,
         return CORPROF_E_DATAINCOMPLETE;
     }
 
-    if (typeHandle.GetModule()->GetLoaderAllocator() == NULL ||
-        typeHandle.GetModule()->GetLoaderAllocator()->GetExposedObject() == NULL)
+    // We might have caught a collectible assembly in the middle of being collected
+    Module *pModule = typeHandle.GetModule();
+    if (pModule->IsCollectible() &&
+        (pModule->GetLoaderAllocator() == NULL || pModule->GetLoaderAllocator()->GetExposedObject() == NULL))
     {
         return CORPROF_E_DATAINCOMPLETE;
     }
