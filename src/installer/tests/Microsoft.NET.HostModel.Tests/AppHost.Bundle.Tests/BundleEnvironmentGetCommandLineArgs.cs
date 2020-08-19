@@ -20,7 +20,6 @@ namespace AppHost.Bundle.Tests
         {
             var fixture = sharedTestState.TestFixture.Copy();
             var singleFile = BundleHelper.BundleApp(fixture);
-            var executablePath = BundleHelper.GetHostPath(fixture);
 
             Command.Create(singleFile)
                 .CaptureStdErr()
@@ -29,7 +28,7 @@ namespace AppHost.Bundle.Tests
                 .Should()
                 .Pass()
                 .And
-                .HaveStdOutContaining(executablePath);
+                .HaveStdOutContaining(singleFile);
         }
 
         public class SharedTestState : IDisposable
