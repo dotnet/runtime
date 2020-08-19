@@ -43,7 +43,7 @@
         $(_PropertiesToPass);
         IncludeDotNetCli=true;
         DotNetCliRuntime=linux-x64;
-        DotNetCliPackageType=sdk';
+        DotNetCliPackageType=sdk;
         DotNetCliVersion=$(BundledNETCoreAppPackageVersion)
       </_PropertiesToPass>
     </PropertyGroup>
