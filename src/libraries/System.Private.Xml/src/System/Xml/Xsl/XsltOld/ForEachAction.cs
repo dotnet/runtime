@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#nullable enable
 namespace System.Xml.Xsl.XsltOld
 {
     using System;
@@ -17,7 +18,7 @@ namespace System.Xml.Xsl.XsltOld
         private const int ContentsProcessed = 5;
 
         private int _selectKey = Compiler.InvalidQueryKey;
-        private ContainerAction _sortContainer;
+        private ContainerAction? _sortContainer;
 
         internal override void Compile(Compiler compiler)
         {
@@ -59,13 +60,13 @@ namespace System.Xml.Xsl.XsltOld
                     if (_sortContainer != null)
                     {
                         processor.InitSortArray();
-                        processor.PushActionFrame(_sortContainer, frame.NodeSet);
+                        processor.PushActionFrame(_sortContainer, frame.NodeSet!);
                         frame.State = ProcessedSort;
                         break;
                     }
                     goto case ProcessedSort;
                 case ProcessedSort:
-                    frame.InitNewNodeSet(processor.StartQuery(frame.NodeSet, _selectKey));
+                    frame.InitNewNodeSet(processor.StartQuery(frame.NodeSet!, _selectKey));
                     if (_sortContainer != null)
                     {
                         Debug.Assert(processor.SortArray.Count != 0);

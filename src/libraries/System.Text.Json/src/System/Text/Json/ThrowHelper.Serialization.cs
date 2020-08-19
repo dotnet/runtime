@@ -249,6 +249,13 @@ namespace System.Text.Json
 
         [DoesNotReturn]
         [MethodImpl(MethodImplOptions.NoInlining)]
+        public static void ThrowInvalidOperationException_ConverterCanConvertNullableRedundant(Type runtimePropertyType, JsonConverter jsonConverter)
+        {
+            throw new InvalidOperationException(SR.Format(SR.ConverterCanConvertNullableRedundant, jsonConverter.GetType(), jsonConverter.TypeToConvert, runtimePropertyType));
+        }
+
+        [DoesNotReturn]
+        [MethodImpl(MethodImplOptions.NoInlining)]
         public static void ThrowNotSupportedException_ObjectWithParameterizedCtorRefMetadataNotHonored(
             ReadOnlySpan<byte> propertyName,
             ref Utf8JsonReader reader,
@@ -595,6 +602,13 @@ namespace System.Text.Json
         public static void ThrowJsonException_MetadataCannotParsePreservedObjectIntoImmutable(Type propertyType)
         {
             ThrowJsonException(SR.Format(SR.MetadataCannotParsePreservedObjectToImmutable, propertyType));
+        }
+
+        [DoesNotReturn]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static void ThrowInvalidOperationException_MetadataReferenceOfTypeCannotBeAssignedToType(string referenceId, Type currentType, Type typeToConvert)
+        {
+            throw new InvalidOperationException(SR.Format(SR.MetadataReferenceOfTypeCannotBeAssignedToType, referenceId, currentType, typeToConvert));
         }
 
         [DoesNotReturn]

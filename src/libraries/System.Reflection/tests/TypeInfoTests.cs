@@ -479,6 +479,7 @@ namespace System.Reflection.Tests
         }
 
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/40868", TestRuntimes.Mono)]
         [InlineData(typeof(InheritedInteraface), new Type[] { typeof(TI_NonGenericInterface2) })]
         [InlineData(typeof(StructWithInheritedInterface), new Type[] { typeof(TI_NonGenericInterface2), typeof(InheritedInteraface) })]
         [InlineData(typeof(NonGenericClassWithNonGenericInterface), new Type[] { typeof(TI_NonGenericInterface1) })]
@@ -628,7 +629,7 @@ namespace System.Reflection.Tests
             // illegal type construction due to T->T?
             Assert.Throws<ArgumentException>(() => typeof(G<,>).MakeGenericType(typeof(int), typeof(int?)));
 
-            // Test trivial object casts 
+            // Test trivial object casts
             s_boxedInt32 = (object)1234;
             Assert.True((s_boxedInt32 is int?) && (int?)s_boxedInt32 == 1234);
 
@@ -644,7 +645,7 @@ namespace System.Reflection.Tests
         {
             //void OpenGenericArrays()
             //{
-            //    // this is valid, reflection checks below should agree 
+            //    // this is valid, reflection checks below should agree
             //    IFace[] arr2 = default(T[]);
             //    IEnumerable<IFace> ie = default(T[]);
             //}
@@ -654,7 +655,7 @@ namespace System.Reflection.Tests
         {
             //void OpenGenericArrays()
             //{
-            //    // this is valid, reflection checks below should agree 
+            //    // this is valid, reflection checks below should agree
             //    U[] arr2 = default(T[]);
             //    IEnumerable<U> ie = default(T[]);
             //}

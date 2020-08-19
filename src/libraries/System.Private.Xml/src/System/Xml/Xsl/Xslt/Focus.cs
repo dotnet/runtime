@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#nullable enable
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Xml.Xsl.XPath;
@@ -34,7 +35,7 @@ namespace System.Xml.Xsl.Xslt
     {
         private readonly XPathQilFactory _f;
         private SingletonFocusType _focusType;
-        private QilIterator _current;
+        private QilIterator? _current;
 
         public SingletonFocus(XPathQilFactory f)
         {
@@ -49,7 +50,7 @@ namespace System.Xml.Xsl.Xslt
             _focusType = focusType;
         }
 
-        public void SetFocus(QilIterator current)
+        public void SetFocus(QilIterator? current)
         {
             if (current != null)
             {
@@ -98,7 +99,7 @@ namespace System.Xml.Xsl.Xslt
     internal struct FunctionFocus : IFocus
     {
         private bool _isSet;
-        private QilParameter _current, _position, _last;
+        private QilParameter? _current, _position, _last;
 
         public void StartFocus(IList<QilNode> args, XslFlags flags)
         {
@@ -107,17 +108,17 @@ namespace System.Xml.Xsl.Xslt
             if ((flags & XslFlags.Current) != 0)
             {
                 _current = (QilParameter)args[argNum++];
-                Debug.Assert(_current.Name.NamespaceUri == XmlReservedNs.NsXslDebug && _current.Name.LocalName == "current");
+                Debug.Assert(_current.Name!.NamespaceUri == XmlReservedNs.NsXslDebug && _current.Name.LocalName == "current");
             }
             if ((flags & XslFlags.Position) != 0)
             {
                 _position = (QilParameter)args[argNum++];
-                Debug.Assert(_position.Name.NamespaceUri == XmlReservedNs.NsXslDebug && _position.Name.LocalName == "position");
+                Debug.Assert(_position.Name!.NamespaceUri == XmlReservedNs.NsXslDebug && _position.Name.LocalName == "position");
             }
             if ((flags & XslFlags.Last) != 0)
             {
                 _last = (QilParameter)args[argNum++];
-                Debug.Assert(_last.Name.NamespaceUri == XmlReservedNs.NsXslDebug && _last.Name.LocalName == "last");
+                Debug.Assert(_last.Name!.NamespaceUri == XmlReservedNs.NsXslDebug && _last.Name.LocalName == "last");
             }
             _isSet = true;
         }
@@ -154,7 +155,7 @@ namespace System.Xml.Xsl.Xslt
     internal struct LoopFocus : IFocus
     {
         private readonly XPathQilFactory _f;
-        private QilIterator _current, _cached, _last;
+        private QilIterator? _current, _cached, _last;
 
         public LoopFocus(XPathQilFactory f)
         {
@@ -173,14 +174,14 @@ namespace System.Xml.Xsl.Xslt
             get { return _current != null; }
         }
 
-        public QilNode GetCurrent()
+        public QilNode? GetCurrent()
         {
             return _current;
         }
 
         public QilNode GetPosition()
         {
-            return _f.XsltConvert(_f.PositionOf(_current), T.DoubleX);
+            return _f.XsltConvert(_f.PositionOf(_current!), T.DoubleX);
         }
 
         public QilNode GetLast()
@@ -197,19 +198,19 @@ namespace System.Xml.Xsl.Xslt
         {
             if (_cached == null)
             {
-                _cached = _f.Let(_current.Binding);
+                _cached = _f.Let(_current!.Binding!);
                 _current.Binding = _cached;
             }
         }
 
-        public void Sort(QilNode sortKeys)
+        public void Sort(QilNode? sortKeys)
         {
             if (sortKeys != null)
             {
                 // If sorting is required, cache the input node-set to support last() within sort key expressions
                 EnsureCache();
                 // The rest of the loop content must be compiled in the context of already sorted node-set
-                _current = _f.For(_f.Sort(_current, sortKeys));
+                _current = _f.For(_f.Sort(_current!, sortKeys));
             }
         }
 
@@ -220,9 +221,10 @@ namespace System.Xml.Xsl.Xslt
             {
                 // last() encountered either in the sort keys or in the body of the current loop
                 EnsureCache();
-                _last.Binding = _f.XsltConvert(_f.Length(_cached), T.DoubleX);
+                _last.Binding = _f.XsltConvert(_f.Length(_cached!), T.DoubleX);
             }
-            result = _f.BaseFactory.Loop(_current, body);
+
+            result = _f.BaseFactory.Loop(_current!, body);
             if (_last != null)
             {
                 result = _f.BaseFactory.Loop(_last, result);

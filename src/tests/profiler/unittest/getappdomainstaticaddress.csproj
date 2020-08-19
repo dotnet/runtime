@@ -6,10 +6,6 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <CLRTestPriority>0</CLRTestPriority>
     <Optimize>true</Optimize>
-    <!-- This test currently fails for TailcallStress. Disable for JIT stress modes until this is fixed.
-         Issue: https://github.com/dotnet/runtime/issues/37117
-    -->
-    <JitOptimizationSensitive>true</JitOptimizationSensitive>
     <!-- This test provides no interesting scenarios for GCStress -->
     <GCStressIncompatible>true</GCStressIncompatible>
   </PropertyGroup>

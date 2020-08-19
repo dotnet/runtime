@@ -52,8 +52,8 @@
     <MicrosoftDotNetApiCompatVersion>5.0.0-beta.20407.3</MicrosoftDotNetApiCompatVersion>
     <MicrosoftDotNetBuildTasksFeedVersion>5.0.0-beta.20407.3</MicrosoftDotNetBuildTasksFeedVersion>
     <MicrosoftDotNetCodeAnalysisVersion>5.0.0-beta.20407.3</MicrosoftDotNetCodeAnalysisVersion>
-    <MicrosoftDotNetGenAPIVersion>5.0.0-beta.20407.3</MicrosoftDotNetGenAPIVersion>
-    <MicrosoftDotNetGenFacadesVersion>5.0.0-beta.20407.3</MicrosoftDotNetGenFacadesVersion>
+    <MicrosoftDotNetGenAPIVersion>5.0.0-beta.20417.5</MicrosoftDotNetGenAPIVersion>
+    <MicrosoftDotNetGenFacadesVersion>5.0.0-beta.20417.5</MicrosoftDotNetGenFacadesVersion>
     <MicrosoftDotNetXUnitExtensionsVersion>5.0.0-beta.20407.3</MicrosoftDotNetXUnitExtensionsVersion>
     <MicrosoftDotNetXUnitConsoleRunnerVersion>2.5.1-beta.20407.3</MicrosoftDotNetXUnitConsoleRunnerVersion>
     <MicrosoftDotNetBuildTasksPackagingVersion>5.0.0-beta.20412.1</MicrosoftDotNetBuildTasksPackagingVersion>
@@ -111,11 +111,11 @@
     <NETStandardLibraryVersion>2.2.0-prerelease.19564.1</NETStandardLibraryVersion>
     <NetStandardLibrary20Version>2.0.3</NetStandardLibrary20Version>
     <!-- dotnet-optimization dependencies -->
-    <optimizationwindows_ntx64IBCCoreFxVersion>99.99.99-master-20200228.3</optimizationwindows_ntx64IBCCoreFxVersion>
-    <optimizationlinuxx64IBCCoreFxVersion>99.99.99-master-20200228.3</optimizationlinuxx64IBCCoreFxVersion>
-    <optimizationwindows_ntx64IBCCoreCLRVersion>99.99.99-master-20200228.3</optimizationwindows_ntx64IBCCoreCLRVersion>
-    <optimizationlinuxx64IBCCoreCLRVersion>99.99.99-master-20200228.3</optimizationlinuxx64IBCCoreCLRVersion>
-    <optimizationPGOCoreCLRVersion>99.99.99-master-20200228.3</optimizationPGOCoreCLRVersion>
+    <optimizationwindows_ntx64IBCCoreFxVersion>99.99.99-master-20200806.6</optimizationwindows_ntx64IBCCoreFxVersion>
+    <optimizationlinuxx64IBCCoreFxVersion>99.99.99-master-20200806.6</optimizationlinuxx64IBCCoreFxVersion>
+    <optimizationwindows_ntx64IBCCoreCLRVersion>99.99.99-master-20200806.6</optimizationwindows_ntx64IBCCoreCLRVersion>
+    <optimizationlinuxx64IBCCoreCLRVersion>99.99.99-master-20200806.6</optimizationlinuxx64IBCCoreCLRVersion>
+    <optimizationPGOCoreCLRVersion>99.99.99-master-20200806.6</optimizationPGOCoreCLRVersion>
     <!-- Not auto-updated. -->
     <MicrosoftDiaSymReaderNativeVersion>1.7.0</MicrosoftDiaSymReaderNativeVersion>
     <SystemCommandLineVersion>2.0.0-beta1.20253.1</SystemCommandLineVersion>
@@ -143,7 +143,7 @@
     <!-- Docs -->
     <MicrosoftPrivateIntellisenseVersion>3.0.0-preview-20200715.1</MicrosoftPrivateIntellisenseVersion>
     <!-- ILLink -->
-    <MicrosoftNETILLinkTasksVersion>5.0.0-preview.3.20412.1</MicrosoftNETILLinkTasksVersion>
+    <MicrosoftNETILLinkTasksVersion>5.0.0-preview.3.20413.1</MicrosoftNETILLinkTasksVersion>
     <!-- ICU -->
     <MicrosoftNETCoreRuntimeICUTransportVersion>5.0.0-preview.8.20410.1</MicrosoftNETCoreRuntimeICUTransportVersion>
     <!-- Mono LLVM -->

@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#nullable enable
 namespace System.Xml.Xsl.XsltOld
 {
     using System;
@@ -55,9 +56,9 @@ namespace System.Xml.Xsl.XsltOld
 
         // For perf reason we precalculating AVTs at compile time.
         // If we can do this we set original AVT to null
-        internal static string PrecalculateAvt(ref Avt avt)
+        internal static string? PrecalculateAvt(ref Avt? avt)
         {
-            string result = null;
+            string? result = null;
             if (avt != null && avt.IsConstant)
             {
                 result = avt.Evaluate(null, null);
@@ -90,7 +91,7 @@ namespace System.Xml.Xsl.XsltOld
             }
         }
 
-        public void CheckRequiredAttribute(Compiler compiler, object attrValue, string attrName)
+        public void CheckRequiredAttribute(Compiler compiler, object? attrValue, string attrName)
         {
             CheckRequiredAttribute(compiler, attrValue != null, attrName);
         }

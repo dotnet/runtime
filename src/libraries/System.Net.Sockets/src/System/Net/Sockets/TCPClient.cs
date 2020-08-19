@@ -259,13 +259,8 @@ namespace System.Net.Sockets
             _active = true;
         }
 
-        public Task ConnectAsync(IPAddress address, int port)
-        {
-
-            Task result = CompleteConnectAsync(Client.ConnectAsync(address, port));
-
-            return result;
-        }
+        public Task ConnectAsync(IPAddress address, int port) =>
+            CompleteConnectAsync(Client.ConnectAsync(address, port));
 
         public Task ConnectAsync(string host, int port) =>
             CompleteConnectAsync(Client.ConnectAsync(host, port));
@@ -274,6 +269,21 @@ namespace System.Net.Sockets
             CompleteConnectAsync(Client.ConnectAsync(addresses, port));
 
         private async Task CompleteConnectAsync(Task task)
+        {
+            await task.ConfigureAwait(false);
+            _active = true;
+        }
+
+        public ValueTask ConnectAsync(IPAddress address, int port, CancellationToken cancellationToken) =>
+            CompleteConnectAsync(Client.ConnectAsync(address, port, cancellationToken));
+
+        public ValueTask ConnectAsync(string host, int port, CancellationToken cancellationToken) =>
+            CompleteConnectAsync(Client.ConnectAsync(host, port, cancellationToken));
+
+        public ValueTask ConnectAsync(IPAddress[] addresses, int port, CancellationToken cancellationToken) =>
+            CompleteConnectAsync(Client.ConnectAsync(addresses, port, cancellationToken));
+
+        private async ValueTask CompleteConnectAsync(ValueTask task)
         {
             await task.ConfigureAwait(false);
             _active = true;

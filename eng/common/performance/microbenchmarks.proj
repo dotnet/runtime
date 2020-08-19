@@ -69,7 +69,7 @@
   </PropertyGroup>
   
   <PropertyGroup>
-    <WorkItemTimeout>2:30</WorkItemTimeout>
+    <WorkItemTimeout>15:30</WorkItemTimeout>
     <WorkItemTimeout Condition="'$(HelixSourcePrefix)' != 'official'">0:15</WorkItemTimeout>
   </PropertyGroup>
 

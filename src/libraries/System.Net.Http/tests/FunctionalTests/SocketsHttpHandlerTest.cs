@@ -152,7 +152,7 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         public async Task CustomConnectionFactory_SyncRequest_Fails()
         {
-            await using ConnectionFactory connectionFactory = new SocketsHttpConnectionFactory();
+            await using ConnectionFactory connectionFactory = new SocketsConnectionFactory(SocketType.Stream, ProtocolType.Tcp);
             using SocketsHttpHandler handler = new SocketsHttpHandler
             {
                 ConnectionFactory = connectionFactory
@@ -161,7 +161,46 @@ namespace System.Net.Http.Functional.Tests
             using HttpClient client = CreateHttpClient(handler);
 
             HttpRequestException e = await Assert.ThrowsAnyAsync<HttpRequestException>(() => client.GetStringAsync($"http://{Guid.NewGuid():N}.com/foo"));
-            NetworkException networkException = Assert.IsType<NetworkException>(e.InnerException);
+            Assert.IsType<NetworkException>(e.InnerException);
+        }
+
+        class CustomConnectionFactory : SocketsConnectionFactory
+        {
+            public CustomConnectionFactory() : base(SocketType.Stream, ProtocolType.Tcp) { }
+
+            public HttpRequestMessage LastHttpRequestMessage { get; private set; }
+
+            public override ValueTask<Connection> ConnectAsync(EndPoint endPoint, IConnectionProperties options = null, CancellationToken cancellationToken = default)
+            {
+                if (options.TryGet(out HttpRequestMessage message))
+                {
+                    LastHttpRequestMessage = message;
+                }
+
+                return base.ConnectAsync(endPoint, options, cancellationToken);
+            }
+        }
+
+        [Fact]
+        public Task CustomConnectionFactory_ConnectAsync_CanCaptureHttpRequestMessage()
+        {
+            return LoopbackServer.CreateClientAndServerAsync(async uri =>
+            {
+                using var connectionFactory = new CustomConnectionFactory();
+                using var handler = new SocketsHttpHandler()
+                {
+                    ConnectionFactory = connectionFactory
+                };
+                using HttpClient client = CreateHttpClient(handler);
+
+                using var request = new HttpRequestMessage(HttpMethod.Get, uri);
+
+                using HttpResponseMessage response = await client.SendAsync(request);
+                string content = await response.Content.ReadAsStringAsync();
+
+                Assert.Equal("OK", content);
+                Assert.Same(request, connectionFactory.LastHttpRequestMessage);
+            }, server => server.HandleRequestAsync(content: "OK"));
         }
     }
 
@@ -2264,23 +2303,24 @@ namespace System.Net.Http.Functional.Tests
 
         private async Task<(int Count, int LastStreamId)> HandleAllPendingRequests(Http2LoopbackConnection connection, int totalRequestCount)
         {
-            int streamId = -1;
+            int lastStreamId = -1;
             for (int i = 0; i < totalRequestCount; i++)
             {
                 try
                 {
                     // Exact number of requests sent over the given connection is unknown,
                     // so we keep reading headers and sending response while there are available requests.
-                    streamId = await connection.ReadRequestHeaderAsync().ConfigureAwait(false);
+                    (int streamId, _) = await connection.ReadAndParseRequestHeaderAsync().ConfigureAwait(false);
                     await connection.SendDefaultResponseAsync(streamId).ConfigureAwait(false);
+                    lastStreamId = streamId;
                 }
                 catch (OperationCanceledException)
                 {
-                    return (i, streamId);
+                    return (i, lastStreamId);
                 }
             }
 
-            return (totalRequestCount, streamId);
+            return (totalRequestCount, lastStreamId);
         }
 
         private async Task<List<int>> AcceptRequests(Http2LoopbackConnection connection, int maxRequests = int.MaxValue)
@@ -2290,7 +2330,8 @@ namespace System.Net.Http.Functional.Tests
             {
                 try
                 {
-                    streamIds.Add(await connection.ReadRequestHeaderAsync().ConfigureAwait(false));
+                    (int streamId, _) = await connection.ReadAndParseRequestHeaderAsync().ConfigureAwait(false);
+                    streamIds.Add(streamId);
                 }
                 catch (OperationCanceledException)
                 {
