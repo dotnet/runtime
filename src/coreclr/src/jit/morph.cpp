@@ -6774,6 +6774,12 @@ bool Compiler::fgCanFastTailCall(GenTreeCall* callee, const char** failReason)
         return false;
     }
 
+    if (callee->IsStressTailCall())
+    {
+        reportFastTailCallDecision("Fast tail calls are not performed under tail call stress");
+        return false;
+    }
+
     // Note on vararg methods:
     // If the caller is vararg method, we don't know the number of arguments passed by caller's caller.
     // But we can be sure that in-coming arg area of vararg caller would be sufficient to hold its
@@ -7226,6 +7232,14 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
     // is set. This avoids the need for iterating through all lcl vars of the current
     // method.  Right now throughout the code base we are not consistently using 'set'
     // method to set lvHasLdAddrOp and lvAddrExposed flags.
+
+    bool isImplicitOrStressTailCall = call->IsImplicitTailCall() || call->IsStressTailCall();
+    if (isImplicitOrStressTailCall && compLocallocUsed)
+    {
+        failTailCall("Localloc used");
+        return nullptr;
+    }
+
     bool hasStructParam = false;
     for (unsigned varNum = 0; varNum < lvaCount; varNum++)
     {
@@ -7235,7 +7249,7 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
         // We still must check for any struct parameters and set 'hasStructParam'
         // so that we won't transform the recursive tail call into a loop.
         //
-        if (call->IsImplicitTailCall() || call->IsStressTailCall())
+        if (isImplicitOrStressTailCall)
         {
             if (varDsc->lvHasLdAddrOp && !lvaIsImplicitByRefLocal(varNum))
             {
