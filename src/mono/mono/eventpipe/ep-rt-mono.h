@@ -75,6 +75,7 @@
 #define EP_RT_DEFINE_ARRAY(array_name, array_type, item_type) \
 	static inline void ep_rt_ ## array_name ## _alloc (array_type *ep_array) { ep_array->array = g_array_new (FALSE, FALSE, sizeof (item_type)); } \
 	static inline void ep_rt_ ## array_name ## _free (array_type *ep_array) { g_array_free (ep_array->array, TRUE); } \
+	static inline void ep_rt_ ## array_name ## _clear (array_type *ep_array) { g_array_set_size (ep_array->array, 0); } \
 	static inline void ep_rt_ ## array_name ## _append (array_type *ep_array, item_type item) { g_array_append_val (ep_array->array, item); } \
 	static inline size_t ep_rt_ ## array_name ## _size (const array_type *ep_array) { return ep_array->array->len; }
 
@@ -373,6 +374,9 @@ ep_rt_atomic_dec_int64_t (volatile int64_t *value)
 /*
  * EventPipe.
  */
+
+EP_RT_DEFINE_ARRAY (session_id_array, ep_rt_session_id_array_t, EventPipeSessionID)
+EP_RT_DEFINE_ARRAY_ITERATOR (session_id_array, ep_rt_session_id_array_t, ep_rt_session_id_array_iterator_t, EventPipeSessionID)
 
 static
 inline

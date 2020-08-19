@@ -37,6 +37,10 @@
 
 static bool _ep_enable_sample_profiler_at_startup = false;
 
+static bool _ep_can_start_threads = false;
+
+static ep_rt_session_id_array_t _ep_deferred_session_ids = { 0 };
+
 /*
  * Forward declares of all static functions.
  */
@@ -467,9 +471,12 @@ enable (
 
 	session = NULL;
 
-	// Enable the sample profiler (if supported).
-	if (enable_sample_profiler)
+	// Enable the sample profiler or defer until we can create threads (if supported).
+	if (enable_sample_profiler && _ep_can_start_threads) {
 		ep_rt_sample_profiler_enable ();
+	} else if (enable_sample_profiler && !_ep_can_start_threads) {
+		_ep_enable_sample_profiler_at_startup = true;
+	}
 
 ep_on_exit:
 	ep_requires_lock_held ();
@@ -521,7 +528,7 @@ disable_holding_lock (
 		ep_session_disable (session); // WriteAllBuffersToFile, and remove providers.
 
 		// Do rundown before fully stopping the session unless rundown wasn't requested
-		if (ep_session_get_rundown_requested (session)) {
+		if (ep_session_get_rundown_requested (session) && _ep_can_start_threads) {
 			ep_session_enable_rundown (session); // Set Rundown provider.
 			EventPipeThread *const thread = ep_thread_get ();
 			if (thread != NULL) {
@@ -994,7 +1001,8 @@ ep_disable (EventPipeSessionID id)
 {
 	ep_requires_lock_not_held ();
 
-	ep_rt_thread_setup ();
+	if (_ep_can_start_threads)
+		ep_rt_thread_setup ();
 
 	if (id == 0)
 		return;
@@ -1051,7 +1059,10 @@ ep_start_streaming (EventPipeSessionID session_id)
 
 	EP_LOCK_ENTER (section1)
 		ep_raise_error_if_nok_holding_lock (is_session_id_in_collection (session_id) == true, section1);
-		ep_session_start_streaming ((EventPipeSession *)session_id);
+		if (_ep_can_start_threads)
+			ep_session_start_streaming ((EventPipeSession *)session_id);
+		else
+			ep_rt_session_id_array_append (&_ep_deferred_session_ids, session_id);
 	EP_LOCK_EXIT (section1)
 
 ep_on_exit:
@@ -1182,6 +1193,8 @@ ep_init (void)
 	const uint32_t default_profiler_sample_rate_in_nanoseconds = 1000000; // 1 msec.
 	ep_rt_sample_set_sampling_rate (default_profiler_sample_rate_in_nanoseconds);
 
+	ep_rt_session_id_array_alloc (&_ep_deferred_session_ids);
+
 	EP_LOCK_ENTER (section1)
 		ep_volatile_store_eventpipe_state_without_barrier (EP_STATE_INITIALIZED);
 	EP_LOCK_EXIT (section1)
@@ -1199,8 +1212,32 @@ ep_on_error:
 void
 ep_finish_init (void)
 {
-	if (_ep_enable_sample_profiler_at_startup)
-		ep_rt_sample_profiler_enable ();
+	ep_requires_lock_not_held ();
+
+	EP_LOCK_ENTER (section1)
+		_ep_can_start_threads = true;
+		if (ep_volatile_load_eventpipe_state_without_barrier () == EP_STATE_INITIALIZED) {
+			ep_rt_session_id_array_iterator_t deferred_session_ids_iterator;
+			ep_rt_session_id_array_iterator_begin (&_ep_deferred_session_ids, &deferred_session_ids_iterator);
+			while (!ep_rt_session_id_array_iterator_end (&_ep_deferred_session_ids, &deferred_session_ids_iterator)) {
+				EventPipeSessionID session_id = ep_rt_session_id_array_iterator_value (&deferred_session_ids_iterator);
+				if (is_session_id_in_collection (session_id))
+					ep_session_start_streaming ((EventPipeSession *)session_id);
+				ep_rt_session_id_array_iterator_next (&_ep_deferred_session_ids, &deferred_session_ids_iterator);
+			}
+			ep_rt_session_id_array_clear (&_ep_deferred_session_ids);
+		}
+
+		if (_ep_enable_sample_profiler_at_startup)
+			ep_rt_sample_profiler_enable ();
+	EP_LOCK_EXIT (section1)
+
+ep_on_exit:
+	ep_requires_lock_not_held ();
+	return;
+
+ep_on_error:
+	ep_exit_error_handler ();
 }
 
 void
@@ -1221,6 +1258,8 @@ ep_shutdown (void)
 		if (session)
 			ep_disable ((EventPipeSessionID)session);
 	}
+
+	ep_rt_session_id_array_free (&_ep_deferred_session_ids);
 
 	// dotnet/coreclr: issue 24850: EventPipe shutdown race conditions
 	// Deallocating providers/events here might cause AV if a WriteEvent
