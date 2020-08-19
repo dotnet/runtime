@@ -39,22 +39,6 @@ add_library_clr(gcinfo_crossgen
 
 set_target_properties(gcinfo_crossgen PROPERTIES CROSSGEN_COMPONENT TRUE)
 
-
-if (CLR_CMAKE_HOST_ARCH_I386)
-    # On x86, build RyuJIT/ARM32 cross-compiling altjit.
-    add_subdirectory(gcinfo_arm)
-endif ()
-
-if (CLR_CMAKE_HOST_ARCH_I386 AND CLR_CMAKE_TARGET_WIN32)
-    # On x86, build Linux x86 cross-compiling altjit.
-    add_subdirectory(gcinfo_linuxx86)
-endif ()
-
-if (CLR_CMAKE_HOST_ARCH_AMD64)
-    # On amd64, build RyuJIT/ARM64 cross-compiling altjit.
-    add_subdirectory(gcinfo_arm64)
-endif ()
-
 _install (FILES gcinfoencoder.cpp
                DESTINATION gcinfo)
 
@@ -144,10 +128,14 @@ function(set_gcinfo_targetdetails)
   )
 endfunction()
 
-add_subdirectory(gcinfo_win_arm)
-add_subdirectory(gcinfo_win_arm64)
-add_subdirectory(gcinfo_win_x64)
-add_subdirectory(gcinfo_win_x86)
+if (CLR_CMAKE_BUILD_SUBSET_ALLJITS AND NOT CLR_CROSS_COMPONENTS_BUILD)
+  if (CLR_CMAKE_TARGET_ARCH_ARM64 OR CLR_CMAKE_TARGET_ARCH_AMD64)
+    add_subdirectory(gcinfo_win_arm64)
+    add_subdirectory(gcinfo_win_x64)
+    add_subdirectory(gcinfo_unix_arm64)
+    add_subdirectory(gcinfo_unix_x64)
+  endif (CLR_CMAKE_TARGET_ARCH_ARM64 OR CLR_CMAKE_TARGET_ARCH_AMD64)
 add_subdirectory(gcinfo_unix_arm)
-add_subdirectory(gcinfo_unix_arm64)
-add_subdirectory(gcinfo_unix_x64)
+add_subdirectory(gcinfo_win_arm)
+add_subdirectory(gcinfo_win_x86) 
+endif (CLR_CMAKE_BUILD_SUBSET_ALLJITS AND NOT CLR_CROSS_COMPONENTS_BUILD)

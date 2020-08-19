@@ -522,29 +522,16 @@ add_subdirectory(static)
 
 add_subdirectory(standalone)
 
-if (CLR_CMAKE_HOST_ARCH_I386 OR CLR_CMAKE_HOST_ARCH_AMD64)
-    # On x86, build RyuJIT/ARM32 cross-compiling altjit.
-    # On amd64, build RyuJIT/ARM64 cross-compiling altjit.
-    add_subdirectory(protononjit)
-endif ()
-
-if (CLR_CMAKE_HOST_ARCH_I386)
-     # On x86, build RyuJIT/ARM32 cross-compiling altjit for ARM_SOFTFP (armel).
-    add_subdirectory(armelnonjit)
-endif ()
-
-if ((CLR_CMAKE_HOST_ARCH_I386 OR CLR_CMAKE_HOST_ARCH_AMD64) AND CLR_CMAKE_TARGET_WIN32)
-    # On Windows, build altjit that targets the Linux ABI:
-    #   On x86, build Linux/x86 altjit. This enables UNIX_X86_ABI.
-    #   On amd64, build Linux/AMD64 altjit. This enables UNIX_AMD64_ABI.
-    add_subdirectory(linuxnonjit)
-endif ()
+if (CLR_CMAKE_BUILD_SUBSET_ALLJITS AND NOT CLR_CROSS_COMPONENTS_BUILD)
+  if (CLR_CMAKE_TARGET_ARCH_ARM64 OR CLR_CMAKE_TARGET_ARCH_AMD64)
+    add_subdirectory(altjit_unix_arm64)
+    add_subdirectory(altjit_win_arm64)
+    add_subdirectory(altjit_unix_x64)
+    add_subdirectory(altjit_win_x64)
+  endif (CLR_CMAKE_TARGET_ARCH_ARM64 OR CLR_CMAKE_TARGET_ARCH_AMD64)
 
 
-add_subdirectory(altjit_unix_arm)
-add_subdirectory(altjit_unix_arm64)
-add_subdirectory(altjit_unix_x64)
-add_subdirectory(altjit_win_arm)
-add_subdirectory(altjit_win_arm64)
-add_subdirectory(altjit_win_x86)
-add_subdirectory(altjit_win_x64)
+  add_subdirectory(altjit_unix_arm)
+  add_subdirectory(altjit_win_arm)
+  add_subdirectory(altjit_win_x86)
+endif (CLR_CMAKE_BUILD_SUBSET_ALLJITS AND NOT CLR_CROSS_COMPONENTS_BUILD)
