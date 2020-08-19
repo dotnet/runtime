@@ -18,7 +18,7 @@ parameters:
   liveLibrariesBuildConfig: ''    # optional -- live-live libraries configuration to use for the run
   runtimeType: 'coreclr'          # optional -- Sets the runtime as coreclr or mono
   codeGenType: 'JIT'              # optional -- Decides on the codegen technology if running on mono
-  projectFile: ''                 # required -- project file to build helix workitems
+  projectFile: 'microbenchmarks.proj'   # optional -- project file to build helix workitems
   runKind: ''                     # required -- test category
 
 jobs:
@@ -42,6 +42,7 @@ jobs:
     timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
 
     variables:
+
     - ${{ each variable in parameters.variables }}:
       - ${{ if ne(variable.name, '') }}:
         - name: ${{ variable.name }}
@@ -58,9 +59,8 @@ jobs:
     - HelixPreCommand: ''
     - Interpreter: ''
 
-    # private job settings
     - ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest')) }}:
-      - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
+      - ${{ if eq( parameters.osGroup, 'Windows_NT') }}:
         - HelixPreCommand: $(HelixPreCommandStemWindows);$(ExtraMSBuildLogsWindows)
         - IsInternal: -Internal
       - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
@@ -69,28 +69,29 @@ jobs:
       - group: DotNet-HelixApi-Access
       - group: dotnet-benchview
 
-    # public (PR) job settings
-    - ${{ if or(eq(variables['System.TeamProject'], 'public'), in(variables['Build.Reason'], 'PullRequest')) }}:
+    - ${{ if not(and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest'))) }}:
       - ${{ if eq( parameters.osGroup, 'Windows_NT') }}:
         - HelixPreCommand: $(ExtraMSBuildLogsWindows)
       - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
-        - HelixPreCommand: $(ExtraMSBuildLogsLinux);npm install --prefix $HELIX_WORKITEM_PAYLOAD jsvu -g;$HELIX_WORKITEM_PAYLOAD/bin/jsvu --os=linux64 --engines=v8
+          - HelixPreCommand: $(ExtraMSBuildLogsLinux);npm install --prefix $HELIX_WORKITEM_PAYLOAD jsvu -g;$HELIX_WORKITEM_PAYLOAD/bin/jsvu --os=linux64 --engines=v8
     
 
     - ${{ if and(eq(parameters.codeGenType, 'Interpreter'), eq(parameters.runtimeType, 'mono')) }}:
       - ${{ if eq( parameters.osGroup, 'Windows_NT') }}:
-        - Interpreter: ' -MonoInterpreter'
         - ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest')) }}:
-          - HelixPreCommand: '$(HelixPreCommandStemWindows);set MONO_ENV_OPTIONS="--interpreter";$(ExtraMSBuildLogsWindows)' # to ask: $(ExtraMSBuildLogsWindows) duplicate from above ?
-        - ${{ if or(eq(variables['System.TeamProject'], 'public'), in(variables['Build.Reason'], 'PullRequest')) }}:
+          - HelixPreCommand: '$(HelixPreCommandStemWindows);set MONO_ENV_OPTIONS="--interpreter";$(ExtraMSBuildLogsWindows)'
+          - Interpreter: ' -MonoInterpreter'
+        - ${{ if not(and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest'))) }}:
           - HelixPreCommand: 'set MONO_ENV_OPTIONS="--interpreter";$(ExtraMSBuildLogsWindows)'
+          - Interpreter: ' -MonoInterpreter'
       - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
-        - Interpreter: ' --monointerpreter'
         - ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest')) }}:
-          - HelixPreCommand: '$(HelixPreCommandStemLinux);export MONO_ENV_OPTIONS="--interpreter";$(ExtraMSBuildLogsLinux)' # to ask: $(ExtraMSBuildLogsWindows) duplicate from above ?
-        - ${{ if or(eq(variables['System.TeamProject'], 'public'), in(variables['Build.Reason'], 'PullRequest')) }}:
+          - HelixPreCommand: '$(HelixPreCommandStemLinux);export MONO_ENV_OPTIONS="--interpreter";$(ExtraMSBuildLogsLinux)'
+          - Interpreter: ' --monointerpreter'
+        - ${{ if not(and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest'))) }}:
           - HelixPreCommand: 'export MONO_ENV_OPTIONS="--interpreter";$(ExtraMSBuildLogsLinux)'
-          
+          - Interpreter: ' --monointerpreter'
+
 
     workspace:
       clean: all
