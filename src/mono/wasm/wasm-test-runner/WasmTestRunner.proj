@@ -23,7 +23,6 @@
       <AssemblySearchPaths Include="$(CORE_ROOT)/TargetingPack" />
     </ItemGroup>
   
-    <Message Importance="High" Text="TestAssemblies: @(TestAssemblies)"/> 
     <Message Importance="High" Text="AppDir: $(AppDir)" />
     <Message Importance="High" Text="TestBinDir: $(TestBinDir)" />
     <Message Importance="High" Text="ArtifactsBinDir: $(ArtifactsBinDir)" />
