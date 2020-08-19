@@ -454,7 +454,7 @@ int32_t GlobalizationNative_CompareString(
         }
         if (lpStr2 == NULL)
         {
-            lpStr2 = &dummyChar; 
+            lpStr2 = &dummyChar;
         }
 
         result = ucol_strcoll(pColl, lpStr1, cwStr1Length, lpStr2, cwStr2Length);
@@ -497,7 +497,7 @@ int32_t GlobalizationNative_IndexOf(
 
         return (result == UCOL_EQUAL) ? 0 : -1;
     }
-    
+
     UErrorCode err = U_ZERO_ERROR;
     const UCollator* pColl = GetCollatorFromSortHandle(pSortHandle, options, &err);
 
@@ -603,61 +603,6 @@ static int AreEqualOrdinalIgnoreCase(UChar32 one, UChar32 two)
     }
 
     return u_toupper(one) == u_toupper(two);
-}
-
-/*
-Function:
-IndexOfOrdinalIgnoreCase
-*/
-int32_t GlobalizationNative_IndexOfOrdinalIgnoreCase(
-    const UChar* lpTarget, int32_t cwTargetLength, const UChar* lpSource, int32_t cwSourceLength, int32_t findLast)
-{
-    int32_t result = -1;
-
-    int32_t endIndex = cwSourceLength - cwTargetLength;
-    assert(endIndex >= 0);
-
-    int32_t i = 0;
-    while (i <= endIndex)
-    {
-        int32_t srcIdx = i, trgIdx = 0;
-        const UChar *src = lpSource, *trg = lpTarget;
-
-        int32_t match = TRUE;
-        while (trgIdx < cwTargetLength)
-        {
-            UChar32 srcCodepoint, trgCodepoint;
-
-#ifdef __clang__
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wsign-conversion"
-#endif
-            U16_NEXT(src, srcIdx, cwSourceLength, srcCodepoint);
-            U16_NEXT(trg, trgIdx, cwTargetLength, trgCodepoint);
-#ifdef __clang__
-#pragma clang diagnostic pop
-#endif
-
-            if (!AreEqualOrdinalIgnoreCase(srcCodepoint, trgCodepoint))
-            {
-                match = FALSE;
-                break;
-            }
-        }
-
-        if (match)
-        {
-            result = i;
-            if (!findLast)
-            {
-                break;
-            }
-        }
-
-        U16_FWD_1(lpSource, i, cwSourceLength);
-    }
-
-    return result;
 }
 
 /*
@@ -933,48 +878,4 @@ int32_t GlobalizationNative_GetSortKey(
     }
 
     return result;
-}
-
-int32_t GlobalizationNative_CompareStringOrdinalIgnoreCase(
-    const UChar* lpStr1, int32_t cwStr1Length, const UChar* lpStr2, int32_t cwStr2Length)
-{
-    assert(lpStr1 != NULL);
-    assert(cwStr1Length >= 0);
-    assert(lpStr2 != NULL);
-    assert(cwStr2Length >= 0);
-
-    int32_t str1Idx = 0;
-    int32_t str2Idx = 0;
-
-    while (str1Idx < cwStr1Length && str2Idx < cwStr2Length)
-    {
-        UChar32 str1Codepoint, str2Codepoint;
-
-#ifdef __clang__
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wsign-conversion"
-#endif
-        U16_NEXT(lpStr1, str1Idx, cwStr1Length, str1Codepoint);
-        U16_NEXT(lpStr2, str2Idx, cwStr2Length, str2Codepoint);
-#ifdef __clang__
-#pragma clang diagnostic pop
-#endif
-
-        if (str1Codepoint != str2Codepoint && u_toupper(str1Codepoint) != u_toupper(str2Codepoint))
-        {
-            return str1Codepoint < str2Codepoint ? -1 : 1;
-        }
-    }
-
-    if (cwStr1Length < cwStr2Length)
-    {
-        return -1;
-    }
-
-    if (cwStr2Length < cwStr1Length)
-    {
-        return 1;
-    }
-
-    return 0;
 }

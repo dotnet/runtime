@@ -154,7 +154,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                 VisitCallSiteMain(callSite, context));
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2006:UnrecognizedReflectionPattern",
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2060:UnrecognizedReflectionPattern",
             Justification = "Calling Array.Empty<T>() is safe since the T doesn't have linker annotations.")]
         internal static MethodInfo GetArrayEmptyMethodInfo(Type itemType) =>
             ArrayEmptyMethodInfo.MakeGenericMethod(itemType);

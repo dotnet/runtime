@@ -478,7 +478,7 @@ inline void  PEImage::Init(LPCWSTR pPath, BundleFileLocation bundleFileLocation)
 
 
 /*static*/
-inline PTR_PEImage PEImage::FindByPath(LPCWSTR pPath)
+inline PTR_PEImage PEImage::FindByPath(LPCWSTR pPath, BOOL isInBundle /* = TRUE */)
 {
     CONTRACTL
     {
@@ -492,13 +492,13 @@ inline PTR_PEImage PEImage::FindByPath(LPCWSTR pPath)
 
     int CaseHashHelper(const WCHAR *buffer, COUNT_T count);
 
-    PEImageLocator locator(pPath);
+    PEImageLocator locator(pPath, isInBundle);
 #ifdef FEATURE_CASE_SENSITIVE_FILESYSTEM
     DWORD dwHash=path.Hash();
 #else
     DWORD dwHash = CaseHashHelper(pPath, (COUNT_T) wcslen(pPath));
 #endif
-   return (PEImage *) s_Images->LookupValue(dwHash, &locator);
+    return (PEImage *) s_Images->LookupValue(dwHash, &locator);
 
 }
 
@@ -516,7 +516,7 @@ inline PTR_PEImage PEImage::OpenImage(LPCWSTR pPath, MDInternalImportFlags flags
 
     CrstHolder holder(&s_hashLock);
 
-    PEImage* found = FindByPath(pPath);
+    PEImage* found = FindByPath(pPath, bundleFileLocation.IsValid());
 
 
     if (found == (PEImage*) INVALIDENTRY)
@@ -603,7 +603,6 @@ inline ULONG PEImage::GetIDHash()
         THROWS;
     }
     CONTRACT_END;
-
 
 #ifdef FEATURE_CASE_SENSITIVE_FILESYSTEM
     RETURN m_path.Hash();
