@@ -21,6 +21,8 @@ namespace AppHost.Bundle.Tests
             var fixture = sharedTestState.TestFixture.Copy();
             var singleFile = BundleHelper.BundleApp(fixture);
 
+            // For single-file, Environment.GetCommandLineArgs[0]
+            // should return the file path of the host.
             Command.Create(singleFile)
                 .CaptureStdErr()
                 .CaptureStdOut()
@@ -29,6 +31,20 @@ namespace AppHost.Bundle.Tests
                 .Pass()
                 .And
                 .HaveStdOutContaining(singleFile);
+
+            // For non single-file apps, Environment.GetCommandLineArgs[0]
+            // should return the file path of the managed entrypoint.
+            var dotnet = fixture.BuiltDotnet;
+            var appPath = BundleHelper.GetAppPath(fixture);
+
+            dotnet.Exec(appPath)
+                .CaptureStdErr()
+                .CaptureStdOut()
+                .Execute()
+                .Should()
+                .Pass()
+                .And
+                .HaveStdOutContaining(appPath);
         }
 
         public class SharedTestState : IDisposable
