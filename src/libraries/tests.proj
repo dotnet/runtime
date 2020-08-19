@@ -25,6 +25,7 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.FileProviders.Composite\tests\Microsoft.Extensions.FileProviders.Composite.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.HostFactoryResolver\tests\Microsoft.Extensions.HostFactoryResolver.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.Hosting\tests\UnitTests\Microsoft.Extensions.Hosting.Unit.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.Logging.Console\tests\Microsoft.Extensions.Logging.Console.Tests\Microsoft.Extensions.Logging.Console.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.VisualBasic.Core\tests\Microsoft.VisualBasic.Core.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Collections.Immutable\tests\System.Collections.Immutable.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Collections.Specialized\tests\System.Collections.Specialized.Tests.csproj" />
