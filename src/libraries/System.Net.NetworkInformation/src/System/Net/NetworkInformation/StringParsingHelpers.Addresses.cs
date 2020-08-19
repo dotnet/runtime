@@ -79,12 +79,11 @@ namespace System.Net.NetworkInformation
             }
         }
 
-        internal static List<IPAddress> ParseDhcpServerAddressesFromLeasesFile(string filePath, string name)
+        internal static void ParseDhcpServerAddressesFromLeasesFile(List<IPAddress> collection, string filePath, string name)
         {
             // Parse the /var/lib/dhcp/dhclient.leases file, if it exists.
             // If any errors occur, like the file not existing or being
             // improperly formatted, just bail and return an empty collection.
-            List<IPAddress> collection = new List<IPAddress>();
             try
             {
                 if (File.Exists(filePath)) // avoid an exception in most cases if path doesn't already exist
@@ -123,8 +122,6 @@ namespace System.Net.NetworkInformation
             {
                 // If any parsing or file reading exception occurs, just ignore it and return the collection.
             }
-
-            return collection;
         }
 
         internal static List<IPAddress> ParseWinsServerAddressesFromSmbConfFile(string smbConfFilePath)
