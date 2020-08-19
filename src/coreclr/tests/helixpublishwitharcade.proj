@@ -34,7 +34,7 @@
         TimeoutPerTestCollectionInMinutes=$(_TimeoutPerTestCollectionInMinutes);
         TimeoutPerTestInMinutes=$(_TimeoutPerTestInMinutes);
         RuntimeVariant=$(_RuntimeVariant);
-          =$(BundledNETCoreAppPackageVersion);
+        BundledNETCoreAppPackageVersion=$(BundledNETCoreAppPackageVersion);
         HelixRuntimeRid=$(HelixRuntimeRid)
       </_PropertiesToPass>
 
@@ -44,7 +44,7 @@
         IncludeDotNetCli=true;
         DotNetCliRuntime=linux-x64;
         DotNetCliPackageType=sdk;
-        DotNetCliVersion=5.0.100-preview.8.20362.3
+        DotNetCliVersion=5.0.100-preview.8.20362.3 
       </_PropertiesToPass>
     </PropertyGroup>
     <Message Importance="High" Text="_PropertiesToPass: $(_PropertiesToPass)"/>
@@ -91,7 +91,7 @@
 
     <IncludeDotNetCli>true</IncludeDotNetCli>
     <DotNetCliPackageType>sdk</DotNetCliPackageType>
-    <DotNetCliVersion>5.0.100-preview.8.20362.3</DotNetCliVersion>
+    <DotNetCliVersion>5.0.100-preview.8.20362.3 </DotNetCliVersion>
     <DotNetCliRuntime>$(HelixRuntimeRid)</DotNetCliRuntime>
     <DotNetCliRuntime Condition="'$(TargetArchitecture)' == 'wasm'" >linux-x64</DotNetCliRuntime>
   </PropertyGroup>
