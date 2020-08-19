@@ -27,7 +27,6 @@
 #include "comdelegate.h"
 #include "dllimportcallback.h"
 #include "eventtrace.h"
-#include "bundle.h"
 
 #include "win32threadpool.h"
 #include "eventtrace.h"
@@ -273,7 +272,7 @@ void SetCommandLineArgs(LPCWSTR pwzAssemblyPath, int argc, LPCWSTR* argv)
     GCPROTECT_BEGIN(gc);
 
     gc.cmdLineArgs = (PTRARRAYREF)AllocateObjectArray(argc + 1 /* arg[0] should be the exe name*/, g_pStringClass);
-    OBJECTREF orAssemblyPath = StringObject::NewString(Bundle::AppIsBundle() ? Bundle::AppBundle->Path() : pwzAssemblyPath);
+    OBJECTREF orAssemblyPath = StringObject::NewString(Bundle::AppIsBundle() ? static_cast<LPCWSTR>(Bundle::AppBundle->Path()) : pwzAssemblyPath);
     gc.cmdLineArgs->SetAt(0, orAssemblyPath);
 
     for (int i = 0; i < argc; ++i)
