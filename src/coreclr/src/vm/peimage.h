@@ -119,11 +119,9 @@ public:
 
     };
 
-    static PTR_PEImage FindById(UINT64 uStreamAsmId, DWORD dwModuleId);
     static PTR_PEImage FindByPath(LPCWSTR pPath,
-                                  BOOL isInBundle = TRUE);
-    static PTR_PEImage FindByShortPath(LPCWSTR pPath);
-    static PTR_PEImage FindByLongPath(LPCWSTR pPath);
+                                  BOOL isInBundle);
+
     void AddToHashMap();
 
     void   Load();
