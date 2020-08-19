@@ -473,8 +473,8 @@ namespace System.Collections.Generic
             {
                 if (pivot == null)
                 {
-                    while (Unsafe.IsAddressLessThan(ref leftRef!, ref nextToLastRef) && (leftRef = ref Unsafe.Add(ref leftRef, 1)) == null) ;
-                    while (Unsafe.IsAddressGreaterThan(ref rightRef!, ref zeroRef) && (rightRef = ref Unsafe.Add(ref rightRef, -1)) == null) ;
+                    while (Unsafe.IsAddressLessThan(ref leftRef, ref nextToLastRef) && (leftRef = ref Unsafe.Add(ref leftRef, 1)) == null) ;
+                    while (Unsafe.IsAddressGreaterThan(ref rightRef, ref zeroRef) && (rightRef = ref Unsafe.Add(ref rightRef, -1)) == null) ;
                 }
                 else
                 {
