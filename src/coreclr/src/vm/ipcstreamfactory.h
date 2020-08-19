@@ -30,7 +30,7 @@ public:
     {
         LPSTR Path = nullptr;
         DiagnosticPortType Type = DiagnosticPortType::CONNECT;
-        DiagnosticPortSuspendMode SuspendMode = DiagnosticPortSuspendMode::NOSUSPEND;
+        DiagnosticPortSuspendMode SuspendMode = DiagnosticPortSuspendMode::SUSPEND;
 
         DiagnosticPortBuilder WithPath(LPSTR path) { Path = path; return *this; }
         DiagnosticPortBuilder WithType(DiagnosticPortType type) { Type = type; return *this; }

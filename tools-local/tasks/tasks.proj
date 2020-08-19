@@ -7,6 +7,8 @@
                       Condition="'$(TargetOS)' != 'iOS' and '$(TargetOS)' != 'tvOS'" />
     <ProjectReference Remove="$(MSBuildThisFileDirectory)mobile.tasks\WasmAppBuilder\WasmAppBuilder.csproj"
                       Condition="'$(TargetOS)' != 'Browser'" />
+    <ProjectReference Remove="$(MSBuildThisFileDirectory)mobile.tasks\CreateWasmBundle\CreateWasmBundle.csproj"
+                      Condition="'$(TargetOS)' != 'Browser'" />
     <ProjectReference Remove="$(MSBuildThisFileDirectory)mobile.tasks\AotCompilerTask\MonoAOTCompiler.csproj"
                       Condition="'$(TargetsMobile)' != 'true'" />
   </ItemGroup>

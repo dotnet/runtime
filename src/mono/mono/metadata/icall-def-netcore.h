@@ -373,6 +373,11 @@ HANDLES(NATIVEL_2, "GetSymbol", ves_icall_System_Runtime_InteropServices_NativeL
 HANDLES(NATIVEL_3, "LoadByName", ves_icall_System_Runtime_InteropServices_NativeLibrary_LoadByName, gpointer, 5, (MonoString, MonoReflectionAssembly, MonoBoolean, guint32, MonoBoolean))
 HANDLES(NATIVEL_4, "LoadFromPath", ves_icall_System_Runtime_InteropServices_NativeLibrary_LoadFromPath, gpointer, 2, (MonoString, MonoBoolean))
 
+#if defined(TARGET_AMD64)
+ICALL_TYPE(X86BASE, "System.Runtime.Intrinsics.X86.X86Base", X86BASE_1)
+NOHANDLES(ICALL(X86BASE_1, "__cpuidex", ves_icall_System_Runtime_Intrinsics_X86_X86Base___cpuidex))
+#endif
+
 ICALL_TYPE(ALC, "System.Runtime.Loader.AssemblyLoadContext", ALC_5)
 HANDLES(ALC_5, "GetLoadContextForAssembly", ves_icall_System_Runtime_Loader_AssemblyLoadContext_GetLoadContextForAssembly, gpointer, 1, (MonoReflectionAssembly))
 HANDLES(ALC_4, "InternalGetLoadedAssemblies", ves_icall_System_Runtime_Loader_AssemblyLoadContext_InternalGetLoadedAssemblies, MonoArray, 0, ())

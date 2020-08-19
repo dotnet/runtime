@@ -399,6 +399,176 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
+        [OuterLoop("Uses delays")]
+        [ConditionalFact(nameof(SupportsAlpn))]
+        public async Task GetAsync_SettingsFrameNotSentOnNewConnection_ClientApplies100StreamLimit()
+        {
+            const int DefaultMaxConcurrentStreams = 100;
+            TimeSpan timeout = TimeSpan.FromSeconds(3);
+            using (Http2LoopbackServer server = Http2LoopbackServer.CreateServer())
+            using (HttpClient client = CreateHttpClient())
+            {
+                Task<Http2LoopbackConnection> connectionTask = AcceptConnectionAndReadSettings(server, timeout);
+
+                List<Task<HttpResponseMessage>> sendTasks = new List<Task<HttpResponseMessage>>();
+                for (int i = 0; i < DefaultMaxConcurrentStreams; i++)
+                {
+                    sendTasks.Add(client.GetAsync(server.Address));
+                }
+
+                Http2LoopbackConnection connection = await connectionTask.TimeoutAfter(TestHelper.PassingTestTimeoutMilliseconds).ConfigureAwait(false);
+
+                // Client sets the default MaxConcurrentStreams to 100, so accept 100 requests.
+                List<int> acceptedRequests = await AcceptRequests(connection, DefaultMaxConcurrentStreams).TimeoutAfter(TestHelper.PassingTestTimeoutMilliseconds).ConfigureAwait(false);
+
+                Assert.Equal(DefaultMaxConcurrentStreams, acceptedRequests.Count);
+
+                // Extra request is queued on the client.
+                Task<HttpResponseMessage> extraSendTask = client.GetAsync(server.Address);
+                await Assert.ThrowsAnyAsync<OperationCanceledException>(() => connection.ReadRequestHeaderAsync()).TimeoutAfter(TestHelper.PassingTestTimeoutMilliseconds).ConfigureAwait(false);
+
+                // Send SETTINGS frame to increase the default stream limit by 1, unblocking the extra request.
+                await connection.SendSettingsAsync(timeout, new[] { new SettingsEntry() { SettingId = SettingId.MaxConcurrentStreams, Value = DefaultMaxConcurrentStreams + 1 } }).ConfigureAwait(false);
+
+                (int extraStreamId, _) = await connection.ReadAndParseRequestHeaderAsync().TimeoutAfter(TestHelper.PassingTestTimeoutMilliseconds).ConfigureAwait(false);
+
+                // Respond to all the requests.
+                acceptedRequests.Add(extraStreamId);
+                foreach (int streamId in acceptedRequests)
+                {
+                    await connection.SendDefaultResponseAsync(streamId).TimeoutAfter(TestHelper.PassingTestTimeoutMilliseconds).ConfigureAwait(false);
+                }
+
+                sendTasks.Add(extraSendTask);
+                await Task.WhenAll(sendTasks).TimeoutAfter(TestHelper.PassingTestTimeoutMilliseconds).ConfigureAwait(false);
+
+                foreach (Task<HttpResponseMessage> sendTask in sendTasks)
+                {
+                    using HttpResponseMessage response = sendTask.Result;
+                    Assert.True(response.IsSuccessStatusCode);
+                }
+            }
+        }
+
+        [OuterLoop("Uses delays")]
+        [ConditionalFact(nameof(SupportsAlpn))]
+        public async Task GetAsync_ServerDelaysSendingSettingsThenSetsLowerMaxConcurrentStreamsLimitThenIncreaseIt_ClientAppliesEachLimitChangeProperly()
+        {
+            const int DefaultMaxConcurrentStreams = 100;
+            const int ExtraStreams = 20;
+            TimeSpan timeout = TimeSpan.FromSeconds(3);
+            using (Http2LoopbackServer server = Http2LoopbackServer.CreateServer())
+            using (HttpClient client = CreateHttpClient())
+            {
+                Task<Http2LoopbackConnection> connectionTask = AcceptConnectionAndReadSettings(server, timeout);
+
+                List<Task<HttpResponseMessage>> sendTasks = new List<Task<HttpResponseMessage>>();
+                for (int i = 0; i < DefaultMaxConcurrentStreams + ExtraStreams; i++)
+                {
+                    sendTasks.Add(client.GetAsync(server.Address));
+                }
+
+                Http2LoopbackConnection connection = await connectionTask.TimeoutAfter(TestHelper.PassingTestTimeoutMilliseconds).ConfigureAwait(false);
+
+                // Client sets the default MaxConcurrentStreams to 100, so accept 100 requests.
+                List<int> acceptedRequests = await AcceptRequests(connection, DefaultMaxConcurrentStreams + ExtraStreams).TimeoutAfter(TestHelper.PassingTestTimeoutMilliseconds).ConfigureAwait(false);
+                Assert.Equal(DefaultMaxConcurrentStreams, acceptedRequests.Count);
+
+                // Send SETTINGS frame with MaxConcurrentStreams = 102
+                await connection.SendSettingsAsync(timeout, new[] { new SettingsEntry() { SettingId = SettingId.MaxConcurrentStreams, Value = DefaultMaxConcurrentStreams + 2 } }).ConfigureAwait(false);
+
+                // Increased MaxConcurrentStreams ublocks only 2 requests.
+                List<int> acceptedExtraRequests = await AcceptRequests(connection, ExtraStreams).TimeoutAfter(TestHelper.PassingTestTimeoutMilliseconds).ConfigureAwait(false);
+                Assert.Equal(2, acceptedExtraRequests.Count);
+
+                acceptedRequests.AddRange(acceptedExtraRequests);
+
+                // Send SETTINGS frame with MaxConcurrentStreams = DefaultMaxConcurrentStreams + ExtraStreams
+                await connection.ExpectSettingsAckAsync().ConfigureAwait(false);
+                Frame frame = new SettingsFrame(new SettingsEntry() { SettingId = SettingId.MaxConcurrentStreams, Value = DefaultMaxConcurrentStreams + ExtraStreams });
+                await connection.WriteFrameAsync(frame).ConfigureAwait(false);
+
+                // Increased MaxConcurrentStreams ublocks all remaining requests.
+                acceptedExtraRequests = await AcceptRequests(connection, ExtraStreams - 2).TimeoutAfter(TestHelper.PassingTestTimeoutMilliseconds).ConfigureAwait(false);
+                Assert.Equal(ExtraStreams - 2, acceptedExtraRequests.Count);
+
+                acceptedRequests.AddRange(acceptedExtraRequests);
+
+                // Respond to all the requests.
+                foreach (int streamId in acceptedRequests)
+                {
+                    await connection.SendDefaultResponseAsync(streamId).TimeoutAfter(TestHelper.PassingTestTimeoutMilliseconds).ConfigureAwait(false);
+                }
+
+                await Task.WhenAll(sendTasks).TimeoutAfter(TestHelper.PassingTestTimeoutMilliseconds).ConfigureAwait(false);
+
+                foreach (Task<HttpResponseMessage> sendTask in sendTasks)
+                {
+                    using HttpResponseMessage response = sendTask.Result;
+                    Assert.True(response.IsSuccessStatusCode);
+                }
+            }
+        }
+
+        [OuterLoop("Uses delays")]
+        [ConditionalFact(nameof(SupportsAlpn))]
+        public async Task GetAsync_ServerSendSettingsWithoutMaxConcurrentStreams_ClientAppliesInfiniteLimit()
+        {
+            const int DefaultMaxConcurrentStreams = 100;
+            TimeSpan timeout = TimeSpan.FromSeconds(3);
+            using (Http2LoopbackServer server = Http2LoopbackServer.CreateServer())
+            using (HttpClient client = CreateHttpClient())
+            {
+                Task<Http2LoopbackConnection> connectionTask = AcceptConnectionAndReadSettings(server, timeout);
+
+                List<Task<HttpResponseMessage>> sendTasks = new List<Task<HttpResponseMessage>>();
+                for (int i = 0; i < DefaultMaxConcurrentStreams; i++)
+                {
+                    sendTasks.Add(client.GetAsync(server.Address));
+                }
+
+                Http2LoopbackConnection connection = await connectionTask.TimeoutAfter(TestHelper.PassingTestTimeoutMilliseconds).ConfigureAwait(false);
+
+                // Client sets the default MaxConcurrentStreams to 100, so accept 100 requests.
+                List<int> acceptedRequests = await AcceptRequests(connection, DefaultMaxConcurrentStreams).TimeoutAfter(TestHelper.PassingTestTimeoutMilliseconds).ConfigureAwait(false);
+                Assert.Equal(DefaultMaxConcurrentStreams, acceptedRequests.Count);
+
+                // Extra request is queued on the client.
+                Task<HttpResponseMessage> extraSendTask = client.GetAsync(server.Address);
+                await Assert.ThrowsAnyAsync<OperationCanceledException>(() => connection.ReadRequestHeaderAsync()).TimeoutAfter(TestHelper.PassingTestTimeoutMilliseconds).ConfigureAwait(false);
+
+                // Send SETTINGS frame without MaxConcurrentSettings value.
+                await connection.SendSettingsAsync(timeout, new SettingsEntry[0]).ConfigureAwait(false);
+
+                // Send 100 more requests
+                sendTasks.Add(extraSendTask);
+                for (int i = 0; i < DefaultMaxConcurrentStreams; i++)
+                {
+                    sendTasks.Add(client.GetAsync(server.Address));
+                }
+
+                // Client sets the MaxConcurrentStreams to 'infinite', so accept 100 + 1 extra requests.
+                List<int> acceptedExtraRequests = await AcceptRequests(connection, DefaultMaxConcurrentStreams + 1).TimeoutAfter(TestHelper.PassingTestTimeoutMilliseconds).ConfigureAwait(false);
+                Assert.Equal(DefaultMaxConcurrentStreams + 1, acceptedExtraRequests.Count);
+
+                // Respond to all the requests.
+                acceptedRequests.AddRange(acceptedExtraRequests);
+                foreach (int streamId in acceptedRequests)
+                {
+                    await connection.SendDefaultResponseAsync(streamId).TimeoutAfter(TestHelper.PassingTestTimeoutMilliseconds).ConfigureAwait(false);
+                }
+
+                sendTasks.Add(extraSendTask);
+                await Task.WhenAll(sendTasks).TimeoutAfter(TestHelper.PassingTestTimeoutMilliseconds).ConfigureAwait(false);
+
+                foreach (Task<HttpResponseMessage> sendTask in sendTasks)
+                {
+                    using HttpResponseMessage response = sendTask.Result;
+                    Assert.True(response.IsSuccessStatusCode);
+                }
+            }
+        }
+
         // This test is based on RFC 7540 section 6.1:
         // "If a DATA frame is received whose stream identifier field is 0x0, the recipient MUST
         // respond with a connection error (Section 5.4.1) of type PROTOCOL_ERROR."
@@ -474,6 +644,31 @@ namespace System.Net.Http.Functional.Tests
                 // The client should close the connection as this is a fatal connection level error.
                 Assert.Null(await connection.ReadFrameAsync(TimeSpan.FromSeconds(30)));
             }
+        }
+
+        private async Task<Http2LoopbackConnection> AcceptConnectionAndReadSettings(Http2LoopbackServer server, TimeSpan timeout)
+        {
+            Http2LoopbackConnection connection = await server.AcceptConnectionAsync(timeout).ConfigureAwait(false);
+            await connection.ReadSettingsAsync().ConfigureAwait(false);
+            return connection;
+        }
+
+        private async Task<List<int>> AcceptRequests(Http2LoopbackConnection connection, int maxRequests = int.MaxValue)
+        {
+            List<int> streamIds = new List<int>();
+            for (int i = 0; i < maxRequests; i++)
+            {
+                try
+                {
+                    streamIds.Add((await connection.ReadAndParseRequestHeaderAsync().ConfigureAwait(false)).streamId);
+                }
+                catch (OperationCanceledException)
+                {
+                    return streamIds;
+                }
+            }
+
+            return streamIds;
         }
 
         private static Frame MakeSimpleHeadersFrame(int streamId, bool endHeaders = false, bool endStream = false) =>

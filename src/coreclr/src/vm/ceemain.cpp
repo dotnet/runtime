@@ -220,6 +220,8 @@
 #include "gdbjit.h"
 #endif // FEATURE_GDBJIT
 
+#include "genanalysis.h"
+
 #ifndef CROSSGEN_COMPILE
 static int GetThreadUICultureId(__out LocaleIDValue* pLocale);  // TODO: This shouldn't use the LCID.  We should rely on name instead
 
@@ -676,6 +678,7 @@ void EEStartupHelper()
         // Initialize the event pipe.
         EventPipe::Initialize();
 #endif // FEATURE_PERFTRACING
+        GenAnalysis::Initialize();
 
 #ifdef TARGET_UNIX
         PAL_SetShutdownCallback(EESocketCleanupHelper);

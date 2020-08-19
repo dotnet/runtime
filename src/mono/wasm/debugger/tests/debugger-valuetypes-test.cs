@@ -11,7 +11,7 @@ namespace DebuggerTests
         public static void MethodWithLocalStructs()
         {
             var ss_local = new SimpleStruct("set in MethodWithLocalStructs", 1, DateTimeKind.Utc);
-            var gs_local = new GenericStruct<ValueTypesTest> { StringField = "gs_local#GenericStruct<ValueTypesTest>#StringField" };
+            var gs_local = new GenericStruct<ValueTypesTest> { StringField = $"gs_local#GenericStruct<ValueTypesTest>#StringField" };
 
             ValueTypesTest vt_local = new ValueTypesTest
             {

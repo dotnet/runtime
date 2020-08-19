@@ -11,12 +11,12 @@ namespace System.Drawing
 {
     public class ImageFormatConverter : TypeConverter
     {
-        public override bool CanConvertFrom(ITypeDescriptorContext context, Type sourceType)
+        public override bool CanConvertFrom(ITypeDescriptorContext? context, Type? sourceType)
         {
-            return sourceType == typeof(string) ? true : base.CanConvertFrom(context, sourceType);
+            return sourceType == typeof(string) || base.CanConvertFrom(context, sourceType);
         }
 
-        public override bool CanConvertTo(ITypeDescriptorContext context, Type destinationType)
+        public override bool CanConvertTo(ITypeDescriptorContext? context, Type? destinationType)
         {
             if ((destinationType == typeof(string)) || (destinationType == typeof(InstanceDescriptor)))
             {
@@ -25,10 +25,10 @@ namespace System.Drawing
             return base.CanConvertTo(context, destinationType);
         }
 
-        public override object ConvertFrom(ITypeDescriptorContext context, CultureInfo culture, object value)
+        public override object ConvertFrom(ITypeDescriptorContext? context, CultureInfo? culture, object value)
         {
             // we must be able to convert from short names and long names
-            string strFormat = value as string;
+            string? strFormat = value as string;
             if (strFormat == null)
             {
                 // case #1, this is not a string
@@ -66,7 +66,7 @@ namespace System.Drawing
             throw new FormatException(SR.Format(SR.ConvertInvalidPrimitive, strFormat, nameof(ImageFormat)));
         }
 
-        public override object ConvertTo(ITypeDescriptorContext context, CultureInfo culture, object value, Type destinationType)
+        public override object ConvertTo(ITypeDescriptorContext? context, CultureInfo? culture, object? value, Type destinationType)
         {
             if (value is ImageFormat imgFormat)
             {
@@ -77,7 +77,7 @@ namespace System.Drawing
 
                 if (destinationType == typeof(InstanceDescriptor))
                 {
-                    string strFormat = null;
+                    string? strFormat = null;
                     if (imgFormat.Guid.Equals(ImageFormat.Bmp.Guid))
                         strFormat = "Bmp";
                     else if (imgFormat.Guid.Equals(ImageFormat.Emf.Guid))
@@ -105,7 +105,7 @@ namespace System.Drawing
                     }
                     else
                     {
-                        ConstructorInfo ctor = typeof(ImageFormat).GetTypeInfo().GetConstructor(new Type[] { typeof(Guid) });
+                        ConstructorInfo? ctor = typeof(ImageFormat).GetTypeInfo().GetConstructor(new Type[] { typeof(Guid) });
                         return new InstanceDescriptor(ctor, new object[] { imgFormat.Guid });
                     }
                 }
@@ -114,7 +114,7 @@ namespace System.Drawing
             return base.ConvertTo(context, culture, value, destinationType);
         }
 
-        public override StandardValuesCollection GetStandardValues(ITypeDescriptorContext context)
+        public override StandardValuesCollection GetStandardValues(ITypeDescriptorContext? context)
         {
             return new TypeConverter.StandardValuesCollection(new ImageFormat[]
             {
@@ -131,6 +131,6 @@ namespace System.Drawing
             });
         }
 
-        public override bool GetStandardValuesSupported(ITypeDescriptorContext context) => true;
+        public override bool GetStandardValuesSupported(ITypeDescriptorContext? context) => true;
     }
 }

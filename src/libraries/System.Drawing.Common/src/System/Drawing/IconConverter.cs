@@ -35,7 +35,7 @@ namespace System.Drawing
                 }
                 else if (value is Icon)
                 {
-                    return value.ToString();
+                    return value.ToString()!;
                 }
             }
             else if (destinationType == typeof(byte[]))

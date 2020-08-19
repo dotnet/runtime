@@ -27,6 +27,20 @@ CQuickArrayList<LPSTR> split(LPSTR string, LPCSTR delimiters)
     return parts;
 }
 
+bool IsWhitespace(char c)
+{
+    return (c == ' ' || c == '\r' || c == '\t' || c == '\n');
+}
+
+bool IsEmpty(LPCSTR string)
+{
+    uint32_t len = static_cast<uint32_t>(strlen(string));
+    for (uint32_t i = 0; i < len; i++)
+        if (!IsWhitespace(string[i]))
+            return false;
+    return true;
+}
+
 bool IpcStreamFactory::ConnectDiagnosticPort::GetIpcPollHandle(IpcStream::DiagnosticsIpc::IpcPollHandle *pIpcPollHandle, ErrorCallback callback)
 {
     STRESS_LOG0(LF_DIAGNOSTICS_PORT, LL_INFO1000, "IpcStreamFactory::ClientConnectionState::GetIpcPollHandle - ENTER.\n");
@@ -122,6 +136,12 @@ bool IpcStreamFactory::Configure(ErrorCallback callback)
             while (portConfigParts.Size() > 1)
                 builder.WithTag(portConfigParts.Pop());
             builder.WithPath(portConfigParts.Pop());
+
+            if (IsEmpty(builder.Path))
+            {
+                STRESS_LOG0(LF_DIAGNOSTICS_PORT, LL_INFO10, "IpcStreamFactory::Configure - Ignoring port configuration with empty address\n");
+                continue;
+            }
 
             // Ignore listen type (see conversation in https://github.com/dotnet/runtime/pull/40499 for details)
             if (builder.Type == DiagnosticPortType::LISTEN)

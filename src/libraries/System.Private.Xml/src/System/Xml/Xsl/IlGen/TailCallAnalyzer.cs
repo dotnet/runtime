@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#nullable enable
 using System;
 using System.Diagnostics;
 using System.Xml.Xsl.Qil;
@@ -50,7 +51,7 @@ namespace System.Xml.Xsl.IlGen
                     {
                         // Recursively analyze Loop return value
                         QilLoop ndLoop = (QilLoop)nd;
-                        if (ndLoop.Variable.NodeType == QilNodeType.Let || !ndLoop.Variable.Binding.XmlType.MaybeMany)
+                        if (ndLoop.Variable.NodeType == QilNodeType.Let || !ndLoop.Variable.Binding!.XmlType!.MaybeMany)
                             AnalyzeDefinition(ndLoop.Body);
                         break;
                     }
