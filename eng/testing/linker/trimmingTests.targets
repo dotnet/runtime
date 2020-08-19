@@ -73,7 +73,6 @@
     <MakeDir Directories="$(_projectDir)" />
     <WriteLinesToFile File="$(_projectFile)"
                       Lines="$([System.IO.File]::ReadAllText('$(ProjectTemplate)')
-                                                 .Replace('{LibBuildProps}', '$([MSBuild]::NormalizeDirectory('$(MSBuildProjectDirectory)', '../../../Directory.Build.props'))')
                                                  .Replace('{NetCoreAppCurrent}', '$(NetCoreAppCurrent)')
                                                  .Replace('{RuntimePackDir}', '%(TestConsoleApps.RuntimePackDirectory)')
                                                  .Replace('{TargetingPackDir}','$(MicrosoftNetCoreAppRefPackDir)')
@@ -98,7 +97,6 @@
       <TestPublishTrimmedCommand>$(TestPublishTrimmedCommand) /nr:false</TestPublishTrimmedCommand>
       <TestPublishTrimmedCommand>$(TestPublishTrimmedCommand) /warnaserror</TestPublishTrimmedCommand>
       <TestPublishTrimmedCommand>$(TestPublishTrimmedCommand) -p:configuration=$(Configuration)</TestPublishTrimmedCommand>
-      <TestPublishTrimmedCommand>$(TestPublishTrimmedCommand) -p:BuildTargetFramework=$(BuildTargetFramework)</TestPublishTrimmedCommand>
     </PropertyGroup>
 
     <Exec Command="$(TestPublishTrimmedCommand) %(TestConsoleApps.AdditionalArgs)" EnvironmentVariables="@(CliEnvironment)" StandardOutputImportance="Low" WorkingDirectory="%(TestConsoleApps.ProjectDir)" />
