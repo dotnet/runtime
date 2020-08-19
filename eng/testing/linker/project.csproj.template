@@ -1,4 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
+  <Import Project="{LibBuildProps}" />
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
