@@ -205,7 +205,7 @@ if [[ "$mono_dotnet" != "" ]]; then
 fi
 
 if [[ "$wasm_runtime_loc" != "" ]]; then
-    configurations="CompilationMode=wasm;RunKind=$kind"
+    configurations="CompilationMode=wasm RunKind=$kind"
     extra_benchmark_dotnet_arguments="$extra_benchmark_dotnet_arguments --category-exclusion-filter NoInterpreter NoWASM"
 fi
 
