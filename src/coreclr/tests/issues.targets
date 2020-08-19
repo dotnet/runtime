@@ -6592,5 +6592,8 @@
         <ExcludeList Include = "$(XunitTestBinBase)/GC/Coverage/LargeObjectAlloc/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Regression/JitBlue/GitHub_19438/GitHub_19438/**">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
    </ItemGroup>
 </Project>
