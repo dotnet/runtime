@@ -268,6 +268,8 @@ if (CROSS_COMPILE)
 set (utils_arch_sources "${utils_arch_sources};mono-hwcap-cross.c")
 elseif (TARGET_AMD64)
 set (utils_arch_sources "${utils_arch_sources};mono-hwcap-x86.c")
+elseif (TARGET_WASM)
+set (utils_arch_sources "${utils_arch_sources};mono-hwcap-wasm.c;mono-mmap-wasm.c")
 else()
   message (FATAL_ERROR "")
 endif()
@@ -277,6 +279,37 @@ addprefix (utils_sources ../utils/ "${utils_platform_sources};${utils_arch_sourc
 #
 # METADATA
 #
+
+#
+# This library contains the icall tables if the runtime was configured with DISABLE_ICALL_TABLES
+#
+if (DISABLE_ICALL_TABLES)
+add_library (mono-icall-table STATIC "../metadata/icall-table.c")
+install (TARGETS mono-icall-table LIBRARY)
+else ()
+set (icall_table_sources "icall-table.c")
+endif ()
+
+#
+# This library contains runtime IL code generation
+#
+set (ilgen_base_sources
+	method-builder-ilgen.c
+	method-builder-ilgen.h
+	method-builder-ilgen-internals.h
+	marshal-ilgen.c
+	marshal-ilgen.h
+	sgen-mono-ilgen.c
+	sgen-mono-ilgen.h)
+
+if (NOT ENABLE_ILGEN)
+addprefix (mono_ilgen_sources ../metadata "${ilgen_base_sources}")
+set_source_files_properties (${mono_ilgen_sources} PROPERTIES COMPILE_DEFINITIONS "HAVE_SGEN_GC")
+add_library (mono-ilgen STATIC "${mono_ilgen_sources}")
+install (TARGETS mono-ilgen LIBRARY)
+else ()
+set (ilgen_sources ${ilgen_base_sources})
+endif ()
 
 set (metadata_win32_sources
 	console-win32.c
@@ -499,11 +532,7 @@ set(metadata_common_sources
 	mono-config-dirs.h
 	mono-config-dirs.c
 	icall-table.h
-	icall-table.c
-	method-builder-ilgen.h
-	method-builder-ilgen.c
-	marshal-ilgen.h
-	marshal-ilgen.c)
+	${icall_table_sources})
 
 set (metadata_gc_dependent_sources
      gc-stats.c
@@ -522,13 +551,12 @@ set (metadata_sgen_sources
 	sgen-stw.c
 	sgen-mono.c
 	sgen-mono.h
-	sgen-client-mono.h
-	sgen-mono-ilgen.h
-	sgen-mono-ilgen.c)
+	sgen-client-mono.h)
 
 addprefix (metadata_gc_dependent_real_sources ../metadata "${metadata_gc_dependent_sources}")
 addprefix (metadata_sgen_real_sources ../metadata "${metadata_sgen_sources}")
-set_source_files_properties (${metadata_sgen_real_sources};${metadata_gc_dependent_real_sources} PROPERTIES COMPILE_DEFINITIONS "HAVE_SGEN_GC")
+addprefix (ilgen_real_sources ../metadata "${ilgen_sources}")
+set_source_files_properties (${metadata_sgen_real_sources};${metadata_gc_dependent_real_sources};${ilgen_real_sources} PROPERTIES COMPILE_DEFINITIONS "HAVE_SGEN_GC")
 
 #
 # We localize the usage of MONO_BINDIR etc. to just one source file, thus enabling
@@ -605,6 +633,14 @@ set_source_files_properties (${sgen_sources} PROPERTIES COMPILE_DEFINITIONS "HAV
 
 # ICU
 if(HAVE_SYS_ICU)
+if(STATIC_ICU)
+set(pal_icushim_sources_base
+	pal_icushim_static.c)
+else()
+set(pal_icushim_sources_base
+	pal_icushim.c)
+endif()
+
 set (icu_shim_sources_base
 	pal_calendarData.c
 	pal_casing.c
@@ -616,7 +652,7 @@ set (icu_shim_sources_base
 	pal_normalization.c
 	pal_timeZoneInfo.c
 	entrypoints.c
-	pal_icushim.c)
+	${pal_icushim_sources_base})
 addprefix (icu_shim_sources "${ICU_SHIM_PATH}" "${icu_shim_sources_base}")
 set_source_files_properties (${icu_shim_sources} PROPERTIES COMPILE_DEFINITIONS OSX_ICU_LIBRARY_PATH="${OSX_ICU_LIBRARY_PATH}")
 set_source_files_properties (${icu_shim_sources} PROPERTIES COMPILE_FLAGS "-I${ICU_INCLUDEDIR} -I${CMAKE_SOURCE_DIR}/../libraries/Native/Unix/System.Globalization.Native/ -I${CMAKE_SOURCE_DIR}/../libraries/Native/Unix/Common/ ${ICU_FLAGS}")
@@ -664,8 +700,6 @@ set (mini_common_sources
 	aot-compiler.h
 	aot-compiler.c
 	aot-runtime.c
-	aot-runtime-wasm.c
-	wasm_m2n_invoke.g.h
 	graph.c
 	mini-codegen.c
 	mini-exceptions.c
@@ -729,8 +763,18 @@ set (amd64_sources
 	tramp-amd64-gsharedvt.c
 	cpu-amd64.h)
 
+set (wasm_sources
+    mini-wasm.c
+	tramp-wasm.c
+	exceptions-wasm.c
+	aot-runtime-wasm.c
+	mini-wasm-debugger.c
+	wasm_m2n_invoke.g.h)
+
 if (TARGET_AMD64)
 set (arch_sources ${amd64_sources})
+elseif (TARGET_WASM)
+set (arch_sources ${wasm_sources})
 endif()
 
 set (darwin_sources
@@ -749,7 +793,6 @@ if (HOST_DARWIN)
 set (os_sources "${darwin_sources};${posix_sources}")
 endif()
 
-if (NOT DISABLE_INTERPRETER)
 set (interp_sources
 	interp/interp.h
 	interp/interp-internals.h
@@ -759,10 +802,19 @@ set (interp_sources
 	interp/mintops.h
 	interp/mintops.c
 	interp/transform.c)
-else ()
-set (interp_sources
+set(interp_stub_sources
 	interp-stubs.c)
+
+if (NOT DISABLE_INTERPRETER)
+set (mini_interp_sources ${interp_sources})
+else ()
+set (mini_interp_sources ${interp_stub_sources})
 endif()
+
+if (ENABLE_INTERP_LIB)
+add_library (mono-ee-interp STATIC "${interp_sources}")
+install (TARGETS mono-ee-interp LIBRARY)
+endif ()
 
 if (ENABLE_LLVM)
 set (llvm_sources
@@ -779,14 +831,20 @@ set (llvm_runtime_sources
 	llvm-runtime.cpp)
 endif()
 
-set (mini_sources "${CMAKE_CURRENT_BINARY_DIR}/buildver-sgen.h;main-core.c;${mini_common_sources};${arch_sources};${os_sources};${interp_sources};${llvm_sources};${debugger_sources};${llvm_runtime_sources}")
+set (mini_sources "${CMAKE_CURRENT_BINARY_DIR}/buildver-sgen.h;main-core.c;${mini_common_sources};${arch_sources};${os_sources};${mini_interp_sources};${llvm_sources};${debugger_sources};${llvm_runtime_sources}")
 
 add_library(monosgen-objects OBJECT "${eglib_sources};${metadata_sources};${utils_sources};${sgen_sources};${icu_shim_sources};${mini_sources}")
 add_library (monosgen-static STATIC $<TARGET_OBJECTS:monosgen-objects>)
-add_library (monosgen SHARED $<TARGET_OBJECTS:monosgen-objects>)
+set_target_properties(monosgen-static PROPERTIES OUTPUT_NAME monosgen-2.0)
+install (TARGETS monosgen-static LIBRARY)
+if (NOT DISABLE_SHARED_LIBS)
+   add_library (monosgen SHARED $<TARGET_OBJECTS:monosgen-objects>)
+endif ()
 
-set_target_properties(monosgen PROPERTIES OUTPUT_NAME monosgen-2.0)
-set_target_properties(monosgen PROPERTIES LIBRARY_OUTPUT_DIRECTORY .libs)
+if (NOT DISABLE_EXECUTABLES)
+   set_target_properties(monosgen PROPERTIES OUTPUT_NAME monosgen-2.0)
+   set_target_properties(monosgen PROPERTIES LIBRARY_OUTPUT_DIRECTORY .libs)
+endif ()
 
 # FIXME: Always rebuilds, creates non-deterministic builds
 # FIXME: Use the previous format
@@ -815,7 +873,10 @@ add_custom_command (
   VERBATIM
 )
 
+if (NOT DISABLE_EXECUTABLES)
 add_executable (mono-sgen "main-sgen.c")
 target_link_libraries (mono-sgen monosgen-static "-framework CoreFoundation" "-framework Foundation" "iconv" ${LLVM_LIBS} ${ICU_LIBS})
 target_link_libraries (monosgen "-framework CoreFoundation" "-framework Foundation" "iconv" ${LLVM_LIBS} ${ICU_LIBS})
 set_target_properties (mono-sgen monosgen PROPERTIES LINK_FLAGS ${ICU_LDFLAGS})
+install(TARGETS mono-sgen RUNTIME)
+endif ()

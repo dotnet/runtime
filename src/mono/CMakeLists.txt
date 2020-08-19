@@ -29,6 +29,26 @@ include(options)
 # Header/function checks
 include(configure)
 
+function(process_enable_minimal)
+  string(REPLACE "," ";" tmp1 "${ENABLE_MINIMAL}")
+  foreach (arg ${tmp1})
+	string(TOUPPER "${arg}" var1)
+    set(DISABLE_${var1} 1 PARENT_SCOPE)
+  endforeach(arg)
+endfunction()
+
+if(ENABLE_MINIMAL)
+  process_enable_minimal()
+endif()
+
+if(ENABLE_INTERP_LIB)
+  set(DISABLE_INTERPRETER 1)
+endif()
+
+if(NOT DISABLE_INTERPRETER AND NOT DISABLE_JIT)
+set(ENABLE_ILGEN 1)
+endif()
+
 # FIXME:
 set(VERSION "")
 
@@ -86,10 +106,13 @@ endif()
 
 set(USE_GCC_ATOMIC_OPS 1)
 set(HAVE_CLASSIC_WINAPI_SUPPORT 1)
-set(ENABLE_ILGEN 1)
 set(HAVE_MOVING_COLLECTOR 1)
 set(HAVE_CONC_GC_AS_DEFAULT 1)
 set(MONO_INSIDE_RUNTIME 1)
+
+if(ENABLE_LAZY_GC_THREAD_CREATION)
+  set(LAZY_GC_THREAD_CREATION 1)
+endif()
 
 ######################################
 # GCC CHECKS
@@ -118,8 +141,13 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
   set(HOST_DARWIN 1)
   set(PTHREAD_POINTER_ID 1)
   set(USE_MACH_SEMA 1)
+elseif(CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
+  set(HOST_WASM 1)
+  set(DISABLE_EXECUTABLES 1)
+  # FIXME: Is there a cmake option for this ?
+  set(DISABLE_SHARED_LIBS 1)
 else()
-  message(FATAL_ERROR "")
+  message(FATAL_ERROR "Host '${CMAKE_SYSTEM_NAME}' not supported.")
 endif()
 
 ######################################
@@ -135,6 +163,11 @@ if(TARGET_SYSTEM_NAME STREQUAL "Darwin")
   set(RID_PREFIX "osx")
   set(CORETARGETS "-p:TargetsUnix=true -p:TargetsOSX=true")
   set(NETCORE_HOST_PLATFORM "macos")
+elseif(TARGET_SYSTEM_NAME STREQUAL "Emscripten")
+  set(TARGET_WASM 1)
+  set(RID_PREFIX "osx")
+  set(COREARCH "wasm32")
+  set(CORETARGETS "-p:TargetsUnix=true -p:TargetsOSX=true")
 else()
   message(FATAL_ERROR "")
 endif()
@@ -145,8 +178,10 @@ endif()
 
 if(CMAKE_SYSTEM_PROCESSOR STREQUAL "x86_64")
   set(HOST_AMD64 1)
+elseif(CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
+  # CMAKE_SYSTEM_PROCESSOR is set to x86
 else()
-  message(FATAL_ERROR "")
+  message(FATAL_ERROR "CMAKE_SYSTEM_PROCESSOR='${CMAKE_SYSTEM_PROCESSOR}' not supported.")
 endif()
 
 ######################################
@@ -160,7 +195,11 @@ if(TARGET_ARCH STREQUAL "x86_64")
   set(MONO_ARCHITECTURE "\"amd64\"")
   set(RID_SUFFIX "x64")
   set(COREARCH "x64")
+elseif(CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
+  # CMAKE_SYSTEM_PROCESSOR is set to x86
+  set(MONO_ARCHITECTURE "\"wasm\"")
 else()
+  message(FATAL_ERROR "CMAKE_SYSTEM_PROCESSOR='${CMAKE_SYSTEM_PROCESSOR}' not supported.")
   message(FATAL_ERROR "")
 endif()
 
@@ -176,6 +215,11 @@ if(TARGET_OSX)
   set(OSX_ICU_LIBRARY_PATH /usr/lib/libicucore.dylib)
   set(ICU_FLAGS "-DTARGET_UNIX -DU_DISABLE_RENAMING -Wno-reserved-id-macro -Wno-documentation -Wno-documentation-unknown-command -Wno-switch-enum -Wno-covered-switch-default -Wno-covered-switch-default -Wno-extra-semi-stmt -Wno-unknown-warning-option -Wno-deprecated-declarations")
   set(HAVE_SYS_ICU 1)
+elseif(TARGET_WASM)
+  #set(ICU_CFLAGS "-DTARGET_UNIX -DU_DISABLE_RENAMING -DHAVE_UDAT_STANDALONE_SHORTER_WEEKDAYS -DHAVE_SET_MAX_VARIABLE")
+  set(ICU_FLAGS "-DPALEXPORT=\"\" -DTARGET_UNIX -Wno-reserved-id-macro -Wno-documentation -Wno-documentation-unknown-command -Wno-switch-enum -Wno-covered-switch-default -Wno-covered-switch-default -Wno-extra-semi-stmt -Wno-unknown-warning-option")
+  set(HAVE_SYS_ICU 1)
+  set(STATIC_ICU 1)
 else()
   message(FATAL_ERROR "")
 endif()
