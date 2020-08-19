@@ -91,7 +91,7 @@
     <IncludeDotNetCli>true</IncludeDotNetCli>
     <DotNetCliPackageType>sdk</DotNetCliPackageType>
     <DotNetCliVersion>$(BundledNETCoreAppPackageVersion)</DotNetCliVersion>
-    <DotNetCliRuntime>$(HelixRuntimeRid)</DotNetCliRuntime>
+    <DotNetCliRuntime>linux-x64</DotNetCliRuntime>
   </PropertyGroup>
 
   <Import Project="testgrouping.proj" />
