@@ -21,6 +21,7 @@
       <AssemblySearchPaths Include="$(MicrosoftNetCoreAppRuntimePackDir)\native"/>
       <AssemblySearchPaths Include="$(MicrosoftNetCoreAppRuntimePackDir)\lib\$(NetCoreAppCurrent)"/>
       <AssemblySearchPaths Include="$(CORE_ROOT)/TargetingPack" />
+      <AssemblySearchPaths Include="$(TestBinDir)" />
     </ItemGroup>
   
     <Message Importance="High" Text="AppDir: $(AppDir)" />
