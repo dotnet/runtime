@@ -31,12 +31,17 @@ namespace AppHost.Bundle.Tests
                 .Pass()
                 .And
                 .HaveStdOutContaining(singleFile);
+        }
 
-            // For non single-file apps, Environment.GetCommandLineArgs[0]
-            // should return the file path of the managed entrypoint.
+        [Fact]
+        public void GetEnvironmentArgs_0_Non_Bundled_App()
+        {
+            var fixture = sharedTestState.TestFixture.Copy();
             var dotnet = fixture.BuiltDotnet;
             var appPath = BundleHelper.GetAppPath(fixture);
 
+            // For non single-file apps, Environment.GetCommandLineArgs[0]
+            // should return the file path of the managed entrypoint.
             dotnet.Exec(appPath)
                 .CaptureStdErr()
                 .CaptureStdOut()
