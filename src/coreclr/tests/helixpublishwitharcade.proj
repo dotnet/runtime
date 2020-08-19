@@ -93,7 +93,7 @@
     <DotNetCliPackageType>sdk</DotNetCliPackageType>
     <DotNetCliVersion>$(BundledNETCoreAppPackageVersion)</DotNetCliVersion>
     <DotNetCliRuntime>$(HelixRuntimeRid)</DotNetCliRuntime>
-    <DotNetCliRuntime Condition="'$(TargetArchitecture)' == 'wasm'" >linux-x64</DotnetCliRuntime>
+    <DotNetCliRuntime Condition="'$(TargetArchitecture)' == 'wasm'" >linux-x64</DotNetCliRuntime>
   </PropertyGroup>
 
   <Import Project="testgrouping.proj" />
