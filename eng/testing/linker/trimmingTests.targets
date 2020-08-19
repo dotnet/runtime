@@ -97,7 +97,7 @@
       <TestPublishTrimmedCommand>$(TestPublishTrimmedCommand) /nr:false</TestPublishTrimmedCommand>
       <TestPublishTrimmedCommand>$(TestPublishTrimmedCommand) /warnaserror</TestPublishTrimmedCommand>
       <TestPublishTrimmedCommand>$(TestPublishTrimmedCommand) -p:configuration=$(Configuration)</TestPublishTrimmedCommand>
-      <TestPublishTrimmedCommand>$(TestPublishTrimmedCommand) -p:BuildTargetFramework=$(BuildTargetFramework)</TestPublishTrimmedCommand>
+      <!-- <TestPublishTrimmedCommand>$(TestPublishTrimmedCommand) -p:BuildTargetFramework=$(BuildTargetFramework)</TestPublishTrimmedCommand> -->
     </PropertyGroup>
 
     <Exec Command="$(TestPublishTrimmedCommand) %(TestConsoleApps.AdditionalArgs)" EnvironmentVariables="@(CliEnvironment)" StandardOutputImportance="Low" WorkingDirectory="%(TestConsoleApps.ProjectDir)" />
