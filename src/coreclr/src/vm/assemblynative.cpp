@@ -562,14 +562,15 @@ void QCALLTYPE AssemblyNative::GetLocale(QCall::AssemblyHandle pAssembly, QCall:
     END_QCALL;
 }
 
-BOOL QCALLTYPE AssemblyNative::GetCodeBase(QCall::AssemblyHandle pAssembly, BOOL fCopiedName, QCall::StringHandleOnStack retString)
+BOOL QCALLTYPE AssemblyNative::GetCodeBase(QCall::AssemblyHandle pAssembly, QCall::StringHandleOnStack retString)
 {
     QCALL_CONTRACT;
+
+    BOOL ret = true;
 
     BEGIN_QCALL;
 
     StackSString codebase;
-    BOOL ret;
 
     {
         ret = pAssembly->GetFile()->GetCodeBase(codebase);

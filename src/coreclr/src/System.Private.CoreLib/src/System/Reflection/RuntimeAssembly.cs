@@ -70,14 +70,13 @@ namespace System.Reflection
 
         [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
         private static extern bool GetCodeBase(QCallAssembly assembly,
-                                               bool copiedName,
                                                StringHandleOnStack retString);
 
-        internal string? GetCodeBase(bool copiedName)
+        internal string? GetCodeBase()
         {
             string? codeBase = null;
             RuntimeAssembly runtimeAssembly = this;
-            if (GetCodeBase(new QCallAssembly(ref runtimeAssembly), copiedName, new StringHandleOnStack(ref codeBase)))
+            if (GetCodeBase(new QCallAssembly(ref runtimeAssembly), new StringHandleOnStack(ref codeBase)))
             {
                 return codeBase;
             }
@@ -88,7 +87,7 @@ namespace System.Reflection
         {
             get
             {
-                var codeBase = GetCodeBase(false);
+                var codeBase = GetCodeBase();
                 if (codeBase is null)
                 {
                     // Not supported if the assembly was loaded from memory
@@ -105,7 +104,7 @@ namespace System.Reflection
         // is returned.
         public override AssemblyName GetName(bool copiedName)
         {
-            string? codeBase = GetCodeBase(copiedName);
+            string? codeBase = GetCodeBase();
 
             var an = new AssemblyName(GetSimpleName(),
                     GetPublicKey(),
