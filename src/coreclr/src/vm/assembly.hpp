@@ -337,11 +337,11 @@ public:
     }
 #endif // DACCESS_COMPILE
 
-    void GetCodeBase(SString &result)
+    BOOL GetCodeBase(SString &result)
     {
         WRAPPER_NO_CONTRACT;
 
-        m_pManifestFile->GetCodeBase(result);
+        return m_pManifestFile->GetCodeBase(result);
     }
 
     OBJECTREF GetExposedObject();
