@@ -569,7 +569,7 @@ set (reloc_libdir "${CMAKE_INSTALL_LIBDIR}")
 
 set_source_files_properties (../metadata/mono-config-dirs.c PROPERTIES COMPILE_DEFINITIONS "MONO_BINDIR=\"${bindir}\";MONO_ASSEMBLIES=\"${assembliesdir}\";MONO_CFG_DIR=\"${confdir}\";MONO_RELOC_LIBDIR=\"../${reloc_libdir}\"")
 
-addprefix (metadata_sources ../metadata/ "${metadata_platform_sources};${metadata_common_sources};${metadata_gc_dependent_sources};${metadata_sgen_sources}")
+addprefix (metadata_sources ../metadata/ "${metadata_platform_sources};${metadata_common_sources};${metadata_gc_dependent_sources};${metadata_sgen_sources};${ilgen_real_sources}")
 
 #
 # SGEN
