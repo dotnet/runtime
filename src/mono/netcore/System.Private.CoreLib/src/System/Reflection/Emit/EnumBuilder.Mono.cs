@@ -48,7 +48,7 @@ namespace System.Reflection.Emit
         private FieldBuilder _underlyingField;
         private Type _underlyingType;
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2006:UnrecognizedReflectionPattern",
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2064:UnrecognizedReflectionPattern",
             Justification = "Reflection.Emit is not subject to trimming")]
         internal EnumBuilder(ModuleBuilder mb, string name, TypeAttributes visibility, Type underlyingType)
         {

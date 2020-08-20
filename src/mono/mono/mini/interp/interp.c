@@ -1152,12 +1152,12 @@ ves_array_calculate_index (MonoArray *ao, stackval *sp, gboolean safe)
 	guint32 pos = 0;
 	if (ao->bounds) {
 		for (gint32 i = 0; i < m_class_get_rank (ac); i++) {
-			guint32 idx = sp [i].data.i;
-			guint32 lower = ao->bounds [i].lower_bound;
+			gint32 idx = sp [i].data.i;
+			gint32 lower = ao->bounds [i].lower_bound;
 			guint32 len = ao->bounds [i].length;
-			if (safe && (idx < lower || (idx - lower) >= len))
+			if (safe && (idx < lower || (guint32)(idx - lower) >= len))
 				return -1;
-			pos = (pos * len) + idx - lower;
+			pos = (pos * len) + (guint32)(idx - lower);
 		}
 	} else {
 		pos = sp [0].data.i;
@@ -6101,12 +6101,12 @@ call_newobj:
 			g_assert (ao->bounds);
 			guint32 pos = 0;
 			for (int i = 0; i < rank; i++) {
-				guint32 idx = sp [i].data.i;
-				guint32 lower = ao->bounds [i].lower_bound;
+				gint32 idx = sp [i].data.i;
+				gint32 lower = ao->bounds [i].lower_bound;
 				guint32 len = ao->bounds [i].length;
-				if (idx < lower || (idx - lower) >= len)
+				if (idx < lower || (guint32)(idx - lower) >= len)
 					THROW_EX (mono_get_exception_index_out_of_range (), ip);
-				pos = (pos * len) + idx - lower;
+				pos = (pos * len) + (guint32)(idx - lower);
 			}
 
 			sp [-1].data.p = mono_array_addr_with_size_fast (ao, esize, pos);
