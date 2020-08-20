@@ -24,7 +24,7 @@ The package store can be either a global system-wide folder or a dotnet.exe rela
             + netcoreapp2.1
         + refs
         + netcoreapp2.0
-        + netcoreapp2.1  
+        + netcoreapp2.1
 ```
 
 The layout within `netcoreapp*` folders is a NuGet cache layout.
@@ -34,7 +34,7 @@ The layout within `netcoreapp*` folders is a NuGet cache layout.
 
 To compose the layout of the shared package store, we will use a dotnet command called `dotnet store`. We expect the *hosting providers* (ex: Antares) to use the command to prime their machines and framework authors who want to provide *pre-optimized package archives* create the compressed archive layouts.
 
-The layout is composed from a list of package names and versions specified as xml: 
+The layout is composed from a list of package names and versions specified as xml:
 
 **Roslyn Example**
 ```xml
@@ -72,7 +72,7 @@ The output folder will be consumed by the runtime by adding to the `DOTNET_SHARE
 
 # Building apps with shared packages
 
-The current mechanism to build applications that share assemblies is by not specifying a RID in the project file. Then, a portable app model is assumed and assemblies that are part of Microsoft.NETCore.App are found under the `dotnet` install root. With shared package store, applications have the ability to filter any set of packages from their publish output. Thus the decision of a portable or a standalone application is not made at the time of project authoring but is instead done at publish time. 
+The current mechanism to build applications that share assemblies is by not specifying a RID in the project file. Then, a portable app model is assumed and assemblies that are part of Microsoft.NETCore.App are found under the `dotnet` install root. With shared package store, applications have the ability to filter any set of packages from their publish output. Thus the decision of a portable or a standalone application is not made at the time of project authoring but is instead done at publish time.
 
 ## Project Authoring
 We will by default treat `Microsoft.NETCore.App` as though `type: platform` is always specified, thus requiring no explicit RID specification by the user. It will be an `ERROR` to specify a RID in the csproj file using the `<RuntimeIdentifier/>` tag.

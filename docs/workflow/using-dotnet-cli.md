@@ -58,13 +58,16 @@ Please run `dotnet new console` in the app folder and update the created `.cspro
     <OutputType>Exe</OutputType>
     <TargetFramework>net5.0</TargetFramework>
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>
-    <RuntimeFrameworkVersion>5.0.0-dev</RuntimeFrameworkVersion>
   </PropertyGroup>
+
+  <ItemGroup>
+    <FrameworkReference Update="Microsoft.NETCore.App" RuntimeFrameworkVersion="5.0.0-dev" />
+  </ItemGroup>
 
 </Project>
 ```
 
-**You have to set the correct values for `RuntimeIdentifier` (RI), `RuntimeFrameworkVersion` and versions of both packages.**
+**You have to set the correct values for `RuntimeIdentifier` (RI) and `RuntimeFrameworkVersion`.**
 
 You can generally figure that out by looking at the packages you found in your output.
 In our example you will see there is a package with the name `Microsoft.NETCore.App.Runtime.win-x64.5.0.0-dev.nupkg`

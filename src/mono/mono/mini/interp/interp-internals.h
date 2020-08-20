@@ -51,49 +51,9 @@ typedef gint64  mono_i;
 #define MINT_TYPE_I MINT_TYPE_I8
 #endif
 
-
-/*
- * GC SAFETY:
- *
- *  The interpreter executes in gc unsafe (non-preempt) mode. On wasm, the C stack is
- * scannable but the wasm stack is not, so to make the code GC safe, the following rules
- * should be followed:
- * - every objref handled by the code needs to either be stored volatile or stored
- *   into a volatile; volatile stores are stack packable, volatile values are not.
- *   Use either OBJREF or stackval->data.o.
- *   This will ensure the objects are pinned. A volatile local
- *   is on the stack and not in registers. Volatile stores ditto.
- * - minimize the number of MonoObject* locals/arguments (or make them volatile).
- *
- * Volatile on a type/local forces all reads and writes to go to memory/stack,
- *   and each such local to have a unique address.
- *
- * Volatile absence on a type/local allows multiple locals to share storage,
- *   if their lifetimes do not overlap. This is called "stack packing".
- *
- * Volatile absence on a type/local allows the variable to live in
- * both stack and register, for fast reads and "write through".
- */
 #ifdef TARGET_WASM
-
-#define WASM_VOLATILE volatile
-
-static inline MonoObject * WASM_VOLATILE *
-mono_interp_objref (MonoObject **o)
-{
-	return o;
-}
-
-#define OBJREF(x) (*mono_interp_objref (&x))
-
-#else
-
-#define WASM_VOLATILE /* nothing */
-
-#define OBJREF(x) x
-
+#define INTERP_NO_STACK_SCAN 1
 #endif
-
 
 /*
  * Value types are represented on the eval stack as pointers to the
@@ -109,7 +69,12 @@ typedef struct {
 		} pair;
 		float f_r4;
 		double f;
-		MonoObject * WASM_VOLATILE o;
+#ifdef INTERP_NO_STACK_SCAN
+		/* Ensure objref is always flushed to interp stack */
+		MonoObject * volatile o;
+#else
+		MonoObject *o;
+#endif
 		/* native size integer and pointer types */
 		gpointer p;
 		mono_u nati;

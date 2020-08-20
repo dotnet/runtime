@@ -15,7 +15,7 @@ namespace System
         protected Attribute() { }
 
 #if !CORERT
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2006:UnrecognizedReflectionPattern",
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:UnrecognizedReflectionPattern",
             Justification = "Unused fields don't make a difference for equality")]
         public override bool Equals(object? obj)
         {
@@ -49,7 +49,7 @@ namespace System
             return true;
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2006:UnrecognizedReflectionPattern",
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:UnrecognizedReflectionPattern",
             Justification = "Unused fields don't make a difference for hashcode quality")]
         public override int GetHashCode()
         {

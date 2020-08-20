@@ -10,7 +10,7 @@ To run the suite, follow these steps:
 
 ## Instructions for Windows testers
 
-VsTest on Windows redirects console input, so in order to properly execute the manual tests, 
+VsTest on Windows redirects console input, so in order to properly execute the manual tests,
 `xunit-console` must be invoked directly. To do this first run
 
 ```
@@ -22,5 +22,4 @@ And then copy and execute the commands logged under the `To repro directly:` sec
 ## Instructions for MacOS testers
 
 By default, Alt-Key does not work on the MacOS terminal.
-Before running the tests, navigate to `Terminal > Preferences > Settings > Keyboard`
-and check "Use option as meta key" at the bottom.
+Before running the tests, navigate to `Terminal > Preferences > Settings > Keyboard` or `Terminal > Preferences > Profiles > Basic > Keyboard` (depending on your macOS version) and check "Use option as meta key" at the bottom.

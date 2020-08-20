@@ -312,3 +312,16 @@ namespace System.ComponentModel
         public override bool IsDefaultAttribute() { throw null; }
     }
 }
+namespace System.ComponentModel.Design.Serialization
+{
+    [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Interface, AllowMultiple=true, Inherited=true)]
+    public sealed partial class DesignerSerializerAttribute : System.Attribute
+    {
+        public DesignerSerializerAttribute(string serializerTypeName, string baseSerializerTypeName) { }
+        public DesignerSerializerAttribute(string serializerTypeName, System.Type baseSerializerType) { }
+        public DesignerSerializerAttribute(System.Type serializerType, System.Type baseSerializerType) { }
+        public string? SerializerBaseTypeName { get { throw null; } }
+        public string? SerializerTypeName { get { throw null; } }
+        public override object TypeId { get { throw null; } }
+    }
+}

@@ -212,7 +212,7 @@ namespace MS.Internal.Xml.XPath
             {
                 return _argList[0].Evaluate(nodeIterator).ToString()!.Length;
             }
-            Debug.Assert(nodeIterator.Current != null);
+            Debug.Assert(nodeIterator!.Current != null);
             return nodeIterator.Current.Value.Length;
         }
 
@@ -225,7 +225,7 @@ namespace MS.Internal.Xml.XPath
             }
             else
             {
-                Debug.Assert(nodeIterator.Current != null);
+                Debug.Assert(nodeIterator!.Current != null);
                 value = nodeIterator.Current.Value;
             }
             int modifyPos = -1;

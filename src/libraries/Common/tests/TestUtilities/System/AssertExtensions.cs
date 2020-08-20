@@ -209,7 +209,7 @@ namespace System
                 if (exceptionTypes.Any(t => t.Equals(exceptionType)))
                     return;
 
-                throw new XunitException($"Expected one of: ({string.Join<Type>(", ", exceptionTypes)}) -> Actual: ({e.GetType()})");
+                throw new XunitException($"Expected one of: ({string.Join<Type>(", ", exceptionTypes)}) -> Actual: ({exceptionType})");
             }
 
             throw new XunitException($"Expected one of: ({string.Join<Type>(", ", exceptionTypes)}) -> Actual: No exception thrown");

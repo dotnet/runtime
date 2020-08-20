@@ -14,23 +14,31 @@ namespace Internal.Cryptography
             byte[] key,
             byte[]? iv,
             int blockSize,
+            int paddingSize,
+            int feedbackSize,
             bool encrypting)
         {
             // The algorithm pointer is a static pointer, so not having any cleanup code is correct.
             IntPtr algorithm;
-            switch (cipherMode)
+            switch ((cipherMode, feedbackSize))
             {
-                case CipherMode.CBC:
+                case (CipherMode.CBC, _):
                     algorithm = Interop.Crypto.EvpDes3Cbc();
                     break;
-                case CipherMode.ECB:
+                case (CipherMode.ECB, _):
                     algorithm = Interop.Crypto.EvpDes3Ecb();
+                    break;
+                case (CipherMode.CFB, 1):
+                    algorithm = Interop.Crypto.EvpDes3Cfb8();
+                    break;
+                case (CipherMode.CFB, 8):
+                    algorithm = Interop.Crypto.EvpDes3Cfb64();
                     break;
                 default:
                     throw new NotSupportedException();
             }
 
-            BasicSymmetricCipher cipher = new OpenSslCipher(algorithm, cipherMode, blockSize, key, 0, iv, encrypting);
+            BasicSymmetricCipher cipher = new OpenSslCipher(algorithm, cipherMode, blockSize, paddingSize, key, 0, iv, encrypting);
             return UniversalCryptoTransform.Create(paddingMode, cipher, encrypting);
         }
     }

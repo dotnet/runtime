@@ -4027,6 +4027,9 @@ process_event (EventKind event, gpointer arg, gint32 il_offset, MonoContext *ctx
 			DebuggerTlsData *tls;
 			tls = (DebuggerTlsData *)mono_native_tls_get_value (debugger_tls_id);
 			g_assert (tls);
+			// We are already processing a breakpoint event
+			if (tls->disable_breakpoints)
+				return;
 			mono_stopwatch_stop (&tls->step_time);
 			break;
 		}

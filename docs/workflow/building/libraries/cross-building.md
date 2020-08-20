@@ -90,7 +90,7 @@ The output is at `artifacts/bin/[BuildSettings]` where `BuildSettings` looks som
 Building corefx for Linux ARM Emulator
 =======================================
 
-It is possible to build corefx binaries (native and managed) for the Linux ARM Emulator (latest version provided here: [#3805](https://github.com/dotnet/coreclr/issues/3805)).
+It is possible to build corefx binaries (native and managed) for the Linux ARM Emulator (latest version provided here: [#5394](https://github.com/dotnet/runtime/issues/5394)).
 The `scripts/arm32_ci_script.sh` script does this.
 
 The following instructions assume that:

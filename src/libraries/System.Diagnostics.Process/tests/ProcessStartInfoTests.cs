@@ -57,7 +57,7 @@ namespace System.Diagnostics.Tests
             environment.Add("NewKey2", "NewValue2");
             Assert.True(environment.ContainsKey("NewKey"));
 
-            Assert.Equal(RuntimeInformation.IsOSPlatform(OSPlatform.Windows), environment.ContainsKey("newkey"));
+            Assert.Equal(OperatingSystem.IsWindows(), environment.ContainsKey("newkey"));
             Assert.False(environment.ContainsKey("NewKey99"));
 
             //Iterating
@@ -93,7 +93,7 @@ namespace System.Diagnostics.Tests
 
             //Contains
             Assert.True(environment.Contains(new KeyValuePair<string, string>("NewKey", "NewValue")));
-            Assert.Equal(RuntimeInformation.IsOSPlatform(OSPlatform.Windows), environment.Contains(new KeyValuePair<string, string>("nEwKeY", "NewValue")));
+            Assert.Equal(OperatingSystem.IsWindows(), environment.Contains(new KeyValuePair<string, string>("nEwKeY", "NewValue")));
             Assert.False(environment.Contains(new KeyValuePair<string, string>("NewKey99", "NewValue99")));
 
             //Exception not thrown with invalid key
@@ -110,7 +110,7 @@ namespace System.Diagnostics.Tests
             Assert.True(environment.TryGetValue("NewKey", out stringout));
             Assert.Equal("NewValue", stringout);
 
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            if (OperatingSystem.IsWindows())
             {
                 Assert.True(environment.TryGetValue("NeWkEy", out stringout));
                 Assert.Equal("NewValue", stringout);
@@ -144,7 +144,7 @@ namespace System.Diagnostics.Tests
             Assert.Throws<KeyNotFoundException>(() => environment["1bB"]);
 
             Assert.True(environment.Contains(new KeyValuePair<string, string>("NewKey2", "NewValue2OverriddenAgain")));
-            Assert.Equal(RuntimeInformation.IsOSPlatform(OSPlatform.Windows), environment.Contains(new KeyValuePair<string, string>("NEWKeY2", "NewValue2OverriddenAgain")));
+            Assert.Equal(OperatingSystem.IsWindows(), environment.Contains(new KeyValuePair<string, string>("NEWKeY2", "NewValue2OverriddenAgain")));
 
             Assert.False(environment.Contains(new KeyValuePair<string, string>("NewKey2", "newvalue2Overriddenagain")));
             Assert.False(environment.Contains(new KeyValuePair<string, string>("newkey2", "newvalue2Overriddenagain")));

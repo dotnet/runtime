@@ -1,0 +1,103 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <PropertyGroup>
+    <DebugType>Embedded</DebugType>
+    <Optimize>True</Optimize>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="TransposeOdd.Vector64.Int16.cs" />
+    <Compile Include="TransposeOdd.Vector64.Int32.cs" />
+    <Compile Include="TransposeOdd.Vector64.SByte.cs" />
+    <Compile Include="TransposeOdd.Vector64.Single.cs" />
+    <Compile Include="TransposeOdd.Vector64.UInt16.cs" />
+    <Compile Include="TransposeOdd.Vector64.UInt32.cs" />
+    <Compile Include="TransposeOdd.Vector128.Byte.cs" />
+    <Compile Include="TransposeOdd.Vector128.Double.cs" />
+    <Compile Include="TransposeOdd.Vector128.Int16.cs" />
+    <Compile Include="TransposeOdd.Vector128.Int32.cs" />
+    <Compile Include="TransposeOdd.Vector128.Int64.cs" />
+    <Compile Include="TransposeOdd.Vector128.SByte.cs" />
+    <Compile Include="TransposeOdd.Vector128.Single.cs" />
+    <Compile Include="TransposeOdd.Vector128.UInt16.cs" />
+    <Compile Include="TransposeOdd.Vector128.UInt32.cs" />
+    <Compile Include="TransposeOdd.Vector128.UInt64.cs" />
+    <Compile Include="VectorTableLookup.Vector128.Byte.cs" />
+    <Compile Include="VectorTableLookup.Vector128.SByte.cs" />
+    <Compile Include="VectorTableLookupExtension.Vector128.Byte.cs" />
+    <Compile Include="VectorTableLookupExtension.Vector128.SByte.cs" />
+    <Compile Include="UnzipEven.Vector64.Byte.cs" />
+    <Compile Include="UnzipEven.Vector64.Int16.cs" />
+    <Compile Include="UnzipEven.Vector64.Int32.cs" />
+    <Compile Include="UnzipEven.Vector64.SByte.cs" />
+    <Compile Include="UnzipEven.Vector64.Single.cs" />
+    <Compile Include="UnzipEven.Vector64.UInt16.cs" />
+    <Compile Include="UnzipEven.Vector64.UInt32.cs" />
+    <Compile Include="UnzipEven.Vector128.Byte.cs" />
+    <Compile Include="UnzipEven.Vector128.Double.cs" />
+    <Compile Include="UnzipEven.Vector128.Int16.cs" />
+    <Compile Include="UnzipEven.Vector128.Int32.cs" />
+    <Compile Include="UnzipEven.Vector128.Int64.cs" />
+    <Compile Include="UnzipEven.Vector128.SByte.cs" />
+    <Compile Include="UnzipEven.Vector128.Single.cs" />
+    <Compile Include="UnzipEven.Vector128.UInt16.cs" />
+    <Compile Include="UnzipEven.Vector128.UInt32.cs" />
+    <Compile Include="UnzipEven.Vector128.UInt64.cs" />
+    <Compile Include="UnzipOdd.Vector64.Byte.cs" />
+    <Compile Include="UnzipOdd.Vector64.Int16.cs" />
+    <Compile Include="UnzipOdd.Vector64.Int32.cs" />
+    <Compile Include="UnzipOdd.Vector64.SByte.cs" />
+    <Compile Include="UnzipOdd.Vector64.Single.cs" />
+    <Compile Include="UnzipOdd.Vector64.UInt16.cs" />
+    <Compile Include="UnzipOdd.Vector64.UInt32.cs" />
+    <Compile Include="UnzipOdd.Vector128.Byte.cs" />
+    <Compile Include="UnzipOdd.Vector128.Double.cs" />
+    <Compile Include="UnzipOdd.Vector128.Int16.cs" />
+    <Compile Include="UnzipOdd.Vector128.Int32.cs" />
+    <Compile Include="UnzipOdd.Vector128.Int64.cs" />
+    <Compile Include="UnzipOdd.Vector128.SByte.cs" />
+    <Compile Include="UnzipOdd.Vector128.Single.cs" />
+    <Compile Include="UnzipOdd.Vector128.UInt16.cs" />
+    <Compile Include="UnzipOdd.Vector128.UInt32.cs" />
+    <Compile Include="UnzipOdd.Vector128.UInt64.cs" />
+    <Compile Include="ZipHigh.Vector64.Byte.cs" />
+    <Compile Include="ZipHigh.Vector64.Int16.cs" />
+    <Compile Include="ZipHigh.Vector64.Int32.cs" />
+    <Compile Include="ZipHigh.Vector64.SByte.cs" />
+    <Compile Include="ZipHigh.Vector64.Single.cs" />
+    <Compile Include="ZipHigh.Vector64.UInt16.cs" />
+    <Compile Include="ZipHigh.Vector64.UInt32.cs" />
+    <Compile Include="ZipHigh.Vector128.Byte.cs" />
+    <Compile Include="ZipHigh.Vector128.Double.cs" />
+    <Compile Include="ZipHigh.Vector128.Int16.cs" />
+    <Compile Include="ZipHigh.Vector128.Int32.cs" />
+    <Compile Include="ZipHigh.Vector128.Int64.cs" />
+    <Compile Include="ZipHigh.Vector128.SByte.cs" />
+    <Compile Include="ZipHigh.Vector128.Single.cs" />
+    <Compile Include="ZipHigh.Vector128.UInt16.cs" />
+    <Compile Include="ZipHigh.Vector128.UInt32.cs" />
+    <Compile Include="ZipHigh.Vector128.UInt64.cs" />
+    <Compile Include="ZipLow.Vector64.Byte.cs" />
+    <Compile Include="ZipLow.Vector64.Int16.cs" />
+    <Compile Include="ZipLow.Vector64.Int32.cs" />
+    <Compile Include="ZipLow.Vector64.SByte.cs" />
+    <Compile Include="ZipLow.Vector64.Single.cs" />
+    <Compile Include="ZipLow.Vector64.UInt16.cs" />
+    <Compile Include="ZipLow.Vector64.UInt32.cs" />
+    <Compile Include="ZipLow.Vector128.Byte.cs" />
+    <Compile Include="ZipLow.Vector128.Double.cs" />
+    <Compile Include="ZipLow.Vector128.Int16.cs" />
+    <Compile Include="ZipLow.Vector128.Int32.cs" />
+    <Compile Include="ZipLow.Vector128.Int64.cs" />
+    <Compile Include="ZipLow.Vector128.SByte.cs" />
+    <Compile Include="ZipLow.Vector128.Single.cs" />
+    <Compile Include="ZipLow.Vector128.UInt16.cs" />
+    <Compile Include="ZipLow.Vector128.UInt32.cs" />
+    <Compile Include="ZipLow.Vector128.UInt64.cs" />
+    <Compile Include="Program.AdvSimd.Arm64_Part5.cs" />
+    <Compile Include="..\Shared\Helpers.cs" />
+    <Compile Include="..\Shared\Program.cs" />
+  </ItemGroup>
+</Project>

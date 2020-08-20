@@ -93,3 +93,7 @@
 #option (ENABLE_CHECKED_BUILD_PRIVATE_TYPES "Enable private types checked build")
 #option (ENABLE_CHECKED_BUILD_CRASH_REPORTING "Enable private types checked build")
 #option (HAVE_BTLS "BoringTls is supported")
+#option (ENABLE_JIT_DUMP "Enable jit dump support on Linux")
+#option (DISABLE_CRASH_REPORTING)
+#option (ENABLE_CXX)
+#option (STATIC_ICU)

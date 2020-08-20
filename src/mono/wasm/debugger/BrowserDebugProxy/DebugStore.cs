@@ -268,7 +268,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         public override int GetHashCode() => assembly.GetHashCode() ^ document.GetHashCode();
 
-        public static bool operator ==(SourceId a, SourceId b) => ((object) a == null) ? (object) b == null : a.Equals(b);
+        public static bool operator ==(SourceId a, SourceId b) => ((object)a == null) ? (object)b == null : a.Equals(b);
 
         public static bool operator !=(SourceId a, SourceId b) => !a.Equals(b);
     }
@@ -486,11 +486,11 @@ namespace Microsoft.WebAssembly.Diagnostics
 
             if (sourceLinkDebugInfo != null)
             {
-                var sourceLinkContent = ((SourceLinkDebugInformation) sourceLinkDebugInfo).Content;
+                var sourceLinkContent = ((SourceLinkDebugInformation)sourceLinkDebugInfo).Content;
 
                 if (sourceLinkContent != null)
                 {
-                    var jObject = JObject.Parse(sourceLinkContent) ["documents"];
+                    var jObject = JObject.Parse(sourceLinkContent)["documents"];
                     sourceLinkMappings = JsonConvert.DeserializeObject<Dictionary<string, string>>(jObject.ToString());
                 }
             }
@@ -592,7 +592,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         public string DocUrl => doc.Url;
 
-        public(int startLine, int startColumn, int endLine, int endColumn) GetExtents()
+        public (int startLine, int startColumn, int endLine, int endColumn) GetExtents()
         {
             var start = Methods.OrderBy(m => m.StartLocation.Line).ThenBy(m => m.StartLocation.Column).First();
             var end = Methods.OrderByDescending(m => m.EndLocation.Line).ThenByDescending(m => m.EndLocation.Column).First();
@@ -606,7 +606,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             {
                 if (uri.IsFile && File.Exists(uri.LocalPath))
                 {
-                    using(var file = File.Open(SourceUri.LocalPath, FileMode.Open))
+                    using (var file = File.Open(SourceUri.LocalPath, FileMode.Open))
                     {
                         await file.CopyToAsync(mem, token).ConfigureAwait(false);
                         mem.Position = 0;
@@ -615,7 +615,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 else if (uri.Scheme == "http" || uri.Scheme == "https")
                 {
                     var client = new HttpClient();
-                    using(var stream = await client.GetStreamAsync(uri))
+                    using (var stream = await client.GetStreamAsync(uri))
                     {
                         await stream.CopyToAsync(mem, token).ConfigureAwait(false);
                         mem.Position = 0;
@@ -659,8 +659,8 @@ namespace Microsoft.WebAssembly.Diagnostics
         {
             var algorithm = GetHashAlgorithm(doc.HashAlgorithm);
             if (algorithm != null)
-                using(algorithm)
-            return algorithm.ComputeHash(sourceStream);
+                using (algorithm)
+                    return algorithm.ComputeHash(sourceStream);
 
             return Array.Empty<byte>();
         }
@@ -670,7 +670,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             if (doc.EmbeddedSource.Length > 0)
                 return new MemoryStream(doc.EmbeddedSource, false);
 
-            foreach (var url in new [] { SourceUri, SourceLinkUri })
+            foreach (var url in new[] { SourceUri, SourceLinkUri })
             {
                 var mem = await GetDataAsync(url, token).ConfigureAwait(false);
                 if (mem != null && (!checkHash || CheckPdbHash(ComputePdbHash(mem))))
@@ -688,11 +688,11 @@ namespace Microsoft.WebAssembly.Diagnostics
             return new
             {
                 scriptId = SourceId.ToString(),
-                    url = Url,
-                    executionContextId,
-                    executionContextAuxData,
-                    //hash:  should be the v8 hash algo, managed implementation is pending
-                    dotNetUrl = DotNetUrl,
+                url = Url,
+                executionContextId,
+                executionContextAuxData,
+                //hash:  should be the v8 hash algo, managed implementation is pending
+                dotNetUrl = DotNetUrl,
             };
         }
     }
@@ -742,7 +742,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                         new DebugItem
                         {
                             Url = url,
-                                Data = Task.WhenAll(client.GetByteArrayAsync(url), pdb != null ? client.GetByteArrayAsync(pdb) : Task.FromResult<byte[]>(null))
+                            Data = Task.WhenAll(client.GetByteArrayAsync(url), pdb != null ? client.GetByteArrayAsync(pdb) : Task.FromResult<byte[]>(null))
                         });
                 }
                 catch (Exception e)

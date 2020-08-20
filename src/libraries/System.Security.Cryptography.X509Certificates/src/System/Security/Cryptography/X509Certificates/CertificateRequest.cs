@@ -658,10 +658,6 @@ namespace System.Security.Cryptography.X509Certificates
                 HashSet<string?> usedOids = new HashSet<string?>(CertificateExtensions.Count);
                 List<X509ExtensionAsn> extensionAsns = new List<X509ExtensionAsn>(CertificateExtensions.Count);
 
-                // An interesting quirk of skipping null values here is that
-                // Extensions.Count == 0 => no extensions
-                // Extensions.ContainsOnly(null) => empty extensions list
-
                 foreach (X509Extension extension in CertificateExtensions)
                 {
                     if (extension == null)
@@ -678,7 +674,13 @@ namespace System.Security.Cryptography.X509Certificates
                     extensionAsns.Add(new X509ExtensionAsn(extension));
                 }
 
-                tbsCertificate.Extensions = extensionAsns.ToArray();
+                // Do not include the extensions sequence at all if there are no
+                // extensions, per RFC 5280:
+                // "If present, this field is a SEQUENCE of one or more certificate extensions"
+                if (extensionAsns.Count > 0)
+                {
+                    tbsCertificate.Extensions = extensionAsns.ToArray();
+                }
             }
 
             AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);

@@ -6,7 +6,7 @@
   </PropertyGroup>
   <PropertyGroup>
     <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetsBrowser)' == 'true'">SR.SystemNetNameResolution_PlatformNotSupported</GeneratePlatformNotSupportedAssemblyMessage>
-    <GeneratePlatformNotSupportedAdditionalParameters Condition="'$(TargetsBrowser)' == 'true'">--exclude-api-list ExcludeApiList.PNSE.Browser.txt</GeneratePlatformNotSupportedAdditionalParameters>
+    <ApiExclusionListPath Condition="'$(TargetsBrowser)' == 'true'">ExcludeApiList.PNSE.Browser.txt</ApiExclusionListPath>
   </PropertyGroup>
   <ItemGroup Condition="'$(TargetsBrowser)' != 'true'">
     <Compile Include="System\Net\Dns.cs" />

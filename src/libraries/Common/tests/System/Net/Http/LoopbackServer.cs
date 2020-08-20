@@ -573,6 +573,7 @@ namespace System.Net.Test.Common
                                 _readStart = 0;
                                 _readEnd = dataLength;
                                 _readBuffer = newBuffer;
+                                startSearch = dataLength;
                             }
                         }
 
@@ -717,6 +718,7 @@ namespace System.Net.Test.Common
                 string[] splits = Encoding.ASCII.GetString(headerLines[0]).Split(' ');
                 requestData.Method = splits[0];
                 requestData.Path = splits[1];
+                requestData.Version = Version.Parse(splits[2].Substring(splits[2].IndexOf('/') + 1));
 
                 // Convert header lines to key/value pairs
                 // Skip first line since it's the status line

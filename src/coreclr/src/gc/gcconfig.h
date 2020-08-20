@@ -83,7 +83,7 @@ public:
     INT_CONFIG   (BGCSpinCount,           "BGCSpinCount",           NULL,                             140,               "Specifies the bgc spin count")                                                           \
     INT_CONFIG   (BGCSpin,                "BGCSpin",                NULL,                             2,                 "Specifies the bgc spin time")                                                            \
     INT_CONFIG   (HeapCount,              "GCHeapCount",            "System.GC.HeapCount",            0,                 "Specifies the number of server GC heaps")                                                \
-    INT_CONFIG   (Gen0Size,               "GCgen0size",             NULL,                             0,                 "Specifies the smallest gen0 size")                                                       \
+    INT_CONFIG   (Gen0Size,               "GCgen0size",             NULL,                             0,                 "Specifies the smallest gen0 budget")                                                     \
     INT_CONFIG   (SegmentSize,            "GCSegmentSize",          NULL,                             0,                 "Specifies the managed heap segment size")                                                \
     INT_CONFIG   (LatencyMode,            "GCLatencyMode",          NULL,                             -1,                "Specifies the GC latency mode - batch, interactive or low latency (note that the same "  \
                                                                                                                          "thing can be specified via API which is the supported way")                              \
@@ -98,6 +98,7 @@ public:
     INT_CONFIG   (GCHighMemPercent,       "GCHighMemPercent",       "System.GC.HighMemoryPercent",    0,                 "The percent for GC to consider as high memory")                                          \
     INT_CONFIG   (GCProvModeStress,       "GCProvModeStress",       NULL,                             0,                 "Stress the provisional modes")                                                           \
     INT_CONFIG   (GCGen0MaxBudget,        "GCGen0MaxBudget",        NULL,                             0,                 "Specifies the largest gen0 allocation budget")                                           \
+    INT_CONFIG   (GCLowSkipRatio,         "GCLowSkipRatio",         NULL,                             30,                "Specifies the low generation skip ratio")                                                \
     INT_CONFIG   (GCHeapHardLimit,        "GCHeapHardLimit",        "System.GC.HeapHardLimit",        0,                 "Specifies a hard limit for the GC heap")                                                 \
     INT_CONFIG   (GCHeapHardLimitPercent, "GCHeapHardLimitPercent", "System.GC.HeapHardLimitPercent", 0,                 "Specifies the GC heap usage as a percentage of the total memory")                        \
     INT_CONFIG   (GCTotalPhysicalMemory,  "GCTotalPhysicalMemory",  NULL,                             0,                 "Specifies what the GC should consider to be total physical memory")                      \

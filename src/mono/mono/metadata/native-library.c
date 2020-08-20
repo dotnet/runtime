@@ -1293,6 +1293,13 @@ lookup_pinvoke_call_impl (MonoMethod *method, MonoLookupPInvokeStatus *status_ou
 
 	if (strcmp (new_scope, "QCall") == 0) {
 		piinfo->addr = mono_lookup_pinvoke_qcall_internal (method, status_out);
+		if (!piinfo->addr) {
+			mono_trace (G_LOG_LEVEL_WARNING, MONO_TRACE_DLLIMPORT,
+						"Unable to find qcall for '%s'.",
+						new_import);
+			status_out->err_code = LOOKUP_PINVOKE_ERR_NO_SYM;
+			status_out->err_arg = g_strdup (new_import);
+		}
 		return piinfo->addr;
 	}
 

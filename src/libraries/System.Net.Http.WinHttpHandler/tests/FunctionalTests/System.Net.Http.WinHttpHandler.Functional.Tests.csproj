@@ -117,6 +117,8 @@
              Link="Common\System\Net\Http\LoopbackServer.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Http\LoopbackServer.AuthenticationHelpers.cs"
              Link="Common\System\Net\Http\LoopbackServer.AuthenticationHelpers.cs" />
+    <Compile Include="$(CommonTestPath)System\Net\SslProtocolSupport.cs"
+             Link="Common\System\Net\SslProtocolSupport.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Http\TestHelper.cs"
              Link="Common\System\Net\Http\TestHelper.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Http\PostScenarioTest.cs"

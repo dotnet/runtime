@@ -4126,44 +4126,19 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
 
             case NI_System_Type_IsAssignableFrom:
             {
-                // Optimize patterns like:
-                //
-                //   typeof(TTo).IsAssignableFrom(typeof(TTFrom))
-                //   valueTypeVar.GetType().IsAssignableFrom(typeof(TTFrom))
-                //
-                // to true/false
                 GenTree* typeTo   = impStackTop(1).val;
                 GenTree* typeFrom = impStackTop(0).val;
 
-                if (typeTo->IsCall() && typeFrom->IsCall())
-                {
-                    // make sure both arguments are `typeof()`
-                    CORINFO_METHOD_HANDLE hTypeof = eeFindHelper(CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE);
-                    if ((typeTo->AsCall()->gtCallMethHnd == hTypeof) && (typeFrom->AsCall()->gtCallMethHnd == hTypeof))
-                    {
-                        CORINFO_CLASS_HANDLE hClassTo =
-                            gtGetHelperArgClassHandle(typeTo->AsCall()->gtCallArgs->GetNode());
-                        CORINFO_CLASS_HANDLE hClassFrom =
-                            gtGetHelperArgClassHandle(typeFrom->AsCall()->gtCallArgs->GetNode());
+                retNode = impTypeIsAssignable(typeTo, typeFrom);
+                break;
+            }
 
-                        if (hClassTo == NO_CLASS_HANDLE || hClassFrom == NO_CLASS_HANDLE)
-                        {
-                            break;
-                        }
+            case NI_System_Type_IsAssignableTo:
+            {
+                GenTree* typeTo   = impStackTop(0).val;
+                GenTree* typeFrom = impStackTop(1).val;
 
-                        TypeCompareState castResult = info.compCompHnd->compareTypesForCast(hClassFrom, hClassTo);
-                        if (castResult == TypeCompareState::May)
-                        {
-                            // requires runtime check
-                            // e.g. __Canon, COMObjects, Nullable
-                            break;
-                        }
-
-                        retNode = gtNewIconNode((castResult == TypeCompareState::Must) ? 1 : 0);
-                        impPopStack(); // drop both CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE calls
-                        impPopStack();
-                    }
-                }
+                retNode = impTypeIsAssignable(typeTo, typeFrom);
                 break;
             }
 
@@ -4366,6 +4341,50 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
     }
 
     return retNode;
+}
+
+GenTree* Compiler::impTypeIsAssignable(GenTree* typeTo, GenTree* typeFrom)
+{
+    // Optimize patterns like:
+    //
+    //   typeof(TTo).IsAssignableFrom(typeof(TTFrom))
+    //   valueTypeVar.GetType().IsAssignableFrom(typeof(TTFrom))
+    //   typeof(TTFrom).IsAssignableTo(typeof(TTo))
+    //   typeof(TTFrom).IsAssignableTo(valueTypeVar.GetType())
+    //
+    // to true/false
+
+    if (typeTo->IsCall() && typeFrom->IsCall())
+    {
+        // make sure both arguments are `typeof()`
+        CORINFO_METHOD_HANDLE hTypeof = eeFindHelper(CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE);
+        if ((typeTo->AsCall()->gtCallMethHnd == hTypeof) && (typeFrom->AsCall()->gtCallMethHnd == hTypeof))
+        {
+            CORINFO_CLASS_HANDLE hClassTo   = gtGetHelperArgClassHandle(typeTo->AsCall()->gtCallArgs->GetNode());
+            CORINFO_CLASS_HANDLE hClassFrom = gtGetHelperArgClassHandle(typeFrom->AsCall()->gtCallArgs->GetNode());
+
+            if (hClassTo == NO_CLASS_HANDLE || hClassFrom == NO_CLASS_HANDLE)
+            {
+                return nullptr;
+            }
+
+            TypeCompareState castResult = info.compCompHnd->compareTypesForCast(hClassFrom, hClassTo);
+            if (castResult == TypeCompareState::May)
+            {
+                // requires runtime check
+                // e.g. __Canon, COMObjects, Nullable
+                return nullptr;
+            }
+
+            GenTreeIntCon* retNode = gtNewIconNode((castResult == TypeCompareState::Must) ? 1 : 0);
+            impPopStack(); // drop both CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE calls
+            impPopStack();
+
+            return retNode;
+        }
+    }
+
+    return nullptr;
 }
 
 GenTree* Compiler::impMathIntrinsic(CORINFO_METHOD_HANDLE method,
@@ -4613,6 +4632,10 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
             else if (strcmp(methodName, "IsAssignableFrom") == 0)
             {
                 result = NI_System_Type_IsAssignableFrom;
+            }
+            else if (strcmp(methodName, "IsAssignableTo") == 0)
+            {
+                result = NI_System_Type_IsAssignableTo;
             }
         }
     }
@@ -7503,11 +7526,13 @@ enum
     PREFIX_TAILCALL_EXPLICIT = 0x00000001, // call has "tail" IL prefix
     PREFIX_TAILCALL_IMPLICIT =
         0x00000010, // call is treated as having "tail" prefix even though there is no "tail" IL prefix
-    PREFIX_TAILCALL    = (PREFIX_TAILCALL_EXPLICIT | PREFIX_TAILCALL_IMPLICIT),
-    PREFIX_VOLATILE    = 0x00000100,
-    PREFIX_UNALIGNED   = 0x00001000,
-    PREFIX_CONSTRAINED = 0x00010000,
-    PREFIX_READONLY    = 0x00100000
+    PREFIX_TAILCALL_STRESS =
+        0x00000100, // call doesn't "tail" IL prefix but is treated as explicit because of tail call stress
+    PREFIX_TAILCALL    = (PREFIX_TAILCALL_EXPLICIT | PREFIX_TAILCALL_IMPLICIT | PREFIX_TAILCALL_STRESS),
+    PREFIX_VOLATILE    = 0x00001000,
+    PREFIX_UNALIGNED   = 0x00010000,
+    PREFIX_CONSTRAINED = 0x00100000,
+    PREFIX_READONLY    = 0x01000000
 };
 
 /********************************************************************************
@@ -8651,6 +8676,7 @@ DONE:
     {
         const bool isExplicitTailCall = (tailCallFlags & PREFIX_TAILCALL_EXPLICIT) != 0;
         const bool isImplicitTailCall = (tailCallFlags & PREFIX_TAILCALL_IMPLICIT) != 0;
+        const bool isStressTailCall   = (tailCallFlags & PREFIX_TAILCALL_STRESS) != 0;
 
         // Exactly one of these should be true.
         assert(isExplicitTailCall != isImplicitTailCall);
@@ -8717,6 +8743,12 @@ DONE:
                     // for in-lining.
                     call->AsCall()->gtCallMoreFlags |= GTF_CALL_M_EXPLICIT_TAILCALL;
                     JITDUMP("\nGTF_CALL_M_EXPLICIT_TAILCALL set for call [%06u]\n", dspTreeID(call));
+
+                    if (isStressTailCall)
+                    {
+                        call->AsCall()->gtCallMoreFlags |= GTF_CALL_M_STRESS_TAILCALL;
+                        JITDUMP("\nGTF_CALL_M_STRESS_TAILCALL set for call [%06u]\n", dspTreeID(call));
+                    }
                 }
                 else
                 {
@@ -14186,6 +14218,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                                     // Stress the tailcall.
                                     JITDUMP(" (Tailcall stress: prefixFlags |= PREFIX_TAILCALL_EXPLICIT)");
                                     prefixFlags |= PREFIX_TAILCALL_EXPLICIT;
+                                    prefixFlags |= PREFIX_TAILCALL_STRESS;
                                 }
                                 else
                                 {

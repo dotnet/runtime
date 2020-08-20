@@ -4337,6 +4337,7 @@ namespace System
         public abstract object? InvokeMember(string name, System.Reflection.BindingFlags invokeAttr, System.Reflection.Binder? binder, object? target, object?[]? args, System.Reflection.ParameterModifier[]? modifiers, System.Globalization.CultureInfo? culture, string[]? namedParameters);
         protected abstract bool IsArrayImpl();
         public virtual bool IsAssignableFrom([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] System.Type? c) { throw null; }
+        public bool IsAssignableTo([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] System.Type? targetType) { throw null; }
         protected abstract bool IsByRefImpl();
         protected abstract bool IsCOMObjectImpl();
         protected virtual bool IsContextfulImpl() { throw null; }
@@ -6043,6 +6044,7 @@ namespace System.Globalization
         public System.Globalization.SortKey GetSortKey(string source, System.Globalization.CompareOptions options) { throw null; }
         public int GetSortKeyLength(System.ReadOnlySpan<char> source, System.Globalization.CompareOptions options = System.Globalization.CompareOptions.None) { throw null; }
         public int IndexOf(System.ReadOnlySpan<char> source, System.ReadOnlySpan<char> value, System.Globalization.CompareOptions options = System.Globalization.CompareOptions.None) { throw null; }
+        public int IndexOf(System.ReadOnlySpan<char> source, System.ReadOnlySpan<char> value, System.Globalization.CompareOptions options, out int matchLength) { throw null; }
         public int IndexOf(System.ReadOnlySpan<char> source, System.Text.Rune value, System.Globalization.CompareOptions options = System.Globalization.CompareOptions.None) { throw null; }
         public int IndexOf(string source, char value) { throw null; }
         public int IndexOf(string source, char value, System.Globalization.CompareOptions options) { throw null; }
@@ -6057,6 +6059,7 @@ namespace System.Globalization
         public int IndexOf(string source, string value, int startIndex, int count) { throw null; }
         public int IndexOf(string source, string value, int startIndex, int count, System.Globalization.CompareOptions options) { throw null; }
         public bool IsPrefix(System.ReadOnlySpan<char> source, System.ReadOnlySpan<char> prefix, System.Globalization.CompareOptions options = System.Globalization.CompareOptions.None) { throw null; }
+        public bool IsPrefix(System.ReadOnlySpan<char> source, System.ReadOnlySpan<char> suffix, System.Globalization.CompareOptions options, out int matchLength) { throw null; }
         public bool IsPrefix(string source, string prefix) { throw null; }
         public bool IsPrefix(string source, string prefix, System.Globalization.CompareOptions options) { throw null; }
         public static bool IsSortable(char ch) { throw null; }
@@ -6064,9 +6067,11 @@ namespace System.Globalization
         public static bool IsSortable(string text) { throw null; }
         public static bool IsSortable(System.Text.Rune value) { throw null; }
         public bool IsSuffix(System.ReadOnlySpan<char> source, System.ReadOnlySpan<char> suffix, System.Globalization.CompareOptions options = System.Globalization.CompareOptions.None) { throw null; }
+        public bool IsSuffix(System.ReadOnlySpan<char> source, System.ReadOnlySpan<char> suffix, System.Globalization.CompareOptions options, out int matchLength) { throw null; }
         public bool IsSuffix(string source, string suffix) { throw null; }
         public bool IsSuffix(string source, string suffix, System.Globalization.CompareOptions options) { throw null; }
         public int LastIndexOf(System.ReadOnlySpan<char> source, System.ReadOnlySpan<char> value, System.Globalization.CompareOptions options = System.Globalization.CompareOptions.None) { throw null; }
+        public int LastIndexOf(System.ReadOnlySpan<char> source, System.ReadOnlySpan<char> value, System.Globalization.CompareOptions options, out int matchLength) { throw null; }
         public int LastIndexOf(System.ReadOnlySpan<char> source, System.Text.Rune value, System.Globalization.CompareOptions options = System.Globalization.CompareOptions.None) { throw null; }
         public int LastIndexOf(string source, char value) { throw null; }
         public int LastIndexOf(string source, char value, System.Globalization.CompareOptions options) { throw null; }
@@ -9992,14 +9997,6 @@ namespace System.Runtime.Versioning
     public sealed class SupportedOSPlatformAttribute : System.Runtime.Versioning.OSPlatformAttribute
     {
         public SupportedOSPlatformAttribute(string platformName) : base(platformName) { }
-    }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Class | System.AttributeTargets.Constructor | System.AttributeTargets.Enum | System.AttributeTargets.Event | System.AttributeTargets.Field | System.AttributeTargets.Method | System.AttributeTargets.Module | System.AttributeTargets.Property | System.AttributeTargets.Struct, AllowMultiple = true, Inherited = false)]
-    public sealed class ObsoletedInOSPlatformAttribute : System.Runtime.Versioning.OSPlatformAttribute
-    {
-        public ObsoletedInOSPlatformAttribute(string platformName) : base(platformName) { }
-        public ObsoletedInOSPlatformAttribute(string platformName, string message) : base(platformName) { }
-        public string? Message { get; }
-        public string? Url { get; set; }
     }
     public abstract class OSPlatformAttribute : System.Attribute
     {

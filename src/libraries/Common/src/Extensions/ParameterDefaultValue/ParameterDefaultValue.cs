@@ -25,7 +25,7 @@ namespace Microsoft.Extensions.Internal
             }
             catch (FormatException) when (parameter.ParameterType == typeof(DateTime))
             {
-                // Workaround for https://github.com/dotnet/corefx/issues/12338
+                // Workaround for https://github.com/dotnet/runtime/issues/18844
                 // If HasDefaultValue throws FormatException for DateTime
                 // we expect it to have default value
                 hasDefaultValue = true;
@@ -39,13 +39,13 @@ namespace Microsoft.Extensions.Internal
                     defaultValue = parameter.DefaultValue;
                 }
 
-                // Workaround for https://github.com/dotnet/corefx/issues/11797
+                // Workaround for https://github.com/dotnet/runtime/issues/18599
                 if (defaultValue == null && parameter.ParameterType.IsValueType)
                 {
                     defaultValue = CreateValueType(parameter.ParameterType);
                 }
 
-                [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2006:UnrecognizedReflectionPattern",
+                [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2067:UnrecognizedReflectionPattern",
                     Justification = "CreateInstance is only called on a ValueType, which will always have a default constructor.")]
                 object? CreateValueType(Type t) => Activator.CreateInstance(t);
 

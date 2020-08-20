@@ -33,13 +33,13 @@ namespace DebuggerTests
 
         public static async System.Threading.Tasks.Task PropertyGettersTestAsync()
         {
-            var ptd = new ClassWithProperties { DTAutoProperty = new DateTime (4, 5, 6, 7, 8, 9), V = 0xDEADBEEF };
-            var swp = new StructWithProperties { DTAutoProperty = new DateTime (4, 5, 6, 7, 8, 9), V = 0xDEADBEEF };
+            var ptd = new ClassWithProperties { DTAutoProperty = new DateTime(4, 5, 6, 7, 8, 9), V = 0xDEADBEEF };
+            var swp = new StructWithProperties { DTAutoProperty = new DateTime(4, 5, 6, 7, 8, 9), V = 0xDEADBEEF };
             System.Console.WriteLine("break here");
             await System.Threading.Tasks.Task.CompletedTask;
         }
 
-        public static void MethodForNegativeTests (string value = null)
+        public static void MethodForNegativeTests(string value = null)
         {
             var ptd = new ClassWithProperties { StringField = value };
             var swp = new StructWithProperties { StringField = value };
