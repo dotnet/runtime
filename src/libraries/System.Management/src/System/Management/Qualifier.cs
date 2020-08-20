@@ -207,8 +207,8 @@ namespace System.Management
             get
             {
                 RefreshQualifierInfo();
-                return ((int)tag_WBEM_FLAVOR_TYPE.WBEM_FLAVOR_MASK_AMENDED ==
-                    (qualifierFlavor & (int)tag_WBEM_FLAVOR_TYPE.WBEM_FLAVOR_AMENDED));
+                return ((qualifierFlavor & (int)tag_WBEM_FLAVOR_TYPE.WBEM_FLAVOR_AMENDED) ==
+                    (int)tag_WBEM_FLAVOR_TYPE.WBEM_FLAVOR_MASK_AMENDED);
             }
             set
             {
@@ -245,8 +245,8 @@ namespace System.Management
             get
             {
                 RefreshQualifierInfo();
-                return ((int)tag_WBEM_FLAVOR_TYPE.WBEM_FLAVOR_ORIGIN_LOCAL ==
-                    (qualifierFlavor & (int)tag_WBEM_FLAVOR_TYPE.WBEM_FLAVOR_MASK_ORIGIN));
+                return ((qualifierFlavor & (int)tag_WBEM_FLAVOR_TYPE.WBEM_FLAVOR_MASK_ORIGIN) ==
+                    (int)tag_WBEM_FLAVOR_TYPE.WBEM_FLAVOR_ORIGIN_LOCAL);
             }
         }
 
@@ -263,8 +263,8 @@ namespace System.Management
             get
             {
                 RefreshQualifierInfo();
-                return ((int)tag_WBEM_FLAVOR_TYPE.WBEM_FLAVOR_FLAG_PROPAGATE_TO_INSTANCE ==
-                    (qualifierFlavor & (int)tag_WBEM_FLAVOR_TYPE.WBEM_FLAVOR_FLAG_PROPAGATE_TO_INSTANCE));
+                return ((qualifierFlavor & (int)tag_WBEM_FLAVOR_TYPE.WBEM_FLAVOR_FLAG_PROPAGATE_TO_INSTANCE) ==
+                    (int)tag_WBEM_FLAVOR_TYPE.WBEM_FLAVOR_FLAG_PROPAGATE_TO_INSTANCE);
             }
             set
             {
@@ -301,8 +301,8 @@ namespace System.Management
             get
             {
                 RefreshQualifierInfo();
-                return ((int)tag_WBEM_FLAVOR_TYPE.WBEM_FLAVOR_FLAG_PROPAGATE_TO_DERIVED_CLASS ==
-                    (qualifierFlavor & (int)tag_WBEM_FLAVOR_TYPE.WBEM_FLAVOR_FLAG_PROPAGATE_TO_DERIVED_CLASS));
+                return ((qualifierFlavor & (int)tag_WBEM_FLAVOR_TYPE.WBEM_FLAVOR_FLAG_PROPAGATE_TO_DERIVED_CLASS) ==
+                    (int)tag_WBEM_FLAVOR_TYPE.WBEM_FLAVOR_FLAG_PROPAGATE_TO_DERIVED_CLASS);
             }
             set
             {
@@ -339,8 +339,8 @@ namespace System.Management
             get
             {
                 RefreshQualifierInfo();
-                return ((int)tag_WBEM_FLAVOR_TYPE.WBEM_FLAVOR_OVERRIDABLE ==
-                    (qualifierFlavor & (int)tag_WBEM_FLAVOR_TYPE.WBEM_FLAVOR_MASK_PERMISSIONS));
+                return ((qualifierFlavor & (int)tag_WBEM_FLAVOR_TYPE.WBEM_FLAVOR_MASK_PERMISSIONS) ==
+                    (int)tag_WBEM_FLAVOR_TYPE.WBEM_FLAVOR_OVERRIDABLE);
             }
             set
             {

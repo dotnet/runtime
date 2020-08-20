@@ -26,7 +26,7 @@ namespace System.Management
         public static IWbemClassObjectFreeThreaded GetErrorInfo()
         {
             IntPtr pErrorInfo = WmiNetUtilsHelper.GetErrorInfo_f();
-            if (IntPtr.Zero != pErrorInfo && new IntPtr(-1) != pErrorInfo)
+            if (pErrorInfo != IntPtr.Zero && new IntPtr(-1) != pErrorInfo)
             {
                 IntPtr pIWbemClassObject;
                 Marshal.QueryInterface(pErrorInfo, ref IWbemClassObjectFreeThreaded.IID_IWbemClassObject, out pIWbemClassObject);

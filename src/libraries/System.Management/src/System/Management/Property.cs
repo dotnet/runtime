@@ -284,7 +284,7 @@ namespace System.Management
         {
             object val = null;
 
-            if ((System.DBNull.Value != wmiValue) && (wmiValue != null))
+            if ((wmiValue != System.DBNull.Value) && (wmiValue != null))
             {
                 if (isArray)
                 {

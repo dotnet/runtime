@@ -2670,7 +2670,7 @@ namespace System.Management
 
                                 if (status >= 0)
                                 {
-                                    path = (System.DBNull.Value != val) ? (new ManagementPath((string)val)) : (new ManagementPath());
+                                    path = (val != System.DBNull.Value) ? (new ManagementPath((string)val)) : (new ManagementPath());
                                     path.IdentifierChanged += new IdentifierChangedEventHandler(HandleIdentifierChange);
                                 }
                             }

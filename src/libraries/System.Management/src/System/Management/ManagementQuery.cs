@@ -140,7 +140,7 @@ namespace System.Management
             // Next token should be the token value - look for terminating WS
             // or end of string
             int i;
-            if (-1 == (i = q.IndexOf(' ')))
+            if ((i = q.IndexOf(' ')) == -1)
                 i = q.Length;            // No WS => consume entire string
 
             tokenValue = q.Substring(0, i);
@@ -1675,7 +1675,7 @@ namespace System.Management
             q = q.Remove(0, 1).TrimStart(null);
 
             // Next item should be the source object
-            if (-1 == (i = q.IndexOf('}')))
+            if ((i = q.IndexOf('}')) == -1)
                 throw new ArgumentException(SR.InvalidQuery);    // Invalid query
 
             tempSourceObject = q.Substring(0, i).TrimEnd(null);
@@ -2192,7 +2192,7 @@ namespace System.Management
             q = q.Remove(0, 1).TrimStart(null);
 
             // Next item should be the source object
-            if (-1 == (i = q.IndexOf('}')))
+            if ((i = q.IndexOf('}')) == -1)
                 throw new ArgumentException(SR.InvalidQuery);    // Invalid query
 
             tempSourceObject = q.Substring(0, i).TrimEnd(null);

@@ -118,7 +118,7 @@ namespace System.Management
                     }
                 }
 
-                if (System.DBNull.Value == val)
+                if (val == System.DBNull.Value)
                     path = null;
                 else
                     path = (string)val;

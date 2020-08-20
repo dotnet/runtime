@@ -750,9 +750,9 @@ namespace System.Management
 
                 status = wbemObject.CompareTo_((int)settings, otherObject.wbemObject);
 
-                if ((int)ManagementStatus.Different == status)
+                if (status == (int)ManagementStatus.Different)
                     result = false;
-                else if ((int)ManagementStatus.NoError == status)
+                else if (status == (int)ManagementStatus.NoError)
                     result = true;
                 else if ((status & 0xfffff000) == 0x80041000)
                     ManagementException.ThrowWithExtendedInfo((ManagementStatus)status);
