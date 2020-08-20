@@ -656,21 +656,21 @@ HijackFaultingThread(
     BuildExceptionRecord(exceptionInfo, &exceptionRecord);
 
 #if defined(HOST_AMD64)
-    void **targetSP = (void **)threadContext.Rsp;
-
     threadContext.ContextFlags = CONTEXT_FLOATING_POINT;
     CONTEXT_GetThreadContextFromThreadState(x86_FLOAT_STATE, (thread_state_t)&exceptionInfo.FloatState, &threadContext);
 
     threadContext.ContextFlags |= CONTEXT_CONTROL | CONTEXT_INTEGER | CONTEXT_SEGMENTS;
     CONTEXT_GetThreadContextFromThreadState(x86_THREAD_STATE, (thread_state_t)&exceptionInfo.ThreadState, &threadContext);
-#elif defined(HOST_ARM64)
-    void **targetSP = (void **)threadContext.Sp;
 
+    void **targetSP = (void **)threadContext.Rsp;
+#elif defined(HOST_ARM64)
     threadContext.ContextFlags = CONTEXT_FLOATING_POINT;
     CONTEXT_GetThreadContextFromThreadState(ARM_NEON_STATE64, (thread_state_t)&exceptionInfo.FloatState, &threadContext);
 
     threadContext.ContextFlags |= CONTEXT_CONTROL | CONTEXT_INTEGER;
     CONTEXT_GetThreadContextFromThreadState(ARM_THREAD_STATE64, (thread_state_t)&exceptionInfo.ThreadState, &threadContext);
+
+    void **targetSP = (void **)threadContext.Sp;
 #else
 #error Unexpected architecture
 #endif
@@ -814,7 +814,7 @@ HijackFaultingThread(
     // the state if the exception is forwarded.
     arm_thread_state64_t ts64 = exceptionInfo.ThreadState;
 
-    exceptionRecord.ExceptionAddress = (void *)arm_thread_state64_get_pc(ts64);
+    exceptionRecord.ExceptionAddress = (void *)arm_thread_state64_get_pc_fptr(ts64);
 
     void **FramePointer = (void **)arm_thread_state64_get_sp(ts64);
 #else
@@ -851,7 +851,7 @@ HijackFaultingThread(
 
     ts64.__rbp = (SIZE_T)FramePointer;
 #elif defined(HOST_ARM64)
-    *--FramePointer = (void *)arm_thread_state64_get_pc(ts64);
+    *--FramePointer = (void *)arm_thread_state64_get_pc_fptr(ts64);
     *--FramePointer = (void *)arm_thread_state64_get_fp(ts64);
 
     arm_thread_state64_set_fp(ts64, FramePointer);
@@ -1077,11 +1077,11 @@ SEHExceptionThread(void *args)
                 machret = thread_get_state(thread, ARM_THREAD_STATE64, (thread_state_t)&threadStateActual, &count);
                 CHECK_MACH("thread_get_state", machret);
 
-                NONPAL_TRACE("ExceptionNotification actual  lr %016llx sp %016llx fp %016llx pc %016llx cpsr %08x\n",
-                    arm_thread_state64_get_lr(threadStateActual),
+                NONPAL_TRACE("ExceptionNotification actual  lr %p sp %016llx fp %016llx pc %p cpsr %08x\n",
+                    arm_thread_state64_get_lr_fptr(threadStateActual),
                     arm_thread_state64_get_sp(threadStateActual),
                     arm_thread_state64_get_fp(threadStateActual),
-                    arm_thread_state64_get_pc(threadStateActual),
+                    arm_thread_state64_get_pc_fptr(threadStateActual),
                     threadStateActual.__cpsr);
 
                 arm_exception_state64_t threadExceptionState;
@@ -1511,13 +1511,13 @@ InjectActivationInternal(CPalThread* pThread)
                 *(--sp) = ThreadState.__rbp;
                 size_t rbpAddress = (size_t)sp;
 #elif defined(HOST_ARM64)
-            if ((g_safeActivationCheckFunction != NULL) && g_safeActivationCheckFunction(arm_thread_state64_get_pc(ThreadState), /* checkingCurrentThread */ FALSE))
+            if ((g_safeActivationCheckFunction != NULL) && g_safeActivationCheckFunction((size_t)arm_thread_state64_get_pc_fptr(ThreadState), /* checkingCurrentThread */ FALSE))
             {
                 // TODO: it would be nice to preserve the red zone in case a jitter would want to use it
                 // Do we really care about unwinding through the wrapper?
                 size_t* sp = (size_t*)arm_thread_state64_get_sp(ThreadState);
-                *(--sp) = arm_thread_state64_get_pc(ThreadState);
-                *(--sp) = arm_thread_state64_get_lr(ThreadState);
+                *(--sp) = (size_t)arm_thread_state64_get_pc_fptr(ThreadState);
+                *(--sp) = arm_thread_state64_get_fp(ThreadState);
                 size_t rfpAddress = (size_t)sp;
 #else
 #error Unexpected architecture
