@@ -83,7 +83,6 @@
     <Compile Include="Design\Serialization\RootDesignerSerializerAttributeTests.cs" />
     <Compile Include="Design\Serialization\ResolveNameEventArgsTests.cs" />
     <Compile Include="Design\Serialization\MemberRelationshipTests.cs" />
-    <Compile Include="Design\Serialization\DesignerSerializerAttributeTests.cs" />
     <Compile Include="Design\Serialization\DesignerLoaderTests.cs" />
     <Compile Include="Design\Serialization\DefaultSerializationProviderAttributeTests.cs" />
     <Compile Include="Design\MenuCommandTests.cs" />

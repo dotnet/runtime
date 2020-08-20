@@ -138,6 +138,9 @@ public class WasmAppBuilder : Task
             File.Copy(Path.Join (MicrosoftNetCoreAppRuntimePackDir, "native", f), Path.Join(AppDir, f), true);
         File.Copy(MainJS!, Path.Join(AppDir, "runtime.js"),  true);
 
+        var html = @"<html><body><script type=""text/javascript"" src=""runtime.js""></script></body></html>";
+        File.WriteAllText(Path.Join(AppDir, "index.html"), html);
+
         foreach (var assembly in _assemblies.Values) {
             config.Assets.Add(new AssemblyEntry (Path.GetFileName(assembly.Location)));
             if (DebugLevel > 0) {

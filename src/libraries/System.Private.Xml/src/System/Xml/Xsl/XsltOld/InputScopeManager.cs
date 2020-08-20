@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#nullable enable
 namespace System.Xml.Xsl.XsltOld
 {
     using System;
@@ -10,17 +11,17 @@ namespace System.Xml.Xsl.XsltOld
 
     internal class InputScopeManager
     {
-        private InputScope _scopeStack;
+        private InputScope? _scopeStack;
         private string _defaultNS = string.Empty;
         private readonly XPathNavigator _navigator;    // We need this nsvigator for document() function implementation
 
-        public InputScopeManager(XPathNavigator navigator, InputScope rootScope)
+        public InputScopeManager(XPathNavigator navigator, InputScope? rootScope)
         {
             _navigator = navigator;
             _scopeStack = rootScope;
         }
 
-        internal InputScope CurrentScope
+        internal InputScope? CurrentScope
         {
             get { return _scopeStack; }
         }
@@ -62,7 +63,7 @@ namespace System.Xml.Xsl.XsltOld
                 return;
             }
 
-            for (NamespaceDecl scope = _scopeStack.Scopes; scope != null; scope = scope.Next)
+            for (NamespaceDecl? scope = _scopeStack.Scopes; scope != null; scope = scope.Next)
             {
                 _defaultNS = scope.PrevDefaultNsUri;
             }
@@ -103,9 +104,9 @@ namespace System.Xml.Xsl.XsltOld
                 return XmlReservedNs.NsXmlNs;
             }
 
-            for (InputScope inputScope = _scopeStack; inputScope != null; inputScope = inputScope.Parent)
+            for (InputScope? inputScope = _scopeStack; inputScope != null; inputScope = inputScope.Parent)
             {
-                string nspace = inputScope.ResolveNonAtom(prefix);
+                string? nspace = inputScope.ResolveNonAtom(prefix);
                 if (nspace != null)
                 {
                     return nspace;
@@ -147,7 +148,7 @@ namespace System.Xml.Xsl.XsltOld
         internal bool IsExtensionNamespace(string nspace)
         {
             Debug.Assert(_scopeStack != null, "PushScope wasn't called");
-            for (InputScope inputScope = _scopeStack; inputScope != null; inputScope = inputScope.Parent)
+            for (InputScope? inputScope = _scopeStack; inputScope != null; inputScope = inputScope.Parent)
             {
                 if (inputScope.IsExtensionNamespace(nspace))
                 {
@@ -170,7 +171,7 @@ namespace System.Xml.Xsl.XsltOld
         internal bool IsExcludedNamespace(string nspace)
         {
             Debug.Assert(_scopeStack != null, "PushScope wasn't called");
-            for (InputScope inputScope = _scopeStack; inputScope != null; inputScope = inputScope.Parent)
+            for (InputScope? inputScope = _scopeStack; inputScope != null; inputScope = inputScope.Parent)
             {
                 if (inputScope.IsExcludedNamespace(nspace))
                 {

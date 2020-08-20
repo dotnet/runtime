@@ -37,8 +37,8 @@ namespace DebuggerTests
                        fn_del_null = TObject("Math.IsMathNull", is_null: true),
                        fn_del_arr = TArray("Math.IsMathNull[]", 1),
 
-                        // Unused locals
-                        fn_func_unused = TDelegate("System.Func<Math, bool>", "bool <DelegatesTest>|(Math)"),
+                       // Unused locals
+                       fn_func_unused = TDelegate("System.Func<Math, bool>", "bool <DelegatesTest>|(Math)"),
                        fn_func_null_unused = TObject("System.Func<Math, bool>", is_null: true),
                        fn_func_arr_unused = TArray("System.Func<Math, bool>[]", 1),
 

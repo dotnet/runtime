@@ -324,9 +324,10 @@ namespace System.Net
     }
     public enum NetworkError : int
     {
-        Unknown = 0,
+        Other = 0,
         EndPointInUse,
         HostNotFound,
+        TimedOut,
         ConnectionRefused,
         OperationAborted,
         ConnectionAborted,

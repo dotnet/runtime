@@ -6,6 +6,7 @@ include(GNUInstallDirs)
 include(CheckIncludeFile)
 include(CheckFunctionExists)
 include(TestBigEndian)
+include (FindPkgConfig)
 
 set(CMAKE_MODULE_PATH
   ${CMAKE_MODULE_PATH}
@@ -32,7 +33,7 @@ include(configure)
 set(VERSION "")
 
 execute_process(
-  COMMAND grep ^MONO_CORLIB_VERSION= configure.ac
+  COMMAND grep ^MONO_CORLIB_VERSION= ${CMAKE_SOURCE_DIR}/configure.ac
   COMMAND cut -d = -f  2
   OUTPUT_VARIABLE CORLIB_VERSION_OUT
 )
@@ -41,6 +42,10 @@ if (CORLIB_VERSION_OUT STREQUAL "")
 endif()
 string(STRIP "${CORLIB_VERSION_OUT}" MONO_CORLIB_VERSION_BASE)
 set(MONO_CORLIB_VERSION "\"${MONO_CORLIB_VERSION_BASE}\"")
+
+if(EXISTS "${CMAKE_SOURCE_DIR}/mono.proj")
+  set(ENABLE_NETCORE 1)
+endif()
 
 if (ENABLE_NETCORE)
   set(DISABLE_REMOTING 1)
@@ -55,6 +60,8 @@ if (ENABLE_NETCORE)
   set(DISABLE_PERFCOUNTERS 1)
   set(DISABLE_ATTACH 1)
   set(DISABLE_DLLMAP 1)
+  set(DISABLE_CONFIG 1)
+  set(DISABLE_CFGDIR_CONFIG 1)
 else()
   message(FATAL_ERROR "Building without -DENABLE_NETCORE=1 is not supported.")
 endif()
@@ -112,7 +119,7 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
   set(PTHREAD_POINTER_ID 1)
   set(USE_MACH_SEMA 1)
 else()
-  message(FATAL ERROR "")
+  message(FATAL_ERROR "")
 endif()
 
 ######################################
@@ -129,7 +136,7 @@ if(TARGET_SYSTEM_NAME STREQUAL "Darwin")
   set(CORETARGETS "-p:TargetsUnix=true -p:TargetsOSX=true")
   set(NETCORE_HOST_PLATFORM "macos")
 else()
-  message(FATAL ERROR "")
+  message(FATAL_ERROR "")
 endif()
 
 ######################################
@@ -139,7 +146,7 @@ endif()
 if(CMAKE_SYSTEM_PROCESSOR STREQUAL "x86_64")
   set(HOST_AMD64 1)
 else()
-  message(FATAL ERROR "")
+  message(FATAL_ERROR "")
 endif()
 
 ######################################
@@ -154,7 +161,23 @@ if(TARGET_ARCH STREQUAL "x86_64")
   set(RID_SUFFIX "x64")
   set(COREARCH "x64")
 else()
-  message(FATAL ERROR "")
+  message(FATAL_ERROR "")
+endif()
+
+######################################
+# ICU CHECKS
+######################################
+set(ICU_SHIM_PATH "../../../libraries/Native/Unix/System.Globalization.Native")
+if(TARGET_OSX)
+  # FIXME: Handle errors
+  # Defines ICU_INCLUDEDIR/ICU_LIBDIR
+  set(ENV{PKG_CONFIG_PATH} "{$PKG_CONFIG_PATH}:/usr/local/lib/pkgconfig:/usr/local/opt/icu4c/lib/pkgconfig")
+  pkg_check_modules(ICU icu-uc)
+  set(OSX_ICU_LIBRARY_PATH /usr/lib/libicucore.dylib)
+  set(ICU_FLAGS "-DTARGET_UNIX -DU_DISABLE_RENAMING -Wno-reserved-id-macro -Wno-documentation -Wno-documentation-unknown-command -Wno-switch-enum -Wno-covered-switch-default -Wno-covered-switch-default -Wno-extra-semi-stmt -Wno-unknown-warning-option -Wno-deprecated-declarations")
+  set(HAVE_SYS_ICU 1)
+else()
+  message(FATAL_ERROR "")
 endif()
 
 ######################################

@@ -86,4 +86,9 @@ namespace System.Net.Test.Common
             throw new NotImplementedException("HTTP/3 does not operate over a Socket.");
         }
     }
+
+    public static class HttpVersion30
+    {
+        public static readonly Version Value = new Version(3, 0);
+    }
 }

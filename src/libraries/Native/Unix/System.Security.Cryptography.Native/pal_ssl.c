@@ -3,6 +3,10 @@
 
 #include "pal_ssl.h"
 #include "openssl.h"
+#include "pal_evp_pkey.h"
+#include "pal_evp_pkey_rsa.h"
+#include "pal_rsa.h"
+#include "pal_x509.h"
 
 #include <assert.h>
 #include <string.h>
@@ -24,9 +28,6 @@ c_static_assert(PAL_SSL_ERROR_ZERO_RETURN == SSL_ERROR_ZERO_RETURN);
     "ECDHE-ECDSA-AES128-SHA256:" \
     "ECDHE-RSA-AES256-SHA384:" \
     "ECDHE-RSA-AES128-SHA256:" \
-    /* Temporary TLS 1.0/1.1 compat after this line */\
-    "ECDHE-ECDSA-AES256-SHA:" \
-    "ECDHE-RSA-AES256-SHA:" \
 
 int32_t CryptoNative_EnsureOpenSslInitialized(void);
 
@@ -42,13 +43,21 @@ static int32_t g_config_specified_ciphersuites = 0;
 
 static void DetectCiphersuiteConfiguration()
 {
-    // This routine will always produce g_config_specified_ciphersuites = 0 on OpenSSL 1.0.x,
+    // This routine will always produce g_config_specified_ciphersuites = 1 on OpenSSL 1.0.x,
     // so if we're building direct for 1.0.x (the only time NEED_OPENSSL_1_1 is undefined) then
     // just omit all the code here.
     //
     // The method uses OpenSSL 1.0.x API, except for the fallback function SSL_CTX_config, to
     // make the portable version easier.
 #ifdef NEED_OPENSSL_1_1
+
+    if (API_EXISTS(SSL_state))
+    {
+        // For portable builds NEED_OPENSSL_1_1 is always set.
+        // OpenSSL 1.0 does not support CipherSuites so there is no way for caller to override default
+        g_config_specified_ciphersuites = 1;
+        return;
+    }
 
     // Check to see if there's a registered default CipherString. If not, we will use our own.
     SSL_CTX* ctx = SSL_CTX_new(TLS_method());
@@ -102,7 +111,7 @@ static void DetectCiphersuiteConfiguration()
 
     SSL_CTX_free(ctx);
 
-#elif !defined(FEATURE_DISTRO_AGNOSTIC_SSL) && defined(SSL_SYSTEM_DEFAULT_CIPHER_LIST)
+#else
 
     // The Fedora, RHEL, and CentOS builds replace the normal defaults (with a configuration model).
     // Consider their non-portable builds to always have specified ciphersuites in config.
@@ -137,7 +146,7 @@ const SSL_METHOD* CryptoNative_SslV2_3Method()
     return method;
 }
 
-SSL_CTX* CryptoNative_SslCtxCreate(SSL_METHOD* method)
+SSL_CTX* CryptoNative_SslCtxCreate(const SSL_METHOD* method)
 {
     SSL_CTX* ctx = SSL_CTX_new(method);
 
@@ -638,4 +647,154 @@ int32_t CryptoNative_SslGetCurrentCipherId(SSL* ssl, int32_t* cipherId)
     *cipherId = SSL_CIPHER_get_id(cipher) & 0xFFFF;
 
     return 1;
+}
+
+// This function generates key pair and creates simple certificate.
+static int MakeSelfSignedCertificate(X509 * cert, EVP_PKEY* evp)
+{
+    RSA* rsa = CryptoNative_RsaCreate();
+    ASN1_TIME* time = ASN1_TIME_new();
+    BIGNUM* bn = BN_new();
+    BN_set_word(bn, RSA_F4);
+    X509_NAME * asnName;
+    unsigned char * name = (unsigned char*)"localhost";
+
+    int ret = 0;
+
+    if (rsa != NULL && CryptoNative_RsaGenerateKeyEx(rsa, 2048, bn) == 1)
+    {
+        if (CryptoNative_EvpPkeySetRsa(evp, rsa) == 1)
+        {
+            rsa = NULL;
+        }
+
+        X509_set_pubkey(cert, evp);
+
+        asnName = X509_get_subject_name(cert);
+        X509_NAME_add_entry_by_txt(asnName, "CN", MBSTRING_ASC, name, -1, -1, 0);
+
+        asnName =  X509_get_issuer_name(cert);
+        X509_NAME_add_entry_by_txt(asnName, "CN", MBSTRING_ASC, name, -1, -1, 0);
+
+        ASN1_TIME_set(time, 0);
+        X509_set1_notBefore(cert, time);
+        X509_set1_notAfter(cert, time);
+
+        ret = X509_sign(cert, evp, EVP_sha256());
+    }
+
+    if (bn != NULL)
+    {
+        BN_free(bn);
+    }
+
+    if (rsa != NULL)
+    {
+        RSA_free(rsa);
+    }
+
+    if (time != NULL)
+    {
+        ASN1_TIME_free(time);
+    }
+
+    return ret;
+}
+
+int32_t CryptoNative_OpenSslGetProtocolSupport(SslProtocols protocol)
+{
+    int ret = 0;
+
+    SSL_CTX* clientCtx = CryptoNative_SslCtxCreate(TLS_method());
+    SSL_CTX* serverCtx = CryptoNative_SslCtxCreate(TLS_method());
+    X509 * cert = X509_new();
+    EVP_PKEY* evp = CryptoNative_EvpPkeyCreate();
+    BIO *bio1 = BIO_new(BIO_s_mem());
+    BIO *bio2 = BIO_new(BIO_s_mem());
+
+    SSL* client = NULL;
+    SSL* server = NULL;
+
+    if (clientCtx != NULL && serverCtx != NULL && cert != NULL && evp != NULL && bio1 != NULL && bio2 != NULL)
+    {
+        CryptoNative_SetProtocolOptions(serverCtx, protocol);
+        CryptoNative_SetProtocolOptions(clientCtx, protocol);
+        SSL_CTX_set_verify(clientCtx, SSL_VERIFY_NONE, NULL);
+        SSL_CTX_set_verify(serverCtx, SSL_VERIFY_NONE, NULL);
+
+        if (MakeSelfSignedCertificate(cert, evp))
+        {
+            CryptoNative_SslCtxUseCertificate(serverCtx, cert);
+            CryptoNative_SslCtxUsePrivateKey(serverCtx, evp);
+
+            server = CryptoNative_SslCreate(serverCtx);
+            SSL_set_accept_state(server);
+
+            client = CryptoNative_SslCreate(clientCtx);
+            SSL_set_connect_state(client);
+
+            // set BIOs in opposite
+            SSL_set_bio(client, bio1, bio2);
+            SSL_set_bio(server, bio2, bio1);
+            // SSL_set_bio takes ownership so we need to up reference since same BIO is shared.
+            BIO_up_ref(bio1);
+            BIO_up_ref(bio2);
+            bio1 = NULL;
+            bio2 = NULL;
+
+            // Try handshake, client side first.
+            SSL* side = client;
+            int sslError = 0;
+            while (1)
+            {
+                ret = SSL_do_handshake(side);
+                if (ret == 1)
+                {
+                    break;
+                }
+
+                sslError = SSL_get_error(side, ret);
+                if (sslError != SSL_ERROR_WANT_READ)
+                {
+                    break;
+                }
+
+                side = side == client ? server : client;
+            }
+        }
+    }
+
+    if (cert != NULL)
+    {
+        X509_free(cert);
+    }
+
+    if (evp != NULL)
+    {
+        CryptoNative_EvpPkeyDestroy(evp);
+    }
+
+    if (bio1)
+    {
+        BIO_free(bio1);
+    }
+
+    if (bio2)
+    {
+        BIO_free(bio2);
+    }
+
+    if (client != NULL)
+    {
+        SSL_free(client);
+    }
+
+    if (server != NULL)
+    {
+        SSL_free(server);
+    }
+
+    ERR_clear_error();
+
+    return ret == 1;
 }

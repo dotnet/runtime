@@ -211,7 +211,7 @@ namespace System.Diagnostics.Tracing
     /// <remarks>
     /// This is a minimal definition for a custom event source:
     /// <code>
-    /// [EventSource(Name="Samples-Demos-Minimal")]
+    /// [EventSource(Name="Samples.Demos.Minimal")]
     /// sealed class MinimalEventSource : EventSource
     /// {
     ///     public static MinimalEventSource Log = new MinimalEventSource();
@@ -546,8 +546,8 @@ namespace System.Diagnostics.Tracing
 #if FEATURE_MANAGED_ETW
 #if FEATURE_PERFTRACING
             // Set the activity id via EventPipe.
-            EventPipeInternal.EventActivityIdControl(
-                (uint)Interop.Advapi32.ActivityControl.EVENT_ACTIVITY_CTRL_SET_ID,
+            EventPipeEventProvider.EventActivityIdControl(
+                Interop.Advapi32.ActivityControl.EVENT_ACTIVITY_CTRL_SET_ID,
                 ref activityId);
 #endif // FEATURE_PERFTRACING
 #if TARGET_WINDOWS
@@ -580,8 +580,8 @@ namespace System.Diagnostics.Tracing
                     Interop.Advapi32.ActivityControl.EVENT_ACTIVITY_CTRL_GET_ID,
                     ref retVal);
 #elif FEATURE_PERFTRACING
-                EventPipeInternal.EventActivityIdControl(
-                    (uint)Interop.Advapi32.ActivityControl.EVENT_ACTIVITY_CTRL_GET_ID,
+                EventPipeEventProvider.EventActivityIdControl(
+                    Interop.Advapi32.ActivityControl.EVENT_ACTIVITY_CTRL_GET_ID,
                     ref retVal);
 #endif // TARGET_WINDOWS
 #endif // FEATURE_MANAGED_ETW
@@ -622,12 +622,12 @@ namespace System.Diagnostics.Tracing
             // Note we can't access m_throwOnWrites because this is a static method.
 
 #if FEATURE_PERFTRACING && TARGET_WINDOWS
-            EventPipeInternal.EventActivityIdControl(
-                (uint)Interop.Advapi32.ActivityControl.EVENT_ACTIVITY_CTRL_SET_ID,
+            EventPipeEventProvider.EventActivityIdControl(
+                Interop.Advapi32.ActivityControl.EVENT_ACTIVITY_CTRL_SET_ID,
                     ref oldActivityThatWillContinue);
 #elif FEATURE_PERFTRACING
-            EventPipeInternal.EventActivityIdControl(
-                (uint)Interop.Advapi32.ActivityControl.EVENT_ACTIVITY_CTRL_GET_SET_ID,
+            EventPipeEventProvider.EventActivityIdControl(
+                Interop.Advapi32.ActivityControl.EVENT_ACTIVITY_CTRL_GET_SET_ID,
                     ref oldActivityThatWillContinue);
 #endif // FEATURE_PERFTRACING && TARGET_WINDOWS
 
@@ -3693,10 +3693,6 @@ namespace System.Diagnostics.Tracing
         {
             try
             {
-                // send message to debugger without delay
-                System.Diagnostics.Debugger.Log(0, null, string.Format("EventSource Error: {0}{1}", msg, System.Environment.NewLine));
-
-                // Send it to all listeners.
                 if (m_outOfBandMessageCount < 16 - 1)     // Note this is only if size byte
                     m_outOfBandMessageCount++;
                 else
@@ -3707,6 +3703,10 @@ namespace System.Diagnostics.Tracing
                     msg = "Reached message limit.   End of EventSource error messages.";
                 }
 
+                // send message to debugger
+                System.Diagnostics.Debugger.Log(0, null, string.Format("EventSource Error: {0}{1}", msg, System.Environment.NewLine));
+
+                // Send it to all listeners.
                 WriteEventString(msg);
                 WriteStringToAllListeners("EventSourceMessage", msg);
             }

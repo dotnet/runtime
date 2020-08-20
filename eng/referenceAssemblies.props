@@ -4,6 +4,9 @@
                             !$(BuildTargetFramework.StartsWith('net4'))">
     <AdditionalBuildTargetFrameworks>$(AdditionalBuildTargetFrameworks);netstandard2.0</AdditionalBuildTargetFrameworks>
     <AdditionalBuildTargetFrameworks Condition="!$(BuildTargetFramework.StartsWith('netcoreapp2.0'))">$(AdditionalBuildTargetFrameworks);netstandard2.1</AdditionalBuildTargetFrameworks>
+
+    <!-- Reference assemblies are special and don't initialize fields or have empty finalizers, etc. -->
+    <EnableAnalyzers>false</EnableAnalyzers>
   </PropertyGroup>
 
   <PropertyGroup>

@@ -1095,9 +1095,14 @@ void BulkComLogger::WriteRcw(RCW *pRcw, Object *obj)
     _ASSERTE(m_currRcw < kMaxRcwCount);
 
 #ifdef FEATURE_COMINTEROP
+    TypeHandle typeHandle = obj->GetGCSafeTypeHandleIfPossible();
+    if (typeHandle == NULL)
+    {
+        return;
+    }
     EventRCWEntry &rcw = m_etwRcwData[m_currRcw];
     rcw.ObjectID = (ULONGLONG)obj;
-    rcw.TypeID = (ULONGLONG)obj->GetTypeHandle().AsTAddr();
+    rcw.TypeID = (ULONGLONG)typeHandle.AsTAddr();
     rcw.IUnk = (ULONGLONG)pRcw->GetIUnknown_NoAddRef();
     rcw.VTable = (ULONGLONG)pRcw->GetVTablePtr();
     rcw.RefCount = pRcw->GetRefCount();
@@ -1179,10 +1184,16 @@ void BulkComLogger::WriteCcw(ComCallWrapper *pCcw, Object **handle, Object *obj)
             flags |= EventCCWEntry::Strong;
     }
 
+    TypeHandle typeHandle = obj->GetGCSafeTypeHandleIfPossible();
+    if (typeHandle == NULL)
+    {
+        return;
+    }
+
     EventCCWEntry &ccw = m_etwCcwData[m_currCcw++];
     ccw.RootID = (ULONGLONG)handle;
     ccw.ObjectID = (ULONGLONG)obj;
-    ccw.TypeID = (ULONGLONG)obj->GetTypeHandle().AsTAddr();
+    ccw.TypeID = (ULONGLONG)typeHandle.AsTAddr();
     ccw.IUnk = (ULONGLONG)iUnk;
     ccw.RefCount = refCount;
     ccw.JupiterRefCount = 0;
@@ -1463,7 +1474,12 @@ void BulkStaticsLogger::WriteEntry(AppDomain *domain, Object **address, Object *
         m_domain = domain;
     }
 
-    ULONGLONG th = (ULONGLONG)obj->GetTypeHandle().AsTAddr();
+    TypeHandle typeHandle = obj->GetGCSafeTypeHandleIfPossible();
+    if (typeHandle == NULL)
+    {
+        return;
+    }
+    ULONGLONG th = (ULONGLONG)typeHandle.AsTAddr();
     ETW::TypeSystemLog::LogTypeAndParametersIfNecessary(m_typeLogger, th, ETW::TypeSystemLog::kTypeLogBehaviorTakeLockAndLogIfFirstTime);
 
     // We should have at least 512 characters remaining in the buffer here.

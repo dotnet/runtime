@@ -68,7 +68,11 @@
           $(DownloadDirectory)*\Libraries_AllConfigurations\**\*.nupkg"
         Exclude="@(RuntimeNupkgFile);@(DownloadedSymbolNupkgFile)" />
 
-      <NupkgToPublishFile Include="@(RuntimeNupkgFile);@(RidAgnosticNupkgToPublishFile)" />
+      <TransportPackagesToPublishFile
+        Include="$(DownloadDirectory)**\*Transport*.nupkg"
+        Exclude="@(RuntimeNupkgFile);@(RidAgnosticNupkgToPublishFile);@(DownloadedSymbolNupkgFile)" />
+
+      <NupkgToPublishFile Include="@(RuntimeNupkgFile);@(RidAgnosticNupkgToPublishFile);@(TransportPackagesToPublishFile)" />
 
       <!--
         Assuming all symbol packages ship and can be found by turning .nupkg => .symbols.nupkg, find

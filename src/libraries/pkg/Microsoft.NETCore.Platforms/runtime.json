@@ -1571,6 +1571,12 @@
         "unix"
       ]
     },
+    "osx-arm64": {
+      "#import": [
+        "osx",
+        "unix-arm64"
+      ]
+    },
     "osx-x64": {
       "#import": [
         "osx",
@@ -1641,6 +1647,40 @@
       "#import": [
         "osx.10.15",
         "osx.10.14-x64"
+      ]
+    },
+    "osx.11": {
+      "#import": [
+        "osx"
+      ]
+    },
+    "osx.11-arm64": {
+      "#import": [
+        "osx.11",
+        "osx-arm64"
+      ]
+    },
+    "osx.11-x64": {
+      "#import": [
+        "osx.11",
+        "osx-x64"
+      ]
+    },
+    "osx.11.0": {
+      "#import": [
+        "osx.11"
+      ]
+    },
+    "osx.11.0-arm64": {
+      "#import": [
+        "osx.11.0",
+        "osx.11-arm64"
+      ]
+    },
+    "osx.11.0-x64": {
+      "#import": [
+        "osx.11.0",
+        "osx.11-x64"
       ]
     },
     "rhel": {

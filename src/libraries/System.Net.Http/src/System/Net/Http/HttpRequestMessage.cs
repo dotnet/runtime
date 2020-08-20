@@ -24,6 +24,7 @@ namespace System.Net.Http
         private Uri? _requestUri;
         private HttpRequestHeaders? _headers;
         private Version _version;
+        private HttpVersionPolicy _versionPolicy;
         private HttpContent? _content;
         private bool _disposed;
         private HttpRequestOptions? _options;
@@ -40,6 +41,20 @@ namespace System.Net.Http
                 CheckDisposed();
 
                 _version = value;
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets the policy determining how <see cref="Version" /> is interpreted and how is the final HTTP version negotiated with the server.
+        /// </summary>
+        public HttpVersionPolicy VersionPolicy
+        {
+            get { return _versionPolicy; }
+            set
+            {
+                CheckDisposed();
+
+                _versionPolicy = value;
             }
         }
 
@@ -181,6 +196,7 @@ namespace System.Net.Http
             _method = method;
             _requestUri = requestUri;
             _version = HttpUtilities.DefaultRequestVersion;
+            _versionPolicy = HttpUtilities.DefaultVersionPolicy;
         }
 
         internal bool MarkAsSent()

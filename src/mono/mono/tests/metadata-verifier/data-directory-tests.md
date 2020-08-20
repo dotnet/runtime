@@ -3,18 +3,18 @@ pe-data-directories-export-table {
 	assembly simple-assembly.exe
 
 	#zero is fine
-	valid offset pe-optional-header + 96 set-uint 0 
+	valid offset pe-optional-header + 96 set-uint 0
 	valid offset pe-optional-header + 100 set-uint 0
 
 	#RVA must be zero
-	invalid offset pe-optional-header + 96 set-uint 0x2000 , offset pe-optional-header + 100 set-uint 10 
+	invalid offset pe-optional-header + 96 set-uint 0x2000 , offset pe-optional-header + 100 set-uint 10
 }
 
 
 pe-data-directories-import-table {
 	#Simple assembly has 2 sections since it doesn't have any resources
 	assembly simple-assembly.exe
-	
+
 	#The IT is 40 bytes long
 	invalid offset pe-optional-header + 108 set-uint 0
 	invalid offset pe-optional-header + 108 set-uint 8
@@ -34,35 +34,35 @@ pe-data-directories-bad-tables {
 	#export
 	invalid offset pe-optional-header + 96 set-uint 0x2000
 
-	#exception 
-	invalid offset pe-optional-header + 120 set-uint 0x2000 
+	#exception
+	invalid offset pe-optional-header + 120 set-uint 0x2000
 
 	#certificate  some assemblies have it.
-	#invalid offset pe-optional-header + 128 set-uint 0x2000 
+	#invalid offset pe-optional-header + 128 set-uint 0x2000
 
-	#debug MS uses it for putting debug info in the assembly 
-	#invalid offset pe-optional-header + 144 set-uint 0x2000 
+	#debug MS uses it for putting debug info in the assembly
+	#invalid offset pe-optional-header + 144 set-uint 0x2000
 
-	#copyright 
-	invalid offset pe-optional-header + 152 set-uint 0x2000 
+	#copyright
+	invalid offset pe-optional-header + 152 set-uint 0x2000
 
-	#global ptr 
-	invalid offset pe-optional-header + 160 set-uint 0x2000 
+	#global ptr
+	invalid offset pe-optional-header + 160 set-uint 0x2000
 
-	#tls table 
-	invalid offset pe-optional-header + 168 set-uint 0x2000 
+	#tls table
+	invalid offset pe-optional-header + 168 set-uint 0x2000
 
-	#load config 
-	invalid offset pe-optional-header + 176 set-uint 0x2000 
+	#load config
+	invalid offset pe-optional-header + 176 set-uint 0x2000
 
-	#bound import 
-	invalid offset pe-optional-header + 184 set-uint 0x2000 
+	#bound import
+	invalid offset pe-optional-header + 184 set-uint 0x2000
 
 	#delay import
-	invalid offset pe-optional-header + 200 set-uint 0x2000 
+	invalid offset pe-optional-header + 200 set-uint 0x2000
 
 	#reserved import
-	invalid offset pe-optional-header + 216 set-uint 0x2000 
+	invalid offset pe-optional-header + 216 set-uint 0x2000
 }
 
 

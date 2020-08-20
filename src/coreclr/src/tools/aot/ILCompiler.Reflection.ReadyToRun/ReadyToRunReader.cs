@@ -672,12 +672,12 @@ namespace ILCompiler.Reflection.ReadyToRun
 
         public bool InputArchitectureSupported()
         {
-            return Machine != Machine.ArmThumb2; // CoreDisTools often fails to decode when disassembling ARM images (see https://github.com/dotnet/coreclr/issues/19637)
+            return Machine != Machine.ArmThumb2; // CoreDisTools often fails to decode when disassembling ARM images (see https://github.com/dotnet/runtime/issues/10959)
         }
 
         // TODO: Fix R2RDump issue where an R2R image cannot be dissassembled with the x86 CoreDisTools
         // For the short term, we want to error out with a decent message explaining the unexpected error
-        // Issue https://github.com/dotnet/coreclr/issues/19564
+        // Issue https://github.com/dotnet/runtime/issues/10928
         public bool DisassemblerArchitectureSupported()
         {
             System.Runtime.InteropServices.Architecture val = System.Runtime.InteropServices.RuntimeInformation.ProcessArchitecture;

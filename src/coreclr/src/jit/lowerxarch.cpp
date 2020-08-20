@@ -5352,7 +5352,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                         op2->SetRegOptional();
 
                         // TODO-XArch-CQ: For commutative nodes, either operand can be reg-optional.
-                        //                https://github.com/dotnet/coreclr/issues/6361
+                        //                https://github.com/dotnet/runtime/issues/6358
                     }
                     break;
                 }
@@ -5538,7 +5538,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                             // TODO-XArch-CQ: Technically any one of the three operands can
                             //                be reg-optional. With a limitation on op1 where
                             //                it can only be so if CopyUpperBits is off.
-                            //                https://github.com/dotnet/coreclr/issues/6361
+                            //                https://github.com/dotnet/runtime/issues/6358
 
                             // 213 form: op1 = (op2 * op1) + op3
                             op3->SetRegOptional();
