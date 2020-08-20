@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkCurrent)</TargetFrameworks>
   </PropertyGroup>
@@ -12,6 +12,7 @@
 
   <ItemGroup>
     <Compile Include="CompilationHelper.cs" />
+    <Compile Include="JsonSourceGeneratorDiagnosticsTests.cs" />
     <Compile Include="JsonSourceGeneratorTests.cs" />
     <Compile Include="TypeWrapperTests.cs" />
   </ItemGroup>

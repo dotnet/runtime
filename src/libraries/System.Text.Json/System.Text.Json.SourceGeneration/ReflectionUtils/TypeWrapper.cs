@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using System.Text;
 using Microsoft.CodeAnalysis;
 
 namespace System.Reflection
@@ -27,7 +28,7 @@ namespace System.Reflection
 
         public override Type BaseType => _typeSymbol.BaseType!.AsType(_metadataLoadContext);
 
-        public override string FullName => Namespace == null ? Name : Namespace + "." + Name;
+        public override string FullName => Namespace == null ? Name : this.GetFullNamespace() + "." + Name;
 
         public override Guid GUID => Guid.Empty;
 
@@ -46,6 +47,8 @@ namespace System.Reflection
         private IArrayTypeSymbol ArrayTypeSymbol => (_typeSymbol as IArrayTypeSymbol)!;
 
         public override bool IsGenericTypeDefinition => base.IsGenericTypeDefinition;
+
+        public INamespaceSymbol GetNamespaceSymbol => _typeSymbol.ContainingNamespace;
 
         public override Type[] GetGenericArguments()
         {
@@ -118,9 +121,12 @@ namespace System.Reflection
             foreach (ISymbol item in _typeSymbol.GetMembers())
             {
                 // Associated Symbol checks the field is not a backingfield.
-                if (item is IFieldSymbol field && field.AssociatedSymbol == null)
+                if (item is IFieldSymbol field && field.AssociatedSymbol == null && !field.IsReadOnly)
                 {
-                    fields.Add(new FieldInfoWrapper(field, _metadataLoadContext));
+                    if ((item.DeclaredAccessibility & Accessibility.Public) == Accessibility.Public)
+                    {
+                        fields.Add(new FieldInfoWrapper(field, _metadataLoadContext));
+                    }
                 }
             }
             return fields.ToArray();
@@ -185,9 +191,12 @@ namespace System.Reflection
             var properties = new List<PropertyInfo>();
             foreach (ISymbol item in _typeSymbol.GetMembers())
             {
-                if (item is IPropertySymbol property)
+                if (item is IPropertySymbol property && !property.IsReadOnly)
                 {
-                    properties.Add(new PropertyWrapper(property, _metadataLoadContext));
+                    if ((item.DeclaredAccessibility & Accessibility.Public) == Accessibility.Public)
+                    {
+                        properties.Add(new PropertyWrapper(property, _metadataLoadContext));
+                    }
                 }
             }
             return properties.ToArray();

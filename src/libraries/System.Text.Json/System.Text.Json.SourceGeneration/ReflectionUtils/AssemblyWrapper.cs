@@ -19,6 +19,8 @@ namespace System.Reflection
 
         internal IAssemblySymbol Symbol { get; }
 
+        public override string FullName => Symbol.Identity.Name;
+
         public override Type[] GetExportedTypes()
         {
             return GetTypes();

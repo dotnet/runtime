@@ -9,7 +9,19 @@ namespace System.Reflection
 {
     public static class RoslynExtensions
     {
-        public static Type AsType(this ITypeSymbol typeSymbol, MetadataLoadContext metadataLoadContext) => (typeSymbol == null ? null : new TypeWrapper(typeSymbol, metadataLoadContext))!;
+        public static Dictionary<string, Type> PrimitiveTypes = new Dictionary<string, Type>()
+        {
+            { "Boolean", typeof(bool) },
+            { "Int32", typeof(int) },
+            { "Int64", typeof(long) },
+            { "Double", typeof(double) },
+            { "Char", typeof(char) },
+            { "String", typeof(string) },
+            { "DateTime", typeof(DateTime) },
+            { "DateTimeOffset", typeof(DateTimeOffset) },
+        };
+        public static Type AsType(this ITypeSymbol typeSymbol, MetadataLoadContext metadataLoadContext) => (
+            typeSymbol == null ? null : (PrimitiveTypes.ContainsKey(typeSymbol.MetadataName)? PrimitiveTypes[typeSymbol.Name] : new TypeWrapper(typeSymbol, metadataLoadContext)))!;
 
         public static ParameterInfo AsParameterInfo(this IParameterSymbol parameterSymbol, MetadataLoadContext metadataLoadContext) => (parameterSymbol == null ? null : new ParameterInfoWrapper(parameterSymbol, metadataLoadContext))!;
 

@@ -20,7 +20,8 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             string referencedSource = @"
               namespace ReferencedAssembly
               {
-                public class ReferencedType {
+                public class ReferencedType
+                {
                     public int ReferencedPublicInt;     
                     public double ReferencedPublicDouble;     
                 }
@@ -61,13 +62,13 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             // Compilation using the referenced image should fail if out MetadataLoadContext does not handle.
             Compilation compilation = CompilationHelper.CreateCompilation(source, additionalReferences);
 
-            JsonSerializerSourceGenerator generator = new JsonSerializerSourceGenerator();
+            JsonSourceGenerator generator = new JsonSourceGenerator();
 
             Compilation newCompilation = CompilationHelper.RunGenerators(compilation, out ImmutableArray<Diagnostic> generatorDiags, generator);
 
             // Make sure compilation was successful.
-            Assert.Empty(generatorDiags);
-            Assert.Empty(newCompilation.GetDiagnostics());
+            Assert.Empty(generatorDiags.Where(diag => diag.Severity.Equals(DiagnosticSeverity.Error)));
+            Assert.Empty(newCompilation.GetDiagnostics().Where(diag => diag.Severity.Equals(DiagnosticSeverity.Error)));
 
             // Should find both types since compilation above was successful.
             Assert.Equal(2, generator.FoundTypes.Count);
@@ -113,7 +114,7 @@ namespace System.Text.Json.SourceGeneration.UnitTests
 
             Compilation compilation = CompilationHelper.CreateCompilation(source);
 
-            JsonSerializerSourceGenerator generator = new JsonSerializerSourceGenerator();
+            JsonSourceGenerator generator = new JsonSourceGenerator();
 
             Compilation outCompilation = CompilationHelper.RunGenerators(compilation, out ImmutableArray<Diagnostic> generatorDiags, generator);
 
@@ -126,42 +127,43 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             // Check for ConstructorInfoWrapper attribute usage.
             (string, string[])[] receivedCtorsWithAttributeNames = foundType.GetConstructors().Select(ctor => (ctor.DeclaringType.FullName, ctor.GetCustomAttributesData().Cast<CustomAttributeData>().Select(attributeData => attributeData.AttributeType.Name).ToArray())).ToArray();
             Assert.Equal(
-                receivedCtorsWithAttributeNames,
                 new (string, string[])[] {
                     ("HelloWorld.MyType", new string[] { }),
                     ("HelloWorld.MyType", new string[] { "JsonConstructorAttribute" })
-                });
+                },
+                receivedCtorsWithAttributeNames
+            );
 
             // Check for MethodInfoWrapper attribute usage.
             (string, string[])[] receivedMethodsWithAttributeNames = foundType.GetMethods().Select(method => (method.Name, method.GetCustomAttributesData().Cast<CustomAttributeData>().Select(attributeData => attributeData.AttributeType.Name).ToArray())).Where(x => x.Item2.Any()).ToArray();
             Assert.Equal(
-                receivedMethodsWithAttributeNames,
-                new (string, string[])[] { ("MyMethod", new string[] { "ObsoleteAttribute" }) });
+                new (string, string[])[] { ("MyMethod", new string[] { "ObsoleteAttribute" }) },
+                receivedMethodsWithAttributeNames
+            );
 
             // Check for FieldInfoWrapper attribute usage.
             (string, string[])[] receivedFieldsWithAttributeNames = foundType.GetFields().Select(field => (field.Name, field.GetCustomAttributesData().Cast<CustomAttributeData>().Select(attributeData => attributeData.AttributeType.Name).ToArray())).Where(x => x.Item2.Any()).ToArray();
             Assert.Equal(
-                receivedFieldsWithAttributeNames,
                 new (string, string[])[] {
                     ("PublicDouble", new string[] { "JsonIncludeAttribute" }),
                     ("PublicChar", new string[] { "JsonPropertyNameAttribute" }),
-                    ("PrivateDouble", new string[] { "JsonIgnoreAttribute" } )
-                });
+                },
+                receivedFieldsWithAttributeNames
+            );
 
             // Check for PropertyInfoWrapper attribute usage.
             (string, string[])[] receivedPropertyWithAttributeNames  = foundType.GetProperties().Select(property => (property.Name, property.GetCustomAttributesData().Cast<CustomAttributeData>().Select(attributeData => attributeData.AttributeType.Name).ToArray())).Where(x => x.Item2.Any()).ToArray();
             Assert.Equal(
-                receivedPropertyWithAttributeNames,
                 new (string, string[])[] {
                     ("PublicPropertyInt", new string[] { "JsonPropertyNameAttribute" }),
                     ("PublicPropertyString", new string[] { "JsonExtensionDataAttribute" }),
-                    ("PrivatePropertyInt", new string[] { "JsonIgnoreAttribute" } )
-                });
+                },
+                receivedPropertyWithAttributeNames
+            );
 
             // Check for MemberInfoWrapper attribute usage.
             (string, string[])[] receivedMembersWithAttributeNames = foundType.GetMembers().Select(member => (member.Name, member.GetCustomAttributesData().Cast<CustomAttributeData>().Select(attributeData => attributeData.AttributeType.Name).ToArray())).Where(x => x.Item2.Any()).ToArray();
             Assert.Equal(
-                receivedMembersWithAttributeNames,
                 new (string, string[])[] {
                     ("PublicDouble", new string[] { "JsonIncludeAttribute" }),
                     ("PublicChar", new string[] { "JsonPropertyNameAttribute" }),
@@ -171,7 +173,9 @@ namespace System.Text.Json.SourceGeneration.UnitTests
                     ("PublicPropertyString", new string[] { "JsonExtensionDataAttribute" }),
                     ("PrivatePropertyInt", new string[] { "JsonIgnoreAttribute" } ),
                     ("MyMethod", new string[] { "ObsoleteAttribute" }),
-                });
+                },
+                receivedMembersWithAttributeNames
+            );
         }
     }
 }

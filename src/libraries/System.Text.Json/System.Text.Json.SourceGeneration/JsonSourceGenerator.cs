@@ -17,7 +17,7 @@ namespace System.Text.Json.SourceGeneration
     /// to generate wanted output code for JsonSerializers.
     /// </summary>
     [Generator]
-    public class JsonSerializerSourceGenerator : ISourceGenerator
+    public class JsonSourceGenerator : ISourceGenerator
     {
         public Dictionary<string, Type> FoundTypes = new Dictionary<string, Type>();
 
@@ -58,7 +58,7 @@ namespace System.Text.Json.SourceGeneration
                         IdentifierNameSyntax externalTypeNode = (IdentifierNameSyntax)attributeArgumentNode?.DescendantNodes().Where(node => node is IdentifierNameSyntax).SingleOrDefault();
 
                         // Get non-user owned typeSymbol from IdentifierNameSyntax and add to found types.
-                        ITypeSymbol externalTypeSymbol = model.GetTypeInfo(externalTypeNode).ConvertedType;
+                        INamedTypeSymbol externalTypeSymbol = model.GetTypeInfo(externalTypeNode).ConvertedType as INamedTypeSymbol;
                         FoundTypes[typeDeclarationNode.Identifier.Text] = new TypeWrapper(externalTypeSymbol, metadataLoadContext);
                     }
                     else
@@ -69,92 +69,27 @@ namespace System.Text.Json.SourceGeneration
                 }
             }
 
-            // Create sources for all found types.
-            StringBuilder member = new StringBuilder();
-            string foundMethods, foundFields, foundProperties, foundCtorParams, foundCtors;
+            JsonSourceGeneratorHelper codegen = new JsonSourceGeneratorHelper();
 
+            // Add base default instance source.
+            context.AddSource("BaseClassInfo.g.cs", SourceText.From(codegen.GenerateHelperContextInfo(), Encoding.UTF8));
+
+            // Run type discovery generation for each root type.
             foreach (KeyValuePair<string, Type> entry in FoundTypes)
             {
-                foreach (MethodInfo method in entry.Value.GetMethods())
-                {
-                    member.Append(@$"""{method.Name}"", "); 
-                }
-                foundMethods = member.ToString();
-                member.Clear();
+                codegen.GenerateClassInfo(entry.Value);
+            }
 
-                foreach (FieldInfo field in entry.Value.GetFields())
-                {
-                    member.Append(@$"{{""{field.Name}"", ""{field.FieldType.Name}""}}, "); 
-                }
-                foundFields = member.ToString();
-                member.Clear();
+            // Generate sources for each type.
+            foreach (KeyValuePair<Type, string> entry in codegen.Types)
+            {
+                context.AddSource($"{entry.Key.Name}ClassInfo.g.cs", SourceText.From(entry.Value, Encoding.UTF8));
+            }
 
-                foreach (PropertyInfo property in entry.Value.GetProperties())
-                {
-                    member.Append(@$"{{""{property.Name}"", ""{property.PropertyType.Name}""}}, "); 
-                }
-                foundProperties = member.ToString();
-                member.Clear();
-
-                foreach (ConstructorInfo ctor in entry.Value.GetConstructors())
-                {
-                    foreach (ParameterInfo param in ctor.GetParameters())
-                    {
-                        member.Append(@$"{{""{param.Name}"", ""{param.ParameterType.Name}""}}, "); 
-                    }
-                }
-                foundCtorParams = member.ToString();
-                member.Clear();
-
-                foreach (ConstructorInfo ctor in entry.Value.GetConstructors())
-                {
-                    member.Append($@"""{ctor.Name}"", ");
-                }
-                foundCtors = member.ToString();
-                member.Clear();
-
-                context.AddSource($"{entry.Key}ClassInfo", SourceText.From($@"
-using System.Collections.Generic;
-
-namespace HelloWorldGenerated
-{{
-    public class {entry.Key}ClassInfo
-    {{
-        public {entry.Key}ClassInfo() {{ }}
-
-        private List<string> ClassCtors = new List<string>()
-        {{ {foundCtors} }};
-        private Dictionary<string, string> ClassCtorParams = new Dictionary<string, string>()
-        {{ {foundCtorParams} }};
-        private List<string> ClassMethods = new List<string>()
-        {{ {foundMethods} }};
-        private Dictionary<string, string> ClassFields = new Dictionary<string, string>()
-        {{ {foundFields} }};
-        private Dictionary<string, string> ClassProperties = new Dictionary<string, string>()
-        {{ {foundProperties} }};
-
-        public string GetClassName()
-        {{
-            return ""{entry.Key}ClassInfo"";
-        }}
-
-        public List<string> Ctors
-        {{ get {{ return ClassCtors; }} }}
-
-        public Dictionary<string, string> CtorParams
-        {{ get {{ return ClassCtorParams; }} }}
-
-        public List<string> Methods 
-        {{ get {{ return ClassMethods; }} }}
-
-        public Dictionary<string, string> Fields
-        {{ get {{ return ClassFields; }} }}
-
-        public Dictionary<string, string> Properties
-        {{ get {{ return ClassProperties; }} }}
-    }}
-}}
-", Encoding.UTF8));
+            // For each diagnostic, report to the user.
+            foreach (Diagnostic diagnostic in codegen.Diagnostics)
+            {
+                context.ReportDiagnostic(diagnostic);
             }
         }
 

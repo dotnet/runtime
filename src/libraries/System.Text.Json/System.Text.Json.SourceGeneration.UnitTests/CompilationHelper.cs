@@ -4,6 +4,7 @@
 
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.IO;
 using System.Reflection;
 using System.Text.Json.Serialization;
 using Microsoft.CodeAnalysis;
@@ -56,6 +57,79 @@ namespace System.Text.Json.SourceGeneration.UnitTests
         {
             CreateDriver(compilation, generators).RunFullGeneration(compilation, out Compilation outCompilation, out diagnostics);
             return outCompilation;
+        }
+
+        public static byte[] CreateAssemblyImage(Compilation compilation)
+        {
+            MemoryStream ms = new MemoryStream();
+            var emitResult = compilation.Emit(ms);
+            if (!emitResult.Success)
+            {
+                throw new InvalidOperationException();
+            }
+            return ms.ToArray();
+        }
+
+        public static Compilation CreateReferencedLocationCompilation()
+        {
+            string source = @"
+            namespace ReferencedAssembly
+            {
+                public class Location
+                {
+                    public int Id { get; set; }
+                    public string Address1 { get; set; }
+                    public string Address2 { get; set; }
+                    public string City { get; set; }
+                    public string State { get; set; }
+                    public string PostalCode { get; set; }
+                    public string Name { get; set; }
+                    public string PhoneNumber { get; set; }
+                    public string Country { get; set; }
+                }
+            }";
+
+            return CreateCompilation(source);
+        }
+
+        public static Compilation CreateCampaignSummaryViewModelCompilation()
+        {
+            string source = @"
+            namespace ReferencedAssembly
+            {
+                public class CampaignSummaryViewModel
+                {
+                    public int Id { get; set; }
+                    public string Title { get; set; }
+                    public string Description { get; set; }
+                    public string ImageUrl { get; set; }
+                    public string OrganizationName { get; set; }
+                    public string Headline { get; set; }
+                }
+            }";
+
+            return CreateCompilation(source);
+        }
+
+        public static Compilation CreateActiveOrUpcomingEventCompilation()
+        {
+            string source = @"
+            namespace ReferencedAssembly
+            {
+                public class ActiveOrUpcomingEvent
+                {
+                    public int Id { get; set; }
+                    public string ImageUrl { get; set; }
+                    public string Name { get; set; }
+                    public string CampaignName { get; set; }
+                    public string CampaignManagedOrganizerName { get; set; }
+                    public string Description { get; set; }
+                    public DateTimeOffset StartDate { get; set; }
+                    public DateTimeOffset EndDate { get; set; }
+                }
+            }";
+
+            return CreateCompilation(source);
         }
     }
 }
