@@ -516,7 +516,7 @@ namespace System.Runtime.InteropServices.JavaScript
                     contractName = contractName!.ToString()!.ToUpper();
                     break;
                 case ConvertEnum.Numeric:
-                    contractName = (int)Enum.Parse(value!.GetType(), contractName!.ToString() ?? string.Empty);
+                    contractName = Convert.ToDouble(Enum.Parse(value!.GetType(), contractName!.ToString() ?? string.Empty));
                     break;
                 default:
                     contractName = contractName!.ToString();
