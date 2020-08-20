@@ -2266,7 +2266,6 @@ StackWalkAction StackFrameIterator::NextRaw(void)
         // make sure we're not skipping a different transition
         if (m_crawl.pFrame->NeedsUpdateRegDisplay())
         {
-            CONSISTENCY_CHECK(m_crawl.pFrame->IsTransitionToNativeFrame());
             if (m_crawl.pFrame->GetVTablePtr() == InlinedCallFrame::GetMethodFrameVPtr())
             {
                 // ControlPC may be different as the InlinedCallFrame stays active throughout
