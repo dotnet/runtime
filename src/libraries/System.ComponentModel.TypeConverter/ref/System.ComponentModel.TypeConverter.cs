@@ -1317,6 +1317,7 @@ namespace System.ComponentModel
     {
         protected TypeDescriptionProvider() { }
         protected TypeDescriptionProvider(System.ComponentModel.TypeDescriptionProvider parent) { }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public virtual object CreateInstance(System.IServiceProvider provider, System.Type objectType, System.Type[] argTypes, object[] args) { throw null; }
         public virtual System.Collections.IDictionary GetCache(object instance) { throw null; }
         public virtual System.ComponentModel.ICustomTypeDescriptor GetExtendedTypeDescriptor(object instance) { throw null; }
