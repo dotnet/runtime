@@ -369,7 +369,7 @@ build_Tests()
     fi
 
     if [[ "$__SkipNative" != 1 ]]; then
-        build_native "$__BuildArch" "$__TestDir" "$__ProjectRoot" "$__NativeTestIntermediatesDir" "CoreCLR test component"
+        build_native "$__BuildArch" "$__TestDir" "$__ProjectRoot" "$__NativeTestIntermediatesDir" "CoreCLR test component" "/p:GenerateRunScript=false"
 
         if [[ "$?" -ne 0 ]]; then
             echo "${__ErrMsgPrefix}${__MsgPrefix}Error: native test build failed. Refer to the build log files for details (above)"
@@ -474,7 +474,7 @@ build_MSBuild_projects()
             buildArgs+=("${__UnprocessedBuildArgs[@]}")
             buildArgs+=("\"/p:CopyNativeProjectBinaries=${__CopyNativeProjectsAfterCombinedTestBuild}\"");
             buildArgs+=("/p:__SkipPackageRestore=true");
-
+	   
             # Disable warnAsError - coreclr issue 19922
             nextCommand="\"$__RepoRootDir/eng/common/msbuild.sh\" $__ArcadeScriptArgs --warnAsError false ${buildArgs[@]}"
             echo "Building step '$stepName' testGroupToBuild=$testGroupToBuild via $nextCommand"
