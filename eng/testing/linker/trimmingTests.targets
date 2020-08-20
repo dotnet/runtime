@@ -35,7 +35,7 @@
       <TestConsoleAppSourceFiles>
         <ProjectFile>%(ProjectDir)project.csproj</ProjectFile>
         <TestCommand>$([MSBuild]::NormalizePath('%(ProjectDir)', 'bin', '$(Configuration)', '$(NetCoreAppCurrent)', '%(TestRuntimeIdentifier)', 'publish', 'project'))</TestCommand>
-        <TestExecutionDirectory>$([MSBuild]::NormalizeDirectory('%(ProjectDir)', 'bin', '$(TargetFramework)-$(Configuration)', '$(NetCoreAppCurrent)', '%(TestRuntimeIdentifier)', 'publish'))</TestExecutionDirectory>
+        <TestExecutionDirectory>$([MSBuild]::NormalizeDirectory('%(ProjectDir)', 'bin', '$(NetCoreAppCurrent)-$(Configuration)', '$(NetCoreAppCurrent)', '%(TestRuntimeIdentifier)', 'publish'))</TestExecutionDirectory>
         <RuntimePackDirectory>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'microsoft.netcore.app.runtime.%(TestRuntimeIdentifier)', '$(Configuration)'))</RuntimePackDirectory>
       </TestConsoleAppSourceFiles>
     </ItemGroup>
