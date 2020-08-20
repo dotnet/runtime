@@ -882,6 +882,7 @@ namespace System.ComponentModel
         public bool Add(string input, out int testPosition, out System.ComponentModel.MaskedTextResultHint resultHint) { throw null; }
         public void Clear() { }
         public void Clear(out System.ComponentModel.MaskedTextResultHint resultHint) { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public object Clone() { throw null; }
         public int FindAssignedEditPositionFrom(int position, bool direction) { throw null; }
         public int FindAssignedEditPositionInRange(int startPosition, int endPosition, bool direction) { throw null; }
