@@ -28,6 +28,8 @@ void EntryPointSlots::Backpatch_Locked(TADDR slot, SlotType slotType, PCODE entr
     _ASSERTE(entryPoint != NULL);
     _ASSERTE(IS_ALIGNED((SIZE_T)slot, GetRequiredSlotAlignment(slotType)));
 
+    bool jitWriteEnabled = PAL_JITWriteEnable(true);
+
     switch (slotType)
     {
         case SlotType_Normal:
@@ -50,6 +52,7 @@ void EntryPointSlots::Backpatch_Locked(TADDR slot, SlotType slotType, PCODE entr
             // fall through
 
         Flush:
+            PAL_JITWriteEnable(jitWriteEnabled);
             ClrFlushInstructionCache((LPCVOID)slot, sizeof(PCODE));
             break;
 

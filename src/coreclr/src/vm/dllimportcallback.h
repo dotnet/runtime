@@ -267,6 +267,8 @@ public:
         }
         CONTRACTL_END;
 
+        bool jitWriteEnabled = PAL_JITWriteEnable(true);
+
         m_pManagedTarget = pManagedTarget;
         m_pObjectHandle     = pObjectHandle;
         m_pUMThunkMarshInfo = pUMThunkMarshInfo;
@@ -278,6 +280,7 @@ public:
 #ifdef _DEBUG
         m_state = kLoadTimeInited;
 #endif
+        PAL_JITWriteEnable(jitWriteEnabled);
     }
 
     void Terminate();

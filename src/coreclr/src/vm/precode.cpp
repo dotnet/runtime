@@ -404,6 +404,8 @@ void Precode::ResetTargetInterlocked()
 {
     WRAPPER_NO_CONTRACT;
 
+    bool jitWriteEnabled = PAL_JITWriteEnable(true);
+
     PrecodeType precodeType = GetType();
     switch (precodeType)
     {
@@ -422,6 +424,8 @@ void Precode::ResetTargetInterlocked()
             break;
     }
 
+    PAL_JITWriteEnable(jitWriteEnabled);
+
     // Although executable code is modified on x86/x64, a FlushInstructionCache() is not necessary on those platforms due to the
     // interlocked operation above (see ClrFlushInstructionCache())
 }
@@ -436,6 +440,8 @@ BOOL Precode::SetTargetInterlocked(PCODE target, BOOL fOnlyRedirectFromPrestub)
 
     if (fOnlyRedirectFromPrestub && !IsPointingToPrestub(expected))
         return FALSE;
+
+    bool jitWriteEnabled = PAL_JITWriteEnable(true);
 
     g_IBCLogger.LogMethodPrecodeWriteAccess(GetMethodDesc());
 
@@ -462,6 +468,8 @@ BOOL Precode::SetTargetInterlocked(PCODE target, BOOL fOnlyRedirectFromPrestub)
         UnexpectedPrecodeType("Precode::SetTargetInterlocked", precodeType);
         break;
     }
+
+    PAL_JITWriteEnable(jitWriteEnabled);
 
     // Although executable code is modified on x86/x64, a FlushInstructionCache() is not necessary on those platforms due to the
     // interlocked operation above (see ClrFlushInstructionCache())

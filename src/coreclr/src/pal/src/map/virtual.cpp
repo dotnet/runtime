@@ -1760,6 +1760,31 @@ ExitVirtualProtect:
     return bRetVal;
 }
 
+#if defined(TARGET_OSX) && defined(TARGET_ARM64)
+bool
+PALAPI
+PAL_JITWriteEnable(bool writeEnable)
+{
+    // Use a thread local to track per thread JIT Write enable state
+    // Threads start with MAP_JIT pages readable and executable (R-X) by default.
+    thread_local bool enabled = false;
+    bool result = enabled;
+    if (enabled != writeEnable)
+    {
+        pthread_jit_write_protect_np(writeEnable ? 0 : 1);
+        enabled = writeEnable;
+    }
+    return result;
+}
+#else
+bool
+PALAPI
+PAL_JITWriteEnable(bool)
+{
+    return true;
+}
+#endif
+
 #if HAVE_VM_ALLOCATE
 //---------------------------------------------------------------------------------------
 //

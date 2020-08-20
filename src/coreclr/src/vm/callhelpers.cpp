@@ -62,12 +62,16 @@ void CallDescrWorkerWithHandler(
 
 #endif
 
+    bool jitWriteEnabled = PAL_JITWriteEnable(false);
+
 
     BEGIN_CALL_TO_MANAGEDEX(fCriticalCall ? EEToManagedCriticalCall : EEToManagedDefault);
 
     CallDescrWorker(pCallDescrData);
 
     END_CALL_TO_MANAGED();
+
+    PAL_JITWriteEnable(jitWriteEnabled);
 }
 
 

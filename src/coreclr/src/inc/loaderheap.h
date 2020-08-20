@@ -549,6 +549,7 @@ private:
     {
         WRAPPER_NO_CONTRACT;
 
+        bool jitWriteEnabled = PAL_JITWriteEnable(true);
 
         void *pResult;
         TaggedMemAllocPtr tmap;
@@ -568,6 +569,8 @@ private:
         tmap.m_szFile           = szFile;
         tmap.m_lineNum          = lineNum;
 #endif
+        PAL_JITWriteEnable(jitWriteEnabled);
+
         return tmap;
     }
 
@@ -625,6 +628,8 @@ public:
     {
         WRAPPER_NO_CONTRACT;
 
+        bool jitWriteEnabled = PAL_JITWriteEnable(true);
+
         CRITSEC_Holder csh(m_CriticalSection);
 
 
@@ -649,6 +654,7 @@ public:
         tmap.m_szFile           = szFile;
         tmap.m_lineNum          = lineNum;
 #endif
+        PAL_JITWriteEnable(jitWriteEnabled);
 
         return tmap;
     }

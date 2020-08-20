@@ -1158,16 +1158,14 @@ void InitThreadManager()
     _ASSERTE_ALL_BUILDS("clr/src/VM/threads.cpp", (BYTE*)JIT_PatchedCodeLast - (BYTE*)JIT_PatchedCodeStart < (ptrdiff_t)GetOsPageSize());
 
 #ifdef FEATURE_WRITEBARRIER_COPY
-#ifdef TARGET_ARM64
-    s_barrierCopy = ClrVirtualAlloc(NULL, g_SystemInfo.dwAllocationGranularity, MEM_COMMIT, PAGE_READWRITE);
-#else
     s_barrierCopy = ClrVirtualAlloc(NULL, g_SystemInfo.dwAllocationGranularity, MEM_COMMIT, PAGE_EXECUTE_READWRITE);
-#endif // TARGET_ARM64
     if (s_barrierCopy == NULL)
     {
         _ASSERTE(!"ClrVirtualAlloc of GC barrier code page failed");
         COMPlusThrowWin32();
     }
+
+    bool jitWriteEnabled = PAL_JITWriteEnable(true);
 
     memcpy(s_barrierCopy, (BYTE*)JIT_PatchedCodeStart, (BYTE*)JIT_PatchedCodeLast - (BYTE*)JIT_PatchedCodeStart);
 
@@ -1181,6 +1179,8 @@ void InitThreadManager()
     // Store the JIT_WriteBarrier_Table copy location to a global variable so that it can be updated.
     JIT_WriteBarrier_Table_Loc = GetWriteBarrierCodeLocation((void*)JIT_WriteBarrier_Table);
 #endif // TARGET_ARM64
+
+    PAL_JITWriteEnable(jitWriteEnabled);
 
 #else // FEATURE_WRITEBARRIER_COPY
 

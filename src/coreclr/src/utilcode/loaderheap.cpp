@@ -1159,6 +1159,10 @@ BOOL UnlockedLoaderHeap::UnlockedReservePages(size_t dwSizeToCommit)
 
     LoaderHeapBlock *pNewBlock;
 
+    bool jitWriteEnable = false;
+    if (m_Options & LHF_EXECUTABLE)
+        jitWriteEnable = PAL_JITWriteEnable(true);
+
     pNewBlock = (LoaderHeapBlock *) pData;
 
     pNewBlock->dwVirtualSize    = dwSizeToReserve;
@@ -1182,6 +1186,9 @@ BOOL UnlockedLoaderHeap::UnlockedReservePages(size_t dwSizeToCommit)
     m_pCurBlock = pNewBlock;
 
     SETUP_NEW_BLOCK(pData, dwSizeToCommit, dwSizeToReserve);
+
+    if (m_Options & LHF_EXECUTABLE)
+        PAL_JITWriteEnable(jitWriteEnable);
 
     return TRUE;
 }

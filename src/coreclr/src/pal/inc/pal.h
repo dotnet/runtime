@@ -2715,6 +2715,11 @@ VirtualFree(
         IN DWORD dwFreeType);
 
 PALIMPORT
+bool
+PALAPI
+PAL_JITWriteEnable(IN bool enable);
+
+PALIMPORT
 BOOL
 PALAPI
 VirtualProtect(

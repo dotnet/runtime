@@ -637,6 +637,8 @@ void FixupPrecode::Init(MethodDesc* pMD, LoaderAllocator *pLoaderAllocator, int 
 {
     WRAPPER_NO_CONTRACT;
 
+    bool jitWriteEnabled = PAL_JITWriteEnable(true);
+
     InitCommon();
 
     // Initialize chunk indices only if they are not initialized yet. This is necessary to make MethodDesc::Reset work.
@@ -664,6 +666,8 @@ void FixupPrecode::Init(MethodDesc* pMD, LoaderAllocator *pLoaderAllocator, int 
     {
         m_pTarget = GetEEFuncEntryPoint(PrecodeFixupThunk);
     }
+
+    PAL_JITWriteEnable(jitWriteEnabled);
 }
 
 #ifdef FEATURE_NATIVE_IMAGE_GENERATION
@@ -1058,6 +1062,17 @@ void JIT_TailCall()
 }
 
 #if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
+EXTERN_C void JIT_UpdateWriteBarrierState(bool skipEphemeralCheck);
+
+static void SafeUpdateWriteBarrierState(bool skipEphemeralCheck)
+{
+    bool jitWriteEnabled = PAL_JITWriteEnable(true);
+
+    JIT_UpdateWriteBarrierState(GCHeapUtilities::IsServerHeap());
+
+    PAL_JITWriteEnable(jitWriteEnabled);
+}
+
 void InitJITHelpers1()
 {
     STANDARD_VM_CONTRACT;
@@ -1083,11 +1098,12 @@ void InitJITHelpers1()
         }
     }
 
-    JIT_UpdateWriteBarrierState(GCHeapUtilities::IsServerHeap());
+    SafeUpdateWriteBarrierState(GCHeapUtilities::IsServerHeap());
 }
 
+
 #else
-EXTERN_C void JIT_UpdateWriteBarrierState(bool) {}
+void SafeUpdateWriteBarrierState(bool) {}
 #endif // !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
 
 PTR_CONTEXT GetCONTEXTFromRedirectedStubStackFrame(T_DISPATCHER_CONTEXT * pDispatcherContext)
@@ -1251,26 +1267,26 @@ void FlushWriteBarrierInstructionCache()
 #ifndef CROSSGEN_COMPILE
 int StompWriteBarrierEphemeral(bool isRuntimeSuspended)
 {
-    JIT_UpdateWriteBarrierState(GCHeapUtilities::IsServerHeap());
+    SafeUpdateWriteBarrierState(GCHeapUtilities::IsServerHeap());
     return SWB_PASS;
 }
 
 int StompWriteBarrierResize(bool isRuntimeSuspended, bool bReqUpperBoundsCheck)
 {
-    JIT_UpdateWriteBarrierState(GCHeapUtilities::IsServerHeap());
+    SafeUpdateWriteBarrierState(GCHeapUtilities::IsServerHeap());
     return SWB_PASS;
 }
 
 #ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
 int SwitchToWriteWatchBarrier(bool isRuntimeSuspended)
 {
-    JIT_UpdateWriteBarrierState(GCHeapUtilities::IsServerHeap());
+    SafeUpdateWriteBarrierState(GCHeapUtilities::IsServerHeap());
     return SWB_PASS;
 }
 
 int SwitchToNonWriteWatchBarrier(bool isRuntimeSuspended)
 {
-    JIT_UpdateWriteBarrierState(GCHeapUtilities::IsServerHeap());
+    SafeUpdateWriteBarrierState(GCHeapUtilities::IsServerHeap());
     return SWB_PASS;
 }
 #endif // FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP

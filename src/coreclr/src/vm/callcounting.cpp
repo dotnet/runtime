@@ -251,6 +251,8 @@ const CallCountingStub *CallCountingManager::CallCountingStubAllocator::Allocate
     }
     CONTRACTL_END;
 
+    bool jitWriteEnabled = PAL_JITWriteEnable(true);
+
     LoaderHeap *heap = m_heap;
     if (heap == nullptr)
     {
@@ -291,6 +293,8 @@ const CallCountingStub *CallCountingManager::CallCountingStubAllocator::Allocate
         UNREACHABLE();
     #endif
     } while (false);
+
+    PAL_JITWriteEnable(jitWriteEnabled);
 
     ClrFlushInstructionCache(stub, sizeInBytes);
     return stub;

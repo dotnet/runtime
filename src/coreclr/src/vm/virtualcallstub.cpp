@@ -1708,6 +1708,8 @@ PCODE VirtualCallStubManager::ResolveWorker(StubCallSite* pCallSite,
         PRECONDITION(IsProtectedByGCFrame(protectedObj));
     } CONTRACTL_END;
 
+    bool jitWriteEnabled = PAL_JITWriteEnable(true);
+
     MethodTable* objectType = (*protectedObj)->GetMethodTable();
     CONSISTENCY_CHECK(CheckPointer(objectType));
 
@@ -2130,6 +2132,8 @@ PCODE VirtualCallStubManager::ResolveWorker(StubCallSite* pCallSite,
 
     // Target can be NULL only if we can't resolve to an address
     _ASSERTE(target != NULL);
+
+    PAL_JITWriteEnable(jitWriteEnabled);
 
     return target;
 }
@@ -2960,6 +2964,8 @@ LookupHolder *VirtualCallStubManager::GenerateLookupStub(PCODE addrOfResolver, s
         POSTCONDITION(CheckPointer(RETVAL));
     } CONTRACT_END;
 
+    bool jitWriteEnabled = PAL_JITWriteEnable(true);
+
     //allocate from the requisite heap and copy the template over it.
     LookupHolder * holder     = (LookupHolder*) (void*) lookup_heap->AllocAlignedMem(sizeof(LookupHolder), CODE_SIZE_ALIGN);
 
@@ -2977,6 +2983,8 @@ LookupHolder *VirtualCallStubManager::GenerateLookupStub(PCODE addrOfResolver, s
 #ifdef FEATURE_PERFMAP
     PerfMap::LogStubs(__FUNCTION__, "GenerateLookupStub", (PCODE)holder->stub(), holder->stub()->size());
 #endif
+
+    PAL_JITWriteEnable(jitWriteEnabled);
 
     RETURN (holder);
 }

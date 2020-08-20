@@ -1829,6 +1829,8 @@ TaggedMemAllocPtr CodeFragmentHeap::RealAllocAlignedMem(size_t  dwRequestedSize
 {
     CrstHolder ch(&m_CritSec);
 
+    bool jitWriteEnabled = PAL_JITWriteEnable(true);
+
     dwRequestedSize = ALIGN_UP(dwRequestedSize, sizeof(TADDR));
 
     if (dwRequestedSize < sizeof(FreeBlock))
@@ -1893,6 +1895,7 @@ TaggedMemAllocPtr CodeFragmentHeap::RealAllocAlignedMem(size_t  dwRequestedSize
     tmap.m_szFile           = szFile;
     tmap.m_lineNum          = lineNum;
 #endif
+    PAL_JITWriteEnable(jitWriteEnabled);
     return tmap;
 }
 

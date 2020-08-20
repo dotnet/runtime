@@ -969,6 +969,8 @@ void EEStartupHelper()
 
 #endif // CROSSGEN_COMPILE
 
+        PAL_JITWriteEnable(true);
+
         SystemDomain::System()->Init();
 
 #ifdef PROFILING_SUPPORTED

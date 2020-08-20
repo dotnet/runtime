@@ -326,6 +326,8 @@ PCODE MethodDesc::PrepareCode(PrepareCodeConfig* pConfig)
 {
     STANDARD_VM_CONTRACT;
 
+    bool jitWriteEnabled = PAL_JITWriteEnable(true);
+
     // If other kinds of code need multi-versioning we could add more cases here,
     // but for now generation of all other code/stubs occurs in other code paths
     _ASSERTE(IsIL() || IsNoMetadata());
@@ -334,6 +336,8 @@ PCODE MethodDesc::PrepareCode(PrepareCodeConfig* pConfig)
 #if defined(FEATURE_GDBJIT) && defined(TARGET_UNIX) && !defined(CROSSGEN_COMPILE)
     NotifyGdb::MethodPrepared(this);
 #endif
+
+    PAL_JITWriteEnable(jitWriteEnabled);
 
     return pCode;
 }
@@ -1880,6 +1884,8 @@ extern "C" PCODE STDCALL PreStubWorker(TransitionBlock* pTransitionBlock, Method
 
     ETWOnStartup(PrestubWorker_V1, PrestubWorkerEnd_V1);
 
+    bool jitWriteEnabled = PAL_JITWriteEnable(true);
+
     MAKE_CURRENT_THREAD_AVAILABLE();
 
     // Attempt to check what GC mode we are running under.
@@ -1963,6 +1969,8 @@ extern "C" PCODE STDCALL PreStubWorker(TransitionBlock* pTransitionBlock, Method
 
         pPFrame->Pop(CURRENT_THREAD);
     }
+
+    PAL_JITWriteEnable(jitWriteEnabled);
 
     POSTCONDITION(pbRetVal != NULL);
 
