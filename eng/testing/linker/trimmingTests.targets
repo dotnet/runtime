@@ -34,7 +34,7 @@
       <!-- We need to separate Item metadata declaration in two in order to be able to use ProjectDir and TestRuntimeIdentifier bellow -->
       <TestConsoleAppSourceFiles>
         <ProjectFile>%(ProjectDir)project.csproj</ProjectFile>
-        <TestCommand>$([MSBuild]::NormalizePath('%(ProjectDir)', 'bin', '$(Configuration)', '$(NetCoreAppCurrent)', '%(TestRuntimeIdentifier)', 'publish', 'project'))</TestCommand>
+        <TestCommand>$([MSBuild]::NormalizePath('%(ProjectDir)', 'bin', '$(NetCoreAppCurrent)-$(Configuration)', '$(NetCoreAppCurrent)', '%(TestRuntimeIdentifier)', 'publish', 'project'))</TestCommand>
         <TestExecutionDirectory>$([MSBuild]::NormalizeDirectory('%(ProjectDir)', 'bin', '$(NetCoreAppCurrent)-$(Configuration)', '$(NetCoreAppCurrent)', '%(TestRuntimeIdentifier)', 'publish'))</TestExecutionDirectory>
         <RuntimePackDirectory>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'microsoft.netcore.app.runtime.%(TestRuntimeIdentifier)', '$(Configuration)'))</RuntimePackDirectory>
       </TestConsoleAppSourceFiles>
