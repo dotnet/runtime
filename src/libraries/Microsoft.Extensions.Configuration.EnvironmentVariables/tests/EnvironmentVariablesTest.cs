@@ -153,6 +153,23 @@ namespace Microsoft.Extensions.Configuration.EnvironmentVariables.Test
             Assert.Equal("System.Data.SqlClient", envConfigSrc.Get("ConnectionStrings:_db1_ProviderName"));
         }
 
+        [Fact]
+        public void LoadEnvironmentVariablesWithPrefixThatEndsWithDoubleUnderscore()
+        {
+            var dict = new Hashtable()
+                {
+                    {"TEST__TEST1__TEST2", "42"},
+                    {"TEST__TEST1__TEST3", "12"},
+                };
+            var envConfigSrc = new EnvironmentVariablesConfigurationProvider("TEST__");
+
+            envConfigSrc.Load(dict);
+
+            Assert.Equal("42", envConfigSrc.Get("TEST1:TEST2"));
+            Assert.Equal("12", envConfigSrc.Get("TEST1:TEST3"));
+        }
+
+
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void BindingDoesNotThrowIfReloadedDuringBinding()
         {
