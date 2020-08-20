@@ -69,7 +69,7 @@ namespace Microsoft.Extensions.Configuration.EnvironmentVariables
             return key.Replace("__", ConfigurationPath.KeyDelimiter);
         }
 
-        private static IEnumerable<DictionaryEntry> AzureEnvToAppEnv(DictionaryEntry entry)
+        private IEnumerable<DictionaryEntry> AzureEnvToAppEnv(DictionaryEntry entry)
         {
             string key = (string)entry.Key;
             string prefix = string.Empty;
@@ -96,7 +96,15 @@ namespace Microsoft.Extensions.Configuration.EnvironmentVariables
             }
             else
             {
-                entry.Key = NormalizeKey(key);
+                if (_prefix != null && _prefix.EndsWith("__"))
+                {
+                    entry.Key = _prefix + NormalizeKey(key.Substring(_prefix.Length));
+                }
+                else
+                {
+                    entry.Key = NormalizeKey(key);
+                }
+
                 yield return entry;
                 yield break;
             }
