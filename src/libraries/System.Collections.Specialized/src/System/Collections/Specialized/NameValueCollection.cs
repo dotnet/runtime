@@ -10,6 +10,7 @@
 using System.Diagnostics;
 using System.Runtime.Serialization;
 using System.Text;
+using System.Runtime.Versioning;
 
 namespace System.Collections.Specialized
 {
@@ -94,6 +95,7 @@ namespace System.Collections.Specialized
         {
         }
 
+        [UnsupportedOSPlatform("browser")]
         protected NameValueCollection(SerializationInfo info, StreamingContext context) : base(info, context)
         {
         }

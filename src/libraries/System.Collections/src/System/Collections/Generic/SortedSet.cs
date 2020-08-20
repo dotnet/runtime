@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.Serialization;
 using Interlocked = System.Threading.Interlocked;
+using System.Runtime.Versioning;
 
 namespace System.Collections.Generic
 {
@@ -1922,11 +1923,13 @@ namespace System.Collections.Generic
                 Initialize();
             }
 
+            [UnsupportedOSPlatform("browser")]
             void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
             {
                 throw new PlatformNotSupportedException();
             }
 
+            [UnsupportedOSPlatform("browser")]
             void IDeserializationCallback.OnDeserialization(object? sender)
             {
                 throw new PlatformNotSupportedException();

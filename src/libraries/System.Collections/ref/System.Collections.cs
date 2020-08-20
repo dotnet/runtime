@@ -294,7 +294,9 @@ namespace System.Collections.Generic
             public void Dispose() { }
             public bool MoveNext() { throw null; }
             void System.Collections.IEnumerator.Reset() { }
+            [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
             void System.Runtime.Serialization.IDeserializationCallback.OnDeserialization(object? sender) { }
+            [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
             void System.Runtime.Serialization.ISerializable.GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         }
     }
@@ -632,7 +634,9 @@ namespace System.Collections.Generic
             public void Dispose() { }
             public bool MoveNext() { throw null; }
             void System.Collections.IEnumerator.Reset() { }
+            [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
             void System.Runtime.Serialization.IDeserializationCallback.OnDeserialization(object? sender) { }
+            [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
             void System.Runtime.Serialization.ISerializable.GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         }
     }

@@ -4,6 +4,7 @@
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.Serialization;
+using System.Runtime.Versioning;
 
 namespace System.Collections.Generic
 {
@@ -596,11 +597,13 @@ namespace System.Collections.Generic
             {
             }
 
+            [UnsupportedOSPlatform("browser")]
             void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
             {
                 throw new PlatformNotSupportedException();
             }
 
+            [UnsupportedOSPlatform("browser")]
             void IDeserializationCallback.OnDeserialization(object? sender)
             {
                 throw new PlatformNotSupportedException();

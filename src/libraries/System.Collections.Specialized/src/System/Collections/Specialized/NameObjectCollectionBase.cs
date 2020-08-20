@@ -13,6 +13,7 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.Serialization;
+using System.Runtime.Versioning;
 
 namespace System.Collections.Specialized
 {
@@ -77,16 +78,19 @@ namespace System.Collections.Specialized
             Reset(capacity);
         }
 
+        [UnsupportedOSPlatform("browser")]
         protected NameObjectCollectionBase(SerializationInfo info, StreamingContext context)
         {
             throw new PlatformNotSupportedException();
         }
 
+        [UnsupportedOSPlatform("browser")]
         public virtual void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             throw new PlatformNotSupportedException();
         }
 
+        [UnsupportedOSPlatform("browser")]
         public virtual void OnDeserialization(object? sender)
         {
             throw new PlatformNotSupportedException();

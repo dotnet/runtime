@@ -95,6 +95,7 @@ namespace System.Collections.Specialized
         protected NameObjectCollectionBase(int capacity, System.Collections.IEqualityComparer? equalityComparer) { }
         [System.ObsoleteAttribute("Please use NameObjectCollectionBase(Int32, IEqualityComparer) instead.")]
         protected NameObjectCollectionBase(int capacity, System.Collections.IHashCodeProvider? hashProvider, System.Collections.IComparer? comparer) { }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         protected NameObjectCollectionBase(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public virtual int Count { get { throw null; } }
         protected bool IsReadOnly { get { throw null; } set { } }
@@ -115,7 +116,9 @@ namespace System.Collections.Specialized
         protected void BaseSet(int index, object? value) { }
         protected void BaseSet(string? name, object? value) { }
         public virtual System.Collections.IEnumerator GetEnumerator() { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public virtual void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public virtual void OnDeserialization(object? sender) { }
         void System.Collections.ICollection.CopyTo(System.Array array, int index) { }
         public partial class KeysCollection : System.Collections.ICollection, System.Collections.IEnumerable
@@ -142,6 +145,7 @@ namespace System.Collections.Specialized
         [System.ObsoleteAttribute("Please use NameValueCollection(Int32, IEqualityComparer) instead.")]
         public NameValueCollection(int capacity, System.Collections.IHashCodeProvider? hashProvider, System.Collections.IComparer? comparer) { }
         public NameValueCollection(int capacity, System.Collections.Specialized.NameValueCollection col) { }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         protected NameValueCollection(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public virtual string?[] AllKeys { get { throw null; } }
         public string? this[int index] { get { throw null; } }
