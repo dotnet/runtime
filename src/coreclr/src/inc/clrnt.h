@@ -936,7 +936,7 @@ typedef struct _UNWIND_INFO {
     // dummy
 } UNWIND_INFO, *PUNWIND_INFO;
 
-#if defined(TARGET_UNIX) || defined(HOST_X86)
+#if defined(HOST_UNIX) || defined(HOST_X86)
 
 EXTERN_C
 NTSYSAPI
@@ -952,7 +952,7 @@ RtlVirtualUnwind (
     __out PDWORD EstablisherFrame,
     __inout_opt PT_KNONVOLATILE_CONTEXT_POINTERS ContextPointers
     );
-#endif // TARGET_UNIX || HOST_X86
+#endif // HOST_UNIX || HOST_X86
 
 #define UNW_FLAG_NHANDLER 0x0
 
