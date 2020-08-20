@@ -71,7 +71,9 @@
   <!-- Common repo directories -->
   <PropertyGroup>
     <!-- Need to try and keep the same logic as the native builds as we need this for packaging -->
-    <NativeBinDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'native', '$(BuildTargetFramework)-$(TargetOS)-$(Configuration)-$(TargetArchitecture)'))</NativeBinDir>
+    <_targetFrameworkValue>$([MSBuild]::ValueOrDefault('$(BuildTargetFramework)', '$(TargetFramework)'))</_targetFrameworkValue>
+    <_targetFrameworkValue>$([MSBuild]::ValueOrDefault('$(_targetFrameworkValue)', '$(NetCoreAppCurrent)'))</_targetFrameworkValue>
+    <NativeBinDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'native', '$(_targetFrameworkValue)-$(TargetOS)-$(Configuration)-$(TargetArchitecture)'))</NativeBinDir>
     <PkgDir>$([MSBuild]::NormalizeDirectory('$(LibrariesProjectRoot)', 'pkg'))</PkgDir>
   </PropertyGroup>
 
