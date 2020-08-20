@@ -1,6 +1,7 @@
 #include "config.h"
 
 #include "mono/metadata/loaded-images-internals.h"
+#include "mono/metadata/image-internals.h"
 #include "mono/metadata/metadata-internals.h"
 #include "mono/utils/mono-logger-internals.h"
 
@@ -100,7 +101,9 @@ mono_loaded_images_remove_image (MonoImage *image)
 
 	loaded_images         = mono_loaded_images_get_hash (li, image->ref_only);
 	loaded_images_by_name = mono_loaded_images_get_by_name_hash (li, image->ref_only);
-	image2 = (MonoImage *)g_hash_table_lookup (loaded_images, image->name);
+
+	char *name = mono_image_get_name_with_culture_if_needed (image);
+	image2 = (MonoImage *)g_hash_table_lookup (loaded_images, name);
 	if (image == image2) {
 		/* This is not true if we are called from mono_image_open () */
 		g_hash_table_remove (loaded_images, image->name);

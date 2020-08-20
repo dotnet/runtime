@@ -36,6 +36,7 @@ public class WasmAppBuilder : Task
     public ITaskItem[]? AssemblySearchPaths { get; set; }
     public int DebugLevel { get; set; }
     public ITaskItem[]? ExtraAssemblies { get; set; }
+    public ITaskItem[]? SatelliteAssemblies { get; set; }
     public ITaskItem[]? FilesToIncludeInFileSystem { get; set; }
     public ITaskItem[]? RemoteSources { get; set; }
     public bool InvariantGlobalization { get; set; }
@@ -70,6 +71,17 @@ public class WasmAppBuilder : Task
     private class AssemblyEntry : AssetEntry
     {
         public AssemblyEntry(string name) : base(name, "assembly") {}
+    }
+
+    private class SatelliteAssemblyEntry : AssetEntry
+    {
+        public SatelliteAssemblyEntry(string name, string culture) : base(name, "resource")
+        {
+            CultureName = culture;
+        }
+
+        [JsonPropertyName("culture")]
+        public string CultureName { get; set; }
     }
 
     private class VfsEntry : AssetEntry {
@@ -147,16 +159,30 @@ public class WasmAppBuilder : Task
         File.WriteAllText(Path.Join(AppDir, "index.html"), html);
 
         foreach (var assembly in _assemblies.Values) {
-            config.Assets.Add(new AssemblyEntry (Path.GetFileName(assembly.Location)));
+            config.Assets.Add(new AssemblyEntry(Path.GetFileName(assembly.Location)));
             if (DebugLevel > 0) {
                 var pdb = assembly.Location;
                 pdb = Path.ChangeExtension(pdb, ".pdb");
                 if (File.Exists(pdb))
-                    config.Assets.Add(new AssemblyEntry (Path.GetFileName(pdb)));
+                    config.Assets.Add(new AssemblyEntry(Path.GetFileName(pdb)));
             }
         }
 
         config.DebugLevel = DebugLevel;
+
+        if (SatelliteAssemblies != null)
+        {
+            foreach (var assembly in SatelliteAssemblies)
+            {
+                string culture = assembly.GetMetadata("CultureName") ?? string.Empty;
+                string fullPath = assembly.GetMetadata("Identity");
+                string name = Path.GetFileName(fullPath);
+                string directory = Path.Join(AppDir, config.AssemblyRoot, culture);
+                Directory.CreateDirectory(directory);
+                File.Copy(fullPath, Path.Join(directory, name), true);
+                config.Assets.Add(new SatelliteAssemblyEntry(name, culture));
+            }
+        }
 
         if (FilesToIncludeInFileSystem != null)
         {
