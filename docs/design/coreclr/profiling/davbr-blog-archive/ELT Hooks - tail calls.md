@@ -3,7 +3,7 @@
 
 For most people the idea of entering or returning from a function seems straightforward. Your profiler's Enter hook is called at the beginning of a function, and its Leave hook is called just before the function returns. But the idea of a tail call and exactly what that means for the Profiling API is less straightforward.
 
-In [Part 1](ELT Hooks - The Basics.md) I talked about the basics of the Enter / Leave / Tailcall hooks and generally how they work. You may want to review that post first if you haven't seen it yet. This post builds on that one by talking exclusively about the Tailcall hook, how it works, and what profilers should do inside their Tailcall hooks.
+In (Part 1)[ELT Hooks - The Basics.md] I talked about the basics of the Enter / Leave / Tailcall hooks and generally how they work. You may want to review that post first if you haven't seen it yet. This post builds on that one by talking exclusively about the Tailcall hook, how it works, and what profilers should do inside their Tailcall hooks.
 
 ## Tail calling in general
 
