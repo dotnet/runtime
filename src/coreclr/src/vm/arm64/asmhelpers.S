@@ -264,6 +264,7 @@ LOCAL_LABEL(EphemeralCheckEnabled):
     // Update wbs state
 #ifdef FEATURE_WRITEBARRIER_COPY
     PREPARE_EXTERNAL_VAR JIT_WriteBarrier_Table_Loc, x12
+    ldr  x12, [x12]
 #else // FEATURE_WRITEBARRIER_COPY
     adr  x12, LOCAL_LABEL(wbs_begin)
 #endif // FEATURE_WRITEBARRIER_COPY
@@ -351,20 +352,7 @@ LOCAL_LABEL(Branch_JIT_WriteBarrier_Copy):
 #endif // FEATURE_WRITEBARRIER_COPY
 LEAF_END JIT_WriteBarrier_Callable, _TEXT
 
-#ifdef FEATURE_WRITEBARRIER_COPY
-.data
-// When JIT_WriteBarrier is copied into an allocated page,
-// helpers use this global variable to jump to it. This variable is set in InitThreadManager.
-PATCH_LABEL JIT_WriteBarrier_Loc
-    .zero 8
-
-// When JIT_WriteBarrier is copied into an allocated page, this variable is used to update the
-// associated pc relative table.
-PATCH_LABEL JIT_WriteBarrier_Table_Loc
-    .zero 8
-#endif // FEATURE_WRITEBARRIER_COPY
-
-
+.balign 64  // Align to power of two at least as big as patchable literal pool so that it fits optimally in cache line
 //------------------------------------------
 // Start of the writeable code region
 LEAF_ENTRY JIT_PatchedCodeStart, _TEXT

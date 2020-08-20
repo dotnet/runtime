@@ -14,8 +14,6 @@
 #include "jitinterface.h"
 #include "ecall.h"
 
-EXTERN_C void JIT_UpdateWriteBarrierState(bool skipEphemeralCheck);
-
 
 #ifndef DACCESS_COMPILE
 //-----------------------------------------------------------------------

@@ -1123,8 +1123,9 @@ PCODE AdjustWriteBarrierIP(PCODE controlPc)
 
 extern "C" void *JIT_WriteBarrier_Loc;
 #ifdef TARGET_ARM64
-extern "C" void* JIT_WriteBarrier_Table;
-extern "C" void *JIT_WriteBarrier_Table_Loc;
+extern "C" void (*JIT_WriteBarrier_Table)();
+extern "C" void *JIT_WriteBarrier_Loc = 0;
+extern "C" void *JIT_WriteBarrier_Table_Loc = 0;
 #endif // TARGET_ARM64
 
 #endif // FEATURE_WRITEBARRIER_COPY
@@ -1177,7 +1178,7 @@ void InitThreadManager()
 
 #ifdef TARGET_ARM64
     // Store the JIT_WriteBarrier_Table copy location to a global variable so that it can be updated.
-    JIT_WriteBarrier_Table_Loc = GetWriteBarrierCodeLocation((void*)JIT_WriteBarrier_Table);
+    JIT_WriteBarrier_Table_Loc = GetWriteBarrierCodeLocation((void*)&JIT_WriteBarrier_Table);
 #endif // TARGET_ARM64
 
     PAL_JITWriteEnable(jitWriteEnabled);
