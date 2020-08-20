@@ -1142,8 +1142,8 @@ CONTEXT_GetThreadContextFromThreadState(
                 lpContext->Cpsr = pState->__cpsr;
                 lpContext->Fp = arm_thread_state64_get_fp(*pState);
                 lpContext->Sp = arm_thread_state64_get_sp(*pState);
-                lpContext->Lr = arm_thread_state64_get_lr(*pState);
-                lpContext->Pc = arm_thread_state64_get_pc(*pState);
+                lpContext->Lr = (uint64_t)arm_thread_state64_get_lr_fptr(*pState);
+                lpContext->Pc = (uint64_t)arm_thread_state64_get_pc_fptr(*pState);
             }
             break;
         case ARM_NEON_STATE64:

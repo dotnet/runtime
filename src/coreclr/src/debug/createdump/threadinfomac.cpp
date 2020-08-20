@@ -101,10 +101,10 @@ ThreadInfo::Initialize()
 
     memcpy(m_gpRegisters.regs, &state.__x, sizeof(state.__x));
     m_gpRegisters.regs[29] =  arm_thread_state64_get_fp(state);
-    m_gpRegisters.regs[30] =  arm_thread_state64_get_lr(state);
+    m_gpRegisters.regs[30] =  (uint64_t)arm_thread_state64_get_lr_fptr(state);
 
     m_gpRegisters.sp = arm_thread_state64_get_sp(state);
-    m_gpRegisters.pc = arm_thread_state64_get_pc(state);
+    m_gpRegisters.pc = (uint64_t)arm_thread_state64_get_pc_fptr(state);
 
     arm_neon_state64_t fpstate;
     stateCount = ARM_NEON_STATE64_COUNT;
