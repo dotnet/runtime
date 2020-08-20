@@ -576,9 +576,9 @@ BOOL QCALLTYPE AssemblyNative::GetCodeBase(QCall::AssemblyHandle pAssembly, BOOL
     }
 
     retString.Set(codebase);
-    return ret;
-
     END_QCALL;
+
+    return ret;
 }
 
 INT32 QCALLTYPE AssemblyNative::GetHashAlgorithm(QCall::AssemblyHandle pAssembly)
