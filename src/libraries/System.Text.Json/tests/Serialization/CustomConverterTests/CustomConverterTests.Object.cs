@@ -460,7 +460,6 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/36329")]
         public static void ClassWithNullablePrimitivesObjectConverterDeserialize()
         {
             const string json =

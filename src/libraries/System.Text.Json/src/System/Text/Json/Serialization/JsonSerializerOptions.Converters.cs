@@ -274,8 +274,7 @@ namespace System.Text.Json
 
             Type converterTypeToConvert = converter.TypeToConvert;
 
-            if (!converterTypeToConvert.IsAssignableFrom(typeToConvert) &&
-                !typeToConvert.IsAssignableFrom(converterTypeToConvert))
+            if (!IsCompatibleConverter(converterTypeToConvert, typeToConvert))
             {
                 ThrowHelper.ThrowInvalidOperationException_SerializationConverterNotCompatible(converter.GetType(), typeToConvert);
             }
@@ -290,6 +289,36 @@ namespace System.Text.Json
             }
 
             return converter;
+        }
+
+        private static bool IsNullableValueType(Type type)
+        {
+            return type.IsGenericType && type.GetGenericTypeDefinition() == s_nullableOfTType;
+        }
+
+        private static bool IsNullableType(Type type)
+        {
+            return !type.IsValueType || IsNullableValueType(type);
+        }
+
+        internal static bool IsAssignableFrom(Type type, Type from)
+        {
+            // Special case for which Type.IsAssignableFrom returns false
+            //    type: Nullable<T> where T : IInterface
+            //    from: IInterface
+
+            if (IsNullableValueType(from) && type.IsInterface)
+            {
+                return type.IsAssignableFrom(from.GetGenericArguments()[0]);
+            }
+
+            return type.IsAssignableFrom(from);
+        }
+
+        private static bool IsCompatibleConverter(Type converterTypeToConvert, Type typeToConvert)
+        {
+            return IsAssignableFrom(converterTypeToConvert, typeToConvert)
+                || IsAssignableFrom(typeToConvert, converterTypeToConvert);
         }
 
         private JsonConverter GetConverterFromAttribute(JsonConverterAttribute converterAttribute, Type typeToConvert, Type classTypeAttributeIsOn, MemberInfo? memberInfo)
@@ -361,9 +390,5 @@ namespace System.Text.Json
             return default;
         }
 
-        private static bool IsNullableType(Type type)
-        {
-            return type.IsGenericType && type.GetGenericTypeDefinition() == s_nullableOfTType;
-        }
     }
 }

@@ -26,14 +26,14 @@ namespace System.Text.Json.Serialization.Tests
 
                 string value = reader.GetString();
 
-                return new StructMember(value);
+                return value == null ? null : new StructMember(value);
             }
 
             public override void Write(Utf8JsonWriter writer, IMemberInterface value, JsonSerializerOptions options)
             {
                 WriteCallCount++;
 
-                JsonSerializer.Serialize(writer, value.Value, typeof(string), options);
+                JsonSerializer.Serialize<string>(writer, value == null ? null : value.Value, options);
             }
         }
 
@@ -46,6 +46,7 @@ namespace System.Text.Json.Serialization.Tests
 
             public override bool CanConvert(Type typeToConvert)
             {
+                typeToConvert = Nullable.GetUnderlyingType(typeToConvert) ?? typeToConvert;
                 return typeof(IMemberInterface).IsAssignableFrom(typeToConvert);
             }
 
@@ -55,14 +56,14 @@ namespace System.Text.Json.Serialization.Tests
 
                 string value = reader.GetString();
 
-                return new StructMember(value);
+                return value == null ? null : new StructMember(value);
             }
 
             public override void Write(Utf8JsonWriter writer, object value, JsonSerializerOptions options)
             {
                 WriteCallCount++;
 
-                JsonSerializer.Serialize(writer, ((IMemberInterface)value).Value, typeof(string), options);
+                JsonSerializer.Serialize<string>(writer, value == null ? null : ((IMemberInterface)value).Value, options);
             }
         }
 
@@ -131,7 +132,6 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/36329")]
         public static void NullableStructMemberToInterfaceConverter()
         {
             const string expected = @"{""MyStructProperty"":""StructProperty"",""MyClassProperty"":""ClassProperty"",""MyStructField"":""StructField"",""MyClassField"":""ClassField""}";
@@ -164,7 +164,6 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/36329")]
         public static void NullableStructMemberToObjectConverter()
         {
             const string expected = @"{""MyStructProperty"":""StructProperty"",""MyClassProperty"":""ClassProperty"",""MyStructField"":""StructField"",""MyClassField"":""ClassField""}";
@@ -193,6 +192,72 @@ namespace System.Text.Json.Serialization.Tests
                 obj.Verify();
 
                 Assert.Equal(4, converter.ReadCallCount);
+            }
+        }
+
+        [Fact]
+        public static void NullableStructMemberWithNullsToInterfaceConverter()
+        {
+            const string expected = @"{""MyStructProperty"":null,""MyClassProperty"":null,""MyStructField"":null,""MyClassField"":null}";
+
+            var converter = new StructToInterfaceConverter();
+            var options = new JsonSerializerOptions()
+            {
+                IncludeFields = true,
+            };
+            options.Converters.Add(converter);
+
+            string json;
+
+            {
+                var obj = new TestClassWithNullableStructMember();
+                json = JsonSerializer.Serialize(obj, options);
+
+                Assert.Equal(4, converter.WriteCallCount);
+                Assert.Equal(expected, json);
+            }
+
+            {
+                var obj = JsonSerializer.Deserialize<TestClassWithNullableStructMember>(json, options);
+
+                Assert.Equal(4, converter.ReadCallCount);
+                Assert.Null(obj.MyStructProperty);
+                Assert.Null(obj.MyStructField);
+                Assert.Null(obj.MyClassProperty);
+                Assert.Null(obj.MyClassField);
+            }
+        }
+
+        [Fact]
+        public static void NullableStructMemberWithNullsToObjectConverter()
+        {
+            const string expected = @"{""MyStructProperty"":null,""MyClassProperty"":null,""MyStructField"":null,""MyClassField"":null}";
+
+            var converter = new StructToObjectConverter();
+            var options = new JsonSerializerOptions()
+            {
+                IncludeFields = true,
+            };
+            options.Converters.Add(converter);
+
+            string json;
+
+            {
+                var obj = new TestClassWithNullableStructMember();
+                json = JsonSerializer.Serialize(obj, options);
+
+                Assert.Equal(4, converter.WriteCallCount);
+                Assert.Equal(expected, json);
+            }
+
+            {
+                var obj = JsonSerializer.Deserialize<TestClassWithNullableStructMember>(json, options);
+
+                Assert.Equal(4, converter.ReadCallCount);
+                Assert.Null(obj.MyStructProperty);
+                Assert.Null(obj.MyStructField);
+                Assert.Null(obj.MyClassProperty);
+                Assert.Null(obj.MyClassField);
             }
         }
 
