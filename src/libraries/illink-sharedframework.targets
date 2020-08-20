@@ -21,7 +21,7 @@
            IL2050: P/invoke method A declares a parameter with COM marshalling. Correctness of COM interop
                    cannot be guaranteed after trimming. Interfaces and interface members might be removed.
       -->
-      <LinkerNoWarn>IL2009;IL2025;IL2026;IL2035;IL2050</LinkerNoWarn>
+      <LinkerNoWarn>IL2008;IL2009;IL2025;IL2026;IL2035;IL2050</LinkerNoWarn>
       <!-- IL2032,IL2055,IL2057-IL2061: Reflection intrinsics with unknown arguments -->
       <LinkerNoWarn>$(LinkerNoWarn);IL2032;IL2055;IL2057;IL2058;IL2059;IL2060;IL2061</LinkerNoWarn>
       <!-- IL2062-IL2066: Unknown values passed to locations with DynamicallyAccessedMemberTypes -->
