@@ -446,11 +446,9 @@ bool IpcStream::Read(void *lpBuffer, const uint32_t nBytesToRead, uint32_t &nByt
                                             false) != 0;
             if (!fSuccess)
             {
-                DWORD dwError = GetLastError();
-                switch (dwError)
+                DWORD dwOverlapError = GetLastError();
+                switch (dwOverlapError)
                 {
-                    case WAIT_IO_COMPLETION:
-                        // We aren't using IO Completion ports so we shouldn't see this...
                     case ERROR_IO_INCOMPLETE:
                         // should only happen if timeout is 0
                         // this isn't technically an error, but the user requested a 0 timeout and the work hasn't been
@@ -471,14 +469,20 @@ bool IpcStream::Read(void *lpBuffer, const uint32_t nBytesToRead, uint32_t &nByt
                             }
                         }
                         break;
+                    case WAIT_IO_COMPLETION:
+                        // We aren't using IO Completion ports so we shouldn't see this...
+                        _ASSERTE(!"IO Completion error when not using IO Completion Ports");
                     default:
+                        // unrecoverable errors
+                        _ASSERTE(!"IpcStream::Read - Unrecoverable error from GetOverlappedResult");
                         break;
                 }
             }
         }
         else
         {
-            // TODO: Add error handling.
+            // Other errors are unrecoverable and we should fall through to return failure
+            _ASSERTE(!"IpcStream::Read - Unrecoverable error from ReadFile");
         }
     }
 
@@ -513,11 +517,9 @@ bool IpcStream::Write(const void *lpBuffer, const uint32_t nBytesToWrite, uint32
                                             false) != 0;
             if (!fSuccess)
             {
-                DWORD dwError = GetLastError();
-                switch (dwError)
+                DWORD dwOverlapError = GetLastError();
+                switch (dwOverlapError)
                 {
-                    case WAIT_IO_COMPLETION:
-                        // We aren't using IO Completion ports so we shouldn't see this...
                     case ERROR_IO_INCOMPLETE:
                         // should only happen if timeout is 0
                         // this isn't technically an error, but the user requested a 0 timeout and the work hasn't been
@@ -538,14 +540,20 @@ bool IpcStream::Write(const void *lpBuffer, const uint32_t nBytesToWrite, uint32
                             }
                         }
                         break;
+                    case WAIT_IO_COMPLETION:
+                        // We aren't using IO Completion ports so we shouldn't see this...
+                        _ASSERTE(!"IO Completion error when not using IO Completion Ports");
                     default:
+                        // unrecoverable errors
+                        _ASSERTE(!"IpcStream::Write - Unrecoverable error from GetOverlappedResult");
                         break;
                 }
             }
         }
         else
         {
-            // TODO: Add error handling.
+            // Other errors are unrecoverable and we should fall through to return failure
+            _ASSERTE(!"IpcStream::Write - Unrecoverable error from WriteFile");
         }
     }
 
