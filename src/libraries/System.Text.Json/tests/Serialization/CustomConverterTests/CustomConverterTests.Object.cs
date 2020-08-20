@@ -313,11 +313,16 @@ namespace System.Text.Json.Serialization.Tests
 
         private class PrimitiveConverter : JsonConverter<object>
         {
+            public int ReadCallCount { get; private set; }
+            public int WriteCallCount { get; private set; }
+
             public override bool CanConvert(Type typeToConvert)
-                => true;
+                => typeToConvert != typeof(ClassWithPrimitives);
 
             public override object Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
             {
+                ReadCallCount++;
+
                 if (reader.TokenType == JsonTokenType.True)
                 {
                     return true;
@@ -353,28 +358,128 @@ namespace System.Text.Json.Serialization.Tests
 
             public override void Write(Utf8JsonWriter writer, object value, JsonSerializerOptions options)
             {
-                throw new InvalidOperationException("Should not get here.");
+                WriteCallCount++;
+
+                if (value is int i)
+                {
+                    writer.WriteNumberValue(i);
+                }
+                else if (value is bool b)
+                {
+                    writer.WriteBooleanValue(b);
+                }
+                else if (value is string s)
+                {
+                    writer.WriteStringValue(s);
+                }
+                else
+                {
+                    throw new NotSupportedException();
+                }
             }
         }
+
         private class ClassWithPrimitives
         {
-            [JsonConverter(typeof(PrimitiveConverter))]
-            public int MyInt { get; set; }
-            [JsonConverter(typeof(PrimitiveConverter))]
-            public bool MyBool { get; set; }
-            [JsonConverter(typeof(PrimitiveConverter))]
-            public string MyString { get; set; }
+            public int MyIntProperty { get; set; }
+            public bool MyBoolProperty { get; set; }
+            public string MyStringProperty { get; set; }
+#pragma warning disable 0649
+            public int MyIntField;
+            public bool MyBoolField;
+            public string MyStringField;
+#pragma warning restore
         }
 
         [Fact]
         public static void ClassWithPrimitivesObjectConverterDeserialize()
         {
-            const string json = @"{""MyInt"":123,""MyBool"":true,""MyString"":""Hello""}";
+            const string json =
+                @"{""MyIntProperty"":123,""MyBoolProperty"":true,""MyStringProperty"":""Hello""," +
+                @"""MyIntField"":321,""MyBoolField"":true,""MyStringField"":""World""}";
 
-            var obj = JsonSerializer.Deserialize<ClassWithPrimitives>(json);
-            Assert.Equal(123, obj.MyInt);
-            Assert.True(obj.MyBool);
-            Assert.Equal("Hello", obj.MyString);
+            var converter = new PrimitiveConverter();
+            var options = new JsonSerializerOptions
+            {
+                IncludeFields = true
+            };
+            options.Converters.Add(converter);
+
+            var obj = JsonSerializer.Deserialize<ClassWithPrimitives>(json, options);
+
+            Assert.Equal(6, converter.ReadCallCount);
+
+            Assert.Equal(123, obj.MyIntProperty);
+            Assert.True(obj.MyBoolProperty);
+            Assert.Equal("Hello", obj.MyStringProperty);
+            Assert.Equal(321, obj.MyIntField);
+            Assert.True(obj.MyBoolField);
+            Assert.Equal("World", obj.MyStringField);
+        }
+
+        [Fact]
+        public static void ClassWithPrimitivesObjectConverterSerialize()
+        {
+            const string expected =
+                @"{""MyIntProperty"":123,""MyBoolProperty"":true,""MyStringProperty"":""Hello""," +
+                @"""MyIntField"":321,""MyBoolField"":true,""MyStringField"":""World""}";
+
+            var converter = new PrimitiveConverter();
+            var options = new JsonSerializerOptions
+            {
+                IncludeFields = true
+            };
+            options.Converters.Add(converter);
+
+            var obj = new ClassWithPrimitives
+            {
+                MyIntProperty = 123,
+                MyBoolProperty = true,
+                MyStringProperty = "Hello",
+                MyIntField = 321,
+                MyBoolField = true,
+                MyStringField = "World",
+            };
+
+            var json = JsonSerializer.Serialize(obj, options);
+
+            Assert.Equal(6, converter.WriteCallCount);
+            Assert.Equal(expected, json);
+        }
+
+        private class ClassWithNullablePrimitives
+        {
+            public int? MyIntProperty { get; set; }
+            public bool? MyBoolProperty { get; set; }
+            public string MyStringProperty { get; set; }
+#pragma warning disable 0649
+            public int? MyIntField;
+            public bool? MyBoolField;
+            public string MyStringField;
+#pragma warning restore
+        }
+
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36329")]
+        public static void ClassWithNullablePrimitivesObjectConverterDeserialize()
+        {
+            const string json =
+                @"{""MyIntProperty"":123,""MyBoolProperty"":true,""MyStringProperty"":""Hello""," +
+                @"""MyIntField"":321,""MyBoolField"":true,""MyStringField"":""World""}";
+
+            var options = new JsonSerializerOptions
+            {
+                IncludeFields = true
+            };
+            
+            var obj = JsonSerializer.Deserialize<ClassWithNullablePrimitives>(json, options);
+
+            Assert.Equal(123, obj.MyIntProperty);
+            Assert.True(obj.MyBoolProperty);
+            Assert.Equal("Hello", obj.MyStringProperty);
+            Assert.Equal(321, obj.MyIntField);
+            Assert.True(obj.MyBoolField);
+            Assert.Equal("World", obj.MyStringField);
         }
 
         [Fact]

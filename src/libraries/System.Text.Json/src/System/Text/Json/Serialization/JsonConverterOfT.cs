@@ -331,7 +331,7 @@ namespace System.Text.Json.Serialization
                     return true;
                 }
 
-                if (type != TypeToConvert)
+                if (type != TypeToConvert && IsInternalConverter)
                 {
                     // Handle polymorphic case and get the new converter.
                     JsonConverter jsonConverter = state.Current.InitializeReEntry(type, options);

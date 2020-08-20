@@ -1077,8 +1077,7 @@ namespace System.Text.Json.Serialization.Tests
 
             public override void Write(Utf8JsonWriter writer, object value, JsonSerializerOptions options)
             {
-                // Since we are converter for object, the string converter will be called instead of this.
-                throw new InvalidOperationException();
+                writer.WriteStringValue((string)value);
             }
         }
 
