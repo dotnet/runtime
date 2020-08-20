@@ -98,6 +98,7 @@
       <TestPublishTrimmedCommand>$(TestPublishTrimmedCommand) /warnaserror</TestPublishTrimmedCommand>
       <TestPublishTrimmedCommand>$(TestPublishTrimmedCommand) /bl:$([MSBuild]::NormalizePath('$(ArtifactsDir)', 'log\$(Configuration)\TrimmingTestsSubTask.binlog'))</TestPublishTrimmedCommand>
       <TestPublishTrimmedCommand>$(TestPublishTrimmedCommand) -p:configuration=$(Configuration)</TestPublishTrimmedCommand>
+      <TestPublishTrimmedCommand>$(TestPublishTrimmedCommand) /p:RestoreUseStaticGraphEvaluation=true</TestPublishTrimmedCommand>
     </PropertyGroup>
 
     <Exec Command="$(TestPublishTrimmedCommand) %(TestConsoleApps.AdditionalArgs)" EnvironmentVariables="@(CliEnvironment)" StandardOutputImportance="Low" WorkingDirectory="%(TestConsoleApps.ProjectDir)" />
