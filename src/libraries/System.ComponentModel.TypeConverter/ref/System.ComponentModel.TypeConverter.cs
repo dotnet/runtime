@@ -2238,6 +2238,7 @@ namespace System.Security.Authentication.ExtendedProtection
     {
         public ExtendedProtectionPolicyTypeConverter() { }
         public override bool CanConvertTo(System.ComponentModel.ITypeDescriptorContext context, System.Type destinationType) { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public override object ConvertTo(System.ComponentModel.ITypeDescriptorContext context, System.Globalization.CultureInfo culture, object value, System.Type destinationType) { throw null; }
     }
 }
