@@ -1,6 +1,6 @@
 <Project>
-  <PropertyGroup Condition="'$(RepositoryEngineeringDir)' != ''">
-    <BeforeTargetFrameworkInferenceTargets>$(RepositoryEngineeringDir)BeforeTargetFrameworkInference.targets</BeforeTargetFrameworkInferenceTargets>
+  <PropertyGroup>
+    <BeforeTargetFrameworkInferenceTargets>$(BUILD_REPOSITORY_LOCALPATH)/eng/BeforeTargetFrameworkInference.targets</BeforeTargetFrameworkInferenceTargets>
   </PropertyGroup>
 
   <PropertyGroup>
