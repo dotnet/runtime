@@ -1,11 +1,8 @@
 <Project>
-  <!-- From BeforeTargetFrameworkInference.targets -->
-  <PropertyGroup Condition="$(TargetFramework.Contains('-'))">
-    <_OriginalTargetFramework>$(TargetFramework)</_OriginalTargetFramework>
-    <TargetFrameworkSuffix>$(TargetFramework.SubString($([MSBuild]::Add($(TargetFramework.IndexOf('-')), 1))))</TargetFrameworkSuffix>
-    <TargetFramework>$(TargetFramework.SubString(0, $(TargetFramework.IndexOf('-'))))</TargetFramework>
+  <PropertyGroup>
+    <BeforeTargetFrameworkInferenceTargets>$(RepositoryEngineeringDir)BeforeTargetFrameworkInference.targets</BeforeTargetFrameworkInferenceTargets>
   </PropertyGroup>
-  
+
   <PropertyGroup>
     <PublishTrimmed>true</PublishTrimmed>
     <TrimMode>link</TrimMode>
