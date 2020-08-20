@@ -187,7 +187,7 @@
     <Message Text= "Full native project references are :%(NativeProjectReferenceNormalized.Identity)" />
     <Message Text= "Native binaries will be copied from :%(NativeProjectOutputFoldersToCopy.Identity)" />
 
-    <MSBuild Projects="$(MSBuildProjectFile)" Targets="CopyNativeProjectBinaries" Properties="NativeProjectOutputFolder=%(NativeProjectOutputFoldersToCopy.Identity)" Condition="'@(NativeProjectReference)' != ''" />
+    <MSBuild Projects="$(MSBuildProjectFile)" Targets="CopyNativeProjectBinaries"  Properties="NativeProjectOutputFolder=%(NativeProjectOutputFoldersToCopy.Identity)" Condition="'@(NativeProjectReference)' != ''" />
 
   </Target>
 
@@ -198,7 +198,7 @@
   <Import Project="CLRTest.Execute.targets" />
   <Target Name="CreateExecuteScript"
           BeforeTargets="Build;CopyAllNativeProjectReferenceBinaries"
-          Condition="'$(CopyNativeTestBinariesOnly)' != 'false' And ('$(_WillCLRTestProjectBuild)' == 'true')" 
+          Condition="'$(CopyNativeTestBinariesOnly)' != 'true' And '$(GenerateRunScript)' != 'false' And ('$(_WillCLRTestProjectBuild)' == 'true')" 
           DependsOnTargets="GenerateExecutionScriptsInternal" />
 
   <Target Name="UpdateReferenceItems"
