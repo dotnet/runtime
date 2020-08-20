@@ -22,11 +22,208 @@ short Compiler::mapRegNumToDwarfReg(regNumber reg)
 {
     short dwarfReg = DWARF_REG_ILLEGAL;
 
-    NYI("CFI codes");
+    switch (reg)
+    {
+        case REG_R0:
+            dwarfReg = 0;
+            break;
+        case REG_R1:
+            dwarfReg = 1;
+            break;
+        case REG_R2:
+            dwarfReg = 2;
+            break;
+        case REG_R3:
+            dwarfReg = 3;
+            break;
+        case REG_R4:
+            dwarfReg = 4;
+            break;
+        case REG_R5:
+            dwarfReg = 5;
+            break;
+        case REG_R6:
+            dwarfReg = 6;
+            break;
+        case REG_R7:
+            dwarfReg = 7;
+            break;
+        case REG_R8:
+            dwarfReg = 8;
+            break;
+        case REG_R9:
+            dwarfReg = 9;
+            break;
+        case REG_R10:
+            dwarfReg = 10;
+            break;
+        case REG_R11:
+            dwarfReg = 11;
+            break;
+        case REG_R12:
+            dwarfReg = 12;
+            break;
+        case REG_R13:
+            dwarfReg = 13;
+            break;
+        case REG_R14:
+            dwarfReg = 14;
+            break;
+        case REG_R15:
+            dwarfReg = 15;
+            break;
+        case REG_R16:
+            dwarfReg = 16;
+            break;
+        case REG_R17:
+            dwarfReg = 17;
+            break;
+        case REG_R18:
+            dwarfReg = 18;
+            break;
+        case REG_R19:
+            dwarfReg = 19;
+            break;
+        case REG_R20:
+            dwarfReg = 20;
+            break;
+        case REG_R21:
+            dwarfReg = 21;
+            break;
+        case REG_R22:
+            dwarfReg = 22;
+            break;
+        case REG_R23:
+            dwarfReg = 23;
+            break;
+        case REG_R24:
+            dwarfReg = 24;
+            break;
+        case REG_R25:
+            dwarfReg = 25;
+            break;
+        case REG_R26:
+            dwarfReg = 26;
+            break;
+        case REG_R27:
+            dwarfReg = 27;
+            break;
+        case REG_R28:
+            dwarfReg = 28;
+            break;
+        case REG_R29:
+            dwarfReg = 29;
+            break;
+        case REG_R30:
+            dwarfReg = 30;
+            break;
+        case REG_SP:
+            dwarfReg = 31;
+            break;
+        case REG_V0:
+            dwarfReg = 64;
+            break;
+        case REG_V1:
+            dwarfReg = 65;
+            break;
+        case REG_V2:
+            dwarfReg = 66;
+            break;
+        case REG_V3:
+            dwarfReg = 67;
+            break;
+        case REG_V4:
+            dwarfReg = 68;
+            break;
+        case REG_V5:
+            dwarfReg = 69;
+            break;
+        case REG_V6:
+            dwarfReg = 70;
+            break;
+        case REG_V7:
+            dwarfReg = 71;
+            break;
+        case REG_V8:
+            dwarfReg = 72;
+            break;
+        case REG_V9:
+            dwarfReg = 73;
+            break;
+        case REG_V10:
+            dwarfReg = 74;
+            break;
+        case REG_V11:
+            dwarfReg = 75;
+            break;
+        case REG_V12:
+            dwarfReg = 76;
+            break;
+        case REG_V13:
+            dwarfReg = 77;
+            break;
+        case REG_V14:
+            dwarfReg = 78;
+            break;
+        case REG_V15:
+            dwarfReg = 79;
+            break;
+        case REG_V16:
+            dwarfReg = 80;
+            break;
+        case REG_V17:
+            dwarfReg = 81;
+            break;
+        case REG_V18:
+            dwarfReg = 82;
+            break;
+        case REG_V19:
+            dwarfReg = 83;
+            break;
+        case REG_V20:
+            dwarfReg = 84;
+            break;
+        case REG_V21:
+            dwarfReg = 85;
+            break;
+        case REG_V22:
+            dwarfReg = 86;
+            break;
+        case REG_V23:
+            dwarfReg = 87;
+            break;
+        case REG_V24:
+            dwarfReg = 88;
+            break;
+        case REG_V25:
+            dwarfReg = 89;
+            break;
+        case REG_V26:
+            dwarfReg = 90;
+            break;
+        case REG_V27:
+            dwarfReg = 91;
+            break;
+        case REG_V28:
+            dwarfReg = 92;
+            break;
+        case REG_V29:
+            dwarfReg = 93;
+            break;
+        case REG_V30:
+            dwarfReg = 94;
+            break;
+        case REG_V31:
+            dwarfReg = 95;
+            break;
+
+        default:
+            NYI("CFI codes");
+    }
 
     return dwarfReg;
 }
-#endif // TARGET_ARM
+#endif // TARGET_UNIX
 
 void Compiler::unwindPush(regNumber reg)
 {
@@ -35,6 +232,18 @@ void Compiler::unwindPush(regNumber reg)
 
 void Compiler::unwindAllocStack(unsigned size)
 {
+#if defined(TARGET_UNIX)
+    if (generateCFIUnwindCodes())
+    {
+        if (compGeneratingProlog)
+        {
+            unwindAllocStackCFI(size);
+        }
+
+        return;
+    }
+#endif // TARGET_UNIX
+
     UnwindInfo* pu = &funCurrentFunc()->uwi;
 
     assert(size % 16 == 0);
@@ -67,6 +276,18 @@ void Compiler::unwindAllocStack(unsigned size)
 
 void Compiler::unwindSetFrameReg(regNumber reg, unsigned offset)
 {
+#if defined(TARGET_UNIX)
+    if (generateCFIUnwindCodes())
+    {
+        if (compGeneratingProlog)
+        {
+            unwindSetFrameRegCFI(reg, offset);
+        }
+
+        return;
+    }
+#endif // TARGET_UNIX
+
     UnwindInfo* pu = &funCurrentFunc()->uwi;
 
     if (offset == 0)
@@ -121,13 +342,29 @@ void Compiler::unwindNop()
 // which we should do instead).
 void Compiler::unwindSaveRegPair(regNumber reg1, regNumber reg2, int offset)
 {
-    UnwindInfo* pu = &funCurrentFunc()->uwi;
-
     // stp reg1, reg2, [sp, #offset]
 
     // offset for store pair in prolog must be positive and a multiple of 8.
     assert(0 <= offset && offset <= 504);
     assert((offset % 8) == 0);
+
+#if defined(TARGET_UNIX)
+    if (generateCFIUnwindCodes())
+    {
+        if (compGeneratingProlog)
+        {
+            FuncInfoDsc*   func     = funCurrentFunc();
+            UNATIVE_OFFSET cbProlog = unwindGetCurrentOffset(func);
+
+            createCfiCode(func, cbProlog, CFI_REL_OFFSET, mapRegNumToDwarfReg(reg1), offset);
+            createCfiCode(func, cbProlog, CFI_REL_OFFSET, mapRegNumToDwarfReg(reg2), offset + 8);
+        }
+
+        return;
+    }
+#endif // TARGET_UNIX
+
+    UnwindInfo* pu = &funCurrentFunc()->uwi;
 
     int z = offset / 8;
     assert(0 <= z && z <= 0x3F);
@@ -187,13 +424,30 @@ void Compiler::unwindSaveRegPair(regNumber reg1, regNumber reg2, int offset)
 // reg1.
 void Compiler::unwindSaveRegPairPreindexed(regNumber reg1, regNumber reg2, int offset)
 {
-    UnwindInfo* pu = &funCurrentFunc()->uwi;
-
     // stp reg1, reg2, [sp, #offset]!
 
     // pre-indexed offset in prolog must be negative and a multiple of 8.
     assert(offset < 0);
     assert((offset % 8) == 0);
+
+#if defined(TARGET_UNIX)
+    if (generateCFIUnwindCodes())
+    {
+        if (compGeneratingProlog)
+        {
+            FuncInfoDsc*   func     = funCurrentFunc();
+            UNATIVE_OFFSET cbProlog = unwindGetCurrentOffset(func);
+
+            createCfiCode(func, cbProlog, CFI_ADJUST_CFA_OFFSET, DWARF_REG_ILLEGAL, -offset);
+            createCfiCode(func, cbProlog, CFI_REL_OFFSET, mapRegNumToDwarfReg(reg1), 0);
+            createCfiCode(func, cbProlog, CFI_REL_OFFSET, mapRegNumToDwarfReg(reg2), 8);
+        }
+
+        return;
+    }
+#endif // TARGET_UNIX
+
+    UnwindInfo* pu = &funCurrentFunc()->uwi;
 
     if (reg1 == REG_FP)
     {
@@ -259,16 +513,31 @@ void Compiler::unwindSaveRegPairPreindexed(regNumber reg1, regNumber reg2, int o
 
 void Compiler::unwindSaveReg(regNumber reg, int offset)
 {
-    UnwindInfo* pu = &funCurrentFunc()->uwi;
-
     // str reg, [sp, #offset]
 
     // offset for store in prolog must be positive and a multiple of 8.
     assert(0 <= offset && offset <= 504);
     assert((offset % 8) == 0);
 
+#if defined(TARGET_UNIX)
+    if (generateCFIUnwindCodes())
+    {
+        if (compGeneratingProlog)
+        {
+            FuncInfoDsc*   func     = funCurrentFunc();
+            UNATIVE_OFFSET cbProlog = unwindGetCurrentOffset(func);
+
+            createCfiCode(func, cbProlog, CFI_REL_OFFSET, mapRegNumToDwarfReg(reg), offset);
+        }
+
+        return;
+    }
+#endif // TARGET_UNIX
+
     int z = offset / 8;
     assert(0 <= z && z <= 0x3F);
+
+    UnwindInfo* pu = &funCurrentFunc()->uwi;
 
     if (emitter::isGeneralRegister(reg))
     {
@@ -298,13 +567,29 @@ void Compiler::unwindSaveReg(regNumber reg, int offset)
 
 void Compiler::unwindSaveRegPreindexed(regNumber reg, int offset)
 {
-    UnwindInfo* pu = &funCurrentFunc()->uwi;
-
     // str reg, [sp, #offset]!
 
     // pre-indexed offset in prolog must be negative and a multiple of 8.
     assert(-256 <= offset && offset < 0);
     assert((offset % 8) == 0);
+
+#if defined(TARGET_UNIX)
+    if (generateCFIUnwindCodes())
+    {
+        if (compGeneratingProlog)
+        {
+            FuncInfoDsc*   func     = funCurrentFunc();
+            UNATIVE_OFFSET cbProlog = unwindGetCurrentOffset(func);
+
+            createCfiCode(func, cbProlog, CFI_ADJUST_CFA_OFFSET, DWARF_REG_ILLEGAL, -offset);
+            createCfiCode(func, cbProlog, CFI_REL_OFFSET, mapRegNumToDwarfReg(reg), 0);
+        }
+
+        return;
+    }
+#endif // _TARGET_UNIX_
+
+    UnwindInfo* pu = &funCurrentFunc()->uwi;
 
     int z = (-offset) / 8 - 1;
     assert(0 <= z && z <= 0x1F);
@@ -337,6 +622,11 @@ void Compiler::unwindSaveRegPreindexed(regNumber reg, int offset)
 
 void Compiler::unwindSaveNext()
 {
+#if defined(TARGET_UNIX)
+    // do not use unwindSaveNext when generating CFI codes as there is no code for this
+    assert(!generateCFIUnwindCodes());
+#endif // TARGET_UNIX
+
     UnwindInfo* pu = &funCurrentFunc()->uwi;
 
     // We're saving the next register pair. The caller is responsible for ensuring this is correct!

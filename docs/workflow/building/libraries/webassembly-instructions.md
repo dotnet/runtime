@@ -14,7 +14,7 @@ export EMSDK_PATH=PATH_TO_SDK_INSTALL/emsdk
 
 ## Building everything
 
-At this time no other build configurations are necessary to start building for WebAssembly.  The CoreLib for WebAssembly build configurations will be built by default using the WebAssembly configuration shown below. 
+At this time no other build configurations are necessary to start building for WebAssembly.  The CoreLib for WebAssembly build configurations will be built by default using the WebAssembly configuration shown below.
 
 This document explains how to work on libraries. In order to work on library projects or run library tests it is necessary to have built the runtime to give the libraries something to run on. If you haven't already done so, please read [this document](../../README.md#Configurations) to understand configurations.
 
@@ -90,7 +90,7 @@ The WebAssembly implementation files are built and made available in the artifac
 
 For Linux and MacOSX:
 ```bash
-./dotnet.sh build /p:Configuration=Debug|Release /p:TargetArchitecture=wasm /p:TargetOS=Browser src/libraries/src.proj /t:BuildWasmRuntimes 
+./dotnet.sh build /p:Configuration=Debug|Release /p:TargetArchitecture=wasm /p:TargetOS=Browser src/libraries/src.proj /t:BuildWasmRuntimes
 ```
 
 __Note__: A `Debug` build sets the following environment variables by default.  When built from the command line this way the `Configuration` value is case sensitive.
@@ -104,7 +104,7 @@ __Note__: A `Debug` build sets the following environment variables by default.  
 
   #### Example:
 ```
-L: GC_MAJOR_SWEEP: major size: 752K in use: 39K 
+L: GC_MAJOR_SWEEP: major size: 752K in use: 39K
 L: GC_MAJOR: (user request) time 3.00ms, stw 3.00ms los size: 0K in use: 0K
 ```
 
@@ -125,7 +125,7 @@ First update emscripten version in the [webassembly Dockerfile](https://github.c
 ENV EMSCRIPTEN_VERSION=1.39.16
 ```
 
-Submit a PR request with the updated version, wait for all checks to pass and for the request to be merged. A [master.json file](https://github.com/dotnet/versions/blob/master/build-info/docker/image-info.dotnet-dotnet-buildtools-prereqs-docker-master.json#L1126) will be updated with the a new docker image.  
+Submit a PR request with the updated version, wait for all checks to pass and for the request to be merged. A [master.json file](https://github.com/dotnet/versions/blob/master/build-info/docker/image-info.dotnet-dotnet-buildtools-prereqs-docker-master.json#L1126) will be updated with the a new docker image.
 
 ```
 {
@@ -154,4 +154,4 @@ container:
     registry: mcr
 ```
 
-Open a PR request with the new image. 
+Open a PR request with the new image.
