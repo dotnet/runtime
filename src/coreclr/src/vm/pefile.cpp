@@ -2130,7 +2130,8 @@ const SString &PEAssembly::GetEffectivePath()
 // assembly.
 //
 // fCopiedName means to get the "shadow copied" path rather than the original path, if applicable
-void PEAssembly::GetCodeBase(SString &result, BOOL fCopiedName/*=FALSE*/)
+// Returns false if the assembly was loaded from a bundle, true otherwise
+BOOL PEAssembly::GetCodeBase(SString &result, BOOL fCopiedName/*=FALSE*/)
 {
     CONTRACTL
     {
@@ -2142,17 +2143,15 @@ void PEAssembly::GetCodeBase(SString &result, BOOL fCopiedName/*=FALSE*/)
     }
     CONTRACTL_END;
 
-    if (GetILimage()->IsInBundle())
-    {
-        result.Set(SString::Empty());
-    }
-    else
+    if (!(GetILimage()->IsInBundle()))
     {
         // All other cases use the file path.
         result.Set(GetEffectivePath());
+        if (!result.IsEmpty())
+            PathToUrl(result);
+        return TRUE;
     }
-    if (!result.IsEmpty())
-        PathToUrl(result);
+    return FALSE;
 }
 
 /* static */

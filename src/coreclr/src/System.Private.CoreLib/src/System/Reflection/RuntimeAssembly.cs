@@ -69,32 +69,32 @@ namespace System.Reflection
         }
 
         [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
-        private static extern void GetCodeBase(QCallAssembly assembly,
+        private static extern bool GetCodeBase(QCallAssembly assembly,
                                                bool copiedName,
                                                StringHandleOnStack retString);
-
-        [DllImport(RuntimeHelpers.QCall)]
-        private static extern bool IsInBundle(QCallAssembly assembly);
 
         internal string? GetCodeBase(bool copiedName)
         {
             string? codeBase = null;
             RuntimeAssembly runtimeAssembly = this;
-            GetCodeBase(new QCallAssembly(ref runtimeAssembly), copiedName, new StringHandleOnStack(ref codeBase));
-            return codeBase;
+            if (GetCodeBase(new QCallAssembly(ref runtimeAssembly), copiedName, new StringHandleOnStack(ref codeBase)))
+            {
+                return codeBase;
+            }
+            return null;
         }
 
         public override string? CodeBase
         {
             get
             {
-                var runtimeAssembly = this;
-                if (IsInBundle(new QCallAssembly(ref runtimeAssembly)))
+                var codeBase = GetCodeBase(false);
+                if (codeBase is null)
                 {
                     // Not supported if the assembly was loaded from memory
                     throw new PlatformNotSupportedException(SR.PlatformNotSupported_CodeBase);
                 }
-                return GetCodeBase(false);
+                return codeBase;
             }
         }
 

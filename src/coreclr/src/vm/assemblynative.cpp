@@ -562,32 +562,23 @@ void QCALLTYPE AssemblyNative::GetLocale(QCall::AssemblyHandle pAssembly, QCall:
     END_QCALL;
 }
 
-void QCALLTYPE AssemblyNative::GetCodeBase(QCall::AssemblyHandle pAssembly, BOOL fCopiedName, QCall::StringHandleOnStack retString)
+BOOL QCALLTYPE AssemblyNative::GetCodeBase(QCall::AssemblyHandle pAssembly, BOOL fCopiedName, QCall::StringHandleOnStack retString)
 {
     QCALL_CONTRACT;
 
     BEGIN_QCALL;
 
     StackSString codebase;
+    BOOL ret;
 
     {
-        pAssembly->GetFile()->GetCodeBase(codebase);
+        ret = pAssembly->GetFile()->GetCodeBase(codebase);
     }
 
     retString.Set(codebase);
+    return ret;
 
     END_QCALL;
-}
-
-BOOL QCALLTYPE AssemblyNative::IsInBundle(QCall::AssemblyHandle pAssembly)
-{
-    QCALL_CONTRACT;
-
-    BOOL retVal=FALSE;
-    BEGIN_QCALL;
-    retVal = pAssembly->GetFile()->GetILimage()->IsInBundle();
-    END_QCALL;
-    return retVal;
 }
 
 INT32 QCALLTYPE AssemblyNative::GetHashAlgorithm(QCall::AssemblyHandle pAssembly)

@@ -341,7 +341,7 @@ public:
     {
         WRAPPER_NO_CONTRACT;
 
-        return m_pManifestFile->GetCodeBase(result);
+        m_pManifestFile->GetCodeBase(result);
     }
 
     OBJECTREF GetExposedObject();
