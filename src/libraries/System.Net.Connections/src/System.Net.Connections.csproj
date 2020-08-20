@@ -18,7 +18,6 @@
     <Compile Include="System\Net\Connections\IConnectionProperties.cs" />
     <Compile Include="System\Net\Connections\Sockets\SocketConnection.cs" />
     <Compile Include="System\Net\Connections\Sockets\SocketsConnectionFactory.cs" />
-    <Compile Include="System\Net\Connections\Sockets\TaskSocketAsyncEventArgs.cs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System.Runtime" />

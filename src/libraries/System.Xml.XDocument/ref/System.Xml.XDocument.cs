@@ -48,6 +48,7 @@ namespace System.Xml.Linq
         DisableFormatting = 1,
         OmitDuplicateNamespaces = 2,
     }
+    [System.ComponentModel.TypeDescriptionProviderAttribute("MS.Internal.Xml.Linq.ComponentModel.XTypeDescriptionProvider`1[[System.Xml.Linq.XAttribute, System.Xml.Linq, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089]],System.ComponentModel.TypeConverter")]
     public partial class XAttribute : System.Xml.Linq.XObject
     {
         public XAttribute(System.Xml.Linq.XAttribute other) { }
@@ -209,6 +210,7 @@ namespace System.Xml.Linq
         public override System.Threading.Tasks.Task WriteToAsync(System.Xml.XmlWriter writer, System.Threading.CancellationToken cancellationToken) { throw null; }
     }
     [System.Xml.Serialization.XmlSchemaProviderAttribute(null, IsAny=true)]
+    [System.ComponentModel.TypeDescriptionProviderAttribute("MS.Internal.Xml.Linq.ComponentModel.XTypeDescriptionProvider`1[[System.Xml.Linq.XElement, System.Xml.Linq, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089]],System.ComponentModel.TypeConverter")]
     public partial class XElement : System.Xml.Linq.XContainer, System.Xml.Serialization.IXmlSerializable
     {
         public XElement(System.Xml.Linq.XElement other) { }

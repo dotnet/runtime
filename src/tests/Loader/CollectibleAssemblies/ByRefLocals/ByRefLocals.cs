@@ -54,13 +54,17 @@ class Program
             Console.WriteLine(span2[0]);
             GC.Collect(2);
             GC.WaitForPendingFinalizers();
-            if (gch1.Target == null)
+            // The loop may be unrolled, in which case things won't be live on the final iteration.
+            if (i < 9)
             {
-                return 1;
-            }
-            if (gch2.Target == null)
-            {
-                return 2;
+                if (gch1.Target == null)
+                {
+                    return 1;
+                }
+                if (gch2.Target == null)
+                {
+                    return 2;
+                }
             }
         }
 

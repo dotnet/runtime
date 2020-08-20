@@ -64,27 +64,7 @@ namespace System.Net.Connections
 
             try
             {
-                using var args = new TaskSocketAsyncEventArgs();
-                args.RemoteEndPoint = endPoint;
-
-                if (socket.ConnectAsync(args))
-                {
-                    using (cancellationToken.UnsafeRegister(static o => Socket.CancelConnectAsync((SocketAsyncEventArgs)o!), args))
-                    {
-                        await args.Task.ConfigureAwait(false);
-                    }
-                }
-
-                if (args.SocketError != SocketError.Success)
-                {
-                    if (args.SocketError == SocketError.OperationAborted)
-                    {
-                        cancellationToken.ThrowIfCancellationRequested();
-                    }
-
-                    throw NetworkErrorHelper.MapSocketException(new SocketException((int)args.SocketError));
-                }
-
+                await socket.ConnectAsync(endPoint, cancellationToken).ConfigureAwait(false);
                 return new SocketConnection(socket);
             }
             catch (SocketException socketException)
