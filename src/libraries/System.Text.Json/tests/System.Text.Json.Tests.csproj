@@ -80,7 +80,7 @@
     <Compile Include="Serialization\CustomConverterTests\CustomConverterTests.Point.cs" />
     <Compile Include="Serialization\CustomConverterTests\CustomConverterTests.Polymorphic.cs" />
     <Compile Include="Serialization\CustomConverterTests\CustomConverterTests.ReadAhead.cs" />
-    <Compile Include="Serialization\CustomConverterTests\CustomConverterTests.StructMember.cs" />
+    <Compile Include="Serialization\CustomConverterTests\CustomConverterTests.ValueTypedMember.cs" />
     <Compile Include="Serialization\CustomConverterTests\CustomConverterTests.cs" />
     <Compile Include="Serialization\CyclicTests.cs" />
     <Compile Include="Serialization\DeserializationWrapper.cs" />
@@ -129,7 +129,7 @@
     <Compile Include="Serialization\TestClasses\TestClasses.SimpleTestClassWithSimpleObject.cs" />
     <Compile Include="Serialization\TestClasses\TestClasses.SimpleTestStruct.cs" />
     <Compile Include="Serialization\TestClasses\TestClasses.SimpleTestStructWithFields.cs" />
-    <Compile Include="Serialization\TestClasses\TestClasses.StructMember.cs" />
+    <Compile Include="Serialization\TestClasses\TestClasses.ValueTypedMember.cs" />
     <Compile Include="Serialization\TestData.cs" />
     <Compile Include="Serialization\Value.ReadTests.cs" />
     <Compile Include="Serialization\Value.WriteTests.cs" />

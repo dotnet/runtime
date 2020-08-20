@@ -231,7 +231,7 @@ namespace System.Text.Json.Serialization
             Debug.Assert(declaringType != null);
 
             Type declaredPropertyType = propertyInfo.PropertyType;
-            Debug.Assert(JsonSerializerOptions.IsAssignableFrom(runtimePropertyType, declaredPropertyType));
+            Debug.Assert(runtimePropertyType.IsConvertibleFrom(declaredPropertyType));
 
             DynamicMethod dynamicMethod = CreateGetterMethod(propertyInfo.Name, runtimePropertyType);
             ILGenerator generator = dynamicMethod.GetILGenerator();
@@ -274,7 +274,7 @@ namespace System.Text.Json.Serialization
             Debug.Assert(declaringType != null);
 
             Type declaredPropertyType = propertyInfo.PropertyType;
-            Debug.Assert(JsonSerializerOptions.IsAssignableFrom(runtimePropertyType, declaredPropertyType));
+            Debug.Assert(runtimePropertyType.IsConvertibleFrom(declaredPropertyType));
 
             DynamicMethod dynamicMethod = CreateSetterMethod(propertyInfo.Name, runtimePropertyType);
             ILGenerator generator = dynamicMethod.GetILGenerator();
@@ -321,7 +321,7 @@ namespace System.Text.Json.Serialization
             Debug.Assert(declaringType != null);
 
             Type declaredFieldType = fieldInfo.FieldType;
-            Debug.Assert(JsonSerializerOptions.IsAssignableFrom(runtimeFieldType, declaredFieldType));
+            Debug.Assert(runtimeFieldType.IsConvertibleFrom(declaredFieldType));
 
             DynamicMethod dynamicMethod = CreateGetterMethod(fieldInfo.Name, runtimeFieldType);
             ILGenerator generator = dynamicMethod.GetILGenerator();
@@ -356,7 +356,7 @@ namespace System.Text.Json.Serialization
             Debug.Assert(declaringType != null);
 
             Type declaredFieldType = fieldInfo.FieldType;
-            Debug.Assert(JsonSerializerOptions.IsAssignableFrom(runtimeFieldType, declaredFieldType));
+            Debug.Assert(runtimeFieldType.IsConvertibleFrom(declaredFieldType));
 
             DynamicMethod dynamicMethod = CreateSetterMethod(fieldInfo.Name, runtimeFieldType);
             ILGenerator generator = dynamicMethod.GetILGenerator();

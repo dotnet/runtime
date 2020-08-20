@@ -317,7 +317,8 @@ namespace System.Text.Json.Serialization.Tests
             public int WriteCallCount { get; private set; }
 
             public override bool CanConvert(Type typeToConvert)
-                => typeToConvert != typeof(ClassWithPrimitives);
+                => typeToConvert != typeof(ClassWithPrimitives)
+                && typeToConvert != typeof(ClassWithNullablePrimitives);
 
             public override object Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
             {
@@ -392,38 +393,13 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public static void ClassWithPrimitivesObjectConverterDeserialize()
-        {
-            const string json =
-                @"{""MyIntProperty"":123,""MyBoolProperty"":true,""MyStringProperty"":""Hello""," +
-                @"""MyIntField"":321,""MyBoolField"":true,""MyStringField"":""World""}";
-
-            var converter = new PrimitiveConverter();
-            var options = new JsonSerializerOptions
-            {
-                IncludeFields = true
-            };
-            options.Converters.Add(converter);
-
-            var obj = JsonSerializer.Deserialize<ClassWithPrimitives>(json, options);
-
-            Assert.Equal(6, converter.ReadCallCount);
-
-            Assert.Equal(123, obj.MyIntProperty);
-            Assert.True(obj.MyBoolProperty);
-            Assert.Equal("Hello", obj.MyStringProperty);
-            Assert.Equal(321, obj.MyIntField);
-            Assert.True(obj.MyBoolField);
-            Assert.Equal("World", obj.MyStringField);
-        }
-
-        [Fact]
-        public static void ClassWithPrimitivesObjectConverterSerialize()
+        public static void ClassWithPrimitivesObjectConverter()
         {
             const string expected =
                 @"{""MyIntProperty"":123,""MyBoolProperty"":true,""MyStringProperty"":""Hello""," +
                 @"""MyIntField"":321,""MyBoolField"":true,""MyStringField"":""World""}";
 
+            string json;
             var converter = new PrimitiveConverter();
             var options = new JsonSerializerOptions
             {
@@ -431,20 +407,34 @@ namespace System.Text.Json.Serialization.Tests
             };
             options.Converters.Add(converter);
 
-            var obj = new ClassWithPrimitives
             {
-                MyIntProperty = 123,
-                MyBoolProperty = true,
-                MyStringProperty = "Hello",
-                MyIntField = 321,
-                MyBoolField = true,
-                MyStringField = "World",
-            };
+                var obj = new ClassWithPrimitives
+                {
+                    MyIntProperty = 123,
+                    MyBoolProperty = true,
+                    MyStringProperty = "Hello",
+                    MyIntField = 321,
+                    MyBoolField = true,
+                    MyStringField = "World",
+                };
 
-            var json = JsonSerializer.Serialize(obj, options);
+                json = JsonSerializer.Serialize(obj, options);
 
-            Assert.Equal(6, converter.WriteCallCount);
-            Assert.Equal(expected, json);
+                Assert.Equal(6, converter.WriteCallCount);
+                Assert.Equal(expected, json);
+            }
+            {
+                var obj = JsonSerializer.Deserialize<ClassWithPrimitives>(json, options);
+
+                Assert.Equal(6, converter.ReadCallCount);
+
+                Assert.Equal(123, obj.MyIntProperty);
+                Assert.True(obj.MyBoolProperty);
+                Assert.Equal("Hello", obj.MyStringProperty);
+                Assert.Equal(321, obj.MyIntField);
+                Assert.True(obj.MyBoolField);
+                Assert.Equal("World", obj.MyStringField);
+            }
         }
 
         private class ClassWithNullablePrimitives
@@ -460,25 +450,46 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public static void ClassWithNullablePrimitivesObjectConverterDeserialize()
+        public static void ClassWithNullablePrimitivesObjectConverter()
         {
-            const string json =
+            const string expected =
                 @"{""MyIntProperty"":123,""MyBoolProperty"":true,""MyStringProperty"":""Hello""," +
                 @"""MyIntField"":321,""MyBoolField"":true,""MyStringField"":""World""}";
 
+            string json;
+            var converter = new PrimitiveConverter();
             var options = new JsonSerializerOptions
             {
                 IncludeFields = true
             };
-            
-            var obj = JsonSerializer.Deserialize<ClassWithNullablePrimitives>(json, options);
+            options.Converters.Add(converter);
 
-            Assert.Equal(123, obj.MyIntProperty);
-            Assert.True(obj.MyBoolProperty);
-            Assert.Equal("Hello", obj.MyStringProperty);
-            Assert.Equal(321, obj.MyIntField);
-            Assert.True(obj.MyBoolField);
-            Assert.Equal("World", obj.MyStringField);
+            {
+                var obj = new ClassWithNullablePrimitives
+                {
+                    MyIntProperty = 123,
+                    MyBoolProperty = true,
+                    MyStringProperty = "Hello",
+                    MyIntField = 321,
+                    MyBoolField = true,
+                    MyStringField = "World",
+                };
+
+                json = JsonSerializer.Serialize(obj, options);
+
+                Assert.Equal(6, converter.WriteCallCount);
+                Assert.Equal(expected, json);
+            }
+            {
+                var obj = JsonSerializer.Deserialize<ClassWithNullablePrimitives>(json, options);
+
+                Assert.Equal(123, obj.MyIntProperty);
+                Assert.True(obj.MyBoolProperty);
+                Assert.Equal("Hello", obj.MyStringProperty);
+                Assert.Equal(321, obj.MyIntField);
+                Assert.True(obj.MyBoolField);
+                Assert.Equal("World", obj.MyStringField);
+            }
         }
 
         [Fact]
