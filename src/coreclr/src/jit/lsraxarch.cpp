@@ -1444,8 +1444,8 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
 
 #ifdef TARGET_X86
     // If we require a byte register on x86, we may run into an over-constrained situation
-    // if we have 4 or more uses (currently, it can be at most 4, if both the source and
-    // destination have base+index addressing).
+    // if we have BYTE_REG_COUNT or more uses (currently, it can be at most 4, if both the
+    // source and destination have base+index addressing).
     // This is because the byteable register requirement doesn't "reserve" a specific register,
     // and it would be possible for the incoming sources to all be occupying the byteable
     // registers, leaving none free for the internal register.
@@ -1454,8 +1454,8 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
     // so that when we create the use we will also create the RefTypeFixedRef on the RegRecord.
     // We don't expect a useCount of more than 3 for the initBlk case, so we haven't set
     // internalIsByte in that case above.
-    assert((useCount < 4) || !blkNode->OperIsInitBlkOp());
-    if (internalIsByte && (useCount >= 4))
+    assert((useCount < BYTE_REG_COUNT) || !blkNode->OperIsInitBlkOp());
+    if (internalIsByte && (useCount >= BYTE_REG_COUNT))
     {
         noway_assert(internalIntDef != nullptr);
         internalIntDef->registerAssignment = RBM_RAX;
@@ -1623,11 +1623,11 @@ int LinearScan::BuildPutArgStk(GenTreePutArgStk* putArgStk)
     buildInternalRegisterUses();
 
 #ifdef TARGET_X86
-    // There are only 4 byteable registers on x86. If we require a byteable internal register,
-    // we must have less than 4 sources.
-    // If we have 4 or more sources, and require a byteable internal register, we need to reserve
+    // There are only 4 (BYTE_REG_COUNT) byteable registers on x86. If we require a byteable internal register,
+    // we must have less than BYTE_REG_COUNT sources.
+    // If we have BYTE_REG_COUNT or more sources, and require a byteable internal register, we need to reserve
     // one explicitly (see BuildBlockStore()).
-    assert(srcCount < 4);
+    assert(srcCount < BYTE_REG_COUNT);
 #endif
 
     return srcCount;
@@ -2774,13 +2774,13 @@ int LinearScan::BuildIndir(GenTreeIndir* indirTree)
 #endif // FEATURE_SIMD
 
 #ifdef TARGET_X86
-    // There are only 4 byteable registers on x86. If we have a source that requires
-    // such a register, we must have no more than 4 sources.
-    // If we have more than 4 sources, and require a byteable register, we need to reserve
+    // There are only BYTE_REG_COUNT byteable registers on x86. If we have a source that requires
+    // such a register, we must have no more than BYTE_REG_COUNT sources.
+    // If we have more than BYTE_REG_COUNT sources, and require a byteable register, we need to reserve
     // one explicitly (see BuildBlockStore()).
     // (Note that the assert below doesn't count internal registers because we only have
     // floating point internal registers, if any).
-    assert(srcCount <= 4);
+    assert(srcCount <= BYTE_REG_COUNT);
 #endif
 
     if (indirTree->gtOper != GT_STOREIND)
