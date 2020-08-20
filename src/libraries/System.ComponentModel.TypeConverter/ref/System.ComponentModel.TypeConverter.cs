@@ -699,7 +699,9 @@ namespace System.ComponentModel
         internal LicenseManager() { }
         public static System.ComponentModel.LicenseContext CurrentContext { get { throw null; } set { } }
         public static System.ComponentModel.LicenseUsageMode UsageMode { get { throw null; } }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public static object CreateWithContext(System.Type type, System.ComponentModel.LicenseContext creationContext) { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public static object CreateWithContext(System.Type type, System.ComponentModel.LicenseContext creationContext, object[] args) { throw null; }
         public static bool IsLicensed(System.Type type) { throw null; }
         public static bool IsValid(System.Type type) { throw null; }
