@@ -521,7 +521,7 @@ HRESULT GetAppDomainStaticAddress::GarbageCollectionFinished()
                     else if (hr != CORPROF_E_DATAINCOMPLETE)
                     {
                         String moduleName = GetModuleIDName(classModuleId);
-                        if (EndsWith(moduleName, L"unloadlibrary.dll"))
+                        if (EndsWith(moduleName, WCHAR("unloadlibrary.dll")))
                         {
                             ++collectibleCount;
                         }
