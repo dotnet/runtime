@@ -18,6 +18,7 @@
     <PublishReadyToRun>true</PublishReadyToRun>
     <!-- Disable crossgen on FreeBSD, NetBSD, illumos and Solaris for now. This can be revisited when we have full support. -->
     <PublishReadyToRun Condition="'$(TargetOS)'=='FreeBSD' Or '$(TargetOS)'=='NetBSD' Or '$(TargetOS)'=='illumos' Or '$(TargetOS)'=='Solaris'">false</PublishReadyToRun>
+    <HostJsonTargetPath>tools/</HostJsonTargetPath>
   </PropertyGroup>
   
   <PropertyGroup>
@@ -27,31 +28,29 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <NativeRuntimeAsset Include="$(CoreCLRCrossgen2Dir)crossgen2$(ExeSuffix)" />
+    <NativeRuntimeAsset Include="$(CoreCLRCrossgen2Dir)crossgen2$(ExeSuffix)" TargetPath="tools/" />
     <Reference Include="$(CoreCLRCrossgen2Dir)crossgen2.dll" />
     <Reference Include="$(CoreCLRCrossgen2Dir)ILCompiler*.dll" />
     <Reference Include="$(CoreCLRCrossgen2Dir)Microsoft.DiaSymReader.dll" />
     <Reference Include="$(CoreCLRCrossgen2Dir)System.CommandLine.dll" />
-    <NativeRuntimeAsset Include="$(CoreCLRCrossgen2Dir)$(LibraryFilePrefix)jitinterface$(LibraryFileExtension)" />
-    <NativeRuntimeAsset Include="$(CoreCLRCrossgen2Dir)$(LibraryFilePrefix)clrjit-$(TargetSpec)$(LibraryFileExtension)" />
+    <NativeRuntimeAsset Include="$(CoreCLRCrossgen2Dir)$(LibraryFilePrefix)jitinterface$(LibraryFileExtension)" TargetPath="tools/" />
+    <NativeRuntimeAsset Include="$(CoreCLRCrossgen2Dir)$(LibraryFilePrefix)clrjit-$(TargetSpec)$(LibraryFileExtension)" TargetPath="tools/" />
     <!-- Include the native hosting layer  -->
-    <NativeRuntimeAsset Include="$(DotNetHostBinDir)/$(LibraryFilePrefix)hostfxr$(LibraryFileExtension)" />
-    <NativeRuntimeAsset Include="$(DotNetHostBinDir)/$(LibraryFilePrefix)hostpolicy$(LibraryFileExtension)" />
+    <NativeRuntimeAsset Include="$(DotNetHostBinDir)/$(LibraryFilePrefix)hostfxr$(LibraryFileExtension)" TargetPath="tools/" />
+    <NativeRuntimeAsset Include="$(DotNetHostBinDir)/$(LibraryFilePrefix)hostpolicy$(LibraryFileExtension)" TargetPath="tools/" />
   </ItemGroup>
 
   <Target Name="AddRuntimeFilesToPackage" DependsOnTargets="ResolveRuntimeFilesFromLocalBuild">
     <ItemGroup>
-      <RuntimeFiles Condition="'%(RuntimeFiles.IsNative)' == 'true'">
-        <TargetPath>runtimes/$(RuntimeIdentifier)/native</TargetPath>
-      </RuntimeFiles>
       <CrossgenFile Include="@(RuntimeFiles)" Condition="'%(Filename)' == 'crossgen'" />
       <ReferenceCopyLocalPaths Include="@(RuntimeFiles)" Exclude="@(CrossgenFile)" />
+      <ReferenceCopyLocalPaths TargetPath="tools/" />
     </ItemGroup>
   </Target>
 
   <Target Name="AddFrameworkFilesToPackage" DependsOnTargets="ResolveLibrariesFromLocalBuild">
     <ItemGroup>
-      <ReferenceCopyLocalPaths Include="@(LibrariesRuntimeFiles)" />
+      <ReferenceCopyLocalPaths Include="@(LibrariesRuntimeFiles)" TargetPath="tools/" />
     </ItemGroup>
   </Target>
 
@@ -62,7 +61,7 @@
   </PropertyGroup>
 
   <ItemGroup Condition="'$(_diaSymReaderPathIfExists)' != ''">
-    <NativeRuntimeAsset Include="$(_diaSymReaderPathIfExists)" />
+    <NativeRuntimeAsset Include="$(_diaSymReaderPathIfExists)" TargetPath="tools/" />
   </ItemGroup>
 
   <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
