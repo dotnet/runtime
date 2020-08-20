@@ -33,6 +33,7 @@ T:System.Runtime.InteropServices.ComVisibleAttribute
 T:System.Runtime.InteropServices.GuidAttribute
 T:System.Runtime.InteropServices.LCIDConversionAttribute
 T:System.Runtime.InteropServices.StructLayoutAttribute
+T:System.Runtime.InteropServices.SuppressGCTransitionAttribute
 T:System.Security.Permissions.EnvironmentPermissionAttribute
 T:System.Security.Permissions.FileIOPermissionAttribute
 T:System.Security.Permissions.HostProtectionAttribute

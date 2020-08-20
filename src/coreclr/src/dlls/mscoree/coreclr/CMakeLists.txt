@@ -103,7 +103,6 @@ set(CORECLR_LIBRARIES
     mdhotdata_full
     bcltype
     ceefgen
-    comfloat_wks
     corguids
     gcinfo
     ildbsymlib

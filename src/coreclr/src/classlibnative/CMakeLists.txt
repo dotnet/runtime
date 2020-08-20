@@ -5,4 +5,3 @@ include_directories("../debug/inc")
 include_directories("../debug/inc/dump")
 
 add_subdirectory(bcltype)
-add_subdirectory(float)
