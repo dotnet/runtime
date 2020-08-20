@@ -7,10 +7,9 @@
     <RuntimePackDir>{RuntimePackDir}</RuntimePackDir>
     <TargetingPackDir>{TargetingPackDir}</TargetingPackDir>
 
-    <!-- These can be removed once we get an SDK with https://github.com/mono/linker/pull/1385. -->
-    <LinkerNoWarn>IL2026</LinkerNoWarn>
+    <!-- IL2026 can be removed once we get an SDK with https://github.com/mono/linker/pull/1385. -->
     <!-- IL2008: Could not resolve type -->
-    <LinkerNoWarn>IL2008</LinkerNoWarn>
+    <LinkerNoWarn>IL2026;IL2008</LinkerNoWarn>
     <!-- IL2032,IL2055,IL2057-IL2061: Reflection intrinsics with unknown arguments -->
     <LinkerNoWarn>$(LinkerNoWarn);IL2032;IL2055;IL2057;IL2058;IL2059;IL2060;IL2061</LinkerNoWarn>
     <!-- IL2062-IL2066: Unknown values passed to locations with DynamicallyAccessedMemberTypes -->
