@@ -33,6 +33,9 @@ steps:
   - script: $(Build.SourcesDirectory)/src/coreclr/build-test$(scriptExt) /p:LibrariesConfiguration=${{ parameters.buildConfig }} -ci -skipnative  -skipstressdependencies -excludemonofailures os Browser wasm
     displayName: Build Tests
 
+  - script: $(Build.SourcesDirectory)/src/coreclr/build-test$(scriptExt) /p:LibrariesConfiguration=${{ parameters.buildConfig }} -ci -buildtestwrappersonly os Browser wasm
+    displayName: Generate Test Wrappers
+
   #  Send tests to Helix
   - template: /eng/pipelines/common/templates/runtimes/send-to-helix-step.yml
     parameters:
