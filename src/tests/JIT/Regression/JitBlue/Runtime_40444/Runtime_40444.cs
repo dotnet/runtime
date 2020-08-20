@@ -52,27 +52,30 @@ class Runtime_40444
         {
             if (TestVolatileRead(ref t2_finished)==1)
             {
-                // The value was chnaged by Thread2
+                // The value was changed by Thread2
                 // We print out how many iterations we looped for and 
                 // return true
                 Console.WriteLine("{0}: t2_result = {1}", i, t2_result);
                 result = true;
 
-                // The other thread has run and we just saw the value of t2_finsihed change
-                // so we return true and pass the test
+                // The other thread has run and we just saw the value of
+                // t2_finished change so we return true and pass the test
                 //             
                 return true;
             }
 
-            // Integer division is somewhat expensive and will add additional time for the loop to execute
-            // Chain two divides so the processir can't hide the latency
+            i++;
+
+            // Integer division is somewhat expensive and will add additional
+            // time for this loop to execute
+            //
+            // Chain the two divides so the processor can't hide the latency
             //
             if (((i / divisor) / divisor) == 1)
             {
                divisor++;
             }
 
-            i++;
             if (i == 1000000000)  // 1000 million
             {
                 loc_finished = t2_finished;
@@ -80,26 +83,30 @@ class Runtime_40444
             }
         }
 
-        // If loc_finished is zero then the other thread never run and we need to try again
+        // If loc_finished is still zero then the other thread has never run
+        // then we need to retry this test.
         //
         if (loc_finished == 0)
         {
-            // We will return false, saying that we couldn't tell if the test failed
+            // We will return false,
+            // this means that we couldn't tell if the test failed
             //
             return false;
         }
         else
         {
-            // If we count up to 1000 million we complete the loop and fail the test
-            // Before the fix this would always happen because we woudl hoist the read
-            // of t2_finished out of the loop
+            // If we count up to 1000 million and we complete the loop
+            // then we fail this test.
+            //
+            // Without the fix to the JIT we hoisted the read out of
+            // the loop and we would always reach here.
             //
             Console.WriteLine("{0}: FAILED, t2_result = {1}, t2_finished is {2}", i, t2_result, t2_finished);
-            result = false;
-
+            
             // The other thread has run and we never saw the value of t2_finsihed change
             // so we return true and fail the test
             //             
+            result = false;
             return true;
         }
     }
