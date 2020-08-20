@@ -309,7 +309,7 @@ After LSRA, the graph has the following properties:
 
     -   However, if such a node is constrained to a set of registers,
         and its current location does not satisfy that requirement, LSRA
-        must insert a `GT_COPY` node between the node and its parent. 
+        must insert a `GT_COPY` node between the node and its parent.
         The `_gtRegNum` on the `GT_COPY` node must satisfy the register
         requirement of the parent.
 
@@ -1088,11 +1088,11 @@ term "EH Var" means a `lclVar` marked `lvLiveInOutOfHndlr`):
 
 -   Adjust the heuristics:
 
-    1. For determining whether an EH var should be a candidate for register allocation, 
+    1. For determining whether an EH var should be a candidate for register allocation,
        e.g. if the defs outweight the uses.
 
     2. For determining when a definition of an EH var should be only stored to the stack,
-       rather than also remaining live in the register. 
+       rather than also remaining live in the register.
 
 -   If the weight of the defs exceeds the weight of the blocks with successors in exception
     regions, consider spilling the `lclVar` to the stack only at those boundaries.
@@ -1241,7 +1241,7 @@ kill site.
 Issue [\#9767](https://github.com/dotnet/runtime/issues/9767) captures the issue that the
 "spill always" stress mode, `LSRA_SPILL_ALWAYS`, `COMPlus_JitStressRegs=0x800` doesn't work properly.
 
-Issue [\#6261](https://github.com/dotnet/runtime/issues/6261) has to do with `RegOptional` 
+Issue [\#6261](https://github.com/dotnet/runtime/issues/6261) has to do with `RegOptional`
 `RefPositions` that are marked as `copyReg` or `moveReg`. See the notes on this issue;
 I don't think such cases should arise, but there may be some cleanup needed here.
 
@@ -1249,7 +1249,7 @@ Issue [\#5793](https://github.com/dotnet/runtime/issues/5793) suggests adding a 
 allocates registers forr mullti-reg nodes in the reverse of the ABI requirements.
 
 Issue [#10691](https://github.com/dotnet/runtime/issues/10691) suggests adding a stress mode that
-deliberately trashes registers that are not currently occupied (e.g. at block boundaries). 
+deliberately trashes registers that are not currently occupied (e.g. at block boundaries).
 
 References
 ----------
