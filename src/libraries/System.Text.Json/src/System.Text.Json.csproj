@@ -272,4 +272,9 @@
     <ProjectReference Include="$(LibrariesProjectRoot)System.Text.Encodings.Web\src\System.Text.Encodings.Web.csproj" />
     <PackageReference Include="System.ValueTuple" Version="$(SystemValueTupleVersion)" Condition="'$(TargetFramework)' == 'net461'" />
   </ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == 'netcoreapp3.0'">
+    <Compile Include="$(CoreLibSharedDir)\System\Runtime\CompilerServices\IntrinsicAttribute.cs" Link="System\Runtime\CompilerServices\IntrinsicAttribute.cs" />
+    <Compile Include="$(CoreLibSharedDir)\System\Runtime\Intrinsics\Arm\AdvSimd.PlatformNotSupported.cs" Link="System\Runtime\Intrinsics\Arm\AdvSimd.PlatformNotSupported.cs" />
+    <Compile Include="$(CoreLibSharedDir)\System\Runtime\Intrinsics\Arm\ArmBase.PlatformNotSupported.cs" Link="System\Runtime\Intrinsics\Arm\ArmBase.PlatformNotSupported.cs" />
+  </ItemGroup>
 </Project>
