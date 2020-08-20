@@ -40,6 +40,11 @@ namespace System.Text.Json.Serialization.Tests
             }
         }
 
+        public class PocoWithParameterizedCtor
+        {
+            public int Obj { get; set; }
+        }
+
         public class ClassWithInt
         {
             public int Obj { get; set; }
@@ -60,9 +65,23 @@ namespace System.Text.Json.Serialization.Tests
             public Poco Obj { get; set; }
         }
 
+        public class ClassWithParameterizedCtor_WithPoco
+        {
+            public PocoWithParameterizedCtor Obj { get; set; }
+
+            public ClassWithParameterizedCtor_WithPoco(PocoWithParameterizedCtor obj) => Obj = obj;
+        }
+
         public class ClassWithPocoArray
         {
             public Poco[] Obj { get; set; }
+        }
+
+        public class ClassWithParameterizedCtor_WithPocoArray
+        {
+            public PocoWithParameterizedCtor[] Obj { get; set; }
+
+            public ClassWithParameterizedCtor_WithPocoArray(PocoWithParameterizedCtor[] obj) => Obj = obj;
         }
 
         public class ClassWithDictionaryOfIntArray
@@ -78,6 +97,13 @@ namespace System.Text.Json.Serialization.Tests
         public class ClassWithDictionaryOfPocoList
         {
             public Dictionary<string, List<Poco>> Obj { get; set; }
+        }
+
+        public class ClassWithParameterizedCtor_WithDictionaryOfPocoList
+        {
+            public Dictionary<string, List<PocoWithParameterizedCtor>> Obj { get; set; }
+
+            public ClassWithParameterizedCtor_WithDictionaryOfPocoList(Dictionary<string, List<PocoWithParameterizedCtor>> obj) => Obj = obj;
         }
 
         public static IEnumerable<Type> TypesForInvalidJsonForCollectionTests()
@@ -105,6 +131,10 @@ namespace System.Text.Json.Serialization.Tests
                 typeof(ClassWithDictionaryOfIntArray),
                 typeof(ClassWithDictionaryOfPoco),
                 typeof(ClassWithDictionaryOfPocoList),
+                typeof(PocoWithParameterizedCtor),
+                typeof(ClassWithParameterizedCtor_WithPoco),
+                typeof(ClassWithParameterizedCtor_WithPocoArray),
+                typeof(ClassWithParameterizedCtor_WithDictionaryOfPocoList),
             };
 
             Type[] collectionTypes = new Type[]
