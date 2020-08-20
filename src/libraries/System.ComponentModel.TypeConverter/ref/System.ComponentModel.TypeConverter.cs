@@ -398,19 +398,6 @@ namespace System.ComponentModel
     {
         public DoubleConverter() { }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.All, AllowMultiple=true, Inherited=true)]
-    public sealed partial class EditorAttribute : System.Attribute
-    {
-        public EditorAttribute() { }
-        public EditorAttribute(string typeName, string baseTypeName) { }
-        public EditorAttribute(string typeName, System.Type baseType) { }
-        public EditorAttribute(System.Type type, System.Type baseType) { }
-        public string EditorBaseTypeName { get { throw null; } }
-        public string EditorTypeName { get { throw null; } }
-        public override object TypeId { get { throw null; } }
-        public override bool Equals(object obj) { throw null; }
-        public override int GetHashCode() { throw null; }
-    }
     public partial class EnumConverter : System.ComponentModel.TypeConverter
     {
         public EnumConverter(System.Type type) { }
