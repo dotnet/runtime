@@ -60,6 +60,14 @@ struct _MonoAssemblyLoadContext {
 	// Maps malloc-ed char* pinvoke scope -> MonoDl*
 	GHashTable *pinvoke_scopes;
 };
+
+struct _MonoBundledSatelliteAssembly {
+	const char *name;
+	const char *culture;
+	const unsigned char *data;
+	unsigned int size;
+};
+
 #endif /* ENABLE_NETCORE */
 
 void

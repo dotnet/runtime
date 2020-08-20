@@ -651,7 +651,8 @@ mono_domain_assembly_open_internal (MonoDomain *domain, MonoAssemblyLoadContext 
 MonoImage *mono_assembly_open_from_bundle (MonoAssemblyLoadContext *alc,
 					   const char *filename,
 					   MonoImageOpenStatus *status,
-					   gboolean refonly);
+					   gboolean refonly,
+					   const char *culture);
 
 MonoAssembly *
 mono_try_assembly_resolve (MonoAssemblyLoadContext *alc, const char *fname, MonoAssembly *requesting, gboolean refonly, MonoError *error);
