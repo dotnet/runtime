@@ -18,6 +18,8 @@ namespace System.Text.Json
         // The global list of built-in simple converters.
         private static readonly Dictionary<Type, JsonConverter> s_defaultSimpleConverters = GetDefaultSimpleConverters();
 
+        private static readonly Type s_nullableOfTType = typeof(Nullable<>);
+
         // The global list of built-in converters that override CanConvert().
         private static readonly JsonConverter[] s_defaultFactoryConverters = new JsonConverter[]
         {
@@ -177,6 +179,18 @@ namespace System.Text.Json
                 Debug.Assert(converter != null);
             }
 
+            // User indicated that non-nullable-struct-handling converter should handle a nullable struct type.
+            // The serializer would have picked that converter up by default and wrapped it in NullableConverter<T>;
+            // throw so that user can modify or remove their unnecessary CanConvert method override.
+            //
+            // We also throw to avoid passing an invalid argument to setters for nullable struct properties,
+            // which would cause an InvalidProgramException when the generated IL is invoked.
+            // This is not an issue of the converter is wrapped in NullableConverter<T>.
+            if (IsNullableType(runtimePropertyType) && !IsNullableType(converter.TypeToConvert))
+            {
+                ThrowHelper.ThrowInvalidOperationException_ConverterCanConvertNullableRedundant(runtimePropertyType, converter);
+            }
+
             return converter;
         }
 
@@ -309,6 +323,11 @@ namespace System.Text.Json
                 Type? underlyingType = Nullable.GetUnderlyingType(typeToConvert);
                 if (underlyingType != null && converter.CanConvert(underlyingType))
                 {
+                    if (converter is JsonConverterFactory converterFactory)
+                    {
+                        converter = converterFactory.GetConverterInternal(underlyingType, this);
+                    }
+
                     // Allow nullable handling to forward to the underlying type's converter.
                     return NullableConverterFactory.CreateValueConverter(underlyingType, converter);
                 }
@@ -345,6 +364,11 @@ namespace System.Text.Json
 
             ThrowHelper.ThrowInvalidOperationException_SerializationDuplicateAttribute(attributeType, classType, memberInfo);
             return default;
+        }
+
+        private static bool IsNullableType(Type type)
+        {
+            return type.IsGenericType && type.GetGenericTypeDefinition() == s_nullableOfTType;
         }
     }
 }

@@ -13,11 +13,13 @@ namespace System.Net
             {
                 SocketError.AddressAlreadyInUse => NetworkError.EndPointInUse,
                 SocketError.HostNotFound => NetworkError.HostNotFound,
+                SocketError.NoData => NetworkError.HostNotFound,
                 SocketError.ConnectionRefused => NetworkError.ConnectionRefused,
                 SocketError.OperationAborted => NetworkError.OperationAborted,
                 SocketError.ConnectionAborted => NetworkError.ConnectionAborted,
                 SocketError.ConnectionReset => NetworkError.ConnectionReset,
-                _ => NetworkError.Unknown
+                SocketError.TimedOut => NetworkError.TimedOut,
+                _ => NetworkError.Other
             };
 
             return new NetworkException(error, socketException);

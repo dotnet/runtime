@@ -92,9 +92,18 @@ namespace System.Diagnostics
         }
 
         /// <summary>Gets the path to the current executable, or null if it could not be retrieved.</summary>
-        private static string GetExePath()
+        private static string? GetExePath()
         {
-            return Interop.libproc.proc_pidpath(Environment.ProcessId);
+            try
+            {
+                return Interop.libproc.proc_pidpath(Environment.ProcessId);
+            }
+            catch (Win32Exception)
+            {
+                // It will throw System.ComponentModel.Win32Exception (2): No such file or Directory when
+                // the executable file is deleted.
+                return null;
+            }
         }
 
         // ----------------------------------

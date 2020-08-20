@@ -769,6 +769,69 @@ namespace Microsoft.Extensions.Configuration.Test
             Assert.False(sectionNotExists);
         }
 
+        [Theory]
+        [InlineData("Value1")]
+        [InlineData("")]
+        public void KeyWithValueAndWithoutChildrenExistsAsSection(string value)
+        {
+            // Arrange
+            var dict = new Dictionary<string, string>()
+            {
+                {"Mem1", value}
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dict);
+            var config = configurationBuilder.Build();
+
+            // Act
+            var sectionExists = config.GetSection("Mem1").Exists();
+
+            // Assert
+            Assert.True(sectionExists);
+        }
+
+        [Fact]
+        public void KeyWithNullValueAndWithoutChildrenIsASectionButNotExists()
+        {
+            // Arrange
+            var dict = new Dictionary<string, string>()
+            {
+                {"Mem1", null}
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dict);
+            var config = configurationBuilder.Build();
+
+            // Act
+            var sections = config.GetChildren();
+            var sectionExists = config.GetSection("Mem1").Exists();
+            var sectionChildren = config.GetSection("Mem1").GetChildren();
+
+            // Assert
+            Assert.Single(sections, section => section.Key == "Mem1");
+            Assert.False(sectionExists);
+            Assert.Empty(sectionChildren);
+        }
+
+        [Fact]
+        public void SectionWithChildrenHasNullValue()
+        {
+            // Arrange
+            var dict = new Dictionary<string, string>()
+            {
+                {"Mem1:KeyInMem1", "ValueInMem1"},
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dict);
+            var config = configurationBuilder.Build();
+
+            // Act
+            var sectionValue = config.GetSection("Mem1").Value;
+
+            // Assert
+            Assert.Null(sectionValue);
+        }
+
         [Fact]
         public void NullSectionDoesNotExist()
         {

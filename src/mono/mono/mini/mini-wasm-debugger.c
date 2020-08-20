@@ -256,7 +256,7 @@ typedef struct {
 static void*
 create_breakpoint_events (GPtrArray *ss_reqs, GPtrArray *bp_reqs, MonoJitInfo *ji, EventKind kind)
 {
-	printf ("ss_reqs %d bp_reqs %d\n", ss_reqs->len, bp_reqs->len);
+	DEBUG_PRINTF (1, "ss_reqs %d bp_reqs %d\n", ss_reqs->len, bp_reqs->len);
 	if ((ss_reqs && ss_reqs->len) || (bp_reqs && bp_reqs->len)) {
 		BpEvents *evts = g_new0 (BpEvents, 1); //just a non-null value to make sure we can raise it on process_breakpoint_events
 		evts->is_ss = (ss_reqs && ss_reqs->len);
@@ -283,7 +283,7 @@ no_seq_points_found (MonoMethod *method, int offset)
 	/*
 	 * This can happen in full-aot mode with assemblies AOTed without the 'soft-debug' option to save space.
 	 */
-	printf ("Unable to find seq points for method '%s', offset 0x%x.\n", mono_method_full_name (method, TRUE), offset);
+	DEBUG_PRINTF (1, "Unable to find seq points for method '%s', offset 0x%x.\n", mono_method_full_name (method, TRUE), offset);
 }
 
 #define DBG_NOT_SUSPENDED 1
@@ -291,7 +291,7 @@ no_seq_points_found (MonoMethod *method, int offset)
 static int
 ss_create_init_args (SingleStepReq *ss_req, SingleStepArgs *ss_args)
 {
-	printf ("ss_create_init_args\n");
+	DEBUG_PRINTF (1, "ss_create_init_args\n");
 	int dummy = 0;
 	ss_req->start_sp = ss_req->last_sp = &dummy;
 	compute_frames ();

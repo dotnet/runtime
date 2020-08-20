@@ -63,8 +63,8 @@ namespace DebuggerTests
                    await CheckPointerValue(ipp_props, "*ipp_null", TPointer("int*", is_null: true));
                }
 
-                // *cp
-                props = await GetObjectOnLocals(locals, "cp");
+               // *cp
+               props = await GetObjectOnLocals(locals, "cp");
                await CheckPointerValue(props, "*cp", TSymbol("113 'q'"));
            });
 
@@ -165,8 +165,8 @@ namespace DebuggerTests
 
                await CheckDateTime(locals, "dt", dt);
 
-                // *dtp
-                var props = await GetObjectOnLocals(locals, "dtp");
+               // *dtp
+               var props = await GetObjectOnLocals(locals, "dtp");
                await CheckDateTime(props, "*dtp", dt);
 
                var gsp_props = await GetObjectOnLocals(locals, "gsp");
@@ -191,8 +191,8 @@ namespace DebuggerTests
                    }
                }
 
-                // gsp_null
-                var gsp_w_n_props = await GetObjectOnLocals(locals, "gsp_null");
+               // gsp_null
+               var gsp_w_n_props = await GetObjectOnLocals(locals, "gsp_null");
                await CheckPointerValue(gsp_w_n_props, "*gsp_null", TValueType("DebuggerTests.GenericStructWithUnmanagedT<System.DateTime>"), "locals#gsp");
 
                {
@@ -228,9 +228,9 @@ namespace DebuggerTests
                    dtpa = TArray("System.DateTime*[]", 2)
                }, "locals", num_fields: 26);
 
-                // dtpa
-                var dtpa_elems = (await CompareObjectPropertiesFor(locals, "dtpa", new[]
-               {
+               // dtpa
+               var dtpa_elems = (await CompareObjectPropertiesFor(locals, "dtpa", new[]
+              {
                     TPointer("System.DateTime*"),
                         TPointer("System.DateTime*", is_null : true)
                }));
@@ -261,9 +261,9 @@ namespace DebuggerTests
                    gspa = TArray("DebuggerTests.GenericStructWithUnmanagedT<System.DateTime>*[]", 3),
                }, "locals", num_fields: 26);
 
-                // dtpa
-                var gspa_elems = await CompareObjectPropertiesFor(locals, "gspa", new[]
-               {
+               // dtpa
+               var gspa_elems = await CompareObjectPropertiesFor(locals, "gspa", new[]
+              {
                     TPointer("DebuggerTests.GenericStructWithUnmanagedT<System.DateTime>*", is_null : true),
                         TPointer("DebuggerTests.GenericStructWithUnmanagedT<System.DateTime>*"),
                         TPointer("DebuggerTests.GenericStructWithUnmanagedT<System.DateTime>*"),
@@ -277,8 +277,8 @@ namespace DebuggerTests
                         TValueType("DebuggerTests.GenericStructWithUnmanagedT<System.DateTime>")
                    });
 
-                    // *[1]
-                    {
+                   // *[1]
+                   {
                        var gsp_deref_props = await GetObjectOnLocals(actual_elems[1], "*[1]");
                        await CheckProps(gsp_deref_props, new
                        {
@@ -295,8 +295,8 @@ namespace DebuggerTests
                        }
                    }
 
-                    // *[2]
-                    {
+                   // *[2]
+                   {
                        var gsp_deref_props = await GetObjectOnLocals(actual_elems[2], "*[2]");
                        await CheckProps(gsp_deref_props, new
                        {
@@ -328,9 +328,9 @@ namespace DebuggerTests
                    dtppa = TArray("System.DateTime**[]", 3),
                }, "locals", num_fields: 26);
 
-                // DateTime**[] dtppa = new DateTime**[] { &dtp, &dtp_null, null };
-                var dtppa_elems = (await CompareObjectPropertiesFor(locals, "dtppa", new[]
-               {
+               // DateTime**[] dtppa = new DateTime**[] { &dtp, &dtp_null, null };
+               var dtppa_elems = (await CompareObjectPropertiesFor(locals, "dtppa", new[]
+              {
                     TPointer("System.DateTime**"),
                         TPointer("System.DateTime**"),
                         TPointer("System.DateTime**", is_null : true)
@@ -401,20 +401,20 @@ namespace DebuggerTests
                    ippa = TArray("int**[]", 5)
                }, "locals", num_fields: 8);
 
-                // ip
-                var props = await GetObjectOnLocals(locals, "ip");
+               // ip
+               var props = await GetObjectOnLocals(locals, "ip");
                await CheckPointerValue(props, "*ip", TNumber(5), "locals");
 
-                // ipp
-                var ipp_props = await GetObjectOnLocals(locals, "ipp");
+               // ipp
+               var ipp_props = await GetObjectOnLocals(locals, "ipp");
                await CheckPointerValue(ipp_props, "*ipp", TPointer("int*"));
 
                ipp_props = await GetObjectOnLocals(ipp_props, "*ipp");
                await CheckPointerValue(ipp_props, "**ipp", TNumber(5));
 
-                // ipa
-                var ipa_elems = await CompareObjectPropertiesFor(locals, "ipa", new[]
-               {
+               // ipa
+               var ipa_elems = await CompareObjectPropertiesFor(locals, "ipa", new[]
+              {
                     TPointer("int*"),
                         TPointer("int*"),
                         TPointer("int*", is_null : true)
@@ -427,9 +427,9 @@ namespace DebuggerTests
                         null
                });
 
-                // ippa
-                var ippa_elems = await CompareObjectPropertiesFor(locals, "ippa", new[]
-               {
+               // ippa
+               var ippa_elems = await CompareObjectPropertiesFor(locals, "ippa", new[]
+              {
                     TPointer("int**"),
                         TPointer("int**"),
                         TPointer("int**"),
@@ -474,20 +474,20 @@ namespace DebuggerTests
                    dtppa = TArray("System.DateTime**[]", 3)
                }, "locals", num_fields: 8);
 
-                // *dtp
-                var dtp_props = await GetObjectOnLocals(locals, "dtp");
+               // *dtp
+               var dtp_props = await GetObjectOnLocals(locals, "dtp");
                await CheckDateTime(dtp_props, "*dtp", dt);
 
-                // *dtpp
-                var dtpp_props = await GetObjectOnLocals(locals, "dtpp");
+               // *dtpp
+               var dtpp_props = await GetObjectOnLocals(locals, "dtpp");
                await CheckPointerValue(dtpp_props, "*dtpp", TPointer("System.DateTime*"), "locals");
 
                dtpp_props = await GetObjectOnLocals(dtpp_props, "*dtpp");
                await CheckDateTime(dtpp_props, "**dtpp", dt);
 
-                // dtpa
-                var dtpa_elems = (await CompareObjectPropertiesFor(locals, "dtpa", new[]
-               {
+               // dtpa
+               var dtpa_elems = (await CompareObjectPropertiesFor(locals, "dtpa", new[]
+              {
                     TPointer("System.DateTime*"),
                         TPointer("System.DateTime*", is_null : true)
                }));
@@ -501,9 +501,9 @@ namespace DebuggerTests
                    await CheckDateTime(actual_elems[0], "*[0]", dt);
                }
 
-                // dtppa = new DateTime**[] { &dtp, &dtp_null, null };
-                var dtppa_elems = (await CompareObjectPropertiesFor(locals, "dtppa", new[]
-               {
+               // dtppa = new DateTime**[] { &dtp, &dtp_null, null };
+               var dtppa_elems = (await CompareObjectPropertiesFor(locals, "dtppa", new[]
+              {
                     TPointer("System.DateTime**"),
                         TPointer("System.DateTime**"),
                         TPointer("System.DateTime**", is_null : true)
@@ -529,15 +529,15 @@ namespace DebuggerTests
             wait_for_event_fn: async (pause_location) =>
            {
 
-                // this will generate the object ids
-                var locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
+               // this will generate the object ids
+               var locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
                var complex = GetAndAssertObjectWithName(locals, "complex");
 
-                // try to deref the non-pointer object, as a pointer
-                await GetProperties(complex["value"]["objectId"].Value<string>().Replace(":object:", ":pointer:"), expect_ok: false);
+               // try to deref the non-pointer object, as a pointer
+               await GetProperties(complex["value"]["objectId"].Value<string>().Replace(":object:", ":pointer:"), expect_ok: false);
 
-                // try to deref an invalid pointer id
-                await GetProperties("dotnet:pointer:123897", expect_ok: false);
+               // try to deref an invalid pointer id
+               await GetProperties("dotnet:pointer:123897", expect_ok: false);
            });
 
         async Task<JToken[]> CheckArrayElements(JToken array, JToken[] exp_elems)

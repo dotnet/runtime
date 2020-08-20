@@ -172,15 +172,17 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Null(val);
             Assert.Equal("null", JsonSerializer.Serialize(val));
 
-            // Per null handling default value for value types (true), converter handles null.
+            // For compat, deserialize does not call converter for null token unless the type doesn't support
+            // null or HandleNull is overridden and returns 'true'.
+            // For compat, serialize does not call converter for null unless null is a valid value and HandleNull is true.
             var options = new JsonSerializerOptions();
             options.Converters.Add(new NullableInt32NullConverter_SpecialCaseNull());
 
             val = JsonSerializer.Deserialize<int?>("null", options);
-            Assert.Equal(-1, val);
+            Assert.Null(val);
 
             val = null;
-            Assert.Equal("-1", JsonSerializer.Serialize(val, options));
+            Assert.Equal("null", JsonSerializer.Serialize(val, options));
         }
 
         private class NullableInt32NullConverter_SpecialCaseNull : JsonConverter<int?>

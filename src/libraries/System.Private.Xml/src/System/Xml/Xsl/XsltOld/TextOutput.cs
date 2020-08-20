@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#nullable enable
 namespace System.Xml.Xsl.XsltOld
 {
     using System;
@@ -42,7 +43,7 @@ namespace System.Xml.Xsl.XsltOld
             _writer.Write(outputChar);
         }
 
-        internal override void Write(string outputText)
+        internal override void Write(string? outputText)
         {
             _writer.Write(outputText);
         }
@@ -50,7 +51,7 @@ namespace System.Xml.Xsl.XsltOld
         internal override void Close()
         {
             _writer.Flush();
-            _writer = null;
+            _writer = null!;
         }
     }
 }

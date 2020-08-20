@@ -143,10 +143,7 @@ jobs:
               - jitstress2
               - jitstress2_tiered
               - zapdisable
-              # tailcallstress currently has hundreds of failures on Linux/arm32, so disable it.
-              # Tracked by https://github.com/dotnet/runtime/issues/38892.
-              - ${{ if or(eq(parameters.osGroup, 'Windows_NT'), ne(parameters.archType, 'arm')) }}:
-                - tailcallstress
+              - tailcallstress
             ${{ if in(parameters.coreclrTestGroup, 'jitstressregs' ) }}:
               scenarios:
               - jitstressregs1

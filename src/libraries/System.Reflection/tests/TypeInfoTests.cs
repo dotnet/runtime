@@ -3,8 +3,8 @@
 
 using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
 using System.IO;
+using System.Linq;
 using System.Runtime.InteropServices;
 using Xunit;
 
@@ -479,6 +479,7 @@ namespace System.Reflection.Tests
         }
 
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/40868", TestRuntimes.Mono)]
         [InlineData(typeof(InheritedInteraface), new Type[] { typeof(TI_NonGenericInterface2) })]
         [InlineData(typeof(StructWithInheritedInterface), new Type[] { typeof(TI_NonGenericInterface2), typeof(InheritedInteraface) })]
         [InlineData(typeof(NonGenericClassWithNonGenericInterface), new Type[] { typeof(TI_NonGenericInterface1) })]
@@ -493,12 +494,18 @@ namespace System.Reflection.Tests
             TypeInfo typeInfo = type.GetTypeInfo();
             Type[] implementedInterfaces = type.GetTypeInfo().ImplementedInterfaces.ToArray();
 
-            Array.Sort(implementedInterfaces, delegate (Type a, Type b) { return a.GetHashCode() - b.GetHashCode(); });
-            Array.Sort(expected, delegate (Type a, Type b) { return a.GetHashCode() - b.GetHashCode(); });
+            Array.Sort(implementedInterfaces, TypeSortComparer);
+            Array.Sort(expected, TypeSortComparer);
 
             Assert.Equal(expected, implementedInterfaces);
             Assert.All(expected, ti => Assert.True(ti.GetTypeInfo().IsAssignableFrom(type.GetTypeInfo())));
             Assert.All(expected, ti => Assert.True(type.GetTypeInfo().IsAssignableTo(ti.GetTypeInfo())));
+
+            static int TypeSortComparer(Type a, Type b)
+            {
+                // produces a stable (within this process) ordering of two Type objects
+                return a.TypeHandle.Value.CompareTo(b.TypeHandle.Value);
+            }
         }
 
         public static IEnumerable<object[]> IsInstanceOfType_TestData()
@@ -622,7 +629,7 @@ namespace System.Reflection.Tests
             // illegal type construction due to T->T?
             Assert.Throws<ArgumentException>(() => typeof(G<,>).MakeGenericType(typeof(int), typeof(int?)));
 
-            // Test trivial object casts 
+            // Test trivial object casts
             s_boxedInt32 = (object)1234;
             Assert.True((s_boxedInt32 is int?) && (int?)s_boxedInt32 == 1234);
 
@@ -638,7 +645,7 @@ namespace System.Reflection.Tests
         {
             //void OpenGenericArrays()
             //{
-            //    // this is valid, reflection checks below should agree 
+            //    // this is valid, reflection checks below should agree
             //    IFace[] arr2 = default(T[]);
             //    IEnumerable<IFace> ie = default(T[]);
             //}
@@ -648,7 +655,7 @@ namespace System.Reflection.Tests
         {
             //void OpenGenericArrays()
             //{
-            //    // this is valid, reflection checks below should agree 
+            //    // this is valid, reflection checks below should agree
             //    U[] arr2 = default(T[]);
             //    IEnumerable<U> ie = default(T[]);
             //}

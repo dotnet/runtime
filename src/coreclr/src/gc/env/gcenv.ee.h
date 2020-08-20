@@ -86,7 +86,7 @@ public:
     static uint32_t GetTotalNumSizedRefHandles();
 
     static bool AnalyzeSurvivorsRequested(int condemnedGeneration);
-    static void AnalyzeSurvivorsFinished(int condemnedGeneration);
+    static void AnalyzeSurvivorsFinished(size_t gcIndex, int condemnedGeneration, uint64_t promoted_bytes, void (*reportGenerationBounds)());
 
     static void VerifySyncTableEntry();
     static void UpdateGCEventStatus(int publicLevel, int publicKeywords, int privateLevel, int privateKeywords);
