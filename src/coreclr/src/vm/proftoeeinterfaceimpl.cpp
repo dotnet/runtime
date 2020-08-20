@@ -3085,7 +3085,7 @@ HRESULT ProfToEEInterfaceImpl::GetRVAStaticAddress(ClassID classId,
  * Returns:
  *    S_OK on success,
  *    E_INVALIDARG if not an app domain static,
- *    CORPROF_E_DATAINCOMPLETE if not yet initialized.
+ *    CORPROF_E_DATAINCOMPLETE if not yet initialized or the module is being unloaded.
  *
  */
 HRESULT ProfToEEInterfaceImpl::GetAppDomainStaticAddress(ClassID classId,
