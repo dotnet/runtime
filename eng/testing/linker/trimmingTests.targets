@@ -13,10 +13,6 @@
       <DestinationFolder>$(TrimmingTestDir)</DestinationFolder>
     </TestSupportFiles>
 
-    <FrameworkInferenceFiles Include="$(RepositoryEngineeringDir)BeforeTargetFrameworkInference.targets">
-      <DestinationFolder>$(TrimmingTestDir)</DestinationFolder>
-    </FrameworkInferenceFiles>
-
     <CliEnvironment Include="DOTNET_CLI_TELEMETRY_OPTOUT=1" />
     <CliEnvironment Include="DOTNET_SKIP_FIRST_TIME_EXPERIENCE=1" />
     <CliEnvironment Include="DOTNET_MULTILEVEL_LOOKUP=0" />
@@ -27,16 +23,8 @@
           Outputs="@(TestSupportFiles->'%(DestinationFolder)\%(FileName)%(Extension)')">
     <MakeDir Directories="%(TestSupportFiles.DestinationFolder)" />
     <Copy SourceFiles="@(TestSupportFiles)" DestinationFolder="%(TestSupportFiles.DestinationFolder)" />
-    <Copy SourceFiles="@(FrameworkInferenceFiles)" DestinationFolder="%(FrameworkInferenceFiles.DestinationFolder)" />
   </Target>
 
-  <Target Name="CopyFrameworkInference"
-          DependsOnTargets="CreateTestDir"
-          Inputs="@(FrameworkInference)"
-          Outputs="@(FrameworkInference->'%(DestinationFolder)\%(FileName)%(Extension)')">
-    <Copy SourceFiles="@(FrameworkInferenceFiles)" DestinationFolder="%(FrameworkInferenceFiles.DestinationFolder)" />
-  </Target>
-  
   <Target Name="GetTestConsoleApps">
     <ItemGroup>
       <TestConsoleAppSourceFiles>
@@ -60,7 +48,7 @@
   </Target>
 
   <Target Name="GenerateProjects"
-          DependsOnTargets="GetTestConsoleApps;CreateTestDir;CopyFrameworkInference"
+          DependsOnTargets="GetTestConsoleApps;CreateTestDir"
           Inputs="@(TestConsoleAppSourceFiles);$(ProjectTemplate);@(TestSupportFiles)"
           Outputs="%(TestConsoleApps.Identity)">
     <PropertyGroup>
