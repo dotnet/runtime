@@ -34,8 +34,7 @@ namespace System.Text.Json
         /// <remarks>Using a <see cref="string"/> is not as efficient as using the
         /// UTF-8 methods since the implementation natively uses UTF-8.
         /// </remarks>
-        [return: MaybeNull]
-        public static TValue Deserialize<[DynamicallyAccessedMembers(MembersAccessedOnRead)] TValue>(string json, JsonSerializerOptions? options = null)
+        public static TValue? Deserialize<[DynamicallyAccessedMembers(MembersAccessedOnRead)] TValue>(string json, JsonSerializerOptions? options = null)
         {
             if (json == null)
             {
@@ -84,8 +83,7 @@ namespace System.Text.Json
             return value;
         }
 
-        [return: MaybeNull]
-        private static TValue Deserialize<TValue>(string json, Type returnType, JsonSerializerOptions? options)
+        private static TValue? Deserialize<TValue>(string json, Type returnType, JsonSerializerOptions? options)
         {
             const long ArrayPoolMaxSizeBeforeUsingNormalAlloc = 1024 * 1024;
 

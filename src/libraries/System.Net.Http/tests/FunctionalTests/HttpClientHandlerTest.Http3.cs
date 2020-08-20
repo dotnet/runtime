@@ -19,7 +19,7 @@ namespace System.Net.Http.Functional.Tests
 {
     public abstract class HttpClientHandlerTest_Http3 : HttpClientHandlerTestBase
     {
-        protected override Version UseVersion => HttpVersion.Version30;
+        protected override Version UseVersion => HttpVersion30;
 
         public static bool SupportsAlpn => PlatformDetection.SupportsAlpn;
 

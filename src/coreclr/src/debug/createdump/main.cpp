@@ -5,14 +5,18 @@
 
 #ifdef HOST_WINDOWS
 #define DEFAULT_DUMP_PATH "%TEMP%\\"
-#define DEFAULT_DUMP_TEMPLATE "dump.%d.dmp"
+#define DEFAULT_DUMP_TEMPLATE "dump.%p.dmp"
 #else
 #define DEFAULT_DUMP_PATH "/tmp/"
-#define DEFAULT_DUMP_TEMPLATE "coredump.%d"
+#define DEFAULT_DUMP_TEMPLATE "coredump.%p"
 #endif
 
 const char* g_help = "createdump [options] pid\n"
-"-f, --name - dump path and file name. The pid can be placed in the name with %d. The default is '" DEFAULT_DUMP_PATH DEFAULT_DUMP_TEMPLATE "'\n"
+"-f, --name - dump path and file name. The default is '" DEFAULT_DUMP_PATH DEFAULT_DUMP_TEMPLATE "'. These specifiers are substituted with following values:\n"
+"   %p  PID of dumped process.\n"
+"   %e  The process executable filename.\n"
+"   %h  Hostname return by gethostname().\n"
+"   %t  Time of dump, expressed as seconds since the Epoch, 1970-01-01 00:00:00 +0000 (UTC).\n"
 "-n, --normal - create minidump.\n"
 "-h, --withheap - create minidump with heap (default).\n"
 "-t, --triage - create triage minidump.\n"
@@ -20,8 +24,6 @@ const char* g_help = "createdump [options] pid\n"
 "-d, --diag - enable diagnostic messages.\n";
 
 bool g_diagnostics = false;
-
-bool CreateDump(const char* dumpPathTemplate, int pid, MINIDUMP_TYPE minidumpType);
 
 //
 // Main entry point
@@ -116,7 +118,6 @@ int __cdecl main(const int argc, const char* argv[])
     if (pid != 0)
     {
         ArrayHolder<char> tmpPath = new char[MAX_LONGPATH];
-        ArrayHolder<char> dumpPath = new char[MAX_LONGPATH];
 
         if (dumpPathTemplate == nullptr)
         {
@@ -134,11 +135,7 @@ int __cdecl main(const int argc, const char* argv[])
             dumpPathTemplate = tmpPath;
         }
 
-        snprintf(dumpPath, MAX_LONGPATH, dumpPathTemplate, pid);
-
-        printf("Writing %s to file %s\n", dumpType, (char*)dumpPath);
-
-        if (CreateDump(dumpPath, pid, minidumpType))
+        if (CreateDump(dumpPathTemplate, pid, dumpType, minidumpType))
         {
             printf("Dump successfully written\n");
         }
@@ -146,6 +143,7 @@ int __cdecl main(const int argc, const char* argv[])
         {
             exitCode = -1;
         }
+
         fflush(stdout);
         fflush(stderr);
     }

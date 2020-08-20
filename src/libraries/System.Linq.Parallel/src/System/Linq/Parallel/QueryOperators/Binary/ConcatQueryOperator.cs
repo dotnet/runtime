@@ -296,10 +296,8 @@ namespace System.Linq.Parallel
 
     internal struct ConcatKey<TLeftKey, TRightKey>
     {
-        [MaybeNull, AllowNull]
-        private readonly TLeftKey _leftKey;
-        [MaybeNull, AllowNull]
-        private readonly TRightKey _rightKey;
+        private readonly TLeftKey? _leftKey;
+        private readonly TRightKey? _rightKey;
         private readonly bool _isLeft;
 
         private ConcatKey([AllowNull] TLeftKey leftKey, [AllowNull] TRightKey rightKey, bool isLeft)

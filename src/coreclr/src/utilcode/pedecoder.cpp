@@ -1770,20 +1770,29 @@ void PEDecoder::LayoutILOnly(void *base, BOOL allowFullPE) const
                            PAGE_READONLY, &oldProtection))
         ThrowLastError();
 
-    // Finally, apply proper protection to copied sections
-    section = sectionStart;
-    while (section < sectionEnd)
+    // Finally, apply proper protection to copied sections    
+    for (section = sectionStart; section < sectionEnd; section++)
     {
         // Add appropriate page protection.
-        if ((section->Characteristics & VAL32(IMAGE_SCN_MEM_WRITE)) == 0)
-        {
-            if (!ClrVirtualProtect((void *) ((BYTE *)base + VAL32(section->VirtualAddress)),
-                                   VAL32(section->Misc.VirtualSize),
-                                   PAGE_READONLY, &oldProtection))
-                ThrowLastError();
-        }
+#if defined(CROSSGEN_COMPILE) || defined(TARGET_UNIX)
+        if (section->Characteristics & IMAGE_SCN_MEM_WRITE)
+            continue;
 
-        section++;
+        DWORD newProtection = PAGE_READONLY;
+#else
+        DWORD newProtection = section->Characteristics & IMAGE_SCN_MEM_EXECUTE ?
+            PAGE_EXECUTE_READ :
+            section->Characteristics & IMAGE_SCN_MEM_WRITE ?
+                PAGE_READWRITE :
+                PAGE_READONLY;
+#endif
+
+        if (!ClrVirtualProtect((void*)((BYTE*)base + VAL32(section->VirtualAddress)),
+            VAL32(section->Misc.VirtualSize),
+            newProtection, &oldProtection))
+        {
+            ThrowLastError();
+        }
     }
 
     RETURN;

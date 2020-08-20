@@ -1203,7 +1203,7 @@ EEJitManager::EEJitManager()
     m_CodeHeapCritSec( CrstSingleUseLock,
                         CrstFlags(CRST_UNSAFE_ANYMODE|CRST_DEBUGGER_THREAD|CRST_TAKEN_DURING_SHUTDOWN)),
     m_CPUCompileFlags(),
-    m_EHClauseCritSec( CrstSingleUseLock )
+    m_JitLoadCritSec( CrstSingleUseLock )
 {
     CONTRACTL {
         THROWS;
@@ -1353,56 +1353,61 @@ void EEJitManager::SetCpuInfo()
 
     int cpuidInfo[4];
 
+    const int EAX = 0;
+    const int EBX = 1;
+    const int ECX = 2;
+    const int EDX = 3;
+
     __cpuid(cpuidInfo, 0x00000000);
-    uint32_t maxCpuId = static_cast<uint32_t>(cpuidInfo[0]);
+    uint32_t maxCpuId = static_cast<uint32_t>(cpuidInfo[EAX]);
 
     if (maxCpuId >= 1)
     {
         __cpuid(cpuidInfo, 0x00000001);
 
-        if (((cpuidInfo[3] & (1 << 25)) != 0) && ((cpuidInfo[3] & (1 << 26)) != 0))                     // SSE & SSE2
+        if (((cpuidInfo[EDX] & (1 << 25)) != 0) && ((cpuidInfo[EDX] & (1 << 26)) != 0))                     // SSE & SSE2
         {
             CPUCompileFlags.Set(InstructionSet_SSE);
             CPUCompileFlags.Set(InstructionSet_SSE2);
 
-            if ((cpuidInfo[2] & (1 << 25)) != 0)                                                      // AESNI
+            if ((cpuidInfo[ECX] & (1 << 25)) != 0)                                                          // AESNI
             {
                 CPUCompileFlags.Set(InstructionSet_AES);
             }
 
-            if ((cpuidInfo[2] & (1 << 1)) != 0)                                                       // PCLMULQDQ
+            if ((cpuidInfo[ECX] & (1 << 1)) != 0)                                                           // PCLMULQDQ
             {
                 CPUCompileFlags.Set(InstructionSet_PCLMULQDQ);
             }
 
-            if ((cpuidInfo[2] & (1 << 0)) != 0)                                                       // SSE3
+            if ((cpuidInfo[ECX] & (1 << 0)) != 0)                                                           // SSE3
             {
                 CPUCompileFlags.Set(InstructionSet_SSE3);
 
-                if ((cpuidInfo[2] & (1 << 9)) != 0)                                                   // SSSE3
+                if ((cpuidInfo[ECX] & (1 << 9)) != 0)                                                       // SSSE3
                 {
                     CPUCompileFlags.Set(InstructionSet_SSSE3);
 
-                    if ((cpuidInfo[2] & (1 << 19)) != 0)                                              // SSE4.1
+                    if ((cpuidInfo[ECX] & (1 << 19)) != 0)                                                  // SSE4.1
                     {
                         CPUCompileFlags.Set(InstructionSet_SSE41);
 
-                        if ((cpuidInfo[2] & (1 << 20)) != 0)                                          // SSE4.2
+                        if ((cpuidInfo[ECX] & (1 << 20)) != 0)                                              // SSE4.2
                         {
                             CPUCompileFlags.Set(InstructionSet_SSE42);
 
-                            if ((cpuidInfo[2] & (1 << 23)) != 0)                                      // POPCNT
+                            if ((cpuidInfo[ECX] & (1 << 23)) != 0)                                          // POPCNT
                             {
                                 CPUCompileFlags.Set(InstructionSet_POPCNT);
                             }
 
-                            if (((cpuidInfo[2] & (1 << 27)) != 0) && ((cpuidInfo[2] & (1 << 28)) != 0)) // OSXSAVE & AVX
+                            if (((cpuidInfo[ECX] & (1 << 27)) != 0) && ((cpuidInfo[ECX] & (1 << 28)) != 0)) // OSXSAVE & AVX
                             {
-                                if(DoesOSSupportAVX() && (xmmYmmStateSupport() == 1))               // XGETBV == 11
+                                if(DoesOSSupportAVX() && (xmmYmmStateSupport() == 1))                       // XGETBV == 11
                                 {
                                     CPUCompileFlags.Set(InstructionSet_AVX);
 
-                                    if ((cpuidInfo[2] & (1 << 12)) != 0)                              // FMA
+                                    if ((cpuidInfo[ECX] & (1 << 12)) != 0)                                  // FMA
                                     {
                                         CPUCompileFlags.Set(InstructionSet_FMA);
                                     }
@@ -1411,7 +1416,7 @@ void EEJitManager::SetCpuInfo()
                                     {
                                         __cpuidex(cpuidInfo, 0x00000007, 0x00000000);
 
-                                        if ((cpuidInfo[1] & (1 << 5)) != 0)                           // AVX2
+                                        if ((cpuidInfo[EBX] & (1 << 5)) != 0)                               // AVX2
                                         {
                                             CPUCompileFlags.Set(InstructionSet_AVX2);
                                         }
@@ -1440,12 +1445,12 @@ void EEJitManager::SetCpuInfo()
         {
             __cpuidex(cpuidInfo, 0x00000007, 0x00000000);
 
-            if ((cpuidInfo[2] & (1 << 3)) != 0)                                                       // BMI1
+            if ((cpuidInfo[EBX] & (1 << 3)) != 0)                                                           // BMI1
             {
                 CPUCompileFlags.Set(InstructionSet_BMI1);
             }
 
-            if ((cpuidInfo[2] & (1 << 8)) != 0)                                                       // BMI2
+            if ((cpuidInfo[EBX] & (1 << 8)) != 0)                                                           // BMI2
             {
                 CPUCompileFlags.Set(InstructionSet_BMI2);
             }
@@ -1453,13 +1458,13 @@ void EEJitManager::SetCpuInfo()
     }
 
     __cpuid(cpuidInfo, 0x80000000);
-    uint32_t maxCpuIdEx = static_cast<uint32_t>(cpuidInfo[0]);
+    uint32_t maxCpuIdEx = static_cast<uint32_t>(cpuidInfo[EAX]);
 
     if (maxCpuIdEx >= 0x80000001)
     {
         __cpuid(cpuidInfo, 0x80000001);
 
-        if ((cpuidInfo[3] & (1 << 5)) != 0)                                                           // LZCNT
+        if ((cpuidInfo[ECX] & (1 << 5)) != 0)                                                               // LZCNT
         {
             CPUCompileFlags.Set(InstructionSet_LZCNT);
         }
@@ -1702,8 +1707,8 @@ BOOL EEJitManager::LoadJIT()
     if (IsJitLoaded())
         return TRUE;
 
-    // Abuse m_EHClauseCritSec to ensure that the JIT is loaded on one thread only
-    CrstHolder chRead(&m_EHClauseCritSec);
+    // Use m_JitLoadCritSec to ensure that the JIT is loaded on one thread only
+    CrstHolder chRead(&m_JitLoadCritSec);
 
     // Did someone load the JIT before we got the lock?
     if (IsJitLoaded())
@@ -3048,21 +3053,14 @@ TypeHandle EEJitManager::ResolveEHClause(EE_ILEXCEPTION_CLAUSE* pEHClause,
     TypeHandle typeHnd = TypeHandle();
     mdToken typeTok = mdTokenNil;
 
+    // CachedTypeHandle's are filled in at JIT time, and not cached when accessed multiple times
+    if (HasCachedTypeHandle(pEHClause))
     {
-        CrstHolder chRead(&m_EHClauseCritSec);
-        if (HasCachedTypeHandle(pEHClause))
-        {
-            typeHnd = TypeHandle::FromPtr(pEHClause->TypeHandle);
-        }
-        else
-        {
-            typeTok = pEHClause->ClassToken;
-        }
+        return TypeHandle::FromPtr(pEHClause->TypeHandle);
     }
-
-    if (!typeHnd.IsNull())
+    else
     {
-        return typeHnd;
+        typeTok = pEHClause->ClassToken;
     }
 
     MethodDesc* pMD = pCf->GetFunction();
@@ -3100,43 +3098,8 @@ TypeHandle EEJitManager::ResolveEHClause(EE_ILEXCEPTION_CLAUSE* pEHClause,
         }
     }
 
-    typeHnd = ClassLoader::LoadTypeDefOrRefOrSpecThrowing(pModule, typeTok, &typeContext,
-                                                          ClassLoader::ReturnNullIfNotFound);
-
-    // If the type (pModule,typeTok) was not loaded or not
-    // restored then the exception object won't have this type, because an
-    // object of this type has not been allocated.
-    if (typeHnd.IsNull())
-        return typeHnd;
-
-    // We can cache any exception specification except:
-    //   - If the type contains type variables in generic code,
-    //     e.g. catch E<T> where T is a type variable.
-    // We CANNOT cache E<T> in non-shared instantiations of generic code because
-    // there is only one EHClause cache for the IL, shared across all instantiations.
-    //
-    if((k & hasAnyVarsMask) == 0)
-    {
-        CrstHolder chWrite(&m_EHClauseCritSec);
-
-        // Note another thread might have beaten us to it ...
-        if (!HasCachedTypeHandle(pEHClause))
-        {
-            // We should never cache a NULL typeHnd.
-            _ASSERTE(!typeHnd.IsNull());
-            pEHClause->TypeHandle = typeHnd.AsPtr();
-            SetHasCachedTypeHandle(pEHClause);
-        }
-        else
-        {
-            // If we raced in here with another thread and got held up on the lock, then we just need to return the
-            // type handle that the other thread put into the clause.
-            // The typeHnd we found and the typeHnd the racing thread found should always be the same
-            _ASSERTE(typeHnd.AsPtr() == pEHClause->TypeHandle);
-            typeHnd = TypeHandle::FromPtr(pEHClause->TypeHandle);
-        }
-    }
-    return typeHnd;
+    return ClassLoader::LoadTypeDefOrRefOrSpecThrowing(pModule, typeTok, &typeContext,
+                                                       ClassLoader::ReturnNullIfNotFound);
 }
 
 void EEJitManager::RemoveJitData (CodeHeader * pCHdr, size_t GCinfo_len, size_t EHinfo_len)

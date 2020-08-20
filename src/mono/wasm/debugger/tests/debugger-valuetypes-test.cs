@@ -11,13 +11,15 @@ namespace DebuggerTests
         public static void MethodWithLocalStructs()
         {
             var ss_local = new SimpleStruct("set in MethodWithLocalStructs", 1, DateTimeKind.Utc);
-            var gs_local = new GenericStruct<ValueTypesTest> { StringField = "gs_local#GenericStruct<ValueTypesTest>#StringField" };
+            var gs_local = new GenericStruct<ValueTypesTest> { StringField = $"gs_local#GenericStruct<ValueTypesTest>#StringField" };
 
             ValueTypesTest vt_local = new ValueTypesTest
             {
                 StringField = "string#0",
                 SimpleStructField = new SimpleStruct("SimpleStructField#string#0", 5, DateTimeKind.Local),
-                SimpleStructProperty = new SimpleStruct("SimpleStructProperty#string#0", 2, DateTimeKind.Utc), DT = new DateTime(2020, 1, 2, 3, 4, 5), RGB = RGB.Blue
+                SimpleStructProperty = new SimpleStruct("SimpleStructProperty#string#0", 2, DateTimeKind.Utc),
+                DT = new DateTime(2020, 1, 2, 3, 4, 5),
+                RGB = RGB.Blue
             };
             Console.WriteLine($"Using the struct: {ss_local.gs.StringField}, gs: {gs_local.StringField}, {vt_local.StringField}");
         }
@@ -61,6 +63,7 @@ namespace DebuggerTests
 
         public struct SimpleStruct
         {
+            public uint V { get { return 0xDEADBEEF + (uint)dt.Month; } set { } }
             public string str_member;
             public DateTime dt;
             public GenericStruct<DateTime> gs;
@@ -216,7 +219,7 @@ namespace DebuggerTests
 
         public static void MethodUpdatingVTArrayMembers()
         {
-            var ssta = new []
+            var ssta = new[]
             {
                 new StructForToStringTests { DT = new DateTime(1, 2, 3, 4, 5, 6) }
             };

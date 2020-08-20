@@ -948,6 +948,12 @@ namespace System.Diagnostics
                                 Logger.Message($"Property {propertyName} not found on {type}");
                                 return new PropertyFetch(type);
                             }
+                            // Delegate creation below is incompatible with static properties.
+                            else if (propertyInfo.GetMethod?.IsStatic == true || propertyInfo.SetMethod?.IsStatic == true)
+                            {
+                                Logger.Message($"Property {propertyName} is static.");
+                                return new PropertyFetch(type);
+                            }
                             Type typedPropertyFetcher = typeInfo.IsValueType ?
                                 typeof(ValueTypedFetchProperty<,>) : typeof(RefTypedFetchProperty<,>);
                             Type instantiatedTypedPropertyFetcher = typedPropertyFetcher.GetTypeInfo().MakeGenericType(

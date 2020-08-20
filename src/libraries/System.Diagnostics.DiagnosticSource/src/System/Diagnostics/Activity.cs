@@ -255,9 +255,6 @@ namespace System.Diagnostics
         /// </summary>
         public IEnumerable<KeyValuePair<string, object?>> TagObjects
         {
-#if ALLOW_PARTIALLY_TRUSTED_CALLERS
-        [System.Security.SecuritySafeCriticalAttribute]
-#endif
             get => _tags ?? s_emptyTagObjects;
         }
 
@@ -929,7 +926,7 @@ namespace System.Diagnostics
 
         internal static Activity CreateAndStart(ActivitySource source, string name, ActivityKind kind, string? parentId, ActivityContext parentContext,
                                                 IEnumerable<KeyValuePair<string, object?>>? tags, IEnumerable<ActivityLink>? links,
-                                                DateTimeOffset startTime, ActivityDataRequest request)
+                                                DateTimeOffset startTime, ActivityTagsCollection? samplerTags, ActivitySamplingResult request)
         {
             Activity activity = new Activity(name);
 
@@ -994,11 +991,23 @@ namespace System.Diagnostics
                 }
             }
 
+            if (samplerTags != null)
+            {
+                if (activity._tags == null)
+                {
+                    activity._tags = new TagsLinkedList(samplerTags!);
+                }
+                else
+                {
+                    activity._tags.Add(samplerTags!);
+                }
+            }
+
             activity.StartTimeUtc = startTime == default ? DateTime.UtcNow : startTime.UtcDateTime;
 
-            activity.IsAllDataRequested = request == ActivityDataRequest.AllData || request == ActivityDataRequest.AllDataAndRecorded;
+            activity.IsAllDataRequested = request == ActivitySamplingResult.AllData || request == ActivitySamplingResult.AllDataAndRecorded;
 
-            if (request == ActivityDataRequest.AllDataAndRecorded)
+            if (request == ActivitySamplingResult.AllDataAndRecorded)
             {
                 activity.ActivityTraceFlags |= ActivityTraceFlags.Recorded;
             }
@@ -1272,9 +1281,10 @@ namespace System.Diagnostics
                 }
             }
 
+            // Note: Some customers use this GetEnumerator dynamically to avoid allocations.
             public Enumerator<T> GetEnumerator() => new Enumerator<T>(_first);
-            IEnumerator<T> IEnumerable<T>.GetEnumerator() => new Enumerator<T>(_first);
-            IEnumerator IEnumerable.GetEnumerator() => new Enumerator<T>(_first);
+            IEnumerator<T> IEnumerable<T>.GetEnumerator() => GetEnumerator();
+            IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
         }
 
         private class TagsLinkedList : IEnumerable<KeyValuePair<string, object?>>
@@ -1287,6 +1297,34 @@ namespace System.Diagnostics
             public TagsLinkedList(IEnumerator<KeyValuePair<string, object?>> e)
             {
                 _last = _first = new LinkedListNode<KeyValuePair<string, object?>>(e.Current);
+
+                while (e.MoveNext())
+                {
+                    _last.Next = new LinkedListNode<KeyValuePair<string, object?>>(e.Current);
+                    _last = _last.Next;
+                }
+            }
+
+            public TagsLinkedList(IEnumerable<KeyValuePair<string, object?>> list) => Add(list);
+
+            // Add doesn't take the lock because it is called from the Activity creation before sharing the activity object to the caller.
+            public void Add(IEnumerable<KeyValuePair<string, object?>> list)
+            {
+                IEnumerator<KeyValuePair<string, object?>> e = list.GetEnumerator();
+                if (!e.MoveNext())
+                {
+                    return;
+                }
+
+                if (_first == null)
+                {
+                    _last = _first = new LinkedListNode<KeyValuePair<string, object?>>(e.Current);
+                }
+                else
+                {
+                    _last!.Next = new LinkedListNode<KeyValuePair<string, object?>>(e.Current);
+                    _last = _last.Next;
+                }
 
                 while (e.MoveNext())
                 {
@@ -1379,9 +1417,10 @@ namespace System.Diagnostics
                 }
             }
 
+            // Note: Some customers use this GetEnumerator dynamically to avoid allocations.
             public Enumerator<KeyValuePair<string, object?>> GetEnumerator() => new Enumerator<KeyValuePair<string, object?>>(_first);
-            IEnumerator<KeyValuePair<string, object?>> IEnumerable<KeyValuePair<string, object?>>.GetEnumerator() => new Enumerator<KeyValuePair<string, object?>>(_first);
-            IEnumerator IEnumerable.GetEnumerator() => new Enumerator<KeyValuePair<string, object?>>(_first);
+            IEnumerator<KeyValuePair<string, object?>> IEnumerable<KeyValuePair<string, object?>>.GetEnumerator() => GetEnumerator();
+            IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
             public IEnumerable<KeyValuePair<string, string?>> EnumerateStringValues()
             {
@@ -1399,15 +1438,15 @@ namespace System.Diagnostics
             }
         }
 
+        // Note: Some customers use this Enumerator dynamically to avoid allocations.
         private struct Enumerator<T> : IEnumerator<T>
         {
-            private readonly LinkedListNode<T>? _head;
             private LinkedListNode<T>? _nextNode;
             [AllowNull, MaybeNull] private T _currentItem;
 
             public Enumerator(LinkedListNode<T>? head)
             {
-                _nextNode = _head = head;
+                _nextNode = head;
                 _currentItem = default;
             }
 
@@ -1428,7 +1467,7 @@ namespace System.Diagnostics
                 return true;
             }
 
-            public void Reset() => _nextNode = _head;
+            public void Reset() => throw new NotSupportedException();
 
             public void Dispose()
             {

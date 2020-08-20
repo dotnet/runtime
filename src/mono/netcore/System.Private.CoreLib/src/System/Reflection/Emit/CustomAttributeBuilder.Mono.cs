@@ -320,7 +320,7 @@ namespace System.Reflection.Emit
             return decode_string(data, pos, out pos);
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2006:UnrecognizedReflectionPattern",
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2057:UnrecognizedReflectionPattern",
             Justification = "Types referenced from custom attributes are preserved")]
         internal static UnmanagedMarshal get_umarshal(CustomAttributeBuilder customBuilder, bool is_field)
         {
@@ -498,7 +498,9 @@ namespace System.Reflection.Emit
             public object?[] namedParamValues;
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2006:UnrecognizedReflectionPattern",
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2057:UnrecognizedReflectionPattern",
+            Justification = "Types referenced from custom attributes are preserved")]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:UnrecognizedReflectionPattern",
             Justification = "Types referenced from custom attributes are preserved")]
         internal static CustomAttributeInfo decode_cattr(CustomAttributeBuilder customBuilder)
         {

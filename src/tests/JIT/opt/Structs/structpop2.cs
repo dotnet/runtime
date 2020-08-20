@@ -4,7 +4,7 @@
 // Optimization of pop with struct types
 // Codegen for TestByPtr should be minimal
 //
-// See https://github.com/dotnet/coreclr/issues/18710
+// See https://github.com/dotnet/runtime/issues/10607
 
 using System;
 using System.Runtime.CompilerServices;

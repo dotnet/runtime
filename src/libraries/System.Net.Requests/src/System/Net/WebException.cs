@@ -96,18 +96,17 @@ namespace System.Net
 
         private static WebExceptionStatus GetStatusFromExceptionHelper(HttpRequestException ex)
         {
-            SocketException? socketEx = ex.InnerException as SocketException;
+            NetworkException? networkException = ex.InnerException as NetworkException;
 
-            if (socketEx is null)
+            if (networkException is null)
             {
                 return WebExceptionStatus.UnknownError;
             }
 
             WebExceptionStatus status;
-            switch (socketEx.SocketErrorCode)
+            switch (networkException.NetworkError)
             {
-                case SocketError.NoData:
-                case SocketError.HostNotFound:
+                case NetworkError.HostNotFound:
                     status = WebExceptionStatus.NameResolutionFailure;
                     break;
                 default:

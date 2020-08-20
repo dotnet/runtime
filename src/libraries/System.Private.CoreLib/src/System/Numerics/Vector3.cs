@@ -58,7 +58,7 @@ namespace System.Numerics
         /// <returns>The hash code.</returns>
         public override readonly int GetHashCode()
         {
-            return HashCode.Combine(this.X.GetHashCode(), this.Y.GetHashCode(), this.Z.GetHashCode());
+            return HashCode.Combine(this.X, this.Y, this.Z);
         }
 
         /// <summary>

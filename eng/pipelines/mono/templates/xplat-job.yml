@@ -79,12 +79,6 @@ jobs:
     - name: osSubgroup
       value: ${{ parameters.osSubgroup }}
 
-    - name: coreClrRepoRoot
-      value: '$(Build.SourcesDirectory)/src/coreclr'
-
-    - name: coreClrRepoRootDir
-      value: '$(coreClrRepoRoot)$(dir)'
-
     - ${{ if and(eq(variables['System.TeamProject'], 'internal'), ne(variables['Build.Reason'], 'PullRequest')) }}:
       - name: _HelixSource
         value: official/dotnet/runtime/$(Build.SourceBranch)

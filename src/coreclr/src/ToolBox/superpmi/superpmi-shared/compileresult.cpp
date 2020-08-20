@@ -796,6 +796,16 @@ void CompileResult::applyRelocs(unsigned char* block1, ULONG blocksize1, void* o
                 size_t address = section_begin + (size_t)fixupLocation - (size_t)originalAddr;
                 if ((section_begin <= address) && (address < section_end)) // A reloc for our section?
                 {
+#if defined(TARGET_AMD64)
+                    // During an actual compile, recordRelocation() will be called before the compile
+                    // is actually finished, and it will write the relative offset into the fixupLocation.
+                    // Then, emitEndCodeGen() will patch forward jumps by subtracting any adjustment due
+                    // to overestimation of instruction sizes. Because we're applying the relocs after the
+                    // compile has finished, we need to reverse that: i.e. add in the (negative) adjustment
+                    // that's now in the fixupLocation.
+                    INT32 adjustment = *(INT32*)address;
+                    delta += adjustment;
+#endif
                     LogDebug("  fixupLoc-%016llX (@%p) : %08X => %08X", fixupLocation, address, *(DWORD*)address,
                              delta);
                     *(DWORD*)address = (DWORD)delta;

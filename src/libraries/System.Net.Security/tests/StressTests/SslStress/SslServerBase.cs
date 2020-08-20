@@ -8,11 +8,11 @@ using System.Net.Sockets;
 using System.Net.Security;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using System.Threading;
 using System.Security.Cryptography.X509Certificates;
 using System.Security.Cryptography;
-using System.Runtime.InteropServices;
 
 namespace SslStress
 {

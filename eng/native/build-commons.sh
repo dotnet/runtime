@@ -158,6 +158,17 @@ EOF
         return
     fi
 
+    SAVED_CFLAGS="${CFLAGS}"
+    SAVED_CXXFLAGS="${CXXFLAGS}"
+    SAVED_LDFLAGS="${LDFLAGS}"
+
+    # Let users provide additional compiler/linker flags via EXTRA_CFLAGS/EXTRA_CXXFLAGS/EXTRA_LDFLAGS.
+    # If users directly override CFLAG/CXXFLAGS/LDFLAGS, that may lead to some configure tests working incorrectly.
+    # See https://github.com/dotnet/runtime/issues/35727 for more information.
+    export CFLAGS="${CFLAGS} ${EXTRA_CFLAGS}"
+    export CXXFLAGS="${CXXFLAGS} ${EXTRA_CXXFLAGS}"
+    export LDFLAGS="${LDFLAGS} ${EXTRA_LDFLAGS}"
+
     if [[ "$__StaticAnalyzer" == 1 ]]; then
         pushd "$intermediatesDir"
 
@@ -175,6 +186,10 @@ EOF
         echo "Executing $cmake_command --build \"$intermediatesDir\" --target install -- -j $__NumProc"
         $cmake_command --build "$intermediatesDir" --target install -- -j "$__NumProc"
     fi
+
+    CFLAGS="${SAVED_CFLAGS}"
+    CXXFLAGS="${SAVED_CXXFLAGS}"
+    LDFLAGS="${SAVED_LDFLAGS}"
 
     local exit_code="$?"
     if [[ "$exit_code" != 0 ]]; then
@@ -228,6 +243,20 @@ __HostOS=$os
 __BuildOS=$os
 
 __msbuildonunsupportedplatform=0
+
+# Get the number of processors available to the scheduler
+# Other techniques such as `nproc` only get the number of
+# processors available to a single process.
+platform="$(uname)"
+if [[ "$platform" == "FreeBSD" ]]; then
+  __NumProc=$(sysctl hw.ncpu | awk '{ print $2+1 }')
+elif [[ "$platform" == "NetBSD" || "$platform" == "SunOS" ]]; then
+  __NumProc=$(($(getconf NPROCESSORS_ONLN)+1))
+elif [[ "$platform" == "Darwin" ]]; then
+  __NumProc=$(($(getconf _NPROCESSORS_ONLN)+1))
+else
+  __NumProc=$(nproc --all)
+fi
 
 while :; do
     if [[ "$#" -le 0 ]]; then
@@ -394,20 +423,6 @@ while :; do
 
     shift
 done
-
-# Get the number of processors available to the scheduler
-# Other techniques such as `nproc` only get the number of
-# processors available to a single process.
-platform="$(uname)"
-if [[ "$platform" == "FreeBSD" ]]; then
-  __NumProc=$(sysctl hw.ncpu | awk '{ print $2+1 }')
-elif [[ "$platform" == "NetBSD" || "$platform" == "SunOS" ]]; then
-  __NumProc=$(($(getconf NPROCESSORS_ONLN)+1))
-elif [[ "$platform" == "Darwin" ]]; then
-  __NumProc=$(($(getconf _NPROCESSORS_ONLN)+1))
-else
-  __NumProc=$(nproc --all)
-fi
 
 __CommonMSBuildArgs="/p:TargetArchitecture=$__BuildArch /p:Configuration=$__BuildType /p:TargetOS=$__TargetOS /nodeReuse:false $__OfficialBuildIdArg $__SignTypeArg $__SkipRestoreArg"
 

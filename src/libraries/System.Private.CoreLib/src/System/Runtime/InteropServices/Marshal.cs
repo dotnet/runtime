@@ -508,7 +508,7 @@ namespace System.Runtime.InteropServices
             PrelinkCore(m);
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2006:UnrecognizedReflectionPattern",
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
             Justification = "This only needs to prelink methods that are actually used")]
         public static void PrelinkAll(Type c)
         {
@@ -572,8 +572,7 @@ namespace System.Runtime.InteropServices
             PtrToStructure(ptr, (object)structure!);
         }
 
-        [return: MaybeNull]
-        public static T PtrToStructure<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]T>(IntPtr ptr) => (T)PtrToStructure(ptr, typeof(T))!;
+        public static T? PtrToStructure<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]T>(IntPtr ptr) => (T)PtrToStructure(ptr, typeof(T))!;
 
         public static void DestroyStructure<T>(IntPtr ptr) => DestroyStructure(ptr, typeof(T));
 

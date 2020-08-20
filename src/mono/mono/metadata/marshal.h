@@ -605,6 +605,10 @@ mono_marshal_need_free (MonoType *t, MonoMethodPInvoke *piinfo, MonoMarshalSpec 
 ICALL_EXTERN_C
 MonoObject* mono_marshal_get_type_object (MonoClass *klass);
 
+ICALL_EXTERN_C
+gpointer
+mono_marshal_lookup_pinvoke (MonoMethod *method);
+
 ICALL_EXPORT
 guint32 
 ves_icall_System_Runtime_InteropServices_Marshal_GetLastWin32Error (void);

@@ -6,6 +6,8 @@
     tell Microsoft.Common.targets not to import Directory.Build.targets again
     -->
     <ImportDirectoryBuildTargets>false</ImportDirectoryBuildTargets>
+
+    <EnableNETAnalyzers Condition="'$(EnableAnalyzers)' != 'true'">false</EnableNETAnalyzers>
   </PropertyGroup>
 
   <Import Project="$(RepositoryEngineeringDir)liveBuilds.targets" />

@@ -318,7 +318,7 @@ namespace System.Threading.Tasks
                     }
 
                     // If we have encountered any exceptions, then throw.
-                    if ((exceptionQ != null) && (exceptionQ.Count > 0))
+                    if ((exceptionQ != null) && (!exceptionQ.IsEmpty))
                     {
                         ThrowSingleCancellationExceptionOrOtherException(exceptionQ, parallelOptions.CancellationToken,
                                                                          new AggregateException(exceptionQ));

@@ -634,10 +634,10 @@ namespace System.Xml
 
         internal override string XPLocalName { get { return LocalName; } }
 
-        internal override string? GetXPAttribute(string localName, string ns)
+        internal override string GetXPAttribute(string localName, string ns)
         {
             if (ns == OwnerDocument.strReservedXmlns)
-                return null;
+                return string.Empty;
 
             XmlAttribute? attr = GetAttributeNode(localName, ns);
             if (attr != null)

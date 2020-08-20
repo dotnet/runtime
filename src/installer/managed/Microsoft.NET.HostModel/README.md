@@ -11,9 +11,9 @@ HostModel is a library used by the [SDK](https://github.com/dotnet/sdk) to perfo
 The HostModel library is in the Runtime repo because:
 
 * The implementations of the host and HostModel are closely related, which facilitates easy development, update, and testing.
-* Separating the HostModel implementation from SDK repo repo aligns with code ownership, and facilitates maintenance. 
+* Separating the HostModel implementation from SDK repo repo aligns with code ownership, and facilitates maintenance.
 
 The build targets/tasks that use the HostModel library are in the SDK repo because:
 
-* This facilitates the MSBuild tasks to be multi-targeted. 
-* It helps generate localized error messages, since SDK repo has the localization infrastructure. 
+* This facilitates the MSBuild tasks to be multi-targeted.
+* It helps generate localized error messages, since SDK repo has the localization infrastructure.

@@ -39,7 +39,7 @@ PEImageLayout* PEImageLayout::LoadFromFlat(PEImageLayout* pflatimage)
     return new ConvertedImageLayout(pflatimage);
 }
 
-PEImageLayout* PEImageLayout::LoadConverted(PEImage* pOwner)
+PEImageLayout* PEImageLayout::LoadConverted(PEImage* pOwner, BOOL isInBundle)
 {
     STANDARD_VM_CONTRACT;
 
@@ -47,7 +47,7 @@ PEImageLayout* PEImageLayout::LoadConverted(PEImage* pOwner)
     if (!pFlat->CheckFormat())
         ThrowHR(COR_E_BADIMAGEFORMAT);
 
-    return new ConvertedImageLayout(pFlat);
+    return new ConvertedImageLayout(pFlat, isInBundle);
 }
 
 PEImageLayout* PEImageLayout::Load(PEImage* pOwner, BOOL bNTSafeLoad, BOOL bThrowOnError)
@@ -59,7 +59,7 @@ PEImageLayout* PEImageLayout::Load(PEImage* pOwner, BOOL bNTSafeLoad, BOOL bThro
 #else
     if (pOwner->IsInBundle())
     {
-        return PEImageLayout::LoadConverted(pOwner);
+        return PEImageLayout::LoadConverted(pOwner, true);
     }
 
     PEImageLayoutHolder pAlloc(new LoadedImageLayout(pOwner,bNTSafeLoad,bThrowOnError));
@@ -386,7 +386,7 @@ RawImageLayout::RawImageLayout(const void *mapped, PEImage* pOwner, BOOL bTakeOw
     IfFailThrow(Init((void*)mapped,(bool)(bFixedUp!=FALSE)));
 }
 
-ConvertedImageLayout::ConvertedImageLayout(PEImageLayout* source)
+ConvertedImageLayout::ConvertedImageLayout(PEImageLayout* source, BOOL isInBundle)
 {
     CONTRACTL
     {
@@ -397,23 +397,37 @@ ConvertedImageLayout::ConvertedImageLayout(PEImageLayout* source)
     m_Layout=LAYOUT_LOADED;
     m_pOwner=source->m_pOwner;
     _ASSERTE(!source->IsMapped());
+    m_isInBundle = isInBundle;
+
+    m_pExceptionDir = NULL;
 
     if (!source->HasNTHeaders())
         EEFileLoadException::Throw(GetPath(), COR_E_BADIMAGEFORMAT);
     LOG((LF_LOADER, LL_INFO100, "PEImage: Opening manually mapped stream\n"));
 
-
+#if !defined(CROSSGEN_COMPILE) && !defined(TARGET_UNIX)
+    // on Windows we may want to enable execution if the image contains R2R sections
+    // so must ensure the mapping is compatible with that
     m_FileMap.Assign(WszCreateFileMapping(INVALID_HANDLE_VALUE, NULL,
-                                          PAGE_READWRITE, 0,
-                                          source->GetVirtualSize(), NULL));
+        PAGE_EXECUTE_READWRITE, 0,
+        source->GetVirtualSize(), NULL));
+
+    DWORD allAccess = FILE_MAP_EXECUTE | FILE_MAP_WRITE;
+#else
+    m_FileMap.Assign(WszCreateFileMapping(INVALID_HANDLE_VALUE, NULL,
+        PAGE_READWRITE, 0,
+        source->GetVirtualSize(), NULL));
+
+    DWORD allAccess = FILE_MAP_ALL_ACCESS;
+#endif
+
     if (m_FileMap == NULL)
         ThrowLastError();
 
-
-    m_FileView.Assign(CLRMapViewOfFile(m_FileMap, FILE_MAP_ALL_ACCESS, 0, 0, 0,
+    m_FileView.Assign(CLRMapViewOfFile(m_FileMap, allAccess, 0, 0, 0,
                                 (void *) source->GetPreferredBase()));
     if (m_FileView == NULL)
-        m_FileView.Assign(CLRMapViewOfFile(m_FileMap, FILE_MAP_ALL_ACCESS, 0, 0, 0));
+        m_FileView.Assign(CLRMapViewOfFile(m_FileMap, allAccess, 0, 0, 0));
 
     if (m_FileView == NULL)
         ThrowLastError();
@@ -421,9 +435,57 @@ ConvertedImageLayout::ConvertedImageLayout(PEImageLayout* source)
     source->LayoutILOnly(m_FileView, TRUE); //@TODO should be false for streams
     IfFailThrow(Init(m_FileView));
 
-#ifdef CROSSGEN_COMPILE
+#if defined(CROSSGEN_COMPILE)
     if (HasNativeHeader())
+    {
         ApplyBaseRelocations();
+    }
+#elif !defined(TARGET_UNIX)
+    if (m_isInBundle &&
+        HasCorHeader() &&
+        (HasNativeHeader() || HasReadyToRunHeader()) &&
+        g_fAllowNativeImages)
+    {
+        if (!IsNativeMachineFormat())
+            ThrowHR(COR_E_BADIMAGEFORMAT);
+
+        // Do base relocation for PE, if necessary.
+        // otherwise R2R will be disabled for this image.
+        ApplyBaseRelocations();
+
+        // Check if there is a static function table and install it. (except x86)
+#if !defined(TARGET_X86)
+        COUNT_T cbSize = 0;
+        PT_RUNTIME_FUNCTION   pExceptionDir = (PT_RUNTIME_FUNCTION)GetDirectoryEntryData(IMAGE_DIRECTORY_ENTRY_EXCEPTION, &cbSize);
+        DWORD tableSize = cbSize / sizeof(T_RUNTIME_FUNCTION);
+
+        if (pExceptionDir != NULL)
+        {
+            if (!RtlAddFunctionTable(pExceptionDir, tableSize, (DWORD64)this->GetBase()))
+                ThrowLastError();
+
+            m_pExceptionDir = pExceptionDir;
+        }
+#endif //TARGET_X86
+    }
+#endif
+}
+
+ConvertedImageLayout::~ConvertedImageLayout()
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_TRIGGERS;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
+#if !defined(CROSSGEN_COMPILE) && !defined(TARGET_UNIX) && !defined(TARGET_X86)
+    if (m_pExceptionDir)
+    {
+        RtlDeleteFunctionTable(m_pExceptionDir);
+    }
 #endif
 }
 

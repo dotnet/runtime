@@ -1,7 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.Threading.Tasks;
+using System.IO;
 using Xunit;
 
 namespace System
@@ -23,6 +25,26 @@ namespace System
         }
 
         [ConditionalFact(nameof(ManualTestsEnabled))]
+        public static void ReadLineFromOpenStandardInput()
+        {
+            string expectedLine = "aab";
+
+            // Use Console.ReadLine
+            Console.WriteLine($"Please type 'a' 3 times, press 'Backspace' to erase 1, then type a single 'b' and press 'Enter'.");
+            string result = Console.ReadLine();
+            Assert.Equal(expectedLine, result);
+            AssertUserExpectedResults("the characters you typed properly echoed as you typed");
+
+            // ReadLine from Console.OpenStandardInput
+            Console.WriteLine($"Please type 'a' 3 times, press 'Backspace' to erase 1, then type a single 'b' and press 'Enter'.");
+            using Stream inputStream = Console.OpenStandardInput();
+            using StreamReader reader = new StreamReader(inputStream);
+            result = reader.ReadLine();
+            Assert.Equal(expectedLine, result);
+            AssertUserExpectedResults("the characters you typed properly echoed as you typed");
+        }
+
+        [ConditionalFact(nameof(ManualTestsEnabled))]
         public static void ReadLine_BackSpaceCanMoveAccrossWrappedLines()
         {
             Console.WriteLine("Please press 'a' until it wraps to the next terminal line, then press 'Backspace' until the input is erased, and then type a single 'a' and press 'Enter'.");
@@ -35,6 +57,7 @@ namespace System
         }
 
         [ConditionalFact(nameof(ManualTestsEnabled))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/40735", TestPlatforms.Windows)]
         public static void InPeek()
         {
             Console.WriteLine("Please type \"peek\" (without the quotes). You should see it as you type:");
@@ -67,17 +90,9 @@ namespace System
         }
 
         [ConditionalTheory(nameof(ManualTestsEnabled))]
-        [InlineData('\x01', ConsoleKey.A, ConsoleModifiers.Control)]
-        [InlineData('\x01', ConsoleKey.A, ConsoleModifiers.Control | ConsoleModifiers.Alt)]
-        [InlineData('\r', ConsoleKey.Enter, (ConsoleModifiers)0)]
-        [InlineData('\n', ConsoleKey.Enter, ConsoleModifiers.Control)]
-        public static void ReadKey_KeyChords(char keyChar, ConsoleKey key, ConsoleModifiers modifiers)
+        [MemberData(nameof(GetKeyChords))]
+        public static void ReadKey_KeyChords(ConsoleKeyInfo expected)
         {
-            var expected = new ConsoleKeyInfo(keyChar, key, 
-                control: modifiers.HasFlag(ConsoleModifiers.Control),
-                alt: modifiers.HasFlag(ConsoleModifiers.Alt),
-                shift: modifiers.HasFlag(ConsoleModifiers.Shift));
-
             Console.Write($"Please type key chord {RenderKeyChord(expected)}: ");
             var actual = Console.ReadKey(intercept: true);
             Console.WriteLine();
@@ -96,16 +111,24 @@ namespace System
             }
         }
 
-        [ConditionalFact(nameof(ManualTestsEnabled))]
-        public static void OpenStandardInput()
+        public static IEnumerable<object[]> GetKeyChords()
         {
-            Console.WriteLine("Please type \"console\" (without the quotes). You shouldn't see it as you type:");
-            var stream = Console.OpenStandardInput();
-            var textReader = new System.IO.StreamReader(stream);
-            var result = textReader.ReadLine();
+            yield return MkConsoleKeyInfo('\x02', ConsoleKey.B, ConsoleModifiers.Control);
+            yield return MkConsoleKeyInfo(OperatingSystem.IsWindows() ? '\x00' : '\x02', ConsoleKey.B, ConsoleModifiers.Control | ConsoleModifiers.Alt);
+            yield return MkConsoleKeyInfo('\r', ConsoleKey.Enter, (ConsoleModifiers)0);
+            // windows will report '\n' as 'Ctrl+Enter', which is typically not picked up by Unix terminals
+            yield return MkConsoleKeyInfo('\n', OperatingSystem.IsWindows() ? ConsoleKey.Enter : ConsoleKey.J, ConsoleModifiers.Control);
 
-            Assert.Equal("console", result);
-            AssertUserExpectedResults("\"console\" correctly not echoed as you typed it");
+            static object[] MkConsoleKeyInfo (char keyChar, ConsoleKey consoleKey, ConsoleModifiers modifiers)
+            {
+                return new object[]
+                {
+                    new ConsoleKeyInfo(keyChar, consoleKey, 
+                        control: modifiers.HasFlag(ConsoleModifiers.Control),
+                        alt: modifiers.HasFlag(ConsoleModifiers.Alt),
+                        shift: modifiers.HasFlag(ConsoleModifiers.Shift))
+                };
+            }
         }
 
         [ConditionalFact(nameof(ManualTestsEnabled))]
@@ -195,7 +218,7 @@ namespace System
                 }
             }
 
-            AssertUserExpectedResults("the arrow keys move around the screen as expected with no other bad artificts");
+            AssertUserExpectedResults("the arrow keys move around the screen as expected with no other bad artifacts");
         }
 
         [ConditionalFact(nameof(ManualTestsEnabled))]
