@@ -74,6 +74,9 @@
 
     <!-- Surround _subset in dashes to simplify checks below -->
     <_subset>+$(_subset.Trim('+'))+</_subset>
+
+    <ClrRuntimeBuildSubsets></ClrRuntimeBuildSubsets>
+    <ClrDefaltRuntimeBuildSubsets>ClrRuntimeSubset=true;ClrJitSubset=true</ClrDefaltRuntimeBuildSubsets>
   </PropertyGroup>
 
   <ItemGroup>
@@ -134,24 +137,28 @@
     <ProjectToBuild Include="$(CoreClrProjectRoot)src\System.Private.CoreLib\System.Private.CoreLib.csproj" Category="clr" />
   </ItemGroup>
 
-  <ItemGroup Condition="$(_subset.Contains('+clr.runtime+'))">
-    <ProjectToBuild Include="$(CoreClrProjectRoot)runtime.proj" AdditionalProperties="%(AdditionalProperties);ClrRuntimeSubset=true;ClrJitSubset=true" Category="clr" />
-  </ItemGroup>
+  <PropertyGroup Condition="$(_subset.Contains('+clr.runtime+'))">
+    <ClrRuntimeBuildSubsets>$(ClrRuntimeBuildSubsets);ClrRuntimeSubset=true;ClrJitSubset=true</ClrRuntimeBuildSubsets>
+  </PropertyGroup>
 
-  <ItemGroup Condition="$(_subset.Contains('+clr.jit+'))">
-    <ProjectToBuild Include="$(CoreClrProjectRoot)runtime.proj" AdditionalProperties="%(AdditionalProperties);ClrJitSubset=true" Category="clr" />
-  </ItemGroup>
+  <PropertyGroup Condition="$(_subset.Contains('+clr.jit+'))">
+    <ClrRuntimeBuildSubsets>$(ClrRuntimeBuildSubsets);ClrJitSubset=true</ClrRuntimeBuildSubsets>
+  </PropertyGroup>
 
-  <ItemGroup Condition="$(_subset.Contains('+clr.alljits+'))">
-    <ProjectToBuild Include="$(CoreClrProjectRoot)runtime.proj" AdditionalProperties="%(AdditionalProperties);ClrAllJitsSubset=true;ClrJitSubset=true" Category="clr" />
+  <PropertyGroup Condition="$(_subset.Contains('+clr.alljits+'))">
+    <ClrRuntimeBuildSubsets>$(ClrRuntimeBuildSubsets);ClrAllJitsSubset=true;ClrJitSubset=true</ClrRuntimeBuildSubsets>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(ClrRuntimeBuildSubsets)' != ''">
+    <ProjectToBuild Include="$(CoreClrProjectRoot)runtime.proj" AdditionalProperties="%(AdditionalProperties);$(ClrRuntimeBuildSubsets)" Category="clr" />
   </ItemGroup>
 
   <ItemGroup Condition="$(_subset.Contains('+linuxdac+')) and $([MSBuild]::IsOsPlatform(Windows)) and '$(TargetArchitecture)' != 'x86'">
-    <ProjectToBuild Include="$(CoreClrProjectRoot)runtime.proj" AdditionalProperties="%(AdditionalProperties);CrossDac=linux" Category="clr" />
+    <ProjectToBuild Include="$(CoreClrProjectRoot)runtime.proj" AdditionalProperties="%(AdditionalProperties);$(ClrDefaltRuntimeBuildSubsets);CrossDac=linux" Category="clr" />
   </ItemGroup>
 
   <ItemGroup Condition="$(_subset.Contains('+alpinedac+')) and $([MSBuild]::IsOsPlatform(Windows)) and '$(TargetArchitecture)' != 'x86' and '$(TargetArchitecture)' != 'arm'">
-    <ProjectToBuild Include="$(CoreClrProjectRoot)runtime.proj" AdditionalProperties="%(AdditionalProperties);CrossDac=alpine" Category="clr" />
+    <ProjectToBuild Include="$(CoreClrProjectRoot)runtime.proj" AdditionalProperties="%(AdditionalProperties);$(ClrDefaltRuntimeBuildSubsets);CrossDac=alpine" Category="clr" />
   </ItemGroup>
 
   <ItemGroup Condition="$(_subset.Contains('+crossdacpack+'))">
