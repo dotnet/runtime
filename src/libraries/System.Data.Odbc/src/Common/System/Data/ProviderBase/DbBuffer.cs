@@ -25,7 +25,7 @@ namespace System.Data.ProviderBase
                 {
                     base.handle = SafeNativeMethods.LocalAlloc((IntPtr)initialSize);
                 }
-                if (IntPtr.Zero == base.handle)
+                if (base.handle == IntPtr.Zero)
                 {
                     throw new OutOfMemoryException();
                 }
@@ -42,7 +42,7 @@ namespace System.Data.ProviderBase
         {
             get
             {
-                return (IntPtr.Zero == base.handle);
+                return (base.handle == IntPtr.Zero);
             }
         }
 
@@ -373,7 +373,7 @@ namespace System.Data.ProviderBase
             // NOTE: The SafeHandle class guarantees this will be called exactly once.
             IntPtr ptr = base.handle;
             base.handle = IntPtr.Zero;
-            if (IntPtr.Zero != ptr)
+            if (ptr != IntPtr.Zero)
             {
                 SafeNativeMethods.LocalFree(ptr);
             }

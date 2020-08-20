@@ -726,7 +726,7 @@ namespace System.Data.Odbc
         internal static void GetDiagErrors(OdbcErrorCollection errors, string? source, OdbcHandle hrHandle, RetCode retcode)
         {
             Debug.Assert(retcode != ODBC32.RetCode.INVALID_HANDLE, "retcode must never be ODBC32.RetCode.INVALID_HANDLE");
-            if (RetCode.SUCCESS != retcode)
+            if (retcode != RetCode.SUCCESS)
             {
                 int NativeError;
                 short iRec = 0;
@@ -740,7 +740,7 @@ namespace System.Data.Odbc
                     ++iRec;
 
                     retcode = hrHandle.GetDiagnosticRecord(iRec, out sqlState, message, out NativeError, out cchActual);
-                    if ((RetCode.SUCCESS_WITH_INFO == retcode) && (message.Capacity - 1 < cchActual))
+                    if ((retcode == RetCode.SUCCESS_WITH_INFO) && (message.Capacity - 1 < cchActual))
                     {
                         message.Capacity = cchActual + 1;
                         retcode = hrHandle.GetDiagnosticRecord(iRec, out sqlState, message, out NativeError, out cchActual);

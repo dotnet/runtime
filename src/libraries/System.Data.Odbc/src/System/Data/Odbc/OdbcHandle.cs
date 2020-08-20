@@ -52,7 +52,7 @@ namespace System.Data.Odbc
                     {
                         case ODBC32.SQL_HANDLE.DBC:
                         case ODBC32.SQL_HANDLE.STMT:
-                            if (IntPtr.Zero != base.handle)
+                            if (base.handle != IntPtr.Zero)
                             {
                                 // must assign _parentHandle after a handle is actually created
                                 // since ReleaseHandle will only call DangerousRelease if a handle exists
@@ -68,7 +68,7 @@ namespace System.Data.Odbc
                 }
             }
 
-            if ((base.handle == ADP.PtrZero) || (ODBC32.RetCode.SUCCESS != retcode))
+            if ((base.handle == ADP.PtrZero) || (retcode != ODBC32.RetCode.SUCCESS))
             {
                 //
                 throw ODBC.CantAllocateEnvironmentHandle(retcode);
@@ -77,7 +77,7 @@ namespace System.Data.Odbc
 
         internal OdbcHandle(OdbcStatementHandle parentHandle, ODBC32.SQL_ATTR attribute) : base(IntPtr.Zero, true)
         {
-            Debug.Assert((ODBC32.SQL_ATTR.APP_PARAM_DESC == attribute) || (ODBC32.SQL_ATTR.APP_ROW_DESC == attribute), "invalid attribute");
+            Debug.Assert((attribute == ODBC32.SQL_ATTR.APP_PARAM_DESC) || (attribute == ODBC32.SQL_ATTR.APP_ROW_DESC), "invalid attribute");
             _handleType = ODBC32.SQL_HANDLE.DESC;
 
             int cbActual;
@@ -95,7 +95,7 @@ namespace System.Data.Odbc
             {
                 if (mustRelease)
                 {
-                    if (IntPtr.Zero != base.handle)
+                    if (base.handle != IntPtr.Zero)
                     {
                         // must call DangerousAddRef after a handle is actually created
                         // since ReleaseHandle will only call DangerousRelease if a handle exists
@@ -128,7 +128,7 @@ namespace System.Data.Odbc
             get
             {
                 // we should not have a parent if we do not have a handle
-                return (IntPtr.Zero == base.handle);
+                return (base.handle == IntPtr.Zero);
             }
         }
 
@@ -138,7 +138,7 @@ namespace System.Data.Odbc
             IntPtr handle = base.handle;
             base.handle = IntPtr.Zero;
 
-            if (IntPtr.Zero != handle)
+            if (handle != IntPtr.Zero)
             {
                 ODBC32.SQL_HANDLE handleType = HandleType;
 

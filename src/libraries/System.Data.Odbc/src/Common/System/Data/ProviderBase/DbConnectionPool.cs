@@ -849,7 +849,7 @@ namespace System.Data.ProviderBase
                     }
                     finally
                     {
-                        if (CREATION_HANDLE == waitResult)
+                        if (waitResult == CREATION_HANDLE)
                         {
                             _waitHandles.CreationSemaphore.Release(1);
                         }
@@ -980,7 +980,7 @@ namespace System.Data.ProviderBase
                             {
                                 waitResult = WaitHandle.WaitAny(_waitHandles.GetHandles(withCreate: true), CreationTimeout);
                             }
-                            if (CREATION_HANDLE == waitResult)
+                            if (waitResult == CREATION_HANDLE)
                             {
                                 DbConnectionInternal newObj;
 
@@ -1005,7 +1005,7 @@ namespace System.Data.ProviderBase
                                     }
                                 }
                             }
-                            else if (WaitHandle.WaitTimeout == waitResult)
+                            else if (waitResult == WaitHandle.WaitTimeout)
                             {
                                 // do not wait forever and potential block this worker thread
                                 // instead wait for a period of time and just requeue to try again
@@ -1014,7 +1014,7 @@ namespace System.Data.ProviderBase
                         }
                         finally
                         {
-                            if (CREATION_HANDLE == waitResult)
+                            if (waitResult == CREATION_HANDLE)
                             {
                                 // reuse waitResult and ignore its value
                                 _waitHandles.CreationSemaphore.Release(1);

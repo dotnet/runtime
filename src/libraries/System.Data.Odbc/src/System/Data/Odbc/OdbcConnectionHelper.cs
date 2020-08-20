@@ -138,7 +138,7 @@ namespace System.Data.Odbc
         internal void Abort(Exception e)
         {
             DbConnectionInternal innerConnection = _innerConnection;
-            if (ConnectionState.Open == innerConnection.State)
+            if (innerConnection.State == ConnectionState.Open)
             {
                 Interlocked.CompareExchange(ref _innerConnection, DbConnectionClosedPreviouslyOpened.SingletonInstance, innerConnection);
                 innerConnection.DoomThisConnection();
@@ -220,17 +220,17 @@ namespace System.Data.Odbc
 
             ConnectionState originalState = _innerConnection.State & ConnectionState.Open;
             ConnectionState currentState = to.State & ConnectionState.Open;
-            if ((originalState != currentState) && (ConnectionState.Closed == currentState))
+            if ((originalState != currentState) && (currentState == ConnectionState.Closed))
             {
                 unchecked { _closeCount++; }
             }
 
             _innerConnection = to;
-            if (ConnectionState.Closed == originalState && ConnectionState.Open == currentState)
+            if (originalState == ConnectionState.Closed && currentState == ConnectionState.Open)
             {
                 OnStateChange(DbConnectionInternal.StateChangeOpen);
             }
-            else if (ConnectionState.Open == originalState && ConnectionState.Closed == currentState)
+            else if (originalState == ConnectionState.Open && currentState == ConnectionState.Closed)
             {
                 OnStateChange(DbConnectionInternal.StateChangeClosed);
             }

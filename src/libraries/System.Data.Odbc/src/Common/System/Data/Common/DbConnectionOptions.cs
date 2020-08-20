@@ -168,7 +168,7 @@ namespace System.Data.Common
                     builder.Append(keyValue);
                 }
                 // string.Contains(char) is .NetCore2.1+ specific
-                else if ((-1 != keyValue.IndexOf('\"')) && (-1 == keyValue.IndexOf('\'')))
+                else if ((keyValue.IndexOf('\"') != -1) && (keyValue.IndexOf('\'') == -1))
                 {
                     // <val"ue> -> <'val"ue'>
                     builder.Append('\'');
@@ -376,7 +376,7 @@ namespace System.Data.Common
                 {
                     value = current.Value;
                 }
-                if (_useOdbcRules || (DbConnectionOptionKeywords.FileName != current.Name))
+                if (_useOdbcRules || (current.Name != DbConnectionOptionKeywords.FileName))
                 {
                     if (value != current.Value)
                     {

@@ -84,14 +84,14 @@ namespace System.Data.Odbc
             p.OdbcType = (OdbcType)valueType;
 
             object bvalue = datarow[SchemaTableColumn.NumericPrecision];
-            if (DBNull.Value != bvalue)
+            if (bvalue != DBNull.Value)
             {
                 byte bval = (byte)(short)bvalue;
                 p.PrecisionInternal = ((bval != 0xff) ? bval : (byte)0);
             }
 
             bvalue = datarow[SchemaTableColumn.NumericScale];
-            if (DBNull.Value != bvalue)
+            if (bvalue != DBNull.Value)
             {
                 byte bval = (byte)(short)bvalue;
                 p.ScaleInternal = ((bval != 0xff) ? bval : (byte)0);
@@ -187,7 +187,7 @@ namespace System.Data.Odbc
             // Note: the driver does not return an error if the given stored procedure does not exist
             // therefore we cannot handle that case and just return not parameters.
 
-            if (ODBC32.RetCode.SUCCESS != retcode)
+            if (retcode != ODBC32.RetCode.SUCCESS)
             {
                 connection.HandleError(hstmt, retcode);
             }

@@ -34,7 +34,7 @@ namespace System.Data.ProviderBase
         protected override CompareInfo GetCompareInfo()
         {
             CompareInfo? compareInfo = null;
-            if (-1 != _defaultLocaleID)
+            if (_defaultLocaleID != -1)
             {
                 compareInfo = CompareInfo.GetCompareInfo(_defaultLocaleID);
             }

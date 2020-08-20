@@ -78,11 +78,11 @@ namespace System.Data.ProviderBase
         {
             //--------------------
             // Preconditions
-            Debug.Assert(seconds >= 0 || InfiniteTimeout == seconds);  // no need to support negative seconds at present
+            Debug.Assert(seconds >= 0 || seconds == InfiniteTimeout);  // no need to support negative seconds at present
 
             //--------------------
             // Method body
-            if (InfiniteTimeout == seconds)
+            if (seconds == InfiniteTimeout)
             {
                 _isInfiniteTimeout = true;
             }

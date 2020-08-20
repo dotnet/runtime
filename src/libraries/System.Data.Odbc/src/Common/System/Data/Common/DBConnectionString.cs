@@ -208,7 +208,7 @@ namespace System.Data.Common
             { // subset of the AllowOnly array
                 behavior = KeyRestrictionBehavior.AllowOnly;
 
-                if (KeyRestrictionBehavior.AllowOnly == entry._behavior)
+                if (entry._behavior == KeyRestrictionBehavior.AllowOnly)
                 { // this PreventUsage and entry AllowOnly
                     if (!ADP.IsEmptyArray(_restrictionValues))
                     {
@@ -246,7 +246,7 @@ namespace System.Data.Common
                     //Debug.WriteLine("7/8 this AllowOnly with no restrictions and entry PreventUsage");
                 }
             }
-            else if (KeyRestrictionBehavior.PreventUsage == _behavior)
+            else if (_behavior == KeyRestrictionBehavior.PreventUsage)
             { // both PreventUsage
                 if (ADP.IsEmptyArray(_restrictionValues))
                 {

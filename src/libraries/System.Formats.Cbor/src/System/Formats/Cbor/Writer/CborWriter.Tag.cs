@@ -130,7 +130,7 @@ namespace System.Formats.Cbor
             WriteStartArray(2);
             WriteInt64(-(long)scale);
 
-            if (-1m - ulong.MinValue <= mantissa && mantissa <= ulong.MaxValue)
+            if (mantissa >= -1m - ulong.MinValue && mantissa <= ulong.MaxValue)
             {
                 if (mantissa >= 0m)
                 {

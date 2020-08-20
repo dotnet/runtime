@@ -121,7 +121,7 @@ namespace System.Data.Odbc
 
         public override bool Contains(object value)
         {
-            return (-1 != IndexOf(value));
+            return (IndexOf(value) != -1);
         }
 
         public override void CopyTo(Array array, int index)
@@ -228,7 +228,7 @@ namespace System.Data.Odbc
             OnChange();
             ValidateType(value);
             int index = IndexOf(value);
-            if (-1 != index)
+            if (index != -1)
             {
                 RemoveIndex(index);
             }
@@ -318,7 +318,7 @@ namespace System.Data.Odbc
                 {
                     name = ADP.Parameter + index.ToString(CultureInfo.CurrentCulture);
                     index++;
-                } while (-1 != IndexOf(name));
+                } while (IndexOf(name) != -1);
                 ((OdbcParameter)value).ParameterName = name;
             }
         }

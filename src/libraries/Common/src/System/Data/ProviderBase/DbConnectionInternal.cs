@@ -406,7 +406,7 @@ namespace System.Data.ProviderBase
                     throw ADP.InternalError(ADP.InternalErrorCode.PooledObjectInPoolMoreThanOnce);  // popping object off stack with multiple pooledCount
                 }
             }
-            else if (-1 != _pooledCount)
+            else if (_pooledCount != -1)
             {
                 throw ADP.InternalError(ADP.InternalErrorCode.NonPooledObjectUsedMoreThanOnce); // popping object off stack with multiple pooledCount
             }

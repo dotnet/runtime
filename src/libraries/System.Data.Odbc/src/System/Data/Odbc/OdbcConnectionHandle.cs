@@ -55,7 +55,7 @@ namespace System.Data.Odbc
         {
             ODBC32.RetCode retcode;
 
-            Debug.Assert(HandleState.Connected <= _handleState, "AutoCommitOff while in wrong state?");
+            Debug.Assert(_handleState >= HandleState.Connected, "AutoCommitOff while in wrong state?");
 
             // must call SQLSetConnectAttrW and set _handleState
             try { }
@@ -164,16 +164,16 @@ namespace System.Data.Odbc
             try { }
             finally
             {
-                if (HandleState.TransactionInProgress == _handleState)
+                if (_handleState == HandleState.TransactionInProgress)
                 {
                     retcode = Interop.Odbc.SQLEndTran(HandleType, handle, transactionOperation);
-                    if ((ODBC32.RetCode.SUCCESS == retcode) || (ODBC32.RetCode.SUCCESS_WITH_INFO == retcode))
+                    if ((retcode == ODBC32.RetCode.SUCCESS) || (retcode == ODBC32.RetCode.SUCCESS_WITH_INFO))
                     {
                         _handleState = HandleState.Transacted;
                     }
                 }
 
-                if (HandleState.Transacted == _handleState)
+                if (_handleState == HandleState.Transacted)
                 { // AutoCommitOn
                     retcode = Interop.Odbc.SQLSetConnectAttrW(handle, ODBC32.SQL_ATTR.AUTOCOMMIT, ODBC32.SQL_AUTOCOMMIT_ON, (int)ODBC32.SQL_IS.UINTEGER);
                     _handleState = HandleState.Connected;
@@ -186,7 +186,7 @@ namespace System.Data.Odbc
         }
         private ODBC32.RetCode Connect(string connectionString)
         {
-            Debug.Assert(HandleState.Allocated == _handleState, "SQLDriverConnect while in wrong state?");
+            Debug.Assert(_handleState == HandleState.Allocated, "SQLDriverConnect while in wrong state?");
 
             ODBC32.RetCode retcode;
 
@@ -215,12 +215,12 @@ namespace System.Data.Odbc
             // must call complete the transaction rollback, change handle state, and disconnect the connection
             retcode = CompleteTransaction(ODBC32.SQL_ROLLBACK, handle);
 
-            if ((HandleState.Connected == _handleState) || (HandleState.TransactionInProgress == _handleState))
+            if ((_handleState == HandleState.Connected) || (_handleState == HandleState.TransactionInProgress))
             {
                 retcode = Interop.Odbc.SQLDisconnect(handle);
                 _handleState = HandleState.Allocated;
             }
-            Debug.Assert(HandleState.Allocated == _handleState, "not expected HandleState.Allocated");
+            Debug.Assert(_handleState == HandleState.Allocated, "not expected HandleState.Allocated");
             return base.ReleaseHandle();
         }
 

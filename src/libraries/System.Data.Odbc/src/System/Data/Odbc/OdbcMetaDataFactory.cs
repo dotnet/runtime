@@ -370,7 +370,7 @@ namespace System.Data.Odbc
                     }
                 }
 
-                if (DBNull.Value != getTypeInfoValues[indexSEARCHABLE])
+                if (getTypeInfoValues[indexSEARCHABLE] != DBNull.Value)
                 {
                     //Use Convert.ToInt16 instead of direct cast to short because the value will be Int32 in some cases
                     short searchableValue = Convert.ToInt16(getTypeInfoValues[indexSEARCHABLE], null);

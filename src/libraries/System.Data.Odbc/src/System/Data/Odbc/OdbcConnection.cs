@@ -304,7 +304,7 @@ namespace System.Data.Odbc
         internal void CheckState(string method)
         {
             ConnectionState state = InternalState;
-            if (ConnectionState.Open != state)
+            if (state != ConnectionState.Open)
             {
                 throw ADP.OpenConnectionRequired(method, state); // MDAC 68323
             }
@@ -323,7 +323,7 @@ namespace System.Data.Odbc
                 if (!ProviderInfo.NoConnectionDead)
                 {
                     int isDead = GetConnectAttr(ODBC32.SQL_ATTR.CONNECTION_DEAD, ODBC32.HANDLER.IGNORE);
-                    if (ODBC32.SQL_CD_TRUE == isDead)
+                    if (isDead == ODBC32.SQL_CD_TRUE)
                     {
                         Close();
                         throw ADP.ConnectionIsDisabled(innerException);
@@ -418,7 +418,7 @@ namespace System.Data.Odbc
             {
                 ODBC32.RetCode retcode = connectionHandle.GetConnectionAttribute(attribute, buffer, out cbActual);
 
-                if ((ODBC32.RetCode.SUCCESS == retcode) || (ODBC32.RetCode.SUCCESS_WITH_INFO == retcode))
+                if ((retcode == ODBC32.RetCode.SUCCESS) || (retcode == ODBC32.RetCode.SUCCESS_WITH_INFO))
                 {
                     retval = BitConverter.ToInt32(buffer, 0);
                 }
@@ -633,12 +633,12 @@ namespace System.Data.Odbc
                 transaction = null; // MDAC 69264
             }
             ConnectionState state = InternalState;
-            if (ConnectionState.Open != state)
+            if (state != ConnectionState.Open)
             {
                 NotifyWeakReference(OdbcReferenceCollection.Recover); // recover for a potentially finalized reader
 
                 state = InternalState;
-                if (ConnectionState.Open != state)
+                if (state != ConnectionState.Open)
                 {
                     if ((ConnectionState.Fetching & state) != 0)
                     {

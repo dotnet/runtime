@@ -829,7 +829,7 @@ namespace System.Data.Odbc
             }
             finally
             {
-                if (ConnectionState.Fetching != _cmdState)
+                if (_cmdState != ConnectionState.Fetching)
                 {
                     if (localReader != null)
                     {
@@ -840,7 +840,7 @@ namespace System.Data.Odbc
                         }
                         ((IDisposable)localReader).Dispose();
                     }
-                    if (ConnectionState.Closed != _cmdState)
+                    if (_cmdState != ConnectionState.Closed)
                     {
                         _cmdState = ConnectionState.Closed;
                     }

@@ -47,7 +47,7 @@ namespace System.Data.Odbc
                 //We need to query for the case where the user didn't set the isolevel
                 //BeginTransaction(), but we should also query to see if the driver
                 //"rolled" the level to a higher supported one...
-                if (IsolationLevel.Unspecified == _isolevel)
+                if (_isolevel == IsolationLevel.Unspecified)
                 {
                     //Get the isolation level
                     int sql_iso = connection.GetConnectAttr(ODBC32.SQL_ATTR.TXN_ISOLATION, ODBC32.HANDLER.THROW);

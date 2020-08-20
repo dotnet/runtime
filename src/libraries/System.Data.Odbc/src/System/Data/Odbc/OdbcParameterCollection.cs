@@ -137,12 +137,12 @@ namespace System.Data.Odbc
 
         public override bool Contains(string value)
         { // WebData 97349
-            return (-1 != IndexOf(value));
+            return (IndexOf(value) != -1);
         }
 
         public bool Contains(OdbcParameter value)
         {
-            return (-1 != IndexOf(value));
+            return (IndexOf(value) != -1);
         }
 
         public void CopyTo(OdbcParameter[] array, int index)
