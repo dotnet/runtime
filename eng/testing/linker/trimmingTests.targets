@@ -96,7 +96,7 @@
       <TestPublishTrimmedCommand>$(TestPublishTrimmedCommand) build /t:PublishTrimmed</TestPublishTrimmedCommand>
       <TestPublishTrimmedCommand>$(TestPublishTrimmedCommand) /nr:false</TestPublishTrimmedCommand>
       <TestPublishTrimmedCommand>$(TestPublishTrimmedCommand) /warnaserror</TestPublishTrimmedCommand>
-      <TestPublishTrimmedCommand>$(TestPublishTrimmedCommand) /bl:$([MSBuild]::NormalizePath('$(ArtifactsDir)', 'log/$(Configuration)/TrimmingTestsSubTask.binlog'))</TestPublishTrimmedCommand>
+      <TestPublishTrimmedCommand>$(TestPublishTrimmedCommand) /bl:$([MSBuild]::NormalizePath('$(ArtifactsDir)', 'log\$(Configuration)\TrimmingTestsSubTask.binlog'))</TestPublishTrimmedCommand>
       <TestPublishTrimmedCommand>$(TestPublishTrimmedCommand) -p:configuration=$(Configuration)</TestPublishTrimmedCommand>
     </PropertyGroup>
 
