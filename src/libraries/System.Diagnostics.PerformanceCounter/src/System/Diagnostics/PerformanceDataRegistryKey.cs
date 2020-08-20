@@ -61,7 +61,7 @@ namespace System.Diagnostics
             int ret;
             int type = 0;
             byte[] data = CreateBlob(size, usePool);
-            while (Interop.Errors.ERROR_MORE_DATA == (ret = Interop.Advapi32.RegQueryValueEx(_hkey, name, lpReserved: null, ref type, data, ref sizeInput)))
+            while ((ret = Interop.Advapi32.RegQueryValueEx(_hkey, name, lpReserved: null, ref type, data, ref sizeInput)) == Interop.Errors.ERROR_MORE_DATA)
             {
                 if (size == int.MaxValue)
                 {

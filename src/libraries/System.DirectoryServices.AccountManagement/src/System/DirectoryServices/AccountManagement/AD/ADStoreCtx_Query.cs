@@ -619,7 +619,7 @@ namespace System.DirectoryServices.AccountManagement
             }
             finally
             {
-                if (IntPtr.Zero != pBytePtr)
+                if (pBytePtr != IntPtr.Zero)
                     UnsafeNativeMethods.LocalFree(pBytePtr);
             }
 

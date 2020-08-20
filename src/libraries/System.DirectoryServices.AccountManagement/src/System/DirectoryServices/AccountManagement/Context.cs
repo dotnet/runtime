@@ -1133,11 +1133,11 @@ namespace System.DirectoryServices.AccountManagement
 
                 foreach (string capability in properties.SupportCapabilities)
                 {
-                    if (CapabilityMap.LDAP_CAP_ACTIVE_DIRECTORY_ADAM_OID == capability)
+                    if (capability == CapabilityMap.LDAP_CAP_ACTIVE_DIRECTORY_ADAM_OID)
                     {
                         properties.contextType = ContextType.ApplicationDirectory;
                     }
-                    else if (CapabilityMap.LDAP_CAP_ACTIVE_DIRECTORY_OID == capability)
+                    else if (capability == CapabilityMap.LDAP_CAP_ACTIVE_DIRECTORY_OID)
                     {
                         properties.contextType = ContextType.Domain;
                     }
