@@ -332,5 +332,27 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         {
             _minValue = (int)_mathMinFunction.Apply(null, new object[] { 5, 6, 2, 3, 7 });
         }
+
+        internal static EnumMarshalTests.RequestCache[] requestEnums;
+        public static void SetRequestEnums(EnumMarshalTests.RequestCache dflt, EnumMarshalTests.RequestCache nostore, EnumMarshalTests.RequestCache reload, EnumMarshalTests.RequestCache nocache, EnumMarshalTests.RequestCache force, EnumMarshalTests.RequestCache onlyif)
+        {
+            requestEnums = new EnumMarshalTests.RequestCache[6];
+            requestEnums[0] = dflt;
+            requestEnums[1] = nostore;
+            requestEnums[2] = reload;
+            requestEnums[3] = nocache;
+            requestEnums[4] = force;
+            requestEnums[5] = onlyif;
+        }
+
+        public static void SetRequestEnumsProperties(JSObject obj)
+        {
+            obj.SetObjectProperty("dflt", EnumMarshalTests.RequestCache.Default);
+            obj.SetObjectProperty("nostore", EnumMarshalTests.RequestCache.NoStore);
+            obj.SetObjectProperty("reload", EnumMarshalTests.RequestCache.Reload);
+            obj.SetObjectProperty("nocache", EnumMarshalTests.RequestCache.NoCache);
+            obj.SetObjectProperty("force", EnumMarshalTests.RequestCache.ForceCache);
+            obj.SetObjectProperty("onlyif", EnumMarshalTests.RequestCache.OnlyIfCached);
+        }
     }
 }

@@ -123,6 +123,8 @@ var BindingSupportLib = {
 			this.safehandle_get_handle = get_method ("SafeHandleGetHandle");
 			this.safehandle_release_by_handle = get_method ("SafeHandleReleaseByHandle");
 
+			this.object_to_enum = get_method ("ObjectToEnum");
+
 			this.init = true;
 		},
 
@@ -531,12 +533,12 @@ var BindingSupportLib = {
 			this.typedarray_copy_from(newTypedArray, pinned_array, begin, end, bytes_per_element);
 			return newTypedArray;
 		},
-		js_to_mono_enum: function (method, parmIdx, js_obj) {
+		js_to_mono_enum: function (js_obj, method, parmIdx) {
 			this.bindings_lazy_init ();
-    
+
 			if (js_obj === null || typeof js_obj === "undefined")
 				return 0;
-			
+
 			var monoObj, monoEnum;
 			try {
 				monoObj = MONO.mono_wasm_new_root (this.js_to_mono_obj (js_obj));

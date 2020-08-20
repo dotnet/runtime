@@ -379,6 +379,11 @@ namespace System.Runtime.InteropServices.JavaScript
 
         private static string ObjectToString(object o)
         {
+            if (o is Enum oIsAnEnum)
+            {
+                return EnumToExportContract(oIsAnEnum)?.ToString() ?? string.Empty;
+            }
+
             return o.ToString() ?? string.Empty;
         }
 
@@ -399,6 +404,126 @@ namespace System.Runtime.InteropServices.JavaScript
         {
             DateTimeOffset unixTime = DateTimeOffset.FromUnixTimeMilliseconds((long)ticks);
             return unixTime.DateTime;
+        }
+
+        private static object? ObjectToEnum(IntPtr methodHandle, int parm, object obj)
+        {
+            IntPtrAndHandle tmp = default(IntPtrAndHandle);
+            tmp.ptr = methodHandle;
+
+            MethodBase? mb = MethodBase.GetMethodFromHandle(tmp.handle);
+            if (mb == null)
+                return null;
+            Type? parmType = mb.GetParameters()[parm]?.ParameterType;
+            if (parmType == null)
+                return null;
+            if (parmType.IsEnum)
+                return Runtime.EnumFromExportContract(parmType, obj);
+            else
+                return null;
+        }
+
+        private static Enum EnumFromExportContract(Type enumType, object value)
+        {
+            if (!enumType.IsEnum)
+            {
+                throw new ArgumentException("Type provided must be an Enum.", nameof(enumType));
+            }
+
+            if (value is string)
+            {
+                FieldInfo[] fields = enumType.GetFields();
+                foreach (FieldInfo fi in fields)
+                {
+                    // Do not process special names
+                    if (fi.IsSpecialName)
+                        continue;
+
+                    ExportAttribute[] attributes =
+                        (ExportAttribute[])fi.GetCustomAttributes(typeof(ExportAttribute), false);
+
+                    ConvertEnum enumConversionType = ConvertEnum.Default;
+
+                    object? contractName = null;
+
+                    if (attributes != null && attributes.Length > 0)
+                    {
+                        enumConversionType = attributes[0].EnumValue;
+                        if (enumConversionType != ConvertEnum.Numeric)
+                            contractName = attributes[0].ContractName;
+                    }
+
+                    contractName = contractName ?? fi.Name;
+                    switch (enumConversionType)
+                    {
+                        case ConvertEnum.ToLower:
+                            contractName = contractName!.ToString()!.ToLower();
+                            break;
+                        case ConvertEnum.ToUpper:
+                            contractName = contractName!.ToString()!.ToUpper();
+                            break;
+                        case ConvertEnum.Numeric:
+                            contractName = (int)Enum.Parse(value.GetType(), contractName!.ToString() ?? string.Empty);
+                            break;
+                        default:
+                            contractName = contractName!.ToString();
+                            break;
+                    }
+
+                    if (contractName!.ToString() == value.ToString())
+                    {
+                        return (Enum)Enum.Parse(enumType, fi.Name);
+                    }
+                }
+
+                throw new ArgumentException($"Value is a name, but not one of the named constants defined for the enum of type: {enumType}.", nameof(value));
+            }
+            else
+            {
+                return (Enum)Enum.ToObject(enumType, value);
+            }
+        }
+
+        private static object EnumToExportContract(Enum value)
+        {
+            FieldInfo? fi = value?.GetType()?.GetField(value.ToString());
+
+            if (fi == null)
+                return string.Empty;
+
+            ExportAttribute[] attributes =
+                (ExportAttribute[])fi.GetCustomAttributes(typeof(ExportAttribute), false);
+
+            ConvertEnum enumConversionType = ConvertEnum.Default;
+
+            object? contractName = value;
+
+            if (attributes != null && attributes.Length > 0)
+            {
+                enumConversionType = attributes[0].EnumValue;
+                if (enumConversionType != ConvertEnum.Numeric)
+                    contractName = attributes[0].ContractName;
+            }
+
+            contractName = contractName ?? value;
+
+            switch (enumConversionType)
+            {
+                case ConvertEnum.ToLower:
+                    contractName = contractName!.ToString()!.ToLower();
+                    break;
+                case ConvertEnum.ToUpper:
+                    contractName = contractName!.ToString()!.ToUpper();
+                    break;
+                case ConvertEnum.Numeric:
+                    contractName = (int)Enum.Parse(value!.GetType(), contractName!.ToString() ?? string.Empty);
+                    break;
+                default:
+                    contractName = contractName!.ToString();
+                    break;
+            }
+
+            return contractName ?? string.Empty;
         }
 
         private static Uri CreateUri(string uri)

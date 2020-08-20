@@ -34,6 +34,7 @@
     <Compile Include="System\Runtime\InteropServices\JavaScript\HostObject.cs" />
     <Compile Include="System\Runtime\InteropServices\JavaScript\Function.cs" />
     <Compile Include="System\Runtime\InteropServices\JavaScript\AnyRef.cs" />
+    <Compile Include="System\Runtime\InteropServices\JavaScript\Export.cs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System.Runtime" />
