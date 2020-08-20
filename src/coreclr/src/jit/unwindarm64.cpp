@@ -623,10 +623,8 @@ void Compiler::unwindSaveRegPreindexed(regNumber reg, int offset)
 void Compiler::unwindSaveNext()
 {
 #if defined(TARGET_UNIX)
-    if (generateCFIUnwindCodes())
-    {
-        unreached(); // do not use unwindSaveNext when generating CFI codes as there is no code for this
-    }
+    // do not use unwindSaveNext when generating CFI codes as there is no code for this
+    assert(!generateCFIUnwindCodes());
 #endif // TARGET_UNIX
 
     UnwindInfo* pu = &funCurrentFunc()->uwi;
