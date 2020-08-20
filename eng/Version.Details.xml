@@ -10,13 +10,13 @@
     </Dependency>
   </ProductDependencies>
   <ToolsetDependencies>
-    <Dependency Name="Microsoft.DotNet.Arcade.Sdk" Version="5.0.0-beta.20407.3">
+    <Dependency Name="Microsoft.DotNet.Arcade.Sdk" Version="5.0.0-beta.20417.6">
       <Uri>https://github.com/dotnet/arcade</Uri>
-      <Sha>ea8f37e8982dc22022b33c5e151081ad04d923a6</Sha>
+      <Sha>83fda4b3f6d93e713749fd1b27c4a6d40b118b13</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.Helix.Sdk" Version="5.0.0-beta.20417.2">
+    <Dependency Name="Microsoft.DotNet.Helix.Sdk" Version="5.0.0-beta.20417.6">
       <Uri>https://github.com/dotnet/arcade</Uri>
-      <Sha>5955e4c51db1b30085790e3ca777c5c60302720c</Sha>
+      <Sha>83fda4b3f6d93e713749fd1b27c4a6d40b118b13</Sha>
     </Dependency>
     <Dependency Name="Microsoft.DotNet.ApiCompat" Version="5.0.0-beta.20407.3">
       <Uri>https://github.com/dotnet/arcade</Uri>
@@ -186,13 +186,13 @@
       <Uri>https://github.com/mono/linker</Uri>
       <Sha>2b04c065c84aa8f30600e3b1989c537fc77de95b</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.XHarness.TestRunners.Xunit" Version="1.0.0-prerelease.20411.1">
+    <Dependency Name="Microsoft.DotNet.XHarness.TestRunners.Xunit" Version="1.0.0-prerelease.20419.2">
       <Uri>https://github.com/dotnet/xharness</Uri>
-      <Sha>3cecc1a18c6063eeabc63984215c1cfb23018a63</Sha>
+      <Sha>88996cb275f64f808395c9e746c3addb13f37d7c</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.XHarness.CLI" Version="1.0.0-prerelease.20411.1">
+    <Dependency Name="Microsoft.DotNet.XHarness.CLI" Version="1.0.0-prerelease.20419.2">
       <Uri>https://github.com/dotnet/xharness</Uri>
-      <Sha>3cecc1a18c6063eeabc63984215c1cfb23018a63</Sha>
+      <Sha>88996cb275f64f808395c9e746c3addb13f37d7c</Sha>
     </Dependency>
   </ToolsetDependencies>
 </Dependencies>
