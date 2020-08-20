@@ -566,7 +566,7 @@ BOOL QCALLTYPE AssemblyNative::GetCodeBase(QCall::AssemblyHandle pAssembly, QCal
 {
     QCALL_CONTRACT;
 
-    BOOL ret = true;
+    BOOL ret = TRUE;
 
     BEGIN_QCALL;
 
