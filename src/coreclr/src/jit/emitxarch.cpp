@@ -8263,11 +8263,11 @@ void emitter::emitDispIns(
     {
         printf(" %-9s", sstr);
     }
-#ifndef TARGET_UNIX
+#ifndef HOST_UNIX
     if (strnlen_s(sstr, 10) >= 8)
-#else  // TARGET_UNIX
+#else  // HOST_UNIX
     if (strnlen(sstr, 10) >= 8)
-#endif // TARGET_UNIX
+#endif // HOST_UNIX
     {
         printf(" ");
     }
