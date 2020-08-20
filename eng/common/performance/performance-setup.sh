@@ -199,7 +199,8 @@ if [[ "$mono_dotnet" != "" ]]; then
 fi
 
 if [[ "$wasm_runtime_loc" != "" ]]; then
-    configurations="CompilationMode=wasm;RunKind=micro"
+    configurations="CompilationMode=wasm RunKind=micro"
+    extra_benchmark_dotnet_arguments="$extra_benchmark_dotnet_arguments --category-exclusion-filter NoInterpreter NoWASM"
 fi
 
 if [[ "$monointerpreter" == "true" ]]; then

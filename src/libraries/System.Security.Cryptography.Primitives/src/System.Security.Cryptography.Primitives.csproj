@@ -5,9 +5,6 @@
     <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
     <Nullable>enable</Nullable>
   </PropertyGroup>
-  <PropertyGroup>
-    <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetsBrowser)' == 'true'">SR.SystemSecurityCryptographyPrimitives_PlatformNotSupported</GeneratePlatformNotSupportedAssemblyMessage>
-  </PropertyGroup>
   <ItemGroup>
     <Compile Include="System\Security\Cryptography\AsymmetricAlgorithm.cs" />
     <Compile Include="System\Security\Cryptography\CipherMode.cs" />
