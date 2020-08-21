@@ -37,10 +37,8 @@
     <ItemGroup>
       <IncludeTraitsItems Include="$(IncludeTraits)" />
       <ExcludeTraitsItems Include="$(ExcludeTraits)" />
-      
     </ItemGroup>
 
-    
     <Error Condition="'$(CORE_ROOT)' == ''" Text="CORE_ROOT is not set." />
     <PropertyGroup>
       <XunitConsoleRunner>$(CORE_ROOT)\xunit.console.dll</XunitConsoleRunner>
