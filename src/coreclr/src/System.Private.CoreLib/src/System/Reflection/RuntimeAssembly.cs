@@ -91,7 +91,7 @@ namespace System.Reflection
                 if (codeBase is null)
                 {
                     // Not supported if the assembly was loaded from memory
-                    throw new PlatformNotSupportedException(SR.PlatformNotSupported_CodeBase);
+                    throw new InvalidOperationException(SR.InvalidOperation_CodeBase);
                 }
                 return codeBase;
             }

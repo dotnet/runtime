@@ -19,9 +19,9 @@ namespace StandaloneApp
                 _ = typeof(Program).Assembly.CodeBase;
                 #pragma warning restore SYSLIB0012
             }
-            catch
+            catch (InvalidOperationException)
             {
-                Console.WriteLine("CodeBase PlatformNotSupported");
+                Console.WriteLine("CodeBase InvalidOperation");
                 return;
             }
 
