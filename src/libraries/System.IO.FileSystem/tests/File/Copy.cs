@@ -343,7 +343,7 @@ namespace System.IO.Tests
     /// <summary>
     /// Single tests that shouldn't be duplicated by inheritance.
     /// </summary>
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/40867", TestPlatforms.Browser)]
+    [PlatformSpecific(~TestPlatforms.Browser)] // https://github.com/dotnet/runtime/issues/40867 - flock not supported
     public sealed class File_Copy_Single : FileSystemTest
     {
         [Fact]

@@ -646,7 +646,7 @@ namespace System.Data.Common
             ADP.BuildSchemaTableInfoTableNames(srcColumnNames);
         }
 
-        protected virtual DataTable GetSchemaTable(DbCommand sourceCommand)
+        protected virtual DataTable? GetSchemaTable(DbCommand sourceCommand)
         {
             using (IDataReader dataReader = sourceCommand.ExecuteReader(CommandBehavior.SchemaOnly | CommandBehavior.KeyInfo))
             {

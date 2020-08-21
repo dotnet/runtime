@@ -1220,10 +1220,12 @@ var MonoSupportLib = {
 			for (var i = 0; i < file_list.length; i++) {
 				var file_name = file_list[i];
 				var behavior;
-				if (file_name === "icudt.dat")
+				if (file_name.startsWith ("icudt") && file_name.endsWith (".dat")) {
+					// ICU data files are expected to be "icudt%FilterName%.dat"
 					behavior = "icu";
-				else // if (file_name.endsWith (".pdb") || file_name.endsWith (".dll"))
+				} else { // if (file_name.endsWith (".pdb") || file_name.endsWith (".dll"))
 					behavior = "assembly";
+				}
 
 				args.assets.push ({
 					name: file_name,

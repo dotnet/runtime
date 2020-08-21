@@ -180,7 +180,7 @@ namespace System.Data.Odbc
         public override long GetInt64(int i) { throw null; }
         public override string GetName(int i) { throw null; }
         public override int GetOrdinal(string value) { throw null; }
-        public override System.Data.DataTable GetSchemaTable() { throw null; }
+        public override System.Data.DataTable? GetSchemaTable() { throw null; }
         public override string GetString(int i) { throw null; }
         public System.TimeSpan GetTime(int i) { throw null; }
         public override object GetValue(int i) { throw null; }
