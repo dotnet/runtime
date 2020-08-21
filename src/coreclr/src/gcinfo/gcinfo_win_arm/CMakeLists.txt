@@ -1,1 +1,1 @@
-set_gcinfo_targetdetails(GCINFONAME gcinfo_win_arm WIN32 ARM)
+set_gcinfo_targetdetails(TARGET gcinfo_win_arm WIN32 ARM)

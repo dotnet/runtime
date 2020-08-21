@@ -1,2 +1,2 @@
 project(clrjit_win_x86)
-set_clrjit_targetdetails(JITNAME clrjit_win_x86_${ARCH_HOST_NAME} I386 WIN32)
+set_clrjit_targetdetails(TARGET clrjit_win_x86_${ARCH_HOST_NAME} I386 WIN32)
