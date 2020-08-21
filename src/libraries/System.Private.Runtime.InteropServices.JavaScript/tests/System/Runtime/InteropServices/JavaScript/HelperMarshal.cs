@@ -364,18 +364,20 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             obj.SetObjectProperty(EnumMarshalTests.StyleColor.RedHex.ToString(), EnumMarshalTests.StyleColor.RedHex);
             obj.SetObjectProperty(EnumMarshalTests.StyleColor.RedLowerCase.ToString(), EnumMarshalTests.StyleColor.RedLowerCase);
             obj.SetObjectProperty(EnumMarshalTests.StyleColor.RedUpperCase.ToString(), EnumMarshalTests.StyleColor.RedUpperCase);
+            obj.SetObjectProperty(EnumMarshalTests.StyleColor.RedNoExport.ToString(), EnumMarshalTests.StyleColor.RedNoExport);
         }
 
         internal static EnumMarshalTests.StyleColor[] styleColorEnums;
-        public static void SetStyleColorEnums(EnumMarshalTests.StyleColor red, EnumMarshalTests.StyleColor greenNumeric, EnumMarshalTests.StyleColor redUpperCase, EnumMarshalTests.StyleColor redLowerCase, EnumMarshalTests.StyleColor redHex)
+        public static void SetStyleColorEnums(EnumMarshalTests.StyleColor red, EnumMarshalTests.StyleColor greenNumeric, EnumMarshalTests.StyleColor redUpperCase, EnumMarshalTests.StyleColor redLowerCase, EnumMarshalTests.StyleColor redHex, EnumMarshalTests.StyleColor redNoExport)
         {
             Console.WriteLine(greenNumeric);
-            styleColorEnums = new EnumMarshalTests.StyleColor[5];
+            styleColorEnums = new EnumMarshalTests.StyleColor[6];
             styleColorEnums[0] = red;
             styleColorEnums[1] = greenNumeric;
             styleColorEnums[2] = redUpperCase;
             styleColorEnums[3] = redLowerCase;
             styleColorEnums[4] = redHex;
+            styleColorEnums[5] = redNoExport;
         }
     }
 }

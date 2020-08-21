@@ -26,6 +26,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
 
         public enum StyleColor : uint
         {
+            RedNoExport,
             [Export(EnumValue = ConvertEnum.Default)]
             Red = 0xff0000ff,
             [Export(EnumValue = ConvertEnum.Numeric)]
@@ -80,13 +81,14 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             Runtime.InvokeJS(@"
                 var color = {};
                 App.call_test_method  (""SetColorEnumsProperties"", [ color ]);
-                App.call_test_method  (""SetStyleColorEnums"", [ color.Red, color.GreenNumeric, color.RedUpperCase, color.RedLowerCase, color.RedHex ]);
+                App.call_test_method  (""SetStyleColorEnums"", [ color.Red, color.GreenNumeric, color.RedUpperCase, color.RedLowerCase, color.RedHex, color.RedNoExport ]);
             ");
             Assert.Equal(StyleColor.Red, HelperMarshal.styleColorEnums[0]);
             Assert.Equal(StyleColor.GreenNumeric, HelperMarshal.styleColorEnums[1]);
             Assert.Equal(StyleColor.RedUpperCase, HelperMarshal.styleColorEnums[2]);
             Assert.Equal(StyleColor.RedLowerCase, HelperMarshal.styleColorEnums[3]);
             Assert.Equal(StyleColor.RedHex, HelperMarshal.styleColorEnums[4]);
+            Assert.Equal(StyleColor.RedNoExport, HelperMarshal.styleColorEnums[5]);
         }
     }
 }
