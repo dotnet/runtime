@@ -148,7 +148,7 @@ namespace System.Net.Quic.Implementations.Managed
         /// <summary>
         ///     Flow control limits set by this endpoint for the peer for the entire connection.
         /// </summary>
-        private ConnectionFlowControlLimits _localLimits = default;
+        private ConnectionFlowControlLimits _localLimits;
 
         /// <summary>
         ///     Values of <see cref="_localLimits"/> that peer has confirmed received.
@@ -158,7 +158,7 @@ namespace System.Net.Quic.Implementations.Managed
         /// <summary>
         ///     Flow control limits set by the peer for this endpoint for the entire connection.
         /// </summary>
-        private ConnectionFlowControlLimits _peerLimits = default;
+        private ConnectionFlowControlLimits _peerLimits;
 
         /// <summary>
         ///     QUIC transport parameters requested by peer endpoint.
@@ -606,7 +606,7 @@ namespace System.Net.Quic.Implementations.Managed
             ThrowIfDisposed();
             ThrowIfError();
 
-            if (Connected) return new ValueTask();
+            if (Connected) return default;
 
             if (NetEventSource.IsEnabled) NetEventSource.NewClientConnection(this, SourceConnectionId!.Data, DestinationConnectionId!.Data);
 
@@ -672,7 +672,7 @@ namespace System.Net.Quic.Implementations.Managed
 
             if (_closeTcs.IsSet)
             {
-                return new ValueTask();
+                return default;
             }
 
             if (!Connected)
@@ -680,10 +680,10 @@ namespace System.Net.Quic.Implementations.Managed
                 // abandon connection attempt
                 _connectTcs.TryCompleteException(new QuicConnectionAbortedException(errorCode));
                 _closeTcs.TryComplete();
-                return new ValueTask();
+                return default;
             }
 
-            if (IsClosed) return new ValueTask();
+            if (IsClosed) return default;
             _outboundError = new QuicError((TransportErrorCode)errorCode, null, FrameType.Padding, false);
             _socketContext.Ping();
 
