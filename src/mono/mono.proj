@@ -941,8 +941,15 @@
   </Target>
 
   <Target Name="BuildMonoRuntimeCMake" Condition="'$(MonoEnableCMake)' != ''">
+    <Exec Command="which ninja" IgnoreExitCode="true" IgnoreStandardErrorWarningFormat="true">
+      <Output TaskParameter="ExitCode" PropertyName="MonoNinjaFound"/>
+    </Exec>
+    <PropertyGroup>
+      <MonoBuildTool Condition="'$(MonoNinjaFound)' == '0'">ninja</MonoBuildTool>
+      <MonoBuildTool Condition="'$(MonoNinjaFound)' != '0'">make -j$([System.Environment]::ProcessorCount)</MonoBuildTool>
+    </PropertyGroup>
     <ItemGroup>
-      <MonoCMakeArgs Include="-G Ninja"/>
+      <MonoCMakeArgs Condition="'$(MonoNinjaFound)' == '0'" Include="-G Ninja"/>
       <MonoCMakeArgs Include="-DCMAKE_INSTALL_PREFIX=$(MonoObjDir)out"/>
     </ItemGroup>
     <ItemGroup Condition="'$(TargetsBrowser)' == 'true'">
@@ -960,8 +967,8 @@
     <Exec Condition="'$(TargetsBrowser)' != 'true'" Command="cmake @(MonoCMakeArgs, ' ') $(MonoProjectRoot)" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoObjDir)"/>
     <Exec Condition="'$(TargetsBrowser)' == 'true'" Command="bash -c 'source $(EMSDK_PATH)/emsdk_env.sh &amp;&amp; emcmake cmake @(MonoCMakeArgs, ' ') $(MonoProjectRoot)'" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoObjDir)" />
     <!-- ninja -->
-    <Exec Condition="'$(TargetsBrowser)' != 'true'" Command="ninja all install" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoObjDir)"/>
-    <Exec Condition="'$(TargetsBrowser)' == 'true'" Command="bash -c 'source $(EMSDK_PATH)/emsdk_env.sh &amp;&amp; ninja all install'" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoObjDir)" />
+    <Exec Condition="'$(TargetsBrowser)' != 'true'" Command="$(MonoBuildTool) all install" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoObjDir)"/>
+    <Exec Condition="'$(TargetsBrowser)' == 'true'" Command="bash -c 'source $(EMSDK_PATH)/emsdk_env.sh &amp;&amp; $(MonoBuildTool) all install'" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoObjDir)" />
   </Target>
 
   <!-- General targets -->
