@@ -23,10 +23,9 @@
     </ItemGroup>
 
     <ItemGroup>
-      <!-- <AllProjects Include="$(TestRoot)**\*.csproj" Exclude="@(DisabledProjects)" />
+      <AllProjects Include="$(TestRoot)**\*.csproj" Exclude="@(DisabledProjects)" />
       <AllProjects Include="$(TestRoot)**\*.fsproj" Exclude="@(DisabledProjects)" />
-      <AllProjects Include="$(TestRoot)**\*.ilproj" Exclude="@(DisabledProjects)" /> -->
-      <AllProjects Include="$(TestRoot)JIT/methodical/divrem/div/i4div_cs_do.csproj"  />
+      <AllProjects Include="$(TestRoot)**\*.ilproj" Exclude="@(DisabledProjects)" /> 
     </ItemGroup>
 
 
