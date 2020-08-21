@@ -231,7 +231,6 @@ namespace System.Text.Json.Serialization
             Debug.Assert(declaringType != null);
 
             Type declaredPropertyType = propertyInfo.PropertyType;
-            Debug.Assert(runtimePropertyType.IsConvertibleFrom(declaredPropertyType));
 
             DynamicMethod dynamicMethod = CreateGetterMethod(propertyInfo.Name, runtimePropertyType);
             ILGenerator generator = dynamicMethod.GetILGenerator();
@@ -274,7 +273,6 @@ namespace System.Text.Json.Serialization
             Debug.Assert(declaringType != null);
 
             Type declaredPropertyType = propertyInfo.PropertyType;
-            Debug.Assert(runtimePropertyType.IsConvertibleFrom(declaredPropertyType));
 
             DynamicMethod dynamicMethod = CreateSetterMethod(propertyInfo.Name, runtimePropertyType);
             ILGenerator generator = dynamicMethod.GetILGenerator();
@@ -305,9 +303,16 @@ namespace System.Text.Json.Serialization
                 // declaredPropertyType: Type of the property
                 // runtimePropertyType:  <T> of JsonConverter / JsonPropertyInfo
 
-                if (declaredPropertyType.IsValueType && declaredPropertyType != runtimePropertyType)
+                if (declaredPropertyType != runtimePropertyType)
                 {
-                    generator.Emit(OpCodes.Unbox_Any, declaredPropertyType);
+                    if (declaredPropertyType.IsValueType)
+                    {
+                        generator.Emit(OpCodes.Unbox_Any, declaredPropertyType);
+                    }
+                    else
+                    {
+                        generator.Emit(OpCodes.Castclass, declaredPropertyType);
+                    }
                 }
             }
         }
@@ -321,7 +326,6 @@ namespace System.Text.Json.Serialization
             Debug.Assert(declaringType != null);
 
             Type declaredFieldType = fieldInfo.FieldType;
-            Debug.Assert(runtimeFieldType.IsConvertibleFrom(declaredFieldType));
 
             DynamicMethod dynamicMethod = CreateGetterMethod(fieldInfo.Name, runtimeFieldType);
             ILGenerator generator = dynamicMethod.GetILGenerator();
@@ -356,7 +360,6 @@ namespace System.Text.Json.Serialization
             Debug.Assert(declaringType != null);
 
             Type declaredFieldType = fieldInfo.FieldType;
-            Debug.Assert(runtimeFieldType.IsConvertibleFrom(declaredFieldType));
 
             DynamicMethod dynamicMethod = CreateSetterMethod(fieldInfo.Name, runtimeFieldType);
             ILGenerator generator = dynamicMethod.GetILGenerator();
@@ -372,9 +375,16 @@ namespace System.Text.Json.Serialization
             // declaredFieldType: Type of the field
             // runtimeFieldType:  <T> of JsonConverter / JsonPropertyInfo
 
-            if (declaredFieldType.IsValueType && declaredFieldType != runtimeFieldType)
+            if (declaredFieldType != runtimeFieldType)
             {
-                generator.Emit(OpCodes.Unbox_Any, declaredFieldType);
+                if (declaredFieldType.IsValueType)
+                {
+                    generator.Emit(OpCodes.Unbox_Any, declaredFieldType);
+                }
+                else
+                {
+                    generator.Emit(OpCodes.Castclass, declaredFieldType);
+                }
             }
 
             generator.Emit(OpCodes.Stfld, fieldInfo);
