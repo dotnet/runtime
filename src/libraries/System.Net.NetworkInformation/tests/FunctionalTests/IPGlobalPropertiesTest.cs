@@ -26,7 +26,7 @@ namespace System.Net.NetworkInformation.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/40938"), TestPlatforms.OSX]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/40938", TestPlatforms.OSX)]
         public void IPGlobalProperties_AccessAllMethods_NoErrors()
         {
             IPGlobalProperties gp = IPGlobalProperties.GetIPGlobalProperties();
