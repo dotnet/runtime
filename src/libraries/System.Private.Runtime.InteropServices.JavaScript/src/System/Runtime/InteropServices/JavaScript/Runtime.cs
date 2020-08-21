@@ -463,7 +463,12 @@ namespace System.Runtime.InteropServices.JavaScript
                             contractName = contractName!.ToString()!.ToUpper();
                             break;
                         case ConvertEnum.Numeric:
-                            return (Enum)Enum.Parse(enumType, value!.ToString() ?? string.Empty);
+                            if (Enum.TryParse(enumType, value!.ToString() ?? string.Empty, out object? enumAsNumeric))
+                            {
+                                if (enumAsNumeric is Enum valueAsEnum)
+                                    return (Enum)valueAsEnum;
+                            }
+                            break;
                         default:
                             contractName = contractName!.ToString();
                             break;

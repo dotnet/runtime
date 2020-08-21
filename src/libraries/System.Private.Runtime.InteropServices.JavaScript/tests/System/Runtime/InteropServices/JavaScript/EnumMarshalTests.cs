@@ -24,6 +24,20 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             OnlyIfCached = -3636,
         }
 
+        public enum StyleColor : uint
+        {
+            [Export(EnumValue = ConvertEnum.Default)]
+            Red = 0xff0000ff,
+            [Export(EnumValue = ConvertEnum.Numeric)]
+            GreenNumeric = 0x00ff00ff,
+            [Export("red", EnumValue = ConvertEnum.ToUpper)]
+            RedUpperCase,
+            [Export("RED", EnumValue = ConvertEnum.ToLower)]
+            RedLowerCase,
+            [Export("#ff0000")]
+            RedHex
+        }
+
         [Fact]
         public static void MarshalRequestEnums()
         {
@@ -58,6 +72,21 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             Assert.Equal(RequestCache.NoCache, HelperMarshal.requestEnums[3]);
             Assert.Equal(RequestCache.ForceCache, HelperMarshal.requestEnums[4]);
             Assert.Equal(RequestCache.OnlyIfCached, HelperMarshal.requestEnums[5]);
+        }
+
+        [Fact]
+        public static void MarshalColorEnumProps()
+        {
+            Runtime.InvokeJS(@"
+                var color = {};
+                App.call_test_method  (""SetColorEnumsProperties"", [ color ]);
+                App.call_test_method  (""SetStyleColorEnums"", [ color.Red, color.GreenNumeric, color.RedUpperCase, color.RedLowerCase, color.RedHex ]);
+            ");
+            Assert.Equal(StyleColor.Red, HelperMarshal.styleColorEnums[0]);
+            Assert.Equal(StyleColor.GreenNumeric, HelperMarshal.styleColorEnums[1]);
+            Assert.Equal(StyleColor.RedUpperCase, HelperMarshal.styleColorEnums[2]);
+            Assert.Equal(StyleColor.RedLowerCase, HelperMarshal.styleColorEnums[3]);
+            Assert.Equal(StyleColor.RedHex, HelperMarshal.styleColorEnums[4]);
         }
     }
 }
