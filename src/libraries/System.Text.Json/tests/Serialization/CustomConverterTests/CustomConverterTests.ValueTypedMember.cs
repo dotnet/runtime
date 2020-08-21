@@ -26,7 +26,14 @@ namespace System.Text.Json.Serialization.Tests
 
                 string value = reader.GetString();
 
-                return value == null ? null : new ValueTypedMember(value);
+                if (value == null)
+                {
+                    return null;
+                }
+
+                return value.IndexOf("ValueTyped", StringComparison.Ordinal) >= 0
+                    ? new ValueTypedMember(value)
+                    : new RefTypedMember(value);
             }
 
             public override void Write(Utf8JsonWriter writer, IMemberInterface value, JsonSerializerOptions options)
@@ -56,7 +63,14 @@ namespace System.Text.Json.Serialization.Tests
 
                 string value = reader.GetString();
 
-                return value == null ? null : new ValueTypedMember(value);
+                if (value == null)
+                {
+                    return null;
+                }
+
+                return value.IndexOf("ValueTyped", StringComparison.Ordinal) >= 0
+                    ? new ValueTypedMember(value)
+                    : new RefTypedMember(value);
             }
 
             public override void Write(Utf8JsonWriter writer, object value, JsonSerializerOptions options)
