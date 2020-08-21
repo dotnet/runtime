@@ -41,9 +41,9 @@ namespace DebuggerTests
                    else
                        AssertEqual(0, obj_accessors.Value["result"]?.Count(), "obj_accessors-count");
 
-                    // Check for a __proto__ object
-                    // isOwn = true, accessorPropertiesOnly = false
-                    var obj_own = await ctx.cli.SendCommand("Runtime.getProperties", JObject.FromObject(new
+                   // Check for a __proto__ object
+                   // isOwn = true, accessorPropertiesOnly = false
+                   var obj_own = await ctx.cli.SendCommand("Runtime.getProperties", JObject.FromObject(new
                    {
                        objectId = result.Value["result"]["objectId"].Value<string>(),
                        accessorPropertiesOnly = false,
@@ -53,8 +53,8 @@ namespace DebuggerTests
                    await CheckProps(obj_own.Value["result"], new
                    {
                        length = TNumber(len),
-                        // __proto__ = TArray (type, 0) // Is this one really required?
-                    }, $"obj_own", num_fields: is_js ? 2 : 1);
+                       // __proto__ = TArray (type, 0) // Is this one really required?
+                   }, $"obj_own", num_fields: is_js ? 2 : 1);
 
                });
         }
@@ -89,8 +89,8 @@ namespace DebuggerTests
 
                    var is_js = bp_loc.EndsWith(".js", StringComparison.Ordinal);
 
-                    // isOwn = false, accessorPropertiesOnly = true
-                    var obj_accessors = await ctx.cli.SendCommand("Runtime.getProperties", JObject.FromObject(new
+                   // isOwn = false, accessorPropertiesOnly = true
+                   var obj_accessors = await ctx.cli.SendCommand("Runtime.getProperties", JObject.FromObject(new
                    {
                        objectId = result.Value["result"]["objectId"].Value<string>(),
                        accessorPropertiesOnly = true,
@@ -101,10 +101,10 @@ namespace DebuggerTests
                    else
                        AssertEqual(0, obj_accessors.Value["result"]?.Count(), "obj_accessors-count");
 
-                    // Ignoring the __proto__ property
+                   // Ignoring the __proto__ property
 
-                    // isOwn = true, accessorPropertiesOnly = false
-                    var obj_own = await ctx.cli.SendCommand("Runtime.getProperties", JObject.FromObject(new
+                   // isOwn = true, accessorPropertiesOnly = false
+                   var obj_own = await ctx.cli.SendCommand("Runtime.getProperties", JObject.FromObject(new
                    {
                        objectId = result.Value["result"]["objectId"].Value<string>(),
                        accessorPropertiesOnly = false,
@@ -141,8 +141,8 @@ namespace DebuggerTests
                {
                    var is_js = bp_loc.EndsWith(".js", StringComparison.Ordinal);
 
-                    // getProperties (isOwn = false, accessorPropertiesOnly = true)
-                    var obj_accessors = await ctx.cli.SendCommand("Runtime.getProperties", JObject.FromObject(new
+                   // getProperties (isOwn = false, accessorPropertiesOnly = true)
+                   var obj_accessors = await ctx.cli.SendCommand("Runtime.getProperties", JObject.FromObject(new
                    {
                        objectId = result.Value["result"]["objectId"].Value<string>(),
                        accessorPropertiesOnly = true,
@@ -153,8 +153,8 @@ namespace DebuggerTests
                    else
                        AssertEqual(0, obj_accessors.Value["result"]?.Count(), "obj_accessors-count");
 
-                    // getProperties (isOwn = true, accessorPropertiesOnly = false)
-                    var obj_own = await ctx.cli.SendCommand("Runtime.getProperties", JObject.FromObject(new
+                   // getProperties (isOwn = true, accessorPropertiesOnly = false)
+                   var obj_own = await ctx.cli.SendCommand("Runtime.getProperties", JObject.FromObject(new
                    {
                        objectId = result.Value["result"]["objectId"].Value<string>(),
                        accessorPropertiesOnly = false,
@@ -164,8 +164,8 @@ namespace DebuggerTests
                    await CheckProps(obj_own.Value["result"], new
                    {
                        length = TNumber(ret_len),
-                        // __proto__ returned by js
-                    }, $"obj_own", num_fields: is_js ? 2 : 1);
+                       // __proto__ returned by js
+                   }, $"obj_own", num_fields: is_js ? 2 : 1);
                });
         }
 
@@ -187,8 +187,8 @@ namespace DebuggerTests
                {
                    var is_js = bp_loc.EndsWith(".js");
 
-                    // getProperties (own=false)
-                    var obj_accessors = await ctx.cli.SendCommand("Runtime.getProperties", JObject.FromObject(new
+                   // getProperties (own=false)
+                   var obj_accessors = await ctx.cli.SendCommand("Runtime.getProperties", JObject.FromObject(new
                    {
                        objectId = result.Value["result"]["objectId"].Value<string>(),
                        accessorPropertiesOnly = true,
@@ -200,23 +200,23 @@ namespace DebuggerTests
                    else
                        AssertEqual(0, obj_accessors.Value["result"]?.Count(), "obj_accessors-count");
 
-                    // getProperties (own=true)
-                    // isOwn = true, accessorPropertiesOnly = false
-                    var obj_own = await ctx.cli.SendCommand("Runtime.getProperties", JObject.FromObject(new
+                   // getProperties (own=true)
+                   // isOwn = true, accessorPropertiesOnly = false
+                   var obj_own = await ctx.cli.SendCommand("Runtime.getProperties", JObject.FromObject(new
                    {
                        objectId = result.Value["result"]["objectId"].Value<string>(),
                        accessorPropertiesOnly = false,
                        ownProperties = true
                    }), ctx.token);
 
-                    // AssertEqual (2, obj_own.Value ["result"].Count (), $"{label}-obj_own.count");
+                   // AssertEqual (2, obj_own.Value ["result"].Count (), $"{label}-obj_own.count");
 
-                    var obj_own_val = obj_own.Value["result"];
+                   var obj_own_val = obj_own.Value["result"];
                    await CheckProps(obj_own_val, new
                    {
                        length = TNumber(ret_len),
-                        // __proto__ returned by JS
-                    }, $"obj_own", num_fields: (is_js ? ret_len + 2 : ret_len + 1));
+                       // __proto__ returned by JS
+                   }, $"obj_own", num_fields: (is_js ? ret_len + 2 : ret_len + 1));
 
                    for (int i = 0; i < ret_len; i++)
                        CheckNumber(obj_own_val, i.ToString(), i * 2 + 1000);
@@ -238,8 +238,8 @@ namespace DebuggerTests
            {
                var ret_len = 5;
 
-                // getProperties (own=false)
-                var obj_accessors = await ctx.cli.SendCommand("Runtime.getProperties", JObject.FromObject(new
+               // getProperties (own=false)
+               var obj_accessors = await ctx.cli.SendCommand("Runtime.getProperties", JObject.FromObject(new
                {
                    objectId = result.Value["result"]["objectId"].Value<string>(),
                    accessorPropertiesOnly = true,
@@ -248,9 +248,9 @@ namespace DebuggerTests
 
                AssertEqual(0, obj_accessors.Value["result"]?.Count(), "obj_accessors-count");
 
-                // getProperties (own=true)
-                // isOwn = true, accessorPropertiesOnly = false
-                var obj_own = await ctx.cli.SendCommand("Runtime.getProperties", JObject.FromObject(new
+               // getProperties (own=true)
+               // isOwn = true, accessorPropertiesOnly = false
+               var obj_own = await ctx.cli.SendCommand("Runtime.getProperties", JObject.FromObject(new
                {
                    objectId = result.Value["result"]["objectId"].Value<string>(),
                    accessorPropertiesOnly = false,
@@ -261,15 +261,15 @@ namespace DebuggerTests
                await CheckProps(obj_own_val, new
                {
                    length = TNumber(ret_len),
-                    // __proto__ returned by JS
-                }, "obj_own", num_fields: ret_len + 1);
+                   // __proto__ returned by JS
+               }, "obj_own", num_fields: ret_len + 1);
 
                for (int i = 0; i < ret_len; i++)
                {
                    var act_i = CheckValueType(obj_own_val, i.ToString(), "Math.SimpleStruct");
 
-                    // Valuetypes can get sent as part of the container's getProperties, so ensure that we can access it
-                    var act_i_props = await GetProperties(act_i["value"]["objectId"]?.Value<string>());
+                   // Valuetypes can get sent as part of the container's getProperties, so ensure that we can access it
+                   var act_i_props = await GetProperties(act_i["value"]["objectId"]?.Value<string>());
                    await CheckProps(act_i_props, new
                    {
                        dt = TValueType("System.DateTime", new DateTime(2020 + (i * 2), 1, 2, 3, 4, 5).ToString()),
@@ -298,8 +298,8 @@ namespace DebuggerTests
             test_fn: async (result) =>
            {
 
-                // getProperties (own=false)
-                var obj_accessors = await ctx.cli.SendCommand("Runtime.getProperties", JObject.FromObject(new
+               // getProperties (own=false)
+               var obj_accessors = await ctx.cli.SendCommand("Runtime.getProperties", JObject.FromObject(new
                {
                    objectId = result.Value["result"]["objectId"].Value<string>(),
                    accessorPropertiesOnly = true,
@@ -307,9 +307,9 @@ namespace DebuggerTests
                }), ctx.token);
                AssertEqual(0, obj_accessors.Value["result"].Count(), "obj_accessors-count");
 
-                // getProperties (own=true)
-                // isOwn = true, accessorPropertiesOnly = false
-                var obj_own = await ctx.cli.SendCommand("Runtime.getProperties", JObject.FromObject(new
+               // getProperties (own=true)
+               // isOwn = true, accessorPropertiesOnly = false
+               var obj_own = await ctx.cli.SendCommand("Runtime.getProperties", JObject.FromObject(new
                {
                    objectId = result.Value["result"]["objectId"].Value<string>(),
                    accessorPropertiesOnly = false,
@@ -346,8 +346,8 @@ namespace DebuggerTests
             test_fn: async (result) =>
            {
 
-                // getProperties (own=false)
-                var obj_accessors = await ctx.cli.SendCommand("Runtime.getProperties", JObject.FromObject(new
+               // getProperties (own=false)
+               var obj_accessors = await ctx.cli.SendCommand("Runtime.getProperties", JObject.FromObject(new
                {
                    objectId = result.Value["result"]["objectId"].Value<string>(),
                    accessorPropertiesOnly = true,
@@ -356,9 +356,9 @@ namespace DebuggerTests
 
                await CheckProps(obj_accessors.Value["result"], new { __proto__ = TIgnore() }, "obj_accessors");
 
-                // getProperties (own=true)
-                // isOwn = true, accessorPropertiesOnly = false
-                var obj_own = await ctx.cli.SendCommand("Runtime.getProperties", JObject.FromObject(new
+               // getProperties (own=true)
+               // isOwn = true, accessorPropertiesOnly = false
+               var obj_own = await ctx.cli.SendCommand("Runtime.getProperties", JObject.FromObject(new
                {
                    objectId = result.Value["result"]["objectId"].Value<string>(),
                    accessorPropertiesOnly = false,
@@ -386,8 +386,8 @@ namespace DebuggerTests
                 "big", bp_loc, line, col, returnByValue: true, roundtrip: roundtrip,
                 test_fn: async (result) =>
                {
-                    // Check cfo result
-                    AssertEqual(JTokenType.Object, result.Value["result"].Type, "cfo-result-jsontype");
+                   // Check cfo result
+                   AssertEqual(JTokenType.Object, result.Value["result"].Type, "cfo-result-jsontype");
                    AssertEqual("object", result.Value["result"]["type"]?.Value<string>(), "cfo-res-type");
 
                    AssertEqual(JTokenType.Array, result.Value["result"]["value"].Type, "cfo-res-value-jsontype");
@@ -421,8 +421,8 @@ namespace DebuggerTests
             roundtrip: roundtrip,
             test_fn: async (result) =>
            {
-                // Check cfo result
-                AssertEqual("object", result.Value["result"]["type"]?.Value<string>(), "cfo-res-type");
+               // Check cfo result
+               AssertEqual("object", result.Value["result"]["type"]?.Value<string>(), "cfo-res-type");
 
                var exp = new JArray();
                for (int i = 0; i < 10; i++)
@@ -647,21 +647,21 @@ namespace DebuggerTests
                    DTArray = TGetter("DTArray"),
                    StringField = TString(null),
 
-                    // Auto properties show w/o getters, because they have
-                    // a backing field
-                    DTAutoProperty = TValueType("System.DateTime", dt.ToString())
+                   // Auto properties show w/o getters, because they have
+                   // a backing field
+                   DTAutoProperty = TValueType("System.DateTime", dt.ToString())
                }, local_name);
 
-                // Automatic properties don't have invokable getters, because we can get their
-                // value from the backing field directly
-                {
+               // Automatic properties don't have invokable getters, because we can get their
+               // value from the backing field directly
+               {
                    var dt_auto_props = await GetObjectOnLocals(obj_props, "DTAutoProperty");
                    await CheckDateTime(obj_props, "DTAutoProperty", dt);
                }
 
-                // Invoke getters, and check values
+               // Invoke getters, and check values
 
-                dt = new DateTime(3, 4, 5, 6, 7, 8);
+               dt = new DateTime(3, 4, 5, 6, 7, 8);
                var res = await InvokeGetter(obj, get_args_fn(new[] { "Int" }), cfo_fn);
                await CheckValue(res.Value["result"], JObject.FromObject(new { type = "number", value = (0xDEADBEEF + (uint)dt.Month) }), $"{local_name}.Int");
 
@@ -672,9 +672,9 @@ namespace DebuggerTests
                await CheckValue(res.Value["result"], TValueType("System.DateTime", dt.ToString()), $"{local_name}.DT");
                await CheckDateTimeValue(res.Value["result"], dt);
 
-                // Check arrays through getters
+               // Check arrays through getters
 
-                res = await InvokeGetter(obj, get_args_fn(new[] { "IntArray" }), cfo_fn);
+               res = await InvokeGetter(obj, get_args_fn(new[] { "IntArray" }), cfo_fn);
                await CheckValue(res.Value["result"], TArray("int[]", 2), $"{local_name}.IntArray");
                {
                    var arr_elems = await GetProperties(res.Value["result"]?["objectId"]?.Value<string>());
@@ -725,9 +725,9 @@ namespace DebuggerTests
 
                    var is_js = bp_loc.EndsWith(".js");
 
-                    // Check with `accessorPropertiesOnly=true`
+                   // Check with `accessorPropertiesOnly=true`
 
-                    var id = result.Value?["result"]?["objectId"]?.Value<string>();
+                   var id = result.Value?["result"]?["objectId"]?.Value<string>();
                    var get_prop_req = JObject.FromObject(new
                    {
                        objectId = id,
@@ -735,16 +735,16 @@ namespace DebuggerTests
                    });
 
                    var res = await GetPropertiesAndCheckAccessors(get_prop_req, is_js ? 6 : 5); // js returns extra `__proto__` member also
-                    Assert.False(res.Value["result"].Any(jt => jt["name"]?.Value<string>() == "StringField"), "StringField shouldn't be returned for `accessorPropertiesOnly`");
+                   Assert.False(res.Value["result"].Any(jt => jt["name"]?.Value<string>() == "StringField"), "StringField shouldn't be returned for `accessorPropertiesOnly`");
 
-                    // Check with `accessorPropertiesOnly` unset, == false
-                    get_prop_req = JObject.FromObject(new
+                   // Check with `accessorPropertiesOnly` unset, == false
+                   get_prop_req = JObject.FromObject(new
                    {
                        objectId = id,
                    });
 
                    res = await GetPropertiesAndCheckAccessors(get_prop_req, is_js ? 8 : 7); // js returns a `__proto__` member also
-                    Assert.True(res.Value["result"].Any(jt => jt["name"]?.Value<string>() == "StringField"), "StringField should be returned for `accessorPropertiesOnly=false`");
+                   Assert.True(res.Value["result"].Any(jt => jt["name"]?.Value<string>() == "StringField"), "StringField should be returned for `accessorPropertiesOnly=false`");
                });
 
             async Task<Result> GetPropertiesAndCheckAccessors(JObject get_prop_req, int num_fields)
@@ -875,10 +875,10 @@ namespace DebuggerTests
                    var res = await InvokeGetter(ptd, "StringField", returnByValue: returnByValue);
                    if (is_js)
                    {
-                        // In js case, it doesn't know the className, so the result looks slightly different
-                        Assert.True(
-                           JObject.DeepEquals(res.Value["result"], null_value_json),
-                           $"[StringField#returnByValue = {returnByValue}] Json didn't match. Actual: {res.Value["result"]} vs {null_value_json}");
+                       // In js case, it doesn't know the className, so the result looks slightly different
+                       Assert.True(
+                          JObject.DeepEquals(res.Value["result"], null_value_json),
+                          $"[StringField#returnByValue = {returnByValue}] Json didn't match. Actual: {res.Value["result"]} vs {null_value_json}");
                    }
                    else
                    {

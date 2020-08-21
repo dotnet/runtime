@@ -129,7 +129,4 @@
   <data name="InvalidOperation_IncorrectImplementation" xml:space="preserve">
     <value>The algorithm's implementation is incorrect.</value>
   </data>
-  <data name="SystemSecurityCryptographyPrimitives_PlatformNotSupported" xml:space="preserve">
-    <value>System.Security.Cryptography.Primitives is not supported on this platform.</value>
-  </data>
 </root>

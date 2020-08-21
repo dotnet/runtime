@@ -189,7 +189,7 @@
     <Reference Include="System.Collections.NonGeneric" />
     <Reference Include="System.Security.Claims" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsUnix)' == 'true' or '$(TargetsBrowser)' == 'true'">
+  <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
     <Reference Include="Microsoft.Win32.Primitives" />
     <Reference Include="System.IO.FileSystem" />
     <Reference Include="System.Net.Primitives" />

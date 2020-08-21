@@ -31,7 +31,7 @@ inline void deleteGCShadow() {}
 inline void checkGCWriteBarrier() {}
 #endif
 
-void GCProfileWalkHeap();
+void GCProfileWalkHeap(bool etwOnly);
 
 class gc_heap;
 class CFinalize;
@@ -57,7 +57,7 @@ protected:
     friend void EnterAllocLock();
     friend void LeaveAllocLock();
     friend void ProfScanRootsHelper(Object** object, ScanContext *pSC, uint32_t dwFlags);
-    friend void GCProfileWalkHeap();
+    friend void GCProfileWalkHeap(bool etwOnly);
 
 public:
     //In order to keep gc.cpp cleaner, ugly EE specific code is relegated to methods.
@@ -315,6 +315,8 @@ public:
     size_t GetLastGCGenerationSize(int gen);
 
     virtual void Shutdown();
+
+    static void ReportGenerationBounds();
 };
 
 #endif  // GCIMPL_H_

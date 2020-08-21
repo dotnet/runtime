@@ -276,6 +276,10 @@ namespace System.Net.Http
             catch (Exception ex)
             {
                 _stream.AbortWrite((long)Http3ErrorCode.InternalError);
+                if (ex is HttpRequestException)
+                {
+                    throw;
+                }
                 throw new HttpRequestException(SR.net_http_client_execution_error, ex);
             }
             finally
@@ -288,7 +292,7 @@ namespace System.Net.Http
         }
 
         /// <summary>
-        /// Waits for the initial response headers to be completed, including e.g. Expect 100 Continue.
+        /// Waits for the response headers to be read, and handles (Expect 100 etc.) informational statuses.
         /// </summary>
         private async Task ReadResponseAsync(CancellationToken cancellationToken)
         {
@@ -550,14 +554,8 @@ namespace System.Net.Http
                 }
             }
 
-            if (request.Content == null || request.Content.Headers.ContentLength == 0)
+            if (request.Content == null)
             {
-                // Expect 100 Continue requires content.
-                if (request.HasHeaders && request.Headers.ExpectContinue != null)
-                {
-                    request.Headers.ExpectContinue = null;
-                }
-
                 if (normalizedMethod.MustHaveRequestBody)
                 {
                     BufferIndexedHeader(H3StaticTable.ContentLength0);
@@ -1165,7 +1163,7 @@ namespace System.Net.Http
         // TODO: it may be possible for Http3RequestStream to implement Stream directly and avoid this allocation.
         private sealed class Http3ReadStream : HttpBaseStream
         {
-            private Http3RequestStream _stream;
+            private Http3RequestStream? _stream;
             private HttpResponseMessage? _response;
 
             public override bool CanRead => true;
@@ -1175,6 +1173,7 @@ namespace System.Net.Http
             public Http3ReadStream(Http3RequestStream stream)
             {
                 _stream = stream;
+                _response = stream._response;
             }
 
             ~Http3ReadStream()
@@ -1199,7 +1198,7 @@ namespace System.Net.Http
                         _stream._connection = null!;
                     }
 
-                    _stream = null!;
+                    _stream = null;
                     _response = null;
                 }
 
@@ -1212,7 +1211,6 @@ namespace System.Net.Http
                 {
                     await _stream.DisposeAsync().ConfigureAwait(false);
                     _stream = null!;
-                    _response = null;
                 }
 
                 await base.DisposeAsync().ConfigureAwait(false);

@@ -40,8 +40,8 @@ This will build the libraries and stress suite to a linux docker image and initi
 
 #### Using Windows containers
 
-Before we get started, please see 
-[docker documentation](https://docs.docker.com/docker-for-windows/#switch-between-windows-and-linux-containers) 
+Before we get started, please see
+[docker documentation](https://docs.docker.com/docker-for-windows/#switch-between-windows-and-linux-containers)
 on how windows containers can be enabled on your machine.
 Once ready, simply run:
 

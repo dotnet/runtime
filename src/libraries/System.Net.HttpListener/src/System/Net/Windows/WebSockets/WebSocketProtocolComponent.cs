@@ -248,7 +248,6 @@ namespace System.Net.WebSockets
 
             ThrowOnError(errorCode);
 
-            Interop.WebSocket.HttpHeader[] responseHeaders = MarshalHttpHeaders(responseHeadersPtr, (int)responseHeaderCount);
             errorCode = Interop.WebSocket.WebSocketEndServerHandshake(webSocketHandle);
 
             ThrowOnError(errorCode);

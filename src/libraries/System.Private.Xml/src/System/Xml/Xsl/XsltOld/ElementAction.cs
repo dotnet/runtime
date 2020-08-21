@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#nullable enable
 namespace System.Xml.Xsl.XsltOld
 {
     using System;
@@ -12,18 +13,18 @@ namespace System.Xml.Xsl.XsltOld
     {
         private const int NameDone = 2;
 
-        private Avt _nameAvt;
-        private Avt _nsAvt;
+        private Avt? _nameAvt;
+        private Avt? _nsAvt;
         private bool _empty;
-        private InputScopeManager _manager;
+        private InputScopeManager? _manager;
         // Compile time precalculated AVTs
-        private string _name;
-        private string _nsUri;
-        private PrefixQName _qname; // When we not have AVTs at all we can do this. null otherwise.
+        private string? _name;
+        private string? _nsUri;
+        private PrefixQName? _qname; // When we not have AVTs at all we can do this. null otherwise.
 
         internal ElementAction() { }
 
-        private static PrefixQName CreateElementQName(string name, string nsUri, InputScopeManager manager)
+        private static PrefixQName CreateElementQName(string name, string? nsUri, InputScopeManager? manager)
         {
             if (nsUri == XmlReservedNs.NsXmlNs)
             {
@@ -35,7 +36,7 @@ namespace System.Xml.Xsl.XsltOld
 
             if (nsUri == null)
             {
-                qname.Namespace = manager.ResolveXmlNamespace(qname.Prefix);
+                qname.Namespace = manager!.ResolveXmlNamespace(qname.Prefix);
             }
             else
             {
@@ -57,7 +58,7 @@ namespace System.Xml.Xsl.XsltOld
             {
                 if (_name != "xmlns")
                 {
-                    _qname = CreateElementQName(_name, _nsUri, compiler.CloneScopeManager());
+                    _qname = CreateElementQName(_name!, _nsUri, compiler.CloneScopeManager());
                 }
             }
             else
@@ -112,7 +113,7 @@ namespace System.Xml.Xsl.XsltOld
                     else
                     {
                         frame.CalulatedName = CreateElementQName(
-                            _nameAvt == null ? _name : _nameAvt.Evaluate(processor, frame),
+                            _nameAvt == null ? _name! : _nameAvt.Evaluate(processor, frame),
                             _nsAvt == null ? _nsUri : _nsAvt.Evaluate(processor, frame),
                             _manager
                         );
@@ -121,7 +122,7 @@ namespace System.Xml.Xsl.XsltOld
 
                 case NameDone:
                     {
-                        PrefixQName qname = frame.CalulatedName;
+                        PrefixQName qname = frame.CalulatedName!;
                         if (processor.BeginEvent(XPathNodeType.Element, qname.Prefix, qname.Name, qname.Namespace, _empty) == false)
                         {
                             // Come back later

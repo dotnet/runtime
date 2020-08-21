@@ -5,6 +5,8 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Security.Principal;
+using System.Threading;
+using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
 namespace System.Security.Claims
@@ -198,6 +200,35 @@ namespace System.Security.Claims
             AssertExtensions.Throws<ArgumentNullException>("identity", () => new ClaimsPrincipal((IIdentity)null));
             AssertExtensions.Throws<ArgumentNullException>("principal", () => new ClaimsPrincipal((IPrincipal)null));
             AssertExtensions.Throws<ArgumentNullException>("reader", () => new ClaimsPrincipal((BinaryReader)null));
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void Current_FallsBackToThread()
+        {
+            RemoteExecutor.Invoke(() =>
+            {
+                ClaimsPrincipal principal1 = new ClaimsPrincipal();
+                ClaimsPrincipal principal2 = new ClaimsPrincipal();
+
+                Thread.CurrentPrincipal = principal1;
+                Assert.Same(principal1, ClaimsPrincipal.Current);
+
+                Thread.CurrentPrincipal = principal2;
+                Assert.Same(principal2, ClaimsPrincipal.Current);
+
+                NonClaimsIdentity id = new NonClaimsIdentity() { Name = "NonClaimsIdentity_Name" };
+                NonClaimsPrincipal nonClaimsPrincipal = new NonClaimsPrincipal() { Identity = id };
+
+                Thread.CurrentPrincipal = nonClaimsPrincipal;
+
+                ClaimsPrincipal current = ClaimsPrincipal.Current;
+                Assert.NotNull(current);
+                Assert.Equal("NonClaimsIdentity_Name", current.Identity.Name);
+
+                // match .NET Framework behavior by throwing ArgumentNullException when Thread.CurrentPrincipal is null
+                Thread.CurrentPrincipal = null;
+                Assert.Throws<ArgumentNullException>(() => ClaimsPrincipal.Current);
+            }).Dispose();
         }
 
         private class NonClaimsPrincipal : IPrincipal

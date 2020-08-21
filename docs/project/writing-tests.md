@@ -56,7 +56,7 @@ public async Task Headers_SetAfterRequestSubmitted_ThrowsInvalidOperationExcepti
 ```
 
 # OuterLoop
-This one is fairly simple but often used incorrectly. When running tests which depend on outside influences like e.g. Hardware (Internet, SerialPort, ...) and you can't mitigate these dependencies, you might consider using the `[OuterLoop]` attribute for your test. 
+This one is fairly simple but often used incorrectly. When running tests which depend on outside influences like e.g. Hardware (Internet, SerialPort, ...) and you can't mitigate these dependencies, you might consider using the `[OuterLoop]` attribute for your test.
 With this attribute, tests are executed in a dedicated CI loop and won't break the default CI loops which get created when you submit a PR.
 To run OuterLoop tests locally you need to set the msbuild property "OuterLoop" to true: `/p:OuterLoop=true`.
 To run OuterLoop tests in CI you need to mention dotnet-bot and identify the tests you want to run. See `@dotnet-bot help` for the exact loop names.

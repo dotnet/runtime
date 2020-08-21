@@ -2007,6 +2007,7 @@ emit_native_wrapper_ilgen (MonoImage *image, MonoMethodBuilder *mb, MonoMethodSi
 	MonoClass *klass;
 	int i, argnum, *tmp_locals;
 	int type, param_shift = 0;
+	int func_addr_local = -1;
 	gboolean need_gc_safe = FALSE;
 	GCSafeTransitionBuilder gc_safe_transition_builder;
 
@@ -2051,8 +2052,40 @@ emit_native_wrapper_ilgen (MonoImage *image, MonoMethodBuilder *mb, MonoMethodSi
 		mono_mb_add_local (mb, sig->ret);
 	}
 
-	if (need_gc_safe) {
-	        gc_safe_transition_builder_add_locals (&gc_safe_transition_builder);
+	if (need_gc_safe)
+		gc_safe_transition_builder_add_locals (&gc_safe_transition_builder);
+
+	if (!func && !aot && !func_param && !MONO_CLASS_IS_IMPORT (mb->method->klass)) {
+		/*
+		 * On netcore, its possible to register pinvoke resolvers at runtime, so
+		 * a pinvoke lookup can fail, and then succeed later. So if the
+		 * original lookup failed, do a lookup every time until it
+		 * succeeds.
+		 * This adds some overhead, but only when the pinvoke lookup
+		 * was not initially successful.
+		 * FIXME: AOT case
+		 */
+		func_addr_local = mono_mb_add_local (mb, int_type);
+
+		int cache_local = mono_mb_add_local (mb, int_type);
+		mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
+		mono_mb_emit_op (mb, CEE_MONO_PINVOKE_ADDR_CACHE, &piinfo->method);
+		mono_mb_emit_stloc (mb, cache_local);
+
+		mono_mb_emit_ldloc (mb, cache_local);
+		mono_mb_emit_byte (mb, CEE_LDIND_I);
+		int pos = mono_mb_emit_branch (mb, CEE_BRTRUE);
+
+		mono_mb_emit_ldloc (mb, cache_local);
+		mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
+		mono_mb_emit_op (mb, CEE_MONO_METHODCONST, &piinfo->method);
+		mono_mb_emit_icall (mb, mono_marshal_lookup_pinvoke);
+		mono_mb_emit_byte (mb, CEE_STIND_I);
+
+		mono_mb_patch_branch (mb, pos);
+		mono_mb_emit_ldloc (mb, cache_local);
+		mono_mb_emit_byte (mb, CEE_LDIND_I);
+		mono_mb_emit_stloc (mb, func_addr_local);
 	}
 
 	/*
@@ -2123,22 +2156,23 @@ emit_native_wrapper_ilgen (MonoImage *image, MonoMethodBuilder *mb, MonoMethodSi
 		g_assert_not_reached ();
 #endif
 	} else {
-		if (aot) {
-			/* Reuse the ICALL_ADDR opcode for pinvokes too */
-			mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
-			mono_mb_emit_op (mb, CEE_MONO_ICALL_ADDR, &piinfo->method);
-			if (piinfo->piflags & PINVOKE_ATTRIBUTE_SUPPORTS_LAST_ERROR) {
-				mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
-				mono_mb_emit_byte (mb, CEE_MONO_SAVE_LAST_ERROR);
-			}
-			mono_mb_emit_calli (mb, csig);
+		if (func_addr_local != -1) {
+			mono_mb_emit_ldloc (mb, func_addr_local);
 		} else {
-			if (piinfo->piflags & PINVOKE_ATTRIBUTE_SUPPORTS_LAST_ERROR) {
+			if (aot) {
+				/* Reuse the ICALL_ADDR opcode for pinvokes too */
 				mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
-				mono_mb_emit_byte (mb, CEE_MONO_SAVE_LAST_ERROR);
+				mono_mb_emit_op (mb, CEE_MONO_ICALL_ADDR, &piinfo->method);
 			}
-			mono_mb_emit_native_call (mb, csig, func);
 		}
+		if (piinfo->piflags & PINVOKE_ATTRIBUTE_SUPPORTS_LAST_ERROR) {
+			mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
+			mono_mb_emit_byte (mb, CEE_MONO_SAVE_LAST_ERROR);
+		}
+		if (func_addr_local != -1 || aot)
+			mono_mb_emit_calli (mb, csig);
+		else
+			mono_mb_emit_native_call (mb, csig, func);
 	}
 
 	if (MONO_TYPE_ISSTRUCT (sig->ret)) {

@@ -3,8 +3,8 @@
 
 using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
 using System.IO;
+using System.Linq;
 using System.Runtime.InteropServices;
 using Xunit;
 
@@ -493,11 +493,18 @@ namespace System.Reflection.Tests
             TypeInfo typeInfo = type.GetTypeInfo();
             Type[] implementedInterfaces = type.GetTypeInfo().ImplementedInterfaces.ToArray();
 
-            Array.Sort(implementedInterfaces, delegate (Type a, Type b) { return a.GetHashCode() - b.GetHashCode(); });
-            Array.Sort(expected, delegate (Type a, Type b) { return a.GetHashCode() - b.GetHashCode(); });
+            Array.Sort(implementedInterfaces, TypeSortComparer);
+            Array.Sort(expected, TypeSortComparer);
 
             Assert.Equal(expected, implementedInterfaces);
             Assert.All(expected, ti => Assert.True(ti.GetTypeInfo().IsAssignableFrom(type.GetTypeInfo())));
+            Assert.All(expected, ti => Assert.True(type.GetTypeInfo().IsAssignableTo(ti.GetTypeInfo())));
+
+            static int TypeSortComparer(Type a, Type b)
+            {
+                // produces a stable (within this process) ordering of two Type objects
+                return a.TypeHandle.Value.CompareTo(b.TypeHandle.Value);
+            }
         }
 
         public static IEnumerable<object[]> IsInstanceOfType_TestData()
@@ -568,10 +575,13 @@ namespace System.Reflection.Tests
         [InlineData(typeof(uint[]), typeof(int[]), true)]
         [InlineData(typeof(IList<int>), typeof(int[]), true)]
         [InlineData(typeof(IList<uint>), typeof(int[]), true)]
-        public void IsAssignableFrom(Type type, Type c, bool expected)
+        public void IsAssignable(Type type, Type c, bool expected)
         {
             Assert.Equal(expected, type.GetTypeInfo().IsAssignableFrom(c));
             Assert.Equal(expected, type.GetTypeInfo().IsAssignableFrom(c?.GetTypeInfo()));
+
+            Assert.Equal(expected, c?.IsAssignableTo(type) ?? false);
+            Assert.Equal(expected, c?.GetTypeInfo().IsAssignableTo(type.GetTypeInfo()) ?? false);
         }
 
         class G<T, U> where T : U
@@ -581,7 +591,7 @@ namespace System.Reflection.Tests
         static volatile object s_boxedInt32;
 
         [Fact]
-        public void IsAssignableFromNullable()
+        public void IsAssignableNullable()
         {
             Type nubInt = typeof(Nullable<int>);
             Type intType = typeof(int);
@@ -592,6 +602,8 @@ namespace System.Reflection.Tests
             // Nullable<T>  is assignable from  int
             Assert.True(nubInt.IsAssignableFrom(intType));
             Assert.False(intType.IsAssignableFrom(nubInt));
+            Assert.False(nubInt.IsAssignableTo(intType));
+            Assert.True(intType.IsAssignableTo(nubInt));
 
             Type nubOfT = nubInt.GetGenericTypeDefinition();
             Type T = nubOfT.GetTypeInfo().GenericTypeParameters[0];
@@ -601,15 +613,22 @@ namespace System.Reflection.Tests
             Assert.True(objType.IsAssignableFrom(T));
             Assert.True(valTypeType.IsAssignableFrom(T));
 
+            Assert.True(T.IsAssignableTo(T));
+            Assert.True(T.IsAssignableTo(objType));
+            Assert.True(T.IsAssignableTo(valTypeType));
+
             // should be false
             // Nullable<T> is not assignable from T
             Assert.False(nubOfT.IsAssignableFrom(T));
             Assert.False(T.IsAssignableFrom(nubOfT));
 
+            Assert.False(nubOfT.IsAssignableTo(T));
+            Assert.False(T.IsAssignableTo(nubOfT));
+
             // illegal type construction due to T->T?
             Assert.Throws<ArgumentException>(() => typeof(G<,>).MakeGenericType(typeof(int), typeof(int?)));
 
-            // Test trivial object casts 
+            // Test trivial object casts
             s_boxedInt32 = (object)1234;
             Assert.True((s_boxedInt32 is int?) && (int?)s_boxedInt32 == 1234);
 
@@ -625,7 +644,7 @@ namespace System.Reflection.Tests
         {
             //void OpenGenericArrays()
             //{
-            //    // this is valid, reflection checks below should agree 
+            //    // this is valid, reflection checks below should agree
             //    IFace[] arr2 = default(T[]);
             //    IEnumerable<IFace> ie = default(T[]);
             //}
@@ -635,7 +654,7 @@ namespace System.Reflection.Tests
         {
             //void OpenGenericArrays()
             //{
-            //    // this is valid, reflection checks below should agree 
+            //    // this is valid, reflection checks below should agree
             //    U[] arr2 = default(T[]);
             //    IEnumerable<U> ie = default(T[]);
             //}
@@ -648,12 +667,17 @@ namespace System.Reflection.Tests
             Assert.True(typeof(IFace[]).IsAssignableFrom(a));
             Assert.True(typeof(IEnumerable<IFace>).IsAssignableFrom(a));
 
+            Assert.True(a.IsAssignableTo(typeof(IFace[])));
+            Assert.True(a.IsAssignableTo(typeof(IEnumerable<IFace>)));
+
             Type a1 = typeof(GG<,>).GetGenericArguments()[0].MakeArrayType();
             Type a2 = typeof(GG<,>).GetGenericArguments()[1].MakeArrayType();
             Assert.True(a2.IsAssignableFrom(a1));
+            Assert.True(a1.IsAssignableTo(a2));
 
             Type ie = typeof(IEnumerable<>).MakeGenericType(typeof(GG<,>).GetGenericArguments()[1]);
             Assert.True(ie.IsAssignableFrom(a1));
+            Assert.True(a1.IsAssignableTo(ie));
         }
 
         public static IEnumerable<object[]> IsEquivilentTo_TestData()

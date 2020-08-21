@@ -11,6 +11,7 @@ internal partial class Interop
             internal const string BCRYPT_ECC_PARAMETERS = "ECCParameters";
             internal const string BCRYPT_EFFECTIVE_KEY_LENGTH = "EffectiveKeyLength";
             internal const string BCRYPT_HASH_LENGTH = "HashDigestLength";
+            internal const string BCRYPT_MESSAGE_BLOCK_LENGTH = "MessageBlockLength";
         }
     }
 }

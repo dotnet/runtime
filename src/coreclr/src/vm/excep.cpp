@@ -3835,7 +3835,7 @@ LONG WatsonLastChance(                  // EXCEPTION_CONTINUE_SEARCH, _CONTINUE_
 
                 STRESS_LOG0(LF_CORDB, LL_INFO10, "D::RFFE: About to call RaiseFailFastException\n");
 #ifdef HOST_WINDOWS
-                CreateCrashDumpIfEnabled();
+                CreateCrashDumpIfEnabled(fSOException);
 #endif
                 RaiseFailFastException(pExceptionInfo == NULL ? NULL : pExceptionInfo->ExceptionRecord,
                                        pExceptionInfo == NULL ? NULL : pExceptionInfo->ContextRecord,
@@ -4085,10 +4085,10 @@ BuildCreateDumpCommandLine(
     }
 }
 
-static bool
+static DWORD 
 LaunchCreateDump(LPCWSTR lpCommandLine)
 {
-    bool fSuccess = false;
+    DWORD fSuccess = false;
 
     EX_TRY
     {
@@ -4117,12 +4117,26 @@ LaunchCreateDump(LPCWSTR lpCommandLine)
 }
 
 void
-CreateCrashDumpIfEnabled()
+CreateCrashDumpIfEnabled(bool stackoverflow)
 {
-    // If enabled, launch the create minidump utility and wait until it completes
-    if (g_createDumpCommandLine != nullptr)
+    // If enabled, launch the create minidump utility and wait until it completes. Only launch createdump once for this process.
+    LPCWSTR createDumpCommandLine = InterlockedExchangeT<LPCWSTR>(&g_createDumpCommandLine, nullptr);
+    if (createDumpCommandLine != nullptr)
     {
-        LaunchCreateDump(g_createDumpCommandLine);
+        if (stackoverflow)
+        {
+            HandleHolder createDumpThreadHandle = Thread::CreateUtilityThread(Thread::StackSize_Small, (LPTHREAD_START_ROUTINE)LaunchCreateDump, (void*)createDumpCommandLine, W(".NET Stack overflow create dump"));
+            if (createDumpThreadHandle != INVALID_HANDLE_VALUE)
+            {
+                // Wait for the dump to be generated
+                DWORD res = WaitForSingleObject(createDumpThreadHandle, INFINITE);
+                _ASSERTE(res == WAIT_OBJECT_0);
+            }
+        }
+        else
+        {
+            LaunchCreateDump(createDumpCommandLine);
+        }
     }
 }
 
@@ -4148,15 +4162,15 @@ GenerateCrashDump(
 void
 InitializeCrashDump()
 {
-    bool enabled = CLRConfig::IsConfigEnabled(CLRConfig::INTERNAL_DbgEnableMiniDump);
-    if (enabled)
+    DWORD enabled = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_DbgEnableMiniDump);
+    if (enabled == 1)
     {
         LPCWSTR dumpName = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_DbgMiniDumpName);
         int dumpType = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_DbgMiniDumpType);
-        bool diag = CLRConfig::IsConfigEnabled(CLRConfig::INTERNAL_CreateDumpDiagnostics);
+        DWORD diag = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_CreateDumpDiagnostics);
 
         SString commandLine;
-        BuildCreateDumpCommandLine(commandLine, dumpName, dumpType, diag);
+        BuildCreateDumpCommandLine(commandLine, dumpName, dumpType, diag == 1);
         g_createDumpCommandLine = commandLine.GetCopyOfUnicodeString();
     }
 }
@@ -4171,7 +4185,7 @@ InitializeCrashDump()
 void CrashDumpAndTerminateProcess(UINT exitCode)
 {
 #ifdef HOST_WINDOWS
-    CreateCrashDumpIfEnabled();
+    CreateCrashDumpIfEnabled(exitCode == COR_E_STACKOVERFLOW);
 #endif
     TerminateProcess(GetCurrentProcess(), exitCode);
 }

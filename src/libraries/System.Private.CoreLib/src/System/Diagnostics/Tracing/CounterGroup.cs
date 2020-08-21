@@ -200,22 +200,47 @@ namespace System.Diagnostics.Tracing
 
         private void OnTimer()
         {
-            Debug.Assert(Monitor.IsEntered(s_counterGroupLock));
             if (_eventSource.IsEnabled())
             {
-                DateTime now = DateTime.UtcNow;
-                TimeSpan elapsed = now - _timeStampSinceCollectionStarted;
-
-                foreach (DiagnosticCounter counter in _counters)
+                DateTime now;
+                TimeSpan elapsed;
+                int pollingIntervalInMilliseconds;
+                DiagnosticCounter[] counters;
+                lock (s_counterGroupLock)
                 {
-                    counter.WritePayload((float)elapsed.TotalSeconds, _pollingIntervalInMilliseconds);
+                    now = DateTime.UtcNow;
+                    elapsed = now - _timeStampSinceCollectionStarted;
+                    pollingIntervalInMilliseconds = _pollingIntervalInMilliseconds;
+                    counters = new DiagnosticCounter[_counters.Count];
+                    _counters.CopyTo(counters);
                 }
-                _timeStampSinceCollectionStarted = now;
 
-                do
+                // MUST keep out of the scope of s_counterGroupLock because this will cause WritePayload
+                // callback can be re-entrant to CounterGroup (i.e. it's possible it calls back into EnableTimer()
+                // above, since WritePayload callback can contain user code that can invoke EventSource constructor
+                // and lead to a deadlock. (See https://github.com/dotnet/runtime/issues/40190 for details)
+                foreach (DiagnosticCounter counter in counters)
                 {
-                    _nextPollingTimeStamp += new TimeSpan(0, 0, 0, 0, _pollingIntervalInMilliseconds);
-                } while (_nextPollingTimeStamp <= now);
+                    // NOTE: It is still possible for a race condition to occur here. An example is if the session
+                    // that subscribed to these batch of counters was disabled and it was immediately enabled in
+                    // a different session, some of the counter data that was supposed to be written to the old
+                    // session can now "overflow" into the new session.
+                    // This problem pre-existed to this change (when we used to hold lock in the call to WritePayload):
+                    // the only difference being the old behavior caused the entire batch of counters to be either
+                    // written to the old session or the new session. The behavior change is not being treated as a
+                    // significant problem to address for now, but we can come back and address it if it turns out to
+                    // be an actual issue.
+                    counter.WritePayload((float)elapsed.TotalSeconds, pollingIntervalInMilliseconds);
+                }
+
+                lock (s_counterGroupLock)
+                {
+                    _timeStampSinceCollectionStarted = now;
+                    do
+                    {
+                        _nextPollingTimeStamp += new TimeSpan(0, 0, 0, 0, _pollingIntervalInMilliseconds);
+                    } while (_nextPollingTimeStamp <= now);
+                }
             }
         }
 
@@ -228,8 +253,15 @@ namespace System.Diagnostics.Tracing
         private static void PollForValues()
         {
             AutoResetEvent? sleepEvent = null;
+
+            // Cache of onTimer callbacks for each CounterGroup.
+            // We cache these outside of the scope of s_counterGroupLock because
+            // calling into the callbacks can cause a re-entrancy into CounterGroup.Enable()
+            // and result in a deadlock. (See https://github.com/dotnet/runtime/issues/40190 for details)
+            List<Action> onTimers = new List<Action>();
             while (true)
             {
+                onTimers.Clear();
                 int sleepDurationInMilliseconds = int.MaxValue;
                 lock (s_counterGroupLock)
                 {
@@ -239,13 +271,17 @@ namespace System.Diagnostics.Tracing
                         DateTime now = DateTime.UtcNow;
                         if (counterGroup._nextPollingTimeStamp < now + new TimeSpan(0, 0, 0, 0, 1))
                         {
-                            counterGroup.OnTimer();
+                            onTimers.Add(() => counterGroup.OnTimer());
                         }
 
                         int millisecondsTillNextPoll = (int)((counterGroup._nextPollingTimeStamp - now).TotalMilliseconds);
                         millisecondsTillNextPoll = Math.Max(1, millisecondsTillNextPoll);
                         sleepDurationInMilliseconds = Math.Min(sleepDurationInMilliseconds, millisecondsTillNextPoll);
                     }
+                }
+                foreach (Action onTimer in onTimers)
+                {
+                    onTimer.Invoke();
                 }
                 if (sleepDurationInMilliseconds == int.MaxValue)
                 {

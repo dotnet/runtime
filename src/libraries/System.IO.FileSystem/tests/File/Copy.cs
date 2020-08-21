@@ -108,7 +108,6 @@ namespace System.IO.Tests
 
         [Theory]
         [MemberData(nameof(CopyFileWithData_MemberData))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/40543", TestPlatforms.Browser)]
         public void CopyFileWithData(char[] data, bool readOnly)
         {
             string testFileSource = GetTestFilePath();
@@ -141,7 +140,12 @@ namespace System.IO.Tests
             }
 
             // Ensure last write/access time on the new file is appropriate
-            if (PlatformDetection.IsNotBrowser) // There is only one write time on browser vfs
+            //
+            // For browser, there is technically only 1 time.  It's the max
+            // of LastWrite and LastAccess.  On browser, File.SetLastWriteTime
+            // overwrites LastWrite and LastAccess, and File.Copy
+            // overwrites LastWrite , so this check doesn't apply.
+            if (PlatformDetection.IsNotBrowser)
             {
                 Assert.InRange(File.GetLastWriteTimeUtc(testFileDest), lastWriteTime.AddSeconds(-1), lastWriteTime.AddSeconds(1));
             }
@@ -333,6 +337,27 @@ namespace System.IO.Tests
             // This always throws as you can't copy an alternate stream out (oddly)
             Assert.Throws<IOException>(() => Copy(testFileAlternateStream, testFile2, overwrite: true));
             Assert.Throws<IOException>(() => Copy(testFileAlternateStream, testFile2 + alternateStream, overwrite: true));
+        }
+    }
+
+    /// <summary>
+    /// Single tests that shouldn't be duplicated by inheritance.
+    /// </summary>
+    [PlatformSpecific(~TestPlatforms.Browser)] // https://github.com/dotnet/runtime/issues/40867 - flock not supported
+    public sealed class File_Copy_Single : FileSystemTest
+    {
+        [Fact]
+        public void EnsureThrowWhenCopyToNonSharedFile()
+        {
+            DirectoryInfo testDirectory = Directory.CreateDirectory(GetTestFilePath());
+            string file1 = Path.Combine(testDirectory.FullName, GetTestFileName());
+            string file2 = Path.Combine(testDirectory.FullName, GetTestFileName());
+
+            File.WriteAllText(file1, "foo");
+            File.WriteAllText(file2, "bar");
+
+            using var stream = new FileStream(file1, FileMode.Open, FileAccess.Read, FileShare.None);
+            Assert.Throws<IOException>(() => File.Copy(file2, file1, overwrite: true));
         }
     }
 }

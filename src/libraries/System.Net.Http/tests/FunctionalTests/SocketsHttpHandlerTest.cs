@@ -136,7 +136,7 @@ namespace System.Net.Http.Functional.Tests
             {
                 using HttpClientHandler handler = CreateHttpClientHandler();
                 handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
-                
+
                 var socketsHandler = (SocketsHttpHandler)GetUnderlyingSocketsHttpHandler(handler);
                 socketsHandler.ConnectionFactory = connectionFactory;
 
@@ -152,7 +152,7 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         public async Task CustomConnectionFactory_SyncRequest_Fails()
         {
-            await using ConnectionFactory connectionFactory = new SocketsHttpConnectionFactory();
+            await using ConnectionFactory connectionFactory = new SocketsConnectionFactory(SocketType.Stream, ProtocolType.Tcp);
             using SocketsHttpHandler handler = new SocketsHttpHandler
             {
                 ConnectionFactory = connectionFactory
@@ -161,7 +161,46 @@ namespace System.Net.Http.Functional.Tests
             using HttpClient client = CreateHttpClient(handler);
 
             HttpRequestException e = await Assert.ThrowsAnyAsync<HttpRequestException>(() => client.GetStringAsync($"http://{Guid.NewGuid():N}.com/foo"));
-            NetworkException networkException = Assert.IsType<NetworkException>(e.InnerException);
+            Assert.IsType<NetworkException>(e.InnerException);
+        }
+
+        class CustomConnectionFactory : SocketsConnectionFactory
+        {
+            public CustomConnectionFactory() : base(SocketType.Stream, ProtocolType.Tcp) { }
+
+            public HttpRequestMessage LastHttpRequestMessage { get; private set; }
+
+            public override ValueTask<Connection> ConnectAsync(EndPoint endPoint, IConnectionProperties options = null, CancellationToken cancellationToken = default)
+            {
+                if (options.TryGet(out HttpRequestMessage message))
+                {
+                    LastHttpRequestMessage = message;
+                }
+
+                return base.ConnectAsync(endPoint, options, cancellationToken);
+            }
+        }
+
+        [Fact]
+        public Task CustomConnectionFactory_ConnectAsync_CanCaptureHttpRequestMessage()
+        {
+            return LoopbackServer.CreateClientAndServerAsync(async uri =>
+            {
+                using var connectionFactory = new CustomConnectionFactory();
+                using var handler = new SocketsHttpHandler()
+                {
+                    ConnectionFactory = connectionFactory
+                };
+                using HttpClient client = CreateHttpClient(handler);
+
+                using var request = new HttpRequestMessage(HttpMethod.Get, uri);
+
+                using HttpResponseMessage response = await client.SendAsync(request);
+                string content = await response.Content.ReadAsStringAsync();
+
+                Assert.Equal("OK", content);
+                Assert.Same(request, connectionFactory.LastHttpRequestMessage);
+            }, server => server.HandleRequestAsync(content: "OK"));
         }
     }
 
@@ -872,7 +911,7 @@ namespace System.Net.Http.Functional.Tests
                 await connection.WriteFrameAsync(MakeDataFrame(streamId, DataBytes));
 
                 // Additional trailing header frame.
-                await connection.SendResponseHeadersAsync(streamId, isTrailingHeader:true, headers: TrailingHeaders, endStream : true);
+                await connection.SendResponseHeadersAsync(streamId, isTrailingHeader: true, headers: TrailingHeaders, endStream: true);
 
                 HttpResponseMessage response = await sendTask;
                 Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -898,7 +937,7 @@ namespace System.Net.Http.Functional.Tests
                 await connection.SendDefaultResponseHeadersAsync(streamId);
                 await connection.WriteFrameAsync(MakeDataFrame(streamId, DataBytes));
                 // Additional trailing header frame with pseudo-headers again..
-                await connection.SendResponseHeadersAsync(streamId, isTrailingHeader:false, headers: TrailingHeaders, endStream : true);
+                await connection.SendResponseHeadersAsync(streamId, isTrailingHeader: false, headers: TrailingHeaders, endStream: true);
 
                 await Assert.ThrowsAsync<HttpRequestException>(() => sendTask);
             }
@@ -937,10 +976,10 @@ namespace System.Net.Http.Functional.Tests
 
                 // Finish data stream and write out trailing headers.
                 await connection.WriteFrameAsync(MakeDataFrame(streamId, DataBytes));
-                await connection.SendResponseHeadersAsync(streamId, endStream : true, isTrailingHeader:true, headers: TrailingHeaders);
+                await connection.SendResponseHeadersAsync(streamId, endStream: true, isTrailingHeader: true, headers: TrailingHeaders);
 
                 // Read data until EOF is reached
-                while (stream.Read(data, 0, data.Length) != 0);
+                while (stream.Read(data, 0, data.Length) != 0) ;
 
                 Assert.Equal(TrailingHeaders.Count, response.TrailingHeaders.Count());
                 Assert.Contains("amazingtrailer", response.TrailingHeaders.GetValues("MyCoolTrailerHeader"));
@@ -962,7 +1001,7 @@ namespace System.Net.Http.Functional.Tests
 
                 // Response header.
                 await connection.SendDefaultResponseHeadersAsync(streamId);
-                await connection.SendResponseHeadersAsync(streamId, endStream : true, isTrailingHeader:true, headers: TrailingHeaders);
+                await connection.SendResponseHeadersAsync(streamId, endStream: true, isTrailingHeader: true, headers: TrailingHeaders);
 
                 HttpResponseMessage response = await sendTask;
                 Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -1302,14 +1341,14 @@ namespace System.Net.Http.Functional.Tests
                 using (var serverStream = new NetworkStream(server, ownsSocket: false))
                 using (var serverReader = new StreamReader(serverStream))
                 {
-                    while (!string.IsNullOrWhiteSpace(await serverReader.ReadLineAsync()));
+                    while (!string.IsNullOrWhiteSpace(await serverReader.ReadLineAsync())) ;
                     await server.SendAsync(new ArraySegment<byte>(Encoding.ASCII.GetBytes(responseBody)), SocketFlags.None);
                     await firstRequest;
 
                     Task<Socket> secondAccept = listener.AcceptAsync(); // shouldn't complete
 
                     Task<string> additionalRequest = client.GetStringAsync(uri);
-                    while (!string.IsNullOrWhiteSpace(await serverReader.ReadLineAsync()));
+                    while (!string.IsNullOrWhiteSpace(await serverReader.ReadLineAsync())) ;
                     await server.SendAsync(new ArraySegment<byte>(Encoding.ASCII.GetBytes(responseBody)), SocketFlags.None);
                     await additionalRequest;
 
@@ -1584,7 +1623,7 @@ namespace System.Net.Http.Functional.Tests
                         "Content-Length: 0\r\n" +
                         "\r\n";
 
-                using  (var handler = new HttpClientHandler())
+                using (var handler = new HttpClientHandler())
                 {
                     handler.Proxy = new UseSpecifiedUriWebProxy(proxyUrl, new NetworkCredential("abc", "password"));
 
@@ -1597,7 +1636,7 @@ namespace System.Net.Http.Functional.Tests
                             // Get first request, no body for GET.
                             await connection.ReadRequestHeaderAndSendCustomResponseAsync(responseBody).ConfigureAwait(false);
                             // Client should send another request after being rejected with 407.
-                            await connection.ReadRequestHeaderAndSendResponseAsync(content:"OK").ConfigureAwait(false);
+                            await connection.ReadRequestHeaderAndSendResponseAsync(content: "OK").ConfigureAwait(false);
                         });
 
                         string response = await request;
@@ -1682,6 +1721,30 @@ namespace System.Net.Http.Functional.Tests
                 handler.DefaultProxyCredentials = newCredentials;
                 Assert.Same(newCredentials, handler.DefaultProxyCredentials);
             }
+        }
+
+        [Fact]
+        public void KeepAlivePing_GetSet_Roundtrips()
+        {
+            using var handler = new SocketsHttpHandler();
+
+            var testTimeSpanValue = TimeSpan.FromSeconds(5);
+            var invalidTimeSpanValue = TimeSpan.FromTicks(TimeSpan.TicksPerSecond - 1);
+
+            Assert.Equal(TimeSpan.FromSeconds(20), handler.KeepAlivePingTimeout);
+            handler.KeepAlivePingTimeout = testTimeSpanValue;
+            Assert.Equal(testTimeSpanValue, handler.KeepAlivePingTimeout);
+
+            Assert.Equal(Timeout.InfiniteTimeSpan, handler.KeepAlivePingDelay);
+            handler.KeepAlivePingDelay = testTimeSpanValue;
+            Assert.Equal(testTimeSpanValue, handler.KeepAlivePingDelay);
+
+            Assert.Equal(HttpKeepAlivePingPolicy.Always, handler.KeepAlivePingPolicy);
+            handler.KeepAlivePingPolicy = HttpKeepAlivePingPolicy.WithActiveRequests;
+            Assert.Equal(HttpKeepAlivePingPolicy.WithActiveRequests, handler.KeepAlivePingPolicy);
+
+            Assert.Throws<ArgumentOutOfRangeException>(() => handler.KeepAlivePingTimeout = invalidTimeSpanValue);
+            Assert.Throws<ArgumentOutOfRangeException>(() => handler.KeepAlivePingDelay = invalidTimeSpanValue);
         }
 
         [Fact]
@@ -1930,6 +1993,9 @@ namespace System.Net.Http.Functional.Tests
                 Assert.Throws(expectedExceptionType, () => handler.SslOptions = new SslClientAuthenticationOptions());
                 Assert.Throws(expectedExceptionType, () => handler.UseCookies = false);
                 Assert.Throws(expectedExceptionType, () => handler.UseProxy = false);
+                Assert.Throws(expectedExceptionType, () => handler.KeepAlivePingTimeout = TimeSpan.FromSeconds(5));
+                Assert.Throws(expectedExceptionType, () => handler.KeepAlivePingDelay = TimeSpan.FromSeconds(5));
+                Assert.Throws(expectedExceptionType, () => handler.KeepAlivePingPolicy = HttpKeepAlivePingPolicy.WithActiveRequests);
             }
         }
     }
@@ -2237,23 +2303,24 @@ namespace System.Net.Http.Functional.Tests
 
         private async Task<(int Count, int LastStreamId)> HandleAllPendingRequests(Http2LoopbackConnection connection, int totalRequestCount)
         {
-            int streamId = -1;
+            int lastStreamId = -1;
             for (int i = 0; i < totalRequestCount; i++)
             {
                 try
                 {
                     // Exact number of requests sent over the given connection is unknown,
                     // so we keep reading headers and sending response while there are available requests.
-                    streamId = await connection.ReadRequestHeaderAsync().ConfigureAwait(false);
+                    (int streamId, _) = await connection.ReadAndParseRequestHeaderAsync().ConfigureAwait(false);
                     await connection.SendDefaultResponseAsync(streamId).ConfigureAwait(false);
+                    lastStreamId = streamId;
                 }
                 catch (OperationCanceledException)
                 {
-                    return (i, streamId);
+                    return (i, lastStreamId);
                 }
             }
 
-            return (totalRequestCount, streamId);
+            return (totalRequestCount, lastStreamId);
         }
 
         private async Task<List<int>> AcceptRequests(Http2LoopbackConnection connection, int maxRequests = int.MaxValue)
@@ -2263,7 +2330,8 @@ namespace System.Net.Http.Functional.Tests
             {
                 try
                 {
-                    streamIds.Add(await connection.ReadRequestHeaderAsync().ConfigureAwait(false));
+                    (int streamId, _) = await connection.ReadAndParseRequestHeaderAsync().ConfigureAwait(false);
+                    streamIds.Add(streamId);
                 }
                 catch (OperationCanceledException)
                 {
