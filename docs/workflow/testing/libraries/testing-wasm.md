@@ -7,14 +7,14 @@ In order to be able to run tests, the following JavaScript engines should be ins
 
 They can be installed as a part of [jsvu](https://github.com/GoogleChromeLabs/jsvu).
 
-Please make sure that a JavaScript engine binary is available via command line,  
+Please make sure that a JavaScript engine binary is available via command line,
 e.g. for V8:
 ```bash
 $ v8
 V8 version 8.5.62
 ```
 
-If you use `jsvu`, first add its location to PATH variable  
+If you use `jsvu`, first add its location to PATH variable
 e.g. for V8
 
 ```bash
@@ -39,7 +39,7 @@ The following shows how to run tests for a specific library
 ```
 
 ### Running tests using different JavaScript engines
-It's possible to set a JavaScript engine explicitly by adding `/p:JSEngine` property: 
+It's possible to set a JavaScript engine explicitly by adding `/p:JSEngine` property:
 
 ```
 ./dotnet.sh build /t:Test src/libraries/System.AppContext/tests /p:TargetOS=Browser /p:TargetArchitecture=wasm /p:Configuration=Release /p:JSEngine=SpiderMonkey

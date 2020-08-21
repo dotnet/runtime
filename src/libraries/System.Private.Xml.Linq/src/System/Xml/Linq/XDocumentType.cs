@@ -12,14 +12,14 @@ namespace System.Xml.Linq
     public class XDocumentType : XNode
     {
         private string _name;
-        private string _publicId;
-        private string _systemId;
+        private string? _publicId;
+        private string? _systemId;
         private string _internalSubset;
 
         /// <summary>
         /// Initializes an empty instance of the <see cref="XDocumentType"/> class.
         /// </summary>
-        public XDocumentType(string name, string publicId, string systemId, string internalSubset)
+        public XDocumentType(string name, string? publicId, string? systemId, string internalSubset)
         {
             _name = XmlConvert.VerifyName(name);
             _publicId = publicId;
@@ -57,6 +57,10 @@ namespace System.Xml.Linq
         {
             get
             {
+                // TODO-NULLABLE: As per documentation, this should return string.Empty.
+                // Should we check for null here?
+                // This is also referenced by XNodeReader.Value which overrides XmlReader.Value, which is non-nullable.
+                // There is one case that passes a nullable parameter (XNodeBuilder.WriteDocType), currently we are just asserting that the nullable parameter does not receive null.
                 return _internalSubset;
             }
             set
@@ -102,7 +106,7 @@ namespace System.Xml.Linq
         /// <summary>
         /// Gets or sets the public identifier for this Document Type Definition (DTD).
         /// </summary>
-        public string PublicId
+        public string? PublicId
         {
             get
             {
@@ -119,7 +123,7 @@ namespace System.Xml.Linq
         /// <summary>
         /// Gets or sets the system identifier for this Document Type Definition (DTD).
         /// </summary>
-        public string SystemId
+        public string? SystemId
         {
             get
             {
@@ -170,7 +174,7 @@ namespace System.Xml.Linq
 
         internal override bool DeepEquals(XNode node)
         {
-            XDocumentType other = node as XDocumentType;
+            XDocumentType? other = node as XDocumentType;
             return other != null && _name == other._name && _publicId == other._publicId &&
                 _systemId == other.SystemId && _internalSubset == other._internalSubset;
         }

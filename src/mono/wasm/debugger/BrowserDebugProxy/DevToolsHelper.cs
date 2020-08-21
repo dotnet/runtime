@@ -193,6 +193,12 @@ namespace Microsoft.WebAssembly.Diagnostics
             return new MonoCommands($"MONO.mono_wasm_get_variables({scopeId}, {JsonConvert.SerializeObject(var_ids)})");
         }
 
+        public static MonoCommands EvaluateMemberAccess(int scopeId, string expr, params VarInfo[] vars)
+        {
+            var var_ids = vars.Select(v => new { index = v.Index, name = v.Name }).ToArray();
+            return new MonoCommands($"MONO.mono_wasm_eval_member_access({scopeId}, {JsonConvert.SerializeObject(var_ids)}, '', '{expr}')");
+        }
+
         public static MonoCommands SetBreakpoint(string assemblyName, uint methodToken, int ilOffset) => new MonoCommands($"MONO.mono_wasm_set_breakpoint (\"{assemblyName}\", {methodToken}, {ilOffset})");
 
         public static MonoCommands RemoveBreakpoint(int breakpointId) => new MonoCommands($"MONO.mono_wasm_remove_breakpoint({breakpointId})");
@@ -285,7 +291,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         internal DebugStore store;
         public TaskCompletionSource<DebugStore> Source { get; } = new TaskCompletionSource<DebugStore>();
 
-        public Dictionary<string, JToken> LocalsCache = new Dictionary<string, JToken>();
+        Dictionary<int, PerScopeCache> perScopeCaches { get; } = new Dictionary<int, PerScopeCache>();
 
         public DebugStore Store
         {
@@ -298,11 +304,26 @@ namespace Microsoft.WebAssembly.Diagnostics
             }
         }
 
+        public PerScopeCache GetCacheForScope(int scope_id)
+        {
+            if (perScopeCaches.TryGetValue(scope_id, out var cache))
+                return cache;
+
+            cache = new PerScopeCache();
+            perScopeCaches[scope_id] = cache;
+            return cache;
+        }
+
         public void ClearState()
         {
             CallStack = null;
-            LocalsCache.Clear();
+            perScopeCaches.Clear();
         }
+    }
 
+    internal class PerScopeCache
+    {
+        public Dictionary<string, JObject> Locals { get; } = new Dictionary<string, JObject>();
+        public Dictionary<string, JObject> MemberReferences { get; } = new Dictionary<string, JObject>();
     }
 }

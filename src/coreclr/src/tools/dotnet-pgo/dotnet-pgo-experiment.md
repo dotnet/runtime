@@ -1,7 +1,7 @@
 # Experiments towards a Profile Data pipeline for .NET
 -----
-The .NET Runtime has a long history of providing instrumentation based profile guided optimization 
-for use internally at Microsoft, and for scenarios involving extremely high value customers. To 
+The .NET Runtime has a long history of providing instrumentation based profile guided optimization
+for use internally at Microsoft, and for scenarios involving extremely high value customers. To
 this end the team built the IBC (instrumented block count) infrastructure into the runtime/ngen,
 and IBCMerge as a tool for manipulating .ibc files. Over the last few years, the structure of these
 technologies and tools has shown that they are not ideal for customer use or even internal use, and
@@ -33,19 +33,19 @@ Profile guided optimization in .NET is used to provide benefits for 3 major conc
 Startup time for an application is primarily improved by avoiding the use of the JIT by ahead of time
 compiling methods in the application. In addition a profile can allow determination of which methods
 are hot vs cold, and group methods commonly used together with others. This has been the primary use
-of pgo in .NET historically. 
+of pgo in .NET historically.
 
 Pgo is used to address size on disk concerns of R2R binaries where the default R2R strategy is too
 aggressive and produces binaries that are excessively large. The idea in that case is to only generate
 the functions specifically referenced in some profile instead of every method the heuristic indicates
 may be interesting.
 
-Application throughput performance has historically been the primary use of pgo data for C++ compilers. 
+Application throughput performance has historically been the primary use of pgo data for C++ compilers.
 .NET has history with the use of instrumented per block counts, but this data is not generally processed
 in an effective manner by the JIT. This proposal aims to revitalize efforts to make good use of profile
 guided data to improve code quality. Over time, it is expected that not only will profile data be used at
 build time, but that it will also be used to do runtime profile instrumentation.
- 
+
 # Proposal Contents
 Profile guided optimization is a combination of effort across a swath of components.
 
@@ -59,7 +59,7 @@ And there are a series of components that need to be modified
 2. Instrumenting jit (clrjit)
 3. Trace processing tool (dotnet-pgo)
 4. AOT compilation tool (crossgen2)
-6. Consuming runtime (coreclr) 
+6. Consuming runtime (coreclr)
 7. Diagnostic tools (r2rdump, dotnet-pgo)
 
 ## Conceptual model of `InstrumentationData`
@@ -68,7 +68,7 @@ statically, and instead is determined through instrumentation of the code. The f
 is expected to be defined by the JIT team, and be specific to the probes inserted, and may very well
 change over time. It is composed of two sections
 
-1. The descriptor used to describe the probes, this is fixed at JIT time, and describes the meaning of the data. 
+1. The descriptor used to describe the probes, this is fixed at JIT time, and describes the meaning of the data.
 2. The data gathered as counts, and values that will be used to perform further optimization.
 
 Both of these data blocks are able to contain type and method data, where the concept is that it is
@@ -78,7 +78,7 @@ but there are also plausible cases for gathering each kind of data in both secti
 be made general to support both. Instrumentation Data shall have a version number independent of the
 general R2R versioning scheme. The intention is for this form of `InstrumentationData` to become
 useable for both out of line instrumentation as described in this document, as well as only tiered
-compilation rejit scenarios with in process profiling. 
+compilation rejit scenarios with in process profiling.
 
 ## Trace data format
 Runtime instrumentation will be accomplished through 4 events, 2 of which are already existing
@@ -149,7 +149,7 @@ Profile data shall be encoded into the R2R FileFormat in a new section named `RE
 This section shall hold a version number, and a single `NativeHashtable` that contains a mapping from type/method
 to the pair of Desc and Data. TODO define how Desc and Data are encoded. The intention is to store exactly the
 same data as is stored in the PGO data file, except that the instrumentation data version must be the same for
-all data chunks. 
+all data chunks.
 
 ## Instrumenting Runtime
 The runtime shall be responsible for choosing when to execute instrumentation, allocating the tracing buffers
@@ -197,7 +197,7 @@ data that may be embedded into the R2R file format for possible consumption by t
 ## Trace processing tool
 The trace processing tool is responsible for reading the trace files as produced by perfview/dotnet trace, and
 producing .MIBC files. The process should be a straightforward format translation for instrumentation data. The
-`FunctionTouchOrder` and existence of the method shall be based on the `JitStarted` and `R2EEntryPoint` events. 
+`FunctionTouchOrder` and existence of the method shall be based on the `JitStarted` and `R2EEntryPoint` events.
 
 ## AOT Compilation tool
 AOT compilation shall use the profile guided data in several ways.
@@ -210,7 +210,7 @@ data for the method being compiled, and for both the uninstantiated method and i
 as are present. The jit is responsible for merging these multiple data sources.
 
 In addition the JIT may optionally choose to generate a profile guided data block for association with the precompiled
-code for use in re-jit scenarios, and information about related method code layout for the code, and optionally a 
+code for use in re-jit scenarios, and information about related method code layout for the code, and optionally a
 portion of the function body which is to be placed into a cold code section. The intention here it to allow some
 algorithm such as Pettis-Hansen or a more modern variant (eg https://research.fb.com/wp-content/uploads/2017/01/cgo2017-hfsort-final1.pdf)
 to be used to optimize code layout.
@@ -219,7 +219,7 @@ to be used to optimize code layout.
 If present in an R2R file, when a method is rejitted, the runtime shall provide a means for the jit to see instrumentation
 data from either previous compiles in process, and/or from the R2R file. This shall provide a means for the JIT to choose
 whether or not the method should be recompiled, or possibly to inform it about optimization opportunities that are
-too expensive to compute at jit time, but could be computed by the AOT compiler, or other such ideas. 
+too expensive to compute at jit time, but could be computed by the AOT compiler, or other such ideas.
 
 As a means of doing this, options such as the following will be given to the jit to provide custom behavior.
 1. Ignore the profile data and rejit.
@@ -235,4 +235,4 @@ would be to use this as a means for adaptive or speculative optimization.
 The tools r2rdump and dotnet-pgo shall provide a means for dumping their inputs. For most forms of data this is
 fairly straightforward, but for `InstrumentationData`, there shall be a common dump tool written in managed code
 that can provide a human readable dump of the data. r2rdump, dotnet-pgo, and possibly sos will all be able to share
-this codebase for examination of the data structures in r2r files, traces, and runtime environments respectively.  
+this codebase for examination of the data structures in r2r files, traces, and runtime environments respectively.

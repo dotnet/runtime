@@ -1,4 +1,4 @@
-﻿Performance Tracing on Linux
+Performance Tracing on Linux
 ============================
 
 When a performance problem is encountered on Linux, these instructions can be used to gather detailed information about what was happening on the machine at the time of the performance problem.

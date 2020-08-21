@@ -20,18 +20,18 @@ This is certainly undesirable and it should be avoided if possible.
 ```
 mkdir ~/dotnet
 cd ~/dotnet
-curl https://dotnetcli.blob.core.windows.net/dotnet/Sdk/master/dotnet-sdk-latest-freebsd-x64.tar.gz | tar xfz - 
+curl https://dotnetcli.blob.core.windows.net/dotnet/Sdk/master/dotnet-sdk-latest-freebsd-x64.tar.gz | tar xfz -
 ```
-if on 12.x you may also need to set `LD_PRELOAD` to `/usr/lib/libpthread.so` to avoid issue when cli freezes. 
+if on 12.x you may also need to set `LD_PRELOAD` to `/usr/lib/libpthread.so` to avoid issue when cli freezes.
 
 
 As of summer 2019 this CLI is no longer good enough to build all repos. If that is your case jump to section [Updating CLI](#updating--bootstrap-cli)
 Binary snapshot can be obtained from https://github.com/wfurt/blob as dotnet-sdk-freebsd-x64-latest.tgz
 
 ## Getting sources
-master of source-build pulls in source code of specific snapshot instead of tip of master branches. 
-That is generally OK but in case of FreeBSD it may miss some changes crucial for build. 
-(or pending un-submitted change) 
+master of source-build pulls in source code of specific snapshot instead of tip of master branches.
+That is generally OK but in case of FreeBSD it may miss some changes crucial for build.
+(or pending un-submitted change)
 
 ```
 git clone https://github.com/dotnet/source-build
@@ -44,9 +44,9 @@ git submodule update
 (cd src/coreclr ; git checkout master)
 ```
 
-port change from 
+port change from
 ```https://github.com/dotnet/corefx/commit/037859ac403ef17879655bb2f2e821d52e6eb4f3```
-In ideal case we could sync up to **master** but that brings Arcade changes and **breaks** the build. 
+In ideal case we could sync up to **master** but that brings Arcade changes and **breaks** the build.
 
 Bootstrap Arcade
 ```
@@ -86,8 +86,8 @@ index 81b8c7b..bb26868 100644
      <BuildArguments>$(BuildArguments) -PortableBuild=$(PortableBuild)</BuildArguments>
 ```
 
-Depending of the day and moon phase you may need to get some updates as well. 
-If build breaks look for pending PRs with FreeBSD tag or label and pull pending changes. 
+Depending of the day and moon phase you may need to get some updates as well.
+If build breaks look for pending PRs with FreeBSD tag or label and pull pending changes.
 
 ## Building
 
@@ -106,7 +106,7 @@ export DOTNET_CLI_TELEMETRY_OPTOUT=1
 ```
 
 In ideal situation this will build whole sdk. Right now it fails somewhere in cli.
-There is problem with rebuild and build will attempt to patch files again and/or make git updates. 
+There is problem with rebuild and build will attempt to patch files again and/or make git updates.
 
 ```export SOURCE_BUILD_SKIP_SUBMODULE_CHECK=1```
 
@@ -114,23 +114,23 @@ To build single repo again one can do:
 ```./build.sh /p:RootRepo=corefx /p:SkipRepoReferences=true ```
 
 ## Resolving issues
-Rebuild or source-build has issues. 
-Often running ```clean.sh``` from top helps. Be careful, that may undo any local pending changes. 
+Rebuild or source-build has issues.
+Often running ```clean.sh``` from top helps. Be careful, that may undo any local pending changes.
 
 Sometimes it would try to apply patches and it would fail.
-You can pass 
-```/p:SkipPatches=true``` to top level build.sh script. 
+You can pass
+```/p:SkipPatches=true``` to top level build.sh script.
 
 
 ## Running CoreFX tests
 
-Follow steps above to build at least corefx and it's dependencies. 
+Follow steps above to build at least corefx and it's dependencies.
 
 TBD
 
 ## Updating  bootstrap CLI.
 
-As build changes, previous versions of CLI may not be good enough any more. Changes in runtime or build dependency on 3.0 JSON are some example of braking changes. Following steps outline steps to update published CLI to what build needs. It will require other system where builds is supported. As close similarity and availability Linux will be used in examples bellow but Windows or MacOS should also yield same result. 
+As build changes, previous versions of CLI may not be good enough any more. Changes in runtime or build dependency on 3.0 JSON are some example of braking changes. Following steps outline steps to update published CLI to what build needs. It will require other system where builds is supported. As close similarity and availability Linux will be used in examples bellow but Windows or MacOS should also yield same result.
 
 Often build would ask for slightly different version without actually  have real dependency on it (that is part of rolling updates across repos).
 One can cheat in this case and simply:
@@ -138,12 +138,12 @@ One can cheat in this case and simply:
 ln -s ~/dotnet/sdk/old_version ~/dotnet/sdk/new_version
 ```
 
- 
+
 
 ### Finding versions and commit hashes
-First we need to find what version are are trying to recreate. That is 'sdk' section in global.json in each repo. As of preview9ih time, this is set to 3.0.100-preview6-012264 and such version will be used in examples. One advantage of using release branches is that it is in coherent state e.g. all repos should need exactly same version. 
+First we need to find what version are are trying to recreate. That is 'sdk' section in global.json in each repo. As of preview9ih time, this is set to 3.0.100-preview6-012264 and such version will be used in examples. One advantage of using release branches is that it is in coherent state e.g. all repos should need exactly same version.
 
-Let's get SDK for supported OS. Sync code base to same version you are trying to build on FreeBSD. 
+Let's get SDK for supported OS. Sync code base to same version you are trying to build on FreeBSD.
 ```
 ./eng/common/build.sh --restore
 Downloading 'https://dot.net/v1/dotnet-install.sh'
@@ -186,7 +186,7 @@ cd core-sdk
 git checkout be3f0c1a03f80492d45396c9f5b855b10a8a0b79
 ```
 
-Set variables and assemble SKD without crossgen. (set DropSuffix=true to strip  `preview6` from version). 
+Set variables and assemble SKD without crossgen. (set DropSuffix=true to strip  `preview6` from version).
 ```
 export DISABLE_CROSSGEN=true
 export CLIBUILD_SKIP_TESTS=true
@@ -212,7 +212,7 @@ cd coreclr
 git checkout 7ec87b0097fdd4400a8632a2eae56612914579ef
 ```
 
-and build 
+and build
 ```
 mkdir -p .dotnet
 curl https://dotnetcli.blob.core.windows.net/dotnet/Sdk/master/dotnet-sdk-latest-freebsd-x64.tar.gz | tar xfz - -C .dotnet
@@ -247,7 +247,7 @@ git checkout d47cae744ddfb625db8e391cecb261e4c3d7bb1c
 ```
 
 #### Building core-setup
-As this has very little platform dependency it is unlikely this needs to be touched. 
+As this has very little platform dependency it is unlikely this needs to be touched.
 If we want to do this to pick up fix or for consistency than ... TBD
 
 ```
