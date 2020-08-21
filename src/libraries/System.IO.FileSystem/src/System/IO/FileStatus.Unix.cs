@@ -26,6 +26,8 @@ namespace System.IO
         // Exists as of the last refresh
         private bool _exists;
 
+        internal bool isBrowser { get; private set; }
+
         internal static void Initialize(
             ref FileStatus status,
             bool isDirectory)
@@ -264,23 +266,26 @@ namespace System.IO
             const long TicksPerSecond = TicksPerMillisecond * 1000;
             long nanoseconds = (time.UtcDateTime.Ticks - DateTimeOffset.UnixEpoch.Ticks - seconds * TicksPerSecond) * NanosecondsPerTick;
 
-            if (isAccessTime)
+            buf[0].TvSec = seconds;
+            buf[0].TvNsec = nanoseconds;
+            buf[1].TvSec = seconds;
+            buf[1].TvNsec = nanoseconds;
+
+            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Create("BROWSER")))
             {
-                buf[0].TvSec = seconds;
-                buf[0].TvNsec = nanoseconds;
-                buf[1].TvSec = _fileStatus.MTime;
-                buf[1].TvNsec = _fileStatus.MTimeNsec;
-            }
-            else
-            {
-                buf[0].TvSec = _fileStatus.ATime;
-                buf[0].TvNsec = _fileStatus.ATimeNsec;
-                buf[1].TvSec = seconds;
-                buf[1].TvNsec = nanoseconds;
+                if (isAccessTime)
+                {
+                    buf[1].TvSec = _fileStatus.MTime;
+                    buf[1].TvNsec = _fileStatus.MTimeNsec;
+                }
+                else
+                {
+                    buf[0].TvSec = _fileStatus.ATime;
+                    buf[0].TvNsec = _fileStatus.ATimeNsec;
+                }
             }
 
             Interop.CheckIo(Interop.Sys.UTimensat(path, buf), path, InitiallyDirectory);
-
             _fileStatusInitialized = -1;
         }
 
@@ -301,6 +306,7 @@ namespace System.IO
             // lstat fails, as a broken symlink should still report info on exists, attributes, etc.
             _isDirectory = false;
             path = Path.TrimEndingDirectorySeparator(path);
+
             int result = Interop.Sys.LStat(path, out _fileStatus);
             if (result < 0)
             {

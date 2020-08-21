@@ -18,6 +18,8 @@ namespace System.IO.Tests
         protected static bool isHFS => driveFormat != null && driveFormat.Equals(HFS, StringComparison.InvariantCultureIgnoreCase);
         protected static bool isNotHFS => !isHFS;
 
+        protected static bool isBrowser => PlatformDetection.IsBrowser;
+
         protected abstract T GetExistingItem();
         protected abstract T GetMissingItem();
 
@@ -41,7 +43,6 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/40528", TestPlatforms.Browser)]
         public void SettingUpdatesProperties()
         {
             T item = GetExistingItem();
@@ -49,7 +50,8 @@ namespace System.IO.Tests
             Assert.All(TimeFunctions(requiresRoundtripping: true), (function) =>
             {
                 // Checking that milliseconds are not dropped after setter.
-                DateTime dt = new DateTime(2014, 12, 1, 12, 3, 3, isHFS ? 0 : 321, function.Kind);
+                // Emscripten drops milliseconds in Browser
+                DateTime dt = new DateTime(2014, 12, 1, 12, 3, 3, (isHFS || isBrowser) ? 0 : 321, function.Kind);
                 function.Setter(item, dt);
                 DateTime result = function.Getter(item);
                 Assert.Equal(dt, result);
