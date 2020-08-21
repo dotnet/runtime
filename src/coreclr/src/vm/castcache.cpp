@@ -254,7 +254,7 @@ void CastCache::TrySet(TADDR source, TADDR target, BOOL result)
 
             if ((version & VERSION_NUM_MASK) >= (VERSION_NUM_MASK - 2))
             {
-                // If exactly 2 ^ VERSION_NUM_SIZE updates happens between here and publishing, we may not recognise a race.
+                // If exactly VERSION_NUM_MASK updates happens between here and publishing, we may not recognise a race.
                 // It is extremely unlikely, but to not worry about the possibility, lets not allow version to go this high and just get a new cache.
                 // This will not happen often.
                 FlushCurrentCache();
@@ -316,6 +316,15 @@ void CastCache::TrySet(TADDR source, TADDR target, BOOL result)
         // mask the lower version bit to make it even.
         // This way we will detect both if version is changing (odd) or has changed (even, but different).
         version &= ~1;
+
+        if ((version & VERSION_NUM_MASK) >= (VERSION_NUM_MASK - 2))
+        {
+            // If exactly VERSION_NUM_MASK updates happens between here and publishing, we may not recognise a race.
+            // It is extremely unlikely, but to not worry about the possibility, lets not allow version to go this high and just get a new cache.
+            // This will not happen often.
+            FlushCurrentCache();
+            return;
+        }
 
         DWORD newVersion = (victimDistance << VERSION_NUM_SIZE) + (version & VERSION_NUM_MASK) + 1;
         DWORD versionOrig = InterlockedCompareExchangeT(&pEntry->version, newVersion, version);
