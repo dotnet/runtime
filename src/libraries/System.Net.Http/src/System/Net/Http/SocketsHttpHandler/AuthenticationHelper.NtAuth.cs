@@ -112,6 +112,11 @@ namespace System.Net.Http
                                 IPHostEntry result = await Dns.GetHostEntryAsync(authUri.IdnHost).ConfigureAwait(false);
                                 hostName = result.HostName;
                             }
+
+                            if (!isProxyAuth && !authUri.IsDefaultPort)
+                            {
+                                hostName = $"{hostName}:{authUri.Port}";
+                            }
                         }
 
                         string spn = "HTTP/" + hostName;

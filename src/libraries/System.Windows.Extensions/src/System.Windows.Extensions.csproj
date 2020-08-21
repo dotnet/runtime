@@ -6,12 +6,9 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(TargetsWindows)' != 'true'">
     <GeneratePlatformNotSupportedAssemblyMessage>SR.PlatformNotSupported_System_Windows_Extensions</GeneratePlatformNotSupportedAssemblyMessage>
-    <GeneratePlatformNotSupportedAdditionalParameters>--exclude-api-list ExcludeApiList.PNSE.txt</GeneratePlatformNotSupportedAdditionalParameters>
   </PropertyGroup>
-  <ItemGroup>
-    <Compile Include="TypeForwards.cs" />
-  </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
+    <Compile Include="TypeForwards.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CertAddCertificateLinkToStore.cs"
              Link="Common\Interop\Windows\Crypt32\Interop.CertAddCertificateLinkToStore.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CertCloseStore.cs"

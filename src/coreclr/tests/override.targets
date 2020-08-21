@@ -24,13 +24,5 @@
       <ResolvedCompileFileDefinitions Remove="@(ResolvedCompileFileDefinitions)" />
     </ItemGroup>
   </Target>
-  
-  <PropertyGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
-    <!--
-      Allow this project to setup the default target frameworks. Note this depends on the targeting packs that VS
-      installs to resolve mscorlib and System. That should be fixed in the future.
-      -->
-    <_TargetFrameworkDirectories></_TargetFrameworkDirectories>
-    <_FullFrameworkReferenceAssemblyPaths></_FullFrameworkReferenceAssemblyPaths>
-  </PropertyGroup>
+
 </Project>

@@ -7,8 +7,8 @@ JitBench is a collection of scenario benchmarks that were originally designed to
 
 Execute 'dotnet run' in this directory. The test should eventually produce output like this:
 
- 
- 
+
+
       === CONFIGURATION ===
 
     DotnetFrameworkVersion: 2.1.0-preview2-26131-06
@@ -97,12 +97,12 @@ In the Benchmarks folder create a new .cs file that implements a class deriving 
 
 - ExePath
 - WorkingDirPath
-- EnvironmentVariables (optional) 
+- EnvironmentVariables (optional)
 
 to determine what process will be invoked later when the benchmark runs. BuildHelloWorldBenchmark.cs is a simple example if you need a template to copy. MusicStore is a bit more sophisticated and shows gathering custom metrics + customizing the Benchview output.
 
 ## Automation
-This how we currently setup to run the test in CI and then retrieve its results. 
+This how we currently setup to run the test in CI and then retrieve its results.
 
 **Setup:**
 

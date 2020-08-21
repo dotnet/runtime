@@ -699,7 +699,9 @@ namespace System.ComponentModel
         internal LicenseManager() { }
         public static System.ComponentModel.LicenseContext CurrentContext { get { throw null; } set { } }
         public static System.ComponentModel.LicenseUsageMode UsageMode { get { throw null; } }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public static object CreateWithContext(System.Type type, System.ComponentModel.LicenseContext creationContext) { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public static object CreateWithContext(System.Type type, System.ComponentModel.LicenseContext creationContext, object[] args) { throw null; }
         public static bool IsLicensed(System.Type type) { throw null; }
         public static bool IsValid(System.Type type) { throw null; }
@@ -880,6 +882,7 @@ namespace System.ComponentModel
         public bool Add(string input, out int testPosition, out System.ComponentModel.MaskedTextResultHint resultHint) { throw null; }
         public void Clear() { }
         public void Clear(out System.ComponentModel.MaskedTextResultHint resultHint) { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public object Clone() { throw null; }
         public int FindAssignedEditPositionFrom(int position, bool direction) { throw null; }
         public int FindAssignedEditPositionInRange(int startPosition, int endPosition, bool direction) { throw null; }
@@ -1317,6 +1320,7 @@ namespace System.ComponentModel
     {
         protected TypeDescriptionProvider() { }
         protected TypeDescriptionProvider(System.ComponentModel.TypeDescriptionProvider parent) { }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public virtual object CreateInstance(System.IServiceProvider provider, System.Type objectType, System.Type[] argTypes, object[] args) { throw null; }
         public virtual System.Collections.IDictionary GetCache(object instance) { throw null; }
         public virtual System.ComponentModel.ICustomTypeDescriptor GetExtendedTypeDescriptor(object instance) { throw null; }
@@ -1359,6 +1363,7 @@ namespace System.ComponentModel
         public static System.ComponentModel.Design.IDesigner CreateDesigner(System.ComponentModel.IComponent component, System.Type designerBaseType) { throw null; }
         public static System.ComponentModel.EventDescriptor CreateEvent(System.Type componentType, System.ComponentModel.EventDescriptor oldEventDescriptor, params System.Attribute[] attributes) { throw null; }
         public static System.ComponentModel.EventDescriptor CreateEvent(System.Type componentType, string name, System.Type type, params System.Attribute[] attributes) { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public static object CreateInstance(System.IServiceProvider provider, System.Type objectType, System.Type[] argTypes, object[] args) { throw null; }
         public static System.ComponentModel.PropertyDescriptor CreateProperty(System.Type componentType, System.ComponentModel.PropertyDescriptor oldPropertyDescriptor, params System.Attribute[] attributes) { throw null; }
         public static System.ComponentModel.PropertyDescriptor CreateProperty(System.Type componentType, string name, System.Type type, params System.Attribute[] attributes) { throw null; }
@@ -2052,16 +2057,6 @@ namespace System.ComponentModel.Design.Serialization
         public abstract void Dispose();
         public virtual void Flush() { }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Interface, AllowMultiple=true, Inherited=true)]
-    public sealed partial class DesignerSerializerAttribute : System.Attribute
-    {
-        public DesignerSerializerAttribute(string serializerTypeName, string baseSerializerTypeName) { }
-        public DesignerSerializerAttribute(string serializerTypeName, System.Type baseSerializerType) { }
-        public DesignerSerializerAttribute(System.Type serializerType, System.Type baseSerializerType) { }
-        public string SerializerBaseTypeName { get { throw null; } }
-        public string SerializerTypeName { get { throw null; } }
-        public override object TypeId { get { throw null; } }
-    }
     public partial interface IDesignerLoaderHost : System.ComponentModel.Design.IDesignerHost, System.ComponentModel.Design.IServiceContainer, System.IServiceProvider
     {
         void EndLoad(string baseClassName, bool successful, System.Collections.ICollection errorCollection);
@@ -2238,6 +2233,7 @@ namespace System.Security.Authentication.ExtendedProtection
     {
         public ExtendedProtectionPolicyTypeConverter() { }
         public override bool CanConvertTo(System.ComponentModel.ITypeDescriptorContext context, System.Type destinationType) { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public override object ConvertTo(System.ComponentModel.ITypeDescriptorContext context, System.Globalization.CultureInfo culture, object value, System.Type destinationType) { throw null; }
     }
 }

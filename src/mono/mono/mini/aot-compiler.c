@@ -5193,6 +5193,17 @@ check_type_depth (MonoType *t, int depth)
 static void
 add_types_from_method_header (MonoAotCompile *acfg, MonoMethod *method);
 
+static gboolean
+inst_has_vtypes (MonoGenericInst *inst)
+{
+	for (int i = 0; i < inst->type_argc; ++i) {
+		MonoType *t = inst->type_argv [i];
+		if (MONO_TYPE_ISSTRUCT (t))
+			return TRUE;
+	}
+	return FALSE;
+}
+
 /*
  * add_generic_class:
  *
@@ -5205,6 +5216,7 @@ add_generic_class_with_depth (MonoAotCompile *acfg, MonoClass *klass, int depth,
 	MonoClassField *field;
 	gpointer iter;
 	gboolean use_gsharedvt = FALSE;
+	gboolean use_gsharedvt_for_array = FALSE;
 
 	if (!acfg->ginst_hash)
 		acfg->ginst_hash = g_hash_table_new (NULL, NULL);
@@ -5248,6 +5260,18 @@ add_generic_class_with_depth (MonoAotCompile *acfg, MonoClass *klass, int depth,
 		(!strcmp (m_class_get_name (klass), "Dictionary`2") || !strcmp (m_class_get_name (klass), "List`1") || !strcmp (m_class_get_name (klass), "ReadOnlyCollection`1")))
 		use_gsharedvt = TRUE;
 
+#ifdef TARGET_WASM
+	/*
+	 * Use gsharedvt for instances with vtype arguments.
+	 * WASM only since other platforms depend on the
+	 * previous behavior.
+	 */
+	if ((acfg->jit_opts & MONO_OPT_GSHAREDVT) && mono_class_is_ginst (klass) && mono_class_get_generic_class (klass)->context.class_inst && is_vt_inst (mono_class_get_generic_class (klass)->context.class_inst)) {
+		use_gsharedvt = TRUE;
+		use_gsharedvt_for_array = TRUE;
+	}
+#endif
+
 	iter = NULL;
 	while ((method = mono_class_get_methods (klass, &iter))) {
 		if ((acfg->jit_opts & MONO_OPT_GSHAREDVT) && method->is_inflated && mono_method_get_context (method)->method_inst) {
@@ -5256,7 +5280,7 @@ add_generic_class_with_depth (MonoAotCompile *acfg, MonoClass *klass, int depth,
 			 */
 			continue;
 		}
-		
+
 		if (mono_method_is_generic_sharable_full (method, FALSE, FALSE, use_gsharedvt)) {
 			/* Already added */
 			add_types_from_method_header (acfg, method);
@@ -5337,7 +5361,7 @@ add_generic_class_with_depth (MonoAotCompile *acfg, MonoClass *klass, int depth,
 			if (!strncmp (method->name, name_prefix, strlen (name_prefix))) {
 				MonoMethod *m = mono_aot_get_array_helper_from_wrapper (method);
 
-				if (m->is_inflated && !mono_method_is_generic_sharable_full (m, FALSE, FALSE, FALSE))
+				if (m->is_inflated && !mono_method_is_generic_sharable_full (m, FALSE, FALSE, use_gsharedvt_for_array))
 					add_extra_method_with_depth (acfg, m, depth);
 			}
 		}
