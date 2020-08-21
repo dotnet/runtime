@@ -37,7 +37,8 @@
 
 static bool _ep_can_start_threads = false;
 
-static ep_rt_session_id_array_t _ep_deferred_session_ids = { 0 };
+static ep_rt_session_id_array_t _ep_deferred_enable_session_ids = { 0 };
+static ep_rt_session_id_array_t _ep_deferred_disable_session_ids = { 0 };
 
 /*
  * Forward declares of all static functions.
@@ -86,9 +87,7 @@ disable_holding_lock (
 
 static
 void
-disable (
-	EventPipeSessionID id,
-	EventPipeProviderCallbackDataQueue *provider_callback_data_queue);
+disable (EventPipeSessionID id);
 
 static
 void
@@ -132,6 +131,10 @@ enable_default_session_via_env_variables (void);
 static
 bool
 session_requested_sampling (EventPipeSession *session);
+
+static
+bool
+ipc_stream_factory_any_suspended_ports (void);
 
 /*
  * Global volatile varaibles, only to be accessed through inlined volatile access functions.
@@ -575,15 +578,33 @@ disable_holding_lock (
 
 static
 void
-disable (
-	EventPipeSessionID id,
-	EventPipeProviderCallbackDataQueue *provider_callback_data_queue)
+disable (EventPipeSessionID id)
 {
 	ep_requires_lock_not_held ();
 
-	EP_LOCK_ENTER (section1)
-		disable_holding_lock (id, provider_callback_data_queue);
-	EP_LOCK_EXIT (section1)
+	if (_ep_can_start_threads)
+		ep_rt_thread_setup ();
+
+	if (id == 0)
+		return;
+
+	// Don't block GC during clean-up.
+	EP_GCX_PREEMP_ENTER
+
+		EventPipeProviderCallbackDataQueue callback_data_queue;
+		EventPipeProviderCallbackData provider_callback_data;
+		EventPipeProviderCallbackDataQueue *provider_callback_data_queue = ep_provider_callback_data_queue_init (&callback_data_queue);
+
+		EP_LOCK_ENTER (section1)
+			disable_holding_lock (id, provider_callback_data_queue);
+		EP_LOCK_EXIT (section1)
+
+		while (ep_provider_callback_data_queue_try_dequeue (provider_callback_data_queue, &provider_callback_data))
+			provider_invoke_callback (&provider_callback_data);
+
+		ep_provider_callback_data_queue_fini (provider_callback_data_queue);
+
+	EP_GCX_PREEMP_EXIT
 
 ep_on_exit:
 	ep_requires_lock_not_held ();
@@ -821,6 +842,14 @@ session_requested_sampling (EventPipeSession *session)
 	return ep_rt_session_provider_list_find_by_name (ep_session_provider_list_get_providers_cref (ep_session_get_providers (session)), "Microsoft-DotNETCore-SampleProfiler");
 }
 
+// TODO: Replace with diagnostic server port implementation.
+static
+bool
+ipc_stream_factory_any_suspended_ports (void)
+{
+	return false;
+}
+
 #ifdef EP_CHECKED_BUILD
 void
 ep_requires_lock_held (void)
@@ -1002,30 +1031,29 @@ ep_disable (EventPipeSessionID id)
 {
 	ep_requires_lock_not_held ();
 
-	if (_ep_can_start_threads)
-		ep_rt_thread_setup ();
+	// ep_disable is called synchronously since the diagnostics server is
+	// single threaded.  HOWEVER, if the runtime was suspended during startup,
+	// then ep_finish_init might not have executed yet. Disabling a session
+	// needs to either happen before we resume or after initialization. We briefly take the
+	// lock to check _ep_can_start_threads to check whether we've finished initialization. We 
+	// also check whether we are still suspended in which case we can safely disable the session
+	// without deferral.
+	EP_LOCK_ENTER (section1)
+		if (!_ep_can_start_threads && !ipc_stream_factory_any_suspended_ports ())
+		{
+			ep_rt_session_id_array_append (&_ep_deferred_disable_session_ids, id);
+			ep_raise_error_holding_lock (section1);
+		}
+	EP_LOCK_EXIT (section1)
 
-	if (id == 0)
-		return;
+	disable (id);
 
-	// Don't block GC during clean-up.
-	EP_GCX_PREEMP_ENTER
-
-		EventPipeProviderCallbackDataQueue callback_data_queue;
-		EventPipeProviderCallbackData provider_callback_data;
-		EventPipeProviderCallbackDataQueue *provider_callback_data_queue = ep_provider_callback_data_queue_init (&callback_data_queue);
-
-		disable (id, provider_callback_data_queue);
-
-		while (ep_provider_callback_data_queue_try_dequeue (provider_callback_data_queue, &provider_callback_data))
-			provider_invoke_callback (&provider_callback_data);
-
-		ep_provider_callback_data_queue_fini (provider_callback_data_queue);
-
-	EP_GCX_PREEMP_EXIT
-
+ep_on_exit:
 	ep_requires_lock_not_held ();
 	return;
+
+ep_on_error:
+	ep_exit_error_handler ();
 }
 
 EventPipeSession *
@@ -1070,7 +1098,7 @@ ep_start_streaming (EventPipeSessionID session_id)
 		if (_ep_can_start_threads)
 			ep_session_start_streaming ((EventPipeSession *)session_id);
 		else
-			ep_rt_session_id_array_append (&_ep_deferred_session_ids, session_id);
+			ep_rt_session_id_array_append (&_ep_deferred_enable_session_ids, session_id);
 	EP_LOCK_EXIT (section1)
 
 ep_on_exit:
@@ -1226,7 +1254,8 @@ ep_init (void)
 	const uint32_t default_profiler_sample_rate_in_nanoseconds = 1000000; // 1 msec.
 	ep_rt_sample_profiler_set_sampling_rate (default_profiler_sample_rate_in_nanoseconds);
 
-	ep_rt_session_id_array_alloc (&_ep_deferred_session_ids);
+	ep_rt_session_id_array_alloc (&_ep_deferred_enable_session_ids);
+	ep_rt_session_id_array_alloc (&_ep_deferred_disable_session_ids);
 
 	EP_LOCK_ENTER (section1)
 		ep_volatile_store_eventpipe_state_without_barrier (EP_STATE_INITIALIZED);
@@ -1247,22 +1276,38 @@ ep_finish_init (void)
 {
 	ep_requires_lock_not_held ();
 
+	// Enable streaming for any deferred sessions
 	EP_LOCK_ENTER (section1)
 		_ep_can_start_threads = true;
 		if (ep_volatile_load_eventpipe_state_without_barrier () == EP_STATE_INITIALIZED) {
 			ep_rt_session_id_array_iterator_t deferred_session_ids_iterator;
-			ep_rt_session_id_array_iterator_begin (&_ep_deferred_session_ids, &deferred_session_ids_iterator);
-			while (!ep_rt_session_id_array_iterator_end (&_ep_deferred_session_ids, &deferred_session_ids_iterator)) {
+			ep_rt_session_id_array_iterator_begin (&_ep_deferred_enable_session_ids, &deferred_session_ids_iterator);
+			while (!ep_rt_session_id_array_iterator_end (&_ep_deferred_enable_session_ids, &deferred_session_ids_iterator)) {
 				EventPipeSessionID session_id = ep_rt_session_id_array_iterator_value (&deferred_session_ids_iterator);
 				if (is_session_id_in_collection (session_id))
 					ep_session_start_streaming ((EventPipeSession *)session_id);
-				ep_rt_session_id_array_iterator_next (&_ep_deferred_session_ids, &deferred_session_ids_iterator);
+				ep_rt_session_id_array_iterator_next (&_ep_deferred_enable_session_ids, &deferred_session_ids_iterator);
 			}
-			ep_rt_session_id_array_clear (&_ep_deferred_session_ids);
+			ep_rt_session_id_array_clear (&_ep_deferred_enable_session_ids);
 		}
 
 		ep_rt_sample_profiler_can_start_sampling ();
 	EP_LOCK_EXIT (section1)
+
+	// release lock in case someone tried to disable while we held it
+	// _ep_deferred_disable_session_ids is now safe to access without the
+	// lock since we've set _ep_can_start_threads to true inside the lock. Anyone
+	// who was waiting on that lock will see that state and not mutate the defer list
+	if (ep_volatile_load_eventpipe_state_without_barrier () == EP_STATE_INITIALIZED) {
+		ep_rt_session_id_array_iterator_t deferred_session_ids_iterator;
+		ep_rt_session_id_array_iterator_begin (&_ep_deferred_disable_session_ids, &deferred_session_ids_iterator);
+		while (!ep_rt_session_id_array_iterator_end (&_ep_deferred_disable_session_ids, &deferred_session_ids_iterator)) {
+			EventPipeSessionID session_id = ep_rt_session_id_array_iterator_value (&deferred_session_ids_iterator);
+			disable (session_id);
+			ep_rt_session_id_array_iterator_next (&_ep_deferred_disable_session_ids, &deferred_session_ids_iterator);
+		}
+		ep_rt_session_id_array_clear (&_ep_deferred_disable_session_ids);
+	}
 
 ep_on_exit:
 	ep_requires_lock_not_held ();
@@ -1291,7 +1336,8 @@ ep_shutdown (void)
 			ep_disable ((EventPipeSessionID)session);
 	}
 
-	ep_rt_session_id_array_free (&_ep_deferred_session_ids);
+	ep_rt_session_id_array_free (&_ep_deferred_enable_session_ids);
+	ep_rt_session_id_array_free (&_ep_deferred_disable_session_ids);
 
 	ep_thread_fini ();
 
