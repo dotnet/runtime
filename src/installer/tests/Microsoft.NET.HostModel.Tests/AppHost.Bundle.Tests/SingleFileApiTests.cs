@@ -1,14 +1,8 @@
-// Licensed to the .NET Foundation under one or more agreements.
-// The .NET Foundation licenses this file to you under the MIT license.
-
-using System;
-using System.IO;
-using Xunit;
+﻿using System;
+using BundleTests.Helpers;
 using Microsoft.DotNet.Cli.Build.Framework;
 using Microsoft.DotNet.CoreSetup.Test;
-using Microsoft.NET.HostModel.Bundle;
-using BundleTests.Helpers;
-using System.Threading;
+using Xunit;
 
 namespace AppHost.Bundle.Tests
 {
@@ -27,7 +21,7 @@ namespace AppHost.Bundle.Tests
             var fixture = sharedTestState.TestFixture.Copy();
             var singleFile = BundleHelper.BundleApp(fixture);
 
-            Command.Create(singleFile)
+            Command.Create(singleFile, "codebase")
                 .CaptureStdErr()
                 .CaptureStdOut()
                 .Execute()
@@ -35,6 +29,43 @@ namespace AppHost.Bundle.Tests
                 .Pass()
                 .And
                 .HaveStdOutContaining("CodeBase NotSupported");
+        }
+
+        [Fact]
+        public void GetEnvironmentArgs_0_Returns_Bundled_Executable_Path()
+        {
+            var fixture = sharedTestState.TestFixture.Copy();
+            var singleFile = BundleHelper.BundleApp(fixture);
+
+            // For single-file, Environment.GetCommandLineArgs[0]
+            // should return the file path of the host.
+            Command.Create(singleFile, "cmdlineargs")
+                .CaptureStdErr()
+                .CaptureStdOut()
+                .Execute()
+                .Should()
+                .Pass()
+                .And
+                .HaveStdOutContaining(singleFile);
+        }
+
+        [Fact]
+        public void GetEnvironmentArgs_0_Non_Bundled_App()
+        {
+            var fixture = sharedTestState.TestFixture.Copy();
+            var dotnet = fixture.BuiltDotnet;
+            var appPath = BundleHelper.GetAppPath(fixture);
+
+            // For non single-file apps, Environment.GetCommandLineArgs[0]
+            // should return the file path of the managed entrypoint.
+            dotnet.Exec(appPath, "cmdlineargs")
+                .CaptureStdErr()
+                .CaptureStdOut()
+                .Execute()
+                .Should()
+                .Pass()
+                .And
+                .HaveStdOutContaining(appPath);
         }
 
         public class SharedTestState : IDisposable
@@ -45,12 +76,10 @@ namespace AppHost.Bundle.Tests
             public SharedTestState()
             {
                 RepoDirectories = new RepoDirectoriesProvider();
-
-                TestFixture = new TestProjectFixture("SingleFileApis", RepoDirectories);
+                TestFixture = new TestProjectFixture("SingleFileApiTests", RepoDirectories);
                 TestFixture
                     .EnsureRestoredForRid(TestFixture.CurrentRid, RepoDirectories.CorehostPackages)
-                    .PublishProject(runtime: TestFixture.CurrentRid,
-                                    outputDirectory: BundleHelper.GetPublishPath(TestFixture));
+                    .PublishProject(runtime: TestFixture.CurrentRid, outputDirectory: BundleHelper.GetPublishPath(TestFixture));
             }
 
             public void Dispose()
