@@ -6,7 +6,7 @@ namespace SingleFileApiTests
     {
         public static void Main(string[] args)
         {
-            switch (args[1])
+            switch (args[0])
             {
                 case "cmdlineargs":
                     Console.WriteLine(Environment.GetCommandLineArgs()[0]);
