@@ -45,7 +45,6 @@
     <PropertyGroup>
       <TargetOSComponent>unix</TargetOSComponent>
       <TargetOSComponent Condition="'$(TargetOS)' == 'Windows_NT'">win</TargetOSComponent>
-      <TargetSpec>$(TargetOSComponent)-$(TargetArchitecture)</TargetSpec>
     </PropertyGroup>
 
     <ItemGroup>
@@ -55,7 +54,13 @@
       <Crossgen2File Include="$(CoreCLRCrossgen2Dir)Microsoft.DiaSymReader.dll" />
       <Crossgen2File Include="$(CoreCLRCrossgen2Dir)System.CommandLine.dll" />
       <Crossgen2File Include="$(CoreCLRCrossgen2Dir)$(LibraryFilePrefix)jitinterface$(LibraryFileExtension)" />
-      <Crossgen2File Include="$(CoreCLRCrossgen2Dir)$(LibraryFilePrefix)clrjit-$(TargetSpec)$(LibraryFileExtension)" />
+      <Crossgen2File Include="$(CoreCLRCrossgen2Dir)clrjit_win_x86_$(TargetArchitecture).dll" />
+      <Crossgen2File Include="$(CoreCLRCrossgen2Dir)clrjit_win_arm_$(TargetArchitecture).dll" />
+      <Crossgen2File Include="$(CoreCLRCrossgen2Dir)clrjit_unix_arm_$(TargetArchitecture).dll" />
+      <Crossgen2File Condition="'$(TargetArchitecture)' == 'arm64' or  '$(TargetArchitecture)' == 'x64'" Include="$(CoreCLRCrossgen2Dir)clrjit_win_x64_$(TargetArchitecture).dll" />
+      <Crossgen2File Condition="'$(TargetArchitecture)' == 'arm64' or  '$(TargetArchitecture)' == 'x64'" Include="$(CoreCLRCrossgen2Dir)clrjit_win_arm64_$(TargetArchitecture).dll" />
+      <Crossgen2File Condition="'$(TargetArchitecture)' == 'arm64' or  '$(TargetArchitecture)' == 'x64'" Include="$(CoreCLRCrossgen2Dir)clrjit_unix_x64_$(TargetArchitecture).dll" />
+      <Crossgen2File Condition="'$(TargetArchitecture)' == 'arm64' or  '$(TargetArchitecture)' == 'x64'" Include="$(CoreCLRCrossgen2Dir)clrjit_unix_arm64_$(TargetArchitecture).dll" />
       <!-- Include the native and managed files from the Microsoft.NETCore.App shared framework -->
       <Crossgen2File Include="@(RuntimeFile)" Condition="'%(RuntimeFile.TargetPath)' == 'runtimes/$(PackageRID)/native' and '%(RuntimeFile.Extension)' != '$(StaticLibraryFileExtension)'" />
       <Crossgen2File Include="@(RuntimeFile)" Condition="'%(RuntimeFile.TargetPath)' == 'runtimes/$(PackageRID)/lib/$(NetCoreAppCurrent)'" />

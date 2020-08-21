@@ -43,10 +43,12 @@
 
 #define CONTEXT_UNWOUND_TO_CALL 0x20000000
 
+#if !defined(HOST_ARM64)
 typedef struct _NEON128 {
     ULONGLONG Low;
     LONGLONG High;
 } NEON128, *PNEON128;
+#endif // !defined(HOST_ARM64)
 
 typedef struct DECLSPEC_ALIGN(8) _T_CONTEXT {
     //
