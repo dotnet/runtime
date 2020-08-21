@@ -34,7 +34,7 @@ namespace AppHost.Bundle.Tests
                 .Should()
                 .Pass()
                 .And
-                .HaveStdOutContaining("CodeBase InvalidOperation");
+                .HaveStdOutContaining("CodeBase NotSupported");
         }
 
         public class SharedTestState : IDisposable
