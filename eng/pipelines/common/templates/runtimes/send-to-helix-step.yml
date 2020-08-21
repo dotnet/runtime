@@ -30,13 +30,10 @@ steps:
   parameters:
     osGroup: ${{ parameters.osGroup }}
     restoreParams: /p:DotNetPublishToBlobFeed=true -restore -projects $(Build.SourcesDirectory)$(dir)eng$(dir)empty.csproj
-    sendParams: ${{ parameters.helixProjectArguments }} /maxcpucount /bl:$(Build.SourcesDirectory)/artifacts/log/SendToHelix.binlog
+    sendParams: ${{ parameters.helixProjectArguments }} /maxcpucount /bl:$(Build.SourcesDirectory)/artifacts/log/SendToHelix.binlog /p:TargetArchitecture=${{ parameters.archType }} /p:TargetOS=${{ parameters.osGroup }}${{ parameters.osSubgroup }} /p:Configuration=${{ parameters.buildConfig }}
     condition: and(succeeded(), ${{ parameters.condition }})
     displayName: ${{ parameters.displayName }}
     environment:
-      __BuildArch: ${{ parameters.archType }}
-      __TargetOS: ${{ parameters.osGroup }}${{ parameters.osSubgroup }}
-      __BuildType: ${{ parameters.buildConfig }}
       _Creator: ${{ parameters.creator }}
       _PublishTestResults: ${{ parameters.publishTestResults }}
       _HelixAccessToken: ${{ parameters.helixAccessToken }}

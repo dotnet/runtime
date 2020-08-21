@@ -552,7 +552,7 @@ namespace System.Collections.Generic
                     j--;
                 }
 
-                Unsafe.Add(ref MemoryMarshal.GetReference(keys), j + 1) = t;
+                Unsafe.Add(ref MemoryMarshal.GetReference(keys), j + 1) = t!;
             }
         }
 
@@ -1054,7 +1054,7 @@ namespace System.Collections.Generic
                     j--;
                 }
 
-                keys[j + 1] = t;
+                keys[j + 1] = t!;
                 values[j + 1] = tValue;
             }
         }

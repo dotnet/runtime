@@ -204,7 +204,7 @@ namespace System.Data.OleDb
         public override long GetInt64(int ordinal) { throw null; }
         public override string GetName(int index) { throw null; }
         public override int GetOrdinal(string name) { throw null; }
-        public override System.Data.DataTable GetSchemaTable() { throw null; }
+        public override System.Data.DataTable? GetSchemaTable() { throw null; }
         public override string GetString(int ordinal) { throw null; }
         public System.TimeSpan GetTimeSpan(int ordinal) { throw null; }
         public override object GetValue(int ordinal) { throw null; }

@@ -856,7 +856,7 @@ namespace System.Data
         public override System.Type GetProviderSpecificFieldType(int ordinal) { throw null; }
         public override object GetProviderSpecificValue(int ordinal) { throw null; }
         public override int GetProviderSpecificValues(object[] values) { throw null; }
-        public override System.Data.DataTable GetSchemaTable() { throw null; }
+        public override System.Data.DataTable? GetSchemaTable() { throw null; }
         public override string GetString(int ordinal) { throw null; }
         public override object GetValue(int ordinal) { throw null; }
         public override int GetValues(object[] values) { throw null; }
@@ -1236,7 +1236,7 @@ namespace System.Data
         bool IsClosed { get; }
         int RecordsAffected { get; }
         void Close();
-        System.Data.DataTable GetSchemaTable();
+        System.Data.DataTable? GetSchemaTable();
         bool NextResult();
         bool Read();
     }
@@ -1935,7 +1935,7 @@ namespace System.Data.Common
         protected abstract string GetParameterName(int parameterOrdinal);
         protected abstract string GetParameterName(string parameterName);
         protected abstract string GetParameterPlaceholder(int parameterOrdinal);
-        protected virtual System.Data.DataTable GetSchemaTable(System.Data.Common.DbCommand sourceCommand) { throw null; }
+        protected virtual System.Data.DataTable? GetSchemaTable(System.Data.Common.DbCommand sourceCommand) { throw null; }
         public System.Data.Common.DbCommand GetUpdateCommand() { throw null; }
         public System.Data.Common.DbCommand GetUpdateCommand(bool useColumnsForParameterNames) { throw null; }
         protected virtual System.Data.Common.DbCommand InitializeCommand(System.Data.Common.DbCommand? command) { throw null; }
@@ -2156,8 +2156,8 @@ namespace System.Data.Common
         public virtual object GetProviderSpecificValue(int ordinal) { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public virtual int GetProviderSpecificValues(object[] values) { throw null; }
-        public virtual System.Data.DataTable GetSchemaTable() { throw null; }
-        public virtual System.Threading.Tasks.Task<System.Data.DataTable> GetSchemaTableAsync(System.Threading.CancellationToken cancellationToken = default) { throw null; }
+        public virtual System.Data.DataTable? GetSchemaTable() { throw null; }
+        public virtual System.Threading.Tasks.Task<System.Data.DataTable?> GetSchemaTableAsync(System.Threading.CancellationToken cancellationToken = default) { throw null; }
         public virtual System.Threading.Tasks.Task<System.Collections.ObjectModel.ReadOnlyCollection<System.Data.Common.DbColumn>> GetColumnSchemaAsync(System.Threading.CancellationToken cancellationToken = default) { throw null; }
         public virtual System.IO.Stream GetStream(int ordinal) { throw null; }
         public abstract string GetString(int ordinal);
