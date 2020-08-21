@@ -1055,13 +1055,35 @@ namespace System.Diagnostics
         /// </devdoc>
         public static Process[] GetProcesses(string machineName)
         {
+            return GetProcesses(machineName, null);
+        }
+
+        /// <devdoc>
+        ///    <para>
+        ///       Creates a new <see cref='System.Diagnostics.Process'/>
+        ///       component for each
+        ///       process resource on the specified computer.
+        ///    </para>
+        /// </devdoc>
+        internal static Process[] GetProcesses(string machineName, Predicate<ProcessInfo>? processFilter)
+        {
             bool isRemoteMachine = ProcessManager.IsRemoteMachine(machineName);
             ProcessInfo[] processInfos = ProcessManager.GetProcessInfos(machineName);
             Process[] processes = new Process[processInfos.Length];
+            int processesLength = 0;
             for (int i = 0; i < processInfos.Length; i++)
             {
                 ProcessInfo processInfo = processInfos[i];
-                processes[i] = new Process(machineName, isRemoteMachine, processInfo.ProcessId, processInfo);
+                if (processFilter == null || processFilter(processInfo))
+                {
+                    processes[processesLength++] = new Process(machineName, isRemoteMachine, processInfo.ProcessId, processInfo);
+                }
+            }
+            if (processesLength < processInfos.Length)
+            {
+                Process[] filteredProcesses = new Process[processesLength];
+                Array.Copy(processes, filteredProcesses, processesLength);
+                return filteredProcesses;
             }
             return processes;
         }

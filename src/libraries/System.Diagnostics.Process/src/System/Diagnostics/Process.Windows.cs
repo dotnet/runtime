@@ -28,22 +28,8 @@ namespace System.Diagnostics
                 processName = string.Empty;
             }
 
-            Process[] procs = GetProcesses(machineName);
-            var list = new List<Process>();
-
-            for (int i = 0; i < procs.Length; i++)
-            {
-                if (string.Equals(processName, procs[i].ProcessName, StringComparison.OrdinalIgnoreCase))
-                {
-                    list.Add(procs[i]);
-                }
-                else
-                {
-                    procs[i].Dispose();
-                }
-            }
-
-            return list.ToArray();
+            return GetProcesses(machineName, process =>
+                string.Equals(processName, process.ProcessName, StringComparison.OrdinalIgnoreCase));
         }
 
         [CLSCompliant(false)]
