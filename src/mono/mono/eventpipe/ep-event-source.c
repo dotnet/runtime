@@ -209,8 +209,8 @@ ep_event_source_send_process_info (
 	ep_char16_t *arch_info_utf16 = NULL;
 
 	command_line_utf16 = ep_rt_utf8_to_utf16_string (command_line, -1);
-	os_info_utf16 = ep_rt_utf8_to_utf16_string (_ep_os_info, -1);
-	arch_info_utf16 = ep_rt_utf8_to_utf16_string (_ep_arch_info, -1);
+	os_info_utf16 = ep_rt_utf8_to_utf16_string (ep_event_source_get_os_info (), -1);
+	arch_info_utf16 = ep_rt_utf8_to_utf16_string (ep_event_source_get_arch_info (), -1);
 
 	EventData data [3] = { { 0 } };
 	if (command_line_utf16)
