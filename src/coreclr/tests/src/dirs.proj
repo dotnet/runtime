@@ -23,10 +23,13 @@
     </ItemGroup>
 
     <ItemGroup>
-      <AllProjects Include="$(TestRoot)**\*.csproj" Exclude="@(DisabledProjects)" />
+      <!-- <AllProjects Include="$(TestRoot)**\*.csproj" Exclude="@(DisabledProjects)" />
       <AllProjects Include="$(TestRoot)**\*.fsproj" Exclude="@(DisabledProjects)" />
-      <AllProjects Include="$(TestRoot)**\*.ilproj" Exclude="@(DisabledProjects)" />
+      <AllProjects Include="$(TestRoot)**\*.ilproj" Exclude="@(DisabledProjects)" /> -->
+      <AllProjects Include="$(TestRoot)JIT/methodical/divrem/div/i4div_cs_do.csproj"  />
     </ItemGroup>
+
+     <Message Text="!!! AllProjects: @(AllProjects)" Importance="High" />
 
     <!-- All the test projects are partitioned into the test groups as defined below.
          Each of the test groups is meant to be built by a separate MSBuild invocation with specified $(__TestGroupToBuild) property. -->
