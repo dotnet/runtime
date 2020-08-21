@@ -44,19 +44,18 @@ _install (FILES gcinfoencoder.cpp
 
 function(set_gcinfo_targetdetails)
 
-  set(options ARM ARM64 I386 AMD64 UNIX WIN32)
-  set(oneValueArgs TARGET)
+  set(oneValueArgs TARGET OS ARCH)
   cmake_parse_arguments(TARGETDETAILS "${options}" "${oneValueArgs}" "" ${ARGN})
 
   set( GCINFO_SOURCES
     ${GCINFO_ALLARCH_SOURCES}
   )
 
-  if(TARGETDETAILS_I386)
+  if(TARGETDETAILS_ARCH STREQUAL "x86")
     list(APPEND GCINFO_SOURCES
       ${GCINFO_I386_SOURCES}
     )
-  endif(TARGETDETAILS_I386)
+  endif(TARGETDETAILS_ARCH STREQUAL "x86")
 
   add_library_clr("${TARGETDETAILS_TARGET}"
     STATIC
@@ -68,16 +67,17 @@ endfunction()
 
 if (CLR_CMAKE_BUILD_SUBSET_ALLJITS AND NOT CLR_CROSS_COMPONENTS_BUILD)
   if (CLR_CMAKE_TARGET_ARCH_ARM64 OR CLR_CMAKE_TARGET_ARCH_AMD64)
-    add_subdirectory(gcinfo_win_arm64)
-    add_subdirectory(gcinfo_win_x64)
-    add_subdirectory(gcinfo_unix_arm64)
-    add_subdirectory(gcinfo_unix_x64)
+    set_gcinfo_targetdetails(TARGET gcinfo_unix_arm64 OS unix ARCH arm64)
+    set_gcinfo_targetdetails(TARGET gcinfo_unix_x64 OS unix ARCH x64)
+    set_gcinfo_targetdetails(TARGET gcinfo_win_arm64 OS win ARCH arm64)
+    set_gcinfo_targetdetails(TARGET gcinfo_win_x64 OS win ARCH x64)
   endif (CLR_CMAKE_TARGET_ARCH_ARM64 OR CLR_CMAKE_TARGET_ARCH_AMD64)
-  add_subdirectory(gcinfo_unix_arm)
-  add_subdirectory(gcinfo_win_arm)
-  add_subdirectory(gcinfo_win_x86)
+
+  set_gcinfo_targetdetails(TARGET gcinfo_unix_arm OS unix ARCH arm)
+  set_gcinfo_targetdetails(TARGET gcinfo_win_arm OS win ARCH arm)
+  set_gcinfo_targetdetails(TARGET gcinfo_win_x86 OS win ARCH x86)
 else()
   if (CLR_CMAKE_TARGET_UNIX)
-    add_subdirectory(gcinfo_unix_${ARCH_TARGET_NAME})
+    set_gcinfo_targetdetails(TARGET gcinfo_unix_${ARCH_TARGET_NAME} OS unix ARCH ${ARCH_TARGET_NAME})
   endif(CLR_CMAKE_TARGET_UNIX)
 endif (CLR_CMAKE_BUILD_SUBSET_ALLJITS AND NOT CLR_CROSS_COMPONENTS_BUILD)
