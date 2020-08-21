@@ -408,7 +408,6 @@ if [[ ! "$runincontext" -eq 0 ]]; then
     runtestPyArguments+=("--run_in_context")
 fi
 
-
 # Default to python3 if it is installed
 __Python=python
  if command -v python3 &>/dev/null; then
