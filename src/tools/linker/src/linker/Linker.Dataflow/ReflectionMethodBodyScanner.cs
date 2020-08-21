@@ -516,7 +516,8 @@ namespace Mono.Linker.Dataflow
 
 				case IntrinsicId.TypeDelegator_Ctor: {
 						// This is an identity function for analysis purposes
-						methodReturnValue = methodParams[1];
+						if (operation.OpCode == OpCodes.Newobj)
+							methodReturnValue = methodParams[1];
 					}
 					break;
 
