@@ -1776,13 +1776,6 @@ PAL_JITWriteEnable(bool writeEnable)
     }
     return result;
 }
-#else
-bool
-PALAPI
-PAL_JITWriteEnable(bool)
-{
-    return true;
-}
 #endif
 
 #if HAVE_VM_ALLOCATE

@@ -969,7 +969,9 @@ void EEStartupHelper()
 
 #endif // CROSSGEN_COMPILE
 
+#if defined(HOST_OSX) && defined(HOST_ARM64)
         PAL_JITWriteEnable(true);
+#endif // defined(HOST_OSX) && defined(HOST_ARM64)
 
         SystemDomain::System()->Init();
 

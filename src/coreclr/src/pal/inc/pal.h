@@ -2714,10 +2714,12 @@ VirtualFree(
         IN SIZE_T dwSize,
         IN DWORD dwFreeType);
 
+#if defined(HOST_OSX) && defined(HOST_ARM64)
 PALIMPORT
 bool
 PALAPI
 PAL_JITWriteEnable(IN bool enable);
+#endif // defined(HOST_OSX) && defined(HOST_ARM64)
 
 PALIMPORT
 BOOL

@@ -571,6 +571,7 @@ private:
         tmap.m_szFile           = szFile;
         tmap.m_lineNum          = lineNum;
 #endif
+
 #if defined(HOST_OSX) && defined(HOST_ARM64)
         PAL_JITWriteEnable(jitWriteEnabled);
 #endif // defined(HOST_OSX) && defined(HOST_ARM64)
@@ -660,6 +661,7 @@ public:
         tmap.m_szFile           = szFile;
         tmap.m_lineNum          = lineNum;
 #endif
+
 #if defined(HOST_OSX) && defined(HOST_ARM64)
         PAL_JITWriteEnable(jitWriteEnabled);
 #endif // defined(HOST_OSX) && defined(HOST_ARM64)

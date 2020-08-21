@@ -1159,9 +1159,11 @@ BOOL UnlockedLoaderHeap::UnlockedReservePages(size_t dwSizeToCommit)
 
     LoaderHeapBlock *pNewBlock;
 
+#if defined(HOST_OSX) && defined(HOST_ARM64)
     bool jitWriteEnable = false;
     if (m_Options & LHF_EXECUTABLE)
         jitWriteEnable = PAL_JITWriteEnable(true);
+#endif // defined(HOST_OSX) && defined(HOST_ARM64)
 
     pNewBlock = (LoaderHeapBlock *) pData;
 
@@ -1187,8 +1189,10 @@ BOOL UnlockedLoaderHeap::UnlockedReservePages(size_t dwSizeToCommit)
 
     SETUP_NEW_BLOCK(pData, dwSizeToCommit, dwSizeToReserve);
 
+#if defined(HOST_OSX) && defined(HOST_ARM64)
     if (m_Options & LHF_EXECUTABLE)
         PAL_JITWriteEnable(jitWriteEnable);
+#endif // defined(HOST_OSX) && defined(HOST_ARM64)
 
     return TRUE;
 }
