@@ -53,7 +53,7 @@
     <WasmAppBuilderDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'WasmAppBuilder', 'Debug', '$(NetCoreAppCurrent)', 'publish'))</WasmAppBuilderDir>
     <CreateWasmBundleDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'CreateWasmBundle', 'Debug', '$(NetCoreAppCurrent)', 'publish'))</CreateWasmBundleDir>
     <MonoAOTCompilerDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'MonoAOTCompiler', 'Debug', '$(NetCoreAppCurrent)'))</MonoAOTCompilerDir>
-  
+
     <AppleAppBuilderTasksAssemblyPath>$([MSBuild]::NormalizePath('$(AppleAppBuilderDir)', 'AppleAppBuilder.dll'))</AppleAppBuilderTasksAssemblyPath>
     <AndroidAppBuilderTasksAssemblyPath>$([MSBuild]::NormalizePath('$(AndroidAppBuilderDir)', 'AndroidAppBuilder.dll'))</AndroidAppBuilderTasksAssemblyPath>
     <WasmAppBuilderTasksAssemblyPath>$([MSBuild]::NormalizePath('$(WasmAppBuilderDir)', 'WasmAppBuilder.dll'))</WasmAppBuilderTasksAssemblyPath>
@@ -89,6 +89,9 @@
 
     <!-- By default the SDK produces ref assembly for 5.0 or later -->
     <ProduceReferenceAssembly>false</ProduceReferenceAssembly>
+
+    <!-- The custom publishing infrastructure in the installer assumes all symbols are going to be under the shipping directory -->
+    <SymbolPackageOutputPath Condition="'$(SymbolPackageOutputPath)'==''">$(ArtifactsShippingPackagesDir)</SymbolPackageOutputPath>
   </PropertyGroup>
 
   <!-- Language configuration -->
@@ -106,7 +109,7 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <!-- Determine what architecture we are building on. -->
     <BuildArchitecture>$([System.Runtime.InteropServices.RuntimeInformation]::ProcessArchitecture.ToString().ToLowerInvariant())</BuildArchitecture>
-    
+
     <!-- Turn off end of life target framework check as we still build for nca2.0 and nca3.0 some OOB libraries -->
     <CheckEolTargetFramework>false</CheckEolTargetFramework>
   </PropertyGroup>
