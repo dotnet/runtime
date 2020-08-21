@@ -276,6 +276,17 @@ endif()
 
 addprefix(utils_sources ../utils/ "${utils_platform_sources};${utils_arch_sources};${utils_common_sources}")
 
+set(utils_public_headers_base
+	mono-logger.h
+	mono-error.h
+	mono-forward.h
+	mono-publib.h
+	mono-jemalloc.h
+	mono-dl-fallback.h
+	mono-private-unstable.h
+	mono-counters.h)
+addprefix(utils_public_headers ../utils "${utils_public_headers_base}")
+
 #
 # METADATA
 #
@@ -571,6 +582,36 @@ set_source_files_properties(../metadata/mono-config-dirs.c PROPERTIES COMPILE_DE
 
 addprefix(metadata_sources ../metadata/ "${metadata_platform_sources};${metadata_common_sources};${metadata_gc_dependent_sources};${metadata_sgen_sources};${ilgen_real_sources}")
 
+set(metadata_public_headers_base
+	appdomain.h
+	assembly.h
+	attrdefs.h
+	blob.h
+	class.h
+	debug-helpers.h
+	debug-mono-symfile.h
+	environment.h
+	exception.h
+	image.h
+	loader.h
+	metadata.h
+	mono-config.h
+	mono-debug.h
+	mono-gc.h
+	mono-private-unstable.h
+	object.h
+	object-forward.h
+	opcodes.h
+	profiler.h
+	profiler-events.h
+	reflection.h
+	row-indexes.h
+	sgen-bridge.h
+	threads.h
+	tokentype.h
+	verify.h)
+addprefix(metadata_public_headers ../metadata/ "${metadata_public_headers_base}")
+
 #
 # SGEN
 #
@@ -831,12 +872,23 @@ set(llvm_runtime_sources
     llvm-runtime.cpp)
 endif()
 
+set(mini_public_headers_base
+  jit.h
+  mono-private-unstable.h)
+addprefix(mini_public_headers ../mini "${mini_public_headers_base}")
+
 set(mini_sources "${CMAKE_CURRENT_BINARY_DIR}/buildver-sgen.h;main-core.c;${mini_common_sources};${arch_sources};${os_sources};${mini_interp_sources};${llvm_sources};${debugger_sources};${llvm_runtime_sources}")
 
 add_library(monosgen-objects OBJECT "${eglib_sources};${metadata_sources};${utils_sources};${sgen_sources};${icu_shim_sources};${mini_sources}")
 add_library(monosgen-static STATIC $<TARGET_OBJECTS:monosgen-objects>)
 set_target_properties(monosgen-static PROPERTIES OUTPUT_NAME monosgen-2.0)
 install(TARGETS monosgen-static LIBRARY)
+install(FILES ${metadata_public_headers}
+  DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/mono-2.0/mono/metadata)
+install(FILES ${utils_public_headers}
+  DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/mono-2.0/mono/utils)
+install(FILES ${mini_public_headers}
+  DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/mono-2.0/mono/jit)
 if(NOT DISABLE_SHARED_LIBS)
    add_library(monosgen SHARED $<TARGET_OBJECTS:monosgen-objects>)
 endif()
