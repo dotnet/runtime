@@ -36550,6 +36550,13 @@ bool GCHeap::StressHeap(gc_alloc_context * context)
                 unsigned sizeToNextObj = (unsigned)Align(size(str));
                 uint8_t* freeObj = ((uint8_t*) str) + sizeToNextObj - sizeOfNewObj;
                 pGenGCHeap->make_unused_array (freeObj, sizeOfNewObj);
+
+#if !defined(TARGET_AMD64) && !defined(TARGET_X86)
+                // ensure that the write to the new free object is seen by
+                // background GC *before* the write to the string length below
+                MemoryBarrier();
+#endif
+
                 str->SetStringLength(str->GetStringLength() - (sizeOfNewObj / sizeof(WCHAR)));
             }
             else
