@@ -228,20 +228,26 @@ int32_t SystemNative_GetIcmpv4GlobalStatistics(Icmpv4GlobalStatistics* retStats)
 
 int32_t SystemNative_GetIcmpv6GlobalStatistics(Icmpv6GlobalStatistics* retStats)
 {
+    // macOS 11.0 added new member to icmp6stat. To make it binary compatible we simply allocate
+    // little bit more and that is ok on older systems. This will make it more resilient to additions in future.
+    // This avoid runtime detection and dynamic allocation. And we do not care about the new value.
+
+    #define ICMP6_STAT_PAD 32
+
     size_t oldlenp;
 
     assert(retStats != NULL);
+    unsigned char buffer[sizeof(struct icmp6stat) + ICMP6_STAT_PAD];
+    oldlenp = sizeof(buffer);
 
-    struct icmp6stat systemStats;
-    oldlenp = sizeof(systemStats);
-    if (sysctlbyname("net.inet6.icmp6.stats", &systemStats, &oldlenp, NULL, 0))
+    if (sysctlbyname("net.inet6.icmp6.stats", &buffer, &oldlenp, NULL, 0))
     {
         memset(retStats, 0, sizeof(Icmpv6GlobalStatistics));
         return -1;
     }
 
-    uint64_t* inHist = systemStats.icp6s_inhist;
-    uint64_t* outHist = systemStats.icp6s_outhist;
+    uint64_t* inHist = ((struct icmp6stat*)(&buffer))->icp6s_inhist;
+    uint64_t* outHist = ((struct icmp6stat*)(&buffer))->icp6s_outhist;
 
     retStats->DestinationUnreachableMessagesReceived = inHist[ICMP6_DST_UNREACH];
     retStats->DestinationUnreachableMessagesSent = outHist[ICMP6_DST_UNREACH];
