@@ -278,7 +278,7 @@ namespace System.Xml
             return _coreReader.ReadContentAsString();
         }
 
-        public override object ReadContentAs(Type returnType, IXmlNamespaceResolver namespaceResolver)
+        public override object ReadContentAs(Type returnType, IXmlNamespaceResolver? namespaceResolver)
         {
             CheckAsync();
             return _coreReader.ReadContentAs(returnType, namespaceResolver);
@@ -801,7 +801,7 @@ namespace System.Xml
             return task;
         }
 
-        public override Task<object> ReadContentAsAsync(Type returnType, IXmlNamespaceResolver namespaceResolver)
+        public override Task<object> ReadContentAsAsync(Type returnType, IXmlNamespaceResolver? namespaceResolver)
         {
             CheckAsync();
             var task = _coreReader.ReadContentAsAsync(returnType, namespaceResolver);

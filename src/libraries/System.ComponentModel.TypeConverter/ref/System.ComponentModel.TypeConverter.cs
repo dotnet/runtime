@@ -2052,16 +2052,6 @@ namespace System.ComponentModel.Design.Serialization
         public abstract void Dispose();
         public virtual void Flush() { }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Interface, AllowMultiple=true, Inherited=true)]
-    public sealed partial class DesignerSerializerAttribute : System.Attribute
-    {
-        public DesignerSerializerAttribute(string serializerTypeName, string baseSerializerTypeName) { }
-        public DesignerSerializerAttribute(string serializerTypeName, System.Type baseSerializerType) { }
-        public DesignerSerializerAttribute(System.Type serializerType, System.Type baseSerializerType) { }
-        public string SerializerBaseTypeName { get { throw null; } }
-        public string SerializerTypeName { get { throw null; } }
-        public override object TypeId { get { throw null; } }
-    }
     public partial interface IDesignerLoaderHost : System.ComponentModel.Design.IDesignerHost, System.ComponentModel.Design.IServiceContainer, System.IServiceProvider
     {
         void EndLoad(string baseClassName, bool successful, System.Collections.ICollection errorCollection);

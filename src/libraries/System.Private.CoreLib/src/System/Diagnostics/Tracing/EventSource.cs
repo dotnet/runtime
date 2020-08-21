@@ -546,8 +546,8 @@ namespace System.Diagnostics.Tracing
 #if FEATURE_MANAGED_ETW
 #if FEATURE_PERFTRACING
             // Set the activity id via EventPipe.
-            EventPipeInternal.EventActivityIdControl(
-                (uint)Interop.Advapi32.ActivityControl.EVENT_ACTIVITY_CTRL_SET_ID,
+            EventPipeEventProvider.EventActivityIdControl(
+                Interop.Advapi32.ActivityControl.EVENT_ACTIVITY_CTRL_SET_ID,
                 ref activityId);
 #endif // FEATURE_PERFTRACING
 #if TARGET_WINDOWS
@@ -580,8 +580,8 @@ namespace System.Diagnostics.Tracing
                     Interop.Advapi32.ActivityControl.EVENT_ACTIVITY_CTRL_GET_ID,
                     ref retVal);
 #elif FEATURE_PERFTRACING
-                EventPipeInternal.EventActivityIdControl(
-                    (uint)Interop.Advapi32.ActivityControl.EVENT_ACTIVITY_CTRL_GET_ID,
+                EventPipeEventProvider.EventActivityIdControl(
+                    Interop.Advapi32.ActivityControl.EVENT_ACTIVITY_CTRL_GET_ID,
                     ref retVal);
 #endif // TARGET_WINDOWS
 #endif // FEATURE_MANAGED_ETW
@@ -622,12 +622,12 @@ namespace System.Diagnostics.Tracing
             // Note we can't access m_throwOnWrites because this is a static method.
 
 #if FEATURE_PERFTRACING && TARGET_WINDOWS
-            EventPipeInternal.EventActivityIdControl(
-                (uint)Interop.Advapi32.ActivityControl.EVENT_ACTIVITY_CTRL_SET_ID,
+            EventPipeEventProvider.EventActivityIdControl(
+                Interop.Advapi32.ActivityControl.EVENT_ACTIVITY_CTRL_SET_ID,
                     ref oldActivityThatWillContinue);
 #elif FEATURE_PERFTRACING
-            EventPipeInternal.EventActivityIdControl(
-                (uint)Interop.Advapi32.ActivityControl.EVENT_ACTIVITY_CTRL_GET_SET_ID,
+            EventPipeEventProvider.EventActivityIdControl(
+                Interop.Advapi32.ActivityControl.EVENT_ACTIVITY_CTRL_GET_SET_ID,
                     ref oldActivityThatWillContinue);
 #endif // FEATURE_PERFTRACING && TARGET_WINDOWS
 

@@ -11,7 +11,7 @@ In the sequel, we assume you are familiar with the basic `EventSource` usage, if
 Without further ado, here is an example on how to use the `EventCounter`
 
 ```c#
-// Give your event sources a descriptive name using the EventSourceAttribute, otherwise the name of the class is used. 
+// Give your event sources a descriptive name using the EventSourceAttribute, otherwise the name of the class is used.
 [EventSource(Name = "Samples.EventCounterDemos.Minimal")]
 public sealed class MinimalEventCounterSource : EventSource
 {
@@ -19,7 +19,7 @@ public sealed class MinimalEventCounterSource : EventSource
     public static MinimalEventCounterSource Log = new MinimalEventCounterSource();
     private EventCounter requestCounter;
 
-    private MinimalEventCounterSource() : base(EventSourceSettings.EtwSelfDescribingEventFormat) 
+    private MinimalEventCounterSource() : base(EventSourceSettings.EtwSelfDescribingEventFormat)
     {
         this.requestCounter = new EventCounter("request", this);
     }
@@ -35,8 +35,8 @@ public sealed class MinimalEventCounterSource : EventSource
         //   2. Each counter supports a single float value, so conceptually it maps to a single
         //      measurement in the code.
         //   3. You don't have to have log with WriteEvent if you don't think you will ever care about details
-        //       of individual requests (that counter data is sufficient).  
-        WriteEvent(1, url, elapsedMSec);    // This logs it to the event stream if events are on.    
+        //       of individual requests (that counter data is sufficient).
+        WriteEvent(1, url, elapsedMSec);    // This logs it to the event stream if events are on.
         this.requestCounter.WriteMetric(elapsedMSec);        // This adds it to the PerfCounter called 'Request' if PerfCounters are on
     }
 }
@@ -61,7 +61,7 @@ As usual, turn on PerfView, and then run the sample code - we get have something
 Now let's drill into what the data captured means - when I copied from PerfView, it looks like this
 
 ```
-ThreadID="17,800" ProcessorNumber="5" Payload="{ Name:"request", Mean:142.0735, StandardDeviation:42.07355, Count:2, Min:100, Max:184.1471, IntervalSec:1.000588 }" 
+ThreadID="17,800" ProcessorNumber="5" Payload="{ Name:"request", Mean:142.0735, StandardDeviation:42.07355, Count:2, Min:100, Max:184.1471, IntervalSec:1.000588 }"
 ```
 
 Now it is obvious that within a sampling period, we have 9 events, and all the other statistics.
