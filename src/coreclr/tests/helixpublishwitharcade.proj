@@ -90,12 +90,17 @@
     <TestEnvFileName Condition=" '$(TargetsWindows)' != 'true' ">SetStressModes_$(Scenario).sh</TestEnvFileName>
 
     <IncludeDotNetCli>true</IncludeDotNetCli>
+    <DotNetCliPackageType>runtime</DotNetCliPackageType>	
+    <DotNetCliVersion>$(BundledNETCoreAppPackageVersion)</DotNetCliVersion>
+    <DotNetCliRuntime>$(HelixRuntimeRid)</DotNetCliRuntime>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(TargetArchitecture) == 'wasm'">
     <DotNetCliPackageType>sdk</DotNetCliPackageType>
     <GlobalJsonContent>$([System.IO.File]::ReadAllText('$(RepoRoot)global.json'))</GlobalJsonContent>
     <DotNetCliVersion>$([System.Text.RegularExpressions.Regex]::Match($(GlobalJsonContent), '(%3F&lt;="dotnet": ").*(%3F=")'))</DotNetCliVersion>
-    <DotNetCliRuntime>$(HelixRuntimeRid)</DotNetCliRuntime>
     <!-- wasm needs to use the host OS DotnetCliRuntime, which on its queue is linux-x64 -->
-    <DotNetCliRuntime Condition="'$(TargetArchitecture)' == 'wasm'" >linux-x64</DotNetCliRuntime>
+    <DotNetCliRuntime>linux-x64</DotNetCliRuntime>
   </PropertyGroup>
 
   <Import Project="testgrouping.proj" />
