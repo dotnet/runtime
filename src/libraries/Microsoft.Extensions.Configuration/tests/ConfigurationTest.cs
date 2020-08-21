@@ -745,6 +745,53 @@ namespace Microsoft.Extensions.Configuration.Test
         }
 
         [Fact]
+        public void SectionGetRequiredSectionSuccess()
+        {
+            // Arrange
+            var dict = new Dictionary<string, string>()
+            {
+                {"Mem1", "Value1"},
+                {"Mem1:KeyInMem1", "ValueInMem1"},
+                {"Mem1:KeyInMem1:Deep1", "ValueDeep1"}
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dict);
+            IConfigurationRoot config = configurationBuilder.Build();
+
+            // Act
+            var sectionExists1 = config.GetRequiredSection("Mem1").Exists();
+            var sectionExists2 = config.GetRequiredSection("Mem1:KeyInMem1").Exists();
+
+            // Assert
+            Assert.True(sectionExists1);
+            Assert.True(sectionExists2);
+        }
+
+        [Fact]
+        public void SectionGetRequiredSectionMissingThrowException()
+        {
+            // Arrange
+            var dict = new Dictionary<string, string>()
+            {
+                {"Mem1", "Value1"},
+                {"Mem1:Deep1", "Value1"},
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dict);
+            IConfigurationRoot config = configurationBuilder.Build();
+
+            Assert.Throws<InvalidOperationException>(() => config.GetRequiredSection("Mem2"));
+            Assert.Throws<InvalidOperationException>(() => config.GetRequiredSection("Mem1:Deep2"));
+        }
+
+        [Fact]
+        public void SectionGetRequiredSectionNullThrowException()
+        {                      
+            IConfigurationRoot config = null;
+            Assert.Throws<ArgumentNullException>(() => config.GetRequiredSection("Mem1"));           
+        }
+
+        [Fact]
         public void SectionWithChildrenExists()
         {
             // Arrange
