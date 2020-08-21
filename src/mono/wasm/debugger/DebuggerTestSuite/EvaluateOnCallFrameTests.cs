@@ -49,22 +49,26 @@ namespace DebuggerTests
                var dateTime = new DateTime(2010, 9, 8, 7, 6, 5 + bias);
                var DTProp = dateTime.AddMinutes(10);
 
-               await EvaluateOnCallFrameAndCheck(id,
-                   (prefix + "a", TNumber(4)),
+                foreach (var pad in new[] { String.Empty, "  " })
+                {
+                    var padded_prefix = pad + prefix;
+                    await EvaluateOnCallFrameAndCheck(id,
+                        ($"{padded_prefix}a", TNumber(4)),
 
-                   // fields
-                   (prefix + "dateTime.TimeOfDay", TValueType("System.TimeSpan", dateTime.TimeOfDay.ToString())),
-                   (prefix + "dateTime", TDateTime(dateTime)),
-                   (prefix + "dateTime.TimeOfDay.Minutes", TNumber(dateTime.TimeOfDay.Minutes)),
+                        // fields
+                        ($"{padded_prefix}dateTime.TimeOfDay", TValueType("System.TimeSpan", dateTime.TimeOfDay.ToString())),
+                        ($"{padded_prefix}dateTime", TDateTime(dateTime)),
+                        ($"{padded_prefix}dateTime.TimeOfDay.Minutes", TNumber(dateTime.TimeOfDay.Minutes)),
 
-                   // properties
-                   (prefix + "DTProp.TimeOfDay.Minutes", TNumber(DTProp.TimeOfDay.Minutes)),
-                   (prefix + "DTProp", TDateTime(DTProp)),
-                   (prefix + "DTProp.TimeOfDay", TValueType("System.TimeSpan", DTProp.TimeOfDay.ToString())),
+                        // properties
+                        ($"{padded_prefix}DTProp.TimeOfDay.Minutes", TNumber(DTProp.TimeOfDay.Minutes)),
+                        ($"{padded_prefix}DTProp", TDateTime(DTProp)),
+                        ($"{padded_prefix}DTProp.TimeOfDay", TValueType("System.TimeSpan", DTProp.TimeOfDay.ToString())),
 
-                   (prefix + "IntProp", TNumber(9)),
-                   (prefix + "NullIfAIsNotZero", TObject("DebuggerTests.EvaluateTestsClassWithProperties", is_null: true))
-               );
+                        ($"{padded_prefix}IntProp", TNumber(9)),
+                        ($"{padded_prefix}NullIfAIsNotZero", TObject("DebuggerTests.EvaluateTestsClassWithProperties", is_null: true))
+                    );
+                }
            });
 
         [Theory]
@@ -104,12 +108,15 @@ namespace DebuggerTests
                var dt = new DateTime(2025, 3, 5, 7, 9, 11);
                await EvaluateOnCallFrameAndCheck(id,
                    ("d", TNumber(401)),
+                   (" d", TNumber(401)),
                    ("e", TNumber(402)),
                    ("f", TNumber(403)),
 
                    // property on a local
                    ("local_dt", TDateTime(dt)),
-                   ("local_dt.Date", TDateTime(dt.Date)));
+                   ("  local_dt", TDateTime(dt)),
+                   ("local_dt.Date", TDateTime(dt.Date)),
+                   ("  local_dt.Date", TDateTime(dt.Date)));
            });
 
         [Fact]
@@ -212,8 +219,10 @@ namespace DebuggerTests
                    // "((dt))", TObject("foo")); //FIXME:
 
                    ("this", TObject("DebuggerTests.EvaluateTestsClass.TestEvaluate")),
+                   ("  this", TObject("DebuggerTests.EvaluateTestsClass.TestEvaluate")),
 
                    ("5", TNumber(5)),
+                   ("  5", TNumber(5)),
                    ("d + e", TNumber(203)),
                    ("e + 10", TNumber(112)),
 
