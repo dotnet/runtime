@@ -33,7 +33,6 @@
       <NonExcludedTestDirectories Include="@(AllTestDirsPaths -> '%(Path)')" Exclude="@(SkipTestDirsPaths)" />
       <TopLevelDirectories Include="@(NonExcludedTestDirectories)" />
       <SecondLevel Include="$([System.IO.Directory]::GetDirectories(%(TopLevelDirectories.Identity)))" />
-      <Message Text="!!! AllRunnableTestPaths: %(AllRunnableTestPaths.Identity)" />
       <SecondLevelDirectories Include="@(SecondLevel)">
         <Path>$([System.IO.Path]::GetFullPath(%(AllRunnableTestPaths.Identity)))</Path>
       </SecondLevelDirectories>
