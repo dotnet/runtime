@@ -36,8 +36,8 @@ void Compiler::optBlockCopyPropPopStacks(BasicBlock* block, LclNumToGenTreePtrSt
             {
                 continue;
             }
-            unsigned lclNum = tree->AsLclVarCommon()->GetLclNum();
-            if (!lvaInSsa(lclNum))
+            const unsigned lclNum = optIsSsaLocal(tree);
+            if (lclNum == BAD_VAR_NUM)
             {
                 continue;
             }
@@ -150,10 +150,10 @@ void Compiler::optCopyProp(BasicBlock* block, Statement* stmt, GenTree* tree, Lc
     {
         return;
     }
-    unsigned lclNum = tree->AsLclVarCommon()->GetLclNum();
+    const unsigned lclNum = optIsSsaLocal(tree);
 
     // Skip non-SSA variables.
-    if (!lvaInSsa(lclNum))
+    if (lclNum == BAD_VAR_NUM)
     {
         return;
     }
