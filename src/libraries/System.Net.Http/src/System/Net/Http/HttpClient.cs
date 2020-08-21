@@ -164,50 +164,81 @@ namespace System.Net.Http
             GetStringAsync(CreateUri(requestUri), cancellationToken);
 
         public Task<string> GetStringAsync(Uri? requestUri, CancellationToken cancellationToken) =>
-            GetStringAsyncCore(GetAsync(requestUri, HttpCompletionOption.ResponseHeadersRead, cancellationToken), cancellationToken);
+            GetStringAsyncCore(requestUri, cancellationToken);
 
-        private async Task<string> GetStringAsyncCore(Task<HttpResponseMessage> getTask, CancellationToken cancellationToken)
+        private async Task<string> GetStringAsyncCore(Uri? requestUri, CancellationToken cancellationToken)
         {
-            // Wait for the response message.
-            using (HttpResponseMessage responseMessage = await getTask.ConfigureAwait(false))
+            bool telemetryStarted = false;
+            bool responseTelemetryStarted = false;
+
+            if (HttpTelemetry.Log.IsEnabled())
             {
-                // Make sure it completed successfully.
-                responseMessage.EnsureSuccessStatusCode();
+                HttpTelemetry.Log.GetHelperStart(nameof(GetStringAsync));
+                telemetryStarted = true;
+            }
 
-                // Get the response content.
-                HttpContent? c = responseMessage.Content;
-                if (c != null)
+            try
+            {
+                // Wait for the response message.
+                using (HttpResponseMessage responseMessage = await GetAsync(requestUri, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false))
                 {
-#if NET46
-                    return await c.ReadAsStringAsync().ConfigureAwait(false);
-#else
-                    HttpContentHeaders headers = c.Headers;
+                    // Make sure it completed successfully.
+                    responseMessage.EnsureSuccessStatusCode();
 
-                    // Since the underlying byte[] will never be exposed, we use an ArrayPool-backed
-                    // stream to which we copy all of the data from the response.
-                    using (Stream responseStream = c.TryReadAsStream() ?? await c.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false))
-                    using (var buffer = new HttpContent.LimitArrayPoolWriteStream(_maxResponseContentBufferSize, (int)headers.ContentLength.GetValueOrDefault()))
+                    // Get the response content.
+                    HttpContent? c = responseMessage.Content;
+                    if (c != null)
                     {
-                        try
+                        if (HttpTelemetry.Log.IsEnabled())
                         {
-                            await responseStream.CopyToAsync(buffer, cancellationToken).ConfigureAwait(false);
+                            HttpTelemetry.Log.ResponseContentStart();
+                            responseTelemetryStarted = true;
                         }
-                        catch (Exception e) when (HttpContent.StreamCopyExceptionNeedsWrapping(e))
-                        {
-                            throw HttpContent.WrapStreamCopyException(e);
-                        }
+    #if NET46
+                        return await c.ReadAsStringAsync().ConfigureAwait(false);
+    #else
+                        HttpContentHeaders headers = c.Headers;
 
-                        if (buffer.Length > 0)
+                        // Since the underlying byte[] will never be exposed, we use an ArrayPool-backed
+                        // stream to which we copy all of the data from the response.
+                        using (Stream responseStream = c.TryReadAsStream() ?? await c.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false))
+                        using (var buffer = new HttpContent.LimitArrayPoolWriteStream(_maxResponseContentBufferSize, (int)headers.ContentLength.GetValueOrDefault()))
                         {
-                            // Decode and return the data from the buffer.
-                            return HttpContent.ReadBufferAsString(buffer.GetBuffer(), headers);
+                            try
+                            {
+                                await responseStream.CopyToAsync(buffer, cancellationToken).ConfigureAwait(false);
+                            }
+                            catch (Exception e) when (HttpContent.StreamCopyExceptionNeedsWrapping(e))
+                            {
+                                throw HttpContent.WrapStreamCopyException(e);
+                            }
+
+                            if (buffer.Length > 0)
+                            {
+                                // Decode and return the data from the buffer.
+                                return HttpContent.ReadBufferAsString(buffer.GetBuffer(), headers);
+                            }
                         }
+    #endif
                     }
-#endif
-                }
 
-                // No content to return.
-                return string.Empty;
+                    // No content to return.
+                    return string.Empty;
+                }
+            }
+            finally
+            {
+                if (HttpTelemetry.Log.IsEnabled())
+                {
+                    if (responseTelemetryStarted)
+                    {
+                        HttpTelemetry.Log.ResponseContentStop();
+                    }
+                    if (telemetryStarted)
+                    {
+                        HttpTelemetry.Log.GetHelperStop();
+                    }
+                }
             }
         }
 
@@ -221,59 +252,52 @@ namespace System.Net.Http
             GetByteArrayAsync(CreateUri(requestUri), cancellationToken);
 
         public Task<byte[]> GetByteArrayAsync(Uri? requestUri, CancellationToken cancellationToken) =>
-            GetByteArrayAsyncCore(GetAsync(requestUri, HttpCompletionOption.ResponseHeadersRead, cancellationToken), cancellationToken);
+            GetByteArrayAsyncCore(requestUri, cancellationToken);
 
-        private async Task<byte[]> GetByteArrayAsyncCore(Task<HttpResponseMessage> getTask, CancellationToken cancellationToken)
+        private async Task<byte[]> GetByteArrayAsyncCore(Uri? requestUri, CancellationToken cancellationToken)
         {
-            // Wait for the response message.
-            using (HttpResponseMessage responseMessage = await getTask.ConfigureAwait(false))
+            bool telemetryStarted = false;
+            bool responseTelemetryStarted = false;
+
+            if (HttpTelemetry.Log.IsEnabled())
             {
-                // Make sure it completed successfully.
-                responseMessage.EnsureSuccessStatusCode();
+                HttpTelemetry.Log.GetHelperStart(nameof(GetByteArrayAsync));
+                telemetryStarted = true;
+            }
 
-                // Get the response content.
-                HttpContent? c = responseMessage.Content;
-                if (c != null)
+            try
+            {
+                // Wait for the response message.
+                using (HttpResponseMessage responseMessage = await GetAsync(requestUri, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false))
                 {
-#if NET46
-                    return await c.ReadAsByteArrayAsync().ConfigureAwait(false);
-#else
-                    HttpContentHeaders headers = c.Headers;
-                    using (Stream responseStream = c.TryReadAsStream() ?? await c.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false))
+                    // Make sure it completed successfully.
+                    responseMessage.EnsureSuccessStatusCode();
+
+                    // Get the response content.
+                    HttpContent? c = responseMessage.Content;
+                    if (c != null)
                     {
-                        long? contentLength = headers.ContentLength;
-                        Stream buffer; // declared here to share the state machine field across both if/else branches
-
-                        if (contentLength.HasValue)
+                        if (HttpTelemetry.Log.IsEnabled())
                         {
-                            // If we got a content length, then we assume that it's correct and create a MemoryStream
-                            // to which the content will be transferred.  That way, assuming we actually get the exact
-                            // amount we were expecting, we can simply return the MemoryStream's underlying buffer.
-                            buffer = new HttpContent.LimitMemoryStream(_maxResponseContentBufferSize, (int)contentLength.GetValueOrDefault());
-
-                            try
-                            {
-                                await responseStream.CopyToAsync(buffer, cancellationToken).ConfigureAwait(false);
-                            }
-                            catch (Exception e) when (HttpContent.StreamCopyExceptionNeedsWrapping(e))
-                            {
-                                throw HttpContent.WrapStreamCopyException(e);
-                            }
-
-                            if (buffer.Length > 0)
-                            {
-                                return ((HttpContent.LimitMemoryStream)buffer).GetSizedBuffer();
-                            }
+                            HttpTelemetry.Log.ResponseContentStart();
+                            responseTelemetryStarted = true;
                         }
-                        else
+    #if NET46
+                        return await c.ReadAsByteArrayAsync().ConfigureAwait(false);
+    #else
+                        HttpContentHeaders headers = c.Headers;
+                        using (Stream responseStream = c.TryReadAsStream() ?? await c.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false))
                         {
-                            // If we didn't get a content length, then we assume we're going to have to grow
-                            // the buffer potentially several times and that it's unlikely the underlying buffer
-                            // at the end will be the exact size needed, in which case it's more beneficial to use
-                            // ArrayPool buffers and copy out to a new array at the end.
-                            buffer = new HttpContent.LimitArrayPoolWriteStream(_maxResponseContentBufferSize);
-                            try
+                            long? contentLength = headers.ContentLength;
+                            Stream buffer; // declared here to share the state machine field across both if/else branches
+
+                            if (contentLength.HasValue)
                             {
+                                // If we got a content length, then we assume that it's correct and create a MemoryStream
+                                // to which the content will be transferred.  That way, assuming we actually get the exact
+                                // amount we were expecting, we can simply return the MemoryStream's underlying buffer.
+                                buffer = new HttpContent.LimitMemoryStream(_maxResponseContentBufferSize, (int)contentLength.GetValueOrDefault());
+
                                 try
                                 {
                                     await responseStream.CopyToAsync(buffer, cancellationToken).ConfigureAwait(false);
@@ -285,17 +309,55 @@ namespace System.Net.Http
 
                                 if (buffer.Length > 0)
                                 {
-                                    return ((HttpContent.LimitArrayPoolWriteStream)buffer).ToArray();
+                                    return ((HttpContent.LimitMemoryStream)buffer).GetSizedBuffer();
                                 }
                             }
-                            finally { buffer.Dispose(); }
-                        }
-                    }
-#endif
-                }
+                            else
+                            {
+                                // If we didn't get a content length, then we assume we're going to have to grow
+                                // the buffer potentially several times and that it's unlikely the underlying buffer
+                                // at the end will be the exact size needed, in which case it's more beneficial to use
+                                // ArrayPool buffers and copy out to a new array at the end.
+                                buffer = new HttpContent.LimitArrayPoolWriteStream(_maxResponseContentBufferSize);
+                                try
+                                {
+                                    try
+                                    {
+                                        await responseStream.CopyToAsync(buffer, cancellationToken).ConfigureAwait(false);
+                                    }
+                                    catch (Exception e) when (HttpContent.StreamCopyExceptionNeedsWrapping(e))
+                                    {
+                                        throw HttpContent.WrapStreamCopyException(e);
+                                    }
 
-                // No content to return.
-                return Array.Empty<byte>();
+                                    if (buffer.Length > 0)
+                                    {
+                                        return ((HttpContent.LimitArrayPoolWriteStream)buffer).ToArray();
+                                    }
+                                }
+                                finally { buffer.Dispose(); }
+                            }
+                        }
+    #endif
+                    }
+
+                    // No content to return.
+                    return Array.Empty<byte>();
+                }
+            }
+            finally
+            {
+                if (HttpTelemetry.Log.IsEnabled())
+                {
+                    if (responseTelemetryStarted)
+                    {
+                        HttpTelemetry.Log.ResponseContentStop();
+                    }
+                    if (telemetryStarted)
+                    {
+                        HttpTelemetry.Log.GetHelperStop();
+                    }
+                }
             }
         }
 
@@ -309,16 +371,50 @@ namespace System.Net.Http
             GetStreamAsync(requestUri, CancellationToken.None);
 
         public Task<Stream> GetStreamAsync(Uri? requestUri, CancellationToken cancellationToken) =>
-            FinishGetStreamAsync(GetAsync(requestUri, HttpCompletionOption.ResponseHeadersRead, cancellationToken), cancellationToken);
+            FinishGetStreamAsync(requestUri, cancellationToken);
 
-        private async Task<Stream> FinishGetStreamAsync(Task<HttpResponseMessage> getTask, CancellationToken cancellationToken)
+        private async Task<Stream> FinishGetStreamAsync(Uri? requestUri, CancellationToken cancellationToken)
         {
-            HttpResponseMessage response = await getTask.ConfigureAwait(false);
-            response.EnsureSuccessStatusCode();
-            HttpContent? c = response.Content;
-            return c != null ?
-                (c.TryReadAsStream() ?? await c.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false)) :
-                Stream.Null;
+            bool telemetryStarted = false;
+            bool responseTelemetryStarted = false;
+
+            if (HttpTelemetry.Log.IsEnabled())
+            {
+                HttpTelemetry.Log.GetHelperStart(nameof(GetStreamAsync));
+                telemetryStarted = true;
+            }
+
+            try
+            {
+                HttpResponseMessage response = await GetAsync(requestUri, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
+                response.EnsureSuccessStatusCode();
+                HttpContent? c = response.Content;
+                if (c != null)
+                {
+                    if (HttpTelemetry.Log.IsEnabled())
+                    {
+                        HttpTelemetry.Log.ResponseContentStart();
+                        responseTelemetryStarted = true;
+                    }
+
+                    return c.TryReadAsStream() ?? await c.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
+                }
+                return Stream.Null;
+            }
+            finally
+            {
+                if (HttpTelemetry.Log.IsEnabled())
+                {
+                    if (responseTelemetryStarted)
+                    {
+                        HttpTelemetry.Log.ResponseContentStop();
+                    }
+                    if (telemetryStarted)
+                    {
+                        HttpTelemetry.Log.GetHelperStop();
+                    }
+                }
+            }
         }
 
         #endregion Simple Get Overloads
@@ -542,8 +638,7 @@ namespace System.Net.Http
             bool telemetryStarted = false;
             if (HttpTelemetry.Log.IsEnabled())
             {
-                // TODO https://github.com/dotnet/runtime/issues/40896: Enable tracing for HTTP/3.
-                if (request.Version.Major < 3 && request.RequestUri != null)
+                if (request.RequestUri != null)
                 {
                     HttpTelemetry.Log.RequestStart(
                         request.RequestUri.Scheme,
@@ -572,14 +667,31 @@ namespace System.Net.Http
                 // Buffer the response content if we've been asked to and we have a Content to buffer.
                 if (buffered && response.Content != null)
                 {
-                    if (async)
+                    bool responseTelemetryStarted = false;
+                    if (HttpTelemetry.Log.IsEnabled())
                     {
-                        await response.Content.LoadIntoBufferAsync(_maxResponseContentBufferSize, cts.Token).ConfigureAwait(false);
-
+                        HttpTelemetry.Log.ResponseContentStart();
+                        responseTelemetryStarted = true;
                     }
-                    else
+
+                    try
                     {
-                        response.Content.LoadIntoBuffer(_maxResponseContentBufferSize, cts.Token);
+                        if (async)
+                        {
+                            await response.Content.LoadIntoBufferAsync(_maxResponseContentBufferSize, cts.Token).ConfigureAwait(false);
+
+                        }
+                        else
+                        {
+                            response.Content.LoadIntoBuffer(_maxResponseContentBufferSize, cts.Token);
+                        }
+                    }
+                    finally
+                    {
+                        if (HttpTelemetry.Log.IsEnabled() && responseTelemetryStarted)
+                        {
+                            HttpTelemetry.Log.ResponseContentStop();
+                        }
                     }
                 }
 

@@ -99,6 +99,30 @@ namespace System.Net.Http
             WriteEvent(eventId: 9);
         }
 
+        [Event(10, Level = EventLevel.Informational)]
+        public void ResponseContentStart()
+        {
+            WriteEvent(eventId: 10);
+        }
+
+        [Event(11, Level = EventLevel.Informational)]
+        public void ResponseContentStop()
+        {
+            WriteEvent(eventId: 11);
+        }
+
+        [Event(12, Level = EventLevel.Informational)]
+        public void GetHelperStart(string methodName)
+        {
+            WriteEvent(eventId: 12, methodName);
+        }
+
+        [Event(13, Level = EventLevel.Informational)]
+        public void GetHelperStop()
+        {
+            WriteEvent(eventId: 13);
+        }
+
         protected override void OnEventCommand(EventCommandEventArgs command)
         {
             if (command.Command == EventCommand.Enable)
