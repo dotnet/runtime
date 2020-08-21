@@ -563,11 +563,13 @@ pal::string_t pal::get_current_os_rid_platform()
         {
             int majorVersion = stoi(release.substr(0, pos));
             // compat path with 10.x
-            if (majorVersion > 20)
+            if (majorVersion < 20)
             {
                 // Extract the major version and subtract 4 from it
                 // to get the Minor version used in OSX versioning scheme.
                 // That is, given a version 10.X.Y, we will get X below.
+                //
+                // macOS Cataline 10.15.5 has kernel 19.5.0
                 int minorVersion = majorVersion - 4;
                 if (minorVersion < 10)
                 {
