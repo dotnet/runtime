@@ -2141,7 +2141,8 @@ BOOL PEAssembly::GetCodeBase(SString &result)
     }
     CONTRACTL_END;
 
-    if (!(GetILimage()->IsInBundle()))
+    auto ilImage = GetILimage();
+    if (ilImage == nullptr || !ilImage->IsInBundle())
     {
         // All other cases use the file path.
         result.Set(GetEffectivePath());
