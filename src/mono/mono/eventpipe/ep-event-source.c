@@ -190,6 +190,8 @@ ep_event_source_enable (
 	EP_ASSERT (event_source != NULL);
 	EP_ASSERT (session != NULL);
 
+	ep_requires_lock_held ();
+
 	EventPipeSessionProvider *session_provider = ep_session_provider_alloc (event_source->provider_name, (uint64_t)-1, EP_EVENT_LEVEL_LOG_ALWAYS, NULL);
 	if (session_provider != NULL)
 		ep_session_add_session_provider (session, session_provider);

@@ -45,6 +45,7 @@
 	static void ep_rt_ ## array_name ## _free (array_type *ep_array); \
 	static void ep_rt_ ## array_name ## _clear (array_type *ep_array); \
 	static void ep_rt_ ## array_name ## _append (array_type *ep_array, item_type item); \
+	static bool ep_rt_ ## array_name ## _remove (array_type *ep_array, const item_type item); \
 	static size_t ep_rt_ ## array_name ## _size (const array_type *ep_array);
 
 #define EP_RT_DECLARE_ARRAY_ITERATOR(array_name, array_type, iterator_type, item_type) \
@@ -231,7 +232,15 @@ ep_rt_sample_profiler_get_sampling_rate (void);
 
 static
 void
-ep_rt_sample_set_sampling_rate (uint32_t nanoseconds);
+ep_rt_sample_profiler_set_sampling_rate (uint32_t nanoseconds);
+
+static
+void
+ep_rt_sample_profiler_can_start_sampling (void);
+
+static
+void
+ep_rt_notify_profiler_provider_created (EventPipeProvider *provider);
 
 /*
  * EventPipeSessionProvider.

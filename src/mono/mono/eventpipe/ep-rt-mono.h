@@ -77,6 +77,15 @@
 	static inline void ep_rt_ ## array_name ## _free (array_type *ep_array) { g_array_free (ep_array->array, TRUE); } \
 	static inline void ep_rt_ ## array_name ## _clear (array_type *ep_array) { g_array_set_size (ep_array->array, 0); } \
 	static inline void ep_rt_ ## array_name ## _append (array_type *ep_array, item_type item) { g_array_append_val (ep_array->array, item); } \
+	static inline bool ep_rt_ ## array_name ## _remove (array_type *ep_array, const item_type item) { \
+		for (gint i = 0; i < ep_array->array->len; ++i ) { \
+			if (g_array_index (ep_array->array, item_type, i) == item) { \
+				ep_array->array = g_array_remove_index_fast (ep_array->array, i); \
+				return true; \
+			} \
+		} \
+		return false; \
+	} \
 	static inline size_t ep_rt_ ## array_name ## _size (const array_type *ep_array) { return ep_array->array->len; }
 
 #define EP_RT_DEFINE_ARRAY_ITERATOR(array_name, array_type, iterator_type, item_type) \
@@ -621,7 +630,21 @@ ep_rt_sample_profiler_get_sampling_rate (void)
 static
 inline
 void
-ep_rt_sample_set_sampling_rate (uint32_t nanoseconds)
+ep_rt_sample_profiler_set_sampling_rate (uint32_t nanoseconds)
+{
+	//TODO: Not supported.
+}
+
+static
+void
+ep_rt_sample_profiler_can_start_sampling (void)
+{
+	//TODO: Not supported.
+}
+
+static
+void
+ep_rt_notify_profiler_provider_created (EventPipeProvider *provider)
 {
 	//TODO: Not supported.
 }
