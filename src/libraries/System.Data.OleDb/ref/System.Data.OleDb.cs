@@ -51,9 +51,9 @@ namespace System.Data.OleDb
         public override object? ExecuteScalar() { throw null; }
         public override void Prepare() { }
         public void ResetCommandTimeout() { }
-        System.Data.IDataReader? System.Data.IDbCommand.ExecuteReader() { throw null; }
-        System.Data.IDataReader? System.Data.IDbCommand.ExecuteReader(System.Data.CommandBehavior behavior) { throw null; }
-        object? System.ICloneable.Clone() { throw null; }
+        System.Data.IDataReader System.Data.IDbCommand.ExecuteReader() { throw null; }
+        System.Data.IDataReader System.Data.IDbCommand.ExecuteReader(System.Data.CommandBehavior behavior) { throw null; }
+        object System.ICloneable.Clone() { throw null; }
     }
     public sealed partial class OleDbCommandBuilder : System.Data.Common.DbCommandBuilder
     {
