@@ -12,10 +12,10 @@ namespace System.Runtime.Serialization
 {
     internal class XmlSerializableReader : XmlReader, IXmlLineInfo
     {
-        private XmlReaderDelegator _xmlReader;
+        private XmlReaderDelegator _xmlReader = null!; // initialized in BeginRead
         private int _startDepth;
         private bool _isRootEmptyElement;
-        private XmlReader _innerReader;
+        private XmlReader _innerReader = null!; // initialized in BeginRead
 
         private XmlReader InnerReader
         {
@@ -125,7 +125,7 @@ namespace System.Runtime.Serialization
         // IXmlLineInfo members
         bool IXmlLineInfo.HasLineInfo()
         {
-            IXmlLineInfo xmlLineInfo = InnerReader as IXmlLineInfo;
+            IXmlLineInfo? xmlLineInfo = InnerReader as IXmlLineInfo;
             return (xmlLineInfo == null) ? _xmlReader.HasLineInfo() : xmlLineInfo.HasLineInfo();
         }
 
@@ -133,7 +133,7 @@ namespace System.Runtime.Serialization
         {
             get
             {
-                IXmlLineInfo xmlLineInfo = InnerReader as IXmlLineInfo;
+                IXmlLineInfo? xmlLineInfo = InnerReader as IXmlLineInfo;
                 return (xmlLineInfo == null) ? _xmlReader.LineNumber : xmlLineInfo.LineNumber;
             }
         }
@@ -142,7 +142,7 @@ namespace System.Runtime.Serialization
         {
             get
             {
-                IXmlLineInfo xmlLineInfo = InnerReader as IXmlLineInfo;
+                IXmlLineInfo? xmlLineInfo = InnerReader as IXmlLineInfo;
                 return (xmlLineInfo == null) ? _xmlReader.LinePosition : xmlLineInfo.LinePosition;
             }
         }

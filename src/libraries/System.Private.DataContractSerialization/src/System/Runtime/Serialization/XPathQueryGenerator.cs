@@ -23,7 +23,7 @@ namespace System.Runtime.Serialization
         }
 
         // Here you can provide your own root element Xpath which will replace the Xpath of the top level element
-        public static string CreateFromDataContractSerializer(Type type, MemberInfo[] pathToMember, StringBuilder rootElementXpath, out XmlNamespaceManager namespaces)
+        public static string CreateFromDataContractSerializer(Type type, MemberInfo[] pathToMember, StringBuilder? rootElementXpath, out XmlNamespaceManager namespaces)
         {
             if (type == null)
             {
@@ -67,13 +67,13 @@ namespace System.Runtime.Serialization
 
         private static DataContract ProcessClassDataContract(ClassDataContract contract, ExportContext context, MemberInfo memberNode)
         {
-            string prefix = context.SetNamespace(contract.Namespace.Value);
+            string prefix = context.SetNamespace(contract.Namespace!.Value);
             foreach (DataMember member in GetDataMembers(contract))
             {
-                if (member.MemberInfo.Name == memberNode.Name && member.MemberInfo.DeclaringType.IsAssignableFrom(memberNode.DeclaringType))
+                if (member.MemberInfo.Name == memberNode.Name && member.MemberInfo.DeclaringType!.IsAssignableFrom(memberNode.DeclaringType))
                 {
                     context.WriteChildToContext(member, prefix);
-                    return member.MemberTypeContract;
+                    return member.MemberTypeContract!;
                 }
             }
             throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlObjectSerializer.CreateSerializationException(SR.QueryGeneratorPathToMemberNotFound));
@@ -106,8 +106,8 @@ namespace System.Runtime.Serialization
             public ExportContext(DataContract rootContract)
             {
                 _namespaces = new XmlNamespaceManager(new NameTable());
-                string prefix = SetNamespace(rootContract.TopLevelElementNamespace.Value);
-                _xPathBuilder = new StringBuilder(XPathQueryGenerator.XPathSeparator + prefix + XPathQueryGenerator.NsSeparator + rootContract.TopLevelElementName.Value);
+                string prefix = SetNamespace(rootContract.TopLevelElementNamespace!.Value);
+                _xPathBuilder = new StringBuilder(XPathQueryGenerator.XPathSeparator + prefix + XPathQueryGenerator.NsSeparator + rootContract.TopLevelElementName!.Value);
             }
 
             public ExportContext(StringBuilder rootContractXPath)

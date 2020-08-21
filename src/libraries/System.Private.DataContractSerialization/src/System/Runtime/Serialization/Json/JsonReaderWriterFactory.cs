@@ -30,7 +30,7 @@ namespace System.Runtime.Serialization.Json
             return CreateJsonReader(buffer, 0, buffer.Length, null, quotas, null);
         }
 
-        public static XmlDictionaryReader CreateJsonReader(Stream stream, Encoding encoding, XmlDictionaryReaderQuotas quotas, OnXmlDictionaryReaderClose onClose)
+        public static XmlDictionaryReader CreateJsonReader(Stream stream, Encoding? encoding, XmlDictionaryReaderQuotas quotas, OnXmlDictionaryReaderClose? onClose)
         {
             XmlJsonReader reader = new XmlJsonReader();
             reader.SetInput(stream, encoding, quotas, onClose);
@@ -42,7 +42,7 @@ namespace System.Runtime.Serialization.Json
             return CreateJsonReader(buffer, offset, count, null, quotas, null);
         }
 
-        public static XmlDictionaryReader CreateJsonReader(byte[] buffer, int offset, int count, Encoding encoding, XmlDictionaryReaderQuotas quotas, OnXmlDictionaryReaderClose onClose)
+        public static XmlDictionaryReader CreateJsonReader(byte[] buffer, int offset, int count, Encoding? encoding, XmlDictionaryReaderQuotas quotas, OnXmlDictionaryReaderClose? onClose)
         {
             XmlJsonReader reader = new XmlJsonReader();
             reader.SetInput(buffer, offset, count, encoding, quotas, onClose);

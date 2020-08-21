@@ -9,12 +9,13 @@ using System.Reflection;
 using System.Collections;
 using System.IO;
 using DataContractDictionary = System.Collections.Generic.Dictionary<System.Xml.XmlQualifiedName, System.Runtime.Serialization.DataContract>;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Runtime.Serialization.Json
 {
     internal class XmlObjectSerializerWriteContextComplexJson : XmlObjectSerializerWriteContextComplex
     {
-        private readonly DataContractJsonSerializer _jsonSerializer;
+        private readonly DataContractJsonSerializer? _jsonSerializer;
         private readonly EmitTypeInformation _emitXsiType;
         private bool _perCallXsiTypeAlreadyEmitted;
         private readonly bool _useSimpleDictionaryFormat;
@@ -48,7 +49,7 @@ namespace System.Runtime.Serialization.Json
             _useSimpleDictionaryFormat = serializer.UseSimpleDictionaryFormat;
         }
 
-        internal IList<Type> SerializerKnownTypeList
+        internal IList<Type>? SerializerKnownTypeList
         {
             get
             {
@@ -79,7 +80,7 @@ namespace System.Runtime.Serialization.Json
             //Noop
         }
 
-        protected override void WriteTypeInfo(XmlWriterDelegator writer, string dataContractName, string dataContractNamespace)
+        protected override void WriteTypeInfo(XmlWriterDelegator writer, string dataContractName, string? dataContractNamespace)
         {
             if (_emitXsiType != EmitTypeInformation.Never)
             {
@@ -170,7 +171,7 @@ namespace System.Runtime.Serialization.Json
             JsonDataContract jsonDataContract = JsonDataContract.GetJsonDataContract(dataContract);
             if (_emitXsiType == EmitTypeInformation.Always && !_perCallXsiTypeAlreadyEmitted && RequiresJsonTypeInfo(dataContract))
             {
-                WriteTypeInfo(xmlWriter, jsonDataContract.TypeName);
+                WriteTypeInfo(xmlWriter, jsonDataContract.TypeName!);
             }
             _perCallXsiTypeAlreadyEmitted = false;
             DataContractJsonSerializerImpl.WriteJsonValue(jsonDataContract, xmlWriter, obj, this, declaredTypeHandle);
@@ -186,7 +187,7 @@ namespace System.Runtime.Serialization.Json
             get { return JsonGlobals.itemDictionaryString; }
         }
 
-        protected override void SerializeWithXsiType(XmlWriterDelegator xmlWriter, object obj, RuntimeTypeHandle objectTypeHandle, Type objectType, int declaredTypeID, RuntimeTypeHandle declaredTypeHandle, Type declaredType)
+        protected override void SerializeWithXsiType(XmlWriterDelegator xmlWriter, object obj, RuntimeTypeHandle objectTypeHandle, Type? objectType, int declaredTypeID, RuntimeTypeHandle declaredTypeHandle, Type declaredType)
         {
             DataContract dataContract;
             bool verifyKnownType = false;
@@ -229,8 +230,8 @@ namespace System.Runtime.Serialization.Json
                 if (((CollectionDataContract)dataContract).Kind == CollectionKind.Dictionary)
                 {
                     // Convert non-generic dictionary to generic dictionary
-                    IDictionary dictionaryObj = obj as IDictionary;
-                    Dictionary<object, object> genericDictionaryObj = new Dictionary<object, object>(dictionaryObj.Count);
+                    IDictionary dictionaryObj = (obj as IDictionary)!;
+                    Dictionary<object, object?> genericDictionaryObj = new Dictionary<object, object?>(dictionaryObj.Count);
                     // Manual use of IDictionaryEnumerator instead of foreach to avoid DictionaryEntry box allocations.
                     IDictionaryEnumerator e = dictionaryObj.GetEnumerator();
                     try
@@ -354,7 +355,8 @@ namespace System.Runtime.Serialization.Json
             }
         }
 
-        internal static DataContract GetRevisedItemContract(DataContract oldItemContract)
+        [return: NotNullIfNotNull("oldItemContract")]
+        internal static DataContract? GetRevisedItemContract(DataContract oldItemContract)
         {
             if ((oldItemContract != null) &&
                 oldItemContract.UnderlyingType.IsGenericType &&
@@ -364,14 +366,14 @@ namespace System.Runtime.Serialization.Json
             }
             return oldItemContract;
         }
-        internal override DataContract GetDataContract(RuntimeTypeHandle typeHandle, Type type)
+        internal override DataContract GetDataContract(RuntimeTypeHandle typeHandle, Type? type)
         {
             DataContract dataContract = base.GetDataContract(typeHandle, type);
             DataContractJsonSerializer.CheckIfTypeIsReference(dataContract);
             return dataContract;
         }
 
-        internal override DataContract GetDataContractSkipValidation(int typeId, RuntimeTypeHandle typeHandle, Type type)
+        internal override DataContract GetDataContractSkipValidation(int typeId, RuntimeTypeHandle typeHandle, Type? type)
         {
             DataContract dataContract = base.GetDataContractSkipValidation(typeId, typeHandle, type);
             DataContractJsonSerializer.CheckIfTypeIsReference(dataContract);

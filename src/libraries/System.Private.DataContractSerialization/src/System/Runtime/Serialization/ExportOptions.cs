@@ -7,7 +7,7 @@ namespace System.Runtime.Serialization
 {
     public class ExportOptions
     {
-        private Collection<Type> _knownTypes;
+        private Collection<Type>? _knownTypes;
 #if SUPPORT_SURROGATE
         private IDataContractSurrogate _dataContractSurrogate;
 

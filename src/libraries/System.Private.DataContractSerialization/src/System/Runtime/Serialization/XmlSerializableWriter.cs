@@ -9,9 +9,9 @@ namespace System.Runtime.Serialization
 {
     internal class XmlSerializableWriter : XmlWriter
     {
-        private XmlWriter _xmlWriter;
+        private XmlWriter _xmlWriter = null!; // initialized in BeginWrite
         private int _depth;
-        private object _obj;
+        private object? _obj;
 
         internal void BeginWrite(XmlWriter xmlWriter, object obj)
         {
@@ -43,7 +43,7 @@ namespace System.Runtime.Serialization
             // XmlSerializer does not write doc type
         }
 
-        public override void WriteStartElement(string prefix, string localName, string ns)
+        public override void WriteStartElement(string? prefix, string localName, string? ns)
         {
             _xmlWriter.WriteStartElement(prefix, localName, ns);
             _depth++;
@@ -70,7 +70,7 @@ namespace System.Runtime.Serialization
             throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlObjectSerializer.CreateSerializationException(SR.IXmlSerializableIllegalOperation));
         }
 
-        public override void WriteStartAttribute(string prefix, string localName, string ns)
+        public override void WriteStartAttribute(string? prefix, string localName, string? ns)
         {
             _xmlWriter.WriteStartAttribute(prefix, localName, ns);
         }
@@ -93,7 +93,7 @@ namespace System.Runtime.Serialization
         public override void Flush() { _xmlWriter.Flush(); }
         public override void WriteName(string name) { _xmlWriter.WriteName(name); }
         public override void WriteQualifiedName(string localName, string ns) { _xmlWriter.WriteQualifiedName(localName, ns); }
-        public override string LookupPrefix(string ns) { return _xmlWriter.LookupPrefix(ns); }
+        public override string? LookupPrefix(string ns) { return _xmlWriter.LookupPrefix(ns); }
         public override XmlSpace XmlSpace { get { return _xmlWriter.XmlSpace; } }
         public override string XmlLang { get { return _xmlWriter.XmlLang; } }
         public override void WriteNmToken(string name) { _xmlWriter.WriteNmToken(name); }
