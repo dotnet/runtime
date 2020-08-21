@@ -275,7 +275,6 @@ namespace System.Data.Odbc
         [System.ComponentModel.DefaultValueAttribute(System.Data.Odbc.OdbcType.NChar)]
         [System.Data.Common.DbProviderSpecificTypePropertyAttribute(true)]
         public System.Data.Odbc.OdbcType OdbcType { get { throw null; } set { } }
-        public int Offset { get { throw null; } set { } }
         [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public override string ParameterName { get { throw null; } set { } }
         public new byte Precision { get { throw null; } set { } }
