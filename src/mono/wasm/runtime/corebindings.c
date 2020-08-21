@@ -165,11 +165,13 @@ mono_wasm_unbox_enum (MonoObject *obj)
 		return *(int*)ptr;
 	case MONO_TYPE_U4:
 		return *(unsigned int*)ptr;
-	// WASM doesn't support returning longs to JS
-	// case MONO_TYPE_I8:
-	// case MONO_TYPE_U8:
+	// WASM doesn't support returning longs to JS i.e. JavaScript does not have a native 64-bit int
+	case MONO_TYPE_I8:
+	case MONO_TYPE_U8:
+		fprintf (stderr, "Invalid type %d to core mono_unbox_enum due to JavaScript not having a native 64-bit int.\n", mono_type_get_type(mono_type_get_underlying_type (type)));
+		return 0;
 	default:
-		printf ("Invalid type %d to mono_unbox_enum\n", mono_type_get_type(mono_type_get_underlying_type (type)));
+		fprintf (stderr, "Invalid type %d to mono_unbox_enum\n", mono_type_get_type(mono_type_get_underlying_type (type)));
 		return 0;
 	}
 }
