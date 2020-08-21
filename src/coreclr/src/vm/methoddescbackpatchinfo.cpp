@@ -28,7 +28,9 @@ void EntryPointSlots::Backpatch_Locked(TADDR slot, SlotType slotType, PCODE entr
     _ASSERTE(entryPoint != NULL);
     _ASSERTE(IS_ALIGNED((SIZE_T)slot, GetRequiredSlotAlignment(slotType)));
 
+#if defined(HOST_OSX) && defined(HOST_ARM64)
     bool jitWriteEnabled = PAL_JITWriteEnable(true);
+#endif // defined(HOST_OSX) && defined(HOST_ARM64)
 
     switch (slotType)
     {
@@ -52,7 +54,9 @@ void EntryPointSlots::Backpatch_Locked(TADDR slot, SlotType slotType, PCODE entr
             // fall through
 
         Flush:
+#if defined(HOST_OSX) && defined(HOST_ARM64)
             PAL_JITWriteEnable(jitWriteEnabled);
+#endif // defined(HOST_OSX) && defined(HOST_ARM64)
             ClrFlushInstructionCache((LPCVOID)slot, sizeof(PCODE));
             break;
 

@@ -326,7 +326,9 @@ PCODE MethodDesc::PrepareCode(PrepareCodeConfig* pConfig)
 {
     STANDARD_VM_CONTRACT;
 
+#if defined(HOST_OSX) && defined(HOST_ARM64)
     bool jitWriteEnabled = PAL_JITWriteEnable(true);
+#endif // defined(HOST_OSX) && defined(HOST_ARM64)
 
     // If other kinds of code need multi-versioning we could add more cases here,
     // but for now generation of all other code/stubs occurs in other code paths
@@ -337,7 +339,9 @@ PCODE MethodDesc::PrepareCode(PrepareCodeConfig* pConfig)
     NotifyGdb::MethodPrepared(this);
 #endif
 
+#if defined(HOST_OSX) && defined(HOST_ARM64)
     PAL_JITWriteEnable(jitWriteEnabled);
+#endif // defined(HOST_OSX) && defined(HOST_ARM64)
 
     return pCode;
 }
@@ -1884,7 +1888,9 @@ extern "C" PCODE STDCALL PreStubWorker(TransitionBlock* pTransitionBlock, Method
 
     ETWOnStartup(PrestubWorker_V1, PrestubWorkerEnd_V1);
 
+#if defined(HOST_OSX) && defined(HOST_ARM64)
     bool jitWriteEnabled = PAL_JITWriteEnable(true);
+#endif // defined(HOST_OSX) && defined(HOST_ARM64)
 
     MAKE_CURRENT_THREAD_AVAILABLE();
 
@@ -1970,7 +1976,9 @@ extern "C" PCODE STDCALL PreStubWorker(TransitionBlock* pTransitionBlock, Method
         pPFrame->Pop(CURRENT_THREAD);
     }
 
+#if defined(HOST_OSX) && defined(HOST_ARM64)
     PAL_JITWriteEnable(jitWriteEnabled);
+#endif // defined(HOST_OSX) && defined(HOST_ARM64)
 
     POSTCONDITION(pbRetVal != NULL);
 

@@ -404,7 +404,9 @@ void Precode::ResetTargetInterlocked()
 {
     WRAPPER_NO_CONTRACT;
 
+#if defined(HOST_OSX) && defined(HOST_ARM64)
     bool jitWriteEnabled = PAL_JITWriteEnable(true);
+#endif // defined(HOST_OSX) && defined(HOST_ARM64)
 
     PrecodeType precodeType = GetType();
     switch (precodeType)
@@ -424,7 +426,9 @@ void Precode::ResetTargetInterlocked()
             break;
     }
 
+#if defined(HOST_OSX) && defined(HOST_ARM64)
     PAL_JITWriteEnable(jitWriteEnabled);
+#endif // defined(HOST_OSX) && defined(HOST_ARM64)
 
     // Although executable code is modified on x86/x64, a FlushInstructionCache() is not necessary on those platforms due to the
     // interlocked operation above (see ClrFlushInstructionCache())
@@ -441,7 +445,9 @@ BOOL Precode::SetTargetInterlocked(PCODE target, BOOL fOnlyRedirectFromPrestub)
     if (fOnlyRedirectFromPrestub && !IsPointingToPrestub(expected))
         return FALSE;
 
+#if defined(HOST_OSX) && defined(HOST_ARM64)
     bool jitWriteEnabled = PAL_JITWriteEnable(true);
+#endif // defined(HOST_OSX) && defined(HOST_ARM64)
 
     g_IBCLogger.LogMethodPrecodeWriteAccess(GetMethodDesc());
 
@@ -469,7 +475,9 @@ BOOL Precode::SetTargetInterlocked(PCODE target, BOOL fOnlyRedirectFromPrestub)
         break;
     }
 
+#if defined(HOST_OSX) && defined(HOST_ARM64)
     PAL_JITWriteEnable(jitWriteEnabled);
+#endif // defined(HOST_OSX) && defined(HOST_ARM64)
 
     // Although executable code is modified on x86/x64, a FlushInstructionCache() is not necessary on those platforms due to the
     // interlocked operation above (see ClrFlushInstructionCache())

@@ -251,7 +251,9 @@ const CallCountingStub *CallCountingManager::CallCountingStubAllocator::Allocate
     }
     CONTRACTL_END;
 
+#if defined(HOST_OSX) && defined(HOST_ARM64)
     bool jitWriteEnabled = PAL_JITWriteEnable(true);
+#endif // defined(HOST_OSX) && defined(HOST_ARM64)
 
     LoaderHeap *heap = m_heap;
     if (heap == nullptr)
@@ -294,7 +296,9 @@ const CallCountingStub *CallCountingManager::CallCountingStubAllocator::Allocate
     #endif
     } while (false);
 
+#if defined(HOST_OSX) && defined(HOST_ARM64)
     PAL_JITWriteEnable(jitWriteEnabled);
+#endif // defined(HOST_OSX) && defined(HOST_ARM64)
 
     ClrFlushInstructionCache(stub, sizeInBytes);
     return stub;

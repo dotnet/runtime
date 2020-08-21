@@ -71,7 +71,9 @@ void CallDescrWorkerWithHandler(
 
     END_CALL_TO_MANAGED();
 
+#if defined(HOST_OSX) && defined(HOST_ARM64)
     PAL_JITWriteEnable(jitWriteEnabled);
+#endif // defined(HOST_OSX) && defined(HOST_ARM64)
 }
 
 

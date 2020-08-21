@@ -635,7 +635,9 @@ void FixupPrecode::Init(MethodDesc* pMD, LoaderAllocator *pLoaderAllocator, int 
 {
     WRAPPER_NO_CONTRACT;
 
+#if defined(HOST_OSX) && defined(HOST_ARM64)
     bool jitWriteEnabled = PAL_JITWriteEnable(true);
+#endif // defined(HOST_OSX) && defined(HOST_ARM64)
 
     InitCommon();
 
@@ -665,7 +667,9 @@ void FixupPrecode::Init(MethodDesc* pMD, LoaderAllocator *pLoaderAllocator, int 
         m_pTarget = GetEEFuncEntryPoint(PrecodeFixupThunk);
     }
 
+#if defined(HOST_OSX) && defined(HOST_ARM64)
     PAL_JITWriteEnable(jitWriteEnabled);
+#endif // defined(HOST_OSX) && defined(HOST_ARM64)
 }
 
 #ifdef FEATURE_NATIVE_IMAGE_GENERATION
@@ -1064,11 +1068,15 @@ EXTERN_C void JIT_UpdateWriteBarrierState(bool skipEphemeralCheck);
 
 static void SafeUpdateWriteBarrierState(bool skipEphemeralCheck)
 {
+#if defined(HOST_OSX) && defined(HOST_ARM64)
     bool jitWriteEnabled = PAL_JITWriteEnable(true);
+#endif // defined(HOST_OSX) && defined(HOST_ARM64)
 
     JIT_UpdateWriteBarrierState(GCHeapUtilities::IsServerHeap());
 
+#if defined(HOST_OSX) && defined(HOST_ARM64)
     PAL_JITWriteEnable(jitWriteEnabled);
+#endif // defined(HOST_OSX) && defined(HOST_ARM64)
 }
 
 void InitJITHelpers1()
