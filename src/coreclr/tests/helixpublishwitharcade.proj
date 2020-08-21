@@ -92,10 +92,10 @@
     <IncludeDotNetCli>true</IncludeDotNetCli>
     <DotNetCliPackageType>runtime</DotNetCliPackageType>	
     <DotNetCliVersion>$(BundledNETCoreAppPackageVersion)</DotNetCliVersion>
-    <DotNetCliRuntime>$(HelixRuntimeRid)</DotNetCliRuntime>
+    <DotNetCliRuntime>$(HelixRuntimeRid)</DotNetCliRuntime> 
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(TargetArchitecture) == 'wasm'">
+  <PropertyGroup Condition="'$(TargetArchitecture)' == 'wasm'">
     <DotNetCliPackageType>sdk</DotNetCliPackageType>
     <GlobalJsonContent>$([System.IO.File]::ReadAllText('$(RepoRoot)global.json'))</GlobalJsonContent>
     <DotNetCliVersion>$([System.Text.RegularExpressions.Regex]::Match($(GlobalJsonContent), '(%3F&lt;="dotnet": ").*(%3F=")'))</DotNetCliVersion>
