@@ -291,13 +291,39 @@ void Compiler::optCopyProp(BasicBlock* block, Statement* stmt, GenTree* tree, Lc
     return;
 }
 
-/**************************************************************************************
- *
- * Helper to check if tree is a local that participates in SSA numbering.
- */
-bool Compiler::optIsSsaLocal(GenTree* tree)
+//------------------------------------------------------------------------------
+// optIsSsaLocal : helper to check if the tree is a local that participates in SSA numbering.
+//
+// Arguments:
+//    tree        -  The tree to perform the check on;
+//
+// Returns:
+//    - lclNum if the local is participating in SSA;
+//    - fieldLclNum is the parent local can be replaced by its only field;
+//    - BAD_VAR_NUM otherwise.
+//
+unsigned Compiler::optIsSsaLocal(GenTree* tree)
 {
-    return tree->IsLocal() && lvaInSsa(tree->AsLclVarCommon()->GetLclNum());
+    if (!tree->IsLocal())
+    {
+        return BAD_VAR_NUM;
+    }
+
+    GenTreeLclVarCommon* lclNode = tree->AsLclVarCommon();
+    unsigned             lclNum  = lclNode->GetLclNum();
+    LclVarDsc*           varDsc  = lvaGetDesc(lclNum);
+
+    if (!lvaInSsa(lclNum) && varDsc->CanBeReplacedWithItsField(this))
+    {
+        lclNum = varDsc->lvFieldLclStart;
+    }
+
+    if (!lvaInSsa(lclNum))
+    {
+        return BAD_VAR_NUM;
+    }
+
+    return lclNum;
 }
 
 //------------------------------------------------------------------------------
@@ -351,21 +377,21 @@ void Compiler::optBlockCopyProp(BasicBlock* block, LclNumToGenTreePtrStack* curS
             // embedded update. Killing the variable is a simplification to produce 0 ASM diffs
             // for an update release.
             //
-            if (optIsSsaLocal(tree) && (tree->gtFlags & GTF_VAR_DEF))
+            const unsigned lclNum = optIsSsaLocal(tree);
+            if ((lclNum != BAD_VAR_NUM) && (tree->gtFlags & GTF_VAR_DEF))
             {
-                VarSetOps::AddElemD(this, optCopyPropKillSet, lvaTable[tree->AsLclVarCommon()->GetLclNum()].lvVarIndex);
+                VarSetOps::AddElemD(this, optCopyPropKillSet, lvaTable[lclNum].lvVarIndex);
             }
         }
 
         // This logic must be in sync with SSA renaming process.
         for (GenTree* tree = stmt->GetTreeList(); tree != nullptr; tree = tree->gtNext)
         {
-            if (!optIsSsaLocal(tree))
+            const unsigned lclNum = optIsSsaLocal(tree);
+            if (lclNum == BAD_VAR_NUM)
             {
                 continue;
             }
-
-            unsigned lclNum = tree->AsLclVarCommon()->GetLclNum();
 
             // As we encounter a definition add it to the stack as a live definition.
             if (tree->gtFlags & GTF_VAR_DEF)
