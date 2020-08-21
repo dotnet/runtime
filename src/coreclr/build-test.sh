@@ -367,7 +367,7 @@ build_Tests()
         fi
     fi
 
-    if [[ "$__SkipNative" != 1 && __BuildArch != "wasm" ]]; then
+    if [[ "$__SkipNative" != 1 && "$__BuildArch" != "wasm" ]]; then
         build_native "$__BuildArch" "$__TestDir" "$__ProjectRoot" "$__NativeTestIntermediatesDir" "CoreCLR test component"
 
         if [[ "$?" -ne 0 ]]; then
