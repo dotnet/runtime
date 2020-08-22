@@ -63,7 +63,7 @@ assemblies. You can change the output directory with the option:
 
 `-out PATH`
 
-If you specify the ouput directory `.`, please ensure that you won't write over
+If you specify the output directory `.`, please ensure that you won't write over
 important assemblies of yours.
 
 ### Specifying assembly lookup paths
