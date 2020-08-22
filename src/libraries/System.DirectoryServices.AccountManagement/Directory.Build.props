@@ -6,6 +6,6 @@
          to a different assembly. -->
     <AssemblyVersion>4.0.0.0</AssemblyVersion>
     <StrongNameKeyId>ECMA</StrongNameKeyId>
-    <IsWindowsSpecific>true</IsWindowsSpecific>
+    <SupportedOSPlatforms>windows</SupportedOSPlatforms>
   </PropertyGroup>
 </Project>

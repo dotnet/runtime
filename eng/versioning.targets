@@ -22,20 +22,18 @@
     </AssemblyMetadata>
   </ItemGroup>
 
-  <!-- Adds SupportedOSPlatform attribute for Windows Specific libraries -->
-  <ItemGroup Condition="'$(IsWindowsSpecific)' == 'true' and '$(IsTestProject)' != 'true'">
-    <AssemblyAttribute Include="System.Runtime.Versioning.SupportedOSPlatform">
-        <_Parameter1>windows</_Parameter1>
-    </AssemblyAttribute>
-  </ItemGroup>
-
-  <ItemGroup>
+  <!-- Adds SupportedOSPlatform or UnsupportedOSPlatform attributes -->
+  <ItemGroup Condition="'$(IsTestProject)' != 'true'">
+    <_supportedOSPlatforms Include="$(SupportedOSPlatforms)" />
     <_unsupportedOSPlatforms Include="$(UnsupportedOSPlatforms)" />
   </ItemGroup>
 
-  <Target Name="AddUnsupportedOSPlatformAttribute" BeforeTargets="GenerateAssemblyInfo" AfterTargets="PrepareForBuild">
+  <Target Name="AddAssemblyOSPlatformAttributes" BeforeTargets="GenerateAssemblyInfo" AfterTargets="PrepareForBuild">
     <ItemGroup>
-      <AssemblyAttribute Include="System.Runtime.Versioning.UnsupportedOSPlatform" Condition="'@(_unsupportedOSPlatforms)' != ''">
+      <AssemblyAttribute Include="System.Runtime.Versioning.SupportedOSPlatform" Condition="'@(_supportedOSPlatforms)' != ''">
+        <_Parameter1>%(_supportedOSPlatforms.Identity)</_Parameter1>
+      </AssemblyAttribute>
+      <AssemblyAttribute Include="System.Runtime.Versioning.UnsupportedOSPlatform" Condition="'@(_supportedOSPlatforms)' == '' and '@(_unsupportedOSPlatforms)' != ''">
         <_Parameter1>%(_unsupportedOSPlatforms.Identity)</_Parameter1>
       </AssemblyAttribute>
     </ItemGroup>
