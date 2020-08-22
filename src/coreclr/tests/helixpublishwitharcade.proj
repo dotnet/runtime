@@ -79,7 +79,7 @@
     <HelixRuntimeRid Condition="'$(TargetOS)' == 'OSX'">osx-$(TargetArchitecture)</HelixRuntimeRid>
     <HelixRuntimeRid Condition="'$(TargetOS)' == 'Linux'">linux-$(TargetArchitecture)</HelixRuntimeRid>
     <HelixRuntimeRid Condition="'$(TargetOS)' == 'Linux_musl'">linux-musl-$(TargetArchitecture)</HelixRuntimeRid>
-    <HelixRuntimeRid Condition="'$(TargetOS)' == 'Browser'">browser-wasm</HelixRuntimeRid>
+    <HelixRuntimeRid Condition="'$(TargetArchitecture)' == 'wasm'">browser-wasm</HelixRuntimeRid>
   </PropertyGroup>
 
   <PropertyGroup>
