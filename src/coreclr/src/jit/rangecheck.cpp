@@ -221,7 +221,7 @@ void RangeCheck::OptimizeRangeCheck(BasicBlock* block, Statement* stmt, GenTree*
             if (arrLength.lLimit.IsConstant())
             {
                 arrSize = arrLength.lLimit.GetConstant();
-                JITDUMP("Min array size is %d", arrSize);
+                JITDUMP("Min array size is %d\n", arrSize);
             }
         }
     }

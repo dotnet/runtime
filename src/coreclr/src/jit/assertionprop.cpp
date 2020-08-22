@@ -1969,23 +1969,27 @@ AssertionInfo Compiler::optAssertionGenJtrue(GenTree* tree)
     }
     else if (vnStore->IsVNCheckedBound(op1VN) && vnStore->IsVNInt32Constant(op2VN))
     {
-        AssertionDsc dsc;
-        dsc.assertionKind    = OAK_EQUAL;
-        dsc.op1.vn           = vnStore->VNConservativeNormalValue(relop->gtVNPair);
-        dsc.op1.kind         = O1K_ARR_BND;
-        dsc.op1.bnd.vnIdx    = vnStore->VNForIntCon(vnStore->ConstantValue<int>(op2VN) - 1);
-        dsc.op1.bnd.vnLen    = op1VN;
-        dsc.op2.vn           = vnStore->VNConservativeNormalValue(op2->gtVNPair);
-        dsc.op2.kind         = O2K_CONST_INT;
-        dsc.op2.u1.iconFlags = 0;
-        dsc.op2.u1.iconVal   = 0;
-
-        AssertionIndex index = optAddAssertion(&dsc);
-        if (relop->OperIs(GT_NE))
+        int con = vnStore->ConstantValue<int>(op2VN);
+        if (con > 0)
         {
-            return AssertionInfo::ForNextEdge(index);
+            AssertionDsc dsc;
+            dsc.assertionKind    = OAK_EQUAL;
+            dsc.op1.vn           = vnStore->VNConservativeNormalValue(relop->gtVNPair);
+            dsc.op1.kind         = O1K_ARR_BND;
+            dsc.op1.bnd.vnIdx    = vnStore->VNForIntCon(con - 1);
+            dsc.op1.bnd.vnLen    = op1VN;
+            dsc.op2.vn           = vnStore->VNConservativeNormalValue(op2->gtVNPair);
+            dsc.op2.kind         = O2K_CONST_INT;
+            dsc.op2.u1.iconFlags = 0;
+            dsc.op2.u1.iconVal   = 0;
+
+            AssertionIndex index = optAddAssertion(&dsc);
+            if (relop->OperIs(GT_NE))
+            {
+                return AssertionInfo::ForNextEdge(index);
+            }
+            return index;
         }
-        return index;
     }
 
     // Check op1 and op2 for an indirection of a GT_LCL_VAR and keep it in op1.
