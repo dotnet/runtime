@@ -4175,7 +4175,8 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                         {
                             impPopStack(); // drop GT_RET_EXPR
 
-                            // should we drop the call this GT_RET_EXPR refers to? (it's Thread:InitializeCurrentThread())
+                            // should we drop the call this GT_RET_EXPR refers to?
+                            // (it's Thread:InitializeCurrentThread())
                             // or we should make sure nobody uses it first?
                             call->ReplaceWith(gtNewNothingNode(), this);
 

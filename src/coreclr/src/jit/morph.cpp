@@ -9041,8 +9041,6 @@ GenTree* Compiler::fgMorphCall(GenTreeCall* call)
         }
     }
 
-
-
     if (origDest != nullptr)
     {
         GenTree* retValVarAddr = gtNewOperNode(GT_ADDR, TYP_BYREF, gtNewLclvNode(retValTmpNum, TYP_STRUCT));
