@@ -3531,6 +3531,7 @@ mono_marshal_get_native_wrapper (MonoMethod *method, gboolean check_exceptions, 
 	GHashTable *cache;
 	gboolean pinvoke = FALSE;
 	gboolean skip_gc_trans = FALSE;
+	gboolean pinvoke_not_found = FALSE;
 	gpointer iter;
 	int i;
 	ERROR_DECL (emitted_error);
@@ -3679,12 +3680,17 @@ mono_marshal_get_native_wrapper (MonoMethod *method, gboolean check_exceptions, 
 		return res;
 	}
 
-
 	/*
 	 * In AOT mode and embedding scenarios, it is possible that the icall is not
 	 * registered in the runtime doing the AOT compilation.
 	 */
-	if (!pinvoke && !piinfo->addr && !aot) {
+#ifdef ENABLE_NETCORE
+	/* Handled at runtime */
+	pinvoke_not_found = !pinvoke && !piinfo->addr && !aot;
+#else
+	pinvoke_not_found = !piinfo->addr && !aot;
+#endif
+	if (pinvoke_not_found) {
 		/* if there's no code but the error isn't set, just use a fairly generic exception. */
 		if (is_ok (emitted_error))
 			mono_error_set_generic_error (emitted_error, "System", "MissingMethodException", "");
