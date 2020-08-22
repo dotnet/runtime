@@ -234,6 +234,7 @@ if (CLR_CMAKE_HOST_UNIX)
   add_definitions(-DHOST_UNIX)
 
   if(CLR_CMAKE_HOST_OSX)
+    add_definitions(-DHOST_OSX)
     if(CLR_CMAKE_HOST_UNIX_AMD64)
       message("Detected OSX x86_64")
     elseif(CLR_CMAKE_HOST_UNIX_ARM64)
