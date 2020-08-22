@@ -61,8 +61,19 @@ void Compiler::optDumpCopyPropStack(LclNumToGenTreePtrStack* curSsaName)
     JITDUMP("{ ");
     for (LclNumToGenTreePtrStack::KeyIterator iter = curSsaName->Begin(); !iter.Equal(curSsaName->End()); ++iter)
     {
-        GenTree* node = iter.GetValue()->Top();
-        JITDUMP("%d-[%06d]:V%02u ", iter.Get(), dspTreeID(node), node->AsLclVarCommon()->GetLclNum());
+        GenTreeLclVarCommon* lclVar    = iter.GetValue()->Top()->AsLclVarCommon();
+        unsigned             ssaLclNum = optIsSsaLocal(lclVar);
+        assert(ssaLclNum != BAD_VAR_NUM);
+
+        if (ssaLclNum == lclVar->GetLclNum())
+        {
+            JITDUMP("%d-[%06d]:V%02u ", iter.Get(), dspTreeID(lclVar), ssaLclNum);
+        }
+        else
+        {
+            // A promoted field was asigned using the parent struct, print `ssa field lclNum(parent lclNum)`.
+            JITDUMP("%d-[%06d]:V%02u(V%02u) ", iter.Get(), dspTreeID(lclVar), ssaLclNum, lclVar->GetLclNum());
+        }
     }
     JITDUMP("}\n\n");
 }
@@ -299,7 +310,7 @@ void Compiler::optCopyProp(BasicBlock* block, Statement* stmt, GenTree* tree, Lc
 //
 // Returns:
 //    - lclNum if the local is participating in SSA;
-//    - fieldLclNum is the parent local can be replaced by its only field;
+//    - fieldLclNum if the parent local can be replaced by its only field;
 //    - BAD_VAR_NUM otherwise.
 //
 unsigned Compiler::optIsSsaLocal(GenTree* tree)
