@@ -350,6 +350,22 @@
     <PlatformManifestFileEntry Include="icudt.dat" IsNative="true" />
   </ItemGroup>
 
+ <ItemGroup>
+    <!-- Exclude shims from the closure verification -->
+    <ExcludeFromClosure Include="mscorlib" />
+    <ExcludeFromClosure Include="System" />
+    <ExcludeFromClosure Include="System.Configuration" />
+    <ExcludeFromClosure Include="System.Core" />
+    <ExcludeFromClosure Include="System.Data" />
+    <ExcludeFromClosure Include="System.Drawing" />
+    <ExcludeFromClosure Include="System.Net" />
+    <ExcludeFromClosure Include="System.Security" />
+    <ExcludeFromClosure Include="System.ServiceModel.Web" />
+    <ExcludeFromClosure Include="System.ServiceProcess" />
+    <ExcludeFromClosure Include="System.Transactions" />
+    <ExcludeFromClosure Include="WindowsBase" />
+ </ItemGroup>
+
   <ItemGroup>
     <!-- Add a reference to Microsoft.DiaSymReader.Native if one does not already exist. -->
     <PackageReference Include="Microsoft.DiaSymReader.Native"
