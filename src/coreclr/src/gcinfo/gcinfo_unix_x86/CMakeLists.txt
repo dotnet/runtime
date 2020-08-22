@@ -1,1 +1,0 @@
-set_gcinfo_targetdetails(TARGET gcinfo_unix_x86 UNIX I386)

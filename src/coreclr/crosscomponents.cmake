@@ -15,6 +15,12 @@ if (CLR_CMAKE_HOST_OS STREQUAL CLR_CMAKE_TARGET_OS)
             crossgen
         )
     endif()
+
+    if (CLR_CMAKE_TARGET_UNIX)
+        list (APPEND CLR_CROSS_COMPONENTS_LIST
+            clrjit_unix_${ARCH_TARGET_NAME}_${ARCH_HOST_NAME}
+        )
+    endif(CLR_CMAKE_TARGET_UNIX)
 endif()
 
 if(NOT CLR_CMAKE_HOST_LINUX AND NOT FEATURE_CROSSBITNESS)

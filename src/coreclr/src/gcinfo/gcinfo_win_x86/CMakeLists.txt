@@ -1,1 +1,0 @@
-set_gcinfo_targetdetails(TARGET gcinfo_win_x86 WIN32 I386)

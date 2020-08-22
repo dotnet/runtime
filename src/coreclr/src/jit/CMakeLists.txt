@@ -10,9 +10,10 @@ endif()
 
 add_compile_options($<$<CXX_COMPILER_ID:MSVC>:-W4>)
 
-function(set_clrjit_targetdetails)
+function(create_standalone_jit)
 
-  set(oneValueArgs TARGET OS ARCH)
+  set(oneValueArgs TARGET OS ARCH ADDITIONAL_DESTINATION)
+  set(options NOALTJIT)
   cmake_parse_arguments(TARGETDETAILS "${options}" "${oneValueArgs}" "" ${ARGN})
 
   set(JIT_ARCH_LINK_LIBRARIES gcinfo_${TARGETDETAILS_OS}_${TARGETDETAILS_ARCH})
@@ -29,12 +30,19 @@ function(set_clrjit_targetdetails)
     clr_unknown_arch()
   endif()
 
-  add_jit("${TARGETDETAILS_TARGET}")
+  if (TARGETDETAILS_ADDITIONAL_DESTINATION STREQUAL "")
+    add_jit(${TARGETDETAILS_TARGET})
+  else()
+    add_jit(${TARGETDETAILS_TARGET} ADDITIONAL_DESTINATION "${TARGETDETAILS_ADDITIONAL_DESTINATION}")
+  endif()
 
   set_target_definitions_to_custom_os_and_arch(${ARGN})
   set_target_properties(${TARGETDETAILS_TARGET} PROPERTIES IGNORE_FEATURE_MERGE_JIT_AND_ENGINE TRUE)
 
-  target_compile_definitions(${TARGETDETAILS_TARGET} PRIVATE ALT_JIT)
+  if (NOT TARGETDETAIL_NOALTJIT)
+    target_compile_definitions(${TARGETDETAILS_TARGET} PRIVATE ALT_JIT)
+  endif (NOT TARGETDETAIL_NOALTJIT)
+
   target_compile_definitions(${TARGETDETAILS_TARGET} PRIVATE FEATURE_NO_HOST)
   target_compile_definitions(${TARGETDETAILS_TARGET} PRIVATE SELF_NO_HOST)
   target_compile_definitions(${TARGETDETAILS_TARGET} PRIVATE FEATURE_READYTORUN_COMPILER)
@@ -443,21 +451,37 @@ endif (FEATURE_MERGE_JIT_AND_ENGINE)
 # Creates a static library "clrjit_static" to link into the VM.
 add_subdirectory(static)
 
-add_subdirectory(standalone)
+if (CLR_CMAKE_TARGET_UNIX)
+set(TARGET_OS_NAME unix)
+else()
+set(TARGET_OS_NAME win)
+endif()
+
+create_standalone_jit(TARGET clrjit OS ${TARGET_OS_NAME} ARCH ${ARCH_TARGET_NAME} NOALTJIT ADDITIONAL_DESTINATION sharedFramework)
+
+# Enable profile guided optimization
+add_pgo(clrjit)
+
+
+if (CLR_CMAKE_HOST_ARCH_I386)
+     # On x86, build RyuJIT/ARM32 cross-compiling altjit for ARM_SOFTFP (armel).
+  create_standalone_jit(TARGET clrjit_unix_armel_${ARCH_HOST_NAME} OS unix ARCH arm)
+  target_compile_definitions(clrjit_unix_armel_${ARCH_HOST_NAME} PRIVATE ARM_SOFTFP)
+endif ()
 
 if (CLR_CMAKE_BUILD_SUBSET_ALLJITS AND NOT CLR_CROSS_COMPONENTS_BUILD)
   if (CLR_CMAKE_TARGET_ARCH_ARM64 OR CLR_CMAKE_TARGET_ARCH_AMD64)
-    set_clrjit_targetdetails(TARGET clrjit_unix_arm64_${ARCH_HOST_NAME} OS unix ARCH arm64)
-    set_clrjit_targetdetails(TARGET clrjit_unix_x64_${ARCH_HOST_NAME} OS unix ARCH x64)
-    set_clrjit_targetdetails(TARGET clrjit_win_arm64_${ARCH_HOST_NAME} OS win ARCH arm64)
-    set_clrjit_targetdetails(TARGET clrjit_win_x64_${ARCH_HOST_NAME} OS win ARCH x64)
+    create_standalone_jit(TARGET clrjit_unix_arm64_${ARCH_HOST_NAME} OS unix ARCH arm64)
+    create_standalone_jit(TARGET clrjit_unix_x64_${ARCH_HOST_NAME} OS unix ARCH x64)
+    create_standalone_jit(TARGET clrjit_win_arm64_${ARCH_HOST_NAME} OS win ARCH arm64)
+    create_standalone_jit(TARGET clrjit_win_x64_${ARCH_HOST_NAME} OS win ARCH x64)
   endif (CLR_CMAKE_TARGET_ARCH_ARM64 OR CLR_CMAKE_TARGET_ARCH_AMD64)
 
-  set_clrjit_targetdetails(TARGET clrjit_unix_arm_${ARCH_HOST_NAME} OS unix ARCH arm)
-  set_clrjit_targetdetails(TARGET clrjit_win_arm_${ARCH_HOST_NAME} OS win ARCH arm)
-  set_clrjit_targetdetails(TARGET clrjit_win_x86_${ARCH_HOST_NAME} OS win ARCH x86)
+  create_standalone_jit(TARGET clrjit_unix_arm_${ARCH_HOST_NAME} OS unix ARCH arm)
+  create_standalone_jit(TARGET clrjit_win_arm_${ARCH_HOST_NAME} OS win ARCH arm)
+  create_standalone_jit(TARGET clrjit_win_x86_${ARCH_HOST_NAME} OS win ARCH x86)
 else()
   if (CLR_CMAKE_TARGET_UNIX)
-    set_clrjit_targetdetails(TARGET clrjit_unix_${ARCH_TARGET_NAME}_${ARCH_HOST_NAME} OS unix ARCH ${ARCH_TARGET_NAME})
+    create_standalone_jit(TARGET clrjit_unix_${ARCH_TARGET_NAME}_${ARCH_HOST_NAME} OS unix ARCH ${ARCH_TARGET_NAME})
   endif(CLR_CMAKE_TARGET_UNIX)
 endif (CLR_CMAKE_BUILD_SUBSET_ALLJITS AND NOT CLR_CROSS_COMPONENTS_BUILD)
