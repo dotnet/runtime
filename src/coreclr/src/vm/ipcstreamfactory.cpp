@@ -318,7 +318,7 @@ IpcStream *IpcStreamFactory::GetNextAvailableStream(ErrorCallback callback)
                 {
                     case IpcStream::DiagnosticsIpc::PollEvents::HANGUP:
                         ((DiagnosticPort*)(rgIpcPollHandles[i].pUserData))->Reset(callback);
-                        STRESS_LOG2(LF_DIAGNOSTICS_PORT, LL_INFO10, "IpcStreamFactory::GetNextAvailableStream - HUP :: Poll attempt: %d, connection %d hung up.\n", nPollAttempts, i);
+                        STRESS_LOG2(LF_DIAGNOSTICS_PORT, LL_INFO10, "IpcStreamFactory::GetNextAvailableStream - HUP :: Poll attempt: %d, connection %d hung up. Connect is reset.\n", nPollAttempts, i);
                         pollTimeoutMs = s_pollTimeoutMinMs;
                         break;
                     case IpcStream::DiagnosticsIpc::PollEvents::SIGNALED:
@@ -330,7 +330,8 @@ IpcStream *IpcStreamFactory::GetNextAvailableStream(ErrorCallback callback)
                         STRESS_LOG2(LF_DIAGNOSTICS_PORT, LL_INFO10, "IpcStreamFactory::GetNextAvailableStream - SIG :: Poll attempt: %d, connection %d signalled.\n", nPollAttempts, i);
                         break;
                     case IpcStream::DiagnosticsIpc::PollEvents::ERR:
-                        STRESS_LOG2(LF_DIAGNOSTICS_PORT, LL_INFO10, "IpcStreamFactory::GetNextAvailableStream - ERR :: Poll attempt: %d, connection %d errored.\n", nPollAttempts, i);
+                        ((DiagnosticPort*)(rgIpcPollHandles[i].pUserData))->Reset(callback);
+                        STRESS_LOG2(LF_DIAGNOSTICS_PORT, LL_INFO10, "IpcStreamFactory::GetNextAvailableStream - ERR :: Poll attempt: %d, connection %d errored. Connection is reset.\n", nPollAttempts, i);
                         fSawError = true;
                         break;
                     case IpcStream::DiagnosticsIpc::PollEvents::NONE:
