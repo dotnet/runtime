@@ -345,6 +345,7 @@ LEAF_ENTRY  JIT_WriteBarrier_Callable, _TEXT
 LOCAL_LABEL(Branch_JIT_WriteBarrier_Copy):
     // Branch to the write barrier
     PREPARE_EXTERNAL_VAR JIT_WriteBarrier_Loc, x17
+    ldr     x17, [x17]
     br      x17
 #else // FEATURE_WRITEBARRIER_COPY
     // Branch to the write barrier
