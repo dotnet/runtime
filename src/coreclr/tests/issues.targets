@@ -1126,7 +1126,7 @@
             <Issue>needs triage</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)Interop/NativeLibrary/AssemblyLoadContext/ResolveUnmanagedDllTests/** ">
-            <Issue>needs triage</Issue>
+            <Issue>https://github.com/dotnet/runtime/issues/41180</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/Array/MarshalArrayAsField/AsByValArray/AsByValArrayTest/**">
             <Issue>needs triage</Issue>
@@ -1192,9 +1192,6 @@
             <Issue>https://github.com/dotnet/runtime/issues/34196</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Interop/StructPacking/StructPacking/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-            <ExcludeList Include="$(XunitTestBinBase)Interop/NativeLibrary/Callback/CallbackStressTest_TargetUnix/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/Convert/ldind_conv/**">
