@@ -1960,19 +1960,20 @@ AssertionInfo Compiler::optAssertionGenJtrue(GenTree* tree)
     }
 
     ValueNum op1VN = vnStore->VNConservativeNormalValue(op1->gtVNPair);
+    ValueNum op2VN = vnStore->VNConservativeNormalValue(op2->gtVNPair);
     // If op1 is lcl and op2 is const or lcl, create assertion.
     if ((op1->gtOper == GT_LCL_VAR) &&
         ((op2->OperKind() & GTK_CONST) || (op2->gtOper == GT_LCL_VAR))) // Fix for Dev10 851483
     {
         return optCreateJtrueAssertions(op1, op2, assertionKind);
     }
-    else if (vnStore->IsVNCheckedBound(op1VN) && op2->OperIs(GT_CNS_INT))
+    else if (vnStore->IsVNCheckedBound(op1VN) && vnStore->IsVNInt32Constant(op2VN))
     {
         AssertionDsc dsc;
         dsc.assertionKind    = OAK_EQUAL;
         dsc.op1.vn           = vnStore->VNConservativeNormalValue(relop->gtVNPair);
         dsc.op1.kind         = O1K_ARR_BND;
-        dsc.op1.bnd.vnIdx    = vnStore->VNForIntCon(op2->AsIntCon()->IntegralValue() - 1);
+        dsc.op1.bnd.vnIdx    = vnStore->VNForIntCon(vnStore->ConstantValue<int>(op2VN) - 1);
         dsc.op1.bnd.vnLen    = op1VN;
         dsc.op2.vn           = vnStore->VNConservativeNormalValue(op2->gtVNPair);
         dsc.op2.kind         = O2K_CONST_INT;

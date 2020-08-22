@@ -5,7 +5,6 @@
 
 #include "jitpch.h"
 #include "rangecheck.h"
-#include "compiler.h"
 
 // Max stack depth (path length) in walking the UD chain.
 static const int MAX_SEARCH_DEPTH = 100;
@@ -61,7 +60,7 @@ int RangeCheck::GetArrLength(ValueNum vn)
 }
 
 // Check if the computed range is within bounds.
-bool RangeCheck::BetweenBounds(Range& range, int lower, ValueNum uLimitVN, int arrSize DEBUGARG(GenTree* upper))
+bool RangeCheck::BetweenBounds(Range& range, int lower, GenTree* upper, int arrSize)
 {
 #ifdef DEBUG
     if (m_pCompiler->verbose)
@@ -74,8 +73,10 @@ bool RangeCheck::BetweenBounds(Range& range, int lower, ValueNum uLimitVN, int a
 
     ValueNumStore* vnStore = m_pCompiler->vnStore;
 
+    // Get the VN for the upper limit.
+    ValueNum uLimitVN = vnStore->VNConservativeNormalValue(upper->gtVNPair);
+
 #ifdef DEBUG
-    assert(vnStore->VNConservativeNormalValue(upper->gtVNPair));
     JITDUMP(FMT_VN " upper bound is: ", uLimitVN);
     if (m_pCompiler->verbose)
     {
@@ -214,11 +215,13 @@ void RangeCheck::OptimizeRangeCheck(BasicBlock* block, Statement* stmt, GenTree*
         if (arrSize <= 0)
         {
             // see if there are any assertions about the array size we can use
+            JITDUMP("Looking for assertions for: " FMT_VN "\n", arrLenVn);
             Range arrLength = Range(Limit(Limit::keDependent));
             MergeEdgeAssertions(arrLenVn, block->bbAssertionIn, &arrLength);
             if (arrLength.lLimit.IsConstant())
             {
                 arrSize = arrLength.lLimit.GetConstant();
+                JITDUMP("Min array size is %d", arrSize);
             }
         }
     }
@@ -276,7 +279,7 @@ void RangeCheck::OptimizeRangeCheck(BasicBlock* block, Statement* stmt, GenTree*
     }
 
     // Is the range between the lower and upper bound values.
-    if (BetweenBounds(range, 0, arrLenVn, arrSize DEBUGARG(bndsChk->gtArrLen)))
+    if (BetweenBounds(range, 0, bndsChk->gtArrLen, arrSize))
     {
         JITDUMP("[RangeCheck::OptimizeRangeCheck] Between bounds\n");
         m_pCompiler->optRemoveRangeCheck(treeParent, stmt);
@@ -629,9 +632,15 @@ void RangeCheck::MergeEdgeAssertions(ValueNum normalLclVN, ASSERT_VALARG_TP asse
             limit   = Limit(Limit::keConstant, info.constVal);
             cmpOper = (genTreeOps)info.cmpOper;
         }
-        else if (IsConstantAssertion(curAssertion, normalLclVN))
+        // Current assertion is of the form i == 100
+        else if (curAssertion->IsConstantInt32Assertion())
         {
-            limit = Limit(Limit::keConstant, m_pCompiler->vnStore->ConstantValue<int>(curAssertion->op2.vn));
+            if (curAssertion->op1.vn != normalLclVN)
+            {
+                continue;
+            }
+
+            limit   = Limit(Limit::keConstant, m_pCompiler->vnStore->ConstantValue<int>(curAssertion->op2.vn));
             cmpOper = GT_EQ;
         }
         // Current assertion is not supported, ignore it
@@ -643,8 +652,7 @@ void RangeCheck::MergeEdgeAssertions(ValueNum normalLclVN, ASSERT_VALARG_TP asse
         assert(limit.IsBinOpArray() || limit.IsConstant());
 
         // Make sure the assertion is of the form != 0 or == 0.
-        if ((curAssertion->op2.vn != m_pCompiler->vnStore->VNZeroForType(TYP_INT)) &&
-            (cmpOper != GT_EQ))
+        if ((curAssertion->op2.vn != m_pCompiler->vnStore->VNZeroForType(TYP_INT)) && (cmpOper != GT_EQ))
         {
             continue;
         }
@@ -659,7 +667,11 @@ void RangeCheck::MergeEdgeAssertions(ValueNum normalLclVN, ASSERT_VALARG_TP asse
         // see if we can simplify this to just a constant
         if (limit.IsBinOpArray() && m_pCompiler->vnStore->IsVNInt32Constant(limit.vn))
         {
-            limit = Limit(Limit::keConstant, m_pCompiler->vnStore->ConstantValue<int>(limit.vn) + limit.cns);
+            Limit tempLimit = Limit(Limit::keConstant, m_pCompiler->vnStore->ConstantValue<int>(limit.vn));
+            if (tempLimit.AddConstant(limit.cns))
+            {
+                limit = tempLimit;
+            }
         }
 
         ValueNum arrLenVN = m_pCompiler->vnStore->VNConservativeNormalValue(m_pCurBndsChk->gtArrLen->gtVNPair);
