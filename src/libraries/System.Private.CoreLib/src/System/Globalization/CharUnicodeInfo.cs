@@ -7,6 +7,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.Unicode;
 using Internal.Runtime.CompilerServices;
+using System.Runtime.CompilerServices;
 
 namespace System.Globalization
 {
@@ -224,8 +225,11 @@ namespace System.Globalization
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
             }
 
-            return GetNumericValueNoBoundsCheck((uint)GetCodePointFromString(s, index));
+            return GetNumericValueInternal(s, index);
         }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static double GetNumericValueInternal(string s, int index) => GetNumericValueNoBoundsCheck((uint)GetCodePointFromString(s, index));
 
         private static double GetNumericValueNoBoundsCheck(uint codePoint)
         {
