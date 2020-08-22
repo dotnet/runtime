@@ -75,7 +75,7 @@
 // init entry leaks.  This defines determine if the asserts that
 // verify for these leaks are defined or not.  These asserts can
 // sometimes go off even if no entries have been leaked so this
-// defines should be used with caution.
+// Xdefines should be used with caution.
 //
 // If we are inside a .cctor when the application shut's down then the
 // class init lock's head will be set and this will cause the assert
