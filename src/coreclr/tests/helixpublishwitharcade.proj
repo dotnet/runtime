@@ -90,7 +90,7 @@
     <TestEnvFileName Condition=" '$(TargetsWindows)' != 'true' ">SetStressModes_$(Scenario).sh</TestEnvFileName>
 
     <IncludeDotNetCli>true</IncludeDotNetCli>
-    <DotNetCliPackageType>runtime</DotNetCliPackageType>	
+    <DotNetCliPackageType>runtime</DotNetCliPackageType>
     <DotNetCliVersion>$(BundledNETCoreAppPackageVersion)</DotNetCliVersion>
     <DotNetCliRuntime>$(HelixRuntimeRid)</DotNetCliRuntime> 
   </PropertyGroup>

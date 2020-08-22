@@ -379,7 +379,7 @@ build_Tests()
     if [[ "$__SkipManaged" != 1 ]]; then
         echo "Starting the Managed Tests Build..."
 
-        build_MSBuild_projects "Tests_Managed" "$__ProjectDir/tests/build.proj" "Managed tests build (build tests)" "$__up" "/bl:${__RepoRootDir}/artifacts/log/${__BuildType}/managed_test_build_${__RuntimeFlavor}.binlog"
+        build_MSBuild_projects "Tests_Managed" "$__ProjectDir/tests/build.proj" "Managed tests build (build tests)" "$__up"
 
         if [[ "$?" -ne 0 ]]; then
             echo "${__ErrMsgPrefix}${__MsgPrefix}Error: managed test build failed. Refer to the build log files for details (above)"
