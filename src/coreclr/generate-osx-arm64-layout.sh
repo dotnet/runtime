@@ -1,9 +1,7 @@
 #! /bin/bash
 
 # This is a simple and currently crude script to generate an osx-arm64 Core_Root
-# It takes a reference osx-x64 Core_Root and replaces the native bits and 
-# System.Private.CoreLib.dll from those built locally.
-# It then removes any remaining x64 native binaries
+# It works around issues with native files being built and/or included with the wrong arch
 
 # ToDo
 # Error checking!!!
@@ -23,10 +21,9 @@ done
 
 RepoRoot="$( cd -P "$( dirname "$source" )/../.." && pwd )"
 
-Reference_Core_Root=${RepoRoot}/artifacts/tests/coreclr/OSX.x64.Debug/Tests/Core_Root
 Core_Root=${RepoRoot}/artifacts/tests/coreclr/OSX.arm64.Debug/Tests/Core_Root
-Arm64_Native_Paths="${RepoRoot}/artifacts/bin/coreclr/OSX.arm64.Debug ${RepoRoot}/artifacts/bin/native/net5.0-OSX-Debug-arm64"
-Arm64_SPC_Path=${RepoRoot}/artifacts/bin/coreclr/OSX.arm64.Release/IL
+Arm64_Native_Paths="${RepoRoot}/artifacts/bin/coreclr/OSX.arm64.Debug ${RepoRoot}/artifacts/bin/native/OSX-arm64-Debug"
+Arm64_SPC_Path=${RepoRoot}/artifacts/bin/coreclr/OSX.arm64.Debug/IL
 
 function x64NativeFiles()
 {
@@ -36,16 +33,19 @@ function x64NativeFiles()
     done
 }
 
-# Remove any existing Core Root
-rm -rf ${Core_Root}
+# Remove any arm64 native files which were built with x86_64 architecture
+for n in $(find ${Arm64_Native_Paths} -type f)
+do
+  (file $n | grep -q x86_64) && rm $n
+done
 
-# Create empty directory path
-mkdir -p ${Core_Root}
+# Rebuild native arm64 files
+${RepoRoot}/src/libraries/Native/build-native.sh -arm64
+${RepoRoot}/src/coreclr/build-runtime.sh -arm64
 
-# Copy reference Core Root
-cp -r ${Reference_Core_Root}/* ${Core_Root}
+${RepoRoot}/src/coreclr/build-test.sh arm64 generatelayoutonly /p:LibrariesConfiguration=Debug
 
-# Copy crossgened arm64 S.P.C.dll
+# Copy arm64 IL S.P.C.dll
 cp ${Arm64_SPC_Path}/System.Private.CoreLib.dll ${Core_Root}
 
 # Replace osx-x64 native files with their arm64 counterparts
@@ -53,7 +53,10 @@ for i in $(x64NativeFiles)
 do 
   echo
   echo $i
-  find ${Arm64_Native_Paths} -name $(basename $i) -exec md5 "{}" ';' -exec cp "{}" $i ';'
+  for n in $(find ${Arm64_Native_Paths} -name $(basename $i))
+  do
+    (file $n | grep -q x86_64) || (md5 $n; cp $n $i)
+  done
 done 2>&1
 
 echo
