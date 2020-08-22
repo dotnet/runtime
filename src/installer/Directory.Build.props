@@ -115,6 +115,7 @@
     <PackageSymbolsBinDir Condition="'$(PackageSymbolsBinDir)' == ''">$(PackagesBasePath)symbols/</PackageSymbolsBinDir>
 
     <AssetOutputPath Condition="'$(AssetOutputPath)'==''">$(ArtifactsShippingPackagesDir)</AssetOutputPath>
+    <SymbolPackageOutputPath Condition="'$(SymbolPackageOutputPath)'==''">$(ArtifactsShippingPackagesDir)</SymbolPackageOutputPath>
 
     <!-- Use '/' instead of '\': used directly by WiX which doesn't accept trailing '\'. -->
     <SharedFrameworkPublishDir>$(IntermediateOutputRootPath)sharedFrameworkPublish/</SharedFrameworkPublishDir>
