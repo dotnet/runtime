@@ -5133,6 +5133,41 @@ DWORD MethodContext::repGetFieldThreadLocalStoreID(CORINFO_FIELD_HANDLE field, v
     return (DWORD)value.B;
 }
 
+
+void MethodContext::recAllocMethodBlockCounts(ULONG count, ICorJitInfo::BlockCounts** pBlockCounts, HRESULT result)
+{
+    if (AllocMethodBlockCounts == nullptr)
+        AllocMethodBlockCounts = new LightWeightMap<DWORD, Agnostic_AllocMethodBlockCounts>();
+
+    Agnostic_AllocMethodBlockCounts value;
+
+    value.address = (DWORDLONG)*pBlockCounts;
+    value.count  = (DWORD)count;
+    value.result = (DWORD)result;
+    value.pBlockCounts_index =
+        AllocMethodBlockCounts->AddBuffer((unsigned char*)*pBlockCounts, count * sizeof(ICorJitInfo::BlockCounts));
+
+    AllocMethodBlockCounts->Add((DWORD)0, value);
+}
+void MethodContext::dmpAllocMethodBlockCounts(DWORD key, const Agnostic_AllocMethodBlockCounts& value)
+{
+    printf("AllocMethodBlockCounts key %u, value addr-%016llX cnt-%u ind-%u res-%08X", key, value.address, value.count,
+        value.pBlockCounts_index, value.result);
+}
+HRESULT MethodContext::repAllocMethodBlockCounts(ULONG count, ICorJitInfo::BlockCounts** pBlockCounts)
+{
+    Agnostic_AllocMethodBlockCounts value;
+    value = AllocMethodBlockCounts->Get((DWORD)0);
+
+    if (count != value.count)
+        __debugbreak();
+
+    HRESULT result = (HRESULT)value.result;
+    *pBlockCounts = (ICorJitInfo::BlockCounts*)AllocMethodBlockCounts->GetBuffer(value.pBlockCounts_index);
+    cr->recAddressMap((void*)value.address, (void*)*pBlockCounts, count * (sizeof(ICorJitInfo::BlockCounts)));
+    return result;
+}
+
 void MethodContext::recGetMethodBlockCounts(CORINFO_METHOD_HANDLE        ftnHnd,
                                             UINT32 *                     pCount,
                                             ICorJitInfo::BlockCounts**   pBlockCounts,
