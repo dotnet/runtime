@@ -13220,16 +13220,15 @@ DONE_MORPHING_CHILDREN:
                 /* No match - exit */
             }
 
+            // Skip optimization if non-NEG operand is constant.
+            // Both op1 and op2 are not constant because it was already checked above.
             if (opts.OptimizationEnabled() &&
                 (((op1->gtFlags & GTF_EXCEPT) == 0) || ((op2->gtFlags & GTF_EXCEPT) == 0)))
             {
-                bool op1OperIsGT_NEG = op1->OperIs(GT_NEG);
-                bool op2OperIsGT_NEG = op2->OperIs(GT_NEG);
-
                 // a - -b = > a + b
                 // SUB(a, (NEG(b)) => ADD(a, b)
 
-                if (!op1OperIsGT_NEG && op2OperIsGT_NEG)
+                if (!op1->OperIs(GT_NEG) && op2->OperIs(GT_NEG))
                 {
                     // tree: SUB
                     // op1: a
@@ -13251,7 +13250,7 @@ DONE_MORPHING_CHILDREN:
                 // -a - -b = > b - a
                 // SUB(NEG(a), (NEG(b)) => SUB(b, a)
 
-                if (op1OperIsGT_NEG && op2OperIsGT_NEG)
+                if (op1->OperIs(GT_NEG) && op2->OperIs(GT_NEG))
                 {
                     // tree: SUB
                     // op1: NEG
@@ -13487,13 +13486,12 @@ DONE_MORPHING_CHILDREN:
                 if (opts.OptimizationEnabled() &&
                     (((op1->gtFlags & GTF_EXCEPT) == 0) || ((op2->gtFlags & GTF_EXCEPT) == 0)))
                 {
-                    bool op1OperIsGT_NEG = op1->OperIs(GT_NEG);
-                    bool op2OperIsGT_NEG = op2->OperIs(GT_NEG);
-
                     // - a + b = > b - a
                     // ADD((NEG(a), b) => SUB(b, a)
 
-                    if (op1OperIsGT_NEG && !op2OperIsGT_NEG)
+                    // Skip optimization if non-NEG operand is constant.
+                    if (op1->OperIs(GT_NEG) && !op2->OperIs(GT_NEG) &&
+                        !(op2->IsCnsIntOrI() && varTypeIsIntegralOrI(typ)))
                     {
                         // tree: ADD
                         // op1: NEG
@@ -13515,8 +13513,11 @@ DONE_MORPHING_CHILDREN:
                     // a + -b = > a - b
                     // ADD(a, (NEG(b)) => SUB(a, b)
 
-                    if (!op1OperIsGT_NEG && op2OperIsGT_NEG)
+                    if (!op1->OperIs(GT_NEG) && op2->OperIs(GT_NEG))
                     {
+                        // a is non cosntant because it was already canonicalized to have
+                        // variable on the left and constant on the right.
+
                         // tree: ADD
                         // op1: a
                         // op2: NEG
@@ -14936,22 +14937,23 @@ GenTree* Compiler::fgRecognizeAndMorphBitwiseRotation(GenTree* tree)
     //                    / \      / \.
     //                   x  AND   x  AND
     //                      / \      / \.
-    //                     y  31   SUB  31
+    //                     y  31   ADD  31
     //                             / \.
-    //                            32  y
-
+    //                            NEG 32
+    //                             |
+    //                             y
     // The patterns recognized:
-    // (x << (y & M)) op (x >>> ((N - y) & M))
-    // (x >>> ((N - y) & M)) op (x << (y & M))
+    // (x << (y & M)) op (x >>> ((-y + N) & M))
+    // (x >>> ((-y + N) & M)) op (x << (y & M))
     //
-    // (x << y) op (x >>> (N - y))
-    // (x >> > (N - y)) op (x << y)
+    // (x << y) op (x >>> (-y + N))
+    // (x >> > (-y + N)) op (x << y)
     //
-    // (x >>> (y & M)) op (x << ((N - y) & M))
-    // (x << ((N - y) & M)) op (x >>> (y & M))
+    // (x >>> (y & M)) op (x << ((-y + N) & M))
+    // (x << ((-y + N) & M)) op (x >>> (y & M))
     //
-    // (x >>> y) op (x << (N - y))
-    // (x << (N - y)) op (x >>> y)
+    // (x >>> y) op (x << (-y + N))
+    // (x << (-y + N)) op (x >>> y)
     //
     // (x << c1) op (x >>> c2)
     // (x >>> c1) op (x << c2)
@@ -15050,52 +15052,55 @@ GenTree* Compiler::fgRecognizeAndMorphBitwiseRotation(GenTree* tree)
             return tree;
         }
 
-        GenTree*   shiftIndexWithSUB    = nullptr;
-        GenTree*   shiftIndexWithoutSUB = nullptr;
+        GenTree*   shiftIndexWithAdd    = nullptr;
+        GenTree*   shiftIndexWithoutAdd = nullptr;
         genTreeOps rotateOp             = GT_NONE;
         GenTree*   rotateIndex          = nullptr;
 
-        if (leftShiftIndex->OperGet() == GT_SUB)
+        if (leftShiftIndex->OperGet() == GT_ADD)
         {
-            shiftIndexWithSUB    = leftShiftIndex;
-            shiftIndexWithoutSUB = rightShiftIndex;
+            shiftIndexWithAdd    = leftShiftIndex;
+            shiftIndexWithoutAdd = rightShiftIndex;
             rotateOp             = GT_ROR;
         }
-        else if (rightShiftIndex->OperGet() == GT_SUB)
+        else if (rightShiftIndex->OperGet() == GT_ADD)
         {
-            shiftIndexWithSUB    = rightShiftIndex;
-            shiftIndexWithoutSUB = leftShiftIndex;
+            shiftIndexWithAdd    = rightShiftIndex;
+            shiftIndexWithoutAdd = leftShiftIndex;
             rotateOp             = GT_ROL;
         }
 
-        if (shiftIndexWithSUB != nullptr)
+        if (shiftIndexWithAdd != nullptr)
         {
-            if (shiftIndexWithSUB->gtGetOp1()->IsCnsIntOrI())
+            if (shiftIndexWithAdd->gtGetOp2()->IsCnsIntOrI())
             {
-                if (shiftIndexWithSUB->gtGetOp1()->AsIntCon()->gtIconVal == rotatedValueBitSize)
+                if (shiftIndexWithAdd->gtGetOp2()->AsIntCon()->gtIconVal == rotatedValueBitSize)
                 {
-                    if (GenTree::Compare(shiftIndexWithSUB->gtGetOp2(), shiftIndexWithoutSUB))
+                    if (shiftIndexWithAdd->gtGetOp1()->OperGet() == GT_NEG)
                     {
-                        // We found one of these patterns:
-                        // (x << (y & M)) | (x >>> ((N - y) & M))
-                        // (x << y) | (x >>> (N - y))
-                        // (x >>> (y & M)) | (x << ((N - y) & M))
-                        // (x >>> y) | (x << (N - y))
-                        // where N == bitsize(x), M is const, and
-                        // M & (N - 1) == N - 1
-                        CLANG_FORMAT_COMMENT_ANCHOR;
+                        if (GenTree::Compare(shiftIndexWithAdd->gtGetOp1()->gtGetOp1(), shiftIndexWithoutAdd))
+                        {
+                            // We found one of these patterns:
+                            // (x << (y & M)) | (x >>> ((-y + N) & M))
+                            // (x << y) | (x >>> (-y + N))
+                            // (x >>> (y & M)) | (x << ((-y + N) & M))
+                            // (x >>> y) | (x << (-y + N))
+                            // where N == bitsize(x), M is const, and
+                            // M & (N - 1) == N - 1
+                            CLANG_FORMAT_COMMENT_ANCHOR;
 
 #ifndef TARGET_64BIT
-                        if (!shiftIndexWithoutSUB->IsCnsIntOrI() && (rotatedValueBitSize == 64))
-                        {
-                            // TODO-X86-CQ: we need to handle variable-sized long shifts specially on x86.
-                            // GT_LSH, GT_RSH, and GT_RSZ have helpers for this case. We may need
-                            // to add helpers for GT_ROL and GT_ROR.
-                            return tree;
-                        }
+                            if (!shiftIndexWithoutAdd->IsCnsIntOrI() && (rotatedValueBitSize == 64))
+                            {
+                                // TODO-X86-CQ: we need to handle variable-sized long shifts specially on x86.
+                                // GT_LSH, GT_RSH, and GT_RSZ have helpers for this case. We may need
+                                // to add helpers for GT_ROL and GT_ROR.
+                                return tree;
+                            }
 #endif
 
-                        rotateIndex = shiftIndexWithoutSUB;
+                            rotateIndex = shiftIndexWithoutAdd;
+                        }
                     }
                 }
             }
