@@ -159,6 +159,7 @@ namespace System.Threading
 
         public extern int ManagedThreadId
         {
+            [Intrinsic]
             [MethodImpl(MethodImplOptions.InternalCall)]
             get;
         }

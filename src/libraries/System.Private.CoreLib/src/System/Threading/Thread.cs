@@ -8,6 +8,7 @@ using System.Globalization;
 using System.Runtime.ConstrainedExecution;
 using System.Security.Principal;
 using System.Runtime.Versioning;
+using System.Runtime.CompilerServices;
 
 namespace System.Threading
 {
@@ -154,7 +155,14 @@ namespace System.Threading
             }
         }
 
-        public static Thread CurrentThread => t_currentThread ?? InitializeCurrentThread();
+        public static Thread CurrentThread
+        {
+            [Intrinsic]
+            get
+            {
+                return t_currentThread ?? InitializeCurrentThread();
+            }
+        }
 
         public ExecutionContext? ExecutionContext => ExecutionContext.Capture();
 
