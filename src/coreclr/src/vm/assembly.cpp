@@ -1643,13 +1643,7 @@ INT32 Assembly::ExecuteMainMethod(PTRARRAYREF *stringArgs, BOOL waitForOtherThre
             AppDomain * pDomain = pThread->GetDomain();
             pDomain->SetRootAssembly(pMeth->GetAssembly());
 
-#if defined(TARGET_OSX) && defined(TARGET_ARM64)
-            // FIXME-OSX-ARM64 RunStartupHooks() calls managed code
-            // which breaks on osx-arm64 currently.
-            // Disable this advanced feature during platform bringup.
-#else
             RunStartupHooks();
-#endif // defined(TARGET_OSX) && defined(TARGET_ARM64)
 
             hr = RunMain(pMeth, 1, &iRetVal, stringArgs);
         }
