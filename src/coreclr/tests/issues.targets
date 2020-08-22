@@ -920,9 +920,6 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/v2.1/DDB/B168384/LdfldaHack/*">
             <Issue>https://github.com/dotnet/runtime/issues/615</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/GitHub_27924/GitHub_27924/*">
-            <Issue>https://github.com/dotnet/runtime/issues/34316</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/SIMD/SimpleSIMDProgram/*">
             <Issue>https://github.com/dotnet/runtime/issues/35724</Issue>
         </ExcludeList>
