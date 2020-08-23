@@ -27,6 +27,17 @@
     </PropertyGroup>
   </Target>
 
+  <!--
+    We should not build some pkgproj in source-build (i.e. targeting-pack).
+  -->
+  <Target Name="GetSourceBuildSkipBuildProps"
+          Condition="'$(DotNetBuildFromSource)' == 'true' and '$(AlwaysBuildEvenInSourceBuild)' != 'true'"
+          BeforeTargets="GetSkipBuildProps">
+    <PropertyGroup Condition="'$(FrameworkPackType)' == 'targeting'">
+      <SkipBuild>true</SkipBuild>
+    </PropertyGroup>
+  </Target>
+
   <PropertyGroup Condition="'$(RuntimeFlavor)' == 'Mono' and '$(TargetsMobile)' != 'true'">
     <RuntimeSpecificFrameworkSuffix>.Mono</RuntimeSpecificFrameworkSuffix>
   </PropertyGroup>

@@ -1,10 +1,10 @@
 # Running Tests using Mono Runtime
 
 ## Running Runtime Tests
-We currently only support running tests against coreclr.  There are additional mono runtime tests in mono/mono, but they 
+We currently only support running tests against coreclr.  There are additional mono runtime tests in mono/mono, but they
 have not been moved over yet. Simply run the following command:
 
-``` 
+```
 dotnet build /t:RunCoreClrTests $(REPO_ROOT)/src/mono/mono.proj
 ```
 
@@ -36,8 +36,8 @@ dotnet build /t:Test /p:RuntimeFlavor=mono
 ```
 
 # Patching Local dotnet (.dotnet-mono)
-Another way to test mono out is by 'patching' a local dotnet with our runtime bits.  This is a good way to write simple 
-test programs and get a glimpse of how mono will work with the dotnet tooling.  
+Another way to test mono out is by 'patching' a local dotnet with our runtime bits.  This is a good way to write simple
+test programs and get a glimpse of how mono will work with the dotnet tooling.
 
 To generate a local .dotnet-mono, execute this command:
 

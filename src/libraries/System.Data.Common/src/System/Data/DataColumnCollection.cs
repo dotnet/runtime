@@ -15,6 +15,8 @@ namespace System.Data
     /// objects for a <see cref='System.Data.DataTable'/>.
     /// </summary>
     [DefaultEvent(nameof(CollectionChanged))]
+    [Editor("Microsoft.VSDesigner.Data.Design.ColumnsCollectionEditor, Microsoft.VSDesigner, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a",
+            "System.Drawing.Design.UITypeEditor, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
     public sealed class DataColumnCollection : InternalDataCollectionBase
     {
         private readonly DataTable _table;

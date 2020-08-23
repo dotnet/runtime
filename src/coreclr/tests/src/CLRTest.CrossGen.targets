@@ -35,6 +35,13 @@ WARNING:   When setting properties based on their current state (for example:
     <PropertyGroup>
       <CrossgenBashScript Condition="'$(CLRTestKind)' == 'BuildAndRun' and '$(CrossGenTest)' != 'false'">
         <![CDATA[
+
+if [ "$(AlwaysUseCrossGen2)" == "true" ]; then
+    export RunCrossGen=
+    export RunCrossGen2=1
+    export CompositeBuildMode=1
+fi
+
 # CrossGen Script
 if [ ! -z ${RunCrossGen+x} ]%3B then
     export COMPlus_ZapRequire=$(ZapRequire)
@@ -59,6 +66,7 @@ if [ ! -z ${RunCrossGen+x} ]%3B then
         ReleaseLock
     fi
 fi
+
 # CrossGen2 Script
 if [ ! -z ${RunCrossGen2+x} ]%3B then
     TakeLock
@@ -163,6 +171,12 @@ fi
       <CrossgenBatchScript Condition="'$(CLRTestKind)' == 'BuildAndRun' and '$(CrossGenTest)' != 'false'">
         <![CDATA[
 
+if /i "$(AlwaysUseCrossGen2)" == "true" (
+    set RunCrossGen=
+    set RunCrossGen2=1
+    set CompositeBuildMode=1
+)
+
 REM CrossGen Script
 if defined RunCrossGen (
     if defined LargeVersionBubble ( set OptionalArguments=!OptionalArguments! /largeversionbubble)
@@ -187,6 +201,7 @@ if defined RunCrossGen (
         )
     )
 )
+
 REM CrossGen2 Script
 if defined RunCrossGen2 (
     set ExtraCrossGen2Args=!ExtraCrossGen2Args! $(CrossGen2TestExtraArguments)

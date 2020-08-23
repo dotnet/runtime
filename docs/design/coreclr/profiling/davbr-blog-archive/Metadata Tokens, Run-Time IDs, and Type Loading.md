@@ -31,16 +31,12 @@ Yes, that is a good example.  You are an astute reader.  Memory profilers that w
 
 # Going from metadata token to run-time ID
 
-# 
-
-# 
-
 As I mentioned above, the safest way to do this is to build up your own map and do reverse-lookups as necessary.  If that scheme meets your needs, then by all means do that, and stop reading!  But in the cases where this is insufficient, you may need to resort to using GetFunctionFromToken(AndTypeArgs) and GetClassFromToken(AndTypeArgs).  There is no simple, foolproof way to use these APIs safely, but here is your guideline:
 
 **Never call GetFunctionFromToken(AndTypeArgs) and GetClassFromToken(AndTypeArgs) unless you’re certain the relevant types have been loaded.**  (“Relevant types” include the ClassID containing the FunctionID whose mdMethodDef you pass to GetFunctionFromToken(AndTypeArgs), and the ClassID whose mdTypeDef you pass to GetClassFromToken(AndTypeArgs).)  If these types have not been loaded, _you may cause them to be loaded now_!  This is bad because:
 
-- This is an easy way to crash the app.  Trying to load a type at the wrong time could cause cycles, causing infinite loops (depending on what your profiler does in response to class load notifications) or outright crashes.  For example, trying to load a type while its containing assembly is still in an early phase of loading is a great and fun way to crash the CLR. 
-- You will impact the behavior of the app.  If you’re lucky enough not to crash the app, you’ve still impacted its behavior, by causing types to get loaded in a different order than they normally would.  Any impact to app behavior like this makes it difficult for your users to reproduce problems that they are trying to use your tool to diagnose, or may hide problems that they don’t discover until they run their application outside of your tool. 
+- This is an easy way to crash the app.  Trying to load a type at the wrong time could cause cycles, causing infinite loops (depending on what your profiler does in response to class load notifications) or outright crashes.  For example, trying to load a type while its containing assembly is still in an early phase of loading is a great and fun way to crash the CLR.
+- You will impact the behavior of the app.  If you’re lucky enough not to crash the app, you’ve still impacted its behavior, by causing types to get loaded in a different order than they normally would.  Any impact to app behavior like this makes it difficult for your users to reproduce problems that they are trying to use your tool to diagnose, or may hide problems that they don’t discover until they run their application outside of your tool.
 
 ## Determining whether a class was loaded
 
@@ -54,14 +50,14 @@ MyRetType MyClass::MyFunction(MyArgumentType myArgumentType)
 
 then you can be reasonably assured that the following are loaded:
 
-- MyClass 
-- MyArgumentType (if it’s a value-type) 
-- MyRetType (if it’s a value-type) 
-- For any class you know is loaded, so should be: 
-  - its base class 
-  - its value-type fields (not necessarily reference-type fields!) 
-  - implemented interfaces 
-  - value-type generic type arguments (and even reference-type generic type arguments in the case of MyClass) 
+- MyClass
+- MyArgumentType (if it’s a value-type)
+- MyRetType (if it’s a value-type)
+- For any class you know is loaded, so should be:
+  - its base class
+  - its value-type fields (not necessarily reference-type fields!)
+  - implemented interfaces
+  - value-type generic type arguments (and even reference-type generic type arguments in the case of MyClass)
 
 So much for stacks.  What if you encounter an instance of a class on the heap?  Surely the class is loaded then, right?  Well, probably.  If you encounter an object on heap just after GC (inside **GarbageCollectionFinished** , before you return), it should be safe to inspect the class’s layout, and then peek through ObjectIDs to see the values of their fields.
 
@@ -73,7 +69,7 @@ In general, a lot of the uncertainty above comes from types stored in NGENd modu
 
 Now is a good time remind you that, not only is it dangerous to inspect run-time IDs too early (i.e., before they load); it’s also dangerous to inspect run-time IDs too late (i.e., after they **unload** ).  For example, if you store ClassIDs and FunctionIDs for later use, and use them “too late”, you can easily crash the CLR.  The profiling API does pretty much no validation of anything (in many cases, it’s incapable of doing so without using up significant amounts of memory to maintain lookup tables for everything).  So we generally take any run-time ID that you pass to ICorProfilerInfo\* methods, cast it to an internal CLR structure ptr, and go boom if the ID is bad.
 
-There is no way to just ask the CLR if a FunctionID or ClassID is valid.  Indeed, classes could get unloaded, and new classes loaded, and your ClassID may now refer to a totally different (valid) class. 
+There is no way to just ask the CLR if a FunctionID or ClassID is valid.  Indeed, classes could get unloaded, and new classes loaded, and your ClassID may now refer to a totally different (valid) class.
 
 You need to keep track of the unloads yourself.  You are notified when run-time IDs go out of scope (today, this happens at the level of an AppDomain unloading or a collectible assembly unloading—in both cases all IDs “contained” in the unloading thing are now invalid).  Once a run-time ID is out of scope, you are not allowed to pass that run-time ID back to the CLR.  In fact, you should consider whether thread synchronization will be necessary in your profiler to maintain this invariant.  For example, if a run-time ID gets unloaded on thread A, you’re still not allowed to pass that run-time ID back to the CLR on thread B.  So you may need to block on a critical section in thread A during the \*UnloadStarted / AppDomainShutdown\* callbacks, to prevent them from returning to the CLR until any uses of the contained IDs in thread B are finished.
 
@@ -91,16 +87,16 @@ ResolveTypeRef doesn’t know about any of this—it was never designed to be us
 
 If you absolutely need to resolve refs to defs, your best bet may be to use your own algorithm which will be as accurate as you can make it, under the circumstances, and which will never try to locate a module that hasn’t been loaded yet.  That means that you shouldn’t try to resolve a ref to a def if that def hasn’t actually been loaded into a type by the CLR.  Consider using an algorithm similar to the following:
 
-1. Get the AssemblyRef from the TypeRef to get to the name, public key token and version of the assembly where the type should reside. 
-2. Enumerate all loaded modules that the Profiling API has notified you of (or via [EnumModules](http://msdn.microsoft.com/en-us/library/dd490890)) (you can filter out a specific AppDomain at this point if you want). 
-3. In each enumerated module, search for a TypeDef with the same name and namespace as the TypeRef (IMetaDataImport::FindTypeDefByName) 
-4. Pay attention to **type forwarding**!  Once you find the TypeDef, it may actually be an “exported” type, in which case you will need to follow the trail to the next module.  Read toward the bottom of [this post](Type Forwarding.md) for more info. 
+1. Get the AssemblyRef from the TypeRef to get to the name, public key token and version of the assembly where the type should reside.
+2. Enumerate all loaded modules that the Profiling API has notified you of (or via [EnumModules](http://msdn.microsoft.com/en-us/library/dd490890)) (you can filter out a specific AppDomain at this point if you want).
+3. In each enumerated module, search for a TypeDef with the same name and namespace as the TypeRef (IMetaDataImport::FindTypeDefByName)
+4. Pay attention to **type forwarding**!  Once you find the TypeDef, it may actually be an “exported” type, in which case you will need to follow the trail to the next module.  Read toward the bottom of [this post](Type Forwarding.md) for more info.
 
 The above can be a little bit smarter by paying attention to what order you choose to search through the modules:
 
-- First search for the TypeDef in assemblies which exactly match the name, public key token and version for the AssemblyRef. 
-- If that fails, then search through assemblies matching name and public key token (where the version is higher than the one supplied – this can happen for Framework assemblies). 
-- If that fails, then search through all the other assemblies 
+- First search for the TypeDef in assemblies which exactly match the name, public key token and version for the AssemblyRef.
+- If that fails, then search through assemblies matching name and public key token (where the version is higher than the one supplied – this can happen for Framework assemblies).
+- If that fails, then search through all the other assemblies
 
 I must warn you that the above scheme is **not tested and not supported.  Use at your own risk!**
 
@@ -108,7 +104,7 @@ I must warn you that the above scheme is **not tested and not supported.  Use at
 
 Although I cannot comment on what will or will not be in any particular future version of the CLR, I can tell you that it is clear to us on the CLR team that we have work to do, to make dealing with metadata tokens and their corresponding run-time type information easier from the profiling API.  After all, it doesn’t take a rocket scientist to read the above and conclude that it does take a rocket scientist to actually follow all this advice.  So for now, enjoy the fact that what you do is really hard, making you difficult to replace, and thus your job all the more secure.  You’re welcome.
 
- 
+
 
 Special thanks to David Wrighton and Karel Zikmund, who have helped considerably with all content in this entry around the type system and metadata.
 

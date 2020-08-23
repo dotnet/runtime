@@ -1,6 +1,8 @@
 ARG SDK_BASE_IMAGE=mcr.microsoft.com/dotnet/nightly/sdk:5.0-buster-slim
 FROM $SDK_BASE_IMAGE
 
+RUN echo "DOTNET_SDK_VERSION="$env:DOTNET_SDK_VERSION
+
 WORKDIR /app
 COPY . .
 

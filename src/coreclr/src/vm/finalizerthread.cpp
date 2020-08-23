@@ -7,8 +7,6 @@
 #include "finalizerthread.h"
 #include "threadsuspend.h"
 #include "jithost.h"
-#include "eventpipe.h"
-#include "eventpipesession.h"
 #include "genanalysis.h"
 
 #ifdef FEATURE_COMINTEROP

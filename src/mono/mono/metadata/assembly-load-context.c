@@ -176,9 +176,10 @@ mono_alc_is_default (MonoAssemblyLoadContext *alc)
 MonoAssemblyLoadContext *
 mono_alc_from_gchandle (MonoGCHandle alc_gchandle)
 {
+	HANDLE_FUNCTION_ENTER ();
 	MonoManagedAssemblyLoadContextHandle managed_alc = MONO_HANDLE_CAST (MonoManagedAssemblyLoadContext, mono_gchandle_get_target_handle (alc_gchandle));
-	MonoAssemblyLoadContext *alc = (MonoAssemblyLoadContext *)MONO_HANDLE_GETVAL (managed_alc, native_assembly_load_context);
-	return alc;
+	MonoAssemblyLoadContext *alc = MONO_HANDLE_GETVAL (managed_alc, native_assembly_load_context);
+	HANDLE_FUNCTION_RETURN_VAL (alc);
 }
 
 MonoGCHandle

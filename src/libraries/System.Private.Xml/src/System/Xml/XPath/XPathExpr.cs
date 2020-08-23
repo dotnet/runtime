@@ -51,7 +51,7 @@ namespace System.Xml.XPath
 
         public abstract void SetContext(XmlNamespaceManager nsManager);
 
-        public abstract void SetContext(IXmlNamespaceResolver nsResolver);
+        public abstract void SetContext(IXmlNamespaceResolver? nsResolver);
 
         public abstract XPathResultType ReturnType { get; }
 

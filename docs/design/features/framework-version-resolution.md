@@ -30,8 +30,7 @@ In the `.runtimeconfig.json` these values are defined like this:
 ```
 
 #### Framework name
-Each framework reference identifies the framework by its name.  
-Framework names are case sensitive (since they're used as folder names even on Linux systems).
+Each framework reference identifies the framework by its name. Framework names are case sensitive (since they're used as folder names even on Linux systems).
 
 #### Version
 Framework version must be a [SemVer V2](https://semver.org) valid version.
@@ -146,13 +145,15 @@ Pros
 
 Cons
 * Testing behavior of new releases with pre-release versions is not fully possible (see below).
-* Some special cases don't work:
-One special case which would not work:  
-*Component A which asks for `2.0.0 LatestMajor` is loaded first on a machine which has `3.0.0` and also `3.1.0-preview` installed. Because it's the first in the process it will resolve the runtime according to the above rules - that is prefer release version - and thus will select `3.0.0`.  
-Later on component B is loaded which asks for `3.1.0-preview LatestMajor` (for example the one in active development). This load will fail since `3.0.0` is not enough to run this component.  
-Loading the components in reverse order (B first and then A) will work since the `3.1.0-preview` runtime will be selected.*
+* Some special cases don't work.
 
-Modification to automatic roll forward to latest patch:  
+  One special case which would not work:
+  *Component A which asks for `2.0.0 LatestMajor` is loaded first on a machine which has `3.0.0` and also `3.1.0-preview` installed. Because it's the first in the process it will resolve the runtime according to the above rules - that is prefer release version - and thus will select `3.0.0`.*
+
+  *Later on component B is loaded which asks for `3.1.0-preview LatestMajor` (for example the one in active development). This load will fail since `3.0.0` is not enough to run this component.*
+  *Loading the components in reverse order (B first and then A) will work since the `3.1.0-preview` runtime will be selected.*
+
+Modification to automatic roll forward to latest patch:
 Existing behavior is to find a matching framework based on the above rules and then apply roll forward to latest patch (except if `Disable` is specified). The new behavior should be:
 * If the above rules find a matching pre-release version of a framework, then automatic roll forward to latest patch is not applied.
 * If the above rules find a matching release version of a framework, automatic roll forward to latest patch is applied.
@@ -218,12 +219,12 @@ Items lower in the list override those higher in the list. At each precedence sc
 This setting is also described in [roll-forward-on-no-candidate-fx](roll-forward-on-no-candidate-fx.md). It can be specified as a property either for the entire `.runtimeconfig.json` or per framework reference (it has no environment variable of command line argument). It disables rolling forward to the latest patch.
 
 The host will compute effective value of `applyPatches` for each framework reference.
-The `applyPatches` value is only considered if the effective `rollForward` value for a given framework reference is 
+The `applyPatches` value is only considered if the effective `rollForward` value for a given framework reference is
 * `LatestPatch`
 * `Minor`
 * `Major`
 
-For the other values `applyPatches` is ignored.  
+For the other values `applyPatches` is ignored.
 *This is to maintain backward compatibility with `rollForwardOnNoCandidateFx`. `applyPatches` is now considered obsolete.*
 
 If `applyPatches` is set to `true` (the default), then the roll-forward rules described above apply fully.
@@ -259,7 +260,7 @@ There's a direct mapping from the `rollForward` setting to the internal represen
 | `rollForward`         | `version_compatibility_range` | `roll_to_highest_version`                  |
 | --------------------- | ----------------------------- | ------------------------------------------ |
 | `Disable`             | `exact`                       | `false`                                    |
-| `LatestPatch`         | `patch`                       | `false` (always picks latest patch anyway) | 
+| `LatestPatch`         | `patch`                       | `false` (always picks latest patch anyway) |
 | `Minor`               | `minor`                       | `false`                                    |
 | `LatestMinor`         | `minor`                       | `true`                                     |
 | `Major`               | `major`                       | `false`                                    |
@@ -306,7 +307,7 @@ Steps
    * By doing this for all `framework references` here, before the next loop, we minimize the number of re-try attempts.
 4. For each `framework reference` in `config fx references`:
 5. --> If the framework's `name` is not in `resolved frameworks` Then resolve the `framework reference` to the actual framework on disk:
-   * If the framework `name` already exists in the `effective fx references` reconcile the currently processed `framework reference` with the one from the `effective fx references` (see above for the algorithm). 
+   * If the framework `name` already exists in the `effective fx references` reconcile the currently processed `framework reference` with the one from the `effective fx references` (see above for the algorithm).
    *Term "reconcile framework references" is used for this in the code, this used to be called "soft-roll-forward" as well.*
      * The reconciliation will always pick the higher `version` and will merge the `rollForward` and `applyPatches` settings.
      * The reconciliation may fail if it's not possible to roll forward from one `framework reference` to the other.
@@ -368,7 +369,7 @@ This might be more of an issue for components (COM and such), which we will reco
 The above proposal will impact behavior of existing apps (because framework resolution is in `hostfxr` which is global on the machine for all frameworks). This is a description of the changes as they apply to apps using either default settings, `rollForwardOnNoCandidateFx` or `applyPatches`.
 
 ### Fixing ordering issues
-In 2.* the algorithm had a bug in it which caused it to resolve different version depending solely on the order of framework references. Consider this example:  
+In 2.* the algorithm had a bug in it which caused it to resolve different version depending solely on the order of framework references. Consider this example:
 
 `Microsoft.NETCore.App` is available on the machine with versions `2.1.1` and `2.1.2`.
 
