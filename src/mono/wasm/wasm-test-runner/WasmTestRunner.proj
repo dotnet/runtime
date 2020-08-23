@@ -1,16 +1,9 @@
-<Project Sdk="Microsoft.NET.Sdk" DefaultTargets="BuildApp">
+<Project Sdk="Microsoft.Build.NoTargets" DefaultTargets="BuildApp">
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
-    <OutputPath>bin</OutputPath>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
-    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
-    <TargetArchitecture>wasm</TargetArchitecture>
-    <TargetOS>Browser</TargetOS>
     <MicrosoftNetCoreAppRuntimePackDir>$(CORE_ROOT)\runtimepack</MicrosoftNetCoreAppRuntimePackDir>
     <BuildDir>$(MSBuildThisFileDirectory)\obj\$(Configuration)\wasm</BuildDir>
     <AppDir>$(TestBinDir)/WasmApp/</AppDir>
-    <RuntimeIdentifier>browser-wasm</RuntimeIdentifier>  
-    <PlatformTarget>AnyCPU</PlatformTarget>   
   </PropertyGroup>
 
   <UsingTask TaskName="WasmAppBuilder" 
