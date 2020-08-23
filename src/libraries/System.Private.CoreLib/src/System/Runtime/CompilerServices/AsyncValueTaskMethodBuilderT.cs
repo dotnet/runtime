@@ -470,7 +470,7 @@ namespace System.Runtime.CompilerServices
                 }
                 else
                 {
-                    ExecutionContext.RunForThreadPoolUnsafe(context, s_callback, this);
+                    ExecutionContext.RunForThreadPoolUnsafe(context, s_callback, this, Thread.CurrentThread);
                 }
             }
 

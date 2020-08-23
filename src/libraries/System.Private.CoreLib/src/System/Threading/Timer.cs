@@ -636,7 +636,7 @@ namespace System.Threading
             }
             else
             {
-                ExecutionContext.RunForThreadPoolUnsafe(context, s_callCallbackInContext, this);
+                ExecutionContext.RunForThreadPoolUnsafe(context, s_callCallbackInContext, this, Thread.CurrentThread);
             }
         }
 

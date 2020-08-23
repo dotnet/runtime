@@ -784,15 +784,6 @@ namespace System.Threading
         private readonly object? _state;
         private readonly ExecutionContext _context;
 
-        private static readonly Action<QueueUserWorkItemCallback> s_executionContextShim = quwi =>
-        {
-            Debug.Assert(quwi._callback != null);
-            WaitCallback callback = quwi._callback;
-            quwi._callback = null;
-
-            callback(quwi._state);
-        };
-
         internal QueueUserWorkItemCallback(WaitCallback callback, object? state, ExecutionContext context)
         {
             Debug.Assert(context != null);
@@ -806,7 +797,21 @@ namespace System.Threading
         {
             base.Execute();
 
-            ExecutionContext.RunForThreadPoolUnsafe(_context, s_executionContextShim, this);
+            // Restore Non-Default context
+            ExecutionContext context = _context;
+            Thread.CurrentThread._executionContext = context;
+            if (context.HasChangeNotifications)
+            {
+                ExecutionContext.OnValuesChanged(previousExecutionCtx: null, context);
+            }
+
+            Debug.Assert(_callback != null);
+            WaitCallback callback = _callback;
+            _callback = null;
+
+            callback(_state);
+
+            // ThreadPoolWorkQueue.Dispatch will handle notifications and reset EC and SyncCtx back to default
         }
     }
 
@@ -829,11 +834,21 @@ namespace System.Threading
         {
             base.Execute();
 
+            // Restore Non-Default context
+            ExecutionContext context = _context;
+            Thread.CurrentThread._executionContext = context;
+            if (context.HasChangeNotifications)
+            {
+                ExecutionContext.OnValuesChanged(previousExecutionCtx: null, context);
+            }
+
             Debug.Assert(_callback != null);
             Action<TState> callback = _callback;
             _callback = null;
 
-            ExecutionContext.RunForThreadPoolUnsafe(_context, callback, in _state);
+            callback(_state);
+
+            // ThreadPoolWorkQueue.Dispatch will handle notifications and reset EC and SyncCtx back to default
         }
     }
 
