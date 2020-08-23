@@ -43,9 +43,9 @@ namespace System.Data.OleDb
             GC.SuppressFinalize(this);
         }
 
-        [
-        DefaultValue(null),
-        ]
+        [DefaultValue(null)]
+        [Editor("Microsoft.VSDesigner.Data.Design.DBCommandEditor, Microsoft.VSDesigner, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a",
+                "System.Drawing.Design.UITypeEditor, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
         public new OleDbCommand? DeleteCommand
         {
             get { return _deleteCommand; }
@@ -58,9 +58,9 @@ namespace System.Data.OleDb
             set { _deleteCommand = (OleDbCommand?)value; }
         }
 
-        [
-        DefaultValue(null)
-        ]
+        [DefaultValue(null)]
+        [Editor("Microsoft.VSDesigner.Data.Design.DBCommandEditor, Microsoft.VSDesigner, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a",
+                "System.Drawing.Design.UITypeEditor, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
         public new OleDbCommand? InsertCommand
         {
             get { return _insertCommand; }
@@ -73,9 +73,9 @@ namespace System.Data.OleDb
             set { _insertCommand = (OleDbCommand?)value; }
         }
 
-        [
-        DefaultValue(null)
-        ]
+        [DefaultValue(null)]
+        [Editor("Microsoft.VSDesigner.Data.Design.DBCommandEditor, Microsoft.VSDesigner, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a",
+                "System.Drawing.Design.UITypeEditor, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
         public new OleDbCommand? SelectCommand
         {
             get { return _selectCommand; }
@@ -88,9 +88,9 @@ namespace System.Data.OleDb
             set { _selectCommand = (OleDbCommand?)value; }
         }
 
-        [
-        DefaultValue(null)
-        ]
+        [DefaultValue(null)]
+        [Editor("Microsoft.VSDesigner.Data.Design.DBCommandEditor, Microsoft.VSDesigner, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a",
+                "System.Drawing.Design.UITypeEditor, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
         public new OleDbCommand? UpdateCommand
         {
             get { return _updateCommand; }
