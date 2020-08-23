@@ -342,7 +342,7 @@ namespace System.Runtime.CompilerServices
         /// <summary>Provides a strongly-typed box object based on the specific state machine type in use.</summary>
         private sealed class StateMachineBox<TStateMachine> :
             StateMachineBox,
-            IValueTaskSource<TResult>, IValueTaskSource, IAsyncStateMachineBox, IThreadPoolWorkItem
+            IValueTaskSource<TResult>, IValueTaskSource, IAsyncStateMachineBox, IThreadPoolWorkItemWithThread
             where TStateMachine : IAsyncStateMachine
         {
             /// <summary>Delegate used to invoke on an ExecutionContext when passed an instance of this box type.</summary>
@@ -459,19 +459,18 @@ namespace System.Runtime.CompilerServices
             public Action MoveNextAction => _moveNextAction ??= new Action(MoveNext);
 
             /// <summary>Invoked to run MoveNext when this instance is executed from the thread pool.</summary>
-            void IThreadPoolWorkItem.Execute()
+            void IThreadPoolWorkItemWithThread.Execute(Thread threadPoolThread)
             {
                 ExecutionContext? context = Context;
-                // Call directly if EC flow is suppressed or if context is Default on ThreadPool
-                if (context is null || context.IsDefault)
+                Debug.Assert(!(StateMachine is null));
+
+                if (context is not null && !context.IsDefault)
                 {
-                    Debug.Assert(!(StateMachine is null));
-                    StateMachine.MoveNext();
+                    ExecutionContext.RestoreNonDefaultContextToThreadPool(threadPoolThread, context);
                 }
-                else
-                {
-                    ExecutionContext.RunForThreadPoolUnsafe(context, s_callback, this, Thread.CurrentThread);
-                }
+
+                StateMachine.MoveNext();
+                // ThreadPoolWorkQueue.Dispatch will handle notifications and reset EC and SyncCtx back to default
             }
 
             /// <summary>Calls MoveNext on <see cref="StateMachine"/></summary>

@@ -517,7 +517,7 @@ namespace System.Threading.Tasks
     }
 
     /// <summary>Base task continuation class used for await continuations.</summary>
-    internal class AwaitTaskContinuation : TaskContinuation, IThreadPoolWorkItem
+    internal class AwaitTaskContinuation : TaskContinuation, IThreadPoolWorkItemWithThread
     {
         /// <summary>The ExecutionContext with which to run the continuation.</summary>
         private readonly ExecutionContext? m_capturedContext;
@@ -617,7 +617,7 @@ namespace System.Threading.Tasks
             }
         }
 
-        void IThreadPoolWorkItem.Execute()
+        void IThreadPoolWorkItemWithThread.Execute(Thread threadPoolThread)
         {
             TplEventSource log = TplEventSource.Log;
             ExecutionContext? context = m_capturedContext;
@@ -642,18 +642,12 @@ namespace System.Threading.Tasks
                 ExecutionContext.CheckThreadPoolAndContextsAreDefault();
                 // If there's no execution context or Default, just invoke the delegate as ThreadPool is on Default context.
                 // We don't have to use ExecutionContext.Run for the Default context here as there is no extra processing after the delegate
-                if (context != null && !context.IsDefault)
+                if (context is not null && !context.IsDefault)
                 {
-                    // Restore Non-Default context
-                    Thread.CurrentThread._executionContext = context;
-                    if (context.HasChangeNotifications)
-                    {
-                        ExecutionContext.OnValuesChanged(previousExecutionCtx: null, context);
-                    }
+                    ExecutionContext.RestoreNonDefaultContextToThreadPool(threadPoolThread, context);
                 }
 
                 m_action();
-
                 // ThreadPoolWorkQueue.Dispatch handles notifications and reset context back to default
             }
             finally

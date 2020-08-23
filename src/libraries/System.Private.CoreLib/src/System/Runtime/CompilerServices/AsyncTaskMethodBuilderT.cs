@@ -316,15 +316,13 @@ namespace System.Runtime.CompilerServices
                 Debug.Assert(StateMachine != null);
 
                 ExecutionContext? context = Context;
-                // Call directly if EC flow is suppressed or if context is Default on ThreadPool
-                if (context == null || context.IsDefault)
+                if (context is not null && !context.IsDefault)
                 {
-                    StateMachine.MoveNext();
+                    ExecutionContext.RestoreNonDefaultContextToThreadPool(threadPoolThread, context);
                 }
-                else
-                {
-                    ExecutionContext.RunForThreadPoolUnsafe(context, s_callback, this, threadPoolThread);
-                }
+
+                StateMachine.MoveNext();
+                // ThreadPoolWorkQueue.Dispatch will handle notifications and reset EC and SyncCtx back to default
 
                 // Can't do much here to work with the branch predictor without excessive gotos.
                 if (IsCompleted)

@@ -8,4 +8,11 @@ namespace System.Threading
     {
         void Execute();
     }
+
+    /// <summary>Represents a work item that can be executed by the ThreadPool and is given ThreadPool thread.</summary>
+    internal interface IThreadPoolWorkItemWithThread : IThreadPoolWorkItem
+    {
+        void IThreadPoolWorkItem.Execute() => throw new NotImplementedException();
+        void Execute(Thread threadPoolThread);
+    }
 }

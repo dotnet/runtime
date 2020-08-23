@@ -242,6 +242,21 @@ namespace System.Threading
             }
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static void RestoreNonDefaultContextToThreadPool(Thread threadPoolThread, ExecutionContext executionContext)
+        {
+            Debug.Assert(threadPoolThread == Thread.CurrentThread);
+            Debug.Assert(executionContext != null);
+            Debug.Assert(!executionContext.IsDefault);
+            CheckThreadPoolAndContextsAreDefault();
+
+            threadPoolThread._executionContext = executionContext;
+            if (executionContext.HasChangeNotifications)
+            {
+                OnValuesChanged(previousExecutionCtx: null, executionContext);
+            }
+        }
+
         internal static void RunFromThreadPoolDispatchLoop(Thread threadPoolThread, ExecutionContext executionContext, ContextCallback callback, object state)
         {
             Debug.Assert(threadPoolThread == Thread.CurrentThread);
@@ -281,26 +296,6 @@ namespace System.Threading
 
             // If exception was thrown by callback, rethrow it now original contexts are restored
             edi?.Throw();
-        }
-
-        internal static void RunForThreadPoolUnsafe(ExecutionContext executionContext, ContextCallback callback, object state, Thread threadPoolThread)
-        {
-            Debug.Assert(threadPoolThread == Thread.CurrentThread);
-            // We aren't running in try/catch as the ThreadPool Dispatch loop will handle it.
-
-            CheckThreadPoolAndContextsAreDefault();
-            Debug.Assert(executionContext != null && !executionContext.m_isDefault, "ExecutionContext argument is Default.");
-
-            // Restore Non-Default context
-            threadPoolThread._executionContext = executionContext;
-            if (executionContext.HasChangeNotifications)
-            {
-                OnValuesChanged(previousExecutionCtx: null, executionContext);
-            }
-
-            callback.Invoke(state);
-
-            // ThreadPoolWorkQueue.Dispatch will handle notifications and reset EC and SyncCtx back to default
         }
 
         internal static void RunOnDefaultContext(Thread currentThread, ExecutionContext? previousExecutionCtx, ContextCallback callback, object? state)

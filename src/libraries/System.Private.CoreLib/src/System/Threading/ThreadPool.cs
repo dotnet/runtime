@@ -619,6 +619,10 @@ namespace System.Threading
                             {
                                 task.ExecuteFromThreadPool(currentThread);
                             }
+                            else if (workItem is IThreadPoolWorkItemWithThread workItemWithThread)
+                            {
+                                workItemWithThread.Execute(currentThread);
+                            }
                             else
                             {
                                 Debug.Assert(workItem is IThreadPoolWorkItem);
@@ -639,6 +643,10 @@ namespace System.Threading
                         // vice versa, in particular when the object implements a bunch
                         // of interfaces.
                         task.ExecuteFromThreadPool(currentThread);
+                    }
+                    else if (workItem is IThreadPoolWorkItemWithThread workItemWithThread)
+                    {
+                        workItemWithThread.Execute(currentThread);
                     }
                     else
                     {
@@ -767,7 +775,7 @@ namespace System.Threading
         }
 #endif
 
-        public virtual void Execute()
+        public void Execute()
         {
 #if DEBUG
             GC.SuppressFinalize(this);
@@ -778,7 +786,7 @@ namespace System.Threading
         }
     }
 
-    internal sealed class QueueUserWorkItemCallback : QueueUserWorkItemCallbackBase
+    internal sealed class QueueUserWorkItemCallback : QueueUserWorkItemCallbackBase, IThreadPoolWorkItemWithThread
     {
         private WaitCallback? _callback; // SOS's ThreadPool command depends on this name
         private readonly object? _state;
@@ -793,17 +801,11 @@ namespace System.Threading
             _context = context;
         }
 
-        public override void Execute()
+        public void Execute(Thread threadPoolThread)
         {
             base.Execute();
 
-            // Restore Non-Default context
-            ExecutionContext context = _context;
-            Thread.CurrentThread._executionContext = context;
-            if (context.HasChangeNotifications)
-            {
-                ExecutionContext.OnValuesChanged(previousExecutionCtx: null, context);
-            }
+            ExecutionContext.RestoreNonDefaultContextToThreadPool(threadPoolThread, _context);
 
             Debug.Assert(_callback != null);
             WaitCallback callback = _callback;
@@ -815,7 +817,7 @@ namespace System.Threading
         }
     }
 
-    internal sealed class QueueUserWorkItemCallback<TState> : QueueUserWorkItemCallbackBase
+    internal sealed class QueueUserWorkItemCallback<TState> : QueueUserWorkItemCallbackBase, IThreadPoolWorkItemWithThread
     {
         private Action<TState>? _callback; // SOS's ThreadPool command depends on this name
         private readonly TState _state;
@@ -830,17 +832,11 @@ namespace System.Threading
             _context = context;
         }
 
-        public override void Execute()
+        public void Execute(Thread threadPoolThread)
         {
             base.Execute();
 
-            // Restore Non-Default context
-            ExecutionContext context = _context;
-            Thread.CurrentThread._executionContext = context;
-            if (context.HasChangeNotifications)
-            {
-                ExecutionContext.OnValuesChanged(previousExecutionCtx: null, context);
-            }
+            ExecutionContext.RestoreNonDefaultContextToThreadPool(threadPoolThread, _context);
 
             Debug.Assert(_callback != null);
             Action<TState> callback = _callback;
@@ -852,7 +848,7 @@ namespace System.Threading
         }
     }
 
-    internal sealed class QueueUserWorkItemCallbackDefaultContext : QueueUserWorkItemCallbackBase
+    internal sealed class QueueUserWorkItemCallbackDefaultContext : QueueUserWorkItemCallbackBase, IThreadPoolWorkItem
     {
         private WaitCallback? _callback; // SOS's ThreadPool command depends on this name
         private readonly object? _state;
@@ -865,7 +861,7 @@ namespace System.Threading
             _state = state;
         }
 
-        public override void Execute()
+        void IThreadPoolWorkItem.Execute()
         {
             ExecutionContext.CheckThreadPoolAndContextsAreDefault();
             base.Execute();
@@ -880,7 +876,7 @@ namespace System.Threading
         }
     }
 
-    internal sealed class QueueUserWorkItemCallbackDefaultContext<TState> : QueueUserWorkItemCallbackBase
+    internal sealed class QueueUserWorkItemCallbackDefaultContext<TState> : QueueUserWorkItemCallbackBase, IThreadPoolWorkItem
     {
         private Action<TState>? _callback; // SOS's ThreadPool command depends on this name
         private readonly TState _state;
@@ -893,7 +889,7 @@ namespace System.Threading
             _state = state;
         }
 
-        public override void Execute()
+        void IThreadPoolWorkItem.Execute()
         {
             ExecutionContext.CheckThreadPoolAndContextsAreDefault();
             base.Execute();

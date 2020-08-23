@@ -387,7 +387,7 @@ namespace System.Threading
     }
 
     // A timer in our TimerQueue.
-    internal sealed partial class TimerQueueTimer : IThreadPoolWorkItem
+    internal sealed partial class TimerQueueTimer : IThreadPoolWorkItemWithThread
     {
         // The associated timer queue.
         private readonly TimerQueue _associatedTimerQueue;
@@ -571,9 +571,9 @@ namespace System.Threading
             }
         }
 
-        void IThreadPoolWorkItem.Execute() => Fire(isThreadPool: true);
+        void IThreadPoolWorkItemWithThread.Execute(Thread threadPoolThread) => Fire(threadPoolThread);
 
-        internal void Fire(bool isThreadPool = false)
+        internal void Fire(Thread? threadPoolThread = null)
         {
             bool canceled = false;
 
@@ -587,9 +587,9 @@ namespace System.Threading
             if (canceled)
                 return;
 
-            if (isThreadPool)
+            if (threadPoolThread is not null)
             {
-                CallCallbackOnThreadPool();
+                CallCallbackOnThreadPool(threadPoolThread);
             }
             else
             {
@@ -623,21 +623,19 @@ namespace System.Threading
             }
         }
 
-        internal void CallCallbackOnThreadPool()
+        internal void CallCallbackOnThreadPool(Thread threadPoolThread)
         {
             if (FrameworkEventSource.Log.IsEnabled(EventLevel.Informational, FrameworkEventSource.Keywords.ThreadTransfer))
                 FrameworkEventSource.Log.ThreadTransferReceiveObj(this, 1, string.Empty);
 
-            // Call directly if EC flow is suppressed or if context is Default on ThreadPool
             ExecutionContext? context = _executionContext;
-            if (context == null || context.IsDefault)
+            if (context is not null && !context.IsDefault)
             {
-                _timerCallback(_state);
+                ExecutionContext.RestoreNonDefaultContextToThreadPool(threadPoolThread, context);
             }
-            else
-            {
-                ExecutionContext.RunForThreadPoolUnsafe(context, s_callCallbackInContext, this, Thread.CurrentThread);
-            }
+
+            _timerCallback(_state);
+            // ThreadPoolWorkQueue.Dispatch will handle notifications and reset EC and SyncCtx back to default
         }
 
         internal void CallCallback()
