@@ -199,7 +199,6 @@
           Condition="'$(_CopyNativeProjectBinaries)' == 'true' And '$(GenerateRunScript)' != 'false' And ('$(_WillCLRTestProjectBuild)' == 'true')"
           DependsOnTargets="GenerateExecutionScriptsInternal" />
 
-
   <Target Name="UpdateReferenceItems"
           BeforeTargets="BeforeResolveReferences"
   >
