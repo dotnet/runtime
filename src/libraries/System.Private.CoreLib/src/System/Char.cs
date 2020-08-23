@@ -47,11 +47,6 @@ namespace System
         // - 0x40 bit if set means 'is uppercase letter'
         // - 0x20 bit if set means 'is lowercase letter'
         // - bottom 5 bits are the UnicodeCategory of the character
-        //
-        // n.b. This data is locked to an earlier version of the Unicode standard (2.0, perhaps?), so
-        // the UnicodeCategory data contained here doesn't necessarily reflect the UnicodeCategory data
-        // contained within the CharUnicodeInfo or Rune types, which generally follow the latest Unicode
-        // standard.
         private static ReadOnlySpan<byte> Latin1CharInfo => new byte[]
         {
         //  0     1     2     3     4     5     6     7     8     9     A     B     C     D     E     F
@@ -525,7 +520,7 @@ namespace System
             if (IsLatin1(c))
             {
                 return CheckLetterOrDigit(GetLatin1UnicodeCategory(c));
-        }
+            }
             return CheckLetterOrDigit(CharUnicodeInfo.GetUnicodeCategoryInternal(s, index));
         }
 
