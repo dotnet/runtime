@@ -888,7 +888,7 @@ AC_ARG_ENABLE(visibility-hidden,
 WARN=''
 if test x"$GCC" = xyes; then
 		WARN='-Wall -Wunused -Wmissing-declarations -Wpointer-arith -Wno-cast-qual -Wwrite-strings -Wno-switch -Wno-switch-enum -Wno-unused-value -Wno-attributes'
-		CFLAGS="$CFLAGS -Wmissing-prototypes -Wstrict-prototypes -Wnested-externs -Wno-format-zero-length"
+		CFLAGS="$CFLAGS -Wmissing-prototypes -Wstrict-prototypes -Wnested-externs -Wno-format-zero-length -Werror=c++-compat"
 
 		# We require C99 with some GNU extensions, e.g. `linux` macro
 		CFLAGS="$CFLAGS -std=gnu99"
@@ -925,6 +925,10 @@ if test x"$GCC" = xyes; then
 		   WARN="$WARN -Wno-unused-function -Wno-tautological-compare -Wno-parentheses-equality -Wno-self-assign -Wno-return-stack-address -Wno-constant-logical-operand"
 		   # We rely on zero length arrays in structs
 		   WARN="$WARN -Wno-zero-length-array"
+		   # Common warnings we have only fixed completely on OSX
+		   WARN="$WARN -Werror=unused-variable -Werror=missing-prototypes"
+		else
+		   WARN="$WARN -Werror=maybe-uninitalized"
 		fi
 else
 	# The Sun Forte compiler complains about inline functions that access static variables
