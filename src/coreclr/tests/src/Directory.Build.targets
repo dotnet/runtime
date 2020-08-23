@@ -196,7 +196,7 @@
   <Import Project="CLRTest.Execute.targets" />
   <Target Name="CreateExecuteScript"
           BeforeTargets="Build;CopyAllNativeProjectReferenceBinaries"
-          Condition="'$(_CopyNativeProjectBinaries)' == 'true' And '$(GenerateRunScript)' != 'false' And ('$(_WillCLRTestProjectBuild)' == 'true')"
+          Condition="'$(CLRTestBuildAllTargets)' != 'allTargets' And '$(GenerateRunScript)' != 'false' And ('$(_WillCLRTestProjectBuild)' == 'true')"
           DependsOnTargets="GenerateExecutionScriptsInternal" />
 
   <Target Name="UpdateReferenceItems"

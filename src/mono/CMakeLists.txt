@@ -1,12 +1,12 @@
-cmake_minimum_required (VERSION 3.14.5)
+cmake_minimum_required(VERSION 3.14.5)
 
-project (mono)
+project(mono)
 
 include(GNUInstallDirs)
 include(CheckIncludeFile)
 include(CheckFunctionExists)
 include(TestBigEndian)
-include (FindPkgConfig)
+include(FindPkgConfig)
 
 set(CMAKE_MODULE_PATH
   ${CMAKE_MODULE_PATH}
@@ -29,6 +29,26 @@ include(options)
 # Header/function checks
 include(configure)
 
+function(process_enable_minimal)
+  string(REPLACE "," ";" tmp1 "${ENABLE_MINIMAL}")
+  foreach(arg ${tmp1})
+    string(TOUPPER "${arg}" var1)
+    set(DISABLE_${var1} 1 PARENT_SCOPE)
+  endforeach(arg)
+endfunction()
+
+if(ENABLE_MINIMAL)
+  process_enable_minimal()
+endif()
+
+if(ENABLE_INTERP_LIB)
+  set(DISABLE_INTERPRETER 1)
+endif()
+
+if(NOT DISABLE_INTERPRETER AND NOT DISABLE_JIT)
+set(ENABLE_ILGEN 1)
+endif()
+
 # FIXME:
 set(VERSION "")
 
@@ -37,7 +57,7 @@ execute_process(
   COMMAND cut -d = -f  2
   OUTPUT_VARIABLE CORLIB_VERSION_OUT
 )
-if (CORLIB_VERSION_OUT STREQUAL "")
+if(CORLIB_VERSION_OUT STREQUAL "")
   message(FATAL_ERROR)
 endif()
 string(STRIP "${CORLIB_VERSION_OUT}" MONO_CORLIB_VERSION_BASE)
@@ -47,7 +67,7 @@ if(EXISTS "${CMAKE_SOURCE_DIR}/mono.proj")
   set(ENABLE_NETCORE 1)
 endif()
 
-if (ENABLE_NETCORE)
+if(ENABLE_NETCORE)
   set(DISABLE_REMOTING 1)
   set(DISABLE_REFLECTION_EMIT_SAVE 1)
   set(DISABLE_APPDOMAINS 1)
@@ -70,15 +90,15 @@ endif()
 set(VERSION "\"\"")
 set(DISABLED_FEATURES "\"\"")
 
-if ((CMAKE_CXX_COMPILER_ID STREQUAL "GNU") OR (CMAKE_CXX_COMPILER_ID STREQUAL "Clang") OR (CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang"))
-  set (GCC 1)
-endif ()
+if((CMAKE_CXX_COMPILER_ID STREQUAL "GNU") OR(CMAKE_CXX_COMPILER_ID STREQUAL "Clang") OR(CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang"))
+  set(GCC 1)
+endif()
 
 add_definitions(-g)
 add_definitions(-DHAVE_CONFIG_H)
 add_definitions(-D_THREAD_SAFE)
 
-if (GCC)
+if(GCC)
   add_definitions(-fPIC)
   add_definitions(-DMONO_DLL_EXPORT)
   add_definitions(-fvisibility=hidden)
@@ -86,10 +106,13 @@ endif()
 
 set(USE_GCC_ATOMIC_OPS 1)
 set(HAVE_CLASSIC_WINAPI_SUPPORT 1)
-set(ENABLE_ILGEN 1)
 set(HAVE_MOVING_COLLECTOR 1)
 set(HAVE_CONC_GC_AS_DEFAULT 1)
 set(MONO_INSIDE_RUNTIME 1)
+
+if(ENABLE_LAZY_GC_THREAD_CREATION)
+  set(LAZY_GC_THREAD_CREATION 1)
+endif()
 
 ######################################
 # GCC CHECKS
@@ -118,8 +141,13 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
   set(HOST_DARWIN 1)
   set(PTHREAD_POINTER_ID 1)
   set(USE_MACH_SEMA 1)
+elseif(CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
+  set(HOST_WASM 1)
+  set(DISABLE_EXECUTABLES 1)
+  # FIXME: Is there a cmake option for this ?
+  set(DISABLE_SHARED_LIBS 1)
 else()
-  message(FATAL_ERROR "")
+  message(FATAL_ERROR "Host '${CMAKE_SYSTEM_NAME}' not supported.")
 endif()
 
 ######################################
@@ -132,9 +160,8 @@ set(TARGET_SYSTEM_NAME "${CMAKE_SYSTEM_NAME}")
 if(TARGET_SYSTEM_NAME STREQUAL "Darwin")
   set(TARGET_MACH 1)
   set(TARGET_OSX 1)
-  set(RID_PREFIX "osx")
-  set(CORETARGETS "-p:TargetsUnix=true -p:TargetsOSX=true")
-  set(NETCORE_HOST_PLATFORM "macos")
+elseif(TARGET_SYSTEM_NAME STREQUAL "Emscripten")
+  set(TARGET_WASM 1)
 else()
   message(FATAL_ERROR "")
 endif()
@@ -145,8 +172,10 @@ endif()
 
 if(CMAKE_SYSTEM_PROCESSOR STREQUAL "x86_64")
   set(HOST_AMD64 1)
+elseif(CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
+  # CMAKE_SYSTEM_PROCESSOR is set to x86
 else()
-  message(FATAL_ERROR "")
+  message(FATAL_ERROR "CMAKE_SYSTEM_PROCESSOR='${CMAKE_SYSTEM_PROCESSOR}' not supported.")
 endif()
 
 ######################################
@@ -160,7 +189,11 @@ if(TARGET_ARCH STREQUAL "x86_64")
   set(MONO_ARCHITECTURE "\"amd64\"")
   set(RID_SUFFIX "x64")
   set(COREARCH "x64")
+elseif(CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
+  # CMAKE_SYSTEM_PROCESSOR is set to x86
+  set(MONO_ARCHITECTURE "\"wasm\"")
 else()
+  message(FATAL_ERROR "CMAKE_SYSTEM_PROCESSOR='${CMAKE_SYSTEM_PROCESSOR}' not supported.")
   message(FATAL_ERROR "")
 endif()
 
@@ -176,6 +209,11 @@ if(TARGET_OSX)
   set(OSX_ICU_LIBRARY_PATH /usr/lib/libicucore.dylib)
   set(ICU_FLAGS "-DTARGET_UNIX -DU_DISABLE_RENAMING -Wno-reserved-id-macro -Wno-documentation -Wno-documentation-unknown-command -Wno-switch-enum -Wno-covered-switch-default -Wno-covered-switch-default -Wno-extra-semi-stmt -Wno-unknown-warning-option -Wno-deprecated-declarations")
   set(HAVE_SYS_ICU 1)
+elseif(TARGET_WASM)
+  #set(ICU_CFLAGS "-DTARGET_UNIX -DU_DISABLE_RENAMING -DHAVE_UDAT_STANDALONE_SHORTER_WEEKDAYS -DHAVE_SET_MAX_VARIABLE")
+  set(ICU_FLAGS "-DPALEXPORT=\"\" -DTARGET_UNIX -Wno-reserved-id-macro -Wno-documentation -Wno-documentation-unknown-command -Wno-switch-enum -Wno-covered-switch-default -Wno-covered-switch-default -Wno-extra-semi-stmt -Wno-unknown-warning-option")
+  set(HAVE_SYS_ICU 1)
+  set(STATIC_ICU 1)
 else()
   message(FATAL_ERROR "")
 endif()
@@ -184,32 +222,32 @@ endif()
 # EGLIB CHECKS
 ######################################
 
-set (GNUC_PRETTY)
-set (GNUC_UNUSED)
-set (BREAKPOINT "G_STMT_START { raise (SIGTRAP); } G_STMT_END")
-if (GCC)
-  set (GNUC_UNUSED "__attribute__((__unused__))")
-  set (GNUC_NORETURN "__attribute__((__noreturn__))")
-  if (CMAKE_SYSTEM_PROCESSOR MATCHES "x86|x86_64")
-	set (BREAKPOINT "G_STMT_START { __asm__ (\"int \$03\"); } G_STMT_END")
-  endif ()
-endif ()
+set(GNUC_PRETTY)
+set(GNUC_UNUSED)
+set(BREAKPOINT "G_STMT_START { raise(SIGTRAP); } G_STMT_END")
+if(GCC)
+  set(GNUC_UNUSED "__attribute__((__unused__))")
+  set(GNUC_NORETURN "__attribute__((__noreturn__))")
+  if(CMAKE_SYSTEM_PROCESSOR MATCHES "x86|x86_64")
+    set(BREAKPOINT "G_STMT_START { __asm__(\"int \$03\"); } G_STMT_END")
+  endif()
+endif()
 
-if (IS_BIG_ENDIAN)
-  set (ORDER G_BIG_ENDIAN)
-else ()
-  set (ORDER G_LITTLE_ENDIAN)
-endif ()
+if(IS_BIG_ENDIAN)
+  set(ORDER G_BIG_ENDIAN)
+else()
+  set(ORDER G_LITTLE_ENDIAN)
+endif()
 
-if (WIN32)
+if(WIN32)
   # FIXME:
-  message (FATAL_ERROR "FIXME")
-else ()
+  message(FATAL_ERROR "FIXME")
+else()
   set(PATHSEP "/")
   set(SEARCHSEP ":")
   set(OS "UNIX")
   set(PIDTYPE "int")
-endif ()
+endif()
 
 # FIXME:
 set(GSIZE_FORMAT "\"lu\"")
@@ -221,22 +259,20 @@ set(GSSIZE "ptrdiff_t")
 # END OF EGLIB CHECKS
 #
 
-TEST_BIG_ENDIAN (IS_BIG_ENDIAN)
+TEST_BIG_ENDIAN(IS_BIG_ENDIAN)
 
 # FIXME:
 set(TARGET_SIZEOF_VOID_P "${SIZEOF_VOID_P}")
 set(SIZEOF_REGISTER "${SIZEOF_VOID_P}")
 
-if (IS_BIG_ENDIAN)
+if(IS_BIG_ENDIAN)
   set(TARGET_BYTE_ORDER G_BIG_ENDIAN)
 else()
   set(TARGET_BYTE_ORDER G_LITTLE_ENDIAN)
 endif()
 
-set (RID "${RID_PREFIX}-${RID_SUFFIX}")
+add_subdirectory(mono)
 
-add_subdirectory (mono)
-
-configure_file (cmake/config.h.in config.h)
-configure_file (cmake/eglib-config.h.cmake.in mono/eglib/eglib-config.h)
-configure_file (cmake/netcore-config.make.in netcore/config.make)
+configure_file(cmake/config.h.in config.h)
+configure_file(cmake/eglib-config.h.cmake.in mono/eglib/eglib-config.h)
+configure_file(cmake/netcore-config.make.in netcore/config.make)
