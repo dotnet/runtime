@@ -145,7 +145,7 @@
     <TestEnvironment Include="jitosr_stress" TC_OnStackReplacement="1" TC_QuickJitForLoops="1" TC_OnStackReplacement_InitialCounter="1" OSR_HitLimit="1" TieredCompilation="1" />
     <TestEnvironment Include="jitpgo" TieredPGO="1" TieredCompilation="1" />
     <TestEnvironment Include="jitguardeddevirtualization" JitEnableGuardedDevirtualization="1" TieredCompilation="0" />
-    <TestEnvironment Include="jitehwritethru" EnableEhWriteThru="1" TieredCompilation="0" />
+    <TestEnvironment Include="jitehwritethrudisable" EnableEhWriteThru="0" TieredCompilation="0" />
     <TestEnvironment Include="jitobjectstackallocation" JitObjectStackAllocation="1" TieredCompilation="0" />
     <TestEnvironment Include="ilasmroundtrip" RunningIlasmRoundTrip="1" />
     <TestEnvironment Include="clrinterpreter" TieredCompilation="1" />

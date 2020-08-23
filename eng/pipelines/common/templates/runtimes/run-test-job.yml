@@ -445,7 +445,7 @@ jobs:
           - jitosr
           - jitosr_stress
           - jitguardeddevirtualization
-          - jitehwritethru
+          - jitehwritethrudisable
           - jitobjectstackallocation
           - jitpgo
         ${{ if in(parameters.testGroup, 'ilasm') }}:
