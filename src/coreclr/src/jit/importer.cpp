@@ -4173,13 +4173,9 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                     {
                         if (lookupNamedIntrinsic(call->gtCallMethHnd) == NI_System_Threading_Thread_get_CurrentThread)
                         {
-                            impPopStack(); // drop GT_RET_EXPR
-
-                            // should we drop the call this GT_RET_EXPR refers to?
-                            // (it's Thread:InitializeCurrentThread())
-                            // or we should make sure nobody uses it first?
+                            // drop get_CurrentThread() call
+                            impPopStack();
                             call->ReplaceWith(gtNewNothingNode(), this);
-
                             retNode = gtNewHelperCallNode(CORINFO_HELP_GETCURRENTMANAGEDTHREADID, TYP_INT);
                         }
                     }
