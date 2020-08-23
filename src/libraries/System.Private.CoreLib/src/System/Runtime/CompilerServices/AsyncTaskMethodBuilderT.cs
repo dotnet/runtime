@@ -407,21 +407,18 @@ namespace System.Runtime.CompilerServices
                                 edi = ExceptionDispatchInfo.Capture(ex);
                             }
 
-                            // Enregister references as they have been stack spilled due to crossing EH.
-                            Thread thread = currentThread;
-                            SynchronizationContext? syncCtx = previousSyncCtx;
-                            if (thread._executionContext == null)
+                            if (currentThread._executionContext == null)
                             {
-                                if (thread._synchronizationContext != syncCtx)
+                                if (currentThread._synchronizationContext != previousSyncCtx)
                                 {
-                                    thread._synchronizationContext = syncCtx;
+                                    currentThread._synchronizationContext = previousSyncCtx;
                                 }
 
                                 edi?.Throw();
                             }
                             else
                             {
-                                ExecutionContext.RestoreDefaultContextThrowIfNeeded(thread, syncCtx, edi);
+                                ExecutionContext.RestoreDefaultContextThrowIfNeeded(currentThread, previousSyncCtx, edi);
                             }
                         }
                         else
