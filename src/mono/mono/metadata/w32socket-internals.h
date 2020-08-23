@@ -20,7 +20,7 @@
 #include <mono/utils/w32api.h>
 
 #ifndef HAVE_SOCKLEN_T
-#define socklen_t int
+#define socklen_t unsigned int
 #endif
 
 #ifndef HOST_WIN32
@@ -64,7 +64,7 @@ SOCKET
 mono_w32socket_accept (SOCKET s, struct sockaddr *addr, socklen_t *addrlen, gboolean blocking);
 
 int
-mono_w32socket_connect (SOCKET s, const struct sockaddr *name, int namelen, gboolean blocking);
+mono_w32socket_connect (SOCKET s, const struct sockaddr *name, socklen_t namelen, gboolean blocking);
 
 int
 mono_w32socket_recv (SOCKET s, char *buf, int len, int flags, gboolean blocking);
