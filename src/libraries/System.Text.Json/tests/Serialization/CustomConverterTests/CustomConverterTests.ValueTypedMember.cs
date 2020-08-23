@@ -31,9 +31,23 @@ namespace System.Text.Json.Serialization.Tests
                     return null;
                 }
 
-                return value.IndexOf("ValueTyped", StringComparison.Ordinal) >= 0
-                    ? new ValueTypedMember(value)
-                    : new RefTypedMember(value);
+                if (value.IndexOf("ValueTyped", StringComparison.Ordinal) >= 0)
+                {
+                    return new ValueTypedMember(value);
+                }
+                if (value.IndexOf("RefTyped", StringComparison.Ordinal) >= 0)
+                {
+                    return new RefTypedMember(value);
+                }
+                if (value.IndexOf("OtherVT", StringComparison.Ordinal) >= 0)
+                {
+                    return new OtherVTMember(value);
+                }
+                if (value.IndexOf("OtherRT", StringComparison.Ordinal) >= 0)
+                {
+                    return new OtherRTMember(value);
+                }
+                throw new JsonException();
             }
 
             public override void Write(Utf8JsonWriter writer, IMemberInterface value, JsonSerializerOptions options)
@@ -68,9 +82,23 @@ namespace System.Text.Json.Serialization.Tests
                     return null;
                 }
 
-                return value.IndexOf("ValueTyped", StringComparison.Ordinal) >= 0
-                    ? new ValueTypedMember(value)
-                    : new RefTypedMember(value);
+                if (value.IndexOf("ValueTyped", StringComparison.Ordinal) >= 0)
+                {
+                    return new ValueTypedMember(value);
+                }
+                if (value.IndexOf("RefTyped", StringComparison.Ordinal) >= 0)
+                {
+                    return new RefTypedMember(value);
+                }
+                if (value.IndexOf("OtherVT", StringComparison.Ordinal) >= 0)
+                {
+                    return new OtherVTMember(value);
+                }
+                if (value.IndexOf("OtherRT", StringComparison.Ordinal) >= 0)
+                {
+                    return new OtherRTMember(value);
+                }
+                throw new JsonException();
             }
 
             public override void Write(Utf8JsonWriter writer, object value, JsonSerializerOptions options)
@@ -79,6 +107,86 @@ namespace System.Text.Json.Serialization.Tests
 
                 JsonSerializer.Serialize<string>(writer, value == null ? null : ((IMemberInterface)value).Value, options);
             }
+        }
+
+        [Fact]
+        public static void AssignmentToValueTypedMemberInterface()
+        {
+            var converter = new ValueTypeToInterfaceConverter();
+            var options = new JsonSerializerOptions { IncludeFields = true };
+            options.Converters.Add(converter);
+
+            Exception ex;
+            // Invalid cast OtherVTMember
+            ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<TestClassWithValueTypedMember>(@"{""MyValueTypedProperty"":""OtherVTProperty""}", options));
+            ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<TestClassWithValueTypedMember>(@"{""MyValueTypedField"":""OtherVTField""}", options));
+            // Invalid cast OtherRTMember
+            ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<TestClassWithValueTypedMember>(@"{""MyValueTypedProperty"":""OtherRTProperty""}", options));
+            ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<TestClassWithValueTypedMember>(@"{""MyValueTypedField"":""OtherRTField""}", options));
+            // Invalid null
+            ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<TestClassWithValueTypedMember>(@"{""MyValueTypedProperty"":null}", options));
+            ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<TestClassWithValueTypedMember>(@"{""MyValueTypedField"":null}", options));
+        }
+
+        [Fact]
+        public static void AssignmentToValueTypedMemberObject()
+        {
+            var converter = new ValueTypeToObjectConverter();
+            var options = new JsonSerializerOptions { IncludeFields = true };
+            options.Converters.Add(converter);
+
+            Exception ex;
+            // Invalid cast OtherVTMember
+            ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<TestClassWithValueTypedMember>(@"{""MyValueTypedProperty"":""OtherVTProperty""}", options));
+            ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<TestClassWithValueTypedMember>(@"{""MyValueTypedField"":""OtherVTField""}", options));
+            // Invalid cast OtherRTMember
+            ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<TestClassWithValueTypedMember>(@"{""MyValueTypedProperty"":""OtherRTProperty""}", options));
+            ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<TestClassWithValueTypedMember>(@"{""MyValueTypedField"":""OtherRTField""}", options));
+            // Invalid null
+            ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<TestClassWithValueTypedMember>(@"{""MyValueTypedProperty"":null}", options));
+            ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<TestClassWithValueTypedMember>(@"{""MyValueTypedField"":null}", options));
+        }
+
+        [Fact]
+        public static void AssignmentToNullableValueTypedMemberInterface()
+        {
+            var converter = new ValueTypeToInterfaceConverter();
+            var options = new JsonSerializerOptions { IncludeFields = true };
+            options.Converters.Add(converter);
+
+            TestClassWithNullableValueTypedMember obj;
+            Exception ex;
+            // Invalid cast OtherVTMember
+            ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<TestClassWithNullableValueTypedMember>(@"{""MyValueTypedProperty"":""OtherVTProperty""}", options));
+            ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<TestClassWithNullableValueTypedMember>(@"{""MyValueTypedField"":""OtherVTField""}", options));
+            // Invalid cast OtherRTMember
+            ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<TestClassWithNullableValueTypedMember>(@"{""MyValueTypedProperty"":""OtherRTProperty""}", options));
+            ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<TestClassWithNullableValueTypedMember>(@"{""MyValueTypedField"":""OtherRTField""}", options));
+            // Valid null
+            obj = JsonSerializer.Deserialize<TestClassWithNullableValueTypedMember>(@"{""MyValueTypedProperty"":null,""MyValueTypedField"":null}", options);
+            Assert.Null(obj.MyValueTypedProperty);
+            Assert.Null(obj.MyValueTypedField);
+        }
+
+        [Fact]
+        public static void AssignmentToNullableValueTypedMemberObject()
+        {
+            var converter = new ValueTypeToObjectConverter();
+            var options = new JsonSerializerOptions { IncludeFields = true };
+            options.Converters.Add(converter);
+
+            TestClassWithNullableValueTypedMember obj;
+            Exception ex;
+            // Invalid cast OtherVTMember
+            ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<TestClassWithNullableValueTypedMember>(@"{""MyValueTypedProperty"":""OtherVTProperty""}", options));
+            ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<TestClassWithNullableValueTypedMember>(@"{""MyValueTypedField"":""OtherVTField""}", options));
+            // Invalid cast OtherRTMember
+            ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<TestClassWithNullableValueTypedMember>(@"{""MyValueTypedProperty"":""OtherRTProperty""}", options));
+            ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<TestClassWithNullableValueTypedMember>(@"{""MyValueTypedField"":""OtherRTField""}", options));
+            // Valid null
+            obj = JsonSerializer.Deserialize<TestClassWithNullableValueTypedMember>(@"{""MyValueTypedProperty"":null,""MyValueTypedField"":null}", options);
+            Assert.Null(obj.MyValueTypedProperty);
+            Assert.Null(obj.MyValueTypedField);
         }
 
         [Fact]

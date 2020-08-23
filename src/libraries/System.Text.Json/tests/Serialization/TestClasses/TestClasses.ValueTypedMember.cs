@@ -76,6 +76,16 @@ namespace System.Text.Json.Serialization.Tests
         }
     }
 
+    public struct OtherVTMember : IMemberInterface
+    {
+        public string Value { get; }
+
+        public OtherVTMember(string value)
+        {
+            Value = value;
+        }
+    }
+
     public class RefTypedMember : IMemberInterface
     {
         public string Value { get; }
@@ -85,4 +95,15 @@ namespace System.Text.Json.Serialization.Tests
             Value = value;
         }
     }
+
+    public class OtherRTMember : IMemberInterface
+    {
+        public string Value { get; }
+
+        public OtherRTMember(string value)
+        {
+            Value = value;
+        }
+    }
+
 }

@@ -8,7 +8,7 @@ namespace System.Text.Json.Serialization.Tests
     public static partial class CustomConverterTests
     {
         [Fact]
-        public static void InvalidCastPropertyFails()
+        public static void InvalidCastRefTypedPropertyFails()
         {
             var obj = new ObjectWrapperWithProperty
             {
@@ -21,11 +21,11 @@ namespace System.Text.Json.Serialization.Tests
 
             var json = JsonSerializer.Serialize(obj);
 
-            Assert.Throws<InvalidCastException>(() => JsonSerializer.Deserialize<ObjectWrapperWithProperty>(json));
+            var ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<ObjectWrapperWithProperty>(json));
         }
 
         [Fact]
-        public static void InvalidCastFieldFails()
+        public static void InvalidCastRefTypedFieldFails()
         {
             var options = new JsonSerializerOptions { IncludeFields = true };
             var obj = new ObjectWrapperWithField
@@ -39,7 +39,7 @@ namespace System.Text.Json.Serialization.Tests
 
             var json = JsonSerializer.Serialize(obj);
 
-            Assert.Throws<InvalidCastException>(() => JsonSerializer.Deserialize<ObjectWrapperWithField>(json, options));
+            var ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<ObjectWrapperWithField>(json, options));
         }
 
         /// <summary>
@@ -109,14 +109,14 @@ namespace System.Text.Json.Serialization.Tests
         public static void CastBasePropertyFails()
         {
             var options = new JsonSerializerOptions { IncludeFields = true };
-            Assert.Throws<InvalidCastException>(() => JsonSerializer.Deserialize<ObjectWrapperDerivedWithProperty>(@"{""DerivedProperty"":""""}", options));
+            var ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<ObjectWrapperDerivedWithProperty>(@"{""DerivedProperty"":""""}", options));
         }
 
         [Fact]
         public static void CastBaseFieldFails()
         {
             var options = new JsonSerializerOptions { IncludeFields = true };
-            Assert.Throws<InvalidCastException>(() => JsonSerializer.Deserialize<ObjectWrapperDerivedWithField>(@"{""DerivedField"":""""}", options));
+            var ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<ObjectWrapperDerivedWithField>(@"{""DerivedField"":""""}", options));
         }
 
         /// <summary>

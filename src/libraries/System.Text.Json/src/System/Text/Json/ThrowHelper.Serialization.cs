@@ -51,6 +51,24 @@ namespace System.Text.Json
 
         [DoesNotReturn]
         [MethodImpl(MethodImplOptions.NoInlining)]
+        public static void ThrowJsonException_DeserializeUnableToAssignValue(Type typeOfValue, string memberName, Type declaredType)
+        {
+            var ex = new JsonException(SR.Format(SR.DeserializeUnableToAssignValue, typeOfValue, memberName, declaredType));
+            ex.AppendPathInformation = true;
+            throw ex;
+        }
+
+        [DoesNotReturn]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static void ThrowJsonException_DeserializeUnableToAssignNull(string memberName, Type declaredType)
+        {
+            var ex = new JsonException(SR.Format(SR.DeserializeUnableToAssignNull, memberName, declaredType));
+            ex.AppendPathInformation = true;
+            throw ex;
+        }
+
+        [DoesNotReturn]
+        [MethodImpl(MethodImplOptions.NoInlining)]
         public static void ThrowJsonException_SerializationConverterRead(JsonConverter? converter)
         {
             var ex = new JsonException(SR.Format(SR.SerializationConverterRead, converter));

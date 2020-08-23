@@ -31,7 +31,7 @@ namespace System.Text.Json
         /// <remarks>
         /// Other than <see cref="Type.IsAssignableFrom(Type)"/> also returns <see langword="true" /> when <paramref name="type"/> is of type <see cref="Nullable{T}"/> where <see langword="T" /> : <see langword="IInterface" /> and <paramref name="from"/> is of type <see langword="IInterface" />.
         /// </remarks>
-        public static bool IsConvertibleFrom(this Type type, Type from)
+        public static bool IsAssignableFromInternal(this Type type, Type from)
         {
             if (IsNullableValueType(from) && type.IsInterface)
             {
