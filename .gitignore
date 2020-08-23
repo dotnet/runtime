@@ -356,3 +356,15 @@ src/coreclr/src/System.Private.CoreLib/common
 # Mono Wasm-specific excludes
 src/mono/wasm/emsdk/
 src/mono/wasm/.stamp-wasm-install-and-select*
+/src/coreclr/out/build/x64-Debug (default)/.cmake/api/v1/query/client-MicrosoftVS/query.json
+/src/coreclr/out/build/x64-Debug (default)/VSInheritEnvironments.txt
+/src/installer/corehost/out/build/x64-Debug (default)/VSInheritEnvironments.txt
+/src/installer/corehost/out/build/x64-Debug (default)/.cmake/api/v1/query/client-MicrosoftVS/query.json
+/src/libraries/Native/Unix/out/build/x64-Debug (default)/.cmake/api/v1/query/client-MicrosoftVS/query.json
+/src/libraries/Native/Unix/out/build/x64-Debug (default)/VSInheritEnvironments.txt
+/src/libraries/Native/Windows/out/build/x64-Debug (default)/.cmake/api/v1/query/client-MicrosoftVS/query.json
+/src/libraries/Native/Windows/out/build/x64-Debug (default)/VSInheritEnvironments.txt
+/src/mono/out/build/x64-Debug (default)/.cmake/api/v1/query/client-MicrosoftVS/query.json
+/src/mono/out/build/x64-Debug (default)/VSInheritEnvironments.txt
+/src/tests/out/build/x64-Debug (default)/.cmake/api/v1/query/client-MicrosoftVS/query.json
+/src/tests/out/build/x64-Debug (default)/VSInheritEnvironments.txt

@@ -36,6 +36,7 @@ namespace System
         private readonly T[]? _array; // Do not rename (binary serialization)
         private readonly int _offset; // Do not rename (binary serialization)
         private readonly int _count; // Do not rename (binary serialization)
+        private readonly bool _isLastElementReachable; //TODO: ^^^ ?
 
         public ArraySegment(T[] array)
         {
@@ -45,6 +46,7 @@ namespace System
             _array = array;
             _offset = 0;
             _count = array.Length;
+            _isLastElementReachable = true;
         }
 
         public ArraySegment(T[] array, int offset, int count)
@@ -58,6 +60,15 @@ namespace System
             _array = array;
             _offset = offset;
             _count = count;
+            _isLastElementReachable = true;
+        }
+
+        private ArraySegment(T[] array, int offset, int count, bool isLastElementReachable)
+        {
+            _array = array;
+            _offset = offset;
+            _count = count;
+            _isLastElementReachable = isLastElementReachable;
         }
 
         public T[]? Array => _array;
@@ -65,6 +76,8 @@ namespace System
         public int Offset => _offset;
 
         public int Count => _count;
+
+        public bool IsSlicedToEnd => _isLastElementReachable != false && _count == 0;
 
         public T this[int index]
         {
@@ -133,7 +146,7 @@ namespace System
                 ThrowHelper.ThrowArgumentOutOfRange_IndexException();
             }
 
-            return new ArraySegment<T>(_array!, _offset + index, _count - index);
+            return new ArraySegment<T>(_array!, _offset + index, _count - index, _isLastElementReachable);
         }
 
         public ArraySegment<T> Slice(int index, int count)
@@ -145,7 +158,7 @@ namespace System
                 ThrowHelper.ThrowArgumentOutOfRange_IndexException();
             }
 
-            return new ArraySegment<T>(_array!, _offset + index, count);
+            return new ArraySegment<T>(_array!, _offset + index, count, _isLastElementReachable != false && _offset + index + count == _offset + _count);
         }
 
         public T[] ToArray()
