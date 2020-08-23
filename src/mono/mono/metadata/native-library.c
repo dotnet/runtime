@@ -28,8 +28,10 @@ typedef enum
 	DLLIMPORTSEARCHPATH_SAFE_DIRECTORIES = 0x1000,
 	DLLIMPORTSEARCHPATH_ASSEMBLY_DIRECTORY = 0x2, // search the assembly directory first regardless of platform, not passed on to LoadLibraryEx
 } DllImportSearchPath;
-//static const int DLLIMPORTSEARCHPATH_LOADLIBRARY_FLAG_MASK = DLLIMPORTSEARCHPATH_USE_DLL_DIRECTORY_FOR_DEPENDENCIES | DLLIMPORTSEARCHPATH_APPLICATION_DIRECTORY |
-//                                                             DLLIMPORTSEARCHPATH_USER_DIRECTORIES | DLLIMPORTSEARCHPATH_SYSTEM32 | DLLIMPORTSEARCHPATH_SAFE_DIRECTORIES;
+#ifdef HOST_WIN32
+static const int DLLIMPORTSEARCHPATH_LOADLIBRARY_FLAG_MASK = DLLIMPORTSEARCHPATH_USE_DLL_DIRECTORY_FOR_DEPENDENCIES | DLLIMPORTSEARCHPATH_APPLICATION_DIRECTORY |
+                                                             DLLIMPORTSEARCHPATH_USER_DIRECTORIES | DLLIMPORTSEARCHPATH_SYSTEM32 | DLLIMPORTSEARCHPATH_SAFE_DIRECTORIES;
+#endif
 
 // This lock may be taken within an ALC lock, and should never be the other way around.
 static MonoCoopMutex native_library_module_lock;
@@ -490,18 +492,28 @@ netcore_check_blocklist (MonoDl *module)
 	return g_hash_table_contains (native_library_module_blocklist, module);
 }
 
+static int
+convert_dllimport_flags (int flags)
+{
+#ifdef HOST_WIN32
+	return flags & DLLIMPORTSEARCHPATH_LOADLIBRARY_FLAG_MASK;
+#else
+	// DllImportSearchPath is Windows-only, other than DLLIMPORTSEARCHPATH_ASSEMBLY_DIRECTORY
+	return 0;
+#endif
+}
+
 static MonoDl *
-netcore_probe_for_module_variations (const char *mdirname, const char *file_name)
+netcore_probe_for_module_variations (const char *mdirname, const char *file_name, int raw_flags)
 {
 	void *iter = NULL;
 	char *full_name;
 	MonoDl *module = NULL;
 
-	// This does not actually mirror CoreCLR's algorithm; if that becomes a problem, potentially use theirs
 	// FIXME: this appears to search *.dylib twice for some reason
 	while ((full_name = mono_dl_build_path (mdirname, file_name, &iter)) && module == NULL) {
 		char *error_msg;
-		module = mono_dl_open (full_name, MONO_DL_LAZY, &error_msg);
+		module = mono_dl_open_full (full_name, MONO_DL_LAZY, raw_flags, &error_msg);
 		if (!module) {
 			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_DLLIMPORT, "DllImport error loading library '%s': '%s'.", full_name, error_msg);
 			g_free (error_msg);
@@ -517,19 +529,23 @@ static MonoDl *
 netcore_probe_for_module (MonoImage *image, const char *file_name, int flags)
 {
 	MonoDl *module = NULL;
+	int lflags = convert_dllimport_flags (flags);
+
+	// TODO: this algorithm doesn't quite match CoreCLR, so respecting DLLIMPORTSEARCHPATH_LEGACY_BEHAVIOR makes little sense
+	// If the difference becomes a problem, overhaul this algorithm to match theirs exactly
 
 	// Try without any path additions
-	module = netcore_probe_for_module_variations (NULL, file_name);
+	module = netcore_probe_for_module_variations (NULL, file_name, lflags);
 
 	// Check the NATIVE_DLL_SEARCH_DIRECTORIES
 	for (int i = 0; i < pinvoke_search_directories_count && module == NULL; ++i)
-		module = netcore_probe_for_module_variations (pinvoke_search_directories[i], file_name);
+		module = netcore_probe_for_module_variations (pinvoke_search_directories[i], file_name, lflags);
 
 	// Check the assembly directory if the search flag is set and the image exists
 	if (flags & DLLIMPORTSEARCHPATH_ASSEMBLY_DIRECTORY && image != NULL && module == NULL) {
 		char *mdirname = g_path_get_dirname (image->filename);
 		if (mdirname)
-			module = netcore_probe_for_module_variations (mdirname, file_name);
+			module = netcore_probe_for_module_variations (mdirname, file_name, lflags);
 		g_free (mdirname);
 	}
 
