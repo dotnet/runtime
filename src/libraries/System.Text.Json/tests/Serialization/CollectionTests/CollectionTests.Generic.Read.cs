@@ -258,6 +258,17 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
+        public static void ReadGenericStructIList()
+        {
+            string json = $"{{\"StructList\":[10,20,30]}}";
+            StructListWrapper wrapper = JsonSerializer.Deserialize<StructListWrapper>(json);
+            Assert.Equal(3, wrapper.StructList.Count);
+            Assert.Equal(10, wrapper.StructList[0]);
+            Assert.Equal(20, wrapper.StructList[1]);
+            Assert.Equal(30, wrapper.StructList[2]);
+        }
+
+        [Fact]
         public static void ReadGenericICollectionOfGenericICollection()
         {
             ICollection<ICollection<int>> result = JsonSerializer.Deserialize<ICollection<ICollection<int>>>(Encoding.UTF8.GetBytes(@"[[1,2],[3,4]]"));

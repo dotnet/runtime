@@ -117,6 +117,7 @@
     <Compile Include="Serialization\TestClasses\TestClasses.Constructor.cs" />
     <Compile Include="Serialization\TestClasses\TestClasses.cs" />
     <Compile Include="Serialization\TestClasses\TestClasses.GenericCollections.cs" />
+    <Compile Include="Serialization\TestClasses\TestClasses.GenericCollectionsStruct.cs" />
     <Compile Include="Serialization\TestClasses\TestClasses.ImmutableCollections.cs" />
     <Compile Include="Serialization\TestClasses\TestClasses.NonGenericCollections.cs" />
     <Compile Include="Serialization\TestClasses\TestClasses.Polymorphic.cs" />

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Text.Json.Serialization.Converters
 {
@@ -12,9 +13,18 @@ namespace System.Text.Json.Serialization.Converters
         : IEnumerableDefaultConverter<TCollection, TElement>
         where TCollection : IList<TElement>
     {
+        // Used to store elements when TCollection is ValueType
+        [MaybeNull]
+        private TCollection _listValues;
+
         protected override void Add(in TElement value, ref ReadStack state)
         {
-            ((TCollection)state.Current.ReturnValue!).Add(value);
+            if (_listValues != null)
+            {
+                _listValues.Add(value);
+                state.Current.ReturnValue = _listValues;
+            }
+            else ((TCollection)state.Current.ReturnValue!).Add(value);
         }
 
         protected override void CreateCollection(ref Utf8JsonReader reader, ref ReadStack state, JsonSerializerOptions options)
@@ -45,6 +55,11 @@ namespace System.Text.Json.Serialization.Converters
                 }
 
                 state.Current.ReturnValue = returnValue;
+
+                if (TypeToConvert.IsValueType)
+                {
+                    _listValues = returnValue;
+                }
             }
         }
 
