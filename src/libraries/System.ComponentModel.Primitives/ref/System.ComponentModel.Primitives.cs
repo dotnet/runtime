@@ -158,6 +158,19 @@ namespace System.ComponentModel
         public override int GetHashCode() { throw null; }
         public override bool IsDefaultAttribute() { throw null; }
     }
+    [System.AttributeUsageAttribute(System.AttributeTargets.All, AllowMultiple=true, Inherited=true)]
+    public sealed partial class EditorAttribute : System.Attribute
+    {
+        public EditorAttribute() { }
+        public EditorAttribute(string typeName, string? baseTypeName) { }
+        public EditorAttribute(string typeName, System.Type baseType) { }
+        public EditorAttribute(System.Type type, System.Type baseType) { }
+        public string? EditorBaseTypeName { get { throw null; } }
+        public string EditorTypeName { get { throw null; } }
+        public override object TypeId { get { throw null; } }
+        public override bool Equals(object? obj) { throw null; }
+        public override int GetHashCode() { throw null; }
+    }
     public sealed partial class EventHandlerList : System.IDisposable
     {
         public EventHandlerList() { }
@@ -167,8 +180,8 @@ namespace System.ComponentModel
         public void Dispose() { }
         public void RemoveHandler(object key, System.Delegate? value) { }
     }
-    [System.ComponentModel.DesignerAttribute("System.ComponentModel.Design.ComponentDesigner, System.Design, Version=4.0.0.0, PublicKeyToken=b03f5f7f11d50a3a")]
-    [System.ComponentModel.DesignerAttribute("System.Windows.Forms.Design.ComponentDocumentDesigner, System.Design, Version=4.0.0.0, PublicKeyToken=b03f5f7f11d50a3a")]
+    [System.ComponentModel.DesignerAttribute("System.ComponentModel.Design.ComponentDesigner, System.Design, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
+    [System.ComponentModel.DesignerAttribute("System.Windows.Forms.Design.ComponentDocumentDesigner, System.Design, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
     [System.ComponentModel.TypeConverterAttribute("System.ComponentModel.ComponentConverter, System, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public partial interface IComponent : System.IDisposable
     {
@@ -310,5 +323,18 @@ namespace System.ComponentModel
         public override bool Equals(object? obj) { throw null; }
         public override int GetHashCode() { throw null; }
         public override bool IsDefaultAttribute() { throw null; }
+    }
+}
+namespace System.ComponentModel.Design.Serialization
+{
+    [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Interface, AllowMultiple=true, Inherited=true)]
+    public sealed partial class DesignerSerializerAttribute : System.Attribute
+    {
+        public DesignerSerializerAttribute(string? serializerTypeName, string? baseSerializerTypeName) { }
+        public DesignerSerializerAttribute(string? serializerTypeName, System.Type baseSerializerType) { }
+        public DesignerSerializerAttribute(System.Type serializerType, System.Type baseSerializerType) { }
+        public string? SerializerBaseTypeName { get { throw null; } }
+        public string? SerializerTypeName { get { throw null; } }
+        public override object TypeId { get { throw null; } }
     }
 }

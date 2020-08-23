@@ -818,5 +818,23 @@ namespace System.PrivateUri.Tests
             Assert.Equal(absoluteUri, uri2.AbsoluteUri);
             Assert.Equal(localPath, uri2.LocalPath);
         }
+
+        public static IEnumerable<object[]> ZeroPortIsParsedForBothKnownAndUnknownSchemes_TestData()
+        {
+            yield return new object[] { "http://example.com:0", 0, false };
+            yield return new object[] { "http://example.com", 80, true };
+            yield return new object[] { "rtsp://example.com:0", 0, false };
+            yield return new object[] { "rtsp://example.com", -1, true };
+        }
+
+        [Theory]
+        [MemberData(nameof(ZeroPortIsParsedForBothKnownAndUnknownSchemes_TestData))]
+        public static void ZeroPortIsParsedForBothKnownAndUnknownSchemes(string uriString, int port, bool isDefaultPort)
+        {
+            Uri.TryCreate(uriString, UriKind.Absolute, out var uri);
+            Assert.Equal(port, uri.Port);
+            Assert.Equal(isDefaultPort, uri.IsDefaultPort);
+            Assert.Equal(uriString + "/", uri.ToString());
+        }
     }
 }

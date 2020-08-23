@@ -94,12 +94,10 @@ int CacheLineSize;
 #if defined(__FreeBSD__)
 #include <sys/types.h>
 #include <sys/param.h>
+#include <sys/sysctl.h>
 #endif
 #if HAVE_GETAUXVAL
 #include <sys/auxv.h>
-#endif
-#if HAVE_SYS_SYSCTL_H || defined(__FreeBSD__)
-#include <sys/sysctl.h>
 #endif
 
 #include <algorithm>
@@ -1378,7 +1376,7 @@ bool GetEntrypointExecutableAbsolutePath(PathCharString& entrypointExecutable)
         {
             entrypointExecutable.Set(cwd, strlen(cwd));
             entrypointExecutable.Append('/');
-            entrypointExecutable.Append(path);
+            entrypointExecutable.Append(path, strlen(path));
 
             result = true;
             free(cwd);
