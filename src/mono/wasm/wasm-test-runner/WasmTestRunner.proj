@@ -28,6 +28,7 @@
       MainAssembly="$(TestAssembly)"
       MainJS="$(CORE_ROOT)\runtime-test\runtime-test.js"
       AssemblySearchPaths="@(AssemblySearchPaths)"
+      SkipMissingAssemblies="True"
       />
 
 
