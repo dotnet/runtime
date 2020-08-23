@@ -434,55 +434,42 @@ bool IpcStream::Read(void *lpBuffer, const uint32_t nBytesToRead, uint32_t &nByt
 
     if (!fSuccess)
     {
-        DWORD dwReadError = GetLastError();
-        if (dwReadError == ERROR_IO_PENDING)
+        // if we're waiting infinitely, only make one syscall
+        if (timeoutMs == InfiniteTimeout)
         {
-            // we are using Overlapped IO so
-            // this is expected and not an error
-            fSuccess = GetOverlappedResultEx(_hPipe,
-                                            overlap,
-                                            &nNumberOfBytesRead,
-                                            timeoutMs,
-                                            false) != 0;
-            if (!fSuccess)
-            {
-                DWORD dwOverlapError = GetLastError();
-                switch (dwOverlapError)
-                {
-                    case ERROR_IO_INCOMPLETE:
-                        // should only happen if timeout is 0
-                        // this isn't technically an error, but the user requested a 0 timeout and the work hasn't been
-                        // completed yet, so we'll cancel.
-                    case WAIT_TIMEOUT:
-                        // We didn't complete the write in time... cancel the IO
-                        {
-                            fSuccess = CancelIoEx(_hPipe, overlap) != 0;
-                            if (!fSuccess)
-                            {
-                                DWORD dwCancelError = GetLastError();
-                            }
-                            else
-                            {
-                                fSuccess = GetOverlappedResult(_hPipe, overlap, &nNumberOfBytesRead, false) != 0;
-                                // failure either means we successfully cancelled the IO or something else went wrong.
-                                // not worth checking since we can't recover either way.
-                            }
-                        }
-                        break;
-                    case WAIT_IO_COMPLETION:
-                        // We aren't using IO Completion ports so we shouldn't see this...
-                        _ASSERTE(!"IO Completion error when not using IO Completion Ports");
-                    default:
-                        // unrecoverable errors
-                        _ASSERTE(!"IpcStream::Read - Unrecoverable error from GetOverlappedResult");
-                        break;
-                }
-            }
+            fSuccess = GetOverlappedResult(_hPipe,              // pipe
+                                           overlap,             // overlapped
+                                           &nNumberOfBytesRead, // out actual number of bytes read
+                                           true) != 0;          // block until async IO completes
         }
         else
         {
-            // Other errors are unrecoverable and we should fall through to return failure
-            _ASSERTE(!"IpcStream::Read - Unrecoverable error from ReadFile");
+            DWORD dwError = GetLastError();
+            if (dwError == ERROR_IO_PENDING)
+            {
+                // Wait on overlapped IO event (triggers when async IO is complete regardless of success)
+                // or timeout
+                DWORD dwWait = WaitForSingleObject(_oOverlap.hEvent, (DWORD)timeoutMs);
+                if (dwWait == WAIT_OBJECT_0)
+                {
+                    // async IO compelted, get the result
+                    fSuccess = GetOverlappedResult(_hPipe,              // pipe
+                                                   overlap,             // overlapped
+                                                   &nNumberOfBytesRead, // out actual number of bytes read
+                                                   true) != 0;          // block until async IO completes
+                }
+                else
+                {
+                    // We either timed out or something else went wrong.
+                    // For any error, attempt to cancel IO and ensure the cancel happened
+                    if (CancelIoEx(_hPipe, overlap) != 0)
+                    {
+                        // check if the async write beat the cancellation
+                        fSuccess = GetOverlappedResult(_hPipe, overlap, &nNumberOfBytesRead, true) != 0;
+                        // Failure here isn't recoverable, so return as such
+                    }
+                }
+            }
         }
     }
 
@@ -505,55 +492,42 @@ bool IpcStream::Write(const void *lpBuffer, const uint32_t nBytesToWrite, uint32
 
     if (!fSuccess)
     {
-        DWORD dwReadError = GetLastError();
-        if (dwReadError == ERROR_IO_PENDING)
+        // if we're waiting infinitely, only make one syscall
+        if (timeoutMs == InfiniteTimeout)
         {
-            // we are using Overlapped IO so
-            // this is expected and not an error
-            fSuccess = GetOverlappedResultEx(_hPipe,
-                                            overlap,
-                                            &nNumberOfBytesWritten,
-                                            timeoutMs,
-                                            false) != 0;
-            if (!fSuccess)
-            {
-                DWORD dwOverlapError = GetLastError();
-                switch (dwOverlapError)
-                {
-                    case ERROR_IO_INCOMPLETE:
-                        // should only happen if timeout is 0
-                        // this isn't technically an error, but the user requested a 0 timeout and the work hasn't been
-                        // completed yet, so we'll cancel.
-                    case WAIT_TIMEOUT:
-                        // We didn't complete the write in time... cancel the IO
-                        {
-                            fSuccess = CancelIoEx(_hPipe, overlap) != 0;
-                            if (!fSuccess)
-                            {
-                                DWORD dwCancelError = GetLastError();
-                            }
-                            else
-                            {
-                                fSuccess = GetOverlappedResult(_hPipe, overlap, &nNumberOfBytesWritten, false) != 0;
-                                // failure either means we successfully cancelled the IO or something else went wrong.
-                                // not worth checking since we can't recover either way.
-                            }
-                        }
-                        break;
-                    case WAIT_IO_COMPLETION:
-                        // We aren't using IO Completion ports so we shouldn't see this...
-                        _ASSERTE(!"IO Completion error when not using IO Completion Ports");
-                    default:
-                        // unrecoverable errors
-                        _ASSERTE(!"IpcStream::Write - Unrecoverable error from GetOverlappedResult");
-                        break;
-                }
-            }
+            fSuccess = GetOverlappedResult(_hPipe,                 // pipe
+                                           overlap,                // overlapped
+                                           &nNumberOfBytesWritten, // out actual number of bytes written
+                                           true) != 0;             // block until async IO completes
         }
         else
         {
-            // Other errors are unrecoverable and we should fall through to return failure
-            _ASSERTE(!"IpcStream::Write - Unrecoverable error from WriteFile");
+            DWORD dwError = GetLastError();
+            if (dwError == ERROR_IO_PENDING)
+            {
+                // Wait on overlapped IO event (triggers when async IO is complete regardless of success)
+                // or timeout
+                DWORD dwWait = WaitForSingleObject(_oOverlap.hEvent, (DWORD)timeoutMs);
+                if (dwWait == WAIT_OBJECT_0)
+                {
+                    // async IO compelted, get the result
+                    fSuccess = GetOverlappedResult(_hPipe,                 // pipe
+                                                   overlap,                // overlapped
+                                                   &nNumberOfBytesWritten, // out actual number of bytes written
+                                                   true) != 0;             // block until async IO completes
+                }
+                else
+                {
+                    // We either timed out or something else went wrong.
+                    // For any error, attempt to cancel IO and ensure the cancel happened
+                    if (CancelIoEx(_hPipe, overlap) != 0)
+                    {
+                        // check if the async write beat the cancellation
+                        fSuccess = GetOverlappedResult(_hPipe, overlap, &nNumberOfBytesWritten, true) != 0;
+                        // Failure here isn't recoverable, so return as such
+                    }
+                }
+            }
         }
     }
 
