@@ -2115,6 +2115,7 @@ namespace System.Data.Common
         protected virtual void InitializeBatching() { }
         protected virtual void OnRowUpdated(System.Data.Common.RowUpdatedEventArgs value) { }
         protected virtual void OnRowUpdating(System.Data.Common.RowUpdatingEventArgs value) { }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         object System.ICloneable.Clone() { throw null; }
         protected virtual void TerminateBatching() { }
         public int Update(System.Data.DataRow[] dataRows) { throw null; }

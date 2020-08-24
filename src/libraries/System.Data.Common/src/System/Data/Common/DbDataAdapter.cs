@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Data.ProviderBase;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.Versioning;
 
 namespace System.Data.Common
 {
@@ -231,6 +232,7 @@ namespace System.Data.Common
             throw ADP.NotSupported();
         }
 
+        [UnsupportedOSPlatform("browser")]
         object ICloneable.Clone()
         {
 #pragma warning disable 618 // ignore obsolete warning about CloneInternals
