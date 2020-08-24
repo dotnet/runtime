@@ -37,7 +37,7 @@ else ()
 
 endif (CLR_CMAKE_TARGET_WIN32)
 
-target_precompile_headers(cordbee_wks_obj PRIVATE stdafx.h)
+target_precompile_headers(cordbee_wks_obj PRIVATE [["stdafx.h"]])
 add_dependencies(cordbee_wks_obj eventing_headers)
 add_library(cordbee_wks INTERFACE)
 target_sources(cordbee_wks INTERFACE $<TARGET_OBJECTS:cordbee_wks_obj>)

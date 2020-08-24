@@ -12,6 +12,7 @@ if(CLR_CMAKE_HOST_UNIX)
     add_dependencies(clrjit_obj coreclrpal gcinfo)
 endif(CLR_CMAKE_HOST_UNIX)
 
+target_include_directories(clrjit_obj PRIVATE ${JIT_SOURCE_DIR})
 target_precompile_headers(clrjit_obj PRIVATE [["jitpch.h"]])
 
 add_library(clrjit_static INTERFACE)

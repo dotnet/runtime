@@ -104,6 +104,8 @@ DacWarning(__in char* format, ...)
     OutputDebugStringA(text);
 }
 
+#pragma warning (push)
+#pragma warning (disable: 4297)
 void
 DacNotImpl(void)
 {
@@ -123,6 +125,7 @@ DacError_NoRet(HRESULT err)
 {
     EX_THROW(HRException, (err));
 }
+#pragma warning (pop)
 
 TADDR
 DacGlobalBase(void)
