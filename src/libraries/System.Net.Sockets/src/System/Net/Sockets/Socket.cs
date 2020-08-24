@@ -329,7 +329,7 @@ namespace System.Net.Sockets
                     return null;
                 }
 
-                if (_localEndPoint == null)
+                //if (_localEndPoint == null)
                 {
                     Internals.SocketAddress socketAddress = IPEndPointExtensions.Serialize(_rightEndPoint);
 
@@ -4936,9 +4936,10 @@ namespace System.Net.Sockets
 
         private bool IsWildcardAddress(IPAddress address)
         {
-            return address.ToString() == IPAddress.Any.ToString()
+            return true;
+            /*return address.ToString() == IPAddress.Any.ToString()
                     || address.ToString() == IPAddress.IPv6Any.ToString()
-                    || address.ToString() == IPAddress.Any.MapToIPv6().ToString();
+                    || address.ToString() == IPAddress.Any.MapToIPv6().ToString();*/
 
             //return address == IPAddress.Any || address == IPAddress.IPv6Any || address == IPAddress.Any.MapToIPv6();
         }

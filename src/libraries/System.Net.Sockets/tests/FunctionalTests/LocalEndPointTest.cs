@@ -202,7 +202,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [Fact]
+        //[Fact]
         public void LocalEndPoint_IsCached()
         {
             using (Socket socket = CreateTcpSocket())
