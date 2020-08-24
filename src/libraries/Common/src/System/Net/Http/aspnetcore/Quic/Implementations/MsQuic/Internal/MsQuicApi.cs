@@ -342,10 +342,17 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
                     quicBuffers[i].Length = (uint)alpnProtocol.Length;
                 }
 
+                IntPtr session;
+
                 fixed (MsQuicNativeMethods.QuicBuffer* pQuicBuffers = quicBuffers)
                 {
-                    return SessionOpen(pQuicBuffers, (uint)alpnProtocols.Count);
+                    session = SessionOpen(pQuicBuffers, (uint)alpnProtocols.Count);
                 }
+
+                ArrayPool<MsQuicNativeMethods.QuicBuffer>.Shared.Return(quicBuffers);
+                ArrayPool<MemoryHandle>.Shared.Return(memoryHandles);
+
+                return session;
             }
             finally
             {
