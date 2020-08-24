@@ -14,7 +14,7 @@
   </ItemGroup>
 
   <Target Name="CopyDependencyToCoreRoot"
-          DependsOnTargets="ResolveAssemblyReferences">
+          DependsOnTargets="ResolveAssemblyReferences;ResolveRuntimeFilesFromLocalBuild">
 
     <ItemGroup>
       <RunTimeDependencyExclude Include="$(CORE_ROOT)\**\*.*"  />
@@ -91,7 +91,7 @@
     <ItemGroup Condition="'$(TargetArchitecture)' == 'wasm'">
           <RunTimeDependencyCopyLocal
           Include="@(RuntimeFiles)"
-          TargetDir="runtimepack/native"/>
+          TargetDir="runtimepack/native/"/>
 
        <RunTimeDependencyCopyLocal
           Include="$(ArtifactsDir)\TargetingPack\**"
