@@ -30,7 +30,7 @@ Copyright (c) .NET Foundation. All rights reserved.
     <_OSArchitecture>$([System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture)</_OSArchitecture>
 
     <MicrosoftNetCoreIlasmPackageRuntimeId Condition="'$(MicrosoftNetCoreIlasmPackageRuntimeId)' == ''">$(_OSPlatform)-$(_OSArchitecture.ToLower())</MicrosoftNetCoreIlasmPackageRuntimeId>
-    <MicrosoftNETCoreILAsmVersion Condition="'$(MicrosoftNETCoreILAsmVersion)' == ''">5.0.0</MicrosoftNETCoreILAsmVersion>
+    <MicrosoftNETCoreILAsmVersion Condition="'$(MicrosoftNETCoreILAsmVersion)' == ''">6.0.0</MicrosoftNETCoreILAsmVersion>
     <MicrosoftNetCoreIlasmPackageName>runtime.$(MicrosoftNetCoreIlasmPackageRuntimeId).microsoft.netcore.ilasm</MicrosoftNetCoreIlasmPackageName>
     <MicrosoftNetCoreIldasmPackageName>runtime.$(MicrosoftNetCoreIlasmPackageRuntimeId).microsoft.netcore.ildasm</MicrosoftNetCoreIldasmPackageName>
 

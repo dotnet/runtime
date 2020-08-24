@@ -2,7 +2,7 @@
 
 Covariant return methods is a runtime feature designed to support the [covariant return types](https://github.com/dotnet/csharplang/blob/master/proposals/covariant-returns.md) and [records](https://github.com/dotnet/csharplang/blob/master/proposals/records.md) C# language features posed for C# 9.0.
 
-This feature allows an overriding method to have a return type that is different than the one on the method it overrides, but compatible with it. The type compability rules are defined in ECMA I.8.7.1. Example: using a more derived return type. 
+This feature allows an overriding method to have a return type that is different than the one on the method it overrides, but compatible with it. The type compability rules are defined in ECMA I.8.7.1. Example: using a more derived return type.
 
 Covariant return methods can only be described through MethodImpl records, and as an initial implementation will only be applicable to methods on reference types. Methods on interfaces and value types will not be supported (may be supported later in the future).
 
@@ -24,9 +24,9 @@ During enumeration of MethodImpls on a type (`MethodTableBuilder::EnumerateMetho
     + Load the `TypeHandle` of the return type of the method on base type.
     + Load the `TypeHandle` of the return type of the method on the current type being validated.
     + Verify that the second `TypeHandle` is compatible with the first `TypeHandle` using the `MethodTable::CanCastTo()` API. If they are not compatible, a TypeLoadException is thrown.
-    
+
 The only exception where `CanCastTo()` will return true for an incompatible type according to the ECMA rules is for structs implementing interfaces, so we explicitly check for that case and throw a TypeLoadException if we hit it.
-    
+
 Once a method is flagged for return type checking, every time the vtable slot containing that method gets overridden on a derived type, the new override will also be checked for compatiblity. This is to ensure that no derived type can implicitly override some virtual method that has already been overridden by some MethodImpl with a covariant return type.
 
 ### VTable Slot Unification
@@ -64,7 +64,7 @@ This slot unification step will also take place during the last step of type loa
 An interface method may be both non-final and have a MethodImpl that declares that it overrides another interface method. If it does, NO other interface method may .override it. Instead further overrides must override the method that it overrode. Also the overriding method may only override 1 method.
 
 The default interface method resolution algorithm shall change from:
- 
+
 ``` console
 Given interface method M and type T.
 Let MSearch = M

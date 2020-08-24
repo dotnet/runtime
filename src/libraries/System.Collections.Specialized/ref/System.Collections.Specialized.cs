@@ -219,6 +219,7 @@ namespace System.Collections.Specialized
         void System.Collections.IList.Insert(int index, object? value) { }
         void System.Collections.IList.Remove(object? value) { }
     }
+    [System.ComponentModel.Design.Serialization.DesignerSerializerAttribute("System.Diagnostics.Design.StringDictionaryCodeDomSerializer, System.Design, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a", "System.ComponentModel.Design.Serialization.CodeDomSerializer, System.Design, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
     public partial class StringDictionary : System.Collections.IEnumerable
     {
         public StringDictionary() { }

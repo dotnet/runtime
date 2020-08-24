@@ -700,7 +700,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 }
                 else
                 {
-                    SendResponse(msg_id, Result.Err($"Unable to evaluate {expression}"), token);
+                    SendResponse(msg_id, Result.Err($"Unable to evaluate '{expression}'"), token);
                 }
             }
             catch (ReturnAsErrorException ree)

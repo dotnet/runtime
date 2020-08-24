@@ -10,7 +10,7 @@ To run the suite, follow these steps:
 
 ## Instructions for Windows testers
 
-VsTest on Windows redirects console input, so in order to properly execute the manual tests, 
+VsTest on Windows redirects console input, so in order to properly execute the manual tests,
 `xunit-console` must be invoked directly. To do this first run
 
 ```

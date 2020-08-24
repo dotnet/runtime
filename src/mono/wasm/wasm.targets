@@ -62,8 +62,14 @@
 
     <Copy SourceFiles="$(NativeBinDir)dotnet.js;
                        $(NativeBinDir)dotnet.wasm;
-                       $(NativeBinDir)dotnet.timezones.blat;
-                       $(NativeBinDir)icudt.dat"
+                       $(NativeBinDir)dotnet.timezones.blat"
+          DestinationFolder="$(MicrosoftNetCoreAppRuntimePackNativeDir)"
+          SkipUnchangedFiles="true" />
+
+    <ItemGroup>
+      <IcuDataFiles Include="$(NativeBinDir)*.dat"/>
+    </ItemGroup>
+    <Copy SourceFiles="@(IcuDataFiles)"
           DestinationFolder="$(MicrosoftNetCoreAppRuntimePackNativeDir)"
           SkipUnchangedFiles="true" />
   </Target>

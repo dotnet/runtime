@@ -17,6 +17,7 @@ using System.Runtime.CompilerServices;
 namespace System.Data.Odbc
 {
     [Designer("Microsoft.VSDesigner.Data.VS.OdbcCommandDesigner, Microsoft.VSDesigner, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
+    [ToolboxItem(true)]
     public sealed class OdbcCommand : DbCommand, ICloneable
     {
         private static int s_objectTypeCount; // Bid counter
@@ -156,6 +157,8 @@ namespace System.Data.Odbc
         }
 
         [AllowNull]
+        [Editor("Microsoft.VSDesigner.Data.Odbc.Design.OdbcCommandTextEditor, Microsoft.VSDesigner, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a",
+                "System.Drawing.Design.UITypeEditor, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
         public override string CommandText
         {
             get
@@ -234,6 +237,8 @@ namespace System.Data.Odbc
             }
         }
 
+        [Editor("Microsoft.VSDesigner.Data.Design.DbConnectionEditor, Microsoft.VSDesigner, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a",
+                "System.Drawing.Design.UITypeEditor, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
         public new OdbcConnection? Connection
         {
             get

@@ -77,6 +77,8 @@ namespace System.Diagnostics
 
         public bool CreateNoWindow { get; set; }
 
+        [Editor("System.Diagnostics.Design.StringDictionaryEditor, System.Design, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a",
+                "System.Drawing.Design.UITypeEditor, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
         public StringDictionary EnvironmentVariables => new StringDictionaryWrapper((Environment as DictionaryWrapper)!);
 
         public IDictionary<string, string?> Environment
@@ -121,6 +123,8 @@ namespace System.Diagnostics
         ///       Returns or sets the application, document, or URL that is to be launched.
         ///    </para>
         /// </devdoc>
+        [Editor("System.Diagnostics.Design.StartFileNameEditor, System.Design, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a",
+                "System.Drawing.Design.UITypeEditor, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
         public string FileName
         {
             get => _fileName ?? string.Empty;
@@ -131,6 +135,8 @@ namespace System.Diagnostics
         ///     Returns or sets the initial directory for the process that is started.
         ///     Specify "" to if the default is desired.
         /// </devdoc>
+        [Editor("System.Diagnostics.Design.WorkingDirectoryEditor, System.Design, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a",
+                "System.Drawing.Design.UITypeEditor, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
         public string WorkingDirectory
         {
             get => _directory ?? string.Empty;

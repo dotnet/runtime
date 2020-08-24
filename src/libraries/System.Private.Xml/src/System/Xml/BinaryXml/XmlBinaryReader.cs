@@ -1784,7 +1784,7 @@ namespace System.Xml
             return base.ReadContentAsObject();
         }
 
-        public override object ReadContentAs(Type returnType, IXmlNamespaceResolver namespaceResolver)
+        public override object ReadContentAs(Type returnType, IXmlNamespaceResolver? namespaceResolver)
         {
             int origPos = _pos;
             try
@@ -4229,7 +4229,7 @@ namespace System.Xml
             return xsst.ValueConverter;
         }
 
-        private object ValueAs(BinXmlToken token, Type returnType, IXmlNamespaceResolver namespaceResolver)
+        private object ValueAs(BinXmlToken token, Type returnType, IXmlNamespaceResolver? namespaceResolver)
         {
             object value;
             CheckValueTokenBounds();

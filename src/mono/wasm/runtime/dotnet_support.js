@@ -31,6 +31,9 @@ var DotNetSupportLib = {
 	},
 
 	mono_wasm_invoke_js_blazor: function(exceptionMessage, callInfo, arg0, arg1, arg2)	{
+		var mono_string = DOTNET._dotnet_get_global()._mono_string_cached
+			|| (DOTNET._dotnet_get_global()._mono_string_cached = Module.cwrap('mono_wasm_string_from_js', 'number', ['string']));
+
 		try {
 			var blazorExports = DOTNET._dotnet_get_global().Blazor;
 			if (!blazorExports) {

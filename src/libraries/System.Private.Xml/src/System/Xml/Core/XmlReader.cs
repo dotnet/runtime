@@ -378,7 +378,7 @@ namespace System.Xml
 
         // Concatenates values of textual nodes of the current content, ignoring comments and PIs, expanding entity references,
         // and converts the content to the requested type. Stops at start tags and end tags.
-        public virtual object ReadContentAs(Type returnType, IXmlNamespaceResolver namespaceResolver)
+        public virtual object ReadContentAs(Type returnType, IXmlNamespaceResolver? namespaceResolver)
         {
             if (!CanReadContentAs())
             {
