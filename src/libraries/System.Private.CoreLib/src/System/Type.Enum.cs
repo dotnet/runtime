@@ -105,7 +105,7 @@ namespace System
             return values;
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2006:UnrecognizedReflectionPattern",
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2085:UnrecognizedReflectionPattern",
             Justification = "Literal fields on enums can never be trimmed")]
         // This will return enumValues and enumNames sorted by the values.
         private void GetEnumData(out string[] enumNames, out Array enumValues)

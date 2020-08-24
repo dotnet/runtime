@@ -414,6 +414,11 @@ namespace System.Reflection
                 throw new ArgumentNullException(nameof(name), SR.ArgumentNull_FileName);
             if (name.Length == 0)
                 throw new ArgumentException(SR.Argument_EmptyFileName);
+            if (Location.Length == 0)
+            {
+                // Throw if the assembly was loaded from memory, indicated by Location returning an empty string
+                throw new FileNotFoundException(SR.IO_NoFileTableInInMemoryAssemblies);
+            }
 
             RuntimeModule? m = (RuntimeModule?)GetModule(name);
 
@@ -425,6 +430,12 @@ namespace System.Reflection
 
         public override FileStream[] GetFiles(bool getResourceModules)
         {
+            if (Location.Length == 0)
+            {
+                // Throw if the assembly was loaded from memory, indicated by Location returning an empty string
+                throw new FileNotFoundException(SR.IO_NoFileTableInInMemoryAssemblies);
+            }
+
             Module[] modules = GetModules(getResourceModules);
 
             if (modules.Length == 0)

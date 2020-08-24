@@ -217,30 +217,26 @@ inline TADDR GetFP(const T_CONTEXT * context)
     return (TADDR)(context->Fp);
 }
 
-inline NEON128 GetSimdMem(PCODE ip)
-{
-    NEON128 mem;
-    LIMITED_METHOD_DAC_CONTRACT;
-    EX_TRY
-    {
-        mem.Low  = dac_cast<PCODE>(ip);
-        mem.High = dac_cast<PCODE>(ip + sizeof(PCODE));
-    }
-    EX_CATCH
-    {
-        _ASSERTE(!"Memory read within jitted Code Failed, this should not happen!!!!");
-    }
-    EX_END_CATCH(SwallowAllExceptions);
 
-    return mem;
-}
-inline TADDR GetMem(PCODE ip)
+inline TADDR GetMem(PCODE address, SIZE_T size, bool signExtend)
 {
     TADDR mem;
     LIMITED_METHOD_DAC_CONTRACT;
     EX_TRY
     {
-        mem = dac_cast<TADDR>(ip);
+        switch (size)
+        {
+        case 4:
+            mem = *(uint32_t*)address;
+            if (signExtend && (mem & 0x80000000))
+                mem |= 0xffffffff00000000;
+            break;
+        case 8:
+            mem = *(uint64_t*)address;
+            break;
+        default:
+            UNREACHABLE();
+        }
     }
     EX_CATCH
     {
@@ -250,6 +246,16 @@ inline TADDR GetMem(PCODE ip)
     return mem;
 }
 
+inline NEON128 GetSimdMem(PCODE ip)
+{
+    NEON128 mem;
+    LIMITED_METHOD_DAC_CONTRACT;
+
+    mem.Low = GetMem(ip, 8, false);
+    mem.High = GetMem(ip + 1, 8, false);
+
+    return mem;
+}
 
 #ifdef FEATURE_COMINTEROP
 void emitCOMStubCall (ComCallMethodDesc *pCOMMethod, PCODE target);
@@ -443,14 +449,14 @@ public:
     };
 
 
-    static void Init(); 
+    static void Init();
 
     void EmitCallManagedMethod(MethodDesc *pMD, BOOL fTailCall);
     void EmitCallLabel(CodeLabel *target, BOOL fTailCall, BOOL fIndirect);
 
     void EmitShuffleThunk(struct ShuffleEntry *pShuffleEntryArray);
 
-#if defined(FEATURE_SHARE_GENERIC_CODE)  
+#if defined(FEATURE_SHARE_GENERIC_CODE)
     void EmitComputedInstantiatingMethodStub(MethodDesc* pSharedMD, struct ShuffleEntry *pShuffleEntryArray, void* extraArg);
 #endif // FEATURE_SHARE_GENERIC_CODE
 

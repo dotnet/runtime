@@ -20,6 +20,7 @@ using System.Security.Authentication;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Internal;
 
 namespace System.Net.Http
 {
@@ -487,9 +488,35 @@ namespace System.Net.Http
 
             // We are at the connection limit. Wait for an available connection or connection count (indicated by null).
             if (NetEventSource.Log.IsEnabled()) Trace("Connection limit reached, waiting for available connection.");
-            return async ?
-                waiter.WaitWithCancellationAsync(cancellationToken) :
-                new ValueTask<HttpConnection?>(waiter.Task.GetAwaiter().GetResult());
+
+            if (HttpTelemetry.Log.IsEnabled())
+            {
+                return WaitOnWaiterWithTelemetryAsync(waiter, async, cancellationToken);
+            }
+            else
+            {
+                return async ?
+                    waiter.WaitWithCancellationAsync(cancellationToken) :
+                    new ValueTask<HttpConnection?>(waiter.Task.GetAwaiter().GetResult());
+            }
+
+            static async ValueTask<HttpConnection?> WaitOnWaiterWithTelemetryAsync(TaskCompletionSourceWithCancellation<HttpConnection?> waiter, bool async, CancellationToken cancellationToken)
+            {
+                ValueStopwatch stopwatch = ValueStopwatch.StartNew();
+                HttpConnection? connection;
+
+                if (async)
+                {
+                    connection = await waiter.WaitWithCancellationAsync(cancellationToken).ConfigureAwait(false);
+                }
+                else
+                {
+                    connection = waiter.Task.GetAwaiter().GetResult();
+                }
+
+                HttpTelemetry.Log.Http11RequestLeftQueue(stopwatch.GetElapsedTime().TotalMilliseconds);
+                return connection;
+            }
         }
 
         private async ValueTask<(HttpConnectionBase? connection, bool isNewConnection, HttpResponseMessage? failureResponse)>
@@ -1265,11 +1292,13 @@ namespace System.Net.Http
             }
         }
 
+        private static readonly SocketsConnectionFactory s_defaultConnectionFactory = new SocketsConnectionFactory(SocketType.Stream, ProtocolType.Tcp);
+
         private ValueTask<Connection> ConnectToTcpHostAsync(string host, int port, HttpRequestMessage initialRequest, bool async, CancellationToken cancellationToken)
         {
             if (async)
             {
-                ConnectionFactory connectionFactory = Settings._connectionFactory ?? SocketsHttpConnectionFactory.Default;
+                ConnectionFactory connectionFactory = Settings._connectionFactory ?? s_defaultConnectionFactory;
 
                 var endPoint = new DnsEndPointWithProperties(host, port, initialRequest);
                 return ConnectHelper.ConnectAsync(connectionFactory, endPoint, endPoint, cancellationToken);
@@ -1773,6 +1802,19 @@ namespace System.Net.Http
             }
             return false;
         }
+
+        internal void HeartBeat()
+        {
+            Http2Connection[]? localHttp2Connections = _http2Connections;
+            if (localHttp2Connections != null)
+            {
+                foreach (Http2Connection http2Connection in localHttp2Connections)
+                {
+                    http2Connection.HeartBeat();
+                }
+            }
+        }
+
 
         // For diagnostic purposes
         public override string ToString() =>

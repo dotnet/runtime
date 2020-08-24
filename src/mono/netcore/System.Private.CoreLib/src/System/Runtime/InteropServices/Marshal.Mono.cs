@@ -373,7 +373,7 @@ namespace System.Runtime.InteropServices
 
         private static Dictionary<(Type, string), ICustomMarshaler>? MarshalerInstanceCache;
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2006:UnrecognizedReflectionPattern",
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
             Justification = "Implementation detail of MarshalAs.CustomMarshaler")]
         internal static ICustomMarshaler? GetCustomMarshalerInstance(Type type, string cookie)
         {

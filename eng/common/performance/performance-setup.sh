@@ -136,7 +136,7 @@ while (($# > 0)); do
       echo "  --runcategories <value>        Related to csproj. Categories of benchmarks to run. Defaults to \"coreclr corefx\""
       echo "  --internal                     If the benchmarks are running as an official job."
       echo "  --monodotnet                   Pass the path to the mono dotnet for mono performance testing."
-      echo "  --wasm                         Path to the unpacled wasm runtime pack."
+      echo "  --wasm                         Path to the unpacked wasm runtime pack."
       echo ""
       exit 0
       ;;
@@ -199,14 +199,15 @@ if [[ "$mono_dotnet" != "" ]]; then
 fi
 
 if [[ "$wasm_runtime_loc" != "" ]]; then
-    configurations="CompilationMode=wasm;RunKind=micro"
+    configurations="CompilationMode=wasm RunKind=micro"
+    extra_benchmark_dotnet_arguments="$extra_benchmark_dotnet_arguments --category-exclusion-filter NoInterpreter NoWASM"
 fi
 
 if [[ "$monointerpreter" == "true" ]]; then
     extra_benchmark_dotnet_arguments="$extra_benchmark_dotnet_arguments --category-exclusion-filter NoInterpreter"
 fi
 
-common_setup_arguments="--channel master --queue $queue --build-number $build_number --build-configs \"$configurations\" --architecture $architecture"
+common_setup_arguments="--channel master --queue $queue --build-number $build_number --build-configs $configurations --architecture $architecture"
 setup_arguments="--repository https://github.com/$repository --branch $branch --get-perf-hash --commit-sha $commit_sha $common_setup_arguments"
 
 
@@ -230,13 +231,9 @@ fi
 
 if [[ "$wasm_runtime_loc" != "" ]]; then
     using_wasm=true
-    
     wasm_dotnet_path=$payload_directory/dotnet-wasm
-    
     mv $wasm_runtime_loc $wasm_dotnet_path
-    
     extra_benchmark_dotnet_arguments="$extra_benchmark_dotnet_arguments --wasmMainJS \$HELIX_CORRELATION_PAYLOAD/dotnet-wasm/runtime-test.js --wasmEngine /home/helixbot/.jsvu/v8 --customRuntimePack \$HELIX_CORRELATION_PAYLOAD/dotnet-wasm"
-    
 fi
 
 if [[ "$mono_dotnet" != "" ]]; then

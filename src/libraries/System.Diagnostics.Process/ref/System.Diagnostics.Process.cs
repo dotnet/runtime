@@ -26,7 +26,7 @@ namespace System.Diagnostics
         public MonitoringDescriptionAttribute(string description) { }
         public override string Description { get { throw null; } }
     }
-    [System.ComponentModel.DesignerAttribute("System.Diagnostics.Design.ProcessDesigner, System.Design, Version=4.0.0.0, PublicKeyToken=b03f5f7f11d50a3a")]
+    [System.ComponentModel.DesignerAttribute("System.Diagnostics.Design.ProcessDesigner, System.Design, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
     public partial class Process : System.ComponentModel.Component, System.IDisposable
     {
         public Process() { }
@@ -116,6 +116,7 @@ namespace System.Diagnostics
         public static System.Diagnostics.Process? Start(System.Diagnostics.ProcessStartInfo startInfo) { throw null; }
         public static System.Diagnostics.Process Start(string fileName) { throw null; }
         public static System.Diagnostics.Process Start(string fileName, string arguments) { throw null; }
+        public static System.Diagnostics.Process Start(string fileName, System.Collections.Generic.IEnumerable<string> arguments) { throw null; }
         [System.CLSCompliantAttribute(false)]
         [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public static System.Diagnostics.Process? Start(string fileName, string userName, System.Security.SecureString password, string domain) { throw null; }
@@ -129,7 +130,7 @@ namespace System.Diagnostics
         public bool WaitForInputIdle() { throw null; }
         public bool WaitForInputIdle(int milliseconds) { throw null; }
     }
-    [System.ComponentModel.DesignerAttribute("System.Diagnostics.Design.ProcessModuleDesigner, System.Design, Version=4.0.0.0, PublicKeyToken=b03f5f7f11d50a3a")]
+    [System.ComponentModel.DesignerAttribute("System.Diagnostics.Design.ProcessModuleDesigner, System.Design, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
     public partial class ProcessModule : System.ComponentModel.Component
     {
         internal ProcessModule() { }
@@ -170,9 +171,11 @@ namespace System.Diagnostics
         [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public string Domain { get { throw null; } set { } }
         public System.Collections.Generic.IDictionary<string, string?> Environment { get { throw null; } }
+        [System.ComponentModel.EditorAttribute("System.Diagnostics.Design.StringDictionaryEditor, System.Design, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a", "System.Drawing.Design.UITypeEditor, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
         public System.Collections.Specialized.StringDictionary EnvironmentVariables { get { throw null; } }
         public bool ErrorDialog { get { throw null; } set { } }
         public System.IntPtr ErrorDialogParentHandle { get { throw null; } set { } }
+        [System.ComponentModel.EditorAttribute("System.Diagnostics.Design.StartFileNameEditor, System.Design, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a", "System.Drawing.Design.UITypeEditor, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
         public string FileName { get { throw null; } set { } }
         [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public bool LoadUserProfile { get { throw null; } set { } }
@@ -194,9 +197,10 @@ namespace System.Diagnostics
         public string[] Verbs { get { throw null; } }
         [System.ComponentModel.DefaultValueAttribute(System.Diagnostics.ProcessWindowStyle.Normal)]
         public System.Diagnostics.ProcessWindowStyle WindowStyle { get { throw null; } set { } }
+        [System.ComponentModel.EditorAttribute("System.Diagnostics.Design.WorkingDirectoryEditor, System.Design, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a", "System.Drawing.Design.UITypeEditor, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
         public string WorkingDirectory { get { throw null; } set { } }
     }
-    [System.ComponentModel.DesignerAttribute("System.Diagnostics.Design.ProcessThreadDesigner, System.Design, Version=4.0.0.0, PublicKeyToken=b03f5f7f11d50a3a")]
+    [System.ComponentModel.DesignerAttribute("System.Diagnostics.Design.ProcessThreadDesigner, System.Design, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
     public partial class ProcessThread : System.ComponentModel.Component
     {
         internal ProcessThread() { }

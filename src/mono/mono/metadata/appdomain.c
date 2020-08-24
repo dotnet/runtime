@@ -2480,7 +2480,7 @@ mono_domain_assembly_preload (MonoAssemblyLoadContext *alc,
 
 		char *base_dir = get_app_context_base_directory (error);
 		search_path [0] = base_dir;
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "Domain %s (%p) ApplicationBase is %s", domain->friendly_name, domain, base_dir);
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "Domain (%p) ApplicationBase is %s", domain, base_dir);
 
 		result = real_load (search_path, aname->culture, aname->name, &req);
 
@@ -2821,7 +2821,7 @@ mono_alc_load_raw_bytes (MonoAssemblyLoadContext *alc, guint8 *assembly_data, gu
 {
 	MonoAssembly *ass = NULL;
 	MonoImageOpenStatus status;
-	MonoImage *image = mono_image_open_from_data_internal (alc, (char*)assembly_data, raw_assembly_len, FALSE, NULL, refonly, FALSE, NULL);
+	MonoImage *image = mono_image_open_from_data_internal (alc, (char*)assembly_data, raw_assembly_len, FALSE, NULL, refonly, FALSE, NULL, NULL);
 
 	if (!image) {
 		mono_error_set_bad_image_by_name (error, "In memory assembly", "0x%p", assembly_data);

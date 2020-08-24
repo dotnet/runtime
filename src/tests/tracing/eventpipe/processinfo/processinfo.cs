@@ -82,7 +82,7 @@ namespace Tracing.Tests.ProcessInfoValidation
             var processInfoMessage = new IpcMessage(0x04, 0x00);
             Logger.logger.Log($"Wrote: {processInfoMessage}");
             IpcMessage response = IpcClient.SendMessage(stream, processInfoMessage);
-            Logger.logger.Log($"Received: {response}");
+            Logger.logger.Log($"Received: <omitted>");
 
             Utils.Assert(response.Header.CommandSet == 0xFF, $"Response must have Server command set. Expected: 0xFF, Received: 0x{response.Header.CommandSet:X2}"); // server
             Utils.Assert(response.Header.CommandId == 0x00, $"Response must have OK command id. Expected: 0x00, Received: 0x{response.Header.CommandId:X2}"); // OK
@@ -95,7 +95,7 @@ namespace Tracing.Tests.ProcessInfoValidation
             // LPCWSTR Arch;
 
             int totalSize = response.Payload.Length;
-            Logger.logger.Log($"Total size of Payload == {totalSize} b");
+            Logger.logger.Log($"Total size of Payload = {totalSize} bytes");
 
             // VALIDATE PID
             int start = 0;

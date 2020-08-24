@@ -31,7 +31,7 @@ emit_array_generic_access (MonoCompile *cfg, MonoMethodSignature *fsig, MonoInst
 	MonoClass *eklass = mono_class_from_mono_type_internal (fsig->params [1]);
 
 	/* the bounds check is already done by the callers */
-	addr = mini_emit_ldelema_1_ins (cfg, eklass, args [0], args [1], FALSE);
+	addr = mini_emit_ldelema_1_ins (cfg, eklass, args [0], args [1], FALSE, FALSE);
 	MonoType *etype = m_class_get_byval_arg (eklass);
 	if (is_set) {
 		EMIT_NEW_LOAD_MEMBASE_TYPE (cfg, load, etype, args [2]->dreg, 0);
@@ -2005,7 +2005,7 @@ emit_array_unsafe_access (MonoCompile *cfg, MonoMethodSignature *fsig, MonoInst 
 	if (is_set) {
 		return mini_emit_array_store (cfg, eklass, args, FALSE);
 	} else {
-		MonoInst *ins, *addr = mini_emit_ldelema_1_ins (cfg, eklass, args [0], args [1], FALSE);
+		MonoInst *ins, *addr = mini_emit_ldelema_1_ins (cfg, eklass, args [0], args [1], FALSE, FALSE);
 		EMIT_NEW_LOAD_MEMBASE_TYPE (cfg, ins, m_class_get_byval_arg (eklass), addr->dreg, 0);
 		return ins;
 	}

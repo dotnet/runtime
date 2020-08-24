@@ -13,7 +13,6 @@
     <DefineConstants Condition="'$(TargetsWindows)' == 'true'">$(DefineConstants),TARGET_WINDOWS=True</DefineConstants>
     <NoWarn Condition="'$(TargetsWindows)' != 'true'">$(NoWarn);CA1823</NoWarn> <!-- Avoid unused fields warnings in Unix build -->
     <AssemblyName>Microsoft.VisualBasic.Core</AssemblyName>
-    <NoStdLib>true</NoStdLib>
     <RemoveIntegerChecks>false</RemoveIntegerChecks>
     <RootNamespace />
     <!-- No plans to fix the analyzer issues. -->

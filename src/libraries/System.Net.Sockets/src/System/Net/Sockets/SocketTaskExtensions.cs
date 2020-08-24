@@ -16,12 +16,20 @@ namespace System.Net.Sockets
 
         public static Task ConnectAsync(this Socket socket, EndPoint remoteEP) =>
             socket.ConnectAsync(remoteEP);
+        public static ValueTask ConnectAsync(this Socket socket, EndPoint remoteEP, CancellationToken cancellationToken) =>
+            socket.ConnectAsync(remoteEP, cancellationToken);
         public static Task ConnectAsync(this Socket socket, IPAddress address, int port) =>
             socket.ConnectAsync(address, port);
+        public static ValueTask ConnectAsync(this Socket socket, IPAddress address, int port, CancellationToken cancellationToken) =>
+            socket.ConnectAsync(address, port, cancellationToken);
         public static Task ConnectAsync(this Socket socket, IPAddress[] addresses, int port) =>
             socket.ConnectAsync(addresses, port);
+        public static ValueTask ConnectAsync(this Socket socket, IPAddress[] addresses, int port, CancellationToken cancellationToken) =>
+            socket.ConnectAsync(addresses, port, cancellationToken);
         public static Task ConnectAsync(this Socket socket, string host, int port) =>
             socket.ConnectAsync(host, port);
+        public static ValueTask ConnectAsync(this Socket socket, string host, int port, CancellationToken cancellationToken) =>
+            socket.ConnectAsync(host, port, cancellationToken);
 
         public static Task<int> ReceiveAsync(this Socket socket, ArraySegment<byte> buffer, SocketFlags socketFlags) =>
             socket.ReceiveAsync(buffer, socketFlags, fromNetworkStream: false);

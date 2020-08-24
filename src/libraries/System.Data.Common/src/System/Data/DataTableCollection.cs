@@ -14,6 +14,8 @@ namespace System.Data
     /// Represents the collection of tables for the <see cref='System.Data.DataSet'/>.
     /// </summary>
     [DefaultEvent(nameof(CollectionChanged))]
+    [Editor("Microsoft.VSDesigner.Data.Design.TablesCollectionEditor, Microsoft.VSDesigner, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a",
+            "System.Drawing.Design.UITypeEditor, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
     [ListBindable(false)]
     public sealed class DataTableCollection : InternalDataCollectionBase
     {

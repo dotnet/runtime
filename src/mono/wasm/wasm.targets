@@ -35,17 +35,41 @@
                            OutputPath="$(WasmPInvokeTablePath)" />
   </Target>
 
+  <UsingTask TaskName="DownloadTimeZoneData" AssemblyFile="$([MSBuild]::NormalizePath('$(ArtifactsBinDir)', 'CreateWasmBundle', 'Debug', '$(NetCoreAppCurrent)', 'publish', 'CreateWasmBundle.dll'))"/>
+  <Target Name="LoadTimeZones" DependsOnTargets="CheckEnv">
+    <DownloadTimeZoneData
+      InputDirectory="$(ArtifactsObjDir)wasm/data/input"
+      OutputDirectory="$(ArtifactsObjDir)wasm/data/output"
+      Version="2020a" />
+  </Target>
+
+  <UsingTask TaskName="CreateWasmBundle" AssemblyFile="$([MSBuild]::NormalizePath('$(ArtifactsBinDir)', 'CreateWasmBundle', 'Debug', '$(NetCoreAppCurrent)', 'publish', 'CreateWasmBundle.dll'))"/>
+  <Target Name="BundleWasm" DependsOnTargets="CheckEnv;LoadTimeZones">
+    <PropertyGroup>
+      <TimeZonesDataPath>$(NativeBinDir)dotnet.timezones.blat</TimeZonesDataPath>
+    </PropertyGroup>
+    <CreateWasmBundle
+      InputDirectory="$(ArtifactsObjDir)wasm/data/output"
+      OutputFileName="$(TimeZonesDataPath)" />
+  </Target>
+
   <!-- This is a documented target that is invoked by developers in their innerloop work. -->
   <Target Name="BuildWasmRuntimes"
           AfterTargets="Build"
-          DependsOnTargets="BuildPInvokeTable">
+          DependsOnTargets="BuildPInvokeTable;BundleWasm">
     <Exec Command="make -C $(MonoProjectRoot)wasm all SHELL=/bin/bash BINDIR=$(ArtifactsBinDir) MONO_BIN_DIR=$(MonoArtifactsPath) OBJDIR=$(ArtifactsObjDir) BUILDS_BIN_DIR=$(NativeBinDir) NATIVE_DIR=$(ArtifactsObjDir)/native/$(NetCoreAppCurrent)-$(TargetOS)-$(Configuration)-$(TargetArchitecture) CONFIG=$(Configuration) PINVOKE_TABLE=$(WasmPInvokeTablePath) ICU_LIBDIR=$(PkgMicrosoft_NETCore_Runtime_ICU_Transport)/runtimes/browser-wasm/native/lib"
           IgnoreStandardErrorWarningFormat="true" />
 
     <Copy SourceFiles="$(NativeBinDir)dotnet.js;
                        $(NativeBinDir)dotnet.wasm;
-                       $(NativeBinDir)dotnet.timezones.blat;
-                       $(NativeBinDir)icudt.dat"
+                       $(NativeBinDir)dotnet.timezones.blat"
+          DestinationFolder="$(MicrosoftNetCoreAppRuntimePackNativeDir)"
+          SkipUnchangedFiles="true" />
+
+    <ItemGroup>
+      <IcuDataFiles Include="$(NativeBinDir)*.dat"/>
+    </ItemGroup>
+    <Copy SourceFiles="@(IcuDataFiles)"
           DestinationFolder="$(MicrosoftNetCoreAppRuntimePackNativeDir)"
           SkipUnchangedFiles="true" />
   </Target>

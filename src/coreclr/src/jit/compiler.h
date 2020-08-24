@@ -6512,7 +6512,7 @@ public:
     void optCopyProp(BasicBlock* block, Statement* stmt, GenTree* tree, LclNumToGenTreePtrStack* curSsaName);
     void optBlockCopyPropPopStacks(BasicBlock* block, LclNumToGenTreePtrStack* curSsaName);
     void optBlockCopyProp(BasicBlock* block, LclNumToGenTreePtrStack* curSsaName);
-    bool optIsSsaLocal(GenTree* tree);
+    unsigned optIsSsaLocal(GenTree* tree);
     int optCopyProp_LclVarScore(LclVarDsc* lclVarDsc, LclVarDsc* copyVarDsc, bool preferOp2);
     void optVnCopyProp();
     INDEBUG(void optDumpCopyPropStack(LclNumToGenTreePtrStack* curSsaName));

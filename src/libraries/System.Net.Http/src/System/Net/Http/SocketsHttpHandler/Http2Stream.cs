@@ -352,7 +352,11 @@ namespace System.Net.Http
                     _creditWaiter = null;
                 }
 
-                if (HttpTelemetry.Log.IsEnabled()) _request.OnStopped();
+                if (HttpTelemetry.Log.IsEnabled())
+                {
+                    bool aborted = _requestCompletionState == StreamCompletionState.Failed || _responseCompletionState == StreamCompletionState.Failed;
+                    _request.OnStopped(aborted);
+                }
             }
 
             private void Cancel()
@@ -572,6 +576,8 @@ namespace System.Net.Http
 
             public void OnHeadersStart()
             {
+                if (HttpTelemetry.Log.IsEnabled()) HttpTelemetry.Log.ResponseHeadersBegin();
+
                 Debug.Assert(!Monitor.IsEntered(SyncObject));
                 lock (SyncObject)
                 {
