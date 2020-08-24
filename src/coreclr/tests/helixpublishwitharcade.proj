@@ -46,7 +46,7 @@
         DotNetCliPackageType=$(DotNetCliPackageType);
         DotNetCliVersion=$(DotNetCliVersion)
       </_PropertiesToPass>
-    </PropertyGroup>
+    </PropertyGroup>  
     <Message Text="DotNetCliVersion: $(DotNetCliVersion)" Importance="High" />
     <Message Text="DotNetCliPackageType: $(DotNetCliPackageType)" Importance="High" />
     <Message Text="HelixRuntimeRid: $(HelixRuntimeRid)" Importance="High" />
@@ -271,6 +271,10 @@
     <HelixPreCommand Include="cat $__TestEnv" />
     <HelixPreCommand Include="sudo bash -c 'echo $HELIX_DUMP_FOLDER/core.%u.%p > /proc/sys/kernel/core_pattern'" Condition=" '$(TargetOS)' != 'OSX' " />
     <HelixPreCommand Include="ulimit -c unlimited" Condition=" '$(TargetOS)' == 'OSX' " />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetArchitecture)' == 'wasm'">
+    <HelixPreCommand Include="dotnet restore $(CORE_ROOT)/wasm-test-runner/WasmTestRunner.proj" />
   </ItemGroup>
 
   <PropertyGroup>
