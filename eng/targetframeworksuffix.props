@@ -80,7 +80,6 @@
       <PropertyGroup>
         <TargetsBrowser>true</TargetsBrowser>
         <PackageTargetRuntime>browser</PackageTargetRuntime>
-        <SupportedOSPlatforms>browser</SupportedOSPlatforms>
       </PropertyGroup>
     </When>
     <When Condition="'$(TargetFrameworkSuffix)' == ''">
