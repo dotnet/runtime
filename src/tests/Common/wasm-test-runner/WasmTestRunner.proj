@@ -8,6 +8,10 @@
     <RestoreSources>https://api.nuget.org/v3/index.json;</RestoreSources>
   </PropertyGroup>
 
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Build.NoTargets" Version="2.0.1" />
+  </ItemGroup>
+
   <UsingTask TaskName="WasmAppBuilder" 
       AssemblyFile="$(CORE_ROOT)/WasmAppBuilder/WasmAppBuilder.dll"/>
 
