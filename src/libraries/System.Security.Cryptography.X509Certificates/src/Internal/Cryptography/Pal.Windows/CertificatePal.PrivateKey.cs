@@ -245,7 +245,6 @@ namespace Internal.Cryptography.Pal
                     out keySpec,
                     out freeKey))
                 {
-                    int dwErrorCode = Marshal.GetLastWin32Error();
 
                     // The documentation for CryptAcquireCertificatePrivateKey says that freeKey
                     // should already be false if "key acquisition fails", and it can be presumed

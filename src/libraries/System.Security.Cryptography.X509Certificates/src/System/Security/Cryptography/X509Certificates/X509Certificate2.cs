@@ -412,7 +412,7 @@ namespace System.Security.Cryptography.X509Certificates
 
             // .NET Framework compat: The .NET Framework expands the filename to a full path for the purpose of performing a CAS permission check. While CAS is not present here,
             // we still need to call GetFullPath() so we get the same exception behavior if the fileName is bad.
-            string fullPath = Path.GetFullPath(fileName);
+            _ = Path.GetFullPath(fileName);
 
             return X509Pal.Instance.GetCertContentType(fileName);
         }

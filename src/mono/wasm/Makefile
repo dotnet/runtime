@@ -113,7 +113,7 @@ clean:
 .PHONY: runtime
 
 icu-data:
-	cp $(ICU_LIBDIR)/icudt.dat $(BUILDS_BIN_DIR)
+	cp $(ICU_LIBDIR)/*.dat $(BUILDS_BIN_DIR)
 
 runtime:
 	EMSDK_PATH=$(TOP)/src/mono/wasm/emsdk $(TOP)/build.sh --subset mono --arch wasm --os Browser -c $(CONFIG) /p:ContinueOnError=false  /p:StopOnFirstFailure=true
