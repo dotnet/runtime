@@ -20,7 +20,7 @@
 #include <mono/utils/w32api.h>
 
 #ifndef HAVE_SOCKLEN_T
-#define socklen_t unsigned int
+#define socklen_t int
 #endif
 
 #ifndef HOST_WIN32
