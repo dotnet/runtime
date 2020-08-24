@@ -1,11 +1,10 @@
-<Project Sdk="Microsoft.Build.NoTargets" DefaultTargets="BuildApp">
+<Project Sdk="Microsoft.Build.NoTargets/1.0.53" DefaultTargets="BuildApp">
   <PropertyGroup>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
     <MicrosoftNetCoreAppRuntimePackDir>$(CORE_ROOT)\runtimepack</MicrosoftNetCoreAppRuntimePackDir>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <BuildDir>$(MSBuildThisFileDirectory)\obj\$(Configuration)\wasm</BuildDir>
     <AppDir>$(TestBinDir)/WasmApp/</AppDir>
-    <RestoreSources>https://api.nuget.org/v3/index.json;</RestoreSources>
   </PropertyGroup>
 
   <ItemGroup>
