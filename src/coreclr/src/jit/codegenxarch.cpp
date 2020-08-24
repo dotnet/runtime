@@ -1783,7 +1783,8 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 
             size_t curNestingSlotOffs;
             curNestingSlotOffs = filterEndOffsetSlotOffs - ((finallyNesting + 1) * TARGET_POINTER_SIZE);
-            GetEmitter()->emitIns_S_I(INS_mov, EA_PTRSIZE, compiler->lvaShadowSPslotsVar, (unsigned)curNestingSlotOffs, 0);
+            GetEmitter()->emitIns_S_I(INS_mov, EA_PTRSIZE, compiler->lvaShadowSPslotsVar, (unsigned)curNestingSlotOffs,
+                                      0);
             break;
 #endif // !FEATURE_EH_FUNCLETS
 
@@ -8120,9 +8121,9 @@ void* CodeGen::genCreateAndStoreGCInfoJIT32(unsigned codeSize,
 
     if (0)
     {
-        BYTE*    temp = (BYTE*)infoPtr;
-        size_t   size = compiler->compInfoBlkAddr - temp;
-        BYTE*    ptab = temp + headerSize;
+        BYTE*  temp = (BYTE*)infoPtr;
+        size_t size = compiler->compInfoBlkAddr - temp;
+        BYTE*  ptab = temp + headerSize;
 
         noway_assert(size == headerSize + ptrMapSize);
 
@@ -8492,7 +8493,8 @@ void CodeGen::genProfilingEnterCallback(regNumber initReg, bool* pInitRegZeroed)
     // Push the profilerHandle
     if (compiler->compProfilerMethHndIndirected)
     {
-        GetEmitter()->emitIns_AR_R(INS_push, EA_PTR_DSP_RELOC, REG_NA, REG_NA, (target_ssize_t)(size_t)compiler->compProfilerMethHnd);
+        GetEmitter()->emitIns_AR_R(INS_push, EA_PTR_DSP_RELOC, REG_NA, REG_NA,
+                                   (target_ssize_t)(size_t)compiler->compProfilerMethHnd);
     }
     else
     {
@@ -8577,7 +8579,8 @@ void CodeGen::genProfilingLeaveCallback(unsigned helper)
 
     if (compiler->compProfilerMethHndIndirected)
     {
-        GetEmitter()->emitIns_AR_R(INS_push, EA_PTR_DSP_RELOC, REG_NA, REG_NA, (target_ssize_t)(ssize_t)compiler->compProfilerMethHnd);
+        GetEmitter()->emitIns_AR_R(INS_push, EA_PTR_DSP_RELOC, REG_NA, REG_NA,
+                                   (target_ssize_t)(ssize_t)compiler->compProfilerMethHnd);
     }
     else
     {
