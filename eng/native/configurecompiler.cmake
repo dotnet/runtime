@@ -425,26 +425,36 @@ endif(CLR_CMAKE_HOST_UNIX)
 if (MSVC)
   # Compile options for targeting windows
 
-  add_compile_options(/TP) # compile all files as C++
-  add_compile_options(/nologo) # Suppress Startup Banner
-  add_compile_options(/W3) # set warning level to 3
-  add_compile_options(/WX) # treat warnings as errors
-  add_compile_options(/Oi) # enable intrinsics
-  add_compile_options(/Oy-) # disable suppressing of the creation of frame pointers on the call stack for quicker function calls
-  add_compile_options(/Gm-) # disable minimal rebuild
-  add_compile_options(/Zp8) # pack structs on 8-byte boundary
-  add_compile_options(/Gy) # separate functions for linker
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/TP>) # compile all files as C++
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/nologo>) # Suppress Startup Banner
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/W3>) # set warning level to 3
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/WX>) # treat warnings as errors
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/Oi>) # enable intrinsics
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/Oy->) # disable suppressing of the creation of frame pointers on the call stack for quicker function calls
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/Gm->) # disable minimal rebuild
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/Zp8>) # pack structs on 8-byte boundary
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/Gy>) # separate functions for linker
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /GR-") # disable C++ RTTI
-  add_compile_options(/FC) # use full pathnames in diagnostics
-  add_compile_options(/MP) # Build with Multiple Processes (number of processes equal to the number of processors)
-  add_compile_options(/Zm200) # Specify Precompiled Header Memory Allocation Limit of 150MB
-  add_compile_options(/Zc:strictStrings) # Disable string-literal to char* or wchar_t* conversion
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/FC>) # use full pathnames in diagnostics
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/MP>) # Build with Multiple Processes (number of processes equal to the number of processors)
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/Zm200>) # Specify Precompiled Header Memory Allocation Limit of 150MB
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/Zc:strictStrings>) # Disable string-literal to char* or wchar_t* conversion
 
-  add_compile_options(/wd4960 /wd4961 /wd4603 /wd4627 /wd4838 /wd4456 /wd4457 /wd4458 /wd4459 /wd4091 /we4640)
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4960>)
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4961>)
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4603>)
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4627>)
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4838>)
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4456>)
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4457>)
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4458>)
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4459>)
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4091>)
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/we4640>)
 
   # Disable Warnings:
   # 4291: Delete not defined for new, c++ exception may cause leak.
-  add_compile_options(/wd4291)
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4291>)
 
   # Treat Warnings as Errors:
   # 4007: 'main' : must be __cdecl.
@@ -453,7 +463,12 @@ if (MSVC)
   # 4551: Function call missing argument list.
   # 4700: Local used w/o being initialized.
   # 4806: Unsafe operation involving type 'bool'.
-  add_compile_options(/we4007 /we4013 /we4102 /we4551 /we4700 /we4806)
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/we4007>)
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/we4013>)
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/we4102>)
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/we4551>)
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/we4700>)
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/we4806>)
 
   # Set Warning Level 3:
   # 4092: Sizeof returns 'unsigned long'.
@@ -464,18 +479,25 @@ if (MSVC)
   # 4212: Function declaration used ellipsis.
   # 4530: C++ exception handler used, but unwind semantics are not enabled. Specify -GX.
   # 35038: data member 'member1' will be initialized after data member 'member2'.
-  add_compile_options(/w34092 /w34121 /w34125 /w34130 /w34132 /w34212 /w34530 /w35038)
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/w34092>)
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/w34121>)
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/w34125>)
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/w34130>)
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/w34132>)
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/w34212>)
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/w34530>)
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/w35038>)
 
   # Set Warning Level 4:
   # 4177: Pragma data_seg s/b at global scope.
-  add_compile_options(/w44177)
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/w44177>)
 
-  add_compile_options(/Zi) # enable debugging information
-  add_compile_options(/ZH:SHA_256) # use SHA256 for generating hashes of compiler processed source files.
-  add_compile_options(/source-charset:utf-8) # Force MSVC to compile source as UTF-8.
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/Zi>) # enable debugging information
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/ZH:SHA_256>) # use SHA256 for generating hashes of compiler processed source files.
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/source-charset:utf-8>) # Force MSVC to compile source as UTF-8.
 
   if (CLR_CMAKE_HOST_ARCH_I386)
-    add_compile_options(/Gz)
+    add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/Gz>)
   endif (CLR_CMAKE_HOST_ARCH_I386)
 
   add_compile_options($<$<OR:$<CONFIG:Release>,$<CONFIG:Relwithdebinfo>>:/GL>)
@@ -527,9 +549,9 @@ if(CLR_CMAKE_ENABLE_CODE_COVERAGE)
 
 endif(CLR_CMAKE_ENABLE_CODE_COVERAGE)
 
-if (CMAKE_BUILD_TOOL STREQUAL nmake)
+if (CMAKE_GENERATOR MATCHES "(Makefile|Ninja)")
   set(CMAKE_RC_CREATE_SHARED_LIBRARY "${CMAKE_CXX_CREATE_SHARED_LIBRARY}")
-endif(CMAKE_BUILD_TOOL STREQUAL nmake)
+endif()
 
 # Ensure other tools are present
 if (CLR_CMAKE_HOST_WIN32)
