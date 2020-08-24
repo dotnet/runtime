@@ -90,8 +90,8 @@
 
     <ItemGroup Condition="'$(TargetArchitecture)' == 'wasm'">
           <RunTimeDependencyCopyLocal
-          Include="$(ArtifactsBinDir)microsoft.netcore.app.runtime.$(TargetOS.ToLower())-$(TargetArchitecture)\$(Configuration)\runtimes\$(TargetOS.ToLower())-$(TargetArchitecture)\**"
-          TargetDir="runtimepack/"/>
+          Include="@(RuntimeFiles)"
+          TargetDir="runtimepack/native"/>
 
        <RunTimeDependencyCopyLocal
           Include="$(ArtifactsDir)\TargetingPack\**"
