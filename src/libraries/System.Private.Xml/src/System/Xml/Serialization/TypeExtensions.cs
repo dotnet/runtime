@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#nullable enable
 namespace System.Xml.Serialization
 {
     using System;
@@ -10,7 +11,7 @@ namespace System.Xml.Serialization
     {
         private const string ImplicitCastOperatorName = "op_Implicit";
 
-        public static bool TryConvertTo(this Type targetType, object data, out object returnValue)
+        public static bool TryConvertTo(this Type targetType, object? data, out object? returnValue)
         {
             if (targetType == null)
             {

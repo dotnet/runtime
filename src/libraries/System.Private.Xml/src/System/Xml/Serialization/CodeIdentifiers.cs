@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#nullable enable
 namespace System.Xml.Serialization
 {
     using System;
@@ -14,14 +15,14 @@ namespace System.Xml.Serialization
         {
         }
 
-        bool IEqualityComparer.Equals(object x, object y)
+        bool IEqualityComparer.Equals(object? x, object? y)
         {
             return (Compare(x, y) == 0);
         }
 
         int IEqualityComparer.GetHashCode(object obj)
         {
-            string s = obj as string;
+            string? s = obj as string;
             if (s == null)
                 throw new ArgumentException(null, nameof(obj));
 

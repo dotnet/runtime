@@ -1,9 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#nullable enable
 using System.Reflection;
 using System;
-
 
 namespace System.Xml.Serialization
 {
@@ -12,11 +12,11 @@ namespace System.Xml.Serialization
     /// </devdoc>
     public class XmlTypeMapping : XmlMapping
     {
-        internal XmlTypeMapping(TypeScope scope, ElementAccessor accessor) : base(scope, accessor)
+        internal XmlTypeMapping(TypeScope? scope, ElementAccessor accessor) : base(scope, accessor)
         {
         }
 
-        internal TypeMapping Mapping
+        internal TypeMapping? Mapping
         {
             get { return Accessor.Mapping; }
         }
@@ -28,7 +28,7 @@ namespace System.Xml.Serialization
         {
             get
             {
-                return Mapping.TypeDesc.Name;
+                return Mapping!.TypeDesc!.Name;
             }
         }
 
@@ -39,29 +39,29 @@ namespace System.Xml.Serialization
         {
             get
             {
-                return Mapping.TypeDesc.FullName;
+                return Mapping!.TypeDesc!.FullName;
             }
         }
 
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
-        public string XsdTypeName
+        public string? XsdTypeName
         {
             get
             {
-                return Mapping.TypeName;
+                return Mapping!.TypeName;
             }
         }
 
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
-        public string XsdTypeNamespace
+        public string? XsdTypeNamespace
         {
             get
             {
-                return Mapping.Namespace;
+                return Mapping!.Namespace;
             }
         }
     }
