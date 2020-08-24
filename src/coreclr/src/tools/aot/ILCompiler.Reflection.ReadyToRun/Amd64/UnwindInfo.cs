@@ -42,8 +42,6 @@ namespace ILCompiler.Reflection.ReadyToRun.Amd64
     /// </summary>
     public class UnwindCode
     {
-        public int Index { get; set; }
-
         public byte CodeOffset { get; set; }
         public UnwindOpCodes UnwindOp { get; set; } //4 bits
 
@@ -63,10 +61,8 @@ namespace ILCompiler.Reflection.ReadyToRun.Amd64
         /// <summary>
         /// Unwinde code parsing is based on <a href="https://github.com/dotnet/coreclr/blob/master/src/jit/unwindamd64.cpp">src\jit\unwindamd64.cpp</a> DumpUnwindInfo
         /// </summary>
-        public UnwindCode(byte[] image, int index, ref int frameOffset, ref int offset)
+        public UnwindCode(byte[] image, ref int frameOffset, ref int offset)
         {
-            Index = index;
-
             CodeOffset = NativeReader.ReadByte(image, ref offset);
             byte op = NativeReader.ReadByte(image, ref offset);
             UnwindOp = (UnwindOpCodes)(op & 15);
@@ -192,7 +188,7 @@ namespace ILCompiler.Reflection.ReadyToRun.Amd64
             int frameOffset = FrameOffset;
             for (int i = 0; i < CountOfUnwindCodes; i++)
             {
-                UnwindCode unwindCode = new UnwindCode(image, i, ref frameOffset, ref offset);
+                UnwindCode unwindCode = new UnwindCode(image, ref frameOffset, ref offset);
                 CodeOffsetToUnwindCodeIndex.Add(unwindCode.CodeOffset, i);
                 UnwindCodes[i] = unwindCode;
             }

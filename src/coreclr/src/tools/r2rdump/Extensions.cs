@@ -216,9 +216,9 @@ namespace R2RDump
                     writer.WriteLine($"PersonalityRVA:     0x{amd64UnwindInfo.PersonalityRoutineRVA:X4}");
                 }
 
-                int uwcIndex = 0;
-                foreach (UnwindCode unwindCode in amd64UnwindInfo.UnwindCodes)
+                for (int uwcIndex = 0; uwcIndex < amd64UnwindInfo.CountOfUnwindCodes; uwcIndex++)
                 {
+                    UnwindCode unwindCode = amd64UnwindInfo.UnwindCodes[uwcIndex];
                     writer.Write($"UnwindCode[{uwcIndex}]: ");
                     writer.Write($"CodeOffset 0x{unwindCode.CodeOffset:X4} ");
                     writer.Write($"FrameOffset 0x{unwindCode.FrameOffset:X4} ");
