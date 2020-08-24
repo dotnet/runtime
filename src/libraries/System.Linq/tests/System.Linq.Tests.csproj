@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
+    <DefineConstants Condition="'$(TargetOS)' == 'Browser'">$(DefineConstants);OUTERLOOP</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="AggregateTests.cs" />
