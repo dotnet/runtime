@@ -4,12 +4,12 @@
 using System.IO;
 using System.Diagnostics;
 using System.Data.Common;
+using System.Runtime.CompilerServices;
+using System.Runtime.Serialization;
+using System.Runtime.Versioning;
 using System.Xml;
 using System.Xml.Schema;
 using System.Xml.Serialization;
-using System.Runtime.Serialization;
-using System.Runtime.CompilerServices;
-using System.Runtime.Versioning;
 
 namespace System.Data.SqlTypes
 {
