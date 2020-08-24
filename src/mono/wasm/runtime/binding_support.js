@@ -141,10 +141,22 @@ var BindingSupportLib = {
 		},
 
 		mono_array_to_js_array: function (mono_array) {
-			if (mono_array == 0)
+			if (mono_array === 0)
+				return null;
+
+			var arrayRoot = MONO.mono_wasm_new_root (mono_array);
+			try {
+				return this._mono_array_to_js_array_rooted (arrayRoot);
+			} finally {
+				arrayRoot.release();
+			}
+		},
+
+		_mono_array_to_js_array_rooted: function (arrayRoot) {
+			if (arrayRoot.value === 0)
 				return null;
 			
-			let [arrayRoot, elemRoot] = MONO.mono_wasm_new_roots ([mono_array, 0]); 
+			let elemRoot = MONO.mono_wasm_new_root (); 
 
 			try {
 				var res = [];
@@ -152,13 +164,14 @@ var BindingSupportLib = {
 				for (var i = 0; i < len; ++i)
 				{
 					elemRoot.value = this.mono_array_get (arrayRoot.value, i);
+					
 					if (this.is_nested_array (elemRoot.value))
-						res.push (this.mono_array_to_js_array (elemRoot.value));
+						res.push (this._mono_array_to_js_array_rooted (elemRoot));
 					else
 						res.push (this._unbox_mono_obj_rooted (elemRoot));
 				}
 			} finally {
-				MONO.mono_wasm_release_roots (arrayRoot, elemRoot);
+				elemRoot.release();
 			}
 
 			return res;
@@ -381,7 +394,6 @@ var BindingSupportLib = {
 			}
 		},
 
-		// FIXME: Audit all callers, this method returns an unrooted object
 		js_typed_array_to_array : function (js_obj) {
 
 			// JavaScript typed arrays are array-like objects and provide a mechanism for accessing 
@@ -666,7 +678,8 @@ var BindingSupportLib = {
 
 			var args_start = null;
 			var buffer = null;
-			var exception_out = null;
+			var [resultRoot, exceptionRoot] = MONO.mono_wasm_new_roots (2);
+			var argsRootBuffer = null;
 
 			// check if the method signature needs argument mashalling
 			if (has_args_marshal && has_args) {
@@ -705,11 +718,16 @@ var BindingSupportLib = {
 					converters.set (args_marshal, converter);
 				}
 
+				// FIXME: Allocate a root buffer to contain all the managed objects like strings so that they aren't
+				//  collected until the method call completes.
+
 				// assume at least 8 byte alignment from malloc
-				buffer = Module._malloc (converter.size + (args.length * 4) + 4);
+				var bufferSizeBytes = converter.size + (args.length * 4);
+				var bufferSizeElements = (bufferSizeBytes / 4) | 0;
+				argsRootBuffer = MONO.mono_wasm_new_root_buffer (bufferSizeElements);
+				buffer = Module._malloc (bufferSizeBytes);
 				var indirect_start = buffer; // buffer + buffer % 8
-				exception_out = indirect_start + converter.size;
-				args_start = exception_out + 4;
+				args_start = indirect_start + converter.size;
 
 				var slot = args_start;
 				var indirect_value = indirect_start;
@@ -721,37 +739,32 @@ var BindingSupportLib = {
 						Module.setValue (indirect_value, obj, handler.indirect);
 						obj = indirect_value;
 						indirect_value += 8;
+					} else {
+						argsRootBuffer.set (i, obj);
 					}
 
 					Module.setValue (slot, obj, "*");
 					slot += 4;
 				}
-			} else {
-				// only marshal the exception
-				exception_out = buffer = Module._malloc (4);
 			}
 
-			Module.setValue (exception_out, 0, "*");
-
-			var res = MONO.mono_wasm_new_root (this.invoke_method (method, this_arg, args_start, exception_out));
 			try {
-				var eh_res = Module.getValue (exception_out, "*");
-
+				resultRoot.value = this.invoke_method (method, this_arg, args_start, exceptionRoot.get_address ());
 				Module._free (buffer);
 
-				if (eh_res != 0) {
-					var msg = this.conv_string (res.value);
+				if (exceptionRoot.value != 0) {
+					var msg = this.conv_string (resultRoot.value);
 					throw new Error (msg); //the convention is that invoke_method ToString () any outgoing exception
 				}
 
 				if (has_args_marshal && has_args) {
 					if (args_marshal.length >= args.length && args_marshal [args.length] === "m")
-						return res.value;
+						return resultRoot.value;
 				}
 
-				return this._unbox_mono_obj_rooted (res);
+				return this._unbox_mono_obj_rooted (resultRoot);
 			} finally {
-				res.release ();
+				MONO.mono_wasm_release_roots (resultRoot, exceptionRoot, argsRootBuffer);
 			}
 		},
 
@@ -764,23 +777,28 @@ var BindingSupportLib = {
 					throw new Error("The delegate target that is being invoked is no longer available.  Please check if it has been prematurely GC'd.");
 			}
 
-			if (!this.delegate_dynamic_invoke) {
-				if (!this.corlib)
-					this.corlib = this.assembly_load ("System.Private.CoreLib");
-				if (!this.delegate_class)
-					this.delegate_class = this.find_class (this.corlib, "System", "Delegate");
-				if (!this.delegate_class)
-				{
-					throw new Error("System.Delegate class can not be resolved.");
+			var [delegateRoot, argsRoot] = MONO.mono_wasm_new_roots ([this.extract_mono_obj (delegate_obj), undefined]);
+			try {
+				if (!this.delegate_dynamic_invoke) {
+					if (!this.corlib)
+						this.corlib = this.assembly_load ("System.Private.CoreLib");
+					if (!this.delegate_class)
+						this.delegate_class = this.find_class (this.corlib, "System", "Delegate");
+					if (!this.delegate_class)
+					{
+						throw new Error("System.Delegate class can not be resolved.");
+					}
+					this.delegate_dynamic_invoke = this.find_method (this.delegate_class, "DynamicInvoke", -1);
 				}
-				this.delegate_dynamic_invoke = this.find_method (this.delegate_class, "DynamicInvoke", -1);
+				argsRoot.value = this.js_array_to_mono_array (js_args);
+				if (!this.delegate_dynamic_invoke)
+					throw new Error("System.Delegate.DynamicInvoke method can not be resolved.");
+				// Note: the single 'm' passed here is causing problems with AOT.  Changed to "mo" again.  
+				// This may need more analysis if causes problems again.
+				return this.call_method (this.delegate_dynamic_invoke, delegateRoot.value, "mo", [ argsRoot.value ]);
+			} finally {
+				MONO.mono_wasm_release_roots (delegateRoot, argsRoot);
 			}
-			var mono_args = this.js_array_to_mono_array (js_args);
-			if (!this.delegate_dynamic_invoke)
-				throw new Error("System.Delegate.DynamicInvoke method can not be resolved.");
-			// Note: the single 'm' passed here is causing problems with AOT.  Changed to "mo" again.  
-			// This may need more analysis if causes problems again.
-			return this.call_method (this.delegate_dynamic_invoke, this.extract_mono_obj (delegate_obj), "mo", [ mono_args ]);
 		},
 		
 		resolve_method_fqn: function (fqn) {
