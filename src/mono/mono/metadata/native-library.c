@@ -772,6 +772,8 @@ netcore_lookup_native_library (MonoAssemblyLoadContext *alc, MonoImage *image, c
 			g_free (error_msg);
 		}
 
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_DLLIMPORT, "Native library found via __Internal: '%s'.", scope);
+
 		return module;
 	}
 
@@ -796,16 +798,22 @@ netcore_lookup_native_library (MonoAssemblyLoadContext *alc, MonoImage *image, c
 	alc_pinvoke_lock (alc);
 	module = netcore_check_alc_cache (alc, scope);
 	alc_pinvoke_unlock (alc);
-	if (module)
+	if (module) {
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_DLLIMPORT, "Native library found in the active ALC cache: '%s'.", scope);
 		goto leave;
+	}
 
 	module = (MonoDl *)netcore_resolve_with_dll_import_resolver_nofail (alc, assembly, scope, flags);
-	if (module)
+	if (module) {
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_DLLIMPORT, "Native library found via DllImportResolver: '%s'.", scope);
 		goto add_to_alc_cache;
+	}
 
 	module = (MonoDl *)netcore_resolve_with_load_nofail (alc, scope);
-	if (module)
+	if (module) {
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_DLLIMPORT, "Native library found via LoadUnmanagedDll: '%s'.", scope);
 		goto add_to_alc_cache;
+	}
 
 	MONO_ENTER_GC_SAFE;
 	mono_global_loader_data_lock ();
@@ -814,18 +822,24 @@ netcore_lookup_native_library (MonoAssemblyLoadContext *alc, MonoImage *image, c
 	MONO_ENTER_GC_SAFE;
 	mono_global_loader_data_unlock ();
 	MONO_EXIT_GC_SAFE;
-	if (module)
+	if (module) {
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_DLLIMPORT, "Native library found in the global cache: '%s'.", scope);
 		goto add_to_alc_cache;
+	}
 
 	module = netcore_probe_for_module (image, scope, flags);
-	if (module)
+	if (module) {
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_DLLIMPORT, "Native library found via filesystem probing: '%s'.", scope);
 		goto add_to_global_cache;
+	}
 
 	/* As this is last chance, I've opted not to put it in a cache, but that is not necessarily the correct decision.
 	 * It is rather convenient here, however, because it means the global cache will only be populated by libraries
 	 * resolved via netcore_probe_for_module and not NativeLibrary, eliminating potential races/conflicts.
 	 */
 	module = netcore_resolve_with_resolving_event_nofail (alc, assembly, scope);
+	if (module)
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_DLLIMPORT, "Native library found via the Resolving event: '%s'.", scope);
 	goto leave;
 
 add_to_global_cache:
