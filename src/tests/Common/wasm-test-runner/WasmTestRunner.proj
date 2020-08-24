@@ -5,6 +5,7 @@
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <BuildDir>$(MSBuildThisFileDirectory)\obj\$(Configuration)\wasm</BuildDir>
     <AppDir>$(TestBinDir)/WasmApp/</AppDir>
+    <RestoreSources>https://api.nuget.org/v3/index.json;</RestoreSources>
   </PropertyGroup>
 
   <UsingTask TaskName="WasmAppBuilder" 
@@ -13,7 +14,7 @@
   <Target Name="BuildApp">
     <ItemGroup>
       <AssemblySearchPaths Include="$(MicrosoftNetCoreAppRuntimePackDir)\native"/>
-      <AssemblySearchPaths Include="$(MicrosoftNetCoreAppRuntimePackDir)"/>
+      <AssemblySearchPaths Include="$(MicrosoftNetCoreAppRuntimePackDir)\lib\$(NetCoreAppCurrent)"/>
       <AssemblySearchPaths Include="$(CORE_ROOT)/TargetingPack" />
       <AssemblySearchPaths Include="$(TestBinDir)" />
     </ItemGroup>
