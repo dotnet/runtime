@@ -215,9 +215,9 @@ namespace R2RDump
                 string instr;
                 int instrSize = _disassembler.GetInstruction(rtf, imageOffset, rtfOffset, out instr);
 
-                if (_r2r.Machine == Machine.Amd64 && ((ILCompiler.Reflection.ReadyToRun.Amd64.UnwindInfo)rtf.UnwindInfo).UnwindCodes.ContainsKey(codeOffset))
+                if (_r2r.Machine == Machine.Amd64 && ((ILCompiler.Reflection.ReadyToRun.Amd64.UnwindInfo)rtf.UnwindInfo).CodeOffsetToUnwindCodeIndex.TryGetValue(codeOffset, out int unwindCodeIndex))
                 {
-                    ILCompiler.Reflection.ReadyToRun.Amd64.UnwindCode code = ((ILCompiler.Reflection.ReadyToRun.Amd64.UnwindInfo)rtf.UnwindInfo).UnwindCodes[codeOffset];                    
+                    ILCompiler.Reflection.ReadyToRun.Amd64.UnwindCode code = ((ILCompiler.Reflection.ReadyToRun.Amd64.UnwindInfo)rtf.UnwindInfo).UnwindCodes[unwindCodeIndex];
                     _writer.Write($"{indentString}{code.UnwindOp} {code.OpInfoStr}");
                     if (code.NextFrameOffset != -1)
                     {
@@ -406,7 +406,7 @@ namespace R2RDump
                     int assemblyRefCount = 0;
                     if (!_r2r.Composite)
                     {
-                        MetadataReader globalReader = _r2r.GetGlobalMetadataReader();
+                        MetadataReader globalReader = _r2r.GetGlobalMetadata().MetadataReader;
                         assemblyRefCount = globalReader.GetTableRowCount(TableIndex.AssemblyRef) + 1;
                         _writer.WriteLine($"MSIL AssemblyRef's ({assemblyRefCount} entries):");
                         for (int assemblyRefIndex = 1; assemblyRefIndex < assemblyRefCount; assemblyRefIndex++)
