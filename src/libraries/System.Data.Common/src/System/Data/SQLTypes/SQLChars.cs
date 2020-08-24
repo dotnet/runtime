@@ -9,6 +9,7 @@ using System.Xml.Schema;
 using System.Xml.Serialization;
 using System.Runtime.Serialization;
 using System.Runtime.CompilerServices;
+using System.Runtime.Versioning;
 
 namespace System.Data.SqlTypes
 {
@@ -535,6 +536,7 @@ namespace System.Data.SqlTypes
 
         // State information is not saved. The current state is converted to Buffer and only the underlying
         // array is serialized, except for Null, in which case this state is kept.
+        [UnsupportedOSPlatform("browser")]
         void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
         {
             throw new PlatformNotSupportedException();
