@@ -694,7 +694,7 @@
     </ItemGroup>
 
     <!-- CI-specific build options -->
-    <ItemGroup Condition="'$(ContinuousIntegrationBuild)' == 'true'">
+    <ItemGroup Condition="'$(ContinuousIntegrationBuild)' == 'true' and '$(TargetsOSX)' == 'true'">
       <_MonoConfigureParams Include="--enable-werror" />
     </ItemGroup>
 
