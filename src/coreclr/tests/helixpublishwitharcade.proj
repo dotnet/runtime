@@ -273,10 +273,6 @@
     <HelixPreCommand Include="ulimit -c unlimited" Condition=" '$(TargetOS)' == 'OSX' " />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetArchitecture)' == 'wasm'">
-    <HelixPreCommand Include="dotnet restore $(CORE_ROOT)/wasm-test-runner/WasmTestRunner.proj" />
-  </ItemGroup>
-
   <PropertyGroup>
     <HelixPreCommands>@(HelixPreCommand)</HelixPreCommands>
   </PropertyGroup>
