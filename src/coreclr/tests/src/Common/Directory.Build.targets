@@ -93,9 +93,12 @@
           Include="@(RuntimeFiles)"
           TargetDir="runtimepack/native/"/>
 
+        <!-- This throws everything in 'native', include many non-native assemblies.
+             This is done because LibrariesRuntimeFiles includes some .js files that
+             WasmAppBuilder expects in native/-->
         <RunTimeDependencyCopyLocal
           Include="@(LibrariesRuntimeFiles)"
-          TargetDir="runtimepack/"/>
+          TargetDir="runtimepack/native/"/>
 
        <RunTimeDependencyCopyLocal
           Include="$(ArtifactsDir)\TargetingPack\**"
