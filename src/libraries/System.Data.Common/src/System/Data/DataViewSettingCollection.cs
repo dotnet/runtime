@@ -7,6 +7,8 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace System.Data
 {
+    [Editor("Microsoft.VSDesigner.Data.Design.DataViewSettingsCollectionEditor, Microsoft.VSDesigner, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a",
+            "System.Drawing.Design.UITypeEditor, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
     public class DataViewSettingCollection : ICollection
     {
         private readonly DataViewManager _dataViewManager;
