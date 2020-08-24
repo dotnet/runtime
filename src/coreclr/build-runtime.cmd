@@ -444,11 +444,11 @@ if %__BuildCrossArchNative% EQU 1 (
 
     set __CMakeBinDir=%__CrossComponentBinDir%
     set "__CMakeBinDir=!__CMakeBinDir:\=/!"
-    set __ExtraCmakeArgs=%__CMakeClrBuildSubsetArgs% "-DCLR_CROSS_COMPONENTS_BUILD=1" "-DCLR_CMAKE_TARGET_ARCH=%__BuildArch%" "-DCLR_CMAKE_TARGET_OS=%__TargetOS%" "-DCLR_CMAKE_PGO_INSTRUMENT=%__PgoInstrument%" "-DCLR_CMAKE_OPTDATA_PATH=%__PgoOptDataPath%" "-DCLR_CMAKE_PGO_OPTIMIZE=%__PgoOptimize%" "-DCMAKE_SYSTEM_VERSION=10.0" "-DCLR_ENG_NATIVE_DIR=%__RepoRootDir%/eng/native" "-DCLR_REPO_ROOT_DIR=%__RepoRootDir%" %__CMakeArgs%
+    set __ExtraCmakeArgs=%__CMakeClrBuildSubsetArgs% "-DCLR_CROSS_COMPONENTS_BUILD=1" "-DCLR_CMAKE_TARGET_ARCH=%__BuildArch%" "-DCLR_CMAKE_TARGET_OS=%__TargetOS%" "-DCLR_CMAKE_PGO_INSTRUMENT=0" "-DCLR_CMAKE_OPTDATA_PATH=%__PgoOptDataPath%" "-DCLR_CMAKE_PGO_OPTIMIZE=0" "-DCMAKE_SYSTEM_VERSION=10.0" "-DCLR_ENG_NATIVE_DIR=%__RepoRootDir%/eng/native" "-DCLR_REPO_ROOT_DIR=%__RepoRootDir%" %__CMakeArgs%
     call "%__SourceDir%\pal\tools\gen-buildsys.cmd" "%__ProjectDir%" "%__CrossCompIntermediatesDir%" %__VSVersion% %__CrossArch% !__ExtraCmakeArgs!
 
     if not !errorlevel! == 0 (
-        echo %__ErrMsgPrefix%%__MsgPrefix%Error: failed to generate cross architecture native component build project 1!
+        echo %__ErrMsgPrefix%%__MsgPrefix%Error: failed to generate cross architecture native component build project %__CrossArch%!
         goto ExitWithError
     )
     @if defined _echo @echo on
@@ -460,11 +460,11 @@ if %__BuildCrossArchNative% EQU 1 (
 
         set __CMakeBinDir=%__CrossComponent2BinDir%
         set "__CMakeBinDir=!__CMakeBinDir:\=/!"
-        set __ExtraCmakeArgs=%__CMakeClrBuildSubsetArgs% "-DCLR_CROSS_COMPONENTS_BUILD=1" "-DCLR_CMAKE_TARGET_ARCH=%__BuildArch%" "-DCLR_CMAKE_TARGET_OS=%__TargetOS%" "-DCLR_CMAKE_PGO_INSTRUMENT=%__PgoInstrument%" "-DCLR_CMAKE_OPTDATA_PATH=%__PgoOptDataPath%" "-DCLR_CMAKE_PGO_OPTIMIZE=%__PgoOptimize%" "-DCMAKE_SYSTEM_VERSION=10.0" "-DCLR_ENG_NATIVE_DIR=%__RepoRootDir%/eng/native" "-DCLR_REPO_ROOT_DIR=%__RepoRootDir%" %__CMakeArgs%
+        set __ExtraCmakeArgs=%__CMakeClrBuildSubsetArgs% "-DCLR_CROSS_COMPONENTS_BUILD=1" "-DCLR_CMAKE_TARGET_ARCH=%__BuildArch%" "-DCLR_CMAKE_TARGET_OS=%__TargetOS%" "-DCLR_CMAKE_PGO_INSTRUMENT=0" "-DCLR_CMAKE_OPTDATA_PATH=%__PgoOptDataPath%" "-DCLR_CMAKE_PGO_OPTIMIZE=0" "-DCMAKE_SYSTEM_VERSION=10.0" "-DCLR_ENG_NATIVE_DIR=%__RepoRootDir%/eng/native" "-DCLR_REPO_ROOT_DIR=%__RepoRootDir%" %__CMakeArgs%
         call "%__SourceDir%\pal\tools\gen-buildsys.cmd" "%__ProjectDir%" "%__CrossComp2IntermediatesDir%" %__VSVersion% %__CrossArch2% !__ExtraCmakeArgs!
 
         if not !errorlevel! == 0 (
-            echo %__ErrMsgPrefix%%__MsgPrefix%Error: failed to generate cross architecture native component build project 2!
+            echo %__ErrMsgPrefix%%__MsgPrefix%Error: failed to generate cross architecture native component build project %__CrossArch2%!
             goto ExitWithError
         )
 
@@ -475,12 +475,13 @@ if %__BuildCrossArchNative% EQU 1 (
 
 :SkipConfigureCrossBuild
     if not exist "%__CrossCompIntermediatesDir%\CMakeCache.txt" (
-        echo %__ErrMsgPrefix%%__MsgPrefix%Error: unable to find generated cross architecture native component build project1!
+        echo %__ErrMsgPrefix%%__MsgPrefix%Error: unable to find generated cross architecture native component build project %__CrossArch%!
         goto ExitWithError
     )
 
     if NOT "%__CrossArch2%" == "" (
         if not exist "%__CrossComp2IntermediatesDir%\CMakeCache.txt" (
+        echo %__ErrMsgPrefix%%__MsgPrefix%Error: unable to find generated cross architecture native component build project %__CrossArch2%!
             goto ExitWithError
         )
     )

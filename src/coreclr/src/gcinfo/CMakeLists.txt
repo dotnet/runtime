@@ -84,4 +84,9 @@ if (CLR_CMAKE_BUILD_SUBSET_ALLJITS AND NOT CLR_CROSS_COMPONENTS_BUILD)
   create_gcinfo_lib(TARGET gcinfo_win_x86 OS win ARCH x86)
 else()
   create_gcinfo_lib(TARGET gcinfo_${TARGET_OS_NAME}_${ARCH_TARGET_NAME} OS ${TARGET_OS_NAME} ARCH ${ARCH_TARGET_NAME})
+
+  if (CLR_CMAKE_HOST_ARCH_I386)
+    # On x86, build RyuJIT/ARM32 cross-compiling altjit for ARM_SOFTFP (armel).
+    create_gcinfo_lib(TARGET gcinfo_unix_arm OS unix ARCH arm)
+  endif()
 endif (CLR_CMAKE_BUILD_SUBSET_ALLJITS AND NOT CLR_CROSS_COMPONENTS_BUILD)
