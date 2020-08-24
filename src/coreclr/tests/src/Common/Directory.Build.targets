@@ -102,7 +102,7 @@
           TargetDir="WasmAppBuilder/"/>
 
         <RunTimeDependencyCopyLocal
-          Include="$(RepoRoot\src\tests\Common\wasm-test-runner\WasmTestRunner.proj"
+          Include="$(RepoRoot)\src\tests\Common\wasm-test-runner\WasmTestRunner.proj"
           TargetDir="wasm-test-runner/"/>
   
         <RunTimeDependencyCopyLocal
