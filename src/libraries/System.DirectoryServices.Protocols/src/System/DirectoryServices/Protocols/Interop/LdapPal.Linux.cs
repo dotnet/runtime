@@ -54,6 +54,8 @@ namespace System.DirectoryServices.Protocols
 
         internal static void FreeMemory(IntPtr outValue) => Interop.ldap_memfree(outValue);
 
+        internal static void FreeMessage(IntPtr outValue) => Interop.ldap_msgfree(outValue);
+
         internal static int ModifyDirectoryEntry(ConnectionHandle ldapHandle, string dn, IntPtr attrs, IntPtr servercontrol, IntPtr clientcontrol, ref int messageNumber) =>
                                 Interop.ldap_modify(ldapHandle, dn, attrs, servercontrol, clientcontrol, ref messageNumber);
 

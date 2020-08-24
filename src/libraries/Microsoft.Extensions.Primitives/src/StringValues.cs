@@ -6,6 +6,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using System.Text;
 using Microsoft.Extensions.Internal;
 
 namespace Microsoft.Extensions.Primitives
@@ -219,7 +220,7 @@ namespace Microsoft.Extensions.Primitives
                         length += value.Length;
                     }
                 }
-#if NETCOREAPP || NETSTANDARD2_1
+#if NETCOREAPP
                 // Create the new string
                 return string.Create(length, values, (span, strings) => {
                     int offset = 0;
@@ -242,9 +243,7 @@ namespace Microsoft.Extensions.Primitives
                     }
                 });
 #else
-#pragma warning disable CS0618
-                var sb = new InplaceStringBuilder(length);
-#pragma warning restore CS0618
+                var sb = new ValueStringBuilder(length);
                 bool hasAdded = false;
                 // Skip null and empty values
                 for (int i = 0; i < values.Length; i++)

@@ -426,7 +426,9 @@ namespace Microsoft.WebAssembly.Diagnostics
         async Task<Result> RuntimeGetProperties(MessageId id, DotnetObjectId objectId, JToken args, CancellationToken token)
         {
             if (objectId.Scheme == "scope")
+            {
                 return await GetScopeProperties(id, int.Parse(objectId.Value), token);
+            }
 
             var res = await SendMonoCommand(id, MonoCommands.GetDetails(objectId, args), token);
             if (res.IsErr)
@@ -673,64 +675,6 @@ namespace Microsoft.WebAssembly.Diagnostics
             return true;
         }
 
-        internal bool TryFindVariableValueInCache(ExecutionContext ctx, string expression, bool only_search_on_this, out JToken obj)
-        {
-            if (ctx.LocalsCache.TryGetValue(expression, out obj))
-            {
-                if (only_search_on_this && obj["fromThis"] == null)
-                    return false;
-                return true;
-            }
-            return false;
-        }
-
-        internal async Task<JToken> TryGetVariableValue(MessageId msg_id, int scope_id, string expression, bool only_search_on_this, CancellationToken token)
-        {
-            JToken thisValue = null;
-            var context = GetContext(msg_id);
-            if (context.CallStack == null)
-                return null;
-
-            if (TryFindVariableValueInCache(context, expression, only_search_on_this, out JToken obj))
-                return obj;
-
-            var scope = context.CallStack.FirstOrDefault(s => s.Id == scope_id);
-            var live_vars = scope.Method.GetLiveVarsAt(scope.Location.CliLocation.Offset);
-            //get_this
-            var res = await SendMonoCommand(msg_id, MonoCommands.GetScopeVariables(scope.Id, live_vars), token);
-
-            var scope_values = res.Value?["result"]?["value"]?.Values<JObject>()?.ToArray();
-            thisValue = scope_values?.FirstOrDefault(v => v["name"]?.Value<string>() == "this");
-
-            if (!only_search_on_this)
-            {
-                if (thisValue != null && expression == "this")
-                    return thisValue;
-
-                var value = scope_values.SingleOrDefault(sv => sv["name"]?.Value<string>() == expression);
-                if (value != null)
-                    return value;
-            }
-
-            //search in scope
-            if (thisValue != null)
-            {
-                if (!DotnetObjectId.TryParse(thisValue["value"]["objectId"], out var objectId))
-                    return null;
-
-                res = await SendMonoCommand(msg_id, MonoCommands.GetDetails(objectId), token);
-                scope_values = res.Value?["result"]?["value"]?.Values<JObject>().ToArray();
-                var foundValue = scope_values.FirstOrDefault(v => v["name"].Value<string>() == expression);
-                if (foundValue != null)
-                {
-                    foundValue["fromThis"] = true;
-                    context.LocalsCache[foundValue["name"].Value<string>()] = foundValue;
-                    return foundValue;
-                }
-            }
-            return null;
-        }
-
         async Task<bool> OnEvaluateOnCallFrame(MessageId msg_id, int scope_id, string expression, CancellationToken token)
         {
             try
@@ -739,35 +683,40 @@ namespace Microsoft.WebAssembly.Diagnostics
                 if (context.CallStack == null)
                     return false;
 
-                var varValue = await TryGetVariableValue(msg_id, scope_id, expression, false, token);
+                var resolver = new MemberReferenceResolver(this, context, msg_id, scope_id, logger);
 
-                if (varValue != null)
+                JObject retValue = await resolver.Resolve(expression, token);
+                if (retValue == null)
+                {
+                    retValue = await EvaluateExpression.CompileAndRunTheExpression(expression, resolver, token);
+                }
+
+                if (retValue != null)
                 {
                     SendResponse(msg_id, Result.OkFromObject(new
                     {
-                        result = varValue["value"]
+                        result = retValue
                     }), token);
-                    return true;
                 }
-
-                string retValue = await EvaluateExpression.CompileAndRunTheExpression(this, msg_id, scope_id, expression, token);
-                SendResponse(msg_id, Result.OkFromObject(new
+                else
                 {
-                    result = new
-                    {
-                        value = retValue
-                    }
-                }), token);
-                return true;
+                    SendResponse(msg_id, Result.Err($"Unable to evaluate '{expression}'"), token);
+                }
+            }
+            catch (ReturnAsErrorException ree)
+            {
+                SendResponse(msg_id, ree.Error, token);
             }
             catch (Exception e)
             {
-                logger.LogDebug(e, $"Error in EvaluateOnCallFrame for expression '{expression}.");
+                logger.LogDebug($"Error in EvaluateOnCallFrame for expression '{expression}' with '{e}.");
+                SendResponse(msg_id, Result.Exception(e), token);
             }
-            return false;
+
+            return true;
         }
 
-        async Task<Result> GetScopeProperties(MessageId msg_id, int scope_id, CancellationToken token)
+        internal async Task<Result> GetScopeProperties(MessageId msg_id, int scope_id, CancellationToken token)
         {
             try
             {
@@ -788,8 +737,11 @@ namespace Microsoft.WebAssembly.Diagnostics
                 if (values == null || values.Length == 0)
                     return Result.OkFromObject(new { result = Array.Empty<object>() });
 
+                var frameCache = ctx.GetCacheForScope(scope_id);
                 foreach (var value in values)
-                    ctx.LocalsCache[value["name"]?.Value<string>()] = value;
+                {
+                    frameCache.Locals[value["name"]?.Value<string>()] = value;
+                }
 
                 return Result.OkFromObject(new { result = values });
             }

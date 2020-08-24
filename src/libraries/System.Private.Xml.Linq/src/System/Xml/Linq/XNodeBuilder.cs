@@ -2,15 +2,16 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 
 namespace System.Xml.Linq
 {
     internal class XNodeBuilder : XmlWriter
     {
-        private List<object> _content;
-        private XContainer _parent;
-        private XName _attrName;
-        private string _attrValue;
+        private List<object>? _content;
+        private XContainer? _parent;
+        private XName? _attrName;
+        private string? _attrValue;
         private readonly XContainer _root;
 
         public XNodeBuilder(XContainer container)
@@ -60,9 +61,9 @@ namespace System.Xml.Linq
             throw new NotSupportedException(SR.NotSupported_WriteBase64);
         }
 
-        public override void WriteCData(string text)
+        public override void WriteCData(string? text)
         {
-            AddNode(new XCData(text));
+            AddNode(new XCData(text!));
         }
 
         public override void WriteCharEntity(char ch)
@@ -75,19 +76,20 @@ namespace System.Xml.Linq
             AddString(new string(buffer, index, count));
         }
 
-        public override void WriteComment(string text)
+        public override void WriteComment(string? text)
         {
-            AddNode(new XComment(text));
+            AddNode(new XComment(text!));
         }
 
-        public override void WriteDocType(string name, string pubid, string sysid, string subset)
+        public override void WriteDocType(string name, string? pubid, string? sysid, string? subset)
         {
+            Debug.Assert(subset != null);
             AddNode(new XDocumentType(name, pubid, sysid, subset));
         }
 
         public override void WriteEndAttribute()
         {
-            XAttribute a = new XAttribute(_attrName, _attrValue);
+            XAttribute a = new XAttribute(_attrName!, _attrValue!);
             _attrName = null;
             _attrValue = null;
             if (_parent != null)
@@ -106,7 +108,7 @@ namespace System.Xml.Linq
 
         public override void WriteEndElement()
         {
-            _parent = ((XElement)_parent).parent;
+            _parent = ((XElement)_parent!).parent;
         }
 
         public override void WriteEntityRef(string name)
@@ -135,7 +137,7 @@ namespace System.Xml.Linq
 
         public override void WriteFullEndElement()
         {
-            XElement e = (XElement)_parent;
+            XElement e = (XElement)_parent!;
             if (e.IsEmpty)
             {
                 e.Add(string.Empty);
@@ -143,13 +145,13 @@ namespace System.Xml.Linq
             _parent = e.parent;
         }
 
-        public override void WriteProcessingInstruction(string name, string text)
+        public override void WriteProcessingInstruction(string name, string? text)
         {
             if (name == "xml")
             {
                 return;
             }
-            AddNode(new XProcessingInstruction(name, text));
+            AddNode(new XProcessingInstruction(name, text!));
         }
 
         public override void WriteRaw(char[] buffer, int index, int count)
@@ -162,10 +164,10 @@ namespace System.Xml.Linq
             AddString(data);
         }
 
-        public override void WriteStartAttribute(string prefix, string localName, string namespaceName)
+        public override void WriteStartAttribute(string? prefix, string localName, string? namespaceName)
         {
             if (prefix == null) throw new ArgumentNullException(nameof(prefix));
-            _attrName = XNamespace.Get(prefix.Length == 0 ? string.Empty : namespaceName).GetName(localName);
+            _attrName = XNamespace.Get(prefix.Length == 0 ? string.Empty : namespaceName!).GetName(localName);
             _attrValue = string.Empty;
         }
 
@@ -177,12 +179,12 @@ namespace System.Xml.Linq
         {
         }
 
-        public override void WriteStartElement(string prefix, string localName, string namespaceName)
+        public override void WriteStartElement(string? prefix, string localName, string? namespaceName)
         {
-            AddNode(new XElement(XNamespace.Get(namespaceName).GetName(localName)));
+            AddNode(new XElement(XNamespace.Get(namespaceName!).GetName(localName)));
         }
 
-        public override void WriteString(string text)
+        public override void WriteString(string? text)
         {
             AddString(text);
         }
@@ -200,7 +202,7 @@ namespace System.Xml.Linq
             WriteString(XmlConvert.ToString(value));
         }
 
-        public override void WriteWhitespace(string ws)
+        public override void WriteWhitespace(string? ws)
         {
             AddString(ws);
         }
@@ -224,14 +226,14 @@ namespace System.Xml.Linq
             {
                 Add(n);
             }
-            XContainer c = n as XContainer;
+            XContainer? c = n as XContainer;
             if (c != null)
             {
                 _parent = c;
             }
         }
 
-        private void AddString(string s)
+        private void AddString(string? s)
         {
             if (s == null)
             {

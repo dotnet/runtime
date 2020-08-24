@@ -795,7 +795,7 @@ namespace System.Net.Sockets
 
         private static NetworkException GetCustomNetworkException(string message, Exception? innerException = null)
         {
-            return new NetworkException(message, NetworkError.Unknown, innerException);
+            return new NetworkException(message, NetworkError.Other, innerException);
         }
     }
 }

@@ -1,9 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
+using System.Diagnostics;
 using System.Diagnostics.Tracing;
-using System.Runtime.CompilerServices;
 using System.Threading;
 
 namespace System.Net.Http
@@ -18,10 +17,16 @@ namespace System.Net.Http
         private PollingCounter? _startedRequestsCounter;
         private PollingCounter? _currentRequestsCounter;
         private PollingCounter? _abortedRequestsCounter;
+        private PollingCounter? _totalHttp11ConnectionsCounter;
+        private PollingCounter? _totalHttp20ConnectionsCounter;
+        private EventCounter? _requestsQueueDurationCounter;
 
         private long _startedRequests;
         private long _stoppedRequests;
         private long _abortedRequests;
+
+        private long _openedHttp11Connections;
+        private long _openedHttp20Connections;
 
         // NOTE
         // - The 'Start' and 'Stop' suffixes on the following event names have special meaning in EventSource. They
@@ -49,6 +54,49 @@ namespace System.Net.Http
         {
             Interlocked.Increment(ref _abortedRequests);
             WriteEvent(eventId: 3);
+        }
+
+        [Event(4, Level = EventLevel.Informational)]
+        public void Http11ConnectionEstablished()
+        {
+            Interlocked.Increment(ref _openedHttp11Connections);
+            WriteEvent(eventId: 4);
+        }
+
+        [Event(5, Level = EventLevel.Informational)]
+        public void Http11ConnectionClosed()
+        {
+            long count = Interlocked.Decrement(ref _openedHttp11Connections);
+            Debug.Assert(count >= 0);
+            WriteEvent(eventId: 5);
+        }
+
+        [Event(6, Level = EventLevel.Informational)]
+        public void Http20ConnectionEstablished()
+        {
+            Interlocked.Increment(ref _openedHttp20Connections);
+            WriteEvent(eventId: 6);
+        }
+
+        [Event(7, Level = EventLevel.Informational)]
+        public void Http20ConnectionClosed()
+        {
+            long count = Interlocked.Decrement(ref _openedHttp20Connections);
+            Debug.Assert(count >= 0);
+            WriteEvent(eventId: 7);
+        }
+
+        [Event(8, Level = EventLevel.Informational)]
+        public void Http11RequestLeftQueue(double timeOnQueueMilliseconds)
+        {
+            _requestsQueueDurationCounter!.WriteMetric(timeOnQueueMilliseconds);
+            WriteEvent(eventId: 8, timeOnQueueMilliseconds);
+        }
+
+        [Event(9, Level = EventLevel.Informational)]
+        public void ResponseHeadersBegin()
+        {
+            WriteEvent(eventId: 9);
         }
 
         protected override void OnEventCommand(EventCommandEventArgs command)
@@ -92,6 +140,22 @@ namespace System.Net.Http
                 _currentRequestsCounter ??= new PollingCounter("current-requests", this, () => -Interlocked.Read(ref _stoppedRequests) + Interlocked.Read(ref _startedRequests))
                 {
                     DisplayName = "Current Requests"
+                };
+
+                _totalHttp11ConnectionsCounter ??= new PollingCounter("http11-connections-current-total", this, () => Interlocked.Read(ref _openedHttp11Connections))
+                {
+                    DisplayName = "Current Http 1.1 Connections"
+                };
+
+                _totalHttp20ConnectionsCounter ??= new PollingCounter("http20-connections-current-total", this, () => Interlocked.Read(ref _openedHttp20Connections))
+                {
+                    DisplayName = "Current Http 2.0 Connections"
+                };
+
+                _requestsQueueDurationCounter ??= new EventCounter("http11-requests-queue-duration", this)
+                {
+                    DisplayName = "HTTP 1.1 Requests Queue Duration",
+                    DisplayUnits = "ms"
                 };
             }
         }
@@ -145,6 +209,21 @@ namespace System.Net.Http
 
                     WriteEventCore(eventId, NumEventDatas, descrs);
                 }
+            }
+        }
+
+        [NonEvent]
+        private unsafe void WriteEvent(int eventId, double arg1)
+        {
+            if (IsEnabled())
+            {
+                EventData descr = new EventData
+                {
+                    DataPointer = (IntPtr)(&arg1),
+                    Size = sizeof(double)
+                };
+
+                WriteEventCore(eventId, eventDataCount: 1, &descr);
             }
         }
     }

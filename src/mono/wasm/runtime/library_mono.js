@@ -10,6 +10,36 @@
  * @property {object} o - value parsed as JSON
  */
 
+/**
+ * @typedef WasmRoot - a single address in the managed heap, visible to the GC
+ * @type {object}
+ * @property {ManagedPointer} value - pointer into the managed heap, stored in the root
+ * @property {function} get_address - retrieves address of the root in wasm memory
+ * @property {function} get - retrieves pointer value
+ * @property {function} set - updates the pointer
+ * @property {function} release - releases the root storage for future use
+ */
+
+/**
+ * @typedef WasmRootBuffer - a collection of addresses in the managed heap, visible to the GC
+ * @type {object}
+ * @property {number} length - number of elements the root buffer can hold
+ * @property {function} get_address - retrieves address of an element in wasm memory, by index
+ * @property {function} get - retrieves an element by index
+ * @property {function} set - sets an element's value by index
+ * @property {function} release - releases the root storage for future use
+ */
+
+/**
+ * @typedef ManagedPointer
+ * @type {number} - address in the managed heap
+ */
+
+/**
+ * @typedef NativePointer
+ * @type {number} - address in wasm memory
+ */
+
 var MonoSupportLib = {
 	$MONO__postset: 'MONO.export_functions (Module);',
 	$MONO: {
@@ -43,6 +73,222 @@ var MonoSupportLib = {
 			module ["mono_wasm_load_icu_data"] = MONO.mono_wasm_load_icu_data;
 			module ["mono_wasm_globalization_init"] = MONO.mono_wasm_globalization_init;
 			module ["mono_wasm_get_loaded_files"] = MONO.mono_wasm_get_loaded_files;
+			module ["mono_wasm_new_root_buffer"] = MONO.mono_wasm_new_root_buffer;
+			module ["mono_wasm_new_root"] = MONO.mono_wasm_new_root;
+			module ["mono_wasm_new_roots"] = MONO.mono_wasm_new_roots;
+			module ["mono_wasm_release_roots"] = MONO.mono_wasm_release_roots;
+		},
+
+		_mono_wasm_root_buffer_prototype: {
+			_check_in_range: function (index) {
+				if ((index >= this.__count) || (index < 0))
+					throw new Error ("index out of range");
+			},
+			/** @returns {NativePointer} */
+			get_address: function (index) {
+				this._check_in_range (index);
+				return this.__offset + (index * 4);
+			},
+			/** @returns {number} */
+			get_address_32: function (index) {
+				this._check_in_range (index);
+				return this.__offset32 + index;
+			},
+			/** @returns {ManagedPointer} */
+			get: function (index) {
+				this._check_in_range (index);				
+				return Module.HEAP32[this.get_address_32 (index)];
+			},
+			set: function (index, value) {
+				this._check_in_range (index);
+				Module.HEAP32[this.get_address_32 (index)] = value;
+				return value;
+			},
+			release: function () {
+				if (this.__offset) {
+					MONO.mono_wasm_deregister_root (this.__offset);
+					MONO._zero_region (this.__offset, this.__count * 4);
+					Module._free (this.__offset);
+				}
+
+				this.__handle = this.__offset = this.__count = this.__offset32 = undefined;
+			},
+		},
+
+		_scratch_root_buffer: null,
+		_scratch_root_free_indices: null,
+
+		_mono_wasm_root_prototype: {
+			/** @returns {NativePointer} */
+			get_address: function () {
+				return this.__buffer.get_address (this.__index);
+			},
+			/** @returns {number} */
+			get_address_32: function () {
+				return this.__buffer.get_address_32 (this.__index);
+			},
+			/** @returns {ManagedPointer} */
+			get: function () {
+				var result = this.__buffer.get (this.__index);
+				return result;
+			},
+			set: function (value) {
+				this.__buffer.set (this.__index, value);
+				return value;
+			},
+			/** @returns {ManagedPointer} */
+			valueOf: function () {
+				return this.get ();
+			},
+			release: function () {
+				MONO._mono_wasm_release_scratch_index (this.__index);
+				this.__buffer = undefined;
+				this.__index = undefined;
+			}
+		},
+
+		_mono_wasm_release_scratch_index: function (index) {
+			if (index === undefined)
+				return;
+
+			this._scratch_root_buffer.set (index, 0);
+			this._scratch_root_free_indices.push (index);
+		},
+
+		_mono_wasm_claim_scratch_index: function () {
+			if (!this._scratch_root_buffer) {
+				const maxScratchRoots = 8192;
+				this._scratch_root_buffer = this.mono_wasm_new_root_buffer (maxScratchRoots, "js roots");
+
+				this._scratch_root_free_indices = new Array (maxScratchRoots);
+				for (var i = 0; i < maxScratchRoots; i++)
+					this._scratch_root_free_indices[i] = i;
+				this._scratch_root_free_indices.reverse ();
+
+				Object.defineProperty (this._mono_wasm_root_prototype, "value", {
+					get: this._mono_wasm_root_prototype.get,
+					set: this._mono_wasm_root_prototype.set,
+					configurable: false
+				});
+			}
+
+			if (this._scratch_root_free_indices.length < 1)
+				throw new Error ("Out of scratch root space");
+
+			var result = this._scratch_root_free_indices.pop ();
+			return result;
+		},
+
+		_zero_region: function (byteOffset, sizeBytes) {
+			(new Uint8Array (Module.HEAPU8.buffer, byteOffset, sizeBytes)).fill (0);
+		},
+
+		/**
+		 * Allocates a block of memory that can safely contain pointers into the managed heap.
+		 * The result object has get(index) and set(index, value) methods that can be used to retrieve and store managed pointers.
+		 * Once you are done using the root buffer, you must call its release() method.
+		 * For small numbers of roots, it is preferable to use the mono_wasm_new_root and mono_wasm_new_roots APIs instead.
+		 * @param {number} capacity - the maximum number of elements the buffer can hold.
+		 * @param {string} [msg] - a description of the root buffer (for debugging)
+		 * @returns {WasmRootBuffer}
+		 */
+		mono_wasm_new_root_buffer: function (capacity, msg) {
+			if (!this.mono_wasm_register_root || !this.mono_wasm_deregister_root) {
+				this.mono_wasm_register_root = Module.cwrap ("mono_wasm_register_root", "number", ["number", "number", "string"]);
+				this.mono_wasm_deregister_root = Module.cwrap ("mono_wasm_deregister_root", null, ["number"]);
+			}
+
+			if (capacity <= 0)
+				throw new Error ("capacity >= 1");
+
+			capacity = capacity | 0;
+				
+			var capacityBytes = capacity * 4;
+			var offset = Module._malloc (capacityBytes);
+			if ((offset % 4) !== 0)
+				throw new Error ("Malloc returned an unaligned offset");
+
+			this._zero_region (offset, capacityBytes);
+
+			var result = Object.create (this._mono_wasm_root_buffer_prototype);
+			result.__offset = offset;
+			result.__offset32 = (offset / 4) | 0;
+			result.__count = capacity;	
+			result.length = capacity;
+			result.__handle = this.mono_wasm_register_root (offset, capacityBytes, msg || 0);
+
+			return result;
+		},
+
+		/**
+		 * Allocates temporary storage for a pointer into the managed heap.
+		 * Pointers stored here will be visible to the GC, ensuring that the object they point to aren't moved or collected.
+		 * If you already have a managed pointer you can pass it as an argument to initialize the temporary storage.
+		 * The result object has get() and set(value) methods, along with a .value property.
+		 * When you are done using the root you must call its .release() method.
+		 * @param {ManagedPointer} [value] - an address in the managed heap to initialize the root with (or 0)
+		 * @returns {WasmRoot}
+		 */
+		mono_wasm_new_root: function (value) {
+			var index = this._mono_wasm_claim_scratch_index ();
+			var buffer = this._scratch_root_buffer;
+				
+			var result = Object.create (this._mono_wasm_root_prototype);
+			result.__buffer = buffer;
+			result.__index = index;
+
+			if (value !== undefined) {
+				if (typeof (value) !== "number")
+					throw new Error ("value must be an address in the managed heap");
+
+				result.set (value);
+			} else {
+				result.set (0);
+			}
+
+			return result;
+		},
+
+		/**
+		 * Allocates 1 or more temporary roots, accepting either a number of roots or an array of pointers.
+		 * mono_wasm_new_roots(n): returns an array of N zero-initialized roots.
+		 * mono_wasm_new_roots([a, b, ...]) returns an array of new roots initialized with each element.
+		 * Each root must be released with its release method, or using the mono_wasm_release_roots API.
+		 * @param {(number | ManagedPointer[])} count_or_values - either a number of roots or an array of pointers
+		 * @returns {WasmRoot[]}
+		 */
+		mono_wasm_new_roots: function (count_or_values) {
+			var result;
+
+			if (Array.isArray (count_or_values)) {
+				result = new Array (count_or_values.length);
+				for (var i = 0; i < result.length; i++)
+					result[i] = this.mono_wasm_new_root (count_or_values[i]);
+			} else if ((count_or_values | 0) > 0) {
+				result = new Array (count_or_values);
+				for (var i = 0; i < result.length; i++)
+					result[i] = this.mono_wasm_new_root ();
+			} else {
+				throw new Error ("count_or_values must be either an array or a number greater than 0");
+			}
+
+			return result;
+		},
+
+		/**
+		 * Releases 1 or more root or root buffer objects.
+		 * Multiple objects may be passed on the argument list.
+		 * 'undefined' may be passed as an argument so it is safe to call this method from finally blocks
+		 *  even if you are not sure all of your roots have been created yet.
+		 * @param {... WasmRoot} roots 
+		 */
+		mono_wasm_release_roots: function () {
+			for (var i = 0; i < arguments.length; i++) {
+				if (!arguments[i])
+					continue;
+
+				arguments[i].release ();
+			}
 		},
 
 		mono_text_decoder: undefined,
@@ -189,6 +435,73 @@ var MonoSupportLib = {
 
 			return res;
 		},
+
+        _resolve_member_by_name: function (base_object, base_name, expr_parts) {
+            if (base_object === undefined || base_object.value === undefined)
+                throw new Error(`Bug: base_object is undefined`);
+
+            if (base_object.value.type === 'object' && base_object.value.subtype === 'null')
+                throw new ReferenceError(`Null reference: ${base_name} is null`);
+
+            if (base_object.value.type !== 'object')
+                throw new ReferenceError(`'.' is only supported on non-primitive types. Failed on '${base_name}'`);
+
+            if (expr_parts.length == 0)
+                throw new Error(`Invalid member access expression`);//FIXME: need the full expression here
+
+            const root = expr_parts[0];
+            const props = this.mono_wasm_get_details(base_object.value.objectId, {});
+            let resObject = props.find(l => l.name == root);
+            if (resObject !== undefined) {
+                if (resObject.value === undefined && resObject.get !== undefined)
+                    resObject = this._invoke_getter(base_object.value.objectId, root);
+            }
+
+            if (resObject === undefined || expr_parts.length == 1)
+                return resObject;
+            else {
+                expr_parts.shift();
+                return this._resolve_member_by_name(resObject, root, expr_parts);
+            }
+        },
+
+        mono_wasm_eval_member_access: function (scope, var_list, rootObjectId, expr) {
+            if (expr === undefined || expr.length == 0)
+                throw new Error(`expression argument required`);
+
+            let parts = expr.split('.');
+            if (parts.length == 0)
+                throw new Error(`Invalid member access expression: ${expr}`);
+
+            const root = parts[0];
+
+            const locals = this.mono_wasm_get_variables(scope, var_list);
+            let rootObject = locals.find(l => l.name === root);
+            if (rootObject === undefined) {
+                // check `this`
+                const thisObject = locals.find(l => l.name == "this");
+                if (thisObject === undefined)
+                    throw new ReferenceError(`Could not find ${root} in locals, and no 'this' found.`);
+
+                const thisProps = this.mono_wasm_get_details(thisObject.value.objectId, {});
+                rootObject = thisProps.find(tp => tp.name == root);
+                if (rootObject === undefined)
+                    throw new ReferenceError(`Could not find ${root} in locals, or in 'this'`);
+
+                if (rootObject.value === undefined && rootObject.get !== undefined)
+                    rootObject = this._invoke_getter(thisObject.value.objectId, root);
+            }
+
+            parts.shift();
+
+            if (parts.length == 0)
+                return rootObject;
+
+            if (rootObject === undefined || rootObject.value === undefined)
+                throw new Error(`Could not get a value for ${root}`);
+
+            return this._resolve_member_by_name(rootObject, root, parts);
+        },
 
 		/**
 		 * @param  {WasmId} id
@@ -697,7 +1010,7 @@ var MonoSupportLib = {
 		},
 
 		mono_wasm_start_single_stepping: function (kind) {
-			console.log (">> mono_wasm_start_single_stepping " + kind);
+			console.debug (">> mono_wasm_start_single_stepping " + kind);
 			if (!this.mono_wasm_setup_single_step)
 				this.mono_wasm_setup_single_step = Module.cwrap ("mono_wasm_setup_single_step", 'number', [ 'number']);
 
@@ -869,7 +1182,7 @@ var MonoSupportLib = {
 			if (ENVIRONMENT_IS_NODE) {
 				var fs = require('fs');
 				return function (asset) {
-					console.log ("MONO_WASM: Loading... " + asset);
+					console.debug ("MONO_WASM: Loading... " + asset);
 					var binary = fs.readFileSync (asset);
 					var resolve_func2 = function (resolve, reject) {
 						resolve (new Uint8Array (binary));
@@ -901,8 +1214,6 @@ var MonoSupportLib = {
 			var bytes = new Uint8Array (blob);
 			if (ctx.tracing)
 				console.log ("MONO_WASM: Loaded:", asset.name, "size", bytes.length, "from", url);
-			else
-				console.log ("MONO_WASM: Loaded:", asset.name);
 
 			var virtualName = asset.virtual_path || asset.name;
 			var offset = null;
@@ -984,10 +1295,12 @@ var MonoSupportLib = {
 			for (var i = 0; i < file_list.length; i++) {
 				var file_name = file_list[i];
 				var behavior;
-				if (file_name === "icudt.dat")
+				if (file_name.startsWith ("icudt") && file_name.endsWith (".dat")) {
+					// ICU data files are expected to be "icudt%FilterName%.dat"
 					behavior = "icu";
-				else // if (file_name.endsWith (".pdb") || file_name.endsWith (".dll"))
+				} else { // if (file_name.endsWith (".pdb") || file_name.endsWith (".dll"))
 					behavior = "assembly";
+				}
 
 				args.assets.push ({
 					name: file_name,
@@ -1079,7 +1392,7 @@ var MonoSupportLib = {
 
 			var load_runtime = Module.cwrap ('mono_wasm_load_runtime', null, ['string', 'number']);
 
-			console.log ("MONO_WASM: Initializing mono runtime");
+			console.debug ("MONO_WASM: Initializing mono runtime");
 
 			this.mono_wasm_globalization_init (args.globalization_mode);
 
@@ -1189,7 +1502,7 @@ var MonoSupportLib = {
 								(asset.name.match (/\.pdb$/) && MONO.mono_wasm_ignore_pdb_load_errors);
 
 							if (isOk)
-								console.log (msg);
+								console.debug (msg);
 							else {
 								console.error (msg);
 								throw new Error (msg);
@@ -1248,9 +1561,9 @@ var MonoSupportLib = {
 
 			if (!invariantMode) {
 				if (this.num_icu_assets_loaded_successfully > 0) {
-					console.log ("MONO_WASM: ICU data archive(s) loaded, disabling invariant mode");
+					console.debug ("MONO_WASM: ICU data archive(s) loaded, disabling invariant mode");
 				} else if (globalization_mode !== "icu") {
-					console.log ("MONO_WASM: ICU data archive(s) not loaded, using invariant globalization mode");
+					console.debug ("MONO_WASM: ICU data archive(s) not loaded, using invariant globalization mode");
 					invariantMode = true;
 				} else {
 					var msg = "invariant globalization mode is inactive and no ICU data archives were loaded";
@@ -1754,7 +2067,6 @@ var MonoSupportLib = {
 	},
 
 	mono_wasm_fire_bp: function () {
-		console.log ("mono_wasm_fire_bp");
 		// eslint-disable-next-line no-debugger
 		debugger;
 	},

@@ -12,6 +12,7 @@ using System.Threading.Tasks;
 
 namespace System.Media
 {
+    [ToolboxItem(false)]
     public class SoundPlayer : Component, ISerializable
     {
         private const int BlockSize = 1024;

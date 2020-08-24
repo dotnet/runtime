@@ -1230,8 +1230,7 @@ void Thread::SetAbortEndTime(ULONGLONG endTime, BOOL fRudeAbort)
 HRESULT
 Thread::UserAbort(ThreadAbortRequester requester,
                   EEPolicy::ThreadAbortTypes abortType,
-                  DWORD timeout,
-                  UserAbort_Client client
+                  DWORD timeout
                  )
 {
     CONTRACTL
@@ -1299,13 +1298,6 @@ Thread::UserAbort(ThreadAbortRequester requester,
     }
 
     _ASSERTE(this != pCurThread);      // Aborting another thread.
-
-    if (client == UAC_Host)
-    {
-        // A host may call ICLRTask::Abort on a critical thread.  We don't want to
-        // block this thread.
-        return S_OK;
-    }
 
 #ifdef _DEBUG
     DWORD elapsed_time = 0;
@@ -2269,111 +2261,112 @@ void Thread::RareDisablePreemptiveGC()
         goto Exit;
     }
 
+    if (ThreadStore::HoldingThreadStore(this))
+    {
+        goto Exit;
+    }
+
     // Note IsGCInProgress is also true for say Pause (anywhere SuspendEE happens) and GCThread is the
     // thread that did the Pause. While in Pause if another thread attempts Rev/Pinvoke it should get inside the following and
     // block until resume
     if ((GCHeapUtilities::IsGCInProgress()  && (this != ThreadSuspend::GetSuspensionThread())) ||
         (m_State & (TS_DebugSuspendPending | TS_StackCrawlNeeded)))
     {
-        if (!ThreadStore::HoldingThreadStore(this))
+        STRESS_LOG1(LF_SYNC, LL_INFO1000, "RareDisablePreemptiveGC: entering. Thread state = %x\n", m_State.Load());
+
+        DWORD dwSwitchCount = 0;
+
+        for (;;)
         {
-            STRESS_LOG1(LF_SYNC, LL_INFO1000, "RareDisablePreemptiveGC: entering. Thread state = %x\n", m_State.Load());
+            EnablePreemptiveGC();
 
-            DWORD dwSwitchCount = 0;
+            // Cannot use GCX_PREEMP_NO_DTOR here because we're inside of the thread
+            // PREEMP->COOP switch mechanism and GCX_PREEMP's assert's will fire.
+            // Instead we use BEGIN_GCX_ASSERT_PREEMP to inform Scan of the mode
+            // change here.
+            BEGIN_GCX_ASSERT_PREEMP;
 
-            do
+            // just wait until the GC is over.
+            if (this != ThreadSuspend::GetSuspensionThread())
             {
-                EnablePreemptiveGC();
-
-                // Cannot use GCX_PREEMP_NO_DTOR here because we're inside of the thread
-                // PREEMP->COOP switch mechanism and GCX_PREEMP's assert's will fire.
-                // Instead we use BEGIN_GCX_ASSERT_PREEMP to inform Scan of the mode
-                // change here.
-                BEGIN_GCX_ASSERT_PREEMP;
-
-                // just wait until the GC is over.
-                if (this != ThreadSuspend::GetSuspensionThread())
+#ifdef PROFILING_SUPPORTED
+                // If profiler desires GC events, notify it that this thread is waiting until the GC is over
+                // Do not send suspend notifications for debugger suspensions
                 {
-#ifdef PROFILING_SUPPORTED
-                    // If profiler desires GC events, notify it that this thread is waiting until the GC is over
-                    // Do not send suspend notifications for debugger suspensions
+                    BEGIN_PIN_PROFILER(CORProfilerTrackSuspends());
+                    if (!(m_State & TS_DebugSuspendPending))
                     {
-                        BEGIN_PIN_PROFILER(CORProfilerTrackSuspends());
-                        if (!(m_State & TS_DebugSuspendPending))
-                        {
-                            g_profControlBlock.pProfInterface->RuntimeThreadSuspended((ThreadID)this);
-                        }
-                        END_PIN_PROFILER();
+                        g_profControlBlock.pProfInterface->RuntimeThreadSuspended((ThreadID)this);
                     }
+                    END_PIN_PROFILER();
+                }
 #endif // PROFILING_SUPPORTED
 
+                DWORD status = S_OK;
+                SetThreadStateNC(TSNC_WaitUntilGCFinished);
+                status = GCHeapUtilities::GetGCHeap()->WaitUntilGCComplete();
+                ResetThreadStateNC(TSNC_WaitUntilGCFinished);
 
-
-                    DWORD status = S_OK;
-                    SetThreadStateNC(TSNC_WaitUntilGCFinished);
-                    status = GCHeapUtilities::GetGCHeap()->WaitUntilGCComplete();
-                    ResetThreadStateNC(TSNC_WaitUntilGCFinished);
-
-                    if (status == (DWORD)COR_E_STACKOVERFLOW)
+                if (status == (DWORD)COR_E_STACKOVERFLOW)
+                {
+                    // One of two things can happen here:
+                    // 1. GC is suspending the process.  GC needs to wait.
+                    // 2. GC is proceeding after suspension.  The current thread needs to spin.
+                    SetThreadState(TS_BlockGCForSO);
+                    while (GCHeapUtilities::IsGCInProgress() && m_fPreemptiveGCDisabled.Load() == 0)
                     {
-                        // One of two things can happen here:
-                        // 1. GC is suspending the process.  GC needs to wait.
-                        // 2. GC is proceeding after suspension.  The current thread needs to spin.
-                        SetThreadState(TS_BlockGCForSO);
-                        while (GCHeapUtilities::IsGCInProgress() && m_fPreemptiveGCDisabled.Load() == 0)
-                        {
 #undef Sleep
-                            // We can not go to a host for blocking operation due ot lack of stack.
-                            // Instead we will spin here until
-                            // 1. GC is finished; Or
-                            // 2. GC lets this thread to run and will wait for it
-                            Sleep(10);
+                        // We can not go to a host for blocking operation due ot lack of stack.
+                        // Instead we will spin here until
+                        // 1. GC is finished; Or
+                        // 2. GC lets this thread to run and will wait for it
+                        Sleep(10);
 #define Sleep(a) Dont_Use_Sleep(a)
-                        }
-                        ResetThreadState(TS_BlockGCForSO);
-                        if (m_fPreemptiveGCDisabled.Load() == 1)
-                        {
-                            // GC suspension has allowed this thread to switch back to cooperative mode.
-                            break;
-                        }
                     }
-                    if (!GCHeapUtilities::IsGCInProgress())
+                    ResetThreadState(TS_BlockGCForSO);
+                    if (m_fPreemptiveGCDisabled.Load() == 1)
                     {
-                        if (HasThreadState(TS_StackCrawlNeeded))
-                        {
-                            SetThreadStateNC(TSNC_WaitUntilGCFinished);
-                            ThreadStore::WaitForStackCrawlEvent();
-                            ResetThreadStateNC(TSNC_WaitUntilGCFinished);
-                        }
-                        else
-                        {
-                            __SwitchToThread(0, ++dwSwitchCount);
-                        }
+                        // GC suspension has allowed this thread to switch back to cooperative mode.
+                        break;
                     }
-
-#ifdef PROFILING_SUPPORTED
-                    // Let the profiler know that this thread is resuming
+                }
+                if (!GCHeapUtilities::IsGCInProgress())
+                {
+                    if (HasThreadState(TS_StackCrawlNeeded))
                     {
-                        BEGIN_PIN_PROFILER(CORProfilerTrackSuspends());
-                        g_profControlBlock.pProfInterface->RuntimeThreadResumed((ThreadID)this);
-                        END_PIN_PROFILER();
+                        SetThreadStateNC(TSNC_WaitUntilGCFinished);
+                        ThreadStore::WaitForStackCrawlEvent();
+                        ResetThreadStateNC(TSNC_WaitUntilGCFinished);
                     }
-#endif // PROFILING_SUPPORTED
                 }
 
-                END_GCX_ASSERT_PREEMP;
+#ifdef PROFILING_SUPPORTED
+                // Let the profiler know that this thread is resuming
+                {
+                    BEGIN_PIN_PROFILER(CORProfilerTrackSuspends());
+                    g_profControlBlock.pProfInterface->RuntimeThreadResumed((ThreadID)this);
+                    END_PIN_PROFILER();
+                }
+#endif // PROFILING_SUPPORTED
+            }
 
-                // disable preemptive gc.
-                FastInterlockOr(&m_fPreemptiveGCDisabled, 1);
+            END_GCX_ASSERT_PREEMP;
 
-                // The fact that we check whether 'this' is the GC thread may seem
-                // strange.  After all, we determined this before entering the method.
-                // However, it is possible for the current thread to become the GC
-                // thread while in this loop.  This happens if you use the COM+
-                // debugger to suspend this thread and then release it.
+            // disable preemptive gc.
+            FastInterlockOr(&m_fPreemptiveGCDisabled, 1);
 
-            } while ((GCHeapUtilities::IsGCInProgress()  && (this != ThreadSuspend::GetSuspensionThread())) ||
-                     (m_State & (TS_DebugSuspendPending | TS_StackCrawlNeeded)));
+            // The fact that we check whether 'this' is the GC thread may seem
+            // strange.  After all, we determined this before entering the method.
+            // However, it is possible for the current thread to become the GC
+            // thread while in this loop.  This happens if you use the COM+
+            // debugger to suspend this thread and then release it.
+            if (! ((GCHeapUtilities::IsGCInProgress() && (this != ThreadSuspend::GetSuspensionThread())) ||
+                    (m_State & (TS_DebugSuspendPending | TS_StackCrawlNeeded))) )
+            {
+                break;
+            }
+
+            __SwitchToThread(0, ++dwSwitchCount);
         }
         STRESS_LOG0(LF_SYNC, LL_INFO1000, "RareDisablePreemptiveGC: leaving\n");
     }

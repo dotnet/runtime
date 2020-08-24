@@ -693,7 +693,7 @@ void EnsurePreemptive()
 
 typedef StateHolder<DoNothing, EnsurePreemptive> EnsurePreemptiveModeIfException;
 
-Thread* SetupThread(BOOL fInternal)
+Thread* SetupThread()
 {
     CONTRACTL {
         THROWS;
@@ -781,17 +781,7 @@ Thread* SetupThread(BOOL fInternal)
 
     SetupTLSForThread(pThread);
 
-    // A host can deny a thread entering runtime by returning a NULL IHostTask.
-    // But we do want threads used by threadpool.
-    if (IsThreadPoolWorkerSpecialThread() ||
-        IsThreadPoolIOCompletionSpecialThread() ||
-        IsTimerSpecialThread() ||
-        IsWaitSpecialThread())
-    {
-        fInternal = TRUE;
-    }
-
-    if (!pThread->InitThread(fInternal) ||
+    if (!pThread->InitThread() ||
         !pThread->PrepareApartmentAndContext())
         ThrowOutOfMemory();
 
@@ -1616,7 +1606,7 @@ Thread::Thread()
 //--------------------------------------------------------------------
 // Failable initialization occurs here.
 //--------------------------------------------------------------------
-BOOL Thread::InitThread(BOOL fInternal)
+BOOL Thread::InitThread()
 {
     CONTRACTL {
         THROWS;
@@ -1841,7 +1831,7 @@ BOOL Thread::HasStarted(BOOL bRequiresTSL)
             ThrowOutOfMemory();
         }
 
-        InitThread(FALSE);
+        InitThread();
 
         SetThread(this);
         SetAppDomain(m_pDomain);

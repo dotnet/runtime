@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#nullable enable
 namespace System.Xml.Xsl.XsltOld
 {
     using System;
@@ -9,11 +10,12 @@ namespace System.Xml.Xsl.XsltOld
     using System.Xml;
     using System.Xml.XPath;
     using System.Text;
+    using System.Diagnostics.CodeAnalysis;
 
     internal sealed class Avt
     {
-        private readonly string _constAvt;
-        private readonly TextEvent[] _events;
+        private readonly string? _constAvt;
+        private readonly TextEvent[]? _events;
 
         private Avt(string constAvt)
         {
@@ -27,16 +29,17 @@ namespace System.Xml.Xsl.XsltOld
             _events = new TextEvent[eventList.Count];
             for (int i = 0; i < eventList.Count; i++)
             {
-                _events[i] = (TextEvent)eventList[i];
+                _events[i] = (TextEvent)eventList[i]!;
             }
         }
 
+        [MemberNotNullWhen(false, nameof(_events))]
         public bool IsConstant
         {
             get { return _events == null; }
         }
 
-        internal string Evaluate(Processor processor, ActionFrame frame)
+        internal string Evaluate(Processor? processor, ActionFrame? frame)
         {
             if (IsConstant)
             {

@@ -34,9 +34,9 @@
     <Compile Include="$(CommonPath)\Interop\Windows\Crypt32\Interop.certificates_types.cs"
              Link="Common\Interop\Windows\Crypt32\Interop.certificates_types.cs" />
     <Compile Include="$(CommonPath)\Interop\Windows\Crypt32\Interop.certificates.cs"
-             Link="Common\Interop\Windows\Crypt32\Interop.certificates.cs" />	
+             Link="Common\Interop\Windows\Crypt32\Interop.certificates.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FormatMessage.cs"
-             Link="Common\Interop\Windows\Kernel32\Interop.FormatMessage.cs" />	
+             Link="Common\Interop\Windows\Kernel32\Interop.FormatMessage.cs" />
     <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.GetModuleHandle.cs"
              Link="Common\Interop\Windows\Kernel32\Interop.GetModuleHandle.cs" />
     <Compile Include="$(CommonPath)\Interop\Windows\Interop.HRESULT_FROM_WIN32.cs"
@@ -56,7 +56,7 @@
     <Compile Include="$(CommonPath)\System\Net\HttpKnownHeaderNames.cs"
              Link="Common\System\Net\HttpKnownHeaderNames.cs" />
     <Compile Include="$(CommonPath)\System\Net\HttpKnownHeaderNames.TryGetHeaderName.cs"
-             Link="Common\System\Net\HttpKnownHeaderNames.TryGetHeaderName.cs" />		
+             Link="Common\System\Net\HttpKnownHeaderNames.TryGetHeaderName.cs" />
     <Compile Include="$(CommonPath)System\Net\HttpStatusDescription.cs"
              Link="Common\System\Net\Http\HttpStatusDescription.cs" />
     <Compile Include="$(CommonPath)\System\Net\SecurityProtocol.cs"
@@ -74,7 +74,7 @@
     <Compile Include="$(CommonPath)\System\Runtime\ExceptionServices\ExceptionStackTrace.cs"
              Link="Common\System\Runtime\ExceptionServices\ExceptionStackTrace.cs" />
     <Compile Include="$(CommonPath)\System\Threading\Tasks\RendezvousAwaitable.cs"
-             Link="Common\System\Threading\Tasks\RendezvousAwaitable.cs" />	
+             Link="Common\System\Threading\Tasks\RendezvousAwaitable.cs" />
     <Compile Include="$(CommonPath)System\Threading\Tasks\TaskToApm.cs"
              Link="Common\System\Threading\Tasks\TaskToApm.cs" />
     <Compile Include="System\Net\Http\NetEventSource.WinHttpHandler.cs" />

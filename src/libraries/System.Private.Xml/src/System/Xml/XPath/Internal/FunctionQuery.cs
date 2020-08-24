@@ -82,7 +82,7 @@ namespace MS.Internal.Xml.XPath
             try
             {
                 Debug.Assert(_function != null);
-                object? retVal = ProcessResult(_function.Invoke(xsltContext, argVals, nodeIterator.Current));
+                object? retVal = ProcessResult(_function.Invoke(xsltContext, argVals, nodeIterator.Current!));
 
                 // ProcessResult may return null when the input value is XmlNode and here doesn't seem to be the case.
                 Debug.Assert(retVal != null);

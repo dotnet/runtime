@@ -14,7 +14,7 @@ namespace System.Xml.Xsl.XPath
         public int startChar;
         public int endChar;
 
-        internal XPathCompileException(string queryString, int startChar, int endChar, string resId, params string[] args)
+        internal XPathCompileException(string queryString, int startChar, int endChar, string resId, params string?[]? args)
             : base(resId, args)
         {
             this.queryString = queryString;

@@ -359,7 +359,7 @@ if (CLR_CMAKE_HOST_UNIX)
   endif()
 
   # Some architectures (e.g., ARM) assume char type is unsigned while CoreCLR assumes char is signed
-  # as x64 does. It has been causing issues in ARM (https://github.com/dotnet/coreclr/issues/4746)
+  # as x64 does. It has been causing issues in ARM (https://github.com/dotnet/runtime/issues/5778)
   add_compile_options(-fsigned-char)
 
   # We mark the function which needs exporting with DLLEXPORT
