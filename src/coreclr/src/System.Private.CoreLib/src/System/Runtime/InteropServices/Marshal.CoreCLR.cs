@@ -723,32 +723,35 @@ namespace System.Runtime.InteropServices
         [SupportedOSPlatform("windows")]
         public static unsafe int QueryInterface(IntPtr pUnk, ref Guid iid, out IntPtr ppv)
         {
-            if (pUnk == IntPtr.Zero)
-                throw new ArgumentNullException(nameof(pUnk));
+            throw null!;
+            // if (pUnk == IntPtr.Zero)
+            //     throw new ArgumentNullException(nameof(pUnk));
 
-            fixed (Guid* pIID = &iid)
-            fixed (IntPtr* p = &ppv)
-            {
-                return ((delegate * stdcall <IntPtr, Guid*, IntPtr*, int>)(*(*(void***)pUnk + 0 /* IUnknown.QueryInterface slot */)))(pUnk, pIID, p);
-            }
+            // fixed (Guid* pIID = &iid)
+            // fixed (IntPtr* p = &ppv)
+            // {
+            //     return ((delegate * stdcall <IntPtr, Guid*, IntPtr*, int>)(*(*(void***)pUnk + 0 /* IUnknown.QueryInterface slot */)))(pUnk, pIID, p);
+            // }
         }
 
         [SupportedOSPlatform("windows")]
         public static unsafe int AddRef(IntPtr pUnk)
         {
-            if (pUnk == IntPtr.Zero)
-                throw new ArgumentNullException(nameof(pUnk));
+            throw null!;
+            // if (pUnk == IntPtr.Zero)
+            //     throw new ArgumentNullException(nameof(pUnk));
 
-            return ((delegate * stdcall <IntPtr, int>)(*(*(void***)pUnk + 1 /* IUnknown.AddRef slot */)))(pUnk);
+            // return ((delegate * stdcall <IntPtr, int>)(*(*(void***)pUnk + 1 /* IUnknown.AddRef slot */)))(pUnk);
         }
 
         [SupportedOSPlatform("windows")]
         public static unsafe int Release(IntPtr pUnk)
         {
-            if (pUnk == IntPtr.Zero)
-                throw new ArgumentNullException(nameof(pUnk));
+            throw null!;
+            // if (pUnk == IntPtr.Zero)
+            //     throw new ArgumentNullException(nameof(pUnk));
 
-            return ((delegate * stdcall <IntPtr, int>)(*(*(void***)pUnk + 2 /* IUnknown.Release slot */)))(pUnk);
+            // return ((delegate * stdcall <IntPtr, int>)(*(*(void***)pUnk + 2 /* IUnknown.Release slot */)))(pUnk);
         }
 
         [SupportedOSPlatform("windows")]

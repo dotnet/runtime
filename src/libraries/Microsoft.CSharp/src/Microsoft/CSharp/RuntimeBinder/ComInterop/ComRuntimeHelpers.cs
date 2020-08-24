@@ -262,7 +262,8 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
         // This method is intended for use through reflection and should only be used directly by IUnknownReleaseNotZero
         public static unsafe int IUnknownRelease(IntPtr interfacePointer)
         {
-            return ((delegate* stdcall<IntPtr, int>)(*(*(void***)interfacePointer + 2 /* IUnknown.Release slot */)))(interfacePointer);
+            throw null!;
+            //return ((delegate* stdcall<IntPtr, int>)(*(*(void***)interfacePointer + 2 /* IUnknown.Release slot */)))(interfacePointer);
         }
 
         // This method is intended for use through reflection and should not be used directly
@@ -284,30 +285,32 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
             out ExcepInfo excepInfo,
             out uint argErr)
         {
-            Guid IID_NULL = default;
+            throw null!;
+            // Guid IID_NULL = default;
 
-            fixed (ComTypes.DISPPARAMS* pDispParams = &dispParams)
-            fixed (Variant* pResult = &result)
-            fixed (ExcepInfo* pExcepInfo = &excepInfo)
-            fixed (uint* pArgErr = &argErr)
-            {
-                var pfnIDispatchInvoke = (delegate* stdcall <IntPtr, int, Guid*, int, ushort, ComTypes.DISPPARAMS*, Variant*, ExcepInfo*, uint*, int>)
-                    (*(*(void***)dispatchPointer + 6 /* IDispatch.Invoke slot */));
+            // fixed (ComTypes.DISPPARAMS* pDispParams = &dispParams)
+            // fixed (Variant* pResult = &result)
+            // fixed (ExcepInfo* pExcepInfo = &excepInfo)
+            // fixed (uint* pArgErr = &argErr)
+            // {
 
-                int hresult = pfnIDispatchInvoke(dispatchPointer,
-                    memberDispId, &IID_NULL, 0, (ushort)flags, pDispParams, pResult, pExcepInfo, pArgErr);
+            //     var pfnIDispatchInvoke = (delegate* stdcall <IntPtr, int, Guid*, int, ushort, ComTypes.DISPPARAMS*, Variant*, ExcepInfo*, uint*, int>)
+            //         (*(*(void***)dispatchPointer + 6 /* IDispatch.Invoke slot */));
 
-                if (hresult == ComHresults.DISP_E_MEMBERNOTFOUND
-                    && (flags & ComTypes.INVOKEKIND.INVOKE_FUNC) != 0
-                    && (flags & (ComTypes.INVOKEKIND.INVOKE_PROPERTYPUT | ComTypes.INVOKEKIND.INVOKE_PROPERTYPUTREF)) == 0)
-                {
-                    // Re-invoke with no result argument to accomodate Word
-                    hresult = pfnIDispatchInvoke(dispatchPointer,
-                        memberDispId, &IID_NULL, 0, (ushort)ComTypes.INVOKEKIND.INVOKE_FUNC, pDispParams, null, pExcepInfo, pArgErr);
-                }
+            //     int hresult = pfnIDispatchInvoke(dispatchPointer,
+            //         memberDispId, &IID_NULL, 0, (ushort)flags, pDispParams, pResult, pExcepInfo, pArgErr);
 
-                return hresult;
-            }
+            //     if (hresult == ComHresults.DISP_E_MEMBERNOTFOUND
+            //         && (flags & ComTypes.INVOKEKIND.INVOKE_FUNC) != 0
+            //         && (flags & (ComTypes.INVOKEKIND.INVOKE_PROPERTYPUT | ComTypes.INVOKEKIND.INVOKE_PROPERTYPUTREF)) == 0)
+            //     {
+            //         // Re-invoke with no result argument to accomodate Word
+            //         hresult = pfnIDispatchInvoke(dispatchPointer,
+            //             memberDispId, &IID_NULL, 0, (ushort)ComTypes.INVOKEKIND.INVOKE_FUNC, pDispParams, null, pExcepInfo, pArgErr);
+            //     }
+
+            //     return hresult;
+            // }
         }
 
         // This method is intended for use through reflection and should not be used directly
