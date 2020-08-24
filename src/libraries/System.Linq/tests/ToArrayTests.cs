@@ -331,6 +331,9 @@ namespace System.Linq.Tests
         }
 
         [Theory]
+#if OUTERLOOP
+        [OuterLoop("Prone to long runs on wasm, which may result in tests timing out.")]
+#endif
         [MemberData(nameof(ToArrayShouldWorkWithSpecialLengthLazyEnumerables_MemberData))]
         public void ToArrayShouldWorkWithSpecialLengthLazyEnumerables(int length)
         {
