@@ -2773,8 +2773,10 @@ mono_assembly_request_open (const char *filename, const MonoAssemblyOpenRequest 
 		if (!loaded_from_bundle)
 			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY,
 				"Assembly Loader loaded assembly from location: '%s'.", filename);
+#ifndef ENABLE_NETCORE // no XML file loading on netcore
 		if (!refonly)
 			mono_config_for_assembly_internal (ass->image);
+#endif
 	}
 
 	/* Clear the reference added by mono_image_open */
