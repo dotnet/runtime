@@ -1,3 +1,5 @@
+<!-- This project requires an explicit SDK version number because it is used on Helix,
+      and global.json is not available. -->
 <Project Sdk="Microsoft.Build.NoTargets/1.0.53" DefaultTargets="BuildApp">
   <PropertyGroup>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
