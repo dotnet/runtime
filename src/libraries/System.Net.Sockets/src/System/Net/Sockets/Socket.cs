@@ -216,7 +216,7 @@ namespace System.Net.Sockets
                                 }
 
                                 _isConnected = true;
-                                _localEndPoint = null;
+                                HandleLocalEndPointOnConnect();
                                 break;
 
                             case SocketError.InvalidArgument:
@@ -226,7 +226,7 @@ namespace System.Net.Sockets
                                 // whether we're actually connected or not, err on the side of saying
                                 // we're connected.
                                 _isConnected = true;
-                                _localEndPoint = null;
+                                HandleLocalEndPointOnConnect();
                                 break;
                         }
                     }
@@ -320,7 +320,7 @@ namespace System.Net.Sockets
                     // Update the state if we've become connected after a non-blocking connect.
                     _isConnected = true;
                     _rightEndPoint = _nonBlockingConnectRightEndPoint;
-                    _localEndPoint = null;
+                    HandleLocalEndPointOnConnect();
                     _nonBlockingConnectInProgress = false;
                 }
 
@@ -367,7 +367,7 @@ namespace System.Net.Sockets
                         // Update the state if we've become connected after a non-blocking connect.
                         _isConnected = true;
                         _rightEndPoint = _nonBlockingConnectRightEndPoint;
-                        _localEndPoint = null;
+                        HandleLocalEndPointOnConnect();
                         _nonBlockingConnectInProgress = false;
                     }
 
@@ -479,7 +479,7 @@ namespace System.Net.Sockets
                     // Update the state if we've become connected after a non-blocking connect.
                     _isConnected = true;
                     _rightEndPoint = _nonBlockingConnectRightEndPoint;
-                    _localEndPoint = null;
+                    HandleLocalEndPointOnConnect();
                     _nonBlockingConnectInProgress = false;
                 }
 
@@ -4904,8 +4904,43 @@ namespace System.Net.Sockets
             // some point in time update the perf counter as well.
             _isConnected = true;
             _isDisconnected = false;
-            _localEndPoint = null;
+            HandleLocalEndPointOnConnect();
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "now connected");
+        }
+
+        private void HandleLocalEndPointOnConnect()
+        {
+            //_localEndPoint = null;
+            if (_localEndPoint == null)
+            {
+                return;
+            }
+
+            if (_localEndPoint is IPEndPoint ipLocalEndpoint)
+            {
+                // If a client socket was bound to a wildcard address, then the `connect` system call
+                // will assign a specific address to the client socket's local endpoint instead of a
+                // wildcard address. In that case we should clear the cached wildcard local endpoint.
+
+                // If a listener socket was bound to a wildcard address, then the `accept` system call
+                // will assign a specific address the accept socket's local endpoint instead of a
+                // wildcard address. In that case we should clear the accept socket's cached wildcard
+                // local endpoint copied from listener.
+
+                if (IsWildcardAddress(ipLocalEndpoint.Address))
+                {
+                    _localEndPoint = null;
+                }
+            }
+        }
+
+        private bool IsWildcardAddress(IPAddress address)
+        {
+            return address.ToString() == IPAddress.Any.ToString()
+                    || address.ToString() == IPAddress.IPv6Any.ToString()
+                    || address.ToString() == IPAddress.Any.MapToIPv6().ToString();
+
+            //return address == IPAddress.Any || address == IPAddress.IPv6Any || address == IPAddress.Any.MapToIPv6();
         }
 
         internal void SetToDisconnected()
