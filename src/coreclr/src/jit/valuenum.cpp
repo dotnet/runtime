@@ -6789,6 +6789,10 @@ void Compiler::fgValueNumberBlockAssignment(GenTree* tree)
             {
                 fgMutateAddressExposedLocal(tree DEBUGARG("COPYBLK - address-exposed local"));
             }
+            else
+            {
+                JITDUMP("LHS V%02u not in ssa at [%06u], so no VN assigned\n", lhsLclNum, dspTreeID(lclVarTree));
+            }
         }
         else
         {
