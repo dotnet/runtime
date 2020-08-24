@@ -90,7 +90,7 @@
 
     <ItemGroup Condition="'$(TargetArchitecture)' == 'wasm'">
           <RunTimeDependencyCopyLocal
-          Include="$(LibrariesSharedFrameworkRefArtifactsPath)runtimes\$(TargetOS.ToLower())-$(TargetArchitecture)\**"
+          Include="$(ArtifactsBinDir)microsoft.netcore.app.runtime.$(TargetOS.ToLower())-$(TargetArchitecture)\$(Configuration)\runtimes\$(TargetOS.ToLower())-$(TargetArchitecture)\**"
           TargetDir="runtimepack/"/>
 
        <RunTimeDependencyCopyLocal
@@ -102,7 +102,7 @@
           TargetDir="WasmAppBuilder/"/>
 
         <RunTimeDependencyCopyLocal
-          Include="$(RepoRoot)src\tests\Common\wasm-test-runner\WasmTestRunner.proj"
+          Include="$(RepoRoot\src\tests\Common\wasm-test-runner\WasmTestRunner.proj"
           TargetDir="wasm-test-runner/"/>
   
         <RunTimeDependencyCopyLocal
