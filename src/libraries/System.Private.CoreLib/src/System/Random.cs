@@ -218,7 +218,72 @@ namespace System
             return (int)(Sample() * maxValue);
         }
 
-        /*=====================================Next=====================================
+        private long FullLong()
+        {
+            int i = InternalSample();
+            long result = 0;
+
+            result = result | (long) InternalSample();
+            result = result | (1u << 31 & (i << 2));
+            result = result | (1u & i);
+
+            result <<= 32;
+
+            result = result | (long) InternalSample();
+            result = result | (1u << 31 & (i << 3));
+            result = result | (1u & (i >> 3));
+
+            return result;
+        }
+
+        /*==================================NextInt64===================================
+        **Returns: An long [0..long.maxValue)
+        **Arguments: maxValue -- One more than the greatest legal return value.
+        **Exceptions: None.
+        ==============================================================================*/
+        public virtual long NextInt64()
+        {
+            return FullLong();
+        }
+
+        /*==================================NextInt64===================================
+        **Returns: A long [0..maxValue)
+        **Arguments: maxValue -- One more than the greatest legal return value.
+        **Exceptions: None.
+        ==============================================================================*/
+        public virtual long NextInt64(long maxValue)
+        {
+            if (maxValue < 0)
+                throw new ArgumentOutOfRangeException(nameof(maxValue), SR.Format(SR.ArgumentOutOfRange_MustBePositive, nameof(maxValue)));
+
+            if (maxValue == 0)
+                return 0;
+
+            long fullLong = (long) FullLong();
+            return (long.MaxValue & fullLong) % maxValue;
+        }
+
+        /*==================================NextInt64===================================
+        **Returns: A long [minvalue..maxvalue)
+        **Arguments: minValue -- the least legal value for the Random number.
+        **           maxValue -- One greater than the greatest legal return value.
+        **Exceptions: None.
+        ==============================================================================*/
+        public virtual long NextInt64(long minValue, long maxValue)
+        {
+            if (minValue > maxValue)
+            {
+                throw new ArgumentOutOfRangeException(nameof(minValue), SR.Format(SR.Argument_MinMaxValue, nameof(minValue), nameof(maxValue)));
+            }
+
+            long range = maxValue - minValue;
+            long range1 = range / 2;
+            long range2 = range - range1;
+
+            return NextInt64(range1 + 1) + NextInt64(range2) + minValue;
+        }
+
+        /*==================================NextDouble==================================
         **Returns: A double [0..1)
         **Arguments: None
         **Exceptions: None
@@ -226,6 +291,16 @@ namespace System
         public virtual double NextDouble()
         {
             return Sample();
+        }
+
+        /*==================================NextSingle==================================
+        **Returns: A float [0..1)
+        **Arguments: None
+        **Exceptions: None
+        ==============================================================================*/
+        public virtual float NextSingle()
+        {
+            return (float) Sample();
         }
 
         /*==================================NextBytes===================================
