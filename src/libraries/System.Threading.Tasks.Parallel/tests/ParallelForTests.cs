@@ -1061,7 +1061,7 @@ namespace System.Threading.Tasks.Tests
             {
                 int newVal = Interlocked.Increment(ref counter);
                 if (newVal == 1) throw new Exception("some non-cancellation-related exception");
-                if (newVal == 2) cts.Cancel();
+                if (newVal >= 2) cts.Cancel();
             };
             for (int i = 0; i < numActions; i++) actions[i] = a3;
 
