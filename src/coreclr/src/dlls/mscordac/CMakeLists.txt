@@ -133,13 +133,11 @@ if(CLR_CMAKE_HOST_WIN32)
     # mscordac.def should be generated before mscordaccore.dll is built
     add_dependencies(mscordaccore mscordaccore_def)
 
-    set(MSCORDAC_OBJ_PATH "${CMAKE_CURRENT_BINARY_DIR}/mscordacobj.dir/${CMAKE_CFG_INTDIR}/mscordac.obj")
-
     # Generate export file
     add_custom_command(
         DEPENDS mscordaccore_def "${CURRENT_BINARY_DIR_FOR_CONFIG}/mscordac.def" mscordacobj daccess
         OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/mscordaccore.exp
-        COMMAND lib.exe /OUT:"${CMAKE_CURRENT_BINARY_DIR}/mscordaccore.lib" /DEF:"${CURRENT_BINARY_DIR_FOR_CONFIG}/mscordac.def" "$<TARGET_FILE:daccess>" $<$<OR:$<CONFIG:Release>,$<CONFIG:Relwithdebinfo>>:/LTCG> ${STATIC_LIBRARY_FLAGS} ${MSCORDAC_OBJ_PATH}
+        COMMAND lib.exe /OUT:"${CMAKE_CURRENT_BINARY_DIR}/mscordaccore.lib" /DEF:"${CURRENT_BINARY_DIR_FOR_CONFIG}/mscordac.def" "$<TARGET_FILE:daccess>" $<$<OR:$<CONFIG:Release>,$<CONFIG:Relwithdebinfo>>:/LTCG> ${STATIC_LIBRARY_FLAGS} $<TARGET_OBJECTS:mscordacobj>
         COMMENT "Generating mscordaccore.exp export file"
     )
 
@@ -149,7 +147,8 @@ if(CLR_CMAKE_HOST_WIN32)
     )
 
     add_custom_target(mscordaccore_exp DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/mscordaccore.exp)
-    add_dependencies(mscordaccore mscordaccore_exp)
+    add_dependencies(mscordaccore_exp mscordacobj)
+    add_dependencies(mscordaccore mscordaccore_exp mscordacobj)
 
     set(COREDAC_LIBRARIES
         ${CMAKE_CURRENT_BINARY_DIR}/mscordaccore.exp # export file

@@ -236,52 +236,6 @@ function(generate_exports_file_prefix inputFilename outputFilename prefix)
                               PROPERTIES GENERATED TRUE)
 endfunction()
 
-# target_precompile_header(TARGET targetName HEADER headerName [ADDITIONAL_INCLUDE_DIRECTORIES includeDirs])
-function(target_precompile_header)
-  set(options "")
-  set(oneValueArgs TARGET HEADER)
-  set(multiValueArgs ADDITIONAL_INCLUDE_DIRECTORIES)
-  cmake_parse_arguments(PRECOMPILE_HEADERS "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGV})
-
-  if ("${PRECOMPILE_HEADERS_TARGET}" STREQUAL "")
-  message(SEND_ERROR "No target supplied to target_precompile_header.")
-  endif()
-  if ("${PRECOMPILE_HEADERS_HEADER}" STREQUAL "")
-    message(SEND_ERROR "No header supplied to target_precompile_header.")
-  endif()
-
-  if(MSVC)
-    get_filename_component(PCH_NAME ${PRECOMPILE_HEADERS_HEADER} NAME_WE)
-    # We need to use the $<TARGET_PROPERTY:NAME> generator here instead of the ${targetName} variable since
-    # CMake evaluates source file properties once per directory. If we just use ${targetName}, we end up sharing
-    # the same PCH between targets, which doesn't work.
-    set(precompiledBinary "${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR}/${PCH_NAME}.$<TARGET_PROPERTY:NAME>.pch")
-    set(pchSourceFile "${CMAKE_CURRENT_BINARY_DIR}/${PCH_NAME}.${PRECOMPILE_HEADERS_TARGET}.cpp")
-
-    file(GENERATE OUTPUT ${pchSourceFile} CONTENT "#include \"${PRECOMPILE_HEADERS_HEADER}\"")
-
-    set(PCH_SOURCE_FILE_INCLUDE_DIRECTORIES ${CMAKE_CURRENT_SOURCE_DIR} ${PRECOMPILE_HEADERS_ADDITIONAL_INCLUDE_DIRECTORIES})
-
-    set_source_files_properties(${pchSourceFile}
-                                PROPERTIES COMPILE_FLAGS "/Yc\"${PRECOMPILE_HEADERS_HEADER}\" /Fp\"${precompiledBinary}\""
-                                            OBJECT_OUTPUTS "${precompiledBinary}"
-                                            INCLUDE_DIRECTORIES "${PCH_SOURCE_FILE_INCLUDE_DIRECTORIES}")
-    get_target_property(TARGET_SOURCES ${PRECOMPILE_HEADERS_TARGET} SOURCES)
-
-    foreach (SOURCE ${TARGET_SOURCES})
-      get_source_file_property(SOURCE_LANG ${SOURCE} LANGUAGE)
-      if (("${SOURCE_LANG}" STREQUAL "C") OR ("${SOURCE_LANG}" STREQUAL "CXX"))
-        set_source_files_properties(${SOURCE}
-          PROPERTIES COMPILE_FLAGS "/Yu\"${PRECOMPILE_HEADERS_HEADER}\" /Fp\"${precompiledBinary}\""
-                      OBJECT_DEPENDS "${precompiledBinary}")
-      endif()
-    endforeach()
-
-    # Add pchSourceFile to PRECOMPILE_HEADERS_TARGET target
-    target_sources(${PRECOMPILE_HEADERS_TARGET} PRIVATE ${pchSourceFile})
-  endif(MSVC)
-endfunction()
-
 function(strip_symbols targetName outputFilename)
   if (CLR_CMAKE_HOST_UNIX)
     set(strip_source_file $<TARGET_FILE:${targetName}>)
@@ -422,6 +376,12 @@ if (CMAKE_VERSION VERSION_LESS "3.12")
     get_directory_property(DIR_COMPILE_DEFINITIONS COMPILE_DEFINITIONS)
     list(APPEND DIR_COMPILE_DEFINITIONS ${ARGV})
     set_directory_properties(PROPERTIES COMPILE_DEFINITIONS "${DIR_COMPILE_DEFINITIONS}")
+  endfunction()
+endif()
+
+if (CMAKE_VERSION VERSION_LESS "3.16")
+  # Provide a no-op polyfill for precompiled headers on old CMake versions
+  function(target_precompile_headers)
   endfunction()
 endif()
 

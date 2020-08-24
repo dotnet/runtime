@@ -79,5 +79,5 @@ endif (CLR_CMAKE_TARGET_WIN32)
 list(APPEND CORDBDI_SOURCES ${CORDBDI_SOURCES_ASM_FILE})
 
 add_library_clr(cordbdi STATIC ${CORDBDI_SOURCES})
-target_precompile_header(TARGET cordbdi HEADER stdafx.h)
+target_precompile_headers(cordbdi PRIVATE stdafx.h)
 add_dependencies(cordbdi eventing_headers)

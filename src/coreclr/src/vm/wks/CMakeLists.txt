@@ -11,9 +11,9 @@ add_library_clr(cee_wks_core OBJECT ${VM_SOURCES_WKS} ${VM_SOURCES_WKS_ARCH_ASM}
 add_library_clr(cee_wks_obj OBJECT ${VM_SOURCES_WKS_SPECIAL})
 add_library_clr(cee_wks_mergeable_obj OBJECT ${VM_SOURCES_WKS_SPECIAL})
 
-target_precompile_header(TARGET cee_wks_core HEADER common.h)
-target_precompile_header(TARGET cee_wks_obj HEADER common.h)
-target_precompile_header(TARGET cee_wks_mergeable_obj HEADER common.h)
+target_precompile_headers(cee_wks_core PRIVATE [["common.h"]])
+target_precompile_headers(cee_wks_obj PRIVATE [["common.h"]])
+target_precompile_headers(cee_wks_mergeable_obj PRIVATE [["common.h"]])
 
 if (MSVC)
     # corelib.cpp does not compile with precompiled header file

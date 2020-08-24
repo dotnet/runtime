@@ -1,6 +1,6 @@
 remove_definitions(-DUNICODE)
 remove_definitions(-D_UNICODE)
-add_definitions(-MT)
+add_compile_options(/MT)
 
 add_executable(InjectResource InjectResource.cpp)
 
