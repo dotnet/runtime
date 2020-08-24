@@ -45,7 +45,8 @@ namespace Mono.Linker
 							else
 								PrependGenericParameters (type.GenericParameters.Skip (declaringTypeGenericParametersCount).ToList (), sb);
 
-							simpleName = type.Name.Substring (0, type.Name.IndexOf ('`'));
+							int explicitArityIndex = type.Name.IndexOf ('`');
+							simpleName = explicitArityIndex != -1 ? type.Name.Substring (0, explicitArityIndex) : type.Name;
 						} else
 							simpleName = type.Name;
 
