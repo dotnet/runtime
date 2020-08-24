@@ -134,7 +134,7 @@ namespace System.Xml.Serialization
             // For enum, its write method (eg. Write1_Gender) could be called multiple times
             // prior to its declaration.
             MethodBuilder methodBuilder = EnsureMethodBuilder(typeBuilder,
-                    methodName,
+                    methodName!,
                     CodeGenerator.PrivateMethodAttributes,
                     typeof(string),
                     new Type[] { mapping.TypeDesc!.Type! });
@@ -209,7 +209,7 @@ namespace System.Xml.Serialization
                     string? enumDefaultValue = null;
                     if (((EnumMapping)mapping).IsFlags)
                     {
-                        string[] values = ((string)defaultValue).Split(null);
+                        string[] values = ((string)defaultValue!).Split(null);
                         for (int i = 0; i < values.Length; i++)
                         {
                             if (values[i] == null || values[i].Length == 0)
@@ -221,7 +221,7 @@ namespace System.Xml.Serialization
                     }
                     else
                     {
-                        enumDefaultValue = (string)defaultValue;
+                        enumDefaultValue = (string)defaultValue!;
                     }
                     ilg.Ldc(Enum.Parse(mapping.TypeDesc.Type!, enumDefaultValue!, false));
                     ilg.If(Cmp.NotEqualTo); // " != "
@@ -767,7 +767,7 @@ namespace System.Xml.Serialization
                 argTypes.Add(typeof(bool));
                 ilg.Ldc(true);
                 MethodInfo methodBuilder = EnsureMethodBuilder(typeBuilder,
-                    methodName,
+                    methodName!,
                     CodeGenerator.PrivateMethodAttributes,
                     typeof(void),
                     argTypes.ToArray());
@@ -823,7 +823,7 @@ namespace System.Xml.Serialization
                         ilg.Ldstr(GetCSharpString(mapping.Namespace));
                         ilg.Call(XmlSerializationWriter_WriteXsiType);
                         MethodBuilder methodBuilder = EnsureMethodBuilder(typeBuilder,
-                            methodName,
+                            methodName!,
                             CodeGenerator.PrivateMethodAttributes,
                             typeof(string),
                             new Type[] { mapping.TypeDesc.Type! }
@@ -2010,7 +2010,7 @@ namespace System.Xml.Serialization
                 ilg.Ldc(false);
                 argTypes.Add(typeof(bool));
                 MethodBuilder methodBuilder = EnsureMethodBuilder(typeBuilder,
-                    methodName,
+                    methodName!,
                     CodeGenerator.PrivateMethodAttributes,
                     typeof(void),
                     argTypes.ToArray());

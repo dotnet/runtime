@@ -2405,7 +2405,7 @@ namespace System.Xml.Serialization
                     if (((EnumMapping)mapping).IsFlags)
                     {
                         Writer.Write("(");
-                        string[] values = ((string)defaultValue).Split(null);
+                        string[] values = ((string)defaultValue!).Split(null);
                         for (int i = 0; i < values.Length; i++)
                         {
                             if (values[i] == null || values[i].Length == 0)
@@ -2418,7 +2418,7 @@ namespace System.Xml.Serialization
                     }
                     else
                     {
-                        Writer.Write(RaCodeGen.GetStringForEnumCompare((EnumMapping)mapping, (string)defaultValue, mapping.TypeDesc.UseReflection));
+                        Writer.Write(RaCodeGen.GetStringForEnumCompare((EnumMapping)mapping, (string)defaultValue!, mapping.TypeDesc.UseReflection));
                     }
                     Writer.Write(")");
                 }

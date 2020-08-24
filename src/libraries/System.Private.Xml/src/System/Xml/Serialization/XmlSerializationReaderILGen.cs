@@ -1162,7 +1162,7 @@ namespace System.Xml.Serialization
                 argTypes.Add(typeof(bool));
 
                 MethodBuilder methodBuilder = EnsureMethodBuilder(typeBuilder,
-                    methodName,
+                    methodName!,
                     CodeGenerator.PrivateMethodAttributes,
                     derived.TypeDesc.Type,
                     argTypes.ToArray()
@@ -1208,7 +1208,7 @@ namespace System.Xml.Serialization
 #endif
                         LocalBuilder eLoc = ilg.DeclareOrGetLocal(typeof(object), "e");
                         MethodBuilder methodBuilder = EnsureMethodBuilder(typeBuilder,
-                            methodName,
+                            methodName!,
                             CodeGenerator.PrivateMethodAttributes,
                             mapping.TypeDesc!.Type,
                             new Type[] { typeof(string) }
@@ -2999,7 +2999,7 @@ namespace System.Xml.Serialization
                 ilg.Ldarg(0);
                 ilg.Ldc(true);
                 MethodBuilder methodBuilder = EnsureMethodBuilder(typeBuilder,
-                    methodName,
+                    methodName!,
                     CodeGenerator.PrivateMethodAttributes,
                     // See WriteNullableMethod for different return type logic
                     element.Mapping.TypeDesc!.Type,
@@ -3180,7 +3180,7 @@ namespace System.Xml.Serialization
                 ilg.Ldc(true);
                 argTypes.Add(typeof(bool));
                 MethodBuilder methodBuilder = EnsureMethodBuilder(typeBuilder,
-                    methodName,
+                    methodName!,
                     CodeGenerator.PrivateMethodAttributes,
                     mapping.TypeDesc.Type,
                     argTypes.ToArray()
@@ -3279,10 +3279,10 @@ namespace System.Xml.Serialization
                 if (choiceSource == null) throw new InvalidOperationException(SR.Format(SR.XmlInternalErrorDetails, "need parent for the " + source));
 #endif
 
-                WriteSourceBegin(choiceSource);
+                WriteSourceBegin(choiceSource!);
                 CodeIdentifier.CheckValidIdentifier(choice.MemberIds![elementIndex]);
                 RaCodeGen.ILGenForEnumMember(ilg, choice.Mapping!.TypeDesc!.Type!, choice.MemberIds[elementIndex]);
-                WriteSourceEnd(choiceSource, choice.Mapping.TypeDesc.Type!);
+                WriteSourceEnd(choiceSource!, choice.Mapping.TypeDesc.Type!);
             }
         }
 

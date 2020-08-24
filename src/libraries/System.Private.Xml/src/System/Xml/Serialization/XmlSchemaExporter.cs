@@ -939,7 +939,7 @@ namespace System.Xml.Serialization
                     return (string)value;
 
                 Type formatter = typeof(XmlConvert);
-                System.Reflection.MethodInfo? format = formatter.GetMethod("ToString", new Type[] { pm.TypeDesc.Type });
+                System.Reflection.MethodInfo? format = formatter.GetMethod("ToString", new Type[] { pm.TypeDesc.Type! });
                 if (format != null)
                     return (string)format.Invoke(formatter, new object[] { value })!;
             }
