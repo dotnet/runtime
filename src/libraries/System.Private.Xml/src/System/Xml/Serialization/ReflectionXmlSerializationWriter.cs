@@ -202,7 +202,7 @@ namespace System.Xml.Serialization
                 int anyCount = 0;
                 var namedAnys = new List<ElementAccessor>();
                 ElementAccessor? unnamedAny = null; // can only have one
-                string? enumTypeName = choice?.Mapping!.TypeDesc!.FullName;
+                string? enumTypeName = (choice != null) ? choice.Mapping!.TypeDesc!.FullName : null;
 
                 for (int i = 0; i < elements.Length; i++)
                 {
@@ -250,7 +250,7 @@ namespace System.Xml.Serialization
 
                         if (choice != null)
                         {
-                            throw CreateChoiceIdentifierValueException(choice.Mapping.TypeDesc!.FullName, choice.MemberName!, elem.Name, elem.NamespaceURI);
+                            throw CreateChoiceIdentifierValueException(choice.Mapping!.TypeDesc!.FullName, choice.MemberName!, elem.Name, elem.NamespaceURI);
                         }
 
                         if (unnamedAny != null)
