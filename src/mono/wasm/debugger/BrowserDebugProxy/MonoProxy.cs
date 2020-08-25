@@ -650,6 +650,9 @@ namespace Microsoft.WebAssembly.Diagnostics
         async Task<MethodInfo> LoadSymbolsOnDemand(AssemblyInfo asm, uint method_token, SessionId sessionId, CancellationToken token)
         {
             var context = GetContext(sessionId);
+            if (asm.TriedToLoadSymbolsOnDemand)
+                return null;
+            asm.TriedToLoadSymbolsOnDemand = true;
             ImageDebugHeader header = asm.Image.GetDebugHeader();
 
             for (var i = 0; i < header.Entries.Length; i++)
