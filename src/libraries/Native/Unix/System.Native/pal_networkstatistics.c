@@ -242,7 +242,7 @@ int32_t SystemNative_GetIcmpv6GlobalStatistics(Icmpv6GlobalStatistics* retStats)
 {
     assert(retStats != NULL);
 
-    size_t oldlenp = atomic_load(&icmp6statSize);
+    size_t oldlenp = (size_t)atomic_load(&icmp6statSize);
     const char* sysctlName = "net.inet6.icmp6.stats";
     void* buffer = malloc(oldlenp);
     if (!buffer)
