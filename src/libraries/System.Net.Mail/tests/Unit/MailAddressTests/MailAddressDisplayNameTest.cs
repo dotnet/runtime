@@ -51,7 +51,7 @@ namespace System.Net.Mail.Tests
             }
             else
             {
-                Assert.Equal($"\"{displayName.Replace("\"", "\\\"")}\" <{Address}>", mailAddress.ToString());
+                Assert.Equal($"\"{displayName.Replace("\"", "\\\"")}\" <{address}>", mailAddress.ToString());
             }
         }
 
