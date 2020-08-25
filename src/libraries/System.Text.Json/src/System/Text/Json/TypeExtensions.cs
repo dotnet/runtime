@@ -7,14 +7,12 @@ namespace System.Text.Json
 {
     internal static class TypeExtensions
     {
-        private static readonly Type s_nullableOfTType = typeof(Nullable<>);
-
         /// <summary>
         /// Returns <see langword="true" /> when the given type is of type <see cref="Nullable{T}"/>.
         /// </summary>
         public static bool IsNullableValueType(this Type type)
         {
-            return type.IsGenericType && type.GetGenericTypeDefinition() == s_nullableOfTType;
+            return Nullable.GetUnderlyingType(type) != null;
         }
 
         /// <summary>

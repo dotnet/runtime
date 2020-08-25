@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Text.Json.Tests;
 using Xunit;
 
 namespace System.Text.Json.Serialization.Tests
@@ -395,9 +396,15 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public static void ClassWithPrimitivesObjectConverter()
         {
-            const string expected =
-                @"{""MyIntProperty"":123,""MyBoolProperty"":true,""MyStringProperty"":""Hello""," +
-                @"""MyIntField"":321,""MyBoolField"":true,""MyStringField"":""World""}";
+            string[] expected = new[]
+            {
+                @"""MyIntProperty"":123",
+                @"""MyBoolProperty"":true",
+                @"""MyStringProperty"":""Hello""",
+                @"""MyIntField"":321",
+                @"""MyBoolField"":true",
+                @"""MyStringField"":""World"""
+            };
 
             string json;
             var converter = new PrimitiveConverter();
@@ -421,7 +428,7 @@ namespace System.Text.Json.Serialization.Tests
                 json = JsonSerializer.Serialize(obj, options);
 
                 Assert.Equal(6, converter.WriteCallCount);
-                Assert.Equal(expected, json);
+                AssertHelper.ValidateJson(expected, json);
             }
             {
                 var obj = JsonSerializer.Deserialize<ClassWithPrimitives>(json, options);
@@ -452,9 +459,15 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public static void ClassWithNullablePrimitivesObjectConverter()
         {
-            const string expected =
-                @"{""MyIntProperty"":123,""MyBoolProperty"":true,""MyStringProperty"":""Hello""," +
-                @"""MyIntField"":321,""MyBoolField"":true,""MyStringField"":""World""}";
+            string[] expected = new[]
+            {
+                @"""MyIntProperty"":123",
+                @"""MyBoolProperty"":true",
+                @"""MyStringProperty"":""Hello""",
+                @"""MyIntField"":321",
+                @"""MyBoolField"":true",
+                @"""MyStringField"":""World"""
+            };
 
             string json;
             var converter = new PrimitiveConverter();
@@ -478,7 +491,7 @@ namespace System.Text.Json.Serialization.Tests
                 json = JsonSerializer.Serialize(obj, options);
 
                 Assert.Equal(6, converter.WriteCallCount);
-                Assert.Equal(expected, json);
+                AssertHelper.ValidateJson(expected, json);
             }
             {
                 var obj = JsonSerializer.Deserialize<ClassWithNullablePrimitives>(json, options);

@@ -8,7 +8,6 @@ namespace System.Text.Json.Serialization.Tests
     public static partial class CustomConverterTests
     {
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/41146")]
         public static void InvalidCastRefTypedPropertyFails()
         {
             var obj = new ObjectWrapperWithProperty
@@ -22,11 +21,10 @@ namespace System.Text.Json.Serialization.Tests
 
             var json = JsonSerializer.Serialize(obj);
 
-            var ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<ObjectWrapperWithProperty>(json));
+            var ex = Assert.Throws<InvalidCastException>(() => JsonSerializer.Deserialize<ObjectWrapperWithProperty>(json));
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/41146")]
         public static void InvalidCastRefTypedFieldFails()
         {
             var options = new JsonSerializerOptions { IncludeFields = true };
@@ -41,7 +39,7 @@ namespace System.Text.Json.Serialization.Tests
 
             var json = JsonSerializer.Serialize(obj);
 
-            var ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<ObjectWrapperWithField>(json, options));
+            var ex = Assert.Throws<InvalidCastException>(() => JsonSerializer.Deserialize<ObjectWrapperWithField>(json, options));
         }
 
         /// <summary>
@@ -108,19 +106,17 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/41146")]
         public static void CastBasePropertyFails()
         {
             var options = new JsonSerializerOptions { IncludeFields = true };
-            var ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<ObjectWrapperDerivedWithProperty>(@"{""DerivedProperty"":""""}", options));
+            var ex = Assert.Throws<InvalidCastException>(() => JsonSerializer.Deserialize<ObjectWrapperDerivedWithProperty>(@"{""DerivedProperty"":""""}", options));
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/41146")]
         public static void CastBaseFieldFails()
         {
             var options = new JsonSerializerOptions { IncludeFields = true };
-            var ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<ObjectWrapperDerivedWithField>(@"{""DerivedField"":""""}", options));
+            var ex = Assert.Throws<InvalidCastException>(() => JsonSerializer.Deserialize<ObjectWrapperDerivedWithField>(@"{""DerivedField"":""""}", options));
         }
 
         /// <summary>
