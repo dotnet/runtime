@@ -28,9 +28,8 @@ namespace AppHost.Bundle.Tests
                 .Should()
                 .Pass()
                 .And
-                .HaveStdOutContaining(@"
-FullyQualifiedName: <Unknown>
-Name: <Unknown>");
+                .HaveStdOutContaining("FullyQualifiedName: <Unknown>")
+                .HaveStdOutContaining("Name: <Unknown>");
         }
 
         [Fact]
