@@ -27,8 +27,10 @@ namespace System.Linq
         System.Linq.IQueryProvider System.Linq.IQueryable.Provider { get { throw null; } }
         System.Collections.Generic.IEnumerator<T> System.Collections.Generic.IEnumerable<T>.GetEnumerator() { throw null; }
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         System.Linq.IQueryable System.Linq.IQueryProvider.CreateQuery(System.Linq.Expressions.Expression expression) { throw null; }
         System.Linq.IQueryable<TElement> System.Linq.IQueryProvider.CreateQuery<TElement>(System.Linq.Expressions.Expression expression) { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         object System.Linq.IQueryProvider.Execute(System.Linq.Expressions.Expression expression) { throw null; }
         TElement System.Linq.IQueryProvider.Execute<TElement>(System.Linq.Expressions.Expression expression) { throw null; }
         public override string? ToString() { throw null; }

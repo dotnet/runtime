@@ -4,6 +4,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq.Expressions;
+using System.Runtime.Versioning;
 
 namespace System.Linq
 {
@@ -53,6 +54,7 @@ namespace System.Linq
 
         Type IQueryable.ElementType => typeof(T);
 
+        [UnsupportedOSPlatform("browser")]
         IQueryable IQueryProvider.CreateQuery(Expression expression)
         {
             if (expression == null)
@@ -74,6 +76,7 @@ namespace System.Linq
             return new EnumerableQuery<TElement>(expression);
         }
 
+        [UnsupportedOSPlatform("browser")]
         object? IQueryProvider.Execute(Expression expression)
         {
             if (expression == null)
