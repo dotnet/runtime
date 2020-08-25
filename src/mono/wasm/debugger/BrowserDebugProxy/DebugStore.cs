@@ -382,7 +382,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         Dictionary<string, TypeInfo> typesByName = new Dictionary<string, TypeInfo>();
         readonly List<SourceFile> sources = new List<SourceFile>();
         internal string Url { get; }
-        bool triedToLoadSymbolsOnDemand;
+        public bool TriedToLoadSymbolsOnDemand { get; set; }
 
         public AssemblyInfo(IAssemblyResolver resolver, string url, byte[] assembly, byte[] pdb)
         {
@@ -441,16 +441,6 @@ namespace Microsoft.WebAssembly.Diagnostics
         }
         
         public ModuleDefinition Image => image;
-        
-        public bool TriedToLoadSymbolsOnDemand
-        {
-            get {
-                return triedToLoadSymbolsOnDemand; 
-            }
-            set {
-                triedToLoadSymbolsOnDemand = value;
-            }
-        }
 
         public void Populate()
         {
