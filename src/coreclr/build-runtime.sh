@@ -95,6 +95,17 @@ build_cross_architecture_components()
     export __CMakeBinDir CROSSCOMPILE
 
     __CMakeArgs="-DCLR_CMAKE_TARGET_ARCH=$__BuildArch -DCLR_CROSS_COMPONENTS_BUILD=1 $__CMakeArgs"
+    if [[ "$__TargetOS" == OSX ]]; then
+        if [[ "$__CrossArch" == x64 ]]; then
+            __CMakeArgs="-DCMAKE_OSX_ARCHITECTURES=\"x86_64\" $__CMakeArgs"
+        elif [[ "$__CrossArch" == arm64 ]]; then
+            __CMakeArgs="-DCMAKE_OSX_ARCHITECTURES=\"arm64\" $__CMakeArgs"
+        else
+            echo "Error: Unknown OSX architecture $__BuildArch."
+            exit 1
+        fi
+    fi
+
     build_native "$__CrossArch" "$__ProjectRoot" "$__ProjectRoot" "$intermediatesForBuild" "cross-architecture components"
 
     CROSSCOMPILE=1
@@ -232,6 +243,19 @@ __CMakeArgs="-DCLR_CMAKE_PGO_INSTRUMENT=$__PgoInstrument -DCLR_CMAKE_OPTDATA_PAT
 
 if [[ "$__SkipConfigure" == 0 && "$__CodeCoverage" == 1 ]]; then
     __CMakeArgs="-DCLR_CMAKE_ENABLE_CODE_COVERAGE=1 $__CMakeArgs"
+fi
+
+if [[ "$__TargetOS" == OSX ]]; then
+    # set default OSX deployment target
+    __CMakeArgs="-DCMAKE_OSX_DEPLOYMENT_TARGET=10.13 $__CMakeArgs"
+    if [[ "$__BuildArch" == x64 ]]; then
+        __CMakeArgs="-DCMAKE_OSX_ARCHITECTURES=\"x86_64\" $__CMakeArgs"
+    elif [[ "$__BuildArch" == arm64 ]]; then
+        __CMakeArgs="-DCMAKE_OSX_ARCHITECTURES=\"arm64\" $__CMakeArgs"
+    else
+        echo "Error: Unknown OSX architecture $__BuildArch."
+        exit 1
+    fi
 fi
 
 if [[ "$__SkipNative" == 1 ]]; then

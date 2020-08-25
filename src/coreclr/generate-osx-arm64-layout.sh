@@ -22,7 +22,9 @@ done
 RepoRoot="$( cd -P "$( dirname "$source" )/../.." && pwd )"
 
 Core_Root=${RepoRoot}/artifacts/tests/coreclr/OSX.arm64.Debug/Tests/Core_Root
-Arm64_Native_Paths="${RepoRoot}/artifacts/bin/coreclr/OSX.arm64.Debug ${RepoRoot}/artifacts/bin/native/OSX-arm64-Debug"
+Arm64_Native_Obj_Paths="${RepoRoot}/artifacts/obj/coreclr/OSX.arm64.Debug ${RepoRoot}/artifacts/obj/native/OSX-arm64-Debug"
+Arm64_Native_Bin_Paths="${RepoRoot}/artifacts/bin/coreclr/OSX.arm64.Debug ${RepoRoot}/artifacts/bin/native/OSX-arm64-Debug"
+Arm64_Native_Paths="${Arm64_Native_Obj_Paths} ${Arm64_Native_Bin_Paths}"
 Arm64_SPC_Path=${RepoRoot}/artifacts/bin/coreclr/OSX.arm64.Debug/IL
 
 function x64NativeFiles()
