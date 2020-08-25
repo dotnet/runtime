@@ -350,7 +350,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 case "DotnetDebugger.addSymbolServerUrl":
                     {
                         string url = args["url"]?.Value<string>();
-                        if (!urlSymbolServerList.Contains(url))
+                        if (!String.IsNullOrEmpty(url) && !urlSymbolServerList.Contains(url))
                             urlSymbolServerList.Add(url);
                         return true;
                     }
