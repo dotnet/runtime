@@ -39,9 +39,9 @@ function(create_standalone_jit)
   set_target_definitions_to_custom_os_and_arch(${ARGN})
   set_target_properties(${TARGETDETAILS_TARGET} PROPERTIES IGNORE_FEATURE_MERGE_JIT_AND_ENGINE TRUE)
 
-  if (NOT TARGETDETAIL_NOALTJIT)
+  if (NOT TARGETDETAILS_NOALTJIT)
     target_compile_definitions(${TARGETDETAILS_TARGET} PRIVATE ALT_JIT)
-  endif (NOT TARGETDETAIL_NOALTJIT)
+  endif (NOT TARGETDETAILS_NOALTJIT)
 
   target_compile_definitions(${TARGETDETAILS_TARGET} PRIVATE FEATURE_NO_HOST)
   target_compile_definitions(${TARGETDETAILS_TARGET} PRIVATE SELF_NO_HOST)
