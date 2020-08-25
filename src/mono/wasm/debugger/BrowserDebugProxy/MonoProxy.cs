@@ -556,7 +556,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
                         var method = asm.GetMethodByToken(method_token);
 
-                        if (method  == null && !asm.Image.HasSymbols)
+                        if (method == null && !asm.Image.HasSymbols)
                         {
                             try
                             {
