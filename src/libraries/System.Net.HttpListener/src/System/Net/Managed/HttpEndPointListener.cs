@@ -119,7 +119,7 @@ namespace System.Net
             HttpConnection conn;
             try
             {
-                conn = new HttpConnection(accepted, epl, epl._secure, epl._cert);
+                conn = new HttpConnection(accepted, epl, epl._secure, epl._cert!);
             }
             catch
             {

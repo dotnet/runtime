@@ -78,8 +78,8 @@ namespace System.Net
             }
         }
 
-        private static WaitCallback s_invokeCB = new WaitCallback(InvokeCallback);
-        private static void InvokeCallback(object? o)
+        private static WaitCallback s_invokeCB = new WaitCallback(InvokeCallback!);
+        private static void InvokeCallback(object o)
         {
             ListenerAsyncResult ares = (ListenerAsyncResult)o!;
             if (ares._forward != null)
@@ -142,7 +142,7 @@ namespace System.Net
                     if (authHeader == null ||
                         !HttpListenerContext.IsBasicHeader(authHeader) ||
                         authHeader.Length < AuthenticationTypes.Basic.Length + 2 ||
-                        !HttpListenerContext.TryParseBasicAuth(authHeader.Substring(AuthenticationTypes.Basic.Length + 1), out errorCode, out string _, out string? __))
+                        !HttpListenerContext.TryParseBasicAuth(authHeader.Substring(AuthenticationTypes.Basic.Length + 1), out errorCode, out _, out _))
                     {
                         authFailure = true;
                         context.Response.StatusCode = (int)errorCode;

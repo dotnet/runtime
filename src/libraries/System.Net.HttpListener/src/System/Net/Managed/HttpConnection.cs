@@ -58,7 +58,7 @@ namespace System.Net
         private int _reuses;
         private bool _contextBound;
         private bool _secure;
-        private X509Certificate? _cert;
+        private X509Certificate _cert;
         private int _timeout = 90000; // 90k ms for first request, 15k ms from then on
         private Timer _timer;
         private IPEndPoint? _localEndPoint;
@@ -70,7 +70,7 @@ namespace System.Net
         private LineState _lineState = LineState.None;
         private int _position;
 
-        public HttpConnection(Socket sock, HttpEndPointListener epl, bool secure, X509Certificate? cert)
+        public HttpConnection(Socket sock, HttpEndPointListener epl, bool secure, X509Certificate cert)
         {
             _socket = sock;
             _epl = epl;
@@ -107,7 +107,7 @@ namespace System.Net
 
             _timer = new Timer(OnTimeout, null, Timeout.Infinite, Timeout.Infinite);
             if (_sslStream != null) {
-                _sslStream.AuthenticateAsServer (_cert!, true, (SslProtocols)ServicePointManager.SecurityProtocol, false);
+                _sslStream.AuthenticateAsServer (_cert, true, (SslProtocols)ServicePointManager.SecurityProtocol, false);
             }
             Init();
         }
