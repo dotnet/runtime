@@ -345,6 +345,8 @@ namespace R2RDump
                     int rtfOffset = _r2r.GetOffset(section.RelativeVirtualAddress);
                     int rtfEndOffset = rtfOffset + section.Size;
                     int rtfIndex = 0;
+                    _writer.WriteLine("  Index | StartRVA |  EndRVA  | UnwindRVA");
+                    _writer.WriteLine("-----------------------------------------");
                     while (rtfOffset < rtfEndOffset)
                     {
                         int startRva = NativeReader.ReadInt32(_r2r.Image, ref rtfOffset);
@@ -354,11 +356,8 @@ namespace R2RDump
                             endRva = NativeReader.ReadInt32(_r2r.Image, ref rtfOffset);
                         }
                         int unwindRva = NativeReader.ReadInt32(_r2r.Image, ref rtfOffset);
-                        _writer.WriteLine($"Index: {rtfIndex}");
-                        _writer.WriteLine($"        StartRva: 0x{startRva:X8}");
-                        if (endRva != -1)
-                            _writer.WriteLine($"        EndRva: 0x{endRva:X8}");
-                        _writer.WriteLine($"        UnwindRva: 0x{unwindRva:X8}");
+                        string endRvaText = (endRva != -1 ? endRva.ToString("x8") : "        ");
+                        _writer.WriteLine($"{rtfIndex,7} | {startRva:X8} | {endRvaText} | {unwindRva:X8}");
                         rtfIndex++;
                     }
                     break;

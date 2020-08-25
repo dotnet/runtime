@@ -164,7 +164,7 @@ namespace ILCompiler.Reflection.ReadyToRun.Amd64
         public Registers FrameRegister { get; set; } //4 bits
         public byte FrameOffset { get; set; } //4 bits
         public Dictionary<int, int> CodeOffsetToUnwindCodeIndex { get; set; }
-        public UnwindCode[] UnwindCodes { get; set; }
+        public List<UnwindCode> UnwindCodes { get; set; }
         public uint PersonalityRoutineRVA { get; set; }
 
         public UnwindInfo() { }
@@ -183,17 +183,19 @@ namespace ILCompiler.Reflection.ReadyToRun.Amd64
             FrameRegister = (Registers)(frameRegisterAndOffset & 15);
             FrameOffset = (byte)(frameRegisterAndOffset >> 4);
 
-            UnwindCodes = new UnwindCode[CountOfUnwindCodes];
+            UnwindCodes = new List<UnwindCode>(CountOfUnwindCodes);
             CodeOffsetToUnwindCodeIndex = new Dictionary<int, int>();
             int frameOffset = FrameOffset;
-            for (int i = 0; i < CountOfUnwindCodes; i++)
+            int sizeOfUnwindCodes = CountOfUnwindCodes * _sizeofUnwindCode;
+            int endOffset = offset + sizeOfUnwindCodes;
+            while (offset < endOffset)
             {
                 UnwindCode unwindCode = new UnwindCode(image, ref frameOffset, ref offset);
-                CodeOffsetToUnwindCodeIndex.Add(unwindCode.CodeOffset, i);
-                UnwindCodes[i] = unwindCode;
+                CodeOffsetToUnwindCodeIndex.Add(unwindCode.CodeOffset, UnwindCodes.Count);
+                UnwindCodes.Add(unwindCode);
             }
 
-            Size = _offsetofUnwindCode + CountOfUnwindCodes * _sizeofUnwindCode;
+            Size = _offsetofUnwindCode + sizeOfUnwindCodes;
             int alignmentPad = -Size & 3;
             Size += alignmentPad + sizeof(uint);
 
