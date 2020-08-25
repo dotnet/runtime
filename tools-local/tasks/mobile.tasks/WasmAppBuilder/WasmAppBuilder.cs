@@ -30,7 +30,7 @@ public class WasmAppBuilder : Task
 
     // full list of ICU data files we produce can be found here:
     // https://github.com/dotnet/icu/tree/maint/maint-67/icu-filters
-    public string? IcuDataFileName { get; set; } = "icudt_optimal.dat";
+    public string? IcuDataFileName { get; set; } = "icudt.dat";
 
     [Required]
     public ITaskItem[]? AssemblySearchPaths { get; set; }
