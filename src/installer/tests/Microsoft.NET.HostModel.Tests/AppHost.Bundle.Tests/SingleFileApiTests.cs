@@ -16,6 +16,24 @@ namespace AppHost.Bundle.Tests
         }
 
         [Fact]
+        public void FullyQualifiedName()
+        {
+            var fixture = sharedTestState.TestFixture.Copy();
+            var singleFile = BundleHelper.BundleApp(fixture);
+
+            Command.Create(singleFile, "fullyqualifiedname")
+                .CaptureStdErr()
+                .CaptureStdOut()
+                .Execute()
+                .Should()
+                .Pass()
+                .And
+                .HaveStdOutContaining("FullyQualifiedName: <Unknown>" +
+                    Environment.NewLine +
+                    "Name: <Unknown>");
+        }
+
+        [Fact]
         public void CodeBaseThrows()
         {
             var fixture = sharedTestState.TestFixture.Copy();

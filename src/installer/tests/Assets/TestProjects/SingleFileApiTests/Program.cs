@@ -8,6 +8,12 @@ namespace SingleFileApiTests
         {
             switch (args[0])
             {
+                case "fullyqualifiedname":
+                    var module = typeof(object).Assembly.GetModules()[0];
+                    Console.WriteLine("FullyQualifiedName: " + module.FullyQualifiedName);
+                    Console.WriteLine("Name: " + module.Name);
+                    return;
+
                 case "cmdlineargs":
                     Console.WriteLine(Environment.GetCommandLineArgs()[0]);
                     return;
