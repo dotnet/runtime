@@ -670,7 +670,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     | (data[2] << 16)
                     | (data[3] << 24));
 
-                if (pdbSignature != 0x53445352) // "SDSR"
+                if (pdbSignature != 0x53445352) // "SDSR" mono/metadata/debug-mono-ppdb.c#L101
                     return null;
 
                 var buffer = new byte[16];
@@ -708,6 +708,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     }
                     catch (Exception e)
                     {
+                        Log("info", $"Unable to load symbols on demand exception: {e.ToString()}");
                         continue;
                     }
 
