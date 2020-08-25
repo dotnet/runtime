@@ -709,9 +709,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     catch (Exception e)
                     {
                         Log("info", $"Unable to load symbols on demand exception: {e.ToString()}");
-                        continue;
                     }
-
                     if (method != null)
                         return method;
                 }
