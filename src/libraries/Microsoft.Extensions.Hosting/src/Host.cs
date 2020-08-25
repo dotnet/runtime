@@ -111,8 +111,11 @@ namespace Microsoft.Extensions.Hosting
 
                 if (isWindows)
                 {
+#pragma warning disable CA1416 // Platform compat analyzer
                     // Add the EventLogLoggerProvider on windows machines
                     logging.AddEventLog();
+#pragma warning restore CA1416 // Platform compat analyzer
+
                 }
 
                 logging.Configure(options =>

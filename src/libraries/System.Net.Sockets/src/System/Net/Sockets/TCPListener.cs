@@ -262,6 +262,7 @@ namespace System.Net.Sockets
             return listener;
         }
 
+        [SupportedOSPlatform("windows")]
         private void SetIPProtectionLevel(bool allowed)
             => _serverSocket!.SetIPProtectionLevel(allowed ? IPProtectionLevel.Unrestricted : IPProtectionLevel.EdgeRestricted);
 
@@ -274,7 +275,7 @@ namespace System.Net.Sockets
                 _serverSocket.ExclusiveAddressUse = true;
             }
 
-            if (_allowNatTraversal != null)
+            if (_allowNatTraversal != null && OperatingSystem.IsWindows())
             {
                 SetIPProtectionLevel(_allowNatTraversal.GetValueOrDefault());
                 _allowNatTraversal = null; // Reset value to avoid affecting more sockets
