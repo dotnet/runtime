@@ -366,7 +366,7 @@ jobs:
       testGroup: innerloop
       nameSuffix: AllSubsets_Mono_RuntimeTests
       buildArgs: -s mono+libs -c $(_BuildConfig)
-      timeoutInMinutes: 120
+      timeoutInMinutes: 180
       condition: >-
         or(
           eq(dependencies.checkout.outputs['SetPathVars_runtimetests.containsChange'], true),
