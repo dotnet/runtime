@@ -256,17 +256,22 @@ int32_t SystemNative_GetIcmpv6GlobalStatistics(Icmpv6GlobalStatistics* retStats)
     if (result && errno == ENOMEM)
     {
         // We did not provide enough memory.
-        // macOS 11.0 added new member to icmp6stat so as FreeBSED reported changes between versions.
+        // macOS 11.0 added new member to icmp6stat so as FreeBSD reported changes between versions.
         oldlenp = GetEstimatedSize(sysctlName);
-        buffer = realloc(buffer, oldlenp);
-        if (buffer)
+        free(buffer);
+        buffer = malloc(oldlenp);
+        if (!buffer)
         {
-            result = sysctlbyname(sysctlName, buffer, &oldlenp, NULL, 0);
-            if (result == 0)
-            {
-                // if the call succeeded, update icmp6statSize
-                atomic_store(&icmp6statSize, oldlenp);
-            }
+            memset(retStats, 0, sizeof(Icmpv6GlobalStatistics));
+            errno = ENOMEM;
+            return -1;
+        }
+
+        result = sysctlbyname(sysctlName, buffer, &oldlenp, NULL, 0);
+        if (result == 0)
+        {
+            // if the call succeeded, update icmp6statSize
+            atomic_store(&icmp6statSize, oldlenp);
         }
     }
 
