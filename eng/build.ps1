@@ -136,7 +136,6 @@ if ($subset -eq 'help') {
   exit 0
 }
 
-Assert-InstalledDependency("CMake")
 Assert-InstalledDependency("Git")
 Assert-GitLongPathsEnabled
 
