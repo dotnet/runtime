@@ -649,10 +649,9 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         async Task<MethodInfo> LoadSymbolsOnDemand(AssemblyInfo asm, uint method_token, SessionId sessionId, CancellationToken token)
         {
-            MethodInfo method = null;
             var context = GetContext(sessionId);
             ImageDebugHeader header = asm.Image.GetDebugHeader();
-            
+
             for (var i = 0; i < header.Entries.Length; i++)
             {
                 var entry = header.Entries[i];
@@ -700,24 +699,23 @@ namespace Microsoft.WebAssembly.Diagnostics
                         var symbolReader = portablePdbReaderProvider.GetSymbolReader(asm.Image, streamToReadFrom);
                         asm.Image.ReadSymbols(symbolReader);
                         asm.Populate();
-                        method = asm.GetMethodByToken(method_token);
                         foreach (var source in asm.Sources)
                         {
                             var scriptSource = JObject.FromObject(source.ToScriptSource(context.Id, context.AuxData));
                             SendEvent(sessionId, "Debugger.scriptParsed", scriptSource, token);
                         }
+                        return asm.GetMethodByToken(method_token);
                     }
                     catch (Exception e)
                     {
-                        Log("info", $"Unable to load symbols on demand exception: {e.ToString()}");
+                        Log("info", $"Unable to load symbols on demand exception: {e.ToString()} url:{urlSymbolServer}");
                     }
-                    if (method != null)
-                        return method;
                 }
+                break;
             }
 
             Log("info", "Unable to load symbols on demand");
-            return method;
+            return null;
         }
         
         async Task OnDefaultContext(SessionId sessionId, ExecutionContext context, CancellationToken token)
