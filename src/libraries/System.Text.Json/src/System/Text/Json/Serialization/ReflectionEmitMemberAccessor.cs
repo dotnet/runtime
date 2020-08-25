@@ -13,18 +13,6 @@ namespace System.Text.Json.Serialization
 {
     internal sealed class ReflectionEmitMemberAccessor : MemberAccessor
     {
-        private static readonly Type s_nullReferenceException = typeof(NullReferenceException);
-        private static readonly Type s_invalidCastExceptionType = typeof(InvalidCastException);
-
-        private static readonly Type s_stringType = typeof(string);
-        private static readonly Type s_typeType = typeof(Type);
-
-        private static readonly MethodInfo s_object_GetType = typeof(object).GetMethod(nameof(object.GetType))!;
-        private static readonly MethodInfo s_throwHelper_ThrowJsonException_DeserializeUnableToAssignValue
-            = typeof(ThrowHelper).GetMethod(nameof(ThrowHelper.ThrowJsonException_DeserializeUnableToAssignValue))!;
-        private static readonly MethodInfo s_throwHelper_ThrowJsonException_DeserializeUnableToAssignNull
-            = typeof(ThrowHelper).GetMethod(nameof(ThrowHelper.ThrowJsonException_DeserializeUnableToAssignNull))!;
-
         public override JsonClassInfo.ConstructorDelegate? CreateConstructor(Type type)
         {
             Debug.Assert(type != null);
@@ -273,36 +261,48 @@ namespace System.Text.Json.Serialization
             return dynamicMethod;
         }
 
-        public override Action<object?, TProperty> CreatePropertySetter<TProperty>(PropertyInfo propertyInfo) =>
+        public override Action<object, TProperty> CreatePropertySetter<TProperty>(PropertyInfo propertyInfo) =>
             CreatePropertySetterDelegate<TProperty>(propertyInfo);
 
-        private static Action<object?, TProperty> CreatePropertySetterDelegate<TProperty>(PropertyInfo propertyInfo)
+        private static Action<object, TProperty> CreatePropertySetterDelegate<TProperty>(PropertyInfo propertyInfo)
         {
             string memberName = propertyInfo.Name;
             Type declaredPropertyType = propertyInfo.PropertyType;
             Type runtimePropertyType = typeof(TProperty);
 
-            DynamicMethod propertySetter = CreatePropertySetter(propertyInfo, memberName, declaredPropertyType, runtimePropertyType);
+            Action<object, TProperty> propertySetter = CreateDelegate<Action<object, TProperty>>(
+                CreatePropertySetter(propertyInfo, runtimePropertyType));
 
             if (declaredPropertyType == runtimePropertyType)
             {
                 // If declared and runtime type are identical, the assignment cannot fail, thus
                 // there is no need for exception handling or closures.
 
-                return CreateDelegate<Action<object?, TProperty>>(propertySetter);
+                return propertySetter;
             }
             else
             {
-                // Return a delegate with some closures needed for creating the potential exception.
+                // Return a delegate with closures and exception handling.
 
-                Action<object?, TProperty, string, Type> propertySetterDelegate =
-                    CreateDelegate<Action<object?, TProperty, string, Type>>(propertySetter);
-
-                return (object? obj, TProperty value) => propertySetterDelegate(obj, value, memberName, declaredPropertyType);
+                return (object obj, TProperty value) =>
+                {
+                    try
+                    {
+                        propertySetter(obj, value);
+                    }
+                    catch (NullReferenceException)
+                    {
+                        ThrowHelper.ThrowJsonException_DeserializeUnableToAssignNull(memberName, declaredPropertyType);
+                    }
+                    catch (InvalidCastException)
+                    {
+                        ThrowHelper.ThrowJsonException_DeserializeUnableToAssignValue(value!.GetType(), memberName, declaredPropertyType);
+                    }
+                };
             }
         }
 
-        private static DynamicMethod CreatePropertySetter(PropertyInfo propertyInfo, string memberName, Type declaredPropertyType, Type runtimePropertyType)
+        private static DynamicMethod CreatePropertySetter(PropertyInfo propertyInfo, Type runtimePropertyType)
         {
             MethodInfo? realMethod = propertyInfo.SetMethod;
             Debug.Assert(realMethod != null);
@@ -310,39 +310,22 @@ namespace System.Text.Json.Serialization
             Type? declaringType = propertyInfo.DeclaringType;
             Debug.Assert(declaringType != null);
 
+            Type declaredPropertyType = propertyInfo.PropertyType;
+
+            DynamicMethod dynamicMethod = CreateSetterMethod(propertyInfo.Name, runtimePropertyType);
+            ILGenerator generator = dynamicMethod.GetILGenerator();
+
+            generator.Emit(OpCodes.Ldarg_0);
+            generator.Emit(declaringType.IsValueType ? OpCodes.Unbox : OpCodes.Castclass, declaringType);
+            generator.Emit(OpCodes.Ldarg_1);
+
             // declaredPropertyType: Type of the property
             // runtimePropertyType:  <T> of JsonConverter / JsonPropertyInfo
 
-            bool valueNeedsCastOrUnbox = declaredPropertyType != runtimePropertyType;
-
-            DynamicMethod dynamicMethod = CreateSetterMethod(memberName, runtimePropertyType, valueNeedsCastOrUnbox);
-            ILGenerator generator = dynamicMethod.GetILGenerator();
-
-            if (!valueNeedsCastOrUnbox)
+            if (declaredPropertyType != runtimePropertyType)
             {
-                generator.Emit(OpCodes.Ldarg_0);
-                generator.Emit(declaringType.IsValueType ? OpCodes.Unbox : OpCodes.Castclass, declaringType);
-                generator.Emit(OpCodes.Ldarg_1);
-            }
-            else
-            {
-                LocalBuilder value = generator.DeclareLocal(declaredPropertyType);
-
-                // try
-                generator.BeginExceptionBlock();
-
                 // When applied to a reference type, the unbox.any instruction has the same effect as castclass.
-                generator.Emit(OpCodes.Ldarg_1);
                 generator.Emit(OpCodes.Unbox_Any, declaredPropertyType);
-                generator.Emit(OpCodes.Stloc_0, value);
-
-                EmitSetterCatchBlocks(generator);
-
-                generator.EndExceptionBlock();
-
-                generator.Emit(OpCodes.Ldarg_0);
-                generator.Emit(declaringType.IsValueType ? OpCodes.Unbox : OpCodes.Castclass, declaringType);
-                generator.Emit(OpCodes.Ldloc_0);
             }
 
             generator.Emit(declaringType.IsValueType ? OpCodes.Call : OpCodes.Callvirt, realMethod);
@@ -365,11 +348,7 @@ namespace System.Text.Json.Serialization
             ILGenerator generator = dynamicMethod.GetILGenerator();
 
             generator.Emit(OpCodes.Ldarg_0);
-            generator.Emit(
-                declaringType.IsValueType
-                    ? OpCodes.Unbox
-                    : OpCodes.Castclass,
-                declaringType);
+            generator.Emit(declaringType.IsValueType ? OpCodes.Unbox : OpCodes.Castclass, declaringType);
             generator.Emit(OpCodes.Ldfld, fieldInfo);
 
             // declaredFieldType: Type of the field
@@ -388,95 +367,71 @@ namespace System.Text.Json.Serialization
         public override Action<object, TProperty> CreateFieldSetter<TProperty>(FieldInfo fieldInfo) =>
             CreateFieldSetterDelegate<TProperty>(fieldInfo);
 
-        private static Action<object?, TProperty> CreateFieldSetterDelegate<TProperty>(FieldInfo fieldInfo)
+        private static Action<object, TProperty> CreateFieldSetterDelegate<TProperty>(FieldInfo fieldInfo)
         {
             string memberName = fieldInfo.Name;
             Type declaredFieldType = fieldInfo.FieldType;
             Type runtimeFieldType = typeof(TProperty);
 
-            DynamicMethod fieldSetter = CreateFieldSetter(fieldInfo, memberName, declaredFieldType, runtimeFieldType);
+            Action<object, TProperty> fieldSetter = CreateDelegate<Action<object, TProperty>>(
+                CreateFieldSetter(fieldInfo, runtimeFieldType));
 
             if (declaredFieldType == runtimeFieldType)
             {
                 // If declared and runtime type are identical, the assignment cannot fail, thus
                 // there is no need for exception handling or closures.
 
-                return CreateDelegate<Action<object?, TProperty>>(fieldSetter);
+                return fieldSetter;
             }
             else
             {
-                // Return a delegate with some closures needed for creating the potential exception.
+                // Return a delegate with closures and exception handling.
 
-                Action<object?, TProperty, string, Type> fieldSetterDelegate =
-                    CreateDelegate<Action<object?, TProperty, string, Type>>(fieldSetter);
-
-                return (object? obj, TProperty value) => fieldSetterDelegate(obj, value, memberName, declaredFieldType);
+                return (object obj, TProperty value) =>
+                {
+                    try
+                    {
+                        fieldSetter(obj, value);
+                    }
+                    catch (NullReferenceException)
+                    {
+                        ThrowHelper.ThrowJsonException_DeserializeUnableToAssignNull(memberName, declaredFieldType);
+                    }
+                    catch (InvalidCastException)
+                    {
+                        ThrowHelper.ThrowJsonException_DeserializeUnableToAssignValue(value!.GetType(), memberName, declaredFieldType);
+                    }
+                };
             }
         }
 
-        private static DynamicMethod CreateFieldSetter(FieldInfo fieldInfo, string memberName, Type declaredFieldType, Type runtimeFieldType)
+        private static DynamicMethod CreateFieldSetter(FieldInfo fieldInfo, Type runtimeFieldType)
         {
             Type? declaringType = fieldInfo.DeclaringType;
             Debug.Assert(declaringType != null);
 
+            Type declaredFieldType = fieldInfo.FieldType;
+
+            DynamicMethod dynamicMethod = CreateSetterMethod(fieldInfo.Name, runtimeFieldType);
+            ILGenerator generator = dynamicMethod.GetILGenerator();
+
+            generator.Emit(OpCodes.Ldarg_0);
+            generator.Emit(declaringType.IsValueType ? OpCodes.Unbox : OpCodes.Castclass, declaringType);
+            generator.Emit(OpCodes.Ldarg_1);
+
             // declaredFieldType: Type of the field
             // runtimeFieldType:  <T> of JsonConverter / JsonPropertyInfo
 
-            bool valueNeedsCastOrUnbox = declaredFieldType != runtimeFieldType;
-
-            DynamicMethod dynamicMethod = CreateSetterMethod(memberName, runtimeFieldType, valueNeedsCastOrUnbox);
-            ILGenerator generator = dynamicMethod.GetILGenerator();
-
-            if (!valueNeedsCastOrUnbox)
+            if (declaredFieldType != runtimeFieldType)
             {
-                generator.Emit(OpCodes.Ldarg_0);
-                generator.Emit(declaringType.IsValueType ? OpCodes.Unbox : OpCodes.Castclass, declaringType);
-                generator.Emit(OpCodes.Ldarg_1);
-            }
-            else
-            {
-                LocalBuilder value = generator.DeclareLocal(declaredFieldType);
-
-                // try
-                generator.BeginExceptionBlock();
-
                 // When applied to a reference type, the unbox.any instruction has the same effect as castclass.
-                generator.Emit(OpCodes.Ldarg_1);
                 generator.Emit(OpCodes.Unbox_Any, declaredFieldType);
-                generator.Emit(OpCodes.Stloc_0, value);
-
-                EmitSetterCatchBlocks(generator);
-
-                generator.EndExceptionBlock();
-
-                generator.Emit(OpCodes.Ldarg_0);
-                generator.Emit(declaringType.IsValueType ? OpCodes.Unbox : OpCodes.Castclass, declaringType);
-                generator.Emit(OpCodes.Ldloc_0);
             }
 
             generator.Emit(OpCodes.Stfld, fieldInfo);
             generator.Emit(OpCodes.Ret);
 
             return dynamicMethod;
-        }
-
-        private static void EmitSetterCatchBlocks(ILGenerator generator)
-        {
-            // catch (NullReferenceException)
-            generator.BeginCatchBlock(s_nullReferenceException);
-            generator.Emit(OpCodes.Pop);
-            generator.Emit(OpCodes.Ldarg_2);
-            generator.Emit(OpCodes.Ldarg_3);
-            generator.Emit(OpCodes.Call, s_throwHelper_ThrowJsonException_DeserializeUnableToAssignNull);
-
-            // catch (InvalidCastException)
-            generator.BeginCatchBlock(s_invalidCastExceptionType);
-            generator.Emit(OpCodes.Pop);
-            generator.Emit(OpCodes.Ldarg_1);
-            generator.Emit(OpCodes.Callvirt, s_object_GetType);
-            generator.Emit(OpCodes.Ldarg_2);
-            generator.Emit(OpCodes.Ldarg_3);
-            generator.Emit(OpCodes.Call, s_throwHelper_ThrowJsonException_DeserializeUnableToAssignValue);
         }
 
         private static DynamicMethod CreateGetterMethod(string memberName, Type memberType) =>
@@ -487,11 +442,11 @@ namespace System.Text.Json.Serialization
                 typeof(ReflectionEmitMemberAccessor).Module,
                 skipVisibility: true);
 
-        private static DynamicMethod CreateSetterMethod(string memberName, Type memberType, bool valueNeedsCastOrUnbox) =>
+        private static DynamicMethod CreateSetterMethod(string memberName, Type memberType) =>
             new DynamicMethod(
                 memberName + "Setter",
                 typeof(void),
-                valueNeedsCastOrUnbox ? new[] { JsonClassInfo.ObjectType, memberType, s_stringType, s_typeType } : new[] { JsonClassInfo.ObjectType, memberType },
+                new[] { JsonClassInfo.ObjectType, memberType },
                 typeof(ReflectionEmitMemberAccessor).Module,
                 skipVisibility: true);
 
