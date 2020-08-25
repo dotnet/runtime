@@ -47,7 +47,7 @@ namespace System.Net.Mail.Tests
 
             if (string.IsNullOrEmpty(displayName))
             {
-                Assert.Equal($"{Address}", mailAddress.ToString());
+                Assert.Equal($"{address}", mailAddress.ToString());
             }
             else
             {
