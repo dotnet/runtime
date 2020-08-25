@@ -219,10 +219,10 @@ namespace System.Text.Json.Serialization
             return dynamicMethod;
         }
 
-        public override Func<object?, TProperty> CreatePropertyGetter<TProperty>(PropertyInfo propertyInfo) =>
-            CreateDelegate<Func<object?, TProperty>>(CreatePropertyGetter(propertyInfo, typeof(TProperty)));
+        public override Func<object, TProperty> CreatePropertyGetter<TProperty>(PropertyInfo propertyInfo) =>
+            CreateDelegate<Func<object, TProperty>>(CreatePropertyGetter(propertyInfo, typeof(TProperty)));
 
-        private static DynamicMethod CreatePropertyGetter(PropertyInfo propertyInfo, Type propertyType)
+        private static DynamicMethod CreatePropertyGetter(PropertyInfo propertyInfo, Type runtimePropertyType)
         {
             MethodInfo? realMethod = propertyInfo.GetMethod;
             Debug.Assert(realMethod != null);
@@ -230,7 +230,9 @@ namespace System.Text.Json.Serialization
             Type? declaringType = propertyInfo.DeclaringType;
             Debug.Assert(declaringType != null);
 
-            DynamicMethod dynamicMethod = CreateGetterMethod(propertyInfo.Name, propertyType);
+            Type declaredPropertyType = propertyInfo.PropertyType;
+
+            DynamicMethod dynamicMethod = CreateGetterMethod(propertyInfo.Name, runtimePropertyType);
             ILGenerator generator = dynamicMethod.GetILGenerator();
 
             generator.Emit(OpCodes.Ldarg_0);
@@ -244,6 +246,14 @@ namespace System.Text.Json.Serialization
             {
                 generator.Emit(OpCodes.Castclass, declaringType);
                 generator.Emit(OpCodes.Callvirt, realMethod);
+            }
+
+            // declaredPropertyType: Type of the property
+            // runtimePropertyType:  <T> of JsonConverter / JsonPropertyInfo
+
+            if (declaredPropertyType != runtimePropertyType && declaredPropertyType.IsValueType)
+            {
+                generator.Emit(OpCodes.Box, declaredPropertyType);
             }
 
             generator.Emit(OpCodes.Ret);
@@ -251,10 +261,10 @@ namespace System.Text.Json.Serialization
             return dynamicMethod;
         }
 
-        public override Action<object?, TProperty> CreatePropertySetter<TProperty>(PropertyInfo propertyInfo) =>
-            CreateDelegate<Action<object?, TProperty>>(CreatePropertySetter(propertyInfo, typeof(TProperty)));
+        public override Action<object, TProperty> CreatePropertySetter<TProperty>(PropertyInfo propertyInfo) =>
+            CreateDelegate<Action<object, TProperty>>(CreatePropertySetter(propertyInfo, typeof(TProperty)));
 
-        private static DynamicMethod CreatePropertySetter(PropertyInfo propertyInfo, Type propertyType)
+        private static DynamicMethod CreatePropertySetter(PropertyInfo propertyInfo, Type runtimePropertyType)
         {
             MethodInfo? realMethod = propertyInfo.SetMethod;
             Debug.Assert(realMethod != null);
@@ -262,24 +272,24 @@ namespace System.Text.Json.Serialization
             Type? declaringType = propertyInfo.DeclaringType;
             Debug.Assert(declaringType != null);
 
-            DynamicMethod dynamicMethod = CreateSetterMethod(propertyInfo.Name, propertyType);
+            Type declaredPropertyType = propertyInfo.PropertyType;
+
+            DynamicMethod dynamicMethod = CreateSetterMethod(propertyInfo.Name, runtimePropertyType);
             ILGenerator generator = dynamicMethod.GetILGenerator();
 
             generator.Emit(OpCodes.Ldarg_0);
+            generator.Emit(declaringType.IsValueType ? OpCodes.Unbox : OpCodes.Castclass, declaringType);
+            generator.Emit(OpCodes.Ldarg_1);
 
-            if (declaringType.IsValueType)
+            // declaredPropertyType: Type of the property
+            // runtimePropertyType:  <T> of JsonConverter / JsonPropertyInfo
+
+            if (declaredPropertyType != runtimePropertyType && declaredPropertyType.IsValueType)
             {
-                generator.Emit(OpCodes.Unbox, declaringType);
-                generator.Emit(OpCodes.Ldarg_1);
-                generator.Emit(OpCodes.Call, realMethod);
+                generator.Emit(OpCodes.Unbox_Any, declaredPropertyType);
             }
-            else
-            {
-                generator.Emit(OpCodes.Castclass, declaringType);
-                generator.Emit(OpCodes.Ldarg_1);
-                generator.Emit(OpCodes.Callvirt, realMethod);
-            };
 
+            generator.Emit(declaringType.IsValueType ? OpCodes.Call : OpCodes.Callvirt, realMethod);
             generator.Emit(OpCodes.Ret);
 
             return dynamicMethod;
@@ -288,12 +298,14 @@ namespace System.Text.Json.Serialization
         public override Func<object, TProperty> CreateFieldGetter<TProperty>(FieldInfo fieldInfo) =>
             CreateDelegate<Func<object, TProperty>>(CreateFieldGetter(fieldInfo, typeof(TProperty)));
 
-        private static DynamicMethod CreateFieldGetter(FieldInfo fieldInfo, Type fieldType)
+        private static DynamicMethod CreateFieldGetter(FieldInfo fieldInfo, Type runtimeFieldType)
         {
             Type? declaringType = fieldInfo.DeclaringType;
             Debug.Assert(declaringType != null);
 
-            DynamicMethod dynamicMethod = CreateGetterMethod(fieldInfo.Name, fieldType);
+            Type declaredFieldType = fieldInfo.FieldType;
+
+            DynamicMethod dynamicMethod = CreateGetterMethod(fieldInfo.Name, runtimeFieldType);
             ILGenerator generator = dynamicMethod.GetILGenerator();
 
             generator.Emit(OpCodes.Ldarg_0);
@@ -303,6 +315,15 @@ namespace System.Text.Json.Serialization
                     : OpCodes.Castclass,
                 declaringType);
             generator.Emit(OpCodes.Ldfld, fieldInfo);
+
+            // declaredFieldType: Type of the field
+            // runtimeFieldType:  <T> of JsonConverter / JsonPropertyInfo
+
+            if (declaredFieldType.IsValueType && declaredFieldType != runtimeFieldType)
+            {
+                generator.Emit(OpCodes.Box, declaredFieldType);
+            }
+
             generator.Emit(OpCodes.Ret);
 
             return dynamicMethod;
@@ -311,21 +332,28 @@ namespace System.Text.Json.Serialization
         public override Action<object, TProperty> CreateFieldSetter<TProperty>(FieldInfo fieldInfo) =>
             CreateDelegate<Action<object, TProperty>>(CreateFieldSetter(fieldInfo, typeof(TProperty)));
 
-        private static DynamicMethod CreateFieldSetter(FieldInfo fieldInfo, Type fieldType)
+        private static DynamicMethod CreateFieldSetter(FieldInfo fieldInfo, Type runtimeFieldType)
         {
             Type? declaringType = fieldInfo.DeclaringType;
             Debug.Assert(declaringType != null);
 
-            DynamicMethod dynamicMethod = CreateSetterMethod(fieldInfo.Name, fieldType);
+            Type declaredFieldType = fieldInfo.FieldType;
+
+            DynamicMethod dynamicMethod = CreateSetterMethod(fieldInfo.Name, runtimeFieldType);
             ILGenerator generator = dynamicMethod.GetILGenerator();
 
             generator.Emit(OpCodes.Ldarg_0);
-            generator.Emit(
-                declaringType.IsValueType
-                    ? OpCodes.Unbox
-                    : OpCodes.Castclass,
-                declaringType);
+            generator.Emit(declaringType.IsValueType ? OpCodes.Unbox : OpCodes.Castclass, declaringType);
             generator.Emit(OpCodes.Ldarg_1);
+
+            // declaredFieldType: Type of the field
+            // runtimeFieldType:  <T> of JsonConverter / JsonPropertyInfo
+
+            if (declaredFieldType != runtimeFieldType && declaredFieldType.IsValueType)
+            {
+                generator.Emit(OpCodes.Unbox_Any, declaredFieldType);
+            }
+
             generator.Emit(OpCodes.Stfld, fieldInfo);
             generator.Emit(OpCodes.Ret);
 

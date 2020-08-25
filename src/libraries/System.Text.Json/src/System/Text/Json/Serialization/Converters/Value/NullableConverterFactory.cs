@@ -22,6 +22,12 @@ namespace System.Text.Json.Serialization.Converters
             JsonConverter valueConverter = options.GetConverter(valueTypeToConvert);
             Debug.Assert(valueConverter != null);
 
+            // If the value type has an interface or object converter, just return that converter directly.
+            if (!valueConverter.TypeToConvert.IsValueType && valueTypeToConvert.IsValueType)
+            {
+                return valueConverter;
+            }
+
             return CreateValueConverter(valueTypeToConvert, valueConverter);
         }
 

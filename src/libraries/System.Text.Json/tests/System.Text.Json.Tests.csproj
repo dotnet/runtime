@@ -9,6 +9,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(CommonTestPath)System\IO\WrappedMemoryStream.cs" Link="CommonTest\System\IO\WrappedMemoryStream.cs" />
+    <Compile Include="AssertHelper.cs" />
     <Compile Include="BitStackTests.cs" />
     <Compile Include="BufferFactory.cs" />
     <Compile Include="BufferSegment.cs" />
@@ -73,6 +74,7 @@
     <Compile Include="Serialization\CustomConverterTests\CustomConverterTests.Exceptions.cs" />
     <Compile Include="Serialization\CustomConverterTests\CustomConverterTests.HandleNull.cs" />
     <Compile Include="Serialization\CustomConverterTests\CustomConverterTests.Int32.cs" />
+    <Compile Include="Serialization\CustomConverterTests\CustomConverterTests.InvalidCast.cs" />
     <Compile Include="Serialization\CustomConverterTests\CustomConverterTests.List.cs" />
     <Compile Include="Serialization\CustomConverterTests\CustomConverterTests.NullValueType.cs" />
     <Compile Include="Serialization\CustomConverterTests\CustomConverterTests.NullableTypes.cs" />
@@ -80,6 +82,7 @@
     <Compile Include="Serialization\CustomConverterTests\CustomConverterTests.Point.cs" />
     <Compile Include="Serialization\CustomConverterTests\CustomConverterTests.Polymorphic.cs" />
     <Compile Include="Serialization\CustomConverterTests\CustomConverterTests.ReadAhead.cs" />
+    <Compile Include="Serialization\CustomConverterTests\CustomConverterTests.ValueTypedMember.cs" />
     <Compile Include="Serialization\CustomConverterTests\CustomConverterTests.cs" />
     <Compile Include="Serialization\CyclicTests.cs" />
     <Compile Include="Serialization\DeserializationWrapper.cs" />
@@ -129,6 +132,7 @@
     <Compile Include="Serialization\TestClasses\TestClasses.SimpleTestClassWithSimpleObject.cs" />
     <Compile Include="Serialization\TestClasses\TestClasses.SimpleTestStruct.cs" />
     <Compile Include="Serialization\TestClasses\TestClasses.SimpleTestStructWithFields.cs" />
+    <Compile Include="Serialization\TestClasses\TestClasses.ValueTypedMember.cs" />
     <Compile Include="Serialization\TestData.cs" />
     <Compile Include="Serialization\Value.ReadTests.cs" />
     <Compile Include="Serialization\Value.WriteTests.cs" />
