@@ -84,6 +84,7 @@ namespace System.Diagnostics
             }));
         }
 
+        [UnsupportedOSPlatform("browser")]
         public override void TraceEvent(TraceEventCache? eventCache, string source, TraceEventType eventType, int id, string format, params object?[]? args)
         {
             if (Filter != null && !Filter.ShouldTrace(eventCache, source, eventType, id, format, args, null, null))
@@ -94,6 +95,7 @@ namespace System.Diagnostics
             WriteFooter(eventCache);
         }
 
+        [UnsupportedOSPlatform("browser")]
         public override void TraceEvent(TraceEventCache? eventCache, string source, TraceEventType eventType, int id, string? message)
         {
             if (Filter != null && !Filter.ShouldTrace(eventCache, source, eventType, id, message, null, null, null))
@@ -104,6 +106,7 @@ namespace System.Diagnostics
             WriteFooter(eventCache);
         }
 
+        [UnsupportedOSPlatform("browser")]
         public override void TraceData(TraceEventCache? eventCache, string source, TraceEventType eventType, int id, object? data)
         {
             if (Filter != null && !Filter.ShouldTrace(eventCache, source, eventType, id, null, null, data, null))
@@ -123,6 +126,7 @@ namespace System.Diagnostics
             WriteFooter(eventCache);
         }
 
+        [UnsupportedOSPlatform("browser")]
         public override void TraceData(TraceEventCache? eventCache, string source, TraceEventType eventType, int id, params object?[]? data)
         {
             if (Filter != null && !Filter.ShouldTrace(eventCache, source, eventType, id, null, null, null, data))
@@ -186,6 +190,7 @@ namespace System.Diagnostics
             _strBldr = null;
         }
 
+        [UnsupportedOSPlatform("browser")]
         public override void TraceTransfer(TraceEventCache? eventCache, string source, int id, string? message, Guid relatedActivityId)
         {
             if (Filter != null && !Filter.ShouldTrace(eventCache, source, TraceEventType.Transfer, id, message, null, null, null))

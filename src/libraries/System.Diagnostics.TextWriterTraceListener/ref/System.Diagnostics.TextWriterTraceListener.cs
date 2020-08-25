@@ -53,10 +53,15 @@ namespace System.Diagnostics
         public XmlWriterTraceListener(string? filename, string? name) { }
         public override void Close() { }
         public override void Fail(string? message, string? detailMessage) { }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public override void TraceData(System.Diagnostics.TraceEventCache? eventCache, string source, System.Diagnostics.TraceEventType eventType, int id, object? data) { }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public override void TraceData(System.Diagnostics.TraceEventCache? eventCache, string source, System.Diagnostics.TraceEventType eventType, int id, params object?[]? data) { }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public override void TraceEvent(System.Diagnostics.TraceEventCache? eventCache, string source, System.Diagnostics.TraceEventType eventType, int id, string? message) { }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public override void TraceEvent(System.Diagnostics.TraceEventCache? eventCache, string source, System.Diagnostics.TraceEventType eventType, int id, string format, params object?[]? args) { }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public override void TraceTransfer(System.Diagnostics.TraceEventCache? eventCache, string source, int id, string? message, System.Guid relatedActivityId) { }
         public override void Write(string? message) { }
         public override void WriteLine(string? message) { }
