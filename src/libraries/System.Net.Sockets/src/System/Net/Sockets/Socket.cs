@@ -22,13 +22,21 @@ namespace System.Net.Sockets
     {
         internal const int DefaultCloseTimeout = -1; // NOTE: changing this default is a breaking change.
 
+        private static readonly HashSet<IPAddress> s_wildcardAddresses = new HashSet<IPAddress>
+        {
+            IPAddress.Any, IPAddress.IPv6Any, IPAddress.Any.MapToIPv6()
+        };
+
         private SafeSocketHandle _handle;
 
         // _rightEndPoint is null if the socket has not been bound.  Otherwise, it is any EndPoint of the
         // correct type (IPEndPoint, etc).
         internal EndPoint? _rightEndPoint;
-        private EndPoint? _localEndPoint; // Cached LocalEndPoint value. Will clear on connect, error and disconnect
         internal EndPoint? _remoteEndPoint;
+
+        // Cached LocalEndPoint value. Cleared on disconnect and error. Cached wildcard addresses are
+        // also cleared on connect and accept.
+        private EndPoint? _localEndPoint;
 
         // These flags monitor if the socket was ever connected at any time and if it still is.
         private bool _isConnected;
@@ -216,7 +224,7 @@ namespace System.Net.Sockets
                                 }
 
                                 _isConnected = true;
-                                HandleLocalEndPointOnConnect();
+                                UpdateLocalEndPointOnConnect();
                                 break;
 
                             case SocketError.InvalidArgument:
@@ -226,7 +234,7 @@ namespace System.Net.Sockets
                                 // whether we're actually connected or not, err on the side of saying
                                 // we're connected.
                                 _isConnected = true;
-                                HandleLocalEndPointOnConnect();
+                                UpdateLocalEndPointOnConnect();
                                 break;
                         }
                     }
@@ -320,7 +328,7 @@ namespace System.Net.Sockets
                     // Update the state if we've become connected after a non-blocking connect.
                     _isConnected = true;
                     _rightEndPoint = _nonBlockingConnectRightEndPoint;
-                    HandleLocalEndPointOnConnect();
+                    UpdateLocalEndPointOnConnect();
                     _nonBlockingConnectInProgress = false;
                 }
 
@@ -329,7 +337,7 @@ namespace System.Net.Sockets
                     return null;
                 }
 
-                //if (_localEndPoint == null)
+                if (_localEndPoint == null)
                 {
                     Internals.SocketAddress socketAddress = IPEndPointExtensions.Serialize(_rightEndPoint);
 
@@ -367,7 +375,7 @@ namespace System.Net.Sockets
                         // Update the state if we've become connected after a non-blocking connect.
                         _isConnected = true;
                         _rightEndPoint = _nonBlockingConnectRightEndPoint;
-                        HandleLocalEndPointOnConnect();
+                        UpdateLocalEndPointOnConnect();
                         _nonBlockingConnectInProgress = false;
                     }
 
@@ -479,7 +487,7 @@ namespace System.Net.Sockets
                     // Update the state if we've become connected after a non-blocking connect.
                     _isConnected = true;
                     _rightEndPoint = _nonBlockingConnectRightEndPoint;
-                    HandleLocalEndPointOnConnect();
+                    UpdateLocalEndPointOnConnect();
                     _nonBlockingConnectInProgress = false;
                 }
 
@@ -4871,7 +4879,12 @@ namespace System.Net.Sockets
             socket._protocolType = _protocolType;
             socket._rightEndPoint = _rightEndPoint;
             socket._remoteEndPoint = remoteEP;
-            socket._localEndPoint = _localEndPoint;
+
+            // If the listener socket was bound to a wildcard address, then the `accept` system call
+            // will assign a specific address to the accept socket's local endpoint instead of a
+            // wildcard address. In that case we should not copy listener's wildcard local endpoint.
+
+            socket._localEndPoint = !IsWildcardEndPoint(_localEndPoint) ? _localEndPoint : null;
 
             // The socket is connected.
             socket.SetToConnected();
@@ -4904,44 +4917,35 @@ namespace System.Net.Sockets
             // some point in time update the perf counter as well.
             _isConnected = true;
             _isDisconnected = false;
-            HandleLocalEndPointOnConnect();
+            UpdateLocalEndPointOnConnect();
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "now connected");
         }
 
-        private void HandleLocalEndPointOnConnect()
+        private void UpdateLocalEndPointOnConnect()
         {
-            //_localEndPoint = null;
-            if (_localEndPoint == null)
+            // If the client socket was bound to a wildcard address, then the `connect` system call
+            // will assign a specific address to the client socket's local endpoint instead of a
+            // wildcard address. In that case we should clear the cached wildcard local endpoint.
+
+            if (IsWildcardEndPoint(_localEndPoint))
             {
-                return;
-            }
-
-            if (_localEndPoint is IPEndPoint ipLocalEndpoint)
-            {
-                // If a client socket was bound to a wildcard address, then the `connect` system call
-                // will assign a specific address to the client socket's local endpoint instead of a
-                // wildcard address. In that case we should clear the cached wildcard local endpoint.
-
-                // If a listener socket was bound to a wildcard address, then the `accept` system call
-                // will assign a specific address the accept socket's local endpoint instead of a
-                // wildcard address. In that case we should clear the accept socket's cached wildcard
-                // local endpoint copied from listener.
-
-                if (IsWildcardAddress(ipLocalEndpoint.Address))
-                {
-                    _localEndPoint = null;
-                }
+                _localEndPoint = null;
             }
         }
 
-        private bool IsWildcardAddress(IPAddress address)
+        private bool IsWildcardEndPoint(EndPoint? endPoint)
         {
-            return true;
-            /*return address.ToString() == IPAddress.Any.ToString()
-                    || address.ToString() == IPAddress.IPv6Any.ToString()
-                    || address.ToString() == IPAddress.Any.MapToIPv6().ToString();*/
+            if (endPoint == null)
+            {
+                return false;
+            }
 
-            //return address == IPAddress.Any || address == IPAddress.IPv6Any || address == IPAddress.Any.MapToIPv6();
+            if (endPoint is IPEndPoint ipEndpoint)
+            {
+                return s_wildcardAddresses.Contains(ipEndpoint.Address);
+            }
+
+            return false;
         }
 
         internal void SetToDisconnected()

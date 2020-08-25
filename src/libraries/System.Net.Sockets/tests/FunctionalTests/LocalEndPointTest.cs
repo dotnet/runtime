@@ -172,6 +172,7 @@ namespace System.Net.Sockets.Tests
 
                 Socket accept = await acceptTask;
                 Assert.Equal(accept.RemoteEndPoint, client.LocalEndPoint);
+                Assert.Equal(accept.LocalEndPoint, client.RemoteEndPoint);
 
                 Assert.Equal(Wildcard, GetLocalEPAddress(server)); // server -> stays as wildcard
                 Assert.Equal(Loopback, GetLocalEPAddress(accept)); // accept -> specific
@@ -202,7 +203,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        //[Fact]
+        [Fact]
         public void LocalEndPoint_IsCached()
         {
             using (Socket socket = CreateTcpSocket())
