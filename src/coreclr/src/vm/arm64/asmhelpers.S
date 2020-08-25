@@ -375,7 +375,7 @@ WRITE_BARRIER_ENTRY JIT_WriteBarrier
     // Update GC Shadow Heap
 
     // Do not perform the work if g_GCShadow is 0
-    ldr  x12, LOCAL_LABEL(wbs_GCShadow)
+    PREPARE_EXTERNAL_VAR g_GCShadow, x12
     cbz  x12, LOCAL_LABEL(ShadowUpdateDisabled)
 
     // need temporary register. Save before using.

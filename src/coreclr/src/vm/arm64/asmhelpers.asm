@@ -440,7 +440,8 @@ NotInHeap
         ; Update GC Shadow Heap
 
         ; Do not perform the work if g_GCShadow is 0
-        ldr      x12, wbs_GCShadow
+        adrp     x12, $g_GCShadow
+        ldr      x12, [x12, $g_GCShadow]
         cbz      x12, ShadowUpdateDisabled
 
         ; need temporary register. Save before using.
