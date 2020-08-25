@@ -1357,6 +1357,9 @@ namespace System
 
         private static void CheckTerminalSettingsInvalidated()
         {
+            // Register for signals that invalidate cached values.
+            EnsureConsoleInitialized();
+
             bool invalidateSettings = Interlocked.CompareExchange(ref s_invalidateCachedSettings, 0, 1) == 1;
             if (invalidateSettings)
             {
