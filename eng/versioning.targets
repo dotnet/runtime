@@ -24,19 +24,23 @@
 
   <!-- Adds SupportedOSPlatform or UnsupportedOSPlatform attributes -->
   <ItemGroup Condition="'$(IsTestProject)' != 'true'">
-    <_supportedOSPlatforms Include="$(SupportedOSPlatforms)" />
-    <_unsupportedOSPlatforms Include="$(UnsupportedOSPlatforms)" />
+    <_supportedOSPlatforms Include="$(AssemblySupportedOSPlatformAttributes)" />
+    <_unsupportedOSPlatforms Include="$(AssemblyUnsupportedOSPlatformAttributes)" />
   </ItemGroup>
 
   <Target Name="AddAssemblyOSPlatformAttributes" BeforeTargets="GenerateAssemblyInfo" AfterTargets="PrepareForBuild">
     <ItemGroup>
+      <!-- When there are Supported OSPlatforms, transform each of those into an attribute -->
       <AssemblyAttribute Include="System.Runtime.Versioning.SupportedOSPlatform" Condition="'@(_supportedOSPlatforms)' != ''">
         <_Parameter1>%(_supportedOSPlatforms.Identity)</_Parameter1>
       </AssemblyAttribute>
+      <!-- When there are not any Supported OSPlatforms, but there are Unsupported OSPlatforms, transform each of those into an attribute -->
       <AssemblyAttribute Include="System.Runtime.Versioning.UnsupportedOSPlatform" Condition="'@(_supportedOSPlatforms)' == '' and '@(_unsupportedOSPlatforms)' != ''">
         <_Parameter1>%(_unsupportedOSPlatforms.Identity)</_Parameter1>
       </AssemblyAttribute>
     </ItemGroup>
+    <Warning Condition="'@(_supportedOSPlatforms)' != '' and '@(_unsupportedOSPlatforms)' != ''"
+             Text="The 'AssemblySupportedOSPlatformAttributes' and 'AssemblyUnsupportedOSPlatformAttributes' properties cannot both be defined; only the AssemblySupportedOSPlatformAttributes was used." />
   </Target>
 
   <Target Name="DecideIfWeNeedToIncludeDllSafeSearchPathAttribute"

@@ -3,6 +3,6 @@
   <PropertyGroup>
     <StrongNameKeyId>Microsoft</StrongNameKeyId>
     <IncludePlatformAttributes>true</IncludePlatformAttributes>
-    <UnsupportedOSPlatforms>windows;browser</UnsupportedOSPlatforms>
+    <AssemblyUnsupportedOSPlatformAttributes>windows;browser</AssemblyUnsupportedOSPlatformAttributes>
   </PropertyGroup>
 </Project>

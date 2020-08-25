@@ -2,7 +2,6 @@
   <Import Project="..\Directory.Build.props" />
   <PropertyGroup>
     <StrongNameKeyId>Open</StrongNameKeyId>
-    <IncludePlatformAttributes>true</IncludePlatformAttributes>
-    <UnsupportedOSPlatforms>browser</UnsupportedOSPlatforms>
+    <AssemblyUnsupportedOSPlatformAttributes>browser</AssemblyUnsupportedOSPlatformAttributes>
   </PropertyGroup>
 </Project>

@@ -2,6 +2,6 @@
   <Import Project="..\Directory.Build.props" />
   <PropertyGroup>
     <StrongNameKeyId>Microsoft</StrongNameKeyId>
-    <SupportedOSPlatforms>windows</SupportedOSPlatforms>
+    <AssemblySupportedOSPlatformAttributes>windows</AssemblySupportedOSPlatformAttributes>
   </PropertyGroup>
 </Project>
