@@ -717,13 +717,15 @@ namespace System.PrivateUri.Tests
             // This will only affect parsers without the IriParsing flag - only custom parsers
             UriParser.Register(new GenericUriParser(GenericUriParserOptions.GenericAuthority), "combine-scheme", -1);
 
+            const string BaseUriString = "combine-scheme://foo";
             const string RelativeUriString = "/relative/uri/with/non/ascii/\u00FC";
+            const string Combined = BaseUriString + "/relative/uri/with/non/ascii/%C3%BC";
 
-            var absoluteUri = new Uri("combine-scheme://foo", UriKind.Absolute);
+            var baseUri = new Uri(BaseUriString, UriKind.Absolute);
             var relativeUri = new Uri(RelativeUriString, UriKind.Relative);
 
-            new Uri(absoluteUri, relativeUri);
-            new Uri(absoluteUri, RelativeUriString);
+            Assert.Equal(Combined, new Uri(baseUri, relativeUri).AbsoluteUri);
+            Assert.Equal(Combined, new Uri(baseUri, RelativeUriString).AbsoluteUri);
         }
 
         [Fact]
