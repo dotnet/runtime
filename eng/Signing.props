@@ -31,7 +31,6 @@
 
       <!-- Third-party components which should be signed.  -->
       <FileSignInfo Include="Newtonsoft.Json.dll" CertificateName="3PartySHA2" />
-      <FileSignInfo Include="AngleSharp.dll" CertificateName="3PartySHA2" />
       <FileSignInfo Include="Mono.Cecil.dll" CertificateName="3PartySHA2" />
       <FileSignInfo Include="Mono.Cecil.Mdb.dll" CertificateName="3PartySHA2" />
       <FileSignInfo Include="Mono.Cecil.Pdb.dll" CertificateName="3PartySHA2" />
