@@ -591,8 +591,13 @@ namespace System.Text.Json.Serialization
         public JsonSerializerContext(System.Text.Json.JsonSerializerOptions options) { }
         public System.Text.Json.Serialization.Metadata.JsonTypeInfo<bool> Boolean { get { throw null; } }
         public System.Text.Json.Serialization.Metadata.JsonTypeInfo<System.DateTimeOffset> DateTimeOffset { get { throw null; } }
+        public System.Text.Json.Serialization.Metadata.JsonTypeInfo<System.DateTime> DateTime { get { throw null; } }
         public System.Text.Json.Serialization.Metadata.JsonTypeInfo<int> Int32 { get { throw null; } }
+        public System.Text.Json.Serialization.Metadata.JsonTypeInfo<long> Int64 { get { throw null; } }
+        public System.Text.Json.Serialization.Metadata.JsonTypeInfo<float> Single { get { throw null; } }
+        public System.Text.Json.Serialization.Metadata.JsonTypeInfo<double> Double { get { throw null; } }
         public System.Text.Json.Serialization.Metadata.JsonTypeInfo<string> String { get { throw null; } }
+        public System.Text.Json.Serialization.Metadata.JsonTypeInfo<char> Char { get { throw null; } }
         public void Dispose() { }
         protected virtual void Dispose(bool disposing) { }
         public System.Text.Json.JsonSerializerOptions? GetOptions() { throw null; }
@@ -684,5 +689,11 @@ namespace System.Text.Json.Serialization.Metadata
     public static partial class KnownCollectionTypeInfos<T>
     {
         public static System.Text.Json.Serialization.Metadata.JsonTypeInfo<System.Collections.Generic.List<T>> GetList(System.Text.Json.Serialization.Metadata.JsonClassInfo elementInfo, System.Text.Json.Serialization.JsonSerializerContext context) { throw null; }
+        public static System.Text.Json.Serialization.Metadata.JsonTypeInfo<T[]> GetArray(System.Text.Json.Serialization.Metadata.JsonClassInfo elementInfo, System.Text.Json.Serialization.JsonSerializerContext context) { throw null; }
+        public static System.Text.Json.Serialization.Metadata.JsonTypeInfo<System.Collections.Generic.IEnumerable<T>> GetIEnumerable(System.Text.Json.Serialization.Metadata.JsonClassInfo elementInfo, System.Text.Json.Serialization.JsonSerializerContext context) { throw null; }
+    }
+    public static partial class KnownDictionaryTypeInfos<TKey, TValue> where TKey : notnull
+    {
+        public static System.Text.Json.Serialization.Metadata.JsonTypeInfo<System.Collections.Generic.Dictionary<TKey, TValue>> GetDictionary(System.Text.Json.Serialization.Metadata.JsonClassInfo elementInfo, System.Text.Json.Serialization.JsonSerializerContext context) { throw null; }
     }
 }

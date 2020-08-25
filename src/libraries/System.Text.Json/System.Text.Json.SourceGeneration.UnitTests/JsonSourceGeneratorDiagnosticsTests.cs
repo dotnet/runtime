@@ -83,7 +83,7 @@ namespace System.Text.Json.SourceGeneration.UnitTests
                 [JsonSerializable]
                 public class IndexViewModel
                 {
-                    public Dictionary<string, ActiveOrUpcomingEvent> ActiveOrUpcomingEvents { get; set; }
+                    public ISet<ActiveOrUpcomingEvent> ActiveOrUpcomingEvents { get; set; }
                     public CampaignSummaryViewModel FeaturedCampaign { get; set; }
                     public bool IsNewAccount { get; set; }
                     public bool HasFeaturedCampaign => FeaturedCampaign != null;
@@ -102,7 +102,7 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             CompilationHelper.RunGenerators(compilation, out var generatorDiags, generator);
 
             // Expected warning logs.
-            string[] expectedWarningDiagnostics = new string[] { "Failed in sourcegenerating nested type Dictionary`2 for root type IndexViewModel" };
+            string[] expectedWarningDiagnostics = new string[] { "Failed in sourcegenerating nested type ISet`1 for root type IndexViewModel" };
 
             CheckDiagnosticMessages(generatorDiags, DiagnosticSeverity.Info, new string[] { });
             CheckDiagnosticMessages(generatorDiags, DiagnosticSeverity.Warning, expectedWarningDiagnostics);

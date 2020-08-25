@@ -18,25 +18,46 @@ namespace System.Text.Json.Serialization.Metadata
     /// <typeparam name="T"></typeparam>
     public static class KnownCollectionTypeInfos<T>
     {
+        private static JsonTypeInfo<T[]>? s_array;
+        /// <summary>
+        /// todo
+        /// </summary>
+        public static JsonTypeInfo<T[]> GetArray(JsonClassInfo elementInfo, JsonSerializerContext context)
+        {
+            if (s_array == null)
+            {
+                s_array = new JsonCollectionTypeInfo<T[]>(CreateList, new ArrayConverter<T[], T>(), elementInfo, context._options);
+            }
+
+            return s_array;
+        }
+
         private static JsonTypeInfo<List<T>>? s_list;
         /// <summary>
         /// todo
         /// </summary>
         public static JsonTypeInfo<List<T>> GetList(JsonClassInfo elementInfo, JsonSerializerContext context)
         {
-            // todo: support obtaining existing converter
-            //if (context._options.HasCustomConverters)
-            //{
-                //JsonConverter<List<T>> converter = (JsonConverter<List<T>>)context._options.GetConverter(typeof(List<T>));
-                //return new JsonCollectionTypeInfo<List<T>>(CreateList, converter, elementInfo, context._options);
-            //}
-
             if (s_list == null)
             {
                 s_list = new JsonCollectionTypeInfo<List<T>>(CreateList, new ListOfTConverter<List<T>, T>(), elementInfo, context._options);
             }
 
             return s_list;
+        }
+
+        private static JsonTypeInfo<IEnumerable<T>>? s_ienumerable;
+        /// <summary>
+        /// todo
+        /// </summary>
+        public static JsonTypeInfo<IEnumerable<T>> GetIEnumerable(JsonClassInfo elementInfo, JsonSerializerContext context)
+        {
+            if (s_ienumerable == null)
+            {
+                s_ienumerable = new JsonCollectionTypeInfo<IEnumerable<T>>(CreateList, new IEnumerableOfTConverter<IEnumerable<T>, T>(), elementInfo, context._options);
+            }
+
+            return s_ienumerable;
         }
 
         private static List<T> CreateList()

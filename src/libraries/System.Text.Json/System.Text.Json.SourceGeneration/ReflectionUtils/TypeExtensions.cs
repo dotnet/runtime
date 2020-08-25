@@ -12,6 +12,10 @@ namespace System.Reflection
     {
         public static bool IsIList(this Type type)
         {
+            if (type.IsGenericType && type.GetGenericTypeDefinition().Equals(typeof(List<>)))
+            {
+                return true;
+            }
             if (type is TypeWrapper typeWrapper)
             {
                 foreach (Type t in typeWrapper.GetInterfaces())
@@ -19,7 +23,7 @@ namespace System.Reflection
                     if (t.IsGenericType && (t.GetGenericTypeDefinition().Equals(typeof(IList<>))))
                     {
                         return true;
-                    }    
+                    }
                 }
                 return false;
             }
@@ -28,6 +32,10 @@ namespace System.Reflection
 
         public static bool IsIEnumerable(this Type type)
         {
+            if (type.IsGenericType && type.GetGenericTypeDefinition().Equals(typeof(IEnumerable<>)))
+            {
+                return true;
+            }
             if (type is TypeWrapper typeWrapper)
             {
                 foreach (Type t in typeWrapper.GetInterfaces())
@@ -44,6 +52,10 @@ namespace System.Reflection
 
         public static bool IsIDictionary(this Type type)
         {
+            if (type.IsGenericType && type.GetGenericTypeDefinition().Equals(typeof(Dictionary<,>)))
+            {
+                return true;
+            }
             if (type is TypeWrapper typeWrapper)
             {
                 foreach (Type t in typeWrapper.GetInterfaces())
@@ -51,11 +63,11 @@ namespace System.Reflection
                     if (t.IsGenericType && (t.GetGenericTypeDefinition().Equals(typeof(IDictionary<,>))))
                     {
                         return true;
-                    }    
+                    }
                 }
                 return false;
             }
-            return type.IsAssignableFrom(typeof(IDictionary<,>));
+            return type.IsAssignableFrom(typeof(Dictionary<,>));
         }
 
         public static string GetFullNamespace(this Type type)

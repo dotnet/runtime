@@ -170,6 +170,7 @@
     <Compile Include="System\Text\Json\Serialization\Metadata\JsonValueInfoOfT.cs" />
     <Compile Include="System\Text\Json\Serialization\MetadataPropertyName.cs" />
     <Compile Include="System\Text\Json\Serialization\Metadata\KnownCollectionTypeInfos.cs" />
+    <Compile Include="System\Text\Json\Serialization\Metadata\KnownDictionaryTypeInfos.cs" />
     <Compile Include="System\Text\Json\Serialization\MemberAccessor.cs" />
     <Compile Include="System\Text\Json\Serialization\ParameterRef.cs" />
     <Compile Include="System\Text\Json\Serialization\PreserveReferenceHandler.cs" />

@@ -179,12 +179,16 @@ namespace {GenerationNamespace}
         }
 
         // Check if current type is supported to be iterated over.
-        private static bool IsSupportedType(Type type)
+        private bool IsSupportedType(Type type)
         {
+            if (type.IsArray)
+            {
+                return true;
+            }
             if (type.IsIEnumerable())
             {
                 // todo: Add more support to collections.
-                if (!type.IsIList())
+                if (!type.IsIList() && !type.IsIDictionary())
                 {
                     return false;
                 }
@@ -225,6 +229,8 @@ namespace {GenerationNamespace}
 
             // Add base imports.
             imports.Add("System");
+            imports.Add("System.Collections");
+            imports.Add("System.Collections.Generic");
             imports.Add("System.Text.Json");
             imports.Add("System.Text.Json.Serialization");
             imports.Add("System.Text.Json.Serialization.Metadata");
@@ -251,8 +257,11 @@ namespace {GenerationNamespace}
 
             foreach (string import in imports)
             {
-                currentFrame.Source.Append($@"
+                if (import.Length > 0)
+                {
+                    currentFrame.Source.Append($@"
 using {import};");
+                }
             }
         }
 
@@ -298,7 +307,7 @@ namespace {GenerationNamespace}
         private bool InitializeTypeInfoProperties(GenerationClassFrame currentFrame)
         {
             Type propertyType;
-            Type genericType;
+            Type[] genericTypes;
             string typeName;
             string propertyName;
 
@@ -309,13 +318,24 @@ namespace {GenerationNamespace}
                 propertyName = property.Name;
                 typeName = propertyType.FullName;
 
+                genericTypes = GetTypesToGenerate(propertyType);
+
+                // Check if Array.
+                if (propertyType.IsArray)
+                {
+                    typeName = $"{genericTypes[0].FullName}[]";
+                }
+
                 // Check if IEnumerable.
                 if (propertyType.IsIEnumerable())
                 {
-                    genericType = GetTypesToGenerate(propertyType).First();
                     if (propertyType.IsIList())
                     {
-                        typeName = $"List<{genericType.FullName}>";
+                        typeName = $"List<{genericTypes[0].FullName}>";
+                    }
+                    else if (propertyType.IsIDictionary())
+                    {
+                        typeName = $"Dictionary<{genericTypes[0].FullName}, {genericTypes[1].FullName}>";
                     }
                     else
                     {
@@ -342,23 +362,37 @@ namespace {GenerationNamespace}
                 var typeInfo = new JsonObjectInfo<{currentType.FullName}>(CreateObjectFunc, SerializeFunc, DeserializeFunc, context.GetOptions());
             ");
 
+
+            Type[] genericTypes;
             Type propertyType;
-            Type genericType;
             string typeClassInfoCall;
+
             foreach (PropertyInfo property in currentFrame.Properties)
             {
                 propertyType = property.PropertyType;
-                // Default classtype for values.
-                typeClassInfoCall = $"context.{propertyType.GetCompilableUniqueName()}";
+                genericTypes = GetTypesToGenerate(propertyType);
+
+                // Check if Array.
+                if (propertyType.IsArray)
+                {
+                    typeClassInfoCall = $"KnownCollectionTypeInfos<{genericTypes[0].FullName}>.GetArray(context.{genericTypes[0].GetCompilableUniqueName()}, context)";
+                }
+                else
+                {
+                    // Default classtype for values.
+                    typeClassInfoCall = $"context.{propertyType.GetCompilableUniqueName()}";
+                }
 
                 // Check if IEnumerable.
                 if (propertyType.IsIEnumerable())
                 {
-                    genericType = GetTypesToGenerate(propertyType).First();
-
                     if (propertyType.IsIList())
                     {
-                        typeClassInfoCall = $"KnownCollectionTypeInfos<{genericType.FullName}>.GetList(context.{genericType.GetCompilableUniqueName()}, context)";
+                        typeClassInfoCall = $"KnownCollectionTypeInfos<{genericTypes[0].FullName}>.GetList(context.{genericTypes[0].GetCompilableUniqueName()}, context)";
+                    }
+                    else if (propertyType.IsIDictionary())
+                    {
+                        typeClassInfoCall = $"KnownDictionaryTypeInfos<{genericTypes[0].FullName}, {genericTypes[1].FullName}>.GetDictionary(context.{genericTypes[1].GetCompilableUniqueName()}, context)";
                     }
                     else
                     {

@@ -57,7 +57,25 @@ namespace System.Text.Json.SourceGeneration.Tests
         public bool HasFeaturedCampaign => FeaturedCampaign != null;
     }
 
-    public class JsonSerializerSourceGeneratorTests
+    [JsonSerializable]
+    public class WeatherForecastWithPOCOs
+    {
+        public DateTimeOffset Date { get; set; }
+        public int TemperatureCelsius { get; set; }
+        public string Summary { get; set; }
+        public string SummaryField;
+        public List<DateTimeOffset> DatesAvailable { get; set; }
+        public Dictionary<string, HighLowTemps> TemperatureRanges { get; set; }
+        public string[] SummaryWords { get; set; }
+    }
+
+    public class HighLowTemps
+    {
+        public int High { get; set; }
+        public int Low { get; set; }
+    }
+
+    public static class JsonSerializerSourceGeneratorTests
     {
         [Fact]
         public static void RoundTripLocation()
@@ -71,7 +89,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         }
 
         [Fact]
-        public void RoundTripIndexViewModel()
+        public static void RoundTripIndexViewModel()
         {
             IndexViewModel expected = CreateIndexViewModel();
 
@@ -101,6 +119,17 @@ namespace System.Text.Json.SourceGeneration.Tests
             ActiveOrUpcomingEvent obj = JsonSerializer.Deserialize(json, JsonContext.Instance.SystemTextJsonSourceGenerationTestsActiveOrUpcomingEvent);
 
             VerifyActiveOrUpcomingEvent(expected, obj);
+        }
+
+        [Fact]
+        public static void RoundTripCollectionsDictionary()
+        {
+            WeatherForecastWithPOCOs expected = CreateWeatherForecastWithPOCOs();
+
+            string json = JsonSerializer.Serialize(expected, JsonContext.Instance.SystemTextJsonSourceGenerationTestsWeatherForecastWithPOCOs);
+            WeatherForecastWithPOCOs obj = JsonSerializer.Deserialize(json, JsonContext.Instance.SystemTextJsonSourceGenerationTestsWeatherForecastWithPOCOs);
+
+            VerifyWeatherForecastWithPOCOs(expected, obj);
         }
 
         internal static Location CreateLocation()
@@ -222,6 +251,66 @@ namespace System.Text.Json.SourceGeneration.Tests
             VerifyCampaignSummaryViewModel(expected.FeaturedCampaign, obj.FeaturedCampaign);
             Assert.Equal(expected.HasFeaturedCampaign, obj.HasFeaturedCampaign);
             Assert.Equal(expected.IsNewAccount, obj.IsNewAccount);
+        }
+
+        internal static WeatherForecastWithPOCOs CreateWeatherForecastWithPOCOs()
+        {
+            return new WeatherForecastWithPOCOs
+            {
+                Date = DateTime.Parse("2019-08-01T00:00:00-07:00"),
+                TemperatureCelsius = 25,
+                Summary = "Hot",
+                DatesAvailable = new List<DateTimeOffset>
+                {
+                    DateTimeOffset.Parse("2019-08-01T00:00:00-07:00"),
+                    DateTimeOffset.Parse("2019-08-02T00:00:00-07:00"),
+                },
+                TemperatureRanges = new Dictionary<string, HighLowTemps> {
+                    {
+                        "Cold",
+                        new HighLowTemps
+                        {
+                            High = 20,
+                            Low = -10,
+                        }
+                    },
+                    {
+                        "Hot",
+                        new HighLowTemps
+                        {
+                            High = 60,
+                            Low = 20,
+                        }
+                    },
+                },
+                SummaryWords = new string[] { "Cool", "Windy", "Humid" },
+            };
+        }
+
+        internal static void VerifyWeatherForecastWithPOCOs(WeatherForecastWithPOCOs expected, WeatherForecastWithPOCOs obj)
+        {
+            Assert.Equal(expected.Date, obj.Date);
+            Assert.Equal(expected.TemperatureCelsius, obj.TemperatureCelsius);
+            Assert.Equal(expected.Summary, obj.Summary);
+            Assert.Equal(expected.DatesAvailable.Count, obj.DatesAvailable.Count);
+            for (int i = 0; i < expected.DatesAvailable.Count; i++)
+            {
+                Assert.Equal(expected.DatesAvailable[i], obj.DatesAvailable[i]);
+            }
+            List<KeyValuePair<string, HighLowTemps>> expectedTemperatureRanges = expected.TemperatureRanges.OrderBy(kv => kv.Key).ToList();
+            List<KeyValuePair<string, HighLowTemps>> objTemperatureRanges = obj.TemperatureRanges.OrderBy(kv => kv.Key).ToList();
+            Assert.Equal(expectedTemperatureRanges.Count, objTemperatureRanges.Count);
+            for (int i = 0; i < expectedTemperatureRanges.Count; i++)
+            {
+                Assert.Equal(expectedTemperatureRanges[i].Key, objTemperatureRanges[i].Key);
+                Assert.Equal(expectedTemperatureRanges[i].Value.Low, objTemperatureRanges[i].Value.Low);
+                Assert.Equal(expectedTemperatureRanges[i].Value.High, objTemperatureRanges[i].Value.High);
+            }
+            Assert.Equal(expected.SummaryWords.Length, obj.SummaryWords.Length);
+            for (int i = 0; i < expected.SummaryWords.Length; i++)
+            {
+                Assert.Equal(expected.SummaryWords[i], obj.SummaryWords[i]);
+            }
         }
     }
 }

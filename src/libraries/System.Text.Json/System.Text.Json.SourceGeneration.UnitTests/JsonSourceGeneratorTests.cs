@@ -228,6 +228,50 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             CheckFieldsPropertiesMethods("NotMyType", ref generator, expectedFieldNamesNotMyType, expectedPropertyNamesNotMyType, expectedMethodNamesNotMyType );
         }
 
+        [Fact]
+        public void CollectionDictionarySourceGeneration()
+        {
+            // Compile the referenced assembly first.
+            Compilation referencedCompilation = CompilationHelper.CreateReferencedHighLowTempsCompilation();
+
+            // Emit the image of the referenced assembly.
+            byte[] referencedImage = CompilationHelper.CreateAssemblyImage(referencedCompilation);
+
+            string source = @"
+            using System;
+            using System.Collections;
+            using System.Collections.Generic;
+            using System.Text.Json.Serialization;
+            using ReferencedAssembly;
+
+              namespace HelloWorld
+              {
+                [JsonSerializable]
+                public class WeatherForecastWithPOCOs
+                {
+                    public DateTimeOffset Date { get; set; }
+                    public int TemperatureCelsius { get; set; }
+                    public string Summary { get; set; }
+                    public string SummaryField;
+                    public List<DateTimeOffset> DatesAvailable { get; set; }
+                    public Dictionary<string, HighLowTemps> TemperatureRanges { get; set; }
+                    public string[] SummaryWords { get; set; }
+                }
+              }";
+
+            MetadataReference[] additionalReferences = { MetadataReference.CreateFromImage(referencedImage) };
+
+            Compilation compilation = CompilationHelper.CreateCompilation(source, additionalReferences);
+
+            JsonSourceGenerator generator = new JsonSourceGenerator();
+
+            Compilation newCompilation = CompilationHelper.RunGenerators(compilation, out var generatorDiags, generator);
+
+            // Make sure compilation was successful.
+            CheckCompilationDiagnosticsErrors(generatorDiags);
+            CheckCompilationDiagnosticsErrors(newCompilation.GetDiagnostics());
+        }
+
         private void CheckCompilationDiagnosticsErrors(ImmutableArray<Diagnostic> diagnostics)
         {
             Assert.Empty(diagnostics.Where(diagnostic => diagnostic.Severity == DiagnosticSeverity.Error));
