@@ -111,6 +111,9 @@
     <ItemGroup>
       <!-- External files -->
       <ItemsToSign Remove="@(ItemsToSign->WithMetadataValue('Filename', 'Newtonsoft.Json'))" />
+      <ItemsToSign Remove="@(ItemsToSign->WithMetadataValue('Filename', 'Mono.Cecil'))" />
+      <ItemsToSign Remove="@(ItemsToSign->WithMetadataValue('Filename', 'Mono.Cecil.Pdb'))" />
+      <ItemsToSign Remove="@(ItemsToSign->WithMetadataValue('Filename', 'Mono.Cecil.Rocks'))" />
     </ItemGroup>
 
     <ItemGroup>
