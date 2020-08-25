@@ -242,7 +242,7 @@ namespace System.Text.Json
                             }
                             else if (DeclaredPropertyType.IsValueType && !DeclaredPropertyType.IsNullableValueType())
                             {
-                                ThrowHelper.ThrowNullReferenceException_DeserializeUnableToAssignNull(DeclaredPropertyType);
+                                ThrowHelper.ThrowInvalidOperationException_DeserializeUnableToAssignNull(DeclaredPropertyType);
                             }
                         }
                         Set!(obj, value!);

@@ -38,6 +38,5 @@ namespace System.Text.Json
 
             return type.IsAssignableFrom(from);
         }
-
     }
 }

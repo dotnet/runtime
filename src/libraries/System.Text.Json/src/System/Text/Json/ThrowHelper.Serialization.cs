@@ -58,9 +58,9 @@ namespace System.Text.Json
 
         [DoesNotReturn]
         [MethodImpl(MethodImplOptions.NoInlining)]
-        public static void ThrowNullReferenceException_DeserializeUnableToAssignNull(Type declaredType)
+        public static void ThrowInvalidOperationException_DeserializeUnableToAssignNull(Type declaredType)
         {
-            throw new NullReferenceException(SR.Format(SR.DeserializeUnableToAssignNull, declaredType));
+            throw new InvalidOperationException(SR.Format(SR.DeserializeUnableToAssignNull, declaredType));
         }
 
         [DoesNotReturn]
