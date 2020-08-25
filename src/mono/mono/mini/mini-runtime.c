@@ -4555,6 +4555,7 @@ mini_init (const char *filename, const char *runtime_version)
 
 #if defined(ENABLE_PERFTRACING) && !defined(DISABLE_EVENTPIPE)
 	ep_init ();
+	ep_finish_init ();
 #endif
 
 	if (mono_aot_only) {

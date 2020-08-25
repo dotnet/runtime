@@ -8,19 +8,14 @@
 .assembly extern System.Runtime
 {
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )                         // .?_....:
-  .ver 4:2:2:0
-}
-.assembly extern System.Runtime.Extensions
-{
-  .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )                         // .?_....:
-  .ver 4:2:2:0
+  .ver 5:0:0:0
 }
 .assembly extern System.Console
 {
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )                         // .?_....:
-  .ver 4:1:2:0
+  .ver 5:0:0:0
 }
-.assembly example1
+.assembly more_tailcalls
 {
   .custom instance void [System.Runtime]System.Runtime.CompilerServices.CompilationRelaxationsAttribute::.ctor(int32) = ( 01 00 08 00 00 00 00 00 ) 
   .custom instance void [System.Runtime]System.Runtime.CompilerServices.RuntimeCompatibilityAttribute::.ctor() = ( 01 00 01 00 54 02 16 57 72 61 70 4E 6F 6E 45 78   // ....T..WrapNonEx
@@ -30,29 +25,32 @@
   //  .custom instance void [System.Runtime]System.Diagnostics.DebuggableAttribute::.ctor(valuetype [System.Runtime]System.Diagnostics.DebuggableAttribute/DebuggingModes) = ( 01 00 02 00 00 00 00 00 ) 
 
   .custom instance void [System.Runtime]System.Runtime.Versioning.TargetFrameworkAttribute::.ctor(string) = ( 01 00 18 2E 4E 45 54 43 6F 72 65 41 70 70 2C 56   // ....NETCoreApp,V
-                                                                                                              65 72 73 69 6F 6E 3D 76 33 2E 31 01 00 54 0E 14   // ersion=v3.1..T..
+                                                                                                              65 72 73 69 6F 6E 3D 76 35 2E 30 01 00 54 0E 14   // ersion=v5.0..T..
                                                                                                               46 72 61 6D 65 77 6F 72 6B 44 69 73 70 6C 61 79   // FrameworkDisplay
                                                                                                               4E 61 6D 65 00 )                                  // Name.
-  .custom instance void [System.Runtime]System.Reflection.AssemblyCompanyAttribute::.ctor(string) = ( 01 00 08 65 78 61 6D 70 6C 65 31 00 00 )          // ...example1..
+  .custom instance void [System.Runtime]System.Reflection.AssemblyCompanyAttribute::.ctor(string) = ( 01 00 0E 6D 6F 72 65 5F 74 61 69 6C 63 61 6C 6C   // ...more_tailcall
+                                                                                                      73 00 00 )                                        // s..
   .custom instance void [System.Runtime]System.Reflection.AssemblyConfigurationAttribute::.ctor(string) = ( 01 00 07 52 65 6C 65 61 73 65 00 00 )             // ...Release..
   .custom instance void [System.Runtime]System.Reflection.AssemblyFileVersionAttribute::.ctor(string) = ( 01 00 07 31 2E 30 2E 30 2E 30 00 00 )             // ...1.0.0.0..
   .custom instance void [System.Runtime]System.Reflection.AssemblyInformationalVersionAttribute::.ctor(string) = ( 01 00 05 31 2E 30 2E 30 00 00 )                   // ...1.0.0..
-  .custom instance void [System.Runtime]System.Reflection.AssemblyProductAttribute::.ctor(string) = ( 01 00 08 65 78 61 6D 70 6C 65 31 00 00 )          // ...example1..
-  .custom instance void [System.Runtime]System.Reflection.AssemblyTitleAttribute::.ctor(string) = ( 01 00 08 65 78 61 6D 70 6C 65 31 00 00 )          // ...example1..
+  .custom instance void [System.Runtime]System.Reflection.AssemblyProductAttribute::.ctor(string) = ( 01 00 0E 6D 6F 72 65 5F 74 61 69 6C 63 61 6C 6C   // ...more_tailcall
+                                                                                                      73 00 00 )                                        // s..
+  .custom instance void [System.Runtime]System.Reflection.AssemblyTitleAttribute::.ctor(string) = ( 01 00 0E 6D 6F 72 65 5F 74 61 69 6C 63 61 6C 6C   // ...more_tailcall
+                                                                                                    73 00 00 )                                        // s..
   .permissionset reqmin
-             = {class 'System.Security.Permissions.SecurityPermissionAttribute, System.Runtime.Extensions, Version=4.2.2.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a' = {property bool 'SkipVerification' = bool(true)}}
+             = {class 'System.Security.Permissions.SecurityPermissionAttribute, System.Runtime, Version=5.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a' = {property bool 'SkipVerification' = bool(true)}}
   .hash algorithm 0x00008004
   .ver 1:0:0:0
 }
-.module example1.dll
-// MVID: {E5213016-898B-454A-941D-D8C885B9972D}
+.module more_tailcalls.dll
+// MVID: {2945C9C4-EED0-49EA-8A87-27475136401B}
 .custom instance void [System.Runtime]System.Security.UnverifiableCodeAttribute::.ctor() = ( 01 00 00 00 ) 
 .imagebase 0x00400000
 .file alignment 0x00000200
 .stackreserve 0x00100000
 .subsystem 0x0003       // WINDOWS_CUI
 .corflags 0x00000001    //  ILONLY
-// Image base: 0x052D0000
+// Image base: 0x00000273609B0000
 
 
 // =============== CLASS MEMBERS DECLARATION ===================
@@ -271,6 +269,7 @@
     .field public class IGenInterface`2<string,object> ig2
     .field public class GenAbstractImpl`1<string> ga1
     .field public class GenAbstractImpl`1<int32> ga2
+    .field public int32[] a
     .method public hidebysig specialname rtspecialname 
             instance void  .ctor() cil managed
     {
@@ -288,19 +287,19 @@
     {
       // Code size       105 (0x69)
       .maxstack  4
-      .locals init (class [System.Runtime.Extensions]System.Diagnostics.Stopwatch V_0,
+      .locals init (class [System.Runtime]System.Diagnostics.Stopwatch V_0,
                !!T V_1)
       IL_0000:  ldstr      "{0}: "
       IL_0005:  ldarg.3
       IL_0006:  call       void [System.Console]System.Console::Write(string,
                                                                       object)
-      IL_000b:  call       class [System.Runtime.Extensions]System.Diagnostics.Stopwatch [System.Runtime.Extensions]System.Diagnostics.Stopwatch::StartNew()
+      IL_000b:  call       class [System.Runtime]System.Diagnostics.Stopwatch [System.Runtime]System.Diagnostics.Stopwatch::StartNew()
       IL_0010:  stloc.0
       IL_0011:  ldarg.1
       IL_0012:  callvirt   instance !0 class [System.Runtime]System.Func`1<!!T>::Invoke()
       IL_0017:  stloc.1
       IL_0018:  ldloc.0
-      IL_0019:  callvirt   instance void [System.Runtime.Extensions]System.Diagnostics.Stopwatch::Stop()
+      IL_0019:  callvirt   instance void [System.Runtime]System.Diagnostics.Stopwatch::Stop()
       IL_001e:  ldloca.s   V_1
       IL_0020:  ldarg.2
       IL_0021:  box        !!T
@@ -311,7 +310,7 @@
       IL_0033:  ldstr      "OK in {1} ms"
       IL_0038:  ldarg.3
       IL_0039:  ldloc.0
-      IL_003a:  callvirt   instance int64 [System.Runtime.Extensions]System.Diagnostics.Stopwatch::get_ElapsedMilliseconds()
+      IL_003a:  callvirt   instance int64 [System.Runtime]System.Diagnostics.Stopwatch::get_ElapsedMilliseconds()
       IL_003f:  box        [System.Runtime]System.Int64
       IL_0044:  call       void [System.Console]System.Console::WriteLine(string,
                                                                           object,
@@ -349,7 +348,7 @@
       IL_0008:  stfld      class [System.Runtime]System.Func`3<int32,int32,!0> class Program/'<>c__DisplayClass7_1`1'<!!T>::f
       IL_000d:  ldarg.0
       IL_000e:  ldloc.0
-      IL_000f:  ldftn      instance !0 class Program/'<>c__DisplayClass7_1`1'<!!T>::'<Main>b__29'()
+      IL_000f:  ldftn      instance !0 class Program/'<>c__DisplayClass7_1`1'<!!T>::'<Main>b__30'()
       IL_0015:  newobj     instance void class [System.Runtime]System.Func`1<!!T>::.ctor(object,
                                                                                          native int)
       IL_001a:  ldarg.2
@@ -537,6 +536,24 @@
       IL_000b:  ret
     } // end of method '<>c__DisplayClass7_0'::'<Main>b__28'
 
+    .method assembly hidebysig instance int32 
+            '<Main>b__29'() cil managed
+    {
+      // Code size       24 (0x18)
+      .maxstack  8
+      IL_0000:  ldc.i4.0
+      IL_0001:  ldc.i4.0
+      IL_0002:  ldstr      "string"
+      IL_0007:  ldarg.0
+      IL_0008:  ldfld      int32[] Program/'<>c__DisplayClass7_0'::a
+      IL_000d:  call       valuetype [System.Runtime]System.Span`1<!0> valuetype [System.Runtime]System.Span`1<int32>::op_Implicit(!0[])
+      IL_0012:  call       int32 Program::InstantiatingStub1<string>(int32,
+                                                                     int32,
+                                                                     !!0,
+                                                                     valuetype [System.Runtime]System.Span`1<int32>)
+      IL_0017:  ret
+    } // end of method '<>c__DisplayClass7_0'::'<Main>b__29'
+
   } // end of class '<>c__DisplayClass7_0'
 
   .class auto ansi sealed nested private beforefieldinit '<>c__DisplayClass7_1`1'<T>
@@ -555,7 +572,7 @@
     } // end of method '<>c__DisplayClass7_1`1'::.ctor
 
     .method assembly hidebysig instance !T 
-            '<Main>b__29'() cil managed
+            '<Main>b__30'() cil managed
     {
       // Code size       18 (0x12)
       .maxstack  8
@@ -566,7 +583,7 @@
       IL_000c:  callvirt   instance !2 class [System.Runtime]System.Func`3<int32,int32,!T>::Invoke(!0,
                                                                                                    !1)
       IL_0011:  ret
-    } // end of method '<>c__DisplayClass7_1`1'::'<Main>b__29'
+    } // end of method '<>c__DisplayClass7_1`1'::'<Main>b__30'
 
   } // end of class '<>c__DisplayClass7_1`1'
 
@@ -827,31 +844,31 @@
     IL_0000:  ldftn      int32 Program::CalcStaticCalli(int32,
                                                         int32)
     IL_0006:  stloc.0
-    IL_0007:  ldftn      int32 Program::CalcStaticCalliOther(int32,
+    IL_0007:  ldloc.0
+    IL_0008:  stsfld     native int Program::s_calcStaticCalli
+    IL_000d:  ldftn      int32 Program::CalcStaticCalliOther(int32,
                                                              valuetype S32,
                                                              int32)
-    IL_000d:  stloc.1
-    IL_000e:  ldftn      valuetype S32 Program::CalcStaticCalliRetbuf(int32,
+    IL_0013:  stloc.1
+    IL_0014:  ldloc.1
+    IL_0015:  stsfld     native int Program::s_calcStaticCalliOther
+    IL_001a:  ldftn      valuetype S32 Program::CalcStaticCalliRetbuf(int32,
                                                                       int32)
-    IL_0014:  stloc.2
-    IL_0015:  ldftn      valuetype S32 Program::CalcStaticCalliRetbufOther(int32,
+    IL_0020:  stloc.2
+    IL_0021:  ldloc.2
+    IL_0022:  stsfld     native int Program::s_calcStaticCalliRetbuf
+    IL_0027:  ldftn      valuetype S32 Program::CalcStaticCalliRetbufOther(int32,
                                                                            valuetype S32,
                                                                            int32)
-    IL_001b:  stloc.3
-    IL_001c:  ldftn      string Program::EmptyCalliOther()
-    IL_0022:  stloc.s    V_4
-    IL_0024:  ldftn      instance string S16::InstanceMethod()
-    IL_002a:  stloc.s    V_5
-    IL_002c:  ldloc.0
-    IL_002d:  stsfld     native int Program::s_calcStaticCalli
-    IL_0032:  ldloc.1
-    IL_0033:  stsfld     native int Program::s_calcStaticCalliOther
-    IL_0038:  ldloc.2
-    IL_0039:  stsfld     native int Program::s_calcStaticCalliRetbuf
-    IL_003e:  ldloc.3
-    IL_003f:  stsfld     native int Program::s_calcStaticCalliRetbufOther
-    IL_0044:  ldloc.s    V_4
-    IL_0046:  stsfld     native int Program::s_emptyCalliOther
+    IL_002d:  stloc.3
+    IL_002e:  ldloc.3
+    IL_002f:  stsfld     native int Program::s_calcStaticCalliRetbufOther
+    IL_0034:  ldftn      string Program::EmptyCalliOther()
+    IL_003a:  stloc.s    V_4
+    IL_003c:  ldloc.s    V_4
+    IL_003e:  stsfld     native int Program::s_emptyCalliOther
+    IL_0043:  ldftn      instance string S16::InstanceMethod()
+    IL_0049:  stloc.s    V_5
     IL_004b:  ldloc.s    V_5
     IL_004d:  stsfld     native int Program::s_instanceMethodOnValueType
     IL_0052:  ret
@@ -861,7 +878,7 @@
           Main() cil managed
   {
     .entrypoint
-    // Code size       1733 (0x6c5)
+    // Code size       1792 (0x700)
     .maxstack  4
     .locals init (class Program/'<>c__DisplayClass7_0' V_0,
              int32 V_1,
@@ -1530,24 +1547,48 @@
                                                                                                  !!0,
                                                                                                  string)
     IL_069a:  ldloc.0
-    IL_069b:  ldfld      bool Program/'<>c__DisplayClass7_0'::result
-    IL_06a0:  brfalse.s  IL_06ae
+    IL_069b:  ldc.i4     0xf4240
+    IL_06a0:  newarr     [System.Runtime]System.Int32
+    IL_06a5:  stfld      int32[] Program/'<>c__DisplayClass7_0'::a
+    IL_06aa:  ldloc.0
+    IL_06ab:  ldfld      int32[] Program/'<>c__DisplayClass7_0'::a
+    IL_06b0:  ldc.i4.s   99
+    IL_06b2:  ldc.i4.1
+    IL_06b3:  stelem.i4
+    IL_06b4:  ldloc.0
+    IL_06b5:  ldloc.0
+    IL_06b6:  ldftn      instance int32 Program/'<>c__DisplayClass7_0'::'<Main>b__29'()
+    IL_06bc:  newobj     instance void class [System.Runtime]System.Func`1<int32>::.ctor(object,
+                                                                                         native int)
+    IL_06c1:  ldloc.0
+    IL_06c2:  ldfld      int32[] Program/'<>c__DisplayClass7_0'::a
+    IL_06c7:  ldlen
+    IL_06c8:  conv.i4
+    IL_06c9:  ldc.i4.1
+    IL_06ca:  add
+    IL_06cb:  ldstr      "Instantiating stub direct"
+    IL_06d0:  callvirt   instance void Program/'<>c__DisplayClass7_0'::'<Main>g__Test|0'<int32>(class [System.Runtime]System.Func`1<!!0>,
+                                                                                                !!0,
+                                                                                                string)
+    IL_06d5:  ldloc.0
+    IL_06d6:  ldfld      bool Program/'<>c__DisplayClass7_0'::result
+    IL_06db:  brfalse.s  IL_06e9
 
-    IL_06a2:  ldstr      "All tailcall-via-help succeeded"
-    IL_06a7:  call       void [System.Console]System.Console::WriteLine(string)
-    IL_06ac:  br.s       IL_06b8
+    IL_06dd:  ldstr      "All tailcall-via-help succeeded"
+    IL_06e2:  call       void [System.Console]System.Console::WriteLine(string)
+    IL_06e7:  br.s       IL_06f3
 
-    IL_06ae:  ldstr      "One or more failures in tailcall-via-help test"
-    IL_06b3:  call       void [System.Console]System.Console::WriteLine(string)
-    IL_06b8:  ldloc.0
-    IL_06b9:  ldfld      bool Program/'<>c__DisplayClass7_0'::result
-    IL_06be:  brtrue.s   IL_06c2
+    IL_06e9:  ldstr      "One or more failures in tailcall-via-help test"
+    IL_06ee:  call       void [System.Console]System.Console::WriteLine(string)
+    IL_06f3:  ldloc.0
+    IL_06f4:  ldfld      bool Program/'<>c__DisplayClass7_0'::result
+    IL_06f9:  brtrue.s   IL_06fd
 
-    IL_06c0:  ldc.i4.1
-    IL_06c1:  ret
+    IL_06fb:  ldc.i4.1
+    IL_06fc:  ret
 
-    IL_06c2:  ldc.i4.s   100
-    IL_06c4:  ret
+    IL_06fd:  ldc.i4.s   100
+    IL_06ff:  ret
   } // end of method Program::Main
 
   .method public hidebysig static void  Calc(int32& x,
@@ -2023,7 +2064,7 @@
     // Code size       41 (0x29)
     .maxstack  2
     .locals init (int32 V_0)
-    IL_0000:  call       int32 [System.Runtime.Extensions]System.Environment::get_TickCount()
+    IL_0000:  call       int32 [System.Runtime]System.Environment::get_TickCount()
     IL_0005:  ldc.i4.0
     IL_0006:  blt.s      IL_000c
 
@@ -2047,14 +2088,14 @@
     IL_0028:  ret
   } // end of method Program::EmptyCalli
 
-    .method private hidebysig static string 
+  .method private hidebysig static string 
           ValueTypeInstanceMethodCalli() cil managed noinlining
   {
     // Code size       51 (0x33)
     .maxstack  2
     .locals init (valuetype S16 V_0,
              int32 V_1)
-    IL_0000:  call       int32 [System.Runtime.Extensions]System.Environment::get_TickCount()
+    IL_0000:  call       int32 [System.Runtime]System.Environment::get_TickCount()
     IL_0005:  ldc.i4.0
     IL_0006:  blt.s      IL_000c
 
@@ -2088,7 +2129,7 @@
     .maxstack  2
     .locals init (valuetype S16 V_0,
              int32 V_1)
-    IL_0000:  call       int32 [System.Runtime.Extensions]System.Environment::get_TickCount()
+    IL_0000:  call       int32 [System.Runtime]System.Environment::get_TickCount()
     IL_0005:  ldc.i4.0
     IL_0006:  blt.s      IL_000c
 
@@ -2630,6 +2671,85 @@
     IL_0003:  callvirt   instance string class GenAbstract`1<int32>::G()
     IL_0008:  ret
   } // end of method Program::GenAbstractGInt
+
+  .method private hidebysig static int32 
+          InstantiatingStub1<T>(int32 a,
+                                int32 r,
+                                !!T c,
+                                valuetype [System.Runtime]System.Span`1<int32> d) cil managed noinlining
+  {
+    // Code size       31 (0x1f)
+    .maxstack  14
+    IL_0000:  ldarg.2
+    IL_0001:  ldarg.2
+    IL_0002:  ldarg.2
+    IL_0003:  ldarg.2
+    IL_0004:  ldarg.2
+    IL_0005:  ldarg.2
+    IL_0006:  ldarg.2
+    IL_0007:  ldarg.2
+    IL_0008:  ldarg.0
+    IL_0009:  ldarg.1
+    IL_000a:  ldarg.3
+    IL_000b:  ldarg.1
+    IL_000c:  ldarga.s   d
+    IL_000e:  ldc.i4.s   99
+    IL_0010:  call       instance !0& valuetype [System.Runtime]System.Span`1<int32>::get_Item(int32)
+    IL_0015:  ldind.i4
+    IL_0016:  add
+    IL_0017:  tail.
+    IL_0019:  call       int32 Program::InstantiatingStub1Other<!!0>(!!0,
+                                                                     !!0,
+                                                                     !!0,
+                                                                     !!0,
+                                                                     !!0,
+                                                                     !!0,
+                                                                     !!0,
+                                                                     !!0,
+                                                                     int32,
+                                                                     int32,
+                                                                     valuetype [System.Runtime]System.Span`1<int32>,
+                                                                     int32)
+    IL_001e:  ret
+  } // end of method Program::InstantiatingStub1
+
+  .method private hidebysig static int32 
+          InstantiatingStub1Other<T>(!!T c0,
+                                     !!T c1,
+                                     !!T c2,
+                                     !!T c3,
+                                     !!T c4,
+                                     !!T c5,
+                                     !!T c6,
+                                     !!T c7,
+                                     int32 a,
+                                     int32 r,
+                                     valuetype [System.Runtime]System.Span`1<int32> d,
+                                     int32 result) cil managed noinlining
+  {
+    // Code size       31 (0x1f)
+    .maxstack  4
+    IL_0000:  ldarg.s    a
+    IL_0002:  ldarga.s   d
+    IL_0004:  call       instance int32 valuetype [System.Runtime]System.Span`1<int32>::get_Length()
+    IL_0009:  bne.un.s   IL_000e
+
+    IL_000b:  ldarg.s    result
+    IL_000d:  ret
+
+    IL_000e:  ldarg.s    a
+    IL_0010:  ldc.i4.1
+    IL_0011:  add
+    IL_0012:  ldarg.s    result
+    IL_0014:  ldarg.0
+    IL_0015:  ldarg.s    d
+    IL_0017:  tail.
+    IL_0019:  call       int32 Program::InstantiatingStub1<!!0>(int32,
+                                                                int32,
+                                                                !!0,
+                                                                valuetype [System.Runtime]System.Span`1<int32>)
+    IL_001e:  ret
+  } // end of method Program::InstantiatingStub1Other
 
   .method public hidebysig specialname rtspecialname 
           instance void  .ctor() cil managed
@@ -4038,14 +4158,15 @@
 
 } // end of class GenAbstractImpl`1
 
-.class private auto ansi example1_Fody.ProcessedByFody
+.class private auto ansi more_tailcalls_ProcessedByFody
        extends [System.Runtime]System.Object
 {
-  .field static assembly literal string FodyVersion = "6.1.1.0"
-  .field static assembly literal string InlineIL = "1.4.0.0"
-} // end of class example1_Fody.ProcessedByFody
+  .field static assembly literal string FodyVersion = "6.2.4.0"
+  .field static assembly literal string InlineIL = "1.5.0.0"
+} // end of class more_tailcalls_ProcessedByFody
 
 
 // =============================================================
 
 // *********** DISASSEMBLY COMPLETE ***********************
+// WARNING: Created Win32 resource file more_tailcalls.res
