@@ -52,12 +52,12 @@ jobs:
       displayName: Run tests/scripts/format.py
       inputs:
         scriptSource: 'filePath'
-        scriptPath: $(coreClrRepoRoot)/tests/scripts/format.py
-        arguments: '-c $(coreClrRepoRoot) -o $(osGroup) -a $(archType)'
+        scriptPath: $(Build.SourcesDirectory)/src/coreclr/tests/scripts/format.py
+        arguments: '-c $(Build.SourcesDirectory)/src/coreclr -o $(osGroup) -a $(archType)'
     - task: PublishBuildArtifacts@1
       displayName: Publish format.patch
       inputs:
-        PathtoPublish: '$(coreClrRepoRoot)/format.patch'
+        PathtoPublish: '$(Build.SourcesDirectory)/src/coreclr/format.patch'
         ArtifactName: format.$(osGroup).$(archType).patch
       continueOnError: true
       condition: failed()

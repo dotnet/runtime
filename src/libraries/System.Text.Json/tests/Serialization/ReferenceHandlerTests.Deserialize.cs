@@ -1543,5 +1543,34 @@ namespace System.Text.Json.Serialization.Tests
         }
         #endregion
         #endregion
+
+        [Fact]
+        public static void ReferenceIsAssignableFrom()
+        {
+            const string json = @"{""Derived"":{""$id"":""my_id_1""},""Base"":{""$ref"":""my_id_1""}}";
+            BaseAndDerivedWrapper root = JsonSerializer.Deserialize<BaseAndDerivedWrapper>(json, s_serializerOptionsPreserve);
+
+            Assert.Same(root.Base, root.Derived);
+        }
+
+        [Fact]
+        public static void ReferenceIsNotAssignableFrom()
+        {
+            const string json = @"{""Base"":{""$id"":""my_id_1""},""Derived"":{""$ref"":""my_id_1""}}";
+            InvalidOperationException ex = Assert.Throws<InvalidOperationException>(() => JsonSerializer.Deserialize<BaseAndDerivedWrapper>(json, s_serializerOptionsPreserve));
+
+            Assert.Contains("my_id_1", ex.Message);
+            Assert.Contains(typeof(Derived).ToString(), ex.Message);
+            Assert.Contains(typeof(Base).ToString(), ex.Message);
+        }
+
+        private class BaseAndDerivedWrapper
+        {
+            public Base Base { get; set; }
+            public Derived Derived { get; set; }
+        }
+
+        private class Derived : Base { }
+        private class Base { }
     }
 }

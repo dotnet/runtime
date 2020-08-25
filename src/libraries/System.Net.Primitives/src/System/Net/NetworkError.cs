@@ -6,14 +6,21 @@ namespace System.Net
     /// <summary>Defines a set of error codes for use with <see cref='System.Net.NetworkException'/>.</summary>
     public enum NetworkError : int
     {
-        /// <summary>An unknown network error occurred.</summary>
-        Unknown = 0,
+        /// <summary>A network error has occurred.</summary>
+        /// <remarks>
+        /// This value indicates a non-generic, implementation-specific error.
+        /// Details could be obtained from <see cref="NetworkException"/>'s inner exception.
+        /// </remarks>
+        Other = 0,
 
         /// <summary>The requested EndPoint is already in use.</summary>
         EndPointInUse,
 
         /// <summary>No such host is known.</summary>
         HostNotFound,
+
+        /// <summary>The connection attempt has timed out.</summary>
+        TimedOut,
 
         /// <summary>No connection could be made because the remote host actively refused it.</summary>
         ConnectionRefused,

@@ -17,7 +17,7 @@ It is a summer internship project being developed by @kasiabulat.
 ## Goals
 
 The user should be able to:
-* Build up a structured in-memory representation of the JSON payload. 
+* Build up a structured in-memory representation of the JSON payload.
 * Query the document object model.
 * Modify it. That includes, remove, add, and update. This means we want to build a modifiable JsonDocument analogue that is not just readonly.
 
@@ -43,7 +43,7 @@ var developer = new JsonObject
 };
 ```
 
-JSON object can be nested within other JSON objects or include a JSON array: 
+JSON object can be nested within other JSON objects or include a JSON array:
 
 ```csharp
 var person = new JsonObject
@@ -78,7 +78,7 @@ var person = new JsonObject
         "phone numbers", new JsonArray()
         {
             "123-456-7890",
-            "123-456-7890" 
+            "123-456-7890"
         }
     }
 };
@@ -102,7 +102,7 @@ var preferences = new JsonObject()
 
 ### Modifying existing instance
 
-The main goal of the new API is to allow users to modify existing instance of `JsonNode` which is not possible with `JsonElement` and `JsonDocument`. 
+The main goal of the new API is to allow users to modify existing instance of `JsonNode` which is not possible with `JsonElement` and `JsonDocument`.
 
 One may change the existing property to have a different value:
 ```csharp
@@ -162,17 +162,17 @@ If a developer knows they will be modifying an instance, there is an API to pars
 ```csharp
 string jsonString = @"
 {
-    ""employee1"" : 
+    ""employee1"" :
     {
         ""name"" : ""Ann"",
         ""surname"" : ""Predictable"",
-        ""age"" : 30,                
+        ""age"" : 30,
     },
-    ""employee2"" : 
+    ""employee2"" :
     {
         ""name"" : ""Zoe"",
         ""surname"" : ""Coder"",
-        ""age"" : 24,                
+        ""age"" : 24,
     }
 }";
 
@@ -194,7 +194,7 @@ Mailbox.SendAllEmployeesData(employees.AsJsonElement());
 * `JsonNull` class instead of `null` reference to node.
 * No additional overloads of Add methods for primary types (bool, string, int, double,  long...) for `JsonObject` and `JsonArray`. Instead - implicit cast operators in JsonNode.
 * `Sort` not implemented for `JsonArray`, beacuse there is no right way to compare `JsonObjects`. If a user wants to sort a `JsonArray` of `JsonNumbers`, `JsonBooleans` or `JsonStrings` they now needs to do the following: convert the `JsonArray` to a regular array (by iterating through all elements), call sort (and convert back to `JsonArray` if needed).
-* Property names duplicates handling method possible to choose during parsing to `JsonNode`. When creating `JsonObject` Add method throws an exception for duplicates and indexer replaces old property value with new one. 
+* Property names duplicates handling method possible to choose during parsing to `JsonNode`. When creating `JsonObject` Add method throws an exception for duplicates and indexer replaces old property value with new one.
 * No support for escaped characters when creating `JsonNumber` from string.
 * `JsonValueKind` property that a caller can inspect and cast to the right concrete type
 * Transformation API:
@@ -208,7 +208,7 @@ Mailbox.SendAllEmployeesData(employees.AsJsonElement());
     * `ToJsonString` method transforming JsonNode to string representation using WriteTo.
 * No recursive equals for `JsonArray` and `JsonObject`.
 * `JsonNode` derived types do not implement `IComparable`.
-* `JsonObject` does not implement `IDictionary`, but `JsonArray` implements `IList`. 
+* `JsonObject` does not implement `IDictionary`, but `JsonArray` implements `IList`.
 * We support order preservation when adding/removing values in `JsonArray`/`JsonObject`.
 * We do not support creating `JsonNumber` from `BigInterger` without changing it to string.
 * `ToString` returns:
@@ -218,7 +218,7 @@ Mailbox.SendAllEmployeesData(employees.AsJsonElement());
     * Is not overloaded for `JsonArray` and `JsonObject`.
 
 ## Open questions
-* Do we want `JsonArray` to support `Contains`, `IndexOf` and `LastIndexOf` if we keep reference equality for `JsonArray`/`JsonObject` and don't have a good way of comparing numbers? 
+* Do we want `JsonArray` to support `Contains`, `IndexOf` and `LastIndexOf` if we keep reference equality for `JsonArray`/`JsonObject` and don't have a good way of comparing numbers?
 * Should nodes track their own position in the JSON graph? Do we want to allow properties like Parent, Next and Previous?
 
     | Solution | Pros | Cons |
@@ -228,18 +228,18 @@ Mailbox.SendAllEmployeesData(employees.AsJsonElement());
 
 * Do we want to change JsonNumber's backing field to something different than string?
 
-    Suggestions: 
-    - `Span<byte>` or array of `Utf8String`/`Char8` (once they come online in the future) / `byte`  
-    - Internal types that are specific to each numeric type in .NET with factories to create JsonNumber 
+    Suggestions:
+    - `Span<byte>` or array of `Utf8String`/`Char8` (once they come online in the future) / `byte`
+    - Internal types that are specific to each numeric type in .NET with factories to create JsonNumber
     - Internal struct field which has all the supported numeric types
     - Unsigned long field accompanying string to store types that are <= 8 bytes long
 
-* Should we add overloads for all nullable types as well? For example: 
-    ```csharp 
+* Should we add overloads for all nullable types as well? For example:
+    ```csharp
     public static implicit operator System.Text.Json.JsonNode (bool? value) { throw null; }
     ```
 
-* Do we want to have implicit cast operators on `JsonNull`, `JsonBoolean`, `JsonString` and `JsonNumber` while we already have them in `JsonNode`? It would be consistent, but implicit cast from e.g. float.Infinity to `JsonNumber` would throw an exception, because we would not be able return `JsonString` in this case anymore. 
+* Do we want to have implicit cast operators on `JsonNull`, `JsonBoolean`, `JsonString` and `JsonNumber` while we already have them in `JsonNode`? It would be consistent, but implicit cast from e.g. float.Infinity to `JsonNumber` would throw an exception, because we would not be able return `JsonString` in this case anymore.
 
 ## Useful links
 

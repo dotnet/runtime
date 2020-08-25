@@ -1186,7 +1186,7 @@ namespace System.Xml.XPath
             return this.Select(XPathExpression.Compile(xpath));
         }
 
-        public virtual XPathNodeIterator Select(string xpath, IXmlNamespaceResolver resolver)
+        public virtual XPathNodeIterator Select(string xpath, IXmlNamespaceResolver? resolver)
         {
             return this.Select(XPathExpression.Compile(xpath, resolver));
         }
@@ -1206,7 +1206,7 @@ namespace System.Xml.XPath
             return Evaluate(XPathExpression.Compile(xpath), null);
         }
 
-        public virtual object Evaluate(string xpath, IXmlNamespaceResolver resolver)
+        public virtual object Evaluate(string xpath, IXmlNamespaceResolver? resolver)
         {
             return this.Evaluate(XPathExpression.Compile(xpath, resolver));
         }

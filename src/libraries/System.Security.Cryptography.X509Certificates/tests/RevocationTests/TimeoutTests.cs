@@ -33,7 +33,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
             using (X509Certificate2 rootCert = rootAuthority.CloneIssuerCert())
             using (X509Certificate2 intermediateCert = intermediateAuthority.CloneIssuerCert())
             {
-                TimeSpan delay = TimeSpan.FromSeconds(3);
+                TimeSpan delay = TimeSpan.FromSeconds(8);
 
                 X509Chain chain = holder.Chain;
                 responder.ResponseDelay = delay;
@@ -41,7 +41,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
 
                 // This needs to be greater than delay, but less than 2x delay to ensure
                 // that the time is a timeout for individual fetches, not a running total.
-                chain.ChainPolicy.UrlRetrievalTimeout = TimeSpan.FromSeconds(5);
+                chain.ChainPolicy.UrlRetrievalTimeout = TimeSpan.FromSeconds(15);
                 chain.ChainPolicy.TrustMode = X509ChainTrustMode.CustomRootTrust;
                 chain.ChainPolicy.CustomTrustStore.Add(rootCert);
                 chain.ChainPolicy.ExtraStore.Add(intermediateCert);
@@ -51,14 +51,14 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
                 chain.ChainPolicy.DisableCertificateDownloads = true;
 
                 Stopwatch watch = Stopwatch.StartNew();
-                Assert.True(chain.Build(endEntityCert));
+                Assert.True(chain.Build(endEntityCert), $"chain.Build; Chain status: {chain.AllStatusFlags()}");
                 watch.Stop();
 
                 // There should be two network fetches, OCSP/CRL to intermediate to get leaf status,
                 // OCSP/CRL to root to get intermediate statuses. It should take at least 2x the delay
                 // plus other non-network time, so we can at least ensure it took as long as
                 // the delay for each fetch.
-                Assert.True(watch.Elapsed >= delay * 2);
+                Assert.True(watch.Elapsed >= delay * 2, $"watch.Elapsed: {watch.Elapsed}");
             }
         }
 
@@ -99,7 +99,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
 
                 chain.ChainPolicy.DisableCertificateDownloads = true;
 
-                Assert.False(chain.Build(endEntityCert));
+                Assert.False(chain.Build(endEntityCert), "chain.Build");
 
                 const X509ChainStatusFlags ExpectedFlags =
                     X509ChainStatusFlags.RevocationStatusUnknown |
@@ -159,7 +159,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
 
                 // Even though UrlRetrievalTimeout is more than the delay, it should
                 // get clamped to 1 minute, and thus less than the actual delay.
-                Assert.False(chain.Build(endEntityCert));
+                Assert.False(chain.Build(endEntityCert), "chain.Build");
 
                 const X509ChainStatusFlags ExpectedFlags =
                     X509ChainStatusFlags.RevocationStatusUnknown |
@@ -208,7 +208,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
 
                 chain.ChainPolicy.DisableCertificateDownloads = true;
 
-                Assert.True(chain.Build(endEntityCert));
+                Assert.True(chain.Build(endEntityCert), $"chain.Build; Chain status: {chain.AllStatusFlags()}");
             }
         }
 
@@ -238,7 +238,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
                 responder.ResponseDelay = delay;
                 responder.DelayedActions = RevocationResponder.DelayedActionsFlag.All;
 
-                chain.ChainPolicy.UrlRetrievalTimeout = TimeSpan.FromSeconds(5);
+                chain.ChainPolicy.UrlRetrievalTimeout = TimeSpan.FromSeconds(15);
                 chain.ChainPolicy.TrustMode = X509ChainTrustMode.CustomRootTrust;
                 chain.ChainPolicy.CustomTrustStore.Add(rootCert);
                 chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
@@ -247,7 +247,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
                 Assert.True(chain.Build(endEntityCert), GetFlags(chain, endEntityCert.Thumbprint).ToString());
                 watch.Stop();
 
-                Assert.True(watch.Elapsed >= delay);
+                Assert.True(watch.Elapsed >= delay, $"watch.Elapsed: {watch.Elapsed}");
             }
         }
 
@@ -282,7 +282,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
                 chain.ChainPolicy.CustomTrustStore.Add(rootCert);
                 chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
 
-                Assert.False(chain.Build(endEntityCert));
+                Assert.False(chain.Build(endEntityCert), "chain.Build");
 
                 const X509ChainStatusFlags ExpectedFlags =
                     X509ChainStatusFlags.PartialChain;

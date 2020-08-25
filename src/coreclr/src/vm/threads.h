@@ -580,19 +580,7 @@ enum ThreadpoolThreadType
 //---------------------------------------------------------------------------
 //
 //---------------------------------------------------------------------------
-Thread* SetupThread(BOOL fInternal);
-inline Thread* SetupThread()
-{
-    WRAPPER_NO_CONTRACT;
-    return SetupThread(FALSE);
-}
-// A host can deny a thread entering runtime by returning a NULL IHostTask.
-// But we do want threads used by threadpool.
-inline Thread* SetupInternalThread()
-{
-    WRAPPER_NO_CONTRACT;
-    return SetupThread(TRUE);
-}
+Thread* SetupThread();
 Thread* SetupThreadNoThrow(HRESULT *phresult = NULL);
 // WARNING : only GC calls this with bRequiresTSL set to FALSE.
 Thread* SetupUnstartedThread(BOOL bRequiresTSL=TRUE);
@@ -1001,9 +989,6 @@ public:
 //
 // A code:Thread contains all the per-thread information needed by the runtime.  You can get at this
 // structure throught the and OS TLS slot see code:#RuntimeThreadLocals for more
-// Implementing IUnknown would prevent the field (e.g. m_Context) layout from being rearranged (which will need to be fixed in
-// "asmconstants.h" for the respective architecture). As it is, ICLRTask derives from IUnknown and would have got IUnknown implemented
-// here - so doing this explicitly and maintaining layout sanity should be just fine.
 class Thread
 {
     friend struct ThreadQueue;  // used to enqueue & dequeue threads onto SyncBlocks
@@ -1793,7 +1778,7 @@ public:
     //--------------------------------------------------------------
     // Failable initialization occurs here.
     //--------------------------------------------------------------
-    BOOL InitThread(BOOL fInternal);
+    BOOL InitThread();
     BOOL AllocHandles();
 
     //--------------------------------------------------------------
@@ -2597,16 +2582,9 @@ public:
 
 
 public:
-    enum UserAbort_Client
-    {
-        UAC_Normal,
-        UAC_Host,       // Called by host through IClrTask::Abort
-    };
-
     HRESULT        UserAbort(ThreadAbortRequester requester,
                              EEPolicy::ThreadAbortTypes abortType,
-                             DWORD timeout,
-                             UserAbort_Client client
+                             DWORD timeout
                             );
 
     BOOL    HandleJITCaseForAbort();
@@ -4797,7 +4775,7 @@ class ThreadStore
 {
     friend class Thread;
     friend class ThreadSuspend;
-    friend Thread* SetupThread(BOOL);
+    friend Thread* SetupThread();
     friend class AppDomain;
 #ifdef DACCESS_COMPILE
     friend class ClrDataAccess;

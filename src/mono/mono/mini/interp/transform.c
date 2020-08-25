@@ -1200,9 +1200,11 @@ interp_emit_ldelema (TransformData *td, MonoClass *array_class, MonoClass *check
 	int rank = m_class_get_rank (array_class);
 	int size = mono_class_array_element_size (element_class);
 
+	gboolean bounded = m_class_get_byval_arg (array_class) ? m_class_get_byval_arg (array_class)->type == MONO_TYPE_ARRAY : FALSE;
+
 	// We only need type checks when writing to array of references
 	if (!check_class || m_class_is_valuetype (element_class)) {
-		if (rank == 1) {
+		if (rank == 1 && !bounded) {
 			interp_add_ins (td, MINT_LDELEMA1);
 			WRITE32_INS (td->last_ins, 0, &size);
 		} else {

@@ -5,6 +5,6 @@ using System.Diagnostics.Tracing;
 
 namespace System.Net
 {
-    [EventSource(Name = "Microsoft-System-Net-Ping")]
+    [EventSource(Name = "Private.InternalDiagnostics.System.Net.Ping")]
     internal sealed partial class NetEventSource { }
 }

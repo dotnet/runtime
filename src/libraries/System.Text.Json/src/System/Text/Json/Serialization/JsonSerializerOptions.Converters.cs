@@ -323,6 +323,11 @@ namespace System.Text.Json
                 Type? underlyingType = Nullable.GetUnderlyingType(typeToConvert);
                 if (underlyingType != null && converter.CanConvert(underlyingType))
                 {
+                    if (converter is JsonConverterFactory converterFactory)
+                    {
+                        converter = converterFactory.GetConverterInternal(underlyingType, this);
+                    }
+
                     // Allow nullable handling to forward to the underlying type's converter.
                     return NullableConverterFactory.CreateValueConverter(underlyingType, converter);
                 }
