@@ -606,7 +606,7 @@ public static int PopCount(ulong bitVectorArg)
 
 #### Notes
 The sample I'm going to walk through implements support for pop count (counting the number of '1' bits in a 64-bit value).
- 
+
 We're going to start by assuming that we have a method with a known signature that implements PopCount.
 Here's the implementation we're going to use. It simply takes the input value, and keeps anding with one, and then shifting right.
 We're first going to simply recognize the name and signature, and replace the method call with a simple PopCnt IR node.

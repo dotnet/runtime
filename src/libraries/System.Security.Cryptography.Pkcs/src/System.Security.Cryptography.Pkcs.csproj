@@ -14,7 +14,6 @@
     <OmitResources Condition="$(TargetFramework.StartsWith('net4'))">true</OmitResources>
     <!-- Currently the netstandard build is locked to the net472 API -->
     <AssemblyVersion Condition="$(TargetFramework.StartsWith('netstandard'))">4.0.4.0</AssemblyVersion>
-    <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetsBrowser)' == 'true'">SR.SystemSecurityCryptographyPkcs_PlatformNotSupported</GeneratePlatformNotSupportedAssemblyMessage>
   </PropertyGroup>
   <Import Project="$(CommonPath)System\Security\Cryptography\Asn1\AsnXml.targets" Condition="'$(IsPartialFacadeAssembly)' != 'true'" />
   <Import Project="$(CommonPath)System\Security\Cryptography\Asn1Reader\System.Security.Cryptography.Asn1Reader.Shared.projitems" Condition="'$(IsPartialFacadeAssembly)' != 'true'" />

@@ -58,7 +58,7 @@ internal static partial class Interop
 ```
 
 As shown above, platforms may be additive, in that an assembly may use functionality from multiple folders, e.g. System.IO.FileSystem's Linux build will use functionality both from Unix (common across all Unix systems) and from Linux (specific to Linux and not available across non-Linux Unix systems).
-			 
+
 - Interop.*.cs files are created in a way such that every assembly consuming the file will need every DllImport it contains.
   - If multiple related DllImports will all be needed by every consumer, they may be declared in the same file, named for the functionality grouping, e.g. Interop.IOErrors.cs.
   - Otherwise, in the limit (and the expected case for most situations) each Interop.*.cs file will contain a single DllImport and associated interop types (e.g. the structs used with that signature) and helper wrappers, e.g. Interop.strerror.cs.
@@ -104,7 +104,7 @@ internal static partial class Interop // contents of Common\src\Interop\Windows\
 
 ```
 (Note that this will likely result in some extra constants defined in each assembly that uses interop, which minimally violates one of the goals, but it's very minimal.)
-			 
+
 - .csproj project files then include the interop code they need, e.g.
 ```XML
 <ItemGroup Condition=" '$(TargetsUnix)' == 'true' ">
@@ -170,10 +170,10 @@ To address this, we're moving to a model where all UNIX interop from dotnet/runt
 
 Guidelines for shim C++ API:
 
-- Keep them as "thin"/1:1 as possible. 
-  - We want to write the majority of code in C#. 
+- Keep them as "thin"/1:1 as possible.
+  - We want to write the majority of code in C#.
 - Never skip the shim and P/Invoke directly to the underlying platform API. It's easy to assume something is safe/guaranteed when it isn't.
-- Don't cheat and take advantage of coincidental agreement between one flavor's ABI and the shim's ABI. 
+- Don't cheat and take advantage of coincidental agreement between one flavor's ABI and the shim's ABI.
 - Use PascalCase in a style closer to Win32 than libc.
   - If an export point has a 1:1 correspondence to the platform API, then name it after the platform API in PascalCase (e.g. stat -> Stat, fstat -> FStat).
   - If an export is not 1:1, then spell things out as we typically would in dotnet/runtime code (i.e. don't use abbreviations unless they come from the underlying API.

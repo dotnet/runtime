@@ -1598,6 +1598,7 @@ C_ASSERT((FEATURE_TAILCALL_OPT == 0) || (FEATURE_FASTTAILCALL == 1));
 
 #if CPU_HAS_BYTE_REGS
   #define RBM_BYTE_REGS           (RBM_EAX|RBM_ECX|RBM_EDX|RBM_EBX)
+  #define BYTE_REG_COUNT          4
   #define RBM_NON_BYTE_REGS       (RBM_ESI|RBM_EDI)
 #else
   #define RBM_BYTE_REGS            RBM_ALLINT

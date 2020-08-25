@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using CultureInfo = System.Globalization.CultureInfo;
 using SuppressMessageAttribute = System.Diagnostics.CodeAnalysis.SuppressMessageAttribute;
 using StringBuilder = System.Text.StringBuilder;
+using System.Diagnostics;
 
 namespace System.Xml.Linq
 {
@@ -28,10 +29,10 @@ namespace System.Xml.Linq
     /// </remarks>
     public abstract class XNode : XObject
     {
-        private static XNodeDocumentOrderComparer s_documentOrderComparer;
-        private static XNodeEqualityComparer s_equalityComparer;
+        private static XNodeDocumentOrderComparer? s_documentOrderComparer;
+        private static XNodeEqualityComparer? s_equalityComparer;
 
-        internal XNode next;
+        internal XNode? next;
 
         internal XNode() { }
 
@@ -42,7 +43,7 @@ namespace System.Xml.Linq
         /// If this property does not have a parent, or if there is no next node,
         /// then this property returns null.
         /// </remarks>
-        public XNode NextNode
+        public XNode? NextNode
         {
             get
             {
@@ -57,17 +58,18 @@ namespace System.Xml.Linq
         /// If this property does not have a parent, or if there is no previous node,
         /// then this property returns null.
         /// </remarks>
-        public XNode PreviousNode
+        public XNode? PreviousNode
         {
             get
             {
                 if (parent == null) return null;
-                XNode n = ((XNode)parent.content).next;
-                XNode p = null;
+                Debug.Assert(parent.content != null);
+                XNode n = ((XNode)parent.content!).next!;
+                XNode? p = null;
                 while (n != this)
                 {
                     p = n;
-                    n = n.next;
+                    n = n.next!;
                 }
                 return p;
             }
@@ -117,7 +119,7 @@ namespace System.Xml.Linq
         /// See XContainer.Add(object content) for details about the content that can be added
         /// using this method.
         /// </remarks>
-        public void AddAfterSelf(object content)
+        public void AddAfterSelf(object? content)
         {
             if (parent == null) throw new InvalidOperationException(SR.InvalidOperation_MissingParent);
             new Inserter(parent, this).Add(content);
@@ -161,11 +163,11 @@ namespace System.Xml.Linq
         /// See XContainer.Add(object content) for details about the content that can be added
         /// using this method.
         /// </remarks>
-        public void AddBeforeSelf(object content)
+        public void AddBeforeSelf(object? content)
         {
             if (parent == null) throw new InvalidOperationException(SR.InvalidOperation_MissingParent);
-            XNode p = (XNode)parent.content;
-            while (p.next != this) p = p.next;
+            XNode? p = (XNode)parent.content!;
+            while (p.next != this) p = p.next!;
             if (p == parent.content) p = null;
             new Inserter(parent, p).Add(content);
         }
@@ -218,7 +220,7 @@ namespace System.Xml.Linq
         /// <remarks>
         /// This method will not return itself in the results.
         /// </remarks>
-        public IEnumerable<XElement> Ancestors(XName name)
+        public IEnumerable<XElement> Ancestors(XName? name)
         {
             return name != null ? GetAncestors(name, false) : XElement.EmptySequence;
         }
@@ -234,7 +236,7 @@ namespace System.Xml.Linq
         /// <exception cref="InvalidOperationException">
         /// Thrown if the two nodes do not share a common ancestor.
         /// </exception>
-        public static int CompareDocumentOrder(XNode n1, XNode n2)
+        public static int CompareDocumentOrder(XNode? n1, XNode? n2)
         {
             if (n1 == n2) return 0;
             if (n1 == null) return -1;
@@ -259,7 +261,7 @@ namespace System.Xml.Linq
                 {
                     do
                     {
-                        n2 = n2.parent;
+                        n2 = n2.parent!;
                         height++;
                     } while (height != 0);
                     if (n1 == n2) return -1;
@@ -268,25 +270,25 @@ namespace System.Xml.Linq
                 {
                     do
                     {
-                        n1 = n1.parent;
+                        n1 = n1.parent!;
                         height--;
                     } while (height != 0);
                     if (n1 == n2) return 1;
                 }
                 while (n1.parent != n2.parent)
                 {
-                    n1 = n1.parent;
-                    n2 = n2.parent;
+                    n1 = n1.parent!;
+                    n2 = n2.parent!;
                 }
             }
             else if (n1.parent == null)
             {
                 throw new InvalidOperationException(SR.InvalidOperation_MissingAncestor);
             }
-            XNode n = (XNode)n1.parent.content;
+            XNode n = (XNode)n1.parent!.content!;
             while (true)
             {
-                n = n.next;
+                n = n.next!;
                 if (n == n1) return -1;
                 if (n == n2) return 1;
             }
@@ -325,7 +327,7 @@ namespace System.Xml.Linq
             XNode n = this;
             while (n.parent != null && n != n.parent.content)
             {
-                n = n.next;
+                n = n.next!;
                 yield return n;
             }
         }
@@ -341,10 +343,10 @@ namespace System.Xml.Linq
         {
             if (parent != null)
             {
-                XNode n = (XNode)parent.content;
+                XNode n = (XNode)parent.content!;
                 do
                 {
-                    n = n.next;
+                    n = n.next!;
                     if (n == this) break;
                     yield return n;
                 } while (parent != null && parent == n.parent);
@@ -372,7 +374,7 @@ namespace System.Xml.Linq
         /// </remarks>
         /// <returns>The element nodes after this node with the specified name.</returns>
         /// <param name="name">The name of elements to enumerate.</param>
-        public IEnumerable<XElement> ElementsAfterSelf(XName name)
+        public IEnumerable<XElement> ElementsAfterSelf(XName? name)
         {
             return name != null ? GetElementsAfterSelf(name) : XElement.EmptySequence;
         }
@@ -398,7 +400,7 @@ namespace System.Xml.Linq
         /// </remarks>
         /// <returns>The element nodes before this node with the specified name.</returns>
         /// <param name="name">The name of elements to enumerate.</param>
-        public IEnumerable<XElement> ElementsBeforeSelf(XName name)
+        public IEnumerable<XElement> ElementsBeforeSelf(XName? name)
         {
             return name != null ? GetElementsBeforeSelf(name) : XElement.EmptySequence;
         }
@@ -409,7 +411,7 @@ namespace System.Xml.Linq
         /// </summary>
         /// <param name="node">The node to compare for document order.</param>
         /// <returns>True if this node appears after the specified node; false if not.</returns>
-        public bool IsAfter(XNode node)
+        public bool IsAfter(XNode? node)
         {
             return CompareDocumentOrder(this, node) > 0;
         }
@@ -420,7 +422,7 @@ namespace System.Xml.Linq
         /// </summary>
         /// <param name="node">The node to compare for document order.</param>
         /// <returns>True if this node appears before the specified node; false if not.</returns>
-        public bool IsBefore(XNode node)
+        public bool IsBefore(XNode? node)
         {
             return CompareDocumentOrder(this, node) < 0;
         }
@@ -549,12 +551,12 @@ namespace System.Xml.Linq
         /// Replaces the content of this <see cref="XNode"/>.
         /// </summary>
         /// <param name="content">Content that replaces this node.</param>
-        public void ReplaceWith(object content)
+        public void ReplaceWith(object? content)
         {
             if (parent == null) throw new InvalidOperationException(SR.InvalidOperation_MissingParent);
             XContainer c = parent;
-            XNode p = (XNode)parent.content;
-            while (p.next != this) p = p.next;
+            XNode? p = (XNode)parent.content!;
+            while (p.next != this) p = p.next!;
             if (p == parent.content) p = null;
             parent.RemoveNode(this);
             if (p != null && p.parent != c) throw new InvalidOperationException(SR.InvalidOperation_ExternalCode);
@@ -611,7 +613,7 @@ namespace System.Xml.Linq
         /// Two <see cref="XProcessingInstruction"/> nodes are equal if they have the same
         /// target and data. Two <see cref="XDocumentType"/> nodes are equal if the have the
         /// same name, public id, system id, and internal subset.</remarks>
-        public static bool DeepEquals(XNode n1, XNode n2)
+        public static bool DeepEquals(XNode? n1, XNode? n2)
         {
             if (n1 == n2) return true;
             if (n1 == null || n2 == null) return false;
@@ -639,9 +641,9 @@ namespace System.Xml.Linq
 
         internal abstract bool DeepEquals(XNode node);
 
-        internal IEnumerable<XElement> GetAncestors(XName name, bool self)
+        internal IEnumerable<XElement> GetAncestors(XName? name, bool self)
         {
-            XElement e = (self ? this : parent) as XElement;
+            XElement? e = (self ? this : parent) as XElement;
             while (e != null)
             {
                 if (name == null || e.name == name) yield return e;
@@ -649,27 +651,27 @@ namespace System.Xml.Linq
             }
         }
 
-        private IEnumerable<XElement> GetElementsAfterSelf(XName name)
+        private IEnumerable<XElement> GetElementsAfterSelf(XName? name)
         {
             XNode n = this;
             while (n.parent != null && n != n.parent.content)
             {
-                n = n.next;
-                XElement e = n as XElement;
+                n = n.next!;
+                XElement? e = n as XElement;
                 if (e != null && (name == null || e.name == name)) yield return e;
             }
         }
 
-        private IEnumerable<XElement> GetElementsBeforeSelf(XName name)
+        private IEnumerable<XElement> GetElementsBeforeSelf(XName? name)
         {
             if (parent != null)
             {
-                XNode n = (XNode)parent.content;
+                XNode n = (XNode)parent.content!;
                 do
                 {
-                    n = n.next;
+                    n = n.next!;
                     if (n == this) break;
-                    XElement e = n as XElement;
+                    XElement? e = n as XElement;
                     if (e != null && (name == null || e.name == name)) yield return e;
                 } while (parent != null && parent == n.parent);
             }
@@ -712,7 +714,7 @@ namespace System.Xml.Linq
                 if (this is XText) ws.ConformanceLevel = ConformanceLevel.Fragment;
                 using (XmlWriter w = XmlWriter.Create(sw, ws))
                 {
-                    XDocument n = this as XDocument;
+                    XDocument? n = this as XDocument;
                     if (n != null)
                     {
                         n.WriteContentTo(w);

@@ -146,13 +146,6 @@ initDistroRidGlobal()
         fi
     fi
 
-    if [ "$buildArch" = "armel" ]; then
-        # Armel cross build is Tizen specific and does not support Portable RID build
-        __PortableBuild=0
-        export __PortableBuild
-        isPortable=0
-    fi
-
     initNonPortableDistroRid "${targetOs}" "${buildArch}" "${isPortable}" "${rootfsDir}"
 
     if [ "$buildArch" = "wasm" ]; then

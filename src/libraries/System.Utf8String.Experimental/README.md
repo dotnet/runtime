@@ -2,7 +2,7 @@ The `Utf8String` and `Char8` types are now available for experimentation. They c
 
 To install:
 
-```ps 
+```ps
 install-package System.Utf8String.Experimental -prerelease -source https://dotnetfeed.blob.core.windows.net/dotnet-core/index.json
 ```
 
