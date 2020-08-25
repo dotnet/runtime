@@ -219,8 +219,8 @@ namespace System.Text.Json.Serialization
             return dynamicMethod;
         }
 
-        public override Func<object?, TProperty> CreatePropertyGetter<TProperty>(PropertyInfo propertyInfo) =>
-            CreateDelegate<Func<object?, TProperty>>(CreatePropertyGetter(propertyInfo, typeof(TProperty)));
+        public override Func<object, TProperty> CreatePropertyGetter<TProperty>(PropertyInfo propertyInfo) =>
+            CreateDelegate<Func<object, TProperty>>(CreatePropertyGetter(propertyInfo, typeof(TProperty)));
 
         private static DynamicMethod CreatePropertyGetter(PropertyInfo propertyInfo, Type runtimePropertyType)
         {
@@ -261,8 +261,8 @@ namespace System.Text.Json.Serialization
             return dynamicMethod;
         }
 
-        public override Action<object?, TProperty> CreatePropertySetter<TProperty>(PropertyInfo propertyInfo) =>
-            CreateDelegate<Action<object?, TProperty>>(CreatePropertySetter(propertyInfo, typeof(TProperty)));
+        public override Action<object, TProperty> CreatePropertySetter<TProperty>(PropertyInfo propertyInfo) =>
+            CreateDelegate<Action<object, TProperty>>(CreatePropertySetter(propertyInfo, typeof(TProperty)));
 
         private static DynamicMethod CreatePropertySetter(PropertyInfo propertyInfo, Type runtimePropertyType)
         {
@@ -330,7 +330,7 @@ namespace System.Text.Json.Serialization
         }
 
         public override Action<object, TProperty> CreateFieldSetter<TProperty>(FieldInfo fieldInfo) =>
-            CreateDelegate<Action<object?, TProperty>>(CreateFieldSetter(fieldInfo, typeof(TProperty)));
+            CreateDelegate<Action<object, TProperty>>(CreateFieldSetter(fieldInfo, typeof(TProperty)));
 
         private static DynamicMethod CreateFieldSetter(FieldInfo fieldInfo, Type runtimeFieldType)
         {
