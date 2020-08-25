@@ -150,46 +150,11 @@ namespace System.Text.Json.Serialization
         public override Action<object, TProperty> CreatePropertySetter<TProperty>(PropertyInfo propertyInfo)
         {
             MethodInfo setMethodInfo = propertyInfo.SetMethod!;
-            Type declaredType = propertyInfo.PropertyType;
 
-            if (typeof(TProperty) == declaredType)
+            return delegate (object obj, TProperty value)
             {
-                // If declared and runtime type are identical, the value must be
-                // assignable. Just call the setter.
-
-                return delegate (object obj, TProperty value)
-                {
-                    setMethodInfo.Invoke(obj, new object[] { value! });
-                };
-            }
-            else
-            {
-                string memberName = propertyInfo.Name;
-
-                return delegate (object obj, TProperty value)
-                {
-                    // Check the value for null or a not assignable type and throw a JsonException
-                    // when the assignment would throw a NRE or ICE.
-
-                    if (value != null)
-                    {
-                        Type typeOfValue = value.GetType();
-                        if (!declaredType.IsAssignableFrom(typeOfValue))
-                        {
-                            ThrowHelper.ThrowJsonException_DeserializeUnableToAssignValue(typeOfValue, memberName, declaredType);
-                        }
-                    }
-                    else if (declaredType.IsValueType && !declaredType.IsNullableValueType())
-                    {
-                        // If null gets passed to a value-typed parameter by reflection, no
-                        // exception is thrown. We have to throw one on our own.
-
-                        ThrowHelper.ThrowJsonException_DeserializeUnableToAssignNull(memberName, declaredType);
-                    }
-
-                    setMethodInfo.Invoke(obj, new object[] { value! });
-                };
-            }
+                setMethodInfo.Invoke(obj, new object[] { value! });
+            };
         }
 
         public override Func<object, TProperty> CreateFieldGetter<TProperty>(FieldInfo fieldInfo) =>
@@ -198,48 +163,10 @@ namespace System.Text.Json.Serialization
                 return (TProperty)fieldInfo.GetValue(obj)!;
             };
 
-        public override Action<object, TProperty> CreateFieldSetter<TProperty>(FieldInfo fieldInfo)
-        {
-            Type declaredType = fieldInfo.FieldType;
-
-            if (typeof(TProperty) == declaredType)
+        public override Action<object, TProperty> CreateFieldSetter<TProperty>(FieldInfo fieldInfo) =>
+            delegate (object obj, TProperty value)
             {
-                // If declared and runtime type are identical, the value must be
-                // assignable. Just call the setter.
-
-                return delegate (object obj, TProperty value)
-                {
-                    fieldInfo.SetValue(obj, value);
-                };
-            }
-            else
-            {
-                string memberName = fieldInfo.Name;
-
-                return delegate (object obj, TProperty value)
-                {
-                    // Check the value for null or a not assignable type and throw a JsonException
-                    // when the assignment would throw a NRE or ICE.
-
-                    if (value != null)
-                    {
-                        Type typeOfValue = value.GetType();
-                        if (!declaredType.IsAssignableFrom(typeOfValue))
-                        {
-                            ThrowHelper.ThrowJsonException_DeserializeUnableToAssignValue(typeOfValue, memberName, declaredType);
-                        }
-                    }
-                    else if (declaredType.IsValueType && !declaredType.IsNullableValueType())
-                    {
-                        // If null gets passed to a value-typed parameter by reflection, no
-                        // exception is thrown. We have to throw one on our own.
-
-                        ThrowHelper.ThrowJsonException_DeserializeUnableToAssignNull(memberName, declaredType);
-                    }
-
-                    fieldInfo.SetValue(obj, value);
-                };
-            }
-        }
+                fieldInfo.SetValue(obj, value);
+            };
     }
 }

@@ -110,6 +110,7 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/41146")]
         public static void AssignmentToValueTypedMemberInterface()
         {
             var converter = new ValueTypeToInterfaceConverter();
@@ -129,6 +130,7 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/41146")]
         public static void AssignmentToValueTypedMemberObject()
         {
             var converter = new ValueTypeToObjectConverter();
@@ -148,6 +150,7 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/41146")]
         public static void AssignmentToNullableValueTypedMemberInterface()
         {
             var converter = new ValueTypeToInterfaceConverter();
@@ -169,6 +172,7 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/41146")]
         public static void AssignmentToNullableValueTypedMemberObject()
         {
             var converter = new ValueTypeToObjectConverter();

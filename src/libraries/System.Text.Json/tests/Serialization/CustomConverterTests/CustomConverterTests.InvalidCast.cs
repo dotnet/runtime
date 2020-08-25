@@ -8,6 +8,7 @@ namespace System.Text.Json.Serialization.Tests
     public static partial class CustomConverterTests
     {
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/41146")]
         public static void InvalidCastRefTypedPropertyFails()
         {
             var obj = new ObjectWrapperWithProperty
@@ -25,6 +26,7 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/41146")]
         public static void InvalidCastRefTypedFieldFails()
         {
             var options = new JsonSerializerOptions { IncludeFields = true };
@@ -106,6 +108,7 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/41146")]
         public static void CastBasePropertyFails()
         {
             var options = new JsonSerializerOptions { IncludeFields = true };
@@ -113,6 +116,7 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/41146")]
         public static void CastBaseFieldFails()
         {
             var options = new JsonSerializerOptions { IncludeFields = true };

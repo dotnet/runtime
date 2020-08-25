@@ -545,12 +545,6 @@
   <data name="ConverterCanConvertNullableRedundant" xml:space="preserve">
     <value>The converter '{0}' handles type '{1}' but is being asked to convert type '{2}'. Either create a separate converter for type '{2}' or change the converter's 'CanConvert' method to only return 'true' for a single type.</value>
   </data>
-  <data name="DeserializeUnableToAssignValue" xml:space="preserve">
-    <value>The converted value of type '{0}' could not be assigned to the property or field '{1}' of type '{2}'.</value>
-  </data>
-  <data name="DeserializeUnableToAssignNull" xml:space="preserve">
-    <value>The converted value 'null' could not be assigned to the property or field '{0}' of type '{1}'.</value>
-  </data>
   <data name="MetadataReferenceOfTypeCannotBeAssignedToType" xml:space="preserve">
     <value>The object with reference id '{0}' of type '{1}' cannot be assigned to the type '{2}'.</value>
   </data>
