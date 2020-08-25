@@ -38,6 +38,8 @@ namespace System.Net.Mail.Tests
         [Theory]
         [InlineData(Address, "\"John Doe\"")]
         [InlineData(Address, "\"\"")]
+        [InlineData(Address, "\"\"\"")]
+        [InlineData(Address, "\"John \"Johnny\" Doe\"")]
         public void MailAddress_WithOuterDoubleQuotesDisplayAndMailAddress_ToStringShouldReturnEscapedDisplayNameAndAddressInAngleBrackets(string address, string displayName)
         {
             MailAddress mailAddress = new MailAddress(address, displayName);
