@@ -32,7 +32,7 @@ namespace System.Net.Mail.Tests
         {
             MailAddress mailAddress = new MailAddress(address, displayName);
             Assert.Equal(displayName, mailAddress.DisplayName);
-            Assert.Equal(string.Format("\"{0}\" <{1}>", displayName.Replace("\"", "\\\""), Address), mailAddress.ToString());
+            Assert.Equal(string.Format("\"{0}\" <{1}>", displayName.Replace("\"", "\\\""), address), mailAddress.ToString());
         }
 
         [Theory]
