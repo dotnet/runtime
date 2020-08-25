@@ -103,8 +103,7 @@ namespace System.IO.Tests
                 DateTimeKind.Utc);
         }
 
-        [ConditionalFact(nameof(isNotHFS))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/40530", TestPlatforms.Browser)]
+        [ConditionalFact(nameof(isNotHFSOrBrowser))]
         public void CopyToMillisecondPresent()
         {
             FileInfo input = GetNonZeroMilliseconds();
@@ -118,8 +117,7 @@ namespace System.IO.Tests
             Assert.NotEqual(0, output.LastWriteTime.Millisecond);
         }
 
-        [ConditionalFact(nameof(isNotHFS))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/40530", TestPlatforms.Browser)]
+        [ConditionalFact(nameof(isNotHFSOrBrowser))]
         public void CopyToNanosecondsPresent()
         {
             FileInfo input = GetNonZeroNanoseconds();
@@ -135,8 +133,8 @@ namespace System.IO.Tests
             Assert.True(HasNonZeroNanoseconds(output.LastWriteTime));
         }
 
-        [ConditionalFact(nameof(isHFS))]
-        public void CopyToNanosecondsPresent_HFS()
+        [ConditionalFact(nameof(isHFSOrBrowser))]
+        public void CopyToNanosecondsPresent_HFSOrBrowser()
         {
             FileInfo input = new FileInfo(GetTestFilePath());
             input.Create().Dispose();
@@ -149,8 +147,8 @@ namespace System.IO.Tests
             Assert.False(HasNonZeroNanoseconds(output.LastWriteTime));
         }
 
-        [ConditionalFact(nameof(isHFS))]
-        public void MoveToMillisecondPresent_HFS()
+        [ConditionalFact(nameof(isHFSOrBrowser))]
+        public void MoveToMillisecondPresent_HFSOrBrowser()
         {
             FileInfo input = new FileInfo(GetTestFilePath());
             input.Create().Dispose();
@@ -161,8 +159,7 @@ namespace System.IO.Tests
             Assert.Equal(0, output.LastWriteTime.Millisecond);
         }
 
-        [ConditionalFact(nameof(isNotHFS))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/40530", TestPlatforms.Browser)]
+        [ConditionalFact(nameof(isNotHFSOrBrowser))]
         public void MoveToMillisecondPresent()
         {
             FileInfo input = GetNonZeroMilliseconds();
@@ -173,8 +170,8 @@ namespace System.IO.Tests
             Assert.NotEqual(0, output.LastWriteTime.Millisecond);
         }
 
-        [ConditionalFact(nameof(isHFS))]
-        public void CopyToMillisecondPresent_HFS()
+        [ConditionalFact(nameof(isHFSOrBrowser))]
+        public void CopyToMillisecondPresent_HFSOrBrowser()
         {
             FileInfo input = new FileInfo(GetTestFilePath());
             input.Create().Dispose();

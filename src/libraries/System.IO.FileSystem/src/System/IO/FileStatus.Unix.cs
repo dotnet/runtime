@@ -26,8 +26,6 @@ namespace System.IO
         // Exists as of the last refresh
         private bool _exists;
 
-        internal bool isBrowser { get; private set; }
-
         internal static void Initialize(
             ref FileStatus status,
             bool isDirectory)
@@ -266,25 +264,27 @@ namespace System.IO
             const long TicksPerSecond = TicksPerMillisecond * 1000;
             long nanoseconds = (time.UtcDateTime.Ticks - DateTimeOffset.UnixEpoch.Ticks - seconds * TicksPerSecond) * NanosecondsPerTick;
 
+#if TARGET_BROWSER
             buf[0].TvSec = seconds;
             buf[0].TvNsec = nanoseconds;
             buf[1].TvSec = seconds;
             buf[1].TvNsec = nanoseconds;
-
-            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Create("BROWSER")))
+#else
+            if (isAccessTime)
             {
-                if (isAccessTime)
-                {
-                    buf[1].TvSec = _fileStatus.MTime;
-                    buf[1].TvNsec = _fileStatus.MTimeNsec;
-                }
-                else
-                {
-                    buf[0].TvSec = _fileStatus.ATime;
-                    buf[0].TvNsec = _fileStatus.ATimeNsec;
-                }
+                buf[0].TvSec = seconds;
+                buf[0].TvNsec = nanoseconds;
+                buf[1].TvSec = _fileStatus.MTime;
+                buf[1].TvNsec = _fileStatus.MTimeNsec;
             }
-
+            else
+            {
+                buf[0].TvSec = _fileStatus.ATime;
+                buf[0].TvNsec = _fileStatus.ATimeNsec;
+                buf[1].TvSec = seconds;
+                buf[1].TvNsec = nanoseconds;
+            }
+#endif
             Interop.CheckIo(Interop.Sys.UTimensat(path, buf), path, InitiallyDirectory);
             _fileStatusInitialized = -1;
         }

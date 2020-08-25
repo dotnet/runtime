@@ -16,9 +16,10 @@ namespace System.IO.Tests
         private static string driveFormat = PlatformDetection.IsInAppContainer ? string.Empty : new DriveInfo(Path.GetTempPath()).DriveFormat;
 
         protected static bool isHFS => driveFormat != null && driveFormat.Equals(HFS, StringComparison.InvariantCultureIgnoreCase);
-        protected static bool isNotHFS => !isHFS;
-
         protected static bool isBrowser => PlatformDetection.IsBrowser;
+
+        protected static bool isHFSOrBrowser => isBrowser || isHFS;
+        protected static bool isNotHFSOrBrowser => !isHFSOrBrowser;
 
         protected abstract T GetExistingItem();
         protected abstract T GetMissingItem();
@@ -79,8 +80,7 @@ namespace System.IO.Tests
             ValidateSetTimes(item, beforeTime, afterTime);
         }
 
-        [ConditionalFact(nameof(isNotHFS))] // OSX HFS driver format does not support millisec granularity
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/40530", TestPlatforms.Browser)]
+        [ConditionalFact(nameof(isNotHFSOrBrowser))] // OSX HFS driver format and Browser platform do not support millisec granularity
         public void TimesIncludeMillisecondPart()
         {
             T item = GetExistingItem();
@@ -112,11 +112,11 @@ namespace System.IO.Tests
             });
         }
 
-        [ConditionalFact(nameof(isHFS))]
-        public void TimesIncludeMillisecondPart_HFS()
+        [ConditionalFact(nameof(isHFSOrBrowser))]
+        public void TimesIncludeMillisecondPart_HFSOrBrowser()
         {
             T item = GetExistingItem();
-            // OSX HFS driver format does not support millisec granularity
+            // OSX HFS driver format and Browser do not support millisec granularity
             Assert.All(TimeFunctions(), (function) =>
             {
                 DateTime time = function.Getter(item);
