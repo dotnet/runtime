@@ -532,7 +532,15 @@ namespace System.Collections.Generic
                 // that other is a hashset using the same equality comparer.
                 if (other is HashSet<T> otherAsSet && EqualityComparersAreEqual(this, otherAsSet))
                 {
-                    IntersectWithHashSetWithSameComparer(otherAsSet);
+                    IntersectWithCollection(otherAsCollection);
+                    return;
+                }
+
+                Type? otherType = other.GetType().GetGenericTypeDefinition();
+                // For types supporting O(1) lookup, utilize the contains method for faster intersect.
+                if (otherType == typeof(Dictionary<,>.KeyCollection))
+                {
+                    IntersectWithCollection(otherAsCollection);
                     return;
                 }
             }
@@ -1266,10 +1274,10 @@ namespace System.Collections.Generic
         }
 
         /// <summary>
-        /// If other is a hashset that uses same equality comparer, intersect is much faster
-        /// because we can use other's Contains
+        /// Intersect with type ICollection using Contains method. Use this only with
+        /// ICollection derived types having an O(1) implementation of Contains()
         /// </summary>
-        private void IntersectWithHashSetWithSameComparer(HashSet<T> other)
+        private void IntersectWithCollection(ICollection<T> other)
         {
             Entry[]? entries = _entries;
             for (int i = 0; i < _count; i++)
