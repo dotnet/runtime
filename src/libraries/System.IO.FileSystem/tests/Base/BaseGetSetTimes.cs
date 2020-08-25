@@ -16,10 +16,9 @@ namespace System.IO.Tests
         private static string driveFormat = PlatformDetection.IsInAppContainer ? string.Empty : new DriveInfo(Path.GetTempPath()).DriveFormat;
 
         protected static bool isHFS => driveFormat != null && driveFormat.Equals(HFS, StringComparison.InvariantCultureIgnoreCase);
-        protected static bool isBrowser => PlatformDetection.IsBrowser;
 
-        protected static bool isHFSOrBrowser => isBrowser || isHFS;
-        protected static bool isNotHFSOrBrowser => !isHFSOrBrowser;
+        protected static bool WithMillisecondResolution => PlatformDetection.IsBrowser || isHFS;
+        protected static bool WithoutMillisecondResolution => !WithMillisecondResolution;
 
         protected abstract T GetExistingItem();
         protected abstract T GetMissingItem();
@@ -52,7 +51,7 @@ namespace System.IO.Tests
             {
                 // Checking that milliseconds are not dropped after setter.
                 // Emscripten drops milliseconds in Browser
-                DateTime dt = new DateTime(2014, 12, 1, 12, 3, 3, (isHFS || isBrowser) ? 0 : 321, function.Kind);
+                DateTime dt = new DateTime(2014, 12, 1, 12, 3, 3, (WithMillisecondResolution) ? 0 : 321, function.Kind);
                 function.Setter(item, dt);
                 DateTime result = function.Getter(item);
                 Assert.Equal(dt, result);
@@ -80,7 +79,7 @@ namespace System.IO.Tests
             ValidateSetTimes(item, beforeTime, afterTime);
         }
 
-        [ConditionalFact(nameof(isNotHFSOrBrowser))] // OSX HFS driver format and Browser platform do not support millisec granularity
+        [ConditionalFact(nameof(WithoutMillisecondResolution))] // OSX HFS driver format and Browser platform do not support millisec granularity
         public void TimesIncludeMillisecondPart()
         {
             T item = GetExistingItem();
@@ -112,7 +111,7 @@ namespace System.IO.Tests
             });
         }
 
-        [ConditionalFact(nameof(isHFSOrBrowser))]
+        [ConditionalFact(nameof(WithMillisecondResolution))]
         public void TimesIncludeMillisecondPart_HFSOrBrowser()
         {
             T item = GetExistingItem();

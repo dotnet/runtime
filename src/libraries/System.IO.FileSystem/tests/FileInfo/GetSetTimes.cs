@@ -103,7 +103,7 @@ namespace System.IO.Tests
                 DateTimeKind.Utc);
         }
 
-        [ConditionalFact(nameof(isNotHFSOrBrowser))]
+        [ConditionalFact(nameof(WithoutMillisecondResolution))]
         public void CopyToMillisecondPresent()
         {
             FileInfo input = GetNonZeroMilliseconds();
@@ -117,7 +117,7 @@ namespace System.IO.Tests
             Assert.NotEqual(0, output.LastWriteTime.Millisecond);
         }
 
-        [ConditionalFact(nameof(isNotHFSOrBrowser))]
+        [ConditionalFact(nameof(WithoutMillisecondResolution))]
         public void CopyToNanosecondsPresent()
         {
             FileInfo input = GetNonZeroNanoseconds();
@@ -133,7 +133,7 @@ namespace System.IO.Tests
             Assert.True(HasNonZeroNanoseconds(output.LastWriteTime));
         }
 
-        [ConditionalFact(nameof(isHFSOrBrowser))]
+        [ConditionalFact(nameof(WithMillisecondResolution))]
         public void CopyToNanosecondsPresent_HFSOrBrowser()
         {
             FileInfo input = new FileInfo(GetTestFilePath());
@@ -147,7 +147,7 @@ namespace System.IO.Tests
             Assert.False(HasNonZeroNanoseconds(output.LastWriteTime));
         }
 
-        [ConditionalFact(nameof(isHFSOrBrowser))]
+        [ConditionalFact(nameof(WithMillisecondResolution))]
         public void MoveToMillisecondPresent_HFSOrBrowser()
         {
             FileInfo input = new FileInfo(GetTestFilePath());
@@ -159,7 +159,7 @@ namespace System.IO.Tests
             Assert.Equal(0, output.LastWriteTime.Millisecond);
         }
 
-        [ConditionalFact(nameof(isNotHFSOrBrowser))]
+        [ConditionalFact(nameof(WithoutMillisecondResolution))]
         public void MoveToMillisecondPresent()
         {
             FileInfo input = GetNonZeroMilliseconds();
@@ -170,7 +170,7 @@ namespace System.IO.Tests
             Assert.NotEqual(0, output.LastWriteTime.Millisecond);
         }
 
-        [ConditionalFact(nameof(isHFSOrBrowser))]
+        [ConditionalFact(nameof(WithMillisecondResolution))]
         public void CopyToMillisecondPresent_HFSOrBrowser()
         {
             FileInfo input = new FileInfo(GetTestFilePath());
