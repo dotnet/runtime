@@ -22,6 +22,7 @@ namespace Microsoft.WebAssembly.Diagnostics
     internal class MonoProxy : DevToolsProxy
     {
         List<string> urlSymbolServerList = new List<string> ();
+        static HttpClient client = new HttpClient();
         HashSet<SessionId> sessions = new HashSet<SessionId>();
         Dictionary<SessionId, ExecutionContext> contexts = new Dictionary<SessionId, ExecutionContext>();
 
@@ -648,66 +649,73 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         async Task<MethodInfo> LoadSymbolsOnDemand(AssemblyInfo asm, uint method_token, SessionId sessionId, CancellationToken token)
         {
-            foreach (var urlSymbolServer in urlSymbolServerList) 
+            MethodInfo method = null;
+            var context = GetContext(sessionId);
+            ImageDebugHeader header = asm.Image.GetDebugHeader();
+            for (var i = 0; i < header.Entries.Length; i++)
             {
-                MethodInfo method = null;
-                var context = GetContext(sessionId);
-                ImageDebugHeader header = asm.Image.GetDebugHeader();
-                for (var i = 0; i < header.Entries.Length; i++)
+                var entry = header.Entries[i];
+                if (entry.Directory.Type != ImageDebugType.CodeView)
                 {
-                    var entry = header.Entries[i];
-                    if (entry.Directory.Type != ImageDebugType.CodeView)
+                    continue;
+                }
+
+                var data = entry.Data;
+
+                if (data.Length < 24)
+                    return null;
+
+                var pdbSignature = (data[0]
+                    | (data[1] << 8)
+                    | (data[2] << 16)
+                    | (data[3] << 24));
+
+                if (pdbSignature != 0x53445352) // "SDSR"
+                    return null;
+
+                var buffer = new byte[16];
+                Buffer.BlockCopy(data, 4, buffer, 0, 16);
+
+                var pdbAge = (data[20]
+                    | (data[21] << 8)
+                    | (data[22] << 16)
+                    | (data[23] << 24));
+
+                var pdbGuid = new Guid(buffer);
+                var buffer2 = new byte[(data.Length - 24) - 1];
+                Buffer.BlockCopy(data, 24, buffer2, 0, (data.Length - 24) - 1);
+                var pdbName = System.Text.Encoding.UTF8.GetString(buffer2, 0, buffer2.Length);
+                pdbName = Path.GetFileName(pdbName);
+
+                foreach (var urlSymbolServer in urlSymbolServerList) 
+                {
+                    var downloadURL = urlSymbolServer + "/" + pdbName + "/" + pdbGuid.ToString("N").ToUpper() + pdbAge + "/" + pdbName;
+
+                    try
+                    {
+                        using HttpResponseMessage response = await client.GetAsync(downloadURL);
+                        using Stream streamToReadFrom = await response.Content.ReadAsStreamAsync();
+                        var portablePdbReaderProvider = new PdbReaderProvider();
+                        var symbolReader = portablePdbReaderProvider.GetSymbolReader(asm.Image, streamToReadFrom);
+                        asm.Image.ReadSymbols(symbolReader);
+                        asm.Populate();
+                        method = asm.GetMethodByToken(method_token);
+                        foreach (var source in asm.Sources)
+                        {
+                            var scriptSource = JObject.FromObject(source.ToScriptSource(context.Id, context.AuxData));
+                            SendEvent(sessionId, "Debugger.scriptParsed", scriptSource, token);
+                        }
+                    }
+                    catch (Exception e)
                     {
                         continue;
                     }
 
-                    var data = entry.Data;
-
-                    if (data.Length < 24)
-                        return null;
-
-                    var pdbSignature = (data[0]
-                        | (data[1] << 8)
-                        | (data[2] << 16)
-                        | (data[3] << 24));
-
-                    if (pdbSignature != 0x53445352) // "SDSR"
-                        return null;
-
-                    var buffer = new byte[16];
-                    Buffer.BlockCopy(data, 4, buffer, 0, 16);
-
-                    var pdbAge = (data[20]
-                        | (data[21] << 8)
-                        | (data[22] << 16)
-                        | (data[23] << 24));
-
-                    var pdbGuid = new Guid(buffer);
-                    var buffer2 = new byte[(data.Length - 24) - 1];
-                    Buffer.BlockCopy(data, 24, buffer2, 0, (data.Length - 24) - 1);
-                    var pdbName = System.Text.Encoding.UTF8.GetString(buffer2, 0, buffer2.Length);
-                    pdbName = Path.GetFileName(pdbName);
-                    var downloadURL = urlSymbolServer + "/" + pdbName + "/" + pdbGuid.ToString("N").ToUpper() + pdbAge + "/" + pdbName;
-
-                    
-                    using var client = new HttpClient();
-                    using HttpResponseMessage response = await client.GetAsync(downloadURL);
-                    using Stream streamToReadFrom = await response.Content.ReadAsStreamAsync();
-                    var portablePdbReaderProvider = new PdbReaderProvider();
-                    var symbolReader = portablePdbReaderProvider.GetSymbolReader(asm.Image, streamToReadFrom);
-                    asm.Image.ReadSymbols(symbolReader);
-                    asm.Populate();
-                    method = asm.GetMethodByToken(method_token);
-                    foreach (var source in asm.Sources)
-                    {
-                        var scriptSource = JObject.FromObject(source.ToScriptSource(context.Id, context.AuxData));
-                        SendEvent(sessionId, "Debugger.scriptParsed", scriptSource, token);
-                    }
                     if (method != null)
                         return method;
                 }
             }
-            return null;
+            return method;
         }
         
         async Task OnDefaultContext(SessionId sessionId, ExecutionContext context, CancellationToken token)
