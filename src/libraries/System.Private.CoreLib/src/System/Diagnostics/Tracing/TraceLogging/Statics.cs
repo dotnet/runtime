@@ -169,7 +169,11 @@ namespace System.Diagnostics.Tracing
 
         public static void CheckName(string? name)
         {
+#if ES_BUILD_STANDALONE
+            if (name != null && name.IndexOf('\0') >= 0)
+#else
             if (name != null && name.Contains('\0'))
+#endif
             {
                 throw new ArgumentOutOfRangeException(nameof(name));
             }
@@ -313,9 +317,9 @@ namespace System.Diagnostics.Tracing
             };
         }
 
-        #endregion
+#endregion
 
-        #region Reflection helpers
+#region Reflection helpers
 
         public static bool HasCustomAttribute(
             PropertyInfo propInfo,
@@ -580,6 +584,6 @@ namespace System.Diagnostics.Tracing
             return result;
         }
 
-        #endregion
+#endregion
     }
 }
