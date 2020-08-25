@@ -938,6 +938,7 @@ namespace System.Tests
         {
             Assert.True(Half.NaN.Equals(Half.NaN));
             Assert.False(Half.NaN == Half.NaN);
+            Assert.True(Half.NaN != Half.NaN);
             Assert.Equal(Half.NaN, Half.NaN);
         }
     }
