@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Runtime.Serialization;
+using System.Runtime.Versioning;
 
 namespace System.IO
 {
@@ -19,6 +20,7 @@ namespace System.IO
             _name = NormalizeDriveName(driveName);
         }
 
+        [UnsupportedOSPlatform("browser")]
         void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
         {
             throw new PlatformNotSupportedException();
