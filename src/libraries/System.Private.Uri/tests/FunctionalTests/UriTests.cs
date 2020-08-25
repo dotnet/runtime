@@ -710,6 +710,23 @@ namespace System.PrivateUri.Tests
         }
 
         [Fact]
+        public static void Uri_CombineUsesNewUriString()
+        {
+            // Tests that internal Uri fields were properly reset during a Combine operation
+            // Otherwise, the wrong Uri string would be used if the relative Uri contains non-ascii characters
+            // This will only affect parsers without the IriParsing flag - only custom parsers
+            UriParser.Register(new GenericUriParser(GenericUriParserOptions.GenericAuthority), "combine-scheme", -1);
+
+            const string RelativeUriString = "/relative/uri/with/non/ascii/\u00FC";
+
+            var absoluteUri = new Uri("combine-scheme://foo", UriKind.Absolute);
+            var relativeUri = new Uri(RelativeUriString, UriKind.Relative);
+
+            new Uri(absoluteUri, relativeUri);
+            new Uri(absoluteUri, RelativeUriString);
+        }
+
+        [Fact]
         public static void Uri_CachesIdnHost()
         {
             var uri = new Uri("https://\u00FCnicode/foo");
