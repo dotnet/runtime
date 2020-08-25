@@ -115,7 +115,7 @@ jobs:
       runtimeType: wasm
       codeGenType: 'wasm'
       projectFile: microbenchmarks.proj
-      runKind: micro   # is this supposed to be micro_mono or micro_wasm?
+      runKind: micro
       runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
 
 
@@ -143,7 +143,7 @@ jobs:
     buildConfig: release
     runtimeFlavor: coreclr
     platforms:
-    #- Linux_x64
+    - Linux_x64
     - Windows_NT_x64
     - Windows_NT_x86
     jobParameters:

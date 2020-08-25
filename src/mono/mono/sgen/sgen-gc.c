@@ -3749,6 +3749,8 @@ sgen_gc_init (void)
 #endif
 				/* If aot code is used, allocation from there won't expect the layout with canaries enabled */
 				sgen_set_use_managed_allocator (FALSE);
+			} else if (!strcmp (opt, "coop-no-stack-scan")) {
+				sgen_disable_native_stack_scan ();
 			} else if (!sgen_client_handle_gc_debug (opt)) {
 				sgen_env_var_error (MONO_GC_DEBUG_NAME, "Ignoring.", "Unknown option `%s`.", opt);
 
@@ -3776,6 +3778,7 @@ sgen_gc_init (void)
 				fprintf (stderr, "  print-allowance\n");
 				fprintf (stderr, "  print-pinning\n");
 				fprintf (stderr, "  print-gchandles\n");
+				fprintf (stderr, "  coop-no-stack-scan\n");
 				fprintf (stderr, "  heap-dump=<filename>\n");
 				fprintf (stderr, "  binary-protocol=<filename>[:<file-size-limit>]\n");
 				fprintf (stderr, "  nursery-canaries\n");
