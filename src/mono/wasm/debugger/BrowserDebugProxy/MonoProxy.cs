@@ -652,6 +652,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             MethodInfo method = null;
             var context = GetContext(sessionId);
             ImageDebugHeader header = asm.Image.GetDebugHeader();
+            
             for (var i = 0; i < header.Entries.Length; i++)
             {
                 var entry = header.Entries[i];
@@ -714,6 +715,8 @@ namespace Microsoft.WebAssembly.Diagnostics
                         return method;
                 }
             }
+
+            Log("info", "Unable to load symbols on demand");
             return method;
         }
         
