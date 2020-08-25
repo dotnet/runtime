@@ -30,7 +30,7 @@
 #endif
 
 gboolean
-mono_cpuidex (int id, int sub_id, int *p_eax, int *p_ebx, int *p_ecx, int *p_edx)
+mono_hwcap_x86_call_cpuidex (int id, int sub_id, int *p_eax, int *p_ebx, int *p_ecx, int *p_edx)
 {
 #if defined(_MSC_VER)
 	int info [4];
@@ -111,7 +111,7 @@ mono_hwcap_arch_init (void)
 {
 	int eax, ebx, ecx, edx;
 
-	if (mono_cpuidex (1, 0, &eax, &ebx, &ecx, &edx)) {
+	if (mono_hwcap_x86_call_cpuidex (1, 0, &eax, &ebx, &ecx, &edx)) {
 		if (edx & (1 << 15)) {
 			mono_hwcap_x86_has_cmov = TRUE;
 
@@ -144,16 +144,16 @@ mono_hwcap_arch_init (void)
 			mono_hwcap_x86_has_avx = TRUE;
 	}
 
-	if (mono_cpuidex (0x80000000, 0, &eax, &ebx, &ecx, &edx)) {
+	if (mono_hwcap_x86_call_cpuidex (0x80000000, 0, &eax, &ebx, &ecx, &edx)) {
 		if ((unsigned int) eax >= 0x80000001 && ebx == 0x68747541 && ecx == 0x444D4163 && edx == 0x69746E65) {
-			if (mono_cpuidex (0x80000001, 0, &eax, &ebx, &ecx, &edx)) {
+			if (mono_hwcap_x86_call_cpuidex (0x80000001, 0, &eax, &ebx, &ecx, &edx)) {
 				if (ecx & (1 << 6))
 					mono_hwcap_x86_has_sse4a = TRUE;
 			}
 		}
 	}
 
-	if (mono_cpuidex (0x80000001, 0, &eax, &ebx, &ecx, &edx)) {
+	if (mono_hwcap_x86_call_cpuidex (0x80000001, 0, &eax, &ebx, &ecx, &edx)) {
 		if (ecx & (1 << 5))
 			mono_hwcap_x86_has_lzcnt = TRUE;
 	}
