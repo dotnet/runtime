@@ -711,13 +711,13 @@ namespace Microsoft.WebAssembly.Diagnostics
                     }
                     catch (Exception e)
                     {
-                        Log("info", $"Unable to load symbols on demand exception: {e.ToString()} url:{urlSymbolServer}");
+                        Log("info", $"Unable to load symbols on demand exception: {e.ToString()} url:{downloadURL} assembly: {asm.Name}");
                     }
                 }
                 break;
             }
 
-            Log("info", "Unable to load symbols on demand");
+            Log("info", "Unable to load symbols on demand assembly: {asm.Name}");
             return null;
         }
         
