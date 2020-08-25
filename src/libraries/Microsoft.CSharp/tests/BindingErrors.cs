@@ -577,6 +577,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Tests
         }
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public void InitOnlyProperty_Set()
         {
             dynamic d = new InitOnlyProperty();
@@ -591,18 +592,21 @@ namespace Microsoft.CSharp.RuntimeBinder.Tests
         }
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public void InitOnlyProperty_SetInConstructor()
         {
             Assert.Throws<RuntimeBinderException>(() => new InitOnlyProperty(1));
         }
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public void InitOnlyProperty_SetInInitAccessor()
         {
             Assert.Throws<RuntimeBinderException>(() => new InitOnlyProperty() { Q = 1 });
         }
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public void InitOnlyProperty_Increment()
         {
             dynamic d = new InitOnlyProperty();
@@ -610,6 +614,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Tests
         }
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public void InitOnlyProperty_CompoundAssignment()
         {
             dynamic d = new InitOnlyProperty();
