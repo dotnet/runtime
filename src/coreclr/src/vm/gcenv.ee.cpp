@@ -157,27 +157,33 @@ static void ScanStackRoots(Thread * pThread, promote_func* fn, ScanContext* sc)
 
 static void ScanTailCallArgBufferRoots(Thread* pThread, promote_func* fn, ScanContext* sc)
 {
-    void* gcDesc;
-    char* argBuffer = pThread->GetTailCallTls()->GetArgBuffer(&gcDesc);
-    if (gcDesc == NULL)
+    TailCallArgBuffer* argBuffer = pThread->GetTailCallTls()->GetArgBuffer();
+    if (argBuffer == NULL || argBuffer->GCDesc == NULL)
         return;
 
-    GCRefMapDecoder decoder(static_cast<PTR_BYTE>(gcDesc));
+    if (argBuffer->State == TAILCALLARGBUFFER_ABANDONED)
+        return;
+
+    bool instArgOnly = argBuffer->State == TAILCALLARGBUFFER_INSTARG_ONLY;
+
+    GCRefMapDecoder decoder(static_cast<PTR_BYTE>(argBuffer->GCDesc));
     while (!decoder.AtEnd())
     {
         int pos = decoder.CurrentPos();
         int token = decoder.ReadToken();
 
-        PTR_TADDR ppObj = dac_cast<PTR_TADDR>(argBuffer + pos * sizeof(TADDR));
+        PTR_TADDR ppObj = dac_cast<PTR_TADDR>(((BYTE*)argBuffer->Args) + pos * sizeof(TADDR));
         switch (token)
         {
         case GCREFMAP_SKIP:
             break;
         case GCREFMAP_REF:
-            fn(dac_cast<PTR_PTR_Object>(ppObj), sc, CHECK_APP_DOMAIN);
+            if (!instArgOnly)
+                fn(dac_cast<PTR_PTR_Object>(ppObj), sc, CHECK_APP_DOMAIN);
             break;
         case GCREFMAP_INTERIOR:
-            PromoteCarefully(fn, dac_cast<PTR_PTR_Object>(ppObj), sc, GC_CALL_INTERIOR);
+            if (!instArgOnly)
+                PromoteCarefully(fn, dac_cast<PTR_PTR_Object>(ppObj), sc, GC_CALL_INTERIOR);
             break;
         case GCREFMAP_METHOD_PARAM:
             if (sc->promotion)

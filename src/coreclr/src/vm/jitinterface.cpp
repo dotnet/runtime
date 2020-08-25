@@ -13952,7 +13952,7 @@ bool CEEInfo::getTailCallHelpersInternal(CORINFO_RESOLVED_TOKEN* callToken,
 
     TailCallHelp::CreateTailCallHelperStubs(
         m_pMethodBeingCompiled, pTargetMD,
-        msig, isCallvirt, isThisArgByRef,
+        msig, isCallvirt, isThisArgByRef, sig->hasTypeArg(),
         &pStoreArgsMD, &needsTarget,
         &pCallTargetMD);
 
