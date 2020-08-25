@@ -52,8 +52,9 @@ jobs:
 
     - IsInternal: ''
     - HelixApiAccessToken: ''
-    
-    # run machine-setup and set PYTHONPATH
+    - HelixPreCommands: ''
+    - AdditionalHelixPreCommands: ''
+    # run machine-setup and set PYTHONPATH for both public and private jobs
     - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
       - HelixPreCommands: 'call %HELIX_WORKITEM_PAYLOAD%\machine-setup.cmd;set PYTHONPATH=%HELIX_WORKITEM_PAYLOAD%\scripts%3B%HELIX_WORKITEM_PAYLOAD%'
     - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
@@ -62,10 +63,10 @@ jobs:
     # extra private job settings
     - ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest')) }}:
       - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
-        - HelixPreCommands: py -3 -m venv %HELIX_WORKITEM_PAYLOAD%\.venv;call %HELIX_WORKITEM_PAYLOAD%\.venv\Scripts\activate.bat;set PYTHONPATH=;py -3 -m pip install --user azure.storage.blob==12.0.0 --force-reinstall;py -3 -m pip install --user azure.storage.queue==12.0.0 --force-reinstall;set "PERFLAB_UPLOAD_TOKEN=$(PerfCommandUploadToken)";$(HelixPreCommands)
-        - IsInternal: -Internal
+        - AdditionalHelixPreCommands: py -3 -m venv %HELIX_WORKITEM_PAYLOAD%\.venv;call %HELIX_WORKITEM_PAYLOAD%\.venv\Scripts\activate.bat;set PYTHONPATH=;py -3 -m pip install --user azure.storage.blob==12.0.0 --force-reinstall;py -3 -m pip install --user azure.storage.queue==12.0.0 --force-reinstall;set "PERFLAB_UPLOAD_TOKEN=$(PerfCommandUploadToken);"
+        - IsInternal: -Internal      
       - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
-        - HelixPreCommands: sudo apt-get -y install python3-venv;python3 -m venv $HELIX_WORKITEM_PAYLOAD/.venv;source $HELIX_WORKITEM_PAYLOAD/.venv/Scripts/activate;export PYTHONPATH=;pip3 install --user azure.storage.blob==12.0.0 --force-reinstall;pip3 install --user azure.storage.queue==12.0.0 --force-reinstall;export PERFLAB_UPLOAD_TOKEN="$(PerfCommandUploadTokenLinux)";$(HelixPreCommands)
+        - AdditionalHelixPreCommands: sudo apt-get -y install python3-venv;python3 -m venv $HELIX_WORKITEM_PAYLOAD/.venv;source $HELIX_WORKITEM_PAYLOAD/.venv/Scripts/activate;export PYTHONPATH=;pip3 install --user azure.storage.blob==12.0.0 --force-reinstall;pip3 install --user azure.storage.queue==12.0.0 --force-reinstall;export PERFLAB_UPLOAD_TOKEN="$(PerfCommandUploadTokenLinux);"
         - IsInternal: --internal
       - group: DotNet-HelixApi-Access
       - group: dotnet-benchview
@@ -144,7 +145,7 @@ jobs:
         HelixType: 'test/performance/$(Kind)/$(_Framework)/$(Architecture)'
         HelixAccessToken: $(HelixApiAccessToken)
         HelixTargetQueues: $(Queue)
-        HelixPreCommands: $(HelixPreCommands)
+        HelixPreCommands: '$(AdditionalHelixPreCommands)$(HelixPreCommands)' # $(HelixPreCommands) should follow $(AdditionalHelixPreCommands) because PYTHONPATH is cleared by the former
         Creator: $(Creator)
         WorkItemTimeout: 4:00 # 4 hours
         WorkItemDirectory: '$(WorkItemDirectory)' # contains scenario tools, shared python scripts, dotnet tool
