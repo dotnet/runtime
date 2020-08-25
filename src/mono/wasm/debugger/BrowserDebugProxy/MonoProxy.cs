@@ -351,7 +351,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 case "DotnetDebugger.addSymbolServerUrl":
                     {
                         string url = args["url"]?.Value<string>();
-                        if (!urlSymbolServerList.Contains(url))
+                        if (!String.IsNullOrEmpty(url) && !urlSymbolServerList.Contains(url))
                             urlSymbolServerList.Add(url);
                         return true;
                     }
@@ -557,7 +557,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
                         var method = asm.GetMethodByToken(method_token);
 
-                        if (method  == null && !asm.Image.HasSymbols)
+                        if (method == null && !asm.Image.HasSymbols)
                         {
                             try
                             {
