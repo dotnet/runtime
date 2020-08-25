@@ -479,7 +479,6 @@ namespace System.Reflection.Tests
         }
 
         [Theory]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/40868", TestRuntimes.Mono)]
         [InlineData(typeof(InheritedInteraface), new Type[] { typeof(TI_NonGenericInterface2) })]
         [InlineData(typeof(StructWithInheritedInterface), new Type[] { typeof(TI_NonGenericInterface2), typeof(InheritedInteraface) })]
         [InlineData(typeof(NonGenericClassWithNonGenericInterface), new Type[] { typeof(TI_NonGenericInterface1) })]

@@ -17,7 +17,7 @@ namespace System.Net.Http
     {
         // TODO: once HTTP/3 is standardized, create APIs for these.
         public static readonly Version HttpVersion30 = new Version(3, 0);
-        public static readonly SslApplicationProtocol Http3ApplicationProtocol = new SslApplicationProtocol("h3");
+        public static readonly SslApplicationProtocol Http3ApplicationProtocol = new SslApplicationProtocol("h3-29");
 
         /// <summary>
         /// If we receive a settings frame larger than this, tear down the connection with an error.

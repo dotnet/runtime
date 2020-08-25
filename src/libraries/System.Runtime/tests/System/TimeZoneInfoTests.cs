@@ -2251,7 +2251,7 @@ namespace System.Tests
                         }
                         else
                         {
-                            Assert.True(tzi.BaseUtcOffset == ts, $"{offset} != {tzi.BaseUtcOffset}, dn:{tzi.DisplayName}, sn:{tzi.StandardName}");
+                            Assert.True(tzi.BaseUtcOffset == ts || tzi.GetUtcOffset(DateTime.Now) == ts, $"{offset} != {tzi.BaseUtcOffset}, dn:{tzi.DisplayName}, sn:{tzi.StandardName}");
                         }
                     }
                 }
@@ -2266,7 +2266,7 @@ namespace System.Tests
             Assert.True(ReferenceEquals(TimeZoneInfo.FindSystemTimeZoneById("UTC"), TimeZoneInfo.Utc));
         }
 
-        // We test the existance of a specific English time zone name to avoid failures on non-English platforms.
+        // We test the existence of a specific English time zone name to avoid failures on non-English platforms.
         [ConditionalFact(nameof(IsEnglishUILanguageAndRemoteExecutorSupported))]
         public static void TestNameWithInvariantCulture()
         {

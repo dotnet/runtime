@@ -11,15 +11,17 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageFile Include="$(ArtifactsDir)bin\BrowserDebugHost\$(TargetArchitecture)\$(Configuration)\BrowserDebugProxy.dll">
-      <TargetPath>tools\$(NetCoreAppCurrent)\BrowserDebugProxy.dll</TargetPath>
-    </PackageFile>
-    <PackageFile Include="$(ArtifactsDir)bin\BrowserDebugHost\$(TargetArchitecture)\$(Configuration)\BrowserDebugHost.dll">
-      <TargetPath>tools\$(NetCoreAppCurrent)\BrowserDebugHost.dll</TargetPath>
-    </PackageFile>
-    <PackageFile Include="$(ArtifactsDir)bin\BrowserDebugHost\$(TargetArchitecture)\$(Configuration)\BrowserDebugHost.runtimeconfig.json">
-      <TargetPath>tools\$(NetCoreAppCurrent)\BrowserDebugHost.runtimeconfig.json</TargetPath>
-    </PackageFile>
+    <_browserDebugHostFiles Include="$(ArtifactsDir)bin\BrowserDebugHost\$(TargetArchitecture)\$(Configuration)\BrowserDebugHost.dll" />
+    <_browserDebugHostFiles Include="$(ArtifactsDir)bin\BrowserDebugHost\$(TargetArchitecture)\$(Configuration)\BrowserDebugHost.runtimeconfig.json" />
+    <_browserDebugHostFiles Include="$(ArtifactsDir)bin\BrowserDebugHost\$(TargetArchitecture)\$(Configuration)\BrowserDebugProxy.dll" />
+    <_browserDebugHostFiles Include="$(ArtifactsDir)bin\BrowserDebugHost\$(TargetArchitecture)\$(Configuration)\Microsoft.CodeAnalysis.CSharp.dll" />
+    <_browserDebugHostFiles Include="$(ArtifactsDir)bin\BrowserDebugHost\$(TargetArchitecture)\$(Configuration)\Microsoft.CodeAnalysis.dll" />
+    <_browserDebugHostFiles Include="$(ArtifactsDir)bin\BrowserDebugHost\$(TargetArchitecture)\$(Configuration)\Mono.Cecil.dll" />
+    <_browserDebugHostFiles Include="$(ArtifactsDir)bin\BrowserDebugHost\$(TargetArchitecture)\$(Configuration)\Mono.Cecil.Pdb.dll" />
+    <_browserDebugHostFiles Include="$(ArtifactsDir)bin\BrowserDebugHost\$(TargetArchitecture)\$(Configuration)\Mono.Cecil.Rocks.dll" />
+    <_browserDebugHostFiles Include="$(ArtifactsDir)bin\BrowserDebugHost\$(TargetArchitecture)\$(Configuration)\Newtonsoft.Json.dll" />
+
+    <PackageFile Include="@(_browserDebugHostFiles)" TargetPath="tools\$(NetCoreAppCurrent)\" />
   </ItemGroup>
 
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets))" />
