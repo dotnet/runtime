@@ -53,7 +53,7 @@ mono_alc_cleanup (MonoAssemblyLoadContext *alc)
 	for (tmp = alc->loaded_assemblies; tmp; tmp = tmp->next) {
 		MonoAssembly *assembly = (MonoAssembly *)tmp->data;
 		g_slist_remove (domain->domain_assemblies, assembly);
-		mono_atomic_dec_i32 (&assembly->ref_count);
+		mono_assembly_decref (assembly);
 		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "Unloading ALC [%p], removing assembly %s[%p] from domain_assemblies, ref_count=%d\n", alc, assembly->aname.name, assembly, assembly->ref_count);
 	}
 	mono_domain_assemblies_unlock (domain);
