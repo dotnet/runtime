@@ -127,7 +127,7 @@ namespace System.Xml.Serialization
         private XmlMapping _mapping = null!;
         private XmlDeserializationEvents _events;
         internal string? DefaultNamespace;
-        private Type _rootType = null!;
+        private Type? _rootType;
         private bool _isReflectionBasedSerializer;
 
         private static readonly TempAssemblyCache s_cache = new TempAssemblyCache();
@@ -386,7 +386,7 @@ namespace System.Xml.Serialization
         {
             if (_mapping == null || !_mapping.GenerateSerializer)
             {
-                _mapping = GenerateXmlTypeMapping(_rootType, null, null, null, DefaultNamespace);
+                _mapping = GenerateXmlTypeMapping(_rootType!, null, null, null, DefaultNamespace);
             }
 
             return _mapping;
@@ -526,7 +526,7 @@ namespace System.Xml.Serialization
 
             if ((anySoapMapping && ReflectionMethodEnabled) || Mode == SerializationMode.ReflectionOnly)
             {
-                XmlSerializer[] serializers = GetReflectionBasedSerializers(mappings, type!);
+                XmlSerializer[] serializers = GetReflectionBasedSerializers(mappings, type);
                 return serializers;
             }
 
@@ -579,7 +579,7 @@ namespace System.Xml.Serialization
             }
         }
 
-        private static XmlSerializer[] GetReflectionBasedSerializers(XmlMapping[] mappings, Type type)
+        private static XmlSerializer[] GetReflectionBasedSerializers(XmlMapping[] mappings, Type? type)
         {
             var serializers = new XmlSerializer[mappings.Length];
             for (int i = 0; i < serializers.Length; i++)
