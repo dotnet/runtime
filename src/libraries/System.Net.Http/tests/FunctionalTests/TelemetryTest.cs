@@ -32,6 +32,7 @@ namespace System.Net.Http.Functional.Tests
 
         [OuterLoop]
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData("Get")]
         [InlineData("String")]
         [InlineData("ByteArray")]
         [InlineData("Stream")]
@@ -52,6 +53,10 @@ namespace System.Net.Http.Functional.Tests
 
                             switch (testMethod)
                             {
+                                case "Get":
+                                    await client.GetAsync(uri);
+                                    break;
+
                                 case "String":
                                     await client.GetStringAsync(uri);
                                     break;
@@ -107,10 +112,14 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [OuterLoop]
-        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public void EventSource_UnsuccessfulRequest_LogsStartAbortedStop()
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData("Get")]
+        [InlineData("String")]
+        [InlineData("ByteArray")]
+        [InlineData("Stream")]
+        public void EventSource_UnsuccessfulRequest_LogsStartAbortedStop(string testMethod)
         {
-            RemoteExecutor.Invoke(async useVersionString =>
+            RemoteExecutor.Invoke(async (useVersionString, testMethod) =>
             {
                 using var listener = new TestEventListener("System.Net.Http", EventLevel.Verbose, eventCounterInterval: 0.1d);
 
@@ -124,7 +133,26 @@ namespace System.Net.Http.Functional.Tests
                         async uri =>
                         {
                             using HttpClient client = CreateHttpClient(useVersionString);
-                            await Assert.ThrowsAsync<TaskCanceledException>(async () => await client.GetStringAsync(uri, cts.Token));
+
+                            switch (testMethod)
+                            {
+                                case "Get":
+                                    await Assert.ThrowsAsync<TaskCanceledException>(async () => await client.GetAsync(uri, cts.Token));
+                                    break;
+
+                                case "String":
+                                    await Assert.ThrowsAsync<TaskCanceledException>(async () => await client.GetStringAsync(uri, cts.Token));
+                                    break;
+
+                                case "ByteArray":
+                                    await Assert.ThrowsAsync<TaskCanceledException>(async () => await client.GetByteArrayAsync(uri, cts.Token));
+                                    break;
+
+                                case "Stream":
+                                    await Assert.ThrowsAsync<TaskCanceledException>(async () => await client.GetStreamAsync(uri, cts.Token));
+                                    break;
+                            }
+
                             semaphore.Release();
                         },
                         async server =>
@@ -151,7 +179,7 @@ namespace System.Net.Http.Functional.Tests
                 Assert.Empty(stop.Payload);
 
                 VerifyEventCounters(events, requestCount: 1, shouldHaveFailures: true);
-            }, UseVersion.ToString()).Dispose();
+            }, UseVersion.ToString(), testMethod).Dispose();
         }
 
         protected static void ValidateStartEventPayload(EventWrittenEventArgs startEvent)
