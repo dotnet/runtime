@@ -2634,7 +2634,7 @@
     </ItemGroup>
 
 
-    <ItemGroup Condition=" '$(TargetArchitecture)' == 'wasm' " >
+    <!--<ItemGroup Condition=" '$(TargetArchitecture)' == 'wasm' " >
    	    <ExcludeList Include = "$(XunitTestBinBase)/Interop/ICastable/**" >
 		    <Issue> Depends on coreclr System.Private.CoreLib; can't be built for wasm.</Issue>
    	    </ExcludeList>
@@ -6505,5 +6505,5 @@
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Regression/JitBlue/GitHub_19438/GitHub_19438/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
-   </ItemGroup>
+   </ItemGroup> -->
 </Project>
