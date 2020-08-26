@@ -245,25 +245,15 @@ jobs:
     value: >-
       $(RuntimeArtifactsArgs)
       $(LibrariesConfigurationArg)
-      $(LibrariesAllConfigurationsOverridePathArg)
-      $(AllArtifactsArgs)
 
   - name: RuntimeArtifactsArgs
     value: ''
   - name: LibrariesConfigurationArg
     value: ''
-  - name: LibrariesAllConfigurationsOverridePathArg
-    value: ''
-  - name: AllArtifactsArgs
-    value: ''
 
   - name: RuntimeDownloadPath
     value: ''
   - name: LibrariesDownloadPath
-    value: ''
-  - name: LibrariesDownloadPathAllConfigurations
-    value: ''
-  - name: AllArtifactsDownloadPath
     value: ''
 
   - ${{ if ne(parameters.liveRuntimeBuildConfig, '') }}:
@@ -350,19 +340,6 @@ jobs:
         condition: and(succeeded(), in(variables['SignType'], 'real', 'test'))
 
   - template: /eng/pipelines/common/clone-checkout-bundle-step.yml
-
-  # Download and extract artifacts for earlier subsets.
-  - task: DownloadBuildArtifacts@0
-    displayName: 'Download artifacts for all platforms'
-    inputs:
-      buildType: current
-      downloadType: specific
-      downloadPath: '$(Build.SourcesDirectory)/__download__/AllPlatforms/'
-      allowPartiallySucceededBuilds: true
-      itemPattern: |
-        $(runtimeFlavorName)Product_*/**
-        libraries_bin_*/**
-        !*Logs*
 
   - ${{ if ne(parameters.liveRuntimeBuildConfig, '') }}:
     - template: /eng/pipelines/common/download-artifact-step.yml
