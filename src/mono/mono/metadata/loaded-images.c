@@ -102,16 +102,17 @@ mono_loaded_images_remove_image (MonoImage *image)
 	loaded_images         = mono_loaded_images_get_hash (li, image->ref_only);
 	loaded_images_by_name = mono_loaded_images_get_by_name_hash (li, image->ref_only);
 
-	char *name = mono_image_get_name_with_culture_if_needed (image);
-	image2 = (MonoImage *)g_hash_table_lookup (loaded_images, name);
+	char *name_with_culture = mono_image_get_name_with_culture_if_needed (image);
+	image2 = (MonoImage *)g_hash_table_lookup (loaded_images, name_with_culture != NULL ? name_with_culture : image->name);
 	if (image == image2) {
 		/* This is not true if we are called from mono_image_open () */
-		g_hash_table_remove (loaded_images, image->name);
+		g_hash_table_remove (loaded_images, name_with_culture != NULL ? name_with_culture : image->name);
 	}
 	if (image->assembly_name && (g_hash_table_lookup (loaded_images_by_name, image->assembly_name) == image))
 		g_hash_table_remove (loaded_images_by_name, (char *) image->assembly_name);
 
 	proceed = TRUE;
+	g_free (name_with_culture);
 done:
 	mono_images_unlock ();
 
