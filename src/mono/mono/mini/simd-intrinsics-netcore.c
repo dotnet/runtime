@@ -28,6 +28,7 @@ mono_simd_intrinsics_init (void)
 #include "mono/utils/bsearch.h"
 #include <mono/metadata/abi-details.h>
 #include <mono/metadata/reflection-internals.h>
+#include <mono/utils/mono-hwcap.h>
 
 #if defined (MONO_ARCH_SIMD_INTRINSICS) && defined(ENABLE_NETCORE)
 
@@ -2177,13 +2178,10 @@ MONO_EMPTY_SOURCE_FILE (simd_intrinsics_netcore);
 
 
 #if defined(ENABLE_NETCORE) && defined(TARGET_AMD64)
-gboolean
-mono_cpuidex (int id, int sub_id, int *p_eax, int *p_ebx, int *p_ecx, int *p_edx);
-
 void
 ves_icall_System_Runtime_Intrinsics_X86_X86Base___cpuidex (int abcd[4], int function_id, int subfunction_id)
 {
-	mono_cpuidex (function_id, subfunction_id,
+	mono_hwcap_x86_call_cpuidex (function_id, subfunction_id,
 		&abcd [0], &abcd [1], &abcd [2], &abcd [3]);
 }
 #endif

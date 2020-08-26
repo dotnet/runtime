@@ -257,7 +257,22 @@ fi
       <PropertyGroup>
       <_CLRTestRunFile Condition="'$(CLRTestIsHosted)'=='true'">"$CORE_ROOT/corerun"</_CLRTestRunFile>
 
-      <BashCLRTestLaunchCmds Condition="'$(CLRTestKind)' == 'BuildAndRun'">
+      <BashCLRTestPreCommands Condition="'$(TargetArchitecture)' == 'wasm'">
+   <![CDATA[
+# Build wasm app containing the test dll
+__Command=""
+if [ ! -z ${__TestDotNetCmd+x} ] %3B then
+  __Command+=" $__TestDotNetCmd"
+else
+  __Command+=" dotnet"
+fi
+
+$__Command msbuild $CORE_ROOT/wasm-test-runner/WasmTestRunner.proj /p:NetCoreAppCurrent=$(NetCoreAppCurrent) /p:TestAssembly=`pwd`/$(MsBuildProjectName).dll /p:TestBinDir=`pwd`
+
+   ]]>
+      </BashCLRTestPreCommands>
+
+      <BashCLRTestLaunchCmds Condition="'$(CLRTestKind)' == 'BuildAndRun' And $(TargetArchitecture) != 'wasm' ">
     <![CDATA[
 $(BashLinkerTestLaunchCmds)
 
@@ -276,6 +291,7 @@ fi
 
 echo $LAUNCHER $ExePath %24(printf "'%s' " "${CLRTestExecutionArguments[@]}")
 $LAUNCHER $ExePath "${CLRTestExecutionArguments[@]}"
+
 CLRTestExitCode=$?
 
 if [ ! -z ${RunCrossGen+x} ]%3B then
@@ -284,6 +300,13 @@ fi
 
 $(BashLinkerTestCleanupCmds)
       ]]></BashCLRTestLaunchCmds>
+      <BashCLRTestLaunchCmds Condition="'$(CLRTestKind)' == 'BuildAndRun' And $(TargetArchitecture) == 'wasm' ">
+      <![CDATA[
+cd WasmApp
+./run-v8.sh $(MsBuildProjectName)
+CLRTestExitCode=$?
+      ]]>
+      </BashCLRTestLaunchCmds>
       <BashCLRTestLaunchCmds Condition="'$(CLRTestKind)' == 'RunOnly'"><![CDATA[
 echo export CDPATH="$%28dirname "${BASH_SOURCE[0]}")"
 export CDPATH="$%28dirname "${BASH_SOURCE[0]}")"

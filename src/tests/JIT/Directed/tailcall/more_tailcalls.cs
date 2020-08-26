@@ -61,22 +61,26 @@ internal class Program
     {
         IL.Emit.Ldftn(new MethodRef(typeof(Program), nameof(CalcStaticCalli)));
         IL.Pop(out IntPtr calcStaticCalli);
+        s_calcStaticCalli = calcStaticCalli;
+
         IL.Emit.Ldftn(new MethodRef(typeof(Program), nameof(CalcStaticCalliOther)));
         IL.Pop(out IntPtr calcStaticCalliOther);
+        s_calcStaticCalliOther = calcStaticCalliOther;
+
         IL.Emit.Ldftn(new MethodRef(typeof(Program), nameof(CalcStaticCalliRetbuf)));
         IL.Pop(out IntPtr calcStaticCalliRetbuf);
+        s_calcStaticCalliRetbuf = calcStaticCalliRetbuf;
+
         IL.Emit.Ldftn(new MethodRef(typeof(Program), nameof(CalcStaticCalliRetbufOther)));
         IL.Pop(out IntPtr calcStaticCalliRetbufOther);
+        s_calcStaticCalliRetbufOther = calcStaticCalliRetbufOther;
+
         IL.Emit.Ldftn(new MethodRef(typeof(Program), nameof(EmptyCalliOther)));
         IL.Pop(out IntPtr emptyCalliOther);
+        s_emptyCalliOther = emptyCalliOther;
+
         IL.Emit.Ldftn(new MethodRef(typeof(S16), nameof(S16.InstanceMethod)));
         IL.Pop(out IntPtr instanceMethodOnValueType);
-
-        s_calcStaticCalli = calcStaticCalli;
-        s_calcStaticCalliOther = calcStaticCalliOther;
-        s_calcStaticCalliRetbuf = calcStaticCalliRetbuf;
-        s_calcStaticCalliRetbufOther = calcStaticCalliRetbufOther;
-        s_emptyCalliOther = emptyCalliOther;
         s_instanceMethodOnValueType = instanceMethodOnValueType;
     }
 
@@ -182,6 +186,10 @@ internal class Program
         Test(() => GenAbstractFInt(ga2), "System.Int32 System.Object", "Abstract generic with generic on method 2");
         Test(() => GenAbstractGString(ga1), "System.String", "Abstract generic without generic on method 1");
         Test(() => GenAbstractGInt(ga2), "System.Int32", "Abstract generic without generic on method 2");
+
+        int[] a = new int[1_000_000];
+        a[99] = 1;
+        Test(() => InstantiatingStub1(0, 0, "string", a), a.Length + 1, "Instantiating stub direct");
 
         if (result)
             Console.WriteLine("All tailcall-via-help succeeded");
@@ -685,6 +693,42 @@ internal class Program
         IL.Emit.Tail();
         IL.Emit.Callvirt(new MethodRef(typeof(GenAbstract<int>), nameof(GenAbstract<int>.G)));
         return IL.Return<string>();
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static int InstantiatingStub1<T>(int a, int r, T c, Span<int> d)
+    {
+        IL.Push(c);
+        IL.Push(c);
+        IL.Push(c);
+        IL.Push(c);
+        IL.Push(c);
+        IL.Push(c);
+        IL.Push(c);
+        IL.Push(c);
+        IL.Push(a);
+        IL.Push(r);
+        IL.Emit.Ldarg(nameof(d));
+        IL.Push(r + d[99]);
+        IL.Emit.Tail();
+        IL.Emit.Call(new MethodRef(typeof(Program), nameof(InstantiatingStub1Other)).MakeGenericMethod(typeof(T)));
+        return IL.Return<int>();
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static int InstantiatingStub1Other<T>(T c0, T c1, T c2, T c3, T c4, T c5, T c6, T c7, int a, int r, Span<int> d, int result)
+    {
+        if (a == d.Length) return result;
+        else
+        {
+            IL.Push(a + 1);
+            IL.Push(result);
+            IL.Push(c0);
+            IL.Emit.Ldarg(nameof(d));
+            IL.Emit.Tail();
+            IL.Emit.Call(new MethodRef(typeof(Program), nameof(InstantiatingStub1)).MakeGenericMethod(typeof(T)));
+            return IL.Return<int>();
+        }
     }
 }
 

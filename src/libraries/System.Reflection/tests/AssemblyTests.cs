@@ -186,6 +186,17 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
+        public void CodeBaseInMemory()
+        {
+            var inMemBlob = File.ReadAllBytes(SourceTestAssemblyPath);
+            var asm = Assembly.Load(inMemBlob);
+            // Should not throw
+            #pragma warning disable SYSLIB0012
+            _ = asm.CodeBase;
+            #pragma warning restore SYSLIB0012
+        }
+
+        [Fact]
         public void GetFiles()
         {
             var asm = typeof(AssemblyTests).Assembly;

@@ -14,7 +14,7 @@
   </ItemGroup>
 
   <Target Name="CopyDependencyToCoreRoot"
-          DependsOnTargets="ResolveAssemblyReferences">
+          DependsOnTargets="ResolveAssemblyReferences;ResolveRuntimeFilesFromLocalBuild">
 
     <ItemGroup>
       <RunTimeDependencyExclude Include="$(CORE_ROOT)\**\*.*"  />
@@ -84,6 +84,38 @@
           Include="$(CoreCLRArtifactsPath)%(RunTimeArtifactsIncludeFolders.Identity)**/*"
           Exclude="@(RunTimeArtifactsExcludeFiles -> '$(CoreCLRArtifactsPath)%(Identity)')"
           TargetDir="%(RunTimeArtifactsIncludeFolders.Identity)" />
+
+
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(TargetArchitecture)' == 'wasm'">
+        <RunTimeDependencyCopyLocal
+          Include="@(RuntimeFiles)"
+          TargetDir="runtimepack/native/"/>
+
+        <!-- This throws everything in 'native', include many non-native assemblies.
+             This is done because LibrariesRuntimeFiles includes some .js files that
+             WasmAppBuilder expects in native/-->
+        <RunTimeDependencyCopyLocal
+          Include="@(LibrariesRuntimeFiles)"
+          TargetDir="runtimepack/native/"/>
+
+       <RunTimeDependencyCopyLocal
+          Include="$(ArtifactsDir)\TargetingPack\**"
+          TargetDir="TargetingPack/"/>
+
+        <!-- Wasm App Builder always builds in Debug -->
+        <RunTimeDependencyCopyLocal
+          Include="$(ArtifactsBinDir)\WasmAppBuilder\Debug\$(NetCoreAppCurrent)\publish\**"
+          TargetDir="WasmAppBuilder/"/>
+
+        <RunTimeDependencyCopyLocal
+          Include="$(RepoRoot)\src\tests\Common\wasm-test-runner\WasmTestRunner.proj"
+          TargetDir="wasm-test-runner/"/>
+  
+        <RunTimeDependencyCopyLocal
+          Include="$(MonoProjectRoot)\wasm\runtime-test.js"
+          TargetDir="runtime-test/"/>
     </ItemGroup>
 
     <Copy

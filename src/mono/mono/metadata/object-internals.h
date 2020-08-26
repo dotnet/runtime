@@ -1663,7 +1663,7 @@ typedef struct {
 	MonoEvent *resolving;
 	MonoEvent *unloading;
 	MonoString *name;
-	gpointer *native_assembly_load_context;
+	MonoAssemblyLoadContext *native_assembly_load_context;
 	gint64 id;
 	gint32 internal_state;
 	MonoBoolean is_collectible;

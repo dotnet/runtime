@@ -320,7 +320,7 @@ ves_icall_System_Diagnostics_Tracing_EventPipeInternal_Enable (
 		(EventPipeSerializationFormat)format,
 		true,
 		NULL,
-		true);
+		NULL);
 	ep_start_streaming (session_id);
 
 	if (config_providers) {
