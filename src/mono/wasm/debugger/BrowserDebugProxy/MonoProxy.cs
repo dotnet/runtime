@@ -692,7 +692,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
                 foreach (var urlSymbolServer in urlSymbolServerList) 
                 {
-                    var downloadURL = urlSymbolServer + "/" + pdbName + "/" + pdbGuid.ToString("N").ToUpper() + pdbAge + "/" + pdbName;
+                    var downloadURL = $"{urlSymbolServer}/{pdbName}/{pdbGuid.ToString("N").ToUpper() + pdbAge}/{pdbName}";
 
                     try
                     {
