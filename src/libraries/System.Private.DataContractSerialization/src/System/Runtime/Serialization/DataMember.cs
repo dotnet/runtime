@@ -27,7 +27,7 @@ namespace System.Runtime.Serialization
             { return _helper.MemberInfo; }
         }
 
-        public string? Name
+        public string Name
         {
             get
             { return _helper.Name; }
@@ -150,7 +150,7 @@ namespace System.Runtime.Serialization
         private class CriticalHelper
         {
             private DataContract? _memberTypeContract;
-            private string? _name;
+            private string _name = null!; // Name is always initialized right after construction
             private int _order;
             private bool _isRequired;
             private bool _emitDefaultValue;
@@ -171,7 +171,7 @@ namespace System.Runtime.Serialization
                 get { return _memberInfo; }
             }
 
-            internal string? Name
+            internal string Name
             {
                 get { return _name; }
                 set { _name = value; }

@@ -306,7 +306,7 @@ namespace System.Runtime.Serialization
         internal static void CheckAndAddMember(List<DataMember> members, DataMember memberContract, Dictionary<string, DataMember> memberNamesTable)
         {
             DataMember? existingMemberContract;
-            if (memberNamesTable.TryGetValue(memberContract.Name!, out existingMemberContract))
+            if (memberNamesTable.TryGetValue(memberContract.Name, out existingMemberContract))
             {
                 Type declaringType = memberContract.MemberInfo.DeclaringType!;
                 DataContract.ThrowInvalidDataContractException(
@@ -317,7 +317,7 @@ namespace System.Runtime.Serialization
                         memberContract.Name),
                     declaringType);
             }
-            memberNamesTable.Add(memberContract.Name!, memberContract);
+            memberNamesTable.Add(memberContract.Name, memberContract);
             members.Add(memberContract);
         }
 

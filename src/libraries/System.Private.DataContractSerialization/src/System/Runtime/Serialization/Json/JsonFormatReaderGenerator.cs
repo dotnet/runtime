@@ -954,8 +954,8 @@ namespace System.Runtime.Serialization.Json
                     }
                     DataMember keyMember = keyValuePairContract.Members![0];
                     DataMember valueMember = keyValuePairContract.Members[1];
-                    LocalBuilder pairKey = _ilg.DeclareLocal(keyMember.MemberType, keyMember.Name!);
-                    LocalBuilder pairValue = _ilg.DeclareLocal(valueMember.MemberType, valueMember.Name!);
+                    LocalBuilder pairKey = _ilg.DeclareLocal(keyMember.MemberType, keyMember.Name);
+                    LocalBuilder pairValue = _ilg.DeclareLocal(valueMember.MemberType, valueMember.Name);
                     _ilg.LoadAddress(value);
                     _ilg.LoadMember(keyMember.MemberInfo);
                     _ilg.Stloc(pairKey);
