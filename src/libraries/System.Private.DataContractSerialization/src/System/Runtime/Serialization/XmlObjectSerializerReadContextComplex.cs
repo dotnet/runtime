@@ -77,6 +77,8 @@ namespace System.Runtime.Serialization
 
         private object? InternalDeserializeInSharedTypeMode(XmlReaderDelegator xmlReader, int declaredTypeID, Type declaredType, string? name, string? ns)
         {
+            Debug.Assert(attributes != null);
+
             object? retObj = null;
             if (TryHandleNullOrRef(xmlReader, declaredType, name, ns, ref retObj))
                 return retObj;
@@ -154,6 +156,8 @@ namespace System.Runtime.Serialization
 
         protected override DataContract? ResolveDataContractFromTypeName()
         {
+            Debug.Assert(attributes != null);
+
             if (_mode == SerializationMode.SharedContract)
             {
                 return base.ResolveDataContractFromTypeName();
@@ -213,6 +217,8 @@ namespace System.Runtime.Serialization
         internal override int GetArraySize()
 #endif
         {
+            Debug.Assert(attributes != null);
+
             return _preserveObjectReferences ? attributes.ArraySZSize : -1;
         }
     }

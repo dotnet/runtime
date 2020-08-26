@@ -173,6 +173,8 @@ namespace System.Runtime.Serialization
                 knownTypesAddedInCurrentScope = true;
             }
 
+            Debug.Assert(attributes != null);
+
             if (attributes.XsiTypeName != null)
             {
                 DataContract? tempDataContract = ResolveDataContractFromKnownTypes(attributes.XsiTypeName, attributes.XsiTypeNamespace, dataContract, declaredType);
@@ -329,6 +331,8 @@ namespace System.Runtime.Serialization
         internal string ReadIfNullOrRef(XmlReaderDelegator xmlReader, Type memberType, bool isMemberTypeSerializable)
 #endif
         {
+            Debug.Assert(attributes != null);
+
             if (attributes.Ref != Globals.NewObjectId)
             {
                 CheckIfTypeSerializable(memberType, isMemberTypeSerializable);
@@ -344,6 +348,7 @@ namespace System.Runtime.Serialization
             return Globals.NewObjectId;
         }
 
+        [MemberNotNull(nameof(attributes))]
 #if USE_REFEMIT
         public virtual void ReadAttributes(XmlReaderDelegator xmlReader)
 #else
@@ -371,6 +376,8 @@ namespace System.Runtime.Serialization
         internal string GetObjectId()
 #endif
         {
+            Debug.Assert(attributes != null);
+
             return attributes.Id;
         }
 
@@ -389,6 +396,8 @@ namespace System.Runtime.Serialization
         internal void AddNewObject(object? obj)
 #endif
         {
+            Debug.Assert(attributes != null);
+
             AddNewObjectWithId(attributes.Id, obj);
         }
 
@@ -624,6 +633,8 @@ namespace System.Runtime.Serialization
 
         protected virtual DataContract? ResolveDataContractFromTypeName()
         {
+            Debug.Assert(attributes != null);
+
             return (attributes.XsiTypeName == null) ? null : ResolveDataContractFromKnownTypes(attributes.XsiTypeName, attributes.XsiTypeNamespace, null /*memberTypeContract*/, null);
         }
 
@@ -737,6 +748,8 @@ namespace System.Runtime.Serialization
 
         private IDataNode ReadExtensionDataValue(XmlReaderDelegator xmlReader, string? dataContractName, string? dataContractNamespace)
         {
+            Debug.Assert(attributes != null);
+
             StartReadExtensionDataValue(xmlReader);
 
             if (attributes.UnrecognizedAttributesFound)
@@ -789,6 +802,8 @@ namespace System.Runtime.Serialization
 
         protected void InitializeExtensionDataNode(IDataNode dataNode, string? dataContractName, string? dataContractNamespace)
         {
+            Debug.Assert(attributes != null);
+
             dataNode.DataContractName = dataContractName;
             dataNode.DataContractNamespace = dataContractNamespace;
             dataNode.ClrAssemblyName = attributes.ClrAssembly;
@@ -826,6 +841,8 @@ namespace System.Runtime.Serialization
 
         private CollectionDataNode ReadUnknownCollectionData(XmlReaderDelegator xmlReader, string? dataContractName, string? dataContractNamespace)
         {
+            Debug.Assert(attributes != null);
+
             var dataNode = new CollectionDataNode();
             InitializeExtensionDataNode(dataNode, dataContractName, dataContractNamespace);
 
@@ -880,6 +897,8 @@ namespace System.Runtime.Serialization
 
         private ISerializableDataNode ReadUnknownISerializableData(XmlReaderDelegator xmlReader, string? dataContractName, string? dataContractNamespace)
         {
+            Debug.Assert(attributes != null);
+
             var dataNode = new ISerializableDataNode();
             InitializeExtensionDataNode(dataNode, dataContractName, dataContractNamespace);
 
@@ -1119,6 +1138,8 @@ namespace System.Runtime.Serialization
 
         protected virtual bool IsReadingCollectionExtensionData(XmlReaderDelegator xmlReader)
         {
+            Debug.Assert(attributes != null);
+
             return (attributes.ArraySZSize != -1);
         }
 
