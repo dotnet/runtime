@@ -97,6 +97,11 @@
         <HelixCommand Condition="'$(TargetsWindows)' != 'true'">./RunTests.sh</HelixCommand>
         <HelixCommand Condition="'$(TargetsWindows)' != 'true' and '$(IncludeHelixCorrelationPayload)' == 'true'">$(HelixCommand) --runtime-path "$HELIX_CORRELATION_PAYLOAD"</HelixCommand>
       </PropertyGroup>
+      <!-- Tell VSTest where to put dump files. -->
+      <ItemGroup>
+        <HelixPreCommand Condition="'$(TargetsWindows)' == 'true'" Include="set VSTEST_DUMP_PATH='%HELIX_DUMP_FOLDER%'" />
+        <HelixPreCommand Condition="'$(TargetsWindows)' != 'true'" Include="export VSTEST_DUMP_PATH='$HELIX_DUMP_FOLDER'" />
+      </ItemGroup>
     </When>
     <Otherwise>
       <PropertyGroup>
