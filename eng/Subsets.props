@@ -210,7 +210,7 @@
   <!-- Installer sets -->
   <ItemGroup Condition="$(_subset.Contains('+corehost+'))">
     <CorehostProjectToBuild Include="$(InstallerProjectRoot)corehost\corehost.proj" SignPhase="Binaries" />
-    <ProjectToBuild Include="@(CorehostProjectToBuild)" BuildInParallel="true" Pack="true" Category="installer" />
+    <ProjectToBuild Include="@(CorehostProjectToBuild)" Pack="true" Category="installer" />
   </ItemGroup>
 
   <ItemGroup Condition="$(_subset.Contains('+installer.managed+'))">
