@@ -1987,6 +1987,8 @@ void stomp_write_barrier_resize(bool is_runtime_suspended, bool requires_upper_b
 
 void stomp_write_barrier_ephemeral(uint8_t* ephemeral_low, uint8_t* ephemeral_high)
 {
+    initGCShadow();
+
     WriteBarrierParameters args = {};
     args.operation = WriteBarrierOp::StompEphemeral;
     args.is_runtime_suspended = true;
@@ -35736,6 +35738,8 @@ HRESULT GCHeap::Initialize()
 {
     HRESULT hr = S_OK;
 
+    initGCShadow();         // If we are debugging write barriers, initialize heap shadow
+
     qpf = (uint64_t)GCToOSInterface::QueryPerformanceFrequency();
     qpf_ms = 1000.0 / (double)qpf;
     qpf_us = 1000.0 * 1000.0 / (double)qpf;
@@ -36047,8 +36051,6 @@ HRESULT GCHeap::Initialize()
     }
 #endif //STRESS_HEAP && !MULTIPLE_HEAPS
 #endif // FEATURE_REDHAWK
-
-    initGCShadow();         // If we are debugging write barriers, initialize heap shadow
 
 #ifdef MULTIPLE_HEAPS
 
