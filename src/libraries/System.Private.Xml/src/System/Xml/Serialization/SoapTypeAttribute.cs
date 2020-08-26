@@ -18,12 +18,12 @@ namespace System.Xml.Serialization
         {
         }
 
-        public SoapTypeAttribute(string typeName)
+        public SoapTypeAttribute(string? typeName)
         {
             _typeName = typeName;
         }
 
-        public SoapTypeAttribute(string typeName, string ns)
+        public SoapTypeAttribute(string? typeName, string? ns)
         {
             _typeName = typeName;
             _ns = ns;

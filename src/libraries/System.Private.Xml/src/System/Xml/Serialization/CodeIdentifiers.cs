@@ -132,7 +132,7 @@ namespace System.Xml.Serialization
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
-        public string AddUnique(string identifier, object value)
+        public string AddUnique(string identifier, object? value)
         {
             identifier = MakeUnique(identifier);
             Add(identifier, value);
@@ -150,7 +150,7 @@ namespace System.Xml.Serialization
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
-        public void Add(string identifier, object value)
+        public void Add(string identifier, object? value)
         {
             _identifiers.Add(identifier, value);
             _list.Add(value);

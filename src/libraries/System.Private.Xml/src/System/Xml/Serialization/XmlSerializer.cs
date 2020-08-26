@@ -156,20 +156,20 @@ namespace System.Xml.Serialization
         {
         }
 
-        public XmlSerializer(Type type, XmlAttributeOverrides overrides, Type[] extraTypes, XmlRootAttribute root, string defaultNamespace) :
+        public XmlSerializer(Type type, XmlAttributeOverrides? overrides, Type[]? extraTypes, XmlRootAttribute? root, string? defaultNamespace) :
             this(type, overrides, extraTypes, root, defaultNamespace, null)
         {
         }
 
-        public XmlSerializer(Type type, XmlRootAttribute root) : this(type, null, Array.Empty<Type>(), root, null, null)
+        public XmlSerializer(Type type, XmlRootAttribute? root) : this(type, null, Array.Empty<Type>(), root, null, null)
         {
         }
 
-        public XmlSerializer(Type type, Type[] extraTypes) : this(type, null, extraTypes, null, null, null)
+        public XmlSerializer(Type type, Type[]? extraTypes) : this(type, null, extraTypes, null, null, null)
         {
         }
 
-        public XmlSerializer(Type type, XmlAttributeOverrides overrides) : this(type, overrides, Array.Empty<Type>(), null, null, null)
+        public XmlSerializer(Type type, XmlAttributeOverrides? overrides) : this(type, overrides, Array.Empty<Type>(), null, null, null)
         {
         }
 
@@ -292,12 +292,12 @@ namespace System.Xml.Serialization
             return new TempAssembly(new XmlMapping[] { xmlMapping }, new Type?[] { type }, defaultNamespace, location);
         }
 
-        public void Serialize(TextWriter textWriter, object o)
+        public void Serialize(TextWriter textWriter, object? o)
         {
             Serialize(textWriter, o, null);
         }
 
-        public void Serialize(TextWriter textWriter, object o, XmlSerializerNamespaces? namespaces)
+        public void Serialize(TextWriter textWriter, object? o, XmlSerializerNamespaces? namespaces)
         {
             XmlTextWriter xmlWriter = new XmlTextWriter(textWriter);
             xmlWriter.Formatting = Formatting.Indented;
@@ -305,12 +305,12 @@ namespace System.Xml.Serialization
             Serialize(xmlWriter, o, namespaces);
         }
 
-        public void Serialize(Stream stream, object o)
+        public void Serialize(Stream stream, object? o)
         {
             Serialize(stream, o, null);
         }
 
-        public void Serialize(Stream stream, object o, XmlSerializerNamespaces? namespaces)
+        public void Serialize(Stream stream, object? o, XmlSerializerNamespaces? namespaces)
         {
             XmlTextWriter xmlWriter = new XmlTextWriter(stream, null);
             xmlWriter.Formatting = Formatting.Indented;
@@ -318,22 +318,22 @@ namespace System.Xml.Serialization
             Serialize(xmlWriter, o, namespaces);
         }
 
-        public void Serialize(XmlWriter xmlWriter, object o)
+        public void Serialize(XmlWriter xmlWriter, object? o)
         {
             Serialize(xmlWriter, o, null);
         }
 
-        public void Serialize(XmlWriter xmlWriter, object o, XmlSerializerNamespaces? namespaces)
+        public void Serialize(XmlWriter xmlWriter, object? o, XmlSerializerNamespaces? namespaces)
         {
             Serialize(xmlWriter, o, namespaces, null);
         }
 
-        public void Serialize(XmlWriter xmlWriter, object o, XmlSerializerNamespaces? namespaces, string? encodingStyle)
+        public void Serialize(XmlWriter xmlWriter, object? o, XmlSerializerNamespaces? namespaces, string? encodingStyle)
         {
             Serialize(xmlWriter, o, namespaces, encodingStyle, null);
         }
 
-        public void Serialize(XmlWriter xmlWriter, object o, XmlSerializerNamespaces? namespaces, string? encodingStyle, string? id)
+        public void Serialize(XmlWriter xmlWriter, object? o, XmlSerializerNamespaces? namespaces, string? encodingStyle, string? id)
         {
             try
             {
@@ -375,7 +375,7 @@ namespace System.Xml.Serialization
             xmlWriter.Flush();
         }
 
-        private void SerializeUsingReflection(XmlWriter xmlWriter, object o, XmlSerializerNamespaces? namespaces, string? encodingStyle, string? id)
+        private void SerializeUsingReflection(XmlWriter xmlWriter, object? o, XmlSerializerNamespaces? namespaces, string? encodingStyle, string? id)
         {
             XmlMapping mapping = GetMapping();
             var writer = new ReflectionXmlSerializationWriter(mapping, xmlWriter, namespaces == null || namespaces.Count == 0 ? DefaultNamespaces : namespaces, encodingStyle, id);
@@ -507,12 +507,12 @@ namespace System.Xml.Serialization
             }
         }
 
-        public static XmlSerializer[] FromMappings(XmlMapping[] mappings)
+        public static XmlSerializer[] FromMappings(XmlMapping[]? mappings)
         {
             return FromMappings(mappings, (Type?)null);
         }
 
-        public static XmlSerializer[] FromMappings(XmlMapping[] mappings, Type? type)
+        public static XmlSerializer[] FromMappings(XmlMapping[]? mappings, Type? type)
         {
             if (mappings == null || mappings.Length == 0) return Array.Empty<XmlSerializer>();
             bool anySoapMapping = false;
@@ -683,7 +683,7 @@ namespace System.Xml.Serialization
             return serializers!;
         }
 
-        public static XmlSerializer[] FromTypes(Type[] types)
+        public static XmlSerializer[] FromTypes(Type[]? types)
         {
             if (types == null)
                 return Array.Empty<XmlSerializer>();
@@ -765,7 +765,7 @@ namespace System.Xml.Serialization
 
         protected virtual XmlSerializationWriter CreateWriter() { throw new NotImplementedException(); }
 
-        protected virtual void Serialize(object o, XmlSerializationWriter writer) { throw new NotImplementedException(); }
+        protected virtual void Serialize(object? o, XmlSerializationWriter writer) { throw new NotImplementedException(); }
 
         internal void SetTempAssembly(TempAssembly tempAssembly, XmlMapping mapping)
         {

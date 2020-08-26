@@ -360,7 +360,7 @@ namespace System.Xml.Serialization
                     _writer.Write("if (type == typeof(");
                     _writer.Write(CodeIdentifier.GetCSharpName(type));
                     _writer.Write(")) return new ");
-                    _writer.Write((string)serializers[xmlMappings[i].Key!]!);
+                    _writer.Write((string?)serializers[xmlMappings[i].Key!]);
                     _writer.WriteLine("();");
                 }
             }

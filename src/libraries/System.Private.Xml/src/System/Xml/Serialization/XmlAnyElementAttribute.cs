@@ -29,7 +29,7 @@ namespace System.Xml.Serialization
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
-        public XmlAnyElementAttribute(string name)
+        public XmlAnyElementAttribute(string? name)
         {
             _name = name;
         }
@@ -37,7 +37,7 @@ namespace System.Xml.Serialization
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
-        public XmlAnyElementAttribute(string name, string ns)
+        public XmlAnyElementAttribute(string? name, string? ns)
         {
             _name = name;
             _ns = ns;

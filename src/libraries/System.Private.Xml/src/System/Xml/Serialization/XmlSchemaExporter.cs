@@ -133,7 +133,7 @@ namespace System.Xml.Serialization
             return false;
         }
 
-        public string ExportAnyType(string ns)
+        public string ExportAnyType(string? ns)
         {
             string name = "any";
             int i = 0;

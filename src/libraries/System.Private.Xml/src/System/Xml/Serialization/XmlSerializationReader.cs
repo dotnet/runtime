@@ -20,7 +20,7 @@ namespace System.Xml.Serialization
     {
         private XmlReader _r = null!;
         private XmlDocument? _d;
-        private Hashtable _callbacks = null!;
+        private Hashtable? _callbacks;
         private Hashtable _types = null!;
         private Hashtable _typesReverse = null!;
         private XmlDeserializationEvents _events;
@@ -908,7 +908,8 @@ namespace System.Xml.Serialization
             return node;
         }
 
-        protected static byte[] ToByteArrayBase64(string value)
+        [return: NotNullIfNotNull("value")]
+        protected static byte[]? ToByteArrayBase64(string? value)
         {
             return XmlCustomFormatter.ToByteArrayBase64(value);
         }
@@ -1115,27 +1116,31 @@ namespace System.Xml.Serialization
             return XmlCustomFormatter.ToEnum(value, h, typeName, true);
         }
 
-        protected static string ToXmlName(string value)
+        [return: NotNullIfNotNull("value")]
+        protected static string? ToXmlName(string? value)
         {
             return XmlCustomFormatter.ToXmlName(value);
         }
 
-        protected static string ToXmlNCName(string value)
+        [return: NotNullIfNotNull("value")]
+        protected static string? ToXmlNCName(string? value)
         {
             return XmlCustomFormatter.ToXmlNCName(value);
         }
 
-        protected static string ToXmlNmToken(string value)
+        [return: NotNullIfNotNull("value")]
+        protected static string? ToXmlNmToken(string? value)
         {
             return XmlCustomFormatter.ToXmlNmToken(value);
         }
 
-        protected static string ToXmlNmTokens(string value)
+        [return: NotNullIfNotNull("value")]
+        protected static string? ToXmlNmTokens(string? value)
         {
             return XmlCustomFormatter.ToXmlNmTokens(value);
         }
 
-        protected XmlQualifiedName ToXmlQualifiedName(string value)
+        protected XmlQualifiedName ToXmlQualifiedName(string? value)
         {
             return ToXmlQualifiedName(value, DecodeName);
         }
@@ -1166,7 +1171,7 @@ namespace System.Xml.Serialization
                 return new XmlQualifiedName(_r.NameTable.Add(localName), ns);
             }
         }
-        protected void UnknownAttribute(object o, XmlAttribute attr)
+        protected void UnknownAttribute(object? o, XmlAttribute attr)
         {
             UnknownAttribute(o, attr, null);
         }
@@ -1264,7 +1269,7 @@ namespace System.Xml.Serialization
                 lineNumber = linePosition = -1;
         }
 
-        protected void UnreferencedObject(string? id, object o)
+        protected void UnreferencedObject(string? id, object? o)
         {
             if (_events.OnUnreferencedObject != null)
             {
@@ -1290,22 +1295,22 @@ namespace System.Xml.Serialization
             return new InvalidOperationException(SR.Format(SR.XmlUnknownType, type.Name, type.Namespace, CurrentTag()));
         }
 
-        protected Exception CreateReadOnlyCollectionException(string? name)
+        protected Exception CreateReadOnlyCollectionException(string name)
         {
             return new InvalidOperationException(SR.Format(SR.XmlReadOnlyCollection, name));
         }
 
-        protected Exception CreateAbstractTypeException(string? name, string? ns)
+        protected Exception CreateAbstractTypeException(string name, string? ns)
         {
             return new InvalidOperationException(SR.Format(SR.XmlAbstractType, name, ns, CurrentTag()));
         }
 
-        protected Exception CreateInaccessibleConstructorException(string? typeName)
+        protected Exception CreateInaccessibleConstructorException(string typeName)
         {
             return new InvalidOperationException(SR.Format(SR.XmlConstructorInaccessible, typeName));
         }
 
-        protected Exception CreateCtorHasSecurityException(string? typeName)
+        protected Exception CreateCtorHasSecurityException(string typeName)
         {
             return new InvalidOperationException(SR.Format(SR.XmlConstructorHasSecurityAttributes, typeName));
         }
@@ -1462,15 +1467,13 @@ namespace System.Xml.Serialization
             }
         }
 
-
-
-        protected void AddFixup(Fixup fixup)
+        protected void AddFixup(Fixup? fixup)
         {
             if (_fixups == null) _fixups = new ArrayList();
             _fixups.Add(fixup);
         }
 
-        protected void AddFixup(CollectionFixup fixup)
+        protected void AddFixup(CollectionFixup? fixup)
         {
             if (_collectionFixups == null) _collectionFixups = new ArrayList();
             _collectionFixups.Add(fixup);
@@ -1537,7 +1540,7 @@ namespace System.Xml.Serialization
 
         protected void FixupArrayRefs(object fixup)
         {
-            Fixup f = (Fixup)fixup!;
+            Fixup f = (Fixup)fixup;
             Array array = (Array)f.Source!;
             for (int i = 0; i < array.Length; i++)
             {
@@ -1791,6 +1794,7 @@ namespace System.Xml.Serialization
             return ReadReferencingElement(name, ns, false, out fixupReference);
         }
 
+        [MemberNotNull(nameof(_callbacks))]
         protected object? ReadReferencingElement(string? name, string? ns, bool elementCanBeType, out string? fixupReference)
         {
             object? o = null;
@@ -1828,6 +1832,7 @@ namespace System.Xml.Serialization
             return o;
         }
 
+        [MemberNotNull(nameof(_callbacks))]
         internal void EnsureCallbackTables()
         {
             if (_callbacks == null)
@@ -1845,7 +1850,7 @@ namespace System.Xml.Serialization
         protected void AddReadCallback(string name, string ns, Type type, XmlSerializationReadCallback read)
         {
             XmlQualifiedName typeName = new XmlQualifiedName(_r.NameTable.Add(name), _r.NameTable.Add(ns));
-            _callbacks[typeName] = read;
+            _callbacks![typeName] = read;
             _types[typeName] = type;
             _typesReverse[type] = typeName;
         }
@@ -1958,14 +1963,14 @@ namespace System.Xml.Serialization
         {
             private readonly XmlSerializationFixupCallback _callback;
             private object? _source;
-            private readonly string[]? _ids;
+            private readonly string?[]? _ids;
 
             public Fixup(object? o, XmlSerializationFixupCallback callback, int count)
                 : this(o, callback, new string[count])
             {
             }
 
-            public Fixup(object? o, XmlSerializationFixupCallback callback, string[]? ids)
+            public Fixup(object? o, XmlSerializationFixupCallback callback, string?[]? ids)
             {
                 _callback = callback;
                 this.Source = o;
@@ -2024,7 +2029,7 @@ namespace System.Xml.Serialization
 
 
     ///<internalonly/>
-    public delegate void XmlSerializationCollectionFixupCallback(object? collection, object collectionItems);
+    public delegate void XmlSerializationCollectionFixupCallback(object? collection, object? collectionItems);
 
     ///<internalonly/>
     public delegate object? XmlSerializationReadCallback();

@@ -112,17 +112,20 @@ namespace System.Xml.Serialization
             return XmlConvert.ToString((ushort)value);
         }
 
-        internal static string FromXmlName(string name)
+        [return: NotNullIfNotNull("name")]
+        internal static string? FromXmlName(string? name)
         {
             return XmlConvert.EncodeName(name);
         }
 
-        internal static string FromXmlNCName(string ncName)
+        [return: NotNullIfNotNull("ncName")]
+        internal static string? FromXmlNCName(string? ncName)
         {
             return XmlConvert.EncodeLocalName(ncName);
         }
 
-        internal static string FromXmlNmToken(string nmToken)
+        [return: NotNullIfNotNull("nmToken")]
+        internal static string? FromXmlNmToken(string? nmToken)
         {
             return XmlConvert.EncodeNmToken(nmToken);
         }
@@ -398,22 +401,26 @@ namespace System.Xml.Serialization
             return (char)XmlConvert.ToUInt16(value);
         }
 
-        internal static string ToXmlName(string value)
+        [return: NotNullIfNotNull("value")]
+        internal static string? ToXmlName(string? value)
         {
             return XmlConvert.DecodeName(CollapseWhitespace(value));
         }
 
-        internal static string ToXmlNCName(string value)
+        [return: NotNullIfNotNull("value")]
+        internal static string? ToXmlNCName(string? value)
         {
             return XmlConvert.DecodeName(CollapseWhitespace(value));
         }
 
-        internal static string ToXmlNmToken(string value)
+        [return: NotNullIfNotNull("value")]
+        internal static string? ToXmlNmToken(string? value)
         {
             return XmlConvert.DecodeName(CollapseWhitespace(value));
         }
 
-        internal static string ToXmlNmTokens(string value)
+        [return: NotNullIfNotNull("value")]
+        internal static string? ToXmlNmTokens(string? value)
         {
             return XmlConvert.DecodeName(CollapseWhitespace(value));
         }

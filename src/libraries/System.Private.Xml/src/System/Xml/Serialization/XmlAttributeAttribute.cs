@@ -30,7 +30,7 @@ namespace System.Xml.Serialization
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
-        public XmlAttributeAttribute(string attributeName)
+        public XmlAttributeAttribute(string? attributeName)
         {
             _attributeName = attributeName;
         }
@@ -38,7 +38,7 @@ namespace System.Xml.Serialization
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
-        public XmlAttributeAttribute(Type type)
+        public XmlAttributeAttribute(Type? type)
         {
             _type = type;
         }
@@ -46,7 +46,7 @@ namespace System.Xml.Serialization
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
-        public XmlAttributeAttribute(string attributeName, Type type)
+        public XmlAttributeAttribute(string? attributeName, Type? type)
         {
             _attributeName = attributeName;
             _type = type;

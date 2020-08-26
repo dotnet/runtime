@@ -22,7 +22,7 @@ namespace System.Xml.Serialization
     {
         public XmlSchemaImporter(XmlSchemas schemas) : base(schemas, CodeGenerationOptions.GenerateProperties, new ImportContext()) { }
 
-        public XmlSchemaImporter(XmlSchemas schemas, CodeIdentifiers typeIdentifiers) : base(schemas, CodeGenerationOptions.GenerateProperties, new ImportContext(typeIdentifiers, false)) { }
+        public XmlSchemaImporter(XmlSchemas schemas, CodeIdentifiers? typeIdentifiers) : base(schemas, CodeGenerationOptions.GenerateProperties, new ImportContext(typeIdentifiers, false)) { }
 
         public XmlTypeMapping ImportDerivedTypeMapping(XmlQualifiedName name, Type? baseType)
         {
@@ -73,7 +73,7 @@ namespace System.Xml.Serialization
             return ImportSchemaType(typeName, null, false);
         }
 
-        public XmlTypeMapping ImportSchemaType(XmlQualifiedName typeName, Type baseType)
+        public XmlTypeMapping ImportSchemaType(XmlQualifiedName typeName, Type? baseType)
         {
             return ImportSchemaType(typeName, baseType, false);
         }
@@ -197,7 +197,7 @@ namespace System.Xml.Serialization
             return new XmlMembersMapping(Scope, element, XmlMappingAccess.Read | XmlMappingAccess.Write);
         }
 
-        public XmlMembersMapping ImportMembersMapping(string name, string ns, SoapSchemaMember[] members)
+        public XmlMembersMapping ImportMembersMapping(string name, string? ns, SoapSchemaMember[] members)
         {
             XmlSchemaComplexType type = new XmlSchemaComplexType();
             XmlSchemaSequence seq = new XmlSchemaSequence();

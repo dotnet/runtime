@@ -60,7 +60,7 @@ namespace System.Xml.Serialization
             }
         }
 
-        public void WriteObject(object o)
+        public void WriteObject(object? o)
         {
             XmlMapping xmlMapping = _mapping;
             if (xmlMapping is XmlTypeMapping xmlTypeMapping)
@@ -69,11 +69,11 @@ namespace System.Xml.Serialization
             }
             else if (xmlMapping is XmlMembersMapping xmlMembersMapping)
             {
-                GenerateMembersElement(o, xmlMembersMapping);
+                GenerateMembersElement(o!, xmlMembersMapping);
             }
         }
 
-        private void WriteObjectOfTypeElement(object o, XmlTypeMapping mapping)
+        private void WriteObjectOfTypeElement(object? o, XmlTypeMapping mapping)
         {
             GenerateTypeElement(o, mapping);
         }

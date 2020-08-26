@@ -1327,7 +1327,7 @@ namespace System.Xml.Serialization
 
             if (structMapping.TypeDesc.IsAbstract)
             {
-                throw CreateAbstractTypeException(structMapping.TypeName, structMapping.Namespace);
+                throw CreateAbstractTypeException(structMapping.TypeName!, structMapping.Namespace);
             }
             else
             {
@@ -1553,7 +1553,7 @@ namespace System.Xml.Serialization
             }
             else if (structMapping.TypeDesc.IsAbstract)
             {
-                throw CreateAbstractTypeException(structMapping.TypeName, structMapping.Namespace);
+                throw CreateAbstractTypeException(structMapping.TypeName!, structMapping.Namespace);
             }
             else
             {

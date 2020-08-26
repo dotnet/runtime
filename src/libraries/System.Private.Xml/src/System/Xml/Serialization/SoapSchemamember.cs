@@ -11,9 +11,9 @@ namespace System.Xml.Serialization
     public class SoapSchemaMember
     {
         private string? _memberName;
-        private XmlQualifiedName _type = XmlQualifiedName.Empty;
+        private XmlQualifiedName? _type = XmlQualifiedName.Empty;
 
-        public XmlQualifiedName MemberType
+        public XmlQualifiedName? MemberType
         {
             get { return _type; }
             set { _type = value; }

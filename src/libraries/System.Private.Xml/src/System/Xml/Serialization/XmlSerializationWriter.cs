@@ -110,7 +110,8 @@ namespace System.Xml.Serialization
             return DynamicAssemblies.Get(assemblyFullName);
         }
 
-        protected static string FromByteArrayHex(byte[] value)
+        [return: NotNullIfNotNull("value")]
+        protected static string? FromByteArrayHex(byte[]? value)
         {
             return XmlCustomFormatter.FromByteArrayHex(value);
         }
@@ -145,22 +146,26 @@ namespace System.Xml.Serialization
             return XmlCustomFormatter.FromEnum(value, values, ids, typeName);
         }
 
-        protected static string FromXmlName(string name)
+        [return: NotNullIfNotNull("name")]
+        protected static string? FromXmlName(string? name)
         {
             return XmlCustomFormatter.FromXmlName(name);
         }
 
-        protected static string FromXmlNCName(string ncName)
+        [return: NotNullIfNotNull("ncName")]
+        protected static string? FromXmlNCName(string? ncName)
         {
             return XmlCustomFormatter.FromXmlNCName(ncName);
         }
 
-        protected static string FromXmlNmToken(string nmToken)
+        [return: NotNullIfNotNull("nmToken")]
+        protected static string? FromXmlNmToken(string? nmToken)
         {
             return XmlCustomFormatter.FromXmlNmToken(nmToken);
         }
 
-        protected static string FromXmlNmTokens(string nmTokens)
+        [return: NotNullIfNotNull("nmTokens")]
+        protected static string? FromXmlNmTokens(string? nmTokens)
         {
             return XmlCustomFormatter.FromXmlNmTokens(nmTokens);
         }
@@ -415,7 +420,6 @@ namespace System.Xml.Serialization
             return FromXmlQualifiedName(xmlQualifiedName, true);
         }
 
-        [return: NotNullIfNotNull("xmlQualifiedName")]
         protected string? FromXmlQualifiedName(XmlQualifiedName? xmlQualifiedName, bool ignoreEmpty)
         {
             if (xmlQualifiedName == null) return null;
@@ -560,7 +564,7 @@ namespace System.Xml.Serialization
             return null;
         }
 
-        protected void WriteNullTagEncoded(string name)
+        protected void WriteNullTagEncoded(string? name)
         {
             WriteNullTagEncoded(name, null);
         }
@@ -574,7 +578,7 @@ namespace System.Xml.Serialization
             _w.WriteEndElement();
         }
 
-        protected void WriteNullTagLiteral(string name)
+        protected void WriteNullTagLiteral(string? name)
         {
             WriteNullTagLiteral(name, null);
         }
@@ -716,7 +720,7 @@ namespace System.Xml.Serialization
         }
 
 
-        protected void WriteElementEncoded(XmlNode node, string name, string? ns, bool isNullable, bool any)
+        protected void WriteElementEncoded(XmlNode? node, string name, string? ns, bool isNullable, bool any)
         {
             if (node == null)
             {
@@ -726,7 +730,7 @@ namespace System.Xml.Serialization
             WriteElement(node, name, ns, isNullable, any);
         }
 
-        protected void WriteElementLiteral(XmlNode node, string name, string? ns, bool isNullable, bool any)
+        protected void WriteElementLiteral(XmlNode? node, string name, string? ns, bool isNullable, bool any)
         {
             if (node == null)
             {
@@ -817,7 +821,7 @@ namespace System.Xml.Serialization
             return new InvalidOperationException(SR.Format(SR.XmlIllegalAnyElement, type.FullName));
         }
 
-        protected void WriteReferencingElement(string n, string ns, object o)
+        protected void WriteReferencingElement(string n, string? ns, object? o)
         {
             WriteReferencingElement(n, ns, o, false);
         }
@@ -891,7 +895,7 @@ namespace System.Xml.Serialization
                     string dims;
                     XmlQualifiedName qname = TypeScope.ParseWsdlArrayType(attr.Value, out dims, (container is XmlSchemaObject) ? (XmlSchemaObject)container : null);
 
-                    string value = FromXmlQualifiedName(qname, true) + dims;
+                    string? value = FromXmlQualifiedName(qname, true) + dims;
 
                     //<xsd:attribute xmlns:q3="s0" wsdl:arrayType="q3:FoosBase[]" xmlns:q4="http://schemas.xmlsoap.org/soap/encoding/" ref="q4:arrayType" />
                     WriteAttribute(Wsdl.ArrayType, Wsdl.Namespace, value);
@@ -984,7 +988,7 @@ namespace System.Xml.Serialization
             _w.WriteEndAttribute();
         }
 
-        protected void WriteAttribute(string prefix, string localName, string? ns, string? value)
+        protected void WriteAttribute(string? prefix, string localName, string? ns, string? value)
         {
             if (value == null) return;
             _w.WriteAttributeString(prefix, localName, null, value);
@@ -1266,12 +1270,12 @@ namespace System.Xml.Serialization
             }
             _w.WriteEndElement();
         }
-        protected void WritePotentiallyReferencingElement(string n, string? ns, object? o)
+        protected void WritePotentiallyReferencingElement(string? n, string? ns, object? o)
         {
             WritePotentiallyReferencingElement(n, ns, o, null, false, false);
         }
 
-        protected void WritePotentiallyReferencingElement(string n, string? ns, object? o, Type? ambientType)
+        protected void WritePotentiallyReferencingElement(string? n, string? ns, object? o, Type? ambientType)
         {
             WritePotentiallyReferencingElement(n, ns, o, ambientType, false, false);
         }

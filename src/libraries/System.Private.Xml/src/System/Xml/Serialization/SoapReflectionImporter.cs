@@ -92,22 +92,22 @@ namespace System.Xml.Serialization
             return xmlMapping;
         }
 
-        public XmlMembersMapping ImportMembersMapping(string elementName, string ns, XmlReflectionMember[] members)
+        public XmlMembersMapping ImportMembersMapping(string? elementName, string? ns, XmlReflectionMember[] members)
         {
             return ImportMembersMapping(elementName, ns, members, true, true, false);
         }
 
-        public XmlMembersMapping ImportMembersMapping(string elementName, string ns, XmlReflectionMember[] members, bool hasWrapperElement, bool writeAccessors)
+        public XmlMembersMapping ImportMembersMapping(string? elementName, string? ns, XmlReflectionMember[] members, bool hasWrapperElement, bool writeAccessors)
         {
             return ImportMembersMapping(elementName, ns, members, hasWrapperElement, writeAccessors, false);
         }
 
-        public XmlMembersMapping ImportMembersMapping(string elementName, string ns, XmlReflectionMember[] members, bool hasWrapperElement, bool writeAccessors, bool validate)
+        public XmlMembersMapping ImportMembersMapping(string? elementName, string? ns, XmlReflectionMember[] members, bool hasWrapperElement, bool writeAccessors, bool validate)
         {
             return ImportMembersMapping(elementName, ns, members, hasWrapperElement, writeAccessors, validate, XmlMappingAccess.Read | XmlMappingAccess.Write);
         }
 
-        public XmlMembersMapping ImportMembersMapping(string elementName, string ns, XmlReflectionMember[] members, bool hasWrapperElement, bool writeAccessors, bool validate, XmlMappingAccess access)
+        public XmlMembersMapping ImportMembersMapping(string? elementName, string? ns, XmlReflectionMember[] members, bool hasWrapperElement, bool writeAccessors, bool validate, XmlMappingAccess access)
         {
             ElementAccessor element = new ElementAccessor();
             element.IsSoap = true;
@@ -230,7 +230,7 @@ namespace System.Xml.Serialization
             return _root;
         }
 
-        private TypeMapping? GetTypeMapping(string typeName, string ns, TypeDesc typeDesc)
+        private TypeMapping? GetTypeMapping(string typeName, string? ns, TypeDesc typeDesc)
         {
             TypeMapping? mapping = (TypeMapping?)_types[typeName, ns];
             if (mapping == null) return null;
@@ -586,7 +586,7 @@ namespace System.Xml.Serialization
             return constant;
         }
 
-        private MembersMapping ImportMembersMapping(XmlReflectionMember[] xmlReflectionMembers, string ns, bool hasWrapperElement, bool writeAccessors, bool validateWrapperElement, RecursionLimiter limiter)
+        private MembersMapping ImportMembersMapping(XmlReflectionMember[] xmlReflectionMembers, string? ns, bool hasWrapperElement, bool writeAccessors, bool validateWrapperElement, RecursionLimiter limiter)
         {
             MembersMapping members = new MembersMapping();
             members.TypeDesc = _typeScope.GetTypeDesc(typeof(object[]));
@@ -626,7 +626,7 @@ namespace System.Xml.Serialization
             return members;
         }
 
-        private MemberMapping? ImportMemberMapping(XmlReflectionMember xmlReflectionMember, string ns, XmlReflectionMember[] xmlReflectionMembers, XmlSchemaForm form, RecursionLimiter limiter)
+        private MemberMapping? ImportMemberMapping(XmlReflectionMember xmlReflectionMember, string? ns, XmlReflectionMember[] xmlReflectionMembers, XmlSchemaForm form, RecursionLimiter limiter)
         {
             SoapAttributes a = xmlReflectionMember.SoapAttributes;
             if (a.SoapIgnore) return null;

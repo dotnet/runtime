@@ -17,7 +17,7 @@ namespace System.Xml.Serialization
     /// </devdoc>
     public class XmlAttributeOverrides
     {
-        private readonly Dictionary<Type, Dictionary<string, XmlAttributes>> _types = new Dictionary<Type, Dictionary<string, XmlAttributes>>();
+        private readonly Dictionary<Type, Dictionary<string, XmlAttributes?>> _types = new Dictionary<Type, Dictionary<string, XmlAttributes?>>();
 
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
@@ -30,12 +30,12 @@ namespace System.Xml.Serialization
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
-        public void Add(Type type, string member, XmlAttributes attributes)
+        public void Add(Type type, string member, XmlAttributes? attributes)
         {
-            Dictionary<string, XmlAttributes>? members;
+            Dictionary<string, XmlAttributes?>? members;
             if (!_types.TryGetValue(type, out members))
             {
-                members = new Dictionary<string, XmlAttributes>();
+                members = new Dictionary<string, XmlAttributes?>();
                 _types.Add(type, members);
             }
             else if (members.ContainsKey(member))
@@ -63,7 +63,7 @@ namespace System.Xml.Serialization
         {
             get
             {
-                Dictionary<string, XmlAttributes>? members;
+                Dictionary<string, XmlAttributes?>? members;
                 XmlAttributes? attributes;
                 return _types.TryGetValue(type, out members) && members.TryGetValue(member, out attributes)
                     ? attributes

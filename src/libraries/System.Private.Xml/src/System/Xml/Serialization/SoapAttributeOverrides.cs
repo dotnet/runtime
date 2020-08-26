@@ -15,12 +15,12 @@ namespace System.Xml.Serialization
     {
         private readonly Hashtable _types = new Hashtable();
 
-        public void Add(Type type, SoapAttributes attributes)
+        public void Add(Type type, SoapAttributes? attributes)
         {
             Add(type, string.Empty, attributes);
         }
 
-        public void Add(Type type, string member, SoapAttributes attributes)
+        public void Add(Type type, string member, SoapAttributes? attributes)
         {
             Hashtable? members = (Hashtable?)_types[type];
             if (members == null)

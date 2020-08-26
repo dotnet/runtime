@@ -120,7 +120,7 @@ namespace System.Xml.Serialization
             return List.Add(schema);
         }
 
-        public int Add(XmlSchema schema, Uri baseUri)
+        public int Add(XmlSchema schema, Uri? baseUri)
         {
             if (List.Contains(schema))
                 return List.IndexOf(schema);
@@ -157,7 +157,7 @@ namespace System.Xml.Serialization
             return List.Contains(schema);
         }
 
-        public bool Contains(string targetNamespace)
+        public bool Contains(string? targetNamespace)
         {
             return SchemaSet.Contains(targetNamespace);
         }
