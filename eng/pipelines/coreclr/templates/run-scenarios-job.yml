@@ -83,6 +83,8 @@ jobs:
             _Framework: ${{ framework }}
     steps:
     - ${{ parameters.steps }}
+    - script: echo "System.TeamProject:$(System.TeamProject);Build.Reason:$(Build.Reason)"
+      displayName: Dump Environment
     # run performance-setup
     - powershell: $(Build.SourcesDirectory)\eng\common\performance\performance-setup.ps1 $(IsInternal) -Framework $(_Framework) -Kind ${{ parameters.runKind }} ${{ parameters.extraSetupParameters }} ${{ parameters.additionalSetupParameters }}
       displayName: Performance Setup (Windows)
