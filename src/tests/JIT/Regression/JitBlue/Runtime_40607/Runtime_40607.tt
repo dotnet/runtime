@@ -1,0 +1,119 @@
+<#@ template debug="false" hostspecific="true" language="C#" #>
+<#@ output extension=".il" #>
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+.assembly extern System.Console
+{
+}
+.assembly extern System.Runtime
+{
+}
+.assembly Runtime_40607
+{
+}
+.module Runtime_40607.dll
+
+.class private auto ansi beforefieldinit Runtime_40607.Program extends [System.Runtime]System.Object
+{
+<#
+    foreach ((string varType, int sizeInBytes) in new [] { ("bool", 1), ("int8", 1), ("uint8", 1), ("int16", 2), ("uint16", 2), ("int32", 4), ("uint32", 4) })
+    {
+#>
+  .method private hidebysig static int32 DependsOnUnInitValue(<#= varType #> valueToWrite) cil managed noinlining
+  {
+    .maxstack  8
+    .locals (int32 V_0, <#= varType #> V_1)
+
+    IL_0000:  ldc.i4.1
+    IL_0001:  stloc.0
+    IL_0002:  br.s       IL_000b
+
+    IL_0004:  ldloc.1
+    IL_0005:  brfalse.s  IL_0011
+
+    IL_0007:  ldc.i4.0
+    IL_0008:  stloc.0
+    IL_0009:  br.s       IL_0011
+
+    IL_000b:  ldloca.s   V_1
+    IL_000d:  ldarg.0
+    IL_000e:  stind.i<#= sizeInBytes #>
+    IL_000f:  br.s       IL_0004
+
+    IL_0011:  ldloc.0
+    IL_0012:  ret
+  }
+
+<#
+    }
+#>
+
+  .method private hidebysig static int32 PoisonStackWith(int32 valueToWrite) cil managed noinlining
+  {
+    .maxstack  8
+    .locals (int32 V_0, int32 V_1)
+
+    IL_0000:  ldc.i4.1
+    IL_0001:  stloc.0
+    IL_0002:  br.s       IL_000b
+
+    IL_0004:  ldloc.1
+    IL_0005:  brfalse.s  IL_0014
+
+    IL_0007:  ldc.i4.0
+    IL_0008:  stloc.0
+    IL_0009:  br.s       IL_0014
+
+    IL_000b:  ldloca.s   V_1
+    IL_000d:  conv.u
+    IL_000e:  ldc.i4.0
+    IL_000f:  add
+    IL_0010:  ldarg.0
+    IL_0011:  stind.i4
+    IL_0012:  br.s       IL_0004
+
+    IL_0014:  ldloc.0
+    IL_0015:  ret
+  }
+
+  .method private hidebysig static int32 Main(string[] args) cil managed
+  {
+    .entrypoint
+    // Code size       75 (0x4b)
+    .maxstack  2
+    .locals init (int32 V_0)
+
+    ldc.i4.s   100
+    stloc.0
+<#
+    string[] varTypes = new string[] { "bool", "int8", "uint8", "int16", "uint16", "int32", "uint32" };
+
+    for (int i = 0; i < varTypes.Length; i++)
+    {
+        string varType = varTypes[i];
+        string lblName = string.Format("IL_{0:x4}", i);
+#>
+    ldc.i4     0xdeadbeef
+    call       int32 Runtime_40607.Program::PoisonStackWith(int32)
+    pop
+
+    ldc.i4.0
+    call       int32 Runtime_40607.Program::DependsOnUnInitValue(<#= varType #>)
+    ldc.i4.1
+    beq.s      <#= lblName #>
+
+    ldstr      "DependsOnUnInitValue(<#= varType #>) has failed"
+    call       void [System.Console]System.Console::WriteLine(string)
+
+    ldc.i4.0
+    stloc.0
+
+<#= lblName #>:
+<#
+    }
+#>
+    ldloc.0
+    ret
+  }
+}
