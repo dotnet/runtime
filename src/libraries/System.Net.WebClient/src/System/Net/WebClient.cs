@@ -53,6 +53,7 @@ namespace System.Net
         private SendOrPostCallback? _reportDownloadProgressChanged;
         private SendOrPostCallback? _reportUploadProgressChanged;
 
+        [Obsolete(Obsoletions.WebRequestMessage, DiagnosticId = Obsoletions.WebRequestDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public WebClient()
         {
             // We don't know if derived types need finalizing, but WebClient doesn't.
