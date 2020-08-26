@@ -37416,11 +37416,6 @@ void gc_heap::update_recorded_gen_data (last_recorded_gc_info* gc_info)
 
 void gc_heap::do_post_gc()
 {
-    if (!settings.concurrent)
-    {
-        initGCShadow();
-    }
-
 #ifdef MULTIPLE_HEAPS
     gc_heap* hp = g_heaps[0];
 #else
