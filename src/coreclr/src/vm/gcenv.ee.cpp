@@ -1610,12 +1610,12 @@ void GCToEEInterface::AnalyzeSurvivorsFinished(size_t gcIndex, int condemnedGene
 #endif
         {
             gcGenAnalysisEventPipeSession->Resume();
-            FireEtwGenAwareBegin();
+            FireEtwGenAwareBegin((int)gcIndex, GetClrInstanceId());
             s_forcedGCInProgress = true;
             GCProfileWalkHeap(true);
             s_forcedGCInProgress = false;
             reportGenerationBounds();
-            FireEtwGenAwareEnd();
+            FireEtwGenAwareEnd((int)gcIndex, GetClrInstanceId());
             gcGenAnalysisEventPipeSession->Pause();
             gcGenAnalysisState = GcGenAnalysisState::Done;
             EnableFinalization(true);
