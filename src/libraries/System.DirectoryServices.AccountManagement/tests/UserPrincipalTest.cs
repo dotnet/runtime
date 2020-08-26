@@ -31,7 +31,7 @@ namespace System.DirectoryServices.AccountManagement.Tests
 
         public void ComputedUACCheck()
         {
-            // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Unit test dummy credentials.")]
+            // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Unit test password.")]
             string username = "Administrator", password = "Adrumble@6";
             //TODO: don't assume it exists, create it if its not
             string OU = "TestNull";
