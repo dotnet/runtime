@@ -155,15 +155,13 @@ namespace DebuggerTests
                var dt = new DateTime(5, 6, 7, 8, 9, 10);
                await CheckProps(locals, new
                {
-                   dt = TValueType("System.DateTime", dt.ToString()),
+                   dt = TDateTime(dt),
                    dtp = TPointer("System.DateTime*"),
                    dtp_null = TPointer("System.DateTime*", is_null: true),
 
                    gsp = TPointer("DebuggerTests.GenericStructWithUnmanagedT<System.DateTime>*"),
                    gsp_null = TPointer("DebuggerTests.GenericStructWithUnmanagedT<System.DateTime>*")
                }, "locals", num_fields: 26);
-
-               await CheckDateTime(locals, "dt", dt);
 
                // *dtp
                var props = await GetObjectOnLocals(locals, "dtp");
@@ -178,7 +176,7 @@ namespace DebuggerTests
                    var gsp_deref_props = await GetObjectOnLocals(gsp_props, "*gsp");
                    await CheckProps(gsp_deref_props, new
                    {
-                       Value = TValueType("System.DateTime", gs_dt.ToString()),
+                       Value = TDateTime(gs_dt),
                        IntField = TNumber(4),
                        DTPP = TPointer("System.DateTime**")
                    }, "locals#gsp#deref");
@@ -201,7 +199,7 @@ namespace DebuggerTests
                    var gsp_deref_props = await GetObjectOnLocals(gsp_w_n_props, "*gsp_null");
                    await CheckProps(gsp_deref_props, new
                    {
-                       Value = TValueType("System.DateTime", gs_dt.ToString()),
+                       Value = TDateTime(gs_dt),
                        IntField = TNumber(4),
                        DTPP = TPointer("System.DateTime**")
                    }, "locals#gsp#deref");
@@ -282,7 +280,7 @@ namespace DebuggerTests
                        var gsp_deref_props = await GetObjectOnLocals(actual_elems[1], "*[1]");
                        await CheckProps(gsp_deref_props, new
                        {
-                           Value = TValueType("System.DateTime", gs_dt.ToString()),
+                           Value = TDateTime(gs_dt),
                            IntField = TNumber(4),
                            DTPP = TPointer("System.DateTime**")
                        }, "locals#gsp#deref");
@@ -300,7 +298,7 @@ namespace DebuggerTests
                        var gsp_deref_props = await GetObjectOnLocals(actual_elems[2], "*[2]");
                        await CheckProps(gsp_deref_props, new
                        {
-                           Value = TValueType("System.DateTime", gs_dt.ToString()),
+                           Value = TDateTime(gs_dt),
                            IntField = TNumber(4),
                            DTPP = TPointer("System.DateTime**")
                        }, "locals#gsp#deref");
@@ -494,8 +492,8 @@ namespace DebuggerTests
                {
                    var actual_elems = await CheckArrayElements(dtpa_elems, new[]
                    {
-                        TValueType("System.DateTime", dt.ToString()),
-                            null
+                        TDateTime(dt),
+                        null
                    });
 
                    await CheckDateTime(actual_elems[0], "*[0]", dt);

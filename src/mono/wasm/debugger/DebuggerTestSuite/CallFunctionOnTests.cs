@@ -272,7 +272,7 @@ namespace DebuggerTests
                    var act_i_props = await GetProperties(act_i["value"]["objectId"]?.Value<string>());
                    await CheckProps(act_i_props, new
                    {
-                       dt = TValueType("System.DateTime", new DateTime(2020 + (i * 2), 1, 2, 3, 4, 5).ToString()),
+                       dt = TDateTime(new DateTime(2020 + (i * 2), 1, 2, 3, 4, 5)),
                        gs = TValueType("Math.GenericStruct<System.DateTime>")
                    }, "obj_own ss_arr[{i}]");
 
@@ -320,11 +320,9 @@ namespace DebuggerTests
                var dt = new DateTime(2020, 1, 2, 3, 4, 5);
                await CheckProps(obj_own_val, new
                {
-                   dt = TValueType("System.DateTime", dt.ToString()),
+                   dt = TDateTime(dt),
                    gs = TValueType("Math.GenericStruct<System.DateTime>")
                }, $"obj_own-props");
-
-               await CheckDateTime(obj_own_val, "dt", dt);
 
                var gs_props = await GetObjectOnLocals(obj_own_val, "gs");
                await CheckProps(gs_props, new
@@ -649,15 +647,8 @@ namespace DebuggerTests
 
                    // Auto properties show w/o getters, because they have
                    // a backing field
-                   DTAutoProperty = TValueType("System.DateTime", dt.ToString())
+                   DTAutoProperty = TDateTime(dt)
                }, local_name);
-
-               // Automatic properties don't have invokable getters, because we can get their
-               // value from the backing field directly
-               {
-                   var dt_auto_props = await GetObjectOnLocals(obj_props, "DTAutoProperty");
-                   await CheckDateTime(obj_props, "DTAutoProperty", dt);
-               }
 
                // Invoke getters, and check values
 
@@ -669,8 +660,7 @@ namespace DebuggerTests
                await CheckValue(res.Value["result"], JObject.FromObject(new { type = "string", value = $"String property, V: 0xDEADBEEF" }), $"{local_name}.String");
 
                res = await InvokeGetter(obj, get_args_fn(new[] { "DT" }), cfo_fn);
-               await CheckValue(res.Value["result"], TValueType("System.DateTime", dt.ToString()), $"{local_name}.DT");
-               await CheckDateTimeValue(res.Value["result"], dt);
+               await CheckValue(res.Value["result"], TDateTime(dt), $"{local_name}.DT");
 
                // Check arrays through getters
 
@@ -696,8 +686,8 @@ namespace DebuggerTests
                    var arr_elems = await GetProperties(res.Value["result"]?["objectId"]?.Value<string>());
                    var exp_elems = new[]
                    {
-                        TValueType("System.DateTime", dt0.ToString()),
-                        TValueType("System.DateTime", dt1.ToString()),
+                        TDateTime(dt0),
+                        TDateTime(dt1)
                    };
 
                    await CheckProps(arr_elems, exp_elems, $"{local_name}.DTArray");
