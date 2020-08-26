@@ -69,16 +69,16 @@ namespace System
         };
 
         // Return true for all characters below or equal U+00ff, which is ASCII + Latin-1 Supplement.
-        private static bool IsLatin1(char ch) => (uint)ch < (uint)Latin1CharInfo.Length;
+        private static bool IsLatin1(char c) => (uint)c < (uint)Latin1CharInfo.Length;
 
         // Return true for all characters below or equal U+007f, which is ASCII.
-        private static bool IsAscii(char ch) => (uint)ch <= '\x007f';
+        public static bool IsAscii(char c) => (uint)c <= '\x007f';
 
         // Return the Unicode category for Unicode character <= 0x00ff.
-        private static UnicodeCategory GetLatin1UnicodeCategory(char ch)
+        private static UnicodeCategory GetLatin1UnicodeCategory(char c)
         {
-            Debug.Assert(IsLatin1(ch), "char.GetLatin1UnicodeCategory(): ch should be <= 00ff");
-            return (UnicodeCategory)(Latin1CharInfo[ch] & UnicodeCategoryMask);
+            Debug.Assert(IsLatin1(c), "char.GetLatin1UnicodeCategory(): c should be <= 00ff");
+            return (UnicodeCategory)(Latin1CharInfo[c] & UnicodeCategoryMask);
         }
 
         //
