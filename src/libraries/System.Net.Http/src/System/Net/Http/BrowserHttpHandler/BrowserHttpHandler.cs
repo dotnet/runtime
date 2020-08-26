@@ -34,6 +34,10 @@ namespace System.Net.Http
 
         private static readonly HttpRequestOptionsKey<bool> EnableStreamingResponse = new HttpRequestOptionsKey<bool>("WebAssemblyEnableStreamingResponse");
         private static readonly HttpRequestOptionsKey<IDictionary<string, object>> FetchOptions = new HttpRequestOptionsKey<IDictionary<string, object>>("WebAssemblyFetchOptions");
+        private bool _allowAutoRedirect = HttpHandlerDefaults.DefaultAutomaticRedirection;
+        private int _maxAutomaticRedirections = HttpHandlerDefaults.DefaultMaxAutomaticRedirections;
+        private bool _disposed;
+        private bool _handlerStarted;
 
         /// <summary>
         /// Gets whether the current Browser supports streaming responses
@@ -43,6 +47,23 @@ namespace System.Net.Http
         {
             using (var streamingSupported = new Function("return typeof Response !== 'undefined' && 'body' in Response.prototype && typeof ReadableStream === 'function'"))
                 return (bool)streamingSupported.Call();
+        }
+
+        private void CheckDisposed()
+        {
+            if (_disposed)
+            {
+                throw new ObjectDisposedException(nameof(BrowserHttpHandler));
+            }
+        }
+
+        private void CheckDisposedOrStarted()
+        {
+            CheckDisposed();
+            if (_handlerStarted)
+            {
+                throw new InvalidOperationException(SR.net_http_operation_started);
+            }
         }
 
         public bool UseCookies
@@ -95,14 +116,27 @@ namespace System.Net.Http
 
         public bool AllowAutoRedirect
         {
-            get => throw new PlatformNotSupportedException();
-            set => throw new PlatformNotSupportedException();
+            get => _allowAutoRedirect;
+            set
+            {
+                CheckDisposedOrStarted();
+                _allowAutoRedirect = value;
+            }
         }
 
         public int MaxAutomaticRedirections
         {
-            get => throw new PlatformNotSupportedException();
-            set => throw new PlatformNotSupportedException();
+            get => _maxAutomaticRedirections;
+            set
+            {
+                if (value < 1)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(value), value, SR.Format(SR.net_http_value_must_be_greater_than, 0));
+                }
+
+                CheckDisposedOrStarted();
+                _maxAutomaticRedirections = value;
+            }
         }
 
         public int MaxConnectionsPerServer
@@ -125,15 +159,27 @@ namespace System.Net.Http
 
         public bool SupportsAutomaticDecompression => false;
         public bool SupportsProxy => false;
-        public bool SupportsRedirectConfiguration => false;
+        public bool SupportsRedirectConfiguration => true;
 
         private Dictionary<string, object?>? _properties;
         public IDictionary<string, object?> Properties => _properties ??= new Dictionary<string, object?>();
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing && !_disposed)
+            {
+                _disposed = true;
+                _handlerStarted = false;
+            }
+
+            base.Dispose(disposing);
+        }
 
         protected internal override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
             try
             {
+                _handlerStarted = true;
                 var requestObject = new JSObject();
 
                 if (request.Options.TryGetValue(FetchOptions, out IDictionary<string, object>? fetchOptions))
@@ -145,6 +191,24 @@ namespace System.Net.Http
                 }
 
                 requestObject.SetObjectProperty("method", request.Method.Method);
+
+                // Allowing or Disallowing redirects.
+                if (AllowAutoRedirect)
+                {
+                    requestObject.SetObjectProperty("redirect", "follow");
+                }
+                else
+                {
+                    // Here we will set redirect to `manual` so that we do not crash with an exception
+                    //
+                    // https://developer.mozilla.org/en-US/docs/Web/API/Response/type
+                    //
+                    // other issues from whatwg/fetch:
+                    //
+                    // https://github.com/whatwg/fetch/issues/763
+                    // https://github.com/whatwg/fetch/issues/601
+                    requestObject.SetObjectProperty("redirect", "manual");
+                }
 
                 // We need to check for body content
                 if (request.Content != null)
@@ -224,8 +288,19 @@ namespace System.Net.Http
                 JSObject t = (JSObject)await response.ConfigureAwait(continueOnCapturedContext: true);
 
                 var status = new WasmFetchResponse(t, abortController, abortCts, abortRegistration);
-
                 HttpResponseMessage httpResponse = new HttpResponseMessage((HttpStatusCode)status.Status);
+
+                // Here we will set the ReasonPhrase so that it can be evaluated later.
+                // We do not have a status code but this will signal some type of what happened
+                // after interrogating the status code for success or not i.e. IsSuccessStatusCode
+                //
+                // https://developer.mozilla.org/en-US/docs/Web/API/Response/type
+                // opaqueredirect: The fetch request was made with redirect: "manual".
+                // The Response's status is 0, headers are empty, body is null and trailer is empty.
+                if (!string.IsNullOrEmpty(status.ResponseType) && status.ResponseType == "opaqueredirect")
+                {
+                    httpResponse.SetReasonPhraseWithoutValidation(status.ResponseType);
+                }
 
                 bool streamingEnabled = false;
                 if (StreamingSupported)
