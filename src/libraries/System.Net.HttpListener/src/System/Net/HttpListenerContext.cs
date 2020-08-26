@@ -9,13 +9,13 @@ namespace System.Net
 {
     public sealed unsafe partial class HttpListenerContext
     {
-        internal HttpListener _listener;
-        private HttpListenerResponse _response;
-        private IPrincipal _user;
+        internal HttpListener? _listener;
+        private HttpListenerResponse? _response;
+        private IPrincipal? _user;
 
         public HttpListenerRequest Request { get; }
 
-        public IPrincipal User => _user;
+        public IPrincipal? User => _user;
 
         // This can be used to cache the results of HttpListener.AuthenticationSchemeSelectorDelegate.
         internal AuthenticationSchemes AuthenticationSchemes { get; set; }
