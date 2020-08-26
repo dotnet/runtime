@@ -246,8 +246,6 @@ if [[ "$__SkipConfigure" == 0 && "$__CodeCoverage" == 1 ]]; then
 fi
 
 if [[ "$__TargetOS" == OSX ]]; then
-    # set default OSX deployment target
-    __CMakeArgs="-DCMAKE_OSX_DEPLOYMENT_TARGET=10.13 $__CMakeArgs"
     if [[ "$__BuildArch" == x64 ]]; then
         __CMakeArgs="-DCMAKE_OSX_ARCHITECTURES=\"x86_64\" $__CMakeArgs"
     elif [[ "$__BuildArch" == arm64 ]]; then
