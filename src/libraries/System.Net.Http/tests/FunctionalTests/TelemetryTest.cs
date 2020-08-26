@@ -31,10 +31,13 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [OuterLoop]
-        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public void EventSource_SuccessfulRequest_LogsStartStop()
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData("String")]
+        [InlineData("ByteArray")]
+        [InlineData("Stream")]
+        public void EventSource_SuccessfulRequest_LogsStartStop(string testMethod)
         {
-            RemoteExecutor.Invoke(async useVersionString =>
+            RemoteExecutor.Invoke(async (useVersionString, testMethod) =>
             {
                 Version version = Version.Parse(useVersionString);
                 using var listener = new TestEventListener("System.Net.Http", EventLevel.Verbose, eventCounterInterval: 0.1d);
@@ -46,7 +49,21 @@ namespace System.Net.Http.Functional.Tests
                         async uri =>
                         {
                             using HttpClient client = CreateHttpClient(useVersionString);
-                            await client.GetStringAsync(uri);
+
+                            switch (testMethod)
+                            {
+                                case "String":
+                                    await client.GetStringAsync(uri);
+                                    break;
+
+                                case "ByteArray":
+                                    await client.GetByteArrayAsync(uri);
+                                    break;
+
+                                case "Stream":
+                                    await client.GetStreamAsync(uri);
+                                    break;
+                            }
                         },
                         async server =>
                         {
@@ -83,8 +100,10 @@ namespace System.Net.Http.Functional.Tests
 
                 Assert.Single(events, e => e.EventName == "ResponseHeadersBegin");
 
+                Assert.Single(events, e => e.EventName == "ResponseContentBegin");
+
                 VerifyEventCounters(events, requestCount: 1, shouldHaveFailures: false);
-            }, UseVersion.ToString()).Dispose();
+            }, UseVersion.ToString(), testMethod).Dispose();
         }
 
         [OuterLoop]

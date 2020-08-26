@@ -163,24 +163,29 @@ namespace System.Net.Http
         public Task<string> GetStringAsync(string? requestUri, CancellationToken cancellationToken) =>
             GetStringAsync(CreateUri(requestUri), cancellationToken);
 
-        public Task<string> GetStringAsync(Uri? requestUri, CancellationToken cancellationToken) =>
-            GetStringAsyncCore(requestUri, cancellationToken);
+        public Task<string> GetStringAsync(Uri? requestUri, CancellationToken cancellationToken)
+        {
+            HttpRequestMessage request = CreateRequestMessage(HttpMethod.Get, requestUri);
 
-        private async Task<string> GetStringAsyncCore(Uri? requestUri, CancellationToken cancellationToken)
+            // Called outside of async state machine to propagate certain exception even without awaiting the returned task.
+            CheckRequestBeforeSend(request);
+
+            return GetStringAsyncCore(request, cancellationToken);
+        }
+
+        private async Task<string> GetStringAsyncCore(HttpRequestMessage request, CancellationToken cancellationToken)
         {
             bool telemetryStarted = false;
-            bool responseTelemetryStarted = false;
-
-            if (HttpTelemetry.Log.IsEnabled())
+            if (HttpTelemetry.Log.IsEnabled() && request.RequestUri != null)
             {
-                HttpTelemetry.Log.GetHelperStart(nameof(GetStringAsync));
+                HttpTelemetry.Log.RequestStart(request);
                 telemetryStarted = true;
             }
 
             try
             {
                 // Wait for the response message.
-                using (HttpResponseMessage responseMessage = await GetAsync(requestUri, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false))
+                using (HttpResponseMessage responseMessage = await SendAsyncCore(request, HttpCompletionOption.ResponseHeadersRead, async: true, emitTelemetryStartStop: false, cancellationToken).ConfigureAwait(false))
                 {
                     // Make sure it completed successfully.
                     responseMessage.EnsureSuccessStatusCode();
@@ -191,8 +196,7 @@ namespace System.Net.Http
                     {
                         if (HttpTelemetry.Log.IsEnabled())
                         {
-                            HttpTelemetry.Log.ResponseContentStart();
-                            responseTelemetryStarted = true;
+                            HttpTelemetry.Log.ResponseContentBegin();
                         }
     #if NET46
                         return await c.ReadAsStringAsync().ConfigureAwait(false);
@@ -226,18 +230,16 @@ namespace System.Net.Http
                     return string.Empty;
                 }
             }
+            catch when (LogRequestAborted(telemetryStarted))
+            {
+                // Unreachable as LogRequestAborted will return false
+                throw;
+            }
             finally
             {
-                if (HttpTelemetry.Log.IsEnabled())
+                if (HttpTelemetry.Log.IsEnabled() && telemetryStarted)
                 {
-                    if (responseTelemetryStarted)
-                    {
-                        HttpTelemetry.Log.ResponseContentStop();
-                    }
-                    if (telemetryStarted)
-                    {
-                        HttpTelemetry.Log.GetHelperStop();
-                    }
+                    HttpTelemetry.Log.RequestStop();
                 }
             }
         }
@@ -251,24 +253,29 @@ namespace System.Net.Http
         public Task<byte[]> GetByteArrayAsync(string? requestUri, CancellationToken cancellationToken) =>
             GetByteArrayAsync(CreateUri(requestUri), cancellationToken);
 
-        public Task<byte[]> GetByteArrayAsync(Uri? requestUri, CancellationToken cancellationToken) =>
-            GetByteArrayAsyncCore(requestUri, cancellationToken);
+        public Task<byte[]> GetByteArrayAsync(Uri? requestUri, CancellationToken cancellationToken)
+        {
+            HttpRequestMessage request = CreateRequestMessage(HttpMethod.Get, requestUri);
 
-        private async Task<byte[]> GetByteArrayAsyncCore(Uri? requestUri, CancellationToken cancellationToken)
+            // Called outside of async state machine to propagate certain exception even without awaiting the returned task.
+            CheckRequestBeforeSend(request);
+
+            return GetByteArrayAsyncCore(request, cancellationToken);
+        }
+
+        private async Task<byte[]> GetByteArrayAsyncCore(HttpRequestMessage request, CancellationToken cancellationToken)
         {
             bool telemetryStarted = false;
-            bool responseTelemetryStarted = false;
-
-            if (HttpTelemetry.Log.IsEnabled())
+            if (HttpTelemetry.Log.IsEnabled() && request.RequestUri != null)
             {
-                HttpTelemetry.Log.GetHelperStart(nameof(GetByteArrayAsync));
+                HttpTelemetry.Log.RequestStart(request);
                 telemetryStarted = true;
             }
 
             try
             {
                 // Wait for the response message.
-                using (HttpResponseMessage responseMessage = await GetAsync(requestUri, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false))
+                using (HttpResponseMessage responseMessage = await SendAsyncCore(request, HttpCompletionOption.ResponseHeadersRead, async: true, emitTelemetryStartStop: false, cancellationToken).ConfigureAwait(false))
                 {
                     // Make sure it completed successfully.
                     responseMessage.EnsureSuccessStatusCode();
@@ -279,8 +286,7 @@ namespace System.Net.Http
                     {
                         if (HttpTelemetry.Log.IsEnabled())
                         {
-                            HttpTelemetry.Log.ResponseContentStart();
-                            responseTelemetryStarted = true;
+                            HttpTelemetry.Log.ResponseContentBegin();
                         }
     #if NET46
                         return await c.ReadAsByteArrayAsync().ConfigureAwait(false);
@@ -345,18 +351,16 @@ namespace System.Net.Http
                     return Array.Empty<byte>();
                 }
             }
+            catch when (LogRequestAborted(telemetryStarted))
+            {
+                // Unreachable as LogRequestAborted will return false
+                throw;
+            }
             finally
             {
-                if (HttpTelemetry.Log.IsEnabled())
+                if (HttpTelemetry.Log.IsEnabled() && telemetryStarted)
                 {
-                    if (responseTelemetryStarted)
-                    {
-                        HttpTelemetry.Log.ResponseContentStop();
-                    }
-                    if (telemetryStarted)
-                    {
-                        HttpTelemetry.Log.GetHelperStop();
-                    }
+                    HttpTelemetry.Log.RequestStop();
                 }
             }
         }
@@ -370,51 +374,62 @@ namespace System.Net.Http
         public Task<Stream> GetStreamAsync(Uri? requestUri) =>
             GetStreamAsync(requestUri, CancellationToken.None);
 
-        public Task<Stream> GetStreamAsync(Uri? requestUri, CancellationToken cancellationToken) =>
-            FinishGetStreamAsync(requestUri, cancellationToken);
+        public Task<Stream> GetStreamAsync(Uri? requestUri, CancellationToken cancellationToken)
+        {
+            HttpRequestMessage request = CreateRequestMessage(HttpMethod.Get, requestUri);
 
-        private async Task<Stream> FinishGetStreamAsync(Uri? requestUri, CancellationToken cancellationToken)
+            // Called outside of async state machine to propagate certain exception even without awaiting the returned task.
+            CheckRequestBeforeSend(request);
+
+            return GetStreamAsyncCore(request, cancellationToken);
+        }
+
+        private async Task<Stream> GetStreamAsyncCore(HttpRequestMessage request, CancellationToken cancellationToken)
         {
             bool telemetryStarted = false;
-            bool responseTelemetryStarted = false;
-
-            if (HttpTelemetry.Log.IsEnabled())
+            if (HttpTelemetry.Log.IsEnabled() && request.RequestUri != null)
             {
-                HttpTelemetry.Log.GetHelperStart(nameof(GetStreamAsync));
+                HttpTelemetry.Log.RequestStart(request);
                 telemetryStarted = true;
             }
 
             try
             {
-                HttpResponseMessage response = await GetAsync(requestUri, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
+                HttpResponseMessage response = await SendAsyncCore(request, HttpCompletionOption.ResponseHeadersRead, async: true, emitTelemetryStartStop: false, cancellationToken).ConfigureAwait(false);
                 response.EnsureSuccessStatusCode();
                 HttpContent? c = response.Content;
                 if (c != null)
                 {
                     if (HttpTelemetry.Log.IsEnabled())
                     {
-                        HttpTelemetry.Log.ResponseContentStart();
-                        responseTelemetryStarted = true;
+                        HttpTelemetry.Log.ResponseContentBegin();
                     }
 
                     return c.TryReadAsStream() ?? await c.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
                 }
                 return Stream.Null;
             }
+            catch when (LogRequestAborted(telemetryStarted))
+            {
+                // Unreachable as LogRequestAborted will return false
+                throw;
+            }
             finally
             {
-                if (HttpTelemetry.Log.IsEnabled())
+                if (HttpTelemetry.Log.IsEnabled() && telemetryStarted)
                 {
-                    if (responseTelemetryStarted)
-                    {
-                        HttpTelemetry.Log.ResponseContentStop();
-                    }
-                    if (telemetryStarted)
-                    {
-                        HttpTelemetry.Log.GetHelperStop();
-                    }
+                    HttpTelemetry.Log.RequestStop();
                 }
             }
+        }
+
+        private static bool LogRequestAborted(bool telemetryStarted)
+        {
+            if (HttpTelemetry.Log.IsEnabled() && telemetryStarted)
+            {
+                HttpTelemetry.Log.RequestAborted();
+            }
+            return false;
         }
 
         #endregion Simple Get Overloads
@@ -581,7 +596,7 @@ namespace System.Net.Http
             // Called outside of async state machine to propagate certain exception even without awaiting the returned task.
             CheckRequestBeforeSend(request);
 
-            ValueTask<HttpResponseMessage> sendTask = SendAsyncCore(request, completionOption, async: false, cancellationToken);
+            ValueTask<HttpResponseMessage> sendTask = SendAsyncCore(request, completionOption, async: false, emitTelemetryStartStop: true, cancellationToken);
             Debug.Assert(sendTask.IsCompleted);
             return sendTask.GetAwaiter().GetResult();
         }
@@ -608,7 +623,7 @@ namespace System.Net.Http
             // Called outside of async state machine to propagate certain exception even without awaiting the returned task.
             CheckRequestBeforeSend(request);
 
-            return SendAsyncCore(request, completionOption, async: true, cancellationToken).AsTask();
+            return SendAsyncCore(request, completionOption, async: true, emitTelemetryStartStop: true, cancellationToken).AsTask();
         }
 
         private void CheckRequestBeforeSend(HttpRequestMessage request)
@@ -627,7 +642,7 @@ namespace System.Net.Http
         }
 
         private async ValueTask<HttpResponseMessage> SendAsyncCore(HttpRequestMessage request, HttpCompletionOption completionOption,
-            bool async, CancellationToken cancellationToken)
+            bool async, bool emitTelemetryStartStop, CancellationToken cancellationToken)
         {
             // Combines given cancellationToken with the global one and the timeout.
             CancellationTokenSource cts = PrepareCancellationTokenSource(cancellationToken, out bool disposeCts, out long timeoutTime);
@@ -638,15 +653,9 @@ namespace System.Net.Http
             bool telemetryStarted = false;
             if (HttpTelemetry.Log.IsEnabled())
             {
-                if (request.RequestUri != null)
+                if (emitTelemetryStartStop && request.RequestUri != null)
                 {
-                    HttpTelemetry.Log.RequestStart(
-                        request.RequestUri.Scheme,
-                        request.RequestUri.IdnHost,
-                        request.RequestUri.Port,
-                        request.RequestUri.PathAndQuery,
-                        request.Version.Major,
-                        request.Version.Minor);
+                    HttpTelemetry.Log.RequestStart(request);
                     telemetryStarted = true;
                 }
             }
@@ -667,31 +676,19 @@ namespace System.Net.Http
                 // Buffer the response content if we've been asked to and we have a Content to buffer.
                 if (buffered && response.Content != null)
                 {
-                    bool responseTelemetryStarted = false;
                     if (HttpTelemetry.Log.IsEnabled())
                     {
-                        HttpTelemetry.Log.ResponseContentStart();
-                        responseTelemetryStarted = true;
+                        HttpTelemetry.Log.ResponseContentBegin();
                     }
 
-                    try
+                    if (async)
                     {
-                        if (async)
-                        {
-                            await response.Content.LoadIntoBufferAsync(_maxResponseContentBufferSize, cts.Token).ConfigureAwait(false);
+                        await response.Content.LoadIntoBufferAsync(_maxResponseContentBufferSize, cts.Token).ConfigureAwait(false);
 
-                        }
-                        else
-                        {
-                            response.Content.LoadIntoBuffer(_maxResponseContentBufferSize, cts.Token);
-                        }
                     }
-                    finally
+                    else
                     {
-                        if (HttpTelemetry.Log.IsEnabled() && responseTelemetryStarted)
-                        {
-                            HttpTelemetry.Log.ResponseContentStop();
-                        }
+                        response.Content.LoadIntoBuffer(_maxResponseContentBufferSize, cts.Token);
                     }
                 }
 
@@ -700,10 +697,7 @@ namespace System.Net.Http
             }
             catch (Exception e)
             {
-                if (HttpTelemetry.Log.IsEnabled() && telemetryStarted)
-                {
-                    HttpTelemetry.Log.RequestAborted();
-                }
+                LogRequestAborted(telemetryStarted);
 
                 response?.Dispose();
 

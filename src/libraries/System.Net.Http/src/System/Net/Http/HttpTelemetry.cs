@@ -36,10 +36,24 @@ namespace System.Net.Http
         // - A stop event's event id must be next one after its start event.
 
         [Event(1, Level = EventLevel.Informational)]
-        public void RequestStart(string scheme, string host, int port, string pathAndQuery, int versionMajor, int versionMinor)
+        private void RequestStart(string scheme, string host, int port, string pathAndQuery, int versionMajor, int versionMinor)
         {
             Interlocked.Increment(ref _startedRequests);
             WriteEvent(eventId: 1, scheme, host, port, pathAndQuery, versionMajor, versionMinor);
+        }
+
+        [NonEvent]
+        public void RequestStart(HttpRequestMessage request)
+        {
+            Debug.Assert(request.RequestUri != null);
+
+            RequestStart(
+                request.RequestUri.Scheme,
+                request.RequestUri.IdnHost,
+                request.RequestUri.Port,
+                request.RequestUri.PathAndQuery,
+                request.Version.Major,
+                request.Version.Minor);
         }
 
         [Event(2, Level = EventLevel.Informational)]
@@ -100,27 +114,9 @@ namespace System.Net.Http
         }
 
         [Event(10, Level = EventLevel.Informational)]
-        public void ResponseContentStart()
+        public void ResponseContentBegin()
         {
             WriteEvent(eventId: 10);
-        }
-
-        [Event(11, Level = EventLevel.Informational)]
-        public void ResponseContentStop()
-        {
-            WriteEvent(eventId: 11);
-        }
-
-        [Event(12, Level = EventLevel.Informational)]
-        public void GetHelperStart(string methodName)
-        {
-            WriteEvent(eventId: 12, methodName);
-        }
-
-        [Event(13, Level = EventLevel.Informational)]
-        public void GetHelperStop()
-        {
-            WriteEvent(eventId: 13);
         }
 
         protected override void OnEventCommand(EventCommandEventArgs command)
