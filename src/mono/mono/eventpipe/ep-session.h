@@ -34,6 +34,8 @@ struct _EventPipeSession_Internal {
 	EventPipeBufferManager *buffer_manager;
 	// Object used to flush event data (File, IPC stream, etc.).
 	EventPipeFile *file;
+	// For synchoronous sessions.
+	EventPipeSessionSynchronousCallback synchronous_callback;
 	// Start date and time in UTC.
 	ep_systemtime_t session_start_time;
 	// Start timestamp.
@@ -79,7 +81,7 @@ ep_session_alloc (
 	uint32_t circular_buffer_size_in_mb,
 	const EventPipeProviderConfiguration *providers,
 	uint32_t providers_len,
-	bool rundown_enabled);
+	EventPipeSessionSynchronousCallback sync_callback);
 
 void
 ep_session_free (EventPipeSession *session);
@@ -137,8 +139,12 @@ ep_session_write_all_buffers_to_file (
 	EventPipeSession *session,
 	bool *events_written);
 
+// If a session is non-synchronous (i.e. a file, pipe, etc) WriteEvent will
+// put the event in a buffer and return as quick as possible. If a session is
+// synchronous (callback to the profiler) then this method will block until the
+// profiler is done parsing and reacting to it.
 bool
-ep_session_write_event_buffered (
+ep_session_write_event (
 	EventPipeSession *session,
 	EventPipeThread *thread,
 	EventPipeEvent *ep_event,

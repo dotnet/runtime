@@ -1230,8 +1230,7 @@ void Thread::SetAbortEndTime(ULONGLONG endTime, BOOL fRudeAbort)
 HRESULT
 Thread::UserAbort(ThreadAbortRequester requester,
                   EEPolicy::ThreadAbortTypes abortType,
-                  DWORD timeout,
-                  UserAbort_Client client
+                  DWORD timeout
                  )
 {
     CONTRACTL
@@ -1299,13 +1298,6 @@ Thread::UserAbort(ThreadAbortRequester requester,
     }
 
     _ASSERTE(this != pCurThread);      // Aborting another thread.
-
-    if (client == UAC_Host)
-    {
-        // A host may call ICLRTask::Abort on a critical thread.  We don't want to
-        // block this thread.
-        return S_OK;
-    }
 
 #ifdef _DEBUG
     DWORD elapsed_time = 0;

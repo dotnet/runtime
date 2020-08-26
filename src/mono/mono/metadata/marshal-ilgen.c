@@ -2055,6 +2055,7 @@ emit_native_wrapper_ilgen (MonoImage *image, MonoMethodBuilder *mb, MonoMethodSi
 	if (need_gc_safe)
 		gc_safe_transition_builder_add_locals (&gc_safe_transition_builder);
 
+#ifdef ENABLE_NETCORE
 	if (!func && !aot && !func_param && !MONO_CLASS_IS_IMPORT (mb->method->klass)) {
 		/*
 		 * On netcore, its possible to register pinvoke resolvers at runtime, so
@@ -2087,6 +2088,7 @@ emit_native_wrapper_ilgen (MonoImage *image, MonoMethodBuilder *mb, MonoMethodSi
 		mono_mb_emit_byte (mb, CEE_LDIND_I);
 		mono_mb_emit_stloc (mb, func_addr_local);
 	}
+#endif
 
 	/*
 	 * cookie = mono_threads_enter_gc_safe_region_unbalanced (ref dummy);

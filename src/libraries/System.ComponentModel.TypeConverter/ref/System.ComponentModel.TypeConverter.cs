@@ -398,19 +398,6 @@ namespace System.ComponentModel
     {
         public DoubleConverter() { }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.All, AllowMultiple=true, Inherited=true)]
-    public sealed partial class EditorAttribute : System.Attribute
-    {
-        public EditorAttribute() { }
-        public EditorAttribute(string typeName, string baseTypeName) { }
-        public EditorAttribute(string typeName, System.Type baseType) { }
-        public EditorAttribute(System.Type type, System.Type baseType) { }
-        public string EditorBaseTypeName { get { throw null; } }
-        public string EditorTypeName { get { throw null; } }
-        public override object TypeId { get { throw null; } }
-        public override bool Equals(object obj) { throw null; }
-        public override int GetHashCode() { throw null; }
-    }
     public partial class EnumConverter : System.ComponentModel.TypeConverter
     {
         public EnumConverter(System.Type type) { }
@@ -586,6 +573,7 @@ namespace System.ComponentModel
         string Name { get; }
         bool Show(string language, string value, ref string newValue);
     }
+    [System.ComponentModel.EditorAttribute("System.Windows.Forms.Design.DataSourceListEditor, System.Design, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a", "System.Drawing.Design.UITypeEditor, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
     [System.ComponentModel.MergablePropertyAttribute(false)]
     public partial interface IListSource
     {
@@ -1568,6 +1556,7 @@ namespace System.ComponentModel.Design
         protected virtual bool ShowDialog(System.ComponentModel.Design.DesignerOptionService.DesignerOptionCollection options, object optionObject) { throw null; }
         object System.ComponentModel.Design.IDesignerOptionService.GetOptionValue(string pageName, string valueName) { throw null; }
         void System.ComponentModel.Design.IDesignerOptionService.SetOptionValue(string pageName, string valueName, object value) { }
+        [System.ComponentModel.EditorAttribute("", "System.Drawing.Design.UITypeEditor, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
         public sealed partial class DesignerOptionCollection : System.Collections.ICollection, System.Collections.IEnumerable, System.Collections.IList
         {
             internal DesignerOptionCollection() { }

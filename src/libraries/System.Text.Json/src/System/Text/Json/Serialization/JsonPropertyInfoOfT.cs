@@ -230,6 +230,21 @@ namespace System.Text.Json
                     success = Converter.TryRead(ref reader, RuntimePropertyType!, Options, ref state, out T value);
                     if (success)
                     {
+                        if (!Converter.IsInternalConverter)
+                        {
+                            if (value != null)
+                            {
+                                Type typeOfValue = value.GetType();
+                                if (!DeclaredPropertyType.IsAssignableFrom(typeOfValue))
+                                {
+                                    ThrowHelper.ThrowInvalidCastException_DeserializeUnableToAssignValue(typeOfValue, DeclaredPropertyType);
+                                }
+                            }
+                            else if (DeclaredPropertyType.IsValueType && !DeclaredPropertyType.IsNullableValueType())
+                            {
+                                ThrowHelper.ThrowInvalidOperationException_DeserializeUnableToAssignNull(DeclaredPropertyType);
+                            }
+                        }
                         Set!(obj, value!);
                     }
                 }

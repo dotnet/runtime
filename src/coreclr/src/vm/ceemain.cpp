@@ -401,7 +401,7 @@ static BOOL WINAPI DbgCtrlCHandler(DWORD dwCtrlType)
     else
 #endif // DEBUGGING_SUPPORTED
     {
-        if (dwCtrlType == CTRL_CLOSE_EVENT)
+        if (dwCtrlType == CTRL_CLOSE_EVENT || dwCtrlType == CTRL_SHUTDOWN_EVENT)
         {
             // Initiate shutdown so the ProcessExit handlers run
             ForceEEShutdown(SCA_ReturnWhenShutdownComplete);

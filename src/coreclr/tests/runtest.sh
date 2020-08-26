@@ -163,6 +163,9 @@ do
         arm64)
             buildArch="arm64"
             ;;
+        wasm)
+            buildArch="wasm"
+            ;;
         debug|Debug)
             buildConfiguration="Debug"
             ;;
@@ -322,6 +325,12 @@ fi
 
 echo "Build Architecture            : ${buildArch}"
 echo "Build Configuration           : ${buildConfiguration}"
+
+
+if [ $buildArch = "wasm" ]; then
+    runtestPyArguments+=("-os" "Browser")
+fi
+
     
 if [ ! -z "$testRootDir" ]; then
     runtestPyArguments+=("-test_location" "$testRootDir")
