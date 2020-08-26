@@ -775,7 +775,10 @@ namespace System.Net.Http
             {
                 if (payloadLength > MaximumUnknownFramePayloadLength)
                 {
-                    Trace($"Received unknown frame type 0x{(long)frameType:x} with {payloadLength} byte payload exceeding the {MaximumUnknownFramePayloadLength} byte maximum.");
+                    if (NetEventSource.Log.IsEnabled())
+                    {
+                        Trace($"Received unknown frame type 0x{(long)frameType:x} with {payloadLength} byte payload exceeding the {MaximumUnknownFramePayloadLength} byte maximum.");
+                    }
                     throw new Http3ConnectionException(Http3ErrorCode.ExcessiveLoad);
                 }
 
