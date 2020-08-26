@@ -1220,6 +1220,9 @@ UMEntryThunk * UMEntryThunk::Decode(void *pCallback)
 
 void UMEntryThunkCode::Encode(BYTE* pTargetCode, void* pvSecretParam)
 {
+#if defined(HOST_OSX) && defined(HOST_ARM64)
+    bool jitWriteEnabled = PAL_JITWriteEnable(true);
+#endif // defined(HOST_OSX) && defined(HOST_ARM64)
     // adr x12, _label
     // ldp x16, x12, [x12]
     // br x16
@@ -1236,6 +1239,9 @@ void UMEntryThunkCode::Encode(BYTE* pTargetCode, void* pvSecretParam)
     m_pTargetCode = (TADDR)pTargetCode;
     m_pvSecretParam = (TADDR)pvSecretParam;
 
+#if defined(HOST_OSX) && defined(HOST_ARM64)
+    PAL_JITWriteEnable(jitWriteEnabled);
+#endif // defined(HOST_OSX) && defined(HOST_ARM64)
     FlushInstructionCache(GetCurrentProcess(),&m_code,sizeof(m_code));
 }
 
@@ -1243,11 +1249,18 @@ void UMEntryThunkCode::Encode(BYTE* pTargetCode, void* pvSecretParam)
 
 void UMEntryThunkCode::Poison()
 {
+#if defined(HOST_OSX) && defined(HOST_ARM64)
+    bool jitWriteEnabled = PAL_JITWriteEnable(true);
+#endif // defined(HOST_OSX) && defined(HOST_ARM64)
+
     m_pTargetCode = (TADDR)UMEntryThunk::ReportViolation;
 
     // ldp x16, x0, [x12]
     m_code[1] = 0xa9400190;
 
+#if defined(HOST_OSX) && defined(HOST_ARM64)
+    PAL_JITWriteEnable(jitWriteEnabled);
+#endif // defined(HOST_OSX) && defined(HOST_ARM64)
     ClrFlushInstructionCache(&m_code,sizeof(m_code));
 }
 
@@ -1826,6 +1839,21 @@ void StubLinkerCPU::EmitCallManagedMethod(MethodDesc *pMD, BOOL fTailCall)
 
 #define DYNAMIC_HELPER_ALIGNMENT sizeof(TADDR)
 
+#if defined(HOST_OSX) && defined(HOST_ARM64)
+#define BEGIN_DYNAMIC_HELPER_EMIT(size) \
+    SIZE_T cb = size; \
+    SIZE_T cbAligned = ALIGN_UP(cb, DYNAMIC_HELPER_ALIGNMENT); \
+    BYTE * pStart = (BYTE *)(void *)pAllocator->GetDynamicHelpersHeap()->AllocAlignedMem(cbAligned, DYNAMIC_HELPER_ALIGNMENT); \
+    BYTE * p = pStart; \
+    bool jitWriteEnabled = PAL_JITWriteEnable(true);
+
+#define END_DYNAMIC_HELPER_EMIT() \
+    _ASSERTE(pStart + cb == p); \
+    while (p < pStart + cbAligned) { *(DWORD*)p = 0xBADC0DF0; p += 4; }\
+    PAL_JITWriteEnable(jitWriteEnabled); \
+    ClrFlushInstructionCache(pStart, cbAligned); \
+    return (PCODE)pStart
+#else // defined(HOST_OSX) && defined(HOST_ARM64)
 #define BEGIN_DYNAMIC_HELPER_EMIT(size) \
     SIZE_T cb = size; \
     SIZE_T cbAligned = ALIGN_UP(cb, DYNAMIC_HELPER_ALIGNMENT); \
@@ -1837,6 +1865,7 @@ void StubLinkerCPU::EmitCallManagedMethod(MethodDesc *pMD, BOOL fTailCall)
     while (p < pStart + cbAligned) { *(DWORD*)p = 0xBADC0DF0; p += 4; }\
     ClrFlushInstructionCache(pStart, cbAligned); \
     return (PCODE)pStart
+#endif // defined(HOST_OSX) && defined(HOST_ARM64)
 
 // Uses x8 as scratch register to store address of data label
 // After load x8 is increment to point to next data
