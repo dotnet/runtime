@@ -6,12 +6,7 @@ using System.Collections.Generic;
 
 namespace System.Text.Json.Serialization.Tests
 {
-    public class StructListWrapper
-    {
-        public GenericStructIList<int> StructList { get; set; }
-    }
-
-    public struct GenericStructIList<T> : IList<T>
+    public struct GenericStructIListWrapper<T> : IList<T>
     {
         private List<T> _list;
         public T this[int index]
@@ -91,4 +86,166 @@ namespace System.Text.Json.Serialization.Tests
             return GetEnumerator();
         }
     }
+
+    public struct GenericStructICollectionWrapper<T> : ICollection<T>
+    {
+        private List<T> _list;
+
+        private void InitializeIfNull()
+        {
+            if (_list == null)
+            {
+                _list = new List<T>();
+            }
+        }
+
+        public int Count => _list.Count;
+
+        public bool IsReadOnly => false;
+
+        public void Add(T item)
+        {
+            InitializeIfNull();
+            _list.Add(item);
+        }
+
+        public void Clear()
+        {
+            _list.Clear();
+        }
+
+        public bool Contains(T item)
+        {
+            return _list.Contains(item);
+        }
+
+        public void CopyTo(T[] array, int arrayIndex)
+        {
+            _list.CopyTo(array, arrayIndex);
+        }
+
+        public IEnumerator<T> GetEnumerator()
+        {
+            return ((ICollection<T>)_list).GetEnumerator();
+        }
+
+        public bool Remove(T item)
+        {
+            return _list.Remove(item);
+        }
+
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return ((ICollection<T>)_list).GetEnumerator();
+        }
+    }
+
+    public struct GenericStructISetWrapper<T> : ISet<T>
+    {
+        private HashSet<T> _hashset;
+
+        private void InitializeIfNull()
+        {
+            if (_hashset == null)
+            {
+                _hashset = new HashSet<T>();
+            }
+        }
+
+        public int Count => _hashset == null ? 0 : _hashset.Count;
+
+        public bool IsReadOnly => false;
+
+        public bool Add(T item)
+        {
+            InitializeIfNull();
+            return _hashset.Add(item);
+        }
+
+        public void Clear()
+        {
+            _hashset.Clear();
+        }
+
+        public bool Contains(T item)
+        {
+            return _hashset.Contains(item);
+        }
+
+        public void CopyTo(T[] array, int arrayIndex)
+        {
+            _hashset.CopyTo(array, arrayIndex);
+        }
+
+        public void ExceptWith(IEnumerable<T> other)
+        {
+            _hashset.ExceptWith(other);
+        }
+
+        public IEnumerator<T> GetEnumerator()
+        {
+            return ((ISet<T>)_hashset).GetEnumerator();
+        }
+
+        public void IntersectWith(IEnumerable<T> other)
+        {
+            _hashset.IntersectWith(other);
+        }
+
+        public bool IsProperSubsetOf(IEnumerable<T> other)
+        {
+            return _hashset.IsProperSubsetOf(other);
+        }
+
+        public bool IsProperSupersetOf(IEnumerable<T> other)
+        {
+            return _hashset.IsProperSupersetOf(other);
+        }
+
+        public bool IsSubsetOf(IEnumerable<T> other)
+        {
+            return _hashset.IsSubsetOf(other);
+        }
+
+        public bool IsSupersetOf(IEnumerable<T> other)
+        {
+            return _hashset.IsSupersetOf(other);
+        }
+
+        public bool Overlaps(IEnumerable<T> other)
+        {
+            return _hashset.Overlaps(other);
+        }
+
+        public bool Remove(T item)
+        {
+            return _hashset.Remove(item);
+        }
+
+        public bool SetEquals(IEnumerable<T> other)
+        {
+            return _hashset.SetEquals(other);
+        }
+
+        public void SymmetricExceptWith(IEnumerable<T> other)
+        {
+            _hashset.SymmetricExceptWith(other);
+        }
+
+        public void UnionWith(IEnumerable<T> other)
+        {
+            _hashset.UnionWith(other);
+        }
+
+        void ICollection<T>.Add(T item)
+        {
+            _hashset.Add(item);
+        }
+
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return ((ISet<T>)_hashset).GetEnumerator();
+        }
+    }
+
 }

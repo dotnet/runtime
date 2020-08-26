@@ -260,12 +260,23 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public static void ReadGenericStructIList()
         {
-            string json = $"{{\"StructList\":[10,20,30]}}";
-            StructListWrapper wrapper = JsonSerializer.Deserialize<StructListWrapper>(json);
-            Assert.Equal(3, wrapper.StructList.Count);
-            Assert.Equal(10, wrapper.StructList[0]);
-            Assert.Equal(20, wrapper.StructList[1]);
-            Assert.Equal(30, wrapper.StructList[2]);
+            string json = "[10,20,30]";
+            var wrapper = JsonSerializer.Deserialize<GenericStructIListWrapper<int>>(json);
+            Assert.Equal(3, wrapper.Count);
+            Assert.Equal(10, wrapper[0]);
+            Assert.Equal(20, wrapper[1]);
+            Assert.Equal(30, wrapper[2]);
+        }
+
+        [Fact]
+        public static void ReadGenericStructICollection()
+        {
+            string json = "[10,20,30]";
+            var wrapper = JsonSerializer.Deserialize<GenericStructICollectionWrapper<int>>(json);
+            Assert.Equal(3, wrapper.Count);
+            Assert.Equal(10, wrapper.ElementAt(0));
+            Assert.Equal(20, wrapper.ElementAt(1));
+            Assert.Equal(30, wrapper.ElementAt(2));
         }
 
         [Fact]

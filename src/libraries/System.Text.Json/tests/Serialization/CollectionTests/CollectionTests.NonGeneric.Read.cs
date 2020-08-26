@@ -136,6 +136,16 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
+        public static void ReadStructIList()
+        {
+            string json = @"[""a"",20]";
+            var wrapper = JsonSerializer.Deserialize<StructWrapperForIList>(json);
+            Assert.Equal(2, wrapper.Count);
+            Assert.Equal("a", ((JsonElement)wrapper[0]).GetString());
+            Assert.Equal(20, ((JsonElement)wrapper[1]).GetInt32());
+        }
+
+        [Fact]
         public static void ReadPrimitiveIList()
         {
             IList result = JsonSerializer.Deserialize<IList>(Encoding.UTF8.GetBytes(@"[1,2]"));

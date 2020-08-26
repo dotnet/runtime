@@ -120,6 +120,7 @@
     <Compile Include="Serialization\TestClasses\TestClasses.GenericCollectionsStruct.cs" />
     <Compile Include="Serialization\TestClasses\TestClasses.ImmutableCollections.cs" />
     <Compile Include="Serialization\TestClasses\TestClasses.NonGenericCollections.cs" />
+    <Compile Include="Serialization\TestClasses\TestClasses.NonGenericCollectionsStruct.cs" />
     <Compile Include="Serialization\TestClasses\TestClasses.Polymorphic.cs" />
     <Compile Include="Serialization\TestClasses\TestClasses.SimpleTestClass.cs" />
     <Compile Include="Serialization\TestClasses\TestClasses.SimpleTestClassWithFields.cs" />
