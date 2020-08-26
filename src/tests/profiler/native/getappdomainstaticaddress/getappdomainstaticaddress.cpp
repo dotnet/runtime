@@ -24,6 +24,8 @@ GetAppDomainStaticAddress::GetAppDomainStaticAddress() :
     refCount(0),
     failures(0),
     successes(0),
+    collectibleCount(0),
+    nonCollectibleCount(0),
     jitEventCount(0),
     gcTriggerThread(),
     gcWaitEvent(),
@@ -111,13 +113,14 @@ HRESULT GetAppDomainStaticAddress::Shutdown()
         this->pCorProfilerInfo = nullptr;
     }
 
-    if(failures == 0 && successes > 0)
+    if(failures == 0 && successes > 0 && collectibleCount > 0 && nonCollectibleCount > 0)
     {
         printf("PROFILER TEST PASSES\n");
     }
     else
     {
-        printf("Test failed number of failures=%d successes=%d\n", failures.load(), successes.load());
+        printf("Test failed number of failures=%d successes=%d collectibleCount=%d nonCollectibleCount=%d\n",
+            failures.load(), successes.load(), collectibleCount.load(), nonCollectibleCount.load());
     }
     fflush(stdout);
 
@@ -403,7 +406,7 @@ HRESULT GetAppDomainStaticAddress::GarbageCollectionFinished()
             // Module is being unloaded...
             continue;
         }
-        if (FAILED(hr))
+        else if (FAILED(hr))
         {
             printf("GetModuleMetaData returned 0x%x  for ModuleID 0x%" PRIxPTR "\n", hr, classModuleId);
             ++failures;
@@ -434,7 +437,7 @@ HRESULT GetAppDomainStaticAddress::GarbageCollectionFinished()
             // Class load not complete.  We can not inspect yet.
             continue;
         }
-        if (FAILED(hr))
+        else if (FAILED(hr))
         {
             printf("GetClassIDInfo2returned 0x%x\n", hr);
             ++failures;
@@ -514,6 +517,18 @@ HRESULT GetAppDomainStaticAddress::GarbageCollectionFinished()
                         printf("GetAppDomainStaticAddress Failed HR 0x%x\n", hr);
                         ++failures;
                         continue;
+                    }
+                    else if (hr != CORPROF_E_DATAINCOMPLETE)
+                    {
+                        String moduleName = GetModuleIDName(classModuleId);
+                        if (EndsWith(moduleName, WCHAR("unloadlibrary.dll")))
+                        {
+                            ++collectibleCount;
+                        }
+                        else
+                        {
+                            ++nonCollectibleCount;
+                        }
                     }
                 }
             }
