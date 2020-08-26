@@ -453,7 +453,7 @@ namespace System.Net.Http
             buffer[2] = (byte)payloadLength;
             buffer[3] = (byte)Http3SettingType.MaxHeaderListSize;
 
-            return buffer.Slice(4 + integerLength).ToArray();
+            return buffer.Slice(0, 4 + integerLength).ToArray();
         }
 
         /// <summary>
