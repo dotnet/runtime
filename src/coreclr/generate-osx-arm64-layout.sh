@@ -22,10 +22,6 @@ done
 RepoRoot="$( cd -P "$( dirname "$source" )/../.." && pwd )"
 
 Core_Root=${RepoRoot}/artifacts/tests/coreclr/OSX.arm64.Debug/Tests/Core_Root
-Arm64_Native_Obj_Paths="${RepoRoot}/artifacts/obj/coreclr/OSX.arm64.Debug ${RepoRoot}/artifacts/obj/native/OSX-arm64-Debug"
-Arm64_Native_Bin_Paths="${RepoRoot}/artifacts/bin/coreclr/OSX.arm64.Debug ${RepoRoot}/artifacts/bin/native/OSX-arm64-Debug"
-Arm64_Native_Paths="${Arm64_Native_Obj_Paths} ${Arm64_Native_Bin_Paths}"
-Arm64_SPC_Path=${RepoRoot}/artifacts/bin/coreclr/OSX.arm64.Debug/IL
 
 function x64NativeFiles()
 {
@@ -35,37 +31,10 @@ function x64NativeFiles()
     done
 }
 
-# Remove any arm64 native files which were built with x86_64 architecture
-for n in $(find ${Arm64_Native_Paths} -type f)
-do
-  (file $n | grep -q x86_64) && rm $n
-done
-
-# Rebuild native arm64 files
-${RepoRoot}/src/libraries/Native/build-native.sh -arm64
-${RepoRoot}/src/coreclr/build-runtime.sh -arm64
-
 ${RepoRoot}/src/coreclr/build-test.sh arm64 generatelayoutonly /p:LibrariesConfiguration=Debug
 
-# Copy arm64 IL S.P.C.dll
-cp ${Arm64_SPC_Path}/System.Private.CoreLib.dll ${Core_Root}
-
-# Replace osx-x64 native files with their arm64 counterparts
+# Warn for any residual osx-x64 native files
 for i in $(x64NativeFiles)
 do 
-  echo
-  echo $i
-  for n in $(find ${Arm64_Native_Paths} -name $(basename $i))
-  do
-    (file $n | grep -q x86_64) || (md5 $n; cp $n $i)
-  done
-done 2>&1
-
-echo
-
-# Remove any residual osx-x64 native files
-for i in $(x64NativeFiles)
-do 
-  echo Removing native x86_64 file $i
-  rm $i
+  echo Warning native x86_64 file $i
 done 2>&1
