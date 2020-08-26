@@ -1864,7 +1864,7 @@ char *
 mono_image_get_name_with_culture_if_needed (MonoImage *image)
 {
 #ifndef ENABLE_NETCORE
-	return g_strdup (image->name);
+	return NULL;
 #else
 	if (!g_str_has_prefix (image->name, "data-") &&
 		!g_path_is_absolute (image->name))
@@ -1875,7 +1875,7 @@ mono_image_get_name_with_culture_if_needed (MonoImage *image)
 			return g_strdup_printf ("(%s)%s", culture, image->name);
 	}
 
-	return g_strdup (image->name);
+	return NULL;
 #endif
 }
 
@@ -1883,33 +1883,33 @@ static MonoImage *
 register_image (MonoLoadedImages *li, MonoImage *image, gboolean *problematic)
 {
 	MonoImage *image2;
-	char *name = mono_image_get_name_with_culture_if_needed (image);
+	char *name_with_culture = mono_image_get_name_with_culture_if_needed (image);
 	GHashTable *loaded_images = mono_loaded_images_get_hash (li, image->ref_only);
 
 	mono_images_lock ();
-	image2 = (MonoImage *)g_hash_table_lookup (loaded_images, name);
+	image2 = (MonoImage *)g_hash_table_lookup (loaded_images, name_with_culture != NULL ? name_with_culture : image->name);
 
 	if (image2) {
 		/* Somebody else beat us to it */
 		mono_image_addref (image2);
 		mono_images_unlock ();
 		mono_image_close (image);
-		g_free (name);
+		g_free (name_with_culture);
 		return image2;
 	}
 
 	GHashTable *loaded_images_by_name = mono_loaded_images_get_by_name_hash (li, image->ref_only);
-	g_hash_table_insert (loaded_images, name, image);
+	g_hash_table_insert (loaded_images, name_with_culture != NULL ? name_with_culture : image->name, image);
 	if (image->assembly_name && (g_hash_table_lookup (loaded_images_by_name, image->assembly_name) == NULL))
 		g_hash_table_insert (loaded_images_by_name, (char *) image->assembly_name, image);
 	mono_images_unlock ();
 
 	if (mono_is_problematic_image (image)) {
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "Registering %s, problematic image '%s'", image->ref_only ? "REFONLY" : "default", name);
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "Registering %s, problematic image '%s'", image->ref_only ? "REFONLY" : "default", name_with_culture != NULL ? name_with_culture : image->name);
 		if (problematic)
 			*problematic = TRUE;
 	}
-	g_free (name);
+	g_free (name_with_culture);
 	return image;
 }
 
