@@ -220,18 +220,19 @@ namespace System
 
         private long FullLong()
         {
-            int i = InternalSample();
             long result = 0;
 
-            result = result | (long) InternalSample();
-            result = result | (1u << 31 & (i << 2));
-            result = result | (1u & i);
+            for (int i = 0; i < 4; i++)
+            {
+                short part;
+                unchecked
+                {
+                    part = (short) InternalSample();
+                }
 
-            result <<= 32;
-
-            result = result | (long) InternalSample();
-            result = result | (1u << 31 & (i << 3));
-            result = result | (1u & (i >> 3));
+                result |= (long) part;
+                result <<= 16;
+            }
 
             return result;
         }
