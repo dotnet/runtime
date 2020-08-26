@@ -730,7 +730,9 @@ namespace System.Formats.Asn1
 
             public void Dispose()
             {
-                if (_writer == null || _writer._nestingStack.Count == 0)
+                Debug.Assert(_writer == null || _writer._nestingStack != null);
+
+                if (_writer == null || _writer._nestingStack!.Count == 0)
                 {
                     return;
                 }

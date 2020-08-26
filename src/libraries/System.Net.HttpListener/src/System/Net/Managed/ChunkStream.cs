@@ -381,7 +381,7 @@ namespace System.Net
             }
 
             StringReader reader = new StringReader(_saved.ToString());
-            string line;
+            string? line;
             while ((line = reader.ReadLine()) != null && line != "")
                 _headers.Add(line);
 
