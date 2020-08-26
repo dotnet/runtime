@@ -193,11 +193,11 @@ if [[ "$internal" == true ]]; then
     creator=
     extra_benchmark_dotnet_arguments=
     
-    if [[ "$architecture" = "arm64" ]]; then
-        queue=Ubuntu.1804.Arm64.Perf
-    else
-        queue=Ubuntu.1804.Amd64.Tiger.Perf
-    fi
+    # if [[ "$architecture" = "arm64" ]]; then
+    #     queue=Ubuntu.1804.Arm64.Perf
+    # else
+    #     queue=Ubuntu.1804.Amd64.Tiger.Perf
+    # fi
 fi
 
 if [[ "$mono_dotnet" != "" ]] && [[ "$monointerpreter" == "false" ]]; then
