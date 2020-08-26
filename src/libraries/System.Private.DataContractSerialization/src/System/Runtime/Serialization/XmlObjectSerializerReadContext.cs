@@ -629,10 +629,8 @@ namespace System.Runtime.Serialization
 
         private ExtensionDataMember ReadExtensionDataMember(XmlReaderDelegator xmlReader, int memberIndex)
         {
-            var member = new ExtensionDataMember
+            var member = new ExtensionDataMember(xmlReader.LocalName, xmlReader.NamespaceURI)
             {
-                Name = xmlReader.LocalName,
-                Namespace = xmlReader.NamespaceURI,
                 MemberIndex = memberIndex
             };
 
@@ -843,7 +841,7 @@ namespace System.Runtime.Serialization
                     dataNode.ItemName = xmlReader.LocalName;
                     dataNode.ItemNamespace = xmlReader.NamespaceURI;
                 }
-                if (xmlReader.IsStartElement(dataNode.ItemName, dataNode.ItemNamespace))
+                if (xmlReader.IsStartElement(dataNode.ItemName, dataNode.ItemNamespace!))
                 {
                     if (dataNode.Items == null)
                         dataNode.Items = new List<IDataNode?>();
@@ -900,8 +898,7 @@ namespace System.Runtime.Serialization
                     continue;
                 }
 
-                var member = new ISerializableDataMember();
-                member.Name = xmlReader.LocalName;
+                var member = new ISerializableDataMember(xmlReader.LocalName);
                 member.Value = ReadExtensionDataValue(xmlReader);
                 if (dataNode.Members == null)
                     dataNode.Members = new List<ISerializableDataMember>();

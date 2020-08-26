@@ -37,21 +37,18 @@ namespace System.Runtime.Serialization
     internal class ExtensionDataMember
 #endif
     {
-        private string? _name;
-        private string? _ns;
         private IDataNode? _value;
         private int _memberIndex;
-        public string? Name
+
+        public ExtensionDataMember(string name, string ns)
         {
-            get { return _name; }
-            set { _name = value; }
+            Name = name;
+            Namespace = ns;
         }
 
-        public string? Namespace
-        {
-            get { return _ns; }
-            set { _ns = value; }
-        }
+        public string Name { get; }
+
+        public string? Namespace { get; }
 
         public IDataNode? Value
         {
@@ -375,14 +372,14 @@ namespace System.Runtime.Serialization
 
     internal class ISerializableDataMember
     {
-        private string? _name;
         private IDataNode? _value;
 
-        internal string? Name
+        public ISerializableDataMember(string name)
         {
-            get { return _name; }
-            set { _name = value; }
+            Name = name;
         }
+
+        internal string Name { get; }
 
         internal IDataNode? Value
         {

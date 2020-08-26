@@ -255,7 +255,7 @@ namespace System.Runtime.Serialization.Json
         internal override void SerializeWithXsiTypeAtTopLevel(DataContract dataContract, XmlWriterDelegator xmlWriter, object obj, RuntimeTypeHandle originalDeclaredTypeHandle, Type graphType)
         {
             bool verifyKnownType = false;
-            Type declaredType = rootTypeDataContract.UnderlyingType;
+            Type declaredType = rootTypeDataContract!.UnderlyingType;
             bool isDeclaredTypeInterface = declaredType.IsInterface;
 
             if (!(isDeclaredTypeInterface && CollectionDataContract.IsCollectionInterface(declaredType))

@@ -161,6 +161,8 @@ namespace System.Runtime.Serialization
 
         internal virtual void SerializeWithXsiTypeAtTopLevel(DataContract dataContract, XmlWriterDelegator xmlWriter, object obj, RuntimeTypeHandle originalDeclaredTypeHandle, Type graphType)
         {
+            Debug.Assert(rootTypeDataContract != null);
+
             bool verifyKnownType = false;
             Type declaredType = rootTypeDataContract.UnderlyingType;
 
@@ -701,7 +703,7 @@ namespace System.Runtime.Serialization
             writer.WriteAttributeQualifiedName(Globals.XsiPrefix, DictionaryGlobals.XsiTypeLocalName, DictionaryGlobals.SchemaInstanceNamespace, dataContractName, dataContractNamespace);
         }
 
-        protected virtual void WriteTypeInfo(XmlWriterDelegator writer, XmlDictionaryString? dataContractName, XmlDictionaryString? dataContractNamespace)
+        protected virtual void WriteTypeInfo(XmlWriterDelegator writer, XmlDictionaryString dataContractName, XmlDictionaryString dataContractNamespace)
         {
             writer.WriteAttributeQualifiedName(Globals.XsiPrefix, DictionaryGlobals.XsiTypeLocalName, DictionaryGlobals.SchemaInstanceNamespace, dataContractName, dataContractNamespace);
         }
@@ -714,9 +716,9 @@ namespace System.Runtime.Serialization
             IList<ExtensionDataMember>? members = extensionData.Members;
             if (members != null)
             {
-                for (int i = 0; i < extensionData.Members.Count; i++)
+                for (int i = 0; i < members.Count; i++)
                 {
-                    ExtensionDataMember member = extensionData.Members[i];
+                    ExtensionDataMember member = members[i];
                     if (member.MemberIndex == memberIndex)
                     {
                         WriteExtensionDataMember(xmlWriter, member);

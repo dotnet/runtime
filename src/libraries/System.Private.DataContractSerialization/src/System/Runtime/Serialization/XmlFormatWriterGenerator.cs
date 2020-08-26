@@ -754,7 +754,7 @@ namespace System.Runtime.Serialization
                 {
                     if (ns == currentContract.StableName.Namespace)
                     {
-                        List<DataMember> members = currentContract.Members;
+                        List<DataMember> members = currentContract.Members!;
                         for (int j = 0; j < members.Count; j++)
                         {
                             if (name == members[j].Name)

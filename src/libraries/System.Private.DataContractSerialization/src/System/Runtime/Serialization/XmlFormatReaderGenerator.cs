@@ -354,7 +354,7 @@ namespace System.Runtime.Serialization
 
             private void ReadMembers(ClassDataContract classContract, LocalBuilder? extensionDataLocal)
             {
-                int memberCount = classContract.MemberNames.Length;
+                int memberCount = classContract.MemberNames!.Length;
                 _ilg.Call(_contextArg, XmlFormatGeneratorStatics.IncrementItemCountMethod, memberCount);
 
                 LocalBuilder memberIndexLocal = _ilg.DeclareLocal(Globals.TypeOfInt, "memberIndex", -1);
@@ -391,7 +391,7 @@ namespace System.Runtime.Serialization
                 int memberCount = (classContract.BaseContract == null) ? 0 : ReadMembers(classContract.BaseContract, requiredMembers,
                     memberLabels, memberIndexLocal, requiredIndexLocal);
 
-                for (int i = 0; i < classContract.Members.Count; i++, memberCount++)
+                for (int i = 0; i < classContract.Members!.Count; i++, memberCount++)
                 {
                     DataMember dataMember = classContract.Members[i];
                     Type memberType = dataMember.MemberType;
@@ -435,7 +435,7 @@ namespace System.Runtime.Serialization
 
             private bool[] GetRequiredMembers(ClassDataContract contract, out int firstRequiredMember)
             {
-                int memberCount = contract.MemberNames.Length;
+                int memberCount = contract.MemberNames!.Length;
                 bool[] requiredMembers = new bool[memberCount];
                 GetRequiredMembers(contract, requiredMembers);
                 for (firstRequiredMember = 0; firstRequiredMember < memberCount; firstRequiredMember++)
@@ -447,7 +447,7 @@ namespace System.Runtime.Serialization
             private int GetRequiredMembers(ClassDataContract contract, bool[] requiredMembers)
             {
                 int memberCount = (contract.BaseContract == null) ? 0 : GetRequiredMembers(contract.BaseContract, requiredMembers);
-                List<DataMember> members = contract.Members;
+                List<DataMember> members = contract.Members!;
                 for (int i = 0; i < members.Count; i++, memberCount++)
                 {
                     requiredMembers[memberCount] = members[i].IsRequired;
@@ -870,7 +870,7 @@ namespace System.Runtime.Serialization
                     {
                         DiagnosticUtility.DebugAssert("Failed to create contract for KeyValuePair type");
                     }
-                    DataMember keyMember = keyValuePairContract.Members[0];
+                    DataMember keyMember = keyValuePairContract.Members![0];
                     DataMember valueMember = keyValuePairContract.Members[1];
                     LocalBuilder pairKey = _ilg.DeclareLocal(keyMember.MemberType, keyMember.Name);
                     LocalBuilder pairValue = _ilg.DeclareLocal(valueMember.MemberType, valueMember.Name);

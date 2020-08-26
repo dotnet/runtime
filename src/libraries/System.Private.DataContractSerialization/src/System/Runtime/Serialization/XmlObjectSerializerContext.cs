@@ -210,7 +210,7 @@ namespace System.Runtime.Serialization
             return dataContracts;
         }
 
-        internal bool IsKnownType(DataContract dataContract, DataContractDictionary? knownDataContracts, Type declaredType)
+        internal bool IsKnownType(DataContract dataContract, DataContractDictionary? knownDataContracts, Type? declaredType)
         {
             bool knownTypesAddedInCurrentScope = false;
             if (knownDataContracts != null)
@@ -228,7 +228,7 @@ namespace System.Runtime.Serialization
             return isKnownType;
         }
 
-        internal bool IsKnownType(DataContract dataContract, Type declaredType)
+        internal bool IsKnownType(DataContract dataContract, Type? declaredType)
         {
             DataContract? knownContract = ResolveDataContractFromKnownTypes(dataContract.StableName.Name, dataContract.StableName.Namespace, null /*memberTypeContract*/, declaredType);
             return knownContract != null && knownContract.UnderlyingType == dataContract.UnderlyingType;
@@ -254,7 +254,7 @@ namespace System.Runtime.Serialization
             return dataContract;
         }
 
-        protected DataContract? ResolveDataContractFromKnownTypes(string typeName, string? typeNs, DataContract? memberTypeContract, Type declaredType)
+        protected DataContract? ResolveDataContractFromKnownTypes(string typeName, string? typeNs, DataContract? memberTypeContract, Type? declaredType)
         {
             XmlQualifiedName qname = new XmlQualifiedName(typeName, typeNs);
             DataContract? dataContract;

@@ -43,7 +43,7 @@ namespace System.Runtime.Serialization
             return null;
         }
 
-        internal static XmlSchemaElement? GetSchemaElement(XmlSchemaSet schemas, XmlQualifiedName elementQName, out XmlSchema outSchema)
+        internal static XmlSchemaElement? GetSchemaElement(XmlSchemaSet schemas, XmlQualifiedName elementQName, out XmlSchema? outSchema)
         {
             outSchema = null;
             ICollection currentSchemas = schemas.Schemas();

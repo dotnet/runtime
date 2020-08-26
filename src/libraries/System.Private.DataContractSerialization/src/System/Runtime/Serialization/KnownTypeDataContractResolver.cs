@@ -20,7 +20,7 @@ namespace System.Runtime.Serialization
             _context = context;
         }
 
-        public override bool TryResolveType(Type type, Type declaredType, DataContractResolver knownTypeResolver, out XmlDictionaryString? typeName, out XmlDictionaryString? typeNamespace)
+        public override bool TryResolveType(Type type, Type? declaredType, DataContractResolver knownTypeResolver, out XmlDictionaryString? typeName, out XmlDictionaryString? typeNamespace)
         {
             if (type == null)
             {
@@ -36,7 +36,7 @@ namespace System.Runtime.Serialization
             }
 
             DataContract contract = DataContract.GetDataContract(type);
-            if (_context.IsKnownType(contract, contract.KnownDataContracts, declaredType!))
+            if (_context.IsKnownType(contract, contract.KnownDataContracts, declaredType))
             {
                 typeName = contract.Name;
                 typeNamespace = contract.Namespace;
@@ -50,7 +50,7 @@ namespace System.Runtime.Serialization
             }
         }
 
-        public override Type? ResolveName(string? typeName, string? typeNamespace, Type declaredType, DataContractResolver knownTypeResolver)
+        public override Type? ResolveName(string? typeName, string? typeNamespace, Type? declaredType, DataContractResolver knownTypeResolver)
         {
             if (typeName == null || typeNamespace == null)
                 return null;
