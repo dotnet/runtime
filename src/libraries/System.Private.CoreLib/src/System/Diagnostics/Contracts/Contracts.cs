@@ -628,7 +628,8 @@ namespace System.Diagnostics.Contracts
             Assembly? probablyNotRewritten = null;
             for (int i = 0; i < stack.FrameCount; i++)
             {
-                Assembly? caller = stack.GetFrame(i)!.GetMethod()?.DeclaringType!.Assembly;
+                MethodBase stackMethod = stack.GetFrame(i)!.GetMethod();
+                Assembly? caller = (stackMethod != null) ? stackMethod.DeclaringType!.Assembly : null;
                 if (caller != null && caller != thisAssembly)
                 {
                     probablyNotRewritten = caller;
