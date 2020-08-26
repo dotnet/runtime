@@ -3775,4 +3775,7 @@
   <data name="BinaryFormatter_SerializationDisallowed" xml:space="preserve">
     <value>BinaryFormatter serialization and deserialization are disabled within this application. See https://aka.ms/binaryformatter for more information.</value>
   </data>
+  <data name="NotSupported_CodeBase" xml:space="preserve">
+    <value>CodeBase is not supported on assemblies loaded from a single-file bundle.</value>
+  </data>
 </root>

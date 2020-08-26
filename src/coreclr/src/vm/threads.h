@@ -239,6 +239,19 @@ public:
 #endif
 };
 
+// TailCallArgBuffer states
+#define TAILCALLARGBUFFER_ACTIVE       0
+#define TAILCALLARGBUFFER_INSTARG_ONLY 1
+#define TAILCALLARGBUFFER_ABANDONED    2
+
+struct TailCallArgBuffer
+{
+    int State;
+    int Size;
+    void* GCDesc;
+    BYTE Args[1];
+};
+
 #ifdef CROSSGEN_COMPILE
 
 #include "asmconstants.h"
@@ -968,18 +981,14 @@ class TailCallTls
     friend class CoreLibBinder;
 
     PortableTailCallFrame* m_frame;
-    char* m_argBuffer;
-    size_t m_argBufferSize;
-    void* m_argBufferGCDesc;
-    char m_argBufferInline[64];
+    TailCallArgBuffer* m_argBuffer;
 
 public:
     TailCallTls();
-    void* AllocArgBuffer(size_t size, void* gcDesc);
-    void FreeArgBuffer();
-    char* GetArgBuffer(void** gcDesc)
+    TailCallArgBuffer* AllocArgBuffer(int size, void* gcDesc);
+    void FreeArgBuffer() { delete[] (BYTE*)m_argBuffer; m_argBuffer = NULL; }
+    TailCallArgBuffer* GetArgBuffer()
     {
-        *gcDesc = m_argBufferGCDesc;
         return m_argBuffer;
     }
     const PortableTailCallFrame* GetFrame() { return m_frame; }

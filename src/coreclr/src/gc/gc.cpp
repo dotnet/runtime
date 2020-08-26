@@ -1987,6 +1987,8 @@ void stomp_write_barrier_resize(bool is_runtime_suspended, bool requires_upper_b
 
 void stomp_write_barrier_ephemeral(uint8_t* ephemeral_low, uint8_t* ephemeral_high)
 {
+    initGCShadow();
+
     WriteBarrierParameters args = {};
     args.operation = WriteBarrierOp::StompEphemeral;
     args.is_runtime_suspended = true;
@@ -37414,11 +37416,6 @@ void gc_heap::update_recorded_gen_data (last_recorded_gc_info* gc_info)
 
 void gc_heap::do_post_gc()
 {
-    if (!settings.concurrent)
-    {
-        initGCShadow();
-    }
-
 #ifdef MULTIPLE_HEAPS
     gc_heap* hp = g_heaps[0];
 #else
