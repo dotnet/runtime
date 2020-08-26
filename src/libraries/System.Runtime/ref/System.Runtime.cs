@@ -3130,8 +3130,12 @@ namespace System
         public virtual int Next() { throw null; }
         public virtual int Next(int maxValue) { throw null; }
         public virtual int Next(int minValue, int maxValue) { throw null; }
+        public virtual long NextInt64() { throw null; }
+        public virtual long NextInt64(long maxValue) { throw null; }
+        public virtual long NextInt64(long minValue, long maxValue) { throw null; }
         public virtual void NextBytes(byte[] buffer) { }
         public virtual void NextBytes(System.Span<byte> buffer) { }
+        public virtual float NextSingle() { throw null; }
         public virtual double NextDouble() { throw null; }
         protected virtual double Sample() { throw null; }
     }
