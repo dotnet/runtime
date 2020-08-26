@@ -536,9 +536,10 @@ namespace System.Collections.Generic
                     return;
                 }
 
-                Type? otherType = other.GetType().GetGenericTypeDefinition();
+                Type? otherType = other.GetType();
+                otherType = otherType.IsGenericType ? otherType.GetGenericTypeDefinition() : null;
                 // For types supporting O(1) lookup, utilize the contains method for faster intersect.
-                if (otherType == typeof(Dictionary<,>.KeyCollection))
+                if (otherType != null && otherType == typeof(Dictionary<,>.KeyCollection))
                 {
                     IntersectWithCollection(otherAsCollection);
                     return;
