@@ -150,34 +150,19 @@ namespace System.Net.Http
             return sslStream;
         }
 
-        public static async ValueTask<QuicConnection> ConnectQuicAsync(string host, int port, SslClientAuthenticationOptions? clientAuthenticationOptions, CancellationToken cancellationToken)
+        public static async ValueTask<QuicConnection> ConnectQuicAsync(DnsEndPoint endPoint, SslClientAuthenticationOptions? clientAuthenticationOptions, CancellationToken cancellationToken)
         {
-            IPAddress[] addresses = await Dns.GetHostAddressesAsync(host).ConfigureAwait(false);
-            Exception? lastException = null;
-
-            foreach (IPAddress address in addresses)
+            QuicConnection con = new QuicConnection(endPoint, clientAuthenticationOptions);
+            try
             {
-                QuicConnection con = new QuicConnection(new IPEndPoint(address, port), clientAuthenticationOptions);
-                try
-                {
-                    await con.ConnectAsync(cancellationToken).ConfigureAwait(false);
-                    return con;
-                }
-                // TODO: it would be great to catch a specific exception here... QUIC implementation dependent.
-                catch (Exception ex) when (!(ex is OperationCanceledException))
-                {
-                    con.Dispose();
-                    lastException = ex;
-                }
+                await con.ConnectAsync(cancellationToken).ConfigureAwait(false);
+                return con;
             }
-
-            if (lastException != null)
+            catch (Exception ex)
             {
-                throw CreateWrappedException(lastException, host, port, cancellationToken);
+                con.Dispose();
+                throw CreateWrappedException(ex, endPoint.Host, endPoint.Port, cancellationToken);
             }
-
-            // TODO: find correct exception to throw here.
-            throw new HttpRequestException("No host found.");
         }
 
         private static Exception CreateWrappedException(Exception error, string host, int port, CancellationToken cancellationToken)

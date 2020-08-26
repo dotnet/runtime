@@ -162,16 +162,24 @@ namespace System.Reflection.Emit
             return ((ModuleBuilder)m_methodBuilder.Module).GetMethodTokenInternal(method, optionalParameterTypes, useMethodDef);
         }
 
-        internal virtual SignatureHelper GetMemberRefSignature(CallingConventions call, Type? returnType,
-            Type[]? parameterTypes, Type[]? optionalParameterTypes)
+        internal SignatureHelper GetMemberRefSignature(
+            CallingConventions call,
+            Type? returnType,
+            Type[]? parameterTypes,
+            Type[]? optionalParameterTypes)
         {
-            return GetMemberRefSignature(call, returnType, parameterTypes, optionalParameterTypes, 0);
+            return GetMemberRefSignature(call, returnType, parameterTypes, null, null, optionalParameterTypes);
+        }
+        internal virtual SignatureHelper GetMemberRefSignature(CallingConventions call, Type? returnType,
+            Type[]? parameterTypes, Type[][]? requiredCustomModifiers, Type[][]? optionalCustomModifiers, Type[]? optionalParameterTypes)
+        {
+            return GetMemberRefSignature(call, returnType, parameterTypes, requiredCustomModifiers, optionalCustomModifiers, optionalParameterTypes, 0);
         }
 
         private SignatureHelper GetMemberRefSignature(CallingConventions call, Type? returnType,
-            Type[]? parameterTypes, Type[]? optionalParameterTypes, int cGenericParameters)
+            Type[]? parameterTypes, Type[][]? requiredCustomModifiers, Type[][]? optionalCustomModifiers, Type[]? optionalParameterTypes, int cGenericParameters)
         {
-            return ((ModuleBuilder)m_methodBuilder.Module).GetMemberRefSignature(call, returnType, parameterTypes, optionalParameterTypes, cGenericParameters);
+            return ((ModuleBuilder)m_methodBuilder.Module).GetMemberRefSignature(call, returnType, parameterTypes, requiredCustomModifiers, optionalCustomModifiers, optionalParameterTypes, cGenericParameters);
         }
 
         internal byte[]? BakeByteArray()

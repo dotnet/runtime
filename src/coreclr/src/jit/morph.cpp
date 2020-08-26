@@ -6774,6 +6774,12 @@ bool Compiler::fgCanFastTailCall(GenTreeCall* callee, const char** failReason)
         return false;
     }
 
+    if (callee->IsStressTailCall())
+    {
+        reportFastTailCallDecision("Fast tail calls are not performed under tail call stress");
+        return false;
+    }
+
     // Note on vararg methods:
     // If the caller is vararg method, we don't know the number of arguments passed by caller's caller.
     // But we can be sure that in-coming arg area of vararg caller would be sufficient to hold its
@@ -7226,6 +7232,14 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
     // is set. This avoids the need for iterating through all lcl vars of the current
     // method.  Right now throughout the code base we are not consistently using 'set'
     // method to set lvHasLdAddrOp and lvAddrExposed flags.
+
+    bool isImplicitOrStressTailCall = call->IsImplicitTailCall() || call->IsStressTailCall();
+    if (isImplicitOrStressTailCall && compLocallocUsed)
+    {
+        failTailCall("Localloc used");
+        return nullptr;
+    }
+
     bool hasStructParam = false;
     for (unsigned varNum = 0; varNum < lvaCount; varNum++)
     {
@@ -7235,7 +7249,7 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
         // We still must check for any struct parameters and set 'hasStructParam'
         // so that we won't transform the recursive tail call into a loop.
         //
-        if (call->IsImplicitTailCall() || call->IsStressTailCall())
+        if (isImplicitOrStressTailCall)
         {
             if (varDsc->lvHasLdAddrOp && !lvaIsImplicitByRefLocal(varNum))
             {
@@ -7686,6 +7700,8 @@ GenTree* Compiler::fgMorphTailCallViaHelpers(GenTreeCall* call, CORINFO_TAILCALL
     assert(!call->IsImplicitTailCall());
     assert(!fgCanFastTailCall(call, nullptr));
 
+    bool virtualCall = call->IsVirtual();
+
     // If VSD then get rid of arg to VSD since we turn this into a direct call.
     // The extra arg will be the first arg so this needs to be done before we
     // handle the retbuf below.
@@ -7720,41 +7736,39 @@ GenTree* Compiler::fgMorphTailCallViaHelpers(GenTreeCall* call, CORINFO_TAILCALL
     // where we pass instantiating stub.
     if ((help.flags & CORINFO_TAILCALL_STORE_TARGET) != 0)
     {
-        // If asked to store target and we have a type arg we will store
-        // instantiating stub, so in that case we should not pass the type arg.
-        if (call->tailCallInfo->GetSig()->hasTypeArg())
+        JITDUMP("Adding target since VM requested it\n");
+        GenTree* target;
+        if (!virtualCall)
         {
-            JITDUMP("Removing type arg");
-
-            assert(call->gtCallArgs != nullptr);
-            if (Target::g_tgtArgOrder == Target::ARG_ORDER_R2L)
+            if (call->gtCallType == CT_INDIRECT)
             {
-                // Generic context is first arg
-                call->gtCallArgs = call->gtCallArgs->GetNext();
+                noway_assert(call->gtCallAddr != nullptr);
+                target = call->gtCallAddr;
             }
             else
             {
-                // Generic context is last arg
-                GenTreeCall::Use** lastArgSlot = &call->gtCallArgs;
-                while ((*lastArgSlot)->GetNext() != nullptr)
+                CORINFO_CONST_LOOKUP addrInfo;
+                info.compCompHnd->getFunctionEntryPoint(call->gtCallMethHnd, &addrInfo);
+
+                CORINFO_GENERIC_HANDLE handle       = nullptr;
+                void*                  pIndirection = nullptr;
+                assert(addrInfo.accessType != IAT_PPVALUE && addrInfo.accessType != IAT_RELPVALUE);
+
+                if (addrInfo.accessType == IAT_VALUE)
                 {
-                    lastArgSlot = &(*lastArgSlot)->NextRef();
+                    handle = addrInfo.handle;
                 }
-
-                *lastArgSlot = nullptr;
+                else if (addrInfo.accessType == IAT_PVALUE)
+                {
+                    pIndirection = addrInfo.addr;
+                }
+                target = gtNewIconEmbHndNode(handle, pIndirection, GTF_ICON_FTN_ADDR, call->gtCallMethHnd);
             }
-            call->fgArgInfo = nullptr;
-        }
-
-        JITDUMP("Adding target since VM requested it\n");
-        GenTree* target;
-        if (call->tailCallInfo->IsCalli())
-        {
-            noway_assert(call->gtCallType == CT_INDIRECT && call->gtCallAddr != nullptr);
-            target = call->gtCallAddr;
         }
         else
         {
+            assert(!call->tailCallInfo->GetSig()->hasTypeArg());
+
             CORINFO_CALL_INFO callInfo;
             unsigned          flags = CORINFO_CALLINFO_LDFTN;
             if (call->tailCallInfo->IsCallvirt())
@@ -7764,19 +7778,10 @@ GenTree* Compiler::fgMorphTailCallViaHelpers(GenTreeCall* call, CORINFO_TAILCALL
 
             eeGetCallInfo(call->tailCallInfo->GetToken(), nullptr, (CORINFO_CALLINFO_FLAGS)flags, &callInfo);
 
-            if (!call->tailCallInfo->IsCallvirt() ||
-                ((callInfo.methodFlags & (CORINFO_FLG_FINAL | CORINFO_FLG_STATIC)) != 0) ||
-                ((callInfo.methodFlags & CORINFO_FLG_VIRTUAL) == 0))
-            {
-                target = getMethodPointerTree(call->tailCallInfo->GetToken(), &callInfo);
-            }
-            else
-            {
-                assert(call->gtCallThisArg != nullptr);
-                // TODO: Proper cloning of the this pointer.
-                target = getVirtMethodPointerTree(gtCloneExpr(call->gtCallThisArg->GetNode()),
-                                                  call->tailCallInfo->GetToken(), &callInfo);
-            }
+            assert(call->gtCallThisArg != nullptr);
+            // TODO: Proper cloning of the this pointer.
+            target = getVirtMethodPointerTree(gtCloneExpr(call->gtCallThisArg->GetNode()),
+                                              call->tailCallInfo->GetToken(), &callInfo);
         }
 
         // Insert target as last arg
@@ -8028,30 +8033,6 @@ GenTree* Compiler::fgCreateCallDispatcherAndGetResult(GenTreeCall*          orig
     }
 
     return finalTree;
-}
-
-//------------------------------------------------------------------------
-// getMethodPointerTree: get a method pointer tree
-//
-// Arguments:
-//    pResolvedToken - resolved token of the call
-//    pCallInfo - the call info of the call
-//
-// Return Value:
-//    A node representing the method pointer
-//
-GenTree* Compiler::getMethodPointerTree(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_CALL_INFO* pCallInfo)
-{
-    switch (pCallInfo->kind)
-    {
-        case CORINFO_CALL:
-            return new (this, GT_FTN_ADDR) GenTreeFptrVal(TYP_I_IMPL, pCallInfo->hMethod);
-        case CORINFO_CALL_CODE_POINTER:
-            return getLookupTree(pResolvedToken, &pCallInfo->codePointerLookup, GTF_ICON_FTN_ADDR, pCallInfo->hMethod);
-        default:
-            noway_assert(!"unknown call kind");
-            return nullptr;
-    }
 }
 
 //------------------------------------------------------------------------
