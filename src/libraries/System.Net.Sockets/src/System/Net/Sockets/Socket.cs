@@ -22,11 +22,6 @@ namespace System.Net.Sockets
     {
         internal const int DefaultCloseTimeout = -1; // NOTE: changing this default is a breaking change.
 
-        private static readonly HashSet<IPAddress> s_wildcardAddresses = new HashSet<IPAddress>
-        {
-            IPAddress.Any, IPAddress.IPv6Any, IPAddress.Any.MapToIPv6()
-        };
-
         private SafeSocketHandle _handle;
 
         // _rightEndPoint is null if the socket has not been bound.  Otherwise, it is any EndPoint of the
@@ -4942,7 +4937,8 @@ namespace System.Net.Sockets
 
             if (endPoint is IPEndPoint ipEndpoint)
             {
-                return s_wildcardAddresses.Contains(ipEndpoint.Address);
+                IPAddress address = ipEndpoint.Address;
+                return IPAddress.Any.Equals(address) || IPAddress.IPv6Any.Equals(address) || IPAddress.Any.MapToIPv6().Equals(address);
             }
 
             return false;
