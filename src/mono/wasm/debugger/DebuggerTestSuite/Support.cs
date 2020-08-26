@@ -342,28 +342,28 @@ namespace DebuggerTests
         internal async Task CheckDateTime(JToken value, DateTime expected, string label = "")
         {
             await CheckValue(value, TValueType("System.DateTime", expected.ToString()), label);
-            await CheckDateTimeValue(value, expected);
+            await CheckDateTimeValue(value, expected, label);
         }
 
-        internal async Task CheckDateTime(JToken locals, string name, DateTime expected)
+        internal async Task CheckDateTime(JToken locals, string name, DateTime expected, string label="")
         {
-            var obj = GetAndAssertObjectWithName(locals, name);
-            await CheckDateTimeValue(obj["value"], expected);
+            var obj = GetAndAssertObjectWithName(locals, name, label);
+            await CheckDateTimeValue(obj["value"], expected, label);
         }
 
-        internal async Task CheckDateTimeValue(JToken value, DateTime expected)
+        internal async Task CheckDateTimeValue(JToken value, DateTime expected, string label="")
         {
-            await CheckDateTimeMembers(value, expected);
+            await CheckDateTimeMembers(value, expected, label);
 
             var res = await InvokeGetter(JObject.FromObject(new { value = value }), "Date");
-            await CheckDateTimeMembers(res.Value["result"], expected.Date);
+            await CheckDateTimeMembers(res.Value["result"], expected.Date, label);
 
             // FIXME: check some float properties too
 
-            async Task CheckDateTimeMembers(JToken v, DateTime exp_dt)
+            async Task CheckDateTimeMembers(JToken v, DateTime exp_dt, string label="")
             {
-                AssertEqual("System.DateTime", v["className"]?.Value<string>(), "className");
-                AssertEqual(exp_dt.ToString(), v["description"]?.Value<string>(), "description");
+                AssertEqual("System.DateTime", v["className"]?.Value<string>(), $"{label}#className");
+                AssertEqual(exp_dt.ToString(), v["description"]?.Value<string>(), $"{label}#description");
 
                 var members = await GetProperties(v["objectId"]?.Value<string>());
 
@@ -409,11 +409,11 @@ namespace DebuggerTests
                 GetAndAssertObjectWithName(locals, name)["value"],
                 TArray(class_name, length), name).Wait();
 
-        internal JToken GetAndAssertObjectWithName(JToken obj, string name)
+        internal JToken GetAndAssertObjectWithName(JToken obj, string name, string label="")
         {
             var l = obj.FirstOrDefault(jt => jt["name"]?.Value<string>() == name);
             if (l == null)
-                Assert.True(false, $"Could not find variable '{name}'");
+                Assert.True(false, $"[{label}] Could not find variable '{name}'");
             return l;
         }
 
