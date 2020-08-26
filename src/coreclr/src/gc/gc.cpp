@@ -8535,6 +8535,75 @@ static void do_vxsort (uint8_t** item_array, ptrdiff_t item_count, uint8_t* rang
 #ifdef MULTIPLE_HEAPS
 #ifdef PARALLEL_MARK_LIST_SORT
 NOINLINE
+uint8_t** gc_heap::equalize_mark_lists()
+{
+    size_t local_mark_count[MAX_SUPPORTED_CPUS];
+    size_t total_mark_count = 0;
+
+    // compute mark count per heap into a local array
+    // compute the total
+    for (int i = 0; i < n_heaps; i++)
+    {
+        gc_heap* hp = g_heaps[i];
+        size_t mark_count = (hp->mark_list_index - hp->mark_list);
+        local_mark_count[i] = mark_count;
+        total_mark_count += mark_count;
+    }
+
+    // compute the average (rounded down)
+    size_t average_mark_count = total_mark_count / n_heaps;
+
+    // compute the remainder
+    size_t remaining_mark_count = total_mark_count - (average_mark_count * n_heaps);
+
+    // compute the target count for this heap - last heap has the remainder
+    size_t target_mark_count = average_mark_count + ((heap_number == n_heaps - 1) ? remaining_mark_count : 0);
+
+    // if our heap has sufficient entries, we can exit early
+    if (local_mark_count[heap_number] >= target_mark_count)
+        return mark_list + target_mark_count;
+
+    // In the following, we try to fill the deficit in heap "deficit_heap_index" with 
+    // surplus from "surplus_heap_index".
+    // If there is no deficit or surplus (anymore), the indices are advanced.
+    int surplus_heap_index = 0;
+    for (int deficit_heap_index = 0; deficit_heap_index <= heap_number; deficit_heap_index++)
+    {
+        // compute the target count for this heap - last heap has the remainder
+        target_mark_count = average_mark_count + ((deficit_heap_index == n_heaps - 1) ? remaining_mark_count : 0);
+
+        // if this heap has the target or larger count, skip it
+        if (local_mark_count[deficit_heap_index] >= target_mark_count)
+            continue;
+
+        // while this heap is lower than average, fill it up
+        while (surplus_heap_index < n_heaps && local_mark_count[deficit_heap_index] < average_mark_count)
+        {
+            size_t deficit = target_mark_count - local_mark_count[deficit_heap_index];
+
+            if (local_mark_count[surplus_heap_index] > average_mark_count)
+            {
+                size_t surplus = local_mark_count[surplus_heap_index] - average_mark_count;
+                size_t amount_to_transfer = min(deficit, surplus);
+                local_mark_count[surplus_heap_index] -= amount_to_transfer;
+                if (deficit_heap_index == heap_number)
+                {
+                    // copy amount_to_transfer mark list items
+                    memcpy(&g_heaps[deficit_heap_index]->mark_list[local_mark_count[deficit_heap_index]],
+                           &g_heaps[surplus_heap_index]->mark_list[local_mark_count[surplus_heap_index]],
+                            amount_to_transfer*sizeof(mark_list[0]));
+                }
+                local_mark_count[deficit_heap_index] += amount_to_transfer;
+            }
+            else
+            {
+                surplus_heap_index++;
+            }
+        }
+    }
+    return mark_list + local_mark_count[heap_number];
+}
+NOINLINE
 void gc_heap::sort_mark_list()
 {
     if (settings.condemned_generation >= max_generation)
@@ -8600,8 +8669,10 @@ void gc_heap::sort_mark_list()
         return;
     }
 
+    uint8_t **local_mark_list_index = equalize_mark_lists();
+
 #ifdef USE_VXSORT
-    ptrdiff_t item_count = mark_list_index - mark_list;
+    ptrdiff_t item_count = local_mark_list_index - mark_list;
 //#define WRITE_SORT_DATA
 #if defined(_DEBUG) || defined(WRITE_SORT_DATA)
         // in debug, make a copy of the mark list
@@ -8663,9 +8734,9 @@ void gc_heap::sort_mark_list()
 
 #else //USE_VXSORT
     dprintf (3, ("Sorting mark lists"));
-    if (mark_list_index > mark_list)
+    if (local_mark_list_index > mark_list)
     {
-        introsort::sort (mark_list, mark_list_index - 1, 0);
+        introsort::sort (mark_list, local_mark_list_index - 1, 0);
     }
 #endif
 
@@ -8683,10 +8754,10 @@ void gc_heap::sort_mark_list()
     uint8_t** x = mark_list;
 
 // predicate means: x is still within the mark list, and within the bounds of this heap
-#define predicate(x) (((x) < mark_list_index) && (*(x) < heap->ephemeral_high))
+#define predicate(x) (((x) < local_mark_list_index) && (*(x) < heap->ephemeral_high))
 
     heap_num = -1;
-    while (x < mark_list_index)
+    while (x < local_mark_list_index)
     {
         gc_heap* heap;
         // find the heap x points into - searching cyclically from the last heap,
@@ -8712,9 +8783,9 @@ void gc_heap::sort_mark_list()
         if (predicate(x))
         {
             // let's see if we get lucky and the whole rest belongs to this piece
-            if (predicate(mark_list_index-1))
+            if (predicate(local_mark_list_index -1))
             {
-                x = mark_list_index;
+                x = local_mark_list_index;
                 mark_list_piece_end[heap_num] = x;
                 break;
             }

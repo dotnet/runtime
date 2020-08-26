@@ -2920,6 +2920,8 @@ protected:
     PER_HEAP
     void sort_mark_list();
     PER_HEAP
+    uint8_t** equalize_mark_lists();
+    PER_HEAP
     void merge_mark_lists();
     PER_HEAP
     void append_to_mark_list(uint8_t **start, uint8_t **end);
