@@ -229,6 +229,10 @@ if (NOT CLR_CMAKE_TARGET_ARCH_I386 OR NOT CLR_CMAKE_TARGET_WIN32)
   add_compile_definitions($<$<NOT:$<BOOL:$<TARGET_PROPERTY:IGNORE_DEFAULT_TARGET_ARCH>>>:FEATURE_EH_FUNCLETS>)
 endif (NOT CLR_CMAKE_TARGET_ARCH_I386 OR NOT CLR_CMAKE_TARGET_WIN32)
 
+
+# Use this function to enable building with a specific target OS and architecture set of defines
+# This is known to work for the set of defines used by the JIT and gcinfo, it is not likely correct for
+# other components of the runtime
 function(set_target_definitions_to_custom_os_and_arch)
   set(oneValueArgs TARGET OS ARCH)
   cmake_parse_arguments(TARGETDETAILS "" "${oneValueArgs}" "" ${ARGN})
