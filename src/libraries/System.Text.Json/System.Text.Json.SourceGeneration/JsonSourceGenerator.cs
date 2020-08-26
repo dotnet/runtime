@@ -59,12 +59,12 @@ namespace System.Text.Json.SourceGeneration
 
                         // Get non-user owned typeSymbol from IdentifierNameSyntax and add to found types.
                         INamedTypeSymbol externalTypeSymbol = model.GetTypeInfo(externalTypeNode).ConvertedType as INamedTypeSymbol;
-                        FoundTypes[typeDeclarationNode.Identifier.Text] = new TypeWrapper(externalTypeSymbol, metadataLoadContext);
+                        FoundTypes[externalTypeSymbol.ToString()] = new TypeWrapper(externalTypeSymbol, metadataLoadContext);
                     }
                     else
                     {
                         // Add user owned type into found types.
-                        FoundTypes[typeDeclarationNode.Identifier.Text] = new TypeWrapper(typeSymbol, metadataLoadContext);
+                        FoundTypes[typeSymbol.ToString()] = new TypeWrapper(typeSymbol, metadataLoadContext);
                     }
                 }
             }
@@ -81,9 +81,9 @@ namespace System.Text.Json.SourceGeneration
             }
 
             // Generate sources for each type.
-            foreach (KeyValuePair<Type, string> entry in codegen.Types)
+            foreach (KeyValuePair<Type, Tuple<string, string>> entry in codegen.Types)
             {
-                context.AddSource($"{entry.Key.Name}ClassInfo.g.cs", SourceText.From(entry.Value, Encoding.UTF8));
+                context.AddSource($"{entry.Value.Item1}ClassInfo.g.cs", SourceText.From(entry.Value.Item2, Encoding.UTF8));
             }
 
             // For each diagnostic, report to the user.

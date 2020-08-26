@@ -27,11 +27,14 @@ namespace System.Text.Json.SourceGeneration
         // Generation namespace for source generation code.
         const string GenerationNamespace = "JsonCodeGeneration";
 
-        // Type for key and a generated-source for value.
-        public Dictionary<Type, string> Types { get; }
+        // TypeWrapper for key and <TypeInfoIdentifier, Source> for value.
+        public Dictionary<Type, Tuple<string, string>> Types { get; }
 
         // Contains types that failed to be generated.
         private HashSet<Type> _failedTypes = new HashSet<Type>();
+
+        // Contains used typeinfo identifiers.
+        private HashSet<string> _usedTypeInfoIdentifiers = new HashSet<string>();
 
         // Contains list of diagnostics for the code generator.
         public List<Diagnostic> Diagnostics { get; }
@@ -39,14 +42,14 @@ namespace System.Text.Json.SourceGeneration
         public JsonSourceGeneratorHelper()
         {
             // Initialize auto properties.
-            Types = new Dictionary<Type, string>();
+            Types = new Dictionary<Type, Tuple<string, string>>();
             Diagnostics = new List<Diagnostic>();
 
             // Initiate diagnostic descriptors.
             InitializeDiagnosticDescriptors();
         }
 
-        public struct GenerationClassFrame
+        public class GenerationClassFrame
         {
             public Type RootType;
             public Type CurrentType;
@@ -58,15 +61,21 @@ namespace System.Text.Json.SourceGeneration
 
             public bool IsSuccessful; 
 
-            public GenerationClassFrame(Type rootType, Type currentType)
+            public GenerationClassFrame(Type rootType, Type currentType, HashSet<string> usedTypeInfoIdentifiers)
             {
                 RootType = rootType;
                 CurrentType = currentType;
-                ClassName = currentType.GetCompilableUniqueName();
                 Source = new StringBuilder();
                 Properties = CurrentType.GetProperties();
                 Fields = CurrentType.GetFields();
                 IsSuccessful = true;
+
+                // If typename was already used, use unique name instead.
+                ClassName = usedTypeInfoIdentifiers.Contains(currentType.Name) ?
+                    currentType.GetCompilableUniqueName() : currentType.Name;
+
+                // Register new ClassName.
+                usedTypeInfoIdentifiers.Add(ClassName);
             }
         }
 
@@ -99,10 +108,10 @@ namespace {GenerationNamespace}
         }
 
         // Generates metadata for type and returns if it was successful.
-        private bool GenerateClassInfo(GenerationClassFrame currentFrame, HashSet<Type> seenTypes)
+        private bool GenerateClassInfo(GenerationClassFrame currentFrame, Dictionary<Type, string> seenTypes)
         {
-            // Add current type to generated types.
-            seenTypes.Add(currentFrame.CurrentType);
+            // Add current type to seen types along with its className..
+            seenTypes[currentFrame.CurrentType] = currentFrame.ClassName;
 
             // Try to recursively generate necessary field and property types.
             foreach (FieldInfo field in currentFrame.Fields)
@@ -137,7 +146,7 @@ namespace {GenerationNamespace}
             InitializeTypeClass(currentFrame);
             TypeInfoGetterSetter(currentFrame);
             currentFrame.IsSuccessful &= InitializeTypeInfoProperties(currentFrame);
-            currentFrame.IsSuccessful &= GenerateTypeInfoConstructor(currentFrame);
+            currentFrame.IsSuccessful &= GenerateTypeInfoConstructor(currentFrame, seenTypes);
             GenerateCreateObject(currentFrame);
             GenerateSerialize(currentFrame);
             GenerateDeserialize(currentFrame);
@@ -148,7 +157,12 @@ namespace {GenerationNamespace}
                 Diagnostics.Add(Diagnostic.Create(_generatedTypeClass, Location.None, new string[] { currentFrame.RootType.Name, currentFrame.ClassName }));
 
                 // Add generated typeinfo for current traversal.
-                Types.Add(currentFrame.CurrentType, currentFrame.Source.ToString());
+                Types.Add(currentFrame.CurrentType, new Tuple<string, string>(currentFrame.ClassName, currentFrame.Source.ToString()));
+                // If added type had its typeinfo name changed, report to the user.
+                if (currentFrame.CurrentType.Name != currentFrame.ClassName)
+                {
+                    Diagnostics.Add(Diagnostic.Create(_typeNameClash, Location.None, new string[] { currentFrame.CurrentType.Name, currentFrame.ClassName }));
+                }
             }
             else
             {
@@ -157,18 +171,21 @@ namespace {GenerationNamespace}
                 // If not successful remove it from found types hashset and add to failed types list.
                 seenTypes.Remove(currentFrame.CurrentType);
                 _failedTypes.Add(currentFrame.CurrentType);
+
+                // Unregister typeinfo identifier since typeinfo will not be saved.
+                _usedTypeInfoIdentifiers.Remove(currentFrame.ClassName);
             }
 
             return currentFrame.IsSuccessful;
         }
 
         // Call recursive type generation if unseen type and check for success and cycles.
-        void GenerateForMembers(GenerationClassFrame currentFrame, Type newType, HashSet<Type> seenTypes)
+        void GenerateForMembers(GenerationClassFrame currentFrame, Type newType, Dictionary<Type, string> seenTypes)
         {
             // If new type, recurse.
             if (IsNewType(newType, seenTypes))
             {
-                bool isMemberSuccessful = GenerateClassInfo(new GenerationClassFrame(currentFrame.RootType, newType), seenTypes);
+                bool isMemberSuccessful = GenerateClassInfo(new GenerationClassFrame(currentFrame.RootType, newType, _usedTypeInfoIdentifiers), seenTypes);
                 currentFrame.IsSuccessful &= isMemberSuccessful;
 
                 if (!isMemberSuccessful)
@@ -200,8 +217,8 @@ namespace {GenerationNamespace}
         // Returns name of types traversed that can be looked up in the dictionary.
         public void GenerateClassInfo(Type type)
         {
-            HashSet<Type> foundTypes = new HashSet<Type>();
-            GenerateClassInfo(new GenerationClassFrame(rootType: type, currentType: type), foundTypes);
+            Dictionary<Type, string> foundTypes = new Dictionary<Type, string>();
+            GenerateClassInfo(new GenerationClassFrame(rootType: type, currentType: type, _usedTypeInfoIdentifiers), foundTypes);
         }
 
         private Type[] GetTypesToGenerate(Type type)
@@ -218,10 +235,24 @@ namespace {GenerationNamespace}
             return new Type[] { type };
         }
 
-        private bool IsNewType(Type type, HashSet<Type> foundTypes) => (
+        private bool IsNewType(Type type, Dictionary<Type, string> foundTypes) => (
             !Types.ContainsKey(type) &&
-            !foundTypes.Contains(type) &&
+            !foundTypes.ContainsKey(type) &&
             !s_simpleTypes.Contains(type));
+
+        private string GetTypeInfoIdentifier(Type type, Dictionary<Type, string> seenTypes)
+        {
+            if (s_simpleTypes.Contains(type))
+            {
+                return type.Name;
+            }
+            if (Types.ContainsKey(type))
+            {
+                return Types[type].Item1;
+            }
+
+            return seenTypes[type];
+        }
 
         private void AddImportsToTypeClass(GenerationClassFrame currentFrame)
         {
@@ -352,7 +383,7 @@ namespace {GenerationNamespace}
             return true;
         }
 
-        private bool GenerateTypeInfoConstructor(GenerationClassFrame currentFrame)
+        private bool GenerateTypeInfoConstructor(GenerationClassFrame currentFrame, Dictionary<Type, string> seenTypes)
         {
             Type currentType = currentFrame.CurrentType;
 
@@ -366,33 +397,29 @@ namespace {GenerationNamespace}
             Type[] genericTypes;
             Type propertyType;
             string typeClassInfoCall;
+            string typeInfoIdentifier;
 
             foreach (PropertyInfo property in currentFrame.Properties)
             {
                 propertyType = property.PropertyType;
                 genericTypes = GetTypesToGenerate(propertyType);
 
-                // Check if Array.
                 if (propertyType.IsArray)
                 {
-                    typeClassInfoCall = $"KnownCollectionTypeInfos<{genericTypes[0].FullName}>.GetArray(context.{genericTypes[0].GetCompilableUniqueName()}, context)";
+                    typeInfoIdentifier = GetTypeInfoIdentifier(genericTypes[0], seenTypes);
+                    typeClassInfoCall = $"KnownCollectionTypeInfos<{genericTypes[0].FullName}>.GetArray(context.{typeInfoIdentifier}, context)";
                 }
-                else
-                {
-                    // Default classtype for values.
-                    typeClassInfoCall = $"context.{propertyType.GetCompilableUniqueName()}";
-                }
-
-                // Check if IEnumerable.
-                if (propertyType.IsIEnumerable())
+                else if (propertyType.IsIEnumerable())
                 {
                     if (propertyType.IsIList())
                     {
-                        typeClassInfoCall = $"KnownCollectionTypeInfos<{genericTypes[0].FullName}>.GetList(context.{genericTypes[0].GetCompilableUniqueName()}, context)";
+                        typeInfoIdentifier = GetTypeInfoIdentifier(genericTypes[0], seenTypes);
+                        typeClassInfoCall = $"KnownCollectionTypeInfos<{genericTypes[0].FullName}>.GetList(context.{typeInfoIdentifier}, context)";
                     }
                     else if (propertyType.IsIDictionary())
                     {
-                        typeClassInfoCall = $"KnownDictionaryTypeInfos<{genericTypes[0].FullName}, {genericTypes[1].FullName}>.GetDictionary(context.{genericTypes[1].GetCompilableUniqueName()}, context)";
+                        typeInfoIdentifier = GetTypeInfoIdentifier(genericTypes[1], seenTypes);
+                        typeClassInfoCall = $"KnownDictionaryTypeInfos<{genericTypes[0].FullName}, {genericTypes[1].FullName}>.GetDictionary(context.{typeInfoIdentifier}, context)";
                     }
                     else
                     {
@@ -400,6 +427,13 @@ namespace {GenerationNamespace}
                         return false;
                     }
                 }
+                else
+                {
+                    // Default classtype for values.
+                    typeInfoIdentifier = GetTypeInfoIdentifier(propertyType, seenTypes);
+                    typeClassInfoCall = $"context.{typeInfoIdentifier}";
+                }
+
 
                 currentFrame.Source.Append($@"
                 _property_{property.Name} = typeInfo.AddProperty(nameof({currentType.FullName}.{property.Name}),

@@ -10,71 +10,6 @@ using Xunit;
 
 namespace System.Text.Json.SourceGeneration.Tests
 {
-    [JsonSerializable]
-    public class Location
-    {
-        public int Id { get; set; }
-        public string Address1 { get; set; }
-        public string Address2 { get; set; }
-        public string City { get; set; }
-        public string State { get; set; }
-        public string PostalCode { get; set; }
-        public string Name { get; set; }
-        public string PhoneNumber { get; set; }
-        public string Country { get; set; }
-    }
-
-    [JsonSerializable]
-    public class ActiveOrUpcomingEvent
-    {
-        public int Id { get; set; }
-        public string ImageUrl { get; set; }
-        public string Name { get; set; }
-        public string CampaignName { get; set; }
-        public string CampaignManagedOrganizerName { get; set; }
-        public string Description { get; set; }
-        public DateTimeOffset StartDate { get; set; }
-        public DateTimeOffset EndDate { get; set; }
-    }
-
-    [JsonSerializable]
-    public class CampaignSummaryViewModel
-    {
-        public int Id { get; set; }
-        public string Title { get; set; }
-        public string Description { get; set; }
-        public string ImageUrl { get; set; }
-        public string OrganizationName { get; set; }
-        public string Headline { get; set; }
-    }
-
-    [JsonSerializable]
-    public class IndexViewModel
-    {
-        public List<ActiveOrUpcomingEvent> ActiveOrUpcomingEvents { get; set; }
-        public CampaignSummaryViewModel FeaturedCampaign { get; set; }
-        public bool IsNewAccount { get; set; }
-        public bool HasFeaturedCampaign => FeaturedCampaign != null;
-    }
-
-    [JsonSerializable]
-    public class WeatherForecastWithPOCOs
-    {
-        public DateTimeOffset Date { get; set; }
-        public int TemperatureCelsius { get; set; }
-        public string Summary { get; set; }
-        public string SummaryField;
-        public List<DateTimeOffset> DatesAvailable { get; set; }
-        public Dictionary<string, HighLowTemps> TemperatureRanges { get; set; }
-        public string[] SummaryWords { get; set; }
-    }
-
-    public class HighLowTemps
-    {
-        public int High { get; set; }
-        public int Low { get; set; }
-    }
-
     public static class JsonSerializerSourceGeneratorTests
     {
         [Fact]
@@ -82,6 +17,8 @@ namespace System.Text.Json.SourceGeneration.Tests
         {
             Location expected = CreateLocation();
 
+            // Location is renamed to SystemTextJsonSourceGenerationTestsLocation given there is another type with the name Location.
+            // Warning to the user is displayed with this detailed at compile time.
             string json = JsonSerializer.Serialize(expected, JsonContext.Instance.SystemTextJsonSourceGenerationTestsLocation);
             Location obj = JsonSerializer.Deserialize(json, JsonContext.Instance.SystemTextJsonSourceGenerationTestsLocation);
 
@@ -93,8 +30,8 @@ namespace System.Text.Json.SourceGeneration.Tests
         {
             IndexViewModel expected = CreateIndexViewModel();
 
-            string json = JsonSerializer.Serialize(expected, JsonContext.Instance.SystemTextJsonSourceGenerationTestsIndexViewModel);
-            IndexViewModel obj = JsonSerializer.Deserialize(json, JsonContext.Instance.SystemTextJsonSourceGenerationTestsIndexViewModel);
+            string json = JsonSerializer.Serialize(expected, JsonContext.Instance.IndexViewModel);
+            IndexViewModel obj = JsonSerializer.Deserialize(json, JsonContext.Instance.IndexViewModel);
 
             VerifyIndexViewModel(expected, obj);
         }
@@ -104,8 +41,8 @@ namespace System.Text.Json.SourceGeneration.Tests
         {
             CampaignSummaryViewModel expected = CreateCampaignSummaryViewModel();
 
-            string json = JsonSerializer.Serialize(expected, JsonContext.Instance.SystemTextJsonSourceGenerationTestsCampaignSummaryViewModel);
-            CampaignSummaryViewModel obj = JsonSerializer.Deserialize(json, JsonContext.Instance.SystemTextJsonSourceGenerationTestsCampaignSummaryViewModel);
+            string json = JsonSerializer.Serialize(expected, JsonContext.Instance.CampaignSummaryViewModel);
+            CampaignSummaryViewModel obj = JsonSerializer.Deserialize(json, JsonContext.Instance.CampaignSummaryViewModel);
 
             VerifyCampaignSummaryViewModel(expected, obj);
         }
@@ -115,8 +52,8 @@ namespace System.Text.Json.SourceGeneration.Tests
         {
             ActiveOrUpcomingEvent expected = CreateActiveOrUpcomingEvent();
 
-            string json = JsonSerializer.Serialize(expected, JsonContext.Instance.SystemTextJsonSourceGenerationTestsActiveOrUpcomingEvent);
-            ActiveOrUpcomingEvent obj = JsonSerializer.Deserialize(json, JsonContext.Instance.SystemTextJsonSourceGenerationTestsActiveOrUpcomingEvent);
+            string json = JsonSerializer.Serialize(expected, JsonContext.Instance.ActiveOrUpcomingEvent);
+            ActiveOrUpcomingEvent obj = JsonSerializer.Deserialize(json, JsonContext.Instance.ActiveOrUpcomingEvent);
 
             VerifyActiveOrUpcomingEvent(expected, obj);
         }
@@ -126,10 +63,21 @@ namespace System.Text.Json.SourceGeneration.Tests
         {
             WeatherForecastWithPOCOs expected = CreateWeatherForecastWithPOCOs();
 
-            string json = JsonSerializer.Serialize(expected, JsonContext.Instance.SystemTextJsonSourceGenerationTestsWeatherForecastWithPOCOs);
-            WeatherForecastWithPOCOs obj = JsonSerializer.Deserialize(json, JsonContext.Instance.SystemTextJsonSourceGenerationTestsWeatherForecastWithPOCOs);
+            string json = JsonSerializer.Serialize(expected, JsonContext.Instance.WeatherForecastWithPOCOs);
+            WeatherForecastWithPOCOs obj = JsonSerializer.Deserialize(json, JsonContext.Instance.WeatherForecastWithPOCOs);
 
             VerifyWeatherForecastWithPOCOs(expected, obj);
+        }
+
+        [Fact]
+        public static void RoundTripTypeNameClash()
+        {
+            RepeatedTypes.Location expected = CreateRepeatedLocation();
+
+            string json = JsonSerializer.Serialize(expected, JsonContext.Instance.Location);
+            RepeatedTypes.Location obj = JsonSerializer.Deserialize(json, JsonContext.Instance.Location);
+
+            VerifyRepeatedLocation(expected, obj);
         }
 
         internal static Location CreateLocation()
@@ -311,6 +259,33 @@ namespace System.Text.Json.SourceGeneration.Tests
             {
                 Assert.Equal(expected.SummaryWords[i], obj.SummaryWords[i]);
             }
+        }
+
+        internal static RepeatedTypes.Location CreateRepeatedLocation()
+        {
+            return new RepeatedTypes.Location
+            {
+                FakeId = 1234,
+                FakeAddress1 = "The Street Name",
+                FakeAddress2 = "20/11",
+                FakeCity = "The City",
+                FakeState = "The State",
+                FakePostalCode = "abc-12",
+                FakeName = "Nonexisting",
+                FakePhoneNumber = "+0 11 222 333 44",
+                FakeCountry = "The Greatest"
+            };
+        }
+        internal static void VerifyRepeatedLocation(RepeatedTypes.Location expected, RepeatedTypes.Location obj)
+        {
+            Assert.Equal(expected.FakeAddress1, obj.FakeAddress1);
+            Assert.Equal(expected.FakeAddress2, obj.FakeAddress2);
+            Assert.Equal(expected.FakeCity, obj.FakeCity);
+            Assert.Equal(expected.FakeState, obj.FakeState);
+            Assert.Equal(expected.FakePostalCode, obj.FakePostalCode);
+            Assert.Equal(expected.FakeName, obj.FakeName);
+            Assert.Equal(expected.FakePhoneNumber, obj.FakePhoneNumber);
+            Assert.Equal(expected.FakeCountry, obj.FakeCountry);
         }
     }
 }

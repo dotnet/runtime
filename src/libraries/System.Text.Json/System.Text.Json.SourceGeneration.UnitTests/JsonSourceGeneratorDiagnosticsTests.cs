@@ -3,10 +3,10 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Immutable;
+using System.Collections.Generic;
 using System.Linq;
 using Microsoft.CodeAnalysis;
 using Xunit;
-using Xunit.Abstractions;
 
 namespace System.Text.Json.SourceGeneration.UnitTests
 {
@@ -17,7 +17,7 @@ namespace System.Text.Json.SourceGeneration.UnitTests
         {
             // Compile the referenced assembly first.
             Compilation campaignCompilation = CompilationHelper.CreateCampaignSummaryViewModelCompilation();
-            Compilation eventCompilation = CompilationHelper.CreateCampaignSummaryViewModelCompilation();
+            Compilation eventCompilation = CompilationHelper.CreateActiveOrUpcomingEventCompilation();
 
             // Emit the image of the referenced assembly.
             byte[] campaignImage = CompilationHelper.CreateAssemblyImage(campaignCompilation);
@@ -25,7 +25,9 @@ namespace System.Text.Json.SourceGeneration.UnitTests
 
             // Main source for current compilation.
             string source = @"
+            using System.Collections.Generic;
             using System.Text.Json.Serialization;
+            using ReferencedAssembly;
 
               namespace JsonSourceGenerator
               {
@@ -52,9 +54,9 @@ namespace System.Text.Json.SourceGeneration.UnitTests
 
             // Expected info logs.
             string[] expectedInfoDiagnostics = new string[] {
-                "Generated type class TestAssemblyActiveOrUpcomingEvent for root type IndexViewModel",
-                "Generated type class TestAssemblyCampaignSummaryViewModel for root type IndexViewModel",
-                "Generated type class TestAssemblyIndexViewModel for root type IndexViewModel",
+                "Generated type class ActiveOrUpcomingEvent for root type IndexViewModel",
+                "Generated type class CampaignSummaryViewModel for root type IndexViewModel",
+                "Generated type class IndexViewModel for root type IndexViewModel",
             };
 
             CheckDiagnosticMessages(generatorDiags, DiagnosticSeverity.Info, expectedInfoDiagnostics);
@@ -67,7 +69,7 @@ namespace System.Text.Json.SourceGeneration.UnitTests
         {
             // Compile the referenced assembly first.
             Compilation campaignCompilation = CompilationHelper.CreateCampaignSummaryViewModelCompilation();
-            Compilation eventCompilation = CompilationHelper.CreateCampaignSummaryViewModelCompilation();
+            Compilation eventCompilation = CompilationHelper.CreateActiveOrUpcomingEventCompilation();
 
             // Emit the image of the referenced assembly.
             byte[] campaignImage = CompilationHelper.CreateAssemblyImage(campaignCompilation);
@@ -77,6 +79,7 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             string source = @"
             using System.Text.Json.Serialization;
             using System.Collections.Generic;
+            using ReferencedAssembly;
 
               namespace JsonSourceGenerator
               {
@@ -105,6 +108,28 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             string[] expectedWarningDiagnostics = new string[] { "Failed in sourcegenerating nested type ISet`1 for root type IndexViewModel" };
 
             CheckDiagnosticMessages(generatorDiags, DiagnosticSeverity.Info, new string[] { });
+            CheckDiagnosticMessages(generatorDiags, DiagnosticSeverity.Warning, expectedWarningDiagnostics);
+            CheckDiagnosticMessages(generatorDiags, DiagnosticSeverity.Error, new string[] { });
+        }
+
+        [Fact]
+        public void NameClashSourceGeneration()
+        {
+            Compilation compilation = CompilationHelper.CreateRepeatedLocationsCompilation();
+
+            JsonSourceGenerator generator = new JsonSourceGenerator();
+
+            CompilationHelper.RunGenerators(compilation, out var generatorDiags, generator);
+
+            // Expected info logs.
+            string[] expectedInfoDiagnostics = new string[] {
+                "Generated type class Location for root type Location",
+                "Generated type class TestAssemblyLocation for root type Location",
+            };
+            // Expected warning logs.
+            string[] expectedWarningDiagnostics = new string[] { "Changed name type Location to TestAssemblyLocation. To use please call `JsonContext.Instance.TestAssemblyLocation`" };
+
+            CheckDiagnosticMessages(generatorDiags, DiagnosticSeverity.Info, expectedInfoDiagnostics);
             CheckDiagnosticMessages(generatorDiags, DiagnosticSeverity.Warning, expectedWarningDiagnostics);
             CheckDiagnosticMessages(generatorDiags, DiagnosticSeverity.Error, new string[] { });
         }

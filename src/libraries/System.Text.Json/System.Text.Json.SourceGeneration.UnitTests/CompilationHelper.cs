@@ -117,6 +117,7 @@ namespace System.Text.Json.SourceGeneration.UnitTests
         public static Compilation CreateActiveOrUpcomingEventCompilation()
         {
             string source = @"
+            using System;
             namespace ReferencedAssembly
             {
                 public class ActiveOrUpcomingEvent
@@ -146,6 +147,51 @@ namespace System.Text.Json.SourceGeneration.UnitTests
                     public int Low { get; set; }
                 }
             }";
+
+            return CreateCompilation(source);
+        }
+
+        public static Compilation CreateRepeatedLocationsCompilation()
+        {
+            string source = @"
+            using System;
+            using System.Collections;
+            using System.Collections.Generic;
+            using System.Text.Json.Serialization;
+
+              namespace Fake
+              {
+                [JsonSerializable]
+                public class Location
+                {
+                    public int FakeId { get; set; }
+                    public string FakeAddress1 { get; set; }
+                    public string FakeAddress2 { get; set; }
+                    public string FakeCity { get; set; }
+                    public string FakeState { get; set; }
+                    public string FakePostalCode { get; set; }
+                    public string FakeName { get; set; }
+                    public string FakePhoneNumber { get; set; }
+                    public string FakeCountry { get; set; }
+                }
+              }
+
+              namespace HelloWorld
+              {
+                [JsonSerializable]
+                public class Location
+                {
+                    public int Id { get; set; }
+                    public string Address1 { get; set; }
+                    public string Address2 { get; set; }
+                    public string City { get; set; }
+                    public string State { get; set; }
+                    public string PostalCode { get; set; }
+                    public string Name { get; set; }
+                    public string PhoneNumber { get; set; }
+                    public string Country { get; set; }
+                }
+              }";
 
             return CreateCompilation(source);
         }

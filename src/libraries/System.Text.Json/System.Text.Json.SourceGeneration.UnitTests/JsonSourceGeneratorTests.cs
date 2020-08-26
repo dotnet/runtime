@@ -56,14 +56,14 @@ namespace System.Text.Json.SourceGeneration.UnitTests
 
             // Check base functionality of found types.
             Assert.Equal(1, generator.FoundTypes.Count);
-            Type myType = generator.FoundTypes["MyType"];
+            Type myType = generator.FoundTypes["HelloWorld.MyType"];
             Assert.Equal("HelloWorld.MyType", myType.FullName);
 
             // Check for received fields, properties and methods in created type.
             string[] expectedPropertyNames = { "PublicPropertyInt", "PublicPropertyString",};
             string[] expectedFieldNames = { "PublicChar", "PublicDouble" };
             string[] expectedMethodNames = { "get_PrivatePropertyInt", "get_PrivatePropertyString", "get_PublicPropertyInt", "get_PublicPropertyString", "MyMethod", "MySecondMethod", "set_PrivatePropertyInt", "set_PrivatePropertyString", "set_PublicPropertyInt", "set_PublicPropertyString", "UsePrivates" };
-            CheckFieldsPropertiesMethods("MyType", ref generator, expectedFieldNames, expectedPropertyNames, expectedMethodNames);
+            CheckFieldsPropertiesMethods("HelloWorld.MyType", ref generator, expectedFieldNames, expectedPropertyNames, expectedMethodNames);
         }
 
         [Fact]
@@ -122,8 +122,8 @@ namespace System.Text.Json.SourceGeneration.UnitTests
 
             // Check base functionality of found types.
             Assert.Equal(2, generator.FoundTypes.Count);
-            Type myType = generator.FoundTypes["MyType"];
-            Type notMyType = generator.FoundTypes["NotMyType"];
+            Type myType = generator.FoundTypes["HelloWorld.MyType"];
+            Type notMyType = generator.FoundTypes["ReferencedAssembly.Location"];
 
             // Check for MyType.
             Assert.Equal("HelloWorld.MyType", myType.FullName);
@@ -132,17 +132,17 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             string[] expectedFieldNamesMyType = { "PublicChar", "PublicDouble" };
             string[] expectedPropertyNamesMyType = { "PublicPropertyInt", "PublicPropertyString" };
             string[] expectedMethodNamesMyType = { "get_PrivatePropertyInt", "get_PrivatePropertyString", "get_PublicPropertyInt", "get_PublicPropertyString", "MyMethod", "MySecondMethod", "set_PrivatePropertyInt", "set_PrivatePropertyString", "set_PublicPropertyInt", "set_PublicPropertyString", "UsePrivates" };
-            CheckFieldsPropertiesMethods("MyType", ref generator, expectedFieldNamesMyType, expectedPropertyNamesMyType, expectedMethodNamesMyType);
+            CheckFieldsPropertiesMethods("HelloWorld.MyType", ref generator, expectedFieldNamesMyType, expectedPropertyNamesMyType, expectedMethodNamesMyType);
 
             // Check for NotMyType.
-            Assert.Equal("ReferencedAssembly.Location", generator.FoundTypes["NotMyType"].FullName);
+            Assert.Equal("ReferencedAssembly.Location", notMyType.FullName);
 
             // Check for received fields, properties and methods for NotMyType.
             string[] expectedFieldNamesNotMyType = { };
             string[] expectedPropertyNamesNotMyType = { "Address1", "Address2", "City", "Country", "Id", "Name", "PhoneNumber", "PostalCode", "State" };
             string[] expectedMethodNamesNotMyType = { "get_Address1", "get_Address2", "get_City", "get_Country", "get_Id", "get_Name", "get_PhoneNumber", "get_PostalCode", "get_State",
                                                       "set_Address1", "set_Address2", "set_City", "set_Country", "set_Id", "set_Name", "set_PhoneNumber", "set_PostalCode", "set_State" };
-            CheckFieldsPropertiesMethods("NotMyType", ref generator, expectedFieldNamesNotMyType, expectedPropertyNamesNotMyType, expectedMethodNamesNotMyType);
+            CheckFieldsPropertiesMethods("ReferencedAssembly.Location", ref generator, expectedFieldNamesNotMyType, expectedPropertyNamesNotMyType, expectedMethodNamesNotMyType);
         }
 
         [Fact]
@@ -209,23 +209,37 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             Assert.Equal(2, generator.FoundTypes.Count);
 
             // Check for MyType.
-            Assert.Equal("HelloWorld.MyType", generator.FoundTypes["MyType"].FullName);
+            Assert.Equal("HelloWorld.MyType", generator.FoundTypes["HelloWorld.MyType"].FullName);
 
             // Check for received fields, properties and methods for MyType.
             string[] expectedFieldNamesMyType = { "PublicChar", "PublicDouble" };
             string[] expectedPropertyNamesMyType = { "PublicPropertyInt", "PublicPropertyString" };
             string[] expectedMethodNamesMyType = { "get_PrivatePropertyInt", "get_PrivatePropertyString", "get_PublicPropertyInt", "get_PublicPropertyString", "MyMethod", "MySecondMethod", "set_PrivatePropertyInt", "set_PrivatePropertyString", "set_PublicPropertyInt", "set_PublicPropertyString", "UsePrivates" };
-            CheckFieldsPropertiesMethods("MyType", ref generator, expectedFieldNamesMyType, expectedPropertyNamesMyType, expectedMethodNamesMyType);
+            CheckFieldsPropertiesMethods("HelloWorld.MyType", ref generator, expectedFieldNamesMyType, expectedPropertyNamesMyType, expectedMethodNamesMyType);
 
             // Check for NotMyType.
-            Assert.Equal("ReferencedAssembly.Location", generator.FoundTypes["NotMyType"].FullName);
+            Assert.Equal("ReferencedAssembly.Location", generator.FoundTypes["ReferencedAssembly.Location"].FullName);
 
             // Check for received fields, properties and methods for NotMyType.
             string[] expectedFieldNamesNotMyType = { };
             string[] expectedPropertyNamesNotMyType = { "Address1", "Address2", "City", "Country", "Id", "Name", "PhoneNumber", "PostalCode", "State" };
             string[] expectedMethodNamesNotMyType = { "get_Address1", "get_Address2", "get_City", "get_Country", "get_Id", "get_Name", "get_PhoneNumber", "get_PostalCode", "get_State",
                                                       "set_Address1", "set_Address2", "set_City", "set_Country", "set_Id", "set_Name", "set_PhoneNumber", "set_PostalCode", "set_State" };
-            CheckFieldsPropertiesMethods("NotMyType", ref generator, expectedFieldNamesNotMyType, expectedPropertyNamesNotMyType, expectedMethodNamesNotMyType );
+            CheckFieldsPropertiesMethods("ReferencedAssembly.Location", ref generator, expectedFieldNamesNotMyType, expectedPropertyNamesNotMyType, expectedMethodNamesNotMyType );
+        }
+
+        [Fact]
+        public void NameClashCompilation()
+        {
+            Compilation compilation = CompilationHelper.CreateRepeatedLocationsCompilation();
+
+            JsonSourceGenerator generator = new JsonSourceGenerator();
+
+            Compilation newCompilation = CompilationHelper.RunGenerators(compilation, out var generatorDiags, generator);
+
+            // Make sure compilation was successful.
+            CheckCompilationDiagnosticsErrors(generatorDiags);
+            CheckCompilationDiagnosticsErrors(newCompilation.GetDiagnostics());
         }
 
         [Fact]

@@ -13,6 +13,7 @@ namespace System.Text.Json.SourceGeneration
         private DiagnosticDescriptor _failedToGenerateTypeClass;
         private DiagnosticDescriptor _failedToAddNewTypesFromMembers;
         private DiagnosticDescriptor _notSupported;
+        private DiagnosticDescriptor _typeNameClash;
 
         private void InitializeDiagnosticDescriptors()
         {
@@ -24,6 +25,7 @@ namespace System.Text.Json.SourceGeneration
                     "category",
                     DiagnosticSeverity.Info,
                     isEnabledByDefault: true);
+
             _failedToGenerateTypeClass =
                 new DiagnosticDescriptor(
                     "JsonSourceGeneration",
@@ -33,6 +35,7 @@ namespace System.Text.Json.SourceGeneration
                     DiagnosticSeverity.Warning,
                     isEnabledByDefault: true,
                     description: "Error message: {2}");
+
             _failedToAddNewTypesFromMembers =
                 new DiagnosticDescriptor(
                     "JsonSourceGeneration",
@@ -41,11 +44,21 @@ namespace System.Text.Json.SourceGeneration
                     "category",
                     DiagnosticSeverity.Warning,
                     isEnabledByDefault: true);
+
             _notSupported =
                 new DiagnosticDescriptor(
                     "JsonSourceGeneration",
                     "Current type is not supported",
                     "Failed in sourcegenerating nested type {1} for root type {0}",
+                    "category",
+                    DiagnosticSeverity.Warning,
+                    isEnabledByDefault: true);
+
+            _typeNameClash =
+                new DiagnosticDescriptor(
+                    "JsonSourceGeneration",
+                    "Current type name clashes with another source generated type",
+                    "Changed name type {0} to {1}. To use please call `JsonContext.Instance.{1}`",
                     "category",
                     DiagnosticSeverity.Warning,
                     isEnabledByDefault: true);
