@@ -891,6 +891,7 @@ install(FILES ${mini_public_headers}
   DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/mono-2.0/mono/jit)
 if(NOT DISABLE_SHARED_LIBS)
    add_library(monosgen SHARED $<TARGET_OBJECTS:monosgen-objects>)
+   install(TARGETS monosgen LIBRARY)
 endif()
 
 if(NOT DISABLE_EXECUTABLES)
