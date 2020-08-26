@@ -348,6 +348,7 @@
     <PlatformManifestFileEntry Include="dotnet.wasm" IsNative="true" />
     <PlatformManifestFileEntry Include="dotnet.timezones.blat" IsNative="true" />
     <PlatformManifestFileEntry Include="icudt.dat" IsNative="true" />
+    <PlatformManifestFileEntry Include="icudt_no_CJK.dat" IsNative="true" />
     <PlatformManifestFileEntry Include="icudt_CJK.dat" IsNative="true" />
     <PlatformManifestFileEntry Include="icudt_EFIGS.dat" IsNative="true" />
     <PlatformManifestFileEntry Include="icudt_optimal.dat" IsNative="true" />
