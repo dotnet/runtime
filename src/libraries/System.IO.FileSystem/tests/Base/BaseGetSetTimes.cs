@@ -17,8 +17,8 @@ namespace System.IO.Tests
 
         protected static bool isHFS => driveFormat != null && driveFormat.Equals(HFS, StringComparison.InvariantCultureIgnoreCase);
 
-        protected static bool WithMillisecondResolution => PlatformDetection.IsBrowser || isHFS;
-        protected static bool WithoutMillisecondResolution => !WithMillisecondResolution;
+        protected static bool LowTemporalResolution => PlatformDetection.IsBrowser || isHFS;
+        protected static bool HighTemporalResolution => !LowTemporalResolution;
 
         protected abstract T GetExistingItem();
         protected abstract T GetMissingItem();
@@ -51,7 +51,7 @@ namespace System.IO.Tests
             {
                 // Checking that milliseconds are not dropped after setter.
                 // Emscripten drops milliseconds in Browser
-                DateTime dt = new DateTime(2014, 12, 1, 12, 3, 3, (WithMillisecondResolution) ? 0 : 321, function.Kind);
+                DateTime dt = new DateTime(2014, 12, 1, 12, 3, 3, LowTemporalResolution ? 0 : 321, function.Kind);
                 function.Setter(item, dt);
                 DateTime result = function.Getter(item);
                 Assert.Equal(dt, result);
@@ -79,7 +79,7 @@ namespace System.IO.Tests
             ValidateSetTimes(item, beforeTime, afterTime);
         }
 
-        [ConditionalFact(nameof(WithoutMillisecondResolution))] // OSX HFS driver format and Browser platform do not support millisec granularity
+        [ConditionalFact(nameof(HighTemporalResolution))] // OSX HFS driver format and Browser platform do not support millisec granularity
         public void TimesIncludeMillisecondPart()
         {
             T item = GetExistingItem();
@@ -111,8 +111,8 @@ namespace System.IO.Tests
             });
         }
 
-        [ConditionalFact(nameof(WithMillisecondResolution))]
-        public void TimesIncludeMillisecondPart_HFSOrBrowser()
+        [ConditionalFact(nameof(LowTemporalResolution))]
+        public void TimesIncludeMillisecondPart_LowTempRes()
         {
             T item = GetExistingItem();
             // OSX HFS driver format and Browser do not support millisec granularity
