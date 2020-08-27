@@ -1034,15 +1034,7 @@ PCODE TheUMEntryPrestubWorker(UMEntryThunk * pUMEntryThunk)
     if (pThread->IsAbortRequested())
         pThread->HandleThreadAbort();
 
-#if defined(HOST_OSX) && defined(HOST_ARM64)
-    bool jitWriteEnabled = PAL_JITWriteEnable(true);
-#endif // defined(HOST_OSX) && defined(HOST_ARM64)
-
     UMEntryThunk::DoRunTimeInit(pUMEntryThunk);
-
-#if defined(HOST_OSX) && defined(HOST_ARM64)
-    PAL_JITWriteEnable(jitWriteEnabled);
-#endif // defined(HOST_OSX) && defined(HOST_ARM64)
 
     return (PCODE)pUMEntryThunk->GetCode();
 }
