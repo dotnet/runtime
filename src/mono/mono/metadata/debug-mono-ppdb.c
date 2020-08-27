@@ -228,6 +228,8 @@ mono_ppdb_load_file (MonoImage *image, const guint8 *raw_contents, int size)
 	if (memcmp (pe_guid, pdb_stream->guid, 16) != 0 || pe_timestamp != pdb_timestamp) {
 		g_warning ("Symbol file %s doesn't match image %s", ppdb_image->name,
 				   image->name);
+		fprintf (stdout, "Symbol file %s doesn't match image %s\n", ppdb_image->name,
+				   image->name);
 		mono_image_close (ppdb_image);
 		return NULL;
 	}
