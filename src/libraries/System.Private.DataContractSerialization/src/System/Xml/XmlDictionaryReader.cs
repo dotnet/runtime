@@ -1586,7 +1586,8 @@ namespace System.Xml
             {
                 get
                 {
-                    return _reader[name, namespaceUri];
+                    // TODO-NULLABLE - I think this is a compiler bug
+                    return _reader[name, namespaceUri!];
                 }
             }
 
