@@ -5144,8 +5144,6 @@ void MethodContext::recAllocMethodBlockCounts(ULONG count, ICorJitInfo::BlockCou
     value.address = (DWORDLONG)*pBlockCounts;
     value.count  = (DWORD)count;
     value.result = (DWORD)result;
-    value.pBlockCounts_index =
-        AllocMethodBlockCounts->AddBuffer((unsigned char*)*pBlockCounts, count * sizeof(ICorJitInfo::BlockCounts));
 
     AllocMethodBlockCounts->Add((DWORD)0, value);
 }
@@ -5160,10 +5158,22 @@ HRESULT MethodContext::repAllocMethodBlockCounts(ULONG count, ICorJitInfo::Block
     value = AllocMethodBlockCounts->Get((DWORD)0);
 
     if (count != value.count)
-        __debugbreak();
+    {
+        LogWarning("AllocMethodBlockCount mismatch: record %d, replay %d", value.count, count);
+    }
 
     HRESULT result = (HRESULT)value.result;
-    *pBlockCounts = (ICorJitInfo::BlockCounts*)AllocMethodBlockCounts->GetBuffer(value.pBlockCounts_index);
+
+    // Allocate a scratch buffer, linked to method context via AllocMethodBlockCounts, so it gets
+    // cleaned up when the method context does.
+    //
+    // We won't bother recording this via AddBuffer because currently SPMI will never look at it.
+    // But we need a writeable buffer because the jit will store IL offsets inside.
+    //
+    // Todo, perhaps: record the buffer as a compile result instead, and defer copying until
+    // jit completion so we can snapshot the offsets the jit writes.
+    //
+    *pBlockCounts = (ICorJitInfo::BlockCounts*)AllocMethodBlockCounts->CreateBuffer(count * sizeof(ICorJitInfo::BlockCounts));
     cr->recAddressMap((void*)value.address, (void*)*pBlockCounts, count * (sizeof(ICorJitInfo::BlockCounts)));
     return result;
 }
