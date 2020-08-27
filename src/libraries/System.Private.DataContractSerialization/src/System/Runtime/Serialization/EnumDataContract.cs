@@ -25,7 +25,7 @@ namespace System.Runtime.Serialization
         {
             _helper = (base.Helper as EnumDataContractCriticalHelper)!;
         }
-        public List<DataMember>? Members
+        public List<DataMember> Members
         {
             get
             { return _helper.Members; }
@@ -70,7 +70,7 @@ namespace System.Runtime.Serialization
             private static readonly Dictionary<Type, XmlQualifiedName> s_typeToName = new Dictionary<Type, XmlQualifiedName>();
             private static readonly Dictionary<XmlQualifiedName, Type> s_nameToType = new Dictionary<XmlQualifiedName, Type>();
 
-            private List<DataMember>? _members;
+            private List<DataMember> _members;
             private List<long>? _values;
             private bool _isULong;
             private bool _isFlags;
@@ -104,7 +104,7 @@ namespace System.Runtime.Serialization
                 IsFlags = type.IsDefined(Globals.TypeOfFlagsAttribute, false);
                 ImportDataMembers();
 
-                XmlDictionary dictionary = new XmlDictionary(2 + Members!.Count);
+                XmlDictionary dictionary = new XmlDictionary(2 + Members.Count);
                 Name = dictionary.Add(StableName.Name);
                 Namespace = dictionary.Add(StableName.Namespace);
                 _childElementNames = new XmlDictionaryString[Members.Count];
@@ -124,7 +124,7 @@ namespace System.Runtime.Serialization
                     }
                 }
             }
-            internal List<DataMember>? Members
+            internal List<DataMember> Members
             {
                 get { return _members; }
                 set { _members = value; }
@@ -159,6 +159,7 @@ namespace System.Runtime.Serialization
                 _isULong = (baseType == Globals.TypeOfULong);
             }
 
+            [MemberNotNull(nameof(_members))]
             private void ImportDataMembers()
             {
                 Type type = this.UnderlyingType;
@@ -319,7 +320,7 @@ namespace System.Runtime.Serialization
 
         private long ReadEnumValue(string value, int index, int count)
         {
-            for (int i = 0; i < Members!.Count; i++)
+            for (int i = 0; i < Members.Count; i++)
             {
                 string memberName = Members[i].Name;
                 if (memberName.Length == count && string.CompareOrdinal(value, index, memberName, 0, count) == 0)

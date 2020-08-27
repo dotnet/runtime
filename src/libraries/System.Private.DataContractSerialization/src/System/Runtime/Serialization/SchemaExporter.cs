@@ -107,11 +107,11 @@ namespace System.Runtime.Serialization
 
         private XmlSchemaElement ExportTopLevelElement(DataContract dataContract, XmlSchema? schema)
         {
-            if (schema == null || dataContract.StableName.Namespace != dataContract.TopLevelElementNamespace.Value)
-                schema = GetSchema(dataContract.TopLevelElementNamespace.Value);
+            if (schema == null || dataContract.StableName.Namespace != dataContract.TopLevelElementNamespace!.Value)
+                schema = GetSchema(dataContract.TopLevelElementNamespace!.Value);
 
             XmlSchemaElement topLevelElement = new XmlSchemaElement();
-            topLevelElement.Name = dataContract.TopLevelElementName.Value;
+            topLevelElement.Name = dataContract.TopLevelElementName!.Value;
             SetElementType(topLevelElement, dataContract, schema);
             topLevelElement.IsNillable = true;
             schema.Items.Add(topLevelElement);
@@ -404,6 +404,8 @@ namespace System.Runtime.Serialization
         {
             XmlSchemaSimpleType type = new XmlSchemaSimpleType();
             type.Name = enumDataContract.StableName.Name;
+            // https://github.com/dotnet/runtime/issues/41448 - enumDataContract.BaseContractName is always null, but this method is not reachable
+            Debug.Assert(enumDataContract.BaseContractName != null, "BaseContractName is always null, but this method is not reachable. Suppressing compiler error.");
             XmlElement? actualTypeElement = (enumDataContract.BaseContractName == DefaultEnumBaseTypeName) ? null : ExportActualType(enumDataContract.BaseContractName);
             type.Annotation = GetSchemaAnnotation(actualTypeElement, ExportSurrogateData(enumDataContract));
             schema.Items.Add(type);
@@ -498,7 +500,7 @@ namespace System.Runtime.Serialization
 
                 XmlSchema? schema;
                 if (SchemaHelper.GetSchemaElement(Schemas,
-                    new XmlQualifiedName(dataContract.TopLevelElementName.Value, dataContract.TopLevelElementNamespace.Value),
+                    new XmlQualifiedName(dataContract.TopLevelElementName!.Value, dataContract.TopLevelElementNamespace!.Value),
                     out schema) == null)
                 {
                     XmlSchemaElement topLevelElement = ExportTopLevelElement(dataContract, schema);
