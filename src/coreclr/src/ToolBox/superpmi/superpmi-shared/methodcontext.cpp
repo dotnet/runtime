@@ -5149,8 +5149,7 @@ void MethodContext::recAllocMethodBlockCounts(ULONG count, ICorJitInfo::BlockCou
 }
 void MethodContext::dmpAllocMethodBlockCounts(DWORD key, const Agnostic_AllocMethodBlockCounts& value)
 {
-    printf("AllocMethodBlockCounts key %u, value addr-%016llX cnt-%u ind-%u res-%08X", key, value.address, value.count,
-        value.pBlockCounts_index, value.result);
+    printf("AllocMethodBlockCounts key %u, value addr-%016llX cnt-%u res-%08X", key, value.address, value.count, value.result);
 }
 HRESULT MethodContext::repAllocMethodBlockCounts(ULONG count, ICorJitInfo::BlockCounts** pBlockCounts)
 {

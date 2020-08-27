@@ -426,7 +426,6 @@ public:
     {
         DWORDLONG address;
         DWORD count;
-        DWORD pBlockCounts_index;
         DWORD result;
     };
     struct Agnostic_GetMethodBlockCounts
