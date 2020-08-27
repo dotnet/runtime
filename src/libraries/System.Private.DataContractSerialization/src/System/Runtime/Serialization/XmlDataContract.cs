@@ -155,7 +155,7 @@ namespace System.Runtime.Serialization
                         _isTopLevelElementNullable = xmlRootAttribute.IsNullable;
                         string elementName = xmlRootAttribute.ElementName;
                         _topLevelElementName = (elementName == null || elementName.Length == 0) ? Name : dictionary.Add(DataContract.EncodeLocalName(elementName));
-                        string elementNs = xmlRootAttribute.Namespace;
+                        string? elementNs = xmlRootAttribute.Namespace;
                         _topLevelElementNamespace = (elementNs == null || elementNs.Length == 0) ? DictionaryGlobals.EmptyString : dictionary.Add(elementNs);
                     }
                     else
@@ -374,7 +374,7 @@ namespace System.Runtime.Serialization
 
         public override object? ReadXmlValue(XmlReaderDelegator xmlReader, XmlObjectSerializerReadContext? context)
         {
-            object o;
+            object? o;
             if (context == null)
             {
                 o = XmlObjectSerializerReadContext.ReadRootIXmlSerializable(xmlReader, this, true /*isMemberType*/);

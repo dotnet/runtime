@@ -139,7 +139,7 @@ namespace System.Runtime.Serialization
 
             public string SetNamespace(string ns)
             {
-                string prefix = _namespaces.LookupPrefix(ns);
+                string? prefix = _namespaces.LookupPrefix(ns);
                 if (prefix == null || prefix.Length == 0)
                 {
                     prefix = "xg" + (_nextPrefix++).ToString(NumberFormatInfo.InvariantInfo);

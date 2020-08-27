@@ -89,7 +89,7 @@ namespace System.Runtime.Serialization
                         dictionaryWriter.WriteXmlnsAttribute(null, ns);
                     else
                     {
-                        string prefix = writer.LookupPrefix(ns);
+                        string? prefix = writer.LookupPrefix(ns);
                         if (prefix == null)
                         {
                             prefix = string.Format(CultureInfo.InvariantCulture, "d{0}p{1}", depth, _prefixes);
@@ -124,7 +124,7 @@ namespace System.Runtime.Serialization
                 dictionaryWriter.WriteStartAttribute(prefix, localName, namespaceUri);
             else
                 writer.WriteStartAttribute(prefix,
-                    (localName == null ? null : localName.Value),
+                    (localName == null ? null : localName.Value)!,
                     (namespaceUri == null ? null : namespaceUri.Value));
         }
 
@@ -241,7 +241,7 @@ namespace System.Runtime.Serialization
             if (dictionaryWriter != null)
                 dictionaryWriter.WriteStartElement(prefix, localName, namespaceUri);
             else
-                writer.WriteStartElement(prefix, (localName == null ? null : localName.Value), (namespaceUri == null ? null : namespaceUri.Value));
+                writer.WriteStartElement(prefix, (localName == null ? null : localName.Value)!, (namespaceUri == null ? null : namespaceUri.Value));
             depth++;
             _prefixes = 1;
         }
@@ -251,7 +251,7 @@ namespace System.Runtime.Serialization
             if (dictionaryWriter != null)
                 dictionaryWriter.WriteStartElement(null, localName, namespaceUri);
             else
-                writer.WriteStartElement(null, (localName == null ? null : localName.Value), (namespaceUri == null ? null : namespaceUri.Value));
+                writer.WriteStartElement(null, (localName == null ? null : localName.Value)!, (namespaceUri == null ? null : namespaceUri.Value));
         }
 
         internal void WriteEndElementPrimitive()
@@ -264,7 +264,7 @@ namespace System.Runtime.Serialization
             get { return writer.WriteState; }
         }
 
-        internal string XmlLang
+        internal string? XmlLang
         {
             get { return writer.XmlLang; }
         }

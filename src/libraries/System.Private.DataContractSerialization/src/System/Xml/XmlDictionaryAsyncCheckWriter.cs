@@ -44,7 +44,7 @@ namespace System.Xml
             return task;
         }
 
-        public override XmlWriterSettings Settings
+        public override XmlWriterSettings? Settings
         {
             get
             {
@@ -62,7 +62,7 @@ namespace System.Xml
             }
         }
 
-        public override string XmlLang
+        public override string? XmlLang
         {
             get
             {
@@ -134,13 +134,13 @@ namespace System.Xml
             return SetLastTask(CoreWriter.WriteBinHexAsync(buffer, index, count));
         }
 
-        public override void WriteCData(string text)
+        public override void WriteCData(string? text)
         {
             CheckAsync();
             CoreWriter.WriteCData(text);
         }
 
-        public override Task WriteCDataAsync(string text)
+        public override Task WriteCDataAsync(string? text)
         {
             CheckAsync();
             return SetLastTask(CoreWriter.WriteCDataAsync(text));
@@ -170,25 +170,25 @@ namespace System.Xml
             return SetLastTask(CoreWriter.WriteCharsAsync(buffer, index, count));
         }
 
-        public override void WriteComment(string text)
+        public override void WriteComment(string? text)
         {
             CheckAsync();
             CoreWriter.WriteComment(text);
         }
 
-        public override Task WriteCommentAsync(string text)
+        public override Task WriteCommentAsync(string? text)
         {
             CheckAsync();
             return SetLastTask(CoreWriter.WriteCommentAsync(text));
         }
 
-        public override void WriteDocType(string name, string pubid, string sysid, string subset)
+        public override void WriteDocType(string name, string? pubid, string? sysid, string? subset)
         {
             CheckAsync();
             CoreWriter.WriteDocType(name, pubid, sysid, subset);
         }
 
-        public override Task WriteDocTypeAsync(string name, string pubid, string sysid, string subset)
+        public override Task WriteDocTypeAsync(string name, string? pubid, string? sysid, string? subset)
         {
             CheckAsync();
             return SetLastTask(CoreWriter.WriteDocTypeAsync(name, pubid, sysid, subset));
@@ -284,7 +284,7 @@ namespace System.Xml
             return SetLastTask(CoreWriter.WriteNodeAsync(reader, defattr));
         }
 
-        public override void WriteProcessingInstruction(string name, string text)
+        public override void WriteProcessingInstruction(string name, string? text)
         {
             CheckAsync();
             CoreWriter.WriteProcessingInstruction(name, text);
@@ -296,13 +296,13 @@ namespace System.Xml
             return SetLastTask(CoreWriter.WriteProcessingInstructionAsync(name, text));
         }
 
-        public override void WriteQualifiedName(string localName, string ns)
+        public override void WriteQualifiedName(string localName, string? ns)
         {
             CheckAsync();
             CoreWriter.WriteQualifiedName(localName, ns);
         }
 
-        public override Task WriteQualifiedNameAsync(string localName, string ns)
+        public override Task WriteQualifiedNameAsync(string localName, string? ns)
         {
             CheckAsync();
             return SetLastTask(CoreWriter.WriteQualifiedNameAsync(localName, ns));
@@ -362,25 +362,25 @@ namespace System.Xml
             return SetLastTask(CoreWriter.WriteStartDocumentAsync(standalone));
         }
 
-        public override void WriteStartElement(string prefix, string localName, string ns)
+        public override void WriteStartElement(string? prefix, string localName, string? ns)
         {
             CheckAsync();
             CoreWriter.WriteStartElement(prefix, localName, ns);
         }
 
-        public override Task WriteStartElementAsync(string prefix, string localName, string ns)
+        public override Task WriteStartElementAsync(string? prefix, string localName, string? ns)
         {
             CheckAsync();
             return SetLastTask(CoreWriter.WriteStartElementAsync(prefix, localName, ns));
         }
 
-        public override void WriteString(string text)
+        public override void WriteString(string? text)
         {
             CheckAsync();
             CoreWriter.WriteString(text);
         }
 
-        public override Task WriteStringAsync(string text)
+        public override Task WriteStringAsync(string? text)
         {
             CheckAsync();
             return SetLastTask(CoreWriter.WriteStringAsync(text));
@@ -398,7 +398,7 @@ namespace System.Xml
             return SetLastTask(CoreWriter.WriteSurrogateCharEntityAsync(lowChar, highChar));
         }
 
-        public override void WriteValue(string value)
+        public override void WriteValue(string? value)
         {
             CheckAsync();
             CoreWriter.WriteValue(value);
@@ -452,13 +452,13 @@ namespace System.Xml
             CoreWriter.WriteValue(value);
         }
 
-        public override void WriteWhitespace(string ws)
+        public override void WriteWhitespace(string? ws)
         {
             CheckAsync();
             CoreWriter.WriteWhitespace(ws);
         }
 
-        public override Task WriteWhitespaceAsync(string ws)
+        public override Task WriteWhitespaceAsync(string? ws)
         {
             CheckAsync();
             return SetLastTask(CoreWriter.WriteWhitespaceAsync(ws));

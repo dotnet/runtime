@@ -21,7 +21,7 @@ namespace System.Runtime.Serialization
                 {
                     if (IsValidAttribute(xmlReader))
                     {
-                        XmlNode node = doc.ReadNode(xmlReader);
+                        XmlNode? node = doc.ReadNode(xmlReader);
                         if (node == null)
                             throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlObjectSerializer.CreateSerializationException(SR.UnexpectedEndOfFile));
                         nodeList.Add(node);
@@ -35,7 +35,7 @@ namespace System.Runtime.Serialization
                 xmlReader.Read();
                 while (xmlReader.Depth > startDepth && xmlReader.NodeType != XmlNodeType.EndElement)
                 {
-                    XmlNode node = doc.ReadNode(xmlReader);
+                    XmlNode? node = doc.ReadNode(xmlReader);
                     if (node == null)
                         throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlObjectSerializer.CreateSerializationException(SR.UnexpectedEndOfFile));
                     nodeList.Add(node);

@@ -684,7 +684,7 @@ namespace System.Xml
                 _writer.WriteBinHex(buffer, index, count);
             }
 
-            public override void WriteCData(string text)
+            public override void WriteCData(string? text)
             {
                 _writer.WriteCData(text);
             }
@@ -699,12 +699,12 @@ namespace System.Xml
                 _writer.WriteChars(buffer, index, count);
             }
 
-            public override void WriteComment(string text)
+            public override void WriteComment(string? text)
             {
                 _writer.WriteComment(text);
             }
 
-            public override void WriteDocType(string name, string pubid, string sysid, string subset)
+            public override void WriteDocType(string name, string? pubid, string? sysid, string? subset)
             {
                 _writer.WriteDocType(name, pubid, sysid, subset);
             }
@@ -750,12 +750,12 @@ namespace System.Xml
                 _writer.WriteNode(reader, defattr);
             }
 
-            public override void WriteProcessingInstruction(string name, string text)
+            public override void WriteProcessingInstruction(string name, string? text)
             {
                 _writer.WriteProcessingInstruction(name, text);
             }
 
-            public override void WriteQualifiedName(string localName, string namespaceUri)
+            public override void WriteQualifiedName(string localName, string? namespaceUri)
             {
                 _writer.WriteQualifiedName(localName, namespaceUri);
             }
@@ -786,7 +786,7 @@ namespace System.Xml
                 _writer.WriteStartDocument(standalone);
             }
 
-            public override void WriteStartElement(string prefix, string localName, string namespaceUri)
+            public override void WriteStartElement(string? prefix, string localName, string? namespaceUri)
             {
                 _writer.WriteStartElement(prefix, localName, namespaceUri);
                 _depth++;
@@ -801,7 +801,7 @@ namespace System.Xml
                 }
             }
 
-            public override void WriteString(string text)
+            public override void WriteString(string? text)
             {
                 _writer.WriteString(text);
             }
@@ -811,7 +811,7 @@ namespace System.Xml
                 _writer.WriteSurrogateCharEntity(lowChar, highChar);
             }
 
-            public override void WriteWhitespace(string whitespace)
+            public override void WriteWhitespace(string? whitespace)
             {
                 _writer.WriteWhitespace(whitespace);
             }
@@ -821,7 +821,7 @@ namespace System.Xml
                 _writer.WriteValue(value);
             }
 
-            public override void WriteValue(string value)
+            public override void WriteValue(string? value)
             {
                 _writer.WriteValue(value);
             }
@@ -874,7 +874,7 @@ namespace System.Xml
                 WriteAttributeString("xmlns", prefix, null, namespaceUri);
             }
 
-            public override string XmlLang
+            public override string? XmlLang
             {
                 get
                 {

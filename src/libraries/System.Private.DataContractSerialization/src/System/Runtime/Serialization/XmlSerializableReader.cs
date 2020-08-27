@@ -67,7 +67,7 @@ namespace System.Runtime.Serialization
             throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlObjectSerializer.CreateSerializationException(SR.IXmlSerializableIllegalOperation));
         }
 
-        public override XmlReaderSettings Settings { get { return InnerReader.Settings; } }
+        public override XmlReaderSettings? Settings { get { return InnerReader.Settings; } }
         public override XmlNodeType NodeType { get { return InnerReader.NodeType; } }
         public override string Name { get { return InnerReader.Name; } }
         public override string LocalName { get { return InnerReader.LocalName; } }
@@ -76,7 +76,7 @@ namespace System.Runtime.Serialization
         public override bool HasValue { get { return InnerReader.HasValue; } }
         public override string Value { get { return InnerReader.Value; } }
         public override int Depth { get { return InnerReader.Depth; } }
-        public override string BaseURI { get { return InnerReader.BaseURI; } }
+        public override string? BaseURI { get { return InnerReader.BaseURI; } }
         public override bool IsEmptyElement { get { return InnerReader.IsEmptyElement; } }
         public override bool IsDefault { get { return InnerReader.IsDefault; } }
         public override XmlSpace XmlSpace { get { return InnerReader.XmlSpace; } }
@@ -84,8 +84,8 @@ namespace System.Runtime.Serialization
         public override Type ValueType { get { return InnerReader.ValueType; } }
         public override int AttributeCount { get { return InnerReader.AttributeCount; } }
         public override string this[int i] { get { return InnerReader[i]; } }
-        public override string this[string name] { get { return InnerReader[name]; } }
-        public override string this[string name, string namespaceURI] { get { return InnerReader[name, namespaceURI]; } }
+        public override string? this[string name] { get { return InnerReader[name]; } }
+        public override string? this[string name, string? namespaceURI] { get { return InnerReader[name, namespaceURI]; } }
         public override bool EOF { get { return InnerReader.EOF; } }
         public override ReadState ReadState { get { return InnerReader.ReadState; } }
         public override XmlNameTable NameTable { get { return InnerReader.NameTable; } }
@@ -94,16 +94,16 @@ namespace System.Runtime.Serialization
         public override bool CanReadValueChunk { get { return InnerReader.CanReadValueChunk; } }
         public override bool HasAttributes { get { return InnerReader.HasAttributes; } }
 
-        public override string GetAttribute(string name) { return InnerReader.GetAttribute(name); }
-        public override string GetAttribute(string name, string namespaceURI) { return InnerReader.GetAttribute(name, namespaceURI); }
+        public override string? GetAttribute(string name) { return InnerReader.GetAttribute(name); }
+        public override string? GetAttribute(string name, string? namespaceURI) { return InnerReader.GetAttribute(name, namespaceURI); }
         public override string GetAttribute(int i) { return InnerReader.GetAttribute(i); }
         public override bool MoveToAttribute(string name) { return InnerReader.MoveToAttribute(name); }
-        public override bool MoveToAttribute(string name, string ns) { return InnerReader.MoveToAttribute(name, ns); }
+        public override bool MoveToAttribute(string name, string? ns) { return InnerReader.MoveToAttribute(name, ns); }
         public override void MoveToAttribute(int i) { InnerReader.MoveToAttribute(i); }
         public override bool MoveToFirstAttribute() { return InnerReader.MoveToFirstAttribute(); }
         public override bool MoveToNextAttribute() { return InnerReader.MoveToNextAttribute(); }
         public override bool MoveToElement() { return InnerReader.MoveToElement(); }
-        public override string LookupNamespace(string prefix) { return InnerReader.LookupNamespace(prefix); }
+        public override string? LookupNamespace(string prefix) { return InnerReader.LookupNamespace(prefix); }
         public override bool ReadAttributeValue() { return InnerReader.ReadAttributeValue(); }
         public override void ResolveEntity() { InnerReader.ResolveEntity(); }
         public override bool IsStartElement() { return InnerReader.IsStartElement(); }
@@ -118,7 +118,7 @@ namespace System.Runtime.Serialization
         public override int ReadContentAsInt() { return InnerReader.ReadContentAsInt(); }
         public override long ReadContentAsLong() { return InnerReader.ReadContentAsLong(); }
         public override string ReadContentAsString() { return InnerReader.ReadContentAsString(); }
-        public override object ReadContentAs(Type returnType, IXmlNamespaceResolver namespaceResolver) { return InnerReader.ReadContentAs(returnType, namespaceResolver); }
+        public override object ReadContentAs(Type returnType, IXmlNamespaceResolver? namespaceResolver) { return InnerReader.ReadContentAs(returnType, namespaceResolver); }
         public override int ReadContentAsBase64(byte[] buffer, int index, int count) { return InnerReader.ReadContentAsBase64(buffer, index, count); }
         public override int ReadContentAsBinHex(byte[] buffer, int index, int count) { return InnerReader.ReadContentAsBinHex(buffer, index, count); }
         public override int ReadValueChunk(char[] buffer, int index, int count) { return InnerReader.ReadValueChunk(buffer, index, count); }

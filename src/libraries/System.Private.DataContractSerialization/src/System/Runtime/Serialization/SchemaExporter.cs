@@ -71,7 +71,7 @@ namespace System.Runtime.Serialization
             if (!Schemas.Contains(Globals.SerializationNamespace))
             {
                 StringReader reader = new StringReader(Globals.SerializationSchema);
-                XmlSchema schema = XmlSchema.Read(new XmlTextReader(reader) { DtdProcessing = DtdProcessing.Prohibit }, null);
+                XmlSchema? schema = XmlSchema.Read(new XmlTextReader(reader) { DtdProcessing = DtdProcessing.Prohibit }, null);
                 if (schema == null)
                     throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidOperationException(SR.Format(SR.CouldNotReadSerializationSchema, Globals.SerializationNamespace)));
                 Schemas.Add(schema);
@@ -594,7 +594,7 @@ namespace System.Runtime.Serialization
                 xsdType = CreateAnyElementType();
                 hasRoot = false;
             }
-            string methodName = provider.MethodName;
+            string? methodName = provider.MethodName;
             if (methodName == null || methodName.Length == 0)
             {
                 if (!provider.IsAny)
@@ -629,7 +629,7 @@ namespace System.Runtime.Serialization
                     XmlSchemaType? providerXsdType = typeInfo as XmlSchemaType;
                     if (providerXsdType != null)
                     {
-                        string typeName = providerXsdType.Name;
+                        string? typeName = providerXsdType.Name;
                         string? typeNs = null;
                         if (typeName == null || typeName.Length == 0)
                         {
@@ -801,7 +801,7 @@ namespace System.Runtime.Serialization
             XmlSchemaAnnotation annotation = new XmlSchemaAnnotation();
             XmlSchemaAppInfo appInfo = new XmlSchemaAppInfo();
             annotation.Items.Add(appInfo);
-            appInfo.Markup = nodes;
+            appInfo.Markup = nodes!; // TODO-NULLABLE - '!' should be removed once XmlSchemaAppInfo is annotated correctly
             return annotation;
         }
 

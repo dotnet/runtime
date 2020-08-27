@@ -269,7 +269,7 @@ namespace System.Xml
         public virtual int ReadArray(System.Xml.XmlDictionaryString localName, System.Xml.XmlDictionaryString namespaceUri, System.TimeSpan[] array, int offset, int count) { throw null; }
         public virtual bool[] ReadBooleanArray(string localName, string namespaceUri) { throw null; }
         public virtual bool[] ReadBooleanArray(System.Xml.XmlDictionaryString localName, System.Xml.XmlDictionaryString namespaceUri) { throw null; }
-        public override object ReadContentAs(System.Type type, System.Xml.IXmlNamespaceResolver namespaceResolver) { throw null; }
+        public override object ReadContentAs(System.Type type, System.Xml.IXmlNamespaceResolver? namespaceResolver) { throw null; }
         public virtual byte[] ReadContentAsBase64() { throw null; }
         public virtual byte[] ReadContentAsBinHex() { throw null; }
         protected byte[] ReadContentAsBinHex(int maxByteArrayContentLength) { throw null; }

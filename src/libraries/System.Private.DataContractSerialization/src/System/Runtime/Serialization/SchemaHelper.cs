@@ -12,7 +12,7 @@ namespace System.Runtime.Serialization
     internal static class SchemaHelper
     {
 
-        internal static bool NamespacesEqual(string ns1, string ns2)
+        internal static bool NamespacesEqual(string? ns1, string? ns2)
         {
             if (ns1 == null || ns1.Length == 0)
                 return (ns2 == null || ns2.Length == 0);

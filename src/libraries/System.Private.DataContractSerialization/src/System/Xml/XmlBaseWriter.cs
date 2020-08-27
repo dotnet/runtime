@@ -295,7 +295,7 @@ namespace System.Xml
             _writeState = WriteState.Attribute;
         }
 
-        public override void WriteStartAttribute(string prefix, string localName, string namespaceUri)
+        public override void WriteStartAttribute(string? prefix, string localName, string? namespaceUri)
         {
             StartAttribute(ref prefix, localName, namespaceUri, null);
             if (!_isXmlnsAttribute)
@@ -436,7 +436,7 @@ namespace System.Xml
             }
         }
 
-        public override void WriteComment(string text)
+        public override void WriteComment(string? text)
         {
             if (IsClosed)
                 ThrowClosed();
@@ -474,7 +474,7 @@ namespace System.Xml
             WriteEndElement();
         }
 
-        public override void WriteCData(string text)
+        public override void WriteCData(string? text)
         {
             if (IsClosed)
                 ThrowClosed();
@@ -494,7 +494,7 @@ namespace System.Xml
             }
         }
 
-        public override void WriteDocType(string name, string pubid, string sysid, string subset)
+        public override void WriteDocType(string name, string? pubid, string? sysid, string? subset)
         {
             throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new NotSupportedException(SR.Format(SR.XmlMethodNotSupported, "WriteDocType")));
         }
@@ -849,7 +849,7 @@ namespace System.Xml
             return prefix;
         }
 
-        public override void WriteQualifiedName(string localName, string namespaceUri)
+        public override void WriteQualifiedName(string localName, string? namespaceUri)
         {
             if (IsClosed)
                 ThrowClosed();
@@ -914,7 +914,7 @@ namespace System.Xml
         }
 
 
-        public override void WriteProcessingInstruction(string name, string text)
+        public override void WriteProcessingInstruction(string name, string? text)
         {
             if (IsClosed)
                 ThrowClosed();
@@ -975,7 +975,7 @@ namespace System.Xml
             throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new NotSupportedException(SR.Format(SR.XmlMethodNotSupported, "WriteNmToken")));
         }
 
-        public override void WriteWhitespace(string whitespace)
+        public override void WriteWhitespace(string? whitespace)
         {
             if (IsClosed)
                 ThrowClosed();
@@ -996,7 +996,7 @@ namespace System.Xml
             WriteString(whitespace);
         }
 
-        public override void WriteString(string value)
+        public override void WriteString(string? value)
         {
             if (IsClosed)
                 ThrowClosed();
@@ -1268,7 +1268,7 @@ namespace System.Xml
             }
         }
 
-        public override void WriteValue(string value)
+        public override void WriteValue(string? value)
         {
             if (IsClosed)
                 ThrowClosed();

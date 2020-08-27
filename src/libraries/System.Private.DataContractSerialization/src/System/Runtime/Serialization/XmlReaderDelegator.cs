@@ -872,7 +872,8 @@ namespace System.Runtime.Serialization
 
         private XmlQualifiedName ParseQualifiedName(string str)
         {
-            string name, ns, prefix;
+            string name, prefix;
+            string? ns;
             if (str == null || str.Length == 0)
                 name = ns = string.Empty;
             else
@@ -1226,7 +1227,7 @@ namespace System.Runtime.Serialization
         internal string Value { get { return reader.Value; } }
         internal Type ValueType { get { return reader.ValueType; } }
         internal int Depth { get { return reader.Depth; } }
-        internal string LookupNamespace(string prefix) { return reader.LookupNamespace(prefix); }
+        internal string? LookupNamespace(string prefix) { return reader.LookupNamespace(prefix); }
         internal bool EOF { get { return reader.EOF; } }
 
         internal void Skip()

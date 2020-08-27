@@ -599,7 +599,7 @@ namespace System.Xml
             return read;
         }
 
-        public override object ReadContentAs(Type type, IXmlNamespaceResolver namespaceResolver)
+        public override object ReadContentAs(Type type, IXmlNamespaceResolver? namespaceResolver)
         {
             if (type == typeof(Guid[]))
             {
@@ -689,7 +689,7 @@ namespace System.Xml
         {
             string prefix;
             XmlConverter.ToQualifiedName(ReadContentAsString(), out prefix, out localName);
-            namespaceUri = LookupNamespace(prefix);
+            namespaceUri = LookupNamespace(prefix)!;
             if (namespaceUri == null)
                 XmlExceptionHelper.ThrowUndefinedPrefix(this, prefix);
         }
@@ -1344,7 +1344,7 @@ namespace System.Xml
                 }
             }
 
-            public override string BaseURI
+            public override string? BaseURI
             {
                 get
                 {
@@ -1389,12 +1389,12 @@ namespace System.Xml
                 return _reader.GetAttribute(index);
             }
 
-            public override string GetAttribute(string name)
+            public override string? GetAttribute(string name)
             {
                 return _reader.GetAttribute(name);
             }
 
-            public override string GetAttribute(string name, string namespaceUri)
+            public override string? GetAttribute(string name, string? namespaceUri)
             {
                 return _reader.GetAttribute(name, namespaceUri);
             }
@@ -1441,7 +1441,7 @@ namespace System.Xml
                 }
             }
 
-            public override string LookupNamespace(string namespaceUri)
+            public override string? LookupNamespace(string namespaceUri)
             {
                 return _reader.LookupNamespace(namespaceUri);
             }
@@ -1456,7 +1456,7 @@ namespace System.Xml
                 return _reader.MoveToAttribute(name);
             }
 
-            public override bool MoveToAttribute(string name, string namespaceUri)
+            public override bool MoveToAttribute(string name, string? namespaceUri)
             {
                 return _reader.MoveToAttribute(name, namespaceUri);
             }
@@ -1574,7 +1574,7 @@ namespace System.Xml
                 }
             }
 
-            public override string this[string name]
+            public override string? this[string name]
             {
                 get
                 {
@@ -1582,7 +1582,7 @@ namespace System.Xml
                 }
             }
 
-            public override string this[string name, string namespaceUri]
+            public override string? this[string name, string? namespaceUri]
             {
                 get
                 {
@@ -1784,7 +1784,7 @@ namespace System.Xml
                 }
             }
 
-            public override object ReadContentAs(Type type, IXmlNamespaceResolver namespaceResolver)
+            public override object ReadContentAs(Type type, IXmlNamespaceResolver? namespaceResolver)
             {
                 return _reader.ReadContentAs(type, namespaceResolver);
             }

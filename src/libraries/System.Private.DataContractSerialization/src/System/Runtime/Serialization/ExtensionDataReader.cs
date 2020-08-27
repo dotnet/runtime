@@ -163,7 +163,7 @@ namespace System.Runtime.Serialization
             return null;
         }
 
-        public override bool MoveToAttribute(string name, string namespaceURI)
+        public override bool MoveToAttribute(string name, string? namespaceURI)
         {
             if (IsXmlDataNode)
                 return _xmlNodeReader.MoveToAttribute(name, _ns);
@@ -375,7 +375,7 @@ namespace System.Runtime.Serialization
             }
         }
 
-        public override string GetAttribute(string name)
+        public override string? GetAttribute(string name)
         {
             if (IsXmlDataNode)
             {

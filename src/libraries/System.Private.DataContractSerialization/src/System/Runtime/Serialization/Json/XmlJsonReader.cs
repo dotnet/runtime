@@ -371,7 +371,7 @@ namespace System.Runtime.Serialization.Json
             return UnescapeJsonString(base.GetAttribute(index));
         }
 
-        public override string? GetAttribute(string localName, string namespaceUri)
+        public override string? GetAttribute(string localName, string? namespaceUri)
         {
             if (localName != JsonGlobals.typeString)
             {

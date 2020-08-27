@@ -432,7 +432,7 @@ namespace System.Runtime.Serialization.Json
             WriteEscapedJsonString(BinHexEncoding.GetString(buffer, index, count));
         }
 
-        public override void WriteCData(string text)
+        public override void WriteCData(string? text)
         {
             WriteString(text);
         }
@@ -467,12 +467,12 @@ namespace System.Runtime.Serialization.Json
             WriteString(new string(buffer, index, count));
         }
 
-        public override void WriteComment(string text)
+        public override void WriteComment(string? text)
         {
             throw new NotSupportedException(SR.Format(SR.JsonMethodNotSupported, "WriteComment"));
         }
 
-        public override void WriteDocType(string name, string pubid, string sysid, string subset)
+        public override void WriteDocType(string name, string? pubid, string? sysid, string? subset)
         {
             throw new NotSupportedException(SR.Format(SR.JsonMethodNotSupported, "WriteDocType"));
         }
@@ -706,7 +706,7 @@ namespace System.Runtime.Serialization.Json
             WriteEndElement();
         }
 
-        public override void WriteProcessingInstruction(string name, string text)
+        public override void WriteProcessingInstruction(string name, string? text)
         {
             if (IsClosed)
             {
@@ -724,7 +724,7 @@ namespace System.Runtime.Serialization.Json
             }
         }
 
-        public override void WriteQualifiedName(string localName, string ns)
+        public override void WriteQualifiedName(string localName, string? ns)
         {
             if (localName == null)
             {
@@ -1134,7 +1134,7 @@ namespace System.Runtime.Serialization.Json
             }
         }
 
-        public override void WriteWhitespace(string ws)
+        public override void WriteWhitespace(string? ws)
         {
             if (IsClosed)
             {

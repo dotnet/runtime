@@ -474,7 +474,7 @@ namespace System.Xml
             }
         }
 
-        public override string? this[string localName, string namespaceUri]
+        public override string? this[string localName, string? namespaceUri]
         {
             get
             {
@@ -590,7 +590,7 @@ namespace System.Xml
             return null;
         }
 
-        private XmlAttributeNode? GetAttributeNode(string localName, string namespaceUri)
+        private XmlAttributeNode? GetAttributeNode(string localName, string? namespaceUri)
         {
             if (localName == null)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentNullException(nameof(localName)));
@@ -658,7 +658,7 @@ namespace System.Xml
             return attributeNode.ValueAsString;
         }
 
-        public override string? GetAttribute(string localName, string namespaceUri)
+        public override string? GetAttribute(string localName, string? namespaceUri)
         {
             XmlAttributeNode? attributeNode = GetAttributeNode(localName, namespaceUri);
             if (attributeNode == null)
@@ -830,7 +830,7 @@ namespace System.Xml
             return true;
         }
 
-        public override bool MoveToAttribute(string localName, string namespaceUri)
+        public override bool MoveToAttribute(string localName, string? namespaceUri)
         {
             XmlNode? attributeNode = GetAttributeNode(localName, namespaceUri);
             if (attributeNode == null)
@@ -1689,7 +1689,7 @@ namespace System.Xml
             return ReadContentAsString();
         }
 
-        public override object ReadContentAs(Type type, IXmlNamespaceResolver namespaceResolver)
+        public override object ReadContentAs(Type type, IXmlNamespaceResolver? namespaceResolver)
         {
             if (type == typeof(ulong))
             {
