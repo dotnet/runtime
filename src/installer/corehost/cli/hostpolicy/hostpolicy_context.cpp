@@ -152,21 +152,17 @@ int hostpolicy_context_t::initialize(hostpolicy_init_t &hostpolicy_init, const a
 
     fx_definition_vector_t::iterator fx_begin;
     fx_definition_vector_t::iterator fx_end;
-    resolver.get_app_fx_definition_range(&fx_begin, &fx_end);
+    resolver.get_app_context_deps_files_range(&fx_begin, &fx_end);
 
     pal::string_t app_context_deps_str;
     fx_definition_vector_t::iterator fx_curr = fx_begin;
     while (fx_curr != fx_end)
     {
-        if (fx_curr != fx_begin && app_context_deps_str != L"")
+        if (fx_curr != fx_begin)
             app_context_deps_str += _X(';');
 
-        auto deps_str = (*fx_curr)->get_deps_file();
+        app_context_deps_str += (*fx_curr)->get_deps_file();
         ++fx_curr;
-        if (bundle::info_t::is_single_file_bundle() && (get_directory(deps_str) == args.app_root))
-            continue;
-
-        app_context_deps_str += deps_str;
     }
 
     // Build properties for CoreCLR instantiation
