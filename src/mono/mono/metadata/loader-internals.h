@@ -26,6 +26,13 @@
 typedef struct _MonoLoadedImages MonoLoadedImages;
 typedef struct _MonoAssemblyLoadContext MonoAssemblyLoadContext;
 
+struct _MonoBundledSatelliteAssembly {
+	const char *name;
+	const char *culture;
+	const unsigned char *data;
+	unsigned int size;
+};
+
 #ifndef DISABLE_DLLMAP
 typedef struct _MonoDllMap MonoDllMap;
 struct _MonoDllMap {
@@ -59,13 +66,6 @@ struct _MonoAssemblyLoadContext {
 	MonoCoopMutex pinvoke_lock;
 	// Maps malloc-ed char* pinvoke scope -> MonoDl*
 	GHashTable *pinvoke_scopes;
-};
-
-struct _MonoBundledSatelliteAssembly {
-	const char *name;
-	const char *culture;
-	const unsigned char *data;
-	unsigned int size;
 };
 
 #endif /* ENABLE_NETCORE */

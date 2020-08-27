@@ -27,8 +27,6 @@ mono_install_assembly_preload_hook_v3 (MonoAssemblyPreLoadFuncV3 func, void *use
 MONO_API MONO_RT_EXTERNAL_ONLY MonoAssemblyLoadContextGCHandle
 mono_alc_get_default_gchandle (void);
 
-#ifdef ENABLE_NETCORE
-
 typedef struct _MonoBundledSatelliteAssembly MonoBundledSatelliteAssembly;
 
 MONO_API void
@@ -36,7 +34,5 @@ mono_register_bundled_satellite_assemblies (const MonoBundledSatelliteAssembly *
 
 MONO_API MonoBundledSatelliteAssembly *
 mono_create_new_bundled_satellite_assembly (const char *name, const char *culture, const unsigned char *data, unsigned int size);
-
-#endif /* ENABLE_NETCORE */
 
 #endif /*__MONO_METADATA_MONO_PRIVATE_UNSTABLE_H__*/

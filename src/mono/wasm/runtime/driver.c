@@ -201,8 +201,6 @@ mono_wasm_add_assembly (const char *name, const unsigned char *data, unsigned in
 	return mono_has_pdb_checksum (data, size);
 }
 
-#ifdef ENABLE_NETCORE
-
 typedef struct WasmSatelliteAssembly_ WasmSatelliteAssembly;
 
 struct WasmSatelliteAssembly_ {
@@ -217,12 +215,11 @@ EMSCRIPTEN_KEEPALIVE void
 mono_wasm_add_satellite_assembly (const char *name, const char *culture, const unsigned char *data, unsigned int size)
 {
 	WasmSatelliteAssembly *entry = g_new0 (WasmSatelliteAssembly, 1);
-	entry->assembly = mono_create_new_bundled_satellite_assembly(name, culture, data, size);
+	entry->assembly = mono_create_new_bundled_satellite_assembly (name, culture, data, size);
 	entry->next = satellite_assemblies;
 	satellite_assemblies = entry;
 	++satellite_assembly_count;
 }
-#endif // ENABLE_NETCORE
 
 EMSCRIPTEN_KEEPALIVE void
 mono_wasm_setenv (const char *name, const char *value)
@@ -498,10 +495,8 @@ mono_wasm_load_runtime (const char *unused, int debug_level)
 		mono_register_bundled_assemblies ((const MonoBundledAssembly **)bundle_array);
 	}
 
-#ifdef ENABLE_NETCORE
-
 	if (satellite_assembly_count) {
-		MonoBundledSatelliteAssembly **satellite_bundle_array =  g_new0 (MonoBundledSatelliteAssembly*, satellite_assembly_count + 1);
+		MonoBundledSatelliteAssembly **satellite_bundle_array =  g_new0 (MonoBundledSatelliteAssembly *, satellite_assembly_count + 1);
 		WasmSatelliteAssembly *cur = satellite_assemblies;
 		int i = 0;
 		while (cur) {
@@ -511,8 +506,6 @@ mono_wasm_load_runtime (const char *unused, int debug_level)
 		}
 		mono_register_bundled_satellite_assemblies ((const MonoBundledSatelliteAssembly **)satellite_bundle_array);
 	}
-
-#endif // ENABLE_NETCORE
 
 	mono_trace_init ();
 	mono_trace_set_log_handler (wasm_logger, NULL);
