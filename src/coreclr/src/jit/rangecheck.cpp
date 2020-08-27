@@ -215,13 +215,12 @@ void RangeCheck::OptimizeRangeCheck(BasicBlock* block, Statement* stmt, GenTree*
         if (arrSize <= 0)
         {
             // see if there are any assertions about the array size we can use
-            JITDUMP("Looking for assertions for: " FMT_VN "\n", arrLenVn);
+            JITDUMP("Looking for array size assertions for: " FMT_VN "\n", arrLenVn);
             Range arrLength = Range(Limit(Limit::keDependent));
             MergeEdgeAssertions(arrLenVn, block->bbAssertionIn, &arrLength);
             if (arrLength.lLimit.IsConstant())
             {
                 arrSize = arrLength.lLimit.GetConstant();
-                JITDUMP("Min array size is %d\n", arrSize);
             }
         }
     }
@@ -527,11 +526,6 @@ void RangeCheck::SetDef(UINT64 hash, Location* loc)
 
 void RangeCheck::MergeEdgeAssertions(GenTreeLclVarCommon* lcl, ASSERT_VALARG_TP assertions, Range* pRange)
 {
-    if (BitVecOps::IsEmpty(m_pCompiler->apTraits, assertions))
-    {
-        return;
-    }
-
     if (lcl->GetSsaNum() == SsaConfig::RESERVED_SSA_NUM)
     {
         return;
@@ -550,6 +544,16 @@ void RangeCheck::MergeEdgeAssertions(GenTreeLclVarCommon* lcl, ASSERT_VALARG_TP 
 // Merge assertions on the edge flowing into the block about a variable.
 void RangeCheck::MergeEdgeAssertions(ValueNum normalLclVN, ASSERT_VALARG_TP assertions, Range* pRange)
 {
+    if (BitVecOps::IsEmpty(m_pCompiler->apTraits, assertions))
+    {
+        return;
+    }
+
+    if (normalLclVN == ValueNumStore::NoVN)
+    {
+        return;
+    }
+
     // Walk through the "assertions" to check if the apply.
     BitVecOps::Iter iter(m_pCompiler->apTraits, assertions);
     unsigned        index = 0;
@@ -605,7 +609,7 @@ void RangeCheck::MergeEdgeAssertions(ValueNum normalLclVN, ASSERT_VALARG_TP asse
                 cmpOper = (genTreeOps)info.cmpOper;
                 limit   = Limit(Limit::keBinOpArray, info.vnBound, 0);
             }
-            else if (info.vnBound == info.vnBound)
+            else if (normalLclVN == info.vnBound)
             {
                 cmpOper = GenTree::SwapRelop((genTreeOps)info.cmpOper);
                 limit   = Limit(Limit::keBinOpArray, info.cmpOp, 0);
