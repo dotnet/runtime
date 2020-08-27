@@ -69,7 +69,7 @@ namespace System.Runtime.Serialization.Json
             return CreateJsonWriter(stream, encoding, ownsStream, indent, JsonReaderWriterFactory.DefaultIndentChars);
         }
 
-        public static XmlDictionaryWriter CreateJsonWriter(Stream stream, Encoding encoding, bool ownsStream, bool indent, string indentChars)
+        public static XmlDictionaryWriter CreateJsonWriter(Stream stream, Encoding encoding, bool ownsStream, bool indent, string? indentChars)
         {
             XmlJsonWriter writer = new XmlJsonWriter(indent, indentChars);
             writer.SetOutput(stream, encoding, ownsStream);

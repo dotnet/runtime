@@ -50,7 +50,7 @@ namespace System.Runtime.Serialization.Json
         {
         }
 
-        public DataContractJsonSerializer(Type type, XmlDictionaryString rootName)
+        public DataContractJsonSerializer(Type type, XmlDictionaryString? rootName)
             : this(type, rootName, null)
         {
         }
@@ -65,7 +65,7 @@ namespace System.Runtime.Serialization.Json
         {
         }
 
-        public DataContractJsonSerializer(Type type, XmlDictionaryString rootName, IEnumerable<Type>? knownTypes)
+        public DataContractJsonSerializer(Type type, XmlDictionaryString? rootName, IEnumerable<Type>? knownTypes)
         {
             _serializer = new DataContractJsonSerializerImpl(type, rootName, knownTypes);
         }
