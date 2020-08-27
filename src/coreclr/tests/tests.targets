@@ -18,10 +18,6 @@
     
     <Error  Text=" The wrappers must be compiled and placed at $(TestAssemblyDir)\*\ before they can be run, Do a clean Test Run"
             Condition="'@(AllTestAssemblies)' == ''" />
-    
-    <Message Text= "AllTestAssemblies= @(AllTestAssemblies)"/>
-    <Message Text= "TestAssemblies= @(TestAssemblies)"/>
-    <Message Text= "_SkipTestAssemblies= @(_SkipTestAssemblies -> '$(TestAssemblyDir)%(Identity)\%(Identity).XUnitWrapper.dll')"/>
   </Target>
 
    <Target Name="RunTests"
