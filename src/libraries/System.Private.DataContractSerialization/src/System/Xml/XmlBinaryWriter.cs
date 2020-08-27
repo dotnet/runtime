@@ -17,7 +17,7 @@ namespace System.Xml
 {
     public interface IXmlBinaryWriterInitializer
     {
-        void SetOutput(Stream stream, IXmlDictionary dictionary, XmlBinaryWriterSession session, bool ownsStream);
+        void SetOutput(Stream stream, IXmlDictionary? dictionary, XmlBinaryWriterSession? session, bool ownsStream);
     }
 
     internal class XmlBinaryNodeWriter : XmlStreamNodeWriter
@@ -1172,7 +1172,7 @@ namespace System.Xml
                 WriteValue(reader.ReadContentAsObject());
         }
 
-        private void WriteStartArray(string? prefix, string localName, string namespaceUri, int count)
+        private void WriteStartArray(string? prefix, string localName, string? namespaceUri, int count)
         {
             StartArray(count);
             _writer.WriteArrayNode();
@@ -1180,7 +1180,7 @@ namespace System.Xml
             WriteEndElement();
         }
 
-        private void WriteStartArray(string? prefix, XmlDictionaryString localName, XmlDictionaryString namespaceUri, int count)
+        private void WriteStartArray(string? prefix, XmlDictionaryString localName, XmlDictionaryString? namespaceUri, int count)
         {
             StartArray(count);
             _writer.WriteArrayNode();
@@ -1193,7 +1193,7 @@ namespace System.Xml
             EndArray();
         }
 
-        private unsafe void UnsafeWriteArray(string? prefix, string localName, string namespaceUri,
+        private unsafe void UnsafeWriteArray(string? prefix, string localName, string? namespaceUri,
                                XmlBinaryNodeType nodeType, int count, byte* array, byte* arrayMax)
         {
             WriteStartArray(prefix, localName, namespaceUri, count);
@@ -1201,7 +1201,7 @@ namespace System.Xml
             WriteEndArray();
         }
 
-        private unsafe void UnsafeWriteArray(string? prefix, XmlDictionaryString localName, XmlDictionaryString namespaceUri,
+        private unsafe void UnsafeWriteArray(string? prefix, XmlDictionaryString localName, XmlDictionaryString? namespaceUri,
                                XmlBinaryNodeType nodeType, int count, byte* array, byte* arrayMax)
         {
             WriteStartArray(prefix, localName, namespaceUri, count);
@@ -1223,7 +1223,7 @@ namespace System.Xml
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentOutOfRangeException(nameof(count), SR.Format(SR.SizeExceedsRemainingBufferSpace, array.Length - offset)));
         }
 
-        public unsafe override void WriteArray(string? prefix, string localName, string namespaceUri, bool[] array, int offset, int count)
+        public unsafe override void WriteArray(string? prefix, string localName, string? namespaceUri, bool[] array, int offset, int count)
         {
             {
                 CheckArray(array, offset, count);
@@ -1237,7 +1237,7 @@ namespace System.Xml
             }
         }
 
-        public unsafe override void WriteArray(string? prefix, XmlDictionaryString localName, XmlDictionaryString namespaceUri, bool[] array, int offset, int count)
+        public unsafe override void WriteArray(string? prefix, XmlDictionaryString localName, XmlDictionaryString? namespaceUri, bool[] array, int offset, int count)
         {
             {
                 CheckArray(array, offset, count);
@@ -1251,7 +1251,7 @@ namespace System.Xml
             }
         }
 
-        public unsafe override void WriteArray(string? prefix, string localName, string namespaceUri, short[] array, int offset, int count)
+        public unsafe override void WriteArray(string? prefix, string localName, string? namespaceUri, short[] array, int offset, int count)
         {
             {
                 CheckArray(array, offset, count);
@@ -1265,7 +1265,7 @@ namespace System.Xml
             }
         }
 
-        public unsafe override void WriteArray(string? prefix, XmlDictionaryString localName, XmlDictionaryString namespaceUri, short[] array, int offset, int count)
+        public unsafe override void WriteArray(string? prefix, XmlDictionaryString localName, XmlDictionaryString? namespaceUri, short[] array, int offset, int count)
         {
             {
                 CheckArray(array, offset, count);
@@ -1279,7 +1279,7 @@ namespace System.Xml
             }
         }
 
-        public unsafe override void WriteArray(string? prefix, string localName, string namespaceUri, int[] array, int offset, int count)
+        public unsafe override void WriteArray(string? prefix, string localName, string? namespaceUri, int[] array, int offset, int count)
         {
             {
                 CheckArray(array, offset, count);
@@ -1293,7 +1293,7 @@ namespace System.Xml
             }
         }
 
-        public unsafe override void WriteArray(string? prefix, XmlDictionaryString localName, XmlDictionaryString namespaceUri, int[] array, int offset, int count)
+        public unsafe override void WriteArray(string? prefix, XmlDictionaryString localName, XmlDictionaryString? namespaceUri, int[] array, int offset, int count)
         {
             {
                 CheckArray(array, offset, count);
@@ -1307,7 +1307,7 @@ namespace System.Xml
             }
         }
 
-        public unsafe override void WriteArray(string? prefix, string localName, string namespaceUri, long[] array, int offset, int count)
+        public unsafe override void WriteArray(string? prefix, string localName, string? namespaceUri, long[] array, int offset, int count)
         {
             {
                 CheckArray(array, offset, count);
@@ -1321,7 +1321,7 @@ namespace System.Xml
             }
         }
 
-        public unsafe override void WriteArray(string? prefix, XmlDictionaryString localName, XmlDictionaryString namespaceUri, long[] array, int offset, int count)
+        public unsafe override void WriteArray(string? prefix, XmlDictionaryString localName, XmlDictionaryString? namespaceUri, long[] array, int offset, int count)
         {
             {
                 CheckArray(array, offset, count);
@@ -1335,7 +1335,7 @@ namespace System.Xml
             }
         }
 
-        public unsafe override void WriteArray(string? prefix, string localName, string namespaceUri, float[] array, int offset, int count)
+        public unsafe override void WriteArray(string? prefix, string localName, string? namespaceUri, float[] array, int offset, int count)
         {
             {
                 CheckArray(array, offset, count);
@@ -1349,7 +1349,7 @@ namespace System.Xml
             }
         }
 
-        public unsafe override void WriteArray(string? prefix, XmlDictionaryString localName, XmlDictionaryString namespaceUri, float[] array, int offset, int count)
+        public unsafe override void WriteArray(string? prefix, XmlDictionaryString localName, XmlDictionaryString? namespaceUri, float[] array, int offset, int count)
         {
             {
                 CheckArray(array, offset, count);
@@ -1363,7 +1363,7 @@ namespace System.Xml
             }
         }
 
-        public unsafe override void WriteArray(string? prefix, string localName, string namespaceUri, double[] array, int offset, int count)
+        public unsafe override void WriteArray(string? prefix, string localName, string? namespaceUri, double[] array, int offset, int count)
         {
             {
                 CheckArray(array, offset, count);
@@ -1377,7 +1377,7 @@ namespace System.Xml
             }
         }
 
-        public unsafe override void WriteArray(string? prefix, XmlDictionaryString localName, XmlDictionaryString namespaceUri, double[] array, int offset, int count)
+        public unsafe override void WriteArray(string? prefix, XmlDictionaryString localName, XmlDictionaryString? namespaceUri, double[] array, int offset, int count)
         {
             {
                 CheckArray(array, offset, count);
@@ -1391,7 +1391,7 @@ namespace System.Xml
             }
         }
 
-        public unsafe override void WriteArray(string? prefix, string localName, string namespaceUri, decimal[] array, int offset, int count)
+        public unsafe override void WriteArray(string? prefix, string localName, string? namespaceUri, decimal[] array, int offset, int count)
         {
             {
                 CheckArray(array, offset, count);
@@ -1405,7 +1405,7 @@ namespace System.Xml
             }
         }
 
-        public unsafe override void WriteArray(string? prefix, XmlDictionaryString localName, XmlDictionaryString namespaceUri, decimal[] array, int offset, int count)
+        public unsafe override void WriteArray(string? prefix, XmlDictionaryString localName, XmlDictionaryString? namespaceUri, decimal[] array, int offset, int count)
         {
             {
                 CheckArray(array, offset, count);
@@ -1420,7 +1420,7 @@ namespace System.Xml
         }
 
         // DateTime
-        public override void WriteArray(string? prefix, string localName, string namespaceUri, DateTime[] array, int offset, int count)
+        public override void WriteArray(string? prefix, string localName, string? namespaceUri, DateTime[] array, int offset, int count)
         {
             {
                 CheckArray(array, offset, count);
@@ -1433,7 +1433,7 @@ namespace System.Xml
             }
         }
 
-        public override void WriteArray(string? prefix, XmlDictionaryString localName, XmlDictionaryString namespaceUri, DateTime[] array, int offset, int count)
+        public override void WriteArray(string? prefix, XmlDictionaryString localName, XmlDictionaryString? namespaceUri, DateTime[] array, int offset, int count)
         {
             {
                 CheckArray(array, offset, count);
@@ -1447,7 +1447,7 @@ namespace System.Xml
         }
 
         // Guid
-        public override void WriteArray(string? prefix, string localName, string namespaceUri, Guid[] array, int offset, int count)
+        public override void WriteArray(string? prefix, string localName, string? namespaceUri, Guid[] array, int offset, int count)
         {
             {
                 CheckArray(array, offset, count);
@@ -1460,7 +1460,7 @@ namespace System.Xml
             }
         }
 
-        public override void WriteArray(string? prefix, XmlDictionaryString localName, XmlDictionaryString namespaceUri, Guid[] array, int offset, int count)
+        public override void WriteArray(string? prefix, XmlDictionaryString localName, XmlDictionaryString? namespaceUri, Guid[] array, int offset, int count)
         {
             {
                 CheckArray(array, offset, count);
@@ -1474,7 +1474,7 @@ namespace System.Xml
         }
 
         // TimeSpan
-        public override void WriteArray(string? prefix, string localName, string namespaceUri, TimeSpan[] array, int offset, int count)
+        public override void WriteArray(string? prefix, string localName, string? namespaceUri, TimeSpan[] array, int offset, int count)
         {
             {
                 CheckArray(array, offset, count);
@@ -1487,7 +1487,7 @@ namespace System.Xml
             }
         }
 
-        public override void WriteArray(string? prefix, XmlDictionaryString localName, XmlDictionaryString namespaceUri, TimeSpan[] array, int offset, int count)
+        public override void WriteArray(string? prefix, XmlDictionaryString localName, XmlDictionaryString? namespaceUri, TimeSpan[] array, int offset, int count)
         {
             {
                 CheckArray(array, offset, count);

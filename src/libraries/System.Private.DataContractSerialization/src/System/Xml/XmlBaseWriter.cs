@@ -600,7 +600,7 @@ namespace System.Xml
             return prefix;
         }
 
-        public override void WriteStartElement(string? prefix, string localName, string namespaceUri)
+        public override void WriteStartElement(string? prefix, string localName, string? namespaceUri)
         {
             StartElement(ref prefix, localName, namespaceUri, null);
             _writer.WriteStartElement(prefix, localName);
@@ -1020,7 +1020,7 @@ namespace System.Xml
             }
         }
 
-        public override void WriteString(XmlDictionaryString value)
+        public override void WriteString(XmlDictionaryString? value)
         {
             if (IsClosed)
                 ThrowClosed();
@@ -1395,7 +1395,7 @@ namespace System.Xml
             }
         }
 
-        public override void WriteValue(XmlDictionaryString value)
+        public override void WriteValue(XmlDictionaryString? value)
         {
             WriteString(value);
         }
@@ -1631,7 +1631,7 @@ namespace System.Xml
             }
         }
 
-        public override void StartCanonicalization(Stream stream, bool includeComments, string[] inclusivePrefixes)
+        public override void StartCanonicalization(Stream stream, bool includeComments, string[]? inclusivePrefixes)
         {
             if (IsClosed)
                 ThrowClosed();

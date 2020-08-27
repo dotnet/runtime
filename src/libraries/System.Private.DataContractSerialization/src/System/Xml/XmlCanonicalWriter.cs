@@ -54,7 +54,7 @@ namespace System.Xml
         {
         }
 
-        public void SetOutput(Stream stream, bool includeComments, string[] inclusivePrefixes)
+        public void SetOutput(Stream stream, bool includeComments, string[]? inclusivePrefixes)
         {
             if (stream == null)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(stream));

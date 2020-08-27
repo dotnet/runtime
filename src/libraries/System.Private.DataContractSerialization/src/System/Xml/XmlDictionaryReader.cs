@@ -193,7 +193,7 @@ namespace System.Xml
             }
         }
 
-        public virtual void StartCanonicalization(Stream stream, bool includeComments, string[] inclusivePrefixes)
+        public virtual void StartCanonicalization(Stream stream, bool includeComments, string[]? inclusivePrefixes)
         {
             throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new NotSupportedException());
         }

@@ -50,7 +50,7 @@ namespace System.Runtime.Serialization
             }
         }
 
-        public override Type? ResolveName(string? typeName, string? typeNamespace, Type? declaredType, DataContractResolver knownTypeResolver)
+        public override Type? ResolveName(string typeName, string? typeNamespace, Type? declaredType, DataContractResolver knownTypeResolver)
         {
             if (typeName == null || typeNamespace == null)
                 return null;

@@ -52,7 +52,7 @@ namespace System.Runtime.Serialization
                                    xmlReader.LocalName != "xmlns";
         }
 
-        public static void WriteNodes(XmlWriter xmlWriter, XmlNode[] nodes)
+        public static void WriteNodes(XmlWriter xmlWriter, XmlNode[]? nodes)
         {
             if (xmlWriter == null)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(xmlWriter));

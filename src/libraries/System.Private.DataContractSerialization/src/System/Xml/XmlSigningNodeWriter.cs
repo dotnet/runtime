@@ -20,7 +20,7 @@ namespace System.Xml
             _text = text;
         }
 
-        public void SetOutput(XmlNodeWriter writer, Stream stream, bool includeComments, string[] inclusivePrefixes)
+        public void SetOutput(XmlNodeWriter writer, Stream stream, bool includeComments, string[]? inclusivePrefixes)
         {
             _writer = writer;
             if (_signingWriter == null)

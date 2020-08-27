@@ -856,7 +856,7 @@ namespace System.Runtime.Serialization.Json
             ResetState();
         }
 
-        public override void StartCanonicalization(Stream stream, bool includeComments, string[] inclusivePrefixes)
+        public override void StartCanonicalization(Stream stream, bool includeComments, string[]? inclusivePrefixes)
         {
             throw new NotSupportedException();
         }
