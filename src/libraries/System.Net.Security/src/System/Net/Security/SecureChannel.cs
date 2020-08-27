@@ -928,8 +928,7 @@ namespace System.Net.Security
             SecurityStatusPal status = SslStreamPal.DecryptMessage(_securityContext!, payload!, ref offset, ref count);
             if (NetEventSource.Log.IsEnabled() && status.ErrorCode == SecurityStatusPalErrorCode.OK)
             {
-                ReadOnlyMemory<byte> buffer = new ReadOnlyMemory<byte>(payload, offset, count);
-                NetEventSource.DumpBuffer(this, buffer, "Decrypt");
+                NetEventSource.DumpBuffer(this, payload!, offset, count);
             }
 
             return status;
