@@ -425,10 +425,7 @@ namespace System.Runtime.InteropServices.JavaScript
 
         private static Enum EnumFromExportContract(Type enumType, object value)
         {
-            if (!enumType.IsEnum)
-            {
-                throw new ArgumentException("Type provided must be an Enum.", nameof(enumType));
-            }
+            System.Diagnostics.Debug.Assert(enumType.IsEnum, $"Type provided for parameter `{nameof(enumType)}` must be an Enum. Instead the following type was found: {enumType}.");
 
             if (value is string)
             {
