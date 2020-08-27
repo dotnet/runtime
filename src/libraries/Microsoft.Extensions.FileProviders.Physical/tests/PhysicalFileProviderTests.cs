@@ -90,7 +90,7 @@ namespace Microsoft.Extensions.FileProviders
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        [PlatformSpecific(TestPlatforms.Linux)] 
         public async void PollingFileProviderShouldntConsumeINotifyInstances()
         {
             List<IDisposable> disposables = new List<IDisposable>();
@@ -101,7 +101,6 @@ namespace Microsoft.Extensions.FileProviders
             int instances = maxInstances + 16;
             try
             {
-                // right now this will fail since we still use FSW
                 for (int i = 0; i < instances; i++)
                 {
                     PhysicalFileProvider pfp = new PhysicalFileProvider(root.RootPath)
@@ -131,7 +130,6 @@ namespace Microsoft.Extensions.FileProviders
                 }
             }
         }
-
             
         private void GetFileInfoReturnsNotFoundFileInfoForIllegalPathWithLeadingSlashes(string path)
         {
