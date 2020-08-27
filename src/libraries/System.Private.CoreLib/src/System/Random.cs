@@ -222,16 +222,10 @@ namespace System
         {
             long result = 0;
 
-            for (int i = 0; i < 4; i++)
+            for (int i = 0; i < 8; i++)
             {
-                short part;
-                unchecked
-                {
-                    part = (short) InternalSample();
-                }
-
-                result |= (long) part;
-                result <<= 16;
+                result |= (long) (0xff & InternalSample());
+                result <<= 8;
             }
 
             return result;
@@ -244,7 +238,10 @@ namespace System
         ==============================================================================*/
         public virtual long NextInt64()
         {
-            return FullLong();
+            long result = Math.Abs(FullLong());
+            if (result == long.MaxValue)
+                return 0;
+            return result;
         }
 
         /*==================================NextInt64===================================
@@ -260,9 +257,15 @@ namespace System
             if (maxValue == 0)
                 return 0;
 
-            long fullLong = (long) FullLong();
-            return (long.MaxValue & fullLong) % maxValue;
-        }
+            long result;
+            long range = (long.MaxValue - 1) - (long.MaxValue - 1) % maxValue;
+            do
+            {
+                result = NextInt64();
+            } while (result >= range);
+
+            return result % maxValue;
+       }
 
         /*==================================NextInt64===================================
         **Returns: A long [minvalue..maxvalue)
@@ -277,11 +280,20 @@ namespace System
                 throw new ArgumentOutOfRangeException(nameof(minValue), SR.Format(SR.Argument_MinMaxValue, nameof(minValue), nameof(maxValue)));
             }
 
-            long range = maxValue - minValue;
-            long range1 = range / 2;
-            long range2 = range - range1;
+            if (minValue == 0)
+                return NextInt64(maxValue);
 
-            return NextInt64(range1 + 1) + NextInt64(range2) + minValue;
+            if (minValue < 0 && maxValue > 0)
+            {
+                long minHalf = -NextInt64(-minValue);
+                long maxHalf = NextInt64(maxValue);
+
+                return minHalf + maxHalf;
+            }
+
+            long range = maxValue - minValue;
+
+            return NextInt64(range) + minValue;
         }
 
         /*==================================NextDouble==================================
@@ -301,7 +313,7 @@ namespace System
         ==============================================================================*/
         public virtual float NextSingle()
         {
-            return (float) Sample();
+            return InternalSample() * (1.0f / MBIG);
         }
 
         /*==================================NextBytes===================================
