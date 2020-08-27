@@ -1470,12 +1470,12 @@ namespace System.Xml.Schema
         [System.Xml.Serialization.XmlAttributeAttribute("version", DataType="token")]
         public string? Version { get { throw null; } set { } }
         [System.ObsoleteAttribute("Use System.Xml.Schema.XmlSchemaSet for schema compilation and validation. https://go.microsoft.com/fwlink/?linkid=14202")]
-        public void Compile(System.Xml.Schema.ValidationEventHandler validationEventHandler) { }
+        public void Compile(System.Xml.Schema.ValidationEventHandler? validationEventHandler) { }
         [System.ObsoleteAttribute("Use System.Xml.Schema.XmlSchemaSet for schema compilation and validation. https://go.microsoft.com/fwlink/?linkid=14202")]
-        public void Compile(System.Xml.Schema.ValidationEventHandler validationEventHandler, System.Xml.XmlResolver resolver) { }
-        public static System.Xml.Schema.XmlSchema? Read(System.IO.Stream stream, System.Xml.Schema.ValidationEventHandler validationEventHandler) { throw null; }
-        public static System.Xml.Schema.XmlSchema? Read(System.IO.TextReader reader, System.Xml.Schema.ValidationEventHandler validationEventHandler) { throw null; }
-        public static System.Xml.Schema.XmlSchema? Read(System.Xml.XmlReader reader, System.Xml.Schema.ValidationEventHandler validationEventHandler) { throw null; }
+        public void Compile(System.Xml.Schema.ValidationEventHandler? validationEventHandler, System.Xml.XmlResolver? resolver) { }
+        public static System.Xml.Schema.XmlSchema? Read(System.IO.Stream stream, System.Xml.Schema.ValidationEventHandler? validationEventHandler) { throw null; }
+        public static System.Xml.Schema.XmlSchema? Read(System.IO.TextReader reader, System.Xml.Schema.ValidationEventHandler? validationEventHandler) { throw null; }
+        public static System.Xml.Schema.XmlSchema? Read(System.Xml.XmlReader reader, System.Xml.Schema.ValidationEventHandler? validationEventHandler) { throw null; }
         public void Write(System.IO.Stream stream) { }
         public void Write(System.IO.Stream stream, System.Xml.XmlNamespaceManager? namespaceManager) { }
         public void Write(System.IO.TextWriter writer) { }
@@ -1494,7 +1494,7 @@ namespace System.Xml.Schema
         public XmlSchemaAnnotated() { }
         [System.Xml.Serialization.XmlElementAttribute("annotation", typeof(System.Xml.Schema.XmlSchemaAnnotation))]
         public System.Xml.Schema.XmlSchemaAnnotation? Annotation { get { throw null; } set { } }
-        [System.Xml.Serialization.XmlAttributeAttribute("id", DataType="ID")]
+        [System.Xml.Serialization.XmlAttributeAttribute("id", DataType = "ID")]
         public string? Id { get { throw null; } set { } }
         [System.Xml.Serialization.XmlAnyAttributeAttribute]
         public System.Xml.XmlAttribute[]? UnhandledAttributes { get { throw null; } set { } }
@@ -1837,13 +1837,16 @@ namespace System.Xml.Schema
         [System.Xml.Serialization.XmlIgnoreAttribute]
         public System.Xml.XmlQualifiedName QualifiedName { get { throw null; } }
         [System.Xml.Serialization.XmlAttributeAttribute("ref")]
+        [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public System.Xml.XmlQualifiedName RefName { get { throw null; } set { } }
         [System.Xml.Serialization.XmlElementAttribute("complexType", typeof(System.Xml.Schema.XmlSchemaComplexType))]
         [System.Xml.Serialization.XmlElementAttribute("simpleType", typeof(System.Xml.Schema.XmlSchemaSimpleType))]
         public System.Xml.Schema.XmlSchemaType? SchemaType { get { throw null; } set { } }
         [System.Xml.Serialization.XmlAttributeAttribute("type")]
+        [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public System.Xml.XmlQualifiedName SchemaTypeName { get { throw null; } set { } }
         [System.Xml.Serialization.XmlAttributeAttribute("substitutionGroup")]
+        [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public System.Xml.XmlQualifiedName SubstitutionGroup { get { throw null; } set { } }
     }
     public partial class XmlSchemaEnumerationFacet : System.Xml.Schema.XmlSchemaFacet
@@ -2441,66 +2444,71 @@ namespace System.Xml.Serialization
     public partial interface IXmlSerializable
     {
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        System.Xml.Schema.XmlSchema GetSchema();
+        System.Xml.Schema.XmlSchema? GetSchema();
         void ReadXml(System.Xml.XmlReader reader);
         void WriteXml(System.Xml.XmlWriter writer);
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Field | System.AttributeTargets.Parameter | System.AttributeTargets.Property | System.AttributeTargets.ReturnValue, AllowMultiple=false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Field | System.AttributeTargets.Parameter | System.AttributeTargets.Property | System.AttributeTargets.ReturnValue, AllowMultiple = false)]
     public partial class XmlAnyAttributeAttribute : System.Attribute
     {
         public XmlAnyAttributeAttribute() { }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Field | System.AttributeTargets.Parameter | System.AttributeTargets.Property | System.AttributeTargets.ReturnValue, AllowMultiple=true)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Field | System.AttributeTargets.Parameter | System.AttributeTargets.Property | System.AttributeTargets.ReturnValue, AllowMultiple = true)]
     public partial class XmlAnyElementAttribute : System.Attribute
     {
         public XmlAnyElementAttribute() { }
-        public XmlAnyElementAttribute(string name) { }
-        public XmlAnyElementAttribute(string name, string ns) { }
+        public XmlAnyElementAttribute(string? name) { }
+        public XmlAnyElementAttribute(string? name, string? ns) { }
+        [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public string Name { get { throw null; } set { } }
-        public string Namespace { get { throw null; } set { } }
+        public string? Namespace { get { throw null; } set { } }
         public int Order { get { throw null; } set { } }
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Field | System.AttributeTargets.Parameter | System.AttributeTargets.Property | System.AttributeTargets.ReturnValue)]
     public partial class XmlAttributeAttribute : System.Attribute
     {
         public XmlAttributeAttribute() { }
-        public XmlAttributeAttribute(string attributeName) { }
-        public XmlAttributeAttribute(string attributeName, System.Type type) { }
-        public XmlAttributeAttribute(System.Type type) { }
+        public XmlAttributeAttribute(string? attributeName) { }
+        public XmlAttributeAttribute(string? attributeName, System.Type? type) { }
+        public XmlAttributeAttribute(System.Type? type) { }
+        [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public string AttributeName { get { throw null; } set { } }
+        [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public string DataType { get { throw null; } set { } }
         public System.Xml.Schema.XmlSchemaForm Form { get { throw null; } set { } }
-        public string Namespace { get { throw null; } set { } }
-        public System.Type Type { get { throw null; } set { } }
+        public string? Namespace { get { throw null; } set { } }
+        public System.Type? Type { get { throw null; } set { } }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Field | System.AttributeTargets.Parameter | System.AttributeTargets.Property | System.AttributeTargets.ReturnValue, AllowMultiple=true)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Field | System.AttributeTargets.Parameter | System.AttributeTargets.Property | System.AttributeTargets.ReturnValue, AllowMultiple = true)]
     public partial class XmlElementAttribute : System.Attribute
     {
         public XmlElementAttribute() { }
-        public XmlElementAttribute(string elementName) { }
-        public XmlElementAttribute(string elementName, System.Type type) { }
-        public XmlElementAttribute(System.Type type) { }
+        public XmlElementAttribute(string? elementName) { }
+        public XmlElementAttribute(string? elementName, System.Type? type) { }
+        public XmlElementAttribute(System.Type? type) { }
+        [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public string DataType { get { throw null; } set { } }
+        [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public string ElementName { get { throw null; } set { } }
         public System.Xml.Schema.XmlSchemaForm Form { get { throw null; } set { } }
         public bool IsNullable { get { throw null; } set { } }
-        public string Namespace { get { throw null; } set { } }
+        public string? Namespace { get { throw null; } set { } }
         public int Order { get { throw null; } set { } }
-        public System.Type Type { get { throw null; } set { } }
+        public System.Type? Type { get { throw null; } set { } }
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Field)]
     public partial class XmlEnumAttribute : System.Attribute
     {
         public XmlEnumAttribute() { }
-        public XmlEnumAttribute(string name) { }
-        public string Name { get { throw null; } set { } }
+        public XmlEnumAttribute(string? name) { }
+        public string? Name { get { throw null; } set { } }
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Field | System.AttributeTargets.Parameter | System.AttributeTargets.Property | System.AttributeTargets.ReturnValue)]
     public partial class XmlIgnoreAttribute : System.Attribute
     {
         public XmlIgnoreAttribute() { }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Field | System.AttributeTargets.Parameter | System.AttributeTargets.Property | System.AttributeTargets.ReturnValue, AllowMultiple=false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Field | System.AttributeTargets.Parameter | System.AttributeTargets.Property | System.AttributeTargets.ReturnValue, AllowMultiple = false)]
     public partial class XmlNamespaceDeclarationsAttribute : System.Attribute
     {
         public XmlNamespaceDeclarationsAttribute() { }
@@ -2510,17 +2518,18 @@ namespace System.Xml.Serialization
     {
         public XmlRootAttribute() { }
         public XmlRootAttribute(string elementName) { }
+        [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public string DataType { get { throw null; } set { } }
         public string ElementName { get { throw null; } set { } }
         public bool IsNullable { get { throw null; } set { } }
-        public string Namespace { get { throw null; } set { } }
+        public string? Namespace { get { throw null; } set { } }
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Interface | System.AttributeTargets.Struct)]
     public sealed partial class XmlSchemaProviderAttribute : System.Attribute
     {
-        public XmlSchemaProviderAttribute(string methodName) { }
+        public XmlSchemaProviderAttribute(string? methodName) { }
         public bool IsAny { get { throw null; } set { } }
-        public string MethodName { get { throw null; } }
+        public string? MethodName { get { throw null; } }
     }
     public partial class XmlSerializerNamespaces
     {
@@ -2528,16 +2537,17 @@ namespace System.Xml.Serialization
         public XmlSerializerNamespaces(System.Xml.Serialization.XmlSerializerNamespaces namespaces) { }
         public XmlSerializerNamespaces(System.Xml.XmlQualifiedName[] namespaces) { }
         public int Count { get { throw null; } }
-        public void Add(string prefix, string ns) { }
+        public void Add(string prefix, string? ns) { }
         public System.Xml.XmlQualifiedName[] ToArray() { throw null; }
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Field | System.AttributeTargets.Parameter | System.AttributeTargets.Property | System.AttributeTargets.ReturnValue)]
     public partial class XmlTextAttribute : System.Attribute
     {
         public XmlTextAttribute() { }
-        public XmlTextAttribute(System.Type type) { }
+        public XmlTextAttribute(System.Type? type) { }
+        [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public string DataType { get { throw null; } set { } }
-        public System.Type Type { get { throw null; } set { } }
+        public System.Type? Type { get { throw null; } set { } }
     }
 }
 namespace System.Xml.XPath
