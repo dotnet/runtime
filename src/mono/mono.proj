@@ -760,7 +760,7 @@
     <Touch Condition="'$(_MonoAotCrossConfigureCommand)' != ''" Files="$(MonoObjDir)cross/config.h" />
   </Target>
 
-  <Target Name="BuildMonoRuntimeUnix" Condition="'$(OS)' != 'Windows_NT' and '$(MonoEnableCMake)' == ''" DependsOnTargets="ConfigureMonoRuntimeUnix">
+  <Target Name="BuildMonoRuntimeUnix" Condition="'$(OS)' != 'Windows_NT' and '$(MonoEnableCMake)' != 'true'" DependsOnTargets="ConfigureMonoRuntimeUnix">
     <Message Text="--- Building Mono ---" Importance="High" />
     <Exec Condition="'$(TargetsBrowser)' != 'true'" Command="make -j$([System.Environment]::ProcessorCount)" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoObjDir)" />
     <Exec Condition="'$(TargetsBrowser)' == 'true'" Command="bash -c 'source $(EMSDK_PATH)/emsdk_env.sh &amp;&amp; make -j$([System.Environment]::ProcessorCount)'" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoObjDir)" />
@@ -938,7 +938,7 @@
     <Error Condition="!Exists('$(LocalDotnet)')" Text="'$(LocalDotnet)' doesn't exist." />
   </Target>
 
-  <Target Name="BuildMonoRuntimeCMake" Condition="'$(MonoEnableCMake)' != ''">
+  <Target Name="BuildMonoRuntimeCMake" Condition="'$(MonoEnableCMake)' == 'true'">
     <Exec Command="which ninja" IgnoreExitCode="true" IgnoreStandardErrorWarningFormat="true">
       <Output TaskParameter="ExitCode" PropertyName="MonoNinjaFound"/>
     </Exec>
@@ -947,7 +947,7 @@
       <MonoBuildTool Condition="'$(MonoNinjaFound)' != '0'">make -j$([System.Environment]::ProcessorCount)</MonoBuildTool>
     </PropertyGroup>
     <ItemGroup>
-      <MonoCMakeArgs Condition="'$(MonoNinjaFound)' == '0'" Include="-G Ninja"/>
+      <MonoCMakeArgs Condition="'$(MonoBuildTool)' == 'ninja'" Include="-G Ninja"/>
       <MonoCMakeArgs Include="-DCMAKE_INSTALL_PREFIX=$(MonoObjDir)out"/>
     </ItemGroup>
     <ItemGroup Condition="'$(TargetsBrowser)' == 'true'">
@@ -964,7 +964,7 @@
     <!-- cmake -->
     <Exec Condition="'$(TargetsBrowser)' != 'true'" Command="cmake @(MonoCMakeArgs, ' ') $(MonoProjectRoot)" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoObjDir)"/>
     <Exec Condition="'$(TargetsBrowser)' == 'true'" Command="bash -c 'source $(EMSDK_PATH)/emsdk_env.sh &amp;&amp; emcmake cmake @(MonoCMakeArgs, ' ') $(MonoProjectRoot)'" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoObjDir)" />
-    <!-- ninja -->
+    <!-- ninja/make -->
     <Exec Condition="'$(TargetsBrowser)' != 'true'" Command="$(MonoBuildTool) all install" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoObjDir)"/>
     <Exec Condition="'$(TargetsBrowser)' == 'true'" Command="bash -c 'source $(EMSDK_PATH)/emsdk_env.sh &amp;&amp; $(MonoBuildTool) all install'" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoObjDir)" />
   </Target>
@@ -1043,7 +1043,7 @@
   </Target>
 
   <Target Name="CleanMono">
-    <RemoveDir Directories="$(MonoObjDir)"/>
+    <RemoveDir Directories="$(MonoObjDir)" />
   </Target>
 
 </Project>
