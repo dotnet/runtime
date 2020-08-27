@@ -6,7 +6,6 @@ using Microsoft.DotNet.Cli.Build.Framework;
 using Microsoft.NET.HostModel.Bundle;
 using Microsoft.DotNet.CoreSetup.Test;
 using System;
-using System.IO;
 using System.Runtime.InteropServices;
 using Xunit;
 
