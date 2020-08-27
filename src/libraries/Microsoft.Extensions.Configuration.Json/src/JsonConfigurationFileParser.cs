@@ -50,6 +50,11 @@ namespace Microsoft.Extensions.Configuration.Json
                 VisitValue(property.Value);
                 ExitContext();
             }
+
+            if (isEmpty && _currentPath != null)
+            {
+                _data[_currentPath] = null;
+            }
         }
 
         private void VisitValue(JsonElement value)
