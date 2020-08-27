@@ -120,7 +120,7 @@ namespace System.Xml
 
         // Writes out a processing instruction with a space between the name and text as follows: <?name text?>
 
-        public virtual Task WriteProcessingInstructionAsync(string name, string text)
+        public virtual Task WriteProcessingInstructionAsync(string name, string? text)
         {
             throw new NotImplementedException();
         }

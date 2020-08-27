@@ -807,7 +807,7 @@ namespace System.Xml
             }
         }
 
-        public override async Task WriteProcessingInstructionAsync(string name, string text)
+        public override async Task WriteProcessingInstructionAsync(string name, string? text)
         {
             try
             {
