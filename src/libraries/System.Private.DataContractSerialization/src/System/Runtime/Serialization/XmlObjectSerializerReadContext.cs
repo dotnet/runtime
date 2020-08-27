@@ -425,7 +425,11 @@ namespace System.Runtime.Serialization
                 // These XmlObjectSerializer implementations do not currently support fix-ups. Hence we
                 // throw in such cases to allow us add fix-up support in the future if we need to.
                 if (DeserializedObjects.IsObjectReferenced(id))
+                {
+                    // https://github.com/dotnet/runtime/issues/41465 - oldObj or newObj may be null below - suppress compiler error by asserting non-null
+                    Debug.Assert(oldObj != null && newObj != null);
                     throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlObjectSerializer.CreateSerializationException(SR.Format(SR.FactoryObjectContainsSelfReference, DataContract.GetClrTypeFullName(oldObj.GetType()), DataContract.GetClrTypeFullName(newObj.GetType()), id)));
+                }
                 DeserializedObjects.Remove(id);
                 DeserializedObjects.Add(id, newObj);
             }
