@@ -6,6 +6,8 @@
   -->
 
   <PropertyGroup>
+    <MonoEnableCMake Condition="'$(MonoEnableCMake)' == '' and '$(TargetsBrowser)' == 'true'">true</MonoEnableCMake>
+    <MonoEnableCMake Condition="'$(MonoEnableCMake)' == '' and '$(TargetsOSX)' == 'true'">true</MonoEnableCMake>
     <MonoCrossDir Condition="'$(MonoCrossDir)' == '' and '$(ROOTFS_DIR)' != ''">$(ROOTFS_DIR)</MonoCrossDir>
     <MonoEnableInterpreter Condition="'$(MonoEnableInterpreter)' == ''">false</MonoEnableInterpreter>
     <DotNetExec Condition="'$(OS)' == 'Windows_NT'">dotnet.exe</DotNetExec>
