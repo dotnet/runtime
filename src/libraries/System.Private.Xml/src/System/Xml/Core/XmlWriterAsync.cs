@@ -70,7 +70,7 @@ namespace System.Xml
         }
 
         // Writes out the attribute with the specified prefix, LocalName, NamespaceURI and value.
-        public Task WriteAttributeStringAsync(string? prefix, string localName, string? ns, string value)
+        public Task WriteAttributeStringAsync(string? prefix, string localName, string? ns, string? value)
         {
             Task task = WriteStartAttributeAsync(prefix, localName, ns);
             if (task.IsSuccess())
@@ -83,7 +83,7 @@ namespace System.Xml
             }
         }
 
-        private async Task WriteAttributeStringAsyncHelper(Task task, string value)
+        private async Task WriteAttributeStringAsyncHelper(Task task, string? value)
         {
             await task.ConfigureAwait(false);
             await WriteStringAsync(value).ConfigureAwait(false);

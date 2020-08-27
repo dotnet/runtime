@@ -355,10 +355,10 @@ namespace System.Data.Common
             if (null == xmlAttrib)
             { // this means type implements IXmlSerializable
                 Type? type = null;
-                string typeName = xmlReader.GetAttribute(Keywords.MSD_INSTANCETYPE, Keywords.MSDNS);
+                string? typeName = xmlReader.GetAttribute(Keywords.MSD_INSTANCETYPE, Keywords.MSDNS);
                 if (typeName == null || typeName.Length == 0)
                 { // No CDT polumorphism
-                    string xsdTypeName = xmlReader.GetAttribute(Keywords.TYPE, Keywords.XSINS); // this xsd type: Base type polymorphism
+                    string? xsdTypeName = xmlReader.GetAttribute(Keywords.TYPE, Keywords.XSINS); // this xsd type: Base type polymorphism
                     if (null != xsdTypeName && xsdTypeName.Length > 0)
                     {
                         string[] _typename = xsdTypeName.Split(':');
