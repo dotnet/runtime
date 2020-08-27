@@ -297,7 +297,7 @@ namespace System.Net.Http
                 // https://developer.mozilla.org/en-US/docs/Web/API/Response/type
                 // opaqueredirect: The fetch request was made with redirect: "manual".
                 // The Response's status is 0, headers are empty, body is null and trailer is empty.
-                if (!string.IsNullOrEmpty(status.ResponseType) && status.ResponseType == "opaqueredirect")
+                if (status.ResponseType == "opaqueredirect")
                 {
                     httpResponse.SetReasonPhraseWithoutValidation(status.ResponseType);
                 }
