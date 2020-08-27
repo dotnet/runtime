@@ -158,11 +158,15 @@ int hostpolicy_context_t::initialize(hostpolicy_init_t &hostpolicy_init, const a
     fx_definition_vector_t::iterator fx_curr = fx_begin;
     while (fx_curr != fx_end)
     {
-        if (fx_curr != fx_begin)
+        if (fx_curr != fx_begin && app_context_deps_str != L"")
             app_context_deps_str += _X(';');
 
-        app_context_deps_str += (*fx_curr)->get_deps_file();
+        auto deps_str = (*fx_curr)->get_deps_file();
         ++fx_curr;
+        if (bundle::info_t::is_single_file_bundle() && (get_directory(deps_str) == args.app_root))
+            continue;
+
+        app_context_deps_str += deps_str;
     }
 
     // Build properties for CoreCLR instantiation
