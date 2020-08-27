@@ -359,6 +359,41 @@ namespace DebuggerTests
                 }
             );
 
+        [Fact]
+        public async Task InspectSimpleStringLocals() =>
+            await CheckInspectLocalsAtBreakpointSite(
+                "Math", "TestSimpleStrings", 13, "TestSimpleStrings",
+                "window.setTimeout(function() { invoke_static_method ('[debugger-test] Math:TestSimpleStrings')(); }, 1);",
+                wait_for_event_fn: async (pause_location) =>
+                {
+                    var locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
+
+                    var str_null = TString(null);
+                    var str_empty = TString(String.Empty);
+                    var str_spaces = TString(" ");
+                    var str_esc = TString("\\");
+
+                    await CheckProps(locals, new
+                    {
+                        str_null,
+                        str_empty,
+                        str_spaces,
+                        str_esc,
+
+                        strings = TArray("string[]", 4)
+                    }, "locals");
+
+                    var strings_arr = await GetObjectOnLocals(locals, "strings");
+                    await CheckProps(strings_arr, new[]
+                    {
+                        str_null,
+                        str_empty,
+                        str_spaces,
+                        str_esc
+                    }, "locals#strings");
+                }
+            );
+
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
