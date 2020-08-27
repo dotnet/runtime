@@ -17,7 +17,7 @@ namespace System.Runtime.Serialization
     internal class XmlObjectSerializerContext
 #endif
     {
-        protected XmlObjectSerializer? serializer;
+        protected XmlObjectSerializer serializer;
         protected DataContract? rootTypeDataContract;
         internal ScopedKnownTypes scopedKnownTypes;
         protected DataContractDictionary? serializerKnownDataContracts;
@@ -30,7 +30,7 @@ namespace System.Runtime.Serialization
         private readonly DataContractResolver? _dataContractResolver;
         private KnownTypeDataContractResolver? _knownTypeResolver;
 
-        internal XmlObjectSerializerContext(XmlObjectSerializer? serializer, int maxItemsInObjectGraph, StreamingContext streamingContext, bool ignoreExtensionDataObject,
+        internal XmlObjectSerializerContext(XmlObjectSerializer serializer, int maxItemsInObjectGraph, StreamingContext streamingContext, bool ignoreExtensionDataObject,
                                             DataContractResolver? dataContractResolver)
         {
             this.serializer = serializer;
@@ -41,7 +41,7 @@ namespace System.Runtime.Serialization
             _dataContractResolver = dataContractResolver;
         }
 
-        internal XmlObjectSerializerContext(XmlObjectSerializer? serializer, int maxItemsInObjectGraph, StreamingContext streamingContext, bool ignoreExtensionDataObject)
+        internal XmlObjectSerializerContext(XmlObjectSerializer serializer, int maxItemsInObjectGraph, StreamingContext streamingContext, bool ignoreExtensionDataObject)
             : this(serializer, maxItemsInObjectGraph, streamingContext, ignoreExtensionDataObject, null)
         {
         }

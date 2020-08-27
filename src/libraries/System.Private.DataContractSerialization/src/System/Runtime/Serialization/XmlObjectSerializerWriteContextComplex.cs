@@ -32,7 +32,7 @@ namespace System.Runtime.Serialization
             _serializationSurrogateProvider = serializer.SerializationSurrogateProvider;
         }
 
-        internal XmlObjectSerializerWriteContextComplex(XmlObjectSerializer? serializer, int maxItemsInObjectGraph, StreamingContext streamingContext, bool ignoreExtensionDataObject)
+        internal XmlObjectSerializerWriteContextComplex(XmlObjectSerializer serializer, int maxItemsInObjectGraph, StreamingContext streamingContext, bool ignoreExtensionDataObject)
             : base(serializer, maxItemsInObjectGraph, streamingContext, ignoreExtensionDataObject)
         {
         }

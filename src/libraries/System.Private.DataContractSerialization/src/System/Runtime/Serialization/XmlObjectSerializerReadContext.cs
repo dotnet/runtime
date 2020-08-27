@@ -100,7 +100,7 @@ namespace System.Runtime.Serialization
                 : new XmlObjectSerializerReadContext(serializer, rootTypeDataContract, dataContractResolver);
         }
 
-        internal XmlObjectSerializerReadContext(XmlObjectSerializer? serializer, int maxItemsInObjectGraph, StreamingContext streamingContext, bool ignoreExtensionDataObject)
+        internal XmlObjectSerializerReadContext(XmlObjectSerializer serializer, int maxItemsInObjectGraph, StreamingContext streamingContext, bool ignoreExtensionDataObject)
             : base(serializer, maxItemsInObjectGraph, streamingContext, ignoreExtensionDataObject)
         {
         }

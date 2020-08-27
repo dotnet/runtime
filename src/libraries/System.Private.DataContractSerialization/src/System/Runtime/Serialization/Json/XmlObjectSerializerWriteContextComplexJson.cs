@@ -15,24 +15,9 @@ namespace System.Runtime.Serialization.Json
 {
     internal class XmlObjectSerializerWriteContextComplexJson : XmlObjectSerializerWriteContextComplex
     {
-        private readonly DataContractJsonSerializer? _jsonSerializer;
         private readonly EmitTypeInformation _emitXsiType;
         private bool _perCallXsiTypeAlreadyEmitted;
         private readonly bool _useSimpleDictionaryFormat;
-
-        public XmlObjectSerializerWriteContextComplexJson(DataContractJsonSerializer serializer, DataContract rootTypeDataContract)
-            : base(null, int.MaxValue, default(StreamingContext), true)
-
-        {
-            _jsonSerializer = serializer;
-            this.rootTypeDataContract = rootTypeDataContract;
-            this.serializerKnownTypeList = serializer.knownTypeList;
-        }
-
-        internal static XmlObjectSerializerWriteContextComplexJson CreateContext(DataContractJsonSerializer serializer, DataContract rootTypeDataContract)
-        {
-            return new XmlObjectSerializerWriteContextComplexJson(serializer, rootTypeDataContract);
-        }
 
         internal static XmlObjectSerializerWriteContextComplexJson CreateContext(DataContractJsonSerializerImpl serializer, DataContract rootTypeDataContract)
         {

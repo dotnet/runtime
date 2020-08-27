@@ -48,7 +48,7 @@ namespace System.Runtime.Serialization
             _unsafeTypeForwardingEnabled = true;
         }
 
-        internal XmlObjectSerializerWriteContext(XmlObjectSerializer? serializer, int maxItemsInObjectGraph, StreamingContext streamingContext, bool ignoreExtensionDataObject)
+        internal XmlObjectSerializerWriteContext(XmlObjectSerializer serializer, int maxItemsInObjectGraph, StreamingContext streamingContext, bool ignoreExtensionDataObject)
             : base(serializer, maxItemsInObjectGraph, streamingContext, ignoreExtensionDataObject)
         {
             // Known types restricts the set of types that can be deserialized
