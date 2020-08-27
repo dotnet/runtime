@@ -429,10 +429,11 @@ namespace System.Xml
         public virtual System.Xml.XmlNode? RemoveAttributeAt(int i) { throw null; }
         public virtual System.Xml.XmlAttribute? RemoveAttributeNode(string localName, string? namespaceURI) { throw null; }
         public virtual System.Xml.XmlAttribute? RemoveAttributeNode(System.Xml.XmlAttribute oldAttr) { throw null; }
-        public virtual void SetAttribute(string name, string value) { }
-        public virtual string SetAttribute(string localName, string? namespaceURI, string value) { throw null; }
+        public virtual void SetAttribute(string name, string? value) { }
+        [return: System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute("value")]
+        public virtual string? SetAttribute(string localName, string? namespaceURI, string? value) { throw null; }
         public virtual System.Xml.XmlAttribute SetAttributeNode(string localName, string? namespaceURI) { throw null; }
-        public virtual System.Xml.XmlAttribute SetAttributeNode(System.Xml.XmlAttribute newAttr) { throw null; }
+        public virtual System.Xml.XmlAttribute? SetAttributeNode(System.Xml.XmlAttribute newAttr) { throw null; }
         public override void WriteContentTo(System.Xml.XmlWriter w) { }
         public override void WriteTo(System.Xml.XmlWriter w) { }
     }
